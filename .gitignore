@@ -1,10 +1,8 @@
 # Godot 4+ specific ignores
-.godot/
-.nomedia
+**/.godot/
+**/.nomedia
 
 # Godot-specific ignores
-.import/
-export.cfg
 export_credentials.cfg
 *.tmp
 
@@ -12,6 +10,10 @@ export_credentials.cfg
 *.translation
 
 # Mono-specific ignores
-.mono/
+**/.mono/
 data_*/
 mono_crash.*.json
+
+# Operating system files
+.DS_Store
+Thumbs.db
