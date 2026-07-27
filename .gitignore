@@ -1,3 +1,25 @@
+# IDE and generated project files
+*.code-workspace
+*.opensdf
+*.sdf
+*.sln
+*.sln.DotSettings.user
+*.slnx
+*.suo
+*.VC.db
+*.VC.opendb
+*.xcodeproj
+*.xcworkspace
+.idea/
+.vs/
+.vscode/
+.vsconfig
+compile_commands.json
+
+# General ignores
+**/.cache/
+**/bin/
+
 # Godot 4+ specific ignores
 **/.godot/
 **/.nomedia
