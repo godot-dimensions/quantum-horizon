@@ -28,13 +28,27 @@ function Get-DirectoryContentChecksum {
     $resolvedDirectoryPath = (Resolve-Path -LiteralPath $DirectoryPath).Path.TrimEnd('\', '/')
     $checksumInput = [System.Text.StringBuilder]::new()
 
-    Get-ChildItem -LiteralPath $resolvedDirectoryPath -File -Recurse |
-        Sort-Object FullName |
-        ForEach-Object {
-            $relativePath = $_.FullName.Substring($resolvedDirectoryPath.Length).TrimStart('\', '/')
-            $fileChecksum = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash
-            [void]$checksumInput.Append($relativePath).Append("`0").Append($fileChecksum).Append("`n")
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $relativePaths = @(& git -C $resolvedDirectoryPath ls-files -co --exclude-standard -- . 2>&1)
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($exitCode -ne 0) {
+        throw "Could not enumerate Git-visible files in: $resolvedDirectoryPath`n$($relativePaths -join "`n")"
+    }
+
+    foreach ($relativePath in @($relativePaths | ForEach-Object { "$_" } | Sort-Object -Unique)) {
+        $filePath = Join-Path $resolvedDirectoryPath $relativePath
+        if (-not (Test-Path -LiteralPath $filePath -PathType Leaf)) {
+            continue
         }
+        $fileChecksum = (Get-FileHash -LiteralPath $filePath -Algorithm SHA256).Hash
+        [void]$checksumInput.Append($relativePath).Append("`0").Append($fileChecksum).Append("`n")
+    }
 
     $hasher = [System.Security.Cryptography.SHA256]::Create()
     try {

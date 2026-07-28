@@ -171,7 +171,26 @@ trap 'rm -f "$state_file"' 0 1 2 15
 } >"$state_file"
 
 directory_checksum() {
-    find "$1" -type f -exec cksum {} \; | LC_ALL=C sort | cksum
+    directory_path=$1
+    file_list=$(mktemp "${TMPDIR:-/tmp}/quantum-horizon-files.XXXXXX") || return 1
+
+    if ! git -C "$directory_path" ls-files -co --exclude-standard -- . >"$file_list"; then
+        rm -f "$file_list"
+        return 1
+    fi
+    LC_ALL=C sort -o "$file_list" "$file_list" || {
+        rm -f "$file_list"
+        return 1
+    }
+
+    while IFS= read -r relative_path; do
+        [ -f "$directory_path/$relative_path" ] || continue
+        printf '%s\n' "$relative_path"
+        cksum <"$directory_path/$relative_path"
+    done <"$file_list" | cksum
+    checksum_status=$?
+    rm -f "$file_list"
+    return "$checksum_status"
 }
 
 cacheable=1

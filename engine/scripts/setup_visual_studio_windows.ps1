@@ -1,4 +1,4 @@
-# Generates a Visual Studio solution for the engine and adds the external 4D module files.
+# Generates a Visual Studio solution for the engine and adds the custom module files.
 
 param(
     [switch]$Force,
@@ -9,14 +9,25 @@ Set-StrictMode -Version Latest
 # Stop on first error.
 $ErrorActionPreference = "Stop"
 
-$scriptVersion = 6
+$scriptVersion = 7
 $projectName = "QuantumHorizon"
 $scriptRoot = $PSScriptRoot
 $engineRoot = Split-Path -Parent $scriptRoot
 $repositoryRoot = Split-Path -Parent $engineRoot
 $engineDir = Join-Path $engineRoot "godot"
 $modulesDir = Join-Path $engineRoot "modules"
-$moduleDir = Join-Path $modulesDir "4d"
+$moduleInfos = @(
+    [pscustomobject]@{
+        Directory = Join-Path $modulesDir "4d"
+        ProjectRoot = "..\modules\4d"
+        FilterRoot = "4D Module"
+    }
+    [pscustomobject]@{
+        Directory = Join-Path $modulesDir "quantum_horizon"
+        ProjectRoot = "..\modules\quantum_horizon"
+        FilterRoot = "Quantum Horizon Module"
+    }
+)
 $cacheDir = Join-Path $scriptRoot ".cache"
 $stateFile = Join-Path $cacheDir "visual_studio_setup.state"
 $vscodeSetupScript = Join-Path $scriptRoot "setup_vscode_windows.ps1"
@@ -49,19 +60,35 @@ function Invoke-SCons {
 function Get-RelativeModulePath {
     param([string]$FullPath)
 
-    $relativePath = $FullPath.Substring($moduleDir.Length).TrimStart([char[]]"\/")
-    return "..\modules\4d\" + $relativePath.Replace("/", "\")
+    $moduleInfo = Get-ModuleInfo -FullPath $FullPath
+    $relativePath = $FullPath.Substring($moduleInfo.Directory.Length).TrimStart([char[]]"\/")
+    return $moduleInfo.ProjectRoot + "\" + $relativePath.Replace("/", "\")
 }
 
 function Get-ModuleFilterPath {
     param([string]$FullPath)
 
-    $relativePath = $FullPath.Substring($moduleDir.Length).TrimStart([char[]]"\/")
+    $moduleInfo = Get-ModuleInfo -FullPath $FullPath
+    $relativePath = $FullPath.Substring($moduleInfo.Directory.Length).TrimStart([char[]]"\/")
     $relativeDirectory = [System.IO.Path]::GetDirectoryName($relativePath)
     if ([string]::IsNullOrEmpty($relativeDirectory)) {
-        return "4D Module"
+        return $moduleInfo.FilterRoot
     }
-    return "4D Module\" + $relativeDirectory.Replace("/", "\")
+    return $moduleInfo.FilterRoot + "\" + $relativeDirectory.Replace("/", "\")
+}
+
+function Get-ModuleInfo {
+    param([string]$FullPath)
+
+    $resolvedPath = [System.IO.Path]::GetFullPath($FullPath)
+    foreach ($moduleInfo in $moduleInfos) {
+        $moduleRoot = $moduleInfo.Directory.TrimEnd("\", "/")
+        $moduleRootWithSeparator = $moduleRoot + [System.IO.Path]::DirectorySeparatorChar
+        if ($resolvedPath.StartsWith($moduleRootWithSeparator, [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $moduleInfo
+        }
+    }
+    throw "File is not inside a configured custom module: $resolvedPath"
 }
 
 function Get-GitFiles {
@@ -96,7 +123,6 @@ function Get-GitFiles {
 
 function Get-VisualStudioSourceFiles {
     $database = Get-Content -LiteralPath $compileCommandsFile -Raw | ConvertFrom-Json
-    $moduleRootWithSeparator = $moduleDir.TrimEnd("\", "/") + [System.IO.Path]::DirectorySeparatorChar
     $sourceFiles = [System.Collections.Generic.List[string]]::new()
 
     foreach ($entry in $database) {
@@ -106,8 +132,13 @@ function Get-VisualStudioSourceFiles {
         }
         $sourcePath = [System.IO.Path]::GetFullPath($sourcePath)
 
-        if ($sourcePath.StartsWith($moduleRootWithSeparator, [System.StringComparison]::OrdinalIgnoreCase)) {
-            $sourceFiles.Add($sourcePath)
+        foreach ($moduleInfo in $moduleInfos) {
+            $moduleRootWithSeparator = $moduleInfo.Directory.TrimEnd("\", "/") +
+                [System.IO.Path]::DirectorySeparatorChar
+            if ($sourcePath.StartsWith($moduleRootWithSeparator, [System.StringComparison]::OrdinalIgnoreCase)) {
+                $sourceFiles.Add($sourcePath)
+                break
+            }
         }
     }
 
@@ -115,7 +146,10 @@ function Get-VisualStudioSourceFiles {
 }
 
 function Get-VisualStudioHeaderFiles {
-    return @(Get-GitFiles -RepoPath $moduleDir -Extensions @(".h", ".hh", ".hpp", ".hxx", ".inc") |
+    $headerFiles = foreach ($moduleInfo in $moduleInfos) {
+        Get-GitFiles -RepoPath $moduleInfo.Directory -Extensions @(".h", ".hh", ".hpp", ".hxx", ".inc")
+    }
+    return @($headerFiles |
         Where-Object {
             $_ -notmatch '[\\/]addons[\\/]' -and
             $_ -notmatch '[\\/]__pycache__[\\/]'
@@ -129,12 +163,14 @@ function Add-ExternalModuleFilesToProject {
         [string[]]$ModuleHeaders
     )
 
-    $escapedModuleDir = [System.Security.SecurityElement]::Escape($moduleDir)
+    $escapedModuleIncludePaths = @($moduleInfos | ForEach-Object {
+        [System.Security.SecurityElement]::Escape($_.Directory)
+    }) -join ";"
     $items = [System.Collections.Generic.List[string]]::new()
-    $items.Add("  <!-- Quantum Horizon external module IntelliSense settings. Builds are still delegated to SCons. -->")
+    $items.Add("  <!-- Quantum Horizon custom module IntelliSense settings. Builds are still delegated to SCons. -->")
     $items.Add("  <PropertyGroup>")
     $items.Add("    <NMakePreprocessorDefinitions>GODOT_MODULE;`$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>")
-    $items.Add("    <NMakeIncludeSearchPath>$escapedModuleDir;`$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>")
+    $items.Add("    <NMakeIncludeSearchPath>$escapedModuleIncludePaths;`$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>")
     $items.Add("  </PropertyGroup>")
     $items.Add("  <ItemGroup>")
     foreach ($headerPath in $ModuleHeaders) {
@@ -170,13 +206,16 @@ function Add-ExternalModuleFilesToFilters {
     $filterPaths = [System.Collections.Generic.HashSet[string]]::new(
         [System.StringComparer]::OrdinalIgnoreCase
     )
-    [void]$filterPaths.Add("4D Module")
+    foreach ($moduleInfo in $moduleInfos) {
+        [void]$filterPaths.Add($moduleInfo.FilterRoot)
+    }
 
     foreach ($filePath in @($ModuleHeaders) + @($ModuleSources)) {
+        $moduleInfo = Get-ModuleInfo -FullPath $filePath
         $filterPath = Get-ModuleFilterPath -FullPath $filePath
-        while ($filterPath.StartsWith("4D Module", [System.StringComparison]::OrdinalIgnoreCase)) {
+        while ($filterPath.StartsWith($moduleInfo.FilterRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
             [void]$filterPaths.Add($filterPath)
-            if ($filterPath -eq "4D Module") {
+            if ($filterPath -eq $moduleInfo.FilterRoot) {
                 break
             }
             $filterPath = Split-Path -Parent $filterPath
@@ -184,7 +223,7 @@ function Add-ExternalModuleFilesToFilters {
     }
 
     $items = [System.Collections.Generic.List[string]]::new()
-    $items.Add("  <!-- Quantum Horizon external module folder hierarchy. -->")
+    $items.Add("  <!-- Quantum Horizon custom module folder hierarchy. -->")
     $items.Add("  <ItemGroup>")
     foreach ($filterPath in @($filterPaths | Sort-Object)) {
         $escapedFilterPath = [System.Security.SecurityElement]::Escape($filterPath)
@@ -227,17 +266,43 @@ function Add-ExternalModuleFilesToFilters {
 }
 
 function Disable-ShowAllFiles {
-    $userSettingsContents = [System.IO.File]::ReadAllText($generatedUserSettings)
     $showAllFilesPattern = '<ShowAllFiles>[^<]*</ShowAllFiles>'
-    if ($userSettingsContents -notmatch $showAllFilesPattern) {
-        throw "Generated Visual Studio user settings have an unexpected format: $generatedUserSettings"
+    if (Test-Path -LiteralPath $generatedUserSettings -PathType Leaf) {
+        $userSettingsContents = [System.IO.File]::ReadAllText($generatedUserSettings)
+        if ($userSettingsContents -match $showAllFilesPattern) {
+            $userSettingsContents = [regex]::Replace(
+                $userSettingsContents,
+                $showAllFilesPattern,
+                '<ShowAllFiles>false</ShowAllFiles>'
+            )
+        }
+        elseif ($userSettingsContents.Contains("</Project>")) {
+            $propertyGroup = @(
+                "  <PropertyGroup>"
+                "    <ShowAllFiles>false</ShowAllFiles>"
+                "  </PropertyGroup>"
+            ) -join [Environment]::NewLine
+            $userSettingsContents = $userSettingsContents.Replace(
+                "</Project>",
+                $propertyGroup + [Environment]::NewLine + "</Project>"
+            )
+        }
+        else {
+            throw "Visual Studio user settings have an unexpected format: $generatedUserSettings"
+        }
+    }
+    else {
+        $userSettingsContents = @(
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">'
+            '  <PropertyGroup>'
+            '    <ShowAllFiles>false</ShowAllFiles>'
+            '  </PropertyGroup>'
+            '</Project>'
+            ''
+        ) -join [Environment]::NewLine
     }
 
-    $userSettingsContents = [regex]::Replace(
-        $userSettingsContents,
-        $showAllFilesPattern,
-        '<ShowAllFiles>false</ShowAllFiles>'
-    )
     [System.IO.File]::WriteAllText(
         $generatedUserSettings,
         $userSettingsContents,
@@ -262,11 +327,13 @@ if (-not (Get-Command scons -ErrorAction SilentlyContinue)) {
 if (-not (Test-Path -LiteralPath $vscodeSetupScript -PathType Leaf)) {
     throw "VS Code setup script not found: $vscodeSetupScript"
 }
-if (-not (Test-Path -LiteralPath $moduleDir -PathType Container)) {
-    throw "4D module directory not found: $moduleDir"
+foreach ($moduleInfo in $moduleInfos) {
+    if (-not (Test-Path -LiteralPath $moduleInfo.Directory -PathType Container)) {
+        throw "Custom module directory not found: $($moduleInfo.Directory)"
+    }
 }
 
-# The compilation database provides the authoritative list of external module
+# The compilation database provides the authoritative list of custom module
 # translation units and is shared with VS Code.
 if (-not $SkipVSCodeSetup) {
     & $vscodeSetupScript
@@ -304,7 +371,7 @@ if ($isCurrent) {
 $moduleSources = Get-VisualStudioSourceFiles
 $moduleHeaders = Get-VisualStudioHeaderFiles
 if ($moduleSources.Count -eq 0) {
-    throw "No 4D module source files were found in the compilation database."
+    throw "No custom module source files were found in the compilation database."
 }
 
 Write-Host "Generating Visual Studio solution..." -ForegroundColor Cyan
@@ -345,10 +412,6 @@ if (-not (Test-Path -LiteralPath $generatedProject -PathType Leaf)) {
 if (-not (Test-Path -LiteralPath $generatedFilters -PathType Leaf)) {
     throw "Visual Studio filters file was not generated: $generatedFilters"
 }
-if (-not (Test-Path -LiteralPath $generatedUserSettings -PathType Leaf)) {
-    throw "Visual Studio user settings were not generated: $generatedUserSettings"
-}
-
 Add-ExternalModuleFilesToProject -ModuleSources $moduleSources -ModuleHeaders $moduleHeaders
 Add-ExternalModuleFilesToFilters -ModuleSources $moduleSources -ModuleHeaders $moduleHeaders
 Disable-ShowAllFiles
@@ -371,5 +434,5 @@ New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
     (New-Object System.Text.UTF8Encoding($false))
 )
 
-Write-Host "[OK] Visual Studio is configured for the engine and 4D module." -ForegroundColor Green
+Write-Host "[OK] Visual Studio is configured for the engine and custom modules." -ForegroundColor Green
 Write-Host "Solution: $repositorySolution"

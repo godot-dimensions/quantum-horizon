@@ -45,30 +45,6 @@ function Invoke-GitText {
     return @($output | ForEach-Object { "$_" })
 }
 
-function Get-DirectoryContentChecksum {
-    param([string]$DirectoryPath)
-
-    $resolvedDirectoryPath = (Resolve-Path -LiteralPath $DirectoryPath).Path.TrimEnd('\', '/')
-    $checksumInput = [System.Text.StringBuilder]::new()
-
-    Get-ChildItem -LiteralPath $resolvedDirectoryPath -File -Recurse |
-        Sort-Object FullName |
-        ForEach-Object {
-            $relativePath = $_.FullName.Substring($resolvedDirectoryPath.Length).TrimStart('\', '/')
-            $fileChecksum = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash
-            [void]$checksumInput.Append($relativePath).Append("`0").Append($fileChecksum).Append("`n")
-        }
-
-    $hasher = [System.Security.Cryptography.SHA256]::Create()
-    try {
-        $bytes = [System.Text.Encoding]::UTF8.GetBytes($checksumInput.ToString())
-        return [System.BitConverter]::ToString($hasher.ComputeHash($bytes)).Replace("-", "")
-    }
-    finally {
-        $hasher.Dispose()
-    }
-}
-
 function Get-SourceLayoutSignature {
     param([string[]]$RepositoryPaths)
 
@@ -84,16 +60,11 @@ function Get-SourceLayoutSignature {
         $resolvedPath = (Resolve-Path -LiteralPath $repositoryPath).Path
         $signatureLines.Add("repository=$resolvedPath")
 
-        if (-not (Test-Path -LiteralPath (Join-Path $resolvedPath ".git"))) {
-            $signatureLines.Add("content-checksum=$(Get-DirectoryContentChecksum -DirectoryPath $resolvedPath)")
-            continue
-        }
-
         $commit = Invoke-GitText -RepoPath $resolvedPath -Arguments @("rev-parse", "HEAD")
         $signatureLines.Add("commit=$($commit -join '')")
 
         $statusLines = Invoke-GitText -RepoPath $resolvedPath -Arguments @(
-            "status", "--porcelain=v1", "--untracked-files=all"
+            "status", "--porcelain=v1", "--untracked-files=all", "--", "."
         )
         foreach ($statusLine in $statusLines) {
             if ($statusLine -match '\.(c|cc|cpp|cxx|m|mm|h|hh|hpp|hxx|inc)$' -or
@@ -103,7 +74,7 @@ function Get-SourceLayoutSignature {
         }
 
         $files = Invoke-GitText -RepoPath $resolvedPath -Arguments @(
-            "ls-files", "-co", "--exclude-standard"
+            "ls-files", "-co", "--exclude-standard", "--", "."
         )
         foreach ($relativePath in @($files | Sort-Object -Unique)) {
             $normalizedPath = $relativePath.Replace("\", "/")
@@ -174,7 +145,8 @@ function Test-CompilationDatabaseIncludesModules {
 
     $contents = Get-Content -LiteralPath $compileCommandsFile -Raw
     $normalizedContents = $contents.Replace("\\", "/").Replace("\", "/")
-    return $normalizedContents -match 'modules/4d/'
+    return $normalizedContents -match 'modules/4d/' -and
+        $normalizedContents -match 'modules/quantum_horizon/'
 }
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
@@ -245,7 +217,7 @@ finally {
 }
 
 if (-not (Test-CompilationDatabaseIncludesModules)) {
-    throw "The generated compilation database does not contain the 4D module: $compileCommandsFile"
+    throw "The generated compilation database does not contain all custom modules: $compileCommandsFile"
 }
 
 New-Item -ItemType Directory -Path $vscodeDir -Force | Out-Null
@@ -288,5 +260,5 @@ Write-JsonFile -Path $extensionsFile -Value $extensions
     (New-Object System.Text.UTF8Encoding($false))
 )
 
-Write-Host "[OK] VS Code IntelliSense is configured for the engine and 4D module." -ForegroundColor Green
+Write-Host "[OK] VS Code IntelliSense is configured for the engine and custom modules." -ForegroundColor Green
 Write-Host "Compilation database: $compileCommandsFile"

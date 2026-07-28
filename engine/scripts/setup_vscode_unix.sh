@@ -97,30 +97,19 @@ trap 'rm -f "$signature_input"' 0 1 2 15
     printf 'custom_modules=../modules\n'
 } >"$signature_input"
 
-directory_checksum() {
-    find "$1" -type f -exec cksum {} \; | LC_ALL=C sort | cksum
-}
-
 for repository_path in "$engine_dir" "$modules_dir"/*; do
     [ -d "$repository_path" ] || continue
 
     repository_path=$(CDPATH= cd -P "$repository_path" && pwd)
     printf 'repository=%s\n' "$repository_path" >>"$signature_input"
 
-    if [ ! -e "$repository_path/.git" ]; then
-        checksum=$(directory_checksum "$repository_path") ||
-            die "Could not calculate content checksum for: $repository_path"
-        printf 'content-checksum=%s\n' "$checksum" >>"$signature_input"
-        continue
-    fi
-
     printf 'commit=%s\n' "$(git -C "$repository_path" rev-parse HEAD)" >>"$signature_input"
 
-    git -C "$repository_path" status --porcelain=v1 --untracked-files=all |
+    git -C "$repository_path" status --porcelain=v1 --untracked-files=all -- . |
         grep -E '\.(c|cc|cpp|cxx|m|mm|h|hh|hpp|hxx|inc)$|(^|/)(SConstruct|SCsub|config\.py)$' |
         sed 's/^/status=/' >>"$signature_input" || true
 
-    git -C "$repository_path" ls-files -co --exclude-standard |
+    git -C "$repository_path" ls-files -co --exclude-standard -- . |
         LC_ALL=C sort -u |
         while IFS= read -r relative_path; do
             case "$relative_path" in
@@ -151,7 +140,8 @@ if [ "$force" -eq 0 ] &&
     [ -f "$settings_file" ] &&
     [ -f "$extensions_file" ] &&
     [ -f "$compile_commands_file" ] &&
-    grep -Eq 'modules/4d/' "$compile_commands_file"; then
+    grep -Eq 'modules/4d/' "$compile_commands_file" &&
+    grep -Eq 'modules/quantum_horizon/' "$compile_commands_file"; then
     saved_signature=$(sed -n '1p' "$state_file")
     if [ "$saved_signature" = "$current_signature" ]; then
         is_current=1
@@ -185,6 +175,8 @@ printf 'Generating VS Code IntelliSense metadata...\n'
     die "Compilation database was not generated: $compile_commands_file"
 grep -Eq 'modules/4d/' "$compile_commands_file" ||
     die "The generated compilation database does not contain the 4D module: $compile_commands_file"
+grep -Eq 'modules/quantum_horizon/' "$compile_commands_file" ||
+    die "The generated compilation database does not contain the Quantum Horizon module: $compile_commands_file"
 
 mkdir -p "$vscode_dir"
 python3 - "$vscode_dir" <<'PYTHON'
@@ -260,5 +252,5 @@ printf '%s\n' "$current_signature" >"$state_file"
 rm -f "$signature_input"
 trap - 0 1 2 15
 
-printf '[OK] VS Code IntelliSense is configured for the engine and 4D module.\n'
+printf '[OK] VS Code IntelliSense is configured for the engine and custom modules.\n'
 printf 'Compilation database: %s\n' "$compile_commands_file"
