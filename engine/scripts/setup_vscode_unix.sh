@@ -97,12 +97,23 @@ trap 'rm -f "$signature_input"' 0 1 2 15
     printf 'custom_modules=../modules\n'
 } >"$signature_input"
 
+directory_checksum() {
+    find "$1" -type f -exec cksum {} \; | LC_ALL=C sort | cksum
+}
+
 for repository_path in "$engine_dir" "$modules_dir"/*; do
     [ -d "$repository_path" ] || continue
-    [ -e "$repository_path/.git" ] || die "Git repository not found: $repository_path"
 
     repository_path=$(CDPATH= cd -P "$repository_path" && pwd)
     printf 'repository=%s\n' "$repository_path" >>"$signature_input"
+
+    if [ ! -e "$repository_path/.git" ]; then
+        checksum=$(directory_checksum "$repository_path") ||
+            die "Could not calculate content checksum for: $repository_path"
+        printf 'content-checksum=%s\n' "$checksum" >>"$signature_input"
+        continue
+    fi
+
     printf 'commit=%s\n' "$(git -C "$repository_path" rev-parse HEAD)" >>"$signature_input"
 
     git -C "$repository_path" status --porcelain=v1 --untracked-files=all |

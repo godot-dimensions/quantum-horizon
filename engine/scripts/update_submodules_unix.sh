@@ -59,13 +59,16 @@ update_repository() {
         case "$repo_path" in
             "$host_repo_path"/*)
                 submodule_path=${repo_path#"$host_repo_path"/}
-                printf '  Missing .git metadata. Initializing submodule from host repo: %s\n' "$submodule_path"
+                printf '  Missing .git metadata. Attempting to initialize host submodule: %s\n' "$submodule_path"
                 git -C "$host_repo_path" submodule update --init --recursive -- "$submodule_path"
                 ;;
         esac
     fi
 
-    [ -e "$repo_path/.git" ] || die "Git repository not found: $repo_path"
+    if [ ! -e "$repo_path/.git" ]; then
+        printf '  No Git repository metadata found; skipping parent-tracked directory.\n\n'
+        return 0
+    fi
 
     if ! status_output=$(git -C "$repo_path" status --porcelain=v1 --untracked-files=all); then
         die "Could not read Git status for: $repo_path"

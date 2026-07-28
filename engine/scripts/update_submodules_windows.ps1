@@ -75,7 +75,7 @@ function Update-Repository {
         $hostPrefix = "$hostRepoPath$([IO.Path]::DirectorySeparatorChar)"
         if ($resolvedRepoPath.StartsWith($hostPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
             $submodulePath = $resolvedRepoPath.Substring($hostPrefix.Length).Replace('\\', '/')
-            Write-Host "  Missing .git metadata. Initializing submodule from host repo: $submodulePath"
+            Write-Host "  Missing .git metadata. Attempting to initialize host submodule: $submodulePath"
             Invoke-Git -RepoPath $hostRepoPath -Arguments @(
                 "submodule", "update", "--init", "--recursive", "--", $submodulePath
             ) | Out-Null
@@ -83,7 +83,10 @@ function Update-Repository {
     }
 
     if (-not (Test-Path -LiteralPath (Join-Path $resolvedRepoPath ".git"))) {
-        throw "Git repository not found: $resolvedRepoPath"
+        Write-Host "  No Git repository metadata found; skipping parent-tracked directory.`n"
+        return [pscustomobject]@{
+            Changed = $false
+        }
     }
 
     $status = Invoke-Git -RepoPath $resolvedRepoPath -Arguments @(

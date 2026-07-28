@@ -170,19 +170,30 @@ trap 'rm -f "$state_file"' 0 1 2 15
     fi
 } >"$state_file"
 
+directory_checksum() {
+    find "$1" -type f -exec cksum {} \; | LC_ALL=C sort | cksum
+}
+
 cacheable=1
 for repository_path in "$engine_dir" "$modules_dir"/*; do
     [ -d "$repository_path" ] || continue
-    [ -e "$repository_path/.git" ] || die "Git repository not found: $repository_path"
-
-    commit=$(git -C "$repository_path" rev-parse HEAD) || die "Could not read Git revision for: $repository_path"
-    changes=$(git -C "$repository_path" status --porcelain=v1 --untracked-files=all) ||
-        die "Could not read Git status for: $repository_path"
+    commit=
+    changes=
+    content_checksum=
+    if [ -e "$repository_path/.git" ]; then
+        commit=$(git -C "$repository_path" rev-parse HEAD) || die "Could not read Git revision for: $repository_path"
+        changes=$(git -C "$repository_path" status --porcelain=v1 --untracked-files=all) ||
+            die "Could not read Git status for: $repository_path"
+    else
+        content_checksum=$(directory_checksum "$repository_path") ||
+            die "Could not calculate content checksum for: $repository_path"
+    fi
 
     if [ -n "$changes" ]; then
         cacheable=0
     fi
-    printf 'repository=%s\ncommit=%s\n' "$repository_path" "$commit" >>"$state_file"
+    printf 'repository=%s\ncommit=%s\ncontent_checksum=%s\n' \
+        "$repository_path" "$commit" "$content_checksum" >>"$state_file"
 done
 
 current_build_key=$(cksum <"$state_file")

@@ -45,6 +45,30 @@ function Invoke-GitText {
     return @($output | ForEach-Object { "$_" })
 }
 
+function Get-DirectoryContentChecksum {
+    param([string]$DirectoryPath)
+
+    $resolvedDirectoryPath = (Resolve-Path -LiteralPath $DirectoryPath).Path.TrimEnd('\', '/')
+    $checksumInput = [System.Text.StringBuilder]::new()
+
+    Get-ChildItem -LiteralPath $resolvedDirectoryPath -File -Recurse |
+        Sort-Object FullName |
+        ForEach-Object {
+            $relativePath = $_.FullName.Substring($resolvedDirectoryPath.Length).TrimStart('\', '/')
+            $fileChecksum = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash
+            [void]$checksumInput.Append($relativePath).Append("`0").Append($fileChecksum).Append("`n")
+        }
+
+    $hasher = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($checksumInput.ToString())
+        return [System.BitConverter]::ToString($hasher.ComputeHash($bytes)).Replace("-", "")
+    }
+    finally {
+        $hasher.Dispose()
+    }
+}
+
 function Get-SourceLayoutSignature {
     param([string[]]$RepositoryPaths)
 
@@ -59,6 +83,11 @@ function Get-SourceLayoutSignature {
     foreach ($repositoryPath in $RepositoryPaths) {
         $resolvedPath = (Resolve-Path -LiteralPath $repositoryPath).Path
         $signatureLines.Add("repository=$resolvedPath")
+
+        if (-not (Test-Path -LiteralPath (Join-Path $resolvedPath ".git"))) {
+            $signatureLines.Add("content-checksum=$(Get-DirectoryContentChecksum -DirectoryPath $resolvedPath)")
+            continue
+        }
 
         $commit = Invoke-GitText -RepoPath $resolvedPath -Arguments @("rev-parse", "HEAD")
         $signatureLines.Add("commit=$($commit -join '')")
