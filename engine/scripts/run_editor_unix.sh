@@ -112,10 +112,7 @@ else
     printf '\nStep 1 of 4: Update skipped.\n'
 fi
 
-printf '\nStep 2 of 4: Setting up VS Code IntelliSense...\n'
-"$vscode_setup_script"
-
-printf '\nStep 3 of 4: Making sure the engine is built...\n'
+printf '\nStep 2 of 4: Making sure the engine is built...\n'
 if [ "$dev_build" -eq 1 ]; then
     "$build_script" --dev --do-not-run
     dev_suffix=.dev
@@ -123,6 +120,28 @@ else
     "$build_script" --do-not-run
     dev_suffix=
 fi
+
+printf '\nStep 3 of 4: Setting up VS Code IntelliSense...\n'
+# Metadata-only SCons runs overwrite this with their much smaller node count,
+# which would make the next real build report 100% progress almost immediately.
+node_count_file=$engine_root/godot/.scons_node_count
+node_count_existed=0
+node_count=
+if [ -f "$node_count_file" ]; then
+    node_count=$(sed -n '1p' "$node_count_file")
+    node_count_existed=1
+fi
+
+setup_exit_code=0
+"$vscode_setup_script" || setup_exit_code=$?
+
+if [ "$node_count_existed" -eq 1 ]; then
+    printf '%s\n' "$node_count" >"$node_count_file"
+else
+    rm -f "$node_count_file"
+fi
+
+[ "$setup_exit_code" -eq 0 ] || exit "$setup_exit_code"
 
 printf '\nStep 4 of 4: Opening the editor...\n'
 executable_path=$engine_root/godot/bin/godot.$platform.editor$dev_suffix.double.$architecture
