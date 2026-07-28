@@ -93,7 +93,14 @@ function Update-Repository {
         "status", "--porcelain=v1", "--untracked-files=all"
     )
     if ($status.Output.Count -gt 0) {
-        throw "Repository has uncommitted changes. Commit or discard them before updating:`n$($status.Output -join "`n")"
+        Write-Host "  Repository has uncommitted changes; skipping Git update:" -ForegroundColor Yellow
+        foreach ($statusLine in $status.Output) {
+            Write-Host "  $statusLine" -ForegroundColor Yellow
+        }
+        Write-Host ""
+        return [pscustomobject]@{
+            Changed = $false
+        }
     }
     Write-Host "  Working tree is clean."
 
@@ -227,7 +234,7 @@ New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
     lastUpdateTime = (Get-Date).ToString("o")
 } | ConvertTo-Json | Set-Content -LiteralPath $updateCacheFile -Encoding UTF8
 
-Write-Host "[OK] All engine repositories are up to date." -ForegroundColor Green
+Write-Host "[OK] Engine repository update checks completed." -ForegroundColor Green
 if ($reposChanged) {
     Write-Host "New source revisions were downloaded." -ForegroundColor Yellow
 }

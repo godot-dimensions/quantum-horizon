@@ -242,6 +242,12 @@ set -- "$@" "-j$jobs" "custom_modules=../modules"
 if [ "$dev_build" -eq 1 ]; then
     set -- "$@" "debug_symbols=yes" "dev_build=yes" "dev_mode=yes"
 fi
+
+if [ "$should_skip_build" -eq 0 ] && [ -e "$executable_path" ]; then
+    rm -f "$executable_path" ||
+        die "Could not remove the existing Godot executable: $executable_path. You must close Godot before re-running the build script."
+fi
+
 if [ "$clean_build" -eq 1 ]; then
     printf '\nCleaning this build configuration...\n'
     (

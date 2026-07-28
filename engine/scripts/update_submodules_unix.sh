@@ -74,8 +74,9 @@ update_repository() {
         die "Could not read Git status for: $repo_path"
     fi
     if [ -n "$status_output" ]; then
-        printf 'Repository has uncommitted changes. Commit or discard them before updating:\n%s\n' "$status_output" >&2
-        exit 1
+        printf '  Repository has uncommitted changes; skipping Git update:\n'
+        printf '%s\n\n' "$status_output"
+        return 0
     fi
     printf '  Working tree is clean.\n'
 
@@ -176,7 +177,7 @@ trap 'rm -f "$cache_tmp"' 0 1 2 15
 mv "$cache_tmp" "$update_cache_file"
 trap - 0 1 2 15
 
-printf '[OK] All engine repositories are up to date.\n'
+printf '[OK] Engine repository update checks completed.\n'
 if [ "$repository_changed" -eq 1 ]; then
     printf 'New source revisions were downloaded.\n'
 else

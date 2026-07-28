@@ -174,6 +174,15 @@ if (-not $Clean -and $null -ne $repositoryState -and (Test-Path -LiteralPath $bu
     }
 }
 
+if (-not $shouldSkipBuild -and (Test-Path -LiteralPath $executablePath -PathType Leaf)) {
+    try {
+        Remove-Item -LiteralPath $executablePath -Force
+    }
+    catch {
+        throw "Could not remove the existing Godot executable: $executablePath`nYou must close Godot before re-running the build script.`n$($_.Exception.Message)"
+    }
+}
+
 Push-Location $engineDir
 try {
     if ($Clean) {
