@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3 uid="uid://dyem53uk1lub2"]
+
+[ext_resource type="Script" uid="uid://cr8pg83f0vv8j" path="res://models/primitives/spheritorus/make_spheritorus.gd" id="1_0msai"]
+[ext_resource type="TetraMaterial4D" uid="uid://bc8jx6s1rr1ge" path="res://models/primitives/spheritorus/noise_spheritorus.mat.tres" id="2_6ilft"]
+[ext_resource type="ArrayTetraMesh4D" uid="uid://bfnhjpnerwlwy" path="res://models/primitives/spheritorus/latest/spheritorus.g4b" id="3_2gl4s"]
+
+[node name="MakeSpheritorus" type="Node"]
+script = ExtResource("1_0msai")
+minor_radius = 0.25
+
+[node name="Spheritorus4D" type="MeshInstance4D" parent="."]
+material_override = ExtResource("2_6ilft")
+mesh = ExtResource("3_2gl4s")
+
+[node name="torus_texmap" type="MeshInstance3D" parent="."]
+skeleton = NodePath("../Spheritorus4D")

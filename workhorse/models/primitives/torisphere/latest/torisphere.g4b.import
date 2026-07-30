@@ -1,0 +1,16 @@
+[remap]
+
+importer="godot_4d.g4mf.mesh_4d"
+type="Mesh4D"
+uid="uid://dqi25ewqslbme"
+path="res://.godot/imported/torisphere.g4b-dd9238bc6c225391d586dec2d67b36bd.res"
+
+[deps]
+
+source_file="res://models/primitives/torisphere/latest/torisphere.g4b"
+dest_files=["res://.godot/imported/torisphere.g4b-dd9238bc6c225391d586dec2d67b36bd.res"]
+
+[params]
+
+preferred_mesh_format=0
+include_invisible=false

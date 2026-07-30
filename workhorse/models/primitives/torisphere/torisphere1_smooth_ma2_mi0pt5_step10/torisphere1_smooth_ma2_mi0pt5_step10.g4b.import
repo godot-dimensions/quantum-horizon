@@ -1,0 +1,16 @@
+[remap]
+
+importer="godot_4d.g4mf.mesh_4d"
+type="Mesh4D"
+uid="uid://bb0jg83n07i4c"
+path="res://.godot/imported/torisphere1_smooth_ma2_mi0pt5_step10.g4b-dc71d4891cb503c6ddc9d000619a6b51.res"
+
+[deps]
+
+source_file="res://models/primitives/torisphere/torisphere1_smooth_ma2_mi0pt5_step10/torisphere1_smooth_ma2_mi0pt5_step10.g4b"
+dest_files=["res://.godot/imported/torisphere1_smooth_ma2_mi0pt5_step10.g4b-dc71d4891cb503c6ddc9d000619a6b51.res"]
+
+[params]
+
+preferred_mesh_format=0
+include_invisible=false

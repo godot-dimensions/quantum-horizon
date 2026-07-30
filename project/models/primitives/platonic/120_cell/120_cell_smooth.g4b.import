@@ -1,0 +1,16 @@
+[remap]
+
+importer="godot_4d.g4mf.mesh_4d"
+type="Mesh4D"
+uid="uid://bvnr74qf3vngm"
+path="res://.godot/imported/120_cell_smooth.g4b-3539bb360e5197c415ca640534defb00.res"
+
+[deps]
+
+source_file="res://models/primitives/platonic/120_cell/120_cell_smooth.g4b"
+dest_files=["res://.godot/imported/120_cell_smooth.g4b-3539bb360e5197c415ca640534defb00.res"]
+
+[params]
+
+preferred_mesh_format=1
+include_invisible=false

@@ -1,0 +1,16 @@
+[gd_resource type="TetraMaterial4D" load_steps=3 format=3 uid="uid://bc8jx6s1rr1ge"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_f0msh"]
+
+[sub_resource type="NoiseTexture3D" id="NoiseTexture3D_u8ayl"]
+width = 128
+height = 128
+depth = 512
+noise = SubResource("FastNoiseLite_f0msh")
+seamless = true
+seamless_blend_skirt = 0.25
+
+[resource]
+resource_name = "noise_tetra_mat"
+albedo_source = 3
+albedo_texture_3d = SubResource("NoiseTexture3D_u8ayl")

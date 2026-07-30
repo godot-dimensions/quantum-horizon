@@ -1,0 +1,124 @@
+{
+	"accessors": [
+		{
+			"bufferView": 0,
+			"componentType": "float8",
+			"vectorSize": 4
+		},
+		{
+			"bufferView": 1,
+			"componentType": "uint8"
+		},
+		{
+			"bufferView": 2,
+			"componentType": "uint8"
+		},
+		{
+			"bufferView": 3,
+			"componentType": "uint8"
+		},
+		{
+			"bufferView": 4,
+			"componentType": "uint8"
+		},
+		{
+			"bufferView": 5,
+			"componentType": "uint8"
+		},
+		{
+			"bufferView": 6,
+			"componentType": "uint8",
+			"vectorSize": 4
+		},
+		{
+			"bufferView": 7,
+			"componentType": "uint8"
+		},
+		{
+			"bufferView": 8,
+			"componentType": "uint8"
+		},
+		{
+			"bufferView": 9,
+			"componentType": "float64",
+			"vectorSize": 4
+		},
+		{
+			"bufferView": 10,
+			"componentType": "float64",
+			"vectorSize": 3
+		},
+		{
+			"bufferView": 11,
+			"componentType": "uint8",
+			"vectorSize": 2
+		}
+	],
+	"asset": {
+		"dimension": 4,
+		"generator": "Godot Engine 4.5.3 with Godot 4D module",
+		"specification": "https://github.com/godot-dimensions/g4mf"
+	},
+	"bufferViews": [
+		{
+			"byteLength": 32
+		},
+		{
+			"byteLength": 62,
+			"byteOffset": 32
+		},
+		{
+			"byteLength": 34,
+			"byteOffset": 94
+		},
+		{
+			"byteLength": 7,
+			"byteOffset": 128
+		},
+		{
+			"byteLength": 38,
+			"byteOffset": 135
+		},
+		{
+			"byteLength": 38,
+			"byteOffset": 173
+		},
+		{
+			"byteLength": 56,
+			"byteOffset": 211
+		},
+		{
+			"byteLength": 56,
+			"byteOffset": 267
+		},
+		{
+			"byteLength": 56,
+			"byteOffset": 323
+		},
+		{
+			"byteLength": 192,
+			"byteOffset": 384
+		},
+		{
+			"byteLength": 384,
+			"byteOffset": 576
+		},
+		{
+			"byteLength": 32,
+			"byteOffset": 960
+		}
+	],
+	"buffers": [
+		{
+			"byteLength": 992,
+			"uri": "data:application/octet-stream;base64,sLCwsDCwsLCwMLCwsLAwsLCwsDAwsLAwsDCwMLCwMDAEAAYBBwQGAggDBAYECQUEBwoIDQQHCwkOBAgMCQ8DAAoCAwENAwMABAsDAQUOAwIMBAMDDwUDCgwLAw0PDgUAAQMGBwUCAAQICQUBAgUKCwUFBAMMDQQIBgoMBAcJCw0GAAECAwQFBgAAAAAAAAYBAQEBAQEGAgICAgICBgMDAwMDAwQEBAQEBAUFBQUGAAECAwQFBgACBgcBAwYAAgQFCAkGCgsMDQEDBAABDgQEAgMFDwUEAgAFBAYCBQACAQAFAwEABQcDAAUEBwcEAAIHBAIGBwMCAAIFAQMCBQMHAgYFBwMAAQIGBQcEAAAAAAAAAAAAAAAAAQEBAQEBAQEBAQEBAgICAgICAgICAgICAwMDAwMDAwMDAwMDBAQEBAUFBQUDAgQAAwIFBAMABAEAAwYBAAMHBgADAgcJAgAECQIEBQkIBAAKAwEMCgMMDQoLAw0OAAEEBQMPAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAAAAIAAAAAAAAAAgAAAAAAAAPC/AAAAAAAAAIAAAAAAAAAAAAAAAAAAAPC/AAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAHDOQRad54j8cM5BFp3niPxwzkEWneeI/AAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPA/xN068FEk3T9VVVVVVVXlP1VVVVVVVdU/vCGWa/I7vz9VVVVVVVXlP1VVVVVVVdU/xN068FEk3T9VVVVVVVXVP1VVVVVVVdU/vCGWa/I7vz9VVVVVVVXVP1VVVVVVVdU/xN068FEk3T9VVVVVVVXlP1VVVVVVVeU/xN068FEk3T9VVVVVVVXVP1VVVVVVVeU/xN068FEk3T9UVVVVVVXlPwAAAAAAAAAAxN068FEk3T9SVVVVVVXVPwAAAAAAAAAAjBnIotM86T9VVVVVVVXlP1VVVVVVVdU/jBnIotM86T9VVVVVVVXVP1VVVVVVVdU/xd068FEk3T9VVVVVVVXlP1VVVVVVVeU/xd068FEk3T9VVVVVVVXVP1VVVVVVVeU/AAAAAAAAAABXVVVVVVXlP44ZyKLTPOk/AAAAAAAAAABZVVVVVVXVP44ZyKLTPOk/xN068FEk3T8AAAAAAADwP1VVVVVVVdU/xN068FEk3T8AAAAAAAAAAFVVVVVVVdU/AAEEBQACBAYAAwQHAAQBBQIGAwcBAgEDAgMFBgUHBgc="
+		}
+	],
+	"meshes": [
+		{
+			"name": "wedge3",
+			"surfaces": [{ "edges": 11, "geometry": [1, 2, 3], "normals": { "geometry": [{ "accessor": 4, "geometryDimension": 3 }], "simplexes": 7, "values": 9 }, "simplexes": 6, "textureMap": { "geometry": [{ "accessor": 5, "geometryDimension": 3 }], "simplexes": 8, "values": 10 } }],
+			"vertices": 0
+		}
+	]
+}

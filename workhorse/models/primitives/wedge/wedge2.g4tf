@@ -1,0 +1,124 @@
+{
+	"accessors": [
+		{
+			"bufferView": 0,
+			"componentType": "float8",
+			"vectorSize": 4
+		},
+		{
+			"bufferView": 1,
+			"componentType": "uint8"
+		},
+		{
+			"bufferView": 2,
+			"componentType": "uint8"
+		},
+		{
+			"bufferView": 3,
+			"componentType": "uint8"
+		},
+		{
+			"bufferView": 4,
+			"componentType": "uint8"
+		},
+		{
+			"bufferView": 5,
+			"componentType": "uint8"
+		},
+		{
+			"bufferView": 6,
+			"componentType": "uint8",
+			"vectorSize": 4
+		},
+		{
+			"bufferView": 7,
+			"componentType": "uint8"
+		},
+		{
+			"bufferView": 8,
+			"componentType": "uint8"
+		},
+		{
+			"bufferView": 9,
+			"componentType": "float64",
+			"vectorSize": 4
+		},
+		{
+			"bufferView": 10,
+			"componentType": "float64",
+			"vectorSize": 3
+		},
+		{
+			"bufferView": 11,
+			"componentType": "uint8",
+			"vectorSize": 2
+		}
+	],
+	"asset": {
+		"dimension": 4,
+		"generator": "Godot Engine 4.5.3 with Godot 4D module",
+		"specification": "https://github.com/godot-dimensions/g4mf"
+	},
+	"bufferViews": [
+		{
+			"byteLength": 48
+		},
+		{
+			"byteLength": 91,
+			"byteOffset": 48
+		},
+		{
+			"byteLength": 45,
+			"byteOffset": 139
+		},
+		{
+			"byteLength": 8,
+			"byteOffset": 184
+		},
+		{
+			"byteLength": 55,
+			"byteOffset": 192
+		},
+		{
+			"byteLength": 55,
+			"byteOffset": 247
+		},
+		{
+			"byteLength": 120,
+			"byteOffset": 302
+		},
+		{
+			"byteLength": 120,
+			"byteOffset": 422
+		},
+		{
+			"byteLength": 120,
+			"byteOffset": 542
+		},
+		{
+			"byteLength": 224,
+			"byteOffset": 664
+		},
+		{
+			"byteLength": 576,
+			"byteOffset": 888
+		},
+		{
+			"byteLength": 48,
+			"byteOffset": 1464
+		}
+	],
+	"buffers": [
+		{
+			"byteLength": 1512,
+			"uri": "data:application/octet-stream;base64,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"
+		}
+	],
+	"meshes": [
+		{
+			"name": "wedge2",
+			"surfaces": [{ "edges": 11, "geometry": [1, 2, 3], "normals": { "geometry": [{ "accessor": 4, "geometryDimension": 3 }], "simplexes": 7, "values": 9 }, "simplexes": 6, "textureMap": { "geometry": [{ "accessor": 5, "geometryDimension": 3 }], "simplexes": 8, "values": 10 } }],
+			"vertices": 0
+		}
+	]
+}

@@ -1,0 +1,16 @@
+[remap]
+
+importer="godot_4d.g4mf.mesh_4d"
+type="Mesh4D"
+uid="uid://cjhtyhu0wtyge"
+path="res://.godot/imported/cylinder_flat_dodeca.g4b-ec041f7d8bb928d24327c26fe7314e6a.res"
+
+[deps]
+
+source_file="res://models/primitives/cylinder/dodeca/cylinder_flat_dodeca.g4b"
+dest_files=["res://.godot/imported/cylinder_flat_dodeca.g4b-ec041f7d8bb928d24327c26fe7314e6a.res"]
+
+[params]
+
+preferred_mesh_format=1
+include_invisible=false

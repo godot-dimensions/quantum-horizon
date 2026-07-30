@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://cxrt3lwjirslg"]
+
+[node name="Main" type="Node4D"]
+
+[node name="MeshInstance4D" type="MeshInstance4D" parent="."]

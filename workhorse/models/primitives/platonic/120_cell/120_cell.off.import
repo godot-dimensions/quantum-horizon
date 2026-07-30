@@ -1,0 +1,17 @@
+[remap]
+
+importer="godot_4d.off_geometry_format.array_poly_mesh_4d"
+type="ArrayPolyMesh4D"
+uid="uid://t1yvepdu0jxl"
+path="res://.godot/imported/120_cell.off-2aa601474fed287ab40b2d401f8a829c.res"
+
+[deps]
+
+source_file="res://models/primitives/platonic/120_cell/120_cell.off"
+dest_files=["res://.godot/imported/120_cell.off-2aa601474fed287ab40b2d401f8a829c.res"]
+
+[params]
+
+compute_normals_mode=1
+double_sided=false
+single_convex_volume=true

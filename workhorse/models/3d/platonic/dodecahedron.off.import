@@ -1,0 +1,17 @@
+[remap]
+
+importer="godot_4d.off_geometry_format.array_poly_mesh_4d"
+type="ArrayPolyMesh4D"
+uid="uid://c4mbobhla3e22"
+path="res://.godot/imported/dodecahedron.off-3645113249740123c3194ed9002e6493.res"
+
+[deps]
+
+source_file="res://models/3d/platonic/dodecahedron.off"
+dest_files=["res://.godot/imported/dodecahedron.off-3645113249740123c3194ed9002e6493.res"]
+
+[params]
+
+compute_normals_mode=1
+double_sided=false
+single_convex_volume=true

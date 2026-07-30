@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://ba5pjnwuj5ixc"]
+
+[ext_resource type="Script" uid="uid://b4eo6g6mnhpoi" path="res://misc/tet_sdf_edge_case/make_tet_sdf_edge_case_mesh.gd" id="1_da5rt"]
+[ext_resource type="Script" uid="uid://coonxi1w0v5af" path="res://general_scripts/distance_to_mesh.gd" id="2_22qwi"]
+[ext_resource type="ArrayTetraMesh4D" path="res://misc/tet_sdf_edge_case/tet_sdf_edge_case_mesh.tres" id="2_42cg5"]
+
+[node name="MakeTetSdfEdgeCaseMesh" type="Node"]
+script = ExtResource("1_da5rt")
+
+[node name="DistanceToMesh" type="Node4D" parent="." node_paths=PackedStringArray("mesh_node", "point_node")]
+script = ExtResource("2_22qwi")
+mesh_node = NodePath("Mesh")
+point_node = NodePath("Point")
+
+[node name="Mesh" type="MeshInstance4D" parent="DistanceToMesh"]
+mesh = ExtResource("2_42cg5")
+
+[node name="Point" type="Node4D" parent="DistanceToMesh"]
+position = Vector4(-0.33158861700745546, 6.4362147696155655e-18, -0.31023933765127004, 0)

@@ -1,0 +1,16 @@
+[remap]
+
+importer="godot_4d.g4mf.mesh_4d"
+type="Mesh4D"
+uid="uid://ciaothksidr8i"
+path="res://.godot/imported/600_cell.g4b-5437f6ce36b1d0ff670eed61d486a204.res"
+
+[deps]
+
+source_file="res://models/primitives/platonic/600_cell/600_cell.g4b"
+dest_files=["res://.godot/imported/600_cell.g4b-5437f6ce36b1d0ff670eed61d486a204.res"]
+
+[params]
+
+preferred_mesh_format=0
+include_invisible=false

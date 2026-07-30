@@ -1,0 +1,16 @@
+[remap]
+
+importer="godot_4d.g4mf.mesh_4d"
+type="Mesh4D"
+uid="uid://cdw076kxookwv"
+path="res://.godot/imported/spheritorus_smooth_ma2_mi0pt25_step32.g4b-f50598822fa00de8004213da8d9381b6.res"
+
+[deps]
+
+source_file="res://models/primitives/spheritorus/spheritorus_smooth_ma2_mi0pt25_step32/spheritorus_smooth_ma2_mi0pt25_step32.g4b"
+dest_files=["res://.godot/imported/spheritorus_smooth_ma2_mi0pt25_step32.g4b-f50598822fa00de8004213da8d9381b6.res"]
+
+[params]
+
+preferred_mesh_format=0
+include_invisible=false

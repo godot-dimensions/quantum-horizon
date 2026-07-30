@@ -1,0 +1,17 @@
+[remap]
+
+importer="godot_4d.off_geometry_format.array_poly_mesh_4d"
+type="ArrayPolyMesh4D"
+uid="uid://tdut7koek82p"
+path="res://.godot/imported/icosahedron.off-0ad650867b18b613183100ddfe34725b.res"
+
+[deps]
+
+source_file="res://models/3d/icosphere/icosahedron.off"
+dest_files=["res://.godot/imported/icosahedron.off-0ad650867b18b613183100ddfe34725b.res"]
+
+[params]
+
+compute_normals_mode=1
+double_sided=false
+single_convex_volume=true

@@ -1,0 +1,16 @@
+[remap]
+
+importer="godot_4d.g4mf.mesh_4d"
+type="Mesh4D"
+uid="uid://c0enaeh1k5c8q"
+path="res://.godot/imported/cylinder_flat_ico3.g4b-c69b9221acc1ee0655875275154d732a.res"
+
+[deps]
+
+source_file="res://models/primitives/cylinder/ico/cylinder_flat_ico3.g4b"
+dest_files=["res://.godot/imported/cylinder_flat_ico3.g4b-c69b9221acc1ee0655875275154d732a.res"]
+
+[params]
+
+preferred_mesh_format=0
+include_invisible=false

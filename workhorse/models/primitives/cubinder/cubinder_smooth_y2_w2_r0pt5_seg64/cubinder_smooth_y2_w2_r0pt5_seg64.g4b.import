@@ -1,0 +1,15 @@
+[remap]
+
+importer="godot_4d.g4mf.scene_4d"
+type="PackedScene"
+uid="uid://n3lr5r8cgna0"
+path="res://.godot/imported/cubinder_smooth_y2_w2_r0pt5_seg64.g4b-846355d1bb22e46d6c3f9f41861115fb.scn"
+
+[deps]
+
+source_file="res://models/primitives/cubinder/cubinder_smooth_y2_w2_r0pt5_seg64/cubinder_smooth_y2_w2_r0pt5_seg64.g4b"
+dest_files=["res://.godot/imported/cubinder_smooth_y2_w2_r0pt5_seg64.g4b-846355d1bb22e46d6c3f9f41861115fb.scn"]
+
+[params]
+
+preferred_mesh_format=0

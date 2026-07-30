@@ -1,0 +1,17 @@
+[remap]
+
+importer="godot_4d.off_geometry_format.array_poly_mesh_4d"
+type="ArrayPolyMesh4D"
+uid="uid://bpe2m8ml0fodq"
+path="res://.godot/imported/truncated_icosahedron.off-24388eb897b2092d613f1ed0212c6cf2.res"
+
+[deps]
+
+source_file="res://models/3d/icosphere/truncated_icosahedron.off"
+dest_files=["res://.godot/imported/truncated_icosahedron.off-24388eb897b2092d613f1ed0212c6cf2.res"]
+
+[params]
+
+compute_normals_mode=1
+double_sided=false
+single_convex_volume=true

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://b0r45c1otpx4k"]
+
+[ext_resource type="Script" uid="uid://b2yt3u4yfvhbd" path="res://models/3d/convert_off_to_glb.gd" id="1_8cmv0"]
+
+[node name="ConvertOFFToGLB" type="Node"]
+script = ExtResource("1_8cmv0")

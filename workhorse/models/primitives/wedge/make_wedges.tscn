@@ -1,0 +1,35 @@
+[gd_scene load_steps=8 format=3 uid="uid://c3ftx8iguiq1s"]
+
+[ext_resource type="Script" uid="uid://dcde2k2c4x8di" path="res://models/primitives/wedge/make_wedges.gd" id="1_utbdx"]
+[ext_resource type="ArrayPolyMesh4D" path="res://models/primitives/wedge/wedge2.res" id="2_utbdx"]
+[ext_resource type="ArrayMesh" uid="uid://3o6wruxj2nlm" path="res://models/primitives/wedge/wedge2_texmap.mesh" id="3_frbn0"]
+[ext_resource type="ArrayPolyMesh4D" path="res://models/primitives/wedge/wedge3.res" id="4_ip0wo"]
+[ext_resource type="ArrayMesh" uid="uid://cfww6i5sxvjec" path="res://models/primitives/wedge/wedge3_texmap.mesh" id="5_sg5xe"]
+[ext_resource type="ArrayPolyMesh4D" path="res://models/primitives/wedge/wedge4.res" id="6_frbn0"]
+[ext_resource type="ArrayMesh" uid="uid://cufnir4cjl76c" path="res://models/primitives/wedge/wedge4_texmap.mesh" id="7_lel2m"]
+
+[node name="AllWedges" type="Node4D"]
+script = ExtResource("1_utbdx")
+
+[node name="Wedge2" type="MeshInstance4D" parent="."]
+position = Vector4(-2, 0, 0, 0)
+mesh = ExtResource("2_utbdx")
+
+[node name="Wedge2TextureMap" type="MeshInstance3D" parent="Wedge2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 0)
+mesh = ExtResource("3_frbn0")
+skeleton = NodePath("../..")
+
+[node name="Wedge3" type="MeshInstance4D" parent="."]
+mesh = ExtResource("4_ip0wo")
+
+[node name="Wedge3TextureMap" type="MeshInstance3D" parent="Wedge3"]
+mesh = ExtResource("5_sg5xe")
+
+[node name="Wedge4" type="MeshInstance4D" parent="."]
+position = Vector4(2, 0, 0, 0)
+mesh = ExtResource("6_frbn0")
+
+[node name="Wedge4TextureMap" type="MeshInstance3D" parent="Wedge4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0)
+mesh = ExtResource("7_lel2m")

@@ -1,0 +1,16 @@
+[gd_scene load_steps=5 format=3 uid="uid://cjkwnfjpqrocl"]
+
+[ext_resource type="Script" uid="uid://ics8gwq71qws" path="res://models/primitives/platonic/24_cell/make_smooth_24_cell.gd" id="1_vvl5e"]
+[ext_resource type="TetraMaterial4D" uid="uid://pts883vpg4u3" path="res://models/noise_tetra.mat.tres" id="2_6lmi7"]
+[ext_resource type="ArrayMesh" uid="uid://fa323stcwi2v" path="res://models/primitives/platonic/24_cell/24_cell_smooth_texmap.res" id="2_gw5qc"]
+[ext_resource type="ArrayPolyMesh4D" uid="uid://dssljcx8hdjv6" path="res://models/primitives/platonic/24_cell/24_cell_smooth.g4b" id="3_pgk7m"]
+
+[node name="MakeSmooth24Cell" type="Node"]
+script = ExtResource("1_vvl5e")
+
+[node name="24CellSmooth" type="MeshInstance4D" parent="."]
+material_override = ExtResource("2_6lmi7")
+mesh = ExtResource("3_pgk7m")
+
+[node name="24CellSmoothTextureMap" type="MeshInstance3D" parent="."]
+mesh = ExtResource("2_gw5qc")

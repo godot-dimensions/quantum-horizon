@@ -1,0 +1,17 @@
+[remap]
+
+importer="godot_4d.off_geometry_format.array_poly_mesh_4d"
+type="ArrayPolyMesh4D"
+uid="uid://csi8ksfpnhcax"
+path="res://.godot/imported/octahedron.off-089b8ee7fd0d2148c2960c8575cc5d1d.res"
+
+[deps]
+
+source_file="res://models/3d/platonic/octahedron.off"
+dest_files=["res://.godot/imported/octahedron.off-089b8ee7fd0d2148c2960c8575cc5d1d.res"]
+
+[params]
+
+compute_normals_mode=1
+double_sided=false
+single_convex_volume=true

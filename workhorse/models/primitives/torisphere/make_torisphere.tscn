@@ -1,0 +1,18 @@
+[gd_scene load_steps=5 format=3 uid="uid://f0x8wnqgoryp"]
+
+[ext_resource type="Script" uid="uid://2gy8tgqikiyc" path="res://models/primitives/torisphere/make_torisphere.gd" id="1_66k4h"]
+[ext_resource type="TetraMaterial4D" uid="uid://pts883vpg4u3" path="res://models/noise_tetra.mat.tres" id="2_otrl1"]
+[ext_resource type="ArrayPolyMesh4D" uid="uid://dqi25ewqslbme" path="res://models/primitives/torisphere/latest/torisphere.g4b" id="3_plefh"]
+[ext_resource type="ArrayMesh" uid="uid://ba14dm17wauar" path="res://models/primitives/torisphere/latest/torisphere_texmap.res" id="4_nfrjk"]
+
+[node name="MakeTorisphere" type="Node"]
+script = ExtResource("1_66k4h")
+steps = 6
+source_icosphere = 0
+
+[node name="Torisphere" type="MeshInstance4D" parent="."]
+material_override = ExtResource("2_otrl1")
+mesh = ExtResource("3_plefh")
+
+[node name="TorisphereTexMap" type="MeshInstance3D" parent="."]
+mesh = ExtResource("4_nfrjk")

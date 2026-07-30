@@ -1,0 +1,16 @@
+[remap]
+
+importer="godot_4d.g4mf.mesh_4d"
+type="Mesh4D"
+uid="uid://bfbae833hid3t"
+path="res://.godot/imported/cylinder_smooth_dodeca.g4b-80a0b7fa98752ed47da4ba22b8e48077.res"
+
+[deps]
+
+source_file="res://models/primitives/cylinder/dodeca/cylinder_smooth_dodeca.g4b"
+dest_files=["res://.godot/imported/cylinder_smooth_dodeca.g4b-80a0b7fa98752ed47da4ba22b8e48077.res"]
+
+[params]
+
+preferred_mesh_format=1
+include_invisible=false

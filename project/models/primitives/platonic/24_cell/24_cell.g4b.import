@@ -1,0 +1,16 @@
+[remap]
+
+importer="godot_4d.g4mf.mesh_4d"
+type="Mesh4D"
+uid="uid://cb8x8i2wwwsly"
+path="res://.godot/imported/24_cell.g4b-9abd11dbe8fdd585f50aaaf550bd9432.res"
+
+[deps]
+
+source_file="res://models/primitives/platonic/24_cell/24_cell.g4b"
+dest_files=["res://.godot/imported/24_cell.g4b-9abd11dbe8fdd585f50aaaf550bd9432.res"]
+
+[params]
+
+preferred_mesh_format=1
+include_invisible=false

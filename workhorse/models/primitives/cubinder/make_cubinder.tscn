@@ -1,0 +1,30 @@
+[gd_scene load_steps=7 format=3 uid="uid://bmitko3enxayk"]
+
+[ext_resource type="Script" uid="uid://b1l5o2y5m8koj" path="res://models/primitives/cubinder/make_cubinder.gd" id="1_kluku"]
+[ext_resource type="ArrayMesh" uid="uid://daleew1r2p2t7" path="res://models/primitives/cubinder/cubinder_smooth_y2_w2_r0pt5_seg16/cubinder_smooth_y2_w2_r0pt5_seg16_texmap.res" id="2_mpqoa"]
+[ext_resource type="PackedScene" path="res://models/primitives/cubinder/cubinder_smooth_y2_w2_r0pt5_seg16/cubinder_smooth_y2_w2_r0pt5_seg16.scn" id="3_rg774"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_q2k6i"]
+
+[sub_resource type="NoiseTexture3D" id="NoiseTexture3D_vw1p1"]
+width = 256
+height = 256
+depth = 1
+noise = SubResource("FastNoiseLite_q2k6i")
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ohq26"]
+albedo_source = 3
+albedo_texture_3d = SubResource("NoiseTexture3D_vw1p1")
+
+[node name="MakeCubinder" type="Node"]
+script = ExtResource("1_kluku")
+
+[node name="CubinderTextureMap" type="MeshInstance3D" parent="."]
+mesh = ExtResource("2_mpqoa")
+
+[node name="CubinderBody" parent="." instance=ExtResource("3_rg774")]
+
+[node name="CubinderMesh" parent="CubinderBody" index="1"]
+material_override = SubResource("TetraMaterial4D_ohq26")
+
+[editable path="CubinderBody"]

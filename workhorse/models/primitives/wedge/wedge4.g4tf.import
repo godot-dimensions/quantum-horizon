@@ -1,0 +1,16 @@
+[remap]
+
+importer="godot_4d.g4mf.mesh_4d"
+type="Mesh4D"
+uid="uid://c8fkwtyhouexx"
+path="res://.godot/imported/wedge4.g4tf-fae695b96649998f3f47c9e0779e472e.res"
+
+[deps]
+
+source_file="res://models/primitives/wedge/wedge4.g4tf"
+dest_files=["res://.godot/imported/wedge4.g4tf-fae695b96649998f3f47c9e0779e472e.res"]
+
+[params]
+
+preferred_mesh_format=1
+include_invisible=false

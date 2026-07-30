@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://dypjktx54oco5"]
+
+[ext_resource type="Script" uid="uid://wqpxwbskmx4s" path="res://models/primitives/platonic/120_cell/make_120_cell.gd" id="1_5yhtu"]
+
+[node name="Make120Cell" type="Node"]
+script = ExtResource("1_5yhtu")

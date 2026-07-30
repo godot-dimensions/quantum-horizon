@@ -10,10 +10,14 @@ config_version=5
 
 [application]
 
-config/name="Quantum Horizon Godot Project"
+config/name="Quantum Horizon Main Godot Project"
 run/main_scene="uid://b2ojfvbl5mjea"
-config/features=PackedStringArray("4.5", "Double Precision", "Mobile")
+config/features=PackedStringArray("4.5", "Double Precision")
 config/icon="res://icon.svg"
+
+[filesystem]
+
+import/blender/enabled=false
 
 [rendering]
 

@@ -1,0 +1,16 @@
+[remap]
+
+importer="godot_4d.g4mf.mesh_4d"
+type="Mesh4D"
+uid="uid://bfnhjpnerwlwy"
+path="res://.godot/imported/spheritorus.g4b-0578ecb58c0d3dd8b267dea2c63db8fb.res"
+
+[deps]
+
+source_file="res://models/primitives/spheritorus/latest/spheritorus.g4b"
+dest_files=["res://.godot/imported/spheritorus.g4b-0578ecb58c0d3dd8b267dea2c63db8fb.res"]
+
+[params]
+
+preferred_mesh_format=0
+include_invisible=false

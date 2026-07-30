@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://brplof5d2rtty"]
+
+[ext_resource type="Script" uid="uid://coonxi1w0v5af" path="res://general_scripts/distance_to_mesh.gd" id="1_tkgvc"]
+
+[node name="DistanceToMesh" type="Node4D" node_paths=PackedStringArray("mesh_node", "point_node")]
+script = ExtResource("1_tkgvc")
+mesh_node = NodePath("Mesh")
+point_node = NodePath("Point")
+
+[node name="Mesh" type="MeshInstance4D" parent="."]
+
+[node name="Point" type="Node4D" parent="."]
+position = Vector4(1.52, -0.1280000000000001, -28.94, -6.388)

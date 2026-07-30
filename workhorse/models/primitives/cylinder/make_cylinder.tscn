@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://j42q31kkv4vq"]
+
+[ext_resource type="Script" uid="uid://cueo6ftnr852f" path="res://models/primitives/cylinder/make_cylinder.gd" id="1_4n7id"]
+
+[node name="MakeCylinder" type="Node"]
+script = ExtResource("1_4n7id")
