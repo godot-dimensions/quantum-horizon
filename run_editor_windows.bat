@@ -7,7 +7,7 @@ set "SCRIPT_DIR=%~dp0"
 set "PROJECT_PATH=%SCRIPT_DIR%project\project.godot"
 set "LAUNCHER_PATH=%SCRIPT_DIR%engine\scripts\run_editor_windows.ps1"
 
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%LAUNCHER_PATH%" -ProjectPath "%PROJECT_PATH%"
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%LAUNCHER_PATH%" -ProjectPath "%PROJECT_PATH%" %*
 set "EXIT_CODE=%ERRORLEVEL%"
 
 echo.

@@ -39,6 +39,8 @@ Once you have all the prerequisites installed:
 
 This will update all submodules, build the engine, and run the editor. Subsequent runs will skip recompilation if it detects that nothing has changed.
 
+To skip generating IDE files, pass `-SkipIdeSetup` on Windows or `--skip-ide-setup` on macOS and Linux.
+
 ### Develop with Visual Studio Code
 
 The `setup_vscode_windows.ps1` and `setup_vscode_unix.sh` scripts will set up files for Visual Studio Code (VS Code).

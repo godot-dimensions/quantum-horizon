@@ -29,7 +29,7 @@ launcher_path=$script_dir/engine/scripts/run_editor_unix.sh
 [ -f "$project_path" ] || die_and_wait "Godot project not found: $project_path"
 [ -f "$launcher_path" ] || die_and_wait "Unix launcher not found: $launcher_path"
 
-"$launcher_path" --project-path "$project_path"
+"$launcher_path" --project-path "$project_path" "$@"
 exit_code=$?
 
 if [ "$exit_code" -ne 0 ]; then

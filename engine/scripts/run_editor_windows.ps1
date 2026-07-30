@@ -3,7 +3,8 @@
 param(
     [string]$ProjectPath, # Path to the Godot project (optional).
     [switch]$Dev, # Pass -Dev to build script (development build).
-    [switch]$DoNotUpdate # Skip the update script.
+    [switch]$DoNotUpdate, # Skip the update script.
+    [switch]$SkipIdeSetup # Skip VS Code and Visual Studio setup.
 )
 
 Set-StrictMode -Version Latest
@@ -23,11 +24,13 @@ if (-not (Test-Path -LiteralPath $updateScript -PathType Leaf)) {
 if (-not (Test-Path -LiteralPath $buildScript -PathType Leaf)) {
     throw "Build script not found: $buildScript"
 }
-if (-not (Test-Path -LiteralPath $vscodeSetupScript -PathType Leaf)) {
-    throw "VS Code setup script not found: $vscodeSetupScript"
-}
-if (-not (Test-Path -LiteralPath $visualStudioSetupScript -PathType Leaf)) {
-    throw "Visual Studio setup script not found: $visualStudioSetupScript"
+if (-not $SkipIdeSetup) {
+    if (-not (Test-Path -LiteralPath $vscodeSetupScript -PathType Leaf)) {
+        throw "VS Code setup script not found: $vscodeSetupScript"
+    }
+    if (-not (Test-Path -LiteralPath $visualStudioSetupScript -PathType Leaf)) {
+        throw "Visual Studio setup script not found: $visualStudioSetupScript"
+    }
 }
 
 $resolvedProjectDirectory = $null
@@ -79,32 +82,37 @@ if ($LASTEXITCODE -ne 0) {
     throw "Engine build failed with exit code $LASTEXITCODE."
 }
 
-Write-Host "`nStep 3 of 4: Setting up developer tools..." -ForegroundColor Yellow
-# Metadata-only SCons runs overwrite this with their much smaller node count,
-# which would make the next real build report 100% progress almost immediately.
-$nodeCountFile = Join-Path $engineRoot "godot\.scons_node_count"
-$nodeCountExisted = Test-Path -LiteralPath $nodeCountFile -PathType Leaf
-[byte[]]$nodeCountBytes = $null
-if ($nodeCountExisted) {
-    $nodeCountBytes = [System.IO.File]::ReadAllBytes($nodeCountFile)
+if ($SkipIdeSetup) {
+    Write-Host "`nStep 3 of 4: Developer tool setup skipped." -ForegroundColor Yellow
 }
-
-try {
-    & $vscodeSetupScript
-    if ($LASTEXITCODE -ne 0) {
-        throw "VS Code setup failed with exit code $LASTEXITCODE."
-    }
-    & $visualStudioSetupScript -SkipVSCodeSetup
-    if ($LASTEXITCODE -ne 0) {
-        throw "Visual Studio setup failed with exit code $LASTEXITCODE."
-    }
-}
-finally {
+else {
+    Write-Host "`nStep 3 of 4: Setting up developer tools..." -ForegroundColor Yellow
+    # Metadata-only SCons runs overwrite this with their much smaller node count,
+    # which would make the next real build report 100% progress almost immediately.
+    $nodeCountFile = Join-Path $engineRoot "godot\.scons_node_count"
+    $nodeCountExisted = Test-Path -LiteralPath $nodeCountFile -PathType Leaf
+    [byte[]]$nodeCountBytes = $null
     if ($nodeCountExisted) {
-        [System.IO.File]::WriteAllBytes($nodeCountFile, $nodeCountBytes)
+        $nodeCountBytes = [System.IO.File]::ReadAllBytes($nodeCountFile)
     }
-    elseif (Test-Path -LiteralPath $nodeCountFile -PathType Leaf) {
-        Remove-Item -LiteralPath $nodeCountFile -Force
+
+    try {
+        & $vscodeSetupScript
+        if ($LASTEXITCODE -ne 0) {
+            throw "VS Code setup failed with exit code $LASTEXITCODE."
+        }
+        & $visualStudioSetupScript -SkipVSCodeSetup
+        if ($LASTEXITCODE -ne 0) {
+            throw "Visual Studio setup failed with exit code $LASTEXITCODE."
+        }
+    }
+    finally {
+        if ($nodeCountExisted) {
+            [System.IO.File]::WriteAllBytes($nodeCountFile, $nodeCountBytes)
+        }
+        elseif (Test-Path -LiteralPath $nodeCountFile -PathType Leaf) {
+            Remove-Item -LiteralPath $nodeCountFile -Force
+        }
     }
 }
 

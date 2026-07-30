@@ -7,9 +7,10 @@ set -eu
 project_path=
 dev_build=0
 do_not_update=0
+skip_ide_setup=0
 
 usage() {
-    printf 'Usage: %s [--project-path PATH] [--dev] [--do-not-update]\n' "$0"
+    printf 'Usage: %s [--project-path PATH] [--dev] [--do-not-update] [--skip-ide-setup]\n' "$0"
 }
 
 die() {
@@ -30,6 +31,10 @@ while [ "$#" -gt 0 ]; do
             ;;
         --do-not-update)
             do_not_update=1
+            shift
+            ;;
+        --skip-ide-setup)
+            skip_ide_setup=1
             shift
             ;;
         -h|--help)
@@ -80,8 +85,10 @@ vscode_setup_script=$script_dir/setup_vscode_unix.sh
 build_script=$script_dir/build_engine_unix.sh
 
 [ -f "$update_script" ] || die "Update script not found: $update_script"
-[ -f "$vscode_setup_script" ] || die "VS Code setup script not found: $vscode_setup_script"
 [ -f "$build_script" ] || die "Build script not found: $build_script"
+if [ "$skip_ide_setup" -eq 0 ]; then
+    [ -f "$vscode_setup_script" ] || die "VS Code setup script not found: $vscode_setup_script"
+fi
 
 resolved_project_directory=
 if [ -n "$project_path" ]; then
@@ -121,27 +128,31 @@ else
     dev_suffix=
 fi
 
-printf '\nStep 3 of 4: Setting up VS Code IntelliSense...\n'
-# Metadata-only SCons runs overwrite this with their much smaller node count,
-# which would make the next real build report 100% progress almost immediately.
-node_count_file=$engine_root/godot/.scons_node_count
-node_count_existed=0
-node_count=
-if [ -f "$node_count_file" ]; then
-    node_count=$(sed -n '1p' "$node_count_file")
-    node_count_existed=1
-fi
-
-setup_exit_code=0
-"$vscode_setup_script" || setup_exit_code=$?
-
-if [ "$node_count_existed" -eq 1 ]; then
-    printf '%s\n' "$node_count" >"$node_count_file"
+if [ "$skip_ide_setup" -eq 1 ]; then
+    printf '\nStep 3 of 4: IDE setup skipped.\n'
 else
-    rm -f "$node_count_file"
-fi
+    printf '\nStep 3 of 4: Setting up VS Code IntelliSense...\n'
+    # Metadata-only SCons runs overwrite this with their much smaller node count,
+    # which would make the next real build report 100% progress almost immediately.
+    node_count_file=$engine_root/godot/.scons_node_count
+    node_count_existed=0
+    node_count=
+    if [ -f "$node_count_file" ]; then
+        node_count=$(sed -n '1p' "$node_count_file")
+        node_count_existed=1
+    fi
 
-[ "$setup_exit_code" -eq 0 ] || exit "$setup_exit_code"
+    setup_exit_code=0
+    "$vscode_setup_script" || setup_exit_code=$?
+
+    if [ "$node_count_existed" -eq 1 ]; then
+        printf '%s\n' "$node_count" >"$node_count_file"
+    else
+        rm -f "$node_count_file"
+    fi
+
+    [ "$setup_exit_code" -eq 0 ] || exit "$setup_exit_code"
+fi
 
 printf '\nStep 4 of 4: Opening the editor...\n'
 executable_path=$engine_root/godot/bin/godot.$platform.editor$dev_suffix.double.$architecture
