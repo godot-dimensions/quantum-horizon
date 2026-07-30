@@ -7,6 +7,7 @@ Quantum Horizon Godot project, engine submodule, and Godot 4D submodule.
 ### Prerequisites
 
 - Git: https://git-scm.com/install/
+- Git LFS: https://git-lfs.com/
 - A clone of this repository.
 - All submodules updated: Run `git submodule update --init --recursive` in a terminal in the root of the repository.
 - Godot compile dependencies for your platform:

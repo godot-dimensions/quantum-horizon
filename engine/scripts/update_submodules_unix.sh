@@ -48,6 +48,36 @@ update_cache_file=$cache_dir/update_cache_unix.json
 
 repository_changed=0
 
+get_lfs_pointer_files() {
+    lfs_files=$(git -C "$host_repo_path" lfs ls-files) || return 1
+    printf '%s\n' "$lfs_files" | awk '$2 == "-"'
+}
+
+checkout_git_lfs_files() {
+    printf '===== Checking Git LFS files =====\n'
+    git -C "$host_repo_path" lfs version >/dev/null 2>&1 ||
+        die "Git LFS was not found. Install Git LFS and re-run this script."
+
+    git -C "$host_repo_path" lfs checkout
+    pointer_files=$(get_lfs_pointer_files) ||
+        die "Could not inspect Git LFS files."
+    if [ -z "$pointer_files" ]; then
+        printf '  All Git LFS files are already checked out.\n\n'
+        return 0
+    fi
+
+    printf '  Downloading missing Git LFS content...\n'
+    git -C "$host_repo_path" lfs fetch
+    git -C "$host_repo_path" lfs checkout
+
+    remaining_pointers=$(get_lfs_pointer_files) ||
+        die "Could not verify Git LFS files after checkout."
+    [ -z "$remaining_pointers" ] ||
+        die "Some Git LFS files could not be checked out:
+$remaining_pointers"
+    printf '  [OK] Git LFS files are checked out.\n\n'
+}
+
 update_repository() {
     repo_path=$1
     default_branch=$2
@@ -158,6 +188,8 @@ done
 if [ "$modules_found" -eq 0 ]; then
     printf 'WARNING: No modules found in %s\n' "$modules_dir" >&2
 fi
+
+checkout_git_lfs_files
 
 mkdir -p "$cache_dir"
 if [ "$repository_changed" -eq 1 ]; then

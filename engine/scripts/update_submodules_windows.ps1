@@ -43,6 +43,42 @@ function Invoke-Git {
     }
 }
 
+function Get-LfsPointerFiles {
+    param([string]$RepoPath)
+
+    $result = Invoke-Git -RepoPath $RepoPath -Arguments @("lfs", "ls-files")
+    return @($result.Output |
+        ForEach-Object { "$_" } |
+        Where-Object { $_ -match '^[0-9a-f]+ - ' })
+}
+
+function Checkout-GitLfsFiles {
+    param([string]$RepoPath)
+
+    Write-Host "===== Checking Git LFS files ====="
+    $version = Invoke-Git -RepoPath $RepoPath -Arguments @("lfs", "version") -AllowFailure
+    if ($version.ExitCode -ne 0) {
+        throw "Git LFS was not found. Install Git LFS and re-run this script."
+    }
+
+    Invoke-Git -RepoPath $RepoPath -Arguments @("lfs", "checkout") | Out-Null
+    $pointerFiles = @(Get-LfsPointerFiles -RepoPath $RepoPath)
+    if ($pointerFiles.Count -eq 0) {
+        Write-Host "  All Git LFS files are already checked out.`n" -ForegroundColor Green
+        return
+    }
+
+    Write-Host "  Downloading missing Git LFS content..." -ForegroundColor Yellow
+    Invoke-Git -RepoPath $RepoPath -Arguments @("lfs", "fetch") | Out-Null
+    Invoke-Git -RepoPath $RepoPath -Arguments @("lfs", "checkout") | Out-Null
+
+    $remainingPointers = @(Get-LfsPointerFiles -RepoPath $RepoPath)
+    if ($remainingPointers.Count -gt 0) {
+        throw "Some Git LFS files could not be checked out:`n$($remainingPointers -join "`n")"
+    }
+    Write-Host "  [OK] Git LFS files are checked out.`n" -ForegroundColor Green
+}
+
 function Test-LocalBranch {
     param(
         [string]$RepoPath,
@@ -227,6 +263,8 @@ else {
         }
     }
 }
+
+Checkout-GitLfsFiles -RepoPath $hostRepoPath
 
 New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
 [ordered]@{
