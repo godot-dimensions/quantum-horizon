@@ -1,0 +1,28 @@
+[gd_scene load_steps=3 format=3 uid="uid://j6j6nagrgwrm"]
+
+[ext_resource type="Script" uid="uid://dryk6inogf1dd" path="res://player/player.gd" id="1_rkbax"]
+
+[sub_resource type="CapsuleShape4D" id="CapsuleShape4D_oul6g"]
+radius = 0.25
+full_height = 1.75
+
+[node name="Player" type="CharacterBody4D"]
+script = ExtResource("1_rkbax")
+
+[node name="CapsuleShape" type="CollisionShape4D" parent="."]
+shape = SubResource("CapsuleShape4D_oul6g")
+
+[node name="PlayerHead" type="Node4D" parent="."]
+position = Vector4(0, 0.75, 0, 0)
+
+[node name="FirstPersonCamera" type="Camera4D" parent="PlayerHead"]
+current = true
+rendering_engine = "Cross-section"
+
+[node name="PositionLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(400, 26)
+offset_left = 8.0
+offset_top = 4.0
+offset_right = 408.0
+offset_bottom = 30.0
+text = "Player position: (0.0, 0.0, 0.0, 0.0)"

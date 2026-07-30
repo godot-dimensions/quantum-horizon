@@ -1,0 +1,23 @@
+[gd_scene load_steps=4 format=3 uid="uid://ctmf65e43mrwr"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_u7wn6"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_7dm0k"]
+size = Vector4(10, 1, 10, 10)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ig7tw"]
+size = Vector4(10, 1, 10, 10)
+
+[node name="FlatPlane" type="Node4D"]
+
+[node name="Ground" type="StaticBody4D" parent="."]
+position = Vector4(0, -0.5, 0, 0)
+
+[node name="BoxCollider" type="CollisionShape4D" parent="Ground"]
+shape = SubResource("BoxShape4D_7dm0k")
+
+[node name="BoxMesh" type="MeshInstance4D" parent="Ground"]
+mesh = SubResource("BoxTetraMesh4D_ig7tw")
+
+[node name="Player" parent="." instance=ExtResource("1_u7wn6")]
+position = Vector4(0, 1, 0, 0)
