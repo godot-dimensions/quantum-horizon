@@ -41,6 +41,10 @@ This will update all submodules, build the engine, and run the editor. Subsequen
 
 To skip generating IDE files, pass `-SkipIdeSetup` on Windows or `--skip-ide-setup` on macOS and Linux.
 
+To regenerate the engine and module documentation after building, pass `-Doctool` on Windows or `--doctool` on macOS and Linux.
+
+To run the engine test suite instead of opening the project, pass `-Test` on Windows or `--test` on macOS and Linux.
+
 ### Develop with Visual Studio Code
 
 The `setup_vscode_windows.ps1` and `setup_vscode_unix.sh` scripts will set up files for Visual Studio Code (VS Code).

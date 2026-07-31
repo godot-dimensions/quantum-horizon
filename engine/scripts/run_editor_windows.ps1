@@ -3,6 +3,8 @@
 param(
     [string]$ProjectPath, # Path to the Godot project (optional).
     [switch]$Dev, # Pass -Dev to build script (development build).
+    [switch]$Doctool, # Regenerate documentation after building.
+    [switch]$Test, # Run the engine test suite instead of opening the editor.
     [switch]$DoNotUpdate, # Skip the update script.
     [switch]$SkipIdeSetup # Skip VS Code and Visual Studio setup.
 )
@@ -13,6 +15,7 @@ $ErrorActionPreference = "Stop"
 
 $scriptRoot = $PSScriptRoot
 $engineRoot = Split-Path -Parent $scriptRoot
+$engineDir = Join-Path $engineRoot "godot"
 $updateScript = Join-Path $scriptRoot "update_submodules_windows.ps1"
 $vscodeSetupScript = Join-Path $scriptRoot "setup_vscode_windows.ps1"
 $visualStudioSetupScript = Join-Path $scriptRoot "setup_visual_studio_windows.ps1"
@@ -82,6 +85,30 @@ if ($LASTEXITCODE -ne 0) {
     throw "Engine build failed with exit code $LASTEXITCODE."
 }
 
+$devSuffix = if ($Dev) { ".dev" } else { "" }
+$executableRelativePath = "bin\godot.windows.editor$devSuffix.double.x86_64.exe"
+$executablePath = Join-Path $engineDir $executableRelativePath
+
+if ($Doctool) {
+    Write-Host "`nStep 2.5 of 4: Regenerating documentation..." -ForegroundColor Yellow
+    if (-not (Test-Path -LiteralPath $executablePath -PathType Leaf)) {
+        throw "Godot executable not found: $executablePath"
+    }
+
+    Push-Location $engineDir
+    try {
+        Write-Host "Running: .\$executableRelativePath --doctool" -ForegroundColor Cyan
+        & ".\$executableRelativePath" --doctool
+        $doctoolExitCode = $LASTEXITCODE
+    }
+    finally {
+        Pop-Location
+    }
+    if ($doctoolExitCode -ne 0) {
+        throw "Documentation generation failed with exit code $doctoolExitCode."
+    }
+}
+
 if ($SkipIdeSetup) {
     Write-Host "`nStep 3 of 4: Developer tool setup skipped." -ForegroundColor Yellow
 }
@@ -116,9 +143,24 @@ else {
     }
 }
 
+# This run script always builds the editor target, which is required by --test.
+if ($Test) {
+    Write-Host "`nStep 4 of 4: Running tests..." -ForegroundColor Yellow
+    if (-not (Test-Path -LiteralPath $executablePath -PathType Leaf)) {
+        throw "Godot executable not found: $executablePath"
+    }
+
+    Write-Host "Running: .\$executableRelativePath --test" -ForegroundColor Cyan
+    $testProcess = Start-Process -FilePath $executablePath -ArgumentList "--test" `
+        -WorkingDirectory $engineDir -NoNewWindow -Wait -PassThru
+    if ($testProcess.ExitCode -ne 0) {
+        throw "Godot tests failed with exit code $($testProcess.ExitCode)."
+    }
+    Write-Host "[OK] Godot tests passed." -ForegroundColor Green
+    return
+}
+
 Write-Host "`nStep 4 of 4: Opening the editor..." -ForegroundColor Yellow
-$devSuffix = if ($Dev) { ".dev" } else { "" }
-$executablePath = Join-Path $engineRoot "godot\bin\godot.windows.editor$devSuffix.double.x86_64.exe"
 if (-not (Test-Path -LiteralPath $executablePath -PathType Leaf)) {
     throw "Godot executable not found: $executablePath"
 }

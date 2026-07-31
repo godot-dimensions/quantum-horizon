@@ -6,11 +6,13 @@ set -eu
 
 project_path=
 dev_build=0
+doctool=0
 do_not_update=0
 skip_ide_setup=0
+test_run=0
 
 usage() {
-    printf 'Usage: %s [--project-path PATH] [--dev] [--do-not-update] [--skip-ide-setup]\n' "$0"
+    printf 'Usage: %s [--project-path PATH] [--dev] [--doctool] [--do-not-update] [--skip-ide-setup] [--test]\n' "$0"
 }
 
 die() {
@@ -29,12 +31,20 @@ while [ "$#" -gt 0 ]; do
             dev_build=1
             shift
             ;;
+        --doctool)
+            doctool=1
+            shift
+            ;;
         --do-not-update)
             do_not_update=1
             shift
             ;;
         --skip-ide-setup)
             skip_ide_setup=1
+            shift
+            ;;
+        --test)
+            test_run=1
             shift
             ;;
         -h|--help)
@@ -128,6 +138,23 @@ else
     dev_suffix=
 fi
 
+executable_relative_path=./bin/godot.$platform.editor$dev_suffix.double.$architecture
+executable_path=$engine_root/godot/bin/godot.$platform.editor$dev_suffix.double.$architecture
+
+if [ "$doctool" -eq 1 ]; then
+    printf '\nStep 2.5 of 4: Regenerating documentation...\n'
+    [ -x "$executable_path" ] || die "Godot executable not found: $executable_path"
+    printf 'Running: %s --doctool\n' "$executable_relative_path"
+
+    doctool_exit_code=0
+    (
+        cd "$engine_root/godot"
+        "$executable_relative_path" --doctool
+    ) || doctool_exit_code=$?
+    [ "$doctool_exit_code" -eq 0 ] ||
+        die "Documentation generation failed with exit code $doctool_exit_code."
+fi
+
 if [ "$skip_ide_setup" -eq 1 ]; then
     printf '\nStep 3 of 4: IDE setup skipped.\n'
 else
@@ -154,9 +181,24 @@ else
     [ "$setup_exit_code" -eq 0 ] || exit "$setup_exit_code"
 fi
 
-printf '\nStep 4 of 4: Opening the editor...\n'
-executable_path=$engine_root/godot/bin/godot.$platform.editor$dev_suffix.double.$architecture
+# This run script always builds the editor target, which is required by --test.
+if [ "$test_run" -eq 1 ]; then
+    printf '\nStep 4 of 4: Running tests...\n'
+    [ -x "$executable_path" ] || die "Godot executable not found: $executable_path"
+    printf 'Running: %s --test\n' "$executable_relative_path"
 
+    test_exit_code=0
+    (
+        cd "$engine_root/godot"
+        "$executable_relative_path" --test
+    ) || test_exit_code=$?
+    [ "$test_exit_code" -eq 0 ] ||
+        die "Godot tests failed with exit code $test_exit_code."
+    printf '[OK] Godot tests passed.\n'
+    exit 0
+fi
+
+printf '\nStep 4 of 4: Opening the editor...\n'
 [ -x "$executable_path" ] || die "Godot executable not found: $executable_path"
 printf 'Running: %s\n' "$executable_path"
 

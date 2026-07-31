@@ -15,12 +15,12 @@ func _ready() -> void:
 
 
 func _input(input_event: InputEvent) -> void:
-	if input_event.is_action_pressed("ui_cancel"):
+	if input_event.is_action_pressed(&"ui_cancel"):
 		get_tree().quit()
-	if input_event is InputEventMouseMotion:
+	elif input_event is InputEventMouseMotion:
 		var body_basis: Projection = basis
 		var rel: Vector2 = input_event.relative * MOUSE_SENSITIVITY
-		if Input.is_action_pressed("rotate_4d"):
+		if Input.is_action_pressed(&"rotate_4d"):
 			body_basis *= Basis4D.from_xw(-rel.x) * Basis4D.from_zw(rel.y)
 		else:
 			body_basis *= Basis4D.from_zx(-rel.x)
@@ -28,6 +28,21 @@ func _input(input_event: InputEvent) -> void:
 			player_head.basis = Basis4D.from_yz(_head_pitch)
 		body_basis.y = Vector4(0, 1, 0, 0)
 		basis = Basis4D.orthonormalized(body_basis)
+	elif input_event.is_action_pressed(&"rotate_4d"):
+		# Temporary test of raycast functionality: Do a raycast on left click.
+		var ray_params := RaycastParameters4D.new()
+		ray_params.global_ray_origin = player_head.global_position
+		ray_params.global_ray_direction = -player_head.global_basis.z
+		# The default is inside_is_skip = true, which
+		# means the ray won't hit the player's capsule.
+		#ray_params.inside_is_skip = false
+		# However, if in the future we want a raycast from not necessarily
+		# inside the capsule (ex: from the player's VR hand, reaching out),
+		# then the player should be explicitly excluded.
+		# Either the body node or shape node will work here.
+		#ray_params.set_exclude_nodes([self])
+		var result: Dictionary = PhysicsServer4D.raycast_physics_objects(ray_params)
+		print(result)
 
 
 func _physics_process(delta_time: float) -> void:
