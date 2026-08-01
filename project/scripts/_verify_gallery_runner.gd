@@ -12,6 +12,7 @@ extends Node
 @onready var minimap_camera: Camera4D = $"../Gallery/MiniMapContainer/MiniMapViewport/MiniMapCamera"
 @onready var minimap_overlay: Control = $"../Gallery/MiniMapOverlay"
 @onready var player_trail: Node = $"../Gallery/FlatPlane/PlayerTrail"
+@onready var fall_respawn: Node = $"../Gallery/FlatPlane/FallRespawn"
 
 func _wait_physics_frames(count: int) -> void:
 	for i in count:
@@ -239,6 +240,25 @@ func _run() -> void:
 	await _wait_physics_frames(2)
 	print("14b.trail_prunes_stale: count %d->%d (expect a decrease, stale sample pruned)" % [
 		trail_before_prune, player_trail.get_trail().size(),
+	])
+
+	# 15. Fall-respawn: drop the player far below the death threshold with a
+	# distinct position/basis, confirm it's teleported back to the original
+	# spawn transform (captured by fall_respawn.gd at _ready(), before this
+	# test ever moved the player) with velocity zeroed.
+	var expected_spawn_pos: Vector4 = fall_respawn._spawn_position
+	var expected_spawn_basis: Projection = fall_respawn._spawn_basis
+	player.global_position = Vector4(3, -20, 4, -2)
+	player.basis = Basis4D.from_zx(1.2)
+	player.linear_velocity = Vector4(0, -15, 0, 0)
+	await _wait_physics_frames(2)
+	var basis_after: Projection = player.global_basis
+	var basis_matches: bool = (
+		basis_after.x.is_equal_approx(expected_spawn_basis.x) and basis_after.y.is_equal_approx(expected_spawn_basis.y)
+		and basis_after.z.is_equal_approx(expected_spawn_basis.z) and basis_after.w.is_equal_approx(expected_spawn_basis.w)
+	)
+	print("15.fall_respawn: pos=%s (expect %s) basis_matches=%s velocity=%s (expect zero)" % [
+		player.global_position, expected_spawn_pos, basis_matches, player.linear_velocity,
 	])
 
 	# Visual check: fresh duck near the midpoint of its path (x=0, on the

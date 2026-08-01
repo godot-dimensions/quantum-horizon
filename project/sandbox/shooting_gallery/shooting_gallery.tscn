@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://scripts/minimap_camera.gd" id="8_minimap_camera"]
 [ext_resource type="Script" path="res://scripts/minimap_overlay.gd" id="9_minimap_overlay"]
 [ext_resource type="Shader" path="res://scripts/minimap_circle_mask.gdshader" id="10_circle_mask"]
+[ext_resource type="Script" path="res://scripts/fall_respawn.gd" id="11_fall_respawn"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_orange"]
 size = Vector4(10, 1, 10, 10)
@@ -108,6 +109,9 @@ script = ExtResource("6_duck_spawner")
 
 [node name="PlayerTrail" type="Node" parent="FlatPlane"]
 script = ExtResource("7_trail")
+
+[node name="FallRespawn" type="Node" parent="FlatPlane"]
+script = ExtResource("11_fall_respawn")
 
 [node name="PoiArrow" type="Control" parent="."]
 script = ExtResource("3_poi_arrow")
