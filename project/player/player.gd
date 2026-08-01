@@ -2,6 +2,7 @@ extends CharacterBody4D
 
 
 const SPEED = 5.0 # Meters per second.
+const SPRINT_MULTIPLIER = 2.5
 const JUMP_VELOCITY = 4.5 # Meters per second.
 const MOUSE_SENSITIVITY = 0.002
 
@@ -59,14 +60,15 @@ func _physics_process(delta_time: float) -> void:
 		Input.get_axis("move_forward", "move_back"),
 		Input.get_axis("move_kata", "move_ana"),
 	)
+	var current_speed: float = SPEED * SPRINT_MULTIPLIER if Input.is_key_pressed(KEY_SHIFT) else SPEED
 	var direction: Vector4 = (basis * input_dir).normalized()
 	if direction:
-		linear_velocity.x = direction.x * SPEED
-		linear_velocity.z = direction.z * SPEED
-		linear_velocity.w = direction.w * SPEED
+		linear_velocity.x = direction.x * current_speed
+		linear_velocity.z = direction.z * current_speed
+		linear_velocity.w = direction.w * current_speed
 	else:
-		linear_velocity.x = move_toward(linear_velocity.x, 0, SPEED)
-		linear_velocity.z = move_toward(linear_velocity.z, 0, SPEED)
-		linear_velocity.w = move_toward(linear_velocity.w, 0, SPEED)
+		linear_velocity.x = move_toward(linear_velocity.x, 0, current_speed)
+		linear_velocity.z = move_toward(linear_velocity.z, 0, current_speed)
+		linear_velocity.w = move_toward(linear_velocity.w, 0, current_speed)
 	move_and_slide()
 	$PositionLabel.text = "Player position: %s" % position
