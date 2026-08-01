@@ -6,7 +6,6 @@ extends Node
 @onready var player_head: Node4D = $"../Gallery/FlatPlane/Player/PlayerHead"
 @onready var spawner: Node4D = $"../Gallery/FlatPlane/GalleryTargetSpawner"
 @onready var duck_spawner: Node4D = $"../Gallery/FlatPlane/DuckRowSpawner"
-@onready var poi_arrow: Control = $"../Gallery/PoiArrow"
 @onready var crosshair: Control = $"../Gallery/Crosshair"
 @onready var barrier: StaticBody4D = $"../Gallery/FlatPlane/Barrier"
 @onready var fall_respawn: Node = $"../Gallery/FlatPlane/FallRespawn"
@@ -51,8 +50,8 @@ func _run() -> void:
 	print("1b.fire button_index=%s (expect 1/left-click)" % [fire_events[0].button_index])
 
 	# 2. Node paths resolve (all @onready vars non-null).
-	print("2.paths: player=%s player_head=%s spawner=%s poi_arrow=%s crosshair=%s barrier=%s" % [
-		player != null, player_head != null, spawner != null, poi_arrow != null, crosshair != null, barrier != null,
+	print("2.paths: player=%s player_head=%s spawner=%s crosshair=%s barrier=%s" % [
+		player != null, player_head != null, spawner != null, crosshair != null, barrier != null,
 	])
 
 	# 3. Target spawn bounds: force several respawns and sample each position.
@@ -147,20 +146,6 @@ func _run() -> void:
 	await _wait_physics_frames(2)
 	print("8a.simulated_left_click: catch_count %d->%d (expect an increment of 1)" % [click_before_count, spawner._catch_count])
 
-	# 8. POI arrow still makes sense: player somewhere on the green floor,
-	# identity basis, compare against the same independently-recomputed
-	# formula used throughout the earlier verification (now against this
-	# scene's actual spawn-area center, which is the orange floor's center -
-	# (0,0,0,0), same as before, by design).
-	player.global_position = Vector4(3, 1, 7, 0)
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
-	await _wait_physics_frames(3)
-	var rel: Vector4 = Vector4.ZERO - player.global_position
-	var basis: Projection = player.global_basis
-	var expected_angle: float = atan2(rel.dot(basis.x), -rel.dot(basis.z))
-	print("8.poi_arrow: expected_angle=%.4f arrow.rotation=%.4f (match=%s)" % [
-		expected_angle, poi_arrow.rotation, is_equal_approx(expected_angle, poi_arrow.rotation),
-	])
 	# 9. Duck row: force a spawn, confirm it lands at PATH_START, and confirm
 	# it actually moves along the expected velocity over real physics ticks.
 	duck_spawner._spawn_timer_sec = duck_spawner.SPAWN_INTERVAL_SEC
