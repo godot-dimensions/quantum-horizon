@@ -12,6 +12,7 @@ extends Node
 @onready var player: CharacterBody4D = $"../FlatPlane/Player"
 @onready var player_head: Node4D = $"../FlatPlane/Player/PlayerHead"
 @onready var spawner: Node4D = $"../FlatPlane/GalleryTargetSpawner"
+@onready var duck_spawner: Node4D = $"../FlatPlane/DuckRowSpawner"
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"fire"):
@@ -32,4 +33,7 @@ func _fire() -> void:
 	var result: Dictionary = PhysicsServer4D.raycast_physics_objects(ray_params)
 	if not result.get("hit", false):
 		return
-	spawner.try_catch_target(result["body"])
+	var hit_body: Object = result["body"]
+	if spawner.try_catch_target(hit_body):
+		return
+	duck_spawner.try_hit_duck(hit_body)

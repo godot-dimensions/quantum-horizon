@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://scripts/poi_arrow.gd" id="3_poi_arrow"]
 [ext_resource type="Script" path="res://scripts/crosshair.gd" id="4_crosshair"]
 [ext_resource type="Script" path="res://scripts/hitscan_weapon.gd" id="5_hitscan"]
+[ext_resource type="Script" path="res://scripts/duck_row_spawner.gd" id="6_duck_spawner"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_orange"]
 size = Vector4(10, 1, 10, 10)
@@ -94,6 +95,9 @@ offset_top = 64.0
 offset_right = 408.0
 offset_bottom = 90.0
 text = "Last catch: -"
+
+[node name="DuckRowSpawner" type="Node4D" parent="FlatPlane"]
+script = ExtResource("6_duck_spawner")
 
 [node name="PoiArrow" type="Control" parent="."]
 script = ExtResource("3_poi_arrow")

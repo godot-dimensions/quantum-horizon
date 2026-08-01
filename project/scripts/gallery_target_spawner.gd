@@ -10,15 +10,14 @@ extends Node4D
 const TargetScene := preload("res://sandbox/shooting_gallery/gallery_target.tscn")
 
 ## Orange floor is a 10x1x10x10 BoxShape4D centered at the origin (half-extent
-## 5 in x/z/w). Keeping spawns within +-4 preserves the same ~20% edge margin
-## ratio target_spawner.gd used (20/25 there, 4/5 here).
+## 5 in x/z/w). Keeping spawns within +-4 on all three axes - x, z, AND w -
+## preserves the same ~20% edge margin ratio target_spawner.gd used (20/25
+## there, 4/5 here), and keeps every spawn genuinely "above the orange floor"
+## rather than the original wide-W-range spotting/tracking design (that's a
+## different exercise from a shooting gallery, where targets should be
+## visible and reachable without extensive slice-rotation spelunking).
 const XZ_RANGE := 4.0
-## W range intentionally NOT constrained to the orange floor's own w-extent -
-## targets hover in space rather than resting on it, so there's nothing
-## requiring them to sit within the floor's physical w bounds. Keeping this
-## wide (unchanged from target_spawner.gd) is the whole point: slice-rotation
-## is still required to spot most targets.
-const W_RANGE := 20.0
+const W_RANGE := 4.0
 ## Orange floor top is at y=0 (Ground position.y=-0.5, half-extent 0.5).
 ## Targets hover 1-2 units above that, chosen at random per spawn.
 const HOVER_Y_MIN := 1.0

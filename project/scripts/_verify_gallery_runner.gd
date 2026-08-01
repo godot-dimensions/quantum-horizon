@@ -5,6 +5,7 @@ extends Node
 @onready var player: CharacterBody4D = $"../Gallery/FlatPlane/Player"
 @onready var player_head: Node4D = $"../Gallery/FlatPlane/Player/PlayerHead"
 @onready var spawner: Node4D = $"../Gallery/FlatPlane/GalleryTargetSpawner"
+@onready var duck_spawner: Node4D = $"../Gallery/FlatPlane/DuckRowSpawner"
 @onready var poi_arrow: Control = $"../Gallery/PoiArrow"
 @onready var crosshair: Control = $"../Gallery/Crosshair"
 @onready var barrier: StaticBody4D = $"../Gallery/FlatPlane/Barrier"
@@ -55,7 +56,7 @@ func _run() -> void:
 		var pos: Vector4 = spawner._current_target.global_position
 		var in_xz: bool = absf(pos.x) <= 4.01 and absf(pos.z) <= 4.01
 		var in_y: bool = pos.y >= 0.99 and pos.y <= 2.01
-		var in_w: bool = absf(pos.w) <= 20.01
+		var in_w: bool = absf(pos.w) <= 4.01
 		print("3.spawn[%d]: pos=%s in_xz=%s in_y=%s in_w=%s" % [i, pos, in_xz, in_y, in_w])
 		spawner._on_catch()
 		await _wait_physics_frames(2)
@@ -156,6 +157,50 @@ func _run() -> void:
 	print("8.poi_arrow: expected_angle=%.4f arrow.rotation=%.4f (match=%s)" % [
 		expected_angle, poi_arrow.rotation, is_equal_approx(expected_angle, poi_arrow.rotation),
 	])
+	# 9. Duck row: force a spawn, confirm it lands at PATH_START, and confirm
+	# it actually moves along the expected velocity over real physics ticks.
+	duck_spawner._spawn_timer_sec = duck_spawner.SPAWN_INTERVAL_SEC
+	var ducks_before: int = duck_spawner._ducks.size()
+	await _wait_physics_frames(2)
+	print("9a.duck_spawns: count %d->%d (expect +1) first_pos=%s (expect PATH_START=%s)" % [
+		ducks_before, duck_spawner._ducks.size(),
+		(duck_spawner._ducks[0].position if duck_spawner._ducks.size() > 0 else "<none>"), duck_spawner.PATH_START,
+	])
+	var duck_under_test: Node4D = duck_spawner._ducks[0]
+	var pos_before_move: Vector4 = duck_under_test.position
+	await _wait_physics_frames(30)
+	var pos_after_move: Vector4 = duck_under_test.position
+	var actual_velocity: Vector4 = (pos_after_move - pos_before_move) / (30.0 / Engine.physics_ticks_per_second)
+	print("9b.duck_moves: actual_velocity=%s expected_velocity=%s (expect closely matching)" % [actual_velocity, duck_spawner._velocity])
+
+	# 10. Duck despawns when hit (via the same try_hit_duck path hitscan_
+	# weapon.gd calls after the red target has already missed).
+	var duck_count_before_hit: int = duck_spawner._ducks.size()
+	var duck_hit: bool = duck_spawner.try_hit_duck(duck_under_test)
+	print("10.duck_hit_despawns: hit_registered=%s duck_count %d->%d (expect true, -1)" % [
+		duck_hit, duck_count_before_hit, duck_spawner._ducks.size(),
+	])
+
+	# 11. Duck despawns silently on reaching the far end (no hit needed) -
+	# place one right at PATH_END and step one frame.
+	var end_duck: Node4D = duck_spawner.DuckScene.instantiate()
+	duck_spawner.add_child(end_duck)
+	end_duck.position = duck_spawner.PATH_END
+	duck_spawner._ducks.append(end_duck)
+	var duck_count_before_end: int = duck_spawner._ducks.size()
+	await _wait_physics_frames(2)
+	print("11.duck_end_despawns: duck_count %d->%d (expect -1)" % [duck_count_before_end, duck_spawner._ducks.size()])
+
+	# Visual check: fresh duck near the midpoint of its path (x=0, on the
+	# player's default sightline) alongside the red target, for a clean shot.
+	player.global_position = Vector4(0, 1, 7, 0)
+	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	spawner._current_target.global_position = Vector4(2, 1.5, -1, 1)
+	var visible_duck: Node4D = duck_spawner.DuckScene.instantiate()
+	duck_spawner.add_child(visible_duck)
+	visible_duck.position = Vector4(0, 1.5, -2, 0)
+	duck_spawner._ducks.append(visible_duck)
+	await _wait_physics_frames(2)
 	await _screenshot("gallery_overview.png")
 
 	get_tree().quit()
