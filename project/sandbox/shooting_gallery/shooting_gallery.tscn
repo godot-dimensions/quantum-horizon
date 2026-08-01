@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="PackedScene" path="res://player/player.tscn" id="1_player"]
 [ext_resource type="Script" path="res://scripts/gallery_target_spawner.gd" id="2_spawner"]
@@ -6,10 +6,6 @@
 [ext_resource type="Script" path="res://scripts/crosshair.gd" id="4_crosshair"]
 [ext_resource type="Script" path="res://scripts/hitscan_weapon.gd" id="5_hitscan"]
 [ext_resource type="Script" path="res://scripts/duck_row_spawner.gd" id="6_duck_spawner"]
-[ext_resource type="Script" path="res://scripts/player_trail.gd" id="7_trail"]
-[ext_resource type="Script" path="res://scripts/minimap_camera.gd" id="8_minimap_camera"]
-[ext_resource type="Script" path="res://scripts/minimap_overlay.gd" id="9_minimap_overlay"]
-[ext_resource type="Shader" path="res://scripts/minimap_circle_mask.gdshader" id="10_circle_mask"]
 [ext_resource type="Script" path="res://scripts/fall_respawn.gd" id="11_fall_respawn"]
 [ext_resource type="Script" path="res://scripts/slice_radar.gd" id="12_slice_radar"]
 [ext_resource type="Script" path="res://scripts/slice_alignment_glow.gd" id="13_slice_glow"]
@@ -41,9 +37,6 @@ size = Vector4(10, 1.1, 0.3, 10)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_barrier"]
 albedo_color = Color(0.5, 0.5, 0.5, 1)
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_minimap_mask"]
-shader = ExtResource("10_circle_mask")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_slice_glow"]
 shader = ExtResource("14_slice_glow_shader")
@@ -113,9 +106,6 @@ text = "Last catch: -"
 [node name="DuckRowSpawner" type="Node4D" parent="FlatPlane"]
 script = ExtResource("6_duck_spawner")
 
-[node name="PlayerTrail" type="Node" parent="FlatPlane"]
-script = ExtResource("7_trail")
-
 [node name="FallRespawn" type="Node" parent="FlatPlane"]
 script = ExtResource("11_fall_respawn")
 
@@ -144,46 +134,15 @@ offset_bottom = 8.0
 [node name="HitscanWeapon" type="Node" parent="."]
 script = ExtResource("5_hitscan")
 
-[node name="MiniMapContainer" type="SubViewportContainer" parent="."]
-material = SubResource("ShaderMaterial_minimap_mask")
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -256.0
-offset_top = -256.0
-offset_right = -16.0
-offset_bottom = -16.0
-mouse_filter = 2
-stretch = true
-
-[node name="MiniMapViewport" type="SubViewport" parent="MiniMapContainer"]
-size = Vector2i(240, 240)
-
-[node name="MiniMapCamera" type="Camera4D" parent="MiniMapContainer/MiniMapViewport"]
-script = ExtResource("8_minimap_camera")
-
-[node name="MiniMapOverlay" type="Control" parent="."]
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -256.0
-offset_top = -256.0
-offset_right = -16.0
-offset_bottom = -16.0
-mouse_filter = 2
-script = ExtResource("9_minimap_overlay")
-
 [node name="SliceRadar" type="Control" parent="."]
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -236.0
-offset_top = 16.0
-offset_right = -16.0
-offset_bottom = 156.0
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_right = 200.0
+offset_top = -310.0
+offset_bottom = -90.0
 mouse_filter = 2
 script = ExtResource("12_slice_radar")
 

@@ -1,7 +1,8 @@
 extends Control
-## Player-centered alternate minimap concept - separate from the existing
-## volume-view minimap (minimap_camera.gd/minimap_overlay.gd), which is left
-## alone/paused for later comparison.
+## Player-centered alternate minimap - replaced the earlier volume-view
+## minimap entirely (that one, plus its dedicated Camera4D/SubViewport rig
+## and the player-trail sibling script it needed, has been removed as of
+## this widget proving more useful).
 ##
 ## Draws a fixed ellipse representing the player's current 3-slice as a
 ## stable "horizontal" reference plane - it never rotates with the player's
@@ -19,34 +20,30 @@ extends Control
 ## stem showing height above/below it.
 ##
 ## Pure 2D math + drawing (like poi_arrow.gd) - no Camera4D/SubViewport
-## involved, so there's no rendered 4D scene here and nothing from the
-## volume-view minimap's camera/viewport rig to share. The circular framing
-## shader isn't reused either - this widget's outer boundary is just its
-## own plain Control rect; the ellipse is content drawn inside it, not an
-## outer crop.
+## involved, nothing rendered in 4D for this widget at all.
 
 const BearingUtility4D = preload("res://scripts/bearing_utility_4d.gd")
 
 const ELLIPSE_SEGMENTS := 48
 
-@export var ellipse_radius_x: float = 85.0
+@export var ellipse_radius_x: float = 160.0
 @export var ellipse_squash_factor: float = 0.55 # vertical radius = horizontal * this - "squashed ~50-60% vertically."
 @export var ellipse_line_color: Color = Color(1.0, 1.0, 1.0, 0.5)
 @export var ellipse_fill_color: Color = Color(1.0, 1.0, 1.0, 0.07)
 
-@export var player_marker_radius: float = 4.0
+@export var player_marker_radius: float = 6.0
 @export var player_marker_color: Color = Color(1.0, 1.0, 1.0, 0.95)
 
-@export var projected_point_radius: float = 3.5
+@export var projected_point_radius: float = 5.0
 @export var projected_point_color: Color = Color(0.6, 0.6, 0.6, 0.9)
 
-@export var off_plane_dot_radius: float = 4.0
+@export var off_plane_dot_radius: float = 6.0
 @export var off_plane_dot_color: Color = Color(0.95, 0.25, 0.85, 0.95)
 @export var stem_color: Color = Color(0.95, 0.25, 0.85, 0.6)
 
 ## World-units-to-pixels for the projected point AND the stem length alike -
 ## one world unit is one unit, visually consistent across the whole widget.
-@export var units_to_pixels: float = 8.0
+@export var units_to_pixels: float = 15.0
 
 @onready var player: CharacterBody4D = $"../FlatPlane/Player"
 @onready var spawner: Node4D = $"../FlatPlane/GalleryTargetSpawner"

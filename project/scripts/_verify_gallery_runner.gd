@@ -9,9 +9,6 @@ extends Node
 @onready var poi_arrow: Control = $"../Gallery/PoiArrow"
 @onready var crosshair: Control = $"../Gallery/Crosshair"
 @onready var barrier: StaticBody4D = $"../Gallery/FlatPlane/Barrier"
-@onready var minimap_camera: Camera4D = $"../Gallery/MiniMapContainer/MiniMapViewport/MiniMapCamera"
-@onready var minimap_overlay: Control = $"../Gallery/MiniMapOverlay"
-@onready var player_trail: Node = $"../Gallery/FlatPlane/PlayerTrail"
 @onready var fall_respawn: Node = $"../Gallery/FlatPlane/FallRespawn"
 @onready var slice_radar: Control = $"../Gallery/SliceRadar"
 @onready var slice_glow: Control = $"../Gallery/SliceAlignmentGlow"
@@ -197,53 +194,6 @@ func _run() -> void:
 	var duck_count_before_end: int = duck_spawner._ducks.size()
 	await _wait_physics_frames(2)
 	print("11.duck_end_despawns: duck_count %d->%d (expect -1)" % [duck_count_before_end, duck_spawner._ducks.size()])
-
-	# 11b. Solid-fill corner projections: sanity-check they land within the
-	# 240x240 viewport (not degenerate/off-screen), for a known player state.
-	player.global_position = Vector4(0, 1, 7, 0)
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
-	await _wait_physics_frames(2)
-	for corner in minimap_overlay.ORANGE_FLOOR_CORNERS:
-		print("11b.orange_corner_projection: world=%s screen=%s" % [corner, minimap_camera.world_to_viewport(corner)])
-
-	# 12. Minimap camera tracks player x/z/w with a fixed pullback in z and a
-	# fixed y (not tracked), and its orientation never changes even as the
-	# player rotates.
-	player.global_position = Vector4(2.0, 1.0, 6.0, 3.0)
-	player.basis = Basis4D.from_zx(0.8) # arbitrary yaw - orientation must NOT follow this.
-	await _wait_physics_frames(2)
-	var expected_cam_pos := Vector4(2.0, minimap_camera.fixed_height_y, 6.0 + minimap_camera.pullback_z, 3.0)
-	print("12a.minimap_tracks_player: camera_pos=%s expected=%s (expect closely matching)" % [
-		minimap_camera.global_position, expected_cam_pos,
-	])
-	var cam_basis_before: Projection = minimap_camera.global_basis
-	player.basis = Basis4D.from_zx(-1.5)
-	await _wait_physics_frames(2)
-	var cam_basis_after: Projection = minimap_camera.global_basis
-	print("12b.minimap_orientation_fixed: basis_unchanged=%s (expect true - camera must not rotate with player look)" % [
-		cam_basis_before.x.is_equal_approx(cam_basis_after.x) and cam_basis_before.y.is_equal_approx(cam_basis_after.y)
-		and cam_basis_before.z.is_equal_approx(cam_basis_after.z) and cam_basis_before.w.is_equal_approx(cam_basis_after.w),
-	])
-
-	# 13. Player indicator centered by construction: since the camera tracks
-	# the player's x/z/w exactly, world_to_viewport(player position) should
-	# land at (or extremely near) the dead center of the 240x240 mini-map
-	# viewport, i.e. (120, 120).
-	await _wait_physics_frames(2)
-	var player_screen_pos: Vector2 = minimap_camera.world_to_viewport(player.global_position)
-	print("13.player_centered_on_minimap: screen_pos=%s (expect ~(120,120))" % [player_screen_pos])
-
-	# 14. Trail records and ages/prunes samples.
-	print("14a.trail_recording: sample_count=%d (expect > 0 after ~%.1fs of running)" % [
-		player_trail.get_trail().size(), player_trail.trail_duration,
-	])
-	var trail_before_prune: int = player_trail.get_trail().size()
-	if trail_before_prune > 0:
-		player_trail.get_trail()[0]["age"] = player_trail.trail_duration + 1.0
-	await _wait_physics_frames(2)
-	print("14b.trail_prunes_stale: count %d->%d (expect a decrease, stale sample pruned)" % [
-		trail_before_prune, player_trail.get_trail().size(),
-	])
 
 	# 15. Fall-respawn: drop the player far below the death threshold with a
 	# distinct position/basis, confirm it's teleported back to the original
