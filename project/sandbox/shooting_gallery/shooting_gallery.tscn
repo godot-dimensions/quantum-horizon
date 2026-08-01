@@ -1,0 +1,121 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="PackedScene" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" path="res://scripts/gallery_target_spawner.gd" id="2_spawner"]
+[ext_resource type="Script" path="res://scripts/poi_arrow.gd" id="3_poi_arrow"]
+[ext_resource type="Script" path="res://scripts/crosshair.gd" id="4_crosshair"]
+[ext_resource type="Script" path="res://scripts/hitscan_weapon.gd" id="5_hitscan"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_orange"]
+size = Vector4(10, 1, 10, 10)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_orange"]
+size = Vector4(10, 1, 10, 10)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_orange"]
+albedo_color = Color(1, 0.6, 0.1, 1)
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_green"]
+size = Vector4(10, 1, 4, 10)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_green"]
+size = Vector4(10, 1, 4, 10)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_green"]
+albedo_color = Color(0.2, 0.8, 0.2, 1)
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_barrier"]
+size = Vector4(10, 1.1, 0.3, 10)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_barrier"]
+size = Vector4(10, 1.1, 0.3, 10)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_barrier"]
+albedo_color = Color(0.5, 0.5, 0.5, 1)
+
+[node name="ShootingGallery" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FlatPlane" type="Node4D" parent="."]
+
+[node name="OrangeFloor" type="StaticBody4D" parent="FlatPlane"]
+position = Vector4(0, -0.5, 0, 0)
+
+[node name="CollisionShape" type="CollisionShape4D" parent="FlatPlane/OrangeFloor"]
+shape = SubResource("BoxShape4D_orange")
+
+[node name="Mesh" type="MeshInstance4D" parent="FlatPlane/OrangeFloor"]
+mesh = SubResource("BoxTetraMesh4D_orange")
+material_override = SubResource("TetraMaterial4D_orange")
+
+[node name="GreenFloor" type="StaticBody4D" parent="FlatPlane"]
+position = Vector4(0, -0.5, 7, 0)
+
+[node name="CollisionShape" type="CollisionShape4D" parent="FlatPlane/GreenFloor"]
+shape = SubResource("BoxShape4D_green")
+
+[node name="Mesh" type="MeshInstance4D" parent="FlatPlane/GreenFloor"]
+mesh = SubResource("BoxTetraMesh4D_green")
+material_override = SubResource("TetraMaterial4D_green")
+
+[node name="Barrier" type="StaticBody4D" parent="FlatPlane"]
+position = Vector4(0, 0.55, 5, 0)
+
+[node name="CollisionShape" type="CollisionShape4D" parent="FlatPlane/Barrier"]
+shape = SubResource("BoxShape4D_barrier")
+
+[node name="Mesh" type="MeshInstance4D" parent="FlatPlane/Barrier"]
+mesh = SubResource("BoxTetraMesh4D_barrier")
+material_override = SubResource("TetraMaterial4D_barrier")
+
+[node name="Player" parent="FlatPlane" instance=ExtResource("1_player")]
+position = Vector4(0, 1, 7, 0)
+
+[node name="GalleryTargetSpawner" type="Node4D" parent="FlatPlane"]
+script = ExtResource("2_spawner")
+
+[node name="TimeLabel" type="Label" parent="FlatPlane/GalleryTargetSpawner"]
+custom_minimum_size = Vector2(400, 26)
+offset_left = 8.0
+offset_top = 34.0
+offset_right = 408.0
+offset_bottom = 60.0
+text = "Elapsed: 0.0s | Avg: 0.0s (0 catches)"
+
+[node name="ResultLabel" type="Label" parent="FlatPlane/GalleryTargetSpawner"]
+custom_minimum_size = Vector2(400, 26)
+offset_left = 8.0
+offset_top = 64.0
+offset_right = 408.0
+offset_bottom = 90.0
+text = "Last catch: -"
+
+[node name="PoiArrow" type="Control" parent="."]
+script = ExtResource("3_poi_arrow")
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -14.0
+offset_top = -68.0
+offset_right = 14.0
+offset_bottom = -40.0
+
+[node name="Crosshair" type="Control" parent="."]
+script = ExtResource("4_crosshair")
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+
+[node name="HitscanWeapon" type="Node" parent="."]
+script = ExtResource("5_hitscan")

@@ -52,6 +52,15 @@ Important: `move_up`/`move_down` (R/F) are defined in the input map but
 **`player.gd` never reads them** - only `move_kata`/`move_ana` (Q/E) feed
 the w-axis, and y is gravity/jump-only. R/F currently do nothing.
 
+**Branch-specific override (`shooting-gallery` branch only):** `rotate_4d` is
+remapped to **right-click** and a new `fire` action is bound to **left-click**
+(`project/project.godot`), to free up left-click for the shooting gallery's
+hitscan weapon. Confirmed via grep that `rotate_4d`/`MOUSE_BUTTON_LEFT` are
+never hardcoded anywhere in the project - the binding is purely an Input Map
+entry, so this was a `project.godot`-only change, no code edits. This is
+local to this branch; `main` still has `rotate_4d` on left-click as described
+in the table above.
+
 Also important: the earlier prototyping's right-click-drag convention is
 **not** what Aaron built - his `rotate_4d` action is bound to left-click.
 

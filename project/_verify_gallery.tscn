@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://sandbox/shooting_gallery/shooting_gallery.tscn" id="1_gallery"]
+[ext_resource type="Script" path="res://scripts/_verify_gallery_runner.gd" id="2_runner"]
+
+[node name="VerifyGallery" type="Node"]
+
+[node name="Gallery" parent="." instance=ExtResource("1_gallery")]
+
+[node name="Runner" type="Node" parent="."]
+script = ExtResource("2_runner")
