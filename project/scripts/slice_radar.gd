@@ -8,16 +8,17 @@ extends Control
 ## stable "horizontal" reference plane - it never rotates with the player's
 ## slice-rotation input, always drawn the same way; the world is expressed
 ## relative to it, not the other way around. A player marker sits fixed at
-## its center. For each tracked object (currently just the active target),
-## projects its position onto the ellipse via right_component/
+## its center. For each tracked object (the active target, and every active
+## duck), projects its position onto the ellipse via right_component/
 ## depth_component (same oblique-projection math as any tilted top-down HUD:
 ## depth's contribution is scaled by the ellipse's own squash factor to
 ## match its tilt), then draws a vertical screen-space stem proportional to
 ## ana_offset - up if positive, down if negative, exactly as
 ## BearingUtility4D already defines the sign, not re-derived here -
-## terminating in a dot marking the object's true off-plane position. Reads
-## like an air-traffic-control altitude readout: a point on the plane, a
-## stem showing height above/below it.
+## terminating in a dot marking the object's true off-plane position,
+## tinted to match that object's real in-world color so targets and ducks
+## stay distinguishable. Reads like an air-traffic-control altitude
+## readout: a point on the plane, a stem showing height above/below it.
 ##
 ## Pure 2D math + drawing (like poi_arrow.gd) - no Camera4D/SubViewport
 ## involved, nothing rendered in 4D for this widget at all.
@@ -38,8 +39,12 @@ const ELLIPSE_SEGMENTS := 48
 @export var projected_point_color: Color = Color(0.6, 0.6, 0.6, 0.9)
 
 @export var off_plane_dot_radius: float = 6.0
-@export var off_plane_dot_color: Color = Color(0.95, 0.25, 0.85, 0.95)
-@export var stem_color: Color = Color(0.95, 0.25, 0.85, 0.6)
+@export var stem_alpha: float = 0.6
+
+## Matches gallery_target.tscn/duck_target.tscn's own albedo colors, so the
+## off-plane marker for each object reads as "which one is this" at a glance.
+const TARGET_COLOR := Color(0.9, 0.1, 0.1, 0.95)
+const DUCK_COLOR := Color(1.0, 0.85, 0.1, 0.95)
 
 ## World-units-to-pixels for the projected point AND the stem length alike -
 ## one world unit is one unit, visually consistent across the whole widget.
@@ -47,6 +52,7 @@ const ELLIPSE_SEGMENTS := 48
 
 @onready var player: CharacterBody4D = $"../FlatPlane/Player"
 @onready var spawner: Node4D = $"../FlatPlane/GalleryTargetSpawner"
+@onready var duck_spawner: Node4D = $"../FlatPlane/DuckRowSpawner"
 
 var _ellipse_center: Vector2
 
@@ -54,7 +60,11 @@ var _ellipse_center: Vector2
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	clip_contents = true
-	_ellipse_center = size / 2.0
+	# Horizontally centered; vertically positioned so the ellipse's own
+	# bottom edge lands exactly on this control's bottom edge (which the
+	# scene anchors flush to the true screen bottom) rather than centered
+	# in the box with margin on both sides.
+	_ellipse_center = Vector2(size.x / 2.0, size.y - ellipse_radius_x * ellipse_squash_factor)
 
 
 func _process(_delta: float) -> void:
@@ -69,7 +79,7 @@ func _ellipse_points() -> PackedVector2Array:
 	return points
 
 
-func _draw_tracked_object(target_position: Vector4) -> void:
+func _draw_tracked_object(target_position: Vector4, marker_color: Color) -> void:
 	var bearing: Dictionary = BearingUtility4D.compute(player, target_position)
 	# Same oblique-projection math as any tilted top-down HUD: right_component
 	# maps straight to horizontal screen offset; depth_component's
@@ -87,8 +97,8 @@ func _draw_tracked_object(target_position: Vector4) -> void:
 	# as BearingUtility4D already defines it. Screen-space up is negative-Y,
 	# so a positive ana_offset (drawn "up") needs the sign flipped here.
 	var stem_end: Vector2 = projected + Vector2(0.0, -bearing.ana_offset * units_to_pixels)
-	draw_line(projected, stem_end, stem_color, 2.0)
-	draw_circle(stem_end, off_plane_dot_radius, off_plane_dot_color)
+	draw_line(projected, stem_end, Color(marker_color.r, marker_color.g, marker_color.b, stem_alpha), 2.0)
+	draw_circle(stem_end, off_plane_dot_radius, marker_color)
 
 
 func _draw() -> void:
@@ -101,11 +111,13 @@ func _draw() -> void:
 
 	draw_circle(_ellipse_center, player_marker_radius, player_marker_color)
 
-	# Currently just the active target - a list so tracking more objects
-	# later (e.g. ducks) is a one-line addition, not a restructure.
-	var tracked_positions: Array = []
+	# Each entry: [world position, marker color]. The active target and
+	# every currently-active duck.
+	var tracked_objects: Array = []
 	if spawner._current_target != null:
-		tracked_positions.append(spawner._current_target.global_position)
+		tracked_objects.append([spawner._current_target.global_position, TARGET_COLOR])
+	for duck in duck_spawner._ducks:
+		tracked_objects.append([duck.global_position, DUCK_COLOR])
 
-	for target_position in tracked_positions:
-		_draw_tracked_object(target_position)
+	for entry in tracked_objects:
+		_draw_tracked_object(entry[0], entry[1])
