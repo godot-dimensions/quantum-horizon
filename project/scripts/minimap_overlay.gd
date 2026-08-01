@@ -28,26 +28,70 @@ extends Control
 ## clip_contents is enabled so a point that projects wildly off-screen gets
 ## clipped to this control's own rect instead of spilling into the main view.
 ##
-## Distances below are scaled down from godot_boids_4d's originals (~1/3) to
-## fit the shooting gallery's much smaller footprint (floors ~+-5, vs. boids'
-## ~14-unit half-extents).
+## Distances below are scaled to the shooting gallery's own footprint
+## (floors ~+-5, vs. boids' ~14-unit half-extents) - the plane/cone distances
+## are deliberately large enough to span the full visible mini-map (not just
+## a small patch near the player), so the slice intersection with far-away
+## objects is actually visible.
+##
+## solid_fill (below) is a Wireframe-Canvas-engine limitation workaround, not
+## an engine feature: WireframeCanvasRenderingEngine4D is genuinely edge-only
+## at the C++ level (Mesh4D only exposes get_edge_indices(), no face/triangle
+## data at all), so "translucent solid objects" can't come from the render
+## engine itself without real new engine work (new mesh-face APIs plus a
+## depth-sorted fill rasterizer - a much bigger, riskier change than anything
+## else here, since it's shared engine code). Instead this draws known
+## objects (floors, barrier, current target, ducks) as translucent filled
+## shapes directly, using the exact same world_to_viewport() projection the
+## trail/plane/cone already use, layered under the wireframe edges for a
+## "solid-with-crisp-outlines" look.
 
 @export var dot_radius: float = 3.0
 @export var trail_color: Color = Color(0.95, 0.85, 0.25)
 
 @export var plane_color: Color = Color(1.0, 1.0, 1.0, 0.9)
 @export var plane_fill_alpha: float = 0.15
-@export var plane_forward_distance: float = 3.0
-@export var plane_back_distance: float = 1.5
-@export var plane_side_distance: float = 2.0
+@export var plane_forward_distance: float = 20.0
+@export var plane_back_distance: float = 6.0
+@export var plane_side_distance: float = 12.0
 
 @export var cone_color: Color = Color(0.3, 0.6, 1.0, 0.65)
-@export var cone_length_distance: float = 2.0
-@export var cone_width_distance: float = 0.6
+@export var cone_length_distance: float = 6.0
+@export var cone_width_distance: float = 1.5
+
+## Known static geometry, mirroring shooting_gallery.tscn's own floor/barrier
+## dimensions. minimap_camera.gd's y-w swap makes screen-x = world-x and
+## screen-y = world-w (z is depth/perspective-scale only, not a screen
+## position axis) - so a fillable, non-degenerate quad needs corners that
+## actually vary across x AND w (each floor's real x/w half-extent is 5,
+## same as the box shapes in shooting_gallery.tscn), at a single
+## representative z (each floor's own center depth). A single fixed w for
+## all 4 corners (as originally written) collapses every corner to the same
+## screen-y, i.e. a zero-area line, not a quad - confirmed via
+## world_to_viewport() before landing on this fix. Update these if the
+## scene's floor sizes ever change - this is a schematic duplicate, not read
+## from the scene live.
+const ORANGE_FLOOR_CORNERS := [
+	Vector4(-5, 0, 0, -5), Vector4(5, 0, 0, -5), Vector4(5, 0, 0, 5), Vector4(-5, 0, 0, 5),
+]
+const GREEN_FLOOR_CORNERS := [
+	Vector4(-5, 0, 7, -5), Vector4(5, 0, 7, -5), Vector4(5, 0, 7, 5), Vector4(-5, 0, 7, 5),
+]
+const BARRIER_CORNERS := [
+	Vector4(-5, 0, 5, -5), Vector4(5, 0, 5, -5), Vector4(5, 0, 5, 5), Vector4(-5, 0, 5, 5),
+]
+const ORANGE_FLOOR_FILL := Color(1.0, 0.6, 0.1, 0.3)
+const GREEN_FLOOR_FILL := Color(0.2, 0.8, 0.2, 0.3)
+const BARRIER_FILL := Color(0.5, 0.5, 0.5, 0.5)
+const TARGET_FILL := Color(0.9, 0.1, 0.1, 0.7)
+const DUCK_FILL := Color(1.0, 0.85, 0.1, 0.7)
+const OBJECT_DOT_RADIUS := 5.0
 
 @onready var player: CharacterBody4D = $"../FlatPlane/Player"
 @onready var player_trail: Node = $"../FlatPlane/PlayerTrail"
 @onready var minimap_camera: Camera4D = $"../MiniMapContainer/MiniMapViewport/MiniMapCamera"
+@onready var target_spawner: Node4D = $"../FlatPlane/GalleryTargetSpawner"
+@onready var duck_spawner: Node4D = $"../FlatPlane/DuckRowSpawner"
 
 
 func _ready() -> void:
@@ -59,7 +103,28 @@ func _process(_delta: float) -> void:
 	queue_redraw()
 
 
+func _draw_filled_quad(corners: Array, color: Color) -> void:
+	var points := PackedVector2Array()
+	for corner in corners:
+		points.append(minimap_camera.world_to_viewport(corner))
+	var colors := PackedColorArray()
+	colors.resize(points.size())
+	colors.fill(color)
+	draw_polygon(points, colors)
+
+
 func _draw() -> void:
+	_draw_filled_quad(ORANGE_FLOOR_CORNERS, ORANGE_FLOOR_FILL)
+	_draw_filled_quad(GREEN_FLOOR_CORNERS, GREEN_FLOOR_FILL)
+	_draw_filled_quad(BARRIER_CORNERS, BARRIER_FILL)
+
+	if target_spawner._current_target != null:
+		var target_screen_pos: Vector2 = minimap_camera.world_to_viewport(target_spawner._current_target.global_position)
+		draw_circle(target_screen_pos, OBJECT_DOT_RADIUS, TARGET_FILL)
+	for duck in duck_spawner._ducks:
+		var duck_screen_pos: Vector2 = minimap_camera.world_to_viewport(duck.global_position)
+		draw_circle(duck_screen_pos, OBJECT_DOT_RADIUS, DUCK_FILL)
+
 	for entry in player_trail.get_trail():
 		var age: float = entry["age"]
 		var alpha: float = clamp(1.0 - (age / player_trail.trail_duration), 0.0, 1.0)

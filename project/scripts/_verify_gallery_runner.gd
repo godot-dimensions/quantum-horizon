@@ -194,6 +194,14 @@ func _run() -> void:
 	await _wait_physics_frames(2)
 	print("11.duck_end_despawns: duck_count %d->%d (expect -1)" % [duck_count_before_end, duck_spawner._ducks.size()])
 
+	# 11b. Solid-fill corner projections: sanity-check they land within the
+	# 240x240 viewport (not degenerate/off-screen), for a known player state.
+	player.global_position = Vector4(0, 1, 7, 0)
+	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	await _wait_physics_frames(2)
+	for corner in minimap_overlay.ORANGE_FLOOR_CORNERS:
+		print("11b.orange_corner_projection: world=%s screen=%s" % [corner, minimap_camera.world_to_viewport(corner)])
+
 	# 12. Minimap camera tracks player x/z/w with a fixed pullback in z and a
 	# fixed y (not tracked), and its orientation never changes even as the
 	# player rotates.
