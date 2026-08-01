@@ -13,6 +13,9 @@ extends Node
 @onready var minimap_overlay: Control = $"../Gallery/MiniMapOverlay"
 @onready var player_trail: Node = $"../Gallery/FlatPlane/PlayerTrail"
 @onready var fall_respawn: Node = $"../Gallery/FlatPlane/FallRespawn"
+@onready var slice_radar: Control = $"../Gallery/SliceRadar"
+@onready var slice_glow: Control = $"../Gallery/SliceAlignmentGlow"
+const BearingUtility4D = preload("res://scripts/bearing_utility_4d.gd")
 
 func _wait_physics_frames(count: int) -> void:
 	for i in count:
@@ -260,6 +263,80 @@ func _run() -> void:
 	print("15.fall_respawn: pos=%s (expect %s) basis_matches=%s velocity=%s (expect zero)" % [
 		player.global_position, expected_spawn_pos, basis_matches, player.linear_velocity,
 	])
+
+	# 16. angle_off_slice: independently recompute asin(ana_offset/rel.length())
+	# for several bearings and confirm BearingUtility4D.compute() matches.
+	player.global_position = Vector4(0, 1, 0, 0)
+	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	var angle_cases: Array = [Vector4(5, 1, 0, 2), Vector4(-3, 1, 4, -6), Vector4(0, 1, 10, 0.1)]
+	for target_pos in angle_cases:
+		var bearing: Dictionary = BearingUtility4D.compute(player, target_pos)
+		var case_rel: Vector4 = target_pos - player.global_position
+		var expected_slice_angle: float = asin(clampf(case_rel.dot(player.global_basis.w) / case_rel.length(), -1.0, 1.0))
+		print("16.angle_off_slice(target=%s): expected=%.5f actual=%.5f (match=%s)" % [
+			target_pos, expected_slice_angle, bearing.angle_off_slice, is_equal_approx(expected_slice_angle, bearing.angle_off_slice),
+		])
+
+	# 16b. Same, but with genuine slice-rotation applied (xw) so basis.w isn't
+	# the trivial (0,0,0,1) - confirms this isn't just correct by coincidence
+	# for an unrotated player.
+	player.basis = Basis4D.from_xw(0.7)
+	await _wait_physics_frames(2)
+	var rotated_target := Vector4(3, 1, 2, 1)
+	var rotated_bearing: Dictionary = BearingUtility4D.compute(player, rotated_target)
+	var rotated_rel: Vector4 = rotated_target - player.global_position
+	var rotated_expected: float = asin(clampf(rotated_rel.dot(player.global_basis.w) / rotated_rel.length(), -1.0, 1.0))
+	print("16b.angle_off_slice_rotated: expected=%.5f actual=%.5f (match=%s)" % [
+		rotated_expected, rotated_bearing.angle_off_slice, is_equal_approx(rotated_expected, rotated_bearing.angle_off_slice),
+	])
+
+	# 17. Slice-alignment glow: independently recompute the opacity curve for
+	# a few configurations and confirm slice_glow's actual
+	# _compute_intensity() matches - 0 at/above 30deg off-slice, 1 at/below
+	# the reused epsilon's instantaneous angle, t^2 ease between.
+	player.global_position = Vector4(0, 1, 7, 0)
+	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	var glow_cases: Array = [
+		Vector4(0, 1.5, 0, 0), # dead ahead, w=0 exactly -> angle 0 -> full opacity.
+		Vector4(0, 1.5, 0, 20), # far off in w -> large angle -> 0 opacity.
+		Vector4(0, 1.5, 0, 1.0), # partway off -> should ease between.
+	]
+	for target_pos in glow_cases:
+		spawner._current_target.global_position = target_pos
+		await _wait_physics_frames(1)
+		var glow_bearing: Dictionary = BearingUtility4D.compute(player, target_pos)
+		var rel_length: float = glow_bearing.rel.length()
+		var angle_deg: float = absf(rad_to_deg(glow_bearing.angle_off_slice))
+		var inner_deg: float = (
+			rad_to_deg(asin(clampf(0.25 / rel_length, -1.0, 1.0))) if rel_length > 0.0001 else 0.0
+		)
+		var expected_opacity: float
+		if angle_deg <= inner_deg:
+			expected_opacity = 1.0
+		elif angle_deg >= 30.0:
+			expected_opacity = 0.0
+		else:
+			var t: float = clampf((30.0 - angle_deg) / (30.0 - inner_deg), 0.0, 1.0)
+			expected_opacity = t * t
+		var actual_opacity: float = slice_glow._compute_intensity()
+		print("17.glow_opacity(target=%s): angle_deg=%.3f inner_deg=%.3f expected=%.4f actual=%.4f (match=%s)" % [
+			target_pos, angle_deg, inner_deg, expected_opacity, actual_opacity, is_equal_approx(expected_opacity, actual_opacity),
+		])
+
+	# 18. Radar widget: sanity-check the projection sign convention with
+	# simple, hand-derivable bearings (identity basis).
+	player.global_position = Vector4(0, 1, 0, 0)
+	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	var right_bearing: Dictionary = BearingUtility4D.compute(player, Vector4(5, 1, 0, 0))
+	print("18a.radar_right(target 5 units right): right_component=%.2f depth_component=%.2f (expect ~5, ~0)" % [
+		right_bearing.right_component, right_bearing.depth_component,
+	])
+	var ahead_bearing: Dictionary = BearingUtility4D.compute(player, Vector4(0, 1, -5, 0))
+	print("18b.radar_ahead(target 5 units ahead/-z): right_component=%.2f depth_component=%.2f (expect ~0, ~-5 -> negative screen offset -> up)" % [
+		ahead_bearing.right_component, ahead_bearing.depth_component,
+	])
+	var ana_bearing: Dictionary = BearingUtility4D.compute(player, Vector4(0, 1, 0, 3))
+	print("18c.radar_ana(target +3 in w): ana_offset=%.2f (expect ~3, stem should draw UP per positive=up convention)" % [ana_bearing.ana_offset])
 
 	# Visual check: fresh duck near the midpoint of its path (x=0, on the
 	# player's default sightline) alongside the red target, for a clean shot.

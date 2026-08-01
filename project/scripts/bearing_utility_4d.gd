@@ -21,10 +21,12 @@ extends RefCounted
 static func compute(body: Node4D, target_position: Vector4) -> Dictionary:
 	var rel: Vector4 = target_position - body.global_position
 	var basis: Projection = body.global_basis
+	var ana_offset: float = rel.dot(basis.w)
+	var rel_length: float = rel.length()
 	return {
 		"rel": rel,
 		# Zero = exactly on the slice boundary (visible). Sign = which side.
-		"ana_offset": rel.dot(basis.w),
+		"ana_offset": ana_offset,
 		# Governs how much xw (right-ana) rotation is needed.
 		"right_component": rel.dot(basis.x),
 		# Governs how much zw (forward-ana) rotation is needed. This engine's
@@ -32,6 +34,14 @@ static func compute(body: Node4D, target_position: Vector4) -> Dictionary:
 		# depth_component - the name describes what it governs, not "how far
 		# ahead" in an intuitive positive-is-forward sense.
 		"depth_component": rel.dot(basis.z),
+		# How far off the current slice the target is, as a genuine angle
+		# rather than a raw distance - a fixed distance threshold behaves
+		# inconsistently depending on range (trivial to satisfy for a close
+		# target, near-impossible for a far one at the same raw ana_offset);
+		# an angle is range-independent. rel_length==0 only when body is
+		# exactly at target_position - falls back to 0 rather than dividing
+		# by zero.
+		"angle_off_slice": asin(clampf(ana_offset / rel_length, -1.0, 1.0)) if rel_length > 0.0001 else 0.0,
 	}
 
 ## Sign of the xw-plane rotation (feed into Rotor4D.from_xw(sign * step)) that

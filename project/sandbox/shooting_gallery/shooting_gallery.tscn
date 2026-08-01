@@ -11,6 +11,9 @@
 [ext_resource type="Script" path="res://scripts/minimap_overlay.gd" id="9_minimap_overlay"]
 [ext_resource type="Shader" path="res://scripts/minimap_circle_mask.gdshader" id="10_circle_mask"]
 [ext_resource type="Script" path="res://scripts/fall_respawn.gd" id="11_fall_respawn"]
+[ext_resource type="Script" path="res://scripts/slice_radar.gd" id="12_slice_radar"]
+[ext_resource type="Script" path="res://scripts/slice_alignment_glow.gd" id="13_slice_glow"]
+[ext_resource type="Shader" path="res://scripts/slice_alignment_glow.gdshader" id="14_slice_glow_shader"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_orange"]
 size = Vector4(10, 1, 10, 10)
@@ -41,6 +44,9 @@ albedo_color = Color(0.5, 0.5, 0.5, 1)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_minimap_mask"]
 shader = ExtResource("10_circle_mask")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_slice_glow"]
+shader = ExtResource("14_slice_glow_shader")
 
 [node name="ShootingGallery" type="Control"]
 layout_mode = 3
@@ -170,3 +176,24 @@ offset_right = -16.0
 offset_bottom = -16.0
 mouse_filter = 2
 script = ExtResource("9_minimap_overlay")
+
+[node name="SliceRadar" type="Control" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -236.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 156.0
+mouse_filter = 2
+script = ExtResource("12_slice_radar")
+
+[node name="SliceAlignmentGlow" type="Control" parent="."]
+material = SubResource("ShaderMaterial_slice_glow")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("13_slice_glow")
