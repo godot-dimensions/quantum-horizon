@@ -24,14 +24,6 @@ const W_RANGE := 20.0
 const HOVER_Y_MIN := 1.0
 const HOVER_Y_MAX := 2.0
 
-## The target box (gallery_target.tscn) is a 1-unit BoxTetraMesh4D, so its
-## w-extent is target.w +- 0.5. "Middle half, at least a quarter in from any
-## edge" excludes the outer 0.25 on each end, leaving target.w +- 0.25.
-const MIDDLE_HALF_W_MARGIN := 0.25
-const TARGET_DEFAULT_COLOR := Color(0.9, 0.1, 0.1, 1) # matches gallery_target.tscn's own albedo_color.
-const TARGET_SLICE_HIGHLIGHT_COLOR := Color(0.2, 0.9, 0.2, 1)
-
-@onready var player: CharacterBody4D = $"../Player"
 @onready var time_label: Label = $TimeLabel
 @onready var result_label: Label = $ResultLabel
 
@@ -39,7 +31,6 @@ var _catch_count: int = 0
 var _total_elapsed_sec: float = 0.0
 var _spawn_time_msec: int = 0
 var _current_target: Node4D = null
-var _current_target_material: Resource = null
 var _stopwatch_visible: bool = false
 
 func _ready() -> void:
@@ -57,17 +48,6 @@ func _process(_delta: float) -> void:
 		var elapsed: float = (Time.get_ticks_msec() - _spawn_time_msec) / 1000.0
 		var average: float = (_total_elapsed_sec / _catch_count) if _catch_count > 0 else 0.0
 		time_label.text = "Elapsed: %.1fs | Avg: %.1fs (%d catches)" % [elapsed, average, _catch_count]
-	if _current_target != null:
-		# Cross-section rendering slices at the camera's local w=0, and the
-		# camera carries no w-offset from Player (PlayerHead/FirstPersonCamera
-		# are both w=0 in local space) - so the player's own global w IS the
-		# world-space w of the currently-visible slice. Doubles as an aiming
-		# aid here: green means this target is actually in the visible slice.
-		var slice_w: float = player.global_position.w
-		var w_offset: float = absf(slice_w - _current_target.global_position.w)
-		_current_target_material.albedo_color = (
-			TARGET_SLICE_HIGHLIGHT_COLOR if w_offset <= MIDDLE_HALF_W_MARGIN else TARGET_DEFAULT_COLOR
-		)
 
 ## Called by hitscan_weapon.gd with the raycast hit's "body" result. Returns
 ## whether it was actually the current target (so the caller can tell a hit
@@ -97,11 +77,6 @@ func _spawn_new_target() -> void:
 	target.position = _random_spawn_position()
 	_current_target = target
 	_spawn_time_msec = Time.get_ticks_msec()
-	# The material is a shared scene sub-resource - duplicate it so recoloring
-	# this target doesn't bleed into every other GalleryTarget instance.
-	var mesh: MeshInstance4D = target.get_node("Mesh")
-	_current_target_material = mesh.material_override.duplicate()
-	mesh.material_override = _current_target_material
 
 func _random_spawn_position() -> Vector4:
 	return Vector4(

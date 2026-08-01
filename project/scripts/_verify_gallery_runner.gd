@@ -122,6 +122,26 @@ func _run() -> void:
 		miss_result.get("hit", false), miss_caught, spawner._catch_count == miss_before_count,
 	])
 
+	# 8b. Real input pipeline: simulate an actual left mouse click (not a
+	# direct _fire()/raycast call) and confirm it reaches hitscan_weapon.gd's
+	# _input() handler and registers a catch. This is the exact path that was
+	# broken when it used _unhandled_input() - the full-screen Control root's
+	# default mouse_filter=STOP silently swallows clicks before they ever
+	# reach _unhandled_input, even though _input() (used by player.gd's own
+	# mouse-look/rotate_4d) is unaffected by that and kept working, masking
+	# the bug.
+	player.global_position = Vector4(0, 1, 7, 0)
+	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	spawner._current_target.global_position = Vector4(0, 1.75, 0, 0)
+	await _wait_physics_frames(2)
+	var click_before_count: int = spawner._catch_count
+	var click_event := InputEventMouseButton.new()
+	click_event.button_index = MOUSE_BUTTON_LEFT
+	click_event.pressed = true
+	Input.parse_input_event(click_event)
+	await _wait_physics_frames(2)
+	print("8a.simulated_left_click: catch_count %d->%d (expect an increment of 1)" % [click_before_count, spawner._catch_count])
+
 	# 8. POI arrow still makes sense: player somewhere on the green floor,
 	# identity basis, compare against the same independently-recomputed
 	# formula used throughout the earlier verification (now against this

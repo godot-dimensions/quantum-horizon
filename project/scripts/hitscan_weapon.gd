@@ -13,7 +13,7 @@ extends Node
 @onready var player_head: Node4D = $"../FlatPlane/Player/PlayerHead"
 @onready var spawner: Node4D = $"../FlatPlane/GalleryTargetSpawner"
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"fire"):
 		_fire()
 
