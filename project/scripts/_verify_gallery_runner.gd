@@ -317,29 +317,35 @@ func _run() -> void:
 		speed_before_pulse, speed_just_after_fire, gun_core.pulse_speed_multiplier, speed_after_settling,
 	])
 
-	# 20d. The zw component of the isoclinic spin only produces a visible
-	# cross-section effect if the mesh's own w-extent is big enough for
-	# vertices to actually swing away from w=0 as it rotates - track a known
-	# extreme local vertex (0,0,0,half_w) through real rotation frames and
-	# confirm its global w-offset from the camera swings through a
-	# meaningful range, not staying near zero the whole time (which is
-	# exactly what made the effect invisible before this mesh had a proper
-	# w-extent - the basis was genuinely changing, per 20b, but nothing was
-	# moving far enough in w for it to show).
+	# 20d. The xw component of the isoclinic spin needs the mesh's w-extent
+	# to actually swing away from w=0 for the cross-section effect to be
+	# visible at all - but that swing has to land somewhere. xw redirects it
+	# into x (open space beside the viewmodel) instead of z (where Barrel/
+	# Stock physically sit) - the first version of this script used zw,
+	# which put that same swing directly into z and clipped straight through
+	# them (confirmed by watching the render, not just the basis-changed
+	# check). Track a known extreme local vertex (0,0,0,half_w) through real
+	# rotation frames and confirm: its global x-offset swings through a
+	# meaningful range (the effect is still genuinely happening), while its
+	# z-offset stays small throughout (nothing is clipping into the
+	# neighboring gun parts anymore).
 	var core_half_w: float = gun_core.mesh.get_size().w / 2.0
 	var local_extreme_vertex := Vector4(0, 0, 0, core_half_w)
-	var w_offsets: Array = []
+	var x_offsets: Array = []
+	var z_offsets: Array = []
 	player.global_position = Vector4(0, 1, 7, 0)
 	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
 	for i in 40:
 		var global_vertex: Vector4 = gun_core.global_position + (gun_core.global_basis * local_extreme_vertex)
-		w_offsets.append(absf(global_vertex.w - player_head.global_position.w))
+		x_offsets.append(absf(global_vertex.x - gun_core.global_position.x))
+		z_offsets.append(absf(global_vertex.z - gun_core.global_position.z))
 		if i % 10 == 0:
 			await _screenshot("gallery_gun_core_spin_%d.png" % i)
 		await _wait_physics_frames(1)
-	var max_w_offset: float = w_offsets.max()
-	print("20d.gun_core_w_swing: core_half_w=%.2f max_abs_w_offset_over_40_frames=%.3f (expect a large fraction of half_w, not near zero)" % [
-		core_half_w, max_w_offset,
+	var max_x_offset: float = x_offsets.max()
+	var max_z_offset: float = z_offsets.max()
+	print("20d.gun_core_w_swing: core_half_w=%.2f max_abs_x_offset=%.3f (expect a large fraction of half_w) max_abs_z_offset=%.3f (expect small, no more clipping into barrel/stock)" % [
+		core_half_w, max_x_offset, max_z_offset,
 	])
 
 	# Visual check: fresh duck near the midpoint of its path (x=0, on the
