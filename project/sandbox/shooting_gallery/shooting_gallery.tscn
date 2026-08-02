@@ -158,12 +158,15 @@ offset_bottom = 8.0
 script = ExtResource("5_hitscan")
 
 [node name="SliceRadar" type="Control" parent="."]
-anchor_left = 0.326389
-anchor_right = 0.673611
-anchor_top = 0.660494
+layout_mode = 1
+anchor_left = 0.333
+anchor_top = 0.5
+anchor_right = 0.667
 anchor_bottom = 1.0
 mouse_filter = 2
 script = ExtResource("12_slice_radar")
+axis_label_style = 2
+axis_line_style = 2
 
 [node name="SliceAlignmentGlow" type="Control" parent="."]
 material = SubResource("ShaderMaterial_slice_glow")

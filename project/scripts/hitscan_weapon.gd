@@ -23,6 +23,7 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"fire"):
 		_fire()
 
+
 func _fire() -> void:
 	gun_core.pulse()
 	var ray_params := RaycastParameters4D.new()

@@ -26,7 +26,6 @@ extends Control
 ## ease formula above; the underlying "genuinely intersecting" criterion
 ## itself stays anchored to that real physical margin, not a made-up angle.
 
-const BearingUtility4D = preload("res://scripts/bearing_utility_4d.gd")
 
 const OUTER_ANGLE_THRESHOLD_DEG := 30.0
 const IN_SLICE_DISTANCE_EPSILON := 0.25
