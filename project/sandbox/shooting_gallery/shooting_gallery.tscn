@@ -112,7 +112,8 @@ mesh = SubResource("BoxTetraMesh4D_gun_stock")
 material_override = SubResource("TetraMaterial4D_gun_metal")
 
 [node name="Core" type="MeshInstance4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel"]
-basis = Projection(0.16, 0, 0, 0, 0, 0.16, 0, 0, 0, 0, 0.16, 0, 0, 0, 0, 0.16)
+position = Vector4(0, 0, -0.01, 0)
+basis = Projection(0.045, 0, 0, 0, 0, 0.045, 0, 0, 0, 0, 0.045, 0, 0, 0, 0, 0.045)
 mesh = ExtResource("16_600_cell_mesh")
 material_override = SubResource("WireMaterial4D_gun_core")
 script = ExtResource("15_gun_core_rotator")

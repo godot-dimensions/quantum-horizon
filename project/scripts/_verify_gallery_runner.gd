@@ -14,6 +14,7 @@ extends Node
 @onready var gun_core: Node4D = $"../Gallery/FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel/Core"
 @onready var hitscan_weapon: Node = $"../Gallery/HitscanWeapon"
 const BearingUtility4D = preload("res://scripts/bearing_utility_4d.gd")
+const PoofEffect4D = preload("res://scripts/poof_effect_4d.gd")
 
 func _wait_physics_frames(count: int) -> void:
 	for i in count:
@@ -355,8 +356,53 @@ func _run() -> void:
 		local_extreme_vertex, max_x_offset, max_z_offset,
 	])
 
+	# 21. Glow pulse: confirm the core's material brightens right after
+	# firing then eases back down in sync with the existing speed-multiplier
+	# decay. No Environment/bloom check here - that approach was tried and
+	# reverted (see gun_core_rotator.gd's doc comment: it blew out the whole
+	# screen), so the glow is now just a safe, capped color lerp.
+	await _wait_physics_frames(2)
+	var color_before_pulse: Color = gun_core.material_override.albedo_color
+	gun_core.pulse()
+	await _wait_physics_frames(2)
+	var color_just_after_pulse: Color = gun_core.material_override.albedo_color
+	await _wait_physics_frames(60)
+	var color_after_settling: Color = gun_core.material_override.albedo_color
+	# Green channel differs most between base (0.25) and hot (0.8) - just-
+	# after should spike well above both the before and settled values.
+	print("21b.glow_pulses_with_fire: green_before=%.3f green_just_after=%.3f (expect higher) green_after_settling=%.3f (expect back down near green_before)" % [
+		color_before_pulse.g, color_just_after_pulse.g, color_after_settling.g,
+	])
+
+	# 22. Poof effect: fire a real shot that hits the target, confirm a poof
+	# effect spawns as a child of the spawner, its particles genuinely move,
+	# and it self-destructs after its own lifetime.
+	player.global_position = Vector4(0, 1, 7, 0)
+	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	spawner._current_target.global_position = Vector4(0, 1.75, 0, 0)
+	await _wait_physics_frames(2)
+	hitscan_weapon._fire()
+	await _wait_physics_frames(2)
+	var poof_node: Node = null
+	for child in spawner.get_children():
+		if child.get_script() == PoofEffect4D:
+			poof_node = child
+			break
+	print("22a.poof_spawns_on_hit: poof_found=%s particle_count=%s (expect true, 10)" % [
+		poof_node != null, (poof_node.get_child_count() if poof_node != null else -1),
+	])
+	if poof_node != null:
+		var particle_pos_before: Vector4 = poof_node.get_child(0).position
+		await _wait_physics_frames(5)
+		var particle_pos_after: Vector4 = poof_node.get_child(0).position
+		print("22b.poof_particles_move: moved=%s" % [not particle_pos_before.is_equal_approx(particle_pos_after)])
+	await _wait_physics_frames(30) # LIFETIME_SEC=0.4s -> ~24 physics frames at 60fps, plus margin.
+	var poof_still_exists: bool = poof_node != null and is_instance_valid(poof_node) and poof_node.is_inside_tree()
+	print("22c.poof_self_destructs: still_exists_after_lifetime=%s (expect false)" % [poof_still_exists])
+
 	# Visual check: fresh duck near the midpoint of its path (x=0, on the
-	# player's default sightline) alongside the red target, for a clean shot.
+	# player's default sightline) alongside the red target, for a clean shot,
+	# plus a fresh poof burst right at the moment of the screenshot.
 	player.global_position = Vector4(0, 1, 7, 0)
 	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
 	spawner._current_target.global_position = Vector4(2, 1.5, -1, 1)
@@ -364,6 +410,10 @@ func _run() -> void:
 	duck_spawner.add_child(visible_duck)
 	visible_duck.position = Vector4(0, 1.5, -2, 0)
 	duck_spawner._ducks.append(visible_duck)
+	var visible_poof := Node4D.new()
+	visible_poof.set_script(PoofEffect4D)
+	spawner.add_child(visible_poof)
+	visible_poof.global_position = Vector4(0.3, 1.6, -1.5, 0)
 	await _wait_physics_frames(2)
 	await _screenshot("gallery_overview.png")
 

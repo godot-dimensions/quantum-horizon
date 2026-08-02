@@ -41,11 +41,27 @@ extends MeshInstance4D
 ##
 ## Speeds up briefly on fire (call pulse()) then eases back down to
 ## base_speed - an exponential decay of the speed multiplier back toward
-## 1.0, not an instant snap.
+## 1.0, not an instant snap. The same decayed _speed_multiplier also drives
+## a glow: the material brightens toward hot_color right as you fire and
+## eases back to base_color in sync with the spin settling down, rather
+## than being a separate, independently-timed effect.
+##
+## Deliberately NOT real HDR/bloom: tried enabling glow on the viewport's
+## World3D with hot_color pushed above 1.0, and it blew out the ENTIRE
+## screen, not just the core - confirmed via screenshot, not just assumed.
+## With ~720 overlapping wireframe edges in a small screen area, their
+## cumulative brightness in the framebuffer blooms far more aggressively
+## than a single bright surface would, and there was no quick, confidently-
+## safe way to tune that blind. hot_color here stays under 1.0 - a
+## noticeably brighter, more saturated color read as "glow" without any
+## bloom risk.
 
 @export var base_speed: float = 1.5 # Radians per second, in each of the xw/yz planes.
 @export var pulse_speed_multiplier: float = 6.0
 @export var pulse_decay_rate: float = 4.0 # Higher = settles back to base_speed faster.
+
+@export var base_color: Color = Color(0.55, 0.25, 0.95, 1.0)
+@export var hot_color: Color = Color(0.95, 0.8, 1.0, 1.0) # Bright, but capped at 1.0 - no bloom risk.
 
 var _speed_multiplier: float = 1.0
 
@@ -62,6 +78,9 @@ func _process(delta: float) -> void:
 	_speed_multiplier = 1.0 + (_speed_multiplier - 1.0) * exp(-pulse_decay_rate * delta)
 	var angle: float = base_speed * _speed_multiplier * delta
 	rotate_rotor_local(Rotor4D.from_xw(angle).rotate_rotor(Rotor4D.from_yz(angle)))
+
+	var glow_t: float = clampf((_speed_multiplier - 1.0) / (pulse_speed_multiplier - 1.0), 0.0, 1.0)
+	material_override.albedo_color = base_color.lerp(hot_color, glow_t)
 
 
 func pulse() -> void:

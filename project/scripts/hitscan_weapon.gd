@@ -3,11 +3,15 @@ extends Node
 ## catch check. Left-click ("fire") raycasts from the player's head along its
 ## forward direction - Aaron's confirmed-working pattern (see player.gd's own
 ## rotate_4d raycast test) - and, if it hits the spawner's current target,
-## triggers the same despawn+respawn/timer logic already built.
+## triggers the same despawn+respawn/timer logic already built. On any
+## successful hit (red target or duck alike), also spawns a poof_effect_4d.gd
+## burst at the raycast's actual impact point.
 ##
 ## Reads Player/PlayerHead from outside rather than adding this to player.gd -
 ## firing doesn't need to touch movement or the existing rotate_4d raycast
 ## test, so there's no reason for it to live inside the controller script.
+
+const PoofEffect4D := preload("res://scripts/poof_effect_4d.gd")
 
 @onready var player: CharacterBody4D = $"../FlatPlane/Player"
 @onready var player_head: Node4D = $"../FlatPlane/Player/PlayerHead"
@@ -36,6 +40,14 @@ func _fire() -> void:
 	if not result.get("hit", false):
 		return
 	var hit_body: Object = result["body"]
-	if spawner.try_catch_target(hit_body):
-		return
-	duck_spawner.try_hit_duck(hit_body)
+	var caught: bool = spawner.try_catch_target(hit_body)
+	if not caught:
+		caught = duck_spawner.try_hit_duck(hit_body)
+	if caught:
+		_spawn_poof(result.get("global_point", hit_body.global_position))
+
+func _spawn_poof(at_position: Vector4) -> void:
+	var poof := Node4D.new()
+	poof.set_script(PoofEffect4D)
+	spawner.add_child(poof)
+	poof.global_position = at_position
