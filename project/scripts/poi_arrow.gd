@@ -25,6 +25,7 @@ const BearingUtility4D = preload("res://scripts/bearing_utility_4d.gd")
 const SPAWN_AREA_CENTER := Vector4(0.0, 0.0, 0.0, 0.0)
 
 const TRIANGLE_SIZE := 28.0
+const LENGTH_SCALE := 30
 ## Bright red rather than white/gray - the scene's floor has no material
 ## override (renders in the default fallback white), so a near-white or gray
 ## triangle would blend into the background depending on which way it's
@@ -40,9 +41,7 @@ const TRIANGLE_COLOR := Color(1.0, 0.15, 0.1, 0.95)
 const DEAD_ZONE_RADIUS := 0.5
 
 @onready var player: CharacterBody4D = $"../FlatPlane/Player"
-
-func _ready() -> void:
-	pivot_offset = size / 2.0
+var angle_to_turn = 0
 
 func _process(_delta: float) -> void:
 	var bearing: Dictionary = BearingUtility4D.compute(player, SPAWN_AREA_CENTER)
@@ -55,12 +54,15 @@ func _process(_delta: float) -> void:
 	# this directly matches: rotating the "points up" triangle clockwise by
 	# this angle sweeps it toward "points right" first, exactly when the
 	# target actually is to the right.
-	rotation = atan2(bearing.right_component, -bearing.depth_component)
+	rotation = atan2(-bearing.right_component * bearing.angle_off_slice, -bearing.depth_component * bearing.angle_off_slice)
+	angle_to_turn = abs(bearing.angle_off_slice)
 
 func _draw() -> void:
+	var length = -angle_to_turn * LENGTH_SCALE
 	var points := PackedVector2Array([
-		Vector2(TRIANGLE_SIZE / 2.0, 0.0), # apex, pointing "up" at rotation=0
-		Vector2(TRIANGLE_SIZE, TRIANGLE_SIZE),
-		Vector2(0.0, TRIANGLE_SIZE),
+		Vector2(0, length - TRIANGLE_SIZE), # apex, pointing "up" at rotation=0
+		Vector2(-TRIANGLE_SIZE/2, length),
+		Vector2(TRIANGLE_SIZE/2, length),
 	])
 	draw_colored_polygon(points, TRIANGLE_COLOR)
+	draw_line(Vector2(0,0), Vector2(0, length), TRIANGLE_COLOR, 5, true)
