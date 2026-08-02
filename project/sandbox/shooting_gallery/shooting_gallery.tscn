@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://scripts/slice_alignment_glow.gd" id="13_slice_glow"]
 [ext_resource type="Shader" path="res://scripts/slice_alignment_glow.gdshader" id="14_slice_glow_shader"]
 [ext_resource type="Script" path="res://scripts/gun_core_rotator.gd" id="15_gun_core_rotator"]
+[ext_resource type="Mesh4D" uid="uid://u62ydn7uiys0" path="res://models/primitives/platonic/600_cell/600_cell.g4b" id="16_600_cell_mesh"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_orange"]
 size = Vector4(10, 1, 10, 10)
@@ -47,14 +48,12 @@ size = Vector4(0.05, 0.05, 0.3, 0.05)
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gun_stock"]
 size = Vector4(0.06, 0.1, 0.22, 0.06)
 
-[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gun_core"]
-size = Vector4(0.16, 0.16, 0.16, 1.2)
-
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_gun_metal"]
 albedo_color = Color(0.22, 0.22, 0.25, 1)
 
-[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_gun_core"]
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_gun_core"]
 albedo_color = Color(0.55, 0.25, 0.95, 1)
+line_thickness = 2.0
 
 [node name="ShootingGallery" type="Control"]
 layout_mode = 3
@@ -113,8 +112,9 @@ mesh = SubResource("BoxTetraMesh4D_gun_stock")
 material_override = SubResource("TetraMaterial4D_gun_metal")
 
 [node name="Core" type="MeshInstance4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel"]
-mesh = SubResource("BoxTetraMesh4D_gun_core")
-material_override = SubResource("TetraMaterial4D_gun_core")
+basis = Projection(0.16, 0, 0, 0, 0, 0.16, 0, 0, 0, 0, 0.16, 0, 0, 0, 0, 0.16)
+mesh = ExtResource("16_600_cell_mesh")
+material_override = SubResource("WireMaterial4D_gun_core")
 script = ExtResource("15_gun_core_rotator")
 
 [node name="GalleryTargetSpawner" type="Node4D" parent="FlatPlane"]
