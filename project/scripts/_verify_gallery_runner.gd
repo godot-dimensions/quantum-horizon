@@ -11,6 +11,8 @@ extends Node
 @onready var fall_respawn: Node = $"../Gallery/FlatPlane/FallRespawn"
 @onready var slice_radar: Control = $"../Gallery/SliceRadar"
 @onready var slice_glow: Control = $"../Gallery/SliceAlignmentGlow"
+@onready var gun_core: Node4D = $"../Gallery/FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel/Core"
+@onready var hitscan_weapon: Node = $"../Gallery/HitscanWeapon"
 const BearingUtility4D = preload("res://scripts/bearing_utility_4d.gd")
 
 func _wait_physics_frames(count: int) -> void:
@@ -293,6 +295,27 @@ func _run() -> void:
 	await _screenshot("gallery_radar_fullscreen_size.png")
 	get_window().size = original_window_size
 	await _wait_physics_frames(3)
+
+	# 20. Gun viewmodel: core rotates continuously (isoclinic xy+zw), and
+	# firing pulses the spin rate, which then decays back toward base speed.
+	print("20a.gun_core_resolves: %s" % [gun_core != null])
+	var basis_t0: Projection = gun_core.global_basis
+	await _wait_physics_frames(10)
+	var basis_t1: Projection = gun_core.global_basis
+	var rotated: bool = not (
+		basis_t0.x.is_equal_approx(basis_t1.x) and basis_t0.y.is_equal_approx(basis_t1.y)
+		and basis_t0.z.is_equal_approx(basis_t1.z) and basis_t0.w.is_equal_approx(basis_t1.w)
+	)
+	print("20b.gun_core_spins_continuously: basis_changed=%s (expect true)" % [rotated])
+
+	var speed_before_pulse: float = gun_core._speed_multiplier
+	hitscan_weapon._fire() # exercises the real fire path, not just calling pulse() in isolation.
+	var speed_just_after_fire: float = gun_core._speed_multiplier
+	await _wait_physics_frames(30)
+	var speed_after_settling: float = gun_core._speed_multiplier
+	print("20c.gun_core_pulse_on_fire: before=%.3f just_after=%.3f (expect ~%.1f) after_settling=%.3f (expect closer to 1.0 than just_after)" % [
+		speed_before_pulse, speed_just_after_fire, gun_core.pulse_speed_multiplier, speed_after_settling,
+	])
 
 	# Visual check: fresh duck near the midpoint of its path (x=0, on the
 	# player's default sightline) alongside the red target, for a clean shot.

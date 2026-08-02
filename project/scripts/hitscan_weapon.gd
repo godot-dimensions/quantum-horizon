@@ -13,12 +13,14 @@ extends Node
 @onready var player_head: Node4D = $"../FlatPlane/Player/PlayerHead"
 @onready var spawner: Node4D = $"../FlatPlane/GalleryTargetSpawner"
 @onready var duck_spawner: Node4D = $"../FlatPlane/DuckRowSpawner"
+@onready var gun_core: Node4D = $"../FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel/Core"
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"fire"):
 		_fire()
 
 func _fire() -> void:
+	gun_core.pulse()
 	var ray_params := RaycastParameters4D.new()
 	ray_params.global_ray_origin = player_head.global_position
 	ray_params.global_ray_direction = -player_head.global_basis.z
