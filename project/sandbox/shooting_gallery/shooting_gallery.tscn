@@ -123,14 +123,10 @@ offset_bottom = 8.0
 script = ExtResource("5_hitscan")
 
 [node name="SliceRadar" type="Control" parent="."]
-anchor_left = 0.5
-anchor_right = 0.5
-anchor_top = 1.0
+anchor_left = 0.326389
+anchor_right = 0.673611
+anchor_top = 0.660494
 anchor_bottom = 1.0
-offset_left = -200.0
-offset_right = 200.0
-offset_top = -220.0
-offset_bottom = 0.0
 mouse_filter = 2
 script = ExtResource("12_slice_radar")
 

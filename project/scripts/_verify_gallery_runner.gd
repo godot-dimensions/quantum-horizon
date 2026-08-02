@@ -273,6 +273,27 @@ func _run() -> void:
 	var ana_bearing: Dictionary = BearingUtility4D.compute(player, Vector4(0, 1, 0, 3))
 	print("18c.radar_ana(target +3 in w): ana_offset=%.2f (expect ~3, stem should draw UP per positive=up convention)" % [ana_bearing.ana_offset])
 
+	# 19. Radar auto-scales with window size: resize the actual OS window to
+	# a much larger "fullscreen-like" resolution and confirm the widget's
+	# rect and derived ellipse radius/scale grow proportionally, not staying
+	# pinned to whatever they were at the original window size.
+	var original_window_size: Vector2i = get_window().size
+	var size_before: Vector2 = slice_radar.size
+	var radius_before: float = slice_radar._ellipse_radius_x
+	get_window().size = Vector2i(1920, 1080)
+	await _wait_physics_frames(3)
+	var size_after: Vector2 = slice_radar.size
+	var radius_after: float = slice_radar._ellipse_radius_x
+	var width_ratio: float = size_after.x / size_before.x
+	var expected_ratio: float = 1920.0 / float(original_window_size.x)
+	print("19.radar_autoscale: size_before=%s size_after=%s width_ratio=%.4f expected_ratio=%.4f (match=%s) radius_before=%.2f radius_after=%.2f radius_grew=%s" % [
+		size_before, size_after, width_ratio, expected_ratio, is_equal_approx(width_ratio, expected_ratio),
+		radius_before, radius_after, radius_after > radius_before,
+	])
+	await _screenshot("gallery_radar_fullscreen_size.png")
+	get_window().size = original_window_size
+	await _wait_physics_frames(3)
+
 	# Visual check: fresh duck near the midpoint of its path (x=0, on the
 	# player's default sightline) alongside the red target, for a clean shot.
 	player.global_position = Vector4(0, 1, 7, 0)
