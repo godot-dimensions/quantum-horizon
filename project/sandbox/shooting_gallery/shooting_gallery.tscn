@@ -48,7 +48,7 @@ size = Vector4(0.05, 0.05, 0.3, 0.05)
 size = Vector4(0.06, 0.1, 0.22, 0.06)
 
 [sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_gun_core"]
-size = Vector4(0.16, 0.16, 0.16, 0.16)
+size = Vector4(0.16, 0.16, 0.16, 6.0)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_gun_metal"]
 albedo_color = Color(0.22, 0.22, 0.25, 1)
