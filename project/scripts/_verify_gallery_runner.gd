@@ -280,13 +280,17 @@ func _run() -> void:
 	# a much larger "fullscreen-like" resolution and confirm the widget's
 	# rect and derived ellipse radius/scale grow proportionally, not staying
 	# pinned to whatever they were at the original window size.
+	# _ellipse_radius_x no longer exists as a stored field - Aaron's radar
+	# rewrite now derives the ellipse radius purely from `size` inside
+	# _draw() each frame (radii.x = size.x * 0.5 * ellipse_margin_ratio), so
+	# recompute the same way here rather than reading internal state.
 	var original_window_size: Vector2i = get_window().size
 	var size_before: Vector2 = slice_radar.size
-	var radius_before: float = slice_radar._ellipse_radius_x
+	var radius_before: float = size_before.x * 0.5 * 0.9
 	get_window().size = Vector2i(1920, 1080)
 	await _wait_physics_frames(3)
 	var size_after: Vector2 = slice_radar.size
-	var radius_after: float = slice_radar._ellipse_radius_x
+	var radius_after: float = size_after.x * 0.5 * 0.9
 	var width_ratio: float = size_after.x / size_before.x
 	var expected_ratio: float = 1920.0 / float(original_window_size.x)
 	print("19.radar_autoscale: size_before=%s size_after=%s width_ratio=%.4f expected_ratio=%.4f (match=%s) radius_before=%.2f radius_after=%.2f radius_grew=%s" % [

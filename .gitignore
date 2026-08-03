@@ -39,3 +39,8 @@ mono_crash.*.json
 # Operating system files
 .DS_Store
 Thumbs.db
+
+# Regenerated verification-run screenshots - not meant to be version controlled,
+# and re-running the suite locally leaves them modified, which blocks git lfs
+# checkout for anyone else's clone (see project/smoke_test_output/).
+project/smoke_test_output/
