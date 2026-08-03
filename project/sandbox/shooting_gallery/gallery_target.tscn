@@ -1,13 +1,11 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://dftmv47smoguq"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_gallery_target"]
-size = Vector4(1, 1, 1, 1)
-
-[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gallery_target"]
-size = Vector4(1, 1, 1, 1)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_gallery_target"]
 albedo_color = Color(0.9, 0.1, 0.1, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gallery_target"]
 
 [node name="GalleryTarget" type="Area4D"]
 
@@ -15,5 +13,5 @@ albedo_color = Color(0.9, 0.1, 0.1, 1)
 shape = SubResource("BoxShape4D_gallery_target")
 
 [node name="Mesh" type="MeshInstance4D" parent="."]
-mesh = SubResource("BoxTetraMesh4D_gallery_target")
 material_override = SubResource("TetraMaterial4D_gallery_target")
+mesh = SubResource("BoxTetraMesh4D_gallery_target")

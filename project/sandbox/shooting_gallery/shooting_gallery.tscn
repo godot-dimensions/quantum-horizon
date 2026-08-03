@@ -1,46 +1,46 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=26 format=3 uid="uid://le06b3c02yx6"]
 
-[ext_resource type="PackedScene" path="res://player/player.tscn" id="1_player"]
-[ext_resource type="Script" path="res://scripts/gallery_target_spawner.gd" id="2_spawner"]
-[ext_resource type="Script" path="res://scripts/crosshair.gd" id="4_crosshair"]
-[ext_resource type="Script" path="res://scripts/hitscan_weapon.gd" id="5_hitscan"]
-[ext_resource type="Script" path="res://scripts/duck_row_spawner.gd" id="6_duck_spawner"]
-[ext_resource type="Script" path="res://scripts/fall_respawn.gd" id="11_fall_respawn"]
-[ext_resource type="Script" path="res://scripts/slice_radar.gd" id="12_slice_radar"]
-[ext_resource type="Script" path="res://scripts/slice_alignment_glow.gd" id="13_slice_glow"]
-[ext_resource type="Shader" path="res://scripts/slice_alignment_glow.gdshader" id="14_slice_glow_shader"]
-[ext_resource type="Script" path="res://scripts/gun_core_rotator.gd" id="15_gun_core_rotator"]
-[ext_resource type="Mesh4D" uid="uid://u62ydn7uiys0" path="res://models/primitives/platonic/600_cell/600_cell.g4b" id="16_600_cell_mesh"]
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://dv154ig7jkgas" path="res://scripts/gallery_target_spawner.gd" id="2_spawner"]
+[ext_resource type="Script" uid="uid://dk3j6d51h1t4m" path="res://scripts/crosshair.gd" id="4_crosshair"]
+[ext_resource type="Script" uid="uid://cmf0s2qg83t8" path="res://scripts/hitscan_weapon.gd" id="5_hitscan"]
+[ext_resource type="Script" uid="uid://bh6glm6kch2h4" path="res://scripts/duck_row_spawner.gd" id="6_duck_spawner"]
+[ext_resource type="Script" uid="uid://chc0ybpm3w0yb" path="res://scripts/fall_respawn.gd" id="11_fall_respawn"]
+[ext_resource type="Script" uid="uid://gknt5mgbwxd2" path="res://scripts/slice_radar.gd" id="12_slice_radar"]
+[ext_resource type="Script" uid="uid://ju3htor6fyc6" path="res://scripts/slice_alignment_glow.gd" id="13_slice_glow"]
+[ext_resource type="Shader" uid="uid://c725rif6jhuda" path="res://scripts/slice_alignment_glow.gdshader" id="14_slice_glow_shader"]
+[ext_resource type="Script" uid="uid://dnw11e64x67a1" path="res://scripts/gun_core_rotator.gd" id="15_gun_core_rotator"]
+[ext_resource type="ArrayTetraMesh4D" uid="uid://u62ydn7uiys0" path="res://models/primitives/platonic/600_cell/600_cell.g4b" id="16_600_cell_mesh"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_orange"]
-size = Vector4(10, 1, 10, 10)
-
-[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_orange"]
 size = Vector4(10, 1, 10, 10)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_orange"]
 albedo_color = Color(1, 0.6, 0.1, 1)
 
-[sub_resource type="BoxShape4D" id="BoxShape4D_green"]
-size = Vector4(10, 1, 4, 10)
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_orange"]
+size = Vector4(10, 1, 10, 10)
 
-[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_green"]
+[sub_resource type="BoxShape4D" id="BoxShape4D_green"]
 size = Vector4(10, 1, 4, 10)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_green"]
 albedo_color = Color(0.2, 0.8, 0.2, 1)
 
-[sub_resource type="BoxShape4D" id="BoxShape4D_barrier"]
-size = Vector4(10, 1.1, 0.3, 10)
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_green"]
+size = Vector4(10, 1, 4, 10)
 
-[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_barrier"]
+[sub_resource type="BoxShape4D" id="BoxShape4D_barrier"]
 size = Vector4(10, 1.1, 0.3, 10)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_barrier"]
 albedo_color = Color(0.5, 0.5, 0.5, 1)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_slice_glow"]
-shader = ExtResource("14_slice_glow_shader")
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_barrier"]
+size = Vector4(10, 1.1, 0.3, 10)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_gun_metal"]
+albedo_color = Color(0.22, 0.22, 0.25, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gun_barrel"]
 size = Vector4(0.05, 0.05, 0.3, 0.05)
@@ -48,12 +48,15 @@ size = Vector4(0.05, 0.05, 0.3, 0.05)
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gun_stock"]
 size = Vector4(0.06, 0.1, 0.22, 0.06)
 
-[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_gun_metal"]
-albedo_color = Color(0.22, 0.22, 0.25, 1)
-
 [sub_resource type="WireMaterial4D" id="WireMaterial4D_gun_core"]
-albedo_color = Color(0.55, 0.25, 0.95, 1)
 line_thickness = 2.0
+albedo_color = Color(0.55, 0.25, 0.95, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_slice_glow"]
+shader = ExtResource("14_slice_glow_shader")
+shader_parameter/glow_color = Color(0.2, 1, 0.35, 1)
+shader_parameter/intensity = 0.0
+shader_parameter/edge_thickness = 0.18
 
 [node name="ShootingGallery" type="Control"]
 layout_mode = 3
@@ -72,8 +75,8 @@ position = Vector4(0, -0.5, 0, 0)
 shape = SubResource("BoxShape4D_orange")
 
 [node name="Mesh" type="MeshInstance4D" parent="FlatPlane/OrangeFloor"]
-mesh = SubResource("BoxTetraMesh4D_orange")
 material_override = SubResource("TetraMaterial4D_orange")
+mesh = SubResource("BoxTetraMesh4D_orange")
 
 [node name="GreenFloor" type="StaticBody4D" parent="FlatPlane"]
 position = Vector4(0, -0.5, 7, 0)
@@ -82,8 +85,8 @@ position = Vector4(0, -0.5, 7, 0)
 shape = SubResource("BoxShape4D_green")
 
 [node name="Mesh" type="MeshInstance4D" parent="FlatPlane/GreenFloor"]
-mesh = SubResource("BoxTetraMesh4D_green")
 material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
 
 [node name="Barrier" type="StaticBody4D" parent="FlatPlane"]
 position = Vector4(0, 0.55, 5, 0)
@@ -92,30 +95,30 @@ position = Vector4(0, 0.55, 5, 0)
 shape = SubResource("BoxShape4D_barrier")
 
 [node name="Mesh" type="MeshInstance4D" parent="FlatPlane/Barrier"]
-mesh = SubResource("BoxTetraMesh4D_barrier")
 material_override = SubResource("TetraMaterial4D_barrier")
+mesh = SubResource("BoxTetraMesh4D_barrier")
 
 [node name="Player" parent="FlatPlane" instance=ExtResource("1_player")]
 position = Vector4(0, 1, 7, 0)
 
-[node name="GunViewmodel" type="Node4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera"]
+[node name="GunViewmodel" type="Node4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera" index="0"]
 position = Vector4(0.3, -0.25, -0.5, 0)
 
 [node name="Barrel" type="MeshInstance4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel"]
 position = Vector4(0, 0.04, -0.22, 0)
-mesh = SubResource("BoxTetraMesh4D_gun_barrel")
 material_override = SubResource("TetraMaterial4D_gun_metal")
+mesh = SubResource("BoxTetraMesh4D_gun_barrel")
 
 [node name="Stock" type="MeshInstance4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel"]
 position = Vector4(0, -0.04, 0.16, 0)
-mesh = SubResource("BoxTetraMesh4D_gun_stock")
 material_override = SubResource("TetraMaterial4D_gun_metal")
+mesh = SubResource("BoxTetraMesh4D_gun_stock")
 
 [node name="Core" type="MeshInstance4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel"]
 position = Vector4(0, 0, -0.01, 0)
 basis = Projection(0.045, 0, 0, 0, 0, 0.045, 0, 0, 0, 0, 0.045, 0, 0, 0, 0, 0.045)
-mesh = ExtResource("16_600_cell_mesh")
 material_override = SubResource("WireMaterial4D_gun_core")
+mesh = ExtResource("16_600_cell_mesh")
 script = ExtResource("15_gun_core_rotator")
 
 [node name="GalleryTargetSpawner" type="Node4D" parent="FlatPlane"]
@@ -144,15 +147,16 @@ script = ExtResource("6_duck_spawner")
 script = ExtResource("11_fall_respawn")
 
 [node name="Crosshair" type="Control" parent="."]
-script = ExtResource("4_crosshair")
+anchors_preset = 0
 anchor_left = 0.5
-anchor_right = 0.5
 anchor_top = 0.5
+anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -8.0
 offset_top = -8.0
 offset_right = 8.0
 offset_bottom = 8.0
+script = ExtResource("4_crosshair")
 
 [node name="HitscanWeapon" type="Node" parent="."]
 script = ExtResource("5_hitscan")
@@ -178,3 +182,5 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("13_slice_glow")
+
+[editable path="FlatPlane/Player"]
