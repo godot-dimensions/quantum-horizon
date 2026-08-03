@@ -17,6 +17,7 @@
 compile_commands.json
 
 # General ignores
+**/.backup/
 **/.cache/
 **/bin/
 
