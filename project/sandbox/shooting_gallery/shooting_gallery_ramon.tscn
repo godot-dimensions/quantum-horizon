@@ -461,7 +461,7 @@ mesh = SubResource("BoxTetraMesh4D_hazard_stripe")
 
 [node name="Player" parent="FlatPlane" instance=ExtResource("1_klo0o")]
 position = Vector4(0, 1, 8.85711883424072, 0)
-basis = Projection(0.9995500336999997, 0, 0, 0.029995500199999994, 0, 1, 0, 0, 0, 0, 1, 0, -0.029995500199999994, 0, 0, 0.9995500336999997)
+basis = Projection(0.9995500336999996, 0, 0, 0.02999550019999999, 0, 1, 0, 0, 0, 0, 1, 0, -0.02999550019999999, 0, 0, 0.9995500336999996)
 
 [node name="GunViewmodel" type="Node4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera" index="0"]
 position = Vector4(0.3, -0.25, -0.5, 0)
@@ -533,7 +533,7 @@ script = ExtResource("32_holodeck")
 
 [node name="TutorialBillboard" type="MeshInstance4D" parent="FlatPlane"]
 position = Vector4(-5.004023422436406, 1.739733530857434, 7.467448630204475, -1.9009113572049547)
-basis = Projection(7.339290167946595e-17, 0, -1.1985970441528933, 0, 0, 1.1985970441528935, 0, 0, 1.1985970441528933, 0, 7.339290167946596e-17, 0, 0, 0, 0, 1.1985970441528935)
+basis = Projection(7.339290167946595e-17, 0, -1.1985970441528933, 0, 0, 1.1985970441528937, 0, 0, 1.1985970441528933, 0, 7.339290167946595e-17, 0, 0, 0, 0, 1.1985970441528937)
 material_override = SubResource("TetraMaterial4D_billboard")
 mesh = SubResource("BoxTetraMesh4D_billboard")
 
