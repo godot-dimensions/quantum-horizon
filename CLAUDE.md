@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Please also read the `AGENTS.md` file for general agent instructions.
+
 ## Repository structure
 
 This repo bundles three things:
