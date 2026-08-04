@@ -128,7 +128,7 @@ else {
         if ($LASTEXITCODE -ne 0) {
             throw "VS Code setup failed with exit code $LASTEXITCODE."
         }
-        & $visualStudioSetupScript -SkipVSCodeSetup
+        & $visualStudioSetupScript -SkipVSCodeSetup -Dev:$Dev
         if ($LASTEXITCODE -ne 0) {
             throw "Visual Studio setup failed with exit code $LASTEXITCODE."
         }
