@@ -87,7 +87,7 @@ func _run() -> void:
 	var player_head: Node4D = player.get_node("PlayerHead")
 
 	var test_bases: Array = [
-		["identity", Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))],
+		["identity", Projection()],
 		["yaw_a", Basis4D.from_zx(1.0)],
 		["yaw_b", Basis4D.from_zx(-1.2)],
 	]
@@ -95,7 +95,7 @@ func _run() -> void:
 		var label: String = entry[0]
 		player.global_position = Vector4(10, 1, 3, 0)
 		player.basis = entry[1]
-		player_head.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+		player_head.basis = Projection()
 		await _wait_physics_frames(3)
 		var rel: Vector4 = Vector4.ZERO - player.global_position
 		var basis: Projection = player.global_basis
@@ -129,8 +129,8 @@ func _run() -> void:
 	# of assigning bases by hand, then compare against an independent
 	# recomputation from Player's real resulting basis after each move.
 	player.global_position = Vector4(10, 1, 3, 0)
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
-	player_head.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	player.basis = Projection()
+	player_head.basis = Projection()
 	var mouse_moves: Array = [Vector2(80, 0), Vector2(-40, 60), Vector2(0, -90), Vector2(25, -25)]
 	for rel in mouse_moves:
 		var ev := InputEventMouseMotion.new()
@@ -148,8 +148,8 @@ func _run() -> void:
 	# normal look, then hold rotate_4d and drag - the one input combination
 	# not yet exercised (xw/zw compose onto Player's basis too).
 	player.global_position = Vector4(10, 1, 3, 0)
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
-	player_head.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	player.basis = Projection()
+	player_head.basis = Projection()
 	var yaw_ev := InputEventMouseMotion.new()
 	yaw_ev.relative = Vector2(60, 0)
 	player._input(yaw_ev)
@@ -175,8 +175,8 @@ func _run() -> void:
 	# zero there, so atan2(near_zero, near_zero) is only stable in theory;
 	# tiny position deltas near that point should NOT cause the arrow to
 	# swing wildly if the logic is sound.
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
-	player_head.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	player.basis = Projection()
+	player_head.basis = Projection()
 	var near_origin_positions: Array = [
 		Vector4(0, 1, 0, 0),
 		Vector4(0.05, 1, -0.02, 0.01),
@@ -193,7 +193,7 @@ func _run() -> void:
 	# half-width 0.5, so the "middle half" (highlight zone) is 4.75..5.25.
 	spawner._current_target.global_position = Vector4(0, 0.5, 0, 5.0)
 	var mat: Resource = spawner._current_target_material
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	player.basis = Projection()
 	player.global_position = Vector4(0, 1, 3, 5.0)
 	await _wait_physics_frames(2)
 	print("8a.on_slice(w=5.0): albedo=%s (expect green)" % [mat.albedo_color])

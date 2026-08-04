@@ -92,12 +92,7 @@ func _process(delta: float) -> void:
 
 		if blocker.pulse:
 			var breath: float = blocker.base_scale * (1.0 + sin(t * BREATH_SPEED + phase) * BREATH_AMOUNT)
-			blocker.mesh_instance.basis = Projection(
-				Vector4(breath, 0, 0, 0),
-				Vector4(0, breath, 0, 0),
-				Vector4(0, 0, breath, 0),
-				Vector4(0, 0, 0, breath),
-			)
+			blocker.mesh_instance.basis = Basis4D.from_scale_uniform(breath)
 
 
 ## Called by hitscan_weapon_ramon.gd. Returns whether the hit body was one of
@@ -126,26 +121,21 @@ func _build_mesh_pool() -> Array:
 	]
 
 
-func _spawn_blocker(mesh: Mesh4D, scale: float, pulse: bool, tough: bool) -> void:
+func _spawn_blocker(mesh: Mesh4D, base_scale: float, pulse: bool, tough: bool) -> void:
 	var area := Area4D.new()
 	add_child(area)
 
 	var collision_shape := CollisionShape4D.new()
 	var box_shape := BoxShape4D.new()
-	box_shape.size = Vector4(1, 1, 1, 1) * scale * 1.2 # Generous hitbox - a forgiving shooting gallery, not a precision test.
+	box_shape.size = Vector4.ONE * base_scale * 1.2 # Generous hitbox - a forgiving shooting gallery, not a precision test.
 	collision_shape.shape = box_shape
 	area.add_child(collision_shape)
 
 	var mesh_instance := MeshInstance4D.new()
 	mesh_instance.mesh = mesh
-	mesh_instance.basis = Projection(
-		Vector4(scale, 0, 0, 0),
-		Vector4(0, scale, 0, 0),
-		Vector4(0, 0, scale, 0),
-		Vector4(0, 0, 0, scale),
-	)
+	mesh_instance.basis = Basis4D.from_scale_uniform(base_scale)
 	var material := TetraMaterial4D.new()
-	material.albedo_source = 3 # TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY.
+	material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY
 	material.albedo_texture_3d = ToughTexture if tough else FragileTexture
 	mesh_instance.material_override = material
 	area.add_child(mesh_instance)
@@ -153,7 +143,7 @@ func _spawn_blocker(mesh: Mesh4D, scale: float, pulse: bool, tough: bool) -> voi
 	var blocker := {
 		"node": area,
 		"mesh_instance": mesh_instance,
-		"base_scale": scale,
+		"base_scale": base_scale,
 		"pulse": pulse,
 		"tough": tough,
 		"base_pos": Vector4.ZERO,

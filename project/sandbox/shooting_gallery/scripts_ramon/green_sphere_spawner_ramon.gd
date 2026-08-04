@@ -104,10 +104,8 @@ func _process(delta: float) -> void:
 				_start_despawn(slot)
 
 		slot.pop *= exp(-POP_DECAY_RATE * delta)
-		var scale: float = SPHERE_SCALE * (1.0 + slot.pop) * slot.transition_t
-		slot.mesh_instance.basis = Projection(
-			Vector4(scale, 0, 0, 0), Vector4(0, scale, 0, 0), Vector4(0, 0, scale, 0), Vector4(0, 0, 0, scale)
-		)
+		var base_scale: float = SPHERE_SCALE * (1.0 + slot.pop) * slot.transition_t
+		slot.mesh_instance.basis = Basis4D.from_scale_uniform(base_scale)
 
 
 ## Called by hitscan_weapon_ramon.gd. Returns whether the hit body was one of
@@ -132,7 +130,7 @@ func _spawn_sphere(slot: Dictionary) -> void:
 
 	var collision_shape := CollisionShape4D.new()
 	var box_shape := BoxShape4D.new()
-	box_shape.size = Vector4(1, 1, 1, 1) * SPHERE_SCALE * 1.1 # Small hitbox - the erratic movement is the real difficulty, not a tiny target on top of that.
+	box_shape.size = Vector4.ONE * SPHERE_SCALE * 1.1 # Small hitbox - the erratic movement is the real difficulty, not a tiny target on top of that.
 	collision_shape.shape = box_shape
 	area.add_child(collision_shape)
 

@@ -38,10 +38,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_age_sec += delta
 	var t: float = clampf(_age_sec / LIFETIME_SEC, 0.0, 1.0)
-	var scale: float = lerpf(1.0, 0.0, t)
-	var scale_basis := Projection(
-		Vector4(scale, 0, 0, 0), Vector4(0, scale, 0, 0), Vector4(0, 0, scale, 0), Vector4(0, 0, 0, scale)
-	)
+	var base_scale: float = lerpf(1.0, 0.0, t)
+	var scale_basis: Projection = Basis4D.from_scale_uniform(base_scale)
 	for entry in _particles:
 		var particle: MeshInstance4D = entry["node"]
 		particle.position += entry["velocity"] * delta

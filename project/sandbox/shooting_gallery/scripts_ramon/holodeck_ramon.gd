@@ -44,7 +44,7 @@ const BackdropTexture := preload("res://textures/dev_finals/ramdev_black.png")
 
 func _ready() -> void:
 	var material := TetraMaterial4D.new()
-	material.albedo_source = 3
+	material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY
 	material.albedo_texture_3d = BackdropTexture
 
 	_build_ceiling(material)
@@ -57,7 +57,7 @@ func _ready() -> void:
 func _build_ceiling(material: TetraMaterial4D) -> void:
 	var mesh := BoxTetraMesh4D.new()
 	mesh.size = Vector4(TILE_SIZE, 0.5, TILE_SIZE, TILE_W_THICKNESS)
-	mesh.cell_texture_map = 1
+	mesh.cell_texture_map = BoxTetraMesh4D.BOX_CELL_TEXTURE_MAP_FILL_EACH_SIDE
 
 	var count: int = int(ROOM_HALF_EXTENT * 2.0 / TILE_SIZE)
 	var start: float = -ROOM_HALF_EXTENT + TILE_SIZE * 0.5
@@ -79,7 +79,7 @@ func _build_wall(material: TetraMaterial4D, fixed_axis_is_x: bool, fixed_value: 
 		mesh.size = Vector4(0.5, TILE_SIZE, TILE_SIZE, TILE_W_THICKNESS)
 	else:
 		mesh.size = Vector4(TILE_SIZE, TILE_SIZE, 0.5, TILE_W_THICKNESS)
-	mesh.cell_texture_map = 1
+	mesh.cell_texture_map = BoxTetraMesh4D.BOX_CELL_TEXTURE_MAP_FILL_EACH_SIDE
 
 	var horiz_count: int = int(ROOM_HALF_EXTENT * 2.0 / TILE_SIZE)
 	var vert_count: int = int((ROOM_CEILING_Y - ROOM_FLOOR_Y) / TILE_SIZE)

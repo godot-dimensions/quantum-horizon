@@ -72,7 +72,7 @@ func _run() -> void:
 	# crosses the barrier's z=5 boundary.
 	player.global_position = Vector4(0, 1, 7, 0)
 	player.linear_velocity = Vector4.ZERO
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	player.basis = Projection()
 	Input.action_press("move_forward")
 	await _wait_physics_frames(90)
 	Input.action_release("move_forward")
@@ -99,7 +99,7 @@ func _run() -> void:
 	# the 1.1-tall barrier) at a target placed at that same height, directly
 	# ahead, on the orange floor side.
 	player.global_position = Vector4(0, 1, 7, 0) # PlayerHead is +0.75 above this -> eye height 1.75
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	player.basis = Projection()
 	spawner._current_target.global_position = Vector4(0, 1.75, 0, 0)
 	await _wait_physics_frames(2)
 	var before_count: int = spawner._catch_count
@@ -138,7 +138,7 @@ func _run() -> void:
 	# mouse-look/rotate_4d) is unaffected by that and kept working, masking
 	# the bug.
 	player.global_position = Vector4(0, 1, 7, 0)
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	player.basis = Projection()
 	spawner._current_target.global_position = Vector4(0, 1.75, 0, 0)
 	await _wait_physics_frames(2)
 	var click_before_count: int = spawner._catch_count
@@ -205,7 +205,7 @@ func _run() -> void:
 	# 16. angle_off_slice: independently recompute asin(ana_offset/rel.length())
 	# for several bearings and confirm BearingUtility4D.compute() matches.
 	player.global_position = Vector4(0, 1, 0, 0)
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	player.basis = Projection()
 	var angle_cases: Array = [Vector4(5, 1, 0, 2), Vector4(-3, 1, 4, -6), Vector4(0, 1, 10, 0.1)]
 	for target_pos in angle_cases:
 		var bearing: Dictionary = BearingUtility4D.compute(player, target_pos)
@@ -233,7 +233,7 @@ func _run() -> void:
 	# _compute_intensity() matches - 0 at/above 30deg off-slice, 1 at/below
 	# the reused epsilon's instantaneous angle, t^2 ease between.
 	player.global_position = Vector4(0, 1, 7, 0)
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	player.basis = Projection()
 	var glow_cases: Array = [
 		Vector4(0, 1.5, 0, 0), # dead ahead, w=0 exactly -> angle 0 -> full opacity.
 		Vector4(0, 1.5, 0, 20), # far off in w -> large angle -> 0 opacity.
@@ -264,7 +264,7 @@ func _run() -> void:
 	# 18. Radar widget: sanity-check the projection sign convention with
 	# simple, hand-derivable bearings (identity basis).
 	player.global_position = Vector4(0, 1, 0, 0)
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	player.basis = Projection()
 	var right_bearing: Dictionary = BearingUtility4D.compute(player, Vector4(5, 1, 0, 0))
 	print("18a.radar_right(target 5 units right): right_component=%.2f depth_component=%.2f (expect ~5, ~0)" % [
 		right_bearing.right_component, right_bearing.depth_component,
@@ -346,7 +346,7 @@ func _run() -> void:
 	var x_offsets: Array = []
 	var z_offsets: Array = []
 	player.global_position = Vector4(0, 1, 7, 0)
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	player.basis = Projection()
 	for i in 40:
 		var global_vertex: Vector4 = gun_core.global_position + (gun_core.global_basis * local_extreme_vertex)
 		x_offsets.append(absf(global_vertex.x - gun_core.global_position.x))
@@ -382,7 +382,7 @@ func _run() -> void:
 	# effect spawns as a child of the spawner, its particles genuinely move,
 	# and it self-destructs after its own lifetime.
 	player.global_position = Vector4(0, 1, 7, 0)
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	player.basis = Projection()
 	spawner._current_target.global_position = Vector4(0, 1.75, 0, 0)
 	await _wait_physics_frames(2)
 	hitscan_weapon._fire()
@@ -408,7 +408,7 @@ func _run() -> void:
 	# player's default sightline) alongside the red target, for a clean shot,
 	# plus a fresh poof burst right at the moment of the screenshot.
 	player.global_position = Vector4(0, 1, 7, 0)
-	player.basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
+	player.basis = Projection()
 	spawner._current_target.global_position = Vector4(2, 1.5, -1, 1)
 	var visible_duck: Node4D = duck_spawner.DuckScene.instantiate()
 	duck_spawner.add_child(visible_duck)
