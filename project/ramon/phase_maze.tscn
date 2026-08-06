@@ -1,0 +1,36 @@
+[gd_scene load_steps=5 format=3 uid="uid://dd2u0thu8rhx2"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_pkrmm"]
+[ext_resource type="Script" uid="uid://chc0ybpm3w0yb" path="res://scripts/fall_respawn.gd" id="2_671uc"]
+[ext_resource type="Script" uid="uid://dwe7stsgeu5de" path="res://ramon/scripts/phase_maze_builder.gd" id="3_a7vyg"]
+[ext_resource type="Script" uid="uid://cglxbulnidtve" path="res://ramon/scripts/maze_hud.gd" id="4_r7j56"]
+
+[node name="PhaseMaze" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MazeWorld" type="Node4D" parent="."]
+
+[node name="Player" parent="MazeWorld" instance=ExtResource("1_pkrmm")]
+
+[node name="FallRespawn" type="Node" parent="MazeWorld"]
+script = ExtResource("2_671uc")
+
+[node name="MazeBuilder" type="Node4D" parent="MazeWorld"]
+script = ExtResource("3_a7vyg")
+
+[node name="MazeHud" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("4_r7j56")
+
+[editable path="MazeWorld/Player"]
