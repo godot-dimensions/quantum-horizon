@@ -2,8 +2,8 @@
 
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://chc0ybpm3w0yb" path="res://scripts/fall_respawn.gd" id="2_fallrespawn"]
-[ext_resource type="Script" path="res://Ramon/scripts/phase_maze_2_builder.gd" id="3_builder"]
-[ext_resource type="Script" path="res://Ramon/scripts/maze_hud_2.gd" id="4_hud"]
+[ext_resource type="Script" uid="uid://bbf3m2eob2kl5" path="res://ramon/PhaseMaze/scripts/phase_maze_2_builder.gd" id="3_builder"]
+[ext_resource type="Script" uid="uid://b1cughugfytjr" path="res://ramon/PhaseMaze/scripts/maze_hud_2.gd" id="4_hud"]
 
 [node name="PhaseMazeLevel2" type="Control"]
 layout_mode = 3

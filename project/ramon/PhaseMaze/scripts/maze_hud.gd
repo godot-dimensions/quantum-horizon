@@ -27,7 +27,7 @@ const WIN_SUBTEXT_FONT_SIZE := 20
 
 ## Level 1 always leads into level 2 once its goal is reached - long enough
 ## to read the banner, not so long it feels like waiting.
-const NEXT_LEVEL_SCENE_PATH := "res://Ramon/phase_maze_2.tscn"
+const NEXT_LEVEL_SCENE_PATH := "res://ramon/PhaseMaze/phase_maze_2.tscn"
 const TRANSITION_DELAY_SEC := 2.5
 
 var _win_visible: bool = false
