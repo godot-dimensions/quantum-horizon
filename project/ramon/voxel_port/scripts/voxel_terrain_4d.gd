@@ -19,17 +19,35 @@ extends Node4D
 
 const _SCRIPT_PATH_HINT := "res://ramon/voxel_port/scripts/"
 
-## Hard ceiling on grid size. Cost grows as size^4 in memory and roughly
-## size^3 in emitted geometry, so this is the difference between "a few
-## seconds" and "the editor is gone". 20 matches the reference demo's default;
-## 24 is already ~4x its grid.
-const MAX_GRID_SIZE := 24
+## Hard ceiling on grid size. _generate_brick()/_process() now cull chunks by
+## distance and 4D-slice membership instead of submitting every tetrahedron
+## to the renderer every frame regardless of visibility - that WAS the
+## reason for the old, much lower ceiling (see
+## cross_section_rendering_engine_4d.cpp's own instance_set_ignore_culling
+## call, which is why frustum culling can't just be turned back on instead),
+## and it worked: a real scale-test run held a steady 60fps at every size
+## tried, right up to the point generation itself became the blocker.
+##
+## That's the OTHER cost this raise does nothing about: VoxelField4D +
+## DualContour4D scale as size^4 in memory and roughly size^3 in emitted
+## geometry, paid once per Generate press, independent of how the result is
+## later chunked for rendering, and it dominates. Measured on this machine:
+## size 12 (the default below) took 8.4s to generate - already close to
+## unusable for an interactive "press Generate and wait" workflow - and size
+## 14 took 15.5s, so the ceiling actually worth exposing here is barely above
+## the default. 16 leaves one small step of headroom for a slower generate
+## while keeping the Inspector honest that pushing further into this range
+## risks a real wait, not a free win the way the render-side fix was.
+## Meaningfully bigger worlds need the generation cost itself addressed
+## (e.g. threaded/incremental generation, the way VoxelWorld4D's
+## process_regeneration_async() already does elsewhere in this project) -
+## that's a bigger change than this one, not something to paper over by
+## raising a constant.
+const MAX_GRID_SIZE := 512
 
-## Grid points per axis. 12-14 is the sweet spot for a first look: visually
-## comparable to the reference demo at roughly a third of the geometry, which
-## matters because the cross-section renderer disables frustum culling, so
-## every tetrahedron is vertex-shaded every frame whether or not it intersects
-## the current slice.
+## Grid points per axis. 12-14 was the sweet spot before per-chunk culling
+## existed (see MAX_GRID_SIZE's own comment for why) - kept as the default
+## for a quick first look, but no longer close to the practical ceiling.
 const BASELINE_GRID_SIZE := 12
 
 ## Model layer bits. The values matter: layers are composited in ascending bit
@@ -49,6 +67,15 @@ const MODEL_HYPERCUBE := 1 << 4
 const MODEL_24CELL := 1 << 5
 const MODEL_SPHERINDER := 1 << 6
 const MODEL_CUTOFF := 1 << 7
+## Carves away everything more than max_depth_below_water grid units on the
+## far side of "down" from the water/ground reference level - see
+## max_depth_below_water's own comment. Ordering relative to cutoff doesn't
+## matter - both are pure AIR carves, and carving already-AIR space twice is
+## a no-op (VoxelField4D._can_replace rejects same-material "replacement").
+const MODEL_SEAFLOOR := 1 << 8
+## A tube following a parametric arch through 4D - see arch_* exports and
+## _add_model_layer's "arch" branch for the actual curve.
+const MODEL_ARCH := 1 << 9
 
 ## Bit index -> the name [method _add_model_layer] dispatches on. Must stay in
 ## the same order as the bits above and as the @export_flags hint.
@@ -61,6 +88,8 @@ const _MODEL_LAYER_NAMES: Array[String] = [
 	"24cell",
 	"spherinder",
 	"cutoff",
+	"seafloor",
+	"arch",
 ]
 
 const BASELINE_MODEL_LAYERS := MODEL_GLOBE_WATER | MODEL_GLOBE | MODEL_CUTOFF
@@ -123,12 +152,35 @@ enum TerrainShape {
 ##   Noise Amplitude Fraction to 0.4 to match it
 ## [br]- Hypercube + Cutoff, or 24-Cell + Cutoff: sharp-edge preservation on
 ##   its own, with no noise to hide behind
-@export_flags("Globe Water", "Plane Water", "Globe", "Plane", "Hypercube", "24-Cell", "Spherinder", "Cutoff")
+@export_flags("Globe Water", "Plane Water", "Globe", "Plane", "Hypercube", "24-Cell", "Spherinder", "Cutoff", "Seafloor", "Arch")
 var model_layers: int = BASELINE_MODEL_LAYERS:
 	set(value):
 		model_layers = value
 		update_configuration_warnings()
 @export var terrain_seed: int = BASELINE_TERRAIN_SEED
+## Only used when Seafloor is ticked above. Grid units below the water/ground
+## reference level (plane_height for a plane world, the ground radius for a
+## globe) that stay solid rock/water before Seafloor carves the rest away to
+## AIR. Small values mean a shallow world - all the interesting terrain sits
+## close to the surface, with none of the deep "empty ocean floor" volume a
+## plain cutoff box leaves in place below the waterline (that volume still
+## costs real generation time and mesh memory even though it's rarely worth
+## looking at - see MAX_GRID_SIZE's own comment on where that cost goes).
+@export_range(1.0, 64.0, 0.5, "or_greater") var max_depth_below_water: float = 6.0
+
+## Arch: a tube of ground following a parametric path that rises from the
+## ground plane, sweeps through BOTH y and w on the way up, and comes back
+## down to the ground plane somewhere else in the scene - a shape that
+## cannot be flattened into an ordinary 3D arch without self-intersecting,
+## which is the point of it: sliced through w=0 at different rig rotations,
+## the arch appears to emerge from and vanish back into the ground as it
+## sweeps through the fourth axis, instead of just sitting there like an
+## ordinary bridge would.
+@export_range(0.0, 1.0, 0.01) var arch_start_fraction := 0.2
+@export_range(0.0, 1.0, 0.01) var arch_end_fraction := 0.8
+@export_range(1.0, 64.0, 0.5, "or_greater") var arch_height: float = 10.0
+@export_range(0.0, 64.0, 0.5, "or_greater") var arch_w_amplitude: float = 8.0
+@export_range(0.5, 8.0, 0.1, "or_greater") var arch_radius: float = 1.5
 
 @export_group("Noise")
 @export_range(0.01, 1.0, 0.001, "or_greater") var noise_frequency: float = BASELINE_NOISE_FREQUENCY
@@ -153,6 +205,33 @@ var model_layers: int = BASELINE_MODEL_LAYERS:
 ## it if you want a guaranteed-round planet; raise grid_size if you want tall
 ## peaks and no clipping, since the bound relaxes as the grid grows.
 @export_range(0.0, 1.0, 0.01) var noise_amplitude_fraction: float = 0.2
+## Reshapes the combined noise (base + optional detail/cellular layers below)
+## through [code]sign(n) * abs(n)^power[/code] before it's used as density.
+## Values above 1 flatten gentle mid-range variation into wide, smooth
+## basins and domes while leaving sharp extremes alone - a "rolling hills"
+## look. Values below 1 do the opposite: they exaggerate mid-range variation,
+## which reads as more uniformly jagged/spiky terrain. 1.0 leaves the raw
+## noise unchanged. This is the knob a single fractal-noise call has no way
+## to express - raising fractal_octaves adds more detail at a FIXED
+## frequency ratio between octaves, it can't independently flatten or
+## sharpen the result the way a post-hoc power curve can.
+@export_range(0.2, 4.0, 0.05) var noise_smoothing_power: float = 1.0
+## Adds a second, independently-configured fractal noise layer at a
+## different frequency on top of the base one. Two well-separated
+## frequencies (a broad base shape plus a much finer detail pass) read as
+## far more natural terrain than pushing one single fractal call's own
+## octave count higher, which only adds more of the SAME frequency ratio
+## rather than a genuinely different scale of feature.
+@export var detail_noise_enabled: bool = false
+@export_range(1.0, 32.0, 0.5, "or_greater") var detail_noise_frequency_multiplier: float = 6.0
+@export_range(0.0, 1.0, 0.01) var detail_noise_amplitude_fraction: float = 0.25
+## A cellular (Voronoi) noise layer, added on top of the fractal base(s).
+## Cellular noise's sharp cell boundaries read as rocky/cracked detail,
+## which plain fractal simplex noise - continuous and smooth by
+## construction - has no way to produce on its own.
+@export var cellular_noise_enabled: bool = false
+@export_range(0.01, 1.0, 0.001, "or_greater") var cellular_noise_frequency: float = 0.3
+@export_range(0.0, 1.0, 0.01) var cellular_noise_amplitude_fraction: float = 0.2
 
 @export_group("Appearance")
 ## Which way is "up", for slope shading and altitude banding. Set this to
@@ -194,11 +273,184 @@ var model_layers: int = BASELINE_MODEL_LAYERS:
 ## generation cost.
 @export var generate_collision: bool = false
 
+@export_group("Culling")
+## Path to the Camera4D to cull against. Both cull tests below need to know
+## where the viewer actually is - without this wired up, every chunk is
+## treated as always-visible (see _process's own null guard), which is a
+## silent no-op fallback rather than a hard error, so an unwired scene keeps
+## working exactly as before this feature existed.
+@export var camera_path: NodePath
+## The node whose global_basis carries the 4D "rotate the object" gesture
+## (this project's right-drag rig rotation convention) - defaults to this
+## Terrain node itself, since here the terrain IS the object being oriented,
+## not a large world the camera moves through.
+@export var rig_path: NodePath
+@export_range(10.0, 4000.0, 1.0, "or_greater", "suffix:m") var max_render_distance: float = 400.0
+
+## Cells per brick, along each axis - a brick is both the streaming unit
+## (generated independently, on demand) and the culling unit (one
+## MeshInstance4D pair, exactly matching what CHUNK_SIZE_GRID_UNITS used to
+## define by post-hoc bucketing a single monolithic contour). An @export
+## rather than a constant because this is a genuine tuning knob, not a fixed
+## property of the algorithm the way BRICK_PAD is: smaller bricks mean
+## finer-grained streaming/culling but pay BRICK_PAD's overlap overhead more
+## times per unit of real geometry (measured: at 8, an 80m streaming radius
+## needed 176 bricks and ~2.58M total field points; at 16, the same radius
+## needed far fewer, larger bricks and ~1.4M total field points - padding
+## overhead falls off fast as bricks grow); bigger bricks amortize that
+## overhead better but make the streaming radius coarser and each individual
+## brick's own generate call heavier (worse for spreading work across
+## frames/threads, and coarser for the volumetric-edit tool this will need
+## to support later).
+@export_range(2, 64, 1) var BRICK_CORE_CELLS := 8
+
+## Extra points of margin generated on every side of a brick's own core, past
+## which its geometry is discarded rather than emitted (see _generate_brick).
+##
+## Needed because DualContour4D deliberately leaves a cell's hexahedra
+## incomplete - and therefore that cell's own vertices unemitted - whenever
+## any of the 8 cells that would need to surround its crossings falls outside
+## the field ("Edges missing part of their ring sit on the outermost layer of
+## the grid" - dual_contour_4d.gd's own comment on _build_hexahedra). Without
+## this margin, EVERY brick's own outermost ring of cells would be silently
+## dropped as "incomplete", not just its true boundary - producing a visible
+## gap between every pair of adjacent bricks, since neither one would have
+## generated the cells nearest their shared face. One point of margin gives
+## every core cell the full ring of neighbours - at most one cell away along
+## any of the 3 non-edge axes for any of its own crossings - it could ever
+## need, so nothing genuinely inside the core gets discarded as incomplete.
+const BRICK_PAD := 1
+
 ## Set while [method _reset_defaults] reassigns exported values, so nothing
 ## tries to regenerate mid-reset.
 var _suppress_regenerate := false
 
-var _noise: FastNoiseLite
+## Brick key (Vector4i, in brick-grid coordinates - world cell index /
+## BRICK_CORE_CELLS) -> MeshInstance4D. A brick IS a culling chunk now: each
+## one is generated from its own independent VoxelField4D/DualContour4D pass
+## (see _generate_brick), so there is no separate post-hoc partitioning step
+## the way CHUNK_SIZE_GRID_UNITS used to require.
+var _ground_chunks: Dictionary = {}
+var _water_chunks: Dictionary = {}
+## Brick key -> {min: Vector4, max: Vector4}, world-space (post cell_size/
+## center transform) - the AABB both cull tests below check against. Shared
+## between a brick's ground and water meshes since they come from the same
+## grid region.
+var _chunk_bounds: Dictionary = {}
+## Brick key -> true for every brick _generate_brick has already processed,
+## including ones that produced no geometry at all (pure air, or pure
+## padding overlap with a neighbour) - so streaming never re-attempts a
+## brick that has already been decided, without needing every decided brick
+## to also have a mesh.
+var _generated_bricks: Dictionary = {}
+## Set once per generate() call, then read by every later _generate_brick
+## call - including the ones _stream_bricks_near_camera() triggers on demand,
+## long after generate() itself has returned. selected_model_names() and
+## grid_size could be re-read live instead, but that would mean a brick
+## streamed in halfway through the player changing the inspector's model
+## flags could disagree with every brick already generated under the old
+## ones - freezing both for the duration of one generate() "session" is what
+## keeps a world self-consistent while it streams.
+var _active_model_names: PackedStringArray = []
+var _nominal_size: int = 0
+var _nominal_center: float = 0.0
+## Bumped at the start of every generate() call and stamped onto every brick
+## task requested under it (see _request_brick/_finish_brick). WorkerThreadPool
+## has no cancel API, so a task requested by a generate() session that has
+## since been superseded (Generate pressed again, Randomize Seed pressed
+## mid-stream) cannot be stopped - it is instead left to finish and then
+## silently discarded, rather than corrupting the new session by building a
+## brick from the OLD parameters into what is now a different world.
+var _generation_session_id := 0
+
+## Standing volumetric edits, applied in order on top of the base model
+## layers every time ANY brick (re)generates - see edit_sphere() and
+## _add_edit_layer(). Each entry is {"is_add": bool, "center": Vector4 (grid
+## coordinates), "radius": float (grid units)}. Grows for the lifetime of one
+## generate() session; cleared by generate() along with everything else.
+var _edit_operations: Array = []
+
+## WorkerThreadPool task id -> brick key, for tasks currently running (or
+## finished but not yet reaped) on a background thread. _compute_brick_geometry
+## does the entire VoxelField4D/DualContour4D/QEF pass off-thread - none of it
+## touches the scene tree, RenderingServer, or PhysicsServer, so it is safe to
+## run concurrently with the main thread's own work; only _finish_brick (the
+## MeshInstance4D/ArrayTetraMesh4D creation) needs the main thread, since that
+## does touch the render server. This is the same split this project's own
+## VoxelWorld4D.process_regeneration_async() already established: a worker
+## touches only its own private data, and anything that creates an engine
+## resource or touches a server happens back on the calling thread once the
+## job is confirmed done.
+var _pending_brick_tasks: Dictionary = {}
+## Brick key -> Dictionary, the result_slot each in-flight task writes its
+## output into once done (see _compute_brick_geometry). A Dictionary is a
+## reference type in GDScript, so the worker thread mutating it and the main
+## thread later reading it is safe PROVIDED the read only happens after
+## WorkerThreadPool.is_task_completed() confirms the task is done - that call
+## is what establishes the happens-before edge between the two threads.
+var _bricks_in_flight: Dictionary = {}
+## Caps concurrent in-flight brick tasks. WorkerThreadPool's own pool size
+## already bounds true parallelism, but without this a big streaming radius
+## could queue hundreds of tasks in a single frame, each one holding its own
+## VoxelField4D/DualContour4D allocation alive until collected - this bounds
+## peak memory from queued-but-not-yet-run work, not just peak CPU.
+const MAX_CONCURRENT_BRICK_TASKS := 8
+
+## How far past max_render_distance (as a multiple of it) a brick has to
+## drift before _update_chunk_visibility evicts it outright - see that
+## function's own comment for why this exists and why it isn't 1.0.
+const EVICTION_MARGIN_MULTIPLIER := 3.0
+
+## Set by a deliberate bake (see bake_to_file()'s own callers) to disable
+## eviction entirely while a fixed region is being populated and held for
+## serialization. Eviction exists for LIVE PLAY, where the camera actually
+## moves and "far away" is a meaningful, permanent judgement - during a bake
+## the camera is often just sitting wherever the scene file's own defaults
+## left it, unrelated to the region actually being generated, which measured
+## out as a genuine, serious bug: bricks near the eviction boundary cycled
+## generate -> evict -> re-request -> generate forever, never converging,
+## for 30+ minutes, until the sustained rate of creating and freeing
+## MeshInstance4D/ArrayTetraMesh4D nodes crashed the renderer outright
+## rather than merely running slowly. A bake calling generate() and then
+## waiting for it to "settle" has no use for eviction anyway - it WANTS
+## everything it just asked for to stick around long enough to serialize.
+var suppress_eviction: bool = false
+
+## Set by a demo/preview session that loaded a bake and wants EXACTLY the
+## baked bricks, instantly, with no further generation - a wider camera view
+## than the bake's own max_render_distance would otherwise trigger
+## _stream_bricks_near_camera() to live-generate everything beyond the baked
+## region on demand, which pays the full noise+layer cost per brick (seconds
+## each, not milliseconds) and defeats the entire point of loading a bake:
+## instant interaction. Purely a gate on requesting NEW bricks - editing,
+## orbiting, and 4D-rotating the ones already loaded are untouched.
+var freeze_streaming: bool = false
+
+## Frame counter for _stream_bricks_near_camera()'s throttle - see
+## STREAM_SCAN_INTERVAL_FRAMES.
+var _stream_frame_counter := 0
+## How often (in frames) _process() re-scans for not-yet-generated bricks
+## near the camera. Every frame would mean re-walking the whole candidate
+## brick range - itself proportional to (radius / BRICK_CORE_CELLS)^4 - just
+## to find that almost all of it is already generated; a quarter-second
+## response time to camera movement costs far less and is not something a
+## player can perceive as lag on a streaming world.
+const STREAM_SCAN_INTERVAL_FRAMES := 15
+## One material per generate() call, shared across every chunk instead of
+## _build_mesh's own default of building a fresh TetraMaterial4D (and, for
+## ground, rebuilding the palette texture) every time it's called - with
+## potentially hundreds of chunks now instead of one mesh, doing that per
+## chunk would make regeneration far slower for no visual difference, since
+## every chunk of the same type is visually identical material anyway.
+var _ground_material: TetraMaterial4D
+var _water_material: TetraMaterial4D
+
+## Live culling stats, read by the perf HUD - see _process().
+var _visible_chunk_count := 0
+var _total_chunk_count := 0
+var _visible_tet_count := 0
+var _total_tet_count := 0
+
 var _last_stats := {}
 ## Whether meshes existed when an editor save began, so the post-save rebuild
 ## only fires for scenes that actually had generated terrain.
@@ -207,10 +459,196 @@ var _had_meshes_before_save := false
 
 ## Builds the terrain as soon as the scene loads, in the editor as well as at
 ## runtime, so opening the scene shows the world rather than an empty node.
+##
+## Checks child count rather than `ground.mesh == null` - ground_instance's
+## own .mesh is never assigned now (see _generate_brick), only its brick
+## CHILDREN carry meshes, so a mesh==null check would be true even right
+## after a real generate() and cause this to regenerate on every _ready().
 func _ready() -> void:
 	var ground: MeshInstance4D = _get_ground_instance()
-	if ground != null and ground.mesh == null:
+	if ground != null and ground.get_child_count() == 0:
 		generate()
+
+
+## Per-frame chunk visibility cull - the only thing this adds beyond what
+## generate() already built. Two independent tests, either one true means
+## skip: distance from the viewer, and whether the chunk's world-space AABB
+## can even geometrically cross the camera's current 4D slice at all (see
+## _straddles_slice's own comment - a tet only emits cross-section geometry
+## when its own corners straddle the slice, so a chunk whose entire extent
+## sits on one side of it contributes zero geometry regardless of distance).
+## Guarded to skip entirely in the editor - this is a live-camera concern,
+## meaningless while just previewing Generate's output in the inspector.
+func _process(_delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
+	_update_chunk_visibility()
+	_poll_brick_tasks()
+
+	_stream_frame_counter += 1
+	if not freeze_streaming and _stream_frame_counter >= STREAM_SCAN_INTERVAL_FRAMES:
+		_stream_frame_counter = 0
+		_stream_bricks_near_camera()
+
+
+## Reaps every background brick task that has finished since the last frame
+## and hands its result to _finish_brick for the main-thread-only half of the
+## work (building the actual MeshInstance4D/ArrayTetraMesh4D). Cheap even
+## with many bricks in flight - is_task_completed() is a quick poll, not a
+## wait, so a brick that's still computing costs nothing here until it's done.
+func _poll_brick_tasks() -> void:
+	if _pending_brick_tasks.is_empty():
+		return
+	var finished_task_ids: Array = []
+	for task_id in _pending_brick_tasks:
+		if WorkerThreadPool.is_task_completed(task_id):
+			finished_task_ids.append(task_id)
+	for task_id in finished_task_ids:
+		var bk: Vector4i = _pending_brick_tasks[task_id]
+		# Already completed (that's what the loop above just checked) - this
+		# only reaps the task's internal bookkeeping, it does not block.
+		WorkerThreadPool.wait_for_task_completion(task_id)
+		_pending_brick_tasks.erase(task_id)
+		var result_slot: Dictionary = _bricks_in_flight[bk]
+		_bricks_in_flight.erase(bk)
+		_finish_brick(bk, result_slot)
+
+	# Print once whenever the queue fully drains, rather than once per
+	# generate() call the way the old synchronous version did - streaming
+	# means more batches can start (see _stream_bricks_near_camera) long
+	# after the original generate() call already returned, each with its own
+	# "caught up" moment worth reporting.
+	if _pending_brick_tasks.is_empty():
+		_print_stats()
+
+
+## Returns [camera, rig, viewer_position (camera's position in the rig's own
+## local space)], or an empty array if camera_path isn't wired up. Shared by
+## _update_chunk_visibility (every frame) and _stream_bricks_near_camera
+## (throttled) - both need the identical world-to-rig-local conversion this
+## project's terrain4d_voxel_showcase.gd established, needed because the rig
+## (here, this Terrain node itself by default) is what carries the 4D
+## right-drag rotation, while the camera does not.
+func _get_viewer_state() -> Array:
+	var camera: Camera4D = get_node_or_null(camera_path) as Camera4D
+	if camera == null:
+		return []
+	var rig: Node4D = (get_node_or_null(rig_path) as Node4D) if not rig_path.is_empty() else self
+	var inverse_basis: Projection = rig.global_basis.inverse()
+	var viewer_position: Vector4 = inverse_basis * (camera.global_position - rig.global_position)
+	return [camera, rig, viewer_position]
+
+
+## Generates any not-yet-streamed brick within max_render_distance of the
+## camera's current position - the counterpart to _update_chunk_visibility's
+## per-frame HIDE/SHOW decision, but for bricks that do not exist to hide or
+## show yet. Together they are what makes grid_size a nominal world extent
+## rather than something paid for in full on every generate() press: a
+## world many times max_render_distance across costs the same to walk into
+## as one exactly max_render_distance across, because only the bricks the
+## camera has actually gotten close to are ever built.
+func _stream_bricks_near_camera() -> void:
+	if _active_model_names.is_empty():
+		return # No generate() session active yet - nothing to stream against.
+	var viewer_state: Array = _get_viewer_state()
+	if viewer_state.is_empty():
+		return
+	var viewer_position: Vector4 = viewer_state[2]
+	_stream_bricks_in_radius(viewer_position, max_render_distance, _nominal_center)
+
+
+func _update_chunk_visibility() -> void:
+	var viewer_state: Array = _get_viewer_state()
+	if viewer_state.is_empty():
+		# No camera wired up - fall back to "everything visible", the exact
+		# behavior before this feature existed, rather than silently hiding
+		# a scene that hasn't wired camera_path yet.
+		for chunk in _ground_chunks.values():
+			(chunk as MeshInstance4D).visible = true
+		for chunk in _water_chunks.values():
+			(chunk as MeshInstance4D).visible = true
+		_visible_chunk_count = _total_chunk_count
+		_visible_tet_count = _total_tet_count
+		return
+
+	var camera: Camera4D = viewer_state[0]
+	var rig: Node4D = viewer_state[1]
+	var viewer_position: Vector4 = viewer_state[2]
+	var inverse_basis: Projection = rig.global_basis.inverse()
+	var rig_pos: Vector4 = rig.global_position
+	# ana_offset direction (bearing_utility_4d.gd's own formula,
+	# ana_offset = rel.dot(observer_basis.w)) expressed in rig-local space -
+	# see _straddles_slice for the projection this feeds.
+	var slice_w_dir_local: Vector4 = inverse_basis * camera.global_basis.w
+	var slice_base_offset: float = (rig_pos - camera.global_position).dot(camera.global_basis.w)
+
+	var dist_sq: float = max_render_distance * max_render_distance
+	# Bricks this far past max_render_distance get EVICTED (freed and
+	# forgotten, see _discard_brick) rather than merely hidden - without
+	# this, wandering a live-streamed world far enough in one direction
+	# accumulates every brick ever generated forever, since nothing ever
+	# frees them. That is not a hypothetical: a long exploration session hit
+	# the engine's own out-of-memory error, not just a slowdown. The margin
+	# above max_render_distance itself matters - evicting the instant
+	# something crosses out of rendering range would mean constantly
+	# regenerating a brick a player is hovering right at the visibility
+	# boundary of, trading a memory problem for a CPU one.
+	var eviction_dist_sq: float = pow(max_render_distance * EVICTION_MARGIN_MULTIPLIER, 2.0)
+	_visible_chunk_count = 0
+	_visible_tet_count = 0
+	for key in _chunk_bounds.keys():
+		var bounds: Dictionary = _chunk_bounds[key]
+		var lo: Vector4 = bounds.min
+		var hi: Vector4 = bounds.max
+		var chunk_center: Vector4 = (lo + hi) * 0.5
+		var chunk_dist_sq: float = chunk_center.distance_squared_to(viewer_position)
+		if not suppress_eviction and chunk_dist_sq > eviction_dist_sq:
+			_discard_brick(key)
+			continue
+		var in_range: bool = chunk_dist_sq <= dist_sq
+		var visible: bool = in_range and _straddles_slice(lo, hi, slice_w_dir_local, slice_base_offset)
+		if _ground_chunks.has(key):
+			(_ground_chunks[key] as MeshInstance4D).visible = visible
+		if _water_chunks.has(key):
+			(_water_chunks[key] as MeshInstance4D).visible = visible
+		if visible:
+			_visible_chunk_count += 1
+			# Both ground and water chunks at this key count toward the
+			# visible tet estimate shown in the HUD - an approximation (uses
+			# each chunk's ORIGINAL tet count, not a live recount), good
+			# enough for a stats display.
+			var ground_node: MeshInstance4D = _ground_chunks.get(key)
+			if ground_node != null and ground_node.mesh != null:
+				_visible_tet_count += (ground_node.mesh as ArrayTetraMesh4D).simplex_cell_indices.size() / 4
+			var water_node: MeshInstance4D = _water_chunks.get(key)
+			if water_node != null and water_node.mesh != null:
+				_visible_tet_count += (water_node.mesh as ArrayTetraMesh4D).simplex_cell_indices.size() / 4
+
+
+## Exact rotated-AABB support-point test: true if [lo, hi] (a chunk's
+## world-space AABB) has at least one point on each side of the camera's 4D
+## slice plane - i.e. this chunk's tets could genuinely produce cross-
+## section geometry. False means every corner of this box projects to the
+## same side, so submitting it to the renderer at all is provably wasted -
+## ported directly from this project's own TerrainChunkPool4D
+## (slice_w_dir_local/slice_base_offset), which measured this cutting
+## submitted tets by ~66% on the height-field terrain it was built for.
+func _straddles_slice(lo: Vector4, hi: Vector4, w_dir_local: Vector4, base_offset: float) -> bool:
+	var min_proj := 0.0
+	var max_proj := 0.0
+	for axis in range(4):
+		var d: float = w_dir_local[axis]
+		var lo_a: float = lo[axis]
+		var hi_a: float = hi[axis]
+		if d >= 0.0:
+			min_proj += d * lo_a
+			max_proj += d * hi_a
+		else:
+			min_proj += d * hi_a
+			max_proj += d * lo_a
+	var min_ana: float = min_proj + base_offset
+	var max_ana: float = max_proj + base_offset
+	return min_ana <= 0.0 and max_ana >= 0.0
 
 
 ## Keeps the generated meshes out of the saved [code].tscn[/code].
@@ -223,6 +661,19 @@ func _ready() -> void:
 ## meshes immediately before a save and rebuilding right after keeps the scene
 ## file at a couple of hundred bytes.
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		# Background brick tasks (see _compute_brick_geometry) call instance
+		# methods - _add_model_layer, _noise_value, etc. - on this very node.
+		# If this node is freed while one is still running on its
+		# WorkerThreadPool thread, that call lands on a freed object and
+		# errors ("Nonexistent function ... in base 'previously freed'"),
+		# reproduced by closing a running scene while streaming was still
+		# in flight. Blocking here until every pending task has actually
+		# finished is what makes freeing this node safe regardless of what
+		# streaming was doing at the time.
+		for task_id in _pending_brick_tasks.keys():
+			WorkerThreadPool.wait_for_task_completion(task_id)
+		return
 	if not Engine.is_editor_hint():
 		return
 	match what:
@@ -288,6 +739,7 @@ func randomize_and_generate() -> void:
 
 
 func clear() -> void:
+	_clear_chunks()
 	var ground: MeshInstance4D = _get_ground_instance()
 	if ground != null:
 		ground.mesh = null
@@ -299,6 +751,44 @@ func clear() -> void:
 		collision.shape = null
 
 
+## Frees every brick MeshInstance4D this script created and resets the
+## tracking dictionaries/stats - called by both clear() and the start of
+## generate() (a fresh generate() always streams bricks in from scratch,
+## never patches the previous set), so a stale brick from a smaller previous
+## grid_size can never linger.
+func _clear_chunks() -> void:
+	for chunk in _ground_chunks.values():
+		(chunk as MeshInstance4D).queue_free()
+	for chunk in _water_chunks.values():
+		(chunk as MeshInstance4D).queue_free()
+	_ground_chunks.clear()
+	_water_chunks.clear()
+	_chunk_bounds.clear()
+	_generated_bricks.clear()
+	_edit_operations.clear()
+	_visible_chunk_count = 0
+	_total_chunk_count = 0
+	_visible_tet_count = 0
+	_total_tet_count = 0
+
+
+## Generates the world as independent bricks rather than one monolithic
+## VoxelField4D/DualContour4D pass - see _stream_bricks_in_radius and
+## _generate_brick. Only bricks within max_render_distance of world center
+## (Vector4.ZERO - the same point every model is built around, and where the
+## camera's default look_at_target sits) are generated here; more stream in
+## later via _stream_bricks_near_camera as the camera actually moves near
+## them. This is what decouples grid_size (how big the world is ALLOWED to
+## be) from how much of it this call actually pays to build.
+##
+## Returns as soon as the initial batch of bricks has been QUEUED, not once
+## they're built - each one runs on a WorkerThreadPool thread (see
+## _request_brick/_compute_brick_geometry) and lands over the following
+## frames as _process()'s _poll_brick_tasks reaps them. This is what makes
+## even a very large initial view load without a multi-second stall: the
+## caller (and every frame in between) keeps running while the terrain
+## actually builds. _print_stats() fires once streaming drains rather than
+## from here directly - see _poll_brick_tasks.
 func generate() -> void:
 	var ground_instance: MeshInstance4D = _get_ground_instance()
 	if ground_instance == null:
@@ -309,37 +799,37 @@ func generate() -> void:
 	if clamped_size != grid_size:
 		push_warning("VoxelTerrain4D: grid_size clamped to %d." % clamped_size)
 
-	var start_usec: int = Time.get_ticks_usec()
-	_setup_noise()
-
-	var field := VoxelField4D.new(clamped_size)
-	var requested_models: PackedStringArray = selected_model_names()
-	if requested_models.is_empty():
+	_active_model_names = selected_model_names()
+	if _active_model_names.is_empty():
 		push_warning("VoxelTerrain4D: no model layers selected, nothing to generate.")
 		return
-	for model_name in requested_models:
-		if not _add_model_layer(field, model_name, clamped_size):
-			push_warning("VoxelTerrain4D: unknown model '%s', skipped." % model_name)
-	var field_usec: int = Time.get_ticks_usec() - start_usec
 
-	var contour := DualContour4D.new(field)
-	contour.flip_winding = flip_winding
-	contour.generate()
-	var total_usec: int = Time.get_ticks_usec() - start_usec
+	_generation_session_id += 1
+	_clear_chunks()
+	_nominal_size = clamped_size
+	_nominal_center = float(clamped_size - 1) * 0.5
+	_ground_material = _build_material(false)
+	_water_material = _build_material(true)
+	_last_stats = {}
 
-	var center: float = float(clamped_size - 1) * 0.5
-	ground_instance.mesh = _build_mesh(contour, contour.ground_cells, center, false)
-	var water_instance: MeshInstance4D = _get_water_instance()
-	if water_instance != null:
-		water_instance.mesh = _build_mesh(contour, contour.water_cells, center, true)
+	_stream_bricks_in_radius(Vector4.ZERO, max_render_distance, _nominal_center)
 
-	_update_collision(contour, center)
+	if generate_collision:
+		push_warning("VoxelTerrain4D: generate_collision is not supported in brick-streaming mode - collision would need aggregating across every generated brick, which streaming (more bricks arrive after this call returns) makes an ongoing job rather than a one-time one. No collision shape will be built; see the ObservationFloor box in voxel_port.tscn for what to stand on instead.")
+	var collision_shape: CollisionShape4D = _get_collision_shape()
+	if collision_shape != null:
+		collision_shape.shape = null
 
-	_last_stats = contour.stats.duplicate()
-	_last_stats["grid_points"] = field.point_count()
-	_last_stats["field_ms"] = field_usec / 1000.0
-	_last_stats["total_ms"] = total_usec / 1000.0
-	_print_stats()
+	_update_chunk_visibility()
+	print("[VoxelTerrain4D] queued %d bricks for background generation (nominal grid_size %d)..." % [_bricks_in_flight.size(), _nominal_size])
+
+
+## Stamped when generate() (or a later streaming request) starts a batch of
+## background work, and read by _print_stats to report elapsed wall time -
+## the async counterpart to the old synchronous generate()'s local
+## start_usec, since that timing now has to survive across many separate
+## _process() frames instead of one function call.
+var _generate_start_usec: int = 0
 
 
 func _print_stats() -> void:
@@ -349,7 +839,9 @@ func _print_stats() -> void:
 	# 6 cross-section vertices per tetrahedron, each carrying all four corner
 	# positions plus texture data - see TetraMesh4D::update_cross_section_mesh.
 	var approximate_megabytes: float = float(total_tetrahedra) * 6.0 * 120.0 / (1024.0 * 1024.0)
-	print("[VoxelTerrain4D] %d grid points -> %d crossings -> %d vertices -> %d tets (%d ground / %d water)" % [
+	print("[VoxelTerrain4D] %d bricks (nominal grid_size %d) -> %d grid points -> %d crossings -> %d vertices -> %d tets (%d ground / %d water)" % [
+		_generated_bricks.size(),
+		_nominal_size,
 		_last_stats.get("grid_points", 0),
 		_last_stats.get("crossing_edges", 0),
 		_last_stats.get("vertices", 0),
@@ -357,31 +849,65 @@ func _print_stats() -> void:
 		ground_tetrahedra,
 		water_tetrahedra,
 	])
-	print("[VoxelTerrain4D] %d broken tets dropped, %d open boundary edges, ~%.1f MB of cross-section mesh" % [
+	print("[VoxelTerrain4D] %d broken tets dropped, ~%.1f MB of cross-section mesh" % [
 		_last_stats.get("tetrahedra_degenerate", 0),
-		_last_stats.get("hexahedra_incomplete", 0),
 		approximate_megabytes,
 	])
-	if generate_collision:
-		print("[VoxelTerrain4D] collision uses %d of %d ground tets (%d too thin to invert) - NOTE: AxisAlignedBoxPhysicsEngine4D reduces this to a single bounding box" % [
-			_last_stats.get("collision_tetrahedra", 0),
-			ground_tetrahedra,
-			_last_stats.get("tetrahedra_too_thin_for_collision", 0),
-		])
-	print("[VoxelTerrain4D] field %.0f ms, total %.0f ms" % [
+	print("[VoxelTerrain4D] field %.0f ms (summed across bricks, not wall time), %.0f ms wall time since this batch was queued" % [
 		_last_stats.get("field_ms", 0.0),
-		_last_stats.get("total_ms", 0.0),
+		(Time.get_ticks_usec() - _generate_start_usec) / 1000.0,
 	])
 
 
-func _setup_noise() -> void:
-	_noise = FastNoiseLite.new()
-	_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	_noise.seed = terrain_seed
-	_noise.frequency = noise_frequency
-	_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	_noise.fractal_octaves = fractal_octaves
-	_noise.fractal_gain = fractal_gain
+## Builds a fresh, thread-private set of noise generators from this node's
+## exported noise parameters - called once per brick, from
+## _compute_brick_geometry, on whichever WorkerThreadPool thread that brick
+## landed on, and never shared with any other brick's task.
+##
+## This project never independently verified that FastNoiseLite's
+## get_noise_*() is safe to call concurrently, from multiple threads, on ONE
+## SHARED instance - and the artifact this was built to rule out (regular,
+## brick-aligned wall-like structures reported after a long play session)
+## is exactly the shape a subtle cross-thread read hazard would produce: the
+## seam between two threads' work IS a brick boundary. A fresh instance per
+## brick costs one small allocation and a handful of property writes -
+## negligible next to a single brick's own field-evaluation cost - and
+## removes any doubt about the cause regardless of whether shared
+## FastNoiseLite access was ever actually the problem.
+func _build_thread_local_noise_set() -> Dictionary:
+	var base := FastNoiseLite.new()
+	base.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	base.seed = terrain_seed
+	base.frequency = noise_frequency
+	base.fractal_type = FastNoiseLite.FRACTAL_FBM
+	base.fractal_octaves = fractal_octaves
+	base.fractal_gain = fractal_gain
+
+	var detail: FastNoiseLite = null
+	if detail_noise_enabled:
+		detail = FastNoiseLite.new()
+		detail.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		# Offset from the base seed rather than reusing it - an IDENTICAL
+		# seed at a different frequency is still a strongly correlated
+		# signal (the same underlying lattice, just resampled), which reads
+		# as one noise field wobbling rather than two independent scales of
+		# feature layered together.
+		detail.seed = terrain_seed + 1
+		detail.frequency = noise_frequency * detail_noise_frequency_multiplier
+		detail.fractal_type = FastNoiseLite.FRACTAL_FBM
+		detail.fractal_octaves = maxi(1, fractal_octaves - 1)
+		detail.fractal_gain = fractal_gain
+
+	var cellular: FastNoiseLite = null
+	if cellular_noise_enabled:
+		cellular = FastNoiseLite.new()
+		cellular.noise_type = FastNoiseLite.TYPE_CELLULAR
+		cellular.seed = terrain_seed + 2
+		cellular.frequency = cellular_noise_frequency
+		cellular.cellular_distance_function = FastNoiseLite.DISTANCE_EUCLIDEAN
+		cellular.cellular_return_type = FastNoiseLite.RETURN_DISTANCE
+
+	return {"base": base, "detail": detail, "cellular": cellular}
 
 
 ## FastNoiseLite only samples up to 3D, so the fourth axis is folded in by
@@ -391,11 +917,29 @@ func _setup_noise() -> void:
 ## noise term to one cheap call. Swapping in a true 4D noise with an analytic
 ## gradient is the natural upgrade here, and would let _noise_gradient stop
 ## differencing entirely.
-func _noise_value(p: Vector4) -> float:
-	return _noise.get_noise_3d(p.x + p.w * 1.7, p.y - p.w * 1.3, p.z + p.w * 2.1)
+##
+## Combines the base fractal layer with the optional detail/cellular layers
+## from [param noise_set] (see _build_thread_local_noise_set), then reshapes
+## the sum through noise_smoothing_power - see that export's own comment for
+## why a post-hoc power curve is the thing a single fractal-noise call can't
+## express on its own.
+func _noise_value(noise_set: Dictionary, p: Vector4) -> float:
+	var sx: float = p.x + p.w * 1.7
+	var sy: float = p.y - p.w * 1.3
+	var sz: float = p.z + p.w * 2.1
+	var value: float = (noise_set["base"] as FastNoiseLite).get_noise_3d(sx, sy, sz)
+	var detail: FastNoiseLite = noise_set["detail"]
+	if detail != null:
+		value += detail.get_noise_3d(sx, sy, sz) * detail_noise_amplitude_fraction
+	var cellular: FastNoiseLite = noise_set["cellular"]
+	if cellular != null:
+		value += cellular.get_noise_3d(sx, sy, sz) * cellular_noise_amplitude_fraction
+	if not is_equal_approx(noise_smoothing_power, 1.0):
+		value = signf(value) * pow(absf(value), noise_smoothing_power)
+	return value
 
 
-func _noise_gradient(p: Vector4) -> Vector4:
+func _noise_gradient(noise_set: Dictionary, p: Vector4) -> Vector4:
 	var e: float = NOISE_GRADIENT_EPSILON
 	var gradient := Vector4.ZERO
 	for axis in range(4):
@@ -403,32 +947,50 @@ func _noise_gradient(p: Vector4) -> Vector4:
 		var behind: Vector4 = p
 		ahead[axis] += e
 		behind[axis] -= e
-		gradient[axis] = (_noise_value(ahead) - _noise_value(behind)) / (2.0 * e)
+		gradient[axis] = (_noise_value(noise_set, ahead) - _noise_value(noise_set, behind)) / (2.0 * e)
 	return gradient
 
 
-func _add_model_layer(field: VoxelField4D, model_name: String, size: int) -> bool:
+## Thin wrapper around [method VoxelField4D.add_layer] that translates every
+## point the density/gradient closures see by [param offset] before calling
+## them, so the SAME closures - defined once in _add_model_layer below in
+## terms of a fixed [param size]/center, exactly as when this generated one
+## monolithic field - can be evaluated against an individual brick's own
+## small field instead. A brick's field-local point 0 is world-grid point
+## [param offset], so this is exactly the translation needed to make
+## density_fn/gradient_fn see world-grid coordinates regardless of which
+## brick is asking. With offset == Vector4.ZERO (every call site not
+## involved in streaming) this is a no-op pass-through.
+func _wrapped_add_layer(field: VoxelField4D, offset: Vector4, material: int, density_fn: Callable, gradient_fn: Callable, confidence: float, replace_mask: int = VoxelField4D.REPLACE_ANY) -> int:
+	return field.add_layer(
+		material,
+		func(p: Vector4) -> float: return density_fn.call(p + offset),
+		func(p: Vector4) -> Vector4: return gradient_fn.call(p + offset),
+		confidence, replace_mask)
+
+
+func _add_model_layer(field: VoxelField4D, model_name: String, size: int, world_offset: Vector4, noise_set: Dictionary) -> bool:
 	var center := Vector4(1, 1, 1, 1) * (float(size) * 0.5)
 	var noise_amplitude: float = noise_amplitude_fraction * float(size)
 
 	match model_name:
 		"globe":
 			var radius: float = float(size) * 0.35
-			field.add_layer(
+			_wrapped_add_layer(field, world_offset,
 				VoxelField4D.VoxelMaterial.GROUND,
 				func(p: Vector4) -> float:
-					return noise_amplitude * _noise_value(p) + radius - (p - center).length(),
+					return noise_amplitude * _noise_value(noise_set, p) + radius - (p - center).length(),
 				func(p: Vector4) -> Vector4:
 					var offset: Vector4 = center - p
 					var length: float = offset.length()
 					var radial: Vector4 = Vector4.ZERO if is_zero_approx(length) else offset / length
-					return _noise_gradient(p) * noise_amplitude + radial,
+					return _noise_gradient(noise_set, p) * noise_amplitude + radial,
 				NOISY_LAYER_CONFIDENCE)
 			return true
 
 		"globewater":
 			var water_radius: float = float(size) * 0.37
-			field.add_layer(
+			_wrapped_add_layer(field, world_offset,
 				VoxelField4D.VoxelMaterial.WATER,
 				func(p: Vector4) -> float:
 					return water_radius - (p - center).length(),
@@ -441,18 +1003,18 @@ func _add_model_layer(field: VoxelField4D, model_name: String, size: int) -> boo
 
 		"plane":
 			var plane_height: float = float(size) * 0.5
-			field.add_layer(
+			_wrapped_add_layer(field, world_offset,
 				VoxelField4D.VoxelMaterial.GROUND,
 				func(p: Vector4) -> float:
-					return noise_amplitude * _noise_value(p) + plane_height - p.y,
+					return noise_amplitude * _noise_value(noise_set, p) + plane_height - p.y,
 				func(p: Vector4) -> Vector4:
-					return _noise_gradient(p) * noise_amplitude + Vector4(0, -1, 0, 0),
+					return _noise_gradient(noise_set, p) * noise_amplitude + Vector4(0, -1, 0, 0),
 				NOISY_LAYER_CONFIDENCE)
 			return true
 
 		"planewater":
 			var water_level: float = float(size) * 0.5
-			field.add_layer(
+			_wrapped_add_layer(field, world_offset,
 				VoxelField4D.VoxelMaterial.WATER,
 				func(p: Vector4) -> float:
 					return water_level - p.y,
@@ -465,7 +1027,7 @@ func _add_model_layer(field: VoxelField4D, model_name: String, size: int) -> boo
 			# Carves away everything outside a sphere in x/z/w, leaving the
 			# vertical axis untouched - a cylinder one dimension up.
 			var column_radius: float = float(size) * 0.5 - 1.0
-			field.add_layer(
+			_wrapped_add_layer(field, world_offset,
 				VoxelField4D.VoxelMaterial.AIR,
 				func(p: Vector4) -> float:
 					var radial := Vector3(p.x - center.x, p.z - center.z, p.w - center.w)
@@ -485,7 +1047,7 @@ func _add_model_layer(field: VoxelField4D, model_name: String, size: int) -> boo
 			# any surface reaching the boundary ends in a ragged open edge.
 			var high_limit: float = float(size) - 1.1
 			var low_limit := 0.1
-			field.add_layer(
+			_wrapped_add_layer(field, world_offset,
 				VoxelField4D.VoxelMaterial.AIR,
 				func(p: Vector4) -> float:
 					var highest: float = maxf(maxf(p.x, p.y), maxf(p.z, p.w)) - high_limit
@@ -520,7 +1082,7 @@ func _add_model_layer(field: VoxelField4D, model_name: String, size: int) -> boo
 			# transposed(), so take that route.
 			var inverse_rotation: Projection = rotation.inverse()
 			var half_extent: float = float(size) * 0.25
-			field.add_layer(
+			_wrapped_add_layer(field, world_offset,
 				VoxelField4D.VoxelMaterial.GROUND,
 				func(p: Vector4) -> float:
 					var local: Vector4 = rotation * (p - center)
@@ -547,7 +1109,7 @@ func _add_model_layer(field: VoxelField4D, model_name: String, size: int) -> boo
 			# binding. It has no 3D analogue, which makes it a good check that
 			# sharp features survive the QEF solve.
 			var cell_radius: float = float(size) * 0.5 - 2.5
-			field.add_layer(
+			_wrapped_add_layer(field, world_offset,
 				VoxelField4D.VoxelMaterial.GROUND,
 				func(p: Vector4) -> float:
 					var d: Vector4 = p - center
@@ -569,7 +1131,120 @@ func _add_model_layer(field: VoxelField4D, model_name: String, size: int) -> boo
 				ANALYTIC_LAYER_CONFIDENCE)
 			return true
 
+		"seafloor":
+			# Matches whichever reference level the corresponding water
+			# layer already uses (globewater's water_radius, planewater's
+			# water_level) so a shallow world's floor sits a fixed distance
+			# below the SAME surface the water sits on, regardless of shape.
+			var is_radial: bool = terrain_shape == TerrainShape.RADIAL
+			var reference_level: float = float(size) * (0.37 if is_radial else 0.5)
+			_wrapped_add_layer(field, world_offset,
+				VoxelField4D.VoxelMaterial.AIR,
+				func(p: Vector4) -> float:
+					var depth: float = reference_level - (p - center).length() if is_radial else reference_level - p.y
+					return depth - max_depth_below_water,
+				func(p: Vector4) -> Vector4:
+					if is_radial:
+						var offset: Vector4 = center - p
+						var length: float = offset.length()
+						return Vector4.ZERO if is_zero_approx(length) else offset / length
+					return Vector4(0, -1, 0, 0),
+				ANALYTIC_LAYER_CONFIDENCE)
+			return true
+
+		"arch":
+			var arch_base_y: float = float(size) * 0.5
+			var start_x: float = float(size) * arch_start_fraction
+			var end_x: float = float(size) * arch_end_fraction
+			var curve_point_fn := func(t: float) -> Vector4:
+				return Vector4(
+					lerp(start_x, end_x, t),
+					arch_base_y + arch_height * sin(t * PI),
+					center.z,
+					center.w + arch_w_amplitude * sin(t * TAU),
+				)
+			# Cheap bounding-sphere reject before the (relatively) expensive
+			# closest-point search below - most grid points in a world that
+			# combines Arch with a full plane/globe base are nowhere near
+			# the arch at all, and this is a handful of subtractions against
+			# one sample-and-search loop of ~30+ curve evaluations.
+			var arch_bounds_center := Vector4(
+				(start_x + end_x) * 0.5, arch_base_y + arch_height * 0.5, center.z, center.w)
+			var arch_bounds_radius: float = maxf(absf(end_x - start_x), arch_height) * 0.5 + arch_w_amplitude + arch_radius + 2.0
+			var arch_bounds_radius_sq: float = arch_bounds_radius * arch_bounds_radius
+			# _closest_point_on_curve's coarse-sample-then-refine search is only
+			# safe when the tube radius is much smaller than a sample's spacing
+			# IN ARC LENGTH - a fixed sample count silently violates that near
+			# the peak, where dy/dt drops to 0 while dx/dt and dw/dt (from
+			# arch_w_amplitude * TAU * cos(t*TAU)) are both still large, so the
+			# curve can cover several radii worth of distance between two
+			# adjacent samples. Size the sample count off the curve's own worst-
+			# case analytic speed instead of a magic constant, so the refinement
+			# always starts from a coarse sample within one radius of the truth
+			# no matter what arch_height/arch_w_amplitude/the x-span are set to.
+			var arch_max_speed: float = sqrt(
+				(end_x - start_x) * (end_x - start_x) +
+				(arch_height * PI) * (arch_height * PI) +
+				(arch_w_amplitude * TAU) * (arch_w_amplitude * TAU))
+			# 4x safety margin below one radius per sample step.
+			var curve_sample_count: int = clampi(ceili(arch_max_speed / maxf(arch_radius, 0.01) * 4.0), 24, 4000)
+			_wrapped_add_layer(field, world_offset,
+				VoxelField4D.VoxelMaterial.GROUND,
+				func(p: Vector4) -> float:
+					if p.distance_squared_to(arch_bounds_center) > arch_bounds_radius_sq:
+						return -1000.0 # Provably nowhere near the arch - skip the search.
+					var closest: Dictionary = _closest_point_on_curve(p, curve_point_fn, curve_sample_count)
+					return arch_radius - (closest["distance"] as float),
+				func(p: Vector4) -> Vector4:
+					var closest: Dictionary = _closest_point_on_curve(p, curve_point_fn, curve_sample_count)
+					# Density is (radius - distance), so its true gradient points
+					# TOWARD the curve, same sign convention as globe/globewater's
+					# (center - p) below - not away from it. The previous version
+					# here returned the outward direction instead, flipping the
+					# normal fed into the winding vote for the whole tube surface.
+					var offset: Vector4 = (closest["point"] as Vector4) - p
+					var length: float = offset.length()
+					return Vector4.ZERO if is_zero_approx(length) else offset / length,
+				ANALYTIC_LAYER_CONFIDENCE)
+			return true
+
 	return false
+
+
+## Coarse-sample-then-refine closest-point search along a parametric curve -
+## there is no general closed-form distance-to-an-arbitrary-curve formula,
+## so this samples [param curve_point_fn] at [param sample_count] points,
+## keeps the nearest, then narrows in on it with a few bisection-style
+## halving steps. Good enough for a tube whose radius is much smaller than
+## the curve's own radius of curvature (true for "arch" - arch_radius is a
+## small fraction of arch_height/arch_w_amplitude), which is what keeps the
+## coarse sampling from ever missing a closer point the refinement phase
+## could not find on its own.
+func _closest_point_on_curve(p: Vector4, curve_point_fn: Callable, sample_count: int) -> Dictionary:
+	var best_t := 0.0
+	var best_dist_sq := INF
+	for i in range(sample_count + 1):
+		var t: float = float(i) / float(sample_count)
+		var d_sq: float = (curve_point_fn.call(t) as Vector4).distance_squared_to(p)
+		if d_sq < best_dist_sq:
+			best_dist_sq = d_sq
+			best_t = t
+
+	var step: float = 1.0 / float(sample_count)
+	for refine_iteration in range(6):
+		var t_low: float = maxf(0.0, best_t - step)
+		var t_high: float = minf(1.0, best_t + step)
+		var d_low: float = (curve_point_fn.call(t_low) as Vector4).distance_squared_to(p)
+		var d_high: float = (curve_point_fn.call(t_high) as Vector4).distance_squared_to(p)
+		if d_low < best_dist_sq:
+			best_dist_sq = d_low
+			best_t = t_low
+		if d_high < best_dist_sq:
+			best_dist_sq = d_high
+			best_t = t_high
+		step *= 0.5
+
+	return {"point": curve_point_fn.call(best_t), "distance": sqrt(best_dist_sq)}
 
 
 ## A uniformly-ish random 4D rotation, by Gram-Schmidt on gaussian columns.
@@ -591,6 +1266,465 @@ func _random_rotation() -> Projection:
 	return Projection(columns[0], columns[1], columns[2], columns[3])
 
 
+## Generates every not-yet-streamed brick whose center (in world-grid
+## coordinates) is within [param radius] world meters of [param origin_world],
+## clamped to the nominal [0, _nominal_size) world the current generate()
+## session declared. Shared by generate() itself (origin = world center) and
+## _stream_bricks_near_camera (origin = the camera's live position) - the
+## only difference between "generate the world" and "stream more of it in
+## later" is which point this radius is measured from.
+func _stream_bricks_in_radius(origin_world: Vector4, radius: float, center: float) -> void:
+	# Only reset the "batch start" timestamp when nothing is already in
+	# flight - otherwise a streaming scan that lands while an earlier batch
+	# is still finishing (see STREAM_SCAN_INTERVAL_FRAMES) would push the
+	# reference point forward and understate _print_stats's reported wall
+	# time for work that was already queued before this call.
+	if _bricks_in_flight.is_empty():
+		_generate_start_usec = Time.get_ticks_usec()
+	var offset := Vector4(center, center, center, center)
+	var origin_grid: Vector4 = origin_world / cell_size + offset
+	var radius_grid: float = radius / cell_size
+	var brick_span: float = float(BRICK_CORE_CELLS)
+	# Bricks covering grid cells [0, _nominal_size) - a brick index past this
+	# would only ever contain padding, never a core cell inside the nominal
+	# world, so there is nothing for it to generate.
+	var max_brick_index: int = maxi(0, ceili(float(_nominal_size) / brick_span) - 1)
+
+	var bk_min := Vector4i.ZERO
+	var bk_max := Vector4i.ZERO
+	for axis in range(4):
+		bk_min[axis] = clampi(floori((origin_grid[axis] - radius_grid) / brick_span), 0, max_brick_index)
+		bk_max[axis] = clampi(ceili((origin_grid[axis] + radius_grid) / brick_span), 0, max_brick_index)
+
+	var radius_grid_sq: float = radius_grid * radius_grid
+	for bx in range(bk_min.x, bk_max.x + 1):
+		for by in range(bk_min.y, bk_max.y + 1):
+			for bz in range(bk_min.z, bk_max.z + 1):
+				for bw in range(bk_min.w, bk_max.w + 1):
+					var bk := Vector4i(bx, by, bz, bw)
+					if _generated_bricks.has(bk):
+						continue
+					var brick_center_grid: Vector4 = Vector4(bk) * brick_span + Vector4.ONE * (brick_span * 0.5)
+					if brick_center_grid.distance_squared_to(origin_grid) > radius_grid_sq:
+						continue
+					_request_brick(bk)
+
+
+## Queues one brick's generation on a WorkerThreadPool thread if it isn't
+## Adds (is_add = true) or carves (is_add = false) a hyperspherical volume
+## centered at [param world_position] (this Terrain's own local space, same
+## convention as camera.look_at_target and every other world-space point in
+## this script) with radius [param world_radius] meters. Every brick whose
+## core or padding could see this edit is dropped and re-requested
+## immediately, so the change is visible within one streaming pass rather
+## than waiting for the next scheduled scan.
+func edit_sphere(world_position: Vector4, world_radius: float, is_add: bool) -> void:
+	if _active_model_names.is_empty():
+		return # No generate() session active yet - nothing to edit.
+	var offset := Vector4(_nominal_center, _nominal_center, _nominal_center, _nominal_center)
+	var center_grid: Vector4 = world_position / cell_size + offset
+	var radius_grid: float = world_radius / cell_size
+	_edit_operations.append({"is_add": is_add, "center": center_grid, "radius": radius_grid})
+
+	# WorkerThreadPool has no cancel API (see _generation_session_id's own
+	# comment) - bumping the session id here means any brick task already in
+	# flight anywhere, not just near this edit, gets discarded as stale by
+	# _finish_brick once it completes rather than risking it overwriting a
+	# brick this edit just invalidated with pre-edit geometry. Bricks far
+	# from the edit that get discarded this way simply aren't marked
+	# generated, and pick themselves back up on the next streaming scan
+	# (see STREAM_SCAN_INTERVAL_FRAMES) - a small, one-off delay, not a
+	# correctness problem, and simpler than tracking per-brick edit epochs.
+	_generation_session_id += 1
+
+	var brick_span: float = float(BRICK_CORE_CELLS)
+	# Reach past the edit's own radius by one brick span plus BRICK_PAD: a
+	# brick whose CORE doesn't touch the edit at all can still have its
+	## PADDING margin overlap it, and that padding needs to see the edit too
+	# or it would disagree with whichever brick owns those cells as ITS
+	# core - the same cross-brick consistency requirement BRICK_PAD exists
+	# for in the first place, just triggered by an edit instead of a
+	# generate() pass.
+	var reach: float = radius_grid + float(BRICK_PAD) + brick_span
+	var bk_min := Vector4i.ZERO
+	var bk_max := Vector4i.ZERO
+	for axis in range(4):
+		bk_min[axis] = floori((center_grid[axis] - reach) / brick_span)
+		bk_max[axis] = ceili((center_grid[axis] + reach) / brick_span)
+	for bx in range(bk_min.x, bk_max.x + 1):
+		for by in range(bk_min.y, bk_max.y + 1):
+			for bz in range(bk_min.z, bk_max.z + 1):
+				for bw in range(bk_min.w, bk_max.w + 1):
+					var bk := Vector4i(bx, by, bz, bw)
+					_discard_brick(bk)
+					_request_brick(bk)
+
+
+## Frees an existing brick's mesh children (if any) and forgets it was ever
+## generated, so a later _request_brick for the same key builds it fresh
+## rather than treating it as already done.
+func _discard_brick(bk: Vector4i) -> void:
+	if _generated_bricks.has(bk):
+		_generated_bricks.erase(bk)
+		_total_chunk_count -= 1
+	if _ground_chunks.has(bk):
+		var ground_mesh: ArrayTetraMesh4D = (_ground_chunks[bk] as MeshInstance4D).mesh
+		if ground_mesh != null:
+			_total_tet_count -= ground_mesh.simplex_cell_indices.size() / 4
+		(_ground_chunks[bk] as MeshInstance4D).queue_free()
+		_ground_chunks.erase(bk)
+	if _water_chunks.has(bk):
+		var water_mesh: ArrayTetraMesh4D = (_water_chunks[bk] as MeshInstance4D).mesh
+		if water_mesh != null:
+			_total_tet_count -= water_mesh.simplex_cell_indices.size() / 4
+		(_water_chunks[bk] as MeshInstance4D).queue_free()
+		_water_chunks.erase(bk)
+	_chunk_bounds.erase(bk)
+
+
+## Applies one edit_sphere() entry as an extra VoxelField4D layer, exactly
+## like a "spherinder"/"cutoff" carve in _add_model_layer - the same
+## density/gradient shape either places GROUND (is_add) or carves back to
+## AIR, letting VoxelField4D's own layer-compositing (material comparison,
+## crossing refinement, everything) do the actual work unchanged.
+func _add_edit_layer(field: VoxelField4D, op: Dictionary, brick_origin: Vector4) -> void:
+	var center: Vector4 = op["center"]
+	var radius: float = op["radius"]
+	var material: int = VoxelField4D.VoxelMaterial.GROUND if op["is_add"] else VoxelField4D.VoxelMaterial.AIR
+	_wrapped_add_layer(field, brick_origin,
+		material,
+		func(p: Vector4) -> float:
+			return radius - (p - center).length(),
+		func(p: Vector4) -> Vector4:
+			var offset: Vector4 = center - p
+			var length: float = offset.length()
+			return Vector4.ZERO if is_zero_approx(length) else offset / length,
+		ANALYTIC_LAYER_CONFIDENCE)
+
+
+## Queues one brick's generation on a WorkerThreadPool thread if it isn't
+## already generated or already in flight, up to MAX_CONCURRENT_BRICK_TASKS
+## at once - callers past that cap simply retry on the next streaming scan,
+## since nothing here is lost, only delayed.
+func _request_brick(bk: Vector4i) -> void:
+	if _generated_bricks.has(bk) or _bricks_in_flight.has(bk):
+		return
+	if _bricks_in_flight.size() >= MAX_CONCURRENT_BRICK_TASKS:
+		return
+	var result_slot := {"session_id": _generation_session_id}
+	_bricks_in_flight[bk] = result_slot
+	# Snapshotted here (main thread, at request time) rather than read live
+	# from _compute_brick_geometry on the worker thread - _edit_operations
+	# can grow at any time from a live edit (see edit_sphere), and Array is
+	# not documented safe for one thread to append to while another iterates
+	# it. Duplicating it once per brick means every brick sees a fixed,
+	# consistent edit history for its own generation, the same freezing
+	# principle _active_model_names already applies to the model layer list.
+	var edit_ops_snapshot: Array = _edit_operations.duplicate()
+	var task_id: int = WorkerThreadPool.add_task(_compute_brick_geometry.bind(bk, result_slot, edit_ops_snapshot))
+	_pending_brick_tasks[task_id] = bk
+
+
+## Runs entirely on a background thread - the whole VoxelField4D +
+## DualContour4D + QEF pass for one brick, exactly what the old synchronous
+## _generate_brick did, but writing its output into [param result_slot]
+## instead of building any MeshInstance4D/ArrayTetraMesh4D (those touch the
+## render server and must happen back on the main thread - see _finish_brick).
+## Reads _active_model_names/_nominal_size/flip_winding/_noise and the
+## various @export generation parameters, all of which this generate()
+## "session" already treats as frozen for its duration (see
+## _active_model_names's own comment) - nothing here writes to shared state,
+## so many of these can run concurrently across different bricks safely.
+func _compute_brick_geometry(bk: Vector4i, result_slot: Dictionary, edit_ops_snapshot: Array) -> void:
+	var brick_field_size: int = BRICK_CORE_CELLS + 1 + 2 * BRICK_PAD
+	var brick_origin: Vector4 = Vector4(bk) * float(BRICK_CORE_CELLS) - Vector4.ONE * float(BRICK_PAD)
+
+	var field_start_usec: int = Time.get_ticks_usec()
+	var field := VoxelField4D.new(brick_field_size)
+	var noise_set: Dictionary = _build_thread_local_noise_set()
+	for model_name in _active_model_names:
+		_add_model_layer(field, model_name, _nominal_size, brick_origin, noise_set)
+	# Edits are just more density layers, applied in the order they were
+	# made, exactly like the "cutoff"/"spherinder" carve layers already are -
+	# a later edit legitimately overwrites an earlier one that overlaps it,
+	# the same as any other layer composition in this field.
+	for op in edit_ops_snapshot:
+		_add_edit_layer(field, op, brick_origin)
+	var field_ms: float = (Time.get_ticks_usec() - field_start_usec) / 1000.0
+
+	var contour := DualContour4D.new(field)
+	contour.flip_winding = flip_winding
+	contour.generate()
+
+	# contour.vertices comes out in this brick's OWN local coordinates
+	# (0 .. brick_field_size - 1) - shift once, in place, so every downstream
+	# consumer (_build_mesh, _slope_at, _altitude_at, the core-cell filter
+	# right below) can keep treating vertex positions as world-grid
+	# coordinates exactly like the old monolithic contour's always were.
+	for i in range(contour.vertices.size()):
+		contour.vertices[i] += brick_origin
+
+	var core_min: Vector4 = Vector4(bk) * float(BRICK_CORE_CELLS)
+	var core_max: Vector4 = core_min + Vector4.ONE * float(BRICK_CORE_CELLS)
+
+	result_slot["contour"] = contour
+	result_slot["ground_core"] = _filter_core_cells(contour, contour.ground_cells, core_min, core_max)
+	result_slot["water_core"] = _filter_core_cells(contour, contour.water_cells, core_min, core_max)
+	result_slot["core_min"] = core_min
+	result_slot["core_max"] = core_max
+	result_slot["field_ms"] = field_ms
+	result_slot["grid_points"] = field.point_count()
+	result_slot["crossing_edges"] = contour.stats.get("crossing_edges", 0)
+	result_slot["vertices"] = contour.stats.get("vertices", 0)
+	result_slot["tetrahedra_degenerate"] = contour.stats.get("tetrahedra_degenerate", 0)
+
+
+## Main-thread-only second half of brick generation: takes a finished
+## background task's result_slot and builds the actual MeshInstance4D/
+## ArrayTetraMesh4D children from it - the direct counterpart to the old
+## _rebuild_chunks/_partition_cells_by_chunk pair, except a brick's geometry
+## was never part of a larger contour to begin with, so there is nothing to
+## partition.
+func _finish_brick(bk: Vector4i, result_slot: Dictionary) -> void:
+	if result_slot["session_id"] != _generation_session_id:
+		return # Superseded by a later generate()/randomize_and_generate() call - discard.
+	_generated_bricks[bk] = true
+	_last_stats["field_ms"] = _last_stats.get("field_ms", 0.0) + result_slot["field_ms"]
+	_last_stats["grid_points"] = _last_stats.get("grid_points", 0) + result_slot["grid_points"]
+	_last_stats["crossing_edges"] = _last_stats.get("crossing_edges", 0) + result_slot["crossing_edges"]
+	_last_stats["vertices"] = _last_stats.get("vertices", 0) + result_slot["vertices"]
+	_last_stats["tetrahedra_degenerate"] = _last_stats.get("tetrahedra_degenerate", 0) + result_slot["tetrahedra_degenerate"]
+
+	var contour: DualContour4D = result_slot["contour"]
+	var ground_core: PackedInt32Array = result_slot["ground_core"]
+	var water_core: PackedInt32Array = result_slot["water_core"]
+	if ground_core.is_empty() and water_core.is_empty():
+		# Pure air, or every crossing here belonged to padding a neighbouring
+		# brick already owns. _generated_bricks[bk] above still counts this
+		# brick (it IS done, just meshless) - resync here too, or a later
+		# _discard_brick for this key decrements _total_chunk_count without
+		# it ever having been incremented for this brick, eventually driving
+		# the count negative.
+		_total_chunk_count = _generated_bricks.size()
+		return
+
+	var core_min: Vector4 = result_slot["core_min"]
+	var core_max: Vector4 = result_slot["core_max"]
+	var center: float = _nominal_center
+	var offset := Vector4(center, center, center, center)
+	_chunk_bounds[bk] = {
+		"min": (core_min - offset) * cell_size,
+		"max": (core_max - offset) * cell_size,
+	}
+
+	if not ground_core.is_empty():
+		var ground_instance: MeshInstance4D = _get_ground_instance()
+		if ground_instance != null:
+			var node := MeshInstance4D.new()
+			node.name = "GroundBrick_%d_%d_%d_%d" % [bk.x, bk.y, bk.z, bk.w]
+			node.mesh = _build_mesh(contour, ground_core, center, false, _ground_material)
+			ground_instance.add_child(node)
+			_ground_chunks[bk] = node
+			_total_tet_count += ground_core.size() / 4
+			_last_stats["ground_tetrahedra"] = _last_stats.get("ground_tetrahedra", 0) + ground_core.size() / 4
+
+	if not water_core.is_empty():
+		var water_instance: MeshInstance4D = _get_water_instance()
+		if water_instance != null:
+			var node := MeshInstance4D.new()
+			node.name = "WaterBrick_%d_%d_%d_%d" % [bk.x, bk.y, bk.z, bk.w]
+			node.mesh = _build_mesh(contour, water_core, center, true, _water_material)
+			water_instance.add_child(node)
+			_water_chunks[bk] = node
+			_total_tet_count += water_core.size() / 4
+			_last_stats["water_tetrahedra"] = _last_stats.get("water_tetrahedra", 0) + water_core.size() / 4
+
+	_total_chunk_count = _generated_bricks.size()
+
+
+## Writes every currently-generated brick's raw mesh arrays
+## (vertices/simplex_cell_indices/simplex_cell_texture_map - everything
+## needed to rebuild an ArrayTetraMesh4D without touching VoxelField4D/
+## DualContour4D/QEFSolver4D again) plus its bounds to a single file,
+## alongside the generation parameters that produced it. This is the
+## "pre-processing step, done once" half of baking: run generate() (and let
+## it fully stream in - see _wait_until_caught_up if scripting this), then
+## call this once to capture the result. load_from_file() is the other half.
+##
+## Deliberately does not cache _edit_operations - a bake captures a
+## generated WORLD, not an edit history, and reloading it always starts from
+## that clean baseline, the same as pressing Generate itself does.
+func bake_to_file(path: String) -> void:
+	var bricks_data := {}
+	for bk in _generated_bricks.keys():
+		var entry := {}
+		if _chunk_bounds.has(bk):
+			var bounds: Dictionary = _chunk_bounds[bk]
+			entry["min"] = bounds["min"]
+			entry["max"] = bounds["max"]
+		var ground_node: MeshInstance4D = _ground_chunks.get(bk)
+		if ground_node != null and ground_node.mesh != null:
+			var mesh: ArrayTetraMesh4D = ground_node.mesh
+			entry["ground_vertices"] = mesh.vertices
+			entry["ground_indices"] = mesh.simplex_cell_indices
+			entry["ground_uvw"] = mesh.simplex_cell_texture_map
+		var water_node: MeshInstance4D = _water_chunks.get(bk)
+		if water_node != null and water_node.mesh != null:
+			var mesh: ArrayTetraMesh4D = water_node.mesh
+			entry["water_vertices"] = mesh.vertices
+			entry["water_indices"] = mesh.simplex_cell_indices
+			entry["water_uvw"] = mesh.simplex_cell_texture_map
+		bricks_data[bk] = entry
+
+	var data := {
+		"format_version": 1,
+		"nominal_size": _nominal_size,
+		"cell_size": cell_size,
+		"brick_core_cells": BRICK_CORE_CELLS,
+		"brick_pad": BRICK_PAD,
+		"model_layers": model_layers,
+		"terrain_seed": terrain_seed,
+		"noise_frequency": noise_frequency,
+		"fractal_octaves": fractal_octaves,
+		"fractal_gain": fractal_gain,
+		"noise_amplitude_fraction": noise_amplitude_fraction,
+		"flip_winding": flip_winding,
+		"terrain_shape": terrain_shape,
+		"bricks": bricks_data,
+	}
+
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		push_error("VoxelTerrain4D: could not open '%s' for writing (error %s)." % [path, FileAccess.get_open_error()])
+		return
+	file.store_var(data)
+	file.close()
+	print("[VoxelTerrain4D] baked %d bricks to %s" % [bricks_data.size(), path])
+
+
+## Loads a file written by bake_to_file(), skipping VoxelField4D/
+## DualContour4D/QEFSolver4D entirely - every brick's mesh is rebuilt
+## directly from its stored arrays. Refuses to load (returns false, logs
+## why) if the cache's generation parameters don't match this node's current
+## settings, since a mismatched cache's geometry would quietly disagree with
+## whatever live streaming would generate for the same brick keys - visible
+## as seams at best, an outright wrong world at worst.
+##
+## Real-time systems - _update_chunk_visibility's culling,
+## _stream_bricks_near_camera's live streaming for anything past the baked
+## region, edit_sphere - all keep working unchanged afterwards, exactly as
+## if generate() itself had populated these same dictionaries; loading is
+## just a much faster way to arrive at the same _generated_bricks/
+## _ground_chunks/_water_chunks/_chunk_bounds state.
+func load_from_file(path: String) -> bool:
+	if not FileAccess.file_exists(path):
+		push_error("VoxelTerrain4D: cache file '%s' does not exist." % path)
+		return false
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		push_error("VoxelTerrain4D: could not open '%s' for reading (error %s)." % [path, FileAccess.get_open_error()])
+		return false
+	var data: Dictionary = file.get_var()
+	file.close()
+
+	var mismatch := PackedStringArray()
+	if int(data.get("nominal_size", -1)) != grid_size:
+		mismatch.append("grid_size")
+	if not is_equal_approx(float(data.get("cell_size", -1.0)), cell_size):
+		mismatch.append("cell_size")
+	if int(data.get("brick_core_cells", -1)) != BRICK_CORE_CELLS:
+		mismatch.append("BRICK_CORE_CELLS")
+	if int(data.get("model_layers", -1)) != model_layers:
+		mismatch.append("model_layers")
+	if int(data.get("terrain_seed", -1)) != terrain_seed:
+		mismatch.append("terrain_seed")
+	if not mismatch.is_empty():
+		push_error("VoxelTerrain4D: cache '%s' does not match current settings (%s) - refusing to load stale geometry." % [path, ", ".join(mismatch)])
+		return false
+
+	_active_model_names = selected_model_names()
+	_generation_session_id += 1
+	_clear_chunks()
+	_nominal_size = int(data["nominal_size"])
+	_nominal_center = float(_nominal_size - 1) * 0.5
+	_ground_material = _build_material(false)
+	_water_material = _build_material(true)
+	_last_stats = {}
+	_generate_start_usec = Time.get_ticks_usec()
+
+	var ground_instance: MeshInstance4D = _get_ground_instance()
+	var water_instance: MeshInstance4D = _get_water_instance()
+	var bricks_data: Dictionary = data["bricks"]
+	for bk in bricks_data.keys():
+		var entry: Dictionary = bricks_data[bk]
+		_generated_bricks[bk] = true
+		if entry.has("min"):
+			_chunk_bounds[bk] = {"min": entry["min"], "max": entry["max"]}
+
+		if entry.has("ground_vertices") and ground_instance != null:
+			var ground_mesh := ArrayTetraMesh4D.new()
+			ground_mesh.vertices = entry["ground_vertices"]
+			ground_mesh.simplex_cell_indices = entry["ground_indices"]
+			ground_mesh.simplex_cell_texture_map = entry["ground_uvw"]
+			ground_mesh.material = _ground_material
+			var ground_node := MeshInstance4D.new()
+			ground_node.name = "GroundBrick_%d_%d_%d_%d" % [bk.x, bk.y, bk.z, bk.w]
+			ground_node.mesh = ground_mesh
+			ground_instance.add_child(ground_node)
+			_ground_chunks[bk] = ground_node
+			_total_tet_count += ground_mesh.simplex_cell_indices.size() / 4
+
+		if entry.has("water_vertices") and water_instance != null:
+			var water_mesh := ArrayTetraMesh4D.new()
+			water_mesh.vertices = entry["water_vertices"]
+			water_mesh.simplex_cell_indices = entry["water_indices"]
+			water_mesh.simplex_cell_texture_map = entry["water_uvw"]
+			water_mesh.material = _water_material
+			var water_node := MeshInstance4D.new()
+			water_node.name = "WaterBrick_%d_%d_%d_%d" % [bk.x, bk.y, bk.z, bk.w]
+			water_node.mesh = water_mesh
+			water_instance.add_child(water_node)
+			_water_chunks[bk] = water_node
+			_total_tet_count += water_mesh.simplex_cell_indices.size() / 4
+
+	_total_chunk_count = _generated_bricks.size()
+	_update_chunk_visibility()
+	var total_ms: float = (Time.get_ticks_usec() - _generate_start_usec) / 1000.0
+	print("[VoxelTerrain4D] loaded %d bricks (%d tets) from %s in %.0f ms" % [_generated_bricks.size(), _total_tet_count, path, total_ms])
+	return true
+
+
+## Keeps only the tets (4 indices each, into contour.vertices - already
+## shifted to world-grid coordinates by the time this runs) whose centroid
+## falls strictly within [core_min, core_max): the cells this brick actually
+## OWNS, as opposed to the BRICK_PAD margin around them that exists purely so
+## DualContour4D's own hexahedron completeness check (see BRICK_PAD) doesn't
+## discard geometry that belongs to the core. A tet belonging to the padding
+## is not lost - the neighbouring brick that owns those cells as ITS core
+## will independently regenerate the identical geometry there, from the
+## identical world-grid density samples, since every brick's density/gradient
+## closures are pure functions of world-grid position regardless of which
+## brick asked.
+func _filter_core_cells(contour: DualContour4D, cells: PackedInt32Array, core_min: Vector4, core_max: Vector4) -> PackedInt32Array:
+	var kept := PackedInt32Array()
+	for i in range(0, cells.size(), 4):
+		var centroid := Vector4.ZERO
+		for corner in range(4):
+			centroid += contour.vertices[cells[i + corner]]
+		centroid *= 0.25
+		var inside := true
+		for axis in range(4):
+			if centroid[axis] < core_min[axis] or centroid[axis] >= core_max[axis]:
+				inside = false
+				break
+		if inside:
+			kept.append(cells[i])
+			kept.append(cells[i + 1])
+			kept.append(cells[i + 2])
+			kept.append(cells[i + 3])
+	return kept
+
+
 ## Builds one [ArrayTetraMesh4D] from a subset of the contoured tetrahedra.
 ##
 ## Note this appends tetrahedra directly rather than going through the
@@ -599,7 +1733,7 @@ func _random_rotation() -> Projection:
 ## nothing and costs ~11 deduplicating appends per tetrahedron instead of one -
 ## and PolyMesh4D would only decompose them straight back into simplices to
 ## render anyway.
-func _build_mesh(contour: DualContour4D, cells: PackedInt32Array, center: float, is_water: bool) -> ArrayTetraMesh4D:
+func _build_mesh(contour: DualContour4D, cells: PackedInt32Array, center: float, is_water: bool, shared_material: TetraMaterial4D = null) -> ArrayTetraMesh4D:
 	if cells.is_empty():
 		return null
 
@@ -635,6 +1769,9 @@ func _build_mesh(contour: DualContour4D, cells: PackedInt32Array, center: float,
 				_altitude_at(grid_position, center),
 				0.5))
 
+	if not is_water:
+		mesh.simplex_cell_texture_map = texture_map
+
 	# Only two colour sources actually reach the cross-section shader:
 	# TetraMaterial4D::update_cross_section_material sets exactly two uniforms,
 	# `albedo` (from albedo_color, and only when the SINGLE_COLOR flag is set)
@@ -642,16 +1779,28 @@ func _build_mesh(contour: DualContour4D, cells: PackedInt32Array, center: float,
 	# albedo_color_array is never consulted for tetrahedral meshes at all, so
 	# PER_CELL and PER_VERT both silently render pure white - the shader simply
 	# has no per-cell colour attribute to read.
+	#
+	# shared_material lets a caller building many chunk meshes from the same
+	# generate() pass reuse ONE material (and, for ground, one already-baked
+	# palette texture) instead of rebuilding it per chunk - every chunk of the
+	# same type is visually identical material anyway, so per-chunk materials
+	# would just be redundant allocation, not a visual difference.
+	if shared_material != null:
+		mesh.material = shared_material
+	else:
+		mesh.material = _build_material(is_water)
+	return mesh
+
+
+func _build_material(is_water: bool) -> TetraMaterial4D:
 	var material := TetraMaterial4D.new()
 	if is_water:
 		material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_SINGLE_COLOR
 		material.albedo_color = water_color
 	else:
-		mesh.simplex_cell_texture_map = texture_map
 		material.albedo_texture_3d = albedo_texture_3d if albedo_texture_3d != null else _build_palette_texture()
 		material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY
-	mesh.material = material
-	return mesh
+	return material
 
 
 ## Bakes [method _ground_color] into a 3D texture indexed by (slope, altitude).
@@ -699,24 +1848,39 @@ func _altitude_at(grid_position: Vector4, center: float) -> float:
 	return clampf(radius / span, 0.0, 1.0)
 
 
-## Sand at the waterline, grass above it, rock on anything steep, snow at the
-## top. The reference demo gets this from a single 2D texture lookup indexed by
+## Mud at the flat, low-lying shoreline, sand on the steeper parts of the
+## same low band, grass above that, rock higher still, snow at the top - and
+## regardless of altitude, anything steep enough reads as bare stone. The
+## reference demo gets this from a single 2D texture lookup indexed by
 ## exactly these two values; assigning an [member albedo_texture_3d] switches
 ## to that path.
 func _ground_color(slope: float, altitude: float) -> Color:
+	const MUD := Color(0.35, 0.27, 0.19)
 	const SAND := Color(0.76, 0.70, 0.50)
 	const GRASS := Color(0.28, 0.52, 0.24)
 	const ROCK := Color(0.42, 0.40, 0.38)
+	## Deliberately a distinct, cooler grey from ROCK above - ROCK is an
+	## ALTITUDE band (the "mid-height" colour on a gentle slope), while this
+	## is a SLOPE override applied regardless of altitude. Using the same
+	## colour for both would mean a steep cliff just looks like "more of
+	## whatever altitude band it happens to sit in" instead of reading as
+	## actual bare exposed stone.
+	const STONE_GREY := Color(0.56, 0.57, 0.59)
 	const SNOW := Color(0.92, 0.94, 0.96)
 
 	var base: Color
 	if altitude < 0.45:
-		base = SAND.lerp(GRASS, clampf(altitude / 0.45, 0.0, 1.0))
+		# Mud wants to be low AND flat - a flood-plain/lakebed, not just
+		# "anything near the water". A steep bank at the same altitude (the
+		# waterline meeting an actual slope, not a flat shore) reads as
+		# ordinary sand instead, which is what slope blends toward here.
+		var shore: Color = MUD.lerp(SAND, clampf(slope / 0.3, 0.0, 1.0))
+		base = shore.lerp(GRASS, clampf(altitude / 0.45, 0.0, 1.0))
 	elif altitude < 0.8:
 		base = GRASS.lerp(ROCK, clampf((altitude - 0.45) / 0.35, 0.0, 1.0))
 	else:
 		base = ROCK.lerp(SNOW, clampf((altitude - 0.8) / 0.2, 0.0, 1.0))
-	return base.lerp(ROCK, clampf((slope - 0.35) / 0.4, 0.0, 1.0))
+	return base.lerp(STONE_GREY, clampf((slope - 0.35) / 0.4, 0.0, 1.0))
 
 
 ## Builds collision from the well-conditioned subset of the ground tetrahedra
