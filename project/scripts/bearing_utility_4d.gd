@@ -19,8 +19,22 @@ extends RefCounted
 ## e.g. gimbal_basis.w/.z usage in player_4d.gd and the test scripts) - no
 ## get_column() needed.
 static func compute(body: Node4D, target_position: Vector4) -> Dictionary:
-	var rel: Vector4 = target_position - body.global_position
-	var basis: Projection = body.global_basis
+	return compute_raw(body.global_position, body.global_basis, target_position)
+
+
+## Same computation as [method compute], but taking the observer's position/
+## basis as plain values rather than reading them off a live Node4D. Needed
+## wherever the "observer" for bearing purposes ISN'T the thing that visually
+## carries the 4D rotation - e.g. voxel_port's hover-camera convention
+## rotates the TERRAIN (rig_path), never the camera itself (see
+## voxel_hover_camera_4d.gd's own header on why), so the correct observer
+## basis for "is this on the currently-visible slice" is the rig's basis,
+## while the correct observer position is still the camera's - two different
+## nodes, neither of which alone is the right single Node4D to pass to
+## [method compute].
+static func compute_raw(observer_position: Vector4, observer_basis: Projection, target_position: Vector4) -> Dictionary:
+	var rel: Vector4 = target_position - observer_position
+	var basis: Projection = observer_basis
 	var ana_offset: float = rel.dot(basis.w)
 	var rel_length: float = rel.length()
 	return {

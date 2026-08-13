@@ -6,6 +6,8 @@
 [ext_resource type="Script" path="res://scripts/clouds_layer.gd" id="5_clouds"]
 [ext_resource type="Shader" path="res://scripts/clouds.gdshader" id="6_cloudshader"]
 [ext_resource type="Texture2D" path="res://textures/clouds_noise_volume_atlas.png" id="7_cloudnoise"]
+[ext_resource type="Script" path="res://scripts/poi_spawner.gd" id="8_poispawner"]
+[ext_resource type="Script" path="res://scripts/poi_radar.gd" id="9_poiradar"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
 size = Vector4(120, 1, 120, 120)
@@ -55,6 +57,13 @@ camera_path = NodePath("../HoverCamera")
 
 [node name="CollisionShape4D" type="CollisionShape4D" parent="Terrain/StaticBody4D"]
 
+[node name="POIs" type="Node4D" parent="Terrain"]
+
+[node name="POISpawner" type="Node" parent="."]
+script = ExtResource("8_poispawner")
+terrain_path = NodePath("../Terrain")
+poi_container_path = NodePath("../Terrain/POIs")
+
 [node name="ObservationFloor" type="StaticBody4D" parent="."]
 position = Vector4(0, -35.5, 0, 0)
 
@@ -98,3 +107,21 @@ theme_override_constants/shadow_offset_y = 1
 text = "FPS: 0"
 script = ExtResource("4_perfhud")
 terrain_path = NodePath("../../Terrain")
+
+[node name="POIRadar" type="Control" parent="HUD"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -220.0
+offset_top = -170.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("9_poiradar")
+camera_path = NodePath("../../HoverCamera")
+rig_path = NodePath("../../Terrain")
+poi_container_path = NodePath("../../Terrain/POIs")
