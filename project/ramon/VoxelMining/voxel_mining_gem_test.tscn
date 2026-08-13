@@ -1,0 +1,35 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://player/player.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://ramon/VoxelMining/voxel_mining_gem_block.tscn" id="2"]
+[ext_resource type="Script" path="res://ramon/VoxelMining/scripts/mining_axe.gd" id="3"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
+size = Vector4(40, 1, 40, 40)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_floor"]
+albedo_color = Color(0.32, 0.34, 0.38, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_floor"]
+size = Vector4(40, 1, 40, 40)
+
+[node name="VoxelMiningGemTest" type="Node4D"]
+
+[node name="ObservationFloor" type="StaticBody4D" parent="."]
+position = Vector4(0, -1, 0, 0)
+
+[node name="BoxCollider" type="CollisionShape4D" parent="ObservationFloor"]
+shape = SubResource("BoxShape4D_floor")
+
+[node name="BoxMesh" type="MeshInstance4D" parent="ObservationFloor"]
+material_override = SubResource("TetraMaterial4D_floor")
+mesh = SubResource("BoxTetraMesh4D_floor")
+
+[node name="RockBlock" parent="." instance=ExtResource("2")]
+position = Vector4(0, 0.55, -2, 0)
+
+[node name="Player" parent="." instance=ExtResource("1")]
+position = Vector4(0, 0.5, 0, 0)
+
+[node name="MiningAxe" type="Node" parent="."]
+script = ExtResource("3")

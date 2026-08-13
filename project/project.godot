@@ -11,13 +11,14 @@ config_version=5
 [application]
 
 config/name="Quantum Horizon Main Godot Project"
-run/main_scene="uid://qoe6y4lb5tgo"
+run/main_scene="uid://ck1m7ghsfv3uq"
 config/features=PackedStringArray("4.5", "Double Precision")
 config/icon="res://icon.svg"
 
 [display]
 
-window/size/mode=2
+window/size/viewport_width=1920
+window/size/viewport_height=1080
 
 [filesystem]
 
