@@ -7,6 +7,14 @@ after building the first Skybox/Sun4D prototype, since renamed to
 `project/ramon/IsoclynicSun/isoclynic_sun.tscn`. Read this before touching any
 of the files below.
 
+> **STATUS 2026-08-13 — parked.** The engine change that backed
+> `fake_light_direction` and the editor `WorldEnvironment` bridge has been
+> reverted, because Aaron's upstream `light` branch rewrites 4 of the 5 files
+> it touched. **Everything below describing `fake_light_direction` as live is
+> no longer true of the checked-out engine.** Full reasoning, current symptoms,
+> and the complete patch to restore it: see
+> [`isoclynic_sun_reinstate.md`](isoclynic_sun_reinstate.md).
+
 ## Where things stand today
 
 Built a `Sun4D` controller (`project/ramon/IsoclynicSun/scripts/sun_4d.gd`) that

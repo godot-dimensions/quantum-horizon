@@ -3,4 +3,4 @@
 	url = https://github.com/godot-dimensions/godot
 [submodule "engine/modules/4d"]
 	path = engine/modules/4d
-	url = https://github.com/Ramonster43/godot-4d
+	url = https://github.com/godot-dimensions/godot-4d
