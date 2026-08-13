@@ -2,8 +2,11 @@
 
 Purpose of this file: a self-contained briefing so a future session can pick up
 `project/ramon/voxel_port/` without re-deriving anything. Written 2026-08-12,
-the day the port was built. The headline unsolved problem is **holes in the
-generated surface** — read "The open problem" before touching the contouring.
+the day the port was built, updated 2026-08-13. The headline unsolved problem is
+**holes in the generated surface** — read "The open problem" before touching the
+contouring. As of 2026-08-13 the mesh is measured closed, so the cause is
+rendering, not contouring; the current lead is coincident ground/water sheets
+and it is untested.
 
 ## What this is
 
@@ -75,11 +78,61 @@ alignments, so big well-formed tetrahedra decide and slivers contribute ~0) and
 all 6 inherit it by reversing the ring. Cross-hexahedron disagreement is now
 0.44%.
 
-**Still wrong:** a manifold check counts **11,664 triangular faces used by only
-one tetrahedron** instead of two, out of 28,140 tets. That's ~2,900 hexahedron
-quad faces (~20%) where neighbours don't line up.
+**RESOLVED 2026-08-13 — the surface is closed. The 11,664 was a measurement
+artifact**, not a defect. The holes you can see are real; the missing geometry
+they implied never existed.
 
-Two theories tested and **ruled out** — don't repeat these:
+The original check identified a face by its three vertex *indices*. But the
+contour deliberately emits one vertex per material pair at the same solved
+position (`_emit_component_vertex`), so two tetrahedra can meet perfectly in
+space while naming the same corner with different ids — and the check scored
+every one of those as a hole. Re-run keyed on *position* instead
+(`voxel_port/manifold_check.gd`, headless, still in the tree):
+
+```
+                        by index      by position
+distinct faces            62,066          53,929
+used twice (good)         50,392          49,638
+used ONCE  (hole)         11,640               0
+used 3+    (non-manifold)     34           4,291
+degenerate (excluded)          0               0
+```
+
+**Zero boundary faces.** Supporting stats from the same run, all of which had
+to be zero for that to mean anything, and all of which are:
+`tetrahedra_degenerate 0` (the `MIN_NORMALIZED_VOLUME` sliver rejection never
+fires, so no geometry is discarded), `hexahedra_incomplete 0` (every one of the
+4,690 crossing edges got its full ring of 8 cells), and no face collapsed to a
+repeated corner. Nothing is missing from the mesh.
+
+So **the visible holes are not missing triangles**, and three suspects die at
+once: vertex sharing, surface topology, and sliver rejection.
+
+**Andrew's answer (2026-08-12), which pointed the right way:** the original
+shows no visible gaps at `?size=12&model=globeWater,globe,cutoff`. On vertex
+sharing he noted that `edge.vertices[cellCoord]` being per-primal-edge is not a
+divergence risk, because `addMeshVertex` fans the same vertex out to every
+relevant primal edge at once — the guarantee lives in the write, not the
+lookup. The port does structurally the same thing. He did caveat that he had
+not verified the tets' faces match perfectly, which is exactly the gap the
+by-position measurement closed.
+
+**Current lead — UNTESTED:** the 4,291 faces used 3+ times. In a clean surface
+that is zero. It is non-zero because ground and water are geometrically
+coincident over much of the globe: 3,553 of 7,517 vertices sit on a position
+another vertex already occupies. One triangle therefore bounds both the ground
+volume and the water volume, and both are rendered — opaque ground and
+transparent water at identical positions. Z-fighting between two near-parallel
+coincident sheets would look exactly like "gaps you can see through, worst on
+flat/faceted regions."
+
+**Next step, ~30 seconds:** regenerate with `model_layers` = `globe,cutoff`
+(water off). Holes vanish → coincident sheets and transparency sorting, and the
+fix is in how the two meshes are separated, nowhere near the QEF or component
+detection. Holes persist → winding, and `flip_winding` plus the 491 contested
+hexahedra are where to look.
+
+Three theories tested and **ruled out** — don't repeat these:
 
 1. *Mismatched fan diagonals.* Worked through the demo's `getFaceIndices` ring
    construction: the main diagonal is defined globally ("cell before the edge
@@ -93,23 +146,15 @@ Two theories tested and **ruled out** — don't repeat these:
    Eight vertices. Not it. (Change was kept anyway — it matches the demo, which
    keys on material pair plus the layer's altitude *function*.)
 
-**Remaining suspect:** vertex sharing. Measuring ~1.94 dual vertices per cell
-(3,869 cells → 7,517 vertices). Much of that is legitimate — `globewater` at
-0.37·size and `globe` at 0.35·size are only ~0.24 grid units apart, so most
-surface cells genuinely contain two sheets. But `_edge_cell_vertex` is keyed
-per *edge*, so two adjacent hexahedra on the same sheet look up their own
-edge's vertex in the four cells they share, and nothing obviously guarantees
-they get the same one.
-
-**Next measurement:** do the unmatched faces cluster at the shoreline (where
-ground and water sheets meet and component assignment legitimately shifts) or
-spread across open terrain? Clustering means the topology is arguably correct
-and the visible holes have a different cause again; spread means component
-detection is inconsistent between neighbouring cells, and that's the bug.
-
-**Cheaper first step:** ask Andrew whether the original shows the same cracks at
-`?size=12&model=globeWater,globe,cutoff`. If it doesn't, the port broke
-something. A question is already drafted for him covering the above.
+3. *Vertex sharing.* Was the leading suspect overnight, on the grounds that
+   `_edge_cell_vertex` is keyed per *edge*, so two adjacent hexahedra on the
+   same sheet look up their own edge's vertex in the four cells they share with
+   nothing obviously forcing agreement. Killed twice over: by Andrew's
+   explanation of `addMeshVertex` above, and by the by-position measurement
+   showing zero boundary faces. The ~1.94 dual vertices per cell (3,869 cells →
+   7,517 vertices) is legitimate — `globewater` at 0.37·size and `globe` at
+   0.35·size are only ~0.24 grid units apart, so most surface cells genuinely
+   contain two sheets.
 
 ## Deferred, roughly in value order
 
