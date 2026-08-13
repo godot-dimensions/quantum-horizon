@@ -1,8 +1,16 @@
-# Overnight terrain bakes
+# Voxel terrain bakes (branch `terrain-review`)
 
-Generated in this worktree (`quantum-horizon-ramon-review`) while fixing several real bugs found
-during interactive sessions, then baking four different terrain "looks" for later use (procedural
-asset placement, gameplay-loop prototyping, etc.).
+Generated while fixing several real bugs in `ramon/voxel_port/`, then baking four different
+terrain "looks" for later use (procedural asset placement, gameplay-loop prototyping, etc.). A
+**Voxel Terrain Demos** menu (`scripts/terrain_demo_menu.tscn`, set as this branch's
+`run/main_scene`) is the entry point - press Play and pick one.
+
+**Important - the actual baked `.bin` files are NOT in this repo.** `bake_to_file()` writes to
+Godot's `user://` data directory (a per-machine folder outside the project, e.g.
+`%APPDATA%\Godot\app_userdata\...` on Windows), not `res://` - and at 140-275MB each they're well
+over GitHub's 100MB push limit regardless. Pulling this branch gets you the menu and the scripts
+that know how to bake/load, but clicking a demo button on a machine that's never baked will just
+print "no bake found" - see "Getting the actual demos running on another machine" below.
 
 ## Bugs fixed
 
@@ -38,26 +46,31 @@ asset placement, gameplay-loop prototyping, etc.).
    set after `load_from_file()` in `_interactive_bake_runner.gd` - which gates
    `_stream_bricks_near_camera()` off entirely so a loaded demo shows exactly what was baked, no
    more, no less.
-6. **Brick candidates excluding corners of an otherwise-uniform region.** `_stream_bricks_in_radius`
-   selects candidates by Euclidean distance from the streaming origin to each brick's *center* -
-   correct and necessary for live streaming around a freely-orbiting camera (a box would look
-   lopsided depending on facing), but for a one-shot bake at `BRICK_CORE_CELLS=16` and the shared
-   `max_render_distance=20`, a single-axis-offset brick sits exactly 16 units out (inside the
-   radius) while a diagonal two-axis-offset brick sits `sqrt(16^2+16^2)~=22.6` units out (just
-   outside it). For a flat terrain (arch/rolling_hills/cracked_archipelago) this only clipped the
-   four outer corners of the demo area - a "plus" shape instead of a filled square, cosmetic since
-   it's away from the interesting content. For `ocean_globe` specifically, the sphere's own radius
-   (~16.8 grid units, plus noise) sits close enough to that same 20-unit radius that the identical
-   filtering clipped pieces of the VISIBLE SPHERE SURFACE - a brick whose center landed just past
-   the radius got skipped even though its core still overlapped the sphere, leaving a gap with no
-   neighbour to connect smoothly to. This, not a meshing bug, was the actual cause of the
-   long-unresolved "hollow, gap-toothed sphere with a disconnected floating fragment" - confirmed
-   by isolating `globe` alone, then `globe+water`, then the full `globe+water+cutoff` stack (all
-   with real noise settings) at a wider radius of 25 and getting a clean, solid result every time,
-   then reproducing that same clean result through the actual bake pipeline. Fixed by raising
-   `max_render_distance` to 25 for all four presets specifically (in `_bake_preset_runner.gd`),
-   which pulls in the diagonal-neighbour bricks without ballooning all the way to the full 81-brick
-   candidate cube.
+6. **Brick candidates excluding parts of an otherwise-uniform region.** `_stream_bricks_in_radius`
+   selects candidates by Euclidean distance from the streaming origin to each brick's *center*.
+   With `BRICK_CORE_CELLS=16`, the diagonal distance to a brick offset on N of the 4 axes is
+   `16*sqrt(N)`: 16 (1 axis), ~22.6 (2), ~27.7 (3), 32 (4 - the true corners of the whole 3x3x3x3
+   candidate cube). The original radius of 20 excluded everything past N=1; raising it to 25
+   (an earlier attempt) covered N=2 but still excluded the 8 bricks at N=3, which was still
+   visible as real gaps on every preset - most obviously on `ocean_globe`, where the sphere's own
+   radius is close enough to the selection radius that ANY exclusion clips the visible surface
+   rather than just an unused corner. **Fixed by raising `max_render_distance` to 35**, which
+   clears all of N=4 with margin - every one of the 81 candidate bricks in this
+   `grid_size`/`BRICK_CORE_CELLS` combination is now included, so there is no remaining
+   radius-shaped gap possible. This is also what root-caused the long-standing
+   "hollow, gap-toothed sphere with a disconnected floating fragment" on ocean_globe - confirmed
+   NOT a meshing/winding bug via isolation testing (`globe` alone, then `+water`, then the full
+   `+water+cutoff` stack, all clean at a wide-enough radius), then reproduced through the real
+   bake pipeline.
+7. **A misclick during orbit could hang the app and blank the mesh.** `edit_sphere()` discards
+   and immediately re-requests every brick within `edit_radius`, unconditionally - it isn't
+   gated by `freeze_streaming` the way ordinary camera-driven streaming is. The click-vs-drag
+   tolerance on the hover camera is only a few pixels, so an accidental click during a fast orbit
+   drag was enough to trigger a full live regeneration pass (noise + layers, real seconds of
+   work) and made the app appear to hang. Not fixed at the root yet - mitigated by adding
+   `VoxelHoverCamera4D.enable_editing` (default on) and setting it `false` in
+   `_interactive_bake_runner.gd`, so the demo-browsing menu never triggers this. Editing needs a
+   real fix (at minimum: respect `freeze_streaming`) before it's turned back on for these demos.
 
 ## New features added
 
@@ -79,16 +92,29 @@ asset placement, gameplay-loop prototyping, etc.).
   same low band looks like on a steeper bank) and a cooler, distinct stone grey for steep slopes
   specifically (previously steep slopes just blended toward the same brownish colour used for the
   mid-altitude band, so a cliff read as "more of whatever altitude it was at" instead of bare rock).
+- **Voxel Terrain Demos menu** (`scripts/terrain_demo_menu.gd`/`.tscn`): the project's
+  `run/main_scene` on this branch. Four buttons load `_interactive_bake.tscn` with a different
+  `bake_path`, staying in the same running instance; Esc from inside any demo returns to the menu.
 
-## How to load one of these later
+## Getting the actual demos running on another machine
 
-The easiest way is `_interactive_bake.tscn` (`scripts/_interactive_bake_runner.gd`) - set its
-`bake_path` export to whichever `.bin` you want, run it, and you get a live, orbitable,
-click-to-edit scene loaded from the cache in well under a second. `freeze_streaming` is set true
-automatically after load, so it shows exactly what was baked and never falls back to slow live
-generation as you move the camera.
+1. Pull `terrain-review` and build the engine normally (`run_editor_windows.bat`/`.ps1`).
+2. First run on a machine that's never had this branch checked out will hit a
+   `Could not find type "VoxelField4D"` (etc.) script parse error - Godot's local `.godot` class
+   cache doesn't know about the new scripts yet. One-time fix: run
+   `godot.windows.editor.double.x86_64.exe --path <project> --editor --headless --quit` once to
+   rebuild the cache, then launch normally.
+3. Get the four `voxel_bake_*.bin` files into your own `user://` folder - either:
+   - Have someone who's already baked send you the files directly (ask, not yet set up as an
+     automatic share), and drop them into your own Godot `user://` data dir for this project, or
+   - Bake them yourself: run each `_bake_*.tscn` scene directly (not through the menu) and wait -
+     at `max_render_distance=35` (full 81-brick coverage) these took 6.5-8.5 minutes each on this
+     machine's RTX 3090, with FPS dips into single digits during generation on the heavier
+     presets. On weaker hardware, budget considerably more and expect it to be genuinely
+     unpleasant to sit through - this is the open question flagged for team discussion (Git LFS
+     vs. a manual file drop vs. something else).
 
-To load manually from your own script:
+## How to load one of these later (from your own script)
 
 ```gdscript
 terrain.BRICK_CORE_CELLS = 16
@@ -101,34 +127,33 @@ terrain.load_from_file("user://voxel_bake_<name>.bin")
 terrain.freeze_streaming = true  # optional - keep set unless you want it to keep streaming live
 ```
 
-Every preset below shares `BRICK_CORE_CELLS=16`, `grid_size=48`, `cell_size=1.0`, `terrain_seed=1`,
-and `max_render_distance=25.0` (raised from the original 20.0 - see bug #6 above).
-`_bake_preset_runner.gd` (and its four `_bake_*.tscn` wrapper scenes) records the *exact*
-per-preset settings if you want to regenerate one from scratch instead of loading the cache.
+Every preset shares `BRICK_CORE_CELLS=16`, `grid_size=48`, `cell_size=1.0`, `terrain_seed=1`, and
+`max_render_distance=35.0`. `_bake_preset_runner.gd` (and its four `_bake_*.tscn` wrapper scenes)
+records the *exact* per-preset settings if you want to regenerate one from scratch.
 
 ## The four scenes
 
 ### 1. Rolling hills (`user://voxel_bake_rolling_hills.bin`)
-**Done** - 33 bricks, 1,285,293 tets, 144.6 MB, 0 broken tets.
+**Done** - 81 bricks (full candidate cube), 1,846,630 tets, 207.5 MB, 0 broken tets.
 
 Gentle, low-frequency terrain with a second fine-detail noise layer and a smoothing power of 1.8
 (flattens the mid-range bumps that made the very first attempt read as "spiky" rather than
 rolling). Shallow seafloor (4 grid units below the waterline) instead of a deep ocean basin.
 
 ### 2. Cracked archipelago (`user://voxel_bake_cracked_archipelago.bin`)
-**Done** - 33 bricks, 1,873,049 tets, 193.0 MB, 0 broken tets.
+**Done** - 81 bricks, 2,674,405 tets, 274.7 MB, 0 broken tets.
 
 Pure cellular/Voronoi noise, no smoothing - reads as a genuine archipelago of separate rounded
 islands surrounded by water, clearly distinct from rolling_hills' continuous terrain.
 
 ### 3. 4D arch (`user://voxel_bake_arch.bin`)
-**Done** - 33 bricks, 1,253,010 tets, 141.5 MB, 0 broken tets.
+**Done** - 81 bricks, 1,794,105 tets, 202.4 MB, 0 broken tets.
 
-Rolling-hills-style base terrain plus the arch tube described above, now rendering as one
-continuous, correctly-shaded tube (see bug #4). In the baseline w=0 view you should see one clear
-"chimney" where the arch's peak pokes through (y-high, w-back-at-zero) and the tube mostly
-invisible elsewhere along its length (it's off in w during most of the climb/descent) - rotate the
-4D slice (right-drag on the hover camera) to watch the rest of it sweep into view.
+Rolling-hills-style base terrain plus the arch tube described above, rendering as one continuous,
+correctly-shaded tube (see bug #4). In the baseline w=0 view you should see one clear "chimney"
+where the arch's peak pokes through (y-high, w-back-at-zero) and the tube mostly invisible
+elsewhere along its length (it's off in w during most of the climb/descent) - rotate the 4D slice
+(right-drag on the hover camera) to watch the rest of it sweep into view.
 
 Known rough edge: the tube's flat end caps, where they meet the ground plane, currently show as
 small depressions rather than blending in perfectly smoothly - cosmetic, not a generation bug
@@ -137,14 +162,13 @@ flat plane at a shallow angle yet). Worth revisiting if these get used for anyth
 seam would actually show.
 
 ### 4. Ocean globe (`user://voxel_bake_ocean_globe.bin`)
-**Done** - 33 bricks, 2,053,101 tets, 161.6 MB, 0 broken tets.
+**Done** - 81 bricks, 2,289,882 tets, 178.2 MB, 0 broken tets.
 
-The project's own original default model (spherical ocean planet), now rendering as one solid,
+The project's own original default model (spherical ocean planet), rendering as one solid,
 continuous sphere with proper islands showing through the water - see bug #6 above for the actual
 root cause (brick-candidate distance filtering clipping the visible surface, nothing to do with
-meshing/winding). This was the long-unresolved item from the first overnight session; it's closed
-now, confirmed both by isolated layer-by-layer testing and by the real bake pipeline producing the
-identical clean tet count and screenshot.
+meshing/winding). This was the long-standing unresolved item from the first pass at these bakes;
+it's closed now.
 
 ## For later: procedural asset placement
 
@@ -153,8 +177,9 @@ should help:
 - `_slope_at()`/`_altitude_at()` (existing) give you exactly the two values the colour system
   itself uses to decide sand/mud/grass/rock/snow/stone - the same signals are a reasonable first
   cut at "where should a tree/house go" (e.g. avoid steep slope, avoid underwater altitude).
-- `edit_sphere()` (existing) means placed objects could carve a flat pad into the terrain under
-  themselves rather than just floating on an uneven surface, if that turns out to matter.
+- `edit_sphere()` (existing, currently disabled in the demo menu - see bug #7) means placed
+  objects could carve a flat pad into the terrain under themselves rather than just floating on
+  an uneven surface, if that turns out to matter.
 - Nothing exists yet for actually sampling "is this world position solid ground" from outside the
   terrain generation pipeline (a raycast-free point query) - that would be the natural next piece
   to build for asset placement specifically, since `generate_collision` is documented as not
@@ -162,9 +187,14 @@ should help:
 
 ## Possible follow-up (not done)
 
-`_stream_bricks_in_radius`'s Euclidean-distance candidate selection is the right tool for live
-streaming around a freely-orbiting camera, but the wrong tool for "bake a clean rectangular/cubic
-region" - raising `max_render_distance` (as done above) works but is a "generous sphere with
-margin," not an exact guarantee of a filled region. A dedicated `_stream_bricks_in_box(min, max)`
-variant, used only by the bake scripts, would give bakes an exact, predictable footprint instead of
-relying on radius tuning per preset.
+- **Editing needs a real fix, not just a disable** (bug #7) - at minimum, gate `edit_sphere()`'s
+  discard+re-request behind `freeze_streaming`, or give it its own opt-in confirmation before it
+  does a live regen pass.
+- **Bake distribution across the team** - the `.bin` files aren't in git (see above); still open
+  whether to hand them out manually, set up Git LFS, or something else.
+- `_stream_bricks_in_radius`'s Euclidean-distance candidate selection is the right tool for live
+  streaming around a freely-orbiting camera, but generating the full 81-brick cube by brute-force
+  radius (35) works only because this grid is small enough to afford it. A dedicated
+  `_stream_bricks_in_box(min, max)` variant, used only by the bake scripts, would express "bake
+  this exact region" directly instead of relying on a radius large enough to accidentally cover
+  it - worth doing if bakes grow beyond this size.

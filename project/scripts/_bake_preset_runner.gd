@@ -5,12 +5,10 @@ extends Node
 ## part of the shipped scene - an overnight batch-baking tool.
 ##
 ## Every preset shares the SAME generation budget (BRICK_CORE_CELLS=16,
-## radius_grid=20, grid_size=48) - the combination already measured to
-## complete reliably in ~2 minutes without the memory blowup a much bigger
-## BRICK_CORE_CELLS hit earlier. Pushing any one preset further tonight
-## would trade a guaranteed set of finished bakes for a chance at a bigger
-## one that might crash partway and leave nothing - not the right trade for
-## an unattended overnight run.
+## grid_size=48, max_render_distance=35 - see _apply_preset()'s own comment
+## on why 35 specifically) - the combination already measured to complete
+## reliably (several minutes at the full 81-brick candidate cube) without
+## the memory blowup a much bigger BRICK_CORE_CELLS hit earlier.
 
 @onready var terrain: Node4D = $VoxelPort/Terrain
 @onready var camera: Camera4D = $VoxelPort/HoverCamera
@@ -25,7 +23,21 @@ func _apply_preset(preset: String) -> void:
 	terrain.BRICK_CORE_CELLS = 16
 	terrain.cell_size = 1.0
 	terrain.grid_size = 48
-	terrain.max_render_distance = 20.0
+	# Candidate bricks are chosen by Euclidean distance from the streaming
+	# origin to each brick's CENTER. With BRICK_CORE_CELLS=16, the diagonal
+	# distance to a brick offset on N of the 4 axes is 16*sqrt(N): 16 (1
+	# axis), ~22.6 (2), ~27.7 (3), 32 (4, the true corners of the whole
+	# candidate cube). An earlier radius of 25 covered only up to N=2,
+	# which left an 8-brick corner gap (all N=3 cases) - visible as chunks
+	# missing near the visual corners on flat terrain, and as gaps clipped
+	# out of the sphere's own surface on ocean_globe specifically (its
+	# radius is close enough to the selection radius that ANY exclusion
+	# shows up on the visible surface, not just unused corners). 35 clears
+	# all of N=4 with margin, so every one of the 81 candidate bricks in
+	# this grid_size/BRICK_CORE_CELLS combination is included - no more
+	# radius-shaped gaps possible, at the cost of generating the full
+	# candidate cube instead of a subset.
+	terrain.max_render_distance = 35.0
 	terrain.terrain_seed = 1
 	terrain.flip_winding = false
 
@@ -36,11 +48,6 @@ func _apply_preset(preset: String) -> void:
 			# instead of the original default's spiky look, plus a shallow
 			# seafloor so there is no deep "empty ocean" volume below the
 			# waterline.
-			# Same corner-gap issue as arch (see that case's comment): at the
-			# shared default radius of 20, diagonal-neighbour bricks
-			# (~22.6 units from center) get silently excluded, notching the
-			# corners out of what should be one continuous flat sheet.
-			terrain.max_render_distance = 25.0
 			terrain.model_layers = terrain.MODEL_PLANE | terrain.MODEL_PLANE_WATER | terrain.MODEL_SEAFLOOR | terrain.MODEL_CUTOFF
 			terrain.terrain_shape = terrain.TerrainShape.PLANAR
 			terrain.noise_frequency = 0.05
@@ -59,9 +66,6 @@ func _apply_preset(preset: String) -> void:
 			# layer) - its sharp cell boundaries read as a cracked,
 			# geometric island pattern once water floods the low cells,
 			# nothing like the continuous rolling-hills look.
-			# Same corner-gap issue as arch/rolling_hills - see that case's
-			# comment.
-			terrain.max_render_distance = 25.0
 			terrain.model_layers = terrain.MODEL_PLANE | terrain.MODEL_PLANE_WATER | terrain.MODEL_SEAFLOOR | terrain.MODEL_CUTOFF
 			terrain.terrain_shape = terrain.TerrainShape.PLANAR
 			terrain.noise_frequency = 0.06
@@ -79,15 +83,6 @@ func _apply_preset(preset: String) -> void:
 			# Rolling-hills-style base terrain (so it is not just bare
 			# flat ground) plus the 4D arch: rises through y, sweeps
 			# through w and back on the way up, lands again elsewhere.
-			# Candidate bricks are chosen by EUCLIDEAN distance from the
-			# streaming origin to each brick's center - at radius 20 (the
-			# shared default above), a single-axis-offset brick sits exactly
-			# 16 units out (inside 20) but a diagonal two-axis-offset corner
-			# brick sits sqrt(16^2+16^2)=~22.6 units out (outside 20), so the
-			# corners of what should be one continuous flat sheet get silently
-			# skipped - a "plus" shape instead of a filled square. 25 clears
-			# the two-axis diagonal with margin.
-			terrain.max_render_distance = 25.0
 			terrain.model_layers = terrain.MODEL_PLANE | terrain.MODEL_PLANE_WATER | terrain.MODEL_SEAFLOOR | terrain.MODEL_ARCH | terrain.MODEL_CUTOFF
 			terrain.terrain_shape = terrain.TerrainShape.PLANAR
 			terrain.noise_frequency = 0.05
@@ -112,19 +107,6 @@ func _apply_preset(preset: String) -> void:
 			# colour fixes as the other presets, to show those fixes
 			# clearly apply to the radial/globe case too, not just planar
 			# ones.
-			# Candidate bricks are chosen by distance from the streaming
-			# origin to each brick's CENTER, not by whether the brick's own
-			# CORE extent reaches the surface - harmless for a flat terrain
-			# (only clips unused corners far from the interesting content),
-			# but this sphere's own radius (~16.8 grid units, plus noise) is
-			# close enough to the shared default radius (20) that the same
-			# filtering clips pieces of the VISIBLE SURFACE itself: a brick
-			# whose CENTER lands just past the radius gets skipped even when
-			# its CORE still overlaps the sphere, leaving a gap with no
-			# neighbour to connect smoothly to - this is what "hollow,
-			# gap-toothed sphere with a disconnected floating fragment" was.
-			# Confirmed by isolation testing at radius 25 (clean, no gaps).
-			terrain.max_render_distance = 25.0
 			terrain.model_layers = terrain.MODEL_GLOBE_WATER | terrain.MODEL_GLOBE | terrain.MODEL_CUTOFF
 			terrain.terrain_shape = terrain.TerrainShape.RADIAL
 			terrain.noise_frequency = 0.1

@@ -59,6 +59,16 @@ extends Camera4D
 ## in this feature.
 @export var terrain_path: NodePath
 @export_range(0.5, 100.0, 0.5, "or_greater", "suffix:m") var edit_radius: float = 6.0
+## edit_sphere() discards and immediately re-requests every brick within
+## reach, unconditionally - including live regeneration cost, since it
+## isn't gated by VoxelTerrain4D.freeze_streaming the way ordinary camera-
+## driven streaming is. A misclick during a fast orbit drag (click-vs-drag
+## tolerance is only CLICK_DRAG_TOLERANCE_PX) can trigger this by accident,
+## which is exactly what made a demo session hang and its mesh vanish.
+## Defaults on; contexts that want guaranteed-instant, edit-free interaction
+## until this gets a real fix (see _interactive_bake_runner.gd) turn it off
+## explicitly.
+@export var enable_editing: bool = true
 
 @export_range(0.001, 0.02, 0.0001) var orbit_sensitivity: float = 0.005
 @export_range(0.001, 0.02, 0.0001) var rotate_4d_sensitivity: float = 0.006
@@ -165,6 +175,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _try_edit(is_add: bool) -> void:
+	if not enable_editing:
+		return
 	var terrain: Node4D = _get_terrain()
 	if terrain == null:
 		return

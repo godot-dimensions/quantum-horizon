@@ -14,6 +14,17 @@ extends Node
 
 @export var bake_path: String = "user://voxel_bake_10cm_safe.bin"
 
+## Set by terrain_demo_menu.gd before adding this scene to the tree, so Esc
+## can return there instead of just quitting - a no-op (Esc does nothing)
+## when this scene is run standalone, e.g. via _bake_*.tscn's own preview.
+var return_to_menu_scene: String = "res://scripts/terrain_demo_menu.tscn"
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		if not return_to_menu_scene.is_empty() and ResourceLoader.exists(return_to_menu_scene):
+			get_tree().change_scene_to_file(return_to_menu_scene)
+
 
 func _apply_baked_generation_params(data: Dictionary) -> void:
 	terrain.BRICK_CORE_CELLS = int(data["brick_core_cells"])
@@ -58,6 +69,11 @@ func _ready() -> void:
 	# for everything beyond it, paying the noise+layer cost per brick (up to
 	# several seconds each) instead of the ~40ms this load just took.
 	terrain.freeze_streaming = true
+	# edit_sphere() discards+re-requests bricks unconditionally, ignoring
+	# freeze_streaming - a misclick during a fast orbit drag was enough to
+	# trigger a live regeneration pass and hang the app. Off here until
+	# editing gets its own real fix; re-enable per-scene once it does.
+	camera.enable_editing = false
 	camera.look_at_target = Vector4.ZERO
 	camera.radius = baked_radius * 1.8
 	camera.min_radius = baked_radius * 0.05
@@ -71,4 +87,4 @@ func _ready() -> void:
 	print("=== cell_size=%.3f (%.0fcm/voxel), baked radius ~%.2fm, camera radius %.2fm, edit_radius %.2fm ===" % [
 		terrain.cell_size, terrain.cell_size * 100.0, baked_radius, camera.radius, camera.edit_radius,
 	])
-	print("=== controls: left-drag orbit, right-drag 4D rotate, scroll zoom, WASD+QE pan, left-click add, right-click carve ===")
+	print("=== controls: left-drag orbit, right-drag 4D rotate, scroll zoom, WASD+QE pan, Esc back to menu (editing disabled for now) ===")
