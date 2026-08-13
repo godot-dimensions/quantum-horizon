@@ -1,8 +1,11 @@
-[gd_scene load_steps=7 format=3 uid="uid://qoe6y4lb5tgo"]
+[gd_scene load_steps=11 format=3 uid="uid://qoe6y4lb5tgo"]
 
 [ext_resource type="Script" uid="uid://c1hlkyfk1tx3s" path="res://ramon/voxel_port/scripts/voxel_terrain_4d.gd" id="2_terrn"]
 [ext_resource type="Script" path="res://ramon/voxel_port/scripts/voxel_hover_camera_4d.gd" id="3_hover"]
 [ext_resource type="Script" path="res://ramon/voxel_port/scripts/voxel_terrain_perf_hud.gd" id="4_perfhud"]
+[ext_resource type="Script" path="res://scripts/clouds_layer.gd" id="5_clouds"]
+[ext_resource type="Shader" path="res://scripts/clouds.gdshader" id="6_cloudshader"]
+[ext_resource type="Texture2D" path="res://textures/clouds_noise_volume_atlas.png" id="7_cloudnoise"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
 size = Vector4(120, 1, 120, 120)
@@ -12,6 +15,29 @@ albedo_color = Color(0.32, 0.34, 0.38, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_floor"]
 size = Vector4(120, 1, 120, 120)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_clouds"]
+shader = ExtResource("6_cloudshader")
+shader_parameter/noise_volume_atlas = ExtResource("7_cloudnoise")
+shader_parameter/atlas_cols = 8.0
+shader_parameter/atlas_rows = 6.0
+shader_parameter/depth = 48.0
+shader_parameter/cloud_color = Color(1, 1, 1, 1)
+shader_parameter/coverage = 0.45
+shader_parameter/softness = 0.35
+shader_parameter/drift_speed_a = Vector2(0.03, 0.01)
+shader_parameter/drift_speed_b = Vector2(-0.015, 0.022)
+shader_parameter/direction_scale = 2.0
+shader_parameter/leak_scale = 24.0
+
+[sub_resource type="Sky" id="Sky_clouds"]
+sky_material = SubResource("ShaderMaterial_clouds")
+
+[sub_resource type="Environment" id="Environment_clouds"]
+background_mode = 2
+sky = SubResource("Sky_clouds")
+ambient_light_source = 3
+ambient_light_energy = 0.6
 
 [node name="VoxelPort" type="Node4D"]
 
@@ -49,6 +75,14 @@ look_at_target = Vector4(0, 0, 0, 0)
 radius = 60.0
 rig_path = NodePath("../Terrain")
 terrain_path = NodePath("../Terrain")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_clouds")
+
+[node name="CloudsController" type="Node" parent="."]
+script = ExtResource("5_clouds")
+sky_material = SubResource("ShaderMaterial_clouds")
+rig_path = NodePath("../Terrain")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
