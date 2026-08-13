@@ -85,6 +85,12 @@ const CLICK_DRAG_TOLERANCE_PX := 6.0
 
 var _azimuth: float = 0.0
 var _elevation: float = deg_to_rad(35.0)
+## Absolute xw/zw angles, recomputed into rig.basis from scratch every drag
+## step rather than composed onto the rig's OWN current basis - see the
+## right-drag handler's own comment for why accumulating local-frame
+## composition drifts.
+var _rotate_4d_angle_xw: float = 0.0
+var _rotate_4d_angle_zw: float = 0.0
 var _dragging_orbit := false
 var _dragging_rotate_4d := false
 var _last_mouse_pos := Vector2.ZERO
@@ -170,8 +176,22 @@ func _unhandled_input(event: InputEvent) -> void:
 				# right-drag convention (mixes x/w and z/w only, never
 				# touching y, so "straight down" stays meaningful for any
 				# ground-probe raycast regardless of current rig rotation).
-				var step: Projection = Basis4D.from_xw(delta.x * rotate_4d_sensitivity) * Basis4D.from_zw(delta.y * rotate_4d_sensitivity)
-				rig.basis = rig.basis * step
+				#
+				# Track absolute xw/zw angles and rebuild rig.basis from them
+				# FRESH every drag step, rather than composing each new step
+				# onto the rig's own current basis (rig.basis = rig.basis *
+				# step). That composition applies each step in the rig's
+				# CURRENT local frame, which drifts: after enough mixed
+				# xw+zw dragging, the local zw plane's actual orientation in
+				# world space can end up wherever the xz plane used to be, so
+				# a pure vertical drag starts visibly looking like a totally
+				# different rotation than the one being requested. Same class
+				# of bug as the 3D orbit camera's own holonomy fix elsewhere
+				# in this project (yaw/pitch tracked as absolute state, not
+				# accumulated local rotations).
+				_rotate_4d_angle_xw += delta.x * rotate_4d_sensitivity
+				_rotate_4d_angle_zw += delta.y * rotate_4d_sensitivity
+				rig.basis = Basis4D.from_xw(_rotate_4d_angle_xw) * Basis4D.from_zw(_rotate_4d_angle_zw)
 
 
 func _try_edit(is_add: bool) -> void:
