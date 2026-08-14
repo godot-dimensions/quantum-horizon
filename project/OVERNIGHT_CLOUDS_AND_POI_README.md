@@ -1,71 +1,59 @@
-# Overnight session: cloud bug fixes + POI system
+# Overnight + morning-after session: cloud bug fixes + POI system
 
-Two commits on `terrain-review`, both local only (not pushed - see "What's not
-done" at the end):
+This doc's original overnight version described a `shader_type sky` /
+`EYEDIR`-based implementation. That approach got reviewed the next morning and
+turned out to be wrong for this project's actual camera use case (an
+RTS-style hover camera looking mostly downward at a bounded terrain patch, not
+a first-person view needing a full sky dome) - a sky shader fills the entire
+sky as seen from ground level, which read as "clouds fixed to the top of the
+screen, not reacting to zoom/rotation" rather than a deck sitting over the
+terrain. This section now describes the CURRENT, morning-after-fixes
+implementation instead of the overnight one; the underlying noise/rotation
+math described below is unchanged from the original overnight work, only
+*where it's sampled from* changed.
 
-- `Add mock 4D-responsive clouds via a real Sky shader`
-- `Add POI system: real 4D markers, surface spawner, and a bearing radar`
+## Clouds: current implementation
 
-## Clouds: what was actually wrong, and what fixed it
+`clouds_layer.gd` + `clouds.gdshader` render an ordinary bounded 3D
+`PlaneMesh` (`shader_type spatial`, `unshaded`, `cull_disabled`,
+`depth_draw_never`) positioned as a semi-transparent deck over the terrain,
+not a sky dome:
 
-Your screenshots caught two real, separate bugs, not one:
+- **Footprint** comes from the terrain's nominal `grid_size * cell_size` -
+  this tracks the terrain's edges well and, importantly, stays a large,
+  stable value throughout brick streaming.
+- **Height** comes from the terrain's ACTUAL generated surface geometry
+  (scanning `Ground/<brick>.mesh` vertices for the highest point, the same
+  vertex-read technique `poi_spawner.gd` uses for surface placement - no
+  raycast or separate height function available in this engine), floated
+  `height_margin_voxels` (default 5) `cell_size` units above that real peak,
+  per an explicit request to derive height from real geometry rather than a
+  fraction of the footprint (which put clouds absurdly high/low whenever
+  grid_size changed, and was the direct cause of the "fixed to the top of the
+  screen, doesn't react to zoom" bug report).
+- Footprint deliberately does NOT also come from the scanned bounds (an
+  earlier version tried this): only a fraction of the terrain's bricks may
+  have streamed in at any moment, so the scanned XZ extent can be far smaller
+  than the terrain's eventual real size - and a small footprint combined with
+  this deck's height hits a reproducible Godot rendering cliff (confirmed
+  empirically: identical shader/material, a ~40-unit plane at height ~29
+  renders nothing from ANY camera angle, while the same plane at height ~10,
+  or a ~70+-unit plane at height ~29, both render fine). Not fully
+  root-caused at the engine level; sidestepped by keeping the footprint on
+  the large, stable nominal formula instead.
 
-**1. Wrong rendering approach entirely.** The clouds were a flat 3D `PlaneMesh`
-sampling its own world position. That has two structural problems a plane can
-never avoid: it shows a hard edge where the mesh ends (the "floating ceiling"
-look), and worse, near the plane's own horizon the visible world-space
-distance per screen pixel grows without bound - classic edge-on-plane
-perspective blowup. That's what produced the severe stretching, and it got
-*worse* not better as I first tried "fade out near the horizon" - the blowup
-starts well before any reasonable fade threshold. Fixed by switching to a real
-`Environment`/`Sky` shader (this project already has one, unused, at
-`ramon/IsoclynicSun/shaders/isoclynic_sun_sky.gdshader` - copied that wiring
-pattern). A sky shader has no geometry and no edges; it's the background
-wherever nothing else is drawn, sampled purely from `EYEDIR` (a per-pixel view
-direction, always a smooth unit vector, no blowup possible).
+The noise sampling itself (seamless flipbook-atlas volume, tilted
+cross-section via the rig's `xw`/`zw` basis) is unchanged from the original
+overnight implementation - see `clouds.gdshader`'s own header for the
+derivation. `debug_mode` (0 = normal) is still there for future debugging -
+set it to 1-4 to see raw world-space XZ, the post-rotation `local`, the
+wrapped tile UV, or a raw single-layer noise sample.
 
-**2. The atlas tiles were never actually seamless.** This was the one
-producing the dramatic radiating rays in your screenshots. I'd flagged this as
-a known shortcut when I first baked the noise volume (real 3-axis-correlated
-noise, but not seamless in x/y - true 2D seamless tiling needs 4 independent
-noise axes and `FastNoiseLite` only goes to 3D) and assumed it wouldn't be
-visible. It wasn't, on a flat texture - but once sampled through `EYEDIR`
-(a *radial*, not linear, coordinate), every ordinary hard tile-seam turned into
-a dramatic curved ray. Confirmed directly by adding a `debug_mode` uniform to
-the shader that outputs raw intermediate values as color - `fract(local_uv)`
-alone, before any texture sampling, already showed the exact ray pattern.
-Fixed by baking one genuinely seamless tile (Godot's own `NoiseTexture2D`
-`seamless=true`, the same technique that already worked fine in this
-feature's very first, throwaway bake attempt) and building all 48 "depth
-slices" as wrapped translations of that same tile - translating a seamless
-tile keeps it exactly seamless, sidestepping the 4-axis problem entirely.
-
-You also caught a real math bug I'd introduced myself along the way: an
-intermediate version applied the rig's rotation to the *depth* coordinate
-only and left the spatial UV as raw untransformed coordinates. That's wrong -
-a plane rotated by angle θ both picks up depth (`local.w = z·sinθ`) *and*
-foreshortens along the rotating axis (`local.z = z·cosθ`, not `z`) at the same
-time. Fixed by computing the full `local = EYEDIR.x·basis_x + EYEDIR.z·basis_z`
-transform together, verified numerically against known rotation angles before
-moving on.
-
-**Current state:** dramatically improved - soft, plausible, windswept-looking
-cloud coverage at every camera angle and rotation I tested, including the
-exact extreme case from your screenshots. There's a faint residual
-dotted/dashed artifact under some rotations, much subtler than the original
-bug (barely visible, not dominating the image) - most likely from the
-depth-slice blend boundary, or minor imperfection in `NoiseTexture2D`'s own
-blend-skirt seamless technique. I judged it not worth further time tonight
-given the POI work was also asked for, but it's the first thing to revisit if
-you want the clouds pixel-perfect. `clouds.gdshader` has a `debug_mode`
-uniform (0 = normal) left in for exactly this kind of future debugging - set
-it to 1-4 to see raw `EYEDIR`, the post-rotation `local`, the wrapped tile UV,
-or a raw single-layer noise sample, at each stage of the pipeline.
-
-Tunables if you want to adjust the look: `direction_scale` (cloud blob size),
-`coverage`/`softness` (how much sky is covered), `leak_scale` (how dramatic
-the rotation-driven tilt looks) - all on the `WorldEnvironment`'s Sky material
-in `voxel_port.tscn`.
+Tunables: `coverage`/`softness` (how much of the deck is covered),
+`leak_scale` (how dramatic the rotation-driven tilt looks), `uv_scale` (cloud
+blob size) - all on the `Clouds` node's shader material in `voxel_port.tscn`.
+`height_margin_voxels` and `rig_path`/`terrain_path` are exports on
+`clouds_layer.gd` itself.
 
 ## POI system
 
