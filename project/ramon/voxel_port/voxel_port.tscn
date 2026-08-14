@@ -1,7 +1,8 @@
-[gd_scene load_steps=6 format=3 uid="uid://qoe6y4lb5tgo"]
+[gd_scene load_steps=7 format=3 uid="uid://qoe6y4lb5tgo"]
 
-[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_ply4d"]
 [ext_resource type="Script" uid="uid://c1hlkyfk1tx3s" path="res://ramon/voxel_port/scripts/voxel_terrain_4d.gd" id="2_terrn"]
+[ext_resource type="Script" path="res://ramon/voxel_port/scripts/voxel_hover_camera_4d.gd" id="3_hover"]
+[ext_resource type="Script" path="res://ramon/voxel_port/scripts/voxel_terrain_perf_hud.gd" id="4_perfhud"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
 size = Vector4(120, 1, 120, 120)
@@ -18,6 +19,7 @@ size = Vector4(120, 1, 120, 120)
 script = ExtResource("2_terrn")
 model_layers = 202
 terrain_shape = 0
+camera_path = NodePath("../HoverCamera")
 
 [node name="Ground" type="MeshInstance4D" parent="Terrain"]
 
@@ -37,5 +39,28 @@ shape = SubResource("BoxShape4D_floor")
 material_override = SubResource("TetraMaterial4D_floor")
 mesh = SubResource("BoxTetraMesh4D_floor")
 
-[node name="Player" parent="." instance=ExtResource("1_ply4d")]
-position = Vector4(45, -33, 0, 0)
+[node name="HoverCamera" type="Camera4D" parent="."]
+current = true
+rendering_engine = "Cross-section"
+view_angle_type = 1
+field_of_view_4d = 1.3962634015954636
+script = ExtResource("3_hover")
+look_at_target = Vector4(0, 0, 0, 0)
+radius = 60.0
+rig_path = NodePath("../Terrain")
+terrain_path = NodePath("../Terrain")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="PerfLabel" type="Label" parent="HUD"]
+offset_left = 8.0
+offset_top = 4.0
+offset_right = 500.0
+offset_bottom = 100.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+text = "FPS: 0"
+script = ExtResource("4_perfhud")
+terrain_path = NodePath("../../Terrain")
