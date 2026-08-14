@@ -52,20 +52,24 @@ render_mode skip_vertex_transform, unshaded, depth_draw_never, blend_mix, shadow
 // This part is unchanged from the earlier plane-based version and was
 // already confirmed working well - only where/how it's sampled changed.
 //
-// The DEPTH (local.w) term still comes from rig_basis, pushed every frame
-// by clouds_layer.gd as basis_x/basis_z, exactly as before: a real 4D
-// cross-section slice always lies exactly at local W=0 in the rig's own
-// frame (that's what "cross-section" means - see slice_edge() in the
-// engine shader), so there is no leftover per-fragment W coordinate to
-// read after slicing. The noise's own "depth into the volume" reactivity
-// is a property of how the ATLAS is sampled, not of the sliced geometry,
-// and still needs this same rig-basis projection to feel continuous
-// across rotation. `local = world.x * rig_basis.x + world.z * rig_basis.z`
-// (world.y/world.w drop out: xw/zw rotations never touch y, and this
-// slab's own world.w is always 0 before slicing) - rig_basis.x/z are
-// pushed wholesale as basis_x/basis_z. Same projection this project
-// already uses to rotate the real terrain (voxel_hover_camera_4d.gd's
-// right-drag handler) and for ana_offset elsewhere (bearing_utility_4d.gd).
+// The noise sampling coordinate comes from interpolating the tetrahedron's
+// RAW, UNTRANSFORMED corners (CUSTOM0-3, in the box's own local space)
+// using the exact same edge/mix_weight the slicing math below already
+// computes - NOT from reconstructing a "world position" out of the sliced
+// view-space VERTEX via INV_VIEW_MATRIX (an earlier version of this shader
+// did that, and it was wrong: confirmed directly this session that pure
+// camera zoom/orbit, with no 4D rig rotation at all, visibly resampled the
+// noise pattern instead of just changing its apparent size/angle - the
+// reconstruction was silently camera-dependent in a way it should never
+// have been). CUSTOM0-3 never involve the camera at all, so local_pos
+// below is provably stable under camera movement, and changes only when
+// the tetrahedron's OWN w-values (which the modelview transform - the
+// rig's rotation baked into this mesh's global transform - do affect)
+// cross zero differently, i.e. only when the 4D slice actually rotates.
+// This is also simpler than the old approach: no separate rig_basis
+// projection is needed, since the slicing itself already reveals a
+// different local_pos as the rig rotates, exactly like it does for the
+// terrain's own real voxel data.
 
 instance uniform vec4 modelview_origin;
 instance uniform vec4 modelview_basis_x;
@@ -84,15 +88,14 @@ uniform vec2 drift_speed_a = vec2(0.03, 0.01); // Slow idle motion, independent 
 uniform vec2 drift_speed_b = vec2(-0.015, 0.022);
 uniform float uv_scale = 0.06; // World-space UV tiling - smaller = bigger cloud blobs.
 
-// Pushed every frame by clouds_layer.gd - see this shader's own header.
-uniform vec4 basis_x = vec4(1.0, 0.0, 0.0, 0.0);
-uniform vec4 basis_z = vec4(0.0, 0.0, 1.0, 0.0);
-uniform float leak_scale = 0.06; // Depth (local.w) world-units -> volume depth-slices.
+uniform float leak_scale = 0.06; // Depth (local_pos.w) world-units -> volume depth-slices.
 
-// Debugging only. 0 = normal rendering. 1 = raw world_xz as color.
-// 2 = local.xz (after the basis transform) as color. 3 = final wrapped
+// Debugging only. 0 = normal rendering. 1 = raw local_pos.xz as color.
+// 2 = same as 1 (kept for numbering compat) as color. 3 = final wrapped
 // tile UV as color. 4 = raw single-layer noise sample as grayscale.
 uniform int debug_mode = 0;
+
+varying vec4 local_pos;
 
 // --- Everything below to the end of vertex() is copied verbatim from
 // tetra_cross_section_shader.glsl - see this shader's own header. ---
@@ -158,6 +161,11 @@ void vertex() {
 		// Vertex is view space and used for lighting, position is clip space and used for rasterizing.
 		VERTEX = position.xyz;
 		POSITION = PROJECTION_MATRIX * vec4(position.xyz, 1.0);
+
+		// Ours: interpolate the RAW local corners (not modelview-transformed)
+		// with the same mix_weight - see this shader's own header for why.
+		vec4 local_verts[] = { CUSTOM0, CUSTOM1, CUSTOM2, CUSTOM3 };
+		local_pos = mix(local_verts[edge_vert1], local_verts[edge_vert2], mix_weight);
 	}
 }
 
@@ -187,20 +195,10 @@ float sample_volume(vec2 local_uv, float w) {
 }
 
 void fragment() {
-	// VERTEX here is the sliced view-space position set in vertex() above;
-	// reconstruct world position from it (there is no MODEL_MATRIX to use -
-	// skip_vertex_transform means VERTEX was never in object space to
-	// begin with, it's already the cross-section's own view-space point).
-	vec2 world_xz = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xz;
+	vec2 local_uv = local_pos.xz * uv_scale;
 
-	vec4 local = world_xz.x * basis_x + world_xz.y * basis_z;
-	vec2 local_uv = local.xz * uv_scale;
-
-	if (debug_mode == 1) {
-		ALBEDO = vec3(world_xz.x * 0.01 + 0.5, world_xz.y * 0.01 + 0.5, 0.0);
-		ALPHA = 1.0;
-	} else if (debug_mode == 2) {
-		ALBEDO = vec3(local.x * 0.01 + 0.5, local.z * 0.01 + 0.5, 0.0);
+	if (debug_mode == 1 || debug_mode == 2) {
+		ALBEDO = vec3(local_pos.x * 0.01 + 0.5, local_pos.z * 0.01 + 0.5, 0.0);
 		ALPHA = 1.0;
 	} else if (debug_mode == 3) {
 		ALBEDO = vec3(fract(local_uv), 0.0);
@@ -209,7 +207,7 @@ void fragment() {
 		ALBEDO = vec3(sample_slice(local_uv, 0.0));
 		ALPHA = 1.0;
 	} else {
-		float w_local = local.w * leak_scale;
+		float w_local = local_pos.w * leak_scale;
 		// Layer B uses a steeper tilt (w_local * 1.3, not a fresh leak
 		// term) so the two layers drift apart under rotation, not just
 		// under time - reinforces the "volumetric" read.

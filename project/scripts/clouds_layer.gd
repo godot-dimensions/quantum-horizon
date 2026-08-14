@@ -143,25 +143,3 @@ func _process(_delta: float) -> void:
 	var terrain: Node = _get_terrain()
 	if terrain != null:
 		_refit_to_terrain(terrain)
-
-	# The parent (Terrain) IS the rig here - this node is meant to be a
-	# direct, identity-basis child of it (see this script's own header),
-	# so its basis is exactly the current 4D slice rotation.
-	var basis_x := Vector4(1.0, 0.0, 0.0, 0.0)
-	var basis_z := Vector4(0.0, 0.0, 1.0, 0.0)
-	var rig: Node4D = get_parent() as Node4D
-	if rig != null:
-		# rig.basis is a Projection (4x4) built by
-		# Basis4D.from_xw(...) * Basis4D.from_zw(...) - pushed wholesale
-		# so the shader can compute the FULL local = world.x*basis_x +
-		# world.z*basis_z transform per-fragment - see clouds.gdshader's
-		# own header for the derivation (this is now only used for the
-		# noise atlas's depth term, not for the mesh's own shape - that
-		# part is handled by real 4D slicing now).
-		var rig_basis: Projection = rig.basis
-		basis_x = rig_basis.x
-		basis_z = rig_basis.z
-
-	if _material != null:
-		_material.set_shader_parameter("basis_x", basis_x)
-		_material.set_shader_parameter("basis_z", basis_z)
