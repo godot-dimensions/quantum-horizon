@@ -1,0 +1,45 @@
+[gd_scene load_steps=7 format=3 uid="uid://bacql382t57ft"]
+
+[ext_resource type="Script" uid="uid://dt0g0ug2fxmgo" path="res://ramon/SkyBoxClouds/scripts/skydome_4d.gd" id="1_skydome"]
+[ext_resource type="Script" uid="uid://cet3tnp3nbwi5" path="res://ramon/SkyBoxClouds/scripts/cloud_field_4d.gd" id="2_clouds"]
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="3_player"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_ground"]
+size = Vector4(600, 2, 600, 600)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ground"]
+albedo_color = Color(0.28, 0.33, 0.26, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ground"]
+size = Vector4(600, 2, 600, 600)
+
+[node name="SkyBoxClouds" type="Node4D"]
+
+[node name="Skydome" type="MeshInstance4D" parent="."]
+position = Vector4(0, 2, 0, 0)
+script = ExtResource("1_skydome")
+follow_path = NodePath("../Player")
+
+[node name="Clouds" type="MeshInstance4D" parent="."]
+script = ExtResource("2_clouds")
+preset_name = "my_sky1"
+clump_attempts = 120
+animate = true
+wind_speed = 0.30000000000000004
+evolve_amplitude = 18.0
+cloud_color = Color(0.93, 0.94, 0.97, 1)
+cloud_seed = 3452511263
+max_tetrahedra = 95000
+
+[node name="Ground" type="StaticBody4D" parent="."]
+position = Vector4(0, -1, 0, 0)
+
+[node name="CollisionShape4D" type="CollisionShape4D" parent="Ground"]
+shape = SubResource("BoxShape4D_ground")
+
+[node name="GroundMesh" type="MeshInstance4D" parent="Ground"]
+material_override = SubResource("TetraMaterial4D_ground")
+mesh = SubResource("BoxTetraMesh4D_ground")
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+position = Vector4(0, 2, 0, 0)
