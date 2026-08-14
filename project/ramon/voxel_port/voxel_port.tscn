@@ -29,15 +29,16 @@ shader_parameter/coverage = 0.45
 shader_parameter/softness = 0.35
 shader_parameter/drift_speed_a = Vector2(0.03, 0.01)
 shader_parameter/drift_speed_b = Vector2(-0.015, 0.022)
-shader_parameter/direction_scale = 2.0
-shader_parameter/leak_scale = 24.0
+shader_parameter/uv_scale = 0.06
+shader_parameter/leak_scale = 0.06
 
-[sub_resource type="Sky" id="Sky_clouds"]
-sky_material = SubResource("ShaderMaterial_clouds")
+[sub_resource type="PlaneMesh" id="PlaneMesh_clouds"]
+material = SubResource("ShaderMaterial_clouds")
+size = Vector2(48, 48)
 
 [sub_resource type="Environment" id="Environment_clouds"]
-background_mode = 2
-sky = SubResource("Sky_clouds")
+background_mode = 1
+background_color = Color(0.55, 0.7, 0.9, 1)
 ambient_light_source = 3
 ambient_light_energy = 0.6
 
@@ -88,10 +89,11 @@ terrain_path = NodePath("../Terrain")
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_clouds")
 
-[node name="CloudsController" type="Node" parent="."]
+[node name="Clouds" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_clouds")
 script = ExtResource("5_clouds")
-sky_material = SubResource("ShaderMaterial_clouds")
 rig_path = NodePath("../Terrain")
+terrain_path = NodePath("../Terrain")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 

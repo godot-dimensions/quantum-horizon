@@ -1,22 +1,19 @@
-shader_type sky;
+shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_never, blend_mix, shadows_disabled;
 
-// Real sky shader (see ramon/IsoclynicSun/shaders/isoclynic_sun_sky.gdshader
-// for this project's existing, proven WorldEnvironment/Sky/shader_type sky
-// wiring) - NOT a mesh plane.
-//
-// Sampled directly from EYEDIR (the per-pixel view direction Godot's sky
-// pass provides - a normalized vec3, always well-defined) rather than by
-// projecting onto a ground plane at a fixed height. An earlier version DID
-// project onto a plane (`t = (cloud_height - camera_y) / EYEDIR.y`, then
-// sample at the hit point) - that has a genuine singularity as EYEDIR.y ->
-// 0 (looking toward the horizon), where t blows up and the sampled position
-// swings wildly per pixel; fading clouds out before that singularity
-// helped but didn't fix it, since the blow-up starts well before the fade
-// threshold and dominates most of the visible sky at any normal, non-
-// steeply-downward camera angle. EYEDIR itself has no such singularity
-// anywhere - it is a unit vector, always smooth and bounded - so using its
-// own components directly as the sampling coordinate is both simpler and
-// correct.
+// Ordinary 3D plane geometry, deliberately outside the 4D Cross-section
+// pipeline (same "doesn't need to be 4D" convention as the HUD) - no
+// Node4D/tet-mesh cost. A semi-transparent LAYER sized to the terrain's own
+// footprint and positioned at a fixed height above it (see clouds_layer.gd),
+// meant to be looked at mostly from above - like a real cloud deck seen from
+// a plane window, not a full sky dome. An earlier version of this WAS a sky
+// shader (shader_type sky, sampled from EYEDIR) - correct for "clouds fill
+// the whole sky as seen from ground level," wrong for this project's actual
+// RTS-style hover camera looking mostly downward at a bounded terrain patch.
+// Reverted to a mesh plane, but keeping every fix already made to the
+// UNDERLYING sampling (seamless atlas, correct tilt math) - only the
+// coordinate SOURCE changes back from EYEDIR to this plane's own world
+// position.
 //
 // Real 4D volumetric clouds were explicitly ruled out as too expensive;
 // this is a cheap mock of that instead, see the conversation this was
@@ -26,57 +23,66 @@ shader_type sky;
 // slices (see _bake_clouds_volume_runner.gd, now deleted after running)
 // packed into one flipbook atlas image, ATLAS_COLS x ATLAS_ROWS tiles
 // (manual 3D-texture-via-2D-atlas trick - there is no real sampler3D here).
+// Each tile is a genuinely SEAMLESS bake (Godot's own NoiseTexture2D
+// seamless=true, then wrapped-translated per slice) - an earlier version
+// baked each slice independently without seamlessness, invisible on a flat
+// texture but catastrophic once sampled through a radial coordinate; not an
+// issue here (world-position sampling was never radial), but the atlas
+// asset itself is shared and already fixed, so no change needed there.
 //
 // Sampled as a genuinely TILTED cross-section through the baked volume, not
-// a single global depth. Treating EYEDIR as if it were a real 4D
-// direction (w=0), its LOCAL direction (as seen through the CURRENT rotated
-// 4D slice) is `rig.basis^T * EYEDIR` - i.e. `local = EYEDIR.x * rig_basis.x
-// + EYEDIR.z * rig_basis.z` (the EYEDIR.y and w=0 terms drop out: xw/zw
-// rotations never touch y so rig_basis.y is exactly (0,1,0,0)). Both the
-// IN-PLANE coordinates (local.xz, the spatial noise UV) and the DEPTH
-// coordinate (local.w, which slice of the volume) come out of this same
-// transform - rig_basis.x/rig_basis.z are pushed wholesale as basis_x/
-// basis_z every frame by clouds_layer.gd. This is the same rig_basis this
-// project already uses to rotate the real terrain (see
+// a single global depth. A world point at (world_xz.x, cloud_height,
+// world_xz.y, 0), if it were a real 4D point, would have LOCAL coordinates
+// (as seen through the CURRENT rotated 4D slice) equal to `rig.basis^T *
+// world` - i.e. `local = world.x * rig_basis.x + world.z * rig_basis.z`
+// (the world.y and world.w terms drop out: xw/zw rotations never touch y so
+// rig_basis.y is exactly (0,1,0,0), and this plane's world.w is always 0).
+// Both the IN-PLANE coordinates (local.xz, the spatial noise UV) and the
+// DEPTH coordinate (local.w, which slice of the volume) come out of this
+// same transform - rig_basis.x/rig_basis.z are pushed wholesale as
+// basis_x/basis_z every frame by clouds_layer.gd. This is the same
+// rig_basis this project already uses to rotate the real terrain (see
 // voxel_hover_camera_4d.gd's right-drag handler) and to compute ana_offset
 // for real 4D points elsewhere (see bearing_utility_4d.gd) - same
-// projection, applied to a direction that was never really 4D to begin
-// with, the same way it was previously applied to a position.
+// projection, just applied to a point that was never really 4D to begin
+// with.
 //
 // At zero rotation, basis_x=(1,0,0,0) and basis_z=(0,0,1,0) exactly, so
-// local = (EYEDIR.x, 0, EYEDIR.z, 0) - the plain, untilted case.
+// local = (world.x, 0, world.z, 0) - identical to the untilted case.
 
 uniform sampler2D noise_volume_atlas : source_color, hint_default_white;
 uniform float atlas_cols = 8.0;
 uniform float atlas_rows = 6.0;
 uniform float depth = 48.0; // Must match the atlas bake's DEPTH (ATLAS_COLS * ATLAS_ROWS).
 uniform vec4 cloud_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
-uniform float coverage = 0.45; // Higher = more of the sky filled with cloud.
+uniform float coverage = 0.45; // Higher = more of the surface covered by cloud.
 uniform float softness = 0.35; // Higher = softer, more feathered edges.
 uniform vec2 drift_speed_a = vec2(0.03, 0.01); // Slow idle motion, independent of rotation.
 uniform vec2 drift_speed_b = vec2(-0.015, 0.022);
-uniform float direction_scale = 2.0; // EYEDIR.xz (range +-1) -> UV tiling - bigger = smaller cloud blobs.
+uniform float uv_scale = 0.06; // World-space UV tiling - smaller = bigger cloud blobs.
 
-// Sky base colors (no real atmosphere/scattering model - just a vertical
-// gradient so clouds have something other than flat black behind them).
-uniform vec3 zenith_color : source_color = vec3(0.25, 0.45, 0.75);
-uniform vec3 horizon_color : source_color = vec3(0.65, 0.75, 0.85);
-uniform vec3 ground_color : source_color = vec3(0.18, 0.18, 0.2);
-
-// Pushed every frame by clouds_layer.gd.
+// Pushed every frame by clouds_layer.gd - see this shader's own header for
+// the derivation.
 uniform vec4 basis_x = vec4(1.0, 0.0, 0.0, 0.0);
 uniform vec4 basis_z = vec4(0.0, 0.0, 1.0, 0.0);
-uniform float leak_scale = 24.0; // Depth (local.w, range roughly +-1.4) world-units -> volume depth-slices.
+uniform float leak_scale = 0.06; // Depth (local.w) world-units -> volume depth-slices.
 
 // Debugging only - see the conversation this was built in. 0 = normal
-// rendering. 1 = raw EYEDIR.xz as color (no basis transform, no texture -
-// isolates whether EYEDIR itself is smooth). 2 = local.xz (after the basis
-// transform, before *direction_scale or fract/texture) as color - isolates
-// whether the basis transform introduces anything non-smooth. 3 = final
-// wrapped tile UV (fract(local_uv)) as color - isolates the tiling/fract
-// step. 4 = raw single-layer noise sample (no 2-layer combine, no
-// smoothstep) as grayscale.
+// rendering. 1 = raw world_xz as color. 2 = local.xz (after the basis
+// transform, before *uv_scale or fract/texture) as color. 3 = final wrapped
+// tile UV (fract(local_uv)) as color. 4 = raw single-layer noise sample (no
+// 2-layer combine, no smoothstep) as grayscale.
 uniform int debug_mode = 0;
+
+// VERTEX is object-space in vertex() - MODEL_MATRIX * VERTEX gives world
+// space; pass it through explicitly rather than relying on render_mode
+// world_vertex_coords (which would also change how VERTEX behaves for
+// anything else added to this shader later).
+varying vec2 world_xz;
+
+void vertex() {
+	world_xz = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xz;
+}
 
 // Samples one atlas tile (slice index, wrapped) at a local tile-space UV
 // (also wrapped manually via fract - the atlas has no hardware wrap, since
@@ -101,22 +107,23 @@ float sample_volume(vec2 local_uv, float w) {
 	return mix(sample_slice(local_uv, slice0), sample_slice(local_uv, slice1), blend);
 }
 
-void sky() {
-	vec4 local = EYEDIR.x * basis_x + EYEDIR.z * basis_z;
-	vec2 local_uv = local.xz * direction_scale;
+void fragment() {
+	vec4 local = world_xz.x * basis_x + world_xz.y * basis_z;
+	vec2 local_uv = local.xz * uv_scale;
 
 	if (debug_mode == 1) {
-		COLOR = vec3(EYEDIR.x * 0.5 + 0.5, EYEDIR.z * 0.5 + 0.5, 0.0);
+		ALBEDO = vec3(world_xz.x * 0.01 + 0.5, world_xz.y * 0.01 + 0.5, 0.0);
+		ALPHA = 1.0;
 	} else if (debug_mode == 2) {
-		COLOR = vec3(local.x * 0.5 + 0.5, local.z * 0.5 + 0.5, 0.0);
+		ALBEDO = vec3(local.x * 0.01 + 0.5, local.z * 0.01 + 0.5, 0.0);
+		ALPHA = 1.0;
 	} else if (debug_mode == 3) {
-		COLOR = vec3(fract(local_uv), 0.0);
+		ALBEDO = vec3(fract(local_uv), 0.0);
+		ALPHA = 1.0;
 	} else if (debug_mode == 4) {
-		COLOR = vec3(sample_slice(local_uv, 0.0));
+		ALBEDO = vec3(sample_slice(local_uv, 0.0));
+		ALPHA = 1.0;
 	} else {
-		vec3 base = mix(horizon_color, zenith_color, smoothstep(0.0, 0.9, max(EYEDIR.y, 0.0)));
-		base = mix(ground_color, base, smoothstep(-0.05, 0.05, EYEDIR.y));
-
 		float w_local = local.w * leak_scale;
 		// Layer B uses a steeper tilt (w_local * 1.3, not a fresh leak
 		// term) so the two layers drift apart under rotation, not just
@@ -126,11 +133,7 @@ void sky() {
 		float density = sample_a * 0.65 + sample_b * 0.35;
 
 		float alpha = smoothstep(1.0 - coverage - softness, 1.0 - coverage + softness, density);
-		// Fade into ground_color below the horizon (clouds are an upper-
-		// hemisphere-only effect) - reuses the same horizon band as the
-		// base sky gradient above.
-		alpha *= smoothstep(-0.05, 0.05, EYEDIR.y);
-
-		COLOR = mix(base, cloud_color.rgb, alpha * cloud_color.a);
+		ALBEDO = cloud_color.rgb;
+		ALPHA = alpha * cloud_color.a;
 	}
 }
