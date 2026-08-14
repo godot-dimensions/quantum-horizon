@@ -17,14 +17,17 @@ extends Node4D
 ## cutoff - carving out rock is nothing more than a subsequent AIR layer with
 ## a replace_mask of GROUND only.
 ##
-## Collision is one [BoxShape4D] per solid grid point rather than a
-## [ConcaveMeshShape4D] of the contoured mesh, per the finding in
-## project/ramon/follow_up/voxel_port.md: the only shipped PhysicsEngine4D
-## collapses any non-BoxShape4D shape to a single AABB, so a mesh-shaped
-## collider would not give per-voxel collision at all. A BoxShape4D is exempt
-## from that collapse, and as a bonus a raycast hit against it hands back the
-## exact CollisionShape4D node hit - so identifying which voxel got hacked is
-## a dictionary lookup, not geometry.
+## Collision is one [BoxShape4D] per solid grid point ON THE SURFACE (see
+## [method _is_surface_point]) rather than a [ConcaveMeshShape4D] of the
+## contoured mesh, per the finding in project/ramon/follow_up/voxel_port.md:
+## the only shipped PhysicsEngine4D collapses any non-BoxShape4D shape to a
+## single AABB, so a mesh-shaped collider would not give per-voxel collision
+## at all. A BoxShape4D is exempt from that collapse, and as a bonus a
+## raycast hit against it hands back the exact CollisionShape4D node hit - so
+## identifying which voxel got hacked is a dictionary lookup, not geometry.
+## Buried interior points get no collider at all - a raycast from outside can
+## never reach one anyway, since the surface shell always absorbs the hit
+## first, so a collider there is pure node-count cost with no possible payoff.
 ##
 ## No incremental/chunked remeshing yet - every mine_at_shape() call reruns
 ## dual contouring over the whole field, same as voxel_terrain_4d.gd's
@@ -52,10 +55,13 @@ const _SCRIPT_PATH_HINT := "res://ramon/VoxelMining/scripts/"
 @export_range(0.1, 0.9, 0.01) var box_fill_fraction: float = 0.65
 
 @export_group("Mining")
-## Radius (in grid cells) of one carve. Centered exactly on the hit voxel, so
-## anything above 1.0 also clears into its immediate neighbors - a bigger,
-## more satisfying "chip" than removing a single lattice point would give.
-@export_range(0.5, 3.0, 0.05) var mining_radius: float = 1.2
+## Radius of one carve, in meters - deliberately real-world units rather than
+## grid cells, so a bite stays the same physical size no matter what
+## grid_size/cell_size this particular block uses. 0.48m matches what a
+## grid-cell radius of 1.2 used to give at the original default cell_size of
+## 0.4m, so nothing about existing tuned blocks changes; only future
+## resolution/scale changes stop silently resizing the bite.
+@export_range(0.05, 2.0, 0.01, "suffix:m") var mining_radius_meters: float = 0.48
 
 @export_group("Appearance")
 ## World-space Y this block's darkest rock band sits at. Shared across every
@@ -112,11 +118,24 @@ func _get_voxels_body() -> StaticBody4D:
 ## done so far. This is the "reset the rock" action, not something mine_at_shape
 ## calls - see [method _remesh] for the persistent-field path that mining uses.
 func generate() -> void:
+	print("[VoxelMiningBlock] %s: generate() called." % name)
 	var clamped_size: int = clampi(grid_size, 4, 16)
 	_field = VoxelField4D.new(clamped_size)
 
 	var center: Vector4 = Vector4.ONE * (float(clamped_size) * 0.5)
-	var half_extent: float = float(clamped_size) * 0.5 * box_fill_fraction
+	_build_base_shape(center, clamped_size)
+	_add_extra_layers(center, clamped_size)
+	_remesh()
+
+
+## Override point for subclasses that want a different base shape entirely -
+## see voxel_mining_sphere_block.gd and voxel_mining_boulder_block.gd. Default
+## is the axis-aligned box this class is built around. Whatever a subclass
+## puts here, everything downstream (dual contouring, per-voxel collision,
+## mining, palette coloring) is unchanged - shape is the only thing that
+## varies.
+func _build_base_shape(center: Vector4, size: int) -> void:
+	var half_extent: float = float(size) * 0.5 * box_fill_fraction
 	_field.add_layer(
 		VoxelField4D.VoxelMaterial.GROUND,
 		func(p: Vector4) -> float:
@@ -142,12 +161,9 @@ func generate() -> void:
 			return gradient,
 		1.0)
 
-	_add_extra_layers(center, clamped_size)
-	_remesh()
-
 
 ## Override point for subclasses that want to seed additional field layers
-## (a cavity, a differently-placed carve) right after the outer box and
+## (a cavity, a differently-placed carve) right after the base shape and
 ## before the first mesh/collider build - see voxel_mining_gem_block.gd for
 ## the one subclass that uses this. No-op here, so plain VoxelMiningBlock
 ## instances are unaffected.
@@ -174,10 +190,13 @@ func mine_at_shape(shape: CollisionShape4D) -> void:
 		return
 
 	var origin := Vector4(grid_point.x, grid_point.y, grid_point.z, grid_point.w)
+	# Converted from meters to grid cells here, at the point of use, rather
+	# than stored that way - see mining_radius_meters' own doc for why.
+	var radius_in_cells: float = mining_radius_meters / cell_size
 	_field.add_layer(
 		VoxelField4D.VoxelMaterial.AIR,
 		func(p: Vector4) -> float:
-			return mining_radius - (p - origin).length(),
+			return radius_in_cells - (p - origin).length(),
 		func(p: Vector4) -> Vector4:
 			var offset: Vector4 = origin - p
 			var length: float = offset.length()
@@ -194,6 +213,7 @@ func mine_at_shape(shape: CollisionShape4D) -> void:
 ## no chunking/dirty-region tracking exists yet, see the class doc.
 func _remesh() -> void:
 	if _field == null:
+		print("[VoxelMiningBlock] _remesh: _field is null, nothing to build.")
 		return
 
 	var contour := DualContour4D.new(_field)
@@ -201,8 +221,14 @@ func _remesh() -> void:
 
 	var center: float = float(_field.size - 1) * 0.5
 	var ground: MeshInstance4D = _get_ground_instance()
-	if ground != null:
+	if ground == null:
+		print("[VoxelMiningBlock] _remesh: no 'Ground' MeshInstance4D child found - check the scene structure.")
+	else:
 		ground.mesh = _build_mesh(contour, center)
+
+	print("[VoxelMiningBlock] %s: field size %d, %d ground tetrahedra, mesh %s" % [
+		name, _field.size, contour.ground_cells.size() / 4,
+		"built" if (ground != null and ground.mesh != null) else "EMPTY"])
 
 	_rebuild_colliders(center)
 
@@ -306,9 +332,28 @@ func _clear_colliders() -> void:
 		child.queue_free()
 
 
-## One BoxShape4D per solid grid point. Rebuilt from scratch every remesh -
-## see the class doc for why that is an accepted cost at this grid size rather
-## than something worth diffing against the previous set.
+## True if this solid point has at least one non-GROUND neighbor - i.e. it is
+## actually part of the reachable surface shell, not buried where a raycast
+## from outside could never land regardless of whether a collider exists
+## there. See _rebuild_colliders for why that distinction is the one that
+## controls collider count.
+func _is_surface_point(p: Vector4i) -> bool:
+	for axis in range(4):
+		for delta in [-1, 1]:
+			var neighbor: Vector4i = p
+			neighbor[axis] += delta
+			if _field.is_inside(neighbor) and _field.material_at(neighbor) != VoxelField4D.VoxelMaterial.GROUND:
+				return true
+	return false
+
+
+## One BoxShape4D per solid grid point that actually touches the surface -
+## not the buried interior, which a raycast from outside could never hit
+## anyway (the surface shell always absorbs the hit first), so a collider
+## there is pure waste until mining actually exposes it. Rebuilt from scratch
+## every remesh, which re-derives the currently-exposed shell fresh each
+## time - a point that was buried becomes a surface point the moment mining
+## clears one of its neighbors, and gets a collider on the very next rebuild.
 func _rebuild_colliders(center: float) -> void:
 	_clear_colliders()
 	var voxels: StaticBody4D = _get_voxels_body()
@@ -324,6 +369,8 @@ func _rebuild_colliders(center: float) -> void:
 				for w in range(_field.size):
 					var grid_point := Vector4i(x, y, z, w)
 					if _field.material_at(grid_point) != VoxelField4D.VoxelMaterial.GROUND:
+						continue
+					if not _is_surface_point(grid_point):
 						continue
 					var collider := CollisionShape4D.new()
 					collider.shape = box
