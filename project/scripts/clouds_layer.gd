@@ -143,3 +143,24 @@ func _process(_delta: float) -> void:
 	var terrain: Node = _get_terrain()
 	if terrain != null:
 		_refit_to_terrain(terrain)
+
+	# Pushed to the shader for the noise sampling coordinate only - the
+	# mesh's own SHAPE already responds to rig rotation for free via real
+	# 4D slicing (see this script's own header), but the noise pattern
+	# additionally needs this same rig-basis projection applied to it to
+	# visibly warp/tilt with rotation instead of just revealing a different
+	# fixed patch of a static texture - see clouds.gdshader's own header.
+	# The parent (Terrain) IS the rig here - this node is meant to be a
+	# direct, identity-basis child of it, so its basis is exactly the
+	# current 4D slice rotation.
+	var basis_x := Vector4(1.0, 0.0, 0.0, 0.0)
+	var basis_z := Vector4(0.0, 0.0, 1.0, 0.0)
+	var rig: Node4D = get_parent() as Node4D
+	if rig != null:
+		var rig_basis: Projection = rig.basis
+		basis_x = rig_basis.x
+		basis_z = rig_basis.z
+
+	if _material != null:
+		_material.set_shader_parameter("basis_x", basis_x)
+		_material.set_shader_parameter("basis_z", basis_z)

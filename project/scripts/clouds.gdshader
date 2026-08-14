@@ -66,10 +66,20 @@ render_mode skip_vertex_transform, unshaded, depth_draw_never, blend_mix, shadow
 // the tetrahedron's OWN w-values (which the modelview transform - the
 // rig's rotation baked into this mesh's global transform - do affect)
 // cross zero differently, i.e. only when the 4D slice actually rotates.
-// This is also simpler than the old approach: no separate rig_basis
-// projection is needed, since the slicing itself already reveals a
-// different local_pos as the rig rotates, exactly like it does for the
-// terrain's own real voxel data.
+//
+// That alone gives "a different fixed patch of the box's own texture gets
+// exposed as the rig rotates" (since the box's SHAPE already responds
+// correctly to rotation, via the same slicing math terrain uses) - but not
+// "the pattern itself visibly warps/tilts as the angle changes," which is
+// what the previous (camera-broken) version had, since it multiplied its
+// sampling coordinate by the rig's own basis before the noise lookup.
+// Restored here the same way, but applied to local_pos (camera-independent)
+// instead of the old world-position reconstruction (camera-dependent) -
+// basis_x/basis_z are still pushed every frame by clouds_layer.gd from
+// rig.basis, same projection this project uses to rotate the real terrain
+// (voxel_hover_camera_4d.gd's right-drag handler) and for ana_offset
+// elsewhere (bearing_utility_4d.gd), just sourced from a value that has no
+// camera dependency this time.
 
 instance uniform vec4 modelview_origin;
 instance uniform vec4 modelview_basis_x;
@@ -88,10 +98,14 @@ uniform vec2 drift_speed_a = vec2(0.03, 0.01); // Slow idle motion, independent 
 uniform vec2 drift_speed_b = vec2(-0.015, 0.022);
 uniform float uv_scale = 0.06; // World-space UV tiling - smaller = bigger cloud blobs.
 
-uniform float leak_scale = 0.06; // Depth (local_pos.w) world-units -> volume depth-slices.
+uniform float leak_scale = 0.06; // Depth (rotated.w) local-units -> volume depth-slices.
+
+// Pushed every frame by clouds_layer.gd - see this shader's own header.
+uniform vec4 basis_x = vec4(1.0, 0.0, 0.0, 0.0);
+uniform vec4 basis_z = vec4(0.0, 0.0, 1.0, 0.0);
 
 // Debugging only. 0 = normal rendering. 1 = raw local_pos.xz as color.
-// 2 = same as 1 (kept for numbering compat) as color. 3 = final wrapped
+// 2 = rotated.xz (after the basis transform) as color. 3 = final wrapped
 // tile UV as color. 4 = raw single-layer noise sample as grayscale.
 uniform int debug_mode = 0;
 
@@ -195,10 +209,14 @@ float sample_volume(vec2 local_uv, float w) {
 }
 
 void fragment() {
-	vec2 local_uv = local_pos.xz * uv_scale;
+	vec4 rotated = local_pos.x * basis_x + local_pos.z * basis_z;
+	vec2 local_uv = rotated.xz * uv_scale;
 
-	if (debug_mode == 1 || debug_mode == 2) {
+	if (debug_mode == 1) {
 		ALBEDO = vec3(local_pos.x * 0.01 + 0.5, local_pos.z * 0.01 + 0.5, 0.0);
+		ALPHA = 1.0;
+	} else if (debug_mode == 2) {
+		ALBEDO = vec3(rotated.x * 0.01 + 0.5, rotated.z * 0.01 + 0.5, 0.0);
 		ALPHA = 1.0;
 	} else if (debug_mode == 3) {
 		ALBEDO = vec3(fract(local_uv), 0.0);
@@ -207,7 +225,7 @@ void fragment() {
 		ALBEDO = vec3(sample_slice(local_uv, 0.0));
 		ALPHA = 1.0;
 	} else {
-		float w_local = local_pos.w * leak_scale;
+		float w_local = rotated.w * leak_scale;
 		// Layer B uses a steeper tilt (w_local * 1.3, not a fresh leak
 		// term) so the two layers drift apart under rotation, not just
 		// under time - reinforces the "volumetric" read.
