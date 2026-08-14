@@ -54,11 +54,16 @@ extends MeshInstance3D
 ## ana_offset-style projection this project already uses for real 4D points
 ## elsewhere, e.g. bearing_utility_4d.gd).
 
-## How many cell_size units above the highest currently-generated surface
-## point the cloud deck floats - "5 voxel heights above the highest voxel,"
-## a real margin off real geometry rather than a fraction of a nominal
-## footprint.
-@export var height_margin_voxels: float = 5.0
+## How many WORLD UNITS above the highest currently-generated surface point
+## the cloud deck floats - a real margin off real geometry rather than a
+## fraction of a nominal footprint. Deliberately a flat world-unit value,
+## NOT multiplied by cell_size: an earlier version scaled it by cell_size
+## ("N voxel heights"), which put the deck absurdly far above the terrain
+## for any coarse-celled bake (e.g. cell_size 4.0 turned a margin of 5 into
+## 20 world units - visibly "in the sky" rather than hugging the surface,
+## per direct visual feedback/annotated screenshot). A flat margin keeps the
+## deck close to the surface regardless of the terrain's own voxel scale.
+@export var height_margin: float = 3.0
 ## The Node4D whose basis carries the xw/zw rotation - typically the same
 ## node right-drag rotates (see voxel_hover_camera_4d.gd's rig_path). This is
 ## the authoritative "how far has the 4D slice rotated" state; there is no
@@ -134,7 +139,7 @@ func _refit_to_terrain(terrain: Node) -> void:
 		_last_ground_chunk_count = chunk_count
 		var max_y: float = _scan_max_height(terrain)
 		if not is_inf(max_y):
-			_current_height = max_y + height_margin_voxels * cell_size
+			_current_height = max_y + height_margin
 			position = Vector3(0.0, _current_height, 0.0)
 
 	# Footprint: the nominal grid_size * cell_size formula, floored against
@@ -175,3 +180,7 @@ func _process(_delta: float) -> void:
 	if _material != null:
 		_material.set_shader_parameter("basis_x", basis_x)
 		_material.set_shader_parameter("basis_z", basis_z)
+		# Half the current footprint - see clouds.gdshader's own comment on
+		# coverage_radius for why this exists (keeps the visible cloud mass
+		# concentrated over the terrain instead of smearing to the horizon).
+		_material.set_shader_parameter("coverage_radius", _last_fitted_footprint * 0.5)

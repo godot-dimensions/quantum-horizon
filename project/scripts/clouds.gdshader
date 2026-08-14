@@ -67,6 +67,39 @@ uniform vec4 basis_x = vec4(1.0, 0.0, 0.0, 0.0);
 uniform vec4 basis_z = vec4(0.0, 0.0, 1.0, 0.0);
 uniform float leak_scale = 0.06; // Depth (local.w) world-units -> volume depth-slices.
 
+// Radial fade centered on the deck's own XZ origin (always the terrain's
+// center - see clouds_layer.gd), pushed every frame as half the current
+// footprint. Without this, a wide, thin, horizontal plane viewed from a
+// normal hover-camera distance/angle visually recedes into a smeared band
+// near the horizon - technically still anchored to the terrain in world
+// space (confirmed directly: moving the plane's position hides it exactly
+// where expected), but reading as if it were glued to the screen/camera
+// instead, since that smeared band barely shifts for ordinary orbit/zoom
+// changes. Fading the coverage out before it reaches that smeared region
+// keeps the VISIBLE cloud mass concentrated directly over the terrain,
+// where it genuinely does shift and scale with camera changes.
+uniform float coverage_radius = 24.0;
+uniform float edge_fade_fraction = 0.35; // Fraction of coverage_radius the fade ramps over.
+
+// View-angle fade - separate problem from coverage_radius above. A flat
+// horizontal plane viewed near edge-on (a shallow/grazing camera angle,
+// the normal RTS-hover-camera case looking somewhat toward the horizon
+// rather than straight down) visually smears its far portion out to fill
+// a huge span of screen space - the classic "infinite floor" perspective
+// illusion, true of ANY finite flat plane viewed edge-on regardless of its
+// actual bounded size (confirmed directly via an annotated screenshot: the
+// deck's rendered extent tracked the screen/horizon, not any world-space
+// boundary). coverage_radius's world-space fade can't fix this - a point
+// can be well within coverage_radius and still be viewed almost edge-on if
+// it's far from the camera in the "away" direction. Fading by how face-on
+// the camera is looking at the plane (NORMAL vs VIEW, both view-space
+// built-ins Godot already provides) fixes it in a way that's genuinely a
+// property of the plane's OWN geometry relative to the viewer, not a
+// camera-position hack - steep/top-down views show it fully, shallow/
+// grazing views fade it out before the smear can dominate the frame.
+uniform float view_fade_start = 0.55; // abs(dot(NORMAL, VIEW)) below this = fully faded.
+uniform float view_fade_end = 0.7; // abs(dot(NORMAL, VIEW)) above this = fully visible.
+
 // Debugging only - see the conversation this was built in. 0 = normal
 // rendering. 1 = raw world_xz as color. 2 = local.xz (after the basis
 // transform, before *uv_scale or fract/texture) as color. 3 = final wrapped
@@ -133,6 +166,17 @@ void fragment() {
 		float density = sample_a * 0.65 + sample_b * 0.35;
 
 		float alpha = smoothstep(1.0 - coverage - softness, 1.0 - coverage + softness, density);
+
+		// See coverage_radius's own comment above for why this exists.
+		float dist_from_center = length(world_xz);
+		float edge_fade = 1.0 - smoothstep(
+			coverage_radius * (1.0 - edge_fade_fraction), coverage_radius, dist_from_center);
+		alpha *= edge_fade;
+
+		// See view_fade_start/end's own comment above for why this exists.
+		float facing = abs(dot(normalize(NORMAL), normalize(VIEW)));
+		alpha *= smoothstep(view_fade_start, view_fade_end, facing);
+
 		ALBEDO = cloud_color.rgb;
 		ALPHA = alpha * cloud_color.a;
 	}
