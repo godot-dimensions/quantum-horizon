@@ -4,8 +4,6 @@
 [ext_resource type="Script" path="res://ramon/voxel_port/scripts/voxel_hover_camera_4d.gd" id="3_hover"]
 [ext_resource type="Script" path="res://ramon/voxel_port/scripts/voxel_terrain_perf_hud.gd" id="4_perfhud"]
 [ext_resource type="Script" path="res://scripts/clouds_layer.gd" id="5_clouds"]
-[ext_resource type="Shader" path="res://scripts/clouds.gdshader" id="6_cloudshader"]
-[ext_resource type="Texture2D" path="res://textures/clouds_noise_volume_atlas.png" id="7_cloudnoise"]
 [ext_resource type="Script" path="res://scripts/poi_spawner.gd" id="8_poispawner"]
 [ext_resource type="Script" path="res://scripts/poi_radar.gd" id="9_poiradar"]
 
@@ -18,23 +16,8 @@ albedo_color = Color(0.32, 0.34, 0.38, 1)
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_floor"]
 size = Vector4(120, 1, 120, 120)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_clouds"]
-shader = ExtResource("6_cloudshader")
-shader_parameter/noise_volume_atlas = ExtResource("7_cloudnoise")
-shader_parameter/atlas_cols = 8.0
-shader_parameter/atlas_rows = 6.0
-shader_parameter/depth = 48.0
-shader_parameter/cloud_color = Color(1, 1, 1, 1)
-shader_parameter/coverage = 0.45
-shader_parameter/softness = 0.35
-shader_parameter/drift_speed_a = Vector2(0.03, 0.01)
-shader_parameter/drift_speed_b = Vector2(-0.015, 0.022)
-shader_parameter/uv_scale = 0.06
-shader_parameter/leak_scale = 0.06
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_clouds"]
-material = SubResource("ShaderMaterial_clouds")
-size = Vector2(48, 48)
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_clouds"]
+size = Vector4(48, 4, 48, 24)
 
 [sub_resource type="Environment" id="Environment_clouds"]
 background_mode = 1
@@ -59,6 +42,10 @@ camera_path = NodePath("../HoverCamera")
 [node name="CollisionShape4D" type="CollisionShape4D" parent="Terrain/StaticBody4D"]
 
 [node name="POIs" type="Node4D" parent="Terrain"]
+
+[node name="Clouds" type="MeshInstance4D" parent="Terrain"]
+mesh = SubResource("BoxTetraMesh4D_clouds")
+script = ExtResource("5_clouds")
 
 [node name="POISpawner" type="Node" parent="."]
 script = ExtResource("8_poispawner")
@@ -88,12 +75,6 @@ terrain_path = NodePath("../Terrain")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_clouds")
-
-[node name="Clouds" type="MeshInstance3D" parent="."]
-mesh = SubResource("PlaneMesh_clouds")
-script = ExtResource("5_clouds")
-rig_path = NodePath("../Terrain")
-terrain_path = NodePath("../Terrain")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 

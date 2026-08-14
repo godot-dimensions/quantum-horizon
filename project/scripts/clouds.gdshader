@@ -1,54 +1,77 @@
 shader_type spatial;
-render_mode unshaded, cull_disabled, depth_draw_never, blend_mix, shadows_disabled;
+render_mode skip_vertex_transform, unshaded, depth_draw_never, blend_mix, shadows_disabled;
+// cull_disabled deliberately NOT set, unlike the earlier flat-plane version:
+// this is now a real enclosed box with correctly-wound outward-facing
+// faces (see this shader's own header), so normal backface culling hides
+// the far/inner faces properly. With it disabled, both faces drew with no
+// reliable ordering between them (transparent/no-depth-write rendering
+// doesn't sort triangles within a single mesh) - the far face visibly
+// bled through on top of the near one, caught directly in an early test
+// screenshot.
 
-// Ordinary 3D plane geometry, deliberately outside the 4D Cross-section
-// pipeline (same "doesn't need to be 4D" convention as the HUD) - no
-// Node4D/tet-mesh cost. A semi-transparent LAYER sized to the terrain's own
-// footprint and positioned at a fixed height above it (see clouds_layer.gd),
-// meant to be looked at mostly from above - like a real cloud deck seen from
-// a plane window, not a full sky dome. An earlier version of this WAS a sky
-// shader (shader_type sky, sampled from EYEDIR) - correct for "clouds fill
-// the whole sky as seen from ground level," wrong for this project's actual
-// RTS-style hover camera looking mostly downward at a bounded terrain patch.
-// Reverted to a mesh plane, but keeping every fix already made to the
-// UNDERLYING sampling (seamless atlas, correct tilt math) - only the
-// coordinate SOURCE changes back from EYEDIR to this plane's own world
-// position.
+// A REAL 4D object (a BoxTetraMesh4D child of Terrain, see clouds_layer.gd)
+// rendered through the engine's own Cross-Section pipeline - the same
+// pipeline that slices the terrain itself, not a 3D-only mock outside it.
+// This was a deliberate architecture change from an earlier version that
+// used an ordinary flat MeshInstance3D plane to fake 4D-reactivity via
+// pushed rotation uniforms: that plane was cheap, but a zero-thickness
+// flat plane viewed at any oblique angle has vanishing on-screen area and
+// severe perspective compression at its far edge (confirmed directly this
+// session: with depth-testing disabled, its true silhouette was a massive
+// wedge smeared toward the horizon, normally hidden behind the terrain
+// except for a sliver that read as "a band glued to the screen"). No
+// amount of alpha-fade tuning fixes that - it's the wrong SHAPE, not a
+// tuning problem. A real 4D box, sliced by the same pipeline as terrain,
+// gets a genuine 3D volume (visible side walls, not just a flat cap) and
+// the same "shape changes correctly with slice angle" behavior terrain
+// itself has - both problems solved by construction, not by fading.
 //
-// Real 4D volumetric clouds were explicitly ruled out as too expensive;
-// this is a cheap mock of that instead, see the conversation this was
-// built in.
+// The performance concern that originally pushed this outside the 4D
+// pipeline was "dozens of individual 4D cloud objects," not 4D-ness
+// itself - a SINGLE 4D slab sized to the terrain's footprint costs about
+// as much as one more terrain brick, nothing like per-cloud objects would.
 //
-// noise_volume_atlas is a real 3-axis FBM noise volume - DEPTH separate 2D
-// slices (see _bake_clouds_volume_runner.gd, now deleted after running)
-// packed into one flipbook atlas image, ATLAS_COLS x ATLAS_ROWS tiles
-// (manual 3D-texture-via-2D-atlas trick - there is no real sampler3D here).
-// Each tile is a genuinely SEAMLESS bake (Godot's own NoiseTexture2D
-// seamless=true, then wrapped-translated per slice) - an earlier version
-// baked each slice independently without seamlessness, invisible on a flat
-// texture but catastrophic once sampled through a radial coordinate; not an
-// issue here (world-position sampling was never radial), but the atlas
-// asset itself is shared and already fixed, so no change needed there.
+// vertex() below is COPIED VERBATIM from the engine's own
+// engine/modules/4d/render/cross_section/tetra_cross_section_shader.glsl -
+// this is not stylistic, it's load-bearing: TetraMaterial4D's cross-section
+// ShaderMaterial only auto-assigns the engine's default shader if the slot
+// is still null (see Material4D::get_cross_section_material() /
+// TetraMaterial4D::update_cross_section_material() in that same module),
+// so clouds_layer.gd hands this shader in directly and it sticks - but the
+// tetrahedron-slicing math (CUSTOM0-3 tet corners, the edge-crossing
+// lookup tables, the modelview instance uniforms the rendering engine
+// pushes per-instance) has to be reproduced exactly or the mesh doesn't
+// slice at all. Only fragment() below is genuinely ours.
 //
-// Sampled as a genuinely TILTED cross-section through the baked volume, not
-// a single global depth. A world point at (world_xz.x, cloud_height,
-// world_xz.y, 0), if it were a real 4D point, would have LOCAL coordinates
-// (as seen through the CURRENT rotated 4D slice) equal to `rig.basis^T *
-// world` - i.e. `local = world.x * rig_basis.x + world.z * rig_basis.z`
-// (the world.y and world.w terms drop out: xw/zw rotations never touch y so
-// rig_basis.y is exactly (0,1,0,0), and this plane's world.w is always 0).
-// Both the IN-PLANE coordinates (local.xz, the spatial noise UV) and the
-// DEPTH coordinate (local.w, which slice of the volume) come out of this
-// same transform - rig_basis.x/rig_basis.z are pushed wholesale as
-// basis_x/basis_z every frame by clouds_layer.gd. This is the same
-// rig_basis this project already uses to rotate the real terrain (see
-// voxel_hover_camera_4d.gd's right-drag handler) and to compute ana_offset
-// for real 4D points elsewhere (see bearing_utility_4d.gd) - same
-// projection, just applied to a point that was never really 4D to begin
-// with.
+// noise_volume_atlas/sample_slice/sample_volume: a real 3-axis FBM noise
+// volume - DEPTH separate 2D slices (see _bake_clouds_volume_runner.gd,
+// deleted after running) packed into one flipbook atlas image (manual
+// 3D-texture-via-2D-atlas trick, since FastNoiseLite/NoiseTexture3D don't
+// give a genuinely seamless 4-axis volume here). Each tile is a seamless
+// bake (NoiseTexture2D seamless=true, then wrapped-translated per slice).
+// This part is unchanged from the earlier plane-based version and was
+// already confirmed working well - only where/how it's sampled changed.
 //
-// At zero rotation, basis_x=(1,0,0,0) and basis_z=(0,0,1,0) exactly, so
-// local = (world.x, 0, world.z, 0) - identical to the untilted case.
+// The DEPTH (local.w) term still comes from rig_basis, pushed every frame
+// by clouds_layer.gd as basis_x/basis_z, exactly as before: a real 4D
+// cross-section slice always lies exactly at local W=0 in the rig's own
+// frame (that's what "cross-section" means - see slice_edge() in the
+// engine shader), so there is no leftover per-fragment W coordinate to
+// read after slicing. The noise's own "depth into the volume" reactivity
+// is a property of how the ATLAS is sampled, not of the sliced geometry,
+// and still needs this same rig-basis projection to feel continuous
+// across rotation. `local = world.x * rig_basis.x + world.z * rig_basis.z`
+// (world.y/world.w drop out: xw/zw rotations never touch y, and this
+// slab's own world.w is always 0 before slicing) - rig_basis.x/z are
+// pushed wholesale as basis_x/basis_z. Same projection this project
+// already uses to rotate the real terrain (voxel_hover_camera_4d.gd's
+// right-drag handler) and for ana_offset elsewhere (bearing_utility_4d.gd).
+
+instance uniform vec4 modelview_origin;
+instance uniform vec4 modelview_basis_x;
+instance uniform vec4 modelview_basis_y;
+instance uniform vec4 modelview_basis_z;
+instance uniform vec4 modelview_basis_w;
 
 uniform sampler2D noise_volume_atlas : source_color, hint_default_white;
 uniform float atlas_cols = 8.0;
@@ -61,61 +84,84 @@ uniform vec2 drift_speed_a = vec2(0.03, 0.01); // Slow idle motion, independent 
 uniform vec2 drift_speed_b = vec2(-0.015, 0.022);
 uniform float uv_scale = 0.06; // World-space UV tiling - smaller = bigger cloud blobs.
 
-// Pushed every frame by clouds_layer.gd - see this shader's own header for
-// the derivation.
+// Pushed every frame by clouds_layer.gd - see this shader's own header.
 uniform vec4 basis_x = vec4(1.0, 0.0, 0.0, 0.0);
 uniform vec4 basis_z = vec4(0.0, 0.0, 1.0, 0.0);
 uniform float leak_scale = 0.06; // Depth (local.w) world-units -> volume depth-slices.
 
-// Radial fade centered on the deck's own XZ origin (always the terrain's
-// center - see clouds_layer.gd), pushed every frame as half the current
-// footprint. Without this, a wide, thin, horizontal plane viewed from a
-// normal hover-camera distance/angle visually recedes into a smeared band
-// near the horizon - technically still anchored to the terrain in world
-// space (confirmed directly: moving the plane's position hides it exactly
-// where expected), but reading as if it were glued to the screen/camera
-// instead, since that smeared band barely shifts for ordinary orbit/zoom
-// changes. Fading the coverage out before it reaches that smeared region
-// keeps the VISIBLE cloud mass concentrated directly over the terrain,
-// where it genuinely does shift and scale with camera changes.
-uniform float coverage_radius = 24.0;
-uniform float edge_fade_fraction = 0.35; // Fraction of coverage_radius the fade ramps over.
-
-// View-angle fade - separate problem from coverage_radius above. A flat
-// horizontal plane viewed near edge-on (a shallow/grazing camera angle,
-// the normal RTS-hover-camera case looking somewhat toward the horizon
-// rather than straight down) visually smears its far portion out to fill
-// a huge span of screen space - the classic "infinite floor" perspective
-// illusion, true of ANY finite flat plane viewed edge-on regardless of its
-// actual bounded size (confirmed directly via an annotated screenshot: the
-// deck's rendered extent tracked the screen/horizon, not any world-space
-// boundary). coverage_radius's world-space fade can't fix this - a point
-// can be well within coverage_radius and still be viewed almost edge-on if
-// it's far from the camera in the "away" direction. Fading by how face-on
-// the camera is looking at the plane (NORMAL vs VIEW, both view-space
-// built-ins Godot already provides) fixes it in a way that's genuinely a
-// property of the plane's OWN geometry relative to the viewer, not a
-// camera-position hack - steep/top-down views show it fully, shallow/
-// grazing views fade it out before the smear can dominate the frame.
-uniform float view_fade_start = 0.55; // abs(dot(NORMAL, VIEW)) below this = fully faded.
-uniform float view_fade_end = 0.7; // abs(dot(NORMAL, VIEW)) above this = fully visible.
-
-// Debugging only - see the conversation this was built in. 0 = normal
-// rendering. 1 = raw world_xz as color. 2 = local.xz (after the basis
-// transform, before *uv_scale or fract/texture) as color. 3 = final wrapped
-// tile UV (fract(local_uv)) as color. 4 = raw single-layer noise sample (no
-// 2-layer combine, no smoothstep) as grayscale.
+// Debugging only. 0 = normal rendering. 1 = raw world_xz as color.
+// 2 = local.xz (after the basis transform) as color. 3 = final wrapped
+// tile UV as color. 4 = raw single-layer noise sample as grayscale.
 uniform int debug_mode = 0;
 
-// VERTEX is object-space in vertex() - MODEL_MATRIX * VERTEX gives world
-// space; pass it through explicitly rather than relying on render_mode
-// world_vertex_coords (which would also change how VERTEX behaves for
-// anything else added to this shader later).
-varying vec2 world_xz;
+// --- Everything below to the end of vertex() is copied verbatim from
+// tetra_cross_section_shader.glsl - see this shader's own header. ---
+
+const int TETRAHEDRON_EDGE_TO_VERTEX_MAP[] = {
+	0, 1,
+	0, 2,
+	0, 3,
+	1, 2,
+	1, 3,
+	2, 3
+};
+const int CROSS_SECTION_LOOKUP[] = {
+	-1, -1, -1, -1, -1, -1,
+	0, 1, 2, -1, -1, -1,
+	0, 4, 3, -1, -1, -1,
+	2, 4, 1, 3, 1, 4,
+	1, 3, 5, -1, -1, -1,
+	0, 3, 2, 5, 2, 3,
+	1, 0, 5, 4, 5, 0,
+	2, 4, 5, -1, -1, -1,
+	2, 5, 4, -1, -1, -1,
+	1, 5, 0, 4, 0, 5,
+	0, 2, 3, 3, 2, 5,
+	1, 5, 3, -1, -1, -1,
+	2, 1, 4, 4, 1, 3,
+	0, 3, 4, -1, -1, -1,
+	0, 2, 1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1
+};
+
+int get_face_lookup_index(float w1, float w2, float w3, float w4, int vertex_id) {
+	int negative1 = w1 < 0.0 ? 1 : 0;
+	int negative2 = w2 < 0.0 ? 2 : 0;
+	int negative3 = w3 < 0.0 ? 4 : 0;
+	int negative4 = w4 < 0.0 ? 8 : 0;
+	int lookup_index = negative1 + negative2 + negative3 + negative4;
+	return (lookup_index * 6) + vertex_id - (vertex_id % 3);
+}
 
 void vertex() {
-	world_xz = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xz;
+	mat4 modelview_basis = mat4(modelview_basis_x, modelview_basis_y, modelview_basis_z, modelview_basis_w);
+
+	vec4 verts[] = { CUSTOM0, CUSTOM1, CUSTOM2, CUSTOM3 };
+	verts[0] = (modelview_basis * verts[0]) + modelview_origin;
+	verts[1] = (modelview_basis * verts[1]) + modelview_origin;
+	verts[2] = (modelview_basis * verts[2]) + modelview_origin;
+	verts[3] = (modelview_basis * verts[3]) + modelview_origin;
+
+	int vertex_id = int(VERTEX.x);
+	int face = get_face_lookup_index(verts[0].w, verts[1].w, verts[2].w, verts[3].w, vertex_id);
+	if (CROSS_SECTION_LOOKUP[face] == -1) {
+		// This vertex is unused, cull.
+		POSITION = vec4(0.0, 0.0, CLIP_SPACE_FAR, 1.0);
+	} else {
+		int position_edge = CROSS_SECTION_LOOKUP[face + (vertex_id % 3)];
+		int edge_vert1 = TETRAHEDRON_EDGE_TO_VERTEX_MAP[position_edge * 2];
+		int edge_vert2 = TETRAHEDRON_EDGE_TO_VERTEX_MAP[(position_edge * 2) + 1];
+		vec4 position1 = verts[edge_vert1];
+		vec4 position2 = verts[edge_vert2];
+		float mix_weight = position1.w / (position1.w - position2.w);
+		vec4 position = mix(position1, position2, mix_weight);
+		// Vertex is view space and used for lighting, position is clip space and used for rasterizing.
+		VERTEX = position.xyz;
+		POSITION = PROJECTION_MATRIX * vec4(position.xyz, 1.0);
+	}
 }
+
+// --- Ours from here on. ---
 
 // Samples one atlas tile (slice index, wrapped) at a local tile-space UV
 // (also wrapped manually via fract - the atlas has no hardware wrap, since
@@ -141,6 +187,12 @@ float sample_volume(vec2 local_uv, float w) {
 }
 
 void fragment() {
+	// VERTEX here is the sliced view-space position set in vertex() above;
+	// reconstruct world position from it (there is no MODEL_MATRIX to use -
+	// skip_vertex_transform means VERTEX was never in object space to
+	// begin with, it's already the cross-section's own view-space point).
+	vec2 world_xz = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xz;
+
 	vec4 local = world_xz.x * basis_x + world_xz.y * basis_z;
 	vec2 local_uv = local.xz * uv_scale;
 
@@ -166,17 +218,6 @@ void fragment() {
 		float density = sample_a * 0.65 + sample_b * 0.35;
 
 		float alpha = smoothstep(1.0 - coverage - softness, 1.0 - coverage + softness, density);
-
-		// See coverage_radius's own comment above for why this exists.
-		float dist_from_center = length(world_xz);
-		float edge_fade = 1.0 - smoothstep(
-			coverage_radius * (1.0 - edge_fade_fraction), coverage_radius, dist_from_center);
-		alpha *= edge_fade;
-
-		// See view_fade_start/end's own comment above for why this exists.
-		float facing = abs(dot(normalize(NORMAL), normalize(VIEW)));
-		alpha *= smoothstep(view_fade_start, view_fade_end, facing);
-
 		ALBEDO = cloud_color.rgb;
 		ALPHA = alpha * cloud_color.a;
 	}

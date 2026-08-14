@@ -1,107 +1,96 @@
 class_name CloudsLayer
-extends MeshInstance3D
-## Ordinary Godot 3D plane, deliberately outside the 4D Cross-section
-## pipeline - same "doesn't need to be 4D" convention as the HUD. No
-## Node4D/tet-mesh cost. Renders through the same viewport/camera as
-## everything else via a standard spatial shader (see clouds.gdshader).
+extends MeshInstance4D
+## A single REAL 4D object - a BoxTetraMesh4D, meant to be a child of
+## Terrain - rendered through the engine's own Cross-Section pipeline, the
+## SAME pipeline that slices the terrain itself. See clouds.gdshader's own
+## header for the full rationale; short version: an earlier version used an
+## ordinary flat MeshInstance3D plane outside the 4D pipeline entirely, on
+## the theory that "genuinely 4D" meant "one 4D object per cloud" and that
+## was too expensive - that was a misreading. The actual performance
+## concern was dozens of INDIVIDUAL 4D cloud objects, not 4D-ness itself.
+## A single slab sized to the terrain's footprint costs about as much as
+## one more terrain brick, and gets the SAME correct-from-any-angle
+## cross-section shape terrain itself has "for free," instead of fighting
+## an ordinary flat plane's inherent edge-on perspective problems with
+## fade hacks (tried and abandoned this session: a world-space radial fade
+## and a view-angle fade both treated symptoms of "wrong shape," not the
+## cause).
 ##
-## Footprint (size) comes from the terrain's own nominal grid_size *
-## cell_size - this already tracks the terrain's edges well (see the
-## conversation this was built in) and, importantly, stays a large, stable
-## value throughout brick streaming. HEIGHT instead comes from the terrain's
-## ACTUAL generated surface geometry (Ground/<brick>.mesh vertices - same
-## source poi_spawner.gd already reads, see that script's own header on why:
-## no raycast available, no separately-callable height function either),
-## per an explicit request to float the deck a fixed margin above the
-## highest real voxel rather than a fraction of the footprint (which put
-## clouds absurdly high/low whenever grid_size changed).
+## Must be parented directly under the terrain's own Node4D (identity
+## basis on this node) rather than given a rig_path override of its own -
+## slicing is keyed off THIS node's global_transform relative to the
+## camera (see CrossSectionRenderingEngine4D / RenderingEngine4D in the
+## engine source), so a child with identity basis under a rotating parent
+## picks up that rotation automatically, exactly like Ground/Water/POIs
+## already do (see poi_spawner.gd's own header for this same convention).
 ##
-## Deliberately NOT using the scanned bounds for the footprint too: only a
-## fraction of the terrain's bricks may have streamed in at any given
-## moment, so the scanned XZ extent can be far smaller than the terrain's
-## eventual real size - and a small footprint combined with this deck's
-## typical height (tens of units, once height_margin_voxels * cell_size is
-## added on top of a real peak) hits a reproducible Godot rendering cliff
-## (confirmed empirically this session: identical shader/material, a ~40-unit
-## plane at height ~29 renders nothing from ANY camera angle tested, while
-## the same plane at height ~10, or a ~70+-unit plane at height ~29, both
-## render fine - some engine-level interaction between small size and large
-## height for a thin transparent quad, not chased further).
+## Footprint (X/Z size) comes from the terrain's own nominal grid_size *
+## cell_size - tracks the terrain's edges well and stays large/stable
+## throughout brick streaming (an earlier attempt to instead use scanned
+## real bounds shrank badly during partial generation - see git history).
+## thickness_y/depth_w give the slab genuine volume in Y and the 4th
+## dimension: real extent (not a zero-thickness sheet) is what avoids the
+## "vanishing on-screen area at oblique angles" problem an ordinary plane
+## had, and real depth_w additionally makes the cross-section's SHAPE
+## respond to slice rotation the same way terrain's own shape does.
 ##
-## The nominal grid_size * cell_size formula alone does NOT reliably dodge
-## that cliff either, though: this project's own default terrain settings
-## (BASELINE_GRID_SIZE 12 * BASELINE_CELL_SIZE 4.0 = 48) land well inside the
-## same failing range, confirmed directly - clouds were invisible in exactly
-## this way the first time this fix was tried live, in the plain default
-## scene, not just a synthetic small-grid test. FOOTPRINT_TO_HEIGHT_MIN_RATIO
-## below is a floor on top of the nominal formula, tying the minimum
-## footprint to the deck's own height instead of a bare magic number, since
-## height (not size alone) is the other half of whatever this cliff actually
-## is - both confirmed-safe empirical points (footprint 70 & 96 at height
-## ~28.6) sit at ratio >= 2.45; 3.0 keeps real margin past that boundary
-## without being tied to one specific grid_size/cell_size combination.
-##
-## A semi-transparent deck seen mostly from above, like a real cloud layer
-## photographed from a plane window, not a full sky dome. RADIAL (globe)
-## terrains are not specially handled - deliberately out of scope for now,
-## see the conversation this was built in; the plane still renders, just
-## without trying to fit a sphere's silhouette.
-##
-## Real 4D volumetric clouds were explicitly ruled out as too expensive, but
-## the cloud pattern should still respond to the current 4D slice rotation
-## as a genuine tilted cross-section (not just a uniform shift) - see
-## clouds.gdshader's own header for the derivation (it reuses the same
-## ana_offset-style projection this project already uses for real 4D points
-## elsewhere, e.g. bearing_utility_4d.gd).
+## Height comes from the terrain's ACTUAL generated surface geometry
+## (Ground/<brick>.mesh vertices - same source poi_spawner.gd reads, see
+## that script's own header on why: no raycast available, no separately-
+## callable height function either), floated height_margin world units
+## above the highest real point - a flat margin, deliberately NOT scaled by
+## cell_size (an earlier version did that and put the deck absurdly high
+## above any coarse-celled terrain).
 
-## How many WORLD UNITS above the highest currently-generated surface point
-## the cloud deck floats - a real margin off real geometry rather than a
-## fraction of a nominal footprint. Deliberately a flat world-unit value,
-## NOT multiplied by cell_size: an earlier version scaled it by cell_size
-## ("N voxel heights"), which put the deck absurdly far above the terrain
-## for any coarse-celled bake (e.g. cell_size 4.0 turned a margin of 5 into
-## 20 world units - visibly "in the sky" rather than hugging the surface,
-## per direct visual feedback/annotated screenshot). A flat margin keeps the
-## deck close to the surface regardless of the terrain's own voxel scale.
 @export var height_margin: float = 3.0
-## The Node4D whose basis carries the xw/zw rotation - typically the same
-## node right-drag rotates (see voxel_hover_camera_4d.gd's rig_path). This is
-## the authoritative "how far has the 4D slice rotated" state; there is no
-## separate copy of it to keep in sync.
-@export var rig_path: NodePath
-## The VoxelTerrain4D to size/position this layer against.
+## Real thickness in Y and the 4th dimension - see this script's own header
+## for why both need to be nonzero.
+@export var thickness_y: float = 4.0
+@export var depth_w: float = 24.0
+## The VoxelTerrain4D to size/position this layer against. Left unset,
+## defaults to this node's own parent - the expected case, since this node
+## should be a direct child of Terrain (see this script's own header on
+## why identity-basis parenting matters for slicing).
 @export var terrain_path: NodePath
 
-## See this script's own header for where this ratio comes from.
-const FOOTPRINT_TO_HEIGHT_MIN_RATIO := 3.0
+const CLOUD_SHADER: Shader = preload("res://scripts/clouds.gdshader")
+const NOISE_ATLAS: Texture2D = preload("res://textures/clouds_noise_volume_atlas.png")
 
 var _material: ShaderMaterial
-var _plane_mesh: PlaneMesh
+var _box_mesh: BoxTetraMesh4D
 ## The expensive part (scanning every generated brick's full vertex array
 ## for its highest point) only re-runs when this changes - checking the
-## child count itself is a cheap O(1) property read, safe to do every frame.
-## Bricks stream in/out rather than mutating in place, so a chunk-count
-## change is exactly the terrain's own signal that the highest point may
-## have changed.
+## child count itself is a cheap O(1) property read, safe to do every
+## frame. Bricks stream in/out rather than mutating in place, so a
+## chunk-count change is exactly the terrain's own signal that the highest
+## point may have changed.
 var _last_ground_chunk_count: int = -1
 var _last_fitted_footprint: float = -1.0
-## The deck's current height above world origin - tracked separately from
-## the terrain scan itself so the footprint floor (which depends on height)
-## can be recomputed every frame alongside the cheap nominal-footprint check,
-## without re-scanning terrain geometry every frame too.
-var _current_height: float = 0.0
 
 
 func _ready() -> void:
 	if mesh == null:
-		mesh = PlaneMesh.new()
-	_plane_mesh = mesh as PlaneMesh
-	if _plane_mesh != null and _plane_mesh.material is ShaderMaterial:
-		_material = _plane_mesh.material
+		mesh = BoxTetraMesh4D.new()
+	_box_mesh = mesh as BoxTetraMesh4D
+
+	if not (material_override is TetraMaterial4D):
+		material_override = TetraMaterial4D.new()
+	var tetra_mat: TetraMaterial4D = material_override
+
+	# get_cross_section_material() only auto-assigns the engine's default
+	# shader if this slot is still null (see TetraMaterial4D::
+	# update_cross_section_material() in the engine source) - assigning
+	# ours here makes it stick permanently, confirmed directly this
+	# session with an isolated test object before building this for real.
+	_material = tetra_mat.get_cross_section_material()
+	_material.shader = CLOUD_SHADER
+	_material.set_shader_parameter("noise_volume_atlas", NOISE_ATLAS)
 
 
 func _get_terrain() -> Node:
-	return get_node_or_null(terrain_path)
+	if not terrain_path.is_empty():
+		return get_node_or_null(terrain_path)
+	return get_parent()
 
 
 ## The terrain's actual highest currently-generated surface point, scanning
@@ -126,7 +115,7 @@ func _scan_max_height(terrain: Node) -> float:
 
 
 func _refit_to_terrain(terrain: Node) -> void:
-	if _plane_mesh == null:
+	if _box_mesh == null:
 		return
 	var cell_size: float = float(terrain.cell_size) if "cell_size" in terrain else 1.0
 
@@ -139,20 +128,15 @@ func _refit_to_terrain(terrain: Node) -> void:
 		_last_ground_chunk_count = chunk_count
 		var max_y: float = _scan_max_height(terrain)
 		if not is_inf(max_y):
-			_current_height = max_y + height_margin
-			position = Vector3(0.0, _current_height, 0.0)
+			position = Vector4(0.0, max_y + height_margin, 0.0, 0.0)
 
-	# Footprint: the nominal grid_size * cell_size formula, floored against
-	# the deck's own height - see this script's own header for both why the
-	# scanned bounds are deliberately NOT used here, and why the floor is
-	# necessary even with the nominal formula alone. Cheap, so re-evaluated
-	# every frame (not gated on chunk_count) since _current_height can change
-	# independently of the nominal formula.
-	var nominal_footprint: float = float(terrain.grid_size) * cell_size
-	var footprint: float = maxf(nominal_footprint, _current_height * FOOTPRINT_TO_HEIGHT_MIN_RATIO)
+	# Footprint: the nominal grid_size * cell_size formula - see this
+	# script's own header for why the scanned bounds are deliberately not
+	# used here.
+	var footprint: float = float(terrain.grid_size) * cell_size
 	if not is_equal_approx(footprint, _last_fitted_footprint):
 		_last_fitted_footprint = footprint
-		_plane_mesh.size = Vector2(footprint, footprint)
+		_box_mesh.size = Vector4(footprint, thickness_y, footprint, depth_w)
 
 
 func _process(_delta: float) -> void:
@@ -160,27 +144,24 @@ func _process(_delta: float) -> void:
 	if terrain != null:
 		_refit_to_terrain(terrain)
 
-	# Identity default (basis_x=(1,0,0,0), basis_z=(0,0,1,0)) matches the
-	# shader's own defaults - the zero-rotation, untilted case.
+	# The parent (Terrain) IS the rig here - this node is meant to be a
+	# direct, identity-basis child of it (see this script's own header),
+	# so its basis is exactly the current 4D slice rotation.
 	var basis_x := Vector4(1.0, 0.0, 0.0, 0.0)
 	var basis_z := Vector4(0.0, 0.0, 1.0, 0.0)
-	if not rig_path.is_empty():
-		var rig: Node4D = get_node_or_null(rig_path)
-		if rig != null:
-			# rig.basis is a Projection (4x4) built by
-			# Basis4D.from_xw(...) * Basis4D.from_zw(...) - pushed wholesale
-			# so the shader can compute the FULL local = world.x*basis_x +
-			# world.z*basis_z transform per-fragment (both the in-plane
-			# rotation/foreshortening AND the depth-into-volume term - see
-			# clouds.gdshader's own header for the derivation).
-			var rig_basis: Projection = rig.basis
-			basis_x = rig_basis.x
-			basis_z = rig_basis.z
+	var rig: Node4D = get_parent() as Node4D
+	if rig != null:
+		# rig.basis is a Projection (4x4) built by
+		# Basis4D.from_xw(...) * Basis4D.from_zw(...) - pushed wholesale
+		# so the shader can compute the FULL local = world.x*basis_x +
+		# world.z*basis_z transform per-fragment - see clouds.gdshader's
+		# own header for the derivation (this is now only used for the
+		# noise atlas's depth term, not for the mesh's own shape - that
+		# part is handled by real 4D slicing now).
+		var rig_basis: Projection = rig.basis
+		basis_x = rig_basis.x
+		basis_z = rig_basis.z
 
 	if _material != null:
 		_material.set_shader_parameter("basis_x", basis_x)
 		_material.set_shader_parameter("basis_z", basis_z)
-		# Half the current footprint - see clouds.gdshader's own comment on
-		# coverage_radius for why this exists (keeps the visible cloud mass
-		# concentrated over the terrain instead of smearing to the horizon).
-		_material.set_shader_parameter("coverage_radius", _last_fitted_footprint * 0.5)
