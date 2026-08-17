@@ -3,7 +3,7 @@ extends SceneTree
 ## Headless structural check for the Demo hub.
 ##
 ## The hub's gates and billboards are generated at runtime and deliberately not
-## saved into the scene, so opening `hub.tscn` in a text editor tells you nothing
+## saved into the scene, so opening `hub1.tscn` in a text editor tells you nothing
 ## about whether they were actually built. This instantiates the scene, walks the
 ## resulting tree and prints it, which is the only way to confirm the ring ran
 ## without opening the editor.
@@ -19,14 +19,14 @@ extends SceneTree
 ##   engine/godot/bin/godot.windows.editor.double.x86_64.console.exe \
 ##       --headless --path project --script res://ramon/Demo/_verify_hub.gd
 
-const DEFAULT_HUB := "res://ramon/Demo/hub.tscn"
+const DEFAULT_HUB := "res://ramon/Demo/hub1.tscn"
 
 var _hub: Node = null
 var _failed: bool = false
 
 
 ## Scene to check, from user args after `--`. Defaults to the main hub:
-##   ... --script res://ramon/Demo/_verify_hub.gd -- hub2.tscn
+##   ... --script res://ramon/Demo/_verify_hub.gd -- hub1.tscn
 static func _hub_path() -> String:
 	var args := OS.get_cmdline_user_args()
 	if args.is_empty():
@@ -89,12 +89,54 @@ func _process(_delta: float) -> bool:
 	print("billboards: %d   Label3D: %d   Sprite3D: %d   frame segments: %d"
 		% [billboards, labels, sprites, frames])
 
-	# Nothing is owned by the scene, so a saved hub.tscn must never contain the
+	# The floor spawns its surface the same way, so that it never bakes a
+	# tetrahedral array into the .tscn. Check it built and stayed unowned.
+	# Only hubs whose floor carries the tiled-floor script generate a Surface.
+	# A plain BoxTetraMesh4D floor is a valid configuration, not a failure.
+	var floor_mesh: Node = _hub.get_node_or_null("Floor/Mesh")
+	if floor_mesh != null and floor_mesh.get_script() == null:
+		print("floor: plain mesh, no tiling script")
+		floor_mesh = null
+	if floor_mesh != null:
+		var surface: Node = floor_mesh.get_node_or_null("Surface")
+		if surface == null:
+			printerr("VERIFY: FAILED - floor surface did not generate")
+			quit(1)
+			return true
+		var detail := "no mesh"
+		if surface.mesh != null:
+			var s: Vector4 = surface.mesh.size
+			var tetra: int = surface.mesh.get_simplex_cell_indices().size() / 4
+			detail = "%.0f x %.0f m, %d tetrahedra, map=%d" % [s.x, s.z, tetra, surface.mesh.cell_texture_map]
+		# The tiling lives in a shader uniform, not in the mesh, so report it -
+		# it is the single number that decides whether the texture repeats.
+		var scale := "none"
+		# Material4D, NOT Godot's Material - they are unrelated hierarchies, and
+		# typing this as Material throws every frame instead of failing once.
+		var mat: Material4D = surface.material_override
+		if mat != null and mat.has_method("get_cross_section_material"):
+			var cs: ShaderMaterial = mat.get_cross_section_material()
+			if cs != null:
+				var shader_name := "stock"
+				if cs.shader != null and not cs.shader.resource_path.is_empty():
+					shader_name = cs.shader.resource_path.get_file()
+				scale = "%s size=%s per %s m" % [
+					shader_name,
+					str(cs.get_shader_parameter("surface_size")),
+					str(cs.get_shader_parameter("texture_metres"))
+				]
+		print("floor: %s | %s | owned=%s" % [detail, scale, str(surface.owner != null)])
+
+	# Nothing is owned by the scene, so a saved hub1.tscn must never contain the
 	# generated nodes. Catching a regression here is cheaper than finding stale
 	# geometry committed into the scene weeks later.
 	var owned_leaks := 0
 	for gate in ring.get_children():
 		if gate.owner != null:
+			owned_leaks += 1
+	if floor_mesh != null:
+		var floor_surface: Node = floor_mesh.get_node_or_null("Surface")
+		if floor_surface != null and floor_surface.owner != null:
 			owned_leaks += 1
 	print("generated nodes wrongly owned by the scene: ", owned_leaks)
 
