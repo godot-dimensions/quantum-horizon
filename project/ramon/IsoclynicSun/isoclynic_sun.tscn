@@ -1,35 +1,37 @@
-[gd_scene load_steps=14 format=3 uid="uid://jqqlpo6xucne"]
+[gd_scene load_steps=9 format=3 uid="uid://jqqlpo6xucne"]
 
 [ext_resource type="Script" uid="uid://c1jsa7mslvhqp" path="res://ramon/IsoclynicSun/scripts/sun_4d.gd" id="1_sun4d"]
-[ext_resource type="Shader" uid="uid://c40npaqiedh2u" path="res://ramon/IsoclynicSun/shaders/isoclynic_sun_sky.gdshader" id="2_skyshader"]
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="3_player"]
 [ext_resource type="ArrayTetraMesh4D" uid="uid://bh6g0ly3wnw3t" path="res://models/primitives/platonic/600_cell/600_cell_smooth.g4b" id="4_600cell"]
 
-[sub_resource type="Gradient" id="Gradient_5yrxk"]
-offsets = PackedFloat32Array(0, 0.5021097, 1)
-colors = PackedColorArray(0.13, 0.11, 0.09, 1, 0.55, 0.7, 0.95, 1, 0.05, 0.12, 0.35, 1)
-
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_0hwwe"]
-gradient = SubResource("Gradient_5yrxk")
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_sky"]
-shader = ExtResource("2_skyshader")
-shader_parameter/sky_ramp = SubResource("GradientTexture1D_0hwwe")
-shader_parameter/sun_direction = Vector3(0, 0.5976145710175594, -0.8017835272113655)
-shader_parameter/sun_color = Color(1, 0.95, 0.85, 1)
-shader_parameter/sun_energy = 1.1999999999999997
-shader_parameter/sun_angular_size = 0.03
-
-[sub_resource type="Sky" id="Sky_1"]
-sky_material = SubResource("ShaderMaterial_sky")
-process_mode = 2
-
-[sub_resource type="Environment" id="Environment_1"]
-background_mode = 2
-sky = SubResource("Sky_1")
-ambient_light_source = 3
-ambient_light_energy = 0.6
-reflected_light_source = 2
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
+shader_parameter/world_up_direction_4d = null
+shader_parameter/horizon_color = Color(0.55, 0.7, 0.95, 1)
+shader_parameter/top_color = Color(0.05, 0.12, 0.35, 1)
+shader_parameter/bottom_color = Color(0.13, 0.11, 0.09, 1)
+shader_parameter/light0_direction_4d = null
+shader_parameter/light0_color = null
+shader_parameter/light0_energy = null
+shader_parameter/light0_angular_radius_radians = null
+shader_parameter/light0_enabled = null
+shader_parameter/light1_direction_4d = null
+shader_parameter/light1_color = null
+shader_parameter/light1_energy = null
+shader_parameter/light1_angular_radius_radians = null
+shader_parameter/light1_enabled = null
+shader_parameter/light2_direction_4d = null
+shader_parameter/light2_color = null
+shader_parameter/light2_energy = null
+shader_parameter/light2_angular_radius_radians = null
+shader_parameter/light2_enabled = null
+shader_parameter/light3_direction_4d = null
+shader_parameter/light3_color = null
+shader_parameter/light3_energy = null
+shader_parameter/light3_angular_radius_radians = null
+shader_parameter/light3_enabled = null
+horizon_color = Color(0.55, 0.7, 0.95, 1)
+top_color = Color(0.05, 0.12, 0.35, 1)
+bottom_color = Color(0.13, 0.11, 0.09, 1)
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
 size = Vector4(50, 1, 50, 50)
@@ -45,13 +47,14 @@ albedo_color = Color(0.9, 0.85, 0.8, 1)
 
 [node name="Skybox" type="Node4D"]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("Environment_1")
+[node name="WorldEnvironment4D" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_sky")
 
-[node name="DirectionalLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(-1, 0, 0, 0, 0.8017835272113655, 0.5976145710175594, 0, 0.5976145710175594, -0.8017835272113655, 0, 0, 0)
-light_energy = 1.1999999999999997
-shadow_enabled = true
+[node name="Sun" type="DirectionalLight4D" parent="."]
+basis = Projection(0.9129231024683224, 0, 0.4015706708183179, -0.07288624917040223, 0.24477943637403243, 0.3256060124151338, -0.6692644127559805, -0.6214088010528327, -0.08429528214658835, 0.9455055392112282, 0.2304761925251375, 0.2139960406358656, 0.3155134575827837, 0, -0.5811255172817932, 0.7501629098056781)
+light_color = Color(1, 0.95, 0.85, 1)
+light_energy = 0.431
 
 [node name="Ground" type="StaticBody4D" parent="."]
 position = Vector4(0, -0.5, 0, 0)
@@ -87,13 +90,12 @@ offset_left = 16.0
 offset_top = 16.0
 offset_right = 500.0
 offset_bottom = 100.0
-text = "sun 4D (world): (0.00, 0.60, -0.80, 0.00)
-sun 3D (local, visible): (0.00, 0.60, -0.80)
-local w: 0.000    w-fade: 1.000"
+text = "sun 4D (world): (-0.08, 0.95, 0.23, 0.21)
+sun 3D (local, visible): (-0.08, 0.95, 0.23)
+local w: 0.214    w-fade: 0.977"
 
 [node name="Sun4D" type="Node" parent="."]
 script = ExtResource("1_sun4d")
-isoclinic_angle_2 = -70.0
-sky_gradient = SubResource("Gradient_5yrxk")
-sky_material = SubResource("ShaderMaterial_sky")
-mesh_materials = Array[Material4D]([SubResource("TetraMaterial4D_floor"), SubResource("TetraMaterial4D_ball")])
+sun_w_extent = 0.23
+isoclinic_angle_1 = 21.5
+isoclinic_angle_2 = -3.0

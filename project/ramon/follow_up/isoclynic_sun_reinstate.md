@@ -1,5 +1,17 @@
 # Isoclynic Sun — how to reinstate
 
+**Resolved 2026-08-17.** Aaron's light work landed on `godot-4d` `origin/main`
+(`WorldEnvironment4D`, `DirectionalLight4D`, `GradientSkyMaterial4D`, and real
+4D-aware shading in the cross-section renderer's `light()` shader) well past
+what route 3 below anticipated — none of this patch was needed. The scene now
+uses a `WorldEnvironment4D` + `GradientSkyMaterial4D` and a real
+`DirectionalLight4D` instead of the 3D `WorldEnvironment`/`Sky`/`DirectionalLight3D`
++ `fake_light_direction` shader hack; `sun_4d.gd` just orients the
+`DirectionalLight4D` each frame (`Node4D.look_at`) and both the sky's sun disc
+and the tetra meshes' shading now fade in/out of the visible slice on their
+own, natively, in both the editor's "4D" tab and Play. The rest of this file
+is kept as historical record of the parked fork patch and why it was reverted.
+
 Self-contained recovery note, written 2026-08-13. The Isoclynic Sun's editor
 preview was switched off that day by reverting a 5-file engine change. This
 file holds everything needed to bring it back without re-deriving it, including
