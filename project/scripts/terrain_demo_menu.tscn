@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://n12hkd1o8um1"]
 
-[ext_resource type="Script" path="res://scripts/terrain_demo_menu.gd" id="1_menu"]
+[ext_resource type="Script" uid="uid://b2xt0kfc2ppof" path="res://scripts/terrain_demo_menu.gd" id="1_menu"]
 
 [node name="TerrainDemoMenu" type="Control"]
 layout_mode = 3

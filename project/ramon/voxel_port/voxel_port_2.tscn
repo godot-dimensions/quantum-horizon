@@ -1,8 +1,8 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=7 format=3 uid="uid://cu55yj0p284ji"]
 
-[ext_resource type="Script" path="res://ramon/voxel_port/scripts/voxel_terrain_4d_2.gd" id="2_terrn"]
-[ext_resource type="Script" path="res://ramon/voxel_port/scripts/voxel_hover_camera_4d.gd" id="3_hover"]
-[ext_resource type="Script" path="res://ramon/voxel_port/scripts/voxel_terrain_perf_hud.gd" id="4_perfhud"]
+[ext_resource type="Script" uid="uid://cxmuugsbcbs0f" path="res://ramon/voxel_port/scripts/voxel_terrain_4d_2.gd" id="2_terrn"]
+[ext_resource type="Script" uid="uid://n8uxxkbptg6o" path="res://ramon/voxel_port/scripts/voxel_hover_camera_4d.gd" id="3_hover"]
+[ext_resource type="Script" uid="uid://ecn8kkodc33l" path="res://ramon/voxel_port/scripts/voxel_terrain_perf_hud.gd" id="4_perfhud"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
 size = Vector4(120, 1, 120, 120)
@@ -41,12 +41,10 @@ mesh = SubResource("BoxTetraMesh4D_floor")
 
 [node name="HoverCamera" type="Camera4D" parent="."]
 current = true
-rendering_engine = "Cross-section"
+rendering_engine_name = "Cross-section"
 view_angle_type = 1
 field_of_view_4d = 1.3962634015954636
 script = ExtResource("3_hover")
-look_at_target = Vector4(0, 0, 0, 0)
-radius = 60.0
 rig_path = NodePath("../Terrain")
 terrain_path = NodePath("../Terrain")
 

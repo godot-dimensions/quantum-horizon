@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=5 format=3 uid="uid://yykexixr3441"]
 
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://chc0ybpm3w0yb" path="res://scripts/fall_respawn.gd" id="2_fallrespawn"]

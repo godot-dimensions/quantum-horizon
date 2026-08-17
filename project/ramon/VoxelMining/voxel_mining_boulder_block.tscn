@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://cwc01l0hlry24"]
 
-[ext_resource type="Script" path="res://ramon/VoxelMining/scripts/voxel_mining_boulder_block.gd" id="1"]
+[ext_resource type="Script" uid="uid://bys2oritjd4vv" path="res://ramon/VoxelMining/scripts/voxel_mining_boulder_block.gd" id="1"]
 
 [node name="VoxelMiningBoulderBlock" type="Node4D"]
 script = ExtResource("1")

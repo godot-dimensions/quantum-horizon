@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://b1menuwcl1f6o"]
 
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1"]
-[ext_resource type="PackedScene" path="res://ramon/VoxelMining/voxel_mining_gem_block.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://ctimhckawyf2s" path="res://ramon/VoxelMining/voxel_mining_gem_block.tscn" id="2"]
 [ext_resource type="Script" uid="uid://c6q1cfdmllkfk" path="res://ramon/VoxelMining/scripts/mining_axe.gd" id="3"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_floor"]

@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://gh03wmhupplp"]
 
-[ext_resource type="Script" path="res://ramon/VoxelMining/scripts/voxel_mining_block.gd" id="1"]
+[ext_resource type="Script" uid="uid://ctk264ubng3j5" path="res://ramon/VoxelMining/scripts/voxel_mining_block.gd" id="1"]
 
 [node name="VoxelMiningBlock" type="Node4D"]
 script = ExtResource("1")

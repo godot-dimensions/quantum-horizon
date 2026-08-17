@@ -9,12 +9,12 @@
 offsets = PackedFloat32Array(0, 0.5021097, 1)
 colors = PackedColorArray(0.13, 0.11, 0.09, 1, 0.55, 0.7, 0.95, 1, 0.05, 0.12, 0.35, 1)
 
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_5yrxk"]
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_0hwwe"]
 gradient = SubResource("Gradient_5yrxk")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_sky"]
 shader = ExtResource("2_skyshader")
-shader_parameter/sky_ramp = SubResource("GradientTexture1D_5yrxk")
+shader_parameter/sky_ramp = SubResource("GradientTexture1D_0hwwe")
 shader_parameter/sun_direction = Vector3(0, 0.5976145710175594, -0.8017835272113655)
 shader_parameter/sun_color = Color(1, 0.95, 0.85, 1)
 shader_parameter/sun_energy = 1.1999999999999997
@@ -96,4 +96,4 @@ script = ExtResource("1_sun4d")
 isoclinic_angle_2 = -70.0
 sky_gradient = SubResource("Gradient_5yrxk")
 sky_material = SubResource("ShaderMaterial_sky")
-mesh_materials = [SubResource("TetraMaterial4D_floor"), SubResource("TetraMaterial4D_ball")]
+mesh_materials = Array[Material4D]([SubResource("TetraMaterial4D_floor"), SubResource("TetraMaterial4D_ball")])

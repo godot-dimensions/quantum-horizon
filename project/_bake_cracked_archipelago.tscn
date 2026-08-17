@@ -1,7 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://dbm44bppsyu4e"]
 
-[ext_resource type="PackedScene" path="res://ramon/voxel_port/voxel_port.tscn" id="1_vport"]
-[ext_resource type="Script" path="res://scripts/_bake_preset_runner.gd" id="2_runner"]
+[ext_resource type="PackedScene" uid="uid://qoe6y4lb5tgo" path="res://ramon/voxel_port/voxel_port.tscn" id="1_vport"]
+[ext_resource type="Script" uid="uid://cigtdlx2kmuwl" path="res://scripts/_bake_preset_runner.gd" id="2_runner"]
 
 [node name="BakePreset" type="Node"]
 script = ExtResource("2_runner")
