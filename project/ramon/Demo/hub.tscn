@@ -1,0 +1,114 @@
+[gd_scene load_steps=19 format=3 uid="uid://2q2e43tlvqa8"]
+
+[ext_resource type="CompressedTexture3D" uid="uid://cm5tj2iv8pmh7" path="res://textures/dev_finals/ramdev_black_metal.png" id="1_hp5mq"]
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://cb351f2xqkqiw" path="res://ramon/Demo/scripts/hub_gate_ring_4d.gd" id="2_ring"]
+[ext_resource type="Script" uid="uid://2yrp524m1rto" path="res://ramon/Demo/scripts/hub_gate_def.gd" id="2_sl4le"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates/gate01.tres" id="3_gate_vp"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates/gate02.tres" id="4_gate_vm"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates/gate03.tres" id="5_gate_pm"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates/gate04.tres" id="6_gate_sbc"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates/gate05.tres" id="7_gate_qr"]
+[ext_resource type="CompressedTexture3D" uid="uid://pbsawdmrmihe" path="res://textures/dev_finals/ramdev_grey.png" id="9_grey"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_hub"]
+shader_parameter/world_up_direction_4d = null
+shader_parameter/horizon_color = Color(0.78, 0.85, 0.92, 1)
+shader_parameter/top_color = Color(0.35, 0.55, 0.85, 1)
+shader_parameter/bottom_color = Color(0.35, 0.36, 0.38, 1)
+shader_parameter/light0_direction_4d = null
+shader_parameter/light0_color = null
+shader_parameter/light0_energy = null
+shader_parameter/light0_angular_radius_radians = null
+shader_parameter/light0_enabled = null
+shader_parameter/light1_direction_4d = null
+shader_parameter/light1_color = null
+shader_parameter/light1_energy = null
+shader_parameter/light1_angular_radius_radians = null
+shader_parameter/light1_enabled = null
+shader_parameter/light2_direction_4d = null
+shader_parameter/light2_color = null
+shader_parameter/light2_energy = null
+shader_parameter/light2_angular_radius_radians = null
+shader_parameter/light2_enabled = null
+shader_parameter/light3_direction_4d = null
+shader_parameter/light3_color = null
+shader_parameter/light3_energy = null
+shader_parameter/light3_angular_radius_radians = null
+shader_parameter/light3_enabled = null
+horizon_color = Color(0.78, 0.85, 0.92, 1)
+top_color = Color(0.35, 0.55, 0.85, 1)
+bottom_color = Color(0.35, 0.36, 0.38, 1)
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
+size = Vector4(48, 1, 48, 80)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_floor"]
+albedo_source = 7
+albedo_texture_3d = ExtResource("9_grey")
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_wgh0k"]
+albedo_source = 3
+albedo_texture_3d = ExtResource("1_hp5mq")
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_floor"]
+material = SubResource("TetraMaterial4D_wgh0k")
+size = Vector4(48, 1, 48, 80)
+cell_texture_map = 1
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_wall"]
+size = Vector4(26, 5, 1, 80)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_wall"]
+albedo_color = Color(0.902, 0.902, 0.902, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_wall"]
+size = Vector4(26, 5, 1, 80)
+
+[node name="Hub" type="Node4D"]
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_hub")
+ambient_light_color = Color(0.5, 0.53, 0.58, 1)
+tonemap_mode = 2
+
+[node name="Sun" type="DirectionalLight4D" parent="."]
+basis = Projection(0.7808, 0, -0.6247, 0, -0.5262, 0.5393, -0.6576, 0, 0.3369, 0.8422, 0.4211, 0, 0, 0, 0, 1)
+light_color = Color(1, 0.98, 0.94, 1)
+light_energy = 0.482
+angular_radius_radians = 0.00045204027626653
+
+[node name="Floor" type="StaticBody4D" parent="."]
+position = Vector4(0, -0.5, 0, 0)
+
+[node name="Collider" type="CollisionShape4D" parent="Floor"]
+shape = SubResource("BoxShape4D_floor")
+
+[node name="Mesh" type="MeshInstance4D" parent="Floor"]
+material_override = SubResource("TetraMaterial4D_floor")
+mesh = SubResource("BoxTetraMesh4D_floor")
+
+[node name="BackWall" type="StaticBody4D" parent="."]
+position = Vector4(0, 2.5, 6, 0)
+
+[node name="Collider" type="CollisionShape4D" parent="BackWall"]
+shape = SubResource("BoxShape4D_wall")
+
+[node name="Mesh" type="MeshInstance4D" parent="BackWall"]
+material_override = SubResource("TetraMaterial4D_wall")
+mesh = SubResource("BoxTetraMesh4D_wall")
+
+[node name="GateRing" type="Node4D" parent="."]
+script = ExtResource("2_ring")
+gates = Array[ExtResource("2_sl4le")]([ExtResource("3_gate_vp"), ExtResource("4_gate_vm"), ExtResource("5_gate_pm"), ExtResource("6_gate_sbc"), ExtResource("7_gate_qr")])
+radius = 11.5
+arc_degrees = 84.0
+frame_thickness = 0.25
+frame_depth = 2.1500000000000004
+w_extent = 16.0
+threshold_depth = 2.8000000000000003
+use_dev_textures = true
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector4(0, 1, 0, 0)
