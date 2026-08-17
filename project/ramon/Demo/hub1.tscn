@@ -1,6 +1,5 @@
-[gd_scene load_steps=19 format=3 uid="uid://2q2e43tlvqa8"]
+[gd_scene load_steps=15 format=3 uid="uid://dcivwwum5md8j"]
 
-[ext_resource type="CompressedTexture3D" uid="uid://cm5tj2iv8pmh7" path="res://textures/dev_finals/ramdev_black_metal.png" id="1_hp5mq"]
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://cb351f2xqkqiw" path="res://ramon/Demo/scripts/hub_gate_ring_4d.gd" id="2_ring"]
 [ext_resource type="Script" uid="uid://2yrp524m1rto" path="res://ramon/Demo/scripts/hub_gate_def.gd" id="2_sl4le"]
@@ -9,13 +8,17 @@
 [ext_resource type="Resource" path="res://ramon/Demo/gates/gate03.tres" id="5_gate_pm"]
 [ext_resource type="Resource" path="res://ramon/Demo/gates/gate04.tres" id="6_gate_sbc"]
 [ext_resource type="Resource" path="res://ramon/Demo/gates/gate05.tres" id="7_gate_qr"]
-[ext_resource type="CompressedTexture3D" uid="uid://pbsawdmrmihe" path="res://textures/dev_finals/ramdev_grey.png" id="9_grey"]
+[ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="8_sun"]
+[ext_resource type="Script" uid="uid://bg6kulalwlupc" path="res://ramon/Demo/scripts/hub_tiled_floor_4d.gd" id="10_floor"]
+[ext_resource type="Script" uid="uid://tr1j217ck3ae" path="res://ramon/Demo/scripts/hub_slice_reset.gd" id="11_reset"]
 
 [sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_hub"]
 shader_parameter/world_up_direction_4d = null
-shader_parameter/horizon_color = Color(0.78, 0.85, 0.92, 1)
-shader_parameter/top_color = Color(0.35, 0.55, 0.85, 1)
-shader_parameter/bottom_color = Color(0.35, 0.36, 0.38, 1)
+shader_parameter/top_color = Color(0.25138095, 0.45543057, 0.70535547, 1)
+shader_parameter/bottom_color = Color(0.2787614, 0.25990424, 0.23803556, 1)
+shader_parameter/inv_top_curve = 4.00000015894572
+shader_parameter/inv_bottom_curve = 30.000001192092896
+shader_parameter/inv_sun_curve = 22.782018847067608
 shader_parameter/light0_direction_4d = null
 shader_parameter/light0_color = null
 shader_parameter/light0_energy = null
@@ -36,48 +39,34 @@ shader_parameter/light3_color = null
 shader_parameter/light3_energy = null
 shader_parameter/light3_angular_radius_radians = null
 shader_parameter/light3_enabled = null
-horizon_color = Color(0.78, 0.85, 0.92, 1)
-top_color = Color(0.35, 0.55, 0.85, 1)
-bottom_color = Color(0.35, 0.36, 0.38, 1)
+top_color = Color(0.25138095, 0.45543057, 0.70535547, 1)
+top_curve = 0.15
+bottom_color = Color(0.2787614, 0.25990424, 0.23803556, 1)
+bottom_curve = 0.02
+sun_curve = 0.15
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
 size = Vector4(48, 1, 48, 80)
 
-[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_floor"]
-albedo_source = 7
-albedo_texture_3d = ExtResource("9_grey")
-
-[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_wgh0k"]
-albedo_source = 3
-albedo_texture_3d = ExtResource("1_hp5mq")
-
-[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_floor"]
-material = SubResource("TetraMaterial4D_wgh0k")
-size = Vector4(48, 1, 48, 80)
-cell_texture_map = 1
-
 [sub_resource type="BoxShape4D" id="BoxShape4D_wall"]
 size = Vector4(26, 5, 1, 80)
 
-[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_wall"]
-albedo_color = Color(0.902, 0.902, 0.902, 1)
-
-[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_wall"]
-size = Vector4(26, 5, 1, 80)
-
-[node name="Hub" type="Node4D"]
+[node name="Hub1" type="Node4D"]
 
 [node name="Environment" type="WorldEnvironment4D" parent="."]
 current = true
 sky_material = SubResource("GradientSkyMaterial4D_hub")
-ambient_light_color = Color(0.5, 0.53, 0.58, 1)
+ambient_light_color = Color(0.3914545, 0.41625983, 0.46172702, 1)
 tonemap_mode = 2
 
 [node name="Sun" type="DirectionalLight4D" parent="."]
-basis = Projection(0.7808, 0, -0.6247, 0, -0.5262, 0.5393, -0.6576, 0, 0.3369, 0.8422, 0.4211, 0, 0, 0, 0, 1)
+basis = Projection(0, 0, 0, 1, 0.1818436621338853, 0.9781476007338056, 0.10079758787013174, 0, -0.8555071680929038, 0.20791169081775934, -0.474215366856622, 0, -0.48480962024633717, 4.7601675429442275e-17, 0.8746197071393959, 0)
 light_color = Color(1, 0.98, 0.94, 1)
-light_energy = 0.482
-angular_radius_radians = 0.00045204027626653
+light_energy = 0.328
+angular_radius_radians = 0.03490658503988659
+script = ExtResource("8_sun")
+elevation_degrees = 12.0
+azimuth_degrees = -119.0
 
 [node name="Floor" type="StaticBody4D" parent="."]
 position = Vector4(0, -0.5, 0, 0)
@@ -85,9 +74,8 @@ position = Vector4(0, -0.5, 0, 0)
 [node name="Collider" type="CollisionShape4D" parent="Floor"]
 shape = SubResource("BoxShape4D_floor")
 
-[node name="Mesh" type="MeshInstance4D" parent="Floor"]
-material_override = SubResource("TetraMaterial4D_floor")
-mesh = SubResource("BoxTetraMesh4D_floor")
+[node name="Mesh" type="Node4D" parent="Floor"]
+script = ExtResource("10_floor")
 
 [node name="BackWall" type="StaticBody4D" parent="."]
 position = Vector4(0, 2.5, 6, 0)
@@ -95,20 +83,29 @@ position = Vector4(0, 2.5, 6, 0)
 [node name="Collider" type="CollisionShape4D" parent="BackWall"]
 shape = SubResource("BoxShape4D_wall")
 
-[node name="Mesh" type="MeshInstance4D" parent="BackWall"]
-material_override = SubResource("TetraMaterial4D_wall")
-mesh = SubResource("BoxTetraMesh4D_wall")
+[node name="Mesh" type="Node4D" parent="BackWall"]
+script = ExtResource("10_floor")
+size = Vector4(26, 5, 1, 80)
+palette_color = "white"
 
 [node name="GateRing" type="Node4D" parent="."]
+position = Vector4(0, -5.1023013325954045e-06, 0, 0)
 script = ExtResource("2_ring")
 gates = Array[ExtResource("2_sl4le")]([ExtResource("3_gate_vp"), ExtResource("4_gate_vm"), ExtResource("5_gate_pm"), ExtResource("6_gate_sbc"), ExtResource("7_gate_qr")])
-radius = 11.5
-arc_degrees = 84.0
+radius = 10.5
+arc_degrees = 60.0
+gate_shape = 1
+aperture_radius = 1.1
+aperture_height = 3.2
 frame_thickness = 0.25
-frame_depth = 2.1500000000000004
-w_extent = 16.0
-threshold_depth = 2.8000000000000003
+frame_depth = 1.1
+w_extent = 13.0
+threshold_depth = 2.3000000000000003
 use_dev_textures = true
 
 [node name="Player" parent="." instance=ExtResource("1_player")]
 position = Vector4(0, 1, 0, 0)
+
+[node name="SliceReset" type="Node" parent="."]
+script = ExtResource("11_reset")
+also_return_to_spawn = true

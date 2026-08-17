@@ -4,12 +4,12 @@ A dev-look hub scene: a spawn point at the focus of an arc of gates, each
 advertising one prototype. Built as a stakeholder-facing testing ground, so the
 priority is layout, readability and dynamics rather than finished art.
 
-Open `hub.tscn`. It does not teleport anywhere yet — the gates are geometry and
-signage only.
+Open `hub1.tscn` — it is also the project's `main_scene`. It does not teleport
+anywhere yet; the gates are geometry and signage only.
 
 ## The one idea to know
 
-**The hub is a list, not a layout.** `hub.tscn` contains no gates and no
+**The hub is a list, not a layout.** `hub1.tscn` contains no gates and no
 billboards. It contains a `GateRing` node holding an array of `HubGateDef4D`
 resources from `gates/`, and everything visible is generated from that array at
 runtime.
@@ -22,11 +22,23 @@ Consequences worth knowing before editing anything:
   right. Moving an entry to the middle puts it in the centre slot, which is the
   first thing anyone looks at — so A/B-ing that is a two-second experiment.
 - **Generated nodes are not owned by the scene**, so they are never serialised
-  into `hub.tscn`. That is what stops geometry going stale, and it sidesteps the
-  `[editable path]` resave trap in `CLAUDE.md` entirely — there is nothing
-  persisted to go out of date. `_verify_hub.gd` asserts this.
+  into `hub1.tscn`. That is what stops geometry going stale, and it sidesteps the
+  `[editable path]` resave trap in `CLAUDE.md` entirely. `_verify_hub.gd` asserts
+  it, because a violation is invisible until weeks later.
 - **Changing a gate dimension on the ring re-cuts every gate.** That is the point
   of generating them.
+
+## Controls
+
+**R restores the home slice** (`hub_slice_reset.gd`). Nothing else in the project
+does — the editor's only Reset buttons belong to the preview sun and environment,
+and `project.godot` has no reset action at all. It rebuilds the body basis from
+your current heading, so w rotation goes to zero while the direction you face is
+preserved, and it zeroes your w *position* too: `move_ana`/`move_kata` leave you
+in a parallel slice that no amount of rotating undoes.
+
+Deliberately Demo-local, and bound to a raw keycode rather than an input action —
+`project.godot` is shared, so an action there would leak this out of the folder.
 
 ## Colour legend
 
@@ -35,107 +47,164 @@ Sampled from `res://textures/dev_finals/ramdev_*.png` at runtime by
 
 | Colour | Means |
 | --- | --- |
-| grey / white / black | structure — floors, walls, gate frames |
+| grey / white / black | structure — floor, wall, gate frames |
 | yellow | interaction and 4D relevance — threshold pads |
 | blue | signage only |
 | red | **not used in the hub** |
 
-Red is deliberately absent. It already means "primary target" inside the
-shooting gallery, and spending it on hub decoration would burn that meaning. The
-hub uses fewer colours than any prototype it links to, because it is the frame
-around the work rather than a competitor to it.
+Red is deliberately absent. It already means "primary target" inside the shooting
+gallery, and spending it on hub decoration would burn that meaning. The hub uses
+fewer colours than any prototype it links to, because it is the frame around the
+work rather than a competitor to it.
 
-Gates are all structurally identical and neutral. **Identity is carried by the
-billboard icon silhouette, not by colour** — that keeps colour free to encode
-state (the `StateDot` changes when a prototype has been visited), which is what
-colour is actually good at.
+Gates are structurally identical and neutral. **Identity is carried by the
+billboard icon silhouette, not by colour** — which keeps colour free to encode
+state (the `StateDot`), the thing colour is actually good at.
 
-## Layout numbers
+## Layout
 
-Radius 12 m, 160° arc, five slots 40° apart — 8.4 m of arc between gate centres
-against 4 m-wide gates. An arc rather than a full ring, so nothing sits behind
-the player and the back wall gives orientation anchoring, which matters more here
-than in a 3D scene because slice rotation removes most other cues.
+Radius 10.5 m, 60° arc, five slots. An arc rather than a full ring, so nothing
+sits behind the player and the back wall gives orientation anchoring — that
+matters more here than in a 3D scene, because slice rotation removes most of the
+cues people navigate by. The ring warns in the editor if gates or their signage
+would collide rather than silently producing a broken layout.
 
-The ring warns in the editor if gates or their signage would collide, rather than
-silently producing a broken layout.
+Gates are currently **rectangular** (`gate_shape = 1`): two pillars and a lintel.
+The circular option is still there and is the more defensible shape in theory —
+slice-rotating mixes an axis with w, so a box long in w becomes long in x after an
+xw rotation, surviving the rotation but changing apparent width, which is wrong
+for furniture the player uses to stay oriented. A rotationally symmetric profile
+holds a more constant cross-section. The circular build approximates that from box
+segments sized by the **chord at the outer radius**, so neighbours meet exactly at
+the visible edge instead of crossing and leaving a lip.
 
-Gate aperture is **circular**, not rectangular. Slice-rotating mixes an axis with
-w, so a box that is long in w becomes long in x after an xw rotation — it
-survives but its apparent width changes as you turn, which is wrong for
-furniture the player is using to stay oriented. A profile that is rotationally
-symmetric in the rotated planes holds a more constant cross-section. See the open
-questions below: the ring of box segments **approximates** this, it does not
-achieve it exactly.
+## The one w-varying gate
+
+Every gate but one is deliberately w-invariant: a long `w_extent` keeps it present
+and stable at any rotation, because navigation furniture that changes as you turn
+is disorienting.
+
+The gate whose definition sets `w_hidden` breaks that on purpose. Its frame and
+membrane sit `hidden_w_offset` out along w with a short `hidden_w_extent`, so they
+are genuinely **absent** from the home slice and pass through it as you rotate —
+roughly `atan(offset / distance)` of zw rotation, about 30° at the defaults.
+
+Its threshold pad, state dot and billboard stay w-invariant even so. That is the
+"signpost the absence" idea: a yellow pad on the floor and a sign naming the
+destination, with no door above it. The affordance is visible; only the way
+through is not. The scarcity is what makes it legible as special.
 
 ## Billboards
 
 Ordinary 3D nodes (`MeshInstance3D` panel, `Sprite3D` icon, two `Label3D`s), not
-4D geometry. A 3D node has no w coordinate to rotate, so it is w-invariant for
-free and can never slice out of view at the moment it is most needed.
+4D geometry — a `TetraMaterial4D` takes a `Texture3D` and cannot carry readable
+typography, and a 3D node has no w coordinate to rotate out of the slice.
 
-Because Godot's `Node3D` only inherits a transform from a `Node3D` parent, these
-children ignore their 4D parent and the ring writes **world-space** transforms
-for them. Move a gate by hand and its sign will not follow until the next
-rebuild.
+They are positioned in **camera-relative space**, rewritten every `pre_render`.
+The cross-section renderer does not draw the world in world coordinates: it
+computes `camera_inverse_transform * global_transform` for every mesh
+(`rendering_engine_4d.cpp`) and parks its own 3D camera at the origin. A
+world-space position therefore renders welded to the viewer. The w component of
+the offset is discarded, which is what keeps signage readable at any rotation.
+
+Orientation is left to the materials' billboard mode, upright by default — full
+billboarding tilts and reads as floating UI rather than a sign.
 
 Text is live, never baked into the sign texture. Changing a blurb is editing a
-string. When a Figma panel design lands it supplies **one** panel texture reused
-by every sign, not one image per sign.
+string, and a Figma panel design would supply **one** texture reused by every
+sign, not one image per sign.
+
+## Floor tiling
+
+`hub_tiled_floor_4d.gd` exists because `BoxTetraMesh4D`'s built-in unwraps assign
+UVW per simplex-cell vertex, and the shader interpolates those along each sliced
+edge — so the box's own tetrahedralisation shows through as diagonal skew. Both
+`CROSS_ISLAND` and `FILL_EACH_SIDE` have this problem; scaling them just gives
+smaller diagonals.
+
+So the texture map is discarded and rebuilt by projecting world position:
+`u = x / texture_metres`, `v = z / texture_metres`. Lines run straight along X and
+Z, one texture spans exactly one metre by construction, and there is no scale
+factor to calibrate.
+
+**Slicing cannot stretch it.** The shader interpolates uvw with the same weight it
+uses for position, and linear interpolation commutes with a linear projection, so
+a sliced point's uvw equals its own x/z. Rotating in xw or zw never touches Y
+either, so the floor cannot tilt out from under the projection.
+
+`box_mapping` handles the rest. A 4D box is bounded by **eight cubic cells**, not
+six faces, tetrahedralised into 40 simplices — and two of those cells face **w**.
+Projecting everything down Y smears the ones that do not face Y, so the projection
+plane is chosen per cell from `simplex_cell_boundary_normals`. That is the
+per-cell equivalent of triplanar; per-fragment would mean forking the shader,
+which would cost the floor its lighting, since the engine appends `light()` to its
+own shader source and a fork freezes without it.
+
+The script is a `Node4D` that **spawns** a `MeshInstance4D` rather than being one,
+because `mesh` is a stored property and assigning generated geometry to it bakes
+the whole tetrahedral array into the scene file.
+
+## Lighting
+
+The stock cross-section shader's angle-based term
+(`albedo * (dot(normal, up) / 2 + 0.5)`) was removed in Aaron's lighting update
+and survives only as a comment. **Any `TetraMaterial4D` surface with no 4D light in
+the scene now renders flat.** The hub has a `DirectionalLight4D` for that reason.
+
+`hub_sun_4d.gd` gives it usable rotation. `Node4D` does expose rotation, but 4D
+has six rotation planes and the inspector packs them into an `AABB` — six
+unlabelled floats; `basis` is a raw 16-float `Projection`. The script exposes
+elevation, azimuth and an ana-tilt instead. Ana-tilt is 0 by default: any w
+component makes lighting change as you slice-rotate, which is the genuinely 4D
+behaviour but costs the hub its constancy.
+
+`angular_radius_degrees` looks broken and is not — the sky shader compares
+`cos(light_angular_radius_radians)` against the view angle, so at small values the
+disc is a fraction of a degree wide. The broad glow is `sun_angle_max` on the
+`GradientSkyMaterial4D`, a separate control.
 
 ## Files
 
 | Path | What |
 | --- | --- |
-| `hub.tscn` | the scene |
-| `gates/*.tres` | the catalogue — billboard text, icon, target, flags |
-| `scripts/hub_gate_ring_4d.gd` | arc layout, spawns and places gates |
-| `scripts/hub_gate_4d.gd` | builds one gate: frame, threshold, sign |
+| `hub1.tscn` | the scene, and the project's main scene |
+| `gates/gate01..05.tres` | the catalogue — billboard text, icon, target, flags |
+| `scripts/hub_gate_ring_4d.gd` | arc layout, spawns gates, places signage |
+| `scripts/hub_gate_4d.gd` | builds one gate: frame, membrane, threshold, sign |
 | `scripts/hub_gate_def.gd` | the `HubGateDef4D` resource type |
 | `scripts/hub_palette.gd` | colour legend, sampled from the dev textures |
+| `scripts/hub_sun_4d.gd` | sun with elevation/azimuth/ana-tilt |
+| `scripts/hub_tiled_floor_4d.gd` | per-metre floor tiling |
+| `scripts/hub_slice_reset.gd` | R returns to the home slice |
 | `textures/` | generated placeholder icons |
 | `_verify_hub.gd` | headless structural check |
 | `_billboard_probe.tscn` | minimal 3D-nodes-in-a-4D-scene test |
 
-## Verified
+## Verifying
 
-Run headlessly with the editor closed:
+Run with the editor **closed** — two Godot processes on the same project's
+`.godot` cache silently breaks `@tool` buttons in the running editor:
 
 ```
 engine/godot/bin/godot.windows.editor.double.x86_64.console.exe --headless --path project --script res://ramon/Demo/_verify_hub.gd
 ```
 
-Confirmed: the scene loads with no script errors; five gates generate at the
-computed arc positions (phase maze lands dead centre at `(0, 0, -12, 0)`); 80
-frame segments, 5 billboards, 10 `Label3D` and 5 `Sprite3D` nodes exist; and zero
-generated nodes are owned by the scene.
+Checks that the scene loads, gates generate at the computed arc positions, the
+floor surface builds, and **nothing generated is owned by the scene**.
 
-## Open questions — NOT yet verified
+## Open questions
 
-Headless has no renderer, so everything below is structure-verified only. None of
-it has been *looked at*.
+Headless has no renderer, so everything the verifier proves is structural. These
+need eyes:
 
-1. **Do the 3D billboards actually render in the cross-section view?** The
-   cross-section engine swaps in a private `World3D`. `Node3D` visual instances
-   should follow that swap where an `Environment` does not, but this is
-   inference. `_billboard_probe.tscn` isolates the question. If they do not
-   render, the fallback is projecting labels to screen space via
-   `Camera4D.world_to_viewport()`.
-2. **Does the ghosted (translucent) frame sort correctly?** The centre gate uses
-   alpha as a placeholder for the ghost-slice projection feature. Transparency in
-   the cross-section renderer is untested, more so now that lighting has landed.
-3. **How well does the segmented ring actually hold up under slice rotation?**
-   It approximates rotational symmetry with box primitives. Whether that reads as
-   stable in practice is exactly the thing to test.
-4. **Texture tiling.** The dev PNGs import as `CompressedTexture3D`, so they *can*
-   map onto 4D geometry — but `BoxTetraMesh4D` has a fixed cell UVW unwrap with no
-   exposed scale, so a texture likely maps once per box rather than once per
-   metre. That would stretch one tile across the whole 48 m floor. Flat albedo
-   sampled from the same PNGs is the default for now; flip `use_dev_textures` on
-   the ring to see what the mapping really does.
-5. **Sun angle, sky colours and tonemapping** are a first guess, not a design.
-   The sun currently has no w component, so lighting is consistent across slices;
-   adding one is the knob for showing off 4D lighting at the cost of stability.
+1. **Does the ghosted frame's transparency sort correctly?** The w-hidden gate and
+   the gate membranes both use alpha. Transparency in the cross-section renderer
+   is untested, more so now that lighting has landed.
+2. **Does exactly one gate changing read as deliberate, or as a bug?** That is the
+   whole premise of the centre slot.
+3. **Does the segmented circular ring hold up under rotation** if you switch back
+   to `gate_shape = 0`? It approximates rotational symmetry with box primitives.
+4. **Sun angle, sky colours and ambient** are first guesses, not a design.
 
 ## Next
 
