@@ -21,6 +21,7 @@ extends Node4D
 ## call that needs eyes on it, hence both.
 
 const Palette := preload("res://ramon/Demo/scripts/hub_palette.gd")
+const SurfaceMaterial := preload("res://ramon/Demo/scripts/hub_material_4d.gd")
 
 ## Marks generated children so a rebuild can clear exactly what it made and
 ## nothing else. Checked via has_meta rather than name matching, which would
@@ -112,11 +113,38 @@ enum {
 		icon = value
 		rebuild()
 
-## Renders the frame translucent: the placeholder for the ghost-slice projection
-## feature. Stands in for a gate that is not really in this slice.
+## Makes this the hub's one w-varying gate: its frame and membrane are pushed out
+## along w and given a short w extent, so they are genuinely ABSENT from the home
+## slice and only enter it as the player slice-rotates.
+##
+## Every other gate is deliberately w-invariant - a long [member w_extent] keeps
+## it present and stable at any rotation, because navigation furniture that
+## changes as you turn is disorienting. This one breaks that rule on purpose, and
+## the scarcity is what makes it legible as special.
+##
+## The threshold pad, state dot and billboard deliberately stay w-invariant even
+## here. That is the "signpost the absence" idea: you see a yellow pad on the
+## floor and a sign naming the destination, with no door above it. The affordance
+## is visible; only the way through is not.
 @export var ghosted: bool = false:
 	set(value):
 		ghosted = value
+		rebuild()
+
+## How far along w a ghosted gate sits. It re-enters the slice at roughly
+## atan(offset / distance-from-origin) of zw rotation, so with the default ~6 m
+## offset and a gate ~10 m out, a modest turn brings it in - far enough to need
+## a deliberate rotation, close enough not to feel like a hunt.
+@export_range(0.0, 40.0, 0.5, "suffix:m") var hidden_w_offset: float = 6.0:
+	set(value):
+		hidden_w_offset = value
+		rebuild()
+
+## Thickness along w of a ghosted gate. Short, so it passes through the slice
+## rather than lingering - that transience is the whole effect.
+@export_range(0.5, 40.0, 0.5, "suffix:m") var hidden_w_extent: float = 4.0:
+	set(value):
+		hidden_w_extent = value
 		rebuild()
 
 @export var visited: bool = false:
@@ -132,6 +160,13 @@ enum {
 @export var use_dev_textures: bool = false:
 	set(value):
 		use_dev_textures = value
+		rebuild()
+
+## Metres one texture covers, shared with the floor and wall so every surface in
+## the hub reads at the same grain. Set from the ring.
+@export_range(0.1, 32.0, 0.1, "suffix:m") var texture_metres: float = 1.0:
+	set(value):
+		texture_metres = value
 		rebuild()
 
 @export_group("Membrane")
@@ -153,6 +188,15 @@ enum {
 @export var membrane_color: String = "black_metal":
 	set(value):
 		membrane_color = value
+		rebuild()
+
+## Metres per texture on the membrane specifically, separate from the rest of the
+## gate. The pane is a very thin slab, so it is the surface most likely to have
+## the shared scale land wrong on it - this exists so it can be dialled without
+## disturbing everything else that currently looks right.
+@export_range(0.05, 8.0, 0.05, "suffix:m") var membrane_texture_metres: float = 0.5:
+	set(value):
+		membrane_texture_metres = value
 		rebuild()
 
 @export_group("Billboard")
@@ -218,6 +262,17 @@ func get_aperture_width() -> float:
 	return aperture_radius * 2.0
 
 
+## w thickness for the parts that are allowed to leave the slice. Everything else
+## in the gate uses [member w_extent] and stays put.
+func _frame_w_extent() -> float:
+	return hidden_w_extent if ghosted else w_extent
+
+
+## w displacement for those same parts. Zero for an ordinary gate.
+func _frame_w_offset() -> float:
+	return hidden_w_offset if ghosted else 0.0
+
+
 ## Height of the top of the opening, in metres above the floor. A circle sits
 ## with its lowest point on the floor, so its highest point is one diameter up.
 func get_aperture_top() -> float:
@@ -261,23 +316,24 @@ func rebuild() -> void:
 ## which is a deliberate trade: a square is what reads as a panel, and matching
 ## the circle would need generated disc geometry rather than a box.
 func _build_membrane() -> void:
-	var material := _make_material(membrane_color, membrane_alpha)
 	var width := get_aperture_width()
 	var height := get_aperture_top()
 	if gate_shape == SHAPE_CIRCULAR:
 		var side: float = width * 0.7071
+		var round_size := Vector4(side, side, 0.03, _frame_w_extent())
 		_adopt(_make_box(
 			"Membrane",
-			Vector4(side, side, 0.03, w_extent),
-			Vector4(0.0, aperture_radius, 0.0, 0.0),
-			material
+			round_size,
+			Vector4(0.0, aperture_radius, 0.0, _frame_w_offset()),
+			SurfaceMaterial.surface(membrane_color, round_size, membrane_texture_metres, use_dev_textures, membrane_alpha)
 		))
 		return
+	var rect_size := Vector4(width, height, 0.03, _frame_w_extent())
 	_adopt(_make_box(
 		"Membrane",
-		Vector4(width, height, 0.03, w_extent),
-		Vector4(0.0, height * 0.5, 0.0, 0.0),
-		material
+		rect_size,
+		Vector4(0.0, height * 0.5, 0.0, _frame_w_offset()),
+		SurfaceMaterial.surface(membrane_color, rect_size, membrane_texture_metres, use_dev_textures, membrane_alpha)
 	))
 
 
@@ -289,13 +345,14 @@ func _build_membrane() -> void:
 ## It faces the gate's local Z and never turns - it is a placement aid, not a
 ## preview of how the sign will read in game.
 func _build_sign_proxy() -> void:
-	var material := _make_material("blue", 0.85)
-	var offset := get_sign_local_offset()
+	var proxy_size := Vector4(panel_size.x, panel_size.y, 0.06, minf(w_extent, 4.0))
+	# Flat, not textured: it stands in for a sign, and tiling a dev grid across it
+	# would make it read as another piece of structure.
 	var proxy := _make_box(
 		"SignProxyEditorOnly",
-		Vector4(panel_size.x, panel_size.y, 0.06, minf(w_extent, 4.0)),
-		offset,
-		material
+		proxy_size,
+		get_sign_local_offset(),
+		SurfaceMaterial.flat("blue", 0.85)
 	)
 	_adopt(proxy)
 
@@ -312,31 +369,24 @@ func _adopt(node: Node) -> void:
 	add_child(node)
 
 
-## Builds a material from one entry in the dev palette, either as flat albedo or
-## as the imported texture, per [member use_dev_textures].
-func _make_material(palette_name: String, alpha: float = 1.0) -> TetraMaterial4D:
-	var material := TetraMaterial4D.new()
-	var color := Palette.get_color(palette_name)
-	color.a = alpha
-	material.albedo_color = color
-	if use_dev_textures:
-		var texture := Palette.get_texture(palette_name)
-		if texture != null:
-			material.albedo_texture_3d = texture
-			# ..._AND_SINGLE multiplies the texture by albedo_color, so white
-			# keeps the texture's own colour and leaves alpha available.
-			material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_AND_SINGLE
-			material.albedo_color = Color(1.0, 1.0, 1.0, alpha)
-	return material
+## Builds a material at the hub's shared world texture scale.
+##
+## [param size] is the box the material goes on, not the gate: the shader derives
+## tiling from it per cell, so a 0.25 m frame segment and the 48 m floor end up
+## with the same grain instead of one texture stretched across each regardless of
+## size. That consistency is the whole reason this goes through
+## hub_material_4d.gd rather than being built inline.
+func _make_material(palette_name: String, size: Vector4, alpha: float = 1.0) -> TetraMaterial4D:
+	return SurfaceMaterial.surface(palette_name, size, texture_metres, use_dev_textures, alpha)
 
 
-func _frame_material() -> TetraMaterial4D:
+func _frame_material(size: Vector4) -> TetraMaterial4D:
 	if ghosted:
 		# Whether the cross-section renderer sorts translucent tetrahedra
 		# correctly is UNVERIFIED - if this reads badly, fall back to a solid
 		# frame in a dimmed structure colour.
-		return _make_material("yellow", 0.35)
-	return _make_material("grey")
+		return _make_material("yellow", size, 0.35)
+	return _make_material("grey", size)
 
 
 ## Creates a box mesh instance without parenting it - the caller decides whether
@@ -359,7 +409,6 @@ func _build_circular_frame() -> void:
 	frame.name = "Frame"
 	_adopt(frame)
 
-	var material := _frame_material()
 	var centre_radius := aperture_radius + frame_thickness * 0.5
 	# Length is the CHORD at the outer radius, not the arc at the mid radius.
 	# Using the arc length overshoots, so neighbouring boxes cross each other and
@@ -367,6 +416,9 @@ func _build_circular_frame() -> void:
 	# The chord meets exactly at the outer edge; whatever overlaps further in is
 	# buried inside the frame where it cannot be seen. 1.02 is anti-seam slack.
 	var segment_length := 2.0 * (aperture_radius + frame_thickness) * sin(PI / float(segment_count)) * 1.02
+	# Every segment is the same size, so one material serves all of them.
+	var segment_size := Vector4(frame_thickness, segment_length, frame_depth, _frame_w_extent())
+	var material := _frame_material(segment_size)
 
 	for i in segment_count:
 		var angle := TAU * float(i) / float(segment_count)
@@ -383,8 +435,8 @@ func _build_circular_frame() -> void:
 		# the floor and the gate is walkable rather than a window.
 		frame.add_child(_make_box(
 			"Seg%d" % i,
-			Vector4(frame_thickness, segment_length, frame_depth, w_extent),
-			Vector4(centre_radius * cos_a, aperture_radius + centre_radius * sin_a, 0.0, 0.0),
+			Vector4(frame_thickness, segment_length, frame_depth, _frame_w_extent()),
+			Vector4(centre_radius * cos_a, aperture_radius + centre_radius * sin_a, 0.0, _frame_w_offset()),
 			material,
 			segment_basis
 		))
@@ -396,26 +448,30 @@ func _build_rectangular_frame() -> void:
 	frame.name = "Frame"
 	_adopt(frame)
 
-	var material := _frame_material()
 	var width := get_aperture_width()
 	var height := get_aperture_top()
 	var pillar_centre := width * 0.5 + frame_thickness * 0.5
 
+	# Pillars and lintel are different shapes, so each needs its own material for
+	# the texture scale to come out the same on both.
+	var pillar_size := Vector4(frame_thickness, height, frame_depth, _frame_w_extent())
+	var pillar_material := _frame_material(pillar_size)
 	for side in [-1.0, 1.0]:
 		var label := "PillarLeft" if side < 0.0 else "PillarRight"
 		frame.add_child(_make_box(
 			label,
-			Vector4(frame_thickness, height, frame_depth, w_extent),
-			Vector4(side * pillar_centre, height * 0.5, 0.0, 0.0),
-			material
+			pillar_size,
+			Vector4(side * pillar_centre, height * 0.5, 0.0, _frame_w_offset()),
+			pillar_material
 		))
 
 	# Lintel spans both pillars so the corners read as solid rather than notched.
+	var lintel_size := Vector4(width + frame_thickness * 2.0, frame_thickness, frame_depth, _frame_w_extent())
 	frame.add_child(_make_box(
 		"Lintel",
-		Vector4(width + frame_thickness * 2.0, frame_thickness, frame_depth, w_extent),
-		Vector4(0.0, height + frame_thickness * 0.5, 0.0, 0.0),
-		material
+		lintel_size,
+		Vector4(0.0, height + frame_thickness * 0.5, 0.0, _frame_w_offset()),
+		_frame_material(lintel_size)
 	))
 
 
@@ -427,11 +483,12 @@ func _build_threshold() -> void:
 	# radially OUTWARD, so putting the pad there parks it behind the gate where
 	# the player never walks, which is what made them look like loose platforms
 	# sitting out in the field.
+	var pad_size := Vector4(get_aperture_width(), 0.04, threshold_depth, w_extent)
 	_adopt(_make_box(
 		"Threshold",
-		Vector4(get_aperture_width(), 0.04, threshold_depth, w_extent),
+		pad_size,
 		Vector4(0.0, 0.02, frame_depth * 0.5 + threshold_depth * 0.5, 0.0),
-		_make_material("yellow")
+		_make_material("yellow", pad_size)
 	))
 
 
@@ -439,11 +496,14 @@ func _build_threshold() -> void:
 ## that differs between gates. Identity is the billboard's job; colour is kept
 ## free to carry state, which is what it is actually good at.
 func _build_state_dot() -> void:
+	var dot_size := Vector4(0.25, 0.25, 0.25, w_extent)
+	# Flat: at 0.25 m a tiled grid would land as noise, and this marker's whole
+	# job is to be one readable block of colour.
 	_adopt(_make_box(
 		"StateDot",
-		Vector4(0.25, 0.25, 0.25, w_extent),
+		dot_size,
 		Vector4(0.0, get_aperture_top() + frame_thickness * 0.5, 0.0, 0.0),
-		_make_material("white" if visited else "black_metal")
+		SurfaceMaterial.flat("white" if visited else "black_metal")
 	))
 
 

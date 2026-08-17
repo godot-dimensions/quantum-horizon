@@ -30,6 +30,18 @@ const GENERATED_META := "hub_generated"
 		gates = value
 		rebuild()
 
+## How many gates to actually build. 0 means "one per catalogue entry".
+##
+## Set it higher and the catalogue repeats to fill the arc; set it lower and only
+## the first N entries are used. This is for judging LAYOUT independently of
+## content - whether seven doors reads as a wall of choices or three feels empty
+## is a question about spacing, and it should not require inventing four more
+## prototypes or deleting real ones to ask it.
+@export_range(0, 24, 1) var gate_count: int = 0:
+	set(value):
+		gate_count = value
+		rebuild()
+
 @export_group("Layout")
 ## Distance from spawn to each gate. Far enough that the arc feels like a place
 ## rather than a menu; close enough that a 0.2 m cap height still reads.
@@ -113,6 +125,19 @@ const GENERATED_META := "hub_generated"
 		font = value
 		rebuild()
 
+## How far along w the one ghosted gate sits, and how thick it is there. Only the
+## entry with `w_hidden` set uses these - every other gate stays w-invariant, so
+## the hub holds still while you rotate and exactly one thing changes.
+@export_range(0.0, 40.0, 0.5, "suffix:m") var hidden_w_offset: float = 6.0:
+	set(value):
+		hidden_w_offset = value
+		rebuild()
+
+@export_range(0.5, 40.0, 0.5, "suffix:m") var hidden_w_extent: float = 4.0:
+	set(value):
+		hidden_w_extent = value
+		rebuild()
+
 ## Translucent pane filling each opening, so a gate reads as something you step
 ## into rather than an empty frame.
 @export var show_membrane: bool = true:
@@ -131,12 +156,27 @@ const GENERATED_META := "hub_generated"
 		membrane_color = value
 		rebuild()
 
+## Metres per texture on the membranes only. Separate from the gate's own scale
+## because the pane is a thin slab and the shared scale is least reliable there.
+@export_range(0.05, 8.0, 0.05, "suffix:m") var membrane_texture_metres: float = 0.5:
+	set(value):
+		membrane_texture_metres = value
+		rebuild()
+
 ## Maps the dev textures onto the gates instead of flat albedo sampled from them.
 ## See the note on [member HubGate4D.use_dev_textures] - the box UVW unwrap has no
 ## exposed scale, so this is an experiment rather than a finished look.
 @export var use_dev_textures: bool = false:
 	set(value):
 		use_dev_textures = value
+		rebuild()
+
+## Metres one texture covers, on every face of every gate. Match this to the
+## floor and back wall and the whole hub reads at one grain, which is what makes
+## the greybox usable as a scale reference instead of decoration.
+@export_range(0.1, 32.0, 0.1, "suffix:m") var texture_metres: float = 1.0:
+	set(value):
+		texture_metres = value
 		rebuild()
 
 
@@ -162,7 +202,7 @@ func rebuild() -> void:
 	if gates.is_empty():
 		return
 
-	var count := gates.size()
+	var count: int = gate_count if gate_count > 0 else gates.size()
 	var arc_radians := deg_to_rad(arc_degrees)
 	var offset_radians := deg_to_rad(arc_offset_degrees)
 	# A single gate sits dead ahead rather than at one end of the arc.
@@ -170,7 +210,9 @@ func rebuild() -> void:
 	var start := 0.0 if count <= 1 else -arc_radians * 0.5
 
 	for i in count:
-		var definition: HubGateDef4D = gates[i]
+		# Wraps, so gate_count above the catalogue size repeats entries rather
+		# than leaving holes in the arc.
+		var definition: HubGateDef4D = gates[i % gates.size()]
 		if definition == null:
 			push_warning("HubGateRing4D: gates[%d] is empty, skipping." % i)
 			continue
@@ -210,10 +252,14 @@ func _build_gate(definition: HubGateDef4D, angle: float, gate_radius: float, ind
 	gate.threshold_depth = threshold_depth
 	gate.panel_size = panel_size
 	gate.use_dev_textures = use_dev_textures
+	gate.texture_metres = texture_metres
 	gate.font = font
+	gate.hidden_w_offset = hidden_w_offset
+	gate.hidden_w_extent = hidden_w_extent
 	gate.show_membrane = show_membrane
 	gate.membrane_alpha = membrane_alpha
 	gate.membrane_color = membrane_color
+	gate.membrane_texture_metres = membrane_texture_metres
 	gate.gate_name = definition.gate_name
 	gate.blurb = definition.blurb
 	gate.icon = definition.icon
