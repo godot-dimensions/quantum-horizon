@@ -41,6 +41,10 @@ const BoundaryWallTexture := preload("res://textures/dev_finals/ramdev_black_met
 const GateWallTexture := preload("res://textures/dev_finals/ramdev_yellow.png")
 const GoalTexture := preload("res://textures/dev_finals/ramdev_red.png")
 
+## Old flat/unlit fake-lighting the engine's cross-section shader used before
+## Aaron's real 4D light system replaced it - see the shader file for why.
+const FlatShadedShader := preload("res://ramon/PhaseMaze/shaders/phase_maze_flat_shaded.gdshader")
+
 const GRID_ORIGIN_X := -GRID_COLS * CELL_SIZE * 0.5
 const GRID_ORIGIN_Z := -GRID_ROWS * CELL_SIZE * 0.5
 
@@ -192,6 +196,13 @@ func _edge_key(a: Vector2i, b: Vector2i) -> String:
 func _make_material(texture: Texture3D) -> TetraMaterial4D:
 	var material := TetraMaterial4D.new()
 	material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY
+	# Swap the engine's cross-section shader for the flat-shaded copy BEFORE
+	# pushing the texture - Material4D only assigns its built-in shader when
+	# the slot is empty, so once this is set it survives; setting the texture
+	# afterwards re-runs update_cross_section_material() and pushes
+	# albedo_texture at the replacement rather than leaving it unbound.
+	var cross_section: ShaderMaterial = material.get_cross_section_material()
+	cross_section.shader = FlatShadedShader
 	material.albedo_texture_3d = texture
 	return material
 
