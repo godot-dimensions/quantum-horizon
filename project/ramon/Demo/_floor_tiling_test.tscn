@@ -1,0 +1,148 @@
+[gd_scene load_steps=8 format=3 uid="uid://7jea0n0453lj"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="2_sun"]
+[ext_resource type="Script" uid="uid://bg6kulalwlupc" path="res://ramon/Demo/scripts/hub_tiled_floor_4d.gd" id="3_floor"]
+[ext_resource type="Script" uid="uid://tr1j217ck3ae" path="res://ramon/Demo/scripts/hub_slice_reset.gd" id="4_reset"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_test"]
+shader_parameter/world_up_direction_4d = null
+shader_parameter/light0_direction_4d = null
+shader_parameter/light0_color = null
+shader_parameter/light0_energy = null
+shader_parameter/light0_angular_radius_radians = null
+shader_parameter/light0_enabled = null
+shader_parameter/light1_direction_4d = null
+shader_parameter/light1_color = null
+shader_parameter/light1_energy = null
+shader_parameter/light1_angular_radius_radians = null
+shader_parameter/light1_enabled = null
+shader_parameter/light2_direction_4d = null
+shader_parameter/light2_color = null
+shader_parameter/light2_energy = null
+shader_parameter/light2_angular_radius_radians = null
+shader_parameter/light2_enabled = null
+shader_parameter/light3_direction_4d = null
+shader_parameter/light3_color = null
+shader_parameter/light3_energy = null
+shader_parameter/light3_angular_radius_radians = null
+shader_parameter/light3_enabled = null
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_slab"]
+size = Vector4(20, 1, 20, 40)
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_big"]
+size = Vector4(120, 1, 60, 40)
+
+[node name="FloorTilingTest" type="Node4D"]
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_test")
+ambient_light_color = Color(0.36, 0.38, 0.43, 1)
+
+[node name="Sun" type="DirectionalLight4D" parent="."]
+basis = Projection(0, 0, 0, 1, 0.9354143466934853, -0.2672612419124244, -0.23145502494313785, 0, 0.35355339059327373, 0.7071067811865476, 0.6123724356957946, 0, -7.343435057440258e-17, -0.6546536707079773, 0.7559289460184545, 0)
+light_color = Color(1, 0.98, 0.94, 1)
+angular_radius_radians = 0.03490658503988659
+script = ExtResource("2_sun")
+elevation_degrees = 45.0
+azimuth_degrees = 30.0
+
+[node name="Slab_01m" type="StaticBody4D" parent="."]
+position = Vector4(-52.5, -0.5, 0, 0)
+
+[node name="Collider" type="CollisionShape4D" parent="Slab_01m"]
+shape = SubResource("BoxShape4D_slab")
+
+[node name="Mesh" type="Node4D" parent="Slab_01m"]
+script = ExtResource("3_floor")
+size = Vector4(20, 1, 20, 40)
+
+[node name="Slab_02m" type="StaticBody4D" parent="."]
+position = Vector4(-31.5, -0.5, 0, 0)
+
+[node name="Collider" type="CollisionShape4D" parent="Slab_02m"]
+shape = SubResource("BoxShape4D_slab")
+
+[node name="Mesh" type="Node4D" parent="Slab_02m"]
+script = ExtResource("3_floor")
+size = Vector4(20, 1, 20, 40)
+texture_metres = 2.0
+
+[node name="Slab_04m" type="StaticBody4D" parent="."]
+position = Vector4(-10.5, -0.5, 0, 0)
+
+[node name="Collider" type="CollisionShape4D" parent="Slab_04m"]
+shape = SubResource("BoxShape4D_slab")
+
+[node name="Mesh" type="Node4D" parent="Slab_04m"]
+script = ExtResource("3_floor")
+size = Vector4(20, 1, 20, 40)
+
+[node name="Slab_05m" type="StaticBody4D" parent="."]
+position = Vector4(10.5, -0.5, 0, 0)
+
+[node name="Collider" type="CollisionShape4D" parent="Slab_05m"]
+shape = SubResource("BoxShape4D_slab")
+
+[node name="Mesh" type="Node4D" parent="Slab_05m"]
+script = ExtResource("3_floor")
+size = Vector4(20, 1, 20, 40)
+texture_metres = 5.0
+
+[node name="Slab_10m" type="StaticBody4D" parent="."]
+position = Vector4(31.5, -0.5, 0, 0)
+
+[node name="Collider" type="CollisionShape4D" parent="Slab_10m"]
+shape = SubResource("BoxShape4D_slab")
+
+[node name="Mesh" type="Node4D" parent="Slab_10m"]
+script = ExtResource("3_floor")
+size = Vector4(20, 1, 20, 40)
+texture_metres = 10.0
+
+[node name="Slab_20m" type="StaticBody4D" parent="."]
+position = Vector4(52.5, -0.5, 0, 0)
+
+[node name="Collider" type="CollisionShape4D" parent="Slab_20m"]
+shape = SubResource("BoxShape4D_slab")
+
+[node name="Mesh" type="Node4D" parent="Slab_20m"]
+script = ExtResource("3_floor")
+size = Vector4(20, 1, 20, 40)
+texture_metres = 20.0
+
+[node name="BigSlab_1m" type="StaticBody4D" parent="."]
+position = Vector4(0, -0.5, -60, 0)
+
+[node name="Collider" type="CollisionShape4D" parent="BigSlab_1m"]
+shape = SubResource("BoxShape4D_big")
+
+[node name="Mesh" type="Node4D" parent="BigSlab_1m"]
+script = ExtResource("3_floor")
+size = Vector4(120, 1, 60, 40)
+texture_metres = 5.0
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector4(0, 1.5, 8, 0)
+
+[node name="SliceReset" type="Node" parent="."]
+script = ExtResource("4_reset")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Legend" type="Label" parent="HUD"]
+offset_left = 8.0
+offset_top = 40.0
+offset_right = 620.0
+offset_bottom = 200.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+text = "Floor tiling test - all slabs 20x20 m, one texture per N metres.
+Left to right (west to east):   1   2   4   5   10   20 m per texture
+Behind you (north):  a 120 x 60 m slab at 5 m, for distance falloff.
+20 m = one texture across the whole slab, which is what PhaseMaze's floor does.
+R resets the slice (Play only; in the editor click the corner axis gizmo)."
