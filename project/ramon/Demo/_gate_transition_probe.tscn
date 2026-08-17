@@ -1,0 +1,111 @@
+[gd_scene load_steps=10 format=3 uid="uid://moxt7kt1ahjj"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://dw1xwtem5for3" path="res://ramon/Demo/scripts/hub_gate_4d.gd" id="2_gate"]
+[ext_resource type="Script" uid="uid://dx50rxuiq5upx" path="res://ramon/Demo/scripts/gate_transition_probe.gd" id="3_trigger"]
+[ext_resource type="CompressedTexture3D" uid="uid://pbsawdmrmihe" path="res://textures/dev_finals/ramdev_grey.png" id="4_grey"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
+shader_parameter/world_up_direction_4d = null
+shader_parameter/horizon_color = Color(0.75, 0.82, 0.9, 1)
+shader_parameter/top_color = Color(0.25, 0.45, 0.85, 1)
+shader_parameter/bottom_color = Color(0.35, 0.32, 0.28, 1)
+shader_parameter/light0_direction_4d = null
+shader_parameter/light0_color = null
+shader_parameter/light0_energy = null
+shader_parameter/light0_angular_radius_radians = null
+shader_parameter/light0_enabled = null
+shader_parameter/light1_direction_4d = null
+shader_parameter/light1_color = null
+shader_parameter/light1_energy = null
+shader_parameter/light1_angular_radius_radians = null
+shader_parameter/light1_enabled = null
+shader_parameter/light2_direction_4d = null
+shader_parameter/light2_color = null
+shader_parameter/light2_energy = null
+shader_parameter/light2_angular_radius_radians = null
+shader_parameter/light2_enabled = null
+shader_parameter/light3_direction_4d = null
+shader_parameter/light3_color = null
+shader_parameter/light3_energy = null
+shader_parameter/light3_angular_radius_radians = null
+shader_parameter/light3_enabled = null
+horizon_color = Color(0.75, 0.82, 0.9, 1)
+top_color = Color(0.25, 0.45, 0.85, 1)
+bottom_color = Color(0.35, 0.32, 0.28, 1)
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
+size = Vector4(8, 1, 20, 8)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_floor"]
+albedo_source = 3
+albedo_texture_3d = ExtResource("4_grey")
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_floor"]
+size = Vector4(8, 1, 20, 8)
+cell_texture_map = 1
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_trigger"]
+size = Vector4(3.2, 3.2, 2, 60)
+
+[node name="GateTransitionProbe" type="Node4D"]
+
+[node name="WorldEnvironment4D" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_sky")
+
+[node name="Sun" type="DirectionalLight4D" parent="."]
+position = Vector4(0, 4, -4, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.7071068, -0.7071068, 0, 0, 0.7071068, 0.7071068, 0, 0, 0, 0, 1)
+light_color = Color(1, 0.95, 0.87, 1)
+light_energy = 1.2
+
+[node name="Floor" type="StaticBody4D" parent="."]
+position = Vector4(0, -0.5, -8, 0)
+
+[node name="CollisionShape4D" type="CollisionShape4D" parent="Floor"]
+shape = SubResource("BoxShape4D_floor")
+
+[node name="MeshInstance4D" type="MeshInstance4D" parent="Floor"]
+material_override = SubResource("TetraMaterial4D_floor")
+mesh = SubResource("BoxTetraMesh4D_floor")
+
+[node name="Gate" type="Node4D" parent="."]
+position = Vector4(0, 0, -8, 0)
+script = ExtResource("2_gate")
+gate_shape = 1
+gate_name = "Test Demo"
+blurb = "Depth-gated trigger + rotor spin on commit"
+
+[node name="GateTrigger" type="Area4D" parent="."]
+position = Vector4(0, 0, -8, 0)
+script = ExtResource("3_trigger")
+gate_name = "Test Demo"
+
+[node name="CollisionShape4D" type="CollisionShape4D" parent="GateTrigger"]
+position = Vector4(0, 1.5, -0.5, 0)
+shape = SubResource("BoxShape4D_trigger")
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector4(0, 1, 0, 0)
+
+[node name="DebugUI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="LegendLabel" type="Label" parent="DebugUI"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 460.0
+offset_bottom = 100.0
+text = "Gate transition probe (Option A + C)
+Walk through the gate (not just the pad). Backing out
+doesn't count - only exiting the far side triggers it.
+No target_scene is wired: after the spin you're handed
+back control on the far side."
