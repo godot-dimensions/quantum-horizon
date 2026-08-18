@@ -1,0 +1,44 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" path="res://sandbox/synthwave/synthwave_sky.gd" id="2_sky"]
+[ext_resource type="Script" path="res://sandbox/synthwave/synthwave_ground.gd" id="3_ground"]
+[ext_resource type="AudioStream" path="res://audio/music/halo_drift.mp3" id="4_music"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_ground"]
+size = Vector4(300, 1, 300, 300)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ground"]
+size = Vector4(300, 1, 300, 300)
+
+[node name="SynthwaveTest" type="Node4D"]
+
+[node name="Ground" type="StaticBody4D" parent="."]
+position = Vector4(0, -0.5, 0, 0)
+
+[node name="CollisionShape4D" type="CollisionShape4D" parent="Ground"]
+shape = SubResource("BoxShape4D_ground")
+
+[node name="GroundMesh" type="MeshInstance4D" parent="Ground"]
+script = ExtResource("3_ground")
+mesh = SubResource("BoxTetraMesh4D_ground")
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector4(0, 1, 0, 0)
+
+[node name="Sky" type="Node4D" parent="Player/PlayerHead/FirstPersonCamera" index="0"]
+script = ExtResource("2_sky")
+
+[node name="Shell" type="MeshInstance4D" parent="Player/PlayerHead/FirstPersonCamera/Sky"]
+
+[node name="SunDisc" type="Node4D" parent="Player/PlayerHead/FirstPersonCamera/Sky"]
+
+[node name="Visual" type="MeshInstance4D" parent="Player/PlayerHead/FirstPersonCamera/Sky/SunDisc"]
+
+[node name="Music" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("4_music")
+autoplay = true
+
+[connection signal="finished" from="Music" to="Music" method="play"]
+
+[editable path="Player"]

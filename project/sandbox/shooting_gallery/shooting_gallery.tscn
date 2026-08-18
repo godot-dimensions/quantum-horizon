@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://le06b3c02yx6"]
+[gd_scene load_steps=38 format=3 uid="uid://le06b3c02yx6"]
 
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://dv154ig7jkgas" path="res://scripts/gallery_target_spawner.gd" id="2_spawner"]
@@ -11,6 +11,15 @@
 [ext_resource type="Shader" uid="uid://c725rif6jhuda" path="res://scripts/slice_alignment_glow.gdshader" id="14_slice_glow_shader"]
 [ext_resource type="Script" uid="uid://dnw11e64x67a1" path="res://scripts/gun_core_rotator.gd" id="15_gun_core_rotator"]
 [ext_resource type="ArrayTetraMesh4D" uid="uid://u62ydn7uiys0" path="res://models/primitives/platonic/600_cell/600_cell.g4b" id="16_600_cell_mesh"]
+[ext_resource type="Script" uid="uid://bc0stkcp3yt8d" path="res://sandbox/shooting_gallery/radar_orb/radar_orb_hud.gd" id="18_radar_orb_hud"]
+[ext_resource type="Texture2D" uid="uid://cdvuaq8kfgns0" path="res://sandbox/shooting_gallery/radar_orb/textures/glass_scratches_normal.jpg" id="19_glass_normal"]
+[ext_resource type="Texture2D" uid="uid://mi1rauivlclq" path="res://sandbox/shooting_gallery/radar_orb/textures/glass_scratches_roughness.jpg" id="20_glass_roughness"]
+[ext_resource type="PackedScene" uid="uid://cue4y8xuxurk8" path="res://weapon/ammo_pips/ammo_pips.tscn" id="21_ammo_pips"]
+[ext_resource type="PackedScene" uid="uid://dhkqw3jdjl45c" path="res://hud/combat_stats/combat_stats_hud.tscn" id="22_combat_stats"]
+[ext_resource type="Script" uid="uid://dl1h5h7q7fx8t" path="res://sandbox/shooting_gallery/w_targeting.gd" id="23_w_targeting"]
+[ext_resource type="Script" uid="uid://cccsdq1d32i2c" path="res://sandbox/shooting_gallery/contest/contest_sequence_player.gd" id="24_contest_player"]
+[ext_resource type="Resource" uid="uid://egwftsfjnvtm" path="res://sandbox/shooting_gallery/contest/sequences/contest_sequence_01.tres" id="25_contest_sequence_01"]
+[ext_resource type="PackedScene" uid="uid://er7x41l2ulsu" path="res://sandbox/shooting_gallery/contest/contest_results_overlay.tscn" id="26_contest_results"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_orange"]
 size = Vector4(10, 1, 10, 10)
@@ -51,6 +60,28 @@ size = Vector4(0.06, 0.1, 0.22, 0.06)
 [sub_resource type="WireMaterial4D" id="WireMaterial4D_gun_core"]
 line_thickness = 2.0
 albedo_color = Color(0.55, 0.25, 0.95, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_glass_dome"]
+radius = 0.3624
+height = 0.3624
+is_hemisphere = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_glass_dome"]
+transparency = 1
+albedo_color = Color(0.75, 0.88, 1, 0.35)
+metallic_specular = 0.9
+roughness = 0.15
+roughness_texture = ExtResource("20_glass_roughness")
+normal_enabled = true
+normal_scale = 1.2
+normal_texture = ExtResource("19_glass_normal")
+rim_enabled = true
+rim = 0.55
+rim_tint = 0.85
+uv1_scale = Vector3(3, 3, 1)
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_glass_dome"]
+viewport_path = NodePath("RadarOrbHud/GlassViewport")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_slice_glow"]
 shader = ExtResource("14_slice_glow_shader")
@@ -121,6 +152,9 @@ material_override = SubResource("WireMaterial4D_gun_core")
 mesh = ExtResource("16_600_cell_mesh")
 script = ExtResource("15_gun_core_rotator")
 
+[node name="AmmoPips" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel" instance=ExtResource("21_ammo_pips")]
+position = Vector4(0, 0.09, -0.22, 0)
+
 [node name="GalleryTargetSpawner" type="Node4D" parent="FlatPlane"]
 script = ExtResource("2_spawner")
 
@@ -143,6 +177,12 @@ text = "Last catch: -"
 [node name="DuckRowSpawner" type="Node4D" parent="FlatPlane"]
 script = ExtResource("6_duck_spawner")
 
+[node name="ContestSequencePlayer" type="Node4D" parent="FlatPlane"]
+script = ExtResource("24_contest_player")
+sequence = ExtResource("25_contest_sequence_01")
+
+[node name="Projectiles" type="Node4D" parent="FlatPlane"]
+
 [node name="FallRespawn" type="Node" parent="FlatPlane"]
 script = ExtResource("11_fall_respawn")
 
@@ -161,16 +201,58 @@ script = ExtResource("4_crosshair")
 [node name="HitscanWeapon" type="Node" parent="."]
 script = ExtResource("5_hitscan")
 
-[node name="SliceRadar" type="Control" parent="."]
+[node name="WTargeting" type="Node" parent="."]
+script = ExtResource("23_w_targeting")
+
+[node name="CombatStatsHud" parent="." instance=ExtResource("22_combat_stats")]
 layout_mode = 1
-anchor_left = 0.333
-anchor_top = 0.5
-anchor_right = 0.667
-anchor_bottom = 1.0
+
+[node name="RadarOrbHud" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("18_radar_orb_hud")
+
+[node name="SliceRadar" type="Control" parent="RadarOrbHud"]
+layout_mode = 1
+anchors_preset = 0
 mouse_filter = 2
 script = ExtResource("12_slice_radar")
 axis_label_style = 2
 axis_line_style = 2
+
+[node name="GlassViewport" type="SubViewport" parent="RadarOrbHud"]
+own_world_3d = true
+transparent_bg = true
+
+[node name="Camera3D" type="Camera3D" parent="RadarOrbHud/GlassViewport"]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 0.75, 1.3)
+fov = 30.0
+
+[node name="DomeLight" type="DirectionalLight3D" parent="RadarOrbHud/GlassViewport"]
+transform = Transform3D(0.75, 0.433013, -0.5, 0, 0.866025, 0.75, 0.5, -0.649519, 0.75, 0, 0, 0)
+light_energy = 1.2
+
+[node name="DomeFillLight" type="DirectionalLight3D" parent="RadarOrbHud/GlassViewport"]
+transform = Transform3D(0.75, -0.433013, 0.5, 0, 0.866025, 0.75, -0.5, -0.649519, 0.75, 0, 0, 0)
+light_color = Color(0.8, 0.9, 1, 1)
+light_energy = 0.5
+
+[node name="DomeMesh" type="MeshInstance3D" parent="RadarOrbHud/GlassViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1415, 0.0817)
+mesh = SubResource("SphereMesh_glass_dome")
+surface_material_override/0 = SubResource("StandardMaterial3D_glass_dome")
+
+[node name="GlassTextureRect" type="TextureRect" parent="RadarOrbHud"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("ViewportTexture_glass_dome")
+expand_mode = 1
 
 [node name="SliceAlignmentGlow" type="Control" parent="."]
 material = SubResource("ShaderMaterial_slice_glow")
@@ -182,5 +264,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("13_slice_glow")
+
+[node name="ContestResultsOverlay" parent="." instance=ExtResource("26_contest_results")]
+layout_mode = 1
 
 [editable path="FlatPlane/Player"]

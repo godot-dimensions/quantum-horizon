@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://qoe6y4lb5tgo"]
+[gd_scene load_steps=10 format=3 uid="uid://qoe6y4lb5tgo"]
 
 [ext_resource type="Script" uid="uid://c1hlkyfk1tx3s" path="res://ramon/voxel_port/scripts/voxel_terrain_4d.gd" id="2_terrn"]
 [ext_resource type="Script" path="res://ramon/voxel_port/scripts/voxel_hover_camera_4d.gd" id="3_hover"]
@@ -15,9 +15,6 @@ albedo_color = Color(0.32, 0.34, 0.38, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_floor"]
 size = Vector4(120, 1, 120, 120)
-
-[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_clouds"]
-size = Vector4(48, 4, 48, 24)
 
 [sub_resource type="Environment" id="Environment_clouds"]
 background_mode = 1
@@ -44,7 +41,6 @@ camera_path = NodePath("../HoverCamera")
 [node name="POIs" type="Node4D" parent="Terrain"]
 
 [node name="Clouds" type="MeshInstance4D" parent="Terrain"]
-mesh = SubResource("BoxTetraMesh4D_clouds")
 script = ExtResource("5_clouds")
 
 [node name="POISpawner" type="Node" parent="."]
@@ -64,7 +60,7 @@ mesh = SubResource("BoxTetraMesh4D_floor")
 
 [node name="HoverCamera" type="Camera4D" parent="."]
 current = true
-rendering_engine = "Cross-section"
+rendering_engine_name = "Cross-section"
 view_angle_type = 1
 field_of_view_4d = 1.3962634015954636
 script = ExtResource("3_hover")

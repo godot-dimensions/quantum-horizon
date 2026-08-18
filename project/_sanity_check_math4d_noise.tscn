@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/_sanity_check_math4d_noise.gd" id="1_runner"]
+
+[node name="SanityCheckMath4DNoise" type="Node"]
+script = ExtResource("1_runner")

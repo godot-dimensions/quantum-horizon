@@ -1,0 +1,84 @@
+[gd_resource type="Resource" script_class="ContestSequence" load_steps=19 format=3 uid="uid://egwftsfjnvtm"]
+
+[ext_resource type="Script" uid="uid://cwtnq6da7144n" path="res://sandbox/shooting_gallery/contest/contest_sequence.gd" id="1_sequence"]
+[ext_resource type="Script" uid="uid://gikxaom3jcft" path="res://sandbox/shooting_gallery/contest/contest_pair.gd" id="2_pair"]
+[ext_resource type="Script" uid="uid://cxx56xujl80qw" path="res://sandbox/shooting_gallery/contest/contest_spawn_event.gd" id="3_event"]
+
+[sub_resource type="Resource" id="Event_1_1"]
+script = ExtResource("3_event")
+spawn_position = Vector4(-2, 1.5, 0, 0)
+
+[sub_resource type="Resource" id="Event_1_2"]
+script = ExtResource("3_event")
+spawn_delay_sec = 1.0
+spawn_position = Vector4(2, 1.5, 0, 0)
+
+[sub_resource type="Resource" id="Pair_1"]
+script = ExtResource("2_pair")
+events = Array[ExtResource("3_event")]([SubResource("Event_1_1"), SubResource("Event_1_2")])
+
+[sub_resource type="Resource" id="Event_2_1"]
+script = ExtResource("3_event")
+archetype = 1
+spawn_position = Vector4(0, 1, 0, 0)
+
+[sub_resource type="Resource" id="Event_2_2"]
+script = ExtResource("3_event")
+spawn_position = Vector4(1.5, 1.5, 0, 3)
+hold_duration_sec = 3.0
+
+[sub_resource type="Resource" id="Pair_2"]
+script = ExtResource("2_pair")
+events = Array[ExtResource("3_event")]([SubResource("Event_2_1"), SubResource("Event_2_2")])
+
+[sub_resource type="Resource" id="Event_3_1"]
+script = ExtResource("3_event")
+archetype = 2
+spawn_position = Vector4(-3, 1.5, 0, 0)
+travel_distance = 6.0
+
+[sub_resource type="Resource" id="Event_3_2"]
+script = ExtResource("3_event")
+archetype = 2
+spawn_delay_sec = 1.2
+spawn_position = Vector4(-3, 1.5, 0, 0)
+travel_distance = 6.0
+
+[sub_resource type="Resource" id="Pair_3"]
+script = ExtResource("2_pair")
+events = Array[ExtResource("3_event")]([SubResource("Event_3_1"), SubResource("Event_3_2")])
+
+[sub_resource type="Resource" id="Event_4_1"]
+script = ExtResource("3_event")
+spawn_position = Vector4(0, 1.5, 0, 3)
+
+[sub_resource type="Resource" id="Event_4_2"]
+script = ExtResource("3_event")
+spawn_delay_sec = 1.0
+spawn_position = Vector4(0, 1.5, 0, -3)
+
+[sub_resource type="Resource" id="Pair_4"]
+script = ExtResource("2_pair")
+events = Array[ExtResource("3_event")]([SubResource("Event_4_1"), SubResource("Event_4_2")])
+
+[sub_resource type="Resource" id="Event_5_1"]
+script = ExtResource("3_event")
+archetype = 2
+spawn_position = Vector4(-3, 1.5, 0, 0)
+travel_distance = 6.0
+
+[sub_resource type="Resource" id="Event_5_2"]
+script = ExtResource("3_event")
+archetype = 2
+spawn_delay_sec = 0.6
+spawn_position = Vector4(-3, 1.5, 0, -3)
+velocity = Vector4(2, 0, 0, 1.2)
+travel_distance = 7.0
+
+[sub_resource type="Resource" id="Pair_5"]
+script = ExtResource("2_pair")
+events = Array[ExtResource("3_event")]([SubResource("Event_5_1"), SubResource("Event_5_2")])
+
+[resource]
+script = ExtResource("1_sequence")
+pairs = Array[ExtResource("2_pair")]([SubResource("Pair_1"), SubResource("Pair_2"), SubResource("Pair_3"), SubResource("Pair_4"), SubResource("Pair_5")])

@@ -28,6 +28,13 @@ var _path_length: float = PATH_START.distance_to(PATH_END)
 var _ducks: Array = [] # Array of Node4D, oldest first.
 var _spawn_timer_sec: float = 0.0
 
+func _ready() -> void:
+	# Free mode only - see gallery_target_spawner.gd's identical guard.
+	# _ducks staying empty is already handled everywhere it's read
+	# (try_hit_duck, slice_radar.gd, w_targeting.gd).
+	if GameMode.selected_mode == GameMode.Mode.CONTEST:
+		set_process(false)
+
 func _process(delta: float) -> void:
 	_spawn_timer_sec += delta
 	if _spawn_timer_sec >= SPAWN_INTERVAL_SEC:

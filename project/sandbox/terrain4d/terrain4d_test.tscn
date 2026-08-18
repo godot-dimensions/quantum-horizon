@@ -1,0 +1,41 @@
+[gd_scene load_steps=5 format=3 uid="uid://10myebwjf8"]
+
+[ext_resource type="Script" uid="uid://85p0bisj6ppl" path="res://sandbox/terrain4d/terrain_generator.gd" id="2_terrain"]
+[ext_resource type="Script" uid="uid://b1gwupxjy6b8k" path="res://sandbox/terrain4d/terrain4d_orbit_controller.gd" id="3_orbit"]
+[ext_resource type="Script" uid="uid://b7krdffjjnyy5" path="res://sandbox/terrain4d/terrain4d_orbit_camera.gd" id="4_camera"]
+[ext_resource type="Script" uid="uid://yw5uom5nth7c" path="res://sandbox/terrain4d/terrain4d_voxel_hover.gd" id="5_hover"]
+
+[node name="Terrain4DTest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="World" type="Node4D" parent="."]
+
+[node name="TerrainRig" type="Node4D" parent="World"]
+script = ExtResource("3_orbit")
+
+[node name="Terrain" type="StaticBody4D" parent="World/TerrainRig"]
+script = ExtResource("2_terrain")
+
+[node name="Mesh" type="MeshInstance4D" parent="World/TerrainRig/Terrain"]
+
+[node name="Collision" type="CollisionShape4D" parent="World/TerrainRig/Terrain"]
+
+[node name="HoverOutline" type="MeshInstance4D" parent="World/TerrainRig/Terrain"]
+
+[node name="OverheadCamera" type="Camera4D" parent="World"]
+current = true
+rendering_engine = "Cross-section"
+view_angle_type = 1
+field_of_view_4d = 1.3962634015954636
+script = ExtResource("4_camera")
+
+[node name="VoxelHover" type="Node" parent="World"]
+script = ExtResource("5_hover")
+camera_path = NodePath("../OverheadCamera")
+terrain_path = NodePath("../TerrainRig/Terrain")
+outline_path = NodePath("../TerrainRig/Terrain/HoverOutline")

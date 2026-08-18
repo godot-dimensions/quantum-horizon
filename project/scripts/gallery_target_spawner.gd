@@ -33,6 +33,15 @@ var _current_target: Node4D = null
 var _stopwatch_visible: bool = false
 
 func _ready() -> void:
+	# Free mode only - contest mode runs its own fixed sequence
+	# (ContestSequencePlayer) instead of this random single-target loop.
+	# _current_target staying null is already handled everywhere it's read
+	# (try_catch_target, slice_radar.gd, w_targeting.gd).
+	if GameMode.selected_mode == GameMode.Mode.CONTEST:
+		set_process(false)
+		time_label.visible = false
+		result_label.visible = false
+		return
 	time_label.visible = false
 	result_label.visible = false
 	_spawn_new_target()

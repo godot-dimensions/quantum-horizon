@@ -1,20 +1,28 @@
 class_name CloudsLayer
 extends MeshInstance4D
-## A single REAL 4D object - a BoxTetraMesh4D, meant to be a child of
-## Terrain - rendered through the engine's own Cross-Section pipeline, the
-## SAME pipeline that slices the terrain itself. See clouds.gdshader's own
-## header for the full rationale; short version: an earlier version used an
-## ordinary flat MeshInstance3D plane outside the 4D pipeline entirely, on
-## the theory that "genuinely 4D" meant "one 4D object per cloud" and that
-## was too expensive - that was a misreading. The actual performance
-## concern was dozens of INDIVIDUAL 4D cloud objects, not 4D-ness itself.
-## A single slab sized to the terrain's footprint costs about as much as
-## one more terrain brick, and gets the SAME correct-from-any-angle
+## A single REAL 4D object - a subdivided box mesh (SubdividedBoxTetraMesh4D,
+## not the engine's own BoxTetraMesh4D - see that class's own header for
+## why), meant to be a child of Terrain - rendered through the engine's own
+## Cross-Section pipeline, the SAME pipeline that slices the terrain itself.
+## See clouds.gdshader's own header for the full rationale; short version:
+## an earlier version used an ordinary flat MeshInstance3D plane outside the
+## 4D pipeline entirely, on the theory that "genuinely 4D" meant "one 4D
+## object per cloud" and that was too expensive - that was a misreading. The
+## actual performance concern was dozens of INDIVIDUAL 4D cloud objects, not
+## 4D-ness itself. A single subdivided slab sized to the terrain's footprint
+## still costs only a few thousand tetrahedra (a couple of terrain bricks'
+## worth, not dozens of objects), and gets the SAME correct-from-any-angle
 ## cross-section shape terrain itself has "for free," instead of fighting
 ## an ordinary flat plane's inherent edge-on perspective problems with
 ## fade hacks (tried and abandoned this session: a world-space radial fade
 ## and a view-angle fade both treated symptoms of "wrong shape," not the
 ## cause).
+##
+## Subdivided rather than a plain BoxTetraMesh4D specifically because a
+## coarse box (BoxTetraMesh4D's own fixed ~40-48 cell decomposition, no
+## subdivision option at all) showed real, confirmed banding in the noise
+## at certain 4D rotations - see SubdividedBoxTetraMesh4D's own header for
+## the full root-cause story.
 ##
 ## Must be parented directly under the terrain's own Node4D (identity
 ## basis on this node) rather than given a rig_path override of its own -
@@ -28,11 +36,20 @@ extends MeshInstance4D
 ## cell_size - tracks the terrain's edges well and stays large/stable
 ## throughout brick streaming (an earlier attempt to instead use scanned
 ## real bounds shrank badly during partial generation - see git history).
-## thickness_y/depth_w give the slab genuine volume in Y and the 4th
-## dimension: real extent (not a zero-thickness sheet) is what avoids the
-## "vanishing on-screen area at oblique angles" problem an ordinary plane
-## had, and real depth_w additionally makes the cross-section's SHAPE
-## respond to slice rotation the same way terrain's own shape does.
+## thickness_y gives the slab real volume in Y (avoids the "vanishing
+## on-screen area at oblique angles" problem an ordinary flat plane had).
+## The 4th-dimension extent is set equal to footprint, NOT independently -
+## an earlier version used a separate, arbitrary depth_w export (24, picked
+## with no basis), and the box's cross-section shape visibly diverged from
+## the terrain's own under rotation as a direct result: the terrain's real
+## 4D field has the SAME extent in W as it does in X/Z, and how much of a
+## shape's footprint a given rotation exposes depends on how much W-extent
+## it has to rotate through - two differently-proportioned 4D shapes sliced
+## by the same rotation reveal different amounts/shapes, confirmed directly
+## via an annotated screenshot showing the two bounding boxes diverging.
+## Matching W to footprint makes clouds a proportionally identical 4D shape
+## to the terrain's own conceptual extent, so they slice into matching
+## outlines under any rotation.
 ##
 ## Height comes from the terrain's ACTUAL generated surface geometry
 ## (Ground/<brick>.mesh vertices - same source poi_spawner.gd reads, see
@@ -43,10 +60,15 @@ extends MeshInstance4D
 ## above any coarse-celled terrain).
 
 @export var height_margin: float = 3.0
-## Real thickness in Y and the 4th dimension - see this script's own header
-## for why both need to be nonzero.
+## Real thickness in Y - see this script's own header for why this needs to
+## be nonzero. (The 4th-dimension extent is derived from footprint, not
+## independently configurable - see this script's own header.)
 @export var thickness_y: float = 4.0
-@export var depth_w: float = 24.0
+## Target sub-cell edge length for SubdividedBoxTetraMesh4D - see that
+## class's own header. Smaller = less banding but more tetrahedra; the
+## thin Y axis (thickness_y) naturally gets little/no subdivision from this
+## same value since it derives subdivision count from actual axis extent.
+@export var target_cell_size: float = 8.0
 ## The VoxelTerrain4D to size/position this layer against. Left unset,
 ## defaults to this node's own parent - the expected case, since this node
 ## should be a direct child of Terrain (see this script's own header on
@@ -57,7 +79,6 @@ const CLOUD_SHADER: Shader = preload("res://scripts/clouds.gdshader")
 const NOISE_ATLAS: Texture2D = preload("res://textures/clouds_noise_volume_atlas.png")
 
 var _material: ShaderMaterial
-var _box_mesh: BoxTetraMesh4D
 ## The expensive part (scanning every generated brick's full vertex array
 ## for its highest point) only re-runs when this changes - checking the
 ## child count itself is a cheap O(1) property read, safe to do every
@@ -69,10 +90,6 @@ var _last_fitted_footprint: float = -1.0
 
 
 func _ready() -> void:
-	if mesh == null:
-		mesh = BoxTetraMesh4D.new()
-	_box_mesh = mesh as BoxTetraMesh4D
-
 	if not (material_override is TetraMaterial4D):
 		material_override = TetraMaterial4D.new()
 	var tetra_mat: TetraMaterial4D = material_override
@@ -115,8 +132,6 @@ func _scan_max_height(terrain: Node) -> float:
 
 
 func _refit_to_terrain(terrain: Node) -> void:
-	if _box_mesh == null:
-		return
 	var cell_size: float = float(terrain.cell_size) if "cell_size" in terrain else 1.0
 
 	# Height: re-scan whenever the Ground's child count changes (bricks
@@ -132,11 +147,16 @@ func _refit_to_terrain(terrain: Node) -> void:
 
 	# Footprint: the nominal grid_size * cell_size formula - see this
 	# script's own header for why the scanned bounds are deliberately not
-	# used here.
+	# used here. Unlike the old BoxTetraMesh4D.size setter (an O(1) property
+	# update), SubdividedBoxTetraMesh4D.build() rebuilds the whole mesh from
+	# scratch - fine here since footprint only actually changes on the rare
+	# frame grid_size/cell_size changes, guarded by the equality check below,
+	# not every frame.
 	var footprint: float = float(terrain.grid_size) * cell_size
 	if not is_equal_approx(footprint, _last_fitted_footprint):
 		_last_fitted_footprint = footprint
-		_box_mesh.size = Vector4(footprint, thickness_y, footprint, depth_w)
+		var half_extents := Vector4(footprint, thickness_y, footprint, footprint) * 0.5
+		mesh = SubdividedBoxTetraMesh4D.build(half_extents, target_cell_size)
 
 
 func _process(_delta: float) -> void:

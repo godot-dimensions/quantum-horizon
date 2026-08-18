@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://b2gu4s0rhq5li"]
+
+[ext_resource type="PackedScene" uid="uid://bmiyjch8iu2xo" path="res://sandbox/skew_polyhedron/skew_polyhedron_test.tscn" id="1_scene"]
+[ext_resource type="Script" uid="uid://busg3hfp80m48" path="res://scripts/_verify_skew_polyhedron_runner.gd" id="2_runner"]
+
+[node name="VerifySkewPolyhedron" type="Node"]
+
+[node name="Scene" parent="." instance=ExtResource("1_scene")]
+
+[node name="Runner" type="Node" parent="."]
+script = ExtResource("2_runner")
