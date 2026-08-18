@@ -50,6 +50,10 @@ func _initialize() -> void:
 		return
 	_root_node = packed.instantiate()
 	root.add_child(_root_node)
+	# Play mode (F5/F6) sets this automatically; scripts that read
+	# get_tree().current_scene (a normal, correct thing to do) would otherwise
+	# see null here and nowhere else. This script IS the SceneTree, hence self.
+	set_current_scene(_root_node)
 	print("SHOT: loaded ", scene_path)
 
 	# Optional camera override: height then pitch in degrees. Looking straight

@@ -23,6 +23,7 @@ func _ready() -> void:
 	particle_mesh.size = Vector4(PARTICLE_SIZE, PARTICLE_SIZE, PARTICLE_SIZE, PARTICLE_SIZE)
 	_shared_material = TetraMaterial4D.new()
 	_shared_material.albedo_color = PARTICLE_COLOR
+	FlatShadingRamon.apply(_shared_material)
 
 	for i in PARTICLE_COUNT:
 		var particle := MeshInstance4D.new()

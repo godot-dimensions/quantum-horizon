@@ -70,7 +70,7 @@ const HUM_MAX_DISTANCE := 20.0
 const HUM_MIN_VOLUME_DB := -40.0
 const HUM_MAX_VOLUME_DB := 4.0
 
-const HumSound := preload("res://sandbox/shooting_gallery/audio/hum_ramon.wav")
+const HumSound := preload("res://ramon/ShootingGalleryRamon/audio/hum_ramon.wav")
 
 @onready var player: CharacterBody4D = $"../Player"
 @onready var game_over_overlay: Control = $"../../GameOverOverlay"
@@ -172,6 +172,7 @@ func _spawn_stalker() -> void:
 	# Nudged another +0.03 per channel on top of that same fix - still dark
 	# enough to read as "black", just distinguishable.
 	material.albedo_color = Color(0.14, 0.14, 0.15, 1.0)
+	FlatShadingRamon.apply(material)
 	_stalker_mesh.material_override = material
 	_stalker.add_child(_stalker_mesh)
 

@@ -137,6 +137,7 @@ func _spawn_blocker(mesh: Mesh4D, base_scale: float, pulse: bool, tough: bool) -
 	var material := TetraMaterial4D.new()
 	material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY
 	material.albedo_texture_3d = ToughTexture if tough else FragileTexture
+	FlatShadingRamon.apply(material)
 	mesh_instance.material_override = material
 	area.add_child(mesh_instance)
 

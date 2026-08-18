@@ -5,7 +5,7 @@ extends Node4D
 ## shooting_gallery.tscn, since that scene's spawner still points at the
 ## original gallery_target_spawner.gd/gallery_target.tscn.
 
-const TargetScene := preload("res://sandbox/shooting_gallery/gallery_target_ramon.tscn")
+const TargetScene := preload("res://ramon/ShootingGalleryRamon/gallery_target_ramon.tscn")
 
 const X_RANGE := 8.0 # Widened alongside the blue floor's x extent.
 const Z_RANGE := 4.0
@@ -58,6 +58,7 @@ func _on_catch() -> void:
 func _spawn_new_target() -> void:
 	var target: Node4D = TargetScene.instantiate()
 	add_child(target)
+	FlatShadingRamon.apply_recursive(target)
 	target.position = _random_spawn_position()
 	_current_target = target
 	_spawn_time_msec = Time.get_ticks_msec()

@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3 uid="uid://dsph52ervpfnd"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_duck"]
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_duck"]
+albedo_color = Color(1, 0.85, 0.1, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_duck"]
+
+[node name="DuckTarget" type="Area4D"]
+
+[node name="CollisionShape" type="CollisionShape4D" parent="."]
+shape = SubResource("BoxShape4D_duck")
+
+[node name="Mesh" type="MeshInstance4D" parent="."]
+material_override = SubResource("TetraMaterial4D_duck")
+mesh = SubResource("BoxTetraMesh4D_duck")

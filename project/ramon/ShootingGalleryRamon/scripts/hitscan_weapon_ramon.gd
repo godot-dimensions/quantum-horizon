@@ -29,10 +29,10 @@ extends Node
 ## brightens gun_core_rotator_ramon.gd's core color while charging (on top
 ## of its existing fire-pulse glow).
 
-const PoofEffect := preload("res://sandbox/shooting_gallery/scripts_ramon/poof_effect_ramon.gd")
-const RayBeam := preload("res://sandbox/shooting_gallery/scripts_ramon/ray_beam_ramon.gd")
-const ChargeBuildupSound := preload("res://sandbox/shooting_gallery/audio/charge_buildup_ramon.wav")
-const ChargeReleaseSound := preload("res://sandbox/shooting_gallery/audio/charge_release_ramon.wav")
+const PoofEffect := preload("res://ramon/ShootingGalleryRamon/scripts/poof_effect_ramon.gd")
+const RayBeam := preload("res://ramon/ShootingGalleryRamon/scripts/ray_beam_ramon.gd")
+const ChargeBuildupSound := preload("res://ramon/ShootingGalleryRamon/audio/charge_buildup_ramon.wav")
+const ChargeReleaseSound := preload("res://ramon/ShootingGalleryRamon/audio/charge_release_ramon.wav")
 
 const CHARGE_MAX_SEC := 3.0
 const MAX_BURST_SHOTS := 6

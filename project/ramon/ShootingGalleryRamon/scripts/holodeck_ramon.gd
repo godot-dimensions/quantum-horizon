@@ -46,6 +46,7 @@ func _ready() -> void:
 	var material := TetraMaterial4D.new()
 	material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY
 	material.albedo_texture_3d = BackdropTexture
+	FlatShadingRamon.apply(material)
 
 	_build_ceiling(material)
 	_build_wall(material, true, -ROOM_HALF_EXTENT) # Left wall (fixed x).

@@ -14,3 +14,9 @@ const BACKGROUND_COLOR := Color(0.0, 0.0, 0.0, 1.0)
 
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(BACKGROUND_COLOR)
+	# One-time pass over the statically-authored scene (floor, barrier, gun
+	# viewmodel, billboard): swaps every baked TetraMaterial4D to flat-shaded so
+	# it's visible without a Light4D/WorldEnvironment4D. Dynamically spawned
+	# objects (targets, ducks, blockers, etc.) apply this themselves at spawn
+	# time instead, since they don't exist yet for this sweep to find.
+	FlatShadingRamon.apply_recursive(get_tree().current_scene)

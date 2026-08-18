@@ -48,6 +48,7 @@ func setup(from: Vector4, to: Vector4, orientation: Projection, intensity: float
 
 	_material = TetraMaterial4D.new()
 	_material.albedo_color = BASE_COLOR.lerp(INTENSE_COLOR, intensity)
+	FlatShadingRamon.apply(_material)
 
 	var mesh_instance := MeshInstance4D.new()
 	mesh_instance.mesh = box_mesh

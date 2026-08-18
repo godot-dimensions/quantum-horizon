@@ -138,6 +138,7 @@ func _spawn_sphere(slot: Dictionary) -> void:
 	mesh_instance.mesh = OrthoplexTetraMesh4D.new()
 	var material := TetraMaterial4D.new()
 	material.albedo_color = Color(0.15, 0.9, 0.25, 1.0)
+	FlatShadingRamon.apply(material)
 	mesh_instance.material_override = material
 	area.add_child(mesh_instance)
 
