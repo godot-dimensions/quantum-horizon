@@ -6,14 +6,19 @@ and most look like your own bug until you dig.
 
 ## Rendering
 
-**`Camera4D.rendering_engine` defaults to `""`, and that does NOT mean
-cross-section.** `RenderingServer4D::_get_rendering_engine()` resolves an
-unknown name by falling through to `_rendering_engines.begin()->value` —
-whichever registered first, which is the *wireframe* engine. A scene can look
-correct in the editor's 4D tab (which picks its own engine from its toolbar)
-and render as white wireframe in Play. Every `Camera4D` in a scene you intend
-to play needs `rendering_engine = "Cross-section"` set explicitly. Only
-`player.tscn` currently does.
+**`Camera4D.rendering_engine_name` defaults to `""`, and that does NOT mean
+cross-section.** (Property name corrected 2026-08-18 - it is
+`rendering_engine_name`, not `rendering_engine`; the wrong name is silently
+dropped by Godot's scene loader on save/load rather than erroring, which is
+exactly how this note itself had it wrong for days.)
+`RenderingServer4D::_get_rendering_engine()` resolves an unknown name by
+falling through to `_rendering_engines.begin()->value` — whichever registered
+first, which is the *wireframe* engine. A scene can look correct in the
+editor's 4D tab (which picks its own engine from its toolbar) and render as
+white wireframe in Play. Every `Camera4D` in a scene you intend to play needs
+`rendering_engine_name = "Cross-section"` set explicitly. Only `player.tscn`,
+`MiegakureLook/miegakure_look.tscn` and `MiegakureLook/miegakure_look_2.tscn`
+currently do.
 
 **The editor's 4D tab renders through its own private `World3D`.**
 `CrossSectionRenderingEngine4D::setup_for_viewport()` instantiates one and
@@ -85,6 +90,30 @@ This is entirely project-side (no engine fork) and doesn't touch the shared
 default shader, so it can't break any other scene that genuinely wants
 Aaron's real lighting.
 
+## Physics
+
+**An `Area4D` never fires for a body that arrives by teleport.** Added
+2026-08-19, found building the portal chamber, where every arrival is a
+teleport by definition.
+
+`AxisAlignedBoxPhysicsEngine4D::move_and_collide` emits `body_entered_self`
+only on a not-overlapping → overlapping *transition*, and it evaluates the
+"before" side against a rect cached at the end of the previous
+`move_and_collide` (`get_body_shape_rects`, which only recomputes when the
+shape *count* changes). Assign a body's `global_position` and neither half
+works: on the arrival frame the cached "before" rect is still at the old
+location, so the swept test sees no overlap; on every frame after, the body is
+already overlapping, so the entered branch is skipped for good.
+
+Measured: the player stood inside a goal `Area4D` for dozens of frames, at a
+position confirmed by trace, with the area reporting nothing. **Any trigger a
+teleport can deliver a body into must be polled**, not detected — a four-axis
+containment test against the box is three lines. See `goal_reached` in
+`project/ramon/Portal/scripts/portal_test_chamber_builder.gd`.
+
+Worth an upstream report: recomputing the moving body's "before" rect when its
+transform changed outside the physics step would fix it generally.
+
 ## Bugs in the shared module
 
 **`ArrayTetraMesh4D::merge_with` mis-sizes the UVW map.** It resizes the
@@ -116,6 +145,26 @@ Godot then loads the same script under two path strings — and if it declares a
 `.godot/editor/script_editor_cache.cfg`, `editor_layout.cfg` and
 `uid_cache.bin`, so it survives fixing the source. After any rename: fix the
 path strings, delete `.godot/uid_cache.bin`, and rescan.
+
+**A `class_name` added outside the editor is invisible to every other script.**
+Global class names are resolved from `.godot/global_script_class_cache.cfg`,
+which **only the editor regenerates on a project scan**. Write a new script (or
+add a `class_name` to an existing one) with the editor closed, then reference it
+from another script, and you get `Parse Error: Identifier "Foo" not declared in
+the current scope` — the referencing script fails to load entirely, so its node
+silently has no script at all and its whole feature is just absent. Measured
+2026-08-19: `MiegakureCamera2` was in the cache and `MiegakureLookBuilder2` was
+not, so `w_readout_2.gd`'s static reads of
+`MiegakureLookBuilder2.STRUCTURE_W_HALF_EXTENT` took the entire HUD down while
+the sibling script that only ever *type-annotated* against `MiegakureCamera2`
+was fine. Note the failure is at parse time, so no `if`-guard or
+`ClassDB.class_exists` check can rescue it.
+
+Two ways out, both worth knowing: open the editor once to force a rescan, or
+don't cross-reference another script's `class_name` for constants — pass the
+values in as `@export`s, or read them off the node instance you already have.
+The second also survives the file being renamed or the folder being moved,
+which is the more common way this bites.
 
 **@tool scripts that gain exports while a scene is open come back with those
 properties `Nil`.** Godot keeps the node's old property table until the scene

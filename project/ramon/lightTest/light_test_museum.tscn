@@ -9,9 +9,6 @@
 
 [sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
 shader_parameter/world_up_direction_4d = null
-shader_parameter/horizon_color = Color(0.75, 0.82, 0.9, 1)
-shader_parameter/top_color = Color(0.25, 0.45, 0.85, 1)
-shader_parameter/bottom_color = Color(0.35, 0.32, 0.28, 1)
 shader_parameter/light0_direction_4d = null
 shader_parameter/light0_color = null
 shader_parameter/light0_energy = null
@@ -32,6 +29,9 @@ shader_parameter/light3_color = null
 shader_parameter/light3_energy = null
 shader_parameter/light3_angular_radius_radians = null
 shader_parameter/light3_enabled = null
+shader_parameter/horizon_color = Color(0.75, 0.82, 0.9, 1)
+shader_parameter/top_color = Color(0.25, 0.45, 0.85, 1)
+shader_parameter/bottom_color = Color(0.35, 0.32, 0.28, 1)
 horizon_color = Color(0.75, 0.82, 0.9, 1)
 top_color = Color(0.25, 0.45, 0.85, 1)
 bottom_color = Color(0.35, 0.32, 0.28, 1)
