@@ -1,0 +1,48 @@
+[gd_scene load_steps=7 format=3 uid="uid://18qhxgg3ajkw"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://dfygcymspf1ni" path="res://ramon/Portal/scripts/portal_player_4d.gd" id="2_playerfork"]
+[ext_resource type="Script" uid="uid://3kyt86a7688n" path="res://ramon/Portal/scripts/voxel_chunk_builder.gd" id="3_builder"]
+[ext_resource type="Script" uid="uid://dkwfwk707qfin" path="res://ramon/Portal/scripts/voxel_chunk_gun.gd" id="4_gun"]
+[ext_resource type="Script" path="res://ramon/Portal/scripts/voxel_chunk_hud.gd" id="5_hud"]
+[ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="99_return"]
+
+[node name="VoxelChunkTest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ChunkWorld" type="Node4D" parent="."]
+
+[node name="Player" parent="ChunkWorld" instance=ExtResource("1_player")]
+script = ExtResource("2_playerfork")
+
+[node name="ChunkBuilder" type="Node4D" parent="ChunkWorld"]
+script = ExtResource("3_builder")
+
+[node name="ChunkGun" type="Node" parent="ChunkWorld"]
+script = ExtResource("4_gun")
+
+[node name="ReturnButton" parent="." instance=ExtResource("99_return")]
+
+[node name="ChunkHud" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("5_hud")
+
+[node name="Readout" type="Label" parent="ChunkHud"]
+layout_mode = 1
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 900.0
+offset_bottom = 360.0
+
+[editable path="ChunkWorld/Player"]

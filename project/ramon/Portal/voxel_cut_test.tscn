@@ -1,0 +1,27 @@
+[gd_scene load_steps=5 format=3 uid="uid://y8hwigse3pqr"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://dfygcymspf1ni" path="res://ramon/Portal/scripts/portal_player_4d.gd" id="2_playerfork"]
+[ext_resource type="Script" uid="uid://dsnsbe3v6hvp4" path="res://ramon/Portal/scripts/voxel_cut_builder.gd" id="3_builder"]
+[ext_resource type="Script" uid="uid://blp2iorxxcwvv" path="res://ramon/Portal/scripts/voxel_cut_gun.gd" id="4_gun"]
+
+[node name="VoxelCutTest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CutWorld" type="Node4D" parent="."]
+
+[node name="Player" parent="CutWorld" instance=ExtResource("1_player")]
+script = ExtResource("2_playerfork")
+
+[node name="CutBuilder" type="Node4D" parent="CutWorld"]
+script = ExtResource("3_builder")
+
+[node name="CutGun" type="Node" parent="CutWorld"]
+script = ExtResource("4_gun")
+
+[editable path="CutWorld/Player"]

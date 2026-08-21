@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="AscentBayDef4D" load_steps=2 format=3 uid="uid://c231qd0v7pyg4"]
+
+[ext_resource type="Script" uid="uid://rls6hnsa6nuy" path="res://ramon/ObstacleCourse/scripts/ascent_bay_def.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+beat_id = "03"
+label = "Elsewhere steps"
+height = 8.5
+plan_x = 9.0
+deck_size = Vector2(7, 6)

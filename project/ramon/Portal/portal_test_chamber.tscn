@@ -1,0 +1,49 @@
+[gd_scene load_steps=7 format=3 uid="uid://302bo3ja44d1"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://dfygcymspf1ni" path="res://ramon/Portal/scripts/portal_player_4d.gd" id="2_playerfork"]
+[ext_resource type="Script" uid="uid://c4snum6bbn3ap" path="res://ramon/Portal/scripts/portal_test_chamber_builder.gd" id="3_builder"]
+[ext_resource type="Script" uid="uid://dfoau8xr7us5b" path="res://ramon/Portal/scripts/portal_link.gd" id="4_link"]
+[ext_resource type="Script" uid="uid://cyyceo4ln6v2c" path="res://ramon/Portal/scripts/portal_gun_4d.gd" id="5_gun"]
+[ext_resource type="Script" uid="uid://bidpu58b8558l" path="res://ramon/Portal/scripts/portal_test_hud.gd" id="6_hud"]
+
+[node name="PortalTestChamber" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ChamberWorld" type="Node4D" parent="."]
+
+[node name="Player" parent="ChamberWorld" instance=ExtResource("1_player")]
+script = ExtResource("2_playerfork")
+
+[node name="ChamberBuilder" type="Node4D" parent="ChamberWorld"]
+script = ExtResource("3_builder")
+
+[node name="PortalLink" type="Node" parent="ChamberWorld"]
+script = ExtResource("4_link")
+
+[node name="PortalGun" type="Node" parent="ChamberWorld"]
+script = ExtResource("5_gun")
+
+[node name="ChamberHud" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("6_hud")
+
+[node name="Readout" type="Label" parent="ChamberHud"]
+layout_mode = 1
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 980.0
+offset_bottom = 460.0
+
+[editable path="ChamberWorld/Player"]

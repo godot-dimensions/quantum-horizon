@@ -1,0 +1,109 @@
+[gd_scene load_steps=12 format=3 uid="uid://dwcp2gacf1w4r"]
+
+[ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="1_sun"]
+[ext_resource type="Script" uid="uid://ct8dfnky30hxf" path="res://ramon/MiegakureLook/scripts/miegakure_look_builder_4.gd" id="2_builder"]
+[ext_resource type="Script" uid="uid://b877stsq4j7wk" path="res://ramon/MiegakureLook/scripts/ball_controller_3.gd" id="3_ball"]
+[ext_resource type="Script" uid="uid://d3lh88ul1jxfs" path="res://ramon/MiegakureLook/scripts/miegakure_camera_3.gd" id="4_camera"]
+[ext_resource type="ArrayTetraMesh4D" uid="uid://bh6g0ly3wnw3t" path="res://models/primitives/platonic/600_cell/600_cell_smooth.g4b" id="5_600cell"]
+[ext_resource type="Script" uid="uid://cciknibxbdxs4" path="res://ramon/MiegakureLook/scripts/goal_banner_3.gd" id="6_banner"]
+[ext_resource type="Script" uid="uid://1pasup0pg36g" path="res://ramon/MiegakureLook/scripts/w_readout_3.gd" id="7_wreadout"]
+[ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="99_return"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_1"]
+shader_parameter/world_up_direction_4d = null
+shader_parameter/light0_direction_4d = null
+shader_parameter/light0_color = null
+shader_parameter/light0_energy = null
+shader_parameter/light0_angular_radius_radians = null
+shader_parameter/light0_enabled = null
+shader_parameter/light1_direction_4d = null
+shader_parameter/light1_color = null
+shader_parameter/light1_energy = null
+shader_parameter/light1_angular_radius_radians = null
+shader_parameter/light1_enabled = null
+shader_parameter/light2_direction_4d = null
+shader_parameter/light2_color = null
+shader_parameter/light2_energy = null
+shader_parameter/light2_angular_radius_radians = null
+shader_parameter/light2_enabled = null
+shader_parameter/light3_direction_4d = null
+shader_parameter/light3_color = null
+shader_parameter/light3_energy = null
+shader_parameter/light3_angular_radius_radians = null
+shader_parameter/light3_enabled = null
+shader_parameter/horizon_color = Color(0.4394054, 0.50191104, 0.66275924, 1)
+shader_parameter/top_color = Color(0.12128911, 0.39580444, 0.7220773, 1)
+shader_parameter/bottom_color = Color(0.1964216, 0.18493599, 0.2547105, 1)
+shader_parameter/inv_top_curve = 4.00000015894572
+shader_parameter/inv_bottom_curve = 30.000001192092896
+shader_parameter/inv_sun_curve = 22.782018847067608
+horizon_color = Color(0.4394054, 0.50191104, 0.66275924, 1)
+top_color = Color(0.12128911, 0.39580444, 0.7220773, 1)
+top_curve = 0.15
+bottom_color = Color(0.1964216, 0.18493599, 0.2547105, 1)
+bottom_curve = 0.02
+sun_curve = 0.15
+
+[sub_resource type="SphereShape4D" id="SphereShape4D_ball"]
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ball"]
+albedo_color = Color(1, 0.55, 0.1, 1)
+
+[node name="MiegakureLook4" type="Node4D"]
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_1")
+ambient_light_color = Color(0.3914545, 0.41625983, 0.46172702, 1)
+tonemap_mode = 2
+
+[node name="Sun" type="DirectionalLight4D" parent="."]
+basis = Projection(0, 0, 0, 1, -0.10060609255454919, 0.9510565162951536, -0.2921813083573824, 0, 0.3096337147946659, 0.3090169943749474, 0.899241602601842, 0, 0.9455185755993168, 0, -0.32556815445715664, 0)
+light_color = Color(1, 0.98, 0.94, 1)
+light_energy = 0.533
+angular_radius_radians = 0.02092126174365602
+script = ExtResource("1_sun")
+elevation_degrees = 18.0
+azimuth_degrees = 19.0
+
+[node name="Builder" type="Node4D" parent="."]
+script = ExtResource("2_builder")
+
+[node name="Ball" type="CharacterBody4D" parent="."]
+position = Vector4(0, 1, 5, 1)
+script = ExtResource("3_ball")
+
+[node name="Collider" type="CollisionShape4D" parent="Ball"]
+shape = SubResource("SphereShape4D_ball")
+
+[node name="Mesh" type="MeshInstance4D" parent="Ball"]
+basis = Projection(0.5, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0.5)
+material_override = SubResource("TetraMaterial4D_ball")
+mesh = ExtResource("5_600cell")
+
+[node name="CameraRig" type="Camera4D" parent="."]
+current = true
+rendering_engine_name = "Cross-section"
+script = ExtResource("4_camera")
+
+[node name="GoalBanner" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("6_banner")
+
+[node name="WReadout" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("7_wreadout")
+
+[node name="ReturnButton" parent="." instance=ExtResource("99_return")]
