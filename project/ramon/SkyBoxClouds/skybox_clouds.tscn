@@ -1,9 +1,10 @@
-[gd_scene load_steps=8 format=3 uid="uid://bacql382t57ft"]
+[gd_scene load_steps=9 format=3 uid="uid://bacql382t57ft"]
 
 [ext_resource type="Script" uid="uid://dt0g0ug2fxmgo" path="res://ramon/SkyBoxClouds/scripts/skydome_4d.gd" id="1_skydome"]
 [ext_resource type="Script" uid="uid://cet3tnp3nbwi5" path="res://ramon/SkyBoxClouds/scripts/cloud_field_4d.gd" id="2_clouds"]
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="3_player"]
 [ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="4_sun"]
+[ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="99_return"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_ground"]
 size = Vector4(600, 2, 600, 600)
@@ -58,3 +59,5 @@ mesh = SubResource("BoxTetraMesh4D_ground")
 
 [node name="Player" parent="." instance=ExtResource("3_player")]
 position = Vector4(0, 2, 0, 0)
+
+[node name="ReturnButton" parent="." instance=ExtResource("99_return")]

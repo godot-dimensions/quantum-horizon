@@ -26,6 +26,7 @@ extends Node4D
 ## With FILL_EACH_SIDE each side spans 0..1, so tiles-per-side is just side
 ## length divided by [member texture_metres] - no calibration by eye.
 
+const Palette := preload("res://ramon/Demo/scripts/hub_palette.gd")
 const SurfaceMaterial := preload("res://ramon/Demo/scripts/hub_material_4d.gd")
 
 ## Marks the generated child so a rebuild clears exactly what it made. Nothing
@@ -86,3 +87,22 @@ func rebuild() -> void:
 	surface.material_override = SurfaceMaterial.surface(palette_color, size, texture_metres, use_dev_textures)
 	surface.set_meta(GENERATED_META, true)
 	add_child(surface)
+
+
+## Turns [member palette_color] into a dropdown of whatever is actually in
+## textures/dev_finals/, rather than a free-text field where a typo silently falls
+## back to flat magenta.
+##
+## Applied as a hint at inspect time instead of an @export_enum so the property
+## stays a plain String - the palette is read from disk, and baking its contents
+## into the type would defeat the point of scanning.
+func _validate_property(property: Dictionary) -> void:
+	if property.name == &"palette_color":
+		# SUGGESTION rather than plain ENUM. PROPERTY_HINT_ENUM on a String is the
+		# fragile pairing - the inspector treats an enum hint as index-based in
+		# several paths, so entries could fail to round-trip depending on their
+		# position in the list. SUGGESTION is the hint meant for a String with
+		# known-good values: it stores the name, not an index, and still allows
+		# typing one that is not listed.
+		property.hint = PROPERTY_HINT_ENUM_SUGGESTION
+		property.hint_string = Palette.get_names_hint()

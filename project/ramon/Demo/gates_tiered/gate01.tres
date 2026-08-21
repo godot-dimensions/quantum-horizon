@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="HubTierGateDef4D" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/Demo/scripts/hub_tier_gate_def.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+gate_name = "Voxel port"
+tier = 2
+visited = false
+angle_nudge = 0.0
+radius_nudge = 0.0

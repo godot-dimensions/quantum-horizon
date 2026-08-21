@@ -39,6 +39,9 @@ enum {
 @export_enum("Circular", "Rectangular") var gate_shape: int = SHAPE_CIRCULAR:
 	set(value):
 		gate_shape = value
+		# Which height controls apply depends on the shape, so the inspector has
+		# to be re-asked when it changes.
+		notify_property_list_changed()
 		rebuild()
 
 ## Half the width of the walkable opening, in metres. Drives BOTH shapes: a
@@ -55,6 +58,7 @@ enum {
 @export var link_height_to_width: bool = true:
 	set(value):
 		link_height_to_width = value
+		notify_property_list_changed()
 		rebuild()
 
 ## Opening height for a rectangular gate. Ignored while
@@ -147,6 +151,14 @@ enum {
 		hidden_w_extent = value
 		rebuild()
 
+## Where walking into this gate's membrane sends the player. Empty means the gate
+## is scenery - no trigger is built at all, so a door with no destination cannot
+## swallow anyone.
+@export var target_scene: PackedScene:
+	set(value):
+		target_scene = value
+		rebuild()
+
 @export var visited: bool = false:
 	set(value):
 		visited = value
@@ -181,6 +193,23 @@ enum {
 @export_range(0.0, 1.0, 0.01) var membrane_alpha: float = 0.35:
 	set(value):
 		membrane_alpha = value
+		rebuild()
+
+## Depth of the pane along the gate's local Z, in metres.
+##
+## Was 0.03 m, which is a film rather than a slab and cost two things. The tiled
+## shader derives its grain from the box's own size, so a 0.03 m dimension gets
+## 0.06 of a texture across it at the default 0.5 m per texture - the edge cells
+## render as one smeared texel. And a pane this thin is not reliably intersected:
+## at walking speed the player advances roughly 8 cm per physics tick, so a future
+## trigger sized to the pane could be stepped straight over.
+##
+## The cost of thickening it is that the SIDES of the slab become visible through
+## the translucency, so the pane reads as a plug filling the opening rather than a
+## film across it. Which of those looks better needs eyes on it.
+@export_range(0.02, 1.0, 0.01, "suffix:m") var membrane_thickness: float = 0.3:
+	set(value):
+		membrane_thickness = value
 		rebuild()
 
 ## Palette entry for the pane. "black_metal" reads as dark glass; "white" or
@@ -252,6 +281,60 @@ enum {
 @export var blurb_font_size: int = 32
 @export var blurb_pixel_size: float = 0.0025
 
+## Shared typography asset - case, tracking, weight, line spacing and outline.
+##
+## Assign the SAME `.tres` here and on _sign_board.tscn and the preview stops being
+## an approximation of the sign: it is driven by the identical settings. Leave it
+## empty and the four exports above are used as before, so an unassigned gate keeps
+## rendering exactly the way it always did.
+@export var sign_style: HubSignStyle4D:
+	set(value):
+		sign_style = value
+		rebuild()
+
+
+## The style to draw with: the assigned asset, or one built from this gate's own
+## legacy exports so [method _build_billboard] never has two code paths to keep
+## in step.
+## Hides height controls that cannot do anything, rather than leaving them
+## editable and inert - which is exactly how aperture_height came to look broken.
+##
+## A circular aperture is as tall as it is wide by definition, so neither control
+## applies. And while link_height_to_width is on it forces the square opening, so
+## aperture_height is overridden whatever it says.
+func _validate_property(property: Dictionary) -> void:
+	if property.name == &"link_height_to_width":
+		if gate_shape == SHAPE_CIRCULAR:
+			property.usage = PROPERTY_USAGE_NO_EDITOR
+	elif property.name == &"aperture_height":
+		if gate_shape == SHAPE_CIRCULAR or link_height_to_width:
+			property.usage = PROPERTY_USAGE_NO_EDITOR
+	elif property.name == &"membrane_color":
+		# Matches the ring and the floor. SUGGESTION, not ENUM - see
+		# HubGateRing4D.PALETTE_PROPERTIES for why the distinction matters.
+		property.hint = PROPERTY_HINT_ENUM_SUGGESTION
+		property.hint_string = Palette.get_names_hint()
+
+
+func _effective_style() -> HubSignStyle4D:
+	if sign_style != null:
+		return sign_style
+	var fallback := HubSignStyle4D.new()
+	fallback.font = font
+	fallback.panel_size = panel_size
+	fallback.title_font_size = title_font_size
+	fallback.title_pixel_size = title_pixel_size
+	fallback.blurb_font_size = blurb_font_size
+	fallback.blurb_pixel_size = blurb_pixel_size
+	return fallback
+
+
+## Panel size actually in force. Every sign measurement goes through this rather
+## than reading [member panel_size] directly, so the assigned style always wins and
+## there is no path by which half the layout uses one size and half the other.
+func get_panel_size() -> Vector2:
+	return _effective_style().panel_size
+
 
 func _ready() -> void:
 	rebuild()
@@ -285,7 +368,7 @@ func get_aperture_top() -> float:
 ## this to camera-relative coordinates every frame - see the note on
 ## [member show_billboard] for why it cannot simply be a world position.
 func get_sign_local_offset() -> Vector4:
-	var height := get_aperture_top() + frame_thickness + billboard_gap + panel_size.y * 0.5
+	var height := get_aperture_top() + frame_thickness + billboard_gap + get_panel_size().y * 0.5
 	return Vector4(0.0, height, 0.0, 0.0)
 
 
@@ -320,21 +403,23 @@ func _build_membrane() -> void:
 	var height := get_aperture_top()
 	if gate_shape == SHAPE_CIRCULAR:
 		var side: float = width * 0.7071
-		var round_size := Vector4(side, side, 0.03, _frame_w_extent())
+		var round_size := Vector4(side, side, membrane_thickness, _frame_w_extent())
 		_adopt(_make_box(
 			"Membrane",
 			round_size,
 			Vector4(0.0, aperture_radius, 0.0, _frame_w_offset()),
 			SurfaceMaterial.surface(membrane_color, round_size, membrane_texture_metres, use_dev_textures, membrane_alpha)
 		))
+		_build_gate_trigger(round_size, Vector4(0.0, aperture_radius, 0.0, _frame_w_offset()))
 		return
-	var rect_size := Vector4(width, height, 0.03, _frame_w_extent())
+	var rect_size := Vector4(width, height, membrane_thickness, _frame_w_extent())
 	_adopt(_make_box(
 		"Membrane",
 		rect_size,
 		Vector4(0.0, height * 0.5, 0.0, _frame_w_offset()),
 		SurfaceMaterial.surface(membrane_color, rect_size, membrane_texture_metres, use_dev_textures, membrane_alpha)
 	))
+	_build_gate_trigger(Vector4(width, height, membrane_thickness, _frame_w_extent()), Vector4(0.0, height * 0.5, 0.0, _frame_w_offset()))
 
 
 ## Editor-only stand-in for the billboard.
@@ -344,17 +429,83 @@ func _build_membrane() -> void:
 ## same spot so the sign's position and size are visible while laying the hub out.
 ## It faces the gate's local Z and never turns - it is a placement aid, not a
 ## preview of how the sign will read in game.
+## Area4D filling the membrane, which is what actually sends the player onward.
+##
+## THE MEMBRANE IS THE TRIGGER, deliberately, and not the threshold pad. The pad is
+## w-invariant while the membrane is not, so on the ghosted gate this inherits the
+## right behaviour for free: its door genuinely is not in the home slice, and
+## neither is the way through. No w special-case anywhere.
+##
+## The collider is thicker than the pane it stands for. The pane can be a few
+## centimetres, and at walking speed the player advances roughly 8 cm per physics
+## tick, so a trigger matched to the visual would be stepped straight over.
+func _build_gate_trigger(membrane_size: Vector4, offset: Vector4) -> void:
+	if target_scene == null:
+		return
+	var area := Area4D.new()
+	area.name = "GateTrigger"
+	area.position = offset
+	var shape := BoxShape4D.new()
+	shape.size = Vector4(
+		membrane_size.x,
+		membrane_size.y,
+		maxf(membrane_size.z, 0.6),
+		membrane_size.w
+	)
+	var collision := CollisionShape4D.new()
+	collision.name = "CollisionShape4D"
+	collision.shape = shape
+	area.add_child(collision)
+	area.body_entered_self.connect(_on_gate_body_entered)
+	_adopt(area)
+
+
+func _on_gate_body_entered(body: PhysicsBody4D) -> void:
+	# @tool means this script runs while authoring, where changing scene would
+	# close the thing being edited.
+	if Engine.is_editor_hint():
+		return
+	if target_scene == null or not (body is CharacterBody4D):
+		return
+	print("HubGate4D: '%s' -> %s" % [gate_name, target_scene.resource_path])
+	# DEFERRED, not direct. body_entered_self fires from inside the physics step,
+	# and change_scene_to_packed frees the current scene immediately - including
+	# the Area4D running this very callback and the body the solver is still
+	# iterating over. That is a crash, not a glitch. Deferring runs it at idle,
+	# once physics has finished with everything it is holding.
+	_change_scene.call_deferred()
+
+
+func _change_scene() -> void:
+	var tree := get_tree()
+	if tree == null or target_scene == null:
+		return
+	tree.change_scene_to_packed(target_scene)
+
+
 func _build_sign_proxy() -> void:
-	var proxy_size := Vector4(panel_size.x, panel_size.y, 0.06, minf(w_extent, 4.0))
-	# Flat, not textured: it stands in for a sign, and tiling a dev grid across it
-	# would make it read as another piece of structure.
+	var proxy_size := Vector4(get_panel_size().x, get_panel_size().y, 0.06, minf(w_extent, 4.0))
 	var proxy := _make_box(
 		"SignProxyEditorOnly",
 		proxy_size,
 		get_sign_local_offset(),
-		SurfaceMaterial.flat("blue", 0.85)
+		_sign_proxy_material()
 	)
 	_adopt(proxy)
+
+
+## Material for the editor stand-in: flat [member HubSignStyle4D.panel_color], the
+## same value the sign board draws its panels with.
+##
+## Untextured on purpose. Putting the gate's icon on here was tried and reverted:
+## a 4D box carries a fixed per-cell UVW unwrap, so a single image gets stretched
+## across whole cells rather than sitting on the face, and it read as one smeared
+## texture spanning every slab. The proxy is a placement aid - it needs to be the
+## right size, in the right place, in the right colour, and nothing more.
+func _sign_proxy_material() -> TetraMaterial4D:
+	var material := TetraMaterial4D.new()
+	material.albedo_color = _effective_style().get_panel_color()
+	return material
 
 
 func _clear_generated() -> void:
@@ -508,6 +659,11 @@ func _build_state_dot() -> void:
 
 
 func _build_billboard() -> void:
+	# Resolved once, up front: every measurement below reads from it, so fetching
+	# it later would leave the panel mesh sized from one source and the text laid
+	# out from another.
+	var style := _effective_style()
+
 	var root := Node3D.new()
 	root.name = "Billboard"
 	_adopt(root)
@@ -515,15 +671,28 @@ func _build_billboard() -> void:
 	var billboard_mode := BaseMaterial3D.BILLBOARD_FIXED_Y if keep_upright else BaseMaterial3D.BILLBOARD_ENABLED
 
 	var panel_material := StandardMaterial3D.new()
-	panel_material.albedo_color = Palette.signage()
+	panel_material.albedo_color = style.get_panel_color()
 	# Unshaded so the sign reads identically wherever the sun falls, and stays
 	# constant as the player slice-rotates past differently lit geometry.
 	panel_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	panel_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	panel_material.billboard_mode = billboard_mode
+	# Rounded corners arrive as alpha, since a QuadMesh has four corners by
+	# definition and nothing about the mesh can change that. The mask is white with
+	# only its alpha varying, so albedo_color still tints the whole panel.
+	var corner_mask := style.make_corner_mask()
+	if corner_mask != null:
+		panel_material.albedo_texture = corner_mask
+		panel_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		# Rounding the panel moved it into the BLENDED pass, where surfaces are
+		# sorted per-object by depth rather than per-pixel. The text sits 2 cm in
+		# front, which is far too close for that sort to stay stable as the view
+		# turns - so the panel would intermittently draw over its own text. Forcing
+		# it to the back of the transparent queue fixes the ordering outright.
+		panel_material.render_priority = -1
 
 	var quad := QuadMesh.new()
-	quad.size = panel_size
+	quad.size = style.panel_size
 
 	var panel := MeshInstance3D.new()
 	panel.name = "Panel"
@@ -531,9 +700,9 @@ func _build_billboard() -> void:
 	panel.material_override = panel_material
 	root.add_child(panel)
 
-	var text_colour := Palette.signage_text()
-	var half_width: float = panel_size.x * 0.5
-	var icon_cell: float = panel_size.y * 0.55
+	var text_colour := style.get_text_color()
+	var half_width: float = style.panel_size.x * 0.5
+	var icon_cell: float = style.panel_size.y * 0.55
 	var text_left := -half_width + 0.14
 
 	if icon != null:
@@ -543,6 +712,10 @@ func _build_billboard() -> void:
 		sprite.shaded = false
 		sprite.modulate = text_colour
 		sprite.billboard = billboard_mode
+		# Writes depth, so it sorts against the panel per-pixel instead of relying
+		# on object order.
+		sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_OPAQUE_PREPASS
+		sprite.render_priority = 1
 		# Scale so the icon's long edge matches the cell regardless of the
 		# source PNG's resolution.
 		var longest: float = float(maxi(icon.get_width(), icon.get_height()))
@@ -554,31 +727,45 @@ func _build_billboard() -> void:
 
 	var title := Label3D.new()
 	title.name = "Title"
-	title.text = gate_name
-	if font != null:
-		title.font = font
-	title.font_size = title_font_size
-	title.pixel_size = title_pixel_size
+	title.text = style.apply_title_case(gate_name)
+	var title_font := style.make_title_font()
+	if title_font != null:
+		title.font = title_font
+	title.font_size = style.title_font_size
+	title.pixel_size = style.title_pixel_size
+	title.line_spacing = style.line_spacing
+	title.outline_size = style.outline_size
+	title.outline_modulate = style.outline_color
 	title.modulate = text_colour
 	title.billboard = billboard_mode
+	title.alpha_cut = Label3D.ALPHA_CUT_OPAQUE_PREPASS
+	title.render_priority = 1
+	title.outline_render_priority = 0
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.position = Vector3(text_left, panel_size.y * 0.19, 0.02)
+	title.position = Vector3(text_left, style.panel_size.y * 0.19, 0.02)
 	root.add_child(title)
 
 	if not blurb.is_empty():
 		var line := Label3D.new()
 		line.name = "Blurb"
-		line.text = blurb
-		if font != null:
-			line.font = font
-		line.font_size = blurb_font_size
-		line.pixel_size = blurb_pixel_size
+		line.text = style.apply_blurb_case(blurb)
+		var blurb_font := style.make_blurb_font()
+		if blurb_font != null:
+			line.font = blurb_font
+		line.font_size = style.blurb_font_size
+		line.pixel_size = style.blurb_pixel_size
+		line.line_spacing = style.line_spacing
+		line.outline_size = style.outline_size
+		line.outline_modulate = style.outline_color
 		line.modulate = text_colour
 		line.billboard = billboard_mode
+		line.alpha_cut = Label3D.ALPHA_CUT_OPAQUE_PREPASS
+		line.render_priority = 1
+		line.outline_render_priority = 0
 		line.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		line.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		line.width = maxf(0.1, panel_size.x - (text_left + half_width)) / blurb_pixel_size
+		line.width = maxf(0.1, (style.panel_size.x - (text_left + half_width)) * style.blurb_width_ratio) / style.blurb_pixel_size
 		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		line.position = Vector3(text_left, -panel_size.y * 0.19, 0.02)
+		line.position = Vector3(text_left, -style.panel_size.y * 0.19, 0.02)
 		root.add_child(line)

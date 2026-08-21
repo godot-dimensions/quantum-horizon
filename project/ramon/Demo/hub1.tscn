@@ -1,24 +1,22 @@
-[gd_scene load_steps=15 format=3 uid="uid://dcivwwum5md8j"]
+[gd_scene load_steps=18 format=3 uid="uid://dcivwwum5md8j"]
 
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://cb351f2xqkqiw" path="res://ramon/Demo/scripts/hub_gate_ring_4d.gd" id="2_ring"]
 [ext_resource type="Script" uid="uid://2yrp524m1rto" path="res://ramon/Demo/scripts/hub_gate_def.gd" id="2_sl4le"]
-[ext_resource type="Resource" path="res://ramon/Demo/gates/gate01.tres" id="3_gate_vp"]
 [ext_resource type="Resource" path="res://ramon/Demo/gates/gate02.tres" id="4_gate_vm"]
 [ext_resource type="Resource" path="res://ramon/Demo/gates/gate03.tres" id="5_gate_pm"]
 [ext_resource type="Resource" path="res://ramon/Demo/gates/gate04.tres" id="6_gate_sbc"]
-[ext_resource type="Resource" path="res://ramon/Demo/gates/gate05.tres" id="7_gate_qr"]
+[ext_resource type="Resource" uid="uid://c6wn6r8bijy72" path="res://ramon/Demo/gates/gate05.tres" id="7_gate_qr"]
 [ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="8_sun"]
+[ext_resource type="Resource" uid="uid://ccaa7ccrewq6u" path="res://ramon/Demo/sign_style.tres" id="10_32g84"]
 [ext_resource type="Script" uid="uid://bg6kulalwlupc" path="res://ramon/Demo/scripts/hub_tiled_floor_4d.gd" id="10_floor"]
 [ext_resource type="Script" uid="uid://tr1j217ck3ae" path="res://ramon/Demo/scripts/hub_slice_reset.gd" id="11_reset"]
+[ext_resource type="Resource" uid="uid://b42upmss6xudx" path="res://ramon/Demo/gates/gate06.tres" id="20_gate_po"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates/gate07.tres" id="21_gate_as"]
+[ext_resource type="Resource" uid="uid://8bdni024u5wh" path="res://ramon/Demo/gates/gate08.tres" id="22_gate_sv"]
 
 [sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_hub"]
 shader_parameter/world_up_direction_4d = null
-shader_parameter/top_color = Color(0.25138095, 0.45543057, 0.70535547, 1)
-shader_parameter/bottom_color = Color(0.2787614, 0.25990424, 0.23803556, 1)
-shader_parameter/inv_top_curve = 4.00000015894572
-shader_parameter/inv_bottom_curve = 30.000001192092896
-shader_parameter/inv_sun_curve = 22.782018847067608
 shader_parameter/light0_direction_4d = null
 shader_parameter/light0_color = null
 shader_parameter/light0_energy = null
@@ -39,9 +37,16 @@ shader_parameter/light3_color = null
 shader_parameter/light3_energy = null
 shader_parameter/light3_angular_radius_radians = null
 shader_parameter/light3_enabled = null
-top_color = Color(0.25138095, 0.45543057, 0.70535547, 1)
+shader_parameter/horizon_color = Color(0.4394054, 0.50191104, 0.66275924, 1)
+shader_parameter/top_color = Color(0.017183676, 0.1289266, 0.26562604, 1)
+shader_parameter/bottom_color = Color(0.1964216, 0.18493599, 0.2547105, 1)
+shader_parameter/inv_top_curve = 4.00000015894572
+shader_parameter/inv_bottom_curve = 30.000001192092896
+shader_parameter/inv_sun_curve = 22.782018847067608
+horizon_color = Color(0.4394054, 0.50191104, 0.66275924, 1)
+top_color = Color(0.017183676, 0.1289266, 0.26562604, 1)
 top_curve = 0.15
-bottom_color = Color(0.2787614, 0.25990424, 0.23803556, 1)
+bottom_color = Color(0.1964216, 0.18493599, 0.2547105, 1)
 bottom_curve = 0.02
 sun_curve = 0.15
 
@@ -60,13 +65,15 @@ ambient_light_color = Color(0.3914545, 0.41625983, 0.46172702, 1)
 tonemap_mode = 2
 
 [node name="Sun" type="DirectionalLight4D" parent="."]
-basis = Projection(0, 0, 0, 1, 0.1818436621338853, 0.9781476007338056, 0.10079758787013174, 0, -0.8555071680929038, 0.20791169081775934, -0.474215366856622, 0, -0.48480962024633717, 4.7601675429442275e-17, 0.8746197071393959, 0)
+position = Vector4(0, 5.877178766986086, 0, 0)
+basis = Projection(0, 0, 0, 1, -0.10060609255454919, 0.9510565162951536, -0.2921813083573824, 0, 0.3096337147946659, 0.3090169943749474, 0.899241602601842, 0, 0.9455185755993168, 0, -0.32556815445715664, 0)
+visible = false
 light_color = Color(1, 0.98, 0.94, 1)
-light_energy = 0.328
-angular_radius_radians = 0.03490658503988659
+light_energy = 0.533
+angular_radius_radians = 0.02092126174365602
 script = ExtResource("8_sun")
-elevation_degrees = 12.0
-azimuth_degrees = -119.0
+elevation_degrees = 18.0
+azimuth_degrees = 19.0
 
 [node name="Floor" type="StaticBody4D" parent="."]
 position = Vector4(0, -0.5, 0, 0)
@@ -76,9 +83,13 @@ shape = SubResource("BoxShape4D_floor")
 
 [node name="Mesh" type="Node4D" parent="Floor"]
 script = ExtResource("10_floor")
+size = Vector4(100, 1, 100, 80)
+palette_color = "red"
+use_dev_textures = false
 
 [node name="BackWall" type="StaticBody4D" parent="."]
-position = Vector4(0, 2.5, 6, 0)
+position = Vector4(0, 2.5, 17.35103558015627, 0)
+visible = false
 
 [node name="Collider" type="CollisionShape4D" parent="BackWall"]
 shape = SubResource("BoxShape4D_wall")
@@ -91,16 +102,32 @@ palette_color = "white"
 [node name="GateRing" type="Node4D" parent="."]
 position = Vector4(0, -5.1023013325954045e-06, 0, 0)
 script = ExtResource("2_ring")
-gates = Array[ExtResource("2_sl4le")]([ExtResource("3_gate_vp"), ExtResource("4_gate_vm"), ExtResource("5_gate_pm"), ExtResource("6_gate_sbc"), ExtResource("7_gate_qr")])
-radius = 10.5
-arc_degrees = 60.0
+gates = Array[ExtResource("2_sl4le")]([ExtResource("4_gate_vm"), ExtResource("5_gate_pm"), ExtResource("6_gate_sbc"), ExtResource("7_gate_qr"), ExtResource("20_gate_po"), ExtResource("21_gate_as"), ExtResource("22_gate_sv")])
+radius = 9.5
+arc_degrees = 360.0
+dais_height = 0.08
+dais_collision = true
+dais_rim_margin = 3.0
+dais_textured = true
+room_margin = 23.0
+room_height = 40.0
+show_room_ceiling = true
+room_w_extent = 225.0
+room_segments = 24
+room_color = "black_metal"
 gate_shape = 1
-aperture_radius = 1.1
-aperture_height = 3.2
-frame_thickness = 0.25
-frame_depth = 1.1
+aperture_radius = 1.3
+link_height_to_width = false
+aperture_height = 3.6
+frame_thickness = 0.65
+frame_depth = 0.85
 w_extent = 13.0
-threshold_depth = 2.3000000000000003
+threshold_depth = 0.2
+billboard_gap = 0.35000000000000003
+sign_style = ExtResource("10_32g84")
+membrane_thickness = 0.44
+membrane_color = "black"
+membrane_texture_metres = 0.05
 use_dev_textures = true
 
 [node name="Player" parent="." instance=ExtResource("1_player")]
@@ -108,4 +135,9 @@ position = Vector4(0, 1, 0, 0)
 
 [node name="SliceReset" type="Node" parent="."]
 script = ExtResource("11_reset")
-also_return_to_spawn = true
+
+[node name="TestOmni" type="OmniLight4D" parent="."]
+position = Vector4(0, 10.130150093139434, 0, 0)
+light_color = Color(0.91776097, 0.9101735, 0.9120623, 1)
+light_energy = 350.0
+omni_range_meters = 22.0

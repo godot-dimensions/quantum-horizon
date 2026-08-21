@@ -60,16 +60,51 @@ func _process(_delta: float) -> bool:
 		quit(1)
 		return true
 
-	var gate_count := ring.get_child_count()
+	# The ring generates more than gates now - the dais is a sibling of them - so
+	# gates are identified by carrying the gate script's own properties rather than
+	# by being a child of the ring. Counting children instead reported six gates
+	# against five catalogue entries the moment the dais landed.
+	var gate_nodes: Array[Node] = []
+	var dais: Node = null
+	for child in ring.get_children():
+		if "gate_name" in child:
+			gate_nodes.append(child)
+		elif child.get_node_or_null("MeshInstance4D") != null:
+			# Not a type check: the dais is a StaticBody4D only when
+			# dais_collision is on, and a plain Node4D otherwise.
+			dais = child
+
 	print("\n===== summary =====")
 	print("catalogue entries: ", ring.gates.size())
-	print("gates generated:   ", gate_count)
+	print("gates generated:   ", gate_nodes.size())
+	if dais == null:
+		print("dais:              none")
+	else:
+		var dais_mesh := dais.get_node_or_null("MeshInstance4D") as MeshInstance4D
+		var dais_shape := dais.get_node_or_null("CollisionShape4D") as CollisionShape4D
+		var tets := 0
+		var radius := 0.0
+		var top := 0.0
+		if dais_mesh != null and dais_mesh.mesh != null:
+			tets = dais_mesh.mesh.get_simplex_cell_indices().size() / 4
+			# Measured from the geometry rather than read back off the shape, so
+			# this still reports honestly when there is no collider to ask.
+			var highest := -INF
+			for v in dais_mesh.mesh.get_vertices():
+				radius = maxf(radius, sqrt(v.x * v.x + v.z * v.z))
+				highest = maxf(highest, v.y)
+			top = dais.position.y + highest
+		# A collider is OPTIONAL and off by default: physics is bounding-box only,
+		# so a round platform would collide as a square and strand the player on a
+		# ledge they cannot step back up. See HubGateRing4D.dais_collision.
+		print("dais:              r=%.2f m, stands %.3f m proud of the floor, %d tetrahedra, collider=%s"
+			% [radius, top, tets, "yes (square! check movement)" if dais_shape != null else "no (visual inlay)"])
 
 	var billboards := 0
 	var labels := 0
 	var sprites := 0
 	var frames := 0
-	for gate in ring.get_children():
+	for gate in gate_nodes:
 		var billboard := gate.get_node_or_null("Billboard")
 		if billboard != null:
 			billboards += 1
@@ -140,7 +175,7 @@ func _process(_delta: float) -> bool:
 			owned_leaks += 1
 	print("generated nodes wrongly owned by the scene: ", owned_leaks)
 
-	if gate_count == 0 or billboards == 0 or frames == 0:
+	if gate_nodes.is_empty() or billboards == 0 or frames == 0:
 		printerr("VERIFY: FAILED - something did not generate")
 		quit(1)
 		return true

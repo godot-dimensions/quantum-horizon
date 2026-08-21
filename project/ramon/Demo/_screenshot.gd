@@ -15,6 +15,10 @@ extends SceneTree
 ##   godot.windows.editor.double.x86_64.console.exe --path project \
 ##       --script res://ramon/Demo/_screenshot.gd -- hub1.tscn shot.png 60 1280 720
 ##
+## The output argument defaults to `user://`, i.e. outside the repository. Pass an
+## absolute path to send it somewhere specific; pass a `res://` path only if the
+## image is genuinely meant to be committed.
+##
 ## Args after `--`: scene name in ramon/Demo/, output filename, camera to use
 ## (see below), then optional width and height.
 ##
@@ -111,7 +115,7 @@ func _process(_delta: float) -> bool:
 		quit(1)
 		return true
 
-	var absolute := ProjectSettings.globalize_path("res://ramon/Demo/" + _out_path)
+	var absolute := _resolve_out_path(_out_path)
 	var err := image.save_png(absolute)
 	if err != OK:
 		printerr("SHOT: save failed (%d) for %s" % [err, absolute])
@@ -120,3 +124,23 @@ func _process(_delta: float) -> bool:
 	print("SHOT: wrote ", absolute, " (", image.get_width(), "x", image.get_height(), ")")
 	quit(0)
 	return true
+
+
+## Where the PNG lands, given whatever was passed as the output argument.
+##
+## Defaults to `user://`, which is OUTSIDE the repository - the previous behaviour
+## hardcoded `res://ramon/Demo/`, so every shot ever taken was written into the
+## project and 93 of them accumulated there before anyone noticed. A screenshot is
+## evidence about a moment, not an asset, and it should not need gitignoring or
+## periodic sweeping to stay out of the tree.
+##
+## An explicit `res://` or `user://` prefix is honoured as given, and so is an
+## absolute filesystem path - which is how a caller sends output to a scratch
+## directory outside the project entirely.
+func _resolve_out_path(out: String) -> String:
+	if out.contains("://"):
+		return ProjectSettings.globalize_path(out)
+	# Windows drive letter, or a POSIX-style absolute path.
+	if out.begins_with("/") or (out.length() > 1 and out[1] == ":"):
+		return out
+	return ProjectSettings.globalize_path("user://" + out)

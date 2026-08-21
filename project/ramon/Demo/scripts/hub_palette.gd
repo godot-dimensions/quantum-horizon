@@ -34,12 +34,44 @@ const FALLBACKS := {
 	"white": Color(0.902, 0.902, 0.902),
 	"black": Color(0.106, 0.106, 0.106),
 	"black_metal": Color(0.149, 0.153, 0.161),
+	"dark_grey": Color(0.216, 0.216, 0.216),
 	"yellow": Color(0.886, 0.949, 0.322),
 	"blue": Color(0.235, 0.510, 0.808),
 	"red": Color(0.831, 0.204, 0.196),
 }
 
 static var _cache: Dictionary = {}
+
+
+## Every palette name available as `ramdev_<name>.png`, sorted.
+##
+## Scanned from disk rather than hard-coded, so dropping a new PNG into
+## dev_finals/ adds it to every colour dropdown without anyone editing code - which
+## is the same reason the colours themselves are sampled from the images rather
+## than written down twice.
+##
+## Falls back to the [constant FALLBACKS] keys when the directory cannot be listed.
+## That is not a theoretical branch: an exported build has no `res://` directory to
+## walk, so without it the dropdowns would come up empty outside the editor.
+static func get_names() -> PackedStringArray:
+	var names := PackedStringArray()
+	var dir := DirAccess.open(TEXTURE_DIR)
+	if dir != null:
+		for file in dir.get_files():
+			# .import sidecars share the stem, so filter on extension rather than
+			# on the prefix alone or every name would appear twice.
+			if file.begins_with("ramdev_") and file.get_extension() == "png":
+				names.append(file.get_basename().trim_prefix("ramdev_"))
+	if names.is_empty():
+		for key in FALLBACKS:
+			names.append(key)
+	names.sort()
+	return names
+
+
+## The same list as a PROPERTY_HINT_ENUM hint string, for inspector dropdowns.
+static func get_names_hint() -> String:
+	return ",".join(get_names())
 
 
 ## Returns the base colour of `ramdev_<name>.png`, cached after the first read.

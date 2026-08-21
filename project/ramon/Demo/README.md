@@ -7,6 +7,11 @@ priority is layout, readability and dynamics rather than finished art.
 Open `hub1.tscn` — it is also the project's `main_scene`. It does not teleport
 anywhere yet; the gates are geometry and signage only.
 
+A second hub, `hub2.tscn`, explores a different structural idea — tiered
+addresses instead of the arc-plus-billboard model below, built to A/B against
+this one rather than replace it. See `HUB2_README.md`; this file only covers
+hub1.
+
 ## The one idea to know
 
 **The hub is a list, not a layout.** `hub1.tscn` contains no gates and no
@@ -63,11 +68,27 @@ state (the `StateDot`), the thing colour is actually good at.
 
 ## Layout
 
-Radius 10.5 m, 60° arc, five slots. An arc rather than a full ring, so nothing
-sits behind the player and the back wall gives orientation anchoring — that
-matters more here than in a 3D scene, because slice rotation removes most of the
-cues people navigate by. The ring warns in the editor if gates or their signage
-would collide rather than silently producing a broken layout.
+A **full 360° ring**, seven slots, radius solved rather than fixed.
+
+This reverses the original design, which was a 60° arc argued for on the grounds
+that a closed ring always has content behind the player, and someone disoriented
+by their first slice rotation may never turn around. Two things retired that
+argument. The **enclosing room** now wraps you on all sides, so the wall does the
+orientation anchoring the back wall used to do alone. And at **seven prototypes**
+a single sweep had to spread so wide that the end gates fell behind you regardless
+— so the arc was paying the cost of a ring without the benefit.
+
+Set `arc_degrees` below 360 and it behaves as an arc again; both cases are
+supported. The difference lives in `_slot_divisor`, and it is not cosmetic: an
+open arc spreads N gates across **N−1** gaps so the outer two land on the ends of
+the sweep, while a closed ring has no ends and needs **N**. Using N−1 on a full
+circle puts the first and last gate at the same angle, exactly on top of each
+other — and the spacing check does not catch that, because their separation is
+zero rather than merely tight.
+
+`auto_radius` treats `radius` as a minimum and grows it until the gates clear each
+other, so adding a prototype widens the circle instead of crowding it. The ring
+still warns in the editor if gates or signage would collide.
 
 Gates are currently **rectangular** (`gate_shape = 1`): two pillars and a lintel.
 The circular option is still there and is the more defensible shape in theory —
@@ -208,5 +229,27 @@ need eyes:
 
 ## Next
 
-An `Area4D` trigger on each threshold pad, and the actual scene transition. The
-`target_scene` field on every gate definition is already populated and unused.
+Transitions are **done**, in both directions.
+
+Walking into a gate's **membrane** — not its threshold pad — loads that gate's
+`target_scene`. The membrane is the trigger deliberately: the pad is w-invariant
+and the membrane is not, so the ghosted gate inherits the right behaviour for
+free, its door genuinely absent from the home slice and so is the way through. No
+`w_hidden` special case anywhere. The scene change is deferred, because
+`change_scene_to_packed` called straight from a physics signal frees the `Area4D`
+running the callback and crashes.
+
+Coming back is `return_button.tscn`, instanced once into each prototype: a
+`CanvasLayer` prompt in the corner, key only (these scenes capture the mouse, so a
+clickable button would fight the cursor), H by default. Editing that one scene
+restyles every copy, and it reads colour and font from `sign_style.tres` so
+restyling the signs restyles it too.
+
+It references the hub by **path**, not by `PackedScene`, and that is load-bearing:
+the hub already points at the prototypes, so a typed reference back would close
+the loop `hub1 → prototype → return_button → hub1`. Godot resolves `ExtResource`
+statically, cannot load a cycle, and fails with `Parse Error: Busy` — neither
+scene opens. **Whenever two scenes link to each other, one edge has to be lazy.**
+
+Still open: `gate01` (Voxel port) was dropped from the catalogue rather than
+linked; its `.tres` and icon are still on disk if you want it back.

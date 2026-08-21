@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://da6cpp0smsgku"]
+
+[ext_resource type="Script" uid="uid://6osy4jtlf1lh" path="res://ramon/Demo/scripts/return_button.gd" id="1_button"]
+[ext_resource type="Resource" uid="uid://ccaa7ccrewq6u" path="res://ramon/Demo/sign_style.tres" id="2_style"]
+
+[node name="ReturnButton" type="CanvasLayer"]
+layer = 100
+script = ExtResource("1_button")
+sign_style = ExtResource("2_style")
