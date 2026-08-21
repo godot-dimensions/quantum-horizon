@@ -1,0 +1,137 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" path="res://scripts/ik_chain_controller.gd" id="2_ik_chain"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_ground"]
+size = Vector4(40, 1, 40, 20)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ground"]
+albedo_color = Color(0.25, 0.3, 0.28, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ground"]
+size = Vector4(40, 1, 40, 20)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_base"]
+albedo_color = Color(0.5, 0.52, 0.58, 1)
+
+[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_base"]
+size = Vector4(2.4, 5.0, 2.4, 2.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_segment1"]
+albedo_color = Color(0.85, 0.35, 0.2, 1)
+
+[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_segment1"]
+size = Vector4(1.6, 3.0, 1.6, 1.6)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_segment2"]
+albedo_color = Color(0.9, 0.75, 0.15, 1)
+
+[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_segment2"]
+size = Vector4(1.2, 2.5, 1.2, 1.2)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_segment3"]
+albedo_color = Color(0.2, 0.75, 0.55, 1)
+
+[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_segment3"]
+size = Vector4(0.9, 2.0, 0.9, 0.9)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_segment4"]
+albedo_color = Color(0.45, 0.3, 0.75, 1)
+
+[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_segment4"]
+size = Vector4(0.7, 1.6, 0.7, 0.7)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_segment5"]
+albedo_color = Color(0.9, 0.3, 0.55, 1)
+
+[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_segment5"]
+size = Vector4(0.55, 1.3, 0.55, 0.55)
+
+[node name="SingleJointTest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FlatPlane" type="Node4D" parent="."]
+
+[node name="Ground" type="StaticBody4D" parent="FlatPlane"]
+position = Vector4(0, -0.5, 0, 0)
+
+[node name="CollisionShape" type="CollisionShape4D" parent="FlatPlane/Ground"]
+shape = SubResource("BoxShape4D_ground")
+
+[node name="Mesh" type="MeshInstance4D" parent="FlatPlane/Ground"]
+material_override = SubResource("TetraMaterial4D_ground")
+mesh = SubResource("BoxTetraMesh4D_ground")
+
+[node name="Player" parent="FlatPlane" instance=ExtResource("1_player")]
+position = Vector4(0, 1, 8, 0)
+
+[node name="BaseSpherinder" type="MeshInstance4D" parent="FlatPlane"]
+position = Vector4(0, 2.5, 0, 0)
+material_override = SubResource("TetraMaterial4D_base")
+mesh = SubResource("OrthoplexTetraMesh4D_base")
+
+[node name="IKChain" type="Node4D" parent="FlatPlane"]
+script = ExtResource("2_ik_chain")
+joint_paths = [NodePath("Joint1"), NodePath("Joint1/Joint2"), NodePath("Joint1/Joint2/Joint3"), NodePath("Joint1/Joint2/Joint3/Joint4"), NodePath("Joint1/Joint2/Joint3/Joint4/Joint5")]
+link_lengths = Array[float]([3.0, 2.5, 2.0, 1.6, 1.3])
+target_path = NodePath("../Player")
+
+[node name="Joint1" type="Node4D" parent="FlatPlane/IKChain"]
+position = Vector4(0, 5, 0, 0)
+
+[node name="ExtensionMesh1" type="MeshInstance4D" parent="FlatPlane/IKChain/Joint1"]
+position = Vector4(0, 1.5, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment1")
+mesh = SubResource("OrthoplexTetraMesh4D_segment1")
+
+[node name="Joint2" type="Node4D" parent="FlatPlane/IKChain/Joint1"]
+position = Vector4(0, 3.0, 0, 0)
+
+[node name="ExtensionMesh2" type="MeshInstance4D" parent="FlatPlane/IKChain/Joint1/Joint2"]
+position = Vector4(0, 1.25, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment2")
+mesh = SubResource("OrthoplexTetraMesh4D_segment2")
+
+[node name="Joint3" type="Node4D" parent="FlatPlane/IKChain/Joint1/Joint2"]
+position = Vector4(0, 2.5, 0, 0)
+
+[node name="ExtensionMesh3" type="MeshInstance4D" parent="FlatPlane/IKChain/Joint1/Joint2/Joint3"]
+position = Vector4(0, 1.0, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment3")
+mesh = SubResource("OrthoplexTetraMesh4D_segment3")
+
+[node name="Joint4" type="Node4D" parent="FlatPlane/IKChain/Joint1/Joint2/Joint3"]
+position = Vector4(0, 2.0, 0, 0)
+
+[node name="ExtensionMesh4" type="MeshInstance4D" parent="FlatPlane/IKChain/Joint1/Joint2/Joint3/Joint4"]
+position = Vector4(0, 0.8, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment4")
+mesh = SubResource("OrthoplexTetraMesh4D_segment4")
+
+[node name="Joint5" type="Node4D" parent="FlatPlane/IKChain/Joint1/Joint2/Joint3/Joint4"]
+position = Vector4(0, 1.6, 0, 0)
+
+[node name="ExtensionMesh5" type="MeshInstance4D" parent="FlatPlane/IKChain/Joint1/Joint2/Joint3/Joint4/Joint5"]
+position = Vector4(0, 0.65, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment5")
+mesh = SubResource("OrthoplexTetraMesh4D_segment5")
+
+[node name="InfoLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(600, 26)
+layout_mode = 0
+offset_left = 8.0
+offset_top = 4.0
+offset_right = 608.0
+offset_bottom = 30.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+text = "5-joint IK chain - the pink hand reaches for the player"
+
+[editable path="FlatPlane/Player"]

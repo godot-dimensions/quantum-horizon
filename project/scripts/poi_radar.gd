@@ -47,6 +47,19 @@ const W_IS_UP: bool = false
 ## Typically the same container poi_spawner.gd populates.
 @export var poi_container_path: NodePath
 
+## Optional - a Node4D exposing `get_travel_direction() -> Vector4` (duck-
+## typed, matching limb_prototype_body.gd's own method - the same value
+## foot placement already reads, not a recomputed one). When set, draws one
+## extra marker via the SAME _draw_tracked_object/BearingUtility4D.compute_raw
+## path as every PoI above, for a point projected direction_indicator_length
+## ahead of this node along its current travel direction - a heading arrow,
+## not a new drawing mechanism. Left empty (the default), _draw() skips this
+## entirely - voxel_port.tscn and any other existing user of this script are
+## unaffected.
+@export var direction_source_path: NodePath
+@export var direction_marker_color: Color = Color(0.25, 0.9, 0.35, 1.0)
+@export var direction_indicator_length: float = 3.0
+
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -154,3 +167,10 @@ func _draw() -> void:
 		var bearing: Dictionary = BearingUtility4D.compute_raw(observer_position, observer_basis, poi.global_position)
 		var rel_local := Vector4(bearing.right_component, 0.0, bearing.depth_component, bearing.ana_offset)
 		_draw_tracked_object(rel_local, POI4D.CATEGORY_COLOR[poi.category], ellipse_center, ellipse_radii)
+
+	var direction_source: Node4D = get_node_or_null(direction_source_path) as Node4D
+	if direction_source != null and direction_source.has_method("get_travel_direction"):
+		var heading_target: Vector4 = direction_source.global_position + direction_source.get_travel_direction() * direction_indicator_length
+		var heading_bearing: Dictionary = BearingUtility4D.compute_raw(observer_position, observer_basis, heading_target)
+		var heading_rel_local := Vector4(heading_bearing.right_component, 0.0, heading_bearing.depth_component, heading_bearing.ana_offset)
+		_draw_tracked_object(heading_rel_local, direction_marker_color, ellipse_center, ellipse_radii)

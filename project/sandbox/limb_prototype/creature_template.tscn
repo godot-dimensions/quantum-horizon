@@ -1,0 +1,286 @@
+[gd_scene load_steps=17 format=3]
+
+[ext_resource type="Script" path="res://scripts/limb_prototype_body.gd" id="1_body"]
+[ext_resource type="Script" path="res://scripts/ik_chain_controller.gd" id="2_ik_chain"]
+[ext_resource type="Script" path="res://scripts/limb_prototype_foot_target.gd" id="3_foot_target"]
+[ext_resource type="Script" path="res://scripts/gait_controller.gd" id="4_gait"]
+[ext_resource type="Script" path="res://scripts/poi.gd" id="5_poi"]
+[ext_resource type="Script" path="res://scripts/limb_prototype_foot_segment.gd" id="6_foot_segment"]
+[ext_resource type="Script" path="res://scripts/hip_suspension_solver.gd" id="7_hip_suspension"]
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_body"]
+albedo_color = Color(0.9, 0.2, 0.6, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_body"]
+size = Vector4(4.0, 1.0, 1.2, 1.2)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_segment1"]
+albedo_color = Color(0.85, 0.35, 0.2, 1)
+
+[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_segment1"]
+size = Vector4(1.6, 3.0, 1.6, 1.6)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_segment2"]
+albedo_color = Color(0.9, 0.75, 0.15, 1)
+
+[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_segment2"]
+size = Vector4(1.2, 2.5, 1.2, 1.2)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_segment3"]
+albedo_color = Color(0.2, 0.75, 0.55, 1)
+
+[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_segment3"]
+size = Vector4(0.9, 2.0, 0.9, 0.9)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_foot"]
+albedo_color = Color(0.15, 0.1, 0.08, 1)
+
+[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_foot"]
+size = Vector4(0.7, 1.1, 0.7, 0.7)
+
+[node name="Creature" type="Node4D"]
+
+[node name="GaitController" type="Node" parent="."]
+script = ExtResource("4_gait")
+preset = "walk"
+body_path = NodePath("../Body")
+standalone_input = false
+
+[node name="Body" type="Node4D" parent="."]
+position = Vector4(0, 5, 0, 0)
+script = ExtResource("1_body")
+creature_class = "steed"
+
+[node name="BodyMesh" type="MeshInstance4D" parent="Body"]
+material_override = SubResource("TetraMaterial4D_body")
+mesh = SubResource("BoxTetraMesh4D_body")
+
+[node name="BodyPOI" type="Node4D" parent="Body"]
+script = ExtResource("5_poi")
+category = 1
+display_name = "Creature"
+
+[node name="LimbAnchorFL" type="Node4D" parent="Body"]
+position = Vector4(1.8, -0.5, 0.5, 0)
+
+[node name="IKChain" type="Node4D" parent="Body/LimbAnchorFL"]
+script = ExtResource("2_ik_chain")
+joint_paths = [NodePath("Joint1"), NodePath("Joint1/Joint2"), NodePath("Joint1/Joint2/Joint3")]
+link_lengths = Array[float]([3.0, 2.5, 2.0])
+target_path = NodePath("../../../FootTargetFL")
+forward_direction_provider = NodePath("../..")
+enable_plane_alignment_twist = true
+
+[node name="Joint1" type="Node4D" parent="Body/LimbAnchorFL/IKChain"]
+
+[node name="ExtensionMesh1" type="MeshInstance4D" parent="Body/LimbAnchorFL/IKChain/Joint1"]
+position = Vector4(0, 1.5, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment1")
+mesh = SubResource("OrthoplexTetraMesh4D_segment1")
+
+[node name="Joint2" type="Node4D" parent="Body/LimbAnchorFL/IKChain/Joint1"]
+position = Vector4(0, 3.0, 0, 0)
+
+[node name="ExtensionMesh2" type="MeshInstance4D" parent="Body/LimbAnchorFL/IKChain/Joint1/Joint2"]
+position = Vector4(0, 1.25, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment2")
+mesh = SubResource("OrthoplexTetraMesh4D_segment2")
+
+[node name="Joint3" type="Node4D" parent="Body/LimbAnchorFL/IKChain/Joint1/Joint2"]
+position = Vector4(0, 2.5, 0, 0)
+
+[node name="ExtensionMesh3" type="MeshInstance4D" parent="Body/LimbAnchorFL/IKChain/Joint1/Joint2/Joint3"]
+position = Vector4(0, 1.0, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment3")
+mesh = SubResource("OrthoplexTetraMesh4D_segment3")
+
+[node name="Foot" type="Node4D" parent="Body/LimbAnchorFL/IKChain/Joint1/Joint2/Joint3"]
+position = Vector4(0, 2.0, 0, 0)
+script = ExtResource("6_foot_segment")
+foot_target_path = NodePath("%FootTargetFL")
+rest_length = 1.1
+
+[node name="ExtensionMeshFoot" type="MeshInstance4D" parent="Body/LimbAnchorFL/IKChain/Joint1/Joint2/Joint3/Foot"]
+position = Vector4(0, 0.55, 0, 0)
+material_override = SubResource("TetraMaterial4D_foot")
+mesh = SubResource("OrthoplexTetraMesh4D_foot")
+
+[node name="LimbAnchorFR" type="Node4D" parent="Body"]
+position = Vector4(1.8, -0.5, -0.5, 0)
+
+[node name="IKChain" type="Node4D" parent="Body/LimbAnchorFR"]
+script = ExtResource("2_ik_chain")
+joint_paths = [NodePath("Joint1"), NodePath("Joint1/Joint2"), NodePath("Joint1/Joint2/Joint3")]
+link_lengths = Array[float]([3.0, 2.5, 2.0])
+target_path = NodePath("../../../FootTargetFR")
+forward_direction_provider = NodePath("../..")
+enable_plane_alignment_twist = true
+
+[node name="Joint1" type="Node4D" parent="Body/LimbAnchorFR/IKChain"]
+
+[node name="ExtensionMesh1" type="MeshInstance4D" parent="Body/LimbAnchorFR/IKChain/Joint1"]
+position = Vector4(0, 1.5, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment1")
+mesh = SubResource("OrthoplexTetraMesh4D_segment1")
+
+[node name="Joint2" type="Node4D" parent="Body/LimbAnchorFR/IKChain/Joint1"]
+position = Vector4(0, 3.0, 0, 0)
+
+[node name="ExtensionMesh2" type="MeshInstance4D" parent="Body/LimbAnchorFR/IKChain/Joint1/Joint2"]
+position = Vector4(0, 1.25, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment2")
+mesh = SubResource("OrthoplexTetraMesh4D_segment2")
+
+[node name="Joint3" type="Node4D" parent="Body/LimbAnchorFR/IKChain/Joint1/Joint2"]
+position = Vector4(0, 2.5, 0, 0)
+
+[node name="ExtensionMesh3" type="MeshInstance4D" parent="Body/LimbAnchorFR/IKChain/Joint1/Joint2/Joint3"]
+position = Vector4(0, 1.0, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment3")
+mesh = SubResource("OrthoplexTetraMesh4D_segment3")
+
+[node name="Foot" type="Node4D" parent="Body/LimbAnchorFR/IKChain/Joint1/Joint2/Joint3"]
+position = Vector4(0, 2.0, 0, 0)
+script = ExtResource("6_foot_segment")
+foot_target_path = NodePath("%FootTargetFR")
+rest_length = 1.1
+
+[node name="ExtensionMeshFoot" type="MeshInstance4D" parent="Body/LimbAnchorFR/IKChain/Joint1/Joint2/Joint3/Foot"]
+position = Vector4(0, 0.55, 0, 0)
+material_override = SubResource("TetraMaterial4D_foot")
+mesh = SubResource("OrthoplexTetraMesh4D_foot")
+
+[node name="LimbAnchorBL" type="Node4D" parent="Body"]
+position = Vector4(-1.8, -0.5, 0.5, 0)
+
+[node name="IKChain" type="Node4D" parent="Body/LimbAnchorBL"]
+script = ExtResource("2_ik_chain")
+joint_paths = [NodePath("Joint1"), NodePath("Joint1/Joint2"), NodePath("Joint1/Joint2/Joint3")]
+link_lengths = Array[float]([3.0, 2.5, 2.0])
+target_path = NodePath("../../../FootTargetBL")
+forward_direction_provider = NodePath("../..")
+enable_plane_alignment_twist = true
+
+[node name="Joint1" type="Node4D" parent="Body/LimbAnchorBL/IKChain"]
+
+[node name="ExtensionMesh1" type="MeshInstance4D" parent="Body/LimbAnchorBL/IKChain/Joint1"]
+position = Vector4(0, 1.5, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment1")
+mesh = SubResource("OrthoplexTetraMesh4D_segment1")
+
+[node name="Joint2" type="Node4D" parent="Body/LimbAnchorBL/IKChain/Joint1"]
+position = Vector4(0, 3.0, 0, 0)
+
+[node name="ExtensionMesh2" type="MeshInstance4D" parent="Body/LimbAnchorBL/IKChain/Joint1/Joint2"]
+position = Vector4(0, 1.25, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment2")
+mesh = SubResource("OrthoplexTetraMesh4D_segment2")
+
+[node name="Joint3" type="Node4D" parent="Body/LimbAnchorBL/IKChain/Joint1/Joint2"]
+position = Vector4(0, 2.5, 0, 0)
+
+[node name="ExtensionMesh3" type="MeshInstance4D" parent="Body/LimbAnchorBL/IKChain/Joint1/Joint2/Joint3"]
+position = Vector4(0, 1.0, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment3")
+mesh = SubResource("OrthoplexTetraMesh4D_segment3")
+
+[node name="Foot" type="Node4D" parent="Body/LimbAnchorBL/IKChain/Joint1/Joint2/Joint3"]
+position = Vector4(0, 2.0, 0, 0)
+script = ExtResource("6_foot_segment")
+foot_target_path = NodePath("%FootTargetBL")
+rest_length = 1.1
+
+[node name="ExtensionMeshFoot" type="MeshInstance4D" parent="Body/LimbAnchorBL/IKChain/Joint1/Joint2/Joint3/Foot"]
+position = Vector4(0, 0.55, 0, 0)
+material_override = SubResource("TetraMaterial4D_foot")
+mesh = SubResource("OrthoplexTetraMesh4D_foot")
+
+[node name="LimbAnchorBR" type="Node4D" parent="Body"]
+position = Vector4(-1.8, -0.5, -0.5, 0)
+
+[node name="IKChain" type="Node4D" parent="Body/LimbAnchorBR"]
+script = ExtResource("2_ik_chain")
+joint_paths = [NodePath("Joint1"), NodePath("Joint1/Joint2"), NodePath("Joint1/Joint2/Joint3")]
+link_lengths = Array[float]([3.0, 2.5, 2.0])
+target_path = NodePath("../../../FootTargetBR")
+forward_direction_provider = NodePath("../..")
+enable_plane_alignment_twist = true
+
+[node name="Joint1" type="Node4D" parent="Body/LimbAnchorBR/IKChain"]
+
+[node name="ExtensionMesh1" type="MeshInstance4D" parent="Body/LimbAnchorBR/IKChain/Joint1"]
+position = Vector4(0, 1.5, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment1")
+mesh = SubResource("OrthoplexTetraMesh4D_segment1")
+
+[node name="Joint2" type="Node4D" parent="Body/LimbAnchorBR/IKChain/Joint1"]
+position = Vector4(0, 3.0, 0, 0)
+
+[node name="ExtensionMesh2" type="MeshInstance4D" parent="Body/LimbAnchorBR/IKChain/Joint1/Joint2"]
+position = Vector4(0, 1.25, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment2")
+mesh = SubResource("OrthoplexTetraMesh4D_segment2")
+
+[node name="Joint3" type="Node4D" parent="Body/LimbAnchorBR/IKChain/Joint1/Joint2"]
+position = Vector4(0, 2.5, 0, 0)
+
+[node name="ExtensionMesh3" type="MeshInstance4D" parent="Body/LimbAnchorBR/IKChain/Joint1/Joint2/Joint3"]
+position = Vector4(0, 1.0, 0, 0)
+material_override = SubResource("TetraMaterial4D_segment3")
+mesh = SubResource("OrthoplexTetraMesh4D_segment3")
+
+[node name="Foot" type="Node4D" parent="Body/LimbAnchorBR/IKChain/Joint1/Joint2/Joint3"]
+position = Vector4(0, 2.0, 0, 0)
+script = ExtResource("6_foot_segment")
+foot_target_path = NodePath("%FootTargetBR")
+rest_length = 1.1
+
+[node name="ExtensionMeshFoot" type="MeshInstance4D" parent="Body/LimbAnchorBR/IKChain/Joint1/Joint2/Joint3/Foot"]
+position = Vector4(0, 0.55, 0, 0)
+material_override = SubResource("TetraMaterial4D_foot")
+mesh = SubResource("OrthoplexTetraMesh4D_foot")
+
+[node name="FootTargetFL" type="Node4D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3_foot_target")
+body_path = NodePath("../Body")
+anchor_path = NodePath("../Body/LimbAnchorFL")
+ik_chain_path = NodePath("../Body/LimbAnchorFL/IKChain")
+gait_controller_path = NodePath("../GaitController")
+leg_index = 0
+reach_release_fraction = 0.97
+
+[node name="FootTargetFR" type="Node4D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3_foot_target")
+body_path = NodePath("../Body")
+anchor_path = NodePath("../Body/LimbAnchorFR")
+ik_chain_path = NodePath("../Body/LimbAnchorFR/IKChain")
+gait_controller_path = NodePath("../GaitController")
+leg_index = 1
+reach_release_fraction = 0.97
+
+[node name="FootTargetBL" type="Node4D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3_foot_target")
+body_path = NodePath("../Body")
+anchor_path = NodePath("../Body/LimbAnchorBL")
+ik_chain_path = NodePath("../Body/LimbAnchorBL/IKChain")
+gait_controller_path = NodePath("../GaitController")
+leg_index = 2
+reach_release_fraction = 0.97
+
+[node name="FootTargetBR" type="Node4D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3_foot_target")
+body_path = NodePath("../Body")
+anchor_path = NodePath("../Body/LimbAnchorBR")
+ik_chain_path = NodePath("../Body/LimbAnchorBR/IKChain")
+gait_controller_path = NodePath("../GaitController")
+leg_index = 3
+reach_release_fraction = 0.97
+
+[node name="HipSuspensionSolver" type="Node" parent="."]
+script = ExtResource("7_hip_suspension")
+body_path = NodePath("../Body")
+leg_foot_target_paths = [NodePath("%FootTargetFL"), NodePath("%FootTargetFR"), NodePath("%FootTargetBL"), NodePath("%FootTargetBR")]

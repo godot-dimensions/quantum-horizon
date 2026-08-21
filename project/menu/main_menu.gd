@@ -20,6 +20,9 @@ const AVAILABLE_MODES := [
 	{"name": "Synthwave Test", "scene_path": "res://sandbox/synthwave/synthwave_test.tscn"},
 	{"name": "Sky Preview", "scene_path": "res://sandbox/sky/sky_test.tscn"},
 	{"name": "Skew Polyhedron {4,4|n}", "scene_path": "res://sandbox/skew_polyhedron/skew_polyhedron_test.tscn"},
+	{"name": "IK Chain Test (5 joints)", "scene_path": "res://sandbox/single_joint/single_joint_test.tscn"},
+	{"name": "Limb Prototype", "scene_path": "res://sandbox/limb_prototype/limb_prototype_test.tscn"},
+	{"name": "Limb Prototype Treadmill", "scene_path": "res://sandbox/limb_prototype/limb_prototype_treadmill.tscn"},
 ]
 
 @onready var mode_list: VBoxContainer = $CenterContainer/VBoxContainer/ModeList

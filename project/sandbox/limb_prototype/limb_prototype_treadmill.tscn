@@ -1,0 +1,97 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" path="res://scripts/motion_lab_creature.gd" id="2_creature"]
+[ext_resource type="Script" path="res://scripts/motion_lab_controller.gd" id="3_controller"]
+[ext_resource type="Script" path="res://scripts/poi_radar.gd" id="4_poiradar"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_platform"]
+size = Vector4(30, 2, 30, 12)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_platform"]
+albedo_color = Color(0.3, 0.32, 0.35, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_platform"]
+size = Vector4(30, 2, 30, 12)
+
+[node name="LimbPrototypeTreadmill" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FlatPlane" type="Node4D" parent="."]
+
+[node name="Platform" type="StaticBody4D" parent="FlatPlane"]
+position = Vector4(0, -1, 0, 0)
+
+[node name="CollisionShape" type="CollisionShape4D" parent="FlatPlane/Platform"]
+shape = SubResource("BoxShape4D_platform")
+
+[node name="Mesh" type="MeshInstance4D" parent="FlatPlane/Platform"]
+material_override = SubResource("TetraMaterial4D_platform")
+mesh = SubResource("BoxTetraMesh4D_platform")
+
+[node name="Player" parent="FlatPlane" instance=ExtResource("1_player")]
+position = Vector4(-7, 3, -7, 0)
+basis = Projection(-0.70710678118655, 0, 0.70710678118655, 0, 0, 1, 0, 0, -0.70710678118655, 0, -0.70710678118655, 0, 0, 0, 0, 1)
+
+[node name="MotionLabCreature" type="Node4D" parent="FlatPlane"]
+
+[node name="Body" type="Node4D" parent="FlatPlane/MotionLabCreature"]
+position = Vector4(0, 5, 0, 0)
+script = ExtResource("2_creature")
+
+[node name="InfoLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(760, 26)
+layout_mode = 0
+offset_left = 8.0
+offset_top = 34.0
+offset_right = 768.0
+offset_bottom = 60.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+text = "Motion lab - one creature, repeating the selected gait in place. Free-roam movement/4D rotation."
+
+[node name="HintLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(760, 26)
+layout_mode = 0
+offset_left = 8.0
+offset_top = 64.0
+offset_right = 768.0
+offset_bottom = 90.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+text = "Size: 1.00 (U/I)   Limbs: 4 (K/L)   Segments/limb: 3 (N/M)   Gait: walk (G)"
+
+[node name="MotionLabController" type="Node" parent="."]
+script = ExtResource("3_controller")
+creature_path = NodePath("../FlatPlane/MotionLabCreature/Body")
+hint_label_path = NodePath("../HintLabel")
+info_label_path = NodePath("../InfoLabel")
+
+[node name="POIRadar" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -220.0
+offset_top = -170.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("4_poiradar")
+halfway_meters = 10.0
+camera_path = NodePath("../FlatPlane/Player")
+rig_path = NodePath("../FlatPlane/Player")
+poi_container_path = NodePath("../FlatPlane")
+direction_source_path = NodePath("../FlatPlane/MotionLabCreature/Body")
+
+[editable path="FlatPlane/Player"]
