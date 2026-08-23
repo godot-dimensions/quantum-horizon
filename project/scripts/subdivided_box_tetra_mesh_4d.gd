@@ -231,10 +231,29 @@ static func _build_cell(mesh: ArrayTetraMesh4D, half_extents: Vector4, subdivisi
 	var fixed_value: float = fixed_sign * half_extents[fixed_axis]
 	# Mirroring one axis (the fixed_sign < 0 case, relative to fixed_sign >
 	# 0) flips handedness - swap 2 of the 8 corner slots to compensate so
-	# both signs of the same axis wind outward consistently. Verified
-	# empirically (windowed screenshot at identity rotation) rather than
-	# derived symbolically - see this class's own header.
-	var flip_winding: bool = fixed_sign < 0.0
+	# both signs of the same axis wind outward consistently.
+	#
+	# A SECOND, independent handedness flip was found later (via the
+	# shrubbery port's own per-voxel standalone-box use case, which
+	# exercises all 4 fixed_axis choices symmetrically for one small
+	# closed box - a configuration this class's original single-cloud-
+	# slab use case, verified only by one windowed screenshot at identity
+	# rotation, never stressed the same way): free_axes is always the
+	# OTHER 3 axes in ascending numeric order, so which position
+	# fixed_axis itself sits at within the full 4-axis ordering (0..3)
+	# changes the PARITY of the (free_axis0, free_axis1, free_axis2,
+	# fixed_axis) permutation relative to the canonical (0,1,2,3) order -
+	# CUBE_TETRA_CORNERS assumes one fixed handedness in local (d0,d1,d2)
+	# coordinates, so embedding it back into full 4D space via an ODD
+	# permutation (fixed_axis is odd: Y or W) produces the OPPOSITE
+	# handedness from an EVEN permutation (fixed_axis is even: X or Z).
+	# Confirmed directly, not guessed: a standalone box's boundary
+	# normals came back backward (negative dot product against the known-
+	# correct outward-from-center direction) for BOTH signs of exactly
+	# the Y and W macro-cells, and correct for BOTH signs of X and Z -
+	# precisely the even/odd axis-index split this second flip predicts
+	# and corrects (_verify_voxel_box_normals_runner.gd).
+	var flip_winding: bool = (fixed_sign < 0.0) != (fixed_axis % 2 == 1)
 	var cell_center_xz := PackedVector3Array()
 
 	for i in range(subdivisions[free_axes[0]]):
