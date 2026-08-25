@@ -59,8 +59,13 @@ func generate() -> void:
 	generator.grow(species)
 	var voxels: Dictionary = generator.voxelize(species)
 
-	var wood_mesh: ArrayTetraMesh4D = ShrubMeshBuilderBlocky4D.build_mesh(voxels, species, ShrubGenerator4D.VOXEL_ID_WOOD)
-	var leaf_mesh: ArrayTetraMesh4D = ShrubMeshBuilderBlocky4D.build_mesh(voxels, species, ShrubGenerator4D.VOXEL_ID_LEAF)
+	# build_meshes() (not build_mesh() called twice) - computing wood/leaf
+	# together in one pass shares the per-voxel neighbor-occupancy check
+	# between them, which measurably matters - see that function's own
+	# comment.
+	var meshes: Dictionary = ShrubMeshBuilderBlocky4D.build_meshes(voxels, species)
+	var wood_mesh: ArrayTetraMesh4D = meshes[ShrubGenerator4D.VOXEL_ID_WOOD]
+	var leaf_mesh: ArrayTetraMesh4D = meshes[ShrubGenerator4D.VOXEL_ID_LEAF]
 
 	var wood_instance := _get_or_create_wood_mesh_instance()
 	wood_instance.mesh = wood_mesh

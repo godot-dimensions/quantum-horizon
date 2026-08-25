@@ -1,8 +1,13 @@
-[gd_scene load_steps=7 format=3 uid="uid://cvsiobipgt1en"]
+[gd_scene load_steps=8 format=3 uid="uid://cvsiobipgt1en"]
 
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://cci7qchdsxa2r" path="res://sandbox/shrubbery/shrubbery_lab.gd" id="2_lab"]
 [ext_resource type="Script" uid="uid://bu06wpw8orns5" path="res://sandbox/shrubbery/shrubbery_lab_controller.gd" id="3_controller"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
+horizon_color = Color(0.75, 0.82, 0.9, 1)
+top_color = Color(0.25, 0.45, 0.85, 1)
+bottom_color = Color(0.35, 0.32, 0.28, 1)
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_platform"]
 size = Vector4(30, 2, 30, 12)
@@ -22,6 +27,15 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="FlatPlane" type="Node4D" parent="."]
+
+[node name="WorldEnvironment4D" type="WorldEnvironment4D" parent="FlatPlane"]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_sky")
+
+[node name="Sun" type="DirectionalLight4D" parent="FlatPlane"]
+basis = Projection(1, 0, 0, 0, 0, -0.3714, -0.9284, 0, 0, 0.9284, -0.3714, 0, 0, 0, 0, 1)
+light_color = Color(1, 0.95, 0.88, 1)
+light_energy = 1.0
 
 [node name="Platform" type="StaticBody4D" parent="FlatPlane"]
 position = Vector4(0, -1, 0, 0)

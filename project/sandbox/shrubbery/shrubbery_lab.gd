@@ -56,8 +56,9 @@ func regenerate() -> void:
 	var wood_mesh: ArrayTetraMesh4D
 	var leaf_mesh: ArrayTetraMesh4D
 	if use_blocky_builder:
-		wood_mesh = ShrubMeshBuilderBlocky4D.build_mesh(voxels, species, ShrubGenerator4D.VOXEL_ID_WOOD)
-		leaf_mesh = ShrubMeshBuilderBlocky4D.build_mesh(voxels, species, ShrubGenerator4D.VOXEL_ID_LEAF)
+		var meshes: Dictionary = ShrubMeshBuilderBlocky4D.build_meshes(voxels, species)
+		wood_mesh = meshes[ShrubGenerator4D.VOXEL_ID_WOOD]
+		leaf_mesh = meshes[ShrubGenerator4D.VOXEL_ID_LEAF]
 	else:
 		wood_mesh = ShrubMeshBuilder4D.build_mesh(voxels, species)
 		leaf_mesh = ArrayTetraMesh4D.new() # Smooth builder doesn't split by voxel ID yet - wood-only for now.

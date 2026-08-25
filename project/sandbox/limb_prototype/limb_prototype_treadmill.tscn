@@ -1,9 +1,14 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3 uid="uid://cbdcicmwagnh7"]
 
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
-[ext_resource type="Script" path="res://scripts/motion_lab_creature.gd" id="2_creature"]
-[ext_resource type="Script" path="res://scripts/motion_lab_controller.gd" id="3_controller"]
-[ext_resource type="Script" path="res://scripts/poi_radar.gd" id="4_poiradar"]
+[ext_resource type="Script" uid="uid://4n0bgbb5riu6" path="res://scripts/motion_lab_creature.gd" id="2_creature"]
+[ext_resource type="Script" uid="uid://c4t188rvrge8l" path="res://scripts/motion_lab_controller.gd" id="3_controller"]
+[ext_resource type="Script" uid="uid://p1c5m88xxyj7" path="res://scripts/poi_radar.gd" id="4_poiradar"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
+horizon_color = Color(0.75, 0.82, 0.9, 1)
+top_color = Color(0.25, 0.45, 0.85, 1)
+bottom_color = Color(0.35, 0.32, 0.28, 1)
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_platform"]
 size = Vector4(30, 2, 30, 12)
@@ -24,6 +29,15 @@ grow_vertical = 2
 
 [node name="FlatPlane" type="Node4D" parent="."]
 
+[node name="WorldEnvironment4D" type="WorldEnvironment4D" parent="FlatPlane"]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_sky")
+
+[node name="Sun" type="DirectionalLight4D" parent="FlatPlane"]
+basis = Projection(1, 0, 0, 0, 0, -0.3714, -0.9284, 0, 0, 0.9284, -0.3714, 0, 0, 0, 0, 1)
+light_color = Color(1, 0.95, 0.88, 1)
+light_energy = 1.0
+
 [node name="Platform" type="StaticBody4D" parent="FlatPlane"]
 position = Vector4(0, -1, 0, 0)
 
@@ -35,7 +49,7 @@ material_override = SubResource("TetraMaterial4D_platform")
 mesh = SubResource("BoxTetraMesh4D_platform")
 
 [node name="Player" parent="FlatPlane" instance=ExtResource("1_player")]
-position = Vector4(-7, 3, -7, 0)
+position = Vector4(-10, 5, -10, 0)
 basis = Projection(-0.70710678118655, 0, 0.70710678118655, 0, 0, 1, 0, 0, -0.70710678118655, 0, -0.70710678118655, 0, 0, 0, 0, 1)
 
 [node name="MotionLabCreature" type="Node4D" parent="FlatPlane"]

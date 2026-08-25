@@ -152,3 +152,13 @@ extends Resource
 ## shrub, killed before completion) - 2.0 cuts sample count by roughly
 ## 5x for a real, measured, still-tractable trade against smoothness.
 @export var mt_supersample_factor: float = 2.0
+
+
+## The default/maximum attractor sampling shape - a plain box centered at
+## attractor_center_offset (LOCAL coordinates, relative to this tree's
+## own trunk root at Vector4.ZERO - see attractor_shape_4d.gd's own
+## header). The single-tree lab uses this directly; the forest scene
+## wraps it in a VoronoiAttractorShape4D to intersect it with each tree's
+## own crown-shyness-eroded Voronoi cell - see shrubbery_forest.gd.
+func build_default_attractor_shape() -> BoxAttractorShape4D:
+	return BoxAttractorShape4D.new(attractor_center_offset, attractor_half_extents)
