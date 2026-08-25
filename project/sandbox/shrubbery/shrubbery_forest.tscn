@@ -1,0 +1,86 @@
+[gd_scene load_steps=8 format=3 uid="uid://c5ptumtrrknwk"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://bls67qjuoxwry" path="res://sandbox/shrubbery/shrubbery_forest.gd" id="2_forest"]
+[ext_resource type="Script" uid="uid://j4u3q38x3g2y" path="res://sandbox/shrubbery/shrubbery_forest_controller.gd" id="3_controller"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
+horizon_color = Color(0.75, 0.82, 0.9, 1)
+top_color = Color(0.25, 0.45, 0.85, 1)
+bottom_color = Color(0.35, 0.32, 0.28, 1)
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_platform"]
+size = Vector4(60, 2, 60, 20)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_platform"]
+albedo_color = Color(0.3, 0.32, 0.35, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_platform"]
+size = Vector4(60, 2, 60, 20)
+
+[node name="ShrubberyForest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FlatPlane" type="Node4D" parent="."]
+
+[node name="WorldEnvironment4D" type="WorldEnvironment4D" parent="FlatPlane"]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_sky")
+
+[node name="Sun" type="DirectionalLight4D" parent="FlatPlane"]
+basis = Projection(1, 0, 0, 0, 0, -0.3714, -0.9284, 0, 0, 0.9284, -0.3714, 0, 0, 0, 0, 1)
+light_color = Color(1, 0.95, 0.88, 1)
+light_energy = 1.0
+
+[node name="Platform" type="StaticBody4D" parent="FlatPlane"]
+position = Vector4(0, -1, 0, 0)
+
+[node name="CollisionShape" type="CollisionShape4D" parent="FlatPlane/Platform"]
+shape = SubResource("BoxShape4D_platform")
+
+[node name="Mesh" type="MeshInstance4D" parent="FlatPlane/Platform"]
+material_override = SubResource("TetraMaterial4D_platform")
+mesh = SubResource("BoxTetraMesh4D_platform")
+
+[node name="Player" parent="FlatPlane" instance=ExtResource("1_player")]
+position = Vector4(10, 6, -10, 0)
+basis = Projection(-0.70710678118655, 0, 0.70710678118655, 0, 0, 1, 0, 0, -0.70710678118655, 0, -0.70710678118655, 0, 0, 0, 0, 1)
+
+[node name="ShrubberyForestRoot" type="Node4D" parent="FlatPlane"]
+script = ExtResource("2_forest")
+
+[node name="InfoLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(900, 26)
+layout_mode = 0
+offset_left = 8.0
+offset_top = 34.0
+offset_right = 908.0
+offset_bottom = 60.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+text = "Shrubbery forest - Voronoi-partitioned crown-shyness composite scene. Free-roam movement/4D rotation."
+
+[node name="HintLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(1000, 74)
+layout_mode = 0
+offset_left = 8.0
+offset_top = 64.0
+offset_right = 1008.0
+offset_bottom = 138.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+
+[node name="ShrubberyForestController" type="Node" parent="."]
+script = ExtResource("3_controller")
+forest_path = NodePath("../FlatPlane/ShrubberyForestRoot")
+hint_label_path = NodePath("../HintLabel")
+info_label_path = NodePath("../InfoLabel")
+
+[editable path="FlatPlane/Player"]

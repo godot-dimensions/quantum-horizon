@@ -37,18 +37,45 @@ func build_trunk(species: ShrubSpecies4D) -> void:
 	branches.append(root)
 
 
-func spawn_attractors_from_tesseract(species: ShrubSpecies4D) -> void:
+## Samples up to `count` attractor points from an arbitrary AttractorShape4D
+## via rejection sampling: draw a uniform random point inside
+## shape.get_bounds(), keep it if shape.contains() accepts it, repeat.
+## Works identically for a plain BoxAttractorShape4D (the default/maximum
+## shape - see ShrubSpecies4D.build_default_attractor_shape()) or a
+## composite VoronoiAttractorShape4D (the forest scene's crown-shyness
+## shape) - the generator itself never needs to know which.
+##
+## max_attempts is a safety cap, not a correctness requirement: a heavily
+## eroded shape (many nearby Voronoi neighbors, aggressive crown shyness)
+## can legitimately have only a small fraction of its bounding box
+## actually accepted, in which case fewer than `count` attractors are
+## returned - a real, desired consequence (a tightly-hemmed-in tree
+## should grow SMALLER in the crowded direction, not spin forever trying
+## to force a fixed attractor count into a shrinking space).
+func spawn_attractors_from_shape(shape: AttractorShape4D, count: int) -> void:
 	attractors.clear()
-	var center: Vector4 = species.attractor_center_offset
-	var half: Vector4 = species.attractor_half_extents
-	for i in range(species.attractor_count):
-		var offset := Vector4(
-			_rng.randf_range(-half.x, half.x),
-			_rng.randf_range(-half.y, half.y),
-			_rng.randf_range(-half.z, half.z),
-			_rng.randf_range(-half.w, half.w)
+	var bounds: Dictionary = shape.get_bounds()
+	var max_attempts: int = count * 50
+	var attempts := 0
+	while attractors.size() < count and attempts < max_attempts:
+		attempts += 1
+		var candidate := Vector4(
+			_rng.randf_range(bounds.min.x, bounds.max.x),
+			_rng.randf_range(bounds.min.y, bounds.max.y),
+			_rng.randf_range(bounds.min.z, bounds.max.z),
+			_rng.randf_range(bounds.min.w, bounds.max.w)
 		)
-		attractors.append({"position": center + offset, "reached": false})
+		if shape.contains(candidate):
+			attractors.append({"position": candidate, "reached": false})
+
+
+## Convenience wrapper matching the single-tree lab's own usage - builds
+## the species' own default box shape (centered at attractor_center_offset,
+## no Voronoi/crown-shyness composition) and spawns from it. The forest
+## scene calls spawn_attractors_from_shape() directly with a
+## VoronoiAttractorShape4D instead.
+func spawn_attractors_from_tesseract(species: ShrubSpecies4D) -> void:
+	spawn_attractors_from_shape(species.build_default_attractor_shape(), species.attractor_count)
 
 
 func clear_attractors() -> void:
@@ -313,37 +340,61 @@ static func cell_center(cell: Vector4i, voxel_size: float) -> Vector4:
 	)
 
 
-## Samples points along the segment at roughly half a voxel apart and
-## marks every cell within `thickness*0.5` of each sample point solid - a
-## simple, correct-enough thickness-aware capsule rasterization for v1
-## (no distance-competition between overlapping branches yet, unlike
-## shrubbery's own closest-distance rule - every branch just claims its
-## own cells outright, acceptable since branches rarely overlap at v1's
-## segment_length/thickness scale). `thickness` is treated as a diameter
-## (radius = thickness*0.5), matching the export's own doc comment.
-## Previously ignored entirely (every segment rasterized as a single-
-## voxel-wide centerline regardless of its own thickness value) - a real
-## gap, not a simplification, since a "thicker trunk" request has nothing
-## to actually widen without this.
+## Rasterizes a thickness-aware capsule around the segment via ONE
+## bounding-box pass with a real point-to-segment distance test per
+## candidate cell - not the earlier approach of sampling many points
+## along the segment and re-scanning a full ball of cells around EACH
+## one. That earlier version was a real, measured performance bug, not
+## just inelegant: consecutive sample points (spaced half a voxel apart)
+## have heavily OVERLAPPING balls, so the same cells were redundantly
+## re-checked ~10x over per segment. Confirmed as the dominant cost in a
+## 30-tree forest scene measuring ~0.9s/tree (voxelize() alone was ~0.55s
+## of that, per shrubbery_lab.gd's own per-stage timing) - unacceptable
+## for a "regenerate on demand, like a terrain chunk" use case. A single
+## bounding-box pass visits each candidate cell once.
+##
+## `thickness` is treated as a diameter (radius = thickness*0.5), matching
+## the export's own doc comment.
 func _rasterize_segment(voxels: Dictionary, from_position: Vector4, to_position: Vector4, thickness: float, voxel_size: float) -> void:
-	var length: float = from_position.distance_to(to_position)
-	var steps: int = maxi(1, int(ceil(length / (voxel_size * 0.5))))
 	var radius: float = maxf(thickness * 0.5, voxel_size * 0.5) # Never thinner than one voxel across.
-	var cell_radius: int = int(ceil(radius / voxel_size))
-	for i in range(steps + 1):
-		var t: float = float(i) / float(steps)
-		var point: Vector4 = from_position.lerp(to_position, t)
-		if cell_radius <= 0:
-			voxels[pack_voxel_key(world_to_cell(point, voxel_size))] = VOXEL_ID_WOOD
-			continue
-		var center_cell: Vector4i = world_to_cell(point, voxel_size)
-		for dx in range(-cell_radius, cell_radius + 1):
-			for dy in range(-cell_radius, cell_radius + 1):
-				for dz in range(-cell_radius, cell_radius + 1):
-					for dw in range(-cell_radius, cell_radius + 1):
-						var cell: Vector4i = center_cell + Vector4i(dx, dy, dz, dw)
-						if cell_center(cell, voxel_size).distance_to(point) <= radius:
-							voxels[pack_voxel_key(cell)] = VOXEL_ID_WOOD
+	var seg_dir: Vector4 = to_position - from_position
+	var seg_length_sq: float = seg_dir.length_squared()
+
+	var box_min := Vector4(
+		minf(from_position.x, to_position.x) - radius,
+		minf(from_position.y, to_position.y) - radius,
+		minf(from_position.z, to_position.z) - radius,
+		minf(from_position.w, to_position.w) - radius
+	)
+	var box_max := Vector4(
+		maxf(from_position.x, to_position.x) + radius,
+		maxf(from_position.y, to_position.y) + radius,
+		maxf(from_position.z, to_position.z) + radius,
+		maxf(from_position.w, to_position.w) + radius
+	)
+	var cell_min: Vector4i = world_to_cell(box_min, voxel_size)
+	var cell_max: Vector4i = world_to_cell(box_max, voxel_size)
+
+	for x in range(cell_min.x, cell_max.x + 1):
+		for y in range(cell_min.y, cell_max.y + 1):
+			for z in range(cell_min.z, cell_max.z + 1):
+				for w in range(cell_min.w, cell_max.w + 1):
+					var cell := Vector4i(x, y, z, w)
+					var p: Vector4 = cell_center(cell, voxel_size)
+					if _point_segment_distance(p, from_position, seg_dir, seg_length_sq) <= radius:
+						voxels[pack_voxel_key(cell)] = VOXEL_ID_WOOD
+
+
+## Distance from `p` to the closest point on segment [a, a+ab] - `ab` and
+## its squared length are passed in precomputed since a caller rasterizing
+## one segment calls this once per candidate cell (easily thousands of
+## calls) against the SAME segment.
+static func _point_segment_distance(p: Vector4, a: Vector4, ab: Vector4, ab_length_sq: float) -> float:
+	if ab_length_sq < 0.0000001:
+		return p.distance_to(a)
+	var t: float = clampf((p - a).dot(ab) / ab_length_sq, 0.0, 1.0)
+	var closest: Vector4 = a + ab * t
+	return p.distance_to(closest)
 
 
 func _rasterize_glome(voxels: Dictionary, center: Vector4, radius: float, voxel_size: float) -> void:
