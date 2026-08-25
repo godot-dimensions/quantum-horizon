@@ -1,0 +1,58 @@
+[gd_scene load_steps=8 format=3 uid="uid://dqew0dv7figro"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://bxylr300l3fu1" path="res://sandbox/sky/sky.gd" id="2_sky"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_ground"]
+size = Vector4(300, 1, 300, 300)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ground"]
+albedo_color = Color(1, 0.6, 0.1, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ground"]
+size = Vector4(300, 1, 300, 300)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_mountains"]
+albedo_color = Color(0.35, 0.38, 0.45, 1)
+
+[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_mountains"]
+size = Vector4(300, 50, 300, 300)
+
+[node name="SkyTest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FlatPlane" type="Node4D" parent="."]
+
+[node name="Ground" type="StaticBody4D" parent="FlatPlane"]
+position = Vector4(0, -0.5, 0, 0)
+
+[node name="CollisionShape" type="CollisionShape4D" parent="FlatPlane/Ground"]
+shape = SubResource("BoxShape4D_ground")
+
+[node name="Mesh" type="MeshInstance4D" parent="FlatPlane/Ground"]
+material_override = SubResource("TetraMaterial4D_ground")
+mesh = SubResource("BoxTetraMesh4D_ground")
+
+[node name="Mountains" type="MeshInstance4D" parent="FlatPlane"]
+basis = Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_mountains")
+mesh = SubResource("OrthoplexTetraMesh4D_mountains")
+
+[node name="Player" parent="FlatPlane" instance=ExtResource("1_player")]
+position = Vector4(0, 1, 0, 0)
+
+[node name="Sky" type="Node4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera" index="0"]
+script = ExtResource("2_sky")
+
+[node name="Shell" type="MeshInstance4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/Sky"]
+
+[node name="SunDisc" type="Node4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/Sky"]
+
+[node name="Visual" type="MeshInstance4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/Sky/SunDisc"]
+
+[editable path="FlatPlane/Player"]

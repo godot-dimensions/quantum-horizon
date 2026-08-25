@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/_measure_live_popin_latency_runner.gd" id="1_runner"]
+
+[node name="MeasureLivePopinLatency" type="Node"]
+script = ExtResource("1_runner")

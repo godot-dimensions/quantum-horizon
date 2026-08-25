@@ -1,0 +1,127 @@
+[gd_scene load_steps=20 format=3 uid="uid://u5hyqolaahjx"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://dk3j6d51h1t4m" path="res://scripts/crosshair.gd" id="2_crosshair"]
+[ext_resource type="Script" uid="uid://dnw11e64x67a1" path="res://scripts/gun_core_rotator.gd" id="3_gun_core_rotator"]
+[ext_resource type="ArrayTetraMesh4D" uid="uid://u62ydn7uiys0" path="res://models/primitives/platonic/600_cell/600_cell.g4b" id="4_600_cell_mesh"]
+[ext_resource type="Script" uid="uid://bke250wa0gpbo" path="res://sandbox/shooting_gallery/bullseye/rail_target_spawner.gd" id="5_spawner"]
+[ext_resource type="Script" uid="uid://dhacrv60ta124" path="res://sandbox/shooting_gallery/bullseye/bullseye_weapon.gd" id="6_weapon"]
+[ext_resource type="Script" uid="uid://d1jeefnsi7swa" path="res://scripts/interaction_trigger_4d.gd" id="8_start_trigger"]
+[ext_resource type="Script" uid="uid://cil3sn5t14hrw" path="res://sandbox/shooting_gallery/bullseye/rail_controller.gd" id="9_rail_controller"]
+[ext_resource type="PackedScene" uid="uid://ce3xkbg7w1ptf" path="res://sandbox/shooting_gallery/bullseye/rail_stats_hud.tscn" id="10_stats_hud"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
+size = Vector4(10, 1, 20, 10)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_floor"]
+albedo_color = Color(0.3, 0.3, 0.35, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_floor"]
+size = Vector4(10, 1, 20, 10)
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_start_trigger"]
+size = Vector4(8, 3, 1, 10)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_gun_metal"]
+albedo_color = Color(0.22, 0.22, 0.25, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gun_barrel"]
+size = Vector4(0.05, 0.05, 0.3, 0.05)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gun_stock"]
+size = Vector4(0.06, 0.1, 0.22, 0.06)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_gun_core"]
+line_thickness = 2.0
+albedo_color = Color(0.55, 0.25, 0.95, 1)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_mount"]
+albedo_color = Color(0.45, 0.28, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_mount"]
+size = Vector4(0.5, 0.5, 1.8, 1)
+
+[node name="BullseyeRange" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FlatPlane" type="Node4D" parent="."]
+
+[node name="Floor" type="StaticBody4D" parent="FlatPlane"]
+position = Vector4(0, -0.5, -3, 0)
+
+[node name="CollisionShape" type="CollisionShape4D" parent="FlatPlane/Floor"]
+shape = SubResource("BoxShape4D_floor")
+
+[node name="Mesh" type="MeshInstance4D" parent="FlatPlane/Floor"]
+material_override = SubResource("TetraMaterial4D_floor")
+mesh = SubResource("BoxTetraMesh4D_floor")
+
+[node name="StartTrigger" type="Area4D" parent="FlatPlane"]
+position = Vector4(0, 1.5, 4, 0)
+script = ExtResource("8_start_trigger")
+
+[node name="CollisionShape" type="CollisionShape4D" parent="FlatPlane/StartTrigger"]
+shape = SubResource("BoxShape4D_start_trigger")
+
+[node name="Player" parent="FlatPlane" instance=ExtResource("1_player")]
+position = Vector4(0, 1, 6, 0)
+
+[node name="GunViewmodel" type="Node4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera" index="0"]
+position = Vector4(0.3, -0.25, -0.5, 0)
+
+[node name="Barrel" type="MeshInstance4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel"]
+position = Vector4(0, 0.04, -0.22, 0)
+material_override = SubResource("TetraMaterial4D_gun_metal")
+mesh = SubResource("BoxTetraMesh4D_gun_barrel")
+
+[node name="Stock" type="MeshInstance4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel"]
+position = Vector4(0, -0.04, 0.16, 0)
+material_override = SubResource("TetraMaterial4D_gun_metal")
+mesh = SubResource("BoxTetraMesh4D_gun_stock")
+
+[node name="Core" type="MeshInstance4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel"]
+position = Vector4(0, 0, -0.01, 0)
+basis = Projection(0.045, 0, 0, 0, 0, 0.045, 0, 0, 0, 0, 0.045, 0, 0, 0, 0, 0.045)
+material_override = SubResource("WireMaterial4D_gun_core")
+mesh = ExtResource("4_600_cell_mesh")
+script = ExtResource("3_gun_core_rotator")
+
+[node name="Mount" type="Node4D" parent="FlatPlane/Player"]
+
+[node name="Body" type="MeshInstance4D" parent="FlatPlane/Player/Mount"]
+position = Vector4(0, -0.9, 0.1, 0)
+material_override = SubResource("TetraMaterial4D_mount")
+mesh = SubResource("BoxTetraMesh4D_mount")
+
+[node name="RailTargetSpawner" type="Node4D" parent="FlatPlane"]
+script = ExtResource("5_spawner")
+
+[node name="Projectiles" type="Node4D" parent="FlatPlane"]
+
+[node name="Crosshair" type="Control" parent="."]
+anchors_preset = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+script = ExtResource("2_crosshair")
+
+[node name="BullseyeWeapon" type="Node" parent="."]
+script = ExtResource("6_weapon")
+
+[node name="RailController" type="Node" parent="."]
+script = ExtResource("9_rail_controller")
+
+[node name="RailStatsHud" parent="." instance=ExtResource("10_stats_hud")]
+layout_mode = 1
+
+[editable path="FlatPlane/Player"]

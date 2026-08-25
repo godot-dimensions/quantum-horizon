@@ -1,0 +1,14 @@
+[gd_scene load_steps=4 format=3 uid="uid://cue4y8xuxurk8"]
+
+[ext_resource type="Script" uid="uid://pl505163r43k" path="res://weapon/ammo_pips/ammo_pips.gd" id="1_ammo_pips"]
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_loaded"]
+albedo_color = Color(1, 0.85, 0.2, 1)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_spent"]
+albedo_color = Color(0.2, 0.2, 0.22, 1)
+
+[node name="AmmoPips" type="Node4D"]
+script = ExtResource("1_ammo_pips")
+loaded_material = SubResource("TetraMaterial4D_loaded")
+spent_material = SubResource("TetraMaterial4D_spent")

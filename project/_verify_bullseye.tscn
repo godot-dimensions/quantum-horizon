@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://f7irg8o2fnee"]
+
+[ext_resource type="PackedScene" uid="uid://u5hyqolaahjx" path="res://sandbox/shooting_gallery/bullseye/bullseye_range.tscn" id="1_range"]
+[ext_resource type="Script" uid="uid://dcgyoktaqekjv" path="res://scripts/_verify_bullseye_runner.gd" id="2_runner"]
+
+[node name="VerifyBullseye" type="Node"]
+
+[node name="Range" parent="." instance=ExtResource("1_range")]
+
+[node name="Runner" type="Node" parent="."]
+script = ExtResource("2_runner")

@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://dfi1x1kxagxi7"]
+
+[ext_resource type="PackedScene" uid="uid://dqew0dv7figro" path="res://sandbox/sky/sky_test.tscn" id="1_sky_test"]
+[ext_resource type="Script" uid="uid://cniicrimkp2p4" path="res://scripts/_verify_sky_runner.gd" id="2_runner"]
+
+[node name="VerifySky" type="Node"]
+
+[node name="SkyTest" parent="." instance=ExtResource("1_sky_test")]
+
+[node name="Runner" type="Node" parent="."]
+script = ExtResource("2_runner")

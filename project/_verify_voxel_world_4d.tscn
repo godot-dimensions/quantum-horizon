@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://metqtcbr6mko"]
+
+[ext_resource type="Script" uid="uid://c623t5387ltst" path="res://scripts/_verify_voxel_world_4d_runner.gd" id="1_runner"]
+
+[node name="VerifyVoxelWorld4D" type="Node"]
+script = ExtResource("1_runner")

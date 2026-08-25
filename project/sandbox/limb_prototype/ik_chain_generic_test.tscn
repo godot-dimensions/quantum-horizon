@@ -1,0 +1,47 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ik_chain_controller.gd" id="1_ik"]
+
+[node name="IKChainGenericTest" type="Node4D"]
+
+[node name="Chain2" type="Node4D" parent="."]
+
+[node name="IKChain" type="Node4D" parent="Chain2"]
+script = ExtResource("1_ik")
+joint_paths = [NodePath("Joint1"), NodePath("Joint1/Joint2")]
+link_lengths = Array[float]([1.5, 1.2])
+target_path = NodePath("../Target2")
+
+[node name="Joint1" type="Node4D" parent="Chain2/IKChain"]
+
+[node name="Joint2" type="Node4D" parent="Chain2/IKChain/Joint1"]
+position = Vector4(0, 1.5, 0, 0)
+
+[node name="Target2" type="Node4D" parent="Chain2"]
+position = Vector4(1.0, -1.0, 0.5, 0)
+
+[node name="Chain5" type="Node4D" parent="."]
+position = Vector4(10, 0, 0, 0)
+
+[node name="IKChain" type="Node4D" parent="Chain5"]
+script = ExtResource("1_ik")
+joint_paths = [NodePath("Joint1"), NodePath("Joint1/Joint2"), NodePath("Joint1/Joint2/Joint3"), NodePath("Joint1/Joint2/Joint3/Joint4"), NodePath("Joint1/Joint2/Joint3/Joint4/Joint5")]
+link_lengths = Array[float]([1.0, 1.0, 1.0, 1.0, 1.0])
+target_path = NodePath("../Target5")
+
+[node name="Joint1" type="Node4D" parent="Chain5/IKChain"]
+
+[node name="Joint2" type="Node4D" parent="Chain5/IKChain/Joint1"]
+position = Vector4(0, 1.0, 0, 0)
+
+[node name="Joint3" type="Node4D" parent="Chain5/IKChain/Joint1/Joint2"]
+position = Vector4(0, 1.0, 0, 0)
+
+[node name="Joint4" type="Node4D" parent="Chain5/IKChain/Joint1/Joint2/Joint3"]
+position = Vector4(0, 1.0, 0, 0)
+
+[node name="Joint5" type="Node4D" parent="Chain5/IKChain/Joint1/Joint2/Joint3/Joint4"]
+position = Vector4(0, 1.0, 0, 0)
+
+[node name="Target5" type="Node4D" parent="Chain5"]
+position = Vector4(2.0, 2.0, 1.0, 0.5)

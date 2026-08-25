@@ -22,6 +22,12 @@ extends Control
 ##
 ## Pure 2D math + drawing (like poi_arrow.gd) - no Camera4D/SubViewport
 ## involved, nothing rendered in 4D for this widget at all.
+##
+## Lives as a full-rect child of radar_orb_hud.gd's Control, which also
+## hosts the glass dome rendered over this readout - being a plain child
+## means this widget automatically shares that node's size/position (and
+## therefore its raise/lower animation) for free, with no cross-script
+## position syncing needed here.
 
 enum AxisLabelStyle {
 	NONE,
@@ -72,21 +78,42 @@ const W_IS_UP: bool = false
 const TARGET_COLOR := Color(0.9, 0.1, 0.1, 0.95)
 const DUCK_COLOR := Color(1.0, 0.85, 0.1, 0.95)
 
+## W-targeting's currently-selected object, if any - drawn with an extra
+## pulsing ring (see _draw_tracked_object) on top of its normal marker color,
+## so "which one is this" and "which one is selected" both stay visible at
+## once rather than the highlight replacing the type color.
+var highlighted_object: Node4D = null
+const HIGHLIGHT_COLOR := Color(0.3, 1.0, 1.0, 0.9)
+const HIGHLIGHT_PULSE_SPEED := 4.0 # Radians/sec.
+const HIGHLIGHT_PULSE_AMPLITUDE := 3.0
+const HIGHLIGHT_RING_BASE_PADDING := 5.0
+
+## The neighbor W-targeting's slice solve actually paired with the primary
+## selection (null when it fell back to the single-target formula instead) -
+## a second, visually distinct ring so it's clear which specific pairing put
+## both objects on the slice, not just which one is primary.
+var secondary_highlighted_object: Node4D = null
+const SECONDARY_HIGHLIGHT_COLOR := Color(1.0, 0.3, 0.9, 0.85)
+var _pulse_time_sec: float = 0.0
+
 ## World-units-to-pixels for the projected point AND the stem length alike -
 ## one world unit is one unit, visually consistent across the whole widget.
 #@export var units_to_pixels: float = 15.0
 
-@onready var player: CharacterBody4D = $"../FlatPlane/Player"
-@onready var spawner: Node4D = $"../FlatPlane/GalleryTargetSpawner"
-@onready var duck_spawner: Node4D = $"../FlatPlane/DuckRowSpawner"
+@onready var player: CharacterBody4D = $"../../FlatPlane/Player"
+@onready var spawner: Node4D = $"../../FlatPlane/GalleryTargetSpawner"
+@onready var duck_spawner: Node4D = $"../../FlatPlane/DuckRowSpawner"
+@onready var contest_player: Node4D = $"../../FlatPlane/ContestSequencePlayer"
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	clip_contents = true
+	set_anchors_preset(Control.PRESET_FULL_RECT)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_pulse_time_sec += delta
 	queue_redraw()
 
 
@@ -98,7 +125,7 @@ func _ellipse_points(ellipse_center: Vector2, ellipse_radii: Vector2) -> PackedV
 	return points
 
 
-func _draw_tracked_object(relative_target_position: Vector4, marker_color: Color, ellipse_center: Vector2, ellipse_radii: Vector2) -> void:
+func _draw_tracked_object(relative_target_position: Vector4, marker_color: Color, ellipse_center: Vector2, ellipse_radii: Vector2, is_highlighted: bool = false, is_secondary: bool = false) -> void:
 	var rel_len: float = relative_target_position.length()
 	var rel_len_exp: float = 1.0 - exp(-rel_len * (NAT_LOG_2 / HALFWAY_METERS))
 	var scaled_target_pos: Vector4 = relative_target_position * (rel_len_exp / rel_len)
@@ -118,6 +145,18 @@ func _draw_tracked_object(relative_target_position: Vector4, marker_color: Color
 	var stem_end: Vector2 = projected + Vector2(0.0, w_offset * ellipse_radii.y)
 	draw_line(projected, stem_end, Color(marker_color.r, marker_color.g, marker_color.b, stem_alpha), 2.0)
 	draw_circle(stem_end, off_plane_dot_radius, marker_color)
+
+	if is_highlighted:
+		var pulse: float = (sin(_pulse_time_sec * HIGHLIGHT_PULSE_SPEED) + 1.0) * 0.5 # 0..1.
+		var ring_radius: float = off_plane_dot_radius + HIGHLIGHT_RING_BASE_PADDING + pulse * HIGHLIGHT_PULSE_AMPLITUDE
+		draw_arc(stem_end, ring_radius, 0.0, TAU, 24, HIGHLIGHT_COLOR, 2.5, true)
+	if is_secondary:
+		# Pulses out of phase from the primary ring (opposite sign) so the two
+		# stay visually distinguishable by motion as well as color, even if
+		# both ever land on nearby markers.
+		var secondary_pulse: float = (sin(_pulse_time_sec * HIGHLIGHT_PULSE_SPEED + PI) + 1.0) * 0.5
+		var secondary_ring_radius: float = off_plane_dot_radius + HIGHLIGHT_RING_BASE_PADDING + secondary_pulse * HIGHLIGHT_PULSE_AMPLITUDE
+		draw_arc(stem_end, secondary_ring_radius, 0.0, TAU, 24, SECONDARY_HIGHLIGHT_COLOR, 2.0, true)
 
 
 func _draw_axes(ellipse_center: Vector2, ellipse_radii: Vector2, player_basis_inv: Projection) -> void:
@@ -247,19 +286,28 @@ func _draw() -> void:
 	_draw_ellipse_rings(ellipse_center, ellipse_radii)
 	draw_circle(ellipse_center, player_marker_radius, player_marker_color)
 
-	# Each entry: [world position, marker color]. The active target and
-	# every currently-active duck.
+	# Each entry: [node, marker color]. The active target and every
+	# currently-active duck. Kept as the node itself (not just its position)
+	# so the highlight check below can compare identity.
 	var tracked_objects: Array = []
 	if spawner._current_target != null:
-		tracked_objects.append([spawner._current_target.global_position, TARGET_COLOR])
+		tracked_objects.append([spawner._current_target, TARGET_COLOR])
 	for duck in duck_spawner._ducks:
-		tracked_objects.append([duck.global_position, DUCK_COLOR])
+		tracked_objects.append([duck, DUCK_COLOR])
+	for contest_target in contest_player.get_active_targets():
+		# Same red visual as the free-mode target (gallery_target.tscn reused
+		# as-is) - matching marker color, not a new one, keeps "marker color
+		# matches real in-world color" true for these too.
+		tracked_objects.append([contest_target, TARGET_COLOR])
 
 	var player_basis_inv: Projection = player.global_basis.inverse()
 	# Draw axis letter labels and lines.
 	_draw_axes(ellipse_center, ellipse_radii, player_basis_inv)
 	# Draw tracked objects.
 	for entry in tracked_objects:
-		var rel_pos_global: Vector4 = entry[0] - player.global_position
+		var tracked_node: Node4D = entry[0]
+		var rel_pos_global: Vector4 = tracked_node.global_position - player.global_position
 		var rel_pos_local: Vector4 = player_basis_inv * rel_pos_global
-		_draw_tracked_object(rel_pos_local, entry[1], ellipse_center, ellipse_radii)
+		var is_highlighted: bool = is_instance_valid(highlighted_object) and tracked_node == highlighted_object
+		var is_secondary: bool = is_instance_valid(secondary_highlighted_object) and tracked_node == secondary_highlighted_object
+		_draw_tracked_object(rel_pos_local, entry[1], ellipse_center, ellipse_radii, is_highlighted, is_secondary)

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/_verify_terrain_color_bands_runner.gd" id="1_runner"]
+
+[node name="VerifyTerrainColorBands" type="Node"]
+script = ExtResource("1_runner")

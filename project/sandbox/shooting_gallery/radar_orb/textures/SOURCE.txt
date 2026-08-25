@@ -1,0 +1,3 @@
+glass_scratches_normal.jpg, glass_scratches_roughness.jpg
+Derived from "Scratches001" by ambientCG (https://ambientcg.com/a/Scratches001)
+License: CC0 1.0 (no attribution required) - https://ambientcg.com/license
