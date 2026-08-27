@@ -100,7 +100,7 @@ index 488950d..57e94f1 100644
 @@ -14,10 +14,55 @@
  #endif
  #endif
- 
+
 +#if GODOT_MODULE && defined(TOOLS_ENABLED)
 +#include "core/config/engine.h"
 +#include "editor/editor_interface.h"
@@ -160,18 +160,18 @@ index e02afa5..06a237d 100644
 @@ -11,6 +11,10 @@
  #include "scene/resources/3d/world_3d.h"
  #endif
- 
+
 +#if GODOT_MODULE && defined(TOOLS_ENABLED)
 +class WorldEnvironment;
 +#endif
 +
  class CrossSectionRenderingEngine4D : public RenderingEngine4D {
  	GDCLASS(CrossSectionRenderingEngine4D, RenderingEngine4D);
- 
+
 @@ -31,6 +35,18 @@ private:
  	RID create_instance();
  	void _cleanup_render_resources();
- 
+
 +#if GODOT_MODULE && defined(TOOLS_ENABLED)
 +	// Bridges the editor's live "4D" tab preview (which renders through this
 +	// engine's own private, disposable World3D - see setup_for_viewport())
@@ -186,13 +186,13 @@ index e02afa5..06a237d 100644
 +
  protected:
  	static void _bind_methods() {}
- 
+
 @@ -39,6 +55,7 @@ public:
  	virtual void setup_for_viewport() override;
  	virtual void cleanup_for_viewport() override;
  	virtual void render_frame() override;
 +	virtual Ref<World3D> get_world_3d() const override { return _cross_section_world_3d; }
- 
+
  	virtual ~CrossSectionRenderingEngine4D();
  };
 diff --git a/render/cross_section/tetra_cross_section_shader.glsl b/render/cross_section/tetra_cross_section_shader.glsl
@@ -202,7 +202,7 @@ index c27ccd1..0d00656 100644
 @@ -12,6 +12,16 @@ instance uniform vec4 modelview_basis_w;
  uniform vec4 albedo : source_color;
  uniform sampler3D albedo_texture : hint_default_white, source_color;
- 
+
 +// Driven per-material by Sun4D (see project/ramon/Skybox/scripts/sun_4d.gd)
 +// via set_shader_parameter() on specific materials it's told to control
 +// (Sun4D.mesh_materials) - deliberately NOT a global shader uniform. A
@@ -214,10 +214,10 @@ index c27ccd1..0d00656 100644
 +uniform vec3 fake_light_direction = vec3(0.0, 1.0, 0.0);
 +
  varying vec3 uvw;
- 
+
  // Maps from an arbitrary edge index to the indices of the vertices in a tetrahedron [a,b,c,d].
 @@ -116,5 +126,10 @@ void vertex() {
- 
+
  void fragment() {
  	NORMAL = normalize(NORMAL);
 -	ALBEDO = albedo.rgb * texture(albedo_texture, uvw).rgb * ((dot((vec4(NORMAL, 0.0) * INV_VIEW_MATRIX).xyz, vec3(0.0, 1.0, 0.0)) / 2.0) + 0.5);
@@ -235,7 +235,7 @@ index 35b07b1..356594a 100644
 @@ -90,6 +90,10 @@ String RenderingEngine4D::get_friendly_name() const {
  	return friendly_name;
  }
- 
+
 +Ref<World3D> RenderingEngine4D::get_world_3d() const {
 +	return Ref<World3D>();
 +}
@@ -246,7 +246,7 @@ index 35b07b1..356594a 100644
 @@ -143,6 +147,8 @@ void RenderingEngine4D::_bind_methods() {
  	ClassDB::bind_method(D_METHOD("set_mesh_relative_positions", "mesh_relative_positions"), &RenderingEngine4D::set_mesh_relative_positions);
  	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "mesh_relative_positions"), "set_mesh_relative_positions", "get_mesh_relative_positions");
- 
+
 +	ClassDB::bind_method(D_METHOD("get_world_3d"), &RenderingEngine4D::get_world_3d);
 +
  	GDVIRTUAL_BIND(_get_friendly_name);
@@ -268,12 +268,12 @@ index 7505ec7..2af0ec2 100644
  #include "scene/main/viewport.h"
 +#include "scene/resources/3d/world_3d.h"
  #endif
- 
+
  class RenderingEngine4D : public RefCounted {
 @@ -60,6 +62,13 @@ public:
  	virtual void cleanup_for_viewport();
  	virtual void render_frame();
- 
+
 +	// Base default is null (e.g. WireframeCanvasRenderingEngine4D has no 3D
 +	// world concept at all). CrossSectionRenderingEngine4D overrides this to
 +	// expose its private World3D, so callers (e.g. the editor's "4D" tab)
