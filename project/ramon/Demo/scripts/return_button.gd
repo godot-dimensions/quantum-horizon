@@ -39,13 +39,21 @@ const GENERATED_META := "hub_generated"
 ## Any two scenes that link to each other need one of the two edges to be lazy
 ## like this. The hub keeps the typed picker; the way back is the string.
 ##
-## It points at `res://ramon/HubFinal.tscn`, deliberately at the ROOT of the ramon
-## folder rather than inside Demo/. Because this is a hand-written path, renaming
-## or moving the hub silently breaks all seven return buttons at once - which
-## already happened when hub3.tscn became hub3Final.tscn. A stable, canonical
-## location that variants get copied FROM, rather than a numbered scene that keeps
-## being superseded, is what stops that recurring.
-@export_file("*.tscn") var hub_scene_path: String = "res://ramon/HubFinal.tscn":
+## CHANGED 2026-08-25: this now points at the MENU, not at the hub.
+##
+## Trym's call is that the diegetic hub is not the right front door for
+## stakeholders yet, so the demo is becoming a chamber package reached from a
+## conventional menu. Repointing here is what actually retires the hub: every
+## prototype instances this one scene, so the hub stops being reachable from
+## anywhere in normal play the moment this default changes. `HubFinal.tscn` still
+## exists and still opens directly - it is deprecated as a destination, not
+## deleted.
+##
+## Because this is a hand-written path, renaming or moving the menu silently
+## breaks every return button at once - which already happened when hub3.tscn
+## became hub3Final.tscn and all seven prompts quietly stopped working. If the
+## mockup is ever renamed or promoted out of ramon/Menu/, update this line.
+@export_file("*.tscn") var hub_scene_path: String = "res://ramon/Menu.tscn":
 	set(value):
 		hub_scene_path = value
 		rebuild()
@@ -60,7 +68,7 @@ const GENERATED_META := "hub_generated"
 
 ## Shown on the prompt. `%s` is replaced with the key's name, so relabelling the
 ## key cannot leave the text lying about which key to press.
-@export var label_format: String = "BACK TO HUB   %s":
+@export var label_format: String = "BACK TO MENU   %s":
 	set(value):
 		label_format = value
 		rebuild()

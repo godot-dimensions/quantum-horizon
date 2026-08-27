@@ -1,0 +1,125 @@
+[gd_resource type="Resource" script_class="MenuCatalogue" load_steps=19 format=3 uid="uid://b6ehjm0dis877"]
+
+[ext_resource type="Script" uid="uid://c12nskqorjkfu" path="res://ramon/Menu/scripts/menu_entry.gd" id="1_i2ljj"]
+[ext_resource type="Texture2D" uid="uid://ci6ttbx34w05t" path="res://ramon/Demo/textures/icon_slice_vision.png" id="2_kdyc8"]
+[ext_resource type="Texture2D" uid="uid://bw0vuw0clsjmc" path="res://ramon/Demo/textures/icon_phase_maze.png" id="3_wp3od"]
+[ext_resource type="Texture2D" uid="uid://comnh1fvblitb" path="res://ramon/Demo/textures/icon_ascent.png" id="4_boe22"]
+[ext_resource type="Texture2D" uid="uid://g3hckkpp33vx" path="res://ramon/Demo/textures/icon_portal_chamber.png" id="5_lnafe"]
+[ext_resource type="Texture2D" uid="uid://dv5bgcfgdkn72" path="res://ramon/Demo/textures/icon_quantum_range.png" id="6_rlsh1"]
+[ext_resource type="Texture2D" uid="uid://240qb5po2vbw" path="res://ramon/Demo/textures/icon_voxel_mining.png" id="7_13old"]
+[ext_resource type="Texture2D" uid="uid://bymvujfnir62x" path="res://ramon/Demo/textures/icon_sky_box_clouds.png" id="8_h1wdl"]
+[ext_resource type="Texture2D" uid="uid://g6jtu406eo3e" path="res://ramon/Demo/textures/icon_voxel_port.png" id="9_jn372"]
+[ext_resource type="Script" uid="uid://b2a43mgb5dqv" path="res://ramon/Menu/scripts/menu_catalogue.gd" id="10_ajynb"]
+
+[sub_resource type="Resource" id="Resource_uy7oo"]
+script = ExtResource("1_i2ljj")
+title = "Slice Vision"
+blurb = "Camera and avatar tuned for reading a 4D cross-section"
+maturity = "Playable"
+clip = "slice_vision"
+icon = ExtResource("2_kdyc8")
+preview_focus = -0.53
+scene_path = "res://ramon/MiegakureLook/levels/level_1_wall.tscn"
+control_keys = PackedStringArray("WASD", "RMB")
+control_actions = PackedStringArray("move", "rotate slice 90°")
+question = "Can anyone read a 4D scene at all without training?"
+approach = "Third-person diorama, discrete 90° turns, floor banded along w."
+finding = "Banding is load-bearing; an unbanded rotated view is a blank diamond."
+
+[sub_resource type="Resource" id="Resource_3f7jf"]
+script = ExtResource("1_i2ljj")
+title = "Phase Maze"
+blurb = "Walls you pass by rotating, not by walking"
+maturity = "Playable"
+clip = "phase_maze"
+icon = ExtResource("3_wp3od")
+scene_path = "res://ramon/PhaseMaze/phase_maze.tscn"
+control_keys = PackedStringArray("WASD", "RMB", "Q / E")
+control_actions = PackedStringArray("move", "rotate slice", "through w")
+question = "Does rotation work as a navigation verb rather than a camera trick?"
+approach = "Maze walls occupy w-bands; rotating changes which ones are solid."
+finding = "It reads immediately, but only where the route is signposted."
+
+[sub_resource type="Resource" id="Resource_snm5f"]
+script = ExtResource("1_i2ljj")
+title = "4D Ascent"
+blurb = "A vertical course climbed by rotating as much as jumping"
+maturity = "Greybox"
+clip = "ascent"
+icon = ExtResource("4_boe22")
+scene_path = "res://ramon/ObstacleCourse/w_gap.tscn"
+control_keys = PackedStringArray("WASD", "SPACE", "RMB")
+control_actions = PackedStringArray("move", "jump", "rotate slice")
+question = "Can a vertical course stay legible once the slice can change?"
+approach = "Bounded tower, tier-coloured back wall as the only HUD."
+finding = "Physics is axis-aligned boxes only: no ramps, every rise is a step."
+
+[sub_resource type="Resource" id="Resource_d6obk"]
+script = ExtResource("1_i2ljj")
+title = "Portal Chamber"
+blurb = "Linked openings that drop you somewhere else"
+clip = "portal"
+icon = ExtResource("5_lnafe")
+scene_path = "res://ramon/Portal/voxel_chunk_test.tscn"
+control_keys = PackedStringArray("LMB", "F", "RMB")
+control_actions = PackedStringArray("blue portal", "yellow portal", "rotate slice")
+question = "Does Portal's momentum-preserving link survive four dimensions?"
+approach = "Two linked apertures; position, orientation and velocity carried across."
+finding = "Works, and accelerates: 7.7 to 22.2 m/s over five crossings."
+
+[sub_resource type="Resource" id="Resource_fmw2o"]
+script = ExtResource("1_i2ljj")
+title = "Quantum Range"
+blurb = "Hitscan raycasting against 4D colliders"
+maturity = "Playable"
+clip = "quantum_range"
+icon = ExtResource("6_rlsh1")
+scene_path = "res://ramon/ShootingGalleryRamon/shooting_gallery_ramon.tscn"
+control_keys = PackedStringArray("WASD", "LMB", "RMB")
+control_actions = PackedStringArray("move", "fire", "rotate slice")
+question = "What does aiming mean when a target can leave your slice?"
+approach = "Real 4D raycasts against 4D collision, independent of the camera."
+finding = "You can miss in a direction you cannot see - and it reads as fair."
+
+[sub_resource type="Resource" id="Resource_3ffix"]
+script = ExtResource("1_i2ljj")
+title = "Voxel Mining"
+blurb = "Destructible geometry by dual contouring in four dimensions"
+clip = "voxel_mining"
+icon = ExtResource("7_13old")
+scene_path = "res://ramon/VoxelMining/voxel_mining_final_2.tscn"
+control_keys = PackedStringArray("WASD", "LMB", "Q / E")
+control_actions = PackedStringArray("move", "carve", "through w")
+question = "Can 4D matter be destroyed at interactive rates?"
+approach = "Persistent voxel field, dual contoured, re-meshed per hit."
+finding = "Yes: about 130 ms per carve at room scale, around 58 fps."
+
+[sub_resource type="Resource" id="Resource_b8wcl"]
+script = ExtResource("1_i2ljj")
+title = "Sky Box Clouds"
+blurb = "A sky built from geometry, so it exists in every slice"
+clip = "skybox_clouds"
+icon = ExtResource("8_h1wdl")
+scene_path = "res://ramon/SkyBoxClouds/skybox_clouds.tscn"
+control_keys = PackedStringArray("WASD", "RMB")
+control_actions = PackedStringArray("move", "rotate slice")
+question = "What does weather look like when you turn out of the world?"
+approach = "Clumped polytope clouds on a 4D skydome, not a painted texture."
+finding = "Clouds genuinely reshape as you rotate, because they are solids."
+
+[sub_resource type="Resource" id="Resource_65qde"]
+script = ExtResource("1_i2ljj")
+title = "Voxel Port"
+blurb = "Streamed 4D terrain, contoured per slice"
+maturity = "Greybox"
+clip = "voxel_port"
+icon = ExtResource("9_jn372")
+control_keys = PackedStringArray("WASD", "Q / E")
+control_actions = PackedStringArray("move", "through w")
+question = "Does 4D terrain scale beyond a single authored room?"
+approach = "Chunked field streamed and contoured around the viewer."
+finding = "Streaming holds; total tetrahedra, not visible geometry, is the budget."
+
+[resource]
+script = ExtResource("10_ajynb")
+entries = Array[ExtResource("1_i2ljj")]([SubResource("Resource_uy7oo"), SubResource("Resource_3f7jf"), SubResource("Resource_snm5f"), SubResource("Resource_d6obk"), SubResource("Resource_fmw2o"), SubResource("Resource_3ffix"), SubResource("Resource_b8wcl"), SubResource("Resource_65qde")])
