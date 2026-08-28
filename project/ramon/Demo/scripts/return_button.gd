@@ -53,7 +53,7 @@ const GENERATED_META := "hub_generated"
 ## breaks every return button at once - which already happened when hub3.tscn
 ## became hub3Final.tscn and all seven prompts quietly stopped working. If the
 ## mockup is ever renamed or promoted out of ramon/Menu/, update this line.
-@export_file("*.tscn") var hub_scene_path: String = "res://ramon/Menu.tscn":
+@export_file("*.tscn") var hub_scene_path: String = "res://ramon/Menu2.tscn":
 	set(value):
 		hub_scene_path = value
 		rebuild()

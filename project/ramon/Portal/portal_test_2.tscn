@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://302bo3ja44d1"]
+[gd_scene load_steps=8 format=3 uid="uid://302bo3ja44d1"]
 
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://dfygcymspf1ni" path="res://ramon/Portal/scripts/portal_player_4d.gd" id="2_playerfork"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://dfoau8xr7us5b" path="res://ramon/Portal/scripts/portal_link.gd" id="4_link"]
 [ext_resource type="Script" uid="uid://cyyceo4ln6v2c" path="res://ramon/Portal/scripts/portal_gun_4d.gd" id="5_gun"]
 [ext_resource type="Script" uid="uid://bidpu58b8558l" path="res://ramon/Portal/scripts/portal_test_hud.gd" id="6_hud"]
+[ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="99_return"]
 
 [node name="PortalTestChamber" type="Control"]
 layout_mode = 3
@@ -45,5 +46,7 @@ offset_left = 24.0
 offset_top = 24.0
 offset_right = 980.0
 offset_bottom = 460.0
+
+[node name="ReturnButton" parent="." instance=ExtResource("99_return")]
 
 [editable path="ChamberWorld/Player"]

@@ -1,9 +1,10 @@
-[gd_scene load_steps=9 format=3 uid="uid://cbdcicmwagnh7"]
+[gd_scene load_steps=10 format=3 uid="uid://cbdcicmwagnh7"]
 
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://4n0bgbb5riu6" path="res://scripts/motion_lab_creature.gd" id="2_creature"]
 [ext_resource type="Script" uid="uid://c4t188rvrge8l" path="res://scripts/motion_lab_controller.gd" id="3_controller"]
 [ext_resource type="Script" uid="uid://p1c5m88xxyj7" path="res://scripts/poi_radar.gd" id="4_poiradar"]
+[ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="99_return"]
 
 [sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
 horizon_color = Color(0.75, 0.82, 0.9, 1)
@@ -107,5 +108,7 @@ camera_path = NodePath("../FlatPlane/Player")
 rig_path = NodePath("../FlatPlane/Player")
 poi_container_path = NodePath("../FlatPlane")
 direction_source_path = NodePath("../FlatPlane/MotionLabCreature/Body")
+
+[node name="ReturnButton" parent="." instance=ExtResource("99_return")]
 
 [editable path="FlatPlane/Player"]

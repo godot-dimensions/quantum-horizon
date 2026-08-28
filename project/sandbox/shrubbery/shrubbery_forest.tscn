@@ -1,8 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://c5ptumtrrknwk"]
+[gd_scene load_steps=9 format=3 uid="uid://c5ptumtrrknwk"]
 
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://bls67qjuoxwry" path="res://sandbox/shrubbery/shrubbery_forest.gd" id="2_forest"]
 [ext_resource type="Script" uid="uid://j4u3q38x3g2y" path="res://sandbox/shrubbery/shrubbery_forest_controller.gd" id="3_controller"]
+[ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="99_return"]
 
 [sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
 horizon_color = Color(0.75, 0.82, 0.9, 1)
@@ -82,5 +83,7 @@ script = ExtResource("3_controller")
 forest_path = NodePath("../FlatPlane/ShrubberyForestRoot")
 hint_label_path = NodePath("../HintLabel")
 info_label_path = NodePath("../InfoLabel")
+
+[node name="ReturnButton" parent="." instance=ExtResource("99_return")]
 
 [editable path="FlatPlane/Player"]
