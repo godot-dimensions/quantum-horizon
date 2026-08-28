@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://2yrp524m1rto" path="res://ramon/Demo/scripts/hub_gate_def.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://g3hckkpp33vx" path="res://ramon/Demo/textures/icon_portal_chamber.png" id="2_icon"]
-[ext_resource type="PackedScene" path="res://ramon/Portal/voxel_chunk_test.tscn" id="3_target"]
+[ext_resource type="PackedScene" path="res://ramon/Portal/portal_test_1.tscn" id="3_target"]
 
 [resource]
 script = ExtResource("1_script")

@@ -7,7 +7,7 @@ extends SceneTree
 ## mis-sliced tends to vanish only from certain angles, heights or w positions.
 ## This sweeps all three so the artifact has nowhere to hide.
 
-const SCENE_PATH := "res://ramon/Portal/voxel_chunk_test.tscn"
+const SCENE_PATH := "res://ramon/Portal/portal_test_1.tscn"
 const WARMUP := 10
 
 ## position, yaw, and w - deliberately including steep and grazing angles, and

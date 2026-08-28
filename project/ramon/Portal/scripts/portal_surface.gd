@@ -18,6 +18,7 @@ extends Node4D
 ## NARROWEST chord it spans - so the hole always sits inside the visible circle
 ## and there is nowhere you can pass that does not look open.
 
+const PortalShading := preload("res://ramon/Portal/scripts/portal_shading.gd")
 const WhiteTexture: Texture3D = preload("res://textures/dev_finals/ramdev_white.png")
 
 ## Panel extents across its own face, in metres.
@@ -120,7 +121,7 @@ func has_hole() -> bool:
 func _make_material() -> TetraMaterial4D:
 	var material := TetraMaterial4D.new()
 	material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY
-	FlatShadingRamon.apply(material)
+	PortalShading.apply(material)
 	material.albedo_texture_3d = WhiteTexture
 	return material
 

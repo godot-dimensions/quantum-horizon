@@ -2,7 +2,7 @@ extends SceneTree
 ## Exercises the chunked wall: shots land anywhere, overlapping cuts merge, and
 ## every opening heals shut again. Renders at three moments in that cycle.
 
-const SCENE_PATH := "res://ramon/Portal/voxel_chunk_test.tscn"
+const SCENE_PATH := "res://ramon/Portal/portal_test_1.tscn"
 const SHOTS := [
 	Vector4(-2.4, 1.9, -8.0, 0.0),
 	Vector4(-1.5, 1.5, -8.0, 0.0),   # overlaps the first: must merge, not stack

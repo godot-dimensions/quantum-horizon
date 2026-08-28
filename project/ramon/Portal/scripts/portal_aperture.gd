@@ -19,6 +19,7 @@ extends Node4D
 ## scaled frame would corrupt the mapping. The animation scales a child holder
 ## and re-cuts the wall in quantised steps.
 
+const PortalShading := preload("res://ramon/Portal/scripts/portal_shading.gd")
 const WhiteTexture: Texture3D = preload("res://textures/dev_finals/ramdev_white.png")
 
 const RADIUS := 1.4
@@ -105,7 +106,7 @@ func build() -> void:
 func _make_material() -> TetraMaterial4D:
 	var material := TetraMaterial4D.new()
 	material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY
-	FlatShadingRamon.apply(material)
+	PortalShading.apply(material)
 	material.albedo_texture_3d = WhiteTexture
 	return material
 

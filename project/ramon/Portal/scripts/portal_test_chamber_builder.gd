@@ -15,6 +15,7 @@ extends Node4D
 ## and you fall through a loop that keeps accelerating, which is the clearest
 ## demonstration that a portal preserves motion rather than just moving you.
 
+const PortalShading := preload("res://ramon/Portal/scripts/portal_shading.gd")
 const SurfaceScript := preload("res://ramon/Portal/scripts/portal_surface.gd")
 
 const FloorTexture: Texture3D = preload("res://textures/dev_finals/ramdev_grey.png")
@@ -56,7 +57,7 @@ func _ready() -> void:
 func _make_material(texture: Texture3D) -> TetraMaterial4D:
 	var material := TetraMaterial4D.new()
 	material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY
-	FlatShadingRamon.apply(material)
+	PortalShading.apply(material)
 	material.albedo_texture_3d = texture
 	return material
 

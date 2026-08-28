@@ -18,7 +18,7 @@ extends SceneTree
 ##   godot.windows.editor.double.x86_64.console.exe --path project \
 ##       --script res://ramon/Portal/_portal_shot.gd
 
-const CHAMBER_PATH := "res://ramon/Portal/portal_test_chamber.tscn"
+const CHAMBER_PATH := "res://ramon/Portal/portal_test_2.tscn"
 const ApertureScript := preload("res://ramon/Portal/scripts/portal_aperture.gd")
 const WARMUP_FRAMES := 25
 const WALK_FRAMES := 40

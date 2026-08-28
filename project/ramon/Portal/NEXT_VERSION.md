@@ -1,6 +1,6 @@
 # Portal cutting, version 3: chunked voxel walls
 
-> **BUILT 2026-08-19 — `voxel_chunk_test.tscn`.** Shoot the far wall anywhere,
+> **BUILT 2026-08-19 — `portal_test_1.tscn`.** Shoot the far wall anywhere,
 > any number of times; overlapping cuts merge into one opening; every opening
 > heals shut and the wall returns to exactly its original tetrahedron count.
 > Measured: 21 chunks build in 1,093 ms, a carve rebuilds 4 chunks in ~285 ms,
@@ -21,7 +21,7 @@ does exactly what it promises.
 But the architecture around it is wrong in three ways:
 
 1. **One patch per wall.** Shooting again *moves* the patch; you cannot make
-   holes all over a wall the way you can in `portal_test_chamber.tscn`.
+   holes all over a wall the way you can in `portal_test_2.tscn`.
 2. **Cuts are not cumulative.** Each patch is built from a fresh field with a
    single ball in it. In VoxelMining, every chip is another AIR layer on a
    persistent field, so a new chip interacts with all the previous ones — the

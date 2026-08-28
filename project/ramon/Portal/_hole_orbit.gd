@@ -7,7 +7,7 @@ extends SceneTree
 ## "shoot a hole, look from an angle", so this frames one hole and walks around
 ## it, keeping it centred, at the distance a player actually stands.
 
-const SCENE_PATH := "res://ramon/Portal/voxel_chunk_test.tscn"
+const SCENE_PATH := "res://ramon/Portal/portal_test_1.tscn"
 const WARMUP := 12
 const HOLE := Vector4(0.0, 1.5, -9.0, 0.0)
 ## Where the camera sits relative to the hole: sideways offset and distance.

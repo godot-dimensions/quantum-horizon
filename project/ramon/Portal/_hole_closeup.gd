@@ -2,7 +2,7 @@ extends SceneTree
 ## Photographs one opening from close range and at an angle, which is where the
 ## "inverted normals" look around a hole shows up. Distance shots hide it.
 
-const CHAMBER_PATH := "res://ramon/Portal/portal_test_chamber.tscn"
+const CHAMBER_PATH := "res://ramon/Portal/portal_test_2.tscn"
 const WARMUP_FRAMES := 30
 
 var _chamber: Node = null

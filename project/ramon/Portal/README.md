@@ -5,7 +5,20 @@ Two scenes, built in that order, from the strategy paper in
 `PAPER_REVIEW.md` for what in that paper survived contact with this codebase
 and `PORTAL_GAME_RESEARCH.md` for what Portal itself actually does.
 
-## `portal_test_chamber.tscn` — the portal simulation
+The two current scenes are named for how the menu launches them: **Portal Test
+1** (`portal_test_1.tscn`) is the wall you shoot openings through, **Portal Test
+2** (`portal_test_2.tscn`) is the chamber of linked openings. One catalogue entry
+in `ramon/Menu2.tscn` carries both, with a launch button each.
+
+## `portal_test_1.tscn` — the shootable wall
+
+A shooting-range room whose far wall is a grid of dual-contoured voxel chunks.
+Shoot it anywhere, any number of times; overlapping cuts merge into one opening
+and stay open. `NEXT_VERSION.md` is the design and the measurements; the short
+version is 40.5 ms per chunk rebuild, 10,752 tetrahedra, four chunks touched per
+shot.
+
+## `portal_test_2.tscn` — the portal simulation
 
 **The current scene.** A sealed room whose four walls take a portal **anywhere
 you aim**, plus a white square of floor and ceiling on a shared footprint, and
