@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Quantum Horizon Main Godot Project"
-run/main_scene="res://ramon/Menu.tscn"
+run/main_scene="uid://cku17c6k0ngeh"
 config/features=PackedStringArray("4.5", "Double Precision")
 config/icon="res://icon.svg"
 

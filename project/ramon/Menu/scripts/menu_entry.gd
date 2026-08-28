@@ -32,6 +32,27 @@ class_name MenuEntry
 		maturity = value
 		emit_changed()
 
+## Roughly how long this takes to see, e.g. "90 sec". Shown next to the maturity
+## badge and in the row.
+##
+## Exists because eight unknowns feel longer than eight ninety-second things -
+## someone deciding whether to click wants to know what they are committing to,
+## and not knowing is itself a reason not to click.
+@export var duration: String = "":
+	set(value):
+		duration = value
+		emit_changed()
+
+## A second sentence for the detail pane.
+##
+## The blurb is shown in the ROW; repeating it verbatim in the pane beside it
+## wastes the most valuable line on the screen. Left empty, the pane falls back
+## to the blurb, so this is an upgrade rather than a requirement.
+@export_multiline var detail: String = "":
+	set(value):
+		detail = value
+		emit_changed()
+
 @export_group("Media")
 ## Basename in `thumbs/`. The menu looks for `<clip>.ogv` first, then
 ## `<clip>_loop.png`, then falls back to the icon.
@@ -61,6 +82,37 @@ class_name MenuEntry
 @export_file("*.tscn") var scene_path: String = "":
 	set(value):
 		scene_path = value
+		emit_changed()
+
+@export_group("Launch")
+## Overrides [MenuCatalogue]'s launch label for this entry only. Empty means
+## "use the catalogue's", which is what every single-scene entry wants.
+##
+## Exists for entries that launch more than one scene, where a button reading
+## LAUNCH next to another button reading LAUNCH says nothing.
+@export var launch_label: String = "":
+	set(value):
+		launch_label = value
+		emit_changed()
+
+## Further scenes this entry can start, each getting its own button beside the
+## primary one. Parallel arrays, same reasoning as the control strip above.
+##
+## One prototype is not always one scene. Portal is two: a wall you shoot holes
+## through and a chamber of linked openings. They share a question, a folder and
+## a set of findings, so splitting them into two rows would say they are two
+## unrelated things - but landing on one when you wanted the other is worse.
+## Both live in one row, and the pane offers both.
+@export var extra_launch_labels: PackedStringArray = PackedStringArray():
+	set(value):
+		extra_launch_labels = value
+		emit_changed()
+
+## Paths, aligned with `extra_launch_labels`. Not `@export_file` because Godot
+## has no per-element file picker for a PackedStringArray.
+@export var extra_launch_scenes: PackedStringArray = PackedStringArray():
+	set(value):
+		extra_launch_scenes = value
 		emit_changed()
 
 @export_group("Controls")
@@ -106,6 +158,19 @@ class_name MenuEntry
 		finding = value
 		emit_changed()
 
+## Measured numbers, as a single line - "130 ms per carve · ~58 fps · 10,752
+## tetrahedra". Rendered as its own strip below the three cells rather than as a
+## fourth cell.
+##
+## Kept SEPARATE from `finding` on purpose: a finding is a claim and a benchmark
+## is a measurement, and mixing them makes both weaker. It is also the block an
+## R&D or academic reader goes to first, so it wants its own place on the page
+## rather than being buried inside prose.
+@export_multiline var benchmark: String = "":
+	set(value):
+		benchmark = value
+		emit_changed()
+
 
 ## Pairs the two control arrays, tolerating a mismatched length rather than
 ## erroring - a half-filled row in the inspector should render what it has.
@@ -115,6 +180,29 @@ func control_pairs() -> Array[Dictionary]:
 		var action: String = control_actions[i] if i < control_actions.size() else ""
 		pairs.append({"key": control_keys[i], "action": action})
 	return pairs
+
+
+## Every scene this entry can start, as {label, path}, primary first.
+##
+## `default_label` is the catalogue's, used whenever this entry has not named
+## its own. An extra target with no label falls back to its file's basename
+## rather than rendering a blank button.
+func launch_targets(default_label: String) -> Array[Dictionary]:
+	var targets: Array[Dictionary] = []
+	if scene_path != "":
+		targets.append({
+			"label": launch_label if launch_label != "" else default_label,
+			"path": scene_path,
+		})
+	for i in extra_launch_scenes.size():
+		var path: String = extra_launch_scenes[i]
+		if path == "":
+			continue
+		var label: String = extra_launch_labels[i] if i < extra_launch_labels.size() else ""
+		if label == "":
+			label = path.get_file().get_basename().replace("_", " ").to_upper()
+		targets.append({"label": label, "path": path})
+	return targets
 
 
 func has_info() -> bool:

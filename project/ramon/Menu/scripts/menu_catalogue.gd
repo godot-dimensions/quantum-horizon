@@ -98,6 +98,12 @@ func notice_text() -> String:
 		finding_label = value
 		emit_changed()
 
+## Heading for the measurements strip under the three cells.
+@export var benchmark_label: String = "MEASURED":
+	set(value):
+		benchmark_label = value
+		emit_changed()
+
 
 func subtitle_text() -> String:
 	return tour_subtitle.replace("{count}", str(entries.size()))

@@ -6,11 +6,23 @@ extends SceneTree
 ## missing UIDs, wrong load_steps, sub-resource ids that collide. Letting
 ## ResourceSaver write them means the format is correct by construction.
 ##
-## Safe to re-run: it OVERWRITES both files, so run it once and then edit in the
-## inspector, not the other way round.
+## NOT SAFE TO RE-RUN, AND IT NOW REFUSES TO.
+##
+## This writes the catalogue from the hardcoded SEED below, which is a snapshot
+## of what the list looked like when the menu was first built. Everything added
+## since - durations, detail lines, benchmark figures, per-entry crops, Motion
+## Lab, Shrubbery Forest, and every edit made in the inspector - exists only in
+## the .tres and is NOT in SEED. Running this over a populated catalogue would
+## silently delete all of it.
+##
+## So it bails out if the catalogue already exists. Pass `overwrite` after `--`
+## if you genuinely mean to throw the current one away.
 ##
 ##   godot.windows.editor.double.x86_64.console.exe --headless --path project \
 ##       --script res://ramon/Menu/_bootstrap_catalogue.gd
+##
+## To ADD to the catalogue rather than replace it, copy `_seed_menu2_entries.gd`
+## instead - that one loads what is there and edits it.
 
 const StyleScript := preload("res://ramon/Menu/scripts/menu_style.gd")
 const EntryScript := preload("res://ramon/Menu/scripts/menu_entry.gd")
@@ -66,12 +78,12 @@ const SEED: Array[Dictionary] = [
 		"finding": "Physics is axis-aligned boxes only: no ramps, every rise is a step.",
 	},
 	{
-		"title": "Portal Chamber",
+		"title": "Portal",
 		"blurb": "Linked openings that drop you somewhere else",
 		"maturity": "Prototype",
 		"clip": "portal",
 		"icon": "icon_portal_chamber.png",
-		"scene": "res://ramon/Portal/voxel_chunk_test.tscn",
+		"scene": "res://ramon/Portal/portal_test_1.tscn",
 		"keys": ["LMB", "F", "RMB"],
 		"actions": ["blue portal", "yellow portal", "rotate slice"],
 		"question": "Does Portal's momentum-preserving link survive four dimensions?",
@@ -134,6 +146,9 @@ const SEED: Array[Dictionary] = [
 
 
 func _initialize() -> void:
+	if not _may_overwrite():
+		return
+
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://ramon/Menu/style/"))
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://ramon/Menu/entries/"))
 
@@ -168,6 +183,37 @@ func _initialize() -> void:
 
 	print("BOOTSTRAP: wrote %s and %s (%d entries)" % [STYLE_PATH, CATALOGUE_PATH, built.size()])
 	quit(0)
+
+
+## Refuses to clobber a catalogue that already exists, and says what would be
+## lost rather than just saying no.
+##
+## The guard reports the CURRENT entry count against SEED's, because the two
+## diverging is the whole hazard: the file on disk has grown entries and fields
+## this script has never heard of.
+func _may_overwrite() -> bool:
+	if not ResourceLoader.exists(CATALOGUE_PATH):
+		return true
+
+	var wanted: bool = false
+	for arg in OS.get_cmdline_user_args():
+		if arg == "overwrite":
+			wanted = true
+	if wanted:
+		print("BOOTSTRAP: overwriting %s as instructed" % CATALOGUE_PATH)
+		return true
+
+	var existing: Resource = load(CATALOGUE_PATH)
+	var count: int = existing.entries.size() if existing != null else -1
+	printerr("BOOTSTRAP: REFUSING TO RUN.")
+	printerr("  %s already exists with %d entries; this script would replace it with %d" % [
+		CATALOGUE_PATH, count, SEED.size()
+	])
+	printerr("  and drop every duration, detail line, benchmark and crop added since.")
+	printerr("  To add entries instead, copy _seed_menu2_entries.gd.")
+	printerr("  To replace it anyway:  --script ... -- overwrite")
+	quit(1)
+	return false
 
 
 func _save(resource: Resource, path: String) -> void:

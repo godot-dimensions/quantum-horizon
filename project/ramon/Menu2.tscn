@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3 uid="uid://cku17c6k0ngeh"]
+
+[ext_resource type="Script" uid="uid://5immhlodd5y0" path="res://ramon/Menu/scripts/menu2.gd" id="1_script"]
+[ext_resource type="Resource" path="res://ramon/Menu/style/menu2_style.tres" id="2_style"]
+[ext_resource type="Resource" uid="uid://b6ehjm0dis877" path="res://ramon/Menu/entries/catalogue.tres" id="3_catalogue"]
+
+[node name="Menu2" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+style = ExtResource("2_style")
+catalogue = ExtResource("3_catalogue")
+preview_focus_live = 0.22

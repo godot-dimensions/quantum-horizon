@@ -85,7 +85,7 @@ const PERFORMANCES: Dictionary = {
 		{"at": 8.0, "yaw": -10.0},
 	],
 
-	# voxel_chunk_test: shoot the wall anywhere, any number of times, and the
+	# portal_test_1: shoot the wall anywhere, any number of times, and the
 	# openings merge and then heal shut. One shot proves nothing - the point is
 	# cumulative cuts - so this pulses `fire` across a slow pan, then holds
 	# still while the wall heals.
@@ -147,6 +147,38 @@ const PERFORMANCES: Dictionary = {
 		{"at": 7.6, "yaw": 10.0},
 	],
 
+	# Gaits are read as RAW KEYCODES by creature_gait_input_router.gd, not as
+	# input actions, so they go through `key` rather than `tap`. Cycling through
+	# walk / trot / hop is the whole point of the clip - a single gait held for
+	# nine seconds shows a loop, not a system.
+	# No yaw or movement: the camera is parked by CAMERAS above, so neither would
+	# reach it. The creatures animate themselves, which is the whole subject -
+	# the clip only has to change gait and let them run.
+	# The scene starts HALTED, so beat one has to start it walking or the clip
+	# opens on a creature standing still. Gait changes first, then a limb added
+	# with L - watching the solver absorb a fifth leg with no new rig is the
+	# claim the whole system is making.
+	"creature": [
+		{"at": 0.0, "key": KEY_1},
+		{"at": 2.6, "key": KEY_2},
+		{"at": 4.8, "key": KEY_3},
+		{"at": 6.6, "key": KEY_L},
+		{"at": 7.8, "key": KEY_1},
+	],
+
+	# A continuous slow pan, because the trees are scattered across the plain
+	# and a fixed view catches one of them at best - the first cut spent half its
+	# frames on empty ground. Panning sweeps several through the frame.
+	#
+	# Deliberately no `G` (new seed) anywhere: regenerating the forest takes
+	# ~2.8 s on the main thread and would freeze the recording mid-clip.
+	"shrubbery": [
+		{"at": 0.0, "yaw": 11.0},
+		{"at": 3.4, "slice": 18.0, "yaw": 0.0},
+		{"at": 5.6, "yaw": 11.0},
+		{"at": 8.2, "slice": -18.0},
+	],
+
 	# No verb at all - this one is scenery, and the claim is that the clouds are
 	# real solids rather than a painted sky, so they RESHAPE under slice
 	# rotation instead of merely sliding past. Slow and continuous, no walking:
@@ -157,6 +189,24 @@ const PERFORMANCES: Dictionary = {
 		{"at": 5.5, "yaw": -6.0},
 		{"at": 6.5, "slice": -14.0},
 	],
+}
+
+## Per-clip camera override, for scenes whose spawn view does not face the
+## content. Absolute world position plus a downward pitch; the camera is
+## detached from the player rig so the controller cannot fight it.
+##
+## Only for scenes that animate BY THEMSELVES, because detaching also means the
+## recorded movement and slice rotation no longer move the view. Creature
+## Gallery qualifies - the creatures walk on their own, and its player spawns at
+## z = -12 facing away from hoppers standing at z = 0.
+const CAMERAS: Dictionary = {
+	# The TREADMILL scene, not the gallery. The gallery spreads five creatures
+	# across 40 m of plain and its player spawns facing away from all of them;
+	# from anywhere far enough to see several, they are specks, and from close
+	# they read as loose coloured blocks rather than an animal. The treadmill
+	# runs one creature repeating its gait in place, which is both the clearer
+	# picture and a natural loop.
+	"creature": {"position": Vector4(0.0, 3.2, 9.5, 0.0), "pitch": -9.0},
 }
 
 var _scene_path: String = "res://ramon/PhaseMaze/phase_maze.tscn"
@@ -214,6 +264,7 @@ func _initialize() -> void:
 	set_current_scene(_root_node)
 
 	_hide_screen_ui(_root_node)
+	_apply_camera_override()
 	_player = _find_movable(_root_node)
 	if _player != null:
 		_start_position = _player.global_position
@@ -239,6 +290,50 @@ func _hide_screen_ui(node: Node) -> void:
 			(child as Control).visible = false
 			continue
 		_hide_screen_ui(child)
+
+
+## Parks the camera at a fixed vantage for clips that declare one.
+##
+## Detached from its holder first, for the reason Demo/_screenshot.gd gives:
+## left under the rig, the controller's own transform fights whatever is set
+## here. Pitch is about X, so local -Z points down-and-forward.
+func _apply_camera_override() -> void:
+	if not CAMERAS.has(_basename):
+		return
+	var spec: Dictionary = CAMERAS[_basename]
+	var camera: Node4D = _find_camera(_root_node)
+	if camera == null:
+		printerr("CLIP: camera override requested but no Camera4D found")
+		return
+
+	var holder: Node = camera.get_parent()
+	if holder != null and holder != _root_node:
+		holder.remove_child(camera)
+		# Cleared first, or Godot warns the node's owner is now inconsistent.
+		camera.owner = null
+		_root_node.add_child(camera)
+
+	camera.position = spec["position"]
+	var radians: float = deg_to_rad(float(spec["pitch"]))
+	var c: float = cos(radians)
+	var s: float = sin(radians)
+	camera.basis = Projection(
+		Vector4(1.0, 0.0, 0.0, 0.0),
+		Vector4(0.0, c, s, 0.0),
+		Vector4(0.0, -s, c, 0.0),
+		Vector4(0.0, 0.0, 0.0, 1.0)
+	)
+	print("CLIP: camera parked at ", spec["position"], " pitch ", spec["pitch"])
+
+
+func _find_camera(node: Node) -> Node4D:
+	if node is Camera4D:
+		return node as Node4D
+	for child in node.get_children():
+		var found: Node4D = _find_camera(child)
+		if found != null:
+			return found
+	return null
 
 
 ## Whatever the clip actually moves - a CharacterBody4D in the first-person
@@ -394,6 +489,9 @@ func _tap_key(keycode: int) -> void:
 	release.keycode = keycode
 	release.pressed = false
 	Input.parse_input_event(release)
+	# Counted like an action tap, or a clip driven entirely by raw keycodes -
+	# the creature gaits are - reports "NO VERB EVER FIRED" while working fine.
+	_verb_count += 1
 
 
 func _send_motion(relative: Vector2) -> void:

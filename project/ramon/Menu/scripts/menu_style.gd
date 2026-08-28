@@ -181,6 +181,34 @@ const DISPLAY: int = 3
 		positive = value
 		emit_changed()
 
+## Heading colour for the measurements strip.
+##
+## Its own token rather than reusing `positive`, which means "played" on the row
+## dots. A measurement is not a success, and two meanings sharing one colour is
+## how a palette stops encoding anything. Muted teal keeps it distinct from both
+## the blue cell headings and the green dots.
+@export var benchmark_accent: Color = Color(0.45, 0.72, 0.70):
+	set(value):
+		benchmark_accent = value
+		emit_changed()
+
+## Fill for the Launch bar.
+##
+## It previously used Godot's default Button theme, which on this ground sat at
+## almost exactly the panel colour - the most important control on the screen
+## was the hardest thing to see. A step lighter than the surface is enough: it
+## reads as a control without competing with the accent, which is spoken for by
+## the hero banner and the selection bar.
+@export var launch_fill: Color = Color(0.185, 0.205, 0.245):
+	set(value):
+		launch_fill = value
+		emit_changed()
+
+@export var launch_fill_hover: Color = Color(0.245, 0.270, 0.320):
+	set(value):
+		launch_fill_hover = value
+		emit_changed()
+
 # --------------------------------------------------------------------------
 # Layout
 # --------------------------------------------------------------------------
@@ -225,6 +253,43 @@ const DISPLAY: int = 3
 @export_range(-3, 3, 1) var info_body_step: int = -1:
 	set(value):
 		info_body_step = value
+		emit_changed()
+
+## Fine adjustment in PIXELS, on top of the step above.
+##
+## The modular scale moves in whole steps, and a step is a ~28% jump - far more
+## than "nudge it one point bigger" ever means. These two let the info text be
+## tuned by single pixels without leaving the scale or dragging every other size
+## along with it.
+@export_range(-6, 6, 1, "suffix:px") var info_label_nudge: int = 0:
+	set(value):
+		info_label_nudge = value
+		emit_changed()
+
+@export_range(-6, 6, 1, "suffix:px") var info_body_nudge: int = 1:
+	set(value):
+		info_body_nudge = value
+		emit_changed()
+
+@export_subgroup("Detail pane spacing")
+## Vertical gap between the blocks stacked down the detail pane - preview,
+## title, blurb, controls, cells, measurements. In spacing units, fractional, so
+## it can be dragged to taste rather than jumping in whole steps.
+@export_range(0.5, 8.0, 0.1) var detail_paragraph_gap: float = 2.0:
+	set(value):
+		detail_paragraph_gap = value
+		emit_changed()
+
+## Horizontal gap between the three info cells.
+@export_range(0.5, 8.0, 0.1) var info_cell_h_gap: float = 2.0:
+	set(value):
+		info_cell_h_gap = value
+		emit_changed()
+
+## Vertical gap between an info cell's heading and its body.
+@export_range(0.0, 4.0, 0.1) var info_cell_label_gap: float = 0.5:
+	set(value):
+		info_cell_label_gap = value
 		emit_changed()
 
 ## How many info cells sit side by side before wrapping. Three fits the
