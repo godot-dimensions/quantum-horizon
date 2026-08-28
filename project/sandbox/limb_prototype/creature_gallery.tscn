@@ -1,9 +1,11 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3 uid="uid://dsfkq1f3df5if"]
 
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://sandbox/limb_prototype/creature_template.tscn" id="2_creature"]
-[ext_resource type="Script" path="res://scripts/poi_radar.gd" id="3_poiradar"]
-[ext_resource type="Script" path="res://scripts/creature_gait_input_router.gd" id="4_router"]
+[ext_resource type="Script" uid="uid://p1c5m88xxyj7" path="res://scripts/poi_radar.gd" id="3_poiradar"]
+[ext_resource type="Script" uid="uid://dl7s71uds1jka" path="res://scripts/creature_gait_input_router.gd" id="4_router"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_p87bd"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_ground"]
 size = Vector4(140, 1, 220, 30)
@@ -21,6 +23,11 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="WorldEnvironment4D" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_p87bd")
+tonemap_mode = 2
 
 [node name="FlatPlane" type="Node4D" parent="."]
 
@@ -40,90 +47,31 @@ position = Vector4(0, 3, -12, 0)
 [node name="Hopper1" parent="FlatPlane" instance=ExtResource("2_creature")]
 position = Vector4(-20, 0, 0, 0)
 
-[node name="Body" parent="FlatPlane/Hopper1"]
-creature_class = "hopper"
-
-[node name="BodyPOI" parent="FlatPlane/Hopper1/Body"]
-category = 2
-display_name = "Hopper 1"
-
 [node name="Hopper2" parent="FlatPlane" instance=ExtResource("2_creature")]
 position = Vector4(-10, 0, 0, 0)
 
-[node name="Body" parent="FlatPlane/Hopper2"]
-creature_class = "hopper"
-
-[node name="BodyPOI" parent="FlatPlane/Hopper2/Body"]
-category = 2
-display_name = "Hopper 2"
-
 [node name="Hopper3" parent="FlatPlane" instance=ExtResource("2_creature")]
-position = Vector4(0, 0, 0, 0)
-
-[node name="Body" parent="FlatPlane/Hopper3"]
-creature_class = "hopper"
-
-[node name="BodyPOI" parent="FlatPlane/Hopper3/Body"]
-category = 2
-display_name = "Hopper 3"
 
 [node name="Hopper4" parent="FlatPlane" instance=ExtResource("2_creature")]
 position = Vector4(10, 0, 0, 0)
 
-[node name="Body" parent="FlatPlane/Hopper4"]
-creature_class = "hopper"
-
-[node name="BodyPOI" parent="FlatPlane/Hopper4/Body"]
-category = 2
-display_name = "Hopper 4"
-
 [node name="Hopper5" parent="FlatPlane" instance=ExtResource("2_creature")]
 position = Vector4(20, 0, 0, 0)
-
-[node name="Body" parent="FlatPlane/Hopper5"]
-creature_class = "hopper"
-
-[node name="BodyPOI" parent="FlatPlane/Hopper5/Body"]
-category = 2
-display_name = "Hopper 5"
 
 [node name="Steed1" parent="FlatPlane" instance=ExtResource("2_creature")]
 position = Vector4(-15, 0, 60, 0)
 
-[node name="BodyPOI" parent="FlatPlane/Steed1/Body"]
-display_name = "Steed 1"
-
 [node name="Steed2" parent="FlatPlane" instance=ExtResource("2_creature")]
 position = Vector4(0, 0, 60, 0)
-
-[node name="BodyPOI" parent="FlatPlane/Steed2/Body"]
-display_name = "Steed 2"
 
 [node name="Steed3" parent="FlatPlane" instance=ExtResource("2_creature")]
 position = Vector4(15, 0, 60, 0)
 
-[node name="BodyPOI" parent="FlatPlane/Steed3/Body"]
-display_name = "Steed 3"
-
 [node name="Giraffe1" parent="FlatPlane" instance=ExtResource("2_creature")]
 position = Vector4(-25, 0, 160, 0)
 
-[node name="Body" parent="FlatPlane/Giraffe1"]
-creature_class = "giraffe"
-
-[node name="BodyPOI" parent="FlatPlane/Giraffe1/Body"]
-category = 0
-display_name = "Giraffe 1"
-
 [node name="Giraffe2" parent="FlatPlane" instance=ExtResource("2_creature")]
 position = Vector4(25, 0, 160, 0)
-
-[node name="Body" parent="FlatPlane/Giraffe2"]
-creature_class = "giraffe"
-
-[node name="BodyPOI" parent="FlatPlane/Giraffe2/Body"]
-category = 0
-display_name = "Giraffe 2"
 
 [node name="InfoLabel" type="Label" parent="."]
 custom_minimum_size = Vector2(760, 26)
