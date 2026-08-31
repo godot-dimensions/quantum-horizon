@@ -16,4 +16,4 @@ const FlatShadedShader := preload("res://ramon/Portal/shaders/portal_flat_shaded
 ## setting the texture afterwards re-runs update_cross_section_material() so the
 ## texture is pushed at the replacement rather than left unbound.
 static func apply(material: TetraMaterial4D) -> void:
-	material.get_cross_section_material().shader = FlatShadedShader
+	material.get_cross_section_material_3d().shader = FlatShadedShader

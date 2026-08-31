@@ -150,7 +150,7 @@ func _process(_delta: float) -> bool:
 		# typing this as Material throws every frame instead of failing once.
 		var mat: Material4D = surface.material_override
 		if mat != null and mat.has_method("get_cross_section_material"):
-			var cs: ShaderMaterial = mat.get_cross_section_material()
+			var cs: ShaderMaterial = mat.get_cross_section_material_3d()
 			if cs != null:
 				var shader_name := "stock"
 				if cs.shader != null and not cs.shader.resource_path.is_empty():

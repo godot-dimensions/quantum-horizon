@@ -52,7 +52,7 @@ static func tiled(palette_name: String, size: Vector4, texture_metres: float, al
 	# texture afterwards re-runs update_cross_section_material() and binds
 	# albedo_texture against the replacement rather than leaving it unbound. Same
 	# ordering trick phase_maze_builder.gd documents.
-	var cross_section: ShaderMaterial = material.get_cross_section_material()
+	var cross_section: ShaderMaterial = material.get_cross_section_material_3d()
 	cross_section.shader = TiledShader
 	material.albedo_texture_3d = texture
 	cross_section.set_shader_parameter("surface_size", size)

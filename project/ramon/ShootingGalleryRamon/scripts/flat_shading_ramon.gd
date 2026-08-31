@@ -14,7 +14,7 @@ const FlatShadedShader := preload("res://ramon/PhaseMaze/shaders/phase_maze_flat
 
 ## Swaps a single TetraMaterial4D's cross-section shader for the flat-shaded one.
 static func apply(material: TetraMaterial4D) -> void:
-	material.get_cross_section_material().shader = FlatShadedShader
+	material.get_cross_section_material_3d().shader = FlatShadedShader
 
 
 ## Walks a subtree and applies the swap to every MeshInstance4D found whose

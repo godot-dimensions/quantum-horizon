@@ -16,7 +16,7 @@ const GridShader := preload("res://sandbox/synthwave/synthwave_grid.gdshader")
 
 func _ready() -> void:
 	var ground_material := TetraMaterial4D.new()
-	var shader_material: ShaderMaterial = ground_material.get_cross_section_material()
+	var shader_material: ShaderMaterial = ground_material.get_cross_section_material_3d()
 	shader_material.shader = GridShader
 	shader_material.set_shader_parameter("line_color", line_color)
 	shader_material.set_shader_parameter("fill_color", fill_color)

@@ -94,12 +94,12 @@ func _ready() -> void:
 		material_override = TetraMaterial4D.new()
 	var tetra_mat: TetraMaterial4D = material_override
 
-	# get_cross_section_material() only auto-assigns the engine's default
+	# get_cross_section_material_3d() only auto-assigns the engine's default
 	# shader if this slot is still null (see TetraMaterial4D::
 	# update_cross_section_material() in the engine source) - assigning
 	# ours here makes it stick permanently, confirmed directly this
 	# session with an isolated test object before building this for real.
-	_material = tetra_mat.get_cross_section_material()
+	_material = tetra_mat.get_cross_section_material_3d()
 	_material.shader = CLOUD_SHADER
 	_material.set_shader_parameter("noise_volume_atlas", NOISE_ATLAS)
 

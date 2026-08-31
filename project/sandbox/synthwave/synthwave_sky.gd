@@ -52,7 +52,7 @@ func _ready() -> void:
 	# per-frame updates only ever touch its two known uniforms (albedo,
 	# albedo_texture), so they don't disturb these.
 	var shell_material := TetraMaterial4D.new()
-	_shell_shader_material = shell_material.get_cross_section_material()
+	_shell_shader_material = shell_material.get_cross_section_material_3d()
 	_shell_shader_material.shader = SkyShader
 	shell.material_override = shell_material
 
@@ -68,7 +68,7 @@ func _ready() -> void:
 	)
 	sun_visual.position = Vector4(0, 0, 0, -w_scale * 0.5)
 	var sun_material := TetraMaterial4D.new()
-	_sun_shader_material = sun_material.get_cross_section_material()
+	_sun_shader_material = sun_material.get_cross_section_material_3d()
 	_sun_shader_material.shader = SunShader
 	_sun_shader_material.set_shader_parameter("native_round_radius", CYLINDER_NATIVE_ROUND_RADIUS)
 	sun_visual.material_override = sun_material

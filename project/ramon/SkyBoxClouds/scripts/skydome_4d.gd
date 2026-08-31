@@ -88,7 +88,7 @@ func _ready() -> void:
 ## generated embeds all 600 tetrahedra into the .tscn - and, far worse, leaves
 ## `mesh` non-null on load, so [method _ready] skips generate(). Everything
 ## generate() does at runtime is then skipped too, including assigning the sky
-## shader via get_cross_section_material(). The dome falls back to the engine's
+## shader via get_cross_section_material_3d(). The dome falls back to the engine's
 ## stock cross-section shader, which culls back faces, and from inside the
 ## shell that means it renders as nothing at all. This is exactly why the sky
 ## appeared in the editor but not in Play.
@@ -166,7 +166,7 @@ func generate() -> void:
 	# empty, so once this is set it survives; setting the texture afterwards
 	# re-runs update_cross_section_material() and pushes `albedo_texture` at the
 	# replacement rather than leaving it unbound.
-	var cross_section: ShaderMaterial = material.get_cross_section_material()
+	var cross_section: ShaderMaterial = material.get_cross_section_material_3d()
 	cross_section.shader = load(SKY_SHADER_PATH)
 	material.albedo_texture_3d = _build_ramp_texture()
 

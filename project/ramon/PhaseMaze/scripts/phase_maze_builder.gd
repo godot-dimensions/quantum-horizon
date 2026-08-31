@@ -122,7 +122,7 @@ func _make_material(texture: Texture3D) -> TetraMaterial4D:
 	# the slot is empty, so once this is set it survives; setting the texture
 	# afterwards re-runs update_cross_section_material() and pushes
 	# albedo_texture at the replacement rather than leaving it unbound.
-	var cross_section: ShaderMaterial = material.get_cross_section_material()
+	var cross_section: ShaderMaterial = material.get_cross_section_material_3d()
 	cross_section.shader = FlatShadedShader
 	material.albedo_texture_3d = texture
 	return material
