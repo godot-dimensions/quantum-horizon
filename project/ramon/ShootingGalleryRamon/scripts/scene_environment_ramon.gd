@@ -19,4 +19,18 @@ func _ready() -> void:
 	# it's visible without a Light4D/WorldEnvironment4D. Dynamically spawned
 	# objects (targets, ducks, blockers, etc.) apply this themselves at spawn
 	# time instead, since they don't exist yet for this sweep to find.
-	FlatShadingRamon.apply_recursive(get_tree().current_scene)
+	#
+	# Walks THIS node's own scene, not get_tree().current_scene.
+	#
+	# current_scene is only the gallery when the gallery was loaded as the
+	# current scene. Launch it from the menu - which adds the prototype as a
+	# child of the tree root and stays current_scene itself - and this swept the
+	# menu's Control tree instead, found no MeshInstance4D, and left every baked
+	# tile on the engine's own LIT shader. This room has no lights, so those
+	# tiles rendered black. Measured: 70 of 428 materials kept the built-in
+	# shader from the menu, 0 of 428 opened directly.
+	#
+	# `owner` is the root of the scene this node was authored in, whatever the
+	# tree looks like around it, so the sweep covers the right subtree either way.
+	var scene_root: Node = owner if owner != null else self
+	FlatShadingRamon.apply_recursive(scene_root)
