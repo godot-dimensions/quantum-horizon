@@ -106,7 +106,10 @@ void vertex() {
 
 	int vertex_id = int(VERTEX.x);
 	int face = get_face_lookup_index(verts[0].w, verts[1].w, verts[2].w, verts[3].w, vertex_id);
-	if (CROSS_SECTION_LOOKUP[face] == -1) {
+	// vertex_id >= 6 is new upstream: a tetrahedron cross-section is at most a
+	// quad, so anything past six vertices is surplus and must be discarded.
+	// Without this test those vertices survive with undefined positions.
+	if (vertex_id >= 6 || CROSS_SECTION_LOOKUP[face] == -1) {
 		// This vertex is unused, cull
 		POSITION = vec4(0.0, 0.0, CLIP_SPACE_FAR, 1.0);
 	} else {
