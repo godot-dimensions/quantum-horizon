@@ -1,0 +1,339 @@
+[gd_resource type="Resource" script_class="FrontierLayout" load_steps=36 format=3]
+
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_category.gd" id="2_category"]
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_edge.gd" id="3_edge"]
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_activity.gd" id="4_activity"]
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_layout.gd" id="5_layout"]
+[sub_resource type="Resource" id="Act_g1"]
+script = ExtResource("4_activity")
+open_briefs = 4
+lane_names = PackedStringArray("ENGINE", "EXTERNAL PROOF", "PARTNER")
+lane_counts = PackedInt32Array(2, 1, 1)
+lane_fills = PackedFloat32Array(0.5, 0.3, 0.25)
+
+[sub_resource type="Resource" id="Y_e0"]
+script = ExtResource("1_entry")
+entry_title = "Core Prototypes"
+reference_position = Vector2(300, 306)
+display_title = "CORE\nPROTOTYPES"
+glyph = "▦"
+state = 1
+kind = 2
+category = 0
+radius_scale = 1.1
+standalone_subtitle = "FORTNIGHTLY REVIEW"
+detail_head = "ENGINE + INTERFACE"
+map_detail = "Quarterly engine and interface workstream for core prototypes."
+
+[sub_resource type="Resource" id="Y_e1"]
+script = ExtResource("1_entry")
+entry_title = "Perf + Interface"
+reference_position = Vector2(610, 306)
+display_title = "PERF + INTERFACE\nITERATION"
+glyph = "◎"
+state = 1
+kind = 2
+category = 0
+radius_scale = 1.1
+standalone_subtitle = "NO FALSE FEATURE DEADLINE"
+detail_head = "ENGINE + INTERFACE"
+map_detail = "Quarterly engine and interface workstream for perf + interface iteration."
+
+[sub_resource type="Resource" id="Y_e2"]
+script = ExtResource("1_entry")
+entry_title = "Production Use"
+reference_position = Vector2(950, 306)
+display_title = "PRODUCTION\nUSE"
+glyph = "◩"
+state = 1
+kind = 2
+category = 0
+radius_scale = 1.1
+standalone_subtitle = "ENGINE UNDER LOAD"
+detail_head = "ENGINE + INTERFACE"
+map_detail = "Quarterly engine and interface workstream for production use."
+
+[sub_resource type="Resource" id="Y_e3"]
+script = ExtResource("1_entry")
+entry_title = "Engine Holds Up"
+reference_position = Vector2(1290, 306)
+display_title = "ENGINE HOLDS\nUP?"
+glyph = "✓"
+state = 1
+kind = 2
+category = 0
+radius_scale = 1.1
+standalone_subtitle = "LEADING INDICATOR"
+detail_head = "ENGINE + INTERFACE"
+map_detail = "Quarterly engine and interface workstream for engine holds up?."
+
+[sub_resource type="Resource" id="Y_x0"]
+script = ExtResource("1_entry")
+entry_title = "Jam Prep"
+reference_position = Vector2(300, 478)
+display_title = "JAM PREP"
+glyph = "▤"
+state = 1
+kind = 2
+category = 2
+radius_scale = 1.05
+standalone_subtitle = "RULES + OUTREACH"
+detail_head = "EXTERNAL PROOF"
+map_detail = "External-proof workstream: jam prep."
+
+[sub_resource type="Resource" id="Y_x1"]
+script = ExtResource("1_entry")
+entry_title = "Hosted Jam 2027"
+reference_position = Vector2(610, 478)
+display_title = "HOSTED JAM"
+glyph = "◆"
+state = 1
+kind = 2
+category = 2
+radius_scale = 1.05
+haloed = true
+standalone_subtitle = "≥3 ENTRANTS"
+detail_head = "EXTERNAL PROOF"
+map_detail = "External-proof workstream: hosted jam."
+activity_count = 3
+activity = SubResource("Act_g1")
+
+[sub_resource type="Resource" id="Y_x2"]
+script = ExtResource("1_entry")
+entry_title = "External Jam 2027"
+reference_position = Vector2(950, 478)
+display_title = "EXTERNAL JAM"
+glyph = "◆"
+state = 4
+kind = 2
+category = 2
+radius_scale = 1.05
+standalone_subtitle = "NO HOME-FIELD ADVANTAGE"
+detail_head = "EXTERNAL PROOF"
+map_detail = "External-proof workstream: external jam."
+
+[sub_resource type="Resource" id="Y_x3"]
+script = ExtResource("1_entry")
+entry_title = "External Reception"
+reference_position = Vector2(1290, 478)
+display_title = "EXTERNAL\nRECEPTION"
+glyph = "↗"
+state = 4
+kind = 2
+category = 2
+radius_scale = 1.05
+standalone_subtitle = "PLATFORM SIGNAL"
+detail_head = "EXTERNAL PROOF"
+map_detail = "External-proof workstream: external reception."
+
+[sub_resource type="Resource" id="Y_p0"]
+script = ExtResource("1_entry")
+entry_title = "RFP Issued"
+reference_position = Vector2(300, 636)
+display_title = "RFP ISSUED"
+glyph = "R"
+state = 2
+kind = 2
+category = 3
+radius_scale = 0.9
+standalone_subtitle = "PARTNER TRACK"
+detail_head = "PARTNER TRACK · LONGER CLOCK"
+map_detail = "Partner activity runs on its own clock rather than as an engine dependency."
+
+[sub_resource type="Resource" id="Y_p1"]
+script = ExtResource("1_entry")
+entry_title = "Grants + Expressions"
+reference_position = Vector2(610, 636)
+display_title = "GRANTS +\nEXPRESSIONS"
+glyph = "◇"
+state = 2
+kind = 2
+category = 3
+radius_scale = 0.9
+standalone_subtitle = "PARTNER TRACK"
+detail_head = "PARTNER TRACK · LONGER CLOCK"
+map_detail = "Partner activity runs on its own clock rather than as an engine dependency."
+
+[sub_resource type="Resource" id="Y_p2"]
+script = ExtResource("1_entry")
+entry_title = "LOI / MOU"
+reference_position = Vector2(950, 636)
+display_title = "LOI / MOU\nCONVERSION"
+glyph = "◇"
+state = 2
+kind = 2
+category = 3
+radius_scale = 0.9
+standalone_subtitle = "PARTNER TRACK"
+detail_head = "PARTNER TRACK · LONGER CLOCK"
+map_detail = "Partner activity runs on its own clock rather than as an engine dependency."
+
+[sub_resource type="Resource" id="Y_p3"]
+script = ExtResource("1_entry")
+entry_title = "Partner Status"
+reference_position = Vector2(1290, 636)
+display_title = "PARTNER\nSTATUS"
+glyph = "R"
+state = 2
+kind = 2
+category = 3
+radius_scale = 0.9
+standalone_subtitle = "PARTNER TRACK"
+detail_head = "PARTNER TRACK · LONGER CLOCK"
+map_detail = "Partner activity runs on its own clock rather than as an engine dependency."
+
+[sub_resource type="Resource" id="Y_gate"]
+script = ExtResource("1_entry")
+entry_title = "Gate 1"
+reference_position = Vector2(1600, 452)
+display_title = "GATE 1"
+glyph = "△"
+state = 1
+kind = 2
+category = 2
+radius_scale = 1.36
+haloed = true
+standalone_subtitle = "ESTABLISH STUDIO OR WIND DOWN"
+detail_head = "PREPRODUCTION → PRODUCTION DECISION"
+map_detail = "The platform advances only if the engine held up in production use and the external proof found genuine reception."
+map_detail_2 = "Partner engagement is reviewed here, but on its own longer clock rather than disguised as an engine dependency."
+tags = PackedStringArray("ESTABLISH STUDIO", "PIVOT", "WIND DOWN")
+action_label = "VIEW CRITERIA"
+activity_glyph = "?"
+activity = SubResource("Act_g1")
+
+[sub_resource type="Resource" id="Y_e_0"]
+script = ExtResource("3_edge")
+from_id = "Core Prototypes"
+to_id = "Perf + Interface"
+tone = 0
+
+[sub_resource type="Resource" id="Y_e_1"]
+script = ExtResource("3_edge")
+from_id = "Perf + Interface"
+to_id = "Production Use"
+tone = 0
+
+[sub_resource type="Resource" id="Y_e_2"]
+script = ExtResource("3_edge")
+from_id = "Production Use"
+to_id = "Engine Holds Up"
+tone = 0
+
+[sub_resource type="Resource" id="Y_x_0"]
+script = ExtResource("3_edge")
+from_id = "Jam Prep"
+to_id = "Hosted Jam 2027"
+tone = 2
+
+[sub_resource type="Resource" id="Y_x_1"]
+script = ExtResource("3_edge")
+from_id = "Hosted Jam 2027"
+to_id = "External Jam 2027"
+tone = 2
+
+[sub_resource type="Resource" id="Y_x_2"]
+script = ExtResource("3_edge")
+from_id = "External Jam 2027"
+to_id = "External Reception"
+tone = 2
+
+[sub_resource type="Resource" id="Y_p_0"]
+script = ExtResource("3_edge")
+from_id = "RFP Issued"
+to_id = "Grants + Expressions"
+tone = 3
+
+[sub_resource type="Resource" id="Y_p_1"]
+script = ExtResource("3_edge")
+from_id = "Grants + Expressions"
+to_id = "LOI / MOU"
+tone = 3
+
+[sub_resource type="Resource" id="Y_p_2"]
+script = ExtResource("3_edge")
+from_id = "LOI / MOU"
+to_id = "Partner Status"
+tone = 3
+estimated = true
+
+[sub_resource type="Resource" id="Z1"]
+script = ExtResource("3_edge")
+from_id = "Engine Holds Up"
+to_id = "Gate 1"
+tone = 0
+
+[sub_resource type="Resource" id="Z2"]
+script = ExtResource("3_edge")
+from_id = "External Reception"
+to_id = "Gate 1"
+tone = 0
+
+[sub_resource type="Resource" id="Z3"]
+script = ExtResource("3_edge")
+from_id = "Partner Status"
+to_id = "Gate 1"
+tone = 1
+estimated = true
+
+[sub_resource type="Resource" id="Q1"]
+script = ExtResource("2_category")
+label = "Q1"
+category = 0
+color = Color(0.51, 0.51, 0.51, 1)
+edge_color = Color(0.251, 0.325, 0.416, 1)
+label_position = Vector2(270, 190)
+separator_x = -1.0
+text_style = 1
+show_mark = false
+
+[sub_resource type="Resource" id="Q2"]
+script = ExtResource("2_category")
+label = "Q2"
+category = 1
+color = Color(0.51, 0.51, 0.51, 1)
+edge_color = Color(0.251, 0.325, 0.416, 1)
+label_position = Vector2(610, 190)
+separator_x = 445.0
+text_style = 1
+show_mark = false
+
+[sub_resource type="Resource" id="Q3"]
+script = ExtResource("2_category")
+label = "Q3"
+category = 2
+color = Color(0.51, 0.51, 0.51, 1)
+edge_color = Color(0.251, 0.325, 0.416, 1)
+label_position = Vector2(950, 190)
+separator_x = 785.0
+text_style = 1
+show_mark = false
+
+[sub_resource type="Resource" id="Q4"]
+script = ExtResource("2_category")
+label = "Q4"
+category = 3
+color = Color(0.51, 0.51, 0.51, 1)
+edge_color = Color(0.251, 0.325, 0.416, 1)
+label_position = Vector2(1290, 190)
+separator_x = 1125.0
+text_style = 1
+show_mark = false
+
+[resource]
+script = ExtResource("5_layout")
+placements = Array[ExtResource("1_entry")]([SubResource("Y_e0"), SubResource("Y_e1"), SubResource("Y_e2"), SubResource("Y_e3"), SubResource("Y_x0"), SubResource("Y_x1"), SubResource("Y_x2"), SubResource("Y_x3"), SubResource("Y_p0"), SubResource("Y_p1"), SubResource("Y_p2"), SubResource("Y_p3"), SubResource("Y_gate")])
+categories = Array[ExtResource("2_category")]([SubResource("Q1"), SubResource("Q2"), SubResource("Q3"), SubResource("Q4")])
+edges = Array[ExtResource("3_edge")]([SubResource("Y_e_0"), SubResource("Y_e_1"), SubResource("Y_e_2"), SubResource("Y_x_0"), SubResource("Y_x_1"), SubResource("Y_x_2"), SubResource("Y_p_0"), SubResource("Y_p_1"), SubResource("Y_p_2"), SubResource("Z1"), SubResource("Z2"), SubResource("Z3")])
+breadcrumb = "FRONTIER MAP  /  2027 PREPRODUCTION"
+fog_teaser_position = Vector2(1815, 452)
+panel_rect = Rect2(70, 760, 1780, 200)
+field_span = Vector2(230, 700)
+caption_position = Vector2(70, 742)
+title = "FRONTIER MAP"
+eyebrow = "QUANTUM HORIZON"
+route_caption = "QUARTERLY MACRO WORKSTREAMS ONLY · PRODUCTIZATION AND THE UGC TAIL STAY FOGGED BEYOND GATE 1"
+launch_label = "INSPECT"
+legend_labels = PackedStringArray("PLAYED", "ACTIVE", "AVAILABLE", "RESEARCH", "LATER / FOG")
+gate_legend_label = "GATE ESSENTIAL"

@@ -1,0 +1,325 @@
+[gd_resource type="Resource" script_class="FrontierLayout" load_steps=34 format=3]
+
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_category.gd" id="2_category"]
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_edge.gd" id="3_edge"]
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_activity.gd" id="4_activity"]
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_layout.gd" id="5_layout"]
+[sub_resource type="Resource" id="Act_ev"]
+script = ExtResource("4_activity")
+contributors = 5
+merged = 4
+open_briefs = 3
+played = 42
+completed = 31
+shared = 8
+member_initials = PackedStringArray("AF", "4D", "RT")
+member_overflow = 2
+lane_names = PackedStringArray("S1 PERFORMANCE", "S2 SCALE", "S3 REGEN")
+lane_counts = PackedInt32Array(2, 1, 1)
+lane_fills = PackedFloat32Array(0.6, 0.35, 0.28)
+
+[sub_resource type="Resource" id="Act_gq"]
+script = ExtResource("4_activity")
+contributors = 4
+merged = 2
+open_briefs = 3
+member_initials = PackedStringArray("AF", "4D", "RT", "TB")
+lane_names = PackedStringArray("EVIDENCE", "DECISION PACK", "PROCESS")
+lane_counts = PackedInt32Array(3, 2, 1)
+lane_fills = PackedFloat32Array(0.7, 0.5, 0.3)
+
+[sub_resource type="Resource" id="N_core"]
+script = ExtResource("1_entry")
+entry_title = "Voxel Core"
+reference_position = Vector2(120, 420)
+display_title = "VOXEL CORE"
+glyph = "▦"
+state = 1
+kind = 2
+category = 2
+radius_scale = 1.12
+standalone_subtitle = "ACTIVE"
+detail_head = "LIVE ARTIFACT"
+map_detail = "The dual-contoured 4D voxel field everything else on this map is built on."
+action_label = "INSPECT"
+
+[sub_resource type="Resource" id="N_surf"]
+script = ExtResource("1_entry")
+entry_title = "Surfacing Modes"
+reference_position = Vector2(340, 315)
+display_title = "SURFACING\nMODES"
+glyph = "◩"
+state = 1
+kind = 2
+category = 2
+standalone_subtitle = "GATE-CRITICAL"
+detail_head = "LIVE ARTIFACT"
+map_detail = "Marching 24-cells and mesh simplification: how a voxel field becomes a surface you can see."
+action_label = "INSPECT"
+
+[sub_resource type="Resource" id="N_mat"]
+script = ExtResource("1_entry")
+entry_title = "Materials + Scatter"
+reference_position = Vector2(340, 535)
+display_title = "MATERIALS +\nSCATTER"
+glyph = "✣"
+state = 1
+kind = 2
+category = 2
+standalone_subtitle = "SUPPORTING"
+detail_head = "LIVE ARTIFACT"
+map_detail = "Surface dressing. Supporting work rather than a gate prerequisite."
+action_label = "INSPECT"
+
+[sub_resource type="Resource" id="N_nev"]
+script = ExtResource("1_entry")
+entry_title = "Nevada Terrain"
+reference_position = Vector2(570, 420)
+display_title = "NEVADA TERRAIN"
+glyph = "▦"
+state = 3
+kind = 2
+category = 2
+radius_scale = 1.15
+haloed = true
+gate_essential = true
+standalone_subtitle = "PROCEDURAL PROOF"
+detail_head = "GATE-ESSENTIAL PROCEDURAL PROOF"
+map_detail = "Demonstrates usable 4D terrain generated from seeds and parameters rather than bespoke construction."
+map_detail_2 = "Its output feeds the S1-S3 evidence package; the exact dependencies still need Aaron and Andrew to validate."
+tags = PackedStringArray("GATE ESSENTIAL", "VOXEL CORE", "KILL-CONDITION PROOF")
+action_label = "NOT BUILT YET"
+
+[sub_resource type="Resource" id="N_regen"]
+script = ExtResource("1_entry")
+entry_title = "In-Place Regen"
+reference_position = Vector2(795, 315)
+display_title = "IN-PLACE\nREGEN"
+glyph = "↻"
+state = 1
+kind = 2
+category = 2
+standalone_subtitle = "S3"
+detail_head = "GATE EVIDENCE"
+map_detail = "Regenerating a world in place from a new seed, without a reload. The S3 criterion."
+action_label = "INSPECT"
+
+[sub_resource type="Resource" id="N_perf"]
+script = ExtResource("1_entry")
+entry_title = "Perf + World Scale"
+reference_position = Vector2(795, 525)
+display_title = "PERF +\nWORLD SCALE"
+glyph = "▥"
+state = 1
+kind = 2
+category = 2
+standalone_subtitle = "S1 / S2"
+detail_head = "GATE EVIDENCE"
+map_detail = "Frame time and world size under load. The S1 and S2 criteria."
+action_label = "INSPECT"
+
+[sub_resource type="Resource" id="N_ev"]
+script = ExtResource("1_entry")
+entry_title = "Gate Evidence"
+reference_position = Vector2(1045, 420)
+display_title = "GATE\nEVIDENCE"
+glyph = "✓"
+state = 1
+kind = 2
+category = 2
+radius_scale = 1.18
+haloed = true
+standalone_subtitle = "S1-S3 + INDEPENDENCE"
+detail_head = "THE EVIDENCE PACKAGE"
+map_detail = "What the October decision is actually read from: the S1-S3 measurements plus the independence ladder."
+tags = PackedStringArray("S1", "S2", "S3")
+action_label = "VIEW EVIDENCE"
+activity_count = 3
+activity = SubResource("Act_ev")
+
+[sub_resource type="Resource" id="N_road"]
+script = ExtResource("1_entry")
+entry_title = "2027 Roadmap"
+reference_position = Vector2(1360, 285)
+display_title = "2027\nROADMAP"
+glyph = "▤"
+state = 1
+kind = 2
+category = 2
+standalone_subtitle = "COSTED"
+detail_head = "DECISION PACK"
+map_detail = "A costed twelve-month plan. Required for the decision, but not a prerequisite in the codebase."
+
+[sub_resource type="Resource" id="N_osp"]
+script = ExtResource("1_entry")
+entry_title = "Open-Source Plan"
+reference_position = Vector2(1360, 430)
+display_title = "OPEN-SOURCE\nPLAN"
+glyph = "◇"
+state = 1
+kind = 2
+category = 2
+standalone_subtitle = "LICENSE + MAINTAINER"
+detail_head = "DECISION PACK"
+map_detail = "License choice, dependency audit, contribution model and a named maintainer."
+
+[sub_resource type="Resource" id="N_rfp"]
+script = ExtResource("1_entry")
+entry_title = "RFP Draft"
+reference_position = Vector2(1360, 600)
+display_title = "RFP DRAFT"
+glyph = "R"
+state = 2
+kind = 2
+category = 3
+standalone_subtitle = "PROCESS MILESTONE"
+detail_head = "DECISION PACK"
+map_detail = "The academic-partner request for proposals. A process milestone on its own clock."
+
+[sub_resource type="Resource" id="N_gate"]
+script = ExtResource("1_entry")
+entry_title = "October Gate"
+reference_position = Vector2(1640, 420)
+display_title = "OCTOBER GATE"
+glyph = "△"
+state = 1
+kind = 2
+category = 2
+radius_scale = 1.32
+haloed = true
+standalone_subtitle = "CONTINUE / PIVOT / STOP"
+detail_head = "THE DECISION"
+map_detail = "Continue, pivot or stop. Read from the evidence package and the decision pack together."
+map_detail_2 = "Nothing on this map votes on the outcome; the map only shows what the call will be made from."
+tags = PackedStringArray("CONTINUE", "PIVOT", "STOP")
+action_label = "VIEW CRITERIA"
+activity_glyph = "?"
+activity = SubResource("Act_gq")
+
+[sub_resource type="Resource" id="E1"]
+script = ExtResource("3_edge")
+from_id = "Voxel Core"
+to_id = "Surfacing Modes"
+tone = 2
+
+[sub_resource type="Resource" id="E2"]
+script = ExtResource("3_edge")
+from_id = "Voxel Core"
+to_id = "Materials + Scatter"
+tone = 1
+estimated = true
+
+[sub_resource type="Resource" id="E3"]
+script = ExtResource("3_edge")
+from_id = "Surfacing Modes"
+to_id = "Nevada Terrain"
+tone = 2
+
+[sub_resource type="Resource" id="E4"]
+script = ExtResource("3_edge")
+from_id = "Materials + Scatter"
+to_id = "Nevada Terrain"
+tone = 1
+estimated = true
+
+[sub_resource type="Resource" id="E5"]
+script = ExtResource("3_edge")
+from_id = "Nevada Terrain"
+to_id = "In-Place Regen"
+tone = 2
+
+[sub_resource type="Resource" id="E6"]
+script = ExtResource("3_edge")
+from_id = "Nevada Terrain"
+to_id = "Perf + World Scale"
+tone = 2
+
+[sub_resource type="Resource" id="E7"]
+script = ExtResource("3_edge")
+from_id = "In-Place Regen"
+to_id = "Gate Evidence"
+tone = 2
+
+[sub_resource type="Resource" id="E8"]
+script = ExtResource("3_edge")
+from_id = "Perf + World Scale"
+to_id = "Gate Evidence"
+tone = 2
+
+[sub_resource type="Resource" id="E9"]
+script = ExtResource("3_edge")
+from_id = "Gate Evidence"
+to_id = "October Gate"
+tone = 0
+curvature = 0.3
+
+[sub_resource type="Resource" id="E10"]
+script = ExtResource("3_edge")
+from_id = "2027 Roadmap"
+to_id = "October Gate"
+tone = 1
+estimated = true
+
+[sub_resource type="Resource" id="E11"]
+script = ExtResource("3_edge")
+from_id = "Open-Source Plan"
+to_id = "October Gate"
+tone = 1
+estimated = true
+
+[sub_resource type="Resource" id="E12"]
+script = ExtResource("3_edge")
+from_id = "RFP Draft"
+to_id = "October Gate"
+tone = 3
+
+[sub_resource type="Resource" id="L_live"]
+script = ExtResource("2_category")
+label = "LIVE ARTIFACT"
+category = 0
+color = Color(0.294, 0.663, 1, 1)
+edge_color = Color(0.294, 0.663, 1, 1)
+label_position = Vector2(70, 178)
+separator_x = -1.0
+text_style = 0
+show_mark = false
+
+[sub_resource type="Resource" id="L_ev"]
+script = ExtResource("2_category")
+label = "GATE EVIDENCE"
+category = 2
+color = Color(0.333, 0.784, 0.741, 1)
+edge_color = Color(0.333, 0.784, 0.741, 1)
+label_position = Vector2(900, 178)
+separator_x = 850.0
+text_style = 0
+show_mark = false
+
+[sub_resource type="Resource" id="L_pack"]
+script = ExtResource("2_category")
+label = "DECISION PACK"
+category = 1
+color = Color(0.51, 0.51, 0.51, 1)
+edge_color = Color(0.251, 0.325, 0.416, 1)
+label_position = Vector2(1325, 178)
+separator_x = 1265.0
+text_style = 0
+show_mark = false
+
+[resource]
+script = ExtResource("5_layout")
+placements = Array[ExtResource("1_entry")]([SubResource("N_core"), SubResource("N_surf"), SubResource("N_mat"), SubResource("N_nev"), SubResource("N_regen"), SubResource("N_perf"), SubResource("N_ev"), SubResource("N_road"), SubResource("N_osp"), SubResource("N_rfp"), SubResource("N_gate")])
+categories = Array[ExtResource("2_category")]([SubResource("L_live"), SubResource("L_ev"), SubResource("L_pack")])
+edges = Array[ExtResource("3_edge")]([SubResource("E1"), SubResource("E2"), SubResource("E3"), SubResource("E4"), SubResource("E5"), SubResource("E6"), SubResource("E7"), SubResource("E8"), SubResource("E9"), SubResource("E10"), SubResource("E11"), SubResource("E12")])
+breadcrumb = "FRONTIER MAP  /  OCTOBER GATE"
+caveat = "ESTIMATED · ENGINEER VALIDATION REQUIRED"
+panel_rect = Rect2(70, 760, 1780, 200)
+field_span = Vector2(230, 700)
+caption_position = Vector2(70, 712)
+title = "FRONTIER MAP"
+eyebrow = "QUANTUM HORIZON"
+route_caption = "TECHNICAL EDGES SHOW ESTIMATED PREREQUISITES · DECISION-PACK EDGES SHOW REQUIRED INPUTS, NOT ENGINE DEPENDENCIES"
+launch_label = "INSPECT"
+legend_labels = PackedStringArray("PLAYED", "ACTIVE", "AVAILABLE", "RESEARCH", "LATER / FOG")
+gate_legend_label = "GATE ESSENTIAL"

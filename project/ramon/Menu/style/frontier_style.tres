@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="FrontierStyle" load_steps=3 format=3]
+
+[ext_resource type="FontFile" path="res://ramon/Demo/fonts/Montserrat/static/Montserrat-SemiBold.ttf" id="1_font"]
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_style.gd" id="2_script"]
+
+; GROUNDS AND TYPE ARE NEUTRAL GREY; EVERYTHING THAT CARRIES MEANING IS NOT.
+;
+; The ladder is lifted from `menu2_style.tres` rather than invented, so the two
+; screens sit at the same values and crossing between them does not feel like
+; changing rooms. Each grey is the LUMINANCE of the Menu2 colour it corresponds
+; to - its background 0.062, surface 0.109, raised 0.155, text 0.917, dim 0.617,
+; faint 0.437 - with the slight blue cast taken out and the intermediate steps
+; (rule, divider, separator, node fills) interpolated between them.
+;
+; THE DETAIL PANEL KEEPS ITS BLUE. It is `menu2_style.tres`'s `surface`
+; (0.098, 0.110, 0.135) copied exactly, tint included, so the panel that holds
+; the selected prototype is literally the same colour on both screens. It is the
+; one place the desaturation is deliberately not applied - a shared component
+; matching its counterpart is worth more here than palette purity.
+;
+; Untouched, deliberately: category hues, route edge colours, node state rings,
+; the check disc, the selection ring, the gold gate badge, and the blue Launch
+; and Start buttons. On this screen colour means something specific - which kind
+; of proof, which state, which action - and a tinted ground competes with that.
+
+[resource]
+script = ExtResource("2_script")
+font = ExtResource("1_font")
+background = Color(0.062, 0.062, 0.062, 1)
+background_far = Color(0.078, 0.078, 0.078, 1)
+header_fill = Color(0.045, 0.045, 0.045, 1)
+rule = Color(0.125, 0.125, 0.125, 1)
+divider = Color(0.165, 0.165, 0.165, 1)
+separator = Color(0.135, 0.135, 0.135, 1)
+text_bright = Color(0.955, 0.955, 0.955, 1)
+text = Color(0.917, 0.917, 0.917, 1)
+text_dim = Color(0.617, 0.617, 0.617, 1)
+text_faint = Color(0.437, 0.437, 0.437, 1)
+text_section = Color(0.400, 0.400, 0.400, 1)
+text_legend = Color(0.520, 0.520, 0.520, 1)
+played_fill = Color(0.105, 0.105, 0.105, 1)
+available_fill = Color(0.082, 0.082, 0.082, 1)
+research_fill = Color(0.095, 0.095, 0.095, 1)
+upcoming_fill = Color(0.125, 0.125, 0.125, 1)
+fog_fill = Color(0.070, 0.070, 0.070, 1)
+panel_fill = Color(0.098, 0.110, 0.135, 1)
+panel_fill_far = Color(0.075, 0.075, 0.075, 1)
+panel_stroke = Color(0.185, 0.185, 0.185, 1)
+button_fill_disabled = Color(0.115, 0.115, 0.115, 1)
+tab_active_fill = Color(0.155, 0.155, 0.155, 1)
+tab_idle_fill = Color(0.088, 0.088, 0.088, 1)
+tab_idle_stroke = Color(0.200, 0.200, 0.200, 1)

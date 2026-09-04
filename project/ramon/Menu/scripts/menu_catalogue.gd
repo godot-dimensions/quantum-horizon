@@ -45,6 +45,27 @@ class_name MenuCatalogue
 		list_heading = value
 		emit_changed()
 
+## The two halves of the mode switch, shown identically on BOTH screens - same
+## labels, same order, only the active index differs.
+##
+## They live on the CATALOGUE rather than on either screen's own resource
+## because they are the one piece of text that must read identically in two
+## places. Held in two resources they would drift, and a switch whose halves are
+## named differently on each side stops looking like a switch and starts looking
+## like two unrelated buttons.
+## Named for the SCREEN it switches to, not for what that screen does. "Guided
+## tour" described an intention; the toggle's two halves have to name the two
+## destinations, or the switch stops being readable as a switch.
+@export var guided_tab: String = "FRONTIER MAP":
+	set(value):
+		guided_tab = value
+		emit_changed()
+
+@export var explore_tab: String = "EXPLORE FREELY":
+	set(value):
+		explore_tab = value
+		emit_changed()
+
 @export var hint: String = "click to select  ·  again or ENTER to launch  ·  ESC returns  ·  ● played":
 	set(value):
 		hint = value

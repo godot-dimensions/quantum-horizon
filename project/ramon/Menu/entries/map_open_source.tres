@@ -1,0 +1,333 @@
+[gd_resource type="Resource" script_class="FrontierLayout" load_steps=35 format=3]
+
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_category.gd" id="2_category"]
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_edge.gd" id="3_edge"]
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_activity.gd" id="4_activity"]
+[ext_resource type="Script" path="res://ramon/Menu/scripts/frontier_layout.gd" id="5_layout"]
+[sub_resource type="Resource" id="Act_brief"]
+script = ExtResource("4_activity")
+contributors = 6
+merged = 3
+open_briefs = 2
+played = 42
+completed = 31
+shared = 8
+member_initials = PackedStringArray("RT", "AF", "4D", "TB")
+member_overflow = 2
+lane_names = PackedStringArray("CODE", "ART / TEST", "DOCS")
+lane_counts = PackedInt32Array(3, 2, 1)
+lane_fills = PackedFloat32Array(0.65, 0.46, 0.26)
+signal_open = true
+option_titles = PackedStringArray("PLAYER VOXEL TOOLS", "W RADAR + TARGETING", "OUTSIDER BUILD DOCS")
+option_subtitles = PackedStringArray("NON-EXPERT CREATION PATH", "4D ORIENTATION INTERFACE", "REMOVE EXPERT INTERVENTIONS")
+option_counts = PackedInt32Array(24, 18, 11)
+
+[sub_resource type="Resource" id="Act_jam"]
+script = ExtResource("4_activity")
+contributors = 3
+open_briefs = 1
+member_initials = PackedStringArray("EX", "EX", "EX")
+lane_names = PackedStringArray("ENTRIES", "MENTORS")
+lane_counts = PackedInt32Array(3, 2)
+lane_fills = PackedFloat32Array(0.4, 0.3)
+
+[sub_resource type="Resource" id="S_build"]
+script = ExtResource("1_entry")
+entry_title = "Stable Public Build"
+reference_position = Vector2(130, 420)
+display_title = "STABLE PUBLIC\nBUILD"
+glyph = "✓"
+state = 0
+kind = 2
+category = 0
+radius_scale = 1.12
+standalone_subtitle = "READY"
+detail_head = "PUBLIC READY"
+map_detail = "A build an outsider can actually obtain and run."
+action_label = "INSPECT"
+
+[sub_resource type="Resource" id="S_lic"]
+script = ExtResource("1_entry")
+entry_title = "License + Maintainer"
+reference_position = Vector2(340, 315)
+display_title = "LICENSE +\nMAINTAINER"
+glyph = "▤"
+state = 0
+kind = 2
+category = 0
+standalone_subtitle = "READY"
+detail_head = "PUBLIC READY"
+map_detail = "License choice, third-party audit, contribution model and a named owner."
+action_label = "INSPECT"
+
+[sub_resource type="Resource" id="S_docs"]
+script = ExtResource("1_entry")
+entry_title = "Outsider Build Docs"
+reference_position = Vector2(340, 525)
+display_title = "OUTSIDER\nBUILD DOCS"
+glyph = "▥"
+state = 1
+kind = 2
+category = 2
+standalone_subtitle = "RUNG-3 PREREQUISITE"
+detail_head = "PUBLIC READY"
+map_detail = "Build instructions written for someone with no access to the team."
+action_label = "INSPECT"
+
+[sub_resource type="Resource" id="S_pack"]
+script = ExtResource("1_entry")
+entry_title = "Example + Context Pack"
+reference_position = Vector2(600, 420)
+display_title = "EXAMPLE +\nCONTEXT PACK"
+glyph = "◇"
+state = 1
+kind = 2
+category = 2
+radius_scale = 1.05
+standalone_subtitle = "PARTIAL"
+detail_head = "OUTSIDER PROOF"
+map_detail = "Worked examples and a Start Here pack, so a newcomer has somewhere to begin."
+action_label = "INSPECT"
+
+[sub_resource type="Resource" id="S_tools"]
+script = ExtResource("1_entry")
+entry_title = "Player Voxel Tools"
+reference_position = Vector2(600, 590)
+display_title = "PLAYER VOXEL\nTOOLS"
+glyph = "✣"
+state = 1
+kind = 2
+category = 2
+standalone_subtitle = "OPEN BRIEF"
+detail_head = "OPEN CONTRIBUTION BRIEF"
+map_detail = "A non-expert creation path. Currently an open brief rather than committed work."
+map_detail_2 = "Contribution is aggregated here; individual people and PRs live one level deeper."
+action_label = "VIEW CONTRIBUTION BRIEF"
+activity_count = 3
+activity = SubResource("Act_brief")
+
+[sub_resource type="Resource" id="S_canary"]
+script = ExtResource("1_entry")
+entry_title = "Outsider Canary"
+reference_position = Vector2(830, 420)
+display_title = "OUTSIDER\nCANARY"
+glyph = "◈"
+state = 1
+kind = 2
+category = 2
+radius_scale = 1.15
+haloed = true
+standalone_subtitle = "NO EXPERT ACCESS"
+detail_head = "THE OPEN-SOURCE READINESS TEST"
+map_detail = "Give one external developer the package without project-expert access and record every intervention required."
+map_detail_2 = "Passing this makes the hosted jam credible; it does not require exposing every contributor as a map node."
+tags = PackedStringArray("RUNG 3", "NO EXPERT ACCESS", "INTERVENTIONS LOGGED")
+action_label = "VIEW ACTIVITY"
+
+[sub_resource type="Resource" id="S_jam"]
+script = ExtResource("1_entry")
+entry_title = "Hosted Jam"
+reference_position = Vector2(1100, 420)
+display_title = "HOSTED\nJAM"
+glyph = "◆"
+state = 4
+kind = 2
+category = 3
+radius_scale = 1.15
+standalone_subtitle = "GROUPED EVENT NODE"
+detail_head = "JAM PATH"
+map_detail = "One node for the whole event. Entries live in its gallery, never as map nodes."
+activity_count = 3
+activity = SubResource("Act_jam")
+
+[sub_resource type="Resource" id="S_hire"]
+script = ExtResource("1_entry")
+entry_title = "Gameplay Hire"
+reference_position = Vector2(1300, 315)
+display_title = "GAMEPLAY\nHIRE"
+glyph = "+"
+state = 4
+kind = 2
+category = 3
+standalone_subtitle = "RECRUITING PATH"
+detail_head = "JAM PATH"
+map_detail = "The jam doubles as a recruiting funnel for the gameplay developer the team lacks."
+
+[sub_resource type="Resource" id="S_gal"]
+script = ExtResource("1_entry")
+entry_title = "Jam Gallery"
+reference_position = Vector2(1300, 525)
+display_title = "JAM\nGALLERY"
+glyph = "▦"
+state = 4
+kind = 2
+category = 3
+standalone_subtitle = "SUBMISSIONS LIVE HERE"
+detail_head = "JAM PATH"
+map_detail = "Where individual submissions live, so the roadmap never grows one node per entry."
+
+[sub_resource type="Resource" id="S_ext"]
+script = ExtResource("1_entry")
+entry_title = "External Jam"
+reference_position = Vector2(1510, 420)
+display_title = "EXTERNAL\nJAM"
+glyph = "◆"
+state = 4
+kind = 2
+category = 3
+radius_scale = 1.05
+standalone_subtitle = "NO HOME-FIELD ADVANTAGE"
+detail_head = "JAM PATH"
+map_detail = "An established third-party jam, entered openly against other engines and teams."
+
+[sub_resource type="Resource" id="S_gate"]
+script = ExtResource("1_entry")
+entry_title = "Gate 1"
+reference_position = Vector2(1740, 420)
+display_title = "GATE 1"
+glyph = "△"
+state = 4
+kind = 2
+category = 2
+radius_scale = 1.15
+haloed = true
+standalone_subtitle = "STUDIO / PIVOT / STOP"
+detail_head = "THE DECISION THIS FEEDS"
+map_detail = "External reception is evidence feeding Gate 1. It is not a vote that rewrites the roadmap."
+
+[sub_resource type="Resource" id="F1"]
+script = ExtResource("3_edge")
+from_id = "Stable Public Build"
+to_id = "License + Maintainer"
+tone = 0
+
+[sub_resource type="Resource" id="F2"]
+script = ExtResource("3_edge")
+from_id = "Stable Public Build"
+to_id = "Outsider Build Docs"
+tone = 0
+
+[sub_resource type="Resource" id="F3"]
+script = ExtResource("3_edge")
+from_id = "License + Maintainer"
+to_id = "Example + Context Pack"
+tone = 2
+
+[sub_resource type="Resource" id="F4"]
+script = ExtResource("3_edge")
+from_id = "Outsider Build Docs"
+to_id = "Example + Context Pack"
+tone = 2
+
+[sub_resource type="Resource" id="F5"]
+script = ExtResource("3_edge")
+from_id = "Example + Context Pack"
+to_id = "Outsider Canary"
+tone = 2
+
+[sub_resource type="Resource" id="F6"]
+script = ExtResource("3_edge")
+from_id = "Example + Context Pack"
+to_id = "Player Voxel Tools"
+tone = 1
+estimated = true
+
+[sub_resource type="Resource" id="F7"]
+script = ExtResource("3_edge")
+from_id = "Outsider Canary"
+to_id = "Hosted Jam"
+tone = 3
+
+[sub_resource type="Resource" id="F8"]
+script = ExtResource("3_edge")
+from_id = "Hosted Jam"
+to_id = "Gameplay Hire"
+tone = 3
+
+[sub_resource type="Resource" id="F9"]
+script = ExtResource("3_edge")
+from_id = "Hosted Jam"
+to_id = "Jam Gallery"
+tone = 3
+
+[sub_resource type="Resource" id="F10"]
+script = ExtResource("3_edge")
+from_id = "Gameplay Hire"
+to_id = "External Jam"
+tone = 3
+
+[sub_resource type="Resource" id="F11"]
+script = ExtResource("3_edge")
+from_id = "Jam Gallery"
+to_id = "External Jam"
+tone = 3
+
+[sub_resource type="Resource" id="F12"]
+script = ExtResource("3_edge")
+from_id = "External Jam"
+to_id = "Gate 1"
+tone = 4
+estimated = true
+
+[sub_resource type="Resource" id="K_pub"]
+script = ExtResource("2_category")
+label = "PUBLIC READY"
+category = 0
+color = Color(0.294, 0.663, 1, 1)
+edge_color = Color(0.294, 0.663, 1, 1)
+label_position = Vector2(70, 178)
+separator_x = -1.0
+text_style = 0
+show_mark = false
+
+[sub_resource type="Resource" id="K_out"]
+script = ExtResource("2_category")
+label = "OUTSIDER PROOF"
+category = 2
+color = Color(0.333, 0.784, 0.741, 1)
+edge_color = Color(0.333, 0.784, 0.741, 1)
+label_position = Vector2(585, 178)
+separator_x = 540.0
+text_style = 0
+show_mark = false
+
+[sub_resource type="Resource" id="K_jam"]
+script = ExtResource("2_category")
+label = "JAM PATH"
+category = 3
+color = Color(0.655, 0.478, 0.957, 1)
+edge_color = Color(0.655, 0.478, 0.957, 1)
+label_position = Vector2(1030, 178)
+separator_x = 990.0
+text_style = 0
+show_mark = false
+
+[sub_resource type="Resource" id="K_g1"]
+script = ExtResource("2_category")
+label = "GATE 1"
+category = 1
+color = Color(0.51, 0.51, 0.51, 1)
+edge_color = Color(0.251, 0.325, 0.416, 1)
+label_position = Vector2(1580, 178)
+separator_x = 1540.0
+text_style = 0
+show_mark = false
+
+[resource]
+script = ExtResource("5_layout")
+placements = Array[ExtResource("1_entry")]([SubResource("S_build"), SubResource("S_lic"), SubResource("S_docs"), SubResource("S_pack"), SubResource("S_tools"), SubResource("S_canary"), SubResource("S_jam"), SubResource("S_hire"), SubResource("S_gal"), SubResource("S_ext"), SubResource("S_gate")])
+categories = Array[ExtResource("2_category")]([SubResource("K_pub"), SubResource("K_out"), SubResource("K_jam"), SubResource("K_g1")])
+edges = Array[ExtResource("3_edge")]([SubResource("F1"), SubResource("F2"), SubResource("F3"), SubResource("F4"), SubResource("F5"), SubResource("F6"), SubResource("F7"), SubResource("F8"), SubResource("F9"), SubResource("F10"), SubResource("F11"), SubResource("F12")])
+breadcrumb = "FRONTIER MAP  /  OPEN-SOURCE + GAME-JAM PATH"
+signal_pill = "NEXT-CYCLE SIGNAL OPEN · 3 CURATED OPTIONS"
+signal_node = "Player Voxel Tools"
+panel_rect = Rect2(70, 760, 1780, 200)
+field_span = Vector2(230, 700)
+caption_position = Vector2(70, 730)
+title = "FRONTIER MAP"
+eyebrow = "QUANTUM HORIZON"
+route_caption = "SCALING RULE · A JAM IS ONE MAP NODE; INDIVIDUAL ENTRIES LIVE IN ITS GALLERY · CONTRIBUTOR COUNTS OPEN A TEMPORARY ACTIVITY DRAWER"
+launch_label = "INSPECT"
+legend_labels = PackedStringArray("PLAYED", "ACTIVE", "AVAILABLE", "RESEARCH", "LATER / FOG")
+gate_legend_label = "GATE ESSENTIAL"

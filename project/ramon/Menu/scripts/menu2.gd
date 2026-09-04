@@ -87,6 +87,10 @@ const DESIGN_RESOLUTION: Vector2i = Vector2i(1920, 1080)
 const DEFAULT_STYLE: String = "res://ramon/Menu/style/menu2_style.tres"
 const DEFAULT_CATALOGUE: String = "res://ramon/Menu/entries/catalogue.tres"
 
+## The other half of the binary switch. Both screens read the same catalogue, so
+## this is a change of VIEW rather than of content.
+const FRONTIER_MAP_SCENE: String = "res://ramon/FrontierMap.tscn"
+
 ## Assign a different style or catalogue here to A/B a look or a running order
 ## without touching this script. Left empty, the defaults above load.
 ##
@@ -208,6 +212,10 @@ var _selected: int = 0
 var _played: Array[bool] = []
 var _rows: Array[PanelContainer] = []
 var _shell: Control = null
+## The banner's reference-space host, and the content margin beneath it. Both
+## are re-fitted on every resize so the bar matches the Frontier Map's exactly.
+var _banner_host: Control = null
+var _margin: MarginContainer = null
 
 var _preview_atlas: AtlasTexture = null
 var _preview_frame: Control = null
@@ -492,11 +500,23 @@ func rebuild() -> void:
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_shell.add_child(background)
 
+	# The banner goes in a 1920x1080 reference space fitted to the window exactly
+	# the way the Frontier Map fits its whole layout, so the bar lands on the
+	# SAME screen pixels on both screens. Putting it in this screen's own
+	# container instead made it a different height and put the tabs somewhere
+	# else, which is precisely the discrepancy it exists to avoid.
+	_banner_host = Control.new()
+	_banner_host.size = MenuBanner.REFERENCE
+	_banner_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_shell.add_child(_banner_host)
+	_banner_host.add_child(_build_banner())
+
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_set_margins(margin, style.space(4))
 	_shell.add_child(margin)
+	_margin = margin
 
 	var columns := HBoxContainer.new()
 	columns.add_theme_constant_override("separation", style.space(4))
@@ -509,6 +529,10 @@ func rebuild() -> void:
 	# prototype runs, and these have to outlive that.
 	_build_launch_overlay()
 	_build_notice()
+
+	_layout_banner()
+	if not resized.is_connected(_layout_banner):
+		resized.connect(_layout_banner)
 
 	_select(_selected)
 
@@ -676,7 +700,8 @@ func _build_list_column() -> Control:
 	column.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation", style.space(1.75))
 
-	column.add_child(_label(catalogue.header, MenuStyle.CAPTION, style.text_dim, true))
+	# The project name moved into the banner, so repeating it here would say it
+	# twice on one screen.
 	column.add_child(_build_hero())
 	column.add_child(_label(catalogue.list_heading, MenuStyle.MICRO, style.text_dim, true))
 
@@ -698,6 +723,56 @@ func _build_list_column() -> Control:
 	# States the interaction rather than leaving it to be guessed at.
 	column.add_child(_label(catalogue.hint, MenuStyle.MICRO, style.text_dim, false))
 	return column
+
+
+## The shared banner, identical to the Frontier Map's. See [MenuBanner].
+##
+## Two views of ONE catalogue: this screen answers "what can I play", the map
+## answers "what is this programme and what has it proved". The banner is the
+## part that must not change between them, so it is the same class, the same
+## labels from the same resource, and the same order - tab 0 is the map, tab 1
+## is this screen. Only the active index differs.
+##
+## No action button here: this screen already has the hero as its start-the-tour
+## affordance, and two START THE TOUR controls on one screen is one too many.
+func _build_banner() -> Control:
+	var banner := MenuBanner.new()
+	banner.setup(
+		catalogue.header, catalogue.explore_tab,
+		PackedStringArray([catalogue.guided_tab, catalogue.explore_tab]), 1, "",
+		{"caps": style.label_font(), "caps_tight": style.label_font()},
+		{
+			"fill": style.background.darkened(0.35), "rule": style.surface_raised,
+			"text_bright": style.text, "text_faint": style.text_dim,
+			"tab_active_fill": style.surface_raised, "tab_active_stroke": style.accent,
+			"tab_idle_fill": style.surface, "tab_idle_stroke": style.surface_raised,
+			"action_fill": style.accent, "action_stroke": style.accent,
+			"action_hover": style.launch_fill_hover, "action_text": style.text,
+		})
+	banner.tab_pressed.connect(func(_index: int) -> void: _on_frontier_map())
+	return banner
+
+
+## Fits the banner's reference space to the window and pushes this screen's
+## content clear of it. Both numbers come from [MenuBanner], so the bar and the
+## gap under it match the Frontier Map exactly.
+func _layout_banner() -> void:
+	if _banner_host == null or _margin == null:
+		return
+	var factor: float = MenuBanner.reference_scale(size)
+	_banner_host.scale = Vector2(factor, factor)
+	_banner_host.position = MenuBanner.reference_origin(size)
+	var below: float = _banner_host.position.y + MenuBanner.HEIGHT * factor
+	_margin.add_theme_constant_override("margin_top", int(below) + style.space(3))
+
+
+func _on_frontier_map() -> void:
+	if Engine.is_editor_hint():
+		return
+	# A plain scene change, unlike a prototype launch. The map is a peer of this
+	# screen rather than something running on top of it, so there is nothing to
+	# keep alive underneath and nothing to unwind on the way back.
+	get_tree().change_scene_to_file(FRONTIER_MAP_SCENE)
 
 
 ## Deliberately much larger than a row: it is the difference between "a menu of

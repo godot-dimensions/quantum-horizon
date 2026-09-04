@@ -12,43 +12,25 @@
 [ext_resource type="Script" uid="uid://b2a43mgb5dqv" path="res://ramon/Menu/scripts/menu_catalogue.gd" id="10_ajynb"]
 [ext_resource type="Texture2D" uid="uid://bjmr20bfnryq" path="res://ramon/Menu/icons/icon_sky_box_clouds.png" id="10_uy7oo"]
 
-[sub_resource type="Resource" id="Resource_0k6x8"]
+[sub_resource type="Resource" id="Resource_uy7oo"]
 script = ExtResource("1_i2ljj")
-title = "Motion Lab"
-blurb = "A creature that walks without a single baked animation"
-duration = "2 min"
-detail = "A quadruped whose gait is solved every frame from IK, with limb count and segments changeable live."
-clip = "creature"
-icon = ExtResource("8_jn372")
-preview_focus = 0.22
-scene_path = "res://sandbox/limb_prototype/limb_prototype_treadmill.tscn"
+title = "Slice Vision"
+blurb = "Camera and avatar tuned for reading a 4D cross-section"
+maturity = "Playable"
+duration = "90 sec"
+detail = "Three chambers that teach reading a cross-section before asking anything of you."
+clip = "slice_vision"
+icon = ExtResource("2_wp3od")
+preview_focus = 0.64
+scene_path = "res://ramon/MiegakureLook/levels/level_1_wall.tscn"
 extra_launch_labels = PackedStringArray()
 extra_launch_scenes = PackedStringArray()
-control_keys = PackedStringArray("1 – 5", "K / L", "N / M")
-control_actions = PackedStringArray("gait", "limbs", "segments")
-question = "Can a creature animate convincingly with no baked clips at all?"
-approach = "FABRIK limbs, a gait state machine, hip suspension and spine IK, solved per tick."
-finding = "Limb count and proportions fall out of parameters, so a new creature needs no rig."
-benchmark = "5 gaits · limbs and segments per limb changed live · per-foot ground raycast"
-
-[sub_resource type="Resource" id="Resource_3ffix"]
-script = ExtResource("1_i2ljj")
-title = "Voxel Mining"
-blurb = "Destructible geometry by dual contouring in four dimensions"
-duration = "2 min"
-detail = "A rock made of 4D voxels that you can carve into, re-meshed on every hit."
-clip = "voxel_mining"
-icon = ExtResource("7_h1wdl")
-preview_focus = 0.73
-scene_path = "res://ramon/VoxelMining/voxel_mining_final_2.tscn"
-extra_launch_labels = PackedStringArray()
-extra_launch_scenes = PackedStringArray()
-control_keys = PackedStringArray("WASD", "LMB", "Q / E")
-control_actions = PackedStringArray("move", "carve", "through w")
-question = "Can 4D matter be destroyed at interactive rates?"
-approach = "Persistent voxel field, dual contoured, re-meshed per hit."
-finding = "Yes: about 130 ms per carve at room scale, around 58 fps."
-benchmark = "~130 ms per carve at room scale · ~58 fps · 10,752 tetrahedra"
+control_keys = PackedStringArray("WASD", "RMB")
+control_actions = PackedStringArray("move", "rotate slice 90°")
+question = "Can anyone read a 4D scene at all without training?"
+approach = "Third-person diorama, discrete 90° turns, floor banded along w."
+finding = "Banding is load-bearing; an unbanded rotated view is a blank diamond."
+benchmark = "10 / 10 scripted checks pass · 3 levels · 90° turn eased over 0.7 s"
 
 [sub_resource type="Resource" id="Resource_3f7jf"]
 script = ExtResource("1_i2ljj")
@@ -70,24 +52,25 @@ approach = "Maze walls occupy w-bands; rotating changes which ones are solid."
 finding = "It reads immediately, but only where the route is signposted."
 benchmark = "2 levels · walls 0.4 m thick in z · slice rotation on right mouse"
 
-[sub_resource type="Resource" id="Resource_ph57d"]
+[sub_resource type="Resource" id="Resource_snm5f"]
 script = ExtResource("1_i2ljj")
-title = "Shrubbery Lab"
-blurb = "A single tree grown in four dimensions, previewed across the slice"
-duration = "90 sec"
-detail = "One tree grown by space colonisation, light enough to render with the projected preview turned on."
-clip = "shrubbery"
-icon = ExtResource("9_ajynb")
-preview_focus = 0.4
-scene_path = "res://sandbox/shrubbery/shrubbery_lab.tscn"
+title = "4D Ascent"
+blurb = "A vertical course climbed by rotating as much as jumping"
+maturity = "Greybox"
+duration = "2 min"
+detail = "A vertical course where the next foothold is often a rotation away rather than a jump."
+clip = "ascent"
+icon = ExtResource("4_lnafe")
+preview_focus = 0.7000000000000001
+scene_path = "res://ramon/ObstacleCourse/w_gap.tscn"
 extra_launch_labels = PackedStringArray()
 extra_launch_scenes = PackedStringArray()
-control_keys = PackedStringArray("WASD", "RMB", "G")
-control_actions = PackedStringArray("move", "rotate slice", "new tree")
-question = "Does procedural growth still read as botanical once it grows in 4D?"
-approach = "Space colonisation in 4D, rendered with the combined cross-section plus projection engine."
-finding = "One tree carries the projected pass comfortably where a whole forest turns it to soup."
-benchmark = "1 tree · combined renderer · plane sharpness 0.2, skewness 0.35"
+control_keys = PackedStringArray("WASD", "SPACE", "RMB")
+control_actions = PackedStringArray("move", "jump", "rotate slice")
+question = "Can a vertical course stay legible once the slice can change?"
+approach = "Bounded tower, tier-coloured back wall as the only HUD."
+finding = "Physics is axis-aligned boxes only: no ramps, every rise is a step."
+benchmark = "Gap 7 m vs 4.59 m jump reach - uncrossable until w changes"
 
 [sub_resource type="Resource" id="Resource_d6obk"]
 script = ExtResource("1_i2ljj")
@@ -109,46 +92,6 @@ approach = "Chunked voxel walls cut anywhere; two apertures carrying position, o
 finding = "Both hold: cuts merge cumulatively, and crossings accelerate 7.7 to 22.2 m/s."
 benchmark = "40.5 ms per chunk rebuild · 10,752 tetrahedra · 7.7 → 22.2 m/s over five crossings"
 
-[sub_resource type="Resource" id="Resource_uy7oo"]
-script = ExtResource("1_i2ljj")
-title = "Slice Vision"
-blurb = "Camera and avatar tuned for reading a 4D cross-section"
-maturity = "Playable"
-duration = "90 sec"
-detail = "Three chambers that teach reading a cross-section before asking anything of you."
-clip = "slice_vision"
-icon = ExtResource("2_wp3od")
-preview_focus = 0.64
-scene_path = "res://ramon/MiegakureLook/levels/level_1_wall.tscn"
-extra_launch_labels = PackedStringArray()
-extra_launch_scenes = PackedStringArray()
-control_keys = PackedStringArray("WASD", "RMB")
-control_actions = PackedStringArray("move", "rotate slice 90°")
-question = "Can anyone read a 4D scene at all without training?"
-approach = "Third-person diorama, discrete 90° turns, floor banded along w."
-finding = "Banding is load-bearing; an unbanded rotated view is a blank diamond."
-benchmark = "10 / 10 scripted checks pass · 3 levels · 90° turn eased over 0.7 s"
-
-[sub_resource type="Resource" id="Resource_snm5f"]
-script = ExtResource("1_i2ljj")
-title = "4D Ascent"
-blurb = "A vertical course climbed by rotating as much as jumping"
-maturity = "Greybox"
-duration = "2 min"
-detail = "A vertical course where the next foothold is often a rotation away rather than a jump."
-clip = "ascent"
-icon = ExtResource("4_lnafe")
-preview_focus = 0.7000000000000001
-scene_path = "res://ramon/ObstacleCourse/w_gap.tscn"
-extra_launch_labels = PackedStringArray()
-extra_launch_scenes = PackedStringArray()
-control_keys = PackedStringArray("WASD", "SPACE", "RMB")
-control_actions = PackedStringArray("move", "jump", "rotate slice")
-question = "Can a vertical course stay legible once the slice can change?"
-approach = "Bounded tower, tier-coloured back wall as the only HUD."
-finding = "Physics is axis-aligned boxes only: no ramps, every rise is a step."
-benchmark = "Gap 7 m vs 4.59 m jump reach - uncrossable until w changes"
-
 [sub_resource type="Resource" id="Resource_fmw2o"]
 script = ExtResource("1_i2ljj")
 title = "Quantum Range"
@@ -169,6 +112,44 @@ approach = "Real 4D raycasts against 4D collision, independent of the camera."
 finding = "You can miss in a direction you cannot see - and it reads as fair."
 benchmark = "True 4D raycasts against 4D colliders, independent of the camera"
 
+[sub_resource type="Resource" id="Resource_3ffix"]
+script = ExtResource("1_i2ljj")
+title = "Voxel Mining"
+blurb = "Destructible geometry by dual contouring in four dimensions"
+duration = "2 min"
+detail = "A rock made of 4D voxels that you can carve into, re-meshed on every hit."
+clip = "voxel_mining"
+icon = ExtResource("7_h1wdl")
+preview_focus = 0.73
+scene_path = "res://ramon/VoxelMining/voxel_mining_final_2.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "LMB", "Q / E")
+control_actions = PackedStringArray("move", "carve", "through w")
+question = "Can 4D matter be destroyed at interactive rates?"
+approach = "Persistent voxel field, dual contoured, re-meshed per hit."
+finding = "Yes: about 130 ms per carve at room scale, around 58 fps."
+benchmark = "~130 ms per carve at room scale · ~58 fps · 10,752 tetrahedra"
+
+[sub_resource type="Resource" id="Resource_ph57d"]
+script = ExtResource("1_i2ljj")
+title = "Shrubbery Lab"
+blurb = "A single tree grown in four dimensions, previewed across the slice"
+duration = "90 sec"
+detail = "One tree grown by space colonisation, light enough to render with the projected preview turned on."
+clip = "shrubbery"
+icon = ExtResource("9_ajynb")
+preview_focus = 0.4
+scene_path = "res://sandbox/shrubbery/shrubbery_lab.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "RMB", "G")
+control_actions = PackedStringArray("move", "rotate slice", "new tree")
+question = "Does procedural growth still read as botanical once it grows in 4D?"
+approach = "Space colonisation in 4D, rendered with the combined cross-section plus projection engine."
+finding = "One tree carries the projected pass comfortably where a whole forest turns it to soup."
+benchmark = "1 tree · combined renderer · plane sharpness 0.2, skewness 0.35"
+
 [sub_resource type="Resource" id="Resource_b8wcl"]
 script = ExtResource("1_i2ljj")
 title = "Sky Box Clouds"
@@ -188,6 +169,25 @@ approach = "Noise over x, z and w seeds clumps of stretched polytopes, detailed 
 finding = "Coverage varies along w, so rotating the slice moves you into different weather."
 benchmark = "24-cell (96 tets) as the workhorse, 600-cell for hero puffs · three-level clump hierarchy"
 
+[sub_resource type="Resource" id="Resource_0k6x8"]
+script = ExtResource("1_i2ljj")
+title = "Motion Lab"
+blurb = "A creature that walks without a single baked animation"
+duration = "2 min"
+detail = "A quadruped whose gait is solved every frame from IK, with limb count and segments changeable live."
+clip = "creature"
+icon = ExtResource("8_jn372")
+preview_focus = 0.22
+scene_path = "res://sandbox/limb_prototype/limb_prototype_treadmill.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("1 – 5", "K / L", "N / M")
+control_actions = PackedStringArray("gait", "limbs", "segments")
+question = "Can a creature animate convincingly with no baked clips at all?"
+approach = "FABRIK limbs, a gait state machine, hip suspension and spine IK, solved per tick."
+finding = "Limb count and proportions fall out of parameters, so a new creature needs no rig."
+benchmark = "5 gaits · limbs and segments per limb changed live · per-foot ground raycast"
+
 [resource]
 script = ExtResource("10_ajynb")
-entries = Array[ExtResource("1_i2ljj")]([SubResource("Resource_0k6x8"), SubResource("Resource_3ffix"), SubResource("Resource_3f7jf"), SubResource("Resource_ph57d"), SubResource("Resource_d6obk"), SubResource("Resource_uy7oo"), SubResource("Resource_snm5f"), SubResource("Resource_fmw2o"), SubResource("Resource_b8wcl")])
+entries = Array[ExtResource("1_i2ljj")]([SubResource("Resource_uy7oo"), SubResource("Resource_3f7jf"), SubResource("Resource_snm5f"), SubResource("Resource_d6obk"), SubResource("Resource_fmw2o"), SubResource("Resource_3ffix"), SubResource("Resource_ph57d"), SubResource("Resource_b8wcl"), SubResource("Resource_0k6x8")])
