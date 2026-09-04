@@ -166,17 +166,29 @@ const PERFORMANCES: Dictionary = {
 		{"at": 7.8, "key": KEY_1},
 	],
 
-	# A continuous slow pan, because the trees are scattered across the plain
-	# and a fixed view catches one of them at best - the first cut spent half its
-	# frames on empty ground. Panning sweeps several through the frame.
+	# Retargeted from shrubbery_forest to shrubbery_lab: ONE tree, not thirty.
+	# The forest's continuous pan is wrong here - with a single subject, panning
+	# just walks it out of frame and spends the rest of the clip on empty ground.
+	# So the yaw is small and only used to settle the framing, and the clip
+	# spends its length on slice rotation instead.
 	#
-	# Deliberately no `G` (new seed) anywhere: regenerating the forest takes
-	# ~2.8 s on the main thread and would freeze the recording mid-clip.
+	# Slice rotation is also the point of this preview now: the lab renders with
+	# the Combined engine, so rotating zw both changes the cross-section AND
+	# reshapes the projected ghost around it. A static shot would show neither.
+	#
+	# Still deliberately no `G` (new tree): regrowth is ~0.4 s on the main thread
+	# (grow 0.026 + voxelize 0.118 + mesh 0.237) - far cheaper than the forest's
+	# 2.8 s, but still a visible hitch mid-clip for no gain.
+	# Framed TIGHT on the tree, from the spawn position. Backing off to fit the
+	# whole tree was tried and is worse: the player moves at 5 m/s, so even two
+	# seconds of retreat puts it 10 m out, where the tree is a speck on an empty
+	# 30 m platform. Close and cropped is the better tile.
 	"shrubbery": [
-		{"at": 0.0, "yaw": 11.0},
-		{"at": 3.4, "slice": 18.0, "yaw": 0.0},
-		{"at": 5.6, "yaw": 11.0},
-		{"at": 8.2, "slice": -18.0},
+		{"at": 0.0, "yaw": 7.0},
+		{"at": 1.6, "slice": 20.0, "yaw": 0.0},
+		{"at": 4.4, "yaw": 6.0, "slice": 0.0},
+		{"at": 5.4, "slice": -20.0},
+		{"at": 8.2, "yaw": -6.0, "slice": 0.0},
 	],
 
 	# No verb at all - this one is scenery, and the claim is that the clouds are

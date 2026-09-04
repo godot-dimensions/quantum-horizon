@@ -1,8 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://cvsiobipgt1en"]
+[gd_scene load_steps=9 format=3 uid="uid://cvsiobipgt1en"]
 
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://cci7qchdsxa2r" path="res://sandbox/shrubbery/shrubbery_lab.gd" id="2_lab"]
 [ext_resource type="Script" uid="uid://bu06wpw8orns5" path="res://sandbox/shrubbery/shrubbery_lab_controller.gd" id="3_controller"]
+[ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="99_return"]
 
 [sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
 horizon_color = Color(0.75, 0.82, 0.9, 1)
@@ -82,5 +83,16 @@ script = ExtResource("3_controller")
 lab_path = NodePath("../FlatPlane/ShrubberyLabRoot")
 hint_label_path = NodePath("../HintLabel")
 info_label_path = NodePath("../InfoLabel")
+
+[node name="ReturnButton" parent="." instance=ExtResource("99_return")]
+
+[node name="FirstPersonCamera" parent="FlatPlane/Player/PlayerHead" index="0"]
+rendering_engine_name = "Combined"
+w_fade_distance = 8.0
+edge_falloff = 0.6
+plane_sharpness = 0.2
+skewness = 0.35
+projection_opacity = 0.85
+projection_opacity_base = 0.5
 
 [editable path="FlatPlane/Player"]
