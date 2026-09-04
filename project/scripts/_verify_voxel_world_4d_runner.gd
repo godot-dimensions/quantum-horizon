@@ -27,7 +27,7 @@ func _ready() -> void:
 	_run()
 
 func _tet_count(mesh: ArrayTetraMesh4D) -> int:
-	return mesh.get_simplex_cell_indices().size() / 4
+	return mesh.get_simplex_cell_vertex_indices().size() / 4
 
 func _centroid(vertices: PackedVector4Array, indices: PackedInt32Array, tet_index: int) -> Vector4:
 	var base := tet_index * 4
@@ -38,16 +38,16 @@ static func _in_bounds(p: Vector4, lo: Vector4, hi: Vector4) -> bool:
 		and p.z >= lo.z and p.z < hi.z and p.w >= lo.w and p.w < hi.w
 
 func _all_mesh_centroids_in_bounds(mesh: ArrayTetraMesh4D, lo: Vector4, hi: Vector4) -> bool:
-	var vertices: PackedVector4Array = mesh.get_vertices()
-	var indices: PackedInt32Array = mesh.get_simplex_cell_indices()
+	var vertices: PackedVector4Array = mesh.get_vertex_positions()
+	var indices: PackedInt32Array = mesh.get_simplex_cell_vertex_indices()
 	for t in range(_tet_count(mesh)):
 		if not _in_bounds(_centroid(vertices, indices, t), lo, hi):
 			return false
 	return true
 
 func _no_mesh_centroids_in_bounds(mesh: ArrayTetraMesh4D, lo: Vector4, hi: Vector4) -> bool:
-	var vertices: PackedVector4Array = mesh.get_vertices()
-	var indices: PackedInt32Array = mesh.get_simplex_cell_indices()
+	var vertices: PackedVector4Array = mesh.get_vertex_positions()
+	var indices: PackedInt32Array = mesh.get_simplex_cell_vertex_indices()
 	for t in range(_tet_count(mesh)):
 		if _in_bounds(_centroid(vertices, indices, t), lo, hi):
 			return false

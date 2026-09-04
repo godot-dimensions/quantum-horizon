@@ -83,8 +83,8 @@ func update_hover_at(screen_pos: Vector2) -> void:
 ## tetrahedron slice of it.
 func _rebuild_outline(dual_cube_id: int, source_ids: PackedInt32Array) -> void:
 	var mesh: ArrayTetraMesh4D = terrain.mesh_instance.mesh
-	var vertices: PackedVector4Array = mesh.get_vertices()
-	var cell_indices: PackedInt32Array = mesh.get_simplex_cell_indices()
+	var vertices: PackedVector4Array = mesh.get_vertex_positions()
+	var cell_indices: PackedInt32Array = mesh.get_simplex_cell_vertex_indices()
 
 	var wire := ArrayWireMesh4D.new()
 	for tet_index in range(source_ids.size()):

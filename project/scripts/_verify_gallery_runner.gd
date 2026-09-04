@@ -407,13 +407,13 @@ func _run() -> void:
 	# script used zw, which put that same swing directly into z and clipped
 	# straight through them (confirmed by watching the render, not just the
 	# basis-changed check). The core is now a 600-cell (no parametric
-	# "size" property - get_vertices() is the only generic way to find its
+	# "size" property - get_vertex_positions() is the only generic way to find its
 	# actual local extent), so find its own most w-extreme local vertex
 	# directly, track it through real rotation frames, and confirm: its
 	# global x-offset swings through a meaningful range (the effect is
 	# still genuinely happening), while its z-offset stays small throughout
 	# (nothing is clipping into the neighboring gun parts anymore).
-	var core_vertices: PackedVector4Array = gun_core.mesh.get_vertices()
+	var core_vertices: PackedVector4Array = gun_core.mesh.get_vertex_positions()
 	var local_extreme_vertex: Vector4 = Vector4.ZERO
 	var max_local_w: float = 0.0
 	for v in core_vertices:

@@ -20,8 +20,8 @@ func _init() -> void:
 		if mesh == null:
 			print("segments=%d -> NULL" % segments)
 			continue
-		var verts: PackedVector4Array = mesh.get_vertices()
-		var cells: PackedInt32Array = mesh.get_simplex_cell_indices()
+		var verts: PackedVector4Array = mesh.get_vertex_positions()
+		var cells: PackedInt32Array = mesh.get_simplex_cell_vertex_indices()
 		# How far the faceted rim bows INSIDE the true circle, midway between two
 		# vertices. Measuring vertex radii instead would report zero error at every
 		# segment count, because an inscribed polygon puts every vertex exactly on

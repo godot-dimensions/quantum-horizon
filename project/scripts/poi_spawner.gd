@@ -99,7 +99,7 @@ func _collect_surface_points_local(terrain: Node4D) -> PackedVector4Array:
 	for chunk in ground.get_children():
 		if chunk is MeshInstance4D and chunk.mesh is ArrayTetraMesh4D:
 			var mesh: ArrayTetraMesh4D = chunk.mesh
-			points.append_array(mesh.get_vertices())
+			points.append_array(mesh.get_vertex_positions())
 	return points
 
 

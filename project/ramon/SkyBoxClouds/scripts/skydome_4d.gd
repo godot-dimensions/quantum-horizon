@@ -131,20 +131,20 @@ func generate() -> void:
 
 	# Every vertex of a regular 4-polytope already lies on a common 3-sphere, so
 	# this is a rescale rather than a projection - it cannot distort the shape.
-	var vertices: PackedVector4Array = shell.get_vertices()
+	var vertices: PackedVector4Array = shell.get_vertex_positions()
 	for i in range(vertices.size()):
 		var length: float = vertices[i].length()
 		if length > 0.0:
 			vertices[i] = vertices[i] / length * radius
-	shell.set_vertices(vertices)
+	shell.set_vertex_positions(vertices)
 
-	var indices: PackedInt32Array = shell.get_simplex_cell_indices()
+	var indices: PackedInt32Array = shell.get_simplex_cell_vertex_indices()
 	if flip_winding:
 		for i in range(0, indices.size(), 4):
 			var swap: int = indices[i + 1]
 			indices[i + 1] = indices[i + 2]
 			indices[i + 2] = swap
-		shell.set_simplex_cell_indices(indices)
+		shell.set_simplex_cell_vertex_indices(indices)
 
 	# One UVW per tetrahedron corner, in the same order as the cell index list -
 	# TetraMesh4D rejects a texture map whose length differs from that list.

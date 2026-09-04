@@ -93,11 +93,11 @@ func _run() -> void:
 
 	# 3. Built mesh + collision.
 	var mesh: ArrayTetraMesh4D = terrain.mesh_instance.mesh
-	var vertex_count: int = mesh.get_vertices().size()
-	var cell_index_count: int = mesh.get_simplex_cell_indices().size()
+	var vertex_count: int = mesh.get_vertex_positions().size()
+	var cell_index_count: int = mesh.get_simplex_cell_vertex_indices().size()
 	print("3a.mesh_nonempty: vertices=%d cell_indices=%d (expect both > 0)" % [vertex_count, cell_index_count])
 	var max_index := -1
-	for idx in mesh.get_simplex_cell_indices():
+	for idx in mesh.get_simplex_cell_vertex_indices():
 		max_index = maxi(max_index, idx)
 	print("3b.cell_indices_in_range: max_index=%d vertex_count=%d (expect max_index < vertex_count)" % [max_index, vertex_count])
 
@@ -207,7 +207,7 @@ func _run() -> void:
 	voxel_hover.update_hover_at(target_screen_pos)
 	print("9a.hover_outline_visible: %s (expect true)" % [hover_outline.visible])
 	var outline_mesh: ArrayWireMesh4D = hover_outline.mesh
-	var outline_vertex_count: int = outline_mesh.get_vertices().size() if outline_mesh != null else 0
+	var outline_vertex_count: int = outline_mesh.get_vertex_positions().size() if outline_mesh != null else 0
 	print("9b.hover_outline_vertex_count: %d (expect > 0)" % [outline_vertex_count])
 	print("9c.hover_dual_cube_id: %d (expect >= 0)" % [voxel_hover._last_dual_cube_id])
 	await _screenshot("terrain4d_view_hover_outline.png")

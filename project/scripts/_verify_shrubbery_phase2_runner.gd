@@ -30,8 +30,8 @@ func _face_key(positions: PackedVector4Array, a: int, b: int, c: int) -> String:
 
 
 func _face_adjacency(mesh: ArrayTetraMesh4D, label: String) -> void:
-	var indices: PackedInt32Array = mesh.get_simplex_cell_indices()
-	var positions: PackedVector4Array = mesh.get_vertices()
+	var indices: PackedInt32Array = mesh.get_simplex_cell_vertex_indices()
+	var positions: PackedVector4Array = mesh.get_vertex_positions()
 	var tet_count: int = indices.size() / 4
 	var face_map: Dictionary = {}
 	for t in range(tet_count):

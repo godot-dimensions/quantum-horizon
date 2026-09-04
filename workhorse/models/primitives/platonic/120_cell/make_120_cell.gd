@@ -7,14 +7,14 @@ func _ready() -> void:
 	var mesh: ArrayPolyMesh4D = load_as_array_poly_mesh_4d(base_path + ".off")
 	mesh.resource_name = "120_cell_mesh"
 	# Scale by the longest length.
-	var verts: PackedVector4Array = mesh.poly_cell_vertices
+	var verts: PackedVector4Array = mesh.poly_cell_vertex_positions
 	var longest_length: float = 0.0
 	for vert in verts:
 		if vert.length() > longest_length:
 			longest_length = vert.length()
 	for i in range(verts.size()):
 		verts[i] = verts[i] / longest_length
-	mesh.poly_cell_vertices = verts
+	mesh.poly_cell_vertex_positions = verts
 	# Save.
 	save_mesh_4d_to_scene_and_g4mf(mesh, base_path)
 	# Smooth and save again.

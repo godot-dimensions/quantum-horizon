@@ -162,7 +162,7 @@ func _generate_tree_task(index: int, per_tree_species: Array[ShrubSpecies4D], pe
 
 	results[index] = {
 		"voxel_count": voxels.size(),
-		"tet_count": wood_mesh.get_simplex_cell_indices().size() / 4 + leaf_mesh.get_simplex_cell_indices().size() / 4,
+		"tet_count": wood_mesh.get_simplex_cell_vertex_indices().size() / 4 + leaf_mesh.get_simplex_cell_vertex_indices().size() / 4,
 		"wood_mesh": wood_mesh,
 		"leaf_mesh": leaf_mesh,
 	}

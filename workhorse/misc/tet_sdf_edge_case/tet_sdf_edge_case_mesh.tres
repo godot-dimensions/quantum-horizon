@@ -2,6 +2,6 @@
 
 [resource]
 resource_name = "tet_sdf_edge_case_mesh"
-simplex_cell_indices = PackedInt32Array(0, 1, 2, 3, 0, 1, 4, 2)
+simplex_cell_vertex_indices = PackedInt32Array(0, 1, 2, 3, 0, 1, 4, 2)
 simplex_cell_boundary_normals = PackedVector4Array(0.9950371902099892, 0, 0.09950371902099893, 0, -0.9950371902099892, 0, 0.09950371902099893, 0)
-vertices = PackedVector4Array(0, -1, 0, 1, 0, 1, 0, 1, 0, 0, 0, -0.5, 0.1, 0, -1, 0, -0.1, 0, -1, 0)
+vertex_positions = PackedVector4Array(0, -1, 0, 1, 0, 1, 0, 1, 0, 0, 0, -0.5, 0.1, 0, -1, 0, -0.1, 0, -1, 0)

@@ -91,7 +91,7 @@ func save_physics_shape_and_mesh_to_scene_and_g4mf(in_shape: Shape4D, in_mesh: M
 	# Save a Godot 3D mesh for the texture map.
 	if mesh_resource is TetraMesh4D:
 		var tetra_mesh: TetraMesh4D = mesh_resource
-		tetra_mesh.get_simplex_cell_indices()
+		tetra_mesh.get_simplex_cell_vertex_indices()
 		#tetra_mesh.get_simplex_cell_boundary_normals()
 		#tetra_mesh.get_simplex_cell_vertex_normals()
 		var tex_map: ArrayMesh = tetra_mesh.export_texture_map_mesh()

@@ -23,9 +23,9 @@ func _ready() -> void:
 	# Collapse the final result from poly to tetra to avoid
 	# complications with the non-convex star-shaped cells being used.
 	var tetra_mesh: ArrayTetraMesh4D = poly_mesh.to_array_tetra_mesh()
-	print(tetra_mesh.get_simplex_cell_indices().size())
+	print(tetra_mesh.get_simplex_cell_vertex_indices().size())
 	#tetra_mesh.remove_opposite_overlapping_tetrahedra()
-	print(tetra_mesh.get_simplex_cell_indices().size())
+	print(tetra_mesh.get_simplex_cell_vertex_indices().size())
 	save_mesh_4d_to_scene_and_g4mf(tetra_mesh, base_path)
 
 
@@ -86,7 +86,7 @@ func rotate_and_flatten_mesh_to_xzw(mesh_4d: ArrayPolyMesh4D) -> void:
 func texture_map_ground_cells_by_spatial_position(mesh_4d: ArrayPolyMesh4D) -> void:
 	# Gather all cells that have the same Y coordinate everywhere on them.
 	var all_cell_vert_ind: Array[PackedInt32Array] = mesh_4d.get_all_cell_vertex_indices(false)
-	var all_cell_vert_val: PackedVector4Array = mesh_4d.poly_cell_vertices
+	var all_cell_vert_val: PackedVector4Array = mesh_4d.poly_cell_vertex_positions
 	var ground_cells := PackedInt32Array()
 	for cell_index in range(all_cell_vert_ind.size()):
 		var this_cell_vert_ind: PackedInt32Array = all_cell_vert_ind[cell_index]

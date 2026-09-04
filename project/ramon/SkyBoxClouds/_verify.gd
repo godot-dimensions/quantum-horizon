@@ -25,9 +25,9 @@ func _check_dome() -> void:
 		print("DOME FAIL: no mesh")
 		return
 	print("DOME  tets %d  texmap %d/%d" % [
-		mesh.get_simplex_cell_indices().size() / 4,
+		mesh.get_simplex_cell_vertex_indices().size() / 4,
 		mesh.simplex_cell_texture_map.size(),
-		mesh.get_simplex_cell_indices().size()])
+		mesh.get_simplex_cell_vertex_indices().size()])
 	dome.free()
 
 
@@ -41,7 +41,7 @@ func _check_clouds() -> void:
 		clouds.free()
 		return
 
-	var vertices: PackedVector4Array = mesh.get_vertices()
+	var vertices: PackedVector4Array = mesh.get_vertex_positions()
 	var min_y := 1e20
 	var max_y := -1e20
 	var max_w := 0.0

@@ -124,7 +124,7 @@ func _scan_max_height(terrain: Node) -> float:
 	for chunk in ground.get_children():
 		if not (chunk is MeshInstance4D) or not (chunk.mesh is ArrayTetraMesh4D):
 			continue
-		var verts: PackedVector4Array = (chunk.mesh as ArrayTetraMesh4D).get_vertices()
+		var verts: PackedVector4Array = (chunk.mesh as ArrayTetraMesh4D).get_vertex_positions()
 		for v in verts:
 			max_y = maxf(max_y, v.y)
 

@@ -585,8 +585,8 @@ func generate() -> void:
 	var detail_template: ArrayTetraMesh4D = _build_template(detail_shape)
 	if primary_template == null or detail_template == null:
 		return
-	var primary_cost: int = primary_template.get_simplex_cell_indices().size() / 4
-	var detail_cost: int = detail_template.get_simplex_cell_indices().size() / 4
+	var primary_cost: int = primary_template.get_simplex_cell_vertex_indices().size() / 4
+	var detail_cost: int = detail_template.get_simplex_cell_vertex_indices().size() / 4
 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = cloud_seed
@@ -816,8 +816,8 @@ func _build_template(shape_value) -> ArrayTetraMesh4D:
 ## cell renders as a hole. Since these shells are convex about the origin, a
 ## cell's outward direction is just its own centroid.
 func _subdivide_to_sphere(mesh: ArrayTetraMesh4D) -> ArrayTetraMesh4D:
-	var vertices: PackedVector4Array = mesh.get_vertices()
-	var indices: PackedInt32Array = mesh.get_simplex_cell_indices()
+	var vertices: PackedVector4Array = mesh.get_vertex_positions()
+	var indices: PackedInt32Array = mesh.get_simplex_cell_vertex_indices()
 	var result := ArrayTetraMesh4D.new()
 	var midpoints := {}
 
@@ -873,7 +873,7 @@ func _subdivide_to_sphere(mesh: ArrayTetraMesh4D) -> ArrayTetraMesh4D:
 
 ## Appends one tetrahedron, flipping its winding if it faces inward.
 func _append_outward(mesh: ArrayTetraMesh4D, cell: Array) -> void:
-	var positions: PackedVector4Array = mesh.get_vertices()
+	var positions: PackedVector4Array = mesh.get_vertex_positions()
 	var a: Vector4 = positions[cell[0]]
 	var b: Vector4 = positions[cell[1]]
 	var c: Vector4 = positions[cell[2]]
@@ -897,7 +897,7 @@ func _append_outward(mesh: ArrayTetraMesh4D, cell: Array) -> void:
 ## is out of bounds". The block is skipped when both meshes have an empty map,
 ## which is the only clean way around it from outside the engine.
 func _normalize_template(blob: ArrayTetraMesh4D) -> ArrayTetraMesh4D:
-	var vertices: PackedVector4Array = blob.get_vertices()
+	var vertices: PackedVector4Array = blob.get_vertex_positions()
 	var longest := 0.0
 	for vertex in vertices:
 		longest = maxf(longest, vertex.length())
@@ -906,7 +906,7 @@ func _normalize_template(blob: ArrayTetraMesh4D) -> ArrayTetraMesh4D:
 		return null
 	for i in range(vertices.size()):
 		vertices[i] = vertices[i] / longest
-	blob.set_vertices(vertices)
+	blob.set_vertex_positions(vertices)
 	blob.set_simplex_cell_texture_map(PackedVector3Array())
 	return blob
 

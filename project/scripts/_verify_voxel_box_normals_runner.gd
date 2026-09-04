@@ -17,8 +17,8 @@ func _ready() -> void:
 	var box_mesh: ArrayTetraMesh4D = SubdividedBoxTetraMesh4D.build(half_extents, target_cell_size)
 	box_mesh.calculate_boundary_normals()
 
-	var positions: PackedVector4Array = box_mesh.get_vertices()
-	var indices: PackedInt32Array = box_mesh.get_simplex_cell_indices()
+	var positions: PackedVector4Array = box_mesh.get_vertex_positions()
+	var indices: PackedInt32Array = box_mesh.get_simplex_cell_vertex_indices()
 	var boundary_normals: PackedVector4Array = box_mesh.get_simplex_cell_boundary_normals()
 	var tet_count: int = indices.size() / 4
 

@@ -63,7 +63,7 @@ func regenerate() -> void:
 		wood_mesh = ShrubMeshBuilder4D.build_mesh(voxels, species)
 		leaf_mesh = ArrayTetraMesh4D.new() # Smooth builder doesn't split by voxel ID yet - wood-only for now.
 	last_elapsed_sec = (Time.get_ticks_usec() - start_usec) / 1_000_000.0
-	last_tet_count = wood_mesh.get_simplex_cell_indices().size() / 4 + leaf_mesh.get_simplex_cell_indices().size() / 4
+	last_tet_count = wood_mesh.get_simplex_cell_vertex_indices().size() / 4 + leaf_mesh.get_simplex_cell_vertex_indices().size() / 4
 
 	_shrub = ShrubInstance4D.new()
 	_shrub.name = "Shrub"

@@ -122,5 +122,5 @@ func _sum_visible_tets(chunk_pool: TerrainChunkPool4D) -> int:
 	var total := 0
 	for brick in chunk_pool.visible_bricks():
 		if brick.cached_mesh != null:
-			total += brick.cached_mesh.get_simplex_cell_indices().size() / 4
+			total += brick.cached_mesh.get_simplex_cell_vertex_indices().size() / 4
 	return total

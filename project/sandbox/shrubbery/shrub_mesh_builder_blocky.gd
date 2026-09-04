@@ -146,7 +146,7 @@ static func build_meshes(voxels: Dictionary, species: ShrubSpecies4D) -> Diction
 		target_mesh.calculate_boundary_normals(true) # keep_existing=true: backstop only, matching voxel_world_4d.gd's own identical pattern.
 
 	var elapsed_sec: float = (Time.get_ticks_usec() - start_usec) / 1_000_000.0
-	var total_tet_count: int = (wood_mesh.get_simplex_cell_indices().size() + leaf_mesh.get_simplex_cell_indices().size()) / 4
+	var total_tet_count: int = (wood_mesh.get_simplex_cell_vertex_indices().size() + leaf_mesh.get_simplex_cell_vertex_indices().size()) / 4
 	print("ShrubMeshBuilderBlocky4D.build_meshes: voxels=%d faces_emitted=%d faces_culled=%d tet_count=%d elapsed_sec=%.3f" % [voxels.size(), faces_emitted, faces_culled, total_tet_count, elapsed_sec])
 	return result
 
@@ -180,8 +180,8 @@ static func _build_face_templates(half_extents: Vector4, target_cell_size: float
 			SubdividedBoxTetraMesh4D._build_cell(face_mesh, half_extents, subdivisions, fixed_axis, fixed_sign, 0.0)
 			face_mesh.calculate_boundary_normals()
 			templates.append({
-				"positions": face_mesh.get_vertices(),
-				"indices": face_mesh.get_simplex_cell_indices(),
+				"positions": face_mesh.get_vertex_positions(),
+				"indices": face_mesh.get_simplex_cell_vertex_indices(),
 				"boundary_normals": face_mesh.get_simplex_cell_boundary_normals(),
 			})
 	return templates

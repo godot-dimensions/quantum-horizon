@@ -86,11 +86,11 @@ func _process(_delta: float) -> bool:
 		var radius := 0.0
 		var top := 0.0
 		if dais_mesh != null and dais_mesh.mesh != null:
-			tets = dais_mesh.mesh.get_simplex_cell_indices().size() / 4
+			tets = dais_mesh.mesh.get_simplex_cell_vertex_indices().size() / 4
 			# Measured from the geometry rather than read back off the shape, so
 			# this still reports honestly when there is no collider to ask.
 			var highest := -INF
-			for v in dais_mesh.mesh.get_vertices():
+			for v in dais_mesh.mesh.get_vertex_positions():
 				radius = maxf(radius, sqrt(v.x * v.x + v.z * v.z))
 				highest = maxf(highest, v.y)
 			top = dais.position.y + highest
@@ -141,7 +141,7 @@ func _process(_delta: float) -> bool:
 		var detail := "no mesh"
 		if surface.mesh != null:
 			var s: Vector4 = surface.mesh.size
-			var tetra: int = surface.mesh.get_simplex_cell_indices().size() / 4
+			var tetra: int = surface.mesh.get_simplex_cell_vertex_indices().size() / 4
 			detail = "%.0f x %.0f m, %d tetrahedra, map=%d" % [s.x, s.z, tetra, surface.mesh.cell_texture_map]
 		# The tiling lives in a shader uniform, not in the mesh, so report it -
 		# it is the single number that decides whether the texture repeats.

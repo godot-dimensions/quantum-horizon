@@ -46,7 +46,7 @@ func _run() -> void:
 	var expected_vertices: int = polyhedron.n * polyhedron.n
 	var expected_edges: int = 2 * polyhedron.n * polyhedron.n
 	print("2a.vertex_count: expected=%d actual=%d (match=%s)" % [
-		expected_vertices, mesh.get_vertices().size(), expected_vertices == mesh.get_vertices().size(),
+		expected_vertices, mesh.get_vertex_positions().size(), expected_vertices == mesh.get_vertex_positions().size(),
 	])
 	print("2b.edge_count: expected=%d actual=%d (match=%s)" % [
 		expected_edges, mesh.get_edge_indices().size() / 2, expected_edges == mesh.get_edge_indices().size() / 2,
@@ -55,7 +55,7 @@ func _run() -> void:
 	# 3. Every vertex lies exactly on the hypersphere of radius RADIUS - the
 	# whole point of the /sqrt(2) normalization in the construction formula.
 	var max_radius_error: float = 0.0
-	for vertex in mesh.get_vertices():
+	for vertex in mesh.get_vertex_positions():
 		max_radius_error = maxf(max_radius_error, absf(vertex.length() - polyhedron.RADIUS))
 	print("3a.all_vertices_on_hypersphere: max_radius_error=%.6f (expect ~0)" % [max_radius_error])
 
@@ -63,7 +63,7 @@ func _run() -> void:
 	await _press_key(KEY_3)
 	print("4a.number_key_sets_n: n=%d (expect 3)" % [polyhedron.n])
 	print("4b.rebuilt_vertex_count: expected=9 actual=%d (match=%s)" % [
-		polyhedron.mesh.get_vertices().size(), polyhedron.mesh.get_vertices().size() == 9,
+		polyhedron.mesh.get_vertex_positions().size(), polyhedron.mesh.get_vertex_positions().size() == 9,
 	])
 	print("4c.label_updated: text=%s (expect it to mention {4,4|3})" % [label.text])
 

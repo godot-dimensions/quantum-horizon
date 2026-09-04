@@ -49,7 +49,7 @@ func _band_tet_count(brick: VoxelBrick4D, band: int) -> int:
 	var mesh: ArrayTetraMesh4D = brick.cached_band_meshes[band]
 	if mesh == null:
 		return 0
-	return mesh.get_simplex_cell_indices().size() / 4
+	return mesh.get_simplex_cell_vertex_indices().size() / 4
 
 func _ready() -> void:
 	_run()

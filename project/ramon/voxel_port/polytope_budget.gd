@@ -62,7 +62,7 @@ func _init() -> void:
 
 
 func _measure(name: String, mesh: TetraMesh4D) -> int:
-	var cells: PackedInt32Array = mesh.get_simplex_cell_indices()
+	var cells: PackedInt32Array = mesh.get_simplex_cell_vertex_indices()
 	var tets: int = cells.size() / 4
 	var verts: int = mesh.get_simplex_cell_positions().size()
 	print("%-20s %10d %10d" % [name, tets, verts])

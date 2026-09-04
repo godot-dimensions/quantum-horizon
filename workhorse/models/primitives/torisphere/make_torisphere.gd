@@ -97,7 +97,7 @@ func make_torisphere(base: ArrayMesh) -> ArrayPolyMesh4D:
 	# The generated torisphere's normals are not correct.
 	# Fix it up by forcing outward from the major axis ring.
 	torisphere.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
-	var all_verts: PackedVector4Array = torisphere.poly_cell_vertices
+	var all_verts: PackedVector4Array = torisphere.poly_cell_vertex_positions
 	var bad_normals: PackedVector4Array = torisphere.get_poly_cell_boundary_normals()
 	var cell_vert_ind: Array[PackedInt32Array] = torisphere.get_all_poly_cell_vertex_indices(3, false)
 	var poly_ind: Array[Array] = torisphere.poly_cell_indices

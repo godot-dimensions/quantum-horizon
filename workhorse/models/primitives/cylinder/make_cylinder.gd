@@ -9,7 +9,7 @@ func _ready() -> void:
 
 func _subdivide_triangle_faces(input: ArrayPolyMesh4D) -> ArrayPolyMesh4D:
 	var sub := ArrayPolyMesh4D.new()
-	var input_vert: PackedVector4Array = input.poly_cell_vertices
+	var input_vert: PackedVector4Array = input.poly_cell_vertex_positions
 	var input_face_vert: Array[PackedInt32Array] = input.get_all_face_vertex_indices()
 	var output_faces: Array[PackedInt32Array] = []
 	for face_iter in input_face_vert:
@@ -48,12 +48,12 @@ func _make_dodecahedral_cylinder() -> void:
 		else:
 			file_no_ext = "cylinder_smooth_dodeca"
 		var ico: ArrayPolyMesh4D = ResourceLoader.load("res://models/3d/dodecahedron/dodecahedron.off").duplicate(true)
-		var vert: PackedVector4Array = ico.poly_cell_vertices
+		var vert: PackedVector4Array = ico.poly_cell_vertex_positions
 		for i in range(vert.size()):
 			vert[i] = vert[i].normalized()
 		# Rotate to put the long side on the Z axis for better texture mapping.
 		vert = Basis4D.xform_array(Basis4D.from_zw(TAU / 4.0), vert)
-		ico.poly_cell_vertices = vert
+		ico.poly_cell_vertex_positions = vert
 		var extruded: ArrayPolyMesh4D = PolyMeshBuilder4D.extrude_linear(ico, Vector4(0, 0, 1, 0))
 		extruded.resource_name = file_no_ext
 		# Texture mapping.
@@ -73,9 +73,9 @@ func _make_dodecahedral_cylinder() -> void:
 			tex_map_pos[1] = second
 			extruded.poly_cell_texture_map = tex_map_pos
 		# Rotate to put the long side on the Y axis instead.
-		vert = extruded.poly_cell_vertices
+		vert = extruded.poly_cell_vertex_positions
 		vert = Basis4D.xform_array(Basis4D.from_yz(-TAU / 4.0), vert)
-		extruded.poly_cell_vertices = vert
+		extruded.poly_cell_vertex_positions = vert
 		extruded.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 		if smooth == 1:
 			extruded.set_smooth_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
@@ -94,12 +94,12 @@ func _make_icosahedral_cylinder(max_subdivisions: int) -> void:
 			else:
 				file_no_ext = "cylinder_smooth_ico" + str(subdivisions)
 			var ico: ArrayPolyMesh4D = ResourceLoader.load("res://models/3d/icosphere/icosahedron.off").duplicate(true)
-			var vert: PackedVector4Array = ico.poly_cell_vertices
+			var vert: PackedVector4Array = ico.poly_cell_vertex_positions
 			for i in range(vert.size()):
 				vert[i] = vert[i].normalized()
 			# Rotate to put the long side on the Z axis for better texture mapping.
 			vert = Basis4D.xform_array(Basis4D.from_zw(TAU / 4.0), vert)
-			ico.poly_cell_vertices = vert
+			ico.poly_cell_vertex_positions = vert
 			for i in range(subdivisions):
 				ico = _subdivide_triangle_faces(ico)
 			var extruded: ArrayPolyMesh4D = PolyMeshBuilder4D.extrude_linear(ico, Vector4(0, 0, 1, 0))
@@ -121,9 +121,9 @@ func _make_icosahedral_cylinder(max_subdivisions: int) -> void:
 				tex_map_pos[1] = second
 				extruded.poly_cell_texture_map = tex_map_pos
 			# Rotate to put the long side on the Y axis instead.
-			vert = extruded.poly_cell_vertices
+			vert = extruded.poly_cell_vertex_positions
 			vert = Basis4D.xform_array(Basis4D.from_yz(-TAU / 4.0), vert)
-			extruded.poly_cell_vertices = vert
+			extruded.poly_cell_vertex_positions = vert
 			extruded.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 			if smooth == 1:
 				extruded.set_smooth_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
@@ -141,12 +141,12 @@ func _make_truncated_icosahedral_cylinder() -> void:
 		else:
 			file_no_ext = "cylinder_smooth_trunc_ico"
 		var ico: ArrayPolyMesh4D = ResourceLoader.load("res://models/3d/icosphere/truncated_icosahedron.off").duplicate(true)
-		var vert: PackedVector4Array = ico.poly_cell_vertices
+		var vert: PackedVector4Array = ico.poly_cell_vertex_positions
 		for i in range(vert.size()):
 			vert[i] = vert[i].normalized()
 		# Rotate to put the long side on the Z axis for better texture mapping.
 		vert = Basis4D.xform_array(Basis4D.from_zw(TAU / 4.0), vert)
-		ico.poly_cell_vertices = vert
+		ico.poly_cell_vertex_positions = vert
 		var extruded: ArrayPolyMesh4D = PolyMeshBuilder4D.extrude_linear(ico, Vector4(0, 0, 1, 0))
 		extruded.resource_name = file_no_ext
 		# Texture mapping.
@@ -166,9 +166,9 @@ func _make_truncated_icosahedral_cylinder() -> void:
 			tex_map_pos[1] = second
 			extruded.poly_cell_texture_map = tex_map_pos
 		# Rotate to put the long side on the Y axis instead.
-		vert = extruded.poly_cell_vertices
+		vert = extruded.poly_cell_vertex_positions
 		vert = Basis4D.xform_array(Basis4D.from_yz(-TAU / 4.0), vert)
-		extruded.poly_cell_vertices = vert
+		extruded.poly_cell_vertex_positions = vert
 		extruded.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 		if smooth == 1:
 			extruded.set_smooth_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)

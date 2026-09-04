@@ -73,7 +73,7 @@ Three new files, all in `project/scripts/`:
   density math lives as anonymous closures private to `_add_model_layer`,
   and isn't solvable for height in closed form for the plane/globe models
   anyway) - instead it reads the Ground mesh's own vertex data directly via
-  `ArrayTetraMesh4D.get_vertices()`. Those come out already in the terrain's
+  `ArrayTetraMesh4D.get_vertex_positions()`. Those come out already in the terrain's
   local coordinate space, so a sampled point can be used as a POI's
   `.position` with no transform math at all. Auto-spawns once the terrain
   actually has a generated surface to sample from (polls for real

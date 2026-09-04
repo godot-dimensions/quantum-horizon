@@ -138,6 +138,6 @@ func _audit_shape_coverage() -> void:
 		var tetra := mesh as TetraMesh4D
 		if tetra != null:
 			uvw = tetra.get_simplex_cell_texture_map().size()
-			cells = tetra.get_simplex_cell_indices().size()
+			cells = tetra.get_simplex_cell_vertex_indices().size()
 		print("  %-18s to_tetra_mesh -> %d cell indices, %d uvw entries" % [shape_name, cells, uvw])
 	print("  (0 uvw entries = cannot carry a tiled dev texture.)")
