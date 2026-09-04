@@ -85,6 +85,16 @@ crust_metres = 0.5
 [node name="Player" parent="." instance=ExtResource("1_player")]
 position = Vector4(0.087706394569986, 1.7895603797084625, 4.6, 0)
 
+[node name="FirstPersonCamera" parent="Player/PlayerHead" index="0"]
+rendering_engine_name = "Combined"
+field_of_view_3d = 1.3494818844471053
+w_fade_distance = 8.0
+edge_falloff = 0.6
+plane_sharpness = 0.2
+skewness = 0.35
+projection_opacity = 0.85
+projection_opacity_base = 0.5
+
 [node name="MiningAxe" type="Node" parent="."]
 script = ExtResource("3_axe")
 
