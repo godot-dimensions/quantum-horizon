@@ -622,7 +622,8 @@ func _build_brick_mesh(brick: VoxelBrick4D, result: Dictionary) -> void:
 			indices[tet_indices[base + 0]], indices[tet_indices[base + 1]],
 			indices[tet_indices[base + 2]], indices[tet_indices[base + 3]]
 		)
-	mesh.set_simplex_cell_vertex_normals(result.tet_vertex_normals)
+	mesh.normal_values = result.tet_vertex_normals
+	mesh.simplex_cell_normal_indices = PackedInt32Array(range(result.tet_vertex_normals.size()))
 	# Assign the backend's own known-correct (density-gradient-derived,
 	# solid -> air) boundary normal directly, one per tet, rather than
 	# letting calculate_boundary_normals() guess via its "assume normal

@@ -108,17 +108,20 @@ func texture_map_ground_cells_by_spatial_position(mesh_4d: ArrayPolyMesh4D) -> v
 			rect_min = rect_min.min(all_cell_vert_val[vert_index])
 	# Remap the spatial coordinates into spatial coordinates, fitting the whole range into a 0 to 1 space.
 	# Discard Y, and use spatial X -> texture X, spatial Z -> texture Y, spatial W -> texture Z.
-	var tex_map: Array[PackedVector3Array] = mesh_4d.poly_cell_texture_map
+	var tex_map: Array[PackedInt32Array] = mesh_4d.poly_cell_texture_map_indices
+	var tex_map_values: PackedVector3Array = mesh_4d.poly_cell_texture_map_values
 	var rect_size: Vector4 = rect_max - rect_min
 	for cell_index in ground_cells:
 		var this_cell_vert_ind: PackedInt32Array = all_cell_vert_ind[cell_index]
-		var this_cell_tex_map: PackedVector3Array = tex_map[cell_index]
+		var this_cell_tex_map: PackedInt32Array = tex_map[cell_index]
 		this_cell_tex_map.resize(this_cell_vert_ind.size())
 		for vert_index in range(this_cell_vert_ind.size()):
 			var vert_pos: Vector4 = all_cell_vert_val[this_cell_vert_ind[vert_index]]
 			var vert_pos_in_rect: Vector4 = (vert_pos - rect_min) / rect_size
 			var tex_coord: Vector3 = Vector3(vert_pos_in_rect.x, vert_pos_in_rect.z, vert_pos_in_rect.w)
-			this_cell_tex_map[vert_index] = tex_coord
+			this_cell_tex_map[vert_index] = tex_map_values.size()
+			tex_map_values.append(tex_coord)
 		tex_map[cell_index] = this_cell_tex_map
-	mesh_4d.poly_cell_texture_map = tex_map
+	mesh_4d.poly_cell_texture_map_values = tex_map_values
+	mesh_4d.poly_cell_texture_map_indices = tex_map
 	mesh_4d.poly_mesh_clear_cache()

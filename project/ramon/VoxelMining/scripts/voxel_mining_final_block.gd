@@ -240,7 +240,8 @@ func _build_mesh(contour: DualContour4D, center: float) -> ArrayTetraMesh4D:
 				_texel_center(_depth_at(contour.vertices[source_index], box_center, box_half_extent)),
 				0.5))
 
-	mesh.simplex_cell_texture_map = texture_map
+	mesh.texture_map_values = texture_map
+	mesh.simplex_cell_texture_map_indices = PackedInt32Array(range(texture_map.size()))
 	var material := TetraMaterial4D.new()
 	material.albedo_texture_3d = albedo_texture_3d if albedo_texture_3d != null else _palette()
 	material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY

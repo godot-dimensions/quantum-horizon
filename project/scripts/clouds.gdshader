@@ -478,7 +478,7 @@ float sample_volume(vec2 local_uv, float w, float blur_radius) {
 // showing the full 45-degree cost. Kept in (not deleted) because the
 // underlying idea - a genuinely shared, continuous per-cell reference
 // point instead of an arbitrary local one - is real infrastructure (the
-// simplex_cell_texture_map plumbing in SubdividedBoxTetraMesh4D.build())
+// texture_map_values / simplex_cell_texture_map_indices plumbing in SubdividedBoxTetraMesh4D.build())
 // that a future, better-targeted trigger signal could still use.
 uniform bool enable_cell_center_fallback = false;
 // Separately tunable from degeneracy_threshold (used for alpha/blur): the

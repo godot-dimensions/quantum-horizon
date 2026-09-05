@@ -10,8 +10,8 @@ func _ready() -> void:
 func _make_wedge2() -> void:
 	var mesh: ArrayPolyMesh4D = BoxPolyMesh4D.new().to_array_poly_mesh()
 	mesh.poly_cell_boundary_normals = PackedVector4Array()
-	mesh.poly_cell_vertex_normals = []
-	mesh.poly_cell_texture_map = []
+	mesh.poly_cell_normal_indices = []
+	mesh.poly_cell_texture_map_indices = []
 	mesh.resource_name = "wedge2"
 	# First, delete the vertices we don't want.
 	var vertices_to_delete := PackedInt32Array()
@@ -127,8 +127,8 @@ func _make_wedge2() -> void:
 func _make_wedge3() -> void:
 	var mesh: ArrayPolyMesh4D = BoxPolyMesh4D.new().to_array_poly_mesh()
 	mesh.poly_cell_boundary_normals = PackedVector4Array()
-	mesh.poly_cell_vertex_normals = []
-	mesh.poly_cell_texture_map = []
+	mesh.poly_cell_normal_indices = []
+	mesh.poly_cell_texture_map_indices = []
 	mesh.resource_name = "wedge3"
 	# First, delete the vertices we don't want.
 	var vertices_to_delete := PackedInt32Array()
@@ -235,8 +235,8 @@ func _make_wedge3() -> void:
 func _make_wedge4() -> void:
 	var mesh: ArrayPolyMesh4D = BoxPolyMesh4D.new().to_array_poly_mesh()
 	mesh.poly_cell_boundary_normals = PackedVector4Array()
-	mesh.poly_cell_vertex_normals = []
-	mesh.poly_cell_texture_map = []
+	mesh.poly_cell_normal_indices = []
+	mesh.poly_cell_texture_map_indices = []
 	mesh.resource_name = "wedge4"
 	# First, delete the vertices we don't want.
 	var vertices_to_delete := PackedInt32Array()

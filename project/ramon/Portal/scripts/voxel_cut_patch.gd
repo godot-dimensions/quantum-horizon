@@ -210,7 +210,8 @@ func _build_mesh(contour: PatchContour4D) -> ArrayTetraMesh4D:
 		for corner in range(4):
 			texture_map.append(Vector3(0.5, 0.5, 0.5))
 
-	mesh.simplex_cell_texture_map = texture_map
+	mesh.texture_map_values = texture_map
+	mesh.simplex_cell_texture_map_indices = PackedInt32Array(range(texture_map.size()))
 	return mesh
 
 

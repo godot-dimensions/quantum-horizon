@@ -133,7 +133,8 @@ func _build(voxels: Dictionary, species: ShrubSpecies4D) -> ArrayTetraMesh4D:
 						var elapsed_so_far: float = (Time.get_ticks_usec() - start_usec) / 1_000_000.0
 						print("  ...bricks_meshed=%d / bricks_visited=%d / candidate=%d, elapsed=%.1fs" % [bricks_meshed, bricks_visited, candidate_bricks, elapsed_so_far])
 
-	mesh.set_simplex_cell_vertex_normals(all_vertex_normals)
+	mesh.normal_values = all_vertex_normals
+	mesh.simplex_cell_normal_indices = PackedInt32Array(range(all_vertex_normals.size()))
 	if all_boundary_normals.size() == total_tets:
 		mesh.set_simplex_cell_boundary_normals(all_boundary_normals)
 		mesh.calculate_boundary_normals(true)

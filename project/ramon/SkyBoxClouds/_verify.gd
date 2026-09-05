@@ -26,7 +26,7 @@ func _check_dome() -> void:
 		return
 	print("DOME  tets %d  texmap %d/%d" % [
 		mesh.get_simplex_cell_vertex_indices().size() / 4,
-		mesh.simplex_cell_texture_map.size(),
+		mesh.simplex_cell_texture_map_indices.size(),
 		mesh.get_simplex_cell_vertex_indices().size()])
 	dome.free()
 

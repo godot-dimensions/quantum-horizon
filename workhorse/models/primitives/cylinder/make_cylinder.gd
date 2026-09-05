@@ -60,18 +60,25 @@ func _make_dodecahedral_cylinder() -> void:
 		extruded.unwrap_texture_map(ArrayPolyMesh4D.UNWRAP_MODE_EACH_ISLAND_FILLS, 0.0, true)
 		# Scale and offset the icosahedral cells to not overlap the sides.
 		if true:
-			var tex_map_pos: Array[PackedVector3Array] = extruded.poly_cell_texture_map
-			var first: PackedVector3Array = tex_map_pos[0]
-			var second: PackedVector3Array = tex_map_pos[1]
+			var tex_map_pos: Array[PackedInt32Array] = extruded.poly_cell_texture_map_indices
+			var tex_map_values: PackedVector3Array = extruded.poly_cell_texture_map_values
+			var first: PackedInt32Array = tex_map_pos[0]
+			var second: PackedInt32Array = tex_map_pos[1]
 			var scale_basis := Basis.from_scale(Vector3(0.5, 0.5, 0.5))
 			var first_xform := Transform3D(scale_basis, Vector3(0.0, 0.0, 0.5))
 			var second_xform := Transform3D(scale_basis, Vector3(0.5, 0.0, 0.5))
 			for i in range(first.size()):
-				first[i] = first_xform * first[i]
-				second[i] = second_xform * second[i]
+				var value: Vector3 = first_xform * tex_map_values[first[i]]
+				first[i] = tex_map_values.size()
+				tex_map_values.append(value)
+			for i in range(second.size()):
+				var value: Vector3 = second_xform * tex_map_values[second[i]]
+				second[i] = tex_map_values.size()
+				tex_map_values.append(value)
 			tex_map_pos[0] = first
 			tex_map_pos[1] = second
-			extruded.poly_cell_texture_map = tex_map_pos
+			extruded.poly_cell_texture_map_values = tex_map_values
+			extruded.poly_cell_texture_map_indices = tex_map_pos
 		# Rotate to put the long side on the Y axis instead.
 		vert = extruded.poly_cell_vertex_positions
 		vert = Basis4D.xform_array(Basis4D.from_yz(-TAU / 4.0), vert)
@@ -108,18 +115,25 @@ func _make_icosahedral_cylinder(max_subdivisions: int) -> void:
 			extruded.unwrap_texture_map(ArrayPolyMesh4D.UNWRAP_MODE_EACH_ISLAND_FILLS, 0.0, true)
 			# Scale and offset the icosahedral cells to not overlap the sides.
 			if true:
-				var tex_map_pos: Array[PackedVector3Array] = extruded.poly_cell_texture_map
-				var first: PackedVector3Array = tex_map_pos[0]
-				var second: PackedVector3Array = tex_map_pos[1]
+				var tex_map_pos: Array[PackedInt32Array] = extruded.poly_cell_texture_map_indices
+				var tex_map_values: PackedVector3Array = extruded.poly_cell_texture_map_values
+				var first: PackedInt32Array = tex_map_pos[0]
+				var second: PackedInt32Array = tex_map_pos[1]
 				var scale_basis := Basis.from_scale(Vector3(0.5, 0.5, 0.5))
 				var first_xform := Transform3D(scale_basis, Vector3(0.0, 0.0, 0.5))
 				var second_xform := Transform3D(scale_basis, Vector3(0.5, 0.0, 0.5))
 				for i in range(first.size()):
-					first[i] = first_xform * first[i]
-					second[i] = second_xform * second[i]
+					var value: Vector3 = first_xform * tex_map_values[first[i]]
+					first[i] = tex_map_values.size()
+					tex_map_values.append(value)
+				for i in range(second.size()):
+					var value: Vector3 = second_xform * tex_map_values[second[i]]
+					second[i] = tex_map_values.size()
+					tex_map_values.append(value)
 				tex_map_pos[0] = first
 				tex_map_pos[1] = second
-				extruded.poly_cell_texture_map = tex_map_pos
+				extruded.poly_cell_texture_map_values = tex_map_values
+				extruded.poly_cell_texture_map_indices = tex_map_pos
 			# Rotate to put the long side on the Y axis instead.
 			vert = extruded.poly_cell_vertex_positions
 			vert = Basis4D.xform_array(Basis4D.from_yz(-TAU / 4.0), vert)
@@ -153,18 +167,25 @@ func _make_truncated_icosahedral_cylinder() -> void:
 		extruded.unwrap_texture_map(ArrayPolyMesh4D.UNWRAP_MODE_EACH_ISLAND_FILLS, 0.0, true)
 		# Scale and offset the icosahedral cells to not overlap the sides.
 		if true:
-			var tex_map_pos: Array[PackedVector3Array] = extruded.poly_cell_texture_map
-			var first: PackedVector3Array = tex_map_pos[0]
-			var second: PackedVector3Array = tex_map_pos[1]
+			var tex_map_pos: Array[PackedInt32Array] = extruded.poly_cell_texture_map_indices
+			var tex_map_values: PackedVector3Array = extruded.poly_cell_texture_map_values
+			var first: PackedInt32Array = tex_map_pos[0]
+			var second: PackedInt32Array = tex_map_pos[1]
 			var scale_basis := Basis.from_scale(Vector3(0.5, 0.5, 0.5))
 			var first_xform := Transform3D(scale_basis, Vector3(0.0, 0.0, 0.5))
 			var second_xform := Transform3D(scale_basis, Vector3(0.5, 0.0, 0.5))
 			for i in range(first.size()):
-				first[i] = first_xform * first[i]
-				second[i] = second_xform * second[i]
+				var value: Vector3 = first_xform * tex_map_values[first[i]]
+				first[i] = tex_map_values.size()
+				tex_map_values.append(value)
+			for i in range(second.size()):
+				var value: Vector3 = second_xform * tex_map_values[second[i]]
+				second[i] = tex_map_values.size()
+				tex_map_values.append(value)
 			tex_map_pos[0] = first
 			tex_map_pos[1] = second
-			extruded.poly_cell_texture_map = tex_map_pos
+			extruded.poly_cell_texture_map_values = tex_map_values
+			extruded.poly_cell_texture_map_indices = tex_map_pos
 		# Rotate to put the long side on the Y axis instead.
 		vert = extruded.poly_cell_vertex_positions
 		vert = Basis4D.xform_array(Basis4D.from_yz(-TAU / 4.0), vert)

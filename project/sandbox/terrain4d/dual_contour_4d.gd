@@ -185,7 +185,7 @@ static func _solve_4x4_impl(rows: Array, b: Vector4) -> Vector4:
 ##     own O(n) linear-scan dedup, since these are already unique) then
 ##     append_tetra_cell_indices() using the returned index mapping.
 ##   tet_vertex_normals: PackedVector4Array, 4 per tet (cell-instance order,
-##     matching ArrayTetraMesh4D.set_simplex_cell_vertex_normals()'s
+##     matching ArrayTetraMesh4D.normal_values with sequential simplex_cell_normal_indices's
 ##     expected layout - normals are NOT deduped the same way, since that
 ##     API wants one per cell-vertex-instance regardless).
 ##   tet_source_ids, tet_count, active_cell_count, grid_point_count,

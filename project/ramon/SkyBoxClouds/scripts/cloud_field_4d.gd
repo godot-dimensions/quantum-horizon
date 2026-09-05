@@ -907,7 +907,8 @@ func _normalize_template(blob: ArrayTetraMesh4D) -> ArrayTetraMesh4D:
 	for i in range(vertices.size()):
 		vertices[i] = vertices[i] / longest
 	blob.set_vertex_positions(vertices)
-	blob.set_simplex_cell_texture_map(PackedVector3Array())
+	blob.texture_map_values = PackedVector3Array()
+	blob.simplex_cell_texture_map_indices = PackedInt32Array()
 	return blob
 
 

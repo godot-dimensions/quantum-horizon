@@ -1543,7 +1543,7 @@ func _finish_brick(bk: Vector4i, result_slot: Dictionary) -> void:
 
 
 ## Writes every currently-generated brick's raw mesh arrays
-## (vertices/simplex_cell_indices/simplex_cell_texture_map - everything
+## (vertex positions, simplex indices, texture values and indices - everything
 ## needed to rebuild an ArrayTetraMesh4D without touching VoxelField4D/
 ## DualContour4D/QEFSolver4D again) plus its bounds to a single file,
 ## alongside the generation parameters that produced it. This is the
@@ -1567,17 +1567,19 @@ func bake_to_file(path: String) -> void:
 			var mesh: ArrayTetraMesh4D = ground_node.mesh
 			entry["ground_vertices"] = mesh.vertices
 			entry["ground_indices"] = mesh.simplex_cell_indices
-			entry["ground_uvw"] = mesh.simplex_cell_texture_map
+			entry["ground_texture_map_values"] = mesh.texture_map_values
+			entry["ground_texture_map_indices"] = mesh.simplex_cell_texture_map_indices
 		var water_node: MeshInstance4D = _water_chunks.get(bk)
 		if water_node != null and water_node.mesh != null:
 			var mesh: ArrayTetraMesh4D = water_node.mesh
 			entry["water_vertices"] = mesh.vertices
 			entry["water_indices"] = mesh.simplex_cell_indices
-			entry["water_uvw"] = mesh.simplex_cell_texture_map
+			entry["water_texture_map_values"] = mesh.texture_map_values
+			entry["water_texture_map_indices"] = mesh.simplex_cell_texture_map_indices
 		bricks_data[bk] = entry
 
 	var data := {
-		"format_version": 1,
+		"format_version": 2,
 		"nominal_size": _nominal_size,
 		"cell_size": cell_size,
 		"brick_core_cells": BRICK_CORE_CELLS,
@@ -1665,7 +1667,11 @@ func load_from_file(path: String) -> bool:
 			var ground_mesh := ArrayTetraMesh4D.new()
 			ground_mesh.vertices = entry["ground_vertices"]
 			ground_mesh.simplex_cell_indices = entry["ground_indices"]
-			ground_mesh.simplex_cell_texture_map = entry["ground_uvw"]
+			ground_mesh.texture_map_values = entry.get("ground_texture_map_values", entry.get("ground_uvw", PackedVector3Array()))
+			if entry.has("ground_texture_map_indices"):
+				ground_mesh.simplex_cell_texture_map_indices = entry["ground_texture_map_indices"]
+			else:
+				ground_mesh.simplex_cell_texture_map_indices = PackedInt32Array(range(ground_mesh.texture_map_values.size()))
 			ground_mesh.material = _ground_material
 			var ground_node := MeshInstance4D.new()
 			ground_node.name = "GroundBrick_%d_%d_%d_%d" % [bk.x, bk.y, bk.z, bk.w]
@@ -1678,7 +1684,11 @@ func load_from_file(path: String) -> bool:
 			var water_mesh := ArrayTetraMesh4D.new()
 			water_mesh.vertices = entry["water_vertices"]
 			water_mesh.simplex_cell_indices = entry["water_indices"]
-			water_mesh.simplex_cell_texture_map = entry["water_uvw"]
+			water_mesh.texture_map_values = entry.get("water_texture_map_values", entry.get("water_uvw", PackedVector3Array()))
+			if entry.has("water_texture_map_indices"):
+				water_mesh.simplex_cell_texture_map_indices = entry["water_texture_map_indices"]
+			else:
+				water_mesh.simplex_cell_texture_map_indices = PackedInt32Array(range(water_mesh.texture_map_values.size()))
 			water_mesh.material = _water_material
 			var water_node := MeshInstance4D.new()
 			water_node.name = "WaterBrick_%d_%d_%d_%d" % [bk.x, bk.y, bk.z, bk.w]
@@ -1770,7 +1780,8 @@ func _build_mesh(contour: DualContour4D, cells: PackedInt32Array, center: float,
 				0.5))
 
 	if not is_water:
-		mesh.simplex_cell_texture_map = texture_map
+		mesh.texture_map_values = texture_map
+		mesh.simplex_cell_texture_map_indices = PackedInt32Array(range(texture_map.size()))
 
 	# Only two colour sources actually reach the cross-section shader:
 	# TetraMaterial4D::update_cross_section_material sets exactly two uniforms,

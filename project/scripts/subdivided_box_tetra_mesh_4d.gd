@@ -165,7 +165,7 @@ static func build(half_extents: Vector4, target_cell_size: float, exclude_axis: 
 	# Ours: per-CELL (sub-cube) center, box-local X/Z only (the two axes
 	# clouds.gdshader's sampling coordinate actually reads - see
 	# CELL_CENTER_XZ's own comment there), stashed via
-	# simplex_cell_texture_map - one of the only genuinely free per-corner
+	# texture_map_values / simplex_cell_texture_map_indices - one of the only genuinely free per-corner
 	# data channels TetraMesh4D exposes (see that class's own
 	# update_cross_section_mesh(), which packs this straight through
 	# UV/UV2/NORMAL/COLOR with no compression on the UV slot specifically,
@@ -192,7 +192,8 @@ static func build(half_extents: Vector4, target_cell_size: float, exclude_axis: 
 		cell_center_xz.append_array(_build_cell(mesh, half_extents, subdivisions, fixed_axis, -1.0, jitter_fraction))
 		cell_center_xz.append_array(_build_cell(mesh, half_extents, subdivisions, fixed_axis, 1.0, jitter_fraction))
 
-	mesh.simplex_cell_texture_map = cell_center_xz
+	mesh.texture_map_values = cell_center_xz
+	mesh.simplex_cell_texture_map_indices = PackedInt32Array(range(cell_center_xz.size()))
 	return mesh
 
 

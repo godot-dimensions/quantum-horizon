@@ -156,7 +156,8 @@ func generate() -> void:
 	for i in range(indices.size()):
 		var height: float = vertices[indices[i]].y / radius
 		texture_map[i] = Vector3(0.5, clampf(0.5 + 0.5 * height, 0.0, 1.0), 0.5)
-	shell.simplex_cell_texture_map = texture_map
+	shell.texture_map_values = texture_map
+	shell.simplex_cell_texture_map_indices = PackedInt32Array(range(texture_map.size()))
 
 	var material := TetraMaterial4D.new()
 	material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY

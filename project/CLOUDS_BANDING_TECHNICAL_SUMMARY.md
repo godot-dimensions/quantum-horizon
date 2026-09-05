@@ -203,7 +203,7 @@ grid-aligned interference pattern — so "more blur" is not simply "more washed 
 sub-cube *center* (a genuinely shared, continuous reference — unlike the earlier failed 0.5
 weight, every tetrahedron in one sub-cube agrees on the exact same point) instead of its own
 unstable interpolated corner. Implemented by extending `SubdividedBoxTetraMesh4D.build()` to
-populate `ArrayTetraMesh4D.simplex_cell_texture_map` (one of the only genuinely free per-corner
+populate `ArrayTetraMesh4D.texture_map_values` and `simplex_cell_texture_map_indices` (one of the only genuinely free per-corner
 data channels `TetraMesh4D` exposes — `NORMAL` gets renormalized and `COLOR` gets `[0,1]`-clamped
 by the engine's own mesh-building code, but `UV` is passed through uncompressed) with each
 cell's box-local X/Z center (the only two components `clouds.gdshader`'s sampling coordinate
@@ -214,7 +214,7 @@ moderate-rotation cost (a sharp, prominent diamond/facet grid, much more visuall
 alpha's mild version) ramps up to full severity at roughly the *same* threshold where it only
 barely starts helping the worst case — there is no usable middle ground. Shipped **disabled**
 by default (`enable_cell_center_fallback = false`), but the code and the
-`simplex_cell_texture_map` mesh-data plumbing are kept in as real, tested infrastructure, in
+`texture_map_values` and `simplex_cell_texture_map_indices` mesh-data plumbing are kept in as real, tested infrastructure, in
 case a future, better-targeted trigger signal (see "What a real fix would need" below) can use
 a shared reference point more surgically.
 
@@ -445,7 +445,7 @@ added during this investigation:
 |---|---|
 | Tetrahedra | 21,600 |
 | Vertices | 4,394 |
-| `simplex_cell_texture_map` entries | 86,400 (4 per tetrahedron) |
+| `simplex_cell_texture_map_indices` entries | 86,400 (4 per tetrahedron) |
 | Build time (`SubdividedBoxTetraMesh4D.build()`) | ~298 ms (was ~289 ms before this session's mesh-data addition — no meaningful regression) |
 | vs. engine's native `BoxTetraMesh4D` (48-cell, unsubdivided) | 450x more tetrahedra |
 | vs. one typical terrain brick (~1,485 tets) | 14.55x one brick's tet count |
@@ -489,5 +489,5 @@ subdivided independently across its own 3 "free" axes, with per-axis subdivision
 from a target world-space cell size — capped at `MAX_SUBDIVISIONS_PER_AXIS = 32` as a hard
 safety ceiling after an earlier 1.4-million-tetrahedron config hung the engine outright during
 mesh construction. Each sub-cube's own box-local X/Z center is also computed here and threaded
-through to `simplex_cell_texture_map`, for the (currently disabled) cell-center fallback — see
+through to `texture_map_values` and `simplex_cell_texture_map_indices`, for the (currently disabled) cell-center fallback — see
 "Later investigation" above.
