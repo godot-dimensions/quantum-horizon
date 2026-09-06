@@ -110,7 +110,7 @@ func save_physics_shape_and_mesh_to_scene_and_g4mf(in_shape: Shape4D, in_mesh: M
 func load_as_array_mesh_3d(path: String) -> ArrayMesh:
 	var res: Resource = ResourceLoader.load(path)
 	if res is ArrayMesh:
-		return res
+		return res.duplicate()
 	if res is PackedScene:
 		var packed_scene := res as PackedScene
 		var node: Node = packed_scene.instantiate()
@@ -118,7 +118,7 @@ func load_as_array_mesh_3d(path: String) -> ArrayMesh:
 			if node is MeshInstance3D:
 				var mesh_3d: ArrayMesh = node.mesh as ArrayMesh
 				if mesh_3d != null:
-					return mesh_3d
+					return mesh_3d.duplicate()
 			node = node.get_child(0)
 	printerr("Unhandled type of resource.")
 	breakpoint
@@ -128,7 +128,10 @@ func load_as_array_mesh_3d(path: String) -> ArrayMesh:
 func load_as_array_poly_mesh_4d(path: String) -> ArrayPolyMesh4D:
 	var res: Resource = ResourceLoader.load(path)
 	if res is ArrayPolyMesh4D:
-		return res
+		# Duplicate so the returned mesh is not tied to the loaded file. Without this, edits
+		# would modify the import cache, and saving a scene containing the mesh would store a
+		# reference to the loaded file instead of embedding the edited mesh into the scene.
+		return res.duplicate()
 	if res is PackedScene:
 		var packed_scene := res as PackedScene
 		var node: Node = packed_scene.instantiate()
@@ -139,7 +142,8 @@ func load_as_array_poly_mesh_4d(path: String) -> ArrayPolyMesh4D:
 			if node is MeshInstance4D:
 				var mesh_4d: Mesh4D = node.mesh
 				if mesh_4d is ArrayPolyMesh4D:
-					return mesh_4d
+					# Duplicate for the same reason as above, since this mesh is owned by the scene.
+					return mesh_4d.duplicate()
 				elif mesh_4d is TetraMesh4D:
 					return PolyMeshBuilder4D.reconstruct_from_tetra_mesh(mesh_4d)
 			node = node.get_child(0)

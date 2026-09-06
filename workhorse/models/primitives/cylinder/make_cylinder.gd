@@ -36,6 +36,10 @@ func _subdivide_triangle_faces(input: ArrayPolyMesh4D) -> ArrayPolyMesh4D:
 	var output_cells: Array[PackedInt32Array] = [output_cell]
 	var output_poly: Array[Array] = [output_faces, output_cells]
 	sub.poly_cell_indices = output_poly
+	sub.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
+	# Deduplicate and compact the normals and texture map values.
+	sub.compact_normal_values()
+	sub.compact_texture_map_values()
 	return sub
 
 
@@ -47,7 +51,7 @@ func _make_dodecahedral_cylinder() -> void:
 			file_no_ext = "cylinder_flat_dodeca"
 		else:
 			file_no_ext = "cylinder_smooth_dodeca"
-		var ico: ArrayPolyMesh4D = ResourceLoader.load("res://models/3d/dodecahedron/dodecahedron.off").duplicate(true)
+		var ico: ArrayPolyMesh4D = ResourceLoader.load("res://models/3d/platonic/dodecahedron.off").duplicate(true)
 		var vert: PackedVector4Array = ico.poly_cell_vertex_positions
 		for i in range(vert.size()):
 			vert[i] = vert[i].normalized()
@@ -86,6 +90,9 @@ func _make_dodecahedral_cylinder() -> void:
 		extruded.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 		if smooth == 1:
 			extruded.set_smooth_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
+		# Deduplicate and compact the normals and texture map values.
+		extruded.compact_normal_values()
+		extruded.compact_texture_map_values()
 		# Save the resulting mesh as a tres, g4b, g4tf, and save the texture map.
 		var base_path: String = script_dir.path_join("dodeca").path_join(file_no_ext)
 		save_mesh_4d_to_scene_and_g4mf(extruded, base_path)
@@ -141,11 +148,15 @@ func _make_icosahedral_cylinder(max_subdivisions: int) -> void:
 			extruded.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 			if smooth == 1:
 				extruded.set_smooth_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
+			# Deduplicate and compact the normals and texture map values.
+			extruded.compact_normal_values()
+			extruded.compact_texture_map_values()
 			# Save the resulting mesh as a tres, g4b, g4tf, and save the texture map.
 			var base_path: String = script_dir.path_join("ico").path_join(file_no_ext)
 			save_mesh_4d_to_scene_and_g4mf(extruded, base_path)
 
 
+# "Soccer ball" shape.
 func _make_truncated_icosahedral_cylinder() -> void:
 	var script_dir: String = get_script().get_path().get_base_dir()
 	for smooth in range(2):
@@ -193,6 +204,9 @@ func _make_truncated_icosahedral_cylinder() -> void:
 		extruded.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 		if smooth == 1:
 			extruded.set_smooth_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
+		# Deduplicate and compact the normals and texture map values.
+		extruded.compact_normal_values()
+		extruded.compact_texture_map_values()
 		# Save the resulting mesh as a tres, g4b, g4tf, and save the texture map.
 		var base_path: String = script_dir.path_join("ico").path_join(file_no_ext)
 		save_mesh_4d_to_scene_and_g4mf(extruded, base_path)

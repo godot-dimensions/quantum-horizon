@@ -12,5 +12,8 @@ seamless_blend_skirt = 0.25
 
 [resource]
 resource_name = "noise_tetra_mat"
+texture_transform_mode = 1
+texture_map_offset = Vector3(0, 0, 0)
+texture_map_scale = Vector3(10, 10, 10)
 albedo_source = 3
 albedo_texture_3d = SubResource("NoiseTexture3D_5vw27")

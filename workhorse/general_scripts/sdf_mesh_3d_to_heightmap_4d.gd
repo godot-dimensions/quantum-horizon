@@ -44,6 +44,9 @@ func _ready() -> void:
 		print("Fluffed!")
 	heightmap.resource_name = base_path.get_file() + "_shape"
 	mesh_4d.resource_name = base_path.get_file() + "_mesh"
+	# Deduplicate and compact the normals and texture map values.
+	mesh_4d.compact_normal_values()
+	mesh_4d.compact_texture_map_values()
 	save_physics_shape_and_mesh_to_scene_and_g4mf(heightmap, mesh_4d, base_path)
 	if PRINT_PROGRESS:
 		print("Saved!")

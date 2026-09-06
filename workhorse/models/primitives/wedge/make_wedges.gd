@@ -119,6 +119,8 @@ func _make_wedge2() -> void:
 	mesh.poly_cell_indices = poly_cell_indices
 	mesh.set_flat_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 	mesh.unwrap_texture_map(ArrayPolyMesh4D.UNWRAP_MODE_TILE_ISLANDS)
+	mesh.compact_normal_values()
+	mesh.compact_texture_map_values()
 	_print_mesh_data(mesh)
 	print(mesh.is_mesh_data_valid())
 	_save_mesh(mesh)
@@ -227,6 +229,8 @@ func _make_wedge3() -> void:
 	mesh.poly_cell_indices = poly_cell_indices
 	mesh.set_flat_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 	mesh.unwrap_texture_map(ArrayPolyMesh4D.UNWRAP_MODE_TILE_ISLANDS)
+	mesh.compact_normal_values()
+	mesh.compact_texture_map_values()
 	_print_mesh_data(mesh)
 	print(mesh.is_mesh_data_valid())
 	_save_mesh(mesh)
@@ -309,6 +313,8 @@ func _make_wedge4() -> void:
 	mesh.poly_cell_indices = poly_cell_indices
 	mesh.set_flat_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 	mesh.unwrap_texture_map(ArrayPolyMesh4D.UNWRAP_MODE_TILE_ISLANDS)
+	mesh.compact_normal_values()
+	mesh.compact_texture_map_values()
 	_print_mesh_data(mesh)
 	print(mesh.is_mesh_data_valid())
 	_save_mesh(mesh)

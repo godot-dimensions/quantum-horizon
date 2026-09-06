@@ -10,7 +10,7 @@ extends SaveToFiles
 # Use 4, 8, 12, 16, etc for a pointy top.
 # Use 6, 10, 14, 18, etc for a flat top.
 @export_range(4, 1024, 1) var steps: int = 10
-@export_range(1, 3, 1) var source_icosphere: int = 1
+@export_range(0, 3, 1) var source_icosphere: int = 1
 @export var smooth: bool = true
 
 
@@ -31,6 +31,7 @@ func _ready() -> void:
 	var param_name: String = params_to_name()
 	var script_dir: String = get_script().get_path().get_base_dir()
 	var base_path: String = script_dir.path_join(param_name + "/" + param_name)
+	print(base_path)
 	save_mesh_4d_to_scene_and_g4mf(torisphere, base_path)
 	# Also save a copy of the latest one so we can show it in `make_torisphere.tscn`.
 	base_path = script_dir.path_join("latest/torisphere")
@@ -124,6 +125,7 @@ func make_torisphere(base: ArrayMesh) -> ArrayPolyMesh4D:
 			all_cell_face_ind[cell_index] = this_cell
 	poly_ind[1] = all_cell_face_ind
 	torisphere.poly_cell_indices = poly_ind
+	torisphere.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 	# Copy over the texture map from the triangle faces to the cells.
 	# NOTE: This must be done BEFORE deduplicating, because the faces
 	# at the end of the ring will be merged with the first face,
@@ -166,6 +168,9 @@ func make_torisphere(base: ArrayMesh) -> ArrayPolyMesh4D:
 		torisphere.set_smooth_shading_normals()
 	else:
 		torisphere.set_flat_shading_normals()
+	# Deduplicate and compact the normals and texture map values.
+	torisphere.compact_normal_values()
+	torisphere.compact_texture_map_values()
 	return torisphere
 
 

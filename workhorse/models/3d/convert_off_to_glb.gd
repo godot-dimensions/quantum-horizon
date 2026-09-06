@@ -6,7 +6,7 @@ func _ready() -> void:
 	var files: PackedStringArray = get_files_recursive(script_dir, "off")
 	for file_path in files:
 		var base_path: String = file_path.trim_suffix(".off")
-		var off_doc := OFFDocument4D.import_load_from_file(file_path)
+		var off_doc := OFFDocument4D.import_read_from_file(file_path)
 		# Scale by the longest length.
 		var verts: PackedVector4Array = off_doc.vertices
 		var longest_length: float = 0.0

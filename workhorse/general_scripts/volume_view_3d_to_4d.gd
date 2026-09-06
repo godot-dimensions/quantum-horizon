@@ -20,10 +20,16 @@ func _ready() -> void:
 	poly_mesh.set_smooth_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 	poly_mesh.unwrap_texture_map(ArrayPolyMesh4D.UNWRAP_MODE_TILE_ISLANDS)
 	texture_map_ground_cells_by_spatial_position(poly_mesh)
+	# Deduplicate and compact the normals and texture map values.
+	poly_mesh.compact_normal_values()
+	poly_mesh.compact_texture_map_values()
 	# Collapse the final result from poly to tetra to avoid
 	# complications with the non-convex star-shaped cells being used.
 	var tetra_mesh: ArrayTetraMesh4D = poly_mesh.to_array_tetra_mesh()
 	print(tetra_mesh.get_simplex_cell_vertex_indices().size())
+	# Deduplicate and compact the normals and texture map values.
+	tetra_mesh.compact_normal_values()
+	tetra_mesh.compact_texture_map_values()
 	#tetra_mesh.remove_opposite_overlapping_tetrahedra()
 	print(tetra_mesh.get_simplex_cell_vertex_indices().size())
 	save_mesh_4d_to_scene_and_g4mf(tetra_mesh, base_path)
@@ -41,6 +47,8 @@ func reassemble_all_3d_meshes_in_scene_to_4d_vertical_prism(input_node: Node) ->
 		assert(this_mesh_4d != null)
 		combined_mesh_4d.merge_with(this_mesh_4d, Vector4D.from_3d(-this_transform_3d.origin))
 	combined_mesh_4d.deduplicate_all_elements()
+	combined_mesh_4d.compact_normal_values()
+	combined_mesh_4d.compact_texture_map_values()
 	rotate_and_flatten_mesh_to_xzw(combined_mesh_4d)
 	return combined_mesh_4d
 
