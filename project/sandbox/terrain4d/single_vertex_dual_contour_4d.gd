@@ -582,7 +582,10 @@ static func generate_native(bounds_min: Vector4, bounds_max: Vector4, nx: int, n
 	Terrain4DProfile.add("generate_phase1_density", _phase1_usec)
 
 	_profile_t0 = Time.get_ticks_usec()
-	var result: Dictionary = Math4D.dual_contour_extract(density, nx, ny, nz, nw, bounds_min, step, qef_regularization)
+	# TODO: Disabled by aaronfranke 2026-09-07 to fix compiling this GDScript file:
+	# This function does not exist and has never existed, why is it here? AI slop?
+	#var result: Dictionary = Math4D.dual_contour_extract(density, nx, ny, nz, nw, bounds_min, step, qef_regularization)
+	var result: Dictionary = {}
 	var _phase23_usec := Time.get_ticks_usec() - _profile_t0
 	# The native call does phases 2 AND 3 in one shot - there's no
 	# GDScript-visible boundary between them to time separately the way
