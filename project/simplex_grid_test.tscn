@@ -1,10 +1,9 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3 uid="uid://nremly42cjsb"]
 
-[ext_resource type="Script" path="res://ramon/SkyBoxClouds/scripts/skydome_4d.gd" id="1_skydome"]
-[ext_resource type="Script" path="res://ramon/SkyBoxClouds/scripts/cloud_field_4d.gd" id="2_clouds"]
-[ext_resource type="Script" path="res://scripts/simplex_grid_layer.gd" id="3_grid"]
-[ext_resource type="Script" path="res://ramon/voxel_port/scripts/voxel_hover_camera_4d.gd" id="4_hover"]
-[ext_resource type="Script" path="res://scripts/simplex_grid_test_hud.gd" id="5_hud"]
+[ext_resource type="Script" uid="uid://cet3tnp3nbwi5" path="res://ramon/SkyBoxClouds/scripts/cloud_field_4d.gd" id="2_clouds"]
+[ext_resource type="Script" uid="uid://crm4x6u3ifpyn" path="res://scripts/simplex_grid_layer.gd" id="3_grid"]
+[ext_resource type="Script" uid="uid://n8uxxkbptg6o" path="res://ramon/voxel_port/scripts/voxel_hover_camera_4d.gd" id="4_hover"]
+[ext_resource type="Script" uid="uid://dqol6vr8ihx80" path="res://scripts/simplex_grid_test_hud.gd" id="5_hud"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_ground"]
 size = Vector4(600, 2, 600, 600)
@@ -14,6 +13,8 @@ albedo_color = Color(0.28, 0.33, 0.26, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ground"]
 size = Vector4(600, 2, 600, 600)
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_0cgc1"]
 
 [node name="SimplexGridTest" type="Node4D"]
 
@@ -26,12 +27,14 @@ position = Vector4(0, -1, 0, 0)
 shape = SubResource("BoxShape4D_ground")
 
 [node name="GroundMesh" type="MeshInstance4D" parent="Rig/Ground"]
+visible = false
 material_override = SubResource("TetraMaterial4D_ground")
 mesh = SubResource("BoxTetraMesh4D_ground")
 
-[node name="Skydome" type="MeshInstance4D" parent="Rig"]
-position = Vector4(0, 2, 0, 0)
-script = ExtResource("1_skydome")
+[node name="Skydome" type="WorldEnvironment4D" parent="Rig"]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_0cgc1")
+tonemap_mode = 2
 
 [node name="Clouds" type="MeshInstance4D" parent="Rig"]
 script = ExtResource("2_clouds")
@@ -46,17 +49,13 @@ max_tetrahedra = 95000
 
 [node name="SimplexGrid" type="Node4D" parent="Rig"]
 script = ExtResource("3_grid")
-grid_size = 8
-spacing = 4.0
-simplex_edge_length = 1.5
-height = 0.5
-simplex_color = Color(0.9, 0.35, 0.2, 1)
 
 [node name="HoverCamera" type="Camera4D" parent="."]
 current = true
 rendering_engine_name = "Cross-section"
 view_angle_type = 1
-field_of_view_4d = 1.3962634015954636
+field_of_view_4d = 1.3962634015954638
+field_of_view_3d = 1.3494818844471053
 script = ExtResource("4_hover")
 look_at_target = Vector4(0, 1, 0, 0)
 radius = 40.0

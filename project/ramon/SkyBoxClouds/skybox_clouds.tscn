@@ -1,10 +1,11 @@
 [gd_scene load_steps=9 format=3 uid="uid://bacql382t57ft"]
 
-[ext_resource type="Script" uid="uid://dt0g0ug2fxmgo" path="res://ramon/SkyBoxClouds/scripts/skydome_4d.gd" id="1_skydome"]
 [ext_resource type="Script" uid="uid://cet3tnp3nbwi5" path="res://ramon/SkyBoxClouds/scripts/cloud_field_4d.gd" id="2_clouds"]
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="3_player"]
 [ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="4_sun"]
 [ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="99_return"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_7shgg"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_ground"]
 size = Vector4(600, 2, 600, 600)
@@ -28,13 +29,8 @@ ana_tilt_degrees = -13.0
 
 [node name="Environment" type="WorldEnvironment4D" parent="."]
 current = true
-ambient_light_color = Color(0.35, 0.4, 0.47, 1)
-ambient_light_sky_contribution = 0.0
-
-[node name="Skydome" type="MeshInstance4D" parent="."]
-position = Vector4(0, 2, 0, 0)
-script = ExtResource("1_skydome")
-follow_path = NodePath("../Player")
+sky_material = SubResource("GradientSkyMaterial4D_7shgg")
+tonemap_mode = 2
 
 [node name="Clouds" type="MeshInstance4D" parent="."]
 script = ExtResource("2_clouds")

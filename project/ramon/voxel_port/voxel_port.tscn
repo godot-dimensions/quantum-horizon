@@ -1,11 +1,10 @@
 [gd_scene load_steps=10 format=3 uid="uid://qoe6y4lb5tgo"]
 
 [ext_resource type="Script" uid="uid://c1hlkyfk1tx3s" path="res://ramon/voxel_port/scripts/voxel_terrain_4d.gd" id="2_terrn"]
-[ext_resource type="Script" path="res://ramon/voxel_port/scripts/voxel_hover_camera_4d.gd" id="3_hover"]
-[ext_resource type="Script" path="res://ramon/voxel_port/scripts/voxel_terrain_perf_hud.gd" id="4_perfhud"]
-[ext_resource type="Script" path="res://scripts/clouds_layer.gd" id="5_clouds"]
-[ext_resource type="Script" path="res://scripts/poi_spawner.gd" id="8_poispawner"]
-[ext_resource type="Script" path="res://scripts/poi_radar.gd" id="9_poiradar"]
+[ext_resource type="Script" uid="uid://n8uxxkbptg6o" path="res://ramon/voxel_port/scripts/voxel_hover_camera_4d.gd" id="3_hover"]
+[ext_resource type="Script" uid="uid://ecn8kkodc33l" path="res://ramon/voxel_port/scripts/voxel_terrain_perf_hud.gd" id="4_perfhud"]
+[ext_resource type="Script" uid="uid://c4ki25crn7tlp" path="res://scripts/poi_spawner.gd" id="8_poispawner"]
+[ext_resource type="Script" uid="uid://p1c5m88xxyj7" path="res://scripts/poi_radar.gd" id="9_poiradar"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
 size = Vector4(120, 1, 120, 120)
@@ -40,9 +39,6 @@ camera_path = NodePath("../HoverCamera")
 
 [node name="POIs" type="Node4D" parent="Terrain"]
 
-[node name="Clouds" type="MeshInstance4D" parent="Terrain"]
-script = ExtResource("5_clouds")
-
 [node name="POISpawner" type="Node" parent="."]
 script = ExtResource("8_poispawner")
 terrain_path = NodePath("../Terrain")
@@ -62,10 +58,9 @@ mesh = SubResource("BoxTetraMesh4D_floor")
 current = true
 rendering_engine_name = "Cross-section"
 view_angle_type = 1
-field_of_view_4d = 1.3962634015954636
+field_of_view_4d = 1.3962634015954638
+field_of_view_3d = 1.3494818844471053
 script = ExtResource("3_hover")
-look_at_target = Vector4(0, 0, 0, 0)
-radius = 60.0
 rig_path = NodePath("../Terrain")
 terrain_path = NodePath("../Terrain")
 
@@ -88,7 +83,7 @@ script = ExtResource("4_perfhud")
 terrain_path = NodePath("../../Terrain")
 
 [node name="POIRadar" type="Control" parent="HUD"]
-layout_mode = 1
+layout_mode = 3
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0

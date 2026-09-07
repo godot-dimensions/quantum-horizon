@@ -1,7 +1,11 @@
 @tool
 extends MeshInstance4D
 
-# No `class_name` here either - see the note at the top of skydome_4d.gd.
+# No `class_name` - a stale editor tab remembering an older, differently-cased
+# path for this folder can make Godot load this file twice under two path
+# strings, and the second copy's class_name then collides with the first,
+# failing the parse with "hides a global script class". The scene references
+# this script by path, so no global name is needed.
 
 ## 4D cumulus built from clumped, stretched, hierarchically-detailed polytopes.
 ##

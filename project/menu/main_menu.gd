@@ -7,8 +7,8 @@ extends Control
 ## throwaway diagnostic scenes (jump_test, bearing_test, trigger_test,
 ## smoke_test, etc.) stay unlisted - this is a hand-curated list, not an
 ## automatic scan of every scene in the project. A WIP feature under active
-## iteration (like Sky Preview below) DOES belong here once it's meant to be
-## played and reviewed by the team, not just exercised by an automated test.
+## iteration DOES belong here once it's meant to be played and reviewed by
+## the team, not just exercised by an automated test.
 const AVAILABLE_MODES := [
 	{"name": "Shooting Gallery - Free", "scene_path": "res://sandbox/shooting_gallery/shooting_gallery.tscn", "game_mode": "free"},
 	{"name": "Shooting Gallery - Contest", "scene_path": "res://sandbox/shooting_gallery/shooting_gallery.tscn", "game_mode": "contest"},
@@ -19,7 +19,6 @@ const AVAILABLE_MODES := [
 	{"name": "4-Simplex Pillar Monument", "scene_path": "res://simplex_pillar_test.tscn"},
 	{"name": "Area Capture Prototype", "scene_path": "res://sandbox/area_capture/area_capture_test.tscn"},
 	{"name": "Synthwave Test", "scene_path": "res://sandbox/synthwave/synthwave_test.tscn"},
-	{"name": "Sky Preview", "scene_path": "res://sandbox/sky/sky_test.tscn"},
 	{"name": "Skew Polyhedron {4,4|n}", "scene_path": "res://sandbox/skew_polyhedron/skew_polyhedron_test.tscn"},
 	{"name": "IK Chain Test (5 joints)", "scene_path": "res://sandbox/single_joint/single_joint_test.tscn"},
 	{"name": "Limb Prototype", "scene_path": "res://sandbox/limb_prototype/limb_prototype_test.tscn"},
