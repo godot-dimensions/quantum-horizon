@@ -9,7 +9,7 @@ func _ready() -> void:
 
 func _subdivide_triangle_faces(input: ArrayPolyMesh4D) -> ArrayPolyMesh4D:
 	var sub := ArrayPolyMesh4D.new()
-	var input_vert: PackedVector4Array = input.poly_cell_vertices
+	var input_vert: PackedVector4Array = input.poly_cell_vertex_positions
 	var input_face_vert: Array[PackedInt32Array] = input.get_all_face_vertex_indices()
 	var output_faces: Array[PackedInt32Array] = []
 	for face_iter in input_face_vert:
@@ -36,6 +36,10 @@ func _subdivide_triangle_faces(input: ArrayPolyMesh4D) -> ArrayPolyMesh4D:
 	var output_cells: Array[PackedInt32Array] = [output_cell]
 	var output_poly: Array[Array] = [output_faces, output_cells]
 	sub.poly_cell_indices = output_poly
+	sub.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
+	# Deduplicate and compact the normals and texture map values.
+	sub.compact_normal_values()
+	sub.compact_texture_map_values()
 	return sub
 
 
@@ -47,38 +51,48 @@ func _make_dodecahedral_cylinder() -> void:
 			file_no_ext = "cylinder_flat_dodeca"
 		else:
 			file_no_ext = "cylinder_smooth_dodeca"
-		var ico: ArrayPolyMesh4D = ResourceLoader.load("res://models/3d/dodecahedron/dodecahedron.off").duplicate(true)
-		var vert: PackedVector4Array = ico.poly_cell_vertices
+		var ico: ArrayPolyMesh4D = ResourceLoader.load("res://models/3d/platonic/dodecahedron.off").duplicate(true)
+		var vert: PackedVector4Array = ico.poly_cell_vertex_positions
 		for i in range(vert.size()):
 			vert[i] = vert[i].normalized()
 		# Rotate to put the long side on the Z axis for better texture mapping.
 		vert = Basis4D.xform_array(Basis4D.from_zw(TAU / 4.0), vert)
-		ico.poly_cell_vertices = vert
+		ico.poly_cell_vertex_positions = vert
 		var extruded: ArrayPolyMesh4D = PolyMeshBuilder4D.extrude_linear(ico, Vector4(0, 0, 1, 0))
 		extruded.resource_name = file_no_ext
 		# Texture mapping.
 		extruded.unwrap_texture_map(ArrayPolyMesh4D.UNWRAP_MODE_EACH_ISLAND_FILLS, 0.0, true)
 		# Scale and offset the icosahedral cells to not overlap the sides.
 		if true:
-			var tex_map_pos: Array[PackedVector3Array] = extruded.poly_cell_texture_map
-			var first: PackedVector3Array = tex_map_pos[0]
-			var second: PackedVector3Array = tex_map_pos[1]
+			var tex_map_pos: Array[PackedInt32Array] = extruded.poly_cell_texture_map_indices
+			var tex_map_values: PackedVector3Array = extruded.poly_cell_texture_map_values
+			var first: PackedInt32Array = tex_map_pos[0]
+			var second: PackedInt32Array = tex_map_pos[1]
 			var scale_basis := Basis.from_scale(Vector3(0.5, 0.5, 0.5))
 			var first_xform := Transform3D(scale_basis, Vector3(0.0, 0.0, 0.5))
 			var second_xform := Transform3D(scale_basis, Vector3(0.5, 0.0, 0.5))
 			for i in range(first.size()):
-				first[i] = first_xform * first[i]
-				second[i] = second_xform * second[i]
+				var value: Vector3 = first_xform * tex_map_values[first[i]]
+				first[i] = tex_map_values.size()
+				tex_map_values.append(value)
+			for i in range(second.size()):
+				var value: Vector3 = second_xform * tex_map_values[second[i]]
+				second[i] = tex_map_values.size()
+				tex_map_values.append(value)
 			tex_map_pos[0] = first
 			tex_map_pos[1] = second
-			extruded.poly_cell_texture_map = tex_map_pos
+			extruded.poly_cell_texture_map_values = tex_map_values
+			extruded.poly_cell_texture_map_indices = tex_map_pos
 		# Rotate to put the long side on the Y axis instead.
-		vert = extruded.poly_cell_vertices
+		vert = extruded.poly_cell_vertex_positions
 		vert = Basis4D.xform_array(Basis4D.from_yz(-TAU / 4.0), vert)
-		extruded.poly_cell_vertices = vert
+		extruded.poly_cell_vertex_positions = vert
 		extruded.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 		if smooth == 1:
 			extruded.set_smooth_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
+		# Deduplicate and compact the normals and texture map values.
+		extruded.compact_normal_values()
+		extruded.compact_texture_map_values()
 		# Save the resulting mesh as a tres, g4b, g4tf, and save the texture map.
 		var base_path: String = script_dir.path_join("dodeca").path_join(file_no_ext)
 		save_mesh_4d_to_scene_and_g4mf(extruded, base_path)
@@ -94,12 +108,12 @@ func _make_icosahedral_cylinder(max_subdivisions: int) -> void:
 			else:
 				file_no_ext = "cylinder_smooth_ico" + str(subdivisions)
 			var ico: ArrayPolyMesh4D = ResourceLoader.load("res://models/3d/icosphere/icosahedron.off").duplicate(true)
-			var vert: PackedVector4Array = ico.poly_cell_vertices
+			var vert: PackedVector4Array = ico.poly_cell_vertex_positions
 			for i in range(vert.size()):
 				vert[i] = vert[i].normalized()
 			# Rotate to put the long side on the Z axis for better texture mapping.
 			vert = Basis4D.xform_array(Basis4D.from_zw(TAU / 4.0), vert)
-			ico.poly_cell_vertices = vert
+			ico.poly_cell_vertex_positions = vert
 			for i in range(subdivisions):
 				ico = _subdivide_triangle_faces(ico)
 			var extruded: ArrayPolyMesh4D = PolyMeshBuilder4D.extrude_linear(ico, Vector4(0, 0, 1, 0))
@@ -108,30 +122,41 @@ func _make_icosahedral_cylinder(max_subdivisions: int) -> void:
 			extruded.unwrap_texture_map(ArrayPolyMesh4D.UNWRAP_MODE_EACH_ISLAND_FILLS, 0.0, true)
 			# Scale and offset the icosahedral cells to not overlap the sides.
 			if true:
-				var tex_map_pos: Array[PackedVector3Array] = extruded.poly_cell_texture_map
-				var first: PackedVector3Array = tex_map_pos[0]
-				var second: PackedVector3Array = tex_map_pos[1]
+				var tex_map_pos: Array[PackedInt32Array] = extruded.poly_cell_texture_map_indices
+				var tex_map_values: PackedVector3Array = extruded.poly_cell_texture_map_values
+				var first: PackedInt32Array = tex_map_pos[0]
+				var second: PackedInt32Array = tex_map_pos[1]
 				var scale_basis := Basis.from_scale(Vector3(0.5, 0.5, 0.5))
 				var first_xform := Transform3D(scale_basis, Vector3(0.0, 0.0, 0.5))
 				var second_xform := Transform3D(scale_basis, Vector3(0.5, 0.0, 0.5))
 				for i in range(first.size()):
-					first[i] = first_xform * first[i]
-					second[i] = second_xform * second[i]
+					var value: Vector3 = first_xform * tex_map_values[first[i]]
+					first[i] = tex_map_values.size()
+					tex_map_values.append(value)
+				for i in range(second.size()):
+					var value: Vector3 = second_xform * tex_map_values[second[i]]
+					second[i] = tex_map_values.size()
+					tex_map_values.append(value)
 				tex_map_pos[0] = first
 				tex_map_pos[1] = second
-				extruded.poly_cell_texture_map = tex_map_pos
+				extruded.poly_cell_texture_map_values = tex_map_values
+				extruded.poly_cell_texture_map_indices = tex_map_pos
 			# Rotate to put the long side on the Y axis instead.
-			vert = extruded.poly_cell_vertices
+			vert = extruded.poly_cell_vertex_positions
 			vert = Basis4D.xform_array(Basis4D.from_yz(-TAU / 4.0), vert)
-			extruded.poly_cell_vertices = vert
+			extruded.poly_cell_vertex_positions = vert
 			extruded.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 			if smooth == 1:
 				extruded.set_smooth_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
+			# Deduplicate and compact the normals and texture map values.
+			extruded.compact_normal_values()
+			extruded.compact_texture_map_values()
 			# Save the resulting mesh as a tres, g4b, g4tf, and save the texture map.
 			var base_path: String = script_dir.path_join("ico").path_join(file_no_ext)
 			save_mesh_4d_to_scene_and_g4mf(extruded, base_path)
 
 
+# "Soccer ball" shape.
 func _make_truncated_icosahedral_cylinder() -> void:
 	var script_dir: String = get_script().get_path().get_base_dir()
 	for smooth in range(2):
@@ -141,37 +166,47 @@ func _make_truncated_icosahedral_cylinder() -> void:
 		else:
 			file_no_ext = "cylinder_smooth_trunc_ico"
 		var ico: ArrayPolyMesh4D = ResourceLoader.load("res://models/3d/icosphere/truncated_icosahedron.off").duplicate(true)
-		var vert: PackedVector4Array = ico.poly_cell_vertices
+		var vert: PackedVector4Array = ico.poly_cell_vertex_positions
 		for i in range(vert.size()):
 			vert[i] = vert[i].normalized()
 		# Rotate to put the long side on the Z axis for better texture mapping.
 		vert = Basis4D.xform_array(Basis4D.from_zw(TAU / 4.0), vert)
-		ico.poly_cell_vertices = vert
+		ico.poly_cell_vertex_positions = vert
 		var extruded: ArrayPolyMesh4D = PolyMeshBuilder4D.extrude_linear(ico, Vector4(0, 0, 1, 0))
 		extruded.resource_name = file_no_ext
 		# Texture mapping.
 		extruded.unwrap_texture_map(ArrayPolyMesh4D.UNWRAP_MODE_EACH_ISLAND_FILLS, 0.0, true)
 		# Scale and offset the icosahedral cells to not overlap the sides.
 		if true:
-			var tex_map_pos: Array[PackedVector3Array] = extruded.poly_cell_texture_map
-			var first: PackedVector3Array = tex_map_pos[0]
-			var second: PackedVector3Array = tex_map_pos[1]
+			var tex_map_pos: Array[PackedInt32Array] = extruded.poly_cell_texture_map_indices
+			var tex_map_values: PackedVector3Array = extruded.poly_cell_texture_map_values
+			var first: PackedInt32Array = tex_map_pos[0]
+			var second: PackedInt32Array = tex_map_pos[1]
 			var scale_basis := Basis.from_scale(Vector3(0.5, 0.5, 0.5))
 			var first_xform := Transform3D(scale_basis, Vector3(0.0, 0.0, 0.5))
 			var second_xform := Transform3D(scale_basis, Vector3(0.5, 0.0, 0.5))
 			for i in range(first.size()):
-				first[i] = first_xform * first[i]
-				second[i] = second_xform * second[i]
+				var value: Vector3 = first_xform * tex_map_values[first[i]]
+				first[i] = tex_map_values.size()
+				tex_map_values.append(value)
+			for i in range(second.size()):
+				var value: Vector3 = second_xform * tex_map_values[second[i]]
+				second[i] = tex_map_values.size()
+				tex_map_values.append(value)
 			tex_map_pos[0] = first
 			tex_map_pos[1] = second
-			extruded.poly_cell_texture_map = tex_map_pos
+			extruded.poly_cell_texture_map_values = tex_map_values
+			extruded.poly_cell_texture_map_indices = tex_map_pos
 		# Rotate to put the long side on the Y axis instead.
-		vert = extruded.poly_cell_vertices
+		vert = extruded.poly_cell_vertex_positions
 		vert = Basis4D.xform_array(Basis4D.from_yz(-TAU / 4.0), vert)
-		extruded.poly_cell_vertices = vert
+		extruded.poly_cell_vertex_positions = vert
 		extruded.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 		if smooth == 1:
 			extruded.set_smooth_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
+		# Deduplicate and compact the normals and texture map values.
+		extruded.compact_normal_values()
+		extruded.compact_texture_map_values()
 		# Save the resulting mesh as a tres, g4b, g4tf, and save the texture map.
 		var base_path: String = script_dir.path_join("ico").path_join(file_no_ext)
 		save_mesh_4d_to_scene_and_g4mf(extruded, base_path)

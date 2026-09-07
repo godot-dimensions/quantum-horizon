@@ -1,6 +1,24 @@
-[gd_scene load_steps=2 format=3 uid="uid://j42q31kkv4vq"]
+[gd_scene load_steps=6 format=3 uid="uid://j42q31kkv4vq"]
 
 [ext_resource type="Script" uid="uid://cueo6ftnr852f" path="res://models/primitives/cylinder/make_cylinder.gd" id="1_4n7id"]
+[ext_resource type="TetraMaterial4D" uid="uid://pts883vpg4u3" path="res://models/noise_tetra.mat.tres" id="2_606pa"]
+[ext_resource type="ArrayPolyMesh4D" uid="uid://cjhtyhu0wtyge" path="res://models/primitives/cylinder/dodeca/cylinder_flat_dodeca.g4b" id="2_k6bpe"]
+[ext_resource type="ArrayPolyMesh4D" uid="uid://dlswax41blfat" path="res://models/primitives/cylinder/ico/cylinder_flat_ico1.g4b" id="3_3bu76"]
+[ext_resource type="ArrayPolyMesh4D" uid="uid://c6r4sm6gnegm1" path="res://models/primitives/cylinder/ico/cylinder_flat_trunc_ico.g4b" id="5_j645g"]
 
 [node name="MakeCylinder" type="Node"]
 script = ExtResource("1_4n7id")
+
+[node name="CylinderDodecahedral" type="MeshInstance4D" parent="."]
+position = Vector4(-3, 0, 0, 0)
+material_override = ExtResource("2_606pa")
+mesh = ExtResource("2_k6bpe")
+
+[node name="CylinderIcosahedral" type="MeshInstance4D" parent="."]
+material_override = ExtResource("2_606pa")
+mesh = ExtResource("3_3bu76")
+
+[node name="CylinderIcoTruncated" type="MeshInstance4D" parent="."]
+position = Vector4(3, 0, 0, 0)
+material_override = ExtResource("2_606pa")
+mesh = ExtResource("5_j645g")

@@ -39,6 +39,9 @@ func convert_cubinder_to_poly_mesh(cubinder_shape: CubinderShape4D) -> ArrayPoly
 	var rot_yz := Basis(Vector3.RIGHT, Vector3.BACK, Vector3.DOWN)
 	assert(is_equal_approx(rot_yz.determinant(), 1.0))
 	cubinder_mesh.transform_texture_map(Transform3D(rot_yz, Vector3(0.0, 1.0, 0.0)))
+	# Deduplicate and compact the normals and texture map values.
+	cubinder_mesh.compact_normal_values()
+	cubinder_mesh.compact_texture_map_values()
 	assert(cubinder_mesh.is_mesh_data_valid())
 	return cubinder_mesh
 

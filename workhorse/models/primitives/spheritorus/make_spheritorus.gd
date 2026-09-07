@@ -40,6 +40,9 @@ func make_spheritorus(base: ArrayPolyMesh4D) -> ArrayPolyMesh4D:
 		extruded.set_smooth_shading_normals()
 	else:
 		extruded.set_flat_shading_normals()
+	# Deduplicate and compact the normals and texture map values.
+	extruded.compact_normal_values()
+	extruded.compact_texture_map_values()
 	return extruded
 
 

@@ -44,6 +44,9 @@ func _ready() -> void:
 		print("Fluffed!")
 	heightmap.resource_name = base_path.get_file() + "_shape"
 	mesh_4d.resource_name = base_path.get_file() + "_mesh"
+	# Deduplicate and compact the normals and texture map values.
+	mesh_4d.compact_normal_values()
+	mesh_4d.compact_texture_map_values()
 	save_physics_shape_and_mesh_to_scene_and_g4mf(heightmap, mesh_4d, base_path)
 	if PRINT_PROGRESS:
 		print("Saved!")
@@ -51,7 +54,7 @@ func _ready() -> void:
 
 func fluff_ground_mesh_sides_massively(tetra_mesh: ArrayTetraMesh4D) -> void:
 	var verts: PackedVector4Array = tetra_mesh.vertices
-	var texmap: PackedVector3Array = tetra_mesh.simplex_cell_texture_map
+	var texmap: PackedVector3Array = tetra_mesh.texture_map_values
 	var max_vert: Vector4 = verts[verts.size() - 1]
 	var min_vert: Vector4 = verts[0]
 	var size_vec4: Vector4 = max_vert - min_vert
@@ -91,4 +94,4 @@ func fluff_ground_mesh_sides_massively(tetra_mesh: ArrayTetraMesh4D) -> void:
 	verts = PackedVector4Array(Math4D.quantize_to_float16(verts))
 	texmap = PackedVector3Array(Math4D.quantize_to_float16(texmap))
 	tetra_mesh.vertices = verts
-	tetra_mesh.simplex_cell_texture_map = texmap
+	tetra_mesh.texture_map_values = texmap

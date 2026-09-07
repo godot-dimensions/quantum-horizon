@@ -1,12 +1,12 @@
 [gd_scene load_steps=8 format=3 uid="uid://c3ftx8iguiq1s"]
 
 [ext_resource type="Script" uid="uid://dcde2k2c4x8di" path="res://models/primitives/wedge/make_wedges.gd" id="1_utbdx"]
-[ext_resource type="ArrayPolyMesh4D" path="res://models/primitives/wedge/wedge2.res" id="2_utbdx"]
-[ext_resource type="ArrayMesh" uid="uid://3o6wruxj2nlm" path="res://models/primitives/wedge/wedge2_texmap.mesh" id="3_frbn0"]
-[ext_resource type="ArrayPolyMesh4D" path="res://models/primitives/wedge/wedge3.res" id="4_ip0wo"]
-[ext_resource type="ArrayMesh" uid="uid://cfww6i5sxvjec" path="res://models/primitives/wedge/wedge3_texmap.mesh" id="5_sg5xe"]
-[ext_resource type="ArrayPolyMesh4D" path="res://models/primitives/wedge/wedge4.res" id="6_frbn0"]
-[ext_resource type="ArrayMesh" uid="uid://cufnir4cjl76c" path="res://models/primitives/wedge/wedge4_texmap.mesh" id="7_lel2m"]
+[ext_resource type="ArrayPolyMesh4D" uid="uid://62lyflye0v1u" path="res://models/primitives/wedge/wedge2.res" id="2_utbdx"]
+[ext_resource type="ArrayMesh" uid="uid://cjeovgw8tecoy" path="res://models/primitives/wedge/wedge2_texmap.mesh" id="3_frbn0"]
+[ext_resource type="ArrayPolyMesh4D" uid="uid://bqc5bitl1eh2b" path="res://models/primitives/wedge/wedge3.res" id="4_ip0wo"]
+[ext_resource type="ArrayMesh" uid="uid://de40x4xav1p77" path="res://models/primitives/wedge/wedge3_texmap.mesh" id="5_sg5xe"]
+[ext_resource type="ArrayPolyMesh4D" uid="uid://cm5p4t35vp2db" path="res://models/primitives/wedge/wedge4.res" id="6_frbn0"]
+[ext_resource type="ArrayMesh" uid="uid://dtyy7b7gg8cro" path="res://models/primitives/wedge/wedge4_texmap.mesh" id="7_lel2m"]
 
 [node name="AllWedges" type="Node4D"]
 script = ExtResource("1_utbdx")

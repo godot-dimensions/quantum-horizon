@@ -1,0 +1,16 @@
+[remap]
+
+importer="godot_4d.g4mf.mesh_4d"
+type="Mesh4D"
+uid="uid://dassog1a4x74j"
+path="res://.godot/imported/cylinder_smooth_trunc_ico.g4b-476403f37f5d823090dbd24a66c64558.res"
+
+[deps]
+
+source_file="res://models/primitives/cylinder/ico/cylinder_smooth_trunc_ico.g4b"
+dest_files=["res://.godot/imported/cylinder_smooth_trunc_ico.g4b-476403f37f5d823090dbd24a66c64558.res"]
+
+[params]
+
+preferred_mesh_format=0
+include_invisible=false

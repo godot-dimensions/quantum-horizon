@@ -10,13 +10,13 @@ func _ready() -> void:
 func _make_wedge2() -> void:
 	var mesh: ArrayPolyMesh4D = BoxPolyMesh4D.new().to_array_poly_mesh()
 	mesh.poly_cell_boundary_normals = PackedVector4Array()
-	mesh.poly_cell_vertex_normals = []
-	mesh.poly_cell_texture_map = []
+	mesh.poly_cell_normal_indices = []
+	mesh.poly_cell_texture_map_indices = []
 	mesh.resource_name = "wedge2"
 	# First, delete the vertices we don't want.
 	var vertices_to_delete := PackedInt32Array()
-	for i in range(mesh.poly_cell_vertices.size()):
-		var vertex: Vector4 = mesh.poly_cell_vertices[i]
+	for i in range(mesh.poly_cell_vertex_positions.size()):
+		var vertex: Vector4 = mesh.poly_cell_vertex_positions[i]
 		if vertex.y + vertex.z > 0.5:
 			vertices_to_delete.append(i)
 	for i in range(vertices_to_delete.size() - 1, -1, -1):
@@ -119,6 +119,8 @@ func _make_wedge2() -> void:
 	mesh.poly_cell_indices = poly_cell_indices
 	mesh.set_flat_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 	mesh.unwrap_texture_map(ArrayPolyMesh4D.UNWRAP_MODE_TILE_ISLANDS)
+	mesh.compact_normal_values()
+	mesh.compact_texture_map_values()
 	_print_mesh_data(mesh)
 	print(mesh.is_mesh_data_valid())
 	_save_mesh(mesh)
@@ -127,13 +129,13 @@ func _make_wedge2() -> void:
 func _make_wedge3() -> void:
 	var mesh: ArrayPolyMesh4D = BoxPolyMesh4D.new().to_array_poly_mesh()
 	mesh.poly_cell_boundary_normals = PackedVector4Array()
-	mesh.poly_cell_vertex_normals = []
-	mesh.poly_cell_texture_map = []
+	mesh.poly_cell_normal_indices = []
+	mesh.poly_cell_texture_map_indices = []
 	mesh.resource_name = "wedge3"
 	# First, delete the vertices we don't want.
 	var vertices_to_delete := PackedInt32Array()
-	for i in range(mesh.poly_cell_vertices.size()):
-		var vertex: Vector4 = mesh.poly_cell_vertices[i]
+	for i in range(mesh.poly_cell_vertex_positions.size()):
+		var vertex: Vector4 = mesh.poly_cell_vertex_positions[i]
 		if vertex.x + vertex.y + vertex.z > 0.0:
 			vertices_to_delete.append(i)
 	for i in range(vertices_to_delete.size() - 1, -1, -1):
@@ -227,6 +229,8 @@ func _make_wedge3() -> void:
 	mesh.poly_cell_indices = poly_cell_indices
 	mesh.set_flat_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 	mesh.unwrap_texture_map(ArrayPolyMesh4D.UNWRAP_MODE_TILE_ISLANDS)
+	mesh.compact_normal_values()
+	mesh.compact_texture_map_values()
 	_print_mesh_data(mesh)
 	print(mesh.is_mesh_data_valid())
 	_save_mesh(mesh)
@@ -235,13 +239,13 @@ func _make_wedge3() -> void:
 func _make_wedge4() -> void:
 	var mesh: ArrayPolyMesh4D = BoxPolyMesh4D.new().to_array_poly_mesh()
 	mesh.poly_cell_boundary_normals = PackedVector4Array()
-	mesh.poly_cell_vertex_normals = []
-	mesh.poly_cell_texture_map = []
+	mesh.poly_cell_normal_indices = []
+	mesh.poly_cell_texture_map_indices = []
 	mesh.resource_name = "wedge4"
 	# First, delete the vertices we don't want.
 	var vertices_to_delete := PackedInt32Array()
-	for i in range(mesh.poly_cell_vertices.size()):
-		var vertex: Vector4 = mesh.poly_cell_vertices[i]
+	for i in range(mesh.poly_cell_vertex_positions.size()):
+		var vertex: Vector4 = mesh.poly_cell_vertex_positions[i]
 		if vertex.x + vertex.y + vertex.z + vertex.w > -0.5:
 			vertices_to_delete.append(i)
 	for i in range(vertices_to_delete.size() - 1, -1, -1):
@@ -309,6 +313,8 @@ func _make_wedge4() -> void:
 	mesh.poly_cell_indices = poly_cell_indices
 	mesh.set_flat_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 	mesh.unwrap_texture_map(ArrayPolyMesh4D.UNWRAP_MODE_TILE_ISLANDS)
+	mesh.compact_normal_values()
+	mesh.compact_texture_map_values()
 	_print_mesh_data(mesh)
 	print(mesh.is_mesh_data_valid())
 	_save_mesh(mesh)
@@ -333,8 +339,8 @@ func _save_mesh(mesh: ArrayPolyMesh4D) -> void:
 
 func _print_mesh_data(mesh: ArrayPolyMesh4D) -> void:
 	print("Vertices:")
-	for i in range(mesh.poly_cell_vertices.size()):
-		print(str(i) + ": " + str(mesh.poly_cell_vertices[i]))
+	for i in range(mesh.poly_cell_vertex_positions.size()):
+		print(str(i) + ": " + str(mesh.poly_cell_vertex_positions[i]))
 	print("Edges:")
 	for i in range(0, mesh.edge_indices.size(), 2):
 		@warning_ignore("integer_division")

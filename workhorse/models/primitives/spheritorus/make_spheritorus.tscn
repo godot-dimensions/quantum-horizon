@@ -6,7 +6,6 @@
 
 [node name="MakeSpheritorus" type="Node"]
 script = ExtResource("1_0msai")
-minor_radius = 0.25
 
 [node name="Spheritorus4D" type="MeshInstance4D" parent="."]
 material_override = ExtResource("2_6ilft")

@@ -1,8 +1,8 @@
 [gd_scene load_steps=7 format=3 uid="uid://bmitko3enxayk"]
 
 [ext_resource type="Script" uid="uid://b1l5o2y5m8koj" path="res://models/primitives/cubinder/make_cubinder.gd" id="1_kluku"]
-[ext_resource type="ArrayMesh" uid="uid://daleew1r2p2t7" path="res://models/primitives/cubinder/cubinder_smooth_y2_w2_r0pt5_seg16/cubinder_smooth_y2_w2_r0pt5_seg16_texmap.res" id="2_mpqoa"]
-[ext_resource type="PackedScene" path="res://models/primitives/cubinder/cubinder_smooth_y2_w2_r0pt5_seg16/cubinder_smooth_y2_w2_r0pt5_seg16.scn" id="3_rg774"]
+[ext_resource type="ArrayMesh" path="res://models/primitives/cubinder/cubinder_smooth_y2_w2_r0pt5_seg16/cubinder_smooth_y2_w2_r0pt5_seg16_texmap.res" id="2_mpqoa"]
+[ext_resource type="PackedScene" uid="uid://i67jm8d4u4n6" path="res://models/primitives/cubinder/cubinder_smooth_y2_w2_r0pt5_seg16/cubinder_smooth_y2_w2_r0pt5_seg16.scn" id="3_rg774"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_q2k6i"]
 

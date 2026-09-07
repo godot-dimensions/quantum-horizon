@@ -10,7 +10,7 @@ extends SaveToFiles
 # Use 4, 8, 12, 16, etc for a pointy top.
 # Use 6, 10, 14, 18, etc for a flat top.
 @export_range(4, 1024, 1) var steps: int = 10
-@export_range(1, 3, 1) var source_icosphere: int = 1
+@export_range(0, 3, 1) var source_icosphere: int = 1
 @export var smooth: bool = true
 
 
@@ -31,6 +31,7 @@ func _ready() -> void:
 	var param_name: String = params_to_name()
 	var script_dir: String = get_script().get_path().get_base_dir()
 	var base_path: String = script_dir.path_join(param_name + "/" + param_name)
+	print(base_path)
 	save_mesh_4d_to_scene_and_g4mf(torisphere, base_path)
 	# Also save a copy of the latest one so we can show it in `make_torisphere.tscn`.
 	base_path = script_dir.path_join("latest/torisphere")
@@ -97,7 +98,7 @@ func make_torisphere(base: ArrayMesh) -> ArrayPolyMesh4D:
 	# The generated torisphere's normals are not correct.
 	# Fix it up by forcing outward from the major axis ring.
 	torisphere.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
-	var all_verts: PackedVector4Array = torisphere.poly_cell_vertices
+	var all_verts: PackedVector4Array = torisphere.poly_cell_vertex_positions
 	var bad_normals: PackedVector4Array = torisphere.get_poly_cell_boundary_normals()
 	var cell_vert_ind: Array[PackedInt32Array] = torisphere.get_all_poly_cell_vertex_indices(3, false)
 	var poly_ind: Array[Array] = torisphere.poly_cell_indices
@@ -124,25 +125,26 @@ func make_torisphere(base: ArrayMesh) -> ArrayPolyMesh4D:
 			all_cell_face_ind[cell_index] = this_cell
 	poly_ind[1] = all_cell_face_ind
 	torisphere.poly_cell_indices = poly_ind
+	torisphere.calculate_boundary_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 	# Copy over the texture map from the triangle faces to the cells.
 	# NOTE: This must be done BEFORE deduplicating, because the faces
 	# at the end of the ring will be merged with the first face,
 	# but for texture map purposes, we want these to be separate!
 	cell_vert_ind = torisphere.get_all_poly_cell_vertex_indices(3, false)
 	var face_vert_ind: Array[PackedInt32Array] = torisphere.get_all_poly_cell_vertex_indices(2, false)
-	var all_tex_maps: Dictionary[Vector2i, Array] = torisphere.all_poly_cell_texture_maps
+	var all_tex_maps: Dictionary[Vector2i, Array] = torisphere.all_poly_cell_texture_map_indices
 	var all_face_vert_tex: Array = all_tex_maps[Vector2i(2, 0)]
-	var all_cell_vert_tex: Array[PackedVector3Array] = []
+	var all_cell_vert_tex: Array[PackedInt32Array] = []
 	all_cell_vert_tex.resize(cell_vert_ind.size())
 	assert(all_cell_face_ind.size() == cell_vert_ind.size())
 	for cell_index in range(cell_vert_ind.size()):
 		var this_cell_face_inds: PackedInt32Array = all_cell_face_ind[cell_index]
 		var this_cell_vert_inds: PackedInt32Array = cell_vert_ind[cell_index]
-		var this_cell_tex := PackedVector3Array()
+		var this_cell_tex := PackedInt32Array()
 		this_cell_tex.resize(this_cell_vert_inds.size())
 		for face in this_cell_face_inds:
 			var this_face_verts: PackedInt32Array = face_vert_ind[face]
-			var this_face_tex: PackedVector3Array = all_face_vert_tex[face]
+			var this_face_tex: PackedInt32Array = all_face_vert_tex[face]
 			if this_face_tex.is_empty():
 				continue # Nothing to copy, this is a quad. We only use the triangles as our data source.
 			assert(this_face_verts.size() == this_face_tex.size())
@@ -152,7 +154,7 @@ func make_torisphere(base: ArrayMesh) -> ArrayPolyMesh4D:
 					this_cell_tex[ind_in_cell] = this_face_tex[i]
 		all_cell_vert_tex[cell_index] = this_cell_tex
 	all_tex_maps[Vector2i(3, 0)] = all_cell_vert_tex
-	torisphere.all_poly_cell_texture_maps = all_tex_maps
+	torisphere.all_poly_cell_texture_map_indices = all_tex_maps
 	assert(torisphere.is_mesh_data_valid())
 	# Deduplicate all elements in the mesh to simplify it.
 	# The deduplication process preserves associated data like normals and texture coordinates.
@@ -166,6 +168,9 @@ func make_torisphere(base: ArrayMesh) -> ArrayPolyMesh4D:
 		torisphere.set_smooth_shading_normals()
 	else:
 		torisphere.set_flat_shading_normals()
+	# Deduplicate and compact the normals and texture map values.
+	torisphere.compact_normal_values()
+	torisphere.compact_texture_map_values()
 	return torisphere
 
 
@@ -176,7 +181,8 @@ func append_triangular_prism(poly_mesh_4d: ArrayPolyMesh4D, a1: Vector4, b1: Vec
 		poly_ind.resize(2)
 	var faces: Array = poly_ind[0]
 	var cells: Array = poly_ind[1]
-	var all_tex_maps: Dictionary[Vector2i, Array] = poly_mesh_4d.all_poly_cell_texture_maps
+	var all_tex_maps: Dictionary[Vector2i, Array] = poly_mesh_4d.all_poly_cell_texture_map_indices
+	var tex_map_values: PackedVector3Array = poly_mesh_4d.poly_cell_texture_map_values
 	var face_vert_tex: Array = all_tex_maps.get_or_add(Vector2i(2, 0), [])
 	# Append the 9 edges of the triangular prism.
 	var a1i: int = poly_mesh_4d.append_vertex(a1, false)
@@ -210,17 +216,20 @@ func append_triangular_prism(poly_mesh_4d: ArrayPolyMesh4D, a1: Vector4, b1: Vec
 	# We MUST deduplicate above so that the triangle edges are connected to themselves,
 	# but this deduplication may cause ordering changes that we need to handle here,
 	# because the first edge may be the reverse of what we tried to append.
-	face_vert_tex.append(PackedVector3Array([a1_tex, b1_tex, c1_tex]))
-	face_vert_tex.append(PackedVector3Array())
-	face_vert_tex.append(PackedVector3Array())
-	face_vert_tex.append(PackedVector3Array())
-	face_vert_tex.append(PackedVector3Array([a2_tex, b2_tex, c2_tex]))
+	var first_tex_index: int = tex_map_values.size()
+	tex_map_values.append_array(PackedVector3Array([a1_tex, b1_tex, c1_tex, a2_tex, b2_tex, c2_tex]))
+	face_vert_tex.append(PackedInt32Array([first_tex_index, first_tex_index + 1, first_tex_index + 2]))
+	face_vert_tex.append(PackedInt32Array())
+	face_vert_tex.append(PackedInt32Array())
+	face_vert_tex.append(PackedInt32Array())
+	face_vert_tex.append(PackedInt32Array([first_tex_index + 3, first_tex_index + 4, first_tex_index + 5]))
 	# Set that data back into the mesh.
 	poly_ind[0] = faces
 	poly_ind[1] = cells
 	poly_mesh_4d.poly_cell_indices = poly_ind
 	all_tex_maps[Vector2i(2, 0)] = face_vert_tex
-	poly_mesh_4d.all_poly_cell_texture_maps = all_tex_maps
+	poly_mesh_4d.poly_cell_texture_map_values = tex_map_values
+	poly_mesh_4d.all_poly_cell_texture_map_indices = all_tex_maps
 
 
 func params_to_name() -> String:

@@ -20,12 +20,18 @@ func _ready() -> void:
 	poly_mesh.set_smooth_shading_normals(ArrayPolyMesh4D.COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY)
 	poly_mesh.unwrap_texture_map(ArrayPolyMesh4D.UNWRAP_MODE_TILE_ISLANDS)
 	texture_map_ground_cells_by_spatial_position(poly_mesh)
+	# Deduplicate and compact the normals and texture map values.
+	poly_mesh.compact_normal_values()
+	poly_mesh.compact_texture_map_values()
 	# Collapse the final result from poly to tetra to avoid
 	# complications with the non-convex star-shaped cells being used.
 	var tetra_mesh: ArrayTetraMesh4D = poly_mesh.to_array_tetra_mesh()
-	print(tetra_mesh.get_simplex_cell_indices().size())
+	print(tetra_mesh.get_simplex_cell_vertex_indices().size())
+	# Deduplicate and compact the normals and texture map values.
+	tetra_mesh.compact_normal_values()
+	tetra_mesh.compact_texture_map_values()
 	#tetra_mesh.remove_opposite_overlapping_tetrahedra()
-	print(tetra_mesh.get_simplex_cell_indices().size())
+	print(tetra_mesh.get_simplex_cell_vertex_indices().size())
 	save_mesh_4d_to_scene_and_g4mf(tetra_mesh, base_path)
 
 
@@ -41,6 +47,8 @@ func reassemble_all_3d_meshes_in_scene_to_4d_vertical_prism(input_node: Node) ->
 		assert(this_mesh_4d != null)
 		combined_mesh_4d.merge_with(this_mesh_4d, Vector4D.from_3d(-this_transform_3d.origin))
 	combined_mesh_4d.deduplicate_all_elements()
+	combined_mesh_4d.compact_normal_values()
+	combined_mesh_4d.compact_texture_map_values()
 	rotate_and_flatten_mesh_to_xzw(combined_mesh_4d)
 	return combined_mesh_4d
 
@@ -86,7 +94,7 @@ func rotate_and_flatten_mesh_to_xzw(mesh_4d: ArrayPolyMesh4D) -> void:
 func texture_map_ground_cells_by_spatial_position(mesh_4d: ArrayPolyMesh4D) -> void:
 	# Gather all cells that have the same Y coordinate everywhere on them.
 	var all_cell_vert_ind: Array[PackedInt32Array] = mesh_4d.get_all_cell_vertex_indices(false)
-	var all_cell_vert_val: PackedVector4Array = mesh_4d.poly_cell_vertices
+	var all_cell_vert_val: PackedVector4Array = mesh_4d.poly_cell_vertex_positions
 	var ground_cells := PackedInt32Array()
 	for cell_index in range(all_cell_vert_ind.size()):
 		var this_cell_vert_ind: PackedInt32Array = all_cell_vert_ind[cell_index]
@@ -108,17 +116,20 @@ func texture_map_ground_cells_by_spatial_position(mesh_4d: ArrayPolyMesh4D) -> v
 			rect_min = rect_min.min(all_cell_vert_val[vert_index])
 	# Remap the spatial coordinates into spatial coordinates, fitting the whole range into a 0 to 1 space.
 	# Discard Y, and use spatial X -> texture X, spatial Z -> texture Y, spatial W -> texture Z.
-	var tex_map: Array[PackedVector3Array] = mesh_4d.poly_cell_texture_map
+	var tex_map: Array[PackedInt32Array] = mesh_4d.poly_cell_texture_map_indices
+	var tex_map_values: PackedVector3Array = mesh_4d.poly_cell_texture_map_values
 	var rect_size: Vector4 = rect_max - rect_min
 	for cell_index in ground_cells:
 		var this_cell_vert_ind: PackedInt32Array = all_cell_vert_ind[cell_index]
-		var this_cell_tex_map: PackedVector3Array = tex_map[cell_index]
+		var this_cell_tex_map: PackedInt32Array = tex_map[cell_index]
 		this_cell_tex_map.resize(this_cell_vert_ind.size())
 		for vert_index in range(this_cell_vert_ind.size()):
 			var vert_pos: Vector4 = all_cell_vert_val[this_cell_vert_ind[vert_index]]
 			var vert_pos_in_rect: Vector4 = (vert_pos - rect_min) / rect_size
 			var tex_coord: Vector3 = Vector3(vert_pos_in_rect.x, vert_pos_in_rect.z, vert_pos_in_rect.w)
-			this_cell_tex_map[vert_index] = tex_coord
+			this_cell_tex_map[vert_index] = tex_map_values.size()
+			tex_map_values.append(tex_coord)
 		tex_map[cell_index] = this_cell_tex_map
-	mesh_4d.poly_cell_texture_map = tex_map
+	mesh_4d.poly_cell_texture_map_values = tex_map_values
+	mesh_4d.poly_cell_texture_map_indices = tex_map
 	mesh_4d.poly_mesh_clear_cache()
