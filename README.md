@@ -45,6 +45,8 @@ To regenerate the engine and module documentation after building, pass `-Doctool
 
 To run the engine test suite instead of opening the project, pass `-Test` on Windows or `--test` on macOS and Linux.
 
+To normalize every `.tscn` file using Godot's editor save behavior, run `.\engine\scripts\resave_scenes_windows.ps1 -ProjectPath .\project\project.godot` on Windows or `./engine/scripts/resave_scenes_unix.sh --project-path ./project/project.godot` on macOS and Linux. Pass `-Dev` or `--dev` to use the development editor build.
+
 ### Develop with Visual Studio Code
 
 The `setup_vscode_windows.ps1` and `setup_vscode_unix.sh` scripts will set up files for Visual Studio Code (VS Code).
