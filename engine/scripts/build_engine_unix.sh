@@ -4,6 +4,14 @@
 
 set -eu
 
+# Godot's SConstruct picks -fdiagnostics-color or -fno-diagnostics-color based
+# on whether stderr is a terminal, and the flag is part of every object's SCons
+# action signature. Force one choice so that terminal and non-terminal builds
+# (IDEs, agents, CI) share signatures instead of fully recompiling each other's
+# objects.
+CLICOLOR_FORCE=1
+export CLICOLOR_FORCE
+
 target=editor
 jobs=
 dev_build=0
