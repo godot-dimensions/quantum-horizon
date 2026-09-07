@@ -219,7 +219,7 @@ func _sample_full_apron(brick: VoxelBrick4D, nominal_samples: Array) -> void:
 							actual.min.z + k * step.z, actual.min.w + l * step.w
 						)
 						d = density_fn.call(pos)
-					DualContour4D._write_density(brick.density, ((i * actual_n + j) * actual_n + k) * actual_n + l, d)
+					SingleVertexDualContour4D._write_density(brick.density, ((i * actual_n + j) * actual_n + k) * actual_n + l, d)
 	Terrain4DProfile.add("apron_sampling", Time.get_ticks_usec() - _profile_t0)
 
 ## Convenience sphere-shaped "dig or place" edit - every point within
@@ -379,9 +379,9 @@ func _apply_edit_to_brick(brick: VoxelBrick4D, region_min: Vector4, region_max: 
 					if w < region_min.w or w > region_max.w:
 						continue
 					var point_index := ((i * n + j) * n + k) * n + l
-					var old_density: float = DualContour4D._read_density(brick.density, point_index)
+					var old_density: float = SingleVertexDualContour4D._read_density(brick.density, point_index)
 					var new_density: float = new_value_fn.call(old_density, Vector4(x, y, z, w))
-					DualContour4D._write_density(brick.density, point_index, new_density)
+					SingleVertexDualContour4D._write_density(brick.density, point_index, new_density)
 
 ## Meshes every dirty, non-collapsed brick via the DC-backed mesh backend,
 ## reading density from each brick's OWN stored array (not the live
@@ -413,7 +413,7 @@ func regenerate_dirty_bricks() -> void:
 ## Thread-safety split, deliberately: the background job (the Callable
 ## passed to WorkerThreadPool.add_task below) only ever touches a
 ## just-duplicated PackedByteArray snapshot of this brick's density plus
-## pure-data helpers (TerrainMeshBackendDC/DualContour4D/
+## pure-data helpers (TerrainMeshBackendDC/SingleVertexDualContour4D/
 ## _filter_to_brick_ownership - none of which create engine Resource/
 ## Object instances or touch RenderingServer/PhysicsServer state, only
 ## Packed*Array/Dictionary/Vector4 math) - never the live brick.density
@@ -466,11 +466,11 @@ func _dispatch_pending_regen_tasks() -> void:
 				var iz := int(roundf((pos.z - actual_min.z) / world_step.z))
 				var iw := int(roundf((pos.w - actual_min.w) / world_step.w))
 				var point_index := ((ix * n + iy) * n + iz) * n + iw
-				return DualContour4D._read_density(density_snapshot, point_index)
+				return SingleVertexDualContour4D._read_density(density_snapshot, point_index)
 			var raw_result: Dictionary = TerrainMeshBackendMT.generate_brick_mesh(actual_min, world_step, n, density_fn)
 			var owned: Dictionary = _filter_to_brick_ownership(raw_result, nominal_min, nominal_max)
 			# Thread-local phase timings, copied straight through - see
-			# DualContour4D.generate()'s own comment on why these (not
+			# SingleVertexDualContour4D.generate()'s own comment on why these (not
 			# Terrain4DProfile) are the race-free source under concurrent
 			# regen.
 			owned["phase1_usec"] = raw_result.phase1_usec

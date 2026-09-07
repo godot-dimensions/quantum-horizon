@@ -137,7 +137,7 @@ func _run_full_case(bounds_min: Vector4, bounds_max: Vector4, base_nx: int, base
 
 	# --- DC reference, at the ORIGINAL resolution (matches the earlier comparison) ---
 	var t_dc := Time.get_ticks_usec()
-	var dc_result: Dictionary = DualContour4D.generate(bounds_min, bounds_max, base_nx, base_ny, base_nz, base_nw, density_fn, 0.15)
+	var dc_result: Dictionary = SingleVertexDualContour4D.generate(bounds_min, bounds_max, base_nx, base_ny, base_nz, base_nw, density_fn, 0.15)
 	var dc_wall: float = (Time.get_ticks_usec() - t_dc) / 1000000.0
 	print("DC @ original resolution (%dx%dx%dx%d): wall=%.2fs tet_count=%d" % [base_nx, base_ny, base_nz, base_nw, dc_wall, dc_result.tet_count])
 

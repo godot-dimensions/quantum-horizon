@@ -156,7 +156,7 @@ func _run_case(bounds_min: Vector4, bounds_max: Vector4, nx: int, ny: int, nz: i
 	if also_run_dc:
 		# --- B: DC at the SAME coarse grid as MT, for a fair "is the gap
 		# an MT crack or a shared under-resolution artifact" check. ---
-		var dc_result: Dictionary = DualContour4D.generate(bounds_min, bounds_max, nx, ny, nz, nw, density_fn, 0.15)
+		var dc_result: Dictionary = SingleVertexDualContour4D.generate(bounds_min, bounds_max, nx, ny, nz, nw, density_fn, 0.15)
 		_face_adjacency(dc_result, label + " [DC @ SAME coarse grid]")
 		var dc_mesh := _build_mesh_from_result(dc_result)
 		await _swap_mesh_and_screenshot(terrain, dc_mesh, Color(0.85, 0.25, 0.2, 1.0), image_prefix + "_dc_samegrid.png")

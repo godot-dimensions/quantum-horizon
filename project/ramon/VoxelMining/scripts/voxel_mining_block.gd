@@ -2,7 +2,7 @@
 extends Node4D
 ## First test of a destructible dual-contoured 4D voxel block: one solid,
 ## axis-aligned box (no water, no noise, no rotation - the simplest possible
-## shape) built on [VoxelField4D]/[DualContour4D]/[QEFSolver4D] from
+## shape) built on [VoxelField4D]/[MultiVertexDualContour4D]/[QEFSolver4D] from
 ## project/ramon/voxel_port/, plus a per-voxel [BoxShape4D] collider grid so a
 ## single mined-out voxel can be identified and removed exactly.
 ##
@@ -216,7 +216,7 @@ func _remesh() -> void:
 		print("[VoxelMiningBlock] _remesh: _field is null, nothing to build.")
 		return
 
-	var contour := DualContour4D.new(_field)
+	var contour := MultiVertexDualContour4D.new(_field)
 	contour.generate()
 
 	var center: float = float(_field.size - 1) * 0.5
@@ -233,7 +233,7 @@ func _remesh() -> void:
 	_rebuild_colliders(center)
 
 
-func _build_mesh(contour: DualContour4D, center: float) -> ArrayTetraMesh4D:
+func _build_mesh(contour: MultiVertexDualContour4D, center: float) -> ArrayTetraMesh4D:
 	if contour.ground_cells.is_empty():
 		return null
 

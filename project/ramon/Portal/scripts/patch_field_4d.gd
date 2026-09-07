@@ -17,10 +17,10 @@ extends RefCounted
 ## the material changes.
 ##
 ## This is the "field" half of the pipeline - it knows nothing about meshes.
-## [DualContour4D] consumes it.
+## [MultiVertexDualContour4D] consumes it.
 ##
 ## The important departure from the project's existing terrain generator
-## (project/ramon/VoxelIsland/scripts/dual_contour_terrain_4d.gd) is that this is
+## (project/ramon/VoxelIsland/scripts/heightfield_dual_contour_terrain_4d.gd) is that this is
 ## volumetric rather than a height field. That generator defines terrain as
 ## y = height(x, z, w), which makes the vertical axis privileged and makes
 ## overhangs, caves, and closed solids (a hypersphere, a hypercube) literally
@@ -82,7 +82,7 @@ var _edge_position: PackedFloat32Array
 var _edge_normal: PackedVector4Array
 var _edge_near_material: PackedByteArray
 var _edge_far_material: PackedByteArray
-## Which layer created each edge. [DualContour4D] hands this back on the
+## Which layer created each edge. [MultiVertexDualContour4D] hands this back on the
 ## generated vertices so the terrain node can ask a layer-specific question
 ## ("which way is up here?") without this class needing to know the answer.
 var _edge_layer: PackedByteArray

@@ -2,7 +2,7 @@
 extends StaticBody4D
 ## An editable ocean plane: a flat colored box providing water visuals and
 ## sea-level collision. The terrain itself has its own real collision now
-## (see dual_contour_terrain_4d.gd's HeightMapShape4D), which only covers
+## (see heightfield_dual_contour_terrain_4d.gd's HeightMapShape4D), which only covers
 ## the terrain's own grid extent - this box is sized well beyond that, so
 ## there's still solid ground/water anywhere outside the terrain's grid
 ## bounds. Unlike the old runtime-only floor script this replaces, this is a

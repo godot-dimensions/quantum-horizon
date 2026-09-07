@@ -20,7 +20,7 @@ const ACTUAL_POINTS_PER_AXIS := NOMINAL_POINTS_PER_AXIS + 2 * APRON_CELLS
 var brick_coord: Vector4i = Vector4i.ZERO
 
 ## Only populated for a non-collapsed brick - int16-packed via
-## DualContour4D's existing _write_density/_read_density convention, sized
+## SingleVertexDualContour4D's existing _write_density/_read_density convention, sized
 ## to ACTUAL_POINTS_PER_AXIS^4 * 2 bytes. This is the brick's persistent,
 ## editable state: regeneration always reads FROM here, never resamples
 ## the live procedural field directly, so a future edit (which mutates
@@ -69,7 +69,7 @@ var mesh_version: int = 0
 ## regenerate (see VoxelWorld4D._finalize_completed_regen_tasks), for
 ## measurement scripts that need a race-free per-stage breakdown even under
 ## concurrent async regen (phase1/2/3 come back thread-locally from
-## DualContour4D.generate()'s return value rather than the shared
+## SingleVertexDualContour4D.generate()'s return value rather than the shared
 ## Terrain4DProfile static, which would race across concurrently-running
 ## WorkerThreadPool jobs - see that function's own comment). Empty until
 ## the first regen. Delete alongside the rest of this session's SPIKE
@@ -118,7 +118,7 @@ static func actual_bounds(coord: Vector4i, world_origin: Vector4, step: Vector4)
 		),
 	}
 
-## Builds a Callable matching DualContour4D.generate()'s density_fn
+## Builds a Callable matching SingleVertexDualContour4D.generate()'s density_fn
 ## signature (Vector4 -> float), reading from THIS brick's own stored
 ## density array by converting a grid-point world position back to a
 ## local index - used instead of resampling the live procedural field, so
@@ -138,4 +138,4 @@ func _sample_stored_density(pos: Vector4, actual_min: Vector4, step: Vector4) ->
 	var iw := int(roundf((pos.w - actual_min.w) / step.w))
 	var n := ACTUAL_POINTS_PER_AXIS
 	var point_index := ((ix * n + iy) * n + iz) * n + iw
-	return DualContour4D._read_density(density, point_index)
+	return SingleVertexDualContour4D._read_density(density, point_index)

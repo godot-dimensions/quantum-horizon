@@ -1,5 +1,5 @@
 extends Node
-## TEMPORARY - times DualContour4D.generate() (via terrain_generator.gd's
+## TEMPORARY - times SingleVertexDualContour4D.generate() (via terrain_generator.gd's
 ## regenerate()) at several grid resolutions, isolated from the drag-
 ## simulation/screenshot overhead the main verify runner has. Not part of
 ## the shipped scene.

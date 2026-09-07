@@ -4,7 +4,7 @@ extends Node
 ## ownership filtering). Not part of the shipped scene. Pure logic - no
 ## scene dependencies, so this runs identically headless or windowed.
 ## Structural/invariant checks only - nothing here compares output against
-## DualContour4D, since MT is a genuinely different algorithm by design,
+## SingleVertexDualContour4D, since MT is a genuinely different algorithm by design,
 ## not a same-output swap like the earlier generate()->generate_native()
 ## native port.
 
@@ -53,7 +53,7 @@ func _no_mesh_centroids_in_bounds(mesh: ArrayTetraMesh4D, lo: Vector4, hi: Vecto
 			return false
 	return true
 
-## Operates on a raw (pre-filter) DualContour4D-style result Dictionary
+## Operates on a raw (pre-filter) SingleVertexDualContour4D-style result Dictionary
 ## directly, rather than a built mesh - used to prove the apron really
 ## does produce geometry reaching into a neighbor's territory before
 ## filtering removes it (a positive control for the filter test below).

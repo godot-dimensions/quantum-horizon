@@ -1,4 +1,4 @@
-class_name DualContour4D
+class_name MultiVertexDualContour4D
 extends RefCounted
 ## Extracts a tetrahedral 4D surface mesh from a [VoxelField4D] by dual
 ## contouring, one dimension up from the usual 3D formulation.

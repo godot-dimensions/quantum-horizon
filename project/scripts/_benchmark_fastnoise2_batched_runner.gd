@@ -103,7 +103,7 @@ func _run_point_by_point(h: int, v: int, w: int, density_fn: Callable, label: St
 # / _sample_full_apron's OWN logic shape (collapse-check the nominal grid
 # first, only sample+store the full actual grid if non-uniform), just with
 # the per-point native call swapped for a per-brick batched one. Reuses
-# real VoxelBrick4D/VoxelWorld4D/DualContour4D for storage and regen so
+# real VoxelBrick4D/VoxelWorld4D/SingleVertexDualContour4D for storage and regen so
 # the regen-phase (QEF/tet) comparison stays apples-to-apples.
 
 func _sample_fastnoise2_octave_sum(x0: float, z0: float, w0: float, step_x: float, step_z: float, step_w: float, n: int) -> PackedFloat64Array:
@@ -182,7 +182,7 @@ func _create_brick_fastnoise2(coord: Vector4i, world_origin: Vector4, step: Vect
 				for l in range(n_actual):
 					var height: float = GROUND_LEVEL + NOISE_AMPLITUDE * actual_flat[idx]
 					var d: float = y - height
-					DualContour4D._write_density(brick.density, idx, d)
+					SingleVertexDualContour4D._write_density(brick.density, idx, d)
 					idx += 1
 	Terrain4DProfile.add("fastnoise2_apron_sampling", Time.get_ticks_usec() - _t1)
 	return brick

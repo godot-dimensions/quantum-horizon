@@ -29,7 +29,7 @@ const _SCRIPT_PATH_HINT := "res://ramon/voxel_port/scripts/"
 ## tried, right up to the point generation itself became the blocker.
 ##
 ## That's the OTHER cost this raise does nothing about: VoxelField4D +
-## DualContour4D scale as size^4 in memory and roughly size^3 in emitted
+## MultiVertexDualContour4D scale as size^4 in memory and roughly size^3 in emitted
 ## geometry, paid once per Generate press, independent of how the result is
 ## later chunked for rendering, and it dominates. Measured on this machine:
 ## size 12 (the default below) took 8.4s to generate - already close to
@@ -246,7 +246,7 @@ var model_layers: int = BASELINE_MODEL_LAYERS:
 ## equivalent colours are computed per tetrahedron in GDScript instead.
 @export var albedo_texture_3d: Texture3D = null
 @export var water_color: Color = Color(0.1, 0.25, 0.6, 0.75)
-## Flip if the terrain renders inside-out - see [member DualContour4D.flip_winding].
+## Flip if the terrain renders inside-out - see [member MultiVertexDualContour4D.flip_winding].
 @export var flip_winding: bool = false
 
 @export_group("Physics")
@@ -307,7 +307,7 @@ var model_layers: int = BASELINE_MODEL_LAYERS:
 ## Extra points of margin generated on every side of a brick's own core, past
 ## which its geometry is discarded rather than emitted (see _generate_brick).
 ##
-## Needed because DualContour4D deliberately leaves a cell's hexahedra
+## Needed because MultiVertexDualContour4D deliberately leaves a cell's hexahedra
 ## incomplete - and therefore that cell's own vertices unemitted - whenever
 ## any of the 8 cells that would need to surround its crossings falls outside
 ## the field ("Edges missing part of their ring sit on the outermost layer of
@@ -327,7 +327,7 @@ var _suppress_regenerate := false
 
 ## Brick key (Vector4i, in brick-grid coordinates - world cell index /
 ## BRICK_CORE_CELLS) -> MeshInstance4D. A brick IS a culling chunk now: each
-## one is generated from its own independent VoxelField4D/DualContour4D pass
+## one is generated from its own independent VoxelField4D/MultiVertexDualContour4D pass
 ## (see _generate_brick), so there is no separate post-hoc partitioning step
 ## the way CHUNK_SIZE_GRID_UNITS used to require.
 var _ground_chunks: Dictionary = {}
@@ -372,7 +372,7 @@ var _edit_operations: Array = []
 
 ## WorkerThreadPool task id -> brick key, for tasks currently running (or
 ## finished but not yet reaped) on a background thread. _compute_brick_geometry
-## does the entire VoxelField4D/DualContour4D/QEF pass off-thread - none of it
+## does the entire VoxelField4D/MultiVertexDualContour4D/QEF pass off-thread - none of it
 ## touches the scene tree, RenderingServer, or PhysicsServer, so it is safe to
 ## run concurrently with the main thread's own work; only _finish_brick (the
 ## MeshInstance4D/ArrayTetraMesh4D creation) needs the main thread, since that
@@ -392,7 +392,7 @@ var _bricks_in_flight: Dictionary = {}
 ## Caps concurrent in-flight brick tasks. WorkerThreadPool's own pool size
 ## already bounds true parallelism, but without this a big streaming radius
 ## could queue hundreds of tasks in a single frame, each one holding its own
-## VoxelField4D/DualContour4D allocation alive until collected - this bounds
+## VoxelField4D/MultiVertexDualContour4D allocation alive until collected - this bounds
 ## peak memory from queued-but-not-yet-run work, not just peak CPU.
 const MAX_CONCURRENT_BRICK_TASKS := 8
 
@@ -773,7 +773,7 @@ func _clear_chunks() -> void:
 
 
 ## Generates the world as independent bricks rather than one monolithic
-## VoxelField4D/DualContour4D pass - see _stream_bricks_in_radius and
+## VoxelField4D/MultiVertexDualContour4D pass - see _stream_bricks_in_radius and
 ## _generate_brick. Only bricks within max_render_distance of world center
 ## (Vector4.ZERO - the same point every model is built around, and where the
 ## camera's default look_at_target sits) are generated here; more stream in
@@ -1426,7 +1426,7 @@ func _request_brick(bk: Vector4i) -> void:
 
 
 ## Runs entirely on a background thread - the whole VoxelField4D +
-## DualContour4D + QEF pass for one brick, exactly what the old synchronous
+## MultiVertexDualContour4D + QEF pass for one brick, exactly what the old synchronous
 ## _generate_brick did, but writing its output into [param result_slot]
 ## instead of building any MeshInstance4D/ArrayTetraMesh4D (those touch the
 ## render server and must happen back on the main thread - see _finish_brick).
@@ -1452,7 +1452,7 @@ func _compute_brick_geometry(bk: Vector4i, result_slot: Dictionary, edit_ops_sna
 		_add_edit_layer(field, op, brick_origin)
 	var field_ms: float = (Time.get_ticks_usec() - field_start_usec) / 1000.0
 
-	var contour := DualContour4D.new(field)
+	var contour := MultiVertexDualContour4D.new(field)
 	contour.flip_winding = flip_winding
 	contour.generate()
 
@@ -1495,7 +1495,7 @@ func _finish_brick(bk: Vector4i, result_slot: Dictionary) -> void:
 	_last_stats["vertices"] = _last_stats.get("vertices", 0) + result_slot["vertices"]
 	_last_stats["tetrahedra_degenerate"] = _last_stats.get("tetrahedra_degenerate", 0) + result_slot["tetrahedra_degenerate"]
 
-	var contour: DualContour4D = result_slot["contour"]
+	var contour: MultiVertexDualContour4D = result_slot["contour"]
 	var ground_core: PackedInt32Array = result_slot["ground_core"]
 	var water_core: PackedInt32Array = result_slot["water_core"]
 	if ground_core.is_empty() and water_core.is_empty():
@@ -1545,7 +1545,7 @@ func _finish_brick(bk: Vector4i, result_slot: Dictionary) -> void:
 ## Writes every currently-generated brick's raw mesh arrays
 ## (vertex positions, simplex indices, texture values and indices - everything
 ## needed to rebuild an ArrayTetraMesh4D without touching VoxelField4D/
-## DualContour4D/QEFSolver4D again) plus its bounds to a single file,
+## MultiVertexDualContour4D/QEFSolver4D again) plus its bounds to a single file,
 ## alongside the generation parameters that produced it. This is the
 ## "pre-processing step, done once" half of baking: run generate() (and let
 ## it fully stream in - see _wait_until_caught_up if scripting this), then
@@ -1605,7 +1605,7 @@ func bake_to_file(path: String) -> void:
 
 
 ## Loads a file written by bake_to_file(), skipping VoxelField4D/
-## DualContour4D/QEFSolver4D entirely - every brick's mesh is rebuilt
+## MultiVertexDualContour4D/QEFSolver4D entirely - every brick's mesh is rebuilt
 ## directly from its stored arrays. Refuses to load (returns false, logs
 ## why) if the cache's generation parameters don't match this node's current
 ## settings, since a mismatched cache's geometry would quietly disagree with
@@ -1708,14 +1708,14 @@ func load_from_file(path: String) -> bool:
 ## shifted to world-grid coordinates by the time this runs) whose centroid
 ## falls strictly within [core_min, core_max): the cells this brick actually
 ## OWNS, as opposed to the BRICK_PAD margin around them that exists purely so
-## DualContour4D's own hexahedron completeness check (see BRICK_PAD) doesn't
+## MultiVertexDualContour4D's own hexahedron completeness check (see BRICK_PAD) doesn't
 ## discard geometry that belongs to the core. A tet belonging to the padding
 ## is not lost - the neighbouring brick that owns those cells as ITS core
 ## will independently regenerate the identical geometry there, from the
 ## identical world-grid density samples, since every brick's density/gradient
 ## closures are pure functions of world-grid position regardless of which
 ## brick asked.
-func _filter_core_cells(contour: DualContour4D, cells: PackedInt32Array, core_min: Vector4, core_max: Vector4) -> PackedInt32Array:
+func _filter_core_cells(contour: MultiVertexDualContour4D, cells: PackedInt32Array, core_min: Vector4, core_max: Vector4) -> PackedInt32Array:
 	var kept := PackedInt32Array()
 	for i in range(0, cells.size(), 4):
 		var centroid := Vector4.ZERO
@@ -1743,7 +1743,7 @@ func _filter_core_cells(contour: DualContour4D, cells: PackedInt32Array, core_mi
 ## nothing and costs ~11 deduplicating appends per tetrahedron instead of one -
 ## and PolyMesh4D would only decompose them straight back into simplices to
 ## render anyway.
-func _build_mesh(contour: DualContour4D, cells: PackedInt32Array, center: float, is_water: bool, shared_material: TetraMaterial4D = null) -> ArrayTetraMesh4D:
+func _build_mesh(contour: MultiVertexDualContour4D, cells: PackedInt32Array, center: float, is_water: bool, shared_material: TetraMaterial4D = null) -> ArrayTetraMesh4D:
 	if cells.is_empty():
 		return null
 
@@ -1903,7 +1903,7 @@ func _ground_color(slope: float, altitude: float) -> Color:
 ## the filtered subset directly keeps the visible mesh complete while giving
 ## the physics side only what it can actually invert. The excluded tetrahedra
 ## are too thin to have meaningfully contributed a collision surface anyway.
-func _update_collision(contour: DualContour4D, center: float) -> void:
+func _update_collision(contour: MultiVertexDualContour4D, center: float) -> void:
 	var collision_shape: CollisionShape4D = _get_collision_shape()
 	if collision_shape == null:
 		return

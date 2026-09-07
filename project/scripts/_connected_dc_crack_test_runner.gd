@@ -109,7 +109,7 @@ func _run_case(bounds_min: Vector4, bounds_max: Vector4, nx: int, ny: int, nz: i
 	var terrain: StaticBody4D = inst.terrain
 	var density_fn: Callable = get_density_fn_factory.call(terrain)
 
-	var dc_result: Dictionary = DualContour4D.generate(bounds_min, bounds_max, nx, ny, nz, nw, density_fn, 0.15)
+	var dc_result: Dictionary = SingleVertexDualContour4D.generate(bounds_min, bounds_max, nx, ny, nz, nw, density_fn, 0.15)
 	var dc_faces: Dictionary = _face_adjacency(dc_result, label + " [DC baseline]")
 
 	var cdc_result: Dictionary = TerrainMeshBackendConnectedDC.generate(bounds_min, bounds_max, nx, ny, nz, nw, density_fn, 0.15)

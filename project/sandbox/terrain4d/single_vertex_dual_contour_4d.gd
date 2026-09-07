@@ -1,4 +1,4 @@
-class_name DualContour4D
+class_name SingleVertexDualContour4D
 extends RefCounted
 ## 4D dual contouring: extracts a tetrahedral hypersurface mesh (the same
 ## "boundary-only" convention BoxTetraMesh4D/OrthoplexTetraMesh4D use, NOT a

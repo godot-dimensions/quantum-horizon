@@ -49,7 +49,7 @@ extends RefCounted
 ## NOT ported: mesh.js's own tet-fan-per-face rendering step (explicitly
 ## specific to its own custom WebGL renderer) and its multi-material
 ## handling (not applicable here) - dual-cube tet assembly below is this
-## project's own existing DualContour4D machinery, unchanged.
+## project's own existing SingleVertexDualContour4D machinery, unchanged.
 ##
 ## Solver substitution, reported plainly rather than silently reused: the
 ## engine's native regularized SPD Cholesky solver
@@ -57,7 +57,7 @@ extends RefCounted
 ## C++ free function INSIDE the monolithic Math4D.dual_contour_extract()
 ## call, not separately bound/exposed to GDScript - exposing it would mean
 ## an engine rebuild, a materially bigger action than this sandboxed
-## spike. Uses DualContour4D._solve_4x4() instead (GDScript Gauss-Jordan,
+## spike. Uses SingleVertexDualContour4D._solve_4x4() instead (GDScript Gauss-Jordan,
 ## same regularized system, correct but not SPD-accelerated).
 
 ## Same apron reach as MT/DC.
@@ -69,7 +69,7 @@ static func stencil_radius_cells() -> int:
 ## gradients(offset(p,axis,pos)) call makes, ported directly: 8 extra
 ## density_fn evaluations (2 per axis), taken ONCE per unique crossing
 ## edge and cached (see _get_or_add_edge_crossing) - not free the way
-## DualContour4D's single cell-wide corner-difference gradient is, but the
+## SingleVertexDualContour4D's single cell-wide corner-difference gradient is, but the
 ## whole point: a per-cell-relative shortcut is exactly what produced
 ## disagreeing cross-cell normals in v1.
 static func _gradient_at(pos: Vector4, density_fn: Callable, epsilon: Vector4) -> Vector4:
@@ -172,7 +172,7 @@ static func _connect_face(axis: int, axis2: int, ints: Array, connections: Array
 			prev = it
 
 ## The general (bounds_min, bounds_max, nx, ny, nz, nw) entry point - see
-## v1's own header for why this shape (mirrors DualContour4D.generate()
+## v1's own header for why this shape (mirrors SingleVertexDualContour4D.generate()
 ## exactly, including independent per-axis point counts needed to run the
 ## historical non-cubic crack-test grids).
 static func generate(bounds_min: Vector4, bounds_max: Vector4, nx: int, ny: int, nz: int, nw: int, density_fn: Callable, qef_regularization: float = 0.15, world_step: Vector4 = Vector4.ZERO) -> Dictionary:
@@ -197,7 +197,7 @@ static func generate(bounds_min: Vector4, bounds_max: Vector4, nx: int, ny: int,
 				var base_ijk := ((i * ny + j) * nz + k) * nw
 				for l in range(nw):
 					var pos := bounds_min + Vector4(i * step.x, j * step.y, k * step.z, l * step.w)
-					DualContour4D._write_density(density, base_ijk + l, density_fn.call(pos))
+					SingleVertexDualContour4D._write_density(density, base_ijk + l, density_fn.call(pos))
 
 	var nx1 := nx - 1
 	var ny1 := ny - 1
@@ -238,7 +238,7 @@ static func generate(bounds_min: Vector4, bounds_max: Vector4, nx: int, ny: int,
 								for bl in range(2):
 									var gl := l + bl
 									var ci := bi * 8 + bj * 4 + bk * 2 + bl
-									corner_density[ci] = DualContour4D._read_density(density, base_gigjgk + gl)
+									corner_density[ci] = SingleVertexDualContour4D._read_density(density, base_gigjgk + gl)
 									corner_pos[ci] = bounds_min + Vector4(gi * step.x, gj * step.y, gk * step.z, gl * step.w)
 									corner_gidx[ci] = base_gigjgk + gl
 					var min_d: float = corner_density[0]
@@ -327,7 +327,7 @@ static func generate(bounds_min: Vector4, bounds_max: Vector4, nx: int, ny: int,
 						multi_vertex_cell_count += 1
 
 					# --- One QEF vertex per component - same accumulation
-					# DualContour4D itself uses, generalized to sum over
+					# SingleVertexDualContour4D itself uses, generalized to sum over
 					# the component's own (shared, cached) per-edge
 					# normals/positions. ---
 					var cidx := ((i * ny1 + j) * nz1 + k) * nw1 + l
@@ -359,7 +359,7 @@ static func generate(bounds_min: Vector4, bounds_max: Vector4, nx: int, ny: int,
 						ata3.w += qef_regularization
 						atb += mass * qef_regularization
 
-						var solved: Vector4 = DualContour4D._solve_4x4([ata0, ata1, ata2, ata3], atb)
+						var solved: Vector4 = SingleVertexDualContour4D._solve_4x4([ata0, ata1, ata2, ata3], atb)
 						if not solved.is_finite():
 							solved = mass
 						var lo: Vector4 = corner_pos[0]
@@ -386,7 +386,7 @@ static func generate(bounds_min: Vector4, bounds_max: Vector4, nx: int, ny: int,
 					cell_edge_vertex[cidx] = edge_vertex
 					active_cell_count += 1
 
-	# --- Dual-cube tet assembly - DualContour4D's own phase 3, unchanged,
+	# --- Dual-cube tet assembly - SingleVertexDualContour4D's own phase 3, unchanged,
 	# except the per-surrounding-cell vertex lookup resolves via the
 	# edge's own local key into that cell's edge_vertex Dictionary. ---
 	var out_indices := PackedInt32Array()
@@ -413,7 +413,7 @@ static func generate(bounds_min: Vector4, bounds_max: Vector4, nx: int, ny: int,
 					for axis in range(4):
 						if g[axis] > counts[axis] - 2:
 							continue
-						var others: Array = DualContour4D.OTHER_AXES[axis]
+						var others: Array = SingleVertexDualContour4D.OTHER_AXES[axis]
 						var ok := true
 						for oa in others:
 							if g[oa] < 1 or g[oa] > counts[oa] - 2:
@@ -421,8 +421,8 @@ static func generate(bounds_min: Vector4, bounds_max: Vector4, nx: int, ny: int,
 								break
 						if not ok:
 							continue
-						var d1: float = DualContour4D._read_density(density, base_index)
-						var d2: float = DualContour4D._read_density(density, base_index + strides[axis])
+						var d1: float = SingleVertexDualContour4D._read_density(density, base_index)
+						var d2: float = SingleVertexDualContour4D._read_density(density, base_index + strides[axis])
 						if (d1 < 0.0) == (d2 < 0.0):
 							continue
 						crossing_edge_count += 1
@@ -464,21 +464,21 @@ static func generate(bounds_min: Vector4, bounds_max: Vector4, nx: int, ny: int,
 							continue
 
 						var min_condition_main := INF
-						for tet in DualContour4D.TET_CORNERS:
+						for tet in SingleVertexDualContour4D.TET_CORNERS:
 							var p0m: Vector4 = corner_positions8[tet[0]]
-							min_condition_main = minf(min_condition_main, DualContour4D._tet_condition(
+							min_condition_main = minf(min_condition_main, SingleVertexDualContour4D._tet_condition(
 								corner_positions8[tet[1]] - p0m, corner_positions8[tet[2]] - p0m, corner_positions8[tet[3]] - p0m
 							))
-						var chosen_decomposition: Array = DualContour4D.TET_CORNERS
+						var chosen_decomposition: Array = SingleVertexDualContour4D.TET_CORNERS
 						if min_condition_main < 0.3:
 							var min_condition_alt := INF
-							for tet in DualContour4D.TET_CORNERS_ALT:
+							for tet in SingleVertexDualContour4D.TET_CORNERS_ALT:
 								var p0a: Vector4 = corner_positions8[tet[0]]
-								min_condition_alt = minf(min_condition_alt, DualContour4D._tet_condition(
+								min_condition_alt = minf(min_condition_alt, SingleVertexDualContour4D._tet_condition(
 									corner_positions8[tet[1]] - p0a, corner_positions8[tet[2]] - p0a, corner_positions8[tet[3]] - p0a
 								))
 							if min_condition_alt > min_condition_main:
-								chosen_decomposition = DualContour4D.TET_CORNERS_ALT
+								chosen_decomposition = SingleVertexDualContour4D.TET_CORNERS_ALT
 
 						var dual_cube_id := next_dual_cube_id
 						next_dual_cube_id += 1
@@ -499,7 +499,7 @@ static func generate(bounds_min: Vector4, bounds_max: Vector4, nx: int, ny: int,
 							var edge1 := p1 - p0
 							var edge2 := p2 - p0
 							var edge3 := p3 - p0
-							if DualContour4D._tet_condition(edge1, edge2, edge3) <= 0.01:
+							if SingleVertexDualContour4D._tet_condition(edge1, edge2, edge3) <= 0.01:
 								skipped_degenerate_tet_count += 1
 								continue
 							var perp := Vector4D.perpendicular(edge1, edge2, edge3)

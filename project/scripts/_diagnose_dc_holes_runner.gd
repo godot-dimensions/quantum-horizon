@@ -1,7 +1,7 @@
 extends Node
 ## TEMPORARY - root-cause diagnosis ONLY (no fixes) for the gap/spike
 ## defect confirmed in terrain4d_test.tscn, which reproduces in the
-## UNTOUCHED single-monolithic-grid DualContour4D.generate() path (no
+## UNTOUCHED single-monolithic-grid SingleVertexDualContour4D.generate() path (no
 ## bricking involved at all).
 ##
 ## Part A: renders the native-port correctness suite's small "real
@@ -10,7 +10,7 @@ extends Node
 ##
 ## Part B: runs the EXACT terrain_generator.gd density/grid (same
 ## noise_seed/frequency/amplitude/persistence, same smooth_max box-closing,
-## same 21x16x21x21 resolution) through DualContour4D.generate(), then
+## same 21x16x21x21 resolution) through SingleVertexDualContour4D.generate(), then
 ## builds a face-adjacency histogram over the returned tet_vertex_indices:
 ## for a closed/watertight tetrahedral hypersurface, every triangular FACE
 ## of every tet should be shared by EXACTLY 2 tets (the 4D analog of "every
@@ -278,7 +278,7 @@ func _run() -> void:
 	# elevated.
 	print("=== PART C (CONTROL): plain sphere SDF, no smooth_max/noise, 24^4 grid ===")
 	var t0c := Time.get_ticks_usec()
-	var result_c: Dictionary = DualContour4D.generate(Vector4(-6, -6, -6, -6), Vector4(6, 6, 6, 6), 24, 24, 24, 24, Callable(self, "_control_sphere_density"), 0.15)
+	var result_c: Dictionary = SingleVertexDualContour4D.generate(Vector4(-6, -6, -6, -6), Vector4(6, 6, 6, 6), 24, 24, 24, 24, Callable(self, "_control_sphere_density"), 0.15)
 	print("generate() wall time: %.2f s" % [(Time.get_ticks_usec() - t0c) / 1000000.0])
 	_analyze_faces(result_c, "PART C control sphere SDF (24^4)")
 
@@ -290,14 +290,14 @@ func _run() -> void:
 	var step_a := 0.75
 	var bounds_min_a := Vector4.ZERO
 	var bounds_max_a := Vector4(5.0 * step_a, 5.0 * step_a, 5.0 * step_a, 5.0 * step_a)
-	var result_a: Dictionary = DualContour4D.generate(bounds_min_a, bounds_max_a, 6, 6, 6, 6, Callable(self, "_ready_fixture_density"), 0.15, Vector4(step_a, step_a, step_a, step_a))
+	var result_a: Dictionary = SingleVertexDualContour4D.generate(bounds_min_a, bounds_max_a, 6, 6, 6, 6, Callable(self, "_ready_fixture_density"), 0.15, Vector4(step_a, step_a, step_a, step_a))
 	var hole_centroids_a: Array = _analyze_faces(result_a, "PART A small fixture (6^4), same as verify suite CASE 2")
 	for i in range(mini(2, hole_centroids_a.size())):
 		_dump_cell_diagnostics(Callable(self, "_ready_fixture_density"), hole_centroids_a[i], Vector4(step_a, step_a, step_a, step_a), "PART A CASE 2 hole cluster #%d" % [i])
 
 	var bounds_min_a3 := Vector4(3.0 * step_a, -2.0 * step_a, 7.0 * step_a, -4.0 * step_a)
 	var bounds_max_a3 := bounds_min_a3 + Vector4(5.0 * step_a, 5.0 * step_a, 5.0 * step_a, 5.0 * step_a)
-	var result_a3: Dictionary = DualContour4D.generate(bounds_min_a3, bounds_max_a3, 6, 6, 6, 6, Callable(self, "_ready_fixture_density"), 0.15, Vector4(step_a, step_a, step_a, step_a))
+	var result_a3: Dictionary = SingleVertexDualContour4D.generate(bounds_min_a3, bounds_max_a3, 6, 6, 6, 6, Callable(self, "_ready_fixture_density"), 0.15, Vector4(step_a, step_a, step_a, step_a))
 	var hole_centroids_a3: Array = _analyze_faces(result_a3, "PART A offset fixture (6^4), same as verify suite CASE 3")
 	for i in range(mini(2, hole_centroids_a3.size())):
 		_dump_cell_diagnostics(Callable(self, "_ready_fixture_density"), hole_centroids_a3[i], Vector4(step_a, step_a, step_a, step_a), "PART A CASE 3 hole cluster #%d" % [i])
@@ -327,7 +327,7 @@ func _run() -> void:
 	)
 	print("step_b=%s" % [step_b])
 	var t0 := Time.get_ticks_usec()
-	var result_b: Dictionary = DualContour4D.generate(bounds_min_b, bounds_max_b, RES_H, RES_V, RES_H, RES_H, Callable(self, "get_density"), QEF_REGULARIZATION)
+	var result_b: Dictionary = SingleVertexDualContour4D.generate(bounds_min_b, bounds_max_b, RES_H, RES_V, RES_H, RES_H, Callable(self, "get_density"), QEF_REGULARIZATION)
 	print("generate() wall time: %.2f s" % [(Time.get_ticks_usec() - t0) / 1000000.0])
 	var hole_centroids: Array = _analyze_faces(result_b, "PART B terrain_generator.gd exact repro")
 

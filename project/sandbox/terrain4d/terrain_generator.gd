@@ -1,5 +1,5 @@
 extends StaticBody4D
-## Procedurally generates a small 4D voxel terrain chunk via DualContour4D +
+## Procedurally generates a small 4D voxel terrain chunk via SingleVertexDualContour4D +
 ## Noise4D, builds it into an ArrayTetraMesh4D (single flat material - no
 ## multi-material blending, per spike scope), and derives a walkable
 ## ConcaveMeshShape4D collision shape from the same mesh.
@@ -61,7 +61,7 @@ func _box_density(p: Vector4) -> float:
 ## whatever density function it's given, so a real kink there gives a
 ## poor/inconsistent gradient right at the cap-meets-wall seam, which was a
 ## plausible contributor to leftover mesh holes beyond what adaptive
-## diagonal selection (see DualContour4D) already fixed.
+## diagonal selection (see SingleVertexDualContour4D) already fixed.
 static func _smooth_max(a: float, b: float, k: float) -> float:
 	if k <= 0.0:
 		return maxf(a, b)
@@ -86,7 +86,7 @@ func get_density(p: Vector4) -> float:
 func regenerate() -> void:
 	var bounds_min := Vector4(-bounds_half_extent_horizontal, bounds_min_y, -bounds_half_extent_horizontal, -bounds_half_extent_horizontal)
 	var bounds_max := Vector4(bounds_half_extent_horizontal, bounds_max_y, bounds_half_extent_horizontal, bounds_half_extent_horizontal)
-	var result := DualContour4D.generate(
+	var result := SingleVertexDualContour4D.generate(
 		bounds_min, bounds_max,
 		resolution_horizontal, resolution_vertical, resolution_horizontal, resolution_horizontal,
 		Callable(self, "get_density"), qef_regularization

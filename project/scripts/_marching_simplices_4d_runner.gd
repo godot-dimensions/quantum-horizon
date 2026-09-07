@@ -8,7 +8,7 @@ extends Node
 ## does this reproduce the holes/cracks, or not?
 ##
 ## Algorithm: each 4D grid cell (a 16-corner tesseract, the SAME
-## corner_density[16] gather DualContour4D already does) is split into
+## corner_density[16] gather SingleVertexDualContour4D already does) is split into
 ## 4! = 24 four-simplices via the standard Kuhn/Freudenthal cube
 ## triangulation - the SAME construction TET_CORNERS/TET_CORNERS_ALT
 ## already use for 3!=6 in the 3D case, just carried one dimension further.
@@ -175,7 +175,7 @@ func _simplex_to_tets(sc: Array, corner_pos: Array, corner_density: Array, corne
 		[v00, v10, v11, v12],
 	]
 
-## Same overall shape/signature as DualContour4D.generate(), but the
+## Same overall shape/signature as SingleVertexDualContour4D.generate(), but the
 ## returned dict only has what this comparison needs, plus mt_simplex_stats
 ## (the sign-classification audit) and unique_vertex_count (post-welding).
 ## alternate_scheme=false (default) reproduces the original, single-anchor
@@ -246,7 +246,7 @@ func generate_mt(bounds_min: Vector4, bounds_max: Vector4, nx: int, ny: int, nz:
 						simplices_for_this_cell = _simplices_anchor1
 
 					# One crude per-cell "normal" (central-difference gradient,
-					# same style as DualContour4D._axis_gradient) shared by
+					# same style as SingleVertexDualContour4D._axis_gradient) shared by
 					# every vertex emitted from this cell - good enough for a
 					# throwaway visual, not meant to be exact. Independent of
 					# welding: the engine currently ignores per-vertex normals

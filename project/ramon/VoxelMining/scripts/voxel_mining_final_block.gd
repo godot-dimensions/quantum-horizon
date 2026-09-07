@@ -201,7 +201,7 @@ func _refresh_palette() -> void:
 ## instead of world altitude, and the palette is this instance's own. Forked
 ## whole because the base builds the mesh and its UVW map in one pass with no
 ## per-vertex hook to override.
-func _build_mesh(contour: DualContour4D, center: float) -> ArrayTetraMesh4D:
+func _build_mesh(contour: MultiVertexDualContour4D, center: float) -> ArrayTetraMesh4D:
 	if contour.ground_cells.is_empty():
 		return null
 

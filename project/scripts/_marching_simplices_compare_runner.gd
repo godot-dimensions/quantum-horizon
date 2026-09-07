@@ -127,7 +127,7 @@ func _run_case(bounds_min: Vector4, bounds_max: Vector4, nx: int, ny: int, nz: i
 	var density_fn: Callable = get_density_fn_factory.call(terrain)
 
 	var t0 := Time.get_ticks_usec()
-	var dc_result: Dictionary = DualContour4D.generate(bounds_min, bounds_max, nx, ny, nz, nw, density_fn, 0.15)
+	var dc_result: Dictionary = SingleVertexDualContour4D.generate(bounds_min, bounds_max, nx, ny, nz, nw, density_fn, 0.15)
 	print("DC generate() wall time: %.2f s" % [(Time.get_ticks_usec() - t0) / 1000000.0])
 	_face_adjacency_summary(dc_result, label + " [Dual Contouring]")
 

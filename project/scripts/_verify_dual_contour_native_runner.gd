@@ -1,5 +1,5 @@
 extends Node
-## TEMPORARY - verifies DualContour4D.generate_native() (native QEF-solve/
+## TEMPORARY - verifies SingleVertexDualContour4D.generate_native() (native QEF-solve/
 ## gradient/tet-assembly port, see engine/modules/4d/math/
 ## dual_contour_native_4d.h/.cpp) against generate() (the existing,
 ## trusted GDScript implementation) on IDENTICAL input, before trusting
@@ -107,8 +107,8 @@ func _ready() -> void:
 	# Case 1: small hand-designed SDF, few cells, easy to reason about.
 	var bounds_min1 := Vector4(-3.0, -3.0, -3.0, -3.0)
 	var bounds_max1 := Vector4(3.0, 3.0, 3.0, 3.0)
-	var gd1 := DualContour4D.generate(bounds_min1, bounds_max1, 6, 6, 6, 6, Callable(self, "_sphere_density"), 0.15)
-	var native1 := DualContour4D.generate_native(bounds_min1, bounds_max1, 6, 6, 6, 6, Callable(self, "_sphere_density"), 0.15)
+	var gd1 := SingleVertexDualContour4D.generate(bounds_min1, bounds_max1, 6, 6, 6, 6, Callable(self, "_sphere_density"), 0.15)
+	var native1 := SingleVertexDualContour4D.generate_native(bounds_min1, bounds_max1, 6, 6, 6, 6, Callable(self, "_sphere_density"), 0.15)
 	overall_ok = _compare("CASE 1: small SDF sphere, 6^4 grid", gd1, native1) and overall_ok
 
 	# Case 2: real production-shaped brick - same step/grid size/density
@@ -117,8 +117,8 @@ func _ready() -> void:
 	var step := 0.75
 	var bounds_min2 := Vector4.ZERO
 	var bounds_max2 := Vector4(5.0 * step, 5.0 * step, 5.0 * step, 5.0 * step)
-	var gd2 := DualContour4D.generate(bounds_min2, bounds_max2, 6, 6, 6, 6, Callable(self, "_heightfield_density"), 0.15, Vector4(step, step, step, step))
-	var native2 := DualContour4D.generate_native(bounds_min2, bounds_max2, 6, 6, 6, 6, Callable(self, "_heightfield_density"), 0.15, Vector4(step, step, step, step))
+	var gd2 := SingleVertexDualContour4D.generate(bounds_min2, bounds_max2, 6, 6, 6, 6, Callable(self, "_heightfield_density"), 0.15, Vector4(step, step, step, step))
+	var native2 := SingleVertexDualContour4D.generate_native(bounds_min2, bounds_max2, 6, 6, 6, 6, Callable(self, "_heightfield_density"), 0.15, Vector4(step, step, step, step))
 	overall_ok = _compare("CASE 2: real production heightfield brick, 6^4 grid", gd2, native2) and overall_ok
 
 	# Case 3: a second brick offset by a non-trivial amount, to exercise
@@ -128,8 +128,8 @@ func _ready() -> void:
 	# main-vs-alt tet decomposition mix).
 	var bounds_min3 := Vector4(3.0 * step, -2.0 * step, 7.0 * step, -4.0 * step)
 	var bounds_max3 := bounds_min3 + Vector4(5.0 * step, 5.0 * step, 5.0 * step, 5.0 * step)
-	var gd3 := DualContour4D.generate(bounds_min3, bounds_max3, 6, 6, 6, 6, Callable(self, "_heightfield_density"), 0.15, Vector4(step, step, step, step))
-	var native3 := DualContour4D.generate_native(bounds_min3, bounds_max3, 6, 6, 6, 6, Callable(self, "_heightfield_density"), 0.15, Vector4(step, step, step, step))
+	var gd3 := SingleVertexDualContour4D.generate(bounds_min3, bounds_max3, 6, 6, 6, 6, Callable(self, "_heightfield_density"), 0.15, Vector4(step, step, step, step))
+	var native3 := SingleVertexDualContour4D.generate_native(bounds_min3, bounds_max3, 6, 6, 6, 6, Callable(self, "_heightfield_density"), 0.15, Vector4(step, step, step, step))
 	overall_ok = _compare("CASE 3: real production heightfield brick, offset location", gd3, native3) and overall_ok
 
 	print("OVERALL_ALL_CASES_OK: %s" % [overall_ok])

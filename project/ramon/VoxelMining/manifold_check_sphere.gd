@@ -42,7 +42,7 @@ func _init() -> void:
 		1.0)
 
 	print("--- base sphere ---")
-	var base_contour := DualContour4D.new(field)
+	var base_contour := MultiVertexDualContour4D.new(field)
 	base_contour.generate()
 	_report(base_contour)
 
@@ -50,7 +50,7 @@ func _init() -> void:
 
 	print("")
 	print("--- after %d carves (a real mining session) ---" % CARVE_COUNT)
-	var mined_contour := DualContour4D.new(field)
+	var mined_contour := MultiVertexDualContour4D.new(field)
 	mined_contour.generate()
 	_report(mined_contour)
 
@@ -115,7 +115,7 @@ func _touches_air(field: VoxelField4D, p: Vector4i) -> bool:
 	return false
 
 
-func _report(contour: DualContour4D) -> void:
+func _report(contour: MultiVertexDualContour4D) -> void:
 	var vertices: PackedVector4Array = contour.vertices
 	var ground: PackedInt32Array = contour.ground_cells
 

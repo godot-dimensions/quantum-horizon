@@ -11,7 +11,7 @@ extends RefCounted
 ## bug), while this algorithm measured EXACTLY 0.0% unpaired faces at
 ## every resolution tested, including the coarse, production-realistic
 ## grid sizes this brick system actually uses (6^4, matching
-## ACTUAL_POINTS_PER_AXIS below). DualContour4D/generate_native() and
+## ACTUAL_POINTS_PER_AXIS below). SingleVertexDualContour4D/generate_native() and
 ## TerrainMeshBackendDC are left in place, unreferenced by VoxelWorld4D,
 ## as the trusted prior implementation - not deleted.
 ##
@@ -209,7 +209,7 @@ static func _sum_where(corner_density: Array, bitmask: int, invert: bool = false
 ## identical crashes, unchanged. So the real mechanism isn't "two crossing
 ## points snap to the same corner" - it's 4 genuinely DISTINCT points that
 ## are (near-)coplanar, i.e. an actual zero-volume simplex, which only a
-## real volume/conditioning test can catch. Reuses DualContour4D's
+## real volume/conditioning test can catch. Reuses SingleVertexDualContour4D's
 ## _tet_condition() formula (scale-invariant: built from normalized edge
 ## directions, so it means the same thing regardless of world_step).
 ##
@@ -255,7 +255,7 @@ static func _tet_condition(edge1: Vector4, edge2: Vector4, edge3: Vector4) -> fl
 ## axis - in practice a brick's own VoxelBrick4D.stored_density_fn(), so
 ## edits (which mutate that stored array) are respected. world_step is
 ## used DIRECTLY (never re-derived by dividing a bounds span), matching
-## DualContour4D.generate_native()'s own convention - the whole reason
+## SingleVertexDualContour4D.generate_native()'s own convention - the whole reason
 ## VoxelWorld4D threads one shared world_origin/step through every brick
 ## is bit-reproducible grid-point math across independently generated
 ## bricks, and re-deriving step by division would silently defeat that
@@ -347,7 +347,7 @@ static func generate_brick_mesh(bounds_min: Vector4, world_step: Vector4, points
 							var p3: Vector4 = out_positions[idxs[3]]
 							# Canonicalize winding order against the KNOWN-correct
 							# outward (solid -> air) direction `n`, mirroring
-							# DualContour4D.generate()'s own established technique
+							# SingleVertexDualContour4D.generate()'s own established technique
 							# (see its comment near its own perp/ref_normal swap) -
 							# NOT for simplex_cell_boundary_normals (confirmed
 							# unused by the Cross-section render shader, only

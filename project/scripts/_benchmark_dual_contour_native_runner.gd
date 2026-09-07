@@ -1,5 +1,5 @@
 extends Node
-## TEMPORARY - benchmarks DualContour4D.generate_native() (native QEF-
+## TEMPORARY - benchmarks SingleVertexDualContour4D.generate_native() (native QEF-
 ## solve/gradient/tet-assembly, see dual_contour_native_4d.h/.cpp) against
 ## generate() (GDScript), ONLY after _verify_dual_contour_native_runner.gd
 ## confirmed identical output on 3 cases (including catching and fixing a
@@ -87,8 +87,8 @@ func _run() -> void:
 				for bw in range(-W, W + 1):
 					var coord := Vector4i(bx, by, bz, bw)
 					var bounds: Dictionary = _brick_actual_bounds(coord, step)
-					var gd_result: Dictionary = DualContour4D.generate(bounds.min, bounds.max, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, Callable(self, "_density"), 0.15, step)
-					var native_result: Dictionary = DualContour4D.generate_native(bounds.min, bounds.max, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, Callable(self, "_density"), 0.15, step)
+					var gd_result: Dictionary = SingleVertexDualContour4D.generate(bounds.min, bounds.max, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, Callable(self, "_density"), 0.15, step)
+					var native_result: Dictionary = SingleVertexDualContour4D.generate_native(bounds.min, bounds.max, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, Callable(self, "_density"), 0.15, step)
 					total_bricks += 1
 					total_active_cells += int(gd_result.active_cell_count)
 					n += 1
@@ -129,7 +129,7 @@ func _run() -> void:
 				for bw in range(-W, W + 1):
 					var coord := Vector4i(bx, by, bz, bw)
 					var bounds: Dictionary = _brick_actual_bounds(coord, step)
-					DualContour4D.generate(bounds.min, bounds.max, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, Callable(self, "_density"), 0.15, step)
+					SingleVertexDualContour4D.generate(bounds.min, bounds.max, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, Callable(self, "_density"), 0.15, step)
 					n += 1
 					_ping("macro gdscript %d/%d bricks" % [n, sweep_total])
 	var t_gdscript_total := Time.get_ticks_usec() - t0
@@ -142,7 +142,7 @@ func _run() -> void:
 				for bw in range(-W, W + 1):
 					var coord := Vector4i(bx, by, bz, bw)
 					var bounds: Dictionary = _brick_actual_bounds(coord, step)
-					DualContour4D.generate_native(bounds.min, bounds.max, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, Callable(self, "_density"), 0.15, step)
+					SingleVertexDualContour4D.generate_native(bounds.min, bounds.max, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, ACTUAL_POINTS_PER_AXIS, Callable(self, "_density"), 0.15, step)
 					n += 1
 					_ping("macro native %d/%d bricks" % [n, sweep_total])
 	var t_native_total := Time.get_ticks_usec() - t0

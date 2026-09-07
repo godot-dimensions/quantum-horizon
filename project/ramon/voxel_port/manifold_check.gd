@@ -10,7 +10,7 @@ extends SceneTree
 ##                 tetrahedra that meet perfectly in space but happen to name
 ##                 the same corner with different vertex ids - which the
 ##                 contour deliberately produces, since it emits one vertex
-##                 per material pair (see DualContour4D._emit_component_vertex).
+##                 per material pair (see MultiVertexDualContour4D._emit_component_vertex).
 ##
 ##   by position - a face is identified by its three vertex POSITIONS, so
 ##                 coincident-but-distinct vertices collapse together. This is
@@ -63,7 +63,7 @@ func _init() -> void:
 	for model_name in terrain.selected_model_names():
 		if not terrain._add_model_layer(field, model_name, GRID_SIZE):
 			push_error("unknown model layer '%s'" % model_name)
-	var contour := DualContour4D.new(field)
+	var contour := MultiVertexDualContour4D.new(field)
 	contour.generate()
 	terrain.free()
 
@@ -71,7 +71,7 @@ func _init() -> void:
 	quit()
 
 
-func _report(contour: DualContour4D) -> void:
+func _report(contour: MultiVertexDualContour4D) -> void:
 	var vertices: PackedVector4Array = contour.vertices
 	var ground: PackedInt32Array = contour.ground_cells
 	var water: PackedInt32Array = contour.water_cells

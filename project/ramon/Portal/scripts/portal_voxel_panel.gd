@@ -1,6 +1,6 @@
 extends Node4D
 ## One portalable panel: a destructible dual-contoured 4D slab you can shoot
-## holes in, built on [VoxelField4D]/[DualContour4D] from
+## holes in, built on [VoxelField4D]/[MultiVertexDualContour4D] from
 ## project/ramon/voxel_port/ exactly the way VoxelMining's block does - a
 ## persistent field with carves added as further AIR layers, plus one
 ## [BoxShape4D] per solid grid point on the surface so a hit resolves to an
@@ -138,7 +138,7 @@ func carve_at_shape(shape: CollisionShape4D, radius_metres: float) -> bool:
 
 func _remesh() -> void:
 	var started_usec: int = Time.get_ticks_usec()
-	var contour := DualContour4D.new(field)
+	var contour := MultiVertexDualContour4D.new(field)
 	contour.generate()
 	var center: float = float(field.size - 1) * 0.5
 	_mesh_instance.mesh = _build_mesh(contour, center)
@@ -147,7 +147,7 @@ func _remesh() -> void:
 	last_remesh_msec = float(Time.get_ticks_usec() - started_usec) / 1000.0
 
 
-func _build_mesh(contour: DualContour4D, center: float) -> ArrayTetraMesh4D:
+func _build_mesh(contour: MultiVertexDualContour4D, center: float) -> ArrayTetraMesh4D:
 	if contour.ground_cells.is_empty():
 		return null
 

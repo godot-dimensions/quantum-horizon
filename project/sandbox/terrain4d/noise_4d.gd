@@ -3,7 +3,7 @@ extends RefCounted
 ## Hash-based 4D value noise with multilinear (16-corner) interpolation and
 ## fractal octave summation. No dependency on any external noise library -
 ## this project has no 4D-capable noise generator, so this hand-rolls the
-## minimum needed to drive DualContour4D's density field.
+## minimum needed to drive SingleVertexDualContour4D's density field.
 ##
 ## Performance note: this is called once per grid point per octave (so
 ## tens of millions of times for a full terrain generation), so the hot

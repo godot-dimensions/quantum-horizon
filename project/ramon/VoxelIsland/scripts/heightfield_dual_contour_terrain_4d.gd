@@ -1,4 +1,5 @@
 @tool
+class_name HeightfieldDualContourTerrain4D
 extends MeshInstance4D
 ## Generates a semi-fractal 4D island via dual contouring on a heightmap SDF:
 ## y = height(x, z, w), where height is fractal (fBm) noise shaped by a
