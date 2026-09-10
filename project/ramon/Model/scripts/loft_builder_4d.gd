@@ -193,6 +193,7 @@ static func build(sections: Array, rings: int, sides: int, taper_ends: bool, ver
 	var watertight: bool = check_watertight(cells, verbose)
 	var flipped: int = make_winding_consistent(cells, positions, verbose)
 	check_not_folded(cells, positions, sections, verbose)
+	check_no_slivers(cells, positions, vertex_section, verbose)
 	if verbose:
 		print("[Loft] %d sections, %d vertices, %d tetrahedra, %d flipped, watertight=%s" % [
 			sections.size(), positions.size(), cells.size() / 4, flipped, watertight
@@ -484,6 +485,72 @@ static func check_not_folded(cells: PackedInt32Array, positions: PackedVector4Ar
 	push_warning("[Loft] FOLDED THROUGH ITSELF: %d of %d tetrahedra (%.0f%%) face inwards - the bend is too sharp for sections this thick. Space the balls further apart, shrink them, or bend less." % [
 		folded, cell_count, 100.0 * float(folded) / float(cell_count)])
 	return false
+
+
+## Warns when the model contains SLIVERS - tetrahedra so flat that the engine cannot
+## build its closest-point cache for them.
+##
+## WHY THIS MATTERS, and why none of the other three checks see it: a sliver is a
+## perfectly valid cell. It is watertight, correctly wound, and not folded. But
+## `TetraMesh4D::populate_inverse_metric_cache` inverts each cell's metric, and a flat
+## cell has no inverse - so on meeting ONE it prints an error and throws the ENTIRE
+## cache away (tetra_mesh_4d.cpp:49). That cache is what 4D raycasts use, and what the
+## editor uses to click-pick a model (editor_main_viewport_4d.cpp:268), so a single
+## bad cell out of ten thousand makes a whole model unselectable and unshootable.
+##
+## WHERE THEY COME FROM: splitting a triangular prism into 3 tetrahedra always
+## produces two with three corners on one layer and only one on the other. Stretch
+## that prism - balls far apart relative to how wide the sections are - and those two
+## become long thin spikes. It shows up first at the profile's poles, where the
+## triangles are smallest. This is inherent to lofting, not a mistake in the split:
+## the cure is more sections along the span, either more balls or more smoothing.
+##
+## The test is the ENGINE'S OWN, reproduced rather than approximated, so this can
+## never disagree with the error in the Output panel. It normalizes the three edges
+## before taking the determinant, which makes it a measure of SHAPE and not size - a
+## tiny cell is fine, a flat one is not, whatever the model's scale.
+static func check_no_slivers(cells: PackedInt32Array, positions: PackedVector4Array, vertex_section: PackedInt32Array, verbose: bool) -> bool:
+	var cell_count: int = cells.size() / 4
+	var slivers: int = 0
+	var worst: float = INF
+	var worst_section: int = 0
+	for cell in range(cell_count):
+		var a: Vector4 = positions[cells[cell * 4]]
+		var quality: float = _cell_shape(a,
+			positions[cells[cell * 4 + 1]],
+			positions[cells[cell * 4 + 2]],
+			positions[cells[cell * 4 + 3]])
+		if quality < worst:
+			worst = quality
+			worst_section = vertex_section[cells[cell * 4]]
+		# CMP_EPSILON, the cutoff in Geometry4D::compute_inverse_metric_3x3.
+		if quality <= 0.00001:
+			slivers += 1
+	if slivers == 0:
+		if verbose:
+			print("[Loft] No slivers: every tetrahedron has a shape the engine can invert (worst %.6f)." % worst)
+		return true
+	push_warning("[Loft] SLIVERS: %d of %d tetrahedra (%.1f%%) are too flat for the engine to build its closest-point cache, worst around section %d. The model still draws, but it cannot be clicked on or raycast against. The balls there are too far apart for how wide the sections are - add a ball on that span, or raise smoothing." % [
+		slivers, cell_count, 100.0 * float(slivers) / float(cell_count), worst_section])
+	return false
+
+
+## How far a tetrahedron is from flat, on the engine's own scale: the determinant of
+## the Gram matrix of its three edges after normalizing them. 1 is an ideal corner,
+## 0 is flat, and it does not change if the whole model is scaled.
+static func _cell_shape(a: Vector4, b: Vector4, c: Vector4, d: Vector4) -> float:
+	var edge1: Vector4 = b - a
+	var edge2: Vector4 = c - a
+	var edge3: Vector4 = d - a
+	var length1: float = edge1.length()
+	var length2: float = edge2.length()
+	var length3: float = edge3.length()
+	if length1 <= 0.0 or length2 <= 0.0 or length3 <= 0.0:
+		return 0.0
+	var n01: float = edge1.dot(edge2) / (length1 * length2)
+	var n02: float = edge1.dot(edge3) / (length1 * length3)
+	var n12: float = edge2.dot(edge3) / (length2 * length3)
+	return (1.0 - n12 * n12) + n01 * (n02 * n12 - n01) + n02 * (n01 * n12 - n02)
 
 
 ## Nearest point on the spine polyline. Snapping to the nearest ball instead leaves
