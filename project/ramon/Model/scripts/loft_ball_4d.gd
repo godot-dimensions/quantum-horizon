@@ -192,20 +192,27 @@ func _validate_property(property: Dictionary) -> void:
 ## the gizmo keeps its own reference frame intact. Committing it to the numbers is
 ## bake_basis_scale()'s job, and only once the drag has stopped.
 func get_loft_section() -> Dictionary:
-	var scale_u: float = basis.x.length()
-	var scale_v: float = basis.z.length()
-	var scale_w: float = basis.w.length()
-	if is_zero_approx(scale_u) or is_zero_approx(scale_v) or is_zero_approx(scale_w):
-		return {"center": position, "radius": radius, "v_scale": v_scale, "w_scale": w_scale,
-			"roll": roll, "squareness": squareness, "color": color}
+	# The BASIS IS HANDED OVER WHOLE rather than folded into the three numbers here.
+	#
+	# Folding it meant deciding which of the ball's local axes were the section's, and
+	# the answer was hard-coded as (X, Z, W) with Y assumed to run along the chain.
+	# That holds only for a spine that runs vertically. Once a body runs along Z - a
+	# goat's, say - the frame turns with it and Y becomes a genuine section axis, so
+	# scaling a ball vertically did nothing at all while the gizmo's W handle silently
+	# drove its height instead.
+	#
+	# The builder knows the real frame, so it applies this basis to the finished
+	# cross-section. That is exact for any orientation, and identical to the old
+	# behaviour whenever the frame is the unaligned one.
 	return {
 		"center": position,
-		"radius": radius * scale_u,
-		"v_scale": v_scale * scale_v / scale_u,
-		"w_scale": w_scale * scale_w / scale_u,
+		"radius": radius,
+		"v_scale": v_scale,
+		"w_scale": w_scale,
 		"roll": roll,
 		"squareness": squareness,
 		"color": color,
+		"basis": basis,
 	}
 
 
@@ -228,21 +235,30 @@ func get_loft_section() -> Dictionary:
 ## The Y column is deliberately ignored: a cross-section has no thickness along the
 ## spine, so scaling a ball vertically has nothing to act on.
 func bake_basis_scale() -> void:
-	var scale_u: float = basis.x.length()
-	var scale_v: float = basis.z.length()
-	var scale_w: float = basis.w.length()
+	# Measured against the section's ACTUAL axes, which the rig stored here on the last
+	# build, rather than against a fixed guess. A chain that runs along Z has its
+	# section axes turned to (X, W, Y), so scaling along the ball's local Y is a real
+	# widening there while being meaningless on a vertical chain - and only the frame
+	# knows which case this is.
+	if _preview_frame.size() < 4:
+		push_warning("Loft ball '%s' has not been built yet, so its section axes are unknown - press Build first." % name)
+		return
+	var scale_u: float = (basis * (_preview_frame[0] as Vector4)).length()
+	var scale_v: float = (basis * (_preview_frame[1] as Vector4)).length()
+	var scale_w: float = (basis * (_preview_frame[2] as Vector4)).length()
 	if is_zero_approx(scale_u) or is_zero_approx(scale_v) or is_zero_approx(scale_w):
 		return
-	# Scaling ONLY along Y is silently meaningless, and silence is the problem: it
-	# looks like the tool is refusing to make the section bigger. Y runs along the
-	# chain, and a cross-section has no thickness in that direction - to lengthen a
-	# region, move the balls apart instead.
-	var only_along_chain: bool = is_equal_approx(scale_u, 1.0) and is_equal_approx(scale_v, 1.0) and is_equal_approx(scale_w, 1.0)
-	if only_along_chain and not is_equal_approx(basis.y.length(), 1.0):
-		push_warning("Loft ball '%s' was scaled only along Y, which does nothing - a cross-section has no thickness along the chain. Scale it sideways, raise its radius, or move the neighbouring balls apart." % name)
-		basis = Projection.IDENTITY
-		return
-	if is_equal_approx(scale_u, 1.0) and is_equal_approx(scale_v, 1.0) and is_equal_approx(scale_w, 1.0):
+	# Scaling ALONG THE CHAIN is the one direction that really is meaningless, and
+	# silence about it looks like the tool refusing to work: a cross-section has no
+	# thickness in the direction it is swept. To lengthen a region, move the balls
+	# apart instead. Note this is the tangent, not Y - on a horizontal body Y widens.
+	var unchanged: bool = (is_equal_approx(scale_u, 1.0) and is_equal_approx(scale_v, 1.0)
+		and is_equal_approx(scale_w, 1.0))
+	if unchanged:
+		var along_chain: float = (basis * (_preview_frame[3] as Vector4)).length()
+		if not is_equal_approx(along_chain, 1.0):
+			push_warning("Loft ball '%s' was scaled only along the chain, which does nothing - a cross-section has no thickness in the direction it is swept. Scale it across the chain, raise its radius, or move the neighbouring balls apart." % name)
+			basis = Projection.IDENTITY
 		return
 	# v_scale and w_scale are relative to radius, so they only take the part of
 	# their own scaling that radius has not already absorbed.

@@ -350,11 +350,19 @@ func _section_signature() -> PackedFloat64Array:
 	for child in _all_balls(self):
 		var section: Dictionary = child.get_loft_section()
 		var center: Vector4 = section["center"]
+		# The WHOLE basis, all sixteen numbers, not a few axis lengths. Recording only
+		# the X, Z and W lengths meant a ball scaled along Y produced an identical
+		# signature, so no rebuild was even attempted - the gizmo appeared dead. Axis
+		# lengths also miss a ball being rotated or sheared, which the builder now
+		# honours. Sixteen floats per ball is nothing next to rebuilding the mesh.
 		var ball_basis: Projection = child.basis
 		signature.append_array(PackedFloat64Array([
 			center.x, center.y, center.z, center.w,
 			section["radius"], section.get("v_scale", 1.0), section["w_scale"],
-			ball_basis.x.length(), ball_basis.z.length(), ball_basis.w.length()
+			ball_basis.x.x, ball_basis.x.y, ball_basis.x.z, ball_basis.x.w,
+			ball_basis.y.x, ball_basis.y.y, ball_basis.y.z, ball_basis.y.w,
+			ball_basis.z.x, ball_basis.z.y, ball_basis.z.z, ball_basis.z.w,
+			ball_basis.w.x, ball_basis.w.y, ball_basis.w.z, ball_basis.w.w,
 		]))
 	return signature
 

@@ -65,6 +65,7 @@ static func _interpolate_section(before: Dictionary, start: Dictionary, end: Dic
 		# Colour blends linearly, not along the curve: a Catmull-Rom overshoot would
 		# push channels outside 0..1 and read as a bright or black band.
 		"color": (start.get("color", Color.WHITE) as Color).lerp(end.get("color", Color.WHITE), t),
+		"basis": _lerp_basis(start.get("basis", Projection.IDENTITY), end.get("basis", Projection.IDENTITY), t),
 	}
 
 
@@ -134,7 +135,20 @@ static func _lerp_section(start: Dictionary, end: Dictionary, t: float) -> Dicti
 		"roll": lerpf(start.get("roll", 0.0), end.get("roll", 0.0), t),
 		"squareness": lerpf(start.get("squareness", 0.0), end.get("squareness", 0.0), t),
 		"color": (start.get("color", Color.WHITE) as Color).lerp(end.get("color", Color.WHITE), t),
+		"basis": _lerp_basis(start.get("basis", Projection.IDENTITY), end.get("basis", Projection.IDENTITY), t),
 	}
+
+
+## Blends two section bases column by column. A basis here is a linear map with no
+## translation, so blending the columns blends the map - good enough for the scaling
+## and mild tilt a ball's gizmo produces, and it collapses to a no-op when both ends
+## are the identity, which is the common case.
+static func _lerp_basis(start: Projection, end: Projection, t: float) -> Projection:
+	if start == end:
+		return start
+	return Projection(
+		(start.x as Vector4).lerp(end.x, t), (start.y as Vector4).lerp(end.y, t),
+		(start.z as Vector4).lerp(end.z, t), (start.w as Vector4).lerp(end.w, t))
 
 
 static func _catmull_rom(before: float, start: float, end: float, after: float, t: float) -> float:
@@ -217,12 +231,20 @@ static func build(sections: Array, rings: int, sides: int, taper_ends: bool, ver
 			axis_u = turned_u
 
 		var exponent: float = _squareness_exponent(section.get("squareness", 0.0))
+		# The ball's own basis is applied to the finished cross-section, which is what
+		# makes gizmo scaling work on EVERY axis. Folding it into radius and the two
+		# scales instead - as this used to - meant deciding in advance which of the
+		# ball's local axes were the section's, and that answer changes with the spine
+		# direction. A horizontal body's sections stand in X, W and Y, so a ball scaled
+		# vertically was being ignored outright. A linear map of the section needs no
+		# such guess and is exact for any orientation.
+		var section_basis: Projection = section.get("basis", Projection.IDENTITY)
 		for direction in directions:
 			var shaped: Vector3 = _apply_squareness(direction, exponent)
-			positions.append(center
-				+ axis_u * (shaped.x * radius)
+			positions.append(center + section_basis * (
+				axis_u * (shaped.x * radius)
 				+ axis_v * (shaped.y * radius * v_scale)
-				+ axis_n * (shaped.z * radius * w_scale))
+				+ axis_n * (shaped.z * radius * w_scale)))
 
 	var cells := PackedInt32Array()
 	# Which section each vertex came from, so texture coordinates can be assigned
