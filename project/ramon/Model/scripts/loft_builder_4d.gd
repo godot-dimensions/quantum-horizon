@@ -170,7 +170,14 @@ static func _apply_squareness(direction: Vector3, exponent: float) -> Vector3:
 
 
 ## Builds the lofted mesh, or null if the input can't make one.
-static func build(sections: Array, rings: int, sides: int, taper_ends: bool, verbose: bool, align_to_spine: bool = true, smoothing: int = 1) -> ArrayTetraMesh4D:
+## [param run_checks] turns off the three DIAGNOSTIC passes - watertightness, folding
+## and slivers. They answer "is this model sound", which is worth knowing when a build
+## is asked for and worth nothing on the intermediate shapes a ball sweeps through
+## while being dragged. Each is a full pass over every cell, and watertightness alone
+## does four dictionary inserts per cell, so on a fourteen-thousand-cell model they
+## dominate the frame. Winding is NOT among them: it rewrites the cells rather than
+## reporting on them, so it always runs.
+static func build(sections: Array, rings: int, sides: int, taper_ends: bool, verbose: bool, align_to_spine: bool = true, smoothing: int = 1, run_checks: bool = true) -> ArrayTetraMesh4D:
 	if sections.size() < 2:
 		push_warning("Loft: need at least 2 sections, got %d." % sections.size())
 		return null
@@ -260,10 +267,11 @@ static func build(sections: Array, rings: int, sides: int, taper_ends: bool, ver
 	if taper_ends:
 		_fill_color(colors, triangle_count, sections[sections.size() - 1].get("color", Color.WHITE))
 
-	var watertight: bool = check_watertight(cells, verbose)
+	var watertight: bool = check_watertight(cells, verbose) if run_checks else true
 	var flipped: int = make_winding_consistent(cells, positions, verbose)
-	check_not_folded(cells, positions, sections, verbose)
-	check_no_slivers(cells, positions, vertex_section, verbose)
+	if run_checks:
+		check_not_folded(cells, positions, sections, verbose)
+		check_no_slivers(cells, positions, vertex_section, verbose)
 	if verbose:
 		print("[Loft] %d sections, %d vertices, %d tetrahedra, %d flipped, watertight=%s" % [
 			sections.size(), positions.size(), cells.size() / 4, flipped, watertight

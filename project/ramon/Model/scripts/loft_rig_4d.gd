@@ -454,7 +454,9 @@ func build(announce: bool = true) -> void:
 	for chain_index in range(chains.size()):
 		# Chain 0 is the rig's own ball children; everything after it is a branch.
 		var chain: Array = chains[chain_index]
-		var piece: ArrayTetraMesh4D = _build_chain(chain, announce and built_chains == 0, chain_index > 0)
+		# Checks run for every chain of a real build, but printing only for the first,
+		# so a four-chain rig reports once rather than four times.
+		var piece: ArrayTetraMesh4D = _build_chain(chain, announce and built_chains == 0, chain_index > 0, announce)
 		if piece == null:
 			continue
 		built_chains += 1
@@ -482,7 +484,7 @@ func build(announce: bool = true) -> void:
 
 
 ## Lofts one chain, plus its mirrored twin if the chain sits off the midline.
-func _build_chain(chain: Array, announce: bool, is_branch: bool = false) -> ArrayTetraMesh4D:
+func _build_chain(chain: Array, announce: bool, is_branch: bool = false, run_checks: bool = true) -> ArrayTetraMesh4D:
 	if chain.size() < 2:
 		push_warning("Loft rig '%s': a chain needs at least 2 balls, found %d." % [name, chain.size()])
 		return null
@@ -510,7 +512,7 @@ func _build_chain(chain: Array, announce: bool, is_branch: bool = false) -> Arra
 				name, chain[index].name, chain[index + 1].name])
 			return null
 
-	var built: ArrayTetraMesh4D = _Builder.build(sections, profile_rings, profile_sides, taper_ends, verbose and announce, align_to_spine, smoothing)
+	var built: ArrayTetraMesh4D = _Builder.build(sections, profile_rings, profile_sides, taper_ends, verbose and announce, align_to_spine, smoothing, run_checks)
 	if built == null:
 		return null
 
@@ -534,7 +536,7 @@ func _build_chain(chain: Array, announce: bool, is_branch: bool = false) -> Arra
 			mirrored_section["center"] = _with_axis_value(center, 2.0 * mirror_plane - _axis_value(center))
 			mirrored_sections.append(mirrored_section)
 		# Quiet: the twin's checks would otherwise report the same result twice.
-		var mirrored: ArrayTetraMesh4D = _Builder.build(mirrored_sections, profile_rings, profile_sides, taper_ends, false, align_to_spine, smoothing)
+		var mirrored: ArrayTetraMesh4D = _Builder.build(mirrored_sections, profile_rings, profile_sides, taper_ends, false, align_to_spine, smoothing, run_checks)
 		if mirrored != null:
 			built.merge_with(mirrored, Vector4(), Projection.IDENTITY)
 			# The merge appends the twin's cells and texture-map entries, so its colour
