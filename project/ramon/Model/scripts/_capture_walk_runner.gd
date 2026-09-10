@@ -8,7 +8,7 @@ func _initialize() -> void:
 	var player: Node4D = instance.get_node_or_null("Player")
 	if player != null:
 		player.basis = Projection(Vector4(0,0,1,0), Vector4(0,1,0,0), Vector4(-1,0,0,0), Vector4(0,0,0,1))
-		player.position = Vector4(-7.0, 2.2, 0.0, 0.0)
+		player.position = Vector4(-13.0, 2.2, 0.0, 0.0)
 func _process(_d) -> bool:
 	_frames += 1
 	if _AT.has(_frames):

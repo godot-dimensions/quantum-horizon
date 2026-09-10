@@ -56,91 +56,134 @@ profile_sides = 10
 profile_rings = 5
 
 [node name="Rump" type="MeshInstance4D" parent="Creature/Strider/Hide"]
-position = Vector4(0, 2.3, -1.7, 0)
+position = Vector4(0, 5.45, -2.4, 0)
 script = ExtResource("4_ball")
-radius = 0.62
+radius = 0.95
 w_scale = 1.35
-color = Color(0.2, 0.3, 0.34, 1)
+color = Color(0.32, 0.21, 0.13, 1)
 
-[node name="Back" type="MeshInstance4D" parent="Creature/Strider/Hide"]
-position = Vector4(0, 2.45, -0.55, 0)
+[node name="Loin" type="MeshInstance4D" parent="Creature/Strider/Hide"]
+position = Vector4(0, 5.6, -1.1, 0)
 script = ExtResource("4_ball")
-radius = 0.72
+radius = 1.0
 w_scale = 1.4
-color = Color(0.24, 0.37, 0.41, 1)
+color = Color(0.42, 0.28, 0.18, 1)
 
 [node name="Barrel" type="MeshInstance4D" parent="Creature/Strider/Hide"]
-position = Vector4(0, 2.45, 0.6, 0)
+position = Vector4(0, 5.55, 0.3, 0)
 script = ExtResource("4_ball")
-radius = 0.7
+radius = 1.05
 w_scale = 1.4
-color = Color(0.24, 0.37, 0.41, 1)
+color = Color(0.42, 0.28, 0.18, 1)
 
 [node name="Chest" type="MeshInstance4D" parent="Creature/Strider/Hide"]
-position = Vector4(0, 2.4, 1.65, 0)
+position = Vector4(0, 5.6, 1.7, 0)
 script = ExtResource("4_ball")
-radius = 0.6
+radius = 0.95
 w_scale = 1.35
-color = Color(0.3, 0.46, 0.5, 1)
+color = Color(0.5, 0.34, 0.22, 1)
 
-[node name="Neck" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest"]
-position = Vector4(0, 0.55, 0.55, 0)
+[node name="Crest" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest"]
+position = Vector4(0, 0.95, 0.85, 0)
 script = ExtResource("4_ball")
-radius = 0.34
+radius = 0.55
 w_scale = 1.15
 starts_branch = true
-color = Color(0.3, 0.46, 0.5, 1)
+color = Color(0.5, 0.34, 0.22, 1)
 
-[node name="Head" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest/Neck"]
-position = Vector4(0, 0.35, 0.55, 0)
+[node name="Poll" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest/Crest"]
+position = Vector4(0, 0.75, 0.7, 0)
 script = ExtResource("4_ball")
-radius = 0.42
-w_scale = 1.2
-color = Color(0.34, 0.52, 0.56, 1)
+radius = 0.4
+w_scale = 1.1
+color = Color(0.42, 0.28, 0.18, 1)
+
+[node name="Jaw" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest/Crest/Poll"]
+position = Vector4(0, -0.3, 0.75, 0)
+script = ExtResource("4_ball")
+radius = 0.3
+w_scale = 1.05
+color = Color(0.26, 0.18, 0.13, 1)
+
+[node name="Muzzle" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest/Crest/Poll/Jaw"]
+position = Vector4(0, -0.15, 0.55, 0)
+script = ExtResource("4_ball")
+radius = 0.24
+w_scale = 1.0
+color = Color(0.26, 0.18, 0.13, 1)
+
+[node name="TailBase" type="MeshInstance4D" parent="Creature/Strider/Hide/Rump"]
+position = Vector4(0, 0.55, -0.55, 0)
+script = ExtResource("4_ball")
+radius = 0.28
+w_scale = 1.1
+starts_branch = true
+color = Color(0.16, 0.12, 0.1, 1)
+
+[node name="TailTip" type="MeshInstance4D" parent="Creature/Strider/Hide/Rump/TailBase"]
+position = Vector4(0, -0.75, -0.75, 0)
+script = ExtResource("4_ball")
+radius = 0.16
+w_scale = 1.1
+color = Color(0.16, 0.12, 0.1, 1)
 
 [node name="ForeHip" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest"]
-position = Vector4(0.62, -0.45, 0.0, 0.34)
+position = Vector4(0.7, -0.55, 0.0, 0.3)
 script = ExtResource("4_ball")
-radius = 0.24
-w_scale = 2.4
+radius = 0.34
+w_scale = 2.1
 starts_branch = true
-color = Color(0.19, 0.28, 0.32, 1)
+color = Color(0.32, 0.21, 0.13, 1)
 
 [node name="ForeKnee" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest/ForeHip"]
-position = Vector4(0.22, -0.8, 0.0, -0.1)
+position = Vector4(0.1, -2.15, 1.15, -0.1)
 script = ExtResource("4_ball")
-radius = 0.18
-w_scale = 2.6
-color = Color(0.42, 0.44, 0.4, 1)
+radius = 0.26
+w_scale = 2.3
+color = Color(0.32, 0.21, 0.13, 1)
 
-[node name="ForeFoot" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest/ForeHip/ForeKnee"]
-position = Vector4(0.06, -0.85, 0.0, -0.08)
+[node name="ForeHock" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest/ForeHip/ForeKnee"]
+position = Vector4(-0.2, -1.7, -1.45, 0.06)
 script = ExtResource("4_ball")
-radius = 0.14
-w_scale = 2.9
-color = Color(0.86, 0.72, 0.34, 1)
+radius = 0.2
+w_scale = 2.5
+color = Color(0.32, 0.21, 0.13, 1)
+
+[node name="ForeHoof" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest/ForeHip/ForeKnee/ForeHock"]
+position = Vector4(0.15, -1.2, 0.6, 0.04)
+script = ExtResource("4_ball")
+radius = 0.17
+w_scale = 2.8
+color = Color(0.14, 0.13, 0.13, 1)
 
 [node name="HindHip" type="MeshInstance4D" parent="Creature/Strider/Hide/Rump"]
-position = Vector4(0.62, -0.45, 0.0, -0.34)
+position = Vector4(0.7, -0.55, 0.0, -0.3)
 script = ExtResource("4_ball")
-radius = 0.24
-w_scale = 2.4
+radius = 0.34
+w_scale = 2.1
 starts_branch = true
-color = Color(0.19, 0.28, 0.32, 1)
+color = Color(0.32, 0.21, 0.13, 1)
 
 [node name="HindKnee" type="MeshInstance4D" parent="Creature/Strider/Hide/Rump/HindHip"]
-position = Vector4(0.22, -0.8, 0.0, 0.1)
+position = Vector4(0.1, -2.15, 1.15, 0.1)
 script = ExtResource("4_ball")
-radius = 0.18
-w_scale = 2.6
-color = Color(0.42, 0.44, 0.4, 1)
+radius = 0.26
+w_scale = 2.3
+color = Color(0.32, 0.21, 0.13, 1)
 
-[node name="HindFoot" type="MeshInstance4D" parent="Creature/Strider/Hide/Rump/HindHip/HindKnee"]
-position = Vector4(0.06, -0.85, 0.0, 0.08)
+[node name="HindHock" type="MeshInstance4D" parent="Creature/Strider/Hide/Rump/HindHip/HindKnee"]
+position = Vector4(-0.2, -1.7, -1.45, -0.06)
 script = ExtResource("4_ball")
-radius = 0.14
-w_scale = 2.9
-color = Color(0.86, 0.72, 0.34, 1)
+radius = 0.2
+w_scale = 2.5
+color = Color(0.32, 0.21, 0.13, 1)
+
+[node name="HindHoof" type="MeshInstance4D" parent="Creature/Strider/Hide/Rump/HindHip/HindKnee/HindHock"]
+position = Vector4(0.15, -1.2, 0.6, -0.04)
+script = ExtResource("4_ball")
+radius = 0.17
+w_scale = 2.8
+color = Color(0.14, 0.13, 0.13, 1)
 
 [node name="Walker" type="Node4D" parent="Creature/Strider"]
 script = ExtResource("5_walker")
