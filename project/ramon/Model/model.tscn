@@ -426,7 +426,6 @@ basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
 position = Vector4(0, 0.6320797763889683, 0, 0)
 material_override = SubResource("TetraMaterial4D_brachio")
 script = ExtResource("4_rig")
-profile_sides = 12
 profile_rings = 6
 
 [node name="Ball1" type="MeshInstance4D" parent="Models/Brachio/Spine"]
@@ -516,25 +515,26 @@ script = ExtResource("5_ball")
 radius = 1.75
 
 [node name="Ball4" type="MeshInstance4D" parent="Models/Brachio/Spine"]
-position = Vector4(0, 24, 7, 0)
+position = Vector4(0, 24, 7.080332266190823, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.9998432903983238, 0, 0, 0, 0, 1.3318933780054496, 0, 0, 0, 0, 1)
 material_override = SubResource("WireMaterial4D_0sbn5")
 script = ExtResource("5_ball")
 radius = 2.5
 
 [node name="Ball5" type="MeshInstance4D" parent="Models/Brachio/Spine"]
-position = Vector4(0, 30.5, 11.032426491494967, 0)
+position = Vector4(0, 30.5, 9.509032685336772, 0)
 material_override = SubResource("WireMaterial4D_s4ydr")
 script = ExtResource("5_ball")
 radius = 1.7
 
 [node name="Ball6" type="MeshInstance4D" parent="Models/Brachio/Spine"]
-position = Vector4(0, 36.545944299861, 13.5, 0)
+position = Vector4(0, 36.545944299861006, 10.957734108149197, 0)
 material_override = SubResource("WireMaterial4D_y85bl")
 script = ExtResource("5_ball")
 radius = 1.25
 
 [node name="Ball7" type="MeshInstance4D" parent="Models/Brachio/Spine"]
-position = Vector4(0, 39, 15.5, 0)
+position = Vector4(0, 39, 12.364373721204842, 0)
 material_override = SubResource("WireMaterial4D_jwhtt")
 script = ExtResource("5_ball")
 radius = 1.05

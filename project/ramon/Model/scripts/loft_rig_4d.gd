@@ -52,6 +52,27 @@ const _COINCIDENT_EPSILON: float = 0.0001
 		if live_rebuild:
 			request_rebuild()
 
+## Drops the built model so the balls underneath can be clicked on.
+##
+## WHY THIS IS NEEDED: the 4D viewport picks by BOUNDING BOX. `MeshInstance4D` never
+## overrides `raycast_intersects_local`, so the final picking pass falls back to
+## `Node4D`'s axis-aligned box test - and this rig's box contains every one of its
+## balls. Whenever the ray meets the built surface the rig wins, and the ball inside
+## it can never be reached. It also makes shift-clicking balls look broken, because
+## every click re-selects the same rig instead of adding a ball.
+##
+## With no mesh the rig has no bounds, so the viewport stops gathering it entirely and
+## the balls become freely clickable - including tips buried inside the body, which
+## cannot be reached any other way except from the Scene tree.
+##
+## Rebuilding is skipped outright while this is on, not just hidden, so dragging balls
+## in this mode costs nothing at all. The guide wireframes still follow their balls.
+## Turn it off to see the model again.
+@export var edit_balls_only: bool = false:
+	set(value):
+		edit_balls_only = value
+		request_rebuild()
+
 ## Builds a mirrored copy of this chain across the X = 0 plane.
 ##
 ## Spore makes bilateral symmetry the DEFAULT rather than a toggle you have to
@@ -442,6 +463,12 @@ func build(announce: bool = true) -> void:
 	if not is_inside_tree():
 		return
 	_dirty = false
+	if edit_balls_only:
+		# No mesh means no bounds, which is what takes this rig out of the viewport's
+		# picking entirely. Previews are still refreshed so the guides do not go stale.
+		mesh = null
+		_update_previews()
+		return
 	var chains: Array = _collect_chains()
 	if chains.is_empty():
 		push_warning("Loft rig '%s': needs at least 2 balls, or a ball parented to another." % name)
@@ -558,6 +585,25 @@ func _build_chain(chain: Array, announce: bool, is_branch: bool = false, run_che
 		if chain[index].has_method("set_mirror_preview"):
 			chain[index].set_mirror_preview(mirroring and show_mirror_ghost, mirror_plane, mirror_axis)
 	return built
+
+
+## Points every ball's guide wireframe along its chain, without building anything.
+##
+## Only used by [member edit_balls_only]: the normal path already does this per chain
+## as a by-product of lofting, and repeating it there would just be work done twice.
+func _update_previews() -> void:
+	for chain in _collect_chains():
+		if chain.size() < 2:
+			continue
+		var sections: Array[Dictionary] = []
+		for ball in chain:
+			var section: Dictionary = ball.get_loft_section()
+			section["center"] = _position_in_rig(ball)
+			sections.append(section)
+		var frames: Array = _Builder.build_frames(sections, align_to_spine)
+		for index in range(chain.size()):
+			if chain[index].has_method("set_preview_frame"):
+				chain[index].set_preview_frame(frames[index])
 
 
 ## Whether this chain is a limb sitting off to one side, and so earns a mirrored
