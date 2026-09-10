@@ -93,11 +93,32 @@ func _ready() -> void:
 
 ## Turns each generated twin into real balls, so the four legs can hold four different
 ## phases. Without this every gait is a pronk - all four legs in lockstep.
+## Detaches only the branches that are ACTUALLY mirrored - the legs.
+##
+## Detaching everything gave the horse two heads. A branch on the midline, like the
+## neck, is never mirrored in the first place, so "detaching" it does not free a twin
+## to move independently; it manufactures a duplicate that was not there. The rig
+## already knows which branches earn a twin, so ask it rather than detaching blind:
+## a branch is mirrored only if it sits clear of the mirror plane.
 func _detach_mirrors() -> void:
+	var axis: int = _rig.mirror_axis_index() if _rig.has_method("mirror_axis_index") else 0
 	for ball in _rig.get_children():
-		for child in ball.get_children() if ball.has_method("get_loft_section") else []:
-			if child.has_method("detach_mirror") and bool(child.get("mirror_branch")):
-				child.detach_mirror()
+		if not ball.has_method("get_loft_section"):
+			continue
+		var plane: float = _axis_of(_rig._position_in_rig(ball), axis)
+		for child in ball.get_children():
+			if not child.has_method("detach_mirror") or not bool(child.get("mirror_branch")):
+				continue
+			if absf(_axis_of(_rig._position_in_rig(child), axis) - plane) < 0.001:
+				continue # On the midline: single by design, and must stay single.
+			child.detach_mirror()
+
+
+func _axis_of(point: Vector4, axis: int) -> float:
+	match axis:
+		1: return point.z
+		2: return point.w
+	return point.x
 
 
 ## A leg is any chain of three balls hanging off a body ball. Recorded with its rest
@@ -116,6 +137,11 @@ func _collect_legs() -> void:
 			if foot == null:
 				continue
 			var hip_world: Vector4 = _rig._position_in_rig(hip)
+			# A LEG DESCENDS. The neck is also a chain of balls hanging off a body ball,
+			# so without this it qualified as a leg and got driven at a foot target on
+			# the floor - the horse nodding its head at every step.
+			if _rig._position_in_rig(foot).y > hip_world.y - 1.0:
+				continue
 			var foot_world: Vector4 = _rig._position_in_rig(foot)
 			_legs.append({
 				"hip": hip, "knee": knee, "foot": foot,
