@@ -494,9 +494,14 @@ static func check_not_folded(cells: PackedInt32Array, positions: PackedVector4Ar
 ## perfectly valid cell. It is watertight, correctly wound, and not folded. But
 ## `TetraMesh4D::populate_inverse_metric_cache` inverts each cell's metric, and a flat
 ## cell has no inverse - so on meeting ONE it prints an error and throws the ENTIRE
-## cache away (tetra_mesh_4d.cpp:49). That cache is what 4D raycasts use, and what the
-## editor uses to click-pick a model (editor_main_viewport_4d.cpp:268), so a single
-## bad cell out of ten thousand makes a whole model unselectable and unshootable.
+## cache away (tetra_mesh_4d.cpp:49). `raycast_intersects_fast` then returns false for
+## every ray, and the editor's picking pass drops the node from its candidate list
+## outright (editor_main_viewport_4d.cpp:268-276), so a single bad cell out of ten
+## thousand makes a whole model impossible to select by clicking it.
+##
+## Note what this does NOT affect: the model draws normally, and shooting is untouched,
+## because weapons raycast through PhysicsServer4D against CollisionShape4D rather than
+## against the mesh. The cost is mesh raycasting alone.
 ##
 ## WHERE THEY COME FROM: splitting a triangular prism into 3 tetrahedra always
 ## produces two with three corners on one layer and only one on the other. Stretch
@@ -530,7 +535,7 @@ static func check_no_slivers(cells: PackedInt32Array, positions: PackedVector4Ar
 		if verbose:
 			print("[Loft] No slivers: every tetrahedron has a shape the engine can invert (worst %.6f)." % worst)
 		return true
-	push_warning("[Loft] SLIVERS: %d of %d tetrahedra (%.1f%%) are too flat for the engine to build its closest-point cache, worst around section %d. The model still draws, but it cannot be clicked on or raycast against. The balls there are too far apart for how wide the sections are - add a ball on that span, or raise smoothing." % [
+	push_warning("[Loft] SLIVERS: %d of %d tetrahedra (%.1f%%) are too flat for the engine to build its closest-point cache, worst around section %d. The model still draws normally and physics is unaffected - what breaks is mesh raycasting, so it can no longer be selected by clicking it in the viewport, only from the Scene tree. The balls there are too far apart for how wide the sections are - add a ball on that span, or raise smoothing." % [
 		slivers, cell_count, 100.0 * float(slivers) / float(cell_count), worst_section])
 	return false
 

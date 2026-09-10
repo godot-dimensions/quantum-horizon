@@ -9,6 +9,11 @@ extends SceneTree
 ##
 ## Reports the engine's shape number for the worst cell, where anything at or below
 ## CMP_EPSILON (0.00001) is what makes it throw the closest-point cache away.
+##
+## FOLDING IS REPORTED ALONGSIDE, because the two failures pull on the same lever from
+## opposite ends: slivers come from spans too LONG for how wide the sections are, and
+## folding from spans too SHORT. Smoothing shortens spans, so a cure for one is a
+## plausible cause of the other, and a fix that only counted slivers would hide it.
 
 const _Builder = preload("res://ramon/Model/scripts/loft_builder_4d.gd")
 
@@ -66,8 +71,26 @@ func _measure(sections: Array, rings: int, sides: int, smoothing: int, note: Str
 		worst = minf(worst, shape)
 		if shape <= 0.00001:
 			slivers += 1
-	print("     %s -> %d tets, %d slivers, worst shape %.7f  %s" % [
-		note, count, slivers, worst, "OK" if slivers == 0 else "still broken"])
+	var folded: int = 0
+	var centers := PackedVector4Array()
+	for section in _sections_of(sections, smoothing):
+		centers.append(section["center"])
+	for cell in range(count):
+		var a: Vector4 = positions[cells[cell * 4]]
+		var b: Vector4 = positions[cells[cell * 4 + 1]]
+		var c: Vector4 = positions[cells[cell * 4 + 2]]
+		var d: Vector4 = positions[cells[cell * 4 + 3]]
+		var centroid: Vector4 = (a + b + c + d) * 0.25
+		var outward: Vector4 = centroid - _Builder._nearest_on_spine(centers, centroid)
+		if outward.length() > 0.0001 and Vector4D.perpendicular(b - a, c - a, d - a).dot(outward) < 0.0:
+			folded += 1
+	print("     %s -> %d tets, %d slivers, %d folded, worst shape %.7f  %s" % [
+		note, count, slivers, folded, worst,
+		"OK" if slivers == 0 and folded == 0 else "still broken"])
+
+
+func _sections_of(sections: Array, smoothing: int) -> Array:
+	return _Builder.smooth_sections(sections, smoothing)
 
 
 func _section(center: Vector4, radius: float) -> Dictionary:
