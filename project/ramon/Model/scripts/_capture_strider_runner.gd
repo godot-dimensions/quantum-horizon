@@ -12,7 +12,10 @@ func _initialize() -> void:
 	root.add_child(instance)
 	var player: Node4D = instance.get_node_or_null("Player")
 	if player != null:
-		player.position = Vector4(0.0, 3.2, 10.0, 0.0)
+		# Yawed 90 degrees for a profile: a quadruped's body plan only reads side-on.
+		player.basis = Projection(
+			Vector4(0, 0, 1, 0), Vector4(0, 1, 0, 0), Vector4(-1, 0, 0, 0), Vector4(0, 0, 0, 1))
+		player.position = Vector4(-8.0, 2.4, 0.0, 0.0)
 
 func _process(_d) -> bool:
 	if _done: return true

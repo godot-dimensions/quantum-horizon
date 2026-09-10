@@ -439,9 +439,17 @@ func detach_mirror() -> void:
 		copy.set_script(get_script())
 		copy.name = "%s_mirror" % source.name
 		copy.position = _reflect(source.position, axis)
+		# EVERY section property, not just the size ones. roll, squareness and colour
+		# were each added after this function was written, and a copy that silently
+		# drops them turns a detached twin white and untwisted while its original is
+		# neither - which is exactly what it did the first time a coloured model was
+		# detached.
 		copy.radius = source.radius
 		copy.v_scale = source.v_scale
 		copy.w_scale = source.w_scale
+		copy.roll = source.roll
+		copy.squareness = source.squareness
+		copy.color = source.color
 		copy.preview_color = source.preview_color
 		copy.starts_branch = index == 0
 		copy.mirror_branch = false
