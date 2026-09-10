@@ -1,4 +1,4 @@
-[gd_scene load_steps=61 format=3 uid="uid://b8kmq3wd4mlnt"]
+[gd_scene load_steps=62 format=3 uid="uid://b8kmq3wd4mlnt"]
 
 [ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="1_sun"]
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="2_player"]
@@ -51,6 +51,9 @@ data = {
 
 [sub_resource type="ImageTexture3D" id="ImageTexture3D_at8hy"]
 _images = Array[Image]([SubResource("Image_coigf")])
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_goat"]
+albedo_color = Color(0.92, 0.88, 0.78, 1)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_neckhead"]
 albedo_source = 3
@@ -418,9 +421,174 @@ script = ExtResource("5_ball")
 radius = 0.06
 v_scale = 2.0
 
+[node name="Goat" type="Node4D" parent="Models"]
+position = Vector4(4, 0, 0, 0)
+
+[node name="Hide" type="MeshInstance4D" parent="Models/Goat"]
+material_override = SubResource("TetraMaterial4D_goat")
+script = ExtResource("4_rig")
+use_ball_colors = true
+profile_sides = 10
+profile_rings = 5
+
+[node name="Rump" type="MeshInstance4D" parent="Models/Goat/Hide"]
+position = Vector4(0, 2.4, -1.75, 0)
+script = ExtResource("5_ball")
+radius = 0.58
+w_scale = 1.35
+color = Color(0.86, 0.8, 0.68, 1)
+
+[node name="Back" type="MeshInstance4D" parent="Models/Goat/Hide"]
+position = Vector4(0, 2.42, -0.7, 0)
+script = ExtResource("5_ball")
+radius = 0.62
+w_scale = 1.46
+color = Color(0.9, 0.85, 0.75, 1)
+
+[node name="Barrel" type="MeshInstance4D" parent="Models/Goat/Hide"]
+position = Vector4(0, 2.4, 0.45, 0)
+script = ExtResource("5_ball")
+radius = 0.64
+w_scale = 1.42
+color = Color(0.9, 0.85, 0.75, 1)
+
+[node name="Chest" type="MeshInstance4D" parent="Models/Goat/Hide"]
+position = Vector4(0, 2.48, 1.4, 0)
+script = ExtResource("5_ball")
+radius = 0.58
+w_scale = 1.4
+color = Color(0.94, 0.9, 0.82, 1)
+
+[node name="RearLegTop" type="MeshInstance4D" parent="Models/Goat/Hide/Rump"]
+position = Vector4(0.52, -0.75, -0.05, 0)
+script = ExtResource("5_ball")
+radius = 0.26
+starts_branch = true
+color = Color(0.55, 0.45, 0.35, 1)
+
+[node name="RearLegMid" type="MeshInstance4D" parent="Models/Goat/Hide/Rump/RearLegTop"]
+position = Vector4(0.04, -0.8, 0.12, 0)
+script = ExtResource("5_ball")
+radius = 0.19
+color = Color(0.55, 0.45, 0.35, 1)
+
+[node name="RearHoof" type="MeshInstance4D" parent="Models/Goat/Hide/Rump/RearLegTop/RearLegMid"]
+position = Vector4(0.0, -0.65, -0.05, 0)
+script = ExtResource("5_ball")
+radius = 0.16
+color = Color(0.18, 0.15, 0.14, 1)
+
+[node name="TailBase" type="MeshInstance4D" parent="Models/Goat/Hide/Rump"]
+position = Vector4(0, 0.55, -0.28, 0)
+script = ExtResource("5_ball")
+radius = 0.14
+starts_branch = true
+color = Color(0.86, 0.8, 0.68, 1)
+
+[node name="TailTip" type="MeshInstance4D" parent="Models/Goat/Hide/Rump/TailBase"]
+position = Vector4(0, 0.12, -0.28, 0)
+script = ExtResource("5_ball")
+radius = 0.08
+color = Color(0.3, 0.25, 0.2, 1)
+
+[node name="FrontLegTop" type="MeshInstance4D" parent="Models/Goat/Hide/Chest"]
+position = Vector4(0.5, -0.8, 0.05, 0)
+script = ExtResource("5_ball")
+radius = 0.25
+starts_branch = true
+color = Color(0.55, 0.45, 0.35, 1)
+
+[node name="FrontLegMid" type="MeshInstance4D" parent="Models/Goat/Hide/Chest/FrontLegTop"]
+position = Vector4(0.05, -0.85, -0.05, 0)
+script = ExtResource("5_ball")
+radius = 0.19
+color = Color(0.55, 0.45, 0.35, 1)
+
+[node name="FrontHoof" type="MeshInstance4D" parent="Models/Goat/Hide/Chest/FrontLegTop/FrontLegMid"]
+position = Vector4(0.0, -0.65, 0.05, 0)
+script = ExtResource("5_ball")
+radius = 0.16
+color = Color(0.18, 0.15, 0.14, 1)
+
+[node name="NeckLow" type="MeshInstance4D" parent="Models/Goat/Hide/Chest"]
+position = Vector4(0, 0.55, 0.5, 0)
+script = ExtResource("5_ball")
+radius = 0.4
+starts_branch = true
+color = Color(0.94, 0.9, 0.82, 1)
+
+[node name="NeckHigh" type="MeshInstance4D" parent="Models/Goat/Hide/Chest/NeckLow"]
+position = Vector4(0, 0.45, 0.42, 0)
+script = ExtResource("5_ball")
+radius = 0.32
+color = Color(0.94, 0.9, 0.82, 1)
+
+[node name="Skull" type="MeshInstance4D" parent="Models/Goat/Hide/Chest/NeckLow/NeckHigh"]
+position = Vector4(0, 0.15, 0.38, 0)
+script = ExtResource("5_ball")
+radius = 0.36
+color = Color(0.94, 0.9, 0.82, 1)
+
+[node name="Muzzle" type="MeshInstance4D" parent="Models/Goat/Hide/Chest/NeckLow/NeckHigh/Skull"]
+position = Vector4(0, -0.22, 0.42, 0)
+script = ExtResource("5_ball")
+radius = 0.22
+starts_branch = true
+color = Color(0.88, 0.78, 0.74, 1)
+
+[node name="Nose" type="MeshInstance4D" parent="Models/Goat/Hide/Chest/NeckLow/NeckHigh/Skull/Muzzle"]
+position = Vector4(0, -0.06, 0.2, 0)
+script = ExtResource("5_ball")
+radius = 0.13
+color = Color(0.25, 0.2, 0.2, 1)
+
+[node name="BeardTop" type="MeshInstance4D" parent="Models/Goat/Hide/Chest/NeckLow/NeckHigh/Skull/Muzzle"]
+position = Vector4(0, -0.26, -0.06, 0)
+script = ExtResource("5_ball")
+radius = 0.12
+starts_branch = true
+color = Color(0.3, 0.25, 0.2, 1)
+
+[node name="BeardTip" type="MeshInstance4D" parent="Models/Goat/Hide/Chest/NeckLow/NeckHigh/Skull/Muzzle/BeardTop"]
+position = Vector4(0, -0.28, -0.05, 0)
+script = ExtResource("5_ball")
+radius = 0.08
+color = Color(0.3, 0.25, 0.2, 1)
+
+[node name="HornBase" type="MeshInstance4D" parent="Models/Goat/Hide/Chest/NeckLow/NeckHigh/Skull"]
+position = Vector4(0.15, 0.34, -0.12, 0)
+script = ExtResource("5_ball")
+radius = 0.12
+starts_branch = true
+color = Color(0.42, 0.36, 0.3, 1)
+
+[node name="HornMid" type="MeshInstance4D" parent="Models/Goat/Hide/Chest/NeckLow/NeckHigh/Skull/HornBase"]
+position = Vector4(0.06, 0.4, -0.34, 0)
+script = ExtResource("5_ball")
+radius = 0.09
+color = Color(0.42, 0.36, 0.3, 1)
+
+[node name="HornTip" type="MeshInstance4D" parent="Models/Goat/Hide/Chest/NeckLow/NeckHigh/Skull/HornBase/HornMid"]
+position = Vector4(0.04, 0.26, -0.44, 0)
+script = ExtResource("5_ball")
+radius = 0.06
+color = Color(0.2, 0.17, 0.15, 1)
+
+[node name="EarBase" type="MeshInstance4D" parent="Models/Goat/Hide/Chest/NeckLow/NeckHigh/Skull"]
+position = Vector4(0.27, 0.02, -0.06, 0)
+script = ExtResource("5_ball")
+radius = 0.09
+starts_branch = true
+color = Color(0.9, 0.85, 0.75, 1)
+
+[node name="EarTip" type="MeshInstance4D" parent="Models/Goat/Hide/Chest/NeckLow/NeckHigh/Skull/EarBase"]
+position = Vector4(0.26, -0.08, -0.26, 0)
+script = ExtResource("5_ball")
+radius = 0.06
+color = Color(0.86, 0.8, 0.68, 1)
+
 [node name="Brachio" type="Node4D" parent="Models"]
 position = Vector4(-15.012292619017094, -2.8558174736673028, 0, 0)
-basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
 
 [node name="Spine" type="MeshInstance4D" parent="Models/Brachio"]
 position = Vector4(0, 0.6320797763889683, 0, 0)
@@ -477,7 +645,7 @@ script = ExtResource("5_ball")
 radius = 1.85
 
 [node name="Ball2" type="MeshInstance4D" parent="Models/Brachio/Spine"]
-position = Vector4(0, 19.5, -6, 0)
+position = Vector4(0, 19.749861525895128, -6, 0)
 material_override = SubResource("WireMaterial4D_f52cm")
 script = ExtResource("5_ball")
 radius = 5.4
@@ -522,13 +690,13 @@ script = ExtResource("5_ball")
 radius = 2.5
 
 [node name="Ball5" type="MeshInstance4D" parent="Models/Brachio/Spine"]
-position = Vector4(0, 30.5, 9.509032685336772, 0)
+position = Vector4(0, 30.5, 9.60376225935671, 0)
 material_override = SubResource("WireMaterial4D_s4ydr")
 script = ExtResource("5_ball")
 radius = 1.7
 
 [node name="Ball6" type="MeshInstance4D" parent="Models/Brachio/Spine"]
-position = Vector4(0, 36.545944299861006, 10.957734108149197, 0)
+position = Vector4(0, 36.545944299861006, 10.826974418160376, 0)
 material_override = SubResource("WireMaterial4D_y85bl")
 script = ExtResource("5_ball")
 radius = 1.25
@@ -540,7 +708,7 @@ script = ExtResource("5_ball")
 radius = 1.05
 
 [node name="Ball8" type="MeshInstance4D" parent="Models/Brachio/Spine"]
-position = Vector4(0, 38.8003567259918, 17.4, 0)
+position = Vector4(0, 38.80035672599181, 15.647702652135656, 0)
 material_override = SubResource("WireMaterial4D_n1af5")
 script = ExtResource("5_ball")
 radius = 0.7000000000000001
