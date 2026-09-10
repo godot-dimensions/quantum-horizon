@@ -1,0 +1,30 @@
+diff --git a/editor/viewport/editor_transform_gizmo_4d.cpp b/editor/viewport/editor_transform_gizmo_4d.cpp
+index b57d26e..b2d314c 100644
+--- a/editor/viewport/editor_transform_gizmo_4d.cpp
++++ b/editor/viewport/editor_transform_gizmo_4d.cpp
+@@ -337,11 +337,23 @@ void EditorTransformGizmo4D::_update_gizmo_mesh_transform(const Camera4D *p_came
+ 		_mesh_holder->set_global_transform(gizmo_transform);
+ 		return;
+ 	}
++	// The gizmo's geometry is built at radius 1, so this factor is the tangent of its
++	// on-screen half-angle. The former hard-coded 0.4 therefore made the gizmo span
++	// about 44 degrees of the view at every zoom level, which dwarfs small models and
++	// cannot be escaped by zooming, since model and gizmo scale together.
++	//
++	// Derived from Godot's existing 3D gizmo-size preference rather than a new
++	// setting, matching how this module already reuses editors/3d/* for navigation
++	// feel and freelook. The default is unchanged for everyone: the 3D setting
++	// defaults to 80, and 80 / 200 == 0.4 exactly. Anyone who finds the gizmo
++	// overbearing can now turn down the "Manipulator Gizmo Size" slider they already
++	// have, and the 4D gizmo follows it.
++	const real_t gizmo_size_factor = real_t(int(EDITOR_GET("editors/3d/manipulator_gizmo_size"))) / 200.0f;
+ 	real_t scale_dist_number;
+ 	if (p_camera->get_projection_type() == Camera4D::PROJECTION4D_ORTHOGRAPHIC) {
+-		scale_dist_number = p_camera->get_orthographic_size() * 0.4f;
++		scale_dist_number = p_camera->get_orthographic_size() * gizmo_size_factor;
+ 	} else {
+-		scale_dist_number = gizmo_transform.origin.distance_to(camera_transform.origin) * 0.4f;
++		scale_dist_number = gizmo_transform.origin.distance_to(camera_transform.origin) * gizmo_size_factor;
+ 	}
+ 	if (scale_dist_number < 1e-4) {
+ 		scale_dist_number = 1e-4;
