@@ -68,6 +68,75 @@ static func _interpolate_section(before: Dictionary, start: Dictionary, end: Dic
 	}
 
 
+## How long a span may be, measured in section widths, before it is split.
+##
+## MEASURED, not chosen. Swept against the whole scene: 4.0 still leaves the
+## brachiosaurus with 24 slivers, 3.5 is clean but is the last value that is, and 2.5,
+## 3.0 and 3.5 are all clean. 3.5 therefore sits directly on the edge of failure, which
+## is no place to leave a default that has to hold for models not yet built - so 3.0,
+## a quarter below the first value known to break. The cost of that caution is roughly
+## 30% more tetrahedra on the two models here.
+##
+## Raising it trades safety for tetrahedra and is only worth doing if a model gets
+## heavy; check_no_slivers will say plainly if it has been raised too far.
+const _MAX_SPAN_RATIO: float = 3.0
+
+## The most pieces one span may be split into, so a ball shrunk to near nothing asks
+## for a sane number of sections rather than hundreds of thousands.
+const _MAX_SPAN_PIECES: int = 12
+
+
+## Splits any span that is too long for how wide its sections are.
+##
+## WHY THIS IS NOT OPTIONAL, and not the `smoothing` knob: a stretched span produces
+## SLIVERS - tetrahedra so flat the engine cannot invert their metric - and one sliver
+## makes it discard the closest-point cache for the whole mesh, which is what the
+## editor uses to click-pick a model. See check_no_slivers for the full chain. The
+## model looks perfectly correct while being unselectable, so leaving this to be
+## noticed and fixed by hand means it will not be.
+##
+## `smoothing` is the wrong tool for it: that subdivides EVERY span in a rig, and it
+## interpolates along a curve, so it both overpays and restyles the model. Only one
+## span on each of the two models in the scene actually produces slivers.
+##
+## Interpolation is LINEAR, deliberately, where `smooth_sections` is Catmull-Rom. This
+## is a tessellation fix, not a shape change: the inserted sections land exactly on the
+## line the authored balls already describe, so the silhouette is untouched. Curving
+## them here would quietly restyle a model that only needed denser cells.
+static func subdivide_long_spans(sections: Array) -> Array:
+	if sections.size() < 2:
+		return sections
+	var out: Array = []
+	for span in range(sections.size() - 1):
+		var start: Dictionary = sections[span]
+		var end: Dictionary = sections[span + 1]
+		out.append(start)
+		# Width is the mean of the two radii: a span from a fat section to a thin one
+		# fails on account of the thin end, and averaging keeps a taper from being
+		# judged by its widest point alone.
+		var width: float = (float(start["radius"]) + float(end["radius"])) * 0.5
+		if width <= 0.0:
+			continue
+		var gap: float = (start["center"] as Vector4).distance_to(end["center"])
+		var pieces: int = mini(int(ceil(gap / (_MAX_SPAN_RATIO * width))), _MAX_SPAN_PIECES)
+		for step in range(1, pieces):
+			out.append(_lerp_section(start, end, float(step) / float(pieces)))
+	out.append(sections[sections.size() - 1])
+	return out
+
+
+static func _lerp_section(start: Dictionary, end: Dictionary, t: float) -> Dictionary:
+	return {
+		"center": (start["center"] as Vector4).lerp(end["center"], t),
+		"radius": lerpf(start["radius"], end["radius"], t),
+		"v_scale": lerpf(start.get("v_scale", 1.0), end.get("v_scale", 1.0), t),
+		"w_scale": lerpf(start["w_scale"], end["w_scale"], t),
+		"roll": lerpf(start.get("roll", 0.0), end.get("roll", 0.0), t),
+		"squareness": lerpf(start.get("squareness", 0.0), end.get("squareness", 0.0), t),
+		"color": (start.get("color", Color.WHITE) as Color).lerp(end.get("color", Color.WHITE), t),
+	}
+
+
 static func _catmull_rom(before: float, start: float, end: float, after: float, t: float) -> float:
 	var t2: float = t * t
 	var t3: float = t2 * t
@@ -106,6 +175,7 @@ static func build(sections: Array, rings: int, sides: int, taper_ends: bool, ver
 		push_warning("Loft: need at least 2 sections, got %d." % sections.size())
 		return null
 	sections = smooth_sections(sections, smoothing)
+	sections = subdivide_long_spans(sections)
 
 	var profile: Dictionary = build_profile_surface(rings, sides)
 	var directions: PackedVector3Array = profile["directions"]
