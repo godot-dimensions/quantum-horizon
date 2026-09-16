@@ -17,7 +17,3 @@ config/features=PackedStringArray("4.5", "Double Precision")
 [filesystem]
 
 import/blender/enabled=false
-
-[rendering]
-
-renderer/rendering_method="mobile"
