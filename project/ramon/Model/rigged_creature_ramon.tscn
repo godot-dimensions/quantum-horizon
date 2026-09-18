@@ -968,6 +968,7 @@ target_path = NodePath("../Creature/Barrel/Chest/Neck1/Neck2/Head")
 [node name="IKGaitDriver" type="Node" parent="."]
 script = ExtResource("6_walker")
 creature_path = NodePath("../Creature")
+w_pair_phase_offset = 0.5
 
 [node name="FootGroundSolver" type="Node" parent="."]
 script = ExtResource("8_foot")
