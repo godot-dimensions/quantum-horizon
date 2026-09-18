@@ -36,6 +36,9 @@ const _COINCIDENT_EPSILON: float = 0.0001
 @export_tool_button("Add ball") var _add_ball_action: Callable = add_ball
 
 @export_tool_button("Build") var _build_action: Callable = build
+
+## Sends the 4D editor viewport back to its default slice.
+@export_tool_button("Reset 4D view") var _reset_view_action: Callable = reset_view
 @export_tool_button("Bake ball scaling") var _bake_action: Callable = bake_ball_scaling
 
 ## Re-lofts automatically whenever a ball moves, resizes, or is added or removed.
@@ -123,6 +126,30 @@ const _COINCIDENT_EPSILON: float = 0.0001
 ## so it stays single, which is usually what you want for it.
 @export_enum("Along mirror axis", "+X", "-X", "+Y", "-Y", "+Z", "-Z", "+W", "-W")
 var new_branch_direction: int = 0
+
+## Builds the model as if every ball sat at W = 0, so it reads as a plain 3D shape.
+##
+## WHY THIS IS A BUILD MODE AND NOT A BUTTON THAT MOVES THINGS: nothing is edited. The
+## balls keep the W you authored; only the loft is generated flat. Tick it to judge a
+## silhouette, untick it and the fourth axis is exactly as it was. Nothing to undo,
+## nothing to lose.
+##
+## It exists because the 4D editor has no way back to a default slice from a script.
+## EditorCamera4D and EditorMainViewport4D expose NOTHING to GDScript - neither has a
+## _bind_methods at all - and the camera rewrites its own position every frame lerping
+## toward a target that is not bound either, so a tool button cannot steer the view. It
+## can, however, change what the view is being pointed AT, which comes to the same
+## thing for judging a shape.
+##
+## For the camera itself, the reliable route is the editor's own Layout menu ->
+## "Preset: Ground View", which is a menu item rather than the corner axis ball. That
+## ball is effectively broken: pressing inside it starts an orbit immediately, and any
+## mouse movement at all clears the focused axis before the release that would have
+## snapped the view.
+@export var flatten_w: bool = false:
+	set(value):
+		flatten_w = value
+		request_rebuild()
 
 ## Tilts each cross-section to sit square to the line the balls make, instead of
 ## leaving it a flat horizontal slice.
@@ -367,6 +394,54 @@ func _section_signature() -> PackedFloat64Array:
 	return signature
 
 
+## The 4D editor's own "Preset: Ground View" command, and the one that follows it back
+## to a single viewport. Their ids, from EditorMainScreen4D's LayoutItem enum.
+const _LAYOUT_GROUND_VIEW: int = 6
+const _LAYOUT_ONE_VIEWPORT: int = 0
+
+
+## Sends the 4D editor viewport back to its default slice - Y up, no slice rotation.
+##
+## HOW, given the camera cannot be touched: EditorCamera4D and EditorMainViewport4D
+## expose nothing to GDScript at all - neither has a _bind_methods - and the camera
+## rewrites its own transform every frame lerping toward an unbound target, so setting
+## its position or basis from here would be undone immediately.
+##
+## What IS reachable is the editor's own menu. The Layout menu's "Preset: Ground View"
+## resets viewport 0 to the Y ground axis, and it is dispatched from an ordinary
+## PopupMenu id_pressed signal - fully bound, like any other Control. So this fires that
+## command rather than trying to steer the camera, then follows it with the
+## single-viewport item so the reset lands without leaving four panes behind.
+##
+## This is a workaround for a real gap: the module never persists the 4D camera, so
+## there is no stored default to return to and a fresh editor process is otherwise the
+## only way back. See project/ramon/follow_up/ for the note to Aaron.
+func reset_view() -> void:
+	if not Engine.is_editor_hint():
+		return
+	var popup: PopupMenu = _find_layout_popup(EditorInterface.get_base_control())
+	if popup == null:
+		push_warning("Loft rig '%s': could not find the 4D editor's Layout menu, so the view was left alone. Open the 4D editor tab first." % name)
+		return
+	popup.id_pressed.emit(_LAYOUT_GROUND_VIEW)
+	popup.id_pressed.emit(_LAYOUT_ONE_VIEWPORT)
+
+
+## Finds the 4D editor's Layout menu by looking for the item it alone carries, rather
+## than by node path - the editor's own tree shape is not ours to depend on.
+func _find_layout_popup(node: Node) -> PopupMenu:
+	var popup: PopupMenu = node as PopupMenu
+	if popup != null:
+		for index in range(popup.item_count):
+			if popup.get_item_text(index).contains("Ground View"):
+				return popup
+	for child in node.get_children(true):
+		var found: PopupMenu = _find_layout_popup(child)
+		if found != null:
+			return found
+	return null
+
+
 ## Adds a ball at the end of this rig's chain, stacked above the last one.
 ##
 ## Exists because every other way of adding a ball hangs off an existing ball, so a
@@ -534,6 +609,14 @@ func _build_chain(chain: Array, announce: bool, is_branch: bool = false, run_che
 		# left the guide wireframes drawn somewhere else again, since those follow the
 		# node's real transform.
 		section["center"] = _position_in_rig(ball)
+		if flatten_w:
+			# Only the OFFSET through W is dropped. Each section keeps its own w_scale,
+			# so the model still has real thickness in the fourth axis - it is simply
+			# not displaced along it, which is what makes a limb wander out of the
+			# slice you are looking at.
+			var flat: Vector4 = section["center"]
+			flat.w = 0.0
+			section["center"] = flat
 		sections.append(section)
 
 	# Two sections in the same place would loft into a zero-thickness slab of
