@@ -4,7 +4,7 @@ extends SceneTree
 var _i: Node
 var _f := 0
 func _initialize() -> void:
-	_i = load("res://ramon/Model/rigged_creature_ramon.tscn").instantiate()
+	_i = load("res://ramon/Model/symmetry_lab_ramon.tscn").instantiate()
 	root.add_child(_i)
 func _process(_d) -> bool:
 	_f += 1

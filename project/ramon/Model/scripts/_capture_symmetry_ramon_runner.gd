@@ -11,7 +11,7 @@ var _shots := [[60, Vector4(-1.5, 3.2, -8.5, 0.0), "ramon_side"],
 			   [180, Vector4(-1.5, 3.2, -6.0, 3.0), "ramon_w3"]]
 var _next := 0
 func _initialize() -> void:
-	_root = load("res://ramon/Model/rigged_creature_ramon.tscn").instantiate()
+	_root = load("res://ramon/Model/symmetry_lab_ramon.tscn").instantiate()
 	root.add_child(_root)
 	current_scene = _root
 func _process(_d) -> bool:
