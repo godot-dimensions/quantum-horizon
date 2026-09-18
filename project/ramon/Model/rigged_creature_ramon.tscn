@@ -1,19 +1,22 @@
-[gd_scene load_steps=8 format=3 uid="uid://bk3wqz9pxrv7m"]
+[gd_scene load_steps=102 format=3 uid="uid://bk3wq1apxrv7m"]
 
 [ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="1_sun"]
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="2_player"]
 [ext_resource type="Script" uid="uid://cuceuwghr0d4v" path="res://ramon/Model/scripts/loft_rig_4d.gd" id="3_rig"]
 [ext_resource type="Script" uid="uid://cdkwbv02fti2x" path="res://ramon/Model/scripts/loft_ball_4d.gd" id="4_ball"]
-[ext_resource type="Script" path="res://ramon/Model/scripts/head_rotation_demo.gd" id="5_headanim"]
-[ext_resource type="Script" path="res://ramon/Model/scripts/ik_gait_driver.gd" id="6_walker"]
-[ext_resource type="Script" path="res://scripts/ik_chain_controller.gd" id="7_ik"]
-[ext_resource type="Script" path="res://ramon/Model/scripts/foot_ground_solver.gd" id="8_foot"]
-[ext_resource type="Script" path="res://ramon/Model/scripts/tail_sway_solver.gd" id="9_tail"]
-[ext_resource type="Script" path="res://ramon/Model/scripts/spine_neck_solver.gd" id="10_spine"]
-[ext_resource type="Script" path="res://ramon/Model/scripts/idle_layer.gd" id="11_idle"]
-[ext_resource type="Script" path="res://ramon/Model/scripts/head_attention.gd" id="12_head"]
+[ext_resource type="Script" uid="uid://cctpeix1vjp6t" path="res://ramon/Model/scripts/head_rotation_demo.gd" id="5_headanim"]
+[ext_resource type="Script" uid="uid://brqba3ffaif1o" path="res://ramon/Model/scripts/ik_gait_driver.gd" id="6_walker"]
+[ext_resource type="Script" uid="uid://droxhc506rw6i" path="res://scripts/ik_chain_controller.gd" id="7_ik"]
+[ext_resource type="Script" uid="uid://37hukc7xb2vw" path="res://ramon/Model/scripts/foot_ground_solver.gd" id="8_foot"]
+[ext_resource type="Script" uid="uid://dyjsmp0obkvr6" path="res://ramon/Model/scripts/tail_sway_solver.gd" id="9_tail"]
+[ext_resource type="Script" uid="uid://xmlioiuuytrp" path="res://ramon/Model/scripts/spine_neck_solver.gd" id="10_spine"]
+[ext_resource type="Script" uid="uid://mqxaiubmcymu" path="res://ramon/Model/scripts/idle_layer.gd" id="11_idle"]
+[ext_resource type="Script" uid="uid://lrab6uceahn1" path="res://ramon/Model/scripts/head_attention.gd" id="12_head"]
 
 [sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
+shader_parameter/horizon_color = Color(0.18, 0.22, 0.3, 1)
+shader_parameter/top_color = Color(0.09, 0.16, 0.35, 1)
+shader_parameter/bottom_color = Color(0.14, 0.13, 0.12, 1)
 horizon_color = Color(0.18, 0.22, 0.3, 1)
 top_color = Color(0.09, 0.16, 0.35, 1)
 bottom_color = Color(0.14, 0.13, 0.12, 1)
@@ -21,14 +24,266 @@ bottom_color = Color(0.14, 0.13, 0.12, 1)
 [sub_resource type="BoxShape4D" id="BoxShape4D_ground"]
 size = Vector4(80, 2, 80, 80)
 
-[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ground"]
-size = Vector4(80, 2, 80, 6)
-
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ground"]
 albedo_color = Color(0.16, 0.17, 0.2, 1)
 
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ground"]
+size = Vector4(80, 2, 80, 6)
+
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_hide"]
 albedo_color = Color(0.85, 0.62, 0.38, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_tv1o1"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_a0rpb"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_myteo"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_nkmge"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_hqbui"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_d23x7"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_8cofp"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_km1dt"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_idn1l"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_0vwda"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_a6mh8"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_sf7c2"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_dgpvd"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_qui8e"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_t7k2c"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_l2cew"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_expw4"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_on1ai"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_c7ttt"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_6rvy4"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_18ne6"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_8itfc"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_bqnog"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_cp5li"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_vmwsw"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_de62v"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_p4fn0"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_8otem"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_1gdyy"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_4a2yp"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_gsfaf"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_wxfg8"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_e32x3"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_ltjln"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_87snn"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_06egu"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_qaugw"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_fx8vo"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_5e36l"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_h3c7w"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_1sc8m"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_pobe1"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_3btud"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_ij686"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_pf2so"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_l0el5"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_s4hf4"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_fistt"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_lrt14"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_25kya"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_broqa"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_n521r"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_apdb5"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_45i6a"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_4hl22"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_xn5gc"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_ttaer"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_wlytj"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_lt2k8"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_oxxsi"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_v5vca"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_rkwdj"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_m116x"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_xley7"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_cbpqq"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_t47ga"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_r0i67"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_b8v4u"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_xwxq4"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_ew2b1"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_vkchs"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_rnmr8"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_gg28i"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_qm52d"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_ye5cf"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_5souc"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_hbclj"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_d8i15"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_a48u4"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_pdcty"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_mlidc"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_03ga4"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_mdvtr"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_y31ny"]
+albedo_color = Color(0.35, 0.85, 1, 1)
 
 [node name="RiggedCreatureRamon" type="Node4D"]
 
@@ -62,59 +317,38 @@ material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
 
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_tv1o1")
 script = ExtResource("4_ball")
 radius = 0.62
 w_scale = 1.42
 
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel"]
 position = Vector4(0.9, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_a0rpb")
 script = ExtResource("4_ball")
 radius = 0.61
 w_scale = 1.4
 
 [node name="Chest" type="MeshInstance4D" parent="Creature/Barrel"]
-position = Vector4(0, 0, 0, 0)
 material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
 
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_myteo")
 script = ExtResource("4_ball")
 radius = 0.62
 w_scale = 1.42
 
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest"]
 position = Vector4(-0.45, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_nkmge")
 script = ExtResource("4_ball")
 radius = 0.6
 w_scale = 1.4
-
-[node name="Rump" type="MeshInstance4D" parent="Creature/Barrel"]
-position = Vector4(0.9, 0, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.61
-w_scale = 1.4
-
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump"]
-position = Vector4(0.45, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.58
-w_scale = 1.35
 
 [node name="Neck1" type="MeshInstance4D" parent="Creature/Barrel/Chest"]
 position = Vector4(-0.45, 0, 0, 0)
@@ -122,16 +356,16 @@ material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
 
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/Neck1"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_hqbui")
 script = ExtResource("4_ball")
 radius = 0.6
 w_scale = 1.4
 
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/Neck1"]
 position = Vector4(-0.75, 0.02, 0, 0)
+material_override = SubResource("WireMaterial4D_d23x7")
 script = ExtResource("4_ball")
 radius = 0.44
 w_scale = 1.3
@@ -142,16 +376,16 @@ material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
 
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/Neck1/Neck2"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_8cofp")
 script = ExtResource("4_ball")
 radius = 0.44
 w_scale = 1.3
 
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/Neck1/Neck2"]
 position = Vector4(-0.7, 0.385, 0, 0)
+material_override = SubResource("WireMaterial4D_km1dt")
 script = ExtResource("4_ball")
 radius = 0.38
 w_scale = 1.2
@@ -162,19 +396,427 @@ material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
 
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/Neck1/Neck2/Head"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_idn1l")
 script = ExtResource("4_ball")
 radius = 0.38
 w_scale = 1.2
 
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/Neck1/Neck2/Head"]
 position = Vector4(-0.55, -0.405, 0, 0)
+material_override = SubResource("WireMaterial4D_0vwda")
 script = ExtResource("4_ball")
 radius = 0.26
 w_scale = 1.1
+
+[node name="ForeLAIK" type="Node4D" parent="Creature/Barrel/Chest"]
+position = Vector4(-0.007, -0.1, 0, 0)
+basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+script = ExtResource("7_ik")
+joint_paths = Array[NodePath]([NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")])
+link_lengths = Array[float]([1.15, 0.95, 0.7])
+target_path = NodePath("../../../ForeLAFootTarget")
+enable_plane_alignment_twist = true
+
+[node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK"]
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper"]
+material_override = SubResource("WireMaterial4D_a6mh8")
+script = ExtResource("4_ball")
+radius = 0.3
+v_scale = 0.6
+w_scale = 1.1
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper"]
+position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("WireMaterial4D_sf7c2")
+script = ExtResource("4_ball")
+radius = 0.26
+v_scale = 0.6
+w_scale = 1.1
+
+[node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper"]
+position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid"]
+material_override = SubResource("WireMaterial4D_dgpvd")
+script = ExtResource("4_ball")
+radius = 0.24
+v_scale = 0.6
+w_scale = 1.6
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid"]
+position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("WireMaterial4D_qui8e")
+script = ExtResource("4_ball")
+radius = 0.2
+v_scale = 0.6
+w_scale = 1.6
+
+[node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid"]
+position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid/Lower"]
+material_override = SubResource("WireMaterial4D_t7k2c")
+script = ExtResource("4_ball")
+radius = 0.19
+v_scale = 0.6
+w_scale = 2.2
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid/Lower"]
+position = Vector4(0, 0.7, 0, 0)
+material_override = SubResource("WireMaterial4D_l2cew")
+script = ExtResource("4_ball")
+radius = 0.15
+v_scale = 0.6
+w_scale = 2.2
+
+[node name="Foot" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid/Lower"]
+position = Vector4(0, 0.7, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid/Lower/Foot"]
+material_override = SubResource("WireMaterial4D_expw4")
+script = ExtResource("4_ball")
+radius = 0.15
+v_scale = 0.7
+w_scale = 2.2
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid/Lower/Foot"]
+position = Vector4(0, 0.34, 0, 0)
+material_override = SubResource("WireMaterial4D_on1ai")
+script = ExtResource("4_ball")
+radius = 0.1
+v_scale = 0.7
+w_scale = 2.2
+squareness = 0.35
+
+[node name="ForeLKIK" type="Node4D" parent="Creature/Barrel/Chest"]
+position = Vector4(-0.007, -0.1, 0, 0)
+basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+script = ExtResource("7_ik")
+joint_paths = Array[NodePath]([NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")])
+link_lengths = Array[float]([1.15, 0.95, 0.7])
+target_path = NodePath("../../../ForeLKFootTarget")
+enable_plane_alignment_twist = true
+
+[node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK"]
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper"]
+material_override = SubResource("WireMaterial4D_c7ttt")
+script = ExtResource("4_ball")
+radius = 0.3
+v_scale = 0.6
+w_scale = 1.1
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper"]
+position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("WireMaterial4D_6rvy4")
+script = ExtResource("4_ball")
+radius = 0.26
+v_scale = 0.6
+w_scale = 1.1
+
+[node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper"]
+position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid"]
+material_override = SubResource("WireMaterial4D_18ne6")
+script = ExtResource("4_ball")
+radius = 0.24
+v_scale = 0.6
+w_scale = 1.6
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid"]
+position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("WireMaterial4D_8itfc")
+script = ExtResource("4_ball")
+radius = 0.2
+v_scale = 0.6
+w_scale = 1.6
+
+[node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid"]
+position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid/Lower"]
+material_override = SubResource("WireMaterial4D_bqnog")
+script = ExtResource("4_ball")
+radius = 0.19
+v_scale = 0.6
+w_scale = 2.2
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid/Lower"]
+position = Vector4(0, 0.7, 0, 0)
+material_override = SubResource("WireMaterial4D_cp5li")
+script = ExtResource("4_ball")
+radius = 0.15
+v_scale = 0.6
+w_scale = 2.2
+
+[node name="Foot" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid/Lower"]
+position = Vector4(0, 0.7, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid/Lower/Foot"]
+material_override = SubResource("WireMaterial4D_vmwsw")
+script = ExtResource("4_ball")
+radius = 0.15
+v_scale = 0.7
+w_scale = 2.2
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid/Lower/Foot"]
+position = Vector4(0, 0.34, 0, 0)
+material_override = SubResource("WireMaterial4D_de62v")
+script = ExtResource("4_ball")
+radius = 0.1
+v_scale = 0.7
+w_scale = 2.2
+squareness = 0.35
+
+[node name="ForeRAIK" type="Node4D" parent="Creature/Barrel/Chest"]
+position = Vector4(-0.893, -0.1, 0, 0)
+basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+script = ExtResource("7_ik")
+joint_paths = Array[NodePath]([NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")])
+link_lengths = Array[float]([1.15, 0.95, 0.7])
+target_path = NodePath("../../../ForeRAFootTarget")
+enable_plane_alignment_twist = true
+
+[node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK"]
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper"]
+material_override = SubResource("WireMaterial4D_p4fn0")
+script = ExtResource("4_ball")
+radius = 0.3
+v_scale = 0.6
+w_scale = 1.1
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper"]
+position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("WireMaterial4D_8otem")
+script = ExtResource("4_ball")
+radius = 0.26
+v_scale = 0.6
+w_scale = 1.1
+
+[node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper"]
+position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid"]
+material_override = SubResource("WireMaterial4D_1gdyy")
+script = ExtResource("4_ball")
+radius = 0.24
+v_scale = 0.6
+w_scale = 1.6
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid"]
+position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("WireMaterial4D_4a2yp")
+script = ExtResource("4_ball")
+radius = 0.2
+v_scale = 0.6
+w_scale = 1.6
+
+[node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid"]
+position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid/Lower"]
+material_override = SubResource("WireMaterial4D_gsfaf")
+script = ExtResource("4_ball")
+radius = 0.19
+v_scale = 0.6
+w_scale = 2.2
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid/Lower"]
+position = Vector4(0, 0.7, 0, 0)
+material_override = SubResource("WireMaterial4D_wxfg8")
+script = ExtResource("4_ball")
+radius = 0.15
+v_scale = 0.6
+w_scale = 2.2
+
+[node name="Foot" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid/Lower"]
+position = Vector4(0, 0.7, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid/Lower/Foot"]
+material_override = SubResource("WireMaterial4D_e32x3")
+script = ExtResource("4_ball")
+radius = 0.15
+v_scale = 0.7
+w_scale = 2.2
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid/Lower/Foot"]
+position = Vector4(0, 0.34, 0, 0)
+material_override = SubResource("WireMaterial4D_ltjln")
+script = ExtResource("4_ball")
+radius = 0.1
+v_scale = 0.7
+w_scale = 2.2
+squareness = 0.35
+
+[node name="ForeRKIK" type="Node4D" parent="Creature/Barrel/Chest"]
+position = Vector4(-0.893, -0.1, 0, 0)
+basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+script = ExtResource("7_ik")
+joint_paths = Array[NodePath]([NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")])
+link_lengths = Array[float]([1.15, 0.95, 0.7])
+target_path = NodePath("../../../ForeRKFootTarget")
+enable_plane_alignment_twist = true
+
+[node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK"]
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper"]
+material_override = SubResource("WireMaterial4D_87snn")
+script = ExtResource("4_ball")
+radius = 0.3
+v_scale = 0.6
+w_scale = 1.1
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper"]
+position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("WireMaterial4D_06egu")
+script = ExtResource("4_ball")
+radius = 0.26
+v_scale = 0.6
+w_scale = 1.1
+
+[node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper"]
+position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid"]
+material_override = SubResource("WireMaterial4D_qaugw")
+script = ExtResource("4_ball")
+radius = 0.24
+v_scale = 0.6
+w_scale = 1.6
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid"]
+position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("WireMaterial4D_fx8vo")
+script = ExtResource("4_ball")
+radius = 0.2
+v_scale = 0.6
+w_scale = 1.6
+
+[node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid"]
+position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid/Lower"]
+material_override = SubResource("WireMaterial4D_5e36l")
+script = ExtResource("4_ball")
+radius = 0.19
+v_scale = 0.6
+w_scale = 2.2
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid/Lower"]
+position = Vector4(0, 0.7, 0, 0)
+material_override = SubResource("WireMaterial4D_h3c7w")
+script = ExtResource("4_ball")
+radius = 0.15
+v_scale = 0.6
+w_scale = 2.2
+
+[node name="Foot" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid/Lower"]
+position = Vector4(0, 0.7, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid/Lower/Foot"]
+material_override = SubResource("WireMaterial4D_1sc8m")
+script = ExtResource("4_ball")
+radius = 0.15
+v_scale = 0.7
+w_scale = 2.2
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid/Lower/Foot"]
+position = Vector4(0, 0.34, 0, 0)
+material_override = SubResource("WireMaterial4D_pobe1")
+script = ExtResource("4_ball")
+radius = 0.1
+v_scale = 0.7
+w_scale = 2.2
+squareness = 0.35
+
+[node name="Rump" type="MeshInstance4D" parent="Creature/Barrel"]
+position = Vector4(0.9, 0, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump"]
+material_override = SubResource("WireMaterial4D_3btud")
+script = ExtResource("4_ball")
+radius = 0.61
+w_scale = 1.4
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump"]
+position = Vector4(0.45, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_ij686")
+script = ExtResource("4_ball")
+radius = 0.58
+w_scale = 1.35
 
 [node name="Tail1" type="MeshInstance4D" parent="Creature/Barrel/Rump"]
 position = Vector4(0.45, 0, 0, 0)
@@ -182,16 +824,16 @@ material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
 
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/Tail1"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_pf2so")
 script = ExtResource("4_ball")
 radius = 0.58
 w_scale = 1.35
 
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/Tail1"]
 position = Vector4(0.4, -0.02, 0, 0)
+material_override = SubResource("WireMaterial4D_l0el5")
 script = ExtResource("4_ball")
 radius = 0.22
 w_scale = 1.15
@@ -202,16 +844,16 @@ material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
 
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/Tail1/Tail2"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_s4hf4")
 script = ExtResource("4_ball")
 radius = 0.22
 w_scale = 1.15
 
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/Tail1/Tail2"]
 position = Vector4(0.45, -0.04, 0, 0)
+material_override = SubResource("WireMaterial4D_fistt")
 script = ExtResource("4_ball")
 radius = 0.16
 w_scale = 1.15
@@ -222,16 +864,16 @@ material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
 
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/Tail1/Tail2/Tail3"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_lrt14")
 script = ExtResource("4_ball")
 radius = 0.16
 w_scale = 1.15
 
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/Tail1/Tail2/Tail3"]
 position = Vector4(0.45, -0.06, 0, 0)
+material_override = SubResource("WireMaterial4D_25kya")
 script = ExtResource("4_ball")
 radius = 0.11
 w_scale = 1.15
@@ -242,724 +884,432 @@ material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
 
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/Tail1/Tail2/Tail3/Tail4"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_broqa")
 script = ExtResource("4_ball")
 radius = 0.11
 w_scale = 1.15
 
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/Tail1/Tail2/Tail3/Tail4"]
 position = Vector4(0.45, -0.08, 0, 0)
+material_override = SubResource("WireMaterial4D_n521r")
 script = ExtResource("4_ball")
 radius = 0.06
 w_scale = 1.15
 
-[node name="ForeLAIK" type="Node4D" parent="Creature/Barrel/Chest"]
-position = Vector4(-0.007, -0.1, 0, 0)
-basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
-script = ExtResource("7_ik")
-joint_paths = [NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")]
-link_lengths = Array[float]([1.15, 0.95, 0.7])
-target_path = NodePath("../../../ForeLAFootTarget")
-root_forward_local = Vector4(1, 0, 0, 0)
-enable_plane_alignment_twist = true
-[node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK"]
-position = Vector4(0, 0, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.3
-v_scale = 0.6
-w_scale = 1.1
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper"]
-position = Vector4(0, 1.15, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.26
-v_scale = 0.6
-w_scale = 1.1
-[node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper"]
-position = Vector4(0, 1.15, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.24
-v_scale = 0.6
-w_scale = 1.6
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid"]
-position = Vector4(0, 0.95, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.2
-v_scale = 0.6
-w_scale = 1.6
-[node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid"]
-position = Vector4(0, 0.95, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid/Lower"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.19
-v_scale = 0.6
-w_scale = 2.2
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid/Lower"]
-position = Vector4(0, 0.7, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.15
-v_scale = 0.6
-w_scale = 2.2
-[node name="ForeLKIK" type="Node4D" parent="Creature/Barrel/Chest"]
-position = Vector4(-0.007, -0.1, 0, 0)
-basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
-script = ExtResource("7_ik")
-joint_paths = [NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")]
-link_lengths = Array[float]([1.15, 0.95, 0.7])
-target_path = NodePath("../../../ForeLKFootTarget")
-root_forward_local = Vector4(1, 0, 0, 0)
-enable_plane_alignment_twist = true
-[node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK"]
-position = Vector4(0, 0, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.3
-v_scale = 0.6
-w_scale = 1.1
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper"]
-position = Vector4(0, 1.15, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.26
-v_scale = 0.6
-w_scale = 1.1
-[node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper"]
-position = Vector4(0, 1.15, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.24
-v_scale = 0.6
-w_scale = 1.6
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid"]
-position = Vector4(0, 0.95, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.2
-v_scale = 0.6
-w_scale = 1.6
-[node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid"]
-position = Vector4(0, 0.95, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid/Lower"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.19
-v_scale = 0.6
-w_scale = 2.2
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid/Lower"]
-position = Vector4(0, 0.7, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.15
-v_scale = 0.6
-w_scale = 2.2
-[node name="ForeRAIK" type="Node4D" parent="Creature/Barrel/Chest"]
-position = Vector4(-0.893, -0.1, 0, 0)
-basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
-script = ExtResource("7_ik")
-joint_paths = [NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")]
-link_lengths = Array[float]([1.15, 0.95, 0.7])
-target_path = NodePath("../../../ForeRAFootTarget")
-root_forward_local = Vector4(1, 0, 0, 0)
-enable_plane_alignment_twist = true
-[node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK"]
-position = Vector4(0, 0, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.3
-v_scale = 0.6
-w_scale = 1.1
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper"]
-position = Vector4(0, 1.15, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.26
-v_scale = 0.6
-w_scale = 1.1
-[node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper"]
-position = Vector4(0, 1.15, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.24
-v_scale = 0.6
-w_scale = 1.6
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid"]
-position = Vector4(0, 0.95, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.2
-v_scale = 0.6
-w_scale = 1.6
-[node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid"]
-position = Vector4(0, 0.95, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid/Lower"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.19
-v_scale = 0.6
-w_scale = 2.2
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid/Lower"]
-position = Vector4(0, 0.7, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.15
-v_scale = 0.6
-w_scale = 2.2
-[node name="ForeRKIK" type="Node4D" parent="Creature/Barrel/Chest"]
-position = Vector4(-0.893, -0.1, 0, 0)
-basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
-script = ExtResource("7_ik")
-joint_paths = [NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")]
-link_lengths = Array[float]([1.15, 0.95, 0.7])
-target_path = NodePath("../../../ForeRKFootTarget")
-root_forward_local = Vector4(1, 0, 0, 0)
-enable_plane_alignment_twist = true
-[node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK"]
-position = Vector4(0, 0, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.3
-v_scale = 0.6
-w_scale = 1.1
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper"]
-position = Vector4(0, 1.15, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.26
-v_scale = 0.6
-w_scale = 1.1
-[node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper"]
-position = Vector4(0, 1.15, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.24
-v_scale = 0.6
-w_scale = 1.6
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid"]
-position = Vector4(0, 0.95, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.2
-v_scale = 0.6
-w_scale = 1.6
-[node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid"]
-position = Vector4(0, 0.95, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid/Lower"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.19
-v_scale = 0.6
-w_scale = 2.2
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid/Lower"]
-position = Vector4(0, 0.7, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.15
-v_scale = 0.6
-w_scale = 2.2
 [node name="HindLAIK" type="Node4D" parent="Creature/Barrel/Rump"]
 position = Vector4(0.8965, -0.1, 0, 0)
 basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 script = ExtResource("7_ik")
-joint_paths = [NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")]
+joint_paths = Array[NodePath]([NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")])
 link_lengths = Array[float]([1.15, 0.95, 0.7])
 target_path = NodePath("../../../HindLAFootTarget")
-root_forward_local = Vector4(1, 0, 0, 0)
 enable_plane_alignment_twist = true
+
 [node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLAIK"]
-position = Vector4(0, 0, 0, 0)
 material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
+
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLAIK/Upper"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_apdb5")
 script = ExtResource("4_ball")
 radius = 0.3
 v_scale = 0.8
 w_scale = 1.1
+
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLAIK/Upper"]
 position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("WireMaterial4D_45i6a")
 script = ExtResource("4_ball")
 radius = 0.26
 v_scale = 0.8
 w_scale = 1.1
+
 [node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLAIK/Upper"]
 position = Vector4(0, 1.15, 0, 0)
 material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
+
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLAIK/Upper/Mid"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_4hl22")
 script = ExtResource("4_ball")
 radius = 0.24
 v_scale = 0.8
 w_scale = 1.6
+
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLAIK/Upper/Mid"]
 position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("WireMaterial4D_xn5gc")
 script = ExtResource("4_ball")
 radius = 0.2
 v_scale = 0.8
 w_scale = 1.6
+
 [node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLAIK/Upper/Mid"]
 position = Vector4(0, 0.95, 0, 0)
 material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
+
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLAIK/Upper/Mid/Lower"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_ttaer")
 script = ExtResource("4_ball")
 radius = 0.19
 v_scale = 0.8
 w_scale = 2.2
+
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLAIK/Upper/Mid/Lower"]
 position = Vector4(0, 0.7, 0, 0)
+material_override = SubResource("WireMaterial4D_wlytj")
 script = ExtResource("4_ball")
 radius = 0.15
 v_scale = 0.8
 w_scale = 2.2
-[node name="HindLKIK" type="Node4D" parent="Creature/Barrel/Rump"]
-position = Vector4(0.8965, -0.1, 0, 0)
-basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
-script = ExtResource("7_ik")
-joint_paths = [NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")]
-link_lengths = Array[float]([1.15, 0.95, 0.7])
-target_path = NodePath("../../../HindLKFootTarget")
-root_forward_local = Vector4(1, 0, 0, 0)
-enable_plane_alignment_twist = true
-[node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK"]
-position = Vector4(0, 0, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.3
-v_scale = 0.8
-w_scale = 1.1
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper"]
-position = Vector4(0, 1.15, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.26
-v_scale = 0.8
-w_scale = 1.1
-[node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper"]
-position = Vector4(0, 1.15, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper/Mid"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.24
-v_scale = 0.8
-w_scale = 1.6
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper/Mid"]
-position = Vector4(0, 0.95, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.2
-v_scale = 0.8
-w_scale = 1.6
-[node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper/Mid"]
-position = Vector4(0, 0.95, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper/Mid/Lower"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.19
-v_scale = 0.8
-w_scale = 2.2
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper/Mid/Lower"]
-position = Vector4(0, 0.7, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.15
-v_scale = 0.8
-w_scale = 2.2
-[node name="HindRAIK" type="Node4D" parent="Creature/Barrel/Rump"]
-position = Vector4(0.0035, -0.1, 0, 0)
-basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
-script = ExtResource("7_ik")
-joint_paths = [NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")]
-link_lengths = Array[float]([1.15, 0.95, 0.7])
-target_path = NodePath("../../../HindRAFootTarget")
-root_forward_local = Vector4(1, 0, 0, 0)
-enable_plane_alignment_twist = true
-[node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK"]
-position = Vector4(0, 0, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.3
-v_scale = 0.8
-w_scale = 1.1
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper"]
-position = Vector4(0, 1.15, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.26
-v_scale = 0.8
-w_scale = 1.1
-[node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper"]
-position = Vector4(0, 1.15, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper/Mid"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.24
-v_scale = 0.8
-w_scale = 1.6
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper/Mid"]
-position = Vector4(0, 0.95, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.2
-v_scale = 0.8
-w_scale = 1.6
-[node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper/Mid"]
-position = Vector4(0, 0.95, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper/Mid/Lower"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.19
-v_scale = 0.8
-w_scale = 2.2
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper/Mid/Lower"]
-position = Vector4(0, 0.7, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.15
-v_scale = 0.8
-w_scale = 2.2
-[node name="HindRKIK" type="Node4D" parent="Creature/Barrel/Rump"]
-position = Vector4(0.0035, -0.1, 0, 0)
-basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
-script = ExtResource("7_ik")
-joint_paths = [NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")]
-link_lengths = Array[float]([1.15, 0.95, 0.7])
-target_path = NodePath("../../../HindRKFootTarget")
-root_forward_local = Vector4(1, 0, 0, 0)
-enable_plane_alignment_twist = true
-[node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK"]
-position = Vector4(0, 0, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.3
-v_scale = 0.8
-w_scale = 1.1
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper"]
-position = Vector4(0, 1.15, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.26
-v_scale = 0.8
-w_scale = 1.1
-[node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper"]
-position = Vector4(0, 1.15, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper/Mid"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.24
-v_scale = 0.8
-w_scale = 1.6
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper/Mid"]
-position = Vector4(0, 0.95, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.2
-v_scale = 0.8
-w_scale = 1.6
-[node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper/Mid"]
-position = Vector4(0, 0.95, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper/Mid/Lower"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.19
-v_scale = 0.8
-w_scale = 2.2
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper/Mid/Lower"]
-position = Vector4(0, 0.7, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.15
-v_scale = 0.8
-w_scale = 2.2
-[node name="Foot" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid/Lower"]
-position = Vector4(0, 0.7, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid/Lower/Foot"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.15
-v_scale = 0.7
-w_scale = 2.2
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLAIK/Upper/Mid/Lower/Foot"]
-position = Vector4(0, 0.34, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.1
-v_scale = 0.7
-w_scale = 2.2
-squareness = 0.35
-[node name="Foot" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid/Lower"]
-position = Vector4(0, 0.7, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid/Lower/Foot"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.15
-v_scale = 0.7
-w_scale = 2.2
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeLKIK/Upper/Mid/Lower/Foot"]
-position = Vector4(0, 0.34, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.1
-v_scale = 0.7
-w_scale = 2.2
-squareness = 0.35
-[node name="Foot" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid/Lower"]
-position = Vector4(0, 0.7, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid/Lower/Foot"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.15
-v_scale = 0.7
-w_scale = 2.2
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRAIK/Upper/Mid/Lower/Foot"]
-position = Vector4(0, 0.34, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.1
-v_scale = 0.7
-w_scale = 2.2
-squareness = 0.35
-[node name="Foot" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid/Lower"]
-position = Vector4(0, 0.7, 0, 0)
-material_override = SubResource("TetraMaterial4D_hide")
-script = ExtResource("3_rig")
-smoothing = 2
-profile_sides = 10
-profile_rings = 4
-[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid/Lower/Foot"]
-position = Vector4(0, 0, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.15
-v_scale = 0.7
-w_scale = 2.2
-[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Chest/ForeRKIK/Upper/Mid/Lower/Foot"]
-position = Vector4(0, 0.34, 0, 0)
-script = ExtResource("4_ball")
-radius = 0.1
-v_scale = 0.7
-w_scale = 2.2
-squareness = 0.35
+
 [node name="Foot" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLAIK/Upper/Mid/Lower"]
 position = Vector4(0, 0.7, 0, 0)
 material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
+
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLAIK/Upper/Mid/Lower/Foot"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_lt2k8")
 script = ExtResource("4_ball")
 radius = 0.15
 v_scale = 0.7
 w_scale = 2.2
+
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLAIK/Upper/Mid/Lower/Foot"]
 position = Vector4(0, 0.34, 0, 0)
+material_override = SubResource("WireMaterial4D_oxxsi")
 script = ExtResource("4_ball")
 radius = 0.1
 v_scale = 0.7
 w_scale = 2.2
 squareness = 0.35
+
+[node name="HindLKIK" type="Node4D" parent="Creature/Barrel/Rump"]
+position = Vector4(0.8965, -0.1, 0, 0)
+basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+script = ExtResource("7_ik")
+joint_paths = Array[NodePath]([NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")])
+link_lengths = Array[float]([1.15, 0.95, 0.7])
+target_path = NodePath("../../../HindLKFootTarget")
+enable_plane_alignment_twist = true
+
+[node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK"]
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper"]
+material_override = SubResource("WireMaterial4D_v5vca")
+script = ExtResource("4_ball")
+radius = 0.3
+v_scale = 0.8
+w_scale = 1.1
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper"]
+position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("WireMaterial4D_rkwdj")
+script = ExtResource("4_ball")
+radius = 0.26
+v_scale = 0.8
+w_scale = 1.1
+
+[node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper"]
+position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper/Mid"]
+material_override = SubResource("WireMaterial4D_m116x")
+script = ExtResource("4_ball")
+radius = 0.24
+v_scale = 0.8
+w_scale = 1.6
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper/Mid"]
+position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("WireMaterial4D_xley7")
+script = ExtResource("4_ball")
+radius = 0.2
+v_scale = 0.8
+w_scale = 1.6
+
+[node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper/Mid"]
+position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper/Mid/Lower"]
+material_override = SubResource("WireMaterial4D_cbpqq")
+script = ExtResource("4_ball")
+radius = 0.19
+v_scale = 0.8
+w_scale = 2.2
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper/Mid/Lower"]
+position = Vector4(0, 0.7, 0, 0)
+material_override = SubResource("WireMaterial4D_t47ga")
+script = ExtResource("4_ball")
+radius = 0.15
+v_scale = 0.8
+w_scale = 2.2
+
 [node name="Foot" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper/Mid/Lower"]
 position = Vector4(0, 0.7, 0, 0)
 material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
+
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper/Mid/Lower/Foot"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_r0i67")
 script = ExtResource("4_ball")
 radius = 0.15
 v_scale = 0.7
 w_scale = 2.2
+
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindLKIK/Upper/Mid/Lower/Foot"]
 position = Vector4(0, 0.34, 0, 0)
+material_override = SubResource("WireMaterial4D_b8v4u")
 script = ExtResource("4_ball")
 radius = 0.1
 v_scale = 0.7
 w_scale = 2.2
 squareness = 0.35
+
+[node name="HindRAIK" type="Node4D" parent="Creature/Barrel/Rump"]
+position = Vector4(0.0035, -0.1, 0, 0)
+basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+script = ExtResource("7_ik")
+joint_paths = Array[NodePath]([NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")])
+link_lengths = Array[float]([1.15, 0.95, 0.7])
+target_path = NodePath("../../../HindRAFootTarget")
+enable_plane_alignment_twist = true
+
+[node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK"]
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper"]
+material_override = SubResource("WireMaterial4D_xwxq4")
+script = ExtResource("4_ball")
+radius = 0.3
+v_scale = 0.8
+w_scale = 1.1
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper"]
+position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("WireMaterial4D_ew2b1")
+script = ExtResource("4_ball")
+radius = 0.26
+v_scale = 0.8
+w_scale = 1.1
+
+[node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper"]
+position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper/Mid"]
+material_override = SubResource("WireMaterial4D_vkchs")
+script = ExtResource("4_ball")
+radius = 0.24
+v_scale = 0.8
+w_scale = 1.6
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper/Mid"]
+position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("WireMaterial4D_rnmr8")
+script = ExtResource("4_ball")
+radius = 0.2
+v_scale = 0.8
+w_scale = 1.6
+
+[node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper/Mid"]
+position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper/Mid/Lower"]
+material_override = SubResource("WireMaterial4D_gg28i")
+script = ExtResource("4_ball")
+radius = 0.19
+v_scale = 0.8
+w_scale = 2.2
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper/Mid/Lower"]
+position = Vector4(0, 0.7, 0, 0)
+material_override = SubResource("WireMaterial4D_qm52d")
+script = ExtResource("4_ball")
+radius = 0.15
+v_scale = 0.8
+w_scale = 2.2
+
 [node name="Foot" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper/Mid/Lower"]
 position = Vector4(0, 0.7, 0, 0)
 material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
+
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper/Mid/Lower/Foot"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_ye5cf")
 script = ExtResource("4_ball")
 radius = 0.15
 v_scale = 0.7
 w_scale = 2.2
+
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRAIK/Upper/Mid/Lower/Foot"]
 position = Vector4(0, 0.34, 0, 0)
+material_override = SubResource("WireMaterial4D_5souc")
 script = ExtResource("4_ball")
 radius = 0.1
 v_scale = 0.7
 w_scale = 2.2
 squareness = 0.35
+
+[node name="HindRKIK" type="Node4D" parent="Creature/Barrel/Rump"]
+position = Vector4(0.0035, -0.1, 0, 0)
+basis = Projection(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+script = ExtResource("7_ik")
+joint_paths = Array[NodePath]([NodePath("Upper"), NodePath("Upper/Mid"), NodePath("Upper/Mid/Lower")])
+link_lengths = Array[float]([1.15, 0.95, 0.7])
+target_path = NodePath("../../../HindRKFootTarget")
+enable_plane_alignment_twist = true
+
+[node name="Upper" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK"]
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper"]
+material_override = SubResource("WireMaterial4D_hbclj")
+script = ExtResource("4_ball")
+radius = 0.3
+v_scale = 0.8
+w_scale = 1.1
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper"]
+position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("WireMaterial4D_d8i15")
+script = ExtResource("4_ball")
+radius = 0.26
+v_scale = 0.8
+w_scale = 1.1
+
+[node name="Mid" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper"]
+position = Vector4(0, 1.15, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper/Mid"]
+material_override = SubResource("WireMaterial4D_a48u4")
+script = ExtResource("4_ball")
+radius = 0.24
+v_scale = 0.8
+w_scale = 1.6
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper/Mid"]
+position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("WireMaterial4D_pdcty")
+script = ExtResource("4_ball")
+radius = 0.2
+v_scale = 0.8
+w_scale = 1.6
+
+[node name="Lower" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper/Mid"]
+position = Vector4(0, 0.95, 0, 0)
+material_override = SubResource("TetraMaterial4D_hide")
+script = ExtResource("3_rig")
+smoothing = 2
+profile_sides = 10
+
+[node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper/Mid/Lower"]
+material_override = SubResource("WireMaterial4D_mlidc")
+script = ExtResource("4_ball")
+radius = 0.19
+v_scale = 0.8
+w_scale = 2.2
+
+[node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper/Mid/Lower"]
+position = Vector4(0, 0.7, 0, 0)
+material_override = SubResource("WireMaterial4D_03ga4")
+script = ExtResource("4_ball")
+radius = 0.15
+v_scale = 0.8
+w_scale = 2.2
+
 [node name="Foot" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper/Mid/Lower"]
 position = Vector4(0, 0.7, 0, 0)
 material_override = SubResource("TetraMaterial4D_hide")
 script = ExtResource("3_rig")
 smoothing = 2
 profile_sides = 10
-profile_rings = 4
+
 [node name="B1" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper/Mid/Lower/Foot"]
-position = Vector4(0, 0, 0, 0)
+material_override = SubResource("WireMaterial4D_mdvtr")
 script = ExtResource("4_ball")
 radius = 0.15
 v_scale = 0.7
 w_scale = 2.2
+
 [node name="B2" type="MeshInstance4D" parent="Creature/Barrel/Rump/HindRKIK/Upper/Mid/Lower/Foot"]
 position = Vector4(0, 0.34, 0, 0)
+material_override = SubResource("WireMaterial4D_y31ny")
 script = ExtResource("4_ball")
 radius = 0.1
 v_scale = 0.7
 w_scale = 2.2
 squareness = 0.35
+
 [node name="ForeLAFootTarget" type="Node4D" parent="Creature"]
-position = Vector4(-0.1570, 0.0500, 0.8500, 0.0000)
+position = Vector4(-0.157, 0.05, 0.85, 0)
+
 [node name="ForeLKFootTarget" type="Node4D" parent="Creature"]
-position = Vector4(-0.1570, 0.0500, -0.8500, 0.0000)
+position = Vector4(-0.157, 0.05, -0.85, 0)
+
 [node name="ForeRAFootTarget" type="Node4D" parent="Creature"]
-position = Vector4(-1.0430, 0.0500, 0.8500, 0.0000)
+position = Vector4(-1.043, 0.05, 0.85, 0)
+
 [node name="ForeRKFootTarget" type="Node4D" parent="Creature"]
-position = Vector4(-1.0430, 0.0500, -0.8500, 0.0000)
+position = Vector4(-1.043, 0.05, -0.85, 0)
+
 [node name="HindLAFootTarget" type="Node4D" parent="Creature"]
-position = Vector4(1.6465, 0.0500, 0.9500, 0.0000)
+position = Vector4(1.6465, 0.05, 0.95, 0)
+
 [node name="HindLKFootTarget" type="Node4D" parent="Creature"]
-position = Vector4(1.6465, 0.0500, -0.9500, 0.0000)
+position = Vector4(1.6465, 0.05, -0.95, 0)
+
 [node name="HindRAFootTarget" type="Node4D" parent="Creature"]
-position = Vector4(0.7535, 0.0500, 0.9500, 0.0000)
+position = Vector4(0.7535, 0.05, 0.95, 0)
+
 [node name="HindRKFootTarget" type="Node4D" parent="Creature"]
-position = Vector4(0.7535, 0.0500, -0.9500, 0.0000)
+position = Vector4(0.7535, 0.05, -0.95, 0)
+
 [node name="HeadRotationDemo" type="Node" parent="." groups=["disabled_demo"]]
 process_mode = 4
 script = ExtResource("5_headanim")
@@ -967,35 +1317,22 @@ target_path = NodePath("../Creature/Barrel/Chest/Neck1/Neck2/Head")
 
 [node name="IKGaitDriver" type="Node" parent="."]
 script = ExtResource("6_walker")
-creature_path = NodePath("../Creature")
 w_pair_phase_offset = 0.5
 
 [node name="FootGroundSolver" type="Node" parent="."]
 script = ExtResource("8_foot")
-creature_path = NodePath("../Creature")
 
 [node name="TailSway" type="Node" parent="."]
 script = ExtResource("9_tail")
-creature_path = NodePath("../Creature")
 
 [node name="SpineNeckSolver" type="Node" parent="."]
 script = ExtResource("10_spine")
-creature_path = NodePath("../Creature")
-gait_driver_path = NodePath("../IKGaitDriver")
 
 [node name="IdleLayer" type="Node" parent="."]
 script = ExtResource("11_idle")
-gait_driver_path = NodePath("../IKGaitDriver")
-spine_solver_path = NodePath("../SpineNeckSolver")
-tail_solver_path = NodePath("../TailSway")
-creature_path = NodePath("../Creature")
 
 [node name="HeadAttention" type="Node" parent="."]
 script = ExtResource("12_head")
-creature_path = NodePath("../Creature")
-gait_driver_path = NodePath("../IKGaitDriver")
-spine_solver_path = NodePath("../SpineNeckSolver")
-player_path = NodePath("../Player")
 
 [node name="Player" parent="." instance=ExtResource("2_player")]
 position = Vector4(0, 2, 9, 0)
@@ -1007,7 +1344,6 @@ w_fade_distance = 8.0
 edge_falloff = 0.6
 plane_sharpness = 0.2
 skewness = 0.35
-projection_opacity = 1.0
 projection_opacity_base = 0.02
 
 [editable path="Player"]
