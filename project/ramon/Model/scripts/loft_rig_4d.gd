@@ -21,6 +21,11 @@ extends MeshInstance4D
 ## 3D surface; here we loft 3D cross-sections into a 4D one.
 
 const _Builder = preload("res://ramon/Model/scripts/loft_builder_4d.gd")
+## Preloaded for its SYMMETRY_* constants only - the rig still duck-types its
+## children, so this creates no requirement that a ball BE this script. Sharing the
+## constants is the point: two copies of the enum is how the two files drift apart
+## and silently stop agreeing about what "3" means.
+const _Ball = preload("res://ramon/Model/scripts/loft_ball_4d.gd")
 
 ## How far off X = 0 a ball must sit before the chain counts as off-centre and
 ## earns a mirrored twin.
@@ -98,6 +103,17 @@ const _COINCIDENT_EPSILON: float = 0.0001
 ## The mirror plane always passes THROUGH the ball a branch hangs off, so a limb's
 ## twin is guaranteed to meet the body at the same point. Only the rig's own chain,
 ## which has no anchor, reflects about the rig's origin.
+##
+## THIS PROPERTY HAS A SECOND MEANING for a branch set to Cyclic or Dihedral: it
+## becomes the EXCLUDED axis. The axis it names is the one that stays fixed, and the
+## ring sweeps the plane of the other two. Y is never involved either way, because
+## the player only rotates within XZW and Y is therefore the model's stable up.
+##
+## So X here means a Cn/Dn ring sweeping the (Z, W) plane: X stays head-to-tail, Y
+## stays up, and the limbs go round through the axis you cannot see. That is the
+## arrangement the Cn/Dn horse prototypes used. It is a reinterpretation rather than
+## a new property on purpose - the inspector does not need two axis pickers that are
+## the same choice worded differently.
 @export_enum("X", "Z", "W") var mirror_axis: int = 0:
 	set(value):
 		mirror_axis = value
@@ -558,41 +574,218 @@ func _build_chain(chain: Array, announce: bool, is_branch: bool = false, run_che
 	# lands nowhere near the ball it belongs to, floating free. The rig's own chain
 	# has no anchor, so it still mirrors about x = 0.
 	var mirror_plane: float = _axis_value(sections[0]["center"]) if is_branch else 0.0
-	var mirroring: bool = _should_mirror(sections, is_branch, mirror_plane)
-	# A branch whose root has been detached keeps its twin as REAL balls, so
-	# generating one as well would give three limbs where two were asked for.
-	if is_branch and chain.size() > 1 and not bool(chain[1].mirror_branch):
-		mirroring = false
-	if mirroring:
+	# The ring turns about the ball the branch hangs off, for the same reason the
+	# mirror plane passes through it: every copy has to meet the body at the one
+	# point they share. The rig's own chain has no anchor, so it uses the origin and
+	# stays mirror-only - a body is not a thing you take five of.
+	var anchor: Vector4 = sections[0]["center"] if is_branch else Vector4()
+	var mode: int = _Ball.SYMMETRY_MIRROR
+	var count: int = 2
+	if is_branch and chain.size() > 1:
+		# A branch whose root has been detached keeps its copies as REAL balls, so
+		# generating them as well would give three limbs where two were asked for.
+		# That case now arrives as symmetry_type = None rather than a separate flag.
+		mode = int(chain[1].symmetry_type)
+		count = maxi(2, int(chain[1].symmetry_count))
+	# EACH HALF OF THE GROUP IS TESTED SEPARATELY, because either can be degenerate
+	# on its own and they fail in opposite directions:
+	#
+	#   - a limb on the MIRROR PLANE is unchanged by the reflection, so a dihedral
+	#     ring would generate all 2N elements into N places - coincident surfaces,
+	#     doubled tetrahedra, and a watertight check that fails on every face at once.
+	#   - a limb on the RING'S OWN AXIS is unchanged by the rotation, so all N
+	#     rotations land on top of each other instead of spreading out.
+	#
+	# Collapsing the degenerate half and keeping the other is what makes a Dihedral
+	# limb on the ring axis come out as the pair it geometrically is, rather than as
+	# nothing at all - which is what testing the two together did.
+	var ring_useful: bool = _should_symmetrize(sections, is_branch, mirror_plane, anchor, mode)
+	var reflect_useful: bool = _should_mirror(sections, is_branch, mirror_plane)
+	var turns: int = 1
+	var reflections: int = 1
+	if mode == _Ball.SYMMETRY_CYCLIC:
+		turns = count if ring_useful else 1
+	elif mode == _Ball.SYMMETRY_DIHEDRAL:
+		turns = count if ring_useful else 1
+		reflections = 2 if reflect_useful else 1
+		if turns > 1 and reflections == 1:
+			push_warning("Loft rig '%s': branch '%s' is Dihedral but sits ON the mirror plane, where the reflection maps it onto itself - built as Cyclic(%d) rather than doubling every limb. Offset it along the mirror axis to get %d." % [
+				name, chain[1].name if chain.size() > 1 else "?", turns, turns * 2])
+		elif turns == 1 and reflections > 1:
+			push_warning("Loft rig '%s': branch '%s' is Dihedral but sits ON the ring axis, where every rotation lands in the same place - built as a mirrored pair rather than %d copies of one spot. Offset it within the rotation plane to get a real ring." % [
+				name, chain[1].name if chain.size() > 1 else "?", count * 2])
+	var mirroring: bool = false
+	if mode == _Ball.SYMMETRY_MIRROR:
+		mirroring = reflect_useful
+	elif mode != _Ball.SYMMETRY_NONE:
+		mirroring = turns * reflections > 1
+	if mirroring and mode == _Ball.SYMMETRY_MIRROR:
 		var mirrored_sections: Array[Dictionary] = []
 		for section in sections:
 			var mirrored_section: Dictionary = section.duplicate()
 			var center: Vector4 = section["center"]
 			mirrored_section["center"] = _with_axis_value(center, 2.0 * mirror_plane - _axis_value(center))
+			# ROLL IS HANDED, so a reflection has to negate it. It is a SIGNED spin of
+			# the section within its own plane, and mirroring a twist reverses which way
+			# it turns - the same reason a right hand reflects into a left one. Copying
+			# it across unchanged gives a twin twisted the WRONG WAY, which does not read
+			# as a twist error at all: it reads as the mirrored limb being squashed and
+			# mis-shapen compared to its original, because its blade section is now
+			# rotated away from where the geometry expects it.
+			#
+			# Positions alone were symmetric all along; only the twist was not, which is
+			# why this is invisible until a rolled limb gets mirrored.
+			mirrored_section["roll"] = -float(section.get("roll", 0.0))
 			mirrored_sections.append(mirrored_section)
 		# Quiet: the twin's checks would otherwise report the same result twice.
 		var mirrored: ArrayTetraMesh4D = _Builder.build(mirrored_sections, profile_rings, profile_sides, taper_ends, false, align_to_spine, smoothing, run_checks)
-		if mirrored != null:
-			built.merge_with(mirrored, Vector4(), Projection.IDENTITY)
-			# The merge appends the twin's cells and texture-map entries, so its colour
-			# bookkeeping has to be appended too. Left out, the twin falls off the end of
-			# both arrays and a mirrored limb comes out white while its original is not.
-			var both_colors: PackedColorArray = built.get_meta("loft_colors", PackedColorArray())
-			both_colors.append_array(mirrored.get_meta("loft_colors", PackedColorArray()))
-			built.set_meta("loft_colors", both_colors)
-			var both_ramps: PackedColorArray = built.get_meta("loft_ramp", PackedColorArray())
-			both_ramps.append_array(mirrored.get_meta("loft_ramp", PackedColorArray()))
-			built.set_meta("loft_ramp", both_ramps)
+		_merge_copy(built, mirrored)
+	elif mirroring:
+		# THE RING IS PLACED BY TRANSFORMING A FINISHED MESH, not by re-lofting
+		# rotated sections, and that distinction is the whole correctness of it.
+		#
+		# build_frames() seeds every section's frame from the GLOBAL axes (X, Z, W)
+		# and Gram-Schmidts them against the spine tangent. A rotation in the (Z, W)
+		# plane MOVES two of those seeds, so a chain whose centres have been rotated
+		# comes back with a frame that is not the rotation of the original's frame -
+		# its cross-sections are spun by some other amount and the copies are not
+		# congruent. Measured on a Dihedral(2) hind leg: 1040 of 1100 vertices had no
+		# partner under the ring's own half turn.
+		#
+		# Reflection survives that same code because an x-reflection leaves the Z and
+		# W seeds untouched, which is why the mirror path was correct all along and
+		# only the ring was wrong. Rather than depend on that distinction, the ring
+		# now moves the very vertices that were already correct. A rotation also
+		# preserves handedness, so unlike a reflection it needs no winding rescue.
+		var template: ArrayTetraMesh4D = _Builder.build(sections, profile_rings, profile_sides, taper_ends, false, align_to_spine, smoothing, false)
+		var reflected_template: ArrayTetraMesh4D = null
+		if reflections == 2:
+			var reflected_sections: Array[Dictionary] = []
+			for section in sections:
+				var reflected_section: Dictionary = section.duplicate()
+				var center: Vector4 = section["center"]
+				reflected_section["center"] = _with_axis_value(center, 2.0 * mirror_plane - _axis_value(center))
+				# Handed, exactly as in the Mirror path - see the note there.
+				reflected_section["roll"] = -float(section.get("roll", 0.0))
+				reflected_sections.append(reflected_section)
+			reflected_template = _Builder.build(reflected_sections, profile_rings, profile_sides, taper_ends, false, align_to_spine, smoothing, false)
+		# k = 0 unreflected is the original, which `built` already holds, so it is the
+		# one element skipped rather than special-cased. Every other element comes out
+		# of the same loop, so the ring cannot disagree with itself.
+		for reflected in range(reflections):
+			var source: ArrayTetraMesh4D = template if reflected == 0 else reflected_template
+			if source == null:
+				continue
+			for k in range(turns):
+				if reflected == 0 and k == 0:
+					continue
+				var angle: float = TAU * float(k) / float(turns)
+				# Rotation about the anchor, as basis + offset: R * v + (a - R * a).
+				var rotation: Projection = _rotate_basis_in_plane(Projection.IDENTITY, angle)
+				var offset: Vector4 = anchor - _rotate_in_plane(anchor, Vector4(), angle)
+				_merge_copy(built, source, rotation, offset)
+
+	if mirroring and mode >= _Ball.SYMMETRY_CYCLIC:
+		_check_ring_w_coverage(sections, anchor, mirror_plane, turns, reflections, chain)
 
 	# A ball shared by two chains gets a frame from each; the last one wins, which
 	# only affects its guide wireframe, never the geometry.
 	var frames: Array = _Builder.build_frames(sections, align_to_spine)
+	var ghosting: bool = mirroring and show_mirror_ghost
 	for index in range(chain.size()):
 		if chain[index].has_method("set_preview_frame"):
 			chain[index].set_preview_frame(frames[index])
-		if chain[index].has_method("set_mirror_preview"):
-			chain[index].set_mirror_preview(mirroring and show_mirror_ghost, mirror_plane, mirror_axis)
+		if chain[index].has_method("set_symmetry_preview"):
+			# Every copy gets a ghost now, not just one twin, so a ring of five reads
+			# as five rather than as a limb and one unexplained extra.
+			var offsets: Array[Vector4] = []
+			if ghosting:
+				offsets = _ghost_offsets(sections[index]["center"], anchor, mirror_plane, mode, turns, reflections)
+			chain[index].set_symmetry_preview(offsets)
 	return built
+
+
+## Warns when a limb ring leaves W GAPS the player can stand in and see no limbs.
+##
+## THE ONE FAILURE MODE NONE OF THE OTHER CHECKS CAN SEE. Watertight, winding, fold
+## and sliver all pass on a limb that is geometrically perfect and yet invisible,
+## because the player's 3D cross-section never intersects it: a ring spreads its
+## limbs through W, but each limb is only as thick in W as its own radius * w_scale,
+## so a wide ring made of thin limbs exists mostly in between slices. Measured on the
+## hand-authored Cn/Dn horses this replaces, the limbs covered 17% and 27% of the W
+## range - the model looked complete at w = 0 and lost its legs by w = 0.25.
+##
+## The ring geometry is known here, so the gap is computed rather than left to be
+## found later by eye or by an external script.
+func _check_ring_w_coverage(sections: Array, anchor: Vector4, plane: float, turns: int, reflections: int, chain: Array) -> void:
+	# TESTED SECTION BY SECTION, not as one pooled union. Pooling hides the actual
+	# failure: a limb's ring radius GROWS along its length while the limb NARROWS, so
+	# the hoof end is both the thinnest in W and the most widely spaced around the
+	# ring. Unioning every section together let one leg's thick shoulder cover the gap
+	# between another leg's thin hooves, and the check passed a model whose legs
+	# genuinely vanished at w = 0.25.
+	#
+	# Every copy is a rotation of the same chain, so section i has the same W
+	# half-extent in all of them and the question is simply whether its own copies
+	# tile W.
+	var worst_gap: float = 0.0
+	var worst_at: float = 0.0
+	var worst_index: int = 0
+	var total: float = 0.0
+	for index in range(1, sections.size()):
+		var half: float = absf(float(sections[index]["radius"]) * float(sections[index]["w_scale"]))
+		var spans: Array[Vector2] = []
+		for reflected in range(reflections):
+			for k in range(turns):
+				var center: Vector4 = sections[index]["center"]
+				if reflected == 1:
+					center = _with_axis_value(center, 2.0 * plane - _axis_value(center))
+				var w: float = _rotate_in_plane(center, anchor, TAU * float(k) / float(turns)).w
+				spans.append(Vector2(w - half, w + half))
+		if spans.size() < 2:
+			continue
+		spans.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.x < b.x)
+		var reach: float = spans[0].y
+		for span in spans:
+			if span.x - reach > worst_gap:
+				worst_gap = span.x - reach
+				worst_at = reach
+				worst_index = index
+			reach = maxf(reach, span.y)
+		total = maxf(total, reach - spans[0].x)
+	# A TOLERANCE, because this samples the sections while the built surface is
+	# CONTINUOUS between them. A limb tapers from one ball to the next, so its W reach
+	# varies all the way along and a hairline gap measured at one station is closed by
+	# the taper either side of it. Warning on those cried wolf on a model whose legs
+	# measurably covered 99% of the W range. Anything above a fiftieth of the span is
+	# a real hole the player can stand in.
+	if worst_gap <= maxf(_COINCIDENT_EPSILON, total * 0.02):
+		return
+	push_warning("Loft rig '%s': ring branch '%s' leaves a %.2f-wide GAP in W at w = %.2f, around ball '%s', out of %.2f spanned - the player standing there sees no limb at all, however sound the geometry is. Raise that ball's w_scale or radius until consecutive copies overlap, pull the ring in, or use fewer copies." % [
+		name, chain[1].name if chain.size() > 1 else "?", worst_gap, worst_at,
+		chain[worst_index].name if worst_index < chain.size() else "?", total])
+
+
+## Folds one symmetry copy into [param built], colour bookkeeping included.
+##
+## SHARED BY MIRROR AND BY THE RING on purpose. The merge appends the copy's cells
+## and texture-map entries, so its colour arrays have to be appended in the same
+## order or the copy falls off the end of both and comes out white while its
+## original is not - which is exactly what a mirrored limb did the first time a
+## coloured model was built. Two copies of that reasoning is how one of them gets
+## fixed and the other does not.
+func _merge_copy(built: ArrayTetraMesh4D, copy: ArrayTetraMesh4D, basis: Projection = Projection.IDENTITY, offset: Vector4 = Vector4()) -> void:
+	if copy == null:
+		return
+	# merge_with applies basis * v + offset, and carries normals through the
+	# inverse-transpose, so a placed copy needs no separate normal fix-up.
+	built.merge_with(copy, offset, basis)
+	var both_colors: PackedColorArray = built.get_meta("loft_colors", PackedColorArray())
+	both_colors.append_array(copy.get_meta("loft_colors", PackedColorArray()))
+	built.set_meta("loft_colors", both_colors)
+	var both_ramps: PackedColorArray = built.get_meta("loft_ramp", PackedColorArray())
+	both_ramps.append_array(copy.get_meta("loft_ramp", PackedColorArray()))
+	built.set_meta("loft_ramp", both_ramps)
 
 
 ## Points every ball's guide wireframe along its chain, without building anything.
@@ -661,6 +854,67 @@ func _should_mirror(sections: Array, skip_anchor: bool, plane: float) -> bool:
 	return true
 
 
+## Whether a chain earns its copies, for any symmetry mode.
+##
+## DELEGATES FOR MIRROR rather than reimplementing it: _should_mirror carries a
+## scalar rule that took real work to get right (a branch judged on its average
+## offset, a body judged strictly ball by ball) and five of the diagnostic runners
+## call it directly. Reproducing that logic here would give two rules to keep in
+## step, and the mirror half of the work is already correct.
+##
+## For a ring the same question needs a 2D answer, because "off the plane" becomes
+## "off the axis": a limb's average offset from the anchor is a vector in the
+## rotation plane, and what matters is its LENGTH. That keeps the existing and
+## already-correct rule that a branch sitting dead centre - a neck, a tail, a spine
+## ridge - stays single instead of being multiplied into a starburst through itself.
+func _should_symmetrize(sections: Array, skip_anchor: bool, plane: float, anchor: Vector4, mode: int) -> bool:
+	if mode == _Ball.SYMMETRY_NONE:
+		return false
+	if mode == _Ball.SYMMETRY_MIRROR:
+		return _should_mirror(sections, skip_anchor, plane)
+	# mirror_x stays the master switch for every mode, so there is one place to turn
+	# branch duplication off wholesale rather than one per mode.
+	if not mirror_x:
+		return false
+	var first: int = 1 if skip_anchor else 0
+	if first >= sections.size():
+		return false
+	# A ring about the rig origin would sweep the body through itself, so the rig's
+	# own chain is never cyclic however its balls are arranged.
+	if not skip_anchor:
+		return false
+	var total_a: float = 0.0
+	var total_b: float = 0.0
+	for index in range(first, sections.size()):
+		total_a += _plane1_value(sections[index]["center"]) - _plane1_value(anchor)
+		total_b += _plane2_value(sections[index]["center"]) - _plane2_value(anchor)
+	var divisor: float = float(sections.size() - first)
+	return Vector2(total_a / divisor, total_b / divisor).length() > _MIDLINE_EPSILON
+
+
+## Where each generated copy of [param center] lands, as offsets from it.
+##
+## Authoring aid only - this is what the ball ghosts draw. Computed from rig-space
+## centres and the same transforms the build uses, so the ghost cannot promise a
+## limb somewhere the build will not put one.
+func _ghost_offsets(center: Vector4, anchor: Vector4, plane: float, mode: int, turns: int, reflections: int) -> Array[Vector4]:
+	var offsets: Array[Vector4] = []
+	if mode == _Ball.SYMMETRY_MIRROR:
+		offsets.append(_with_axis_value(center, 2.0 * plane - _axis_value(center)) - center)
+		return offsets
+	# Handed the build's OWN counts, degenerate halves already collapsed - a ghost
+	# promising ten limbs where five will be built is worse than no ghost at all.
+	for reflected in range(reflections):
+		for k in range(turns):
+			if reflected == 0 and k == 0:
+				continue
+			var point: Vector4 = center
+			if reflected == 1:
+				point = _with_axis_value(point, 2.0 * plane - _axis_value(point))
+			offsets.append(_rotate_in_plane(point, anchor, TAU * float(k) / float(turns)) - center)
+	return offsets
+
+
 ## A ball's centre expressed in the RIG's space, whichever ball it hangs off.
 ##
 ## Walks up through any parent balls, applying each one's own transform, so a limb
@@ -720,3 +974,91 @@ func branch_spawn_direction() -> Vector4:
 ## Which axis index the mirror uses, so a ball can reflect its own chain.
 func mirror_axis_index() -> int:
 	return mirror_axis
+
+
+## The linear part of a ring rotation, for a ball detaching its own copies.
+##
+## Public because "Detach mirror" has to reproduce the transforms the build used,
+## and a ball has no business knowing which two axes the ring turns in - that is the
+## rig's setting.
+func rotate_direction_in_plane(direction: Vector4, angle: float) -> Vector4:
+	return _rotate_in_plane(direction, Vector4(), angle)
+
+
+## The two axes a Cyclic/Dihedral ring rotates in: the complement of [member
+## mirror_axis] within (X, Z, W). Same three-case shape as _axis_value, returning
+## the pair it leaves out instead of the one it names.
+##
+## Y IS NEVER RETURNED. It is the axis every player rotation preserves, so it is the
+## model's up; sweeping a limb ring through it would tip the creature over rather
+## than arrange it radially.
+func _plane_axes() -> Vector2i:
+	match mirror_axis:
+		1:
+			return Vector2i(0, 3)  # Z excluded -> rotate in (X, W)
+		2:
+			return Vector2i(0, 2)  # W excluded -> rotate in (X, Z)
+	return Vector2i(2, 3)  # X excluded -> rotate in (Z, W)
+
+
+## One component of [param point], by axis index (0 = x, 1 = y, 2 = z, 3 = w).
+static func _component(point: Vector4, axis: int) -> float:
+	match axis:
+		1:
+			return point.y
+		2:
+			return point.z
+		3:
+			return point.w
+	return point.x
+
+
+## [param point] with its first rotation-plane component replaced.
+func _plane1_value(point: Vector4) -> float:
+	return _component(point, _plane_axes().x)
+
+
+## [param point] with its second rotation-plane component replaced.
+func _plane2_value(point: Vector4) -> float:
+	return _component(point, _plane_axes().y)
+
+
+## [param point] with both rotation-plane components replaced, the other two kept.
+func _with_plane_values(point: Vector4, first: float, second: float) -> Vector4:
+	var axes: Vector2i = _plane_axes()
+	var out: Vector4 = point
+	out[axes.x] = first
+	out[axes.y] = second
+	return out
+
+
+## [param point] turned [param angle] radians about [param anchor], within the
+## rotation plane. The two axes outside that plane are left exactly as they were, so
+## a limb ring stays at its own height and its own head-to-tail station.
+func _rotate_in_plane(point: Vector4, anchor: Vector4, angle: float) -> Vector4:
+	var da: float = _plane1_value(point) - _plane1_value(anchor)
+	var db: float = _plane2_value(point) - _plane2_value(anchor)
+	var c: float = cos(angle)
+	var s: float = sin(angle)
+	return _with_plane_values(point,
+		_plane1_value(anchor) + da * c - db * s,
+		_plane2_value(anchor) + da * s + db * c)
+
+
+## The same rotation applied to a BASIS rather than a point.
+##
+## Needed because a section carries its own basis, and rotating only the centres
+## leaves every copy's cross-section oriented as though it had never moved - a
+## gizmo-scaled or rolled limb would come out sheared the wrong way round the ring.
+## Rotating each column reuses _rotate_in_plane with a zero anchor, so a direction
+## and a position can never disagree about which way the ring turns.
+##
+## Safe in a way reflection is not: a rotation preserves handedness, so a rotated
+## copy is not inside-out and needs no winding rescue.
+func _rotate_basis_in_plane(basis: Projection, angle: float) -> Projection:
+	var origin := Vector4()
+	return Projection(
+		_rotate_in_plane(basis.x, origin, angle),
+		_rotate_in_plane(basis.y, origin, angle),
+		_rotate_in_plane(basis.z, origin, angle),
+		_rotate_in_plane(basis.w, origin, angle))

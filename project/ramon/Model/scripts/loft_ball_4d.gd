@@ -24,6 +24,14 @@ const _Builder = preload("res://ramon/Model/scripts/loft_builder_4d.gd")
 
 const _PREVIEW_SEGMENTS: int = 24
 
+## Branch duplication modes for [member symmetry_type]. Mirror is order 2 and is
+## what this tool did exclusively before Cyclic/Dihedral were added, so it stays
+## the default and every existing model keeps building exactly as it did.
+const SYMMETRY_NONE: int = 0
+const SYMMETRY_MIRROR: int = 1
+const SYMMETRY_CYCLIC: int = 2
+const SYMMETRY_DIHEDRAL: int = 3
+
 ## How far above this ball a newly added one is placed. Deliberately not zero:
 ## two balls at the same height would loft into a zero-thickness slab, which the
 ## rig refuses to build. Drag the new one wherever it belongs.
@@ -100,14 +108,66 @@ const _NEW_BALL_RISE: float = 0.5
 		starts_branch = value
 		_notify_rig()
 
-## Whether the branch starting at this ball is still generated as a mirrored pair.
+## How the branch starting at this ball is duplicated.
 ##
-## Only meaningful on a ball that starts a branch. "Detach mirror" turns it off and
-## builds the twin as real balls instead, so the two sides can then be shaped
-## independently - the same trade Spore makes when you break symmetry.
+## Only meaningful on a ball that starts a branch. Mirror is one reflected twin
+## across the rig's mirror axis - bilateral symmetry, what a creature usually
+## wants, and the only mode this tool had before. Cyclic is [member symmetry_count]
+## copies spaced evenly around the anchor, sweeping the plane of the two axes the
+## rig's mirror axis does NOT name. Dihedral is the same ring plus a reflected ring,
+## which is twice as many limbs and the symmetry an actual animal's radial plan has.
+##
+## A ROTATION ORBIT ALONE IS ALWAYS CYCLIC no matter how many copies you take, so
+## Dihedral is not Cyclic with a bigger count - the reflected half is what makes it
+## dihedral rather than a relabelled Cyclic(2N).
+##
+## "Detach mirror" sets this to None and builds the copies as real balls instead,
+## so they can then be shaped independently - the same trade Spore makes when you
+## break symmetry.
+@export_enum("None", "Mirror", "Cyclic", "Dihedral") var symmetry_type: int = SYMMETRY_MIRROR:
+	set(value):
+		symmetry_type = value
+		# Keeps the legacy flag telling the truth for anything still reading it,
+		# without bouncing back and turning Cyclic into Mirror - see below.
+		if not _syncing_symmetry:
+			_syncing_symmetry = true
+			mirror_branch = value != SYMMETRY_NONE
+			_syncing_symmetry = false
+		notify_property_list_changed()
+		_notify_rig()
+
+## How many copies Cyclic makes around the anchor, or how many each half of a
+## Dihedral ring makes - so Dihedral(5) is ten limbs, not five.
+##
+## Ignored by None and Mirror, which have no count to choose: Mirror is always
+## order 2. Hidden in the inspector for those two rather than shown doing nothing.
+@export_range(2, 12, 1) var symmetry_count: int = 2:
+	set(value):
+		symmetry_count = value
+		_notify_rig()
+
+## SUPERSEDED BY [member symmetry_type], kept because things outside this file read
+## it - strider_walker.gd asks it whether a limb is paired - and because a detached
+## branch saves it as false, so dropping it would silently re-grow limbs in scenes
+## that had them detached.
+##
+## Hidden from the inspector (two controls for one decision is how they drift apart)
+## but still stored and still honoured on load. It carries one bit where
+## symmetry_type carries four, so it only forces a change when the two genuinely
+## disagree: false means None, and true only reinstates Mirror if the type had been
+## None. That ordering matters - a scene storing symmetry_type = Cyclic alongside
+## the default mirror_branch = true would otherwise load as Mirror, because property
+## order in a .tscn is not guaranteed.
 @export var mirror_branch: bool = true:
 	set(value):
 		mirror_branch = value
+		if not _syncing_symmetry:
+			_syncing_symmetry = true
+			if not value:
+				symmetry_type = SYMMETRY_NONE
+			elif symmetry_type == SYMMETRY_NONE:
+				symmetry_type = SYMMETRY_MIRROR
+			_syncing_symmetry = false
 		_notify_rig()
 
 ## Spins this cross-section within its own plane, in degrees.
@@ -157,9 +217,12 @@ const _NEW_BALL_RISE: float = 0.5
 		_rebuild_preview()
 
 var _preview_frame: Array = []
-var _mirror_preview: bool = false
-var _mirror_plane: float = 0.0
-var _mirror_axis: int = 0
+## Local-space offsets of every ghost copy, handed over by the rig. Empty when the
+## ghost is off. Replaces the old plane/axis pair, which could only describe one
+## reflection and had no way to express a ring of five.
+var _ghost_offsets: Array[Vector4] = []
+## Breaks the setter loop between symmetry_type and the legacy mirror_branch.
+var _syncing_symmetry: bool = false
 
 
 func _ready() -> void:
@@ -173,6 +236,26 @@ func _ready() -> void:
 func _validate_property(property: Dictionary) -> void:
 	if property.name == "mesh":
 		property.usage &= ~PROPERTY_USAGE_STORAGE
+	elif property.name == "symmetry_type":
+		# HIDDEN ON A BALL THAT HEADS NO BRANCH, because there it does nothing at
+		# all and saying so in the inspector is the only way anyone finds out. The
+		# rig reads these off the branch HEAD - the first ball of the branch, not
+		# the spine ball it hangs from - so setting Dihedral on a torso ball and
+		# watching the model not change is otherwise a completely silent dead end.
+		#
+		# Storage is untouched, only the inspector, so a value saved before this
+		# check existed still loads and still means what it meant.
+		if not _is_branch_head():
+			property.usage &= ~PROPERTY_USAGE_EDITOR
+	elif property.name == "symmetry_count":
+		# Same rule, plus: nothing to choose for None or Mirror, so it is hidden
+		# rather than shown accepting a number that changes nothing.
+		if not _is_branch_head() or symmetry_type < SYMMETRY_CYCLIC:
+			property.usage &= ~PROPERTY_USAGE_EDITOR
+	elif property.name == "mirror_branch":
+		# Still stored and still loaded - only taken off the inspector, so there is
+		# one control for one decision. See the note on the property itself.
+		property.usage &= ~PROPERTY_USAGE_EDITOR
 
 
 ## NO TRANSFORM NOTIFICATION EXISTS HERE. Node3D offers set_notify_transform() and
@@ -396,19 +479,26 @@ func _spawn(parent: Node, after: Node, offset: Vector4, new_radius: float, new_v
 ## is the FIRST child of the one before it, so every single one came out called
 ## "Branch1". Godot allows that - they are not siblings - but a scene tree full of
 ## identically named nodes is unreadable and impossible to talk about.
-## Writes this branch's mirrored twin out as real balls and stops generating it.
+## Writes this branch's generated copies out as real balls and stops generating them.
+##
+## Now writes out HOWEVER MANY the branch has - one twin for Mirror, N for Cyclic,
+## 2N for Dihedral - because the alternative is a ring of five that detaches into
+## two and silently loses three limbs.
+##
+## Still one-way, and still the same trade as before: symmetry buys you consistency
+## for free, and this buys back the ability to shape each limb on its own.
 func detach_mirror() -> void:
 	# Being a chain head is what matters, and there are TWO ways to become one: the
 	# explicit "starts_branch" flag, or implicitly by being one of several children,
 	# since a ball with more than one child forks and each child heads its own chain.
 	# Testing only the flag refused to detach perfectly ordinary forks.
 	if not _is_branch_head():
-		push_warning("Loft ball '%s' does not head a branch, so it has no twin of its own to detach. Press this on the first ball of a limb - the one directly under the ball it grows from." % name)
+		push_warning("Loft ball '%s' does not head a branch, so it has no copies of its own to detach. Press this on the first ball of a limb - the one directly under the ball it grows from." % name)
 		return
 	var rig: Node = _rig()
 	if rig == null or not rig.has_method("mirror_axis_index"):
 		return
-	if not mirror_branch:
+	if symmetry_type == SYMMETRY_NONE:
 		push_warning("Loft ball '%s': this branch is already detached." % name)
 		return
 
@@ -423,56 +513,87 @@ func detach_mirror() -> void:
 				kids.append(child)
 		node = kids[0] if kids.size() == 1 else null
 
-	# Reflection is linear and the mirror plane passes through the anchor, so every
-	# ball's own offset simply flips its component along the mirror axis. That holds
-	# at any depth, which is why the whole limb can be copied in one pass.
+	# EVERY TRANSFORM IS LINEAR AND FIXES THE ANCHOR, reflections and rotations
+	# alike, and the anchor is this ball's own parent. So a ball's local offset can
+	# be transformed on its own and the whole limb lands correctly however deep it
+	# nests - which is why one pass over the chain is enough for any of the modes.
+	# Each entry is [reflect_first, angle].
+	var elements: Array = []
+	if symmetry_type == SYMMETRY_MIRROR:
+		elements.append([true, 0.0])
+	else:
+		var count: int = maxi(2, symmetry_count)
+		var reflections: int = 2 if symmetry_type == SYMMETRY_DIHEDRAL else 1
+		for reflected in range(reflections):
+			for k in range(count):
+				if reflected == 0 and k == 0:
+					continue  # the original, which already exists as these very balls
+				elements.append([reflected == 1, TAU * float(k) / float(count)])
+
 	var undo_redo: EditorUndoRedoManager = EditorInterface.get_editor_undo_redo() if Engine.is_editor_hint() else null
 	var scene_root: Node = get_tree().edited_scene_root if Engine.is_editor_hint() else owner
 	if undo_redo != null:
-		undo_redo.create_action("Detach mirrored limb")
+		undo_redo.create_action("Detach symmetric limb")
 
 	var parent: Node = get_parent()
-	var made: Array[Node] = []
-	for index in range(chain.size()):
-		var source: Node = chain[index]
-		var copy := MeshInstance4D.new()
-		copy.set_script(get_script())
-		copy.name = "%s_mirror" % source.name
-		copy.position = _reflect(source.position, axis)
-		# EVERY section property, not just the size ones. roll, squareness and colour
-		# were each added after this function was written, and a copy that silently
-		# drops them turns a detached twin white and untwisted while its original is
-		# neither - which is exactly what it did the first time a coloured model was
-		# detached.
-		copy.radius = source.radius
-		copy.v_scale = source.v_scale
-		copy.w_scale = source.w_scale
-		copy.roll = source.roll
-		copy.squareness = source.squareness
-		copy.color = source.color
-		copy.preview_color = source.preview_color
-		copy.starts_branch = index == 0
-		copy.mirror_branch = false
-		made.append(copy)
-		var target: Node = parent if index == 0 else made[index - 1]
-		if undo_redo != null:
-			undo_redo.add_do_method(target, "add_child", copy, true)
-			if scene_root != null:
-				undo_redo.add_do_method(copy, "set_owner", scene_root)
-			undo_redo.add_do_reference(copy)
-		else:
-			target.add_child(copy)
-			copy.owner = scene_root
+	var roots: Array[Node] = []
+	for element_index in range(elements.size()):
+		var reflect_first: bool = bool(elements[element_index][0])
+		var angle: float = float(elements[element_index][1])
+		# Mirror keeps the "_mirror" suffix it has always used; rings are numbered,
+		# since "_mirror" five times over says nothing about which limb is which.
+		var suffix: String = "mirror" if symmetry_type == SYMMETRY_MIRROR else "sym%d" % (element_index + 1)
+		var made: Array[Node] = []
+		for index in range(chain.size()):
+			var source: Node = chain[index]
+			var copy := MeshInstance4D.new()
+			copy.set_script(get_script())
+			copy.name = "%s_%s" % [source.name, suffix]
+			var offset: Vector4 = source.position
+			if reflect_first:
+				offset = _reflect(offset, axis)
+			if not is_zero_approx(angle) and rig.has_method("rotate_direction_in_plane"):
+				offset = rig.rotate_direction_in_plane(offset, angle)
+			copy.position = offset
+			# EVERY section property, not just the size ones. roll, squareness and colour
+			# were each added after this function was written, and a copy that silently
+			# drops them turns a detached twin white and untwisted while its original is
+			# neither - which is exactly what it did the first time a coloured model was
+			# detached.
+			copy.radius = source.radius
+			copy.v_scale = source.v_scale
+			copy.w_scale = source.w_scale
+			copy.roll = source.roll
+			copy.squareness = source.squareness
+			copy.color = source.color
+			copy.preview_color = source.preview_color
+			copy.starts_branch = index == 0
+			# None, not "mirror off": a detached copy must not itself become the seed of
+			# another ring, which is how detaching a Dihedral(5) once would otherwise
+			# produce fifty limbs.
+			copy.symmetry_type = SYMMETRY_NONE
+			made.append(copy)
+			var target: Node = parent if index == 0 else made[index - 1]
+			if undo_redo != null:
+				undo_redo.add_do_method(target, "add_child", copy, true)
+				if scene_root != null:
+					undo_redo.add_do_method(copy, "set_owner", scene_root)
+				undo_redo.add_do_reference(copy)
+			else:
+				target.add_child(copy)
+				copy.owner = scene_root
+		roots.append(made[0])
 
 	if undo_redo != null:
-		undo_redo.add_do_property(self, "mirror_branch", false)
-		undo_redo.add_undo_property(self, "mirror_branch", true)
-		undo_redo.add_undo_method(parent, "remove_child", made[0])
+		undo_redo.add_do_property(self, "symmetry_type", SYMMETRY_NONE)
+		undo_redo.add_undo_property(self, "symmetry_type", symmetry_type)
+		for root_node in roots:
+			undo_redo.add_undo_method(parent, "remove_child", root_node)
 		undo_redo.add_do_method(rig, "request_rebuild")
 		undo_redo.add_undo_method(rig, "request_rebuild")
 		undo_redo.commit_action()
 	else:
-		mirror_branch = false
+		symmetry_type = SYMMETRY_NONE
 
 
 static func _reflect(point: Vector4, axis: int) -> Vector4:
@@ -539,15 +660,25 @@ func _notify_rig() -> void:
 		rig.request_rebuild()
 
 
-## Told by the rig whether this chain is being mirrored, so the guide can show a
-## ghost of the twin. Without it a mirrored rig draws one wireframe but builds two
-## limbs, and the second one looks like it came from nowhere.
-func set_mirror_preview(enabled: bool, plane: float = 0.0, axis: int = 0) -> void:
-	if enabled == _mirror_preview and is_equal_approx(plane, _mirror_plane) and axis == _mirror_axis:
-		return
-	_mirror_preview = enabled
-	_mirror_plane = plane
-	_mirror_axis = axis
+## Told by the rig where every generated copy of this section will land, as offsets
+## from this ball. Without it a symmetric rig draws one wireframe but builds two or
+## ten limbs, and the extras look like they came from nowhere.
+##
+## TAKES OFFSETS RATHER THAN A PLANE AND AN AXIS, which is what it used to take. A
+## plane can only ever describe one reflection; it has no way to say "and four more,
+## at 72 degrees apart". The rig already computes the copy transforms for the build,
+## so handing over the results keeps the ghost and the geometry from ever disagreeing
+## about where a limb goes.
+func set_symmetry_preview(offsets: Array[Vector4]) -> void:
+	if offsets.size() == _ghost_offsets.size():
+		var same: bool = true
+		for index in range(offsets.size()):
+			if not offsets[index].is_equal_approx(_ghost_offsets[index]):
+				same = false
+				break
+		if same:
+			return
+	_ghost_offsets = offsets.duplicate()
 	_rebuild_preview()
 
 
@@ -593,22 +724,14 @@ func _rebuild_preview() -> void:
 	var wire := ArrayWireMesh4D.new()
 	var v_radius: float = radius * v_scale
 	var w_radius: float = radius * w_scale
-	# The ghost sits where the mirrored twin's section will be. Local space, so the
-	# offset is twice this ball's own X, backwards.
+	# One ring per copy, the first being this ball itself at no offset. The rig hands
+	# these over already computed, in this ball's own local space.
+	#
+	# It used to derive the single mirror offset here from this ball's LOCAL position
+	# against a rig-space plane, which quietly disagreed with the build for any limb
+	# nested under another ball. The rig knows both, so it does the arithmetic now.
 	var origins: Array[Vector4] = [Vector4()]
-	if _mirror_preview:
-		var own: float = position.x
-		if _mirror_axis == 1:
-			own = position.z
-		elif _mirror_axis == 2:
-			own = position.w
-		var step: float = 2.0 * (_mirror_plane - own)
-		if _mirror_axis == 1:
-			origins.append(Vector4(0.0, 0.0, step, 0.0))
-		elif _mirror_axis == 2:
-			origins.append(Vector4(0.0, 0.0, 0.0, step))
-		else:
-			origins.append(Vector4(step, 0.0, 0.0, 0.0))
+	origins.append_array(_ghost_offsets)
 	for origin in origins:
 		for segment in range(_PREVIEW_SEGMENTS):
 			var from_angle: float = TAU * float(segment) / float(_PREVIEW_SEGMENTS)
