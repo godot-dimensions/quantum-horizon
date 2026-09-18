@@ -67,6 +67,14 @@ const _GaitController = preload("res://scripts/gait_controller.gd")
 @export_range(0.0, 1.0, 0.05) var peck_reach: float = 0.92
 @export_range(1, 6, 1) var peck_jabs: int = 3
 
+## Rigs that hang off the head but are authored as SIBLINGS of the neck rather than
+## children of it - the wattle, here. Nothing carries them when the neck swings, so
+## without this the bird's beak goes to the floor and its red wattle stays hanging in
+## the air where the head used to be. They are not reparented: a rig nested inside
+## another rig's chain would be lofted as a BRANCH of it, fusing two separately
+## coloured meshes. Carrying them rigidly keeps the geometry exactly as authored.
+@export var head_attachment_paths: Array[NodePath] = [NodePath("../Wattle")]
+
 var halted: bool = false
 ## Fed to the gait clock, which derives its period as reference_period * reference_speed
 ## / speed - so this is a cadence dial, not a distance. At 24 the period is 0.33 s, and
@@ -115,6 +123,7 @@ const _NECK_PIVOT := Vector4(0.0, 1.02, 0.42, 0.0)
 var _peck_countdown: float = 0.0
 var _peck_elapsed: float = -1.0
 var _peck_angle: float = 0.0
+var _carried: Array = []
 var _neck_pivot: Vector4 = _NECK_PIVOT
 
 ## The bird itself. This node is a CHILD of it, so writing our own position would slide
@@ -161,6 +170,10 @@ func _ready() -> void:
 		_body_rest = _body.position
 	if _neck != null:
 		_neck_rest = _neck.position
+		for path in head_attachment_paths:
+			var node: Node = get_node_or_null(path)
+			if node is Node4D:
+				_carried.append({"node": node, "rest": (node as Node4D).position})
 
 	# Orbit about a point one radius away, so the bird starts where it was placed
 	# rather than jumping to the rim of a circle centred on itself.
@@ -221,6 +234,7 @@ func _physics_process(_delta: float) -> void:
 		var drift: Vector4 = _body.position - _body_rest
 		_neck.position = _neck_rest - drift * head_stabilise
 		_apply_peck(pecking)
+		_carry_attachments()
 
 
 ## Advances the peck clock and returns how far down the neck should be, 0 to 1.
@@ -420,3 +434,19 @@ func _lowest_foot() -> float:
 		if foot is Node4D:
 			lowest = minf(lowest, (foot as Node4D).global_position.y)
 	return 0.0 if is_inf(lowest) else lowest
+
+
+## Glues the head attachments to the neck, whatever the neck is doing.
+##
+## Each one is placed as though it were a child of the neck rig: its offset from the
+## neck at rest, carried through the neck's current rotation. That covers the peck and
+## the gaze-stabilising counter-bob in one expression, so the wattle cannot drift a
+## frame behind the beak it hangs from.
+func _carry_attachments() -> void:
+	if _carried.is_empty() or _neck == null:
+		return
+	var neck_basis: Projection = _neck.basis
+	for entry in _carried:
+		var node: Node4D = entry["node"]
+		node.basis = neck_basis
+		node.position = _neck.position + neck_basis * (entry["rest"] - _neck_rest)
