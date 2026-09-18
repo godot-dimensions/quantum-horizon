@@ -36,47 +36,52 @@ happens.
 
 ---
 
-## What rendering actually costs
+## The cost hierarchy: drawing, deforming, re-lofting
 
-Measured with everything else in the scene hidden, vsync off:
+Three ways geometry can cost you, and they are about an order of magnitude apart.
+Measured 18–19 Sep 2026 on the chicken:
 
-| | tets | frame |
+| | per tetrahedron per frame | example |
 |---|---|---|
-| body + neck as **two** meshes | 6,100 | **15.37 ms** |
-| the same geometry merged into **one** mesh | 6,200 | **19.03 ms** |
+| **drawing** it | ~0.15 us | five chickens, ~50,000 tets: **0.86 ms** |
+| **deforming** it (skinning) | ~2.5 us | 6,200-cell body: **18.5 ms**; 720-cell leg: **1.8 ms** |
+| **re-lofting** it | ~11 us | 720-cell leg: **7.8 ms** |
 
-**One big mesh costs more than two smaller ones at equal tetrahedra** — about 3.7 ms
-here, roughly a quarter. Not a volume effect. The colour ramp and the per-frame rebuild
-were both ruled out by switching them off and re-measuring; neither moved the number.
-So: splitting a creature across several rigs is not just an authoring convenience, it is
-cheaper to draw.
+**Drawing lofted geometry is nearly free.** This was the biggest surprise. Five whole
+chickens cost 0.86 ms to draw; hiding them saved almost nothing. Tetrahedron count is
+not the thing to optimise.
 
-Whole scene, same two scenes: 16.16 ms working, 23.13 ms merged.
+**Moving one ball re-lofts the entire rig, and that is the expensive path.** The walker
+posed the chicken's legs by writing knee and foot ball positions; the rig noticed and
+rebuilt the whole leg. Five birds spent **77 ms of a 79 ms frame** doing this, while
+drawing all five cost 0.86 ms. Replacing it with skinning — bind each vertex to the two
+bones once, then `set_vertex_positions` each frame — took the flock from **79.31 ms to
+19.76 ms**.
 
-## What deforming a mesh costs
+So the order of preference for anything that moves: move whole NODES if you can (free),
+skin if the surface must bend, and never let a rig re-loft per frame.
 
-Moving a mesh's vertices per frame ("skinning") on the merged 6,200-cell body:
+**RETRACTED: "one big mesh costs more than two".** An earlier version of this file
+claimed merging the neck into the body cost 3.7 ms for identical geometry (15.37 ms as
+two meshes against 19.03 as one). That was wrong. Both numbers were dominated by the
+legs re-lofting in the background. Re-measured with a quiet baseline: **0.91 ms for
+6,100 tets in two meshes, 0.73 ms for 6,200 in one.** There is no meaningful draw
+penalty for merging.
 
-| | |
-|---|---|
-| GDScript skinning maths | **0.204 ms** |
-| `set_vertex_positions()` | **0.004 ms** |
-| the engine rebuilding the proxy mesh | **~18.3 ms** |
-| **total** | **18.51 ms/frame** |
+The lesson is about method, not meshes: hiding everything else is not enough to isolate
+what you are measuring, because hidden things still ANIMATE. Turn the animation off too.
 
-The approach is sound and the maths is free. What makes it unaffordable is that moving
-any vertex triggers a rebuild of the *whole* proxy mesh. An incremental proxy update is
-an engine-side change and would unlock real skinned deformation — this measurement is
-the argument for it.
+**What merging does still cost** is flexibility: a part of a merged mesh cannot be moved
+by transforming a node, because the mesh belongs to the rig, not the part. It has to be
+deformed, at ~2.5 us per cell per frame. That is affordable for a leg and not for a
+whole body.
 
-Earlier per-mesh figures (3700 cells 8.05 ms, 2400 cells 4.64 ms, 720 cells 0.19 ms)
-were taken with vsync ON and are indicative only; they do suggest the cost falls away
-sharply below ~1000 cells.
+## Making a joint look continuous without merging
 
-**Consequence for animation:** a part of a merged mesh cannot be moved by transforming a
-node, because the mesh belongs to the rig, not the part. Either keep the piece as its own
-rig and move it rigidly (cheap, shows a joint), or merge it and deform (continuous, and
-currently too expensive). Trym's rigid-transform creature is the affordable route today.
+Sink the joining ball INSIDE its neighbour rather than butting the two surfaces together.
+The chicken's neck base sat 0.234 from the chest ball's centre, just outside its 0.2
+radius, and read as a join; moved to 0.139 it is swallowed by the chest and the seam is
+inside the body where nothing can see it. Visually as good as merging, and free.
 
 ---
 
@@ -125,6 +130,13 @@ its base puts the head on a circle of radius R about the hinge, so any target lo
 the *last ball of the neck chain* (further from the hinge, so it reaches) swung the head
 147°, turning it upside down so the comb scraped the floor and the beak pointed back at
 the bird's own feet.
+
+**Parent an attachment rather than carrying it in code.** A rig nested under a BALL is
+skipped by the parent rig's branch detection, which only descends through balls — so it
+keeps its own mesh, material and colour while inheriting the transform. The chicken's
+wattle was first carried by the walker at runtime instead, on the mistaken assumption
+that nesting would fuse it into the neck; that worked when playing but left the wattle
+behind in the EDITOR, where no walker is running.
 
 **Attachments authored as siblings do not follow.** The wattle is its own rig beside the
 neck, not under it, so the beak went to the floor and the wattle stayed in the air. Carry

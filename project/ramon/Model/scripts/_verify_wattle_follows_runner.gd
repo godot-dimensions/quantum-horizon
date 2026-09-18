@@ -18,7 +18,8 @@ func _process(_d) -> bool:
 	if _f == 5:
 		_w = _root.get_node_or_null("Chicken/Walker")
 		_beak = _root.get_node_or_null("Chicken/NeckHead/Ball4/BeakBase/BeakMid/BeakTip")
-		_wat = _root.get_node_or_null("Chicken/Wattle/Ball2")
+		# The wattle hangs off the head ball now, not off the chicken root.
+		_wat = _root.get_node_or_null("Chicken/NeckHead/Ball4/Wattle/Ball2")
 		print("beak tip: %s   wattle ball: %s" % [_beak != null, _wat != null])
 		return false
 	if _f < 5: return false

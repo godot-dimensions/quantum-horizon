@@ -68,12 +68,15 @@ const _GaitController = preload("res://scripts/gait_controller.gd")
 @export_range(1, 6, 1) var peck_jabs: int = 3
 
 ## Rigs that hang off the head but are authored as SIBLINGS of the neck rather than
-## children of it - the wattle, here. Nothing carries them when the neck swings, so
-## without this the bird's beak goes to the floor and its red wattle stays hanging in
-## the air where the head used to be. They are not reparented: a rig nested inside
-## another rig's chain would be lofted as a BRANCH of it, fusing two separately
-## coloured meshes. Carrying them rigidly keeps the geometry exactly as authored.
-@export var head_attachment_paths: Array[NodePath] = [NodePath("../Wattle")]
+## children of it. Nothing carries those when the neck swings, so their part of the head
+## stays in the air while the beak goes to the floor.
+##
+## Empty by default, because PARENTING is the better fix and the wattle now uses it: a
+## rig nested under a ball is skipped by the parent rig's branch detection, which only
+## descends through balls, so it keeps its own mesh and colour while inheriting the
+## transform - and it follows in the EDITOR too, which this runtime carrying never did.
+## Kept for anything that genuinely cannot be reparented.
+@export var head_attachment_paths: Array[NodePath] = []
 
 ## WHICH part of the head is aimed at the floor. This has to be the beak: aiming the
 ## last ball of the neck chain instead puts the COMB on the ground and swings the head
@@ -118,6 +121,13 @@ var speed: float = 24.0
 ## Seconds of noise per second of walking. Lower is lazier.
 @export var wander_scale: float = 0.35
 
+## How close another bird has to be before this one steers away, in units. Without it
+## five birds in close proximity walk straight through each other - measured closest
+## approach 0.02 units, which is two birds occupying the same space. This is steering,
+## not collision: they lean away from a crowd rather than being pushed apart, so the
+## flock stays loose instead of jostling. 0 disables it.
+@export var separation: float = 1.7
+
 var _angle: float = 0.0
 var _centre: Vector4
 var _heading: float = 0.0
@@ -131,6 +141,9 @@ var _peck_countdown: float = 0.0
 var _peck_elapsed: float = -1.0
 var _peck_angle: float = 0.0
 var _carried: Array = []
+var _bound: bool = false
+const _FLOCK_GROUP := "chicken_flock"
+var _crowding: float = 0.0
 var _neck_pivot: Vector4 = _NECK_PIVOT
 
 ## The bird itself. This node is a CHILD of it, so writing our own position would slide
@@ -197,6 +210,7 @@ func _ready() -> void:
 	_noise.frequency = 1.0
 	_noise.seed = randi()
 	_wander_centre = _creature.position
+	_creature.add_to_group(_FLOCK_GROUP)
 	_peck_countdown = randf_range(peck_interval_min, peck_interval_max)
 
 	_gait = Node.new()
@@ -210,10 +224,18 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	# Only the two LEG rigs re-loft, and they are the cheapest rigs on the bird. The
-	# body, neck, wings and wattle never rebuild - they are moved as whole nodes, which
-	# is the rigid approach Trym's creature uses throughout. A chicken authored as bones
-	# rather than as a model would not re-loft at all.
+	# NOTHING on this bird re-lofts. The body, neck, wings and wattle are moved as whole
+	# nodes - the rigid approach Trym's creature uses throughout - and the two legs, which
+	# do have to bend, are skinned.
+	#
+	# They used to re-loft, and an earlier version of this comment called them "the
+	# cheapest rigs on the bird". Measured, they were the opposite: 7.8 ms per leg per
+	# frame, so five birds spent 77 ms of a 79 ms frame in there while DRAWING all five
+	# cost 0.86 ms. Moving a single ball is what triggers it.
+	if not _bound:
+		_bound = true
+		for leg in _legs:
+			_bind_leg(leg)
 	var phase: float = float(_gait.phase_progress)
 	var duty: float = float(_gait.duty_factor)
 
@@ -332,10 +354,11 @@ func _wander(delta: float) -> void:
 		# because a bird can only turn so fast and the noise kept pulling the other way.
 		turn = lerpf(turn, signf(toward), clampf((strayed - 1.0) * 3.0, 0.0, 1.0))
 
+	turn = _avoid_crowding(turn)
 	_heading += turn * deg_to_rad(turn_rate_degrees) * delta
 	var period: float = maxf(float(_gait.period_sec), 0.0001)
 	var ground_speed: float = 2.0 * stride_length / period
-	var step: float = ground_speed * delta
+	var step: float = ground_speed * delta * (1.0 - 0.85 * _crowding)
 	_creature.position += Vector4(sin(_heading) * step, 0.0, cos(_heading) * step, 0.0)
 	_face(_heading)
 
@@ -388,8 +411,10 @@ func _place_leg(leg: Dictionary, goal: Vector4) -> void:
 		bend -= direction * bend.dot(direction)
 	bend = bend.normalized()
 
-	(leg["knee"] as Node4D).position = hip + direction * along + bend * out
-	(leg["foot"] as Node4D).position = hip + direction * reach
+	# NOT written back to the ball nodes. Moving a ball makes its rig re-loft the whole
+	# leg, which measured at 7.8 ms per leg per frame - five birds spent 77 of their
+	# 79 ms/frame there. The same pose is applied by skinning the mesh instead.
+	_skin_leg(leg, hip + direction * along + bend * out, hip + direction * reach)
 
 
 ## Works out the swing angle that actually puts the beak on the floor.
@@ -459,3 +484,106 @@ func _carry_attachments() -> void:
 		var node: Node4D = entry["node"]
 		node.basis = neck_basis
 		node.position = _neck.position + neck_basis * (entry["rest"] - _neck_rest)
+
+
+## Binds a leg's mesh to its two bones, once.
+##
+## Each vertex is placed along the leg by height - 0 at the hip, 1 at the foot - and
+## handed to the thigh or the shank according to which side of the knee it falls on,
+## with a soft band across the joint so the surface bends instead of shearing. Cheap,
+## and good enough for a leg this low-poly.
+func _bind_leg(leg: Dictionary) -> void:
+	var rig: Node = leg["rig"]
+	var mesh := (rig as MeshInstance4D).mesh as ArrayTetraMesh4D
+	if mesh == null:
+		return
+	# Stops the rig re-lofting when anything moves: from here the mesh is driven directly.
+	rig.set("live_rebuild", false)
+	var rest: PackedVector4Array = mesh.get_vertex_positions()
+	var hip: Vector4 = leg["hip_pos"]
+	var knee: Vector4 = (leg["knee"] as Node4D).position
+	var foot: Vector4 = (leg["foot"] as Node4D).position
+	var span: float = maxf(hip.y - foot.y, 0.0001)
+	var at_knee: float = (hip.y - knee.y) / span
+	var weights := PackedFloat32Array()
+	weights.resize(rest.size())
+	for i in rest.size():
+		var s: float = (hip.y - rest[i].y) / span
+		weights[i] = smoothstep(at_knee - 0.14, at_knee + 0.14, s)
+	leg["mesh"] = mesh
+	leg["rest"] = rest
+	leg["weights"] = weights
+	leg["rest_knee"] = knee
+	leg["rest_foot"] = foot
+	leg["out"] = PackedVector4Array()
+	leg["out"].resize(rest.size())
+
+
+## Poses a bound leg: thigh rotates about the hip, shank about the knee, and each vertex
+## is a blend of the two.
+func _skin_leg(leg: Dictionary, knee: Vector4, foot: Vector4) -> void:
+	if not leg.has("mesh"):
+		return
+	var hip: Vector4 = leg["hip_pos"]
+	var rest: PackedVector4Array = leg["rest"]
+	var weights: PackedFloat32Array = leg["weights"]
+	var out: PackedVector4Array = leg["out"]
+	var thigh: Array = _plane_rotation((leg["rest_knee"] as Vector4) - hip, knee - hip)
+	var shank: Array = _plane_rotation((leg["rest_foot"] as Vector4) - (leg["rest_knee"] as Vector4), foot - knee)
+	var rest_knee: Vector4 = leg["rest_knee"]
+	for i in rest.size():
+		var v: Vector4 = rest[i]
+		var a: Vector4 = hip + _apply_plane_rotation(v - hip, thigh)
+		var b: Vector4 = knee + _apply_plane_rotation(v - rest_knee, shank)
+		out[i] = a.lerp(b, weights[i])
+	(leg["mesh"] as ArrayTetraMesh4D).set_vertex_positions(out)
+
+
+## The rotation carrying one direction onto another, as the plane they span plus the
+## angle within it. In 4D there is no rotation axis to name - a rotation lives in a
+## PLANE - so it is stored as two orthonormal vectors and the sine and cosine.
+func _plane_rotation(from: Vector4, to: Vector4) -> Array:
+	var u: Vector4 = from.normalized()
+	var t: Vector4 = to.normalized()
+	var c: float = clampf(u.dot(t), -1.0, 1.0)
+	var v: Vector4 = t - u * c
+	if v.length() < 0.00001:
+		return [u, u, 1.0, 0.0]   # already aligned, or exactly reversed
+	v = v.normalized()
+	return [u, v, c, sqrt(maxf(1.0 - c * c, 0.0))]
+
+
+func _apply_plane_rotation(x: Vector4, r: Array) -> Vector4:
+	var u: Vector4 = r[0]
+	var v: Vector4 = r[1]
+	var c: float = r[2]
+	var s: float = r[3]
+	var xu: float = u.dot(x)
+	var xv: float = v.dot(x)
+	return x + ((c - 1.0) * xu - s * xv) * u + (s * xu + (c - 1.0) * xv) * v
+
+
+## Bends a turn away from any bird standing too close.
+##
+## Each neighbour inside the separation radius pushes, harder the closer it is, and the
+## bird turns toward the sum. Blended with the wander rather than replacing it, so a
+## crowded bird still wanders - it just wanders outward.
+func _avoid_crowding(turn: float) -> float:
+	_crowding = 0.0
+	if separation <= 0.0:
+		return turn
+	var push := Vector2.ZERO
+	for other in _creature.get_tree().get_nodes_in_group(_FLOCK_GROUP):
+		if other == _creature or not (other is Node4D):
+			continue
+		var away := Vector2(_creature.position.x - (other as Node4D).position.x,
+			_creature.position.z - (other as Node4D).position.z)
+		var gap: float = away.length()
+		if gap > 0.001 and gap < separation:
+			push += away / gap * (1.0 - gap / separation)
+	var urgency: float = clampf(push.length(), 0.0, 1.0)
+	_crowding = urgency
+	if urgency < 0.001:
+		return turn
+	var toward: float = wrapf(atan2(push.x, push.y) - _heading, -PI, PI)
+	return lerpf(turn, signf(toward), urgency)

@@ -3,7 +3,8 @@ extends SceneTree
 var _root: Node
 var _f := 0
 func _initialize() -> void:
-	_root = load("res://ramon/Model/rigged_creature_merged.tscn").instantiate()
+	var nm := "rigged_creature_ramon" if OS.get_cmdline_user_args().has("working") else "rigged_creature_merged"
+	_root = load("res://ramon/Model/%s.tscn" % nm).instantiate()
 	root.add_child(_root); current_scene = _root
 func _process(_d) -> bool:
 	_f += 1
@@ -22,6 +23,6 @@ func _process(_d) -> bool:
 	p.linear_velocity = Vector4.ZERO
 	if _f < 40: return false
 	var img: Image = root.get_texture().get_image()
-	img.save_png("res://smoke_test_output/merged.png")
+	img.save_png("res://smoke_test_output/%s.png" % ("tucked" if OS.get_cmdline_user_args().has("working") else "merged"))
 	print("SAVED merged")
 	return true
