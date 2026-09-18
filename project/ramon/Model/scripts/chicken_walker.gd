@@ -75,6 +75,13 @@ const _GaitController = preload("res://scripts/gait_controller.gd")
 ## coloured meshes. Carrying them rigidly keeps the geometry exactly as authored.
 @export var head_attachment_paths: Array[NodePath] = [NodePath("../Wattle")]
 
+## WHICH part of the head is aimed at the floor. This has to be the beak: aiming the
+## last ball of the neck chain instead puts the COMB on the ground and swings the head
+## a full 147 degrees, which turns it upside down and leaves the beak pointing back at
+## the bird's own feet. The beak sits forward of the neck's axis, so aiming it needs a
+## far smaller swing and lands the head the right way up.
+@export var peck_target_path: NodePath = NodePath("../NeckHead/Ball4/BeakBase/BeakMid/BeakTip")
+
 var halted: bool = false
 ## Fed to the gait clock, which derives its period as reference_period * reference_speed
 ## / speed - so this is a cadence dial, not a distance. At 24 the period is 0.33 s, and
@@ -395,9 +402,11 @@ func _place_leg(leg: Dictionary, goal: Vector4) -> void:
 func _solve_peck_angle() -> void:
 	if _neck == null:
 		return
-	var head: Node = _neck
-	while head.get_child_count() > 0:
-		head = head.get_child(head.get_child_count() - 1)
+	var head: Node = get_node_or_null(peck_target_path)
+	if head == null:
+		head = _neck
+		while head.get_child_count() > 0:
+			head = head.get_child(head.get_child_count() - 1)
 	var first: Node = _neck
 	if first.get_child_count() > 0:
 		first = first.get_child(0)
@@ -412,7 +421,7 @@ func _solve_peck_angle() -> void:
 	var want: float = lerpf(_neck_pivot.y + head_off.y, ground, peck_reach) - _neck_pivot.y
 	_peck_angle = acos(clampf(want / r, -1.0, 1.0)) - phi
 	if true:
-		print("[walker] peck: head %.3f from hinge, reaching y %.3f -> %.2f rad" % [r, want + _neck_pivot.y, _peck_angle])
+		print("[walker] peck: aiming %s, %.3f from hinge, reaching y %.3f -> %.2f rad" % [head.name, r, want + _neck_pivot.y, _peck_angle])
 
 
 ## Local offset of a descendant, summed up the chain. Valid at rest, where every basis
