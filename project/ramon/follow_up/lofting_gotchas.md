@@ -76,6 +76,35 @@ by transforming a node, because the mesh belongs to the rig, not the part. It ha
 deformed, at ~2.5 us per cell per frame. That is affordable for a leg and not for a
 whole body.
 
+## The "fog" over the floor is the PROJECTION pass
+
+**CORRECTION.** An earlier note here blamed the haze on the ground slab ending 40 units
+away with the sky's horizon band showing above it. Enlarging the ground did help, but it
+was not the main cause. A/B'd at runtime, 19 Sep 2026:
+
+| | mean pixel difference from the authored view |
+|---|---|
+| projection pass off (`rendering_engine_name = "Cross-section"`) | **17.3**, and only below the horizon |
+| ground thinned through W (300 -> 6), projection left on | **4.3** |
+
+The player's camera in `rigged_creature_ramon` is set to `Combined`, which draws a faint
+PROJECTION of the whole 4D scene over the cross-section (`projection_opacity_base = 0.02`).
+A ground box 300 units thick through W projects an enormous faint slab across the lower
+half of the screen. That is the haze. The sky is untouched, which is why sampling a
+column of sky showed no difference at all and sent the first investigation the wrong way.
+
+**There is no way to exclude one mesh from the projection pass.** `Cross-section` and
+`Projected` both call the same `_update_3d_mesh_instances()` over the same mesh list, so
+it is all or nothing per camera. Options without an engine change:
+
+- Thin the VISIBLE ground through W while leaving the collision box wide: the mesh
+  (`BoxTetraMesh4D`) and the shape (`BoxShape4D`) are separate resources. Removes about
+  three quarters of the haze; costs a floor that vanishes visually past |w| > half its
+  W size.
+- Lower `projection_opacity_base`, which dims the projection for everything.
+- Add a per-mesh "skip projection" flag to the 4D module - the real fix, and an engine
+  change.
+
 ## Making a joint look continuous without merging
 
 Sink the joining ball INSIDE its neighbour rather than butting the two surfaces together.
