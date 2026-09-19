@@ -1,4 +1,4 @@
-[gd_scene load_steps=135 format=3 uid="uid://bk3wq1apxrv7m"]
+[gd_scene load_steps=135 format=3]
 
 [ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="1_sun"]
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="2_player"]
