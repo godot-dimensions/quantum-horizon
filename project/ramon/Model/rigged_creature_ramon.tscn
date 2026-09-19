@@ -1,10 +1,11 @@
-[gd_scene load_steps=135 format=3 uid="uid://bk3wq1apxrv7m"]
+[gd_scene load_steps=156 format=3 uid="uid://bk3wq1apxrv7m"]
 
 [ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="1_sun"]
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="2_player"]
 [ext_resource type="Script" uid="uid://cuceuwghr0d4v" path="res://ramon/Model/scripts/loft_rig_4d.gd" id="3_rig"]
 [ext_resource type="Script" uid="uid://cdkwbv02fti2x" path="res://ramon/Model/scripts/loft_ball_4d.gd" id="4_ball"]
 [ext_resource type="Script" path="res://ramon/Model/scripts/chicken_walker.gd" id="chk_walker"]
+[ext_resource type="Script" path="res://ramon/Model/scripts/strider_walker.gd" id="brx_walker"]
 [ext_resource type="Script" uid="uid://cctpeix1vjp6t" path="res://ramon/Model/scripts/head_rotation_demo.gd" id="5_headanim"]
 [ext_resource type="Script" uid="uid://brqba3ffaif1o" path="res://ramon/Model/scripts/ik_gait_driver.gd" id="6_walker"]
 [ext_resource type="Script" uid="uid://droxhc506rw6i" path="res://scripts/ik_chain_controller.gd" id="7_ik"]
@@ -389,6 +390,69 @@ albedo_color = Color(0.35, 0.85, 1, 1)
 [sub_resource type="WireMaterial4D" id="WireMaterial4D_y31ny"]
 albedo_color = Color(0.35, 0.85, 1, 1)
 
+[sub_resource type="TetraMaterial4D" id="brx_TetraMaterial4D_brachio"]
+albedo_color = Color(0.52, 0.56, 0.44, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_ypfv2"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_ulgr0"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_ggh4v"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_a51rd"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_kqfky"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_hx8cd"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_agcg8"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_soqx4"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_f52cm"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_840xd"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_r3t0v"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_mfkqo"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_4u36y"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_ytfqa"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_0sbn5"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_s4ydr"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_y85bl"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_jwhtt"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_n1af5"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="brx_WireMaterial4D_l2nje"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
 [node name="RiggedCreatureRamon" type="Node4D"]
 
 [node name="Sun" type="DirectionalLight4D" parent="."]
@@ -404,7 +468,7 @@ sky_material = SubResource("GradientSkyMaterial4D_sky")
 tonemap_mode = 2
 
 [node name="Ground" type="StaticBody4D" parent="."]
-position = Vector4(0, -1, 0, 0)
+position = Vector4(0, -1.05, 0, 0)
 
 [node name="CollisionShape4D" type="CollisionShape4D" parent="Ground"]
 shape = SubResource("BoxShape4D_ground")
@@ -2718,3 +2782,140 @@ material_override = SubResource("chk_WireMaterial4D_vj4qu")
 script = ExtResource("4_ball")
 radius = 0.06
 v_scale = 2.0
+
+[node name="Brachio" type="Node4D" parent="."]
+position = Vector4(-24, -0.906, -14, 0)
+
+[node name="Spine" type="MeshInstance4D" parent="Brachio"]
+position = Vector4(0, 0.6320797763889683, 0, 0)
+material_override = SubResource("brx_TetraMaterial4D_brachio")
+script = ExtResource("3_rig")
+profile_rings = 6
+
+[node name="Ball1" type="MeshInstance4D" parent="Brachio/Spine"]
+position = Vector4(0, 17.5, -15.141976765312137, 0)
+material_override = SubResource("brx_WireMaterial4D_ypfv2")
+script = ExtResource("4_ball")
+radius = 4.6
+
+[node name="Tail1" type="MeshInstance4D" parent="Brachio/Spine/Ball1"]
+position = Vector4(0, -1.5, -6.4696, 0)
+material_override = SubResource("brx_WireMaterial4D_ulgr0")
+script = ExtResource("4_ball")
+radius = 3.1
+
+[node name="Tail2" type="MeshInstance4D" parent="Brachio/Spine/Ball1/Tail1"]
+position = Vector4(0, -3, -7.3885, 0)
+material_override = SubResource("brx_WireMaterial4D_ggh4v")
+script = ExtResource("4_ball")
+radius = 1.7
+
+[node name="Tail3" type="MeshInstance4D" parent="Brachio/Spine/Ball1/Tail1/Tail2"]
+position = Vector4(0, -2, -8, 0)
+material_override = SubResource("brx_WireMaterial4D_a51rd")
+script = ExtResource("4_ball")
+radius = 0.55
+
+[node name="BackLeg1" type="MeshInstance4D" parent="Brachio/Spine/Ball1"]
+position = Vector4(3.9456, -2.5, 2.3077, 0)
+material_override = SubResource("brx_WireMaterial4D_kqfky")
+script = ExtResource("4_ball")
+radius = 3.0
+
+[node name="BackLeg2" type="MeshInstance4D" parent="Brachio/Spine/Ball1/BackLeg1"]
+position = Vector4(-0.0456, -5.5, -0.1657, 0)
+material_override = SubResource("brx_WireMaterial4D_hx8cd")
+script = ExtResource("4_ball")
+radius = 2.0
+
+[node name="BackLeg3" type="MeshInstance4D" parent="Brachio/Spine/Ball1/BackLeg1/BackLeg2"]
+position = Vector4(0.2, -5.5, 0.5, 0)
+material_override = SubResource("brx_WireMaterial4D_agcg8")
+script = ExtResource("4_ball")
+radius = 1.55
+
+[node name="BackLeg4" type="MeshInstance4D" parent="Brachio/Spine/Ball1/BackLeg1/BackLeg2/BackLeg3"]
+position = Vector4(0, -2.8, 0.5, 0)
+material_override = SubResource("brx_WireMaterial4D_soqx4")
+script = ExtResource("4_ball")
+radius = 1.85
+
+[node name="Ball2" type="MeshInstance4D" parent="Brachio/Spine"]
+position = Vector4(0, 19.749861525895128, -6, 0)
+material_override = SubResource("brx_WireMaterial4D_f52cm")
+script = ExtResource("4_ball")
+radius = 5.4
+v_scale = 1.2000000000000002
+
+[node name="Ball3" type="MeshInstance4D" parent="Brachio/Spine"]
+position = Vector4(0, 19.460593982660505, -0.442156725128406, 0)
+material_override = SubResource("brx_WireMaterial4D_840xd")
+script = ExtResource("4_ball")
+radius = 4.7
+v_scale = 1.6
+
+[node name="FrontLeg1" type="MeshInstance4D" parent="Brachio/Spine/Ball3"]
+position = Vector4(3.4848, -1.9606, 1.9422, 0)
+material_override = SubResource("brx_WireMaterial4D_r3t0v")
+script = ExtResource("4_ball")
+radius = 2.9
+
+[node name="FrontLeg2" type="MeshInstance4D" parent="Brachio/Spine/Ball3/FrontLeg1"]
+position = Vector4(0.2152, -6, -0.3, 0)
+material_override = SubResource("brx_WireMaterial4D_mfkqo")
+script = ExtResource("4_ball")
+radius = 1.9
+
+[node name="FrontLeg3" type="MeshInstance4D" parent="Brachio/Spine/Ball3/FrontLeg1/FrontLeg2"]
+position = Vector4(0.2, -6.5, -0.2, 0)
+material_override = SubResource("brx_WireMaterial4D_4u36y")
+script = ExtResource("4_ball")
+radius = 1.45
+
+[node name="FrontLeg4" type="MeshInstance4D" parent="Brachio/Spine/Ball3/FrontLeg1/FrontLeg2/FrontLeg3"]
+position = Vector4(0, -3.8, 0.5, 0)
+material_override = SubResource("brx_WireMaterial4D_ytfqa")
+script = ExtResource("4_ball")
+radius = 1.75
+
+[node name="Ball4" type="MeshInstance4D" parent="Brachio/Spine"]
+position = Vector4(0, 24, 7.080332266190823, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.9998432903983238, 0, 0, 0, 0, 1.3318933780054496, 0, 0, 0, 0, 1)
+material_override = SubResource("brx_WireMaterial4D_0sbn5")
+script = ExtResource("4_ball")
+radius = 2.5
+
+[node name="Ball5" type="MeshInstance4D" parent="Brachio/Spine"]
+position = Vector4(0, 30.5, 9.60376225935671, 0)
+material_override = SubResource("brx_WireMaterial4D_s4ydr")
+script = ExtResource("4_ball")
+radius = 1.7
+
+[node name="Ball6" type="MeshInstance4D" parent="Brachio/Spine"]
+position = Vector4(0, 36.545944299861006, 10.826974418160376, 0)
+material_override = SubResource("brx_WireMaterial4D_y85bl")
+script = ExtResource("4_ball")
+radius = 1.25
+
+[node name="Ball7" type="MeshInstance4D" parent="Brachio/Spine"]
+position = Vector4(0, 39, 12.364373721204842, 0)
+material_override = SubResource("brx_WireMaterial4D_jwhtt")
+script = ExtResource("4_ball")
+radius = 1.05
+
+[node name="Ball8" type="MeshInstance4D" parent="Brachio/Spine"]
+position = Vector4(0, 38.80035672599182, 15.448416363131695, 0)
+material_override = SubResource("brx_WireMaterial4D_n1af5")
+script = ExtResource("4_ball")
+radius = 0.7000000000000001
+
+[node name="Walker" type="Node4D" parent="Brachio"]
+script = ExtResource("brx_walker")
+rig_path = NodePath("../Spine")
+leg_name_prefixes = PackedStringArray("FrontLeg", "BackLeg")
+skin_every = 3
+stride_length = 2.5
+step_height = 0.3
+body_bob = 0.35
+belt_speed = 6.4
+travel = true

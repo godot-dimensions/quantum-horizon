@@ -31,12 +31,47 @@ const _GaitController = preload("res://scripts/gait_controller.gd")
 ## about 106 ms at 10 sides x 5 rings, which is six frames' worth. Cost falls roughly
 ## with sides x rings, so this trades roundness for a moving creature. The real fix is
 ## to skin the mesh instead of rebuilding it - see the note in _physics_process.
+## Only branches whose first ball's name starts with one of these count as legs. Empty
+## means "any descending chain of three balls", which is how the horse was collected.
+## The brachiosaurus needs it: its TAIL drops five units from the body ball it hangs
+## off, so it passes the descent test and the creature tries to walk on it.
+@export var leg_name_prefixes: PackedStringArray = PackedStringArray()
+
+## How far from a leg's own line a vertex can sit and still be carried by it. Wide
+## enough to take the whole limb, narrow enough to leave the belly behind.
+## How often the mesh is re-posed, in frames. Handing vertices back makes the engine
+## rebuild the whole proxy mesh, which measured 18.97 ms on the brachiosaurus - 6.6 us
+## per cell, far worse per cell than a chicken's leg because this animal is forty units
+## tall and covers most of the screen. Drawing it without touching it costs 0.40 ms.
+## A sauropod at a slow walk does not need a fresh pose sixty times a second, so this
+## divides the cost directly. The IK still runs every frame; only the mesh lags.
+@export_range(1, 6, 1) var skin_every: int = 3
+
+@export var leg_influence: float = 4.5
+
+## Prints how many vertices ended up bound, which is the quick way to see a binding that
+## has caught the whole body or none of it.
+@export var verbose_skin: bool = false
+
 @export var animation_sides: int = 6
 @export var animation_rings: int = 3
 
-## Metres per second the ground appears to move under the creature. It walks in place,
-## treadmill-style, exactly as Motion Lab does - the alternative is chasing it around.
+## Metres per second the ground appears to move under the creature. On its own this is
+## a treadmill - it walks in place, exactly as Motion Lab does.
 @export var belt_speed: float = 1.6
+
+## Whether it actually goes anywhere. Off by default: Motion Lab and the horse were
+## built to be watched from one spot.
+##
+## The travel speed is NOT a separate number to tune. A planted foot slides backward
+## through rig space at stride_length per stance, so the creature has to move forward at
+## exactly that rate or the feet will skate. It is derived from the gait every frame.
+@export var travel: bool = false
+
+## NOTE: it walks in a straight line. Turning was tried and removed. Yawing the whole
+## creature swings its planted feet around its centre - a foot fifteen units out drags
+## half a unit a second at only 1.5 deg/s - so a turn has to be steered into the foot
+## TARGETS, which is a gait change rather than a transform. Until then, straight.
 
 ## How far forward of its rest position a foot reaches at the top of its swing.
 @export var stride_length: float = 1.1
@@ -55,7 +90,24 @@ const _GaitController = preload("res://scripts/gait_controller.gd")
 var halted: bool = false
 var speed: float = 0.0
 
+# Preloaded rather than reached by its class_name: a global class is only registered
+# once the editor has scanned the project, so a class_name reference fails outright in
+# a headless run. The other scripts here preload for the same reason.
+const _Plane = preload("res://ramon/Model/scripts/plane_rotation_4d.gd")
+
 var _rig: Node
+var _bound: bool = false
+var _skin_maths := 0.0
+var _skin_upload := 0.0
+var _skin_frames := 0
+var _since_skin := 0
+var _rig_rest_y: float = 0.0
+var _rest_verts := PackedVector4Array()
+var _posed := PackedVector4Array()
+var _skin_index := PackedInt32Array()
+var _skin_leg := PackedInt32Array()
+var _skin_weight := PackedFloat32Array()
+var _skin_shank := PackedFloat32Array()
 var _gait: Node
 var _legs: Array = []
 var _body_rest_y: float = 0.0
@@ -70,6 +122,8 @@ func _ready() -> void:
 		return
 	speed = belt_speed
 	_rig.verbose = false
+	if _rig is Node4D:
+		_rig_rest_y = (_rig as Node4D).position.y
 	_rig.profile_sides = animation_sides
 	_rig.profile_rings = animation_rings
 	_detach_mirrors()
@@ -130,6 +184,14 @@ func _collect_legs() -> void:
 		for hip in ball.get_children():
 			if not hip.has_method("get_loft_section"):
 				continue
+			if not leg_name_prefixes.is_empty():
+				var named := false
+				for prefix in leg_name_prefixes:
+					if hip.name.begins_with(prefix):
+						named = true
+						break
+				if not named:
+					continue
 			var knee: Node = _only_ball_child(hip)
 			if knee == null:
 				continue
@@ -174,11 +236,13 @@ func _only_ball_child(node: Node) -> Node:
 
 
 func _physics_process(_delta: float) -> void:
-	# Rebuilding the whole mesh every frame is the honest bottleneck here, and is why
-	# the resolution is turned down. Skinning - binding each vertex to its section once
-	# and only moving vertices afterwards - would remove it entirely: moving all of a
-	# creature's vertices measured 0.06 ms, against 106 ms to rebuild. That is the next
-	# piece of work, not a subtlety.
+	# It used to rebuild the whole mesh every frame, which is why the resolution is
+	# turned down. Measured on the brachiosaurus that cost 26.87 ms/frame on its own.
+	# It is skinned now: each vertex is bound once to the leg bone nearest it, and only
+	# vertices move afterwards. Nothing here re-lofts.
+	if not _bound:
+		_bound = true
+		_bind_mesh()
 	var phase: float = float(_gait.phase_progress)
 	var duty: float = float(_gait.duty_factor)
 	var offsets: Array = _gait.phase_offsets
@@ -186,14 +250,28 @@ func _physics_process(_delta: float) -> void:
 	for leg in _legs:
 		var order: int = int(leg["order"]) % offsets.size()
 		var local_phase: float = fposmod(phase + float(offsets[order]), 1.0)
+		leg["was_stance"] = bool(leg.get("in_stance", false))
+		leg["in_stance"] = local_phase < duty
+		leg["prev_goal"] = leg.get("foot_goal", Vector4.ZERO)
 		leg["foot_goal"] = _foot_position(leg, local_phase, duty)
 
 	# The trunk rises and falls at twice the gait frequency - once per diagonal pair.
-	if _body_ball != null:
-		_body_ball.position.y = _body_rest_y + sin(phase * TAU * 2.0) * body_bob
+	# Applied to the rig NODE rather than to the body ball: moving a ball re-lofts.
+	var bob: float = sin(phase * TAU * 2.0) * body_bob
+	if _rig is Node4D:
+		(_rig as Node4D).position.y = _rig_rest_y + bob
 
 	for leg in _legs:
-		_place_leg(leg, leg["foot_goal"])
+		# In rig space, so the bob the rig node just applied has to come back off the
+		# goal or the feet would ride up and down with the trunk.
+		var goal: Vector4 = leg["foot_goal"]
+		_place_leg(leg, Vector4(goal.x, goal.y - bob, goal.z, goal.w))
+	if travel and not halted:
+		_travel()
+	_since_skin += 1
+	if _since_skin >= skin_every:
+		_since_skin = 0
+		_skin()
 
 
 ## Where a foot should be at this point in its own cycle.
@@ -244,8 +322,128 @@ func _place_leg(leg: Dictionary, goal: Vector4) -> void:
 		bend -= direction * bend.dot(direction)
 	bend = bend.normalized()
 
-	var knee_world: Vector4 = hip + direction * along + bend * out
-	var foot_world: Vector4 = hip + direction * reach
-	# Balls are nested, so a child's position is its offset from its parent.
-	(leg["knee"] as Node4D).position = knee_world - hip
-	(leg["foot"] as Node4D).position = foot_world - knee_world
+	# Recorded rather than written to the balls: writing a ball makes the rig re-loft
+	# the entire creature. The pose reaches the mesh through _skin() instead.
+	leg["knee_now"] = hip + direction * along + bend * out
+	leg["foot_now"] = hip + direction * reach
+
+
+## Binds every vertex near a leg to that leg, once.
+##
+## A vertex is judged by two things: how far DOWN the leg it sits, measured from the hip
+## to the foot, and how far it is from the leg's own line. Both have to be satisfied, and
+## that is what keeps the belly still - it is low enough to pass the first test but far
+## enough from any leg to fail the second. Everything unbound never moves again, so the
+## body, neck and tail cost nothing per frame.
+func _bind_mesh() -> void:
+	# Rebuild FIRST. _ready lowers the rig to animation resolution, but that rebuild has
+	# not necessarily happened by the first physics frame - binding straight away caught
+	# the full-resolution mesh (9600 cells rather than 2880) and bound to stale vertices.
+	_rig.call("build")
+	var mesh := (_rig as MeshInstance4D).mesh as ArrayTetraMesh4D
+	if mesh == null or _legs.is_empty():
+		return
+	# From here the mesh is driven directly, so the rig must stop watching its balls.
+	_rig.set("live_rebuild", false)
+	_rest_verts = mesh.get_vertex_positions()
+	_posed = _rest_verts.duplicate()
+	for leg in _legs:
+		leg["rest_knee"] = _rig._position_in_rig(leg["knee"])
+		leg["rest_foot"] = _rig._position_in_rig(leg["foot"])
+		leg["knee_now"] = leg["rest_knee"]
+		leg["foot_now"] = leg["rest_foot"]
+	for i in _rest_verts.size():
+		var v: Vector4 = _rest_verts[i]
+		var best: int = -1
+		var best_weight: float = 0.0
+		var best_shank: float = 0.0
+		for index in _legs.size():
+			var leg: Dictionary = _legs[index]
+			var hip: Vector4 = leg["hip_world"]
+			var knee: Vector4 = leg["rest_knee"]
+			var foot: Vector4 = leg["rest_foot"]
+			var drop: float = maxf(hip.y - foot.y, 0.0001)
+			var down: float = clampf((hip.y - v.y) / drop, 0.0, 1.0)
+			var reach: float = minf(_distance_to_segment(v, hip, knee), _distance_to_segment(v, knee, foot))
+			var near: float = 1.0 - smoothstep(leg_influence * 0.55, leg_influence, reach)
+			var weight: float = smoothstep(0.02, 0.4, down) * near
+			if weight > best_weight:
+				best_weight = weight
+				best = index
+				var at_knee: float = (hip.y - knee.y) / drop
+				best_shank = smoothstep(at_knee - 0.18, at_knee + 0.18, down)
+		if best >= 0 and best_weight > 0.001:
+			_skin_index.append(i)
+			_skin_leg.append(best)
+			_skin_weight.append(best_weight)
+			_skin_shank.append(best_shank)
+	if verbose_skin:
+		print("[strider] bound %d of %d vertices to %d legs" % [_skin_index.size(), _rest_verts.size(), _legs.size()])
+
+
+## Applies the current pose to the bound vertices. Two rotations per leg, then a blend.
+func _skin() -> void:
+	if _skin_index.is_empty():
+		return
+	var t0 := Time.get_ticks_usec()
+	var thigh: Array = []
+	var shank: Array = []
+	for leg in _legs:
+		var hip: Vector4 = leg["hip_world"]
+		thigh.append(_Plane.between((leg["rest_knee"] as Vector4) - hip, (leg["knee_now"] as Vector4) - hip))
+		shank.append(_Plane.between((leg["rest_foot"] as Vector4) - (leg["rest_knee"] as Vector4),
+			(leg["foot_now"] as Vector4) - (leg["knee_now"] as Vector4)))
+	for k in _skin_index.size():
+		var i: int = _skin_index[k]
+		var leg: Dictionary = _legs[_skin_leg[k]]
+		var v: Vector4 = _rest_verts[i]
+		var hip: Vector4 = leg["hip_world"]
+		var a: Vector4 = hip + _Plane.apply(v - hip, thigh[_skin_leg[k]])
+		var b: Vector4 = (leg["knee_now"] as Vector4) + _Plane.apply(v - (leg["rest_knee"] as Vector4), shank[_skin_leg[k]])
+		_posed[i] = v.lerp(a.lerp(b, _skin_shank[k]), _skin_weight[k])
+	var t1 := Time.get_ticks_usec()
+	((_rig as MeshInstance4D).mesh as ArrayTetraMesh4D).set_vertex_positions(_posed)
+	if verbose_skin:
+		_skin_maths += t1 - t0
+		_skin_upload += Time.get_ticks_usec() - t1
+		_skin_frames += 1
+		if _skin_frames == 200:
+			var mesh := (_rig as MeshInstance4D).mesh as ArrayTetraMesh4D
+			print("[strider] %d cells, %d of %d verts bound, maths %.3f ms, upload %.3f ms" % [
+				mesh.get_simplex_cell_vertex_indices().size() / 4, _skin_index.size(),
+				_rest_verts.size(), _skin_maths / 200.0 / 1000.0, _skin_upload / 200.0 / 1000.0])
+
+
+func _distance_to_segment(point: Vector4, a: Vector4, b: Vector4) -> float:
+	var ab: Vector4 = b - a
+	var length_squared: float = ab.length_squared()
+	if length_squared < 0.000001:
+		return point.distance_to(a)
+	var t: float = clampf((point - a).dot(ab) / length_squared, 0.0, 1.0)
+	return point.distance_to(a + ab * t)
+
+
+## Carries the creature along at exactly the rate its planted feet slide backward.
+##
+## MEASURED from the feet rather than derived from the gait. The derivation - stride
+## length over the stance fraction of the period - looks right and is not: it produced a
+## foot drift equal to the body speed, meaning the feet moved with the body instead of
+## staying put. Taking the actual per-frame slide of the feet that are ON THE GROUND and
+## moving the creature by its opposite cannot be out of step with the gait, whatever the
+## cadence, duty factor or stride is set to.
+##
+## Only legs that were in stance LAST frame as well count: a leg landing this frame jumps
+## from its swing arc to the ground, and that jump is not ground slide.
+func _travel() -> void:
+	var mover := get_parent() as Node4D
+	if mover == null:
+		return
+	var slide := Vector4.ZERO
+	var planted: int = 0
+	for leg in _legs:
+		if bool(leg.get("in_stance", false)) and bool(leg.get("was_stance", false)):
+			slide += (leg["foot_goal"] as Vector4) - (leg["prev_goal"] as Vector4)
+			planted += 1
+	if planted == 0:
+		return
+	mover.position -= mover.basis * (slide / float(planted))
