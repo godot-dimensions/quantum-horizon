@@ -1542,8 +1542,8 @@ script = ExtResource("11_idle")
 script = ExtResource("12_head")
 
 [node name="Chicken" type="Node4D" parent="."]
-basis = Projection(0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25)
 position = Vector4(-2.2, -0.053, 5.5, 0)
+basis = Projection(0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25)
 
 [node name="Body" type="MeshInstance4D" parent="Chicken"]
 material_override = SubResource("chk_TetraMaterial4D_feather")
@@ -1797,8 +1797,8 @@ skewness = 0.35
 projection_opacity_base = 0.02
 
 [node name="Chicken2" type="Node4D" parent="."]
-basis = Projection(0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25)
 position = Vector4(-1.86, -0.053, 5.69, 0)
+basis = Projection(0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25)
 
 [node name="Body" type="MeshInstance4D" parent="Chicken2"]
 material_override = SubResource("chk_TetraMaterial4D_feather")
@@ -2041,8 +2041,8 @@ radius = 0.06
 v_scale = 2.0
 
 [node name="Chicken3" type="Node4D" parent="."]
-basis = Projection(0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25)
 position = Vector4(-2.55, -0.053, 5.78, 0)
+basis = Projection(0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25)
 
 [node name="Body" type="MeshInstance4D" parent="Chicken3"]
 material_override = SubResource("chk_TetraMaterial4D_feather")
@@ -2285,8 +2285,8 @@ radius = 0.06
 v_scale = 2.0
 
 [node name="Chicken4" type="Node4D" parent="."]
-basis = Projection(0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25)
 position = Vector4(-2.02, -0.053, 5.2, 0)
+basis = Projection(0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25)
 
 [node name="Body" type="MeshInstance4D" parent="Chicken4"]
 material_override = SubResource("chk_TetraMaterial4D_feather")
@@ -2528,8 +2528,8 @@ radius = 0.06
 v_scale = 2.0
 
 [node name="Chicken5" type="Node4D" parent="."]
-basis = Projection(0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25)
 position = Vector4(-2.46, -0.053, 5.28, 0)
+basis = Projection(0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25)
 
 [node name="Body" type="MeshInstance4D" parent="Chicken5"]
 material_override = SubResource("chk_TetraMaterial4D_feather")
@@ -2772,8 +2772,8 @@ radius = 0.06
 v_scale = 2.0
 
 [node name="Brachio" type="Node4D" parent="."]
+position = Vector4(-24, -0.6765954705195831, -14, 0)
 basis = Projection(0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25)
-position = Vector4(-24, -0.259028, -14, 0)
 
 [node name="Spine" type="MeshInstance4D" parent="Brachio"]
 position = Vector4(0, 0.6320797763889683, 0, 0)
