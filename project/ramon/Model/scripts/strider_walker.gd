@@ -363,6 +363,9 @@ func _bind_mesh() -> void:
 		var best: int = -1
 		var best_weight: float = 0.0
 		var best_shank: float = 0.0
+		var nearest: int = -1
+		var nearest_reach: float = INF
+		var below_foot: bool = false
 		for index in _legs.size():
 			var leg: Dictionary = _legs[index]
 			var hip: Vector4 = leg["hip_world"]
@@ -379,12 +382,32 @@ func _bind_mesh() -> void:
 			var reach: float = minf(_distance_to_segment(v, hip, knee), _distance_to_segment(v, knee, beyond))
 			var influence: float = maxf(drop * leg_influence_ratio, 0.0001)
 			var near: float = 1.0 - smoothstep(influence * 0.55, influence, reach)
+			if reach < nearest_reach:
+				nearest_reach = reach
+				nearest = index
+				# Below this leg's last ball. No radius test: the influence radius is
+				# sized for a limb's thickness, and a splayed hoof reaches past it, which
+				# left 40 of the horse's foot vertices bound to nothing. Nothing but feet
+				# exists below the feet, and picking the NEAREST leg is what keeps one
+				# hoof from being claimed by the leg beside it.
+				below_foot = v.y <= foot.y
 			var weight: float = smoothstep(0.02, 0.4, down) * near
 			if weight > best_weight:
 				best_weight = weight
 				best = index
 				var at_knee: float = (hip.y - knee.y) / drop
 				best_shank = smoothstep(at_knee - 0.18, at_knee + 0.18, down)
+		# ANYTHING BELOW THE LAST IK BALL RIDES RIGIDLY WITH THE SHANK.
+		#
+		# A hoof, a toe, a foot pad - the chain's IK ends at the ankle and this geometry
+		# hangs beneath it, where the smooth falloff gives it partial weights or none at
+		# all. Measured on the horse: of 214 vertices below the foot ball, 48 were bound
+		# to nothing and 64 were bound at as little as 0.01, so the hoof tore three ways
+		# as the leg swung. Nothing down there should bend - it is the end of the limb.
+		if nearest >= 0 and below_foot:
+			best = nearest
+			best_weight = 1.0
+			best_shank = 1.0
 		if best >= 0 and best_weight > 0.001:
 			_skin_index.append(i)
 			_skin_leg.append(best)
