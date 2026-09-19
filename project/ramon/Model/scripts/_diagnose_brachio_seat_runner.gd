@@ -19,9 +19,12 @@ func _process(_d) -> bool:
 		while not stack.is_empty():
 			var n: Node = stack.pop_back()
 			if n is MeshInstance4D and (n as MeshInstance4D).mesh is ArrayTetraMesh4D and (n as MeshInstance4D).visible:
-				var off: float = (n as Node4D).global_position.y
+				# Through the node's own transform. Adding the offset alone ignores any
+				# SCALE on the creature, which is exactly what is being checked here.
+				var b: Projection = (n as Node4D).global_basis
+				var off: Vector4 = (n as Node4D).global_position
 				for v in ((n as MeshInstance4D).mesh as ArrayTetraMesh4D).get_vertex_positions():
-					low = minf(low, v.y + off)
+					low = minf(low, (b * v).y + off.y)
 			for c in n.get_children(): stack.append(c)
 		if low < 1e8:
 			print("  %-10s lowest %+.3f -> %s by %.3f" % [top.name, low,

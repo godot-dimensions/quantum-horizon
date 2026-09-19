@@ -18,15 +18,14 @@ func _process(_d) -> bool:
 			if n is Camera4D: _cam = n
 			for c in n.get_children(): stack.append(c)
 	var p: CharacterBody4D = _root.get_node("Player")
-	var eye := Vector4(4.0, 3.2, 16.0, 0.0)
+	# Framed for the new scale: the birds are a quarter the size they were.
+	var eye := Vector4(1.2, 1.1, 8.4, 0.0)
 	p.global_position = eye
-	p.global_basis = Basis4D.looking_at(Vector4(-6.0, 1.0, -6.0, 0.0) - eye)
+	p.global_basis = Basis4D.looking_at(Vector4(-8.0, 1.2, -4.0, 0.0) - eye)
 	p.linear_velocity = Vector4.ZERO
-	if _shot == 1 and _cam:
-		_cam.w_fade_mode = 0
-		_cam.edge_falloff = 1.0
+
 	if _f < 60 + _shot * 60: return false
 	root.get_texture().get_image().save_png("res://smoke_test_output/fog_%d.png" % _shot)
 	print("SAVED fog_%d" % _shot)
 	_shot += 1
-	return _shot > 1
+	return _shot > 0

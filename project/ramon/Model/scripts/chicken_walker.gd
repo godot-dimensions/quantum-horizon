@@ -144,6 +144,7 @@ var _carried: Array = []
 var _bound: bool = false
 const _FLOCK_GROUP := "chicken_flock"
 var _crowding: float = 0.0
+var _scale: float = 1.0
 var _neck_pivot: Vector4 = _NECK_PIVOT
 
 ## The bird itself. This node is a CHILD of it, so writing our own position would slide
@@ -209,6 +210,10 @@ func _ready() -> void:
 	_noise.fractal_octaves = 4
 	_noise.frequency = 1.0
 	_noise.seed = randi()
+	# Everything the gait measures - stride, step height, reach - is in the bird's OWN
+	# units. Its travel is in the parent's. Shrinking the bird has to shrink the distance
+	# it covers per step by the same factor or it skates across the ground.
+	_scale = maxf(_creature.basis.x.length(), 0.0001)
 	_wander_centre = _creature.position
 	_creature.add_to_group(_FLOCK_GROUP)
 	_peck_countdown = randf_range(peck_interval_min, peck_interval_max)
@@ -325,15 +330,16 @@ func _apply_peck(amount: float) -> void:
 func _travel(delta: float) -> void:
 	var period: float = maxf(float(_gait.period_sec), 0.0001)
 	var ground_speed: float = 2.0 * stride_length / period
-	_angle += (ground_speed / maxf(circle_radius, 0.0001)) * delta
+	# circle_radius is a distance in the WORLD, so the speed around it has to be too.
+	_angle += (ground_speed * _scale / maxf(circle_radius, 0.0001)) * delta
 	_creature.position = _centre + Vector4(cos(_angle) * circle_radius,
 		_creature.position.y - _centre.y, sin(_angle) * circle_radius, 0.0)
 	# Face along the tangent. The bird is modelled facing +Z, so its local Z column has
 	# to become the direction of travel, and X follows from it.
-	var tz: float = cos(_angle)
-	var tx: float = -sin(_angle)
-	_creature.basis = Projection(Vector4(tz, 0.0, -tx, 0.0), Vector4(0.0, 1.0, 0.0, 0.0),
-		Vector4(tx, 0.0, tz, 0.0), Vector4(0.0, 0.0, 0.0, 1.0))
+	var tz: float = cos(_angle) * _scale
+	var tx: float = -sin(_angle) * _scale
+	_creature.basis = Projection(Vector4(tz, 0.0, -tx, 0.0), Vector4(0.0, _scale, 0.0, 0.0),
+		Vector4(tx, 0.0, tz, 0.0), Vector4(0.0, 0.0, 0.0, _scale))
 
 
 ## Steers by fractal noise, moving forward at whatever speed the gait is producing.
@@ -345,7 +351,7 @@ func _wander(delta: float) -> void:
 	# freely in the middle and turns away rather than walking off the platform. Blended
 	# into the noise instead of overriding it, or the return reads as a sudden decision.
 	var offset: Vector4 = _creature.position - _wander_centre
-	var strayed: float = Vector2(offset.x, offset.z).length() / maxf(roam_radius, 0.001)
+	var strayed: float = Vector2(offset.x, offset.z).length() / maxf(roam_radius * _scale, 0.001)
 	if strayed > 1.0:
 		var home: float = atan2(-offset.x, -offset.z)
 		var toward: float = wrapf(home - _heading, -PI, PI)
@@ -358,18 +364,24 @@ func _wander(delta: float) -> void:
 	_heading += turn * deg_to_rad(turn_rate_degrees) * delta
 	var period: float = maxf(float(_gait.period_sec), 0.0001)
 	var ground_speed: float = 2.0 * stride_length / period
-	var step: float = ground_speed * delta * (1.0 - 0.85 * _crowding)
+	var step: float = ground_speed * delta * _scale * (1.0 - 0.85 * _crowding)
 	_creature.position += Vector4(sin(_heading) * step, 0.0, cos(_heading) * step, 0.0)
 	_face(_heading)
 
 
 ## Points the bird along a heading. It is modelled facing +Z, so its local Z column has
 ## to become the direction of travel and X follows from it.
+## Points the bird along its heading, KEEPING whatever scale it was placed at.
+##
+## This writes the whole basis every frame, so a scale set in the scene would be wiped
+## on the first step. The models are authored at 1 unit = 0.25 m while the player is
+## 1 unit = 1 m, so the birds are scaled down to share a world with him, and that scale
+## has to survive being re-aimed.
 func _face(heading: float) -> void:
-	var tz: float = cos(heading)
-	var tx: float = sin(heading)
-	_creature.basis = Projection(Vector4(tz, 0.0, -tx, 0.0), Vector4(0.0, 1.0, 0.0, 0.0),
-		Vector4(tx, 0.0, tz, 0.0), Vector4(0.0, 0.0, 0.0, 1.0))
+	var tz: float = cos(heading) * _scale
+	var tx: float = sin(heading) * _scale
+	_creature.basis = Projection(Vector4(tz, 0.0, -tx, 0.0), Vector4(0.0, _scale, 0.0, 0.0),
+		Vector4(tx, 0.0, tz, 0.0), Vector4(0.0, 0.0, 0.0, _scale))
 
 
 func _foot_position(leg: Dictionary, local_phase: float, duty: float) -> Vector4:
@@ -466,7 +478,7 @@ func _lowest_foot() -> float:
 	for leg in _legs:
 		var foot: Node = leg["foot"]
 		if foot is Node4D:
-			lowest = minf(lowest, (foot as Node4D).global_position.y)
+			lowest = minf(lowest, _sum_up(foot, _creature).y)
 	return 0.0 if is_inf(lowest) else lowest
 
 
@@ -572,6 +584,7 @@ func _avoid_crowding(turn: float) -> float:
 	_crowding = 0.0
 	if separation <= 0.0:
 		return turn
+	var reach: float = separation * _scale
 	var push := Vector2.ZERO
 	for other in _creature.get_tree().get_nodes_in_group(_FLOCK_GROUP):
 		if other == _creature or not (other is Node4D):
@@ -579,8 +592,8 @@ func _avoid_crowding(turn: float) -> float:
 		var away := Vector2(_creature.position.x - (other as Node4D).position.x,
 			_creature.position.z - (other as Node4D).position.z)
 		var gap: float = away.length()
-		if gap > 0.001 and gap < separation:
-			push += away / gap * (1.0 - gap / separation)
+		if gap > 0.001 and gap < reach:
+			push += away / gap * (1.0 - gap / reach)
 	var urgency: float = clampf(push.length(), 0.0, 1.0)
 	_crowding = urgency
 	if urgency < 0.001:
