@@ -129,13 +129,13 @@ top_color = Color(0.09, 0.16, 0.35, 1)
 bottom_color = Color(0.14, 0.13, 0.12, 1)
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_ground"]
-size = Vector4(80, 2, 80, 80)
+size = Vector4(300, 2, 300, 300)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ground"]
-albedo_color = Color(0.16, 0.17, 0.2, 1)
+albedo_color = Color(0.24, 0.25, 0.28, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ground"]
-size = Vector4(80, 2, 80, 6)
+size = Vector4(300, 2, 300, 300)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_hide"]
 albedo_color = Color(0.85, 0.62, 0.38, 1)
