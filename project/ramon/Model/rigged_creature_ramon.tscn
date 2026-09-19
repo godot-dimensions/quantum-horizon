@@ -12,7 +12,7 @@
 [ext_resource type="Script" uid="uid://xmlioiuuytrp" path="res://ramon/Model/scripts/spine_neck_solver.gd" id="10_spine"]
 [ext_resource type="Script" uid="uid://mqxaiubmcymu" path="res://ramon/Model/scripts/idle_layer.gd" id="11_idle"]
 [ext_resource type="Script" uid="uid://lrab6uceahn1" path="res://ramon/Model/scripts/head_attention.gd" id="12_head"]
-[ext_resource type="Script" path="res://ramon/Model/scripts/strider_walker_ramon.gd" id="brx_walker"]
+[ext_resource type="Script" path="res://ramon/Model/scripts/strider_walker.gd" id="brx_walker"]
 [ext_resource type="Script" uid="uid://d1x2ef38ksbba" path="res://ramon/Model/scripts/chicken_walker.gd" id="chk_walker"]
 
 [sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
@@ -2902,6 +2902,7 @@ radius = 0.7000000000000001
 script = ExtResource("brx_walker")
 rig_path = NodePath("../Spine")
 leg_name_prefixes = PackedStringArray("FrontLeg", "BackLeg")
+skin_every = 3
 belt_speed = 4.0
 travel = true
 stride_length = 2.5
