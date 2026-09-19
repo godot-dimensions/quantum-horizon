@@ -3,7 +3,7 @@ extends SceneTree
 ## Read from the MESH, because the walker no longer moves the balls.
 var _root: Node
 var _f := 0
-var _mesh: ArrayTetraMesh4D
+var _node: MeshInstance4D
 var _lo := 1e9
 var _hi := -1e9
 var _zlo := 1e9
@@ -20,13 +20,15 @@ func _process(_d) -> bool:
 			if n is MeshInstance4D and (n as MeshInstance4D).mesh is ArrayTetraMesh4D:
 				var m := (n as MeshInstance4D).mesh as ArrayTetraMesh4D
 				if m.get_simplex_cell_vertex_indices().size() / 4 > 500:
-					_mesh = m
+					_node = n as MeshInstance4D
 					print("watching %s (%d cells)" % [n.name, m.get_simplex_cell_vertex_indices().size() / 4])
 			for c in n.get_children(): stack.append(c)
 		return false
-	if _f < 20 or _mesh == null: return _mesh == null and _f > 25
+	if _f < 20 or _node == null: return _node == null and _f > 25
 	var low := Vector4(0, 1e9, 0, 0)
-	for v in _mesh.get_vertex_positions():
+	var live := _node.mesh as ArrayTetraMesh4D
+	if live == null: return false
+	for v in live.get_vertex_positions():
 		if v.y < low.y: low = v
 	_lo = minf(_lo, low.y); _hi = maxf(_hi, low.y)
 	_zlo = minf(_zlo, low.z); _zhi = maxf(_zhi, low.z)
