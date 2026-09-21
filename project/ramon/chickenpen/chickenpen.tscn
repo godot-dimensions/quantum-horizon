@@ -1,4 +1,4 @@
-[gd_scene load_steps=45 format=3]
+[gd_scene load_steps=47 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -27,10 +27,12 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_collector_4d.gd" id="pen_collector"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_searcher_4d.gd" id="pen_searcher"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_nessa_talk_4d.gd" id="pen_nessa_talk"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_slice_gizmo_4d.gd" id="pen_gizmo"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cat_4d.gd" id="pen_cat"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_lofted_girl_4d.gd" id="pen_lofted_girl"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cat_grab_4d.gd" id="pen_cat_grab"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="pen_face"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_trym_4d.gd" id="pen_trym"]
 [ext_resource type="Script" uid="uid://bvklfrydaxyio" path="res://ramon/dialogue/world_tag_4d.gd" id="pen_world_tag"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
@@ -221,6 +223,16 @@ offset_right = 1100.0
 offset_bottom = 280.0
 text = ""
 
+[node name="SliceGizmo" type="Control" parent="UI"]
+offset_left = 900.0
+offset_top = 88.0
+offset_right = 1200.0
+offset_bottom = 176.0
+script = ExtResource("pen_gizmo")
+player_path = NodePath("../../Player")
+locator_path = NodePath("../../Systems/Locator")
+manager_path = NodePath("../../Chickens")
+
 [node name="NessaTag" type="Control" parent="UI"]
 script = ExtResource("dlg_tag")
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
@@ -279,7 +291,7 @@ catcher_path = NodePath("../../Player/Catcher")
 manager_path = NodePath("../../Chickens")
 dialogue_path = NodePath("../Talk")
 tag_path = NodePath("../../UI/TalkTag")
-locator_ui_paths = Array[NodePath]([NodePath("../../UI/Locator"), NodePath("../../UI/Radar")])
+locator_ui_paths = Array[NodePath]([NodePath("../../UI/Locator"), NodePath("../../UI/Radar"), NodePath("../../UI/SliceGizmo")])
 
 [node name="Locator" type="Node" parent="Systems"]
 script = ExtResource("pen_locator")
@@ -429,6 +441,11 @@ script = ExtResource("pen_cat")
 crate_path = NodePath("../Crate")
 player_path = NodePath("../../Player")
 perch_path = NodePath("../../Pen/Coop")
+
+[node name="Trym" type="Node4D" parent="World"]
+position = Vector4(1.8, 0, -18.2, 0)
+script = ExtResource("pen_trym")
+player_path = NodePath("../../Player")
 
 [node name="Scenery" type="Node4D" parent="World"]
 

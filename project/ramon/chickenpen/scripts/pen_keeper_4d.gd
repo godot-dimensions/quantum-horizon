@@ -16,6 +16,9 @@ extends Node4D
 @export var player_path: NodePath
 @export var manager_path: NodePath
 @export var readout_path: NodePath
+## The keeper himself, turned to face whoever walks up to him.
+@export var figure_path: NodePath
+@export_range(0.5, 20.0, 0.5) var turn_speed: float = 6.0
 ## How close you have to be before he says anything.
 @export_range(1.0, 12.0, 0.5) var speak_within: float = 4.0
 ## And how far off your slice he can still be heard - generous, because a keeper who goes
@@ -25,6 +28,8 @@ extends Node4D
 var _player: Node4D
 var _manager: Node
 var _readout: Label
+var _figure: Node4D
+var _facing: float = 0.0
 var _last: String = ""
 
 
@@ -32,6 +37,7 @@ func _ready() -> void:
 	_player = get_node_or_null(player_path) as Node4D
 	_manager = get_node_or_null(manager_path)
 	_readout = get_node_or_null(readout_path) as Label
+	_figure = get_node_or_null(figure_path) as Node4D
 	if _player == null or _readout == null:
 		push_warning("PenKeeper: player or readout missing - he will never say anything (item 82).")
 		return
@@ -43,6 +49,13 @@ func _process(_delta: float) -> void:
 		return
 	var gap: Vector4 = _player.global_position - global_position
 	var near: bool = Vector2(gap.x, gap.z).length() <= speak_within and absf(gap.w) <= speak_within_w
+	# Turn to whoever came to talk. The same convention the player and the girl use -
+	# atan2(x, z) into Basis4D.from_zx, so +Z is the way he faces - because a character
+	# that delivers his lines to a fence post while you stand beside him reads as broken.
+	if near and _figure != null:
+		var want: float = atan2(gap.x, gap.z)
+		_facing = rotate_toward(_facing, want, turn_speed * _delta)
+		_figure.basis = Basis4D.from_zx(_facing)
 	var line: String = _line() if near else ""
 	if line != _last:
 		_last = line

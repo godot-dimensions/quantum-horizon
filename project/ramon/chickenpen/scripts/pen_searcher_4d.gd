@@ -49,6 +49,11 @@ var _rng := RandomNumberGenerator.new()
 var _said: String = ""
 
 
+## Set while she is being talked to. Gravity and the floor keep working; only her
+## searching stops, so she cannot walk out of her own conversation.
+var halted: bool = false
+
+
 func _ready() -> void:
 	_avatar = get_node_or_null(avatar_path) as Node4D
 	_player = get_node_or_null(player_path) as Node4D
@@ -63,9 +68,26 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		linear_velocity += get_gravity() * delta
+	if halted:
+		linear_velocity.x = 0.0
+		linear_velocity.z = 0.0
+		linear_velocity.w = 0.0
+		move_and_slide()
+		return
 	_think(delta)
 	move_and_slide()
 	_talk()
+
+
+## Turn to whoever is speaking to her, so she is not delivering her lines to a fence post.
+## Uses the player's own facing convention: atan2(x, z) into Basis4D.from_zx.
+func face_towards(point: Vector4) -> void:
+	if _avatar == null:
+		return
+	var gap: Vector4 = point - global_position
+	if absf(gap.x) > 0.001 or absf(gap.z) > 0.001:
+		_facing = atan2(gap.x, gap.z)
+		_avatar.basis = Basis4D.from_zx(_facing)
 
 
 func _think(delta: float) -> void:

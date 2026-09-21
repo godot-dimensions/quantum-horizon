@@ -31,8 +31,12 @@ func _process(_d) -> bool:
 	match _stage:
 		0:
 			if _f == 10:
-				# Stand just in front of him. He is at (2.3, 0, -4.3).
-				_player.global_position = Vector4(2.3, 1.2, -2.7, 0.0)
+				# Stand just in front of wherever he actually is. Hard-coding the spot
+				# meant that moving him by a metre silently made this test unreachable
+				# rather than failing on anything real.
+				var head: Node4D = _root.get_node("World/KeeperHead")
+				var at: Vector4 = head.global_position
+				_player.global_position = Vector4(at.x, 1.2, at.z + 1.6, at.w)
 				_player.linear_velocity = Vector4.ZERO
 			if _f == 45:
 				var driver: Node = _root.get_node("Systems/TalkDriver")

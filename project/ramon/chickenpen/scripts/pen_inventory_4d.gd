@@ -90,6 +90,12 @@ func add_item(effect_name: String) -> void:
 	_flash = flash_seconds
 
 
+## Handing something back to its owner has to empty the slot, or the belt keeps claiming
+## you are carrying a coin that is now in somebody else's pocket.
+func remove_item(effect_name: String) -> void:
+	items.erase(effect_name)
+
+
 func has_item(effect_name: String) -> bool:
 	return items.has(effect_name)
 

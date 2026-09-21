@@ -52,6 +52,12 @@ func _ready() -> void:
 		_manager.connect("progress_changed", _on_progress)
 	if _objective != null:
 		_objective.text = objective_text
+	# Anything else under Systems that knows how to reset itself, does. The talk drivers
+	# hold quest state - who has been met, who is carrying whose coin - and item 73's
+	# restart is not one if it leaves that behind.
+	for sibling in get_parent().get_children():
+		if sibling != self and sibling.has_method("reset"):
+			sibling.call("reset")
 	_on_progress(_manager.call("returned_count"), (_manager.get("agents") as Array).size())
 
 
