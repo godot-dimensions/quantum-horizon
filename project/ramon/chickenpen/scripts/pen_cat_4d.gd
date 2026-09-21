@@ -51,7 +51,38 @@ const WALKER := preload("res://ramon/Model/scripts/strider_walker.gd")
 @export_range(0.5, 12.0, 0.1) var pause_min: float = 1.5
 @export_range(0.5, 20.0, 0.1) var pause_max: float = 5.0
 
+@export_group("Sitting and fleeing")
+## Something to sit on. It goes there of its own accord, jumps up, and stays until it is
+## disturbed - which is most of what makes a cat read as a cat rather than as livestock.
+@export var crate_path: NodePath
+@export var player_path: NodePath
+## How high the crate's top is above its own origin.
+@export_range(0.1, 3.0, 0.05) var crate_top: float = 0.55
+@export_range(0.2, 2.0, 0.05) var jump_seconds: float = 0.55
+@export_range(0.5, 20.0, 0.5) var sit_min: float = 6.0
+@export_range(0.5, 40.0, 0.5) var sit_max: float = 16.0
+## Get this close and it leaves - off the crate if it has to.
+@export_range(0.5, 10.0, 0.1) var flee_distance: float = 2.6
+@export_range(1.0, 20.0, 0.5) var flee_pace: float = 14.0
+@export_range(0.5, 12.0, 0.5) var flee_seconds: float = 3.5
+## How long one wash of the paw takes.
+@export_range(0.3, 4.0, 0.1) var wash_seconds: float = 1.5
+
+enum Mood { WANDER, TO_CRATE, JUMP, SIT, FLEE }
+
 var _walker: Node4D
+var _crate: Node4D
+var _player: Node4D
+var _mood: Mood = Mood.WANDER
+var _mood_left: float = 0.0
+var _jump_from := Vector4.ZERO
+var _jump_to := Vector4.ZERO
+var _jump_t: float = 0.0
+var _lick: float = 0.0
+var _feet: Array[Node4D] = []
+var _foot_rest: Array[Vector4] = []
+var _head_ball: Node4D
+var _head_rest := Vector4.ZERO
 var _home := Vector4.ZERO
 var _heading: float = 0.0
 var _clock: float = 0.0
@@ -68,7 +99,10 @@ func _ready() -> void:
 	_rng.seed = 5150
 	_home = position
 	_heading = _rng.randf_range(0.0, TAU)
+	_crate = get_node_or_null(crate_path) as Node4D
+	_player = get_node_or_null(player_path) as Node4D
 	rebuild()
+	_mood_left = _rng.randf_range(4.0, 9.0)
 
 
 func _later() -> void:
@@ -124,10 +158,32 @@ func rebuild() -> void:
 			Vector4(side * 0.004 * u, -0.22 * u, -0.02 * u, 0.0), 0.040 * u)
 		_ball(hknee, "HindFoot" + tag, Vector4(0.0, -0.22 * u, 0.04 * u, 0.0), 0.042 * u)
 
+	# A snout: two small balls branching forward off the head. Forward rather than down,
+	# so the slope test never mistakes it for a limb - and the walker is name-restricted
+	# to hips anyway.
+	var snout := _ball(head, "SnoutBase", Vector4(0.0, -0.012 * u, 0.055 * u, 0.0), 0.045 * u, true)
+	_ball(snout, "SnoutTip", Vector4(0.0, -0.008 * u, 0.045 * u, 0.0), 0.030 * u)
+
 	# The tail, also a branch, rising away from the rump so it never reads as a fifth leg.
-	var tail := _ball(rump, "TailBase", Vector4(0.0, 0.05 * u, -0.13 * u, 0.0), 0.035 * u, true)
-	var tail_mid := _ball(tail, "TailMid", Vector4(0.0, 0.07 * u, -0.12 * u, 0.0), 0.026 * u)
-	_ball(tail_mid, "TailTip", Vector4(0.0, 0.09 * u, -0.09 * u, 0.0), 0.018 * u)
+	var tail := _ball(rump, "TailBase", Vector4(0.0, 0.05 * u, -0.13 * u, 0.0), 0.036 * u, true)
+	var t2 := _ball(tail, "TailB", Vector4(0.0, 0.08 * u, -0.14 * u, 0.0), 0.030 * u)
+	var t3 := _ball(t2, "TailC", Vector4(0.0, 0.09 * u, -0.13 * u, 0.0), 0.025 * u)
+	var t4 := _ball(t3, "TailD", Vector4(0.0, 0.08 * u, -0.12 * u, 0.0), 0.021 * u)
+	_ball(t4, "TailE", Vector4(0.0, 0.05 * u, -0.10 * u, 0.0), 0.017 * u)
+
+	# Kept so the sitting pose can write them directly. Safe ONLY while the walker is
+	# switched off: it owns these positions the rest of the time and would overwrite any
+	# pose put underneath it on the very next frame.
+	_feet.clear()
+	_foot_rest.clear()
+	for path in ["Chest/FrontHipL/FrontKneeL/FrontFootL", "Chest/FrontHipR/FrontKneeR/FrontFootR",
+			"Rump/HindHipL/HindKneeL/HindFootL", "Rump/HindHipR/HindKneeR/HindFootR"]:
+		var foot: Node4D = hide.get_node_or_null(path) as Node4D
+		if foot != null:
+			_feet.append(foot)
+			_foot_rest.append(foot.position)
+	_head_ball = head
+	_head_rest = head.position
 
 	if hide.has_method("build"):
 		hide.call("build", false)
@@ -203,11 +259,45 @@ func _process(delta: float) -> void:
 	if Engine.is_editor_hint() or not walks or _walker == null:
 		return
 	_clock += delta
-	if _pause > 0.0:
-		_pause -= delta
-		_walker.set("travel", false)
-		return
-	_walker.set("travel", true)
+	if _scared() and _mood != Mood.FLEE and _mood != Mood.JUMP:
+		_bolt()
+	match _mood:
+		Mood.WANDER:
+			_do_wander(delta)
+		Mood.TO_CRATE:
+			_do_to_crate(delta)
+		Mood.JUMP:
+			_do_jump(delta)
+		Mood.SIT:
+			_do_sit(delta)
+		Mood.FLEE:
+			_do_flee(delta)
+
+
+## Close enough to be worth leaving over. Flat distance AND the same slice, so somebody
+## walking past in another slice does not disturb it - which is the rule everything else
+## in this scene follows.
+func _scared() -> bool:
+	if _player == null:
+		return false
+	var gap: Vector4 = _player.global_position - global_position
+	return Vector2(gap.x, gap.z).length() < flee_distance and absf(gap.w) < 1.2
+
+
+## The walker owns the feet while it runs, so anything that poses them by hand has to
+## switch it off first and hand the rest pose back afterwards.
+func _walking(on: bool) -> void:
+	_walker.set("travel", on)
+	_walker.set_process(on)
+	_walker.set_physics_process(on)
+	if on:
+		_restore_pose()
+
+
+func _do_wander(delta: float) -> void:
+	_walking(true)
+	_walker.set("belt_speed", pace)
+	_mood_left -= delta
 	var offset: Vector4 = position - _home
 	if Vector2(offset.x, offset.z).length() > roam_radius:
 		_heading = rotate_toward(_heading, atan2(-offset.x, -offset.z),
@@ -215,6 +305,119 @@ func _process(delta: float) -> void:
 	else:
 		_heading += sin(_clock * 0.6) * deg_to_rad(turn_rate_degrees) * delta * 0.5
 	basis = Basis4D.from_zx(_heading)
-	# Cats stop. Often.
-	if _rng.randf() < delta * 0.1:
-		_pause = _rng.randf_range(pause_min, pause_max)
+	# Sooner or later it decides it would rather be up somewhere.
+	if _mood_left <= 0.0 and _crate != null:
+		_mood = Mood.TO_CRATE
+
+
+func _do_to_crate(delta: float) -> void:
+	_walking(true)
+	_walker.set("belt_speed", pace)
+	var to: Vector4 = _crate.global_position - global_position
+	var flat: float = Vector2(to.x, to.z).length()
+	_heading = rotate_toward(_heading, atan2(to.x, to.z),
+		deg_to_rad(turn_rate_degrees) * delta * 3.0)
+	basis = Basis4D.from_zx(_heading)
+	if flat < 0.85:
+		_leap_to(_crate.position + Vector4(0.0, crate_top, 0.0, 0.0))
+
+
+## An arc, with the legs held still - the walker plants feet on the floor and a cat in the
+## air has none, so it is switched off for the whole jump rather than fought.
+func _do_jump(delta: float) -> void:
+	_walking(false)
+	_jump_t = minf(_jump_t + delta / jump_seconds, 1.0)
+	var along: Vector4 = _jump_from.lerp(_jump_to, _jump_t)
+	var lift: float = maxf(0.3, (_jump_to.y - _jump_from.y) * 0.7)
+	position = Vector4(along.x, along.y + sin(_jump_t * PI) * lift, along.z, along.w)
+	_tuck(clampf(_jump_t * 2.0, 0.0, 1.0))
+	if _jump_t < 1.0:
+		return
+	if _jump_to.y > _home.y + 0.1:
+		_mood = Mood.SIT
+		_mood_left = _rng.randf_range(sit_min, sit_max)
+		_lick = _rng.randf_range(2.0, 5.0)
+	else:
+		_mood = Mood.WANDER
+		_mood_left = _rng.randf_range(5.0, 12.0)
+
+
+## Sitting, and every so often washing a paw.
+func _do_sit(delta: float) -> void:
+	_walking(false)
+	_tuck(1.0)
+	_mood_left -= delta
+	_lick -= delta
+	if _lick <= 0.0:
+		var into: float = -_lick
+		if into <= wash_seconds:
+			_wash(into / wash_seconds)
+		else:
+			_lick = _rng.randf_range(3.0, 9.0)
+	if _mood_left <= 0.0:
+		_hop_down()
+
+
+func _do_flee(delta: float) -> void:
+	_walking(true)
+	_walker.set("belt_speed", flee_pace)
+	_mood_left -= delta
+	if _player != null:
+		var away: Vector4 = global_position - _player.global_position
+		_heading = rotate_toward(_heading, atan2(away.x, away.z),
+			deg_to_rad(turn_rate_degrees) * delta * 5.0)
+		basis = Basis4D.from_zx(_heading)
+	if _mood_left <= 0.0 and not _scared():
+		_mood = Mood.WANDER
+		_mood_left = _rng.randf_range(4.0, 9.0)
+
+
+func _bolt() -> void:
+	# Off the crate first if it is on one. A cat does not teleport to the floor.
+	if _mood == Mood.SIT:
+		_hop_down()
+		return
+	_mood = Mood.FLEE
+	_mood_left = flee_seconds
+
+
+func _hop_down() -> void:
+	_leap_to(Vector4(position.x + sin(_heading) * 1.0, _home.y,
+		position.z + cos(_heading) * 1.0, position.w))
+
+
+func _leap_to(target: Vector4) -> void:
+	_jump_from = position
+	_jump_to = target
+	_jump_to.w = position.w
+	_jump_t = 0.0
+	_mood = Mood.JUMP
+
+
+## Folds the legs under the body: 0 standing, 1 fully sat. The back pair come further
+## forward than the front, because that is the difference between sitting and crouching.
+func _tuck(amount: float) -> void:
+	for i in _feet.size():
+		var rest: Vector4 = _foot_rest[i]
+		var lift: float = (0.6 if i >= 2 else 0.25) * amount
+		_feet[i].position = rest + Vector4(0.0, -rest.y * lift, length * 0.05 * amount, 0.0)
+
+
+## One front paw up to the muzzle and back down, with the head dipping to meet it - a cat
+## brings its face to the paw as much as the paw to its face.
+func _wash(t: float) -> void:
+	if _feet.is_empty() or _head_ball == null:
+		return
+	var reach: float = sin(clampf(t, 0.0, 1.0) * PI)
+	var rest: Vector4 = _foot_rest[0]
+	_feet[0].position = rest + Vector4(0.0,
+		-rest.y * 0.6 - length * 0.10 * reach, length * 0.13 * reach, 0.0)
+	_head_ball.position = _head_rest + Vector4(0.0,
+		-length * 0.05 * reach, -length * 0.02 * reach, 0.0)
+
+
+func _restore_pose() -> void:
+	for i in _feet.size():
+		_feet[i].position = _foot_rest[i]
+	if _head_ball != null:
+		_head_ball.position = _head_rest
