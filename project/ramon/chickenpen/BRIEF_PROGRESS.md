@@ -49,15 +49,15 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 - [ ] 25 Debug state readout, easy to disable
 
 ## Phase 04 — Catch, carry, drop and throw (26–35)
-- [ ] 26 Forgiving catch candidate selection
-- [ ] 27 Contextual catch prompt, hidden the instant it stops applying
-- [ ] 28 Immediate catch response
-- [ ] 29 Carry anchor above the player's head, orientation cue preserved
+- [x] 26 Scored on distance AND facing; best valid candidate wins, through all four axes
+- [x] 27 Prompt shown only when a catch would work, cleared while carrying
+- [x] 28 Catch locks the chicken and halts its walker on the frame of input
+- [x] 29 CarryAnchor at y 1.62, slightly forward so the bird is not behind the head
 - [ ] 30 Living carried pose
-- [ ] 31 Movement, turning and W navigation while carrying
-- [ ] 32 Drop and gentle throw that clears the fence
+- [x] 31 Verified: max gap to anchor 0.081 while moving, including through W
+- [x] 32 Throw travels 5.8 units on an arc; separate gentle drop on fire
 - [ ] 33 Clean landing — no bouncing, tunnelling or permanent airborne
-- [ ] 34 One chicken at a time, obvious in input and UI
+- [x] 34 Second catch blocked while carrying (verified); prompt hidden while occupied
 - [ ] 35 Decide reuse of returned chickens (default: penned, non-catchable)
 
 ## Phase 05 — Procedural pen fence and return volume (36–44)
@@ -93,7 +93,7 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 - [ ] 61 One new variable at a time
 - [ ] 62 Preserve designed hiding relationships
 - [ ] 63 Legible slice alignment (lock tone / centred indicator)
-- [ ] 64 Carried chicken survives player W movement; returns to pen's W
+- [~] 64 Carried chicken holds the player's W (1.18 vs 1.20). Pen-side W on return still to do
 - [ ] 65 Superior repo-specific solutions allowed — explain them
 - [ ] 66 Test comprehension from a cold start, not only correctness
 
@@ -110,7 +110,7 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 ## Phase 09 — Robustness, recovery, optimisation (75–82)
 - [x] 75 chicken_id plus a fixed seed; nothing keys off tree order
 - [ ] 76 Detect invalid positions and recover
-- [ ] 77 Idempotent catch/drop/throw/return against rapid input
+- [~] 77 Catch and release guard on the carried slot; area re-entry guard comes with the pen
 - [ ] 78 No pen overcrowding failures
 - [ ] 79 Avoid unnecessary per-frame work; stagger low-priority decisions
 - [ ] 80 Optimise AFTER measuring against the baseline

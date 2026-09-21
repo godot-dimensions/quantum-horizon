@@ -5,6 +5,8 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_avatar_4d.gd" id="avatar"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_gait_4d.gd" id="gait"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/chicken_manager_4d.gd" id="pen_chickens"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/chicken_catcher_4d.gd" id="pen_catcher"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/chickenpen_game_4d.gd" id="pen_game"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -43,6 +45,14 @@ script = ExtResource("pen_chickens")
 [node name="UI" type="Node4D" parent="."]
 
 [node name="Systems" type="Node" parent="."]
+
+[node name="Game" type="Node" parent="Systems"]
+script = ExtResource("pen_game")
+manager_path = NodePath("../../Chickens")
+player_path = NodePath("../../Player")
+catcher_path = NodePath("../../Player/Catcher")
+progress_label_path = NodePath("../../UI/Progress")
+objective_label_path = NodePath("../../UI/Objective")
 
 [node name="Sun" type="DirectionalLight4D" parent="World"]
 basis = Projection(0, 0, 0, 1, 0.946946, -0.259996, -0.188934, 0, 0.321394, 0.766044, 0.55667, 0, 0, -0.587859, 0.808963, 0)
@@ -113,6 +123,15 @@ script = ExtResource("avatar")
 build = 2
 skin = Color(0.42, 0.62, 0.36, 1)
 accent = Color(0.93, 0.80, 0.62, 1)
+
+[node name="CarryAnchor" type="Node4D" parent="Player"]
+position = Vector4(0, 1.62, 0.16, 0)
+
+[node name="Catcher" type="Node4D" parent="Player"]
+script = ExtResource("pen_catcher")
+manager_path = NodePath("../../Chickens")
+carry_anchor_path = NodePath("../CarryAnchor")
+prompt_path = NodePath("../../UI/CatchPrompt")
 
 [node name="Gait" type="Node4D" parent="Player"]
 script = ExtResource("gait")
