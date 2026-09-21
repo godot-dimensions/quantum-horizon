@@ -91,12 +91,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			_slice_xw -= motion.x
 			_slice_zw += motion.y
 		else:
-			# PLUS, not minus. Subtracting swung the view left when the mouse went right,
-			# which is the wrong way round for a camera you are pushing rather than a head
-			# you are turning. The W-drag above keeps its own sign: it is a separate,
-			# deliberately-held gesture, and pen_slice_assist_4d tells the player which way
-			# to drag in words that are derived from that sign.
-			yaw += motion.x
+			# MINUS, and this was tried both ways with a controller in hand. Plus is what
+			# the geometry suggests - the camera sits at +Z of a from_zx(yaw) frame and
+			# looks BACK at the player, so plus swings the arm towards +X and the view
+			# turns right - and it played worse. Minus is what is here because it is the
+			# one that felt right, not because of an argument about signs. Do not "fix"
+			# it by reading the maths; flip it, play it, and see.
+			yaw -= motion.x
 			pitch = clampf(pitch - motion.y,
 				deg_to_rad(pitch_min_degrees), deg_to_rad(pitch_max_degrees))
 		_apply()

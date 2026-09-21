@@ -1,12 +1,18 @@
 extends SceneTree
 
-## Push the mouse right: does the view turn right?
+## Which way does the view swing when you push the mouse right?
 ##
-## Worth a runner rather than a guess. The rig's camera sits at +Z of a from_zx(yaw)
-## frame and looks BACK at the player, so the view direction is the negative of the arm -
-## which is exactly the kind of double negative this project has got backwards before.
-## Measured by where the camera ends up and which way it ends up looking, not by reading
-## the sign off the line that was changed.
+## THIS RUNNER DOES NOT DECIDE THE ANSWER - it only pins down whichever answer was chosen.
+## The sign was settled by playing it both ways, not by reading the geometry: the geometry
+## argues for the other one (the camera sits at +Z of a from_zx(yaw) frame and looks BACK
+## at the player, so a double negative sits between the mouse and the view) and it felt
+## wrong in the hand. So this exists to stop the sign being flipped silently by someone
+## working the maths out from scratch and concluding it is a bug.
+##
+## If it fails, flip it, play it, and see - do not just make the runner agree.
+##
+## Must run WINDOWED: the rig ignores motion unless the mouse is captured, and headless
+## Godot will not capture a mouse it has no window for.
 
 var _root: Node
 var _f := 0
@@ -28,8 +34,6 @@ func _process(_d) -> bool:
 	if _f < 50: return false
 	var rig: Node4D = _root.get_node("Player/CameraRig")
 	var camera: Node4D = _root.get_node("Player/CameraRig/Pitch/Camera4D")
-	# The rig ignores motion unless the mouse is captured, and headless Godot will not
-	# capture a mouse it has no window for - so this one has to run windowed.
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		print("   (mouse could not be captured - run this windowed, not headless)")
@@ -52,12 +56,11 @@ func _process(_d) -> bool:
 	var turned: float = wrapf(after - before, -PI, PI)
 	print("\n--- mouse pushed right ---")
 	print("   view bearing %+.3f -> %+.3f rad, a turn of %+.3f" % [before, after, turned])
-	print("   camera arm x %+.2f -> %+.2f  (it should swing towards +X)"
-		% [before_arm.x, after_arm.x])
-	# Facing -Z, turning towards -X is turning to your right, and that is a POSITIVE
-	# change in the atan2(x, z) bearing the whole scene measures headings with.
-	var ok: bool = turned > 0.05
-	print("\n   %s the view turns RIGHT when the mouse goes right"
+	print("   camera arm x %+.2f -> %+.2f" % [before_arm.x, after_arm.x])
+	# Negative in the atan2(x, z) bearing the whole scene measures headings with. Chosen
+	# in play; see the note at the top before changing it.
+	var ok: bool = turned < -0.05
+	print("\n   %s the sign is the one that was settled by playing it"
 		% ["PASS" if ok else "FAIL"])
 	print("\n%d FAIL(s)" % (0 if ok else 1))
 	quit(0 if ok else 1)
