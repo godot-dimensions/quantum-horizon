@@ -35,6 +35,11 @@ const WALKER := preload("res://ramon/Model/scripts/strider_walker.gd")
 
 @export_group("Walking")
 @export var walks: bool = true
+## Cadence, handed to strider_walker as its belt_speed. NOT a distance: the creature's
+## actual pace comes out of stride times cadence, and travel is then measured off the
+## planted feet. At the walker's default of 1.6 this animal crawled - measured at under a
+## tenth of a unit per second, which is a body length every ten seconds.
+@export_range(0.5, 20.0, 0.1) var pace: float = 6.0
 @export_range(0.05, 4.0, 0.05) var stride_length: float = 0.46
 @export_range(0.02, 2.0, 0.02) var step_height: float = 0.10
 @export_range(0.0, 0.3, 0.005) var body_bob: float = 0.03
@@ -97,9 +102,16 @@ func rebuild() -> void:
 		# Legs: hip, knee, foot. These descend, so the walker takes them.
 		var hip := _ball(hips, "LegHip" + tag,
 			Vector4(side * 0.062 * u, -0.02 * u, 0.0, 0.0), 0.052 * u, true)
+		# THE LEG HAS TO OUTREACH THE HIP HEIGHT, with slack left over.
+		#
+		# At 0.22 + 0.22 against a hip 0.46 up, the leg could not reach the floor at all:
+		# the IK sat fully extended and clamped every frame, so there was nothing left to
+		# make a stride out of and the foot swung 0.09 however fast she walked. This is the
+		# same bug the player's crouch was, from the other direction. 0.27 each gives a
+		# 0.70 reach against a 0.62 stance - enough slack for a stride of about 0.6.
 		var knee := _ball(hip, "LegKnee" + tag,
-			Vector4(side * 0.004 * u, -0.22 * u, 0.0, 0.0), 0.042 * u)
-		_ball(knee, "LegFoot" + tag, Vector4(0.0, -0.22 * u, 0.03 * u, 0.0), 0.045 * u)
+			Vector4(side * 0.004 * u, -0.27 * u, 0.0, 0.0), 0.042 * u)
+		_ball(knee, "LegFoot" + tag, Vector4(0.0, -0.27 * u, 0.03 * u, 0.0), 0.045 * u)
 
 		# Arms: shoulder, elbow, hand. These hang almost straight down too, so they are
 		# kept out of the gait by NAME rather than by slope - see leg_name_prefixes below.
@@ -134,6 +146,7 @@ func rebuild() -> void:
 	walker.set("stride_length", stride_length)
 	walker.set("step_height", step_height)
 	walker.set("body_bob", body_bob)
+	walker.set("belt_speed", pace)
 	walker.set("travel", true)
 	add_child(walker)
 	_own(walker)

@@ -37,6 +37,11 @@ const WALKER := preload("res://ramon/Model/scripts/strider_walker.gd")
 
 @export_group("Walking")
 @export var walks: bool = true
+## Cadence, handed to strider_walker as its belt_speed. NOT a distance: the creature's
+## actual pace comes out of stride times cadence, and travel is then measured off the
+## planted feet. At the walker's default of 1.6 this animal crawled - measured at under a
+## tenth of a unit per second, which is a body length every ten seconds.
+@export_range(0.5, 20.0, 0.1) var pace: float = 6.0
 @export_range(0.05, 4.0, 0.05) var stride_length: float = 0.42
 @export_range(0.02, 2.0, 0.02) var step_height: float = 0.11
 @export_range(0.0, 0.3, 0.005) var body_bob: float = 0.02
@@ -106,15 +111,18 @@ func rebuild() -> void:
 		var tag: String = "L" if side > 0.0 else "R"
 		var shoulder := _ball(chest, "FrontHip" + tag,
 			Vector4(side * 0.070 * u, -0.02 * u, 0.02 * u, 0.0), 0.050 * u, true)
+		# Long enough to reach the ground AND have slack for a stride - at 0.14 + 0.14
+		# against a shoulder 0.38 up, the leg fell short of the floor and the IK clamped
+		# flat out, which is why the paw barely swung however fast the cat went.
 		var fknee := _ball(shoulder, "FrontKnee" + tag,
-			Vector4(side * 0.004 * u, -0.14 * u, -0.01 * u, 0.0), 0.038 * u)
-		_ball(fknee, "FrontFoot" + tag, Vector4(0.0, -0.14 * u, 0.03 * u, 0.0), 0.042 * u)
+			Vector4(side * 0.004 * u, -0.22 * u, -0.01 * u, 0.0), 0.038 * u)
+		_ball(fknee, "FrontFoot" + tag, Vector4(0.0, -0.22 * u, 0.03 * u, 0.0), 0.042 * u)
 
 		var hip := _ball(rump, "HindHip" + tag,
 			Vector4(side * 0.075 * u, -0.01 * u, 0.0, 0.0), 0.055 * u, true)
 		var hknee := _ball(hip, "HindKnee" + tag,
-			Vector4(side * 0.004 * u, -0.14 * u, -0.02 * u, 0.0), 0.040 * u)
-		_ball(hknee, "HindFoot" + tag, Vector4(0.0, -0.14 * u, 0.04 * u, 0.0), 0.042 * u)
+			Vector4(side * 0.004 * u, -0.22 * u, -0.02 * u, 0.0), 0.040 * u)
+		_ball(hknee, "HindFoot" + tag, Vector4(0.0, -0.22 * u, 0.04 * u, 0.0), 0.042 * u)
 
 	# The tail, also a branch, rising away from the rump so it never reads as a fifth leg.
 	var tail := _ball(rump, "TailBase", Vector4(0.0, 0.05 * u, -0.13 * u, 0.0), 0.035 * u, true)
@@ -146,6 +154,7 @@ func rebuild() -> void:
 	walker.set("body_bob", body_bob)
 	# It carries the animal forward off its own planted feet, so this node only has to
 	# decide which way is forward.
+	walker.set("belt_speed", pace)
 	walker.set("travel", true)
 	add_child(walker)
 	_own(walker)
