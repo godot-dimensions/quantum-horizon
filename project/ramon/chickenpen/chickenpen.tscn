@@ -1,4 +1,4 @@
-[gd_scene load_steps=48 format=3]
+[gd_scene load_steps=49 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -34,6 +34,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cat_grab_4d.gd" id="pen_cat_grab"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="pen_face"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_trym_4d.gd" id="pen_trym"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_slice_plane_4d.gd" id="pen_plane"]
 [ext_resource type="Script" uid="uid://bvklfrydaxyio" path="res://ramon/dialogue/world_tag_4d.gd" id="pen_world_tag"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
@@ -162,14 +163,12 @@ outline = 4
 pin_to_bottom = false
 
 [node name="Radar" type="Control" parent="UI"]
-anchor_left = 1.0
 anchor_top = 1.0
-anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -470.0
-offset_top = -508.0
-offset_right = -30.0
-offset_bottom = -138.0
+offset_left = 24.0
+offset_top = -404.0
+offset_right = 464.0
+offset_bottom = -34.0
 script = ExtResource("pen_radar")
 player_path = NodePath("../../Player")
 manager_path = NodePath("../../Chickens")
@@ -226,15 +225,31 @@ offset_right = 1100.0
 offset_bottom = 280.0
 text = ""
 
+[node name="SlicePlane" type="Control" parent="UI"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -590.0
+offset_top = -600.0
+offset_right = -30.0
+offset_bottom = -160.0
+script = ExtResource("pen_plane")
+player_path = NodePath("../../Player")
+pen_path = NodePath("../../Pen")
+fence_path = NodePath("../../Pen/Fence")
+coop_path = NodePath("../../Pen/Coop")
+slice_frame_path = NodePath("../../Player/CameraRig")
+
 [node name="SliceGizmo" type="Control" parent="UI"]
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -730.0
-offset_top = -128.0
+offset_left = -740.0
+offset_top = -142.0
 offset_right = -30.0
-offset_bottom = -26.0
+offset_bottom = -40.0
 script = ExtResource("pen_gizmo")
 player_path = NodePath("../../Player")
 locator_path = NodePath("../../Systems/Locator")
