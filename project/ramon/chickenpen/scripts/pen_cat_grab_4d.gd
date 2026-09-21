@@ -35,7 +35,10 @@ extends Node
 ## And how long you spend on the ground afterwards.
 @export_range(0.5, 8.0, 0.5) var knocked_down_seconds: float = 2.2
 @export var scratch_line: String = "It scratched me, damn.."
-@export var carry_line: String = "Throw it in the pen!"
+## A THOUGHT, NOT AN INSTRUCTION. "Throw it in the pen!" is the game telling you what
+## to do next. Phrased as an urge the character is having, the same words become a
+## joke about the player, and it stops reading as a tutorial prompt.
+@export var carry_line: String = "I feel an urge to throw the cat in the pen.."
 
 @export_group("Throwing")
 @export_range(0.5, 12.0, 0.5) var throw_speed: float = 5.0
@@ -83,9 +86,11 @@ func _can_grab() -> bool:
 		return false
 	if _catcher != null and _catcher.get("carried") != null:
 		return false
-	# Not while it is already in the air or on its way somewhere.
+	# Only while it is wandering, heading for its crate, or sat on it. Not mid-jump, not
+	# on its way to the coop, and NOT while it is running from you having just scratched
+	# its way out: catching it again during its own escape undoes the escape.
 	var mood: int = int(_cat.get("_mood"))
-	if mood != 3 and mood != 0 and mood != 1 and mood != 4:
+	if mood != 0 and mood != 1 and mood != 3:
 		return false
 	var slice: Projection = _frame.global_basis if _frame != null else _player.global_basis
 	var gap: Vector4 = _cat.global_position - _player.global_position

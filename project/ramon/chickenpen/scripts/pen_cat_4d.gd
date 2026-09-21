@@ -63,8 +63,8 @@ const WALKER := preload("res://ramon/Model/scripts/strider_walker.gd")
 @export_range(0.2, 2.0, 0.05) var jump_seconds: float = 0.55
 @export_range(0.5, 20.0, 0.5) var sit_min: float = 6.0
 @export_range(0.5, 40.0, 0.5) var sit_max: float = 16.0
-## Get this close and it leaves - off the crate if it has to.
-@export_range(0.5, 10.0, 0.1) var flee_distance: float = 2.6
+## How hard and how long it runs once it HAS been provoked, which now only happens when
+## it scratches its way out of your arms.
 @export_range(1.0, 20.0, 0.5) var flee_pace: float = 20.0
 @export_range(0.5, 12.0, 0.5) var flee_seconds: float = 5.0
 ## An extra shove on top of what the legs carry it. A startled cat does not accelerate
@@ -277,10 +277,11 @@ func _process(delta: float) -> void:
 	if Engine.is_editor_hint() or not walks or _walker == null:
 		return
 	_clock += delta
-	# Being carried, thrown, or on its way to the coop outranks being startled.
-	if _scared() and _mood == Mood.SIT or _scared() and _mood == Mood.WANDER \
-			or _scared() and _mood == Mood.TO_CRATE:
-		_bolt()
+	# IT DOES NOT RUN FROM YOU. An earlier version bolted whenever you came within a
+	# couple of units, which made it unapproachable: the only way to reach it was to
+	# corner it, and the pick-up - the thing the cat is actually for - could not be
+	# reached at all. The one time it runs is after it has scratched its way out of your
+	# arms, which is the beat that needs it.
 	match _mood:
 		Mood.WANDER:
 			_do_wander(delta)
@@ -300,16 +301,6 @@ func _process(delta: float) -> void:
 			_do_thrown(delta)
 		Mood.TO_PERCH:
 			_do_to_perch(delta)
-
-
-## Close enough to be worth leaving over. Flat distance AND the same slice, so somebody
-## walking past in another slice does not disturb it - which is the rule everything else
-## in this scene follows.
-func _scared() -> bool:
-	if _player == null:
-		return false
-	var gap: Vector4 = _player.global_position - global_position
-	return Vector2(gap.x, gap.z).length() < flee_distance and absf(gap.w) < 1.2
 
 
 ## The walker owns the feet while it runs, so anything that poses them by hand has to
@@ -398,18 +389,13 @@ func _do_flee(delta: float) -> void:
 		_heading = atan2(away.x, away.z)
 	basis = Basis4D.from_zx(_heading)
 	position += Vector4(sin(_heading), 0.0, cos(_heading), 0.0) * flee_dash * delta
-	if _mood_left <= 0.0 and not _scared():
+	# Ends on its own clock. It used to also wait until the player was far away, which was
+	# right while proximity was what started the run and is wrong now: a scratch leaves
+	# them lying right next to it, so that test would never clear and it would run for
+	# ever.
+	if _mood_left <= 0.0:
 		_mood = Mood.WANDER
 		_mood_left = _rng.randf_range(4.0, 9.0)
-
-
-func _bolt() -> void:
-	# Off the crate first if it is on one. A cat does not teleport to the floor.
-	if _mood == Mood.SIT:
-		_hop_down()
-		return
-	_mood = Mood.FLEE
-	_mood_left = flee_seconds
 
 
 func _hop_down() -> void:
