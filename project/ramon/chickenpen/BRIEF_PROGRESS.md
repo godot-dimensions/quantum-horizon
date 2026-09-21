@@ -61,15 +61,15 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 - [ ] 35 Decide reuse of returned chickens (default: penned, non-catchable)
 
 ## Phase 05 — Procedural pen fence and return volume (36–44)
-- [ ] 36 Reusable procedural fence (repeated posts and rails, not a stretched mesh)
-- [ ] 37 Numeric Inspector dimensions (+/-X, +/-Z, height, spacing, optional gate)
-- [ ] 38 Rebuild without visual stretching
-- [ ] 39 Collision regenerates with geometry
-- [ ] 40 Return volume generated from the SAME parameters
-- [ ] 41 Fence low and readable
+- [x] 36 pen_fence_4d.gd, @tool, posts and rails as modular segments
+- [x] 37 Per-side extents, height, spacing, rail count, thickness, W depth, gate side/position/width
+- [x] 38 Verified: 14x12 gives 36 posts, 28x12 gives 55; post size constant at 0.13
+- [x] 39 One wall per run, built in the same pass; 5 walls for a gated pen
+- [x] 40 No second box - interior_bounds() derives from the same extents; verified it tracks resizes
+- [x] 41 Height 0.95 against a 1.35 player - see over it, throw over it
 - [ ] 42 Interior comfortably fits 12 chickens plus coop
-- [ ] 43 Register each return exactly once
-- [ ] 44 Returned chickens stay contained
+- [x] 43 The returned flag lives on the chicken, so re-entry cannot re-count
+- [x] 44 A penned chicken that leaves is replaced inside, score untouched
 
 ## Phase 06 — Functional chicken house (45–49)
 - [ ] 45 Designed coop (body, roof, chicken-sized opening, ramp)
@@ -111,7 +111,7 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 - [x] 75 chicken_id plus a fixed seed; nothing keys off tree order
 - [ ] 76 Detect invalid positions and recover
 - [~] 77 Catch and release guard on the carried slot; area re-entry guard comes with the pen
-- [ ] 78 No pen overcrowding failures
+- [~] 78 Penned destinations are spread inside the interior with a margin; no chicken-to-chicken collision exists to explode
 - [ ] 79 Avoid unnecessary per-frame work; stagger low-priority decisions
 - [ ] 80 Optimise AFTER measuring against the baseline
 - [ ] 81 Debug controls (teleport, reset, mark W targets, resize pen, force states)

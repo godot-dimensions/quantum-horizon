@@ -7,6 +7,8 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/chicken_manager_4d.gd" id="pen_chickens"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/chicken_catcher_4d.gd" id="pen_catcher"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/chickenpen_game_4d.gd" id="pen_game"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_fence_4d.gd" id="pen_fence"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_return_4d.gd" id="pen_return"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -41,6 +43,15 @@ metadata/copied_from = "res://ramon/chickenpen/chickenpen_proceduralwalker.tscn"
 script = ExtResource("pen_chickens")
 
 [node name="Pen" type="Node4D" parent="."]
+position = Vector4(0, 0, -11, 0)
+
+[node name="Fence" type="Node4D" parent="Pen"]
+script = ExtResource("pen_fence")
+
+[node name="Return" type="Node" parent="Pen"]
+script = ExtResource("pen_return")
+fence_path = NodePath("../Fence")
+manager_path = NodePath("../../Chickens")
 
 [node name="UI" type="Node4D" parent="."]
 
