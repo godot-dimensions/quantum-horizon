@@ -175,6 +175,7 @@ player_path = NodePath("../../Player")
 manager_path = NodePath("../../Chickens")
 locator_path = NodePath("../../Systems/Locator")
 slice_frame_path = NodePath("../../Player/CameraRig")
+pen_path = NodePath("../../Pen")
 
 [node name="LockOn" type="Label" parent="UI"]
 offset_left = 16.0
@@ -230,7 +231,7 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -470.0
+offset_left = -730.0
 offset_top = -128.0
 offset_right = -30.0
 offset_bottom = -26.0
@@ -334,6 +335,7 @@ manager_path = NodePath("../../Chickens")
 dialogue_path = NodePath("../Talk")
 tag_path = NodePath("../../UI/TalkTag")
 locator_ui_paths = Array[NodePath]([NodePath("../../UI/Locator"), NodePath("../../UI/Radar")])
+gate_locator = false
 
 [node name="Locator" type="Node" parent="Systems"]
 script = ExtResource("pen_locator")
