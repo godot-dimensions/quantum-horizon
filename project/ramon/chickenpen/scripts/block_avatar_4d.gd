@@ -144,7 +144,7 @@ func _build_chibi() -> void:
 	# Proportions from the Ocarina-of-Time child reference: the head is about a QUARTER
 	# of total height, which is the number that decides whether a figure reads as a child
 	# or a short adult. Tunic to mid-thigh, bare legs below it, chunky boots.
-	torso = _limb(self, "Tunic", Vector4(0.0, 0.72, 0.0, 0.0), Vector3(0.38, 0.46, 0.24), skin)
+	torso = _limb(self, "Tunic", Vector4(0.0, 0.84, 0.0, 0.0), Vector3(0.38, 0.46, 0.24), skin)
 	_limb(torso, "Belt", Vector4(0.0, -0.20, 0.0, 0.0), Vector3(0.40, 0.07, 0.26), Color(0.35, 0.22, 0.14))
 	head = _limb(torso, "Head", Vector4(0.0, 0.42, 0.0, 0.0), Vector3(0.30, 0.32, 0.29), accent)
 	_limb(head, "Cap", Vector4(0.0, 0.21, -0.02, 0.0), Vector3(0.33, 0.14, 0.31), skin)
@@ -162,12 +162,12 @@ func _build_chibi() -> void:
 		# 0.44 leg - so the leg could not reach the floor, sat permanently straight, and
 		# every planted foot was out of range and got dragged. Reach now exceeds hip
 		# height by 0.06, which is the slack the knee bends into.
-		var hip := _pivot(self, "Hip" + tag, Vector4(0.10 * side, 0.50, 0.0, 0.0))
-		_limb(hip, "Thigh" + tag, Vector4(0.0, -0.155, 0.0, 0.0), Vector3(0.13, 0.31, 0.14), accent)
-		var knee := _pivot(hip, "Knee" + tag, Vector4(0.0, -0.31, 0.0, 0.0))
-		_limb(knee, "Shin" + tag, Vector4(0.0, -0.155, 0.0, 0.0), Vector3(0.12, 0.31, 0.13), accent)
-		_limb(knee, "Boot" + tag, Vector4(0.0, -0.34, 0.04, 0.0), Vector3(0.15, 0.12, 0.24), Color(0.40, 0.26, 0.16))
-		var shoulder := _pivot(self, "Shoulder" + tag, Vector4(0.22 * side, 0.90, 0.0, 0.0))
+		var hip := _pivot(self, "Hip" + tag, Vector4(0.10 * side, 0.62, 0.0, 0.0))
+		_limb(hip, "Thigh" + tag, Vector4(0.0, -0.15, 0.0, 0.0), Vector3(0.13, 0.30, 0.14), accent)
+		var knee := _pivot(hip, "Knee" + tag, Vector4(0.0, -0.30, 0.0, 0.0))
+		_limb(knee, "Shin" + tag, Vector4(0.0, -0.15, 0.0, 0.0), Vector3(0.12, 0.30, 0.13), accent)
+		_limb(knee, "Boot" + tag, Vector4(0.0, -0.33, 0.04, 0.0), Vector3(0.15, 0.10, 0.24), Color(0.40, 0.26, 0.16))
+		var shoulder := _pivot(self, "Shoulder" + tag, Vector4(0.22 * side, 1.02, 0.0, 0.0))
 		_limb(shoulder, "UpperArm" + tag, Vector4(0.0, -0.09, 0.0, 0.0), Vector3(0.10, 0.18, 0.11), skin)
 		var elbow := _pivot(shoulder, "Elbow" + tag, Vector4(0.0, -0.18, 0.0, 0.0))
 		_limb(elbow, "Forearm" + tag, Vector4(0.0, -0.09, 0.0, 0.0), Vector3(0.09, 0.18, 0.10), accent)

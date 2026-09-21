@@ -32,12 +32,12 @@ extends Node4D
 @export var step_height: float = 0.12
 
 ## Arms swing opposite the legs, and less.
-@export_range(0.0, 1.2, 0.01) var arm_swing: float = 0.45
+@export_range(0.0, 1.2, 0.01) var arm_swing: float = 0.60
 @export_range(0.0, 1.5, 0.01) var elbow_bend: float = 0.35
 
 ## How far the body rises and falls. Twice gait frequency: a biped's trunk lifts once per
 ## STEP, not once per cycle.
-@export_range(0.0, 0.2, 0.005) var body_bob: float = 0.035
+@export_range(0.0, 0.2, 0.005) var body_bob: float = 0.04
 
 ## How far it leans into a run.
 @export_range(0.0, 0.6, 0.01) var run_lean: float = 0.14
@@ -68,6 +68,7 @@ var _last_body := Vector4.ZERO
 var _travelled: float = 0.0
 var _measured: bool = false
 var _sole: float = 0.0
+var _avatar_rest := Vector4.ZERO
 
 
 func _ready() -> void:
@@ -140,6 +141,7 @@ func _measure() -> void:
 	_gait.reference_period_sec = maxf(stride_length / (pace * duty), 0.12)
 	if _avatar.torso != null:
 		_torso_rest = _avatar.torso.position
+	_avatar_rest = _avatar.position
 	_measured = true
 
 
@@ -171,13 +173,24 @@ func _physics_process(delta: float) -> void:
 	_step(1, _avatar.hip_right, _avatar.knee_right, fposmod(phase + 0.5, 1.0), duty, stride, delta)
 
 	# Arms take the opposite leg, which is what stops a walk looking like a march.
-	var swing: float = sin(phase * TAU) * arm_swing * effort * (1.0 - _airborne)
+	#
+	# Scaled against a WALK, not a run. Using speed/run_speed meant walking at 2.4 with a
+	# run speed of 6 gave 40% of the swing - about ten degrees of shoulder - which reads
+	# as arms that do not move at all. A walk should already swing most of the way, with
+	# a run adding the rest.
+	var arm_effort: float = clampf(speed / maxf(run_speed * 0.45, 0.001), 0.0, 1.15)
+	var swing: float = sin(phase * TAU) * arm_swing * arm_effort * (1.0 - _airborne)
 	_arm(_avatar.shoulder_left, _avatar.elbow_left, -swing)
 	_arm(_avatar.shoulder_right, _avatar.elbow_right, swing)
 
+	# THE PELVIS RISES AT MID-STANCE. This is not decoration: with the hip pinned at one
+	# height the standing leg can never extend, and the character walks in a permanent
+	# 42-degree crouch. Lifting the whole avatar at twice gait frequency - once per step -
+	# straightens the supporting leg exactly when it should be straightest.
+	var bob: float = sin(phase * TAU * 2.0) * body_bob * effort * (1.0 - _airborne)
+	_avatar.position = _avatar_rest + Vector4(0.0, maxf(bob, 0.0), 0.0, 0.0)
 	if _avatar.torso != null:
-		var bob: float = sin(phase * TAU * 2.0) * body_bob * effort * (1.0 - _airborne)
-		_avatar.torso.position = _torso_rest + Vector4(0.0, bob, 0.0, 0.0)
+		_avatar.torso.position = _torso_rest
 		_avatar.torso.basis = Basis4D.from_yz(-run_lean * effort)
 
 
@@ -198,10 +211,16 @@ func _physics_process(delta: float) -> void:
 func _step(index: int, hip: Node4D, knee: Node4D, local_phase: float, duty: float,
 		stride: float, _delta: float) -> void:
 	var reach: float = (_thigh + _shin) * 0.97
-	var drop: float = minf(_hip_height, reach)
 	var hip_world: Vector4 = hip.global_position
+	# THE ANKLE'S HEIGHT IS SET BY THE FLOOR, NOT BY THE LEG. It sits one sole above the
+	# ground, so the drop from hip to ankle is whatever that distance happens to be -
+	# clamped only if the leg genuinely cannot reach that far. Subtracting the sole from
+	# a drop that had already been clamped to the leg's reach did the opposite: raising
+	# the hip lifted the TARGET instead of straightening the leg, which is why standing
+	# taller changed nothing and then made the feet hover.
 	var forward: Vector4 = _avatar.global_basis * Vector4(0.0, 0.0, 1.0, 0.0)
-	var ground: Vector4 = hip_world - Vector4(0.0, drop - _sole, 0.0, 0.0)
+	var drop: float = clampf(hip_world.y - _body.global_position.y - _sole, 0.05, reach)
+	var ground: Vector4 = hip_world - Vector4(0.0, drop, 0.0, 0.0)
 	var in_stance: bool = local_phase < duty and _airborne < 0.5
 	var target: Vector4
 
