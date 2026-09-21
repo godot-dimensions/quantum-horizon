@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=23 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -9,6 +9,9 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/chickenpen_game_4d.gd" id="pen_game"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_fence_4d.gd" id="pen_fence"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_return_4d.gd" id="pen_return"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_coop_4d.gd" id="pen_coop"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/chicken_locator_4d.gd" id="pen_locator"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/chicken_cues_4d.gd" id="pen_cues"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -48,14 +51,59 @@ position = Vector4(0, 0, -11, 0)
 [node name="Fence" type="Node4D" parent="Pen"]
 script = ExtResource("pen_fence")
 
+[node name="Coop" type="Node4D" parent="Pen"]
+position = Vector4(0, 0, -4.3, 0)
+script = ExtResource("pen_coop")
+
 [node name="Return" type="Node" parent="Pen"]
 script = ExtResource("pen_return")
 fence_path = NodePath("../Fence")
 manager_path = NodePath("../../Chickens")
+coop_path = NodePath("../Coop")
 
 [node name="UI" type="Node4D" parent="."]
 
+[node name="Objective" type="Label" parent="UI"]
+offset_left = 16.0
+offset_top = 44.0
+offset_right = 880.0
+offset_bottom = 68.0
+text = "Twelve chickens are loose."
+
+[node name="Progress" type="Label" parent="UI"]
+offset_left = 16.0
+offset_top = 68.0
+offset_right = 420.0
+offset_bottom = 92.0
+text = "Chickens returned: 0/12"
+
+[node name="Locator" type="Label" parent="UI"]
+offset_left = 16.0
+offset_top = 96.0
+offset_right = 880.0
+offset_bottom = 120.0
+text = "Locator: ..."
+
+[node name="CatchPrompt" type="Label" parent="UI"]
+offset_left = 16.0
+offset_top = 124.0
+offset_right = 420.0
+offset_bottom = 148.0
+text = ""
+
 [node name="Systems" type="Node" parent="."]
+
+[node name="Locator" type="Node" parent="Systems"]
+script = ExtResource("pen_locator")
+manager_path = NodePath("../../Chickens")
+player_path = NodePath("../../Player")
+readout_path = NodePath("../../UI/Locator")
+
+[node name="Cues" type="Node" parent="Systems"]
+script = ExtResource("pen_cues")
+locator_path = NodePath("../Locator")
+manager_path = NodePath("../../Chickens")
+player_path = NodePath("../../Player")
 
 [node name="Game" type="Node" parent="Systems"]
 script = ExtResource("pen_game")

@@ -31,8 +31,11 @@ const PLACEMENTS := [
 	[9.5, -3.2, 0.0, 3.0],
 	[-10.0, -5.5, 0.0, 3.0],
 	[7.2, 10.5, 0.0, 2.6],
-	# W offsets, nearest first so the lesson lands before the hunt.
-	[2.6, -5.4, 0.9, 2.0],
+	# W offsets, nearest first so the lesson lands before the hunt. The first one sits
+	# close to where the player starts ON PURPOSE: standing beside a chicken you cannot
+	# see is a sharper first lesson than a distant one. Keep it clear of the pen, which
+	# reaches z = -5.1 - it was authored at z = -5.4 and spawned inside the fence.
+	[2.6, -1.4, 0.9, 2.0],
 	[-6.4, 1.2, -1.3, 2.2],
 	[5.6, 4.4, 1.9, 2.2],
 	[-3.2, 8.6, -2.1, 2.2],

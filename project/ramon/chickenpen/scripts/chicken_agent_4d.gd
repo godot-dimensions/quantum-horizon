@@ -62,6 +62,19 @@ enum State { IDLE, WANDER, ALERT, EVADE, CARRIED, THROWN, PENNED, RECOVERING }
 var state: State = State.IDLE
 var returned: bool = false
 
+## Has the player ever had hold of this bird? A chicken counts as delivered because
+## someone carried it in, never because it wandered in on its own - see pen_return_4d.gd.
+var ever_carried: bool = false
+
+## How long a delivered chicken takes to walk onto the pen's slice, and which slice that
+## is. Zero is the slice the player starts on, so a full pen is visible from where the
+## objective is read.
+const SETTLE_SECONDS: float = 1.6
+@export var pen_slice_w: float = 0.0
+
+var _settle_from: float = 0.0
+var _settle_time: float = SETTLE_SECONDS
+
 var _rng := RandomNumberGenerator.new()
 var _timer: float = 0.0
 var _cooldown: float = 0.0
@@ -177,6 +190,13 @@ func _tick_evade() -> void:
 
 func _tick_penned() -> void:
 	# Penned birds are calm: no alert, no evade, a shorter leash (item 24).
+	if _settle_time < SETTLE_SECONDS:
+		_settle_time += get_physics_process_delta_time()
+		var t: float = clampf(_settle_time / SETTLE_SECONDS, 0.0, 1.0)
+		# Eased, so it slows into place instead of stopping dead.
+		var w: float = lerpf(_settle_from, pen_slice_w, t * t * (3.0 - 2.0 * t))
+		_creature.position.w = w
+		home_position.w = w
 	if _timer <= 0.0:
 		_enter(State.PENNED)
 
@@ -242,6 +262,7 @@ func can_be_caught() -> bool:
 
 
 func on_caught() -> void:
+	ever_carried = true
 	_enter(State.CARRIED)
 
 
@@ -249,10 +270,21 @@ func on_released() -> void:
 	_enter(State.THROWN)
 
 
+## Item 64: a delivered chicken has to still be THERE afterwards.
+##
+## It keeps the W it landed at for a moment and then walks onto the pen's own slice,
+## rather than snapping there the instant it touches down. The distinction matters: the
+## player threw it while standing at some W of their own, and a bird that teleported on
+## landing would look like it had been rejected. Drifting reads as the chicken settling.
+## The alternative - leaving it at the thrown W forever - is worse than a snap, because a
+## pen full of chickens nobody can see from the home slice looks like a pen full of
+## nothing.
 func on_landed(in_pen: bool) -> void:
 	if in_pen:
 		returned = true
 		home_position = _creature.position
+		_settle_from = _creature.position.w
+		_settle_time = 0.0
 		_enter(State.PENNED)
 	else:
 		_enter(State.IDLE)

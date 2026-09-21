@@ -72,30 +72,30 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 - [x] 44 A penned chicken that leaves is replaced inside, score untouched
 
 ## Phase 06 — Functional chicken house (45–49)
-- [ ] 45 Designed coop (body, roof, chicken-sized opening, ramp)
-- [ ] 46 Low-poly, consistent with existing style
-- [ ] 47 Placed at the back of the pen
-- [ ] 48 Optional idle interest points
-- [ ] 49 Practical dimensions editable (not fully proceduralised)
+- [x] 45 `pen_coop_4d.gd` — stilted body, split front with a real doorway and lintel, pitched roof, ramp
+- [x] 46 Box tetra meshes and flat colours, same vocabulary as the fence
+- [x] 47 At `Pen/Coop`, z −4.3 inside a pen that reaches −6, doorway facing in
+- [x] 48 `idle_points()`; every third returned bird takes one as its home and walks over
+- [x] 49 Size, roof rise, doorway, ramp and stilts exported; nothing else parameterised
 
 ## Phase 07 — W-locator, hiding and discovery (50–66)
-- [ ] 50 INSPECT the Shooting Gallery first — reuse its target-location logic and UI language
-- [ ] 51 Locator's minimum information
-- [ ] 52 Two-part cue (spatial arrow + ana/kata indicator) if it fits
-- [ ] 53 Signal strength communicates approach
-- [ ] 54 Chicken audio as supporting guidance
-- [ ] 55 Optional partial visual reveal near the correct slice
-- [ ] 56 Stable target selection (nearest eligible, no rapid switching)
-- [ ] 57 Exclude invalid targets (carried, penned, completed)
-- [ ] 58 Not an autopilot
+- [x] 50 Inspected the Range; reuses `scripts/bearing_utility_4d.gd` rather than re-deriving it
+- [x] 51 Nearest eligible chicken: direction, distance, W side, strength — nothing more
+- [x] 52 Two parts kept separate: where to walk, and which way through W
+- [x] 53 Five-bar strength from `angle_off_slice`; drops when you close in XZ without matching W
+- [x] 54 Synthesised cluck in `chicken_cues_4d.gd`; rate and level rise with alignment, no direction encoded
+- [x] 55 Orthoplex marker — its cross-section shrinks to a point at the band edge, so the engine does the fade (no alpha exists to fade with)
+- [x] 56 Nearest eligible, with a 25% hysteresis margin before it switches
+- [x] 57 Eligibility asked of the chicken; verified the target moves on the moment one is returned
+- [x] 58 No coordinates, no marker at range; the glimpse only exists once you are nearly in the slice
 - [x] 59 Placement table authored in that order; verified 6 in the starting slice, 6 offset in W
 - [x] 60 First W chicken sits at w = 0.9
-- [ ] 61 One new variable at a time
-- [ ] 62 Preserve designed hiding relationships
-- [ ] 63 Legible slice alignment (lock tone / centred indicator)
-- [~] 64 Carried chicken holds the player's W (1.18 vs 1.20). Pen-side W on return still to do
-- [ ] 65 Superior repo-specific solutions allowed — explain them
-- [ ] 66 Test comprehension from a cold start, not only correctness
+- [x] 61 Placements 7–10 vary W alone, 11–12 add distance
+- [x] 62 Bounded wander around authored homes, plus a W leash; never becomes a chase
+- [x] 63 `LOCKED ... in your slice - catchable` — a state change, not a better number
+- [x] 64 Carried chicken holds the player's W (1.18 vs 1.20); on return it eases onto the pen slice over 1.6 s rather than snapping
+- [x] 65 Reused the Range's bearing utility; replaced the Range's slice-rotate advice with this scene's real control
+- [x] 66 `_verify_comprehension_runner.gd` reads the screen, presses the key it names, locks on in 33 frames
 
 ## Phase 08 — Objective flow, feedback, completion (67–74)
 - [ ] 67 Clear start state near the pen with a short objective message
