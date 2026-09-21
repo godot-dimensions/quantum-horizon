@@ -36,6 +36,14 @@ const BearingUtility4D = preload("res://scripts/bearing_utility_4d.gd")
 
 @export_group("Clucking")
 @export var audio_enabled: bool = true
+## The repeating cluck, SEPARATE from the one-shot sounds and off by default.
+##
+## Item 54 asked for faint clucking that strengthens as you align, and it does work as a
+## cue - but it fires every few seconds for the whole session, and in practice that reads
+## as a loop you want to get away from rather than as guidance. The return chirp and the
+## completion chorus are unaffected: those fire once each, when something actually
+## happened, which is the difference between feedback and background.
+@export var clucking_enabled: bool = false
 ## Seconds between clucks when the player is nowhere near the chicken's slice, and when
 ## they are on it. Rate is the coarse half of the cue; loudness is the fine half.
 @export_range(0.5, 12.0, 0.1) var cluck_interval_far: float = 4.5
@@ -77,6 +85,7 @@ var _cluck: AudioStreamPlayer
 var _confirm: AudioStreamPlayer
 var _chorus: AudioStreamPlayer
 var _since_cluck: float = 0.0
+var _silenced: bool = false
 var _markers: Dictionary = {}
 var _bob: float = 0.0
 
@@ -131,7 +140,7 @@ func _strength(target: Node) -> float:
 
 
 func _tick_audio(delta: float, target: Node, strength: float) -> void:
-	if _cluck == null:
+	if _cluck == null or not clucking_enabled or _silenced:
 		return
 	if target == null:
 		return
@@ -195,7 +204,9 @@ func _make_marker() -> MeshInstance4D:
 ## the glimpse off also stops the tick that would have hidden them - they would have
 ## frozen mid-bob wherever they were.
 func quiet() -> void:
-	audio_enabled = false
+	# A flag rather than clearing the exports, so switching the guidance off at the end of
+	# a run cannot quietly turn the clucking back ON when the next run resumes it.
+	_silenced = true
 	glimpse_enabled = false
 	for marker in _markers.values():
 		(marker as MeshInstance4D).visible = false
@@ -203,7 +214,7 @@ func quiet() -> void:
 
 ## And back on, for a restart (item 73).
 func resume() -> void:
-	audio_enabled = true
+	_silenced = false
 	glimpse_enabled = true
 	_since_cluck = 0.0
 
