@@ -46,6 +46,11 @@ const BearingUtility4D = preload("res://scripts/bearing_utility_4d.gd")
 @export_range(-60.0, 0.0, 1.0) var cluck_db_far: float = -32.0
 @export_range(-60.0, 0.0, 1.0) var cluck_db_near: float = -14.0
 
+## Louder than the clucking, because it fires twelve times in a session rather than
+## continuously, and because it is the one sound that confirms an action succeeded.
+@export_range(-40.0, 0.0, 1.0) var confirm_db: float = -8.0
+@export_range(-40.0, 0.0, 1.0) var chorus_db: float = -6.0
+
 @export_group("Glimpse")
 @export var glimpse_enabled: bool = true
 ## How far through W the marker reaches. Outside this band its cross-section is empty, so
@@ -62,6 +67,8 @@ var _manager: Node
 var _player: Node4D
 var _player_node: Node
 var _cluck: AudioStreamPlayer
+var _confirm: AudioStreamPlayer
+var _chorus: AudioStreamPlayer
 var _since_cluck: float = 0.0
 var _markers: Dictionary = {}
 var _bob: float = 0.0
@@ -76,9 +83,20 @@ func _ready() -> void:
 		return
 	if audio_enabled:
 		_cluck = AudioStreamPlayer.new()
+		_cluck.name = "Cluck"
 		_cluck.stream = _make_cluck()
 		_cluck.volume_db = cluck_db_far
 		add_child(_cluck)
+		_confirm = AudioStreamPlayer.new()
+		_confirm.name = "Confirm"
+		_confirm.stream = _make_confirm()
+		_confirm.volume_db = confirm_db
+		add_child(_confirm)
+		_chorus = AudioStreamPlayer.new()
+		_chorus.name = "Chorus"
+		_chorus.stream = _make_chorus()
+		_chorus.volume_db = chorus_db
+		add_child(_chorus)
 
 
 func _process(delta: float) -> void:
@@ -163,33 +181,109 @@ func _make_marker() -> MeshInstance4D:
 	return node
 
 
+## The hunt is over: stop guiding (item 72).
+##
+## The markers are hidden explicitly rather than left to the next tick, because switching
+## the glimpse off also stops the tick that would have hidden them - they would have
+## frozen mid-bob wherever they were.
+func quiet() -> void:
+	audio_enabled = false
+	glimpse_enabled = false
+	for marker in _markers.values():
+		(marker as MeshInstance4D).visible = false
+
+
+## And back on, for a restart (item 73).
+func resume() -> void:
+	audio_enabled = true
+	glimpse_enabled = true
+	_since_cluck = 0.0
+
+
+## Item 70: a chicken is home. Played the instant the count changes, not on a timer.
+func confirm() -> void:
+	if _confirm != null:
+		_confirm.play()
+
+
+## Item 72: all twelve are in. A short collective answer from the flock rather than a
+## fanfare - the brief asks for a small response, and the pen answering in its own voice
+## is a better fit than a reward jingle.
+func celebrate() -> void:
+	if _chorus != null:
+		_chorus.play()
+
+
 ## A cluck, built from numbers rather than shipped as a file.
 ##
 ## The falling pitch is what makes it a cluck instead of a beep - a chicken's call drops
 ## roughly an octave over its short length - and the noise term gives it the breathy edge
 ## that a pure tone lacks. Generated rather than sourced because there is no chicken audio
 ## in ramon/sounds/ and this prototype should not depend on one being added.
+
 func _make_cluck() -> AudioStreamWAV:
-	var rate: int = 22050
-	var seconds: float = 0.13
-	var count: int = int(rate * seconds)
+	return _render(0.13, func(u: float, rng: RandomNumberGenerator, phase: float) -> Array:
+		var hz: float = 880.0 * exp(-3.4 * u) + 300.0
+		var next: float = phase + TAU * hz / float(RATE)
+		var sample: float = sin(next) * 0.6 + sin(next * 2.0) * 0.25 			+ rng.randf_range(-1.0, 1.0) * 0.12
+		# Fast attack, slower decay: the click at the front is what identifies it.
+		return [sample * clampf(u / 0.06, 0.0, 1.0) * exp(-4.2 * u), next])
+
+
+## Item 70: a rising two-note chirp.
+##
+## It goes UP where the cluck goes down, and that contrast is the whole reason it reads as
+## "that worked" in a field full of falling clucks. Pitch direction carries the meaning;
+## nothing else has to.
+func _make_confirm() -> AudioStreamWAV:
+	return _render(0.26, func(u: float, _rng: RandomNumberGenerator, phase: float) -> Array:
+		var hz: float = 520.0 if u < 0.42 else 780.0
+		var next: float = phase + TAU * hz / float(RATE)
+		var sample: float = sin(next) * 0.7 + sin(next * 3.0) * 0.12
+		# Re-struck at the note change, so it is two notes rather than one bent one.
+		var step: float = u if u < 0.42 else u - 0.42
+		return [sample * clampf(step / 0.01, 0.0, 1.0) * exp(-9.0 * step), next])
+
+
+## Item 72: the flock answering at once.
+##
+## Eight clucks at scattered pitches and start times, summed into ONE stream rather than
+## played on eight players - one sound has one level, and a chorus assembled at playback
+## would have to be mixed every time it fired.
+func _make_chorus() -> AudioStreamWAV:
+	return _render(1.1, func(u: float, rng: RandomNumberGenerator, phase: float) -> Array:
+		var total: float = 0.0
+		for bird in 8:
+			var start: float = float(bird) * 0.085 + sin(float(bird) * 2.7) * 0.02
+			var step: float = u * 1.1 - start
+			if step < 0.0 or step > 0.2:
+				continue
+			var hz: float = (760.0 + float(bird) * 55.0) * exp(-3.4 * step / 0.13) + 300.0
+			total += sin(TAU * hz * step) * exp(-4.2 * step / 0.13) * 0.34
+		return [total + rng.randf_range(-1.0, 1.0) * 0.03 * exp(-2.0 * u), phase])
+
+
+const RATE: int = 22050
+
+
+## Shared renderer. The three sounds differ only in how one sample is computed, so the
+## buffer arithmetic lives here instead of three times over. The voice is handed the
+## running oscillator phase and returns the next one, because a cluck sweeps its pitch and
+## a phase recomputed from scratch each sample would click.
+func _render(seconds: float, voice: Callable) -> AudioStreamWAV:
+	var count: int = int(RATE * seconds)
 	var data := PackedByteArray()
 	data.resize(count * 2)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 20260921
 	var phase: float = 0.0
 	for i in count:
-		var u: float = float(i) / float(count)
-		var hz: float = 880.0 * exp(-3.4 * u) + 300.0
-		phase += TAU * hz / float(rate)
-		var sample: float = sin(phase) * 0.6 + sin(phase * 2.0) * 0.25 \
-			+ rng.randf_range(-1.0, 1.0) * 0.12
-		# Fast attack, slower decay: the click at the front is most of what identifies it.
-		var envelope: float = clampf(u / 0.06, 0.0, 1.0) * exp(-4.2 * u)
-		data.encode_s16(i * 2, int(clampf(sample * envelope, -1.0, 1.0) * 32000.0))
+		var result: Array = voice.call(float(i) / float(count), rng, phase)
+		phase = float(result[1])
+		data.encode_s16(i * 2, int(clampf(float(result[0]), -1.0, 1.0) * 32000.0))
 	var wav := AudioStreamWAV.new()
 	wav.format = AudioStreamWAV.FORMAT_16_BITS
-	wav.mix_rate = rate
+	wav.mix_rate = RATE
 	wav.stereo = false
 	wav.data = data
 	return wav

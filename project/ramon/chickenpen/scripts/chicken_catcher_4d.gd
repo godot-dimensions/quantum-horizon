@@ -81,7 +81,13 @@ func _physics_process(delta: float) -> void:
 	_advance_flights(delta)
 	if carried != null:
 		_carry_tick()
-		_show_prompt("")
+		# Item 68: the throw and the drop are taught HERE, at the only moment they mean
+		# anything. Before you are holding a chicken there is nothing to throw, and a
+		# tutorial panel that explained it up front would be explaining a verb the player
+		# cannot perform yet. Both are shown because they are genuinely different acts -
+		# one lobs the bird over the fence, the other sets it down where you stand.
+		_show_prompt("Throw  [%s]      Put down  [%s]" % [
+			_action_hint(&"catch_target"), _action_hint(&"fire")])
 		return
 	_candidate = _best_candidate()
 	# Item 27: the prompt appears only when a catch would actually work, and goes the

@@ -110,17 +110,14 @@ func _report_cues() -> void:
 	if mesh != null:
 		print("   marker W half-extent %.2f - its cross-section is empty beyond that, so the" % mesh.half_extents.w)
 		print("     glimpse cannot be seen from a slice the chicken is not nearly in.")
-	var player: AudioStreamPlayer = null
-	for c in _cues.get_children():
-		if c is AudioStreamPlayer:
-			player = c
-	if player == null:
-		print("   clucking: NOT present")
-	else:
+	for named in ["Cluck", "Confirm", "Chorus"]:
+		var player: AudioStreamPlayer = _cues.get_node_or_null(named) as AudioStreamPlayer
+		if player == null:
+			print("   %s: NOT present" % named)
+			continue
 		var wav: AudioStreamWAV = player.stream as AudioStreamWAV
-		print("   clucking: %.2f s cluck synthesised, currently %.0f dB (range %.0f..%.0f)" % [
-			float(wav.data.size() / 2) / float(wav.mix_rate), player.volume_db,
-			_cues.get("cluck_db_far"), _cues.get("cluck_db_near")])
+		print("   %-8s %.2f s synthesised at %.0f dB" % [
+			named + ":", float(wav.data.size() / 2) / float(wav.mix_rate), player.volume_db])
 
 
 func _release() -> void:

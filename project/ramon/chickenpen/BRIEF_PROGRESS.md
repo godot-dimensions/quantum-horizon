@@ -98,14 +98,14 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 - [x] 66 `_verify_comprehension_runner.gd` reads the screen, presses the key it names, locks on in 33 frames
 
 ## Phase 08 — Objective flow, feedback, completion (67–74)
-- [ ] 67 Clear start state near the pen with a short objective message
-- [ ] 68 Teach controls at the moment each first matters
-- [ ] 69 Persistent restrained progress counter
-- [ ] 70 Confirm each return immediately
-- [ ] 71 No timer in the default mode
-- [ ] 72 Clear completion event at 12/12
-- [ ] 73 Restart and replay without an editor restart
-- [ ] 74 Presentation stays prototype-focused
+- [x] 67 Player starts 9.5 units from the pen beside a keeper placeholder and a sign; objective on screen
+- [x] 68 `pen_tutor_4d.gd` for move and the W axis; the catcher prompts catch, throw and put-down. No panel, each hint once
+- [x] 69 `Chickens returned: n/12`, one line under the objective
+- [x] 70 Rising two-note chirp on the frame the count moves — up, where the clucks fall
+- [x] 71 Verified none: no Timer node and no exported limit (the only countdown is each chicken's next peck)
+- [x] 72 Locator stops guiding and says so, objective becomes the completion line, eight-cluck chorus, glimpses off
+- [x] 73 Ctrl+R: 12 eligible again, none marked returned, homes back at authored spots, locator and hints restored
+- [x] 74 Flat colours and box meshes throughout; the only things added were a keeper and a sign, both marking where chickens go
 
 ## Phase 09 — Robustness, recovery, optimisation (75–82)
 - [x] 75 chicken_id plus a fixed seed; nothing keys off tree order

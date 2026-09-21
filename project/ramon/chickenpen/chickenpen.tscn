@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3]
+[gd_scene load_steps=27 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_coop_4d.gd" id="pen_coop"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/chicken_locator_4d.gd" id="pen_locator"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/chicken_cues_4d.gd" id="pen_cues"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_tutor_4d.gd" id="pen_tutor"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -36,6 +37,15 @@ albedo_color = Color(0.55, 0.42, 0.3, 1)
 
 [sub_resource type="TetraMaterial4D" id="post_far"]
 albedo_color = Color(0.35, 0.5, 0.45, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="sign_post_mesh"]
+size = Vector4(0.12, 1.5, 0.12, 0.12)
+
+[sub_resource type="BoxTetraMesh4D" id="sign_board_mesh"]
+size = Vector4(1.1, 0.62, 0.08, 1.1)
+
+[sub_resource type="TetraMaterial4D" id="sign_mat"]
+albedo_color = Color(0.85, 0.78, 0.6, 1)
 
 [node name="ChickenPen" type="Node4D"]
 metadata/copied_from = "res://ramon/chickenpen/chickenpen_proceduralwalker.tscn"
@@ -91,6 +101,13 @@ offset_right = 420.0
 offset_bottom = 148.0
 text = ""
 
+[node name="Hint" type="Label" parent="UI"]
+offset_left = 16.0
+offset_top = 152.0
+offset_right = 880.0
+offset_bottom = 176.0
+text = ""
+
 [node name="Systems" type="Node" parent="."]
 
 [node name="Locator" type="Node" parent="Systems"]
@@ -105,11 +122,20 @@ locator_path = NodePath("../Locator")
 manager_path = NodePath("../../Chickens")
 player_path = NodePath("../../Player")
 
+[node name="Tutor" type="Node" parent="Systems"]
+script = ExtResource("pen_tutor")
+player_path = NodePath("../../Player")
+catcher_path = NodePath("../../Player/Catcher")
+locator_path = NodePath("../Locator")
+label_path = NodePath("../../UI/Hint")
+
 [node name="Game" type="Node" parent="Systems"]
 script = ExtResource("pen_game")
 manager_path = NodePath("../../Chickens")
 player_path = NodePath("../../Player")
 catcher_path = NodePath("../../Player/Catcher")
+locator_path = NodePath("../Locator")
+cues_path = NodePath("../Cues")
 progress_label_path = NodePath("../../UI/Progress")
 objective_label_path = NodePath("../../UI/Objective")
 
@@ -131,6 +157,26 @@ shape = SubResource("ground_shape")
 [node name="GroundMesh" type="MeshInstance4D" parent="World/Ground"]
 material_override = SubResource("ground_mat")
 mesh = SubResource("ground_mesh")
+
+[node name="Keeper" type="Node4D" parent="World"]
+position = Vector4(1.7, 0, -4, 0)
+script = ExtResource("avatar")
+build = 2
+skin = Color(0.76, 0.58, 0.44, 1)
+accent = Color(0.52, 0.33, 0.55, 1)
+
+[node name="Sign" type="Node4D" parent="World"]
+position = Vector4(-1.7, 0, -4, 0)
+
+[node name="Post" type="MeshInstance4D" parent="World/Sign"]
+position = Vector4(0, 0.75, 0, 0)
+mesh = SubResource("sign_post_mesh")
+material_override = SubResource("sign_mat")
+
+[node name="Board" type="MeshInstance4D" parent="World/Sign"]
+position = Vector4(0, 1.45, 0, 0)
+mesh = SubResource("sign_board_mesh")
+material_override = SubResource("sign_mat")
 
 [node name="Scenery" type="Node4D" parent="World"]
 
@@ -170,7 +216,7 @@ material_override = SubResource("post_far")
 mesh = SubResource("post_mesh")
 
 [node name="Player" type="CharacterBody4D" parent="."]
-position = Vector4(0, 1.2, 0, 0)
+position = Vector4(0, 1.2, -1.5, 0)
 script = ExtResource("character")
 
 [node name="CollisionShape4D" type="CollisionShape4D" parent="Player"]
