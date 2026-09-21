@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3]
+[gd_scene load_steps=33 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_controls_4d.gd" id="pen_controls"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/chicken_radar_4d.gd" id="pen_radar"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_keeper_4d.gd" id="pen_keeper"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_slice_assist_4d.gd" id="pen_assist"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -123,7 +124,7 @@ text = ""
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 18.0
-offset_top = -252.0
+offset_top = -288.0
 offset_right = 1200.0
 offset_bottom = -20.0
 script = ExtResource("pen_controls")
@@ -142,6 +143,13 @@ player_path = NodePath("../../Player")
 manager_path = NodePath("../../Chickens")
 locator_path = NodePath("../../Systems/Locator")
 slice_frame_path = NodePath("../../Player/CameraRig")
+
+[node name="LockOn" type="Label" parent="UI"]
+offset_left = 16.0
+offset_top = 232.0
+offset_right = 1100.0
+offset_bottom = 256.0
+text = ""
 
 [node name="Keeper" type="Label" parent="UI"]
 offset_left = 16.0
@@ -181,6 +189,13 @@ fence_path = NodePath("../../Pen/Fence")
 cues_path = NodePath("../Cues")
 game_path = NodePath("../Game")
 readout_path = NodePath("../../UI/Debug")
+
+[node name="SliceAssist" type="Node" parent="Systems"]
+script = ExtResource("pen_assist")
+rig_path = NodePath("../../Player/CameraRig")
+player_path = NodePath("../../Player")
+locator_path = NodePath("../Locator")
+readout_path = NodePath("../../UI/LockOn")
 
 [node name="Game" type="Node" parent="Systems"]
 script = ExtResource("pen_game")
@@ -299,6 +314,7 @@ manager_path = NodePath("../../Chickens")
 carry_anchor_path = NodePath("../CarryAnchor")
 facing_path = NodePath("../Avatar")
 gait_path = NodePath("../Gait")
+slice_frame_path = NodePath("../CameraRig")
 prompt_path = NodePath("../../UI/CatchPrompt")
 
 [node name="Gait" type="Node4D" parent="Player"]

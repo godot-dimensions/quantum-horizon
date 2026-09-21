@@ -33,6 +33,9 @@ signal released(agent: Node, thrown: bool)
 @export var facing_path: NodePath
 ## The gait, told when a chicken is picked up so it can stoop and then hold its arms up.
 @export var gait_path: NodePath
+## Whose basis defines the slice you are standing in - the camera rig. Same node the
+## locator and the radar read; see the note on catch_w_tolerance for why it matters here.
+@export var slice_frame_path: NodePath
 
 @export_group("Catching")
 ## How close is close enough (item 26).
@@ -47,7 +50,18 @@ signal released(agent: Node, thrown: bool)
 ## to less than the 1.6 reach. That quietly made the whole phase step optional, and made a
 ## liar of the locator, which was still saying "turn toward ana" to make it catchable. You
 ## have to be in the chicken's slice to pick it up; that is the mechanic.
-@export_range(0.05, 1.0, 0.05) var catch_w_tolerance: float = 0.25
+##
+## MEASURED ALONG THE SLICE YOU ARE IN, not along the world's W axis. Those are the same
+## thing only until you slice-rotate, and then they are badly different: rotating brings a
+## chicken into view by turning the slice, which leaves its WORLD w offset as large as it
+## ever was. Testing the world axis meant a bird you were looking straight at refused to be
+## picked up, so rotating was useless for catching and the only way in was to walk through
+## W. This is the same quantity the locator calls ana_offset, so "the locator says
+## catchable" and "the catch works" are now the same statement.
+@export_range(0.05, 1.0, 0.05) var catch_w_tolerance: float = 0.35
+## How far below (or above) you a chicken can be and still be picked up. Generous: the
+## character stoops for it, and a bird at your feet is the normal case, not the edge one.
+@export_range(0.2, 4.0, 0.1) var catch_height: float = 2.0
 
 @export_group("Throwing")
 ## A LOB, NOT A PITCH. Held overhead in two hands and tossed about three metres, which is
@@ -136,6 +150,7 @@ func _best_candidate() -> Node:
 	var facing: Node4D = get_node_or_null(facing_path) as Node4D
 	var frame: Projection = facing.global_basis if facing != null else global_basis
 	var forward: Vector4 = frame * Vector4(0.0, 0.0, 1.0, 0.0)
+	var slice: Projection = _slice_basis()
 	var best: Node = null
 	var best_score: float = -INF
 	for agent in _manager.call("locator_candidates"):
@@ -143,14 +158,27 @@ func _best_candidate() -> Node:
 		if body == null:
 			continue
 		var to_bird: Vector4 = body.global_position - global_position
-		if absf(to_bird.w) > catch_w_tolerance:
+		if absf(to_bird.dot(slice.w)) > catch_w_tolerance:
 			continue
-		var gap: float = Vector3(to_bird.x, to_bird.y, to_bird.z).length()
+		# HORIZONTAL distance within that slice, with height handled separately.
+		#
+		# Measuring all three together spent most of the reach going DOWN: this node rides
+		# at the player's origin, about 1.3 above the ground, and a chicken stands at zero.
+		# That left sqrt(1.6^2 - 1.3^2) = 0.93 of actual grabbing room, so a bird plainly
+		# in front of you was out of range for reasons nothing on screen could explain.
+		# How far away it is and whether you can bend down to it are two questions.
+		var drop: float = absf(to_bird.dot(slice.y))
+		if drop > catch_height:
+			continue
+		var gap: float = Vector2(to_bird.dot(slice.x), to_bird.dot(slice.z)).length()
 		if gap > catch_distance:
 			continue
 		var ahead: float = 1.0
 		if gap > 0.001:
-			ahead = forward.dot(to_bird / gap)
+			# Measured flat too, so looking slightly down at a bird at your feet does not
+			# count against how squarely you are facing it.
+			var flat := Vector2(to_bird.dot(slice.x), to_bird.dot(slice.z)) / gap
+			ahead = Vector2(forward.dot(slice.x), forward.dot(slice.z)).normalized().dot(flat)
 		if ahead < cos(deg_to_rad(catch_angle_degrees)):
 			continue
 		# Nearer is better, straighter ahead is better, and being ahead breaks ties
@@ -160,6 +188,13 @@ func _best_candidate() -> Node:
 			best_score = score
 			best = agent
 	return best
+
+
+## The frame the visible slice is defined in. Falls back to this node's own basis, which
+## is what it used to use implicitly by reading the world axes.
+func _slice_basis() -> Projection:
+	var frame: Node4D = get_node_or_null(slice_frame_path) as Node4D
+	return frame.global_basis if frame != null else global_basis
 
 
 func _catch(agent: Node) -> void:
