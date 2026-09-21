@@ -134,9 +134,13 @@ func _strength(target: Node) -> float:
 	var body: Node4D = target.get_parent() as Node4D
 	if body == null:
 		return 0.0
-	var bearing: Dictionary = BearingUtility4D.compute(_player, body.global_position)
+	# Through the locator's own frame, so the clucking and the words agree about what
+	# "aligned" means even while the player is rotating their slice.
+	var bearing: Dictionary = BearingUtility4D.compute_raw(
+		_player.global_position, _locator.call("_slice_basis"), body.global_position)
 	var wide: float = float(_locator.get("wide_angle"))
-	return clampf(1.0 - float(bearing["angle_off_slice"]) / maxf(wide, 0.01), 0.0, 1.0)
+	# Absolute, for the same reason the locator takes the absolute: the angle is signed.
+	return clampf(1.0 - absf(float(bearing["angle_off_slice"])) / maxf(wide, 0.01), 0.0, 1.0)
 
 
 func _tick_audio(delta: float, target: Node, strength: float) -> void:

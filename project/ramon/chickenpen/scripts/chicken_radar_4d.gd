@@ -40,6 +40,10 @@ const W_IS_UP: bool = false
 @export var player_path: NodePath
 @export var manager_path: NodePath
 @export var locator_path: NodePath
+## Whose basis defines the slice being drawn - the camera rig here, not the body. See the
+## same note on chicken_locator_4d.gd: the rig carries the slice rotation, so reading the
+## body left this dial completely static while the player rotated their slice.
+@export var slice_frame_path: NodePath
 
 @export_group("Shape")
 @export var ellipse_squash_factor: float = 0.55
@@ -64,6 +68,7 @@ const W_IS_UP: bool = false
 var _player: Node4D
 var _manager: Node
 var _locator: Node
+var _frame: Node4D
 var _pulse: float = 0.0
 
 
@@ -72,6 +77,7 @@ func _ready() -> void:
 	_player = get_node_or_null(player_path) as Node4D
 	_manager = get_node_or_null(manager_path)
 	_locator = get_node_or_null(locator_path)
+	_frame = get_node_or_null(slice_frame_path) as Node4D
 	if _player == null or _manager == null:
 		push_warning("ChickenRadar: player or manager missing, so the radar has nothing to plot (item 82).")
 
@@ -107,7 +113,7 @@ func _draw() -> void:
 	# The player's own frame, so "right" and "ahead" on the dial mean right and ahead to
 	# the character - read from the BODY, which is what bearing_utility_4d exists to insist
 	# on: the head carries pitch and would tilt the whole dial with a glance upward.
-	var frame: Projection = _player.global_basis.inverse()
+	var frame: Projection = (_frame.global_basis if _frame != null else _player.global_basis).inverse()
 	for agent in (_manager.get("agents") as Array):
 		if not bool(agent.call("can_be_caught")):
 			continue

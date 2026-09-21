@@ -35,6 +35,16 @@ const BearingUtility4D = preload("res://scripts/bearing_utility_4d.gd")
 @export var manager_path: NodePath
 @export var player_path: NodePath
 @export var readout_path: NodePath
+## The node whose basis defines the currently VISIBLE slice.
+##
+## Not the player body, in this scene. The Range applies slice-rotation to the body, so
+## there the body is both where you are and which slice you see. Here the camera rig owns
+## it, which meant slice-rotating changed the view and changed nothing in this readout -
+## it read a body basis that never moved. bearing_utility_4d anticipates exactly this and
+## provides compute_raw for it: observer POSITION from one node, observer BASIS from
+## another. The rig is right and the rig's Pitch CHILD is not - pitch must stay out of it,
+## which is the bug that utility's header documents.
+@export var slice_frame_path: NodePath
 
 ## How much closer a rival chicken must be before the locator switches to it. Without
 ## this, two chickens at similar range make the readout flicker between them, which item
@@ -51,6 +61,7 @@ var target: Node = null
 
 var _manager: Node
 var _player: Node4D
+var _frame: Node4D
 var _readout: Label
 
 
@@ -58,6 +69,7 @@ func _ready() -> void:
 	_manager = get_node_or_null(manager_path)
 	_player = get_node_or_null(player_path) as Node4D
 	_readout = get_node_or_null(readout_path) as Label
+	_frame = get_node_or_null(slice_frame_path) as Node4D
 	if _manager == null or _player == null:
 		push_warning("ChickenLocator: manager or player missing, so it cannot point at anything (item 82).")
 
@@ -107,9 +119,14 @@ func _describe(agent: Node) -> String:
 	var body: Node4D = agent.get_parent() as Node4D
 	if body == null:
 		return "Locator: ..."
-	var bearing: Dictionary = BearingUtility4D.compute(_player, body.global_position)
+	var bearing: Dictionary = BearingUtility4D.compute_raw(
+		_player.global_position, _slice_basis(), body.global_position)
 	var rel: Vector4 = bearing["rel"]
-	var angle: float = float(bearing["angle_off_slice"])
+	# ABSOLUTE. angle_off_slice is SIGNED - it says which side of the slice the chicken is
+	# on, not just how far - so comparing it raw against a threshold called every negative
+	# value a lock, however far off it was. It never showed while slice-rotation did
+	# nothing, because walking through W only ever approached the slice from one side.
+	var angle: float = absf(float(bearing["angle_off_slice"]))
 	var ana: float = float(bearing["ana_offset"])
 	var flat: float = Vector2(rel.x, rel.z).length()
 
@@ -128,10 +145,15 @@ func _describe(agent: Node) -> String:
 	return "Locator: %s %s  [%s]  it is %s of you - press %s" % [distance, where, bars, side, key]
 
 
+## The frame the visible slice is defined in: the rig if there is one, the body otherwise.
+func _slice_basis() -> Projection:
+	return _frame.global_basis if _frame != null else _player.global_basis
+
+
 func _heading_word(rel: Vector4) -> String:
 	if _player == null:
 		return ""
-	var basis: Projection = _player.global_basis
+	var basis: Projection = _slice_basis()
 	var forward: float = rel.dot(-basis.z)
 	var right: float = rel.dot(basis.x)
 	if absf(forward) > absf(right):
