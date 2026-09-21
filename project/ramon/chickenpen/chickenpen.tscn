@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=3]
+[gd_scene load_steps=30 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/chicken_cues_4d.gd" id="pen_cues"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_tutor_4d.gd" id="pen_tutor"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_debug_4d.gd" id="pen_debug"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_controls_4d.gd" id="pen_controls"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -115,6 +116,15 @@ offset_top = 180.0
 offset_right = 880.0
 offset_bottom = 204.0
 text = ""
+
+[node name="Controls" type="Label" parent="UI"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = -252.0
+offset_right = 1200.0
+offset_bottom = -20.0
+script = ExtResource("pen_controls")
 
 [node name="Systems" type="Node" parent="."]
 
