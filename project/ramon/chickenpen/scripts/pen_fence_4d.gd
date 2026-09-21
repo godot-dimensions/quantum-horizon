@@ -35,8 +35,15 @@ enum GateSide { NONE, X_POSITIVE, X_NEGATIVE, Z_POSITIVE, Z_NEGATIVE }
 @export_range(0.03, 0.4, 0.01) var post_thickness: float = 0.13: set = _set_post_thickness
 @export_range(0.02, 0.3, 0.01) var rail_thickness: float = 0.07: set = _set_rail_thickness
 
-## How far the fence reaches through W. Generous, because a pen that exists in only one
-## slice would let a chicken walk out of it sideways through the fourth axis.
+## How far the fence reaches through W, for the meshes AND the collision. Generous,
+## because a pen that exists in only one slice would let a chicken walk out of it sideways
+## through the fourth axis.
+##
+## THE MESHES USE IT TOO. They used to be as thin through W as they are thick - a post was
+## 0.13 through W because 0.13 was its width - so stepping one slice off zero made the
+## whole fence disappear while its collision, which did use w_depth, went on stopping you.
+## An invisible wall you cannot see the pen behind is the worst of both, and a player in
+## another slice could not even find the pen they were carrying a chicken to.
 @export_range(0.5, 12.0, 0.1) var w_depth: float = 6.0: set = _set_w_depth
 
 @export_group("Gate")
@@ -120,7 +127,7 @@ func rebuild() -> void:
 		return
 
 	var post_mesh := BoxTetraMesh4D.new()
-	post_mesh.size = Vector4(post_thickness, height, post_thickness, post_thickness)
+	post_mesh.size = Vector4(post_thickness, height, post_thickness, w_depth)
 	var post_mat := TetraMaterial4D.new()
 	post_mat.albedo_color = post_color
 	var rail_mat := TetraMaterial4D.new()
@@ -190,7 +197,7 @@ func _build_side(index: int, along_x: bool, fixed: float, from: float, to: float
 			rail.name = "Rail_%d_%d_%d" % [index, run_index, r]
 			var mesh := BoxTetraMesh4D.new()
 			mesh.size = Vector4(length if along_x else rail_thickness, rail_thickness,
-				rail_thickness if along_x else length, rail_thickness)
+				rail_thickness if along_x else length, w_depth)
 			rail.mesh = mesh
 			rail.material_override = rail_mat
 			rail.position = Vector4(centre if along_x else fixed, y, fixed if along_x else centre, 0.0)

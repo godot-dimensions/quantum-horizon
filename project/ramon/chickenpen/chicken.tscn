@@ -126,6 +126,7 @@ basis = Projection(0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25)
 [node name="Body" type="MeshInstance4D" parent="."]
 material_override = SubResource("chk_TetraMaterial4D_feather")
 script = ExtResource("3_rig")
+live_rebuild = false
 profile_sides = 12
 profile_rings = 6
 
@@ -180,6 +181,7 @@ v_scale = 2.6
 [node name="NeckHead" type="MeshInstance4D" parent="."]
 material_override = SubResource("chk_TetraMaterial4D_neckhead")
 script = ExtResource("3_rig")
+live_rebuild = false
 use_ball_colors = true
 profile_sides = 10
 profile_rings = 6
@@ -237,6 +239,7 @@ color = Color(0.94, 0.7, 0.22, 1)
 [node name="Wattle" type="MeshInstance4D" parent="NeckHead/Ball4"]
 material_override = SubResource("chk_TetraMaterial4D_comb")
 script = ExtResource("3_rig")
+live_rebuild = false
 profile_sides = 6
 
 [node name="Ball1" type="MeshInstance4D" parent="NeckHead/Ball4/Wattle"]
@@ -285,6 +288,7 @@ color = Color(0.85, 0.1, 0.1, 1)
 [node name="LegL" type="MeshInstance4D" parent="."]
 material_override = SubResource("chk_TetraMaterial4D_beak")
 script = ExtResource("3_rig")
+live_rebuild = false
 mirror_x = false
 profile_sides = 6
 
@@ -309,6 +313,7 @@ radius = 0.075
 [node name="LegR" type="MeshInstance4D" parent="."]
 material_override = SubResource("chk_TetraMaterial4D_beak")
 script = ExtResource("3_rig")
+live_rebuild = false
 mirror_x = false
 profile_sides = 6
 
@@ -338,6 +343,7 @@ wander_scale = 0.38
 [node name="Wing" type="MeshInstance4D" parent="."]
 material_override = SubResource("chk_TetraMaterial4D_feather")
 script = ExtResource("3_rig")
+live_rebuild = false
 profile_sides = 10
 profile_rings = 5
 

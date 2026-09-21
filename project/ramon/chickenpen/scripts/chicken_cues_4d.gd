@@ -61,6 +61,13 @@ const BearingUtility4D = preload("res://scripts/bearing_utility_4d.gd")
 @export_range(2.0, 40.0, 0.5) var reveal_distance: float = 11.0
 @export var glimpse_color: Color = Color(1.0, 0.92, 0.45)
 @export_range(0.0, 3.0, 0.05) var glimpse_height: float = 1.65
+## Chickens closer than this through W are already in plain sight, so they get no marker.
+##
+## Without it the markers hovered over birds standing in front of the player, which is
+## clutter at best and a map marker at worst - the thing item 58 is against. Tied to the
+## slice you are on rather than to a distance, it also gives the arrival its own signal:
+## the marker vanishes at the moment the chicken itself appears.
+@export_range(0.0, 0.5, 0.01) var present_band: float = 0.12
 
 var _locator: Node
 var _manager: Node
@@ -155,7 +162,8 @@ func _tick_glimpse(delta: float) -> void:
 		var here: Vector4 = body.global_position
 		if wanted:
 			var flat: float = Vector2(here.x - at.x, here.z - at.z).length()
-			wanted = flat <= reveal_distance
+			var through_w: float = absf(here.w - at.w)
+			wanted = flat <= reveal_distance and through_w > present_band
 		marker.visible = wanted
 		if not wanted:
 			continue

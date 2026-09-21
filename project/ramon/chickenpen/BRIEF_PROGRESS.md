@@ -109,13 +109,13 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 
 ## Phase 09 — Robustness, recovery, optimisation (75–82)
 - [x] 75 chicken_id plus a fixed seed; nothing keys off tree order
-- [ ] 76 Detect invalid positions and recover
-- [~] 77 Catch and release guard on the carried slot; area re-entry guard comes with the pen
-- [~] 78 Penned destinations are spread inside the interior with a margin; no chicken-to-chicken collision exists to explode
-- [ ] 79 Avoid unnecessary per-frame work; stagger low-priority decisions
-- [ ] 80 Optimise AFTER measuring against the baseline
-- [ ] 81 Debug controls (teleport, reset, mark W targets, resize pen, force states)
-- [ ] 82 Fail visibly during development
+- [x] 76 Four tests in `_guard`: NaN, fell through, too far from home, wedged (path length over a window). All four verified
+- [x] 77 Guarded at the state machine, so every caller is idempotent: 20 catches, 20 releases, 20 landings = one chicken, one count
+- [x] 78 Separation now applies while a bird is being steered; twelve in the pen sit 0.3-0.7 apart, none outside, gateway clear
+- [x] 79 Return checks every 3rd frame; fence and coop rebuild only on change; rates listed by `_profile_pen_runner.gd`
+- [x] 80 Measured first: found the chickens' loft rigs re-checking every frame (`live_rebuild` lost in the extraction). 3.21 -> 2.44 ms
+- [x] 81 `pen_debug_4d.gd`, number row only, one switch turns it fully off (verified: stops processing AND input)
+- [x] 82 Thirteen named warnings across the systems; every missing path announces itself
 
 ## Phase 10 — Verification and delivery (83–90)
 - [ ] 83 Source scenes intact
@@ -126,6 +126,23 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 - [ ] 88 Orientation cue verified
 - [ ] 89 Full loop 0/12 → 12/12, then restart and part of a second run
 - [ ] 90 Implementation report
+
+## Found by playing it, not by reading it
+
+Five things only turned up once the prototype was driven through a real playthrough with
+the frames captured (`_playthrough_runner.gd`):
+
+1. **W moved at run speed.** A short press of the ana key took the player from w 0 to
+   w 5.9, past every chicken in the game. Now a third of walking pace.
+2. **The catch cone pointed backwards.** `Basis4D.looking_at` documents -Z as forward;
+   the catcher used +Z, so walking up to a chicken and pressing the key did nothing.
+3. **And it read the wrong node.** The body never turns - only the avatar does - so
+   "in front of you" meant "north of you" whichever way the player was looking.
+4. **You could catch a chicken you could not see.** Catch range was a plain 4D distance,
+   so 0.9 through W plus 1.2 across the ground came under the 1.6 reach. That made the
+   phase step optional and the locator a liar.
+5. **The fence vanished off-slice while still blocking you.** Its meshes were as thin
+   through W as they were thick; only the collision used `w_depth`.
 
 ## Deviations from the brief
 (recorded as they happen, with the reason)

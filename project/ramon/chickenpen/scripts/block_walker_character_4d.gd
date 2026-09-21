@@ -37,6 +37,9 @@ extends CharacterBody4D
 
 var _facing: float = 0.0
 
+## How much slower the ana/kata axis is than ordinary movement.
+@export_range(0.05, 1.0, 0.05) var w_speed_scale: float = 0.3
+
 @onready var _rig: Node4D = $CameraRig
 @onready var _avatar: Node4D = $Avatar
 @onready var _label: Label = get_node_or_null("StateLabel")
@@ -57,7 +60,15 @@ func _physics_process(delta: float) -> void:
 	var target: Vector4 = wish * top
 	linear_velocity.x = move_toward(linear_velocity.x, target.x, rate)
 	linear_velocity.z = move_toward(linear_velocity.z, target.z, rate)
-	linear_velocity.w = move_toward(linear_velocity.w, target.w, rate)
+	# The fourth axis moves DELIBERATELY, at a fraction of walking pace.
+	#
+	# At full speed a short press of the ana key crossed w 0 to 5.9, and the twelve
+	# chickens live between w -2.5 and 2.5 - so every one of them was behind a control
+	# that shot past all of them at once, and landing on one was luck. It is also truer to
+	# what the action is: stepping out of the world you can see is not a stride.
+	var w_top: float = top * w_speed_scale
+	linear_velocity.w = move_toward(linear_velocity.w, wish.w * w_top,
+		acceleration * w_top * delta)
 	move_and_slide()
 	_turn_avatar(wish, delta)
 	if _label != null:

@@ -59,6 +59,17 @@ enum State { IDLE, WANDER, ALERT, EVADE, CARRIED, THROWN, PENNED, RECOVERING }
 @export_group("Debug")
 @export var debug_state: bool = false
 
+@export_group("Recovery")
+## Below this the chicken has left the world rather than wandered (item 76).
+@export var lost_below_y: float = -4.0
+## And beyond this from its own home it is lost rather than exploring. Generous: a good
+## throw covers a lot of ground, and recovering a bird mid-flight would undo the throw.
+@export var lost_distance: float = 60.0
+@export_range(1.0, 30.0, 0.5) var stuck_seconds: float = 8.0
+## Total ground a chicken must cover within that window. A healthy bird idles and wanders
+## its way to several units; one held against a post covers essentially nothing.
+@export_range(0.05, 4.0, 0.05) var stuck_travel: float = 0.6
+
 var state: State = State.IDLE
 var returned: bool = false
 
@@ -72,6 +83,9 @@ var ever_carried: bool = false
 const SETTLE_SECONDS: float = 1.6
 @export var pen_slice_w: float = 0.0
 
+var _last_seen: Vector4 = Vector4.ZERO
+var _path: float = 0.0
+var _stuck_elapsed: float = 0.0
 var _settle_from: float = 0.0
 var _settle_time: float = SETTLE_SECONDS
 
@@ -107,6 +121,7 @@ func bind_player(player: Node4D) -> void:
 func _physics_process(delta: float) -> void:
 	_cooldown = maxf(_cooldown - delta, 0.0)
 	_timer -= delta
+	_guard(delta)
 	match state:
 		State.IDLE:
 			_tick_idle()
@@ -240,6 +255,95 @@ func _away_from_player() -> float:
 ##
 ## Applied as a pull rather than a wall: it is steered home when it strays, instead of
 ## being stopped at a boundary, which would look like it had walked into glass.
+## Item 76: notice when a chicken has ended up somewhere it cannot come back from.
+##
+## FOUR WAYS TO BE LOST, and they need different tests because they fail differently. A
+## bird that falls through the floor keeps falling and never trips a distance check in XZ.
+## One that is thrown over the horizon is at a perfectly sensible height. One wedged
+## against a fence post is at a legal position and simply never leaves it, so only time
+## reveals it. And a NaN is none of the above - it compares false against every threshold,
+## so it has to be tested for first or it slips through all of them.
+##
+## The recovery is deliberately dull: go home. There is nowhere better to put a chicken
+## that has gone wrong, and anywhere cleverer would be a second placement system disagreeing
+## with the authored one.
+func _guard(delta: float) -> void:
+	if state == State.CARRIED or state == State.RECOVERING:
+		_path = 0.0
+		_stuck_elapsed = 0.0
+		_last_seen = _creature.position
+		return
+	var at: Vector4 = _creature.position
+	var reason: String = ""
+	if not _finite(at):
+		reason = "its position stopped being a number"
+	elif at.y < lost_below_y:
+		reason = "it fell through the world (y %.1f)" % at.y
+	elif Vector2(at.x - home_position.x, at.z - home_position.z).length() > lost_distance:
+		reason = "it is %.0f units from home" % Vector2(at.x - home_position.x, at.z - home_position.z).length()
+	else:
+		reason = _check_stuck(delta, at)
+	if reason != "":
+		recover(reason)
+
+
+## Has this chicken got anywhere in the last few seconds?
+##
+## PATH LENGTH, NOT DISPLACEMENT, and over a long window rather than between frames. Both
+## of those are lessons from getting it wrong:
+##
+##   - Per-frame stillness teleported seven healthy chickens on its first run. A bird walks
+##     about 0.02 units per frame, which is the same order as any threshold small enough to
+##     mean "not moving", so walking and being wedged were indistinguishable.
+##   - Net displacement would flag a bird that wandered in a circle and came back, which is
+##     ordinary chicken behaviour and not a fault. Summing the path cannot make that
+##     mistake: a circling bird has travelled, even though it is back where it started.
+##
+## WORST CASE IT TAKES TWICE stuck_seconds to notice. The window that was already running
+## when the bird got wedged still holds the walking it did beforehand, so that one passes
+## and only the next clean window trips. Eight to sixteen seconds is the right order for
+## this: long enough never to fire on a bird that is merely dithering, short enough that a
+## player hunting the last chicken is not left staring at a fence post.
+##
+## It also does not care which state the bird is in. An earlier version only counted while
+## WANDERing, so a chicken pinned against a fence post cycled idle - wander - idle as usual,
+## reset the count every time it went idle, and stayed pinned forever.
+func _check_stuck(delta: float, at: Vector4) -> String:
+	if state == State.PENNED:
+		_path = 0.0
+		_stuck_elapsed = 0.0
+		_last_seen = at
+		return ""
+	_path += Vector2(at.x - _last_seen.x, at.z - _last_seen.z).length()
+	_last_seen = at
+	_stuck_elapsed += delta
+	if _stuck_elapsed < stuck_seconds:
+		return ""
+	var walked: float = _path
+	_path = 0.0
+	_stuck_elapsed = 0.0
+	if walked < stuck_travel:
+		return "it walked %.2f units in %.0f s, so it is wedged against something" % [
+			walked, stuck_seconds]
+	return ""
+
+
+func _finite(v: Vector4) -> bool:
+	return is_finite(v.x) and is_finite(v.y) and is_finite(v.z) and is_finite(v.w)
+
+
+## Send a chicken home. Public because the debug tools (item 81) need exactly this.
+func recover(reason: String) -> void:
+	# Always announced. A chicken recovering is by definition something going wrong, and
+	# item 82 would rather that be noisy during development than quietly corrected.
+	push_warning("ChickenAgent %d recovered: %s (item 76)." % [chicken_id, reason])
+	_path = 0.0
+	_stuck_elapsed = 0.0
+	_creature.position = home_position
+	_last_seen = home_position
+	_enter(State.RECOVERING)
+
+
 func _contain() -> void:
 	if state == State.CARRIED or state == State.THROWN or _walker == null:
 		return
@@ -261,12 +365,21 @@ func can_be_caught() -> bool:
 	return not returned and state != State.CARRIED and state != State.PENNED
 
 
+## Item 77: the state transitions refuse the impossible rather than trusting the caller.
+##
+## Rapid presses, a repeated area signal and a frame that ran twice all arrive here as the
+## same thing - a second call that should do nothing - and guarding at the state machine
+## means every caller is idempotent, not just the careful ones.
 func on_caught() -> void:
+	if state == State.CARRIED or returned:
+		return
 	ever_carried = true
 	_enter(State.CARRIED)
 
 
 func on_released() -> void:
+	if state != State.CARRIED:
+		return
 	_enter(State.THROWN)
 
 
@@ -280,6 +393,8 @@ func on_released() -> void:
 ## pen full of chickens nobody can see from the home slice looks like a pen full of
 ## nothing.
 func on_landed(in_pen: bool) -> void:
+	if returned:
+		return
 	if in_pen:
 		returned = true
 		home_position = _creature.position

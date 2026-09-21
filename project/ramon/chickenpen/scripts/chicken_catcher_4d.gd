@@ -24,12 +24,28 @@ signal released(agent: Node, thrown: bool)
 @export var manager_path: NodePath
 @export var carry_anchor_path: NodePath
 @export var prompt_path: NodePath
+## Which node's facing decides what is "in front of you".
+##
+## THE AVATAR, NOT THIS NODE. The catcher hangs off the player body, and the body never
+## turns - only the avatar does, because turning the body would feed yaw into the movement
+## maths. So reading the body's basis asked "what is north of you", not "what are you
+## looking at", and the answer never changed however the player span on the spot.
+@export var facing_path: NodePath
 
 @export_group("Catching")
 ## How close is close enough (item 26).
 @export var catch_distance: float = 1.6
 ## How far off straight-ahead a chicken may be and still be catchable, in degrees.
 @export var catch_angle_degrees: float = 110.0
+## How far off your own slice a chicken may be and still be catchable.
+##
+## MUCH TIGHTER THAN THE REACH, and separate from it on purpose. Measuring catch range as a
+## plain 4D distance let the player grab a bird 0.9 out through W - one they could not see,
+## standing in front of empty grass - because 0.9 through W and 1.2 across the ground came
+## to less than the 1.6 reach. That quietly made the whole phase step optional, and made a
+## liar of the locator, which was still saying "turn toward ana" to make it catchable. You
+## have to be in the chicken's slice to pick it up; that is the mechanic.
+@export_range(0.05, 1.0, 0.05) var catch_w_tolerance: float = 0.25
 
 @export_group("Throwing")
 ## Forward speed of a throw. Enough to clear a low fence, not enough to be a weapon
@@ -99,7 +115,13 @@ func _physics_process(delta: float) -> void:
 func _best_candidate() -> Node:
 	if _manager == null:
 		return null
-	var forward: Vector4 = global_basis * Vector4(0.0, 0.0, 1.0, 0.0)
+	# MINUS Z. Basis4D.looking_at documents the local Z axis as pointing AWAY from the
+	# target, the same convention as Godot's 3D camera, so forward is -Z. This read +Z,
+	# which put the catch cone directly behind the player: walking up to a chicken and
+	# pressing the key did nothing, and it only worked if you turned your back on it.
+	var facing: Node4D = get_node_or_null(facing_path) as Node4D
+	var frame: Projection = facing.global_basis if facing != null else global_basis
+	var forward: Vector4 = -(frame * Vector4(0.0, 0.0, 1.0, 0.0))
 	var best: Node = null
 	var best_score: float = -INF
 	for agent in _manager.call("locator_candidates"):
@@ -107,17 +129,19 @@ func _best_candidate() -> Node:
 		if body == null:
 			continue
 		var to_bird: Vector4 = body.global_position - global_position
-		var gap: float = to_bird.length()
+		if absf(to_bird.w) > catch_w_tolerance:
+			continue
+		var gap: float = Vector3(to_bird.x, to_bird.y, to_bird.z).length()
 		if gap > catch_distance:
 			continue
-		var facing: float = 1.0
+		var ahead: float = 1.0
 		if gap > 0.001:
-			facing = forward.dot(to_bird / gap)
-		if facing < cos(deg_to_rad(catch_angle_degrees)):
+			ahead = forward.dot(to_bird / gap)
+		if ahead < cos(deg_to_rad(catch_angle_degrees)):
 			continue
 		# Nearer is better, straighter ahead is better, and being ahead breaks ties
 		# between two chickens at the same range.
-		var score: float = (1.0 - gap / catch_distance) + facing * 0.6
+		var score: float = (1.0 - gap / catch_distance) + ahead * 0.6
 		if score > best_score:
 			best_score = score
 			best = agent
@@ -158,7 +182,9 @@ func _release(thrown: bool) -> void:
 	agent.call("on_released")
 	var body: Node4D = agent.get_parent() as Node4D
 	if body != null:
-		var forward: Vector4 = (global_basis * Vector4(0.0, 0.0, 1.0, 0.0)).normalized()
+		var facing: Node4D = get_node_or_null(facing_path) as Node4D
+		var frame: Projection = facing.global_basis if facing != null else global_basis
+		var forward: Vector4 = (-(frame * Vector4(0.0, 0.0, 1.0, 0.0))).normalized()
 		var speed: float = throw_speed if thrown else drop_speed
 		var rise: float = throw_rise if thrown else 0.0
 		_flying.append({

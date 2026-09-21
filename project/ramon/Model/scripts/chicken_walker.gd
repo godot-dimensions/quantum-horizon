@@ -377,8 +377,15 @@ func _wander(delta: float) -> void:
 	if steer_override:
 		# Turn toward the heading we were handed, at the bird's own turn rate, so an
 		# externally steered bird still banks like a bird instead of snapping round.
+		#
+		# CROWDING STILL COUNTS while being steered. This used to hand the steer straight
+		# to the heading and drop the crowd-adjusted turn on the floor, so a bird on a
+		# leash could be walked into its neighbours with no way to object: it only slowed
+		# down, never turned aside, and twelve of them in a pen ended up 0.08 units apart.
+		# Blending by urgency means a clear bird obeys and a squeezed one steps out.
 		var toward: float = wrapf(steer_heading - _heading, -PI, PI)
-		_heading += clampf(toward, -1.0, 1.0) * deg_to_rad(turn_rate_degrees) * delta
+		var commanded: float = clampf(toward, -1.0, 1.0)
+		_heading += lerpf(commanded, turn, _crowding) * deg_to_rad(turn_rate_degrees) * delta
 	else:
 		_heading += turn * deg_to_rad(turn_rate_degrees) * delta
 	var period: float = maxf(float(_gait.period_sec), 0.0001)
