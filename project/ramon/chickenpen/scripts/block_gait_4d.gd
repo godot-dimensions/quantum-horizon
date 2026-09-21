@@ -66,6 +66,8 @@ var _lift := [Vector4.ZERO, Vector4.ZERO]
 var _was_stance := [false, false]
 var _last_body := Vector4.ZERO
 var _travelled: float = 0.0
+var _measured: bool = false
+var _sole: float = 0.0
 
 
 func _ready() -> void:
@@ -80,11 +82,18 @@ func _ready() -> void:
 	add_child(_gait)
 	if _gait.has_method("apply_preset"):
 		_gait.apply_preset("walk")
-	call_deferred("_measure")
+	# NOT deferred-and-hope: see _measure.
 
 
 ## Reads the avatar's own build rather than being told it, so the same gait fits the
 ## chibi, the plush and the human without three sets of numbers.
+##
+## Called from _physics_process until it succeeds, rather than deferred from _ready. The
+## avatar builds its blocks in its OWN _ready, and nothing orders the two: measuring
+## first read a torso that did not exist yet, left its rest position at zero, and the
+## body-bob then wrote the torso to y=0 every frame - which dropped the head and chest to
+## the floor and left the hips and shoulders above them. The legs looked like they came
+## out of the head because, relative to the sunken torso, they did.
 func _measure() -> void:
 	if _avatar == null or _avatar.get("hip_left") == null:
 		return
@@ -98,6 +107,13 @@ func _measure() -> void:
 		if child is MeshInstance4D and String(child.name).begins_with("Shin"):
 			shin_block = child as Node4D
 	_shin = maxf(absf(shin_block.position.y) * 2.0, 0.01) if shin_block != null else _thigh
+	# The IK places the ANKLE. A boot hangs below it, so without this the sole sinks into
+	# the ground by its own half-height.
+	for child in knee.get_children():
+		if child is MeshInstance4D and String(child.name).begins_with("Boot"):
+			var box := (child as MeshInstance4D).mesh as BoxTetraMesh4D
+			if box != null:
+				_sole = maxf(absf((child as Node4D).position.y) + box.size.y * 0.5 - _shin, 0.0)
 	# A STRIDE IS LIMITED BY SWEEP, NOT BY LEG LENGTH. A leg of length R whose hip is H
 	# off the ground can only put its foot sqrt(R^2 - H^2) forward or back before it goes
 	# straight, and a straight leg cannot hold a plant - it gets clamped and dragged.
@@ -124,11 +140,16 @@ func _measure() -> void:
 	_gait.reference_period_sec = maxf(stride_length / (pace * duty), 0.12)
 	if _avatar.torso != null:
 		_torso_rest = _avatar.torso.position
+	_measured = true
 
 
 func _physics_process(delta: float) -> void:
 	if _avatar == null or _body == null or _avatar.get("hip_left") == null:
 		return
+	if not _measured:
+		_measure()
+		if not _measured:
+			return
 	# MEASURED displacement, not velocity. The character damps its velocity every frame,
 	# so linear_velocity is what it is TRYING to do, not what it DID - retreating the
 	# foot by that number over-retreats it and the foot skates the other way. The only
@@ -180,7 +201,7 @@ func _step(index: int, hip: Node4D, knee: Node4D, local_phase: float, duty: floa
 	var drop: float = minf(_hip_height, reach)
 	var hip_world: Vector4 = hip.global_position
 	var forward: Vector4 = _avatar.global_basis * Vector4(0.0, 0.0, 1.0, 0.0)
-	var ground: Vector4 = hip_world - Vector4(0.0, drop, 0.0, 0.0)
+	var ground: Vector4 = hip_world - Vector4(0.0, drop - _sole, 0.0, 0.0)
 	var in_stance: bool = local_phase < duty and _airborne < 0.5
 	var target: Vector4
 

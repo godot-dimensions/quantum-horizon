@@ -60,7 +60,21 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# ESCAPE HAS TO GET YOU OUT. These scenes capture the mouse on the first frame and
+	# nothing gave it back, so a running scene could not be closed without killing the
+	# window. First press frees the cursor, second quits.
+	if event.is_action_pressed(&"ui_cancel"):
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		else:
+			get_tree().quit()
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventMouseButton and event.pressed:
+		# Clicking back into the window recaptures it.
+		if Input.mouse_mode == Input.MOUSE_MODE_VISIBLE and event.button_index == MOUSE_BUTTON_LEFT:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			return
 		# Wheel zoom. Read from the raw event rather than an action, because the project's
 		# input map has no wheel bindings and adding them would change every other scene.
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
