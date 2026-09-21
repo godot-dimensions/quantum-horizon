@@ -52,7 +52,7 @@ func _card() -> String:
 		"%s  move      mouse  look" % _keys([&"move_forward", &"move_left", &"move_back", &"move_right"]),
 		"%s / %s  step ana / kata - through the fourth axis" % [
 			_key(&"move_ana"), _key(&"move_kata")],
-		"T  lock onto the nearest chicken - the slice turns to it for you",
+		"T  pick the nearest chicken - it tells you which way to slice-rotate onto it",
 		"%s  pick up a chicken, and throw the one you are holding" % _key(&"catch_target"),
 		"%s  put it down where you stand instead" % _key(&"fire"),
 		"hold %s + mouse  turn the view through W" % _key(&"rotate_4d"),

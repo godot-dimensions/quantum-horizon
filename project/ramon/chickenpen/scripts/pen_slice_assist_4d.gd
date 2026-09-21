@@ -1,13 +1,11 @@
 extends Node
 
-## Lock onto a chicken and let the slice come to you (items 50 and 65).
+## Pick a chicken and be told which way to rotate onto it (items 50 and 65).
 ##
-## THE GALLERY DOES NOT MAKE YOU HUNT BY HAND. Its w_targeting.gd selects a target and then
-## CONTINUOUSLY re-solves the player's slice orientation so that target stays on the visible
-## slice - re-solved every frame, not once, because a target that moves would otherwise
-## drift back out. Manual rotation is for looking around; landing on something is done for
-## you. Without that, this scene asked the player to do by hand what the Range does for
-## them, and it was as hard as it sounds:
+## THE GALLERY DOES NOT MAKE YOU GUESS. Its w_targeting.gd selects a target and re-solves
+## the slice orientation continuously, so manual rotation there is for looking around
+## rather than for finding. This scene asked the player to do that by hand, and measuring
+## it showed the job was not merely fiddly:
 ##
 ##   standing 1.1 units from a chicken 0.90 off-slice, rotating xw through 62 degrees
 ##   moved its offset from 0.894 to 0.424 and never reached it
@@ -15,6 +13,15 @@ extends Node
 ## and worse, xw was the WRONG PLANE - the bird was straight ahead, so its offset lay along
 ## z and needed zw. Nothing on screen said so. Picking the right plane by feel, from a
 ## control that is a held right-mouse drag, is not a puzzle anybody solves twice.
+##
+## IT NAMES THE DRAG; IT DOES NOT PERFORM IT.
+##
+## An earlier version rotated the slice for you, and it worked - but the rotating WAS the
+## mechanic. Six of the twelve chickens exist to teach that things sit off your slice, and
+## a button that finds them teaches only that the button exists. What was actually missing
+## was never the effort; it was that nothing on screen said whether a given chicken needed
+## xw or zw, and picking the wrong one moves the offset almost not at all. So this says
+## which way to drag, watches you do it, and tells you when you have arrived.
 ##
 ## SOLVED BY MEASUREMENT, NOT BY ALGEBRA. Rather than derive which xw and zw put a given
 ## chicken on the slice - which depends on the exact order the rig composes its rotations,
@@ -29,11 +36,19 @@ const BearingUtility4D = preload("res://scripts/bearing_utility_4d.gd")
 @export var locator_path: NodePath
 @export var readout_path: NodePath
 
-## How fast the slice eases onto the target. Fast enough to feel like help, slow enough
-## that you can see which way it went - the whole point is to teach what rotating does.
+## Do the rotation instead of guiding it. Off: the solver is correct and kept for when an
+## assist is wanted - a demo where nobody should be stuck, say - but it bypasses the lesson.
+@export var rotate_for_me: bool = false
+## How fast the slice eases onto the target when it does.
 @export_range(0.5, 12.0, 0.1) var ease_speed: float = 3.2
-## Below this offset it stops nudging, so a locked slice sits still instead of humming.
-@export_range(0.001, 0.2, 0.001) var settled: float = 0.02
+## Below this offset the chicken counts as arrived.
+##
+## MUST NOT BE TIGHTER THAN THE CATCH ALLOWS. At 0.02 against a catch tolerance of 0.35 it
+## went on demanding drags long after the bird was catchable, and since a real drag is
+## coarse it overshot the band every time: the advice flipped between "drag up" and "drag
+## down" forever while the chicken sat there, grabbable, the whole while. Guidance should
+## stop when the player can act, not when a number is small.
+@export_range(0.01, 1.0, 0.01) var settled: float = 0.30
 @export var toggle_key: Key = KEY_T
 
 var tracking: bool = false
@@ -43,6 +58,9 @@ var _player: Node4D
 var _locator: Node
 var _readout: Label
 var _held: Node = null
+## The offset when the chicken was selected, so the bar shows progress against the job you
+## were actually given rather than against a fixed scale.
+var _first_offset: float = 0.0
 
 
 func _ready() -> void:
@@ -64,7 +82,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	_held = _locator.get("target") if tracking else null
 	if tracking and _held == null:
 		tracking = false
-	_say("" if not tracking else "Locked on chicken %s - the slice is turning to it." % _held.get("chicken_id"))
+	_first_offset = 0.0
+	_say("" if not tracking else "Chicken %s selected - see below." % _held.get("chicken_id"))
 	get_viewport().set_input_as_handled()
 
 
@@ -81,24 +100,58 @@ func _physics_process(delta: float) -> void:
 	var body: Node4D = _held.get_parent() as Node4D
 	if body == null:
 		return
+	if is_zero_approx(_first_offset):
+		_first_offset = absf(_ana(body, 0.0, 0.0))
 	var offset: float = _ana(body, 0.0, 0.0)
+	var name: String = str(_held.get("chicken_id"))
 	if absf(offset) <= settled:
-		_say("Locked on chicken %s - it is on your slice." % _held.get("chicken_id"))
+		_say("Chicken %s is on your slice now - catch it." % name)
 		return
 
-	# Which way does each plane move the offset? Nudge, look, and step downhill.
+	# Which plane moves this chicken, and how much? Nudge each, look at what the offset
+	# does. The bigger gradient is the plane worth dragging in; the other one can be
+	# almost useless, which is the whole reason this readout exists.
 	var probe: float = 0.01
 	var d_xw: float = (_ana(body, probe, 0.0) - offset) / probe
 	var d_zw: float = (_ana(body, 0.0, probe) - offset) / probe
-	var scale: float = d_xw * d_xw + d_zw * d_zw
-	if scale < 0.000001:
+	if absf(d_xw) < 0.0001 and absf(d_zw) < 0.0001:
+		_say("Chicken %s cannot be turned onto your slice from here - walk closer." % name)
 		return
-	# The step that would zero the offset outright, taken a fraction at a time.
-	var step: float = clampf(ease_speed * delta, 0.0, 1.0) * -offset / scale
-	_rig.set("_slice_xw", float(_rig.get("_slice_xw")) + d_xw * step)
-	_rig.set("_slice_zw", float(_rig.get("_slice_zw")) + d_zw * step)
-	_rig.call("_apply")
-	_say("Locked on chicken %s - the slice is turning to it." % _held.get("chicken_id"))
+
+	if rotate_for_me:
+		var scale: float = d_xw * d_xw + d_zw * d_zw
+		var step: float = clampf(ease_speed * delta, 0.0, 1.0) * -offset / scale
+		_rig.set("_slice_xw", float(_rig.get("_slice_xw")) + d_xw * step)
+		_rig.set("_slice_zw", float(_rig.get("_slice_zw")) + d_zw * step)
+		_rig.call("_apply")
+		_say("Locked on chicken %s - turning the slice to it." % name)
+		return
+
+	_say("Chicken %s: hold %s and drag %s.   %s" % [
+		name, _rotate_key(), _drag_words(offset, d_xw, d_zw), _closeness(offset)])
+
+
+## Which way to move the mouse, in the player's words.
+##
+## The rig maps a drag to the slice as _slice_xw -= motion.x and _slice_zw += motion.y, so
+## increasing xw means dragging LEFT and increasing zw means dragging DOWN. Both signs are
+## read off that mapping rather than guessed, and the plane is whichever one actually moves
+## this chicken - the failure being fixed here is a player dragging hard in the plane that
+## does nothing.
+func _drag_words(offset: float, d_xw: float, d_zw: float) -> String:
+	var use_xw: bool = absf(d_xw) >= absf(d_zw)
+	var needed: float = -offset / (d_xw if use_xw else d_zw)
+	if use_xw:
+		return "left" if needed > 0.0 else "right"
+	return "down" if needed > 0.0 else "up"
+
+
+## Feedback while dragging, so the guidance is not a one-shot instruction you follow blind.
+func _closeness(offset: float) -> String:
+	var span: float = maxf(_first_offset, 0.0001)
+	var left: float = clampf(absf(offset) / span, 0.0, 1.0)
+	var filled: int = int(round((1.0 - left) * 6.0))
+	return "[%s]" % "".lpad(filled, "=").rpad(6, ".")
 
 
 ## The target's offset from the slice, as it WOULD be with the rig nudged by these amounts.
@@ -119,6 +172,23 @@ func _ana(body: Node4D, add_xw: float, add_zw: float) -> float:
 		_rig.set("_slice_zw", zw)
 		_rig.call("_apply")
 	return float(bearing["ana_offset"])
+
+
+## The key that holds slice-rotation, read from the InputMap like every other key named
+## on screen in this scene.
+func _rotate_key() -> String:
+	for event in InputMap.action_get_events(&"rotate_4d"):
+		if event is InputEventMouseButton:
+			match (event as InputEventMouseButton).button_index:
+				MOUSE_BUTTON_RIGHT:
+					return "right mouse"
+				MOUSE_BUTTON_LEFT:
+					return "left mouse"
+			return "mouse %d" % (event as InputEventMouseButton).button_index
+		if event is InputEventKey:
+			var code: int = event.physical_keycode if event.physical_keycode != 0 else event.keycode
+			return OS.get_keycode_string(code)
+	return "slice-rotate"
 
 
 func _say(text: String) -> void:
