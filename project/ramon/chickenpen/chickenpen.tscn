@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=3]
+[gd_scene load_steps=38 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -22,6 +22,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_talk_4d.gd" id="pen_talk"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_slice_assist_4d.gd" id="pen_assist"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_inventory_4d.gd" id="pen_inventory"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_gauntlet_award_4d.gd" id="pen_award"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -246,6 +247,14 @@ rig_path = NodePath("../../Player/CameraRig")
 player_path = NodePath("../../Player")
 locator_path = NodePath("../Locator")
 readout_path = NodePath("../../UI/LockOn")
+
+[node name="GauntletAward" type="Node" parent="Systems"]
+script = ExtResource("pen_award")
+player_path = NodePath("../../Player")
+avatar_path = NodePath("../../Player/Avatar")
+dialogue_path = NodePath("../Talk")
+world_path = NodePath("../../World")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 
 [node name="Game" type="Node" parent="Systems"]
 script = ExtResource("pen_game")

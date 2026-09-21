@@ -22,8 +22,8 @@ extends Control
 const ITEMS := {
 	"give_gauntlet": {
 		"name": "Gauntlet",
-		"colour": Color(0.98, 0.80, 0.26),
-		"glyph": "W",
+		"colour": Color(0.36, 0.98, 0.46),
+		"icon": "gauntlet",
 	},
 }
 
@@ -91,6 +91,40 @@ func reset() -> void:
 	_flash = 0.0
 
 
+## Item icons, drawn rather than imported.
+##
+## A slot is 54 pixels. At that size an imported sprite is mostly guesswork about which
+## pixels survive, whereas four rectangles are exactly as legible as they were designed to
+## be at every resolution - and the shape can match the model it stands for, which is what
+## makes the thing in the slot recognisably the thing that just turned over your head.
+func _draw_icon(kind: String, box: Rect2, colour: Color) -> void:
+	if kind != "gauntlet":
+		return
+	var unit: float = box.size.x
+	var mid: Vector2 = box.position + box.size * 0.5
+	var dim := Color(colour.r, colour.g, colour.b, 0.55)
+
+	# The cuff, as a band across the slot, with the strap edges darker at top and bottom.
+	var cuff := Rect2(mid - Vector2(unit * 0.30, unit * 0.26), Vector2(unit * 0.60, unit * 0.52))
+	draw_rect(cuff, dim, false, maxf(unit * 0.045, 1.5))
+	draw_rect(Rect2(cuff.position + Vector2(0.0, -unit * 0.07),
+		Vector2(cuff.size.x, unit * 0.06)), dim, true)
+	draw_rect(Rect2(cuff.position + Vector2(0.0, cuff.size.y + unit * 0.01),
+		Vector2(cuff.size.x, unit * 0.06)), dim, true)
+
+	# The screen, filled, because it is the lit part and the thing the eye lands on.
+	draw_rect(Rect2(mid - Vector2(unit * 0.19, unit * 0.19),
+		Vector2(unit * 0.38, unit * 0.27)), colour, true)
+
+	# The dial on the inboard edge and the button row under the screen: the two details
+	# that stop it reading as a plain rectangle.
+	draw_rect(Rect2(mid + Vector2(-unit * 0.38, -unit * 0.08),
+		Vector2(unit * 0.08, unit * 0.16)), dim, true)
+	for i in 3:
+		draw_rect(Rect2(mid + Vector2((float(i) - 1.0) * unit * 0.11 - unit * 0.03, unit * 0.12),
+			Vector2(unit * 0.06, unit * 0.06)), colour, true)
+
+
 func _draw() -> void:
 	var screen: Vector2 = get_viewport_rect().size
 	var total: float = float(slot_count) * slot_size + float(slot_count - 1) * slot_gap
@@ -119,11 +153,7 @@ func _draw() -> void:
 		draw_rect(box.grow(-4.0), Color(colour.r, colour.g, colour.b, 0.22), true)
 		draw_rect(box, edge, false, 2.0)
 
-		var glyph: String = str(item["glyph"])
-		var glyph_size: int = int(slot_size * 0.52)
-		var glyph_width: float = font.get_string_size(glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, glyph_size).x
-		draw_string(font, at + Vector2((slot_size - glyph_width) * 0.5, slot_size * 0.68),
-			glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, glyph_size, colour)
+		_draw_icon(str(item.get("icon", "")), box, colour)
 
 		var label: String = str(item["name"])
 		var label_width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
