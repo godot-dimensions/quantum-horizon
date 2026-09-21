@@ -83,7 +83,9 @@ func _physics_process(delta: float) -> void:
 		return
 	if input_enabled and Input.is_action_just_pressed(&"move_jump") and is_on_floor():
 		linear_velocity.y = jump_velocity
-	var wish: Vector4 = _wish_direction()
+	var parts: Array = _wish_parts()
+	var wish: Vector4 = parts[0]
+	var ana: float = parts[1]
 	var top: float = run_speed
 	if input_enabled and Input.is_key_pressed(KEY_SHIFT):
 		top = sprint_speed
@@ -99,9 +101,17 @@ func _physics_process(delta: float) -> void:
 	# chickens live between w -2.5 and 2.5 - so every one of them was behind a control
 	# that shot past all of them at once, and landing on one was luck. It is also truer to
 	# what the action is: stepping out of the world you can see is not a stride.
+	# ONLY THE KEY IS THROTTLED, NOT THE WALK.
+	#
+	# Walking inside a tilted slice has a w component - your own forward axis leans
+	# through W - and it has to move at the same pace as x and z or you slide out of the
+	# slice you are standing in. It used to share this throttle with the ana key, at 30%,
+	# so every step drifted you off your own slice: line up on a chicken, walk at it, and
+	# it is gone again by the time you arrive. That is the whole "everything goes
+	# lopsided when I walk".
 	var w_top: float = top * w_speed_scale
-	linear_velocity.w = move_toward(linear_velocity.w, wish.w * w_top,
-		acceleration * w_top * delta)
+	linear_velocity.w = move_toward(linear_velocity.w,
+		target.w + ana * w_top, acceleration * maxf(top, w_top) * delta)
 	move_and_slide()
 	_turn_avatar(wish, delta)
 	if _label != null:
@@ -110,17 +120,26 @@ func _physics_process(delta: float) -> void:
 			_horizontal_speed(), position.w]
 
 
-func _wish_direction() -> Vector4:
+## Walking and stepping through W are two different actions that happened to share one
+## vector, and sharing it is what made them share a speed limit too. Split: the walk is a
+## unit direction lying IN your slice, tilt and all; the step is the raw key, scaled
+## separately by whoever uses it.
+func _wish_parts() -> Array:
 	if not input_enabled:
-		return Vector4.ZERO
-	var local := Vector4(
-		Input.get_axis(&"move_left", &"move_right"),
-		0.0,
-		Input.get_axis(&"move_forward", &"move_back"),
-		Input.get_axis(&"move_kata", &"move_ana"))
-	if local.length_squared() < 0.0001:
-		return Vector4.ZERO
-	return (_rig.movement_basis() * local).normalized()
+		return [Vector4.ZERO, 0.0]
+	var side: float = Input.get_axis(&"move_left", &"move_right")
+	var fore: float = Input.get_axis(&"move_forward", &"move_back")
+	var ana: float = Input.get_axis(&"move_kata", &"move_ana")
+	var walk: Vector4 = Vector4.ZERO
+	if side * side + fore * fore > 0.0001:
+		walk = (_rig.movement_basis() * Vector4(side, 0.0, fore, 0.0)).normalized()
+	return [walk, ana]
+
+
+## Kept for anything that only wants the direction, and for the searcher, which drives
+## this character without a rig of its own.
+func _wish_direction() -> Vector4:
+	return _wish_parts()[0]
 
 
 func _turn_avatar(wish: Vector4, delta: float) -> void:

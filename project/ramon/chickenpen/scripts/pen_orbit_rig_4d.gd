@@ -115,12 +115,27 @@ func _physics_process(delta: float) -> void:
 ## back into it, and keeping it on its own node means the rig's own basis stays a clean
 ## horizontal frame that movement can be measured against - the same reason the project's
 ## first-person player keeps pitch on its head node.
+##
+## THE SLICE ROTATIONS GO OUTSIDE THE YAW, and the order is the whole point.
+##
+## Built the other way round - from_zx(yaw) first, then the W-planes - yaw is the
+## outermost rotation, so it turns the slice normal along with everything else and simply
+## LOOKING AROUND re-cuts the world. Measured before the swap: with xw at 20 degrees, a
+## full look-around swung the slice normal 40 degrees and moved the slice's height over
+## the pen's far corner from -5.66 to +5.66. You could line up on a chicken, turn to walk
+## at it, and lose the alignment by turning.
+##
+## With the slice rotations outermost, yaw's own w column is (0, 0, 0, 1) - from_zx only
+## touches x and z - so the product's w column is the slice rotations' alone and cannot
+## depend on yaw at all. Measured after: 0.0 degrees of swing at every slice rotation
+## tried, and the view still yaws by exactly the angle asked for.
 func _apply() -> void:
-	var frame: Projection = Basis4D.from_zx(yaw)
+	var frame: Projection = Projection.IDENTITY
 	if not is_zero_approx(_slice_xw):
 		frame *= Basis4D.from_xw(_slice_xw)
 	if not is_zero_approx(_slice_zw):
 		frame *= Basis4D.from_zw(_slice_zw)
+	frame *= Basis4D.from_zx(yaw)
 	basis = Basis4D.orthonormalized(frame)
 	if _pitch_node != null:
 		_pitch_node.basis = Basis4D.from_yz(pitch)
