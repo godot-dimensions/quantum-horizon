@@ -56,22 +56,33 @@ const WALKER := preload("res://ramon/Model/scripts/strider_walker.gd")
 ## disturbed - which is most of what makes a cat read as a cat rather than as livestock.
 @export var crate_path: NodePath
 @export var player_path: NodePath
-## How high the crate's top is above its own origin.
-@export_range(0.1, 3.0, 0.05) var crate_top: float = 0.55
+## How high the crate's top is ABOVE THE CRATE'S OWN ORIGIN, not above the floor. The
+## crate sits at 0.3 and is 0.6 tall, so its surface is 0.3 above itself - measuring from
+## the floor instead put the cat a quarter of a unit into the air above it.
+@export_range(0.1, 3.0, 0.05) var crate_top: float = 0.34
 @export_range(0.2, 2.0, 0.05) var jump_seconds: float = 0.55
 @export_range(0.5, 20.0, 0.5) var sit_min: float = 6.0
 @export_range(0.5, 40.0, 0.5) var sit_max: float = 16.0
 ## Get this close and it leaves - off the crate if it has to.
 @export_range(0.5, 10.0, 0.1) var flee_distance: float = 2.6
-@export_range(1.0, 20.0, 0.5) var flee_pace: float = 14.0
-@export_range(0.5, 12.0, 0.5) var flee_seconds: float = 3.5
+@export_range(1.0, 20.0, 0.5) var flee_pace: float = 20.0
+@export_range(0.5, 12.0, 0.5) var flee_seconds: float = 5.0
+## An extra shove on top of what the legs carry it. A startled cat does not accelerate
+## like a horse, and the walker's travel alone reads as a brisk trot rather than a bolt.
+@export_range(0.0, 6.0, 0.1) var flee_dash: float = 1.5
+## Where a thrown cat decides to settle - the coop. It walks there and gets on top.
+@export var perch_path: NodePath
+@export_range(0.1, 6.0, 0.05) var perch_top: float = 2.45
+## It starts the game already up on its crate, rather than wandering into it.
+@export var starts_on_crate: bool = true
 ## How long one wash of the paw takes.
 @export_range(0.3, 4.0, 0.1) var wash_seconds: float = 1.5
 
-enum Mood { WANDER, TO_CRATE, JUMP, SIT, FLEE }
+enum Mood { WANDER, TO_CRATE, JUMP, SIT, FLEE, CARRIED, THROWN, TO_PERCH }
 
 var _walker: Node4D
 var _crate: Node4D
+var _perch: Node4D
 var _player: Node4D
 var _mood: Mood = Mood.WANDER
 var _mood_left: float = 0.0
@@ -101,8 +112,15 @@ func _ready() -> void:
 	_heading = _rng.randf_range(0.0, TAU)
 	_crate = get_node_or_null(crate_path) as Node4D
 	_player = get_node_or_null(player_path) as Node4D
+	_perch = get_node_or_null(perch_path) as Node4D
 	rebuild()
 	_mood_left = _rng.randf_range(4.0, 9.0)
+	# Found sitting on its crate, not wandering towards one.
+	if starts_on_crate and _crate != null:
+		position = _crate.position + Vector4(0.0, crate_top, 0.0, 0.0)
+		_mood = Mood.SIT
+		_mood_left = _rng.randf_range(sit_min, sit_max)
+		_lick = _rng.randf_range(2.0, 5.0)
 
 
 func _later() -> void:
@@ -259,7 +277,9 @@ func _process(delta: float) -> void:
 	if Engine.is_editor_hint() or not walks or _walker == null:
 		return
 	_clock += delta
-	if _scared() and _mood != Mood.FLEE and _mood != Mood.JUMP:
+	# Being carried, thrown, or on its way to the coop outranks being startled.
+	if _scared() and _mood == Mood.SIT or _scared() and _mood == Mood.WANDER \
+			or _scared() and _mood == Mood.TO_CRATE:
 		_bolt()
 	match _mood:
 		Mood.WANDER:
@@ -272,6 +292,14 @@ func _process(delta: float) -> void:
 			_do_sit(delta)
 		Mood.FLEE:
 			_do_flee(delta)
+		Mood.CARRIED:
+			# Held. Whoever is holding it owns its position; it just stays tucked.
+			_walking(false)
+			_tuck(1.0)
+		Mood.THROWN:
+			_do_thrown(delta)
+		Mood.TO_PERCH:
+			_do_to_perch(delta)
 
 
 ## Close enough to be worth leaving over. Flat distance AND the same slice, so somebody
@@ -362,11 +390,14 @@ func _do_flee(delta: float) -> void:
 	_walking(true)
 	_walker.set("belt_speed", flee_pace)
 	_mood_left -= delta
-	if _player != null:
+	# Aimed away ONCE, at the start, then run straight. Re-aiming every frame while
+	# moving curves the path into an arc around the player, which covers a third of the
+	# ground and does not read as bolting.
+	if _player != null and _mood_left > flee_seconds - 0.2:
 		var away: Vector4 = global_position - _player.global_position
-		_heading = rotate_toward(_heading, atan2(away.x, away.z),
-			deg_to_rad(turn_rate_degrees) * delta * 5.0)
-		basis = Basis4D.from_zx(_heading)
+		_heading = atan2(away.x, away.z)
+	basis = Basis4D.from_zx(_heading)
+	position += Vector4(sin(_heading), 0.0, cos(_heading), 0.0) * flee_dash * delta
 	if _mood_left <= 0.0 and not _scared():
 		_mood = Mood.WANDER
 		_mood_left = _rng.randf_range(4.0, 9.0)
@@ -392,6 +423,57 @@ func _leap_to(target: Vector4) -> void:
 	_jump_to.w = position.w
 	_jump_t = 0.0
 	_mood = Mood.JUMP
+
+
+## Picked up. Whoever grabbed it drives its position from here until they let go.
+func grab() -> void:
+	_mood = Mood.CARRIED
+	_walking(false)
+
+
+## Let go without being thrown: it lands where it is and leaves at speed.
+func drop_and_flee() -> void:
+	position.y = _home.y
+	_mood = Mood.FLEE
+	_mood_left = flee_seconds
+	_walking(true)
+
+
+## Thrown. It arcs to where it was aimed, then walks to the coop and gets on top of it -
+## which is what makes a successful throw read as the cat AGREEING rather than as the cat
+## simply landing somewhere.
+func thrown_to(landing: Vector4) -> void:
+	_leap_to(Vector4(landing.x, _home.y, landing.z, position.w))
+	_mood = Mood.THROWN
+
+
+func _do_thrown(delta: float) -> void:
+	_walking(false)
+	_jump_t = minf(_jump_t + delta / maxf(jump_seconds * 1.6, 0.05), 1.0)
+	var along: Vector4 = _jump_from.lerp(_jump_to, _jump_t)
+	position = Vector4(along.x, along.y + sin(_jump_t * PI) * 1.1, along.z, along.w)
+	_tuck(0.6)
+	if _jump_t >= 1.0:
+		_mood = Mood.TO_PERCH if _perch != null else Mood.WANDER
+		_mood_left = _rng.randf_range(5.0, 10.0)
+
+
+## Walks to the coop and jumps up. It ignores the player on the way - having just been
+## thrown there, bolting from whoever threw it would undo the whole point.
+func _do_to_perch(delta: float) -> void:
+	_walking(true)
+	# A trot, not a stroll: the coop can be fifteen units away and a cat ambling there at
+	# its own pace is two minutes of nothing.
+	_walker.set("belt_speed", pace * 4.0)
+	var to: Vector4 = _perch.global_position - global_position
+	var flat: float = Vector2(to.x, to.z).length()
+	_heading = rotate_toward(_heading, atan2(to.x, to.z),
+		deg_to_rad(turn_rate_degrees) * delta * 4.0)
+	basis = Basis4D.from_zx(_heading)
+	if flat < 1.6:
+		var top: Vector4 = _perch.global_position - (get_parent() as Node4D).global_position
+		_leap_to(Vector4(top.x, top.y + perch_top, top.z, position.w))
+		# Landing above its home height sends it into SIT, which is where it stays.
 
 
 ## Folds the legs under the body: 0 standing, 1 fully sat. The back pair come further

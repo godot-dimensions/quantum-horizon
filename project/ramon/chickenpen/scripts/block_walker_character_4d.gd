@@ -56,9 +56,31 @@ var _facing: float = PI
 @onready var _label: Label = get_node_or_null("StateLabel")
 
 
+## Seconds left on the floor. Nothing else in the scene knocks the player down yet; the
+## cat is the first thing that fights back.
+var _down: float = 0.0
+
+
+## Put on the ground for a moment. Movement stops, the avatar tips over, and it gets back
+## up on its own - there is no state to clear and nothing to forget to undo.
+func knock_down(seconds: float) -> void:
+	_down = maxf(_down, seconds)
+
+
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		linear_velocity += get_gravity() * delta
+	if _down > 0.0:
+		_down -= delta
+		linear_velocity.x = move_toward(linear_velocity.x, 0.0, 20.0 * delta)
+		linear_velocity.z = move_toward(linear_velocity.z, 0.0, 20.0 * delta)
+		linear_velocity.w = move_toward(linear_velocity.w, 0.0, 20.0 * delta)
+		move_and_slide()
+		# Tipped over, and levelling out again over the last half second rather than
+		# snapping upright.
+		var tip: float = clampf(_down / 0.5, 0.0, 1.0) * PI * 0.42
+		_avatar.basis = Basis4D.from_zx(_facing) * Basis4D.from_yz(tip)
+		return
 	if input_enabled and Input.is_action_just_pressed(&"move_jump") and is_on_floor():
 		linear_velocity.y = jump_velocity
 	var wish: Vector4 = _wish_direction()
