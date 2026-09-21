@@ -1,0 +1,119 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/real_character_4d.gd" id="character"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_avatar_4d.gd" id="avatar"]
+
+[sub_resource type="GradientSkyMaterial4D" id="sky"]
+
+[sub_resource type="BoxShape4D" id="ground_shape"]
+size = Vector4(120, 2, 120, 120)
+
+[sub_resource type="BoxTetraMesh4D" id="ground_mesh"]
+size = Vector4(120, 2, 120, 120)
+
+[sub_resource type="TetraMaterial4D" id="ground_mat"]
+albedo_color = Color(0.3, 0.33, 0.3, 1)
+
+[sub_resource type="CapsuleShape4D" id="body_shape"]
+radius = 0.35
+full_height = 1.7
+
+[sub_resource type="BoxTetraMesh4D" id="post_mesh"]
+size = Vector4(0.7, 2.2, 0.7, 0.7)
+
+[sub_resource type="TetraMaterial4D" id="post_near"]
+albedo_color = Color(0.55, 0.42, 0.3, 1)
+
+[sub_resource type="TetraMaterial4D" id="post_far"]
+albedo_color = Color(0.35, 0.5, 0.45, 1)
+
+[node name="ChickenPenHuman" type="Node4D"]
+
+[node name="Sun" type="DirectionalLight4D" parent="."]
+basis = Projection(0, 0, 0, 1, 0.946946, -0.259996, -0.188934, 0, 0.321394, 0.766044, 0.55667, 0, 0, -0.587859, 0.808963, 0)
+light_color = Color(1, 0.98, 0.94, 1)
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("sky")
+tonemap_mode = 2
+
+[node name="Ground" type="StaticBody4D" parent="."]
+position = Vector4(0, -1, 0, 0)
+
+[node name="CollisionShape4D" type="CollisionShape4D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="GroundMesh" type="MeshInstance4D" parent="Ground"]
+material_override = SubResource("ground_mat")
+mesh = SubResource("ground_mesh")
+
+[node name="Posts" type="Node4D" parent="."]
+
+[node name="Post1" type="MeshInstance4D" parent="Posts"]
+position = Vector4(-4, 1.1, -3, 0)
+material_override = SubResource("post_near")
+mesh = SubResource("post_mesh")
+
+[node name="Post2" type="MeshInstance4D" parent="Posts"]
+position = Vector4(5, 1.1, -1.5, 0)
+material_override = SubResource("post_near")
+mesh = SubResource("post_mesh")
+
+[node name="Post3" type="MeshInstance4D" parent="Posts"]
+position = Vector4(1.5, 1.1, 6, 0)
+material_override = SubResource("post_near")
+mesh = SubResource("post_mesh")
+
+[node name="Post4" type="MeshInstance4D" parent="Posts"]
+position = Vector4(-6, 1.1, 4, 0)
+material_override = SubResource("post_near")
+mesh = SubResource("post_mesh")
+
+[node name="Post5" type="MeshInstance4D" parent="Posts"]
+position = Vector4(0, 1.1, -7, 1.6)
+material_override = SubResource("post_far")
+mesh = SubResource("post_mesh")
+
+[node name="Post6" type="MeshInstance4D" parent="Posts"]
+position = Vector4(7, 1.1, 5, -1.6)
+material_override = SubResource("post_far")
+mesh = SubResource("post_mesh")
+
+[node name="Post7" type="MeshInstance4D" parent="Posts"]
+position = Vector4(-2, 1.1, 9, 2.4)
+material_override = SubResource("post_far")
+mesh = SubResource("post_mesh")
+
+[node name="Player" type="CharacterBody4D" parent="."]
+position = Vector4(0, 1.2, 0, 0)
+script = ExtResource("character")
+
+[node name="CollisionShape4D" type="CollisionShape4D" parent="Player"]
+position = Vector4(0, 0.85, 0, 0)
+shape = SubResource("body_shape")
+
+[node name="Avatar" type="Node4D" parent="Player"]
+script = ExtResource("avatar")
+build = 1
+skin = Color(0.78, 0.66, 0.56, 1)
+accent = Color(0.35, 0.45, 0.62, 1)
+
+[node name="CameraRig" type="Node4D" parent="Player"]
+script = ExtResource("rig")
+
+[node name="Pitch" type="Node4D" parent="Player/CameraRig"]
+
+[node name="Camera4D" type="Camera4D" parent="Player/CameraRig/Pitch"]
+position = Vector4(0, 0, 5, 0)
+current = true
+rendering_engine_name = "Cross-section"
+w_fade_distance = 6.0
+
+[node name="StateLabel" type="Label" parent="Player"]
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 600.0
+offset_bottom = 40.0
+text = "..."
