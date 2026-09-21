@@ -1,7 +1,9 @@
 # 4D Chicken Pen Prototype — build progress
 
-Working checklist against `4D_Chicken_Pen_Prototype_Claude_Implementation_Brief.pdf`
-(90 items, 10 phases). Kept in the repo so progress survives a long session.
+Working checklist against the brief. Ramon supplied it as markdown at
+`project/ramon/follow_up/4D_Chicken_Pen_Prototype_Claude_Implementation_Brief.md`
+(90 items, 10 phases) - read THAT for the full wording of any item; this file only
+tracks what is done.
 
 Brief's own instruction: treat ordered outcomes and non-destructive starting conditions
 as REQUIREMENTS; treat the proposed locator UI, hiding patterns and capture details as
