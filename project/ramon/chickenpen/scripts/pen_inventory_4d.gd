@@ -25,6 +25,16 @@ const ITEMS := {
 		"colour": Color(0.36, 0.98, 0.46),
 		"icon": "gauntlet",
 	},
+	"found_coin": {
+		"name": "ADA",
+		"colour": Color(0.42, 0.58, 0.98),
+		"icon": "coin",
+	},
+	"found_egg": {
+		"name": "Golden Egg",
+		"colour": Color(0.98, 0.82, 0.30),
+		"icon": "egg",
+	},
 }
 
 @export var dialogue_path: NodePath
@@ -98,11 +108,36 @@ func reset() -> void:
 ## be at every resolution - and the shape can match the model it stands for, which is what
 ## makes the thing in the slot recognisably the thing that just turned over your head.
 func _draw_icon(kind: String, box: Rect2, colour: Color) -> void:
-	if kind != "gauntlet":
-		return
 	var unit: float = box.size.x
 	var mid: Vector2 = box.position + box.size * 0.5
 	var dim := Color(colour.r, colour.g, colour.b, 0.55)
+
+	if kind == "coin":
+		# A ring with the mark's dot field inside it, the same rings the model is built
+		# from, so the slot and the thing you picked up are recognisably one object.
+		draw_arc(mid, unit * 0.30, 0.0, TAU, 28, colour, maxf(unit * 0.05, 1.5), true)
+		draw_circle(mid, unit * 0.045, colour)
+		for ring in [[6, 0.11, 0.032], [6, 0.19, 0.024], [10, 0.26, 0.017]]:
+			var count: int = int(ring[0])
+			for i in count:
+				var angle: float = TAU * float(i) / float(count)
+				draw_circle(mid + Vector2(cos(angle), sin(angle)) * unit * float(ring[1]),
+					unit * float(ring[2]), colour)
+		return
+
+	if kind == "egg":
+		# Drawn as stacked chords rather than an ellipse call, because an egg is wider
+		# below its middle and a circle primitive cannot say that.
+		var rows := [[-0.26, 0.10], [-0.19, 0.15], [-0.10, 0.19], [0.00, 0.20],
+			[0.10, 0.185], [0.19, 0.145], [0.26, 0.085]]
+		for row in rows:
+			var half: float = unit * float(row[1])
+			draw_rect(Rect2(mid + Vector2(-half, unit * float(row[0]) - unit * 0.05),
+				Vector2(half * 2.0, unit * 0.075)), colour, true)
+		return
+
+	if kind != "gauntlet":
+		return
 
 	# The cuff, as a band across the slot, with the strap edges darker at top and bottom.
 	var cuff := Rect2(mid - Vector2(unit * 0.30, unit * 0.26), Vector2(unit * 0.60, unit * 0.52))

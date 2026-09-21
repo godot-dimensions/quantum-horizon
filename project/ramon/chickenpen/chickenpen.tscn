@@ -1,4 +1,4 @@
-[gd_scene load_steps=38 format=3]
+[gd_scene load_steps=41 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -23,6 +23,8 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_slice_assist_4d.gd" id="pen_assist"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_inventory_4d.gd" id="pen_inventory"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_gauntlet_award_4d.gd" id="pen_award"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_pickup_4d.gd" id="pen_pickup"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_collector_4d.gd" id="pen_collector"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -256,6 +258,14 @@ dialogue_path = NodePath("../Talk")
 world_path = NodePath("../../World")
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 
+[node name="Collector" type="Node" parent="Systems"]
+script = ExtResource("pen_collector")
+player_path = NodePath("../../Player")
+slice_frame_path = NodePath("../../Player/CameraRig")
+inventory_path = NodePath("../../UI/Inventory")
+readout_path = NodePath("../../UI/LockOn")
+pickups_path = NodePath("../../World/Pickups")
+
 [node name="Game" type="Node" parent="Systems"]
 script = ExtResource("pen_game")
 manager_path = NodePath("../../Chickens")
@@ -308,6 +318,19 @@ material_override = SubResource("sign_mat")
 position = Vector4(0, 1.45, 0, 0)
 mesh = SubResource("sign_board_mesh")
 material_override = SubResource("sign_mat")
+
+[node name="Pickups" type="Node4D" parent="World"]
+
+[node name="AdaCoin" type="Node4D" parent="World/Pickups"]
+position = Vector4(-5.4, 1, 4.6, 1.15)
+script = ExtResource("pen_pickup")
+kind = 0
+
+[node name="GoldenEgg" type="Node4D" parent="World/Pickups"]
+position = Vector4(7.8, 0.95, -1.2, -1.6)
+script = ExtResource("pen_pickup")
+kind = 1
+size = 0.3
 
 [node name="Scenery" type="Node4D" parent="World"]
 
