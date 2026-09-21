@@ -163,10 +163,10 @@ func _build_chibi() -> void:
 		# every planted foot was out of range and got dragged. Reach now exceeds hip
 		# height by 0.06, which is the slack the knee bends into.
 		var hip := _pivot(self, "Hip" + tag, Vector4(0.10 * side, 0.62, 0.0, 0.0))
-		_limb(hip, "Thigh" + tag, Vector4(0.0, -0.15, 0.0, 0.0), Vector3(0.13, 0.30, 0.14), accent)
-		var knee := _pivot(hip, "Knee" + tag, Vector4(0.0, -0.30, 0.0, 0.0))
-		_limb(knee, "Shin" + tag, Vector4(0.0, -0.15, 0.0, 0.0), Vector3(0.12, 0.30, 0.13), accent)
-		_limb(knee, "Boot" + tag, Vector4(0.0, -0.33, 0.04, 0.0), Vector3(0.15, 0.10, 0.24), Color(0.40, 0.26, 0.16))
+		_limb(hip, "Thigh" + tag, Vector4(0.0, -0.18, 0.0, 0.0), Vector3(0.13, 0.36, 0.14), accent)
+		var knee := _pivot(hip, "Knee" + tag, Vector4(0.0, -0.36, 0.0, 0.0))
+		_limb(knee, "Shin" + tag, Vector4(0.0, -0.18, 0.0, 0.0), Vector3(0.12, 0.36, 0.13), accent)
+		_limb(knee, "Boot" + tag, Vector4(0.0, -0.39, 0.04, 0.0), Vector3(0.15, 0.10, 0.24), Color(0.40, 0.26, 0.16))
 		var shoulder := _pivot(self, "Shoulder" + tag, Vector4(0.22 * side, 1.02, 0.0, 0.0))
 		_limb(shoulder, "UpperArm" + tag, Vector4(0.0, -0.09, 0.0, 0.0), Vector3(0.10, 0.18, 0.11), skin)
 		var elbow := _pivot(shoulder, "Elbow" + tag, Vector4(0.0, -0.18, 0.0, 0.0))

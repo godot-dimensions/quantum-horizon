@@ -26,7 +26,7 @@ extends Node4D
 
 ## Length of a stride, in units. A step longer than the leg cannot be taken, so this is
 ## clamped against the leg's own reach when the avatar is measured.
-@export var stride_length: float = 0.55
+@export var stride_length: float = 0.95
 
 ## How high the foot lifts at the top of its arc.
 @export var step_height: float = 0.12
@@ -121,8 +121,16 @@ func _measure() -> void:
 	# Clamping against R instead let a 0.55 stride be asked of a leg that could sweep
 	# 0.25, which is most of why the feet skated.
 	var reach_len: float = _thigh + _shin
-	var sweep: float = sqrt(maxf(reach_len * reach_len - _hip_height * _hip_height, 0.0))
-	stride_length = minf(stride_length, sweep * 2.0 * 0.8)
+	var stand: float = maxf(_hip_height - _sole, 0.01)
+	var sweep: float = sqrt(maxf(reach_len * reach_len - stand * stand, 0.0))
+	stride_length = minf(stride_length, sweep * 2.0 * 0.82)
+	if stride_length < 0.05:
+		# A hip higher than the leg is long gives a sweep of zero, so every step has no
+		# length and the legs cycle on the spot as fast as the clock will go - which is
+		# exactly what "frantic" looks like, and is a BUILD error rather than a tuning
+		# one. Worth shouting about: it is invisible in the numbers until you measure
+		# the stride itself.
+		push_warning("BlockGait: legs too short for hip height (reach %.2f, stands %.2f) - stride is %.3f, the walk will churn on the spot." % [reach_len, stand, stride_length])
 
 	# SCALE THE CLOCK TO THIS BODY. The "walk" preset is reference_speed 2.0 with
 	# reference_period_sec 4.0 - a four-second cycle, authored for Motion Lab's large
