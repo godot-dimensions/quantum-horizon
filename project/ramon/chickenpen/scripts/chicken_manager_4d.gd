@@ -31,17 +31,34 @@ const PLACEMENTS := [
 	[9.5, -3.2, 0.0, 3.0],
 	[-10.0, -5.5, 0.0, 3.0],
 	[7.2, 10.5, 0.0, 2.6],
-	# W offsets, nearest first so the lesson lands before the hunt. The first one sits
-	# close to where the player starts ON PURPOSE: standing beside a chicken you cannot
-	# see is a sharper first lesson than a distant one. Keep it clear of the pen, which
-	# reaches z = -5.1 - it was authored at z = -5.4 and spawned inside the fence.
-	[2.6, -1.4, 0.9, 2.0],
-	[-6.4, 1.2, -1.3, 2.2],
-	[5.6, 4.4, 1.9, 2.2],
-	[-3.2, 8.6, -2.1, 2.2],
-	# W plus distance.
-	[12.0, 7.4, 1.6, 2.6],
-	[-9.6, -9.2, -2.5, 2.6],
+	# THE W BIRDS RING THE PEN, six of them on a circle 9.5 out from its centre, at
+	# bearings 30 degrees apart from the player's line of approach. Before this they were
+	# scattered through the field on the player's side of the pen, which meant the whole
+	# hunt happened in one direction and the pen was only ever something you walked back
+	# to. Around it, every trip home is from somewhere else.
+	#
+	# THE TEACHING ORDER SURVIVES IT, which is why the bearings are paired rather than
+	# evenly spread: the two nearest the player's start take the first and gentlest W
+	# offsets, the two abreast of the pen take the next, and the two behind it - the
+	# longest walk in the scene - take the largest. Nearest first, then W, then distance,
+	# exactly as before.
+	#
+	# NONE OF THEM SPAWN IN THE PEN. The fence runs x -5 to 5 and z -15.5 to -6.5; the
+	# closest of these sits 3.7 clear of it, and the widest wander radius here is 2.6, so
+	# even a bird that drifts the whole way stays out. An earlier bird was authored at
+	# z = -5.4 and spawned inside the fence, which counted it on frame one.
+	#
+	# The first one still sits near where the player starts ON PURPOSE: standing beside a
+	# chicken you cannot see is a sharper first lesson than a distant one. It is 4.9 away,
+	# not on top of the spawn at (0, -1.5) - hence 30 degrees rather than a bearing that
+	# would have put a bird in the player's face.
+	[4.75, -2.77, 0.9, 2.0],
+	[-4.75, -2.77, -1.3, 2.2],
+	[9.5, -11.0, 1.9, 2.2],
+	[-9.5, -11.0, -2.1, 2.2],
+	# Behind the pen: W plus the longest walk.
+	[4.75, -19.23, 1.6, 2.6],
+	[-4.75, -19.23, -2.5, 2.6],
 ]
 
 @export var chicken_count: int = 12

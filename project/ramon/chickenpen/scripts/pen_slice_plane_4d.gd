@@ -72,23 +72,28 @@ extends Control
 @export_range(0.05, 2.0, 0.05) var home_tolerance: float = 0.35
 ## Pixels per world unit of w. The pen is far enough down the z axis that a small zw
 ## rotation lifts its far corners a long way, so this stays small and the quad is clamped.
-@export_range(2.0, 60.0, 0.5) var w_pixels: float = 22.0
-## Pixels per world unit across the ground.
+## How much of the panel's HEIGHT one world unit of w takes. A fraction rather than a
+## pixel count, so the diagram is the same diagram at any window size - at a fixed pixel
+## scale it drew the same small picture in the middle of a panel twice the size.
+@export_range(0.005, 0.2, 0.001) var w_fraction: float = 0.05
+## How much of the panel's WIDTH one world unit across the ground takes.
 ##
 ## SIZED FOR THE FIELD, NOT THE PEN. On its own the pen would happily take the whole
 ## panel, and then every chicken would be off the edge of it - and a bird you cannot see
-## is a bird you cannot line up on. At this scale the pen is still a couple of hundred
-## pixels across and the flock fits around it.
-@export_range(1.0, 48.0, 0.5) var ground_scale: float = 14.0
+## is a bird you cannot line up on.
+@export_range(0.005, 0.12, 0.0005) var ground_fraction: float = 0.025
 ## How far past the pen the SHEET of your slice is drawn, as a multiple of the pen's own
 ## half-extents. The white outline stays the pen's true size and is what you match; the
 ## sheet is your slice, which is infinite, and drawing only the pen-sized patch of it left
 ## every chicken standing outside the one thing they had to be judged against.
 @export_range(1.0, 4.0, 0.05) var sheet_spread: float = 1.75
-## What the diagram is centred on, as an offset from the pen. The flock all lives on one
-## side of the pen, so centring on the pen itself left half the panel empty and squeezed
-## everything into the other half.
-@export var view_offset := Vector2(2.5, 6.75)
+## What the diagram is centred on, as an offset from the pen.
+##
+## It used to be a long way north, because the whole flock lived on that side and centring
+## on the pen left half the panel empty. Half of them ring the pen now, so the centre of
+## what has to be shown has moved back towards it - and at the old offset the sheet's far
+## corner ran off the edge of the panel.
+@export var view_offset := Vector2(1.0, 3.0)
 
 @export_group("Look")
 @export var ground_color: Color = Color(1.0, 1.0, 1.0, 0.45)
@@ -196,11 +201,30 @@ func _w_above(x: float, z: float) -> float:
 	return p.w - ((x - p.x) * n.x + (0.0 - p.y) * n.y + (z - p.z) * n.z) / n.w
 
 
+## The three scales, all derived from the panel rather than written in pixels, so the
+## whole diagram grows and shrinks with the window instead of sitting at one size in the
+## corner of whatever it is given.
+func _ground_px() -> float:
+	return maxf(size.x, 1.0) * ground_fraction
+
+
+func _w_px() -> float:
+	return maxf(size.y, 1.0) * w_fraction
+
+
+## For the things that should grow with the panel but not linearly - dots, rings and
+## lettering, which have a size below which they stop being readable and above which they
+## start being shouty. 560 is the width this was drawn at.
+func _ui() -> float:
+	return clampf(size.x / 560.0, 0.85, 1.7)
+
+
 ## World (x, z, w) to a point on the panel.
 func _plan(x: float, z: float, w: float, origin: Vector2, mid: Vector2) -> Vector2:
-	var dx: float = (x - mid.x) * ground_scale
-	var dz: float = (z - mid.y) * ground_scale
-	return origin + Vector2(dx - dz, (dx + dz) * ISO_RISE - w * w_pixels)
+	var scale: float = _ground_px()
+	var dx: float = (x - mid.x) * scale
+	var dz: float = (z - mid.y) * scale
+	return origin + Vector2(dx - dz, (dx + dz) * ISO_RISE - w * _w_px())
 
 
 func _draw() -> void:
@@ -335,7 +359,7 @@ func _draw() -> void:
 	for i in folk.size():
 		_name_tag(font, String(folk[i][3]), tags[i], folk[i][4])
 
-	_label(font, "the pen's ground, and your slice over it", Vector2(10.0, 20.0),
+	_label(font, "the pen's ground, and your slice over it", Vector2(10.0, 22.0 * _ui()),
 		Color(1.0, 1.0, 1.0, 0.75))
 	_label(font, _reading(heights, worst, home), Vector2(10.0, size.y - 10.0), colour)
 
@@ -429,13 +453,14 @@ func _folk() -> Array:
 ## Returns where the blob landed, so the name can be written in a later pass.
 func _draw_person(x: float, z: float, w: float, tint: Color, shrink: float,
 		plane_colour: Color, origin: Vector2, mid: Vector2) -> Vector2:
+	var u: float = _ui()
 	var foot: Vector2 = _plan(x, z, 0.0, origin, mid)
 	var head: Vector2 = _plan(x, z, w, origin, mid)
 	var true_w: float = _w_above(x, z)
 	var on_slice: bool = false
 	if not is_nan(true_w):
 		var rung: Vector2 = _plan(x, z, true_w * shrink, origin, mid)
-		draw_line(rung - Vector2(7.0, 0.0), rung + Vector2(7.0, 0.0),
+		draw_line(rung - Vector2(7.0 * u, 0.0), rung + Vector2(7.0 * u, 0.0),
 			Color(plane_colour.r, plane_colour.g, plane_colour.b, 0.5), 1.0)
 		on_slice = absf(true_w - w / maxf(shrink, 0.0001)) <= home_tolerance
 	# THE BLOB KEEPS ITS OWN COLOUR. Repainting it green when it lands on your slice made
@@ -444,12 +469,12 @@ func _draw_person(x: float, z: float, w: float, tint: Color, shrink: float,
 	# exactly when you first look at it. Being on your slice is a RING instead.
 	var colour: Color = tint
 	draw_line(foot, head, Color(colour.r, colour.g, colour.b, 0.35), 1.0)
-	draw_circle(foot, 2.0, Color(colour.r, colour.g, colour.b, 0.4))
-	draw_circle(head, 6.5, colour)
+	draw_circle(foot, 2.0 * u, Color(colour.r, colour.g, colour.b, 0.4))
+	draw_circle(head, 6.5 * u, colour)
 	# The ring is not decoration on a dark character - it is the whole silhouette.
-	draw_arc(head, 6.5, 0.0, TAU, 20, Color(1.0, 1.0, 1.0, 0.55), 1.0, true)
+	draw_arc(head, 6.5 * u, 0.0, TAU, 20, Color(1.0, 1.0, 1.0, 0.55), 1.0, true)
 	if on_slice:
-		draw_arc(head, 9.5, 0.0, TAU, 20, home_color, 2.0, true)
+		draw_arc(head, 9.5 * u, 0.0, TAU, 20, home_color, 2.0, true)
 	return head
 
 
@@ -463,28 +488,29 @@ func _draw_person(x: float, z: float, w: float, tint: Color, shrink: float,
 ## infinite; the rung is the bit of it that is under that bird.
 func _draw_bird(x: float, z: float, w: float, is_target: bool, shrink: float,
 		plane_colour: Color, origin: Vector2, mid: Vector2) -> void:
+	var u: float = _ui()
 	var foot: Vector2 = _plan(x, z, 0.0, origin, mid)
 	var head: Vector2 = _plan(x, z, w, origin, mid)
 	var true_w: float = _w_above(x, z)
 	var on_slice: bool = false
 	if not is_nan(true_w):
 		var rung: Vector2 = _plan(x, z, true_w * shrink, origin, mid)
-		draw_line(rung - Vector2(7.0, 0.0), rung + Vector2(7.0, 0.0),
+		draw_line(rung - Vector2(7.0 * u, 0.0), rung + Vector2(7.0 * u, 0.0),
 			Color(plane_colour.r, plane_colour.g, plane_colour.b, 0.5), 1.0)
 		on_slice = absf(true_w - w / maxf(shrink, 0.0001)) <= home_tolerance
 	var colour: Color = target_color if is_target else chicken_color
 	draw_line(foot, head, Color(colour.r, colour.g, colour.b, 0.35), 1.0)
-	draw_circle(foot, 2.0, Color(colour.r, colour.g, colour.b, 0.4))
+	draw_circle(foot, 2.0 * u, Color(colour.r, colour.g, colour.b, 0.4))
 	# A head rather than a dot: a comb, a body and a beak, which is enough at five pixels
 	# to read as a chicken and not as another corner of something.
-	draw_circle(head, 5.5, colour)
-	draw_line(head + Vector2(4.0, 0.5), head + Vector2(9.0, 2.0), colour, 2.0)
-	draw_line(head + Vector2(-2.0, -5.0), head + Vector2(2.0, -8.0), colour, 2.0)
+	draw_circle(head, 5.5 * u, colour)
+	draw_line(head + Vector2(4.0, 0.5) * u, head + Vector2(9.0, 2.0) * u, colour, 2.0)
+	draw_line(head + Vector2(-2.0, -5.0) * u, head + Vector2(2.0, -8.0) * u, colour, 2.0)
 	if is_target:
-		draw_arc(head, 10.5, 0.0, TAU, 22, target_color, 1.5, true)
+		draw_arc(head, 10.5 * u, 0.0, TAU, 22, target_color, 1.5, true)
 	if on_slice:
 		# Its head is in your slice: this is the bird you can walk up to and take.
-		draw_arc(head, 8.0, 0.0, TAU, 20, home_color, 2.0, true)
+		draw_arc(head, 8.0 * u, 0.0, TAU, 20, home_color, 2.0, true)
 
 
 ## A name beside a blob, kept on the panel and out of its neighbour's way.
@@ -494,7 +520,8 @@ func _draw_bird(x: float, z: float, w: float, is_target: bool, shrink: float,
 ## the edge were clipped to nonsense. Each tag is nudged to the side of its blob that has
 ## more room, and pushed down if the line above is already taken.
 func _name_tag(font: Font, who: String, at: Vector2, colour: Color) -> void:
-	var width: float = font.get_string_size(who, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+	var letters: int = int(round(13.0 * _ui()))
+	var width: float = font.get_string_size(who, HORIZONTAL_ALIGNMENT_LEFT, -1, letters).x
 	var left: bool = at.x + 12.0 + width > size.x - 6.0
 	var spot := Vector2(at.x - 11.0 - width if left else at.x + 11.0, at.y + 4.0)
 	spot.x = clampf(spot.x, 6.0, maxf(6.0, size.x - width - 6.0))
@@ -508,11 +535,11 @@ func _name_tag(font: Font, who: String, at: Vector2, colour: Color) -> void:
 		guard += 1
 		for taken in _tags:
 			if absf(taken.y - spot.y) < 14.0 					and spot.x < taken.x + taken.z and taken.x < spot.x + width:
-				spot.y = taken.y + 15.0
+				spot.y = taken.y + letters + 2.0
 				settled = false
 				break
 	_tags.append(Vector3(spot.x, spot.y, width))
-	draw_string(font, spot, who, HORIZONTAL_ALIGNMENT_LEFT, -1, 13,
+	draw_string(font, spot, who, HORIZONTAL_ALIGNMENT_LEFT, -1, letters,
 		Color(colour.r, colour.g, colour.b, 0.95))
 
 
@@ -524,7 +551,7 @@ func _name_tag(font: Font, who: String, at: Vector2, colour: Color) -> void:
 ## plane at all - the x and z terms cancel in pairs. Uniform scaling keeps it zero;
 ## clamping corners one at a time does not, which is precisely the bug.
 func _fitted(heights: Array) -> Array:
-	var reach: float = (size.y * 0.40) / maxf(w_pixels, 0.01)
+	var reach: float = (size.y * 0.40) / maxf(_w_px(), 0.01)
 	var worst: float = 0.0
 	for h in heights:
 		worst = maxf(worst, absf(h))
@@ -558,4 +585,5 @@ func _reading(heights: Array, worst: float, home: bool) -> String:
 
 
 func _label(font: Font, text: String, at: Vector2, colour: Color) -> void:
-	draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, colour)
+	draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1,
+		int(round(17.0 * _ui())), colour)
