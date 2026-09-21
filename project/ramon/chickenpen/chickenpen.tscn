@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=3]
+[gd_scene load_steps=36 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -16,7 +16,10 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_debug_4d.gd" id="pen_debug"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_controls_4d.gd" id="pen_controls"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/chicken_radar_4d.gd" id="pen_radar"]
-[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_keeper_4d.gd" id="pen_keeper"]
+[ext_resource type="Script" path="res://ramon/dialogue/dialogue_box_4d.gd" id="dlg_box"]
+[ext_resource type="Script" path="res://ramon/dialogue/dialogue_player_4d.gd" id="dlg_talk"]
+[ext_resource type="Script" path="res://ramon/dialogue/world_tag_4d.gd" id="dlg_tag"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_talk_4d.gd" id="pen_talk"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_slice_assist_4d.gd" id="pen_assist"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
@@ -121,13 +124,17 @@ offset_bottom = 204.0
 text = ""
 
 [node name="Controls" type="Label" parent="UI"]
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 18.0
-offset_top = -288.0
-offset_right = 1200.0
-offset_bottom = -20.0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -700.0
+offset_top = 18.0
+offset_right = -26.0
+offset_bottom = 240.0
+horizontal_alignment = 2
 script = ExtResource("pen_controls")
+text_size = 15
+outline = 4
+pin_to_bottom = false
 
 [node name="Radar" type="Control" parent="UI"]
 anchor_left = 1.0
@@ -158,7 +165,43 @@ offset_right = 1100.0
 offset_bottom = 232.0
 text = ""
 
+[node name="TalkTag" type="Control" parent="UI"]
+script = ExtResource("dlg_tag")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../World/KeeperHead")
+lift = 12.0
+
+[node name="TalkBox" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("dlg_box")
+choice_side = 1
+over_head_width = 470.0
+over_head_lift = 10.0
+over_head_nudge_x = -450.0
+choice_width = 470.0
+choice_gap = 10.0
+text_size = 20
+choice_size = 19
+name_size = 17
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../World/KeeperHead")
+
 [node name="Systems" type="Node" parent="."]
+
+[node name="Talk" type="Node" parent="Systems"]
+script = ExtResource("dlg_talk")
+box_path = NodePath("../../UI/TalkBox")
+
+[node name="TalkDriver" type="Node" parent="Systems"]
+script = ExtResource("pen_talk")
+player_path = NodePath("../../Player")
+character_path = NodePath("../../Player")
+catcher_path = NodePath("../../Player/Catcher")
+manager_path = NodePath("../../Chickens")
+dialogue_path = NodePath("../Talk")
+tag_path = NodePath("../../UI/TalkTag")
+locator_ui_paths = Array[NodePath]([NodePath("../../UI/Locator"), NodePath("../../UI/Radar")])
 
 [node name="Locator" type="Node" parent="Systems"]
 script = ExtResource("pen_locator")
@@ -234,12 +277,8 @@ build = 2
 skin = Color(0.76, 0.58, 0.44, 1)
 accent = Color(0.52, 0.33, 0.55, 1)
 
-[node name="KeeperVoice" type="Node4D" parent="World"]
-position = Vector4(2.3, 0, -4.3, 0)
-script = ExtResource("pen_keeper")
-player_path = NodePath("../../Player")
-manager_path = NodePath("../../Chickens")
-readout_path = NodePath("../../UI/Keeper")
+[node name="KeeperHead" type="Node4D" parent="World"]
+position = Vector4(2.3, 1.65, -4.3, 0)
 
 [node name="Sign" type="Node4D" parent="World"]
 position = Vector4(-2.3, 0, -4.3, 0)

@@ -41,6 +41,11 @@ extends CharacterBody4D
 ## way the camera looks - gives PI. Starting at 0 therefore started the character facing
 ## the exact opposite of the way the first press of W would take it: it stood looking down
 ## the camera until you moved.
+## Cleared while a conversation is open. Gravity and the floor keep working - only the
+## player's own intent is switched off - so standing still mid-sentence cannot leave the
+## body hovering or half through the ground.
+var input_enabled: bool = true
+
 var _facing: float = PI
 
 ## How much slower the ana/kata axis is than ordinary movement.
@@ -54,13 +59,13 @@ var _facing: float = PI
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		linear_velocity += get_gravity() * delta
-	if Input.is_action_just_pressed(&"move_jump") and is_on_floor():
+	if input_enabled and Input.is_action_just_pressed(&"move_jump") and is_on_floor():
 		linear_velocity.y = jump_velocity
 	var wish: Vector4 = _wish_direction()
 	var top: float = run_speed
-	if Input.is_key_pressed(KEY_SHIFT):
+	if input_enabled and Input.is_key_pressed(KEY_SHIFT):
 		top = sprint_speed
-	elif Input.is_key_pressed(KEY_ALT):
+	elif input_enabled and Input.is_key_pressed(KEY_ALT):
 		top = walk_speed
 	var rate: float = acceleration * top * delta
 	var target: Vector4 = wish * top
@@ -84,6 +89,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _wish_direction() -> Vector4:
+	if not input_enabled:
+		return Vector4.ZERO
 	var local := Vector4(
 		Input.get_axis(&"move_left", &"move_right"),
 		0.0,

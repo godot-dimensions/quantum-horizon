@@ -22,6 +22,11 @@ extends Label
 
 @export var toggle_key: Key = KEY_H
 
+## Bottom-left, growing upward, or pinned to whatever corner the scene put it in. The
+## card moved to the top right to clear the bottom of the screen for dialogue, and up
+## there it has to grow DOWNWARD or the first rows walk off the top edge.
+@export var pin_to_bottom: bool = true
+
 
 func _ready() -> void:
 	add_theme_font_size_override("font_size", text_size)
@@ -30,12 +35,13 @@ func _ready() -> void:
 	add_theme_constant_override("outline_size", outline)
 	# Pinned to the bottom of its rect, so the block grows upward and its last line stays
 	# put however many lines it ends up with.
-	vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM if pin_to_bottom else VERTICAL_ALIGNMENT_TOP
 	text = _card()
 	# Grow the rect to whatever the card actually needs. Sizing it by hand in the scene
 	# clipped the last line the moment a row was added, and the row that went missing was
 	# the one naming the key that hides this.
-	custom_minimum_size = Vector2(0.0, get_combined_minimum_size().y)
+	if pin_to_bottom:
+		custom_minimum_size = Vector2(0.0, get_combined_minimum_size().y)
 
 
 func _unhandled_input(event: InputEvent) -> void:
