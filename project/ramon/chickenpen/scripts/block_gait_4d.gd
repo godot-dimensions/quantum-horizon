@@ -37,7 +37,7 @@ extends Node4D
 
 ## How far the body rises and falls. Twice gait frequency: a biped's trunk lifts once per
 ## STEP, not once per cycle.
-@export_range(0.0, 0.2, 0.005) var body_bob: float = 0.04
+@export_range(0.0, 0.3, 0.005) var body_bob: float = 0.095
 
 ## How far it leans into a run.
 @export_range(0.0, 0.6, 0.01) var run_lean: float = 0.14
@@ -208,6 +208,11 @@ func _physics_process(delta: float) -> void:
 	# height the standing leg can never extend, and the character walks in a permanent
 	# 42-degree crouch. Lifting the whole avatar at twice gait frequency - once per step -
 	# straightens the supporting leg exactly when it should be straightest.
+	# MEASURED, NOT REASONED. Re-phasing this to peak at 0.25 and 0.75 - which is where
+	# mid-stance looks like it should be from the duty factor - made the knee WORSE, 19
+	# degrees to 32. The peak at 0.125 is where the stance leg is actually most extended,
+	# so it stays. The amount is up from 0.04 because 0.04 was not enough to straighten a
+	# leg standing at three quarters of its extension.
 	var bob: float = sin(phase * TAU * 2.0) * body_bob * effort * (1.0 - _airborne)
 	_avatar.position = _avatar_rest + Vector4(0.0, maxf(bob, 0.0), 0.0, 0.0)
 	if _avatar.torso != null:
