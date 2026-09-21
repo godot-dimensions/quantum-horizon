@@ -30,6 +30,16 @@ extends Node4D
 
 enum Build { PLUSH, HUMAN, CHIBI }
 
+## Hair, and whether a cap is worn over it. Defaults are the player's, so adding these
+## changes nothing that already exists - a second chibi becomes a different person by
+## turning the cap off and giving it another hair colour, rather than by a second build.
+@export var hair: Color = Color(0.86, 0.72, 0.32)
+@export var wear_cap: bool = true
+## A ponytail hanging behind the head. Three tapering blocks rather than one, so it reads
+## as hanging hair instead of a handle - and so it can be given a slight kick outward at
+## the end, which is most of what makes it look like hair at all.
+@export var ponytail: bool = false
+
 @export var build: Build = Build.PLUSH:
 	set(value):
 		build = value
@@ -151,9 +161,18 @@ func _build_chibi() -> void:
 	torso = _limb(self, "Tunic", Vector4(0.0, 0.84, 0.0, 0.0), Vector3(0.38, 0.46, 0.24), skin)
 	_limb(torso, "Belt", Vector4(0.0, -0.20, 0.0, 0.0), Vector3(0.40, 0.07, 0.26), Color(0.35, 0.22, 0.14))
 	head = _limb(torso, "Head", Vector4(0.0, 0.42, 0.0, 0.0), Vector3(0.30, 0.32, 0.29), accent)
-	_limb(head, "Cap", Vector4(0.0, 0.21, -0.02, 0.0), Vector3(0.33, 0.14, 0.31), skin)
-	_limb(head, "CapTail", Vector4(0.0, 0.16, -0.24, 0.0), Vector3(0.12, 0.10, 0.28), skin)
-	_limb(head, "Hair", Vector4(0.0, 0.06, -0.15, 0.0), Vector3(0.31, 0.22, 0.06), Color(0.86, 0.72, 0.32))
+	if wear_cap:
+		_limb(head, "Cap", Vector4(0.0, 0.21, -0.02, 0.0), Vector3(0.33, 0.14, 0.31), skin)
+		_limb(head, "CapTail", Vector4(0.0, 0.16, -0.24, 0.0), Vector3(0.12, 0.10, 0.28), skin)
+	else:
+		# No cap means the crown shows, so it needs hair on top as well as at the back.
+		_limb(head, "Crown", Vector4(0.0, 0.15, 0.0, 0.0), Vector3(0.32, 0.10, 0.31), hair)
+	_limb(head, "Hair", Vector4(0.0, 0.06, -0.15, 0.0), Vector3(0.31, 0.22, 0.06), hair)
+	if ponytail:
+		_limb(head, "Tie", Vector4(0.0, 0.10, -0.19, 0.0), Vector3(0.12, 0.09, 0.08), hair)
+		_limb(head, "Tail1", Vector4(0.0, -0.02, -0.24, 0.0), Vector3(0.15, 0.20, 0.13), hair)
+		_limb(head, "Tail2", Vector4(0.0, -0.19, -0.27, 0.0), Vector3(0.12, 0.16, 0.11), hair)
+		_limb(head, "Tail3", Vector4(0.0, -0.32, -0.31, 0.0), Vector3(0.08, 0.12, 0.08), hair)
 	_limb(head, "EarL", Vector4(0.18, 0.02, -0.02, 0.0), Vector3(0.09, 0.05, 0.05), accent)
 	_limb(head, "EarR", Vector4(-0.18, 0.02, -0.02, 0.0), Vector3(0.09, 0.05, 0.05), accent)
 
