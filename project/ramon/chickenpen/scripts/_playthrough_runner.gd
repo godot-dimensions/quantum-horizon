@@ -109,7 +109,8 @@ func _process(_d) -> bool:
 			var gate: Vector4 = (_fence as Node4D).global_position + Vector4(0.0, 1.3, 7.5, 0.0)
 			_player.global_position = gate
 			_player.global_basis = Projection.IDENTITY
-			_aim(0.0, -10.0, 4.0)
+			# Facing the pen, which is -Z from the gate: atan2(0, -1) = PI.
+			_aim(PI, -10.0, 4.0)
 			_player.linear_velocity = Vector4.ZERO
 			_wait = 20
 			_beat += 1
@@ -167,19 +168,28 @@ func _view(x: float, z: float, w: float, at: Vector4, pitch_degrees: float, dist
 	_player.global_basis = Projection.IDENTITY
 	_player.linear_velocity = Vector4.ZERO
 	var to: Vector4 = at - Vector4(x, 1.3, z, w)
-	_aim(atan2(-to.x, -to.z), pitch_degrees, distance)
+	_aim(atan2(to.x, to.z), pitch_degrees, distance)
 
 
-func _aim(yaw: float, pitch_degrees: float, distance: float) -> void:
+## `facing` is the direction the CHARACTER faces. The camera goes opposite, so it looks
+## along that direction from behind - the two are independent in play, where the mouse aims
+## one and walking turns the other, and conflating them pointed the camera at the back of
+## the field.
+func _aim(facing: float, pitch_degrees: float, distance: float) -> void:
 	var rig: Node4D = _root.get_node("Player/CameraRig") as Node4D
+	var yaw: float = facing + PI
 	rig.set("yaw", yaw)
 	rig.set("pitch", deg_to_rad(pitch_degrees))
 	rig.set("distance", distance)
 	rig.set("_zoom_target", distance)
 	rig.call("_apply")
+	# Set the CHARACTER'S facing, not the avatar's basis. The character rewrites that basis
+	# from its own _facing every physics frame, so posing the avatar directly lasts exactly
+	# one frame and the catch then fires at whatever the character was really looking at.
+	_player.set("_facing", facing)
 	var avatar: Node4D = _root.get_node_or_null("Player/Avatar") as Node4D
 	if avatar != null:
-		avatar.basis = Basis4D.from_zx(yaw)
+		avatar.basis = Basis4D.from_zx(facing)
 
 
 ## Stand a short way from a chicken, on the given slice, looking at it.

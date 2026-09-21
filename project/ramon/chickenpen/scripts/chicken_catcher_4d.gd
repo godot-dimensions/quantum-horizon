@@ -31,6 +31,8 @@ signal released(agent: Node, thrown: bool)
 ## maths. So reading the body's basis asked "what is north of you", not "what are you
 ## looking at", and the answer never changed however the player span on the spot.
 @export var facing_path: NodePath
+## The gait, told when a chicken is picked up so it can stoop and then hold its arms up.
+@export var gait_path: NodePath
 
 @export_group("Catching")
 ## How close is close enough (item 26).
@@ -48,11 +50,16 @@ signal released(agent: Node, thrown: bool)
 @export_range(0.05, 1.0, 0.05) var catch_w_tolerance: float = 0.25
 
 @export_group("Throwing")
-## Forward speed of a throw. Enough to clear a low fence, not enough to be a weapon
-## (item 32).
-@export var throw_speed: float = 5.5
+## A LOB, NOT A PITCH. Held overhead in two hands and tossed about three metres, which is
+## far enough to clear the fence from just outside it and short enough that you have to
+## walk up to the pen rather than lining up a shot from across the field. The old numbers
+## threw it 5.9 m flat - a baseball, not a chicken being put somewhere.
+##
+## The two together set the shape: rise decides how high the arch goes and therefore how
+## long it is in the air, speed decides how far it gets in that time.
+@export var throw_speed: float = 1.90
 ## Upward part of the throw, which is what makes it an arc rather than a shove.
-@export var throw_rise: float = 3.4
+@export var throw_rise: float = 3.0
 ## A plain drop, for placing rather than throwing.
 @export var drop_speed: float = 0.6
 
@@ -119,13 +126,16 @@ func _physics_process(delta: float) -> void:
 func _best_candidate() -> Node:
 	if _manager == null:
 		return null
-	# MINUS Z. Basis4D.looking_at documents the local Z axis as pointing AWAY from the
-	# target, the same convention as Godot's 3D camera, so forward is -Z. This read +Z,
-	# which put the catch cone directly behind the player: walking up to a chicken and
-	# pressing the key did nothing, and it only worked if you turned your back on it.
+	# PLUS Z, because that is the direction this character walks.
+	#
+	# Basis4D.looking_at treats -Z as forward, and following that convention here was
+	# wrong: the avatar is not posed with looking_at, it is posed with from_zx(_facing)
+	# where _facing comes from atan2(wish.x, wish.z). That makes the basis' +Z column the
+	# movement direction. Using -Z aimed the catch, and the throw, at whatever was directly
+	# behind the character as it walked.
 	var facing: Node4D = get_node_or_null(facing_path) as Node4D
 	var frame: Projection = facing.global_basis if facing != null else global_basis
-	var forward: Vector4 = -(frame * Vector4(0.0, 0.0, 1.0, 0.0))
+	var forward: Vector4 = frame * Vector4(0.0, 0.0, 1.0, 0.0)
 	var best: Node = null
 	var best_score: float = -INF
 	for agent in _manager.call("locator_candidates"):
@@ -154,12 +164,19 @@ func _best_candidate() -> Node:
 
 func _catch(agent: Node) -> void:
 	carried = agent
+	_tell_gait(true)
 	agent.call("on_caught")
 	var body: Node4D = agent.get_parent() as Node4D
 	if body != null:
 		# Freeze any leftover flight so a caught chicken does not keep travelling.
 		_flying = _flying.filter(func(f): return f["agent"] != agent)
 	emit_signal("caught", agent)
+
+
+func _tell_gait(carrying: bool) -> void:
+	var gait: Node = get_node_or_null(gait_path)
+	if gait != null:
+		gait.call("set_carrying", carrying)
 
 
 func _carry_tick() -> void:
@@ -186,14 +203,17 @@ func _carry_tick() -> void:
 func _release(thrown: bool) -> void:
 	var agent: Node = carried
 	carried = null
+	_tell_gait(false)
 	if agent == null:
 		return
 	agent.call("on_released")
 	var body: Node4D = agent.get_parent() as Node4D
 	if body != null:
+		# Thrown the way the character is facing, which is the way it walks - see the note
+		# on +Z in _best_candidate.
 		var facing: Node4D = get_node_or_null(facing_path) as Node4D
 		var frame: Projection = facing.global_basis if facing != null else global_basis
-		var forward: Vector4 = (-(frame * Vector4(0.0, 0.0, 1.0, 0.0))).normalized()
+		var forward: Vector4 = (frame * Vector4(0.0, 0.0, 1.0, 0.0)).normalized()
 		var speed: float = throw_speed if thrown else drop_speed
 		var rise: float = throw_rise if thrown else 0.0
 		_flying.append({

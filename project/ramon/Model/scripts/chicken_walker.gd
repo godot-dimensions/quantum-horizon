@@ -40,8 +40,11 @@ const _GaitController = preload("res://scripts/gait_controller.gd")
 ## Cadence comes from the gait clock, which scales its period against its own
 ## reference_speed of 2.0 - so `speed` below 2.0 makes the bird slower than the preset,
 ## not faster. It was 1.2, i.e. running at two thirds cadence.
-@export var stride_length: float = 0.17
-@export var step_height: float = 0.07
+## A CHICKEN'S STRIDE IS MOST OF ITS BODY LENGTH. These were 0.17 and 0.07 against a bird
+## about 1.9 units long - a nine percent stride - so the legs shuffled while the body
+## glided, which is what reads as moonwalking whatever the feet are doing underneath.
+@export var stride_length: float = 0.52
+@export var step_height: float = 0.14
 @export var body_bob: float = 0.018
 @export var body_pitch: float = 0.035
 @export var head_stabilise: float = 0.9
@@ -87,10 +90,13 @@ const _GaitController = preload("res://scripts/gait_controller.gd")
 
 var halted: bool = false
 ## Fed to the gait clock, which derives its period as reference_period * reference_speed
-## / speed - so this is a cadence dial, not a distance. At 24 the period is 0.33 s, and
-## with a 0.17 stride that carries the bird about 1.0 units/s: roughly one leg-length
-## per second, which is a chicken's walk. It was 0.25 units/s before.
-var speed: float = 24.0
+## / speed - so this is a cadence dial, not a distance. Forward speed is 2 * stride /
+## period, so LENGTHENING THE STRIDE SPEEDS THE BIRD UP unless the cadence comes down to
+## match: tripling the stride to 0.52 and leaving this at 24 took the flock from 0.12 to
+## 0.39 units/s, scooting rather than walking. At 7.8 the period is about 1.0 s and the
+## 0.52 stride carries it roughly 1.0 units/s again - the same pace as before, taken in
+## long strides instead of a shuffle, which is the whole point of the change.
+var speed: float = 7.8
 
 ## Radius of the circle it walks. The forward speed is DERIVED from the gait rather
 ## than set independently: a stride carries the body a fixed distance, so travelling
@@ -410,17 +416,57 @@ func _face(heading: float) -> void:
 		Vector4(tx, 0.0, tz, 0.0), Vector4(0.0, 0.0, 0.0, _scale))
 
 
+## Where this foot should be, in the bird's own frame.
+##
+## STANCE PINS THE FOOT TO THE GROUND, not to a slide down the body's z axis.
+##
+## It used to lerp the foot from `landing` back to `lift_off` in LOCAL space, which is a
+## treadmill: the foot slides backwards at stride_length per stance, and that only looks
+## planted if the body happens to be travelling at exactly that speed. It was not. Measured
+## on a wandering bird, the foot crossed the ground at 1.11x the body's own speed - the foot
+## and the body moving together, which is precisely what moonwalking looks like.
+##
+## Now the foot is planted at touchdown as a point in the WORLD and converted back into the
+## bird's frame every frame, so it stays where it was put however fast the bird then walks.
+## It is the same fix, for the same reason, as the one documented at length in the player's
+## block_gait_4d.gd: a planted foot has to be planted by construction, not by arithmetic
+## that has to come out even.
 func _foot_position(leg: Dictionary, local_phase: float, duty: float) -> Vector4:
 	var rest: Vector4 = leg["rest_foot"]
 	var forward := Vector4(0.0, 0.0, 1.0, 0.0)
-	var lift_off: Vector4 = rest - forward * (stride_length * 0.5)
-	var landing: Vector4 = rest + forward * (stride_length * 0.5)
+	# THE SWEEP IS THE BODY'S TRAVEL, not the stride.
+	#
+	# The body advances 2 x stride per gait cycle (each of two legs takes one step), so
+	# during ONE leg's stance it covers 2 x stride x duty. The foot was swept by exactly
+	# stride_length instead, so even a perfectly planted foot came up 20% short of the
+	# ground it had to cover and made the difference up by sliding.
+	var sweep: float = stride_length * 2.0 * maxf(duty, 0.0001)
+	var lift_off: Vector4 = rest - forward * (sweep * 0.5)
+	var landing: Vector4 = rest + forward * (sweep * 0.5)
 	if local_phase < duty:
-		return landing.lerp(lift_off, local_phase / maxf(duty, 0.0001))
+		if not bool(leg.get("planted", false)):
+			leg["planted"] = true
+			leg["plant_world"] = _to_world(leg, landing)
+		return _to_local(leg, leg["plant_world"])
+	leg["planted"] = false
 	var swing: float = (local_phase - duty) / maxf(1.0 - duty, 0.0001)
 	var eased: float = swing * swing * (3.0 - 2.0 * swing)
 	var apex: Vector4 = (lift_off + landing) * 0.5 + Vector4(0.0, step_height * 2.0, 0.0, 0.0)
 	return lift_off.lerp(apex, eased).lerp(apex.lerp(landing, eased), eased)
+
+
+## THE LEG RIG'S FRAME, not the bird's. Every position in here - the rest foot, the hip,
+## the IK goal - is local to the leg rig, which is a child of the bird with its own
+## transform. Converting through the bird instead lands the plant point somewhere else
+## entirely, and the foot skates worse than it did before.
+func _to_world(leg: Dictionary, local: Vector4) -> Vector4:
+	var rig: Node4D = leg["rig"] as Node4D
+	return rig.global_basis * local + rig.global_position
+
+
+func _to_local(leg: Dictionary, world: Vector4) -> Vector4:
+	var rig: Node4D = leg["rig"] as Node4D
+	return rig.global_basis.inverse() * (world - rig.global_position)
 
 
 ## Closed-form two-bone IK, joint folding BACKWARD.
@@ -449,10 +495,24 @@ func _place_leg(leg: Dictionary, goal: Vector4) -> void:
 		bend -= direction * bend.dot(direction)
 	bend = bend.normalized()
 
-	# NOT written back to the ball nodes. Moving a ball makes its rig re-loft the whole
-	# leg, which measured at 7.8 ms per leg per frame - five birds spent 77 of their
-	# 79 ms/frame there. The same pose is applied by skinning the mesh instead.
-	_skin_leg(leg, hip + direction * along + bend * out, hip + direction * reach)
+	var knee_pos: Vector4 = hip + direction * along + bend * out
+	var foot_pos: Vector4 = hip + direction * reach
+	_skin_leg(leg, knee_pos, foot_pos)
+
+	# AND WRITTEN BACK TO THE BALLS, which skinning alone did not do.
+	#
+	# Skinning poses the leg MESH. It does not move the ball nodes, and the separate foot
+	# mesh follows a ball - so the leg swung while the foot stayed exactly where it was
+	# born, sliding along the ground with the body. Measured: the foot's height varied by
+	# 0.0000 over six seconds and it travelled across the ground at 1.11x the body's own
+	# speed. That is a moonwalk by definition.
+	#
+	# The original reason for not writing them back was real - moving a ball made its rig
+	# re-loft, at 7.8 ms per leg per frame - but it no longer applies. _bind_leg sets
+	# live_rebuild = false on the rig, and the rig's _process returns before it looks at
+	# the dirty flag, so a moved ball now costs a vector assignment and nothing else.
+	(leg["knee"] as Node4D).position = knee_pos
+	(leg["foot"] as Node4D).position = foot_pos
 
 
 ## Works out the swing angle that actually puts the beak on the floor.

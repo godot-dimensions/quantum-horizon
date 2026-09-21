@@ -35,7 +35,13 @@ extends CharacterBody4D
 @export_range(0.1, 50.0, 0.1) var acceleration: float = 12.0
 @export_range(0.1, 50.0, 0.1) var turn_speed: float = 11.0
 
-var _facing: float = 0.0
+## Starts facing AWAY from the camera, which is PI, not zero.
+##
+## _turn_avatar sets this to atan2(wish.x, wish.z), so walking forward - which is -Z, the
+## way the camera looks - gives PI. Starting at 0 therefore started the character facing
+## the exact opposite of the way the first press of W would take it: it stood looking down
+## the camera until you moved.
+var _facing: float = PI
 
 ## How much slower the ana/kata axis is than ordinary movement.
 @export_range(0.05, 1.0, 0.05) var w_speed_scale: float = 0.3

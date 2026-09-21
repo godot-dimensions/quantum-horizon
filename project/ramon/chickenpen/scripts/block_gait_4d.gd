@@ -42,6 +42,19 @@ extends Node4D
 ## How far it leans into a run.
 @export_range(0.0, 0.6, 0.01) var run_lean: float = 0.14
 
+@export_group("Carrying")
+## How far the character stoops to pick a chicken up, and for how long.
+##
+## A pickup that happens instantly reads as the chicken teleporting into your hands. The
+## bend does not have to be long - it has to exist, so the eye has something to attribute
+## the chicken's arrival to.
+@export_range(0.0, 1.5, 0.05) var pickup_bend: float = 0.75
+@export_range(0.1, 1.5, 0.05) var pickup_seconds: float = 0.45
+@export_range(0.0, 0.4, 0.01) var pickup_dip: float = 0.18
+## Where the arms go while holding a chicken: straight up, overhead.
+@export_range(0.0, 6.3, 0.05) var carry_arm_raise: float = 3.15
+@export_range(0.0, 1.0, 0.05) var carry_elbow: float = 0.18
+
 ## How close to the hip the swing foot may come, as a fraction of leg length. The lower
 ## this is, the more the knee folds.
 @export_range(0.5, 1.0, 0.01) var min_swing_extension: float = 0.80
@@ -77,6 +90,10 @@ var _travelled: float = 0.0
 var _measured: bool = false
 var _sole: float = 0.0
 var _avatar_rest := Vector4.ZERO
+var _carrying: bool = false
+var _carry_blend: float = 0.0
+var _pickup: float = 0.0
+var _pelvis_drop: float = 0.0
 
 
 func _ready() -> void:
@@ -135,7 +152,16 @@ func _measure() -> void:
 	# 0.25, which is most of why the feet skated.
 	var reach_len: float = _thigh + _shin
 	var stand: float = maxf(_hip_height - _sole, 0.01)
-	var sweep: float = sqrt(maxf(reach_len * reach_len - stand * stand, 0.0))
+	# Measured at the LOW point of the dip, because that is where the foot reaches
+	# furthest: computing it at the standing height would promise a stride the leg can
+	# only manage at mid-stance.
+	# AND against the leg _step will actually use, which is 97% of it - the last 3% is held
+	# back so the knee never locks dead straight. Computing the sweep from the full length
+	# promised a stride the IK then clamped, and a clamped target is a foot that cannot
+	# reach its plant: the player's feet went from planting perfectly to slipping 0.10.
+	var low: float = maxf(stand - body_bob, 0.01)
+	var usable: float = reach_len * 0.97
+	var sweep: float = sqrt(maxf(usable * usable - low * low, 0.0))
 	stride_length = minf(stride_length, sweep * 2.0 * 0.82)
 	if stride_length < 0.05:
 		# A hip higher than the leg is long gives a sweep of zero, so every step has no
@@ -201,8 +227,21 @@ func _physics_process(delta: float) -> void:
 	# a run adding the rest.
 	var arm_effort: float = clampf(speed / maxf(run_speed * 0.45, 0.001), 0.0, 1.15)
 	var swing: float = sin(phase * TAU) * arm_swing * arm_effort * (1.0 - _airborne)
-	_arm(_avatar.shoulder_left, _avatar.elbow_left, -swing)
-	_arm(_avatar.shoulder_right, _avatar.elbow_right, swing)
+	if _carry_blend > 0.001:
+		# BOTH ARMS UP, and the swing folded out as they rise rather than switched off, so
+		# picking a chicken up mid-stride does not snap the arms.
+		# SWEPT, NOT REASONED ABOUT. Neither sign of 2.55 raised the arm at all - both landed
+		# it around 1.38 with the head top at 1.54 - so the angle was found by stepping the
+		# shoulder through a full turn and measuring where the arm's mesh actually reaches
+		# highest. That is pi: the arm hangs down at rest, so half a turn puts it straight
+		# up. The peak is 1.44, BELOW the head top, because these arms are short - which is
+		# why the carry anchor sits where it does rather than where arm length suggests.
+		var raised: float = carry_arm_raise
+		_hold(_avatar.shoulder_left, _avatar.elbow_left, lerpf(-swing, raised, _carry_blend))
+		_hold(_avatar.shoulder_right, _avatar.elbow_right, lerpf(swing, raised, _carry_blend))
+	else:
+		_arm(_avatar.shoulder_left, _avatar.elbow_left, -swing)
+		_arm(_avatar.shoulder_right, _avatar.elbow_right, swing)
 
 	# THE PELVIS RISES AT MID-STANCE. This is not decoration: with the hip pinned at one
 	# height the standing leg can never extend, and the character walks in a permanent
@@ -214,10 +253,16 @@ func _physics_process(delta: float) -> void:
 	# so it stays. The amount is up from 0.04 because 0.04 was not enough to straighten a
 	# leg standing at three quarters of its extension.
 	var bob: float = sin(phase * TAU * 2.0) * body_bob * effort * (1.0 - _airborne)
-	_avatar.position = _avatar_rest + Vector4(0.0, maxf(bob, 0.0), 0.0, 0.0)
+	# The stoop, layered over the walk rather than replacing it: one arc down and back up.
+	var stoop: float = 0.0
+	if _pickup > 0.0:
+		_pickup = maxf(_pickup - delta, 0.0)
+		stoop = sin((1.0 - _pickup / pickup_seconds) * PI)
+	_carry_blend = move_toward(_carry_blend, 1.0 if _carrying else 0.0, delta * 4.0)
+	_avatar.position = _avatar_rest + Vector4(0.0, maxf(bob, 0.0) - pickup_dip * stoop, 0.0, 0.0)
 	if _avatar.torso != null:
 		_avatar.torso.position = _torso_rest
-		_avatar.torso.basis = Basis4D.from_yz(-run_lean * effort)
+		_avatar.torso.basis = Basis4D.from_yz(-run_lean * effort - pickup_bend * stoop)
 
 
 ## One leg, one point in its cycle.
@@ -318,6 +363,24 @@ func _solve_leg(hip: Node4D, knee: Node4D, ankle: Node4D, target_z: float, targe
 
 ## Arms swing from the shoulder with the elbow trailing, which is enough to read as an
 ## arm rather than a plank.
+## Carrying: the arm is held, not swung, so the elbow stays nearly straight instead of
+## folding by the amount the shoulder has turned - which at an overhead angle would tuck
+## the hands back down behind the head.
+func _hold(shoulder: Node4D, elbow: Node4D, angle: float) -> void:
+	if shoulder == null:
+		return
+	shoulder.basis = Basis4D.from_yz(angle)
+	if elbow != null:
+		elbow.basis = Basis4D.from_yz(-carry_elbow)
+
+
+## Called by the catcher when a chicken is picked up or let go.
+func set_carrying(carrying: bool) -> void:
+	if carrying and not _carrying:
+		_pickup = pickup_seconds
+	_carrying = carrying
+
+
 func _arm(shoulder: Node4D, elbow: Node4D, swing: float) -> void:
 	if shoulder == null:
 		return

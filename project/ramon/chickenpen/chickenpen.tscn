@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=3]
+[gd_scene load_steps=32 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_debug_4d.gd" id="pen_debug"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_controls_4d.gd" id="pen_controls"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/chicken_radar_4d.gd" id="pen_radar"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_keeper_4d.gd" id="pen_keeper"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -141,6 +142,13 @@ player_path = NodePath("../../Player")
 manager_path = NodePath("../../Chickens")
 locator_path = NodePath("../../Systems/Locator")
 
+[node name="Keeper" type="Label" parent="UI"]
+offset_left = 16.0
+offset_top = 208.0
+offset_right = 1100.0
+offset_bottom = 232.0
+text = ""
+
 [node name="Systems" type="Node" parent="."]
 
 [node name="Locator" type="Node" parent="Systems"]
@@ -202,14 +210,22 @@ material_override = SubResource("ground_mat")
 mesh = SubResource("ground_mesh")
 
 [node name="Keeper" type="Node4D" parent="World"]
-position = Vector4(3.6, 0, -2.2, 0)
+position = Vector4(2.30, 0, -4.30, 0)
+basis = Projection(0.7727, 0, 0.6347, 0, 0, 1, 0, 0, -0.6347, 0, 0.7727, 0, 0, 0, 0, 1)
 script = ExtResource("avatar")
 build = 2
 skin = Color(0.76, 0.58, 0.44, 1)
 accent = Color(0.52, 0.33, 0.55, 1)
 
+[node name="KeeperVoice" type="Node4D" parent="World"]
+position = Vector4(2.3, 0, -4.3, 0)
+script = ExtResource("pen_keeper")
+player_path = NodePath("../../Player")
+manager_path = NodePath("../../Chickens")
+readout_path = NodePath("../../UI/Keeper")
+
 [node name="Sign" type="Node4D" parent="World"]
-position = Vector4(-3.6, 0, -2.2, 0)
+position = Vector4(-2.3, 0, -4.3, 0)
 
 [node name="Post" type="MeshInstance4D" parent="World/Sign"]
 position = Vector4(0, 0.75, 0, 0)
@@ -273,13 +289,14 @@ skin = Color(0.42, 0.62, 0.36, 1)
 accent = Color(0.93, 0.80, 0.62, 1)
 
 [node name="CarryAnchor" type="Node4D" parent="Player"]
-position = Vector4(0, 1.02, 0.34, 0)
+position = Vector4(0, 1.58, 0.05, 0)
 
 [node name="Catcher" type="Node4D" parent="Player"]
 script = ExtResource("pen_catcher")
 manager_path = NodePath("../../Chickens")
 carry_anchor_path = NodePath("../CarryAnchor")
 facing_path = NodePath("../Avatar")
+gait_path = NodePath("../Gait")
 prompt_path = NodePath("../../UI/CatchPrompt")
 
 [node name="Gait" type="Node4D" parent="Player"]

@@ -35,7 +35,9 @@ enum State { IDLE, WANDER, ALERT, EVADE, CARRIED, THROWN, PENNED, RECOVERING }
 @export var w_drift: float = 0.15
 
 @export_group("Speeds")
-@export var walk_speed: float = 18.0
+## Cadence, not distance - see chicken_walker.gd's `speed`. Scaled down with the stride
+## going up, so the birds keep their old pace with longer steps.
+@export var walk_speed: float = 6.0
 @export var evade_speed: float = 34.0
 
 @export_group("Idle and wander")
@@ -61,6 +63,23 @@ enum State { IDLE, WANDER, ALERT, EVADE, CARRIED, THROWN, PENNED, RECOVERING }
 ## interesting question is almost always "what is number 7 doing", and twelve chickens all
 ## logging at once is not a readout, it is a wall.
 @export var debug_state: bool = false
+
+@export_group("Temperament")
+## Docile birds do not flee. They notice nothing, bolt from nothing, and spend their time
+## standing about pecking the ground.
+##
+## This deliberately switches off items 21-23 - the startle, the evade and its cooldown -
+## which the brief asked for and which are still here and still work. A chicken that runs
+## when you approach turns catching into a chase, and the hunt in this prototype is meant
+## to be through W, not around the field. The skittish version is one flag away.
+@export var docile: bool = true
+## How often a docile bird pecks, and how often a penned one does. Penned birds peck more:
+## they have arrived, they are at home, and a pen of chickens all pecking reads as settled
+## in a way a pen of chickens all walking does not.
+@export_range(0.5, 20.0, 0.5) var peck_every_min: float = 2.0
+@export_range(0.5, 20.0, 0.5) var peck_every_max: float = 5.0
+@export_range(0.5, 20.0, 0.5) var penned_peck_every_min: float = 1.2
+@export_range(0.5, 20.0, 0.5) var penned_peck_every_max: float = 3.2
 
 @export_group("Liveliness")
 ## How far a startled chicken hops, and how far its wings come up (item 21).
@@ -161,6 +180,7 @@ func _enter(next: State) -> void:
 	match state:
 		State.IDLE:
 			_set_walker(true, walk_speed, false, 0.0)
+			_set_pecking(peck_every_min, peck_every_max)
 			_timer = _rng.randf_range(idle_seconds_min, idle_seconds_max)
 		State.WANDER:
 			_set_walker(false, walk_speed, false, 0.0)
@@ -175,7 +195,9 @@ func _enter(next: State) -> void:
 			_evade_from = _creature.position
 			_timer = 1.4
 		State.PENNED:
-			_set_walker(false, walk_speed * 0.6, false, 0.0)
+			# Home. It stands about and pecks rather than pacing the fence.
+			_set_walker(true, walk_speed * 0.5, false, 0.0)
+			_set_pecking(penned_peck_every_min, penned_peck_every_max)
 			_timer = _rng.randf_range(wander_seconds_min, wander_seconds_max)
 		State.CARRIED, State.THROWN:
 			_set_walker(true, 0.0, false, 0.0)
@@ -238,6 +260,16 @@ func _tick_recovering() -> void:
 		_enter(State.IDLE)
 
 
+## How often this bird pecks. Set per state, because a settled chicken pecks more than a
+## wandering one and the difference is most of what makes the pen look like a pen.
+func _set_pecking(every_min: float, every_max: float) -> void:
+	if _walker == null:
+		return
+	_walker.set("peck_enabled", true)
+	_walker.set("peck_interval_min", every_min)
+	_walker.set("peck_interval_max", every_max)
+
+
 func _set_walker(halted: bool, speed: float, steer: bool, heading: float) -> void:
 	if _walker == null:
 		return
@@ -265,7 +297,7 @@ func _distance_to_player() -> float:
 ## every time, so the bird vibrated instead of settling. A chicken that has just run is
 ## allowed to be unimpressed by you for a few seconds.
 func _threatened() -> bool:
-	if state == State.PENNED or returned or _cooldown > 0.0:
+	if docile or state == State.PENNED or returned or _cooldown > 0.0:
 		return false
 	return _distance_to_player() < alert_distance
 

@@ -162,18 +162,32 @@ func _build_chibi() -> void:
 	# a walk and a pair of stilts.
 	for side in [1.0, -1.0]:
 		var tag: String = "L" if side > 0.0 else "R"
-		# THE LEG MUST BE LONGER THAN THE HIP IS HIGH. It was not - hip at 0.60 with a
-		# 0.44 leg - so the leg could not reach the floor, sat permanently straight, and
-		# every planted foot was out of range and got dragged. Reach now exceeds hip
-		# height by 0.06, which is the slack the knee bends into.
-		var hip := _pivot(self, "Hip" + tag, Vector4(0.10 * side, 0.62, 0.0, 0.0))
-		_limb(hip, "Thigh" + tag, Vector4(0.0, -0.18, 0.0, 0.0), Vector3(0.13, 0.36, 0.14), accent)
-		var knee := _pivot(hip, "Knee" + tag, Vector4(0.0, -0.36, 0.0, 0.0))
-		_limb(knee, "Shin" + tag, Vector4(0.0, -0.18, 0.0, 0.0), Vector3(0.12, 0.36, 0.13), accent)
+		# THE LEG MUST BE LONGER THAN THE HIP IS HIGH, BUT ONLY JUST.
+		#
+		# Too short and it cannot reach the floor, sits permanently straight, and every
+		# planted foot gets dragged. Too long and the difference has to go somewhere, and
+		# the only place it can go is the knee: at 0.36 + 0.36 against a hip 0.62 up and a
+		# 0.08 sole, a straight leg reached 0.18 BELOW the ground, so the character stood
+		# in a 83-degree squat before it had taken a step. Measured walking, its knee never
+		# came straighter than 29 degrees and averaged 66.
+		#
+		# The hip sits at 0.70, so the stance is 0.62 against a 0.64 leg - 97%, standing
+		# straight. The stride is bought by DIPPING from there rather than by crouching
+		# permanently and hopping up; see body_bob in block_gait_4d.gd.
+		#
+		# 0.32 + 0.32 = 0.64 against a 0.62 stance. At the top of the pelvis rise the hip
+		# is 0.635 up, which is 99% of the leg - straight, near enough to read as straight -
+		# and at the ends of the stride it still has 0.10 of slack to bend into. The slack
+		# is also what the stride is made of: sweep is sqrt(leg^2 - stance^2), so a leg
+		# sized flush to the stance would stand up beautifully and be unable to step.
+		var hip := _pivot(self, "Hip" + tag, Vector4(0.10 * side, 0.70, 0.0, 0.0))
+		_limb(hip, "Thigh" + tag, Vector4(0.0, -0.16, 0.0, 0.0), Vector3(0.13, 0.32, 0.14), accent)
+		var knee := _pivot(hip, "Knee" + tag, Vector4(0.0, -0.32, 0.0, 0.0))
+		_limb(knee, "Shin" + tag, Vector4(0.0, -0.16, 0.0, 0.0), Vector3(0.12, 0.32, 0.13), accent)
 		# THE BOOT HANGS OFF AN ANKLE, not off the shin. Rigid to the shin it tips with
 		# the leg, which is the single most obviously wrong thing about the walk. Given
 		# its own joint the gait can hold it flat, and later roll it for toe-off.
-		var ankle := _pivot(knee, "Ankle" + tag, Vector4(0.0, -0.36, 0.0, 0.0))
+		var ankle := _pivot(knee, "Ankle" + tag, Vector4(0.0, -0.32, 0.0, 0.0))
 		_limb(ankle, "Boot" + tag, Vector4(0.0, -0.03, 0.04, 0.0), Vector3(0.15, 0.10, 0.24), Color(0.40, 0.26, 0.16))
 		var shoulder := _pivot(self, "Shoulder" + tag, Vector4(0.22 * side, 1.02, 0.0, 0.0))
 		_limb(shoulder, "UpperArm" + tag, Vector4(0.0, -0.09, 0.0, 0.0), Vector3(0.10, 0.18, 0.11), skin)
