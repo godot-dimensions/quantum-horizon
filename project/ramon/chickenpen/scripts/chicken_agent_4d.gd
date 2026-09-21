@@ -57,7 +57,17 @@ enum State { IDLE, WANDER, ALERT, EVADE, CARRIED, THROWN, PENNED, RECOVERING }
 @export var catch_distance: float = 0.9
 
 @export_group("Debug")
+## Item 25: print this chicken's state changes. Per bird rather than global, because the
+## interesting question is almost always "what is number 7 doing", and twelve chickens all
+## logging at once is not a readout, it is a wall.
 @export var debug_state: bool = false
+
+@export_group("Liveliness")
+## How far a startled chicken hops, and how far its wings come up (item 21).
+@export_range(0.0, 2.0, 0.05) var startle_hop: float = 0.55
+@export_range(0.0, 1.5, 0.05) var startle_wing_lift: float = 0.8
+## And how much it fidgets while being carried (item 30).
+@export_range(0.0, 1.5, 0.05) var carried_flutter: float = 0.5
 
 @export_group("Recovery")
 ## Below this the chicken has left the world rather than wandered (item 76).
@@ -84,6 +94,8 @@ const SETTLE_SECONDS: float = 1.6
 @export var pen_slice_w: float = 0.0
 
 var _last_seen: Vector4 = Vector4.ZERO
+var _wing_node: Node4D
+var _flutter: float = 0.0
 var _path: float = 0.0
 var _stuck_elapsed: float = 0.0
 var _settle_from: float = 0.0
@@ -122,6 +134,7 @@ func _physics_process(delta: float) -> void:
 	_cooldown = maxf(_cooldown - delta, 0.0)
 	_timer -= delta
 	_guard(delta)
+	_animate(delta)
 	match state:
 		State.IDLE:
 			_tick_idle()
@@ -141,6 +154,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _enter(next: State) -> void:
+	if debug_state and next != state:
+		print("[chicken %d] %s -> %s at %.1v" % [
+			chicken_id, State.keys()[state], State.keys()[next], _creature.position])
 	state = next
 	match state:
 		State.IDLE:
@@ -240,8 +256,18 @@ func _distance_to_player() -> float:
 	return _creature.global_position.distance_to(_player.global_position)
 
 
+## Is the player close enough to startle this bird right now?
+##
+## THE COOLDOWN COUNTS HERE TOO, not only at the moment it decides to run. It used to gate
+## the EVADE and not the ALERT, so a player simply standing next to a chicken made it
+## flicker IDLE - ALERT - IDLE many times a second: it noticed, found it was still resting,
+## went back to idle, and noticed again on the very next frame. The startle hop replayed
+## every time, so the bird vibrated instead of settling. A chicken that has just run is
+## allowed to be unimpressed by you for a few seconds.
 func _threatened() -> bool:
-	return state != State.PENNED and not returned and _distance_to_player() < alert_distance
+	if state == State.PENNED or returned or _cooldown > 0.0:
+		return false
+	return _distance_to_player() < alert_distance
 
 
 func _away_from_player() -> float:
@@ -267,6 +293,52 @@ func _away_from_player() -> float:
 ## The recovery is deliberately dull: go home. There is nowhere better to put a chicken
 ## that has gone wrong, and anywhere cleverer would be a second placement system disagreeing
 ## with the authored one.
+## Items 21 and 30: the two moments the chicken has to look alive without walking.
+##
+## A startled bird HOPS AND THROWS ITS WINGS UP, and a carried one keeps fidgeting. Both
+## are the same small amount of work - a wing angle and a height - and both exist because
+## a chicken that merely stops, or merely hangs in your hands, reads as a prop. The walker
+## drives the legs and never touches the wing or the height, so these can be written
+## directly without fighting it.
+func _animate(delta: float) -> void:
+	_flutter += delta
+	var wing: Node4D = _wing()
+	if wing == null:
+		return
+	match state:
+		State.ALERT:
+			# Wings up and a hop, over the beat of noticing. Sine over the whole beat, so
+			# it lands as the bird decides whether to bolt.
+			var beat: float = clampf(1.0 - _timer / 0.35, 0.0, 1.0)
+			var arc: float = sin(beat * PI)
+			wing.basis = Basis4D.from_xy(-startle_wing_lift * arc)
+			_creature.position.y = home_position.y + startle_hop * arc
+		State.EVADE:
+			# Still half-raised while running, the way a panicking bird holds them.
+			wing.basis = Basis4D.from_xy(-startle_wing_lift * 0.45)
+			_creature.position.y = home_position.y
+		State.CARRIED, State.THROWN:
+			# Item 30: a slow flutter with an occasional harder flap, so it never settles
+			# into a loop the eye can predict. It keeps flapping through the throw, which
+			# is both funnier and the honest thing for a bird in the air to do.
+			#
+			# NEITHER OF THESE TOUCHES THE HEIGHT. The catcher owns where a held or flying
+			# chicken is, and writing y here flattened every throw into a slide along the
+			# ground - the arc was there in the catcher and overwritten a frame later.
+			var slow: float = sin(_flutter * 4.2) * 0.35
+			var kick: float = maxf(sin(_flutter * 0.9), 0.0)
+			wing.basis = Basis4D.from_xy(-carried_flutter * (slow + kick * 0.8))
+		_:
+			wing.basis = Projection.IDENTITY
+			_creature.position.y = home_position.y
+
+
+func _wing() -> Node4D:
+	if _wing_node == null:
+		_wing_node = _creature.get_node_or_null("Wing") as Node4D
+	return _wing_node
+
+
 func _guard(delta: float) -> void:
 	if state == State.CARRIED or state == State.RECOVERING:
 		_path = 0.0

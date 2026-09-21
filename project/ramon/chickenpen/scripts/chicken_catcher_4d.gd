@@ -56,6 +56,9 @@ signal released(agent: Node, thrown: bool)
 ## A plain drop, for placing rather than throwing.
 @export var drop_speed: float = 0.6
 
+## How far a carried chicken bobs in your hands (item 30).
+@export_range(0.0, 0.3, 0.01) var carry_bob: float = 0.05
+
 @export_group("Flight")
 @export var gravity: float = 9.0
 ## Below this height a thrown chicken has landed.
@@ -68,6 +71,7 @@ var _anchor: Node4D
 var _prompt: Label
 var _candidate: Node = null
 var _flying: Array = []
+var _bob: float = 0.0
 
 
 func _ready() -> void:
@@ -171,7 +175,12 @@ func _carry_tick() -> void:
 	# every other part of the carry looked correct.
 	var host: Node4D = body.get_parent() as Node4D
 	var origin: Vector4 = host.global_position if host != null else Vector4.ZERO
-	body.position = _anchor.global_position - origin
+	# Item 30: a small bob on top of the anchor, so a held chicken is never perfectly
+	# still. It belongs here rather than on the chicken because this line runs after the
+	# chicken's own processing and would overwrite anything it wrote to its height.
+	_bob += get_physics_process_delta_time()
+	var lift: float = sin(_bob * 5.4) * carry_bob + sin(_bob * 2.1) * carry_bob * 0.4
+	body.position = _anchor.global_position - origin + Vector4(0.0, lift, 0.0, 0.0)
 
 
 func _release(thrown: bool) -> void:

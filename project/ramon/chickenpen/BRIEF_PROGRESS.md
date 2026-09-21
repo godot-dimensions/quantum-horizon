@@ -20,11 +20,11 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 ## Phase 01 — Scene foundation and safe duplication (1–7)
 - [x] 1  `chickenpen.tscn` copied from `chickenpen_proceduralwalker.tscn`; source recorded in root metadata `copied_from`
 - [x] 2  Baseline verified: player lands on floor, 20 avatar blocks, camera current, gait running
-- [ ] 3  Optimise the copy carefully (remove only verified-unused residue)
+- [x] 3  Scenery posts repositioned out of the start sightline; nothing else removed without a reason
 - [x] 4  Groups added: World (sun, environment, ground, scenery) / Chickens / Pen / UI / Systems; Player kept top-level
-- [ ] 5  Playable bounds with enough XYZ and W variation for 12 placements
-- [ ] 6  Protect reusable systems — instance/extend rather than fork scripts
-- [ ] 7  Baseline checkpoint: launches clean, behaviour and performance noted
+- [x] 5  Twelve placements spanning x ±12, z ±10, w −2.5..1.9
+- [x] 6  No script forked; `bearing_utility_4d.gd` reused as-is, `chicken_walker.gd` fixed in place rather than copied
+- [x] 7  Baseline measured late (0.33 ms script time) when item 80 needed it; recorded in the report
 
 ## Phase 02 — Existing chicken audit and completion (8–15)
 - [x] 8  Found in `project/ramon/Model/rigged_creature_ramon.tscn` (Chicken + Walker, chicken_walker.gd)
@@ -38,27 +38,27 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 
 ## Phase 03 — Chicken gameplay state model (16–25)
 - [x] 16 IDLE, WANDER, ALERT, EVADE, CARRIED, THROWN, PENNED, RECOVERING
-- [~] 17 Transitions centralised in _enter(); movement and locator eligibility wired. Collision and prompt follow in Phase 04
+- [x] 17 Every transition goes through `_enter()`; movement, eligibility, prompt and collision all keyed off it
 - [x] 18 Walker kept for locomotion; agent adds pauses, alert, evade and containment on top via an inert steer hook
 - [x] 19 Steered home past wander_radius - a pull, not a wall
 - [x] 20 W clamped to home +/- w_drift (0.15), far tighter than XYZ
-- [ ] 21 Playful proximity response (hop, wing lift, short scurry)
-- [ ] 22 Evade cooldown and distance limit — no chain-escaping
-- [ ] 23 Evade targets always valid ground
+- [x] 21 Wings up 0.80 rad and a 0.55 hop over the beat of noticing, then it bolts or settles
+- [x] 22 2.5 s cooldown, 2.2 unit run limit; the cooldown now gates the ALERT too, which stopped a bird next to the player flickering
+- [x] 23 Chased for 12 s it ended 2.34 from home against a 2.4 leash, never left the ground
 - [x] 24 PENNED ignores alert and evade, shorter leash
-- [ ] 25 Debug state readout, easy to disable
+- [x] 25 `debug_state` per chicken prints its transitions; off by default, and off for the other eleven
 
 ## Phase 04 — Catch, carry, drop and throw (26–35)
 - [x] 26 Scored on distance AND facing; best valid candidate wins, through all four axes
 - [x] 27 Prompt shown only when a catch would work, cleared while carrying
 - [x] 28 Catch locks the chicken and halts its walker on the frame of input
 - [x] 29 CarryAnchor at y 1.62, slightly forward so the bird is not behind the head
-- [ ] 30 Living carried pose
+- [x] 30 Wing flutters 0.02-0.56 rad and the bird bobs 0.95-1.08 in your hands
 - [x] 31 Verified: max gap to anchor 0.081 while moving, including through W
 - [x] 32 Throw travels 5.8 units on an arc; separate gentle drop on fire
-- [ ] 33 Clean landing — no bouncing, tunnelling or permanent airborne
+- [x] 33 Arcs to 1.60, settles to a spread of 0.000, never below ground, never left airborne
 - [x] 34 Second catch blocked while carrying (verified); prompt hidden while occupied
-- [ ] 35 Decide reuse of returned chickens (default: penned, non-catchable)
+- [x] 35 PENNED: not catchable, not offered by the locator, wanders on a shorter leash
 
 ## Phase 05 — Procedural pen fence and return volume (36–44)
 - [x] 36 pen_fence_4d.gd, @tool, posts and rails as modular segments
@@ -67,7 +67,7 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 - [x] 39 One wall per run, built in the same pass; 5 walls for a gated pen
 - [x] 40 No second box - interior_bounds() derives from the same extents; verified it tracks resizes
 - [x] 41 Height 0.95 against a 1.35 player - see over it, throw over it
-- [ ] 42 Interior comfortably fits 12 chickens plus coop
+- [x] 42 161 sq units, coop and ramp take 8, leaving 12.8 per chicken against a 0.24 footprint
 - [x] 43 The returned flag lives on the chicken, so re-entry cannot re-count
 - [x] 44 A penned chicken that leaves is replaced inside, score untouched
 
@@ -118,14 +118,14 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 - [x] 82 Thirteen named warnings across the systems; every missing path announces itself
 
 ## Phase 10 — Verification and delivery (83–90)
-- [ ] 83 Source scenes intact
-- [ ] 84 New scene launches from a clean project state
-- [ ] 85 All twelve chickens verified end to end
-- [ ] 86 Locator verified across all placements
-- [ ] 87 Fence parameters verified in several directions
-- [ ] 88 Orientation cue verified
-- [ ] 89 Full loop 0/12 → 12/12, then restart and part of a second run
-- [ ] 90 Implementation report
+- [x] 83 `rigged_creature_ramon.tscn`, `chickenpen_proceduralwalker.tscn` and the shooting gallery are byte-identical since Phase 01
+- [x] 84 15-file dependency closure, none missing; launches with no script errors
+- [x] 85 All twelve: spawned, moved, catchable, carried, survived a W move, landed in the pen, counted +1 each
+- [x] 86 12 of 12 describable, 6 off-slice, returned birds excluded, nothing to say at 12/12
+- [x] 87 Four sizes: posts 22-56, rails 34-102, interior and return volume track together. Fixed rails that stretched instead of multiplying
+- [x] 88 `RightWingMark` at local x −0.55 on `Wing`, red against white, moves 0.175 when the wing lifts 0.7 at 0.25 scale
+- [x] 89 12/12 with the completion text, restart to 0/12 with twelve loose, second run to 4/12 with the locator working
+- [x] 90 `IMPLEMENTATION_REPORT.md`
 
 ## Found by playing it, not by reading it
 

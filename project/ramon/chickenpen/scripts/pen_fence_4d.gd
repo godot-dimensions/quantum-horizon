@@ -164,9 +164,14 @@ func _build_side(index: int, along_x: bool, fixed: float, from: float, to: float
 	var gap_centre: float = from + span * 0.5 + gate_position * span * 0.5
 	var gap_half: float = gate_width * 0.5 if which == gate_side else 0.0
 
+	# Where the posts stand, with a hole where the gateway is. Computed once and used for
+	# both the posts and the rails, so a rail can never span a gap a post is missing from.
+	var stations: Array = []
 	for i in count + 1:
 		var at: float = from + step * float(i)
-		if gap_half > 0.0 and absf(at - gap_centre) < gap_half:
+		var blocked: bool = gap_half > 0.0 and absf(at - gap_centre) < gap_half
+		stations.append(null if blocked else at)
+		if blocked:
 			continue
 		var post := MeshInstance4D.new()
 		post.name = "Post_%d_%d" % [index, i]
@@ -176,25 +181,26 @@ func _build_side(index: int, along_x: bool, fixed: float, from: float, to: float
 		add_child(post)
 		_own(post)
 
-	# Rails run between the posts, skipping the gateway, and are cut to length rather
-	# than scaled - a rail is its own box with its own size.
-	var runs: Array = []
-	if gap_half > 0.0:
-		runs.append([from, gap_centre - gap_half])
-		runs.append([gap_centre + gap_half, to])
-	else:
-		runs.append([from, to])
-
-	for run_index in runs.size():
-		var run: Array = runs[run_index]
-		var length: float = run[1] - run[0]
+	# ONE RAIL PER BAY, not one per side (item 38).
+	#
+	# The rails used to be a single box stretched across a whole run, so a pen twice the
+	# size got the same ten rails at twice the length - posts that multiplied and rails
+	# that stretched, which is precisely the mix the brief calls out. A bay is the gap
+	# between two adjacent posts, so widening the pen now adds rails instead of lengthening
+	# them, and every rail in the pen is the same size whatever the pen is.
+	for i in stations.size() - 1:
+		var left = stations[i]
+		var right = stations[i + 1]
+		if left == null or right == null:
+			continue
+		var length: float = float(right) - float(left)
 		if length <= 0.05:
 			continue
-		var centre: float = (run[0] + run[1]) * 0.5
+		var centre: float = (float(left) + float(right)) * 0.5
 		for r in rail_count:
 			var y: float = height * (float(r + 1) / float(rail_count + 1))
 			var rail := MeshInstance4D.new()
-			rail.name = "Rail_%d_%d_%d" % [index, run_index, r]
+			rail.name = "Rail_%d_%d_%d" % [index, i, r]
 			var mesh := BoxTetraMesh4D.new()
 			mesh.size = Vector4(length if along_x else rail_thickness, rail_thickness,
 				rail_thickness if along_x else length, w_depth)
@@ -204,18 +210,29 @@ func _build_side(index: int, along_x: bool, fixed: float, from: float, to: float
 			add_child(rail)
 			_own(rail)
 
-		# Item 39: one collision wall per RUN, generated in the same pass from the same
-		# numbers, so it cannot describe a fence that is no longer there. Per run rather
-		# than per rail: the rails are what you see, the wall is what you cannot walk
-		# through, and a gateway needs a real gap in both.
+	# Item 39: collision per RUN rather than per bay, generated in the same pass from the
+	# same numbers. The rails are what you see and the wall is what you cannot walk
+	# through; one box per continuous stretch is cheaper and describes the same barrier.
+	var runs: Array = []
+	if gap_half > 0.0:
+		runs.append([from, gap_centre - gap_half])
+		runs.append([gap_centre + gap_half, to])
+	else:
+		runs.append([from, to])
+	for run_index in runs.size():
+		var run: Array = runs[run_index]
+		var run_length: float = run[1] - run[0]
+		if run_length <= 0.05:
+			continue
+		var run_centre: float = (run[0] + run[1]) * 0.5
 		var shape := CollisionShape4D.new()
 		shape.name = "Wall_%d_%d" % [index, run_index]
 		var box := BoxShape4D.new()
-		box.size = Vector4(length if along_x else post_thickness, height,
-			post_thickness if along_x else length, w_depth)
+		box.size = Vector4(run_length if along_x else post_thickness, height,
+			post_thickness if along_x else run_length, w_depth)
 		shape.shape = box
-		shape.position = Vector4(centre if along_x else fixed, height * 0.5,
-			fixed if along_x else centre, 0.0)
+		shape.position = Vector4(run_centre if along_x else fixed, height * 0.5,
+			fixed if along_x else run_centre, 0.0)
 		body.add_child(shape)
 		_own(shape)
 
