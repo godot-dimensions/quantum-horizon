@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3]
+[gd_scene load_steps=37 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -21,6 +21,7 @@
 [ext_resource type="Script" path="res://ramon/dialogue/world_tag_4d.gd" id="dlg_tag"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_talk_4d.gd" id="pen_talk"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_slice_assist_4d.gd" id="pen_assist"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_inventory_4d.gd" id="pen_inventory"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -186,6 +187,12 @@ choice_size = 19
 name_size = 17
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 head_anchor_path = NodePath("../../World/KeeperHead")
+
+[node name="Inventory" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("pen_inventory")
+dialogue_path = NodePath("../../Systems/Talk")
 
 [node name="Systems" type="Node" parent="."]
 
