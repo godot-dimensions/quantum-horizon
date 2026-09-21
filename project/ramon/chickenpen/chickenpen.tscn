@@ -240,6 +240,8 @@ pen_path = NodePath("../../Pen")
 fence_path = NodePath("../../Pen/Fence")
 coop_path = NodePath("../../Pen/Coop")
 slice_frame_path = NodePath("../../Player/CameraRig")
+manager_path = NodePath("../../Chickens")
+locator_path = NodePath("../../Systems/Locator")
 
 [node name="SliceGizmo" type="Control" parent="UI"]
 anchor_left = 1.0

@@ -31,6 +31,17 @@ extends Control
 ## would mean assuming which order from_xw and from_zw compose in, which is one more thing
 ## to get backwards silently.
 ##
+## THE CHICKENS STAND ON IT TOO, each at its own (x, z) on a stem up to its own w. That
+## turns the level from a way home into a way to ANY slice: a bird is catchable when your
+## plane passes through its head, and because a bird far down the field needs a different
+## rotation from one at your feet, its position on the ground matters as much as its
+## height. A row of heights alone - which is what the ruler is - cannot say that.
+##
+## Their heights are scaled by THE SAME factor as the plane's, which matters more than it
+## sounds: the picture shrinks itself to stay on the panel, and scaling the plane without
+## scaling the birds would draw them aligned when they are not, or apart when they touch.
+## Everything goes through _fitted together for exactly that reason.
+##
 ## IT READS, IT DOES NOT DRIVE. No snap-home button, for the same reason the prism has
 ## none: arriving on a slice is the thing you are meant to have done.
 
@@ -45,6 +56,11 @@ extends Control
 @export var coop_path: NodePath
 ## Whose basis carries the slice rotation. The camera rig, as everywhere else here.
 @export var slice_frame_path: NodePath
+## The flock, so the birds can stand on the diagram. Optional - without it this is still
+## a way home, just not a way to anywhere else.
+@export var manager_path: NodePath
+## Which bird the locator is talking about, so the words and the picture agree.
+@export var locator_path: NodePath
 
 @export_group("Reading")
 ## How close counts as home. The same figure the catch uses, so "the diagram says home"
@@ -53,9 +69,13 @@ extends Control
 ## Pixels per world unit of w. The pen is far enough down the z axis that a small zw
 ## rotation lifts its far corners a long way, so this stays small and the quad is clamped.
 @export_range(2.0, 60.0, 0.5) var w_pixels: float = 22.0
-## Pixels per world unit across the ground. The pen is ten units by nine, so this is what
-## decides how much of the panel the footprint fills.
-@export_range(1.0, 48.0, 0.5) var ground_scale: float = 18.0
+## Pixels per world unit across the ground.
+##
+## SIZED FOR THE FIELD, NOT THE PEN. On its own the pen would happily take the whole
+## panel, and then every chicken would be off the edge of it - and a bird you cannot see
+## is a bird you cannot line up on. At this scale the pen is still a couple of hundred
+## pixels across and the flock fits around it.
+@export_range(1.0, 48.0, 0.5) var ground_scale: float = 12.0
 
 @export_group("Look")
 @export var ground_color: Color = Color(1.0, 1.0, 1.0, 0.45)
@@ -63,6 +83,8 @@ extends Control
 @export var home_color: Color = Color(0.45, 0.95, 0.5, 0.95)
 @export var near_color: Color = Color(1.0, 0.85, 0.25, 0.95)
 @export var far_color: Color = Color(0.95, 0.45, 0.35, 0.95)
+@export var chicken_color: Color = Color(0.78, 0.78, 0.76, 0.9)
+@export var target_color: Color = Color(1.0, 0.85, 0.25, 0.95)
 @export var toggle_key: Key = KEY_N
 
 ## Extents used if the fence cannot be read.
@@ -88,6 +110,8 @@ var _pen: Node4D
 var _fence: Node
 var _coop: Node4D
 var _frame: Node4D
+var _manager: Node
+var _locator: Node
 
 
 func _ready() -> void:
@@ -97,6 +121,11 @@ func _ready() -> void:
 	_fence = get_node_or_null(fence_path)
 	_coop = get_node_or_null(coop_path) as Node4D
 	_frame = get_node_or_null(slice_frame_path) as Node4D
+	_manager = get_node_or_null(manager_path)
+	_locator = get_node_or_null(locator_path)
+	# A bird well down the field projects outside the panel. Clipped, it simply is not
+	# shown; unclipped it would be drawn across the rest of the screen.
+	clip_contents = true
 	if _player == null or _pen == null:
 		push_warning("PenSlicePlane: player or pen missing - the level has nothing to level against.")
 
@@ -189,26 +218,125 @@ func _draw() -> void:
 	var home: bool = worst <= home_tolerance
 	var colour: Color = home_color if home else (near_color if worst < 2.0 else far_color)
 
-	# Your slice, over the same four corners. Clamped so a big tilt bends the picture
-	# rather than throwing it off the panel - the shape still says which way to go.
-	var reach: float = (size.y * 0.42) / w_pixels
+	# Your slice, over the same four corners, shrunk as a WHOLE if it would leave the
+	# panel. Clamping each corner on its own was the obvious way to keep it in frame and
+	# it stops the picture being a plane: a corner that hits the limit is pinned while
+	# the other three carry on, so the quad buckles and the one thing the instrument is
+	# for - reading a flat plane against a tilted one - is the thing it stops showing.
+	# Scaling every height by the same factor keeps it planar and keeps the tilt's
+	# direction; only its steepness is compressed, and the caption carries the real
+	# number anyway.
+	# The flock, gathered before anything is fitted, because they share the plane's scale.
+	var birds: Array = _flock()
+	var everything: Array = heights.duplicate()
+	for bird in birds:
+		everything.append(bird[2])
+	var fitted_all: Array = _fitted(everything)
+	var drawn: Array = fitted_all.slice(0, corners.size())
+
 	var live := PackedVector2Array()
 	for i in corners.size():
 		var c: Vector2 = corners[i]
-		var w: float = clampf(heights[i], -reach, reach)
+		var w: float = drawn[i]
 		var point: Vector2 = _plan(c.x, c.y, w, origin, mid)
 		live.append(point)
 		# A drop line to the ground below it, which is what makes a small gap visible.
 		draw_line(_plan(c.x, c.y, 0.0, origin, mid), point,
 			Color(colour.r, colour.g, colour.b, 0.4), 1.0)
-	var fill := PackedVector2Array(live)
-	draw_colored_polygon(fill, Color(colour.r, colour.g, colour.b, 0.14))
+	# FILLED AS TWO TRIANGLES, not as one quad. A strong tilt can fold the projected
+	# corners into a bow-tie, and draw_colored_polygon cannot triangulate one of those -
+	# it fails with "Invalid polygon data" and the fill vanishes. Triangles always
+	# triangulate, and a folded shape still shades sensibly.
+	var wash := Color(colour.r, colour.g, colour.b, 0.14)
+	draw_colored_polygon(PackedVector2Array([live[0], live[1], live[2]]), wash)
+	draw_colored_polygon(PackedVector2Array([live[0], live[2], live[3]]), wash)
 	live.append(live[0])
 	draw_polyline(live, colour, 2.0, true)
+
+	# The shrink the picture actually applied, read back off a corner rather than
+	# recomputed, so the rungs below cannot drift out of step with the quad.
+	var shrink: float = 1.0
+	for i in heights.size():
+		if absf(heights[i]) > 0.001:
+			shrink = drawn[i] / heights[i]
+			break
+	for i in birds.size():
+		var bird: Array = birds[i]
+		_draw_bird(bird[0], bird[1], fitted_all[corners.size() + i],
+			bool(bird[3]), shrink, colour, origin, mid)
 
 	_label(font, "the pen's ground, and your slice over it", Vector2(10.0, 20.0),
 		Color(1.0, 1.0, 1.0, 0.75))
 	_label(font, _reading(heights, worst, home), Vector2(10.0, size.y - 10.0), colour)
+
+
+## Every catchable bird, as [x, z, w, is_the_target].
+func _flock() -> Array:
+	if _manager == null:
+		return []
+	var target: Node = _locator.get("target") if _locator != null else null
+	var out: Array = []
+	for agent in (_manager.get("agents") as Array):
+		if not bool(agent.call("can_be_caught")):
+			continue
+		var body: Node4D = agent.get_parent() as Node4D
+		if body == null:
+			continue
+		var at: Vector4 = body.global_position
+		out.append([at.x, at.z, at.w, agent == target])
+	return out
+
+
+## One bird: a stem on the pen's ground level, a head at its w, and a RUNG at the height
+## your slice passes through at that spot.
+##
+## The rung is what makes the birds usable at all. The quad is only drawn over the pen's
+## own footprint, and the flock stands well outside it - so without a mark at the bird's
+## own position there is nothing to judge its head against, and the diagram shows you
+## twelve heights against a plane that is somewhere else on the panel. Your slice is
+## infinite; the rung is the bit of it that is under that bird.
+func _draw_bird(x: float, z: float, w: float, is_target: bool, shrink: float,
+		plane_colour: Color, origin: Vector2, mid: Vector2) -> void:
+	var foot: Vector2 = _plan(x, z, 0.0, origin, mid)
+	var head: Vector2 = _plan(x, z, w, origin, mid)
+	var true_w: float = _w_above(x, z)
+	var on_slice: bool = false
+	if not is_nan(true_w):
+		var rung: Vector2 = _plan(x, z, true_w * shrink, origin, mid)
+		draw_line(rung - Vector2(7.0, 0.0), rung + Vector2(7.0, 0.0),
+			Color(plane_colour.r, plane_colour.g, plane_colour.b, 0.5), 1.0)
+		on_slice = absf(true_w - w / maxf(shrink, 0.0001)) <= home_tolerance
+	var colour: Color = home_color if on_slice else (target_color if is_target else chicken_color)
+	draw_line(foot, head, Color(colour.r, colour.g, colour.b, 0.35), 1.0)
+	draw_circle(foot, 1.5, Color(colour.r, colour.g, colour.b, 0.4))
+	# A head rather than a dot: a comb, a body and a beak, which is enough at five pixels
+	# to read as a chicken and not as another corner of something.
+	draw_circle(head, 4.0, colour)
+	draw_line(head + Vector2(3.0, 0.0), head + Vector2(6.5, 1.0), colour, 1.5)
+	draw_line(head + Vector2(-1.5, -4.0), head + Vector2(1.5, -6.0), colour, 1.5)
+	if is_target:
+		draw_arc(head, 8.0, 0.0, TAU, 20, target_color, 1.5, true)
+	if on_slice:
+		# Its head is in your slice: this is the bird you can walk up to and take.
+		draw_arc(head, 6.0, 0.0, TAU, 18, home_color, 1.5, true)
+
+
+## The four heights as they are actually drawn: the true ones, scaled together if the
+## steepest would otherwise run off the panel.
+##
+## A PLANE OVER A RECTANGLE HAS AN INVARIANT, and it is what makes this testable. For
+## corners taken in cyclic order the alternating sum h0 - h1 + h2 - h3 is zero for any
+## plane at all - the x and z terms cancel in pairs. Uniform scaling keeps it zero;
+## clamping corners one at a time does not, which is precisely the bug.
+func _fitted(heights: Array) -> Array:
+	var reach: float = (size.y * 0.40) / maxf(w_pixels, 0.01)
+	var worst: float = 0.0
+	for h in heights:
+		worst = maxf(worst, absf(h))
+	if worst <= reach or worst < 0.0001:
+		return heights.duplicate()
+	var shrink: float = reach / worst
+	return heights.map(func(h): return h * shrink)
 
 
 ## What the shape is saying, in one line, for when it is nearly matched and the picture
