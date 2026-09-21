@@ -208,7 +208,15 @@ func _collect_legs() -> void:
 			# A LEG DESCENDS. The neck is also a chain of balls hanging off a body ball,
 			# so without this it qualified as a leg and got driven at a foot target on
 			# the floor - the horse nodding its head at every step.
-			if _rig._position_in_rig(foot).y > hip_world.y - 1.0:
+			#
+			# MEASURED AS A SLOPE, NOT A DROP. This asked for a full unit of descent, which
+			# is the same scale trap leg_influence_ratio above was already fixed for: a
+			# metre is most of a horse's leg and more than a whole cat, so no animal
+			# smaller than a horse could have legs at all. Requiring the chain to point
+			# more DOWN than along instead is the same test for a sauropod and a kitten.
+			var drop: Vector4 = _rig._position_in_rig(foot) - hip_world
+			var reach: float = drop.length()
+			if reach < 0.0001 or -drop.y < reach * 0.5:
 				continue
 			var foot_world: Vector4 = _rig._position_in_rig(foot)
 			_legs.append({
