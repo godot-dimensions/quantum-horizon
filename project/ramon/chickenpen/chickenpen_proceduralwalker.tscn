@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_avatar_4d.gd" id="avatar"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_gait_4d.gd" id="gait"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -28,7 +29,7 @@ albedo_color = Color(0.55, 0.42, 0.3, 1)
 [sub_resource type="TetraMaterial4D" id="post_far"]
 albedo_color = Color(0.35, 0.5, 0.45, 1)
 
-[node name="ChickenPenBlockWalker" type="Node4D"]
+[node name="ChickenPenProceduralWalker" type="Node4D"]
 
 [node name="Sun" type="DirectionalLight4D" parent="."]
 basis = Projection(0, 0, 0, 1, 0.946946, -0.259996, -0.188934, 0, 0.321394, 0.766044, 0.55667, 0, 0, -0.587859, 0.808963, 0)
@@ -99,6 +100,10 @@ script = ExtResource("avatar")
 build = 2
 skin = Color(0.42, 0.62, 0.36, 1)
 accent = Color(0.93, 0.80, 0.62, 1)
+
+[node name="Gait" type="Node4D" parent="Player"]
+script = ExtResource("gait")
+run_speed = 6
 
 [node name="CameraRig" type="Node4D" parent="Player"]
 script = ExtResource("rig")

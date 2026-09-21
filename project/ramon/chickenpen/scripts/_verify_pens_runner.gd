@@ -1,6 +1,6 @@
 extends SceneTree
 ## Do all three pens load, build their avatars, stand on the ground and place a camera?
-var _scenes := ["chickenpen_plush", "chickenpen_human", "chickenpen_blockwalker"]
+var _scenes := ["chickenpen_kirbywalker", "chickenpen_human", "chickenpen_proceduralwalker"]
 var _i := 0
 var _root: Node
 var _f := 0

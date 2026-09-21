@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/real_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_avatar_4d.gd" id="avatar"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_gait_4d.gd" id="gait"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -99,6 +100,10 @@ script = ExtResource("avatar")
 build = 1
 skin = Color(0.78, 0.66, 0.56, 1)
 accent = Color(0.35, 0.45, 0.62, 1)
+
+[node name="Gait" type="Node4D" parent="Player"]
+script = ExtResource("gait")
+run_speed = 8
 
 [node name="CameraRig" type="Node4D" parent="Player"]
 script = ExtResource("rig")

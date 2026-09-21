@@ -1,6 +1,6 @@
 extends SceneTree
 ## One frame of each pen, from a fixed spot so the three are comparable.
-var _scenes := ["chickenpen_plush", "chickenpen_human", "chickenpen_blockwalker"]
+var _scenes := ["chickenpen_kirbywalker", "chickenpen_human", "chickenpen_proceduralwalker"]
 var _i := 0
 var _root: Node
 var _f := 0
