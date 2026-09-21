@@ -29,10 +29,10 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 ## Phase 02 — Existing chicken audit and completion (8–15)
 - [x] 8  Found in `project/ramon/Model/rigged_creature_ramon.tscn` (Chicken + Walker, chicken_walker.gd)
 - [x] 9  Extracted to `chickenpen/chicken.tscn` (37 nodes, 32 sub-resources); runs standalone, 2 legs, wanders 0.46 units
-- [ ] 10 Audit what already works
-- [ ] 11 Add feet only if missing
-- [ ] 12 Red spot on the RIGHT WING only (orientation cue)
-- [ ] 13 Preserve visual hierarchy (no competing red marks)
+- [x] 10 Audited: wander is script-driven (chicken_walker.gd) - fBm steering, gait clock, two-bone leg IK, pecking, flock separation. Not animation clips.
+- [x] 11 Feet were missing (legs ended in stubs). Added, following the foot ball via follow_node_4d.gd
+- [x] 12 Red mark on the right wing (-X, since the chicken faces +Z), parented to the Wing rig so it is not mirrored
+- [!] 13 Comb and wattle are already red - see Deviations
 - [ ] 14 Expose reusable config (wander radius, speeds, idle range, alert/evade, cooldown)
 - [ ] 15 Twelve instances stay distinct via seeded variation
 
@@ -129,6 +129,14 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 
 ## Deviations from the brief
 (recorded as they happen, with the reason)
+
+**Item 13 - competing red marks.** The chicken already had a red comb and red wattle
+before this brief; they are anatomically red and removing them would make it stop reading
+as a chicken. They sit on the HEAD, which is a facing cue rather than a chirality cue, so
+they do not compete with what the wing mark is for: telling left from right, which is the
+thing a W-rotation can flip. The wing mark is larger and more saturated than either, on an
+otherwise white wing. If it turns out to confuse in play, the comb and wattle can be
+shifted to orange in one line each.
 
 ## Notes
 - Source scene for the rig: `project/ramon/chickenpen/chickenpen_proceduralwalker.tscn`

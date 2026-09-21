@@ -2,6 +2,7 @@
 [ext_resource type="Script" uid="uid://cuceuwghr0d4v" path="res://ramon/Model/scripts/loft_rig_4d.gd" id="3_rig"]
 [ext_resource type="Script" uid="uid://cdkwbv02fti2x" path="res://ramon/Model/scripts/loft_ball_4d.gd" id="4_ball"]
 [ext_resource type="Script" uid="uid://d1x2ef38ksbba" path="res://ramon/Model/scripts/chicken_walker.gd" id="chk_walker"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/follow_node_4d.gd" id="chk_follow"]
 
 [sub_resource type="TetraMaterial4D" id="chk_TetraMaterial4D_feather"]
 albedo_color = Color(0.93, 0.9, 0.84, 1)
@@ -105,6 +106,18 @@ albedo_color = Color(0.35, 0.85, 1, 1)
 
 [sub_resource type="WireMaterial4D" id="chk_WireMaterial4D_vj4qu"]
 albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="TetraMaterial4D" id="chk_mat_foot"]
+albedo_color = Color(0.85, 0.66, 0.18, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="chk_mesh_foot"]
+size = Vector4(0.11, 0.04, 0.19, 0.11)
+
+[sub_resource type="TetraMaterial4D" id="chk_mat_mark"]
+albedo_color = Color(0.94, 0.06, 0.06, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="chk_mesh_mark"]
+size = Vector4(0.05, 0.14, 0.2, 0.16)
 
 [node name="Chicken" type="Node4D"]
 basis = Projection(0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0.25)
@@ -348,3 +361,21 @@ script = ExtResource("4_ball")
 radius = 0.06
 v_scale = 2.0
 
+[node name="FootL" type="MeshInstance4D" parent="LegL"]
+material_override = SubResource("chk_mat_foot")
+mesh = SubResource("chk_mesh_foot")
+script = ExtResource("chk_follow")
+target_path = NodePath("../Ball1")
+offset = Vector4(0, -0.03, 0.05, 0)
+
+[node name="FootR" type="MeshInstance4D" parent="LegR"]
+material_override = SubResource("chk_mat_foot")
+mesh = SubResource("chk_mesh_foot")
+script = ExtResource("chk_follow")
+target_path = NodePath("../Ball1")
+offset = Vector4(0, -0.03, 0.05, 0)
+
+[node name="RightWingMark" type="MeshInstance4D" parent="Wing"]
+position = Vector4(-0.55, 0.95, -0.1, 0)
+material_override = SubResource("chk_mat_mark")
+mesh = SubResource("chk_mesh_mark")
