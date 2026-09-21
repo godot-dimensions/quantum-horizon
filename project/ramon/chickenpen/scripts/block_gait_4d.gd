@@ -42,6 +42,14 @@ extends Node4D
 ## How far it leans into a run.
 @export_range(0.0, 0.6, 0.01) var run_lean: float = 0.14
 
+## How close to the hip the swing foot may come, as a fraction of leg length. The lower
+## this is, the more the knee folds.
+@export_range(0.5, 1.0, 0.01) var min_swing_extension: float = 0.80
+
+## How much of the leg's rotation the ankle undoes. 1.0 keeps the foot perfectly flat;
+## slightly less lets it tip a little with the leg, which looks less mechanical.
+@export_range(0.0, 1.0, 0.05) var foot_levelling: float = 0.85
+
 ## Speed at which the legs are considered to be running rather than walking, used only to
 ## scale the lean and the stride.
 @export var run_speed: float = 5.0
@@ -110,11 +118,16 @@ func _measure() -> void:
 	_shin = maxf(absf(shin_block.position.y) * 2.0, 0.01) if shin_block != null else _thigh
 	# The IK places the ANKLE. A boot hangs below it, so without this the sole sinks into
 	# the ground by its own half-height.
-	for child in knee.get_children():
-		if child is MeshInstance4D and String(child.name).begins_with("Boot"):
+	# Under the ANKLE, not the knee: the foot moved when it got its own joint, and
+	# looking in the old place silently measured a sole of zero - which sank the boots
+	# into the ground and, because the stride is clamped against standing height, quietly
+	# shortened every step.
+	var foot_parent: Node = _avatar.ankle_left if _avatar.get("ankle_left") != null else knee
+	for child in foot_parent.get_children():
+		if child is MeshInstance4D and String(child.name).begins_with(("Boot")):
 			var box := (child as MeshInstance4D).mesh as BoxTetraMesh4D
 			if box != null:
-				_sole = maxf(absf((child as Node4D).position.y) + box.size.y * 0.5 - _shin, 0.0)
+				_sole = maxf(absf((child as Node4D).position.y) + box.size.y * 0.5, 0.0)
 	# A STRIDE IS LIMITED BY SWEEP, NOT BY LEG LENGTH. A leg of length R whose hip is H
 	# off the ground can only put its foot sqrt(R^2 - H^2) forward or back before it goes
 	# straight, and a straight leg cannot hold a plant - it gets clamped and dragged.
@@ -177,8 +190,8 @@ func _physics_process(delta: float) -> void:
 	# Below a walk the stride shortens rather than the cycle slowing to a crawl.
 	var stride: float = stride_length * clampf(speed / maxf(run_speed * 0.6, 0.001), 0.25, 1.0)
 
-	_step(0, _avatar.hip_left, _avatar.knee_left, fposmod(phase, 1.0), duty, stride, delta)
-	_step(1, _avatar.hip_right, _avatar.knee_right, fposmod(phase + 0.5, 1.0), duty, stride, delta)
+	_step(0, _avatar.hip_left, _avatar.knee_left, _avatar.ankle_left, fposmod(phase, 1.0), duty, stride, delta)
+	_step(1, _avatar.hip_right, _avatar.knee_right, _avatar.ankle_right, fposmod(phase + 0.5, 1.0), duty, stride, delta)
 
 	# Arms take the opposite leg, which is what stops a walk looking like a march.
 	#
@@ -216,8 +229,8 @@ func _physics_process(delta: float) -> void:
 ## STANCE: the target is the spot where the foot landed, and stays there while the body
 ## walks over it. SWING: it travels from where it lifted to where it will next land,
 ## rising to step_height on the way.
-func _step(index: int, hip: Node4D, knee: Node4D, local_phase: float, duty: float,
-		stride: float, _delta: float) -> void:
+func _step(index: int, hip: Node4D, knee: Node4D, ankle: Node4D, local_phase: float,
+		duty: float, stride: float, _delta: float) -> void:
 	var reach: float = (_thigh + _shin) * 0.97
 	var hip_world: Vector4 = hip.global_position
 	# THE ANKLE'S HEIGHT IS SET BY THE FLOOR, NOT BY THE LEG. It sits one sole above the
@@ -255,7 +268,17 @@ func _step(index: int, hip: Node4D, knee: Node4D, local_phase: float, duty: floa
 
 	# Into the hip's own frame, which is what the solver works in.
 	var local: Vector4 = _avatar.global_basis.inverse() * (target - hip_world)
-	_solve_leg(hip, knee, local.z, local.y)
+	# KEEP THE SWING LEG FROM FOLDING UP. A two-bone leg takes up slack the only way it
+	# can - by folding - so a target that comes close to the hip gives a knee at 106
+	# degrees where a person walks at about 65. Refusing to bring the foot nearer than
+	# this fraction of the leg's length caps the fold directly, and the small amount of
+	# lift it costs is not visible.
+	var span: float = Vector2(local.z, local.y).length()
+	var floor_span: float = (_thigh + _shin) * min_swing_extension
+	if span < floor_span and span > 0.001:
+		var scale: float = floor_span / span
+		local = Vector4(local.x, local.y * scale, local.z * scale, local.w)
+	_solve_leg(hip, knee, ankle, local.z, local.y)
 
 
 ## Closed-form two-bone IK in the sagittal plane.
@@ -264,7 +287,7 @@ func _step(index: int, hip: Node4D, knee: Node4D, local_phase: float, duty: floa
 ## lengths gives every angle by the cosine rule, so nothing here is iterative and nothing
 ## can fail to converge. The knee is placed so it bends FORWARD, like a human's - the
 ## other root of the same triangle bends it backwards, like a bird's.
-func _solve_leg(hip: Node4D, knee: Node4D, target_z: float, target_y: float) -> void:
+func _solve_leg(hip: Node4D, knee: Node4D, ankle: Node4D, target_z: float, target_y: float) -> void:
 	var d: float = clampf(sqrt(target_z * target_z + target_y * target_y),
 		absf(_thigh - _shin) + 0.01, _thigh + _shin - 0.01)
 	# Angle of the hip-to-foot line, measured from straight down.
@@ -277,8 +300,15 @@ func _solve_leg(hip: Node4D, knee: Node4D, target_z: float, target_y: float) -> 
 	# FORWARD put it 0.18 BACKWARD, because Basis4D.from_yz turns the opposite way to
 	# what the maths above assumes. With the sign wrong the swing added to the body's
 	# motion instead of cancelling it, which is exactly what a skating leg looks like.
-	hip.basis = Basis4D.from_yz(-(line + at_hip))
-	knee.basis = Basis4D.from_yz(PI - at_knee)
+	var hip_angle: float = -(line + at_hip)
+	var knee_angle: float = PI - at_knee
+	hip.basis = Basis4D.from_yz(hip_angle)
+	knee.basis = Basis4D.from_yz(knee_angle)
+	# THE FOOT STAYS FLAT. Rotations compose down the chain, so undoing their sum at the
+	# ankle leaves the boot level with the ground however the leg is bent - instead of
+	# tipping with the shin, which was the most obviously wrong thing about the walk.
+	if ankle != null:
+		ankle.basis = Basis4D.from_yz(-(hip_angle + knee_angle) * foot_levelling)
 
 
 ## Arms swing from the shoulder with the elbow trailing, which is enough to read as an

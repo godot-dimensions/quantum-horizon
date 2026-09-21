@@ -20,8 +20,17 @@ extends CharacterBody4D
 ## and turns it; the gait node reads the velocity that results and works the legs.
 
 @export_group("Movement")
-@export var walk_speed: float = 2.4
-@export var run_speed: float = 6.0
+## RUNNING IS THE DEFAULT. A character this size covering ground at a stroll is dull to
+## play, so no modifier means a run; hold ALT to walk and SHIFT to sprint.
+##
+## The numbers are chosen against the BODY, not picked for feel. Cadence is
+## stride / (speed * duty), so at a 0.78 stride these give roughly 1.1 steps a second
+## walking, 2.3 running and 3.2 sprinting. The previous 6.0 "run" needed 4.6 steps a
+## second on 0.36-unit legs, which is why it looked frantic: it was a sprint being
+## called a run.
+@export var run_speed: float = 3.0
+@export var walk_speed: float = 1.4
+@export var sprint_speed: float = 4.2
 @export var jump_velocity: float = 4.6
 @export_range(0.1, 50.0, 0.1) var acceleration: float = 12.0
 @export_range(0.1, 50.0, 0.1) var turn_speed: float = 11.0
@@ -39,7 +48,11 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed(&"move_jump") and is_on_floor():
 		linear_velocity.y = jump_velocity
 	var wish: Vector4 = _wish_direction()
-	var top: float = run_speed if Input.is_key_pressed(KEY_SHIFT) else walk_speed
+	var top: float = run_speed
+	if Input.is_key_pressed(KEY_SHIFT):
+		top = sprint_speed
+	elif Input.is_key_pressed(KEY_ALT):
+		top = walk_speed
 	var rate: float = acceleration * top * delta
 	var target: Vector4 = wish * top
 	linear_velocity.x = move_toward(linear_velocity.x, target.x, rate)
@@ -49,7 +62,7 @@ func _physics_process(delta: float) -> void:
 	_turn_avatar(wish, delta)
 	if _label != null:
 		_label.text = "%s   %.1f units/s   w %.2f" % [
-			"AIRBORNE" if not is_on_floor() else ("WALK" if _horizontal_speed() > 0.05 else "IDLE"),
+			_gait_name(),
 			_horizontal_speed(), position.w]
 
 
@@ -72,3 +85,16 @@ func _turn_avatar(wish: Vector4, delta: float) -> void:
 
 func _horizontal_speed() -> float:
 	return Vector3(linear_velocity.x, linear_velocity.z, linear_velocity.w).length()
+
+
+func _gait_name() -> String:
+	if not is_on_floor():
+		return "AIRBORNE"
+	var moving: float = _horizontal_speed()
+	if moving < 0.05:
+		return "IDLE"
+	if moving > (run_speed + sprint_speed) * 0.5:
+		return "SPRINT"
+	if moving < (walk_speed + run_speed) * 0.5:
+		return "WALK"
+	return "RUN"

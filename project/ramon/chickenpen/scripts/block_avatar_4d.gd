@@ -63,6 +63,8 @@ var hip_left: Node4D
 var hip_right: Node4D
 var knee_left: Node4D
 var knee_right: Node4D
+var ankle_left: Node4D
+var ankle_right: Node4D
 var shoulder_left: Node4D
 var shoulder_right: Node4D
 var elbow_left: Node4D
@@ -129,15 +131,17 @@ func _pair(offset_x: float, joint_y: float, upper_len: float, lower_len: float,
 		_limb(joint, ("Forearm" if is_arm else "Shin") + tag,
 			Vector4(0.0, -lower_len * 0.5, 0.0, 0.0),
 			Vector3(thickness * 0.92, lower_len, depth * 0.92), lower_colour)
+		var ankle: Node4D = null
 		if not is_arm:
-			_limb(joint, "Foot" + tag, Vector4(0.0, -lower_len - 0.05, depth * 0.5, 0.0),
+			ankle = _pivot(joint, "Ankle" + tag, Vector4(0.0, -lower_len, 0.0, 0.0))
+			_limb(ankle, "Foot" + tag, Vector4(0.0, -0.05, depth * 0.5, 0.0),
 				Vector3(thickness * 1.15, 0.11, depth * 1.5), lower_colour)
 		if side > 0.0:
 			if is_arm: shoulder_left = root; elbow_left = joint
-			else: hip_left = root; knee_left = joint
+			else: hip_left = root; knee_left = joint; ankle_left = ankle
 		else:
 			if is_arm: shoulder_right = root; elbow_right = joint
-			else: hip_right = root; knee_right = joint
+			else: hip_right = root; knee_right = joint; ankle_right = ankle
 
 
 func _build_chibi() -> void:
@@ -166,16 +170,22 @@ func _build_chibi() -> void:
 		_limb(hip, "Thigh" + tag, Vector4(0.0, -0.18, 0.0, 0.0), Vector3(0.13, 0.36, 0.14), accent)
 		var knee := _pivot(hip, "Knee" + tag, Vector4(0.0, -0.36, 0.0, 0.0))
 		_limb(knee, "Shin" + tag, Vector4(0.0, -0.18, 0.0, 0.0), Vector3(0.12, 0.36, 0.13), accent)
-		_limb(knee, "Boot" + tag, Vector4(0.0, -0.39, 0.04, 0.0), Vector3(0.15, 0.10, 0.24), Color(0.40, 0.26, 0.16))
+		# THE BOOT HANGS OFF AN ANKLE, not off the shin. Rigid to the shin it tips with
+		# the leg, which is the single most obviously wrong thing about the walk. Given
+		# its own joint the gait can hold it flat, and later roll it for toe-off.
+		var ankle := _pivot(knee, "Ankle" + tag, Vector4(0.0, -0.36, 0.0, 0.0))
+		_limb(ankle, "Boot" + tag, Vector4(0.0, -0.03, 0.04, 0.0), Vector3(0.15, 0.10, 0.24), Color(0.40, 0.26, 0.16))
 		var shoulder := _pivot(self, "Shoulder" + tag, Vector4(0.22 * side, 1.02, 0.0, 0.0))
 		_limb(shoulder, "UpperArm" + tag, Vector4(0.0, -0.09, 0.0, 0.0), Vector3(0.10, 0.18, 0.11), skin)
 		var elbow := _pivot(shoulder, "Elbow" + tag, Vector4(0.0, -0.18, 0.0, 0.0))
 		_limb(elbow, "Forearm" + tag, Vector4(0.0, -0.09, 0.0, 0.0), Vector3(0.09, 0.18, 0.10), accent)
 		_limb(elbow, "Hand" + tag, Vector4(0.0, -0.20, 0.0, 0.0), Vector3(0.09, 0.08, 0.10), accent)
 		if side > 0.0:
-			hip_left = hip; knee_left = knee; shoulder_left = shoulder; elbow_left = elbow
+			hip_left = hip; knee_left = knee; ankle_left = ankle
+			shoulder_left = shoulder; elbow_left = elbow
 		else:
-			hip_right = hip; knee_right = knee; shoulder_right = shoulder; elbow_right = elbow
+			hip_right = hip; knee_right = knee; ankle_right = ankle
+			shoulder_right = shoulder; elbow_right = elbow
 
 
 ## A bare node to rotate a limb about. The block hangs below it, so the limb swings from

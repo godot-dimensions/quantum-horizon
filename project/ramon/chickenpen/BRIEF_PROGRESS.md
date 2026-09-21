@@ -13,9 +13,9 @@ better repo-specific solutions where they improve clarity — documenting any de
 Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, see notes
 
 ## Phase 00 — walk/run polish (Ramon's extra ask, not in the brief)
-- [ ] Running as the default gait, less frantic
-- [ ] Reduce the swing-leg fold (currently 106 deg against a person's ~65)
-- [ ] Ankle joint so the boot stays flat instead of tipping with the shin
+- [x] Running as the default gait, less frantic (3.0 units/s, 2.3 steps/s; ALT walks, SHIFT sprints)
+- [x] Swing-leg fold 106 deg -> 74 (a person is ~65); stance 32
+- [x] Ankle joint added to all three builds; foot levelled at 0.85 of the leg's rotation
 
 ## Phase 01 — Scene foundation and safe duplication (1–7)
 - [ ] 1  Copy the finished rig into `chickenpen.tscn`, non-destructively
