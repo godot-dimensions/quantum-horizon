@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://cdkwbv02fti2x" path="res://ramon/Model/scripts/loft_ball_4d.gd" id="4_ball"]
 [ext_resource type="Script" uid="uid://d1x2ef38ksbba" path="res://ramon/Model/scripts/chicken_walker.gd" id="chk_walker"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/follow_node_4d.gd" id="chk_follow"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/chicken_agent_4d.gd" id="chk_agent"]
 
 [sub_resource type="TetraMaterial4D" id="chk_TetraMaterial4D_feather"]
 albedo_color = Color(0.93, 0.9, 0.84, 1)
@@ -379,3 +380,6 @@ offset = Vector4(0, -0.03, 0.05, 0)
 position = Vector4(-0.55, 0.95, -0.1, 0)
 material_override = SubResource("chk_mat_mark")
 mesh = SubResource("chk_mesh_mark")
+
+[node name="Agent" type="Node4D" parent="."]
+script = ExtResource("chk_agent")

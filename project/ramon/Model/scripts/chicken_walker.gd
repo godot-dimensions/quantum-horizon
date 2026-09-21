@@ -144,6 +144,19 @@ var _carried: Array = []
 var _bound: bool = false
 const _FLOCK_GROUP := "chicken_flock"
 var _crowding: float = 0.0
+
+## ADDITIVE HOOK for the chicken-pen minigame, and deliberately inert otherwise.
+##
+## When something else needs to decide where this bird goes - fleeing a player, heading
+## for a pen - it sets these instead of the walker inventing a heading from its noise.
+## Everything else about the walk is unchanged, so the five birds in
+## rigged_creature_ramon.tscn that use this script are untouched: steer_override starts
+## false and nothing reads steer_heading until it is true.
+##
+## Extending rather than forking, which is what item 6 of the brief asks for and what the
+## strider walker had to be rescued from earlier in this project.
+var steer_override: bool = false
+var steer_heading: float = 0.0
 var _scale: float = 1.0
 var _neck_pivot: Vector4 = _NECK_PIVOT
 
@@ -361,7 +374,13 @@ func _wander(delta: float) -> void:
 		turn = lerpf(turn, signf(toward), clampf((strayed - 1.0) * 3.0, 0.0, 1.0))
 
 	turn = _avoid_crowding(turn)
-	_heading += turn * deg_to_rad(turn_rate_degrees) * delta
+	if steer_override:
+		# Turn toward the heading we were handed, at the bird's own turn rate, so an
+		# externally steered bird still banks like a bird instead of snapping round.
+		var toward: float = wrapf(steer_heading - _heading, -PI, PI)
+		_heading += clampf(toward, -1.0, 1.0) * deg_to_rad(turn_rate_degrees) * delta
+	else:
+		_heading += turn * deg_to_rad(turn_rate_degrees) * delta
 	var period: float = maxf(float(_gait.period_sec), 0.0001)
 	var ground_speed: float = 2.0 * stride_length / period
 	var step: float = ground_speed * delta * _scale * (1.0 - 0.85 * _crowding)

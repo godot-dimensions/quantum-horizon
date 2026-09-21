@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_avatar_4d.gd" id="avatar"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_gait_4d.gd" id="gait"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/chicken_manager_4d.gd" id="pen_chickens"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -35,6 +36,7 @@ metadata/copied_from = "res://ramon/chickenpen/chickenpen_proceduralwalker.tscn"
 [node name="World" type="Node4D" parent="."]
 
 [node name="Chickens" type="Node4D" parent="."]
+script = ExtResource("pen_chickens")
 
 [node name="Pen" type="Node4D" parent="."]
 

@@ -33,19 +33,19 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 - [x] 11 Feet were missing (legs ended in stubs). Added, following the foot ball via follow_node_4d.gd
 - [x] 12 Red mark on the right wing (-X, since the chicken faces +Z), parented to the Wing rig so it is not mirrored
 - [!] 13 Comb and wattle are already red - see Deviations
-- [ ] 14 Expose reusable config (wander radius, speeds, idle range, alert/evade, cooldown)
-- [ ] 15 Twelve instances stay distinct via seeded variation
+- [x] 14 chicken_agent_4d.gd exposes home, wander radius, w drift, speeds, idle/wander ranges, alert/evade distance, evade cap and cooldown, catch distance, seed
+- [x] 15 One chicken.tscn instanced twelve times; seed drives idle timing, wander range and nerve. 12 distinct seeds verified
 
 ## Phase 03 — Chicken gameplay state model (16–25)
-- [ ] 16 Core states: idle/wander, alert/evade, carried, dropped/thrown, penned, recovery
-- [ ] 17 Centralised transitions own movement, collision, animation, prompt, locator eligibility
-- [ ] 18 Expand the existing wander rather than replacing it
-- [ ] 19 Loose chickens stay in authored regions
-- [ ] 20 W behaviour predictable (stay in assigned W region)
+- [x] 16 IDLE, WANDER, ALERT, EVADE, CARRIED, THROWN, PENNED, RECOVERING
+- [~] 17 Transitions centralised in _enter(); movement and locator eligibility wired. Collision and prompt follow in Phase 04
+- [x] 18 Walker kept for locomotion; agent adds pauses, alert, evade and containment on top via an inert steer hook
+- [x] 19 Steered home past wander_radius - a pull, not a wall
+- [x] 20 W clamped to home +/- w_drift (0.15), far tighter than XYZ
 - [ ] 21 Playful proximity response (hop, wing lift, short scurry)
 - [ ] 22 Evade cooldown and distance limit — no chain-escaping
 - [ ] 23 Evade targets always valid ground
-- [ ] 24 Penned chickens behave calmly, never flee
+- [x] 24 PENNED ignores alert and evade, shorter leash
 - [ ] 25 Debug state readout, easy to disable
 
 ## Phase 04 — Catch, carry, drop and throw (26–35)
@@ -88,8 +88,8 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 - [ ] 56 Stable target selection (nearest eligible, no rapid switching)
 - [ ] 57 Exclude invalid targets (carried, penned, completed)
 - [ ] 58 Not an autopilot
-- [ ] 59 Readable 12-chicken progression (3 near slice, 3 XYZ, 4 W, 2 combined)
-- [ ] 60 First off-slice chicken needs only a small adjustment
+- [x] 59 Placement table authored in that order; verified 6 in the starting slice, 6 offset in W
+- [x] 60 First W chicken sits at w = 0.9
 - [ ] 61 One new variable at a time
 - [ ] 62 Preserve designed hiding relationships
 - [ ] 63 Legible slice alignment (lock tone / centred indicator)
@@ -108,7 +108,7 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 - [ ] 74 Presentation stays prototype-focused
 
 ## Phase 09 — Robustness, recovery, optimisation (75–82)
-- [ ] 75 Stable identity per chicken (IDs, not tree order or names)
+- [x] 75 chicken_id plus a fixed seed; nothing keys off tree order
 - [ ] 76 Detect invalid positions and recover
 - [ ] 77 Idempotent catch/drop/throw/return against rapid input
 - [ ] 78 No pen overcrowding failures
