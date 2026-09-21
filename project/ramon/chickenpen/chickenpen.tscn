@@ -1,4 +1,4 @@
-[gd_scene load_steps=43 format=3]
+[gd_scene load_steps=44 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -27,6 +27,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_collector_4d.gd" id="pen_collector"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_searcher_4d.gd" id="pen_searcher"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cat_4d.gd" id="pen_cat"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_lofted_girl_4d.gd" id="pen_lofted_girl"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -340,6 +341,10 @@ position = Vector4(7.8, 0.95, -1.2, -1.6)
 script = ExtResource("pen_pickup")
 kind = 1
 size = 0.3
+
+[node name="LoftedGirl" type="Node4D" parent="World"]
+position = Vector4(-10, 0, 6.5, 0)
+script = ExtResource("pen_lofted_girl")
 
 [node name="Cat" type="Node4D" parent="World"]
 position = Vector4(-6.5, 0, 0.5, 0)
