@@ -61,6 +61,10 @@ extends Control
 @export var manager_path: NodePath
 ## Which bird the locator is talking about, so the words and the picture agree.
 @export var locator_path: NodePath
+## The people, and the cat. Each is drawn as a blob at its own place and its own w, with
+## its node's name beside it - so "which slice is Nessa on" is a glance rather than a
+## walk. Named from the node, so adding somebody to this list is the whole job.
+@export var people_paths: Array[NodePath] = []
 
 @export_group("Reading")
 ## How close counts as home. The same figure the catch uses, so "the diagram says home"
@@ -75,7 +79,16 @@ extends Control
 ## panel, and then every chicken would be off the edge of it - and a bird you cannot see
 ## is a bird you cannot line up on. At this scale the pen is still a couple of hundred
 ## pixels across and the flock fits around it.
-@export_range(1.0, 48.0, 0.5) var ground_scale: float = 12.0
+@export_range(1.0, 48.0, 0.5) var ground_scale: float = 14.0
+## How far past the pen the SHEET of your slice is drawn, as a multiple of the pen's own
+## half-extents. The white outline stays the pen's true size and is what you match; the
+## sheet is your slice, which is infinite, and drawing only the pen-sized patch of it left
+## every chicken standing outside the one thing they had to be judged against.
+@export_range(1.0, 4.0, 0.05) var sheet_spread: float = 1.75
+## What the diagram is centred on, as an offset from the pen. The flock all lives on one
+## side of the pen, so centring on the pen itself left half the panel empty and squeezed
+## everything into the other half.
+@export var view_offset := Vector2(2.5, 6.75)
 
 @export_group("Look")
 @export var ground_color: Color = Color(1.0, 1.0, 1.0, 0.45)
@@ -83,7 +96,14 @@ extends Control
 @export var home_color: Color = Color(0.45, 0.95, 0.5, 0.95)
 @export var near_color: Color = Color(1.0, 0.85, 0.25, 0.95)
 @export var far_color: Color = Color(0.95, 0.45, 0.35, 0.95)
-@export var chicken_color: Color = Color(0.78, 0.78, 0.76, 0.9)
+## White, like the birds themselves.
+@export var chicken_color: Color = Color(1.0, 1.0, 0.97, 0.95)
+## Only a fallback now - each blob takes its own character's colour. Set an entry in
+## people_overrides to force one.
+@export var people_color: Color = Color(0.93, 0.32, 0.36, 0.95)
+## Index-matched to people_paths. Any entry with alpha above zero wins outright, which is
+## the escape hatch for when the guess below picks the wrong one.
+@export var people_overrides: Array[Color] = []
 @export var target_color: Color = Color(1.0, 0.85, 0.25, 0.95)
 @export var toggle_key: Key = KEY_N
 
@@ -112,6 +132,12 @@ var _coop: Node4D
 var _frame: Node4D
 var _manager: Node
 var _locator: Node
+var _people: Array[Node4D] = []
+## Resolved once: a character's colours do not change, and hunting for them every frame
+## for every marker would be work done sixty times a second for no reason.
+var _people_colors: Array[Color] = []
+## Where a name has already been written this frame, so the next one can step around it.
+var _tags: Array[Vector3] = []
 
 
 func _ready() -> void:
@@ -123,6 +149,11 @@ func _ready() -> void:
 	_frame = get_node_or_null(slice_frame_path) as Node4D
 	_manager = get_node_or_null(manager_path)
 	_locator = get_node_or_null(locator_path)
+	for path in people_paths:
+		var who: Node4D = get_node_or_null(path) as Node4D
+		if who != null:
+			_people.append(who)
+			_people_colors.append(_colour_of(who, _people.size() - 1))
 	# A bird well down the field projects outside the panel. Clipped, it simply is not
 	# shown; unclipped it would be drawn across the rest of the screen.
 	clip_contents = true
@@ -176,13 +207,20 @@ func _draw() -> void:
 	if _player == null or _pen == null:
 		return
 	var pen: Rect2 = _footprint()
-	var mid: Vector2 = pen.position + pen.size * 0.5
+	var mid: Vector2 = pen.position + pen.size * 0.5 + view_offset
+	var pen_mid: Vector2 = pen.position + pen.size * 0.5
+	# The sheet: the same rectangle grown about the pen's centre.
+	var sheet := Rect2(pen_mid - pen.size * 0.5 * sheet_spread, pen.size * sheet_spread)
+	var sheet_corners: Array = [Vector2(sheet.position.x, sheet.position.y),
+		Vector2(sheet.end.x, sheet.position.y), Vector2(sheet.end.x, sheet.end.y),
+		Vector2(sheet.position.x, sheet.end.y)]
 	var origin := Vector2(size.x * 0.5, size.y * 0.55)
 	var font: Font = ThemeDB.fallback_font
 
 	# The radar has its dark ellipse to sit on; this had nothing, and a diagram made
 	# entirely of thin lines is unreadable over a sunlit field.
 	draw_rect(Rect2(Vector2.ZERO, size), Color(0.0, 0.0, 0.0, 0.42), true)
+	_tags.clear()
 
 	var corners: Array = [Vector2(pen.position.x, pen.position.y),
 		Vector2(pen.end.x, pen.position.y), Vector2(pen.end.x, pen.end.y),
@@ -194,12 +232,24 @@ func _draw() -> void:
 		flat.append(_plan(c.x, c.y, 0.0, origin, mid))
 	flat.append(flat[0])
 	draw_polyline(flat, ground_color, 1.5, true)
+
+	# THE FRAME THE SHEET LANDS ON. The sheet of your slice is drawn wider than the pen so
+	# the flock stands under it, and that cost the thing the diagram was built around: two
+	# shapes of the same size coming together. This is that shape - the sheet's own
+	# footprint, lying flat at w = 0 - so being home is the coloured quad sitting exactly
+	# on it rather than a judgement about a smaller rectangle somewhere inside it.
+	var frame := PackedVector2Array()
+	for c in sheet_corners:
+		frame.append(_plan(c.x, c.y, 0.0, origin, mid))
+	frame.append(frame[0])
+	draw_polyline(frame, Color(ground_color.r, ground_color.g, ground_color.b,
+		ground_color.a * 0.75), 1.5, true)
 	if _coop != null:
 		# A small square at the coop's end, so one end of the pen is tellable from the
 		# other and the direction of a tilt can be read.
 		var at: Vector4 = _coop.global_position
 		var coop := PackedVector2Array()
-		for d in [Vector2(-1.2, -1.2), Vector2(1.2, -1.2), Vector2(1.2, 1.2), Vector2(-1.2, 1.2)]:
+		for d in [Vector2(-2.0, -2.0), Vector2(2.0, -2.0), Vector2(2.0, 2.0), Vector2(-2.0, 2.0)]:
 			coop.append(_plan(at.x + d.x, at.z + d.y, 0.0, origin, mid))
 		coop.append(coop[0])
 		draw_polyline(coop, coop_color, 1.0, true)
@@ -226,17 +276,25 @@ func _draw() -> void:
 	# Scaling every height by the same factor keeps it planar and keeps the tilt's
 	# direction; only its steepness is compressed, and the caption carries the real
 	# number anyway.
-	# The flock, gathered before anything is fitted, because they share the plane's scale.
+	# Everything that will be drawn, gathered before anything is fitted, because it all
+	# has to share one scale. THE READING above stays on the pen's own corners - that is
+	# what "am I on the pen's slice" means - while the sheet below is what gets drawn.
 	var birds: Array = _flock()
-	var everything: Array = heights.duplicate()
+	var folk: Array = _folk()
+	var sheet_heights: Array = []
+	for c in sheet_corners:
+		sheet_heights.append(_w_above(c.x, c.y))
+	var everything: Array = sheet_heights.duplicate()
 	for bird in birds:
 		everything.append(bird[2])
+	for who in folk:
+		everything.append(who[2])
 	var fitted_all: Array = _fitted(everything)
-	var drawn: Array = fitted_all.slice(0, corners.size())
+	var drawn: Array = fitted_all.slice(0, sheet_corners.size())
 
 	var live := PackedVector2Array()
-	for i in corners.size():
-		var c: Vector2 = corners[i]
+	for i in sheet_corners.size():
+		var c: Vector2 = sheet_corners[i]
 		var w: float = drawn[i]
 		var point: Vector2 = _plan(c.x, c.y, w, origin, mid)
 		live.append(point)
@@ -256,14 +314,26 @@ func _draw() -> void:
 	# The shrink the picture actually applied, read back off a corner rather than
 	# recomputed, so the rungs below cannot drift out of step with the quad.
 	var shrink: float = 1.0
-	for i in heights.size():
-		if absf(heights[i]) > 0.001:
-			shrink = drawn[i] / heights[i]
+	for i in sheet_heights.size():
+		if absf(sheet_heights[i]) > 0.001:
+			shrink = drawn[i] / sheet_heights[i]
 			break
+	var at: int = sheet_corners.size()
 	for i in birds.size():
 		var bird: Array = birds[i]
-		_draw_bird(bird[0], bird[1], fitted_all[corners.size() + i],
-			bool(bird[3]), shrink, colour, origin, mid)
+		_draw_bird(bird[0], bird[1], fitted_all[at + i], bool(bird[3]), shrink,
+			colour, origin, mid)
+	at += birds.size()
+	# BLOBS FIRST, NAMES AFTER. Drawn one person at a time, the next person's blob lands
+	# on top of the last person's name - which is what put the cat over "Nessa". Two
+	# passes keeps every name above every marker.
+	var tags: Array = []
+	for i in folk.size():
+		var who: Array = folk[i]
+		tags.append(_draw_person(who[0], who[1], fitted_all[at + i], who[4],
+			shrink, colour, origin, mid))
+	for i in folk.size():
+		_name_tag(font, String(folk[i][3]), tags[i], folk[i][4])
 
 	_label(font, "the pen's ground, and your slice over it", Vector2(10.0, 20.0),
 		Color(1.0, 1.0, 1.0, 0.75))
@@ -287,6 +357,102 @@ func _flock() -> Array:
 	return out
 
 
+## What colour a character is, taken from the character rather than from a list here -
+## so recolouring somebody in the scene recolours their blob and the two cannot drift.
+##
+## THE HARD PART IS THAT THERE IS NO ONE PROPERTY. The chibi avatar paints a tunic from
+## `skin` and the head, arms and legs from `accent`, and which of the two IS the character
+## depends on the character: Nessa is her red tunic (skin), while the keeper reads as
+## purple, and his purple is the accent - his tunic is tan.
+##
+## So: skip whatever looks like flesh, and take the rest. A hue between 15 and 45 degrees
+## at less than 60% saturation is a skin tone, and no character is identified by one.
+## That picks Nessa's red (hue 358) over her accent (hue 27), and the keeper's purple
+## (hue 290) over his tan (hue 26) - the two cases that pull in opposite directions.
+## When it guesses wrong, people_overrides settles it without changing any of this.
+func _colour_of(who: Node4D, index: int) -> Color:
+	if index < people_overrides.size() and people_overrides[index].a > 0.0:
+		return people_overrides[index]
+	# A character with a colour of its own says so plainly.
+	for named in ["fur", "cloth", "shirt"]:
+		var own: Variant = who.get(named)
+		if own is Color:
+			return _visible(own)
+	# Otherwise it is a block avatar, either here or one node down.
+	var avatar: Node = who if who.get("accent") is Color else who.get_node_or_null("Avatar")
+	if avatar == null or not (avatar.get("accent") is Color):
+		return people_color
+	var tunic: Color = avatar.get("skin")
+	var trim: Color = avatar.get("accent")
+	if _is_flesh(tunic) and not _is_flesh(trim):
+		return _visible(trim)
+	if _is_flesh(trim) and not _is_flesh(tunic):
+		return _visible(tunic)
+	# Neither or both: take the more colourful of the two.
+	return _visible(tunic if _saturation(tunic) >= _saturation(trim) else trim)
+
+
+func _saturation(c: Color) -> float:
+	var high: float = maxf(c.r, maxf(c.g, c.b))
+	if high < 0.0001:
+		return 0.0
+	return (high - minf(c.r, minf(c.g, c.b))) / high
+
+
+func _is_flesh(c: Color) -> bool:
+	var hue: float = c.h * 360.0
+	return hue >= 15.0 and hue <= 45.0 and _saturation(c) < 0.6
+
+
+## TRUE TO THE CHARACTER, including the dark ones. Lightening the cat until it stood out
+## against the panel was the obvious thing and it was wrong: the cat is black, and a grey
+## blob for it is a worse marker than a black one, because the colour IS the name. Dark
+## blobs get a pale outline when they are drawn instead, which costs a ring and keeps
+## them honest.
+func _visible(c: Color) -> Color:
+	return Color(c.r, c.g, c.b, 0.95)
+
+
+## The people and the cat, as [x, z, w, name].
+func _folk() -> Array:
+	var out: Array = []
+	for who in _people:
+		if not is_instance_valid(who):
+			continue
+		var at: Vector4 = who.global_position
+		out.append([at.x, at.z, at.w, who.name, _people_colors[_people.find(who)]])
+	return out
+
+
+## One person: a blob rather than a head, so they cannot be mistaken for livestock, with
+## their name beside them and the same rung the birds get.
+## Returns where the blob landed, so the name can be written in a later pass.
+func _draw_person(x: float, z: float, w: float, tint: Color, shrink: float,
+		plane_colour: Color, origin: Vector2, mid: Vector2) -> Vector2:
+	var foot: Vector2 = _plan(x, z, 0.0, origin, mid)
+	var head: Vector2 = _plan(x, z, w, origin, mid)
+	var true_w: float = _w_above(x, z)
+	var on_slice: bool = false
+	if not is_nan(true_w):
+		var rung: Vector2 = _plan(x, z, true_w * shrink, origin, mid)
+		draw_line(rung - Vector2(7.0, 0.0), rung + Vector2(7.0, 0.0),
+			Color(plane_colour.r, plane_colour.g, plane_colour.b, 0.5), 1.0)
+		on_slice = absf(true_w - w / maxf(shrink, 0.0001)) <= home_tolerance
+	# THE BLOB KEEPS ITS OWN COLOUR. Repainting it green when it lands on your slice made
+	# every marker the same colour at the default slice, which is where the game starts -
+	# so the one thing the blobs are for, telling people apart at a glance, was gone
+	# exactly when you first look at it. Being on your slice is a RING instead.
+	var colour: Color = tint
+	draw_line(foot, head, Color(colour.r, colour.g, colour.b, 0.35), 1.0)
+	draw_circle(foot, 2.0, Color(colour.r, colour.g, colour.b, 0.4))
+	draw_circle(head, 6.5, colour)
+	# The ring is not decoration on a dark character - it is the whole silhouette.
+	draw_arc(head, 6.5, 0.0, TAU, 20, Color(1.0, 1.0, 1.0, 0.55), 1.0, true)
+	if on_slice:
+		draw_arc(head, 9.5, 0.0, TAU, 20, home_color, 2.0, true)
+	return head
+
+
 ## One bird: a stem on the pen's ground level, a head at its w, and a RUNG at the height
 ## your slice passes through at that spot.
 ##
@@ -306,19 +472,48 @@ func _draw_bird(x: float, z: float, w: float, is_target: bool, shrink: float,
 		draw_line(rung - Vector2(7.0, 0.0), rung + Vector2(7.0, 0.0),
 			Color(plane_colour.r, plane_colour.g, plane_colour.b, 0.5), 1.0)
 		on_slice = absf(true_w - w / maxf(shrink, 0.0001)) <= home_tolerance
-	var colour: Color = home_color if on_slice else (target_color if is_target else chicken_color)
+	var colour: Color = target_color if is_target else chicken_color
 	draw_line(foot, head, Color(colour.r, colour.g, colour.b, 0.35), 1.0)
-	draw_circle(foot, 1.5, Color(colour.r, colour.g, colour.b, 0.4))
+	draw_circle(foot, 2.0, Color(colour.r, colour.g, colour.b, 0.4))
 	# A head rather than a dot: a comb, a body and a beak, which is enough at five pixels
 	# to read as a chicken and not as another corner of something.
-	draw_circle(head, 4.0, colour)
-	draw_line(head + Vector2(3.0, 0.0), head + Vector2(6.5, 1.0), colour, 1.5)
-	draw_line(head + Vector2(-1.5, -4.0), head + Vector2(1.5, -6.0), colour, 1.5)
+	draw_circle(head, 5.5, colour)
+	draw_line(head + Vector2(4.0, 0.5), head + Vector2(9.0, 2.0), colour, 2.0)
+	draw_line(head + Vector2(-2.0, -5.0), head + Vector2(2.0, -8.0), colour, 2.0)
 	if is_target:
-		draw_arc(head, 8.0, 0.0, TAU, 20, target_color, 1.5, true)
+		draw_arc(head, 10.5, 0.0, TAU, 22, target_color, 1.5, true)
 	if on_slice:
 		# Its head is in your slice: this is the bird you can walk up to and take.
-		draw_arc(head, 6.0, 0.0, TAU, 18, home_color, 1.5, true)
+		draw_arc(head, 8.0, 0.0, TAU, 20, home_color, 2.0, true)
+
+
+## A name beside a blob, kept on the panel and out of its neighbour's way.
+##
+## The people are not evenly spread - Nessa, the lofted girl and the cat all live in the
+## same corner of the field - so their names landed on top of each other and the ones near
+## the edge were clipped to nonsense. Each tag is nudged to the side of its blob that has
+## more room, and pushed down if the line above is already taken.
+func _name_tag(font: Font, who: String, at: Vector2, colour: Color) -> void:
+	var width: float = font.get_string_size(who, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+	var left: bool = at.x + 12.0 + width > size.x - 6.0
+	var spot := Vector2(at.x - 11.0 - width if left else at.x + 11.0, at.y + 4.0)
+	spot.x = clampf(spot.x, 6.0, maxf(6.0, size.x - width - 6.0))
+	# Compared as RECTANGLES, not as centres. Comparing centres let a tag clamped to the
+	# left edge sit under a longer one whose centre was far enough away to pass, which is
+	# how "LoftedGirl" ended up written through "Nessa".
+	var settled: bool = false
+	var guard: int = 0
+	while not settled and guard < 8:
+		settled = true
+		guard += 1
+		for taken in _tags:
+			if absf(taken.y - spot.y) < 14.0 					and spot.x < taken.x + taken.z and taken.x < spot.x + width:
+				spot.y = taken.y + 15.0
+				settled = false
+				break
+	_tags.append(Vector3(spot.x, spot.y, width))
+	draw_string(font, spot, who, HORIZONTAL_ALIGNMENT_LEFT, -1, 13,
+		Color(colour.r, colour.g, colour.b, 0.95))
 
 
 ## The four heights as they are actually drawn: the true ones, scaled together if the

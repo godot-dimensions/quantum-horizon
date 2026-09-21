@@ -163,6 +163,7 @@ outline = 4
 pin_to_bottom = false
 
 [node name="Radar" type="Control" parent="UI"]
+visible = false
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 24.0
@@ -242,8 +243,10 @@ coop_path = NodePath("../../Pen/Coop")
 slice_frame_path = NodePath("../../Player/CameraRig")
 manager_path = NodePath("../../Chickens")
 locator_path = NodePath("../../Systems/Locator")
+people_paths = Array[NodePath]([NodePath("../../Nessa"), NodePath("../../World/Keeper"), NodePath("../../World/Trym"), NodePath("../../World/LoftedGirl"), NodePath("../../World/Cat")])
 
 [node name="SliceGizmo" type="Control" parent="UI"]
+visible = false
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
@@ -351,7 +354,7 @@ catcher_path = NodePath("../../Player/Catcher")
 manager_path = NodePath("../../Chickens")
 dialogue_path = NodePath("../Talk")
 tag_path = NodePath("../../UI/TalkTag")
-locator_ui_paths = Array[NodePath]([NodePath("../../UI/Locator"), NodePath("../../UI/Radar")])
+locator_ui_paths = Array[NodePath]([NodePath("../../UI/Locator")])
 gate_locator = false
 
 [node name="Locator" type="Node" parent="Systems"]
