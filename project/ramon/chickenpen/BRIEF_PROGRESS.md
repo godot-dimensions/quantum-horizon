@@ -18,17 +18,17 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` deviated, 
 - [x] Ankle joint added to all three builds; foot levelled at 0.85 of the leg's rotation
 
 ## Phase 01 — Scene foundation and safe duplication (1–7)
-- [ ] 1  Copy the finished rig into `chickenpen.tscn`, non-destructively
-- [ ] 2  Clean baseline: movement, camera, 3D rotation, W controls, animation unchanged
+- [x] 1  `chickenpen.tscn` copied from `chickenpen_proceduralwalker.tscn`; source recorded in root metadata `copied_from`
+- [x] 2  Baseline verified: player lands on floor, 20 avatar blocks, camera current, gait running
 - [ ] 3  Optimise the copy carefully (remove only verified-unused residue)
-- [ ] 4  Readable scene structure (player/camera, world, chickens, pen, UI, recovery)
+- [x] 4  Groups added: World (sun, environment, ground, scenery) / Chickens / Pen / UI / Systems; Player kept top-level
 - [ ] 5  Playable bounds with enough XYZ and W variation for 12 placements
 - [ ] 6  Protect reusable systems — instance/extend rather than fork scripts
 - [ ] 7  Baseline checkpoint: launches clean, behaviour and performance noted
 
 ## Phase 02 — Existing chicken audit and completion (8–15)
-- [ ] 8  Locate the existing animated chicken
-- [ ] 9  Run it in isolation
+- [x] 8  Found in `project/ramon/Model/rigged_creature_ramon.tscn` (Chicken + Walker, chicken_walker.gd)
+- [x] 9  Extracted to `chickenpen/chicken.tscn` (37 nodes, 32 sub-resources); runs standalone, 2 legs, wanders 0.46 units
 - [ ] 10 Audit what already works
 - [ ] 11 Add feet only if missing
 - [ ] 12 Red spot on the RIGHT WING only (orientation cue)
