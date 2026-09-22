@@ -22,7 +22,11 @@ func _check(label: String, ok: bool, detail: String) -> void:
 
 func _process(_d) -> bool:
 	_f += 1
-	if _f < 60: return false
+	# Everything is set up on the FIRST frame, not after a settling period. The room
+	# builds itself and carves its own rock before anything else happens, and those
+	# frames carry enormous deltas - waiting sixty of them out let the opening and the
+	# first act run before the watcher had started watching, which made this test pass or
+	# fail depending on how busy the machine was.
 	if _show == null:
 		_show = _root.get_node_or_null("Show")
 		if _show == null:
@@ -59,7 +63,9 @@ func _process(_d) -> bool:
 		_check("the way out is standing when you get there", bool(_root.get_node("ExitArch").get("armed")),
 			"open at the head of the walkway")
 		# Hurry the show along, or this test is a minute of waiting.
-		_show.set("opening_seconds", 0.2)
+		# Long enough that the carve still happens during the ARRIVAL, which is where the
+		# real show takes it.
+		_show.set("opening_seconds", 1.0)
 		_show.set("act_seconds", 0.5)
 		_show.set("closing_seconds", 0.3)
 		print("\n--- the run ---")
