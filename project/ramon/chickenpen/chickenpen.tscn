@@ -1,4 +1,4 @@
-[gd_scene load_steps=50 format=3]
+[gd_scene load_steps=54 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -29,12 +29,15 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_trym_talk_4d.gd" id="pen_trym_talk"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_shed_4d.gd" id="pen_shed"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cat_4d.gd" id="pen_cat"]
-[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_lofted_girl_4d.gd" id="pen_lofted_girl"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cat_grab_4d.gd" id="pen_cat_grab"]
+[ext_resource type="PackedScene" uid="uid://bxg6a6e97ce30" path="res://ramon/Model/nike.tscn" id="nike_scene"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_nike_grab_4d.gd" id="pen_nike_grab"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_nike_talk_4d.gd" id="pen_nike_talk"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="pen_face"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_trym_4d.gd" id="pen_trym"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_slice_plane_4d.gd" id="pen_plane"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_pickaxe_4d.gd" id="pen_pickaxe"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_crow_4d.gd" id="pen_crow"]
 [ext_resource type="PackedScene" uid="uid://gh03wmhupplp" path="res://ramon/VoxelMining/voxel_mining_block.tscn" id="voxel_rock"]
 [ext_resource type="Script" uid="uid://bvklfrydaxyio" path="res://ramon/dialogue/world_tag_4d.gd" id="pen_world_tag"]
 
@@ -255,6 +258,28 @@ name_size = 17
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 head_anchor_path = NodePath("../../World/TrymHead")
 
+[node name="NikeTag" type="Control" parent="UI"]
+script = ExtResource("dlg_tag")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../World/Nike/Head")
+lift = 12.0
+
+[node name="NikeBox" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("dlg_box")
+choice_side = 1
+over_head_width = 470.0
+over_head_lift = 10.0
+over_head_nudge_x = -450.0
+choice_width = 470.0
+choice_gap = 10.0
+text_size = 20
+choice_size = 19
+name_size = 17
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../World/Nike/Head")
+
 [node name="NessaTag" type="Control" parent="UI"]
 script = ExtResource("dlg_tag")
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
@@ -417,6 +442,36 @@ tag_path = NodePath("../../UI/PlayerTag")
 scratches = false
 carry_line = "Trym's cat does not seem to mind."
 
+[node name="NikeGrab" type="Node" parent="Systems"]
+script = ExtResource("pen_nike_grab")
+nike_path = NodePath("../../World/Nike")
+antics_path = NodePath("../../World/Nike/Antics")
+walker_path = NodePath("../../World/Nike/Walker")
+player_path = NodePath("../../Player")
+catcher_path = NodePath("../../Player/Catcher")
+anchor_path = NodePath("../../Player/CarryAnchor")
+gait_path = NodePath("../../Player/Gait")
+slice_frame_path = NodePath("../../Player/CameraRig")
+tag_path = NodePath("../../UI/PlayerTag")
+busy_paths = Array[NodePath]([NodePath("../CatGrab"), NodePath("../RedCatGrab")])
+
+[node name="NikeTalk" type="Node" parent="Systems"]
+script = ExtResource("dlg_talk")
+box_path = NodePath("../../UI/NikeBox")
+
+[node name="NikeDriver" type="Node" parent="Systems"]
+script = ExtResource("pen_nike_talk")
+player_path = NodePath("../../Player")
+camera_rig_path = NodePath("../../Player/CameraRig")
+talk_range = 4.2
+hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint")])
+character_path = NodePath("../../Player")
+catcher_path = NodePath("../../Player/Catcher")
+dialogue_path = NodePath("../NikeTalk")
+tag_path = NodePath("../../UI/NikeTag")
+grab_path = NodePath("../NikeGrab")
+pen_path = NodePath("../../Pen")
+
 [node name="Game" type="Node" parent="Systems"]
 script = ExtResource("pen_game")
 manager_path = NodePath("../../Chickens")
@@ -483,9 +538,9 @@ script = ExtResource("pen_pickup")
 kind = 1
 size = 0.3
 
-[node name="LoftedGirl" type="Node4D" parent="World"]
-position = Vector4(-10, 0, 6.5, 0)
-script = ExtResource("pen_lofted_girl")
+[node name="Nike" parent="World" instance=ExtResource("nike_scene")]
+position = Vector4(7.5, 0, 2, 0)
+basis = Projection(0.3, 0, 0, 0, 0, 0.3, 0, 0, 0, 0, 0.3, 0, 0, 0, 0, 0.3)
 
 [node name="Crate" type="MeshInstance4D" parent="World"]
 position = Vector4(-7.4, 0.3, 1.8, 0)
@@ -544,6 +599,12 @@ player_path = NodePath("../../Player")
 position = Vector4(6.6, 1.5, -11.0, 0)
 cell_size = 0.8
 mining_radius_meters = 0.96
+
+[node name="Crow" type="Node4D" parent="World"]
+position = Vector4(0, 0, -11, 0)
+script = ExtResource("pen_crow")
+fence_path = NodePath("../../Pen/Fence")
+ground_radius = 7.0
 
 [node name="Scenery" type="Node4D" parent="World"]
 
