@@ -36,6 +36,14 @@ extends Node
 ## free and a walk carries the pickaxe without a line of code about walking.
 @export var avatar_path: NodePath
 @export_range(0.1, 2.0, 0.05) var swing_seconds: float = 0.45
+## How the tool sits in the fist. Built with its haft straight up, which is how it is
+## easiest to lay out and not how anything is ever held: a hand grips a haft ACROSS the
+## palm, so the haft has to come off the forearm rather than continue it, and the picks
+## have to lie in the plane the arm swings through or they bite sideways into nothing.
+## Two quarter turns, and both are exported because which quarter turn is which depends
+## on the elbow's own frame and is faster to see than to derive.
+@export_range(-3.2, 3.2, 0.05) var haft_across: float = 1.5707963
+@export_range(-3.2, 3.2, 0.05) var picks_into_swing: float = 1.5707963
 @export var haft_color: Color = Color(0.55, 0.36, 0.20)
 @export var head_color: Color = Color(0.72, 0.75, 0.79)
 
@@ -88,6 +96,7 @@ func _hang_it() -> void:
 	# Held at the bottom of the haft with the head above the fist, which is how a pickaxe
 	# is carried and also what keeps it clear of the leg while walking.
 	_prop.position = Vector4(0.0, -0.20, 0.0, 0.0)
+	_prop.basis = Basis4D.from_yz(haft_across) * Basis4D.from_xy(picks_into_swing)
 	_haft()
 
 
