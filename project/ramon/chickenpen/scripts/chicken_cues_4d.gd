@@ -51,13 +51,20 @@ const BearingUtility4D = preload("res://scripts/bearing_utility_4d.gd")
 ## Quiet even at its loudest. This fires continuously while the player hunts, and a cue
 ## that plays every second has to sit under everything else or it becomes the thing the
 ## player is trying to get away from.
-@export_range(-60.0, 0.0, 1.0) var cluck_db_far: float = -32.0
-@export_range(-60.0, 0.0, 1.0) var cluck_db_near: float = -14.0
+@export_range(-60.0, 0.0, 1.0) var cluck_db_far: float = -36.0
+@export_range(-60.0, 0.0, 1.0) var cluck_db_near: float = -22.0
 
+## RE-LEVELLED AGAINST THE RECORDINGS, and they were measured rather than judged: these
+## three streams are synthesised here and peak at -4.3, -5.4 and -8.0 dBFS, which is
+## hotter than most of the library files beside them. They were tuned when this scene had
+## no other sound in it, and by the time it did, the return chirp was the second loudest
+## thing in the game - louder than a pickaxe hitting rock. The numbers below put them on
+## the same table as pen_sfx_4d.gd: a confirmation lands at about -22 dBFS effective and
+## the completion chorus at -20.
 ## Louder than the clucking, because it fires twelve times in a session rather than
 ## continuously, and because it is the one sound that confirms an action succeeded.
-@export_range(-40.0, 0.0, 1.0) var confirm_db: float = -8.0
-@export_range(-40.0, 0.0, 1.0) var chorus_db: float = -6.0
+@export_range(-40.0, 0.0, 1.0) var confirm_db: float = -17.0
+@export_range(-40.0, 0.0, 1.0) var chorus_db: float = -12.0
 
 @export_group("Glimpse")
 @export var glimpse_enabled: bool = true
@@ -100,16 +107,19 @@ func _ready() -> void:
 	if audio_enabled:
 		_cluck = AudioStreamPlayer.new()
 		_cluck.name = "Cluck"
+		_cluck.bus = &"SFX"
 		_cluck.stream = _make_cluck()
 		_cluck.volume_db = cluck_db_far
 		add_child(_cluck)
 		_confirm = AudioStreamPlayer.new()
 		_confirm.name = "Confirm"
+		_confirm.bus = &"SFX"
 		_confirm.stream = _make_confirm()
 		_confirm.volume_db = confirm_db
 		add_child(_confirm)
 		_chorus = AudioStreamPlayer.new()
 		_chorus.name = "Chorus"
+		_chorus.bus = &"SFX"
 		_chorus.stream = _make_chorus()
 		_chorus.volume_db = chorus_db
 		add_child(_chorus)

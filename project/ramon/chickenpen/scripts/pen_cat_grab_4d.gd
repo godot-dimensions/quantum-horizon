@@ -25,6 +25,12 @@ extends Node
 @export var catcher_path: NodePath
 @export var anchor_path: NodePath
 @export var slice_frame_path: NodePath
+## Picked up, and had enough of being picked up. Announced rather than acted on, the way
+## the chicken catcher announces a catch: sound and anything else that wants to know is
+## then somebody else's file, and this one stays about the cat.
+signal grabbed
+signal scratched
+
 @export var tag_path: NodePath
 
 @export_group("Grabbing")
@@ -107,6 +113,7 @@ func _grab() -> void:
 	_left = patience
 	_cat.call("grab")
 	_say(carry_line)
+	emit_signal("grabbed")
 
 
 func _process(delta: float) -> void:
@@ -132,6 +139,7 @@ func _process(delta: float) -> void:
 
 ## Out of time. It goes, you sit down, and the screen says why.
 func _scratch() -> void:
+	emit_signal("scratched")
 	holding = false
 	_cat.call("drop_and_flee")
 	_say(scratch_line, knocked_down_seconds)

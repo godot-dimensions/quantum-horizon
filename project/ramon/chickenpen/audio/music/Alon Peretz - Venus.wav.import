@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://dux8ujuhgg3kf"
+path="res://.godot/imported/Alon Peretz - Venus.wav-bb792a1a07b332fc0601b2a1bf6d9437.sample"
+
+[deps]
+
+source_file="res://ramon/chickenpen/audio/music/Alon Peretz - Venus.wav"
+dest_files=["res://.godot/imported/Alon Peretz - Venus.wav-bb792a1a07b332fc0601b2a1bf6d9437.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

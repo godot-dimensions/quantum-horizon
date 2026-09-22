@@ -48,6 +48,7 @@
 [ext_resource type="Script" uid="uid://bvklfrydaxyio" path="res://ramon/dialogue/world_tag_4d.gd" id="pen_world_tag"]
 [ext_resource type="Script" uid="uid://cyiwmk46dutm2" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/theatre/theatre.tscn" id="theatre_scene"]
+[ext_resource type="Script" uid="uid://0ylph4u1sgu2" path="res://ramon/chickenpen/scripts/pen_sfx_4d.gd" id="pen_sfx"]
 [ext_resource type="Script" uid="uid://c2kixgu1hst3e" path="res://ramon/chickenpen/theatre/theatre_arch_4d.gd" id="thr_arch"]
 [ext_resource type="PackedScene" uid="uid://gh03wmhupplp" path="res://ramon/VoxelMining/voxel_mining_block.tscn" id="voxel_rock"]
 
@@ -5601,6 +5602,11 @@ fence_path = NodePath("../../Pen/Fence")
 cues_path = NodePath("../Cues")
 game_path = NodePath("../Game")
 readout_path = NodePath("../../UI/Debug")
+
+[node name="Sfx" type="Node" parent="Systems"]
+process_mode = 3
+script = ExtResource("pen_sfx")
+catcher_path = NodePath("../../Player/Catcher")
 
 [node name="SliceAssist" type="Node" parent="Systems"]
 script = ExtResource("pen_assist")

@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://cno7ce3e7ma6o"
+path="res://.godot/imported/Yotam Agam - Unconscious Mind Delta.wav-715b266fb3360d19a1eac69bf03eae1e.sample"
+
+[deps]
+
+source_file="res://ramon/chickenpen/audio/music/Yotam Agam - Unconscious Mind Delta.wav"
+dest_files=["res://.godot/imported/Yotam Agam - Unconscious Mind Delta.wav-715b266fb3360d19a1eac69bf03eae1e.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2
