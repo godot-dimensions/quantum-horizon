@@ -5,10 +5,13 @@ extends SceneTree
 ## the one moment you least want to find them.
 
 ## Every character's writing, checked in one pass. A new script is one more row.
+const _Nike = preload("res://ramon/dialogue/nike_script.gd")
+
 const SCRIPTS: Array = [
 	{"who": "Keeper", "nodes": KeeperScript.NODES, "start": KeeperScript.START},
 	{"who": "Nessa", "nodes": NessaScript.NODES, "start": NessaScript.START},
 	{"who": "Trym", "nodes": TrymScript.NODES, "start": TrymScript.START},
+	{"who": "Nike", "nodes": _Nike.NODES, "start": _Nike.START},
 ]
 
 

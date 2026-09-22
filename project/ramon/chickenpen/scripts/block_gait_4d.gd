@@ -51,6 +51,19 @@ extends Node4D
 @export_range(0.0, 1.5, 0.05) var pickup_bend: float = 0.75
 @export_range(0.1, 1.5, 0.05) var pickup_seconds: float = 0.45
 @export_range(0.0, 0.4, 0.01) var pickup_dip: float = 0.18
+## HOW HEAVY THE THING IN YOUR ARMS IS, 0 to 1. A chicken is 0 and changes nothing, so
+## every existing caller keeps the pose it always had. The pig is 1.
+##
+## Weight is read off the KNEES, not off the arms. Arms already go overhead for a chicken
+## and cannot say more than that, and a stagger or a grunt is audio this prototype has
+## none of - but a body carrying something heavy sinks, and the sink is visible from any
+## angle. So the load lowers the hips, and because the foot targets live in WORLD space
+## and stay on the floor, the legs absorb every bit of that as knee bend. Nothing had to
+## be authored: the IK was already solving for whatever the hip height happened to be.
+@export_range(0.0, 0.6, 0.01) var heavy_crouch: float = 0.24
+## And leans the trunk back a little, the way you do to get a heavy load over your feet.
+@export_range(0.0, 0.6, 0.01) var heavy_lean: float = 0.16
+
 ## Where the arms go while holding a chicken: straight up, overhead.
 @export_range(0.0, 6.3, 0.05) var carry_arm_raise: float = 3.15
 @export_range(0.0, 1.0, 0.05) var carry_elbow: float = 0.18
@@ -110,6 +123,11 @@ var _sole: float = 0.0
 var _avatar_rest := Vector4.ZERO
 var _carrying: bool = false
 var _carry_blend: float = 0.0
+## How heavy what is being carried is, and the eased version of it. Blended more slowly
+## than the carry itself: arms snap up to catch a bird, but sinking under a weight is a
+## thing that happens to you over about half a second.
+var _load: float = 0.0
+var _load_blend: float = 0.0
 var _pickup: float = 0.0
 var _pelvis_drop: float = 0.0
 ## 0 while walking, 1 once stood. See settle_seconds.
@@ -288,10 +306,16 @@ func _physics_process(delta: float) -> void:
 		_pickup = maxf(_pickup - delta, 0.0)
 		stoop = sin((1.0 - _pickup / pickup_seconds) * PI)
 	_carry_blend = move_toward(_carry_blend, 1.0 if _carrying else 0.0, delta * 4.0)
-	_avatar.position = _avatar_rest + Vector4(0.0, maxf(bob, 0.0) - pickup_dip * stoop, 0.0, 0.0)
+	_load_blend = move_toward(_load_blend, _load if _carrying else 0.0, delta * 2.2)
+	var sink: float = heavy_crouch * _load_blend
+	_avatar.position = _avatar_rest + Vector4(0.0,
+		maxf(bob, 0.0) - pickup_dip * stoop - sink, 0.0, 0.0)
 	if _avatar.torso != null:
 		_avatar.torso.position = _torso_rest
-		_avatar.torso.basis = Basis4D.from_yz(-run_lean * effort - pickup_bend * stoop)
+		# Leaned BACK under a load - a positive angle here, against the forward lean of a
+		# run and of a stoop - so the weight ends up over the feet instead of ahead of them.
+		_avatar.torso.basis = Basis4D.from_yz(-run_lean * effort - pickup_bend * stoop
+			+ heavy_lean * _load_blend)
 
 
 ## One leg, one point in its cycle.
@@ -414,11 +438,14 @@ func _hold(shoulder: Node4D, elbow: Node4D, angle: float) -> void:
 		elbow.basis = Basis4D.from_yz(-carry_elbow)
 
 
-## Called by the catcher when a chicken is picked up or let go.
-func set_carrying(carrying: bool) -> void:
+## Called by the catcher when a chicken is picked up or let go, and by the pig's grab
+## with a load of 1. The second argument defaults to nothing, so the catcher's existing
+## one-argument call keeps the pose it always had.
+func set_carrying(carrying: bool, load: float = 0.0) -> void:
 	if carrying and not _carrying:
 		_pickup = pickup_seconds
 	_carrying = carrying
+	_load = clampf(load, 0.0, 1.0)
 
 
 func _arm(shoulder: Node4D, elbow: Node4D, swing: float) -> void:

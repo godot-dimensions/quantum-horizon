@@ -23,6 +23,10 @@ class_name WorldTag4D
 @export_group("Behaviour")
 ## Pixels above the projected anchor point.
 @export_range(-200.0, 200.0, 1.0) var lift: float = 0.0
+## Sideways offset, for when a character has more than one prompt over him and they should
+## sit beside each other rather than stack. The tag is centred on its anchor, so equal and
+## opposite nudges put two of them either side of the head.
+@export_range(-300.0, 300.0, 1.0) var nudge_x: float = 0.0
 ## Beyond this, the tag fades out. Stops distant chatter cluttering the screen.
 @export_range(1.0, 60.0, 0.5) var fade_from: float = 9.0
 @export_range(1.0, 80.0, 0.5) var fade_to: float = 14.0
@@ -101,7 +105,7 @@ func _place() -> float:
 
 	var point: Vector2 = _camera.world_to_viewport(here)
 	var screen: Vector2 = get_viewport_rect().size
-	var want: Vector2 = point - Vector2(size.x * 0.5, size.y + lift)
+	var want: Vector2 = point - Vector2(size.x * 0.5 - nudge_x, size.y + lift)
 	if clamp_to_screen:
 		want.x = clampf(want.x, screen_margin, screen.x - size.x - screen_margin)
 		want.y = clampf(want.y, screen_margin, screen.y - size.y - screen_margin)

@@ -118,11 +118,60 @@ func _physics_process(delta: float) -> void:
 	linear_velocity.w = move_toward(linear_velocity.w,
 		target.w + ana * w_top, acceleration * maxf(top, w_top) * delta)
 	move_and_slide()
+	_step_up(wish)
 	_turn_avatar(wish, delta)
 	if _label != null:
 		_label.text = "%s   %.1f units/s   w %.2f" % [
 			_gait_name(),
 			_horizontal_speed(), position.w]
+
+
+## CLIMBING A STEP, because nothing else here can.
+##
+## The 4D physics engine is axis-aligned - `axis_aligned_box_physics_engine_4d` is the
+## only one there is - so a sloped collider does not exist: a ramp has to be built as a
+## staircase of little boxes. And CharacterBody4D has no step-up of its own, so every one
+## of those risers is a vertical face, and a vertical face is a WALL however low it is.
+## The result is geometry you can walk down and cannot walk back up, which is what this
+## fixes.
+##
+## IT PROBES RATHER THAN SHOVING. Lifting whenever the body is blocked would let you climb
+## anything by leaning on it. This asks what the floor is doing a pace ahead - a ray down
+## from above head-of-step height - and only lifts if there IS floor there and it is
+## within one step. A wall has no floor a pace in front of it at knee height, so a wall
+## stays a wall. A gap in a fence has floor beyond it, but the floor is at the SAME height,
+## so there is nothing to climb and nothing happens.
+@export_group("Stepping up")
+## The tallest thing that counts as a step rather than an obstacle.
+@export_range(0.0, 1.0, 0.01) var step_height: float = 0.32
+## How far ahead to look for the surface being stepped onto.
+@export_range(0.1, 1.5, 0.05) var step_reach: float = 0.45
+
+
+func _step_up(wish: Vector4) -> void:
+	if step_height <= 0.0 or not is_on_wall() or not is_on_floor():
+		return
+	var flat := Vector4(wish.x, 0.0, wish.z, 0.0)
+	if flat.length() < 0.2:
+		return
+	flat = flat.normalized()
+	# Down from above the highest step we would take, a pace ahead.
+	var params := RaycastParameters4D.new()
+	var probe: Vector4 = global_position + flat * step_reach
+	params.global_ray_origin = probe + Vector4(0.0, step_height + 0.25, 0.0, 0.0)
+	params.global_ray_direction = Vector4(0.0, -1.0, 0.0, 0.0)
+	params.max_distance = step_height + 0.30
+	params.set_exclude_nodes([self])
+	var hit: Dictionary = PhysicsServer4D.raycast_physics_objects(params)
+	if hit.is_empty() or not hit.has("position"):
+		return
+	var top: float = (hit["position"] as Vector4).y
+	var climb: float = top - global_position.y
+	if climb <= 0.02 or climb > step_height:
+		return
+	# Onto it, plus a hair so the next frame starts above the lip rather than inside it.
+	global_position = Vector4(global_position.x, top + 0.02,
+		global_position.z, global_position.w)
 
 
 ## Walking and stepping through W are two different actions that happened to share one
