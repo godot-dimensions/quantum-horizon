@@ -59,11 +59,15 @@ var _flags: Dictionary = {}
 ## this one. It is what lets a sign-off mean "goodbye" the first time and "back to the
 ## list" once somebody has shown they want to talk.
 var _asked_any: bool = false
+## An effect waiting for its line. See `do_on_line`.
+var _pending_effect: String = ""
 var _echoing: bool = false
 var _echo_goto: String = ""
 var _echo_held: float = 0.0
 var _holding: bool = false
 var _hold_time: float = 0.0
+## Whether there was anything left to hurry when the key went down. See _advance_key.
+var _hold_had_text: bool = false
 
 
 func _ready() -> void:
@@ -105,6 +109,7 @@ func stop() -> void:
 	_pending_choices = []
 	_echoing = false
 	_holding = false
+	_pending_effect = ""
 	if _box != null:
 		_box.fast_forward = false
 	if _box != null:
@@ -154,8 +159,16 @@ func _enter(key: String) -> void:
 	_at = 0
 	_pending_choices = _visible_choices(node)
 
+	# `do_on_line` holds the effect back until the line that announces it has finished
+	# being said. Without it the effect fires the moment the node is entered, so the
+	# keeper's gauntlet flew to your wrist while he was still two lines away from
+	# offering it. Absent, effects fire on entry as before.
+	_pending_effect = ""
 	if node.has("do"):
-		effect.emit(String(node["do"]))
+		if node.has("do_on_line"):
+			_pending_effect = String(node["do"])
+		else:
+			effect.emit(String(node["do"]))
 
 	if _lines.is_empty():
 		# A hub with no line of its own: go straight to the replies, keeping whatever the
@@ -174,6 +187,10 @@ func _speak() -> void:
 
 
 func _on_line_finished() -> void:
+	if _pending_effect != "" and _at >= int(_script_nodes[_key].get("do_on_line", 0)):
+		var announced: String = _pending_effect
+		_pending_effect = ""
+		effect.emit(announced)
 	# Replies only appear once the last line has fully arrived, so reading and choosing
 	# never compete for the same moment.
 	if _at >= _lines.size() - 1 and not _pending_choices.is_empty():
@@ -258,7 +275,7 @@ func _process(delta: float) -> void:
 
 	# Tap or hold, decided by how long the key has been down. A tap finishes the line it
 	# is looking at; a hold runs the reveal fast without skipping any of it.
-	if _holding:
+	if _holding and _hold_had_text:
 		_hold_time += delta
 		if _hold_time > tap_seconds:
 			_box.fast_forward = true
@@ -274,6 +291,21 @@ func _process(delta: float) -> void:
 
 
 # ------------------------------------------------------------------ input
+
+## Escape leaves the conversation, immediately, from anywhere in it.
+##
+## Handled in _input rather than _unhandled_input, and CONSUMED, because the camera rig
+## also watches ui_cancel - first press frees the mouse, second quits the game. Sharing
+## the key through _unhandled_input meant that escaping a conversation could also release
+## the cursor or close the window, depending on which node the event happened to reach
+## first. Consuming it here means Escape means one thing while somebody is talking.
+func _input(event: InputEvent) -> void:
+	if not _running:
+		return
+	if event.is_action_pressed(&"ui_cancel"):
+		stop()
+		get_viewport().set_input_as_handled()
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not _running or _box == null:
@@ -304,21 +336,27 @@ func _unhandled_input(event: InputEvent) -> void:
 			_box.move_choice(-1)
 		KEY_DOWN, KEY_S:
 			_box.move_choice(1)
-		KEY_ESCAPE:
-			stop()
 		_:
 			if key >= KEY_1 and key <= KEY_9:
 				_box.pick_index(key - KEY_1)
 
 
-## One path for every way of saying "on". Tap is decided on release, so a hold can run the
-## reveal fast without the initial press having already finished the line.
+## One path for every way of saying "on". A tap is decided on release, so that holding the
+## key can run the reveal fast without the initial press having already finished the line.
+##
+## BUT A HOLD ONLY HAS A JOB WHILE TEXT IS STILL ARRIVING. Once the line has finished
+## there is nothing to hurry, so a press that outstayed tap_seconds used to be classified
+## as a hold and then do nothing at all on release - the input vanished, and it took
+## several increasingly annoyed presses to land one short enough to count. If there was no
+## text left to hurry when the key went down, any release advances, however long the
+## finger stayed on the key.
 func _advance_key(down: bool) -> void:
 	if down:
 		_holding = true
 		_hold_time = 0.0
+		_hold_had_text = _box.is_typing()
 		return
-	if _holding and _hold_time <= tap_seconds:
+	if _holding and (not _hold_had_text or _hold_time <= tap_seconds):
 		_tap()
 	_holding = false
 	_box.fast_forward = false

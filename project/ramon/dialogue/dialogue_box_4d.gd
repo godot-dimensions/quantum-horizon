@@ -153,6 +153,16 @@ func _ready() -> void:
 	visible = false
 
 
+## Swap which camera the over-head layout projects through.
+##
+## A staged conversation runs on a second camera standing in the world, and projecting a
+## speaker's head through the orbit camera instead put the panel in the corner of the
+## screen - correct arithmetic, wrong point of view. Passing null restores whatever the
+## scene wired.
+func use_camera(cam: Camera4D) -> void:
+	_camera = cam if cam != null else get_node_or_null(camera_path) as Camera4D
+
+
 # ------------------------------------------------------------------ public API
 
 ## Show a line. Calling this with what is already up does nothing, so a caller that
@@ -311,51 +321,84 @@ func _place() -> void:
 	if _speech == null:
 		return
 	var screen: Vector2 = get_viewport_rect().size
-	var choice_now: Vector2 = _choice_panel.get_combined_minimum_size()
 
 	if layout == Layout.BOTTOM_BAND:
 		var band_w: float = maxf(screen.x - side_margin * 2.0, 200.0)
-		_body_label.custom_minimum_size = Vector2(0.0, band_text_height)
-		_speech.size.x = band_w
-		var speech_h: float = _speech.get_combined_minimum_size().y
+		var speech_h: float = maxf(_speech_height(band_w), _plate_height() + BODY_PAD_Y + band_text_height)
+		var choice_h: float = _choice_height(minf(choice_width, band_w))
 		_speech.position = Vector2(side_margin, screen.y - bottom_margin - speech_h)
 		_speech.size = Vector2(band_w, speech_h)
 
 		var cw: float = minf(choice_width, band_w)
 		var cx: float = side_margin if choice_side == ChoiceSide.LEFT else screen.x - side_margin - cw
-		_choice_panel.size = Vector2(cw, choice_now.y)
-		_choice_panel.position = Vector2(cx, _speech.position.y - choice_gap - choice_now.y)
+		_choice_panel.size = Vector2(cw, choice_h)
+		_choice_panel.position = Vector2(cx, _speech.position.y - choice_gap - choice_h)
+
 	elif layout == Layout.OVER_HEAD and _camera != null and _head != null and _facing_camera():
-		# Everything hangs off one projected point, and the replies go BELOW the speech
-		# here rather than above it - above his head there is usually no room above.
 		var w: float = minf(over_head_width, screen.x - over_head_margin * 2.0)
-		_body_label.custom_minimum_size = Vector2(0.0, 0.0)
-		_speech.size.x = w
-		var h: float = _speech.get_combined_minimum_size().y
+		var h: float = _speech_height(w)
+		var ch: float = _choice_height(w)
 		var point: Vector2 = _camera.world_to_viewport(_head.global_position)
 		var x: float = clampf(point.x - w * 0.5 + over_head_nudge_x,
 			over_head_margin, screen.x - w - over_head_margin)
-
 		# Replies underneath, reading downward. What keeps them off the speaker is the
-		# sideways nudge, not the stacking order.
-		#
-		# The speech's BOTTOM edge is what gets pinned, not its top: the reply list appears
-		# and clears on every single beat, and pinning the top would make his line hop down
-		# and back up each time it did.
+		# sideways nudge, not the stacking order. The speech's BOTTOM edge is what gets
+		# pinned, not its top: the reply list appears and clears on every beat, and
+		# pinning the top would make his line hop down and back up each time it did.
 		var y: float = clampf(point.y - h - over_head_lift, over_head_margin,
-			screen.y - h - choice_now.y - choice_gap - over_head_margin)
+			maxf(screen.y - h - ch - choice_gap - over_head_margin, over_head_margin))
 		_speech.position = Vector2(x, y)
 		_speech.size = Vector2(w, h)
-		_choice_panel.size = Vector2(w, choice_now.y)
+		_choice_panel.size = Vector2(w, ch)
 		_choice_panel.position = Vector2(x, y + h + choice_gap)
+
 	else:
-		_body_label.custom_minimum_size = Vector2(0.0, text_height)
-		_speech.size.x = box_width
-		var tall: float = _speech.get_combined_minimum_size().y
+		var tall: float = maxf(_speech_height(box_width), _plate_height() + BODY_PAD_Y + text_height)
 		_speech.position = Vector2(margin_left, screen.y * 0.5 + offset_from_middle)
 		_speech.size = Vector2(box_width, tall)
-		_choice_panel.size = Vector2(box_width, choice_now.y)
+		_choice_panel.size = Vector2(box_width, _choice_height(box_width))
 		_choice_panel.position = Vector2(margin_left, _speech.position.y + tall + 8.0)
+
+
+## Heights are measured from the FONT, not from get_combined_minimum_size().
+##
+## A container's minimum size is only right once it has been laid out at its new width,
+## and _place sets that width in the same frame it reads it back. The result lagged by a
+## frame and was wildly wrong on the frame the text changed: once as a panel tall enough
+## to fill the screen, once as a four-reply list 28 pixels high. Asking the font how tall
+## the wrapped string is answers now, exactly, and cannot disagree with what gets drawn.
+const BODY_PAD_X: float = 40.0
+const BODY_PAD_Y: float = 28.0
+const CHOICE_PAD_X: float = 36.0
+const CHOICE_PAD_Y: float = 28.0
+const CHOICE_GAP_Y: float = 4.0
+
+
+func _speech_height(width: float) -> float:
+	return _plate_height() + BODY_PAD_Y + _wrapped(_body_label, width - BODY_PAD_X)
+
+
+func _plate_height() -> float:
+	return _plate.get_combined_minimum_size().y if _plate != null else 0.0
+
+
+func _choice_height(width: float) -> float:
+	if _choice_labels.is_empty():
+		return 0.0
+	var total: float = CHOICE_PAD_Y + CHOICE_GAP_Y * float(_choice_labels.size() - 1)
+	for label in _choice_labels:
+		total += _wrapped(label, width - CHOICE_PAD_X)
+	return total
+
+
+func _wrapped(label: Label, width: float) -> float:
+	if label == null or label.text == "":
+		return 0.0
+	var font: Font = label.get_theme_font("font")
+	if font == null:
+		return float(label.get_theme_font_size("font_size")) * 1.4
+	return font.get_multiline_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT,
+		maxf(width, 40.0), label.get_theme_font_size("font_size")).y
 
 
 ## Behind the camera projects to nonsense, so OVER_HEAD drops back to the band when the
