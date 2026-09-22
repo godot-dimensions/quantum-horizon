@@ -62,6 +62,7 @@ func _card() -> String:
 		"%s  pick up a chicken, and throw the one you are holding" % _key(&"catch_target"),
 		"%s  put it down where you stand instead" % _key(&"fire"),
 		"hold %s + mouse  turn the view through W" % _key(&"rotate_4d"),
+		"R  back to the slice you started on - level and at w zero",
 		"%s  jump      Ctrl+R  restart      %s  hide this      Esc  quit" % [
 			_key(&"move_jump"), OS.get_keycode_string(toggle_key)],
 	]

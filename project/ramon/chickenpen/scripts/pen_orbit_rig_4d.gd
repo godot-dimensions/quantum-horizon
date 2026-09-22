@@ -42,12 +42,34 @@ extends Node4D
 ## How much of the pulled-in distance to keep clear of the obstruction.
 @export var collision_margin: float = 0.3
 
+@export_group("The way back")
+## R puts you back on the default slice: both rotations to zero and your w to zero.
+##
+## THE BRIEF DOES NOT FORBID THIS, though it is easy to think it does. Item 58 - "do not
+## make the locator an autopilot" - asks to "leave enough interpretation to make W-search
+## meaningful" and to "avoid a giant exact world marker that removes all discovery unless
+## testing shows it is needed for comprehension". That is about the instrument that points
+## you at a CHICKEN. This points at nothing; it undoes your own rotations and puts you back
+## where you began, which is the opposite of being led to a target.
+##
+## What it protects is the willingness to rotate at all. Getting lost in W is not a skill
+## the brief is testing, it is the thing that stops the testing happening - and a way back
+## is what makes turning the slice far enough to be useful feel safe to try.
+##
+## It does not touch where you stand or which way you look. Only the fourth axis.
+@export var home_key: Key = KEY_R
+## Taken over a moment rather than snapped, so the level diagram shows the quad coming
+## flat and you can see what the key did.
+@export_range(0.05, 3.0, 0.05) var home_seconds: float = 0.45
+
 var yaw: float = 0.0
 var pitch: float = -0.15
 
 var _slice_xw: float = 0.0
 var _slice_zw: float = 0.0
 var _zoom_target: float = 0.0
+## Seconds left on the way back to the default slice. Zero means nothing is happening.
+var _homing: float = 0.0
 
 @onready var _pitch_node: Node4D = $Pitch
 @onready var _camera: Camera4D = $Pitch/Camera4D
@@ -70,6 +92,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_tree().quit()
 		get_viewport().set_input_as_handled()
 		return
+	if event is InputEventKey and event.pressed and not event.echo \
+			and (event as InputEventKey).keycode == home_key \
+			and not Input.is_key_pressed(KEY_CTRL):
+		# Ctrl+R restarts the whole scene and is somebody else's key. Plain R is the slice.
+		_homing = home_seconds
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventMouseButton and event.pressed:
 		# Clicking back into the window recaptures it.
 		if Input.mouse_mode == Input.MOUSE_MODE_VISIBLE and event.button_index == MOUSE_BUTTON_LEFT:
@@ -86,6 +115,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		var motion: Vector2 = event.relative * mouse_sensitivity
 		if Input.is_action_pressed(&"rotate_4d"):
+			# Taking hold of the slice cancels the trip home. Fighting the player for
+			# control of the same two angles is worse than either behaviour alone.
+			_homing = 0.0
 			# Turning the view through W: this changes which slice of the 4D world is
 			# visible, not which way the character faces within it.
 			_slice_xw -= motion.x
@@ -104,6 +136,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _homing > 0.0:
+		_go_home(delta)
 	distance = lerpf(distance, _zoom_target, clampf(delta * 10.0, 0.0, 1.0))
 	position = Vector4(0.0, pivot_height, 0.0, 0.0)
 	_place_camera()
@@ -139,6 +173,36 @@ func _apply() -> void:
 	basis = Basis4D.orthonormalized(frame)
 	if _pitch_node != null:
 		_pitch_node.basis = Basis4D.from_yz(pitch)
+
+
+## The trip back to the default slice: both rotations and your w, eased to zero together.
+##
+## The step is delta over the time REMAINING, not a fixed fraction, so the three of them
+## arrive at zero at the same moment and exactly on time - a plain lerp toward zero is
+## asymptotic and would leave a slice that is nearly default for ever, which is the one
+## outcome this is meant to rule out.
+##
+## Your w velocity is held at zero on the way, or the walker's own accelerating carries
+## you back off the slice as fast as this puts you on it.
+func _go_home(delta: float) -> void:
+	_homing = maxf(_homing - delta, 0.0)
+	var step: float = clampf(delta / maxf(_homing + delta, 0.0001), 0.0, 1.0)
+	_slice_xw = lerpf(_slice_xw, 0.0, step)
+	_slice_zw = lerpf(_slice_zw, 0.0, step)
+	var body: Node4D = get_parent() as Node4D
+	if body != null:
+		body.position.w = lerpf(body.position.w, 0.0, step)
+		if body.get("linear_velocity") != null:
+			var speed: Vector4 = body.get("linear_velocity")
+			speed.w = 0.0
+			body.set("linear_velocity", speed)
+	if _homing <= 0.0:
+		# Landed exactly, rather than within a rounding error of it.
+		_slice_xw = 0.0
+		_slice_zw = 0.0
+		if body != null:
+			body.position.w = 0.0
+	_apply()
 
 
 ## Positions the camera along the arm, pulled in if the world is in the way.

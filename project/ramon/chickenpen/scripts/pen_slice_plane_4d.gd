@@ -439,8 +439,16 @@ func _draw_you(shrink: float, origin: Vector2, mid: Vector2, u: float) -> void:
 	if is_nan(w):
 		return
 	var spot: Vector2 = _plan(here.x, here.z, w * shrink, origin, mid)
-	var facing: Projection = _frame.global_basis if _frame != null else _player.global_basis
-	var ahead: Vector4 = (facing * Vector4(0.0, 0.0, 1.0, 0.0)).normalized()
+	# NEGATIVE Z, and it was drawn positive and pointed exactly backwards.
+	#
+	# The rig's +Z is where the CAMERA sits - behind you, looking back - so the way you
+	# actually go is its negative. The walker agrees without ever saying so: it reads
+	# Input.get_axis("move_forward", "move_back"), which returns MINUS one for forward,
+	# and multiplies that through the same basis. So the arrow is built from the same
+	# expression the movement is, rather than from a guess about which way +Z points.
+	var facing: Projection = _frame.get("movement_basis").call() if _frame != null \
+		and _frame.has_method("movement_basis") else _player.global_basis
+	var ahead: Vector4 = (facing * Vector4(0.0, 0.0, -1.0, 0.0)).normalized()
 	var tip: Vector2 = _plan(here.x + ahead.x * 2.6, here.z + ahead.z * 2.6, w * shrink,
 		origin, mid)
 	var along: Vector2 = tip - spot
