@@ -15,7 +15,6 @@ var _f := 0
 var _fails: Array = []
 
 const PEN := Vector2(0.0, -11.0)
-const HALF := Vector2(5.0, 4.5)
 
 
 func _initialize() -> void:
@@ -33,6 +32,15 @@ func _process(_d) -> bool:
 	_f += 1
 	if _f < 70: return false
 	var manager: Node = _root.get_node("Chickens")
+	# READ FROM THE FENCE, not written down here. Written down, this test went on checking
+	# clearances against a pen that had since been made smaller and would have passed a
+	# chicken standing in the wall.
+	var fence: Node = _root.get_node("Pen/Fence")
+	var half := Vector2(maxf(float(fence.get("extend_x_positive")),
+			float(fence.get("extend_x_negative"))),
+		maxf(float(fence.get("extend_z_positive")), float(fence.get("extend_z_negative"))))
+	print("
+   the pen measures %.1f by %.1f from its middle" % [half.x, half.y])
 	var agents: Array = manager.get("agents")
 	var placements: Array = manager.get("PLACEMENTS")
 
@@ -44,7 +52,7 @@ func _process(_d) -> bool:
 		var at := Vector2(placements[i][0], placements[i][1])
 		var w: float = placements[i][2]
 		var roam: float = placements[i][3]
-		var gap := Vector2(absf(at.x - PEN.x) - HALF.x, absf(at.y - PEN.y) - HALF.y)
+		var gap := Vector2(absf(at.x - PEN.x) - half.x, absf(at.y - PEN.y) - half.y)
 		var clear: float = maxf(gap.x, gap.y)
 		if clear <= 0.0:
 			inside.append(i + 1)

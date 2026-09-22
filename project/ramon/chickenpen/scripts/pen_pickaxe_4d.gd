@@ -36,28 +36,23 @@ extends Node
 ## free and a walk carries the pickaxe without a line of code about walking.
 @export var avatar_path: NodePath
 @export_range(0.1, 2.0, 0.05) var swing_seconds: float = 0.45
-## How the tool sits in the fist. Built with its haft straight up, which is how it is
-## easiest to lay out and not how anything is ever held: a hand grips a haft ACROSS the
-## palm, so the haft has to come off the forearm rather than continue it, and the picks
-## have to lie in the plane the arm swings through or they bite sideways into nothing.
-## Two quarter turns, and both are exported because which quarter turn is which depends
-## on the elbow's own frame and is faster to see than to derive.
-@export_range(-3.2, 3.2, 0.05) var haft_across: float = 3.1415927
-@export_range(-3.2, 3.2, 0.05) var picks_into_swing: float = 1.5707963
-## And the third.
+## How the tool leans in the fist, in degrees off the forearm. 0 continues the arm like a
+## staff held out in front of you; 90 crosses it at a right angle, which is what a fist
+## closed round a haft actually does and what this wants.
+@export_range(0.0, 90.0, 1.0) var haft_lean: float = 90.0
+## The two ends of the arc, as angles at the shoulder.
 ##
-## SWEPT AND MEASURED, after three rounds of turning it by eye got nowhere. A pickaxe
-## bites along the arc the arm swings through, so the line joining its two points has to
-## lie along the character's FORWARD - and that is a number: take the two outer pick
-## blocks, measure the axis between them, compare it to the way the avatar faces.
+## MEASURED, AND THE FIRST PAIR SWUNG BEHIND HIM. Basis4D.from_yz turns the limb's down
+## axis to (0, -cos, -sin), so 0 hangs it down, PI stands it straight up, +PI/2 points it
+## BACKWARD and -PI/2 forward - this scene faces +Z. Winding up to +2.4 and striking to
+## -0.9 therefore raises the arm up and BEHIND, then drags it down through the back and
+## only reaches the front on the last frame. Tracked at the hand: it sat 0.35 behind the
+## shoulder for the whole swing and finished 0.30 in front.
 ##
-## The sweep also corrected what the pictures seemed to say. Every combination puts the
-## points in the fore-and-aft plane and none of them across the body - the wide pale arc
-## that looked like a sideways pickaxe in the front-on shot was one of the scene's
-## signboards behind it. What was actually wrong was subtler: the points sat 83% vertical
-## and 56% forward, which is a pickaxe held to chip at the sky. At haft PI they are 83%
-## forward, which is the one that bites.
-@export_range(-3.2, 3.2, 0.05) var picks_forward: float = 1.5707963
+## Both ends are negative now, so the arm lifts forward and up and comes down forward -
+## the whole arc happens where the rock is and where the player is looking.
+@export_range(-6.3, 6.3, 0.05) var windup_angle: float = -2.7
+@export_range(-6.3, 6.3, 0.05) var strike_angle: float = -0.9
 @export var haft_color: Color = Color(0.55, 0.36, 0.20)
 @export var head_color: Color = Color(0.72, 0.75, 0.79)
 
@@ -110,7 +105,7 @@ func _hang_it() -> void:
 	# Held at the bottom of the haft with the head above the fist, which is how a pickaxe
 	# is carried and also what keeps it clear of the leg while walking.
 	_prop.position = Vector4(0.0, -0.20, 0.0, 0.0)
-	_prop.basis = Basis4D.from_yz(haft_across) * Basis4D.from_xy(picks_into_swing) 		* Basis4D.from_zx(picks_forward)
+	_prop.basis = _grip()
 	_haft()
 
 
@@ -119,6 +114,29 @@ func _hang_it() -> void:
 ## - right on the pivot it is supposed to swing around, so the whole arc moved it about
 ## nine centimetres. The head now sits a little above the fist and well below the
 ## shoulder, which is what gives the swing something to travel.
+## THE GRIP IS BUILT FROM THE AXES IT SHOULD HAVE, not from a stack of quarter turns.
+##
+## Three rounds went by turning it ninety degrees in one plane after another and looking:
+## each fixed one view and broke the next, because a quarter turn moves all three axes and
+## only one of them was ever being judged. Naming the axes instead settles all three at
+## once and reads as what it is.
+##
+## The prop is modelled with its haft along local +Y and its picks along local +/-X. In
+## the elbow's frame -Y runs down the forearm and +Z is the way the character faces, so:
+##
+##   the haft leans up and FORWARD out of the fist, head uppermost
+##   the picks cross it in the same plane the arm swings through, so they bite
+##   what is left over points sideways, which is the one direction nothing wants
+##
+## Right-handed, so the third column is the cross of the first two and not a guess: for
+## picks (0,-s,c) and haft (0,c,s) that cross comes out (-1,0,0).
+func _grip() -> Projection:
+	var lean: float = deg_to_rad(haft_lean)
+	var haft := Vector4(0.0, cos(lean), sin(lean), 0.0)
+	var picks := Vector4(0.0, -sin(lean), cos(lean), 0.0)
+	return Projection(picks, haft, Vector4(-1.0, 0.0, 0.0, 0.0), Vector4(0.0, 0.0, 0.0, 1.0))
+
+
 func _haft() -> void:
 	_block("Haft", Vector4(0.0, 0.04, 0.0, 0.0), Vector3(0.026, 0.40, 0.026), haft_color)
 	_block("Collar", Vector4(0.0, 0.21, 0.0, 0.0), Vector3(0.062, 0.070, 0.062), head_color)
@@ -182,8 +200,8 @@ func _pose(t: float) -> void:
 	var elbow: Node4D = _avatar.get("elbow_right") as Node4D
 	if shoulder == null:
 		return
-	var lift: float = 2.4
-	var strike: float = -0.9
+	var lift: float = windup_angle
+	var strike: float = strike_angle
 	var angle: float = 0.0
 	if t < 0.35:
 		# Wind up quickly, then hold for an instant at the top.

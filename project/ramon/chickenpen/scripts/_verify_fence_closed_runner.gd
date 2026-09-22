@@ -31,10 +31,13 @@ func _process(_d) -> bool:
 			boxes.append([shape.position, (shape.shape as BoxShape4D).size])
 	print("   %d collision boxes in the fence" % boxes.size())
 
-	var z_side: float = 4.5
+	# READ FROM THE FENCE. Written down, this walked the near side of a pen that had since
+	# been made smaller and reported a gap where there is timber.
+	var z_side: float = float(fence.get("extend_z_positive"))
+	var x_reach: float = float(fence.get("extend_x_positive"))
 	var holes: Array = []
 	for i in 81:
-		var x: float = -5.0 + float(i) * 0.125
+		var x: float = -x_reach + float(i) * (x_reach * 2.0 / 80.0)
 		var covered: bool = false
 		for b in boxes:
 			var at: Vector4 = b[0]
