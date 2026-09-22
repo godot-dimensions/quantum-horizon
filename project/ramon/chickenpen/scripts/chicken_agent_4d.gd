@@ -119,6 +119,8 @@ var _path: float = 0.0
 var _stuck_elapsed: float = 0.0
 var _settle_from: float = 0.0
 var _settle_time: float = SETTLE_SECONDS
+## Whether the penned bird is mid-stroll or stopped to peck. It lands walking.
+var _penned_walking: bool = true
 
 var _rng := RandomNumberGenerator.new()
 var _timer: float = 0.0
@@ -195,10 +197,15 @@ func _enter(next: State) -> void:
 			_evade_from = _creature.position
 			_timer = 1.4
 		State.PENNED:
-			# Home. It stands about and pecks rather than pacing the fence.
-			_set_walker(true, walk_speed * 0.5, false, 0.0)
+			# Home, and STILL A BIRD. This used to halt the walker outright - a penned
+			# chicken stood on one spot pecking for ever, and because the state re-entered
+			# itself it never walked again in the whole run. It now does what a loose one
+			# does, a few steps and then a stop to peck, only slower, calmer and on a
+			# shorter leash; _contain already holds it to 60% of its wander radius around
+			# wherever it landed.
+			_set_walker(not _penned_walking, walk_speed * 0.5, false, 0.0)
 			_set_pecking(penned_peck_every_min, penned_peck_every_max)
-			_timer = _rng.randf_range(wander_seconds_min, wander_seconds_max)
+			_timer = _rng.randf_range(wander_seconds_min, wander_seconds_max) 				* (1.0 if _penned_walking else 1.6)
 		State.CARRIED, State.THROWN:
 			_set_walker(true, 0.0, false, 0.0)
 		State.RECOVERING:
@@ -243,7 +250,13 @@ func _tick_evade() -> void:
 
 func _tick_penned() -> void:
 	# Penned birds are calm: no alert, no evade, a shorter leash (item 24).
-	if _settle_time < SETTLE_SECONDS:
+	#
+	# THE DRIFT ONTO THE PEN'S SLICE ONLY HAPPENS WHILE IT IS WALKING. Run against a
+	# halted walker it slid the body through W with both feet planted, which is the skate
+	# it was reported as - the legs were doing nothing while the bird travelled. Moving
+	# it only while the legs are moving costs nothing, because it starts off walking the
+	# moment it lands.
+	if _settle_time < SETTLE_SECONDS and _penned_walking:
 		_settle_time += get_physics_process_delta_time()
 		var t: float = clampf(_settle_time / SETTLE_SECONDS, 0.0, 1.0)
 		# Eased, so it slows into place instead of stopping dead.
@@ -251,6 +264,7 @@ func _tick_penned() -> void:
 		_creature.position.w = w
 		home_position.w = w
 	if _timer <= 0.0:
+		_penned_walking = not _penned_walking
 		_enter(State.PENNED)
 
 
@@ -501,9 +515,12 @@ func on_landed(in_pen: bool) -> void:
 		return
 	if in_pen:
 		returned = true
+		# WHEREVER IT LANDS IS HOME. It does not walk back to where it was thrown from or
+		# to the middle of the pen - it picks up its life at the spot it came down on.
 		home_position = _creature.position
 		_settle_from = _creature.position.w
 		_settle_time = 0.0
+		_penned_walking = true
 		_enter(State.PENNED)
 	else:
 		_enter(State.IDLE)
