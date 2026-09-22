@@ -19,6 +19,7 @@ var _agent: Node
 var _body: Node4D
 var _walker: Node
 var _slid: float = 0.0
+var _first_second: float = 0.0
 var _walked: float = 0.0
 var _last := Vector4.ZERO
 
@@ -49,6 +50,9 @@ func _process(_d) -> bool:
 		var moved: float = (at - _last).length()
 		if bool(_walker.get("halted")):
 			_slid += moved
+			# The first second after touchdown is the window the skate was reported in.
+			if _step == 1 and _f < 60:
+				_first_second += moved
 		else:
 			_walked += moved
 		_last = at
@@ -74,8 +78,10 @@ func _process(_d) -> bool:
 			_last = _landed
 			print("\n   landed at %v" % _landed)
 		1:
-			if _f < 200: return false
-			print("   after three seconds it is at %v" % _body.global_position)
+			# Longer than before: it lands STANDING now, so the first stroll is a few
+			# seconds away rather than immediate.
+			if _f < 420: return false
+			print("   seven seconds later it is at %v" % _body.global_position)
 			var strayed: float = Vector2(_body.global_position.x - _landed.x,
 				_body.global_position.z - _landed.z).length()
 			_check("it stayed where it landed", strayed < 2.5,
@@ -84,6 +90,8 @@ func _process(_d) -> bool:
 				"covered %.2f units on the ground" % _walked)
 			_check("it never slid with its feet still", _slid < 0.05,
 				"%.3f units travelled while halted" % _slid)
+			_check("and nothing moved it as it landed", _first_second < 0.02,
+				"%.4f units in the first second after touchdown" % _first_second)
 			_check("it is penned and counted", bool(_agent.get("returned")),
 				"state %s" % _agent.call("describe"))
 			print("\n%d FAIL(s)" % _fails.size())

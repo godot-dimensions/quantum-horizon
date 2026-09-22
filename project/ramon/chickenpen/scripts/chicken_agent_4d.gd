@@ -107,10 +107,9 @@ var returned: bool = false
 ## someone carried it in, never because it wandered in on its own - see pen_return_4d.gd.
 var ever_carried: bool = false
 
-## How long a delivered chicken takes to walk onto the pen's slice, and which slice that
-## is. Zero is the slice the player starts on, so a full pen is visible from where the
-## objective is read.
-const SETTLE_SECONDS: float = 1.6
+## Which slice a delivered chicken belongs on. Zero is the slice the player starts on, so
+## a full pen is visible from where the objective is read. Adopted the instant it lands
+## rather than eased into over a second and a half - see on_landed.
 @export var pen_slice_w: float = 0.0
 
 @export_group("The coop")
@@ -143,8 +142,6 @@ var _wing_node: Node4D
 var _flutter: float = 0.0
 var _path: float = 0.0
 var _stuck_elapsed: float = 0.0
-var _settle_from: float = 0.0
-var _settle_time: float = SETTLE_SECONDS
 ## Whether the penned bird is mid-stroll or stopped to peck. It lands walking.
 var _penned_walking: bool = true
 var _coop: Node4D
@@ -245,7 +242,10 @@ func _enter(next: State) -> void:
 			# does, a few steps and then a stop to peck, only slower, calmer and on a
 			# shorter leash; _contain already holds it to 60% of its wander radius around
 			# wherever it landed.
-			_set_walker(not _penned_walking, walk_speed * 0.5, false, 0.0)
+			# NEARLY FULL PACE. At half, a penned bird covered a quarter of a unit in
+			# seven seconds - technically walking and not visibly so. Calm is the long
+			# pauses between strolls, not a slow stroll.
+			_set_walker(not _penned_walking, walk_speed * 0.9, false, 0.0)
 			_set_pecking(penned_peck_every_min, penned_peck_every_max)
 			_timer = _rng.randf_range(wander_seconds_min, wander_seconds_max) 				* (1.0 if _penned_walking else 1.6)
 		State.CARRIED, State.THROWN:
@@ -307,19 +307,6 @@ func _tick_evade() -> void:
 
 func _tick_penned() -> void:
 	# Penned birds are calm: no alert, no evade, a shorter leash (item 24).
-	#
-	# THE DRIFT ONTO THE PEN'S SLICE ONLY HAPPENS WHILE IT IS WALKING. Run against a
-	# halted walker it slid the body through W with both feet planted, which is the skate
-	# it was reported as - the legs were doing nothing while the bird travelled. Moving
-	# it only while the legs are moving costs nothing, because it starts off walking the
-	# moment it lands.
-	if _settle_time < SETTLE_SECONDS and _penned_walking:
-		_settle_time += get_physics_process_delta_time()
-		var t: float = clampf(_settle_time / SETTLE_SECONDS, 0.0, 1.0)
-		# Eased, so it slows into place instead of stopping dead.
-		var w: float = lerpf(_settle_from, pen_slice_w, t * t * (3.0 - 2.0 * t))
-		_creature.position.w = w
-		home_position.w = w
 	if _timer > 0.0:
 		return
 	# Every so often, at the end of a stroll, it goes and uses the henhouse.
@@ -653,12 +640,20 @@ func on_landed(in_pen: bool) -> void:
 		return
 	if in_pen:
 		returned = true
-		# WHEREVER IT LANDS IS HOME. It does not walk back to where it was thrown from or
-		# to the middle of the pen - it picks up its life at the spot it came down on.
+		# WHEREVER IT LANDS IS HOME, and it is home the moment it touches down.
+		#
+		# NOTHING SLIDES ANY MORE. The slice it belongs on used to be eased onto over a
+		# second and a half, which moved the bird while it stood there - the skate. Easing
+		# it only while the legs moved just traded one fault for a worse pair: it marched
+		# off along the throw line and then the leash hauled it back. The slice is simply
+		# adopted on the frame it lands, inside the impact, and after that nothing moves
+		# the bird but its own legs.
 		home_position = _creature.position
-		_settle_from = _creature.position.w
-		_settle_time = 0.0
-		_penned_walking = true
+		home_position.w = pen_slice_w
+		_creature.position.w = pen_slice_w
+		# AND IT LANDS STANDING. Walking out of the touchdown is what sent it skating off
+		# in whatever direction it happened to be flying.
+		_penned_walking = false
 		_enter(State.PENNED)
 	else:
 		_enter(State.IDLE)
