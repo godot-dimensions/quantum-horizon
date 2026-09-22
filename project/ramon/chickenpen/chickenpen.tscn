@@ -227,14 +227,14 @@ offset_bottom = 280.0
 text = ""
 
 [node name="SlicePlane" type="Control" parent="UI"]
-anchor_left = 0.6
-anchor_top = 0.38
+anchor_left = 0.62
+anchor_top = 0.33
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 0.0
 offset_top = 0.0
-offset_right = -26.0
-offset_bottom = -26.0
+offset_right = -24.0
+offset_bottom = -24.0
 script = ExtResource("pen_plane")
 player_path = NodePath("../../Player")
 pen_path = NodePath("../../Pen")

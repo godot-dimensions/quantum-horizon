@@ -81,19 +81,24 @@ extends Control
 ## SIZED FOR THE FIELD, NOT THE PEN. On its own the pen would happily take the whole
 ## panel, and then every chicken would be off the edge of it - and a bird you cannot see
 ## is a bird you cannot line up on.
-@export_range(0.005, 0.12, 0.0005) var ground_fraction: float = 0.025
-## How far past the pen the SHEET of your slice is drawn, as a multiple of the pen's own
-## half-extents. The white outline stays the pen's true size and is what you match; the
-## sheet is your slice, which is infinite, and drawing only the pen-sized patch of it left
-## every chicken standing outside the one thing they had to be judged against.
-@export_range(1.0, 4.0, 0.05) var sheet_spread: float = 1.75
-## What the diagram is centred on, as an offset from the pen.
+@export_range(0.005, 0.12, 0.0005) var ground_fraction: float = 0.020
+## How much of the dial's radius the SHEET of your slice fills. It is drawn concentric
+## with the dial rather than over the pen, because your slice is infinite and the pen is
+## not a natural middle for it - and at a fixed share of the dial it is always the same
+## size and always centred, which makes "does it land on its frame" a sharper read than
+## judging a rectangle that wandered about.
+@export_range(0.3, 0.98, 0.01) var sheet_fill: float = 0.8
+## How far out you may walk, as a share of the dial's radius, before the view starts
+## following you.
 ##
-## It used to be a long way north, because the whole flock lived on that side and centring
-## on the pen left half the panel empty. Half of them ring the pen now, so the centre of
-## what has to be shown has moved back towards it - and at the old offset the sheet's far
-## corner ran off the edge of the panel.
-@export var view_offset := Vector2(1.0, 3.0)
+## NOT ZERO, AND NOT ONE. Centred on you the whole time, the pen slides about constantly
+## and the diagram loses the one fixed landmark it exists to provide. Anchored on the pen
+## the whole time, you walk off your own instrument. Held until you reach this ring and
+## following after it, the picture is still while you work near home and scrolls while you
+## are out hunting - and you can never leave it.
+@export_range(0.0, 0.95, 0.05) var dead_zone: float = 0.7
+## Markers fade out over the last of the dial rather than popping off at the rim.
+@export_range(0.0, 0.4, 0.01) var edge_fade: float = 0.14
 
 @export_group("Look")
 @export var ground_color: Color = Color(1.0, 1.0, 1.0, 0.45)
@@ -110,6 +115,7 @@ extends Control
 ## the escape hatch for when the guess below picks the wrong one.
 @export var people_overrides: Array[Color] = []
 @export var target_color: Color = Color(1.0, 0.85, 0.25, 0.95)
+@export var you_color: Color = Color(1.0, 1.0, 1.0, 0.95)
 ## How big the birds are drawn, on top of the panel's own scaling.
 @export_range(0.4, 2.0, 0.05) var bird_size: float = 0.9
 @export var toggle_key: Key = KEY_N
@@ -237,79 +243,82 @@ func _plan(x: float, z: float, w: float, origin: Vector2, mid: Vector2) -> Vecto
 func _draw() -> void:
 	if _player == null or _pen == null:
 		return
-	var pen: Rect2 = _footprint()
-	var mid: Vector2 = pen.position + pen.size * 0.5 + view_offset
-	var pen_mid: Vector2 = pen.position + pen.size * 0.5
-	# The sheet: the same rectangle grown about the pen's centre.
-	var sheet := Rect2(pen_mid - pen.size * 0.5 * sheet_spread, pen.size * sheet_spread)
-	var sheet_corners: Array = [Vector2(sheet.position.x, sheet.position.y),
-		Vector2(sheet.end.x, sheet.position.y), Vector2(sheet.end.x, sheet.end.y),
-		Vector2(sheet.position.x, sheet.end.y)]
-	var origin := Vector2(size.x * 0.5, size.y * 0.55)
 	var font: Font = ThemeDB.fallback_font
-
-	# The radar has its dark ellipse to sit on; this had nothing, and a diagram made
-	# entirely of thin lines is unreadable over a sunlit field.
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0.0, 0.0, 0.0, 0.42), true)
+	var u: float = _ui()
+	var origin: Vector2 = size * 0.5
+	var radius: float = minf(size.x, size.y) * 0.5 - 12.0 * u
 	_tags.clear()
+
+	# ROUND, and the roundness is not decoration: the dial scrolls now, so what is on it
+	# changes as you walk, and a circle has no corners for a marker to hide in and no
+	# direction that shows more than another. A rectangle would quietly favour whatever
+	# lay along its diagonal.
+	draw_circle(origin, radius, Color(0.0, 0.0, 0.0, 0.45))
+	draw_arc(origin, radius, 0.0, TAU, 96, Color(1.0, 1.0, 1.0, 0.28), 1.5, true)
+
+	var pen: Rect2 = _footprint()
+	var anchor: Vector2 = pen.position + pen.size * 0.5
+	var mid: Vector2 = _view_centre(anchor, origin, radius)
+
+	# The sheet, sized to a share of the dial and concentric with it.
+	var reach: float = radius * sheet_fill / maxf(_ground_px(), 0.0001)
+	var span: float = maxf(pen.size.x + pen.size.y, 0.001)
+	var half := Vector2(reach * pen.size.x / span, reach * pen.size.y / span)
+	var sheet_corners: Array = [mid + Vector2(-half.x, -half.y), mid + Vector2(half.x, -half.y),
+		mid + Vector2(half.x, half.y), mid + Vector2(-half.x, half.y)]
 
 	var corners: Array = [Vector2(pen.position.x, pen.position.y),
 		Vector2(pen.end.x, pen.position.y), Vector2(pen.end.x, pen.end.y),
 		Vector2(pen.position.x, pen.end.y)]
 
-	# The pen's own ground, flat at w = 0. This is the thing you are matching.
+	# The pen's own ground, flat at w = 0. Wherever it happens to be on the dial, this is
+	# the landmark.
 	var flat := PackedVector2Array()
 	for c in corners:
 		flat.append(_plan(c.x, c.y, 0.0, origin, mid))
 	flat.append(flat[0])
 	draw_polyline(flat, ground_color, 1.5, true)
+	if _coop != null:
+		# A small square at the coop's end, so one end of the pen is tellable from the
+		# other and the direction of a tilt can be read.
+		var coop_at: Vector4 = _coop.global_position
+		var coop := PackedVector2Array()
+		for d in [Vector2(-2.0, -2.0), Vector2(2.0, -2.0), Vector2(2.0, 2.0), Vector2(-2.0, 2.0)]:
+			coop.append(_plan(coop_at.x + d.x, coop_at.z + d.y, 0.0, origin, mid))
+		coop.append(coop[0])
+		draw_polyline(coop, coop_color, 1.0, true)
 
-	# THE FRAME THE SHEET LANDS ON. The sheet of your slice is drawn wider than the pen so
-	# the flock stands under it, and that cost the thing the diagram was built around: two
-	# shapes of the same size coming together. This is that shape - the sheet's own
-	# footprint, lying flat at w = 0 - so being home is the coloured quad sitting exactly
-	# on it rather than a judgement about a smaller rectangle somewhere inside it.
+	# THE FRAME THE SHEET LANDS ON, at w = 0 and the same size and place as the sheet, so
+	# home is one shape sitting exactly on another rather than a judgement about a
+	# rectangle somewhere inside it.
 	var frame := PackedVector2Array()
 	for c in sheet_corners:
 		frame.append(_plan(c.x, c.y, 0.0, origin, mid))
 	frame.append(frame[0])
 	draw_polyline(frame, Color(ground_color.r, ground_color.g, ground_color.b,
 		ground_color.a * 0.75), 1.5, true)
-	if _coop != null:
-		# A small square at the coop's end, so one end of the pen is tellable from the
-		# other and the direction of a tilt can be read.
-		var at: Vector4 = _coop.global_position
-		var coop := PackedVector2Array()
-		for d in [Vector2(-2.0, -2.0), Vector2(2.0, -2.0), Vector2(2.0, 2.0), Vector2(-2.0, 2.0)]:
-			coop.append(_plan(at.x + d.x, at.z + d.y, 0.0, origin, mid))
-		coop.append(coop[0])
-		draw_polyline(coop, coop_color, 1.0, true)
 
+	# THE READING STAYS ON THE PEN'S OWN CORNERS. "Am I on the pen's slice" is the
+	# question worth answering, and it is asked about the pen, not about whatever patch
+	# of slice happens to be under the dial.
 	var heights: Array = []
 	var worst: float = 0.0
 	for c in corners:
-		var w: float = _w_above(c.x, c.y)
-		if is_nan(w):
-			_label(font, "your slice is edge-on to W - drag back", Vector2(10.0, size.y - 10.0),
-				far_color)
+		var pen_w: float = _w_above(c.x, c.y)
+		if is_nan(pen_w):
+			_label(font, "your slice is edge-on to W - drag back",
+				Vector2(origin.x - radius, origin.y + radius - 38.0 * u), far_color,
+				radius * 2.0, 15.0)
 			return
-		heights.append(w)
-		worst = maxf(worst, absf(w))
+		heights.append(pen_w)
+		worst = maxf(worst, absf(pen_w))
 
 	var home: bool = worst <= home_tolerance
 	var colour: Color = home_color if home else (near_color if worst < 2.0 else far_color)
 
-	# Your slice, over the same four corners, shrunk as a WHOLE if it would leave the
-	# panel. Clamping each corner on its own was the obvious way to keep it in frame and
-	# it stops the picture being a plane: a corner that hits the limit is pinned while
-	# the other three carry on, so the quad buckles and the one thing the instrument is
-	# for - reading a flat plane against a tilted one - is the thing it stops showing.
-	# Scaling every height by the same factor keeps it planar and keeps the tilt's
-	# direction; only its steepness is compressed, and the caption carries the real
-	# number anyway.
 	# Everything that will be drawn, gathered before anything is fitted, because it all
-	# has to share one scale. THE READING above stays on the pen's own corners - that is
-	# what "am I on the pen's slice" means - while the sheet below is what gets drawn.
+	# has to share one scale - scaling the sheet without scaling the birds would draw them
+	# aligned when they are not.
 	var birds: Array = _flock()
 	var folk: Array = _folk()
 	var sheet_heights: Array = []
@@ -326,16 +335,13 @@ func _draw() -> void:
 	var live := PackedVector2Array()
 	for i in sheet_corners.size():
 		var c: Vector2 = sheet_corners[i]
-		var w: float = drawn[i]
-		var point: Vector2 = _plan(c.x, c.y, w, origin, mid)
+		var point: Vector2 = _plan(c.x, c.y, drawn[i], origin, mid)
 		live.append(point)
 		# A drop line to the ground below it, which is what makes a small gap visible.
 		draw_line(_plan(c.x, c.y, 0.0, origin, mid), point,
 			Color(colour.r, colour.g, colour.b, 0.4), 1.0)
 	# FILLED AS TWO TRIANGLES, not as one quad. A strong tilt can fold the projected
-	# corners into a bow-tie, and draw_colored_polygon cannot triangulate one of those -
-	# it fails with "Invalid polygon data" and the fill vanishes. Triangles always
-	# triangulate, and a folded shape still shades sensibly.
+	# corners into a bow-tie, and draw_colored_polygon cannot triangulate one of those.
 	var wash := Color(colour.r, colour.g, colour.b, 0.14)
 	draw_colored_polygon(PackedVector2Array([live[0], live[1], live[2]]), wash)
 	draw_colored_polygon(PackedVector2Array([live[0], live[2], live[3]]), wash)
@@ -343,32 +349,111 @@ func _draw() -> void:
 	draw_polyline(live, colour, 2.0, true)
 
 	# The shrink the picture actually applied, read back off a corner rather than
-	# recomputed, so the rungs below cannot drift out of step with the quad.
+	# recomputed, so the rungs cannot drift out of step with the quad.
 	var shrink: float = 1.0
 	for i in sheet_heights.size():
 		if absf(sheet_heights[i]) > 0.001:
 			shrink = drawn[i] / sheet_heights[i]
 			break
+
 	var at: int = sheet_corners.size()
 	for i in birds.size():
 		var bird: Array = birds[i]
-		_draw_bird(bird[0], bird[1], fitted_all[at + i], bool(bird[3]), shrink,
-			colour, origin, mid)
+		var fade: float = _fade(Vector2(bird[0], bird[1]), origin, mid, radius)
+		if fade > 0.01:
+			_draw_bird(bird[0], bird[1], fitted_all[at + i], bool(bird[3]), shrink,
+				colour, origin, mid, fade)
 	at += birds.size()
-	# BLOBS FIRST, NAMES AFTER. Drawn one person at a time, the next person's blob lands
-	# on top of the last person's name - which is what put the cat over "Nessa". Two
-	# passes keeps every name above every marker.
+	# BLOBS FIRST, NAMES AFTER. Drawn one at a time, the next figure lands on top of the
+	# last figure's name.
 	var tags: Array = []
+	var fades: Array = []
 	for i in folk.size():
 		var who: Array = folk[i]
+		var fade: float = _fade(Vector2(who[0], who[1]), origin, mid, radius)
+		fades.append(fade)
 		tags.append(_draw_person(who[0], who[1], fitted_all[at + i], who[4],
-			bool(who[5]), shrink, colour, origin, mid))
+			bool(who[5]), shrink, colour, origin, mid, fade) if fade > 0.01 else Vector2.ZERO)
 	for i in folk.size():
-		_name_tag(font, String(folk[i][3]), tags[i], folk[i][4])
+		if fades[i] > 0.4:
+			_name_tag(font, String(folk[i][3]), tags[i], folk[i][4])
 
-	_label(font, "the pen's ground, and your slice over it", Vector2(10.0, 22.0 * _ui()),
-		Color(1.0, 1.0, 1.0, 0.75))
-	_label(font, _reading(heights, worst, home), Vector2(10.0, size.y - 10.0), colour)
+	_draw_you(shrink, origin, mid, u)
+
+	# SET IN FROM THE RIM, not level with it. draw_string places a BASELINE, so a caption
+	# put level with the top of the circle draws entirely above it - and the chord that
+	# close to the rim is narrower than the words are long, so it would spill out of the
+	# sides as well. This band, between the sheet at 80% and the rim, is the clear ring.
+	_label(font, "your slice, and the pen",
+		Vector2(origin.x - radius, origin.y - radius + 52.0 * u),
+		Color(1.0, 1.0, 1.0, 0.75), radius * 2.0, 15.0)
+	_label(font, _reading(heights, worst, home),
+		Vector2(origin.x - radius, origin.y + radius - 38.0 * u), colour, radius * 2.0, 15.0)
+
+
+## Where the dial is looking: the pen while you are near it, you once you are not.
+##
+## The dead zone is measured on the PANEL, not in the world. The projection is not
+## isotropic - a step along x moves you across the dial twice as far as a step along z
+## moves you down it - so a circle measured in world units draws as an ellipse, and "you
+## cannot leave the dial" would hold in one direction and fail in the other.
+func _view_centre(anchor: Vector2, origin: Vector2, radius: float) -> Vector2:
+	var here := Vector2(_player.global_position.x, _player.global_position.z)
+	var on_panel: Vector2 = _plan(here.x, here.y, 0.0, origin, anchor) - origin
+	var keep: float = radius * dead_zone
+	if on_panel.length() <= keep or on_panel.length() < 0.0001:
+		return anchor
+	# Push the view along until you are back on the ring, turning the shift on the panel
+	# back into a shift in the world.
+	return anchor + _unplan(on_panel - on_panel.normalized() * keep)
+
+
+## The projection, run backwards, on the w = 0 plane. u = (dx - dz) * s and
+## v = (dx + dz) * ISO_RISE * s, which is two equations in two unknowns.
+func _unplan(screen: Vector2) -> Vector2:
+	var s: float = maxf(_ground_px(), 0.0001)
+	var a: float = screen.x / s
+	var b: float = screen.y / (ISO_RISE * s)
+	return Vector2((a + b) * 0.5, (b - a) * 0.5)
+
+
+## How solidly a marker at (x, z) is drawn: full inside the dial, fading over the last of
+## it, gone outside. Popping off at the rim reads as a bug; fading reads as distance.
+func _fade(at: Vector2, origin: Vector2, mid: Vector2, radius: float) -> float:
+	var d: float = (_plan(at.x, at.y, 0.0, origin, mid) - origin).length()
+	var edge: float = radius - 16.0 * _ui()
+	if edge <= 0.0:
+		return 0.0
+	return clampf((edge - d) / maxf(edge * edge_fade, 1.0), 0.0, 1.0)
+
+
+## You, on your own slice - which you always are, so the marker sits on the sheet by
+## construction and is a check on the rest of the picture as much as a position.
+##
+## AN ARROW, NOT A DOT. The dial does not turn with you, so without something that points
+## there is nothing on it to say which way you are facing, and "the chicken is over there"
+## cannot be acted on.
+func _draw_you(shrink: float, origin: Vector2, mid: Vector2, u: float) -> void:
+	var here: Vector4 = _player.global_position
+	var w: float = _w_above(here.x, here.z)
+	if is_nan(w):
+		return
+	var spot: Vector2 = _plan(here.x, here.z, w * shrink, origin, mid)
+	var facing: Projection = _frame.global_basis if _frame != null else _player.global_basis
+	var ahead: Vector4 = (facing * Vector4(0.0, 0.0, 1.0, 0.0)).normalized()
+	var tip: Vector2 = _plan(here.x + ahead.x * 2.6, here.z + ahead.z * 2.6, w * shrink,
+		origin, mid)
+	var along: Vector2 = tip - spot
+	if along.length() < 0.5:
+		along = Vector2(0.0, -1.0)
+	along = along.normalized()
+	var side: Vector2 = Vector2(-along.y, along.x)
+	draw_colored_polygon(PackedVector2Array([spot + along * 9.0 * u,
+		spot - along * 5.0 * u + side * 5.0 * u,
+		spot - along * 2.0 * u,
+		spot - along * 5.0 * u - side * 5.0 * u]), you_color)
+	draw_arc(spot, 11.0 * u, 0.0, TAU, 20, Color(0.0, 0.0, 0.0, 0.45), 3.0, true)
+	draw_arc(spot, 11.0 * u, 0.0, TAU, 20, you_color, 1.2, true)
 
 
 ## Every catchable bird, as [x, z, w, is_the_target].
@@ -461,7 +546,7 @@ func _folk() -> Array:
 ## their name beside them and the same rung the birds get.
 ## Returns where the blob landed, so the name can be written in a later pass.
 func _draw_person(x: float, z: float, w: float, tint: Color, is_cat: bool, shrink: float,
-		plane_colour: Color, origin: Vector2, mid: Vector2) -> Vector2:
+		plane_colour: Color, origin: Vector2, mid: Vector2, fade: float = 1.0) -> Vector2:
 	var u: float = _ui()
 	var foot: Vector2 = _plan(x, z, 0.0, origin, mid)
 	var head: Vector2 = _plan(x, z, w, origin, mid)
@@ -477,6 +562,7 @@ func _draw_person(x: float, z: float, w: float, tint: Color, is_cat: bool, shrin
 	# so the one thing the blobs are for, telling people apart at a glance, was gone
 	# exactly when you first look at it. Being on your slice is a RING instead.
 	var colour: Color = tint
+	colour.a *= fade
 	draw_line(foot, head, Color(colour.r, colour.g, colour.b, 0.35), 1.0)
 	draw_circle(foot, 2.0 * u, Color(colour.r, colour.g, colour.b, 0.4))
 	var scale: float = u * bird_size
@@ -496,7 +582,7 @@ func _draw_person(x: float, z: float, w: float, tint: Color, is_cat: bool, shrin
 ## twelve heights against a plane that is somewhere else on the panel. Your slice is
 ## infinite; the rung is the bit of it that is under that bird.
 func _draw_bird(x: float, z: float, w: float, is_target: bool, shrink: float,
-		plane_colour: Color, origin: Vector2, mid: Vector2) -> void:
+		plane_colour: Color, origin: Vector2, mid: Vector2, fade: float = 1.0) -> void:
 	var u: float = _ui()
 	var foot: Vector2 = _plan(x, z, 0.0, origin, mid)
 	var head: Vector2 = _plan(x, z, w, origin, mid)
@@ -508,6 +594,7 @@ func _draw_bird(x: float, z: float, w: float, is_target: bool, shrink: float,
 			Color(plane_colour.r, plane_colour.g, plane_colour.b, 0.5), 1.0)
 		on_slice = absf(true_w - w / maxf(shrink, 0.0001)) <= home_tolerance
 	var colour: Color = target_color if is_target else chicken_color
+	colour.a *= fade
 	draw_line(foot, head, Color(colour.r, colour.g, colour.b, 0.35), 1.0)
 	draw_circle(foot, 2.0 * u, Color(colour.r, colour.g, colour.b, 0.4))
 	var middle: Vector2 = _chicken_icon(head, colour, u * bird_size)
@@ -699,6 +786,10 @@ func _reading(heights: Array, worst: float, home: bool) -> String:
 	return "%s   (worst corner %+.1f)" % [" and ".join(parts), worst]
 
 
-func _label(font: Font, text: String, at: Vector2, colour: Color) -> void:
-	draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1,
-		int(round(17.0 * _ui())), colour)
+func _label(font: Font, text: String, at: Vector2, colour: Color, width: float = -1.0,
+		letters: float = 17.0) -> void:
+	# Centred across the dial when given a width. A round instrument has no left edge to
+	# hang a caption off - at the panel's corner it would sit outside the circle entirely.
+	draw_string(font, at, text,
+		HORIZONTAL_ALIGNMENT_CENTER if width > 0.0 else HORIZONTAL_ALIGNMENT_LEFT,
+		width, int(round(letters * _ui())), colour)

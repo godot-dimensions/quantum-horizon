@@ -26,7 +26,12 @@ func _check(label: String, ok: bool, detail: String) -> void:
 func _sample(plane: Control) -> Array:
 	# The panel's size, and the pen's drawn width in pixels at that size.
 	var pen: Rect2 = plane.call("_footprint")
-	var mid: Vector2 = pen.position + pen.size * 0.5 + plane.get("view_offset")
+	# The dial's own view centre, which now follows the player rather than sitting at a
+	# fixed offset from the pen.
+	var origin: Vector2 = plane.size * 0.5
+	var radius: float = minf(plane.size.x, plane.size.y) * 0.5 - 12.0 * float(plane.call("_ui"))
+	var mid: Vector2 = plane.call("_view_centre", pen.position + pen.size * 0.5,
+		origin, radius)
 	var a: Vector2 = plane.call("_plan", pen.position.x, pen.position.y, 0.0,
 		Vector2.ZERO, mid)
 	var b: Vector2 = plane.call("_plan", pen.end.x, pen.end.y, 0.0, Vector2.ZERO, mid)
