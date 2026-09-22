@@ -87,9 +87,19 @@ func _process(_d) -> bool:
 	# The camera sits behind the player along +Z. Anything within a few metres of that
 	# line, behind them, is parked in every shot of the stage.
 	var behind: Vector4 = exit.global_position - player.global_position
-	_check("and it is NOT behind the player's shoulder",
-		absf(behind.x) > 4.0 or behind.z < 0.0,
-		"%.1f m to the side, %.1f m back" % [behind.x, behind.z])
+	# It IS behind them - that is what a centred room looks like. What matters is that it
+	# is further back than the camera, which the rig parks five metres behind the player.
+	_check("it is further back than the camera sits",
+		Vector2(behind.x, behind.z).length() > 6.0,
+		"%.1f m behind, camera rides at 5.0" % Vector2(behind.x, behind.z).length())
+	_check("and the walkway is on the room's centre line",
+		absf(float(stage.get("aisle_from").x)) < 0.01
+			and absf(float(stage.get("aisle_to").x)) < 0.01,
+		"symmetrical about x = 0")
+	var pad: MeshInstance4D = stage.get_node_or_null("Landing") as MeshInstance4D
+	_check("there is a level landing at the top", pad != null
+		and absf(pad.global_position.y - (float(stage.get("aisle_to").y) + 0.06)) < 0.02,
+		"flat, at the height the rake finishes")
 	# Seats were actually removed, rather than the aisle happening to miss them all: a
 	# full house is tiers x seats_per_tier, minus whatever falls off the disc.
 	var seated: int = stage.get_node("House").get_child_count() / 2

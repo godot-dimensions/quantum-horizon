@@ -95,7 +95,14 @@ func _process(_d) -> bool:
 			_arch.global_position + Vector4(0.0, 1.4, 0.0, 0.0))
 		_save("3_door")
 		return false
-	# 4. and through it, into the room.
+	# 4. he goes when somebody comes to stand with him - so come and stand with him. The
+	# first version of this teleported straight to the DOOR, which is two metres past him
+	# and, it turns out, close enough to photograph but not what he is waiting for: he
+	# stood there indefinitely and the run never reached the theatre.
+	if _seen.has("door") and figure != null and figure.visible:
+		_player.global_position = Vector4(at.x + 1.4, 1.2, at.z + 1.4, 0.0)
+		return false
+	# 5. and then through the door after him.
 	if _seen.has("door") and _theatre == null:
 		_player.global_position = Vector4(_arch.global_position.x, 1.2,
 			_arch.global_position.z, 0.0)
@@ -109,7 +116,6 @@ func _process(_d) -> bool:
 		_theatre.add_child(_eye)
 		_eye.position = Vector4.ZERO
 		_eye.current = true
-		(_theatre.get_node("Player") as Node4D).global_position = Vector4(0.0, 1.2, 12.0, 0.0)
 		return false
 
 	# What the player ACTUALLY sees on arrival: from where their own camera sits, five
@@ -118,16 +124,15 @@ func _process(_d) -> bool:
 	# thing that was wrong with the last version of this room.
 	if _theatre != null and not _seen.has("arrival"):
 		_seen["arrival"] = true
-		# Where their own camera sits: five metres back up the walkway, which is the one
-		# clear channel through the seating.
-		_look_from(Vector4(5.99, 3.0, 8.65, 0.0), Vector4(0.0, 1.4, 0.4, 0.0))
+		# Where their own camera sits: five metres back up the walkway, above the rake.
+		_look_from(Vector4(0.0, 3.5, 9.6, 0.0), Vector4(0.0, 1.3, 0.2, 0.0))
 		_save("7_arrival")
 		return false
 	if _theatre != null and not _seen.has("wayout"):
 		_seen["wayout"] = true
-		_look_from(Vector4(-1.6, 3.4, 3.2, 0.0),
+		_look_from(Vector4(-2.8, 2.4, 1.4, 0.0),
 			(_theatre.get_node("ExitArch") as Node4D).global_position
-				+ Vector4(0.0, 1.2, 0.0, 0.0))
+				+ Vector4(0.0, 0.9, 0.0, 0.0))
 		_save("8_wayout")
 		return false
 

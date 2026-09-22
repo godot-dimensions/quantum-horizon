@@ -57,23 +57,29 @@ extends Node4D
 @export var seat_color: Color = Color(0.16, 0.13, 0.20)
 
 @export_group("The aisle")
-## ONE RAKED BOX from the floor by the stage up to the way out, and the seats get out of
-## its way. There is no ramp to the seating itself and there does not need to be - what a
-## room like this actually needs is a floor you can read: somewhere obvious to stand, and
-## an obvious route off it.
+## A RAKED BOX AND THEN A FLAT ONE, straight up the middle of the seating arc from the
+## edge of the stage to the way out, and the seats get out of their way. There is no ramp
+## to the seating itself and there does not need to be - what a room like this actually
+## needs is a floor you can read: somewhere obvious to stand, an obvious route off it, and
+## the freedom to stop anywhere on the way and watch from that height.
 ##
-## IT GOES UP AND ACROSS, not straight back. A door directly behind the audience is a door
-## directly behind the CAMERA, which in a third-person game means the way out is parked in
-## the middle of every shot of the stage. Running the aisle off to one side puts it out of
-## the sightline and costs nothing but a yaw.
-@export var aisle_from := Vector4(0.0, 0.0, 4.6, 0.0): set = _set_aisle_from
-@export var aisle_to := Vector4(7.4, 1.6, 9.6, 0.0): set = _set_aisle_to
+## IT IS ON THE CENTRE LINE, and that is the point. An earlier version ran it off
+## diagonally to keep the door out of the third-person camera's way, which solved a camera
+## problem by putting the room's main axis somewhere nobody would have drawn it. The rig
+## already raycasts and pulls in when something is behind the player, so the diagonal was
+## buying nothing; what keeps the door out of shot is starting the player at the BOTTOM,
+## where it is further back than the camera is.
+@export var aisle_from := Vector4(0.0, 0.0, 3.3, 0.0): set = _set_aisle_from
+@export var aisle_to := Vector4(0.0, 1.9, 10.6, 0.0): set = _set_aisle_to
+## The flat run on the end of it. The door stands at the far end of this, so the last few
+## steps to the way out are level - a doorway on a slope is a doorway you fall out of.
+@export_range(0.0, 8.0, 0.1) var aisle_landing: float = 1.8: set = _set_aisle_landing
 @export_range(1.0, 6.0, 0.1) var aisle_width: float = 2.8: set = _set_aisle_width
 ## Steps under the rake. The physics here keeps boxes and nothing else, so a tilted slab
 ## is a tilted PICTURE with an axis-aligned brick behind it; the thing you actually walk
 ## on is a staircase of little boxes with their tops on the slope. Enough of them and the
 ## rise per step is a few centimetres, which walks like a ramp.
-@export_range(4, 60, 1) var aisle_steps: int = 24
+@export_range(4, 80, 1) var aisle_steps: int = 44
 @export var aisle_color: Color = Color(0.12, 0.14, 0.20)
 
 @export_group("The void")
@@ -90,25 +96,37 @@ func _set_rim_color(v: Color) -> void: rim_color = v; _later()
 func _set_aisle_from(v: Vector4) -> void: aisle_from = v; _later()
 func _set_aisle_to(v: Vector4) -> void: aisle_to = v; _later()
 func _set_aisle_width(v: float) -> void: aisle_width = v; _later()
+func _set_aisle_landing(v: float) -> void: aisle_landing = v; _later()
 
 
-## The top of the aisle, where the way out stands. Public so the scene does not have to
-## keep a second copy of the number.
+## The heading of the whole walkway, as a yaw.
+func aisle_yaw() -> float:
+	return atan2(aisle_to.x - aisle_from.x, aisle_to.z - aisle_from.z)
+
+
+## The far end of the landing, where the way out stands. Public so the scene does not have
+## to keep a second copy of the number.
 func aisle_head() -> Vector4:
-	return aisle_to
+	var yaw: float = aisle_yaw()
+	return aisle_to + Vector4(sin(yaw) * aisle_landing, 0.0, cos(yaw) * aisle_landing, 0.0)
 
 
-## How far a point on the floor is from the aisle, measured to the SEGMENT rather than to
-## the line - seats beyond either end of it are not in the aisle, they are just near it.
+## How far a point on the floor is from the walkway, measured to the SEGMENTS rather than
+## to a line - seats beyond either end of it are not in the aisle, they are just near it.
+## The rake and the landing are one path, so it is the nearer of the two.
 func aisle_gap(at: Vector4) -> float:
-	var a := Vector2(aisle_from.x, aisle_from.z)
-	var b := Vector2(aisle_to.x, aisle_to.z)
 	var p := Vector2(at.x, at.z)
+	var head: Vector4 = aisle_head()
+	return minf(_to_segment(p, Vector2(aisle_from.x, aisle_from.z),
+			Vector2(aisle_to.x, aisle_to.z)),
+		_to_segment(p, Vector2(aisle_to.x, aisle_to.z), Vector2(head.x, head.z)))
+
+
+func _to_segment(p: Vector2, a: Vector2, b: Vector2) -> float:
 	var run: Vector2 = b - a
 	if run.length_squared() < 0.0001:
 		return p.distance_to(a)
-	var along: float = clampf((p - a).dot(run) / run.length_squared(), 0.0, 1.0)
-	return p.distance_to(a + run * along)
+	return p.distance_to(a + run * clampf((p - a).dot(run) / run.length_squared(), 0.0, 1.0))
 
 
 func _ready() -> void:
@@ -278,7 +296,8 @@ func rebuild() -> void:
 		mote.basis = Basis4D.from_zx(rng.randf_range(0.0, TAU))
 
 
-## The raked walkway, and the staircase of boxes that makes it walkable.
+## The walkway: a raked box, a flat one on the end of it, and the staircase of little
+## boxes that makes both of them something you can actually walk up.
 func _aisle(body: StaticBody4D) -> void:
 	var run := Vector2(aisle_to.x - aisle_from.x, aisle_to.z - aisle_from.z)
 	var flat: float = run.length()
@@ -286,33 +305,53 @@ func _aisle(body: StaticBody4D) -> void:
 		return
 	var rise: float = aisle_to.y - aisle_from.y
 	var length: float = sqrt(flat * flat + rise * rise)
-	var middle: Vector4 = (aisle_from + aisle_to) * 0.5
+	var yaw: float = aisle_yaw()
+	var turn: Projection = Basis4D.from_zx(yaw)
 
-	var deck := _slab(self, "Aisle", middle + Vector4(0.0, 0.06, 0.0, 0.0),
+	# The rake. Turned to the heading first, then tilted. from_yz turns the opposite way
+	# to the obvious reading - the same note block_gait_4d.gd carries - so the NEGATIVE
+	# angle is the one that lifts the far end.
+	var deck := _slab(self, "Aisle", (aisle_from + aisle_to) * 0.5
+		+ Vector4(0.0, 0.06, 0.0, 0.0),
 		Vector3(aisle_width, 0.24, length), aisle_color)
-	# Turned to the heading first, then raked. from_yz turns the opposite way to the
-	# obvious reading - the same note block_gait_4d.gd carries - so the NEGATIVE angle is
-	# the one that lifts the far end.
-	deck.basis = Basis4D.from_zx(atan2(run.x, run.y)) * Basis4D.from_yz(-atan2(rise, flat))
-	var edge := _slab(self, "AisleEdge", middle + Vector4(0.0, 0.20, 0.0, 0.0),
-		Vector3(aisle_width * 0.04, 0.04, length * 0.98), rim_color)
-	edge.basis = deck.basis
-	edge.position += deck.basis * Vector4(aisle_width * 0.48, 0.0, 0.0, 0.0)
-	var edge2 := _slab(self, "AisleEdge2", edge.position, Vector3(aisle_width * 0.04, 0.04,
-		length * 0.98), rim_color)
-	edge2.basis = deck.basis
-	edge2.position -= deck.basis * Vector4(aisle_width * 0.96, 0.0, 0.0, 0.0)
+	deck.basis = turn * Basis4D.from_yz(-atan2(rise, flat))
+	_aisle_edges(deck, "Rake", aisle_width, length)
 
-	# And the steps. Deep enough that each one is buried in the one below it, so there is
-	# no lip between them for a foot to catch on.
-	for step in aisle_steps:
-		var t: float = (float(step) + 0.5) / float(aisle_steps)
-		var at: Vector4 = aisle_from.lerp(aisle_to, t)
-		# Tops level with the DECK's top surface, not with the centre line it was laid
-		# out along - the slab is drawn 0.06 above the line and is 0.24 thick, so its
-		# surface is 0.18 up. Stepping on the line means standing shin-deep in the ramp.
+	# The landing. Level, so the last few steps to the door are not taken on a slope.
+	var head: Vector4 = aisle_head()
+	if aisle_landing > 0.1:
+		var pad := _slab(self, "Landing", (aisle_to + head) * 0.5
+			+ Vector4(0.0, 0.06, 0.0, 0.0),
+			Vector3(aisle_width, 0.24, aisle_landing), aisle_color)
+		pad.basis = turn
+		_aisle_edges(pad, "Landing", aisle_width, aisle_landing)
+
+	# And the steps. Deep enough that each is buried in the one below it, so there is no
+	# lip between them for a foot to catch on, and their tops are level with the DECK's
+	# top surface rather than with the line it was laid out along - the slab sits 0.06
+	# above that line and is 0.24 thick, so its surface is 0.18 up. Stepping on the line
+	# means standing shin-deep in the ramp.
+	var total: float = length + aisle_landing
+	# Enough that no single step is more than about five centimetres, whatever the rake
+	# is set to - the count follows the RISE, because the rise is what a foot has to clear.
+	var steps: int = maxi(aisle_steps, int(ceil(absf(rise) / 0.05)))
+	for step in steps:
+		var t: float = (float(step) + 0.5) / float(steps)
+		var walked: float = t * total
+		var at: Vector4 = aisle_from.lerp(aisle_to, minf(walked / length, 1.0))
+		if walked > length:
+			at = aisle_to + Vector4(sin(yaw), 0.0, cos(yaw), 0.0) * (walked - length)
 		_collide(body, Vector4(at.x, at.y + 0.18 - 0.30, at.z, 0.0),
 			Vector4(aisle_width, 0.6, aisle_width, floor_w_depth))
+
+
+## A lit strip down each side, so the edge of the drop is readable in a dark room.
+func _aisle_edges(deck: MeshInstance4D, tag: String, wide: float, along: float) -> void:
+	for side in [-1.0, 1.0]:
+		var strip := _slab(self, "AisleEdge%s%d" % [tag, int(side)],
+			deck.position + deck.basis * Vector4(side * wide * 0.48, 0.14, 0.0, 0.0),
+			Vector3(wide * 0.04, 0.04, along * 0.99), rim_color)
+		strip.basis = deck.basis
 
 
 func _slab(parent: Node, part: String, at: Vector4, size: Vector3,
