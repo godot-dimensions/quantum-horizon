@@ -25,12 +25,16 @@ extends Node4D
 ## - wings wide, nose up, legs down - on the way in. A bird that flaps at one rate the
 ## whole time reads as a toy.
 
-const RIG := preload("res://ramon/Model/scripts/loft_rig_4d.gd")
-const BALL := preload("res://ramon/Model/scripts/loft_ball_4d.gd")
+const RIG := preload("res://ramon/chickenpen/scripts/loft_rig_4d.gd")
+const BALL := preload("res://ramon/chickenpen/scripts/loft_ball_4d.gd")
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
 
 ## Beak to tail, in world units. A crow beside a 1.5-unit person.
+## Its own seed. THREE CROWS SHARING ONE would be three birds doing the same thing at the
+## same moment, which reads as a single bird rendered three times - and the first version
+## of this had the seed written into _ready as a constant.
+@export var flock_seed: int = 0
 @export_range(0.15, 2.0, 0.05) var length: float = 0.52: set = _set_length
 @export var feather: Color = Color(0.10, 0.10, 0.13): set = _set_feather
 @export var sheen: Color = Color(0.22, 0.24, 0.34): set = _set_sheen
@@ -42,7 +46,13 @@ const BALL := preload("res://ramon/Model/scripts/loft_ball_4d.gd")
 @export var fence_path: NodePath
 ## And the patch of ground it works, as a radius about this node's own position.
 @export_range(1.0, 30.0, 0.5) var ground_radius: float = 7.0
-@export_range(0.0, 1.0, 0.05) var fence_preference: float = 0.6
+## Anything else it might stand on - the coop, the shed, a crate, a rock. The TOP of each
+## is worked out from its own meshes rather than typed in, so a thing that is rebuilt or
+## resized is still landed on correctly and nothing here has to know how tall a shed is.
+@export var perch_paths: Array[NodePath] = []
+## How often it goes for something rather than the bare ground. The rest of the time it
+## drops into the field, which is where a crow spends most of its day anyway.
+@export_range(0.0, 1.0, 0.05) var perch_preference: float = 0.75
 
 @export_group("Timing")
 @export_range(1.0, 60.0, 0.5) var perch_min: float = 4.0
@@ -73,6 +83,7 @@ var _head_rest := Vector4.ZERO
 var _legs: Array[Node4D] = []
 var _leg_rest: Array[Vector4] = []
 var _fence: Node
+var _perches: Array[Node4D] = []
 
 var _mood: Mood = Mood.PERCHED
 var _mood_left: float = 0.0
@@ -85,6 +96,7 @@ var _to := Vector4.ZERO
 var _leg: float = 0.0
 var _look: float = 0.0
 var _look_at: float = 0.0
+var _shrug: float = 0.0
 var _rng := RandomNumberGenerator.new()
 
 
@@ -96,10 +108,14 @@ func _set_eye(v: Color) -> void: eye_color = v; _later()
 
 
 func _ready() -> void:
-	_rng.seed = 90210
+	_rng.seed = flock_seed if flock_seed != 0 else int(hash(name))
 	_home = position
 	_heading = _rng.randf_range(0.0, TAU)
 	_fence = get_node_or_null(fence_path)
+	for path in perch_paths:
+		var thing: Node4D = get_node_or_null(path) as Node4D
+		if thing != null:
+			_perches.append(thing)
 	rebuild()
 	_mood_left = _rng.randf_range(perch_min, perch_max)
 
@@ -264,6 +280,16 @@ func _do_perched(delta: float) -> void:
 	var bob: float = maxf(sin(_clock * 2.1), 0.0)
 	_head.position = _head_rest + Vector4(0.0, -0.045 * length * bob,
 		0.02 * length * bob, 0.0)
+	# And every so often it shrugs its wings, which is the thing a real one does that
+	# nothing else in the pose does - a bird that only ever turns its head is a puppet.
+	_shrug = maxf(_shrug - delta, 0.0)
+	if _shrug <= 0.0 and _rng.randf() < delta * 0.35:
+		_shrug = 0.45
+	if _shrug > 0.0:
+		var flick: float = sin((1.0 - _shrug / 0.45) * PI)
+		for i in _wings.size():
+			var side: float = 1.0 if i == 0 else -1.0
+			_wings[i].basis = Basis4D.from_zx(side * fold_sweep) 				* Basis4D.from_xy(-side * (-0.16 - flick * 0.55))
 	if _mood_left <= 0.0:
 		_from = position
 		_to = position + Vector4(0.0, cruise_height, 0.0, 0.0)
@@ -274,10 +300,20 @@ func _do_perched(delta: float) -> void:
 ## Straight up, off the perch, working for it. Deep fast beats and the legs trailing.
 func _do_takeoff(delta: float) -> void:
 	var t: float = 1.0 - clampf(_mood_left / maxf(takeoff_seconds, 0.01), 0.0, 1.0)
-	position = _from.lerp(_to, ease(t, 0.55))
+	# A CROUCH FIRST. A bird does not rise off a rail, it pushes off one - and the first
+	# version simply started travelling upwards on the frame the timer ran out, which
+	# reads as being lifted rather than jumping.
+	if t < 0.22:
+		var dip: float = sin(t / 0.22 * PI) * 0.055 * length
+		position = _from - Vector4(0.0, dip, 0.0, 0.0)
+		_fold(1.0)
+		_stand(1.0)
+		return
+	var climb: float = (t - 0.22) / 0.78
+	position = _from.lerp(_to, ease(climb, 0.5))
 	_beat += delta * climb_beats
 	_flap(0.95)
-	_stand(1.0 - t)
+	_stand(1.0 - climb)
 	_head.position = _head_rest
 	if _mood_left > 0.0:
 		return
@@ -301,7 +337,10 @@ func _do_flying(delta: float) -> void:
 	position += Vector4(sin(_heading), 0.0, cos(_heading), 0.0) * fly_speed * delta
 	position.y = lerpf(position.y, _to.y, clampf(delta * 1.2, 0.0, 1.0))
 	# Banking, so a turn is something the whole bird does.
-	basis = Basis4D.from_zx(_heading) * Basis4D.from_xy(clampf(-turn, -0.7, 0.7))
+	# Banking into the turn, and the nose following the climb - a bird holds level while
+	# its height changes only in a cartoon.
+	var rise: float = clampf((_to.y - position.y) * 0.25, -0.45, 0.45)
+	basis = Basis4D.from_zx(_heading) * Basis4D.from_xy(clampf(-turn, -0.7, 0.7)) 		* Basis4D.from_yz(-rise)
 	_beat += delta * cruise_beats
 	# A glide is the wings held out and still for part of every cycle.
 	var phase: float = fposmod(_beat, 1.0)
@@ -348,33 +387,104 @@ func _pick_air() -> void:
 		_home.z + cos(angle) * reach, position.w)
 
 
-## Somewhere to come down: the top rail of the fence if it can, the ground if not.
+## Somewhere to come down.
 ##
-## The rail is picked along a SIDE rather than anywhere within the pen, because a bird
-## that lands on the middle of a fence is sitting on nothing.
+## GATHERED, THEN CHOSEN AT RANDOM. Everything it could stand on goes into one list - the
+## fence's top rail, the top of every object it has been pointed at, and the open ground -
+## and one is drawn out. Adding somewhere new to land is then a NodePath in the scene and
+## nothing here, which is the difference between a bird that uses its world and a bird
+## with a list of two places written into its script.
 func _pick_perch() -> Vector4:
-	if _fence != null and _rng.randf() < fence_preference:
-		var height: float = float(_fence.get("height"))
-		var east: float = float(_fence.get("extend_x_positive"))
-		var west: float = float(_fence.get("extend_x_negative"))
-		var north: float = float(_fence.get("extend_z_positive"))
-		var south: float = float(_fence.get("extend_z_negative"))
-		var origin: Vector4 = (_fence as Node4D).global_position
-		var host: Node4D = get_parent() as Node4D
-		var local: Vector4 = origin - (host.global_position if host != null else Vector4.ZERO)
-		var side: int = _rng.randi_range(0, 3)
-		var along: float = _rng.randf_range(-0.85, 0.85)
-		var spot := Vector4.ZERO
-		match side:
-			0: spot = Vector4(along * east, 0.0, north, 0.0)
-			1: spot = Vector4(along * east, 0.0, -south, 0.0)
-			2: spot = Vector4(east, 0.0, along * north, 0.0)
-			_: spot = Vector4(-west, 0.0, along * north, 0.0)
-		return Vector4(local.x + spot.x, height, local.z + spot.z, position.w)
+	var spots: Array[Vector4] = []
+	if _fence != null:
+		spots.append(_rail_spot())
+	for thing in _perches:
+		if is_instance_valid(thing):
+			var top: Vector4 = _top_of(thing)
+			if not is_nan(top.y):
+				spots.append(top)
+	if not spots.is_empty() and _rng.randf() < perch_preference:
+		return spots[_rng.randi() % spots.size()]
 	var angle: float = _rng.randf_range(0.0, TAU)
 	var reach: float = ground_radius * _rng.randf_range(0.2, 1.0)
 	return Vector4(_home.x + sin(angle) * reach, _home.y,
 		_home.z + cos(angle) * reach, position.w)
+
+
+## The highest point of a built thing, and somewhere on top of it to stand.
+##
+## Measured off its own meshes, so it follows a shed that is resized or a rock that is
+## mined away, and nothing here has to know how tall a shed is. The spot is jittered
+## across the top rather than always dead centre, because three crows queueing for the
+## same square inch of roof is worse than none.
+func _top_of(thing: Node4D) -> Vector4:
+	var box: Array = _extent(thing)
+	if box.is_empty():
+		return Vector4(0.0, NAN, 0.0, 0.0)
+	var top: float = box[0]
+	var lo: Vector2 = box[1]
+	var hi: Vector2 = box[2]
+	var host: Node4D = get_parent() as Node4D
+	var origin: Vector4 = host.global_position if host != null else Vector4.ZERO
+	var inset: float = 0.25
+	return Vector4(
+		_rng.randf_range(minf(lo.x + inset, hi.x), maxf(hi.x - inset, lo.x)) - origin.x,
+		top - origin.y,
+		_rng.randf_range(minf(lo.y + inset, hi.y), maxf(hi.y - inset, lo.y)) - origin.z,
+		position.w)
+
+
+## A thing's highest surface and its footprint, as [top, low corner, high corner].
+##
+## RETURNED rather than accumulated into arguments: GDScript passes floats and Vector2s by
+## value, so the obvious recursive version quietly measured nothing but the last branch it
+## walked. Boxes only - they are what everything in this scene is built from, and a
+## faceted ball has no flat top to stand on anyway.
+func _extent(thing: Node) -> Array:
+	var top: float = -1.0e9
+	var lo := Vector2(1.0e9, 1.0e9)
+	var hi := Vector2(-1.0e9, -1.0e9)
+	var any: bool = false
+	for child in thing.get_children():
+		if child is MeshInstance4D and (child as MeshInstance4D).mesh is BoxTetraMesh4D:
+			var m: MeshInstance4D = child
+			var size: Vector4 = (m.mesh as BoxTetraMesh4D).size
+			var at: Vector4 = m.global_position
+			top = maxf(top, at.y + size.y * 0.5)
+			lo = Vector2(minf(lo.x, at.x - size.x * 0.5), minf(lo.y, at.z - size.z * 0.5))
+			hi = Vector2(maxf(hi.x, at.x + size.x * 0.5), maxf(hi.y, at.z + size.z * 0.5))
+			any = true
+		var deeper: Array = _extent(child)
+		if not deeper.is_empty():
+			any = true
+			top = maxf(top, float(deeper[0]))
+			lo = Vector2(minf(lo.x, (deeper[1] as Vector2).x),
+				minf(lo.y, (deeper[1] as Vector2).y))
+			hi = Vector2(maxf(hi.x, (deeper[2] as Vector2).x),
+				maxf(hi.y, (deeper[2] as Vector2).y))
+	return [top, lo, hi] if any else []
+
+
+## A spot on the fence's top rail. Along a SIDE rather than anywhere within the pen,
+## because a bird that lands in the middle of a fence is sitting on nothing.
+func _rail_spot() -> Vector4:
+	var height: float = float(_fence.get("height"))
+	var east: float = float(_fence.get("extend_x_positive"))
+	var west: float = float(_fence.get("extend_x_negative"))
+	var north: float = float(_fence.get("extend_z_positive"))
+	var south: float = float(_fence.get("extend_z_negative"))
+	var origin: Vector4 = (_fence as Node4D).global_position
+	var host: Node4D = get_parent() as Node4D
+	var local: Vector4 = origin - (host.global_position if host != null else Vector4.ZERO)
+	var side: int = _rng.randi_range(0, 3)
+	var along: float = _rng.randf_range(-0.85, 0.85)
+	var spot := Vector4.ZERO
+	match side:
+		0: spot = Vector4(along * east, 0.0, north, 0.0)
+		1: spot = Vector4(along * east, 0.0, -south, 0.0)
+		2: spot = Vector4(east, 0.0, along * north, 0.0)
+		_: spot = Vector4(-west, 0.0, along * north, 0.0)
+	return Vector4(local.x + spot.x, height, local.z + spot.z, position.w)
 
 
 ## Wings. 0 is held out flat and still - a glide - and 1 is a full beat.

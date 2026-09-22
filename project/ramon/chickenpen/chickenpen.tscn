@@ -30,7 +30,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_shed_4d.gd" id="pen_shed"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cat_4d.gd" id="pen_cat"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cat_grab_4d.gd" id="pen_cat_grab"]
-[ext_resource type="PackedScene" uid="uid://bxg6a6e97ce30" path="res://ramon/Model/nike.tscn" id="nike_scene"]
+[ext_resource type="PackedScene" uid="uid://cwssrsgrpb5rh" path="res://ramon/chickenpen/nike.tscn" id="nike_scene"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_nike_grab_4d.gd" id="pen_nike_grab"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_nike_talk_4d.gd" id="pen_nike_talk"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="pen_face"]
@@ -264,6 +264,12 @@ camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 anchor_path = NodePath("../../World/Nike/Head")
 lift = 12.0
 
+[node name="NikeCarryTag" type="Control" parent="UI"]
+script = ExtResource("dlg_tag")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../World/Nike/Head")
+lift = 44.0
+
 [node name="NikeBox" type="Control" parent="UI"]
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -453,6 +459,7 @@ anchor_path = NodePath("../../Player/CarryAnchor")
 gait_path = NodePath("../../Player/Gait")
 slice_frame_path = NodePath("../../Player/CameraRig")
 tag_path = NodePath("../../UI/PlayerTag")
+prompt_tag_path = NodePath("../../UI/NikeCarryTag")
 busy_paths = Array[NodePath]([NodePath("../CatGrab"), NodePath("../RedCatGrab")])
 
 [node name="NikeTalk" type="Node" parent="Systems"]
@@ -603,8 +610,26 @@ mining_radius_meters = 0.96
 [node name="Crow" type="Node4D" parent="World"]
 position = Vector4(0, 0, -11, 0)
 script = ExtResource("pen_crow")
+flock_seed = 20873
 fence_path = NodePath("../../Pen/Fence")
-ground_radius = 7.0
+ground_radius = 7.5
+perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate"), NodePath("../MiningRock"), NodePath("../Sign")])
+
+[node name="Crow2" type="Node4D" parent="World"]
+position = Vector4(-7.5, 0, -6.5, 0)
+script = ExtResource("pen_crow")
+flock_seed = 51199
+fence_path = NodePath("../../Pen/Fence")
+ground_radius = 8.5
+perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate"), NodePath("../MiningRock"), NodePath("../Sign")])
+
+[node name="Crow3" type="Node4D" parent="World"]
+position = Vector4(6.5, 0, -1.5, 0)
+script = ExtResource("pen_crow")
+flock_seed = 77341
+fence_path = NodePath("../../Pen/Fence")
+ground_radius = 8.0
+perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate"), NodePath("../MiningRock"), NodePath("../Sign")])
 
 [node name="Scenery" type="Node4D" parent="World"]
 
