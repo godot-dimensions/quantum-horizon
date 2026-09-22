@@ -35,10 +35,26 @@ const ITEMS := {
 		"colour": Color(0.98, 0.82, 0.30),
 		"icon": "egg",
 	},
+	"found_pickaxe": {
+		"name": "Pickaxe",
+		"colour": Color(0.72, 0.78, 0.86),
+		"icon": "pickaxe",
+	},
 }
 
 @export var dialogue_path: NodePath
 @export_range(1, 10, 1) var slot_count: int = 5
+## Things you are carrying before anybody hands you anything. The pickaxe is one - it is a
+## tool rather than a reward, so there is no conversation to earn it from, and hanging it
+## off a dialogue effect would have meant inventing one.
+@export var starts_with: Array[String] = []
+
+enum Align { CENTRE, LEFT }
+
+## Dead centre puts the belt under the character, where the eye is already looking and
+## where a dialogue panel or a thrown chicken wants to be. Left gets it out of the way.
+@export var align: Align = Align.LEFT
+@export_range(0.0, 400.0, 1.0) var side_margin: float = 40.0
 
 @export_group("Look")
 @export_range(24.0, 140.0, 1.0) var slot_size: float = 54.0
@@ -54,6 +70,9 @@ const ITEMS := {
 ## Effect names, in the order they were gained. Empty strings are never stored - a slot is
 ## empty because the list is shorter than the bar.
 var items: Array[String] = []
+## Which slot is in hand, or -1 for none. A tool has to be CHOSEN before it does anything,
+## or every tool in the belt fights over the same button the moment you own two.
+var selected: int = -1
 
 var _flash: float = 0.0
 
@@ -61,6 +80,8 @@ var _flash: float = 0.0
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for effect_name in starts_with:
+		add_item(effect_name)
 	var dialogue: Node = get_node_or_null(dialogue_path)
 	if dialogue == null:
 		push_warning("PenInventory: dialogue_path resolves to nothing, so nothing can ever be picked up (item 82).")
@@ -73,6 +94,68 @@ func _process(delta: float) -> void:
 	if _flash > 0.0:
 		_flash = maxf(_flash - delta, 0.0)
 	queue_redraw()
+
+
+## CHOOSING A SLOT, by clicking it or by its number.
+##
+## IN `_input`, NOT `_unhandled_input`. The camera rig also takes a left click - it is
+## what recaptures the mouse after Escape - and whichever of the two runs second never
+## sees the press. `_input` runs before every `_unhandled_input` in the tree, so the belt
+## gets first refusal and passes anything that is not a slot straight through.
+##
+## THE CLICK ONLY COUNTS WHILE THERE IS A POINTER. This scene captures the mouse on its
+## first frame, and a captured mouse has no meaningful position - the click would land on
+## whatever slot the last free cursor happened to be over. So clicking selects while the
+## cursor is free, and the number keys do the same job while it is not; the keys are the
+## in-play route and the click is there because a belt you can click is what a belt looks
+## like.
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		var digit: int = (event as InputEventKey).keycode - KEY_1
+		if digit >= 0 and digit < slot_count:
+			_choose(digit)
+			get_viewport().set_input_as_handled()
+		return
+	if not (event is InputEventMouseButton) or not event.pressed:
+		return
+	if (event as InputEventMouseButton).button_index != MOUSE_BUTTON_LEFT:
+		return
+	if Input.mouse_mode != Input.MOUSE_MODE_VISIBLE:
+		return
+	var where: Vector2 = get_viewport().get_mouse_position()
+	for index in slot_count:
+		if _slot_rect(index).has_point(where):
+			_choose(index)
+			get_viewport().set_input_as_handled()
+			return
+
+
+## Clicking the slot you are already holding puts it away, which is the only way to stop
+## holding something without picking up something else.
+func _choose(index: int) -> void:
+	if index >= items.size():
+		return
+	selected = -1 if selected == index else index
+	_flash = 0.0
+
+
+## What is in your hand, as an effect name, or "" for an empty hand. The tools ask this
+## rather than being told, so a second tool is a row in ITEMS and a node of its own.
+func selected_effect() -> String:
+	if selected < 0 or selected >= items.size():
+		return ""
+	return items[selected]
+
+
+## Where a slot sits on screen. ONE source for this, because the click test and the
+## drawing have to agree exactly - computed twice they drift the moment either moves.
+func _slot_rect(index: int) -> Rect2:
+	var screen: Vector2 = get_viewport_rect().size
+	var total: float = float(slot_count) * slot_size + float(slot_count - 1) * slot_gap
+	var left: float = side_margin if align == Align.LEFT else (screen.x - total) * 0.5
+	var top: float = screen.y - bottom_margin - slot_size
+	return Rect2(Vector2(left + float(index) * (slot_size + slot_gap), top),
+		Vector2(slot_size, slot_size))
 
 
 ## Anything the dialogue announces that names a known item lands in a slot. Unknown effects
@@ -93,7 +176,11 @@ func add_item(effect_name: String) -> void:
 ## Handing something back to its owner has to empty the slot, or the belt keeps claiming
 ## you are carrying a coin that is now in somebody else's pocket.
 func remove_item(effect_name: String) -> void:
+	var was: String = selected_effect()
 	items.erase(effect_name)
+	# Slots shuffle down when one is removed, so the index that was in hand now points at
+	# somebody else's item. Follow the THING, not the number.
+	selected = items.find(was) if was != "" and was != effect_name else -1
 
 
 func has_item(effect_name: String) -> bool:
@@ -104,7 +191,10 @@ func has_item(effect_name: String) -> bool:
 ## of the first still on your wrist.
 func reset() -> void:
 	items.clear()
+	selected = -1
 	_flash = 0.0
+	for effect_name in starts_with:
+		add_item(effect_name)
 
 
 ## Item icons, drawn rather than imported.
@@ -117,6 +207,23 @@ func _draw_icon(kind: String, box: Rect2, colour: Color) -> void:
 	var unit: float = box.size.x
 	var mid: Vector2 = box.position + box.size * 0.5
 	var dim := Color(colour.r, colour.g, colour.b, 0.55)
+
+	if kind == "pickaxe":
+		# A haft on the diagonal and a head across the top of it. Drawn rather than
+		# imported for the same reason the rest are: at 54 pixels an imported sprite is
+		# mostly a guess about which of its details survive.
+		var butt: Vector2 = mid + Vector2(-unit * 0.20, unit * 0.30)
+		var neck: Vector2 = mid + Vector2(unit * 0.16, -unit * 0.24)
+		draw_line(butt, neck, Color(0.62, 0.45, 0.28, 0.95), maxf(unit * 0.09, 2.0))
+		# The head, as a shallow arc with a point at each end - a straight bar reads as a
+		# hammer and a full curve as a sickle.
+		var head := PackedVector2Array()
+		for i in 9:
+			var a: float = lerpf(-2.5, -0.64, float(i) / 8.0)
+			head.append(neck + Vector2(cos(a), sin(a)) * unit * 0.30)
+		draw_polyline(head, colour, maxf(unit * 0.08, 2.0), true)
+		draw_circle(neck, unit * 0.055, dim)
+		return
 
 	if kind == "coin":
 		# A ring with the mark's dot field inside it, the same rings the model is built
@@ -169,13 +276,13 @@ func _draw_icon(kind: String, box: Rect2, colour: Color) -> void:
 func _draw() -> void:
 	var screen: Vector2 = get_viewport_rect().size
 	var total: float = float(slot_count) * slot_size + float(slot_count - 1) * slot_gap
-	var left: float = (screen.x - total) * 0.5
+	var left: float = side_margin if align == Align.LEFT else (screen.x - total) * 0.5
 	var top: float = screen.y - bottom_margin - slot_size
 	var font: Font = ThemeDB.fallback_font
 
 	for index in slot_count:
-		var at := Vector2(left + float(index) * (slot_size + slot_gap), top)
-		var box := Rect2(at, Vector2(slot_size, slot_size))
+		var box: Rect2 = _slot_rect(index)
+		var at: Vector2 = box.position
 		var filled: bool = index < items.size()
 		draw_rect(box, empty_fill, true)
 
@@ -192,6 +299,12 @@ func _draw() -> void:
 			var pulse: float = (sin(_flash * 9.0) + 1.0) * 0.5
 			edge = filled_border.lerp(colour, pulse)
 		draw_rect(box.grow(-4.0), Color(colour.r, colour.g, colour.b, 0.22), true)
+		if index == selected:
+			# In hand: brighter inside and a second frame outside, so which one is chosen
+			# survives being glanced at rather than read.
+			draw_rect(box.grow(-4.0), Color(colour.r, colour.g, colour.b, 0.30), true)
+			draw_rect(box.grow(3.0), colour, false, 2.0)
+			edge = colour
 		draw_rect(box, edge, false, 2.0)
 
 		_draw_icon(str(item.get("icon", "")), box, colour)
