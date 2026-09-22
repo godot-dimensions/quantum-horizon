@@ -143,6 +143,10 @@ var _people: Array[Node4D] = []
 ## Resolved once: a character's colours do not change, and hunting for them every frame
 ## for every marker would be work done sixty times a second for no reason.
 var _people_colors: Array[Color] = []
+## Whether each one is drawn as a person or as a cat. Settled once, off the same property
+## that gives the cat its colour, rather than by matching its node's name - a name is a
+## label somebody can change and a `fur` export is what the thing actually is.
+var _people_are_cats: Array[bool] = []
 ## Where a name has already been written this frame, so the next one can step around it.
 var _tags: Array[Vector3] = []
 
@@ -161,6 +165,7 @@ func _ready() -> void:
 		if who != null:
 			_people.append(who)
 			_people_colors.append(_colour_of(who, _people.size() - 1))
+			_people_are_cats.append(who.get("fur") is Color)
 	# A bird well down the field projects outside the panel. Clipped, it simply is not
 	# shown; unclipped it would be drawn across the rest of the screen.
 	clip_contents = true
@@ -357,7 +362,7 @@ func _draw() -> void:
 	for i in folk.size():
 		var who: Array = folk[i]
 		tags.append(_draw_person(who[0], who[1], fitted_all[at + i], who[4],
-			shrink, colour, origin, mid))
+			bool(who[5]), shrink, colour, origin, mid))
 	for i in folk.size():
 		_name_tag(font, String(folk[i][3]), tags[i], folk[i][4])
 
@@ -446,14 +451,16 @@ func _folk() -> Array:
 		if not is_instance_valid(who):
 			continue
 		var at: Vector4 = who.global_position
-		out.append([at.x, at.z, at.w, who.name, _people_colors[_people.find(who)]])
+		var slot: int = _people.find(who)
+		out.append([at.x, at.z, at.w, who.name, _people_colors[slot],
+			_people_are_cats[slot]])
 	return out
 
 
 ## One person: a blob rather than a head, so they cannot be mistaken for livestock, with
 ## their name beside them and the same rung the birds get.
 ## Returns where the blob landed, so the name can be written in a later pass.
-func _draw_person(x: float, z: float, w: float, tint: Color, shrink: float,
+func _draw_person(x: float, z: float, w: float, tint: Color, is_cat: bool, shrink: float,
 		plane_colour: Color, origin: Vector2, mid: Vector2) -> Vector2:
 	var u: float = _ui()
 	var foot: Vector2 = _plan(x, z, 0.0, origin, mid)
@@ -472,12 +479,12 @@ func _draw_person(x: float, z: float, w: float, tint: Color, shrink: float,
 	var colour: Color = tint
 	draw_line(foot, head, Color(colour.r, colour.g, colour.b, 0.35), 1.0)
 	draw_circle(foot, 2.0 * u, Color(colour.r, colour.g, colour.b, 0.4))
-	draw_circle(head, 6.5 * u, colour)
-	# The ring is not decoration on a dark character - it is the whole silhouette.
-	draw_arc(head, 6.5 * u, 0.0, TAU, 20, Color(1.0, 1.0, 1.0, 0.55), 1.0, true)
+	var scale: float = u * bird_size
+	var middle: Vector2 = _cat_icon(head, colour, scale) if is_cat \
+		else _person_icon(head, colour, scale)
 	if on_slice:
-		draw_arc(head, 9.5 * u, 0.0, TAU, 20, home_color, 2.0, true)
-	return head
+		draw_arc(middle, 12.0 * scale, 0.0, TAU, 22, home_color, 2.0, true)
+	return middle
 
 
 ## One bird: a stem on the pen's ground level, a head at its w, and a RUNG at the height
@@ -509,6 +516,73 @@ func _draw_bird(x: float, z: float, w: float, is_target: bool, shrink: float,
 	if on_slice:
 		# It stands in your slice: this is the bird you can walk up to and take.
 		draw_arc(middle, 10.5 * u * bird_size, 0.0, TAU, 22, home_color, 2.0, true)
+
+
+## A person, front on, standing on the point. Returns the middle of them, for the ring
+## and for where their name is hung.
+##
+## FRONT ON, WHERE THE CHICKENS AND THE CAT ARE IN PROFILE. That is the whole reason the
+## silhouettes are tellable apart at fifteen pixels: a side-on animal and a face-on person
+## do not share an outline, so the difference survives being small far better than any
+## amount of detail would.
+##
+## EVERY ONE OF THEM GETS A PALE EDGE. Two of these characters are dressed in near-black
+## - the cat's fur and Trym's shirt - and on a dark panel the edge is not decoration, it
+## is the entire silhouette. It is drawn on all of them so they look like one set.
+func _person_icon(at: Vector2, colour: Color, u: float) -> Vector2:
+	var edge := Color(1.0, 1.0, 1.0, 0.5)
+	draw_line(at + Vector2(-2.0, 0.0) * u, at + Vector2(-2.0, -5.0) * u, colour, 2.0 * u)
+	draw_line(at + Vector2(2.0, 0.0) * u, at + Vector2(2.0, -5.0) * u, colour, 2.0 * u)
+	# A torso that narrows towards the shoulders, which is most of what makes a blocky
+	# figure read as a person rather than as a box on legs.
+	var torso := PackedVector2Array([at + Vector2(-3.7, -4.6) * u,
+		at + Vector2(3.7, -4.6) * u, at + Vector2(3.0, -12.2) * u,
+		at + Vector2(-3.0, -12.2) * u])
+	draw_colored_polygon(torso, colour)
+	draw_line(at + Vector2(-3.4, -11.4) * u, at + Vector2(-5.6, -5.8) * u, colour, 1.8 * u)
+	draw_line(at + Vector2(3.4, -11.4) * u, at + Vector2(5.6, -5.8) * u, colour, 1.8 * u)
+	var skull: Vector2 = at + Vector2(0.0, -15.4) * u
+	draw_circle(skull, 3.5 * u, colour)
+	draw_arc(skull, 3.5 * u, 0.0, TAU, 18, edge, 1.0, true)
+	var outline := PackedVector2Array(torso)
+	outline.append(outline[0])
+	draw_polyline(outline, edge, 1.0, true)
+	return at + Vector2(0.0, -9.5) * u
+
+
+## The cat, in profile like the birds, with the tail up - which is the pose that reads as
+## a cat from across a room, and at this size reading is all there is.
+func _cat_icon(at: Vector2, colour: Color, u: float) -> Vector2:
+	var edge := Color(1.0, 1.0, 1.0, 0.5)
+	for leg in [-3.0, 2.6]:
+		draw_line(at + Vector2(leg, 0.0) * u, at + Vector2(leg, -3.4) * u, colour, 1.8 * u)
+	# The tail, up and curling back over itself.
+	var tail := PackedVector2Array()
+	for i in 7:
+		var t: float = float(i) / 6.0
+		tail.append(at + Vector2(-5.4 - sin(t * 2.2) * 2.6, -6.6 - t * 8.4) * u)
+	draw_polyline(tail, colour, 1.8 * u, true)
+	var body: Vector2 = at + Vector2(0.0, -6.0) * u
+	draw_colored_polygon(_oval(body, 6.0 * u, 3.3 * u), colour)
+	draw_polyline(_closed(_oval(body, 6.0 * u, 3.3 * u)), edge, 1.0, true)
+	var skull: Vector2 = at + Vector2(6.0 * u, -9.4 * u)
+	draw_line(at + Vector2(3.6, -7.4) * u, skull, colour, 2.6 * u)
+	draw_circle(skull, 3.0 * u, colour)
+	draw_arc(skull, 3.0 * u, 0.0, TAU, 16, edge, 1.0, true)
+	# Two ears, which is the other half of reading as a cat.
+	for ear in [-1.9, 1.7]:
+		draw_colored_polygon(PackedVector2Array([
+			skull + Vector2(ear - 1.2, -1.8) * u, skull + Vector2(ear, -5.0) * u,
+			skull + Vector2(ear + 1.3, -1.6) * u]), colour)
+	return at + Vector2(0.6, -7.4) * u
+
+
+## The same points again with the first repeated, for drawing an outline round a shape
+## that was filled as a polygon.
+func _closed(points: PackedVector2Array) -> PackedVector2Array:
+	var loop := PackedVector2Array(points)
+	loop.append(loop[0])
+	return loop
 
 
 ## A whole chicken, standing on the point, facing right. Returns where its body sits, so
