@@ -19,6 +19,8 @@ extends Node4D
 ## open at the head of the walkway the whole time, so nobody is ever held here.
 
 const ROCK := preload("res://ramon/VoxelMining/voxel_mining_block.tscn")
+## The man in the shed, for his clothes. See _dress_presenter.
+const TRYM := preload("res://ramon/chickenpen/scripts/pen_trym_4d.gd")
 
 @export var stage_path: NodePath
 @export var caption_path: NodePath
@@ -68,6 +70,8 @@ const ROCK := preload("res://ramon/VoxelMining/voxel_mining_block.tscn")
 ## to go between the sitting and the first finding - it turns off the chair and finds
 ## him standing there waiting, which is what a presenter does while an audience settles.
 @export_range(0.0, 15.0, 0.5, "suffix:s") var after_sit_seconds: float = 3.5
+## And how long the camera stays on you once you are down, before it turns to find him.
+@export_range(0.0, 6.0, 0.1, "suffix:s") var hold_on_seat_seconds: float = 1.3
 
 ## Each act: the title, the finding in one line, the measured figure, and the colour the
 ## room turns while it is running.
@@ -128,6 +132,7 @@ var _camera: Node
 var _seat: Node
 var _waited: float = 0.0
 var _greeted: bool = false
+var _sat_for: float = 0.0
 
 
 func _ready() -> void:
@@ -150,6 +155,7 @@ func _ready() -> void:
 		_presenter.position = wings.lerp(
 			Vector4(foot.x, 0.0, foot.z, 0.0), presenter_head_start)
 		_face = atan2(foot.x - _presenter.position.x, foot.z - _presenter.position.z)
+		_dress_presenter()
 		# Past the beat in the doorway, or he would stop dead for a second and then set
 		# off, half way down a walkway he is supposed to have been walking along.
 		_phase = 1.5
@@ -306,8 +312,14 @@ func _process(delta: float) -> void:
 	# turns off the chair and finds him, and he gives it a beat before he begins. Without
 	# this the first finding started on the same frame you touched the seat, because the
 	# opening clock has been running since you walked in and had long since expired.
+	#
+	# AND IT HOLDS ON YOU FIRST. The shot used to change on the same frame the player
+	# landed, which cut the sitting off at exactly the moment it finished - the one frame
+	# it was worth holding on.
 	if not _greeted and _act < 0 and _seat != null and _seat.has_method("is_settled") \
 			and bool(_seat.call("is_settled")):
+		_sat_for += delta
+	if not _greeted and _sat_for > 0.0 and _sat_for >= hold_on_seat_seconds:
 		_greeted = true
 		_phase = maxf(0.0, opening_seconds - after_sit_seconds)
 		_frame(-1)
@@ -379,6 +391,69 @@ func _frame(act: int) -> void:
 		shot = "presenter"
 		over = closing_seconds
 	_camera.call("shoot", shot, over)
+
+
+## THE SAME MAN WHO WAS IN THE SHED. The presenter here was a bare block avatar with its
+## colours typed into theatre.tscn by eye, and they had drifted - near-black instead of
+## his shirt, no eyes, and no trousers at all, so the shared avatar painted his legs in
+## the shirt colour and his feet in his face colour and he presented in the dark with bare
+## feet. Somebody walks out of one scene and into the other; he cannot change on the way.
+##
+## THE COLOURS ARE READ OFF pen_trym_4d.gd RATHER THAN COPIED. `new()` on a Node script
+## builds the object without parenting it, so none of its _ready runs and no desk, stool
+## or shelf of books is made - it is just a bag of defaults to ask, and it is freed on the
+## way out. Copying the four colours over would have worked today and drifted again the
+## first time anyone recoloured him.
+##
+## ORDER MATTERS. `hair`, `eyes` and the eye measurements have no setters and so do not
+## rebuild the avatar; `skin` and `accent` do. So everything quiet is set first and `skin`
+## last, and the one rebuild it triggers picks up all of it.
+func _dress_presenter() -> void:
+	if _presenter == null:
+		return
+	var him: Object = TRYM.new()
+	_presenter.set("hair", him.get("hair"))
+	_presenter.set("wear_cap", false)
+	_presenter.set("eyes", true)
+	_presenter.set("eye_colour", Color(0.11, 0.12, 0.16))
+	_presenter.set("eye_spacing", 0.080)
+	_presenter.set("eye_height", 0.035)
+	_presenter.set("eye_width", 0.040)
+	_presenter.set("eye_tall", 0.044)
+	_presenter.set("build", 2)
+	_presenter.set("accent", him.get("skin"))
+	# Last, and the rebuild this triggers is the one that draws everything above.
+	_presenter.set("skin", him.get("shirt"))
+	# TROUSERS, sleeved over each leg segment a shade wider so they read as cloth over the
+	# limb rather than fighting it, and parented to the joints so they bend with the walk.
+	# The shared avatar paints legs, face and hands from ONE colour, so a man in a black
+	# shirt comes out bare-legged - which is the whole reason the shed version has these.
+	var cloth: Color = him.get("trousers")
+	for tag in ["L", "R"]:
+		var hip: Node4D = _presenter.get_node_or_null("Hip%s" % tag) as Node4D
+		var knee: Node4D = _presenter.get_node_or_null("Hip%s/Knee%s" % [tag, tag]) as Node4D
+		if hip != null:
+			_trouser(hip, "Trouser%s" % tag, Vector4(0.0, -0.16, 0.0, 0.0),
+				Vector3(0.145, 0.33, 0.155), cloth)
+		if knee != null:
+			_trouser(knee, "TrouserLower%s" % tag, Vector4(0.0, -0.16, 0.0, 0.0),
+				Vector3(0.135, 0.33, 0.145), cloth)
+	him.free()
+
+
+func _trouser(parent: Node, part: String, at: Vector4, size: Vector3,
+		colour: Color) -> void:
+	var node := MeshInstance4D.new()
+	node.name = part
+	var mesh := BoxTetraMesh4D.new()
+	# 0.47 through W, the same as the shed's, so he is as solid off the slice as on it.
+	mesh.size = Vector4(size.x, size.y, size.z, 0.47)
+	node.mesh = mesh
+	var cloth := TetraMaterial4D.new()
+	cloth.albedo_color = colour
+	node.material_override = cloth
+	parent.add_child(node)
+	node.position = at
 
 
 ## Part two drives him too, because he is still the one talking. -1 hands him back to the

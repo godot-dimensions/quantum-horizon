@@ -16,6 +16,7 @@ var _seat: Node
 var _camera: Node
 var _two: Node
 var _seen := {}
+var _held_for := 0
 
 
 func _initialize() -> void:
@@ -66,9 +67,12 @@ func _process(_d) -> bool:
 		_seen["pressed"] = true
 		_seat.call("sit")
 		return false
-	# Mid-sit: he has crossed to the chair and is turning into it.
-	if _seen.has("pressed") and not _seen.has("mid") \
-			and bool(_camera.call("is_holding")):
+	# Mid-sit, a good way in. NOT the first frame the camera is held: that one is still the
+	# player's own view, easing out of the back of their own head, and it is the one the
+	# first version of this kept catching.
+	if _seen.has("pressed") and bool(_camera.call("is_holding")):
+		_held_for += 1
+	if _held_for == 60 and not _seen.has("mid"):
 		_seen["mid"] = true
 		_shoot("1_sitting")
 		return false

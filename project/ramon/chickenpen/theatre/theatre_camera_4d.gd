@@ -39,9 +39,16 @@ extends Node4D
 ## the rig: short is a cut with the edges rounded off, long is a drifting dream. 1.6 reads
 ## as a deliberate operator.
 @export_range(0.2, 6.0, 0.1) var settle_seconds: float = 1.6
-## And the first move of all, which is slower - it is the one the player is being taught by.
-@export_range(0.2, 8.0, 0.1) var handover_seconds: float = 2.6
+## And the first move of all. It used to be 2.6, which was longer than the sit it belonged
+## to: the camera was still travelling toward its framing of the chair when the player
+## landed in it and the shot changed to the presenter, so the one shot the whole beat
+## exists for was never actually reached. A handover has to finish inside the thing it is
+## handing over.
+@export_range(0.2, 8.0, 0.1) var handover_seconds: float = 1.3
 @export_range(0.5, 3.0, 0.05) var eye_height: float = 1.25
+## How far back the camera stands to watch you sit, and how high.
+@export_range(1.5, 10.0, 0.1) var sit_distance: float = 4.2
+@export_range(0.5, 5.0, 0.1) var sit_height: float = 1.7
 
 ## Each shot is an eye and a point to look at, and optionally a second pair it drifts to
 ## over the length of the beat. `follow` aims at the presenter wherever he actually is,
@@ -126,19 +133,28 @@ func take(seat_at: Vector4, look_from: Vector4 = Vector4.ZERO) -> void:
 	if _camera == null or _holding:
 		return
 	_seat_eye = seat_at + Vector4(0.0, eye_height, 0.0, 0.0)
-	# Between the chair and the stage, off to one side and low, looking back at the chair.
-	# Standing behind it would have put the player's own back between the camera and the
-	# thing it is watching them do.
-	var toward: Vector4 = Vector4(-seat_at.x, 0.0, -seat_at.z, 0.0)
-	if Vector2(toward.x, toward.z).length() > 0.01:
-		toward = toward.normalized()
-	else:
-		toward = Vector4(0.0, 0.0, -1.0, 0.0)
-	var across := Vector4(toward.z, 0.0, -toward.x, 0.0)
-	_sit_eye = seat_at + toward * 2.45 + across * 1.55 + Vector4(0.0, 1.15, 0.0, 0.0)
-	_sit_focus = seat_at + Vector4(0.0, 0.78, 0.0, 0.0)
-	if look_from != Vector4.ZERO:
-		_sit_focus = _sit_focus.lerp(look_from + Vector4(0.0, 0.78, 0.0, 0.0), 0.35)
+	# A SIDE-ON TWO-SHOT OF THE WALK AND THE CHAIR. The camera stands square to the line
+	# between where you were standing and where you are about to sit, on the STAGE side of
+	# it, so it looks back up the house and you can see your own face arrive. Framing it
+	# off the chair alone put the walk behind the camera, and blending the focus toward
+	# where you pressed the key pulled the chair out to the edge of the frame - both of
+	# which a picture caught and neither of which the numbers would have.
+	var here: Vector4 = look_from if look_from != Vector4.ZERO else seat_at
+	var mid: Vector4 = here.lerp(seat_at, 0.5)
+	var along := Vector4(seat_at.x - here.x, 0.0, seat_at.z - here.z, 0.0)
+	if Vector2(along.x, along.z).length() < 0.3:
+		# Sat down where they stood: no line to stand square to, so fall back to the line
+		# from the stage out to the chair.
+		along = Vector4(seat_at.x, 0.0, seat_at.z, 0.0)
+	var square := Vector4(-along.z, 0.0, along.x, 0.0)
+	if Vector2(square.x, square.z).length() > 0.01:
+		square = square.normalized()
+	# The side the stage is on, so the room is what you are walking into rather than what
+	# is behind the camera.
+	if square.dot(Vector4(-mid.x, 0.0, -mid.z, 0.0)) < 0.0:
+		square = -square
+	_sit_eye = mid + square * sit_distance + Vector4(0.0, sit_height, 0.0, 0.0)
+	_sit_focus = mid.lerp(seat_at, 0.65) + Vector4(0.0, 0.8, 0.0, 0.0)
 	_eye = _their_camera.global_position
 	# Where they were looking: a point out in front of their camera, so the pan away from
 	# it starts from the direction they were actually facing.

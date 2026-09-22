@@ -78,9 +78,6 @@ position = Vector4(-4.45, 0, 1.5, 0)
 basis = Projection(0.8, 0, -0.6, 0, 0, 1, 0, 0, 0.6, 0, 0.8, 0, 0, 0, 0, 1)
 script = ExtResource("avatar")
 build = 2
-skin = Color(0.11, 0.12, 0.15, 1)
-accent = Color(0.91, 0.76, 0.63, 1)
-hair = Color(0.14, 0.11, 0.09, 1)
 wear_cap = false
 
 [node name="ExitArch" type="Node4D" parent="."]
