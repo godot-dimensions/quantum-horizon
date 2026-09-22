@@ -1,4 +1,4 @@
-[gd_scene load_steps=55 format=3]
+[gd_scene load_steps=57 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -39,6 +39,8 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_pickaxe_4d.gd" id="pen_pickaxe"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_crow_4d.gd" id="pen_crow"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_rock_gold_4d.gd" id="pen_gold"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_professor_4d.gd" id="pen_prof"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_professor_talk_4d.gd" id="pen_prof_talk"]
 [ext_resource type="PackedScene" uid="uid://gh03wmhupplp" path="res://ramon/VoxelMining/voxel_mining_block.tscn" id="voxel_rock"]
 [ext_resource type="Script" uid="uid://bvklfrydaxyio" path="res://ramon/dialogue/world_tag_4d.gd" id="pen_world_tag"]
 
@@ -264,12 +266,14 @@ script = ExtResource("dlg_tag")
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 anchor_path = NodePath("../../World/Nike/Head")
 lift = 12.0
+nudge_x = -110.0
 
 [node name="NikeCarryTag" type="Control" parent="UI"]
 script = ExtResource("dlg_tag")
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 anchor_path = NodePath("../../World/Nike/Head")
-lift = 44.0
+lift = 12.0
+nudge_x = 110.0
 
 [node name="NikeBox" type="Control" parent="UI"]
 anchor_right = 1.0
@@ -286,6 +290,28 @@ choice_size = 19
 name_size = 17
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 head_anchor_path = NodePath("../../World/Nike/Head")
+
+[node name="ProfessorTag" type="Control" parent="UI"]
+script = ExtResource("dlg_tag")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../World/ProfessorHead")
+lift = 12.0
+
+[node name="ProfessorBox" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("dlg_box")
+choice_side = 1
+over_head_width = 470.0
+over_head_lift = 10.0
+over_head_nudge_x = -450.0
+choice_width = 470.0
+choice_gap = 10.0
+text_size = 20
+choice_size = 19
+name_size = 17
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../World/ProfessorHead")
 
 [node name="NessaTag" type="Control" parent="UI"]
 script = ExtResource("dlg_tag")
@@ -478,7 +504,25 @@ catcher_path = NodePath("../../Player/Catcher")
 dialogue_path = NodePath("../NikeTalk")
 tag_path = NodePath("../../UI/NikeTag")
 grab_path = NodePath("../NikeGrab")
+antics_path = NodePath("../../World/Nike/Antics")
 pen_path = NodePath("../../Pen")
+
+[node name="ProfessorTalk" type="Node" parent="Systems"]
+script = ExtResource("dlg_talk")
+box_path = NodePath("../../UI/ProfessorBox")
+
+[node name="ProfessorDriver" type="Node" parent="Systems"]
+script = ExtResource("pen_prof_talk")
+player_path = NodePath("../../Player")
+camera_rig_path = NodePath("../../Player/CameraRig")
+character_path = NodePath("../../Player")
+catcher_path = NodePath("../../Player/Catcher")
+dialogue_path = NodePath("../ProfessorTalk")
+tag_path = NodePath("../../UI/ProfessorTag")
+rock_path = NodePath("../../World/MiningRock")
+gold_path = NodePath("../../World/RockGold")
+facing_path = NodePath("../../World/ProfessorFacing")
+pickaxe_path = NodePath("../Pickaxe")
 
 [node name="Game" type="Node" parent="Systems"]
 script = ExtResource("pen_game")
@@ -602,6 +646,20 @@ position = Vector4(-11, 0, -14.6, 0)
 basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
 script = ExtResource("pen_trym")
 player_path = NodePath("../../Player")
+
+[node name="Professor" type="Node4D" parent="World"]
+position = Vector4(3.1, 0, -8.7, 0)
+basis = Projection(0.7071, 0, -0.7071, 0, 0, 1, 0, 0, 0.7071, 0, 0.7071, 0, 0, 0, 0, 1)
+script = ExtResource("pen_prof")
+
+[node name="ProfessorHead" type="Node4D" parent="World"]
+position = Vector4(3.1, 1.45, -8.7, 0)
+
+[node name="ProfessorFacing" type="Node4D" parent="World"]
+script = ExtResource("pen_face")
+figure_path = NodePath("../Professor")
+player_path = NodePath("../../Player")
+notice_within = 4.0
 
 [node name="RockGold" type="Node4D" parent="World"]
 position = Vector4(6.8, 1.7, -10.8, 0)

@@ -43,6 +43,16 @@ func _ready() -> void:
 	_facing = _rest
 
 
+## Turn to the player at once, for when something other than proximity has decided the
+## character is paying attention - a conversation opening, say.
+func face_now() -> void:
+	if _figure == null or _player == null:
+		return
+	var gap: Vector4 = _player.global_position - _figure.global_position
+	_facing = atan2(gap.x, gap.z)
+	_figure.basis = Basis4D.from_zx(_facing)
+
+
 func _process(delta: float) -> void:
 	if _figure == null or _player == null:
 		return
