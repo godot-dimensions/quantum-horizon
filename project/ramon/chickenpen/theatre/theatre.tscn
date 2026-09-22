@@ -1,8 +1,12 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_stage_4d.gd" id="stage"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_show_4d.gd" id="show"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_caption_4d.gd" id="caption"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_aside_4d.gd" id="aside"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_part_two_4d.gd" id="part_two"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_prompt_4d.gd" id="prompt"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_metric_4d.gd" id="metric"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_arch_4d.gd" id="arch"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -78,7 +82,7 @@ hair = Color(0.14, 0.11, 0.09, 1)
 wear_cap = false
 
 [node name="ExitArch" type="Node4D" parent="."]
-position = Vector4(0, 2.08, 15.6, 0)
+position = Vector4(0, 2.08, 18.6, 0)
 script = ExtResource("arch")
 player_path = NodePath("../Player")
 starts_open = true
@@ -88,7 +92,18 @@ script = ExtResource("show")
 stage_path = NodePath("../Stage")
 caption_path = NodePath("../UI/Caption")
 presenter_path = NodePath("../Presenter")
+exit_path = NodePath("../ExitArch")
 audience_path = NodePath("../Player")
+part_two_path = NodePath("../PartTwo")
+
+[node name="PartTwo" type="Node" parent="."]
+script = ExtResource("part_two")
+stage_path = NodePath("../Stage")
+caption_path = NodePath("../UI/Caption")
+prompt_path = NodePath("../UI/Prompt")
+show_path = NodePath("../Show")
+presenter_path = NodePath("../Presenter")
+metrics_path = NodePath("../UI/Metrics")
 
 [node name="UI" type="Node4D" parent="."]
 
@@ -97,8 +112,26 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("caption")
 
+[node name="Metrics" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("metric")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+
+[node name="Prompt" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("prompt")
+
+[node name="Aside" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("aside")
+player_path = NodePath("../../Player")
+stage_path = NodePath("../../Stage")
+
 [node name="Player" type="CharacterBody4D" parent="."]
-position = Vector4(0, 3.28, 14.4, 0)
+position = Vector4(0, 3.28, 12.6, 0)
 script = ExtResource("character")
 
 [node name="CollisionShape4D" type="CollisionShape4D" parent="Player"]

@@ -191,6 +191,25 @@ a fork without syncing leaves the submodule's own `origin` on upstream, so the
 next update silently pulls the fork commit away. See
 `isoclynic_sun_reinstate.md` for the incident.
 
+## A FABRIK-driven rig cannot be scaled by a parent
+
+`scripts/ik_chain_controller.gd` solves entirely in GLOBAL space - it reads
+`target.global_position`, walks `joints[i].global_position`, and writes
+`joints[i].global_basis` back - while its `link_lengths` stay in the chain's own
+LOCAL units. A uniform scale anywhere up the ancestor chain therefore leaves
+every leg reaching for a target it can no longer arrive at, and the global-basis
+writes fight the scale rather than composing with it.
+
+This bites the moment you try to reuse a rigged creature at a different size:
+the obvious move is the one the lofted goat allows (set the root's basis to a
+uniform `Projection` and it fits anywhere), and it is exactly wrong here. Place
+a rigged creature instead - translate it onto the floor and build the scene
+around its authored size. `ramon/chickenpen/theatre/theatre_creature_4d.gd`
+does this and says so at the top.
+
+Corollary: a rigid ROTATION of an ancestor is fine, because the targets rotate
+with the joints and the lengths are unchanged.
+
 ## State as of 2026-08-14
 
 - `engine/godot` is deliberately left modified: the branch records `73e1646`

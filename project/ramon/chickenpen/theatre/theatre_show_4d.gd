@@ -34,13 +34,17 @@ const ROCK := preload("res://ramon/VoxelMining/voxel_mining_block.tscn")
 @export_group("The presenter")
 ## Whoever he is talking to, so he addresses the person in the room rather than a fixed
 ## point the person may well not be standing at.
+## The way out, so the end of the talk can light it up.
+@export var exit_path: NodePath
+## Part two, which is offered rather than played. It only runs on a yes.
+@export var part_two_path: NodePath
 @export var audience_path: NodePath
 ## He comes in the same way you do - through the door, down the walkway, ahead of you -
 ## and then works between two marks: one out front for the claim, one in on the drum for
 ## the demonstration. A presenter who stands on one spot for a minute is a sign, not a
 ## speaker, and one who is simply already on stage when you arrive never came from
 ## anywhere.
-@export var wings := Vector4(0.0, 0.0, 13.2, 0.0)
+@export var wings := Vector4(0.0, 0.0, 16.2, 0.0)
 @export var mark_claim := Vector4(-5.3, 0.0, 2.6, 0.0)
 @export var mark_exhibit := Vector4(-3.9, 0.0, 0.9, 0.0)
 ## Brisk. He has the length of the house to cover before the first act, and a man
@@ -94,6 +98,10 @@ var _carved: bool = false
 ## than to every number inside it, so the shapes stay described in their own terms.
 const EXHIBIT_SCALE: float = 1.5
 var _audience: Node4D
+var _exit: Node
+var _part_two: Node
+var _held: int = -1
+var _spin: bool = true
 var _stride: float = 0.0
 var _walking: bool = false
 var _face: float = 0.0
@@ -105,6 +113,8 @@ func _ready() -> void:
 	_caption = get_node_or_null(caption_path)
 	_presenter = get_node_or_null(presenter_path) as Node4D
 	_audience = get_node_or_null(audience_path) as Node4D
+	_exit = get_node_or_null(exit_path)
+	_part_two = get_node_or_null(part_two_path)
 	if _presenter != null:
 		# Off in the wings, so the room is empty when you arrive and he walks into it.
 		_presenter.position = wings
@@ -256,7 +266,7 @@ func _process(delta: float) -> void:
 		return
 	_clock += delta
 	_phase += delta
-	if _table != null:
+	if _table != null and _spin:
 		# Everything on the turntable turns, slowly, the whole time.
 		_table.basis = Basis4D.from_zx(_clock * 0.22)
 	_pulse()
@@ -275,10 +285,34 @@ func _process(delta: float) -> void:
 		_enter(_act + 1)
 	elif _act == ACTS.size() and _phase >= closing_seconds and not _done:
 		_done = true
+		# The way out has been usable the whole time - nobody is shut in here - but now it
+		# is the thing to look at, so it is turned up.
+		if _exit != null:
+			_exit.set("highlight", 1.0)
+		if _part_two != null and _part_two.has_method("offer"):
+			_part_two.call("offer")
 		_say("", "That is the lot. The way out is behind you - mind the step, it is further through W than it looks.", "")
 
 	if _act >= 0 and _act < ACTS.size():
 		_demonstrate(_act, _phase)
+
+
+## Part two drives him too, because he is still the one talking. -1 hands him back to the
+## act clock; 0 puts him out front where a claim gets made; 1 puts him in on the drum where
+## it gets demonstrated. Without this he would stand on his closing mark for five more
+## exhibits, which is the difference between a presenter and a hat stand.
+func hold_at(mark: int) -> void:
+	_held = mark
+
+
+## Part two switches the turntable off for its comparison exhibits. Three columns of
+## different heights are a chart, and a chart that rotates spends half its time with the
+## columns lined up behind one another - which is exactly how the first capture of it came
+## out. The spin is charm for a single object and an obstacle for three.
+func set_spin(on: bool) -> void:
+	_spin = on
+	if not on and _table != null:
+		_table.basis = Basis4D.from_zx(0.0)
 
 
 ## Trym giving the talk: where he stands, which way he is turned, and what his arms are
@@ -301,7 +335,12 @@ func _perform(delta: float) -> void:
 	var goes_to: Vector4 = mark_claim
 	var looks_at: Vector4 = house
 	var t: float = _phase / maxf(act_seconds, 0.01)
-	if _act < 0:
+	if _held >= 0:
+		# Part two is running the show now.
+		goes_to = mark_exhibit if _held == 1 else mark_claim
+		if _held == 1:
+			looks_at = drum
+	elif _act < 0:
 		# He waits in the dark while the room assembles, then walks on.
 		# A beat in the doorway, then he sets off - so you see him arrive rather than
 		# finding him already walking.

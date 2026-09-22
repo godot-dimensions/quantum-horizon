@@ -27,7 +27,7 @@ extends Node4D
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
 
 @export_group("The floor")
-@export_range(4.0, 40.0, 0.5) var radius: float = 17.0: set = _set_radius
+@export_range(4.0, 40.0, 0.5) var radius: float = 20.0: set = _set_radius
 @export_range(8, 64, 1) var segments: int = 28: set = _set_segments
 @export_range(0.1, 2.0, 0.05) var floor_thickness: float = 0.5
 ## Through W. Generous on purpose - see the header.
@@ -81,7 +81,7 @@ extends Node4D
 ## coming through the door straight onto a downward slope with a back row at your elbow is
 ## an arrival nobody gets to look at. It is also why the disc is wider than the room
 ## needs: the landing has to have somewhere to be.
-@export_range(0.0, 12.0, 0.1) var aisle_landing: float = 5.0: set = _set_aisle_landing
+@export_range(0.0, 12.0, 0.1) var aisle_landing: float = 8.0: set = _set_aisle_landing
 @export_range(1.0, 6.0, 0.1) var aisle_width: float = 2.8: set = _set_aisle_width
 ## Steps under the rake. The physics here keeps boxes and nothing else, so a tilted slab
 ## is a tilted PICTURE with an axis-aligned brick behind it; the thing you actually walk
