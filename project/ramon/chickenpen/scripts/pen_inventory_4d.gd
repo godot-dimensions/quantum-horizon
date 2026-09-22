@@ -35,6 +35,11 @@ const ITEMS := {
 		"colour": Color(0.98, 0.82, 0.30),
 		"icon": "egg",
 	},
+	"found_gold": {
+		"name": "Gold",
+		"colour": Color(0.98, 0.78, 0.22),
+		"icon": "nugget",
+	},
 	"found_pickaxe": {
 		"name": "Pickaxe",
 		"colour": Color(0.72, 0.78, 0.86),
@@ -203,10 +208,30 @@ func reset() -> void:
 ## pixels survive, whereas four rectangles are exactly as legible as they were designed to
 ## be at every resolution - and the shape can match the model it stands for, which is what
 ## makes the thing in the slot recognisably the thing that just turned over your head.
+## The same ring of points with the first repeated, for outlining a filled polygon.
+func _closed_loop(points: PackedVector2Array) -> PackedVector2Array:
+	var loop := PackedVector2Array(points)
+	loop.append(loop[0])
+	return loop
+
+
 func _draw_icon(kind: String, box: Rect2, colour: Color) -> void:
 	var unit: float = box.size.x
 	var mid: Vector2 = box.position + box.size * 0.5
 	var dim := Color(colour.r, colour.g, colour.b, 0.55)
+
+	if kind == "nugget":
+		# A lump rather than a disc: the ADA piece is already a circle, and two round yellow
+		# things in one belt is one too many.
+		var lump := PackedVector2Array()
+		for i in 9:
+			var a: float = TAU * float(i) / 9.0
+			var wobble: float = 0.20 + 0.055 * sin(float(i) * 2.3)
+			lump.append(mid + Vector2(cos(a), sin(a) * 0.82) * unit * wobble)
+		draw_colored_polygon(lump, colour)
+		draw_polyline(_closed_loop(lump), Color(1.0, 0.94, 0.66, 0.85),
+			maxf(unit * 0.03, 1.0), true)
+		return
 
 	if kind == "pickaxe":
 		# A SILHOUETTE, not a line drawing. Upright haft, a collar, and a head that sweeps

@@ -1,4 +1,4 @@
-[gd_scene load_steps=54 format=3]
+[gd_scene load_steps=55 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -38,6 +38,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_slice_plane_4d.gd" id="pen_plane"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_pickaxe_4d.gd" id="pen_pickaxe"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_crow_4d.gd" id="pen_crow"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_rock_gold_4d.gd" id="pen_gold"]
 [ext_resource type="PackedScene" uid="uid://gh03wmhupplp" path="res://ramon/VoxelMining/voxel_mining_block.tscn" id="voxel_rock"]
 [ext_resource type="Script" uid="uid://bvklfrydaxyio" path="res://ramon/dialogue/world_tag_4d.gd" id="pen_world_tag"]
 
@@ -601,6 +602,14 @@ position = Vector4(-11, 0, -14.6, 0)
 basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
 script = ExtResource("pen_trym")
 player_path = NodePath("../../Player")
+
+[node name="RockGold" type="Node4D" parent="World"]
+position = Vector4(6.8, 1.7, -10.8, 0)
+script = ExtResource("pen_gold")
+rock_path = NodePath("../MiningRock")
+pickaxe_path = NodePath("../../Systems/Pickaxe")
+player_path = NodePath("../../Player")
+inventory_path = NodePath("../../UI/Inventory")
 
 [node name="MiningRock" parent="World" instance=ExtResource("voxel_rock")]
 position = Vector4(6.6, 1.5, -11.0, 0)

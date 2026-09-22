@@ -23,6 +23,11 @@ extends Node
 ## the mouse captured, and rock actually in reach. Every other press falls through
 ## untouched. That is the rule the talk driver and the cat grab already follow.
 
+## Where a swing landed and how wide the bite was. Announced rather than acted on, so
+## anything that cares about digging - gold in the seam today, something else tomorrow -
+## hangs off the signal instead of being wired into the swing.
+signal mined(at: Vector4, radius: float)
+
 @export var player_path: NodePath
 @export var camera_path: NodePath
 @export var inventory_path: NodePath
@@ -262,4 +267,6 @@ func _swing() -> bool:
 	if rock == null or not rock.has_method("mine_at_shape"):
 		return false
 	rock.call("mine_at_shape", hit.get("shape"))
+	var bite: Variant = rock.get("mining_radius_meters")
+	mined.emit(hit.get("position", from), float(bite) if bite != null else 0.5)
 	return true
