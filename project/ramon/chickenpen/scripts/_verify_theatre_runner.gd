@@ -63,6 +63,13 @@ func _process(_d) -> bool:
 			"a VoxelMiningBlock with its own colliders")
 		_check("the way out is standing when you get there", bool(_root.get_node("ExitArch").get("armed")),
 			"open at the head of the walkway")
+		# AND ALREADY LIT, before anybody has walked near it or finished anything. It is
+		# behind the audience, at the top of a rake, in the dark; a door that only lights
+		# when you are stood in front of it is a door you have to have found first.
+		_check("and already glowing when you arrive",
+			float(_root.get_node("ExitArch").get("highlight")) > 0.5,
+			"resting at %.2f, so it is the blue thing you see when you turn round"
+				% float(_root.get_node("ExitArch").get("highlight")))
 		# Hurry the show along, or this test is a minute of waiting.
 		# Long enough that the carve still happens during the ARRIVAL, which is where the
 		# real show takes it.

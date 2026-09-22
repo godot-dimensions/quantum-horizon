@@ -85,6 +85,7 @@ position = Vector4(0, 2.08, 18.6, 0)
 script = ExtResource("arch")
 player_path = NodePath("../Player")
 starts_open = true
+highlight = 0.75
 
 [node name="ShotCamera" type="Node4D" parent="."]
 script = ExtResource("shotcam")

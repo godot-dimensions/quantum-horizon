@@ -54,8 +54,16 @@ signal entered
 ## circle of this radius leaves both outer thirds of it untriggered, so you could walk
 ## clean through the arch and nothing would happen. Which is what did happen.
 @export_range(0.3, 4.0, 0.1) var enter_within: float = 1.15
-## Brightened when something wants the way out noticed - at the end of the presentation,
-## for instance. It is usable either way; this is an announcement, not a lock.
+## How lit it is when nothing in particular is happening, and what something asking for
+## it to be noticed raises it to. It is usable either way; this is an announcement, not a
+## lock.
+##
+## THE WAY OUT OF THE THEATRE RESTS AT 0.75, not at nothing. A door that only lights when
+## you are standing in front of it is a door you have to already have found, and the one
+## in that room is behind the audience, at the top of a rake, in the dark. It should be
+## the blue thing you see the moment you turn round - so the end of the talk takes it from
+## bright to brightest rather than from off to on, which is a smaller announcement and a
+## much better room.
 @export_range(0.0, 1.0, 0.05) var highlight: float = 0.0
 ## And it notices YOU. Walk up to it at any point in the talk and it lights and chimes,
 ## because a door that only acknowledges you when a script says so is a door you have to
@@ -158,7 +166,12 @@ func _process(delta: float) -> void:
 	var was_near: bool = _near
 	_near = wakes_within > 0.0 and _player != null and _flat_gap() <= wakes_within
 	var want_lit: float = maxf(highlight, 1.0 if _near else 0.0)
-	if _near and not was_near and _lit < 0.5 and _chime != null:
+	# It chimes when you arrive in front of it, unless whatever owns it has already
+	# turned it all the way up - at that point the door has been announced and saying so
+	# again every time you walk past is nagging. Tested against `highlight` rather than
+	# against how lit it currently is, which is what it used to do: a door with a resting
+	# glow is never below half, so it had quietly stopped chiming at all.
+	if _near and not was_near and highlight < 0.9 and _chime != null:
 		_chime.play()
 	_lit = move_toward(_lit, want_lit, delta * 1.6)
 	var glow: TetraMaterial4D = _field.material_override as TetraMaterial4D
