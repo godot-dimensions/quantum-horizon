@@ -84,6 +84,7 @@ metadata/copied_from = "res://ramon/chickenpen/chickenpen_proceduralwalker.tscn"
 
 [node name="Chickens" type="Node4D" parent="."]
 script = ExtResource("pen_chickens")
+coop_path = NodePath("../Pen/Coop")
 
 [node name="Pen" type="Node4D" parent="."]
 position = Vector4(0, 0, -11, 0)

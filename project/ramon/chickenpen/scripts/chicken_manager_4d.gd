@@ -62,6 +62,8 @@ const PLACEMENTS := [
 ]
 
 @export var chicken_count: int = 12
+## The henhouse, handed to every bird so a penned one can go in or sit on it.
+@export var coop_path: NodePath
 
 ## Height the chickens are placed at. The ground sits at 0 in this scene.
 @export var ground_y: float = 0.0
@@ -115,6 +117,9 @@ func spawn_all() -> void:
 		# them repeatable.
 		agent.set("variation_seed", (i + 1) * 7919 + 13)
 		agent.set("home_position", chicken.position)
+		# Set here rather than on twelve instances: every bird shares one henhouse.
+		if coop_path != NodePath():
+			agent.set("coop_path", agent.get_path_to(get_node(coop_path)))
 		agent.set("wander_radius", place[3])
 		agents.append(agent)
 	if _player != null:

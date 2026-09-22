@@ -15,7 +15,8 @@ extends Node4D
 ## comes from variation_seed rather than from twelve hand-edited copies: idle timing,
 ## wander radius, how skittish it is. One scene, twelve personalities.
 
-enum State { IDLE, WANDER, ALERT, EVADE, CARRIED, THROWN, PENNED, RECOVERING }
+enum State { IDLE, WANDER, ALERT, EVADE, CARRIED, THROWN, PENNED, RECOVERING,
+	TO_COOP, NESTING, ROOSTING }
 
 ## Stable identity (item 75). Progress, locator exclusion and recovery all key off this
 ## rather than on scene-tree order or a display name, either of which can change.
@@ -112,6 +113,31 @@ var ever_carried: bool = false
 const SETTLE_SECONDS: float = 1.6
 @export var pen_slice_w: float = 0.0
 
+@export_group("The coop")
+## The henhouse itself. A penned bird uses it: it walks up the ramp and settles inside, or
+## flies up and sits on the roof, and after a while it comes back out and carries on.
+##
+## INSIDE IS HIDDEN, NOT WALKED AROUND. The coop is a shell with a doorway and no interior
+## worth pathing through, and a chicken clipping through a wall to get in looks far worse
+## than one that has simply gone in. It is set by the manager rather than per bird, so
+## twelve chickens do not need twelve paths typing out.
+## RESOLVED ON ASSIGNMENT, not in _ready. The manager sets this after the chicken is in
+## the tree, so _ready has already run and looked the path up while it was still empty -
+## the same late-property trap that once left the cat's walker unconfigured. Every bird
+## simply never found its coop and stayed in the yard.
+@export var coop_path: NodePath: set = _set_coop_path
+## How often a penned bird bothers, as a fraction of the times it finishes a stroll.
+@export_range(0.0, 1.0, 0.05) var coop_chance: float = 0.35
+## Above the coop's OWN ORIGIN, not above the floor - the same measurement the cat's perch
+## needed correcting for.
+@export_range(0.1, 6.0, 0.05) var roof_top: float = 2.29
+@export_range(1.0, 60.0, 0.5) var coop_min: float = 6.0
+@export_range(1.0, 90.0, 0.5) var coop_max: float = 16.0
+@export_range(0.2, 3.0, 0.05) var hop_seconds: float = 0.6
+## How close to the coop's middle counts as being at it. The building is 1.8 deep, so
+## anything under about 1.2 is inside the wall.
+@export_range(0.5, 4.0, 0.05) var arrive_within: float = 1.7
+
 var _last_seen: Vector4 = Vector4.ZERO
 var _wing_node: Node4D
 var _flutter: float = 0.0
@@ -121,6 +147,11 @@ var _settle_from: float = 0.0
 var _settle_time: float = SETTLE_SECONDS
 ## Whether the penned bird is mid-stroll or stopped to peck. It lands walking.
 var _penned_walking: bool = true
+var _coop: Node4D
+var _hop_from := Vector4.ZERO
+var _hop_to := Vector4.ZERO
+var _hop_t: float = 0.0
+var _roosting: bool = false
 
 var _rng := RandomNumberGenerator.new()
 var _timer: float = 0.0
@@ -139,12 +170,19 @@ func _ready() -> void:
 	wander_seconds_max *= _rng.randf_range(0.8, 1.3)
 	wander_radius *= _rng.randf_range(0.85, 1.2)
 	alert_distance *= _rng.randf_range(0.85, 1.15)
+	_set_coop_path(coop_path)
 	_walker = _creature.get_node_or_null("Walker")
 	if _walker == null:
 		push_warning("ChickenAgent %d: no Walker under %s, so it will not move." % [chicken_id, _creature.name])
 	if home_position == Vector4.ZERO:
 		home_position = _creature.position
 	_enter(State.IDLE)
+
+
+func _set_coop_path(to: NodePath) -> void:
+	coop_path = to
+	if is_node_ready():
+		_coop = get_node_or_null(coop_path) as Node4D
 
 
 func bind_player(player: Node4D) -> void:
@@ -169,6 +207,10 @@ func _physics_process(delta: float) -> void:
 			_tick_penned()
 		State.RECOVERING:
 			_tick_recovering()
+		State.TO_COOP:
+			_tick_to_coop()
+		State.NESTING, State.ROOSTING:
+			_tick_indoors()
 		_:
 			pass
 	_contain()
@@ -211,6 +253,21 @@ func _enter(next: State) -> void:
 		State.RECOVERING:
 			_set_walker(true, 0.0, false, 0.0)
 			_timer = 0.2
+		State.TO_COOP:
+			# A PURPOSEFUL PACE. At 0.7 of the stroll it covered 0.05 units a second and
+			# spent fourteen seconds crossing a metre and a half - a bird ambling to the
+			# henhouse over a quarter of a minute reads as stuck, not as unhurried.
+			_set_walker(false, walk_speed * 1.6, true, 0.0)
+			_set_pecking(penned_peck_every_min * 3.0, penned_peck_every_max * 3.0)
+			_timer = 12.0
+		State.NESTING:
+			_set_walker(true, 0.0, false, 0.0)
+			_timer = _rng.randf_range(coop_min, coop_max)
+		State.ROOSTING:
+			# Settled high up: it stands and pecks, and does not try to walk off a roof.
+			_set_walker(true, 0.0, false, 0.0)
+			_set_pecking(penned_peck_every_min, penned_peck_every_max)
+			_timer = _rng.randf_range(coop_min, coop_max)
 
 
 func _tick_idle() -> void:
@@ -263,15 +320,80 @@ func _tick_penned() -> void:
 		var w: float = lerpf(_settle_from, pen_slice_w, t * t * (3.0 - 2.0 * t))
 		_creature.position.w = w
 		home_position.w = w
-	if _timer <= 0.0:
-		_penned_walking = not _penned_walking
-		_enter(State.PENNED)
+	if _timer > 0.0:
+		return
+	# Every so often, at the end of a stroll, it goes and uses the henhouse.
+	if _coop != null and _penned_walking and _rng.randf() < coop_chance:
+		_roosting = _rng.randf() < 0.5
+		_enter(State.TO_COOP)
+		return
+	_penned_walking = not _penned_walking
+	_enter(State.PENNED)
 
 
 func _tick_recovering() -> void:
 	if _timer <= 0.0:
 		_creature.position = home_position
 		_enter(State.IDLE)
+
+
+## Walking to the henhouse, then either in at the door or up onto the roof.
+##
+## The timer is a WAY OUT, not a plan: a bird that cannot reach the door - shoved off
+## course, or hemmed in by eleven others - gives up and goes back to strolling rather
+## than pushing at the wall for the rest of the run.
+func _tick_to_coop() -> void:
+	if _coop == null:
+		_enter(State.PENNED)
+		return
+	var to: Vector4 = _coop.global_position - _creature.global_position
+	var flat: float = Vector2(to.x, to.z).length()
+	if _walker != null:
+		_walker.set("steer_override", true)
+		_walker.set("steer_heading", atan2(to.x, to.z))
+	if _timer <= 0.0:
+		_enter(State.PENNED)
+		return
+	# ARRIVED AT THE RAMP, not at the middle of the building. The coop's origin is inside
+	# its own walls, so a threshold tight enough to call "at the door" is one the bird can
+	# only meet by standing in the wall.
+	if flat > arrive_within:
+		return
+	# Arrived. Home becomes the coop, so _contain stops pulling it back to the spot it
+	# landed on - it is allowed to be here.
+	home_position = _coop.position
+	if _roosting:
+		_hop_from = _creature.position
+		_hop_to = _coop.position + Vector4(0.0, roof_top, 0.0, 0.0)
+		_hop_to.w = _creature.position.w
+		_hop_t = 0.0
+		_enter(State.ROOSTING)
+	else:
+		_creature.visible = false
+		_enter(State.NESTING)
+
+
+## Settled - inside out of sight, or up on the roof - until its time is up, and then back
+## down to the floor of the pen.
+func _tick_indoors() -> void:
+	if state == State.ROOSTING and _hop_t < 1.0:
+		_hop_t = minf(_hop_t + get_physics_process_delta_time() / maxf(hop_seconds, 0.05), 1.0)
+		var along: Vector4 = _hop_from.lerp(_hop_to, _hop_t)
+		# A flap up rather than a lift: chickens do get onto things, badly.
+		_creature.position = Vector4(along.x, along.y + sin(_hop_t * PI) * 0.35,
+			along.z, along.w)
+		return
+	if _timer > 0.0:
+		return
+	# Back down and out, at the foot of the ramp.
+	var door: Vector4 = _coop.position + Vector4(0.0, 0.0, 1.4, 0.0)
+	door.y = 0.0
+	door.w = _creature.position.w
+	_creature.position = door
+	_creature.visible = true
+	home_position = door
+	_penned_walking = true
+	_enter(State.PENNED)
 
 
 ## How often this bird pecks. Set per state, because a settled chicken pecks more than a
@@ -374,6 +496,9 @@ func _animate(delta: float) -> void:
 			var slow: float = sin(_flutter * 4.2) * 0.35
 			var kick: float = maxf(sin(_flutter * 0.9), 0.0)
 			wing.basis = Basis4D.from_xy(-carried_flutter * (slow + kick * 0.8))
+		State.NESTING, State.ROOSTING:
+			# It owns its own height up there; writing home's y drops it through the roof.
+			wing.basis = Projection.IDENTITY
 		_:
 			wing.basis = Projection.IDENTITY
 			_creature.position.y = home_position.y
@@ -427,6 +552,14 @@ func _guard(delta: float) -> void:
 ## WANDERing, so a chicken pinned against a fence post cycled idle - wander - idle as usual,
 ## reset the count every time it went idle, and stayed pinned forever.
 func _check_stuck(delta: float, at: Vector4) -> String:
+	# A nesting or roosting bird is meant to be still, and one walking to the coop is
+	# under orders. None of them is stuck, and recovering them teleports a chicken out of
+	# the henhouse for the crime of using it.
+	if state == State.NESTING or state == State.ROOSTING or state == State.TO_COOP:
+		_path = 0.0
+		_stuck_elapsed = 0.0
+		_last_seen = at
+		return ""
 	if state == State.PENNED:
 		_path = 0.0
 		_stuck_elapsed = 0.0
@@ -465,6 +598,10 @@ func recover(reason: String) -> void:
 func _contain() -> void:
 	if state == State.CARRIED or state == State.THROWN or _walker == null:
 		return
+	# Hands off a bird that is on its way to the coop, in it, or on top of it - the leash
+	# would drag it off the roof and the W clamp would pull it back through the wall.
+	if state == State.TO_COOP or state == State.NESTING or state == State.ROOSTING:
+		return
 	var offset: Vector4 = _creature.position - home_position
 	var flat: float = Vector2(offset.x, offset.z).length()
 	var limit: float = wander_radius if state != State.PENNED else wander_radius * 0.6
@@ -480,7 +617,8 @@ func _contain() -> void:
 
 
 func can_be_caught() -> bool:
-	return not returned and state != State.CARRIED and state != State.PENNED
+	return not returned and state != State.CARRIED and state != State.PENNED \
+		and state != State.NESTING and state != State.ROOSTING and state != State.TO_COOP
 
 
 ## Item 77: the state transitions refuse the impossible rather than trusting the caller.
