@@ -1,4 +1,4 @@
-[gd_scene load_steps=806 format=3 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=807 format=3 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -51,6 +51,7 @@
 [ext_resource type="Script" uid="uid://0ylph4u1sgu2" path="res://ramon/chickenpen/scripts/pen_sfx_4d.gd" id="pen_sfx"]
 [ext_resource type="Script" uid="uid://c2kixgu1hst3e" path="res://ramon/chickenpen/theatre/theatre_arch_4d.gd" id="thr_arch"]
 [ext_resource type="PackedScene" uid="uid://gh03wmhupplp" path="res://ramon/VoxelMining/voxel_mining_block.tscn" id="voxel_rock"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_fullscreen_4d.gd" id="pen_fullscreen"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 shader_parameter/horizon_color = Color(0.98, 0.71, 0.35, 1)
@@ -5522,6 +5523,9 @@ lift = 40.0
 w_range = 6.0
 
 [node name="Systems" type="Node" parent="."]
+
+[node name="FullScreen" type="Node" parent="Systems"]
+script = ExtResource("pen_fullscreen")
 
 [node name="Talk" type="Node" parent="Systems"]
 script = ExtResource("dlg_talk")

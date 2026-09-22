@@ -119,6 +119,19 @@ extends Control
 ## How big the birds are drawn, on top of the panel's own scaling.
 @export_range(0.4, 2.0, 0.05) var bird_size: float = 0.9
 @export var toggle_key: Key = KEY_N
+## THE WAY BACK, WRITTEN ON THE INSTRUMENT THAT SHOWS YOU ARE LOST. The key that flattens
+## the slice lives on the camera rig and was only ever named on the controls card in the
+## other corner - which is the wrong corner. This dial is the thing that tells you your
+## plane is tilted, so it is the thing that should tell you how to un-tilt it.
+##
+## It is read off the rig's own `home_key` rather than printed, the same as every other
+## key named anywhere in this prototype: a printed key stops being true the moment
+## somebody rebinds it.
+##
+## It sits there whether or not the slice is tilted: a key you only learn about once you
+## are already lost is a key you learn too late.
+@export var rig_path: NodePath = NodePath("../../Player/CameraRig")
+@export var hint_color: Color = Color(1.0, 1.0, 1.0, 0.42)
 
 ## Extents used if the fence cannot be read.
 const FALLBACK := Rect2(-5.0, -4.5, 10.0, 9.0)
@@ -166,6 +179,7 @@ func _ready() -> void:
 	_frame = get_node_or_null(slice_frame_path) as Node4D
 	_manager = get_node_or_null(manager_path)
 	_locator = get_node_or_null(locator_path)
+	_rig = get_node_or_null(rig_path)
 	for path in people_paths:
 		var who: Node4D = get_node_or_null(path) as Node4D
 		if who != null:
@@ -389,6 +403,12 @@ func _draw() -> void:
 		Color(1.0, 1.0, 1.0, 0.75), radius * 2.0, 15.0)
 	_label(font, _reading(heights, worst, home),
 		Vector2(origin.x - radius, origin.y + radius - 38.0 * u), colour, radius * 2.0, 15.0)
+	# Under the reading, smaller and dimmer. See the note on rig_path.
+	var back: String = _home_key()
+	if back != "":
+		_label(font, "%s  flatten the slice" % back,
+			Vector2(origin.x - radius, origin.y + radius - 19.0 * u),
+			hint_color, radius * 2.0, 12.5)
 
 
 ## Where the dial is looking: the pen while you are near it, you once you are not.
@@ -801,3 +821,14 @@ func _label(font: Font, text: String, at: Vector2, colour: Color, width: float =
 	draw_string(font, at, text,
 		HORIZONTAL_ALIGNMENT_CENTER if width > 0.0 else HORIZONTAL_ALIGNMENT_LEFT,
 		width, int(round(letters * _ui())), colour)
+
+
+## What the camera rig has its way-back bound to, as a key name. Empty if there is no rig
+## to ask, so a dial dropped into a scene without one simply does not offer the hint.
+func _home_key() -> String:
+	if _rig == null:
+		return ""
+	var code: int = int(_rig.get("home_key"))
+	if code == 0:
+		return ""
+	return OS.get_keycode_string(code)
