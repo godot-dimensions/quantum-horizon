@@ -78,8 +78,19 @@ func _process(delta: float) -> bool:
 			var parked: CanvasItem = _root.get_node("UI/Debug") as CanvasItem
 			if parked != null:
 				parked.visible = false
-			_inv.call("offer")
-			_check("and he offers", bool(_inv.call("has_offered")), "offer() taken")
+			_check("the door is not even there yet", not _arch.visible,
+				"hidden, not merely lowered - a shut door has its lintel at ground level")
+			var talk: Node = _root.get_node("Systems/TrymTalk")
+			_check("his script carries the invite",
+				TrymScript.NODES.has("show_you")
+					and String(TrymScript.NODES["show_you"].get("do", "")) == "trym_invite",
+				"show_you does trym_invite")
+			# Exactly as the dialogue would: the effect arms it, the end of the
+			# conversation starts it.
+			talk.emit_signal("effect", "trym_invite")
+			talk.emit_signal("ended")
+			_check("and that is what sets him off", bool(_inv.call("has_offered")),
+				"armed on the effect, walked on the end of the conversation")
 			_stage = 1
 		1:
 			# He speaks, then walks. Wait for the door to come up.
@@ -99,9 +110,14 @@ func _process(delta: float) -> bool:
 			_check("his tag came with him",
 				absf((_root.get_node("World/TrymHead") as Node4D).global_position.z - fig.z) < 1.5,
 				"TrymHead follows the figure")
+			_check("and he is waiting rather than leaving", _figure().visible,
+				"he asked you to follow him, so he does not go without you")
 			_stage = 15
 		15:
-			# He beckons, then steps through it - AWAY from the player, not past it.
+			# He called you over and he will stand there until you come - so come. He only
+			# goes through once somebody is near enough to follow him.
+			var him: Vector4 = _figure().global_position
+			_player.global_position = Vector4(him.x + 1.6, 1.2, him.z + 1.6, 0.0)
 			if _figure().visible:
 				return false
 			print("\n--- and goes through it ---")
@@ -176,9 +192,21 @@ func _process(delta: float) -> bool:
 						_arch.global_position.z])
 			_check("and the door can be walked again",
 				not bool(_arch.get("_used")), "rearm() ran over the tree")
-			_check("Trym is back at his desk", _figure().visible
-				and _figure().global_position.z < -13.0,
-				"at z %.1f, sitting" % _figure().global_position.z)
+			var both: float = (_figure().global_position
+				- (_root.get_node("Player") as Node4D).global_position).length()
+			_check("he came out with you, on your side of it", _figure().visible
+				and _figure().global_position.z > _arch.global_position.z
+				and both > 0.8 and both < 4.0,
+				"%.1f m from you, door at z %.1f" % [both, _arch.global_position.z])
+			_check("and the door is folding away", not bool(_arch.get("armed")),
+				"disarmed - it lifts into the air and goes")
+			_check("his conversation marker came with him",
+				absf((_root.get_node("World/TrymStand") as Node4D).global_position.z
+					- _figure().global_position.z) < 3.0,
+				"talking to him no longer teleports you into the shed")
+			_check("and he owes you an opinion",
+				bool(_root.get_node("Systems/TrymDriver").get("_owes_an_opinion")),
+				"next thing he says is 'so, what did you think'")
 			print("\n%d FAIL(s)" % _fails.size())
 			quit(1 if _fails.size() > 0 else 0)
 			return true

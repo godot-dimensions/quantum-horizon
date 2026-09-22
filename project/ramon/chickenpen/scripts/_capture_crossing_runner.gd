@@ -112,6 +112,25 @@ func _process(_d) -> bool:
 		(_theatre.get_node("Player") as Node4D).global_position = Vector4(0.0, 1.2, 12.0, 0.0)
 		return false
 
+	# What the player ACTUALLY sees on arrival: from where their own camera sits, five
+	# metres behind them down the aisle. The fixed camera the rest of these shots use
+	# would not have caught the way out parked in the middle of the frame, which is the
+	# thing that was wrong with the last version of this room.
+	if _theatre != null and not _seen.has("arrival"):
+		_seen["arrival"] = true
+		# Where their own camera sits: five metres back up the walkway, which is the one
+		# clear channel through the seating.
+		_look_from(Vector4(5.99, 3.0, 8.65, 0.0), Vector4(0.0, 1.4, 0.4, 0.0))
+		_save("7_arrival")
+		return false
+	if _theatre != null and not _seen.has("wayout"):
+		_seen["wayout"] = true
+		_look_from(Vector4(-1.6, 3.4, 3.2, 0.0),
+			(_theatre.get_node("ExitArch") as Node4D).global_position
+				+ Vector4(0.0, 1.2, 0.0, 0.0))
+		_save("8_wayout")
+		return false
+
 	if _theatre != null:
 		var show: Node = _theatre.get_node("Show")
 		var act: int = int(show.call("current_act"))

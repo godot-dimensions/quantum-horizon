@@ -15,15 +15,14 @@ extends Node4D
 ## the same shape the dialogue takes, for the same reason.
 ##
 ## IT RUNS ON A CLOCK AND CANNOT BE FAILED. There is no input in here beyond walking about.
-## A player who wanders off mid-act comes back to the next one, and the exit lights when
-## the whole thing has run once, so nobody is ever trapped waiting for a beat they missed.
+## A player who wanders off mid-act comes back to the next one, and the way out stands
+## open at the head of the walkway the whole time, so nobody is ever held here.
 
 const ROCK := preload("res://ramon/VoxelMining/voxel_mining_block.tscn")
 
 @export var stage_path: NodePath
 @export var caption_path: NodePath
 @export var presenter_path: NodePath
-@export var exit_path: NodePath
 
 @export_group("Pacing")
 @export_range(1.0, 20.0, 0.5) var opening_seconds: float = 7.0
@@ -72,7 +71,6 @@ const ACTS := [
 var _stage: Node4D
 var _caption: Node
 var _presenter: Node4D
-var _exit: Node
 var _table: Node4D
 var _panels: Array[MeshInstance4D] = []
 var _beams: Array[MeshInstance4D] = []
@@ -101,7 +99,6 @@ func _ready() -> void:
 	_caption = get_node_or_null(caption_path)
 	_presenter = get_node_or_null(presenter_path) as Node4D
 	_audience = get_node_or_null(audience_path) as Node4D
-	_exit = get_node_or_null(exit_path)
 	if _presenter != null:
 		# Off in the wings, so the room is empty when you arrive and he walks into it.
 		_presenter.position = wings
@@ -120,8 +117,10 @@ func _ready() -> void:
 			_beams.append(beam)
 	_build_exhibits()
 	_show(-1)
-	if _exit != null:
-		_exit.set("armed", false)
+	# The way out is NOT switched off here. It stands open from the moment you arrive,
+	# at the head of the walkway, because a walkway that leads to nothing for the first
+	# seven seconds is a walkway that leads to nothing - and a room you cannot leave is
+	# not a room you explore, it is one you sit out.
 
 
 # ---------------------------------------------------------------- the exhibits
@@ -270,8 +269,6 @@ func _process(delta: float) -> void:
 		_enter(_act + 1)
 	elif _act == ACTS.size() and _phase >= closing_seconds and not _done:
 		_done = true
-		if _exit != null:
-			_exit.set("armed", true)
 		_say("", "That is the lot. The way out is behind you - mind the step, it is further through W than it looks.", "")
 
 	if _act >= 0 and _act < ACTS.size():
@@ -418,12 +415,6 @@ func current_act() -> int:
 func _enter(act: int) -> void:
 	_act = act
 	_phase = 0.0
-	# The way out opens the moment the first act does. It stays dark through the arrival -
-	# a lit exit behind you while the room is still assembling is an invitation to miss the
-	# room - but the whole talk runs a minute, and a minute with no door is not a
-	# presentation, it is a cutscene. From here on, leaving is always allowed.
-	if act == 0 and _exit != null:
-		_exit.set("armed", true)
 	_show(act)
 	if act < ACTS.size():
 		var a: Dictionary = ACTS[act]

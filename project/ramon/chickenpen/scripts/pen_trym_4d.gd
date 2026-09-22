@@ -291,6 +291,17 @@ func set_figure_visible(shown: bool) -> void:
 		_figure.visible = shown
 
 
+## Puts the figure down at a point in WORLD space, without walking him there. For the end
+## of a trip he did not walk back from.
+func place_at(target: Vector4) -> void:
+	if _figure == null:
+		return
+	var here: Vector4 = _figure.global_position
+	_walk += Vector4(target.x - here.x, 0.0, target.z - here.z, 0.0)
+	_stride = 0.0
+	_moving = false
+
+
 ## Where his head is now, for anything that has to point at him while he is moving - his
 ## speech tag is anchored to a fixed marker at the desk, which stops being where he is the
 ## moment he stands up and walks off.

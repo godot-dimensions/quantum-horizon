@@ -78,17 +78,17 @@ hair = Color(0.14, 0.11, 0.09, 1)
 wear_cap = false
 
 [node name="ExitArch" type="Node4D" parent="."]
-position = Vector4(0, 0, 10.5, 0)
+position = Vector4(7.4, 1.72, 9.6, 0)
+basis = Projection(0.55985741, 0, -0.82858897, 0, 0, 1, 0, 0, 0.82858897, 0, 0.55985741, 0, 0, 0, 0, 1)
 script = ExtResource("arch")
 player_path = NodePath("../Player")
-armed = false
+starts_open = true
 
 [node name="Show" type="Node4D" parent="."]
 script = ExtResource("show")
 stage_path = NodePath("../Stage")
 caption_path = NodePath("../UI/Caption")
 presenter_path = NodePath("../Presenter")
-exit_path = NodePath("../ExitArch")
 audience_path = NodePath("../Player")
 
 [node name="UI" type="Node4D" parent="."]
@@ -99,7 +99,8 @@ anchor_bottom = 1.0
 script = ExtResource("caption")
 
 [node name="Player" type="CharacterBody4D" parent="."]
-position = Vector4(0, 1.2, 6.2, 0)
+position = Vector4(1.85, 1.78, 5.85, 0)
+basis = Projection(0.55985741, 0, -0.82858897, 0, 0, 1, 0, 0, 0.82858897, 0, 0.55985741, 0, 0, 0, 0, 1)
 script = ExtResource("character")
 
 [node name="CollisionShape4D" type="CollisionShape4D" parent="Player"]

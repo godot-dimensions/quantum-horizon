@@ -73,7 +73,7 @@ const NODES: Dictionary = {
 	"lines": [
 		"It is here, and it's the good kind. You can't do it wrong in three dimensions — only slowly.",
 	],
-	"goto": "hub",
+	"goto": "offer",
 },
 
 "you_real": {
@@ -81,13 +81,62 @@ const NODES: Dictionary = {
 	"lines": [
 		"Ha! Nobody who says that ever leaves. Go on, ask me something.",
 	],
-	"goto": "hub",
+	"goto": "offer",
 },
 
 "you_like": {
 	"speaker": "Trym",
 	"lines": [
 		"That's the right order, actually. Everyone who ends up any good at this liked it first and understood it second.",
+	],
+	"goto": "offer",
+},
+
+# ---------------------------------------------------------------- the thing he built
+
+## HE ASKS, THE PLAYER DECIDES. An NPC who simply walks off and expects to be followed is
+## a cutscene with extra steps; one who asks is a person with an idea. Declining costs
+## nothing - the hub keeps the offer open - which is the same rule every other list in
+## this script follows.
+##
+## IT SITS ON THE PATH EVERY INTRODUCTION TAKES - all three answers to "what about you"
+## come here - so it lands in the first conversation without being bolted to the end of
+## one. There is no `instead` on it: turning him down should not cost the trip, so his
+## driver simply opens with this node again next time, and stops the moment you accept.
+## Which is also in character for a man the script describes as hard to stop once started.
+"offer": {
+	"speaker": "Trym",
+	"lines": [
+		"Right - hang on. While you're here.",
+		"I've been building something in the evenings. It isn't on this farm, and I have completely failed to explain it to anybody standing still. Two minutes. Come outside with me.",
+	],
+	"choices": [
+		{"text": "Go on then.", "goto": "show_you"},
+		{"text": "Later, maybe.", "goto": "hub", "back": true},
+	],
+},
+
+## The effect fires on the SECOND line, not the first: `do_on_line` holds it back until
+## the sentence that announces it has been read, so he gets up as he finishes speaking
+## rather than while the player is still on "Brilliant". `goto` is empty because he is
+## leaving - the conversation ends and the walk begins.
+"show_you": {
+	"speaker": "Trym",
+	"instead": "what_did_you_think",
+	"lines": [
+		"Brilliant. Right.",
+		"Out we go. Don't wander off - I'll only have to come and find you.",
+	],
+	"do": "trym_invite",
+	"do_on_line": 1,
+	"goto": "",
+},
+
+"what_did_you_think": {
+	"speaker": "Trym",
+	"lines": [
+		"So. What did you think?",
+		"No - don't answer that. I'll take it personally and then we'll be here all evening. I'm glad you came.",
 	],
 	"goto": "hub",
 },

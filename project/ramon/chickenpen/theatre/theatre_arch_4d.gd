@@ -13,6 +13,15 @@ extends Node4D
 ## somebody switching it on. The frame comes up first and the field fills in after, because
 ## that order is the one that looks deliberate.
 ##
+## IT RISES OUT OF THE GROUND AND LEAVES THROUGH THE AIR. Opening, the frame comes up from
+## under the floor; shutting, it lifts away upward instead of sinking back where it came
+## from. Same animation, opposite direction, and the difference is the whole read: one is
+## a thing being built, the other is a thing being taken away.
+##
+## AND WHEN IT IS SHUT IT IS NOT THERE AT ALL. Hidden, not merely lowered - a closed door
+## parked under the floor still has its lintel at ground level, which is a mystery beam
+## lying in a field from the moment the scene loads.
+##
 ## THE FIELD IS THICK THROUGH W. It is a doorway in four dimensions and a player who has
 ## turned their slice must still be able to walk into it - a thin one would be a door that
 ## only exists on the slice it was built on, which is a joke this scene has already made
@@ -23,8 +32,8 @@ signal entered
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
 
 @export var player_path: NodePath
-## Off until something switches it on. The exit spends the arrival dark and lights when
-## the first act begins, so nobody is shut in for the length of the talk.
+## Off until something switches it on. The one Trym raises in the field starts off; the
+## one at the head of the theatre's walkway is simply standing when you get there.
 @export var armed: bool = true: set = _set_armed
 ## Open the moment it is built, for a door that is meant to be already standing.
 @export var starts_open: bool = false
@@ -47,11 +56,19 @@ var _frame: Node4D
 var _field: MeshInstance4D
 var _open: float = 0.0
 var _used: bool = false
+var _shutting: bool = false
 
 
 func _set_armed(v: bool) -> void:
 	armed = v
-	if is_node_ready() and not armed:
+	if not is_node_ready():
+		return
+	if armed:
+		_shutting = false
+	elif _open > 0.05:
+		# It was standing. Take it away upward rather than snapping it off.
+		_shutting = true
+	else:
 		_open = 0.0
 		_used = false
 
@@ -60,6 +77,7 @@ func _ready() -> void:
 	_player = get_node_or_null(player_path) as Node4D
 	rebuild()
 	_open = 1.0 if starts_open else 0.0
+	visible = _open > 0.005
 
 
 func rebuild() -> void:
@@ -95,9 +113,14 @@ func _process(delta: float) -> void:
 	var want: float = 1.0 if armed else 0.0
 	_open = move_toward(_open, want, delta / maxf(open_seconds, 0.05))
 	# The frame rises first; the field fills in over the back half.
+	visible = _open > 0.005
+	if not visible:
+		return
 	var up: float = clampf(_open * 1.6, 0.0, 1.0)
 	_frame.basis = Basis4D.from_zx(0.0)
-	_frame.position = Vector4(0.0, -height * (1.0 - up), 0.0, 0.0)
+	# Down through the floor on the way in, up into the air on the way out.
+	var away: float = height * (1.0 - up) * (1.0 if _shutting else -1.0)
+	_frame.position = Vector4(0.0, away, 0.0, 0.0)
 	var fill: float = clampf((_open - 0.45) / 0.55, 0.0, 1.0)
 	_field.visible = fill > 0.01
 	if _field.mesh is BoxTetraMesh4D:

@@ -3,12 +3,15 @@ extends Node
 ## Trym's invitation: the moment he stops answering questions about chickens and offers to
 ## show you something.
 ##
-## IT HOOKS HIS CONVERSATION WITHOUT EDITING IT. DialoguePlayer4D emits `effect`, `started`
-## and `ended`, so this listens rather than being written into his script - which matters
-## because that script belongs to another pass of work that is still going on. Add
-## `"do": "trym_invite"` to any node of his and the invitation fires exactly there; until
-## somebody does, it fires on a random roll when a conversation with him finishes, which
-## is the same beat one turn later.
+## IT COMES OUT OF THE CONVERSATION, not out of a timer. His script has a node that ends
+## with `"do": "trym_invite"`, so the offer is something he says, in the first
+## conversation, at the point he says it - an earlier version rolled dice when any talk
+## with him finished and the result was a man who abruptly stood up and walked into a
+## field for no stated reason.
+##
+## AND IT WAITS FOR THE END OF THE SENTENCE. The effect only arms it; the walk starts on
+## `ended`, one beat later, because a character who gets up and leaves while his own
+## dialogue box is still open is a bug that looks like rudeness.
 ##
 ## ONCE A RUN. An offer that repeats is not an offer, it is a machine, and the whole point
 ## is that it feels like he decided.
@@ -29,7 +32,7 @@ extends Node
 ## follow", which is a better question than "what is this". Nothing forces them through it
 ## and nothing hurries them.
 
-enum Beat { WAITING, SPEAKING, WALKING, RAISING, BECKONING, LEAVING, OPEN }
+enum Beat { WAITING, SPEAKING, WALKING, RAISING, CALLING, LEAVING, OPEN, HOME }
 
 @export var dialogue_path: NodePath
 @export var trym_path: NodePath
@@ -37,17 +40,18 @@ enum Beat { WAITING, SPEAKING, WALKING, RAISING, BECKONING, LEAVING, OPEN }
 @export var arch_path: NodePath
 @export var crossing_path: NodePath
 @export var player_path: NodePath
+## His talk driver, so it knows to open with "what did you think" when you get home.
+@export var driver_path: NodePath
+## The marker the driver slides the player to for a conversation. It lives at the desk; it
+## has to come with him, or talking to him by the door teleports you back into the shed.
+@export var stand_marker_path: NodePath
 ## The marker his speech tag hangs from. It lives at the desk, so while he is walking it
 ## gets carried along behind his head - otherwise he talks from an empty stool.
 @export var head_path: NodePath
 
 @export_group("When")
-## The effect that triggers it outright, for when his script has a line for it.
+## The node in his script that ends with `"do": "trym_invite"`.
 @export var effect_name: String = "trym_invite"
-## Otherwise: the chance, per finished conversation, that he offers.
-@export_range(0.0, 1.0, 0.05) var chance_per_talk: float = 0.5
-## And a floor on it, so somebody who talks to him once still sees it eventually.
-@export_range(1, 8, 1) var certain_after: int = 2
 
 @export_group("The walk")
 ## Where he goes, in WORLD space: out of the shed door, then clear of it, then to the spot
@@ -62,12 +66,17 @@ enum Beat { WAITING, SPEAKING, WALKING, RAISING, BECKONING, LEAVING, OPEN }
 @export_range(0.5, 6.0, 0.1) var vanish_beyond: float = 2.0
 @export_range(0.2, 6.0, 0.1) var walk_speed: float = 1.7
 @export_range(0.5, 8.0, 0.5) var speak_seconds: float = 3.6
-@export_range(0.5, 8.0, 0.5) var raise_seconds: float = 2.2
-@export_range(0.5, 8.0, 0.5) var beckon_seconds: float = 3.4
+@export_range(0.5, 8.0, 0.5) var raise_seconds: float = 2.4
+## How close you have to get before he goes through. He does NOT go on a timer: he asked
+## you to follow him, so he waits until you have, however long that takes.
+@export_range(1.0, 12.0, 0.5) var waits_until_within: float = 4.5
 
-const LINE := "Right - enough chickens. Want to see something cool? Follow me outside."
-const AT_THE_DOOR := "Built this last week. Mind the threshold, it's deeper than it looks."
-const BECKON := "Come on. It won't bite. Much."
+## Said as he comes out of the shed, not at the door - "follow me" is an instruction, and
+## an instruction given after you have already arrived is a caption.
+const LINE := "Follow me!"
+const AT_THE_DOOR := "There. Built it last week."
+const CALL := "Come on, stand with me. It's deeper than it looks."
+const HOME_AGAIN := "Right. Back where we started."
 
 var _dialogue: Node
 var _trym: Node4D
@@ -79,8 +88,11 @@ var _head: Node4D
 var _beat: Beat = Beat.WAITING
 var _timer: float = 0.0
 var _leg: int = 0
-var _talks: int = 0
+var _armed: bool = false
 var _offered: bool = false
+var _driver: Node
+var _marker: Node4D
+var _stood := Vector4.ZERO
 
 
 func _ready() -> void:
@@ -91,6 +103,8 @@ func _ready() -> void:
 	_crossing = get_node_or_null(crossing_path)
 	_player = get_node_or_null(player_path) as Node4D
 	_head = get_node_or_null(head_path) as Node4D
+	_driver = get_node_or_null(driver_path)
+	_marker = get_node_or_null(stand_marker_path) as Node4D
 	if _arch != null:
 		_arch.set("armed", false)
 		if _arch.has_signal("entered") and not _arch.is_connected("entered", _on_entered):
@@ -106,14 +120,11 @@ func _ready() -> void:
 
 func _on_effect(name: String) -> void:
 	if name == effect_name:
-		_offer()
+		_armed = true
 
 
 func _on_ended() -> void:
-	_talks += 1
-	if _offered:
-		return
-	if _talks >= certain_after or randf() < chance_per_talk:
+	if _armed:
 		_offer()
 
 
@@ -130,6 +141,7 @@ func _offer() -> void:
 	if _offered or _trym == null:
 		return
 	_offered = true
+	_armed = false
 	_beat = Beat.SPEAKING
 	_timer = speak_seconds
 	_leg = 0
@@ -146,6 +158,16 @@ func _process(delta: float) -> void:
 	if _head != null and _trym.has_method("head_position"):
 		_head.global_position = _trym.call("head_position")
 	if _beat == Beat.OPEN:
+		return
+	if _beat == Beat.HOME:
+		# Home again: he stands where the door was, turned to whoever he came back with,
+		# and the one line over his head clears itself so it does not become scenery.
+		if _trym.has_method("face_towards") and _player != null:
+			_trym.call("face_towards", _player.global_position)
+		_timer -= delta
+		if _timer <= 0.0 and _timer > -1.0:
+			_say("")
+			_timer = -99.0
 		return
 	_timer -= delta
 	match _beat:
@@ -171,14 +193,21 @@ func _process(delta: float) -> void:
 				_trym.call("face_towards", _player.global_position)
 			if _timer > 0.0:
 				return
-			_beat = Beat.BECKONING
-			_timer = beckon_seconds
-			_say(BECKON)
-		Beat.BECKONING:
-			if _timer > 0.0:
+			_beat = Beat.CALLING
+			_say(CALL)
+		Beat.CALLING:
+			# He called you over, so he waits until you come. No timer: a man who invites
+			# you somewhere and then leaves without you has not invited you anywhere.
+			if _trym.has_method("face_towards") and _player != null:
+				_trym.call("face_towards", _player.global_position)
+			if _player == null:
+				_beat = Beat.LEAVING
 				return
+			var reach: Vector4 = _player.global_position - _trym.call("head_position")
+			if Vector2(reach.x, reach.z).length() > waits_until_within:
+				return
+			_say("")
 			_beat = Beat.LEAVING
-			_timer = 1.4
 		Beat.LEAVING:
 			# He turns, walks into his own door and is gone - away from the player, through
 			# the field, not around it. Hidden rather than freed, because a freed Trym is
@@ -206,15 +235,42 @@ func _raise() -> void:
 
 ## Called on the way home, by the crossing's sweep for anything that wants resetting.
 ##
-## He walked off through his own door; coming back and finding his stool empty for the
-## rest of the run would cost the farm a character for the sake of continuity nobody asked
-## for. He is simply at his desk again. What does NOT reset is the offer - it happens once
-## - and the door stays standing, so going back is a walk rather than a second audition.
+## THE DOOR GOES. Disarming it folds it up into the air and takes it away, which is the
+## right ending for a thing that was put up for one trip - a glowing arch left standing in
+## a chicken field forever is set dressing nobody chose.
+##
+## AND HE IS STANDING RIGHT THERE, not back at his desk. You came out of that door
+## together; finding him already seated forty metres away, as though none of it happened,
+## throws away the whole beat. He stays where the door was, and the marker his talk driver
+## slides the player to comes with him - otherwise saying hello teleports you into the
+## shed he is not in.
 func rearm() -> void:
 	if _beat != Beat.OPEN or _trym == null:
 		return
-	if _trym.has_method("return_to_desk"):
-		_trym.call("return_to_desk")
+	_beat = Beat.HOME
+	if _arch != null:
+		_arch.set("armed", false)
+	# Back on YOUR side of the door, a pace to one side of where the crossing puts you
+	# down. He walked through it ahead of you; coming out behind you would be a third
+	# thing happening that nobody saw.
+	var spot := Vector4(door_at.x + 1.5, 0.0, door_at.z + 2.6, 0.0)
+	if _trym.has_method("place_at"):
+		_trym.call("place_at", spot)
+	if _trym.has_method("set_figure_visible"):
+		_trym.call("set_figure_visible", true)
+	if _trym.has_method("face_towards") and _player != null:
+		_trym.call("face_towards", _player.global_position)
+	# From the TARGET, not from him. place_at only moves the offset the figure is drawn
+	# at; his global position does not catch up until the next frame, and reading it here
+	# puts the marker where he used to be.
+	_stood = spot
+	if _marker != null:
+		# A pace to one side, so the conversation is side by side rather than nose to nose.
+		_marker.global_position = Vector4(spot.x + 1.1, 0.0, spot.z + 0.9, 0.0)
+	if _driver != null and _driver.has_method("ask_what_you_thought"):
+		_driver.call("ask_what_you_thought")
+	_say(HOME_AGAIN)
+	_timer = 3.5
 
 
 func _on_entered() -> void:

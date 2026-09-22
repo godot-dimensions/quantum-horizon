@@ -56,6 +56,26 @@ extends Node4D
 @export_range(0, 60, 1) var seats_per_tier: int = 22
 @export var seat_color: Color = Color(0.16, 0.13, 0.20)
 
+@export_group("The aisle")
+## ONE RAKED BOX from the floor by the stage up to the way out, and the seats get out of
+## its way. There is no ramp to the seating itself and there does not need to be - what a
+## room like this actually needs is a floor you can read: somewhere obvious to stand, and
+## an obvious route off it.
+##
+## IT GOES UP AND ACROSS, not straight back. A door directly behind the audience is a door
+## directly behind the CAMERA, which in a third-person game means the way out is parked in
+## the middle of every shot of the stage. Running the aisle off to one side puts it out of
+## the sightline and costs nothing but a yaw.
+@export var aisle_from := Vector4(0.0, 0.0, 4.6, 0.0): set = _set_aisle_from
+@export var aisle_to := Vector4(7.4, 1.6, 9.6, 0.0): set = _set_aisle_to
+@export_range(1.0, 6.0, 0.1) var aisle_width: float = 2.8: set = _set_aisle_width
+## Steps under the rake. The physics here keeps boxes and nothing else, so a tilted slab
+## is a tilted PICTURE with an axis-aligned brick behind it; the thing you actually walk
+## on is a staircase of little boxes with their tops on the slope. Enough of them and the
+## rise per step is a few centimetres, which walks like a ramp.
+@export_range(4, 60, 1) var aisle_steps: int = 24
+@export var aisle_color: Color = Color(0.12, 0.14, 0.20)
+
 @export_group("The void")
 @export_range(0, 400, 1) var motes: int = 160
 @export_range(10.0, 120.0, 1.0) var mote_spread: float = 55.0
@@ -67,6 +87,28 @@ func _set_radius(v: float) -> void: radius = v; _later()
 func _set_segments(v: int) -> void: segments = v; _later()
 func _set_floor_color(v: Color) -> void: floor_color = v; _later()
 func _set_rim_color(v: Color) -> void: rim_color = v; _later()
+func _set_aisle_from(v: Vector4) -> void: aisle_from = v; _later()
+func _set_aisle_to(v: Vector4) -> void: aisle_to = v; _later()
+func _set_aisle_width(v: float) -> void: aisle_width = v; _later()
+
+
+## The top of the aisle, where the way out stands. Public so the scene does not have to
+## keep a second copy of the number.
+func aisle_head() -> Vector4:
+	return aisle_to
+
+
+## How far a point on the floor is from the aisle, measured to the SEGMENT rather than to
+## the line - seats beyond either end of it are not in the aisle, they are just near it.
+func aisle_gap(at: Vector4) -> float:
+	var a := Vector2(aisle_from.x, aisle_from.z)
+	var b := Vector2(aisle_to.x, aisle_to.z)
+	var p := Vector2(at.x, at.z)
+	var run: Vector2 = b - a
+	if run.length_squared() < 0.0001:
+		return p.distance_to(a)
+	var along: float = clampf((p - a).dot(run) / run.length_squared(), 0.0, 1.0)
+	return p.distance_to(a + run * along)
 
 
 func _ready() -> void:
@@ -188,6 +230,10 @@ func rebuild() -> void:
 			var at := Vector4(sin(a) * r, lift, cos(a) * r, 0.0)
 			if Vector2(at.x, at.z).length() > radius - 0.8:
 				continue
+			# An aisle is seats NOT being there. Half the width plus a seat's own width,
+			# so the row ends clear of the edge rather than overhanging it.
+			if aisle_gap(at) < aisle_width * 0.5 + 0.35:
+				continue
 			var seat := _slab(house, "Seat%d_%d" % [tier, i], at,
 				Vector3(0.46, 0.34, 0.42), seat_color)
 			seat.basis = Basis4D.from_zx(a)
@@ -195,6 +241,8 @@ func rebuild() -> void:
 				at + Vector4(sin(a) * 0.26, 0.30, cos(a) * 0.26, 0.0),
 				Vector3(0.46, 0.44, 0.12), seat_color.lerp(rim_color, 0.12))
 			back.basis = Basis4D.from_zx(a)
+
+	_aisle(body)
 
 	# THE PODIUM, off to one side so the presenter never stands in front of the exhibit.
 	var podium := Node4D.new()
@@ -228,6 +276,43 @@ func rebuild() -> void:
 		var mote := _slab(sky, "Mote%d" % i, at, Vector3(size, size, size),
 			mote_color.lerp(rim_color, rng.randf()))
 		mote.basis = Basis4D.from_zx(rng.randf_range(0.0, TAU))
+
+
+## The raked walkway, and the staircase of boxes that makes it walkable.
+func _aisle(body: StaticBody4D) -> void:
+	var run := Vector2(aisle_to.x - aisle_from.x, aisle_to.z - aisle_from.z)
+	var flat: float = run.length()
+	if flat < 0.5:
+		return
+	var rise: float = aisle_to.y - aisle_from.y
+	var length: float = sqrt(flat * flat + rise * rise)
+	var middle: Vector4 = (aisle_from + aisle_to) * 0.5
+
+	var deck := _slab(self, "Aisle", middle + Vector4(0.0, 0.06, 0.0, 0.0),
+		Vector3(aisle_width, 0.24, length), aisle_color)
+	# Turned to the heading first, then raked. from_yz turns the opposite way to the
+	# obvious reading - the same note block_gait_4d.gd carries - so the NEGATIVE angle is
+	# the one that lifts the far end.
+	deck.basis = Basis4D.from_zx(atan2(run.x, run.y)) * Basis4D.from_yz(-atan2(rise, flat))
+	var edge := _slab(self, "AisleEdge", middle + Vector4(0.0, 0.20, 0.0, 0.0),
+		Vector3(aisle_width * 0.04, 0.04, length * 0.98), rim_color)
+	edge.basis = deck.basis
+	edge.position += deck.basis * Vector4(aisle_width * 0.48, 0.0, 0.0, 0.0)
+	var edge2 := _slab(self, "AisleEdge2", edge.position, Vector3(aisle_width * 0.04, 0.04,
+		length * 0.98), rim_color)
+	edge2.basis = deck.basis
+	edge2.position -= deck.basis * Vector4(aisle_width * 0.96, 0.0, 0.0, 0.0)
+
+	# And the steps. Deep enough that each one is buried in the one below it, so there is
+	# no lip between them for a foot to catch on.
+	for step in aisle_steps:
+		var t: float = (float(step) + 0.5) / float(aisle_steps)
+		var at: Vector4 = aisle_from.lerp(aisle_to, t)
+		# Tops level with the DECK's top surface, not with the centre line it was laid
+		# out along - the slab is drawn 0.06 above the line and is 0.24 thick, so its
+		# surface is 0.18 up. Stepping on the line means standing shin-deep in the ramp.
+		_collide(body, Vector4(at.x, at.y + 0.18 - 0.30, at.z, 0.0),
+			Vector4(aisle_width, 0.6, aisle_width, floor_w_depth))
 
 
 func _slab(parent: Node, part: String, at: Vector4, size: Vector3,

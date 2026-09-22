@@ -56,8 +56,8 @@ func _process(_d) -> bool:
 			table.get_node_or_null("ActThree/Rock") != null
 				and table.get_node_or_null("ActThree/Rock/Voxels") != null,
 			"a VoxelMiningBlock with its own colliders")
-		_check("the way out starts dark", not bool(_root.get_node("ExitArch").get("armed")),
-			"armed = false")
+		_check("the way out is standing when you get there", bool(_root.get_node("ExitArch").get("armed")),
+			"open at the head of the walkway")
 		# Hurry the show along, or this test is a minute of waiting.
 		_show.set("opening_seconds", 0.2)
 		_show.set("act_seconds", 0.5)
@@ -73,8 +73,8 @@ func _process(_d) -> bool:
 	print("   acts in order: %s" % [_seen])
 	_check("it ran all three and closed", _seen.has(0) and _seen.has(1) and _seen.has(2)
 		and _seen.has(3), "%s" % [_seen])
-	_check("and the way out is lit now", bool(_root.get_node("ExitArch").get("armed")),
-		"armed = true")
+	_check("and it is still there at the end", bool(_root.get_node("ExitArch").get("armed"))
+		and _root.get_node("ExitArch").visible, "you can walk out of it")
 	var voxels: Node = _root.get_node_or_null("Stage/Turntable/ActThree/Rock/Voxels")
 	_check("and somebody had been at the rock with a pick", bool(_show.get("_carved"))
 		and voxels != null and voxels.get_child_count() > 0,

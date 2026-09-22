@@ -1,5 +1,6 @@
 [gd_scene load_steps=61 format=3]
 
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_sun_4d.gd" id="pen_sun"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_avatar_4d.gd" id="avatar"]
@@ -48,7 +49,28 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_invitation_4d.gd" id="pen_invite"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/theatre/theatre.tscn" id="theatre_scene"]
 
-[sub_resource type="GradientSkyMaterial4D" id="sky"]
+[sub_resource type="VolumetricCloudMaterial4D" id="clouds"]
+coverage = 0.42
+density = 1.15
+bottom_height = 700.0
+vertical_thickness = 1800.0
+shape_scale = 2200.0
+detail_strength = 0.45
+sun_intensity = 4.0
+phase_anisotropy = 0.8
+ambient_color = Color(0.26, 0.33, 0.48, 1)
+ambient_intensity = 0.35
+shadow_strength = 1.0
+
+[sub_resource type="PhysicalSkyMaterial4D" id="sky"]
+rayleigh_coefficient = 3.2e-05
+rayleigh_color = Color(0.28, 0.4, 0.66, 1)
+mie_coefficient = 1.4e-05
+mie_anisotropy = 0.86
+mie_color = Color(1, 0.8, 0.58, 1)
+sun_glow_intensity = 3.0
+sun_glow_half_width_radians = 0.07
+ground_color = Color(0.1, 0.075, 0.05, 1)
 
 [sub_resource type="BoxShape4D" id="ground_shape"]
 size = Vector4(120, 2, 120, 120)
@@ -539,13 +561,21 @@ progress_label_path = NodePath("../../UI/Progress")
 objective_label_path = NodePath("../../UI/Objective")
 
 [node name="Sun" type="DirectionalLight4D" parent="World"]
-basis = Projection(0, 0, 0, 1, 0.946946, -0.259996, -0.188934, 0, 0.321394, 0.766044, 0.55667, 0, 0, -0.587859, 0.808963, 0)
-light_color = Color(1, 0.98, 0.94, 1)
+light_color = Color(1, 0.7, 0.42, 1)
+light_energy = 1.8
+angular_radius_degrees = 2.5
+script = ExtResource("pen_sun")
+elevation_degrees = 8.0
+azimuth_degrees = 118.0
 
 [node name="Environment" type="WorldEnvironment4D" parent="World"]
 current = true
 sky_material = SubResource("sky")
+cloud_material = SubResource("clouds")
+ambient_light_color = Color(0.3, 0.4, 0.58, 1)
+ambient_light_sky_contribution = 0.85
 tonemap_mode = 2
+tonemap_exposure = 1.0
 
 [node name="Ground" type="StaticBody4D" parent="World"]
 position = Vector4(0, -1, 0, 0)
@@ -840,3 +870,5 @@ arch_path = NodePath("../World/TrymDoor")
 crossing_path = NodePath("../Crossing")
 player_path = NodePath("../Player")
 head_path = NodePath("../World/TrymHead")
+driver_path = NodePath("../Systems/TrymDriver")
+stand_marker_path = NodePath("../World/TrymStand")
