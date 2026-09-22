@@ -16,6 +16,7 @@ var _on_at := Vector4.ZERO
 var _claim_at := Vector4.ZERO
 var _reach := 0.0
 var _rest := 0.0
+var _high := 0.0
 var _stage := 0
 
 
@@ -48,7 +49,7 @@ func _process(_d) -> bool:
 		_show = _root.get_node("Show")
 		_p = _root.get_node("Presenter")
 		_wings = _show.get("wings")
-		_show.set("opening_seconds", 3.0)
+		_show.set("opening_seconds", 9.0)
 		_show.set("act_seconds", 6.0)
 		return false
 
@@ -58,14 +59,26 @@ func _process(_d) -> bool:
 		0:
 			if _p.position.distance_to(_wings) > 0.3:
 				_on_at = _p.position
-				print("\n--- he walks on ---")
-				_check("he starts in the wings", true, "left them at %.2f, %.2f" % [_on_at.x, _on_at.z])
+				print("\n--- he comes down the house ---")
+				_check("he starts up at the door", _on_at.z > 11.0,
+					"set off from z %.1f, %.2f up" % [_on_at.z, _on_at.y])
+				_high = _on_at.y
 				_stage = 1
 		1:
+			# On the way down his feet should be ON the ramp, not at the height he set
+			# off from - he moves in X and Z, and the walkway supplies the rest.
+			if _high > 0.0 and _p.position.z < 8.0 and _p.position.z > 4.0:
+				_check("and walks DOWN it rather than through the air",
+					_p.position.y < _high - 0.4 and _p.position.y > 0.05,
+					"at z %.1f he is %.2f up, having set off at %.2f"
+						% [_p.position.z, _p.position.y, _high])
+				_high = -99.0
 			# Out front for the claim.
 			if act == 0 and t > 1.0:
 				_claim_at = _p.position
 				_rest = _arm()
+				_check("and arrives at floor level", _claim_at.y < 0.2,
+					"y %.2f on his mark" % _claim_at.y)
 				_check("and comes out to make the claim",
 					_claim_at.distance_to(_wings) > 1.5,
 					"at %.2f, %.2f - %.1f m from the wings" % [_claim_at.x, _claim_at.z,

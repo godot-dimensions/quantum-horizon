@@ -25,7 +25,8 @@ const ROCK := preload("res://ramon/VoxelMining/voxel_mining_block.tscn")
 @export var presenter_path: NodePath
 
 @export_group("Pacing")
-@export_range(1.0, 20.0, 0.5) var opening_seconds: float = 7.0
+## Long enough for him to walk the house and for you to follow him down it.
+@export_range(1.0, 30.0, 0.5) var opening_seconds: float = 11.0
 @export_range(4.0, 40.0, 0.5) var act_seconds: float = 16.0
 @export_range(1.0, 20.0, 0.5) var closing_seconds: float = 9.0
 @export_range(0.2, 6.0, 0.1) var change_seconds: float = 1.6
@@ -34,13 +35,17 @@ const ROCK := preload("res://ramon/VoxelMining/voxel_mining_block.tscn")
 ## Whoever he is talking to, so he addresses the person in the room rather than a fixed
 ## point the person may well not be standing at.
 @export var audience_path: NodePath
-## He walks on from behind the backdrop, and works between two marks: one out front for the
-## claim, one in on the drum for the demonstration. A presenter who stands on one spot for
-## a minute is a sign, not a speaker.
-@export var wings := Vector4(-7.4, 0.0, 5.4, 0.0)
+## He comes in the same way you do - through the door, down the walkway, ahead of you -
+## and then works between two marks: one out front for the claim, one in on the drum for
+## the demonstration. A presenter who stands on one spot for a minute is a sign, not a
+## speaker, and one who is simply already on stage when you arrive never came from
+## anywhere.
+@export var wings := Vector4(0.0, 0.0, 13.2, 0.0)
 @export var mark_claim := Vector4(-5.3, 0.0, 2.6, 0.0)
 @export var mark_exhibit := Vector4(-3.9, 0.0, 0.9, 0.0)
-@export_range(0.3, 4.0, 0.05) var presenter_speed: float = 1.25
+## Brisk. He has the length of the house to cover before the first act, and a man
+## strolling it at a metre a second is a man the audience overtakes.
+@export_range(0.3, 4.0, 0.05) var presenter_speed: float = 1.95
 
 ## Each act: the title, the finding in one line, the measured figure, and the colour the
 ## room turns while it is running.
@@ -92,6 +97,7 @@ var _audience: Node4D
 var _stride: float = 0.0
 var _walking: bool = false
 var _face: float = 0.0
+var _got_down: bool = false
 
 
 func _ready() -> void:
@@ -297,7 +303,21 @@ func _perform(delta: float) -> void:
 	var t: float = _phase / maxf(act_seconds, 0.01)
 	if _act < 0:
 		# He waits in the dark while the room assembles, then walks on.
-		goes_to = mark_claim if _phase > opening_seconds * 0.4 else wings
+		# A beat in the doorway, then he sets off - so you see him arrive rather than
+		# finding him already walking.
+		#
+		# AND HE COMES DOWN THE AISLE, not straight at his mark. A line from the door to
+		# a spot beside the stage leaves the walkway about half way down; he would step
+		# off the side of the ramp, drop to the floor and walk the rest of it THROUGH the
+		# thing he had been standing on. So the foot of the rake is a waypoint, and only
+		# once he is on the flat does he cut across to where he presents from.
+		goes_to = wings
+		if _phase > 1.4:
+			var foot: Vector4 = _stage.get("aisle_from") if _stage != null else Vector4.ZERO
+			if not _got_down and Vector2(_presenter.position.x - foot.x,
+					_presenter.position.z - foot.z).length() < 0.8:
+				_got_down = true
+			goes_to = mark_claim if _got_down else Vector4(foot.x, 0.0, foot.z, 0.0)
 	elif _act < ACTS.size():
 		if t >= 0.30:
 			goes_to = mark_exhibit
@@ -317,6 +337,15 @@ func _perform(delta: float) -> void:
 		# Walking, he faces where he is going - a man who crosses a stage sideways while
 		# still looking at you is a dolly shot, not a person.
 		looks_at = _presenter.position + to
+
+	# Down the ramp, not through the air above it. He moves in X and Z; the walkway says
+	# how high the floor is under him at each step, and off the walkway that is zero.
+	if _stage != null and _stage.has_method("aisle_height"):
+		# Rebuilt rather than assigned into: `position` is a property, and writing one
+		# component of a property is a trick worth not relying on.
+		var stand: Vector4 = _presenter.position
+		_presenter.position = Vector4(stand.x,
+			float(_stage.call("aisle_height", stand)), stand.z, stand.w)
 
 	var aim := Vector4(looks_at.x - _presenter.position.x, 0.0,
 		looks_at.z - _presenter.position.z, 0.0)

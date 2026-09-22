@@ -29,12 +29,27 @@ extends Node4D
 @export var effect_name: String = "found_gold"
 
 @export_group("The seam")
-@export_range(1, 12, 1) var count: int = 5
+## Pieces lying within reach of a swing made from the slice you start on. These teach the
+## mechanic: hit rock, find gold.
+@export_range(0, 12, 1) var shallow_count: int = 3
+## And pieces lying too far through W for ANY swing from that slice to touch, however you
+## stand. These are the point.
+##
+## A carve is a SPHERE about a metre across, so a piece further through W than that radius
+## cannot be reached from the default slice no matter where in the field you put your
+## feet - the geometry says so, not a difficulty curve. To get one you have to move
+## through W or turn the slice, and then dig again from a cross-section that did not exist
+## a moment ago. It is the one thing in this project that a three-dimensional game cannot
+## do, and until now nothing asked the player to do it.
+@export_range(0, 12, 1) var deep_count: int = 3
 @export var gold: Color = Color(0.98, 0.78, 0.22): set = _set_gold
 @export_range(0.05, 1.0, 0.01) var orb_size: float = 0.30: set = _set_size
 ## How deep in they sit, as a fraction of the rock's half-width. Under 1 so none of them
 ## is poking out of the surface before a pick has touched it.
 @export_range(0.1, 0.95, 0.05) var seam_spread: float = 0.62
+## How far beyond a swing's own reach a deep piece must sit. Slack, so the rule holds
+## even at the widest the carve is ever tuned to.
+@export_range(0.1, 2.0, 0.05) var deep_margin: float = 0.45
 @export var seed_value: int = 4242
 
 @export_group("Collecting")
@@ -84,10 +99,22 @@ func rebuild() -> void:
 	# The rock's solid half-width, from its own exported grid rather than a guess.
 	var grid: float = float(_rock.get("grid_size")) * float(_rock.get("cell_size"))
 	var reach: float = grid * 0.5 * float(_rock.get("box_fill_fraction")) * seam_spread
-	for i in count:
+	# How far a single swing can reach through W, which is what divides the two kinds.
+	var bite: float = float(_rock.get("mining_radius_meters"))
+	for i in shallow_count + deep_count:
+		var deep: bool = i >= shallow_count
+		var off_slice: float = 0.0
+		if deep:
+			# Clear of the bite by a margin, and still inside the rock's own W extent -
+			# a piece buried outside the material is not buried, it is missing.
+			off_slice = rng.randf_range(bite + deep_margin, maxf(reach, bite + deep_margin + 0.1))
+			if rng.randf() < 0.5:
+				off_slice = -off_slice
+		else:
+			off_slice = rng.randf_range(-bite * 0.5, bite * 0.5)
 		var at := Vector4(
 			rng.randf_range(-reach, reach), rng.randf_range(-reach, reach),
-			rng.randf_range(-reach, reach), rng.randf_range(-reach * 0.4, reach * 0.4))
+			rng.randf_range(-reach, reach), off_slice)
 		var orb := MeshInstance4D.new()
 		orb.name = "Nugget%d" % i
 		var mesh := OrthoplexTetraMesh4D.new()
@@ -130,6 +157,15 @@ func _process(_delta: float) -> void:
 		_orbs[i].visible = false
 		if _inventory != null and _inventory.has_method("add_item"):
 			_inventory.call("add_item", effect_name)
+
+
+## How many of the deep ones are still in there - the ones that need the slice turned.
+func deep_left() -> int:
+	var n: int = 0
+	for i in _orbs.size():
+		if i >= shallow_count and not _found[i]:
+			n += 1
+	return n
 
 
 ## How many are still in the rock, for anything that wants to say so.

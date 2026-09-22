@@ -70,12 +70,35 @@ func _process(_d) -> bool:
 	var deck_top: float = near.y + (deck.mesh as BoxTetraMesh4D).size.y * 0.5 + 0.06
 	_check("and its steps level with the deck", absf(tops[0].y - deck_top) < 0.12,
 		"first step top %.2f, deck surface %.2f" % [tops[0].y, deck_top])
+	# And the bottom of it meets the floor, rather than ending in a kerb you step off.
+	_check("and the foot of it is flush with the floor",
+		absf(float(stage.call("aisle_height", foot))) < 0.03,
+		"deck surface %.3f at the bottom" % float(stage.call("aisle_height", foot)))
+	_check("and it reaches the presentation platform",
+		absf(Vector2(foot.x, foot.z).length() - float(stage.get("drum_radius"))) < 0.25,
+		"foot at r %.2f, drum rim at %.2f" % [Vector2(foot.x, foot.z).length(),
+			float(stage.get("drum_radius"))])
 	var stood: Node4D = _root.get_node("Player") as Node4D
 	_check("the player is put down on it, not in it",
 		float(stage.call("aisle_gap", stood.global_position)) < float(stage.get("aisle_width")) * 0.5,
 		"%.1f m from the walkway's centre line"
 			% float(stage.call("aisle_gap", stood.global_position)))
 
+	# The floor has to be solid all the way out, not just under the middle and the rim.
+	var holes := 0
+	for ring in range(1, 9):
+		var r: float = float(ring) * float(stage.get("radius")) / 9.0
+		for spoke in 12:
+			var a: float = TAU * float(spoke) / 12.0
+			var probe := Vector4(sin(a) * r, 2.0, cos(a) * r, 0.0)
+			var params := RaycastParameters4D.new()
+			params.global_ray_origin = probe
+			params.global_ray_direction = Vector4(0.0, -1.0, 0.0, 0.0)
+			params.max_distance = 4.0
+			if PhysicsServer4D.raycast_physics_objects(params).is_empty():
+				holes += 1
+	_check("the floor is solid all the way out", holes == 0,
+		"%d of 96 probes found nothing under them" % holes)
 	print("\n--- the way out ---")
 	var exit: Node4D = _root.get_node("ExitArch")
 	var player: Node4D = _root.get_node("Player")
@@ -87,11 +110,15 @@ func _process(_d) -> bool:
 	# The camera sits behind the player along +Z. Anything within a few metres of that
 	# line, behind them, is parked in every shot of the stage.
 	var behind: Vector4 = exit.global_position - player.global_position
-	# It IS behind them - that is what a centred room looks like. What matters is that it
-	# is further back than the camera, which the rig parks five metres behind the player.
-	_check("it is further back than the camera sits",
-		Vector2(behind.x, behind.z).length() > 6.0,
-		"%.1f m behind, camera rides at 5.0" % Vector2(behind.x, behind.z).length())
+	# You arrive THROUGH it, so you start beside it and walk down the house.
+	_check("you start at the door", Vector2(behind.x, behind.z).length() < 2.5,
+		"%.1f m from it" % Vector2(behind.x, behind.z).length())
+	var nearest: float = INF
+	for child in stage.get_node("House").get_children():
+		nearest = minf(nearest, ((child as Node4D).global_position
+			- exit.global_position).length())
+	_check("and there is a walk before the seating starts", nearest > 3.0,
+		"%.1f m from the door to the nearest seat" % nearest)
 	_check("and the walkway is on the room's centre line",
 		absf(float(stage.get("aisle_from").x)) < 0.01
 			and absf(float(stage.get("aisle_to").x)) < 0.01,

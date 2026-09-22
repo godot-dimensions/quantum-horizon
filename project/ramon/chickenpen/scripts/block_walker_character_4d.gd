@@ -161,8 +161,10 @@ func _step_up(wish: Vector4) -> void:
 	params.global_ray_origin = probe + Vector4(0.0, step_height + 0.25, 0.0, 0.0)
 	params.global_ray_direction = Vector4(0.0, -1.0, 0.0, 0.0)
 	params.max_distance = step_height + 0.30
-	params.set_exclude_nodes([self])
 	var hit: Dictionary = PhysicsServer4D.raycast_physics_objects(params)
+	if Engine.get_physics_frames() % 40 == 0:
+		print("[step] from %v dir %v hit %s" % [params.global_ray_origin, flat,
+			str(hit.get("position", "nothing"))])
 	if hit.is_empty() or not hit.has("position"):
 		return
 	var top: float = (hit["position"] as Vector4).y

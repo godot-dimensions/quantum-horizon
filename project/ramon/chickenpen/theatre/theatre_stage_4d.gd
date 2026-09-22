@@ -27,7 +27,7 @@ extends Node4D
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
 
 @export_group("The floor")
-@export_range(4.0, 40.0, 0.5) var radius: float = 13.0: set = _set_radius
+@export_range(4.0, 40.0, 0.5) var radius: float = 17.0: set = _set_radius
 @export_range(8, 64, 1) var segments: int = 28: set = _set_segments
 @export_range(0.1, 2.0, 0.05) var floor_thickness: float = 0.5
 ## Through W. Generous on purpose - see the header.
@@ -69,11 +69,19 @@ extends Node4D
 ## already raycasts and pulls in when something is behind the player, so the diagonal was
 ## buying nothing; what keeps the door out of shot is starting the player at the BOTTOM,
 ## where it is further back than the camera is.
-@export var aisle_from := Vector4(0.0, 0.0, 3.3, 0.0): set = _set_aisle_from
+## The foot sits at the drum's own rim, and it sits 0.18 LOW - which is the deck's own
+## thickness above the line it is laid out along. Put the line on the floor and the deck's
+## top surface ends up a lip proud of it, so the last thing anybody coming down the ramp
+## does is step off an eighteen-centimetre kerb. Sunk by its own thickness, the surface
+## arrives flush with the floor and meets the platform instead of stopping short of it.
+@export var aisle_from := Vector4(0.0, -0.18, 3.1, 0.0): set = _set_aisle_from
 @export var aisle_to := Vector4(0.0, 1.9, 10.6, 0.0): set = _set_aisle_to
-## The flat run on the end of it. The door stands at the far end of this, so the last few
-## steps to the way out are level - a doorway on a slope is a doorway you fall out of.
-@export_range(0.0, 8.0, 0.1) var aisle_landing: float = 1.8: set = _set_aisle_landing
+## The flat run on the end of it. You arrive at the far end of this, so there is a walk
+## along the top of the house before the seating starts and before the floor drops away -
+## coming through the door straight onto a downward slope with a back row at your elbow is
+## an arrival nobody gets to look at. It is also why the disc is wider than the room
+## needs: the landing has to have somewhere to be.
+@export_range(0.0, 12.0, 0.1) var aisle_landing: float = 5.0: set = _set_aisle_landing
 @export_range(1.0, 6.0, 0.1) var aisle_width: float = 2.8: set = _set_aisle_width
 ## Steps under the rake. The physics here keeps boxes and nothing else, so a tilted slab
 ## is a tilted PICTURE with an axis-aligned brick behind it; the thing you actually walk
@@ -122,6 +130,23 @@ func aisle_gap(at: Vector4) -> float:
 		_to_segment(p, Vector2(aisle_to.x, aisle_to.z), Vector2(head.x, head.z)))
 
 
+## How high the walkway's surface is over a point, or 0 for a point that is not on it.
+## Anything that walks down the aisle needs this - they move in X and Z and would
+## otherwise stroll down to the stage through the air at the height they started.
+func aisle_height(at: Vector4) -> float:
+	if aisle_gap(at) > aisle_width * 0.5 + 0.4:
+		return 0.0
+	var a := Vector2(aisle_from.x, aisle_from.z)
+	var b := Vector2(aisle_to.x, aisle_to.z)
+	var p := Vector2(at.x, at.z)
+	var run: Vector2 = b - a
+	if run.length_squared() < 0.0001:
+		return aisle_to.y + 0.18
+	# Past the top of the rake is the landing, which is level.
+	var along: float = clampf((p - a).dot(run) / run.length_squared(), 0.0, 1.0)
+	return lerpf(aisle_from.y, aisle_to.y, along) + 0.18
+
+
 func _to_segment(p: Vector2, a: Vector2, b: Vector2) -> float:
 	var run: Vector2 = b - a
 	if run.length_squared() < 0.0001:
@@ -151,9 +176,9 @@ func rebuild() -> void:
 	add_child(body)
 	_own(body)
 
-	var core := _slab(body, "Core", Vector4(0.0, -floor_thickness * 0.5, 0.0, 0.0),
+	_slab(body, "Core", Vector4(0.0, -floor_thickness * 0.5, 0.0, 0.0),
 		Vector3(radius * 0.86, floor_thickness, radius * 0.86), floor_color)
-	_collide(body, core.position, (core.mesh as BoxTetraMesh4D).size)
+	_floor_collision(body)
 
 	for i in segments:
 		var a: float = TAU * float(i) / float(segments)
@@ -162,7 +187,6 @@ func rebuild() -> void:
 		var plate := _slab(body, "Plate%d" % i, at,
 			Vector3(radius * 0.34, floor_thickness, radius * 0.34), floor_color)
 		plate.basis = Basis4D.from_zx(a)
-		_collide(body, at, (plate.mesh as BoxTetraMesh4D).size)
 
 	# The lit rim. Thin, bright, and the only thing in the room with an edge.
 	for i in segments * 2:
@@ -332,17 +356,31 @@ func _aisle(body: StaticBody4D) -> void:
 	# above that line and is 0.24 thick, so its surface is 0.18 up. Stepping on the line
 	# means standing shin-deep in the ramp.
 	var total: float = length + aisle_landing
-	# Enough that no single step is more than about five centimetres, whatever the rake
-	# is set to - the count follows the RISE, because the rise is what a foot has to clear.
-	var steps: int = maxi(aisle_steps, int(ceil(absf(rise) / 0.05)))
+	var spacing: float = 0.0
+	# Enough that no single step on the RAKE is more than about five centimetres, whatever
+	# it is set to. The rise is what a foot has to clear, but the steps are spread over
+	# the rake AND the level landing, so the count has to be scaled by how much of the
+	# run is actually sloped - otherwise a long landing quietly coarsens the stairs.
+	var needed: float = absf(rise) / 0.05 * (length + aisle_landing) / length
+	var steps: int = maxi(aisle_steps, int(ceil(needed)))
+	spacing = total / float(steps)
 	for step in steps:
 		var t: float = (float(step) + 0.5) / float(steps)
 		var walked: float = t * total
 		var at: Vector4 = aisle_from.lerp(aisle_to, minf(walked / length, 1.0))
 		if walked > length:
 			at = aisle_to + Vector4(sin(yaw), 0.0, cos(yaw), 0.0) * (walked - length)
-		_collide(body, Vector4(at.x, at.y + 0.18 - 0.30, at.z, 0.0),
-			Vector4(aisle_width, 0.6, aisle_width, floor_w_depth))
+		# SHALLOW ALONG THE WALKWAY, wide across it. The first version used the aisle's
+		# width for both, which made every step a 2.8-metre-deep block: consecutive ones
+		# sit 0.18 apart but each reached 1.4 forward, so the box that actually held you
+		# up was one from far higher up the slope and the real riser was 0.44 rather than
+		# 0.05. Walking down still worked, because walking down is falling. Walking up was
+		# a wall.
+		var deep: float = spacing * 1.8
+		var size := Vector4(aisle_width, 0.6, deep, floor_w_depth)
+		if absf(sin(yaw)) > absf(cos(yaw)):
+			size = Vector4(deep, 0.6, aisle_width, floor_w_depth)
+		_collide(body, Vector4(at.x, at.y + 0.18 - 0.30, at.z, 0.0), size)
 
 
 ## A lit strip down each side, so the edge of the drop is readable in a dark room.
@@ -369,6 +407,30 @@ func _slab(parent: Node, part: String, at: Vector4, size: Vector3,
 	node.position = at
 	_own(node)
 	return node
+
+
+## The floor you can stand on, as a grid rather than as one box per visible plate.
+##
+## THE PLATES DO NOT TILE. They are drawn as a ring of rotated slabs around a central
+## slab, which READS as a disc and is the whole reason it is built that way - but the
+## collider for each one is axis-aligned and sits where its middle is, so the ring of
+## boxes lands well outside the corners of the middle one. At this radius that left a
+## four-metre annulus of nothing, directly under the seating, and anyone who walked out
+## there dropped through the world. It had been there at every radius this room has had.
+##
+## So the collision is its own thing: square cells covering the disc, kept if their middle
+## is inside it, overlapping by a whisker so no seam falls between two of them.
+func _floor_collision(body: StaticBody4D) -> void:
+	var cell: float = maxf(radius * 0.22, 1.0)
+	var across: int = int(ceil(radius * 2.0 / cell))
+	for ix in across + 1:
+		for iz in across + 1:
+			var at := Vector4(-radius + float(ix) * cell, -floor_thickness * 0.5,
+				-radius + float(iz) * cell, 0.0)
+			if Vector2(at.x, at.z).length() > radius:
+				continue
+			_collide(body, at, Vector4(cell * 1.02, floor_thickness, cell * 1.02,
+				floor_w_depth))
 
 
 ## One collision box per floor plate. Boxes, because the physics here collapses anything

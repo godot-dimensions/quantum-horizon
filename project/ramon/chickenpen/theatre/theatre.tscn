@@ -78,7 +78,7 @@ hair = Color(0.14, 0.11, 0.09, 1)
 wear_cap = false
 
 [node name="ExitArch" type="Node4D" parent="."]
-position = Vector4(0, 2.08, 12.4, 0)
+position = Vector4(0, 2.08, 15.6, 0)
 script = ExtResource("arch")
 player_path = NodePath("../Player")
 starts_open = true
@@ -98,7 +98,7 @@ anchor_bottom = 1.0
 script = ExtResource("caption")
 
 [node name="Player" type="CharacterBody4D" parent="."]
-position = Vector4(0, 1.72, 4.6, 0)
+position = Vector4(0, 3.28, 14.4, 0)
 script = ExtResource("character")
 
 [node name="CollisionShape4D" type="CollisionShape4D" parent="Player"]
