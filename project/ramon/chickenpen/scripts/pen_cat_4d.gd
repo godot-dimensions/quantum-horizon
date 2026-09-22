@@ -24,9 +24,9 @@ extends Node4D
 ## their children with them - the trap that made the chicken's feet vanish. They do not
 ## follow the head, which is fine while the walker only drives legs.
 
-const RIG := preload("res://ramon/Model/scripts/loft_rig_4d.gd")
-const BALL := preload("res://ramon/Model/scripts/loft_ball_4d.gd")
-const WALKER := preload("res://ramon/Model/scripts/strider_walker.gd")
+const RIG := preload("res://ramon/chickenpen/scripts/loft_rig_4d.gd")
+const BALL := preload("res://ramon/chickenpen/scripts/loft_ball_4d.gd")
+const WALKER := preload("res://ramon/chickenpen/scripts/strider_walker.gd")
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
 

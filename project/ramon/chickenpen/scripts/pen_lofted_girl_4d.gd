@@ -21,9 +21,9 @@ extends Node4D
 ## still get lofted into the surface, so she has arms without the walker trying to step
 ## on them.
 
-const RIG := preload("res://ramon/Model/scripts/loft_rig_4d.gd")
-const BALL := preload("res://ramon/Model/scripts/loft_ball_4d.gd")
-const WALKER := preload("res://ramon/Model/scripts/strider_walker.gd")
+const RIG := preload("res://ramon/chickenpen/scripts/loft_rig_4d.gd")
+const BALL := preload("res://ramon/chickenpen/scripts/loft_ball_4d.gd")
+const WALKER := preload("res://ramon/chickenpen/scripts/strider_walker.gd")
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
 
