@@ -110,6 +110,8 @@ extends Control
 ## the escape hatch for when the guess below picks the wrong one.
 @export var people_overrides: Array[Color] = []
 @export var target_color: Color = Color(1.0, 0.85, 0.25, 0.95)
+## How big the birds are drawn, on top of the panel's own scaling.
+@export_range(0.4, 2.0, 0.05) var bird_size: float = 0.9
 @export var toggle_key: Key = KEY_N
 
 ## Extents used if the fence cannot be read.
@@ -501,16 +503,54 @@ func _draw_bird(x: float, z: float, w: float, is_target: bool, shrink: float,
 	var colour: Color = target_color if is_target else chicken_color
 	draw_line(foot, head, Color(colour.r, colour.g, colour.b, 0.35), 1.0)
 	draw_circle(foot, 2.0 * u, Color(colour.r, colour.g, colour.b, 0.4))
-	# A head rather than a dot: a comb, a body and a beak, which is enough at five pixels
-	# to read as a chicken and not as another corner of something.
-	draw_circle(head, 5.5 * u, colour)
-	draw_line(head + Vector2(4.0, 0.5) * u, head + Vector2(9.0, 2.0) * u, colour, 2.0)
-	draw_line(head + Vector2(-2.0, -5.0) * u, head + Vector2(2.0, -8.0) * u, colour, 2.0)
+	var middle: Vector2 = _chicken_icon(head, colour, u * bird_size)
 	if is_target:
-		draw_arc(head, 10.5 * u, 0.0, TAU, 22, target_color, 1.5, true)
+		draw_arc(middle, 13.0 * u * bird_size, 0.0, TAU, 24, target_color, 1.5, true)
 	if on_slice:
-		# Its head is in your slice: this is the bird you can walk up to and take.
-		draw_arc(head, 8.0 * u, 0.0, TAU, 20, home_color, 2.0, true)
+		# It stands in your slice: this is the bird you can walk up to and take.
+		draw_arc(middle, 10.5 * u * bird_size, 0.0, TAU, 22, home_color, 2.0, true)
+
+
+## A whole chicken, standing on the point, facing right. Returns where its body sits, so
+## a ring can be drawn round the bird rather than round its feet.
+##
+## IT STANDS ON THE MARK RATHER THAN BEING CENTRED ON IT. The mark is the bird's own w,
+## and the rung beside it is where your slice passes - so feet meeting rung is the whole
+## reading, and a glyph centred on the mark would have half of itself below the line it
+## is being judged against.
+##
+## It used to be a white ball with a beak and a comb stuck on. That reads as a chicken at
+## five pixels and as a circle at fifteen, and the panel is big enough now to draw the
+## bird properly.
+func _chicken_icon(at: Vector2, colour: Color, u: float) -> Vector2:
+	# Legs first, so the body covers where they meet it.
+	draw_line(at + Vector2(-1.3, 0.0) * u, at + Vector2(-1.3, -3.6) * u, colour, 1.6 * u)
+	draw_line(at + Vector2(1.8, 0.0) * u, at + Vector2(1.8, -3.6) * u, colour, 1.6 * u)
+	# Tail, behind the body.
+	draw_colored_polygon(PackedVector2Array([at + Vector2(-4.6, -9.0) * u,
+		at + Vector2(-10.4, -13.4) * u, at + Vector2(-4.9, -6.0) * u]), colour)
+	var body: Vector2 = at + Vector2(0.0, -8.0) * u
+	draw_colored_polygon(_oval(body, 6.2 * u, 4.5 * u), colour)
+	var skull: Vector2 = at + Vector2(5.9, -13.2) * u
+	draw_circle(skull, 3.2 * u, colour)
+	# A neck, or the head reads as a second bird sitting on the first.
+	draw_line(at + Vector2(3.4, -9.4) * u, skull, colour, 2.6 * u)
+	# Comb and beak.
+	draw_colored_polygon(PackedVector2Array([at + Vector2(4.4, -15.6) * u,
+		at + Vector2(6.1, -18.4) * u, at + Vector2(7.5, -15.6) * u]), colour)
+	draw_colored_polygon(PackedVector2Array([at + Vector2(8.7, -13.9) * u,
+		at + Vector2(12.0, -12.7) * u, at + Vector2(8.7, -11.6) * u]), colour)
+	return at + Vector2(1.2, -10.0) * u
+
+
+## An ellipse as a polygon, because draw_circle cannot be squashed and a chicken drawn
+## with a round body is a ball with legs.
+func _oval(centre: Vector2, rx: float, ry: float) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in 16:
+		var a: float = TAU * float(i) / 16.0
+		points.append(centre + Vector2(cos(a) * rx, sin(a) * ry))
+	return points
 
 
 ## A name beside a blob, kept on the panel and out of its neighbour's way.
@@ -534,7 +574,8 @@ func _name_tag(font: Font, who: String, at: Vector2, colour: Color) -> void:
 		settled = true
 		guard += 1
 		for taken in _tags:
-			if absf(taken.y - spot.y) < 14.0 					and spot.x < taken.x + taken.z and taken.x < spot.x + width:
+			if absf(taken.y - spot.y) < letters + 1.0 \
+					and spot.x < taken.x + taken.z and taken.x < spot.x + width:
 				spot.y = taken.y + letters + 2.0
 				settled = false
 				break
