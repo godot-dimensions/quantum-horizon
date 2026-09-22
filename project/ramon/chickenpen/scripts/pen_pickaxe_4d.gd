@@ -31,6 +31,14 @@ extends Node
 ## node with a different name in it.
 @export var tool_effect: String = "found_pickaxe"
 
+@export_group("In hand")
+## Where the prop hangs. The avatar's own right elbow, so it inherits the arm's swing for
+## free and a walk carries the pickaxe without a line of code about walking.
+@export var avatar_path: NodePath
+@export_range(0.1, 2.0, 0.05) var swing_seconds: float = 0.45
+@export var haft_color: Color = Color(0.55, 0.36, 0.20)
+@export var head_color: Color = Color(0.72, 0.75, 0.79)
+
 @export_group("Reach")
 ## Metres. Melee, not a hitscan weapon's reach.
 @export_range(0.5, 8.0, 0.1) var reach: float = 3.0
@@ -41,9 +49,18 @@ var _player: Node4D
 var _camera: Node4D
 var _inventory: Node
 var _catcher: Node
+var _avatar: Node4D
+var _prop: Node4D
+## Seconds into the current swing, or -1 when the arm belongs to the walk again.
+var _swinging: float = -1.0
 
 
 func _ready() -> void:
+	# AFTER THE GAIT, DELIBERATELY. The walk writes the arm's pose every frame and the
+	# swing has to overwrite it, so this runs late rather than being moved in the tree -
+	# process_priority orders it without anybody else's node having to move.
+	process_priority = 20
+	_avatar = get_node_or_null(avatar_path) as Node4D
 	_player = get_node_or_null(player_path) as Node4D
 	_camera = get_node_or_null(camera_path) as Node4D
 	_inventory = get_node_or_null(inventory_path)
@@ -52,11 +69,118 @@ func _ready() -> void:
 		push_warning("PenPickaxe: player, camera or inventory missing - nothing can be mined.")
 
 
+## The prop, built once and hidden rather than made and unmade as it is chosen. It hangs
+## off the avatar's own elbow, so the walk cycle carries it and nothing here knows how to
+## walk; only the swing is this node's business.
+##
+## BUILT LATE, AND REBUILT IF IT GOES. block_avatar_4d frees every child when it rebuilds
+## itself, which it does whenever one of its colours is touched - so a prop parented into
+## it can vanish without warning. Checking it is still there costs one null test a frame.
+func _hang_it() -> void:
+	if _avatar == null:
+		return
+	var hand: Node4D = _avatar.get("elbow_right") as Node4D
+	if hand == null or (_prop != null and is_instance_valid(_prop) and _prop.get_parent() == hand):
+		return
+	_prop = Node4D.new()
+	_prop.name = "Pickaxe"
+	hand.add_child(_prop)
+	# Held at the bottom of the haft with the head above the fist, which is how a pickaxe
+	# is carried and also what keeps it clear of the leg while walking.
+	_prop.position = Vector4(0.0, -0.20, 0.0, 0.0)
+	_haft()
+
+
+## SIZED TO THE CHIBI, which is smaller than it sounds. The first version had a haft 0.72
+## long against an arm of 0.36, which put the head of the pickaxe level with the shoulder
+## - right on the pivot it is supposed to swing around, so the whole arc moved it about
+## nine centimetres. The head now sits a little above the fist and well below the
+## shoulder, which is what gives the swing something to travel.
+func _haft() -> void:
+	_block("Haft", Vector4(0.0, 0.04, 0.0, 0.0), Vector3(0.026, 0.40, 0.026), haft_color)
+	_block("Collar", Vector4(0.0, 0.21, 0.0, 0.0), Vector3(0.062, 0.070, 0.062), head_color)
+	_block("Cap", Vector4(0.0, 0.25, 0.0, 0.0), Vector3(0.032, 0.028, 0.032), haft_color)
+	# Two picks, each three blocks that shrink and droop as they go out. Blocky rather
+	# than curved, to sit with everything else in this scene.
+	for side in [-1.0, 1.0]:
+		var tag: String = "L" if side < 0.0 else "R"
+		var steps := [[0.070, 0.224, 0.094, 0.040, 0.10], [0.152, 0.212, 0.078, 0.033, 0.26],
+			[0.218, 0.182, 0.058, 0.025, 0.45]]
+		for i in steps.size():
+			var step: Array = steps[i]
+			var part: MeshInstance4D = _block("Pick%s%d" % [tag, i],
+				Vector4(side * float(step[0]), float(step[1]), 0.0, 0.0),
+				Vector3(float(step[2]), float(step[3]), 0.030), head_color)
+			part.basis = Basis4D.from_xy(-side * float(step[4]))
+
+
+func _block(part: String, at: Vector4, size: Vector3, colour: Color) -> MeshInstance4D:
+	var node := MeshInstance4D.new()
+	node.name = part
+	var mesh := BoxTetraMesh4D.new()
+	# A real extent through W, or the tool vanishes the moment the slice moves.
+	mesh.size = Vector4(size.x, size.y, size.z, 0.30)
+	node.mesh = mesh
+	var material := TetraMaterial4D.new()
+	material.albedo_color = colour
+	node.material_override = material
+	_prop.add_child(node)
+	node.position = at
+	return node
+
+
+func _process(delta: float) -> void:
+	_hang_it()
+	var in_hand: bool = _inventory != null \
+		and String(_inventory.call("selected_effect")) == tool_effect
+	if _prop != null and is_instance_valid(_prop):
+		_prop.visible = in_hand
+	if _swinging < 0.0:
+		return
+	_swinging += delta
+	var t: float = clampf(_swinging / maxf(swing_seconds, 0.01), 0.0, 1.0)
+	_pose(t)
+	if t >= 1.0:
+		_swinging = -1.0
+
+
+## The arc, as one angle at the shoulder. Up and back for the first third, then over and
+## down - which is the whole of a pickaxe swing and needs no more joints than that.
+##
+## THE SIGNS ARE MEASURED, NOT REASONED. Basis4D.from_yz(0) hangs the arm straight down
+## and from_yz(PI) puts it straight up, so anything between PI/2 and PI is up-and-BACK and
+## anything negative is forward-and-down. That was settled by sweeping the angle and
+## watching where the head of the pickaxe ended up, the same way the gauntlet's raised arm
+## was, because neither sign is obvious from the name of the function.
+func _pose(t: float) -> void:
+	if _avatar == null:
+		return
+	var shoulder: Node4D = _avatar.get("shoulder_right") as Node4D
+	var elbow: Node4D = _avatar.get("elbow_right") as Node4D
+	if shoulder == null:
+		return
+	var lift: float = 2.4
+	var strike: float = -0.9
+	var angle: float = 0.0
+	if t < 0.35:
+		# Wind up quickly, then hold for an instant at the top.
+		angle = lerpf(0.0, lift, ease(t / 0.35, 0.4))
+	else:
+		# And down, fast at first so the contact reads as a hit rather than a wave.
+		angle = lerpf(lift, strike, ease((t - 0.35) / 0.65, 2.6))
+	shoulder.basis = Basis4D.from_yz(angle)
+	if elbow != null:
+		elbow.basis = Basis4D.from_yz(lerpf(-0.6, 0.0, clampf(t * 1.6, 0.0, 1.0)))
+
+
 func _input(event: InputEvent) -> void:
 	if not event.is_action_pressed(&"fire"):
 		return
 	if not _armed():
 		return
+	# The arm moves on every press. Only a press that actually reaches rock swallows the
+	# button, but a swing at thin air is still a swing and has to look like one.
+	_swinging = 0.0
 	if _swing():
 		get_viewport().set_input_as_handled()
 

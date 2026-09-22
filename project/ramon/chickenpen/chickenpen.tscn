@@ -403,6 +403,7 @@ player_path = NodePath("../../Player")
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 inventory_path = NodePath("../../UI/Inventory")
 catcher_path = NodePath("../../Player/Catcher")
+avatar_path = NodePath("../../Player/Avatar")
 
 [node name="Game" type="Node" parent="Systems"]
 script = ExtResource("pen_game")
@@ -517,7 +518,9 @@ script = ExtResource("pen_trym")
 player_path = NodePath("../../Player")
 
 [node name="MiningRock" parent="World" instance=ExtResource("voxel_rock")]
-position = Vector4(7.5, 0, 2.5, 0)
+position = Vector4(8.5, 0, 3.0, 0)
+cell_size = 0.8
+mining_radius_meters = 0.96
 
 [node name="Scenery" type="Node4D" parent="World"]
 

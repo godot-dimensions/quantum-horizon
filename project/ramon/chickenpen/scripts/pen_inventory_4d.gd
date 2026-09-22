@@ -209,20 +209,29 @@ func _draw_icon(kind: String, box: Rect2, colour: Color) -> void:
 	var dim := Color(colour.r, colour.g, colour.b, 0.55)
 
 	if kind == "pickaxe":
-		# A haft on the diagonal and a head across the top of it. Drawn rather than
-		# imported for the same reason the rest are: at 54 pixels an imported sprite is
-		# mostly a guess about which of its details survive.
-		var butt: Vector2 = mid + Vector2(-unit * 0.20, unit * 0.30)
-		var neck: Vector2 = mid + Vector2(unit * 0.16, -unit * 0.24)
-		draw_line(butt, neck, Color(0.62, 0.45, 0.28, 0.95), maxf(unit * 0.09, 2.0))
-		# The head, as a shallow arc with a point at each end - a straight bar reads as a
-		# hammer and a full curve as a sickle.
+		# A SILHOUETTE, not a line drawing. Upright haft, a collar, and a head that sweeps
+		# out to a point either side and droops as it goes - which is the one shape that
+		# separates a pickaxe from a hammer at fifty pixels.
+		var half: float = unit * 0.34
+		var haft := Rect2(mid + Vector2(-unit * 0.045, -unit * 0.14),
+			Vector2(unit * 0.09, unit * 0.46))
+		draw_rect(haft, Color(0.58, 0.40, 0.24, 0.95), true)
+		draw_rect(Rect2(mid + Vector2(-unit * 0.075, -unit * 0.21),
+			Vector2(unit * 0.15, unit * 0.11)), colour, true)
+		draw_rect(Rect2(mid + Vector2(-unit * 0.05, -unit * 0.27),
+			Vector2(unit * 0.10, unit * 0.06)), Color(0.58, 0.40, 0.24, 0.95), true)
+		# Top edge out from the middle, then back along the underside - the two meet at
+		# each tip, which is what makes the point rather than a blunt end.
 		var head := PackedVector2Array()
-		for i in 9:
-			var a: float = lerpf(-2.5, -0.64, float(i) / 8.0)
-			head.append(neck + Vector2(cos(a), sin(a)) * unit * 0.30)
-		draw_polyline(head, colour, maxf(unit * 0.08, 2.0), true)
-		draw_circle(neck, unit * 0.055, dim)
+		for i in 13:
+			var x: float = lerpf(-half, half, float(i) / 12.0)
+			var k: float = (x / half) * (x / half)
+			head.append(mid + Vector2(x, -unit * 0.30 + unit * 0.17 * k))
+		for i in 13:
+			var x: float = lerpf(half, -half, float(i) / 12.0)
+			var k: float = (x / half) * (x / half)
+			head.append(mid + Vector2(x, -unit * 0.19 + unit * 0.11 * k))
+		draw_colored_polygon(head, colour)
 		return
 
 	if kind == "coin":
