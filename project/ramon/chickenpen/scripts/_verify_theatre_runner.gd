@@ -7,6 +7,7 @@ var _f := 0
 var _fails: Array = []
 var _show: Node
 var _seen: Array = []
+var _lit_on_approach: float = 0.0
 
 
 func _initialize() -> void:
@@ -68,6 +69,10 @@ func _process(_d) -> bool:
 		_show.set("opening_seconds", 1.0)
 		_show.set("act_seconds", 0.5)
 		_show.set("closing_seconds", 0.3)
+		# He holds his mark until somebody sits down, and nobody sits down in this test -
+		# the chair has a runner of its own. Zero is what he waits for a player who never
+		# finds it, which is the case this one is standing in for.
+		_show.set("waits_for_seat", 0.0)
 		print("\n--- the run ---")
 		return false
 
@@ -75,12 +80,29 @@ func _process(_d) -> bool:
 	if _seen.is_empty() or _seen[-1] != act:
 		_seen.append(act)
 
+	# Walk up to the way out part way through, to see whether it notices you rather
+	# than waiting for the talk to finish.
+	if _f == 600:
+		var door: Node4D = _root.get_node("ExitArch") as Node4D
+		(_root.get_node("Player") as Node4D).global_position = door.global_position
+	if _f == 640:
+		_lit_on_approach = float(_root.get_node("ExitArch").get("_lit"))
+		(_root.get_node("Player") as Node4D).global_position = Vector4(0, 2.0, 0, 0)
 	if _f < 900: return false
 	print("   acts in order: %s" % [_seen])
 	_check("it ran all three and closed", _seen.has(0) and _seen.has(1) and _seen.has(2)
 		and _seen.has(3), "%s" % [_seen])
 	_check("and it is still there at the end", bool(_root.get_node("ExitArch").get("armed"))
 		and _root.get_node("ExitArch").visible, "you can walk out of it")
+	_check("it lights up when you walk to it, mid-talk", _lit_on_approach > 0.5,
+		"lit %.2f on approach, without waiting for the end" % _lit_on_approach)
+	_check("and it has a sound of its own",
+		_root.get_node_or_null("ExitArch/Chime") != null,
+		"the farm's sfx system is switched off while you are in here")
+	_check("and the talk turns it up when it finishes",
+		float(_root.get_node("ExitArch").get("highlight")) > 0.9,
+		"highlight %.2f - usable all along, announced at the end"
+			% float(_root.get_node("ExitArch").get("highlight")))
 	var voxels: Node = _root.get_node_or_null("Stage/Turntable/ActThree/Rock/Voxels")
 	_check("and somebody had been at the rock with a pick", bool(_show.get("_carved"))
 		and voxels != null and voxels.get_child_count() > 0,

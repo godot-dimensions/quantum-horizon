@@ -36,6 +36,7 @@ const CREATURE := preload("res://ramon/chickenpen/theatre/theatre_creature_4d.gd
 @export var show_path: NodePath
 @export var presenter_path: NodePath
 @export var metrics_path: NodePath
+@export var camera_path: NodePath
 
 @export_group("Pacing")
 @export_range(4.0, 60.0, 0.5) var moment_seconds: float = 17.0
@@ -46,6 +47,12 @@ const CREATURE := preload("res://ramon/chickenpen/theatre/theatre_creature_4d.gd
 ## walking creature is teal rather than lime ON PURPOSE: it carries a real engine
 ## measurement, but it is not one of the three thresholds moment IV says are unmeasured,
 ## and colouring it as though it were would fill that empty column by implication.
+##
+## `shot` is how the camera frames the moment once you are sitting down, and every one of
+## them is named in theatre_camera_4d.SHOTS. Four of the seven hold still. The two that
+## move, move because the move IS the sentence: the camera drifts toward the plinth with
+## nothing on it, and tracks away from the stop conditions that are not on your slice and
+## finds empty floor where they would be.
 ##
 ## Two optional keys, both used by the walking creature and by nothing else yet. `pace`
 ## multiplies the shared moment length for a slide that needs longer than the rest - a
@@ -60,6 +67,7 @@ const MOMENTS := [
 		"tier": "MIXED - EACH COLUMN CARRIES ITS OWN TIER",
 		"tint": Color(0.55, 0.72, 0.26),
 		"piece": 0,
+		"shot": "low",
 		"metrics": [
 			{"at": Vector4(-2.6, 3.4, 0.0, 0.0), "value": "0 / 3", "side": -1.0,
 				"label": "engine thresholds measured", "colour": Color(0.80, 0.95, 0.42)},
@@ -74,6 +82,7 @@ const MOMENTS := [
 		"tier": "OBSERVED - N=7, ROUND 1, MAY-JUNE 2026",
 		"tint": Color(0.78, 0.35, 0.51),
 		"piece": 1,
+		"shot": "wide",
 		"metrics": [
 			{"at": Vector4(-2.3, 1.7, -1.1, 0.0), "value": "7 / 7", "side": -1.0,
 				"label": "developed 4D intuition", "colour": Color(1.0, 0.55, 0.74)},
@@ -88,6 +97,7 @@ const MOMENTS := [
 		"tier": "MEASURED - THIS BUILD, THIS SCENE",
 		"tint": Color(0.52, 0.42, 0.85),
 		"piece": 2,
+		"shot": "close",
 		"metrics": [
 			{"at": Vector4(-2.7, 2.5, 0.0, 0.0), "value": "{balls}", "side": -1.0,
 				"label": "handles placed by a designer", "colour": Color(0.72, 0.62, 1.0)},
@@ -103,6 +113,7 @@ const MOMENTS := [
 		"tier": "DEMONSTRATED - BUILT AND RESHAPED IN FRONT OF YOU",
 		"tint": Color(0.42, 0.56, 0.92),
 		"piece": 2,
+		"shot": "push",
 		"metrics": [
 			{"at": Vector4(-2.7, 2.5, 0.0, 0.0), "value": "{balls}", "side": -1.0,
 				"label": "handles, placed by hand or by machine",
@@ -116,6 +127,7 @@ const MOMENTS := [
 		"tier": "MEASURED - ONE MACHINE, VSYNC OFF, 350 FRAMES AVERAGED, 19 SEP 2026",
 		"tint": Color(0.10, 0.34, 0.40),
 		"piece": 5,
+		"shot": "profile",
 		"pace": 1.55,
 		"metrics": [
 			{"at": Vector4(-4.6, 4.1, 0.0, 0.0), "value": "{creature_tetra}", "side": -1.0,
@@ -148,6 +160,7 @@ const MOMENTS := [
 		"tier": "PROPOSED - DELIVERABLE 2 SEVEN IS THE RECORD",
 		"tint": Color(0.62, 0.30, 0.24),
 		"piece": 3,
+		"shot": "drift",
 		"metrics": [
 			{"at": Vector4(0.0, 2.2, -1.2, 0.0), "value": "3 of 7", "side": 1.0,
 				"label": "readable this October", "colour": Color(1.0, 0.52, 0.38)},
@@ -160,6 +173,7 @@ const MOMENTS := [
 		"tier": "STATUS - NOTION WORK LOG, 16 SEPTEMBER 2026",
 		"tint": Color(0.80, 0.62, 0.22),
 		"piece": 4,
+		"shot": "wide",
 		"metrics": [
 			{"at": Vector4(0.0, 2.6, 0.0, 0.0), "value": "{days}", "side": 1.0,
 				"label": "days until the gate", "colour": Color(1.0, 0.85, 0.42)},
@@ -181,6 +195,7 @@ var _phase: float = 0.0
 var _pieces: Array[Node4D] = []
 var _goat: Node4D
 var _creature: Node4D
+var _camera: Node
 var _told: int = 0
 var _figures: Array[Node4D] = []
 var _stones: Array[Node4D] = []
@@ -196,6 +211,7 @@ func _ready() -> void:
 	_show = get_node_or_null(show_path)
 	_presenter = get_node_or_null(presenter_path) as Node4D
 	_metrics = get_node_or_null(metrics_path)
+	_camera = get_node_or_null(camera_path)
 	if _stage == null:
 		push_warning("TheatrePartTwo: no stage, so there is nowhere to put any of this.")
 		return
@@ -304,6 +320,10 @@ func _enter(which: int) -> void:
 	_phase = 0.0
 	_told = 0
 	_show_piece(which)
+	if _camera != null and _camera.has_method("shoot"):
+		_camera.call("shoot",
+			String(MOMENTS[which].get("shot", "house")) if which < MOMENTS.size() else "house",
+			_length(which) if which < MOMENTS.size() else closing_seconds)
 	# Square again, or the next slide inherits a rotation it never asked for.
 	if _pieces.size() > 2:
 		_pieces[2].basis = Basis4D.from_zx(0.0)

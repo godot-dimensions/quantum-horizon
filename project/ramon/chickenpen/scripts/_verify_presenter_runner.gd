@@ -13,6 +13,9 @@ var _show: Node
 var _p: Node4D
 var _wings := Vector4.ZERO
 var _on_at := Vector4.ZERO
+## Where he stands on the very first frame the room exists, which is the only frame his
+## head start is observable on.
+var _entered_at := Vector4.ZERO
 var _claim_at := Vector4.ZERO
 var _reach := 0.0
 var _rest := 0.0
@@ -43,6 +46,12 @@ func _arm() -> float:
 
 func _process(_d) -> bool:
 	_f += 1
+	# READ ON FRAME ONE. He goes through the door ahead of the player, so his head start
+	# only exists on the frame the room appears; forty frames later he has walked and
+	# there is nothing left to observe.
+	if _f == 1:
+		_entered_at = (_root.get_node("Presenter") as Node4D).position
+		return false
 	if _f < 40:
 		return false
 	if _show == null:
@@ -51,6 +60,8 @@ func _process(_d) -> bool:
 		_wings = _show.get("wings")
 		_show.set("opening_seconds", 9.0)
 		_show.set("act_seconds", 6.0)
+		# Nobody sits down in this test; the chair has a runner of its own.
+		_show.set("waits_for_seat", 0.0)
 		return false
 
 	var act: int = int(_show.call("current_act"))
@@ -60,7 +71,14 @@ func _process(_d) -> bool:
 			if _p.position.distance_to(_wings) > 0.3:
 				_on_at = _p.position
 				print("\n--- he comes down the house ---")
-				_check("he starts up at the door", _on_at.z > 11.0,
+				# He is already walking when the room appears - see presenter_head_start
+				# in theatre_show_4d - so the question is no longer "did he start at the
+				# door" but "did he start on the walkway, having already left it".
+				_check("he is already on his way in",
+					_entered_at.z > _wings.z - 6.5 and _entered_at.z < _wings.z - 1.0,
+					"the room opens with him at z %.1f, the door at z %.1f"
+						% [_entered_at.z, _wings.z])
+				_check("and still well up the house", _on_at.z > 9.5,
 					"set off from z %.1f, %.2f up" % [_on_at.z, _on_at.y])
 				_high = _on_at.y
 				_stage = 1

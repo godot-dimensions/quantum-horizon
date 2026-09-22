@@ -56,6 +56,18 @@ extends Node4D
 @export_range(0, 60, 1) var seats_per_tier: int = 22
 @export var seat_color: Color = Color(0.16, 0.13, 0.20)
 
+## YOUR SEAT. One chair in a house of ninety is built properly and the rest are 0.46 metre
+## blocks, because ninety proper chairs is ninety times the tetrahedra to say the same
+## thing at a distance nobody reads them from. This is the one you actually sit in, so it
+## is sized to the avatar rather than to the silhouette: a pan you fit on, arms at the
+## height your elbows are, and a back that reaches your shoulders.
+##
+## It stands in the row rather than beside it - same radius and same lift as the tier it
+## belongs to - and the generic seats that would have stood where it does are left out.
+@export_range(0, 7, 1) var your_seat_tier: int = 1
+@export_range(-60.0, 60.0, 1.0, "suffix:°") var your_seat_bearing: float = -15.0
+@export var your_seat_color: Color = Color(0.24, 0.17, 0.30)
+
 @export_group("The aisle")
 ## A RAKED BOX AND THEN A FLAT ONE, straight up the middle of the seating arc from the
 ## edge of the stage to the way out, and the seats get out of their way. There is no ramp
@@ -276,6 +288,9 @@ func rebuild() -> void:
 			# so the row ends clear of the edge rather than overhanging it.
 			if aisle_gap(at) < aisle_width * 0.5 + 0.35:
 				continue
+			# And not on top of the one chair that is a chair.
+			if (at - your_seat_spot()).length() < 0.95:
+				continue
 			var seat := _slab(house, "Seat%d_%d" % [tier, i], at,
 				Vector3(0.46, 0.34, 0.42), seat_color)
 			seat.basis = Basis4D.from_zx(a)
@@ -284,6 +299,7 @@ func rebuild() -> void:
 				Vector3(0.46, 0.44, 0.12), seat_color.lerp(rim_color, 0.12))
 			back.basis = Basis4D.from_zx(a)
 
+	_your_seat(house)
 	_aisle(body)
 
 	# THE PODIUM, off to one side so the presenter never stands in front of the exhibit.
@@ -318,6 +334,69 @@ func rebuild() -> void:
 		var mote := _slab(sky, "Mote%d" % i, at, Vector3(size, size, size),
 			mote_color.lerp(rim_color, rng.randf()))
 		mote.basis = Basis4D.from_zx(rng.randf_range(0.0, TAU))
+
+
+## Where the chair stands, in the stage's own frame. Public, because the seat script needs
+## it before the chair exists and the row-building loop needs it while it runs.
+func your_seat_spot() -> Vector4:
+	var r: float = drum_radius + 3.4 + float(your_seat_tier) * 1.5
+	var lift: float = 0.25 + float(your_seat_tier) * 0.55
+	var a: float = deg_to_rad(your_seat_bearing)
+	return Vector4(sin(a) * r, lift, cos(a) * r, 0.0)
+
+
+## THE CHAIR. Built to the block avatar rather than to a silhouette, because this is the
+## one piece of furniture in the room that gets looked at from half a metre away.
+##
+## The numbers come off the avatar: it sits with its hips about 0.17 over the pan and its
+## thigh folded forward, so the pan is 0.62 deep and 0.70 wide - wide enough that the legs
+## are not clipping the arms - the arms are 0.26 over the pan where an elbow actually is,
+## and the back reaches 0.92, which is shoulder height on a seated chibi rather than the
+## 0.44 stub the row seats have.
+##
+## A STRIP OF THE ROOM'S OWN LIGHT ALONG THE FRONT EDGE. Every lit thing in here is lit in
+## the same cyan - the ring in the drum, the beams, the rim of the floor - so a chair that
+## carries a little of it belongs to the room instead of being furniture that arrived from
+## somewhere else. It is also the thing the sit prompt brightens.
+func _your_seat(house: Node4D) -> void:
+	var at: Vector4 = your_seat_spot()
+	var a: float = deg_to_rad(your_seat_bearing)
+	var chair := Node4D.new()
+	chair.name = "YourSeat"
+	house.add_child(chair)
+	chair.position = at
+	chair.basis = Basis4D.from_zx(a)
+	_own(chair)
+
+	var dark: Color = your_seat_color.lerp(Color.BLACK, 0.45)
+	# The pedestal, narrower than the seat so the chair reads as standing on something.
+	_slab(chair, "Foot", Vector4(0.0, -0.10, 0.0, 0.0),
+		Vector3(0.34, 0.20, 0.34), dark)
+	# The pan.
+	_slab(chair, "Pan", Vector4(0.0, 0.07, 0.0, 0.0),
+		Vector3(0.70, 0.16, 0.62), your_seat_color)
+	# Its front edge, carrying the room's light.
+	_slab(chair, "Edge", Vector4(0.0, 0.09, -0.30, 0.0),
+		Vector3(0.70, 0.06, 0.05), rim_color)
+	# The back, leaned away from the stage so it is a seat rather than a bench, and a
+	# headrest across the top of it in the lighter tone.
+	# THE BACK IS 0.62, NOT THE 0.92 IT STARTED AT. The first one was a proper cinema
+	# seat's back and it swallowed the player: this avatar's head top lands 1.09 over the
+	# chair's origin, the old headrest reached 1.11, and from behind - which is where the
+	# camera is for the whole sit - there was a purple slab with a fringe of hair over it.
+	# Measured off the avatar rather than judged: hip 0.700 above the feet, knee 0.527,
+	# ankle 0.220, whole figure 1.402 tall.
+	var back := _slab(chair, "Back", Vector4(0.0, 0.43, 0.31, 0.0),
+		Vector3(0.70, 0.62, 0.14), your_seat_color)
+	back.basis = Basis4D.from_yz(-0.12)
+	_slab(chair, "Head", Vector4(0.0, 0.78, 0.34, 0.0),
+		Vector3(0.66, 0.14, 0.17), your_seat_color.lerp(rim_color, 0.16))
+	# Arms, and a lighter cap on each so the top edge catches.
+	for side in [-1.0, 1.0]:
+		_slab(chair, "Arm%d" % int(side), Vector4(side * 0.39, 0.25, 0.05, 0.0),
+			Vector3(0.10, 0.36, 0.56), dark)
+		_slab(chair, "Cap%d" % int(side), Vector4(side * 0.39, 0.44, 0.05, 0.0),
+			Vector3(0.13, 0.05, 0.58), your_seat_color.lerp(rim_color, 0.24))
 
 
 ## The walkway: a raked box, a flat one on the end of it, and the staircase of little

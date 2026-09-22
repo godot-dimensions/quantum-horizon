@@ -23,6 +23,9 @@ const ROCK := preload("res://ramon/VoxelMining/voxel_mining_block.tscn")
 @export var stage_path: NodePath
 @export var caption_path: NodePath
 @export var presenter_path: NodePath
+## The shot camera, and the chair that hands it the job.
+@export var camera_path: NodePath
+@export var seat_path: NodePath
 
 @export_group("Pacing")
 ## Long enough for him to walk the house and for you to follow him down it.
@@ -50,6 +53,21 @@ const ROCK := preload("res://ramon/VoxelMining/voxel_mining_block.tscn")
 ## Brisk. He has the length of the house to cover before the first act, and a man
 ## strolling it at a metre a second is a man the audience overtakes.
 @export_range(0.3, 4.0, 0.05) var presenter_speed: float = 1.95
+## HE WENT THROUGH THE DOOR AHEAD OF YOU, so you should arrive to find him already on his
+## way down rather than standing in the dark waiting to be watched. This is how far along
+## his walk he is the moment the room appears - 0 is still in the wings, 1 is at the foot
+## of the rake. A man who waits offstage until his audience is seated did not go first.
+@export_range(0.0, 0.95, 0.01) var presenter_head_start: float = 0.34
+
+@export_group("Waiting for you")
+## He holds at his mark until you sit down. This is the cap on that, so a player who never
+## finds the chair is not left in a room where nothing ever happens - he starts anyway and
+## you watch it standing up, camera untouched.
+@export_range(0.0, 120.0, 1.0, "suffix:s") var waits_for_seat: float = 40.0
+## And a beat after you land in the chair before he starts, so the camera has somewhere
+## to go between the sitting and the first finding - it turns off the chair and finds
+## him standing there waiting, which is what a presenter does while an audience settles.
+@export_range(0.0, 15.0, 0.5, "suffix:s") var after_sit_seconds: float = 3.5
 
 ## Each act: the title, the finding in one line, the measured figure, and the colour the
 ## room turns while it is running.
@@ -106,6 +124,10 @@ var _stride: float = 0.0
 var _walking: bool = false
 var _face: float = 0.0
 var _got_down: bool = false
+var _camera: Node
+var _seat: Node
+var _waited: float = 0.0
+var _greeted: bool = false
 
 
 func _ready() -> void:
@@ -115,13 +137,22 @@ func _ready() -> void:
 	_audience = get_node_or_null(audience_path) as Node4D
 	_exit = get_node_or_null(exit_path)
 	_part_two = get_node_or_null(part_two_path)
-	if _presenter != null:
-		# Off in the wings, so the room is empty when you arrive and he walks into it.
-		_presenter.position = wings
-		_face = 0.0
+	_camera = get_node_or_null(camera_path)
+	_seat = get_node_or_null(seat_path)
 	if _stage == null:
 		push_warning("TheatreShow: no stage, so there is nowhere to put any of this.")
 		return
+	if _presenter != null:
+		# Already walking. The room is instanced the instant you step through the door, so
+		# his _ready and your arrival are the same moment - and placing him at the wings
+		# there means you and he come through it together, which is not what happened.
+		var foot: Vector4 = _stage.get("aisle_from")
+		_presenter.position = wings.lerp(
+			Vector4(foot.x, 0.0, foot.z, 0.0), presenter_head_start)
+		_face = atan2(foot.x - _presenter.position.x, foot.z - _presenter.position.z)
+		# Past the beat in the doorway, or he would stop dead for a second and then set
+		# off, half way down a walkway he is supposed to have been walking along.
+		_phase = 1.5
 	_table = _stage.get_node_or_null("Turntable") as Node4D
 	for panel in (_stage.get_node_or_null("Backdrop").get_children()
 			if _stage.get_node_or_null("Backdrop") != null else []):
@@ -271,6 +302,15 @@ func _process(delta: float) -> void:
 		_table.basis = Basis4D.from_zx(_clock * 0.22)
 	_pulse()
 	_perform(delta)
+	# THE MOMENT YOU LAND IN THE CHAIR. The camera has been watching you sit down; it now
+	# turns off the chair and finds him, and he gives it a beat before he begins. Without
+	# this the first finding started on the same frame you touched the seat, because the
+	# opening clock has been running since you walked in and had long since expired.
+	if not _greeted and _act < 0 and _seat != null and _seat.has_method("is_settled") \
+			and bool(_seat.call("is_settled")):
+		_greeted = true
+		_phase = maxf(0.0, opening_seconds - after_sit_seconds)
+		_frame(-1)
 	# The carve is taken during the ARRIVAL, not when act three starts. Every blow
 	# re-contours the whole field - about a sixth of a second each - and four of them is
 	# most of a second of frozen frames. Spent while the room is still assembling and
@@ -279,7 +319,7 @@ func _process(delta: float) -> void:
 	if not _carved and _phase > 0.35:
 		_carve_once()
 
-	if _act < 0 and _phase >= opening_seconds:
+	if _act < 0 and _phase >= opening_seconds and _ready_for_you(delta):
 		_enter(0)
 	elif _act >= 0 and _act < ACTS.size() and _phase >= act_seconds:
 		_enter(_act + 1)
@@ -295,6 +335,50 @@ func _process(delta: float) -> void:
 
 	if _act >= 0 and _act < ACTS.size():
 		_demonstrate(_act, _phase)
+
+
+## HE WAITS FOR YOU TO SIT. The whole opening is him crossing the room and you following
+## him down it, and starting the first finding at somebody still on the stairs is starting
+## it at nobody. Once he is on his mark he simply stands there, looking at the house,
+## until you are in the chair.
+##
+## CAPPED, though. A player who never finds the chair - or does not want it - is not left
+## in a room where nothing ever happens: he gives up waiting and presents to a man
+## standing in an aisle, which is a thing that happens at real presentations.
+func _ready_for_you(delta: float) -> bool:
+	if _seat == null or not _seat.has_method("is_seated"):
+		return true
+	if bool(_seat.call("is_seated")):
+		return true
+	_waited += delta
+	return _waited >= waits_for_seat
+
+
+## What the camera is doing, act by act. Most of them hold: see theatre_camera_4d's header
+## for why there are no orbits in here.
+func _frame(act: int) -> void:
+	if _camera == null or not _camera.has_method("shoot"):
+		return
+	var shot: String = "house"
+	var over: float = act_seconds
+	if act < 0:
+		shot = "presenter"
+		over = opening_seconds
+	elif act == 0:
+		# The exhibit is an ABSENCE. The camera goes toward it anyway, which is the joke.
+		shot = "push"
+	elif act == 1:
+		# A box round a thing that is not a box: a comparison, and comparisons are read
+		# from one place. Held.
+		shot = "house"
+	elif act == 2:
+		# The rock turning through W. Held close, because it is already turning and a
+		# camera turning with it would cancel the turn out.
+		shot = "close"
+	else:
+		shot = "presenter"
+		over = closing_seconds
+	_camera.call("shoot", shot, over)
 
 
 ## Part two drives him too, because he is still the one talking. -1 hands him back to the
@@ -484,6 +568,7 @@ func _enter(act: int) -> void:
 	_act = act
 	_phase = 0.0
 	_show(act)
+	_frame(act)
 	if act < ACTS.size():
 		var a: Dictionary = ACTS[act]
 		_say(String(a["title"]), String(a["body"]), String(a["figure"]))

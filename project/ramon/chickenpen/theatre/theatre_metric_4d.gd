@@ -19,6 +19,12 @@ extends Control
 ## would be the exact mistake the first finding is about.
 
 @export var camera_path: NodePath
+## AND THE RIG THAT TAKES THE CAMERA WHEN YOU SIT DOWN. A figure is anchored to a point in
+## the world and drawn in screen space, so it has to be projected through the camera that
+## is actually rendering. Pointed at the player's camera alone, every number slid off its
+## subject the moment the shot camera became current: the subject moved on screen and its
+## label stayed where the seated view would have put it.
+@export var shot_rig_path: NodePath
 @export_file("*.ttf") var font_file: String = "res://ramon/Demo/fonts/Montserrat/static/Montserrat-SemiBold.ttf"
 @export_range(0.05, 2.0, 0.05) var fade_seconds: float = 0.5
 ## How far through W the subject can be before its figure goes with it.
@@ -32,6 +38,7 @@ extends Control
 @export var rule_color: Color = Color(0.45, 0.72, 0.95, 0.65)
 
 var _camera: Camera4D
+var _shot_rig: Node
 var _font: Font
 var _metrics: Array = []
 var _fade: float = 0.0
@@ -41,6 +48,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_camera = get_node_or_null(camera_path) as Camera4D
+	_shot_rig = get_node_or_null(shot_rig_path)
 	if font_file != "" and ResourceLoader.exists(font_file):
 		_font = load(font_file)
 	if _font == null:
@@ -71,20 +79,33 @@ func _process(delta: float) -> void:
 	_fade = move_toward(_fade, want, delta / maxf(fade_seconds, 0.01))
 	if _camera == null:
 		_camera = get_node_or_null(camera_path) as Camera4D
+	if _shot_rig == null:
+		_shot_rig = get_node_or_null(shot_rig_path)
 	queue_redraw()
 
 
+## Whichever camera is rendering this frame - the player's while they are on their feet,
+## the shot camera once they have sat down and it has taken over.
+func _live() -> Camera4D:
+	if _shot_rig != null and _shot_rig.has_method("live_camera"):
+		var shot: Camera4D = _shot_rig.call("live_camera") as Camera4D
+		if shot != null and shot.is_current():
+			return shot
+	return _camera
+
+
 func _draw() -> void:
-	if _fade <= 0.01 or _camera == null or _metrics.is_empty():
+	var eye: Camera4D = _live()
+	if _fade <= 0.01 or eye == null or _metrics.is_empty():
 		return
 	var screen: Vector2 = get_viewport_rect().size
 	for metric in _metrics:
 		var at: Vector4 = metric.get("at", Vector4.ZERO)
-		var gap: Vector4 = at - _camera.global_position
+		var gap: Vector4 = at - eye.global_position
 		# Behind the camera projects to nonsense, and off the slice is not there at all.
-		if (-_camera.global_basis.z).dot(gap) <= 0.05 or absf(gap.w) > w_range:
+		if (-eye.global_basis.z).dot(gap) <= 0.05 or absf(gap.w) > w_range:
 			continue
-		var point: Vector2 = _camera.world_to_viewport(at)
+		var point: Vector2 = eye.world_to_viewport(at)
 		if point.x < -200.0 or point.x > screen.x + 200.0:
 			continue
 		var side: float = float(metric.get("side", 1.0))

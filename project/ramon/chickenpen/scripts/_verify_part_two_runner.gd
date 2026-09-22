@@ -50,6 +50,10 @@ func _process(_d) -> bool:
 		show.set("closing_seconds", 0.3)
 		_two.set("moment_seconds", 0.5)
 		_two.set("closing_seconds", 0.3)
+		# He waits for the audience to sit down before he starts, and nobody sits down in
+		# this test - the chair has a runner of its own. Waiting zero seconds is what he
+		# does for a player who never finds it.
+		show.set("waits_for_seat", 0.0)
 		return false
 
 	var prompt: Node = _root.get_node("UI/Prompt")
