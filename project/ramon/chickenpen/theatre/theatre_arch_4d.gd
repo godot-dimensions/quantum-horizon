@@ -69,6 +69,18 @@ signal entered
 ## because a door that only acknowledges you when a script says so is a door you have to
 ## be told about. Zero turns this off.
 @export_range(0.0, 12.0, 0.5) var wakes_within: float = 4.5
+## ITS OWN LAMP, because there is no such thing as an emissive material here. Material4D
+## has one shading mode in its enum and nothing binds it, and the 4D renderer lights these
+## surfaces from the scene's lights like any other - so a bright albedo on a door standing
+## eleven metres behind every lamp in the room renders black, which is exactly what it did.
+## Turning the colour up did nothing and could not have.
+##
+## So the door carries a light. That is also the better answer than an emissive shader
+## would have been: it spills onto the landing and the back rows, so the way out is
+## somewhere the light is coming from rather than a bright rectangle stuck on the dark.
+@export var glow_color: Color = Color(0.36, 0.72, 1.0)
+@export_range(0.0, 8.0, 0.1) var glow_energy: float = 1.45
+@export_range(1.0, 30.0, 0.5, "suffix:m") var glow_range: float = 9.0
 ## Its own sound, because the farm's sfx system lives in the farm and is switched off
 ## while you are in here. A file if one is given, and a generated chime if not - so this
 ## works out of the box and can still be replaced with a real recording later.
@@ -84,6 +96,7 @@ var _shutting: bool = false
 var _lit: float = 0.0
 var _near: bool = false
 var _chime: AudioStreamPlayer
+var _lamps: Array[OmniLight4D] = []
 
 
 func _set_armed(v: bool) -> void:
@@ -133,6 +146,24 @@ func rebuild() -> void:
 		Vector3(width * 0.92, height * 0.92, 0.06), field_color)
 	_own(_field)
 
+	# ONE EACH SIDE, AND OFF THE PANEL'S OWN PLANE. A single lamp at the middle of the
+	# doorway sits inside the field, which is six centimetres thick - so the field is
+	# edge-on to its own light and stays black while everything around it lights up. That
+	# is what the first attempt looked like: a glowing frame round a dark hole. Half a
+	# metre out on each face lights the panel from the front whichever way you came at it,
+	# and the two together still spill onto the floor either side.
+	_lamps.clear()
+	for side in [-1.0, 1.0]:
+		var lamp := OmniLight4D.new()
+		lamp.name = "Glow%d" % int(side)
+		lamp.light_color = glow_color
+		lamp.light_energy = 0.0
+		lamp.omni_range_meters = glow_range
+		add_child(lamp)
+		_own(lamp)
+		lamp.position = Vector4(0.0, height * 0.5, side * 0.95, 0.0)
+		_lamps.append(lamp)
+
 	# Rebuilt with everything else, because rebuild() frees every child.
 	_chime = AudioStreamPlayer.new()
 	_chime.name = "Chime"
@@ -174,6 +205,10 @@ func _process(delta: float) -> void:
 	if _near and not was_near and highlight < 0.9 and _chime != null:
 		_chime.play()
 	_lit = move_toward(_lit, want_lit, delta * 1.6)
+	# The lamps follow the same number the field's colour does, so they and the surface
+	# can never disagree about whether the door is lit. Halved, because there are two.
+	for lamp in _lamps:
+		lamp.light_energy = glow_energy * _lit * 0.5
 	var glow: TetraMaterial4D = _field.material_override as TetraMaterial4D
 	if glow != null:
 		# Lit, it breathes faster and further - the same field, turned up, so it reads as
