@@ -111,7 +111,7 @@ const NODES: Dictionary = {
 		"I've been building something in the evenings. It isn't on this farm, and I have completely failed to explain it to anybody standing still. Two minutes. Come outside with me.",
 	],
 	"choices": [
-		{"text": "Go on then.", "goto": "show_you"},
+		{"text": "Sounds fascinating. Lead the way.", "goto": "show_you"},
 		{"text": "Later, maybe.", "goto": "hub", "back": true},
 	],
 },

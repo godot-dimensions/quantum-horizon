@@ -23,7 +23,10 @@ func _process(_d) -> bool:
 	print("chicken node scale: %s" % [mgr.get("chicken_scale")])
 	_extent("chicken", body)
 	_extent("keeper", _root.get_node("World/Keeper"))
-	_extent("sign", _root.get_node("World/Sign"))
+	# The sign was removed from the scene; get_node would error on it.
+	var sign: Node = _root.get_node_or_null("World/Sign")
+	if sign != null:
+		_extent("sign", sign)
 	_extent("one scenery post", _root.get_node("World/Scenery/Post1"))
 	_extent("coop", _root.get_node("Pen/Coop"))
 	var fence: Node = _root.get_node("Pen/Fence")
