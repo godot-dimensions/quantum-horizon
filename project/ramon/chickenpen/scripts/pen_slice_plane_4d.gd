@@ -62,7 +62,7 @@ extends Control
 ## Which bird the locator is talking about, so the words and the picture agree.
 @export var locator_path: NodePath
 ## The people, and the cat. Each is drawn as a blob at its own place and its own w, with
-## its node's name beside it - so "which slice is Nessa on" is a glance rather than a
+## its node's name beside it - so "which slice is Mithra on" is a glance rather than a
 ## walk. Named from the node, so adding somebody to this list is the whole job.
 @export var people_paths: Array[NodePath] = []
 
@@ -168,6 +168,7 @@ var _people_colors: Array[Color] = []
 var _people_are_cats: Array[bool] = []
 ## Where a name has already been written this frame, so the next one can step around it.
 var _tags: Array[Vector3] = []
+var _rig: Node
 
 
 func _ready() -> void:
@@ -506,12 +507,12 @@ func _flock() -> Array:
 ##
 ## THE HARD PART IS THAT THERE IS NO ONE PROPERTY. The chibi avatar paints a tunic from
 ## `skin` and the head, arms and legs from `accent`, and which of the two IS the character
-## depends on the character: Nessa is her red tunic (skin), while the keeper reads as
+## depends on the character: Mithra is her red tunic (skin), while the keeper reads as
 ## purple, and his purple is the accent - his tunic is tan.
 ##
 ## So: skip whatever looks like flesh, and take the rest. A hue between 15 and 45 degrees
 ## at less than 60% saturation is a skin tone, and no character is identified by one.
-## That picks Nessa's red (hue 358) over her accent (hue 27), and the keeper's purple
+## That picks Mithra's red (hue 358) over her accent (hue 27), and the keeper's purple
 ## (hue 290) over his tan (hue 26) - the two cases that pull in opposite directions.
 ## When it guesses wrong, people_overrides settles it without changing any of this.
 func _colour_of(who: Node4D, index: int) -> Color:
@@ -744,7 +745,7 @@ func _oval(centre: Vector2, rx: float, ry: float) -> PackedVector2Array:
 
 ## A name beside a blob, kept on the panel and out of its neighbour's way.
 ##
-## The people are not evenly spread - Nessa, the lofted girl and the cat all live in the
+## The people are not evenly spread - Mithra, the lofted girl and the cat all live in the
 ## same corner of the field - so their names landed on top of each other and the ones near
 ## the edge were clipped to nonsense. Each tag is nudged to the side of its blob that has
 ## more room, and pushed down if the line above is already taken.
@@ -756,7 +757,7 @@ func _name_tag(font: Font, who: String, at: Vector2, colour: Color) -> void:
 	spot.x = clampf(spot.x, 6.0, maxf(6.0, size.x - width - 6.0))
 	# Compared as RECTANGLES, not as centres. Comparing centres let a tag clamped to the
 	# left edge sit under a longer one whose centre was far enough away to pass, which is
-	# how "LoftedGirl" ended up written through "Nessa".
+	# how "LoftedGirl" ended up written through "Mithra".
 	var settled: bool = false
 	var guard: int = 0
 	while not settled and guard < 8:
