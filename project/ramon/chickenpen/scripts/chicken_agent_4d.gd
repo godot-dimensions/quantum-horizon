@@ -86,6 +86,11 @@ enum State { IDLE, WANDER, ALERT, EVADE, CARRIED, THROWN, PENNED, RECOVERING,
 ## How far a startled chicken hops, and how far its wings come up (item 21).
 @export_range(0.0, 2.0, 0.05) var startle_hop: float = 0.55
 @export_range(0.0, 1.5, 0.05) var startle_wing_lift: float = 0.8
+## And how it behaves once the last bird is in and the pen is celebrating. Higher and
+## much faster than a startle, which is the difference between alarm and delight.
+@export_range(0.0, 3.0, 0.05) var party_hop: float = 0.42
+@export_range(0.5, 20.0, 0.1) var party_rate: float = 7.5
+@export_range(0.0, 1.5, 0.05) var party_wing_lift: float = 1.05
 ## And how much it fidgets while being carried (item 30).
 @export_range(0.0, 1.5, 0.05) var carried_flutter: float = 0.5
 
@@ -148,6 +153,9 @@ var _coop: Node4D
 var _hop_from := Vector4.ZERO
 var _hop_to := Vector4.ZERO
 var _hop_t: float = 0.0
+## Set when the twelfth bird lands. It is not a STATE, deliberately - see celebrate().
+var _partying: bool = false
+var _party_phase: float = 0.0
 var _roosting: bool = false
 
 var _rng := RandomNumberGenerator.new()
@@ -212,6 +220,29 @@ func _physics_process(delta: float) -> void:
 			pass
 	_contain()
 
+
+
+## The twelfth chicken is in. Everybody in the pen goes up and down and does not stop.
+##
+## A FLAG, NOT A STATE, and that is the whole design of it. A CELEBRATING state would
+## have to answer every question the state machine answers - is it catchable, does it
+## wander, does it count, what does it go back to - and the honest answer to all of them
+## is "exactly what PENNED says", because the bird is still penned. It is just also
+## delighted. So the flag rides on top and touches nothing but the pose.
+##
+## AND IT NEVER ENDS, which is the ask. There is no timer to expire and nothing that
+## clears it but a restart, so the pen is still going when you walk away and still going
+## when you come back from the theatre.
+func celebrate(on: bool = true) -> void:
+	_partying = on
+	# Out of phase with every other bird, off the id it already has, so twelve chickens
+	# do not hop as one animal. A random offset would do the same until you restarted and
+	# got a different pen; this way the party looks the same every run.
+	_party_phase = float(chicken_id) * 0.7391
+
+
+func is_partying() -> bool:
+	return _partying
 
 func _enter(next: State) -> void:
 	if debug_state and next != state:
@@ -475,6 +506,17 @@ func _animate(delta: float) -> void:
 	_flutter += delta
 	var wing: Node4D = _wing()
 	if wing == null:
+		return
+	if _partying:
+		# Frantic rather than pleased: fast, and the bird leaves the ground on every beat
+		# instead of bobbing. abs() of a sine gives the bounce its bottom - a plain sine
+		# would spend half of each cycle underground, and the ground is where it started.
+		_party_phase += delta * party_rate
+		var up: float = absf(sin(_party_phase))
+		_creature.position.y = home_position.y + party_hop * up
+		# Wings out of step with the legs, because a bird flaps on the way up and again
+		# on the way down, and matching them made it read as one stiff mechanism.
+		wing.basis = Basis4D.from_xy(-party_wing_lift * absf(sin(_party_phase * 1.7)))
 		return
 	match state:
 		State.ALERT:

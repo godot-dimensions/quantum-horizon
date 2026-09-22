@@ -39,6 +39,29 @@ enum Build { PLUSH, HUMAN, CHIBI }
 ## as hanging hair instead of a handle - and so it can be given a slight kick outward at
 ## the end, which is most of what makes it look like hair at all.
 @export var ponytail: bool = false
+## How far the brown waistband reaches down the thigh. At the default it is the thin belt
+## it has always been; raise it and the same block becomes a pair of shorts.
+##
+## It grows DOWNWARD ONLY - the top edge stays where the tunic ends, because that seam is
+## the one the eye reads as the waist and moving it makes the figure look shorter in the
+## body rather than longer in the leg.
+@export_range(0.05, 0.40, 0.01) var shorts_length: float = 0.07
+## Two eyes on the front of the head. Off by default: the whole cast is deliberately
+## faceless, so this is a per-figure decision rather than a house style.
+@export var eyes: bool = false
+@export var eye_colour: Color = Color(0.13, 0.12, 0.15)
+## The four numbers that make one figure's eyes not another's. They DEFAULT TO THE
+## KEEPER'S, which were hard-coded here before anyone else had any, so a figure that sets
+## none of them is built exactly as it was.
+##
+## THIS IS THE WHOLE RANGE OF EXPRESSION on a head with no other features. A block face
+## has no brow, no mouth and no tilt, so set-apart-and-narrow reads as level and watchful
+## while close-and-small reads as peering - and that is the entire vocabulary. Keep the
+## differences small; past about a centimetre they stop reading as a face at all.
+@export_range(0.03, 0.12, 0.001) var eye_spacing: float = 0.072
+@export_range(-0.06, 0.10, 0.001) var eye_height: float = 0.03
+@export_range(0.02, 0.08, 0.001) var eye_width: float = 0.042
+@export_range(0.02, 0.09, 0.001) var eye_tall: float = 0.050
 
 @export var build: Build = Build.PLUSH:
 	set(value):
@@ -159,11 +182,19 @@ func _build_chibi() -> void:
 	# of total height, which is the number that decides whether a figure reads as a child
 	# or a short adult. Tunic to mid-thigh, bare legs below it, chunky boots.
 	torso = _limb(self, "Tunic", Vector4(0.0, 0.84, 0.0, 0.0), Vector3(0.38, 0.46, 0.24), skin)
-	_limb(torso, "Belt", Vector4(0.0, -0.20, 0.0, 0.0), Vector3(0.40, 0.07, 0.26), Color(0.35, 0.22, 0.14))
+	# The waistband, which doubles as shorts when it is long enough to. Its TOP edge is
+	# pinned at the hem of the tunic and only the bottom moves, so lengthening it does not
+	# ride up over the belly.
+	var waist_top: float = -0.20 + 0.07 * 0.5
+	_limb(torso, "Belt", Vector4(0.0, waist_top - shorts_length * 0.5, 0.0, 0.0),
+		Vector3(0.40, shorts_length, 0.26), Color(0.35, 0.22, 0.14))
 	head = _limb(torso, "Head", Vector4(0.0, 0.42, 0.0, 0.0), Vector3(0.30, 0.32, 0.29), accent)
 	if wear_cap:
+		# THE CAP, AND NO TAIL BEHIND IT. There used to be a second block hanging off the
+		# back - a nod to the Ocarina-of-Time reference the proportions come from - and at
+		# this block size it did not read as a cap tail. It read as a square stuck to the
+		# back of the head, which is what it is.
 		_limb(head, "Cap", Vector4(0.0, 0.21, -0.02, 0.0), Vector3(0.33, 0.14, 0.31), skin)
-		_limb(head, "CapTail", Vector4(0.0, 0.16, -0.24, 0.0), Vector3(0.12, 0.10, 0.28), skin)
 	else:
 		# No cap means the crown shows, so it needs hair on top as well as at the back.
 		_limb(head, "Crown", Vector4(0.0, 0.15, 0.0, 0.0), Vector3(0.32, 0.10, 0.31), hair)
@@ -175,6 +206,17 @@ func _build_chibi() -> void:
 		_limb(head, "Tail3", Vector4(0.0, -0.32, -0.31, 0.0), Vector3(0.08, 0.12, 0.08), hair)
 	_limb(head, "EarL", Vector4(0.18, 0.02, -0.02, 0.0), Vector3(0.09, 0.05, 0.05), accent)
 	_limb(head, "EarR", Vector4(-0.18, 0.02, -0.02, 0.0), Vector3(0.09, 0.05, 0.05), accent)
+	if eyes:
+		# +Z is the front: the hair sits at -0.15 and the feet point at +Z, so that is the
+		# way the figure faces. The head is 0.29 deep, so its face is at +0.145 and the
+		# whites stand a hair proud of it rather than z-fighting with it.
+		# JUST THE DARK, no white behind it. A sclera turns a blank block head into a
+		# doll's face; two dark marks on a plain head read as eyes and leave the figure
+		# in the same deadpan register as everything else in the field.
+		for side in [1.0, -1.0]:
+			_limb(head, "Eye" + ("L" if side > 0.0 else "R"),
+				Vector4(eye_spacing * side, eye_height, 0.148, 0.0),
+				Vector3(eye_width, eye_tall, 0.02), eye_colour)
 
 	# TWO SEGMENTS PER LIMB. The knee is its own pivot hanging off the thigh, so bending
 	# it swings the shin without moving the thigh - which is the whole difference between

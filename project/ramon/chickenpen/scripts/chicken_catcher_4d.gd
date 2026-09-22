@@ -197,6 +197,20 @@ func _slice_basis() -> Projection:
 	return frame.global_basis if frame != null else global_basis
 
 
+## Put a chicken in the player's hands without them having reached for it - Mithra hands
+## one over at the end of her errand.
+##
+## A REAL CATCH, not a lookalike. It goes through the same _catch the F key does, so the
+## bird enters CARRIED, the gait raises its arms, the `caught` signal fires and the cluck
+## plays. A second path that merely parented the chicken to the anchor would drift from
+## this one the first time either changed.
+func give(agent: Node) -> bool:
+	if agent == null or carried != null:
+		return false
+	_catch(agent)
+	return true
+
+
 func _catch(agent: Node) -> void:
 	carried = agent
 	_tell_gait(true)

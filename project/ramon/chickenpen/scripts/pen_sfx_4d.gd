@@ -166,6 +166,21 @@ const SFX := &"SFX"
 @export_range(0.0, 60.0, 0.5) var music_trim_head: float = 0.0
 @export_range(0.0, 60.0, 0.5) var music_trim_tail: float = 14.0
 
+@export_group("The pen is full")
+## The twelfth chicken lands. Two sounds at once, deliberately: a crowd and a chord.
+##
+## THE CHEER IS THE REACTION AND THE STRUM IS THE PUNCTUATION, and they do different
+## jobs. A crowd on its own is a long unshaped noise that could mean anything; a chord on
+## its own is a UI ding. Together the chord lands on the moment and the crowd carries it
+## afterwards, which is the shape of the beat - a thing happened, and then everyone was
+## pleased about it.
+@export_file("*.wav") var cheer_file: String = "res://ramon/chickenpen/audio/sfx/Clap Studios - Crowd long and joyous cheering.wav"
+@export_range(-40.0, 12.0, 0.5) var cheer_db: float = -12.0
+@export_file("*.wav") var strum_file: String = "res://ramon/chickenpen/audio/sfx/Ni Sound - Acoustic Transitions - Acoustic Guitar Happy Strumming Ident.wav"
+@export_range(-40.0, 12.0, 0.5) var strum_db: float = -12.0
+## The game node, whose `completed` says the pen is full.
+@export var game_path: NodePath = NodePath("../Game")
+
 @export_group("Trym's door")
 ## The sci-fi arch Trym puts up in the field, and takes away again when you come back.
 ##
@@ -247,6 +262,8 @@ var _been_to_the_cinema: bool = false
 var _cinema_bed: AudioStreamPlayer
 var _inside: bool = false
 var _music: AudioStreamPlayer
+var _cheer: AudioStreamPlayer
+var _strum: AudioStreamPlayer
 var _cluck_streams: Array[AudioStream] = []
 var _meow: AudioStream
 var _angry: AudioStream
@@ -265,6 +282,7 @@ func _ready() -> void:
 	_start_music()
 	_start_clucks()
 	_start_cats()
+	_start_finish()
 	_start_stone()
 	_start_door()
 	_start_cinema()
@@ -446,6 +464,37 @@ func _start_cinema() -> void:
 	add_child(_cinema_bed)
 
 
+func _start_finish() -> void:
+	var game: Node = get_node_or_null(game_path)
+	if game == null or not game.has_signal("completed"):
+		push_warning("PenSfx: no game with a `completed` signal, so filling the pen is silent.")
+		return
+	var cheer: AudioStream = _load(cheer_file, "the cheering")
+	if cheer != null:
+		_cheer = AudioStreamPlayer.new()
+		_cheer.name = "Cheer"
+		_cheer.stream = cheer
+		_cheer.volume_db = cheer_db
+		_cheer.bus = SFX
+		add_child(_cheer)
+	var strum: AudioStream = _load(strum_file, "the strumming ident")
+	if strum != null:
+		_strum = AudioStreamPlayer.new()
+		_strum.name = "Strum"
+		_strum.stream = strum
+		_strum.volume_db = strum_db
+		_strum.bus = SFX
+		add_child(_strum)
+	game.connect("completed", _on_completed)
+
+
+func _on_completed() -> void:
+	if _strum != null:
+		_strum.play()
+	if _cheer != null:
+		_cheer.play()
+
+
 func _start_crows() -> void:
 	if not crows_enabled:
 		return
@@ -485,7 +534,7 @@ func _process(delta: float) -> void:
 			_crossed(away)
 	if _crow == null:
 		return
-	if _crow_left > 0.0:
+	if _crow_left > 0.0 and not _inside:
 		_crow_left -= delta
 		var window: float = minf(crow_event_seconds, _crow_length)
 		var done: float = window - _crow_left
@@ -499,6 +548,11 @@ func _process(delta: float) -> void:
 		if _crow_left <= 0.0:
 			_crow.stop()
 			_crow_wait = _rng.randf_range(crow_gap_min, crow_gap_max)
+		return
+	# The clock only runs outdoors. Stopping the player alone would leave the timer to
+	# expire in the theatre and fire the moment you stepped back out, which is a crow
+	# waiting behind the door rather than weather.
+	if _inside:
 		return
 	_crow_wait -= delta
 	if _crow_wait <= 0.0:
@@ -534,6 +588,15 @@ func _crossed(away: bool) -> void:
 				_bed.stop()
 			if _music != null:
 				_music.stop()
+		# AND THE CROWS STAY OUTSIDE. The node survives the crossing on purpose - it is set
+		# to PROCESS_MODE_ALWAYS so the music can start at all - but "survives" applies to
+		# the whole node, so the crow scheduler went on ticking and a murder of crows would
+		# swell up over the presentation at -14 dB, louder than the music the presenter is
+		# talking over. One already in flight kept fading in as the player walked through
+		# the door. The theatre is a room hanging in nothing; there is no sky in it.
+		if _crow != null:
+			_crow.stop()
+		_crow_left = 0.0
 		if _cinema_bed != null:
 			_cinema_bed.play()
 		# The arrival, over the top of the music starting, and only ever once.

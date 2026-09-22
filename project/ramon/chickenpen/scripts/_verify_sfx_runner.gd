@@ -63,6 +63,7 @@ var _crow: AudioStreamPlayer
 var _arch: Node
 var _crossing: Node
 var _envelope: Array = []
+var _crow_armed: bool = false
 var _stage: int = 0
 
 
@@ -91,11 +92,12 @@ func _process(_d) -> bool:
 		6: _door_is_up()
 		7: _into_the_cinema()
 		8: _first_visit()
-		9: _second_visit()
-		10: _second_visit_check()
-		11: _crow_begins()
-		12: return _crow_envelope()
-		13: return _does_it_wrap()
+		9: _still_inside()
+		10: _second_visit()
+		11: _second_visit_check()
+		12: _crow_begins()
+		13: return _crow_envelope()
+		14: return _does_it_wrap()
 		_: return true
 	_stage += 1
 	return false
@@ -283,8 +285,30 @@ func _first_visit() -> void:
 			bed.get_length()] if bed != null else "no wav")
 	_check("the farm does not carry into the room", _bed != null and not _bed.playing,
 		"the ambience stops at the door")
+	# THE THIRD SOUND, which the first version of this forgot. Silencing the two beds by
+	# hand is the obvious half of "the farm stops at the door"; the crows are on a timer
+	# of their own and kept going, because the node deliberately survives the crossing so
+	# the music can start. A check that only knows about the beds passes a scene with
+	# crows in the theatre.
+	_check("and neither do the crows", _crow != null and not _crow.playing,
+		"crow player silent inside")
+	# Hurry its clock right up. Outdoors this would fire an event immediately; in here it
+	# must not fire at all, and it must not be sitting fully wound to go off the instant
+	# the player steps back out.
+	_sfx.set("_crow_wait", 0.01)
+	_crow_armed = true
 	if _cinema != null:
 		_cinema.stop()
+	# Deliberately NOT leaving yet - _still_inside runs next, with the clock wound and the
+	# player still in the room. Coming home here is what made this check meaningless the
+	# first time: the crow then fired outdoors, correctly, and was reported as a failure.
+
+
+## Still in the theatre, one frame on, with the crow's clock wound to almost nothing.
+func _still_inside() -> void:
+	_check("a wound-up crow does not go off indoors",
+		_crow != null and not _crow.playing and _crow_armed,
+		"clock forced to 0.01 s, a frame has passed, still nothing")
 	if _crossing != null:
 		_crossing.call("come_back")
 
@@ -295,7 +319,9 @@ func _second_visit() -> void:
 			and not _cinema_bed.playing else "STILL PLAYING"))
 	if _crossing != null:
 		_crossing.call("go")
-	_stage = 9
+	# Straight to the second-visit check, skipping the stage numbers in between. Written
+	# as the stage BEFORE it because _process adds one after every arm.
+	_stage = 10
 
 
 func _second_visit_check() -> void:
@@ -344,7 +370,7 @@ func _crow_envelope() -> bool:
 		"%.0f s window out of %.0f s" % [float(_sfx.get("crow_event_seconds")),
 			_crow.stream.get_length()])
 	_the_whole_mix()
-	_stage = 13
+	_stage = 14
 	_arm_wrap()
 	return false
 
