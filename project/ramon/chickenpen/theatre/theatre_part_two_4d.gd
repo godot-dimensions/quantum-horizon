@@ -281,7 +281,27 @@ func _unhandled_input(event: InputEvent) -> void:
 	if step == 0:
 		return
 	get_viewport().set_input_as_handled()
+	# FORWARD OFF THE END FINISHES IT. Part one had this bug and it is the same one here:
+	# _enter resets the phase clock, and stepping forward while already on the closing
+	# beat clamps to the same index and re-enters it, so every click restarts the seconds
+	# the ending is waiting on - and the ending is what stands you out of the chair.
+	if step > 0 and _moment >= MOMENTS.size():
+		_finish()
+		return
 	_enter(clampi(_moment + step, 0, MOMENTS.size()))
+
+
+## The end of it: stop the clock, hand the presenter back, and let them out of the chair.
+## Ending the show while still holding the camera and the player's legs is a room that
+## will not let you leave.
+func _finish() -> void:
+	if not _running:
+		return
+	_running = false
+	if _show != null and _show.has_method("hold_at"):
+		_show.call("hold_at", -1)
+	if _show != null and _show.has_method("let_them_go"):
+		_show.call("let_them_go")
 
 
 ## How long a moment runs. Most take the shared pace; the walking creature asks for
@@ -300,13 +320,7 @@ func _process(delta: float) -> void:
 	if _moment >= 0 and _moment < MOMENTS.size() and _phase >= _length(_moment):
 		_enter(_moment + 1)
 	elif _moment == MOMENTS.size() and _phase >= closing_seconds:
-		_running = false
-		if _show != null and _show.has_method("hold_at"):
-			_show.call("hold_at", -1)
-		# AND LET THEM OUT OF THE CHAIR. Ending the show while still holding the camera
-		# and the player's legs is a room that will not let you leave.
-		if _show != null and _show.has_method("let_them_go"):
-			_show.call("let_them_go")
+		_finish()
 		return
 	if _moment >= 0 and _moment < MOMENTS.size():
 		_later(_moment, _phase)

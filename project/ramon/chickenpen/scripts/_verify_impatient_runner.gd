@@ -1,0 +1,140 @@
+extends SceneTree
+
+## What happens when somebody clicks through it instead of watching it.
+##
+## THE BUG THIS EXISTS FOR. Both parts end on a closing beat that waits out a clock before
+## it does the thing that matters - part one offers part two, part two stands you out of
+## the chair. Stepping forward re-entered whichever beat you were already on, because the
+## index clamps, and re-entering reset that clock. So clicking to hurry the end along was
+## the one action that held it open, for ever. The more impatient you were, the longer it
+## took, and from the seat it looked like the offer simply never came.
+##
+## Nothing else could have caught it. Every other runner lets the clock run: they are
+## testing what the room does, and this is testing what a person does to it.
+##
+## It clicks on EVERY frame from the moment the first act starts, which is far more
+## brutal than anybody would really be, and that is the point - the failure was a race
+## between a click and a clock, so the test should lose that race every time it can.
+
+var _root: Node
+var _f := 0
+var _fails: Array = []
+var _show: Node
+var _two: Node
+var _seat: Node
+var _camera: Node
+var _their: Camera4D
+var _player: CharacterBody4D
+var _clicking := false
+var _answered := false
+var _offered_at := 0
+var _sat := false
+var _down := false
+
+
+func _initialize() -> void:
+	_root = load("res://ramon/chickenpen/theatre/theatre.tscn").instantiate()
+	root.add_child(_root)
+	current_scene = _root
+
+
+func _check(label: String, ok: bool, detail: String) -> void:
+	print("   %s %-46s %s" % ["PASS" if ok else "FAIL", label, detail])
+	if not ok:
+		_fails.append(label)
+
+
+## A left click, the way a mouse sends one: down, and then up on the next frame. The show
+## reads the press, so the release is only good manners.
+func _click() -> void:
+	var down := InputEventMouseButton.new()
+	down.button_index = MOUSE_BUTTON_LEFT
+	down.pressed = true
+	Input.parse_input_event(down)
+	var up := InputEventMouseButton.new()
+	up.button_index = MOUSE_BUTTON_LEFT
+	up.pressed = false
+	Input.parse_input_event(up)
+
+
+func _process(_d) -> bool:
+	_f += 1
+	if _f == 1:
+		_show = _root.get_node("Show")
+		_two = _root.get_node("PartTwo")
+		_seat = _root.get_node("UI/Seat")
+		_camera = _root.get_node("ShotCamera")
+		_player = _root.get_node("Player") as CharacterBody4D
+		_their = _root.get_node("Player/CameraRig/Pitch/Camera4D") as Camera4D
+		# Long beats on purpose. A clock this slow means nothing can finish on time by
+		# accident: if the ending arrives, it arrived because somebody clicked for it.
+		_show.set("opening_seconds", 0.5)
+		_show.set("act_seconds", 30.0)
+		_show.set("closing_seconds", 30.0)
+		_show.set("waits_for_seat", 0.0)
+		_two.set("moment_seconds", 30.0)
+		_two.set("closing_seconds", 30.0)
+		return false
+
+	# Into the chair first, so the ending has something to release.
+	if _f == 3:
+		var stage: Node4D = _root.get_node("Stage") as Node4D
+		var top: Vector4 = stage.get("aisle_to")
+		var foot: Vector4 = stage.get("aisle_from")
+		_player.set_physics_process(false)
+		_player.global_position = Vector4(0.0, lerpf(top.y, foot.y, 0.5) + 0.18,
+			lerpf(top.z, foot.z, 0.5), 0.0)
+		_seat.set("sit_seconds", 0.3)
+		return false
+	if not _sat and bool(_seat.call("is_offering")):
+		_sat = true
+		_seat.call("sit")
+		return false
+	if not _down:
+		_down = bool(_seat.call("is_settled"))
+		return false
+
+	var prompt: Node = _root.get_node("UI/Prompt")
+	if not _answered and bool(prompt.call("is_asking")):
+		_answered = true
+		_offered_at = _f
+		print("\n--- clicked through part one ---")
+		_check("the offer arrives for somebody who clicks", true,
+			"reached on frame %d with the closing clock set to 30 seconds" % _f)
+		var key := InputEventKey.new()
+		key.keycode = int(prompt.get("yes_key"))
+		key.pressed = true
+		Input.parse_input_event(key)
+		return false
+
+	# Click on every frame, both parts.
+	_clicking = true
+	_click()
+
+	if not _answered:
+		if _f > 4000:
+			print("   FAIL clicking through part one never reached the offer")
+			print("        act %d, phase %.1f" % [int(_show.call("current_act")),
+				float(_show.get("_phase"))])
+			quit(1)
+			return true
+		return false
+
+	# And through part two, to the end.
+	if bool(_two.call("is_running")):
+		if _f > _offered_at + 4000:
+			print("   FAIL clicking through part two never reached the end, at moment %d"
+				% int(_two.call("current_moment")))
+			quit(1)
+			return true
+		return false
+
+	print("\n--- and clicked through part two ---")
+	_check("it ends for somebody who clicks", int(_two.call("current_moment")) >= 5,
+		"ran out of moments on frame %d rather than holding on the last one" % _f)
+	_check("and it lets go of them", not bool(_seat.call("is_seated"))
+		and _their.is_current() and not bool(_camera.call("is_holding")),
+		"out of the chair with the camera back, the same as sitting it out")
+	print("\n%d FAIL(s)" % _fails.size())
+	quit(1 if _fails.size() > 0 else 0)
+	return true

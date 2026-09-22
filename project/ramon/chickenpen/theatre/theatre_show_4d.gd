@@ -339,18 +339,8 @@ func _process(delta: float) -> void:
 		_enter(0)
 	elif _act >= 0 and _act < ACTS.size() and _phase >= act_seconds:
 		_enter(_act + 1)
-	elif _act == ACTS.size() and _phase >= closing_seconds and not _done:
-		_done = true
-		# The way out has been usable the whole time - nobody is shut in here - but now it
-		# is the thing to look at, so it is turned up.
-		if _exit != null:
-			_exit.set("highlight", 1.0)
-		if _part_two != null and _part_two.has_method("offer"):
-			_part_two.call("offer")
-		else:
-			# Nobody is going to ask them anything, so this is the end of it.
-			let_them_go()
-		_say("", "That is the lot. The way out is behind you - mind the step, it is further through W than it looks.", "")
+	elif _act == ACTS.size() and _phase >= closing_seconds:
+		_finish()
 
 	if _act >= 0 and _act < ACTS.size():
 		_demonstrate(_act, _phase)
@@ -755,9 +745,36 @@ func _unhandled_input(event: InputEvent) -> void:
 	if step == 0:
 		return
 	get_viewport().set_input_as_handled()
-	# Backward out of the first act goes to the arrival, which is what it was; forward off
-	# the end lands on the closing beat rather than running off the list.
+	# FORWARD OFF THE END FINISHES IT, rather than saying the last line again.
+	#
+	# This is the bug that stopped the offer ever arriving. _enter resets the phase clock,
+	# and stepping forward while already on the closing beat clamped to the same index and
+	# re-entered it - so every click restarted the nine seconds the offer is waiting on.
+	# Clicking to hurry the end along was the one thing that held it open, which is a
+	# nasty shape of bug: the more impatient you are, the longer it takes, for ever.
+	if step > 0 and _act >= ACTS.size():
+		_finish()
+		return
+	# Backward out of the first act goes to the arrival, which is what it was.
 	_enter(clampi(_act + step, -1, ACTS.size()))
+
+
+## The end of part one: light the way out, and either ask them about part two or let them
+## go. Once, whether it was the clock that got here or somebody clicking.
+func _finish() -> void:
+	if _done:
+		return
+	_done = true
+	# The way out has been usable the whole time - nobody is shut in here - but now it is
+	# the thing to look at, so it is turned up.
+	if _exit != null:
+		_exit.set("highlight", 1.0)
+	if _part_two != null and _part_two.has_method("offer"):
+		_part_two.call("offer")
+	else:
+		# Nobody is going to ask them anything, so this is the end of it.
+		let_them_go()
+	_say("", "That is the lot. The way out is behind you - mind the step, it is further through W than it looks.", "")
 
 
 ## Lets go of the chair, hands the camera back, and puts the player on their feet facing
