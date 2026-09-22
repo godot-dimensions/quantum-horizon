@@ -29,6 +29,9 @@ extends Node
 
 const GOAT := preload("res://ramon/chickenpen/theatre/theatre_goat_4d.gd")
 const CREATURE := preload("res://ramon/chickenpen/theatre/theatre_creature_4d.gd")
+## Part one, for the one string both parts print. A const on a script is reachable through
+## the script itself, so this shares the line rather than keeping a second copy of it.
+const SHOW := preload("res://ramon/chickenpen/theatre/theatre_show_4d.gd")
 
 @export var stage_path: NodePath
 @export var caption_path: NodePath
@@ -167,7 +170,7 @@ const MOMENTS := [
 	},
 	{
 		"title": "VIII. WHAT WOULD STOP THIS",
-		"body": "Seven conditions, written down before the tests rather than after them. Three can be read today. The other four cannot be evaluated until the end of 2027 - so they are not standing where you are standing. Turn your slice and they are there.",
+		"body": "Seven conditions, written down before the tests rather than after them. Three can be read today. The other four cannot be evaluated until the end of 2027, so they are not standing where you are standing - and nothing you do from that chair will bring them into view. Four empty marks on the floor is the honest position, and it is the one the programme is in.",
 		"figure": "3 readable now. 4 not yet measurable. One of the three is whether 4D content still needs a specialist.",
 		"tier": "PROPOSED - DELIVERABLE 2 SEVEN IS THE RECORD",
 		"tint": Color(0.62, 0.30, 0.24),
@@ -237,6 +240,8 @@ func _on_answered(yes: bool) -> void:
 	if not yes:
 		_say("", "Fair enough. The way out is behind you.", "", "")
 		_done = true
+		if _show != null and _show.has_method("let_them_go"):
+			_show.call("let_them_go")
 		return
 	begin()
 
@@ -298,6 +303,10 @@ func _process(delta: float) -> void:
 		_running = false
 		if _show != null and _show.has_method("hold_at"):
 			_show.call("hold_at", -1)
+		# AND LET THEM OUT OF THE CHAIR. Ending the show while still holding the camera
+		# and the player's legs is a room that will not let you leave.
+		if _show != null and _show.has_method("let_them_go"):
+			_show.call("let_them_go")
 		return
 	if _moment >= 0 and _moment < MOMENTS.size():
 		_later(_moment, _phase)
@@ -407,15 +416,13 @@ func _retell(which: int) -> void:
 	_metrics.call("show_metrics", filled, true)
 
 
-## THE CONTROLS ARE ON SCREEN, because a presentation you can step through is only worth
-## having if somebody knows they can. Part one does not draw this: it runs on a clock and
-## the only input in it is walking about.
-const NAV := "\u2190  \u2192   step through      \u00b7      click   forward"
-
-
+## THE CONTROLS ARE ON SCREEN ON EVERY SLIDE, because a presentation you can step through
+## is only worth having if somebody knows they can - and a line that appears on some
+## slides and not others reads as the controls having stopped working. Part one names the
+## string, so the two parts cannot drift apart.
 func _say(title: String, body: String, figure: String, tier: String) -> void:
 	if _caption != null and _caption.has_method("show_act"):
-		_caption.call("show_act", title, body, figure, tier, NAV if tier != "" else "")
+		_caption.call("show_act", title, body, figure, tier, SHOW.NAV)
 
 
 func _tint(to: Color) -> void:
@@ -613,6 +620,29 @@ func _stop_conditions() -> Node4D:
 		_block(stone, "Cap", Vector4(0.0, 1.44, 0.0, 0.0),
 			Vector3(0.50, 0.10, 0.36),
 			shade.lerp(Color(1.0, 0.85, 0.42), 0.5 if readable else 0.0), 0.7)
+		# AN EMPTY MARK ON THE FLOOR for each one that is not here. The stone itself sits
+		# at a W offset and is genuinely absent from your slice; without something at
+		# w = 0 to show where it WOULD stand, four of the seven are not merely unreadable,
+		# they are invisible - and a gap you cannot see is not an exhibit, it is an
+		# oversight. The mark is the same move act one makes with a plinth carrying a box
+		# the renderer will never draw.
+		if not readable:
+			var mark := Node4D.new()
+			# Named after the condition it stands in for. Four nodes all called "Mark"
+			# get renamed by Godot on the way in, and anything looking for them by name
+			# then finds exactly one.
+			mark.name = "Mark%s" % String(all[i][0])
+			piece.add_child(mark)
+			mark.position = Vector4(stone.position.x, 0.0, stone.position.z, 0.0)
+			mark.basis = stone.basis
+			for edge in [Vector4(0.0, 0.0, 0.20, 0.0), Vector4(0.0, 0.0, -0.20, 0.0)]:
+				_block(mark, "EdgeZ%d" % int(signf(edge.z)),
+					edge + Vector4(0.0, 0.03, 0.0, 0.0),
+					Vector3(0.56, 0.04, 0.05), Color(0.42, 0.40, 0.44), 0.5)
+			for edge in [Vector4(0.28, 0.0, 0.0, 0.0), Vector4(-0.28, 0.0, 0.0, 0.0)]:
+				_block(mark, "EdgeX%d" % int(signf(edge.x)),
+					edge + Vector4(0.0, 0.03, 0.0, 0.0),
+					Vector3(0.05, 0.04, 0.44), Color(0.42, 0.40, 0.44), 0.5)
 		_stones.append(stone)
 	return piece
 

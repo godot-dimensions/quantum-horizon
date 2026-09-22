@@ -52,6 +52,14 @@ func _process(_d) -> bool:
 		_root.add_child(_eye)
 		_eye.position = Vector4.ZERO
 		_eye.current = true
+		# AND THE FIGURES HAVE TO PROJECT THROUGH THIS ONE. They are drawn in screen space
+		# against whichever camera is live, and in the real room that is the shot camera;
+		# here it is this stand-in, and without telling the labels so they were being
+		# placed against the player's own camera and landing nowhere near their subjects -
+		# which looked exactly like the bug it was supposed to be checking.
+		var figures: Node = _root.get_node_or_null("UI/Metrics")
+		if figures != null:
+			figures.set("_camera", _eye)
 		(_root.get_node("Player") as Node4D).global_position = Vector4(0.0, 3.3, 12.0, 0.0)
 		return false
 

@@ -206,15 +206,22 @@ func _process(_d) -> bool:
 	var stones: Node4D = table.get_node_or_null("Stones") as Node4D
 	var here := 0
 	var elsewhere := 0
+	var marks := 0
 	if stones != null:
 		for child in stones.get_children():
-			if absf((child as Node4D).position.w) < 0.01:
+			if String(child.name).begins_with("Mark"):
+				marks += 1
+			elif absf((child as Node4D).position.w) < 0.01:
 				here += 1
 			else:
 				elsewhere += 1
 	_check("three stop conditions are readable here", here == 3, "%d at w = 0" % here)
 	_check("and four are genuinely off your slice", elsewhere == 4,
 		"%d sitting at a W offset, not merely greyed out" % elsewhere)
+	# And the four leave a mark on the floor where they would stand. Without one they are
+	# not unreadable, they are invisible - and a gap nobody can see is not an exhibit.
+	_check("with an empty mark for each of the four", marks == 4,
+		"%d outlines at w = 0, standing in for the four that are not" % marks)
 
 	print("\n--- and the room says how to drive it ---")
 	_check("every moment set figures beside its subject", _figure_was_up,

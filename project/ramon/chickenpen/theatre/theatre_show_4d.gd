@@ -19,6 +19,10 @@ extends Node4D
 ## open at the head of the walkway the whole time, so nobody is ever held here.
 
 const ROCK := preload("res://ramon/VoxelMining/voxel_mining_block.tscn")
+## The controls line, shown on every slide of both parts. Kept here and read by part two
+## rather than written twice, because two copies of a caption that names a key is two
+## places to forget when somebody rebinds one.
+const NAV := "\u2190  \u2192   step through      \u00b7      click   forward"
 ## The man in the shed, for his clothes. See _dress_presenter.
 const TRYM := preload("res://ramon/chickenpen/scripts/pen_trym_4d.gd")
 
@@ -343,6 +347,9 @@ func _process(delta: float) -> void:
 			_exit.set("highlight", 1.0)
 		if _part_two != null and _part_two.has_method("offer"):
 			_part_two.call("offer")
+		else:
+			# Nobody is going to ask them anything, so this is the end of it.
+			let_them_go()
 		_say("", "That is the lot. The way out is behind you - mind the step, it is further through W than it looks.", "")
 
 	if _act >= 0 and _act < ACTS.size():
@@ -582,8 +589,13 @@ func _perform(delta: float) -> void:
 		if shoulder != null:
 			shoulder.basis = Basis4D.from_yz(-lift + counter * 0.55 + idle)
 		if elbow != null:
-			# Straight when pointing, bent when it is not doing anything in particular.
-			elbow.basis = Basis4D.from_yz(0.38 * (1.0 - lift / 1.35) + absf(counter) * 0.3)
+			# NEGATIVE, because an elbow is not a knee. The sign convention every limb in
+			# this project shares - POSITIVE folds the lower segment back under the upper
+			# one - is right for a leg and exactly backwards for an arm: it bent his
+			# forearms away behind him. Straight when pointing, bent when it is not doing
+			# anything in particular.
+			elbow.basis = Basis4D.from_yz(
+				-(0.38 * (1.0 - lift / 1.35) + absf(counter) * 0.3))
 	var torso: Node4D = _presenter.get("torso") as Node4D
 	if torso != null:
 		torso.basis = Basis4D.from_yz(-reach * 0.14 + idle * 0.5)
@@ -714,7 +726,51 @@ func _pulse() -> void:
 
 func _say(title: String, body: String, figure: String) -> void:
 	if _caption != null and _caption.has_method("show_act"):
-		_caption.call("show_act", title, body, figure)
+		_caption.call("show_act", title, body, figure, "", NAV)
+
+
+## THE SAME CONTROLS AS PART TWO, because from a chair the two are one presentation and
+## finding that the arrows stop working half way through it is finding a seam. The clock
+## still runs underneath either way - stand still and it plays itself.
+##
+## IT KEEPS ITS HANDS OFF while part two is running or the prompt is up: part two has its
+## own handler and the prompt is waiting on a yes, and two things stepping on one click is
+## the sort of bug that only shows up in front of somebody.
+func _unhandled_input(event: InputEvent) -> void:
+	if _done or _stage == null:
+		return
+	if _part_two != null and _part_two.has_method("is_running") \
+			and bool(_part_two.call("is_running")):
+		return
+	var step := 0
+	var click := event as InputEventMouseButton
+	if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
+		step = 1
+	var key := event as InputEventKey
+	if key != null and key.pressed and not key.echo:
+		if key.keycode == KEY_RIGHT:
+			step = 1
+		elif key.keycode == KEY_LEFT:
+			step = -1
+	if step == 0:
+		return
+	get_viewport().set_input_as_handled()
+	# Backward out of the first act goes to the arrival, which is what it was; forward off
+	# the end lands on the closing beat rather than running off the list.
+	_enter(clampi(_act + step, -1, ACTS.size()))
+
+
+## Lets go of the chair, hands the camera back, and puts the player on their feet facing
+## the way out.
+##
+## THIS IS WHAT WAS MISSING AT THE END. The show finished, the camera stayed held, and the
+## player stayed pinned in a seat with no way out but a movement key nobody had told them
+## about - which is not a presentation ending, it is a room that will not let you leave.
+func let_them_go() -> void:
+	if _exit != null:
+		_exit.set("highlight", 1.0)
+	if _seat != null and _seat.has_method("is_seated") and bool(_seat.call("is_seated")):
+		_seat.call("stand")
 
 
 func _block(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color,
