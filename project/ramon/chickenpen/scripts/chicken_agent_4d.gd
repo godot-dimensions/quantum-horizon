@@ -348,16 +348,32 @@ func _tick_to_coop() -> void:
 		return
 	# Arrived. Home becomes the coop, so _contain stops pulling it back to the spot it
 	# landed on - it is allowed to be here.
-	home_position = _coop.position
+	#
+	# IN THE BIRD'S OWN PARENT FRAME. _coop.position is local to the PEN and the chicken's
+	# position is local to the flock, and mixing the two sent the bird to the coop's
+	# offset measured from the wrong origin - out of the fence entirely and two and a half
+	# units up. The pen then clamped it back in x and z while keeping the height, wrote
+	# that height into its home, and the animator pinned it there: a chicken hovering over
+	# the yard for good.
+	var here: Vector4 = _coop_in_my_frame()
+	home_position = here
 	if _roosting:
 		_hop_from = _creature.position
-		_hop_to = _coop.position + Vector4(0.0, roof_top, 0.0, 0.0)
+		_hop_to = here + Vector4(0.0, roof_top, 0.0, 0.0)
 		_hop_to.w = _creature.position.w
 		_hop_t = 0.0
 		_enter(State.ROOSTING)
 	else:
 		_creature.visible = false
 		_enter(State.NESTING)
+
+
+## Where the coop is, expressed in the same frame the chicken's own position is in.
+## Everything else here works in that frame, and the coop lives under the pen rather than
+## under the flock - so its `position` is measured from a different origin entirely.
+func _coop_in_my_frame() -> Vector4:
+	var host: Node4D = _creature.get_parent() as Node4D
+	return _coop.global_position - (host.global_position if host != null else Vector4.ZERO)
 
 
 ## Settled - inside out of sight, or up on the roof - until its time is up, and then back
@@ -373,7 +389,7 @@ func _tick_indoors() -> void:
 	if _timer > 0.0:
 		return
 	# Back down and out, at the foot of the ramp.
-	var door: Vector4 = _coop.position + Vector4(0.0, 0.0, 1.4, 0.0)
+	var door: Vector4 = _coop_in_my_frame() + Vector4(0.0, 0.0, 1.4, 0.0)
 	door.y = 0.0
 	door.w = _creature.position.w
 	_creature.position = door
@@ -601,6 +617,15 @@ func _contain() -> void:
 	# the chicken stays findable where it was put.
 	if absf(offset.w) > w_drift:
 		_creature.position.w = home_position.w + clampf(offset.w, -w_drift, w_drift)
+
+
+## Whether the bird is on its way to the henhouse, in it, or on top of it. The pen's
+## return volume asks before it does anything, because every correction it makes assumes
+## a bird standing on the floor of the pen - and one halfway through a hop onto the roof
+## is not that. Caught mid-hop it had its raised height written into its own home, and an
+## animator that pins y to home then left it hovering there for good.
+func using_coop() -> bool:
+	return state == State.TO_COOP or state == State.NESTING or state == State.ROOSTING
 
 
 func can_be_caught() -> bool:
