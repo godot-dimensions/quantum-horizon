@@ -78,29 +78,21 @@ func _physics_process(_delta: float) -> void:
 			continue
 		# It is in the pen and has not been counted. Count it once, and only once.
 		agent.call("on_landed", true)
-		_send_to_coop(agent, body)
 		_manager.call("note_returned", agent)
 
 
-## Item 48: give some of the returned birds somewhere to be.
+## ITEM 48 IS NOW THE BIRD'S OWN BUSINESS, and this is where it used to be done TO it.
 ##
-## Their HOME moves, not their position - they walk over rather than appear there, and
-## their ordinary penned wander then keeps them loosely around the coop instead of around
-## the spot they happened to land on.
-func _send_to_coop(agent: Node, body: Node4D) -> void:
-	if _coop == null or coop_share <= 0:
-		return
-	if int(agent.get("chicken_id")) % coop_share != 0:
-		return
-	var points: Array = _coop.call("idle_points")
-	if points.is_empty():
-		return
-	var spot: Vector4 = points[int(agent.get("chicken_id")) % points.size()]
-	var host: Node4D = _manager as Node4D
-	var local: Vector4 = spot - (host.global_position if host != null else Vector4.ZERO)
-	local.w = body.position.w
-	agent.set("home_position", local)
-
+## A third of the birds had their home_position rewritten to a spot by the coop the
+## instant they were counted - "their HOME moves, not their position", the idea being they
+## would walk over rather than appear there. What it actually does is hand containment a
+## destination the bird is not at, and containment tows it: drop a chicken in the pen and
+## it slides off towards the coop and springs about on the leash. Outside the fence none
+## of this runs, which is exactly why the fault only ever showed up inside it.
+##
+## A penned chicken goes to the coop by itself now - in at the door or up onto the roof,
+## and back out again - so the behaviour this was reaching for exists without anything
+## moving the bird. Wherever it lands, it stays and gets on with it.
 
 ## Item 44: a returned chicken that somehow leaves is put back, WITHOUT changing the
 ## score. Escaping should be an inconvenience, not a way to lose progress.
