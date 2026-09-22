@@ -29,9 +29,15 @@ extends Control
 @export_range(0.05, 2.0, 0.05) var fade_seconds: float = 0.5
 ## How far through W the subject can be before its figure goes with it.
 @export_range(0.5, 20.0, 0.5) var w_range: float = 6.0
+## EVERY PIXEL NUMBER BELOW IS AT THIS HEIGHT and is scaled from it. Without that the
+## figures stayed 30 pixels tall on a 2160-line screen while the caption under them, which
+## has always been set in fractions of the viewport, grew with it - so full screen gave a
+## huge caption and a row of tiny numbers whose leader lines were hairlines that did not
+## visibly reach anything.
+const REFERENCE_HEIGHT: float = 680.0
 @export_range(8, 60, 1) var value_size: int = 30
 @export_range(6, 40, 1) var label_size: int = 15
-## How far to one side of the anchor the figure sits, in pixels.
+## How far to one side of the anchor the figure sits, at the reference height.
 @export_range(0.0, 300.0, 5.0) var offset_x: float = 86.0
 @export_range(-300.0, 300.0, 5.0) var offset_y: float = -18.0
 @export var label_color: Color = Color(0.72, 0.80, 0.90)
@@ -99,6 +105,9 @@ func _draw() -> void:
 	if _fade <= 0.01 or eye == null or _metrics.is_empty():
 		return
 	var screen: Vector2 = get_viewport_rect().size
+	var u: float = maxf(screen.y / REFERENCE_HEIGHT, 0.35)
+	var value_px: int = int(round(float(value_size) * u))
+	var label_px: int = int(round(float(label_size) * u))
 	for metric in _metrics:
 		var at: Vector4 = metric.get("at", Vector4.ZERO)
 		var gap: Vector4 = at - eye.global_position
@@ -106,7 +115,7 @@ func _draw() -> void:
 		if (-eye.global_basis.z).dot(gap) <= 0.05 or absf(gap.w) > w_range:
 			continue
 		var point: Vector2 = eye.world_to_viewport(at)
-		if point.x < -200.0 or point.x > screen.x + 200.0:
+		if point.x < -200.0 * u or point.x > screen.x + 200.0 * u:
 			continue
 		var side: float = float(metric.get("side", 1.0))
 		var colour: Color = metric.get("colour", Color(0.85, 0.92, 1.0))
@@ -114,18 +123,24 @@ func _draw() -> void:
 		var label: String = String(metric.get("label", ""))
 
 		var wide: float = _font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1,
-			value_size).x
-		var anchor := Vector2(point.x + side * offset_x, point.y + offset_y)
-		# A leader, so it is unambiguous which object the figure belongs to. Without it a
-		# number floating near two exhibits belongs to neither.
-		var reach := Vector2(point.x + side * 14.0, point.y)
-		draw_line(reach, Vector2(anchor.x - side * 8.0, anchor.y + 4.0),
-			Color(rule_color, rule_color.a * _fade), 1.0, true)
-
+			value_px).x
+		var anchor := Vector2(point.x + side * offset_x * u, point.y + offset_y * u)
 		var x: float = anchor.x if side > 0.0 else anchor.x - wide
+
+		# THE LEADER IS DRAWN TO THE TEXT, not to where the text is assumed to be. It used
+		# to run a fixed 14 pixels off the anchor point and stop a fixed 8 short of the
+		# figure, which only joined the two while the figure happened to be 86 pixels away
+		# - change the window and the line stopped in mid air with a gap at both ends.
+		# Now it starts a small way off the subject and ends at the near edge of the
+		# number, whatever the number turned out to be and wherever it landed.
+		var from := Vector2(point.x + side * 13.0 * u, point.y)
+		var near: float = x - 7.0 * u if side > 0.0 else x + wide + 7.0 * u
+		draw_line(from, Vector2(near, anchor.y - float(value_px) * 0.32),
+			Color(rule_color, rule_color.a * _fade), maxf(1.0, u), true)
+
 		draw_string(_font, Vector2(x, anchor.y), value, HORIZONTAL_ALIGNMENT_LEFT, -1,
-			value_size, Color(colour, _fade))
+			value_px, Color(colour, _fade))
 		if label != "":
-			draw_string(_font, Vector2(x, anchor.y + float(label_size) * 1.35), label,
-				HORIZONTAL_ALIGNMENT_LEFT, -1, label_size,
+			draw_string(_font, Vector2(x, anchor.y + float(label_px) * 1.35), label,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, label_px,
 				Color(label_color, _fade * 0.85))

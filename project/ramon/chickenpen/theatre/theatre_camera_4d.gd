@@ -73,6 +73,11 @@ const SHOTS := {
 	# The three-quarter on the drum. Held: the goat is already turning, and a camera
 	# turning with it would cancel the turn out.
 	"close": {"eye": Vector4(2.7, 2.1, 3.9, 0.0), "focus": Vector4(0.0, 1.5, 0.0, 0.0)},
+	# The same corner, easing in. FOR THE ONE THAT GROWS: a thing assembling itself reads
+	# from the three-quarter and not from the front, where a new limb arriving on the far
+	# side is hidden behind the near one and the whole build looks like nothing happening.
+	"quarter": {"eye": Vector4(3.5, 2.7, 5.6, 0.0), "focus": Vector4(0.0, 1.4, 0.0, 0.0),
+		"eye_to": Vector4(2.4, 2.0, 3.7, 0.0)},
 	# Side-on, easing in. A walk cycle is read from the side and from nowhere else.
 	"profile": {"eye": Vector4(0.9, 3.0, 9.4, 0.0), "focus": Vector4(0.0, 1.9, 0.0, 0.0),
 		"eye_to": Vector4(0.5, 2.4, 7.4, 0.0)},

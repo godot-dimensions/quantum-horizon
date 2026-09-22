@@ -29,6 +29,10 @@ extends Control
 @export var title_color: Color = Color(0.72, 0.93, 1.0)
 @export var body_color: Color = Color(0.92, 0.94, 0.98)
 @export var figure_color: Color = Color(1.0, 0.85, 0.42)
+## The controls line, opposite the tier stamp. Dim on purpose: it is a reference, not a
+## fourth thing to read, and an audience that has already found the arrows should stop
+## seeing it.
+@export var nav_color: Color = Color(0.72, 0.80, 0.90, 0.55)
 ## The evidence tier, drawn as a small pill above the title. The deck this is drawn from
 ## tiers every claim and shows the tier, and the accent marks the GAP rather than the
 ## achievement - so a NOT YET MEASURED pill is the loudest thing on the slide, on purpose.
@@ -37,6 +41,7 @@ extends Control
 var _title: String = ""
 var _body: String = ""
 var _figure: String = ""
+var _nav: String = ""
 var _tier: String = ""
 var _fade: float = 0.0
 
@@ -46,10 +51,14 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 
-func show_act(title: String, body: String, figure: String, tier: String = "") -> void:
+## `nav` is the controls line, set by whichever part of the show actually HAS controls -
+## part one runs on a clock and has none, so it passes nothing and nothing is drawn.
+func show_act(title: String, body: String, figure: String, tier: String = "",
+		nav: String = "") -> void:
 	_title = title
 	_body = body
 	_figure = figure
+	_nav = nav
 	_tier = tier
 	_fade = 0.0
 
@@ -110,6 +119,15 @@ func _draw() -> void:
 		draw_rect(box, Color(tier_color, 0.75 * alpha), false, 1.0)
 		draw_string(font, Vector2(pad + pad * 0.25, y - lead * 0.3), _tier,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, pill_size, Color(tier_color, alpha))
+		# The controls, on the same line and at the other end of it. Measured and placed
+		# by its own width rather than right-aligned into a box, because the band is drawn
+		# rather than laid out and there is no box to align into.
+		if _nav != "":
+			var nav_size: int = int(screen.y * 0.017)
+			var nav_wide: float = font.get_string_size(_nav, HORIZONTAL_ALIGNMENT_LEFT,
+				-1, nav_size).x
+			draw_string(font, Vector2(screen.x - pad - nav_wide, y - lead * 0.3), _nav,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, nav_size, Color(nav_color, alpha))
 		y += lead * 0.78
 	if _title != "":
 		draw_string(font, Vector2(pad, y), _title, HORIZONTAL_ALIGNMENT_LEFT, -1,

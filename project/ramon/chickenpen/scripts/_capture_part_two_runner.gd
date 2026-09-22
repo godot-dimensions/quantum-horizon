@@ -47,6 +47,7 @@ func _process(_d) -> bool:
 		show.set("act_seconds", 0.5)
 		show.set("closing_seconds", 0.3)
 		_two.set("moment_seconds", 7.0)
+		show.set("waits_for_seat", 0.0)
 		_eye = (_root.get_node("Player/CameraRig/Pitch/Camera4D") as Camera4D).duplicate()
 		_root.add_child(_eye)
 		_eye.position = Vector4.ZERO
@@ -70,51 +71,54 @@ func _process(_d) -> bool:
 		return false
 
 	var moment: int = int(_two.call("current_moment"))
-	if moment < 0 or moment > 6:
-		if moment > 6 and _shots >= 10:
+	if moment < 0 or moment > 4:
+		if moment > 4 and _shots >= 7:
 			print("%d pictures" % _shots)
 			quit()
 			return true
 		return false
 	var phase: float = float(_two.get("_phase"))
-	# Against THIS moment's length, not the shared one: the creature runs half again as
-	# long as the rest, and measuring its beats against the shared number caught the skin
-	# coming off rather than the gait changing.
-	var span: float = float(_two.get("moment_seconds")) * (1.55 if moment == 4 else 1.0)
-	var late: bool = phase > span * 0.72
+	# Against THIS moment's length, not the shared one - two of the five run longer.
+	var pace: float = 1.7 if moment == 0 else (1.55 if moment == 3 else 1.0)
+	var span: float = float(_two.get("moment_seconds")) * pace
 
-	# THE CREATURE, THREE TIMES. Backed off and side-on: it is 5.9 long against a 6.2 drum,
-	# and a walk cycle is a thing you read from the side.
-	if moment == 4:
-		var beats := [["walking", 0.18], ["rig", 0.44], ["gait", 0.90]]
-		for i in beats.size():
-			var tag: String = "c_%s" % beats[i][0]
-			if not _seen.has(tag) and phase > span * float(beats[i][1]):
+	# IV twice: apart on three slices, then arrived on one.
+	if moment == 0:
+		for beat in [["apart", 0.20], ["one", 0.56], ["swept", 0.95]]:
+			var tag: String = "iv_%s" % beat[0]
+			if not _seen.has(tag) and phase > span * float(beat[1]):
 				_seen[tag] = true
-				_look_from(Vector4(0.6, 4.0, 12.6, 0.0), Vector4(0.0, 2.2, 0.0, 0.0))
-				_pending = "%d_creature_%s" % [5 + i, beats[i][0]]
+				# The shot the slide is actually framed on, not a director's view of it.
+				_look_from(Vector4(0.0, 1.25, 7.0, 0.0), Vector4(0.0, 2.1, 0.0, 0.0))
+				_pending = "%d_%s" % [_shots, tag]
 				return false
 		return false
 
-	# The build moment twice: half assembled, and reshaped.
-	if moment == 3 and not _seen.has("half") and phase > float(_two.get("moment_seconds")) * 0.30:
-		_seen["half"] = true
-		_look_from(Vector4(2.8, 2.2, 3.8, 0.0), Vector4(0.0, 1.5, 0.0, 0.0))
-		_pending = "4_building"
+	# VII three times: dressed, bared, and in another gait.
+	if moment == 3:
+		var beats := [["walking", 0.18], ["rig", 0.44], ["gait", 0.90]]
+		for i in beats.size():
+			var tag: String = "vii_%s" % beats[i][0]
+			if not _seen.has(tag) and phase > span * float(beats[i][1]):
+				_seen[tag] = true
+				_look_from(Vector4(0.6, 4.0, 12.6, 0.0), Vector4(0.0, 2.2, 0.0, 0.0))
+				_pending = "%d_%s" % [_shots, tag]
+				return false
 		return false
-	# The goat twice: the workings, then the skin.
-	if moment == 2 and not _seen.has("balls") and phase > 1.2:
-		_seen["balls"] = true
-		_look_from(Vector4(2.8, 2.2, 3.8, 0.0), Vector4(0.0, 1.5, 0.0, 0.0))
-		_pending = "3_goat_balls"
+
+	# The goat pair, from the three-quarter the slide is framed on.
+	if moment == 2 and not _seen.has("building") and phase > span * 0.42:
+		_seen["building"] = true
+		_look_from(Vector4(3.1, 2.5, 4.6, 0.0), Vector4(0.0, 1.4, 0.0, 0.0))
+		_pending = "%d_vi_building" % _shots
 		return false
 	var key_name := "m%d" % moment
-	if late and not _seen.has(key_name):
+	if phase > span * 0.72 and not _seen.has(key_name):
 		_seen[key_name] = true
-		if moment == 2 or moment == 3:
-			_look_from(Vector4(2.8, 2.2, 3.8, 0.0), Vector4(0.0, 1.5, 0.0, 0.0))
+		if moment == 1 or moment == 2:
+			_look_from(Vector4(3.1, 2.5, 4.6, 0.0), Vector4(0.0, 1.4, 0.0, 0.0))
 		else:
 			_look_from(Vector4(1.1, 3.4, 8.4, 0.0), Vector4(0.0, 1.5, 0.0, 0.0))
-		_pending = "%d_moment%d" % [moment + (1 if moment < 4 else 4), moment + 4]
+		_pending = "%d_moment%d" % [_shots, moment + 4]
 		return false
 	return false
