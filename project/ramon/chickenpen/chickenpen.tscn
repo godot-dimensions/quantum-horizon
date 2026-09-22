@@ -405,6 +405,17 @@ inventory_path = NodePath("../../UI/Inventory")
 catcher_path = NodePath("../../Player/Catcher")
 avatar_path = NodePath("../../Player/Avatar")
 
+[node name="RedCatGrab" type="Node" parent="Systems"]
+script = ExtResource("pen_cat_grab")
+cat_path = NodePath("../../World/RedCat")
+player_path = NodePath("../../Player")
+catcher_path = NodePath("../../Player/Catcher")
+anchor_path = NodePath("../../Player/CarryAnchor")
+slice_frame_path = NodePath("../../Player/CameraRig")
+tag_path = NodePath("../../UI/PlayerTag")
+scratches = false
+carry_line = "Trym's cat does not seem to mind."
+
 [node name="Game" type="Node" parent="Systems"]
 script = ExtResource("pen_game")
 manager_path = NodePath("../../Chickens")
@@ -491,6 +502,17 @@ script = ExtResource("pen_cat")
 crate_path = NodePath("../Crate")
 player_path = NodePath("../../Player")
 perch_path = NodePath("../../Pen/Coop")
+
+[node name="RedCat" type="Node4D" parent="World"]
+position = Vector4(-10, 0, -14, 0)
+script = ExtResource("pen_cat")
+fur = Color(0.78, 0.33, 0.14, 1)
+eye = Color(0.45, 0.85, 0.35, 1)
+player_path = NodePath("../../Player")
+starts_on_crate = false
+den_path = NodePath("../Shed")
+lives_in_den = true
+roam_radius = 4.0
 
 [node name="Shed" type="Node4D" parent="World"]
 position = Vector4(-10, 0, -14, 0)

@@ -34,6 +34,9 @@ extends Node
 @export_range(0.5, 15.0, 0.5) var patience: float = 3.0
 ## And how long you spend on the ground afterwards.
 @export_range(0.5, 8.0, 0.5) var knocked_down_seconds: float = 2.2
+## Whether this one objects to being carried. The black one does and always has; a
+## friendlier animal can be carried about indefinitely and simply gets put down.
+@export var scratches: bool = true
 @export var scratch_line: String = "It scratched me, damn.."
 ## A THOUGHT, NOT AN INSTRUCTION. "Throw it in the pen!" is the game telling you what
 ## to do next. Phrased as an urge the character is having, the same words become a
@@ -86,11 +89,10 @@ func _can_grab() -> bool:
 		return false
 	if _catcher != null and _catcher.get("carried") != null:
 		return false
-	# Only while it is wandering, heading for its crate, or sat on it. Not mid-jump, not
-	# on its way to the coop, and NOT while it is running from you having just scratched
-	# its way out: catching it again during its own escape undoes the escape.
-	var mood: int = int(_cat.get("_mood"))
-	if mood != 0 and mood != 1 and mood != 3:
+	# THE CAT DECIDES. This used to test its mood against a handful of literal numbers,
+	# which is fine until somebody adds a mood in the middle of the enum and every number
+	# below it quietly means something else. It answers for itself now.
+	if not bool(_cat.call("can_be_picked_up")):
 		return false
 	var slice: Projection = _frame.global_basis if _frame != null else _player.global_basis
 	var gap: Vector4 = _cat.global_position - _player.global_position
@@ -109,6 +111,13 @@ func _grab() -> void:
 
 func _process(delta: float) -> void:
 	if not holding or _cat == null:
+		return
+	if not scratches:
+		# A friendly one is simply carried. It still has to be put somewhere, which is
+		# what the throw is for.
+		var host_calm: Node4D = _cat.get_parent() as Node4D
+		_cat.position = _anchor.global_position \
+			- (host_calm.global_position if host_calm != null else Vector4.ZERO)
 		return
 	# Held overhead, written as a LOCAL position: assigning global_position on a Node4D
 	# goes through the parent's transform and silently does nothing, which is a trap this

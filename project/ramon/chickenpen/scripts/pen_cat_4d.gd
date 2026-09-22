@@ -72,17 +72,37 @@ const WALKER := preload("res://ramon/Model/scripts/strider_walker.gd")
 @export_range(0.0, 6.0, 0.1) var flee_dash: float = 1.5
 ## Where a thrown cat decides to settle - the coop. It walks there and gets on top.
 @export var perch_path: NodePath
-@export_range(0.1, 6.0, 0.05) var perch_top: float = 2.45
+## MEASURED OFF THE COOP'S ROOF, and above its own origin - the same trap the crate had.
+## At 2.45 the cat sat 0.16 in the air: the roof is at 2.29 and the coop's origin is on
+## the floor, so reading the number as a world height floated it by the difference.
+@export_range(0.1, 6.0, 0.05) var perch_top: float = 2.28
 ## It starts the game already up on its crate, rather than wandering into it.
 @export var starts_on_crate: bool = true
 ## How long one wash of the paw takes.
 @export_range(0.3, 4.0, 0.1) var wash_seconds: float = 1.5
 
-enum Mood { WANDER, TO_CRATE, JUMP, SIT, FLEE, CARRIED, THROWN, TO_PERCH }
+@export_group("Living somewhere")
+## A building this one belongs to. Given one it keeps house instead of keeping a crate:
+## it comes out, mooches about nearby, and goes back in for a while.
+##
+## INSIDE IS HIDDEN, NOT MOVED SOMEWHERE ELSE. The shed has walls and no floor plan worth
+## pathing round, and a cat that walks through a wall to get in is worse than one that
+## simply is not out. Hidden, it is also unpickable for free - the grab asks the cat.
+@export var den_path: NodePath
+@export var lives_in_den: bool = false
+## How far from the door it is willing to get.
+@export_range(0.5, 14.0, 0.5) var den_radius: float = 4.0
+@export_range(1.0, 60.0, 0.5) var indoors_min: float = 5.0
+@export_range(1.0, 90.0, 0.5) var indoors_max: float = 14.0
+@export_range(2.0, 90.0, 0.5) var outdoors_min: float = 8.0
+@export_range(2.0, 90.0, 0.5) var outdoors_max: float = 22.0
+
+enum Mood { WANDER, TO_CRATE, JUMP, SIT, FLEE, CARRIED, THROWN, TO_PERCH, TO_DEN, INSIDE }
 
 var _walker: Node4D
 var _crate: Node4D
 var _perch: Node4D
+var _den: Node4D
 var _player: Node4D
 var _mood: Mood = Mood.WANDER
 var _mood_left: float = 0.0
@@ -113,10 +133,15 @@ func _ready() -> void:
 	_crate = get_node_or_null(crate_path) as Node4D
 	_player = get_node_or_null(player_path) as Node4D
 	_perch = get_node_or_null(perch_path) as Node4D
+	_den = get_node_or_null(den_path) as Node4D
 	rebuild()
 	_mood_left = _rng.randf_range(4.0, 9.0)
-	# Found sitting on its crate, not wandering towards one.
-	if starts_on_crate and _crate != null:
+	if lives_in_den and _den != null:
+		# Found at home, and due out shortly.
+		_mood = Mood.INSIDE
+		_mood_left = _rng.randf_range(1.0, 4.0)
+		_indoors(true)
+	elif starts_on_crate and _crate != null:
 		position = _crate.position + Vector4(0.0, crate_top, 0.0, 0.0)
 		_mood = Mood.SIT
 		_mood_left = _rng.randf_range(sit_min, sit_max)
@@ -301,6 +326,10 @@ func _process(delta: float) -> void:
 			_do_thrown(delta)
 		Mood.TO_PERCH:
 			_do_to_perch(delta)
+		Mood.TO_DEN:
+			_do_to_den(delta)
+		Mood.INSIDE:
+			_do_inside(delta)
 
 
 ## The walker owns the feet while it runs, so anything that poses them by hand has to
@@ -324,8 +353,10 @@ func _do_wander(delta: float) -> void:
 	else:
 		_heading += sin(_clock * 0.6) * deg_to_rad(turn_rate_degrees) * delta * 0.5
 	basis = Basis4D.from_zx(_heading)
-	# Sooner or later it decides it would rather be up somewhere.
-	if _mood_left <= 0.0 and _crate != null:
+	# Sooner or later it decides it would rather be up somewhere - or indoors.
+	if _mood_left <= 0.0 and lives_in_den and _den != null:
+		_mood = Mood.TO_DEN
+	elif _mood_left <= 0.0 and _crate != null:
 		_mood = Mood.TO_CRATE
 
 
@@ -460,6 +491,55 @@ func _do_to_perch(delta: float) -> void:
 		var top: Vector4 = _perch.global_position - (get_parent() as Node4D).global_position
 		_leap_to(Vector4(top.x, top.y + perch_top, top.z, position.w))
 		# Landing above its home height sends it into SIT, which is where it stays.
+
+
+## Home, at a trot. It ignores the player on the way for the same reason a thrown cat
+## does: being turned around by whoever is standing there would never let it arrive.
+func _do_to_den(delta: float) -> void:
+	_walking(true)
+	_walker.set("belt_speed", pace * 1.4)
+	var to: Vector4 = _den.global_position - global_position
+	_heading = rotate_toward(_heading, atan2(to.x, to.z),
+		deg_to_rad(turn_rate_degrees) * delta * 3.0)
+	basis = Basis4D.from_zx(_heading)
+	if Vector2(to.x, to.z).length() < 1.1:
+		_mood = Mood.INSIDE
+		_mood_left = _rng.randf_range(indoors_min, indoors_max)
+		_indoors(true)
+
+
+func _do_inside(delta: float) -> void:
+	_walking(false)
+	_mood_left -= delta
+	if _mood_left > 0.0:
+		return
+	_indoors(false)
+	# Out of the door and off in whatever direction it fancies.
+	_heading = _rng.randf_range(0.0, TAU)
+	basis = Basis4D.from_zx(_heading)
+	_mood = Mood.WANDER
+	_mood_left = _rng.randf_range(outdoors_min, outdoors_max)
+
+
+## In or out. Parked at the door either way, so coming out starts from the doorway rather
+## than from wherever it last happened to be standing.
+func _indoors(shut_in: bool) -> void:
+	if _den != null:
+		var host: Node4D = get_parent() as Node4D
+		var door: Vector4 = _den.global_position - (host.global_position if host != null else Vector4.ZERO)
+		position = Vector4(door.x, _home.y, door.z, position.w)
+		_home = position
+	visible = not shut_in
+
+
+## Whether somebody could pick this up right now. ASKED, NOT GUESSED: the grab handler
+## used to test the mood against a handful of literal numbers, which quietly went wrong
+## the moment two more moods were added to the middle of the enum.
+func can_be_picked_up() -> bool:
+	if not visible:
+		return false
+	return _mood == Mood.WANDER or _mood == Mood.TO_CRATE or _mood == Mood.SIT \
+		or _mood == Mood.TO_DEN
 
 
 ## Folds the legs under the body: 0 standing, 1 fully sat. The back pair come further
