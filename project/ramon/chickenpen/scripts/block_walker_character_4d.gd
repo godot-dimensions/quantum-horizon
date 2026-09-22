@@ -47,6 +47,11 @@ extends CharacterBody4D
 var input_enabled: bool = true
 
 var _facing: float = PI
+## While a conversation is open, the avatar turns to whoever is speaking instead of
+## keeping whatever heading it was walking on. The NPCs already do this; without the
+## player doing it too, they turn politely to face somebody staring at a fence.
+var _face_point: Vector4 = Vector4.ZERO
+var _facing_point: bool = false
 
 ## How much slower the ana/kata axis is than ordinary movement.
 @export_range(0.05, 1.0, 0.05) var w_speed_scale: float = 0.3
@@ -143,9 +148,27 @@ func _wish_direction() -> Vector4:
 
 
 func _turn_avatar(wish: Vector4, delta: float) -> void:
-	if absf(wish.x) > 0.001 or absf(wish.z) > 0.001:
+	# Eased at the same rate a walking turn uses, rather than snapped: a head that jumps
+	# round the instant a key is pressed reads as a glitch, and this is the one moment the
+	# player is looking straight at their own avatar.
+	if _facing_point:
+		var gap: Vector4 = _face_point - global_position
+		if absf(gap.x) > 0.001 or absf(gap.z) > 0.001:
+			_facing = rotate_toward(_facing, atan2(gap.x, gap.z), turn_speed * delta)
+	elif absf(wish.x) > 0.001 or absf(wish.z) > 0.001:
 		_facing = rotate_toward(_facing, atan2(wish.x, wish.z), turn_speed * delta)
 	_avatar.basis = Basis4D.from_zx(_facing)
+
+
+## Turn to face a point without moving toward it. Same name and convention as the NPCs'.
+func face_towards(point: Vector4) -> void:
+	_face_point = point
+	_facing_point = true
+
+
+## Back to facing wherever you walk.
+func stop_facing() -> void:
+	_facing_point = false
 
 
 func _horizontal_speed() -> float:

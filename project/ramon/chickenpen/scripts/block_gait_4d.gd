@@ -63,6 +63,24 @@ extends Node4D
 ## slightly less lets it tip a little with the leg, which looks less mechanical.
 @export_range(0.0, 1.0, 0.05) var foot_levelling: float = 0.85
 
+## How long standing still takes to become STANDING.
+##
+## WHY THIS IS NEEDED AT ALL. In stance a foot's target is _plant - a position in the
+## WORLD, fixed at touchdown, deliberately, because that is what stops the feet skating.
+## The consequence is that stopping mid-stride leaves one foot nailed to the ground where
+## it last landed and the other frozen part-way through its arc, which reads as a pose held
+## rather than a walk ended. Repositioning the body - a conversation moving you to a mark -
+## makes it obvious: the foot stays behind entirely.
+##
+## So when the body is no longer going anywhere, both feet ease off their plants and back
+## to directly under the hips, which is what standing is. Coming back to a walk clears the
+## stale plants first, so the first step starts from under the body instead of snapping
+## back to wherever the last one ended.
+@export_range(0.05, 1.5, 0.05) var settle_seconds: float = 0.3
+## Below this speed the legs are considered to have stopped rather than to be walking
+## slowly. A shade above the `halted` threshold, so settling begins before the clock stops.
+@export_range(0.02, 1.0, 0.01) var settle_below: float = 0.14
+
 ## Speed at which the legs are considered to be running rather than walking, used only to
 ## scale the lean and the stride.
 @export var run_speed: float = 5.0
@@ -94,6 +112,8 @@ var _carrying: bool = false
 var _carry_blend: float = 0.0
 var _pickup: float = 0.0
 var _pelvis_drop: float = 0.0
+## 0 while walking, 1 once stood. See settle_seconds.
+var _settle: float = 0.0
 
 
 func _ready() -> void:
@@ -208,6 +228,9 @@ func _physics_process(delta: float) -> void:
 	_travelled = Vector2(moved.x, moved.z).length()
 	speed = Vector3(_body.linear_velocity.x, _body.linear_velocity.z, _body.linear_velocity.w).length()
 	halted = speed < 0.05 or not _body.is_on_floor()
+	var stopped: bool = speed < settle_below and _body.is_on_floor()
+	_settle = move_toward(_settle, 1.0 if stopped else 0.0,
+		delta / maxf(settle_seconds, 0.01))
 	_airborne = lerpf(_airborne, 0.0 if _body.is_on_floor() else 1.0, clampf(delta * 9.0, 0.0, 1.0))
 
 	var phase: float = float(_gait.phase_progress)
@@ -215,6 +238,12 @@ func _physics_process(delta: float) -> void:
 	var effort: float = clampf(speed / maxf(run_speed, 0.001), 0.0, 1.0)
 	# Below a walk the stride shortens rather than the cycle slowing to a crawl.
 	var stride: float = stride_length * clampf(speed / maxf(run_speed * 0.6, 0.001), 0.25, 1.0)
+	# ...but STANDING STILL means standing. The 0.25 floor above keeps a slow walk legible;
+	# held at zero speed it parked the legs a quarter-stride apart with the knees bent, which
+	# reads as perched on a bench rather than stopped. Faded out below a slow walk, the feet
+	# come together and the knees straighten. The arms already scale themselves to nothing
+	# this way - the legs were the half that did not.
+	stride *= clampf(speed / 0.35, 0.0, 1.0)
 
 	_step(0, _avatar.hip_left, _avatar.knee_left, _avatar.ankle_left, fposmod(phase, 1.0), duty, stride, delta)
 	_step(1, _avatar.hip_right, _avatar.knee_right, _avatar.ankle_right, fposmod(phase + 0.5, 1.0), duty, stride, delta)
@@ -252,7 +281,7 @@ func _physics_process(delta: float) -> void:
 	# degrees to 32. The peak at 0.125 is where the stance leg is actually most extended,
 	# so it stays. The amount is up from 0.04 because 0.04 was not enough to straighten a
 	# leg standing at three quarters of its extension.
-	var bob: float = sin(phase * TAU * 2.0) * body_bob * effort * (1.0 - _airborne)
+	var bob: float = sin(phase * TAU * 2.0) * body_bob * effort * (1.0 - _airborne) * (1.0 - _settle)
 	# The stoop, layered over the walk rather than replacing it: one arc down and back up.
 	var stoop: float = 0.0
 	if _pickup > 0.0:
@@ -315,6 +344,17 @@ func _step(index: int, hip: Node4D, knee: Node4D, ankle: Node4D, local_phase: fl
 		# the step leads a body that is still moving.
 		var landing: Vector4 = ground + forward * (stride * 0.5)
 		target = _lift[index].lerp(landing, eased) + Vector4(0.0, sin(t * PI) * step_height, 0.0, 0.0)
+
+	# Standing: off the plant and back under the hip. Blended rather than switched, so a
+	# walk that ends does so by putting its feet down rather than by cutting.
+	if _settle > 0.001:
+		target = target.lerp(ground, _settle)
+		if _settle > 0.999:
+			# Fully stood. Forget the old plants, or resuming a walk snaps the foot back to
+			# wherever it last touched down - which after a reposition is another room.
+			_plant[index] = ground
+			_lift[index] = ground
+			_was_stance[index] = false
 
 	# Into the hip's own frame, which is what the solver works in.
 	var local: Vector4 = _avatar.global_basis.inverse() * (target - hip_world)
