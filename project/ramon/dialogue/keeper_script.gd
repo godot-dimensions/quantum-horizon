@@ -45,9 +45,13 @@ const NODES: Dictionary = {
 		"So take this. A gauntlet. It reads the fourth way and points down it. Where I'm blind, it isn't.",
 	],
 	"do": "give_gauntlet",
+	## Held back until that third line has been said. It used to fire the moment the node
+	## was entered, which flew the gauntlet onto your wrist while he was still two lines
+	## away from offering it.
+	"do_on_line": 2,
 	"choices": [
 		{"text": "I'll find them. You'll get this back.", "goto": "gift_return"},
-		{"text": "Thanks.", "goto": "gift_thanks"},
+		{"text": "Thanks.", "goto": "gift_thanks", "leave": true},
 		{"text": "I'll try without, thanks.", "goto": "gift_decline"},
 		{"text": "Is there a human I can talk to about this?", "goto": "ask_human"},
 	],
@@ -110,7 +114,7 @@ const NODES: Dictionary = {
 		{"text": "The chickens, then.", "goto": "hub_birds"},
 		{"text": "You're not what I expected.", "goto": "hub_him"},
 		{"text": "Who else is out here?", "goto": "hub_place"},
-		{"text": "I'll get on with it.", "goto": "exit"},
+		{"text": "I'll get on with it.", "goto": "exit", "leave": true},
 	],
 },
 
@@ -121,7 +125,7 @@ const NODES: Dictionary = {
 		{"text": "Where do I even start looking?", "goto": "where_look"},
 		{"text": "And once I've got hold of one?", "goto": "how_catch"},
 		{"text": "Twelve. How does that even happen?", "goto": "how_out", "once": true},
-		{"text": "Enough about chickens.", "goto": "hub"},
+		{"text": "Enough about chickens.", "goto": "hub", "back": true},
 	],
 },
 
@@ -132,7 +136,7 @@ const NODES: Dictionary = {
 		{"text": "Go on then. What are you?", "goto": "what_i_am", "once": true},
 		{"text": "Do you ever want to go after them yourself?", "goto": "wistful", "once": true},
 		{"text": "I'll take that gauntlet after all.", "goto": "ask_gauntlet", "needs": "!gauntlet"},
-		{"text": "Never mind.", "goto": "hub"},
+		{"text": "Never mind.", "goto": "hub", "back": true},
 	],
 },
 
@@ -142,7 +146,7 @@ const NODES: Dictionary = {
 	"choices": [
 		{"text": "Whose field is this, anyway?", "goto": "hoskinson", "once": true},
 		{"text": "And who do you answer to?", "goto": "trym", "once": true},
-		{"text": "Never mind.", "goto": "hub"},
+		{"text": "Never mind.", "goto": "hub", "back": true},
 	],
 },
 
@@ -262,7 +266,7 @@ const NODES: Dictionary = {
 		"Bring them back. That's as close as I get to going.",
 	],
 	"choices": [
-		{"text": "I'll bring them back.", "goto": "hub_him"},
+		{"text": "I'll bring them back.", "goto": "hub_him", "back": true},
 		{"text": "It's a machine feeling sorry for itself.", "goto": "rude_pity"},
 	],
 },
