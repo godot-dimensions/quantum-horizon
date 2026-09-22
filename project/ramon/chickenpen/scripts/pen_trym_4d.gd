@@ -90,6 +90,15 @@ var _facing: float = PI
 var _rest_facing: float = PI
 var _dwell: float = 0.0
 var _roused: bool = false
+## The invitation borrows him: while it has him he ignores proximity entirely, and the
+## figure walks out of the shed WITHOUT the desk, stool and bookshelf coming too. Which is
+## why the walk is an offset on the figure and not a move of this node - this node is the
+## furniture.
+var _taken: bool = false
+var _walk := Vector4.ZERO
+var _walk_facing: float = 0.0
+var _stride: float = 0.0
+var _moving: bool = false
 
 
 func _set_shirt(v: Color) -> void: shirt = v; _later()
@@ -210,6 +219,87 @@ func sit_down() -> void:
 	_dwell = 0.0
 
 
+## Hands him to something that wants to stage a scene with him. He stays up whether or not
+## the player is standing near, because a man who sits back down mid-sentence is a bug.
+func take_over() -> void:
+	_taken = true
+	_roused = true
+
+
+func release() -> void:
+	_taken = false
+	_moving = false
+	_walk = Vector4.ZERO
+
+
+## Puts him back where he started: at the desk, sitting, visible, facing his laptop. Used
+## when the player comes home from somewhere he went ahead to - the alternative is a farm
+## with an empty stool in it and a character you can never speak to again.
+func return_to_desk() -> void:
+	release()
+	_stride = 0.0
+	_rise = 0.0
+	_roused = false
+	_dwell = 0.0
+	_facing = _rest_facing
+	_walk_facing = 0.0
+	if _figure != null:
+		_figure.visible = true
+	_apply(0.0)
+
+
+## One step of a walk towards a point in WORLD space. True once he is there.
+##
+## He will not move until he is on his feet - the get-up has to finish, or he slides out of
+## the shed still folded into the shape of the stool.
+func walk_towards(target: Vector4, speed: float, delta: float) -> bool:
+	if _figure == null:
+		return true
+	var here: Vector4 = _figure.global_position
+	var to := Vector4(target.x - here.x, 0.0, target.z - here.z, 0.0)
+	var flat: float = Vector2(to.x, to.z).length()
+	if flat <= 0.12:
+		_moving = false
+		return true
+	if not is_standing():
+		_moving = false
+		return false
+	var dir: Vector4 = to / flat
+	var step: float = minf(speed * delta, flat)
+	_walk += dir * step
+	_stride += step * 3.6
+	_moving = true
+	# Into HIS frame: _facing is applied to the figure as a local basis, and this node is
+	# turned to face along the shed.
+	var local: Vector4 = global_basis.inverse() * dir
+	_walk_facing = atan2(local.x, local.z)
+	return false
+
+
+## Turns him on the spot to look at a point in world space.
+func face_towards(target: Vector4) -> void:
+	if _figure == null:
+		return
+	var to: Vector4 = target - _figure.global_position
+	var local: Vector4 = global_basis.inverse() * Vector4(to.x, 0.0, to.z, 0.0)
+	if Vector2(local.x, local.z).length() > 0.01:
+		_walk_facing = atan2(local.x, local.z)
+
+
+func set_figure_visible(shown: bool) -> void:
+	if _figure != null:
+		_figure.visible = shown
+
+
+## Where his head is now, for anything that has to point at him while he is moving - his
+## speech tag is anchored to a fixed marker at the desk, which stops being where he is the
+## moment he stands up and walks off.
+func head_position() -> Vector4:
+	if _figure == null:
+		return global_position
+	return _figure.global_position + Vector4(0.0, 1.5, 0.0, 0.0)
+
+
 ## True once he is on his feet, for anything that wants to wait for him.
 func is_standing() -> bool:
 	return _rise > 0.95
@@ -220,6 +310,12 @@ func _process(delta: float) -> void:
 		return
 	var near: bool = false
 	var want: float = _rest_facing
+	if _taken:
+		# Borrowed: no proximity, no dwell, no sitting back down. He faces where he walks.
+		_rise = minf(_rise + delta / maxf(rise_seconds, 0.01), 1.0)
+		_facing = rotate_toward(_facing, _walk_facing, turn_speed * delta)
+		_apply(_rise)
+		return
 	if _player != null:
 		var gap: Vector4 = _player.global_position - global_position
 		near = Vector2(gap.x, gap.z).length() <= notice_within \
@@ -310,31 +406,39 @@ func _bookshelf() -> void:
 func _apply(rise: float) -> void:
 	var sat: float = 1.0 - rise
 	_figure.position = Vector4(0.0, -SIT_DROP * sat,
-		seat_offset + stand_back * rise, 0.0)
+		seat_offset + stand_back * rise, 0.0) + global_basis.inverse() * _walk
 	_figure.basis = Basis4D.from_zx(_facing)
 	var thigh: float = THIGH_SIT * sat
 	var shin: float = SHIN_SIT * sat
+	# A stride, so he walks out rather than skating out. Same sign convention as the sit:
+	# NEGATIVE hip swings the thigh forward, POSITIVE knee folds the shin back under it -
+	# so the knee bends on the leg that is travelling backwards, which is the one lifting.
+	var swing: float = sin(_stride) * 0.42 if _moving else 0.0
 	for side in ["left", "right"]:
+		var lead: float = -swing if side == "left" else swing
 		var hip: Node4D = _figure.get("hip_%s" % side) as Node4D
 		var knee: Node4D = _figure.get("knee_%s" % side) as Node4D
 		var ankle: Node4D = _figure.get("ankle_%s" % side) as Node4D
+		var hip_angle: float = thigh + lead
+		var knee_angle: float = shin + maxf(0.0, lead) * 0.75
 		if hip != null:
-			hip.basis = Basis4D.from_yz(thigh)
+			hip.basis = Basis4D.from_yz(hip_angle)
 		if knee != null:
-			knee.basis = Basis4D.from_yz(shin)
+			knee.basis = Basis4D.from_yz(knee_angle)
 		if ankle != null:
 			# Rotations compose down the chain, so undoing their sum keeps the boot flat to
 			# the floor however the leg is folded.
-			ankle.basis = Basis4D.from_yz(-(thigh + shin))
+			ankle.basis = Basis4D.from_yz(-(hip_angle + knee_angle))
 	# Arms reaching forward to the keyboard, elbows bent back, and both unfolding to his
-	# sides as he rises.
+	# sides as he rises - then counter-swinging to whichever leg is forward.
 	for side in ["left", "right"]:
+		var counter: float = swing if side == "left" else -swing
 		var shoulder: Node4D = _figure.get("shoulder_%s" % side) as Node4D
 		var elbow: Node4D = _figure.get("elbow_%s" % side) as Node4D
 		if shoulder != null:
-			shoulder.basis = Basis4D.from_yz(-1.05 * sat)
+			shoulder.basis = Basis4D.from_yz(-1.05 * sat + counter * 0.6)
 		if elbow != null:
-			elbow.basis = Basis4D.from_yz(0.45 * sat)
+			elbow.basis = Basis4D.from_yz(0.45 * sat + absf(counter) * 0.4)
 	# A slight lean into the screen while seated, straightening as he gets up.
 	var torso: Node4D = _figure.get("torso") as Node4D
 	if torso != null:

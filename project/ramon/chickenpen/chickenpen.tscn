@@ -1,4 +1,4 @@
-[gd_scene load_steps=57 format=3]
+[gd_scene load_steps=61 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -43,6 +43,10 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_professor_talk_4d.gd" id="pen_prof_talk"]
 [ext_resource type="PackedScene" uid="uid://gh03wmhupplp" path="res://ramon/VoxelMining/voxel_mining_block.tscn" id="voxel_rock"]
 [ext_resource type="Script" uid="uid://bvklfrydaxyio" path="res://ramon/dialogue/world_tag_4d.gd" id="pen_world_tag"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_arch_4d.gd" id="thr_arch"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_crossing_4d.gd" id="pen_crossing"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_invitation_4d.gd" id="pen_invite"]
+[ext_resource type="PackedScene" path="res://ramon/chickenpen/theatre/theatre.tscn" id="theatre_scene"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 
@@ -647,6 +651,12 @@ basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
 script = ExtResource("pen_trym")
 player_path = NodePath("../../Player")
 
+[node name="TrymDoor" type="Node4D" parent="World"]
+position = Vector4(-9, 0, -6, 0)
+script = ExtResource("thr_arch")
+player_path = NodePath("../../Player")
+armed = false
+
 [node name="Professor" type="Node4D" parent="World"]
 position = Vector4(3.1, 0, -8.7, 0)
 basis = Projection(0.7071, 0, -0.7071, 0, 0, 1, 0, 0, 0.7071, 0, 0.7071, 0, 0, 0, 0, 1)
@@ -813,3 +823,20 @@ offset_top = 12.0
 offset_right = 600.0
 offset_bottom = 40.0
 text = "..."
+
+[node name="Crossing" type="Node" parent="."]
+script = ExtResource("pen_crossing")
+theatre_scene = ExtResource("theatre_scene")
+asleep_paths = Array[NodePath]([NodePath("../World"), NodePath("../Chickens"), NodePath("../Pen"), NodePath("../Nessa"), NodePath("../Player"), NodePath("../UI"), NodePath("../Systems"), NodePath("../Invitation")])
+farm_camera_path = NodePath("../Player/CameraRig/Pitch/Camera4D")
+player_path = NodePath("../Player")
+
+[node name="Invitation" type="Node" parent="."]
+script = ExtResource("pen_invite")
+dialogue_path = NodePath("../Systems/TrymTalk")
+trym_path = NodePath("../World/Trym")
+tag_path = NodePath("../UI/TrymTag")
+arch_path = NodePath("../World/TrymDoor")
+crossing_path = NodePath("../Crossing")
+player_path = NodePath("../Player")
+head_path = NodePath("../World/TrymHead")
