@@ -29,7 +29,7 @@ const AVATAR := preload("res://ramon/chickenpen/scripts/block_avatar_4d.gd")
 @export var shirt: Color = Color(0.10, 0.11, 0.13): set = _set_shirt
 @export var skin: Color = Color(0.91, 0.76, 0.63): set = _set_skin
 @export var hair: Color = Color(0.13, 0.10, 0.08): set = _set_hair
-@export var timber: Color = Color(0.45, 0.33, 0.23): set = _set_timber
+@export var timber: Color = Color(0.21, 0.16, 0.15): set = _set_timber
 ## Trousers. The shared avatar paints legs, face and hands from ONE colour, so a figure in
 ## a black shirt comes out bare-legged; rather than split that colour for every character
 ## in the scene, his legs get a dark block sleeved over them here.
@@ -44,7 +44,29 @@ const AVATAR := preload("res://ramon/chickenpen/scripts/block_avatar_4d.gd")
 @export_range(0.5, 20.0, 0.5) var turn_speed: float = 5.0
 ## He also gets up if you simply stand there long enough, so the character is not invisible
 ## to anyone who never presses the key.
-@export_range(0.0, 10.0, 0.5) var rises_anyway_after: float = 2.0
+## Zero disables it: he stays at his desk until the key is actually pressed, so getting up
+## is the beat that opens the conversation rather than something that already happened
+## while you were walking over.
+@export_range(0.0, 10.0, 0.5) var rises_anyway_after: float = 0.0
+
+@export_group("Bookshelf")
+## A case of books beside the desk. Offsets are in HIS frame, not the world's, so turning
+## him to face a different doorway carries his furniture round with him.
+## Y is the shed floor's own thickness, so the case stands ON the boards rather than
+## sinking through them.
+@export var shelf_offset: Vector4 = Vector4(1.37, 0.06, -0.06, 0.0): set = _set_shelf_at
+## Turned to stand along the back wall instead of across it.
+@export_range(-180.0, 180.0, 5.0) var shelf_yaw_degrees: float = -90.0: set = _set_shelf_yaw
+@export var shelf_size: Vector3 = Vector3(1.15, 1.55, 0.32): set = _set_shelf_size
+@export_range(2, 6, 1) var shelf_rows: int = 3: set = _set_shelf_rows
+## Books are drawn as spines of varying width and height, in a fixed palette rather than
+## random colours - random reads as noise, a palette reads as a shelf somebody filled.
+@export var book_colors: PackedColorArray = PackedColorArray([
+	Color(0.40, 0.17, 0.15), Color(0.21, 0.29, 0.21), Color(0.19, 0.24, 0.35),
+	Color(0.63, 0.53, 0.38), Color(0.34, 0.25, 0.19), Color(0.25, 0.35, 0.34),
+	Color(0.75, 0.69, 0.55), Color(0.45, 0.31, 0.17), Color(0.30, 0.20, 0.22),
+	Color(0.55, 0.45, 0.24),
+]): set = _set_books
 
 @export_group("Furniture")
 @export_range(0.15, 1.2, 0.01) var seat_height: float = 0.42
@@ -74,6 +96,11 @@ func _set_shirt(v: Color) -> void: shirt = v; _later()
 func _set_skin(v: Color) -> void: skin = v; _later()
 func _set_hair(v: Color) -> void: hair = v; _later()
 func _set_timber(v: Color) -> void: timber = v; _later()
+func _set_shelf_at(v: Vector4) -> void: shelf_offset = v; _later()
+func _set_shelf_yaw(v: float) -> void: shelf_yaw_degrees = v; _later()
+func _set_shelf_size(v: Vector3) -> void: shelf_size = v; _later()
+func _set_shelf_rows(v: int) -> void: shelf_rows = v; _later()
+func _set_books(v: PackedColorArray) -> void: book_colors = v; _later()
 func _set_trousers(v: Color) -> void: trousers = v; _later()
 
 
@@ -100,6 +127,8 @@ func rebuild() -> void:
 				Vector3(0.07, desk_top, 0.07), timber)
 	_box(self, "Stool", Vector4(0.0, seat_height * 0.5, seat_offset, 0.0),
 		Vector3(0.40, seat_height, 0.40), timber)
+
+	_bookshelf()
 
 	# The laptop. The lid is hinged at the back of the base and the screen is a CHILD of
 	# the lid, so tipping the lid carries the screen with it - two boxes rotated separately
@@ -196,7 +225,11 @@ func _process(delta: float) -> void:
 		near = Vector2(gap.x, gap.z).length() <= notice_within \
 			and absf(gap.w) <= notice_within_w
 		if near:
-			want = atan2(gap.x, gap.z)
+			# In the node's OWN frame, because _facing is applied to the figure as a local
+			# basis. Turning this node - which is how the shed aims him - rotates that
+			# frame, and a world-space angle would then be wrong by exactly that much.
+			var local: Vector4 = global_basis.inverse() * gap
+			want = atan2(local.x, local.z)
 
 	if not near:
 		_dwell = 0.0
@@ -216,6 +249,60 @@ func _process(delta: float) -> void:
 	_facing = rotate_toward(_facing, want if _rise > 0.55 else _rest_facing,
 		turn_speed * delta)
 	_apply(_rise)
+
+
+## A case of books. Carcass, shelves, then a row of spines per shelf, packed left to right
+## until the shelf runs out - so changing the width changes how many books fit rather than
+## stretching the ones that are there.
+func _bookshelf() -> void:
+	if shelf_size.x < 0.1 or shelf_size.y < 0.1:
+		return
+	var case := Node4D.new()
+	case.name = "Bookshelf"
+	add_child(case)
+	_own(case)
+	case.position = shelf_offset
+	case.basis = Basis4D.from_zx(deg_to_rad(shelf_yaw_degrees))
+
+	var wide: float = shelf_size.x
+	var tall: float = shelf_size.y
+	var deep: float = shelf_size.z
+	var panel: float = 0.05
+
+	_box(case, "ShelfBack", Vector4(0.0, tall * 0.5, -deep * 0.5 + panel * 0.5, 0.0),
+		Vector3(wide, tall, panel), timber)
+	for sx in [-1.0, 1.0]:
+		_box(case, "ShelfSide%s" % ("P" if sx > 0.0 else "N"),
+			Vector4(sx * (wide * 0.5 - panel * 0.5), tall * 0.5, 0.0, 0.0),
+			Vector3(panel, tall, deep), timber)
+	_box(case, "ShelfTop", Vector4(0.0, tall - panel * 0.5, 0.0, 0.0),
+		Vector3(wide, panel, deep), timber)
+
+	# Rows, and the books standing on each of them.
+	var inner: float = wide - panel * 2.0
+	# shelf_rows books-bearing boards plus the top, with the first sitting on the floor.
+	var gap: float = (tall - panel) / float(shelf_rows)
+	for row in shelf_rows + 1:
+		var y: float = panel * 0.5 + gap * float(row)
+		_box(case, "Shelf%d" % row, Vector4(0.0, y, 0.0, 0.0),
+			Vector3(wide, panel, deep), timber)
+		if row >= shelf_rows or book_colors.is_empty():
+			continue
+		var x: float = -inner * 0.5
+		var index: int = row * 3
+		while x < inner * 0.5 - 0.03:
+			# Widths and heights vary by a repeating pattern rather than at random: a shelf
+			# of identical books reads as a texture, and a shelf of noise reads as rubble.
+			var thick: float = 0.035 + 0.022 * float(index % 4)
+			if x + thick > inner * 0.5:
+				break
+			var height: float = gap * (0.62 + 0.09 * float(index % 3))
+			_box(case, "Book%d_%d" % [row, index],
+				Vector4(x + thick * 0.5, y + panel * 0.5 + height * 0.5, 0.0, 0.0),
+				Vector3(thick, height, deep * 0.78),
+				book_colors[index % book_colors.size()])
+			x += thick + 0.008
+			index += 1
 
 
 ## 0 is seated at the laptop, 1 is standing clear of the stool, and every value between is

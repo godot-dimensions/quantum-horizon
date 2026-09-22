@@ -42,6 +42,18 @@ extends Node4D
 ## How much of the pulled-in distance to keep clear of the obstruction.
 @export var collision_margin: float = 0.3
 
+@export_group("Conversation")
+## While somebody is talking, the camera comes in and the point it orbits drops, so the
+## two of you fill the frame instead of standing as small figures under a wide sky.
+##
+## DISTANCE AND PIVOT ONLY - NOT PITCH. Easing the pitch toward a framing would fight the
+## mouse for the same variable, and the player should still be able to look around while
+## somebody talks at them. Lowering what the camera orbits around gets the same "we are
+## down here at eye level" read without taking the look away.
+@export_range(1.0, 8.0, 0.1) var talk_distance: float = 2.9
+@export_range(0.0, 2.0, 0.05) var talk_pivot_height: float = 0.8
+@export_range(1.0, 20.0, 0.5) var talk_ease: float = 7.0
+
 @export_group("The way back")
 ## R puts you back on the default slice: both rotations to zero and your w to zero.
 ##
@@ -70,6 +82,11 @@ var _slice_zw: float = 0.0
 var _zoom_target: float = 0.0
 ## Seconds left on the way back to the default slice. Zero means nothing is happening.
 var _homing: float = 0.0
+var _talking: bool = false
+## The authored framing, so leaving a conversation restores what the scene asked for and
+## whatever the player had zoomed to, rather than a hard-coded default.
+var _home_pivot: float = 0.0
+var _rest_distance: float = 0.0
 
 @onready var _pitch_node: Node4D = $Pitch
 @onready var _camera: Camera4D = $Pitch/Camera4D
@@ -77,8 +94,23 @@ var _homing: float = 0.0
 
 func _ready() -> void:
 	_zoom_target = distance
+	_home_pivot = pivot_height
+	_rest_distance = distance
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_apply()
+
+
+## Called when a conversation opens and closes. Remembers whatever the player had zoomed
+## to so leaving gives it back.
+func set_talking(on: bool) -> void:
+	if on == _talking:
+		return
+	_talking = on
+	if on:
+		_rest_distance = _zoom_target
+		_zoom_target = talk_distance
+	else:
+		_zoom_target = _rest_distance
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -138,6 +170,11 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	if _homing > 0.0:
 		_go_home(delta)
+	# The conversation framing eases in and out on the same channel the zoom already uses,
+	# so it cannot end up fighting a scroll wheel.
+	pivot_height = lerpf(pivot_height,
+		talk_pivot_height if _talking else _home_pivot,
+		clampf(delta * talk_ease, 0.0, 1.0))
 	distance = lerpf(distance, _zoom_target, clampf(delta * 10.0, 0.0, 1.0))
 	position = Vector4(0.0, pivot_height, 0.0, 0.0)
 	_place_camera()
