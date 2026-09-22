@@ -10,9 +10,14 @@ var _shots := 0
 var _eye: Camera4D
 
 const STOPS := [0.0, 0.25, 0.45, 0.6, 0.8, 1.0]
+## Which way the camera stands off. The side shows the arc; the FRONT shows how the tool
+## sits in the fist, which is a different question and needs its own picture.
+@warning_ignore("unused_private_class_variable")
+var from_front: bool = false
 
 
 func _initialize() -> void:
+	from_front = OS.get_cmdline_user_args().has("front")
 	_root = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
 	root.add_child(_root); current_scene = _root
 
@@ -21,7 +26,8 @@ func _process(_d) -> bool:
 	_f += 1
 	if _f < 80: return false
 	if _pending != "":
-		root.get_texture().get_image().save_png("res://smoke_test_output/swing_%s.png" % _pending)
+		root.get_texture().get_image().save_png("res://smoke_test_output/swing_%s%s.png"
+			% ["front_" if from_front else "", _pending])
 		_pending = ""
 		return false
 	if _shots >= STOPS.size():
@@ -46,7 +52,7 @@ func _process(_d) -> bool:
 	# that side, and shot from the other one the body hides the whole swing - which is
 	# what the first attempt at this photographed.
 	var at: Vector4 = avatar.global_position + Vector4(0.0, 0.95, 0.0, 0.0)
-	var eye_at: Vector4 = at + Vector4(-2.9, 0.25, 0.0, 0.0)
+	var eye_at: Vector4 = at + (Vector4(0.0, 0.25, 3.0, 0.0) if from_front 		else Vector4(-2.9, 0.25, 0.0, 0.0))
 	var f: Vector4 = (at - eye_at).normalized()
 	_eye.global_position = eye_at
 	_eye.global_basis = Basis4D.from_zx(atan2(-f.x, -f.z)) \

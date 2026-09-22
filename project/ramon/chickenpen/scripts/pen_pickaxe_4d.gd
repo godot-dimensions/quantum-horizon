@@ -42,8 +42,22 @@ extends Node
 ## have to lie in the plane the arm swings through or they bite sideways into nothing.
 ## Two quarter turns, and both are exported because which quarter turn is which depends
 ## on the elbow's own frame and is faster to see than to derive.
-@export_range(-3.2, 3.2, 0.05) var haft_across: float = 1.5707963
+@export_range(-3.2, 3.2, 0.05) var haft_across: float = 3.1415927
 @export_range(-3.2, 3.2, 0.05) var picks_into_swing: float = 1.5707963
+## And the third.
+##
+## SWEPT AND MEASURED, after three rounds of turning it by eye got nowhere. A pickaxe
+## bites along the arc the arm swings through, so the line joining its two points has to
+## lie along the character's FORWARD - and that is a number: take the two outer pick
+## blocks, measure the axis between them, compare it to the way the avatar faces.
+##
+## The sweep also corrected what the pictures seemed to say. Every combination puts the
+## points in the fore-and-aft plane and none of them across the body - the wide pale arc
+## that looked like a sideways pickaxe in the front-on shot was one of the scene's
+## signboards behind it. What was actually wrong was subtler: the points sat 83% vertical
+## and 56% forward, which is a pickaxe held to chip at the sky. At haft PI they are 83%
+## forward, which is the one that bites.
+@export_range(-3.2, 3.2, 0.05) var picks_forward: float = 1.5707963
 @export var haft_color: Color = Color(0.55, 0.36, 0.20)
 @export var head_color: Color = Color(0.72, 0.75, 0.79)
 
@@ -96,7 +110,7 @@ func _hang_it() -> void:
 	# Held at the bottom of the haft with the head above the fist, which is how a pickaxe
 	# is carried and also what keeps it clear of the leg while walking.
 	_prop.position = Vector4(0.0, -0.20, 0.0, 0.0)
-	_prop.basis = Basis4D.from_yz(haft_across) * Basis4D.from_xy(picks_into_swing)
+	_prop.basis = Basis4D.from_yz(haft_across) * Basis4D.from_xy(picks_into_swing) 		* Basis4D.from_zx(picks_forward)
 	_haft()
 
 
