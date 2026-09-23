@@ -164,6 +164,13 @@ func rebuild() -> void:
 	figure.set("accent", skin)
 	figure.set("hair", hair)
 	figure.set("wear_cap", false)
+	# Set wide and a shade narrow: level, unhurried, listening.
+	figure.set("eyes", true)
+	figure.set("eye_colour", Color(0.11, 0.12, 0.16))
+	figure.set("eye_spacing", 0.080)
+	figure.set("eye_height", 0.035)
+	figure.set("eye_width", 0.040)
+	figure.set("eye_tall", 0.044)
 	add_child(figure)
 	_own(figure)
 	_figure = figure

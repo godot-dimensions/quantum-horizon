@@ -45,9 +45,25 @@ const ITEMS := {
 		"colour": Color(0.72, 0.78, 0.86),
 		"icon": "pickaxe",
 	},
+	"rewatch_ticket": {
+		"name": "Ticket",
+		"colour": Color(0.86, 0.72, 0.98),
+		"icon": "ticket",
+	},
 }
 
 @export var dialogue_path: NodePath
+## Everyone ELSE who can hand you something.
+##
+## ONE PATH WAS NOT ENOUGH, and the way it failed is the reason this is a list. The belt
+## listened to the keeper alone, so his gauntlet arrived and the pickaxe arrived (that one
+## is in starts_with, not a conversation at all) - and every other character on the farm
+## could announce a gift, have the effect fire correctly, and hand you nothing. Trym's
+## ticket did exactly that: the dialogue said he gave it to you and the belt never heard.
+##
+## Anything that hands items over should be in here. An effect naming an item this belt
+## does not know is ignored, so adding a speaker who gives nothing costs nothing.
+@export var dialogue_paths: Array[NodePath] = []
 @export_range(1, 10, 1) var slot_count: int = 5
 ## Things you are carrying before anybody hands you anything. The pickaxe is one - it is a
 ## tool rather than a reward, so there is no conversation to earn it from, and hanging it
@@ -87,12 +103,18 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for effect_name in starts_with:
 		add_item(effect_name)
-	var dialogue: Node = get_node_or_null(dialogue_path)
-	if dialogue == null:
-		push_warning("PenInventory: dialogue_path resolves to nothing, so nothing can ever be picked up (item 82).")
-		return
-	if not dialogue.is_connected("effect", _on_effect):
-		dialogue.connect("effect", _on_effect)
+	var heard: int = 0
+	for path in ([dialogue_path] as Array[NodePath]) + dialogue_paths:
+		if path.is_empty():
+			continue
+		var dialogue: Node = get_node_or_null(path)
+		if dialogue == null or not dialogue.has_signal("effect"):
+			continue
+		if not dialogue.is_connected("effect", _on_effect):
+			dialogue.connect("effect", _on_effect)
+		heard += 1
+	if heard == 0:
+		push_warning("PenInventory: no dialogue to listen to, so nothing can ever be picked up (item 82).")
 
 
 func _process(delta: float) -> void:
@@ -231,6 +253,22 @@ func _draw_icon(kind: String, box: Rect2, colour: Color) -> void:
 		draw_colored_polygon(lump, colour)
 		draw_polyline(_closed_loop(lump), Color(1.0, 0.94, 0.66, 0.85),
 			maxf(unit * 0.03, 1.0), true)
+		return
+
+	if kind == "ticket":
+		# A stub with a torn edge. Two rectangles and a row of notches reads as a ticket at
+		# fifty pixels, where anything more literal reads as a grey smudge.
+		var w: float = unit * 0.34
+		var h: float = unit * 0.22
+		draw_rect(Rect2(mid - Vector2(w, h), Vector2(w * 2.0, h * 2.0)), colour)
+		draw_rect(Rect2(mid - Vector2(w, h), Vector2(w * 2.0, h * 2.0)), dim,
+			false, maxf(unit * 0.03, 1.0))
+		# The perforation, a third of the way along.
+		var tear: float = mid.x - w * 0.34
+		for i in 5:
+			var y: float = mid.y - h + h * 2.0 * (float(i) + 0.5) / 5.0
+			draw_line(Vector2(tear, y - h * 0.10), Vector2(tear, y + h * 0.10),
+				Color(0.12, 0.10, 0.14, 0.9), maxf(unit * 0.035, 1.0))
 		return
 
 	if kind == "pickaxe":

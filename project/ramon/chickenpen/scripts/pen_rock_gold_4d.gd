@@ -43,10 +43,18 @@ extends Node4D
 ## do, and until now nothing asked the player to do it.
 @export_range(0, 12, 1) var deep_count: int = 3
 @export var gold: Color = Color(0.98, 0.78, 0.22): set = _set_gold
-@export_range(0.05, 1.0, 0.01) var orb_size: float = 0.30: set = _set_size
+@export_range(0.05, 1.0, 0.01) var orb_size: float = 0.40: set = _set_size
 ## How deep in they sit, as a fraction of the rock's half-width. Under 1 so none of them
 ## is poking out of the surface before a pick has touched it.
-@export_range(0.1, 0.95, 0.05) var seam_spread: float = 0.62
+##
+## THIS IS A SHELL, NOT A BOX. Scattering them uniformly through the volume sounds like a
+## seam and plays like an empty rock: most of a cube is nowhere near its surface, so the
+## average piece ended up about two metres in, and mining the whole bottom face of the
+## thing turned up nothing. They now sit at a RADIUS - a shell just under the skin - so
+## ordinary digging on any face runs into one within a swing or two.
+@export_range(0.1, 0.95, 0.05) var seam_spread: float = 0.78
+## How much the shell wobbles, so they are not all at an identical depth.
+@export_range(0.0, 0.4, 0.01) var seam_jitter: float = 0.12
 ## How far beyond a swing's own reach a deep piece must sit. Slack, so the rule holds
 ## even at the widest the carve is ever tuned to.
 @export_range(0.1, 2.0, 0.05) var deep_margin: float = 0.45
@@ -54,7 +62,7 @@ extends Node4D
 
 @export_group("Collecting")
 ## How close the swing has to land, on top of the carve's own radius.
-@export_range(0.0, 2.0, 0.05) var reveal_slack: float = 0.35
+@export_range(0.0, 2.0, 0.05) var reveal_slack: float = 0.55
 @export_range(0.5, 4.0, 0.1) var pick_up_within: float = 1.4
 
 var _rock: Node4D
@@ -112,9 +120,17 @@ func rebuild() -> void:
 				off_slice = -off_slice
 		else:
 			off_slice = rng.randf_range(-bite * 0.5, bite * 0.5)
-		var at := Vector4(
-			rng.randf_range(-reach, reach), rng.randf_range(-reach, reach),
-			rng.randf_range(-reach, reach), off_slice)
+		# A DIRECTION AND A DEPTH, rather than three independent numbers. Three uniform
+		# coordinates put most pieces near the middle of the rock; a unit direction times
+		# a depth puts every one of them the same distance under whichever face you happen
+		# to be standing at, which is what makes them findable by digging rather than by
+		# knowing where they are.
+		var dir := Vector3(rng.randfn(), rng.randfn(), rng.randfn())
+		if dir.length() < 0.001:
+			dir = Vector3(1.0, 0.0, 0.0)
+		dir = dir.normalized()
+		var depth: float = reach * (1.0 + rng.randf_range(-seam_jitter, seam_jitter))
+		var at := Vector4(dir.x * depth, dir.y * depth, dir.z * depth, off_slice)
 		var orb := MeshInstance4D.new()
 		orb.name = "Nugget%d" % i
 		var mesh := OrthoplexTetraMesh4D.new()
@@ -141,6 +157,17 @@ func _on_mined(at: Vector4, radius: float) -> void:
 			continue
 		if (_orbs[i].global_position - at).length() <= radius + reveal_slack:
 			_orbs[i].visible = true
+			# IT COMES OUT WITH THE SWING. Left where it was buried, a revealed nugget sits
+			# about two metres inside a six-metre rock and you have to tunnel in and stand
+			# in the hole to get within pick_up_within of it - which nobody did, because
+			# nothing tells you there is anything in there. Knocking it loose into the
+			# opening you just made is what a pickaxe hitting a seam should do anyway.
+			#
+			# ITS W IS ITS OWN. Only the three dimensions you can walk in are moved, so the
+			# deep half of the seam still sits a slice away and still has to be turned onto
+			# - which is the one part of this that is about the fourth dimension.
+			_orbs[i].global_position = Vector4(at.x, at.y, at.z,
+				_orbs[i].global_position.w)
 
 
 ## Walking into a revealed one pockets it. Kept here rather than in the collector, which

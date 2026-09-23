@@ -1,6 +1,6 @@
 extends RefCounted
 
-## NO class_name. The keeper's and Nessa's scripts register one, and it works because the
+## NO class_name. The keeper's and Mithra's scripts register one, and it works because the
 ## editor has scanned them; a file created outside that scan is not in the global class
 ## cache yet, and anything referring to it by name fails to parse until the project is
 ## reopened. Preloaded by path it works the moment it exists.
@@ -8,20 +8,31 @@ extends RefCounted
 ## The mining professor's dialogue, as data - the same shape the keeper's is in, so the
 ## player it is handed to needs no new code and this is a file rather than a system.
 ##
-## THE TECHNICAL DETAIL IS ALL TRUE. Every number he quotes is one this project measured:
-## the 8^4 field, the whole-field remesh after every hit and what it costs, one BoxShape4D
+## HE IS THE MANUAL FOR THE VOXEL SYSTEM, and that is his job in the scene. Everything the
+## rock does that a player cannot see - the field underneath it, the cost of a blow, why
+## the colliders are boxes, why a carve is an addition rather than a subtraction - is here
+## and nowhere else. A demo of a technology that never says what the technology is asks
+## the visitor to be impressed by a rock.
+##
+## THE TECHNICAL DETAIL IS ALL TRUE. Every number he quotes was measured in this project:
+## 8^4 points, the whole-field remesh after every hit and what it costs, one BoxShape4D
 ## per SURFACE voxel and why it cannot be a mesh, the carve as an AIR layer with a
-## GROUND-only replace mask, the 0.96 metre bite. A character who explains a system in
-## invented terms is worse than one who says nothing, because the player who checks comes
-## away trusting the game less. He is funny about things that are true.
+## GROUND-only replace mask, the 0.96 metre bite, six nuggets of which three sit further
+## through W than any single blow can reach. A character who explains a system in invented
+## terms is worse than one who says nothing, because the player who checks comes away
+## trusting the game less.
+##
+## SHORT LINES. The first draft gave him three long paragraphs a topic, which reads as a
+## lecture however good the sentences are - and a player skimming a lecture learns nothing
+## the third of a page they actually read. Two lines, one idea each, one number each. He
+## is precise because he is a pedant, not because he is thorough.
 ##
 ## THE COMEDY IS THE GAP between the scale of his apparatus and the scale of his subject.
-## He has instrumentation, a grant, a helmet with a lamp on it, a four-dimensional field
-## solver - and he is standing in a chicken field hitting a rock. He does not find this
-## funny, which is what makes it funny.
+## A grant, a lamp on his helmet, a four-dimensional field solver - and he is standing in
+## a chicken field hitting a rock. He does not find this funny.
 ##
-## FOUR REPLIES MAXIMUM, the same budget the keeper keeps, for the same reason: nine
-## options is a database query and the eye stops reading and starts scanning.
+## FOUR REPLIES MAXIMUM, which is why the topics run over two pages instead of seven in a
+## column. Nine options is a database query: the eye stops reading and starts scanning.
 
 const START: String = "intro"
 
@@ -30,26 +41,25 @@ const NODES: Dictionary = {
 # ---------------------------------------------------------------- first meeting
 
 "intro": {
-	"speaker": "Professor",
+	"speaker": "Professor Miner",
 	"lines": [
-		"Ah. An assistant. Or a trespasser. The paperwork is identical, so let us proceed as though it were the first.",
-		"This is a boulder. That is the least interesting true statement I can make about it, and I would ask you not to repeat it.",
-		"It is a scalar field on an eight-by-eight-by-eight-by-eight lattice, surfaced by dual contouring, and you may hit it with a pick.",
+		"An assistant, or a trespasser. The paperwork is identical.",
+		"This is not a boulder. It is a scalar field on an eight-by-eight-by-eight-by-eight lattice, and you may hit it with a pick.",
 	],
 	"choices": [
 		{"text": "I can hit it?", "goto": "how_to_mine"},
-		{"text": "Dual what?", "goto": "topic_contour"},
+		{"text": "A field of what?", "goto": "topic_contour"},
 		{"text": "Is there anything in it?", "goto": "topic_gold"},
 		{"text": "I'll leave you to it.", "goto": "bye", "leave": true},
 	],
 },
 
 "how_to_mine": {
-	"speaker": "Professor",
+	"speaker": "Professor Miner",
 	"lines": [
-		"Take the pick — press one, it is the first thing on your belt — and strike the rock from close range.",
-		"Each blow removes a sphere of material about a metre across. Not a hole: a SPHERE. The distinction will matter to you in a moment.",
-		"Go on. I have been hitting it alone for two weeks and my notes have begun to repeat themselves.",
+		"Pick is on your belt. Press its number, stand close, swing.",
+		"Each blow takes a sphere about a metre across. Gold sits a hand's depth under the skin - one blow, two at most, anywhere on it.",
+		"Bring what you find to the keeper. He has been waiting years for someone to hand him something.",
 	],
 	"topic": true,
 	"goto": "menu",
@@ -58,74 +68,90 @@ const NODES: Dictionary = {
 # ---------------------------------------------------------------- the topics
 
 "menu": {
-	"speaker": "Professor",
+	"speaker": "Professor Miner",
 	"lines": ["Ask. I am contractually obliged to disseminate."],
 	"choices": [
-		{"text": "What is it actually made of?", "goto": "topic_contour"},
+		{"text": "What is it made of?", "goto": "topic_contour"},
 		{"text": "Why does it hitch when I hit it?", "goto": "topic_cost"},
 		{"text": "How does it know which bit I hit?", "goto": "topic_collision"},
-		{"text": "What do I do once it's open?", "goto": "topic_rotate"},
+		{"text": "Other questions.", "goto": "menu_two"},
+	],
+},
+
+"menu_two": {
+	"speaker": "Professor Miner",
+	"lines": ["Go on."],
+	"choices": [
+		{"text": "What is the gold for?", "goto": "topic_gold"},
+		{"text": "What happens if I turn the slice?", "goto": "topic_rotate"},
+		{"text": "Why a sphere?", "goto": "topic_bite"},
+		{"text": "That's everything.", "goto": "bye", "leave": true},
 	],
 },
 
 "topic_contour": {
-	"speaker": "Professor",
+	"speaker": "Professor Miner",
 	"instead": "topic_contour_again",
 	"lines": [
-		"Four thousand and ninety-six points, each holding a number: how far inside the rock it is. Positive within, negative without.",
-		"The surface you can see is where that number crosses zero. Dual contouring finds that crossing and fits a vertex to it, which is why the rock has corners instead of stairs.",
-		"Carving is not subtraction. It adds a layer of AIR over the top, masked to replace only GROUND — so the rock forgets, but the field remembers everything it was told, in order.",
-		"I find that rather moving. My colleagues find it a reason not to sit with me.",
+		"Four thousand and ninety-six points, each holding one number: how far inside the rock it is. Positive within, negative without.",
+		"The surface is where that number crosses zero. Dual contouring fits a vertex to the crossing, which is why the rock has corners and not stairs.",
 	],
 	"topic": true,
 	"goto": "menu",
 },
 
 "topic_cost": {
-	"speaker": "Professor",
+	"speaker": "Professor Miner",
 	"instead": "topic_cost_again",
 	"lines": [
-		"Because every blow re-contours the ENTIRE field. All four thousand and ninety-six points, for a bite the size of your head.",
-		"About a sixth of a second. You feel it as a stumble. I feel it as the sound of a man who has not yet implemented chunking.",
-		"Making the rock twice as large cost nothing, incidentally — the cells were simply told to be bigger. Doubling the LATTICE would have cost sixteen times as much. There is a lesson in that, and it is not about rocks.",
+		"Every blow re-contours the entire field. All four thousand and ninety-six points, for a bite the size of your head. A sixth of a second.",
+		"Making the rock bigger was free - the cells were told to be wider. Doubling the LATTICE would cost sixteen times as much. There is a lesson in that, and it is not about rocks.",
 	],
 	"topic": true,
 	"goto": "menu",
 },
 
 "topic_collision": {
-	"speaker": "Professor",
+	"speaker": "Professor Miner",
 	"instead": "topic_collision_again",
 	"lines": [
-		"Every voxel on the SURFACE carries its own box-shaped collider. Five hundred and forty-four of them, at present count.",
-		"Only the surface. A buried voxel gets nothing, on the grounds that a ray from outside can never reach one — the shell always takes the hit first. Colliders for the invisible are how you spend a frame budget on nothing.",
-		"And they must be BOXES. The physics here collapses any other shape to a single bounding volume, so a mesh-shaped collider would give you one enormous invisible crate and no way to tell which part of it you struck.",
-		"Your pick asks the raycast which shape it hit, and the block looks that shape up in a dictionary. No geometry. A lookup.",
+		"Every voxel on the surface carries its own box collider. Five hundred and forty-four of them. Buried ones get nothing - the shell always takes the hit first.",
+		"They must be boxes. This physics collapses any other shape to one bounding volume, so a mesh collider would be a single enormous crate with no way to tell which part you struck.",
+		"Your pick asks the raycast which shape it hit and looks that shape up in a dictionary. No geometry. A lookup.",
+	],
+	"topic": true,
+	"goto": "menu",
+},
+
+"topic_bite": {
+	"speaker": "Professor Miner",
+	"instead": "topic_bite_again",
+	"lines": [
+		"Because carving is not subtraction. It lays a sphere of AIR over the field, masked to replace only GROUND, and the field keeps every layer it was ever given, in order.",
+		"The rock forgets. The field remembers. I find that moving; my colleagues find it a reason not to sit with me.",
 	],
 	"topic": true,
 	"goto": "menu",
 },
 
 "topic_gold": {
-	"speaker": "Professor",
+	"speaker": "Professor Miner",
 	"instead": "topic_gold_again",
 	"lines": [
-		"There is gold in it. Five pieces, on my last survey, though I concede my last survey was conducted by hitting the rock and looking hopeful.",
-		"They are not part of the field — they are simply IN there, waiting for the material in front of them to stop existing. Dig, and they turn up.",
-		"Walk into one and it is yours. I have not tried this myself. I am on a grant, and the terms are specific.",
+		"Six pieces. Three lie within reach of the slice you are standing in. Three do not, and no blow from here will ever touch them.",
+		"Each one buys one trough from the keeper. Six troughs is a field that mostly walks itself. I am told this matters to you more than the lattice does.",
 	],
 	"topic": true,
 	"goto": "menu",
 },
 
 "topic_rotate": {
-	"speaker": "Professor",
+	"speaker": "Professor Miner",
 	"instead": "topic_rotate_again",
 	"lines": [
-		"Now THIS is the part I would like you to actually do, rather than nod at.",
-		"Hollow it out, then turn your slice. Hold the W-drag and lean on the mouse.",
-		"The hole you dug is a hole in FOUR dimensions, and what you are looking at is one three-dimensional slice of it. Turn the slice and you are not looking at the hole from a new angle — you are looking at a DIFFERENT HOLE. Same rock. Same blow. A shape you have never seen and did not make on purpose.",
-		"The first time it happened to me I sat down in the grass. A chicken stood on my clipboard. I have not been the same.",
+		"A blow reaches about a metre. Three of the six sit further through W than that, so the geometry - not a difficulty setting - says you cannot have them from here.",
+		"Hollow it out, hold the W-drag, lean on the mouse. Then dig again from a cross-section that did not exist a moment ago.",
+		"The hole you made is a hole in four dimensions. Turn the slice and you are not seeing it from a new angle. You are seeing a different hole. Same rock, same blow.",
 	],
 	"topic": true,
 	"goto": "menu",
@@ -133,41 +159,47 @@ const NODES: Dictionary = {
 
 # ---------------------------------------------------------------- second visits
 
-## SECOND VISITS ARE SHORT. A character who delivers the same three-paragraph lecture
-## every time you ask is one you stop asking, and the topics are worth asking twice - the
-## first pass is for the idea and the second is for the number you half-remember.
+## SECOND VISITS ARE ONE LINE. A character who delivers the same lecture every time is one
+## you stop asking, and these are worth asking twice - the first pass is for the idea, the
+## second for the number you half-remember.
 "topic_contour_again": {
-	"speaker": "Professor",
-	"lines": ["A field of numbers, a surface where they cross zero, and a memory of every layer it was ever given. Yes."],
+	"speaker": "Professor Miner",
+	"lines": ["A field of numbers, and a surface where they cross zero. Four thousand and ninety-six of them."],
 	"goto": "menu",
 },
 
 "topic_cost_again": {
-	"speaker": "Professor",
-	"lines": ["The whole lattice, every blow. A sixth of a second. I have made peace with it in the way one makes peace with a neighbour."],
+	"speaker": "Professor Miner",
+	"lines": ["The whole lattice, every blow, a sixth of a second. I have made peace with it as one does with a neighbour."],
 	"goto": "menu",
 },
 
 "topic_collision_again": {
-	"speaker": "Professor",
-	"lines": ["Boxes on the shell, nothing buried, and a dictionary instead of geometry. Five hundred and forty-four little certainties."],
+	"speaker": "Professor Miner",
+	"lines": ["Boxes on the shell, nothing buried, a dictionary instead of geometry. Five hundred and forty-four little certainties."],
+	"goto": "menu",
+},
+
+"topic_bite_again": {
+	"speaker": "Professor Miner",
+	"lines": ["Air laid over ground, never taken away. The rock forgets and the field does not."],
 	"goto": "menu",
 },
 
 "topic_gold_again": {
-	"speaker": "Professor",
-	"lines": ["Still five. Still in there. Still not mine, per the terms."],
+	"speaker": "Professor Miner",
+	"lines": ["Six. Three here, three a slice away. One trough apiece, and the keeper does the building."],
 	"goto": "menu",
 },
 
 "topic_rotate_again": {
-	"speaker": "Professor",
+	"speaker": "Professor Miner",
 	"lines": ["Dig, then turn the slice. Same rock, same blow, a shape you did not make on purpose. Do go and do it."],
 	"goto": "menu",
 },
 
 "bye": {
-	"speaker": "Professor",
+	"speaker": "Professor Miner",
 	"lines": ["Mind the rock. It is, in a strict sense, four times more rock than it appears."],
 	"goto_if_asked": "menu",
 },

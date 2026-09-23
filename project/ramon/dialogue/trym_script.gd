@@ -124,21 +124,156 @@ const NODES: Dictionary = {
 	"speaker": "Trym",
 	"instead": "what_did_you_think",
 	"lines": [
-		"Brilliant. Right.",
-		"Out we go. Don't wander off - I'll only have to come and find you.",
+		"Brilliant. Out we go.",
 	],
 	"do": "trym_invite",
-	"do_on_line": 1,
+	"do_on_line": 0,
 	"goto": "",
 },
 
+## COMING BACK FROM THE SHOWING.
+##
+## IT MUST NOT FALL BACK TO THE ORIGINAL TOPIC LIST. The first version sent every answer
+## home to `hub`, and after the cinema that reads as the conversation rewinding - you have
+## just watched the thing and he offers you "why is this pen four-dimensional at all?"
+## again. The return leg has its own hub, `post_show`, and nothing here reaches the old
+## one.
+##
+## A SPECTRUM, NOT A MENU. Seven positions from enthusiastic to dismissive, sitting beside
+## each other so the player picks a stance rather than a topic. Each is `once`, so the
+## list thins as you work through it and the conversation ends when you have said your
+## piece. This is the only node allowed past the four-reply cap, named explicitly in the
+## verifier so the exception cannot spread by accident.
+##
+## EVERY ANSWER LEADS WITH UNDERSTANDING - the developer slide's own first beat, before
+## Create and before Carry it forward. He concedes the sceptical ones outright, including
+## the last, which he cannot answer with a number and does not pretend to.
+##
+## AND EVERY FIGURE IS FROM THE RECORD: 25.2 ms across seven creatures, 73,020 tetrahedra,
+## 79.31 down to 19.76, ~130 ms a carve at ~58 fps, 40.5 ms to rebuild a portal chunk,
+## 7 of 7 reporting intuition against 3 of 7 finishing, and goat 1.15 m, chicken 0.51 m,
+## brachiosaurus 10.2 m from one authoring method. The floor banding is a HYPOTHESIS here
+## because that is what the slide calls it. Understating the evidence is the character.
 "what_did_you_think": {
 	"speaker": "Trym",
+	"topic": true,
 	"lines": [
-		"So. What did you think?",
-		"No - don't answer that. I'll take it personally and then we'll be here all evening. I'm glad you came.",
+		"Right. You've seen it now.",
+		"Not whether you enjoyed it - whether you think it can become a platform people build ON. That's the actual question in October, and it splits three ways: can it run reliably, can people understand it and enjoy it, and can anybody other than us build with it. Any one of them can change the scope on its own.",
+		"So. Wherever you land, land on it honestly. I get the polite answer from everybody.",
 	],
-	"goto": "hub",
+	"goto": "post_show",
+},
+
+"post_show": {
+	"speaker": "Trym",
+	"lines": [],
+	"choices": [
+		{"text": "This is it. You've got a platform.", "goto": "say_platform", "once": true},
+		{"text": "I'd play a horror game built in this tomorrow.", "goto": "say_horror", "once": true},
+		{"text": "The tools impressed me more than the games did.", "goto": "say_tools", "once": true},
+		{"text": "It depends whether anyone else can build with it.", "goto": "say_transfer", "once": true},
+		{"text": "People will bounce off it. It's too hard to read.", "goto": "say_player", "once": true},
+		{"text": "It'll never run well enough to ship.", "goto": "say_engine", "once": true},
+		{"text": "Honestly? It's a tech demo looking for a game.", "goto": "say_demo", "once": true},
+		{"text": "So what are you actually asking for?", "goto": "the_ask", "once": true},
+		{"text": "That's me done.", "goto": "exit", "leave": true},
+	],
+},
+
+"say_platform": {
+	"speaker": "Trym",
+	"topic": true,
+	"lines": [
+		"I understand why it looks that way from inside it. It looks that way to me too, and two of the three legs are holding better than I expected.",
+		"But I should be precise about what you just walked through, because the flattering version of the story is the wrong one. The foundation is specialist engineering - Aaron and Andrew write the engine, and nothing here happens without them. What sits on top was made by the two of us: a designer, and me, who knows what a rotor is and could not implement one at gunpoint. The claim is narrower than people hear it. Not that anybody can build 4D - that people who cannot build the floor can still build a room on it.",
+		"And we've only been at it since May, after we came off Unreal onto Godot. Two of us over five months is not a sample. That's a partnership finding its feet, not a platform.",
+	],
+	"goto": "post_show",
+},
+
+"say_horror": {
+	"speaker": "Trym",
+	"topic": true,
+	"lines": [
+		"I understand the instinct, and you've picked the direction I'd pick. Let me tell you why it's the right one rather than just the fun one.",
+		"In every genre, being disoriented is friction - something you pay for with fun somewhere else. In exactly one genre it isn't friction, it's the product. Iron Lung was a six-dollar indie about a submarine in the dark, it got famous on other people's channels, and then somebody made a film of it. We happen to be extremely good at taking a person's bearings away.",
+		"What I won't do is plan on it. That's a low-probability breakout, not a forecast, and a studio that budgets for lightning gets what it deserves.",
+	],
+	"goto": "post_show",
+},
+
+"say_tools": {
+	"speaker": "Trym",
+	"topic": true,
+	"lines": [
+		"I understand why that sounds like faint praise, and I'd like to be clear that it isn't. That IS the finding. The tool is the output.",
+		"You place control balls down a spine, set their size, and the thing lofts a body through them. Same method, different numbers: a goat at a metre fifteen, a chicken at half a metre, a brachiosaurus at ten. Nobody built those a tetrahedron at a time, which is the only reason there are nine experiments rather than one.",
+		"With the caveat I keep repeating, because it's the honest half: specialist engineering still holds the foundation up. The authoring sits on top of work neither of us could do.",
+	],
+	"goto": "post_show",
+},
+
+"say_transfer": {
+	"speaker": "Trym",
+	"topic": true,
+	"lines": [
+		"I understand, and I agree with you completely. That's the third pillar, and it's the one I'd bet against.",
+		"So it's the next test, and it's deliberately uncomfortable. One outside author. One defined task: take a creature, change its proportions, procedurally animate it, make it hold up in a scene. We hand over the tool, starter material, documentation and AI access.",
+		"And we record the failures and how much help they needed, not just whether it came out. A result you have to stand next to in order to reproduce isn't independence. It's supervision.",
+	],
+	"goto": "post_show",
+},
+
+"say_player": {
+	"speaker": "Trym",
+	"topic": true,
+	"lines": [
+		"I understand, and I won't fight you with the number you're expecting me to use.",
+		"Seven playtesters. Seven of seven said they came away with some intuition for it. Three of seven actually finished. Those two numbers tell different stories, and the honest reading is the second one - people believed they had understood it rather more than their hands had.",
+		"Which is where the work went. If you can't see the fourth axis you need something that tells you it moved, so we band the floor - a repeating pattern the eye can measure the change against. And I'll be careful here: that's a hypothesis with a picture beside it. It hasn't been tested on anybody yet.",
+		"The next study asks them to do the task, explain the rule back in their own words, and then choose whether to carry on. Understanding and appeal measured separately, because a thing can pass one and fail the other, and I'd rather know which than average them into a number that flatters us.",
+	],
+	"goto": "post_show",
+},
+
+"say_engine": {
+	"speaker": "Trym",
+	"topic": true,
+	"lines": [
+		"I understand, and rather than reassure you I'll just give you the numbers.",
+		"Seven creatures animating together: 25.2 milliseconds a frame, so about forty a second, with seventy-three thousand tetrahedra on screen. Carving the rock runs around 130 milliseconds a carve and sits near fifty-eight frames between them. Cutting a portal through a wall rebuilds that chunk in 40.5.",
+		"None of that is shippable and I'd rather say so than dress it up. But it moves when we push it - the five-creature test went from 79.31 milliseconds to 19.76 by binding each vertex to its bone once instead of rebuilding every limb from scratch every frame.",
+		"And here's the caveat off our own slide, before you go and find it yourself: one machine, one scene, no controlled repeat, hardware and sample count not supplied. A number nobody else can reproduce isn't evidence. It's a nice afternoon.",
+	],
+	"goto": "post_show",
+},
+
+"say_demo": {
+	"speaker": "Trym",
+	"topic": true,
+	"lines": [
+		"I understand. That's the fear I'd have in your chair, and it's the only one on your list I can't wave a measurement at.",
+		"The difference between a demo and a platform is whether the same foundation serves games that have nothing to do with one another. That's why there are nine experiments across four areas rather than one polished thing - reading 4D space, acting through the fourth axis, reusable environments, living creatures. One engine underneath all of it. A single beautiful slice would prove one game was worth finishing. It wouldn't tell you the ground was fertile.",
+		"But I'd rather concede the shape of your point than dodge it. That's evidence, not proof. Which is why stop is genuinely on the table in October, alongside continue and rescope, and why I wrote down beforehand what would make me pick it.",
+	],
+	"goto": "post_show",
+},
+
+## THE ASK, STATED PLAINLY. A stakeholder who plays this should be able to leave knowing
+## what is actually being requested in October, not merely that the numbers are honest.
+## It is the deck's closing slide in his own voice: three outcomes, a BOUNDED
+## recommendation rather than a runway, and continuation tied to the evidence.
+"the_ask": {
+	"speaker": "Trym",
+	"topic": true,
+	"lines": [
+		"Three things, and none of them is more money for as long as it takes.",
+		"Three outcomes are on the table in October. Continue, rescope, or stop. We're recommending continue - but bounded. Fund a named set of tests with review points attached, not a runway. If the wider case weakens, narrow it to one title or one tool. If the fundamentals fail, wind it down. Those are our words, in our own deck, written before anybody asked us for them.",
+		"So: agree what we're testing, agree how it's paid for, agree when we next look. Tie the money to the evidence rather than to how keen I sound - because how keen I sound is not data.",
+		"Decision pack on the twelfth, gate on the sixteenth. Build it, measure it, let the evidence decide. Which is either the dullest sentence in the whole deck or the entire point of it, depending rather a lot on how that week goes.",
+	],
+	"goto": "post_show",
 },
 
 # ---------------------------------------------------------------- the three questions
@@ -206,6 +341,30 @@ const NODES: Dictionary = {
 	"goto": "hub",
 },
 
+"greet_ticket": {
+	"speaker": "Trym",
+	"topic": true,
+	"lines": [
+		"Before you go - here. Take this.",
+		"It's a ticket. The projector doesn't care whether I'm standing next to it, and I've realised I'd rather you could go back and check a number than take my word for one of them. That's the entire argument I've been making at you all afternoon, so it would be a bit rich to make you come and ask me every time.",
+		"Keep it on your belt. Press it whenever you like.",
+	],
+	"do": "rewatch_ticket",
+	"do_on_line": 2,
+	"goto": "",
+},
+
+## AFTER ALL OF IT. Short, and it ends - it does not reopen the topic list. Coming back
+## to a man who offers you his introduction again is the thing that made the conversation
+## feel like a machine in the first place.
+"greet_after": {
+	"speaker": "Trym",
+	"lines": [
+		"Go on, then. You've got the ticket - you don't need me to let you in.",
+	],
+	"goto": "",
+},
+
 "exit": {
 	"speaker": "Trym",
 	"lines": [
@@ -222,6 +381,8 @@ const NODES: Dictionary = {
 	"goto": "hub",
 },
 
+
+
 "greet_carrying": {
 	"speaker": "Trym",
 	"lines": [
@@ -237,7 +398,7 @@ const NODES: Dictionary = {
 		"All twelve. You realise you've just done the whole experiment, don't you.",
 		"Ran, was understood, was worth doing. Somebody write that down.",
 	],
-	"goto": "hub",
+	"goto": "",
 },
 
 }

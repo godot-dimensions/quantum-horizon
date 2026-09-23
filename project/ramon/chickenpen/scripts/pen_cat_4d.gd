@@ -92,6 +92,14 @@ const WALKER := preload("res://ramon/chickenpen/scripts/strider_walker.gd")
 @export var lives_in_den: bool = false
 ## How far from the door it is willing to get.
 @export_range(0.5, 14.0, 0.5) var den_radius: float = 4.0
+## How far clear of the den's walls it is held.
+##
+## WHY THIS IS NEEDED AT ALL: nothing in this scene has walls a wanderer can feel. The
+## buildings are meshes, the animals are driven by their own code rather than by physics,
+## and so a cat that decides to stroll north strolls through the shed. Pushing it back out
+## of the footprint each frame is the cheapest honest fix - no colliders, no pathing, and
+## it cannot end up stuck inside because being inside is the one state it corrects.
+@export_range(0.0, 2.0, 0.05) var den_clearance: float = 0.35
 @export_range(1.0, 60.0, 0.5) var indoors_min: float = 5.0
 @export_range(1.0, 90.0, 0.5) var indoors_max: float = 14.0
 @export_range(2.0, 90.0, 0.5) var outdoors_min: float = 8.0
@@ -330,6 +338,7 @@ func _process(delta: float) -> void:
 			_do_to_den(delta)
 		Mood.INSIDE:
 			_do_inside(delta)
+	_keep_out_of_den()
 
 
 ## The walker owns the feet while it runs, so anything that poses them by hand has to
@@ -358,6 +367,42 @@ func _do_wander(delta: float) -> void:
 		_mood = Mood.TO_DEN
 	elif _mood_left <= 0.0 and _crate != null:
 		_mood = Mood.TO_CRATE
+
+
+## The doorway if the den knows where its door is, the middle of it if not.
+func _den_door() -> Vector4:
+	if _den != null and _den.has_method("door_point"):
+		return _den.call("door_point")
+	return _den.global_position if _den != null else global_position
+
+
+## Shoves it back out of its den's footprint, and turns it away so it does not spend the
+## rest of the minute walking into the same wall. Called after whatever moved it.
+##
+## IT ONLY EVER PUSHES OUT. There is no "am I allowed through here" test and no doorway
+## gap, because the cat never actually goes in: reaching the door it is hidden instead,
+## for the reason in the den_path note. So the footprint can be solid, which means there
+## is no gap to get wedged in.
+func _keep_out_of_den() -> void:
+	if _den == null or not visible or not _den.has_method("footprint_half"):
+		return
+	var half: Vector2 = _den.call("footprint_half") + Vector2(den_clearance, den_clearance)
+	var local: Vector4 = _den.global_basis.inverse() * (global_position - _den.global_position)
+	var into_x: float = half.x - absf(local.x)
+	var into_z: float = half.y - absf(local.z)
+	if into_x <= 0.0 or into_z <= 0.0:
+		return
+	# Out by the nearer wall, which is the shortest way back into the daylight.
+	if into_x < into_z:
+		local.x = (half.x if local.x >= 0.0 else -half.x)
+	else:
+		local.z = (half.y if local.z >= 0.0 else -half.y)
+	var fixed: Vector4 = _den.global_position + _den.global_basis * local
+	global_position = Vector4(fixed.x, global_position.y, fixed.z, global_position.w)
+	var away := Vector2(fixed.x - _den.global_position.x, fixed.z - _den.global_position.z)
+	if away.length() > 0.01:
+		_heading = atan2(away.x, away.y)
+		basis = Basis4D.from_zx(_heading)
 
 
 func _do_to_crate(delta: float) -> void:
@@ -498,11 +543,11 @@ func _do_to_perch(delta: float) -> void:
 func _do_to_den(delta: float) -> void:
 	_walking(true)
 	_walker.set("belt_speed", pace * 1.4)
-	var to: Vector4 = _den.global_position - global_position
+	var to: Vector4 = _den_door() - global_position
 	_heading = rotate_toward(_heading, atan2(to.x, to.z),
 		deg_to_rad(turn_rate_degrees) * delta * 3.0)
 	basis = Basis4D.from_zx(_heading)
-	if Vector2(to.x, to.z).length() < 1.1:
+	if Vector2(to.x, to.z).length() < 0.8:
 		_mood = Mood.INSIDE
 		_mood_left = _rng.randf_range(indoors_min, indoors_max)
 		_indoors(true)
@@ -526,7 +571,7 @@ func _do_inside(delta: float) -> void:
 func _indoors(shut_in: bool) -> void:
 	if _den != null:
 		var host: Node4D = get_parent() as Node4D
-		var door: Vector4 = _den.global_position - (host.global_position if host != null else Vector4.ZERO)
+		var door: Vector4 = _den_door() - (host.global_position if host != null else Vector4.ZERO)
 		position = Vector4(door.x, _home.y, door.z, position.w)
 		_home = position
 	visible = not shut_in

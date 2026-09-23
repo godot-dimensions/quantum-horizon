@@ -19,6 +19,42 @@ extends Node4D
 ## it is what lets the avatar turn to face where it is going while the camera looks
 ## wherever the player points it.
 
+## THREE CAMERAS TO CHOOSE BETWEEN, cycled with Tab, because this is being decided by
+## playing rather than by argument and the only useful comparison is an immediate one.
+##
+## SUBJECT SIZE IS HELD ROUGHLY CONSTANT across the three: the distance rises as the lens
+## narrows, by 1/tan(fov/2). Narrowing the lens on its own is only a zoom, and of course a
+## zoomed picture looks different - what these three actually differ in is PERSPECTIVE.
+## Wide throws the world away from you and leaves a large empty foreground; narrow
+## compresses it, so the pen reads as a box you can judge distances across.
+##
+## The height and the downward tilt climb with the narrowing, and they are doing at least
+## as much of the work as the lens is. Most of what makes the third one legible is simply
+## that it can see the ground.
+##
+##   1 - 77.3 degrees at 5 m. Where this started: the engine's default focal length.
+##   2 - 55 degrees at 8 m. A compromise that keeps a good amount of sky.
+##   3 - 45 degrees at 9.7 m, higher and tilted further down. The diorama.
+##   4 - the cinema's own framing, copied from theatre_camera_4d: wide, close, and up at
+##       1.7 m. It is there to be compared against, not because the farm should use a
+##       shot built for one seated figure on a stage.
+##
+## Each row is: name, field of view in degrees, distance, pivot height, pitch in degrees.
+const PRESETS: Array = [
+	["Camera 1", 77.3, 5.00, 1.10, -8.6],
+	["Camera 2", 55.0, 8.00, 1.50, -15.0],
+	["Camera 3", 45.0, 9.70, 1.90, -22.0],
+	["Camera 4", 77.3, 4.20, 1.70, -6.0],
+]
+
+signal preset_changed(index: int)
+
+## Which one the scene opens on, and whether this rig has presets at all. Negative - the
+## default - uses the distance, pivot and pitch exported below, and Tab does nothing: the
+## behaviour this had before there were presets, which is what the cinema wants.
+@export_range(-1, 3, 1) var start_preset: int = -1
+@export var cycle_key: Key = KEY_TAB
+
 ## Degrees the camera sits above the character's feet, as the point it orbits.
 @export var pivot_height: float = 1.1
 
@@ -29,6 +65,21 @@ extends Node4D
 @export var zoom_speed: float = 1.2
 
 @export_range(0.0, 0.02, 0.0001) var mouse_sensitivity: float = 0.005
+
+## Which way the camera looks on the first frame, in degrees. Positive turns the view to
+## its left, which is the sign from_zx uses.
+##
+## EXPORTED RATHER THAN SET ON `yaw` IN THE SCENE. `yaw` is a plain script variable, so a
+## .tscn line setting it applies on load but carries no STORAGE flag - the next time the
+## editor saves the scene it would be dropped, and the spawn would quietly go back to
+## facing straight down -Z with nothing in the diff to explain it.
+@export_range(-180.0, 180.0, 0.5) var start_yaw_degrees: float = 0.0
+
+## How far the camera looks down on the first frame, in degrees. Negative looks down.
+##
+## EXPORTED FOR THE SAME REASON AS THE YAW: `pitch` is a plain script variable, so a value
+## set on it in the scene applies on load and is dropped the next time the editor saves.
+@export_range(-89.0, 89.0, 0.5) var start_pitch_degrees: float = -8.6
 
 ## Pitch limits, in degrees. Asymmetric on purpose: a third-person camera wants to look
 ## down at the character far more than it wants to look up at its feet.
@@ -82,22 +133,69 @@ var _slice_zw: float = 0.0
 var _zoom_target: float = 0.0
 ## Seconds left on the way back to the default slice. Zero means nothing is happening.
 var _homing: float = 0.0
+## Seconds during which an implausibly large mouse jump is treated as the cursor being
+## warped rather than as a look. See _unhandled_input.
+var _ignore_mouse: float = 1.5
 var _talking: bool = false
+## Set while a staged shot is on screen. See lock_look.
+var _look_locked: bool = false
 ## The authored framing, so leaving a conversation restores what the scene asked for and
 ## whatever the player had zoomed to, rather than a hard-coded default.
 var _home_pivot: float = 0.0
 var _rest_distance: float = 0.0
+## Which of PRESETS is on, so the readout can say which.
+var preset: int = 0
 
 @onready var _pitch_node: Node4D = $Pitch
 @onready var _camera: Camera4D = $Pitch/Camera4D
 
 
 func _ready() -> void:
+	yaw = deg_to_rad(start_yaw_degrees)
+	pitch = deg_to_rad(start_pitch_degrees)
+	if start_preset >= 0:
+		use_preset(start_preset)
 	_zoom_target = distance
 	_home_pivot = pivot_height
 	_rest_distance = distance
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_apply()
+
+
+## PRESETS reached through a call, not through get(): a const is not a property, so
+## asking a rig instance for "PRESETS" comes back null and the readout draws nothing.
+func presets() -> Array:
+	return PRESETS
+
+
+## Snaps to one of the three. The zoom target moves with it, so the wheel still works
+## from wherever the preset put you, and a conversation afterwards returns to it.
+func use_preset(index: int) -> void:
+	if PRESETS.is_empty():
+		return
+	preset = posmod(index, PRESETS.size())
+	var p: Array = PRESETS[preset]
+	distance = float(p[2])
+	_zoom_target = distance
+	_rest_distance = distance
+	pivot_height = float(p[3])
+	_home_pivot = pivot_height
+	pitch = deg_to_rad(float(p[4]))
+	if _camera != null:
+		_camera.set("field_of_view_3d", deg_to_rad(float(p[1])))
+	_apply()
+	preset_changed.emit(preset)
+
+
+## Held still while a staged shot is up.
+##
+## THE SHOT IS NOT YOURS FOR THOSE TWO SECONDS. The staged camera is a different node, so
+## dragging the mouse does not move it anyway - but it does turn the orbit camera behind
+## the cut, and the view you are handed back is then somewhere you never chose to look.
+## Ignoring the mouse for the length of the shot means the cut back returns you exactly
+## where the cut away left you.
+func lock_look(on: bool) -> void:
+	_look_locked = on
 
 
 ## Called when a conversation opens and closes. Remembers whatever the player had zoomed
@@ -114,6 +212,11 @@ func set_talking(on: bool) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if start_preset >= 0 and event is InputEventKey and event.pressed and not event.echo:
+		if (event as InputEventKey).keycode == cycle_key:
+			use_preset(preset + 1)
+			get_viewport().set_input_as_handled()
+			return
 	# ESCAPE HAS TO GET YOU OUT. These scenes capture the mouse on the first frame and
 	# nothing gave it back, so a running scene could not be closed without killing the
 	# window. First press frees the cursor, second quits.
@@ -145,6 +248,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion:
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 			return
+		if _look_locked:
+			return
+		if _ignore_mouse > 0.0 and event.relative.length() > 120.0:
+			# The warp, not a look. Small movements in this window are let through, so
+			# somebody who grabs the mouse immediately is not ignored.
+			return
 		var motion: Vector2 = event.relative * mouse_sensitivity
 		if Input.is_action_pressed(&"rotate_4d"):
 			# Taking hold of the slice cancels the trip home. Fighting the player for
@@ -168,6 +277,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _ignore_mouse > 0.0:
+		_ignore_mouse -= delta
 	if _homing > 0.0:
 		_go_home(delta)
 	# The conversation framing eases in and out on the same channel the zoom already uses,
@@ -265,9 +376,9 @@ func _clear_distance(wanted: float) -> float:
 	params.global_ray_direction = back
 	params.max_distance = wanted
 	var hit: Dictionary = PhysicsServer4D.raycast_physics_objects(params)
-	if hit.is_empty() or not hit.has("position"):
+	if hit.is_empty() or not hit.has("global_point"):
 		return wanted
-	var travelled: float = origin.distance_to(hit["position"])
+	var travelled: float = origin.distance_to(hit["global_point"])
 	return clampf(travelled - collision_margin, min_distance * 0.5, wanted)
 
 

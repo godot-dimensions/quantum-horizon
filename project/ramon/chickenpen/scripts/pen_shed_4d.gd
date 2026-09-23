@@ -69,6 +69,25 @@ extends Node4D
 ## Which gable the door is in: +1 for the +X end, -1 for the -X end.
 @export_enum("Plus X:1", "Minus X:-1") var door_side: int = -1: set = _set_door_side
 
+## Where the doorway is, in world space, a step OUTSIDE the wall.
+##
+## OUTSIDE, NOT ON THE THRESHOLD. Whatever uses this parks itself here, and a point in the
+## plane of the wall is a point inside the keep-out that surrounds the building - so a cat
+## sent to the threshold gets shoved back out of it on the same frame and stands there
+## jittering against its own front door.
+func door_point(step_out: float = 0.55) -> Vector4:
+	var reach: float = length * 0.5 + step_out
+	return global_position + global_basis * Vector4(float(door_side) * reach, 0.0, 0.0, 0.0)
+
+
+## Half the footprint, in the building's own frame, for anything that has to stay out of
+## it. Walls are thin and centred on these, so this is the middle of the wall rather than
+## its outside face - close enough for keeping an animal out, and the clearance the caller
+## adds covers the difference.
+func footprint_half() -> Vector2:
+	return Vector2(length * 0.5, width * 0.5)
+
+
 @export_group("Cutaway")
 ## The camera to hide walls away from. Without it, the cutaway takes the roof and the door
 ## wall and leaves the rest - still better than a closed box, but only from one side.

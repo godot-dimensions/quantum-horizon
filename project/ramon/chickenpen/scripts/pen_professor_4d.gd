@@ -21,6 +21,14 @@ const AVATAR := preload("res://ramon/chickenpen/scripts/block_avatar_4d.gd")
 @export var coat: Color = Color(0.30, 0.34, 0.42): set = _set_coat
 @export var skin: Color = Color(0.88, 0.72, 0.58): set = _set_skin
 @export var hair: Color = Color(0.82, 0.80, 0.76): set = _set_hair
+## Denim, for the legs. The chibi build paints thigh and shin with `accent`, which is
+## his skin, so out of the box he is a man in a coat and no trousers - fine on a figure
+## nobody stands close to, and not fine now that a conversation puts a camera on him.
+##
+## REPAINTED AFTER THE BUILD rather than added to the avatar as a fourth colour: every
+## other figure in the field shares that script, and a new export on it is a decision
+## about all of them. This is one character wanting trousers.
+@export var trousers: Color = Color(0.22, 0.31, 0.52): set = _set_trousers
 @export var helmet: Color = Color(0.92, 0.66, 0.16): set = _set_helmet
 @export var lamp: Color = Color(1.0, 0.96, 0.70): set = _set_lamp
 @export var haft: Color = Color(0.55, 0.36, 0.20): set = _set_haft
@@ -30,6 +38,7 @@ var _figure: Node4D
 
 
 func _set_coat(v: Color) -> void: coat = v; _later()
+func _set_trousers(v: Color) -> void: trousers = v; _later()
 func _set_skin(v: Color) -> void: skin = v; _later()
 func _set_hair(v: Color) -> void: hair = v; _later()
 func _set_helmet(v: Color) -> void: helmet = v; _later()
@@ -61,9 +70,18 @@ func rebuild() -> void:
 	figure.set("accent", skin)
 	figure.set("hair", hair)
 	figure.set("wear_cap", false)
+	# Close-set and small under the helmet brim: peering at something.
+	figure.set("eyes", true)
+	figure.set("eye_colour", Color(0.16, 0.13, 0.11))
+	figure.set("eye_spacing", 0.062)
+	figure.set("eye_height", 0.025)
+	figure.set("eye_width", 0.036)
+	figure.set("eye_tall", 0.044)
 	add_child(figure)
 	_own(figure)
 	_figure = figure
+
+	_wear_trousers(figure)
 
 	# THE HELMET SITS ON THE HEAD BALL, not on this node, so it comes along when he turns
 	# to face somebody. The lamp is a separate block rather than a bright face on the
@@ -101,6 +119,25 @@ func rebuild() -> void:
 				Vector4(side * float(step[0]), float(step[1]), 0.0, 0.0),
 				Vector3(float(step[2]), float(step[3]), 0.030), head_iron)
 			part.basis = Basis4D.from_xy(-side * float(step[4]))
+
+
+## Paints the four leg blocks. The boots are left alone - they are already their own
+## brown and a boot the colour of the trouser stops reading as a boot.
+func _wear_trousers(figure: Node4D) -> void:
+	# The waistband goes too. It is the top of the same garment, and left brown it reads
+	# as a belt he is wearing over them rather than as the trousers themselves.
+	var parts: Array[String] = ["Tunic/Belt"]
+	for tag in ["L", "R"]:
+		parts.append("Hip%s/Thigh%s" % [tag, tag])
+		parts.append("Hip%s/Knee%s/Shin%s" % [tag, tag, tag])
+	for path in parts:
+		var limb: MeshInstance4D = figure.get_node_or_null(path) as MeshInstance4D
+		if limb == null:
+			push_warning("%s: no %s to put a trouser leg on." % [name, path])
+			continue
+		var material := TetraMaterial4D.new()
+		material.albedo_color = trousers
+		limb.material_override = material
 
 
 func _box(parent: Node, part: String, at: Vector4, size: Vector3,
