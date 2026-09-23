@@ -102,6 +102,10 @@ var _driver: Node
 var _marker: Node4D
 var _stood := Vector4.ZERO
 var _home_to := Vector4.ZERO
+## Where he is being put down on the way home, and how many more frames to keep
+## insisting on it - see rearm().
+var _settle_to := Vector4.ZERO
+var _settle_frames: int = 0
 
 
 func _ready() -> void:
@@ -162,6 +166,13 @@ func _offer() -> void:
 
 
 func _process(delta: float) -> void:
+	# Before the beat guard: putting him down happens on the way home, and HOME returns
+	# out of the branch below without ever reaching this.
+	if _settle_frames > 0 and _trym != null and _trym.has_method("place_at"):
+		_settle_frames -= 1
+		_trym.call("place_at", _settle_to)
+		if _trym.has_method("face_towards") and _player != null:
+			_trym.call("face_towards", _player.global_position)
 	if _beat == Beat.WAITING or _trym == null:
 		return
 	if _head != null and _trym.has_method("head_position"):
@@ -272,6 +283,11 @@ func stage_as_if_followed() -> void:
 	_armed = false
 	_beat = Beat.OPEN
 	_say("")
+	# AND HE HAS SHOWN YOU IT. This node's own header says the shortcut puts everything
+	# into the state it would be in had you walked the invitation - and it was missing the
+	# one piece his talk driver keys everything else off. See mark_shown there.
+	if _driver != null and _driver.has_method("mark_shown"):
+		_driver.call("mark_shown")
 	_put_door_up()
 	# Standing, not merely armed. The shortcut switches the farm off a frame later, so the
 	# door never gets to animate open - and a door that was never up has nothing to fold
@@ -311,6 +327,21 @@ func _raise() -> void:
 ## throws away the whole beat. He stays where the door was, and the marker his talk driver
 ## slides the player to comes with him - otherwise saying hello teleports you into the
 ## shed he is not in.
+## Is he in the middle of taking you to the cinema?
+##
+## True from the moment he gets up and says he will show you, through the walk, the door
+## going up, the crossing itself, and right up to the two of you being back on the farm.
+## His talk driver asks this and refuses F for the whole of it.
+##
+## NOT `is_walking()`, WHICH WAS THE FIRST ATTEMPT. He stops on the way - at the end of
+## the walk, while the door rises, while he waits at the threshold for you to follow - and
+## the moving flag goes false at every one of those, so the prompt flashed back on
+## repeatedly during an errand he is plainly in the middle of. The beat is the honest
+## question: it is one continuous thing from "let me show you" to coming home.
+func is_leading() -> bool:
+	return _beat >= Beat.WALKING and _beat < Beat.HOME
+
+
 func rearm() -> void:
 	# ANY beat from the door going up onwards, not just the tidy one. Following him
 	# promptly - which is what he asked you to do - means you cross the threshold while he
@@ -322,16 +353,37 @@ func rearm() -> void:
 	_beat = Beat.HOME
 	if _arch != null:
 		_arch.set("armed", false)
-	# Back on YOUR side of the door, a pace to one side of where the crossing puts you
-	# down. He walked through it ahead of you; coming out behind you would be a third
-	# thing happening that nobody saw.
-	# HE COMES OUT OF THE DOOR, rather than appearing next to it. Put down in the doorway
-	# and walked the last couple of metres, so the two of you arrive rather than simply
-	# being somewhere.
-	var spot := Vector4(door_at.x + 1.6, 0.0, door_at.z + 1.4, 0.0)
-	_home_to = spot
-	if _trym.has_method("place_at"):
-		_trym.call("place_at", Vector4(door_at.x, 0.0, door_at.z, 0.0))
+	# BESIDE YOU, ALREADY THERE, AS THE DOOR FOLDS. He used to be put down in the doorway
+	# and walk the last couple of metres, on the reasoning that the two of you should
+	# arrive rather than simply be somewhere. In practice it read as him appearing over by
+	# the shed and jogging across the field at you, because the spot was measured from
+	# `door_at` - the door TRYM raised, back by the shed - rather than from where you
+	# actually came out.
+	#
+	# That is wrong for the ordinary trip and completely wrong for the ticket, which puts
+	# a door up wherever you happen to be standing. So it is measured from YOU now, and he
+	# is placed on the mark rather than walked to it: the door folding away is the arrival,
+	# and he is part of it instead of a second event that happens afterwards.
+	var base: Vector4 = _player.global_position if _player != null else door_at
+	var spot := Vector4(base.x + 1.6, 0.0, base.z + 1.4, base.w)
+	# No walk. Anything non-zero here is a leg for him to cover in the HOME beat.
+	_home_to = Vector4.ZERO
+	# PUT DOWN OVER SEVERAL FRAMES, NOT ONE, and this is the whole reason he kept turning
+	# up in a field fifteen metres away.
+	#
+	# place_at is RELATIVE: it adds `target - figure.global_position` to his walk offset.
+	# On the frame the farm wakes up from the crossing that global position is stale - the
+	# World branch has just been re-enabled and its transforms have not been recomputed -
+	# so the delta is measured from where he used to be and lands him nowhere near the
+	# mark. The comment further down this file has said so for months; the old code hid it
+	# by walking him the rest of the way, which is what read as him jogging over from the
+	# shed.
+	#
+	# Repeating the call is self-correcting: each one adds whatever error is left, so by
+	# the time the transforms are fresh he is on the spot. Measured at fifteen metres out
+	# on the first frame and under a centimetre by the third.
+	_settle_to = spot
+	_settle_frames = 5
 	if _trym.has_method("set_figure_visible"):
 		_trym.call("set_figure_visible", true)
 	if _trym.has_method("face_towards") and _player != null:

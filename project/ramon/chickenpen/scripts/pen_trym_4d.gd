@@ -309,6 +309,16 @@ func place_at(target: Vector4) -> void:
 	_moving = false
 
 
+## Is he on his way somewhere? True from the moment he sets off until he arrives.
+##
+## Asked by his talk driver, which refuses to open a conversation while he is walking.
+## Talking stages a shot and slides the player onto a marker beside him, and that marker
+## is a fixed node back at the shed - so catching him halfway across the field put you in
+## the shed while he carried on walking away from you.
+func is_walking() -> bool:
+	return _moving
+
+
 ## Where his head is now, for anything that has to point at him while he is moving - his
 ## speech tag is anchored to a fixed marker at the desk, which stops being where he is the
 ## moment he stands up and walks off.

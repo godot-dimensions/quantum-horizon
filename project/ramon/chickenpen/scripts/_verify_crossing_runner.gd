@@ -12,6 +12,8 @@ extends SceneTree
 var _root: Node
 var _f := 0
 var _stage := 0
+var _mark := 0
+var _stood_at := Vector4.ZERO
 var _fails: Array = []
 var _inv: Node
 var _trym: Node4D
@@ -77,7 +79,22 @@ func _process(delta: float) -> bool:
 			if _inv == null or _crossing == null or _arch == null or _trym == null:
 				print("\n%d FAIL(s)" % _fails.size()); quit(1); return true
 			_check("the door starts dark", not bool(_arch.get("armed")), "armed = false")
-			_stage = 5
+			_stage = 45
+			_mark = _f + 600
+		45:
+			# WAITED FOR, NOT ASSUMED. The trip used to complete inside the keypress, so
+			# the next frame could assert it. It does not any more: the loading tunnel is
+			# raised and two real frames are awaited before the theatre is built, which is
+			# the whole point of it - the curtain has to be drawn before the stall. A test
+			# that checked on the next frame would now fail on a feature working exactly
+			# as intended, so it waits on the CONDITION with a cap instead.
+			if bool(_crossing.call("is_away")):
+				_stage = 5
+			elif _f >= _mark:
+				_check("and C drops you straight into the cinema", false,
+					"nothing after %d frames" % 600)
+				print("
+%d FAIL(s)" % _fails.size()); quit(1); return true
 		5:
 			_check("and C drops you straight into the cinema",
 				bool(_crossing.call("is_away")), "no invitation needed")
@@ -110,6 +127,30 @@ func _process(delta: float) -> bool:
 				"%.1f m from the doorway, not wherever C was pressed"
 					% Vector2(home.x - _arch.global_position.x,
 						home.z - _arch.global_position.z).length())
+			# BESIDE YOU, NOT ACROSS THE FIELD - CHECKED A FEW FRAMES LATER, WHICH IS THE
+			# POINT. place_at is relative: it adds `target - figure.global_position` to his
+			# walk offset, and on the frame the farm wakes from the crossing that global
+			# position is stale, because the World branch has only just been re-enabled.
+			# One call lands him fifteen metres out. rearm repeats it, each call adding
+			# whatever error is left, and he is on the mark by the third - so asserting on
+			# the same frame as the return measures the stale transform, not the fix.
+			_stood_at = home
+			_mark = _f + 12
+			_stage = 62
+		62:
+			if _f < _mark:
+				return false
+			var figure: Node4D = _trym.get_node_or_null("Figure") as Node4D
+			var beside: float = 99.0
+			if figure != null:
+				var away: Vector4 = figure.global_position - _stood_at
+				beside = Vector2(away.x, away.z).length()
+			_check("and he is standing next to you when you arrive", beside < 4.0,
+				"%.1f m away, against 15 when place_at was called once" % beside)
+			_check("rather than walking over afterwards",
+				(_inv.get("_home_to") as Vector4) == Vector4.ZERO,
+				"no leg left for him to cover - the door folding away is the arrival")
+
 			# And back to square one, so the REAL invitation can be tested after it. The
 			# shortcut marks the offer as made; without this the rest of the run waits
 			# forever for a door that is never raised a second time.
@@ -123,6 +164,18 @@ func _process(delta: float) -> bool:
 			var parked: CanvasItem = _root.get_node("UI/Debug") as CanvasItem
 			if parked != null:
 				parked.visible = false
+			_stage = 7
+			_mark = _f + 400
+		7:
+			# WAITED FOR, BECAUSE A DOOR TAKES TIME TO GO DOWN. reset() only clears
+			# `armed`; the arch then folds, and it is hidden at the end of that, not on
+			# the frame it was told to. This used to be asserted on the same frame as the
+			# reset and passed on timing alone - the trip happened to leave the door
+			# already folded by then. The loading tunnel moved that timing by two frames
+			# and the assertion went red, which is a test being fragile rather than a
+			# door being broken.
+			if _arch.visible and _f < _mark:
+				return false
 			_check("the door is not even there yet", not _arch.visible,
 				"hidden, not merely lowered - a shut door has its lintel at ground level")
 			var talk: Node = _root.get_node("Systems/TrymTalk")
@@ -257,6 +310,16 @@ func _process(delta: float) -> bool:
 						_arch.global_position.z])
 			_check("and the door can be walked again",
 				not bool(_arch.get("_used")), "rearm() ran over the tree")
+			# THE SAME WAIT AS THE FIRST HOMECOMING. He is put down over several frames,
+			# because place_at measures from a transform that is stale on the frame the
+			# farm wakes up - so both of these read where he USED to be if they are asked
+			# on the return frame itself. Twelve frames is a fifth of a second and well
+			# past it.
+			_mark = _f + 12
+			_stage = 36
+		36:
+			if _f < _mark:
+				return false
 			var both: float = (_figure().global_position
 				- (_root.get_node("Player") as Node4D).global_position).length()
 			_check("he came back out with you", _figure().visible
@@ -268,6 +331,32 @@ func _process(delta: float) -> bool:
 				absf((_root.get_node("World/TrymStand") as Node4D).global_position.z
 					- _figure().global_position.z) < 3.0,
 				"talking to him no longer teleports you into the shed")
+			# THE SHORTCUT HAS TO LEAVE HIM IN THE STATE THE WALK WOULD HAVE. It stages
+			# the trip without running his dialogue, so the `trym_invite` effect never
+			# fires and `_shown_it` stayed false - and _entry_node falls through to
+			# `offer` on that, forever. You came home, told him what you thought, and then
+			# he asked whether you would like to see it. No ticket, ever, and the opening
+			# conversation apparently starting over.
+			# HE ASKS ONCE. Going back is easy - C is two presses, the ticket is one - and
+			# every homecoming calls ask_what_you_thought. Without a guard each trip put
+			# the opinion conversation back at the front of the queue, so you were asked
+			# what you thought of it on every return and never reached the ticket.
+			var driver: Node = _root.get_node("Systems/TrymDriver")
+			var owed_before: bool = bool(driver.get("_owes_an_opinion"))
+			# CLEARED FIRST. The real rearm a moment ago already set this, so asking
+			# whether a second call sets it again is unanswerable unless the flag starts
+			# down - the test was reading the first homecoming's answer.
+			driver.set("_owes_an_opinion", false)
+			driver.set("_heard_opinion", true)
+			driver.call("ask_what_you_thought")
+			_check("and he only asks your opinion once",
+				not bool(driver.get("_owes_an_opinion")),
+				"a second visit does not rewind him to the same question")
+			driver.set("_heard_opinion", false)
+			driver.set("_owes_an_opinion", owed_before)
+			_check("and the shortcut left him thinking he had shown you",
+				bool(_root.get_node("Systems/TrymDriver").get("_shown_it")),
+				"otherwise every conversation after this one is the offer again")
 			_check("and he owes you an opinion",
 				bool(_root.get_node("Systems/TrymDriver").get("_owes_an_opinion")),
 				"next thing he says is 'so, what did you think'")

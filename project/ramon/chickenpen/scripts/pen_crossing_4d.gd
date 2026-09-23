@@ -92,6 +92,40 @@ func _stage_trip(node: Node) -> void:
 
 
 ## Through the door.
+##
+## AND THE ROOM IS BUILT HERE, NOT EARLIER. THAT WAS TRIED AND IT IS NOT POSSIBLE LIKE
+## THIS.
+##
+## Building the theatre during Trym's offer and parking it disabled and invisible is the
+## obvious answer to the stall, and it measured beautifully - 3,946 ms at the door down to
+## 2.0. It is also wrong, for a reason `visible` hides: theatre.tscn carries a
+## WorldEnvironment4D with `current = true`, and an environment is not a visual node. The
+## moment it enters the tree it owns the sky, the tonemapping and the mood of whatever
+## scene it landed in - so the farm turned into the inside of the cinema while the player
+## was still standing in a field, and its Camera4D was one `current` away from taking the
+## view as well.
+##
+## Making it safe would mean reaching into the parked room and switching off its
+## environment, its lights and its camera, then switching them back on at the threshold -
+## which is a list of things to remember, and the next thing added to theatre.tscn that
+## claims a global would not be on it. The stall is worth more than that risk. What made
+## the real difference was not scheduling at all: the goat's twelve lofts are baked to
+## disk now, which took part two from 3,474 ms to 697 on its own.
+##
+## THERE WAS ALSO A LOADING TUNNEL HERE AND IT HAS BEEN TAKEN OUT.
+##
+## Going through costs a visible second - the theatre is instantiated whole, carving its
+## own rock and building its floor, house, backdrop and three exhibits on the frame it
+## arrives - so a curtain over that second is the right idea. This one did not land on it.
+## It was shown, then two `process_frame`s were awaited, then the theatre was built; but
+## `process_frame` fires at the START of an idle frame, before anything is drawn, so the
+## curtain went up on screen roughly when the stall ended. Ramon saw it flash AFTER
+## arriving, which is worse than no curtain at all.
+##
+## `await RenderingServer.frame_post_draw` is the wait that actually means "it is on the
+## screen", and it is a one-line difference - so this is recoverable if it is ever wanted
+## back. Ramon's call was to drop it rather than iterate, and a stall you were not warned
+## about beats a curtain that arrives to congratulate you on having waited.
 func go() -> void:
 	if is_away() or theatre_scene == null:
 		return
