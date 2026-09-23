@@ -29,7 +29,7 @@ func _initialize() -> void:
 		["- 12 chicken walkers", _kill_chickens],
 		["- the pig", _kill_pig],
 		["- the voxel rock", _kill_rock],
-		["- the cat and Nessa", _kill_others],
+		["- the cat and Mithra", _kill_others],
 	]
 
 
@@ -60,7 +60,7 @@ func _kill_rock() -> void:
 
 
 func _kill_others() -> void:
-	for path in ["World/Cat", "World/RedCat", "Nessa", "World/Trym", "World/Keeper"]:
+	for path in ["World/Cat", "World/RedCat", "Mithra", "World/Trym", "World/Keeper"]:
 		var node: Node = _scene.get_node_or_null(path)
 		if node != null:
 			node.set_process_mode(Node.PROCESS_MODE_DISABLED)

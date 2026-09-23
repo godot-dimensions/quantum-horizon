@@ -1,4 +1,4 @@
-[gd_scene load_steps=807 format=3 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=812 format=3 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -29,8 +29,10 @@
 [ext_resource type="Script" uid="uid://tojoxxbra426" path="res://ramon/chickenpen/scripts/pen_inventory_4d.gd" id="pen_inventory"]
 [ext_resource type="Script" uid="uid://dwl0i3lj62160" path="res://ramon/chickenpen/scripts/pen_invitation_4d.gd" id="pen_invite"]
 [ext_resource type="Script" uid="uid://ds8fowx0k7uht" path="res://ramon/chickenpen/scripts/chicken_locator_4d.gd" id="pen_locator"]
-[ext_resource type="Script" uid="uid://bxbcoqn6ci5pu" path="res://ramon/chickenpen/scripts/pen_nessa_talk_4d.gd" id="pen_nessa_talk"]
+[ext_resource type="Script" uid="uid://bxbcoqn6ci5pu" path="res://ramon/chickenpen/scripts/pen_mithra_talk_4d.gd" id="pen_mithra_talk"]
 [ext_resource type="Script" uid="uid://dbh5bwplcfxb2" path="res://ramon/chickenpen/scripts/pen_nike_grab_4d.gd" id="pen_nike_grab"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_rewatch_4d.gd" id="pen_rewatch"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_upgrades_4d.gd" id="pen_upgrades"]
 [ext_resource type="Script" uid="uid://b0qfnli2g703l" path="res://ramon/chickenpen/scripts/pen_nike_talk_4d.gd" id="pen_nike_talk"]
 [ext_resource type="Script" uid="uid://dh1ppo804shfq" path="res://ramon/chickenpen/scripts/pen_pickaxe_4d.gd" id="pen_pickaxe"]
 [ext_resource type="Script" uid="uid://bn2xullbedgl3" path="res://ramon/chickenpen/scripts/pen_pickup_4d.gd" id="pen_pickup"]
@@ -47,10 +49,14 @@
 [ext_resource type="Script" uid="uid://clt1565tx46h8" path="res://ramon/chickenpen/scripts/pen_tutor_4d.gd" id="pen_tutor"]
 [ext_resource type="Script" uid="uid://bvklfrydaxyio" path="res://ramon/dialogue/world_tag_4d.gd" id="pen_world_tag"]
 [ext_resource type="Script" uid="uid://cyiwmk46dutm2" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_camera_picker_4d.gd" id="pen_campick"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/theatre/theatre.tscn" id="theatre_scene"]
 [ext_resource type="Script" uid="uid://0ylph4u1sgu2" path="res://ramon/chickenpen/scripts/pen_sfx_4d.gd" id="pen_sfx"]
 [ext_resource type="Script" uid="uid://c2kixgu1hst3e" path="res://ramon/chickenpen/theatre/theatre_arch_4d.gd" id="thr_arch"]
 [ext_resource type="PackedScene" uid="uid://gh03wmhupplp" path="res://ramon/VoxelMining/voxel_mining_block.tscn" id="voxel_rock"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_celebration_4d.gd" id="pen_party"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_talk_motion_4d.gd" id="pen_talkmotion"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_mithra_fetch_4d.gd" id="pen_fetch"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_fullscreen_4d.gd" id="pen_fullscreen"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
@@ -2401,6 +2407,7 @@ position = Vector4(2.3, 0, -5.9, 0)
 basis = Projection(0.7727, 0, 0.6347, 0, 0, 1, 0, 0, -0.6347, 0, 0.7727, 0, 0, 0, 0, 1)
 script = ExtResource("avatar")
 build = 2
+eyes = true
 skin = Color(0.76, 0.58, 0.44, 1)
 accent = Color(0.52, 0.33, 0.55, 1)
 
@@ -2536,6 +2543,11 @@ mesh = SubResource("BoxTetraMesh4D_ml0ol")
 
 [node name="KeeperHead" type="Node4D" parent="World"]
 position = Vector4(2.3, 1.65, -5.9, 0)
+
+[node name="TalkCam" type="Camera4D" parent="World"]
+position = Vector4(3.9, 1.8, -3.9, 0)
+rendering_engine_name = "Cross-section"
+w_fade_distance = 6.0
 
 [node name="Pickups" type="Node4D" parent="World"]
 
@@ -4346,7 +4358,7 @@ script = ExtResource("pen_crow")
 flock_seed = 20873
 fence_path = NodePath("../../Pen/Fence")
 ground_radius = 7.5
-perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate"), NodePath("../MiningRock"), NodePath("../Sign")])
+perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate"), NodePath("../MiningRock")])
 
 [node name="Hide" type="MeshInstance4D" parent="World/Crow"]
 material_override = SubResource("TetraMaterial4D_b77hk")
@@ -4491,7 +4503,7 @@ script = ExtResource("pen_crow")
 flock_seed = 51199
 fence_path = NodePath("../../Pen/Fence")
 ground_radius = 8.5
-perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate"), NodePath("../MiningRock"), NodePath("../Sign")])
+perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate"), NodePath("../MiningRock")])
 
 [node name="Hide" type="MeshInstance4D" parent="World/Crow2"]
 material_override = SubResource("TetraMaterial4D_5o40q")
@@ -4636,7 +4648,7 @@ script = ExtResource("pen_crow")
 flock_seed = 77341
 fence_path = NodePath("../../Pen/Fence")
 ground_radius = 8.0
-perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate"), NodePath("../MiningRock"), NodePath("../Sign")])
+perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate"), NodePath("../MiningRock")])
 
 [node name="Hide" type="MeshInstance4D" parent="World/Crow3"]
 material_override = SubResource("TetraMaterial4D_h8yy2")
@@ -4776,26 +4788,6 @@ material_override = SubResource("TetraMaterial4D_gwc0i")
 mesh = SubResource("BoxTetraMesh4D_pijvj")
 
 [node name="Scenery" type="Node4D" parent="World"]
-
-[node name="Post1" type="MeshInstance4D" parent="World/Scenery"]
-position = Vector4(-8.5, 1.1, 1.5, 0)
-material_override = SubResource("post_near")
-mesh = SubResource("post_mesh")
-
-[node name="Post2" type="MeshInstance4D" parent="World/Scenery"]
-position = Vector4(8.5, 1.1, 2.5, 0)
-material_override = SubResource("post_near")
-mesh = SubResource("post_mesh")
-
-[node name="Post3" type="MeshInstance4D" parent="World/Scenery"]
-position = Vector4(1.5, 1.1, 6, 0)
-material_override = SubResource("post_near")
-mesh = SubResource("post_mesh")
-
-[node name="Post4" type="MeshInstance4D" parent="World/Scenery"]
-position = Vector4(-6, 1.1, 4, 0)
-material_override = SubResource("post_near")
-mesh = SubResource("post_mesh")
 
 [node name="Post5" type="MeshInstance4D" parent="World/Scenery"]
 position = Vector4(-3.5, 1.1, 2.5, 1.6)
@@ -5195,6 +5187,12 @@ position = Vector4(-4.2, 0.6333333333333333, 3.04, 0)
 material_override = SubResource("TetraMaterial4D_ut0m5")
 mesh = SubResource("BoxTetraMesh4D_n2hfa")
 
+[node name="Upgrades" type="Node4D" parent="Pen"]
+script = ExtResource("pen_upgrades")
+inventory_path = NodePath("../../UI/Inventory")
+manager_path = NodePath("../../Chickens")
+pen_path = NodePath("..")
+
 [node name="Coop" type="Node4D" parent="Pen"]
 position = Vector4(0, 0, -3.1, 0)
 script = ExtResource("pen_coop")
@@ -5324,7 +5322,7 @@ offset_top = 180.0
 offset_right = 880.0
 offset_bottom = 204.0
 
-[node name="Controls" type="Label" parent="UI"]
+[node name="Controls" type="Control" parent="UI"]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
@@ -5332,11 +5330,8 @@ offset_left = -700.0
 offset_top = 18.0
 offset_right = -26.0
 offset_bottom = 240.0
-horizontal_alignment = 2
 script = ExtResource("pen_controls")
-text_size = 15
-outline = 4
-pin_to_bottom = false
+text_size = 13
 
 [node name="LockOn" type="Label" parent="UI"]
 offset_left = 16.0
@@ -5374,6 +5369,15 @@ name_size = 17
 text_size = 20
 choice_size = 19
 
+[node name="CameraPicker" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 260.0
+offset_bottom = 60.0
+script = ExtResource("pen_campick")
+rig_path = NodePath("../../Player/CameraRig")
+under_path = NodePath("../Controls")
+
 [node name="Inventory" type="Control" parent="UI"]
 layout_mode = 3
 anchors_preset = 15
@@ -5381,6 +5385,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("pen_inventory")
 dialogue_path = NodePath("../../Systems/Talk")
+dialogue_paths = Array[NodePath]([NodePath("../../Systems/TrymTalk"), NodePath("../../Systems/ProfessorTalk"), NodePath("../../Systems/NikeTalk"), NodePath("../../Systems/MithraTalk")])
 starts_with = Array[String](["found_pickaxe"])
 
 [node name="Searcher" type="Label" parent="UI"]
@@ -5391,12 +5396,12 @@ offset_bottom = 280.0
 
 [node name="SlicePlane" type="Control" parent="UI"]
 layout_mode = 3
-anchor_left = 0.62
-anchor_top = 0.33
+anchor_left = 0.6771
+anchor_top = 0.426
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = -24.0
-offset_bottom = -24.0
+offset_right = -10.0
+offset_bottom = -10.0
 script = ExtResource("pen_plane")
 player_path = NodePath("../../Player")
 pen_path = NodePath("../../Pen")
@@ -5405,7 +5410,7 @@ coop_path = NodePath("../../Pen/Coop")
 slice_frame_path = NodePath("../../Player/CameraRig")
 manager_path = NodePath("../../Chickens")
 locator_path = NodePath("../../Systems/Locator")
-people_paths = Array[NodePath]([NodePath("../../Nessa"), NodePath("../../World/Keeper"), NodePath("../../World/Trym"), NodePath("../../World/LoftedGirl"), NodePath("../../World/Cat")])
+people_paths = Array[NodePath]([NodePath("../../Mithra"), NodePath("../../World/Keeper"), NodePath("../../World/Trym"), NodePath("../../World/LoftedGirl"), NodePath("../../World/Cat")])
 
 [node name="TrymTag" type="Control" parent="UI"]
 layout_mode = 3
@@ -5489,15 +5494,15 @@ name_size = 17
 text_size = 20
 choice_size = 19
 
-[node name="NessaTag" type="Control" parent="UI"]
+[node name="MithraTag" type="Control" parent="UI"]
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("pen_world_tag")
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
-anchor_path = NodePath("../../Nessa/Head")
+anchor_path = NodePath("../../Mithra/Head")
 lift = 12.0
 
-[node name="NessaBox" type="Control" parent="UI"]
+[node name="MithraBox" type="Control" parent="UI"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -5507,7 +5512,7 @@ choice_side = 1
 choice_width = 470.0
 choice_gap = 10.0
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
-head_anchor_path = NodePath("../../Nessa/Head")
+head_anchor_path = NodePath("../../Mithra/Head")
 over_head_width = 470.0
 name_size = 17
 text_size = 20
@@ -5546,27 +5551,41 @@ tag_path = NodePath("../../UI/TrymTag")
 camera_rig_path = NodePath("../../Player/CameraRig")
 stand_marker_path = NodePath("../../World/TrymStand")
 cutaway_path = NodePath("../../World/Shed")
-hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint")])
+hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint"), NodePath("../../UI/Objective"), NodePath("../../UI/Progress"), NodePath("../../UI/Debug"), NodePath("../../UI/CameraPicker")])
 talk_range = 3.6
+two_shot = true
+two_shot_seconds = 2.5
+camera_marker_path = NodePath("../../World/TalkCam")
+camera_target_path = NodePath("../../World/TrymHead")
+main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/TrymBox")
 
-[node name="NessaTalk" type="Node" parent="Systems"]
+[node name="MithraTalk" type="Node" parent="Systems"]
 script = ExtResource("dlg_talk")
-box_path = NodePath("../../UI/NessaBox")
+box_path = NodePath("../../UI/MithraBox")
 
-[node name="NessaDriver" type="Node" parent="Systems"]
-script = ExtResource("pen_nessa_talk")
-searcher_path = NodePath("../../Nessa")
+[node name="MithraDriver" type="Node" parent="Systems"]
+script = ExtResource("pen_mithra_talk")
+searcher_path = NodePath("../../Mithra")
 inventory_path = NodePath("../../UI/Inventory")
 mutter_path = NodePath("../../UI/Searcher")
 player_path = NodePath("../../Player")
 character_path = NodePath("../../Player")
 catcher_path = NodePath("../../Player/Catcher")
-dialogue_path = NodePath("../NessaTalk")
-tag_path = NodePath("../../UI/NessaTag")
+dialogue_path = NodePath("../MithraTalk")
+tag_path = NodePath("../../UI/MithraTag")
 camera_rig_path = NodePath("../../Player/CameraRig")
+two_shot = true
+two_shot_seconds = 2.5
+camera_marker_path = NodePath("../../World/TalkCam")
+camera_target_path = NodePath("../../Mithra/Head")
+main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/MithraBox")
+hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint"), NodePath("../../UI/Objective"), NodePath("../../UI/Progress"), NodePath("../../UI/Debug"), NodePath("../../UI/CameraPicker")])
 
 [node name="TalkDriver" type="Node" parent="Systems"]
 script = ExtResource("pen_talk")
+upgrades_path = NodePath("../../Pen/Upgrades")
 manager_path = NodePath("../../Chickens")
 locator_ui_paths = Array[NodePath]([NodePath("../../UI/Locator")])
 gate_locator = false
@@ -5576,6 +5595,13 @@ catcher_path = NodePath("../../Player/Catcher")
 dialogue_path = NodePath("../Talk")
 tag_path = NodePath("../../UI/TalkTag")
 camera_rig_path = NodePath("../../Player/CameraRig")
+hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint"), NodePath("../../UI/Objective"), NodePath("../../UI/Progress"), NodePath("../../UI/Debug"), NodePath("../../UI/CameraPicker")])
+two_shot_seconds = 2.5
+camera_marker_path = NodePath("../../World/TalkCam")
+camera_target_path = NodePath("../../World/KeeperHead")
+main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/TalkBox")
+two_shot = true
 
 [node name="Locator" type="Node" parent="Systems"]
 script = ExtResource("pen_locator")
@@ -5611,6 +5637,18 @@ readout_path = NodePath("../../UI/Debug")
 process_mode = 3
 script = ExtResource("pen_sfx")
 catcher_path = NodePath("../../Player/Catcher")
+game_path = NodePath("../Game")
+
+[node name="Celebration" type="Node" parent="Systems"]
+script = ExtResource("pen_party")
+
+[node name="TalkMotion" type="Node" parent="Systems"]
+script = ExtResource("pen_talkmotion")
+speakers = Array[NodePath]([NodePath("../MithraTalk"), NodePath("../Talk"), NodePath("../TrymTalk"), NodePath("../ProfessorTalk")])
+figures = Array[NodePath]([NodePath("../../Mithra/Avatar"), NodePath("../../World/Keeper"), NodePath("../../World/Trym/Figure"), NodePath("../../World/Professor/Figure")])
+
+[node name="MithraFetch" type="Node" parent="Systems"]
+script = ExtResource("pen_fetch")
 
 [node name="SliceAssist" type="Node" parent="Systems"]
 script = ExtResource("pen_assist")
@@ -5663,6 +5701,13 @@ tag_path = NodePath("../../UI/PlayerTag")
 scratches = false
 carry_line = "Trym's cat does not seem to mind."
 
+[node name="Rewatch" type="Node" parent="Systems"]
+script = ExtResource("pen_rewatch")
+inventory_path = NodePath("../../UI/Inventory")
+crossing_path = NodePath("../../Crossing")
+tag_path = NodePath("../../UI/PlayerTag")
+dialogue_paths = Array[NodePath]([NodePath("../Talk"), NodePath("../TrymTalk"), NodePath("../MithraTalk"), NodePath("../NikeTalk"), NodePath("../ProfessorTalk")])
+
 [node name="NikeGrab" type="Node" parent="Systems"]
 script = ExtResource("pen_nike_grab")
 nike_path = NodePath("../../World/Nike")
@@ -5692,8 +5737,14 @@ catcher_path = NodePath("../../Player/Catcher")
 dialogue_path = NodePath("../NikeTalk")
 tag_path = NodePath("../../UI/NikeTag")
 camera_rig_path = NodePath("../../Player/CameraRig")
-hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint")])
+hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint"), NodePath("../../UI/Objective"), NodePath("../../UI/Progress"), NodePath("../../UI/Debug"), NodePath("../../UI/CameraPicker")])
 talk_range = 4.2
+two_shot = true
+two_shot_seconds = 2.5
+camera_marker_path = NodePath("../../World/TalkCam")
+camera_target_path = NodePath("../../World/Nike/Head")
+main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/NikeBox")
 
 [node name="ProfessorTalk" type="Node" parent="Systems"]
 script = ExtResource("dlg_talk")
@@ -5711,6 +5762,17 @@ catcher_path = NodePath("../../Player/Catcher")
 dialogue_path = NodePath("../ProfessorTalk")
 tag_path = NodePath("../../UI/ProfessorTag")
 camera_rig_path = NodePath("../../Player/CameraRig")
+hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint"), NodePath("../../UI/Objective"), NodePath("../../UI/Progress"), NodePath("../../UI/Debug"), NodePath("../../UI/CameraPicker")])
+two_shot = true
+two_shot_seconds = 2.5
+two_shot_side = 1.9
+two_shot_back = 1.7
+two_shot_rise = 0.35
+two_shot_bias = 0.8
+camera_marker_path = NodePath("../../World/TalkCam")
+camera_target_path = NodePath("../../World/ProfessorHead")
+main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/ProfessorBox")
 
 [node name="Game" type="Node" parent="Systems"]
 script = ExtResource("pen_game")
@@ -5722,7 +5784,7 @@ objective_label_path = NodePath("../../UI/Objective")
 locator_path = NodePath("../Locator")
 cues_path = NodePath("../Cues")
 
-[node name="Nessa" type="CharacterBody4D" parent="."]
+[node name="Mithra" type="CharacterBody4D" parent="."]
 position = Vector4(-13, 1.2, 3.5, 0)
 script = ExtResource("pen_searcher")
 player_path = NodePath("../Player")
@@ -5730,11 +5792,11 @@ inventory_path = NodePath("../UI/Inventory")
 readout_path = NodePath("../UI/Searcher")
 roam_radius = 6.5
 
-[node name="CollisionShape4D" type="CollisionShape4D" parent="Nessa"]
+[node name="CollisionShape4D" type="CollisionShape4D" parent="Mithra"]
 position = Vector4(0, 0.68, 0, 0)
 shape = SubResource("body_shape")
 
-[node name="Avatar" type="Node4D" parent="Nessa"]
+[node name="Avatar" type="Node4D" parent="Mithra"]
 basis = Projection(0.75, 0, 0, 0, 0, 0.75, 0, 0, 0, 0, 0.75, 0, 0, 0, 0, 0.75)
 script = ExtResource("avatar")
 hair = Color(0.78, 0.22, 0.12, 1)
@@ -5743,161 +5805,167 @@ ponytail = true
 build = 2
 skin = Color(0.84, 0.34, 0.36, 1)
 accent = Color(0.95, 0.8, 0.68, 1)
+eyes = true
+eye_colour = Color(0.12, 0.14, 0.13, 1)
+eye_spacing = 0.068
+eye_height = 0.034
+eye_width = 0.046
+eye_tall = 0.058
 
-[node name="Tunic" type="MeshInstance4D" parent="Nessa/Avatar"]
+[node name="Tunic" type="MeshInstance4D" parent="Mithra/Avatar"]
 position = Vector4(0, 0.84, 0, 0)
 material_override = SubResource("TetraMaterial4D_abako")
 mesh = SubResource("BoxTetraMesh4D_pqvpn")
 
-[node name="Belt" type="MeshInstance4D" parent="Nessa/Avatar/Tunic"]
+[node name="Belt" type="MeshInstance4D" parent="Mithra/Avatar/Tunic"]
 position = Vector4(0, -0.2, 0, 0)
 material_override = SubResource("TetraMaterial4D_fyvtp")
 mesh = SubResource("BoxTetraMesh4D_uel5f")
 
-[node name="Head" type="MeshInstance4D" parent="Nessa/Avatar/Tunic"]
+[node name="Head" type="MeshInstance4D" parent="Mithra/Avatar/Tunic"]
 position = Vector4(0, 0.42, 0, 0)
 material_override = SubResource("TetraMaterial4D_nte2n")
 mesh = SubResource("BoxTetraMesh4D_xacsn")
 
-[node name="Crown" type="MeshInstance4D" parent="Nessa/Avatar/Tunic/Head"]
+[node name="Crown" type="MeshInstance4D" parent="Mithra/Avatar/Tunic/Head"]
 position = Vector4(0, 0.15, 0, 0)
 material_override = SubResource("TetraMaterial4D_qjk1o")
 mesh = SubResource("BoxTetraMesh4D_s2dj5")
 
-[node name="Hair" type="MeshInstance4D" parent="Nessa/Avatar/Tunic/Head"]
+[node name="Hair" type="MeshInstance4D" parent="Mithra/Avatar/Tunic/Head"]
 position = Vector4(0, 0.06, -0.15, 0)
 material_override = SubResource("TetraMaterial4D_y2eqq")
 mesh = SubResource("BoxTetraMesh4D_lnxyu")
 
-[node name="Tie" type="MeshInstance4D" parent="Nessa/Avatar/Tunic/Head"]
+[node name="Tie" type="MeshInstance4D" parent="Mithra/Avatar/Tunic/Head"]
 position = Vector4(0, 0.1, -0.19, 0)
 material_override = SubResource("TetraMaterial4D_e4bn5")
 mesh = SubResource("BoxTetraMesh4D_xxqns")
 
-[node name="Tail1" type="MeshInstance4D" parent="Nessa/Avatar/Tunic/Head"]
+[node name="Tail1" type="MeshInstance4D" parent="Mithra/Avatar/Tunic/Head"]
 position = Vector4(0, -0.02, -0.24, 0)
 material_override = SubResource("TetraMaterial4D_axehe")
 mesh = SubResource("BoxTetraMesh4D_l7jss")
 
-[node name="Tail2" type="MeshInstance4D" parent="Nessa/Avatar/Tunic/Head"]
+[node name="Tail2" type="MeshInstance4D" parent="Mithra/Avatar/Tunic/Head"]
 position = Vector4(0, -0.19, -0.27, 0)
 material_override = SubResource("TetraMaterial4D_7nh4m")
 mesh = SubResource("BoxTetraMesh4D_oyx0x")
 
-[node name="Tail3" type="MeshInstance4D" parent="Nessa/Avatar/Tunic/Head"]
+[node name="Tail3" type="MeshInstance4D" parent="Mithra/Avatar/Tunic/Head"]
 position = Vector4(0, -0.32, -0.31, 0)
 material_override = SubResource("TetraMaterial4D_ny8dk")
 mesh = SubResource("BoxTetraMesh4D_dxb6i")
 
-[node name="EarL" type="MeshInstance4D" parent="Nessa/Avatar/Tunic/Head"]
+[node name="EarL" type="MeshInstance4D" parent="Mithra/Avatar/Tunic/Head"]
 position = Vector4(0.18, 0.02, -0.02, 0)
 material_override = SubResource("TetraMaterial4D_jad8g")
 mesh = SubResource("BoxTetraMesh4D_b1x14")
 
-[node name="EarR" type="MeshInstance4D" parent="Nessa/Avatar/Tunic/Head"]
+[node name="EarR" type="MeshInstance4D" parent="Mithra/Avatar/Tunic/Head"]
 position = Vector4(-0.18, 0.02, -0.02, 0)
 material_override = SubResource("TetraMaterial4D_253qy")
 mesh = SubResource("BoxTetraMesh4D_2bkvq")
 
-[node name="HipL" type="Node4D" parent="Nessa/Avatar"]
+[node name="HipL" type="Node4D" parent="Mithra/Avatar"]
 position = Vector4(0.1, 0.7, 0, 0)
 
-[node name="ThighL" type="MeshInstance4D" parent="Nessa/Avatar/HipL"]
+[node name="ThighL" type="MeshInstance4D" parent="Mithra/Avatar/HipL"]
 position = Vector4(0, -0.16, 0, 0)
 material_override = SubResource("TetraMaterial4D_8yqx7")
 mesh = SubResource("BoxTetraMesh4D_2e664")
 
-[node name="KneeL" type="Node4D" parent="Nessa/Avatar/HipL"]
+[node name="KneeL" type="Node4D" parent="Mithra/Avatar/HipL"]
 position = Vector4(0, -0.32, 0, 0)
 
-[node name="ShinL" type="MeshInstance4D" parent="Nessa/Avatar/HipL/KneeL"]
+[node name="ShinL" type="MeshInstance4D" parent="Mithra/Avatar/HipL/KneeL"]
 position = Vector4(0, -0.16, 0, 0)
 material_override = SubResource("TetraMaterial4D_u4ddx")
 mesh = SubResource("BoxTetraMesh4D_khu0r")
 
-[node name="AnkleL" type="Node4D" parent="Nessa/Avatar/HipL/KneeL"]
+[node name="AnkleL" type="Node4D" parent="Mithra/Avatar/HipL/KneeL"]
 position = Vector4(0, -0.32, 0, 0)
 
-[node name="BootL" type="MeshInstance4D" parent="Nessa/Avatar/HipL/KneeL/AnkleL"]
+[node name="BootL" type="MeshInstance4D" parent="Mithra/Avatar/HipL/KneeL/AnkleL"]
 position = Vector4(0, -0.03, 0.04, 0)
 material_override = SubResource("TetraMaterial4D_oroxs")
 mesh = SubResource("BoxTetraMesh4D_ca1go")
 
-[node name="ShoulderL" type="Node4D" parent="Nessa/Avatar"]
+[node name="ShoulderL" type="Node4D" parent="Mithra/Avatar"]
 position = Vector4(0.22, 1.02, 0, 0)
 
-[node name="UpperArmL" type="MeshInstance4D" parent="Nessa/Avatar/ShoulderL"]
+[node name="UpperArmL" type="MeshInstance4D" parent="Mithra/Avatar/ShoulderL"]
 position = Vector4(0, -0.09, 0, 0)
 material_override = SubResource("TetraMaterial4D_l4l3j")
 mesh = SubResource("BoxTetraMesh4D_ctwya")
 
-[node name="ElbowL" type="Node4D" parent="Nessa/Avatar/ShoulderL"]
+[node name="ElbowL" type="Node4D" parent="Mithra/Avatar/ShoulderL"]
 position = Vector4(0, -0.18, 0, 0)
 
-[node name="ForearmL" type="MeshInstance4D" parent="Nessa/Avatar/ShoulderL/ElbowL"]
+[node name="ForearmL" type="MeshInstance4D" parent="Mithra/Avatar/ShoulderL/ElbowL"]
 position = Vector4(0, -0.09, 0, 0)
 material_override = SubResource("TetraMaterial4D_i77ov")
 mesh = SubResource("BoxTetraMesh4D_4d2sd")
 
-[node name="HandL" type="MeshInstance4D" parent="Nessa/Avatar/ShoulderL/ElbowL"]
+[node name="HandL" type="MeshInstance4D" parent="Mithra/Avatar/ShoulderL/ElbowL"]
 position = Vector4(0, -0.2, 0, 0)
 material_override = SubResource("TetraMaterial4D_fl6wl")
 mesh = SubResource("BoxTetraMesh4D_uxl8a")
 
-[node name="HipR" type="Node4D" parent="Nessa/Avatar"]
+[node name="HipR" type="Node4D" parent="Mithra/Avatar"]
 position = Vector4(-0.1, 0.7, 0, 0)
 
-[node name="ThighR" type="MeshInstance4D" parent="Nessa/Avatar/HipR"]
+[node name="ThighR" type="MeshInstance4D" parent="Mithra/Avatar/HipR"]
 position = Vector4(0, -0.16, 0, 0)
 material_override = SubResource("TetraMaterial4D_oucp2")
 mesh = SubResource("BoxTetraMesh4D_7nu72")
 
-[node name="KneeR" type="Node4D" parent="Nessa/Avatar/HipR"]
+[node name="KneeR" type="Node4D" parent="Mithra/Avatar/HipR"]
 position = Vector4(0, -0.32, 0, 0)
 
-[node name="ShinR" type="MeshInstance4D" parent="Nessa/Avatar/HipR/KneeR"]
+[node name="ShinR" type="MeshInstance4D" parent="Mithra/Avatar/HipR/KneeR"]
 position = Vector4(0, -0.16, 0, 0)
 material_override = SubResource("TetraMaterial4D_ugqwb")
 mesh = SubResource("BoxTetraMesh4D_44v60")
 
-[node name="AnkleR" type="Node4D" parent="Nessa/Avatar/HipR/KneeR"]
+[node name="AnkleR" type="Node4D" parent="Mithra/Avatar/HipR/KneeR"]
 position = Vector4(0, -0.32, 0, 0)
 
-[node name="BootR" type="MeshInstance4D" parent="Nessa/Avatar/HipR/KneeR/AnkleR"]
+[node name="BootR" type="MeshInstance4D" parent="Mithra/Avatar/HipR/KneeR/AnkleR"]
 position = Vector4(0, -0.03, 0.04, 0)
 material_override = SubResource("TetraMaterial4D_2lwu3")
 mesh = SubResource("BoxTetraMesh4D_44lv7")
 
-[node name="ShoulderR" type="Node4D" parent="Nessa/Avatar"]
+[node name="ShoulderR" type="Node4D" parent="Mithra/Avatar"]
 position = Vector4(-0.22, 1.02, 0, 0)
 
-[node name="UpperArmR" type="MeshInstance4D" parent="Nessa/Avatar/ShoulderR"]
+[node name="UpperArmR" type="MeshInstance4D" parent="Mithra/Avatar/ShoulderR"]
 position = Vector4(0, -0.09, 0, 0)
 material_override = SubResource("TetraMaterial4D_fl0v5")
 mesh = SubResource("BoxTetraMesh4D_ipdq5")
 
-[node name="ElbowR" type="Node4D" parent="Nessa/Avatar/ShoulderR"]
+[node name="ElbowR" type="Node4D" parent="Mithra/Avatar/ShoulderR"]
 position = Vector4(0, -0.18, 0, 0)
 
-[node name="ForearmR" type="MeshInstance4D" parent="Nessa/Avatar/ShoulderR/ElbowR"]
+[node name="ForearmR" type="MeshInstance4D" parent="Mithra/Avatar/ShoulderR/ElbowR"]
 position = Vector4(0, -0.09, 0, 0)
 material_override = SubResource("TetraMaterial4D_vcqxf")
 mesh = SubResource("BoxTetraMesh4D_xn0nv")
 
-[node name="HandR" type="MeshInstance4D" parent="Nessa/Avatar/ShoulderR/ElbowR"]
+[node name="HandR" type="MeshInstance4D" parent="Mithra/Avatar/ShoulderR/ElbowR"]
 position = Vector4(0, -0.2, 0, 0)
 material_override = SubResource("TetraMaterial4D_ne4wv")
 mesh = SubResource("BoxTetraMesh4D_p5eu8")
 
-[node name="Gait" type="Node4D" parent="Nessa"]
+[node name="Gait" type="Node4D" parent="Mithra"]
 script = ExtResource("gait")
 run_speed = 2.4
 
-[node name="Head" type="Node4D" parent="Nessa"]
+[node name="Head" type="Node4D" parent="Mithra"]
 position = Vector4(0, 1.3, 0, 0)
 
 [node name="Player" type="CharacterBody4D" parent="."]
-position = Vector4(0, 1.2, -1.5, 0)
+position = Vector4(4.6, 1.2, -2, 0)
 script = ExtResource("character")
 
 [node name="CollisionShape4D" type="CollisionShape4D" parent="Player"]
@@ -5907,8 +5975,14 @@ shape = SubResource("body_shape")
 [node name="Avatar" type="Node4D" parent="Player"]
 script = ExtResource("avatar")
 build = 2
+shorts_length = 0.16
 skin = Color(0.42, 0.62, 0.36, 1)
 accent = Color(0.93, 0.8, 0.62, 1)
+eyes = true
+eye_spacing = 0.07
+eye_height = 0.038
+eye_width = 0.044
+eye_tall = 0.054
 
 [node name="Tunic" type="MeshInstance4D" parent="Player/Avatar"]
 position = Vector4(0, 0.84, 0, 0)
@@ -6058,14 +6132,20 @@ run_speed = 6
 
 [node name="CameraRig" type="Node4D" parent="Player"]
 script = ExtResource("rig")
-talk_distance = 4.6
-talk_pivot_height = 1.0
+start_preset = 1
+pivot_height = 1.5
+distance = 8.0
+start_yaw_degrees = 27.1
+start_pitch_degrees = -15.0
+talk_distance = 5.2
+talk_pivot_height = 1.1
 
 [node name="Pitch" type="Node4D" parent="Player/CameraRig"]
 
 [node name="Camera4D" type="Camera4D" parent="Player/CameraRig/Pitch"]
 position = Vector4(0, 0, 5, 0)
 current = true
+field_of_view_3d = 0.9599310886
 rendering_engine_name = "Cross-section"
 w_fade_distance = 6.0
 
@@ -6079,7 +6159,7 @@ text = "..."
 [node name="Crossing" type="Node" parent="."]
 script = ExtResource("pen_crossing")
 theatre_scene = ExtResource("theatre_scene")
-asleep_paths = Array[NodePath]([NodePath("../World"), NodePath("../Chickens"), NodePath("../Pen"), NodePath("../Nessa"), NodePath("../Player"), NodePath("../UI"), NodePath("../Systems"), NodePath("../Invitation")])
+asleep_paths = Array[NodePath]([NodePath("../World"), NodePath("../Chickens"), NodePath("../Pen"), NodePath("../Mithra"), NodePath("../Player"), NodePath("../UI"), NodePath("../Systems"), NodePath("../Invitation")])
 farm_camera_path = NodePath("../Player/CameraRig/Pitch/Camera4D")
 player_path = NodePath("../Player")
 

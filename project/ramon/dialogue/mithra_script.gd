@@ -1,7 +1,7 @@
 extends RefCounted
-class_name NessaScript
+class_name MithraScript
 
-## Nessa, who has been pacing the same field for days looking for a coin that went
+## Mithra, who has been pacing the same field for days looking for a coin that went
 ## sideways out of the world.
 ##
 ## Same shape as KeeperScript - see the header there for what a node is and what the
@@ -28,7 +28,7 @@ const NODES: Dictionary = {
 # ---------------------------------------------------------------- first meeting
 
 "intro": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": [
 		"Don't — don't walk there. Stand still a moment.",
 		"I dropped a coin. Just here, about a yard from my boot. It did not land.",
@@ -44,7 +44,7 @@ const NODES: Dictionary = {
 },
 
 "coin_kind": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"topic": true,
 	"lines": [
 		"An ADA. A physical one — a real disc, struck in metal, for a currency that has never once been a disc.",
@@ -55,7 +55,7 @@ const NODES: Dictionary = {
 },
 
 "sceptic": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"topic": true,
 	"lines": [
 		"They do here. Ask the chickens.",
@@ -64,7 +64,7 @@ const NODES: Dictionary = {
 },
 
 "accept": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": [
 		"Then you can do the one thing I can't.",
 		"Step ana — that way, whichever way that turns out to be — and look at the ground.",
@@ -76,7 +76,7 @@ const NODES: Dictionary = {
 },
 
 "brush_off": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": [
 		"Mm. Everyone says that and then comes back.",
 	],
@@ -87,7 +87,7 @@ const NODES: Dictionary = {
 # ---------------------------------------------------------------- topics
 
 "hub": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": [],
 	"choices": [
 		{"text": "Tell me about this coin.", "goto": "coin_kind", "once": true},
@@ -100,7 +100,7 @@ const NODES: Dictionary = {
 ## The setup. The egg is buried in a list of junk and thrown away in half a line, so that
 ## handing it over later is a callback rather than an announcement.
 "found_things": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"topic": true,
 	"lines": [
 		"A boot. Two boots, actually, and not a pair.",
@@ -111,7 +111,7 @@ const NODES: Dictionary = {
 },
 
 "who_she_is": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"topic": true,
 	"lines": [
 		"I walk the far fence. Which mostly means I'm the one who notices when something has stopped being where it was.",
@@ -121,7 +121,7 @@ const NODES: Dictionary = {
 },
 
 "sign_off": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": [
 		"Ana. Look down. That's the whole of it.",
 	],
@@ -131,7 +131,7 @@ const NODES: Dictionary = {
 # ---------------------------------------------------------------- the handover
 
 "greet_has_coin": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": [
 		"You've — that's it. That's it, give it here.",
 	],
@@ -143,7 +143,7 @@ const NODES: Dictionary = {
 },
 
 "not_yet": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": [
 		"You're holding it. You are actually holding it and walking away.",
 	],
@@ -151,7 +151,7 @@ const NODES: Dictionary = {
 },
 
 "haggle": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": [
 		"Nothing. It's worth nothing, it's a novelty disc, you could buy nine of them.",
 		"That isn't the point and you know it isn't.",
@@ -163,7 +163,7 @@ const NODES: Dictionary = {
 },
 
 "withhold": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": [
 		"Fine. It's had four days of my life, it can have the rest of the afternoon.",
 	],
@@ -171,7 +171,7 @@ const NODES: Dictionary = {
 },
 
 "handover": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": [
 		"Thank you. Genuinely — that's four days off my week.",
 		"Hold on. You've done me a turn and all I've got is other people's lost property.",
@@ -181,7 +181,7 @@ const NODES: Dictionary = {
 },
 
 "reward": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": [
 		"Here. Three slices over, in a nest that wasn't there the day before.",
 		"It's an egg, it's gold, and I have no earthly use for either of those facts.",
@@ -191,9 +191,75 @@ const NODES: Dictionary = {
 },
 
 "reward_close": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": [
 		"Don't drop it. I'd never find it.",
+		"Actually — no, hold on, that's not enough. You're the chicken person, aren't you.",
+		"Right. Stay there. STAY there.",
+	],
+	# She is off. The walk is not in this file - `fetch_chicken` tells
+	# pen_mithra_fetch_4d to take her, and she leaves on the beat after the box closes.
+	"do": "fetch_chicken",
+	"goto": "",
+},
+
+# ------------------------------------------------- she went and got you a chicken
+
+## Spoken when she arrives back, with a bird. Started by the fetch, not by walking up to
+## her - she came to YOU, so she opens her own mouth.
+"delivery": {
+	"speaker": "Mithra",
+	"lines": [
+		"Got one! Four days I can't find a coin a yard from my boot, and I find a chicken in ninety seconds.",
+		"Don't say it.",
+	],
+	"choices": [
+		{"text": "Thank you, Mithra.", "goto": "thanked"},
+		{"text": "You are extremely good at this.", "goto": "thanked_warm"},
+		{"text": "I wasn't going to say anything.", "goto": "thanked_dry"},
+	],
+},
+
+"thanked": {
+	"speaker": "Mithra",
+	"lines": [
+		"Here. Mind the left wing, she's opinionated about it.",
+	],
+	"do": "hand_over_chicken",
+	"goto": "farewell",
+},
+
+"thanked_warm": {
+	"speaker": "Mithra",
+	"lines": [
+		"I KNOW. Wrong career. Here, take her before I start charging.",
+	],
+	"do": "hand_over_chicken",
+	"goto": "farewell",
+},
+
+"thanked_dry": {
+	"speaker": "Mithra",
+	"lines": [
+		"You were thinking it. Everyone thinks it. Here.",
+	],
+	"do": "hand_over_chicken",
+	"goto": "farewell",
+},
+
+"farewell": {
+	"speaker": "Mithra",
+	"lines": [
+		"Thanks again, buddy!",
+	],
+	"do": "mithra_leaves",
+	"goto": "",
+},
+
+"greet_after_gift": {
+	"speaker": "Mithra",
+	"lines": [
+		"Back on the grass. There's a trowel down there somewhere that isn't mine either.",
 	],
 	"goto": "",
 },
@@ -201,25 +267,25 @@ const NODES: Dictionary = {
 # ---------------------------------------------------------------- gameplay states
 
 "greet_looking": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": ["Still here. Still the same nine yards of grass."],
 	"goto": "hub",
 },
 
 "greet_hinted": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": ["Ana, and look down. I'd do it myself if I had the axis for it."],
 	"goto": "hub",
 },
 
 "greet_done": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": ["Back in my pocket, where it can't get up to anything. How's the egg?"],
 	"goto": "",
 },
 
 "greet_carrying": {
-	"speaker": "Nessa",
+	"speaker": "Mithra",
 	"lines": ["You've got a chicken under your arm and it is looking at me."],
 	"goto": "",
 },

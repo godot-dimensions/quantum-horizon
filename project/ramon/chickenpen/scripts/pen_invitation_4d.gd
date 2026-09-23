@@ -25,12 +25,14 @@ extends Node
 ## a straight line through a wall on the day somebody moves his desk, and a character who
 ## clips through his own shed undoes every other thing this scene does carefully.
 ##
-## HE GOES FIRST, AND HE GOES AWAY FROM YOU. He stops on YOUR side of the door and puts it
-## up behind himself, so when he turns and steps through it he is walking away through the
-## field rather than past it - a man who walks alongside his own door and then stops
-## existing is a bug, and reads as one. The question the player is left holding is "do I
-## follow", which is a better question than "what is this". Nothing forces them through it
-## and nothing hurries them.
+## HE NEVER TURNS ROUND. He comes out of the shed heading away from it, the door goes up
+## IN FRONT of him along the way he was already walking, he calls you, and then he
+## carries straight on through it. An earlier version put the door up behind him, which
+## meant he walked out, stopped, turned about-face and went back the way he came - and
+## whatever that reads as, it is not a man leading you somewhere.
+##
+## The door stays open behind him, because the whole question the player is left holding
+## is "do I follow". Nothing forces them through it and nothing hurries them.
 
 enum Beat { WAITING, SPEAKING, WALKING, RAISING, CALLING, LEAVING, OPEN, HOME }
 
@@ -54,18 +56,24 @@ enum Beat { WAITING, SPEAKING, WALKING, RAISING, CALLING, LEAVING, OPEN, HOME }
 @export var effect_name: String = "trym_invite"
 
 @export_group("The walk")
-## Where he goes, in WORLD space: out of the shed door, then clear of it, then to the spot
-## he stops on - which is BETWEEN the player and where the door goes up.
+## Where he goes, in WORLD space: out of the shed door, clear of it, and on to the spot he
+## stops at - all of it in one direction, away from the shed.
 @export var route: Array[Vector4] = [Vector4(-10.0, 0.0, -12.1, 0.0),
-	Vector4(-9.4, 0.0, -8.0, 0.0), Vector4(-9.0, 0.0, -4.4, 0.0)]
-## Where the arch goes up, also world space: a couple of paces BEHIND him, so he is facing
-## you across it.
-@export var door_at := Vector4(-9.0, 0.0, -6.6, 0.0)
+	Vector4(-9.4, 0.0, -9.0, 0.0), Vector4(-9.0, 0.0, -5.8, 0.0)]
+## Where the arch goes up: a couple of paces AHEAD of him, on the line he is walking, so
+## the next thing he does is walk through it.
+@export var door_at := Vector4(-9.0, 0.0, -3.3, 0.0)
 @export_range(-180.0, 180.0, 5.0) var door_yaw_degrees: float = 0.0
 ## How far past it he gets before he is out of sight.
 @export_range(0.5, 6.0, 0.1) var vanish_beyond: float = 2.0
 @export_range(0.2, 6.0, 0.1) var walk_speed: float = 1.7
-@export_range(0.5, 8.0, 0.5) var speak_seconds: float = 3.6
+## A breath between the box closing and him standing up - not a speech.
+##
+## IT USED TO BE 3.6 SECONDS, on the reasoning that he should finish his sentence before
+## he moves. He has already finished it: the sentence was in the dialogue box, and the box
+## has shut by the time this runs. What the wait actually bought was four seconds of the
+## player looking at a man sitting still, having just been told to follow him.
+@export_range(0.0, 8.0, 0.05) var speak_seconds: float = 0.35
 @export_range(0.5, 8.0, 0.5) var raise_seconds: float = 2.4
 ## How close you have to get before he goes through. He does NOT go on a timer: he asked
 ## you to follow him, so he waits until you have, however long that takes.
@@ -93,6 +101,7 @@ var _offered: bool = false
 var _driver: Node
 var _marker: Node4D
 var _stood := Vector4.ZERO
+var _home_to := Vector4.ZERO
 
 
 func _ready() -> void:
@@ -160,9 +169,12 @@ func _process(delta: float) -> void:
 	if _beat == Beat.OPEN:
 		return
 	if _beat == Beat.HOME:
-		# Home again: he stands where the door was, turned to whoever he came back with,
-		# and the one line over his head clears itself so it does not become scenery.
-		if _trym.has_method("face_towards") and _player != null:
+		# Home again: he walks clear of the doorway, then turns to whoever he came back
+		# with, and the one line over his head clears itself rather than becoming scenery.
+		if _home_to != Vector4.ZERO:
+			if _trym.call("walk_towards", _home_to, walk_speed, delta):
+				_home_to = Vector4.ZERO
+		elif _trym.has_method("face_towards") and _player != null:
 			_trym.call("face_towards", _player.global_position)
 		_timer -= delta
 		if _timer <= 0.0 and _timer > -1.0:
@@ -209,11 +221,10 @@ func _process(delta: float) -> void:
 			_say("")
 			_beat = Beat.LEAVING
 		Beat.LEAVING:
-			# He turns, walks into his own door and is gone - away from the player, through
-			# the field, not around it. Hidden rather than freed, because a freed Trym is
-			# one his own conversation still holds a reference to, and the desk he was
-			# sitting at is the same node.
-			var away: Vector4 = Basis4D.from_zx(deg_to_rad(door_yaw_degrees)) * Vector4(0.0, 0.0, -vanish_beyond, 0.0)
+			# Straight on through it, the way he was already facing. Hidden rather than
+			# freed, because a freed Trym is one his own conversation still holds a
+			# reference to, and the desk he was sitting at is the same node.
+			var away: Vector4 = Basis4D.from_zx(deg_to_rad(door_yaw_degrees)) * Vector4(0.0, 0.0, vanish_beyond, 0.0)
 			var beyond := Vector4(door_at.x, 0.0, door_at.z, 0.0) + away
 			if not _trym.call("walk_towards", beyond, walk_speed, delta):
 				return
@@ -223,11 +234,67 @@ func _process(delta: float) -> void:
 			_beat = Beat.OPEN
 
 
+func _put_door_up() -> void:
+	if _arch == null or not (_arch is Node4D):
+		return
+	(_arch as Node4D).position = Vector4(door_at.x, 0.0, door_at.z, 0.0)
+	(_arch as Node4D).basis = Basis4D.from_zx(deg_to_rad(door_yaw_degrees))
+	_arch.set("armed", true)
+
+
+## Back to before any of it happened: him at his desk, the door gone, the offer still to
+## be made. His talk driver has a reset() of its own; this is the other half of it.
+func reset() -> void:
+	_offered = false
+	_armed = false
+	_beat = Beat.WAITING
+	_timer = 0.0
+	_leg = 0
+	_say("")
+	if _arch != null:
+		_arch.set("armed", false)
+	if _trym != null and _trym.has_method("return_to_desk"):
+		_trym.call("return_to_desk")
+
+
+## TESTING ONLY. Jumps to the state you would be in having accepted the offer and followed
+## him through: the door up, and him already inside it.
+##
+## It exists so the debug key's way back plays the REAL homecoming - him beside you, the
+## door folding away, the "so what did you think" - rather than nothing at all, which is
+## what happens if you drop into the theatre without the invitation ever having run.
+##
+## It re-stages every time, including after a real trip, so the key stays repeatable.
+func stage_as_if_followed() -> void:
+	if _trym == null:
+		return
+	_offered = true
+	_armed = false
+	_beat = Beat.OPEN
+	_say("")
+	_put_door_up()
+	# Standing, not merely armed. The shortcut switches the farm off a frame later, so the
+	# door never gets to animate open - and a door that was never up has nothing to fold
+	# away when you come home, which is most of the arrival gone.
+	if _arch != null:
+		_arch.set("_open", 1.0)
+	if _trym.has_method("take_over"):
+		_trym.call("take_over")
+	if _trym.has_method("place_at"):
+		_trym.call("place_at", Vector4(door_at.x, 0.0, door_at.z + vanish_beyond, 0.0))
+	if _trym.has_method("set_figure_visible"):
+		_trym.call("set_figure_visible", false)
+	# And YOU are standing in the doorway, because that is where you would be. The
+	# crossing puts you back a pace in front of wherever you went in from, so without
+	# this the shortcut drops you home at whatever spot you happened to press the key on
+	# rather than out in front of the shed where the door was.
+	if _player != null:
+		_player.global_position = Vector4(door_at.x, _player.global_position.y,
+			door_at.z, _player.global_position.w)
+
+
 func _raise() -> void:
-	if _arch != null and _arch is Node4D:
-		(_arch as Node4D).position = Vector4(door_at.x, 0.0, door_at.z, 0.0)
-		(_arch as Node4D).basis = Basis4D.from_zx(deg_to_rad(door_yaw_degrees))
-		_arch.set("armed", true)
+	_put_door_up()
 	_say(AT_THE_DOOR)
 	_beat = Beat.RAISING
 	_timer = raise_seconds
@@ -245,7 +312,12 @@ func _raise() -> void:
 ## slides the player to comes with him - otherwise saying hello teleports you into the
 ## shed he is not in.
 func rearm() -> void:
-	if _beat != Beat.OPEN or _trym == null:
+	# ANY beat from the door going up onwards, not just the tidy one. Following him
+	# promptly - which is what he asked you to do - means you cross the threshold while he
+	# is still walking through, and the crossing then freezes this node mid-stride. It
+	# used to insist on OPEN, so a player who kept up came home to a door that never shut
+	# and a Trym who was still switched off inside it.
+	if _trym == null or _beat < Beat.CALLING or _beat >= Beat.HOME:
 		return
 	_beat = Beat.HOME
 	if _arch != null:
@@ -253,9 +325,13 @@ func rearm() -> void:
 	# Back on YOUR side of the door, a pace to one side of where the crossing puts you
 	# down. He walked through it ahead of you; coming out behind you would be a third
 	# thing happening that nobody saw.
-	var spot := Vector4(door_at.x + 1.5, 0.0, door_at.z + 2.6, 0.0)
+	# HE COMES OUT OF THE DOOR, rather than appearing next to it. Put down in the doorway
+	# and walked the last couple of metres, so the two of you arrive rather than simply
+	# being somewhere.
+	var spot := Vector4(door_at.x + 1.6, 0.0, door_at.z + 1.4, 0.0)
+	_home_to = spot
 	if _trym.has_method("place_at"):
-		_trym.call("place_at", spot)
+		_trym.call("place_at", Vector4(door_at.x, 0.0, door_at.z, 0.0))
 	if _trym.has_method("set_figure_visible"):
 		_trym.call("set_figure_visible", true)
 	if _trym.has_method("face_towards") and _player != null:

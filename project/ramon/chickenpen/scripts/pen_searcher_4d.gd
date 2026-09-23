@@ -139,8 +139,8 @@ func _talk() -> void:
 	var line: String = ""
 	if near:
 		var has_coin: bool = _inventory != null and bool(_inventory.call("has_item", "found_coin"))
-		line = "Nessa: \"Is that my coin? I've been up and down this field twice.\"" if has_coin \
-			else "Nessa: \"I dropped an ADA coin somewhere here. It's not where I dropped it.\""
+		line = "Mithra: \"Is that my coin? I've been up and down this field twice.\"" if has_coin \
+			else "Mithra: \"I dropped an ADA coin somewhere here. It's not where I dropped it.\""
 	if line != _said:
 		_said = line
 		_readout.text = line

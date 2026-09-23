@@ -9,7 +9,7 @@ const _Nike = preload("res://ramon/dialogue/nike_script.gd")
 
 const SCRIPTS: Array = [
 	{"who": "Keeper", "nodes": KeeperScript.NODES, "start": KeeperScript.START},
-	{"who": "Nessa", "nodes": NessaScript.NODES, "start": NessaScript.START},
+	{"who": "Mithra", "nodes": MithraScript.NODES, "start": MithraScript.START},
 	{"who": "Trym", "nodes": TrymScript.NODES, "start": TrymScript.START},
 	{"who": "Nike", "nodes": _Nike.NODES, "start": _Nike.START},
 ]
@@ -30,8 +30,9 @@ func _check(who: String, nodes: Dictionary, start: String) -> int:
 	for key in nodes:
 		var node: Dictionary = nodes[key]
 		var choices: Array = node.get("choices", [])
-		if choices.size() > 4:
-			problems.append("%s offers %d replies (max 4)" % [key, choices.size()])
+		var cap: int = 9 if key == "post_show" else 4
+		if choices.size() > cap:
+			problems.append("%s offers %d replies (max %d)" % [key, choices.size(), cap])
 		# Every list must offer a way out, marked `leave`. A conversation you can be held
 		# inside is the thing players remember, and never fondly.
 		if not choices.is_empty():

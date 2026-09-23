@@ -32,6 +32,17 @@ extends Node
 @export var farm_camera_path: NodePath
 @export var player_path: NodePath
 
+@export_group("Testing")
+## A way straight in and straight out again, for looking at the theatre without walking
+## the whole invitation first. It TOGGLES - the same key brings you home - because a way
+## in that needs a different way out is half a shortcut.
+##
+## It deliberately does not touch the invitation. Jumping in this way leaves Trym exactly
+## where he was, which is the honest thing for a debug key to do: it should show you the
+## room, not fake the scene that leads to it.
+@export var debug_key_enabled: bool = true
+@export var debug_key: Key = KEY_C
+
 var _theatre: Node
 var _asleep: Array[Node] = []
 var _hidden: Array[CanvasItem] = []
@@ -45,8 +56,39 @@ func _ready() -> void:
 			_asleep.append(branch)
 
 
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not debug_key_enabled:
+		return
+	var key := event as InputEventKey
+	if key == null or not key.pressed or key.echo or key.keycode != debug_key:
+		return
+	get_viewport().set_input_as_handled()
+	if is_away():
+		come_back()
+	else:
+		go_for_testing()
+
+
 func is_away() -> bool:
 	return _theatre != null and is_instance_valid(_theatre)
+
+
+## The debug key's way in. Same trip, but anything that stages the journey is first put
+## into the state it would be in had you walked it - so coming back plays the real
+## homecoming rather than the mechanical half of it.
+func go_for_testing() -> void:
+	if is_away():
+		return
+	for node in get_tree().current_scene.get_children():
+		_stage_trip(node)
+	go()
+
+
+func _stage_trip(node: Node) -> void:
+	if node.has_method("stage_as_if_followed"):
+		node.call("stage_as_if_followed")
+	for child in node.get_children():
+		_stage_trip(child)
 
 
 ## Through the door.

@@ -3,7 +3,7 @@ extends SceneTree
 ## Does each blob come out the colour of its own character?
 ##
 ## The awkward case is that the chibi avatar has two colours and which one IS the
-## character depends on the character: Nessa reads as her red tunic, the keeper as his
+## character depends on the character: Mithra reads as her red tunic, the keeper as his
 ## purple accent - and his tunic is tan. So the rule is "skip whatever looks like flesh",
 ## and these two pull in opposite directions, which is what makes them worth checking.
 
@@ -43,10 +43,10 @@ func _process(_d) -> bool:
 	var keeper: Color = by_name.get("Keeper", Color.BLACK)
 	_check("the keeper is purple", keeper.h * 360.0 > 250.0 and keeper.h * 360.0 < 330.0,
 		"hue %.0f" % (keeper.h * 360.0))
-	# Nessa is her red tunic, not her skin tone.
-	var nessa: Color = by_name.get("Nessa", Color.BLACK)
-	var nessa_hue: float = nessa.h * 360.0
-	_check("Nessa is red", nessa_hue > 340.0 or nessa_hue < 12.0, "hue %.0f" % nessa_hue)
+	# Mithra is her red tunic, not her skin tone.
+	var mithra: Color = by_name.get("Mithra", Color.BLACK)
+	var mithra_hue: float = mithra.h * 360.0
+	_check("Mithra is red", mithra_hue > 340.0 or mithra_hue < 12.0, "hue %.0f" % mithra_hue)
 	# THE DARK ONES STAY DARK. An earlier version lightened them so they would stand out
 	# against the panel, which is exactly backwards: the cat is black, and a grey blob for
 	# it is a worse marker than a black one because the colour is what names it. They are
@@ -67,7 +67,7 @@ func _process(_d) -> bool:
 		for j in range(i + 1, colours.size()):
 			if (colours[i] as Color).is_equal_approx(colours[j]):
 				same += 1
-	# NOT A FAILURE. Nessa and the lofted girl wear the same red in the world, so their
+	# NOT A FAILURE. Mithra and the lofted girl wear the same red in the world, so their
 	# blobs match and should - the colour is read off the character, not invented here,
 	# and their names are what tell them apart. Reported so it stays a known fact.
 	print("   note: %d pair(s) share a colour, which is true of them in the world" % same)

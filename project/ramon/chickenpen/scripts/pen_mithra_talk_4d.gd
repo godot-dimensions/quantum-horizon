@@ -1,6 +1,6 @@
 extends PenNpcTalk4D
 
-## Nessa's half of the conversation: she stops searching to talk, opens on whichever beat
+## Mithra's half of the conversation: she stops searching to talk, opens on whichever beat
 ## of her small quest you have reached, and hands over a golden egg when she gets her coin
 ## back.
 ##
@@ -30,6 +30,8 @@ var _inventory: Node
 var _mutter: Label
 var _hinted: bool = false
 var _gave_coin: bool = false
+## Once she has fetched you a bird she has nothing left to offer, and says so.
+var _gifted: bool = false
 var _met: bool = false
 
 
@@ -37,7 +39,7 @@ func _configure() -> void:
 	_searcher = get_node_or_null(searcher_path)
 	_inventory = get_node_or_null(inventory_path)
 	_mutter = get_node_or_null(mutter_path) as Label
-	_talk.use_script(NessaScript.NODES, NessaScript.START)
+	_talk.use_script(MithraScript.NODES, MithraScript.START)
 
 
 func _began() -> void:
@@ -57,9 +59,11 @@ func _ended() -> void:
 func _entry_node() -> String:
 	if not _met:
 		_met = true
-		return NessaScript.START
+		return MithraScript.START
 	if _catcher != null and _catcher.get("carried") != null:
 		return "greet_carrying"
+	if _gifted:
+		return "greet_after_gift"
 	if _gave_coin:
 		return "greet_done"
 	if _has(COIN):
@@ -92,9 +96,29 @@ func reset() -> void:
 	_met = false
 	_hinted = false
 	_gave_coin = false
+	_gifted = false
 	if _talk != null:
 		_talk.stop()
 		_talk.reset()
 	if _searcher != null:
 		_searcher.set("halted", false)
 	_set_player_moving(true)
+
+## SHE starts this one. Every other conversation in the scene opens because the player
+## walked up and pressed a key; this one opens because she has just crossed the field
+## with a chicken and is standing in front of them holding it.
+##
+## IT GOES THROUGH THE SAME DOOR as a normal conversation - _before_begin does the camera
+## staging, the walk-lock and the tag - so an unprompted conversation is framed exactly
+## like a prompted one. Calling _talk.begin() on its own would have played the lines with
+## the camera still behind the player's shoulder and the player free to walk away
+## mid-sentence.
+func begin_delivery() -> void:
+	if _talk == null or _talk.is_running():
+		return
+	_before_begin()
+	_talk.begin("delivery")
+
+
+func gave_a_chicken() -> void:
+	_gifted = true

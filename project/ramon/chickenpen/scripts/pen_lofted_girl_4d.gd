@@ -3,7 +3,7 @@ extends Node4D
 
 ## A second girl, lofted rather than built from blocks, and walked by the same rig.
 ##
-## WHY A SECOND ONE RATHER THAN REPLACING NESSA. The block girl works and is driven by the
+## WHY A SECOND ONE RATHER THAN REPLACING MITHRA. The block girl works and is driven by the
 ## player's own controller, so she inherits every walk fix for free. This is the other
 ## experiment: the creature pipeline - a loft hide, branch limbs, strider_walker - pointed
 ## at a HUMAN instead of an animal. Having both in the same field is the only way to see

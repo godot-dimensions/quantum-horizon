@@ -19,10 +19,10 @@ func _process(_d) -> bool:
 	_f += 1
 	if _f < 70: return false
 	if _pending != "":
-		root.get_texture().get_image().save_png("res://smoke_test_output/nessa_%s.png" % _pending)
+		root.get_texture().get_image().save_png("res://smoke_test_output/mithra_%s.png" % _pending)
 		_pending = ""
 		return false
-	var her: Node4D = _root.get_node("Nessa")
+	var her: Node4D = _root.get_node("Mithra")
 	var player: Node4D = _root.get_node("Player")
 	var rig: Node4D = _root.get_node("Player/CameraRig")
 	if _t0 == 0:
