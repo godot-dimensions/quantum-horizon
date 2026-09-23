@@ -191,6 +191,74 @@ a fork without syncing leaves the submodule's own `origin` on upstream, so the
 next update silently pulls the fork commit away. See
 `isoclynic_sun_reinstate.md` for the incident.
 
+**A stale submodule pointer is not the safe default — it is the breaking one.**
+On 2026-09-23 the branch recorded `engine/modules/4d` at `38307ab` while the
+module checked out and compiled here was `7533287`, ten commits ahead. The
+instinct was to leave it: an uncommitted pointer feels safer than a committed
+one. It is the reverse. One of those ten commits, `d3fda79`, *exposes*
+`Mesh4D.get_rect_bounds`, and seven project files call it — including
+`ObstacleCourse/scripts/ascent_builder_4d.gd` and `ascent_wall_builder_4d.gd`,
+which is gameplay, not tests. Anyone cloning the branch and building what it
+recorded would have got a 4D Ascent that does not run, with nothing in the repo
+to say why.
+
+Check before deciding, do not reason from feel:
+
+```
+cd engine/modules/4d
+git merge-base --is-ancestor <local-pointer> origin/main   # 0 = fetchable by anyone
+git log --oneline <recorded>..<local-pointer>              # what the branch is missing
+```
+
+The `-dirty` suffix in `git diff --submodule=short` means files modified inside
+the submodule's own working tree. Those are local-only and do **not** travel
+with a pointer bump, so they are not a reason to withhold one.
+
+One straggler from that bump, still unfixed:
+`Model/scripts/_diagnose_skinning_budget_runner.gd:66` calls
+`update_proxy_mesh_3d()`, which those ten commits replaced with
+`append_proxy_mesh_surfaces_3d`.
+
+## Two ways a careful change still breaks
+
+Both of these cost real time on 2026-09-23, with three Claude sessions sharing
+one working tree. Neither is Godot's fault and both will be rediscovered.
+
+**Staging a file hunk by hunk can split it below the level the language cares
+about.** Three sessions editing one tree meant committing by explicit path and,
+for shared files, by explicit hunk — which is what kept anyone from sweeping
+anyone. It is also what broke `HEAD`. A filter kept every hunk mentioning
+`_rig ` or `_rig =` and dropped `var _rig: Node`, which matches neither. The
+commit landed three *uses* of a variable and none of its *declaration*: an
+undeclared identifier, which GDScript rejects at parse time, so
+`pen_slice_plane_4d.gd` would not have loaded from a clean checkout.
+
+A filter clever enough to split a file by authorship is clever enough to split
+it below what the parser needs. Where a file is genuinely mixed, commit it
+whole and say whose work it carries in the message.
+
+**A test that waits N frames on a system that polls every N frames is a coin
+flip.** `_verify_celebration_runner` filled the pen, waited exactly three
+frames, then asserted the game had noticed. `pen_return_4d` tests every
+`check_every` frames — 3 by default — so three frames of waiting buys between
+zero and one check depending on where its tick counter happens to sit. One run
+in three got zero, which reads as a flaky test and sends you looking at
+whatever changed most recently. It is not flakiness, it is a race with a
+divisor.
+
+Wait on the condition with a frame cap, never on a frame count. And when
+widening a wait, check whether the counter you are extending is read by
+anything further down — the first fix for this reused `_settle`, which the
+sampling loop below it also counts on, and would have started that loop
+part-way through its own count. Same shape as the `_rig` bug: a partial change
+that leaves one name meaning two things.
+
+**Capture runners cannot run headless.** `_verify_mithra_runner`,
+`_verify_ticket_runner` and `_verify_flock_ring_runner` all die on `save_png`
+or `texture_2d_get` under `--headless` — the dummy renderer has no texture to
+hand them. Their assertions still execute and print, so read the output rather
+than the exit code, and run them windowed when you want the images.
+
 ## A FABRIK-driven rig cannot be scaled by a parent
 
 `scripts/ik_chain_controller.gd` solves entirely in GLOBAL space - it reads
