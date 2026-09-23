@@ -110,9 +110,12 @@ func _process(_d) -> bool:
 	# The camera sits behind the player along +Z. Anything within a few metres of that
 	# line, behind them, is parked in every shot of the stage.
 	var behind: Vector4 = exit.global_position - player.global_position
-	# You arrive THROUGH it, so you start beside it and walk down the house.
-	_check("you start at the door", Vector2(behind.x, behind.z).length() < 2.5,
-		"%.1f m from it" % Vector2(behind.x, behind.z).length())
+	# You arrive through it and walk down the house. Far enough along the landing that the
+	# camera - which rides five metres back - is in front of the door rather than behind
+	# it, so the way out is not parked in the middle of every shot of the stage.
+	var gap: float = Vector2(behind.x, behind.z).length()
+	_check("you start down the landing, clear of the door", gap > 5.5 and gap < 9.0,
+		"%.1f m along it, camera rides at 5.0" % gap)
 	var nearest: float = INF
 	for child in stage.get_node("House").get_children():
 		nearest = minf(nearest, ((child as Node4D).global_position

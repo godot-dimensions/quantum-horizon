@@ -112,6 +112,9 @@ func _process(_d) -> bool:
 		var show: Node = _theatre.get_node("Show")
 		show.set("opening_seconds", 3.0)
 		show.set("act_seconds", 4.5)
+		# He waits for somebody to sit down before he starts, and nobody sits down in a
+		# capture run - which left this stopping after the third picture.
+		show.set("waits_for_seat", 0.0)
 		_eye = (_theatre.get_node("Player/CameraRig/Pitch/Camera4D") as Camera4D).duplicate()
 		_theatre.add_child(_eye)
 		_eye.position = Vector4.ZERO

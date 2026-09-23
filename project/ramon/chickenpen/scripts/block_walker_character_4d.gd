@@ -165,9 +165,9 @@ func _step_up(wish: Vector4) -> void:
 	if Engine.get_physics_frames() % 40 == 0:
 		print("[step] from %v dir %v hit %s" % [params.global_ray_origin, flat,
 			str(hit.get("position", "nothing"))])
-	if hit.is_empty() or not hit.has("position"):
+	if hit.is_empty() or not hit.has("global_point"):
 		return
-	var top: float = (hit["position"] as Vector4).y
+	var top: float = (hit["global_point"] as Vector4).y
 	var climb: float = top - global_position.y
 	if climb <= 0.02 or climb > step_height:
 		return

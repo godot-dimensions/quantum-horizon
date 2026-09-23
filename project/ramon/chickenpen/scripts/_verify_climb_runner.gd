@@ -2,6 +2,21 @@ extends SceneTree
 
 ## Can you walk back UP the ramp?
 ##
+## IT WAS A WRONG DICTIONARY KEY, not a limitation of the engine.
+##
+## The reasoning that nearly stopped this being fixed went: the only 4D physics engine is
+## axis_aligned_box_physics_engine_4d, so a sloped collider cannot exist and a ramp has to
+## be a staircase of boxes - and CharacterBody4D has no step-up, so every riser is a
+## vertical face, and a vertical face is a wall however low it is. All of that is true.
+## The conclusion drawn from it - that walking back up was therefore impossible - was not,
+## because a step-up can be written, and one had been.
+##
+## It did nothing, because it asked the raycast result for "position". There is no such
+## key: PhysicsServer4D.raycast_physics_objects returns `hit`, `distance`, `normal`,
+## `point`, `global_distance`, `global_normal`, `global_point`, `body` and `shape`. The
+## probe found the floor every time and the code threw the answer away. The camera rig had
+## the same key wrong, so its collision had never once fired either.
+##
 ## IT PRESSES THE KEY. Everything else about the walkway can be measured from its geometry,
 ## but this cannot: whether a staircase of axis-aligned boxes is climbable depends on the
 ## character controller, the capsule, the riser height and the physics engine all at once.
@@ -49,10 +64,6 @@ func _process(delta: float) -> bool:
 		return false
 
 	_held += delta
-	if int(_held * 2.0) != int((_held - delta) * 2.0):
-		print("      t %.1f  at %v  on_floor %s  on_wall %s"
-			% [_held, _player.global_position,
-				str(_player.call("is_on_floor")), str(_player.call("is_on_wall"))])
 	# Facing up the ramp is facing +Z, so forward has to be re-pressed each frame only in
 	# the sense that it stays held; the walker reads the axis every frame by itself.
 	if _held < 6.0:
