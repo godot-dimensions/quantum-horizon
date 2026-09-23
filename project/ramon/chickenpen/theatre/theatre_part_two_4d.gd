@@ -204,6 +204,7 @@ var _stones: Array[Node4D] = []
 var _metrics: Node
 var _turned: bool = false
 var _done: bool = false
+var _lent_back: bool = false
 
 
 func _ready() -> void:
@@ -224,8 +225,9 @@ func _ready() -> void:
 			_panels.append(panel)
 	if _prompt != null and _prompt.has_signal("answered"):
 		_prompt.connect("answered", _on_answered)
-	_build()
-	_show_piece(-1)
+	# NOT BUILT HERE ANY MORE. See the header on _pump_build: this was 3.5 of the 3.9
+	# seconds it cost to walk through the door, paid up front for the optional half of a
+	# talk you had not agreed to watch yet.
 
 
 ## Asked by the first show when it runs out of findings.
@@ -247,6 +249,7 @@ func _on_answered(yes: bool) -> void:
 
 
 func begin() -> void:
+	finish_building()
 	if _running or _done:
 		return
 	_running = true
@@ -266,7 +269,7 @@ func current_moment() -> int:
 ## and it plays itself - but a presentation you cannot skip or go back in is a video, and
 ## the one thing an audience always wants is the slide they just missed.
 func _unhandled_input(event: InputEvent) -> void:
-	if not _running:
+	if not _running or _lent_back:
 		return
 	var step := 0
 	var click := event as InputEventMouseButton
@@ -288,7 +291,50 @@ func _unhandled_input(event: InputEvent) -> void:
 	if step > 0 and _moment >= MOMENTS.size():
 		_finish()
 		return
+	# BACKWARD OFF THE FRONT GOES INTO PART ONE. From the audience there is one
+	# presentation, not two, and a back arrow that does nothing on the first slide reads
+	# as the controls having stopped working - which is exactly what an audience concludes
+	# the moment a key stops responding. The yes/no question sits between the two halves
+	# and that does make this an odd seam, but the seam is ours and should not be theirs.
+	if step < 0 and _moment == 0 and _show != null 			and _show.has_method("step_back_from_part_two"):
+		lend_back()
+		_show.call("step_back_from_part_two")
+		return
 	_enter(clampi(_moment + step, 0, MOMENTS.size()))
+
+
+## Part one has the floor for a moment. The clock stops, the input goes quiet, and the
+## exhibits come off the drum - without that last part, act three would be demonstrated
+## with three solids from moment IV still standing behind it.
+func lend_back() -> void:
+	if _lent_back:
+		return
+	_lent_back = true
+	_show_piece(-1)
+	if _show != null and _show.has_method("hold_at"):
+		_show.call("hold_at", -1)
+
+
+## And taking it back, on the next forward step. Re-entering moment 0 rather than resuming
+## mid-slide, because a slide you stepped away from and came back to should start again -
+## its exhibit animates, and rejoining it half way through shows you the end of something
+## you never saw the start of.
+func resume() -> void:
+	if not _lent_back:
+		return
+	_lent_back = false
+	# PART ONE'S STAGE IS CLEARED FIRST. lend_back took this room's exhibits off the drum
+	# on the way out; this is the other half of that, and it was missing. Part one put its
+	# last finding back up when it was handed the floor - the mined rock - and it was
+	# still standing there when we took the floor back, so every slide from here on was
+	# played through the middle of it.
+	if _show != null and _show.has_method("clear_stage"):
+		_show.call("clear_stage")
+	_enter(0)
+
+
+func is_lent_back() -> bool:
+	return _lent_back
 
 
 ## The end of it: stop the clock, hand the presenter back, and let them out of the chair.
@@ -314,7 +360,11 @@ func _length(which: int) -> float:
 
 
 func _process(delta: float) -> void:
-	if not _running or _stage == null:
+	# Before the early return, because the exhibits are built while part ONE is running
+	# and this node is not.
+	if _built < BUILDERS.size():
+		_pump_build(delta)
+	if not _running or _lent_back or _stage == null:
 		return
 	_phase += delta
 	if _moment >= 0 and _moment < MOMENTS.size() and _phase >= _length(_moment):
@@ -353,7 +403,15 @@ func _enter(which: int) -> void:
 	# everything else - the three copies fill the drum and the creature is very nearly as
 	# long as the drum is wide.
 	if _show != null and _show.has_method("hold_at"):
-		_show.call("hold_at", 1 if which == 1 or which == 2 else 0)
+		# AT THE DRUM FOR ANYTHING HE CAN STAND BESIDE. The goat, and now the stop
+		# conditions - seven stones, four of them off-slice, which is the one exhibit in
+		# here you genuinely have to be next to for the point to land.
+		#
+		# Still out front for the three copies and the walking creature: those two fill
+		# the drum edge to edge, and a presenter standing in them is a presenter you
+		# cannot see. The rule is what he can stand BESIDE, not which slide it is.
+		var beside: bool = which < MOMENTS.size() 			and int(MOMENTS[which].get("piece", which)) in [1, 3]
+		_show.call("hold_at", 1 if beside else 0)
 	# Still for everything that is a comparison; turning for the goat, which is one object
 	# and wants to be seen from more than one side.
 	if _show != null and _show.has_method("set_spin"):
@@ -448,11 +506,86 @@ func _tint(to: Color) -> void:
 
 # ---------------------------------------------------------------- the exhibits
 
+## THE FOUR EXHIBITS, ONE PER FRAME, STARTING A BEAT AFTER THE ROOM OPENS.
+##
+## WHY THIS WAS THE WHOLE PROBLEM. Walking through the sci-fi door cost about four seconds
+## and this function was three and a half of them - measured child by child, 89% of the
+## entire theatre. It ran in `_ready`, so it was paid on the frame the door was crossed,
+## building the goat and the eight-legged creature and the three copies, and then hiding
+## all of them. For the optional second half of a talk nobody had said yes to yet.
+##
+## Preloading could never have helped with that, which is the thing that made it look
+## mysterious: the PackedScene is held as an exported reference and is already resident,
+## so `load()` is a cache hit at 0.0 ms and `instantiate()` is 0.3. A scene file is a
+## blueprint. All the cost is construction, and construction cannot start before you ask.
+##
+## SO IT IS ASKED FOR LATER, AND IN PIECES. Part one runs for the best part of a minute
+## before the prompt, and the player spends the first of those seconds walking down a ramp
+## and being sat in a chair. One exhibit a frame across that window costs four frames of
+## about a second each in a debug build - well under a frame each in a real one - and the
+## door itself drops to around 450 ms.
+##
+## ANYTHING THAT NEEDS THEM ALL CALLS finish_building() FIRST, which runs whatever is left
+## on the spot. That is the safety net: the timing above has seconds of slack, but a slow
+## machine, a paused tree or somebody hammering the arrow keys should not be able to get a
+## half-built set on stage.
+const BUILDERS: Array[StringName] = [&"_the_same_thing", &"_the_goat", &"_stop_conditions",
+	&"_the_creature"]
+## How long after the room opens the first one starts. Not zero: the arrival has its own
+## camera move, and a frame of it lost to a lofted goat is the first frame you see.
+@export_range(0.0, 60.0, 0.5) var build_delay: float = 14.0
+## Between one exhibit and the next. Two heavy frames next to each other are a stutter;
+## two a couple of seconds apart are two blips, and a blip while you are sitting still
+## looking at a slide is close to invisible.
+@export_range(0.0, 20.0, 0.5) var build_gap: float = 5.0
+
+var _built: int = 0
+var _build_wait: float = -1.0
+
+
+## Is everything this half needs actually made? The exhibits AND the goat's lofts - the
+## four appends finish in four frames and the goat takes another twelve after that.
+func is_built() -> bool:
+	if _built < BUILDERS.size():
+		return false
+	return _goat == null or not _goat.has_method("is_baked") or bool(_goat.call("is_baked"))
+
+
+func _pump_build(delta: float) -> void:
+	if _stage == null:
+		return
+	if _build_wait < 0.0:
+		_build_wait = build_delay
+	_build_wait -= delta
+	if _build_wait <= 0.0:
+		_build_one()
+		_build_wait = build_gap
+
+
+func _build_one() -> void:
+	var piece: Node4D = call(BUILDERS[_built]) as Node4D
+	_built += 1
+	if piece == null:
+		return
+	_pieces.append(piece)
+	# Parked as it is made, rather than built visible and hidden afterwards - otherwise
+	# each one is on stage for the frame between being finished and the next one starting.
+	piece.visible = false
+	piece.position = Vector4(0.0, -40.0, 0.0, 0.0)
+
+
+## Everything that is left, now. Cheap when the pump has already done it, which is the
+## normal case.
+func finish_building() -> void:
+	while _built < BUILDERS.size():
+		_build_one()
+	# And the goat's own twelve lofts, which are the bulk of it and bake themselves one a
+	# frame. Nothing may go on stage part assembled.
+	if _goat != null and _goat.has_method("finish_baking"):
+		_goat.call("finish_baking")
+
 func _build() -> void:
-	_pieces.append(_the_same_thing())
-	_pieces.append(_the_goat())
-	_pieces.append(_stop_conditions())
-	_pieces.append(_the_creature())
+	finish_building()
 	for piece in _pieces:
 		piece.visible = false
 ## One at a time, and the rest are not merely hidden but moved out of the way, so a turn of

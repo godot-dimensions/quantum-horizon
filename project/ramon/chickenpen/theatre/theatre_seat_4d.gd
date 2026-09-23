@@ -30,6 +30,8 @@ extends Control
 @export_range(0.0, 1.0, 0.05) var offers_at: float = 0.30
 ## How near a seat has to be to be the one offered.
 @export_range(1.0, 12.0, 0.5) var reach: float = 5.5
+## And how close once the talk is OVER - see the note where it is used.
+@export_range(0.5, 12.0, 0.5) var reach_after: float = 2.0
 ## Long enough for three beats to read as three beats. Under about 1.5 they run together
 ## into one slide and it stops being an animation.
 @export_range(0.5, 6.0, 0.1) var sit_seconds: float = 2.0
@@ -69,6 +71,9 @@ var _camera: Node
 var _their_camera: Camera4D
 
 var _chair: Node4D
+## Exported since this node was written and never resolved until now - nothing had
+## asked the show a question before.
+var _show: Node
 var _offered: bool = false
 var _lit: Array[TetraMaterial4D] = []
 var _rest: PackedColorArray = PackedColorArray()
@@ -109,6 +114,7 @@ func _ready() -> void:
 		_chair = house.get_node_or_null("YourSeat") as Node4D
 	if _chair == null:
 		push_warning("TheatreSeat: the stage has no YourSeat, so there is nothing to sit in.")
+	_show = get_node_or_null(show_path)
 
 
 func is_seated() -> bool:
@@ -162,8 +168,16 @@ func _process(delta: float) -> void:
 		if _wants_out():
 			stand()
 		return
+	# ONE REACH WAS SERVING TWO DIFFERENT SITUATIONS. During the talk the chair is the
+	# thing to do and should be findable from halfway down the rake. Afterwards it is
+	# just a chair - and at the old reach the offer was the first thing on screen the
+	# moment the presentation ended, inviting you to sit down for a talk that had just
+	# finished.
+	var want: float = reach
+	if _show != null and _show.has_method("is_over") and bool(_show.call("is_over")):
+		want = reach_after
 	_offered = _chair != null and _down_the_rake() >= offers_at \
-		and (_chair.global_position - _player.global_position).length() < reach
+		and (_chair.global_position - _player.global_position).length() < want
 	_glow(_offered)
 	if _offered and Input.is_action_just_pressed(&"catch_target"):
 		sit()

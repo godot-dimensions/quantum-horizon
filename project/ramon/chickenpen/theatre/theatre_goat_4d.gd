@@ -45,6 +45,11 @@ const GOAT_PATH := "Models/Goat"
 @export_group("The build")
 ## How many steps the animal is assembled in. Each costs a full loft to bake, so this is
 ## the number that decides how long the arrival's hitch is.
+## Load the stages from disk instead of lofting them. See _load_baked: twelve runtime
+## lofts is 3.1 seconds and it is the same twelve every run, so they are baked once by
+## _bake_goat_runner and read back here. Turned OFF by that runner, which has to loft them
+## in order to have something to save.
+@export var bake_to_disk: bool = true
 @export_range(2, 16, 1) var build_stages: int = 7
 ## And how many steps the reshape takes once it is whole.
 @export_range(0, 8, 1) var morph_stages: int = 4
@@ -72,6 +77,10 @@ var _balls_at_stage: Array[int] = []
 var _shown: int = -1
 var _tetra_whole: int = 0
 var _bake_ms: float = 0.0
+## Which loft is next, or -1 for "all of them are done".
+var _bake_at: int = -1
+var _bake_from: int = 0
+var _rest: Array = []
 
 
 func _ready() -> void:
@@ -98,9 +107,17 @@ func rebuild() -> void:
 	_coat = _rig.material_override
 	_plain = TetraMaterial4D.new()
 	_plain.albedo_color = plain_color
-	_bake()
-	show_finished()
-	set_markers_visible(false)
+	_markers_wanted = false
+	# READ, NOT LOFTED, when the bake is on disk. This is the whole optimisation: the
+	# twelve lofts are a pure function of the authored animal, so they are done once by
+	# _bake_goat_runner and loaded here in a few milliseconds.
+	#
+	# The fallback is deliberate rather than defensive. If somebody edits the goat in the
+	# Model scene and forgets to re-run the bake, the theatre should still show the goat
+	# they just authored - slowly - rather than the one from last week, or nothing at all.
+	if bake_to_disk and _load_baked():
+		return
+	_bake_begin()
 
 
 ## Lifts the goat out of the Model scene and throws the rest of that scene away. Loading a
@@ -184,39 +201,122 @@ func _mark() -> void:
 
 # ---------------------------------------------------------------- baking
 
-func _bake() -> void:
-	var started: int = Time.get_ticks_usec()
-	var rest: Array = []
-	for ball in _balls:
-		rest.append(ball.position)
+## ONE LOFT A FRAME, AND THIS IS WHERE THE STALL AT THE DOOR ACTUALLY LIVED.
+##
+## Measured: building this goat was 3,106 ms of part two's 3,474, and part two was 3,500
+## of the theatre's 3,946. Nearly four fifths of the cost of walking through the sci-fi
+## door was this one function. It is not that the goat is large - the eight-legged
+## creature has half again as many tetrahedra and builds in 367 ms - it is that this bakes
+## TWELVE separate lofts of it: seven stages of assembly, four of reshaping, and one more
+## in its own colours. A dozen full lofts in a single frame is a dozen full lofts in a
+## single frame, whichever frame you choose.
+##
+## So it is a state machine now, one loft per call. The stall does not disappear - the work
+## is the work - it is divided by twelve and spread over twelve frames of a presentation
+## nobody is interacting with yet, instead of arriving whole on the frame you walk through
+## a door and look up.
+##
+## THE INTERMEDIATE STATES ARE NOT WATCHED. Between frames the animal is left part
+## assembled, or part way through a reshape, with its handles moved. That would matter if
+## anybody could see it; during the bake this node is parked at y = -40 with `visible`
+## false, which is where part two keeps every exhibit until its slide.
+const BAKED := "res://ramon/chickenpen/theatre/baked/"
 
-	# Assembling: keep the first share of the handles, loft, keep the mesh.
-	for step in build_stages:
+
+## True if every stage was found and read. All or nothing: a half-loaded set would show
+## the animal jumping between a baked stage and a lofted one.
+func _load_baked() -> bool:
+	if not ResourceLoader.exists(BAKED + "goat.cfg"):
+		return false
+	var counts := ConfigFile.new()
+	if counts.load(BAKED + "goat.cfg") != OK:
+		return false
+	var stages: int = int(counts.get_value("goat", "stages", 0))
+	if stages <= 0:
+		return false
+	var loaded: Array[ArrayTetraMesh4D] = []
+	for i in stages:
+		var path: String = "%sgoat_stage_%02d.res" % [BAKED, i]
+		if not ResourceLoader.exists(path):
+			return false
+		var mesh := load(path) as ArrayTetraMesh4D
+		if mesh == null:
+			return false
+		loaded.append(mesh)
+	var dressed := load(BAKED + "goat_finished.res") as ArrayTetraMesh4D if 		ResourceLoader.exists(BAKED + "goat_finished.res") else null
+	if dressed == null:
+		return false
+	_baked = loaded
+	_finished = dressed
+	_balls_at_stage = counts.get_value("goat", "balls_at_stage", []) as Array
+	_tetra_whole = int(counts.get_value("goat", "tetra_whole", 0))
+	_bake_at = -1
+	show_finished()
+	set_markers_visible(false)
+	return true
+
+
+func _bake_begin() -> void:
+	_bake_from = Time.get_ticks_usec()
+	_bake_at = 0
+	_rest.clear()
+	for ball in _balls:
+		_rest.append(ball.position)
+
+
+func is_baked() -> bool:
+	return _bake_at < 0
+
+
+## The whole remainder, now. The safety net for anything that needs the animal before the
+## pump has got there - see finish_building in theatre_part_two_4d.
+func finish_baking() -> void:
+	while _bake_at >= 0:
+		bake_step()
+
+
+## Returns true once there is nothing left to do.
+func bake_step() -> bool:
+	if _bake_at < 0 or _rig == null:
+		return true
+	var step: int = _bake_at
+	_bake_at += 1
+	if step < build_stages:
+		# Assembling: keep the first share of the handles, loft, keep the mesh.
 		var keep: int = maxi(2, int(ceil(float(_balls.size())
 			* float(step + 1) / float(build_stages))))
 		var parked: Array = _detach_beyond(keep)
 		_snapshot(keep)
 		_reattach(parked)
-
-	# Reshaping: the whole animal, with four handles moved a little further each time.
-	for step in morph_stages:
-		var v: float = float(step + 1) / float(maxi(morph_stages, 1))
+		return false
+	if step < build_stages + morph_stages:
+		# Reshaping: the whole animal, with four handles moved a little further each time.
+		var v: float = float(step - build_stages + 1) / float(maxi(morph_stages, 1))
 		for i in _balls.size():
 			var push: Vector4 = RESHAPE.get(String(_balls[i].name), Vector4.ZERO)
-			_balls[i].position = (rest[i] as Vector4) + push * v
+			_balls[i].position = (_rest[i] as Vector4) + push * v
 		_snapshot(_balls.size())
+		return false
+	# Last: handles back where they started, and once more in its own colours, for the
+	# slide where it is finished and the markings are the point rather than a distraction.
 	for i in _balls.size():
-		_balls[i].position = rest[i]
-
-	# And once more in its own colours, for the slide where it is finished and the
-	# markings are the point rather than a distraction from it.
+		_balls[i].position = _rest[i]
 	_rig.set("use_ball_colors", true)
 	_rig.call("build")
 	var dressed := _rig.mesh as ArrayTetraMesh4D
 	if dressed != null:
 		_finished = dressed.duplicate(true) as ArrayTetraMesh4D
 		_tetra_whole = _finished.simplex_cell_vertex_indices.size() / 4
-	_bake_ms = float(Time.get_ticks_usec() - started) / 1000.0
+	_bake_ms = float(Time.get_ticks_usec() - _bake_from) / 1000.0
+	_bake_at = -1
+	show_finished()
+	set_markers_visible(_markers_wanted)
+	return true
+
+
+func _process(_delta: float) -> void:
+	if _bake_at >= 0:
+		bake_step()
 
 
 ## Lofts what is currently attached and files the result away. Plain: the build stages

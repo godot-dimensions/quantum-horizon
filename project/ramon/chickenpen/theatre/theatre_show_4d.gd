@@ -54,11 +54,33 @@ const TRYM := preload("res://ramon/chickenpen/scripts/pen_trym_4d.gd")
 ## speaker, and one who is simply already on stage when you arrive never came from
 ## anywhere.
 @export var wings := Vector4(0.0, 0.0, 16.2, 0.0)
-@export var mark_claim := Vector4(-5.3, 0.0, 2.6, 0.0)
-@export var mark_exhibit := Vector4(-3.9, 0.0, 0.9, 0.0)
+## BEHIND THE PODIUM, which theatre_stage_4d builds at (-4.45, 0, 1.5) - drum_radius plus
+## 1.35 out to the left, with its lit strip facing the house at +Z.
+##
+## The claim mark used to sit at z 2.6, which is over a metre IN FRONT of the stand: he
+## delivered the whole talk standing between the audience and his own lectern. Squarely
+## behind it is one step further out, in line with it rather than off to one side, so it
+## reads as his and not as scenery he happens to be near.
+##
+## AND NOT BEHIND THE DRUM EITHER, which was the overcorrection. Four metres past the
+## turntable put him against the backdrop with every exhibit between him and the house -
+## technically "behind the table" and useless to look at.
+@export var mark_claim := Vector4(-4.45, 0.0, 0.8, 0.0)
+## A step in towards the drum for the demonstration, so he is beside the thing he is
+## pointing at rather than talking about it from the lectern.
+@export var mark_exhibit := Vector4(-3.9, 0.0, 0.6, 0.0)
 ## Brisk. He has the length of the house to cover before the first act, and a man
 ## strolling it at a metre a second is a man the audience overtakes.
 @export_range(0.3, 4.0, 0.05) var presenter_speed: float = 1.95
+## HOW MUCH OF EACH ACT HE SPENDS AT THE EXHIBIT rather than at his lectern, as a fraction
+## of the act. He used to stand out front for the first third and only then step in, which
+## made the walk to the stage a thing that happened once and briefly - and it is the best
+## thing he does, because it is the only moment he stops being a voice and becomes a man
+## showing you an object. So he goes over sooner and stays longer.
+@export_range(0.0, 1.0, 0.01) var steps_in_at: float = 0.16
+## And when he turns from the house to the thing itself. After he has arrived, so he
+## crosses the floor facing the people he is talking to.
+@export_range(0.0, 1.0, 0.01) var turns_to_it_at: float = 0.34
 ## HE WENT THROUGH THE DOOR AHEAD OF YOU, so you should arrive to find him already on his
 ## way down rather than standing in the dark waiting to be watched. This is how far along
 ## his walk he is the moment the room appears - 0 is still in the wings, 1 is at the foot
@@ -113,7 +135,20 @@ var _exhibits: Array[Node4D] = []
 var _act: int = -1
 var _clock: float = 0.0
 var _phase: float = 0.0
+## Announced as well as acted on. This is the single point where the talk is over by any
+## route - part one ending with no part two, part two ending, or the offer declined - so
+## it is the only honest thing for anybody downstream to listen to.
+signal finished
+
+## How long the closing caption stays up once the talk is over.
+@export_range(0.0, 30.0, 0.5) var caption_hold: float = 3.0
+var _clear_in: float = -1.0
+
 var _done: bool = false
+## The WHOLE talk is over - both halves, whichever way you went. `_done` is only part one
+## finishing, which is not the same thing at all: saying yes to part two means the
+## presentation carries on for another nine slides with `_done` already set.
+var _over: bool = false
 var _hull: Node4D
 var _swarm: Node4D
 var _rock: Node4D
@@ -137,6 +172,7 @@ var _seat: Node
 var _waited: float = 0.0
 var _greeted: bool = false
 var _sat_for: float = 0.0
+var _lent: bool = false
 
 
 func _ready() -> void:
@@ -172,8 +208,8 @@ func _ready() -> void:
 			if _stage.get_node_or_null("Beams") != null else []):
 		if beam is MeshInstance4D:
 			_beams.append(beam)
-	_build_exhibits()
-	_show(-1)
+	# Built across the next few frames rather than here - see _build_exhibits. Nothing is
+	# on stage for the opening anyway; the room is dark and he is still walking on.
 	# The way out is NOT switched off here. It stands open from the moment you arrive,
 	# at the head of the walkway, because a walkway that leads to nothing for the first
 	# seven seconds is a walkway that leads to nothing - and a room you cannot leave is
@@ -182,12 +218,51 @@ func _ready() -> void:
 
 # ---------------------------------------------------------------- the exhibits
 
-func _build_exhibits() -> void:
-	_exhibits.append(_act_one())
-	_exhibits.append(_act_two())
-	_exhibits.append(_act_three())
-	for piece in _exhibits:
-		piece.visible = false
+## ONE ACT A FRAME, STARTING IMMEDIATELY.
+##
+## The same change part two needed and for the same reason, in smaller numbers: these three
+## were built inside `_ready`, so they were paid on the frame the door was crossed. 209 ms
+## of the theatre's 510 in a debug build - not the disaster part two was, but the largest
+## thing left once that was dealt with, and a handful of dropped frames at exactly the
+## moment the player is looking for a reaction to having walked through a door.
+##
+## SPREAD AGAINST WHEN EACH IS ACTUALLY WANTED, which is much further apart than it first
+## looks. Act one is needed when the opening ends, eleven seconds in. Act two is not wanted
+## until sixteen seconds after that, and act three sixteen after that again - so only ONE
+## of the three has any urgency at all, and the other two have half a minute each.
+##
+## AND A CAMERA MOVE IS THE WORST PLACE TO PUT ONE, not the best. It is tempting to hide
+## the work under the arrival, because something is already happening - but a dropped frame
+## during motion is exactly when a dropped frame is visible. The image is supposed to be
+## changing smoothly and suddenly is not. The same frame lost while you are sitting still
+## looking at a slide is close to invisible. So one act is made early enough to be ready
+## for the opening, and the rest are made while you are seated and the shot is still.
+##
+## Anything that needs them sooner calls finish_building(), which `_enter` does.
+const ACT_BUILDERS: Array[StringName] = [&"_act_one", &"_act_two", &"_act_three"]
+## Before the first one. Early, because act one has to exist by the end of the opening -
+## it is the only one of the three that is in any hurry.
+@export_range(0.0, 20.0, 0.1) var build_delay: float = 1.2
+## And between each. Long, because acts two and three have half a minute apiece and every
+## second of that is a second further from the arrival.
+@export_range(0.0, 30.0, 0.5) var build_gap: float = 8.0
+
+var _built: int = 0
+var _build_wait: float = -1.0
+
+
+func _build_one() -> void:
+	var piece: Node4D = call(ACT_BUILDERS[_built]) as Node4D
+	_built += 1
+	if piece == null:
+		return
+	_exhibits.append(piece)
+	piece.visible = false
+
+
+func finish_building() -> void:
+	while _built < ACT_BUILDERS.size():
+		_build_one()
 
 
 ## Two plinths. One carries a MeshInstance3D and is therefore empty.
@@ -303,6 +378,18 @@ func _act_three() -> Node4D:
 # ---------------------------------------------------------------- the run
 
 func _process(delta: float) -> void:
+	if _clear_in > 0.0:
+		_clear_in -= delta
+		if _clear_in <= 0.0 and _caption != null and _caption.has_method("show_act"):
+			_caption.call("show_act", "", "", "", "", "")
+	# Before anything else: the exhibits are made while the opening plays.
+	if _built < ACT_BUILDERS.size():
+		if _build_wait < 0.0:
+			_build_wait = build_delay
+		_build_wait -= delta
+		if _build_wait <= 0.0:
+			_build_one()
+			_build_wait = build_gap
 	if _stage == null:
 		return
 	_clock += delta
@@ -514,9 +601,9 @@ func _perform(delta: float) -> void:
 				_got_down = true
 			goes_to = mark_claim if _got_down else Vector4(foot.x, 0.0, foot.z, 0.0)
 	elif _act < ACTS.size():
-		if t >= 0.30:
+		if t >= steps_in_at:
 			goes_to = mark_exhibit
-		if t >= 0.58:
+		if t >= turns_to_it_at:
 			looks_at = drum
 	else:
 		goes_to = mark_claim
@@ -642,6 +729,7 @@ func current_act() -> int:
 
 
 func _enter(act: int) -> void:
+	finish_building()
 	_act = act
 	_phase = 0.0
 	_show(act)
@@ -727,9 +815,20 @@ func _say(title: String, body: String, figure: String) -> void:
 ## own handler and the prompt is waiting on a yes, and two things stepping on one click is
 ## the sort of bug that only shows up in front of somebody.
 func _unhandled_input(event: InputEvent) -> void:
-	if _done or _stage == null:
+	# `_done` IS NOT THE END WHEN THE FLOOR HAS BEEN LENT BACK. Part one sets `_done` when
+	# it finishes and offers part two; this used to return on it unconditionally, which
+	# killed the arrow keys for the rest of the night. So stepping BACK off part two's
+	# first slide worked - part two has its own handler and called in here - and stepping
+	# forward again did nothing at all, because the key never got past this line.
+	#
+	# Both halves then sat waiting for each other: part two had set `_lent_back`, which
+	# stops its clock and its input, and the only thing that could clear it was a forward
+	# step arriving here. That is the hang - the show frozen on a slide with the player
+	# still able to walk about, which is what Ramon saw.
+	if (_done and not _lent) or _stage == null:
 		return
-	if _part_two != null and _part_two.has_method("is_running") \
+	# Unless part two has lent the floor back - see step_back_from_part_two.
+	if not _lent and _part_two != null and _part_two.has_method("is_running") \
 			and bool(_part_two.call("is_running")):
 		return
 	var step := 0
@@ -745,6 +844,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	if step == 0:
 		return
 	get_viewport().set_input_as_handled()
+	# BORROWED, SO FORWARD GIVES IT BACK. Part two lent the floor for one step;
+	# stepping forward from here returns to its first slide rather than walking into
+	# part one's closing beat and offering part two all over again.
+	if _lent and step > 0:
+		_lent = false
+		if _part_two != null and _part_two.has_method("resume"):
+			_part_two.call("resume")
+		return
 	# FORWARD OFF THE END FINISHES IT, rather than saying the last line again.
 	#
 	# This is the bug that stopped the offer ever arriving. _enter resets the phase clock,
@@ -777,13 +884,51 @@ func _finish() -> void:
 	_say("", "That is the lot. The way out is behind you - mind the step, it is further through W than it looks.", "")
 
 
+## Part two stepping backwards off its own first slide. It has already taken its
+## exhibits off the drum and handed the presenter back, so this only has to put the
+## last finding up again and start listening.
+##
+## `_done` is deliberately left set. This is a replay, not the talk running a second
+## time, and the offer must not fire again on the way past.
+func step_back_from_part_two() -> void:
+	_lent = true
+	_enter(ACTS.size() - 1)
+
+
 ## Lets go of the chair, hands the camera back, and puts the player on their feet facing
 ## the way out.
 ##
 ## THIS IS WHAT WAS MISSING AT THE END. The show finished, the camera stayed held, and the
 ## player stayed pinned in a seat with no way out but a movement key nobody had told them
 ## about - which is not a presentation ending, it is a room that will not let you leave.
+## Take part one's exhibits off the stage, without touching anything else.
+##
+## Part two needs this when it takes the floor back after lending it. Stepping backwards
+## off part two's first slide puts part one's last finding up - which means making the
+## mined rock visible again - and stepping forward returns to part two. Nothing used to
+## clear the rock on the way back, so from then on every part two slide was played with
+## act three standing in the middle of it, and the goat came up inside the voxel block.
+func clear_stage() -> void:
+	_show(-1)
+
+
+func is_over() -> bool:
+	return _over
+
+
 func let_them_go() -> void:
+	if not _over:
+		_over = true
+		# AND THE BAND GOES AWAY, eventually. The last caption - "that is the case as it
+		# stands" after part two, or "that is the lot" after part one - used to sit across
+		# the bottom of the screen for the rest of the visit, because nothing ever cleared
+		# it. It is the presentation's voice, and the presentation has finished; leaving it
+		# up made the room look like it was still mid-sentence while you walked about.
+		#
+		# Not immediately, though: the line is the closing line and it should be readable
+		# after the talk has stopped.
+		_clear_in = caption_hold
+		finished.emit()
 	if _exit != null:
 		_exit.set("highlight", 1.0)
 	if _seat != null and _seat.has_method("is_seated") and bool(_seat.call("is_seated")):

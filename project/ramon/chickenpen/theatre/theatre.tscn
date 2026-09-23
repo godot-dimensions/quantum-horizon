@@ -2,6 +2,10 @@
 
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_stage_4d.gd" id="stage"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_show_4d.gd" id="show"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_after_4d.gd" id="thtr_after"]
+[ext_resource type="Script" path="res://ramon/dialogue/world_tag_4d.gd" id="thtr_tag"]
+[ext_resource type="Script" path="res://ramon/dialogue/dialogue_player_4d.gd" id="thtr_player"]
+[ext_resource type="Script" path="res://ramon/dialogue/dialogue_box_4d.gd" id="thtr_box"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_caption_4d.gd" id="caption"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_aside_4d.gd" id="aside"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_part_two_4d.gd" id="part_two"]
@@ -80,6 +84,8 @@ script = ExtResource("avatar")
 build = 2
 wear_cap = false
 
+[node name="PresenterHead" type="Node4D" parent="."]
+
 [node name="ExitArch" type="Node4D" parent="."]
 position = Vector4(0, 2.08, 18.6, 0)
 script = ExtResource("arch")
@@ -113,7 +119,47 @@ presenter_path = NodePath("../Presenter")
 metrics_path = NodePath("../UI/Metrics")
 camera_path = NodePath("../ShotCamera")
 
+[node name="TrymTalk" type="Node" parent="."]
+script = ExtResource("thtr_player")
+box_path = NodePath("../UI/TrymBox")
+
+[node name="AfterShow" type="Node" parent="."]
+script = ExtResource("thtr_after")
+player_path = NodePath("../Player")
+character_path = NodePath("../Player")
+dialogue_path = NodePath("../TrymTalk")
+tag_path = NodePath("../UI/TrymTag")
+dialogue_box_path = NodePath("../UI/TrymBox")
+show_path = NodePath("../Show")
+hide_while_talking = Array[NodePath]([NodePath("../UI/Caption"), NodePath("../UI/Metrics"), NodePath("../UI/Prompt"), NodePath("../UI/Aside"), NodePath("../UI/Seat")])
+talk_range = 6.0
+talk_range_w = 4.0
+
 [node name="UI" type="Node4D" parent="."]
+
+[node name="TrymBox" type="Control" parent="UI"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("thtr_box")
+choice_side = 1
+choice_width = 470.0
+choice_gap = 10.0
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../PresenterHead")
+over_head_width = 470.0
+name_size = 17
+text_size = 20
+choice_size = 19
+
+[node name="TrymTag" type="Control" parent="UI"]
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("thtr_tag")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../PresenterHead")
+lift = 26.0
 
 [node name="Caption" type="Control" parent="UI"]
 anchor_right = 1.0

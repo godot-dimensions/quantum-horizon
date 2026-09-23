@@ -93,7 +93,10 @@ func _draw() -> void:
 	if _title != "":
 		needs += lead * 1.15
 	needs += lead * float(lines.size())
-	if _tier != "":
+	# The row carries the tier stamp, the controls, or both - so it is reserved if either
+	# is present. It used to be reserved only for the tier, which is why part one, which
+	# has no tier, drew no controls line: there was no row for it to be in.
+	if _tier != "" or _nav != "":
 		needs += lead * 0.78
 	if _figure != "":
 		needs += lead * (0.1 + float(tail.size()))
@@ -108,26 +111,29 @@ func _draw() -> void:
 	# draw_string places a BASELINE, not a top edge, so the first line starts a line-height
 	# down from the rule rather than level with it.
 	var y: float = top + lead
-	if _tier != "":
-		# A pill, so it reads as a stamp on the claim rather than as more sentence.
+	# ONE ROW, TWO INDEPENDENT THINGS. The tier stamp at the left end, the controls at the
+	# right. The controls used to be drawn INSIDE the tier branch, so part one - which has
+	# no tier - never showed them, and the three findings looked like a presentation you
+	# could not step through even though you always could.
+	if _tier != "" or _nav != "":
 		var pill_size: int = int(screen.y * 0.017)
-		var wide: float = font.get_string_size(_tier, HORIZONTAL_ALIGNMENT_LEFT, -1,
-			pill_size).x
-		var box := Rect2(Vector2(pad, y - lead * 0.82),
-			Vector2(wide + pad * 0.5, lead * 0.72))
-		draw_rect(box, Color(tier_color, 0.16 * alpha), true)
-		draw_rect(box, Color(tier_color, 0.75 * alpha), false, 1.0)
-		draw_string(font, Vector2(pad + pad * 0.25, y - lead * 0.3), _tier,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, pill_size, Color(tier_color, alpha))
-		# The controls, on the same line and at the other end of it. Measured and placed
-		# by its own width rather than right-aligned into a box, because the band is drawn
-		# rather than laid out and there is no box to align into.
+		if _tier != "":
+			# A pill, so it reads as a stamp on the claim rather than as more sentence.
+			var wide: float = font.get_string_size(_tier, HORIZONTAL_ALIGNMENT_LEFT, -1,
+				pill_size).x
+			var box := Rect2(Vector2(pad, y - lead * 0.82),
+				Vector2(wide + pad * 0.5, lead * 0.72))
+			draw_rect(box, Color(tier_color, 0.16 * alpha), true)
+			draw_rect(box, Color(tier_color, 0.75 * alpha), false, 1.0)
+			draw_string(font, Vector2(pad + pad * 0.25, y - lead * 0.3), _tier,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, pill_size, Color(tier_color, alpha))
+		# Measured and placed by its own width rather than right-aligned into a box,
+		# because the band is drawn rather than laid out and there is no box to align to.
 		if _nav != "":
-			var nav_size: int = int(screen.y * 0.017)
 			var nav_wide: float = font.get_string_size(_nav, HORIZONTAL_ALIGNMENT_LEFT,
-				-1, nav_size).x
+				-1, pill_size).x
 			draw_string(font, Vector2(screen.x - pad - nav_wide, y - lead * 0.3), _nav,
-				HORIZONTAL_ALIGNMENT_LEFT, -1, nav_size, Color(nav_color, alpha))
+				HORIZONTAL_ALIGNMENT_LEFT, -1, pill_size, Color(nav_color, alpha))
 		y += lead * 0.78
 	if _title != "":
 		draw_string(font, Vector2(pad, y), _title, HORIZONTAL_ALIGNMENT_LEFT, -1,
