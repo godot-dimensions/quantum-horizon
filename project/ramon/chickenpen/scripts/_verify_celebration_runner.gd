@@ -21,6 +21,7 @@ var _game: Node
 var _manager: Node
 var _stage := 0
 var _settle := 0
+var _waited := 0
 var _lows: Array = []
 var _highs: Array = []
 
@@ -53,9 +54,19 @@ func _process(_d) -> bool:
 			_check("and there is no confetti", _party.get_node_or_null("Confetti") == null, "")
 			# The shortcut, exactly as the M key calls it.
 			_party.call("_fill_the_pen")
-		1, 2, 3:
-			pass  # let the return volume notice, at its own every-third-frame rate
-		4:
+		1:
+			# WAIT FOR THE CONDITION, NOT FOR A FIXED NUMBER OF FRAMES. This used to sit
+			# out three frames and then assert, which is a race it lost about one run in
+			# three: pen_return_4d tests every `check_every` frames (3 by default), so
+			# three frames of waiting buys somewhere between zero and one check depending
+			# on where its tick counter happens to be. It passed on byte-identical files
+			# three times running and then failed, which is the signature.
+			# Its own counter: _settle belongs to the sampling loop further down, and
+			# borrowing it here left that loop starting part-way through its own count.
+			_waited += 1
+			if not bool(_game.get("_finished")) and _waited < 400:
+				return false
+		2:
 			print("\n--- the twelfth chicken is in ---")
 			_check("the game says it is finished", bool(_game.get("_finished")),
 				"%d returned" % _manager.call("returned_count"))
