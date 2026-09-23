@@ -102,9 +102,13 @@ func _process(_d) -> bool:
 		6:
 			# Walk the handover out to the end and check what changed hands.
 			if not _talk.is_running():
-				print("coin gone from the belt: %s   egg on it: %s" % [
+				# GOLD, not the egg. She used to pay in a solid gold egg, which was a joke
+				# nothing else in the game could read - no system spent it, so the reward for
+				# the one errand was a souvenir. A nugget is `found_gold`, the same token the
+				# rock drops, and the keeper turns it into a feeding trough.
+				print("coin gone from the belt: %s   gold on it: %s" % [
 					not bool(_inventory.call("has_item", "found_coin")),
-					_inventory.call("has_item", "found_egg")])
+					_inventory.call("has_item", "found_gold")])
 				_save("mithra_04_reward")
 				return true
 			if _f >= _next:

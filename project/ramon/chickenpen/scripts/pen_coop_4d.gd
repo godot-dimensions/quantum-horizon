@@ -110,11 +110,22 @@ func rebuild() -> void:
 		Vector3(body_size.x + eave * 2.0, 0.1, 0.16), roof)
 
 	# The ramp, from the doorway down to the ground.
+	#
+	# THE SIGN WAS THE WRONG WAY ROUND AND IT SHOWED. A negative from_yz lifts the +Z end,
+	# which is the note theatre_stage_4d carries about its aisle and which is right THERE,
+	# because the theatre's aisle climbs towards +Z. This one runs the other way: the
+	# doorway is at front_z and the plank reaches OUT from it, so its +Z end is the end
+	# lying in the grass. Lifting that one put the high end in the field and the low end
+	# at the door - a plank sloping away from the coop, not touching it, which is exactly
+	# what Ramon reported seeing: "weird, inverted, doesn't lead to the entry doorway".
+	#
+	# So the angle is positive here and negative there, and neither is a typo. The rule is
+	# about which END is uphill, not about which function you called.
 	if ramp_length > 0.1 and stilt_height > 0.01:
 		var ramp := _box("Ramp",
 			Vector4(0.0, floor_y * 0.5, front_z + ramp_length * 0.45, 0.0),
 			Vector3(door_width * 1.2, 0.08, ramp_length), wall)
-		ramp.basis = Basis4D.from_yz(-atan2(floor_y, ramp_length))
+		ramp.basis = Basis4D.from_yz(atan2(floor_y, ramp_length))
 
 	# Item 48: a few places a penned chicken can choose to stand, near the ramp and the
 	# doorway, so the coop is somewhere they relate to rather than scenery.

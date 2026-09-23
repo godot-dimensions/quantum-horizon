@@ -293,3 +293,23 @@ with the joints and the lengths are unchanged.
   `OVERNIGHT_BAKES_README.md` pointing at brick selection radius), and the
   parked Isoclynic Sun bridge (`isoclynic_sun_reinstate.md`), waiting on
   Aaron's 4D lights reaching upstream main.
+
+## `Basis4D.from_yz` — the sign is about which END is uphill
+
+`theatre_stage_4d.gd` carries a note saying a NEGATIVE `from_yz` angle is the
+one that lifts the far end of a ramp, and that note got copied into
+`pen_coop_4d.gd`, where it was wrong. The rule is not about the function; it is
+about which end of the slab you meant to raise.
+
+A slab's length runs along its own local `+Z`. `from_yz(-a)` lifts the `+Z` end,
+`from_yz(+a)` lifts the `-Z` end. The theatre's aisle climbs towards `+Z`, so it
+wants the negative. The coop's ramp reaches OUT from the doorway, so its `+Z`
+end is the one lying in the grass, and the negative angle put the high end in
+the field and the low end at the door — a plank sloping away from the building
+and not touching it. Correct there, wrong here, same line of code.
+
+It survived a long time because it is barely visible on paper: the rise is
+0.35 over 1.5, about 13°, so nothing looks obviously broken in the numbers, and
+the scene file's cached basis was the OLD sign while the script rebuilt the new
+one on `_ready` — so reading the `.tscn` and reading the script disagreed. Only
+a rendered frame showed it. Capture the thing.

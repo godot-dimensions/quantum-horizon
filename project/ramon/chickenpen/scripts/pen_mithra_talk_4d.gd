@@ -18,6 +18,7 @@ extends PenNpcTalk4D
 
 const COIN: String = "found_coin"
 const EGG: String = "found_egg"
+const GOLD: String = "found_gold"
 
 @export var searcher_path: NodePath
 @export var inventory_path: NodePath
@@ -83,9 +84,12 @@ func _on_effect(name: String) -> void:
 			# handing it over is the sort of small lie that makes an inventory useless.
 			if _inventory != null and _inventory.has_method("remove_item"):
 				_inventory.call("remove_item", COIN)
-		"give_egg":
+		"give_nugget":
+			# A nugget rather than the golden egg she used to hand over. The egg is a
+			# trinket you can also just find in the field; a nugget buys a trough off the
+			# keeper, so thanking you with one is thanking you with something.
 			if _inventory != null:
-				_inventory.call("add_item", EGG)
+				_inventory.call("add_item", GOLD)
 
 
 func _has(item: String) -> bool:

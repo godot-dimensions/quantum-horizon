@@ -37,7 +37,7 @@ extends Node
 ## the start of a cycle, and it gates travel in the same breath. The chicken uses the same
 ## flag to stop its legs while its beak is down.
 
-enum State { WALK, ROOT, GOING_DOWN, LYING, GETTING_UP }
+enum State { WALK, ROOT, GOING_DOWN, LYING, GETTING_UP, HOP }
 
 @export var walker_path: NodePath = NodePath("../Walker")
 @export var rig_path: NodePath = NodePath("../Hide")
@@ -95,6 +95,55 @@ enum State { WALK, ROOT, GOING_DOWN, LYING, GETTING_UP }
 ## check only fires when he next stops.
 @export_range(0.5, 10.0, 0.1) var leash_radius: float = 1.8
 
+@export_group("Dinner")
+## The troughs. When one goes up he walks over and eats at it.
+##
+## HE DOES IT THE SAME WAY THE CHICKENS DO, which is why there is no steering code here
+## either: pen_upgrades_4d moves a bird's idea of HOME to the trough and lets it drift in
+## at its own pace. Nike already walks in straight lines back toward `_home` whenever he
+## has strayed too far from it, so moving his home to the trough is the whole behaviour.
+## What is added is a radius he will settle at, and a long root once he is there - a pig
+## with his nose in a trough is already the animation for eating.
+@export var feeder_path: NodePath = NodePath("../../../Pen/Upgrades")
+## How close he gets before he stops walking and puts his head down. Roughly a snout's
+## reach from the rim: closer and he stands in it.
+@export_range(0.3, 4.0, 0.1) var feed_radius: float = 1.1
+## How long dinner lasts before he goes back to being a pig about the field.
+@export var feed_seconds := Vector2(9.0, 16.0)
+## HE DOES NOT HURRY, and that was a deliberate reversal. He was given a trot on the way
+## to dinner - twice the gait, because a trough goes up ten metres off and his amble covers
+## 0.17 metres a second, so at his own pace it is a two-minute walk. Ramon's call was that
+## Nike walks at one speed, always. He is right: a pig who moves faster when something good
+## happens is a pig with a game system attached to him, and the whole point of him is that
+## he is indifferent to yours. He gets there when he gets there.
+##
+## EXCEPT FOR THE FENCE, WHICH HE JUMPS. Throw him in the pen and then put food down
+## outside it and he used to walk straight through the rails, because he is kinematic - the
+## walker writes his position and never asks the physics server anything, so the fence's
+## collision bodies are not there as far as he is concerned. That was already true before
+## any of this; feeding him just made it something you would watch happen.
+##
+## A hop is the honest fix and the funny one. He is three tenths scale and the rails are
+## most of a metre, so it is a real jump for him, and it is the only moment in the level
+## where the pig does something athletic.
+##
+## THE FEET STOP FOR IT. `halted` freezes the gait's phase rather than resetting it, so he
+## takes off mid-stride and picks the same stride back up on landing, and while halted the
+## walker stops writing travel - which is what makes it safe to drive his position by hand
+## for the length of the arc.
+@export var fence_path: NodePath = NodePath("../../../Pen/Fence")
+## How far from the rails he takes off. Roughly his own length.
+@export_range(0.2, 3.0, 0.05) var hop_launch: float = 0.8
+## How far the jump carries him. Comfortably more than the launch distance, so he lands
+## clear of the rails rather than astride them.
+@export_range(0.5, 6.0, 0.1) var hop_distance: float = 2.2
+@export_range(0.2, 2.0, 0.05) var hop_seconds: float = 0.85
+## Over the top rail. The fence's own height is read off the fence, so raising it in the
+## inspector raises the jump.
+@export_range(0.0, 1.5, 0.05) var hop_clearance: float = 0.35
+## Nose up off the ground, level at the top, nose down into the landing.
+@export_range(0.0, 40.0, 1.0, "suffix:°") var hop_pitch_degrees: float = 14.0
+
 var state: State = State.WALK
 
 var _walker: Node
@@ -119,6 +168,15 @@ var _heading: float = 0.0
 ## full size the first time he turned round.
 var _scale: float = 1.0
 var _leashed: bool = false
+## Where dinner is, in WORLD coordinates rather than his parent's. The troughs are built
+## under the pen and he lives under the world, and converting between the two frames every
+## frame to save one variable would be the kind of saving that goes wrong once.
+var _feed_at: Vector4 = Vector4.ZERO
+var _going_to_eat: bool = false
+var _fence: Node4D
+var _hop_from: Vector4 = Vector4.ZERO
+var _hop_to: Vector4 = Vector4.ZERO
+var _hop_peak: float = 0.0
 
 
 func _ready() -> void:
@@ -136,12 +194,19 @@ func _ready() -> void:
 		_heading = _yaw
 		_scale = maxf(_mover.basis.x.length(), 0.0001)
 	_limit = randf_range(walk_seconds.x, walk_seconds.y)
+	_fence = get_node_or_null(fence_path) as Node4D
+	var feeders: Node = get_node_or_null(feeder_path)
+	if feeders != null and feeders.has_signal("feeder_raised"):
+		feeders.connect("feeder_raised", go_and_eat)
 
 
 func _physics_process(delta: float) -> void:
 	if _walker == null or _rig == null:
 		return
 	if suspended:
+		# Picked up on the way to dinner. Wherever he is put down it will not be here, and
+		# a pig who resumed a walk to a trough he can no longer see would look possessed.
+		_going_to_eat = false
 		_set_halted(true)
 		return
 	if not _have_rest:
@@ -153,14 +218,37 @@ func _physics_process(delta: float) -> void:
 		State.WALK:
 			_blend = 0.0
 			_set_halted(false)
-			if _leashed and _strayed():
+			if _fence != null and _crossing_rails():
+				# THE FENCE STOPS HIM NOW, WHICHEVER WAY HE IS GOING. The hop used to be
+				# checked only while he was on his way to a trough, which left the rails
+				# solid for exactly one errand and made of paper the rest of the time -
+				# and being thrown into the pen is when he is actually up against them.
+				# He is kinematic, so the fence's collision bodies do not exist as far as
+				# he is concerned; something here has to notice them or nothing does.
+				var side: bool = _inside_pen(_mover.global_position)
+				if _going_to_eat and side != _inside_pen(_feed_at):
+					_take_off()
+				else:
+					_turn_away()
+			elif _going_to_eat and _at_the_trough():
+				# Checked every frame, not at the end of the leg. A walk leg runs up to
+				# eleven seconds and he covers the length of the pen in that - so a pig
+				# who only noticed dinner when he next stopped would walk straight past it
+				# and eat somewhere out in the grass.
+				_going_to_eat = false
+				_enter(State.ROOT, randf_range(feed_seconds.x, feed_seconds.y))
+			elif _leashed and _strayed():
 				# Stopped short and turned back, rather than waiting for the walk leg to
 				# run out. Stopping is also what makes the turn free - see the header.
 				_choose_heading()
 				_enter(State.ROOT, randf_range(0.8, 1.4))
 			elif _timer >= _limit:
 				_choose_heading()
-				if randf() < lie_chance:
+				if _going_to_eat:
+					# No lie-downs between here and the trough, and a brief stop rather
+					# than a proper root: he is going somewhere.
+					_enter(State.ROOT, randf_range(0.4, 0.8))
+				elif randf() < lie_chance:
 					_enter(State.GOING_DOWN, down_seconds)
 				else:
 					_enter(State.ROOT, randf_range(root_seconds.x, root_seconds.y))
@@ -171,6 +259,18 @@ func _physics_process(delta: float) -> void:
 			_blend = minf(_timer / 0.35, 1.0) * minf((_limit - _timer) / 0.35, 1.0)
 			_blend = clampf(_blend, 0.0, 1.0)
 			if _timer >= _limit:
+				_enter(State.WALK, randf_range(walk_seconds.x, walk_seconds.y))
+		State.HOP:
+			_set_halted(true)
+			var u: float = clampf(_timer / maxf(hop_seconds, 0.01), 0.0, 1.0)
+			_blend = u
+			# Driven here rather than left to the walker, which is not travelling while
+			# halted. A plain parabola: four-u-one-minus-u peaks at exactly 1 halfway,
+			# so the clearance number is the height he actually reaches.
+			_mover.position = _hop_from.lerp(_hop_to, u)
+			_mover.position.y = _hop_peak * 4.0 * u * (1.0 - u)
+			if _timer >= hop_seconds:
+				_mover.position.y = 0.0
 				_enter(State.WALK, randf_range(walk_seconds.x, walk_seconds.y))
 		State.GOING_DOWN:
 			_set_halted(true)
@@ -189,6 +289,84 @@ func _physics_process(delta: float) -> void:
 				_enter(State.WALK, randf_range(walk_seconds.x, walk_seconds.y))
 	_turn(delta)
 	_pose()
+
+
+## Dinner is served. Called by pen_upgrades_4d when a trough goes up.
+##
+## The CURRENT leg is cut short rather than left to run out, for the same reason the leash
+## cuts one short: the trough appears the moment you pay for it, and a pig who carried on
+## ambling for another nine seconds before noticing would look like he had not noticed.
+## Being carried at the time is the one case where nothing happens - he is not walking
+## anywhere, and he will be put down somewhere else.
+func go_and_eat(at: Vector4) -> void:
+	if _mover == null or suspended:
+		return
+	_feed_at = at
+	_going_to_eat = true
+	# His patch moves with him, so once dinner is over he goes on being a pig around the
+	# trough instead of walking all the way back to where the scene first put him.
+	_home = _mover.position + (at - _mover.global_position)
+	if _at_the_trough():
+		_going_to_eat = false
+		_enter(State.ROOT, randf_range(feed_seconds.x, feed_seconds.y))
+		return
+	_choose_heading()
+	# STOPPED, so that he can turn. He only turns while halted - the walker's feet are
+	# planted otherwise - so setting a heading and sending him straight back out to walk
+	# had him carry the OLD direction for the rest of the leg. Measured: eleven seconds and
+	# a metre further from his dinner before he came round. A short root instead, which is
+	# the same move the leash makes and reads as a pig looking up.
+	_enter(State.ROOT, randf_range(0.5, 0.9))
+
+
+func _inside_pen(at: Vector4) -> bool:
+	if _fence == null:
+		return false
+	var centre: Vector4 = _fence.global_position
+	var half_x: float = maxf(float(_fence.get("extend_x_positive")),
+		float(_fence.get("extend_x_negative")))
+	var half_z: float = maxf(float(_fence.get("extend_z_positive")),
+		float(_fence.get("extend_z_negative")))
+	return absf(at.x - centre.x) <= half_x and absf(at.z - centre.z) <= half_z
+
+
+## Is the next stride going to put him through the rails?
+##
+## SAMPLED AHEAD RATHER THAN MEASURED TO THE NEAREST RAIL, and that is what makes it work
+## at the corners and in both directions at once. Asking "am I inside here, and would I
+## still be inside a stride from now" answers the question for a pig walking out, a pig
+## walking in, and a pig cutting diagonally across a corner, with the same two calls. The
+## measured version only handled one of the three and had to know which side he started on.
+func _crossing_rails() -> bool:
+	if _mover == null:
+		return false
+	var dir := Vector4(sin(_yaw), 0.0, cos(_yaw), 0.0)
+	var ahead: Vector4 = _mover.global_position + dir * hop_launch
+	return _inside_pen(_mover.global_position) != _inside_pen(ahead)
+
+
+## Not every meeting with a fence is a jump. With nothing on the other side he wants, he
+## does what an animal in a field does: stops, turns round and goes back the other way.
+## Roughly back the other way - a pig who reversed to the exact opposite bearing every
+## time would trace the same line across the pen for ever.
+func _turn_away() -> void:
+	_heading = _yaw + PI + randf_range(-0.7, 0.7)
+	_enter(State.ROOT, randf_range(0.6, 1.2))
+
+
+func _take_off() -> void:
+	var dir := Vector4(sin(_yaw), 0.0, cos(_yaw), 0.0)
+	_hop_from = _mover.position
+	_hop_to = _mover.position + dir * hop_distance
+	_hop_peak = float(_fence.get("height")) + hop_clearance
+	_enter(State.HOP, hop_seconds)
+
+
+func _at_the_trough() -> bool:
+	if _mover == null:
+		return false
+	var gap: Vector4 = _feed_at - _mover.global_position
+	return Vector2(gap.x, gap.z).length() <= feed_radius
 
 
 ## Called when a conversation with him opens and closes. Turning it on re-centres his
@@ -211,6 +389,10 @@ func _strayed() -> bool:
 ## direction - at least 50 degrees, or the turn is invisible and he appears to be stuck.
 func _choose_heading() -> void:
 	if _mover == null:
+		return
+	if _going_to_eat:
+		var to_food: Vector4 = _feed_at - _mover.global_position
+		_heading = atan2(to_food.x, to_food.z)
 		return
 	var away: Vector4 = _mover.position - _home
 	var flat := Vector2(away.x, away.z)
@@ -269,6 +451,11 @@ func _pose() -> void:
 			lift = root_lift * _blend
 			# The ruffle only happens once the nose is actually down.
 			yaw = deg_to_rad(ruffle_degrees) * _blend * sin(_clock * TAU * ruffle_hertz)
+		State.HOP:
+			# Negative is nose UP - root_pitch is positive for a snout in the dirt - so
+			# this runs from up at the launch, through level at the top, to down on the
+			# way in, which is the shape of every jump.
+			pitch = deg_to_rad(-hop_pitch_degrees) * (1.0 - 2.0 * _blend)
 		State.GOING_DOWN, State.LYING, State.GETTING_UP:
 			roll = deg_to_rad(lie_roll_degrees) * _blend
 			lift = lie_rise * _blend

@@ -45,6 +45,7 @@ extends Node
 ##   the music .............. -44    under the bed, as asked
 ##   the crows .............. -26    weather, somewhere else
 ##   cluck, stone, meow ..... -22    a thing you did, confirmed
+##   the pickup blip ........ -22    the same, in a timbre the farm has not got
 ##   door, arrival .......... -16    a moment, once
 ##   the scratch ............ -14    the loudest thing, because it is the punishment
 ##   Venus under a speaker .. -34
@@ -56,6 +57,13 @@ extends Node
 ## AND THERE ARE THREE BUSES, so those relationships survive somebody wanting the music
 ## down. Music, Ambience and SFX all feed a Master carrying a hard limiter at -1 dB,
 ## which does nothing at all until a scratch lands over a stone hit over two beds.
+
+## A lot of crows has just started, and is about to get loud. Emitted at the bottom of the
+## swell rather than the top, so whatever listens can decide for itself how far into the
+## noise it wants to arrive - `pen_crow_line_4d` waits out the fade, because a line that
+## appears before you have heard anything is a line about nothing.
+signal crows_rising
+
 
 const MUSIC := &"Music"
 const AMBIENCE := &"Ambience"
@@ -91,6 +99,31 @@ const SFX := &"SFX"
 @export var catcher_path: NodePath
 
 @export_group("The cats")
+## THE PICKUP BLIP, and it answers two complaints at once.
+##
+## ONE: nothing confirmed an item reaching the belt. The gauntlet, the coin, Mithra's
+## nugget - they appeared in a slot and the world said nothing. This listens to the belt's
+## own `picked_up`, which fires from the single line inside `add_item` that actually
+## appends, so it cannot go off for a duplicate or a full belt.
+##
+## TWO: catching a chicken WAS already making a sound and Ramon could not hear it. The two
+## cluck takes are farm recordings playing over `ambience_file`, which is ninety seconds of
+## chicken clucks and birds. Same species, same room, same spectrum - the confirm was
+## masked by the bed it was mixed against, which is a mixing fault and not a missing sound.
+## So the blip plays on a catch too, under the cluck: a short bright UI transient has
+## nothing in common with a farmyard and cuts straight through it. The cluck is still the
+## character of the moment, the blip is what tells you it happened.
+##
+## It is the menu's select sound, copied into the pen's own audio folder rather than
+## referenced across at res://ramon/sounds/, because the pen is meant to stand on its own.
+@export_file("*.wav") var blip_file: String = "res://ramon/chickenpen/audio/sfx/Ni Sound - Soft UI - Digital Button Select.wav"
+## The file peaks at -7.6 dBFS, and the confirm row in the table above is -22 effective.
+@export_range(-40.0, 12.0, 0.5) var blip_db: float = -14.5
+## The belt, which is where every item on the farm ends up.
+@export var inventory_path: NodePath = NodePath("../../UI/Inventory")
+## The troughs, so buying one makes the same noise as picking one up.
+@export var upgrades_path: NodePath = NodePath("../../Pen/Upgrades")
+
 ## Picked up. Both cats get it - the tabby you are stealing and Trym's, who does not mind.
 @export_file("*.wav") var cat_meow_file: String = "res://ramon/chickenpen/audio/sfx/Marcello Del Monaco - Pet Sounds - Cat Happy Meow.wav"
 @export_range(-40.0, 12.0, 0.5) var cat_meow_db: float = -11.0
@@ -247,6 +280,7 @@ const SFX := &"SFX"
 
 var _bed: AudioStreamPlayer
 var _cluck: AudioStreamPlayer
+var _blip: AudioStreamPlayer
 var _cat: AudioStreamPlayer
 var _crow: AudioStreamPlayer
 var _stone: AudioStreamPlayer
@@ -281,6 +315,7 @@ func _ready() -> void:
 	_start_bed()
 	_start_music()
 	_start_clucks()
+	_start_blips()
 	_start_cats()
 	_start_finish()
 	_start_stone()
@@ -355,6 +390,47 @@ func _start_clucks() -> void:
 	# end of _catch). Listening to that rather than editing the catcher keeps the sound out
 	# of the gameplay code entirely: this node can be deleted and nothing breaks.
 	catcher.connect("caught", _on_caught)
+
+
+func _start_blips() -> void:
+	var stream: AudioStream = _load(blip_file, "the pickup blip")
+	if stream == null:
+		return
+	_blip = AudioStreamPlayer.new()
+	_blip.name = "Blip"
+	_blip.bus = SFX
+	_blip.stream = stream
+	_blip.volume_db = blip_db
+	add_child(_blip)
+	var belt: Node = get_node_or_null(inventory_path)
+	if belt == null or not belt.has_signal("picked_up"):
+		push_warning("PenSfx: no belt at inventory_path, so picking things up is silent.")
+	else:
+		belt.connect("picked_up", _on_picked_up)
+	# The catcher is fetched a second time rather than kept from _start_clucks, so that
+	# either of the two sounds can be deleted without taking the other with it.
+	var catcher: Node = get_node_or_null(catcher_path)
+	if catcher != null:
+		catcher.connect("caught", func(_agent: Node) -> void: _play_blip())
+	# And a trough going up, which is the one purchase in the game. Spending a nugget was
+	# silent, which made an upgrade feel like a bug until you spotted the thing in the
+	# grass.
+	var upgrades: Node = get_node_or_null(upgrades_path)
+	if upgrades != null and upgrades.has_signal("feeder_raised"):
+		upgrades.connect("feeder_raised", func(_at: Vector4) -> void: _play_blip())
+
+
+func _on_picked_up(_effect_name: String) -> void:
+	_play_blip()
+
+
+## Restarted from the top every time rather than allowed to ring on. Two pickups in quick
+## succession should sound like two, and a 1.25 s tail over itself sounds like neither.
+func _play_blip() -> void:
+	if _blip == null:
+		return
+	_blip.stop()
+	_blip.play()
 
 
 func _start_cats() -> void:
@@ -560,6 +636,7 @@ func _process(delta: float) -> void:
 
 
 func _start_crow_event() -> void:
+	emit_signal("crows_rising")
 	var window: float = minf(crow_event_seconds, _crow_length)
 	_crow_left = window
 	# Half the event each way at most, so the swell always reaches its top before it turns.

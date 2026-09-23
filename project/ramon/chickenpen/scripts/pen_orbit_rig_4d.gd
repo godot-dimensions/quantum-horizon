@@ -211,6 +211,12 @@ func set_talking(on: bool) -> void:
 		_zoom_target = _rest_distance
 
 
+## Bring the slice back to flat over `home_seconds`. The R key does it, and so does the
+## full restart - one way in, so the two can never drift apart.
+func go_home() -> void:
+	_homing = home_seconds
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if start_preset >= 0 and event is InputEventKey and event.pressed and not event.echo:
 		if (event as InputEventKey).keycode == cycle_key:
@@ -231,7 +237,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			and (event as InputEventKey).keycode == home_key \
 			and not Input.is_key_pressed(KEY_CTRL):
 		# Ctrl+R restarts the whole scene and is somebody else's key. Plain R is the slice.
-		_homing = home_seconds
+		go_home()
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventMouseButton and event.pressed:

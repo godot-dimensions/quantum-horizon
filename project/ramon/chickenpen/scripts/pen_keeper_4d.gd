@@ -70,7 +70,7 @@ func _line() -> String:
 	if home >= total and total > 0:
 		return "Keeper: \"That's the lot of them. Thank you kindly.\""
 	if home == 0:
-		return "Keeper: \"All twelve got out. Some of them aren't where you can see them - mind the fourth way.\""
+		return "Keeper: \"All nine got out. Some of them aren't where you can see them - mind the fourth way.\""
 	if home < total / 3:
 		return "Keeper: \"%d down, %d to go. The ones left are the awkward ones.\"" % [home, total - home]
 	if home < total - 2:

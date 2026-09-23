@@ -52,6 +52,12 @@ const ITEMS := {
 	},
 }
 
+## Something landed in a slot. `pen_sfx_4d` listens for this and blips; nothing in here
+## knows what a blip is. It fires for the thing that arrived, not for the attempt - a
+## duplicate or a full belt returns above without a sound, which is right: the confirm
+## has to mean "you have it now", or it stops meaning anything.
+signal picked_up(effect_name: String)
+
 @export var dialogue_path: NodePath
 ## Everyone ELSE who can hand you something.
 ##
@@ -78,10 +84,13 @@ enum Align { CENTRE, LEFT }
 @export_range(0.0, 400.0, 1.0) var side_margin: float = 40.0
 
 @export_group("Look")
-@export_range(24.0, 140.0, 1.0) var slot_size: float = 54.0
-@export_range(0.0, 40.0, 1.0) var slot_gap: float = 10.0
+## Bigger than it was. Fifty-four was sized against a windowed prototype and reads as a
+## row of stamps on a full screen, where it is the one piece of UI you have to pick things
+## out of at a glance.
+@export_range(24.0, 140.0, 1.0) var slot_size: float = 72.0
+@export_range(0.0, 40.0, 1.0) var slot_gap: float = 13.0
 ## Leaves room under the row for the name of whatever is in a slot.
-@export_range(0.0, 200.0, 1.0) var bottom_margin: float = 46.0
+@export_range(0.0, 200.0, 1.0) var bottom_margin: float = 52.0
 @export var empty_fill: Color = Color(0.0, 0.0, 0.0, 0.34)
 @export var empty_border: Color = Color(1.0, 1.0, 1.0, 0.5)
 @export var filled_border: Color = Color(1.0, 1.0, 1.0, 0.72)
@@ -96,13 +105,18 @@ var items: Array[String] = []
 var selected: int = -1
 
 var _flash: float = 0.0
+## True only while the belt is being stocked from `starts_with`. You did not pick the
+## pickaxe up, it was in your hand when the level loaded - so it does not get the sound.
+var _filling: bool = false
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_filling = true
 	for effect_name in starts_with:
 		add_item(effect_name)
+	_filling = false
 	var heard: int = 0
 	for path in ([dialogue_path] as Array[NodePath]) + dialogue_paths:
 		if path.is_empty():
@@ -198,6 +212,8 @@ func add_item(effect_name: String) -> void:
 		return
 	items.append(effect_name)
 	_flash = flash_seconds
+	if not _filling:
+		picked_up.emit(effect_name)
 
 
 ## Handing something back to its owner has to empty the slot, or the belt keeps claiming
@@ -220,8 +236,10 @@ func reset() -> void:
 	items.clear()
 	selected = -1
 	_flash = 0.0
+	_filling = true
 	for effect_name in starts_with:
 		add_item(effect_name)
+	_filling = false
 
 
 ## Item icons, drawn rather than imported.
@@ -382,6 +400,11 @@ func _draw() -> void:
 		_draw_icon(str(item.get("icon", "")), box, colour)
 
 		var label: String = str(item["name"])
-		var label_width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
-		draw_string(font, at + Vector2((slot_size - label_width) * 0.5, slot_size + 17.0),
-			label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1.0, 1.0, 1.0, 0.8))
+		# The name grows with the slot rather than staying at 14 - a bigger box with the
+		# same caption under it looks like a mistake rather than a size.
+		var name_size: int = clampi(int(slot_size * 0.26), 11, 22)
+		var label_width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1,
+			name_size).x
+		draw_string(font, at + Vector2((slot_size - label_width) * 0.5,
+			slot_size + float(name_size) + 4.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1,
+			name_size, Color(1.0, 1.0, 1.0, 0.8))

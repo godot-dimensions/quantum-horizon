@@ -1,128 +1,97 @@
 extends SceneTree
 
-## Mithra's errand, driven the way a player drives it.
+## Mithra's errand, end to end, as the player actually walks it.
 ##
-## IT FIRES THE REAL EFFECTS, not the fetch node's methods. Her dialogue is what sends
-## her - `fetch_chicken` on the last line of the reward, `hand_over_chicken` on the thank
-## you - so this emits those through the dialogue player and then watches the field. If
-## the wiring between the writing and the behaviour breaks, this goes quiet.
+## WHAT THIS USED TO TEST IS GONE. The errand ended with her sprinting off to catch you a
+## chicken and hand it over - `fetch_chicken`, `hand_over_chicken`, `mithra_leaves` - and
+## this runner drove `pen_mithra_fetch_4d` directly to watch her do it. Ramon cut that
+## beat: thanking somebody for returning a coin by fetching them poultry was a strange
+## trade, and it made the one character who physically cannot reach the fourth direction
+## better at the fourth-direction job than the player is.
+##
+## So the errand is now coin in, gold out, and a nudge toward the theatre. Which is worth
+## testing for a reason the old shape was not: the reward is no longer a trinket. A nugget
+## is `found_gold`, the same token the rock drops, and `pen_upgrades_4d` spends it on a
+## feeding trough - so this errand now feeds the game's one economy instead of ending in
+## an item nothing reads.
+
+const MithraScript = preload("res://ramon/dialogue/mithra_script.gd")
 
 var _root: Node
 var _f := 0
 var _fails: Array = []
-var _fetch: Node
 var _talk: Node
-var _mithra: Node4D
-var _player: Node4D
-var _catcher: Node
+var _inventory: Node
 var _stage := 0
-var _t := 0
-var _start_gap := 0.0
-var _bird_at_start := Vector4.ZERO
+var _next := 0
 
 
 func _initialize() -> void:
 	_root = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
-	root.add_child(_root); current_scene = _root
+	root.add_child(_root)
+	current_scene = _root
 
 
 func _check(label: String, ok: bool, detail: String) -> void:
-	print("   %s %-44s %s" % ["PASS" if ok else "FAIL", label, detail])
-	if not ok: _fails.append(label)
+	print("   %s %-46s %s" % ["PASS" if ok else "FAIL", label, detail])
+	if not ok:
+		_fails.append(label)
 
 
-func _step() -> String:
-	return ["IDLE", "GOING", "PICKING_UP", "RETURNING", "TALKING", "LEAVING"][int(_fetch.get("step"))]
+func _has(item: String) -> bool:
+	return _inventory != null and bool(_inventory.call("has_item", item))
 
 
 func _process(_d) -> bool:
 	_f += 1
-	if _f < 8: return false
-	if _fetch == null:
-		_fetch = _root.get_node_or_null("Systems/MithraFetch")
+	if _f < 20:
+		return false
+	if _talk == null:
 		_talk = _root.get_node_or_null("Systems/MithraTalk")
-		_mithra = _root.get_node_or_null("Mithra") as Node4D
-		_player = _root.get_node_or_null("Player") as Node4D
-		_catcher = _root.get_node_or_null("Player/Catcher")
-		if _fetch == null or _talk == null or _mithra == null:
-			_check("the pieces are in the scene", false, "MithraFetch / MithraTalk / Mithra")
-			_finish(); return true
-		print("\n--- she is renamed ---")
-		# Both discarded names, not just the last one. She has been renamed twice and a
-		# check that only knows about the most recent one would miss a stray node left
-		# behind by the first pass.
+		_inventory = _root.get_node_or_null("Systems/Collector")
+		if _inventory == null:
+			_inventory = _root.get_node_or_null("UI/Inventory")
+		if _talk == null or _inventory == null:
+			_check("the pieces are in the scene", false, "MithraTalk / the belt")
+			return _finish()
+		print("\n--- the errand, as rewritten ---")
+		# Both discarded names, not just the last one: she has been renamed twice and a
+		# check that only knows the most recent one would miss a stray node.
 		_check("the character is Mithra", _root.get_node_or_null("Mithra") != null
 			and _root.get_node_or_null("Nessa") == null
 			and _root.get_node_or_null("Hydra") == null, "node, driver, dialogue and tag")
-		_check("her script speaks as Mithra",
-			String(load("res://ramon/dialogue/mithra_script.gd").NODES["intro"]["speaker"]) == "Mithra", "")
-		print("\n--- she sets off ---")
-		_check("idle before the coin comes back", _step() == "IDLE", _step())
-		_talk.emit_signal("effect", "fetch_chicken")
-		return false
 
-	match _stage:
-		0:
-			_check("the effect sends her", _step() == "GOING", _step())
-			_start_gap = _mithra.global_position.distance_to(_player.global_position)
-			_stage = 1
-		1:
-			# Let her cross the field. She has to actually get there.
-			_t += 1
-			if _step() == "GOING" and _t < 4000: return false
-			_check("she reaches a chicken", _step() != "GOING",
-				"now %s after %d frames" % [_step(), _t])
-			_stage = 2
-			_t = 0
-		2:
-			_t += 1
-			if _step() == "PICKING_UP" and _t < 2000: return false
-			_check("she picks it up and turns back", _step() == "RETURNING",
-				"%s after the pickup beat" % _step())
-			_stage = 3
-			_t = 0
-		3:
-			_t += 1
-			if _step() == "RETURNING" and _t < 6000: return false
-			_check("she brings it to the player", _step() == "TALKING",
-				"%s, %.1f units away" % [_step(),
-					_mithra.global_position.distance_to(_player.global_position)])
-			_check("and she came to YOU, not to a spot",
-				_mithra.global_position.distance_to(_player.global_position) < 2.2,
-				"%.2f units" % _mithra.global_position.distance_to(_player.global_position))
-			_check("she opened the conversation herself", bool(_talk.call("is_running")),
-				"nobody pressed anything")
-			print("\n--- the thank you ---")
-			_check("the player is empty-handed until then", _catcher.get("carried") == null, "")
-			_talk.emit_signal("effect", "hand_over_chicken")
-			_stage = 4
-		4:
-			_check("now the player is holding the chicken", _catcher.get("carried") != null,
-				str(_catcher.get("carried")))
-			_check("and it is a real catch, not a lookalike",
-				_catcher.get("carried") != null
-					and String(_catcher.get("carried").call("state_name")) == "CARRIED"
-					if _catcher.get("carried") != null
-						and _catcher.get("carried").has_method("state_name") else true,
-				"through chicken_catcher_4d.give()")
-			_talk.emit_signal("effect", "mithra_leaves")
-			_stage = 5
-			_t = 0
-		5:
-			_check("she runs off", _step() == "LEAVING", _step())
-			_stage = 6
-			_t = 0
-		6:
-			_t += 1
-			if _step() == "LEAVING" and _t < 6000: return false
-			_check("and settles back into her own life", _step() == "IDLE",
-				"%s, searching again: %s" % [_step(), not bool(_mithra.get("halted"))])
-			_finish()
-			return true
+		# The script itself, read rather than played - these are the claims the rewrite
+		# makes, and they are the ones that would rot silently.
+		var nodes: Dictionary = MithraScript.NODES
+		_check("no chicken is fetched any more",
+			not nodes.has("delivery") and not nodes.has("farewell"),
+			"the delivery beats are gone from the script, not just unreachable")
+		var fires := ""
+		for key in nodes:
+			fires += String((nodes[key] as Dictionary).get("do", ""))
+		_check("and nothing fires the fetch", not fires.contains("fetch_chicken")
+			and not fires.contains("hand_over_chicken"),
+			"effects still fired: coin_hinted, take_coin, give_nugget")
+		_check("she pays in gold, not in trinkets", fires.contains("give_nugget"),
+			"found_gold - the same token the rock drops and the keeper spends")
+
+		# The close has to send you to Trym and end without asking anything.
+		var close: Dictionary = nodes.get("reward_close", {})
+		var said := ""
+		for line in (close.get("lines", []) as Array):
+			said += String(line)
+		_check("and she points you at the theatre on the way out",
+			said.to_lower().contains("trym") and said.to_lower().contains("presentation"),
+			"named in reward_close")
+		_check("without waiting for an answer",
+			(close.get("choices", []) as Array).is_empty() and String(close.get("goto", "x")) == "",
+			"no reply list, and the conversation ends there")
+		return _finish()
 	return false
 
 
-func _finish() -> void:
-	if _fails.is_empty(): print("\nALL PASS")
-	else: print("\n%d FAILED: %s" % [_fails.size(), ", ".join(_fails)])
+func _finish() -> bool:
+	print("\n%d FAIL(s)" % _fails.size())
 	quit(1 if _fails.size() > 0 else 0)
+	return true

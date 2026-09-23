@@ -52,11 +52,14 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_camera_picker_4d.gd" id="pen_campick"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/theatre/theatre.tscn" id="theatre_scene"]
 [ext_resource type="Script" uid="uid://0ylph4u1sgu2" path="res://ramon/chickenpen/scripts/pen_sfx_4d.gd" id="pen_sfx"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_crow_line_4d.gd" id="pen_crowline"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_again_4d.gd" id="pen_again"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_info_card_4d.gd" id="pen_infocard"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_fps_4d.gd" id="pen_fps"]
 [ext_resource type="Script" uid="uid://c2kixgu1hst3e" path="res://ramon/chickenpen/theatre/theatre_arch_4d.gd" id="thr_arch"]
 [ext_resource type="PackedScene" uid="uid://gh03wmhupplp" path="res://ramon/VoxelMining/voxel_mining_block.tscn" id="voxel_rock"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_celebration_4d.gd" id="pen_party"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_talk_motion_4d.gd" id="pen_talkmotion"]
-[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_mithra_fetch_4d.gd" id="pen_fetch"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_fullscreen_4d.gd" id="pen_fullscreen"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
@@ -5283,12 +5286,27 @@ coop_path = NodePath("../Coop")
 
 [node name="UI" type="Node4D" parent="."]
 
+[node name="InfoCard" type="Control" parent="UI"]
+anchors_preset = 0
+offset_right = 1200.0
+offset_bottom = 300.0
+mouse_filter = 2
+script = ExtResource("pen_infocard")
+label_paths = Array[NodePath]([NodePath("../Fps"), NodePath("../Objective"), NodePath("../Progress"), NodePath("../Locator"), NodePath("../CatchPrompt"), NodePath("../Hint"), NodePath("../Debug"), NodePath("../Keeper"), NodePath("../LockOn"), NodePath("../Searcher"), NodePath("../../Player/StateLabel")])
+
+[node name="Fps" type="Label" parent="UI"]
+offset_left = 16.0
+offset_top = 14.0
+offset_right = 420.0
+offset_bottom = 44.0
+script = ExtResource("pen_fps")
+
 [node name="Objective" type="Label" parent="UI"]
 offset_left = 16.0
 offset_top = 44.0
 offset_right = 880.0
 offset_bottom = 68.0
-text = "Twelve chickens are loose."
+text = "Nine chickens are loose."
 
 [node name="Progress" type="Label" parent="UI"]
 offset_left = 16.0
@@ -5322,6 +5340,14 @@ offset_top = 180.0
 offset_right = 880.0
 offset_bottom = 204.0
 
+[node name="Again" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("pen_again")
+
 [node name="Controls" type="Control" parent="UI"]
 anchors_preset = 1
 anchor_left = 1.0
@@ -5352,6 +5378,17 @@ script = ExtResource("pen_world_tag")
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 anchor_path = NodePath("../../World/KeeperHead")
 lift = 12.0
+
+[node name="ThoughtBox" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("dlg_box")
+layout = 0
+bottom_margin = 120.0
+name_size = 17
+text_size = 20
 
 [node name="TalkBox" type="Control" parent="UI"]
 layout_mode = 3
@@ -5639,6 +5676,11 @@ script = ExtResource("pen_sfx")
 catcher_path = NodePath("../../Player/Catcher")
 game_path = NodePath("../Game")
 
+[node name="CrowLine" type="Node" parent="Systems"]
+process_mode = 3
+script = ExtResource("pen_crowline")
+talker_paths = Array[NodePath]([NodePath("../Talk"), NodePath("../TrymTalk"), NodePath("../ProfessorTalk"), NodePath("../NikeTalk"), NodePath("../MithraTalk")])
+
 [node name="Celebration" type="Node" parent="Systems"]
 script = ExtResource("pen_party")
 
@@ -5646,9 +5688,6 @@ script = ExtResource("pen_party")
 script = ExtResource("pen_talkmotion")
 speakers = Array[NodePath]([NodePath("../MithraTalk"), NodePath("../Talk"), NodePath("../TrymTalk"), NodePath("../ProfessorTalk")])
 figures = Array[NodePath]([NodePath("../../Mithra/Avatar"), NodePath("../../World/Keeper"), NodePath("../../World/Trym/Figure"), NodePath("../../World/Professor/Figure")])
-
-[node name="MithraFetch" type="Node" parent="Systems"]
-script = ExtResource("pen_fetch")
 
 [node name="SliceAssist" type="Node" parent="Systems"]
 script = ExtResource("pen_assist")
@@ -6151,10 +6190,10 @@ w_fade_distance = 6.0
 
 [node name="StateLabel" type="Label" parent="Player"]
 offset_left = 16.0
-offset_top = 12.0
+offset_top = 280.0
 offset_right = 600.0
-offset_bottom = 40.0
-text = "..."
+offset_bottom = 304.0
+text = ""
 
 [node name="Crossing" type="Node" parent="."]
 script = ExtResource("pen_crossing")
