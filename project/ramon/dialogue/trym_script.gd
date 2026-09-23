@@ -33,7 +33,7 @@ const NODES: Dictionary = {
 "intro": {
 	"speaker": "Trym",
 	"lines": [
-		"Hey there! Hang on — right — sorry. I'd been sitting so long my legs had developed opinions.",
+		"Hey there! Hang on, right, sorry. I'd been sitting so long my legs had developed opinions.",
 		"You're the one going after the chickens through W, aren't you. I've been watching from the desk instead of doing the thing I'm meant to be doing. Best afternoon I've had in weeks, and I want to be clear that I mean that literally and not as a way of being polite.",
 	],
 	"choices": [
@@ -71,7 +71,7 @@ const NODES: Dictionary = {
 "you_chickens": {
 	"speaker": "Trym",
 	"lines": [
-		"It is here, and it's the good kind. You can't do it wrong in three dimensions — only slowly.",
+		"It is here, and it's the good kind. You can't do it wrong in three dimensions, only slowly.",
 	],
 	"goto": "offer",
 },
@@ -276,6 +276,100 @@ const NODES: Dictionary = {
 	"goto": "post_show",
 },
 
+## IN THE CINEMA, WHEN THE PRESENTATION IS OVER.
+##
+## Four beats across three conversations, entered by name from theatre_after_4d rather
+## than reached by a goto - which is what the `greet_` prefix means everywhere else in
+## this file, and why three of them carry it.
+##
+## EVERY ONE OF THEM HAS A LINE OF HIS, EVEN THE ONES THAT ARE REALLY YOURS. That is not
+## padding. dialogue_player_4d deliberately leaves the previous line on screen when it
+## enters a node with no lines, so a hub does not blink between beats - and an OPENING
+## node with no lines has no previous beat, so it left the last thing he said in the
+## conversation before still sitting above the new reply list. Two words of his are what
+## stops a stale line being read as him repeating himself.
+"greet_cinema": {
+	"speaker": "Trym",
+	"lines": [
+		"Mm?",
+	],
+	"choices": [
+		{"text": "Nice one.", "goto": "cinema_answers"},
+		{"text": "Let's get going.", "goto": "after_show_walk", "leave": true},
+	],
+},
+
+## AND HE ANSWERS ALL OF IT IN ONE GO, then closes it himself. It used to run straight on
+## into the leaving speech, which is nine lines without a breath in them and reads as the
+## conversation having got away from both of you. He says his piece and suggests you go;
+## everything else he has to say is now the reason you come back.
+##
+## Every figure is from the record, and the last one is a gap rather than a result.
+"cinema_answers": {
+	"speaker": "Trym",
+	"lines": [
+		"It runs. Seven creatures animating together came in at 25.2 milliseconds. A carve is about 130 at 58 frames a second. A portal chunk rebuilds in 40.5. Those are budgets, not miracles, and a budget is a thing you can build on.",
+		"People understand it. Seven of seven came out of a session with the intuition for the fourth direction. Three of seven actually finished. Those are two different numbers and I am not going to average them into one that flatters us.",
+		"One authoring method gave us a goat at 1.15 metres, a chicken at 0.51 and a brachiosaurus at 10.2. Same rig, same solver, three animals. That is the part I would put in front of an artist.",
+		"Whether anybody outside this room can build with it is the one I cannot answer with a figure. That is the honest gap, and it is what October is actually about.",
+		"Right. Now let's go, shall we?",
+	],
+	"goto": "",
+},
+
+## THE SECOND TIME, AND THIS IS WHERE IT TURNS. He has answered everything he is
+## comfortable answering, so what is left is the thing he keeps not saying - and he gets
+## most of the way to saying it before stopping himself, which is what makes you push.
+"greet_cinema_again": {
+	"speaker": "Trym",
+	"lines": [
+		"You're still here.",
+		"If you knew where we were located inside hyperspace right now, you'd get the jitters too. I've stopped asking.",
+		"We can be here. We can't stay here. Those are two different sentences and I have learned to respect the second one.",
+	],
+	"goto": "",
+},
+
+## AND THE THIRD TIME YOU DO NOT LET HIM. He has been trying to leave for two
+## conversations and half-explaining why; this is the push, and it is yours to make.
+##
+## HE IS NOT JOKING AND HE IS NOT EXPLAINING. The answer is one sentence, delivered flat,
+## and then he changes the subject back to the thing he is comfortable with - which is
+## what somebody does when they have said more than they meant to. Everything else in this
+## room is measured in milliseconds and tetrahedra. This is the one line with no figure
+## attached, and it lands because of that rather than in spite of it.
+"greet_cinema_insist": {
+	"speaker": "Trym",
+	"lines": [
+		"What.",
+	],
+	"choices": [
+		{"text": "I insist. Tell me more.", "goto": "cinema_truth"},
+		{"text": "Fine. Let's go.", "goto": "after_show_walk", "leave": true},
+	],
+},
+
+"cinema_truth": {
+	"speaker": "Trym",
+	"lines": [
+		"...",
+		"All right. The honest truth.",
+		"We are very close to the transcendental object at the end of time.",
+		"Right. So. Let's stick to the fourth dimension, shall we?",
+	],
+	"goto": "",
+},
+
+## The short way out, from either of the reply lists.
+"after_show_walk": {
+	"speaker": "Trym",
+	"lines": [
+		"Let's get back to the pen house. We can talk more there.",
+		"Back through the dimensional door. It only goes the one place.",
+	],
+	"goto": "",
+},
+
 # ---------------------------------------------------------------- the three questions
 
 "hub": {
@@ -307,7 +401,7 @@ const NODES: Dictionary = {
 	"topic": true,
 	"lines": [
 		"Four things, and they're all smaller than people expect. That it runs. That it can be understood. That it makes gameplay worth having. And that it can be built at a rate that doesn't need a specialist for every blade of grass.",
-		"There's a week in October where we have to show all four of those rather than say them. The stance is that we're proving it works, not that it's optimised — which sounds like a get-out and isn't, because the two get confused constantly and the second one is a different year's problem.",
+		"There's a week in October where we have to show all four of those rather than say them. The stance is that we're proving it works, not that it's optimised, which sounds like a get-out and isn't, because the two get confused constantly and the second one is a different year's problem.",
 		"The fourth one is the one that keeps me up. And the test for it is me: somebody who is not an engineer, building something, badly, on purpose.",
 	],
 	"choices": [
@@ -323,8 +417,8 @@ const NODES: Dictionary = {
 	"speaker": "Trym",
 	"topic": true,
 	"lines": [
-		"Badly is the wrong word, I'll give you that. I mean without a specialist standing behind me — that's the actual test, and it only counts if it's a fair one.",
-		"Look at this field, though. A designer built it. Not an engineer — a designer, working with Claude, asking for things and getting them back. A year ago that sentence would have been a joke and I'd have been the one laughing at it.",
+		"Badly is the wrong word, I'll give you that. I mean without a specialist standing behind me. That's the actual test, and it only counts if it's a fair one.",
+		"Look at this field, though. A designer built it. Not an engineer, a designer, working with Claude, asking for things and getting them back. A year ago that sentence would have been a joke and I'd have been the one laughing at it.",
 		"And I've been doing my own prototypes in the evenings, which is how I know the difference between the AI wrote some code and somebody who can't write code finished something. It's promising. Not meeting-promising. I keep getting surprised in the right direction, which is the only kind of promising I trust.",
 	],
 	"goto": "hub",
@@ -354,15 +448,25 @@ const NODES: Dictionary = {
 	"goto": "",
 },
 
-## AFTER ALL OF IT. Short, and it ends - it does not reopen the topic list. Coming back
-## to a man who offers you his introduction again is the thing that made the conversation
-## feel like a machine in the first place.
+## AFTER ALL OF IT - AND THE DOOR BACK IN IS STILL OPEN.
+##
+## The original reasoning was that a man who offers you his introduction again reads as a
+## machine, and that is still true - which is why this does not go to `hub`. But it used
+## to end flat, and having taken the ticket you could never ask him about the prototype
+## again. Those answers are the substance of the whole afternoon: what it runs at, what
+## seven of seven understood, what he is actually asking for in October. Handing somebody
+## a ticket is a strange moment to take the conversation away from them.
+##
+## So the reply list is the one from after the showing, not the one from before it. The
+## entries are `once`, so it thins as you work through it and ends when you have nothing
+## left to ask.
 "greet_after": {
 	"speaker": "Trym",
 	"lines": [
 		"Go on, then. You've got the ticket - you don't need me to let you in.",
+		"Unless there was something else. I have not run out of numbers.",
 	],
-	"goto": "",
+	"goto": "post_show",
 },
 
 "exit": {
@@ -387,7 +491,7 @@ const NODES: Dictionary = {
 	"speaker": "Trym",
 	"lines": [
 		"You've got one! Look at it. Completely unbothered about having been in two places.",
-		"Go on — fence first, me after.",
+		"Go on, fence first, me after.",
 	],
 	"goto": "",
 },
@@ -395,7 +499,7 @@ const NODES: Dictionary = {
 "greet_done": {
 	"speaker": "Trym",
 	"lines": [
-		"All twelve. You realise you've just done the whole experiment, don't you.",
+		"All nine. You realise you've just done the whole experiment, don't you.",
 		"Ran, was understood, was worth doing. Somebody write that down.",
 	],
 	"goto": "",

@@ -41,7 +41,8 @@ const NODES: Dictionary = {
 	"speaker": "Keeper",
 	"lines": [
 		"You. I've watched you skirt this field all week without once crossing into it. Today that is the exact qualification I need.",
-		"Twelve chickens are out. Through the gate, and then out of the world — into a direction I can't turn my head far enough to see.",
+		"Nine chickens are out. Through the gate, and then out of the world, into a direction I can't turn my head far enough to see.",
+			"I am asking you to go and find them. I cannot. I have watched that gate for four years and I have never once seen where they go.",
 		"So take this. A gauntlet. It reads the fourth way and points down it. Where I'm blind, it isn't.",
 	],
 	"do": "give_gauntlet",
@@ -73,7 +74,7 @@ const NODES: Dictionary = {
 "gift_thanks": {
 	"speaker": "Keeper",
 	"lines": [
-		"Don't thank me yet. Thank me at twelve.",
+		"Don't thank me yet. Thank me at nine.",
 	],
 	"goto": "",
 	"goto_if_asked": "hub",
@@ -86,7 +87,7 @@ const NODES: Dictionary = {
 	"speaker": "Keeper",
 	"lines": [
 		"That will be difficult, sir. Not impossible. Difficult.",
-		"You'll pass within arm's reach of nine of them, feel the air go wrong, and put it down to weather.",
+		"You'll pass within arm's reach of most of them, feel the air go wrong, and put it down to weather.",
 		"It'll be on the post when the principle wears thin.",
 	],
 	"do": "withhold_gauntlet",
@@ -148,7 +149,7 @@ const NODES: Dictionary = {
 	"choices": [
 		{"text": "Where do I even start looking?", "goto": "where_look"},
 		{"text": "And once I've got hold of one?", "goto": "how_catch"},
-		{"text": "Twelve. How does that even happen?", "goto": "how_out", "once": true},
+		{"text": "Nine of them? How does that even happen?", "goto": "how_out", "once": true},
 		{"text": "Enough about chickens.", "goto": "hub", "back": true},
 	],
 },
@@ -191,7 +192,7 @@ const NODES: Dictionary = {
 	"topic": true,
 	"lines": [
 		"You've been looking in three directions. That's reading one page and calling the book short.",
-		"Half of them aren't far off. They're beside you, in a direction you've no word for — the gauntlet has one. Follow it and it'll swing you onto their slice.",
+		"Half of them aren't far off. They're beside you, in a direction you've no word for, and the gauntlet has one. Follow it and it'll swing you onto their slice.",
 		"Ana and kata. Don't ask me which is which. I only know that neither of them is left.",
 	],
 	"goto": "hub_birds",
@@ -252,9 +253,9 @@ const NODES: Dictionary = {
 	"topic": true,
 	"instead": "what_i_am_again",
 	"lines": [
-		"I'm a culture. Human neurons grown on a grid of electrodes, kept warm, kept fed, and taught the only way anything is taught — by consequence.",
+		"I'm a culture. Human neurons grown on a grid of electrodes, kept warm, kept fed, and taught the only way anything is taught, by consequence.",
 		"My ancestors, and I use the word loosely, were taught to play Pong. A dish of cells learning to keep a square between two lines. That was the entire ambition of the field at the time.",
-		"Four generations on, here I am, keeping twelve chickens between four fences. You can see the family resemblance.",
+		"Four generations on, here I am, keeping nine chickens between four fences. You can see the family resemblance.",
 	],
 	"goto": "what_i_am_close",
 },
@@ -306,7 +307,7 @@ const NODES: Dictionary = {
 "exit": {
 	"speaker": "Keeper",
 	"lines": [
-		"Good. Twelve.",
+		"Good. Nine.",
 	],
 	"goto": "",
 },
@@ -317,7 +318,7 @@ const NODES: Dictionary = {
 
 "greet_none": {
 	"speaker": "Keeper",
-	"lines": ["Back, and empty-handed. Twelve. Still twelve."],
+	"lines": ["Back, and empty-handed. Nine. Still nine."],
 	"goto": "hub",
 },
 
@@ -343,7 +344,7 @@ const NODES: Dictionary = {
 	"speaker": "Keeper",
 	"lines": [
 		"That's the lot. Every one of them.",
-		"Keep the gauntlet. It's wasted on something whose whole employment is standing at a gate and counting to twelve.",
+		"Keep the gauntlet. It's wasted on something whose whole employment is standing at a gate and counting to nine.",
 		"And the latch is still old.",
 	],
 	"goto": "",

@@ -30,7 +30,7 @@ const NODES: Dictionary = {
 "intro": {
 	"speaker": "Mithra",
 	"lines": [
-		"Don't — don't walk there. Stand still a moment.",
+		"Don't, don't walk there. Stand still a moment.",
 		"I dropped a coin. Just here, about a yard from my boot. It did not land.",
 		"It went sideways, and not a sideways I've got. It is under my boots right now and I cannot reach it.",
 		"I wish I had one of those gauntlets he hands out. I'd have had it back on the first pass instead of the ninth.",
@@ -47,7 +47,7 @@ const NODES: Dictionary = {
 	"speaker": "Mithra",
 	"topic": true,
 	"lines": [
-		"An ADA. A physical one — a real disc, struck in metal, for a currency that has never once been a disc.",
+		"An ADA. A physical one, a real disc struck in metal, for a currency that has never once been a disc.",
 		"Yes. I know. It was a gift, and the person who gave it to me thought that was funny too.",
 		"It's the only one I have and it is within two metres of my feet, in a direction I can't lean.",
 	],
@@ -67,7 +67,7 @@ const NODES: Dictionary = {
 	"speaker": "Mithra",
 	"lines": [
 		"Then you can do the one thing I can't.",
-		"Step ana — that way, whichever way that turns out to be — and look at the ground.",
+		"Step ana, that way, whichever way that turns out to be, and look at the ground.",
 		"It'll be lying in the grass on the next slice over, being extremely gold about it.",
 	],
 	"do": "coin_hinted",
@@ -133,7 +133,7 @@ const NODES: Dictionary = {
 "greet_has_coin": {
 	"speaker": "Mithra",
 	"lines": [
-		"You've — that's it. That's it, give it here.",
+		"You've, that's it. That's it, give it here.",
 	],
 	"choices": [
 		{"text": "Here.", "goto": "handover"},
@@ -153,8 +153,8 @@ const NODES: Dictionary = {
 "haggle": {
 	"speaker": "Mithra",
 	"lines": [
-		"Nothing. It's worth nothing, it's a novelty disc, you could buy nine of them.",
-		"That isn't the point and you know it isn't.",
+		"To a market? A rounding error. The joke of the thing is that the coin is the least valuable way to hold it, and somebody minted it anyway.",
+		"But it has been four days under my own boot, in a direction I can't lean. That is what it is worth. Ask me again in a week and the number goes up.",
 	],
 	"choices": [
 		{"text": "Here. I was joking.", "goto": "handover"},
@@ -173,7 +173,7 @@ const NODES: Dictionary = {
 "handover": {
 	"speaker": "Mithra",
 	"lines": [
-		"Thank you. Genuinely — that's four days off my week.",
+		"Thank you. Genuinely, that's four days off my week.",
 		"Hold on. You've done me a turn and all I've got is other people's lost property.",
 	],
 	"do": "take_coin",
@@ -183,10 +183,11 @@ const NODES: Dictionary = {
 "reward": {
 	"speaker": "Mithra",
 	"lines": [
-		"Here. Three slices over, in a nest that wasn't there the day before.",
-		"It's an egg, it's gold, and I have no earthly use for either of those facts.",
+		"Here. Three slices over, sitting in the grass where the coin should have been.",
+		"Gold. A proper lump of it. Take it to the keeper, he has been waiting years for someone to hand him something.",
+		"And before you say it: yes, I spent four days hunting a coin while standing on that. ADA is my gold anyway. This is just the heavy kind.",
 	],
-	"do": "give_egg",
+	"do": "give_nugget",
 	"goto": "reward_close",
 },
 
@@ -194,67 +195,20 @@ const NODES: Dictionary = {
 	"speaker": "Mithra",
 	"lines": [
 		"Don't drop it. I'd never find it.",
-		"Actually — no, hold on, that's not enough. You're the chicken person, aren't you.",
-		"Right. Stay there. STAY there.",
+		"Oh, and before you go. Ask Trym about his presentation.",
+		"It is better than he makes it sound, and he makes it sound quite good. Might see you there, yeah?",
 	],
-	# She is off. The walk is not in this file - `fetch_chicken` tells
-	# pen_mithra_fetch_4d to take her, and she leaves on the beat after the box closes.
-	"do": "fetch_chicken",
+	# She does not go anywhere and does not wait for an answer. The errand used to end
+	# with her sprinting off to catch you a chicken, which was a strange way to thank
+	# somebody for returning a coin - and it made the one character who cannot reach
+	# the fourth direction better at the fourth-direction job than you are.
 	"goto": "",
 },
 
-# ------------------------------------------------- she went and got you a chicken
 
-## Spoken when she arrives back, with a bird. Started by the fetch, not by walking up to
-## her - she came to YOU, so she opens her own mouth.
-"delivery": {
-	"speaker": "Mithra",
-	"lines": [
-		"Got one! Four days I can't find a coin a yard from my boot, and I find a chicken in ninety seconds.",
-		"Don't say it.",
-	],
-	"choices": [
-		{"text": "Thank you, Mithra.", "goto": "thanked"},
-		{"text": "You are extremely good at this.", "goto": "thanked_warm"},
-		{"text": "I wasn't going to say anything.", "goto": "thanked_dry"},
-	],
-},
 
-"thanked": {
-	"speaker": "Mithra",
-	"lines": [
-		"Here. Mind the left wing, she's opinionated about it.",
-	],
-	"do": "hand_over_chicken",
-	"goto": "farewell",
-},
 
-"thanked_warm": {
-	"speaker": "Mithra",
-	"lines": [
-		"I KNOW. Wrong career. Here, take her before I start charging.",
-	],
-	"do": "hand_over_chicken",
-	"goto": "farewell",
-},
 
-"thanked_dry": {
-	"speaker": "Mithra",
-	"lines": [
-		"You were thinking it. Everyone thinks it. Here.",
-	],
-	"do": "hand_over_chicken",
-	"goto": "farewell",
-},
-
-"farewell": {
-	"speaker": "Mithra",
-	"lines": [
-		"Thanks again, buddy!",
-	],
-	"do": "mithra_leaves",
-	"goto": "",
-},
 
 "greet_after_gift": {
 	"speaker": "Mithra",

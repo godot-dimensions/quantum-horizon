@@ -45,11 +45,12 @@ const NODES: Dictionary = {
 	"lines": [
 		"An assistant, or a trespasser. The paperwork is identical.",
 		"This is not a boulder. It is a scalar field on an eight-by-eight-by-eight-by-eight lattice, and you may hit it with a pick.",
+		"There is gold in it. I have no use for gold. You, I gather, have a field full of chickens and a keeper who wants paying in it.",
 	],
 	"choices": [
 		{"text": "I can hit it?", "goto": "how_to_mine"},
 		{"text": "A field of what?", "goto": "topic_contour"},
-		{"text": "Is there anything in it?", "goto": "topic_gold"},
+		{"text": "Gold? What would I do with gold?", "goto": "topic_gold"},
 		{"text": "I'll leave you to it.", "goto": "bye", "leave": true},
 	],
 },
@@ -67,14 +68,23 @@ const NODES: Dictionary = {
 
 # ---------------------------------------------------------------- the topics
 
+## A WAY OUT OF EVERY ONE OF THEM. The topics used to run across two menus and only the
+## second carried a way to leave, so getting out of the first one meant going further IN -
+## you had to ask for more questions in order to stop asking questions. Three menus now,
+## four entries each, and the fourth is always the door.
+##
+## THE FOUR-REPLY CAP IS WHY IT IS THREE MENUS AND NOT ONE LONG ONE. Six topics and a
+## leave is seven replies, which is a wall of text where a conversation should be, and
+## _verify_script_runner enforces four for exactly that reason. A carousel costs one entry
+## per page and keeps every page readable.
 "menu": {
 	"speaker": "Professor Miner",
 	"lines": ["Ask. I am contractually obliged to disseminate."],
 	"choices": [
 		{"text": "What is it made of?", "goto": "topic_contour"},
 		{"text": "Why does it hitch when I hit it?", "goto": "topic_cost"},
-		{"text": "How does it know which bit I hit?", "goto": "topic_collision"},
 		{"text": "Other questions.", "goto": "menu_two"},
+		{"text": "I'll go and dig something. Cya.", "goto": "bye_dig", "leave": true},
 	],
 },
 
@@ -82,10 +92,21 @@ const NODES: Dictionary = {
 	"speaker": "Professor Miner",
 	"lines": ["Go on."],
 	"choices": [
-		{"text": "What is the gold for?", "goto": "topic_gold"},
+		{"text": "How does it know which bit I hit?", "goto": "topic_collision"},
+		{"text": "Tell me about the gold again.", "goto": "topic_gold"},
+		{"text": "More.", "goto": "menu_three"},
+		{"text": "That's me. Cheers.", "goto": "bye", "leave": true},
+	],
+},
+
+"menu_three": {
+	"speaker": "Professor Miner",
+	"lines": ["There is more of it than anybody expects. That is the recurring theme."],
+	"choices": [
 		{"text": "What happens if I turn the slice?", "goto": "topic_rotate"},
 		{"text": "Why a sphere?", "goto": "topic_bite"},
-		{"text": "That's everything.", "goto": "bye", "leave": true},
+		{"text": "Back to the start.", "goto": "menu"},
+		{"text": "Right. I'm off.", "goto": "bye_off", "leave": true},
 	],
 },
 
@@ -139,7 +160,8 @@ const NODES: Dictionary = {
 	"instead": "topic_gold_again",
 	"lines": [
 		"Six pieces. Three lie within reach of the slice you are standing in. Three do not, and no blow from here will ever touch them.",
-		"Each one buys one trough from the keeper. Six troughs is a field that mostly walks itself. I am told this matters to you more than the lattice does.",
+		"Each piece buys one feeding trough from the keeper. A trough is grain on the ground, and a chicken that has found grain stops wandering to the far hedge.",
+		"It will not catch a single bird for you. It will save you the walk to where the bird went. I am told this matters to you more than the lattice does.",
 	],
 	"topic": true,
 	"goto": "menu",
@@ -198,9 +220,24 @@ const NODES: Dictionary = {
 	"goto": "menu",
 },
 
+## THREE WAYS OF SAYING GOODBYE, because one line said every time is a machine and this
+## is the one character who would notice. All three come back to the same place if you
+## turn round and ask him something else.
 "bye": {
 	"speaker": "Professor Miner",
 	"lines": ["Mind the rock. It is, in a strict sense, four times more rock than it appears."],
+	"goto_if_asked": "menu",
+},
+
+"bye_dig": {
+	"speaker": "Professor Miner",
+	"lines": ["Dig something. Yes. That is the correct instinct and I am glad one of us has it."],
+	"goto_if_asked": "menu",
+},
+
+"bye_off": {
+	"speaker": "Professor Miner",
+	"lines": ["Off. Right. I shall be here, being rained on by a sky that is only three quarters there."],
 	"goto_if_asked": "menu",
 },
 
