@@ -21,7 +21,7 @@ signal completed()
 @export var cues_path: NodePath
 
 ## Item 67: the opening statement of what the player is meant to do.
-@export var objective_text: String = "Twelve chickens are loose. Bring them all back to the pen."
+@export var objective_text: String = "Nine chickens are loose. Bring them all back to the pen."
 
 @export var completion_text: String = "All twelve chickens are home."
 

@@ -107,6 +107,30 @@ const NODES: Dictionary = {
 
 # ---------------------------------------------------------------- topics
 
+"greet_gold": {
+	"speaker": "Keeper",
+	"lines": [
+		"Is that gold? From the rock out there?",
+		"Well. I've been meaning to do something about this place for a long while and never had the means. Say the word and I'll put it to use - one nugget, one job, mind. I'm not a magician.",
+	],
+	"choices": [
+		{"text": "Put up a feeder.", "goto": "built_feeder"},
+		{"text": "I'll hang on to it for now.", "goto": "exit", "leave": true},
+	],
+},
+
+"built_feeder": {
+	"speaker": "Keeper",
+	"do": "build_feeder",
+	"do_on_line": 1,
+	"lines": [
+		"Grain in a trough. I'll set it down where they're thickest just now - no sense putting it where there's nothing to feed.",
+		"It'll not put a single bird back for you, mind, and I'd not want it to. But the ones that wander near will come and stand about it instead of drifting off to the far hedge, and you'll spend a good deal less of your day walking.",
+		"Bring me another nugget and I'll put up another. There's enough in that rock for six, by my reckoning.",
+	],
+	"goto": "",
+},
+
 "hub": {
 	"speaker": "Keeper",
 	"lines": [],

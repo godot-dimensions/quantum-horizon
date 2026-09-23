@@ -22,46 +22,48 @@ extends Node4D
 const CHICKEN_SCENE := preload("res://ramon/chickenpen/chicken.tscn")
 
 ## x, z, w, and the wander radius allowed at that spot. Y comes from the ground.
+##
+## NINE BEARINGS, FORTY DEGREES APART, ALL THE WAY ROUND. Twelve was too many to hunt, so
+## the ring is thinned rather than cut back on one side - dropping the last three of a
+## twelve-bearing ring would have left a ninety-degree hole in it. Radii run 9.5 to 13.2:
+## close enough that no trip is a hike, spread enough that you cannot stand still and see
+## them all.
+##
+## THE TEACHING ORDER IS THE ARRAY ORDER and it still climbs - three at w = 0 that can be
+## walked to, three a slice off, three deepest - but each group is spread around the
+## circle rather than clustered, so learning to slice-rotate does not also mean learning
+## to walk in one direction.
+##
+## The first bird is near the spawn ON PURPOSE: standing beside a chicken you cannot see
+## is a sharper first lesson than a distant one. It sits 4.4 from the start, not on top
+## of it.
+##
+## NONE OF THEM SPAWN IN THE PEN, and none can wander in: the fence runs x -4.2 to 4.2
+## and z -14.8 to -7.2, and the nearest bird plus its whole wander radius still stops
+## short. An earlier bird was authored at z = -5.4, spawned inside the fence, and counted
+## itself on frame one.
+##
+## THE LAST ONE IS BEHIND TRYM'S SHED - the deepest W and the only bird a building hides,
+## so it is found by going round something rather than crossing open ground. Its wander
+## radius is the smallest here for that reason: the shed occupies x -11.7 to -8.3, and at
+## 1.4 it cannot drift inside the walls.
 const PLACEMENTS := [
-	# In or near the starting slice.
-	[3.4, 2.6, 0.0, 2.4],
-	[-4.2, 3.4, 0.0, 2.4],
-	[1.8, 6.2, 0.0, 2.0],
-	# Ordinary exploration, still in the starting slice.
-	[9.5, -3.2, 0.0, 3.0],
-	[-10.0, -5.5, 0.0, 3.0],
-	[7.2, 10.5, 0.0, 2.6],
-	# THE W BIRDS RING THE PEN, six of them on a circle 9.5 out from its centre, at
-	# bearings 30 degrees apart from the player's line of approach. Before this they were
-	# scattered through the field on the player's side of the pen, which meant the whole
-	# hunt happened in one direction and the pen was only ever something you walked back
-	# to. Around it, every trip home is from somewhere else.
-	#
-	# THE TEACHING ORDER SURVIVES IT, which is why the bearings are paired rather than
-	# evenly spread: the two nearest the player's start take the first and gentlest W
-	# offsets, the two abreast of the pen take the next, and the two behind it - the
-	# longest walk in the scene - take the largest. Nearest first, then W, then distance,
-	# exactly as before.
-	#
-	# NONE OF THEM SPAWN IN THE PEN. The fence runs x -5 to 5 and z -15.5 to -6.5; the
-	# closest of these sits 3.7 clear of it, and the widest wander radius here is 2.6, so
-	# even a bird that drifts the whole way stays out. An earlier bird was authored at
-	# z = -5.4 and spawned inside the fence, which counted it on frame one.
-	#
-	# The first one still sits near where the player starts ON PURPOSE: standing beside a
-	# chicken you cannot see is a sharper first lesson than a distant one. It is 4.9 away,
-	# not on top of the spawn at (0, -1.5) - hence 30 degrees rather than a bearing that
-	# would have put a bird in the player's face.
-	[4.75, -2.77, 0.9, 2.0],
-	[-4.75, -2.77, -1.3, 2.2],
-	[9.5, -11.0, 1.9, 2.2],
-	[-9.5, -11.0, -2.1, 2.2],
-	# Behind the pen: W plus the longest walk.
-	[4.75, -19.23, 1.6, 2.6],
-	[-4.75, -19.23, -2.5, 2.6],
+	# w = 0: walk to them. Three quadrants, not three paces apart.
+	[4.44, -1.48, 0.0, 2.2],
+	[-9.01, -4.69, 0.0, 2.4],
+	[6.6, -20.42, 0.0, 2.4],
+	# One slice off: the first birds that need E and Q.
+	[-3.24, 1.07, 0.9, 2.2],
+	[9.97, -6.35, -1.2, 2.4],
+	[-0.83, -20.46, 1.4, 2.4],
+	# Deepest W, and the long way round the back.
+	[10.14, -13.72, -1.8, 2.4],
+	[-8.49, -19.49, 2.2, 2.6],
+	# Behind the shed.
+	[-13.15, -12.15, -2.6, 1.4],
 ]
 
-@export var chicken_count: int = 12
+@export var chicken_count: int = 9
 ## The henhouse, handed to every bird so a penned one can go in or sit on it.
 @export var coop_path: NodePath
 

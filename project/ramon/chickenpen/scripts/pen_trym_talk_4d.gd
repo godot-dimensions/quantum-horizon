@@ -13,6 +13,13 @@ var _figure: Node
 var _met: bool = false
 var _owes_an_opinion: bool = false
 var _shown_it: bool = false
+## NOTHING HE SAYS IS SAID TWICE. The introduction happens once, the conversation after
+## the showing happens once, and the third time you come to him he hands over the ticket
+## and stops being a gate on the theatre. Before this, once the post-show conversation
+## was spent, `_entry_node` fell through to greet_back - which returns to the original
+## topic list, so talking to him a third time rewound the whole thing to the beginning.
+var _heard_opinion: bool = false
+var _gave_ticket: bool = false
 
 
 func _configure() -> void:
@@ -46,14 +53,21 @@ func ask_what_you_thought() -> void:
 func _entry_node() -> String:
 	if _owes_an_opinion:
 		_owes_an_opinion = false
+		_heard_opinion = true
 		return "what_did_you_think"
 	if not _met:
 		_met = true
 		return TrymScript.START
+	# He keeps offering until you accept. Declining should not delete the invitation.
 	if not _shown_it:
 		return "offer"
 	if _catcher != null and _catcher.get("carried") != null:
 		return "greet_carrying"
+	if _heard_opinion and not _gave_ticket:
+		_gave_ticket = true
+		return "greet_ticket"
+	if _gave_ticket:
+		return "greet_after"
 	return "greet_back"
 
 
@@ -61,6 +75,8 @@ func reset() -> void:
 	_met = false
 	_owes_an_opinion = false
 	_shown_it = false
+	_heard_opinion = false
+	_gave_ticket = false
 	if _talk != null:
 		_talk.stop()
 		_talk.reset()

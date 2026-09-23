@@ -11,17 +11,22 @@ extends PenNpcTalk4D
 ## behaviour back when it gets in the way of testing.
 
 @export var manager_path: NodePath
+## What the gold buys. Given one, walking up with a nugget opens his builder instead of
+## his usual greeting.
+@export var upgrades_path: NodePath
 ## What the gauntlet switches on. Hidden at the start, shown when he hands it over.
 @export var locator_ui_paths: Array[NodePath] = []
 @export var gate_locator: bool = true
 
 var _manager: Node
+var _upgrades: Node
 var _has_gauntlet: bool = false
 var _met: bool = false
 
 
 func _configure() -> void:
 	_manager = get_node_or_null(manager_path)
+	_upgrades = get_node_or_null(upgrades_path)
 	_talk.use_script(KeeperScript.NODES, KeeperScript.START, Callable(KeeperScript, "fill"))
 	_show_locator(not gate_locator)
 
@@ -34,6 +39,10 @@ func _before_begin() -> void:
 ## The scripted meeting once, then whatever state you turn up in - which is what makes him
 ## a second readout of the count as well as a character.
 func _entry_node() -> String:
+	# Gold in hand and a job left to do beats anything else he might say.
+	if _upgrades != null and bool(_upgrades.call("can_pay")) \
+			and not bool(_upgrades.call("all_built")):
+		return "greet_gold"
 	if not _met:
 		_met = true
 		return KeeperScript.START
@@ -58,9 +67,24 @@ func _on_effect(name: String) -> void:
 			_has_gauntlet = true
 		"withhold_gauntlet":
 			_has_gauntlet = false
+		"build_feeder":
+			_build("feeder")
+		"build_beacon":
+			_build("beacon")
 	_talk.set_flag("gauntlet", _has_gauntlet)
 	if gate_locator:
 		_show_locator(_has_gauntlet)
+
+
+## The dialogue has already promised it, so a refusal here would leave him describing a
+## trough that is not there. buy() only fails if the gold has gone missing between the
+## greeting and the choice, which the entry check makes very unlikely and which is worth
+## a warning rather than a silent nothing.
+func _build(which: String) -> void:
+	if _upgrades == null:
+		return
+	if not bool(_upgrades.call("buy", which)):
+		push_warning("%s: keeper promised a %s and could not pay for it." % [name, which])
 
 
 func _show_locator(on: bool) -> void:

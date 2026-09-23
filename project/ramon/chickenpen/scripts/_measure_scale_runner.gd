@@ -27,7 +27,9 @@ func _process(_d) -> bool:
 	var sign: Node = _root.get_node_or_null("World/Sign")
 	if sign != null:
 		_extent("sign", sign)
-	_extent("one scenery post", _root.get_node("World/Scenery/Post1"))
+	var post: Node = _root.get_node_or_null("World/Scenery/Post5")
+	if post != null:
+		_extent("one scenery post", post)
 	_extent("coop", _root.get_node("Pen/Coop"))
 	var fence: Node = _root.get_node("Pen/Fence")
 	var b: Array = fence.call("interior_bounds")
