@@ -5447,7 +5447,7 @@ coop_path = NodePath("../../Pen/Coop")
 slice_frame_path = NodePath("../../Player/CameraRig")
 manager_path = NodePath("../../Chickens")
 locator_path = NodePath("../../Systems/Locator")
-people_paths = Array[NodePath]([NodePath("../../Mithra"), NodePath("../../World/Keeper"), NodePath("../../World/Trym"), NodePath("../../World/LoftedGirl"), NodePath("../../World/Cat")])
+people_paths = Array[NodePath]([NodePath("../../Mithra"), NodePath("../../World/Keeper"), NodePath("../../World/Trym"), NodePath("../../World/Cat")])
 
 [node name="TrymTag" type="Control" parent="UI"]
 layout_mode = 3

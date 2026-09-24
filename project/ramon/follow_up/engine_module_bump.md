@@ -1,66 +1,50 @@
-# The 4D module bump, and why it is not merged yet
+# The 4D module bump — done, and what it cost
 
-**Status as of 24 September 2026: deliberately deferred. Not forgotten.**
+**Status: merged 24 September 2026. `origin/main` in, submodule now at `d9e2227`.**
 
-## What the situation is
+Kept as a record because the *next* bump will look exactly like this one.
 
-`engine/modules/4d` is a submodule — a recorded commit id, not files in this
-repo. `RamonPrototypes` records **`7533287`**. `origin/main` records
-**`d9e2227`**, bumped there by Aaron on 22 September along with an LFS fix.
+## What moved
 
-Merging `main` into this branch moves that pointer, and the next
-`update_submodules` run checks the newer module out and rebuilds against it.
+`engine/modules/4d` went from **`7533287`** to **`d9e2227`** — 19 commits, merged in
+along with `origin/main` as `5704d3d`.
 
-## Why it was not done on the day
+The worry was `74639a4 Major feature: Implement MultiSurfaceMesh4D`, a change to the mesh
+class hierarchy. The same area previously split `Mesh4D` into `SingleSurfaceMesh4D` and
+broke callers (see `engine_gotchas.md`), and the pen leans on that hierarchy everywhere:
+`BoxTetraMesh4D` for the fence, coop, troughs and confetti; `ArrayTetraMesh4D` for every
+lofted creature and for the eleven baked goat meshes in `theatre/baked/`, which were the
+case most likely to go stale if the class changed shape.
 
-There are **19 commits** between the two, and they are not all housekeeping:
+**It did not break any of it.** `MultiSurfaceMesh4D` was added alongside the existing
+classes rather than replacing them.
 
-```
-d9e2227  Add import of HoxelDraw .hox and .4do files
-74639a4  Major feature: Implement MultiSurfaceMesh4D
-a6b25a2  Fix tetra mesh transform incorrectly clearing boundary normals
-1df340b  Refuse to build 3D surfaces that would overflow Godot's rendering server
-ce2b141  Add Mesh4D.proxy_mesh_3d_marked_dirty signal
-1be110a  Keep all data when converting to Array versions of Poly and Wire meshes
-...plus a dozen G4MF import/export changes
-```
+## How it was verified
 
-`MultiSurfaceMesh4D` is a change to the **mesh class hierarchy**. That is the
-same area that previously split `Mesh4D` into `SingleSurfaceMesh4D` and broke
-callers — see `engine_gotchas.md`. The chicken pen leans on that hierarchy
-everywhere: `BoxTetraMesh4D` for the fence, the coop, the troughs and the
-confetti; `ArrayTetraMesh4D` for every lofted creature; the loft rigs; and the
-twelve baked goat meshes now sitting in `theatre/baked/` as saved
-`ArrayTetraMesh4D` resources, which are the case most likely to go stale if the
-class changes shape.
+Twenty-eight runners against the rebuilt engine:
 
-The two fixes in there are ones we probably WANT — the tetra-normals fix and
-the rendering-server overflow guard both touch things this project does.
+- 23 reported `0 FAIL(s)`
+- `_verify_celebration_runner` and `_verify_talkmotion_runner` reported `ALL PASS`
+- `_verify_mithra_runner` hit only the known headless limit — `save_png` on a null
+  image, because the dummy renderer has no texture. Not a bump failure.
+- `_verify_blob_colours_runner` reported 1 FAIL, traced to a **pre-existing** dead
+  `NodePath("../../World/LoftedGirl")` in `people_paths` on `UI/SlicePlane`, last touched
+  in `62568de`. Removed; the runner now expects four figures, not five.
+- Five diagnostic runners print measurements rather than a FAIL count. `_verify_catch_runner`
+  and `_verify_planted_feet_runner` print a "verdict" below their own threshold, and did so
+  before the bump as well — the catch gap is headless `_process`/`_physics_process` skew,
+  and the foot-plant error was already 0.037 against a 0.02 threshold when
+  `chickenpen_walk_polish.md` was written on 21 Sep.
 
-## The risk, stated plainly
+## The two local edits inside the submodule
 
-This is the one change that could put the pen in a state where nothing runs. It
-is not a merge, it is a job:
+`editor/viewport/editor_transform_gizmo_4d.cpp` and `nodes/camera_4d.h` add a
+focal-length macro for the editor gizmo. They re-applied cleanly across the bump — 45
+lines, no conflict markers — and are still uncommitted inside the submodule on purpose.
+No GDScript depends on them.
 
-1. Stash or commit the two local edits inside the submodule
-   (`editor/viewport/editor_transform_gizmo_4d.cpp`, `nodes/camera_4d.h` — they
-   add a focal-length macro for the editor gizmo and no GDScript depends on them)
-2. Merge `main`, update the submodule
-3. **Full engine rebuild** — the slow part
-4. Run the whole runner suite and fix what moved
+## The lesson for next time
 
-## Why it should not be left much longer
-
-Staying 19 behind only makes the catch-up harder, and a stale pointer is exactly
-how the obstacle course ended up broken before: the branch recorded a module
-older than the one being built against, so a fresh clone got code that would not
-compile. The gate is 16 October. Doing this at the start of a session with room
-to react is very different from discovering it the week of the deadline.
-
-## What Aaron should know
-
-The concern is not that the bump is wrong — it is that nobody has run the pen
-against it. If the mesh hierarchy change has a migration note, or if he already
-knows whether `BoxTetraMesh4D` / `ArrayTetraMesh4D` callers are affected, that
-would save a rebuild-and-find-out cycle. Worth asking him before spending the
-build time.
+Doing this took one rebuild and one runner sweep. Staying 19 commits behind was the
+expensive state, not the catching up. Bump early in a session with room to react rather
+than in the week of a gate.

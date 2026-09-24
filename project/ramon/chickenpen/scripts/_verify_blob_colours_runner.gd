@@ -38,7 +38,11 @@ func _process(_d) -> bool:
 		print("   %-12s rgb %.2f %.2f %.2f   hue %3.0f  sat %.2f"
 			% [people[i].name, c.r, c.g, c.b, c.h * 360.0, c.s])
 
-	_check("everyone got a blob", people.size() == 5, "%d people" % people.size())
+	# FOUR, NOT FIVE. The list used to name a LoftedGirl who is not in the scene - she was
+	# taken out and her NodePath was left behind - so this has been asserting five and
+	# getting four ever since. A path that resolves to nothing is silent: the slice plane
+	# skipped her without complaint and only the count gave it away.
+	_check("everyone got a blob", people.size() == 4, "%d people" % people.size())
 	# The keeper is purple, not the tan of his tunic.
 	var keeper: Color = by_name.get("Keeper", Color.BLACK)
 	_check("the keeper is purple", keeper.h * 360.0 > 250.0 and keeper.h * 360.0 < 330.0,
