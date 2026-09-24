@@ -56,6 +56,14 @@ func _process(_d) -> bool:
 		_check("they are not built on the frame you arrive",
 			table.get_node_or_null("ActThree") == null,
 			"a doorway is not the place to pay for a mined rock")
+		# AND THE CARVE HAS NOT HAPPENED YET EITHER. It used to fire at a third of a
+		# second, from back when every exhibit was built inside _ready. Once the acts were
+		# spread out, the rock did not exist at that moment - so the carve took its own
+		# `_rock == null` exit, set `_carved` on the way out, and the block went on stage
+		# solid. Nothing failed; the tunnel simply was not there.
+		_check("and the rock has not been carved before it exists",
+			not bool(_show.get("_carved")),
+			"a carve that runs early runs on nothing and marks itself done")
 		_exhibits_at = _f + 6
 		_check("the way out is standing when you get there", bool(_root.get_node("ExitArch").get("armed")),
 			"open at the head of the walkway")

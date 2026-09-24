@@ -414,12 +414,19 @@ func _process(delta: float) -> void:
 		_greeted = true
 		_phase = maxf(0.0, opening_seconds - after_sit_seconds)
 		_frame(-1)
-	# The carve is taken during the ARRIVAL, not when act three starts. Every blow
-	# re-contours the whole field - about a sixth of a second each - and four of them is
-	# most of a second of frozen frames. Spent while the room is still assembling and
-	# nobody is watching anything in particular, it is invisible; spent on the turn into
-	# the act it is a stutter in the middle of the presentation.
-	if not _carved and _phase > 0.35:
+	# The carve is taken early, not when act three starts. Every blow re-contours the whole
+	# field - about a sixth of a second each - and four of them is most of a second of
+	# frozen frames. Spent while the room is still assembling and nobody is watching
+	# anything in particular it is invisible; spent on the turn into the act it is a
+	# stutter in the middle of the presentation.
+	#
+	# BUT NOT BEFORE THE ROCK EXISTS, which is the bit that broke. This used to fire at a
+	# third of a second, back when every exhibit was built inside _ready. The acts are made
+	# a few seconds apart now, so act three - and `_rock` with it - does not exist until
+	# about seventeen seconds in. The carve ran on nothing, took the `_rock == null` exit,
+	# and set `_carved` on the way out, so the block went on stage solid. The tunnel you
+	# turn a slice to look through was simply never cut.
+	if not _carved and _phase > 0.35 and _rock != null:
 		_carve_once()
 
 	if _act < 0 and _phase >= opening_seconds and _ready_for_you(delta):

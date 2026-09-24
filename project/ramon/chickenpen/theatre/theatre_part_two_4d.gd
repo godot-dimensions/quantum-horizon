@@ -75,7 +75,7 @@ const MOMENTS := [
 		"tint": Color(0.78, 0.35, 0.51),
 		"piece": 0,
 		"shot": "low",
-		"pace": 1.7,
+		"pace": 1.45,
 		"metrics": [
 			{"at": Vector4(-4.6, 3.9, 0.0, 0.0), "value": "7 / 7", "side": -1.0,
 				"label": "developed 4D intuition", "colour": Color(1.0, 0.55, 0.74)},
@@ -83,7 +83,7 @@ const MOMENTS := [
 				"label": "forward interest, out of 10", "colour": Color(1.0, 0.55, 0.74)},
 		],
 		"later": [
-			{"at": 0.44, "metrics": [
+			{"at": 0.40, "metrics": [
 				{"at": Vector4(2.4, 4.4, 0.0, 0.0), "value": "1", "side": 1.0,
 					"label": "object, on one slice at last",
 					"colour": Color(1.0, 0.55, 0.74)},
@@ -819,9 +819,16 @@ func _demonstrate(which: int, t: float) -> void:
 			# all three become the ring and then the cap IN LOCKSTEP - which says the same
 			# sentence a second time and much louder, because now you are watching one
 			# object contain all of it rather than being told that it does.
-			var home: float = clampf((t - span * 0.42) / maxf(span * 0.16, 0.01), 0.0, 1.0)
+			# BRISKER THAN IT WAS. The three used to stand apart for the first 42% of the
+			# slide before anything moved, on the reasoning that you need long enough to
+			# be sure they have nothing in common. True, but 42% of the longest slide in
+			# the talk is a long time to look at three motionless blocks - you have made
+			# up your mind well before then, and the rest is waiting. They now set off at
+			# 28% and the sweep follows at 46%, so the same three beats happen with less
+			# dead air in front of each.
+			var home: float = clampf((t - span * 0.28) / maxf(span * 0.14, 0.01), 0.0, 1.0)
 			home = home * home * (3.0 - 2.0 * home)
-			var sweep: float = clampf((t - span * 0.60) / maxf(span * 0.36, 0.01), 0.0, 1.0)
+			var sweep: float = clampf((t - span * 0.46) / maxf(span * 0.34, 0.01), 0.0, 1.0)
 			sweep = sweep * sweep * (3.0 - 2.0 * sweep)
 			for i in _copies.size():
 				_copies[i].position.w = lerpf(-DEPTHS[i],
