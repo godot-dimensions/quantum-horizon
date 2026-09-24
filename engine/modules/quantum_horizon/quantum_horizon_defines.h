@@ -31,6 +31,10 @@
 // Prior to Godot 4.7, Input enums were located in the Input class,
 // but in 4.7 they were moved to a separate InputClassEnums namespace.
 #define InputClassEnums Input
+
+// Prior to Godot 4.7, RenderingServer enums were in RenderingServer,
+// but in 4.7 they were moved to a separate RenderingServerEnums (RSE) namespace.
+#define RSE RenderingServer
 #endif
 
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 6
@@ -46,9 +50,13 @@
 // In Godot 4.5 and later, namespaces were capitalized: core_bind -> CoreBind.
 #define CoreBind core_bind
 
+// In Godot 4.5 and later, the "PROPERTY_HINT_GROUP_ENABLE" property hint was added.
+#define PROPERTY_HINT_GROUP_ENABLE PROPERTY_HINT_NONE
+
 // Prior to Godot 4.5, the vector resize API did not clarify whether it was initializing new elements or not.
+// Plain `resize` does NOT zero-initialize trivial types, so `resize_initialized` must map to `resize_zeroed`.
 // See https://github.com/godotengine/godot/pull/104522
-#define resize_initialized resize
+#define resize_initialized resize_zeroed
 #define resize_uninitialized resize
 
 // As of Godot 4.5, we can use constexpr for vectors, but 4.4 and earlier don't support constexpr for vectors.
@@ -65,7 +73,8 @@
 #define Math_TAU Math::TAU
 #endif
 
-#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4)
+#if GODOT_VERSION_MAJOR > 4 || (GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 5)
+// While TypedDictionary is available in Godot 4.4 and later, the C++ API is incomplete, missing iterators. So we can't use it until Godot 4.5.
 #define GODOT_HAS_TYPED_DICTIONARY 1
 #endif
 
@@ -78,6 +87,39 @@
 #ifndef Math_NAN
 #define Math_NAN std::numeric_limits<double>::quiet_NaN()
 #endif // Math_INF
+
+#ifndef ABS
+#define ABS Math::abs
+#endif // ABS
+
+#ifndef Math_E
+#define Math_E Math::E
+#endif // Math_E
+
+#ifndef Math_PI
+#define Math_PI Math::PI
+#endif // Math_PI
+
+#ifndef Math_SQRT12
+#define Math_SQRT12 Math::SQRT12
+#endif // Math_SQRT12
+
+#ifndef Math_SQRT2
+#define Math_SQRT2 Math::SQRT2
+#endif // Math_SQRT2
+
+#ifndef Math_TAU
+#define Math_TAU Math::TAU
+#endif // Math_TAU
+
+#ifndef _NO_DISCARD_
+#define _NO_DISCARD_ [[nodiscard]]
+#endif // _NO_DISCARD_
+
+// TODO: This should ideally be `Math_INF` but Godot's bindings do not like infinity,
+// and also values above max float32 will overflow to infinity in the bindings.
+// See https://github.com/godotengine/godot-cpp/pull/2030
+#define BINDING_SAFE_INF 3.4e38
 
 #ifndef REAL_T_IS_DOUBLE
 #error "Quantum Horizon's Godot fork should be built with `precision=double`."
