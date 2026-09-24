@@ -65,9 +65,20 @@ func _process(_d) -> bool:
 		"silent through %d frames of loading" % _f)
 	belt.call("add_item", "found_gold")
 	_check("a real pickup does", heard == ["found_gold"], "%s" % [heard])
+	# A SECOND NUGGET IS A SECOND PICKUP. Gold stacks now - there are six in the rock and
+	# six troughs to spend them on - so this blips again, and should. The check used to
+	# assert the opposite using gold as its example of a duplicate, which stopped being
+	# true the moment the belt learned to count.
 	belt.call("add_item", "found_gold")
-	_check("and the same thing twice does not", heard.size() == 1,
-		"add_item returns early on a duplicate, so no second sound")
+	_check("and so does a second nugget", heard.size() == 2,
+		"x%d on the belt, and you hear it arrive"
+			% int(belt.call("count_of", "found_gold")))
+	# But something one-of still refuses, silently.
+	belt.call("add_item", "give_gauntlet")
+	var after_first: int = heard.size()
+	belt.call("add_item", "give_gauntlet")
+	_check("a second gauntlet does not", heard.size() == after_first,
+		"one-of items still return early, so no second sound")
 	return _finish()
 
 

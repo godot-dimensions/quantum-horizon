@@ -35,10 +35,15 @@ const ITEMS := {
 		"colour": Color(0.98, 0.82, 0.30),
 		"icon": "egg",
 	},
+	## THE ONLY THING YOU CAN HOLD MORE THAN ONE OF. There are six nuggets in the rock and
+	## six troughs to spend them on, so a belt that refuses the second one makes five of
+	## them unreachable - and it refused silently, which is worse: you swung the pick, the
+	## rock gave up a nugget, and nothing happened.
 	"found_gold": {
 		"name": "Gold",
 		"colour": Color(0.98, 0.78, 0.22),
 		"icon": "nugget",
+		"stacks": true,
 	},
 	"found_pickaxe": {
 		"name": "Pickaxe",
@@ -100,6 +105,8 @@ enum Align { CENTRE, LEFT }
 ## Effect names, in the order they were gained. Empty strings are never stored - a slot is
 ## empty because the list is shorter than the bar.
 var items: Array[String] = []
+## How many of each, for the ones that stack. Absent means one.
+var counts: Dictionary = {}
 ## Which slot is in hand, or -1 for none. A tool has to be CHOSEN before it does anything,
 ## or every tool in the belt fights over the same button the moment you own two.
 var selected: int = -1
@@ -208,9 +215,21 @@ func _on_effect(effect_name: String) -> void:
 
 
 func add_item(effect_name: String) -> void:
-	if items.has(effect_name) or items.size() >= slot_count:
+	# A SECOND NUGGET IS A SECOND NUGGET, not a duplicate to be thrown away. Stackable
+	# items keep a count against the one slot; everything else is still one-of, because
+	# two gauntlets or two tickets would be nonsense.
+	if items.has(effect_name):
+		if not bool((ITEMS.get(effect_name, {}) as Dictionary).get("stacks", false)):
+			return
+		counts[effect_name] = count_of(effect_name) + 1
+		_flash = flash_seconds
+		if not _filling:
+			picked_up.emit(effect_name)
+		return
+	if items.size() >= slot_count:
 		return
 	items.append(effect_name)
+	counts[effect_name] = 1
 	_flash = flash_seconds
 	if not _filling:
 		picked_up.emit(effect_name)
@@ -219,7 +238,12 @@ func add_item(effect_name: String) -> void:
 ## Handing something back to its owner has to empty the slot, or the belt keeps claiming
 ## you are carrying a coin that is now in somebody else's pocket.
 func remove_item(effect_name: String) -> void:
+	# One off the stack, and only the last one empties the slot.
+	if count_of(effect_name) > 1:
+		counts[effect_name] = count_of(effect_name) - 1
+		return
 	var was: String = selected_effect()
+	counts.erase(effect_name)
 	items.erase(effect_name)
 	# Slots shuffle down when one is removed, so the index that was in hand now points at
 	# somebody else's item. Follow the THING, not the number.
@@ -230,10 +254,18 @@ func has_item(effect_name: String) -> bool:
 	return items.has(effect_name)
 
 
+## How many you are carrying. Zero if none, one for anything that does not stack.
+func count_of(effect_name: String) -> int:
+	if not items.has(effect_name):
+		return 0
+	return int(counts.get(effect_name, 1))
+
+
 ## Item 73's restart should empty your pockets too, or a second run starts with the reward
 ## of the first still on your wrist.
 func reset() -> void:
 	items.clear()
+	counts.clear()
 	selected = -1
 	_flash = 0.0
 	_filling = true
@@ -402,6 +434,20 @@ func _draw() -> void:
 		var label: String = str(item["name"])
 		# The name grows with the slot rather than staying at 14 - a bigger box with the
 		# same caption under it looks like a mistake rather than a size.
+		# HOW MANY, in the corner of the slot, and only when it is more than one. A "1" on
+		# every item is noise; a "3" on the gold is the whole reason the stack exists.
+		var held: int = count_of(items[index])
+		if held > 1:
+			var tag: String = "x%d" % held
+			var tag_size: int = clampi(int(slot_size * 0.30), 12, 26)
+			var tag_wide: float = font.get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1,
+				tag_size).x
+			var corner := Vector2(at.x + slot_size - tag_wide - 5.0,
+				at.y + slot_size - 6.0)
+			draw_string(font, corner + Vector2(1.0, 1.0), tag, HORIZONTAL_ALIGNMENT_LEFT,
+				-1, tag_size, Color(0.0, 0.0, 0.0, 0.7))
+			draw_string(font, corner, tag, HORIZONTAL_ALIGNMENT_LEFT, -1, tag_size,
+				Color(1.0, 1.0, 1.0, 0.95))
 		var name_size: int = clampi(int(slot_size * 0.26), 11, 22)
 		var label_width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1,
 			name_size).x

@@ -62,8 +62,16 @@ extends Node4D
 
 @export_group("Collecting")
 ## How close the swing has to land, on top of the carve's own radius.
-@export_range(0.0, 2.0, 0.05) var reveal_slack: float = 0.55
-@export_range(0.5, 4.0, 0.1) var pick_up_within: float = 1.4
+## How much wider than the bite a swing counts as having uncovered. Generous, because a
+## seam you have to hit within half a metre of is a seam most people never find - and
+## there is nothing on screen telling you it is in there.
+@export_range(0.0, 2.0, 0.05) var reveal_slack: float = 0.70
+## How near you have to get. The nugget is knocked into the opening you just made, so this
+## wants to be "step forward after swinging" rather than "stand on the exact spot" - at
+## 1.4 you could back off half a pace after the swing and leave it behind without ever
+## knowing it was there. Pulled back from 2.3 after a playtest - findable, but you still
+## have to go to it. Tightened twice by playtest: 1.4 was too mean, 2.3 too kind.
+@export_range(0.5, 4.0, 0.1) var pick_up_within: float = 1.65
 
 var _rock: Node4D
 var _pickaxe: Node
