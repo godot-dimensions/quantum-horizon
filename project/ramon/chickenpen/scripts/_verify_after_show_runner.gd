@@ -104,9 +104,16 @@ func _process(_d) -> bool:
 		var opener := ""
 		for reply in (first.get("choices", []) as Array):
 			opener += String((reply as Dictionary).get("text", ""))
-		_check("with the questions and a way out", opener.to_lower().contains("questions")
-			and opener.to_lower().contains("going"),
-			"ask him, or leave - and the leave goes straight to the walk")
+		# TWO WAYS OUT OF IT, checked by where they GO rather than by what they say. The
+		# opener was "Thanks for that. I have a few questions." and is now just "Nice
+		# one." - and an assertion that searched the text for the word "questions" went
+		# red on a writing change that was entirely correct.
+		var goes: Array = []
+		for reply in (first.get("choices", []) as Array):
+			goes.append(String((reply as Dictionary).get("goto", "")))
+		_check("one reply asks him, one leaves",
+			goes.has("cinema_answers") and goes.has("after_show_walk"),
+			"%s - and the leave goes straight to the walk" % [goes])
 		# ONE RUN, NO SEAM. It used to stop and then start again.
 		var answers: Dictionary = TrymScript.NODES.get("cinema_answers", {})
 		var said := ""
