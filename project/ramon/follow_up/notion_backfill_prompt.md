@@ -2,13 +2,13 @@
 
 The **Claude Work Log — cross-team status** board lives in the Quantum Horizon R&D
 Working Space. Trym set it up on 10 September 2026 as a shared operational status
-source for everyone's Claude instances, not just his — but in practice almost nobody
-writes to it, so it reads as one person's private status page.
+source for everyone's Claude instances — but in practice almost nobody writes to it.
 
 If your work is not on it, it is invisible to the gate.
 
-Claude can reconstruct your history from git and fill it in for you. Paste the prompt
-below into a Claude Code session opened on this repo.
+You do not have to fill it in by hand. Claude can reconstruct your history from git
+and write the cards for you. Open a Claude Code session on this repo and paste the
+prompt below.
 
 ## The prompt
 
@@ -48,32 +48,34 @@ Thrust C (interface, control & perception), Engine, Partners, Ops.
 
 ## Before you paste it
 
-**You need the Notion connector enabled** in your Claude Code session. Without it
-step 1 fails silently and everything after it is invention.
+**You need the Notion connector enabled** in your session. Without it, step 1 fails
+and everything after it is invention.
 
-## Why each step is in there
+Expect about ten minutes of back and forth. Most of that is you reading the table at
+step 5 and correcting it.
 
-**Step 3 is the one that does the real work.** Six of Ramon's prototypes were last
-*touched* on 19 September by a sweep that added frame-capture scripts to every folder,
-and several more by a project-wide `vertices` → `vertex_positions` rename. Dating cards
-from those would have claimed he was working on Phase Maze last week when the real work
-finished on 12 August. Find the biggest commit per area, then check whether it is
-actually about that area or just swept through it.
+## Why three of the steps are in there
 
-**Step 5 is the one to keep when you trim the prompt.** The temptation is to let Claude
-write the cards directly. Reviewing the table first is where you catch a wrong date, a
-prototype filed under the wrong thrust, or two things that should not have been merged
-— and this is a shared board, so those are visible to the whole team.
+**Step 3 is the one that does the real work.** This repo is full of commits that swept
+through every folder at once — a `vertices` → `vertex_positions` rename, engine-API
+follow-ups, a batch that dropped a capture script into half a dozen prototypes. Any of
+those will make a prototype you finished in August look like last week's work. Tell
+Claude to find the biggest commit per area, then check whether it was actually about
+that area or just passed through it.
 
-**Step 6 is not modesty.** Ramon's backfill came out as 16 Done and 3 not: the chicken
-pen still moving, the gait polish parked on a design decision, and the gizmo patch
-waiting on Aaron. Those three are the rows a reader actually learns something from.
+**Step 5 is the one to keep if you trim the prompt.** The temptation is to let Claude
+write the cards straight to Notion. Reviewing the table first is where you catch a
+wrong date, something filed under the wrong thrust, or two items that should not have
+been merged. This is a shared board — those mistakes are visible to everyone.
 
-## What it produced
+**Step 6 is not modesty.** The rows people actually learn something from are the ones
+that are not Done: what is still moving, what is parked and why, and who you are
+waiting on. A board of uniform green tells a reader nothing, and three weeks before a
+gate it invites a question you do not want asked in the room.
 
-Nineteen cards spanning 6 August to 24 September 2026, in about ten minutes of back and
-forth. `Engine`, `Thrust A` and `Thrust B` went from zero rows to populated.
+## Adding rows by hand instead
 
-The schema, if you want to add rows by hand instead:
-`Item` (title) · `Area` · `Person` · `Status` · `Current Detail` · `Blocking On` ·
-`Last Updated`.
+The schema is: `Item` (title) · `Area` · `Person` · `Status` · `Current Detail` ·
+`Blocking On` · `Last Updated`.
+
+`Status` options are Not started · In progress · Blocked · Waiting on input · Done.
