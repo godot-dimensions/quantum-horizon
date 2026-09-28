@@ -12,6 +12,8 @@ var _step := 0
 var _wait := 0
 var _failed := 0
 var _want := 1.0
+## What the scale loaded - the player's saved size - before the test sets its own.
+var _loaded := 0.0
 
 
 func _initialize() -> void:
@@ -47,6 +49,8 @@ func _near(a: Rect2, b: Rect2) -> bool:
 
 func _process(_d: float) -> bool:
 	_f += 1
+	if _f == 4:
+		_loaded = float(_room.get_node("Systems/UiScale").get("percent"))
 	if _f == 5:
 		_room.get_node("Systems/UiScale").set("percent", 130.0)
 	if _f < 30:
@@ -63,9 +67,8 @@ func _process(_d: float) -> bool:
 				var slider := _room.get_node_or_null("UI/Controls/UiSize") as HSlider
 				_check("the size slider is on the controls card", slider != null)
 				if slider != null:
-					var saved: float = float(_room.get_node("Systems/UiScale").get("percent"))
-					_check("and starts where the scale is", absf(slider.value - saved) < 0.01 or absf(slider.value - 130.0) < 0.01,
-						"slider %.0f, scale %.0f" % [slider.value, saved])
+					_check("and starts at the size the scale loaded", absf(slider.value - _loaded) < 0.01,
+						"slider %.0f, loaded %.0f" % [slider.value, _loaded])
 					_check("from 50% to 300%", slider.min_value == 50.0 and slider.max_value == 300.0)
 				_room.get_node("Crossing").call("go_for_testing")
 				_step = 1

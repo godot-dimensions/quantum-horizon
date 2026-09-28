@@ -101,9 +101,9 @@ light_energy = 5.0
 omni_range_meters = 13.0
 
 [node name="Laptop" type="OmniLight4D" parent="Lamps"]
-position = Vector4(-6.95, 1.1, -31.3, 0)
+position = Vector4(7.25, 1.1, -39.8, 0)
 light_color = Color(0.55, 0.8, 1, 1)
-light_energy = 1.2
+light_energy = 1.6
 omni_range_meters = 2.5
 
 [node name="WorkLeft" type="OmniLight4D" parent="Lamps"]
@@ -118,6 +118,24 @@ light_color = Color(1, 0.7, 0.38, 1)
 light_energy = 1.3
 omni_range_meters = 6.0
 
+[node name="WayThroughW" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 1.9, -36, 7.6)
+light_color = Color(0.62, 0.82, 1, 1)
+light_energy = 2.2
+omni_range_meters = 5.0
+
+[node name="WayThroughWBack" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 1.9, -36, 10.2)
+light_color = Color(0.62, 0.82, 1, 1)
+light_energy = 1.6
+omni_range_meters = 4.5
+
+[node name="WRoom" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 2.2, -36, 14.5)
+light_color = Color(0.62, 0.82, 1, 1)
+light_energy = 1.2
+omni_range_meters = 6.0
+
 [node name="Rock" type="MeshInstance4D" parent="."]
 mesh = ExtResource("cave_mesh")
 script = ExtResource("baked")
@@ -128,7 +146,7 @@ script = ExtResource("exit")
 player_path = NodePath("../../Player")
 
 [node name="Monolith" parent="." instance=ExtResource("voxel_block")]
-position = Vector4(0, 3.58, -36, 0)
+position = Vector4(0, 3.18, -36, 0)
 script = ExtResource("monolith")
 cell_size = 0.8
 mining_radius_meters = 0.96
@@ -137,7 +155,7 @@ world_height_min = 1.5
 world_height_max = 5.7
 
 [node name="Gold" type="Node4D" parent="."]
-position = Vector4(0, 3.58, -36, 0)
+position = Vector4(0, 3.18, -36, 0)
 script = ExtResource("gold")
 rock_path = NodePath("../Monolith")
 pickaxe_path = NodePath("../../Systems/Pickaxe")

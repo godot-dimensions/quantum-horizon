@@ -69,10 +69,33 @@ const PLINTH_TOP := 1.5
 const CHUNKS := [
 	[Vector4(-4.6, -2.0, -28.5, -4.6), Vector4(4.6, 7.6, 10.5, 4.6), 12],
 	[Vector4(-16.0, -2.0, -52.0, -10.5), Vector4(16.0, 19.8, -19.5, 10.5), 15],
+	# The way through W, and the room at the end of it. Overlaps the chamber's grid from
+	# w 4.5 to 10.5, as the tunnel's does round the corridor's mouth.
+	[Vector4(-6.0, -2.0, -42.0, 4.5), Vector4(6.0, 7.5, -30.0, 19.5), 13],
 ]
 ## The whole cave's extent, for the floor and its collider.
 const LO := Vector4(-16.0, -2.0, -52.0, -10.5)
-const HI := Vector4(16.0, 19.8, 10.5, 10.5)
+const HI := Vector4(16.0, 19.8, 10.5, 19.5)
+
+## THE WAY THROUGH W (Ramon, 28 Sept: "can you place one opening when rotating the W
+## somewhere ... a hole with maybe a glowing fill, that you can pass through?").
+##
+## A passage out of the chamber's far wall in +w, beside the plinth, with a small round
+## room at the end of it. All of it lies past w = 6, so on the slice you arrive in - w = 0
+## - the chamber is exactly as it was: there is nothing to see. Turn the slice through W
+## standing on the corridor's line and the chamber's W extent swings round into view, and
+## with it an opening in its wall, filled with a pale glowing sheet. The sheet has no
+## collider; walk into it and you are through, walking along W into the room.
+##
+## Where the sheet stands, as (x, z, w); the passage's span along w, its half-width in x
+## and z and its height; the room's centre and radii.
+const W_DOOR := Vector3(0.0, -36.0, 8.8)
+const W_PASSAGE := Vector2(6.0, 12.5)
+const W_PASSAGE_HALF := 2.4
+const W_PASSAGE_HIGH := 3.8
+const W_ROOM := Vector4(0.0, 0.0, -36.0, 15.0)
+const W_ROOM_R := Vector4(3.5, 5.0, 3.5, 3.0)
+const W_GLOW := Color(0.62, 0.82, 1.0)
 
 const ROCK := Color(0.31, 0.295, 0.28)
 const ROCK_DARK := Color(0.17, 0.165, 0.155)
@@ -117,7 +140,17 @@ func air_density(p: Vector4) -> float:
 	var q := Vector4((p.x - CHAMBER.x) / CHAMBER_R.x, (p.y - CHAMBER.y) / CHAMBER_R.y,
 		(p.z - CHAMBER.z) / CHAMBER_R.z, (p.w - CHAMBER.w) / CHAMBER_R.w)
 	var chamber: float = (1.0 - q.length()) * 9.0 + 0.7 * rough
-	return _smooth_max(_smooth_max(tunnel, corridor, 1.2), chamber, 2.0)
+	var air: float = _smooth_max(_smooth_max(tunnel, corridor, 1.2), chamber, 2.0)
+	# The way through W: a passage along w, then a room.
+	var before: float = maxf(0.0, p.w - W_PASSAGE.y)
+	var after: float = maxf(0.0, W_PASSAGE.x - p.w)
+	var u := Vector4((p.x - W_DOOR.x) / W_PASSAGE_HALF, p.y / W_PASSAGE_HIGH,
+		(p.z - W_DOOR.y) / W_PASSAGE_HALF, (before + after) / W_PASSAGE_HALF)
+	var passage: float = (1.0 - u.length()) * W_PASSAGE_HALF + 0.25 * rough
+	var r := Vector4((p.x - W_ROOM.x) / W_ROOM_R.x, (p.y - W_ROOM.y) / W_ROOM_R.y,
+		(p.z - W_ROOM.z) / W_ROOM_R.z, (p.w - W_ROOM.w) / W_ROOM_R.w)
+	var room: float = (1.0 - r.length()) * 3.5 + 0.4 * rough
+	return _smooth_max(_smooth_max(air, passage, 1.0), room, 1.5)
 
 
 ## A tube along z from [param span].x down to [param span].y: round in (x, w), [param high]
@@ -148,7 +181,10 @@ func wall_colour(p: Vector4, normal: Vector4, _r: float) -> Color:
 	c = c.lerp(FLOOR_TRODDEN, 0.3 * smoothstep(0.5, 0.9, normal.y))
 	c = c.lerp(Color.BLACK, 0.4 * smoothstep(-0.3, -0.8, normal.y))
 	# Up into the dark: the chamber's vault fades out long before its top.
-	return c.lerp(Color.BLACK, smoothstep(6.0, 16.0, p.y) * 0.85)
+	c = c.lerp(Color.BLACK, smoothstep(6.0, 16.0, p.y) * 0.85)
+	# The glow of the sheet across the way through W, on the rock round it.
+	var near: float = 1.0 - smoothstep(0.5, 4.5, (p - Vector4(W_DOOR.x, 1.9, W_DOOR.y, W_DOOR.z)).length())
+	return c.lerp(W_GLOW * 0.55, 0.45 * near)
 
 
 func floor_height(x: float, z: float, w: float) -> float:
@@ -220,9 +256,11 @@ func props() -> Array:
 		out.append([base + Vector4(0.0, 6.5, 0.0, 0.0), Vector4(1.5, 0.45, 0.5, 0.9), STEEL, false])
 		out.append([base + Vector4(-signf(t.x) * 0.28, 6.5, 0.0, 0.0), Vector4(0.04, 0.34, 0.40, 0.8), LAMP, false])
 	# The research site: two tables with instruments, crates, cases and a generator.
-	# The laptop, open on the left table, its screen lit (cave.tscn has a small light in
-	# front of it so it glows on the table and the case beside it).
-	var laptop := Vector4(-6.95, 0.0, -31.5, 0.0)
+	# The laptop, open on the table at the back, its screen lit (cave.tscn has a small light
+	# in front of it so it glows on the table and the case beside it). It was on the front
+	# table first, where the towers and the uplight washed it out (Ramon, 28 Sept: "so in
+	# the light it doesn't get noticed ... place it on the table in the back").
+	var laptop := Vector4(7.25, 0.0, -40.0, 0.0)
 	out.append([laptop + Vector4(0.0, 0.9, 0.05, 0.0), Vector4(0.36, 0.025, 0.26, 0.26), Color(0.16, 0.17, 0.19), false])
 	out.append([laptop + Vector4(0.0, 1.03, -0.08, 0.0), Vector4(0.36, 0.24, 0.02, 0.26), Color(0.16, 0.17, 0.19), false])
 	out.append([laptop + Vector4(0.0, 1.03, -0.065, 0.0), Vector4(0.32, 0.2, 0.012, 0.22), LAPTOP_GLOW, false])
@@ -246,6 +284,10 @@ func props() -> Array:
 	for leg in [Vector4(0.25, 0, 0.14, 0), Vector4(-0.25, 0, 0.14, 0), Vector4(0, 0, -0.28, 0), Vector4(0, 0, 0, 0.28), Vector4(0, 0, 0, -0.28)]:
 		out.append([tripod + leg * 0.8 + Vector4(0.0, 0.6, 0.0, 0.0), Vector4(0.04, 1.2, 0.04, 0.04), STEEL, false])
 	out.append([tripod + Vector4(0.0, 1.32, 0.0, 0.0), Vector4(0.26, 0.2, 0.34, 0.26), GENERATOR, false])
+	# The glowing sheet across the way through W: thin in w, spanning the opening, and not
+	# solid - it is walked through. Wider and taller than the opening, so its edges are in
+	# the rock and only the hole shows it.
+	out.append([Vector4(W_DOOR.x, 1.9, W_DOOR.y, W_DOOR.z), Vector4(W_PASSAGE_HALF * 2.2, 3.9, W_PASSAGE_HALF * 2.2, 0.05), W_GLOW, false])
 	return out
 
 

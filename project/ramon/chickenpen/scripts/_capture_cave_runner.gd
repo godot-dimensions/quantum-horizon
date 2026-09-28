@@ -21,6 +21,13 @@ const SHOTS := [
 	[Vector3(9.5, -35.5, 0.0), 90.0, 6.0, 0.0, 5.0],
 	[Vector3(0.0, -31.2, 0.0), 0.0, 18.0, 0.0, 3.0],
 	[Vector3(0.0, -31.2, 0.0), 0.0, 18.0, 90.0, 3.0],
+	# The way through W: toward the glowing sheet from beside the plinth with the slice
+	# turned (both ways round, since which side it swings to depends on the turn), then
+	# from inside the room at the end, looking back.
+	[Vector3(0.0, -30.0, 5.5), 33.0, 6.0, 90.0, 3.5],
+	[Vector3(0.0, -30.0, 5.5), -33.0, 6.0, 90.0, 3.5],
+	[Vector3(0.0, -36.0, 16.0), 90.0, 6.0, 90.0, 3.0],
+	[Vector3(0.0, -36.0, 16.0), -90.0, 6.0, 90.0, 3.0],
 ]
 
 var _room: Node

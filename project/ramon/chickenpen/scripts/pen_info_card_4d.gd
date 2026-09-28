@@ -25,10 +25,15 @@ extends Control
 ## stacks only the rows that have something to say, and the panel is exactly as tall as
 ## the number of them. Nothing blinks a gap into the middle of it any more.
 ##
-## AND THE WIDTH NEVER SNAPS IN. It grows the instant a longer line arrives and shrinks
-## back slowly, because the widest line on the card is the frame counter, whose last
-## number changes every half second - a panel that tracked it exactly would breathe in and
-## out for as long as you looked at it.
+## AND NOW IT DOES NOT MOVE AT ALL. Packed to fit, the card still grew a row every time a
+## prompt came up - the catch prompt, a hint, the keeper - and shrank again when it went,
+## and a panel changing size in the corner of your eye is a thing you look at (Ramon,
+## 28 Sept: "the top left UI window should be fixed and not sometimes extend downward ...
+## it is distracting"). So it is a fixed size: room for [member rows] rows at
+## [member card_width], the rows packed from the top as before and the space under them
+## simply left empty. Should more want to be up at once than there is room for, the ones in
+## [member give_way_paths] - the debug readouts - make room first, then the last in order;
+## and a line too long for the card is cut short with an ellipsis instead of widening it.
 
 ## The readouts to sit behind, in the order they are stacked. Anything empty or hidden is
 ## skipped, so the card ends where the text does.
@@ -42,8 +47,11 @@ extends Control
 @export_range(12.0, 60.0, 1.0) var row_height: float = 25.0
 ## The first row is the frame counter, which is set larger than the rest.
 @export_range(12.0, 80.0, 1.0) var first_row_height: float = 30.0
-## Pixels a second the panel is allowed to narrow by. Slow on purpose - see the header.
-@export_range(10.0, 2000.0, 10.0) var shrink_rate: float = 90.0
+## How many rows the card always has room for, and how wide it always is.
+@export_range(1, 20, 1) var rows: int = 8
+@export_range(100.0, 2000.0, 10.0) var card_width: float = 820.0
+## Rows that make way first when more want to be up than there is room for.
+@export var give_way_paths: Array[NodePath] = [NodePath("../Debug"), NodePath("../../Player/StateLabel")]
 ## Matching pen_controls_4d, on purpose.
 @export_range(0.0, 1.0, 0.01) var panel_alpha: float = 0.34
 @export var panel_color: Color = Color(0.04, 0.05, 0.08)
@@ -57,6 +65,7 @@ extends Control
 @export var text_color: Color = Color(1.0, 1.0, 1.0, 0.78)
 
 var _labels: Array[Label] = []
+var _give_way: Array[Label] = []
 var _panel: StyleBoxFlat
 var _box: Rect2 = Rect2()
 
@@ -80,48 +89,44 @@ func _ready() -> void:
 			# handles the case where the card is off and this is still readable.
 			label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.55))
 			label.add_theme_constant_override("shadow_offset_y", 1)
+		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		label.clip_text = true
+	for path in give_way_paths:
+		var label: Label = get_node_or_null(path) as Label
+		if label != null:
+			_give_way.append(label)
 
 
-## Stack the rows that have something in them, and report the box they fill.
+## Stack the rows that have something in them, as many as there is room for, and hide the
+## rest until there is. The box is always the same.
 func _measure() -> Rect2:
+	var up: Array[Label] = []
+	for label in _labels:
+		if is_instance_valid(label) and label.visible and label.text.strip_edges() != "":
+			up.append(label)
+	# Over the limit: the debug readouts first, then from the bottom of the order.
+	var dropped: Array[Label] = []
+	for label in _give_way:
+		if up.size() <= rows:
+			break
+		if up.has(label):
+			up.erase(label)
+			dropped.append(label)
+	while up.size() > rows:
+		dropped.append(up.pop_back())
+	for label in dropped:
+		label.position.y = -1000.0
 	var y: float = top
-	var widest: float = 0.0
-	var packed := 0
-	for i in _labels.size():
-		var label: Label = _labels[i]
-		if not is_instance_valid(label):
-			continue
-		if not label.visible or label.text.strip_edges() == "":
-			continue
-		label.position.y = y
-		label.position.x = left
-		y += first_row_height if i == 0 else row_height
-		packed += 1
-		# The Label's own rect is as wide as it was authored, which is most of the screen
-		# for the long ones. The card follows the TEXT, so it ends where the sentence does.
-		var font: Font = label.get_theme_font("font")
-		if font != null:
-			widest = maxf(widest, font.get_string_size(label.text,
-				HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size("font_size")).x)
-		else:
-			widest = maxf(widest, label.size.x)
-	if packed == 0:
-		return Rect2()
-	return Rect2(Vector2(left, top), Vector2(widest, y - top))
+	for label in up:
+		label.position = Vector2(left, y)
+		label.size.x = card_width
+		y += first_row_height if label == _labels[0] else row_height
+	var tall: float = first_row_height + float(rows - 1) * row_height
+	return Rect2(Vector2(left, top), Vector2(card_width, tall))
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	var box: Rect2 = _measure()
-	if box.size.x <= 0.0:
-		if _box.size.x > 0.0:
-			_box = box
-			queue_redraw()
-		return
-	# Out at once, in slowly. Every frame the counter's last digit changes the panel would
-	# otherwise step in and out by a few pixels, which is the twitch you see rather than
-	# the numbers themselves.
-	if box.size.x < _box.size.x:
-		box.size.x = maxf(box.size.x, _box.size.x - shrink_rate * delta)
 	if box == _box:
 		return
 	_box = box
@@ -129,7 +134,7 @@ func _process(delta: float) -> void:
 
 
 ## Where the panel is actually drawn, in the parent's coordinates. The Control's own rect
-## is a fixed 1200 by 300 and the panel is packed inside it to fit whatever rows are up, so
+## is a fixed 1200 by 300 and the panel is drawn inside it at its own fixed size, so
 ## anything that wants to sit below the card has to ask for this, not for `size`.
 func drawn_rect() -> Rect2:
 	return Rect2(position + _box.position - Vector2(pad_x, pad_y), _box.size + Vector2(pad_x, pad_y) * 2.0)

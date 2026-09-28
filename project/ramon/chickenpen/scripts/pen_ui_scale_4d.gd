@@ -28,7 +28,7 @@ extends Node
 
 ## How big the interface is, in percent of how it was. What the slider last left it at is
 ## used instead, when there is one.
-@export_range(50.0, 300.0, 5.0) var percent: float = 150.0
+@export_range(50.0, 300.0, 5.0) var percent: float = 125.0
 const SETTINGS := "user://pen_settings.cfg"
 ## Controls kept at their unscaled size and place on screen.
 @export var keep_size_paths: Array[NodePath] = [NodePath("../../UI/SlicePlane")]

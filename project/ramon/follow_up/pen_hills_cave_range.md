@@ -88,7 +88,7 @@ preloads the other. `sandbox/shooting_gallery/shooting_gallery.tscn` is untouche
 | Hill ring, first version ("Classic") | 61,440 tetrahedra, bakes in 0.7 s |
 | Voronoi mountains | 92,160 tetrahedra in 13 layers (about 113 MB of video memory, 36 MB more than Classic), bakes in 2.4 s |
 | Cave hill | 80,919 tetrahedra, bakes in 8.2 s |
-| Cave (walls, floor, props) | 65,313 tetrahedra, bakes in 5.5 s |
+| Cave (walls, floor, props, the way through W) | 84,977 tetrahedra, bakes in 9.9 s (65,313 before the way through W) |
 | The cube on the plinth | 8⁴ = 4,096 points at 0.8 m; 6,000 tetrahedra whole, 6,480 after five blows; 544 surface colliders whole, 522 after five blows; **184–208 ms a blow** |
 | The slab it replaced | 10⁴ = 10,000 points at 0.66 m; 1,368 tetrahedra whole; 63 colliders; 172 ms a blow (its "363 after five blows" counted colliders already queued for freeing) |
 | Pen frame, from the spawn point | **2.69 ms** mean (371 fps), p99 3.82 - against 2.60 before the hills and 2.46 this morning |
@@ -192,6 +192,17 @@ and planted_feet ("FEET SLIP by 0.089", which Ramon has said is fine).
 | 12 | The professor's "carried an 8 in" story is confusing; the monolith should be a discovery | Rewritten: they found a cube in the hill, on a plinth older than the hill, on a lattice nobody laid. |
 | 13 | A better main character | Waiting on Ramon: three directions proposed, "the cartographer" recommended, to be built as a switchable alternative. |
 | - | The corridor planks in the cave | Removed; the rest as it was. |
+
+### And the round after
+
+| Note | What is there now |
+|---|---|
+| The top-left card grows when prompts come in; distracting | A fixed size: room for eight rows at a fixed width, rows packed from the top as before and empty space left under them. With more than eight up at once the debug readouts make way first; a line too long is cut with an ellipsis (`pen_info_card_4d.gd`). |
+| UI too big; a UI size slider | The scale is a plain percentage now (on a 4K screen the old rule came to 2.6x): 125% by default, set with a slider at the foot of the controls card, kept in `user://pen_settings.cfg`. |
+| The hole on the left of the cave arch | A slit cut by the bake's own re-winding in the crease where rock meets turf; re-winding is off. And the height under the contoured block is cut back further, so its last cells no longer dip below where the block begins. |
+| The laptop washes out in the light | On the table at the back now, with its own light a touch stronger. |
+| The cube hovers over the plinth | It stood 0.40 m up (measured: lowest surface 1.90, plinth top 1.50); lowered with its gold, it now sits at exactly 1.50. |
+| An opening you only see turning W, with a glowing fill you can pass through | A passage out of the chamber's wall in +w beside the plinth, filled with a pale glowing sheet that has no collider, and a small room at the end. All of it past w = 6, so the slice you arrive in is unchanged; turn the slice through W on the corridor's line and it is there. Walking along +w from the chamber takes you through the sheet into the room (`_capture_way_through_w_runner.gd`). |
 
 **Chirality** needs a different solution (the signs were its test case); left until
 Aaron's fence update lands.
