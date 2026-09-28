@@ -53,8 +53,9 @@ const THROAT := Color(0.16, 0.17, 0.20)
 @export_range(1.0, 8.0, 0.1) var w_thickness: float = 3.0
 
 @export_group("Mouth")
-@export_range(0.8, 5.0, 0.05) var mouth_radius: float = 2.2
-@export_range(0.05, 0.8, 0.01) var lip_radius: float = 0.3
+## Everything about the mouth - teeth, lip, throat, the swirl in it - is drawn to this.
+@export_range(0.4, 5.0, 0.05) var mouth_radius: float = 1.1
+@export_range(0.03, 0.8, 0.01) var lip_radius: float = 0.17
 @export_range(8, 48, 1) var lip_segments: int = 24
 @export_range(0, 64, 1) var outer_teeth: int = 30
 @export_range(0, 64, 1) var inner_teeth: int = 22
@@ -62,12 +63,12 @@ const THROAT := Color(0.16, 0.17, 0.20)
 @export_group("Vortex")
 @export_range(2, 12, 1) var vortex_arms: int = 6
 @export_range(3, 24, 1) var streaks_per_arm: int = 9
-@export_range(0.2, 0.95, 0.01) var vortex_fill: float = 0.62
+@export_range(0.1, 0.95, 0.01) var vortex_fill: float = 0.42
 
 @export_group("Limbs")
 @export_range(4, 48, 1) var limb_count: int = 24
 @export_range(3, 12, 1) var pieces_per_limb: int = 7
-@export_range(1.0, 14.0, 0.1) var limb_length: float = 6.0
+@export_range(1.0, 14.0, 0.1) var limb_length: float = 8.5
 @export_range(0.05, 1.5, 0.01) var root_radius: float = 0.2
 @export_range(0.01, 0.5, 0.005) var tip_radius: float = 0.035
 @export var limb_seed: int = 17
@@ -161,17 +162,19 @@ func _build_mouth() -> void:
 		ring.basis = _segment_basis(p1 - p0, lip_radius)
 	# Two rows, pointing in and a little back into the throat; the inner row shorter and set
 	# between the outer's.
+	# Teeth, heart and swirl were drawn for a 2.2 m mouth; they keep those proportions.
+	var m: float = mouth_radius / 2.2
 	for row in 2:
 		var count: int = outer_teeth if row == 0 else inner_teeth
 		for i in count:
 			var a: float = TAU * (float(i) + 0.5 * float(row)) / float(maxi(count, 1))
 			var radial := Vector4(cos(a), sin(a), 0, 0)
-			var root: Vector4 = radial * (mouth_radius - lip_radius * 0.4 - 0.35 * float(row)) + Vector4(0, 0, 0.12 - 0.25 * float(row), 0)
-			var length: float = 0.8 if row == 0 else 0.5
+			var root: Vector4 = radial * (mouth_radius - lip_radius * 0.4 - 0.35 * m * float(row)) + Vector4(0, 0, (0.12 - 0.25 * float(row)) * m, 0)
+			var length: float = (0.8 if row == 0 else 0.5) * m
 			var aim: Vector4 = (-radial * 0.85 + Vector4(0, 0, -0.45, 0)).normalized()
 			var tooth: MeshInstance4D = _piece(_mouth, "Tooth%d_%d" % [row, i], _tooth, teeth)
 			tooth.position = root
-			tooth.basis = _segment_basis(aim * length, 0.13 if row == 0 else 0.09)
+			tooth.basis = _segment_basis(aim * length, (0.13 if row == 0 else 0.09) * m)
 	var throat := TetraMaterial4D.new()
 	throat.albedo_color = THROAT
 	# A dark ring behind the teeth, so the mouth reads as a hole and not a hoop.
@@ -179,8 +182,8 @@ func _build_mouth() -> void:
 		var a0: float = TAU * float(i) / float(lip_segments)
 		var a1: float = TAU * float(i + 1) / float(lip_segments)
 		var r: float = mouth_radius * 0.8
-		var p0 := Vector4(cos(a0) * r, sin(a0) * r, -0.5, 0)
-		var p1 := Vector4(cos(a1) * r, sin(a1) * r, -0.5, 0)
+		var p0 := Vector4(cos(a0) * r, sin(a0) * r, -0.5 * m, 0)
+		var p1 := Vector4(cos(a1) * r, sin(a1) * r, -0.5 * m, 0)
 		var back: MeshInstance4D = _piece(_mouth, "Throat%d" % i, _segment, throat)
 		back.position = p0
 		back.basis = _segment_basis(p1 - p0, lip_radius * 1.4)
@@ -188,11 +191,11 @@ func _build_mouth() -> void:
 	_heart = MeshInstance4D.new()
 	_heart.name = "Heart"
 	var heart_mesh := OrthoplexTetraMesh4D.new()
-	heart_mesh.size = Vector4.ONE * 0.9
+	heart_mesh.size = Vector4.ONE * 0.9 * maxf(m, 0.6)
 	_heart.mesh = heart_mesh
 	_heart.material_override = _heart_material
 	_mouth.add_child(_heart)
-	_heart.position = Vector4(0, 0, -0.9, 0)
+	_heart.position = Vector4(0, 0, -0.9 * m, 0)
 
 
 func _build_vortex() -> void:
@@ -320,20 +323,21 @@ func _facing(delta: float, centre: Vector4) -> Projection:
 ## the middle, turning faster toward it, and sinking back into the throat as it goes.
 func _place_vortex(agitation: float) -> void:
 	var rim: float = mouth_radius * vortex_fill
+	var m: float = mouth_radius / 2.2
 	for entry in _streaks:
 		var piece: MeshInstance4D = entry[0]
 		var arm: int = entry[1]
 		var j: int = entry[2]
 		var inward: float = float(j) / float(maxi(streaks_per_arm - 1, 1))
-		var r: float = lerpf(rim, 0.2, inward)
-		var angle: float = TAU * float(arm) / float(vortex_arms) + inward * 3.0 + _t * agitation * (0.8 + 1.4 / maxf(r, 0.2))
+		var r: float = lerpf(rim, 0.2 * m, inward)
+		var angle: float = TAU * float(arm) / float(vortex_arms) + inward * 3.0 + _t * agitation * (0.8 + 1.4 * m / maxf(r, 0.2 * m))
 		var radial := Vector4(cos(angle), sin(angle), 0, 0)
 		var tangent := Vector4(-sin(angle), cos(angle), 0, 0)
-		var here: Vector4 = radial * r + Vector4(0, 0, -0.2 - 0.6 * inward * inward, 0)
+		var here: Vector4 = radial * r + Vector4(0, 0, (-0.2 - 0.6 * inward * inward) * m, 0)
 		var along: Vector4 = (tangent - radial * 0.35).normalized()
-		var length: float = lerpf(0.55, 0.2, inward)
+		var length: float = lerpf(0.55, 0.2, inward) * m
 		piece.position = here - along * length * 0.5
-		piece.basis = _segment_basis(along * length, lerpf(0.07, 0.04, inward))
+		piece.basis = _segment_basis(along * length, lerpf(0.07, 0.04, inward) * m)
 
 
 ## The limbs, each a path out from behind the ring that curls in its own two directions, the
