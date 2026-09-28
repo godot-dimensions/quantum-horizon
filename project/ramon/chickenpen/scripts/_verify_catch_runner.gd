@@ -57,7 +57,14 @@ func _process(_d) -> bool:
 			return false
 		"carry":
 			# Move the player about, including through W, and watch the chicken hold on.
-			_player.global_position += Vector4(0.02, 0.0, 0.015, 0.01)
+			#
+			# AWAY FROM NIKE, toward -x. The path used to run +x from the first chicken
+			# straight into where Nike stands; at three times the size (28 Sept) her body
+			# reaches it, and a player teleported through her dragged the carried chicken -
+			# a real body - against her side, 1.7 m behind the anchor. In play the player
+			# collides with her too, so that was the test walking through a pig, not the
+			# carry letting go.
+			_player.global_position += Vector4(-0.02, 0.0, 0.015, 0.01)
 			var gap: float = _body.global_position.distance_to(_anchor.global_position)
 			_carry_gap_max = maxf(_carry_gap_max, gap)
 			_w_while_carried = _body.global_position.w
