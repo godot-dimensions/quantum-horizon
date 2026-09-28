@@ -1,0 +1,183 @@
+extends SceneTree
+
+## The dreamer in the far room (cave_dreamer_4d.gd, cave_dreamer_talk_4d.gd): it is there
+## when the room is, F opens a conversation with it, its core is blue for a calm line and
+## red for a warning, calm again once the conversation is over, and red if you crowd it.
+## Also: the sheet across the way through W parts as you walk into it and closes behind you,
+## and the cube stands centred on its plinth.
+##
+## Windowed, it saves res://smoke_test_output/dreamer_<n>.png: calm, warning, and one with
+## the slice turned through W so its limbs cross the slice differently.
+
+const CaveRock := preload("res://ramon/chickenpen/cave/cave_rock_4d.gd")
+
+var _room: Node
+var _cave: Node4D
+var _f := 0
+var _step := 0
+var _t := 0.0
+var _failed := 0
+var _windowed := false
+
+
+func _initialize() -> void:
+	# Never takes the keyboard: typing elsewhere while this window is up must not reach
+	# the pen (C opens the theatre, E and Q step through W).
+	root.unfocusable = true
+	_windowed = DisplayServer.get_name() != "headless"
+	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	root.add_child(_room)
+	current_scene = _room
+
+
+func _check(what: String, ok: bool, detail: String = "") -> void:
+	print("  %s  %s  %s" % ["PASS" if ok else "FAIL", what, detail])
+	if not ok:
+		_failed += 1
+
+
+func _player() -> CharacterBody4D:
+	return _room.get_node("Player") as CharacterBody4D
+
+
+func _hold(local: Vector4) -> void:
+	_player().global_position = _cave.global_position + local
+	_player().linear_velocity = Vector4.ZERO
+
+
+func _face(local_target: Vector4) -> void:
+	var rig := _player().get_node("CameraRig") as Node4D
+	var d: Vector4 = _cave.global_position + local_target - _player().global_position
+	rig.set("yaw", atan2(-d.x, -d.z))
+	rig.set("pitch", deg_to_rad(22.0))
+	rig.call("_apply")
+
+
+func _save(n: int) -> void:
+	if _windowed:
+		root.get_texture().get_image().save_png("res://smoke_test_output/dreamer_%d.png" % n)
+		print("   saved dreamer_%d.png" % n)
+
+
+func _far(path: String) -> Node:
+	var far: Node = _cave.find_child("FarRoom", true, false)
+	return far.get_node_or_null(path) if far != null else null
+
+
+func _sheet_open() -> bool:
+	return bool(_cave.get_node("WaySheet").call("is_open"))
+
+
+func _process(d: float) -> bool:
+	_f += 1
+	if _f == 10:
+		_room.get_node("CaveCrossing").call("go")
+	if _f == 14:
+		for c in _room.get_children():
+			if c.name == "Cave":
+				_cave = c
+		if _windowed:
+			for c in ["UI/SlicePlane", "UI/Controls", "UI/Quests", "UI/InfoCard", "UI/Inventory", "UI/CameraPicker"]:
+				var n := _room.get_node_or_null(c) as CanvasItem
+				if n != null:
+					n.visible = false
+	if _f < 20:
+		return false
+	_t += d
+	match _step:
+		0:
+			# The cube, centred on its plinth: the middle of its mesh, from the cave.
+			var cube: Node4D = _cave.get_node("Monolith")
+			var lo := Vector4(INF, INF, INF, INF)
+			var hi := -lo
+			for c in cube.get_children():
+				if c is MeshInstance4D and c.mesh != null and c.mesh.has_method("get_vertex_positions"):
+					for v: Vector4 in c.mesh.call("get_vertex_positions"):
+						var g: Vector4 = c.global_basis * v + c.global_position - _cave.global_position
+						lo = Vector4(minf(lo.x, g.x), minf(lo.y, g.y), minf(lo.z, g.z), minf(lo.w, g.w))
+						hi = Vector4(maxf(hi.x, g.x), maxf(hi.y, g.y), maxf(hi.z, g.z), maxf(hi.w, g.w))
+			var mid: Vector4 = (lo + hi) * 0.5
+			_check("the cube is centred on the plinth", absf(mid.x) < 0.05 and absf(mid.z - CaveRock.CHAMBER.z) < 0.05 and absf(mid.w) < 0.05,
+				"middle %s" % mid)
+			_check("and stands on it", absf(lo.y - CaveRock.PLINTH_TOP) < 0.03, "bottom %.3f" % lo.y)
+			_step = 1; _t = 0.0
+		1:
+			# Up to the sheet in the chamber, then into it.
+			_hold(Vector4(0, 0.05, -36, 6.0))
+			if _t > 0.6:
+				_check("the sheet stands while you are in the chamber", not _sheet_open())
+				_step = 2; _t = 0.0
+		2:
+			_hold(Vector4(0, 0.05, -36, 9.5))
+			if _t > 0.8:
+				_check("and parts once you step into it", _sheet_open())
+				_step = 3; _t = 0.0
+		3:
+			# In the far room, level with the dreamer, a few metres in front of it.
+			_hold(Vector4(0, 0.05, -30.5, 36))
+			_face(Vector4(0, 5.5, -36, 36))
+			if _far("Dreamer") != null and _t > 1.2:
+				var dreamer: Node = _far("Dreamer")
+				_check("the dreamer is there with the room", dreamer != null)
+				_check("calm when you arrive", not bool(dreamer.call("is_warning")))
+				var press := InputEventAction.new()
+				press.action = &"catch_target"
+				press.pressed = true
+				Input.parse_input_event(press)
+				_step = 4; _t = 0.0
+		4:
+			_hold(Vector4(0, 0.05, -32.2, 36))
+			if _t > 1.5:
+				var talk: Node = _far("Systems/DreamerTalk")
+				_check("F opens a conversation with it", talk != null and bool(talk.call("is_running")))
+				_check("and it is calm to begin with", not bool(_far("Dreamer").call("is_warning")))
+				_save(0)
+				# To its warning, as if chosen.
+				talk.call("stop")
+				talk.call("begin", "topic_wake")
+				_step = 5; _t = 0.0
+		5:
+			_hold(Vector4(0, 0.05, -32.2, 36))
+			if _t > 1.2:
+				_check("a warning turns the core red", bool(_far("Dreamer").call("is_warning")))
+				_save(1)
+				_far("Systems/DreamerTalk").call("stop")
+				_step = 6; _t = 0.0
+		6:
+			_hold(Vector4(0, 0.05, -32.2, 36))
+			if _t > 1.5:
+				_check("and it calms when the talk is over", not bool(_far("Dreamer").call("is_warning")))
+				var rig := _player().get_node("CameraRig") as Node4D
+				rig.set("_slice_xw", deg_to_rad(35.0))
+				rig.call("_apply")
+				_step = 7; _t = 0.0
+		7:
+			_hold(Vector4(0, 0.05, -32.2, 36))
+			if _t > 0.8:
+				_save(2)
+				var rig := _player().get_node("CameraRig") as Node4D
+				rig.set("_slice_xw", 0.0)
+				rig.call("_apply")
+				_step = 8; _t = 0.0
+		8:
+			# Right up against it.
+			_hold(Vector4(0, 0.05, -35.0, 36))
+			if _t > 1.2:
+				_check("crowding it turns it red", bool(_far("Dreamer").call("is_warning")))
+				_step = 9; _t = 0.0
+		9:
+			_hold(Vector4(0, 0.05, -36, 20))
+			if _t > 1.0:
+				_step = 10; _t = 0.0
+		10:
+			_hold(Vector4(0, 0.05, -36, 4.0))
+			if _t > 1.5:
+				_check("the sheet closes behind you back in the chamber", not _sheet_open())
+				print("DREAMER: %s" % ("ALL PASS" if _failed == 0 else "%d FAILED" % _failed))
+				quit()
+				return true
+	if _f > 6000:
+		print("DREAMER: TIMED OUT at step %d" % _step)
+		quit()
+		return true
+	return false

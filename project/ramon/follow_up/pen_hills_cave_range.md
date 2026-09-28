@@ -209,6 +209,18 @@ and planted_feet ("FEET SLIP by 0.089", which Ramon has said is fine).
 | On the map, so you can align to it and find it; the cube too | The dial draws landmarks - anything in the group `slice_dial_landmark` - on a stem to their own w with a rung where your slice passes and a ring when it goes through them: the way through W as an archway, the cube as a cube. In the cave the dial centres on the chamber (`slice_dial_anchor`) instead of on the pen a kilometre off. |
 | "A tunnel to another big room"; worried about memory | Its own scene, `cave/cave_far.tscn`, streamed: `cave_far_stream_4d.gd` loads it on a worker thread - its mesh made drawable there too - as soon as you turn the slice through W or step off w = 0, and frees it after 3 s back on the flat slice or when you leave the cave. No jump at the sheet: you still walk straight through. Measured: 756 MB without it, 828 MB with it; in 0.4 s from the start of the turn; the longest frame while it comes in 17 ms (141 ms before the build was moved off the main thread). Twenty metres of tunnel along W to a round hall as big as the chamber at w = 36, with a ring of six standing stones spread through x, z and W, lit by lamps with no fittings (the cave's 4D lights only reach a few metres, so each stone has its own). |
 
+### The dreamer, and the round with it
+
+| Note | What is there now |
+|---|---|
+| An abstract Azathoth-like being in the far room you can talk to: limbs in all dimensions, a vibrant core, blue when calm and red in warning | The dreamer (`cave/cave_dreamer_4d.gd`, its lines in `cave_dreamer_script.gd`, F to talk). A flat ring of a mouth, hung high, that slowly turns to face you in your own slice, two rows of teeth pointing in, a vortex of streaks inside it and only there, sinking back to a burning heart; two dozen thin metallic-grey limbs trailing behind, through W as well. Its warning lines (`"do": "warn"`) and crowding it turn it red and make it move faster. |
+| Rigid, then lofted, tentacles | Both: one tapered segment and one cone are lofted once; every limb, lip, tooth and streak is one of those two meshes stretched into place, so nothing is skinned or rebuilt and the meshes' memory is paid once. Every piece is three times thicker through the slice's normal than across it: a thin tube in 4D crosses your slice only within its radius and was mostly invisible. |
+| The cube is offset to the right | Its surface sits half a lattice cell off its node in every axis; the node is moved so the cube's middle is the plinth's, to a millimetre. |
+| "Wow, what's this" on first seeing the chamber | Said once through the player's thought box as the corridor opens into it (`cave_first_look_4d.gd`). |
+| The laptop's light is too bright | Its lamp down from 1.6 to 0.45 and in to 1.6 m. |
+| The doorway's mark too high on the dial; "way through W" reads oddly | "anomalous reading", a larger beating dot with an exclamation mark; in the cave the dial's W scale is its own (`dial_w_fraction` on the anchor), so it stands half as high. |
+| Walking through the arch, the camera goes through it a second time | The sheet parts as you or the camera reach it and closes only when both of you are back in the chamber (`cave_w_sheet_4d.gd`); a faint glowing line on the tunnel's floor leads on to the far room. |
+
 **Chirality** needs a different solution (the signs were its test case); left until
 Aaron's fence update lands.
 

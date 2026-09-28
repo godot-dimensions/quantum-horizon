@@ -1,8 +1,19 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_far_4d.gd" id="far"]
 [ext_resource type="Script" path="res://ramon/chickenpen/terrain/baked_ground_4d.gd" id="baked"]
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/cave_far.res" id="cave_far_mesh"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_dreamer_4d.gd" id="dreamer"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_dreamer_talk_4d.gd" id="dreamer_talk"]
+[ext_resource type="Script" path="res://ramon/dialogue/world_tag_4d.gd" id="tag"]
+[ext_resource type="Script" path="res://ramon/dialogue/dialogue_player_4d.gd" id="dlg"]
+[ext_resource type="Script" path="res://ramon/dialogue/dialogue_box_4d.gd" id="box"]
+
+[sub_resource type="BoxTetraMesh4D" id="glow_line"]
+size = Vector4(12, 0.02, 0.35, 17.8)
+
+[sub_resource type="TetraMaterial4D" id="glow_line_colour"]
+albedo_color = Color(0.45, 0.65, 1, 1)
 
 [node name="FarRoom" type="Node4D"]
 script = ExtResource("far")
@@ -10,6 +21,64 @@ script = ExtResource("far")
 [node name="RockFar" type="MeshInstance4D" parent="."]
 mesh = ExtResource("cave_far_mesh")
 script = ExtResource("baked")
+
+[node name="TunnelGlow" type="MeshInstance4D" parent="."]
+position = Vector4(0, 0.02, -36, 18.1)
+mesh = SubResource("glow_line")
+material_override = SubResource("glow_line_colour")
+
+[node name="Dreamer" type="Node4D" parent="."]
+position = Vector4(0, 0, -36, 36)
+script = ExtResource("dreamer")
+
+[node name="DreamerHead" type="Node4D" parent="."]
+position = Vector4(0, 5.5, -36, 36)
+
+[node name="UI" type="Node4D" parent="."]
+
+[node name="DreamerTag" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("tag")
+camera_path = NodePath("../../../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../DreamerHead")
+lift = 40.0
+
+[node name="DreamerBox" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("box")
+choice_side = 1
+choice_width = 470.0
+choice_gap = 10.0
+camera_path = NodePath("../../../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../DreamerHead")
+over_head_width = 470.0
+name_size = 17
+text_size = 20
+choice_size = 19
+
+[node name="Systems" type="Node" parent="."]
+
+[node name="DreamerTalk" type="Node" parent="Systems"]
+script = ExtResource("dlg")
+box_path = NodePath("../../UI/DreamerBox")
+
+[node name="DreamerDriver" type="Node" parent="Systems"]
+script = ExtResource("dreamer_talk")
+player_path = NodePath("../../../../Player")
+character_path = NodePath("../../../../Player")
+catcher_path = NodePath("../../../../Player/Catcher")
+dialogue_path = NodePath("../DreamerTalk")
+tag_path = NodePath("../../UI/DreamerTag")
+camera_rig_path = NodePath("../../../../Player/CameraRig")
+main_camera_path = NodePath("../../../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/DreamerBox")
+hide_while_talking = Array[NodePath]([NodePath("../../../../UI/SlicePlane"), NodePath("../../../../UI/Controls"), NodePath("../../../../UI/Inventory"), NodePath("../../../../UI/Hint"), NodePath("../../../../UI/Debug"), NodePath("../../../../UI/CameraPicker"), NodePath("../../../../UI/Quests")])
+talk_range = 7.0
+talk_range_w = 2.5
 
 [node name="Lamps" type="Node4D" parent="."]
 
@@ -50,25 +119,25 @@ light_energy = 2.5
 omni_range_meters = 5.0
 
 [node name="FarStoneZ+" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 1.2, -30.8, 36)
+position = Vector4(0, 1.2, -32.323, 39.677)
 light_color = Color(0.62, 0.82, 1, 1)
 light_energy = 2.5
 omni_range_meters = 5.0
 
 [node name="FarStoneZ-" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 1.2, -41.2, 36)
+position = Vector4(0, 1.2, -32.323, 32.323)
 light_color = Color(0.62, 0.82, 1, 1)
 light_energy = 2.5
 omni_range_meters = 5.0
 
 [node name="FarStoneW+" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 1.2, -36, 41.2)
+position = Vector4(0, 1.2, -39.677, 39.677)
 light_color = Color(0.62, 0.82, 1, 1)
 light_energy = 2.5
 omni_range_meters = 5.0
 
 [node name="FarStoneW-" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 1.2, -36, 30.8)
+position = Vector4(0, 1.2, -39.677, 32.323)
 light_color = Color(0.62, 0.82, 1, 1)
 light_energy = 2.5
 omni_range_meters = 5.0

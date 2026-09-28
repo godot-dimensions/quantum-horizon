@@ -14,6 +14,9 @@ var _worst := 0.0
 
 
 func _initialize() -> void:
+	# Never takes the keyboard: typing elsewhere while this window is up must not reach
+	# the pen (C opens the theatre, E and Q step through W).
+	root.unfocusable = true
 	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
 	root.add_child(_room)
 	current_scene = _room

@@ -45,6 +45,9 @@ var _hud := false
 
 
 func _initialize() -> void:
+	# Never takes the keyboard: typing elsewhere while this window is up must not reach
+	# the pen (C opens the theatre, E and Q step through W).
+	root.unfocusable = true
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("tag="):
 			_tag = a.substr(4)

@@ -310,17 +310,21 @@ func props() -> Array:
 	for leg in [Vector4(0.25, 0, 0.14, 0), Vector4(-0.25, 0, 0.14, 0), Vector4(0, 0, -0.28, 0), Vector4(0, 0, 0, 0.28), Vector4(0, 0, 0, -0.28)]:
 		out.append([tripod + leg * 0.8 + Vector4(0.0, 0.6, 0.0, 0.0), Vector4(0.04, 1.2, 0.04, 0.04), STEEL, false])
 	out.append([tripod + Vector4(0.0, 1.32, 0.0, 0.0), Vector4(0.26, 0.2, 0.34, 0.26), GENERATOR, false])
-	# The glowing sheet across the way through W: thin in w, spanning the opening, and not
-	# solid - it is walked through. Wider and taller than the opening, so its edges are in
-	# the rock and only the hole shows it.
-	out.append([Vector4(W_DOOR.x, 1.9, W_DOOR.y, W_DOOR.z), Vector4(W_PASSAGE_REACH * 2.2, 3.9, W_PASSAGE_HALF * 2.2, 0.05), W_GLOW, false])
+	# (The glowing sheet across the way through W is not baked: it parts as you walk into
+	# it - cave_w_sheet_4d.gd.)
 	return out
 
 
-## The far room's standing stones: six, two along each of x, z and w, round its middle.
+## The far room's standing stones: six round its middle, two along x and four on the
+## diagonals of z and w - turned off the w axis because that is the way you walk in, along
+## the tunnel, and a stone on it stood between you and the dreamer.
+const FAR_STONE_DIRECTIONS := [Vector4(1, 0, 0, 0), Vector4(-1, 0, 0, 0),
+	Vector4(0, 0, 0.7071, 0.7071), Vector4(0, 0, 0.7071, -0.7071), Vector4(0, 0, -0.7071, 0.7071), Vector4(0, 0, -0.7071, -0.7071)]
+
+
 func far_props() -> Array:
 	var out := []
-	for d in [Vector4(1, 0, 0, 0), Vector4(-1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, -1, 0), Vector4(0, 0, 0, 1), Vector4(0, 0, 0, -1)]:
+	for d in FAR_STONE_DIRECTIONS:
 		var base: Vector4 = W_ROOM + d * W_STONES_OUT
 		out.append([base + Vector4(0.0, 1.9, 0.0, 0.0), Vector4(1.2, 3.8, 1.0, 1.0), STONE, true])
 		out.append([base + Vector4(0.0, 0.15, 0.0, 0.0), Vector4(1.8, 0.3, 1.6, 1.6), STONE_DARK, true])

@@ -251,8 +251,15 @@ func _ground_px() -> float:
 	return maxf(size.x, 1.0) * ground_fraction
 
 
+## A place standing in for the pen can set its own (metadata "dial_w_fraction"): the cave's
+## way through W is nearly nine metres off in W, and at the pen's scale - set for chickens a
+## metre or two off - it stood at the top of the dial.
 func _w_px() -> float:
-	return maxf(size.y, 1.0) * w_fraction
+	var fraction: float = w_fraction
+	var elsewhere: Node4D = _local_anchor() if is_inside_tree() else null
+	if elsewhere != null and elsewhere.has_meta(&"dial_w_fraction"):
+		fraction = float(elsewhere.get_meta(&"dial_w_fraction"))
+	return maxf(size.y, 1.0) * fraction
 
 
 ## For the things that should grow with the panel but not linearly - dots, rings and
@@ -439,7 +446,7 @@ func _draw() -> void:
 	_label(font, "your slice, and the pen",
 		Vector2(origin.x - radius, origin.y - radius + 52.0 * u),
 		Color(1.0, 1.0, 1.0, 0.75), radius * 2.0, 15.0)
-	_label(font, _reading(heights, worst, home),
+	_label(font, _reading(heights, worst, home, elsewhere != null),
 		Vector2(origin.x - radius, origin.y + radius - 38.0 * u), colour, radius * 2.0, 15.0)
 	# Under the reading, smaller and dimmer. See the note on rig_path.
 	var back: String = _home_key()
@@ -683,7 +690,13 @@ func _draw_landmark(x: float, z: float, w: float, tint: Color, tolerance: float,
 	colour.a *= fade
 	draw_line(foot, head, Color(colour.r, colour.g, colour.b, 0.35), 1.0)
 	draw_circle(foot, 2.0 * u, Color(colour.r, colour.g, colour.b, 0.4))
-	var middle: Vector2 = _cube_icon(head, colour, u * bird_size) if icon == "cube" 		else _arch_icon(head, colour, u * bird_size)
+	var middle: Vector2
+	if icon == "cube":
+		middle = _cube_icon(head, colour, u * bird_size)
+	elif icon == "anomaly":
+		middle = _anomaly_icon(head, colour, u * bird_size)
+	else:
+		middle = _arch_icon(head, colour, u * bird_size)
 	if on_slice:
 		draw_arc(middle, 13.0 * u * bird_size, 0.0, TAU, 24, home_color, 2.0, true)
 	return middle
@@ -704,6 +717,21 @@ func _cube_icon(at: Vector2, colour: Color, u: float) -> Vector2:
 	for face in [diamond, left, right]:
 		draw_polyline(_closed(face), Color(1.0, 1.0, 1.0, 0.5 * colour.a), 1.0, true)
 	return top + Vector2(0.0, 0.5 * s)
+
+
+## Something the instruments cannot account for: a large dot that beats, and an exclamation
+## mark beside it.
+func _anomaly_icon(at: Vector2, colour: Color, u: float) -> Vector2:
+	var beat: float = 0.5 + 0.5 * sin(float(Time.get_ticks_msec()) * 0.006)
+	var centre: Vector2 = at + Vector2(0.0, -6.0 * u)
+	draw_circle(centre, (11.0 + 3.0 * beat) * u, Color(colour.r, colour.g, colour.b, colour.a * 0.25))
+	draw_circle(centre, 7.5 * u, colour)
+	draw_arc(centre, 7.5 * u, 0.0, TAU, 24, Color(1.0, 1.0, 1.0, 0.6 * colour.a), 1.4, true)
+	# The mark, a stroke and a dot, to the dot's left so the name can go to its right.
+	var mark: Vector2 = centre + Vector2(-16.0 * u, -2.0 * u)
+	draw_line(mark + Vector2(0.0, -8.5 * u), mark + Vector2(0.0, 2.0 * u), colour, 3.0 * u)
+	draw_circle(mark + Vector2(0.0, 6.0 * u), 1.8 * u, colour)
+	return centre
 
 
 ## An archway standing on the point: two jambs and a round top, the opening filled faintly
@@ -944,9 +972,9 @@ func _fitted(heights: Array) -> Array:
 
 ## What the shape is saying, in one line, for when it is nearly matched and the picture
 ## has run out of resolution.
-func _reading(heights: Array, worst: float, home: bool) -> String:
+func _reading(heights: Array, worst: float, home: bool, away_from_pen: bool = false) -> String:
 	if home:
-		return "home - the pen's own slice"
+		return "home - the flat slice" if away_from_pen else "home - the pen's own slice"
 	var lift: float = 0.0
 	for h in heights:
 		lift += h

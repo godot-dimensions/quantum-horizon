@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=21 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_4d.gd" id="cave"]
 [ext_resource type="Script" path="res://ramon/chickenpen/terrain/baked_ground_4d.gd" id="baked"]
@@ -15,6 +15,8 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_miner_talk_4d.gd" id="miner_talk"]
 [ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_murmur_4d.gd" id="murmur"]
 [ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_far_stream_4d.gd" id="far_stream"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_w_sheet_4d.gd" id="w_sheet"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_first_look_4d.gd" id="first_look"]
 
 [sub_resource type="GradientSkyMaterial4D" id="voidsky"]
 top_color = Color(0.008, 0.009, 0.014, 1)
@@ -104,8 +106,8 @@ omni_range_meters = 13.0
 [node name="Laptop" type="OmniLight4D" parent="Lamps"]
 position = Vector4(7.25, 1.1, -39.8, 0)
 light_color = Color(0.55, 0.8, 1, 1)
-light_energy = 1.6
-omni_range_meters = 2.5
+light_energy = 0.45
+omni_range_meters = 1.6
 
 [node name="WorkLeft" type="OmniLight4D" parent="Lamps"]
 position = Vector4(-7, 2.1, -31.5, 0)
@@ -137,12 +139,20 @@ script = ExtResource("baked")
 
 [node name="WayThroughWMark" type="Node4D" parent="." groups=["slice_dial_landmark"]]
 position = Vector4(0, 0, -36, 8.8)
-metadata/dial_label = "way through W"
+metadata/dial_label = "anomalous reading"
+metadata/dial_icon = "anomaly"
 metadata/dial_color = Color(0.62, 0.82, 1, 0.95)
 metadata/dial_tolerance = 1.5
 
 [node name="DialAnchor" type="Node4D" parent="." groups=["slice_dial_anchor"]]
 position = Vector4(0, 0, -33, 0)
+metadata/dial_w_fraction = 0.022
+
+[node name="WaySheet" type="MeshInstance4D" parent="."]
+script = ExtResource("w_sheet")
+
+[node name="FirstLook" type="Node" parent="."]
+script = ExtResource("first_look")
 
 [node name="FarStream" type="Node" parent="."]
 script = ExtResource("far_stream")
@@ -153,7 +163,7 @@ script = ExtResource("exit")
 player_path = NodePath("../../Player")
 
 [node name="Monolith" parent="." groups=["slice_dial_landmark"] instance=ExtResource("voxel_block")]
-position = Vector4(0, 3.18, -36, 0)
+position = Vector4(-0.4, 3.18, -36.4, -0.4)
 script = ExtResource("monolith")
 cell_size = 0.8
 mining_radius_meters = 0.96
@@ -165,7 +175,7 @@ metadata/dial_icon = "cube"
 metadata/dial_color = Color(0.62, 0.66, 0.9, 0.95)
 
 [node name="Gold" type="Node4D" parent="."]
-position = Vector4(0, 3.18, -36, 0)
+position = Vector4(0, 3.58, -36, 0)
 script = ExtResource("gold")
 rock_path = NodePath("../Monolith")
 pickaxe_path = NodePath("../../Systems/Pickaxe")
