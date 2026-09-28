@@ -62,6 +62,9 @@ extends Node4D
 ## The floorboards. Thin, so the step up from the grass is barely a step.
 @export_range(0.02, 0.4, 0.01) var floor_thick: float = 0.06: set = _set_floor_thick
 @export_range(0.5, 8.0, 0.1) var w_depth: float = 3.4: set = _set_w_depth
+## Cap the shed at both ends of W, so it is a closed room in four dimensions and not a
+## 3D shed stretched through the fourth. See _close_in_w.
+@export var close_in_w: bool = true: set = _set_close
 
 @export_group("Door")
 @export_range(0.5, 3.0, 0.05) var door_width: float = 1.3: set = _set_door_w
@@ -109,6 +112,7 @@ var _open: bool = false
 var _camera: Node4D
 
 
+func _set_close(v: bool) -> void: close_in_w = v; _later()
 func _set_length(v: float) -> void: length = v; _later()
 func _set_width(v: float) -> void: width = v; _later()
 func _set_wall_height(v: float) -> void: wall_height = v; _later()
@@ -184,8 +188,37 @@ func rebuild() -> void:
 				Vector3(wall_thick, wall_height, width), wall_color)
 			_walls.append({"node": group, "out": Vector4(sx, 0.0, 0.0, 0.0)})
 
+	if close_in_w:
+		_close_in_w()
 	_roof()
 	_update_cutaway()
+
+
+## THE TWO WALLS A 3D BUILDING NEVER HAS. A room in 4D is bounded by eight walls, not four:
+## minus and plus x, y, z AND w. This shed had six of them - four walls, a floor and a roof,
+## each stretched through W - and nothing capping it at either end of W. So stepping along
+## W out of its slab, or turning the slice so W came into view, looked straight out of the
+## side of the building into the field: Trym, 25 Sept, "the house suffers the same fate as
+## the pen in terms of being 'holey' in 4D".
+##
+## These are the other two. Each is the shed's whole footprint, full height, but thin in W,
+## sitting just inside the ends of the slab. From the home slice you never see them - they
+## are nowhere near w = 0 - which is right, since nothing is missing from there. Strafe to
+## the shed's edge in W and one fills the view the way a wall does when you walk into it;
+## turn the slice a quarter through W and they stand where the gable walls stood, closing
+## the room from that side too. They go into the cutaway list like the others, with normals
+## along W, and the cutaway's dot product is already four-dimensional, so it hides the near
+## one from a rotated camera exactly as it hides a near side wall from an ordinary one.
+func _close_in_w() -> void:
+	var half_w: float = w_depth * 0.5 - wall_thick * 0.5
+	for sw in [-1.0, 1.0]:
+		var cap: Node4D = _box(self, "WWall%s" % _tag(sw), Vector4(0.0, wall_height * 0.5, 0.0, sw * half_w),
+			Vector3(length, wall_height, width), wall_color)
+		var mesh := (cap as MeshInstance4D).mesh as BoxTetraMesh4D
+		var extent: Vector4 = mesh.size
+		extent.w = wall_thick
+		mesh.size = extent
+		_walls.append({"node": cap, "out": Vector4(0.0, 0.0, 0.0, sw)})
 
 
 ## Two planes leaning on the ridge, each a child of a pivot ON the ridge line.

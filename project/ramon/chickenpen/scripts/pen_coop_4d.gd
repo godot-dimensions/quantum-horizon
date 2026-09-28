@@ -22,6 +22,8 @@ extends Node4D
 @export_range(0.0, 1.0, 0.05) var stilt_height: float = 0.35: set = _set_stilt
 ## How far it reaches through W. Matches the pen so it exists in the same slices.
 @export_range(0.5, 12.0, 0.1) var w_depth: float = 3.0: set = _set_w
+## Cap it at both ends of W, so it is a closed hut in four dimensions.
+@export var close_in_w: bool = true: set = _set_close
 
 @export var wall_color: Color = Color(0.72, 0.56, 0.38): set = _set_wall_color
 @export var roof_color: Color = Color(0.42, 0.26, 0.20): set = _set_roof_color
@@ -40,6 +42,7 @@ func _set_door_h(v: float) -> void: door_height = v; _rebuild_later()
 func _set_ramp(v: float) -> void: ramp_length = v; _rebuild_later()
 func _set_stilt(v: float) -> void: stilt_height = v; _rebuild_later()
 func _set_w(v: float) -> void: w_depth = v; _rebuild_later()
+func _set_close(v: bool) -> void: close_in_w = v; _rebuild_later()
 func _set_wall_color(v: Color) -> void: wall_color = v; _rebuild_later()
 func _set_roof_color(v: Color) -> void: roof_color = v; _rebuild_later()
 
@@ -94,6 +97,19 @@ func rebuild() -> void:
 			Vector4(sx * (half.x - 0.08), floor_y + half.y, 0.0, 0.0),
 			Vector3(0.16, body_size.y, body_size.z), wall)
 	_box("Floor", Vector4(0.0, floor_y, 0.0, 0.0), Vector3(body_size.x, 0.12, body_size.z), wall)
+
+	# THE TWO WALLS A 3D HUT NEVER HAS - the coop was a box open at both ends of W, the
+	# same "holey" Trym found in the house. See pen_shed_4d._close_in_w for the whole
+	# argument; the short form is that a room in 4D has eight walls and this had six.
+	if close_in_w:
+		for sw in [-1.0, 1.0]:
+			var cap := _box("WWall_%s" % ("P" if sw > 0.0 else "N"),
+				Vector4(0.0, floor_y + half.y, 0.0, sw * (w_depth * 0.5 - 0.08)),
+				Vector3(body_size.x, body_size.y, body_size.z), wall)
+			var mesh := cap.mesh as BoxTetraMesh4D
+			var extent: Vector4 = mesh.size
+			extent.w = 0.16
+			mesh.size = extent
 
 	# A pitched roof in two slabs, overhanging on every side.
 	var eave: float = 0.18

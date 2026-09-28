@@ -116,6 +116,9 @@ extends Control
 @export var people_overrides: Array[Color] = []
 @export var target_color: Color = Color(1.0, 0.85, 0.25, 0.95)
 @export var you_color: Color = Color(1.0, 1.0, 1.0, 0.95)
+## How far the view wedge reaches on the map, in metres, and how faint it is.
+@export_range(1.0, 30.0, 0.5) var view_cone_length: float = 7.0
+@export_range(0.0, 1.0, 0.02) var view_cone_alpha: float = 0.14
 ## How big the birds are drawn, on top of the panel's own scaling.
 @export_range(0.4, 2.0, 0.05) var bird_size: float = 0.9
 @export var toggle_key: Key = KEY_N
@@ -477,12 +480,45 @@ func _draw_you(shrink: float, origin: Vector2, mid: Vector2, u: float) -> void:
 		along = Vector2(0.0, -1.0)
 	along = along.normalized()
 	var side: Vector2 = Vector2(-along.y, along.x)
+	_draw_view_cone(here, ahead, w * shrink, origin, mid)
 	draw_colored_polygon(PackedVector2Array([spot + along * 9.0 * u,
 		spot - along * 5.0 * u + side * 5.0 * u,
 		spot - along * 2.0 * u,
 		spot - along * 5.0 * u - side * 5.0 * u]), you_color)
 	draw_arc(spot, 11.0 * u, 0.0, TAU, 20, Color(0.0, 0.0, 0.0, 0.45), 3.0, true)
 	draw_arc(spot, 11.0 * u, 0.0, TAU, 20, you_color, 1.2, true)
+
+
+## WHAT YOU CAN SEE, AS A WEDGE ON THE MAP. Trym, 25 Sept: the "minimap camera angle
+## highlight cone thing". The arrow already says which way you face; this says how much of
+## the field that facing takes in, which is the question you are actually asking when a
+## chicken is on the dial and not on your screen - is it in front of me and off to one
+## side, or behind me altogether.
+##
+## The real field of view, not a pretty angle. The rig's lens changes with its presets, and
+## Camera4D's field_of_view_3d is the vertical angle, so it is widened by the viewport's
+## aspect into the horizontal one the eye actually sweeps. Drawn flat on the ground at your
+## own w, under the arrow, faint enough that the birds on top of it still read first.
+func _draw_view_cone(here: Vector4, ahead: Vector4, w: float, origin: Vector2, mid: Vector2) -> void:
+	var cam: Camera4D = _frame.get("_camera") as Camera4D if _frame != null else null
+	var vertical: float = deg_to_rad(55.0)
+	if cam != null and cam.get("field_of_view_3d") != null:
+		vertical = float(cam.get("field_of_view_3d"))
+	var view: Vector2 = get_viewport_rect().size
+	var aspect: float = view.x / maxf(view.y, 1.0)
+	var half: float = atan(tan(vertical * 0.5) * aspect)
+	var forward := Vector2(ahead.x, ahead.z)
+	if forward.length() < 0.001:
+		return
+	forward = forward.normalized()
+	var points := PackedVector2Array([_plan(here.x, here.z, w, origin, mid)])
+	for i in 9:
+		var a: float = lerpf(-half, half, float(i) / 8.0)
+		var d: Vector2 = forward.rotated(a) * view_cone_length
+		points.append(_plan(here.x + d.x, here.z + d.y, w, origin, mid))
+	draw_colored_polygon(points, Color(you_color.r, you_color.g, you_color.b, view_cone_alpha))
+	draw_polyline(points + PackedVector2Array([points[0]]),
+		Color(you_color.r, you_color.g, you_color.b, view_cone_alpha * 2.2), 1.0, true)
 
 
 ## Every catchable bird, as [x, z, w, is_the_target].
