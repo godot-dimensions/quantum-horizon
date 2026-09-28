@@ -69,8 +69,9 @@ const THROAT := Color(0.16, 0.17, 0.20)
 @export_range(4, 48, 1) var limb_count: int = 24
 @export_range(3, 12, 1) var pieces_per_limb: int = 7
 @export_range(1.0, 14.0, 0.1) var limb_length: float = 12.0
-@export_range(0.05, 1.5, 0.01) var root_radius: float = 0.2
-@export_range(0.01, 0.5, 0.005) var tip_radius: float = 0.035
+## A limb is no thicker where it leaves the lip than the lip itself.
+@export_range(0.02, 1.5, 0.01) var root_radius: float = 0.09
+@export_range(0.005, 0.5, 0.005) var tip_radius: float = 0.02
 @export var limb_seed: int = 17
 
 var _player: Node4D
@@ -206,9 +207,11 @@ func _build_vortex() -> void:
 			_streaks.append([_piece(_mouth, "Swirl%d_%d" % [arm, j], _segment, _streak_materials[j]), arm, j])
 
 
-## The limbs leave from behind the ring, trailing away from you and out round it, most of
-## them hanging, and through W as well: most nearly level with your slice and carried
-## through it by their curl, every fourth set off along W itself.
+## The limbs grow from the lip itself, spaced round the ring - not from the middle, where
+## they crowded the mouth (Ramon, 28 Sept: "the tentacles should start from the ring, not
+## from the center") - and trail away from you and out, most of them hanging, and through
+## W as well: most nearly level with your slice and carried through it by their curl, every
+## fourth set off along W itself.
 func _build_limbs() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = limb_seed
@@ -232,12 +235,13 @@ func _build_limbs() -> void:
 		var through: float = rng.randf_range(-0.2, 0.2)
 		if i % 4 == 3:
 			through = rng.randf_range(0.6, 0.9) * (1.0 if i % 8 == 3 else -1.0)
-		var out := Vector4(cos(round_), sin(round_) * 0.8 - rng.randf_range(0.2, 0.7), 0, 0)
+		var radial := Vector4(cos(round_), sin(round_), 0, 0)
+		var out: Vector4 = (radial + Vector4(0, -rng.randf_range(0.2, 0.7), 0, 0)).normalized()
 		var d: Vector4 = (out * 0.8 + Vector4(0, 0, -rng.randf_range(0.5, 0.9), through)).normalized()
 		_dirs.append(d)
 		var a: Vector4 = _square_to(d, Vector4(0, 1, 0, 0))
 		var b: Vector4 = _square_to(d, Vector4(0, 0, 0, 1) if absf(d.w) < 0.9 else Vector4(1, 0, 0, 0), a)
-		_sides.append([a, b, out.normalized() * mouth_radius * 0.9])
+		_sides.append([a, b, radial * mouth_radius])
 		var pieces: Array = []
 		for k in pieces_per_limb:
 			pieces.append(_piece(_body, "Limb%d_%d" % [i, k], _segment, shades[k]))
@@ -282,13 +286,14 @@ func _process(delta: float) -> void:
 
 	var shimmer: float = 0.5 + 0.5 * sin(_t * (2.3 + 3.0 * _heat))
 	var colour: Color = CALM_A.lerp(CALM_B, shimmer).lerp(WARN_A.lerp(WARN_B, shimmer), _heat)
-	_heart_material.albedo_color = colour.lerp(Color.WHITE, 0.45 + 0.25 * shimmer)
+	# Not white-hot: bright in the middle, but its colour, so the ring and teeth still read.
+	_heart_material.albedo_color = colour.lerp(Color.WHITE, 0.1 + 0.1 * shimmer)
 	_heart.basis = Basis4D.from_zw(-_t * 1.7) * Basis4D.from_xy(_t * 1.1)
 	for j in _streak_materials.size():
 		var inward: float = float(j) / float(maxi(_streak_materials.size() - 1, 1))
-		_streak_materials[j].albedo_color = colour.darkened(0.4 * (1.0 - inward)).lerp(Color.WHITE, 0.3 * inward * inward)
+		_streak_materials[j].albedo_color = colour.darkened(0.4 * (1.0 - inward)).lerp(Color.WHITE, 0.08 * inward * inward)
 	_light.light_color = colour
-	_light.light_energy = 4.5 + 2.0 * shimmer + 2.0 * _heat
+	_light.light_energy = 2.2 + 0.9 * shimmer + 1.3 * _heat
 	_place_vortex(agitation)
 	_place_limbs(agitation)
 
@@ -349,7 +354,7 @@ func _place_limbs(agitation: float) -> void:
 		var d: Vector4 = _dirs[i]
 		var a: Vector4 = _sides[i][0]
 		var b: Vector4 = _sides[i][1]
-		var root: Vector4 = _sides[i][2] + Vector4(0, 0, -0.4, 0)
+		var root: Vector4 = _sides[i][2] + Vector4(0, 0, -lip_radius, 0)
 		var phase: float = float(i) * 2.39
 		var from: Vector4 = _limb_point(root, d, a, b, phase, 0.0, agitation)
 		for k in pieces.size():
