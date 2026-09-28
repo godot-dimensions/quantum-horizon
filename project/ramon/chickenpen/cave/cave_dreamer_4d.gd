@@ -33,6 +33,10 @@ extends Node4D
 ## too close: blue in calm, red in warning, and everything moves faster when it is red.
 
 const LoftBuilder := preload("res://ramon/chickenpen/scripts/loft_builder_4d.gd")
+## How far a segment's rounded ends reach past it, as a share of its length: enough to
+## cover the joint with the next, and short, since the first one's reaches back toward the
+## ring and a long one lay across it.
+const CAP := 0.06
 
 const CALM_A := Color(0.30, 0.62, 1.0)
 const CALM_B := Color(0.55, 0.40, 1.0)
@@ -67,11 +71,11 @@ const THROAT := Color(0.16, 0.17, 0.20)
 
 @export_group("Limbs")
 @export_range(4, 48, 1) var limb_count: int = 24
-@export_range(3, 12, 1) var pieces_per_limb: int = 7
+@export_range(3, 16, 1) var pieces_per_limb: int = 9
 @export_range(1.0, 14.0, 0.1) var limb_length: float = 12.0
 ## A limb is no thicker where it leaves the lip than the lip itself.
-@export_range(0.02, 1.5, 0.01) var root_radius: float = 0.09
-@export_range(0.005, 0.5, 0.005) var tip_radius: float = 0.02
+@export_range(0.01, 1.5, 0.005) var root_radius: float = 0.05
+@export_range(0.005, 0.5, 0.005) var tip_radius: float = 0.012
 @export var limb_seed: int = 17
 
 var _player: Node4D
@@ -114,9 +118,11 @@ func _ready() -> void:
 	_build_limbs()
 	_light = OmniLight4D.new()
 	_light.name = "Glow"
-	_light.omni_range_meters = 14.0
+	_light.omni_range_meters = 7.0
 	_mouth.add_child(_light)
-	_light.position = Vector4(0, 0, 0.6, 0)
+	# In the throat, not in front of the teeth: in front, it lit the teeth and the lip to a
+	# white disc that hid the ring.
+	_light.position = Vector4(0, 0, -0.3, 0)
 
 
 ## The two shapes everything is made of, along y from 0 to 1: a segment of tube narrowing
@@ -124,10 +130,10 @@ func _ready() -> void:
 func _make_meshes() -> void:
 	var shrink: float = pow(tip_radius / root_radius, 1.0 / float(pieces_per_limb))
 	_segment = LoftBuilder.build([
-		{"center": Vector4(0, -0.18, 0, 0), "radius": 0.62, "w_scale": 1.0},
+		{"center": Vector4(0, -CAP, 0, 0), "radius": 0.7, "w_scale": 1.0},
 		{"center": Vector4(0, 0.0, 0, 0), "radius": 1.0, "w_scale": 1.0},
 		{"center": Vector4(0, 1.0, 0, 0), "radius": shrink, "w_scale": 1.0},
-		{"center": Vector4(0, 1.18, 0, 0), "radius": shrink * 0.62, "w_scale": 1.0},
+		{"center": Vector4(0, 1.0 + CAP, 0, 0), "radius": shrink * 0.7, "w_scale": 1.0},
 	], 3, 8, true, false, true, 1, false)
 	_tooth = LoftBuilder.build([
 		{"center": Vector4(0, -0.05, 0, 0), "radius": 0.7, "w_scale": 1.0},
@@ -241,7 +247,9 @@ func _build_limbs() -> void:
 		_dirs.append(d)
 		var a: Vector4 = _square_to(d, Vector4(0, 1, 0, 0))
 		var b: Vector4 = _square_to(d, Vector4(0, 0, 0, 1) if absf(d.w) < 0.9 else Vector4(1, 0, 0, 0), a)
-		_sides.append([a, b, radial * _clear_radius()])
+		# Out past the lip by the first segment's cap as well, so its rounded end starts
+		# outside the ring too.
+		_sides.append([a, b, radial * (_clear_radius() + CAP * _lengths[0])])
 		var pieces: Array = []
 		for k in pieces_per_limb:
 			pieces.append(_piece(_body, "Limb%d_%d" % [i, k], _segment, shades[k]))
@@ -293,7 +301,7 @@ func _process(delta: float) -> void:
 		var inward: float = float(j) / float(maxi(_streak_materials.size() - 1, 1))
 		_streak_materials[j].albedo_color = colour.darkened(0.4 * (1.0 - inward)).lerp(Color.WHITE, 0.08 * inward * inward)
 	_light.light_color = colour
-	_light.light_energy = 2.2 + 0.9 * shimmer + 1.3 * _heat
+	_light.light_energy = 1.2 + 0.5 * shimmer + 1.0 * _heat
 	_place_vortex(agitation)
 	_place_limbs(agitation)
 
