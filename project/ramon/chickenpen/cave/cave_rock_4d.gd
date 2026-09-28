@@ -78,11 +78,14 @@ const CHUNKS := [
 ## loaded while it can be seen - see cave_far_stream_4d.gd.
 const FAR_CHUNKS := [
 	[Vector4(-8.5, -2.0, -42.0, 12.0), Vector4(8.5, 7.5, -30.0, 29.0), 13],
-	[Vector4(-16.5, -2.0, -52.5, 24.0), Vector4(16.5, 15.5, -19.5, 48.0), 15],
+	[Vector4(-22.5, -2.0, -58.5, 18.0), Vector4(22.5, 19.5, -13.5, 54.0), 17],
 ]
+## The far room's floor, wider than the rest of the cave's.
+const FAR_FLOOR_LO := Vector3(-21.0, -57.0, 13.0)
+const FAR_FLOOR_HI := Vector3(21.0, -15.0, 53.0)
 ## The whole cave's extent, for the floor's collider.
 const LO := Vector4(-16.0, -2.0, -52.0, -10.5)
-const HI := Vector4(16.0, 19.8, 10.5, 48.0)
+const HI := Vector4(16.0, 19.8, 10.5, 54.0)
 ## Where the near floor ends and the far one begins, along w - the same line, so the two
 ## floors meet and do not overlap.
 const FLOOR_SPLIT_W := 13.0
@@ -119,7 +122,9 @@ const W_PASSAGE_HALF := 2.4
 const W_PASSAGE_REACH := 6.0
 const W_PASSAGE_HIGH := 3.8
 const W_ROOM := Vector4(0.0, 0.0, -36.0, 36.0)
-const W_ROOM_R := Vector4(13.0, 13.0, 13.0, 10.0)
+## Bigger than it was (Ramon, 28 Sept: "the creature is clipping too much with the wall
+## behind it. cant the second cave be slightly bigger?").
+const W_ROOM_R := Vector4(19.0, 16.0, 19.0, 15.0)
 const W_STONES_OUT := 6.5
 const W_GLOW := Color(0.62, 0.82, 1.0)
 
@@ -372,9 +377,7 @@ func bake_far() -> TerrainBake.Builder:
 		var part: TerrainBake.Builder = _bake_walls(chunk[0], chunk[1], chunk[2])
 		print("   far walls, grid %d over %s: %d tetrahedra" % [chunk[2], chunk[1] - chunk[0], part.tet_count()])
 		far.append(part)
-	far.append(TerrainBake.bake_height_box(
-		Vector3(LO.x + 1.0, LO.z + 1.0, FLOOR_SPLIT_W), Vector3(HI.x - 1.0, HI.z - 1.0, HI.w - 1.0),
-		2.0, floor_height, floor_colour, [], -0.05))
+	far.append(TerrainBake.bake_height_box(FAR_FLOOR_LO, FAR_FLOOR_HI, 2.0, floor_height, floor_colour, [], -0.05))
 	_bake_props(far, far_props())
 	return far
 

@@ -28,7 +28,7 @@ func _process(d: float) -> bool:
 	p.global_position = _cave.global_position + Vector4(0.0, 0.05, -30.5, 36.0)
 	p.linear_velocity = Vector4.ZERO
 	var rig := p.get_node("CameraRig") as Node4D
-	var dd: Vector4 = _cave.global_position + Vector4(0, 5.0, -36, 36) - p.global_position
+	var dd: Vector4 = _cave.global_position + Vector4(0, 6.2, -36, 36) - p.global_position
 	rig.set("yaw", atan2(-dd.x, -dd.z)); rig.set("pitch", deg_to_rad(12.0)); rig.call("_apply")
 	var far: Node = _cave.find_child("FarRoom", true, false)
 	if far == null:

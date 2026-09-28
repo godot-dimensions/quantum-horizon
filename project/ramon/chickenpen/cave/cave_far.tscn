@@ -9,11 +9,6 @@
 [ext_resource type="Script" path="res://ramon/dialogue/dialogue_player_4d.gd" id="dlg"]
 [ext_resource type="Script" path="res://ramon/dialogue/dialogue_box_4d.gd" id="box"]
 
-[sub_resource type="BoxTetraMesh4D" id="glow_line"]
-size = Vector4(12, 0.02, 0.35, 17.8)
-
-[sub_resource type="TetraMaterial4D" id="glow_line_colour"]
-albedo_color = Color(0.45, 0.65, 1, 1)
 
 [node name="FarRoom" type="Node4D"]
 script = ExtResource("far")
@@ -22,17 +17,12 @@ script = ExtResource("far")
 mesh = ExtResource("cave_far_mesh")
 script = ExtResource("baked")
 
-[node name="TunnelGlow" type="MeshInstance4D" parent="."]
-position = Vector4(0, 0.02, -36, 18.1)
-mesh = SubResource("glow_line")
-material_override = SubResource("glow_line_colour")
-
 [node name="Dreamer" type="Node4D" parent="."]
 position = Vector4(0, 0, -36, 36)
 script = ExtResource("dreamer")
 
 [node name="DreamerHead" type="Node4D" parent="."]
-position = Vector4(0, 5.5, -36, 36)
+position = Vector4(0, 6.5, -36, 36)
 
 [node name="UI" type="Node4D" parent="."]
 
@@ -95,13 +85,13 @@ light_energy = 1.2
 omni_range_meters = 6.0
 
 [node name="FarRoom" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 7, -36, 36)
+position = Vector4(0, 8, -36, 36)
 light_color = Color(0.55, 0.7, 1, 1)
 light_energy = 14.0
-omni_range_meters = 30.0
+omni_range_meters = 36.0
 
 [node name="FarRoomEntry" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 4, -36, 26)
+position = Vector4(0, 4, -36, 23)
 light_color = Color(0.62, 0.82, 1, 1)
 light_energy = 3.5
 omni_range_meters = 12.0
@@ -143,31 +133,31 @@ light_energy = 2.5
 omni_range_meters = 5.0
 
 [node name="FarWallWashZ+" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 3.5, -26.5, 36)
+position = Vector4(0, 4, -22, 36)
 light_color = Color(0.5, 0.62, 0.95, 1)
 light_energy = 1.4
 omni_range_meters = 6.0
 
 [node name="FarWallWashZ-" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 3.5, -45.5, 36)
+position = Vector4(0, 4, -50, 36)
 light_color = Color(0.5, 0.62, 0.95, 1)
 light_energy = 1.4
 omni_range_meters = 6.0
 
 [node name="FarWallWashW+" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 3.5, -36, 43.5)
+position = Vector4(0, 4, -36, 48)
 light_color = Color(0.5, 0.62, 0.95, 1)
 light_energy = 1.4
 omni_range_meters = 6.0
 
 [node name="FarWallWashX+" type="OmniLight4D" parent="Lamps"]
-position = Vector4(9.5, 3.5, -36, 36)
+position = Vector4(14, 4, -36, 36)
 light_color = Color(0.5, 0.62, 0.95, 1)
 light_energy = 1.4
 omni_range_meters = 6.0
 
 [node name="FarRoomBack" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 3, -36, 45)
+position = Vector4(0, 4, -36, 48.5)
 light_color = Color(0.62, 0.82, 1, 1)
 light_energy = 2.0
 omni_range_meters = 10.0

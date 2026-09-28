@@ -50,7 +50,7 @@ const THROAT := Color(0.16, 0.17, 0.20)
 @export var player_path: NodePath = NodePath("../../../Player")
 @export var camera_rig_path: NodePath = NodePath("../../../Player/CameraRig")
 ## How high the mouth hangs above the floor, and how quickly it turns to you.
-@export_range(1.0, 10.0, 0.1) var core_height: float = 5.5
+@export_range(1.0, 10.0, 0.1) var core_height: float = 6.5
 @export_range(0.1, 5.0, 0.05) var turn_rate: float = 0.8
 ## Coming closer than this, across the floor and through W, upsets it.
 @export_range(0.5, 5.0, 0.1) var too_close: float = 2.0
@@ -71,11 +71,11 @@ const THROAT := Color(0.16, 0.17, 0.20)
 
 @export_group("Limbs")
 @export_range(4, 48, 1) var limb_count: int = 24
-@export_range(3, 16, 1) var pieces_per_limb: int = 9
+@export_range(3, 32, 1) var pieces_per_limb: int = 20
 @export_range(1.0, 14.0, 0.1) var limb_length: float = 12.0
 ## A limb is no thicker where it leaves the lip than the lip itself.
-@export_range(0.01, 1.5, 0.005) var root_radius: float = 0.05
-@export_range(0.005, 0.5, 0.005) var tip_radius: float = 0.012
+@export_range(0.01, 1.5, 0.005) var root_radius: float = 0.07
+@export_range(0.005, 0.5, 0.005) var tip_radius: float = 0.016
 @export var limb_seed: int = 17
 
 var _player: Node4D
@@ -198,7 +198,7 @@ func _build_mouth() -> void:
 	_heart = MeshInstance4D.new()
 	_heart.name = "Heart"
 	var heart_mesh := OrthoplexTetraMesh4D.new()
-	heart_mesh.size = Vector4.ONE * 0.9 * maxf(m, 0.6)
+	heart_mesh.size = Vector4.ONE * 0.55 * maxf(m, 0.6)
 	_heart.mesh = heart_mesh
 	_heart.material_override = _heart_material
 	_mouth.add_child(_heart)
@@ -222,7 +222,7 @@ func _build_vortex() -> void:
 func _build_limbs() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = limb_seed
-	var ratio: float = 0.86
+	var ratio: float = 0.92
 	var first: float = limb_length * (1.0 - ratio) / (1.0 - pow(ratio, pieces_per_limb))
 	var shrink: float = pow(tip_radius / root_radius, 1.0 / float(pieces_per_limb))
 	var along := 0.0
@@ -243,13 +243,16 @@ func _build_limbs() -> void:
 		if i % 4 == 3:
 			through = rng.randf_range(0.6, 0.9) * (1.0 if i % 8 == 3 else -1.0)
 		var radial := Vector4(cos(round_), sin(round_), 0, 0)
-		var d: Vector4 = (radial + Vector4(0, -rng.randf_range(0.1, 0.4), -rng.randf_range(0.2, 0.45), through)).normalized()
+		# Out within your slice at the root, always: one that set off through W there was cut
+		# by the slice into a sliver reaching back across the lip. The ones that go through W
+		# bend into it further out (_limb_point).
+		var d: Vector4 = (radial + Vector4(0, -rng.randf_range(0.1, 0.4), -rng.randf_range(0.2, 0.45), 0)).normalized()
 		_dirs.append(d)
 		var a: Vector4 = _square_to(d, Vector4(0, 1, 0, 0))
 		var b: Vector4 = _square_to(d, Vector4(0, 0, 0, 1) if absf(d.w) < 0.9 else Vector4(1, 0, 0, 0), a)
 		# Out past the lip by the first segment's cap as well, so its rounded end starts
 		# outside the ring too.
-		_sides.append([a, b, radial * (_clear_radius() + CAP * _lengths[0])])
+		_sides.append([a, b, radial * (_clear_radius() + CAP * _lengths[0]), through])
 		var pieces: Array = []
 		for k in pieces_per_limb:
 			pieces.append(_piece(_body, "Limb%d_%d" % [i, k], _segment, shades[k]))
@@ -363,28 +366,34 @@ func _place_limbs(agitation: float) -> void:
 		var a: Vector4 = _sides[i][0]
 		var b: Vector4 = _sides[i][1]
 		var root: Vector4 = _sides[i][2] + Vector4(0, 0, -lip_radius * 0.5, 0)
+		var through: float = _sides[i][3]
 		var phase: float = float(i) * 2.39
-		var from: Vector4 = _limb_point(root, d, a, b, phase, 0.0, agitation)
+		var from: Vector4 = _limb_point(root, d, a, b, phase, 0.0, agitation, through)
 		for k in pieces.size():
-			var to: Vector4 = _limb_point(root, d, a, b, phase, _starts[k] + _lengths[k], agitation)
+			var to: Vector4 = _limb_point(root, d, a, b, phase, _starts[k] + _lengths[k], agitation, through)
 			var piece: MeshInstance4D = pieces[k]
 			piece.position = from
 			piece.basis = _segment_basis(to - from, _radii[k])
 			from = to
 
 
-func _limb_point(root: Vector4, d: Vector4, a: Vector4, b: Vector4, phase: float, along: float, agitation: float) -> Vector4:
+func _limb_point(root: Vector4, d: Vector4, a: Vector4, b: Vector4, phase: float, along: float, agitation: float, through: float = 0.0) -> Vector4:
 	var s: float = along / limb_length
-	var curl: float = s * s * (2.2 + 0.8 * _heat)
-	var wave: float = _t * 0.9 * agitation + phase - s * 3.6
+	# WAVY (Ramon: "make the tentacles more wavey"): the curl starts near the root and grows
+	# along the limb, with two bends down its length that travel out toward the tip.
+	var curl: float = (0.9 * s + 0.6 * s * s) * (2.4 + 0.8 * _heat)
+	var wave: float = _t * 1.3 * agitation + phase - s * 8.5
 	var at: Vector4 = root + d * along
-	at += a * (sin(wave) * curl) + b * (cos(wave * 0.83 + 0.6) * curl)
-	# Never in front of the ring, and never inside its edge where it is near the ring's
-	# plane: the mouth stays clear however the limb curls.
+	at += a * (sin(wave) * curl) + b * (cos(wave * 0.71 + 0.6) * curl * 0.8)
+	# Into W, more the further out: none at the root, so the root stays in your slice.
+	at.w += through * along * s
+	# Never in front of the ring, and never inside a cone opening back from its edge: seen
+	# from in front, anything behind the ring and near its axis shows through the mouth, so
+	# the further back a limb is, the further out it has to be.
 	at.z = minf(at.z, -lip_radius * 0.5)
 	var across: float = Vector2(at.x, at.y).length()
-	var edge: float = _clear_radius()
-	if across < edge and at.z > -2.0 and across > 0.0001:
+	var edge: float = _clear_radius() + maxf(0.0, -at.z - lip_radius) * 0.7
+	if across < edge and across > 0.0001:
 		var k: float = edge / across
 		at.x *= k
 		at.y *= k
