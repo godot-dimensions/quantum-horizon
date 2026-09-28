@@ -207,11 +207,12 @@ func _build_vortex() -> void:
 			_streaks.append([_piece(_mouth, "Swirl%d_%d" % [arm, j], _segment, _streak_materials[j]), arm, j])
 
 
-## The limbs grow from the lip itself, spaced round the ring - not from the middle, where
-## they crowded the mouth (Ramon, 28 Sept: "the tentacles should start from the ring, not
-## from the center") - and trail away from you and out, most of them hanging, and through
-## W as well: most nearly level with your slice and carried through it by their curl, every
-## fourth set off along W itself.
+## The limbs start just outside the lip and grow outward from it, spaced round the ring, so
+## the ring and the mouth inside it stay clean (Ramon, 28 Sept: "a tentacle starts from that
+## ring and goes outward, making the center ring clean ... from tentacles"). They lean a
+## little back, away from you, and down, and through W as well: most nearly level with your
+## slice and carried through it by their curl, every fourth set off along W itself. No point
+## of a limb is let in front of the ring or inside its edge (see _limb_point).
 func _build_limbs() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = limb_seed
@@ -236,12 +237,11 @@ func _build_limbs() -> void:
 		if i % 4 == 3:
 			through = rng.randf_range(0.6, 0.9) * (1.0 if i % 8 == 3 else -1.0)
 		var radial := Vector4(cos(round_), sin(round_), 0, 0)
-		var out: Vector4 = (radial + Vector4(0, -rng.randf_range(0.2, 0.7), 0, 0)).normalized()
-		var d: Vector4 = (out * 0.8 + Vector4(0, 0, -rng.randf_range(0.5, 0.9), through)).normalized()
+		var d: Vector4 = (radial + Vector4(0, -rng.randf_range(0.1, 0.4), -rng.randf_range(0.2, 0.45), through)).normalized()
 		_dirs.append(d)
 		var a: Vector4 = _square_to(d, Vector4(0, 1, 0, 0))
 		var b: Vector4 = _square_to(d, Vector4(0, 0, 0, 1) if absf(d.w) < 0.9 else Vector4(1, 0, 0, 0), a)
-		_sides.append([a, b, radial * mouth_radius])
+		_sides.append([a, b, radial * _clear_radius()])
 		var pieces: Array = []
 		for k in pieces_per_limb:
 			pieces.append(_piece(_body, "Limb%d_%d" % [i, k], _segment, shades[k]))
@@ -354,7 +354,7 @@ func _place_limbs(agitation: float) -> void:
 		var d: Vector4 = _dirs[i]
 		var a: Vector4 = _sides[i][0]
 		var b: Vector4 = _sides[i][1]
-		var root: Vector4 = _sides[i][2] + Vector4(0, 0, -lip_radius, 0)
+		var root: Vector4 = _sides[i][2] + Vector4(0, 0, -lip_radius * 0.5, 0)
 		var phase: float = float(i) * 2.39
 		var from: Vector4 = _limb_point(root, d, a, b, phase, 0.0, agitation)
 		for k in pieces.size():
@@ -371,7 +371,21 @@ func _limb_point(root: Vector4, d: Vector4, a: Vector4, b: Vector4, phase: float
 	var wave: float = _t * 0.9 * agitation + phase - s * 3.6
 	var at: Vector4 = root + d * along
 	at += a * (sin(wave) * curl) + b * (cos(wave * 0.83 + 0.6) * curl)
+	# Never in front of the ring, and never inside its edge where it is near the ring's
+	# plane: the mouth stays clear however the limb curls.
+	at.z = minf(at.z, -lip_radius * 0.5)
+	var across: float = Vector2(at.x, at.y).length()
+	var edge: float = _clear_radius()
+	if across < edge and at.z > -2.0 and across > 0.0001:
+		var k: float = edge / across
+		at.x *= k
+		at.y *= k
 	return at
+
+
+## How far out from the mouth's middle the limbs keep: the lip's outer edge and a little.
+func _clear_radius() -> float:
+	return mouth_radius + lip_radius * 1.4
 
 
 ## A piece's y along [param span], its three other axes square to it and [param radius]
