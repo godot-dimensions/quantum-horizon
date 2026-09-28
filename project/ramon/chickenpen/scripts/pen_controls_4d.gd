@@ -66,13 +66,55 @@ func _ready() -> void:
 	_chip.set_corner_radius_all(4)
 	_build()
 	queue_redraw()
+	_make_hint.call_deferred()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo \
 			and (event as InputEventKey).keycode == toggle_key:
 		visible = not visible
+		if _hint != null:
+			_hint.visible = not visible
 		get_viewport().set_input_as_handled()
+
+
+## WHERE THE CARD WENT. Hiding it with H left nothing behind, so the one key that brings it
+## back was only written on the card it had just hidden - Trym: "After hiding the tooltip
+## with H, there should be a small indicator top right (where it used to be) that H will
+## bring it back in case you forget the buttons."
+##
+## A SIBLING, NOT A CHILD. A hidden Control draws none of its children, so a hint hung off
+## the card would vanish at exactly the moment it is needed. It sits in the same corner in
+## the same chip style as the card's own keys, and is only ever up while the card is down.
+var _hint: Label
+
+
+func _make_hint() -> void:
+	var host: Node = get_parent()
+	if host == null:
+		return
+	_hint = Label.new()
+	_hint.name = "ControlsHint"
+	_hint.text = "%s   controls" % OS.get_keycode_string(toggle_key)
+	_hint.add_theme_font_size_override("font_size", text_size)
+	_hint.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.82))
+	var chip := StyleBoxFlat.new()
+	chip.bg_color = Color(0.04, 0.05, 0.08, maxf(panel_alpha, 0.55))
+	chip.border_color = Color(1.0, 1.0, 1.0, 0.16)
+	chip.set_border_width_all(1)
+	chip.set_corner_radius_all(6)
+	chip.content_margin_left = 10.0
+	chip.content_margin_right = 10.0
+	chip.content_margin_top = 4.0
+	chip.content_margin_bottom = 4.0
+	_hint.add_theme_stylebox_override("normal", chip)
+	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hint.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_hint.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_hint.offset_right = -right_margin
+	_hint.offset_top = offset_top
+	_hint.visible = not visible
+	host.add_child(_hint)
 
 
 ## The verbs in the order you need them: get there, get into its slice, pick it up, put it

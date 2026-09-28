@@ -35,7 +35,7 @@ signal completed()
 ## never reached them. The belt is the one that mattered: it hangs off UI, so a restart
 ## put the flock back and left last round's gold on your wrist - and the trough you had
 ## already bought with it still standing in the field.
-@export var also_reset_paths: Array[NodePath] = [NodePath("../../UI/Inventory")]
+@export var also_reset_paths: Array[NodePath] = [NodePath("../../UI/Inventory"), NodePath("../../UI/Quests")]
 
 var _manager: Node
 var _player: Node4D

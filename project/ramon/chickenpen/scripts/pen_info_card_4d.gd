@@ -128,6 +128,13 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+## Where the panel is actually drawn, in the parent's coordinates. The Control's own rect
+## is a fixed 1200 by 300 and the panel is packed inside it to fit whatever rows are up, so
+## anything that wants to sit below the card has to ask for this, not for `size`.
+func drawn_rect() -> Rect2:
+	return Rect2(position + _box.position - Vector2(pad_x, pad_y), _box.size + Vector2(pad_x, pad_y) * 2.0)
+
+
 func _draw() -> void:
 	if _box.size.x <= 0.0 or _box.size.y <= 0.0 or panel_alpha <= 0.0:
 		return

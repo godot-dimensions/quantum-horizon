@@ -84,6 +84,11 @@ func _physics_process(_delta: float) -> void:
 		_readout.text = "Locator: all chickens accounted for."
 		return
 	_readout.text = _describe(target)
+	# The camera rig carries the T lock; the slice frame IS that rig, so no new wiring.
+	# "Tracking", not "locked on": this line already says LOCKED, meaning in your slice,
+	# and two different meanings of lock side by side is one too many.
+	if _frame != null and _frame.has_method("is_locked_on") and bool(_frame.call("is_locked_on")):
+		_readout.text = "[T] tracking  -  " + _readout.text
 
 
 ## Nearest eligible loose chicken, with hysteresis (items 56 and 57).

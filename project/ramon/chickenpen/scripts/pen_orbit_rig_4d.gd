@@ -105,6 +105,24 @@ signal preset_changed(index: int)
 @export_range(0.0, 2.0, 0.05) var talk_pivot_height: float = 0.8
 @export_range(1.0, 20.0, 0.5) var talk_ease: float = 7.0
 
+@export_group("Locking on")
+## T: keep the nearest loose chicken dead ahead of you. The controls card has promised this
+## since the start and nothing listened for the key - Trym: "I couldn't seem to get T to do
+## anything in terms of locking onto chickens".
+##
+## HEADING ONLY. It turns the way you face, never your slice and never your w. Rotating the
+## slice onto a chicken would SHOW it without making it reachable - the camera changes what
+## you see, only moving through W changes where you are - and the locator's own rule is that
+## a guide which does the searching for you deletes the thing it exists to teach. Locked on,
+## the bird stays in front of you while you step through W to get to it yourself.
+@export var lock_key: Key = KEY_T
+## Where to ask which chicken is nearest. The locator already answers that question, with
+## hysteresis, from the birds that are loose - carried, penned and returned birds are not
+## candidates - so the lock and the HUD can never disagree about which one it means.
+@export var locator_path: NodePath
+## How quickly the heading swings onto the bird, per second, as a fraction of the gap.
+@export_range(1.0, 30.0, 0.5) var lock_turn_rate: float = 8.0
+
 @export_group("The way back")
 ## R puts you back on the default slice: both rotations to zero and your w to zero.
 ##
@@ -139,6 +157,11 @@ var _ignore_mouse: float = 1.5
 var _talking: bool = false
 ## Set while a staged shot is on screen. See lock_look.
 var _look_locked: bool = false
+var _locator: Node
+## The chicken locked on to, and its agent - the agent is what the locator hands out, and
+## asking whether it is still a candidate is how a caught bird releases the lock.
+var _lock_agent: Node = null
+var _lock_body: Node4D = null
 ## The authored framing, so leaving a conversation restores what the scene asked for and
 ## whatever the player had zoomed to, rather than a hard-coded default.
 var _home_pivot: float = 0.0
@@ -159,7 +182,13 @@ func _ready() -> void:
 	_home_pivot = pivot_height
 	_rest_distance = distance
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_locator = get_node_or_null(locator_path)
 	_apply()
+
+
+## Locked on to a chicken, for the locator's readout.
+func is_locked_on() -> bool:
+	return _lock_body != null
 
 
 ## PRESETS reached through a call, not through get(): a const is not a property, so
@@ -223,6 +252,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			use_preset(preset + 1)
 			get_viewport().set_input_as_handled()
 			return
+	if event is InputEventKey and event.pressed and not event.echo 			and (event as InputEventKey).keycode == lock_key:
+		_toggle_lock()
+		get_viewport().set_input_as_handled()
+		return
 	# ESCAPE HAS TO GET YOU OUT. These scenes capture the mouse on the first frame and
 	# nothing gave it back, so a running scene could not be closed without killing the
 	# window. First press frees the cursor, second quits.
@@ -276,7 +309,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			# turns right - and it played worse. Minus is what is here because it is the
 			# one that felt right, not because of an argument about signs. Do not "fix"
 			# it by reading the maths; flip it, play it, and see.
-			yaw -= motion.x
+			# Locked on, the heading belongs to the lock and the mouse keeps only pitch -
+			# otherwise every nudge is a tug of war the player cannot win or see.
+			if _lock_body == null:
+				yaw -= motion.x
 			pitch = clampf(pitch - motion.y,
 				deg_to_rad(pitch_min_degrees), deg_to_rad(pitch_max_degrees))
 		_apply()
@@ -294,6 +330,8 @@ func _physics_process(delta: float) -> void:
 		clampf(delta * talk_ease, 0.0, 1.0))
 	distance = lerpf(distance, _zoom_target, clampf(delta * 10.0, 0.0, 1.0))
 	position = Vector4(0.0, pivot_height, 0.0, 0.0)
+	if _lock_body != null:
+		_steer_to_lock(delta)
 	_place_camera()
 
 
@@ -392,3 +430,68 @@ func _clear_distance(wanted: float) -> float:
 ## left out, so walking forward never means walking into the ground.
 func movement_basis() -> Projection:
 	return basis
+
+
+## T. On if nothing is locked and the locator has a bird; off otherwise.
+func _toggle_lock() -> void:
+	if _lock_body != null:
+		_release_lock()
+		return
+	if _locator == null:
+		return
+	var agent: Node = _locator.get("target")
+	var body := agent.get_parent() as Node4D if agent != null else null
+	if body == null:
+		return
+	_lock_agent = agent
+	_lock_body = body
+	# Taking the heading cancels any trip home: the two want the same angle.
+	_homing = 0.0
+
+
+func _release_lock() -> void:
+	_lock_agent = null
+	_lock_body = null
+
+
+## Swings the heading onto the locked bird, within the slice you have chosen.
+##
+## The bird's offset is taken into the rig's parent frame and then out of the slice
+## rotation, so what is left is where it stands in the 3D world you are looking at; its W
+## is dropped, because W is the part you have to walk. The yaw that points the view along
+## that is one of two closed forms depending on from_zx's handedness, so both are tried and
+## the one whose forward actually lands on the bird is kept - measured, not argued, the
+## same way the slice assist settles its signs.
+func _steer_to_lock(delta: float) -> void:
+	if not is_instance_valid(_lock_body) or not is_instance_valid(_lock_agent):
+		_release_lock()
+		return
+	# Caught, carried, penned or returned: no longer a candidate, so the lock lets go.
+	var manager: Node = _locator.get("_manager") if _locator != null else null
+	if manager != null and manager.has_method("locator_candidates") 			and not (manager.call("locator_candidates") as Array).has(_lock_agent):
+		_release_lock()
+		return
+	var parent := get_parent() as Node4D
+	var rel: Vector4 = _lock_body.global_position - global_position
+	if parent != null:
+		rel = parent.global_basis.inverse() * rel
+	var slice: Projection = Projection.IDENTITY
+	if not is_zero_approx(_slice_xw):
+		slice *= Basis4D.from_xw(_slice_xw)
+	if not is_zero_approx(_slice_zw):
+		slice *= Basis4D.from_zw(_slice_zw)
+	var t: Vector4 = slice.inverse() * rel
+	var flat := Vector2(t.x, t.z)
+	if flat.length() < 0.2:
+		return
+	flat = flat.normalized()
+	var want: float = yaw
+	var best: float = -2.0
+	for candidate in [atan2(-flat.x, -flat.y), atan2(flat.x, -flat.y)]:
+		var f: Vector4 = Basis4D.from_zx(candidate) * Vector4(0.0, 0.0, -1.0, 0.0)
+		var score: float = Vector2(f.x, f.z).dot(flat)
+		if score > best:
+			best = score
+			want = candidate
+	yaw = lerp_angle(yaw, want, clampf(delta * lock_turn_rate, 0.0, 1.0))
+	_apply()
