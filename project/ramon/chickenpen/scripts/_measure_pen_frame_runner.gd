@@ -16,6 +16,11 @@ extends SceneTree
 ## Reading 8.0 here means the frame is pinned against that cap, not that physics is the
 ## cost - which is what his 8.0 ticks at 146 ms meant.
 ##
+## NO SCRIPT-TIME COLUMN, deliberately. Performance.TIME_PROCESS holds its value between
+## updates rather than reporting each frame - Trym's harness found ten consecutive frames
+## reading back bit-identical - so averaging it produced "35 ms of process time" inside a
+## 2.5 ms frame. Frame time from the wall clock is the only number here that can be trusted.
+##
 ## Optional arguments after `--`:
 ##   norock=1   strip the voxel rock's colliders before measuring, to see what they cost
 ##   frames=N   how many frames to measure (default 300)
@@ -31,8 +36,6 @@ var _last: int = 0
 var _times: PackedFloat64Array = []
 var _ticks_this_frame: int = 0
 var _ticks: PackedInt32Array = []
-var _proc: float = 0.0
-var _phys: float = 0.0
 
 
 func _initialize() -> void:
@@ -76,8 +79,6 @@ func _process(_d: float) -> bool:
 	if _f > WARMUP:
 		_times.append(float(now - _last) / 1000.0)
 		_ticks.append(_ticks_this_frame)
-		_proc += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
-		_phys += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
 	_ticks_this_frame = 0
 	_last = now
 	if _f >= WARMUP + _frames:
@@ -102,4 +103,3 @@ func _report() -> void:
 	print("   mean %.2f ms   (%.1f fps)" % [mean, 1000.0 / mean])
 	print("   p50 %.2f   p95 %.2f   p99 %.2f   worst %.2f ms" % [sorted[n / 2], sorted[int(n * 0.95)], sorted[int(n * 0.99)], sorted[n - 1]])
 	print("   physics ticks per frame %.2f   (Godot caps it at %d)" % [float(tick_total) / n, Engine.max_physics_steps_per_frame])
-	print("   script time per frame: process %.2f ms, physics %.2f ms" % [_proc / n, _phys / n])

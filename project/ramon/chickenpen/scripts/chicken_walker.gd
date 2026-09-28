@@ -24,9 +24,9 @@ extends Node4D
 ##     planted, and a bird holds its head still against that rocking - the "chicken
 ##     head" effect Trym's own design doc names in section 4.4 as a thing to build.
 ##
-## The legs are driven as loft balls rather than as rigid bones, because the chicken was
-## authored as a model and not as a bone rig. That costs a re-loft of the two small leg
-## rigs each frame; see _physics_process for what that actually measures.
+## The legs were authored as lofted tubes, not as bones, so each one is cut in two at the
+## knee on the first frame and the halves are moved as rigid pieces - see _bind_leg for why
+## they stopped being skinned, and what it cost while they were.
 
 const _GaitController = preload("res://scripts/gait_controller.gd")
 
@@ -251,9 +251,10 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	# NOTHING on this bird re-lofts. The body, neck, wings and wattle are moved as whole
-	# nodes - the rigid approach Trym's creature uses throughout - and the two legs, which
-	# do have to bend, are skinned.
+	# NOTHING on this bird re-lofts or reshapes. The body, neck, wings and wattle are moved
+	# as whole nodes - the rigid approach Trym's creature uses throughout - and the two legs
+	# are two rigid halves each, hinged at the knee. No mesh is written after the first
+	# frame, which is what keeps the renderer from rebuilding them (see _bind_leg).
 	#
 	# They used to re-loft, and an earlier version of this comment called them "the
 	# cheapest rigs on the bird". Measured, they were the opposite: 7.8 ms per leg per
@@ -593,12 +594,39 @@ func _carry_attachments() -> void:
 ## handed to the thigh or the shank according to which side of the knee it falls on,
 ## with a soft band across the joint so the surface bends instead of shearing. Cheap,
 ## and good enough for a leg this low-poly.
+## Where a tetrahedron goes when the leg is cut in two. Anything whose average weight is
+## below HI belongs to the thigh, anything above LO to the shank, and the band between them
+## is given to BOTH. That overlap is what hides the joint: rigid pieces hinged at a point
+## open a notch on the outside of the bend, and a strip that belongs to both halves fills
+## it. At rest the two copies coincide exactly, in the same colour, so the overlap is
+## invisible until the leg bends and then it is exactly where it is needed.
+const LEG_SPLIT_LO: float = 0.38
+const LEG_SPLIT_HI: float = 0.62
+
+
+## Cuts the lofted leg into a thigh and a shank that are moved, never reshaped.
+##
+## WHY THIS STOPPED BEING SKINNING. Skinning wrote a fresh vertex array into the leg every
+## physics tick, and every write marks the mesh's 3D proxy dirty, so the renderer rebuilt
+## all 720 tetrahedra of every leg every frame: eighteen legs, 12,960 tetrahedra, most of
+## the frame. Worse, it ran in _physics_process, so a slow frame that owed the physics
+## clock four or eight ticks re-skinned every leg four or eight times before drawing once.
+##
+## But the skinning was only ever two rigid motions blended - the thigh swinging about the
+## hip and the shank about the knee. So the leg is cut once, here, along the same weights,
+## and each half is handed to a node whose TRANSFORM carries its motion. A transform change
+## costs the renderer a matrix; a mesh change costs it the mesh. Nothing is written into a
+## mesh again after this function returns.
+##
+## The pieces share the source mesh's vertex, normal and texture arrays whole and take only
+## their own tetrahedra, so every index still points where it did and the colouring and
+## texture mapping come across untouched.
 func _bind_leg(leg: Dictionary) -> void:
-	var rig: Node = leg["rig"]
-	var mesh := (rig as MeshInstance4D).mesh as ArrayTetraMesh4D
+	var rig := leg["rig"] as MeshInstance4D
+	var mesh := rig.mesh as ArrayTetraMesh4D if rig != null else null
 	if mesh == null:
 		return
-	# Stops the rig re-lofting when anything moves: from here the mesh is driven directly.
+	# Stops the rig re-lofting when a ball moves: from here the pieces are driven directly.
 	rig.set("live_rebuild", false)
 	var rest: PackedVector4Array = mesh.get_vertex_positions()
 	var hip: Vector4 = leg["hip_pos"]
@@ -611,33 +639,83 @@ func _bind_leg(leg: Dictionary) -> void:
 	for i in rest.size():
 		var s: float = (hip.y - rest[i].y) / span
 		weights[i] = smoothstep(at_knee - 0.14, at_knee + 0.14, s)
+	var pieces: Array = _split_leg(mesh, weights)
+	for i in 2:
+		var piece := MeshInstance4D.new()
+		piece.name = "Thigh" if i == 0 else "Shank"
+		piece.mesh = pieces[i]
+		piece.material_override = rig.material_override
+		rig.add_child(piece)
+		leg["thigh_node" if i == 0 else "shank_node"] = piece
+	# The rig keeps its balls and the foot hanging under it, but draws nothing itself.
+	rig.mesh = null
 	leg["mesh"] = mesh
-	leg["rest"] = rest
-	leg["weights"] = weights
 	leg["rest_knee"] = knee
 	leg["rest_foot"] = foot
-	leg["out"] = PackedVector4Array()
-	leg["out"].resize(rest.size())
 
 
-## Poses a bound leg: thigh rotates about the hip, shank about the knee, and each vertex
-## is a blend of the two.
+## One lofted leg in, two meshes out - see LEG_SPLIT_LO for why they overlap.
+func _split_leg(mesh: ArrayTetraMesh4D, weights: PackedFloat32Array) -> Array:
+	var cells: PackedInt32Array = mesh.simplex_cell_vertex_indices
+	var textures: PackedInt32Array = mesh.simplex_cell_texture_map_indices
+	var normals: PackedInt32Array = mesh.simplex_cell_normal_indices
+	var boundary: PackedVector4Array = mesh.simplex_cell_boundary_normals
+	var out: Array = []
+	for half in 2:
+		var c := PackedInt32Array()
+		var t := PackedInt32Array()
+		var n := PackedInt32Array()
+		var b := PackedVector4Array()
+		for cell in cells.size() / 4:
+			var k: int = cell * 4
+			var w: float = (weights[cells[k]] + weights[cells[k + 1]]
+				+ weights[cells[k + 2]] + weights[cells[k + 3]]) * 0.25
+			var keep: bool = w < LEG_SPLIT_HI if half == 0 else w > LEG_SPLIT_LO
+			if not keep:
+				continue
+			for j in 4:
+				c.append(cells[k + j])
+				if textures.size() == cells.size():
+					t.append(textures[k + j])
+				if normals.size() == cells.size():
+					n.append(normals[k + j])
+			if boundary.size() == cells.size() / 4:
+				b.append(boundary[cell])
+		var piece := ArrayTetraMesh4D.new()
+		piece.vertex_positions = mesh.vertex_positions
+		piece.normal_values = mesh.normal_values
+		piece.texture_map_values = mesh.texture_map_values
+		piece.simplex_cell_vertex_indices = c
+		piece.simplex_cell_texture_map_indices = t
+		piece.simplex_cell_normal_indices = n
+		piece.simplex_cell_boundary_normals = b
+		out.append(piece)
+	return out
+
+
+## Poses a bound leg: the thigh rotates about the hip, the shank about the knee, and each
+## is a node transform rather than a vertex write - the same two motions the skinning
+## blended, applied to the pieces that carry them.
 func _skin_leg(leg: Dictionary, knee: Vector4, foot: Vector4) -> void:
-	if not leg.has("mesh"):
+	if not leg.has("thigh_node"):
 		return
 	var hip: Vector4 = leg["hip_pos"]
-	var rest: PackedVector4Array = leg["rest"]
-	var weights: PackedFloat32Array = leg["weights"]
-	var out: PackedVector4Array = leg["out"]
-	var thigh: Array = _plane_rotation((leg["rest_knee"] as Vector4) - hip, knee - hip)
-	var shank: Array = _plane_rotation((leg["rest_foot"] as Vector4) - (leg["rest_knee"] as Vector4), foot - knee)
 	var rest_knee: Vector4 = leg["rest_knee"]
-	for i in rest.size():
-		var v: Vector4 = rest[i]
-		var a: Vector4 = hip + _apply_plane_rotation(v - hip, thigh)
-		var b: Vector4 = knee + _apply_plane_rotation(v - rest_knee, shank)
-		out[i] = a.lerp(b, weights[i])
-	(leg["mesh"] as ArrayTetraMesh4D).set_vertex_positions(out)
+	var thigh: Array = _plane_rotation(rest_knee - hip, knee - hip)
+	var shank: Array = _plane_rotation((leg["rest_foot"] as Vector4) - rest_knee, foot - knee)
+	_carry(leg["thigh_node"] as Node4D, thigh, hip, hip)
+	_carry(leg["shank_node"] as Node4D, shank, rest_knee, knee)
+
+
+## Moves a piece so that its point `from` lands on `to`, turned by plane rotation `r`:
+## v -> to + R(v - from). As a transform that is basis R and origin to - R(from).
+func _carry(piece: Node4D, r: Array, from: Vector4, to: Vector4) -> void:
+	piece.basis = Projection(
+		_apply_plane_rotation(Vector4(1.0, 0.0, 0.0, 0.0), r),
+		_apply_plane_rotation(Vector4(0.0, 1.0, 0.0, 0.0), r),
+		_apply_plane_rotation(Vector4(0.0, 0.0, 1.0, 0.0), r),
+		_apply_plane_rotation(Vector4(0.0, 0.0, 0.0, 1.0), r))
+	piece.position = to - _apply_plane_rotation(from, r)
 
 
 ## The rotation carrying one direction onto another, as the plane they span plus the

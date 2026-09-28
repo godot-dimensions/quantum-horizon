@@ -113,6 +113,8 @@ var _since_skin := 0
 var _rig_rest_y: float = 0.0
 var _rest_verts := PackedVector4Array()
 var _posed := PackedVector4Array()
+## The body and a thigh and shank per leg, once the hide has been cut - see _cut_into_pieces.
+var _pieces: Array[MeshInstance4D] = []
 var _skin_index := PackedInt32Array()
 var _skin_leg := PackedInt32Array()
 var _skin_weight := PackedFloat32Array()
@@ -255,8 +257,9 @@ func _only_ball_child(node: Node) -> Node:
 func _physics_process(_delta: float) -> void:
 	# It used to rebuild the whole mesh every frame, which is why the resolution is
 	# turned down. Measured on the brachiosaurus that cost 26.87 ms/frame on its own.
-	# It is skinned now: each vertex is bound once to the leg bone nearest it, and only
-	# vertices move afterwards. Nothing here re-lofts.
+	# Then it was skinned, which still rebuilt it - every vertex write dirties the proxy.
+	# Now the hide is cut into rigid pieces on the first frame and only their transforms
+	# change (see _cut_into_pieces). Nothing here re-lofts or reshapes a mesh.
 	if not _bound:
 		_bound = true
 		_bind_mesh()
@@ -426,39 +429,144 @@ func _bind_mesh() -> void:
 			_skin_shank.append(best_shank)
 	if verbose_skin:
 		print("[strider] bound %d of %d vertices to %d legs" % [_skin_index.size(), _rest_verts.size(), _legs.size()])
+	_cut_into_pieces(mesh)
 
 
-## Applies the current pose to the bound vertices. Two rotations per leg, then a blend.
-func _skin() -> void:
-	if _skin_index.is_empty():
-		return
-	var t0 := Time.get_ticks_usec()
-	var thigh: Array = []
-	var shank: Array = []
-	for leg in _legs:
-		var hip: Vector4 = leg["hip_world"]
-		thigh.append(_Plane.between((leg["rest_knee"] as Vector4) - hip, (leg["knee_now"] as Vector4) - hip))
-		shank.append(_Plane.between((leg["rest_foot"] as Vector4) - (leg["rest_knee"] as Vector4),
-			(leg["foot_now"] as Vector4) - (leg["knee_now"] as Vector4)))
+## Where a tetrahedron goes when the hide is cut apart. Same idea as the chicken's legs:
+## the band either side of each joint is given to BOTH neighbours, so the notch a rigid
+## hinge opens on the outside of a bend is always filled by the piece on the other side.
+## At rest the copies coincide exactly, in the same colour, and cannot be seen.
+const JOINT_LO: float = 0.38
+const JOINT_HI: float = 0.62
+
+
+## Cuts the hide into a body and a thigh and shank per leg, each moved and never reshaped.
+##
+## WHY. Skinning wrote the whole vertex array back every physics tick, and each write
+## marks the mesh's 3D proxy dirty: Nike's hide is 7,008 tetrahedra and the red cat's
+## 2,928, all rebuilt by the renderer every time either of them took a step. And it ran in
+## _physics_process, so a slow frame owing several physics ticks paid it several times.
+##
+## The skinning was never more than rigid motions blended - the body still, each thigh
+## about its hip, each shank about its knee - so the hide is cut once along the same
+## binding and each part is handed to a node whose TRANSFORM carries its motion. The
+## vertex, normal and texture arrays are shared whole by every piece, so indices and
+## colouring come across untouched; only the tetrahedra are divided.
+##
+## The binding above is kept exactly as it was, which is why this reads its arrays rather
+## than deciding again which leg owns what.
+func _cut_into_pieces(mesh: ArrayTetraMesh4D) -> void:
+	var count: int = _rest_verts.size()
+	var owner := PackedInt32Array()
+	var weight := PackedFloat32Array()
+	var shank := PackedFloat32Array()
+	owner.resize(count)
+	owner.fill(-1)
+	weight.resize(count)
+	shank.resize(count)
 	for k in _skin_index.size():
 		var i: int = _skin_index[k]
-		var leg: Dictionary = _legs[_skin_leg[k]]
-		var v: Vector4 = _rest_verts[i]
+		owner[i] = _skin_leg[k]
+		weight[i] = _skin_weight[k]
+		shank[i] = _skin_shank[k]
+	var cells: PackedInt32Array = mesh.simplex_cell_vertex_indices
+	var textures: PackedInt32Array = mesh.simplex_cell_texture_map_indices
+	var normals: PackedInt32Array = mesh.simplex_cell_normal_indices
+	var boundary: PackedVector4Array = mesh.simplex_cell_boundary_normals
+	# Piece 0 is the body; leg k is pieces 1 + 2k (thigh) and 2 + 2k (shank).
+	var pieces: int = 1 + _legs.size() * 2
+	# Plain Arrays, not packed ones, while they grow. A PackedInt32Array is a VALUE type in
+	# GDScript: pulled out of an Array and appended to, it grows a temporary copy that is
+	# thrown away, and every bucket stays empty - which is exactly what the first version
+	# of this did, silently deleting Nike's hide. They are converted once at the end.
+	var buckets: Array = []
+	for p in pieces:
+		buckets.append([[], [], [], []])
+	for cell in cells.size() / 4:
+		var k: int = cell * 4
+		# Which leg, if any: the one owning most of this tetrahedron's corners.
+		var votes: Dictionary = {}
+		var w: float = 0.0
+		var s: float = 0.0
+		for j in 4:
+			var v: int = cells[k + j]
+			w += weight[v]
+			s += shank[v]
+			if owner[v] >= 0:
+				votes[owner[v]] = int(votes.get(owner[v], 0)) + 1
+		w *= 0.25
+		s *= 0.25
+		var leg: int = -1
+		var most: int = 0
+		for l in votes:
+			if votes[l] > most:
+				most = votes[l]
+				leg = l
+		var into: Array = []
+		if leg < 0 or w < JOINT_HI:
+			into.append(0)
+		if leg >= 0 and w > JOINT_LO:
+			if s < JOINT_HI:
+				into.append(1 + leg * 2)
+			if s > JOINT_LO:
+				into.append(2 + leg * 2)
+		for p in into:
+			var b: Array = buckets[p]
+			for j in 4:
+				(b[0] as Array).append(cells[k + j])
+				if textures.size() == cells.size():
+					(b[1] as Array).append(textures[k + j])
+				if normals.size() == cells.size():
+					(b[2] as Array).append(normals[k + j])
+			if boundary.size() == cells.size() / 4:
+				(b[3] as Array).append(boundary[cell])
+	var rig := _rig as MeshInstance4D
+	_pieces.clear()
+	for p in pieces:
+		var b: Array = buckets[p]
+		var node := MeshInstance4D.new()
+		node.name = "Body" if p == 0 else "Leg%d%s" % [(p - 1) / 2, "Thigh" if p % 2 == 1 else "Shank"]
+		if not (b[0] as Array).is_empty():
+			var piece := ArrayTetraMesh4D.new()
+			piece.vertex_positions = mesh.vertex_positions
+			piece.normal_values = mesh.normal_values
+			piece.texture_map_values = mesh.texture_map_values
+			piece.simplex_cell_vertex_indices = PackedInt32Array(b[0])
+			piece.simplex_cell_texture_map_indices = PackedInt32Array(b[1])
+			piece.simplex_cell_normal_indices = PackedInt32Array(b[2])
+			piece.simplex_cell_boundary_normals = PackedVector4Array(b[3])
+			node.mesh = piece
+		node.material_override = rig.material_override
+		rig.add_child(node)
+		_pieces.append(node)
+	# The rig keeps its balls and moves the body with its own bob, but draws nothing itself.
+	rig.mesh = null
+
+
+## Poses the legs by moving their pieces - two plane rotations per leg, the same two the
+## skinning used to blend, applied to transforms instead of to seven thousand vertices.
+func _skin() -> void:
+	if _pieces.size() != 1 + _legs.size() * 2:
+		return
+	for l in _legs.size():
+		var leg: Dictionary = _legs[l]
 		var hip: Vector4 = leg["hip_world"]
-		var a: Vector4 = hip + _Plane.apply(v - hip, thigh[_skin_leg[k]])
-		var b: Vector4 = (leg["knee_now"] as Vector4) + _Plane.apply(v - (leg["rest_knee"] as Vector4), shank[_skin_leg[k]])
-		_posed[i] = v.lerp(a.lerp(b, _skin_shank[k]), _skin_weight[k])
-	var t1 := Time.get_ticks_usec()
-	((_rig as MeshInstance4D).mesh as ArrayTetraMesh4D).set_vertex_positions(_posed)
-	if verbose_skin:
-		_skin_maths += t1 - t0
-		_skin_upload += Time.get_ticks_usec() - t1
-		_skin_frames += 1
-		if _skin_frames == 200:
-			var mesh := (_rig as MeshInstance4D).mesh as ArrayTetraMesh4D
-			print("[strider] %d cells, %d of %d verts bound, maths %.3f ms, upload %.3f ms" % [
-				mesh.get_simplex_cell_vertex_indices().size() / 4, _skin_index.size(),
-				_rest_verts.size(), _skin_maths / 200.0 / 1000.0, _skin_upload / 200.0 / 1000.0])
+		var rest_knee: Vector4 = leg["rest_knee"]
+		var knee: Vector4 = leg["knee_now"]
+		_carry(_pieces[1 + l * 2], _Plane.between(rest_knee - hip, knee - hip), hip, hip)
+		_carry(_pieces[2 + l * 2], _Plane.between((leg["rest_foot"] as Vector4) - rest_knee,
+			(leg["foot_now"] as Vector4) - knee), rest_knee, knee)
+
+
+## Moves a piece so that its point `from` lands on `to`, turned by plane rotation `r`:
+## v -> to + R(v - from), which as a transform is basis R and origin to - R(from).
+func _carry(piece: Node4D, r: Array, from: Vector4, to: Vector4) -> void:
+	piece.basis = Projection(
+		_Plane.apply(Vector4(1.0, 0.0, 0.0, 0.0), r),
+		_Plane.apply(Vector4(0.0, 1.0, 0.0, 0.0), r),
+		_Plane.apply(Vector4(0.0, 0.0, 1.0, 0.0), r),
+		_Plane.apply(Vector4(0.0, 0.0, 0.0, 1.0), r))
+	piece.position = to - _Plane.apply(from, r)
 
 
 func _distance_to_segment(point: Vector4, a: Vector4, b: Vector4) -> float:

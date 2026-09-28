@@ -10,12 +10,16 @@ var _nike: Node4D
 var _antics: Node
 var _spot: Vector4
 var _said_frame := 0
+## Physics ticks, counted separately from process frames. See stage 3.
+var _ticks := 0
+var _jump_by := 0
 var _stage := 0
 var _start_gap: float = 0.0
 var _peaked: float = 0.0
 
 
 func _initialize() -> void:
+	physics_frame.connect(func() -> void: _ticks += 1)
 	_root = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
 	root.add_child(_root)
 	current_scene = _root
@@ -141,13 +145,20 @@ func _process(_d) -> bool:
 				"%.1f m from the middle, inside a %.1f by %.1f fence" % [1.5,
 					float(fence.get("extend_x_positive")), float(fence.get("extend_z_positive"))])
 			_stage = 4
-			_said_frame = _f + 4000
+			# THE DEADLINE IS IN PHYSICS TICKS, NOT FRAMES. He walks on the physics clock and
+			# slowly - a couple of metres to the rail is twenty-odd seconds - while this loop
+			# counts process frames, which headless run faster than physics by a ratio that
+			# depends on how busy the machine is. A deadline of 4000 frames was 25-30 seconds
+			# of his time on a quiet machine and less under load, so the test failed about
+			# one run in four and more often in a batch: a race, not a pig who would not jump.
+			# Sixty seconds of his own time is comfortably more than he needs.
+			_jump_by = _ticks + 60 * 60
 		4:
 			if int(_antics.get("state")) == 5:
 				_peaked = maxf(_peaked, _nike.global_position.y)
 				_stage = 5
-			elif _f >= _said_frame:
-				_check("he jumps it", false, "he never left the ground")
+			elif _ticks >= _jump_by:
+				_check("he jumps it", false, "he never left the ground in 60 s of his own time")
 				return _finish()
 		5:
 			_peaked = maxf(_peaked, _nike.global_position.y)

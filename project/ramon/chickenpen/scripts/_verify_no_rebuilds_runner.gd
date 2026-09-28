@@ -90,7 +90,39 @@ func _report() -> void:
 	for i in mini(12, rows.size()):
 		var r: Array = rows[i]
 		print("      %6.0f tets/tick   %.2f x %5d   %s" % [r[0], r[1], r[2], r[3]])
+	var fails: int = 0
 	var ok: bool = tets <= BUDGET_TETS
+	if not ok:
+		fails += 1
 	print("   %s the pen stays inside its rebuild budget" % ("PASS" if ok else "FAIL"))
-	print("\n%d FAIL(s)" % (0 if ok else 1))
-	quit(0 if ok else 1)
+	# AND NOTHING VANISHED TO GET THERE. The first version of the rigid hides divided the
+	# tetrahedra into buckets that silently stayed empty, deleted Nike and both cats, and
+	# passed the budget above perfectly - nothing left, nothing to rebuild. So each animal
+	# that used to be skinned must still draw at least the tetrahedra it was skinned with.
+	for pair in DRAWN:
+		var node: Node = _room.get_node_or_null(String(pair[0]))
+		var have: int = _drawn_tets(node) if node != null else 0
+		var enough: bool = have >= int(pair[1])
+		if not enough:
+			fails += 1
+		print("   %s %s still draws %d tetrahedra (it was skinned with %d)" % [
+			"PASS" if enough else "FAIL", pair[0], have, pair[1]])
+	print("\n%d FAIL(s)" % fails)
+	quit(0 if fails == 0 else 1)
+
+
+## Every animal whose mesh used to be rewritten each tick, and how many tetrahedra it had.
+const DRAWN := [
+	["World/Nike", 7008], ["World/Cat", 2928], ["World/RedCat", 2928],
+	["Chickens/Chicken01", 1440], ["Chickens/Chicken05", 1440], ["Chickens/Chicken09", 1440],
+]
+
+
+func _drawn_tets(node: Node) -> int:
+	var n: int = 0
+	var mi := node as MeshInstance4D
+	if mi != null and mi.is_visible_in_tree() and mi.mesh is ArrayTetraMesh4D:
+		n += (mi.mesh as ArrayTetraMesh4D).get_simplex_cell_vertex_indices().size() / 4
+	for c in node.get_children():
+		n += _drawn_tets(c)
+	return n
