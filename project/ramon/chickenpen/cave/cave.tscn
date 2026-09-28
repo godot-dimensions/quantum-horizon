@@ -3,7 +3,6 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_4d.gd" id="cave"]
 [ext_resource type="Script" path="res://ramon/chickenpen/terrain/baked_ground_4d.gd" id="baked"]
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/cave.res" id="cave_mesh"]
-[ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/cave_far.res" id="cave_far_mesh"]
 [ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_exit_4d.gd" id="exit"]
 [ext_resource type="PackedScene" uid="uid://gh03wmhupplp" path="res://ramon/VoxelMining/voxel_mining_block.tscn" id="voxel_block"]
 [ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_monolith_block.gd" id="monolith"]
@@ -15,6 +14,7 @@
 [ext_resource type="Script" path="res://ramon/dialogue/dialogue_box_4d.gd" id="box"]
 [ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_miner_talk_4d.gd" id="miner_talk"]
 [ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_murmur_4d.gd" id="murmur"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_far_stream_4d.gd" id="far_stream"]
 
 [sub_resource type="GradientSkyMaterial4D" id="voidsky"]
 top_color = Color(0.008, 0.009, 0.014, 1)
@@ -131,108 +131,8 @@ light_color = Color(0.62, 0.82, 1, 1)
 light_energy = 1.6
 omni_range_meters = 4.5
 
-[node name="WTunnel1" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 2.4, -36, 16)
-light_color = Color(0.62, 0.82, 1, 1)
-light_energy = 1.2
-omni_range_meters = 6.0
-
-[node name="WTunnel2" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 2.4, -36, 22.5)
-light_color = Color(0.62, 0.82, 1, 1)
-light_energy = 1.2
-omni_range_meters = 6.0
-
-[node name="FarRoom" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 7, -36, 36)
-light_color = Color(0.55, 0.7, 1, 1)
-light_energy = 14.0
-omni_range_meters = 30.0
-
-[node name="FarRoomEntry" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 4, -36, 26)
-light_color = Color(0.62, 0.82, 1, 1)
-light_energy = 3.5
-omni_range_meters = 12.0
-
-[node name="FarStoneX+" type="OmniLight4D" parent="Lamps"]
-position = Vector4(5.2, 1.2, -36, 36)
-light_color = Color(0.62, 0.82, 1, 1)
-light_energy = 2.5
-omni_range_meters = 5.0
-
-[node name="FarStoneX-" type="OmniLight4D" parent="Lamps"]
-position = Vector4(-5.2, 1.2, -36, 36)
-light_color = Color(0.62, 0.82, 1, 1)
-light_energy = 2.5
-omni_range_meters = 5.0
-
-[node name="FarStoneZ+" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 1.2, -30.8, 36)
-light_color = Color(0.62, 0.82, 1, 1)
-light_energy = 2.5
-omni_range_meters = 5.0
-
-[node name="FarStoneZ-" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 1.2, -41.2, 36)
-light_color = Color(0.62, 0.82, 1, 1)
-light_energy = 2.5
-omni_range_meters = 5.0
-
-[node name="FarStoneW+" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 1.2, -36, 41.2)
-light_color = Color(0.62, 0.82, 1, 1)
-light_energy = 2.5
-omni_range_meters = 5.0
-
-[node name="FarStoneW-" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 1.2, -36, 30.8)
-light_color = Color(0.62, 0.82, 1, 1)
-light_energy = 2.5
-omni_range_meters = 5.0
-
-[node name="FarWallWashZ+" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 3.5, -26.5, 36)
-light_color = Color(0.5, 0.62, 0.95, 1)
-light_energy = 1.4
-omni_range_meters = 6.0
-
-[node name="FarWallWashZ-" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 3.5, -45.5, 36)
-light_color = Color(0.5, 0.62, 0.95, 1)
-light_energy = 1.4
-omni_range_meters = 6.0
-
-[node name="FarWallWashW+" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 3.5, -36, 43.5)
-light_color = Color(0.5, 0.62, 0.95, 1)
-light_energy = 1.4
-omni_range_meters = 6.0
-
-[node name="FarWallWashX+" type="OmniLight4D" parent="Lamps"]
-position = Vector4(9.5, 3.5, -36, 36)
-light_color = Color(0.5, 0.62, 0.95, 1)
-light_energy = 1.4
-omni_range_meters = 6.0
-
-[node name="FarRoomBack" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 3, -36, 45)
-light_color = Color(0.62, 0.82, 1, 1)
-light_energy = 2.0
-omni_range_meters = 10.0
-
-[node name="FarRoomStones" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 1.2, -36, 36)
-light_color = Color(0.62, 0.82, 1, 1)
-light_energy = 6.0
-omni_range_meters = 11.0
-
 [node name="Rock" type="MeshInstance4D" parent="."]
 mesh = ExtResource("cave_mesh")
-script = ExtResource("baked")
-
-[node name="RockFar" type="MeshInstance4D" parent="."]
-mesh = ExtResource("cave_far_mesh")
 script = ExtResource("baked")
 
 [node name="WayThroughWMark" type="Node4D" parent="." groups=["slice_dial_landmark"]]
@@ -243,6 +143,9 @@ metadata/dial_tolerance = 1.5
 
 [node name="DialAnchor" type="Node4D" parent="." groups=["slice_dial_anchor"]]
 position = Vector4(0, 0, -33, 0)
+
+[node name="FarStream" type="Node" parent="."]
+script = ExtResource("far_stream")
 
 [node name="ExitArch" type="Node4D" parent="."]
 position = Vector4(0, 0, 5.8, 0)

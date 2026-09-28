@@ -74,8 +74,8 @@ const CHUNKS := [
 	[Vector4(-8.5, -2.0, -42.0, 4.5), Vector4(8.5, 7.5, -30.0, 14.5), 12],
 ]
 ## The rest of the way through W and the far room, baked as a mesh of their own
-## (baked/cave_far.res, bake_far): they rebake on their own, and two meshes draw cheaper
-## than one of the same size put together.
+## (baked/cave_far.res, bake_far) for a scene of their own (cave_far.tscn), which is only
+## loaded while it can be seen - see cave_far_stream_4d.gd.
 const FAR_CHUNKS := [
 	[Vector4(-8.5, -2.0, -42.0, 12.0), Vector4(8.5, 7.5, -30.0, 29.0), 13],
 	[Vector4(-16.5, -2.0, -52.5, 24.0), Vector4(16.5, 15.5, -19.5, 48.0), 15],
@@ -327,10 +327,19 @@ func far_props() -> Array:
 	return out
 
 
-## Where the player cannot go, as boxes: every prop marked solid.
+## Where the player cannot go, as boxes: every prop marked solid. The far room's are its
+## own (cave_far_4d.gd), since it is only there some of the time.
 func solid_boxes() -> Array:
+	return _solid(props())
+
+
+func far_solid_boxes() -> Array:
+	return _solid(far_props())
+
+
+func _solid(list: Array) -> Array:
 	var out := []
-	for prop in props() + far_props():
+	for prop in list:
 		if prop[3]:
 			out.append([prop[0], prop[1]])
 	return out

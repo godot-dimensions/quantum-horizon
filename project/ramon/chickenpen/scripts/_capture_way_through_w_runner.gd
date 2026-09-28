@@ -39,7 +39,12 @@ func _process(d: float) -> bool:
 					lamp.set("light_energy", 0.0)
 		_eye = Camera4D.new(); _eye.set("rendering_engine_name", "Cross-section")
 		_cave.add_child(_eye); _eye.current = true
+		# Off w = 0, so the far room streams in (cave_far_stream_4d.gd).
+		_player().global_position = _cave.global_position + Vector4(0, 0.05, -31, 3.0)
 	if _f < 20:
+		return false
+	if _f < 400 and not bool(_cave.get_node("FarStream").call("is_loaded")):
+		_f = 19
 		return false
 	var shots := [[Vector4(0, 1.8, -36, 3.6), 1.0], [Vector4(1.2, 1.7, -34.5, 3.0), 1.0], [Vector4(0, 1.8, -36, 17.2), -1.0],
 		[Vector4(0, 1.8, -36, 12.0), 1.0], [Vector4(0, 2.2, -36, 25.0), 1.0], [Vector4(0, 2.5, -36, 45.0), -1.0]]
