@@ -36,7 +36,11 @@ func _ready() -> void:
 	box.size = _size
 	mesh = box
 	var material := TetraMaterial4D.new()
-	material.albedo_color = CaveRock.W_GLOW
+	# The shade the baked sheet had before it was its own mesh: the bake darkens every face
+	# of a prop but its top by a quarter, and the full colour made the chamber a third
+	# brighter round the arch (Ramon, 29 Sept: "the mood is changed in the first cave ...
+	# too bright").
+	material.albedo_color = CaveRock.W_GLOW.darkened(0.25)
 	material_override = material
 	position = Vector4(CaveRock.W_DOOR.x, 1.9, CaveRock.W_DOOR.y, CaveRock.W_DOOR.z)
 
