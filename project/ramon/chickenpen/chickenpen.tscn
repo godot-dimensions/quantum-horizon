@@ -2367,7 +2367,7 @@ mesh = SubResource("BoxTetraMesh4D_rr3dw")
 
 [node name="Nike" parent="World" instance=ExtResource("nike_scene")]
 position = Vector4(7.5, 0, 2, 0)
-basis = Projection(0.3, 0, 0, 0, 0, 0.3, 0, 0, 0, 0, 0.3, 0, 0, 0, 0, 0.3)
+basis = Projection(0.9, 0, 0, 0, 0, 0.9, 0, 0, 0, 0, 0.9, 0, 0, 0, 0, 0.9)
 
 [node name="Crate" type="MeshInstance4D" parent="World"]
 position = Vector4(-7.4, 0.3, 1.8, 0)

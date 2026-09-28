@@ -78,6 +78,10 @@ extends Node
 ## is small enough to go straight overhead; a pig this size wants to come down into the
 ## hands rather than float above them.
 @export var carry_offset: Vector4 = Vector4(0.0, -0.36, 0.06, 0.0)
+## The size carry_offset was tuned at. Scaled by his real size over this, for the same
+## reason nike_antics scales his hop: at three times the size, feet 0.36 m below your hands
+## put the rest of him up through your chest.
+@export_range(0.05, 3.0, 0.05) var designed_at_scale: float = 0.3
 ## Turned across the body while carried. A pig held nose-forward reads as a battering ram
 ## and buries his head in the back of the player's own avatar; across the chest is how you
 ## would actually carry something with a head at one end.
@@ -220,7 +224,8 @@ func _process(_delta: float) -> void:
 	# from where it was told to stand.
 	var host: Node4D = _nike.get_parent() as Node4D
 	var origin: Vector4 = host.global_position if host != null else Vector4.ZERO
-	_nike.position = _anchor.global_position - origin + carry_offset
+	var ratio: float = _rest_basis.x.length() / maxf(designed_at_scale, 0.0001)
+	_nike.position = _anchor.global_position - origin + carry_offset * ratio
 	_nike.basis = Basis4D.from_zx(deg_to_rad(carry_yaw_degrees)) * _rest_basis
 
 

@@ -143,6 +143,13 @@ enum State { WALK, ROOT, GOING_DOWN, LYING, GETTING_UP, HOP }
 @export_range(0.0, 1.5, 0.05) var hop_clearance: float = 0.35
 ## Nose up off the ground, level at the top, nose down into the landing.
 @export_range(0.0, 40.0, 1.0, "suffix:°") var hop_pitch_degrees: float = 14.0
+## The size the launch, the distance and feed_radius were tuned at. They are lengths in metres,
+## and a pig three times the size needs three times the run-up - taking off 0.8 m out, a
+## big Nike would still have his snout through the rails. So they are scaled by his actual
+## size over this one, and resizing him in the scene just works. Trym, 25 Sept: "Nike
+## should be bigger, he's actually pretty huge IRL, like make him easily 3 times as tall
+## and proportionally fat."
+@export_range(0.05, 3.0, 0.05) var designed_at_scale: float = 0.3
 
 var state: State = State.WALK
 
@@ -258,7 +265,19 @@ func _physics_process(delta: float) -> void:
 			# down rather than snapping down.
 			_blend = minf(_timer / 0.35, 1.0) * minf((_limit - _timer) / 0.35, 1.0)
 			_blend = clampf(_blend, 0.0, 1.0)
-			if _timer >= _limit:
+			# ON HIS WAY TO DINNER HE DOES NOT SET OFF UNTIL HE IS FACING IT. He can only
+			# turn while stopped, and this stop was a fixed half second or so - about forty
+			# degrees of turn. With the trough behind him he set off still facing away and
+			# walked a full leg the wrong way before stopping to turn another forty. Watched
+			# tick by tick: 139 degrees off, then 102, then 131 as he walked on. A small pig
+			# covered so little ground doing that it never showed; three times the size, he
+			# walks three times as far, and he ended up further from his dinner than he
+			# started three runs in five. So the stop simply lasts until he has come round,
+			# with a ceiling so that nothing can hold him here for ever.
+			var facing_it: bool = not _going_to_eat \
+				or absf(angle_difference(_yaw, _heading)) <= deg_to_rad(12.0) \
+				or _timer >= _limit + 4.0
+			if _timer >= _limit and facing_it:
 				_enter(State.WALK, randf_range(walk_seconds.x, walk_seconds.y))
 		State.HOP:
 			_set_halted(true)
@@ -341,7 +360,7 @@ func _crossing_rails() -> bool:
 	if _mover == null:
 		return false
 	var dir := Vector4(sin(_yaw), 0.0, cos(_yaw), 0.0)
-	var ahead: Vector4 = _mover.global_position + dir * hop_launch
+	var ahead: Vector4 = _mover.global_position + dir * hop_launch * _size_ratio()
 	return _inside_pen(_mover.global_position) != _inside_pen(ahead)
 
 
@@ -357,7 +376,7 @@ func _turn_away() -> void:
 func _take_off() -> void:
 	var dir := Vector4(sin(_yaw), 0.0, cos(_yaw), 0.0)
 	_hop_from = _mover.position
-	_hop_to = _mover.position + dir * hop_distance
+	_hop_to = _mover.position + dir * hop_distance * _size_ratio()
 	_hop_peak = float(_fence.get("height")) + hop_clearance
 	_enter(State.HOP, hop_seconds)
 
@@ -366,7 +385,11 @@ func _at_the_trough() -> bool:
 	if _mover == null:
 		return false
 	var gap: Vector4 = _feed_at - _mover.global_position
-	return Vector2(gap.x, gap.z).length() <= feed_radius
+	# Scaled like the hop: it is measured from his middle, and it is his SNOUT that has to
+	# reach the trough. Unscaled, a big Nike had to push his middle to within a metre of it,
+	# which put his snout through the fence the trough stands against - so he turned away,
+	# came back, turned away, and walked off from his dinner three runs in five.
+	return Vector2(gap.x, gap.z).length() <= feed_radius * _size_ratio()
 
 
 ## Called when a conversation with him opens and closes. Turning it on re-centres his
@@ -473,3 +496,8 @@ func _pose() -> void:
 	_rig.basis = basis
 	# Height handed to the walker to apply, for the reason in the header.
 	_walker.set("_rig_rest_y", _rest_y + lift)
+
+
+## How much bigger than his tuning he is - see designed_at_scale.
+func _size_ratio() -> float:
+	return _scale / maxf(designed_at_scale, 0.0001)
