@@ -66,6 +66,7 @@ choice_size = 19
 [node name="DreamerTalk" type="Node" parent="Systems"]
 script = ExtResource("dlg")
 box_path = NodePath("../../UI/DreamerBox")
+escape_leaves = false
 
 [node name="DreamerDriver" type="Node" parent="Systems"]
 script = ExtResource("dreamer_talk")

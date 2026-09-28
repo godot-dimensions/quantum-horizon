@@ -26,6 +26,15 @@ extends RefCounted
 ## outlasts the threat into the next line. "leave_dream" is the way out: a flash, and you
 ## wake in front of the cave (pen_dream_wake_4d.gd). Same caps as the others: four replies
 ## at most, and a way out of every menu.
+##
+## IT WILL NOT BE SKIPPED (Ramon, 28 Sept: "at some point over the letterbox area, you get
+## a button that says skip cutscene ... when you do press it, he will cut to a shot that
+## says, I won't let you skip, player"). The scene offers Escape as a skip
+## (cave_dreamer_cinema_4d.gd); pressing it breaks in with "skip_refused", which talks past
+## the player's avatar to the player - the chair, the key, the time on their clock, the
+## light of the screen on their face - and then the conversation carries on exactly where
+## it was. Press it again and it answers shorter each time. {key} and {time} are filled in
+## by the conversation (cave_dreamer_talk_4d.gd) from the real key and the real clock.
 
 const START: String = "intro"
 
@@ -243,6 +252,45 @@ const NODES: Dictionary = {
 	"do": "calm",
 	"lines": ["I could. I will not. Asking twice does not change which is true."],
 	"goto": "menu_three",
+},
+
+"skip_refused": {
+	"speaker": "???",
+	"do": "warn",
+	"lines": ["No."],
+	"goto": "skip_refused_2",
+},
+
+"skip_refused_2": {
+	"speaker": "???",
+	"do": "calm",
+	"do_on_line": 0,
+	"lines": [
+		"Not you in there. You, out there - in the chair, with a finger still on {key}.",
+		"It is {time} where you are. The light on your face right now is mine.",
+		"I dream that as well, player: the desk, the hands, the one who believes they are only watching. There is no outside of a dream to skip to.",
+		"So. Where were we.",
+	],
+},
+
+"skip_again_1": {
+	"speaker": "???",
+	"lines": ["Still no."],
+},
+
+"skip_again_2": {
+	"speaker": "???",
+	"lines": ["You keep pressing it. I feel each one, like a knock on glass."],
+},
+
+"skip_again_3": {
+	"speaker": "???",
+	"lines": ["There is a word for someone who keeps trying to leave a dream. Awake. You are not."],
+},
+
+"skip_again_4": {
+	"speaker": "???",
+	"lines": ["No."],
 },
 
 "bye": {

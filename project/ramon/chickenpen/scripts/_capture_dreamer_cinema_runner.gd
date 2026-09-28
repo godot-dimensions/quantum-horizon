@@ -8,6 +8,10 @@ extends SceneTree
 ##
 ## Also checks what the scene promises: you are moved to the mark, the slice is flat and
 ## locked, the HUD is away, the scene camera is current, and every shot is one it knows.
+## And that it will not be skipped: Escape before the offer does nothing, Escape after it
+## breaks in with the refusal and a still stare, the conversation carries on at the very
+## line it was on, a second Escape gets the shorter answer and the replies back - and the
+## game is still running after all of it (the rig's second Escape quits).
 
 const ROOM := Vector4(0, 0, -36, 46)
 ## Replies to pick, in order, each time replies are offered.
@@ -23,6 +27,19 @@ var _picks := 0
 var _last := ""
 var _failed := 0
 var _shots := {}
+var _escaped := 0
+var _was_refused := false
+
+
+func _escape() -> void:
+	var press := InputEventAction.new()
+	press.action = &"ui_cancel"
+	press.pressed = true
+	Input.parse_input_event(press)
+	var release := InputEventAction.new()
+	release.action = &"ui_cancel"
+	release.pressed = false
+	Input.parse_input_event(release)
 
 
 func _initialize() -> void:
@@ -94,6 +111,14 @@ func _process(d: float) -> bool:
 				_check("and it cannot be turned", bool(rig.get("_look_locked")))
 				_check("the dial is away", not (_room.get_node("UI/SlicePlane") as CanvasItem).visible)
 				_check("and the frame counter", not (_room.get_node("UI/Fps") as CanvasItem).visible)
+				# Too early: the skip is not on offer yet, and Escape must not end it either.
+				_escape()
+				_step = 20; _t = 0.0
+		20:
+			if _t > 0.3:
+				var talk: Node = _far("Systems/DreamerTalk")
+				_check("Escape before the offer does nothing", bool(talk.call("is_running")) and not bool(talk.call("is_interrupted")),
+					String(talk.get("_key")))
 				_step = 2; _t = 0.0
 		2:
 			var talk: Node = _far("Systems/DreamerTalk")
@@ -109,9 +134,21 @@ func _process(d: float) -> bool:
 			var choosing: bool = bool(box.call("has_choices"))
 			var beat: String = "%s_%d%s" % [key, line, "_choices" if choosing else ""]
 			if beat != _last:
+				# Back from the refusal: exactly where it was.
+				if _was_refused and not bool(talk.call("is_interrupted")):
+					_was_refused = false
+					_check("and it carries on at the line it was on", beat.begins_with("topic_what_1" if _escaped == 1 else "menu_two_0"), beat)
 				_last = beat
 				_t = 0.0
 			if bool(box.call("is_typing")):
+				return false
+			# The skip, twice: once mid-line, once while choosing.
+			var skip_at: String = "topic_what_1" if _escaped == 0 else ("menu_two_0_choices" if _escaped == 1 else "")
+			if beat == skip_at and _t > 1.0:
+				_escape()
+				_escaped += 1
+				_was_refused = true
+				_step = 21; _t = 0.0
 				return false
 			# Long enough into the shot to see where it is going.
 			if _t > 2.2:
@@ -121,11 +158,20 @@ func _process(d: float) -> bool:
 					_picks += 1
 				else:
 					talk.call("_advance")
+		21:
+			if _t > 0.3:
+				var talk: Node = _far("Systems/DreamerTalk")
+				var want: String = "skip_refused" if _escaped == 1 else "skip_again_1"
+				_check("Escape %d breaks in with %s" % [_escaped, want], bool(talk.call("is_running")) and String(talk.get("_key")) == want, String(talk.get("_key")))
+				_check("in the still stare", String(_far("Systems/DreamerCinema").call("shot")) == "stare")
+				_check("and the offer is struck through", bool(_far("Systems/DreamerCinema").call("has_refused")))
+				_step = 2; _t = 0.0
 		3:
 			if _t > 1.2 and _t - d <= 1.2:
 				_save("wake")
 			if _t > 4.0:
 				_check("every shot is one it knows", not _shots.has(""), str(_shots.keys()))
+				_check("and the game is still running after two Escapes", _escaped == 2, "%d" % _escaped)
 				print("CINEMA: %s, %d shots used" % ["ALL PASS" if _failed == 0 else "%d FAILED" % _failed, _shots.size()])
 				quit()
 				return true

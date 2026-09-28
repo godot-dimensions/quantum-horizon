@@ -45,7 +45,7 @@ func _configure() -> void:
 	_dreamer = get_node_or_null(dreamer_path)
 	_cave = get_node_or_null(cave_path)
 	_cinema = get_node_or_null(cinema_path)
-	_talk.use_script(DreamerScript.NODES, DreamerScript.START)
+	_talk.use_script(DreamerScript.NODES, DreamerScript.START, _fill_line)
 	for path in hide_all_under:
 		var under: Node = get_node_or_null(path)
 		if under == null:
@@ -57,6 +57,15 @@ func _configure() -> void:
 		var item := get_node_or_null(path) as CanvasItem
 		if item != null and not _hide.has(item):
 			_hide.append(item)
+
+
+## Its words about the player at the desk: the key they pressed to skip it, and the time on
+## their own clock.
+func _fill_line(line: String, _returned: int, _total: int) -> String:
+	if not line.contains("{"):
+		return line
+	var now: Dictionary = Time.get_time_dict_from_system()
+	return line.format({"key": "Escape", "time": "%d:%02d" % [int(now["hour"]), int(now["minute"])]})
 
 
 func _entry_node() -> String:

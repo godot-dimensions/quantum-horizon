@@ -25,6 +25,9 @@ signal ended
 ## The script to play: any class exposing NODES, START and fill(). Left as a plain
 ## reference so a second character does not need this file changed.
 @export var handle_input: bool = true
+## Whether Escape ends the conversation. Off for one that will not let you go (the dreamer
+## catches the key itself - cave_dreamer_cinema_4d.gd).
+@export var escape_leaves: bool = true
 
 ## Show the reply you picked, in your own voice, before he answers it.
 ##
@@ -68,6 +71,8 @@ var _holding: bool = false
 var _hold_time: float = 0.0
 ## Whether there was anything left to hurry when the key went down. See _advance_key.
 var _hold_had_text: bool = false
+## Where to carry on from after an interruption. See [method interrupt].
+var _resume: Dictionary = {}
 
 
 func _ready() -> void:
@@ -104,6 +109,7 @@ func begin(key: String = "") -> void:
 
 func stop() -> void:
 	_running = false
+	_resume = {}
 	_key = ""
 	_lines = []
 	_pending_choices = []
@@ -132,10 +138,53 @@ func reset() -> void:
 	_asked_any = false
 
 
+## Breaks in with [param key] and afterwards carries on exactly where it was: the same
+## node and line (said again), its replies if they were up, an effect it was still holding
+## for a line, the reply you had just picked. For something the conversation itself did not
+## choose - the dreamer refusing to be skipped. The interrupting nodes end as a
+## conversation would, with no goto; that is where it carries on. False if it could not: not
+## running, already interrupted, or no such node.
+func interrupt(key: String) -> bool:
+	if not _running or not _resume.is_empty() or not _script_nodes.has(key):
+		return false
+	_resume = {"key": _key, "lines": _lines, "at": _at, "choices": _pending_choices,
+		"effect": _pending_effect, "echo": _echo_goto if _echoing else ""}
+	_echoing = false
+	_holding = false
+	if _box != null:
+		_box.fast_forward = false
+	_enter(key)
+	return true
+
+
+func is_interrupted() -> bool:
+	return not _resume.is_empty()
+
+
+func _carry_on() -> void:
+	var r: Dictionary = _resume
+	_resume = {}
+	if String(r["echo"]) != "":
+		_enter(String(r["echo"]))
+		return
+	_key = String(r["key"])
+	_lines = r["lines"]
+	_at = int(r["at"])
+	_pending_choices = r["choices"]
+	_pending_effect = String(r["effect"])
+	if _lines.is_empty():
+		_show_choices()
+	else:
+		_speak()
+
+
 # ------------------------------------------------------------------ walking
 
 func _enter(key: String) -> void:
 	if key == "":
+		if not _resume.is_empty():
+			_carry_on()
+			return
 		stop()
 		return
 	if not _script_nodes.has(key):
@@ -300,7 +349,7 @@ func _process(delta: float) -> void:
 ## the cursor or close the window, depending on which node the event happened to reach
 ## first. Consuming it here means Escape means one thing while somebody is talking.
 func _input(event: InputEvent) -> void:
-	if not _running:
+	if not _running or not escape_leaves:
 		return
 	if event.is_action_pressed(&"ui_cancel"):
 		stop()

@@ -29,6 +29,20 @@ extends Node
 ## the colour of its heart - blue, and red when it is - so the close-ups read, and read as
 ## lit by it.
 ##
+## "SKIP CUTSCENE", AND IT WILL NOT BE SKIPPED (Ramon, 28 Sept). A few seconds in, the top
+## bar offers Escape as a skip - the key that ends every other conversation. Pressed, it
+## breaks in ("skip_refused", DialoguePlayer4D.interrupt) and cuts to the one shot that does
+## not move: straight into its mouth, the bars closing in a little, as it talks to the
+## player at the desk rather than the one in the cave. Then the conversation carries on
+## exactly where it was, and the offer stays on the bar struck through - for this visit
+## and every later one (kept on the cave, like everything it remembers). Pressed again, it
+## answers, shorter each time.
+##
+## ESCAPE IS CAUGHT HERE, FIRST, while the scene plays: the dialogue player is told not to
+## end the conversation with it (escape_leaves), and nothing after this sees the key - the
+## camera rig, whose Escape frees the mouse and whose second Escape quits, included. The way
+## out is the way it always was: "I'll go".
+##
 ## Letterboxed, with the words on the lower bar - under everything else on screen, so the
 ## subtitles sit on top of it.
 
@@ -59,6 +73,16 @@ const SHOTS := {
 	"bye": ["rise"],
 }
 const CHOOSING := "shoulder"
+## Its refusal, and every shorter one after it.
+const REFUSALS := ["skip_refused", "skip_again_1", "skip_again_2", "skip_again_3", "skip_again_4"]
+const STARE := {
+	"skip_refused": ["stare"],
+	"skip_refused_2": ["stare", "stare", "stare", "side"],
+	"skip_again_1": ["stare"],
+	"skip_again_2": ["stare"],
+	"skip_again_3": ["stare"],
+	"skip_again_4": ["stare"],
+}
 
 @export var talk_path: NodePath = NodePath("../DreamerTalk")
 @export var box_path: NodePath = NodePath("../../UI/DreamerBox")
@@ -70,6 +94,10 @@ const CHOOSING := "shoulder"
 @export_range(0.0, 0.25, 0.005) var bars: float = 0.1
 ## How far you take a step back when it threatens everything.
 @export_range(0.0, 1.5, 0.05) var flinch_step: float = 0.4
+## Seconds into the scene before the skip is offered.
+@export_range(0.0, 30.0, 0.5) var skip_after: float = 4.0
+## Where what it remembers is kept (the cave), as its conversation does.
+@export var cave_path: NodePath = NodePath("../../..")
 
 var _talk: Node
 var _box: Node
@@ -91,6 +119,11 @@ var _flinch := -1.0
 var _flinch_from := Vector4.ZERO
 var _glow: OmniLight4D
 var _heart: OmniLight4D
+var _skip: RichTextLabel
+var _skip_k := 0.0
+var _playing := 0.0
+var _pressed := 0
+var _tight := 0.0
 
 
 func _ready() -> void:
@@ -107,6 +140,14 @@ func _ready() -> void:
 	add_child(_layer)
 	_top = _bar()
 	_bottom = _bar()
+	_skip = RichTextLabel.new()
+	_skip.bbcode_enabled = true
+	_skip.fit_content = true
+	_skip.scroll_active = false
+	_skip.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_skip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_skip.modulate = Color(1, 1, 1, 0)
+	_layer.add_child(_skip)
 	_glow = OmniLight4D.new()
 	_glow.name = "FaceGlow"
 	_glow.omni_range_meters = 4.0
@@ -129,6 +170,8 @@ func begin() -> void:
 	_on = true
 	_shot = ""
 	_u = 0.0
+	_playing = 0.0
+	_skip_k = 0.0
 	if _rig != null:
 		_slice_was = Vector2(float(_rig.get("_slice_xw")), float(_rig.get("_slice_zw")))
 		_rig.set("_slice_xw", 0.0)
@@ -168,16 +211,63 @@ func shot() -> String:
 	return _shot
 
 
+## Whether it has already refused to be skipped, on this visit or an earlier one.
+func has_refused() -> bool:
+	var cave: Node = get_node_or_null(cave_path)
+	return cave != null and cave.has_meta(&"dreamer_skip_refused")
+
+
+func _input(event: InputEvent) -> void:
+	if not _on or _talk == null or not bool(_talk.call("is_running")):
+		return
+	if not event.is_action_pressed(&"ui_cancel"):
+		return
+	# Nothing after this sees it: not the conversation, not the rig's mouse-and-quit.
+	get_viewport().set_input_as_handled()
+	if _playing < skip_after or bool(_talk.call("is_interrupted")):
+		return
+	var refused: bool = has_refused()
+	var which: String = REFUSALS[0] if not refused else REFUSALS[mini(_pressed + 1, REFUSALS.size() - 1)]
+	if bool(_talk.call("interrupt", which)):
+		if refused:
+			_pressed += 1
+		var cave: Node = get_node_or_null(cave_path)
+		if cave != null:
+			cave.set_meta(&"dreamer_skip_refused", true)
+
+
+func _place_skip(delta: float, w: float, tall: float) -> void:
+	var running: bool = _on and _talk != null and bool(_talk.call("is_running"))
+	_skip_k = move_toward(_skip_k, 1.0 if running and _playing >= skip_after else 0.0, delta / 0.8)
+	_skip.visible = _skip_k > 0.0
+	if not _skip.visible:
+		return
+	var size: int = maxi(11, int(round(tall * 0.26)))
+	var key := "[color=#ffffff]Esc[/color]"
+	var text: String = ("[s]Skip cutscene[/s]   " + key) if has_refused() else ("Skip cutscene   " + key)
+	var bb: String = "[right][font_size=%d]%s[/font_size][/right]" % [size, text]
+	if _skip.text != bb:
+		_skip.text = bb
+	_skip.size = Vector2(w * 0.4, tall)
+	_skip.position = Vector2(w * 0.6 - tall * 0.5, (tall - float(size) * 1.35) * 0.5)
+	_skip.modulate = Color(0.78, 0.8, 0.84, 0.85 * _skip_k * (0.55 if has_refused() else 1.0))
+
+
 func _process(delta: float) -> void:
 	_bars_k = move_toward(_bars_k, 1.0 if _on else 0.0, delta / 0.6)
+	if _on:
+		_playing += delta
 	var h: float = get_viewport().get_visible_rect().size.y
 	var w: float = get_viewport().get_visible_rect().size.x
-	var tall: float = h * bars * smoothstep(0.0, 1.0, _bars_k)
+	# When it stares out at the player the bars close in a little.
+	_tight = move_toward(_tight, 1.0 if _shot == "stare" else 0.0, delta / 0.4)
+	var tall: float = h * lerpf(bars, bars * 1.45, smoothstep(0.0, 1.0, _tight)) * smoothstep(0.0, 1.0, _bars_k)
 	_top.position = Vector2.ZERO
 	_top.size = Vector2(w, tall)
 	_bottom.position = Vector2(0.0, h - tall)
 	_bottom.size = Vector2(w, tall)
 	_layer.visible = _bars_k > 0.0
+	_place_skip(delta, w, h * bars)
 	if not _on or _camera == null or _dreamer == null or _player == null or _far == null:
 		return
 	if _mouth == null:
@@ -222,7 +312,7 @@ func _wanted() -> String:
 		return _shot if _shot != "" else "rise"
 	if _box != null and bool(_box.call("has_choices")):
 		return CHOOSING
-	var list: Array = SHOTS.get(key, [CHOOSING])
+	var list: Array = STARE.get(key, SHOTS.get(key, [CHOOSING]))
 	var at: int = int(_talk.get("_at"))
 	if key == "end_flinch" and _flinch < 0.0:
 		_flinch = 0.0
@@ -286,6 +376,11 @@ func _frame(which: String, u: float) -> void:
 			eye = m + mz * lerpf(5.2, 4.0, k) + my * 0.15
 			aim = m - mz * 0.6
 			fov = 32.0
+		"stare":
+			# Dead still, dead centre, straight into it: the one shot that does not move.
+			eye = m + mz * 3.3
+			aim = m
+			fov = 30.0
 		"mouth_push":
 			# The same, from further, and slower - it comes to you.
 			var k: float = smoothstep(0.0, 1.0, u / 9.0)
