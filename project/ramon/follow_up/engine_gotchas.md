@@ -313,3 +313,48 @@ It survived a long time because it is barely visible on paper: the rise is
 the scene file's cached basis was the OLD sign while the script rebuilt the new
 one on `_ready` — so reading the `.tscn` and reading the script disagreed. Only
 a rendered frame showed it. Capture the thing.
+
+## `Node4D.global_position = x` is wrong two levels below an offset node
+
+Found 28 Sept 2026 building the cave. `Node4D::set_global_position`
+(`engine/modules/4d/nodes/node_4d.cpp`, at module commit `e449710`) converts
+through the parent's **local** transform:
+
+```cpp
+set_position(node_4d_parent->get_transform().xform_inv(p_global_position));
+```
+
+so it is only right when the parent's own parent sits at the origin. Tested:
+parent at x = 1000, child's child told `global_position = (1000, 1, 0, 0)`,
+reads back `(2000, 1, 0, 0)`. The getter is right, so the error only shows as
+things landing in the wrong place. `set_global_basis`, `set_global_transform`
+and `set_global_rotation` all go through the parent's GLOBAL transform and are
+fine; it is only this one.
+
+It never bit in the pen because nearly everything there hangs straight off an
+un-moved `World`. The cave hangs 1 km along x, and a piece of gold knocked loose
+by the pickaxe (`Cave/Gold/Nugget0`) landed a kilometre further on.
+
+**Workaround:** set `position` through the parent instead —
+`node.position = parent.global_basis.inverse() * (where - parent.global_position)`
+(`_place_global` in `pen_rock_gold_4d.gd`). **The fix for Aaron** is one word:
+`get_transform()` → `get_global_transform()` on that line.
+
+## The cross-section renderer ignores per-vertex colour
+
+`TetraMaterial4D` has `albedo_color_array` and per-vertex / per-cell sources,
+and the wireframe path uses them — but `tetra_cross_section_shader.glsl`, which
+is what the pen draws with, only ever reads one albedo times a `Texture3D` looked
+up at a UVW carried on each tetrahedron corner. Per-vertex colour set the obvious
+way draws as flat albedo. `terrain/terrain_bake_4d.gd` gets real per-vertex
+colour anyway by giving each vertex a UVW that IS its colour and a 2x2x2 identity
+colour cube as the texture; see its header.
+
+## Every tetrahedron is ~1.25 KB of video memory
+
+`TetraMesh4D` builds its cross-section proxy as TWELVE vertices per tetrahedron
+at 104 bytes each (`tetra_mesh_4d.h`, `PROXY_VERTS_PER_TET`,
+`PROXY_BYTES_PER_VERT`), whether it is on screen or not. Measured in the pen:
+the 92,160-tetrahedron hill ring added 229 MB of video memory while costing
+0.04 ms of frame time. Drawing is nearly free; memory is not. Budget
+tetrahedra for static scenery by memory, not by frame time.

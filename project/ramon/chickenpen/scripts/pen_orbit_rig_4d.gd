@@ -146,6 +146,11 @@ signal preset_changed(index: int)
 var yaw: float = 0.0
 var pitch: float = -0.15
 
+## Somewhere with walls the physics cannot see can say how far back the camera may go:
+## anything with camera_clearance(origin, direction, wanted) -> float. The cave sets itself
+## here while you are in it - its walls are baked rock with no colliders, and the ray above
+## would sail through them. Null everywhere else.
+var clearance_provider: Object = null
 var _slice_xw: float = 0.0
 var _slice_zw: float = 0.0
 var _zoom_target: float = 0.0
@@ -404,6 +409,9 @@ func _place_camera() -> void:
 	var wanted: float = distance
 	if collide_with_world:
 		wanted = minf(wanted, _clear_distance(distance))
+		if is_instance_valid(clearance_provider):
+			var back: Vector4 = (_pitch_node.global_basis * Vector4(0.0, 0.0, 1.0, 0.0)).normalized()
+			wanted = minf(wanted, float(clearance_provider.call("camera_clearance", global_position, back, wanted)))
 	_camera.position = Vector4(0.0, 0.0, wanted, 0.0)
 
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=739 format=3 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=726 format=3 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -25,7 +25,6 @@
 [ext_resource type="Script" uid="uid://cu6xoypl3i6xf" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="pen_face"]
 [ext_resource type="Script" uid="uid://c1bvpy7t11nc7" path="res://ramon/chickenpen/scripts/pen_fence_4d.gd" id="pen_fence"]
 [ext_resource type="Script" uid="uid://bulhbjp8177pp" path="res://ramon/chickenpen/scripts/chickenpen_game_4d.gd" id="pen_game"]
-[ext_resource type="Script" uid="uid://dv1be1tfindmi" path="res://ramon/chickenpen/scripts/pen_rock_gold_4d.gd" id="pen_gold"]
 [ext_resource type="Script" uid="uid://tojoxxbra426" path="res://ramon/chickenpen/scripts/pen_inventory_4d.gd" id="pen_inventory"]
 [ext_resource type="Script" uid="uid://dwl0i3lj62160" path="res://ramon/chickenpen/scripts/pen_invitation_4d.gd" id="pen_invite"]
 [ext_resource type="Script" uid="uid://ds8fowx0k7uht" path="res://ramon/chickenpen/scripts/chicken_locator_4d.gd" id="pen_locator"]
@@ -59,7 +58,6 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_sign_4d.gd" id="pen_sign"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_fps_4d.gd" id="pen_fps"]
 [ext_resource type="Script" uid="uid://c2kixgu1hst3e" path="res://ramon/chickenpen/theatre/theatre_arch_4d.gd" id="thr_arch"]
-[ext_resource type="PackedScene" uid="uid://gh03wmhupplp" path="res://ramon/VoxelMining/voxel_mining_block.tscn" id="voxel_rock"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_celebration_4d.gd" id="pen_party"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_talk_motion_4d.gd" id="pen_talkmotion"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_fullscreen_4d.gd" id="pen_fullscreen"]
@@ -68,6 +66,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_bounds_4d.gd" id="pen_bounds"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cave_hill_4d.gd" id="pen_cave_hill"]
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/cave_hill.res" id="cave_hill_mesh"]
+[ext_resource type="PackedScene" path="res://ramon/chickenpen/cave/cave.tscn" id="cave_scene"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 shader_parameter/horizon_color = Color(0.98, 0.71, 0.35, 1)
@@ -1339,42 +1338,6 @@ albedo_color = Color(0.68, 0.71, 0.76, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_30a8l"]
 size = Vector4(0.058, 0.025, 0.03, 0.42)
-
-[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_bfn0w"]
-albedo_color = Color(0.98, 0.78, 0.22, 1)
-
-[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_fthf2"]
-size = Vector4(0.3, 0.3, 0.3, 0.3)
-
-[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_18xj6"]
-albedo_color = Color(0.98, 0.78, 0.22, 1)
-
-[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_j7isy"]
-size = Vector4(0.3, 0.3, 0.3, 0.3)
-
-[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_tr1sj"]
-albedo_color = Color(0.98, 0.78, 0.22, 1)
-
-[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_6hcwv"]
-size = Vector4(0.3, 0.3, 0.3, 0.3)
-
-[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_62sck"]
-albedo_color = Color(0.98, 0.78, 0.22, 1)
-
-[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_4peq5"]
-size = Vector4(0.3, 0.3, 0.3, 0.3)
-
-[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_5ib0e"]
-albedo_color = Color(0.98, 0.78, 0.22, 1)
-
-[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_hrjoc"]
-size = Vector4(0.3, 0.3, 0.3, 0.3)
-
-[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_revtn"]
-albedo_color = Color(0.98, 0.78, 0.22, 1)
-
-[sub_resource type="OrthoplexTetraMesh4D" id="OrthoplexTetraMesh4D_ge0ji"]
-size = Vector4(0.3, 0.3, 0.3, 0.3)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_b77hk"]
 albedo_color = Color(0.1, 0.1, 0.13, 1)
@@ -3486,7 +3449,7 @@ material_override = SubResource("TetraMaterial4D_u2trt")
 mesh = SubResource("BoxTetraMesh4D_2y55e")
 
 [node name="Professor" type="Node4D" parent="World"]
-position = Vector4(13.2, 0, -16.2, 0)
+position = Vector4(12.6, 0, -23.2, 0)
 basis = Projection(0.7071, 0, -0.7071, 0, 0, 1, 0, 0, 0.7071, 0, 0.7071, 0, 0, 0, 0, 1)
 script = ExtResource("pen_prof")
 
@@ -3689,7 +3652,7 @@ material_override = SubResource("TetraMaterial4D_6ehws")
 mesh = SubResource("BoxTetraMesh4D_30a8l")
 
 [node name="ProfessorHead" type="Node4D" parent="World"]
-position = Vector4(13.2, 1.45, -16.2, 0)
+position = Vector4(12.6, 1.45, -23.2, 0)
 
 [node name="ProfessorFacing" type="Node4D" parent="World"]
 script = ExtResource("pen_face")
@@ -3697,62 +3660,13 @@ figure_path = NodePath("../Professor")
 player_path = NodePath("../../Player")
 notice_within = 4.0
 
-[node name="RockGold" type="Node4D" parent="World"]
-position = Vector4(17.2, 1.7, -19.8, 0)
-script = ExtResource("pen_gold")
-rock_path = NodePath("../MiningRock")
-pickaxe_path = NodePath("../../Systems/Pickaxe")
-player_path = NodePath("../../Player")
-inventory_path = NodePath("../../UI/Inventory")
-
-[node name="Nugget0" type="MeshInstance4D" parent="World/RockGold"]
-position = Vector4(0.8191880359080326, -0.441491319946016, -0.14777406534613835, -0.33239011495310666)
-visible = false
-material_override = SubResource("TetraMaterial4D_bfn0w")
-mesh = SubResource("OrthoplexTetraMesh4D_fthf2")
-
-[node name="Nugget1" type="MeshInstance4D" parent="World/RockGold"]
-position = Vector4(-0.7248934356365216, 0.6004164120532061, -0.5444276030015873, 0.0892669886405889)
-visible = false
-material_override = SubResource("TetraMaterial4D_18xj6")
-mesh = SubResource("OrthoplexTetraMesh4D_j7isy")
-
-[node name="Nugget2" type="MeshInstance4D" parent="World/RockGold"]
-position = Vector4(-0.39500293739481185, -0.9648208157757183, -0.09021298251877474, -0.32350232841350934)
-visible = false
-material_override = SubResource("TetraMaterial4D_tr1sj")
-mesh = SubResource("OrthoplexTetraMesh4D_6hcwv")
-
-[node name="Nugget3" type="MeshInstance4D" parent="World/RockGold"]
-position = Vector4(-0.12478561974198299, -0.8215317924138781, 0.7657624501334896, 1.459230445136995)
-visible = false
-material_override = SubResource("TetraMaterial4D_62sck")
-mesh = SubResource("OrthoplexTetraMesh4D_4peq5")
-
-[node name="Nugget4" type="MeshInstance4D" parent="World/RockGold"]
-position = Vector4(-0.642898145528909, -0.8539934006836192, 0.08738943901411722, 1.4479562700551716)
-visible = false
-material_override = SubResource("TetraMaterial4D_5ib0e")
-mesh = SubResource("OrthoplexTetraMesh4D_hrjoc")
-
-[node name="Nugget5" type="MeshInstance4D" parent="World/RockGold"]
-position = Vector4(1.1667888693750985, 1.1759101401049947, 0.595586522558154, 1.477562671275514)
-visible = false
-material_override = SubResource("TetraMaterial4D_revtn")
-mesh = SubResource("OrthoplexTetraMesh4D_ge0ji")
-
-[node name="MiningRock" parent="World" instance=ExtResource("voxel_rock")]
-position = Vector4(17, 1.5, -20, 0)
-cell_size = 0.8
-mining_radius_meters = 0.96
-
 [node name="Crow" type="Node4D" parent="World"]
 position = Vector4(0, 0, -11, 0)
 script = ExtResource("pen_crow")
 flock_seed = 20873
 fence_path = NodePath("../../Pen/Fence")
 ground_radius = 7.5
-perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate"), NodePath("../MiningRock")])
+perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate")])
 
 [node name="Hide" type="MeshInstance4D" parent="World/Crow"]
 material_override = SubResource("TetraMaterial4D_b77hk")
@@ -3897,7 +3811,7 @@ script = ExtResource("pen_crow")
 flock_seed = 51199
 fence_path = NodePath("../../Pen/Fence")
 ground_radius = 8.5
-perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate"), NodePath("../MiningRock")])
+perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate")])
 
 [node name="Hide" type="MeshInstance4D" parent="World/Crow2"]
 material_override = SubResource("TetraMaterial4D_5o40q")
@@ -4042,7 +3956,7 @@ script = ExtResource("pen_crow")
 flock_seed = 77341
 fence_path = NodePath("../../Pen/Fence")
 ground_radius = 8.0
-perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate"), NodePath("../MiningRock")])
+perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate")])
 
 [node name="Hide" type="MeshInstance4D" parent="World/Crow3"]
 material_override = SubResource("TetraMaterial4D_h8yy2")
@@ -5190,8 +5104,6 @@ box_path = NodePath("../../UI/ProfessorBox")
 
 [node name="ProfessorDriver" type="Node" parent="Systems"]
 script = ExtResource("pen_prof_talk")
-rock_path = NodePath("../../World/MiningRock")
-gold_path = NodePath("../../World/RockGold")
 facing_path = NodePath("../../World/ProfessorFacing")
 pickaxe_path = NodePath("../Pickaxe")
 player_path = NodePath("../../Player")
@@ -5601,6 +5513,19 @@ theatre_scene = ExtResource("theatre_scene")
 asleep_paths = Array[NodePath]([NodePath("../World"), NodePath("../Chickens"), NodePath("../Pen"), NodePath("../Mithra"), NodePath("../Player"), NodePath("../UI"), NodePath("../Systems"), NodePath("../Invitation")])
 farm_camera_path = NodePath("../Player/CameraRig/Pitch/Camera4D")
 player_path = NodePath("../Player")
+
+[node name="CaveCrossing" type="Node" parent="."]
+script = ExtResource("pen_crossing")
+theatre_scene = ExtResource("cave_scene")
+asleep_paths = Array[NodePath]([NodePath("../World"), NodePath("../Chickens"), NodePath("../Pen"), NodePath("../Mithra"), NodePath("../Invitation"), NodePath("../Crossing"), NodePath("../Systems/Bounds"), NodePath("../Systems/Locator"), NodePath("../Systems/Cues"), NodePath("../Systems/Tutor"), NodePath("../Systems/CrowLine"), NodePath("../Systems/Rewatch"), NodePath("../UI/Locator"), NodePath("../UI/Objective"), NodePath("../UI/Progress"), NodePath("../UI/CatchPrompt"), NodePath("../UI/Hint"), NodePath("../UI/Keeper")])
+farm_camera_path = NodePath("../Player/CameraRig/Pitch/Camera4D")
+player_path = NodePath("../Player")
+bring_player = true
+return_offset = Vector4(0, 0, 4, 0)
+face_on_return = true
+blocked_by = Array[NodePath]([NodePath("../Crossing")])
+debug_key = 86
+stage_before_testing = false
 
 [node name="Invitation" type="Node" parent="."]
 script = ExtResource("pen_invite")

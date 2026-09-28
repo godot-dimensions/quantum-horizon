@@ -115,6 +115,12 @@ func rebuild() -> void:
 	# The rock's solid half-width, from its own exported grid rather than a guess.
 	var grid: float = float(_rock.get("grid_size")) * float(_rock.get("cell_size"))
 	var reach: float = grid * 0.5 * float(_rock.get("box_fill_fraction")) * seam_spread
+	# A rock that is not a cube - the cave's monolith is a slab - says so with its
+	# proportions, one fraction per axis; the shell is squashed to match, or half the seam
+	# would be buried in thin air either side of it.
+	var shape := Vector4.ONE
+	if _rock.get("proportions") is Vector4:
+		shape = _rock.get("proportions")
 	# How far a single swing can reach through W, which is what divides the two kinds.
 	var bite: float = float(_rock.get("mining_radius_meters"))
 	for i in shallow_count + deep_count:
@@ -123,7 +129,7 @@ func rebuild() -> void:
 		if deep:
 			# Clear of the bite by a margin, and still inside the rock's own W extent -
 			# a piece buried outside the material is not buried, it is missing.
-			off_slice = rng.randf_range(bite + deep_margin, maxf(reach, bite + deep_margin + 0.1))
+			off_slice = rng.randf_range(bite + deep_margin, maxf(reach * shape.w, bite + deep_margin + 0.1))
 			if rng.randf() < 0.5:
 				off_slice = -off_slice
 		else:
@@ -138,7 +144,7 @@ func rebuild() -> void:
 			dir = Vector3(1.0, 0.0, 0.0)
 		dir = dir.normalized()
 		var depth: float = reach * (1.0 + rng.randf_range(-seam_jitter, seam_jitter))
-		var at := Vector4(dir.x * depth, dir.y * depth, dir.z * depth, off_slice)
+		var at := Vector4(dir.x * depth * shape.x, dir.y * depth * shape.y, dir.z * depth * shape.z, off_slice)
 		var orb := MeshInstance4D.new()
 		orb.name = "Nugget%d" % i
 		var mesh := OrthoplexTetraMesh4D.new()
@@ -174,8 +180,23 @@ func _on_mined(at: Vector4, radius: float) -> void:
 			# ITS W IS ITS OWN. Only the three dimensions you can walk in are moved, so the
 			# deep half of the seam still sits a slice away and still has to be turned onto
 			# - which is the one part of this that is about the fourth dimension.
-			_orbs[i].global_position = Vector4(at.x, at.y, at.z,
-				_orbs[i].global_position.w)
+			_place_global(_orbs[i], Vector4(at.x, at.y, at.z, _orbs[i].global_position.w))
+
+
+## Puts [param node] at [param where] in world space.
+##
+## NOT `global_position = where`. Node4D.set_global_position in the engine module converts
+## through the parent's LOCAL transform rather than its global one (node_4d.cpp, 28 Sept
+## 2026: `node_4d_parent->get_transform().xform_inv(...)`), so it is only right when the
+## parent's own parent is at the origin. In the pen it was; in the cave, which hangs a
+## kilometre along x, a knocked-loose piece of gold landed a kilometre further on. The
+## basis and transform setters convert through the global transform and are fine.
+func _place_global(node: Node4D, where: Vector4) -> void:
+	var parent := node.get_parent() as Node4D
+	if parent == null:
+		node.global_position = where
+		return
+	node.position = parent.global_basis.inverse() * (where - parent.global_position)
 
 
 ## Walking into a revealed one pockets it. Kept here rather than in the collector, which

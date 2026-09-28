@@ -32,6 +32,24 @@ extends Node
 @export var farm_camera_path: NodePath
 @export var player_path: NodePath
 
+@export_group("Taking the player along")
+## For a place the pen's OWN player walks into, rather than one with a player of its own
+## like the theatre: the cave inside the hill. The player is moved to wherever the opened
+## scene's arrival() says, and faced into it, and keeps its belt, tool and camera - so
+## what you find there comes home with you. Leave it off and nothing below applies.
+@export var bring_player: bool = false
+## Which way the camera faces on arriving, in the rig's yaw (0 looks along -z).
+@export var arrival_yaw_degrees: float = 0.0
+## Where the player is set down on the way home, from where they went in. The default is
+## the theatre's: a pace back from the door, so they do not walk straight through again.
+@export var return_offset: Vector4 = Vector4(0.0, 0.0, 1.6, 0.0)
+## Turn the camera on the way home, to face away from where you went in.
+@export var face_on_return: bool = false
+@export var return_yaw_degrees: float = 180.0
+## Other crossings that, while away, make this one stay shut - so the cave's key does not
+## open a cave on top of the theatre.
+@export var blocked_by: Array[NodePath] = []
+
 @export_group("Testing")
 ## A way straight in and straight out again, for looking at the theatre without walking
 ## the whole invitation first. It TOGGLES - the same key brings you home - because a way
@@ -42,6 +60,9 @@ extends Node
 ## room, not fake the scene that leads to it.
 @export var debug_key_enabled: bool = true
 @export var debug_key: Key = KEY_C
+## Whether the debug key first stages whatever normally leads up to the trip (Trym's
+## invitation, for the theatre). A place with no lead-up leaves it off.
+@export var stage_before_testing: bool = true
 
 var _theatre: Node
 var _asleep: Array[Node] = []
@@ -79,8 +100,9 @@ func is_away() -> bool:
 func go_for_testing() -> void:
 	if is_away():
 		return
-	for node in get_tree().current_scene.get_children():
-		_stage_trip(node)
+	if stage_before_testing:
+		for node in get_tree().current_scene.get_children():
+			_stage_trip(node)
 	go()
 
 
@@ -129,6 +151,10 @@ func _stage_trip(node: Node) -> void:
 func go() -> void:
 	if is_away() or theatre_scene == null:
 		return
+	for path in blocked_by:
+		var other: Node = get_node_or_null(path)
+		if other != null and other.has_method("is_away") and bool(other.call("is_away")):
+			return
 	var player: Node4D = get_node_or_null(player_path) as Node4D
 	if player != null:
 		# Where to put them back down. Not the door - standing in a doorway you have just
@@ -149,6 +175,9 @@ func go() -> void:
 	var exit: Node = _theatre.get_node_or_null("ExitArch")
 	if exit != null and exit.has_signal("entered"):
 		exit.connect("entered", come_back)
+	if bring_player and player != null and _theatre.has_method("arrival"):
+		player.global_position = _theatre.call("arrival")
+		_face(player, arrival_yaw_degrees)
 
 
 ## And back out of it.
@@ -173,10 +202,22 @@ func come_back() -> void:
 	var player: Node4D = get_node_or_null(player_path) as Node4D
 	if player != null and _was_at != Vector4.ZERO:
 		# A pace back from where they went in, and on the floor.
-		player.global_position = Vector4(_was_at.x, _was_at.y, _was_at.z + 1.6, _was_at.w)
+		player.global_position = _was_at + return_offset
+		if face_on_return:
+			_face(player, return_yaw_degrees)
 	# The door has to be walkable again, or the second visit never happens.
 	for node in get_tree().current_scene.get_children():
 		_rearm(node)
+
+
+## Stops the body and points its camera rig at [param yaw_degrees].
+func _face(player: Node4D, yaw_degrees: float) -> void:
+	if player is CharacterBody4D:
+		(player as CharacterBody4D).linear_velocity = Vector4.ZERO
+	var rig: Node = player.get_node_or_null("CameraRig")
+	if rig != null and rig.has_method("_apply"):
+		rig.set("yaw", deg_to_rad(yaw_degrees))
+		rig.call("_apply")
 
 
 ## Every Control in a branch that is currently showing, remembered so it can be put back

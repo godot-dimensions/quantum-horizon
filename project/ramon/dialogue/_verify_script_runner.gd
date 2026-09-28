@@ -6,12 +6,16 @@ extends SceneTree
 
 ## Every character's writing, checked in one pass. A new script is one more row.
 const _Nike = preload("res://ramon/dialogue/nike_script.gd")
+const _Professor = preload("res://ramon/chickenpen/scripts/professor_script.gd")
+const _Hale = preload("res://ramon/chickenpen/cave/cave_miner_script.gd")
 
 const SCRIPTS: Array = [
 	{"who": "Keeper", "nodes": KeeperScript.NODES, "start": KeeperScript.START},
 	{"who": "Mithra", "nodes": MithraScript.NODES, "start": MithraScript.START},
 	{"who": "Trym", "nodes": TrymScript.NODES, "start": TrymScript.START},
 	{"who": "Nike", "nodes": _Nike.NODES, "start": _Nike.START},
+	{"who": "Professor", "nodes": _Professor.NODES, "start": _Professor.START},
+	{"who": "Hale", "nodes": _Hale.NODES, "start": _Hale.START},
 ]
 
 

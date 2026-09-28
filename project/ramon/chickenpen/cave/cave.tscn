@@ -1,0 +1,284 @@
+[gd_scene load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_4d.gd" id="cave"]
+[ext_resource type="Script" path="res://ramon/chickenpen/terrain/baked_ground_4d.gd" id="baked"]
+[ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/cave.res" id="cave_mesh"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_exit_4d.gd" id="exit"]
+[ext_resource type="PackedScene" uid="uid://gh03wmhupplp" path="res://ramon/VoxelMining/voxel_mining_block.tscn" id="voxel_block"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_monolith_block.gd" id="monolith"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_rock_gold_4d.gd" id="gold"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_suit_4d.gd" id="suit"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="face"]
+[ext_resource type="Script" path="res://ramon/dialogue/world_tag_4d.gd" id="tag"]
+[ext_resource type="Script" path="res://ramon/dialogue/dialogue_player_4d.gd" id="dlg"]
+[ext_resource type="Script" path="res://ramon/dialogue/dialogue_box_4d.gd" id="box"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_miner_talk_4d.gd" id="miner_talk"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_murmur_4d.gd" id="murmur"]
+
+[sub_resource type="GradientSkyMaterial4D" id="voidsky"]
+top_color = Color(0.008, 0.009, 0.014, 1)
+horizon_color = Color(0.016, 0.018, 0.026, 1)
+bottom_color = Color(0.004, 0.004, 0.007, 1)
+top_curve = 0.35
+bottom_curve = 0.1
+
+[node name="Cave" type="Node4D"]
+position = Vector4(1000, 0, 0, 0)
+script = ExtResource("cave")
+player_path = NodePath("../Player")
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("voidsky")
+ambient_light_color = Color(0.085, 0.09, 0.11, 1)
+tonemap_mode = 2
+
+[node name="KeyLight" type="DirectionalLight4D" parent="."]
+basis = Projection(1, 0, 0, 0, 0, 0.5, 0.866, 0, 0, -0.866, 0.5, 0, 0, 0, 0, 1)
+light_color = Color(0.55, 0.62, 0.8, 1)
+light_energy = 0.22
+
+[node name="Lamps" type="Node4D" parent="."]
+
+[node name="Station1" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 3.3, -7.5, 0)
+light_color = Color(0.82, 0.9, 1, 1)
+light_energy = 2.2
+omni_range_meters = 8.0
+
+[node name="Station2" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 3.3, -12.5, 0)
+light_color = Color(0.82, 0.9, 1, 1)
+light_energy = 2.2
+omni_range_meters = 8.0
+
+[node name="Station3" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 3.3, -17.5, 0)
+light_color = Color(0.82, 0.9, 1, 1)
+light_energy = 2.2
+omni_range_meters = 8.0
+
+[node name="Station4" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 3.3, -22.5, 0)
+light_color = Color(0.82, 0.9, 1, 1)
+light_energy = 2.2
+omni_range_meters = 8.0
+
+[node name="TowerFrontLeft" type="OmniLight4D" parent="Lamps"]
+position = Vector4(-7, 6.2, -31, 0)
+light_color = Color(0.86, 0.92, 1, 1)
+light_energy = 4.0
+omni_range_meters = 17.0
+
+[node name="TowerFrontRight" type="OmniLight4D" parent="Lamps"]
+position = Vector4(7, 6.2, -31, 0)
+light_color = Color(0.86, 0.92, 1, 1)
+light_energy = 4.0
+omni_range_meters = 17.0
+
+[node name="TowerBackLeft" type="OmniLight4D" parent="Lamps"]
+position = Vector4(-7, 6.2, -42.5, 0)
+light_color = Color(0.6, 0.72, 1, 1)
+light_energy = 3.2
+omni_range_meters = 16.0
+
+[node name="TowerBackRight" type="OmniLight4D" parent="Lamps"]
+position = Vector4(7, 6.2, -42.5, 0)
+light_color = Color(0.6, 0.72, 1, 1)
+light_energy = 3.2
+omni_range_meters = 16.0
+
+[node name="Uplight" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 1.1, -32.4, 0)
+light_color = Color(0.7, 0.85, 1, 1)
+light_energy = 3.6
+omni_range_meters = 8.0
+
+[node name="Backdrop" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 6, -46.5, 0)
+light_color = Color(0.45, 0.6, 1, 1)
+light_energy = 5.0
+omni_range_meters = 13.0
+
+[node name="WorkLeft" type="OmniLight4D" parent="Lamps"]
+position = Vector4(-7, 2.1, -31.5, 0)
+light_color = Color(1, 0.7, 0.38, 1)
+light_energy = 1.3
+omni_range_meters = 6.0
+
+[node name="WorkRight" type="OmniLight4D" parent="Lamps"]
+position = Vector4(7.2, 2.1, -40, 0)
+light_color = Color(1, 0.7, 0.38, 1)
+light_energy = 1.3
+omni_range_meters = 6.0
+
+[node name="Rock" type="MeshInstance4D" parent="."]
+mesh = ExtResource("cave_mesh")
+script = ExtResource("baked")
+
+[node name="ExitArch" type="Node4D" parent="."]
+position = Vector4(0, 0, 5.8, 0)
+script = ExtResource("exit")
+player_path = NodePath("../../Player")
+
+[node name="Monolith" parent="." instance=ExtResource("voxel_block")]
+position = Vector4(0, 3.65, -36, 0)
+script = ExtResource("monolith")
+grid_size = 10
+cell_size = 0.66
+mining_radius_meters = 0.55
+proportions = Vector4(0.44, 1, 0.3, 0.44)
+world_height_min = 1.5
+world_height_max = 5.8
+
+[node name="Gold" type="Node4D" parent="."]
+position = Vector4(0, 3.65, -36, 0)
+script = ExtResource("gold")
+rock_path = NodePath("../Monolith")
+pickaxe_path = NodePath("../../Systems/Pickaxe")
+player_path = NodePath("../../Player")
+inventory_path = NodePath("../../UI/Inventory")
+orb_size = 0.3
+deep_margin = 0.2
+
+[node name="Miner" type="Node4D" parent="."]
+position = Vector4(2.4, 0, -30.2, 0)
+script = ExtResource("suit")
+task = 0
+suit = Color(0.9, 0.9, 0.88, 1)
+trim = Color(0.36, 0.38, 0.42, 1)
+visor = Color(0.55, 0.42, 0.12, 1)
+
+[node name="MinerHead" type="Node4D" parent="."]
+position = Vector4(2.4, 1.45, -30.2, 0)
+
+[node name="MinerFacing" type="Node4D" parent="."]
+script = ExtResource("face")
+figure_path = NodePath("../Miner")
+player_path = NodePath("../../Player")
+notice_within = 4.0
+
+[node name="Surveyor" type="Node4D" parent="."]
+position = Vector4(-4.2, 0, -30.2, 0)
+script = ExtResource("suit")
+task = 1
+phase = 0.7
+yaw_degrees = 144.0
+
+[node name="SurveyorHead" type="Node4D" parent="."]
+position = Vector4(-4.2, 1.45, -30.2, 0)
+
+[node name="Sampler" type="Node4D" parent="."]
+position = Vector4(3.9, 0, -34.6, 0)
+script = ExtResource("suit")
+task = 2
+phase = 2.1
+yaw_degrees = -90.0
+
+[node name="SamplerHead" type="Node4D" parent="."]
+position = Vector4(3.9, 1.1, -34.6, 0)
+
+[node name="Reader" type="Node4D" parent="."]
+position = Vector4(-2.8, 0, -41.2, 1.2)
+script = ExtResource("suit")
+task = 3
+phase = 4.3
+yaw_degrees = 28.0
+
+[node name="ReaderHead" type="Node4D" parent="."]
+position = Vector4(-2.8, 1.45, -41.2, 1.2)
+
+[node name="TalkCam" type="Camera4D" parent="."]
+position = Vector4(0, 1.8, -28, 0)
+rendering_engine_name = "Cross-section"
+w_fade_distance = 6.0
+
+[node name="UI" type="Node4D" parent="."]
+
+[node name="MinerTag" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("tag")
+camera_path = NodePath("../../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../MinerHead")
+lift = 12.0
+
+[node name="MinerBox" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("box")
+choice_side = 1
+choice_width = 470.0
+choice_gap = 10.0
+camera_path = NodePath("../../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../MinerHead")
+over_head_width = 470.0
+name_size = 17
+text_size = 20
+choice_size = 19
+
+[node name="SurveyorTag" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("tag")
+camera_path = NodePath("../../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../SurveyorHead")
+lift = 12.0
+text_color = Color(0.82, 0.9, 1, 1)
+text_size = 17
+
+[node name="SamplerTag" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("tag")
+camera_path = NodePath("../../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../SamplerHead")
+lift = 12.0
+text_color = Color(0.82, 0.9, 1, 1)
+text_size = 17
+
+[node name="ReaderTag" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("tag")
+camera_path = NodePath("../../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../ReaderHead")
+lift = 12.0
+text_color = Color(0.82, 0.9, 1, 1)
+text_size = 17
+
+[node name="Systems" type="Node" parent="."]
+
+[node name="MinerTalk" type="Node" parent="Systems"]
+script = ExtResource("dlg")
+box_path = NodePath("../../UI/MinerBox")
+
+[node name="MinerDriver" type="Node" parent="Systems"]
+script = ExtResource("miner_talk")
+facing_path = NodePath("../../MinerFacing")
+pickaxe_path = NodePath("../../../Systems/Pickaxe")
+player_path = NodePath("../../../Player")
+character_path = NodePath("../../../Player")
+catcher_path = NodePath("../../../Player/Catcher")
+dialogue_path = NodePath("../MinerTalk")
+tag_path = NodePath("../../UI/MinerTag")
+camera_rig_path = NodePath("../../../Player/CameraRig")
+camera_marker_path = NodePath("../../TalkCam")
+camera_target_path = NodePath("../../MinerHead")
+two_shot = true
+main_camera_path = NodePath("../../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/MinerBox")
+hide_while_talking = Array[NodePath]([NodePath("../../../UI/SlicePlane"), NodePath("../../../UI/Controls"), NodePath("../../../UI/Inventory"), NodePath("../../../UI/Hint"), NodePath("../../../UI/Debug"), NodePath("../../../UI/CameraPicker"), NodePath("../../../UI/Quests")])
+two_shot_side = 1.9
+two_shot_back = 1.7
+two_shot_rise = 0.35
+two_shot_bias = 0.8
+two_shot_seconds = 2.5
+
+[node name="Murmurs" type="Node" parent="Systems"]
+script = ExtResource("murmur")
+player_path = NodePath("../../../Player")
+tag_paths = Array[NodePath]([NodePath("../../UI/SurveyorTag"), NodePath("../../UI/SamplerTag"), NodePath("../../UI/ReaderTag")])
+figure_paths = Array[NodePath]([NodePath("../../Surveyor"), NodePath("../../Sampler"), NodePath("../../Reader")])

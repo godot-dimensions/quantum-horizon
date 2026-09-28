@@ -3,13 +3,14 @@ extends SceneTree
 ## Bakes the pen's terrain and saves it, so nothing is generated when the scene opens.
 ##
 ## Headless is fine - this only builds arrays and writes files.
-## Args (after --): what=hills | cave_hill
+## Args (after --): what=hills | cave_hill | cave
 ## Writes res://ramon/chickenpen/terrain/baked/<what>.res and reads it back to check that
 ## the colours survived the round trip.
 
 const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd")
 const PenHills := preload("res://ramon/chickenpen/terrain/pen_hills_4d.gd")
 const PenCaveHill := preload("res://ramon/chickenpen/terrain/pen_cave_hill_4d.gd")
+const CaveRock := preload("res://ramon/chickenpen/cave/cave_rock_4d.gd")
 const OUT := "res://ramon/chickenpen/terrain/baked/"
 
 
@@ -26,6 +27,8 @@ func _initialize() -> void:
 			b = PenHills.new().bake_shell()
 		"cave_hill":
 			b = PenCaveHill.new().bake()
+		"cave":
+			b = CaveRock.new().bake()
 		_:
 			print("nothing called %s to bake" % what)
 			quit(1)
