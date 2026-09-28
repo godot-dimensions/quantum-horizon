@@ -8,6 +8,7 @@ extends SceneTree
 const _Nike = preload("res://ramon/dialogue/nike_script.gd")
 const _Professor = preload("res://ramon/chickenpen/scripts/professor_script.gd")
 const _Hale = preload("res://ramon/chickenpen/cave/cave_miner_script.gd")
+const _Range = preload("res://ramon/chickenpen/scripts/range_master_script.gd")
 
 const SCRIPTS: Array = [
 	{"who": "Keeper", "nodes": KeeperScript.NODES, "start": KeeperScript.START},
@@ -16,6 +17,7 @@ const SCRIPTS: Array = [
 	{"who": "Nike", "nodes": _Nike.NODES, "start": _Nike.START},
 	{"who": "Professor", "nodes": _Professor.NODES, "start": _Professor.START},
 	{"who": "Hale", "nodes": _Hale.NODES, "start": _Hale.START},
+	{"who": "Range Master", "nodes": _Range.NODES, "start": _Range.START},
 ]
 
 

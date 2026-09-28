@@ -1,4 +1,4 @@
-[gd_scene load_steps=46 format=3 uid="uid://c35cc8bahk37i"]
+[gd_scene load_steps=47 format=3 uid="uid://c35cc8bahk37i"]
 
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_klo0o"]
 [ext_resource type="CompressedTexture3D" uid="uid://7sn7g152xkb3" path="res://textures/dev_finals/ramdev_blue.png" id="1_mkiib"]
@@ -24,6 +24,7 @@
 [ext_resource type="Script" uid="uid://bwberot5mvh5t" path="res://ramon/ShootingGalleryRamon/scripts/slice_radar_ramon.gd" id="31_radar_ramon"]
 [ext_resource type="Script" uid="uid://c0616r1ij5vay" path="res://ramon/ShootingGalleryRamon/scripts/holodeck_ramon.gd" id="32_holodeck"]
 [ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="99_return"]
+[ext_resource type="Script" path="res://ramon/ShootingGalleryRamon/scripts/range_way_home_ramon.gd" id="100_wayhome"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_blue_floor"]
 size = Vector4(20, 1, 10, 10)
@@ -611,5 +612,8 @@ mouse_filter = 2
 script = ExtResource("30_instructions")
 
 [node name="ReturnButton" parent="." instance=ExtResource("99_return")]
+
+[node name="WayHome" type="Node" parent="."]
+script = ExtResource("100_wayhome")
 
 [editable path="FlatPlane/Player"]

@@ -1,4 +1,4 @@
-[gd_scene load_steps=726 format=3 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=730 format=3 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -67,6 +67,10 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cave_hill_4d.gd" id="pen_cave_hill"]
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/cave_hill.res" id="cave_hill_mesh"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/cave/cave.tscn" id="cave_scene"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_range_booth_4d.gd" id="range_booth"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_range_master_4d.gd" id="range_master"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_range_talk_4d.gd" id="range_talk"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_range_trip_4d.gd" id="range_trip"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 shader_parameter/horizon_color = Color(0.98, 0.71, 0.35, 1)
@@ -2142,6 +2146,33 @@ script = ExtResource("baked_ground")
 [node name="CaveHill" type="MeshInstance4D" parent="World"]
 mesh = ExtResource("cave_hill_mesh")
 script = ExtResource("pen_cave_hill")
+
+[node name="RangeBooth" type="Node4D" parent="World"]
+position = Vector4(-19, 0, -9, 0)
+script = ExtResource("range_booth")
+
+[node name="RangeSign" type="Node4D" parent="World"]
+position = Vector4(-16.95, 2.95, -9, 0)
+basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
+script = ExtResource("pen_sign")
+text = "RANGE"
+mount_height = 0.0
+board_colour = Color(0.16, 0.13, 0.10, 1)
+letter_colour = Color(0.93, 0.86, 0.66, 1)
+
+[node name="RangeMaster" type="Node4D" parent="World"]
+position = Vector4(-18.4, 0, -7.6, 0)
+basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
+script = ExtResource("range_master")
+
+[node name="RangeMasterHead" type="Node4D" parent="World"]
+position = Vector4(-18.4, 1.45, -7.6, 0)
+
+[node name="RangeMasterFacing" type="Node4D" parent="World"]
+script = ExtResource("pen_face")
+figure_path = NodePath("../RangeMaster")
+player_path = NodePath("../../Player")
+notice_within = 4.0
 
 [node name="Keeper" type="Node4D" parent="World"]
 position = Vector4(2.3, 0, -5.9, 0)
@@ -4841,6 +4872,30 @@ name_size = 17
 text_size = 20
 choice_size = 19
 
+[node name="RangeMasterTag" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("pen_world_tag")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../World/RangeMasterHead")
+lift = 12.0
+
+[node name="RangeMasterBox" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("dlg_box")
+choice_side = 1
+choice_width = 470.0
+choice_gap = 10.0
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../World/RangeMasterHead")
+over_head_width = 470.0
+name_size = 17
+text_size = 20
+choice_size = 19
+
 [node name="MithraTag" type="Control" parent="UI"]
 layout_mode = 3
 anchors_preset = 0
@@ -5123,6 +5178,35 @@ camera_marker_path = NodePath("../../World/TalkCam")
 camera_target_path = NodePath("../../World/ProfessorHead")
 main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 dialogue_box_path = NodePath("../../UI/ProfessorBox")
+
+[node name="RangeMasterTalk" type="Node" parent="Systems"]
+script = ExtResource("dlg_talk")
+box_path = NodePath("../../UI/RangeMasterBox")
+
+[node name="RangeMasterDriver" type="Node" parent="Systems"]
+script = ExtResource("range_talk")
+facing_path = NodePath("../../World/RangeMasterFacing")
+trip_path = NodePath("../RangeTrip")
+player_path = NodePath("../../Player")
+character_path = NodePath("../../Player")
+catcher_path = NodePath("../../Player/Catcher")
+dialogue_path = NodePath("../RangeMasterTalk")
+tag_path = NodePath("../../UI/RangeMasterTag")
+camera_rig_path = NodePath("../../Player/CameraRig")
+hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint"), NodePath("../../UI/Objective"), NodePath("../../UI/Progress"), NodePath("../../UI/Debug"), NodePath("../../UI/CameraPicker")])
+two_shot = true
+two_shot_seconds = 2.5
+two_shot_side = 1.9
+two_shot_back = 1.7
+two_shot_rise = 0.35
+two_shot_bias = 0.8
+camera_marker_path = NodePath("../../World/TalkCam")
+camera_target_path = NodePath("../../World/RangeMasterHead")
+main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/RangeMasterBox")
+
+[node name="RangeTrip" type="Node" parent="Systems"]
+script = ExtResource("range_trip")
 
 [node name="Game" type="Node" parent="Systems"]
 script = ExtResource("pen_game")

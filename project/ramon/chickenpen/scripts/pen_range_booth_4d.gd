@@ -1,0 +1,139 @@
+@tool
+extends Node4D
+
+## The shooting range beside Trym's shed: a covered firing line in near-black timber, a
+## rack of rifles, sandbags, and painted boards down the range. Show only - nothing here
+## fires. The range master behind the counter has somewhere better to send you
+## (pen_range_talk_4d.gd, pen_range_trip_4d.gd).
+##
+## ONE MESH, BUILT FROM BOXES, COLOURED PER VERTEX. Everything is a box, so it is drawn
+## from a list of boxes through terrain_bake_4d's box front end and merged into a single
+## mesh - one draw instead of sixty (Experiment B) - and the boxes that should stop you are
+## made into colliders from the same list, so what you see and what you bump into agree.
+## It is small enough (about 2,500 tetrahedra) to build when the scene opens rather than
+## bake to disk.
+##
+## FOUR-DIMENSIONAL LIKE A ROOM, OPEN LIKE A STALL. The enclosure rule
+## (follow_up/4d_enclosure_rule.md): corner posts with the booth's full W depth, half-height
+## walls on both z sides AND both w sides, so a turned slice sees a booth and not a roof on
+## sticks. The +x side, toward the field, is the way in; the -x side is the firing line.
+## The target boards are spread through w as well as z, so turning the slice down the
+## range brings other boards onto it.
+##
+## Its own frame: +x faces the field, -x is down the range.
+
+const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd")
+
+@export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
+@export var wood: Color = Color(0.105, 0.088, 0.072): set = _set_colour
+@export var wood_edge: Color = Color(0.17, 0.14, 0.11): set = _set_colour
+@export var steel: Color = Color(0.20, 0.21, 0.23): set = _set_colour
+@export var stock: Color = Color(0.36, 0.22, 0.12): set = _set_colour
+@export var sandbag: Color = Color(0.46, 0.41, 0.31): set = _set_colour
+@export var board: Color = Color(0.90, 0.88, 0.80): set = _set_colour
+@export var ring: Color = Color(0.72, 0.14, 0.10): set = _set_colour
+
+const HALF := Vector3(2.0, 2.5, 1.75)
+const ROOF_Y := 2.85
+
+
+func _set_colour(_v: Color) -> void:
+	if is_node_ready():
+		rebuild()
+
+
+func _ready() -> void:
+	rebuild()
+
+
+## [centre, size, colour, solid] for every box.
+func boxes() -> Array:
+	var out := []
+	# Deck, counter and its top. The deck is drawn, not collided with: a body here has no
+	# step-up (snap distance 0.1 m), so even a plank's height of deck would stop you at
+	# its edge. It is thin enough that standing "in" it does not show.
+	out.append([Vector4(0.0, 0.025, 0.0, 0.0), Vector4(HALF.x * 2.0, 0.05, HALF.y * 2.0, HALF.z * 2.0), wood_edge, false])
+	out.append([Vector4(-HALF.x + 0.3, 0.55, 0.0, 0.0), Vector4(0.45, 1.0, HALF.y * 2.0 - 0.3, HALF.z * 2.0 - 0.2), wood, true])
+	out.append([Vector4(-HALF.x + 0.3, 1.08, 0.0, 0.0), Vector4(0.62, 0.06, HALF.y * 2.0 - 0.1, HALF.z * 2.0), wood_edge, false])
+	# Posts at the four corners in (x, z), each running the booth's whole W depth. Posts at
+	# the eight corners in (x, z, w) with a post's own thin W depth looked right on paper
+	# and left the roof floating: every one of them sat off the home slice.
+	for sx in [-1.0, 1.0]:
+		for sz in [-1.0, 1.0]:
+			out.append([Vector4(sx * (HALF.x - 0.1), ROOF_Y * 0.5, sz * (HALF.y - 0.1), 0.0), Vector4(0.16, ROOF_Y, 0.16, HALF.z * 2.0), wood, true])
+	# And the same four again for the w walls: at the corners in (w, z), running the whole X
+	# depth. A slice turned a quarter into W sees these as its corner posts, the way the
+	# home slice sees the ones above; in between it cuts parts of both.
+	for sw in [-1.0, 1.0]:
+		for sz in [-1.0, 1.0]:
+			out.append([Vector4(0.0, ROOF_Y * 0.5, sz * (HALF.y - 0.1), sw * (HALF.z - 0.1)), Vector4(HALF.x * 2.0, ROOF_Y, 0.16, 0.16), wood, false])
+	# Roof, and a ridge along it.
+	out.append([Vector4(0.0, ROOF_Y + 0.07, 0.0, 0.0), Vector4(HALF.x * 2.0 + 0.5, 0.14, HALF.y * 2.0 + 0.5, HALF.z * 2.0 + 0.5), wood, false])
+	out.append([Vector4(0.0, ROOF_Y + 0.22, 0.0, 0.0), Vector4(0.26, 0.18, HALF.y * 2.0 + 0.5, HALF.z * 2.0 + 0.5), wood_edge, false])
+	# Half walls on both z sides and both w sides - the eight-wall rule, cut to waist height.
+	for s in [-1.0, 1.0]:
+		out.append([Vector4(0.0, 0.62, s * (HALF.y - 0.06), 0.0), Vector4(HALF.x * 2.0, 1.0, 0.1, HALF.z * 2.0), wood, true])
+		out.append([Vector4(0.0, 0.62, 0.0, s * (HALF.z - 0.06)), Vector4(HALF.x * 2.0, 1.0, HALF.y * 2.0, 0.1), wood, true])
+		# Plank lines on them, a shade lighter.
+		for y in [0.3, 0.62, 0.94]:
+			out.append([Vector4(0.0, y, s * (HALF.y - 0.005), 0.0), Vector4(HALF.x * 2.0 - 0.1, 0.03, 0.02, HALF.z * 2.0 - 0.2), wood_edge, false])
+	# The rifle rack against the +z wall, and four rifles standing in it.
+	var rack_z: float = HALF.y - 0.28
+	out.append([Vector4(0.4, 1.25, rack_z, 0.0), Vector4(1.8, 0.08, 0.14, 0.5), wood_edge, false])
+	out.append([Vector4(0.4, 0.2, rack_z, 0.0), Vector4(1.8, 0.1, 0.24, 0.5), wood_edge, false])
+	for i in 4:
+		var x: float = -0.3 + 0.45 * float(i)
+		out.append([Vector4(x, 0.36, rack_z, 0.0), Vector4(0.07, 0.36, 0.05, 0.07), stock, false])
+		out.append([Vector4(x, 0.95, rack_z, 0.0), Vector4(0.035, 0.85, 0.035, 0.05), steel, false])
+	# Two rifles lying on the counter, pointing down the range.
+	for z in [-0.9, 0.7]:
+		out.append([Vector4(-HALF.x + 0.15, 1.15, z, 0.0), Vector4(0.95, 0.035, 0.035, 0.05), steel, false])
+		out.append([Vector4(-HALF.x + 0.62, 1.15, z, 0.0), Vector4(0.36, 0.08, 0.06, 0.07), stock, false])
+	# Ammunition tins.
+	for z in [-0.1, 1.5]:
+		out.append([Vector4(-HALF.x + 0.4, 1.17, z, 0.3), Vector4(0.24, 0.12, 0.14, 0.14), Color(0.22, 0.28, 0.16), false])
+	# Down the range: boards on posts, spread through z and w, and a berm of sandbags.
+	var boards := [Vector3(-9.0, -1.2, 0.0), Vector3(-12.0, 0.8, 0.9), Vector3(-15.0, -0.2, -1.1), Vector3(-18.0, 1.4, 0.4), Vector3(-13.5, -1.9, -0.3)]
+	for b in boards:
+		var at := Vector4(b.x, 0.0, b.y, b.z)
+		out.append([at + Vector4(0.0, 0.7, 0.0, 0.0), Vector4(0.08, 1.4, 0.08, 0.08), wood, false])
+		out.append([at + Vector4(0.02, 1.55, 0.0, 0.0), Vector4(0.06, 0.9, 0.9, 0.9), board, false])
+		out.append([at + Vector4(0.06, 1.55, 0.0, 0.0), Vector4(0.03, 0.56, 0.56, 0.56), ring, false])
+		out.append([at + Vector4(0.08, 1.55, 0.0, 0.0), Vector4(0.02, 0.36, 0.36, 0.36), board, false])
+		out.append([at + Vector4(0.10, 1.55, 0.0, 0.0), Vector4(0.02, 0.14, 0.14, 0.14), Color(0.08, 0.08, 0.08), false])
+	for row in 3:
+		var y: float = 0.16 + 0.3 * float(row)
+		out.append([Vector4(-21.0, y, 0.0, 0.0), Vector4(0.6, 0.28, 6.0 - row * 0.8, 4.0 - row * 0.6), sandbag.darkened(0.06 * row), true])
+	# A few loose sandbags by the counter.
+	out.append([Vector4(-HALF.x - 0.45, 0.16, -1.8, 0.8), Vector4(0.55, 0.3, 0.4, 0.4), sandbag, true])
+	out.append([Vector4(-HALF.x - 0.45, 0.16, 1.9, -0.9), Vector4(0.55, 0.3, 0.4, 0.4), sandbag, true])
+	return out
+
+
+func rebuild() -> void:
+	for child in get_children():
+		if child.has_meta("range_booth_built"):
+			child.free()
+	var all := TerrainBake.Builder.new()
+	var body := StaticBody4D.new()
+	body.name = "Solid"
+	body.set_meta("range_booth_built", true)
+	for b in boxes():
+		var colour: Color = b[2]
+		all.append(TerrainBake.bake_box(b[0], b[1], func(p: Vector4, outward: Vector4) -> Color:
+			# Tops catch the light, sides less so, and the foot of anything standing darker.
+			var c: Color = colour if outward.y > 0.5 else colour.darkened(0.2)
+			return c.lerp(Color.BLACK, 0.3 * (1.0 - smoothstep(0.0, 0.35, p.y)) * float(outward.y < 0.5))))
+		if b[3] and not Engine.is_editor_hint():
+			var shape := BoxShape4D.new()
+			shape.size = b[1]
+			var holder := CollisionShape4D.new()
+			holder.shape = shape
+			holder.position = b[0]
+			body.add_child(holder)
+	var mesh := MeshInstance4D.new()
+	mesh.name = "Booth"
+	mesh.set_meta("range_booth_built", true)
+	mesh.mesh = TerrainBake.mesh_of(all)
+	add_child(mesh)
+	add_child(body)
