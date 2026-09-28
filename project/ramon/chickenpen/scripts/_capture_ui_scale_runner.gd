@@ -5,14 +5,13 @@ extends SceneTree
 ## conversation with him; and at the range's counter. Windowed.
 ##
 ## Args (after --): tag=<name>   writes res://smoke_test_output/ui_<tag>_<n>.png
-##                  scale=<f>    UiScale's ui_scale; 1 is the interface as it was. Run it
-##                               at the size you want to judge - the scale follows the
-##                               window's height and is never below 1.
+##                  percent=<p>  UiScale's percent; 100 is the interface as it was. Set on
+##                               the node, so the player's saved setting is not touched.
 
 var _room: Node
 var _f := 0
 var _tag := "now"
-var _scale := 1.3
+var _percent := 150.0
 var _n := 0
 
 
@@ -20,8 +19,8 @@ func _initialize() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("tag="):
 			_tag = a.substr(4)
-		elif a.begins_with("scale="):
-			_scale = float(a.substr(6))
+		elif a.begins_with("percent="):
+			_percent = float(a.substr(8))
 	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
 	root.add_child(_room)
 	current_scene = _room
@@ -53,7 +52,7 @@ func _save() -> void:
 func _process(_d: float) -> bool:
 	_f += 1
 	if _f == 5:
-		_room.get_node("Systems/UiScale").set("ui_scale", _scale)
+		_room.get_node("Systems/UiScale").set("percent", _percent)
 	var prof: Node4D = _room.get_node("World/Professor") as Node4D
 	var booth: Node4D = _room.get_node("World/RangeBooth") as Node4D
 	if _f < 60:

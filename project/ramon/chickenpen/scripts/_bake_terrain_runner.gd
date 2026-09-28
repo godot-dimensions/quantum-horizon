@@ -21,6 +21,8 @@ func _initialize() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("what="):
 			what = a.substr(5)
+		elif a == "rewind=1":
+			TerrainBake.rewind = true
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
 	var started: int = Time.get_ticks_msec()
 	var b: TerrainBake.Builder

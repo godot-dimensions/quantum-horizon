@@ -59,6 +59,9 @@ const PERMUTATIONS := [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2
 const CUBE_SIZE := 32
 
 static var _cube: ImageTexture3D
+## Whether bake_density re-winds the contour's tetrahedra against the density. OFF: see
+## there for why it was added and why it cut the hole it was meant to prevent.
+static var rewind := false
 
 
 ## The colour cube: linear light at evenly spaced sRGB values. Shared, so every baked mesh
@@ -431,12 +434,14 @@ static func bake_density(field: VoxelField4D, to_world: Callable, density: Calla
 				light *= shade_of(solid_fraction(density, p, _spacing(pass_, p.length())), pass_[1])
 			light = lerpf(1.0, light, weight)
 		out.vertex(i, p, Color(c.r * light, c.g * light, c.b * light, c.a))
-	# RE-WOUND HERE, against the density itself. The contour winds each hexahedron's six
-	# tetrahedra by a vote, and on a flat surface - a tunnel floor - most of them are slivers
-	# and the vote can go either way. A tetrahedron wound backwards has its slice culled, a
-	# hole. So each one is checked against which way the air is at its centre - down the
-	# density's gradient - and turned round if it disagrees. The same rule the height front
-	# ends wind by.
+	# RE-WINDING, OFF BY DEFAULT (static var rewind). Added on the guess that the contour's
+	# own winding - a vote per hexahedron - went wrong on the flat tunnel floor, and each
+	# tetrahedron checked against which way the air is at its centre instead. The floor's
+	# pattern turned out to be the 8-bit colour slot. And the check itself is what goes wrong
+	# in a crease: where the rock face meets the turf the air is on two sides at once, the
+	# check turned good tetrahedra round, and a turned tetrahedron's slice is culled - a
+	# long slit you could see the sky through, up the left of the cave's arch (Ramon, 28
+	# Sept: "the hole in the cave is still there ... on the left corner"). Without it, gone.
 	var cells: PackedInt32Array = contour.ground_cells
 	var flipped := 0
 	for t in range(0, cells.size(), 4):
@@ -457,7 +462,7 @@ static func bake_density(field: VoxelField4D, to_world: Callable, density: Calla
 			var e := Vector4.ZERO
 			e[axis] = 0.05
 			air[axis] = float(density.call(mid - e)) - float(density.call(mid + e))
-		if n.dot(air) < 0.0:
+		if rewind and n.dot(air) < 0.0:
 			var swap: int = c
 			c = d
 			d = swap

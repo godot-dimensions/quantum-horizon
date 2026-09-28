@@ -25,6 +25,11 @@ extends Control
 ## and the first thing anyone noticed in a screenshot. Everything here is a fraction of
 ## white over a panel that is barely there: legible when you look at it, gone when you
 ## are not.
+##
+## AND A SLIDER AT THE FOOT for the size of the whole interface (Ramon, 28 Sept: "add a UI
+## size percentage slider somewhere"), through pen_ui_scale_4d.gd. ESC frees the cursor to
+## use it, as for anything else on the card. It takes effect when it is let go: resizing the
+## interface while it is being dragged would move the slider out from under the pointer.
 
 ## Font size for the verbs. The keys inside their boxes are drawn a point smaller.
 @export_range(9, 28, 1) var text_size: int = 13
@@ -35,6 +40,8 @@ extends Control
 @export var toggle_key: Key = KEY_H
 ## The block under the rule. Off gives you the playing controls alone.
 @export var show_shortcuts: bool = true
+## The interface scale the slider at the foot sets. Nothing there, no slider.
+@export var ui_scale_path: NodePath = NodePath("../../Systems/UiScale")
 
 ## Where the keys that are not input actions actually live, so the card can ask them what
 ## they are bound to instead of repeating it. Each is a node path and the name of an
@@ -51,6 +58,13 @@ var _label_x: float = 0.0
 var _rule_after: int = -1
 var _panel: StyleBoxFlat
 var _chip: StyleBoxFlat
+## The row the slider sits in, or -1.
+var _slider_row: int = -1
+var _ui_scale: Node
+var _slider: HSlider
+var _percent: Label
+var _dragging := false
+const SLIDER_W := 190.0
 
 
 func _ready() -> void:
@@ -64,6 +78,9 @@ func _ready() -> void:
 	_chip.border_color = Color(1.0, 1.0, 1.0, 0.20)
 	_chip.set_border_width_all(1)
 	_chip.set_corner_radius_all(4)
+	_ui_scale = get_node_or_null(ui_scale_path)
+	if _ui_scale != null:
+		_make_slider()
 	_build()
 	queue_redraw()
 	_make_hint.call_deferred()
@@ -145,6 +162,9 @@ func _build() -> void:
 				continue
 			_rows.append([OS.get_keycode_string(code), entry[2], true])
 		_rows.append(["CTRL+R", "restart the scene", true])
+	if _slider != null:
+		_slider_row = _rows.size()
+		_rows.append(["UI size", "", false])
 	_measure()
 
 
@@ -158,10 +178,19 @@ func _measure() -> void:
 			font.get_string_size(row[0], HORIZONTAL_ALIGNMENT_LEFT, -1, key_size).x + 14.0)
 		widest = maxf(widest,
 			font.get_string_size(row[1], HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x)
+	if _slider != null:
+		widest = maxf(widest, SLIDER_W + 12.0 + font.get_string_size("300%", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x)
 	_label_x = 14.0 + _chip_w + 12.0
 	var height: float = 14.0 + float(_rows.size()) * _step() + 8.0
 	if _rule_after >= 0:
 		height += 11.0
+	if _slider_row >= 0:
+		height += 11.0
+		var y: float = _row_y(_slider_row)
+		var chip_h: float = float(text_size) + 7.0
+		_slider.position = Vector2(_label_x, y + (chip_h - 16.0) * 0.5)
+		_slider.size = Vector2(SLIDER_W, 16.0)
+		_percent.position = Vector2(_label_x + SLIDER_W + 12.0, y + 1.0)
 	# Anchored to the right edge in the scene, so the card is grown leftward and downward
 	# from the corner it is pinned to rather than being sized by hand - a row added below
 	# used to fall off the bottom of a rect somebody had typed a number into.
@@ -174,6 +203,62 @@ func _step() -> float:
 	return float(text_size) + 9.0
 
 
+## Where row [param i] starts, down the card - the same sums _draw does.
+func _row_y(i: int) -> float:
+	var y: float = 14.0 + float(i) * _step()
+	if _rule_after >= 0 and i > _rule_after:
+		y += 11.0
+	if _slider_row >= 0 and i >= _slider_row:
+		y += 11.0
+	return y
+
+
+func _make_slider() -> void:
+	_slider = HSlider.new()
+	_slider.name = "UiSize"
+	_slider.min_value = 50.0
+	_slider.max_value = 300.0
+	_slider.step = 5.0
+	_slider.value = float(_ui_scale.get("percent"))
+	# No keyboard focus: the arrow keys and WASD belong to walking.
+	_slider.focus_mode = Control.FOCUS_NONE
+	_slider.mouse_filter = Control.MOUSE_FILTER_STOP
+	_slider.value_changed.connect(_on_slider)
+	_slider.drag_started.connect(_on_drag_started)
+	_slider.drag_ended.connect(_on_drag_ended)
+	add_child(_slider)
+	_percent = Label.new()
+	_percent.add_theme_font_size_override("font_size", text_size)
+	_percent.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.72))
+	_percent.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_percent)
+	_percent.text = "%d%%" % roundi(_slider.value)
+	# The scale reads what the slider last left it at in its own _ready, which comes after
+	# this one; catch up with it once it has.
+	_sync_slider.call_deferred()
+
+
+func _sync_slider() -> void:
+	_slider.set_value_no_signal(float(_ui_scale.get("percent")))
+	_percent.text = "%d%%" % roundi(_slider.value)
+
+
+func _on_drag_started() -> void:
+	_dragging = true
+
+
+func _on_drag_ended(_changed: bool) -> void:
+	_dragging = false
+	_ui_scale.call("set_percent", _slider.value)
+
+
+func _on_slider(v: float) -> void:
+	_percent.text = "%d%%" % roundi(v)
+	# A click on the track moves it without a drag; that takes effect straight away.
+	if not _dragging:
+		_ui_scale.call("set_percent", v)
+
+
 func _draw() -> void:
 	if _rows.is_empty():
 		return
@@ -183,6 +268,10 @@ func _draw() -> void:
 		draw_style_box(_panel, Rect2(Vector2.ZERO, size))
 	var y: float = 14.0
 	for i in _rows.size():
+		if i == _slider_row:
+			y += 5.0
+			draw_line(Vector2(14.0, y), Vector2(size.x - 14.0, y), Color(1.0, 1.0, 1.0, 0.09), 1.0)
+			y += 6.0
 		var row: Array = _rows[i]
 		var chip_h: float = float(text_size) + 7.0
 		var box := Rect2(14.0, y, _chip_w, chip_h)

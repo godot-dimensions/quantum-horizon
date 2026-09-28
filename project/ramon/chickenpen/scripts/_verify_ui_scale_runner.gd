@@ -3,8 +3,8 @@ extends SceneTree
 ## The pen's interface scale (pen_ui_scale_4d.gd): on in the pen, the dial held at its
 ## unscaled rectangle on screen, off while the theatre is open and while the pen is parked
 ## for the range's gallery, and on again after each. Headless is fine - it reads the
-## window's content scale and the dial's rectangle, not the frame. Headless the window is
-## 64 lines tall, so ui_scale is set to whatever makes the factor 1.3 at that height.
+## window's content scale and the dial's rectangle, not the frame. The size is set straight
+## on the node, not through the slider, so the player's saved setting is not touched.
 
 var _room: Node
 var _f := 0
@@ -48,7 +48,7 @@ func _near(a: Rect2, b: Rect2) -> bool:
 func _process(_d: float) -> bool:
 	_f += 1
 	if _f == 5:
-		_room.get_node("Systems/UiScale").set("ui_scale", 1.3 * 1080.0 / float(root.size.y))
+		_room.get_node("Systems/UiScale").set("percent", 130.0)
 	if _f < 30:
 		return false
 	_wait += 1
@@ -60,6 +60,13 @@ func _process(_d: float) -> bool:
 				_check("scaled in the pen", is_equal_approx(root.content_scale_factor, _want), "%.3f" % root.content_scale_factor)
 				_check("the dial is where it always was", _near(_dial_on_screen(), _dial_as_authored()),
 					"%s vs %s" % [_dial_on_screen(), _dial_as_authored()])
+				var slider := _room.get_node_or_null("UI/Controls/UiSize") as HSlider
+				_check("the size slider is on the controls card", slider != null)
+				if slider != null:
+					var saved: float = float(_room.get_node("Systems/UiScale").get("percent"))
+					_check("and starts where the scale is", absf(slider.value - saved) < 0.01 or absf(slider.value - 130.0) < 0.01,
+						"slider %.0f, scale %.0f" % [slider.value, saved])
+					_check("from 50% to 300%", slider.min_value == 50.0 and slider.max_value == 300.0)
 				_room.get_node("Crossing").call("go_for_testing")
 				_step = 1
 				_wait = 0

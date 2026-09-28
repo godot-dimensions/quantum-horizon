@@ -78,7 +78,19 @@ const BLOCK_MIN := Vector4(9.5, -1.2, -44.0, -7.3)
 const BLOCK_MAX := Vector4(23.5, 12.8, -26.0, 6.7)
 const BLOCK_GRID := 16
 ## The part of the height taken away under the block, inset from its edges.
-const CARVE_INSET := 1.5
+##
+## AT LEAST ONE HEIGHT CELL PLUS HALF A BLOCK CELL. The height's cells that straddle the cut
+## slope down to it across their whole 1.35 m, and the block's surface only starts half of
+## one of its own cells in from its edge. At 1.5 the slope began before the block did, and
+## along the join the ground dipped a couple of metres under where the block took over - a
+## crack you could see the sky through (Ramon, 28 Sept: "the hole in the cave is still
+## there"). At 2.2 the whole slope is under the block's surface, where it is not seen.
+##
+## EXCEPT AT THE FRONT, where the arch opens: 2.2 in from the block's front edge the turf
+## shoulder already stands four metres tall across the mouth, and the height would build a
+## wall of it there. The front keeps 1.5, where the shoulder is still at the field.
+const CARVE_INSET := 2.2
+const CARVE_INSET_FRONT := 1.5
 
 const GRASS := Color(0.20, 0.27, 0.12)
 const GRASS_HIGH := Color(0.29, 0.33, 0.15)
@@ -146,6 +158,7 @@ func shoulder_height(x: float, z: float, w: float) -> float:
 func height(x: float, z: float, w: float) -> float:
 	var lo: Vector4 = BLOCK_MIN + Vector4.ONE * CARVE_INSET
 	var hi: Vector4 = BLOCK_MAX - Vector4.ONE * CARVE_INSET
+	hi.z = BLOCK_MAX.z - CARVE_INSET_FRONT
 	if x > lo.x and x < hi.x and z > lo.z and z < hi.z and w > lo.w and w < hi.w:
 		return -0.5
 	return hill_height(x, z, w)

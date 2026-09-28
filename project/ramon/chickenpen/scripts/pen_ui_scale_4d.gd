@@ -7,10 +7,13 @@ extends Node
 ## sizes and pixel margins in its own script. Rather than turn each of them up, the window's
 ## content scale factor turns all of it up together - fonts, panels, margins, the belt, the
 ## tags - in proportion, and anything anchored to the screen's edges stays anchored to them.
-## ui_scale is how big it is at 1080 lines; it follows the window's height, so it is the
-## same share of the screen at any size, where before a 4K screen made it half as big. It
-## is never made smaller than it was, though: in a small window - the editor's own game
-## view - it stays as it always was.
+##
+## A PLAIN PERCENTAGE, set with the slider at the foot of the controls card
+## (pen_controls_4d.gd) and kept between runs in user://pen_settings.cfg. 100 is the
+## interface exactly as it was before any of this. The first version followed the window's
+## height instead - 1.3 at 1080 lines - which on Ramon's 4K screen came to 2.6 and was far
+## too big (28 Sept: "the UI elements are too big now ... add a UI size percentage
+## slider"). What looks right depends on the screen and the eyes, so it is his to set.
 ##
 ## THE DIAL IS HELD AT EXACTLY ITS OLD SIZE. It is given the rectangle on screen it had
 ## before, in pixels, and a scale of one over the factor, so the two cancel.
@@ -23,9 +26,10 @@ extends Node
 ## which answers in window pixels; world_tag_4d.gd and dialogue_box_4d.gd convert that to
 ## the canvas's units, which is a no-op wherever nothing is scaled.
 
-## How big the interface is at 1080 lines; 1 is how it was.
-@export_range(0.5, 3.0, 0.05) var ui_scale: float = 1.3
-@export var reference_height: float = 1080.0
+## How big the interface is, in percent of how it was. What the slider last left it at is
+## used instead, when there is one.
+@export_range(50.0, 300.0, 5.0) var percent: float = 150.0
+const SETTINGS := "user://pen_settings.cfg"
 ## Controls kept at their unscaled size and place on screen.
 @export var keep_size_paths: Array[NodePath] = [NodePath("../../UI/SlicePlane")]
 ## Crossings during whose trips the scale is off (anything with is_away()).
@@ -42,6 +46,9 @@ func _ready() -> void:
 	# The theatre's crossing puts all of Systems to sleep while it is open, and this is the
 	# one thing in there that has to notice it is.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	var saved := ConfigFile.new()
+	if saved.load(SETTINGS) == OK:
+		percent = clampf(float(saved.get_value("ui", "percent", percent)), 50.0, 300.0)
 	for path in keep_size_paths:
 		var c := get_node_or_null(path) as Control
 		if c != null:
@@ -64,13 +71,22 @@ func _exit_tree() -> void:
 
 
 func _process(_delta: float) -> void:
-	var want: float = maxf(ui_scale * float(get_window().size.y) / reference_height, 1.0)
+	var want: float = percent / 100.0
 	for n in _away:
 		if is_instance_valid(n) and bool(n.call("is_away")):
 			want = 1.0
 	if not is_equal_approx(want, _factor):
 		_set_factor(want)
 	_hold_kept()
+
+
+## Sets the size from the slider, and remembers it for next time.
+func set_percent(p: float) -> void:
+	percent = clampf(p, 50.0, 300.0)
+	var saved := ConfigFile.new()
+	saved.load(SETTINGS)
+	saved.set_value("ui", "percent", percent)
+	saved.save(SETTINGS)
 
 
 func _set_factor(f: float) -> void:
