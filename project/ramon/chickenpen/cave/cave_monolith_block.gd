@@ -1,21 +1,19 @@
 @tool
 extends "res://ramon/VoxelMining/scripts/voxel_mining_block.gd"
 
-## The rock from the pen, stood on end in the cave as the thing everyone is here for: a
-## tall black slab on a ruined plinth, the 2001 monolith by way of a voxel field. It mines
-## exactly as it did in the field - same field, same dual contouring, same per-voxel
-## colliders, and the pickaxe and the gold seam hang off it unchanged - only the shape and
-## the colour are its own.
+## The thing everyone in the cave is here for: a black cube on a ruined plinth, found in
+## the hill, and nobody knows who put it there. It is the pen's own voxel block - same field,
+## same dual contouring, same per-voxel colliders, and the pickaxe and the seam hang off it
+## unchanged - and only its colour is its own.
 ##
-## HOW THIN A SLAB CAN BE. Dual contouring needs a couple of cells across anything it is to
-## draw, and this block's grid tops out at 16 (voxel_mining_block.gd clamps it). A slab two
-## cells thick and at most ~10 tall is about 1 : 2 : 4, not the film's 1 : 4 : 9. It still
-## reads as a slab stood on end, which is what sells it; thinner would have to be a plain
-## box and could not be mined.
+## IT WAS A SLAB FOR AN AFTERNOON AND THAT WAS WORSE (Ramon, 28 Sept). Stood on end as a
+## 2001 monolith it was two cells thick: two blows went through it, the bites came out
+## square, and it no longer felt like dual contouring. The cube in cave.tscn is the field
+## rock's exact settings - 8^4 at 0.8 m, a 0.96 m bite - which are what cut away in round
+## pieces and could be walked round and dug from several sides.
 ##
-## THE PROPORTIONS ARE IN (x, y, z, w). Its W depth matches its width, so turning the slice
-## a quarter into W shows the same face again rather than a sliver - the enclosure rule's
-## "match the W depth to the footprint", applied to an object.
+## THE PROPORTIONS ARE STILL THERE, per axis of (x, y, z, w), for anything that wants a
+## block of another shape; cave.tscn sets them all to 1.
 
 ## Each half-extent as a fraction of the base shape's half-size (voxel_mining_block's
 ## box_fill_fraction of half the grid).

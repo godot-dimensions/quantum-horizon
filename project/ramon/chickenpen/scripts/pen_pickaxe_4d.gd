@@ -240,6 +240,9 @@ func _armed() -> bool:
 		return false
 	if _catcher != null and _catcher.get("carried") != null:
 		return false
+	# At the range's counter the button fires the rifle instead (pen_range_shooting_4d.gd).
+	if bool(_player.get_meta(&"at_firing_line", false)):
+		return false
 	return String(_inventory.call("selected_effect")) == tool_effect
 
 

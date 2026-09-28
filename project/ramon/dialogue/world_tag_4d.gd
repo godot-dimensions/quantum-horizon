@@ -103,8 +103,10 @@ func _place() -> float:
 	size = _panel.get_combined_minimum_size()
 	_panel.size = size
 
-	var point: Vector2 = _camera.world_to_viewport(here)
 	var screen: Vector2 = get_viewport_rect().size
+	# world_to_viewport answers in window pixels; this control lives in canvas units, which
+	# differ when the window's content is scaled (pen_ui_scale_4d.gd).
+	var point: Vector2 = _camera.world_to_viewport(here) * screen / Vector2(get_viewport().get_size())
 	var want: Vector2 = point - Vector2(size.x * 0.5 - nudge_x, size.y + lift)
 	if clamp_to_screen:
 		want.x = clampf(want.x, screen_margin, screen.x - size.x - screen_margin)

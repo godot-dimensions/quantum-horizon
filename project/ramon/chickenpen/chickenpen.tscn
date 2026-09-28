@@ -55,14 +55,14 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_again_4d.gd" id="pen_again"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_info_card_4d.gd" id="pen_infocard"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_quests_4d.gd" id="pen_quests"]
-[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_sign_4d.gd" id="pen_sign"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_fps_4d.gd" id="pen_fps"]
 [ext_resource type="Script" uid="uid://c2kixgu1hst3e" path="res://ramon/chickenpen/theatre/theatre_arch_4d.gd" id="thr_arch"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_celebration_4d.gd" id="pen_party"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_talk_motion_4d.gd" id="pen_talkmotion"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_fullscreen_4d.gd" id="pen_fullscreen"]
 [ext_resource type="Script" path="res://ramon/chickenpen/terrain/baked_ground_4d.gd" id="baked_ground"]
-[ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/hills.res" id="hills_mesh"]
+[ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/mountains.res" id="mountains_mesh"]
+[ext_resource type="Script" path="res://ramon/chickenpen/terrain/pen_mountains_4d.gd" id="pen_mountains"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_bounds_4d.gd" id="pen_bounds"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cave_hill_4d.gd" id="pen_cave_hill"]
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/cave_hill.res" id="cave_hill_mesh"]
@@ -71,6 +71,9 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_range_master_4d.gd" id="range_master"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_range_talk_4d.gd" id="range_talk"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_range_trip_4d.gd" id="range_trip"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cave_fade_4d.gd" id="cave_fade"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_range_shooting_4d.gd" id="range_shooting"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_ui_scale_4d.gd" id="ui_scale"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 shader_parameter/horizon_color = Color(0.98, 0.71, 0.35, 1)
@@ -2140,8 +2143,8 @@ material_override = SubResource("ground_mat")
 mesh = SubResource("ground_mesh")
 
 [node name="Hills" type="MeshInstance4D" parent="World"]
-mesh = ExtResource("hills_mesh")
-script = ExtResource("baked_ground")
+mesh = ExtResource("mountains_mesh")
+script = ExtResource("pen_mountains")
 
 [node name="CaveHill" type="MeshInstance4D" parent="World"]
 mesh = ExtResource("cave_hill_mesh")
@@ -2150,15 +2153,6 @@ script = ExtResource("pen_cave_hill")
 [node name="RangeBooth" type="Node4D" parent="World"]
 position = Vector4(-19, 0, -9, 0)
 script = ExtResource("range_booth")
-
-[node name="RangeSign" type="Node4D" parent="World"]
-position = Vector4(-16.95, 2.95, -9, 0)
-basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
-script = ExtResource("pen_sign")
-text = "RANGE"
-mount_height = 0.0
-board_colour = Color(0.16, 0.13, 0.10, 1)
-letter_colour = Color(0.93, 0.86, 0.66, 1)
 
 [node name="RangeMaster" type="Node4D" parent="World"]
 position = Vector4(-18.4, 0, -7.6, 0)
@@ -2375,12 +2369,7 @@ mesh = SubResource("BoxTetraMesh4D_rr3dw")
 
 [node name="Nike" parent="World" instance=ExtResource("nike_scene")]
 position = Vector4(7.5, 0, 2, 0)
-basis = Projection(0.9, 0, 0, 0, 0, 0.9, 0, 0, 0, 0, 0.9, 0, 0, 0, 0, 0.9)
-
-[node name="PenSign" type="Node4D" parent="World"]
-position = Vector4(3.2, 0, -6.4, 0)
-basis = Projection(0.9455, 0, 0.3256, 0, 0, 1, 0, 0, -0.3256, 0, 0.9455, 0, 0, 0, 0, 1)
-script = ExtResource("pen_sign")
+basis = Projection(0.6, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0.6)
 
 [node name="Crate" type="MeshInstance4D" parent="World"]
 position = Vector4(-7.4, 0.3, 1.8, 0)
@@ -4755,6 +4744,7 @@ offset_bottom = 60.0
 script = ExtResource("pen_campick")
 rig_path = NodePath("../../Player/CameraRig")
 under_path = NodePath("../Controls")
+clear_of_path = NodePath("../SlicePlane")
 
 [node name="Inventory" type="Control" parent="UI"]
 layout_mode = 3
@@ -5208,6 +5198,15 @@ dialogue_box_path = NodePath("../../UI/RangeMasterBox")
 [node name="RangeTrip" type="Node" parent="Systems"]
 script = ExtResource("range_trip")
 
+[node name="CaveFade" type="CanvasLayer" parent="Systems"]
+script = ExtResource("cave_fade")
+
+[node name="RangeShooting" type="Node" parent="Systems"]
+script = ExtResource("range_shooting")
+
+[node name="UiScale" type="Node" parent="Systems"]
+script = ExtResource("ui_scale")
+
 [node name="Game" type="Node" parent="Systems"]
 script = ExtResource("pen_game")
 manager_path = NodePath("../../Chickens")
@@ -5606,7 +5605,7 @@ farm_camera_path = NodePath("../Player/CameraRig/Pitch/Camera4D")
 player_path = NodePath("../Player")
 bring_player = true
 keep_scene = true
-return_offset = Vector4(0, 0, 4, 0)
+return_offset = Vector4(0, 0, 8.5, 0)
 face_on_return = true
 blocked_by = Array[NodePath]([NodePath("../Crossing")])
 debug_key = 86

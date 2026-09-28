@@ -3,25 +3,26 @@ extends RefCounted
 ## NO class_name, for the reason professor_script.gd gives: preloaded by path it works the
 ## moment it exists, without waiting for an editor scan.
 
-## The miner in the spacesuit at the foot of the monolith: Hale.
+## The miner in the spacesuit at the foot of the cube: Hale.
 ##
 ## THE PROFESSOR'S RULE HOLDS HERE: EVERY NUMBER IS MEASURED. Ramon asked for a miner who
 ## talks "voxel-rock benchmark details with mystery", and the professor's header is clear
 ## that a character who explains a system in invented terms is worse than one who says
-## nothing. So each figure below comes from _measure_monolith_runner.gd on the slab as it
-## stands in cave.tscn, 28 Sept 2026: a 10^4 lattice (10,000 points) at 0.66 m, 1,368
-## tetrahedra when whole, 63 surface colliders before anyone digs and 363 after five blows,
-## 172 ms to re-contour after every blow; the six pieces of gold of which three sit further
-## through W than one blow reaches (pen_rock_gold_4d.gd, with the slab's 0.55 m bite). The
-## pen's old rock, for comparison, is the professor's 8^4 and 544 colliders - and measured
-## the same day at 184-209 ms a blow, MORE than the slab with two and a half times the
-## points, because rebuilding its 544 colliders costs more than contouring the bigger
-## field. That surprise is in his lines because it is true.
+## nothing. So each figure below comes from _measure_monolith_runner.gd on the cube as it
+## stands in cave.tscn, 28 Sept 2026: an 8^4 lattice (4,096 points) at 0.8 m; 6,000
+## tetrahedra whole and 6,480 after five blows; 544 surface colliders whole and 522 after
+## five blows; 184-208 ms to re-contour after every blow; a 0.96 m bite; six pieces of gold
+## of which three sit further through W than one blow reaches (pen_rock_gold_4d.gd). And
+## the cave around it, 65,313 tetrahedra (_bake_terrain_runner.gd what=cave).
 ##
-## THE MYSTERY IS IN WHAT THE NUMBERS DO, not in anything made up about them. A rock whose
-## collider count goes UP as you take it away, that re-computes the whole of itself when
-## touched, that is exactly as big in W as it is across - those are true of the slab and
-## they are strange, so he finds them strange. He never says what it is. Nobody here knows.
+## MEASURE LIVE COLLIDERS, NOT CHILDREN. A blow queues the old colliders for freeing and
+## adds new ones in the same frame, and a plain child count read 3,195 after five blows -
+## more than the cube has points. This script once quoted such a number; it no longer does.
+##
+## THE MYSTERY IS IN WHAT THE NUMBERS DO, not in anything made up about them. A thing on a
+## grid nobody laid, that re-computes all of itself when touched and has skin under its
+## skin - those are true of the cube and they are strange, so he finds them strange. He
+## never says what it is. Nobody here knows.
 ##
 ## HE IS NOT THE PROFESSOR. The professor is a pedant in a chicken field and finds nothing
 ## funny. Hale is a working miner three weeks into a job that stopped making sense on day
@@ -35,7 +36,7 @@ const NODES: Dictionary = {
 "intro": {
 	"speaker": "Hale",
 	"lines": [
-		"Mind the cables. And don't touch the slab unless you mean to.",
+		"Mind the cables. And don't touch the cube unless you mean to.",
 		"Name's Hale. I dig things out of hills for a living. Usually I know what they are before I start.",
 		"This one was here before the hill was.",
 	],
@@ -50,7 +51,7 @@ const NODES: Dictionary = {
 "how_to_mine": {
 	"speaker": "Hale",
 	"lines": [
-		"Pick on your belt, stand close, swing. It takes a bite about a metre across. The white-suits will scream. They're not wrong to.",
+		"Pick on your belt, stand close, swing. It takes a bite about two metres across. The white-suits will scream. They're not wrong to.",
 		"There's gold in it. Six pieces, the scanners say. Three you can reach from this slice. Three you can't, however close you stand.",
 	],
 	"topic": true,
@@ -61,7 +62,7 @@ const NODES: Dictionary = {
 	"speaker": "Hale",
 	"lines": [
 		"You hit it. Hear them? The white-suits have been dreading that for three weeks.",
-		"Felt the stall, though? A sixth of a second. Ten thousand points, all of them, re-worked for a bite the size of your head. It never skips one.",
+		"Felt the stall, though? A fifth of a second. Four thousand and ninety-six points, all of them, re-worked for a bite the size of your head. It never skips one.",
 		"I won't stop you. I'm not sure anyone should be encouraging you, either.",
 	],
 	"goto": "menu",
@@ -93,8 +94,8 @@ const NODES: Dictionary = {
 	"speaker": "Hale",
 	"instead": "topic_what_again",
 	"lines": [
-		"Honestly? A lattice. Ten points by ten by ten by ten, each one holding a single number that says how far inside the slab it is.",
-		"The surface is where that number crosses zero. Somebody built this on a grid. The grid is 66 centimetres. I've measured it four times.",
+		"Honestly? A lattice. Eight points by eight by eight by eight, each one holding a single number that says how far inside the thing it is.",
+		"The surface is where that number crosses zero. Somebody built this on a grid. The grid is eighty centimetres. I've measured it four times.",
 	],
 	"topic": true,
 	"goto": "menu",
@@ -115,8 +116,8 @@ const NODES: Dictionary = {
 	"speaker": "Hale",
 	"instead": "topic_lattice_again",
 	"lines": [
-		"The old rock in the field was eight on a side - four thousand and ninety-six points. This is ten. Ten thousand.",
-		"Whole, it's one thousand three hundred and sixty-eight tetrahedra. That's all it takes to draw it. Everything down here - the cave, the lot - is sixty-seven thousand.",
+		"Four thousand and ninety-six points. Whole, it's six thousand tetrahedra - that's all it takes to draw it. Every cut is new surface, so it only gets more.",
+		"Everything else down here - the cave, the plinth, the lot - is sixty-five thousand. The cube's the smallest thing in the room, and the one nobody can explain.",
 	],
 	"topic": true,
 	"goto": "menu",
@@ -126,8 +127,8 @@ const NODES: Dictionary = {
 	"speaker": "Hale",
 	"instead": "topic_cost_again",
 	"lines": [
-		"Every blow it re-contours the entire field. Not the bit you hit. All of it. A hundred and seventy milliseconds, give or take a few.",
-		"Here's the odd part. The old rock in the field has a quarter of the points and takes LONGER - two hundred a blow. It isn't the points. It's the skin: that one rebuilds five hundred and forty-four boxes every hit. This starts with sixty-three.",
+		"Every blow it re-contours the entire field. Not the bit you hit. All of it. About two hundred milliseconds, every time.",
+		"You'd think something that old would have found a shortcut. It hasn't. Or it doesn't want one.",
 	],
 	"topic": true,
 	"goto": "menu",
@@ -137,9 +138,9 @@ const NODES: Dictionary = {
 	"speaker": "Hale",
 	"instead": "topic_colliders_again",
 	"lines": [
-		"Every point on its surface carries its own little box, for your pick to find. Sixty-three of them, whole.",
-		"Five blows in, three hundred and sixty-three. You take it away and there's MORE of it to touch. The white-suits did not like that at all.",
-		"It's just the inside coming to the surface, I tell them. They write that down too.",
+		"Every point on its surface carries its own little box, for your pick to find. Five hundred and forty-four of them, whole.",
+		"Five blows in, five hundred and twenty-two. You take the skin off and there's skin under it, nearly as much. The white-suits want to know where it stops.",
+		"I tell them it stops where the grid does. They write that down too.",
 	],
 	"topic": true,
 	"goto": "menu",
@@ -149,7 +150,7 @@ const NODES: Dictionary = {
 	"speaker": "Hale",
 	"instead": "topic_deep_again",
 	"lines": [
-		"Three pieces sit further through W than a blow can reach. It's as deep that way as it is wide - look at it with your slice turned and it's the same slab.",
+		"Three pieces sit further through W than a blow can reach. It's as deep that way as it is wide - turn your slice and it's the same cube.",
 		"So hollow it from here, turn the slice, and dig again from a side of it that wasn't there a minute ago. Nobody on the crew will. You might.",
 	],
 	"topic": true,
@@ -160,7 +161,7 @@ const NODES: Dictionary = {
 ## second for the number you half-remember.
 "topic_what_again": {
 	"speaker": "Hale",
-	"lines": ["A lattice. Ten to the fourth, sixty-six centimetres apart. Somebody's grid."],
+	"lines": ["A lattice. Eight to the fourth, eighty centimetres apart. Somebody's grid."],
 	"goto": "menu",
 },
 
@@ -172,25 +173,25 @@ const NODES: Dictionary = {
 
 "topic_lattice_again": {
 	"speaker": "Hale",
-	"lines": ["Ten thousand points. Thirteen hundred and sixty-eight tetrahedra, whole. Doesn't sound like much until you swing at it."],
+	"lines": ["Four thousand and ninety-six points. Six thousand tetrahedra, whole. Doesn't sound like much until you swing at it."],
 	"goto": "menu",
 },
 
 "topic_cost_again": {
 	"speaker": "Hale",
-	"lines": ["The whole field, every blow, a sixth of a second. And the skin costs more than the size. It never takes a shortcut."],
+	"lines": ["The whole field, every blow, a fifth of a second. It never takes a shortcut."],
 	"goto": "menu",
 },
 
 "topic_colliders_again": {
 	"speaker": "Hale",
-	"lines": ["Sixty-three boxes whole, three hundred and sixty-three after five blows. Less of it, more to touch."],
+	"lines": ["Five hundred and forty-four boxes whole, five hundred and twenty-two after five blows. Skin under the skin."],
 	"goto": "menu",
 },
 
 "topic_deep_again": {
 	"speaker": "Hale",
-	"lines": ["Three out of reach through W. Dig, turn your slice, dig again. Same slab, different hole."],
+	"lines": ["Three out of reach through W. Dig, turn your slice, dig again. Same cube, different hole."],
 	"goto": "menu",
 },
 

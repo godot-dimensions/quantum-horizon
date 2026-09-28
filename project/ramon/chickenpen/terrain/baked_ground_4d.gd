@@ -6,7 +6,7 @@ extends MeshInstance4D
 ## The baked file holds the shape and one colour coordinate per vertex, but not the tiny
 ## colour-cube texture those coordinates look up: an ImageTexture3D made in a headless run
 ## has no image data to save (the dummy renderer keeps none), so the bake would write an
-## empty one. The cube is eight texels and costs nothing to make, so it is made here.
+## empty one. The cube is small and made once a run (terrain_bake_4d.gd), so it is made here.
 
 const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd")
 

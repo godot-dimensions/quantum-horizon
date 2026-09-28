@@ -12,19 +12,34 @@ extends RefCounted
 ## a thousand instances of the same thing. Scenery here is built as a handful of large
 ## meshes for that reason.
 ##
-## COLOUR PER VERTEX, BY WAY OF A 2x2x2 TEXTURE. The engine has per-vertex colour arrays on
-## TetraMaterial4D, but the cross-section shader the pen draws with never reads them: its
-## albedo is one colour times a Texture3D looked up at a coordinate carried on each corner of
-## each tetrahedron (tetra_cross_section_shader.glsl, fragment()). So every vertex gets a
-## coordinate that IS its colour, and the texture is the colour cube itself - eight texels,
-## black at one corner, white at the other. Linear filtering between those eight corners is
-## exactly linear in the coordinate, so what comes out is the vertex colour, interpolated
-## across the slice like any vertex colour would be. The coordinates are squeezed into
-## 0.25..0.75, the texel centres of a two-texel axis, so the filtering never clamps.
+## COLOUR PER VERTEX, BY WAY OF A COLOUR-CUBE TEXTURE. The engine has per-vertex colour
+## arrays on TetraMaterial4D, but the cross-section shader the pen draws with never reads
+## them: its albedo is one colour times a Texture3D looked up at a coordinate carried on each
+## corner of each tetrahedron (tetra_cross_section_shader.glsl, fragment()). So every vertex
+## gets a coordinate that IS its colour, and the texture is the colour cube itself, black at
+## one corner and white at the other. What comes out is the vertex colour, interpolated
+## across the slice like any vertex colour would be. Coordinates stay between the first and
+## last texel centres, so the filtering never clamps.
 ##
-## THE COLOUR IS LINEAR. The corners are 0 and 1, which read the same whether or not the
-## sampler decodes sRGB, so the texture hands back exactly the coordinate - and the shader
-## treats albedo as linear light. [method uvw_of] converts from the sRGB colours people pick.
+## THE COORDINATE IS sRGB, NOT LINEAR. The engine packs the four corners' coordinates into
+## whatever vertex slots are free (tetra_mesh_4d.cpp, append_proxy_mesh_surfaces_3d), and
+## the fourth corner's, and the first corner's third component, go in the vertex colour -
+## which Godot keeps at 8 bits. Coded linearly, one step of 8 bits is 0.008 of linear
+## light: nothing on bright grass, but on rock at 0.02 it is a jump of 40%, and since the
+## same vertex is the fourth corner of one tetrahedron and the first of the next, each
+## tetrahedron came out its own shade. That was the triangle pattern in the cave mouth's
+## dark gradient (Ramon, 28 Sept: "feels like it has a pattern"), and it is why it showed
+## most under the blue fill light and never on the grey test patch. Coded as sRGB, one 8-bit
+## step is one step of an ordinary 8-bit image, too small to see at any brightness. So the
+## coordinate is the sRGB colour itself, and the cube's texels along each axis are linear
+## light at evenly spaced sRGB values - half floats, which no sampler sRGB-decodes, so the
+## texture hands back exactly what is written into it whatever the material says. Filtering
+## between the texels is the sRGB curve in straight pieces, within 0.0005 of it.
+##
+## ONE SPARE TEXEL AT EACH END. The sampler repeats, and black sits on the first texel's
+## centre: an 8-bit slot rounding down by a hair blended in the white from the far side, and
+## lit the tunnel up in blue and yellow. The end texels repeat their neighbours, so a hair
+## either way reads the same.
 ##
 ## DARKNESS WITHOUT SHADOWS: 4D VERTEX OCCLUSION. The surface-nets trick (jedjoud10's
 ## voxel notes), one dimension up: look at the 3x3x3x3 = 81 points around a vertex and count
@@ -36,23 +51,34 @@ extends RefCounted
 ## the second, bit 2 the third. These four have an even number of bits set.
 const EVEN_CORNERS := [0, 3, 5, 6]
 const ODD_CORNERS := [1, 2, 4, 7]
+## The six paths from a cell's lowest corner to its highest, one tetrahedron each (Kuhn's
+## split). Every cell is cut the same way, with no mirror image in the next one.
+const PERMUTATIONS := [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]
+
+## Texels along each axis of the colour cube.
+const CUBE_SIZE := 32
 
 static var _cube: ImageTexture3D
 
 
-## The eight-texel colour cube. Shared, so every baked mesh can use one material setup.
+## The colour cube: linear light at evenly spaced sRGB values. Shared, so every baked mesh
+## can use one material setup.
 static func colour_cube() -> ImageTexture3D:
 	if _cube != null:
 		return _cube
+	var ramp := PackedFloat32Array()
+	for i in CUBE_SIZE:
+		var t: float = clampf(float(i - 1) / float(CUBE_SIZE - 3), 0.0, 1.0)
+		ramp.append(Color(t, 0.0, 0.0).srgb_to_linear().r)
 	var layers: Array[Image] = []
-	for z in 2:
-		var img: Image = Image.create_empty(2, 2, false, Image.FORMAT_RGB8)
-		for y in 2:
-			for x in 2:
-				img.set_pixel(x, y, Color(float(x), float(y), float(z)))
+	for z in CUBE_SIZE:
+		var img: Image = Image.create_empty(CUBE_SIZE, CUBE_SIZE, false, Image.FORMAT_RGBAH)
+		for y in CUBE_SIZE:
+			for x in CUBE_SIZE:
+				img.set_pixel(x, y, Color(ramp[x], ramp[y], ramp[z]))
 		layers.append(img)
 	_cube = ImageTexture3D.new()
-	_cube.create(Image.FORMAT_RGB8, 2, 2, 2, false, layers)
+	_cube.create(Image.FORMAT_RGBAH, CUBE_SIZE, CUBE_SIZE, CUBE_SIZE, false, layers)
 	return _cube
 
 
@@ -65,10 +91,13 @@ static func material(tint: Color = Color.WHITE) -> TetraMaterial4D:
 	return m
 
 
-## The texture coordinate that reads back as this (sRGB) colour.
+## The texture coordinate that reads back as this (sRGB) colour: the colour itself, moved in
+## to the centres of the texels between the two spare ones.
 static func uvw_of(c: Color) -> Vector3:
-	var l: Color = c.clamp().srgb_to_linear()
-	return Vector3(0.25 + 0.5 * l.r, 0.25 + 0.5 * l.g, 0.25 + 0.5 * l.b)
+	var s: Color = c.clamp()
+	var k: float = float(CUBE_SIZE - 3) / float(CUBE_SIZE)
+	var o: float = 1.5 / float(CUBE_SIZE)
+	return Vector3(o + k * s.r, o + k * s.g, o + k * s.b)
 
 
 ## How much of the 3^4 neighbourhood of [param p] is solid, spaced [param spacing] apart:
@@ -118,6 +147,8 @@ class Builder:
 	var cells := PackedInt32Array()
 	var _weld := {}
 	var skipped := 0
+	## Tetrahedra the density front end turned round (see bake_density).
+	var flipped := 0
 
 	## Index of the vertex known as [param key], adding it if it is new.
 	func vertex(key: Variant, position: Vector4, colour: Color = Color.WHITE) -> int:
@@ -160,6 +191,7 @@ class Builder:
 		for i in other.cells:
 			cells.append(i + base)
 		skipped += other.skipped
+		flipped += other.flipped
 
 ## The finished mesh. Each corner looks its colour up through its own vertex, so the
 ## texture map is one entry per vertex and the corner indices are the cells themselves.
@@ -264,6 +296,18 @@ static func _five_tets(out: Builder, corners: PackedInt32Array, odd: bool, outwa
 		out.tet(corners[k], corners[k ^ 1], corners[k ^ 2], corners[k ^ 4], outward)
 
 
+## One cell as six tetrahedra along the paths from corner 0 to corner 7. More tetrahedra
+## than the five-way split, but every cell identical - see bake_height_box's `six`.
+static func _six_tets(out: Builder, corners: PackedInt32Array, outward: Vector4) -> void:
+	for perm in PERMUTATIONS:
+		var bits := 0
+		var path := PackedInt32Array([corners[0]])
+		for k in 3:
+			bits |= 1 << int(perm[k])
+			path.append(corners[bits])
+		out.tet(path[0], path[1], path[2], path[3], outward)
+
+
 ## Cube-face coordinate for grid line [param i] of [param n], tangent-warped so the cells are
 ## close to even in angle. The two ends are exactly -1 and 1, so neighbouring faces agree on
 ## their shared vertices to the last bit and weld.
@@ -299,7 +343,7 @@ static func _spacing(pass_: Array, r: float) -> float:
 ## [param cell] across - for a patch near the player that wants finer detail than the shell.
 ## Cells whose every corner is below [param hidden_below] are left out: they would only be
 ## drawn underneath the field, and every tetrahedron costs video memory.
-static func bake_height_box(lo: Vector3, hi: Vector3, cell: float, height: Callable, colour: Callable, ao: Array = [], hidden_below: float = -INF) -> Builder:
+static func bake_height_box(lo: Vector3, hi: Vector3, cell: float, height: Callable, colour: Callable, ao: Array = [], hidden_below: float = -INF, six: bool = false) -> Builder:
 	var out := Builder.new()
 	var counts := Vector3i(maxi(1, ceili((hi.x - lo.x) / cell)), maxi(1, ceili((hi.y - lo.y) / cell)), maxi(1, ceili((hi.z - lo.z) / cell)))
 	var step := Vector3((hi.x - lo.x) / counts.x, (hi.y - lo.y) / counts.y, (hi.z - lo.z) / counts.z)
@@ -322,7 +366,10 @@ static func bake_height_box(lo: Vector3, hi: Vector3, cell: float, height: Calla
 					corners.append(v)
 					shown = shown or out.positions[v].y >= hidden_below
 				if shown:
-					_five_tets(out, corners, (a + b + c) % 2 == 1, up)
+					if six:
+						_six_tets(out, corners, up)
+					else:
+						_five_tets(out, corners, (a + b + c) % 2 == 1, up)
 	return out
 
 
@@ -362,7 +409,10 @@ static func bake_box(centre: Vector4, size: Vector4, colour: Callable) -> Builde
 ## space) drives the occlusion; [param colour] as for the shell, with r the distance from
 ## the origin.
 ## Cells entirely below [param hidden_below] are dropped, as for the height box.
-static func bake_density(field: VoxelField4D, to_world: Callable, density: Callable, colour: Callable, ao: Array = [], hidden_below: float = -INF) -> Builder:
+## [param ao_weight], if given, is Callable(p: Vector4) -> float: how much of the occlusion
+## to apply at p, 0 to 1. Where the colour already says how dark it is (the cave mouth's
+## tunnel), switch it off.
+static func bake_density(field: VoxelField4D, to_world: Callable, density: Callable, colour: Callable, ao: Array = [], hidden_below: float = -INF, ao_weight: Callable = Callable()) -> Builder:
 	var contour := MultiVertexDualContour4D.new(field)
 	contour.generate()
 	var out := Builder.new()
@@ -375,15 +425,43 @@ static func bake_density(field: VoxelField4D, to_world: Callable, density: Calla
 		var normal: Vector4 = contour.vertex_normals[i]
 		var c: Color = colour.call(p, normal, p.length())
 		var light := 1.0
-		for pass_ in ao:
-			light *= shade_of(solid_fraction(density, p, _spacing(pass_, p.length())), pass_[1])
+		var weight: float = float(ao_weight.call(p)) if ao_weight.is_valid() else 1.0
+		if weight > 0.0:
+			for pass_ in ao:
+				light *= shade_of(solid_fraction(density, p, _spacing(pass_, p.length())), pass_[1])
+			light = lerpf(1.0, light, weight)
 		out.vertex(i, p, Color(c.r * light, c.g * light, c.b * light, c.a))
-	# The contour already winds its cells; keep them as they are.
+	# RE-WOUND HERE, against the density itself. The contour winds each hexahedron's six
+	# tetrahedra by a vote, and on a flat surface - a tunnel floor - most of them are slivers
+	# and the vote can go either way. A tetrahedron wound backwards has its slice culled, a
+	# hole. So each one is checked against which way the air is at its centre - down the
+	# density's gradient - and turned round if it disagrees. The same rule the height front
+	# ends wind by.
 	var cells: PackedInt32Array = contour.ground_cells
+	var flipped := 0
 	for t in range(0, cells.size(), 4):
 		var shown := false
 		for k in 4:
 			shown = shown or out.positions[cells[t + k]].y >= hidden_below
-		if shown:
-			out.cells.append_array(cells.slice(t, t + 4))
+		if not shown:
+			continue
+		var a: int = cells[t]
+		var b: int = cells[t + 1]
+		var c: int = cells[t + 2]
+		var d: int = cells[t + 3]
+		var pa: Vector4 = out.positions[a]
+		var n: Vector4 = Vector4D.perpendicular(out.positions[b] - pa, out.positions[c] - pa, out.positions[d] - pa)
+		var mid: Vector4 = (pa + out.positions[b] + out.positions[c] + out.positions[d]) * 0.25
+		var air := Vector4.ZERO
+		for axis in 4:
+			var e := Vector4.ZERO
+			e[axis] = 0.05
+			air[axis] = float(density.call(mid - e)) - float(density.call(mid + e))
+		if n.dot(air) < 0.0:
+			var swap: int = c
+			c = d
+			d = swap
+			flipped += 1
+		out.cells.append_array(PackedInt32Array([a, b, c, d]))
+	out.flipped = flipped
 	return out

@@ -15,6 +15,7 @@ var _w_while_carried: float = 0.0
 var _stage := "approach"
 var _land_frame := -1
 var _throw_from := Vector4.ZERO
+var _caught_at := -1
 
 
 func _initialize() -> void:
@@ -53,6 +54,7 @@ func _process(_d) -> bool:
 				var candidate: Node = _catcher.call("_best_candidate")
 				print("candidate found: %s" % ("yes" if candidate != null else "NO"))
 				_catcher.call("_catch", candidate if candidate != null else _target)
+				_caught_at = _f
 				_stage = "carry"
 			return false
 		"carry":
@@ -66,7 +68,12 @@ func _process(_d) -> bool:
 			# carry letting go.
 			_player.global_position += Vector4(-0.02, 0.0, 0.015, 0.01)
 			var gap: float = _body.global_position.distance_to(_anchor.global_position)
-			_carry_gap_max = maxf(_carry_gap_max, gap)
+			# Not in the first few frames. The catcher lifts the chicken from its physics
+			# step, and a drawn frame can come before that step has run: the gap is then
+			# the chicken's height off the ground to the anchor, 1.7 m, and the test failed
+			# about one run in two on it with the carry working perfectly.
+			if _f > _caught_at + 5:
+				_carry_gap_max = maxf(_carry_gap_max, gap)
 			_w_while_carried = _body.global_position.w
 			if _f > 190:
 				print("carried: max gap to anchor %.4f, chicken w %.3f, player w %.3f" % [

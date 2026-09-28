@@ -56,6 +56,12 @@ extends Control
 ## dozen pixels of the emptiest part of a circle. Use it only when the thing to avoid is
 ## genuinely beside the anchor rather than below it.
 @export var avoid_path: NodePath
+## Optional. Something underneath the card that the panel must not drop onto. When hanging
+## under the card would put it there, it goes beside the card instead - to its left, bottom
+## edges flush - which still reads as the card's. Wired to the dial on the farm: with the
+## interface scaled up (pen_ui_scale_4d.gd) the card is taller and hanging under it put
+## the panel across the top of the dial.
+@export var clear_of_path: NodePath
 ## Used only when there is nothing to sit under: left edge, and height above the belt.
 @export_range(0.0, 200.0, 1.0) var side_margin: float = 40.0
 @export_range(0.0, 200.0, 1.0) var lift: float = 118.0
@@ -63,6 +69,7 @@ extends Control
 var _rig: Node
 var _under: Control
 var _avoid: Control
+var _clear_of: Control
 var _panel: StyleBoxFlat
 var _chip: StyleBoxFlat
 var _chip_on: StyleBoxFlat
@@ -88,6 +95,7 @@ func _ready() -> void:
 	_chip_on.set_corner_radius_all(4)
 	_under = get_node_or_null(under_path) as Control
 	_avoid = get_node_or_null(avoid_path) as Control
+	_clear_of = get_node_or_null(clear_of_path) as Control
 	_rig = get_node_or_null(rig_path)
 	if _rig == null:
 		push_warning("%s: no camera rig - nothing to report." % name)
@@ -167,6 +175,8 @@ func _lay_out() -> void:
 		if _avoid != null:
 			right = minf(right, _avoid.position.x - gap)
 		position = Vector2(right - w, _under.position.y + _under.size.y + gap)
+		if _clear_of != null and _clear_of.visible and position.y + h > _clear_of.position.y:
+			position = Vector2(_under.position.x - gap - w, _under.position.y + _under.size.y - h)
 	else:
 		position = Vector2(side_margin, get_viewport_rect().size.y - lift - h)
 	size = Vector2(w, h)

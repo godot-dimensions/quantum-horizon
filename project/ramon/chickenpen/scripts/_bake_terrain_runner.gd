@@ -3,7 +3,9 @@ extends SceneTree
 ## Bakes the pen's terrain and saves it, so nothing is generated when the scene opens.
 ##
 ## Headless is fine - this only builds arrays and writes files.
-## Args (after --): what=hills | cave_hill | cave
+## Args (after --): what=hills | cave_hill | cave | mountains
+## "mountains" bakes with the parameters on the pen's World/Hills node, as its Bake button
+## does, and writes mountains.res; "hills" is the first version, kept as the "Classic" style.
 ## Writes res://ramon/chickenpen/terrain/baked/<what>.res and reads it back to check that
 ## the colours survived the round trip.
 
@@ -29,6 +31,19 @@ func _initialize() -> void:
 			b = PenCaveHill.new().bake()
 		"cave":
 			b = CaveRock.new().bake()
+		"mountains":
+			var room: Node = (load("res://ramon/chickenpen/chickenpen.tscn") as PackedScene).instantiate()
+			var hills: Node = room.get_node("World/Hills")
+			if not hills.has_method("bake"):
+				print("World/Hills is not the mountains node")
+				room.free()
+				quit(1)
+				return
+			var said: String = hills.call("bake")
+			room.free()
+			print("   " + said)
+			quit(0 if said.ends_with("(OK)") else 1)
+			return
 		_:
 			print("nothing called %s to bake" % what)
 			quit(1)
@@ -37,8 +52,8 @@ func _initialize() -> void:
 	var took: float = (Time.get_ticks_msec() - started) / 1000.0
 	var path: String = OUT + what + ".res"
 	var err: int = ResourceSaver.save(mesh, path, ResourceSaver.FLAG_COMPRESS)
-	print("   %s: %d vertices, %d tetrahedra, %d degenerate dropped, %.1f s  ->  %s (%s)"
-		% [what, b.positions.size(), b.tet_count(), b.skipped, took, path, error_string(err)])
+	print("   %s: %d vertices, %d tetrahedra, %d degenerate dropped, %d re-wound, %.1f s  ->  %s (%s)"
+		% [what, b.positions.size(), b.tet_count(), b.skipped, b.flipped, took, path, error_string(err)])
 	var back: ArrayTetraMesh4D = load(path) as ArrayTetraMesh4D
 	var ok: bool = back != null and back.get_vertex_positions().size() == b.positions.size() \
 		and back.texture_map_values.size() == b.positions.size() \

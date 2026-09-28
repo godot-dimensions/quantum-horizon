@@ -9,7 +9,7 @@ extends PenNpcTalk4D
 ## know that.
 ##
 ## HE OPENS ON WHAT YOU HAVE DONE. First meeting, the introduction. After that, once you
-## have taken a piece out of the slab, a line that knows it before the topics.
+## have taken a piece out of the cube, a line that knows it before the topics.
 
 const MinerScript := preload("res://ramon/chickenpen/cave/cave_miner_script.gd")
 

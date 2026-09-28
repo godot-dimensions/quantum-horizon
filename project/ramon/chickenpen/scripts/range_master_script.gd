@@ -35,7 +35,7 @@ const NODES: Dictionary = {
 	"speaker": "Range Master",
 	"lines": [
 		"Targets that aren't on your slice until you turn to them. And a black slab, out past the floor, that comes for you. Don't let it reach you.",
-		"Funny. They've got one just like it in the hill. H brings you back here when you've had enough.",
+		"Funny. They've found something like it in the hill. H brings you back here when you've had enough.",
 	],
 	"choices": [
 		{"text": "Show me.", "goto": "off_you_go"},

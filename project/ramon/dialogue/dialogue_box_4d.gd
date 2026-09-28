@@ -338,7 +338,8 @@ func _place() -> void:
 		var w: float = minf(over_head_width, screen.x - over_head_margin * 2.0)
 		var h: float = _speech_height(w)
 		var ch: float = _choice_height(w)
-		var point: Vector2 = _camera.world_to_viewport(_head.global_position)
+		# Window pixels to canvas units - they differ when the window's content is scaled.
+		var point: Vector2 = _camera.world_to_viewport(_head.global_position) * screen / Vector2(get_viewport().get_size())
 		var x: float = clampf(point.x - w * 0.5 + over_head_nudge_x,
 			over_head_margin, screen.x - w - over_head_margin)
 		# Replies underneath, reading downward. What keeps them off the speaker is the

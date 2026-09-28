@@ -2,7 +2,7 @@ extends RefCounted
 
 ## The cave inside the hill: a rough tunnel from the daylight, a long straight excavated
 ## corridor lined with work lights, and at its end a high chamber with a ruined plinth in
-## the middle and the monolith on it. All of it baked by _bake_terrain_runner.gd what=cave.
+## the middle and the cube on it. All of it baked by _bake_terrain_runner.gd what=cave.
 ##
 ## Everything here is in the cave's own frame. The scene is hung 1 km along x from the pen
 ## (cave.tscn, cave_4d.gd) so the two never touch, and nothing in this file needs to know.
@@ -11,7 +11,7 @@ extends RefCounted
 ## a wow moment". So the corridor is straight, centred on the plinth, and lit in evenly
 ## spaced pairs - in x AND in w, since this is four-dimensional and a slice turned into W
 ## should frame it the same way - and the chamber opens out at the end of it with the
-## monolith dead centre, tall, lit from below, and a ceiling too high to see.
+## cube dead centre, lit from below, and a ceiling too high to see.
 ##
 ## WALLS ARE A DENSITY, THE FLOOR IS A HEIGHT. The cave's air is a union of three shapes
 ## (tunnel, corridor, chamber) and the rock is everything else; dual contouring draws the
@@ -57,9 +57,10 @@ const CHAMBER_R := Vector4(13.0, 17.0, 12.0, 8.0)
 const STATIONS := [-7.5, -12.5, -17.5, -22.5]
 const STAND_OFFSET := 2.45
 
-## The plinth: three tiers, each this much smaller than the last, and its top.
-const PLINTH_BASE := 6.4
-const PLINTH_STEP := 1.6
+## The plinth: three tiers, each this much smaller than the last, and its top. Wide enough
+## on top for the cube (4.2 m across) with a step to stand on in front of it.
+const PLINTH_BASE := 8.4
+const PLINTH_STEP := 1.4
 const PLINTH_RISE := 0.5
 const PLINTH_TOP := 1.5
 
@@ -86,8 +87,8 @@ const CASE := Color(0.86, 0.42, 0.12)
 const GENERATOR := Color(0.85, 0.66, 0.12)
 const TABLE := Color(0.50, 0.50, 0.52)
 const SCREEN := Color(0.45, 0.80, 1.0)
+const LAPTOP_GLOW := Color(0.80, 0.94, 1.0)
 const CABLE := Color(0.05, 0.05, 0.06)
-const PLANK := Color(0.30, 0.22, 0.15)
 
 var _rough := FastNoiseLite.new()
 var _grain := FastNoiseLite.new()
@@ -181,7 +182,7 @@ func props() -> Array:
 		out.append([CHAMBER + Vector4(0.0, PLINTH_RISE * (k + 0.5), 0.0, 0.0),
 			Vector4(side, PLINTH_RISE, side, side), STONE if k != 1 else STONE_DARK, true])
 	# Broken blocks of an older, larger plinth scattered round it.
-	for d in [Vector4(3.9, 0.25, 2.6, 1.2), Vector4(-3.6, 0.2, -3.1, -1.9), Vector4(2.2, 0.3, -4.0, 2.8), Vector4(-2.8, 0.18, 3.4, -2.6)]:
+	for d in [Vector4(4.9, 0.25, 2.6, 1.2), Vector4(-4.8, 0.2, -3.1, -1.9), Vector4(2.2, 0.3, -4.9, 2.8), Vector4(-2.8, 0.18, 4.8, -2.6)]:
 		out.append([CHAMBER + d, Vector4(1.1, d.y * 2.0, 0.8, 0.9), STONE_DARK, true])
 	# Columns on the four diagonals in (x, z) and the two ends of W: framing the plinth from
 	# the corridor on the home slice, and from the corridor again with the slice turned.
@@ -206,11 +207,7 @@ func props() -> Array:
 			out.append([at + Vector4(0.0, 0.04, 0.0, 0.0), Vector4(0.55, 0.08, 0.55, 0.55), STEEL, false])
 			out.append([at + Vector4(0.0, 2.75, -0.02, 0.0), Vector4(0.46, 0.30, 0.12, 0.46), STEEL, false])
 			out.append([at + Vector4(0.0, 2.75, -0.09, 0.0), Vector4(0.38, 0.22, 0.03, 0.38), LAMP, false])
-	# A walkway of boards down the corridor.
-	var z := 3.0
-	while z > CORRIDOR.y - 1.0:
-		out.append([Vector4(0.0, 0.03, z, 0.0), Vector4(1.3, 0.06, 0.34, 1.3), PLANK, false])
-		z -= 0.62
+	# (There was a walkway of boards down the corridor. Ramon, 28 Sept: better without.)
 	# Cables either side of it, in x and in w.
 	for s in [-1.0, 1.0]:
 		out.append([Vector4(s * 1.3, 0.025, (4.0 + CHAMBER.z + 6.0) * 0.5, 0.0), Vector4(0.06, 0.05, 4.0 - CHAMBER.z - 6.0, 0.06), CABLE, false])
@@ -223,6 +220,12 @@ func props() -> Array:
 		out.append([base + Vector4(0.0, 6.5, 0.0, 0.0), Vector4(1.5, 0.45, 0.5, 0.9), STEEL, false])
 		out.append([base + Vector4(-signf(t.x) * 0.28, 6.5, 0.0, 0.0), Vector4(0.04, 0.34, 0.40, 0.8), LAMP, false])
 	# The research site: two tables with instruments, crates, cases and a generator.
+	# The laptop, open on the left table, its screen lit (cave.tscn has a small light in
+	# front of it so it glows on the table and the case beside it).
+	var laptop := Vector4(-6.95, 0.0, -31.5, 0.0)
+	out.append([laptop + Vector4(0.0, 0.9, 0.05, 0.0), Vector4(0.36, 0.025, 0.26, 0.26), Color(0.16, 0.17, 0.19), false])
+	out.append([laptop + Vector4(0.0, 1.03, -0.08, 0.0), Vector4(0.36, 0.24, 0.02, 0.26), Color(0.16, 0.17, 0.19), false])
+	out.append([laptop + Vector4(0.0, 1.03, -0.065, 0.0), Vector4(0.32, 0.2, 0.012, 0.22), LAPTOP_GLOW, false])
 	for table in [[Vector4(-7.0, 0.0, -31.5, 0.0), 1.0], [Vector4(7.2, 0.0, -40.0, 0.0), -1.0]]:
 		var at: Vector4 = table[0]
 		out.append([at + Vector4(0.0, 0.86, 0.0, 0.0), Vector4(2.2, 0.06, 0.9, 0.9), TABLE, true])

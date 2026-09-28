@@ -6,21 +6,27 @@ extends SceneTree
 ##
 ## Args (after --): tag=<name>  writes res://smoke_test_output/cave_hill_<tag>_<n>.png
 ##                  hide=A,B    hide these nodes first (paths from the scene root)
+##                  only=N      take shot N alone
+##                  unlit=A,B   set these lights' energy to 0 (paths from the scene root)
+##                  ambient0=1  no ambient light and no sky in it
 
 const SHOTS := [
 	# [stand at (x, z, w), look at (x, y, z, w), pitch degrees, slice xw degrees, distance]
+	[Vector3(16.5, -21.0, 0.0), Vector4(16.5, 2.5, -30.0, 0.0), 4.0, 0.0, 4.0],
+	[Vector3(9.0, -22.5, 0.0), Vector4(16.5, 1.5, -29.0, 0.0), 2.0, 0.0, 4.0],
+	[Vector3(24.0, -22.5, 0.0), Vector4(16.5, 1.5, -29.0, 0.0), 2.0, 0.0, 4.0],
+	[Vector3(16.5, -29.8, 0.0), Vector4(16.5, 1.6, -40.0, 0.0), 0.0, 0.0, 3.0],
 	[Vector3(4.6, -2.0, 0.0), Vector4(17.0, 2.0, -30.0, 0.0), 2.0, 0.0, 5.0],
-	[Vector3(15.0, -17.0, 0.0), Vector4(16.5, 2.5, -30.0, 0.0), 2.0, 0.0, 4.0],
-	[Vector3(16.5, -24.5, 0.0), Vector4(16.5, 1.8, -34.0, 0.0), 0.0, 0.0, 3.0],
-	[Vector3(16.5, -24.5, 0.0), Vector4(16.5, 1.8, -34.0, 0.0), 0.0, 60.0, 3.0],
-	[Vector3(30.0, -22.0, 0.0), Vector4(20.0, 2.5, -34.0, 0.0), -4.0, 0.0, 6.0],
-	[Vector3(8.0, -12.0, 0.0), Vector4(17.0, 3.0, -34.0, 0.0), 2.0, 45.0, 5.0],
+	[Vector3(16.5, -21.0, 0.0), Vector4(16.5, 2.5, -30.0, 0.0), 4.0, 60.0, 4.0],
 ]
 
 var _room: Node
 var _f := 0
 var _tag := "now"
 var _hide: PackedStringArray = []
+var _unlit: PackedStringArray = []
+var _only := -1
+var _ambient0 := false
 
 
 func _initialize() -> void:
@@ -29,6 +35,12 @@ func _initialize() -> void:
 			_tag = a.substr(4)
 		elif a.begins_with("hide="):
 			_hide = a.substr(5).split(",")
+		elif a.begins_with("unlit="):
+			_unlit = a.substr(6).split(",")
+		elif a.begins_with("only="):
+			_only = int(a.substr(5))
+		elif a == "ambient0=1":
+			_ambient0 = true
 	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
 	root.add_child(_room)
 	current_scene = _room
@@ -46,9 +58,11 @@ func _process(_d: float) -> bool:
 		return false
 	var n: int = (_f - 20) / 45
 	var phase: int = (_f - 20) % 45
-	if n >= SHOTS.size():
+	if n >= SHOTS.size() or (_only >= 0 and n > 0):
 		quit()
 		return true
+	if _only >= 0:
+		n = _only
 	var shot: Array = SHOTS[n]
 	if phase == 0:
 		for path in _hide:
@@ -56,6 +70,14 @@ func _process(_d: float) -> bool:
 			if node != null:
 				node.visible = false
 		_hide_hud(_room.get_node("UI"))
+		for path in _unlit:
+			var light := _room.get_node_or_null(path)
+			if light != null:
+				light.set("light_energy", 0.0)
+		if _ambient0:
+			var env := _room.get_node("World/Environment")
+			env.set("ambient_light_color", Color.BLACK)
+			env.set("ambient_light_sky_contribution", 0.0)
 	if phase < 30:
 		# Held in place every frame, since gravity and the bounds would otherwise move it.
 		var at: Vector3 = shot[0]

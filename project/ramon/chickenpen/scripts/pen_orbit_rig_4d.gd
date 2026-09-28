@@ -105,6 +105,16 @@ signal preset_changed(index: int)
 @export_range(0.0, 2.0, 0.05) var talk_pivot_height: float = 0.8
 @export_range(1.0, 20.0, 0.5) var talk_ease: float = 7.0
 
+@export_group("Aiming")
+## At the range's counter (pen_range_shooting_4d.gd) the camera comes in over the right
+## shoulder at eye height, so the sight in the middle of the screen looks past you and down
+## the range instead of at the back of your own head. Eased in and out; the zoom you had
+## is left alone and comes back when you step away.
+@export_range(0.3, 4.0, 0.05) var aim_distance: float = 1.1
+@export_range(0.0, 1.5, 0.05) var aim_shoulder: float = 0.55
+@export_range(0.5, 2.5, 0.05) var aim_pivot_height: float = 1.5
+@export_range(1.0, 20.0, 0.5) var aim_ease: float = 8.0
+
 @export_group("Locking on")
 ## T: keep the nearest loose chicken dead ahead of you. The controls card has promised this
 ## since the start and nothing listened for the key - Trym: "I couldn't seem to get T to do
@@ -160,6 +170,9 @@ var _homing: float = 0.0
 ## warped rather than as a look. See _unhandled_input.
 var _ignore_mouse: float = 1.5
 var _talking: bool = false
+var _aiming: bool = false
+## 0 in the ordinary framing, 1 over the shoulder.
+var _aim_blend: float = 0.0
 ## Set while a staged shot is on screen. See lock_look.
 var _look_locked: bool = false
 var _locator: Node
@@ -243,6 +256,11 @@ func set_talking(on: bool) -> void:
 		_zoom_target = talk_distance
 	else:
 		_zoom_target = _rest_distance
+
+
+## Called when the player steps up to the range's counter and away from it.
+func set_aiming(on: bool) -> void:
+	_aiming = on
 
 
 ## Bring the slice back to flat over `home_seconds`. The R key does it, and so does the
@@ -334,7 +352,9 @@ func _physics_process(delta: float) -> void:
 		talk_pivot_height if _talking else _home_pivot,
 		clampf(delta * talk_ease, 0.0, 1.0))
 	distance = lerpf(distance, _zoom_target, clampf(delta * 10.0, 0.0, 1.0))
-	position = Vector4(0.0, pivot_height, 0.0, 0.0)
+	_aim_blend = move_toward(_aim_blend, 1.0 if _aiming else 0.0, delta * aim_ease * 0.5)
+	var aim: float = smoothstep(0.0, 1.0, _aim_blend)
+	position = Vector4(0.0, lerpf(pivot_height, aim_pivot_height, aim), 0.0, 0.0)
 	if _lock_body != null:
 		_steer_to_lock(delta)
 	_place_camera()
@@ -406,13 +426,14 @@ func _go_home(delta: float) -> void:
 func _place_camera() -> void:
 	if _camera == null:
 		return
-	var wanted: float = distance
+	var aim: float = smoothstep(0.0, 1.0, _aim_blend)
+	var wanted: float = lerpf(distance, aim_distance, aim)
 	if collide_with_world:
 		wanted = minf(wanted, _clear_distance(distance))
 		if is_instance_valid(clearance_provider):
 			var back: Vector4 = (_pitch_node.global_basis * Vector4(0.0, 0.0, 1.0, 0.0)).normalized()
 			wanted = minf(wanted, float(clearance_provider.call("camera_clearance", global_position, back, wanted)))
-	_camera.position = Vector4(0.0, 0.0, wanted, 0.0)
+	_camera.position = Vector4(aim_shoulder * aim, 0.0, wanted, 0.0)
 
 
 ## How far back the camera can sit before something blocks it.

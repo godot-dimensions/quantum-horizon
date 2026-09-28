@@ -49,7 +49,7 @@ func _ready() -> void:
 	rebuild()
 
 
-## Somebody has taken a pick to the slab. Turn to [param towards] (world space), hands up,
+## Somebody has taken a pick to the cube. Turn to [param towards] (world space), hands up,
 ## for [param seconds], then go back to work - more slowly than they stopped.
 func panic(seconds: float, towards: Vector4) -> void:
 	_panic = seconds

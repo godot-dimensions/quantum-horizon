@@ -9,6 +9,8 @@ extends SceneTree
 ## Args (after --): tag=<name>   writes res://smoke_test_output/horizon_<tag>_<n>.png
 ## Optional: at=x,z   stand somewhere other than the origin.   pitch=<deg>   default 4.
 ##           ui=1       keep the HUD; by default it is hidden so the skyline can be read.
+##           hills=<path>  show this baked mesh on World/Hills instead of the scene's own,
+##                      to look at a bake before the scene uses it.
 
 var _room: Node
 var _f := 0
@@ -17,6 +19,7 @@ var _tag := "now"
 var _at := Vector2.ZERO
 var _pitch := 4.0
 var _ui := false
+var _hills := ""
 const YAWS := [0.0, 90.0, 180.0, 270.0]
 
 
@@ -31,7 +34,11 @@ func _initialize() -> void:
 			_pitch = float(a.substr(6))
 		elif a == "ui=1":
 			_ui = true
+		elif a.begins_with("hills="):
+			_hills = a.substr(6)
 	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	if _hills != "":
+		(_room.get_node("World/Hills") as MeshInstance4D).mesh = load(_hills) as Mesh4D
 	root.add_child(_room)
 	current_scene = _room
 

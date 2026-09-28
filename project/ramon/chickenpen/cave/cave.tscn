@@ -89,7 +89,7 @@ light_energy = 3.2
 omni_range_meters = 16.0
 
 [node name="Uplight" type="OmniLight4D" parent="Lamps"]
-position = Vector4(0, 1.1, -32.4, 0)
+position = Vector4(0, 0.9, -31.4, 0)
 light_color = Color(0.7, 0.85, 1, 1)
 light_energy = 3.6
 omni_range_meters = 8.0
@@ -99,6 +99,12 @@ position = Vector4(0, 6, -46.5, 0)
 light_color = Color(0.45, 0.6, 1, 1)
 light_energy = 5.0
 omni_range_meters = 13.0
+
+[node name="Laptop" type="OmniLight4D" parent="Lamps"]
+position = Vector4(-6.95, 1.1, -31.3, 0)
+light_color = Color(0.55, 0.8, 1, 1)
+light_energy = 1.2
+omni_range_meters = 2.5
 
 [node name="WorkLeft" type="OmniLight4D" parent="Lamps"]
 position = Vector4(-7, 2.1, -31.5, 0)
@@ -122,24 +128,21 @@ script = ExtResource("exit")
 player_path = NodePath("../../Player")
 
 [node name="Monolith" parent="." instance=ExtResource("voxel_block")]
-position = Vector4(0, 3.65, -36, 0)
+position = Vector4(0, 3.58, -36, 0)
 script = ExtResource("monolith")
-grid_size = 10
-cell_size = 0.66
-mining_radius_meters = 0.55
-proportions = Vector4(0.44, 1, 0.3, 0.44)
+cell_size = 0.8
+mining_radius_meters = 0.96
+proportions = Vector4(1, 1, 1, 1)
 world_height_min = 1.5
-world_height_max = 5.8
+world_height_max = 5.7
 
 [node name="Gold" type="Node4D" parent="."]
-position = Vector4(0, 3.65, -36, 0)
+position = Vector4(0, 3.58, -36, 0)
 script = ExtResource("gold")
 rock_path = NodePath("../Monolith")
 pickaxe_path = NodePath("../../Systems/Pickaxe")
 player_path = NodePath("../../Player")
 inventory_path = NodePath("../../UI/Inventory")
-orb_size = 0.3
-deep_margin = 0.2
 
 [node name="Miner" type="Node4D" parent="."]
 position = Vector4(2.4, 0, -30.2, 0)
@@ -169,14 +172,14 @@ yaw_degrees = 144.0
 position = Vector4(-4.2, 1.45, -30.2, 0)
 
 [node name="Sampler" type="Node4D" parent="."]
-position = Vector4(3.9, 0, -34.6, 0)
+position = Vector4(4.7, 0, -34.6, 0)
 script = ExtResource("suit")
 task = 2
 phase = 2.1
 yaw_degrees = -90.0
 
 [node name="SamplerHead" type="Node4D" parent="."]
-position = Vector4(3.9, 1.1, -34.6, 0)
+position = Vector4(4.7, 1.1, -34.6, 0)
 
 [node name="Reader" type="Node4D" parent="."]
 position = Vector4(-2.8, 0, -41.2, 1.2)

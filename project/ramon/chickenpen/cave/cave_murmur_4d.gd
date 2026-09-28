@@ -7,7 +7,7 @@ extends Node
 ## a whole dialogue each would make a site into a queue of interviews. So each of them has
 ## a handful of lines that appear over their head while you are near and change every few
 ## seconds - you catch the site's mood without anyone turning round. The lines are the
-## mystery told sideways: none of them explains the slab, all of them are worried about it.
+## mystery told sideways: none of them explains the cube, all of them are worried about it.
 ##
 ## THEY ARE STUDYING IT AND THEY DO NOT KNOW WHAT IT IS. Ramon: "they are studying the
 ## voxel artifact, they don't know where it came from". So what you overhear is people
@@ -20,7 +20,7 @@ extends Node
 ## AND AFTERWARDS, UP CLOSE, THE DATA WAS GOOD. Ramon: "when you talk to them afterwards
 ## ... hitting it was bad but we did get more data, the voxel data on each hit". Walk up to
 ## one of them once it has calmed down and they will tell you so, grudgingly - and the
-## numbers they give are read off the slab as it is at that moment (its collider count,
+## numbers they give are read off the cube as it is at that moment (its collider count,
 ## the blows they have logged), so what they say stays true however much you have dug.
 ##
 ## THEY DO NOT ENCOURAGE YOU. Ramon, 28 Sept: "as you start mining the monolith ... the
@@ -39,7 +39,7 @@ extends Node
 @export var tag_paths: Array[NodePath] = []
 ## The researchers themselves, in the same order, so a blow can make them react.
 @export var figure_paths: Array[NodePath] = []
-## The slab, whose collider count the researchers quote.
+## The cube, whose collider count the researchers quote.
 @export var monolith_path: NodePath = NodePath("../../Monolith")
 @export_range(1.0, 12.0, 0.5) var hear_within: float = 4.5
 ## Closer than this and they talk to you instead of to each other.
@@ -64,9 +64,9 @@ const LINES := [
 		"Older than the hill. Possibly older than the question.",
 	],
 	[
-		"Remesh log's in. Ten thousand points, every single time.",
+		"Remesh log's in. Four thousand and ninety-six points, every single time.",
 		"Why would anyone build a thing that recomputes itself when it's touched?",
-		"The plinth's older than anything else down here. The slab isn't the same age as the plinth.",
+		"The plinth's older than anything else down here. The cube isn't the same age as the plinth.",
 		"Upload failed. Of course the upload failed. We're in a hill.",
 	],
 ]
@@ -81,15 +81,15 @@ const ADDRESS := [
 const PANIC := [
 	["STOP! Stop hitting it!", "Put the pick DOWN!", "You're changing the readings!", "Hale! HALE! They're hitting it!"],
 	["Get back from it!", "Oh no. Oh no no no.", "It's warm - it's getting WARM!", "Don't touch the seam!"],
-	["Remesh spike! It's recomputing!", "Ten thousand points and you just moved every one!", "Who authorised this?!", "Log it. LOG IT."],
+	["Remesh spike! It's recomputing!", "Four thousand points and you just moved every one!", "Who authorised this?!", "Log it. LOG IT."],
 ]
 
 ## Up close after a blow, calm again: it was a bad idea, and the data is excellent.
-## %b is replaced with the blows logged so far, %c with the slab's collider count now.
+## %b is replaced with the blows logged so far, %c with the cube's collider count now.
 const ADDRESS_AFTER := [
-	["That was a bad idea. ...The readings off it are the cleanest we've had, though.", "Every blow, all ten thousand points re-worked. We logged every one. That's %b now.", "Don't do it again. Or - if you do, tell us first so we can start the scan."],
+	["That was a bad idea. ...The readings off it are the cleanest we've had, though.", "Every blow, all four thousand and ninety-six points re-worked. We logged every one. That's %b now.", "Don't do it again. Or - if you do, tell us first so we can start the scan."],
 	["You scared the life out of me. But look - the fresh faces are cleaner than anything on the outside.", "It's warmer where you cut it. We have the temperature on every blow.", "I'm not saying thank you. The samples are good."],
-	["Sixty-three colliders when we started. %c now. You made more of it by taking some away.", "A hundred and seventy milliseconds a blow, near enough. The most consistent thing about it.", "Bad. Very bad. Best data of the whole dig."],
+	["Five hundred and forty-four colliders when we started. %c now. There's skin under the skin.", "Two hundred milliseconds a blow, near enough. The most consistent thing about it.", "Bad. Very bad. Best data of the whole dig."],
 ]
 
 ## After the first blow, instead of LINES. Worse the more you have taken.
@@ -137,7 +137,7 @@ func _exit_tree() -> void:
 		pick.disconnect("mined", _on_mined)
 
 
-## A blow landed on the slab.
+## A blow landed on the cube.
 func _on_mined(_at: Vector4 = Vector4.ZERO, _radius: float = 0.0) -> void:
 	_blows += 1
 	_panic = panic_seconds
@@ -196,7 +196,7 @@ func _process(delta: float) -> void:
 		tag.show_text(_fill(String(lines[n])))
 
 
-## The live numbers in a line: blows logged, and the slab's collider count as it is now.
+## The live numbers in a line: blows logged, and the cube's collider count as it is now.
 func _fill(line: String) -> String:
 	if line.contains("%b"):
 		line = line.replace("%b", str(_blows))

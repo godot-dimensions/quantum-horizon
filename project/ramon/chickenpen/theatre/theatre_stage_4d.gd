@@ -313,6 +313,29 @@ func rebuild() -> void:
 		drum_color.lerp(glow_color, 0.3))
 	_slab(podium, "Strip", Vector4(0.0, 1.15, 0.22, 0.0), Vector3(0.50, 0.03, 0.05), glow_color)
 
+	# A LAPTOP BESIDE THE PODIUM, open, its screen lit and facing the house (Ramon, 28 Sept:
+	# "a laptop with glowing screen ... close to Trym's booth"). On a stand of its own
+	# rather than on the podium top, so it is seen from the seats and not hidden behind the
+	# presenter; a small light in front of the screen puts its glow on the stand and floor.
+	var stand := Node4D.new()
+	stand.name = "LaptopStand"
+	add_child(stand)
+	stand.position = podium.position + Vector4(0.85, 0.0, 0.25, 0.0)
+	_own(stand)
+	_slab(stand, "Stem", Vector4(0.0, 0.42, 0.0, 0.0), Vector3(0.10, 0.84, 0.10), drum_color)
+	_slab(stand, "Top", Vector4(0.0, 0.86, 0.0, 0.0), Vector3(0.46, 0.04, 0.36), drum_color)
+	_slab(stand, "Base", Vector4(0.0, 0.89, 0.03, 0.0), Vector3(0.36, 0.02, 0.26), Color(0.14, 0.15, 0.17))
+	_slab(stand, "Lid", Vector4(0.0, 1.02, -0.10, 0.0), Vector3(0.36, 0.24, 0.02), Color(0.14, 0.15, 0.17))
+	_slab(stand, "Screen", Vector4(0.0, 1.02, -0.087, 0.0), Vector3(0.32, 0.20, 0.01), Color(0.80, 0.94, 1.0))
+	var glow := OmniLight4D.new()
+	glow.name = "ScreenGlow"
+	glow.light_color = Color(0.55, 0.8, 1.0)
+	glow.light_energy = 1.0
+	glow.omni_range_meters = 2.2
+	stand.add_child(glow)
+	glow.position = Vector4(0.0, 1.05, 0.15, 0.0)
+	_own(glow)
+
 	# THE MOTES. Scattered wide and deep, including through W, so turning the slice
 	# changes the sky rather than leaving it frozen - which is itself one of the three
 	# things being demonstrated, running quietly in the background the whole time.

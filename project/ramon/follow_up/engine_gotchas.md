@@ -340,6 +340,8 @@ by the pickaxe (`Cave/Gold/Nugget0`) landed a kilometre further on.
 (`_place_global` in `pen_rock_gold_4d.gd`). **The fix for Aaron** is one word:
 `get_transform()` → `get_global_transform()` on that line.
 
+(Fixed upstream in the module, `0cd7372`; not yet pulled here as of 28 Sept.)
+
 ## The cross-section renderer ignores per-vertex colour
 
 `TetraMaterial4D` has `albedo_color_array` and per-vertex / per-cell sources,
@@ -347,8 +349,37 @@ and the wireframe path uses them — but `tetra_cross_section_shader.glsl`, whic
 is what the pen draws with, only ever reads one albedo times a `Texture3D` looked
 up at a UVW carried on each tetrahedron corner. Per-vertex colour set the obvious
 way draws as flat albedo. `terrain/terrain_bake_4d.gd` gets real per-vertex
-colour anyway by giving each vertex a UVW that IS its colour and a 2x2x2 identity
-colour cube as the texture; see its header.
+colour anyway by giving each vertex a UVW that IS its colour and a colour cube as
+the texture; see its header.
+
+## Two of those twelve texture coordinates are 8-bit
+
+Found 28 Sept 2026 chasing a "pattern" in the cave mouth's dark gradient. The
+proxy packs each tetrahedron's four corner UVWs into free vertex slots
+(`tetra_mesh_4d.cpp`, `append_proxy_mesh_surfaces_3d`): UV, UV2, the normal's
+x/z and y/z, VERTEX.y and .z are floats, but the fourth corner's UVW and the
+first corner's w go through `set_color`, which Godot stores as RGBA8. With a
+colour cube coded linearly (0.25 + 0.5 x linear colour), one 8-bit step is 0.008
+of linear light: invisible on grass, 40% of a dark rock's value. A vertex is a
+different corner in each tetrahedron around it, so each tetrahedron came out its
+own shade - a mosaic of triangles that only showed on dark colours, and most
+under the brightest light. It looked like lighting, occlusion, winding and
+z-fighting in turn; it was none of them.
+
+**Workaround** (in `terrain_bake_4d.gd`): code the UVW as the sRGB colour, and
+make the cube's texels linear light at evenly spaced sRGB values - then an 8-bit
+step is an ordinary 8-bit image's step. Use a half-float texture (no sampler
+decodes those, whatever the material's hints), and pad each end with a spare
+texel: the sampler repeats, and black on the edge texel's centre, rounded down a
+hair, blended in white from the far side.
+
+## `Camera4D.world_to_viewport` answers in window pixels
+
+It scales by `viewport->get_size()`, the window's pixel size. A Control lives in
+canvas units, which are the same thing until the window's content is scaled
+(`Window.content_scale_factor`, or a stretch mode); then everything placed from
+it is off by the scale. Multiply by `get_viewport_rect().size /
+Vector2(get_viewport().get_size())` (`world_tag_4d.gd`, `dialogue_box_4d.gd`).
 
 ## Every tetrahedron is ~1.25 KB of video memory
 

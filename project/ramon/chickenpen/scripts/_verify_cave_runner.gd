@@ -137,7 +137,7 @@ func _physics_process(_d: float) -> bool:
 			# face. The blow here was struck at the piece itself, inside the slab, so it is
 			# brought out to the front of the plinth by hand - standing a body inside the
 			# slab's own colliders gets it thrown hundreds of metres by the depenetration.
-			var stand: Vector4 = _cave.global_position + Vector4(0.0, 1.55, -36.0 + 1.9, 0.0)
+			var stand: Vector4 = _cave.global_position + Vector4(0.0, 1.05, -36.0 + 2.9, 0.0)
 			_hold(stand)
 			# Through its parent, not global_position: see _place_global in the gold script.
 			var parent: Node4D = orb.get_parent()

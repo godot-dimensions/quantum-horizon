@@ -43,6 +43,10 @@ func _process(_d: float) -> bool:
 		total += t
 	print("   one blow: %.0f ms mean over %d  (%s)" % [total / times.size(), times.size(), ", ".join(Array(times).map(func(t): return "%.0f" % t))])
 	tets = (ground.mesh as ArrayTetraMesh4D).get_simplex_cell_vertex_indices().size() / 4
-	print("   after five blows: %d tetrahedra, %d colliders" % [tets, voxels.get_child_count()])
+	# Only the live ones. A blow queues the old colliders for freeing and adds new ones in
+	# the same frame, so a plain child count here double-counts - it read 363 on the slab
+	# and 3,195 on the cube, which is more solid points than the cube has.
+	var live: int = voxels.get_children().filter(func(c): return not c.is_queued_for_deletion()).size()
+	print("   after five blows: %d tetrahedra, %d colliders" % [tets, live])
 	quit()
 	return true

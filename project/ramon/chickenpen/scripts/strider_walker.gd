@@ -395,7 +395,14 @@ func _bind_mesh() -> void:
 			var beyond: Vector4 = foot + (foot - knee).normalized() * drop * 0.5
 			var reach: float = minf(_distance_to_segment(v, hip, knee), _distance_to_segment(v, knee, beyond))
 			var influence: float = maxf(drop * leg_influence_ratio, 0.0001)
-			var near: float = 1.0 - smoothstep(influence * 0.55, influence, reach)
+			# IN THE LEG OR NOT, NOT A FALLOFF ACROSS IT. This used to fade from the
+			# leg's centre line out to its skin, which skinning blended smoothly - but a
+			# rigid cut reads an in-between weight as "belongs to the body as well", so
+			# the outer skin of every leg was left behind as a static copy while the leg
+			# walked out from under it (Ramon, 28 Sept: "like a part of the leg mesh is
+			# idle"), and the hooves trailed slivers. Now everything within reach is the
+			# leg's, and how far below the hip it is decides the rest.
+			var near: float = 1.0 if reach <= influence else 0.0
 			if reach < nearest_reach:
 				nearest_reach = reach
 				nearest = index
@@ -405,7 +412,10 @@ func _bind_mesh() -> void:
 				# exists below the feet, and picking the NEAREST leg is what keeps one
 				# hoof from being claimed by the leg beside it.
 				below_foot = v.y <= foot.y
-			var weight: float = smoothstep(0.02, 0.4, down) * near
+			# The blend band - where body and thigh overlap to hide the hinge - sits just
+			# under the hip, where a swinging leg barely moves, instead of a fifth of the
+			# way down it, where the body's still copy was plainly visible.
+			var weight: float = smoothstep(0.0, 0.2, down) * near
 			if weight > best_weight:
 				best_weight = weight
 				best = index

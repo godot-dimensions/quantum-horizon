@@ -48,11 +48,13 @@ const MOUTH := Vector4(16.5, 0.0, -28.6, 0.0)
 const ARCH_HALF_WIDTH := 3.6
 const ARCH_HEIGHT := 5.0
 ## The tunnel runs this far in, and its last few metres close round into a blind end.
-const TUNNEL_DEPTH := 7.0
+## Long enough that walking in feels like going somewhere: the screen has faded to black
+## (pen_cave_fade_4d.gd) well before you could see the end.
+const TUNNEL_DEPTH := 11.0
 const END_ROUNDING := 2.5
-## The floor inside sits a hair above the field, so the tunnel's own dark floor is drawn
+## The floor inside sits a little above the field, so the tunnel's own dark floor is drawn
 ## rather than the field's green one.
-const FLOOR := 0.04
+const FLOOR := 0.06
 ## The rock face the arch is cut into: how far it stands out of the hill beside and above
 ## the opening, and how far in front of the hill's foot its face is.
 const FACE_MARGIN := 1.2
@@ -62,11 +64,19 @@ const FACE_ABOVE := 1.3
 const SHOULDER_HEIGHT := 8.0
 const SHOULDER_WIDTH := 9.5
 
-## The block of hill that is dual-contoured instead of drawn as a height: a 14 m cube in
-## grid terms, round the mouth.
-const BLOCK_MIN := Vector4(9.5, -1.2, -40.0, -7.0)
-const BLOCK_SIZE := 14.0
-const BLOCK_GRID := 14
+## The block of hill that is dual-contoured instead of drawn as a height, round the mouth.
+## Its grid is stretched along the tunnel, like the cave's: 0.93 m cells across the mouth
+## and 1.2 m along it.
+##
+## AND IT IS SHIFTED A THIRD OF A CELL OFF w = 0. Centred on it, a cell's middle sat exactly on
+## the slice the player stands in, and dual contouring puts a vertex at the middle of the
+## crossings - so a surface that barely changes along W (the dome, the turf) had whole rows
+## of vertices lying exactly ON w = 0. A slice through a tetrahedron's vertices is a triangle
+## of no area: the dome drew nothing, and neither did patches of the hillside, which were
+## the "broken gaps" (Ramon, 28 Sept). Off-centre, every tetrahedron crosses the slice.
+const BLOCK_MIN := Vector4(9.5, -1.2, -44.0, -7.3)
+const BLOCK_MAX := Vector4(23.5, 12.8, -26.0, 6.7)
+const BLOCK_GRID := 16
 ## The part of the height taken away under the block, inset from its edges.
 const CARVE_INSET := 1.5
 
@@ -135,7 +145,7 @@ func shoulder_height(x: float, z: float, w: float) -> float:
 ## The height as it is drawn: the whole hill, less the part under the dual-contoured block.
 func height(x: float, z: float, w: float) -> float:
 	var lo: Vector4 = BLOCK_MIN + Vector4.ONE * CARVE_INSET
-	var hi: Vector4 = BLOCK_MIN + Vector4.ONE * (BLOCK_SIZE - CARVE_INSET)
+	var hi: Vector4 = BLOCK_MAX - Vector4.ONE * CARVE_INSET
 	if x > lo.x and x < hi.x and z > lo.z and z < hi.z and w > lo.w and w < hi.w:
 		return -0.5
 	return hill_height(x, z, w)
@@ -184,28 +194,37 @@ func block_density(p: Vector4) -> float:
 	return minf(maxf(hill_density(p), face_density(p)), -tunnel_density(p))
 
 
-## How far into the tunnel a point is: 0 at the mouth, 1 at the far end.
-func tunnel_depth(p: Vector4) -> float:
-	return clampf((MOUTH.z + 0.5 - p.z) / TUNNEL_DEPTH, 0.0, 1.0)
+## How far into the tunnel a point is, in metres from the mouth.
+func tunnel_into(p: Vector4) -> float:
+	return MOUTH.z + 0.5 - p.z
 
 
 func block_colour(p: Vector4, normal: Vector4, r: float) -> Color:
 	var grain: float = _grain.get_noise_3d(p.x * 2.0, p.y * 2.0, p.z * 2.0 + p.w) * 0.5 + 0.5
 	var t: float = tunnel_density(p)
 	if t > -0.6:
-		# The tunnel's own walls and floor: rock going to black with depth, and the blind
-		# end black outright.
-		var c: Color = FACE_ROCK_DARK.lerp(STONE_DARK, grain)
-		var depth: float = tunnel_depth(p)
-		c = c.lerp(Color.BLACK, pow(smoothstep(0.0, 0.75, depth), 0.6))
-		# Darker low down, where the light from the mouth reaches least.
-		c = c.lerp(Color.BLACK, 0.35 * (1.0 - smoothstep(0.0, 2.0, p.y)) * smoothstep(0.0, 0.3, depth))
-		return c
+		# The tunnel's own walls and floor: a plain ramp to black, no grain, so it reads
+		# as darkness rather than as dark rock.
+		return tunnel_colour(p)
 	if face_density(p) >= hill_density(p) - 0.15:
 		var c: Color = FACE_ROCK.lerp(FACE_ROCK_DARK, grain * 0.7)
 		# Moss and turf on whatever faces up.
 		return c.lerp(GRASS, smoothstep(0.55, 0.85, normal.y) * 0.8)
 	return colour(p, normal, r)
+
+
+## The tunnel's colour at [param p]: the rock face's darkest going to black over the first
+## three and a half metres, darker low down where the light from the mouth reaches least.
+## The screen starts to fade (pen_cave_fade_4d.gd) where this reaches black, so the dark
+## keeps deepening past where the rock can show it.
+##
+## The pattern of triangles Ramon saw in this gradient (28 Sept: "feels like it has a
+## pattern") was not in the gradient: it was the engine's 8-bit colour slot, and it is
+## fixed for every baked mesh in terrain_bake_4d.gd.
+func tunnel_colour(p: Vector4) -> Color:
+	var into: float = tunnel_into(p)
+	var c: Color = FACE_ROCK_DARK.lerp(Color.BLACK, pow(smoothstep(-0.6, 3.5, into), 0.8))
+	return c.lerp(Color.BLACK, 0.4 * (1.0 - smoothstep(0.0, 2.0, p.y)))
 
 
 ## What you bump into. The hill as tiers of boxes stepped in to follow the dome, three boxes
@@ -300,9 +319,10 @@ func bake() -> TerrainBake.Builder:
 		Vector3(HILL.x + HALF.x * 1.1, HILL.z + HALF.y * 1.1, HALF.z * 1.1),
 		1.35, height, colour, [[0.8, 0.5], [3.0, 0.45]], -0.05)
 	var field := VoxelField4D.new(BLOCK_GRID)
-	var cell: float = BLOCK_SIZE / float(BLOCK_GRID - 1)
+	var cell4: Vector4 = (BLOCK_MAX - BLOCK_MIN) / float(BLOCK_GRID - 1)
+	var cell: float = (cell4.x + cell4.y + cell4.z + cell4.w) * 0.25
 	var to_world := func(g: Vector4) -> Vector4:
-		return BLOCK_MIN + g * cell
+		return BLOCK_MIN + g * cell4
 	var grid_density := func(g: Vector4) -> float:
 		return block_density(to_world.call(g)) / cell
 	var grid_gradient := func(g: Vector4) -> Vector4:
@@ -314,6 +334,9 @@ func bake() -> TerrainBake.Builder:
 			out[axis] = (float(grid_density.call(g + e)) - float(grid_density.call(g - e))) / (2.0 * h)
 		return out
 	field.add_layer(VoxelField4D.VoxelMaterial.GROUND, grid_density, grid_gradient, 0.6)
-	var block: TerrainBake.Builder = TerrainBake.bake_density(field, to_world, block_density, block_colour, [[0.8, 0.5], [3.0, 0.45]], -0.05)
+	# No occlusion in the tunnel: its dark is painted on, as one plain ramp.
+	var ao_weight := func(p: Vector4) -> float:
+		return 1.0 - smoothstep(-1.2, -0.3, tunnel_density(p))
+	var block: TerrainBake.Builder = TerrainBake.bake_density(field, to_world, block_density, block_colour, [[0.8, 0.5], [3.0, 0.45]], -0.05, ao_weight)
 	hill.append(block)
 	return hill

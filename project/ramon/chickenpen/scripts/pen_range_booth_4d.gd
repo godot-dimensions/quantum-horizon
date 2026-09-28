@@ -2,9 +2,9 @@
 extends Node4D
 
 ## The shooting range beside Trym's shed: a covered firing line in near-black timber, a
-## rack of rifles, sandbags, and painted boards down the range. Show only - nothing here
-## fires. The range master behind the counter has somewhere better to send you
-## (pen_range_talk_4d.gd, pen_range_trip_4d.gd).
+## rack of rifles, sandbags, and painted boards down the range. Stand at the counter and
+## shoot the boards (pen_range_shooting_4d.gd). The range master behind it has somewhere
+## better to send you as well (pen_range_talk_4d.gd, pen_range_trip_4d.gd).
 ##
 ## ONE MESH, BUILT FROM BOXES, COLOURED PER VERTEX. Everything is a box, so it is drawn
 ## from a list of boxes through terrain_bake_4d's box front end and merged into a single
@@ -12,6 +12,10 @@ extends Node4D
 ## made into colliders from the same list, so what you see and what you bump into agree.
 ## It is small enough (about 2,500 tetrahedra) to build when the scene opens rather than
 ## bake to disk.
+##
+## EXCEPT THE BOARDS, which fall when shot and so cannot be part of a mesh that never moves.
+## Each is its own node, hinged at the foot of its face, all five sharing one small mesh;
+## the posts they stand on stay in the booth's mesh.
 ##
 ## FOUR-DIMENSIONAL LIKE A ROOM, OPEN LIKE A STALL. The enclosure rule
 ## (follow_up/4d_enclosure_rule.md): corner posts with the booth's full W depth, half-height
@@ -35,6 +39,21 @@ const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd"
 
 const HALF := Vector3(2.0, 2.5, 1.75)
 const ROOF_Y := 2.85
+## Down the range, in the booth's frame: (x, z, w) of each board's post. Spread through z
+## and w, so turning the slice down the range brings other boards onto it.
+const BOARDS := [Vector3(-9.0, -1.2, 0.0), Vector3(-12.0, 0.8, 0.9), Vector3(-15.0, -0.2, -1.1), Vector3(-18.0, 1.4, 0.4), Vector3(-13.5, -1.9, -0.3)]
+## How high the hinge at the foot of a board's face is: the top of its post.
+const HINGE_Y := 1.1
+## A board's face as a box, from its hinge: [centre, size]. The rings are cubes in (y, z, w)
+## - a 4D board's face is a solid, not a square - so how far out a shot landed is the
+## largest of its three offsets from the middle, and the bull is the black cube there.
+const FACE := [Vector4(0.02, 0.45, 0.0, 0.0), Vector4(0.06, 0.9, 0.9, 0.9)]
+const RING_HALF := 0.28
+const INNER_HALF := 0.18
+const BULL_HALF := 0.07
+
+## The board nodes, in the order of BOARDS.
+var board_nodes: Array[Node4D] = []
 
 
 func _set_colour(_v: Color) -> void:
@@ -92,15 +111,10 @@ func boxes() -> Array:
 	# Ammunition tins.
 	for z in [-0.1, 1.5]:
 		out.append([Vector4(-HALF.x + 0.4, 1.17, z, 0.3), Vector4(0.24, 0.12, 0.14, 0.14), Color(0.22, 0.28, 0.16), false])
-	# Down the range: boards on posts, spread through z and w, and a berm of sandbags.
-	var boards := [Vector3(-9.0, -1.2, 0.0), Vector3(-12.0, 0.8, 0.9), Vector3(-15.0, -0.2, -1.1), Vector3(-18.0, 1.4, 0.4), Vector3(-13.5, -1.9, -0.3)]
-	for b in boards:
-		var at := Vector4(b.x, 0.0, b.y, b.z)
-		out.append([at + Vector4(0.0, 0.7, 0.0, 0.0), Vector4(0.08, 1.4, 0.08, 0.08), wood, false])
-		out.append([at + Vector4(0.02, 1.55, 0.0, 0.0), Vector4(0.06, 0.9, 0.9, 0.9), board, false])
-		out.append([at + Vector4(0.06, 1.55, 0.0, 0.0), Vector4(0.03, 0.56, 0.56, 0.56), ring, false])
-		out.append([at + Vector4(0.08, 1.55, 0.0, 0.0), Vector4(0.02, 0.36, 0.36, 0.36), board, false])
-		out.append([at + Vector4(0.10, 1.55, 0.0, 0.0), Vector4(0.02, 0.14, 0.14, 0.14), Color(0.08, 0.08, 0.08), false])
+	# Down the range: the boards' posts (the boards themselves are board_boxes()), and a
+	# berm of sandbags.
+	for b in BOARDS:
+		out.append([Vector4(b.x, HINGE_Y * 0.5, b.y, b.z), Vector4(0.08, HINGE_Y, 0.08, 0.08), wood, false])
 	for row in 3:
 		var y: float = 0.16 + 0.3 * float(row)
 		out.append([Vector4(-21.0, y, 0.0, 0.0), Vector4(0.6, 0.28, 6.0 - row * 0.8, 4.0 - row * 0.6), sandbag.darkened(0.06 * row), true])
@@ -108,6 +122,24 @@ func boxes() -> Array:
 	out.append([Vector4(-HALF.x - 0.45, 0.16, -1.8, 0.8), Vector4(0.55, 0.3, 0.4, 0.4), sandbag, true])
 	out.append([Vector4(-HALF.x - 0.45, 0.16, 1.9, -0.9), Vector4(0.55, 0.3, 0.4, 0.4), sandbag, true])
 	return out
+
+
+## One board's face, from its hinge: [centre, size, colour] for each box.
+func board_boxes() -> Array:
+	return [
+		[FACE[0], FACE[1], board],
+		[Vector4(0.06, 0.45, 0.0, 0.0), Vector4(0.03, RING_HALF * 2.0, RING_HALF * 2.0, RING_HALF * 2.0), ring],
+		[Vector4(0.08, 0.45, 0.0, 0.0), Vector4(0.02, INNER_HALF * 2.0, INNER_HALF * 2.0, INNER_HALF * 2.0), board],
+		[Vector4(0.10, 0.45, 0.0, 0.0), Vector4(0.02, BULL_HALF * 2.0, BULL_HALF * 2.0, BULL_HALF * 2.0), Color(0.08, 0.08, 0.08)],
+	]
+
+
+## The shading every box here gets: tops catch the light, sides less so, and the foot of
+## anything standing darker. [param base_y] is how high the box's own frame starts.
+static func _shade(colour: Color, base_y: float = 0.0) -> Callable:
+	return func(p: Vector4, outward: Vector4) -> Color:
+		var c: Color = colour if outward.y > 0.5 else colour.darkened(0.2)
+		return c.lerp(Color.BLACK, 0.3 * (1.0 - smoothstep(0.0, 0.35, p.y + base_y)) * float(outward.y < 0.5))
 
 
 func rebuild() -> void:
@@ -119,11 +151,7 @@ func rebuild() -> void:
 	body.name = "Solid"
 	body.set_meta("range_booth_built", true)
 	for b in boxes():
-		var colour: Color = b[2]
-		all.append(TerrainBake.bake_box(b[0], b[1], func(p: Vector4, outward: Vector4) -> Color:
-			# Tops catch the light, sides less so, and the foot of anything standing darker.
-			var c: Color = colour if outward.y > 0.5 else colour.darkened(0.2)
-			return c.lerp(Color.BLACK, 0.3 * (1.0 - smoothstep(0.0, 0.35, p.y)) * float(outward.y < 0.5))))
+		all.append(TerrainBake.bake_box(b[0], b[1], _shade(b[2])))
 		if b[3] and not Engine.is_editor_hint():
 			var shape := BoxShape4D.new()
 			shape.size = b[1]
@@ -137,3 +165,18 @@ func rebuild() -> void:
 	mesh.mesh = TerrainBake.mesh_of(all)
 	add_child(mesh)
 	add_child(body)
+	# The boards: one mesh shared by all five, each on its own hinge.
+	var face := TerrainBake.Builder.new()
+	for b in board_boxes():
+		face.append(TerrainBake.bake_box(b[0], b[1], _shade(b[2], HINGE_Y)))
+	var face_mesh: ArrayTetraMesh4D = TerrainBake.mesh_of(face)
+	board_nodes.clear()
+	for i in BOARDS.size():
+		var b: Vector3 = BOARDS[i]
+		var hinge := MeshInstance4D.new()
+		hinge.name = "Board%d" % i
+		hinge.set_meta("range_booth_built", true)
+		hinge.mesh = face_mesh
+		hinge.position = Vector4(b.x, HINGE_Y, b.y, b.z)
+		add_child(hinge)
+		board_nodes.append(hinge)

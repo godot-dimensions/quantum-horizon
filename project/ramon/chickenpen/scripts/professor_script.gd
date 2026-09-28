@@ -14,17 +14,16 @@ extends RefCounted
 ## and nowhere else. A demo of a technology that never says what the technology is asks
 ## the visitor to be impressed by a rock.
 ##
-## HIS ROCK IS IN THE HILL NOW (28 Sept 2026). It stands on end in the cave as the monolith
-## (cave/cave.tscn), and he points you at it; Hale, the miner down there, has the slab's own
-## numbers. His are the old rock's, which is still the block VoxelMining ships, so they are
-## still true - re-measured the same day at 184-209 ms a blow, hence "a fifth of a second"
-## where it used to say a sixth.
+## THE CUBE WAS FOUND, NOT BROUGHT (28 Sept 2026). The rock that used to sit in the field is
+## the cube on the plinth in the cave (cave/cave.tscn), and in the fiction it was dug out
+## of the hill, not carried into it - Ramon: "the monolith should be a discovery". He has
+## not been down; he points you in, and his numbers are the cube's, because it is the same
+## block VoxelMining ships - re-measured the same day at 184-208 ms a blow, hence "a fifth of
+## a second" where it used to say a sixth.
 ##
 ## AND HE KNOWS SOMETHING IS OFF DOWN THERE (Ramon: "the professor ... probably knows
-## there's something off"). The unease rides on two true numbers: the rock that left the
-## field is 8^4, and the slab on the plinth is 10^4 (cave.tscn). In the fiction nobody can
-## account for the difference, which is the whole of the mystery; in the project it is two
-## settings, which is why it can be quoted without inventing anything.
+## there's something off"). The unease is the lattice itself: a grid of 8^4 points that
+## nobody laid, on a plinth older than the hill. True of the cube, and nobody can explain it.
 ##
 ## THE TECHNICAL DETAIL IS ALL TRUE. Every number he quotes was measured in this project:
 ## 8^4 points, the whole-field remesh after every hit and what it costs, one BoxShape4D
@@ -56,9 +55,9 @@ const NODES: Dictionary = {
 	"speaker": "Professor Miner",
 	"lines": [
 		"An assistant, or a trespasser. The paperwork is identical.",
-		"I HAD a rock. A scalar field on an eight-by-eight-by-eight-by-eight lattice. Then people in white suits came with a crane, and now there is a hole in that hill and a slab in the hole.",
-		"They carried an eight in. The miner down there tells me what stands on that plinth is a TEN. Rocks do not acquire lattice points. I have stopped sleeping well.",
-		"There is gold in the slab. I have no use for gold. You, I gather, have a field full of chickens and a keeper who wants paying in it.",
+		"They found something in that hill. A cube, on a plinth older than the hill it is in.",
+		"A scalar field on an eight-by-eight-by-eight-by-eight lattice. Nobody laid that lattice. Nobody can say who did. I have stopped sleeping well.",
+		"There is gold in it. I have no use for gold. You, I gather, have a field full of chickens and a keeper who wants paying in it.",
 	],
 	"choices": [
 		{"text": "I can hit it?", "goto": "how_to_mine"},
@@ -72,8 +71,8 @@ const NODES: Dictionary = {
 	"speaker": "Professor Miner",
 	"lines": [
 		"The hole behind me. Walk in until it gets dark, then keep walking. The miner at the bottom is called Hale; he has newer numbers than mine and fewer opinions.",
-		"My instruments have not agreed with one another since the day they stood it up. I mention it only because nobody down there will.",
-		"Pick is on your belt. Press its number, stand close, swing. Gold sits a hand's depth under the skin.",
+		"My instruments have not agreed with one another since the day they opened that hill. I mention it only because nobody down there will.",
+		"Pick is on your belt. Press its number, stand close, swing. Each blow takes a sphere about two metres across; gold sits a hand's depth under the skin.",
 		"Bring what you find to the keeper. He has been waiting years for someone to hand him something.",
 	],
 	"topic": true,
@@ -139,7 +138,7 @@ const NODES: Dictionary = {
 	"speaker": "Professor Miner",
 	"instead": "topic_cost_again",
 	"lines": [
-		"Every blow re-contoured the entire field. All four thousand and ninety-six points, for a bite the size of your head. A fifth of a second.",
+		"Every blow re-contours the entire field. All four thousand and ninety-six points, for a bite the size of your head. A fifth of a second.",
 		"Making the rock bigger was free - the cells were told to be wider. Doubling the LATTICE would cost sixteen times as much. There is a lesson in that, and it is not about rocks.",
 	],
 	"topic": true,
@@ -239,7 +238,7 @@ const NODES: Dictionary = {
 ## turn round and ask him something else.
 "bye": {
 	"speaker": "Professor Miner",
-	"lines": ["Mind the slab. It is, in a strict sense, four times more slab than it appears."],
+	"lines": ["Mind the cube. It is, in a strict sense, four times more cube than it appears."],
 	"goto_if_asked": "menu",
 },
 

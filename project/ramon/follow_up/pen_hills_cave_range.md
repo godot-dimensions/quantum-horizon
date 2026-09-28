@@ -1,23 +1,26 @@
 # The pen's hills, the cave in the hill, and the range — 28 Sept 2026
 
 Phases D–G of the 70-step pen plan, plus Ramon's notes given while it was being
-built. Everything here is committed locally on `RamonPrototypes` and **not pushed**.
+built, plus his thirteen notes from the evening of the 28th (at the end). Everything
+here is committed locally on `RamonPrototypes` and **not pushed**.
 
 ## Try it
 
 - **The hills** are everywhere you look, including with the slice turned into W.
 - **The cave.** Back and to the right of the pen there is a round hill with a
-  half-sunk arch in a dark grey rock face. Walk in and keep walking into the dark;
-  at the back of the tunnel you arrive in the cave. **V** goes straight in and out
-  (a debug key, like **C** is for the theatre).
-- **Inside**: down the lit corridor to the chamber. **F** at Hale, the miner in
-  the spacesuit. Walk up to the researchers. Take the pickaxe (**1**) to the
-  monolith and see what they do. The daylight behind where you arrived is the way
-  out; you come home in the mouth of the cave, facing the field.
-- **The range** is beside Trym's shed. **F** at the range master, *Show me*, and
-  you are in `shooting_gallery_ramon.tscn`. **H** there says *BACK TO THE CHICKEN
-  PEN* and brings you home with everything as you left it. Opened from the menu,
-  the gallery still says *BACK TO MENU*.
+  half-sunk arch in a dark grey rock face. Walk in and keep walking: the screen
+  goes dark as you go, and you arrive in the cave in the black. **V** goes
+  straight in and out (a debug key, like **C** is for the theatre).
+- **Inside**: down the corridor to the chamber. **F** at Hale, the miner in the
+  spacesuit. Walk up to the researchers. Find the laptop on their table. Take the
+  pickaxe (**1**) to the cube on the plinth and see what they do. Walk back toward
+  the daylight behind where you arrived: the screen goes white and you step out
+  into the mouth of the cave, facing the field.
+- **The range** is beside Trym's shed. Stand at the counter: the camera comes over
+  your shoulder, and **left click** shoots the boards down the range. **F** at the
+  range master, *Show me*, and you are in `shooting_gallery_ramon.tscn`. **H**
+  there says *BACK TO THE CHICKEN PEN* and brings you home with everything as you
+  left it. Opened from the menu, the gallery still says *BACK TO MENU*.
 
 ## What was asked, and what it became
 
@@ -30,14 +33,14 @@ built. Everything here is committed locally on `RamonPrototypes` and **not pushe
 | Entering transports to a new cave scene | `cave/cave.tscn`, opened by the pen's own crossing. **The pen's own player walks in** - same belt, pickaxe and dialogue system - so gold dug there comes home. |
 | Readable darkness, dungeon-like but natural, high ceiling, moody excavation lights | The theatre's recipe underground: a black sky, a faint key, coloured lamps. Walls fade to black as they rise, so the chamber has a ceiling you cannot see. |
 | Walk a bit to the site, symmetry framing, wow moment | A rough tunnel, then a straight excavated corridor lit by rings of work lights in x **and** w, opening on the plinth dead centre with the monolith on it. |
-| Ruins pedestal, the voxel block as a 2001 monolith | The pen's voxel rock, stood on end as a black slab (`cave/cave_monolith_block.gd`) on a three-tier plinth among broken columns. It still mines and still has the gold seam. |
+| Ruins pedestal, the voxel block as a 2001 monolith | First a black slab; since the evening notes, the pen's original voxel cube again (see below), on a three-tier plinth among broken columns. It mines and has the gold seam. |
 | Spacesuit miner talking voxel benchmarks with mystery | Hale. Every number he gives was measured the same day (see below), and the mystery is what the numbers do. |
 | Three researchers in white measuring; crates, tools | A surveyor at a tripod, one kneeling at the plinth taking samples, one with a tablet; tables, instruments, cases, crates, a generator. |
 | "Delicate equipment, please don't touch"; they don't know where it came from | Up close and calm they address you; overheard, they talk about an artifact with no quarry, no tool marks, nothing to date. |
 | Researchers panic when you mine it; won't encourage you | Every blow sets all three off - they turn to you, hands up, shouting across the chamber. From then on they mutter about you. |
 | "Afterwards … hitting it was bad but we got more data" | Up close after a blow: grudging, and quoting the slab's live collider count and the blows they logged. |
-| The professor outside knows something is off | He sends you to the hole and is uneasy: an 8-lattice rock was carried in, and what stands on the plinth is a 10. Both true. |
-| Range booth, rustic, near-black wood, guns, boards, show only | A covered firing line in near-black timber by the shed: rifle rack, rifles and tins on the counter, target boards spread through z and w, a sandbag berm. |
+| The professor outside knows something is off | He sends you to the hole, uneasy about what they found there: a cube on a plinth older than the hill, on a lattice nobody laid. (His first version, about an 8 carried in and a 10 on the plinth, was confusing - note 12 below.) |
+| Range booth, rustic, near-black wood, guns, boards, show only | A covered firing line in near-black timber by the shed: rifle rack, rifles and tins on the counter, target boards spread through z and w, a sandbag berm. Since note 8, the boards can be shot. |
 | F → "you look like you got some experience…" → the real range | The range master, ear defenders round his neck, with that line. |
 | The range needs a way back | H in the gallery, relabelled only when you came from the pen. |
 
@@ -82,19 +85,21 @@ preloads the other. `sandbox/shooting_gallery/shooting_gallery.tscn` is untouche
 
 | | |
 |---|---|
-| Hill ring | 61,440 tetrahedra, bakes in 0.7 s |
-| Cave hill | 55,431 tetrahedra |
-| Cave (walls, floor, props) | 67,033 tetrahedra, bakes in 4.9 s |
-| Monolith | 10⁴ = 10,000 points at 0.66 m; 1,368 tetrahedra whole; 63 surface colliders, 363 after five blows; **172 ms a blow** |
-| The pen's old rock, same test | 8⁴ = 4,096 points, 544 colliders, **184–209 ms a blow** - slower than the slab with 2.4× the points, because rebuilding colliders costs more than contouring |
+| Hill ring, first version ("Classic") | 61,440 tetrahedra, bakes in 0.7 s |
+| Voronoi mountains | 92,160 tetrahedra in 13 layers (about 113 MB of video memory, 36 MB more than Classic), bakes in 2.4 s |
+| Cave hill | 80,919 tetrahedra, bakes in 8.2 s |
+| Cave (walls, floor, props) | 65,313 tetrahedra, bakes in 5.5 s |
+| The cube on the plinth | 8⁴ = 4,096 points at 0.8 m; 6,000 tetrahedra whole, 6,480 after five blows; 544 surface colliders whole, 522 after five blows; **184–208 ms a blow** |
+| The slab it replaced | 10⁴ = 10,000 points at 0.66 m; 1,368 tetrahedra whole; 63 colliders; 172 ms a blow (its "363 after five blows" counted colliders already queued for freeing) |
 | Pen frame, from the spawn point | **2.69 ms** mean (371 fps), p99 3.82 - against 2.60 before the hills and 2.46 this morning |
 | Cave frame, at the chamber's mouth | **0.96 ms** mean, p99 1.43 |
 | Video memory | **475 MB** in the pen (280 before the hills); **626 MB** in the cave, with the pen still resident |
 
 Frame times from `_measure_pen_frame_runner.gd` (windowed, 1280×720, vsync off; `cave=1` for
-the cave). Drawing the new scenery is close to free; what it costs is video memory.
+the cave). Drawing the new scenery is close to free; what it costs is video memory. The frame
+and memory figures are from before the evening notes and were not re-measured after them.
 
-## Traps found (the first three are in `engine_gotchas.md`)
+## Traps found (the first three are in `engine_gotchas.md`; 7-9 are from the evening)
 
 1. **`Node4D.global_position = x` is wrong two levels below an offset node** - it
    converts through the parent's local transform. A nugget in the cave (hung 1 km
@@ -109,7 +114,26 @@ the cave). Drawing the new scenery is close to free; what it costs is video memo
    set, running the whole X depth at the W corners, stands for a turned slice.
 6. **Tests that wait in physics ticks are flaky headless**: a slow frame catches up
    several ticks in a row, before any `_process` has seen the move being waited on.
-   The cave and range runners count drawn frames.
+   The cave and range runners count drawn frames. Anything on a clock (the fade, the
+   boards) has to be waited for in seconds: headless frames are far shorter than real ones.
+7. **The cross-section shader's colour coordinates go partly through an 8-bit slot.**
+   The engine packs the four corners' texture coordinates into whatever vertex slots
+   are free (`tetra_mesh_4d.cpp`, `append_proxy_mesh_surfaces_3d`): the fourth corner's,
+   and the first corner's third component, go in the vertex COLOR, which Godot stores
+   at 8 bits. Colour coded linearly into that loses 40% of a dark rock's value in one
+   step, and because a vertex is a different corner in each tetrahedron it sits in,
+   every tetrahedron came out its own shade - the "pattern" in the cave mouth's
+   gradient. Fixed for every baked mesh by coding the coordinate as sRGB, with a
+   32-texel half-float colour cube that turns it back into linear light
+   (`terrain_bake_4d.gd`). Anyone putting colour through a Texture3D onto dark
+   surfaces will meet this.
+8. **A dual-contour grid centred on w = 0 draws nothing on a surface that barely
+   changes along W**: its vertices sit exactly on the slice, and a slice through a
+   tetrahedron's vertices has no area. The cave hill's grid is shifted a third of a
+   cell off w = 0.
+9. **`Camera4D.world_to_viewport` answers in window pixels**, not canvas units. The
+   same until the window's content is scaled; then every tag and head-anchored
+   dialogue box is off by the scale. `world_tag_4d.gd` and `dialogue_box_4d.gd` convert.
 
 ## Not done, and why
 
@@ -151,11 +175,38 @@ ring (expects more than nine chickens), talk, trym (three checks on standing up)
 report a verdict rather than failing: agent ("NEVER REACTED", a standalone chicken test)
 and planted_feet ("FEET SLIP by 0.089", which Ramon has said is fine).
 
+## Ramon's thirteen notes (28 Sept, evening)
+
+| # | Note | What is there now |
+|---|---|---|
+| 1, 2 | The cave hole's gradient has a pattern; broken gaps in the cave mesh | The pattern was the 8-bit colour slot (trap 7), fixed for every baked mesh; the gradient into the dark is smooth. The gaps were the degenerate slice (trap 8). |
+| 3 | Walking into the hole is like walking into a wall; enter in darkness, then teleport | The tunnel runs 11 m into the hill, darkening, and the screen fades to black with depth (from 3 m in, black by 8.4 m). The crossing fires in the black, which clears in the cave's own dark tunnel over 1.2 s. Walking out, the screen whitens toward the daylight, the way home fires in the white, and it clears on the field with you in the mouth of the cave. By position, not by timer: stop and it stops, turn back and it lifts (`pen_cave_fade_4d.gd`). |
+| 4 | The original voxel cube back; it should cut in round bits | The pen's own 8⁴ cube at 0.8 m on the plinth; the pickaxe takes a round bite about two metres across. Hale's and the researchers' numbers are re-measured for it. |
+| 5 | A glowing laptop in the cave, somewhere you can find it; the same in the theatre near Trym's booth | On the researchers' table left of the plinth, lit; and on a stand beside the theatre's podium, facing the seats. Nothing else in the theatre was touched. |
+| 6 | Gold, or a mysterious 4D ore? | Waiting on Ramon. Recommended: a glowing 4D crystal in place of the gold, the loop unchanged. |
+| 7 | Nike smaller; her legs stand still and move at once | Two-thirds the size. The legs: the rigid-piece skin gave body vertices near the hip a share of the leg; weights are now all-or-nothing within reach. |
+| 8 | Very basic range functionality | At the counter the camera comes over your shoulder, a sight appears, and left click fires down it. A hit tips the board over backwards for 2.5 s; bull's-eyes are called; a tally sits under the sight. Boards on another slice cannot be hit until you turn to them (`pen_range_shooting_4d.gd`). |
+| 9 | UI text and elements bigger, except the dial | Everything 1.3× at 1080 lines, following the window's height and never smaller than before; the dial held at exactly its old size (`pen_ui_scale_4d.gd`). Off in the theatre and in the gallery. The camera-test panel moves beside the controls card when hanging under it would cover the dial. |
+| 10 | Remove the CHICKENS and RANGE signs | Gone. |
+| 11 | Mountains block the sky; size variation; "what do you use voronoi for the seed?"; keep the old ones; parameters | The first range used no Voronoi: it was ridged simplex noise on direction, one continuous wall. The new one is Voronoi throughout: each cell on the sphere of directions (W included) is one mountain's seed; its random cell value says whether it has a mountain and how tall; F2 - F1 brings it down to a saddle at the cell's border. Three bands in the one radial mesh: a green rim at 115 m, a middle range at 240 m, snow-capped peaks at 450 m, with sky between (`terrain/pen_peaks_4d.gd`). Every number is a parameter on World/Hills with a **Bake** button (`terrain/pen_mountains_4d.gd`); **Style** switches back to the first version, kept as it was (`baked/hills.res`). |
+| 12 | The professor's "carried an 8 in" story is confusing; the monolith should be a discovery | Rewritten: they found a cube in the hill, on a plinth older than the hill, on a lattice nobody laid. |
+| 13 | A better main character | Waiting on Ramon: three directions proposed, "the cartographer" recommended, to be built as a switchable alternative. |
+| - | The corridor planks in the cave | Removed; the rest as it was. |
+
+**Chirality** needs a different solution (the signs were its test case); left until
+Aaron's fence update lands.
+
 ## For Aaron
 
 `engine/modules/4d/nodes/node_4d.cpp`, `Node4D::set_global_position`:
 `node_4d_parent->get_transform().xform_inv(...)` should be
 `node_4d_parent->get_global_transform().xform_inv(...)`. Only wrong when the parent
 has an offset parent of its own; the basis, transform and rotation setters are fine.
-And, FYI: the tetrahedron proxy's 12 vertices a tetrahedron (6 of them culled in the
-shader) is where all the video memory of big static meshes goes.
+(Since fixed upstream, 0cd7372 - not yet pulled here.) And, FYI: the tetrahedron proxy's
+12 vertices a tetrahedron (6 of them culled in the shader) is where all the video memory of
+big static meshes goes.
+
+And trap 7: in `append_proxy_mesh_surfaces_3d`, `uvw4` and `uvw1.z` go through
+`set_color`, which Godot keeps at 8 bits, while the other ten texture coordinates are
+floats. Any slot that stays float would fix it at the source; until then, colour coded as
+sRGB is the workaround.

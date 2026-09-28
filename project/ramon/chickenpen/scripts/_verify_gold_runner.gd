@@ -103,7 +103,7 @@ func _process(_d) -> bool:
 		# three metres up the slab. Moved through its parent: Node4D.global_position is
 		# wrong two levels below an offset node (follow_up/engine_gotchas.md).
 		var first: Node4D = _gold.get_child(0) as Node4D
-		var stand: Vector4 = _cave.global_position + Vector4(0.0, 1.55, -34.1, 0.0)
+		var stand: Vector4 = _cave.global_position + Vector4(0.0, 1.05, -33.1, 0.0)
 		_player.global_position = stand
 		first.position = _gold.global_basis.inverse() * (stand + Vector4(0.0, 0.8, -0.4, 0.0) - _gold.global_position)
 		_step = 2
