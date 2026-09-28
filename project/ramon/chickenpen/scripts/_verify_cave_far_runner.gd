@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CaveRock := preload("res://ramon/chickenpen/cave/cave_rock_4d.gd")
+
 ## The far room streams (cave_far_stream_4d.gd): not there when you arrive, loaded once you
 ## turn the slice through W, let go after you are back on the flat slice, loaded again by
 ## stepping off w = 0, its standing stones solid, and let go when you leave the cave.
@@ -105,7 +107,7 @@ func _process(d: float) -> bool:
 			if _t > 0.5:
 				var far: Node = _cave.find_child("FarRoom", true, false)
 				var solid: Node = far.get_node_or_null("Solid") if far != null else null
-				_check("the standing stones are solid", solid != null and solid.get_child_count() == 12,
+				_check("the standing stones are solid, and its floor", solid != null and solid.get_child_count() == 1 + CaveRock.new().far_solid_boxes().size(),
 					"%d colliders" % (solid.get_child_count() if solid != null else -1))
 				_room.get_node("CaveCrossing").call("come_back")
 				_step = 5; _t = 0.0

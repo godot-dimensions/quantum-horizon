@@ -15,7 +15,7 @@ const CaveRock := preload("res://ramon/chickenpen/cave/cave_rock_4d.gd")
 ## the tunnel is wide in x, so it shows from anywhere the tunnel does - and small in z and
 ## w, which are what you see of it walking along W.
 const TRAIL_FROM := 9.6
-const TRAIL_TO := 24.0
+const TRAIL_TO := 27.5
 const TRAIL_STEP := 0.6
 const TRAIL_GLOW := Color(0.45, 0.65, 1.0)
 

@@ -29,6 +29,26 @@ extends Node4D
 ## so every piece is [member w_thickness] times thicker through the slice's normal than
 ## across it - still thin to look at, and on your slice for metres at a time.
 ##
+## TWICE THE SIZE IT WAS DRAWN (Ramon, 28 Sept: "the whole creature can be twice as big").
+## Everything below is still in the metres it was drawn in; [member creature_scale] is put
+## on the two nodes the frame turns, so the mouth, the teeth, the swirl, the limbs and the
+## heart's light (whose range scales with its node) all grow together, and nothing else
+## has to know.
+##
+## ITS LIMBS STAY IN THE ROOM. At twice the size they reached through the walls, the floor
+## and the ceiling of the far room, so every point along a limb is kept inside
+## [member room_radii] - an ellipsoid round this node, which stands at the room's middle
+## on its floor - and above [member floor_clear]: a limb that reaches a wall lies along it,
+## and the lower ones rest on the floor.
+##
+## ALIVE, BARELY. It breathes - a slow rise and fall of a third of a metre over eleven
+## seconds, with a nod of a degree that goes with it - and a fine dust rises off the middle
+## of its mouth and drifts up across its face (Ramon, 28 Sept: "a subtle particle effect
+## surrounding the very center of the mouth and slowly phasing upward ... very small like
+## dust particles", "the creature maybe can very subtly move up and down, but ever so
+## subtle. just to indicate some life"). The motes are a few centimetres across, in metres
+## rather than the creature's scale, so they stay dust however big it is drawn.
+##
 ## [method set_mood] is called by its conversation (cave_dreamer_talk_4d.gd) and by coming
 ## too close: blue in calm, red in warning, and everything moves faster when it is red.
 
@@ -50,11 +70,17 @@ const THROAT := Color(0.16, 0.17, 0.20)
 @export var player_path: NodePath = NodePath("../../../Player")
 @export var camera_rig_path: NodePath = NodePath("../../../Player/CameraRig")
 ## How high the mouth hangs above the floor, and how quickly it turns to you.
-@export_range(1.0, 10.0, 0.1) var core_height: float = 6.5
+@export_range(1.0, 20.0, 0.1) var core_height: float = 11.0
 @export_range(0.1, 5.0, 0.05) var turn_rate: float = 0.8
 ## Coming closer than this, across the floor and through W, upsets it.
-@export_range(0.5, 5.0, 0.1) var too_close: float = 2.0
+@export_range(0.5, 10.0, 0.1) var too_close: float = 4.0
 @export_range(1.0, 8.0, 0.1) var w_thickness: float = 3.0
+## How much bigger than drawn. See "TWICE THE SIZE".
+@export_range(0.25, 4.0, 0.05) var creature_scale: float = 2.0
+## Where its limbs may reach: the far room's radii (cave_rock_4d.gd, W_ROOM_R) less a
+## margin, round this node.
+@export var room_radii: Vector4 = Vector4(25.0, 19.5, 25.0, 19.5)
+@export_range(0.0, 3.0, 0.05) var floor_clear: float = 0.35
 
 @export_group("Mouth")
 ## Everything about the mouth - teeth, lip, throat, the swirl in it - is drawn to this.
@@ -78,6 +104,18 @@ const THROAT := Color(0.16, 0.17, 0.20)
 @export_range(0.005, 0.5, 0.005) var tip_radius: float = 0.016
 @export var limb_seed: int = 17
 
+@export_group("Breath and dust")
+@export_range(0.0, 2.0, 0.01) var breath_height: float = 0.35
+@export_range(1.0, 30.0, 0.5) var breath_seconds: float = 11.0
+@export_range(0.0, 5.0, 0.1) var nod_degrees: float = 1.0
+@export_range(0, 200, 1) var dust_count: int = 44
+## Metres across, at its largest.
+@export_range(0.005, 0.2, 0.005) var dust_size: float = 0.035
+## How far up across its face a mote rises, as a share of the mouth's radius, and how long it
+## takes.
+@export_range(0.5, 6.0, 0.1) var dust_rise: float = 2.4
+@export_range(1.0, 20.0, 0.5) var dust_seconds: float = 7.0
+
 var _player: Node4D
 var _rig: Node4D
 ## Turned by the frame: the mouth (ring, teeth, swirl, heart) and the body (limbs).
@@ -98,6 +136,9 @@ var _starts: PackedFloat32Array = []
 var _lengths: PackedFloat32Array = []
 var _radii: PackedFloat32Array = []
 var _t := 0.0
+## [MeshInstance4D, where across the mouth it starts (x, y), phase, wander phase]
+var _dust: Array = []
+var _dust_material: TetraMaterial4D
 ## 0 calm, 1 warning; eased toward what is wanted.
 var _heat := 0.0
 var _talk_mood := 0.0
@@ -116,6 +157,7 @@ func _ready() -> void:
 	_build_mouth()
 	_build_vortex()
 	_build_limbs()
+	_build_dust()
 	_light = OmniLight4D.new()
 	_light.name = "Glow"
 	_light.omni_range_meters = 7.0
@@ -259,6 +301,41 @@ func _build_limbs() -> void:
 		_limbs.append(pieces)
 
 
+func _build_dust() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = limb_seed + 101
+	var mote := BoxTetraMesh4D.new()
+	mote.size = Vector4.ONE
+	_dust_material = TetraMaterial4D.new()
+	for i in dust_count:
+		var m := MeshInstance4D.new()
+		m.name = "Dust%d" % i
+		m.mesh = mote
+		m.material_override = _dust_material
+		add_child(m)
+		var a: float = rng.randf() * TAU
+		var r: float = sqrt(rng.randf()) * 0.5
+		_dust.append([m, Vector2(cos(a), sin(a)) * r, rng.randf(), rng.randf() * TAU])
+
+
+## Each mote from near the middle of the mouth, a little in front of it, up the mouth's own
+## face and slowly out toward you; growing in, and gone again, over its life.
+func _place_dust(centre: Vector4, frame: Projection, colour: Color) -> void:
+	_dust_material.albedo_color = colour.lerp(Color.WHITE, 0.55)
+	var reach: float = mouth_radius * creature_scale
+	for entry in _dust:
+		var m: MeshInstance4D = entry[0]
+		var start: Vector2 = entry[1]
+		var k: float = fmod(_t / dust_seconds + float(entry[2]), 1.0)
+		var wander: float = float(entry[3])
+		var across: float = start.x + 0.12 * sin(_t * 0.7 + wander) * k
+		var up: float = start.y + dust_rise * k
+		var out: float = 0.25 + 0.6 * k
+		m.position = centre + frame * Vector4(across, up, out, 0.0) * reach
+		var size: float = dust_size * sin(PI * k) * (0.75 + 0.25 * sin(_t * 3.1 + wander * 2.0))
+		m.basis = Projection(Vector4(size, 0, 0, 0), Vector4(0, size, 0, 0), Vector4(0, 0, size, 0), Vector4(0, 0, 0, size))
+
+
 ## [param v] with the parts along [param d] (and [param e]) taken out, unit length.
 static func _square_to(d: Vector4, v: Vector4, e: Vector4 = Vector4.ZERO) -> Vector4:
 	var out: Vector4 = v - d * v.dot(d)
@@ -288,12 +365,16 @@ func _process(delta: float) -> void:
 		close = gap.length() < too_close
 	_heat = move_toward(_heat, maxf(_talk_mood, 1.0 if close else 0.0), delta * 2.5)
 	var agitation: float = 1.0 + 1.6 * _heat
-	var centre := Vector4(0, core_height + 0.25 * sin(_t * 0.9), 0, 0)
+	# Breathing: one slow rise and fall, a smaller quicker one riding on it, and a nod.
+	var breath: float = sin(_t * TAU / breath_seconds)
+	var centre := Vector4(0, core_height + breath_height * (breath + 0.25 * sin(_t * 1.3 + 1.0)), 0, 0)
 	var frame: Projection = _facing(delta, centre)
+	var nodded: Projection = frame * Basis4D.from_yz(deg_to_rad(nod_degrees) * sin(_t * TAU / breath_seconds + 0.6))
+	var grown := Projection(nodded.x * creature_scale, nodded.y * creature_scale, nodded.z * creature_scale, nodded.w * creature_scale)
 	_mouth.position = centre
-	_mouth.basis = frame
+	_mouth.basis = grown
 	_body.position = centre
-	_body.basis = frame
+	_body.basis = grown
 
 	var shimmer: float = 0.5 + 0.5 * sin(_t * (2.3 + 3.0 * _heat))
 	var colour: Color = CALM_A.lerp(CALM_B, shimmer).lerp(WARN_A.lerp(WARN_B, shimmer), _heat)
@@ -306,7 +387,8 @@ func _process(delta: float) -> void:
 	_light.light_color = colour
 	_light.light_energy = 1.2 + 0.5 * shimmer + 1.0 * _heat
 	_place_vortex(agitation)
-	_place_limbs(agitation)
+	_place_limbs(agitation, centre, frame)
+	_place_dust(centre, frame, colour)
 
 
 ## The mouth's frame, turned a little further toward you every frame: z toward your head, y
@@ -359,7 +441,7 @@ func _place_vortex(agitation: float) -> void:
 ## The limbs, each a path out from behind the ring that curls in its own two directions, the
 ## curl growing along it - the root nearly still, the tip free - and each segment spanning
 ## from the path at its start to the path at its end.
-func _place_limbs(agitation: float) -> void:
+func _place_limbs(agitation: float, centre: Vector4, frame: Projection) -> void:
 	for i in _limbs.size():
 		var pieces: Array = _limbs[i]
 		var d: Vector4 = _dirs[i]
@@ -368,9 +450,9 @@ func _place_limbs(agitation: float) -> void:
 		var root: Vector4 = _sides[i][2] + Vector4(0, 0, -lip_radius * 0.5, 0)
 		var through: float = _sides[i][3]
 		var phase: float = float(i) * 2.39
-		var from: Vector4 = _limb_point(root, d, a, b, phase, 0.0, agitation, through)
+		var from: Vector4 = _in_room(_limb_point(root, d, a, b, phase, 0.0, agitation, through), centre, frame)
 		for k in pieces.size():
-			var to: Vector4 = _limb_point(root, d, a, b, phase, _starts[k] + _lengths[k], agitation, through)
+			var to: Vector4 = _in_room(_limb_point(root, d, a, b, phase, _starts[k] + _lengths[k], agitation, through), centre, frame)
 			var piece: MeshInstance4D = pieces[k]
 			piece.position = from
 			piece.basis = _segment_basis(to - from, _radii[k])
@@ -398,6 +480,26 @@ func _limb_point(root: Vector4, d: Vector4, a: Vector4, b: Vector4, phase: float
 		at.x *= k
 		at.y *= k
 	return at
+
+
+## [param at], a point in the frame, moved in to the room's ellipsoid and up off its floor if
+## it is outside them - worked in this node's space, where the room is, and brought back.
+## The frame is a rotation, so going back is a dot with each of its axes.
+func _in_room(at: Vector4, centre: Vector4, frame: Projection) -> Vector4:
+	var q: Vector4 = centre + frame * at * creature_scale
+	var r := Vector4(q.x / room_radii.x, q.y / room_radii.y, q.z / room_radii.z, q.w / room_radii.w)
+	var reach: float = r.length()
+	var moved := false
+	if reach > 1.0:
+		q /= reach
+		moved = true
+	if q.y < floor_clear:
+		q.y = floor_clear
+		moved = true
+	if not moved:
+		return at
+	var v: Vector4 = (q - centre) / creature_scale
+	return Vector4(v.dot(frame.x), v.dot(frame.y), v.dot(frame.z), v.dot(frame.w))
 
 
 ## How far out from the mouth's middle the limbs keep: the lip's outer edge and a little.

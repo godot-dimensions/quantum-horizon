@@ -72,12 +72,15 @@ func _process(_delta: float) -> void:
 	var cave: Node4D = _crossing.get("_theatre") as Node4D
 	if cave == null or not is_instance_valid(cave):
 		return
-	var z: float = (cave.global_basis.inverse() * (_player.global_position - cave.global_position)).z
+	var local: Vector4 = cave.global_basis.inverse() * (_player.global_position - cave.global_position)
+	var z: float = local.z
 	if not _released and _task < 0 and z < release_below_z:
 		for node in _nodes:
 			node.mesh = null
 		_released = true
-	elif _released and _task < 0 and z > reload_above_z:
+	# Only on the way out: the far room, out along W, reaches back to z -7, which is no
+	# nearer the daylight than its middle is.
+	elif _released and _task < 0 and z > reload_above_z and local.w < CaveRock.FLOOR_SPLIT_W:
 		_task = WorkerThreadPool.add_task(_load_in_background, false, "pen scenery")
 	if _task >= 0 and WorkerThreadPool.is_task_completed(_task):
 		_take_back(false)

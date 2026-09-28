@@ -224,6 +224,23 @@ and planted_feet ("FEET SLIP by 0.089", which Ramon has said is fine).
 **Chirality** needs a different solution (the signs were its test case); left until
 Aaron's fence update lands.
 
+### The dreamer speaks, and wakes you (28 Sept, late)
+
+| Note | What is there now |
+|---|---|
+| Keep how it talks; only a small part of its intelligence is conscious and talking, the rest a mystery even to that part; it is the dreamer, the dream and every incarnation, the player too. Cross-reference Azathoth, don't copy my words | `cave_dreamer_script.gd` rewritten from the lore: the blind god at the centre, lulled by pipes and drums, whose waking ends the dream. What speaks is "a sliver of me that happens to be awake"; the music is a lullaby that keeps it under; you are "one of the ways I have of looking at myself". A third menu ("Something darker") holds who you are to it, what if it woke, and whether it could end all this. |
+| It could destroy all dreams, goes red, you're scared, "did that scare you? wasn't intended as such" | `topic_end` warns (red); your "(You take a step back.)" and the first line of `end_after` keep it red - `"do_on_line": 0` holds the calm until "Did that frighten you? It was not meant to" has been said - then blue again. |
+| Leaving: a flash, you're on the floor in front of the cave, shake your head, stand up | Its goodbye carries `"do": "leave_dream"`; when the talk closes, the pen's `Systems/DreamWake` (`scripts/pen_dream_wake_4d.gd`) flashes to white, carries you home by the cave's own crossing at the peak, lays you on your back 4.5 m out from the arch facing it, sits you up with a shake of the head, stands you, and you think "...What was that?". The HUD is held back until the white is up. |
+| The whole creature twice as big | `creature_scale` 2 on the two nodes the frame turns - everything, the heart's light included, grows together. The mouth hangs at 11 m. Every limb point is kept inside the room's ellipsoid and above its floor, so limbs lie along walls rather than through them. |
+| ...so the room grows | Half as big again (radii 28/22/28/22) and moved out to w 46, so the way through W is still a fifteen-metre walk; its grid is coarser (3.6 m cells) so it costs about what it did: 135k tetrahedra against 97k. Everything placed in it moved with it. Scenery is not read back while you are out along W. |
+| Tentacles can't be longer because they slice in and out of W? | Yes: a limb only shows where it crosses your slice, and the ones set off through W leave it within a few metres; extra length mostly goes where you cannot see it. Keeping them nearer the slice is the only way to show more of them. |
+| F starts a cinematic: fixed spot, no W dial, close-ups, side shot, mouth insides, your face, a slow pan for scale | `cave/cave_dreamer_cinema_4d.gd`. F stands you on `DreamerMark` (10 m in front, at its w), flattens and locks the slice, puts the whole HUD away and letterboxes. A camera of the far room's own cuts between eight shots, chosen per line in `SHOTS`: a slow left-to-right pan from behind you (scale), straight down its throat pushing in (teeth, swirl, heart), a slower push for threats, a low angle from under it, a side profile, a three-quarter close-up of you, a low over-your-left-shoulder shot while you choose (replies hang down the left), and a rise from behind you as it lets you go. A soft light in its heart's colour rides above you so the close-ups read - blue, then red on your step back. |
+| Dust off the middle of the mouth, rising; a subtle up-and-down | 44 motes of 3.5 cm rise up its face over 7 s and fade; it breathes 0.35 m over 11 s with a one-degree nod. |
+
+Test: `scripts/_verify_dreamer_runner.gd` (22 checks, now through the threat and the
+waking) and `scripts/_capture_dreamer_cinema_runner.gd` (plays the scene through and saves a
+frame of every shot, `cine_*.png`, plus 9 checks on the staging).
+
 ## For Aaron
 
 `engine/modules/4d/nodes/node_4d.cpp`, `Node4D::set_global_position`:

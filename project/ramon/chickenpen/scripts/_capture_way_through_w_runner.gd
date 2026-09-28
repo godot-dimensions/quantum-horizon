@@ -65,7 +65,7 @@ func _process(d: float) -> bool:
 		var recipe = CaveRock.new()
 		var lo := INF
 		for i in 81:
-			var w: float = lerpf(6.5, 36.0, i / 80.0)
+			var w: float = lerpf(6.5, 46.0, i / 80.0)
 			lo = minf(lo, recipe.air_density(Vector4(0, 1.0, -36, w)))
 		print("air along the way at chest height: lowest %.2f" % lo)
 	_walk_t += d

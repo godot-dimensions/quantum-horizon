@@ -25,10 +25,10 @@ func _process(d: float) -> bool:
 	if _f < 14 or _cave == null:
 		return false
 	var p := _room.get_node("Player") as CharacterBody4D
-	p.global_position = _cave.global_position + Vector4(0.0, 0.05, -30.5, 36.0)
+	p.global_position = _cave.global_position + Vector4(0.0, 0.05, -27.0, 46.0)
 	p.linear_velocity = Vector4.ZERO
 	var rig := p.get_node("CameraRig") as Node4D
-	var dd: Vector4 = _cave.global_position + Vector4(0, 6.2, -36, 36) - p.global_position
+	var dd: Vector4 = _cave.global_position + Vector4(0, 10.5, -36, 46) - p.global_position
 	rig.set("yaw", atan2(-dd.x, -dd.z)); rig.set("pitch", deg_to_rad(12.0)); rig.call("_apply")
 	var far: Node = _cave.find_child("FarRoom", true, false)
 	if far == null:
@@ -36,12 +36,12 @@ func _process(d: float) -> bool:
 	_t += d
 	if _t > 2.5 and _t - d <= 2.5:
 		root.get_texture().get_image().save_png("res://smoke_test_output/mouth_play.png")
-		# Now a free camera, 2.5 m in front of the mouth, straight at it.
+		# Now a free camera, 5 m in front of the mouth, straight at it.
 		var mouth: Node4D = far.get_node("Dreamer/Mouth")
 		_eye = Camera4D.new(); _eye.set("rendering_engine_name", "Cross-section")
 		_cave.add_child(_eye); _eye.current = true
 		var fwd: Vector4 = mouth.global_basis.z.normalized()
-		var at: Vector4 = mouth.global_position + fwd * 2.5
+		var at: Vector4 = mouth.global_position + fwd * 5.0
 		var f: Vector4 = (mouth.global_position - at).normalized()
 		_eye.global_position = at
 		_eye.global_basis = Basis4D.from_zx(atan2(-f.x, -f.z)) * Basis4D.from_yz(asin(clampf(f.y, -1.0, 1.0)))

@@ -35,10 +35,10 @@ func _hide_hud(node: Node) -> void:
 
 func _stand() -> void:
 	var p := _room.get_node("Player") as CharacterBody4D
-	p.global_position = _cave.global_position + Vector4(1.6, 0.05, -28.0, 36.0)
+	p.global_position = _cave.global_position + Vector4(2.0, 0.05, -21.0, 46.0)
 	p.linear_velocity = Vector4.ZERO
 	var rig := p.get_node("CameraRig") as Node4D
-	var d: Vector4 = _cave.global_position + Vector4(0, 6.2, -36, 36) - p.global_position
+	var d: Vector4 = _cave.global_position + Vector4(0, 10.5, -36, 46) - p.global_position
 	rig.set("yaw", atan2(-d.x, -d.z))
 	rig.set("pitch", deg_to_rad(14.0))
 	rig.set("distance", 3.0)

@@ -76,13 +76,17 @@ const CHUNKS := [
 ## The rest of the way through W and the far room, baked as a mesh of their own
 ## (baked/cave_far.res, bake_far) for a scene of their own (cave_far.tscn), which is only
 ## loaded while it can be seen - see cave_far_stream_4d.gd.
+##
+## The room's grid is coarser than the chamber's - 3.6 m cells across it against the
+## chamber's 2.3 - so that half as big again costs about what it did; its walls are far off.
 const FAR_CHUNKS := [
-	[Vector4(-8.5, -2.0, -42.0, 12.0), Vector4(8.5, 7.5, -30.0, 29.0), 13],
-	[Vector4(-22.5, -2.0, -58.5, 18.0), Vector4(22.5, 19.5, -13.5, 54.0), 17],
+	[Vector4(-8.5, -2.0, -42.0, 12.0), Vector4(8.5, 7.5, -30.0, 31.0), 13],
+	[Vector4(-30.5, -2.0, -66.5, 21.5), Vector4(30.5, 24.0, -5.5, 70.5), 18],
 ]
-## The far room's floor, wider than the rest of the cave's.
-const FAR_FLOOR_LO := Vector3(-21.0, -57.0, 13.0)
-const FAR_FLOOR_HI := Vector3(21.0, -15.0, 53.0)
+## The far room's floor, wider than the rest of the cave's, and baked in bigger cells.
+const FAR_FLOOR_LO := Vector3(-29.0, -65.0, 13.0)
+const FAR_FLOOR_HI := Vector3(29.0, -7.0, 69.0)
+const FAR_FLOOR_CELL := 2.8
 ## The whole cave's extent, for the floor's collider.
 const LO := Vector4(-16.0, -2.0, -52.0, -10.5)
 const HI := Vector4(16.0, 19.8, 10.5, 54.0)
@@ -108,24 +112,26 @@ const FLOOR_SPLIT_W := 13.0
 ## the plinth.
 ##
 ## THE FAR ROOM (Ramon, 28 Sept: "when you enter the new doorway, you can enter a tunnel to
-## another big room?"). Past the sheet the passage runs on along W for twenty metres and
-## opens into a round hall as big as the chamber, far out at w = 36 - beside the chamber,
-## in the direction you cannot see. A ring of standing stones in it, spread through x, z
+## another big room?"). Past the sheet the passage runs on along W for fifteen metres and
+## opens into a round hall half as big again as the chamber, far out at w = 46 - beside the
+## chamber, in the direction you cannot see. A ring of standing stones in it, spread through x, z
 ## and W, so it is a different ring at every slice.
 ##
 ## Where the sheet stands, as (x, z, w); the passage's span along w, its half-widths in z
 ## (the arch you see) and in x (where it can be seen from) and its height; the far room's
 ## centre and radii, and how far out its stones stand.
 const W_DOOR := Vector3(0.0, -36.0, 8.8)
-const W_PASSAGE := Vector2(6.0, 28.0)
+const W_PASSAGE := Vector2(6.0, 30.0)
 const W_PASSAGE_HALF := 2.4
 const W_PASSAGE_REACH := 6.0
 const W_PASSAGE_HIGH := 3.8
-const W_ROOM := Vector4(0.0, 0.0, -36.0, 36.0)
 ## Bigger than it was (Ramon, 28 Sept: "the creature is clipping too much with the wall
-## behind it. cant the second cave be slightly bigger?").
-const W_ROOM_R := Vector4(19.0, 16.0, 19.0, 15.0)
-const W_STONES_OUT := 6.5
+## behind it. cant the second cave be slightly bigger?"), then half as big again and further
+## out along W when the dreamer doubled ("the whole creature can be twice as big") - so the
+## way through W is still a walk of fifteen metres before it opens out.
+const W_ROOM := Vector4(0.0, 0.0, -36.0, 46.0)
+const W_ROOM_R := Vector4(28.0, 22.0, 28.0, 22.0)
+const W_STONES_OUT := 10.5
 const W_GLOW := Color(0.62, 0.82, 1.0)
 
 const ROCK := Color(0.31, 0.295, 0.28)
@@ -377,7 +383,7 @@ func bake_far() -> TerrainBake.Builder:
 		var part: TerrainBake.Builder = _bake_walls(chunk[0], chunk[1], chunk[2])
 		print("   far walls, grid %d over %s: %d tetrahedra" % [chunk[2], chunk[1] - chunk[0], part.tet_count()])
 		far.append(part)
-	far.append(TerrainBake.bake_height_box(FAR_FLOOR_LO, FAR_FLOOR_HI, 2.0, floor_height, floor_colour, [], -0.05))
+	far.append(TerrainBake.bake_height_box(FAR_FLOOR_LO, FAR_FLOOR_HI, FAR_FLOOR_CELL, floor_height, floor_colour, [], -0.05))
 	_bake_props(far, far_props())
 	return far
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=730 format=3 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=731 format=3 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -75,6 +75,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_range_shooting_4d.gd" id="range_shooting"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_ui_scale_4d.gd" id="ui_scale"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_scenery_release_4d.gd" id="scenery_release"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_dream_wake_4d.gd" id="dream_wake"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 shader_parameter/horizon_color = Color(0.98, 0.71, 0.35, 1)
@@ -5210,6 +5211,9 @@ script = ExtResource("ui_scale")
 
 [node name="SceneryRelease" type="Node" parent="Systems"]
 script = ExtResource("scenery_release")
+
+[node name="DreamWake" type="Node" parent="Systems"]
+script = ExtResource("dream_wake")
 
 [node name="Game" type="Node" parent="Systems"]
 script = ExtResource("pen_game")

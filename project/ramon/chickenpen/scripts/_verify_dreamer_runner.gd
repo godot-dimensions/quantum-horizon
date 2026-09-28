@@ -4,12 +4,19 @@ extends SceneTree
 ## when the room is, F opens a conversation with it, its core is blue for a calm line and
 ## red for a warning, calm again once the conversation is over, and red if you crowd it.
 ## Also: the sheet across the way through W parts as you walk into it and closes behind you,
-## and the cube stands centred on its plinth.
+## and the cube stands centred on its plinth. Then its talk: threatened, it goes red and
+## stays red through your step back into the line that asks whether that frightened you,
+## and calms on it; and saying goodbye flashes you home, onto your back in front of the
+## cave, up again, and thinking "...What was that?".
 ##
 ## Windowed, it saves res://smoke_test_output/dreamer_<n>.png: calm, warning, and one with
-## the slice turned through W so its limbs cross the slice differently.
+## the slice turned through W so its limbs cross the slice differently; and wake_<n>.png:
+## lying, sitting up, standing.
 
 const CaveRock := preload("res://ramon/chickenpen/cave/cave_rock_4d.gd")
+const CaveHill := preload("res://ramon/chickenpen/terrain/pen_cave_hill_4d.gd")
+## The far room's middle, on its floor, and where you stand to look at it.
+const ROOM := Vector4(0, 0, -36, 46)
 
 var _room: Node
 var _cave: Node4D
@@ -18,6 +25,9 @@ var _step := 0
 var _t := 0.0
 var _failed := 0
 var _windowed := false
+var _tap := 0.0
+var _seen_flinch := false
+var _asking := -1.0
 
 
 func _initialize() -> void:
@@ -53,10 +63,22 @@ func _face(local_target: Vector4) -> void:
 	rig.call("_apply")
 
 
-func _save(n: int) -> void:
+func _save(n: int, what: String = "dreamer") -> void:
 	if _windowed:
-		root.get_texture().get_image().save_png("res://smoke_test_output/dreamer_%d.png" % n)
-		print("   saved dreamer_%d.png" % n)
+		root.get_texture().get_image().save_png("res://smoke_test_output/%s_%d.png" % [what, n])
+		print("   saved %s_%d.png" % [what, n])
+
+
+## Presses on through the conversation, a tap every quarter second, as a player would.
+func _tap_on(d: float) -> void:
+	_tap += d
+	if _tap > 0.25:
+		_tap = 0.0
+		_far("Systems/DreamerTalk").call("_advance")
+
+
+func _talk_key() -> String:
+	return String(_far("Systems/DreamerTalk").get("_key"))
 
 
 func _far(path: String) -> Node:
@@ -114,8 +136,8 @@ func _process(d: float) -> bool:
 				_step = 3; _t = 0.0
 		3:
 			# In the far room, level with the dreamer, a few metres in front of it.
-			_hold(Vector4(0, 0.05, -30.5, 36))
-			_face(Vector4(0, 5.5, -36, 36))
+			_hold(ROOM + Vector4(0, 0.05, 9.0, 0))
+			_face(ROOM + Vector4(0, 10.0, 0, 0))
 			if _far("Dreamer") != null and _t > 1.2:
 				var dreamer: Node = _far("Dreamer")
 				_check("the dreamer is there with the room", dreamer != null)
@@ -126,7 +148,7 @@ func _process(d: float) -> bool:
 				Input.parse_input_event(press)
 				_step = 4; _t = 0.0
 		4:
-			_hold(Vector4(0, 0.05, -32.2, 36))
+			_hold(ROOM + Vector4(0, 0.05, 7.0, 0))
 			if _t > 1.5:
 				var talk: Node = _far("Systems/DreamerTalk")
 				_check("F opens a conversation with it", talk != null and bool(talk.call("is_running")))
@@ -137,14 +159,14 @@ func _process(d: float) -> bool:
 				talk.call("begin", "topic_wake")
 				_step = 5; _t = 0.0
 		5:
-			_hold(Vector4(0, 0.05, -32.2, 36))
+			_hold(ROOM + Vector4(0, 0.05, 7.0, 0))
 			if _t > 1.2:
 				_check("a warning turns the core red", bool(_far("Dreamer").call("is_warning")))
 				_save(1)
 				_far("Systems/DreamerTalk").call("stop")
 				_step = 6; _t = 0.0
 		6:
-			_hold(Vector4(0, 0.05, -32.2, 36))
+			_hold(ROOM + Vector4(0, 0.05, 7.0, 0))
 			if _t > 1.5:
 				_check("and it calms when the talk is over", not bool(_far("Dreamer").call("is_warning")))
 				var rig := _player().get_node("CameraRig") as Node4D
@@ -152,7 +174,7 @@ func _process(d: float) -> bool:
 				rig.call("_apply")
 				_step = 7; _t = 0.0
 		7:
-			_hold(Vector4(0, 0.05, -32.2, 36))
+			_hold(ROOM + Vector4(0, 0.05, 7.0, 0))
 			if _t > 0.8:
 				_save(2)
 				var rig := _player().get_node("CameraRig") as Node4D
@@ -161,7 +183,7 @@ func _process(d: float) -> bool:
 				_step = 8; _t = 0.0
 		8:
 			# Right up against it.
-			_hold(Vector4(0, 0.05, -35.0, 36))
+			_hold(ROOM + Vector4(0, 0.05, 2.0, 0))
 			if _t > 1.2:
 				_check("crowding it turns it red", bool(_far("Dreamer").call("is_warning")))
 				_step = 9; _t = 0.0
@@ -173,6 +195,86 @@ func _process(d: float) -> bool:
 			_hold(Vector4(0, 0.05, -36, 4.0))
 			if _t > 1.5:
 				_check("the sheet closes behind you back in the chamber", not _sheet_open())
+				_step = 11; _t = 0.0
+		11:
+			# Back to it, and ask whether it could end all this.
+			_hold(ROOM + Vector4(0, 0.05, 7.0, 0))
+			_face(ROOM + Vector4(0, 10.0, 0, 0))
+			if _t > 1.0:
+				_far("Systems/DreamerTalk").call("begin", "topic_end")
+				_step = 12; _t = 0.0
+		12:
+			_hold(ROOM + Vector4(0, 0.05, 7.0, 0))
+			if _t > 1.2:
+				_check("the threat turns it red", bool(_far("Dreamer").call("is_warning")), _talk_key())
+				_step = 13; _t = 0.0
+		13:
+			_hold(ROOM + Vector4(0, 0.05, 7.0, 0))
+			_tap_on(d)
+			if _talk_key() == "end_flinch":
+				_seen_flinch = true
+				if _t > 0.6:
+					_check("and stays red while you step back", bool(_far("Dreamer").call("is_warning")))
+					_save(3)
+					_step = 14; _t = 0.0
+			elif _t > 8.0:
+				_check("the threat goes on to your step back", false, "at %s" % _talk_key())
+				_step = 14; _t = 0.0
+		14:
+			_hold(ROOM + Vector4(0, 0.05, 7.0, 0))
+			var talk: Node = _far("Systems/DreamerTalk")
+			var box: Node = _far("UI/DreamerBox")
+			if _talk_key() == "end_after" and int(talk.get("_at")) == 0 and bool(box.call("is_typing")):
+				if _asking < 0.0:
+					_asking = _t
+					_check("still red as it asks whether that frightened you", bool(_far("Dreamer").call("is_warning")))
+			elif _talk_key() != "end_after" or not bool(box.call("is_typing")):
+				_tap_on(d)
+			if _talk_key() == "end_after" and int(talk.get("_at")) >= 1:
+				if _t > 0.8:
+					_check("and calm once it has asked", not bool(_far("Dreamer").call("is_warning")))
+					talk.call("stop")
+					_step = 15; _t = 0.0
+			elif _t > 12.0:
+				_check("it goes on to ask whether that frightened you", false, "at %s" % _talk_key())
+				talk.call("stop")
+				_step = 15; _t = 0.0
+		15:
+			# Goodbye: a flash, and home.
+			_hold(ROOM + Vector4(0, 0.05, 7.0, 0))
+			if _t > 0.8:
+				_far("Systems/DreamerTalk").call("begin", "bye")
+				_step = 16; _t = 0.0
+		16:
+			if _far("Systems/DreamerTalk") != null and bool(_far("Systems/DreamerTalk").call("is_running")):
+				_hold(ROOM + Vector4(0, 0.05, 7.0, 0))
+				_tap_on(d)
+			var wake: Node = _room.get_node("Systems/DreamWake")
+			if bool(wake.call("is_waking")):
+				_check("saying goodbye starts the waking", true)
+				_step = 17; _t = 0.0
+			elif _t > 8.0:
+				_check("saying goodbye starts the waking", false)
+				_step = 17; _t = 0.0
+		17:
+			if _t > 1.3 and _t - d <= 1.3:
+				var crossing: Node = _room.get_node("CaveCrossing")
+				_check("and you are home", not bool(crossing.call("is_away")))
+				var at: Vector4 = _player().global_position
+				var spot: Vector4 = CaveHill.MOUTH + Vector4(0, 0.05, 4.5, 0)
+				_check("in front of the cave", Vector2(at.x - spot.x, at.z - spot.z).length() < 0.6 and absf(at.w) < 0.05, "at %s" % at)
+				var up: Vector4 = (_player().get_node("Avatar") as Node4D).basis.y
+				_check("lying on your back", up.y < 0.3 and up.z > 0.7, "avatar up %s" % up)
+				_save(0, "wake")
+			if _t > 2.6 and _t - d <= 2.6:
+				_save(1, "wake")
+			if _t > 4.0:
+				var up: Vector4 = (_player().get_node("Avatar") as Node4D).basis.y
+				_check("and up again", up.y > 0.99, "avatar up %s" % up)
+				_check("walking again", _player().is_physics_processing())
+				var thought: Node = _room.get_node("UI/ThoughtBox")
+				_check("wondering what that was", thought.visible and String(thought.get("_full")) == "...What was that?", String(thought.get("_full")))
+				_save(2, "wake")
 				print("DREAMER: %s" % ("ALL PASS" if _failed == 0 else "%d FAILED" % _failed))
 				quit()
 				return true
