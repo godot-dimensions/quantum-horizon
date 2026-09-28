@@ -24,6 +24,8 @@ extends SceneTree
 ## Optional arguments after `--`:
 ##   norock=1   strip the voxel rock's colliders before measuring, to see what they cost
 ##   frames=N   how many frames to measure (default 300)
+##   drop=A,B   remove these nodes (paths from the scene root) before the first frame, to
+##              see what they cost - e.g. drop=World/Hills
 
 const SCENE := "res://ramon/chickenpen/chickenpen.tscn"
 const WARMUP := 150
@@ -31,6 +33,7 @@ const WARMUP := 150
 var _room: Node
 var _frames: int = 300
 var _norock: bool = false
+var _drop: PackedStringArray = []
 var _f: int = 0
 var _last: int = 0
 var _times: PackedFloat64Array = []
@@ -45,9 +48,17 @@ func _initialize() -> void:
 			_frames = int(kv[1])
 		elif kv.size() == 2 and kv[0] == "norock":
 			_norock = kv[1] == "1"
+		elif kv.size() == 2 and kv[0] == "drop":
+			_drop = kv[1].split(",")
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	Engine.max_fps = 0
 	_room = load(SCENE).instantiate()
+	for path in _drop:
+		var gone: Node = _room.get_node_or_null(path)
+		print("   dropped %s" % path if gone != null else "   no node %s to drop" % path)
+		if gone != null:
+			gone.get_parent().remove_child(gone)
+			gone.free()
 	root.add_child(_room)
 	current_scene = _room
 	physics_frame.connect(func() -> void: _ticks_this_frame += 1)
@@ -103,3 +114,5 @@ func _report() -> void:
 	print("   mean %.2f ms   (%.1f fps)" % [mean, 1000.0 / mean])
 	print("   p50 %.2f   p95 %.2f   p99 %.2f   worst %.2f ms" % [sorted[n / 2], sorted[int(n * 0.95)], sorted[int(n * 0.99)], sorted[n - 1]])
 	print("   physics ticks per frame %.2f   (Godot caps it at %d)" % [float(tick_total) / n, Engine.max_physics_steps_per_frame])
+	print("   video memory %.0f MB   (buffers %.0f MB)" % [Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
+		Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / 1048576.0])
