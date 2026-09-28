@@ -91,7 +91,7 @@ preloads the other. `sandbox/shooting_gallery/shooting_gallery.tscn` is untouche
 | Cave (walls, floor, props, the start of the way through W) | 81,951 tetrahedra, bakes in 9.5 s (65,313 before the way through W) |
 | The far room and the tunnel to it (`cave_far.res`, its own mesh) | 61,126 tetrahedra, bakes in 7.5 s |
 | Cave frame, with the far room | **1.32 ms** mean (756 fps), p99 2.28 - against 0.96 before it |
-| Video memory in the cave, pen resident | **756 MB**, 828 MB with the far room streamed in (626 this morning). An empty window is 70 MB and the pen alone 655 MB, 391 MB of it the 4D meshes' vertex buffers |
+| Video memory in the cave, pen resident | **549 MB** in the chamber, with the pen's mountains and cave hill let go (`pen_scenery_release_4d.gd`); 756 MB in the tunnel by the way out, where they are kept; 828 MB with the far room streamed in. An empty window is 70 MB and the pen alone 645-655 MB, about 376 MB of it the 4D meshes (308,000 tetrahedra, 56% of them in those two) |
 | The cube on the plinth | 8⁴ = 4,096 points at 0.8 m; 6,000 tetrahedra whole, 6,480 after five blows; 544 surface colliders whole, 522 after five blows; **184–208 ms a blow** |
 | The slab it replaced | 10⁴ = 10,000 points at 0.66 m; 1,368 tetrahedra whole; 63 colliders; 172 ms a blow (its "363 after five blows" counted colliders already queued for freeing) |
 | Pen frame, from the spawn point | **2.69 ms** mean (371 fps), p99 3.82 - against 2.60 before the hills and 2.46 this morning |

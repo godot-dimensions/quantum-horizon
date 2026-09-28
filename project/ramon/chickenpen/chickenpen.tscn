@@ -74,6 +74,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cave_fade_4d.gd" id="cave_fade"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_range_shooting_4d.gd" id="range_shooting"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_ui_scale_4d.gd" id="ui_scale"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_scenery_release_4d.gd" id="scenery_release"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 shader_parameter/horizon_color = Color(0.98, 0.71, 0.35, 1)
@@ -5206,6 +5207,9 @@ script = ExtResource("range_shooting")
 
 [node name="UiScale" type="Node" parent="Systems"]
 script = ExtResource("ui_scale")
+
+[node name="SceneryRelease" type="Node" parent="Systems"]
+script = ExtResource("scenery_release")
 
 [node name="Game" type="Node" parent="Systems"]
 script = ExtResource("pen_game")
