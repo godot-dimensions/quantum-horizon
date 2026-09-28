@@ -52,8 +52,20 @@ func _ready() -> void:
 		Vector4(hi.x - lo.x, 1.0, hi.z - lo.z, hi.w - lo.w))
 	for box in _recipe.solid_boxes():
 		_add_box(body, box[0], box[1])
-	# The orbit camera's own ray only sees colliders, and these walls have none.
-	_rig = get_node_or_null(str(player_path) + "/CameraRig")
+	_claim_camera()
+
+
+## The orbit camera's own ray only sees colliders, and these walls have none. Claimed on
+## every arrival, not just the first: the crossing keeps the cave between visits and puts
+## it back in the tree, which does not run _ready again.
+func _enter_tree() -> void:
+	if is_node_ready():
+		_claim_camera()
+
+
+func _claim_camera() -> void:
+	if _rig == null:
+		_rig = get_node_or_null(str(player_path) + "/CameraRig")
 	if _rig != null:
 		_rig.set("clearance_provider", self)
 

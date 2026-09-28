@@ -26,6 +26,8 @@ extends SceneTree
 ##   frames=N   how many frames to measure (default 300)
 ##   drop=A,B   remove these nodes (paths from the scene root) before the first frame, to
 ##              see what they cost - e.g. drop=World/Hills
+##   cave=1     go into the cave through the pen's crossing first, and measure standing at
+##              the mouth of the chamber looking at the plinth
 
 const SCENE := "res://ramon/chickenpen/chickenpen.tscn"
 const WARMUP := 150
@@ -34,6 +36,7 @@ var _room: Node
 var _frames: int = 300
 var _norock: bool = false
 var _drop: PackedStringArray = []
+var _cave: bool = false
 var _f: int = 0
 var _last: int = 0
 var _times: PackedFloat64Array = []
@@ -50,6 +53,8 @@ func _initialize() -> void:
 			_norock = kv[1] == "1"
 		elif kv.size() == 2 and kv[0] == "drop":
 			_drop = kv[1].split(",")
+		elif kv.size() == 2 and kv[0] == "cave":
+			_cave = kv[1] == "1"
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	Engine.max_fps = 0
 	_room = load(SCENE).instantiate()
@@ -85,6 +90,16 @@ func _strip_rock() -> int:
 func _process(_d: float) -> bool:
 	_f += 1
 	var now: int = Time.get_ticks_usec()
+	if _cave and _f == 10:
+		_room.get_node("CaveCrossing").call("go")
+	if _cave and _f == 20:
+		for child in _room.get_children():
+			if child.name == "Cave":
+				var p := _room.get_node("Player") as CharacterBody4D
+				p.global_position = (child as Node4D).global_position + Vector4(0.0, 0.05, -24.5, 0.0)
+				var rig: Node = _room.get_node("Player/CameraRig")
+				rig.set("yaw", 0.0)
+				rig.call("_apply")
 	if _f == WARMUP and _norock:
 		print("   stripped %d collision objects from the rock" % _strip_rock())
 	if _f > WARMUP:
@@ -110,7 +125,7 @@ func _report() -> void:
 	for t in _ticks:
 		tick_total += t
 	var n: int = _times.size()
-	print("   frames %d%s" % [n, "   (rock colliders stripped)" if _norock else ""])
+	print("   frames %d%s%s" % [n, "   (rock colliders stripped)" if _norock else "", "   (in the cave)" if _cave else ""])
 	print("   mean %.2f ms   (%.1f fps)" % [mean, 1000.0 / mean])
 	print("   p50 %.2f   p95 %.2f   p99 %.2f   worst %.2f ms" % [sorted[n / 2], sorted[int(n * 0.95)], sorted[int(n * 0.99)], sorted[n - 1]])
 	print("   physics ticks per frame %.2f   (Godot caps it at %d)" % [float(tick_total) / n, Engine.max_physics_steps_per_frame])

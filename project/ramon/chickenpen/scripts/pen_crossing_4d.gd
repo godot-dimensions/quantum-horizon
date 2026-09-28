@@ -46,6 +46,13 @@ extends Node
 ## Turn the camera on the way home, to face away from where you went in.
 @export var face_on_return: bool = false
 @export var return_yaw_degrees: float = 180.0
+## Keep the place between visits instead of building it afresh each time. The theatre is
+## rebuilt every visit, which is right for a show. The cave is not a show: a slab you have
+## dug into should still have the hole in it next time, and a seam you have emptied should
+## stay empty - rebuilt, it came back whole with six fresh pieces of gold, which was a way
+## to print money. Kept, it is taken out of the tree on the way home and put back on the
+## next visit exactly as it was.
+@export var keep_scene: bool = false
 ## Other crossings that, while away, make this one stay shut - so the cave's key does not
 ## open a cave on top of the theatre.
 @export var blocked_by: Array[NodePath] = []
@@ -65,6 +72,8 @@ extends Node
 @export var stage_before_testing: bool = true
 
 var _theatre: Node
+## The place, parked between visits, when keep_scene is on.
+var _kept: Node
 var _asleep: Array[Node] = []
 var _hidden: Array[CanvasItem] = []
 var _was_at := Vector4.ZERO
@@ -168,12 +177,19 @@ func go() -> void:
 		if branch is Node4D:
 			(branch as Node4D).visible = false
 		_put_away(branch)
-	_theatre = theatre_scene.instantiate()
-	get_tree().current_scene.add_child(_theatre)
+	if _kept != null and is_instance_valid(_kept):
+		_theatre = _kept
+		_kept = null
+		get_tree().current_scene.add_child(_theatre)
+		# Its own way out was used on the way home last time.
+		_rearm(_theatre)
+	else:
+		_theatre = theatre_scene.instantiate()
+		get_tree().current_scene.add_child(_theatre)
 	# The way home, connected here rather than inside the theatre - the theatre has no
 	# business knowing what it was opened from.
 	var exit: Node = _theatre.get_node_or_null("ExitArch")
-	if exit != null and exit.has_signal("entered"):
+	if exit != null and exit.has_signal("entered") and not exit.is_connected("entered", come_back):
 		exit.connect("entered", come_back)
 	if bring_player and player != null and _theatre.has_method("arrival"):
 		player.global_position = _theatre.call("arrival")
@@ -184,7 +200,11 @@ func go() -> void:
 func come_back() -> void:
 	if not is_away():
 		return
-	_theatre.queue_free()
+	if keep_scene:
+		_theatre.get_parent().remove_child(_theatre)
+		_kept = _theatre
+	else:
+		_theatre.queue_free()
 	_theatre = null
 	for branch in _asleep:
 		if not is_instance_valid(branch):

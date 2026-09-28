@@ -113,6 +113,17 @@ func _ready() -> void:
 		_tags.append(get_node_or_null(path) as WorldTag4D)
 	for path in figure_paths:
 		_figures.append(get_node_or_null(path))
+	_listen()
+
+
+## Connected on every arrival - the cave is kept between visits (pen_crossing_4d keep_scene)
+## and comes back into the tree without _ready.
+func _enter_tree() -> void:
+	if is_node_ready():
+		_listen()
+
+
+func _listen() -> void:
 	var pick: Node = get_node_or_null(pickaxe_path)
 	if pick != null and pick.has_signal("mined") and not pick.is_connected("mined", _on_mined):
 		pick.connect("mined", _on_mined)

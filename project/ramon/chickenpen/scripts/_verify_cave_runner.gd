@@ -92,6 +92,11 @@ func _physics_process(_d: float) -> bool:
 			_check("the quest line for the hill ticks", QUESTS._visited.has("cave"))
 			var bounds: Node = _room.get_node("Systems/Bounds")
 			_check("the field's own bounds are asleep", bounds.process_mode == Node.PROCESS_MODE_DISABLED)
+			var sfx: Node = _room.get_node("Systems/Sfx")
+			var cave_bed: AudioStreamPlayer = sfx.get_node_or_null("CaveBed")
+			var farm_bed: AudioStreamPlayer = sfx.get_node_or_null("Ambience")
+			_check("the cave's music plays and the farm is quiet", cave_bed != null and cave_bed.playing and (farm_bed == null or not farm_bed.playing),
+				"cave %s, farm %s" % [cave_bed != null and cave_bed.playing, farm_bed != null and farm_bed.playing])
 			# Walk into a wall: stand well inside the rock beside the corridor.
 			_hold(_cave.global_position + Vector4(6.0, 0.05, -14.0, 0.0))
 			_step = 2
@@ -159,9 +164,13 @@ func _physics_process(_d: float) -> bool:
 			_step = 5
 			_wait = 8
 		5:
-			_check("the daylight takes you home", _find_cave() == null or _find_cave().is_queued_for_deletion())
+			_check("the daylight takes you home", _find_cave() == null)
 			var world: Node4D = _room.get_node("World")
 			_check("with the field back on", world.visible and world.process_mode == Node.PROCESS_MODE_INHERIT)
+			var sfx: Node = _room.get_node("Systems/Sfx")
+			var cave_bed: AudioStreamPlayer = sfx.get_node_or_null("CaveBed")
+			var farm_bed: AudioStreamPlayer = sfx.get_node_or_null("Ambience")
+			_check("and the farm's sound back, the cave's gone", (farm_bed == null or farm_bed.playing) and (cave_bed == null or not cave_bed.playing))
 			var p := _player()
 			var mouth_z: float = CaveHill.MOUTH.z
 			_check("set down in the mouth of the cave", absf(p.global_position.x - CaveHill.MOUTH.x) < 3.0 and p.global_position.z > mouth_z - 6.5 and p.global_position.z < mouth_z + 1.0, "at %s" % p.global_position)
@@ -174,7 +183,20 @@ func _physics_process(_d: float) -> bool:
 			_step = 6
 			_wait = 10
 		6:
-			_check("the hill works a second time", _find_cave() != null)
+			var again: Node4D = _find_cave()
+			_check("the hill works a second time", again != null)
+			if again == null:
+				return _done()
+			_check("and it is the same cave, kept", again == _cave)
+			var left: int = int(again.get_node("Gold").call("left_in_the_rock"))
+			_check("with the gold you took still gone", left == 5, "%d pieces left in the slab" % left)
+			_check("and the researchers still remember", int(again.get_node("Systems/Murmurs").call("blows")) > 0)
+			var exit: Node4D = again.get_node("ExitArch")
+			_hold(exit.global_position + Vector4(0.0, 0.05, -0.6, 0.0))
+			_step = 7
+			_wait = 8
+		7:
+			_check("and the daylight works a second time", _find_cave() == null and _room.get_node("World").visible)
 			return _done()
 	return false
 

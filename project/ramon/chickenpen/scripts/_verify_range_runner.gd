@@ -79,6 +79,8 @@ func _process(_d: float) -> bool:
 			_check("its key brings back the same pen", current_scene == _room and _room.is_inside_tree())
 			_check("with the belt as it was", bool(_room.get_node("UI/Inventory").call("has_item", "found_watch")))
 			_check("and the pen's camera in charge", bool(_room.get_node("Player/CameraRig/Pitch/Camera4D").get("current")))
+			var farm_bed: AudioStreamPlayer = _room.get_node("Systems/Sfx").get_node_or_null("Ambience")
+			_check("and the farm's sound back on", farm_bed == null or farm_bed.playing)
 			_check("and the way home taken down", not root.has_meta("chickenpen_way_home"))
 			var gone := true
 			for child in root.get_children():

@@ -7,6 +7,7 @@ extends SceneTree
 ## Nothing in the engine will ever tell you; a player finds it by picking the third reply.
 
 const Script4 := preload("res://ramon/chickenpen/scripts/professor_script.gd")
+const CaveHill := preload("res://ramon/chickenpen/terrain/pen_cave_hill_4d.gd")
 
 var _root: Node
 var _f := 0
@@ -30,18 +31,22 @@ func _process(_d) -> bool:
 
 	print("\n--- the man ---")
 	var prof: Node4D = _root.get_node_or_null("World/Professor") as Node4D
-	_check("he is in the scene", prof != null, "beside the rock")
+	_check("he is in the scene", prof != null, "by the hill")
 	if prof == null:
 		quit(1); return true
-	var rock: Node4D = _root.get_node("World/MiningRock")
-	var gap: float = Vector2(prof.global_position.x - rock.global_position.x,
-		prof.global_position.z - rock.global_position.z).length()
-	# BESIDE IT, NOT IN IT. The rock's solid half-width is grid * cell / 2 * box_fill,
-	# which is 2.08 here - the first placement had him 2.56 from its centre and therefore
-	# standing inside the boulder, which a distance check alone happily passed.
-	var solid: float = float(rock.get("grid_size")) * float(rock.get("cell_size")) 		* 0.5 * float(rock.get("box_fill_fraction"))
-	_check("and he is standing beside it, not in it", gap > solid + 0.6 and gap < 5.5,
-		"%.2f from its centre, and it is solid to %.2f" % [gap, solid])
+	# THE ROCK HAS GONE INTO THE HILL (28 Sept 2026), and he stands in front of the hole it
+	# went into, pointing people at it - near the mouth, and clear of the rock face and the
+	# hill's colliders, which a distance check alone would not prove.
+	var hill = CaveHill.new()
+	var mouth: Vector4 = CaveHill.MOUTH
+	var gap: float = Vector2(prof.global_position.x - mouth.x, prof.global_position.z - mouth.z).length()
+	var clear := true
+	for box in hill.solid_boxes():
+		var d: Vector4 = (prof.global_position + Vector4(0.0, 0.9, 0.0, 0.0) - box[0]).abs() - (box[1] as Vector4) * 0.5
+		if d.x < 0.3 and d.y < 0.0 and d.z < 0.3 and d.w < 0.3:
+			clear = false
+	_check("he stands in front of the cave mouth", gap > 3.0 and gap < 9.0 and clear,
+		"%.2f from the mouth, %s" % [gap, "clear of the hill" if clear else "INSIDE the hill"])
 	_check("with a helmet on", prof.get_node_or_null("Figure/Tunic/Head/Helmet") != null,
 		"and a lamp: %s" % [prof.get_node_or_null("Figure/Tunic/Head/Lamp") != null])
 	_check("and a pick", prof.get_node_or_null("Pick/Collar") != null, "over his shoulder")

@@ -5605,6 +5605,7 @@ asleep_paths = Array[NodePath]([NodePath("../World"), NodePath("../Chickens"), N
 farm_camera_path = NodePath("../Player/CameraRig/Pitch/Camera4D")
 player_path = NodePath("../Player")
 bring_player = true
+keep_scene = true
 return_offset = Vector4(0, 0, 4, 0)
 face_on_return = true
 blocked_by = Array[NodePath]([NodePath("../Crossing")])

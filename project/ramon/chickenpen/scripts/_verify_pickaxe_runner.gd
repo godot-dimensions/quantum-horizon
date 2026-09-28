@@ -7,6 +7,9 @@ extends SceneTree
 ## and the carve all come from project/ramon/VoxelMining/ unchanged; what is new is the
 ## part that belongs to this scene - which tool is in hand and where the swing starts from
 ## - so the test aims a real raycast at the real rock and counts colliders either side.
+##
+## THE ROCK IS IN THE CAVE NOW (28 Sept 2026), stood on end as the monolith. The test walks
+## in through the pen's cave crossing and swings the pen's own pickaxe at it there.
 
 var _root: Node
 var _f := 0
@@ -62,8 +65,13 @@ func _shell(voxels: Node) -> Array:
 
 func _process(_d) -> bool:
 	_f += 1
+	if _f == 20 and _step == 0:
+		_root.get_node("CaveCrossing").call("go")
 	if _f < 70: return false
-	var rock: Node4D = _root.get_node_or_null("World/MiningRock") as Node4D
+	var rock: Node4D = null
+	for child in _root.get_children():
+		if child.name == "Cave":
+			rock = child.get_node_or_null("Monolith") as Node4D
 	if rock == null:
 		print("   FAIL there is no rock in the scene")
 		quit(1); return true
@@ -95,9 +103,11 @@ func _process(_d) -> bool:
 				String(belt.call("selected_effect")) == "", "hand is empty")
 			belt.call("_choose", 0)
 
-			# Stand in front of the rock and look straight at it.
+			# Stand in front of the rock and look straight at it: half a metre from its
+			# face, which on the slab is its thin side.
 			var middle: Vector4 = _rock_middle(voxels)
-			player.position = Vector4(middle.x, 1.2, middle.z + 2.2, middle.w)
+			var face: float = float(rock.get("grid_size")) * 0.5 * float(rock.get("box_fill_fraction")) 				* float(rock.get("cell_size")) * float((rock.get("proportions") as Vector4).z)
+			player.position = Vector4(middle.x, 1.6, middle.z + face + 0.5, middle.w)
 			player.set("linear_velocity", Vector4.ZERO)
 			var to: Vector4 = middle - player.global_position
 			rig.set("yaw", atan2(-to.x, -to.z))

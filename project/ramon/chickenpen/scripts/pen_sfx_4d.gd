@@ -254,6 +254,23 @@ const SFX := &"SFX"
 @export var farm_stops_inside: bool = true
 @export var crossing_path: NodePath = NodePath("../../Crossing")
 
+@export_group("The cave")
+## Underground the farm stops too - chickens and a meditation pad do not carry into a hill -
+## and the cave's own music takes over: Ramon's pick, "Follow Me Nowhere" (28 Sept).
+##
+## FROM THE TOP EACH TIME, THEN LOOPED FROM HALF A MINUTE IN. The piece opens with nine
+## seconds at about -54 dBFS and builds, which is the right sound for walking into the
+## dark, so every visit starts there. Looping the whole file would drop that silence into
+## the middle of a long stay, so the loop runs from 30 s (about -21 dBFS) to four seconds
+## before the end (about -17), where the recording's own fade-out starts - the nearest two
+## levels in the piece, measured from the file, not by ear.
+@export var cave_crossing_path: NodePath = NodePath("../../CaveCrossing")
+@export_file("*.wav") var cave_bed_file: String = "res://ramon/chickenpen/audio/music/Michael Vignola - Follow Me Nowhere.wav"
+@export_range(0.25, 2.0, 0.01) var cave_bed_pitch: float = 1.0
+@export_range(-60.0, 6.0, 0.5) var cave_bed_db: float = -12.0
+@export_range(0.0, 120.0, 0.5) var cave_bed_loop_from: float = 30.0
+@export_range(0.0, 60.0, 0.5) var cave_bed_trim_tail: float = 4.0
+
 @export_group("Crows")
 ## A murder of crows kicking off somewhere out of sight, now and then.
 @export var crows_enabled: bool = true
@@ -295,6 +312,9 @@ var _crossing: Node
 var _been_to_the_cinema: bool = false
 var _cinema_bed: AudioStreamPlayer
 var _inside: bool = false
+var _cave_crossing: Node
+var _cave_bed: AudioStreamPlayer
+var _in_cave: bool = false
 var _music: AudioStreamPlayer
 var _cheer: AudioStreamPlayer
 var _strum: AudioStreamPlayer
@@ -321,7 +341,39 @@ func _ready() -> void:
 	_start_stone()
 	_start_door()
 	_start_cinema()
+	_start_cave()
 	_start_crows()
+
+
+## Back from the shooting gallery. The pen was taken out of the tree while you were there
+## (pen_range_trip_4d.gd), and a player leaving the tree stops playing and does not start
+## again on its own when it comes back - so the farm would come home silent.
+func _enter_tree() -> void:
+	if not is_node_ready() or _inside or _in_cave:
+		return
+	if _bed != null and not _bed.playing:
+		_bed.play(ambience_loop_trim)
+	if _music != null and not _music.playing:
+		_music.play(music_trim_head)
+
+
+func _start_cave() -> void:
+	_cave_crossing = get_node_or_null(cave_crossing_path)
+	if _cave_crossing == null or not _cave_crossing.has_method("is_away"):
+		return
+	var wav := _load(cave_bed_file, "the cave's music") as AudioStreamWAV
+	if wav == null:
+		return
+	# A copy, so the loop points set here cannot move anybody else's use of the file.
+	wav = wav.duplicate()
+	_loop_between(wav, cave_bed_loop_from, cave_bed_trim_tail)
+	_cave_bed = AudioStreamPlayer.new()
+	_cave_bed.name = "CaveBed"
+	_cave_bed.bus = MUSIC
+	_cave_bed.stream = wav
+	_cave_bed.pitch_scale = cave_bed_pitch
+	_cave_bed.volume_db = cave_bed_db
+	add_child(_cave_bed)
 
 
 func _start_bed() -> void:
@@ -608,9 +660,14 @@ func _process(delta: float) -> void:
 		if away != _inside:
 			_inside = away
 			_crossed(away)
+	if _cave_crossing != null:
+		var below: bool = bool(_cave_crossing.call("is_away"))
+		if below != _in_cave:
+			_in_cave = below
+			_went_underground(below)
 	if _crow == null:
 		return
-	if _crow_left > 0.0 and not _inside:
+	if _crow_left > 0.0 and not _inside and not _in_cave:
 		_crow_left -= delta
 		var window: float = minf(crow_event_seconds, _crow_length)
 		var done: float = window - _crow_left
@@ -628,7 +685,7 @@ func _process(delta: float) -> void:
 	# The clock only runs outdoors. Stopping the player alone would leave the timer to
 	# expire in the theatre and fire the moment you stepped back out, which is a crow
 	# waiting behind the door rather than weather.
-	if _inside:
+	if _inside or _in_cave:
 		return
 	_crow_wait -= delta
 	if _crow_wait <= 0.0:
@@ -688,6 +745,27 @@ func _crossed(away: bool) -> void:
 	if _bed != null and not _bed.playing:
 		# Back in from the loop points rather than from the top, so coming home does not
 		# start with the recording's quiet opening.
+		_bed.play(ambience_loop_trim)
+	if _music != null and not _music.playing:
+		_music.play(music_trim_head)
+
+
+## Into the hill and out again: the farm off and the hum on, then the other way round.
+func _went_underground(below: bool) -> void:
+	if below:
+		if _bed != null:
+			_bed.stop()
+		if _music != null:
+			_music.stop()
+		if _crow != null:
+			_crow.stop()
+		_crow_left = 0.0
+		if _cave_bed != null:
+			_cave_bed.play(0.0)
+		return
+	if _cave_bed != null:
+		_cave_bed.stop()
+	if _bed != null and not _bed.playing:
 		_bed.play(ambience_loop_trim)
 	if _music != null and not _music.playing:
 		_music.play(music_trim_head)

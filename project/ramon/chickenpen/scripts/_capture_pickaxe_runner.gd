@@ -1,6 +1,9 @@
 extends SceneTree
 
 ## The rock before and after a few swings, with the pickaxe in hand in the belt.
+##
+## The rock is the monolith in the cave now (28 Sept 2026): this goes in through the pen's
+## cave crossing and swings the pen's own pickaxe at it there. Windowed.
 
 var _root: Node
 var _f := 0
@@ -26,6 +29,8 @@ func _middle(voxels: Node) -> Vector4:
 
 func _process(_d) -> bool:
 	_f += 1
+	if _f == 20:
+		_root.get_node("CaveCrossing").call("go")
 	if _f < 80: return false
 	if _pending != "":
 		root.get_texture().get_image().save_png("res://smoke_test_output/pickaxe_%s.png" % _pending)
@@ -33,7 +38,10 @@ func _process(_d) -> bool:
 		_pending = ""
 		return false
 
-	var rock: Node4D = _root.get_node("World/MiningRock")
+	var rock: Node4D = null
+	for child in _root.get_children():
+		if child.name == "Cave":
+			rock = child.get_node("Monolith")
 	var voxels: Node = rock.get_node("Voxels")
 	var belt: Node = _root.get_node("UI/Inventory")
 	var pick: Node = _root.get_node("Systems/Pickaxe")
@@ -48,7 +56,9 @@ func _process(_d) -> bool:
 		belt.call("_choose", 0)
 
 	var middle: Vector4 = _middle(voxels)
-	player.global_position = Vector4(middle.x, 1.2, middle.z + 2.2, middle.w)
+	# Half a metre from the slab's thin face, on the plinth.
+	var face: float = float(rock.get("grid_size")) * 0.5 * float(rock.get("box_fill_fraction")) 		* float(rock.get("cell_size")) * float((rock.get("proportions") as Vector4).z)
+	player.global_position = Vector4(middle.x, 1.6, middle.z + face + 0.5, middle.w)
 	player.set("linear_velocity", Vector4.ZERO)
 	var to: Vector4 = middle - player.global_position
 	rig.set("yaw", atan2(-to.x, -to.z))
