@@ -44,6 +44,16 @@ extends Control
 ##
 ## IT READS, IT DOES NOT DRIVE. No snap-home button, for the same reason the prism has
 ## none: arriving on a slice is the thing you are meant to have done.
+##
+## LANDMARKS, AND SOMEWHERE ELSE TO STAND. Anything in the group "slice_dial_landmark" is
+## drawn like a person - its own (x, z), a stem up to its own w, a rung where your slice
+## passes, a ring when your slice goes through it - with an archway for a figure, or a cube
+## if its "dial_icon" says so, and its "dial_label" beside it (metadata, with "dial_color"
+## and "dial_tolerance"). The cave's way through W is one, and the cube on the plinth (Ramon, 28 Sept: "the doorway should also be visible on the map so
+## you can align to it and find it"). And a node in "slice_dial_anchor" takes the pen's
+## place as what the dial is centred on and levels against, while it is in the tree: the
+## cave hangs a kilometre from the pen, and anchored on the pen the dial pushed you out to
+## its rim and everything round you with you.
 
 @export var player_path: NodePath
 ## The pen, whose footprint is the fixed half of the picture.
@@ -138,6 +148,8 @@ extends Control
 
 ## Extents used if the fence cannot be read.
 const FALLBACK := Rect2(-5.0, -4.5, 10.0, 9.0)
+const LANDMARK_GROUP := &"slice_dial_landmark"
+const ANCHOR_GROUP := &"slice_dial_anchor"
 ## ISOMETRIC, AND NOT THE OBLIQUE VIEW THIS STARTED WITH.
 ##
 ## Any fixed projection from three dimensions to two collapses one direction, and every
@@ -276,6 +288,12 @@ func _draw() -> void:
 
 	var pen: Rect2 = _footprint()
 	var anchor: Vector2 = pen.position + pen.size * 0.5
+	# What the reading levels against: the pen, or the place standing in for it.
+	var level: Rect2 = pen
+	var elsewhere: Node4D = _local_anchor()
+	if elsewhere != null:
+		anchor = Vector2(elsewhere.global_position.x, elsewhere.global_position.z)
+		level = Rect2(anchor - pen.size * 0.5, pen.size)
 	var mid: Vector2 = _view_centre(anchor, origin, radius)
 
 	# The sheet, sized to a share of the dial and concentric with it.
@@ -318,10 +336,13 @@ func _draw() -> void:
 
 	# THE READING STAYS ON THE PEN'S OWN CORNERS. "Am I on the pen's slice" is the
 	# question worth answering, and it is asked about the pen, not about whatever patch
-	# of slice happens to be under the dial.
+	# of slice happens to be under the dial. (Or the anchor's, where there is one.)
 	var heights: Array = []
 	var worst: float = 0.0
-	for c in corners:
+	var level_corners: Array = [Vector2(level.position.x, level.position.y),
+		Vector2(level.end.x, level.position.y), Vector2(level.end.x, level.end.y),
+		Vector2(level.position.x, level.end.y)]
+	for c in level_corners:
 		var pen_w: float = _w_above(c.x, c.y)
 		if is_nan(pen_w):
 			_label(font, "your slice is edge-on to W - drag back",
@@ -339,6 +360,7 @@ func _draw() -> void:
 	# aligned when they are not.
 	var birds: Array = _flock()
 	var folk: Array = _folk()
+	var marks: Array = _landmarks()
 	var sheet_heights: Array = []
 	for c in sheet_corners:
 		sheet_heights.append(_w_above(c.x, c.y))
@@ -347,6 +369,8 @@ func _draw() -> void:
 		everything.append(bird[2])
 	for who in folk:
 		everything.append(who[2])
+	for mark in marks:
+		everything.append(mark[2])
 	var fitted_all: Array = _fitted(everything)
 	var drawn: Array = fitted_all.slice(0, sheet_corners.size())
 
@@ -392,9 +416,19 @@ func _draw() -> void:
 		fades.append(fade)
 		tags.append(_draw_person(who[0], who[1], fitted_all[at + i], who[4],
 			bool(who[5]), shrink, colour, origin, mid, fade) if fade > 0.01 else Vector2.ZERO)
+	at += folk.size()
+	for i in marks.size():
+		var mark: Array = marks[i]
+		var fade: float = _fade(Vector2(mark[0], mark[1]), origin, mid, radius)
+		fades.append(fade)
+		tags.append(_draw_landmark(mark[0], mark[1], fitted_all[at + i], mark[4], mark[5],
+			mark[6], shrink, colour, origin, mid, fade) if fade > 0.01 else Vector2.ZERO)
 	for i in folk.size():
 		if fades[i] > 0.4:
 			_name_tag(font, String(folk[i][3]), tags[i], folk[i][4])
+	for i in marks.size():
+		if fades[folk.size() + i] > 0.4:
+			_name_tag(font, String(marks[i][3]), tags[folk.size() + i], marks[i][4])
 
 	_draw_you(shrink, origin, mid, u)
 
@@ -605,6 +639,86 @@ func _folk() -> Array:
 		out.append([at.x, at.z, at.w, who.name, _people_colors[slot],
 			_people_are_cats[slot]])
 	return out
+
+
+## The node standing in for the pen as the dial's middle, if one is in the tree.
+func _local_anchor() -> Node4D:
+	for node in get_tree().get_nodes_in_group(ANCHOR_GROUP):
+		var n := node as Node4D
+		if n != null and n.is_inside_tree():
+			return n
+	return null
+
+
+## The landmarks, as [x, z, w, label, colour, tolerance, icon].
+func _landmarks() -> Array:
+	var out: Array = []
+	for node in get_tree().get_nodes_in_group(LANDMARK_GROUP):
+		var n := node as Node4D
+		if n == null or not n.is_inside_tree():
+			continue
+		var at: Vector4 = n.global_position
+		out.append([at.x, at.z, at.w, String(n.get_meta(&"dial_label", n.name)),
+			n.get_meta(&"dial_color", Color(0.62, 0.82, 1.0, 0.95)),
+			float(n.get_meta(&"dial_tolerance", home_tolerance)),
+			String(n.get_meta(&"dial_icon", "arch"))])
+	return out
+
+
+## A landmark: drawn like a person - stem, rung, a ring once your slice goes through it -
+## with an archway for the figure. Returns where it landed, for its name.
+func _draw_landmark(x: float, z: float, w: float, tint: Color, tolerance: float, icon: String,
+		shrink: float, plane_colour: Color, origin: Vector2, mid: Vector2, fade: float = 1.0) -> Vector2:
+	var u: float = _ui()
+	var foot: Vector2 = _plan(x, z, 0.0, origin, mid)
+	var head: Vector2 = _plan(x, z, w, origin, mid)
+	var true_w: float = _w_above(x, z)
+	var on_slice: bool = false
+	if not is_nan(true_w):
+		var rung: Vector2 = _plan(x, z, true_w * shrink, origin, mid)
+		draw_line(rung - Vector2(7.0 * u, 0.0), rung + Vector2(7.0 * u, 0.0),
+			Color(plane_colour.r, plane_colour.g, plane_colour.b, 0.5), 1.0)
+		on_slice = absf(true_w - w / maxf(shrink, 0.0001)) <= tolerance
+	var colour: Color = tint
+	colour.a *= fade
+	draw_line(foot, head, Color(colour.r, colour.g, colour.b, 0.35), 1.0)
+	draw_circle(foot, 2.0 * u, Color(colour.r, colour.g, colour.b, 0.4))
+	var middle: Vector2 = _cube_icon(head, colour, u * bird_size) if icon == "cube" 		else _arch_icon(head, colour, u * bird_size)
+	if on_slice:
+		draw_arc(middle, 13.0 * u * bird_size, 0.0, TAU, 24, home_color, 2.0, true)
+	return middle
+
+
+## A cube standing on the point, drawn the way the dial draws everything: its top a
+## diamond, its two near faces below it.
+func _cube_icon(at: Vector2, colour: Color, u: float) -> Vector2:
+	var s: float = 5.5 * u
+	var top: Vector2 = at + Vector2(0.0, -2.0 * s)
+	var diamond := PackedVector2Array([top + Vector2(0.0, -s * 0.5), top + Vector2(s, 0.0),
+		top + Vector2(0.0, s * 0.5), top + Vector2(-s, 0.0)])
+	var left := PackedVector2Array([diamond[3], diamond[2], diamond[2] + Vector2(0.0, 1.4 * s), diamond[3] + Vector2(0.0, 1.4 * s)])
+	var right := PackedVector2Array([diamond[2], diamond[1], diamond[1] + Vector2(0.0, 1.4 * s), diamond[2] + Vector2(0.0, 1.4 * s)])
+	draw_colored_polygon(left, Color(colour.r, colour.g, colour.b, colour.a * 0.55))
+	draw_colored_polygon(right, Color(colour.r, colour.g, colour.b, colour.a * 0.8))
+	draw_colored_polygon(diamond, colour)
+	for face in [diamond, left, right]:
+		draw_polyline(_closed(face), Color(1.0, 1.0, 1.0, 0.5 * colour.a), 1.0, true)
+	return top + Vector2(0.0, 0.5 * s)
+
+
+## An archway standing on the point: two jambs and a round top, the opening filled faintly
+## with its own colour, the way the real one is filled with light.
+func _arch_icon(at: Vector2, colour: Color, u: float) -> Vector2:
+	var half: float = 5.5 * u
+	var jamb: float = 8.0 * u
+	var outline := PackedVector2Array([at + Vector2(-half, 0.0), at + Vector2(-half, -jamb)])
+	for i in 9:
+		var a: float = PI + PI * float(i) / 8.0
+		outline.append(at + Vector2(0.0, -jamb) + Vector2(cos(a), sin(a)) * half)
+	outline.append(at + Vector2(half, 0.0))
+	draw_colored_polygon(outline, Color(colour.r, colour.g, colour.b, colour.a * 0.45))
+	draw_polyline(outline, colour, 1.8 * u, true)
+	return at + Vector2(0.0, -jamb * 0.8)
 
 
 ## One person: a blob rather than a head, so they cannot be mistaken for livestock, with

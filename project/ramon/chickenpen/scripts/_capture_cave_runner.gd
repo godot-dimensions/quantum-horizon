@@ -9,6 +9,7 @@ extends SceneTree
 ##                  only=N       just that shot
 ##                  strike=1     land a blow on the monolith before each shot, to see the
 ##                               researchers react
+##                  hud=1        keep the HUD - for the dial (the last two shots are for it)
 
 const SHOTS := [
 	# [stand at (x, z, w) in the cave, yaw degrees, pitch, slice xw degrees, distance]
@@ -28,6 +29,10 @@ const SHOTS := [
 	[Vector3(0.0, -30.0, 5.5), -33.0, 6.0, 90.0, 3.5],
 	[Vector3(0.0, -36.0, 16.0), 90.0, 6.0, 90.0, 3.0],
 	[Vector3(0.0, -36.0, 16.0), -90.0, 6.0, 90.0, 3.0],
+	# For the dial (hud=1): the way through W and the cube on it, on the slice you arrive
+	# in and with the slice turned toward the way through.
+	[Vector3(-2.0, -28.0, 0.0), 0.0, 8.0, 0.0, 4.0],
+	[Vector3(-2.0, -28.0, 0.0), 0.0, 8.0, 60.0, 4.0],
 ]
 
 var _room: Node
@@ -36,6 +41,7 @@ var _f := 0
 var _tag := "now"
 var _only := -1
 var _strike := false
+var _hud := false
 
 
 func _initialize() -> void:
@@ -46,6 +52,8 @@ func _initialize() -> void:
 			_only = int(a.substr(5))
 		elif a == "strike=1":
 			_strike = true
+		elif a == "hud=1":
+			_hud = true
 	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
 	root.add_child(_room)
 	current_scene = _room
@@ -67,7 +75,8 @@ func _process(_d: float) -> bool:
 			if child.name == "Cave":
 				_cave = child
 		print("   in the cave: %s   player at %s" % [_cave != null, player.global_position])
-		_hide_hud(_room.get_node("UI"))
+		if not _hud:
+			_hide_hud(_room.get_node("UI"))
 	if _f < 30 or _cave == null:
 		return false
 	var n: int = (_f - 30) / 45

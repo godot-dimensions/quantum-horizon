@@ -3,7 +3,7 @@ extends SceneTree
 ## Bakes the pen's terrain and saves it, so nothing is generated when the scene opens.
 ##
 ## Headless is fine - this only builds arrays and writes files.
-## Args (after --): what=hills | cave_hill | cave | mountains
+## Args (after --): what=hills | cave_hill | cave | cave_far | mountains
 ## "mountains" bakes with the parameters on the pen's World/Hills node, as its Bake button
 ## does, and writes mountains.res; "hills" is the first version, kept as the "Classic" style.
 ## Writes res://ramon/chickenpen/terrain/baked/<what>.res and reads it back to check that
@@ -33,6 +33,8 @@ func _initialize() -> void:
 			b = PenCaveHill.new().bake()
 		"cave":
 			b = CaveRock.new().bake()
+		"cave_far":
+			b = CaveRock.new().bake_far()
 		"mountains":
 			var room: Node = (load("res://ramon/chickenpen/chickenpen.tscn") as PackedScene).instantiate()
 			var hills: Node = room.get_node("World/Hills")

@@ -88,7 +88,10 @@ preloads the other. `sandbox/shooting_gallery/shooting_gallery.tscn` is untouche
 | Hill ring, first version ("Classic") | 61,440 tetrahedra, bakes in 0.7 s |
 | Voronoi mountains | 92,160 tetrahedra in 13 layers (about 113 MB of video memory, 36 MB more than Classic), bakes in 2.4 s |
 | Cave hill | 80,919 tetrahedra, bakes in 8.2 s |
-| Cave (walls, floor, props, the way through W) | 84,977 tetrahedra, bakes in 9.9 s (65,313 before the way through W) |
+| Cave (walls, floor, props, the start of the way through W) | 81,951 tetrahedra, bakes in 9.5 s (65,313 before the way through W) |
+| The far room and the tunnel to it (`cave_far.res`, its own mesh) | 61,126 tetrahedra, bakes in 7.5 s |
+| Cave frame, with the far room | **1.32 ms** mean (756 fps), p99 2.28 - against 0.96 before it |
+| Video memory in the cave, pen resident | **828 MB** (626 this morning) |
 | The cube on the plinth | 8⁴ = 4,096 points at 0.8 m; 6,000 tetrahedra whole, 6,480 after five blows; 544 surface colliders whole, 522 after five blows; **184–208 ms a blow** |
 | The slab it replaced | 10⁴ = 10,000 points at 0.66 m; 1,368 tetrahedra whole; 63 colliders; 172 ms a blow (its "363 after five blows" counted colliders already queued for freeing) |
 | Pen frame, from the spawn point | **2.69 ms** mean (371 fps), p99 3.82 - against 2.60 before the hills and 2.46 this morning |
@@ -202,7 +205,9 @@ and planted_feet ("FEET SLIP by 0.089", which Ramon has said is fine).
 | The hole on the left of the cave arch | A slit cut by the bake's own re-winding in the crease where rock meets turf; re-winding is off. And the height under the contoured block is cut back further, so its last cells no longer dip below where the block begins. |
 | The laptop washes out in the light | On the table at the back now, with its own light a touch stronger. |
 | The cube hovers over the plinth | It stood 0.40 m up (measured: lowest surface 1.90, plinth top 1.50); lowered with its gold, it now sits at exactly 1.50. |
-| An opening you only see turning W, with a glowing fill you can pass through | A passage out of the chamber's wall in +w beside the plinth, filled with a pale glowing sheet that has no collider, and a small room at the end. All of it past w = 6, so the slice you arrive in is unchanged; turn the slice through W on the corridor's line and it is there. Walking along +w from the chamber takes you through the sheet into the room (`_capture_way_through_w_runner.gd`). |
+| An opening you only see turning W, with a glowing fill you can pass through | A passage out of the chamber's wall in +w beside the plinth, filled with a pale glowing sheet that has no collider. All of it past w = 6, so the slice you arrive in is unchanged; turn the slice through W from anywhere by the plinth and it swings into view. Walking along +w from the chamber takes you through the sheet (`_capture_way_through_w_runner.gd`). |
+| On the map, so you can align to it and find it; the cube too | The dial draws landmarks - anything in the group `slice_dial_landmark` - on a stem to their own w with a rung where your slice passes and a ring when it goes through them: the way through W as an archway, the cube as a cube. In the cave the dial centres on the chamber (`slice_dial_anchor`) instead of on the pen a kilometre off. |
+| "A tunnel to another big room"; in this scene or a new one | In this scene - a new one would need a load and a jump at the sheet, and the whole point is walking through it - but baked as its own mesh. Twenty metres of tunnel along W to a round hall as big as the chamber at w = 36, with a ring of six standing stones spread through x, z and W, lit by lamps with no fittings (the cave's 4D lights only reach a few metres, so each stone has its own). |
 
 **Chirality** needs a different solution (the signs were its test case); left until
 Aaron's fence update lands.

@@ -69,13 +69,23 @@ const PLINTH_TOP := 1.5
 const CHUNKS := [
 	[Vector4(-4.6, -2.0, -28.5, -4.6), Vector4(4.6, 7.6, 10.5, 4.6), 12],
 	[Vector4(-16.0, -2.0, -52.0, -10.5), Vector4(16.0, 19.8, -19.5, 10.5), 15],
-	# The way through W, and the room at the end of it. Overlaps the chamber's grid from
-	# w 4.5 to 10.5, as the tunnel's does round the corridor's mouth.
-	[Vector4(-6.0, -2.0, -42.0, 4.5), Vector4(6.0, 7.5, -30.0, 19.5), 13],
+	# The start of the way through W. Overlaps the chamber's grid from w 4.5 to 10.5, as
+	# the tunnel's does round the corridor's mouth.
+	[Vector4(-8.5, -2.0, -42.0, 4.5), Vector4(8.5, 7.5, -30.0, 14.5), 12],
 ]
-## The whole cave's extent, for the floor and its collider.
+## The rest of the way through W and the far room, baked as a mesh of their own
+## (baked/cave_far.res, bake_far): they rebake on their own, and two meshes draw cheaper
+## than one of the same size put together.
+const FAR_CHUNKS := [
+	[Vector4(-8.5, -2.0, -42.0, 12.0), Vector4(8.5, 7.5, -30.0, 29.0), 13],
+	[Vector4(-16.5, -2.0, -52.5, 24.0), Vector4(16.5, 15.5, -19.5, 48.0), 15],
+]
+## The whole cave's extent, for the floor's collider.
 const LO := Vector4(-16.0, -2.0, -52.0, -10.5)
-const HI := Vector4(16.0, 19.8, 10.5, 19.5)
+const HI := Vector4(16.0, 19.8, 10.5, 48.0)
+## Where the near floor ends and the far one begins, along w - the same line, so the two
+## floors meet and do not overlap.
+const FLOOR_SPLIT_W := 13.0
 
 ## THE WAY THROUGH W (Ramon, 28 Sept: "can you place one opening when rotating the W
 ## somewhere ... a hole with maybe a glowing fill, that you can pass through?").
@@ -87,14 +97,30 @@ const HI := Vector4(16.0, 19.8, 10.5, 19.5)
 ## with it an opening in its wall, filled with a pale glowing sheet. The sheet has no
 ## collider; walk into it and you are through, walking along W into the room.
 ##
-## Where the sheet stands, as (x, z, w); the passage's span along w, its half-width in x
-## and z and its height; the room's centre and radii.
+## WIDE IN X, WHICH YOU NEVER SEE. With the slice turned a quarter through W, x is the
+## direction the slice is cut across, so what is drawn of the way through is its extent in
+## z, y and w - an arch 4.8 m wide. How far it reaches in x only decides where you can be
+## standing when you turn and still have it come into view: at 2.4 either side of the
+## corridor's line you had to be almost on that line; at 6 it comes round from anywhere by
+## the plinth.
+##
+## THE FAR ROOM (Ramon, 28 Sept: "when you enter the new doorway, you can enter a tunnel to
+## another big room?"). Past the sheet the passage runs on along W for twenty metres and
+## opens into a round hall as big as the chamber, far out at w = 36 - beside the chamber,
+## in the direction you cannot see. A ring of standing stones in it, spread through x, z
+## and W, so it is a different ring at every slice.
+##
+## Where the sheet stands, as (x, z, w); the passage's span along w, its half-widths in z
+## (the arch you see) and in x (where it can be seen from) and its height; the far room's
+## centre and radii, and how far out its stones stand.
 const W_DOOR := Vector3(0.0, -36.0, 8.8)
-const W_PASSAGE := Vector2(6.0, 12.5)
+const W_PASSAGE := Vector2(6.0, 28.0)
 const W_PASSAGE_HALF := 2.4
+const W_PASSAGE_REACH := 6.0
 const W_PASSAGE_HIGH := 3.8
-const W_ROOM := Vector4(0.0, 0.0, -36.0, 15.0)
-const W_ROOM_R := Vector4(3.5, 5.0, 3.5, 3.0)
+const W_ROOM := Vector4(0.0, 0.0, -36.0, 36.0)
+const W_ROOM_R := Vector4(13.0, 13.0, 13.0, 10.0)
+const W_STONES_OUT := 6.5
 const W_GLOW := Color(0.62, 0.82, 1.0)
 
 const ROCK := Color(0.31, 0.295, 0.28)
@@ -144,12 +170,12 @@ func air_density(p: Vector4) -> float:
 	# The way through W: a passage along w, then a room.
 	var before: float = maxf(0.0, p.w - W_PASSAGE.y)
 	var after: float = maxf(0.0, W_PASSAGE.x - p.w)
-	var u := Vector4((p.x - W_DOOR.x) / W_PASSAGE_HALF, p.y / W_PASSAGE_HIGH,
+	var u := Vector4((p.x - W_DOOR.x) / W_PASSAGE_REACH, p.y / W_PASSAGE_HIGH,
 		(p.z - W_DOOR.y) / W_PASSAGE_HALF, (before + after) / W_PASSAGE_HALF)
 	var passage: float = (1.0 - u.length()) * W_PASSAGE_HALF + 0.25 * rough
 	var r := Vector4((p.x - W_ROOM.x) / W_ROOM_R.x, (p.y - W_ROOM.y) / W_ROOM_R.y,
 		(p.z - W_ROOM.z) / W_ROOM_R.z, (p.w - W_ROOM.w) / W_ROOM_R.w)
-	var room: float = (1.0 - r.length()) * 3.5 + 0.4 * rough
+	var room: float = (1.0 - r.length()) * 9.0 + 0.7 * rough
 	return _smooth_max(_smooth_max(air, passage, 1.0), room, 1.5)
 
 
@@ -287,14 +313,24 @@ func props() -> Array:
 	# The glowing sheet across the way through W: thin in w, spanning the opening, and not
 	# solid - it is walked through. Wider and taller than the opening, so its edges are in
 	# the rock and only the hole shows it.
-	out.append([Vector4(W_DOOR.x, 1.9, W_DOOR.y, W_DOOR.z), Vector4(W_PASSAGE_HALF * 2.2, 3.9, W_PASSAGE_HALF * 2.2, 0.05), W_GLOW, false])
+	out.append([Vector4(W_DOOR.x, 1.9, W_DOOR.y, W_DOOR.z), Vector4(W_PASSAGE_REACH * 2.2, 3.9, W_PASSAGE_HALF * 2.2, 0.05), W_GLOW, false])
+	return out
+
+
+## The far room's standing stones: six, two along each of x, z and w, round its middle.
+func far_props() -> Array:
+	var out := []
+	for d in [Vector4(1, 0, 0, 0), Vector4(-1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, -1, 0), Vector4(0, 0, 0, 1), Vector4(0, 0, 0, -1)]:
+		var base: Vector4 = W_ROOM + d * W_STONES_OUT
+		out.append([base + Vector4(0.0, 1.9, 0.0, 0.0), Vector4(1.2, 3.8, 1.0, 1.0), STONE, true])
+		out.append([base + Vector4(0.0, 0.15, 0.0, 0.0), Vector4(1.8, 0.3, 1.6, 1.6), STONE_DARK, true])
 	return out
 
 
 ## Where the player cannot go, as boxes: every prop marked solid.
 func solid_boxes() -> Array:
 	var out := []
-	for prop in props():
+	for prop in props() + far_props():
 		if prop[3]:
 			out.append([prop[0], prop[1]])
 	return out
@@ -309,16 +345,34 @@ func bake() -> TerrainBake.Builder:
 		print("   walls, grid %d over %s: %d tetrahedra" % [chunk[2], chunk[1] - chunk[0], part.tet_count()])
 		walls.append(part)
 	var ground: TerrainBake.Builder = TerrainBake.bake_height_box(
-		Vector3(LO.x + 1.0, LO.z + 1.0, LO.w + 1.0), Vector3(HI.x - 1.0, HI.z - 1.0, HI.w - 1.0),
+		Vector3(LO.x + 1.0, LO.z + 1.0, LO.w + 1.0), Vector3(HI.x - 1.0, HI.z - 1.0, FLOOR_SPLIT_W),
 		2.0, floor_height, floor_colour, [], -0.05)
 	walls.append(ground)
-	for prop in props():
+	_bake_props(walls, props())
+	return walls
+
+
+## The rest of the way through W and the far room: their walls, their floor, the stones.
+func bake_far() -> TerrainBake.Builder:
+	var far := TerrainBake.Builder.new()
+	for chunk in FAR_CHUNKS:
+		var part: TerrainBake.Builder = _bake_walls(chunk[0], chunk[1], chunk[2])
+		print("   far walls, grid %d over %s: %d tetrahedra" % [chunk[2], chunk[1] - chunk[0], part.tet_count()])
+		far.append(part)
+	far.append(TerrainBake.bake_height_box(
+		Vector3(LO.x + 1.0, LO.z + 1.0, FLOOR_SPLIT_W), Vector3(HI.x - 1.0, HI.z - 1.0, HI.w - 1.0),
+		2.0, floor_height, floor_colour, [], -0.05))
+	_bake_props(far, far_props())
+	return far
+
+
+func _bake_props(into: TerrainBake.Builder, list: Array) -> void:
+	for prop in list:
 		var colour: Color = prop[2]
-		walls.append(TerrainBake.bake_box(prop[0], prop[1], func(q: Vector4, outward: Vector4) -> Color:
+		into.append(TerrainBake.bake_box(prop[0], prop[1], func(q: Vector4, outward: Vector4) -> Color:
 			# Tops lighter than sides, and the foot of anything standing on the floor darker.
 			var c: Color = colour if outward.y > 0.5 else colour.darkened(0.25)
 			return c.lerp(Color.BLACK, 0.35 * (1.0 - smoothstep(0.0, 0.4, q.y)) * float(outward.y < 0.5))))
-	return walls
 
 
 func _bake_walls(lo: Vector4, hi: Vector4, grid: int) -> TerrainBake.Builder:

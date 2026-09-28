@@ -13,7 +13,8 @@ extends RefCounted
 ## tetrahedra whole and 6,480 after five blows; 544 surface colliders whole and 522 after
 ## five blows; 184-208 ms to re-contour after every blow; a 0.96 m bite; six pieces of gold
 ## of which three sit further through W than one blow reaches (pen_rock_gold_4d.gd). And
-## the cave around it, 84,977 tetrahedra with the way through W (_bake_terrain_runner.gd what=cave).
+## the cave around it, 143,077 tetrahedra with the way through W and the far room (81,951
+## in cave.res and 61,126 in cave_far.res, _bake_terrain_runner.gd what=cave and cave_far).
 ##
 ## MEASURE LIVE COLLIDERS, NOT CHILDREN. A blow queues the old colliders for freeing and
 ## adds new ones in the same frame, and a plain child count read 3,195 after five blows -
@@ -117,7 +118,7 @@ const NODES: Dictionary = {
 	"instead": "topic_lattice_again",
 	"lines": [
 		"Four thousand and ninety-six points. Whole, it's six thousand tetrahedra - that's all it takes to draw it. Every cut is new surface, so it only gets more.",
-		"Everything else down here - the cave, the plinth, the lot - is eighty-five thousand. The cube's the smallest thing in the room, and the one nobody can explain.",
+		"Everything else down here - the cave, the plinth, the lot - is a hundred and forty-three thousand. The cube's the smallest thing in the room, and the one nobody can explain.",
 	],
 	"topic": true,
 	"goto": "menu",
