@@ -54,8 +54,8 @@ const THROAT := Color(0.16, 0.17, 0.20)
 
 @export_group("Mouth")
 ## Everything about the mouth - teeth, lip, throat, the swirl in it - is drawn to this.
-@export_range(0.4, 5.0, 0.05) var mouth_radius: float = 1.1
-@export_range(0.03, 0.8, 0.01) var lip_radius: float = 0.17
+@export_range(0.4, 5.0, 0.05) var mouth_radius: float = 0.55
+@export_range(0.03, 0.8, 0.01) var lip_radius: float = 0.1
 @export_range(8, 48, 1) var lip_segments: int = 24
 @export_range(0, 64, 1) var outer_teeth: int = 30
 @export_range(0, 64, 1) var inner_teeth: int = 22
@@ -68,7 +68,7 @@ const THROAT := Color(0.16, 0.17, 0.20)
 @export_group("Limbs")
 @export_range(4, 48, 1) var limb_count: int = 24
 @export_range(3, 12, 1) var pieces_per_limb: int = 7
-@export_range(1.0, 14.0, 0.1) var limb_length: float = 8.5
+@export_range(1.0, 14.0, 0.1) var limb_length: float = 12.0
 @export_range(0.05, 1.5, 0.01) var root_radius: float = 0.2
 @export_range(0.01, 0.5, 0.005) var tip_radius: float = 0.035
 @export var limb_seed: int = 17
