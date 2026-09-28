@@ -25,7 +25,7 @@ func _process(_d) -> bool:
 	_inv = _root.get_node("UI/Inventory")
 	var player: Node4D = _root.get_node("Player")
 	var rig: Node4D = _root.get_node("Player/CameraRig")
-	var coin: Node4D = _root.get_node("World/Pickups/AdaCoin")
+	var coin: Node4D = _root.get_node("World/Pickups/PocketWatch")
 	var egg: Node4D = _root.get_node("World/Pickups/GoldenEgg")
 
 	_stage += 1

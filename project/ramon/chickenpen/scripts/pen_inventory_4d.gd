@@ -25,10 +25,10 @@ const ITEMS := {
 		"colour": Color(0.36, 0.98, 0.46),
 		"icon": "gauntlet",
 	},
-	"found_coin": {
-		"name": "ADA",
-		"colour": Color(0.42, 0.58, 0.98),
-		"icon": "coin",
+	"found_watch": {
+		"name": "Pocket Watch",
+		"colour": Color(0.88, 0.72, 0.42),
+		"icon": "watch",
 	},
 	"found_egg": {
 		"name": "Golden Egg",
@@ -236,7 +236,7 @@ func add_item(effect_name: String) -> void:
 
 
 ## Handing something back to its owner has to empty the slot, or the belt keeps claiming
-## you are carrying a coin that is now in somebody else's pocket.
+## you are carrying a watch that is now back in somebody else's pocket.
 func remove_item(effect_name: String) -> void:
 	# One off the stack, and only the last one empties the slot.
 	if count_of(effect_name) > 1:
@@ -293,8 +293,8 @@ func _draw_icon(kind: String, box: Rect2, colour: Color) -> void:
 	var dim := Color(colour.r, colour.g, colour.b, 0.55)
 
 	if kind == "nugget":
-		# A lump rather than a disc: the ADA piece is already a circle, and two round yellow
-		# things in one belt is one too many.
+		# A lump rather than a disc: the pocket watch is already a circle, and two round
+		# brassy things in one belt is one too many.
 		var lump := PackedVector2Array()
 		for i in 9:
 			var a: float = TAU * float(i) / 9.0
@@ -347,17 +347,23 @@ func _draw_icon(kind: String, box: Rect2, colour: Color) -> void:
 		draw_colored_polygon(head, colour)
 		return
 
-	if kind == "coin":
-		# A ring with the mark's dot field inside it, the same rings the model is built
-		# from, so the slot and the thing you picked up are recognisably one object.
-		draw_arc(mid, unit * 0.30, 0.0, TAU, 28, colour, maxf(unit * 0.05, 1.5), true)
-		draw_circle(mid, unit * 0.045, colour)
-		for ring in [[6, 0.11, 0.032], [6, 0.19, 0.024], [10, 0.26, 0.017]]:
-			var count: int = int(ring[0])
-			for i in count:
-				var angle: float = TAU * float(i) / float(count)
-				draw_circle(mid + Vector2(cos(angle), sin(angle)) * unit * float(ring[1]),
-					unit * float(ring[2]), colour)
+	if kind == "watch":
+		# The case, the crown and bow on top, twelve hour ticks and two hands - the same
+		# pieces the model is built from, so the slot and the thing you picked up are
+		# recognisably one object. The hands are set to ten to two, as every watch in every
+		# shop window is, because that is the time people read as "a watch".
+		var face: Vector2 = mid + Vector2(0.0, unit * 0.04)
+		var r: float = unit * 0.26
+		draw_arc(face, r, 0.0, TAU, 32, colour, maxf(unit * 0.05, 1.5), true)
+		draw_rect(Rect2(face + Vector2(-unit * 0.035, -r - unit * 0.07), Vector2(unit * 0.07, unit * 0.07)), colour, true)
+		draw_arc(face + Vector2(0.0, -r - unit * 0.10), unit * 0.05, 0.0, TAU, 14, colour, maxf(unit * 0.03, 1.0), true)
+		for i in 12:
+			var a: float = TAU * float(i) / 12.0
+			var d := Vector2(sin(a), -cos(a))
+			draw_line(face + d * r * 0.72, face + d * r * (0.86 if i % 3 else 0.62), dim, maxf(unit * 0.025, 1.0), true)
+		draw_line(face, face + Vector2(sin(-TAU / 6.0), -cos(-TAU / 6.0)) * r * 0.48, colour, maxf(unit * 0.045, 1.5), true)
+		draw_line(face, face + Vector2(sin(TAU / 6.0), -cos(TAU / 6.0)) * r * 0.66, colour, maxf(unit * 0.035, 1.2), true)
+		draw_circle(face, unit * 0.035, colour)
 		return
 
 	if kind == "egg":

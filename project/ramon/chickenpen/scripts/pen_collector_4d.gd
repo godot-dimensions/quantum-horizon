@@ -62,13 +62,13 @@ func _process(delta: float) -> void:
 
 
 func _take(item: Node4D) -> void:
-	var id: String = "found_coin" if int(item.get("kind")) == 0 else "found_egg"
+	var id: String = "found_watch" if int(item.get("kind")) == 0 else "found_egg"
 	item.visible = false
 	item.set_process(false)
 	if _inventory != null:
 		_inventory.call("add_item", id)
 	if _readout != null:
-		_readout.text = "Found: %s" % ("an ADA coin" if id == "found_coin" else "a golden egg")
+		_readout.text = "Found: %s" % ("a pocket watch, still ticking" if id == "found_watch" else "a golden egg")
 		_left = message_seconds
 
 

@@ -7,7 +7,7 @@ func _initialize() -> void:
 func _process(_d) -> bool:
 	_f += 1
 	if _f < 60: return false
-	for name in ["AdaCoin", "GoldenEgg"]:
+	for name in ["PocketWatch", "GoldenEgg"]:
 		var n: Node4D = _root.get_node_or_null("World/Pickups/%s" % name)
 		if n == null:
 			print("%s: MISSING" % name); continue

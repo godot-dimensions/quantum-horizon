@@ -1,6 +1,6 @@
 extends CharacterBody4D
 
-## The girl looking for her coin: the player's own rig, driven by a wander instead of input.
+## The girl looking for her pocket watch: the player's own rig, driven by a wander instead of input.
 ##
 ## SAME RIG, DIFFERENT DRIVER. She is a CharacterBody4D with a block_avatar_4d and a
 ## block_gait_4d under her, exactly as the player is - so she inherits the planted feet, the
@@ -116,7 +116,7 @@ func _think(delta: float) -> void:
 
 
 ## Somewhere else within her patch. Never her own W - she is looking on this slice, which
-## is the joke: the coin is not on it.
+## is the joke: the watch is not on it.
 func _choose() -> void:
 	var angle: float = _rng.randf_range(0.0, TAU)
 	var span: float = _rng.randf_range(roam_radius * 0.3, roam_radius)
@@ -138,9 +138,9 @@ func _talk() -> void:
 		and absf(gap.w) <= speak_within_w
 	var line: String = ""
 	if near:
-		var has_coin: bool = _inventory != null and bool(_inventory.call("has_item", "found_coin"))
-		line = "Mithra: \"Is that my coin? I've been up and down this field twice.\"" if has_coin \
-			else "Mithra: \"I dropped an ADA coin somewhere here. It's not where I dropped it.\""
+		var has_watch: bool = _inventory != null and bool(_inventory.call("has_item", "found_watch"))
+		line = "Mithra: \"Is that my watch? I've been up and down this field twice.\"" if has_watch \
+			else "Mithra: \"I dropped my watch somewhere here. I can hear it. It's not where I dropped it.\""
 	if line != _said:
 		_said = line
 		_readout.text = line

@@ -99,12 +99,12 @@ func _press(code: Key) -> void:
 		ev.pressed = down
 		Input.parse_input_event(ev)
 	# Delivered straight to the handler as well. The dummy driver does not always run a
-	# parsed event all the way out to _unhandled_input, and the point of this test is the
+	# parsed event all the way out to _input, and the point of this test is the
 	# handler, not Godot's input plumbing.
 	var ev2 := InputEventKey.new()
 	ev2.keycode = code
 	ev2.pressed = true
-	_again.call("_unhandled_input", ev2)
+	_again.call("_input", ev2)
 
 
 func _finish() -> bool:

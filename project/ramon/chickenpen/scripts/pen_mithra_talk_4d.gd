@@ -1,14 +1,14 @@
 extends PenNpcTalk4D
 
 ## Mithra's half of the conversation: she stops searching to talk, opens on whichever beat
-## of her small quest you have reached, and hands over a golden egg when she gets her coin
-## back.
+## of her small quest you have reached, and hands over a gold nugget when she gets her
+## pocket watch back.
 ##
 ## Reach, the shared catch key, the prompt over her head and freezing the player come from
 ## PenNpcTalk4D, which the keeper uses too. This file is only what makes her her.
 ##
 ## THE QUEST STATE IS THE INVENTORY, NOT A COPY OF IT. She asks pen_inventory_4d whether
-## you are carrying `found_coin` rather than keeping her own flag, because the coin can be
+## you are carrying `found_watch` rather than keeping her own flag, because the watch can be
 ## picked up by walking over it without her being involved at all. A second record of the
 ## same fact is a second thing to get out of step.
 ##
@@ -16,7 +16,7 @@ extends PenNpcTalk4D
 ## reads as broken rather than busy, and one who stops but keeps facing the fence reads as
 ## rude. Both are two lines here, and both are the difference between a person and a sign.
 
-const COIN: String = "found_coin"
+const WATCH: String = "found_watch"
 const EGG: String = "found_egg"
 const GOLD: String = "found_gold"
 
@@ -30,7 +30,7 @@ var _searcher: Node
 var _inventory: Node
 var _mutter: Label
 var _hinted: bool = false
-var _gave_coin: bool = false
+var _gave_watch: bool = false
 ## Once she has fetched you a bird she has nothing left to offer, and says so.
 var _gifted: bool = false
 var _met: bool = false
@@ -65,10 +65,10 @@ func _entry_node() -> String:
 		return "greet_carrying"
 	if _gifted:
 		return "greet_after_gift"
-	if _gave_coin:
+	if _gave_watch:
 		return "greet_done"
-	if _has(COIN):
-		return "greet_has_coin"
+	if _has(WATCH):
+		return "greet_has_watch"
 	if _hinted:
 		return "greet_hinted"
 	return "greet_looking"
@@ -76,14 +76,14 @@ func _entry_node() -> String:
 
 func _on_effect(name: String) -> void:
 	match name:
-		"coin_hinted":
+		"watch_hinted":
 			_hinted = true
-		"take_coin":
-			_gave_coin = true
+		"take_watch":
+			_gave_watch = true
 			# It is hers again, so it leaves your pockets. Leaving it on the belt after
 			# handing it over is the sort of small lie that makes an inventory useless.
 			if _inventory != null and _inventory.has_method("remove_item"):
-				_inventory.call("remove_item", COIN)
+				_inventory.call("remove_item", WATCH)
 		"give_nugget":
 			# A nugget rather than the golden egg she used to hand over. The egg is a
 			# trinket you can also just find in the field; a nugget buys a trough off the
@@ -99,7 +99,7 @@ func _has(item: String) -> bool:
 func reset() -> void:
 	_met = false
 	_hinted = false
-	_gave_coin = false
+	_gave_watch = false
 	_gifted = false
 	if _talk != null:
 		_talk.stop()

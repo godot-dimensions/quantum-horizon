@@ -84,7 +84,13 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+## _input, NOT _unhandled_input. N is also the slice dial's key, and the dial listens in
+## _unhandled_input too and is reached first - so with the prompt up, N toggled the dial,
+## marked itself handled, and the prompt never heard it. Trym: "the N button is already
+## bound to toggling the dial and doesn't get rid of the prompt". Taking input one stage
+## earlier, and only while the question is on screen, means the answer to the question
+## always goes to the question. The rewatch prompt does the same for the same reason.
+func _input(event: InputEvent) -> void:
 	if not visible or not (event is InputEventKey):
 		return
 	var key := event as InputEventKey

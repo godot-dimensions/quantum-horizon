@@ -5,11 +5,11 @@ extends SceneTree
 ## WHAT THIS USED TO TEST IS GONE. The errand ended with her sprinting off to catch you a
 ## chicken and hand it over - `fetch_chicken`, `hand_over_chicken`, `mithra_leaves` - and
 ## this runner drove `pen_mithra_fetch_4d` directly to watch her do it. Ramon cut that
-## beat: thanking somebody for returning a coin by fetching them poultry was a strange
+## beat: thanking somebody for returning a watch by fetching them poultry was a strange
 ## trade, and it made the one character who physically cannot reach the fourth direction
 ## better at the fourth-direction job than the player is.
 ##
-## So the errand is now coin in, gold out, and a nudge toward the theatre. Which is worth
+## So the errand is now watch in, gold out, and a nudge toward the theatre. Which is worth
 ## testing for a reason the old shape was not: the reward is no longer a trinket. A nugget
 ## is `found_gold`, the same token the rock drops, and `pen_upgrades_4d` spends it on a
 ## feeding trough - so this errand now feeds the game's one economy instead of ending in
@@ -72,7 +72,7 @@ func _process(_d) -> bool:
 			fires += String((nodes[key] as Dictionary).get("do", ""))
 		_check("and nothing fires the fetch", not fires.contains("fetch_chicken")
 			and not fires.contains("hand_over_chicken"),
-			"effects still fired: coin_hinted, take_coin, give_nugget")
+			"effects still fired: watch_hinted, take_watch, give_nugget")
 		_check("she pays in gold, not in trinkets", fires.contains("give_nugget"),
 			"found_gold - the same token the rock drops and the keeper spends")
 

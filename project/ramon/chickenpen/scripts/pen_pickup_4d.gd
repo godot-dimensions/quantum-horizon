@@ -1,27 +1,30 @@
 @tool
 extends Node4D
 
-## Something to find: an ADA coin, or a golden egg.
+## Something to find: Mithra's 4D pocket watch, or a golden egg.
 ##
-## THE LOGO IS GEOMETRY, NOT A TEXTURE. A coin would normally be a cylinder with the mark
-## painted on it, and that is the wrong tool twice over here. TetraMaterial4D takes a
-## Texture3D rather than a flat image, so a 2D logo would have to be lifted into a volume
-## before it could be applied at all; and every other object in this scene is untextured
-## flat colour, so a texture-mapped coin would be the one thing in the world that did not
-## match. Built as dots it belongs, and it stays sharp at any distance.
+## IT WAS AN ADA COIN, with the Cardano mark built from dots. Trym asked on 25 Sept for every
+## mention of money to come out of the scene, and it became the watch Mithra lost.
 ##
-## AND THE COIN IS A ROSETTE, NOT A CYLINDER. The module has boxes and orthoplexes and no
-## round primitive, so the disc is six rectangles turned thirty degrees apart - a rough
-## twelve-sided plate. At the size a coin is actually seen, that reads as round, and it
-## costs six meshes rather than a lathe.
+## A WATCH THAT KEEPS FOUR-DIMENSIONAL TIME, LITERALLY. The case and the face have depth
+## through W like everything else, so the watch is solid from any slice. The HANDS do not:
+## three pairs of them stand at three different depths along W, each set to a different
+## time, each thin enough in W to belong to one slice. Step through W or turn your slice
+## while it spins and the watch tells you a different time. The back says it keeps
+## four-dimensional time; Mithra took that for a boast. It is the one object in the scene
+## that shows the fourth axis doing something to its own geometry rather than hiding it.
+##
+## ROUND WITHOUT A ROUND PRIMITIVE. The module has boxes and orthoplexes, so the case is
+## six rectangles turned thirty degrees apart - a rough twelve-sided plate that reads as
+## round at the size it is seen, the same trick the coin used.
 ##
 ## FOUND, NOT GIVEN. These sit off the starting slice on purpose. The gauntlet is handed
 ## over in conversation; these are what the gauntlet is FOR, so they are only reachable by
 ## doing the thing it teaches.
 
-enum Kind { ADA_COIN, GOLDEN_EGG }
+enum Kind { POCKET_WATCH, GOLDEN_EGG }
 
-@export var kind: Kind = Kind.ADA_COIN: set = _set_kind
+@export var kind: Kind = Kind.POCKET_WATCH: set = _set_kind
 @export_range(0.05, 2.0, 0.01) var size: float = 0.34: set = _set_size
 @export_range(0.05, 3.0, 0.05) var w_depth: float = 0.5: set = _set_w
 ## Turns on the spot, because a collectible that is not moving reads as scenery.
@@ -29,8 +32,9 @@ enum Kind { ADA_COIN, GOLDEN_EGG }
 @export_range(0.0, 0.5, 0.01) var bob_height: float = 0.08
 
 @export_group("Colours")
-@export var coin_face: Color = Color(0.04, 0.20, 0.70): set = _set_a
-@export var coin_mark: Color = Color(0.97, 0.98, 1.0): set = _set_b
+@export var watch_case: Color = Color(0.80, 0.62, 0.30): set = _set_a
+@export var watch_face: Color = Color(0.96, 0.93, 0.84): set = _set_b
+@export var watch_hands: Color = Color(0.10, 0.09, 0.12): set = _set_e
 @export var egg_shell: Color = Color(0.98, 0.80, 0.24): set = _set_c
 @export var egg_shine: Color = Color(1.0, 0.94, 0.62): set = _set_d
 
@@ -41,8 +45,9 @@ var _clock: float = 0.0
 func _set_kind(v: Kind) -> void: kind = v; _later()
 func _set_size(v: float) -> void: size = v; _later()
 func _set_w(v: float) -> void: w_depth = v; _later()
-func _set_a(v: Color) -> void: coin_face = v; _later()
-func _set_b(v: Color) -> void: coin_mark = v; _later()
+func _set_a(v: Color) -> void: watch_case = v; _later()
+func _set_b(v: Color) -> void: watch_face = v; _later()
+func _set_e(v: Color) -> void: watch_hands = v; _later()
 func _set_c(v: Color) -> void: egg_shell = v; _later()
 func _set_d(v: Color) -> void: egg_shine = v; _later()
 
@@ -68,50 +73,79 @@ func _process(delta: float) -> void:
 func rebuild() -> void:
 	for child in get_children():
 		child.free()
-	if kind == Kind.ADA_COIN:
-		_build_coin()
+	if kind == Kind.POCKET_WATCH:
+		_build_watch()
 	else:
 		_build_egg()
 
 
-## A disc standing on edge, with the mark on both faces so it reads while it turns.
-func _build_coin() -> void:
-	var face := TetraMaterial4D.new()
-	face.albedo_color = coin_face
-	var mark := TetraMaterial4D.new()
-	mark.albedo_color = coin_mark
+## Where along W each set of hands stands, and the time it shows - hours and minutes. The
+## middle set is on the slice you normally see; the others are a short step either way.
+const HANDS := [[-0.16, 10, 10], [0.0, 3, 45], [0.16, 7, 25]]
 
-	var thickness: float = size * 0.16
-	# Six plates, thirty degrees apart. Each is as wide as the coin and narrow enough that
-	# six of them tile the circle rather than stacking into a square.
+
+## The case on edge, a cream face each side, the bow and crown on top, twelve ticks, and
+## three pairs of hands at three depths along W.
+func _build_watch() -> void:
+	var brass := TetraMaterial4D.new()
+	brass.albedo_color = watch_case
+	var cream := TetraMaterial4D.new()
+	cream.albedo_color = watch_face
+	var ink := TetraMaterial4D.new()
+	ink.albedo_color = watch_hands
+
+	var thickness: float = size * 0.22
 	for i in 6:
-		var plate := _box("Plate%d" % i, Vector4.ZERO,
-			Vector3(size * 2.0, size * 0.54, thickness), face)
+		var plate := _box("Case%d" % i, Vector4.ZERO,
+			Vector3(size * 2.0, size * 0.54, thickness), brass)
 		plate.basis = Basis4D.from_xy(PI * float(i) / 6.0)
+	# The face, a little smaller than the case and standing proud of it on both sides.
+	for i in 6:
+		for side in [1.0, -1.0]:
+			var face := _box("Face%d%s" % [i, "F" if side > 0.0 else "B"],
+				Vector4(0.0, 0.0, side * thickness * 0.52, 0.0),
+				Vector3(size * 1.72, size * 0.46, thickness * 0.08), cream)
+			face.basis = Basis4D.from_xy(PI * float(i) / 6.0)
+	# The crown and the bow the chain would hang from.
+	_box("Crown", Vector4(0.0, size * 1.06, 0.0, 0.0), Vector3(size * 0.20, size * 0.18, size * 0.20), brass)
+	for i in 4:
+		var a: float = TAU * float(i) / 4.0
+		var bar := _box("Bow%d" % i, Vector4(sin(a) * size * 0.15, size * 1.30 + cos(a) * size * 0.15, 0.0, 0.0),
+			Vector3(size * 0.20, size * 0.06, size * 0.06), brass)
+		bar.basis = Basis4D.from_xy(a)
+	# Twelve ticks, longer at the quarters.
+	for i in 12:
+		var a: float = TAU * float(i) / 12.0
+		var quarter: bool = i % 3 == 0
+		for side in [1.0, -1.0]:
+			var tick := _box("Tick%d%s" % [i, "F" if side > 0.0 else "B"],
+				Vector4(sin(a) * size * 0.72, cos(a) * size * 0.72, side * thickness * 0.58, 0.0),
+				Vector3(size * 0.05, size * (0.16 if quarter else 0.09), thickness * 0.06), ink)
+			tick.basis = Basis4D.from_xy(-a)
+	# THE HANDS, a set per slice. Each is thin in W so it belongs to one depth only, which is
+	# what makes the time change as you move through W - see the header.
+	for layer in HANDS.size():
+		var at_w: float = float(HANDS[layer][0])
+		var hour: float = float(HANDS[layer][1]) + float(HANDS[layer][2]) / 60.0
+		var minute: float = float(HANDS[layer][2])
+		for side in [1.0, -1.0]:
+			_hand("Hour%d%s" % [layer, "F" if side > 0.0 else "B"], TAU * hour / 12.0, size * 0.42, size * 0.075,
+				side * thickness * 0.62, at_w, ink)
+			_hand("Minute%d%s" % [layer, "F" if side > 0.0 else "B"], TAU * minute / 60.0, size * 0.62, size * 0.05,
+				side * thickness * 0.64, at_w, ink)
 
-	# The Cardano mark: rings of dots, thinning outward. Not the logo to the millimetre -
-	# the number of dots per ring and how fast they shrink is what makes it recognisable.
-	# Bolder than the first pass, which read as a fine speckle rather than a mark. The
-	# gradation matters more than the count: dots that shrink noticeably outward are what
-	# makes it look designed instead of scattered.
-	var rings := [
-		[6, 0.28, 0.21], [6, 0.50, 0.16], [12, 0.70, 0.115], [12, 0.88, 0.075],
-	]
-	for r in rings.size():
-		var ring: Array = rings[r]
-		var count: int = int(ring[0])
-		var radius: float = size * float(ring[1])
-		var dot: float = size * float(ring[2])
-		# Alternate rings are offset half a step, which is what stops the dots forming
-		# spokes instead of a field.
-		var twist: float = (PI / float(count)) if r % 2 == 1 else 0.0
-		for i in count:
-			var angle: float = TAU * float(i) / float(count) + twist
-			for side in [1.0, -1.0]:
-				_box("Dot%d_%d_%s" % [r, i, "F" if side > 0.0 else "B"],
-					Vector4(cos(angle) * radius, sin(angle) * radius,
-						side * thickness * 0.56, 0.0),
-					Vector3(dot, dot, thickness * 0.3), mark)
+
+## One hand, pivoted at the centre and pointing at `angle` (clockwise from twelve), sitting
+## at depth `at_w` along W with only a thin slice of W to itself.
+func _hand(part: String, angle: float, length: float, width: float, z: float, at_w: float,
+		material: TetraMaterial4D) -> void:
+	var node := _box(part, Vector4(sin(angle) * length * 0.5, cos(angle) * length * 0.5, z, at_w),
+		Vector3(width, length, size * 0.03), material)
+	var mesh := node.mesh as BoxTetraMesh4D
+	var extent: Vector4 = mesh.size
+	extent.w = w_depth * 0.24
+	mesh.size = extent
+	node.basis = Basis4D.from_xy(-angle)
 
 
 ## A blocky egg: stacked slabs, widest below the middle, the way an egg actually is.

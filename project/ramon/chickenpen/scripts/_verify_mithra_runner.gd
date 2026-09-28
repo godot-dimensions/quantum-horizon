@@ -1,8 +1,8 @@
 extends SceneTree
 
 ## Walks Mithra's whole quest: that she can be addressed, that she stops searching to talk,
-## that turning up with her coin opens a different conversation, and that handing it over
-## empties the coin slot and fills the egg one.
+## that turning up with her watch opens a different conversation, and that handing it over
+## empties the watch slot and fills the egg one.
 
 var _root: Node
 var _player: Node4D
@@ -72,8 +72,8 @@ func _process(_d) -> bool:
 			# stuck when she was only still speaking.
 			if not _talk.is_running():
 				print("she walks again after it ends: %s" % (not bool(_mithra.get("halted"))))
-				# Now turn up carrying the coin, as if it had been found off-slice.
-				_inventory.call("add_item", "found_coin")
+				# Now turn up carrying the watch, as if it had been found off-slice.
+				_inventory.call("add_item", "found_watch")
 				_stand_by_her()
 				_stage = 4
 				_next = _f + 10
@@ -88,7 +88,7 @@ func _process(_d) -> bool:
 				_next = _f + 20
 		5:
 			if _box.has_choices():
-				_save("mithra_03_has_coin")
+				_save("mithra_03_has_watch")
 				_box.pick_index(0)
 				_stage = 6
 				_next = _f + 8
@@ -97,7 +97,7 @@ func _process(_d) -> bool:
 				_talk.call("_tap")
 				_next = _f + 5
 			if _f > 1400:
-				print("PROBLEM: she never noticed the coin")
+				print("PROBLEM: she never noticed the watch")
 				return true
 		6:
 			# Walk the handover out to the end and check what changed hands.
@@ -106,8 +106,8 @@ func _process(_d) -> bool:
 				# nothing else in the game could read - no system spent it, so the reward for
 				# the one errand was a souvenir. A nugget is `found_gold`, the same token the
 				# rock drops, and the keeper turns it into a feeding trough.
-				print("coin gone from the belt: %s   gold on it: %s" % [
-					not bool(_inventory.call("has_item", "found_coin")),
+				print("watch gone from the belt: %s   gold on it: %s" % [
+					not bool(_inventory.call("has_item", "found_watch")),
 					_inventory.call("has_item", "found_gold")])
 				_save("mithra_04_reward")
 				return true

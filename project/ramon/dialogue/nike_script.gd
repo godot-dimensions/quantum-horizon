@@ -6,10 +6,11 @@ class_name NikeScript
 ##
 ## HE IS REAL, WHICH IS WHY THE JOKES WORK. Nike is Charles Hoskinson's pot-bellied pig.
 ## He was rescued - his previous owners had been feeding him bacon - and lives on
-## Hoskinson's ranch. A photograph of him on X produced a meme coin inside twelve hours,
-## market cap approaching a million dollars, past ten million within days, and Hoskinson's
-## own comment on the record was that he was "at a loss". None of that is invented, and
-## none of it is played for whimsy: Nike states it flatly and lets the player react.
+## Hoskinson's ranch. None of that is invented, and none of it is played for whimsy: Nike
+## states it flatly and lets the player react.
+##
+## NOTHING ABOUT MONEY. He had a conversation about the meme coin named after him; Trym
+## asked on 25 Sept for every mention of money to come out of the scene, and it did.
 ##
 ## THE TECHNICAL ANSWER IS ALSO REAL. What he says about himself is what he is - one
 ## lofted surface with branch chains for limbs, skinned to closed-form two-bone IK, with
@@ -105,7 +106,7 @@ const NODES: Dictionary = {
 	"goto": "hub",
 },
 
-## The rescue and the coin, both on the record, both delivered flat.
+## The rescue, on the record and delivered flat.
 "charles": {
 	"speaker": "Nike",
 	"topic": true,
@@ -114,22 +115,9 @@ const NODES: Dictionary = {
 		"You'll get the short version, because the long version upsets people. I had other owners before him. They fed me bacon. I'm not going to expand on that.",
 		"Then Charles turned up and took me to the ranch, and nobody has fed me anything questionable since, and that is the entirety of my opinion on Charles.",
 	],
-	"choices": [
-		{"text": "I heard you're worth money.", "goto": "the_coin"},
-		{"text": "Good.", "goto": "hub", "back": true},
-	],
-},
-
-"the_coin": {
-	"speaker": "Nike",
-	"topic": true,
-	"lines": [
-		"Ah. That.",
-		"He put a photograph of me on the internet. Twelve hours later there was a coin named after me with a market capitalisation approaching a million dollars, and inside a few days it was past ten million. His public comment was that he was at a loss. I thought that was very reasonable of him.",
-		"So I have a market cap. I've never seen it. I assume it's kept in the barn with everything else I own.",
-	],
 	"goto": "hub",
 },
+
 
 ## The lazy-pig problem, which is also the carry mechanic asking to be used.
 "the_pen": {
