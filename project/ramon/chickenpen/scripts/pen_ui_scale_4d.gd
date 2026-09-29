@@ -18,6 +18,12 @@ extends Node
 ## THE DIAL IS HELD AT EXACTLY ITS OLD SIZE. It is given the rectangle on screen it had
 ## before, in pixels, and a scale of one over the factor, so the two cancel.
 ##
+## THE DIAL HAS A SIZE OF ITS OWN (Ramon, 29 Sept: "a second [control] next to it, that
+## controls the bottom right collector hud size"): [member dial_percent], kept between runs
+## beside the other. The dial - the first of the kept controls - is held at its old place
+## but scaled by it, growing up and to the left from its bottom-right corner, so it stays
+## in its corner however big it is.
+##
 ## THE PEN ONLY. The factor is the whole window's, so it is put back to 1 whenever
 ## something else is on screen: while the theatre is open (no theatre work, 28 Sept), while
 ## the pen is parked for the range's gallery, and when the pen closes.
@@ -35,7 +41,12 @@ const SETTINGS := "user://pen_settings.cfg"
 ## Crossings during whose trips the scale is off (anything with is_away()).
 @export var off_while_away_paths: Array[NodePath] = [NodePath("../../Crossing")]
 
+## The dial's own size, in percent of how it was drawn.
+var dial_percent: float = 100.0
+const DIAL_MIN := 50.0
+const DIAL_MAX := 200.0
 var _factor := 1.0
+var _holding := false
 var _kept: Array[Control] = []
 ## Per kept control: [anchors (l, t, r, b), offsets (l, t, r, b)] as authored.
 var _layout: Array = []
@@ -49,6 +60,7 @@ func _ready() -> void:
 	var saved := ConfigFile.new()
 	if saved.load(SETTINGS) == OK:
 		percent = clampf(float(saved.get_value("ui", "percent", percent)), 50.0, 300.0)
+		dial_percent = clampf(float(saved.get_value("ui", "dial_percent", dial_percent)), DIAL_MIN, DIAL_MAX)
 	for path in keep_size_paths:
 		var c := get_node_or_null(path) as Control
 		if c != null:
@@ -89,6 +101,15 @@ func set_percent(p: float) -> void:
 	saved.save(SETTINGS)
 
 
+## Sets the dial's own size, and remembers it for next time.
+func set_dial_percent(p: float) -> void:
+	dial_percent = clampf(p, DIAL_MIN, DIAL_MAX)
+	var saved := ConfigFile.new()
+	saved.load(SETTINGS)
+	saved.set_value("ui", "dial_percent", dial_percent)
+	saved.save(SETTINGS)
+
+
 func _set_factor(f: float) -> void:
 	_factor = f
 	if is_inside_tree():
@@ -100,23 +121,32 @@ func _set_factor(f: float) -> void:
 			_restore(i)
 
 
-## Where each kept control would be on screen unscaled, in pixels, held there.
+## Where each kept control would be on screen unscaled, in pixels, held there - the dial
+## scaled by its own size about its bottom-right corner.
 func _hold_kept() -> void:
-	if is_equal_approx(_factor, 1.0):
+	var dial: float = dial_percent / 100.0
+	if is_equal_approx(_factor, 1.0) and is_equal_approx(dial, 1.0):
+		if _holding:
+			_holding = false
+			for i in _kept.size():
+				_restore(i)
 		return
+	_holding = true
 	var screen := Vector2(get_viewport().get_size())
 	for i in _kept.size():
 		var c: Control = _kept[i]
 		if not is_instance_valid(c):
 			continue
+		var own: float = dial if i == 0 else 1.0
 		var a: Vector4 = _layout[i][0]
 		var o: Vector4 = _layout[i][1]
 		var top_left := Vector2(a.x * screen.x + o.x, a.y * screen.y + o.y)
 		var bottom_right := Vector2(a.z * screen.x + o.z, a.w * screen.y + o.w)
 		if c.anchor_right != 0.0 or c.anchor_bottom != 0.0:
 			c.set_anchors_preset(Control.PRESET_TOP_LEFT)
-		c.scale = Vector2.ONE / _factor
-		c.position = top_left / _factor
+		var drawn: Vector2 = (bottom_right - top_left) * own
+		c.scale = Vector2.ONE * own / _factor
+		c.position = (bottom_right - drawn) / _factor
 		c.size = bottom_right - top_left
 
 

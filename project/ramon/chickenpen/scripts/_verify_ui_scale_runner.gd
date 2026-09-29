@@ -11,6 +11,8 @@ var _f := 0
 var _step := 0
 var _wait := 0
 var _failed := 0
+var _dial_was := 100.0
+var _corner_was := Vector2.ZERO
 var _want := 1.0
 ## What the scale loaded - the player's saved size - before the test sets its own.
 var _loaded := 0.0
@@ -64,12 +66,58 @@ func _process(_d: float) -> bool:
 				_check("scaled in the pen", is_equal_approx(root.content_scale_factor, _want), "%.3f" % root.content_scale_factor)
 				_check("the dial is where it always was", _near(_dial_on_screen(), _dial_as_authored()),
 					"%s vs %s" % [_dial_on_screen(), _dial_as_authored()])
-				var slider := _room.get_node_or_null("UI/Controls/UiSize") as HSlider
-				_check("the size slider is on the controls card", slider != null)
-				if slider != null:
-					_check("and starts at the size the scale loaded", absf(slider.value - _loaded) < 0.01,
-						"slider %.0f, loaded %.0f" % [slider.value, _loaded])
-					_check("from 50% to 300%", slider.min_value == 50.0 and slider.max_value == 300.0)
+				# A small vertical spinner now, not a slider: a plus over a minus, 10% a press.
+				var card: Node = _room.get_node("UI/Controls")
+				_check("the size control is on the controls card", _room.get_node_or_null("UI/Controls/UiSize") != null)
+				var ui: Node = _room.get_node("Systems/UiScale")
+				_check("and shows the size in force", absf(float(card.call("size_percent")) - float(ui.get("percent"))) < 0.01,
+					"%.0f" % float(card.call("size_percent")))
+				var plus: Button = card.get("_plus")
+				var minus: Button = card.get("_minus")
+				_check("plus above minus", plus != null and minus != null and plus.position.y < minus.position.y
+					and absf(plus.position.x - minus.position.x) < 0.5)
+				_check("no slider to drag", card.find_children("*", "HSlider", true, false).is_empty())
+				var was: float = float(card.call("size_percent"))
+				plus.pressed.emit()
+				_check("plus is 10% up", absf(float(card.call("size_percent")) - (was + 10.0)) < 0.01)
+				minus.pressed.emit()
+				minus.pressed.emit()
+				_check("minus is 10% down", absf(float(card.call("size_percent")) - (was - 10.0)) < 0.01)
+				plus.pressed.emit()
+				for i in 40:
+					card.call("step_size", -10.0)
+				_check("never under 50%", absf(float(card.call("size_percent")) - 50.0) < 0.01)
+				for i in 40:
+					card.call("step_size", 10.0)
+				_check("never over 300%", absf(float(card.call("size_percent")) - 300.0) < 0.01)
+				# The buttons save what they choose; put back the size this machine had saved,
+				# and the one this test runs at.
+				ui.call("set_percent", _loaded)
+				ui.set("percent", was)
+				# The dial's own size: hidden until Shift, a hint in its place; a press scales
+				# the dial about its bottom-right corner.
+				_check("the dial's size is tucked away until Shift", not (card.get("_dial_plus") as Button).visible
+					and (card.get("_dial_hint") as Label).visible)
+				_dial_was = float(ui.get("dial_percent"))
+				var dial := _room.get_node("UI/SlicePlane") as Control
+				_corner_was = dial.get_global_rect().end
+				card.call("step_dial", 20.0)
+				_step = 10
+				_wait = 0
+				return false
+				_room.get_node("Crossing").call("go_for_testing")
+				_step = 1
+				_wait = 0
+		10:
+			if _wait == 3:
+				var ui: Node = _room.get_node("Systems/UiScale")
+				var dial := _room.get_node("UI/SlicePlane") as Control
+				var shown: float = dial.get_global_rect().size.x * dial.scale.x
+				_check("the dial grows with its own size", absf(float(ui.get("dial_percent")) - (_dial_was + 20.0)) < 0.01,
+					"%.0f%%" % float(ui.get("dial_percent")))
+				var drawn: Vector2 = dial.get_global_transform().origin + dial.size * dial.get_global_transform().get_scale()
+				_check("and stays in its corner", drawn.distance_to(_corner_was) < 2.0, "%s against %s" % [drawn, _corner_was])
+				ui.call("set_dial_percent", _dial_was)
 				_room.get_node("Crossing").call("go_for_testing")
 				_step = 1
 				_wait = 0
