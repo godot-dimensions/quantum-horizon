@@ -52,6 +52,38 @@ const RING_HALF := 0.28
 const INNER_HALF := 0.18
 const BULL_HALF := 0.07
 
+## SIGNS THROUGH W (Ramon, 29 Sept: "maybe you can find different signs in 4d when you
+## rotate"). A board's face is a solid 0.9 deep in W, and the rings fill only its middle;
+## either side of them, a painted layer a hand's depth thick: on one side a letter, on the
+## other a red glyph. The home slice cuts every board through its rings, so neither shows
+## until you step or turn the slice through a board - and then it is a different sign on
+## each board, and a different one again the other way. Read across the range from the
+## left, the letters spell what the white suits dig out of the hill.
+const SIGN_W := 0.37
+const SIGN_CELL := 0.13
+## By board, in the order of BOARDS: its letter, and its glyph. The boards' order across
+## the range from the counter, left to right, is 3, 1, 2, 0, 4.
+const LETTERS := ["T", "Z", "O", "A", "H"]
+const GLYPHS := ["diamond", "cross", "eye", "plus", "triangle"]
+const BITMAPS := {
+	"A": [".###.", "#...#", "#####", "#...#", "#...#"],
+	"Z": ["#####", "...#.", "..#..", ".#...", "#####"],
+	"O": [".###.", "#...#", "#...#", "#...#", ".###."],
+	"T": ["#####", "..#..", "..#..", "..#..", "..#.."],
+	"H": ["#...#", "#...#", "#####", "#...#", "#...#"],
+	"diamond": ["..#..", ".#.#.", "#...#", ".#.#.", "..#.."],
+	"cross": ["#...#", ".#.#.", "..#..", ".#.#.", "#...#"],
+	"eye": [".###.", "#...#", "#.#.#", "#...#", ".###."],
+	"plus": ["..#..", "..#..", "#####", "..#..", "..#.."],
+	"triangle": ["..#..", ".#.#.", ".#.#.", "#...#", "#####"],
+}
+@export var letter_ink: Color = Color(0.06, 0.06, 0.07): set = _set_colour
+@export var glyph_ink: Color = Color(0.70, 0.12, 0.10): set = _set_colour
+## The rifle on the counter you pick up to shoot, where one of the pair used to lie, and
+## the other still painted into the booth beside it (pen_range_shooting_4d.gd).
+const RIFLE_ON_COUNTER := Vector4(-HALF.x + 0.15, 1.15, -0.9, 0.0)
+var counter_rifle: Node4D
+
 ## The board nodes, in the order of BOARDS.
 var board_nodes: Array[Node4D] = []
 
@@ -104,8 +136,9 @@ func boxes() -> Array:
 		var x: float = -0.3 + 0.45 * float(i)
 		out.append([Vector4(x, 0.36, rack_z, 0.0), Vector4(0.07, 0.36, 0.05, 0.07), stock, false])
 		out.append([Vector4(x, 0.95, rack_z, 0.0), Vector4(0.035, 0.85, 0.035, 0.05), steel, false])
-	# Two rifles lying on the counter, pointing down the range.
-	for z in [-0.9, 0.7]:
+	# A rifle lying on the counter, pointing down the range; the other of the pair is its own
+	# node (counter_rifle), since you pick it up.
+	for z in [0.7]:
 		out.append([Vector4(-HALF.x + 0.15, 1.15, z, 0.0), Vector4(0.95, 0.035, 0.035, 0.05), steel, false])
 		out.append([Vector4(-HALF.x + 0.62, 1.15, z, 0.0), Vector4(0.36, 0.08, 0.06, 0.07), stock, false])
 	# Ammunition tins.
@@ -121,6 +154,22 @@ func boxes() -> Array:
 	# A few loose sandbags by the counter.
 	out.append([Vector4(-HALF.x - 0.45, 0.16, -1.8, 0.8), Vector4(0.55, 0.3, 0.4, 0.4), sandbag, true])
 	out.append([Vector4(-HALF.x - 0.45, 0.16, 1.9, -0.9), Vector4(0.55, 0.3, 0.4, 0.4), sandbag, true])
+	return out
+
+
+## A board's signs, from its hinge: [centre, size, colour] for each painted cell.
+func sign_boxes(index: int) -> Array:
+	var out := []
+	for layer in [[String(LETTERS[index]), SIGN_W, letter_ink], [String(GLYPHS[index]), -SIGN_W, glyph_ink]]:
+		var rows: Array = BITMAPS[layer[0]]
+		for r in rows.size():
+			var row: String = rows[r]
+			for c in row.length():
+				if row[c] != "#":
+					continue
+				# Seen from the counter, looking down -x, the board's left is +z.
+				var at := Vector4(0.07, FACE[0].y + (2 - r) * SIGN_CELL, (2 - c) * SIGN_CELL, float(layer[1]))
+				out.append([at, Vector4(0.02, SIGN_CELL * 0.92, SIGN_CELL * 0.92, 0.14), layer[2]])
 	return out
 
 
@@ -165,18 +214,29 @@ func rebuild() -> void:
 	mesh.mesh = TerrainBake.mesh_of(all)
 	add_child(mesh)
 	add_child(body)
-	# The boards: one mesh shared by all five, each on its own hinge.
-	var face := TerrainBake.Builder.new()
-	for b in board_boxes():
-		face.append(TerrainBake.bake_box(b[0], b[1], _shade(b[2], HINGE_Y)))
-	var face_mesh: ArrayTetraMesh4D = TerrainBake.mesh_of(face)
+	# The boards, each on its own hinge, each with its own signs - so each its own mesh now,
+	# five small ones rather than one shared.
 	board_nodes.clear()
 	for i in BOARDS.size():
-		var b: Vector3 = BOARDS[i]
+		var face := TerrainBake.Builder.new()
+		for b in board_boxes() + sign_boxes(i):
+			face.append(TerrainBake.bake_box(b[0], b[1], _shade(b[2], HINGE_Y)))
+		var bp: Vector3 = BOARDS[i]
 		var hinge := MeshInstance4D.new()
 		hinge.name = "Board%d" % i
 		hinge.set_meta("range_booth_built", true)
-		hinge.mesh = face_mesh
-		hinge.position = Vector4(b.x, HINGE_Y, b.y, b.z)
+		hinge.mesh = TerrainBake.mesh_of(face)
+		hinge.position = Vector4(bp.x, HINGE_Y, bp.y, bp.z)
 		add_child(hinge)
 		board_nodes.append(hinge)
+	# The rifle you pick up: barrel and stock, the same boxes the painted one is made of.
+	var rifle := TerrainBake.Builder.new()
+	rifle.append(TerrainBake.bake_box(Vector4.ZERO, Vector4(0.95, 0.035, 0.035, 0.05), _shade(steel, 1.15)))
+	rifle.append(TerrainBake.bake_box(Vector4(0.47, 0.0, 0.0, 0.0), Vector4(0.36, 0.08, 0.06, 0.07), _shade(stock, 1.15)))
+	var on_counter := MeshInstance4D.new()
+	on_counter.name = "CounterRifle"
+	on_counter.set_meta("range_booth_built", true)
+	on_counter.mesh = TerrainBake.mesh_of(rifle)
+	on_counter.position = RIFLE_ON_COUNTER
+	add_child(on_counter)
+	counter_rifle = on_counter

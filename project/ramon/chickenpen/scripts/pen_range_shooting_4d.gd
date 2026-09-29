@@ -16,6 +16,15 @@ extends Node
 ## the slice is turned to it - the same rule the gallery the range master sends you to is
 ## built on.
 ##
+## PICK THE RIFLE UP FIRST (Ramon, 29 Sept: "when you shoot you should be able to pick up a
+## gun of course"). One of the two rifles on the counter is its own node (the booth's
+## counter_rifle); at the counter the first press of the button takes it off the counter
+## and into your hands, and only then does the button shoot. The same button rather than
+## F, because F at the counter belongs to the range master, whose reach covers it - and a
+## rifle that answered F would take the key from him. Step away from the counter and it goes
+## back where it lay; range rifles stay at the range. While you hold it you face where you
+## aim, so the barrel and the shot agree.
+##
 ## THE PICKAXE STANDS DOWN AT THE COUNTER. Both answer the same button; the player carries
 ## meta "at_firing_line" while there, and pen_pickaxe_4d.gd will not swing while it is set.
 ## A carried chicken wins over both: the button puts it down (chicken_catcher_4d.gd).
@@ -64,6 +73,10 @@ var _call_left := 0.0
 var _shot_sound: AudioStreamPlayer
 var _knock_sound: AudioStreamPlayer
 var _ding_sound: AudioStreamPlayer
+## Whether the rifle is in your hands, and the one drawn there.
+var holding := false
+var _aiming_was := false
+var _held_rifle: MeshInstance4D
 
 ## How far a board tips back when it is hit, and how fast it goes over and comes back up.
 const DOWN_TILT := 1.35
@@ -82,6 +95,35 @@ func _ready() -> void:
 	_knock_sound = _player_for(_knock(), -6.0)
 	_ding_sound = _player_for(DING, -8.0)
 
+
+## The rifle as you hold it: the counter one's mesh, under the avatar, barrel forward and
+## the stock at the shoulder. Made at the first pick-up rather than when the pen opens: the
+## avatar builds itself in its own _ready and clears what it finds under it.
+func _make_held_rifle() -> void:
+	var avatar: Node4D = _player.get_node_or_null("Avatar") as Node4D if _player != null else null
+	if avatar == null:
+		return
+	_held_rifle = MeshInstance4D.new()
+	_held_rifle.name = "HeldRifle"
+	avatar.add_child(_held_rifle)
+	# The mesh points its barrel along its own -x with the stock at +x; turned so the
+	# barrel points the way the avatar faces (+z).
+	_held_rifle.basis = Basis4D.from_zx(PI * 0.5)
+	_held_rifle.position = Vector4(0.16, 0.78, 0.35, 0.0)
+	_held_rifle.visible = false
+
+
+func _pick_up(on: bool) -> void:
+	holding = on
+	if on and (_held_rifle == null or not is_instance_valid(_held_rifle)):
+		_make_held_rifle()
+	var lying: Node4D = _booth.get("counter_rifle") as Node4D if _booth != null else null
+	if lying != null:
+		lying.visible = not on
+	if _held_rifle != null:
+		if on and _held_rifle.mesh == null and lying is MeshInstance4D:
+			_held_rifle.mesh = (lying as MeshInstance4D).mesh
+		_held_rifle.visible = on
 
 func _boards() -> Array[Node4D]:
 	if _booth == null:
@@ -110,12 +152,26 @@ func _process(delta: float) -> void:
 	if at != _at_line:
 		_at_line = at
 		_player.set_meta(&"at_firing_line", at)
-		if _rig != null and _rig.has_method("set_aiming"):
-			_rig.call("set_aiming", at)
+		if not at and holding:
+			_pick_up(false)
+	# The camera comes over your shoulder only once there is something in your hands.
+	var aiming: bool = at and holding
+	if _rig != null and _rig.has_method("set_aiming") and aiming != _aiming_was:
+		_aiming_was = aiming
+		_rig.call("set_aiming", aiming)
+	if aiming and _camera != null:
+		var ahead: Vector4 = _camera.global_basis * Vector4(0.0, 0.0, -1.0, 0.0)
+		if absf(ahead.x) + absf(ahead.z) > 0.01:
+			_player.set("_facing", atan2(ahead.x, ahead.z))
 	var captured: bool = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 	_hud.visible = at
-	_sight.visible = at and captured
-	_tally.text = "RANGE    shots %d    hits %d    bull's-eyes %d" % [shots, hits, bulls] if shots > 0 else "RANGE    left click to shoot the boards"
+	_sight.visible = aiming and captured
+	if not holding:
+		_tally.text = "RANGE    left click to pick up the rifle"
+	elif shots > 0:
+		_tally.text = "RANGE    shots %d    hits %d    bull's-eyes %d" % [shots, hits, bulls]
+	else:
+		_tally.text = "RANGE    left click to shoot    the boards go deeper than they look"
 	if _call_left > 0.0:
 		_call_left = maxf(_call_left - delta, 0.0)
 		_call.modulate.a = clampf(_call_left / 0.4, 0.0, 1.0)
@@ -139,6 +195,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED or _camera == null:
 		return
 	if _catcher != null and _catcher.get("carried") != null:
+		return
+	get_viewport().set_input_as_handled()
+	if not holding:
+		_pick_up(true)
 		return
 	var forward: Vector4 = (_camera.global_basis * Vector4(0.0, 0.0, -1.0, 0.0)).normalized()
 	shoot(_camera.global_position, forward)

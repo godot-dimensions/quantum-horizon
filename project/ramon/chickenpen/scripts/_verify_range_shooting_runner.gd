@@ -1,5 +1,7 @@
 extends SceneTree
 
+const BoothScript := preload("res://ramon/chickenpen/scripts/pen_range_booth_4d.gd")
+
 ## The range booth's boards (pen_range_shooting_4d.gd): the counter is found, a shot at a
 ## board's middle is a bull's-eye and tips it over backwards, a board that is down cannot be
 ## hit, a board on another slice cannot be hit from this one, the board stands up again,
@@ -20,6 +22,8 @@ var _f := 0
 var _step := 0
 var _t := 0.0
 var _failed := 0
+var _eye_cam: Camera4D
+var _sign_shot := 0
 var _windowed := false
 
 
@@ -108,6 +112,19 @@ func _process(d: float) -> bool:
 				_check("the HUD comes up there", (_shooter.get("_hud") as CanvasLayer).visible)
 				_check("the pickaxe is told to stand down", bool(_player().get_meta(&"at_firing_line", false)))
 				_check("five boards, each its own node", (_booth.get("board_nodes") as Array).size() == 5)
+				var lying: Node4D = _booth.get("counter_rifle")
+				_check("a rifle lies on the counter", lying != null and lying.visible and not bool(_shooter.get("holding")))
+				_check("and the first press picks it up", String((_shooter.get("_tally") as Label).text).contains("pick up the rifle"))
+				_shooter.call("_pick_up", true)
+				_step = 10
+				_t = 0.0
+		10:
+			_hold(_in_booth(Vector4(-1.0, 0.0, 0.0, 0.0)))
+			_look_down_range()
+			if _t > 0.8:
+				var lying: Node4D = _booth.get("counter_rifle")
+				var held: Node4D = _player().get_node_or_null("Avatar/HeldRifle")
+				_check("off the counter and into your hands", not lying.visible and held != null and held.visible)
 				_check("the camera comes over the shoulder", float(_player().get_node("CameraRig").get("_aim_blend")) > 0.5)
 				_save(0)
 				var hit: int = int(_shooter.call("shoot", _eye(), _face_of(0) - _eye()))
@@ -160,9 +177,39 @@ func _process(d: float) -> bool:
 				_check("walking off puts the HUD away", not (_shooter.get("_hud") as CanvasLayer).visible)
 				_check("and gives the pickaxe back", not bool(_player().get_meta(&"at_firing_line", false)))
 				_check("and the camera back", float(_player().get_node("CameraRig").get("_aim_blend")) < 0.5)
-				print("RANGE SHOOTING: %s" % ("ALL PASS" if _failed == 0 else "%d FAILED" % _failed))
-				quit()
-				return true
+				_check("and the rifle back on the counter", (_booth.get("counter_rifle") as Node4D).visible and not bool(_shooter.get("holding")))
+				# The signs through W: a letter on one side of every board's rings, a glyph on
+				# the other, and the letters, read across the range from the left, are AZOTH.
+				var order: Array = []
+				for i in 5:
+					order.append([float(BoothScript.BOARDS[i].y), String(BoothScript.LETTERS[i])])
+				order.sort_custom(func(a, b): return a[0] > b[0])
+				var word := ""
+				for o in order:
+					word += String(o[1])
+				_check("the boards spell it, left to right", word == "AZOTH", word)
+				_check("every board carries its signs", int(_booth.call("sign_boxes", 0).size()) > 10)
+				_step = 5
+				_t = 0.0
+		5:
+			# A close look at board 3 (the A), from in front, at three depths through it.
+			if _eye_cam == null:
+				_eye_cam = Camera4D.new()
+				_eye_cam.set("rendering_engine_name", "Cross-section")
+				_booth.add_child(_eye_cam)
+				_eye_cam.current = true
+			var b: Vector4 = _board(3).position
+			var depth: float = [0.0, BoothScript.SIGN_W, -BoothScript.SIGN_W][mini(_sign_shot, 2)]
+			_eye_cam.position = Vector4(b.x + 2.2, b.y + 0.45, b.z, b.w + depth)
+			_eye_cam.basis = Projection(Vector4(0, 0, -1, 0), Vector4(0, 1, 0, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 1))
+			if _t > 0.6:
+				_save(3 + _sign_shot)
+				_sign_shot += 1
+				_t = 0.0
+				if _sign_shot >= 3:
+					print("RANGE SHOOTING: %s" % ("ALL PASS" if _failed == 0 else "%d FAILED" % _failed))
+					quit()
+					return true
 	if _f > 20000:
 		print("RANGE SHOOTING: TIMED OUT at step %d" % _step)
 		quit()
