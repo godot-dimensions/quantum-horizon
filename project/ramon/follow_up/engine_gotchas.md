@@ -389,3 +389,13 @@ at 104 bytes each (`tetra_mesh_4d.h`, `PROXY_VERTS_PER_TET`,
 the 92,160-tetrahedron hill ring added 229 MB of video memory while costing
 0.04 ms of frame time. Drawing is nearly free; memory is not. Budget
 tetrahedra for static scenery by memory, not by frame time.
+
+## Parking a scene and putting it back can change its light (29 Sept)
+
+Taking the current scene out of the tree and adding it back (the range trip, the laptop
+trip) re-enters every node in tree order. With more than one WorldEnvironment4D marked
+`current` in it - the pen's own, and the cave's or the cinema's opened beside it - the one
+that ends up in charge is decided by that order, not by which was in charge before: the cave
+came back lit by the field's warm evening. Note the environment really in use before parking
+(current, and not under a hidden branch) and call `make_current()` on it after. And any menu
+that sets the window's `content_scale_*` or mode leaves them set: save the window, restore it.
