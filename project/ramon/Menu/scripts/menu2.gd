@@ -664,6 +664,11 @@ func _apply_window_mode() -> void:
 	window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
 	window.content_scale_size = DESIGN_RESOLUTION
 
+	# Opened from a laptop in the chicken pen, the game's window is the game's: leave its
+	# mode and size alone (pen_laptop_trip_4d.gd puts the scaling above back on return).
+	if get_tree().root.has_meta(&"laptop_trip"):
+		return
+
 	match WINDOW_MODE:
 		WindowMode.BORDERLESS_FULLSCREEN:
 			window.mode = Window.MODE_FULLSCREEN

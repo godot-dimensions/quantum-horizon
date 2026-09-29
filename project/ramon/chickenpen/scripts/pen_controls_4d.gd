@@ -63,6 +63,12 @@ var _slider_row: int = -1
 var _ui_scale: Node
 var _slider: HSlider
 var _percent: Label
+## A step down and a step up either side of the slider (Ramon, 29 Sept: "add a plus icon for
+## upres, and a minus for downres"), for when dragging is fiddly.
+var _minus: Button
+var _plus: Button
+const SIZE_STEP := 10.0
+const STEP_W := 22.0
 var _dragging := false
 const SLIDER_W := 190.0
 
@@ -179,7 +185,7 @@ func _measure() -> void:
 		widest = maxf(widest,
 			font.get_string_size(row[1], HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x)
 	if _slider != null:
-		widest = maxf(widest, SLIDER_W + 12.0 + font.get_string_size("300%", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x)
+		widest = maxf(widest, (STEP_W + 6.0) * 2.0 + SLIDER_W + 12.0 + font.get_string_size("300%", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x)
 	_label_x = 14.0 + _chip_w + 12.0
 	var height: float = 14.0 + float(_rows.size()) * _step() + 8.0
 	if _rule_after >= 0:
@@ -188,9 +194,14 @@ func _measure() -> void:
 		height += 11.0
 		var y: float = _row_y(_slider_row)
 		var chip_h: float = float(text_size) + 7.0
-		_slider.position = Vector2(_label_x, y + (chip_h - 16.0) * 0.5)
+		var mid: float = y + chip_h * 0.5
+		_minus.position = Vector2(_label_x, mid - STEP_W * 0.5)
+		_minus.size = Vector2(STEP_W, STEP_W)
+		_slider.position = Vector2(_label_x + STEP_W + 6.0, y + (chip_h - 16.0) * 0.5)
 		_slider.size = Vector2(SLIDER_W, 16.0)
-		_percent.position = Vector2(_label_x + SLIDER_W + 12.0, y + 1.0)
+		_plus.position = Vector2(_slider.position.x + SLIDER_W + 6.0, mid - STEP_W * 0.5)
+		_plus.size = Vector2(STEP_W, STEP_W)
+		_percent.position = Vector2(_plus.position.x + STEP_W + 10.0, y + 1.0)
 	# Anchored to the right edge in the scene, so the card is grown leftward and downward
 	# from the corner it is pinned to rather than being sized by hand - a row added below
 	# used to fall off the bottom of a rect somebody had typed a number into.
@@ -227,6 +238,8 @@ func _make_slider() -> void:
 	_slider.drag_started.connect(_on_drag_started)
 	_slider.drag_ended.connect(_on_drag_ended)
 	add_child(_slider)
+	_minus = _step_button("−", -SIZE_STEP)
+	_plus = _step_button("+", SIZE_STEP)
 	_percent = Label.new()
 	_percent.add_theme_font_size_override("font_size", text_size)
 	_percent.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.72))
@@ -236,6 +249,26 @@ func _make_slider() -> void:
 	# The scale reads what the slider last left it at in its own _ready, which comes after
 	# this one; catch up with it once it has.
 	_sync_slider.call_deferred()
+
+
+## A small square button, in the card's own quiet style, that nudges the size by [param by].
+func _step_button(text: String, by: float) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.focus_mode = Control.FOCUS_NONE
+	b.add_theme_font_size_override("font_size", text_size + 2)
+	for state in ["normal", "hover", "pressed"]:
+		var box := StyleBoxFlat.new()
+		box.bg_color = Color(1.0, 1.0, 1.0, 0.08 if state == "normal" else (0.16 if state == "hover" else 0.24))
+		box.set_corner_radius_all(4)
+		box.content_margin_top = 0.0
+		box.content_margin_bottom = 2.0
+		b.add_theme_stylebox_override(state, box)
+	b.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.8))
+	b.pressed.connect(func() -> void:
+		_slider.value = clampf(_slider.value + by, _slider.min_value, _slider.max_value))
+	add_child(b)
+	return b
 
 
 func _sync_slider() -> void:

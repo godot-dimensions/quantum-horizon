@@ -16,6 +16,19 @@ extends CanvasLayer
 ## and only at the top of the menu does it ask. While the question is up it takes every key
 ## itself - Enter is yes, Escape is no - because Enter in both menus launches a prototype.
 ## Nothing in the menus was changed for this.
+##
+## AND IT PUTS BACK WHAT THE MENUS CHANGE AROUND THE GAME (Ramon, 29 Sept: "after I return
+## from the laptop ... the cave is browner, and no HUD"). Two things outlive a menu:
+##   - The window. Menu2 sets its own content scale (canvas items, 1920x1080, expand) and
+##     goes borderless fullscreen, and nothing set them back - the HUD, laid out for the
+##     game's own window, came back scaled off the screen, the dial with it.
+##   - The environment. The pen and the cave (and the cinema) each carry a
+##     WorldEnvironment4D marked current, and which one owns the sky and the light depends
+##     on the order they enter the tree (pen_crossing_4d.gd says so at length). Putting the
+##     whole pen back re-enters them in the pen's order, and the field's warm evening won
+##     inside the cave. So the one that was really in use - marked current and not under a
+##     branch the crossing has hidden - is noted on the way out and made current again on
+##     the way back.
 
 const FONT := "res://ramon/Demo/fonts/Montserrat/static/Montserrat-Medium.ttf"
 const FONT_BOLD := "res://ramon/Demo/fonts/Montserrat/static/Montserrat-SemiBold.ttf"
@@ -24,6 +37,8 @@ var _pen: Node
 var _camera: Camera4D
 var _mouse := Input.MOUSE_MODE_VISIBLE
 var _ask: Control
+var _window: Dictionary = {}
+var _environment: Node
 var _home: Button
 
 
@@ -82,6 +97,11 @@ func _swap(menu_path: String) -> void:
 		return
 	_mouse = Input.mouse_mode
 	_pen = tree.current_scene
+	_window = _window_state()
+	_environment = _environment_in_use(_pen)
+	# Tells Menu2 not to take over the window's mode and size - only its scaling, which this
+	# puts back.
+	tree.root.set_meta(&"laptop_trip", true)
 	tree.root.remove_child(_pen)
 	var menu: Node = packed.instantiate()
 	tree.root.add_child(menu)
@@ -101,13 +121,60 @@ func _return() -> void:
 	if here != null and here != _pen and is_instance_valid(here):
 		tree.root.remove_child(here)
 		here.queue_free()
+	if tree.root.has_meta(&"laptop_trip"):
+		tree.root.remove_meta(&"laptop_trip")
+	_restore_window()
 	if _pen != null and is_instance_valid(_pen):
 		tree.root.add_child(_pen)
 		tree.current_scene = _pen
+	if _environment != null and is_instance_valid(_environment):
+		_environment.call("make_current")
 	if _camera != null and is_instance_valid(_camera):
 		_camera.current = true
 	Input.mouse_mode = _mouse
 	queue_free()
+
+
+func _window_state() -> Dictionary:
+	var w: Window = get_window()
+	return {"scale_mode": w.content_scale_mode, "aspect": w.content_scale_aspect,
+		"scale_size": w.content_scale_size, "factor": w.content_scale_factor,
+		"mode": w.mode, "borderless": w.borderless, "size": w.size, "position": w.position}
+
+
+func _restore_window() -> void:
+	if _window.is_empty():
+		return
+	var w: Window = get_window()
+	w.content_scale_mode = _window["scale_mode"]
+	w.content_scale_aspect = _window["aspect"]
+	w.content_scale_size = _window["scale_size"]
+	w.content_scale_factor = _window["factor"]
+	w.borderless = _window["borderless"]
+	w.mode = _window["mode"]
+	if int(_window["mode"]) == Window.MODE_WINDOWED:
+		w.size = _window["size"]
+		w.position = _window["position"]
+		# And again once the change of mode has settled: straight out of fullscreen the
+		# system trims the size it is given by the frame it is about to draw, and a frame
+		# later is still too soon.
+		var size_: Vector2i = _window["size"]
+		var at: Vector2i = _window["position"]
+		get_tree().create_timer(0.25).timeout.connect(func() -> void:
+			if is_instance_valid(w) and w.mode == Window.MODE_WINDOWED:
+				w.size = size_
+				w.position = at)
+
+
+## The WorldEnvironment4D that is actually lighting the game: marked current, and not inside
+## a branch that is hidden (the crossing hides the field while you are in the cave or the
+## cinema). The last such in the tree, the way the most recent arrival wins.
+static func _environment_in_use(scene: Node) -> Node:
+	var found: Node = null
+	for env in scene.find_children("*", "WorldEnvironment4D", true, false):
+		if bool(env.get("current")) and (env as Node4D).is_visible_in_tree():
+			found = env
+	return found
 
 
 # ------------------------------------------------------------------ the question
