@@ -75,18 +75,14 @@ const STEP_W := 20.0
 const STEP_H := 14.0
 ## How much taller than the other rows the size row is, for the two buttons stacked in it.
 const SIZE_ROW_EXTRA := 9.0
-## AND THE DIAL'S OWN SIZE, beside it, while Shift is held with the cursor free (Ramon, 29
-## Sept: "with holding shift, we can make a second [control] next to it, that controls the
-## bottom right collector hud size"). Only with the cursor free: Shift is also the sprint
-## key, and a control that popped in every time you ran would be a flicker, not a feature -
-## and only a free cursor can click it anyway. Its room is kept whether it shows or not, so
-## the card never changes width; while it is hidden that room says how to get it.
+## AND THE DIAL'S OWN SIZE, in a row of its own right under it (Ramon, 29 Sept: "a dial size
+## measure right under the other, so we can check the different sizes together"): the same
+## number and the same plus over minus, always there. Shift with the + and - keys sizes it
+## too.
 var _dial_percent: Label
 var _dial_plus: Button
 var _dial_minus: Button
-var _dial_hint: Label
 const DIAL_STEP := 10.0
-const DIAL_GAP := 22.0
 
 
 func _ready() -> void:
@@ -203,6 +199,7 @@ func _build() -> void:
 	if _size_box != null:
 		_slider_row = _rows.size()
 		_rows.append(["UI size", "", false])
+		_rows.append(["Dial size", "", false])
 	_measure()
 
 
@@ -217,39 +214,36 @@ func _measure() -> void:
 		widest = maxf(widest,
 			font.get_string_size(row[1], HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x)
 	if _size_box != null:
-		var one: float = font.get_string_size("300%", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x + 10.0 + STEP_W
-		var dial: float = font.get_string_size("Dial 200%", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x + 10.0 + STEP_W
-		widest = maxf(widest, one + DIAL_GAP + maxf(dial, font.get_string_size("Shift: dial size", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size - 2).x))
+		widest = maxf(widest, font.get_string_size("300%", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x + 10.0 + STEP_W)
 	_label_x = 14.0 + _chip_w + 12.0
 	var height: float = 14.0 + float(_rows.size()) * _step() + 8.0
 	if _rule_after >= 0:
 		height += 11.0
 	if _slider_row >= 0:
-		height += 11.0
-		var y: float = _row_y(_slider_row)
-		var chip_h: float = float(text_size) + 7.0
-		height += SIZE_ROW_EXTRA
-		var mid: float = y + (chip_h + SIZE_ROW_EXTRA) * 0.5
-		var digits: float = get_theme_default_font().get_string_size("300%", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x
-		_percent.position = Vector2(_label_x, mid - float(text_size) * 0.72)
-		_plus.position = Vector2(_label_x + digits + 10.0, mid - STEP_H - 1.0)
-		_plus.size = Vector2(STEP_W, STEP_H)
-		_minus.position = Vector2(_label_x + digits + 10.0, mid + 1.0)
-		_minus.size = Vector2(STEP_W, STEP_H)
-		var x0: float = _plus.position.x + STEP_W + DIAL_GAP
-		var dial_w: float = get_theme_default_font().get_string_size("Dial 200%", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x
-		_dial_percent.position = Vector2(x0, _percent.position.y)
-		_dial_plus.position = Vector2(x0 + dial_w + 10.0, _plus.position.y)
-		_dial_plus.size = _plus.size
-		_dial_minus.position = Vector2(x0 + dial_w + 10.0, _minus.position.y)
-		_dial_minus.size = _minus.size
-		_dial_hint.position = Vector2(x0, mid - float(text_size - 2) * 0.72)
+		# Both size rows are taller than a row, for the plus and minus stacked in each.
+		height += 11.0 + SIZE_ROW_EXTRA * 2.0
+		_place_spinner(0, _percent, _plus, _minus)
+		_place_spinner(1, _dial_percent, _dial_plus, _dial_minus)
 	# Anchored to the right edge in the scene, so the card is grown leftward and downward
 	# from the corner it is pinned to rather than being sized by hand - a row added below
 	# used to fall off the bottom of a rect somebody had typed a number into.
 	offset_right = -right_margin
 	offset_left = -right_margin - (_label_x + widest + 16.0)
 	offset_bottom = offset_top + height
+
+
+## Size row [param k] (0 the interface, 1 the dial): its number, and its plus over minus,
+## level with the chip _draw puts at the same place.
+func _place_spinner(k: int, number: Label, plus: Button, minus: Button) -> void:
+	var chip_h: float = float(text_size) + 7.0
+	var top: float = _row_y(_slider_row + k) + SIZE_ROW_EXTRA * (float(k) + 0.5)
+	var mid: float = top + chip_h * 0.5
+	var digits: float = get_theme_default_font().get_string_size("300%", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x
+	number.position = Vector2(_label_x, mid - float(text_size) * 0.72)
+	plus.position = Vector2(_label_x + digits + 10.0, mid - STEP_H - 1.0)
+	plus.size = Vector2(STEP_W, STEP_H)
+	minus.position = Vector2(_label_x + digits + 10.0, mid + 1.0)
+	minus.size = Vector2(STEP_W, STEP_H)
 
 
 func _step() -> float:
@@ -286,13 +280,6 @@ func _make_spinner() -> void:
 	add_child(_dial_percent)
 	_dial_plus = _step_button("+", DIAL_STEP, true)
 	_dial_minus = _step_button("−", -DIAL_STEP, true)
-	_dial_hint = Label.new()
-	_dial_hint.text = "Shift: dial size"
-	_dial_hint.add_theme_font_size_override("font_size", maxi(text_size - 2, 8))
-	_dial_hint.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.3))
-	_dial_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_dial_hint)
-	_show_dial(false)
 	_show_size()
 	# The scale reads what was last chosen in its own _ready, which comes after this one;
 	# catch up with it once it has.
@@ -307,27 +294,12 @@ func size_percent() -> float:
 func _show_size() -> void:
 	_percent.text = "%d%%" % roundi(size_percent())
 	if _dial_percent != null:
-		_dial_percent.text = "Dial %d%%" % roundi(dial_percent())
+		_dial_percent.text = "%d%%" % roundi(dial_percent())
 
 
 ## The dial's own size, from the scale.
 func dial_percent() -> float:
 	return float(_ui_scale.get("dial_percent")) if _ui_scale != null else 100.0
-
-
-func _show_dial(on: bool) -> void:
-	_dial_percent.visible = on
-	_dial_plus.visible = on
-	_dial_minus.visible = on
-	_dial_hint.visible = not on
-
-
-func _process(_delta: float) -> void:
-	if _dial_plus == null:
-		return
-	var on: bool = Input.is_key_pressed(KEY_SHIFT) and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED
-	if on != _dial_plus.visible:
-		_show_dial(on)
 
 
 ## A small button in the card's own quiet style that moves the size - or, with [param dial],
@@ -383,11 +355,14 @@ func _draw() -> void:
 		draw_style_box(_panel, Rect2(Vector2.ZERO, size))
 	var y: float = 14.0
 	for i in _rows.size():
+		var sized: bool = _slider_row >= 0 and i >= _slider_row
 		if i == _slider_row:
 			y += 5.0
 			draw_line(Vector2(14.0, y), Vector2(size.x - 14.0, y), Color(1.0, 1.0, 1.0, 0.09), 1.0)
-			# Level with the spinner beside it, which is taller than a row.
-			y += 6.0 + SIZE_ROW_EXTRA * 0.5
+			y += 6.0
+		# Level with the spinner beside it, which is taller than a row.
+		if sized:
+			y += SIZE_ROW_EXTRA * 0.5
 		var row: Array = _rows[i]
 		var chip_h: float = float(text_size) + 7.0
 		var box := Rect2(14.0, y, _chip_w, chip_h)
@@ -401,7 +376,7 @@ func _draw() -> void:
 		draw_string(font, Vector2(_label_x, y + font.get_ascent(text_size) + 3.5), row[1],
 			HORIZONTAL_ALIGNMENT_LEFT, -1, text_size,
 			Color(1.0, 1.0, 1.0, 0.44 if row[2] else 0.72))
-		y += _step()
+		y += _step() + (SIZE_ROW_EXTRA * 0.5 if sized else 0.0)
 		if i == _rule_after:
 			y += 5.0
 			draw_line(Vector2(14.0, y), Vector2(size.x - 14.0, y),

@@ -12,6 +12,7 @@ var _step := 0
 var _wait := 0
 var _failed := 0
 var _dial_was := 100.0
+var _dial_saved := 100.0
 var _corner_was := Vector2.ZERO
 var _want := 1.0
 ## What the scale loaded - the player's saved size - before the test sets its own.
@@ -55,6 +56,10 @@ func _process(_d: float) -> bool:
 		_loaded = float(_room.get_node("Systems/UiScale").get("percent"))
 	if _f == 5:
 		_room.get_node("Systems/UiScale").set("percent", 130.0)
+		# The dial at its drawn size for the checks of where it sits - in memory only, so
+		# the size this machine has saved for it is left as it is.
+		_dial_saved = float(_room.get_node("Systems/UiScale").get("dial_percent"))
+		_room.get_node("Systems/UiScale").set("dial_percent", 100.0)
 	if _f < 30:
 		return false
 	_wait += 1
@@ -95,7 +100,8 @@ func _process(_d: float) -> bool:
 				card.call("_unhandled_input", e)
 				_check("and with Shift they size the dial", absf(float(ui.get("dial_percent")) - (dial_keys + 10.0)) < 0.01
 					and absf(float(card.call("size_percent")) - before_keys) < 0.01)
-				ui.call("set_dial_percent", dial_keys)
+				ui.call("set_dial_percent", _dial_saved)
+				ui.set("dial_percent", dial_keys)
 				var was: float = float(card.call("size_percent"))
 				plus.pressed.emit()
 				_check("plus is 10% up", absf(float(card.call("size_percent")) - (was + 10.0)) < 0.01)
@@ -115,8 +121,9 @@ func _process(_d: float) -> bool:
 				ui.set("percent", was)
 				# The dial's own size: hidden until Shift, a hint in its place; a press scales
 				# the dial about its bottom-right corner.
-				_check("the dial's size is tucked away until Shift", not (card.get("_dial_plus") as Button).visible
-					and (card.get("_dial_hint") as Label).visible)
+				var dplus: Button = card.get("_dial_plus")
+				_check("the dial's size in a row right under the UI size, always shown", dplus.is_visible_in_tree()
+					and dplus.position.y > (card.get("_minus") as Button).position.y and absf(dplus.position.x - plus.position.x) < 0.5)
 				_dial_was = float(ui.get("dial_percent"))
 				var dial := _room.get_node("UI/SlicePlane") as Control
 				_corner_was = dial.get_global_rect().end
@@ -136,7 +143,8 @@ func _process(_d: float) -> bool:
 					"%.0f%%" % float(ui.get("dial_percent")))
 				var drawn: Vector2 = dial.get_global_transform().origin + dial.size * dial.get_global_transform().get_scale()
 				_check("and stays in its corner", drawn.distance_to(_corner_was) < 2.0, "%s against %s" % [drawn, _corner_was])
-				ui.call("set_dial_percent", _dial_was)
+				ui.call("set_dial_percent", _dial_saved)
+				ui.set("dial_percent", _dial_was)
 				_room.get_node("Crossing").call("go_for_testing")
 				_step = 1
 				_wait = 0
