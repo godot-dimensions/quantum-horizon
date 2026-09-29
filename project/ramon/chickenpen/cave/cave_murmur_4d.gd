@@ -28,7 +28,7 @@ extends Node
 ## encourage you." Every blow sets all three off at once - they turn to you, hands up, and
 ## their lines are heard across the chamber, not just up close. When it dies down they do
 ## not go back to work as if nothing happened: from the first blow on, what they mutter is
-## about you, and it gets worse the more you dig. The gold is still yours to take. Nobody
+## about you, and it gets worse the more you dig. The azoth is still yours to take. Nobody
 ## down here is going to tell you it was a good idea.
 
 @export var player_path: NodePath = NodePath("../../../Player")

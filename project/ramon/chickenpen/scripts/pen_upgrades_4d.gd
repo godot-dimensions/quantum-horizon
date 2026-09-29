@@ -1,12 +1,12 @@
 extends Node4D
 
-## What the gold is FOR. The keeper takes a nugget and builds something onto his pen.
+## What the azoth is FOR. The keeper takes a piece and builds something onto his pen.
 ##
 ## ONE NUGGET, ONE TROUGH, and the rock holds six. That is the loop: dig, carry, spend,
 ## go back and dig another - and the field gets a little kinder each time you do.
 ##
 ## It is one nugget rather than a price because the belt refuses duplicates: it carries a
-## single Gold token, not a count. Teaching it to stack would change a widget four other
+## single Azoth token, not a count. Teaching it to stack would change a widget four other
 ## things share, and a trip per nugget turns out to read better than a running total
 ## anyway. Each one is its own errand.
 ##
@@ -35,7 +35,7 @@ signal feeder_raised(at: Vector4)
 @export var manager_path: NodePath
 @export var pen_path: NodePath
 ## The belt's name for a nugget, which is what one of these costs.
-@export var cost_effect: String = "found_gold"
+@export var cost_effect: String = "found_azoth"
 
 @export_group("Feeder")
 ## Loose birds nearer the pen than this are drawn in. Beyond it they stay where they are:
@@ -90,7 +90,7 @@ func can_pay() -> bool:
 
 
 ## Takes the nugget and puts the thing up. Returns false rather than half-building if the
-## gold is not actually there, so a dialogue that offers the choice cannot get out of step
+## azoth is not actually there, so a dialogue that offers the choice cannot get out of step
 ## with the belt that pays for it.
 func buy(which: String) -> bool:
 	if which != "feeder" or all_built() or not can_pay():

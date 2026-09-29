@@ -28,7 +28,7 @@ class_name MithraScript
 ## object, with a character standing next to it telling you plainly what to press.
 ##
 ## AND SHE POINTS YOU AT THE HILL. Her nugget was found up by the cave mouth, where the
-## people in white suits are, so paying you also tells you where the rest of the gold is -
+## people in white suits are, so paying you also tells you where the rest of the azoth is -
 ## the errand hands you on to the cave instead of ending in a field.
 
 const START: String = "intro"
@@ -194,7 +194,7 @@ const NODES: Dictionary = {
 	"speaker": "Mithra",
 	"lines": [
 		"Here. I found this up by the hill, the one with the hole in it, the morning the watch went.",
-		"Gold. A proper lump of it. Take it to the keeper, he has been waiting years for someone to hand him something.",
+		"It's warm, and it's purple, and when I look at it side-on it isn't all there. The keeper will take it. He has been waiting years for someone to hand him something.",
 		"And there's more where it came from. There are people in white suits going in and out of that hill, and not one of them will tell me what they're measuring.",
 	],
 	"do": "give_nugget",

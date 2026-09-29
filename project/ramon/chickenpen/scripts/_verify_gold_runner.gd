@@ -81,7 +81,7 @@ func _process(_d) -> bool:
 		_check("it is buried to start with", _showing() == 0,
 			"%d of %d showing" % [_showing(), _gold.get_child_count()])
 		_check("and none is in the belt yet",
-			not bool(_root.get_node("UI/Inventory").call("has_item", "found_gold")),
+			not bool(_root.get_node("UI/Inventory").call("has_item", "found_azoth")),
 			"belt: %s" % [_root.get_node("UI/Inventory").get("items")])
 		return false
 
@@ -112,7 +112,7 @@ func _process(_d) -> bool:
 
 	if _f < 90: return false
 	_check("walking into one pockets it",
-		bool(_root.get_node("UI/Inventory").call("has_item", "found_gold")),
+		bool(_root.get_node("UI/Inventory").call("has_item", "found_azoth")),
 		"belt: %s" % [_root.get_node("UI/Inventory").get("items")])
 	_check("and the rock itself is untouched by all this",
 		_rock.get_node("Ground") != null and _rock.get_node("Voxels") != null,

@@ -46,7 +46,7 @@ func _process(_d) -> bool:
 		return false
 	if not _started:
 		_started = true
-		_scene.get_node("UI/Inventory").call("add_item", "found_gold")
+		_scene.get_node("UI/Inventory").call("add_item", "found_azoth")
 		assert(bool(_up.call("buy", "feeder")), "could not buy the trough")
 		for agent in _mgr.get("agents"):
 			if not is_instance_valid(agent):

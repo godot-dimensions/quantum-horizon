@@ -11,7 +11,7 @@ extends RefCounted
 ## nothing. So each figure below comes from _measure_monolith_runner.gd on the cube as it
 ## stands in cave.tscn, 28 Sept 2026: an 8^4 lattice (4,096 points) at 0.8 m; 6,000
 ## tetrahedra whole and 6,480 after five blows; 544 surface colliders whole and 522 after
-## five blows; 184-208 ms to re-contour after every blow; a 0.96 m bite; six pieces of gold
+## five blows; 184-208 ms to re-contour after every blow; a 0.96 m bite; six pieces of azoth
 ## of which three sit further through W than one blow reaches (pen_rock_gold_4d.gd). And
 ## the cave around it, 143,077 tetrahedra with the way through W and the far room (81,951
 ## in cave.res and 61,126 in cave_far.res, _bake_terrain_runner.gd what=cave and cave_far).
@@ -53,7 +53,7 @@ const NODES: Dictionary = {
 	"speaker": "Hale",
 	"lines": [
 		"Pick on your belt, stand close, swing. It takes a bite about two metres across. The white-suits will scream. They're not wrong to.",
-		"There's gold in it. Six pieces, the scanners say. Three you can reach from this slice. Three you can't, however close you stand.",
+		"There's azoth in it. The purple stuff the suits are here for. Six pieces, the scanners say. Three you can reach from this slice. Three you can't, however close you stand.",
 	],
 	"topic": true,
 	"goto": "menu",
@@ -85,7 +85,7 @@ const NODES: Dictionary = {
 	"lines": ["Ask. I've had three weeks to think of answers."],
 	"choices": [
 		{"text": "Your people keep measuring it.", "goto": "topic_colliders"},
-		{"text": "The gold you can't reach?", "goto": "topic_deep"},
+		{"text": "The azoth you can't reach?", "goto": "topic_deep"},
 		{"text": "Back to the start.", "goto": "menu"},
 		{"text": "I'll leave you to it.", "goto": "bye", "leave": true},
 	],

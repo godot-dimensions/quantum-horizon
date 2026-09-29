@@ -1,7 +1,7 @@
 extends PenNpcTalk4D
 
 ## Mithra's half of the conversation: she stops searching to talk, opens on whichever beat
-## of her small quest you have reached, and hands over a gold nugget when she gets her
+## of her small quest you have reached, and hands over a piece of azoth when she gets her
 ## pocket watch back.
 ##
 ## Reach, the shared catch key, the prompt over her head and freezing the player come from
@@ -18,7 +18,7 @@ extends PenNpcTalk4D
 
 const WATCH: String = "found_watch"
 const EGG: String = "found_egg"
-const GOLD: String = "found_gold"
+const AZOTH: String = "found_azoth"
 
 @export var searcher_path: NodePath
 @export var inventory_path: NodePath
@@ -85,11 +85,11 @@ func _on_effect(name: String) -> void:
 			if _inventory != null and _inventory.has_method("remove_item"):
 				_inventory.call("remove_item", WATCH)
 		"give_nugget":
-			# A nugget rather than the golden egg she used to hand over. The egg is a
+			# A piece of azoth rather than the golden egg she used to hand over. The egg is a
 			# trinket you can also just find in the field; a nugget buys a trough off the
 			# keeper, so thanking you with one is thanking you with something.
 			if _inventory != null:
-				_inventory.call("add_item", GOLD)
+				_inventory.call("add_item", AZOTH)
 
 
 func _has(item: String) -> bool:

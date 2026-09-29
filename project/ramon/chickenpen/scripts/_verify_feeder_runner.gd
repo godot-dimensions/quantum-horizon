@@ -43,8 +43,8 @@ func _process(_d) -> bool:
 			_check("the pieces are in the scene", false, "Pen/Upgrades / World/Nike")
 			return _finish()
 		print("\n--- the trough ---")
-		_root.get_node("UI/Inventory").call("add_item", "found_gold")
-		_check("a nugget buys one", bool(_up.call("buy", "feeder")), "found_gold spent")
+		_root.get_node("UI/Inventory").call("add_item", "found_azoth")
+		_check("a nugget buys one", bool(_up.call("buy", "feeder")), "found_azoth spent")
 		var trough: Node4D = _up.get_node_or_null("Feeder1") as Node4D
 		if trough == null:
 			_check("and one goes up", false, "no Feeder1")

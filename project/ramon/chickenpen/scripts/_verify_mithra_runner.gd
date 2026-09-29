@@ -104,11 +104,11 @@ func _process(_d) -> bool:
 			if not _talk.is_running():
 				# GOLD, not the egg. She used to pay in a solid gold egg, which was a joke
 				# nothing else in the game could read - no system spent it, so the reward for
-				# the one errand was a souvenir. A nugget is `found_gold`, the same token the
+				# the one errand was a souvenir. A nugget is `found_azoth`, the same token the
 				# rock drops, and the keeper turns it into a feeding trough.
 				print("watch gone from the belt: %s   gold on it: %s" % [
 					not bool(_inventory.call("has_item", "found_watch")),
-					_inventory.call("has_item", "found_gold")])
+					_inventory.call("has_item", "found_azoth")])
 				_save("mithra_04_reward")
 				return true
 			if _f >= _next:

@@ -11,7 +11,7 @@ extends PenNpcTalk4D
 ## behaviour back when it gets in the way of testing.
 
 @export var manager_path: NodePath
-## What the gold buys. Given one, walking up with a nugget opens his builder instead of
+## What the azoth buys. Given one, walking up with a piece opens his builder instead of
 ## his usual greeting.
 @export var upgrades_path: NodePath
 ## What the gauntlet switches on. Hidden at the start, shown when he hands it over.
@@ -39,10 +39,10 @@ func _before_begin() -> void:
 ## The scripted meeting once, then whatever state you turn up in - which is what makes him
 ## a second readout of the count as well as a character.
 func _entry_node() -> String:
-	# Gold in hand and a job left to do beats anything else he might say.
+	# Azoth in hand and a job left to do beats anything else he might say.
 	if _upgrades != null and bool(_upgrades.call("can_pay")) \
 			and not bool(_upgrades.call("all_built")):
-		return "greet_gold"
+		return "greet_azoth"
 	if not _met:
 		_met = true
 		return KeeperScript.START
@@ -77,7 +77,7 @@ func _on_effect(name: String) -> void:
 
 
 ## The dialogue has already promised it, so a refusal here would leave him describing a
-## trough that is not there. buy() only fails if the gold has gone missing between the
+## trough that is not there. buy() only fails if the azoth has gone missing between the
 ## greeting and the choice, which the entry check makes very unlikely and which is worth
 ## a warning rather than a silent nothing.
 func _build(which: String) -> void:

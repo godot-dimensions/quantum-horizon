@@ -35,14 +35,19 @@ const ITEMS := {
 		"colour": Color(0.98, 0.82, 0.30),
 		"icon": "egg",
 	},
-	## THE ONLY THING YOU CAN HOLD MORE THAN ONE OF. There are six nuggets in the rock and
+	## THE ONLY THING YOU CAN HOLD MORE THAN ONE OF. There are six pieces in the rock and
 	## six troughs to spend them on, so a belt that refuses the second one makes five of
 	## them unreachable - and it refused silently, which is worse: you swung the pick, the
-	## rock gave up a nugget, and nothing happened.
-	"found_gold": {
-		"name": "Gold",
-		"colour": Color(0.98, 0.78, 0.22),
-		"icon": "nugget",
+	## rock gave up a piece, and nothing happened.
+	##
+	## AZOTH, NOT GOLD (Ramon, 29 Sept: "replace the gold in the lore with a ... purple ore
+	## that is related to azatoth and his interdimensional powers"). The alchemists' first
+	## matter; the white suits' word for it. Its count is always shown, one included - it
+	## is cumulative, and how much you have is the point of it.
+	"found_azoth": {
+		"name": "Azoth",
+		"colour": Color(0.68, 0.40, 1.0),
+		"icon": "azoth",
 		"stacks": true,
 	},
 	"found_pickaxe": {
@@ -292,17 +297,24 @@ func _draw_icon(kind: String, box: Rect2, colour: Color) -> void:
 	var mid: Vector2 = box.position + box.size * 0.5
 	var dim := Color(colour.r, colour.g, colour.b, 0.55)
 
-	if kind == "nugget":
-		# A lump rather than a disc: the pocket watch is already a circle, and two round
-		# brassy things in one belt is one too many.
-		var lump := PackedVector2Array()
-		for i in 9:
-			var a: float = TAU * float(i) / 9.0
-			var wobble: float = 0.20 + 0.055 * sin(float(i) * 2.3)
-			lump.append(mid + Vector2(cos(a), sin(a) * 0.82) * unit * wobble)
-		draw_colored_polygon(lump, colour)
-		draw_polyline(_closed_loop(lump), Color(1.0, 0.94, 0.66, 0.85),
-			maxf(unit * 0.03, 1.0), true)
+	if kind == "azoth":
+		# A crystal: a long six-sided point, its left facets darker than its right, with a
+		# pale glint down the ridge - glassy, and plainly not a lump of metal.
+		var h: float = unit * 0.30
+		var r: float = unit * 0.13
+		var top: Vector2 = mid + Vector2(0.0, -h)
+		var bottom: Vector2 = mid + Vector2(0.0, h)
+		var left_hi: Vector2 = mid + Vector2(-r, -h * 0.35)
+		var left_lo: Vector2 = mid + Vector2(-r, h * 0.45)
+		var right_hi: Vector2 = mid + Vector2(r, -h * 0.35)
+		var right_lo: Vector2 = mid + Vector2(r, h * 0.45)
+		draw_colored_polygon(PackedVector2Array([top, mid + Vector2(0.0, -h * 0.2), mid + Vector2(0.0, h * 0.6), bottom, left_lo, left_hi]),
+			colour.darkened(0.35))
+		draw_colored_polygon(PackedVector2Array([top, right_hi, right_lo, bottom, mid + Vector2(0.0, h * 0.6), mid + Vector2(0.0, -h * 0.2)]),
+			colour)
+		draw_line(top, mid + Vector2(0.0, h * 0.6), Color(0.94, 0.86, 1.0, 0.9), maxf(unit * 0.025, 1.0), true)
+		draw_polyline(_closed_loop(PackedVector2Array([top, right_hi, right_lo, bottom, left_lo, left_hi])),
+			Color(0.90, 0.80, 1.0, 0.85), maxf(unit * 0.03, 1.0), true)
 		return
 
 	if kind == "ticket":
@@ -440,10 +452,10 @@ func _draw() -> void:
 		var label: String = str(item["name"])
 		# The name grows with the slot rather than staying at 14 - a bigger box with the
 		# same caption under it looks like a mistake rather than a size.
-		# HOW MANY, in the corner of the slot, and only when it is more than one. A "1" on
-		# every item is noise; a "3" on the gold is the whole reason the stack exists.
+		# HOW MANY, in the corner of the slot: on anything that stacks, always - "x1" of azoth
+		# is worth knowing, it is cumulative - and on nothing else, where a "1" is noise.
 		var held: int = count_of(items[index])
-		if held > 1:
+		if bool(item.get("stacks", false)) or held > 1:
 			var tag: String = "x%d" % held
 			var tag_size: int = clampi(int(slot_size * 0.30), 12, 26)
 			var tag_wide: float = font.get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1,

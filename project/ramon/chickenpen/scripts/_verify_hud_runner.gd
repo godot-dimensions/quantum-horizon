@@ -100,7 +100,7 @@ func _process(_d) -> bool:
 		# Walk away, turn round, pick something up, then restart.
 		_moved_to = Vector4(-14.0, 1.2, 8.0, 2.5)
 		_player.global_position = _moved_to
-		_root.get_node("UI/Inventory").call("add_item", "found_gold")
+		_root.get_node("UI/Inventory").call("add_item", "found_azoth")
 		_stage = 1
 		_mark = _f + 10
 		return false
@@ -129,7 +129,7 @@ func _process(_d) -> bool:
 					"back at %.1f, %.1f, %.1f, w %.1f" % [_player.position.x,
 						_player.position.y, _player.position.z, _player.position.w])
 				_check("with your pockets emptied",
-					not bool(_root.get_node("UI/Inventory").call("has_item", "found_gold")),
+					not bool(_root.get_node("UI/Inventory").call("has_item", "found_azoth")),
 					"the nugget is gone, and so is the trough it bought")
 				_check("and the slice brought back to flat",
 					float(_root.get_node("Player/CameraRig").get("_homing")) > 0.0,

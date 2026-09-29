@@ -11,7 +11,7 @@ extends SceneTree
 ##
 ## So the errand is now watch in, gold out, and a nudge toward the theatre. Which is worth
 ## testing for a reason the old shape was not: the reward is no longer a trinket. A nugget
-## is `found_gold`, the same token the rock drops, and `pen_upgrades_4d` spends it on a
+## is `found_azoth`, the same token the rock drops, and `pen_upgrades_4d` spends it on a
 ## feeding trough - so this errand now feeds the game's one economy instead of ending in
 ## an item nothing reads.
 
@@ -74,7 +74,7 @@ func _process(_d) -> bool:
 			and not fires.contains("hand_over_chicken"),
 			"effects still fired: watch_hinted, take_watch, give_nugget")
 		_check("she pays in gold, not in trinkets", fires.contains("give_nugget"),
-			"found_gold - the same token the rock drops and the keeper spends")
+			"found_azoth - the same token the rock drops and the keeper spends")
 
 		# The close has to send you to Trym and end without asking anything.
 		var close: Dictionary = nodes.get("reward_close", {})

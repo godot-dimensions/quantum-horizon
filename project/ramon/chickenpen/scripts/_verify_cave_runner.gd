@@ -47,7 +47,7 @@ func _find_cave() -> Node4D:
 
 
 func _gold_count() -> int:
-	return int(_room.get_node("UI/Inventory").call("count_of", "found_gold"))
+	return int(_room.get_node("UI/Inventory").call("count_of", "found_azoth"))
 
 
 func _hold(at: Vector4) -> void:

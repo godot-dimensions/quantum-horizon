@@ -6,7 +6,7 @@ extends Node4D
 ## HOSTED, NOT STANDALONE. The pen does not unload when you walk into the hill (see
 ## pen_crossing_4d.gd): the field is switched off and this scene is added beside it, and it
 ## is the PEN'S player who walks in - with the same belt, the same pickaxe and the same
-## dialogue system - so the gold you dig here is in your belt when you come out, and the
+## dialogue system - so the azoth you dig here is in your belt when you come out, and the
 ## miner speaks through the same machinery as the professor. Paths out of this scene to
 ## the player therefore go up one more level than they look like they should.
 ##

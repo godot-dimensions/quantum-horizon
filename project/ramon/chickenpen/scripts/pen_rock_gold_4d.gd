@@ -1,7 +1,11 @@
 @tool
 extends Node4D
 
-## Gold orbs buried in the mining rock, revealed by digging them out.
+## Azoth buried in the mining rock, revealed by digging it out.
+##
+## AZOTH, WHERE THIS USED TO BE GOLD (Ramon, 29 Sept): violet, and a 4D crystal - the
+## orthoplex it always was, which every slice cuts into a different stone. The file and the
+## node keep the old name so nothing that points at them breaks.
 ##
 ## NOTHING IN VoxelMining IS TOUCHED. The rock is still the block that ships in
 ## project/ramon/VoxelMining/, carving exactly as it did; the gold is a handful of small
@@ -25,12 +29,12 @@ extends Node4D
 @export var pickaxe_path: NodePath
 @export var player_path: NodePath
 @export var inventory_path: NodePath
-## What the belt calls a nugget. Matches a row in pen_inventory_4d's ITEMS.
-@export var effect_name: String = "found_gold"
+## What the belt calls a piece. Matches a row in pen_inventory_4d's ITEMS.
+@export var effect_name: String = "found_azoth"
 
 @export_group("The seam")
 ## Pieces lying within reach of a swing made from the slice you start on. These teach the
-## mechanic: hit rock, find gold.
+## mechanic: hit rock, find azoth.
 @export_range(0, 12, 1) var shallow_count: int = 3
 ## And pieces lying too far through W for ANY swing from that slice to touch, however you
 ## stand. These are the point.
@@ -42,7 +46,7 @@ extends Node4D
 ## a moment ago. It is the one thing in this project that a three-dimensional game cannot
 ## do, and until now nothing asked the player to do it.
 @export_range(0, 12, 1) var deep_count: int = 3
-@export var gold: Color = Color(0.98, 0.78, 0.22): set = _set_gold
+@export var gold: Color = Color(0.68, 0.40, 1.0): set = _set_gold
 @export_range(0.05, 1.0, 0.01) var orb_size: float = 0.40: set = _set_size
 ## How deep in they sit, as a fraction of the rock's half-width. Under 1 so none of them
 ## is poking out of the surface before a pick has touched it.
@@ -146,9 +150,9 @@ func rebuild() -> void:
 		var depth: float = reach * (1.0 + rng.randf_range(-seam_jitter, seam_jitter))
 		var at := Vector4(dir.x * depth * shape.x, dir.y * depth * shape.y, dir.z * depth * shape.z, off_slice)
 		var orb := MeshInstance4D.new()
-		orb.name = "Nugget%d" % i
+		orb.name = "Azoth%d" % i
 		var mesh := OrthoplexTetraMesh4D.new()
-		# Round, because a gold BOX in a rock reads as a crate somebody buried.
+		# A crystal, the 4D octahedron: a BOX in a rock reads as a crate somebody buried.
 		mesh.size = Vector4.ONE * orb_size
 		orb.mesh = mesh
 		var material := TetraMaterial4D.new()

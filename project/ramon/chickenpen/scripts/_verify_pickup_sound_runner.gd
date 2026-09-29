@@ -63,16 +63,16 @@ func _process(_d) -> bool:
 	belt.connect("picked_up", func(name_: String) -> void: heard.append(name_))
 	_check("the starting pickaxe did not announce itself", heard.is_empty(),
 		"silent through %d frames of loading" % _f)
-	belt.call("add_item", "found_gold")
-	_check("a real pickup does", heard == ["found_gold"], "%s" % [heard])
+	belt.call("add_item", "found_azoth")
+	_check("a real pickup does", heard == ["found_azoth"], "%s" % [heard])
 	# A SECOND NUGGET IS A SECOND PICKUP. Gold stacks now - there are six in the rock and
 	# six troughs to spend them on - so this blips again, and should. The check used to
 	# assert the opposite using gold as its example of a duplicate, which stopped being
 	# true the moment the belt learned to count.
-	belt.call("add_item", "found_gold")
+	belt.call("add_item", "found_azoth")
 	_check("and so does a second nugget", heard.size() == 2,
 		"x%d on the belt, and you hear it arrive"
-			% int(belt.call("count_of", "found_gold")))
+			% int(belt.call("count_of", "found_azoth")))
 	# But something one-of still refuses, silently.
 	belt.call("add_item", "give_gauntlet")
 	var after_first: int = heard.size()

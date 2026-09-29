@@ -3,7 +3,7 @@ extends SceneTree
 ## Two nuggets, and then two troughs.
 ##
 ## The rock holds six and the keeper sells six troughs, but the belt was a set of unique
-## items: the second `found_gold` hit `if items.has(...)` and was dropped on the floor.
+## items: the second `found_azoth` hit `if items.has(...)` and was dropped on the floor.
 ## Silently, which is the worst part - you swung the pick, the rock gave up a nugget, and
 ## nothing happened. Five of the six were unreachable.
 
@@ -35,13 +35,13 @@ func _process(_d) -> bool:
 		return _finish()
 
 	print("\n--- carrying more than one nugget ---")
-	belt.call("add_item", "found_gold")
-	_check("the first one lands", int(belt.call("count_of", "found_gold")) == 1, "x1")
-	belt.call("add_item", "found_gold")
-	_check("and so does the second", int(belt.call("count_of", "found_gold")) == 2,
+	belt.call("add_item", "found_azoth")
+	_check("the first one lands", int(belt.call("count_of", "found_azoth")) == 1, "x1")
+	belt.call("add_item", "found_azoth")
+	_check("and so does the second", int(belt.call("count_of", "found_azoth")) == 2,
 		"x2 - it used to be thrown away without a word")
 	_check("in one slot, not two",
-		(belt.get("items") as Array).count("found_gold") == 1,
+		(belt.get("items") as Array).count("found_azoth") == 1,
 		"a stack, so it does not eat the belt")
 
 	# Nothing else stacks. Two gauntlets would be nonsense.
@@ -52,11 +52,11 @@ func _process(_d) -> bool:
 
 	print("\n--- and both get spent ---")
 	_check("the keeper takes the first", bool(up.call("buy", "feeder")), "trough 1")
-	_check("and you still have one", int(belt.call("count_of", "found_gold")) == 1,
+	_check("and you still have one", int(belt.call("count_of", "found_azoth")) == 1,
 		"x1 left on the belt")
 	_check("the keeper takes the second", bool(up.call("buy", "feeder")), "trough 2")
 	_check("and now the belt is empty of gold",
-		not bool(belt.call("has_item", "found_gold")), "the slot is released")
+		not bool(belt.call("has_item", "found_azoth")), "the slot is released")
 	_check("two troughs went up", int(up.call("feeder_count")) == 2,
 		"%d in the field" % int(up.call("feeder_count")))
 	return _finish()

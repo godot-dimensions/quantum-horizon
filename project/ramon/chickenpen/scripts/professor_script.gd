@@ -28,7 +28,7 @@ extends RefCounted
 ## THE TECHNICAL DETAIL IS ALL TRUE. Every number he quotes was measured in this project:
 ## 8^4 points, the whole-field remesh after every hit and what it costs, one BoxShape4D
 ## per SURFACE voxel and why it cannot be a mesh, the carve as an AIR layer with a
-## GROUND-only replace mask, the 0.96 metre bite, six nuggets of which three sit further
+## GROUND-only replace mask, the 0.96 metre bite, six pieces of azoth of which three sit further
 ## through W than any single blow can reach. A character who explains a system in invented
 ## terms is worse than one who says nothing, because the player who checks comes away
 ## trusting the game less.
@@ -57,12 +57,12 @@ const NODES: Dictionary = {
 		"An assistant, or a trespasser. The paperwork is identical.",
 		"They found something in that hill. A cube, on a plinth older than the hill it is in.",
 		"A scalar field on an eight-by-eight-by-eight-by-eight lattice. Nobody laid that lattice. Nobody can say who did. I have stopped sleeping well.",
-		"There is gold in it. I have no use for gold. You, I gather, have a field full of chickens and a keeper who wants paying in it.",
+		"And there is something in it that is not rock. Violet, glassy, and never wholly in the slice you are looking at. The suits call it azoth. You, I gather, have a keeper who would take it as payment.",
 	],
 	"choices": [
 		{"text": "I can hit it?", "goto": "how_to_mine"},
 		{"text": "A field of what?", "goto": "topic_contour"},
-		{"text": "Gold? What would I do with gold?", "goto": "topic_gold"},
+		{"text": "Azoth? What is that?", "goto": "topic_azoth"},
 		{"text": "I'll leave you to it.", "goto": "bye", "leave": true},
 	],
 },
@@ -72,7 +72,7 @@ const NODES: Dictionary = {
 	"lines": [
 		"The hole behind me. Walk in until it gets dark, then keep walking. The miner at the bottom is called Hale; he has newer numbers than mine and fewer opinions.",
 		"My instruments have not agreed with one another since the day they opened that hill. I mention it only because nobody down there will.",
-		"Pick is on your belt. Press its number, stand close, swing. Each blow takes a sphere about two metres across; gold sits a hand's depth under the skin.",
+		"Pick is on your belt. Press its number, stand close, swing. Each blow takes a sphere about two metres across; the azoth sits a hand's depth under the skin.",
 		"Bring what you find to the keeper. He has been waiting years for someone to hand him something.",
 	],
 	"topic": true,
@@ -106,7 +106,7 @@ const NODES: Dictionary = {
 	"lines": ["Go on."],
 	"choices": [
 		{"text": "How does it know which bit I hit?", "goto": "topic_collision"},
-		{"text": "Tell me about the gold again.", "goto": "topic_gold"},
+		{"text": "Tell me about the azoth again.", "goto": "topic_azoth"},
 		{"text": "More.", "goto": "menu_three"},
 		{"text": "That's me. Cheers.", "goto": "bye", "leave": true},
 	],
@@ -168,13 +168,14 @@ const NODES: Dictionary = {
 	"goto": "menu",
 },
 
-"topic_gold": {
+"topic_azoth": {
 	"speaker": "Professor Miner",
-	"instead": "topic_gold_again",
+	"instead": "topic_azoth_again",
 	"lines": [
-		"Six pieces. Three lie within reach of the slice you are standing in. Three do not, and no blow from here will ever touch them.",
-		"Each piece buys one feeding trough from the keeper. A trough is grain on the ground, and a chicken that has found grain stops wandering to the far hedge.",
-		"It will not catch a single bird for you. It will save you the walk to where the bird went. I am told this matters to you more than the lattice does.",
+		"Azoth. The alchemists' word for the first matter, the stuff under all the other stuff. The suits borrowed it because nothing in the periodic table would have it.",
+		"Its crystal habit is four-dimensional, so every slice of a piece is a different stone. It is warm when nothing near it is. The suits think it seeped out of whatever laid the lattice. I think they read too much. I also think they are right.",
+		"Six pieces in the rock. Three within reach of the slice you are standing in; three do not, and no blow from here will ever touch them.",
+		"Each one buys a feeding trough from the keeper, who does not care what it is. It will not catch a bird for you. It will save you the walk to where the bird went.",
 	],
 	"topic": true,
 	"goto": "menu",
@@ -221,9 +222,9 @@ const NODES: Dictionary = {
 	"goto": "menu",
 },
 
-"topic_gold_again": {
+"topic_azoth_again": {
 	"speaker": "Professor Miner",
-	"lines": ["Six. Three here, three a slice away. One trough apiece, and the keeper does the building."],
+	"lines": ["Azoth. Six pieces, three here, three a slice away. One trough apiece, and the keeper does the building."],
 	"goto": "menu",
 },
 
