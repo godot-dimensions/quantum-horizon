@@ -72,9 +72,9 @@ const SIZE_STEP := 10.0
 const SIZE_MIN := 50.0
 const SIZE_MAX := 300.0
 const STEP_W := 20.0
-const STEP_H := 12.0
+const STEP_H := 14.0
 ## How much taller than the other rows the size row is, for the two buttons stacked in it.
-const SIZE_ROW_EXTRA := 6.0
+const SIZE_ROW_EXTRA := 9.0
 ## AND THE DIAL'S OWN SIZE, beside it, while Shift is held with the cursor free (Ramon, 29
 ## Sept: "with holding shift, we can make a second [control] next to it, that controls the
 ## bottom right collector hud size"). Only with the cursor free: Shift is also the sprint
@@ -109,6 +109,22 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# THE + AND - KEYS DO WHAT THE BUTTONS SAY (Ramon, 29 Sept: "plus and minus don't do
+	# anything in terms of scaling"): the buttons only answer a free cursor, and the keys
+	# they are drawn as answer always - the main row's or the numpad's, and with Shift the
+	# dial's size rather than the interface's.
+	if event is InputEventKey and event.pressed and _ui_scale != null:
+		var code: int = (event as InputEventKey).keycode
+		var up: bool = code == KEY_EQUAL or code == KEY_PLUS or code == KEY_KP_ADD
+		var down: bool = code == KEY_MINUS or code == KEY_KP_SUBTRACT
+		if up or down:
+			var by: float = SIZE_STEP if up else -SIZE_STEP
+			if (event as InputEventKey).shift_pressed:
+				step_dial(by)
+			else:
+				step_size(by)
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventKey and event.pressed and not event.echo \
 			and (event as InputEventKey).keycode == toggle_key:
 		visible = not visible
@@ -320,7 +336,11 @@ func _step_button(text: String, by: float, dial: bool = false) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", maxi(text_size - 2, 8))
+	# Small enough that the button can really be STEP_H tall: a Button is never shorter than
+	# its text, and at the card's own size it came out taller than its slot and lay over the
+	# one below, so a click on the lower half of + landed on -.
+	b.add_theme_font_size_override("font_size", maxi(text_size - 5, 8))
+	b.custom_minimum_size = Vector2(STEP_W, STEP_H)
 	for state in ["normal", "hover", "pressed"]:
 		var box := StyleBoxFlat.new()
 		box.bg_color = Color(1.0, 1.0, 1.0, 0.08 if state == "normal" else (0.16 if state == "hover" else 0.24))

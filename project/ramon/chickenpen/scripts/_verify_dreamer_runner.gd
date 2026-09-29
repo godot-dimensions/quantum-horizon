@@ -29,6 +29,8 @@ var _tap := 0.0
 var _seen_flinch := false
 var _asking := -1.0
 var _drops_before := 0
+var _seen_tag := false
+var _said_far := false
 
 
 func _initialize() -> void:
@@ -134,7 +136,32 @@ func _process(d: float) -> bool:
 			_hold(Vector4(0, 0.05, -36, 9.5))
 			if _t > 0.8:
 				_check("and parts once you step into it", _sheet_open())
+				_step = 30; _t = 0.0
+		30:
+			# Coming in along W, as you do: fourteen metres short of it, the slice turned a
+			# quarter through W so the way ahead is +w. F has to work from here, and its prompt
+			# be on screen - and the room says so as you come into it.
+			_hold(ROOM + Vector4(0, 0.05, 0, -14.0))
+			var rig := _player().get_node("CameraRig") as Node4D
+			rig.set("yaw", 0.0)
+			rig.set("pitch", deg_to_rad(8.0))
+			rig.set("_slice_zw", -PI * 0.5 if _t < 1.5 else PI * 0.5)
+			rig.call("_apply")
+			var driver: Node = _far("Systems/DreamerDriver")
+			var tag := _far("UI/DreamerTag") as CanvasItem
+			if driver != null and bool(driver.call("_can_talk")) and tag.visible:
+				_seen_tag = true
+			if _t > 3.0 and driver != null:
+				_check("F works from fourteen metres along W", bool(driver.call("_can_talk")))
+				_check("and its prompt is on screen coming in along W", _seen_tag)
+				var thought: Node = _room.get_node("UI/ThoughtBox")
+				_check("coming into the room: wow, and I sense something", _cave.has_meta(&"cave_far_first_look_said")
+					and (String(thought.get("_full")) == "Wow... and I sense something." or _said_far), String(thought.get("_full")))
+				rig.set("_slice_zw", 0.0)
+				rig.call("_apply")
 				_step = 3; _t = 0.0
+			elif String(_room.get_node("UI/ThoughtBox").get("_full")) == "Wow... and I sense something.":
+				_said_far = true
 		3:
 			# In the far room, level with the dreamer, a few metres in front of it.
 			_hold(ROOM + Vector4(0, 0.05, 9.0, 0))

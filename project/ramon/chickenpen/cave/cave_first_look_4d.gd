@@ -14,6 +14,12 @@ extends Node
 ## How far down the corridor, along the cave's z, before the chamber is in view.
 @export var at_z: float = -21.0
 @export var line: String = "Wow... what is this place?"
+## Or instead, how far out along W - for the far room, which you walk into along W (Ramon,
+## 29 Sept: "when you enter the second cave, make him say, wow.. and I sense something").
+@export var use_w: bool = false
+@export var at_w: float = 25.0
+## Where it is remembered as said: the parent's parent, under this name.
+@export var said_meta: StringName = &"cave_first_look_said"
 @export_range(0.5, 20.0, 0.5) var hold_seconds: float = 3.5
 
 const SAID := &"cave_first_look_said"
@@ -59,10 +65,11 @@ func _process(delta: float) -> void:
 		return
 	var cave := get_parent() as Node4D
 	var root: Node = cave.get_parent()
-	if root == null or root.has_meta(SAID):
+	if root == null or root.has_meta(said_meta):
 		return
-	var z: float = (cave.global_basis.inverse() * (_player.global_position - cave.global_position)).z
-	if z < at_z and not _busy():
-		root.set_meta(SAID, true)
+	var local: Vector4 = cave.global_basis.inverse() * (_player.global_position - cave.global_position)
+	var there: bool = local.w > at_w if use_w else local.z < at_z
+	if there and not _busy():
+		root.set_meta(said_meta, true)
 		_showing = true
 		_box.call("say", String(_box.get("player_name")), line)

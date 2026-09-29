@@ -276,12 +276,12 @@ func _build() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 14)
 	column.add_child(row)
-	var yes := _button("Back to the pen   Enter", regular, true)
+	var yes := _button("Yes", regular, true)
 	yes.pressed.connect(func() -> void:
 		_show_ask(false)
 		come_back())
 	row.add_child(yes)
-	var no := _button("Stay   Esc", regular, false)
+	var no := _button("No", regular, false)
 	no.pressed.connect(func() -> void: _show_ask(false))
 	row.add_child(no)
 

@@ -68,6 +68,19 @@ func _fill_line(line: String, _returned: int, _total: int) -> String:
 	return line.format({"key": "Escape", "time": "%d:%02d" % [int(now["hour"]), int(now["minute"])]})
 
 
+## IN REACH ACROSS THE FLOOR AND THROUGH W TOGETHER. The others measure the floor and W
+## separately, and W tightly, which is right for people standing on your slice; you walk to
+## the dreamer along W, so its twenty-odd metres of approach are all W, and with a tight W
+## limit F only came on right underneath it (Ramon, 29 Sept: "it should work in further
+## distance"). One distance, in (x, z, w), up to talk_range.
+func _in_reach() -> bool:
+	var anchor: Node4D = _anchor()
+	if anchor == null or _player == null:
+		return false
+	var gap: Vector4 = anchor.global_position - _player.global_position
+	return Vector3(gap.x, gap.z, gap.w).length() <= talk_range
+
+
 func _entry_node() -> String:
 	if _cave != null and not _cave.has_meta(&"dreamer_met"):
 		_cave.set_meta(&"dreamer_met", true)

@@ -129,7 +129,11 @@ extends Control
 ## How far the view wedge reaches on the map, in metres, and how strong its red is where
 ## it starts, under you; it fades to nothing at its far edge.
 @export_range(1.0, 30.0, 0.5) var view_cone_length: float = 7.0
-@export_range(0.0, 1.0, 0.02) var view_cone_alpha: float = 0.42
+@export_range(0.0, 1.0, 0.02) var view_cone_alpha: float = 0.32
+## How quickly the red dies away along the wedge: 1 is an even fade to its edge, higher is
+## most of it gone in the first part (Ramon, 29 Sept: "make the gradient falloff fade
+## sooner, it's very red from the start").
+@export_range(1.0, 5.0, 0.1) var view_cone_falloff: float = 2.6
 ## The wedge is drawn this much narrower than the lens really sees (Ramon, 29 Sept: "a bit
 ## less than perfect 90 degrees cutout ... less wide"): at the pen's 16:9 and 55-degree lens
 ## the true sweep is 88 degrees, which read as a quarter of a pie rather than a look.
@@ -564,13 +568,13 @@ func _draw_view_cone(here: Vector4, ahead: Vector4, w: float, origin: Vector2, m
 	var strong := Color(view_cone_color.r, view_cone_color.g, view_cone_color.b, view_cone_alpha)
 	var gone := Color(view_cone_color.r, view_cone_color.g, view_cone_color.b, 0.0)
 	var centre: Vector2 = _plan(here.x, here.z, w, origin, mid)
-	var rings: int = 5
+	var rings: int = 8
 	var spokes: int = 12
 	for r in rings:
 		var near: float = float(r) / float(rings)
 		var far: float = float(r + 1) / float(rings)
-		var inner: Color = strong.lerp(gone, near)
-		var outer: Color = strong.lerp(gone, far)
+		var inner: Color = strong.lerp(gone, 1.0 - pow(1.0 - near, view_cone_falloff))
+		var outer: Color = strong.lerp(gone, 1.0 - pow(1.0 - far, view_cone_falloff))
 		for i in spokes:
 			var a0: float = lerpf(-half, half, float(i) / float(spokes))
 			var a1: float = lerpf(-half, half, float(i + 1) / float(spokes))

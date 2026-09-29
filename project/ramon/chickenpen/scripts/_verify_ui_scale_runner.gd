@@ -77,6 +77,25 @@ func _process(_d: float) -> bool:
 				_check("plus above minus", plus != null and minus != null and plus.position.y < minus.position.y
 					and absf(plus.position.x - minus.position.x) < 0.5)
 				_check("no slider to drag", card.find_children("*", "HSlider", true, false).is_empty())
+				_check("and the two do not overlap", plus.get_global_rect().end.y <= minus.get_global_rect().position.y + 0.5,
+					"%s over %s" % [plus.get_global_rect(), minus.get_global_rect()])
+				# The keys the buttons are drawn as.
+				var before_keys: float = float(card.call("size_percent"))
+				var e := InputEventKey.new()
+				e.keycode = KEY_EQUAL
+				e.pressed = true
+				card.call("_unhandled_input", e)
+				_check("the + key is 10% up", absf(float(card.call("size_percent")) - (before_keys + 10.0)) < 0.01)
+				e.keycode = KEY_KP_SUBTRACT
+				card.call("_unhandled_input", e)
+				_check("the - key is 10% down", absf(float(card.call("size_percent")) - before_keys) < 0.01)
+				var dial_keys: float = float(ui.get("dial_percent"))
+				e.keycode = KEY_EQUAL
+				e.shift_pressed = true
+				card.call("_unhandled_input", e)
+				_check("and with Shift they size the dial", absf(float(ui.get("dial_percent")) - (dial_keys + 10.0)) < 0.01
+					and absf(float(card.call("size_percent")) - before_keys) < 0.01)
+				ui.call("set_dial_percent", dial_keys)
 				var was: float = float(card.call("size_percent"))
 				plus.pressed.emit()
 				_check("plus is 10% up", absf(float(card.call("size_percent")) - (was + 10.0)) < 0.01)

@@ -94,8 +94,14 @@ func _place() -> float:
 		return 0.0
 
 	# Off the current slice. Checked against the camera rather than the player because it
-	# is the camera's slice that decides what is on screen at all.
-	if absf(gap.w) > w_range:
+	# is the camera's slice that decides what is on screen at all - and ALONG the camera's
+	# own slice normal, not along w: with the slice turned a quarter through W, as it is
+	# walking the way to the dreamer, w is a direction you are looking down, and a creature
+	# twenty metres ahead of you counted as twenty metres off the slice (Ramon, 29 Sept: "I
+	# don't see the F with talk"). On the flat slice the normal is w and nothing changes.
+	var normal: Vector4 = _camera.global_basis.w.normalized()
+	var off: float = gap.dot(normal)
+	if absf(off) > w_range:
 		return 0.0
 
 	# Track the panel's own size each frame: the text changes, and the tag has to stay
@@ -113,7 +119,7 @@ func _place() -> float:
 		want.y = clampf(want.y, screen_margin, screen.y - size.y - screen_margin)
 	position = want
 
-	var flat: float = Vector3(gap.x, gap.y, gap.z).length()
+	var flat: float = (gap - normal * off).length()
 	return 1.0 - clampf((flat - fade_from) / maxf(fade_to - fade_from, 0.001), 0.0, 1.0)
 
 

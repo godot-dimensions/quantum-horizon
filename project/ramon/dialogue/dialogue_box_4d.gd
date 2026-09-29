@@ -112,9 +112,11 @@ enum ChoiceSide { RIGHT, LEFT }
 ## every monitor.
 @export_range(0.015, 0.08, 0.001) var cinema_text_ratio: float = 0.032
 @export_range(0.3, 0.95, 0.01) var cinema_width_ratio: float = 0.72
-## Where the middle of the words sits, as a share of the screen's height from its bottom
-## edge - the middle of the lower letterbox bar.
-@export_range(0.0, 0.5, 0.005) var cinema_bottom_ratio: float = 0.05
+## Where the top of the words sits, as a share of the screen's height from its top: just
+## under the top edge of the lower letterbox bar (Ramon, 29 Sept: "a little bit higher ...
+## align right under the top of the bottom letterbox bar"), so more lines grow down into
+## the bar rather than off the screen.
+@export_range(0.5, 1.0, 0.005) var cinema_top_ratio: float = 0.912
 @export var cinema_text_color: Color = Color(0.96, 0.95, 0.92, 0.8)
 @export var cinema_player_color: Color = Color(0.80, 0.86, 0.95, 0.72)
 @export var cinema_choice_color: Color = Color(0.92, 0.92, 0.92, 0.5)
@@ -367,9 +369,9 @@ func _place() -> void:
 		var w: float = screen.x * cinema_width_ratio
 		var h: float = _wrapped(_body_label, w)
 		_speech.size = Vector2(w, h)
-		# Centred on the bar; a third line grows upward into the picture, not off the screen.
-		var centre_y: float = screen.y * (1.0 - cinema_bottom_ratio)
-		_speech.position = Vector2((screen.x - w) * 0.5, minf(centre_y - h * 0.5, screen.y - h - 4.0))
+		# Hung from just under the top of the bar; a line too many to fit rises into the
+		# picture rather than going off the screen.
+		_speech.position = Vector2((screen.x - w) * 0.5, minf(screen.y * cinema_top_ratio, screen.y - h - 4.0))
 		# The replies hang in the left third, clear of the middle of the frame, where the
 		# shot puts whoever is talking and, over your shoulder, you.
 		var cw: float = screen.x * 0.34

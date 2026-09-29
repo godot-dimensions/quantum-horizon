@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_far_4d.gd" id="far"]
 [ext_resource type="Script" path="res://ramon/chickenpen/terrain/baked_ground_4d.gd" id="baked"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://ramon/dialogue/dialogue_player_4d.gd" id="dlg"]
 [ext_resource type="Script" path="res://ramon/dialogue/dialogue_box_4d.gd" id="box"]
 [ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_dreamer_cinema_4d.gd" id="cinema"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_first_look_4d.gd" id="first_look"]
 
 
 [node name="FarRoom" type="Node4D"]
@@ -93,6 +94,16 @@ talk_range_w = 7.5
 
 [node name="DreamerCinema" type="Node" parent="Systems"]
 script = ExtResource("cinema")
+
+[node name="FirstLook" type="Node" parent="."]
+script = ExtResource("first_look")
+box_path = NodePath("../../../UI/ThoughtBox")
+player_path = NodePath("../../../Player")
+talker_paths = Array[NodePath]([NodePath("../Systems/DreamerTalk")])
+line = "Wow... and I sense something."
+use_w = true
+at_w = 25.0
+said_meta = &"cave_far_first_look_said"
 
 [node name="Lamps" type="Node4D" parent="."]
 
