@@ -147,7 +147,9 @@ const CASE := Color(0.86, 0.42, 0.12)
 const GENERATOR := Color(0.85, 0.66, 0.12)
 const TABLE := Color(0.50, 0.50, 0.52)
 const SCREEN := Color(0.45, 0.80, 1.0)
-const LAPTOP_GLOW := Color(0.80, 0.94, 1.0)
+## Lit, not a lamp (Ramon, 29 Sept: "lower the emission on the laptop ... glow without it
+## overpowering"): a screen's blue-grey rather than near-white.
+const LAPTOP_GLOW := Color(0.42, 0.55, 0.66)
 const CABLE := Color(0.05, 0.05, 0.06)
 
 var _rough := FastNoiseLite.new()

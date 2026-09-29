@@ -1,4 +1,4 @@
-[gd_scene load_steps=731 format=3 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=732 format=3 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -76,6 +76,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_ui_scale_4d.gd" id="ui_scale"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_scenery_release_4d.gd" id="scenery_release"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_dream_wake_4d.gd" id="dream_wake"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_laptop_4d.gd" id="laptop"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 shader_parameter/horizon_color = Color(0.98, 0.71, 0.35, 1)
@@ -2959,6 +2960,13 @@ position = Vector4(-10.4, 1.5, -14.6, 0)
 
 [node name="TrymStand" type="Node4D" parent="World"]
 position = Vector4(-9.3, 0, -12.6, 0)
+
+[node name="TrymLaptopUse" type="Node4D" parent="World"]
+position = Vector4(-10.7, 0.72, -14.6, 0)
+script = ExtResource("laptop")
+player_path = NodePath("../../Player")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+catcher_path = NodePath("../../Player/Catcher")
 
 [node name="Trym" type="Node4D" parent="World"]
 position = Vector4(-11, 0, -14.6, 0)

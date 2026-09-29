@@ -75,7 +75,7 @@ class_name PenNpcTalk4D
 
 @export_group("Reach")
 ## How close on the ground before they are worth talking to.
-@export_range(1.0, 12.0, 0.5) var talk_range: float = 3.0
+@export_range(1.0, 12.0, 0.5, "or_greater") var talk_range: float = 3.0
 ## And how far through W. They should still be addressable from a slice or so away,
 ## because someone who goes silent when you step sideways reads as a bug.
 @export_range(0.5, 8.0, 0.5) var talk_range_w: float = 2.0
@@ -156,6 +156,8 @@ var _slide: float = -1.0
 
 
 func _ready() -> void:
+	# So a laptop can ask whether a conversation could start before it takes F (pen_laptop_4d).
+	add_to_group(&"npc_talk")
 	_player = get_node_or_null(player_path) as Node4D
 	_character = get_node_or_null(character_path)
 	_catcher = get_node_or_null(catcher_path)

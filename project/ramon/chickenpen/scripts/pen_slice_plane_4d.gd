@@ -126,9 +126,15 @@ extends Control
 @export var people_overrides: Array[Color] = []
 @export var target_color: Color = Color(1.0, 0.85, 0.25, 0.95)
 @export var you_color: Color = Color(1.0, 1.0, 1.0, 0.95)
-## How far the view wedge reaches on the map, in metres, and how faint it is.
+## How far the view wedge reaches on the map, in metres, and how strong its red is where
+## it starts, under you; it fades to nothing at its far edge.
 @export_range(1.0, 30.0, 0.5) var view_cone_length: float = 7.0
-@export_range(0.0, 1.0, 0.02) var view_cone_alpha: float = 0.14
+@export_range(0.0, 1.0, 0.02) var view_cone_alpha: float = 0.42
+## The wedge is drawn this much narrower than the lens really sees (Ramon, 29 Sept: "a bit
+## less than perfect 90 degrees cutout ... less wide"): at the pen's 16:9 and 55-degree lens
+## the true sweep is 88 degrees, which read as a quarter of a pie rather than a look.
+@export_range(0.3, 1.0, 0.01) var view_cone_narrowing: float = 0.76
+@export var view_cone_color: Color = Color(1.0, 0.24, 0.2)
 ## How big the birds are drawn, on top of the panel's own scaling.
 @export_range(0.4, 2.0, 0.05) var bird_size: float = 0.9
 @export var toggle_key: Key = KEY_N
@@ -435,7 +441,7 @@ func _draw() -> void:
 			_name_tag(font, String(folk[i][3]), tags[i], folk[i][4])
 	for i in marks.size():
 		if fades[folk.size() + i] > 0.4:
-			_name_tag(font, String(marks[i][3]), tags[folk.size() + i], marks[i][4])
+			_name_tag(font, String(marks[i][3]), tags[folk.size() + i], marks[i][4], _icon_clearance(font, String(marks[i][6])))
 
 	_draw_you(shrink, origin, mid, u)
 
@@ -547,19 +553,37 @@ func _draw_view_cone(here: Vector4, ahead: Vector4, w: float, origin: Vector2, m
 		vertical = float(cam.get("field_of_view_3d"))
 	var view: Vector2 = get_viewport_rect().size
 	var aspect: float = view.x / maxf(view.y, 1.0)
-	var half: float = atan(tan(vertical * 0.5) * aspect)
+	var half: float = atan(tan(vertical * 0.5) * aspect) * view_cone_narrowing
 	var forward := Vector2(ahead.x, ahead.z)
 	if forward.length() < 0.001:
 		return
 	forward = forward.normalized()
-	var points := PackedVector2Array([_plan(here.x, here.z, w, origin, mid)])
-	for i in 9:
-		var a: float = lerpf(-half, half, float(i) / 8.0)
-		var d: Vector2 = forward.rotated(a) * view_cone_length
-		points.append(_plan(here.x + d.x, here.z + d.y, w, origin, mid))
-	draw_colored_polygon(points, Color(you_color.r, you_color.g, you_color.b, view_cone_alpha))
-	draw_polyline(points + PackedVector2Array([points[0]]),
-		Color(you_color.r, you_color.g, you_color.b, view_cone_alpha * 2.2), 1.0, true)
+	# A RED GRADIENT, NO LINES (Ramon, 29 Sept): strongest under you, gone at the far edge.
+	# Drawn as rings of quads, each ring's colour its distance out, so the fade is even from
+	# the point outward rather than stretched along the sides of one fan of triangles.
+	var strong := Color(view_cone_color.r, view_cone_color.g, view_cone_color.b, view_cone_alpha)
+	var gone := Color(view_cone_color.r, view_cone_color.g, view_cone_color.b, 0.0)
+	var centre: Vector2 = _plan(here.x, here.z, w, origin, mid)
+	var rings: int = 5
+	var spokes: int = 12
+	for r in rings:
+		var near: float = float(r) / float(rings)
+		var far: float = float(r + 1) / float(rings)
+		var inner: Color = strong.lerp(gone, near)
+		var outer: Color = strong.lerp(gone, far)
+		for i in spokes:
+			var a0: float = lerpf(-half, half, float(i) / float(spokes))
+			var a1: float = lerpf(-half, half, float(i + 1) / float(spokes))
+			var d0: Vector2 = forward.rotated(a0) * view_cone_length
+			var d1: Vector2 = forward.rotated(a1) * view_cone_length
+			var p00: Vector2 = centre if r == 0 else _plan(here.x + d0.x * near, here.z + d0.y * near, w, origin, mid)
+			var p01: Vector2 = centre if r == 0 else _plan(here.x + d1.x * near, here.z + d1.y * near, w, origin, mid)
+			var p10: Vector2 = _plan(here.x + d0.x * far, here.z + d0.y * far, w, origin, mid)
+			var p11: Vector2 = _plan(here.x + d1.x * far, here.z + d1.y * far, w, origin, mid)
+			if r == 0:
+				draw_polygon(PackedVector2Array([centre, p10, p11]), PackedColorArray([inner, outer, outer]))
+			else:
+				draw_polygon(PackedVector2Array([p00, p10, p11, p01]), PackedColorArray([inner, outer, outer, inner]))
 
 
 ## Every catchable bird, as [x, z, w, is_the_target].
@@ -927,11 +951,20 @@ func _oval(centre: Vector2, rx: float, ry: float) -> PackedVector2Array:
 ## same corner of the field - so their names landed on top of each other and the ones near
 ## the edge were clipped to nonsense. Each tag is nudged to the side of its blob that has
 ## more room, and pushed down if the line above is already taken.
-func _name_tag(font: Font, who: String, at: Vector2, colour: Color) -> void:
+## How far a landmark's name stands off the middle of its icon: past the icon's own edge
+## (the anomaly's beating halo is the widest), and one space more (Ramon, 29 Sept: "the
+## text is very close by the name of the object ... 1 space to the right").
+func _icon_clearance(font: Font, icon: String) -> float:
+	var u: float = _ui() * bird_size
+	var reach: float = 14.0 * u if icon == "anomaly" else 5.5 * u
+	return reach + font.get_string_size(" ", HORIZONTAL_ALIGNMENT_LEFT, -1, int(round(13.0 * _ui()))).x
+
+
+func _name_tag(font: Font, who: String, at: Vector2, colour: Color, clear: float = 11.0) -> void:
 	var letters: int = int(round(13.0 * _ui()))
 	var width: float = font.get_string_size(who, HORIZONTAL_ALIGNMENT_LEFT, -1, letters).x
-	var left: bool = at.x + 12.0 + width > size.x - 6.0
-	var spot := Vector2(at.x - 11.0 - width if left else at.x + 11.0, at.y + 4.0)
+	var left: bool = at.x + clear + 1.0 + width > size.x - 6.0
+	var spot := Vector2(at.x - clear - width if left else at.x + clear, at.y + 4.0)
 	spot.x = clampf(spot.x, 6.0, maxf(6.0, size.x - width - 6.0))
 	# Compared as RECTANGLES, not as centres. Comparing centres let a tag clamped to the
 	# left edge sit under a longer one whose centre was far enough away to pass, which is

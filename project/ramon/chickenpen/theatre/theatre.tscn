@@ -132,7 +132,7 @@ tag_path = NodePath("../UI/TrymTag")
 dialogue_box_path = NodePath("../UI/TrymBox")
 show_path = NodePath("../Show")
 hide_while_talking = Array[NodePath]([NodePath("../UI/Caption"), NodePath("../UI/Metrics"), NodePath("../UI/Prompt"), NodePath("../UI/Aside"), NodePath("../UI/Seat")])
-talk_range = 6.0
+talk_range = 3.0
 talk_range_w = 4.0
 
 [node name="UI" type="Node4D" parent="."]

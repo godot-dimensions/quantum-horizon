@@ -67,6 +67,10 @@ extends Node4D
 @export_range(0, 7, 1) var your_seat_tier: int = 1
 @export_range(-60.0, 60.0, 1.0, "suffix:°") var your_seat_bearing: float = -15.0
 @export var your_seat_color: Color = Color(0.24, 0.17, 0.30)
+const LAPTOP := preload("res://ramon/chickenpen/scripts/pen_laptop_4d.gd")
+## The laptop's stand, on the house side of the podium's flank; see "A LAPTOP ON THE FLANK".
+@export var laptop_spot := Vector4(-7.9, 0.0, 1.2, 0.0)
+@export var laptop_screen_color := Color(0.42, 0.55, 0.66)
 
 @export_group("The aisle")
 ## A RAKED BOX AND THEN A FLAT ONE, straight up the middle of the seating arc from the
@@ -313,28 +317,44 @@ func rebuild() -> void:
 		drum_color.lerp(glow_color, 0.3))
 	_slab(podium, "Strip", Vector4(0.0, 1.15, 0.22, 0.0), Vector3(0.50, 0.03, 0.05), glow_color)
 
-	# A LAPTOP BESIDE THE PODIUM, open, its screen lit and facing the house (Ramon, 28 Sept:
-	# "a laptop with glowing screen ... close to Trym's booth"). On a stand of its own
-	# rather than on the podium top, so it is seen from the seats and not hidden behind the
-	# presenter; a small light in front of the screen puts its glow on the stand and floor.
+	# A LAPTOP ON THE FLANK, past the podium on the side of the seats (Ramon, 28 Sept: "a
+	# laptop with glowing screen ... close to Trym's booth"; 29 Sept: "next to the stage, and
+	# next to the booth, but on the side of the chairs ... a bit further away ... never facing
+	# the crowd or the backside, more like rotated 90"). Clear of the seating fan, which ends
+	# 76 degrees round, and of the backdrop, which begins at 112; its screen faces out, away
+	# from the stage, so whoever uses it stands on the far side of it from the podium - four
+	# and a half metres from where Trym finishes, outside his reach (theatre.tscn AfterShow
+	# talk_range), so F means the laptop there and not him. A soft screen and a small light:
+	# lit, not a lamp (Ramon, 29 Sept: "the laptops glow without it overpowering").
 	var stand := Node4D.new()
 	stand.name = "LaptopStand"
 	add_child(stand)
-	stand.position = podium.position + Vector4(0.85, 0.0, 0.25, 0.0)
+	stand.position = laptop_spot
+	stand.basis = Basis4D.from_zx(-PI * 0.5)
 	_own(stand)
 	_slab(stand, "Stem", Vector4(0.0, 0.42, 0.0, 0.0), Vector3(0.10, 0.84, 0.10), drum_color)
 	_slab(stand, "Top", Vector4(0.0, 0.86, 0.0, 0.0), Vector3(0.46, 0.04, 0.36), drum_color)
 	_slab(stand, "Base", Vector4(0.0, 0.89, 0.03, 0.0), Vector3(0.36, 0.02, 0.26), Color(0.14, 0.15, 0.17))
 	_slab(stand, "Lid", Vector4(0.0, 1.02, -0.10, 0.0), Vector3(0.36, 0.24, 0.02), Color(0.14, 0.15, 0.17))
-	_slab(stand, "Screen", Vector4(0.0, 1.02, -0.087, 0.0), Vector3(0.32, 0.20, 0.01), Color(0.80, 0.94, 1.0))
+	_slab(stand, "Screen", Vector4(0.0, 1.02, -0.087, 0.0), Vector3(0.32, 0.20, 0.01), laptop_screen_color)
 	var glow := OmniLight4D.new()
 	glow.name = "ScreenGlow"
 	glow.light_color = Color(0.55, 0.8, 1.0)
-	glow.light_energy = 1.0
-	glow.omni_range_meters = 2.2
+	glow.light_energy = 0.4
+	glow.omni_range_meters = 1.5
 	stand.add_child(glow)
 	glow.position = Vector4(0.0, 1.05, 0.15, 0.0)
 	_own(glow)
+	# Where it is used from: just in front of the screen. Only in play - it is a prompt and a
+	# key, nothing to see - and its paths are the cinema's own player, not the pen's.
+	if not Engine.is_editor_hint():
+		var use := Node4D.new()
+		use.name = "LaptopUse"
+		use.set_script(LAPTOP)
+		use.set("player_path", NodePath("../../../Player"))
+		use.set("camera_path", NodePath("../../../Player/CameraRig/Pitch/Camera4D"))
+		use.position = Vector4(0.0, 1.0, 0.1, 0.0)
+		stand.add_child(use)
 
 	# THE MOTES. Scattered wide and deep, including through W, so turning the slice
 	# changes the sky rather than leaving it frozen - which is itself one of the three
