@@ -61,28 +61,22 @@ var _chip: StyleBoxFlat
 ## The row the slider sits in, or -1.
 var _slider_row: int = -1
 var _ui_scale: Node
-## THE UI SIZE IS A SMALL VERTICAL SPINNER, not a slider (Ramon, 29 Sept: "ideally a UI hud
-## scaler should be small and vertical, with plus on the top, and minus down below, and no
-## ability to drag slider"): the size, and beside it a plus over a minus, 10% a press.
+## THE SIZES ARE KEYS, LIKE EVERYTHING ELSE ON THE CARD (Ramon, 29 Sept: "of course you have
+## to say press + -, and under it shift + +/- ... might as well remove the plus minus icons"):
+## two rows in the card's own grammar, the key in its chip and what it does beside it, with
+## the size as it stands written into the words - the interface's, and under it the dial's,
+## so the two can be read together. 10% a press. Room is kept for the widest number, so the
+## card never changes width as the numbers do.
 var _size_box: Control
-var _percent: Label
-var _minus: Button
-var _plus: Button
 const SIZE_STEP := 10.0
 const SIZE_MIN := 50.0
 const SIZE_MAX := 300.0
-const STEP_W := 20.0
-const STEP_H := 14.0
-## How much taller than the other rows the size row is, for the two buttons stacked in it.
-const SIZE_ROW_EXTRA := 9.0
-## AND THE DIAL'S OWN SIZE, in a row of its own right under it (Ramon, 29 Sept: "a dial size
-## measure right under the other, so we can check the different sizes together"): the same
-## number and the same plus over minus, always there. Shift with the + and - keys sizes it
-## too.
-var _dial_percent: Label
-var _dial_plus: Button
-var _dial_minus: Button
 const DIAL_STEP := 10.0
+## The number first, then what it is (Ramon, 29 Sept: "percentage first, then text"): drawn
+## as two columns, the number in room for the widest one, so the words stay put.
+const SIZE_WORDS := "UI size"
+const DIAL_WORDS := "dial size"
+const NUMBER_ROOM := "300%"
 
 
 func _ready() -> void:
@@ -198,8 +192,8 @@ func _build() -> void:
 		_rows.append(["CTRL+R", "restart the scene", true])
 	if _size_box != null:
 		_slider_row = _rows.size()
-		_rows.append(["UI size", "", false])
-		_rows.append(["Dial size", "", false])
+		_rows.append(["+ / −", SIZE_WORDS, false, "%d%%" % roundi(size_percent())])
+		_rows.append(["Shift + / −", DIAL_WORDS, false, "%d%%" % roundi(dial_percent())])
 	_measure()
 
 
@@ -214,36 +208,20 @@ func _measure() -> void:
 		widest = maxf(widest,
 			font.get_string_size(row[1], HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x)
 	if _size_box != null:
-		widest = maxf(widest, font.get_string_size("300%", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x + 10.0 + STEP_W)
+		widest = maxf(widest, _number_w() + maxf(font.get_string_size(SIZE_WORDS, HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x,
+			font.get_string_size(DIAL_WORDS, HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x))
 	_label_x = 14.0 + _chip_w + 12.0
 	var height: float = 14.0 + float(_rows.size()) * _step() + 8.0
 	if _rule_after >= 0:
 		height += 11.0
 	if _slider_row >= 0:
-		# Both size rows are taller than a row, for the plus and minus stacked in each.
-		height += 11.0 + SIZE_ROW_EXTRA * 2.0
-		_place_spinner(0, _percent, _plus, _minus)
-		_place_spinner(1, _dial_percent, _dial_plus, _dial_minus)
+		height += 11.0
 	# Anchored to the right edge in the scene, so the card is grown leftward and downward
 	# from the corner it is pinned to rather than being sized by hand - a row added below
 	# used to fall off the bottom of a rect somebody had typed a number into.
 	offset_right = -right_margin
 	offset_left = -right_margin - (_label_x + widest + 16.0)
 	offset_bottom = offset_top + height
-
-
-## Size row [param k] (0 the interface, 1 the dial): its number, and its plus over minus,
-## level with the chip _draw puts at the same place.
-func _place_spinner(k: int, number: Label, plus: Button, minus: Button) -> void:
-	var chip_h: float = float(text_size) + 7.0
-	var top: float = _row_y(_slider_row + k) + SIZE_ROW_EXTRA * (float(k) + 0.5)
-	var mid: float = top + chip_h * 0.5
-	var digits: float = get_theme_default_font().get_string_size("300%", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x
-	number.position = Vector2(_label_x, mid - float(text_size) * 0.72)
-	plus.position = Vector2(_label_x + digits + 10.0, mid - STEP_H - 1.0)
-	plus.size = Vector2(STEP_W, STEP_H)
-	minus.position = Vector2(_label_x + digits + 10.0, mid + 1.0)
-	minus.size = Vector2(STEP_W, STEP_H)
 
 
 func _step() -> float:
@@ -261,73 +239,38 @@ func _row_y(i: int) -> float:
 
 
 func _make_spinner() -> void:
-	# Named as the slider was, so anything looking for the size control still finds it.
+	# A marker for the size rows, named as the slider once was, so anything looking for the
+	# size control still finds the card has one.
 	_size_box = Control.new()
 	_size_box.name = "UiSize"
 	_size_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_size_box)
-	_percent = Label.new()
-	_percent.add_theme_font_size_override("font_size", text_size)
-	_percent.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.72))
-	_percent.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_percent)
-	_plus = _step_button("+", SIZE_STEP)
-	_minus = _step_button("−", -SIZE_STEP)
-	_dial_percent = Label.new()
-	_dial_percent.add_theme_font_size_override("font_size", text_size)
-	_dial_percent.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.72))
-	_dial_percent.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_dial_percent)
-	_dial_plus = _step_button("+", DIAL_STEP, true)
-	_dial_minus = _step_button("−", -DIAL_STEP, true)
-	_show_size()
 	# The scale reads what was last chosen in its own _ready, which comes after this one;
 	# catch up with it once it has.
 	_show_size.call_deferred()
 
 
 ## The size as it stands, from the scale itself.
+## The column the size rows' numbers take, words starting after it.
+func _number_w() -> float:
+	return get_theme_default_font().get_string_size(NUMBER_ROOM, HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x + 12.0
+
+
 func size_percent() -> float:
 	return float(_ui_scale.get("percent")) if _ui_scale != null else 100.0
 
 
 func _show_size() -> void:
-	_percent.text = "%d%%" % roundi(size_percent())
-	if _dial_percent != null:
-		_dial_percent.text = "%d%%" % roundi(dial_percent())
+	if _slider_row < 0 or _rows.size() < _slider_row + 2:
+		return
+	_rows[_slider_row][3] = "%d%%" % roundi(size_percent())
+	_rows[_slider_row + 1][3] = "%d%%" % roundi(dial_percent())
+	queue_redraw()
 
 
 ## The dial's own size, from the scale.
 func dial_percent() -> float:
 	return float(_ui_scale.get("dial_percent")) if _ui_scale != null else 100.0
-
-
-## A small button in the card's own quiet style that moves the size - or, with [param dial],
-## the dial's size - by [param by].
-func _step_button(text: String, by: float, dial: bool = false) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.focus_mode = Control.FOCUS_NONE
-	# Small enough that the button can really be STEP_H tall: a Button is never shorter than
-	# its text, and at the card's own size it came out taller than its slot and lay over the
-	# one below, so a click on the lower half of + landed on -.
-	b.add_theme_font_size_override("font_size", maxi(text_size - 5, 8))
-	b.custom_minimum_size = Vector2(STEP_W, STEP_H)
-	for state in ["normal", "hover", "pressed"]:
-		var box := StyleBoxFlat.new()
-		box.bg_color = Color(1.0, 1.0, 1.0, 0.08 if state == "normal" else (0.16 if state == "hover" else 0.24))
-		box.set_corner_radius_all(3)
-		box.content_margin_top = 0.0
-		box.content_margin_bottom = 0.0
-		b.add_theme_stylebox_override(state, box)
-	b.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.8))
-	b.pressed.connect(func() -> void:
-		if dial:
-			step_dial(by)
-		else:
-			step_size(by))
-	add_child(b)
-	return b
 
 
 ## The dial's size up or down by [param by], within the scale's limits.
@@ -355,14 +298,10 @@ func _draw() -> void:
 		draw_style_box(_panel, Rect2(Vector2.ZERO, size))
 	var y: float = 14.0
 	for i in _rows.size():
-		var sized: bool = _slider_row >= 0 and i >= _slider_row
 		if i == _slider_row:
 			y += 5.0
 			draw_line(Vector2(14.0, y), Vector2(size.x - 14.0, y), Color(1.0, 1.0, 1.0, 0.09), 1.0)
 			y += 6.0
-		# Level with the spinner beside it, which is taller than a row.
-		if sized:
-			y += SIZE_ROW_EXTRA * 0.5
 		var row: Array = _rows[i]
 		var chip_h: float = float(text_size) + 7.0
 		var box := Rect2(14.0, y, _chip_w, chip_h)
@@ -373,10 +312,16 @@ func _draw() -> void:
 		draw_string(font, Vector2(box.position.x + (_chip_w - kw) * 0.5,
 			y + font.get_ascent(key_size) + 3.5), row[0], HORIZONTAL_ALIGNMENT_LEFT, -1,
 			key_size, Color(1.0, 1.0, 1.0, 0.90 if not row[2] else 0.55))
-		draw_string(font, Vector2(_label_x, y + font.get_ascent(text_size) + 3.5), row[1],
+		var words_x: float = _label_x
+		if row.size() > 3:
+			# A size row: its number, then its words in the column after the widest number.
+			draw_string(font, Vector2(_label_x, y + font.get_ascent(text_size) + 3.5), row[3],
+				HORIZONTAL_ALIGNMENT_LEFT, -1, text_size, Color(1.0, 1.0, 1.0, 0.9))
+			words_x += _number_w()
+		draw_string(font, Vector2(words_x, y + font.get_ascent(text_size) + 3.5), row[1],
 			HORIZONTAL_ALIGNMENT_LEFT, -1, text_size,
 			Color(1.0, 1.0, 1.0, 0.44 if row[2] else 0.72))
-		y += _step() + (SIZE_ROW_EXTRA * 0.5 if sized else 0.0)
+		y += _step()
 		if i == _rule_after:
 			y += 5.0
 			draw_line(Vector2(14.0, y), Vector2(size.x - 14.0, y),

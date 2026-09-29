@@ -71,19 +71,21 @@ func _process(_d: float) -> bool:
 				_check("scaled in the pen", is_equal_approx(root.content_scale_factor, _want), "%.3f" % root.content_scale_factor)
 				_check("the dial is where it always was", _near(_dial_on_screen(), _dial_as_authored()),
 					"%s vs %s" % [_dial_on_screen(), _dial_as_authored()])
-				# A small vertical spinner now, not a slider: a plus over a minus, 10% a press.
+				# Key rows now, as the rest of the card: + / - for the UI size, Shift + / - for the dial.
 				var card: Node = _room.get_node("UI/Controls")
 				_check("the size control is on the controls card", _room.get_node_or_null("UI/Controls/UiSize") != null)
 				var ui: Node = _room.get_node("Systems/UiScale")
 				_check("and shows the size in force", absf(float(card.call("size_percent")) - float(ui.get("percent"))) < 0.01,
 					"%.0f" % float(card.call("size_percent")))
-				var plus: Button = card.get("_plus")
-				var minus: Button = card.get("_minus")
-				_check("plus above minus", plus != null and minus != null and plus.position.y < minus.position.y
-					and absf(plus.position.x - minus.position.x) < 0.5)
+				var rows: Array = card.get("_rows")
+				var at: int = int(card.get("_slider_row"))
+				_check("the sizes are key rows: + / - then Shift + / -, no buttons", at >= 0
+					and String(rows[at][0]).begins_with("+") and String(rows[at + 1][0]).begins_with("Shift")
+					and card.find_children("*", "Button", true, false).is_empty())
+				_check("the number first, then the words", String(rows[at][3]).ends_with("%") and String(rows[at][1]) == "UI size"
+					and String(rows[at + 1][1]) == "dial size", "%s %s / %s %s" % [rows[at][3], rows[at][1], rows[at + 1][3], rows[at + 1][1]])
+				var was: float = float(card.call("size_percent"))
 				_check("no slider to drag", card.find_children("*", "HSlider", true, false).is_empty())
-				_check("and the two do not overlap", plus.get_global_rect().end.y <= minus.get_global_rect().position.y + 0.5,
-					"%s over %s" % [plus.get_global_rect(), minus.get_global_rect()])
 				# The keys the buttons are drawn as.
 				var before_keys: float = float(card.call("size_percent"))
 				var e := InputEventKey.new()
@@ -102,28 +104,19 @@ func _process(_d: float) -> bool:
 					and absf(float(card.call("size_percent")) - before_keys) < 0.01)
 				ui.call("set_dial_percent", _dial_saved)
 				ui.set("dial_percent", dial_keys)
-				var was: float = float(card.call("size_percent"))
-				plus.pressed.emit()
-				_check("plus is 10% up", absf(float(card.call("size_percent")) - (was + 10.0)) < 0.01)
-				minus.pressed.emit()
-				minus.pressed.emit()
-				_check("minus is 10% down", absf(float(card.call("size_percent")) - (was - 10.0)) < 0.01)
-				plus.pressed.emit()
 				for i in 40:
 					card.call("step_size", -10.0)
 				_check("never under 50%", absf(float(card.call("size_percent")) - 50.0) < 0.01)
 				for i in 40:
 					card.call("step_size", 10.0)
 				_check("never over 300%", absf(float(card.call("size_percent")) - 300.0) < 0.01)
-				# The buttons save what they choose; put back the size this machine had saved,
-				# and the one this test runs at.
+				# The keys save what they choose; put back the size this machine had saved, and
+				# the one this test runs at.
 				ui.call("set_percent", _loaded)
 				ui.set("percent", was)
-				# The dial's own size: hidden until Shift, a hint in its place; a press scales
-				# the dial about its bottom-right corner.
-				var dplus: Button = card.get("_dial_plus")
-				_check("the dial's size in a row right under the UI size, always shown", dplus.is_visible_in_tree()
-					and dplus.position.y > (card.get("_minus") as Button).position.y and absf(dplus.position.x - plus.position.x) < 0.5)
+				# The dial's own size: a press scales the dial about its bottom-right corner.
+				card.call("_show_size")
+				_check("and the number in the row follows the size", String((card.get("_rows") as Array)[at][3]) == "%d%%" % roundi(float(card.call("size_percent"))))
 				_dial_was = float(ui.get("dial_percent"))
 				var dial := _room.get_node("UI/SlicePlane") as Control
 				_corner_was = dial.get_global_rect().end
