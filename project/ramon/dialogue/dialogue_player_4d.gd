@@ -202,6 +202,10 @@ func _enter(key: String) -> void:
 
 	if bool(node.get("topic", false)):
 		_asked_any = true
+	# A node can raise a flag of its own on the way in, for a reply that should only appear
+	# once something has been said - no effect handler needed for that.
+	if node.has("sets"):
+		set_flag(String(node["sets"]), true)
 	_visited[key] = true
 	_key = key
 	_lines = node.get("lines", [])

@@ -25,6 +25,9 @@ script = ExtResource("dreamer")
 [node name="DreamerHead" type="Node4D" parent="."]
 position = Vector4(0, 11, -36, 46)
 
+[node name="DreamerTalkSpot" type="Node4D" parent="."]
+position = Vector4(0, 4.5, -36, 46)
+
 [node name="DreamerMark" type="Node4D" parent="."]
 position = Vector4(0, 0, -26, 46)
 
@@ -41,8 +44,10 @@ layout_mode = 3
 anchors_preset = 0
 script = ExtResource("tag")
 camera_path = NodePath("../../../../Player/CameraRig/Pitch/Camera4D")
-anchor_path = NodePath("../../DreamerHead")
-lift = 40.0
+anchor_path = NodePath("../../DreamerTalkSpot")
+fade_from = 22.0
+fade_to = 30.0
+w_range = 8.0
 
 [node name="DreamerBox" type="Control" parent="UI"]
 layout_mode = 3
@@ -50,7 +55,7 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("box")
-layout = 0
+layout = 3
 choice_side = 1
 choice_width = 470.0
 choice_gap = 10.0
@@ -83,8 +88,8 @@ stand_marker_path = NodePath("../../DreamerMark")
 step_seconds = 0.05
 camera_marker_path = NodePath("../../CinemaCamera")
 camera_target_path = NodePath("../../DreamerHead")
-talk_range = 10.0
-talk_range_w = 7.0
+talk_range = 16.0
+talk_range_w = 7.5
 
 [node name="DreamerCinema" type="Node" parent="Systems"]
 script = ExtResource("cinema")

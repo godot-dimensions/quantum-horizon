@@ -30,7 +30,7 @@ signal line_finished
 signal chose(index: int)
 
 enum Reveal { WORD, LETTER }
-enum Layout { BOTTOM_BAND, LEFT_PANEL, OVER_HEAD }
+enum Layout { BOTTOM_BAND, LEFT_PANEL, OVER_HEAD, CINEMA }
 enum ChoiceSide { RIGHT, LEFT }
 
 @export var layout: Layout = Layout.OVER_HEAD
@@ -98,6 +98,30 @@ enum ChoiceSide { RIGHT, LEFT }
 @export_range(10, 48, 1) var text_size: int = 24
 @export_range(10, 40, 1) var choice_size: int = 20
 
+@export_group("Cinema")
+## CINEMA is a film's subtitles rather than a game's dialogue box (Ramon, 29 Sept, of the
+## dreamer: "more cinematic, like watching a movie. bigger text, 80 percent white text, so
+## not super popping bright"). What it takes from film and TV subtitling - the Netflix and
+## BBC style guides agree on nearly all of it - is: no box and no name plate, centred at the
+## bottom of the picture, never more than two lines if it can help it, off-white rather than
+## white, and a soft shadow instead of a background so it reads over a bright shot without
+## a panel sitting on the image. Here it sits on the lower letterbox bar, where a film puts
+## its subtitles when it has bars to put them on. Your own lines are in italics, as a
+## subtitle marks a voice that is not the one on screen, and the replies are a quiet list in
+## the left third rather than a menu. Sizes are shares of the screen's height, so it looks the same on
+## every monitor.
+@export_range(0.015, 0.08, 0.001) var cinema_text_ratio: float = 0.032
+@export_range(0.3, 0.95, 0.01) var cinema_width_ratio: float = 0.72
+## Where the middle of the words sits, as a share of the screen's height from its bottom
+## edge - the middle of the lower letterbox bar.
+@export_range(0.0, 0.5, 0.005) var cinema_bottom_ratio: float = 0.05
+@export var cinema_text_color: Color = Color(0.96, 0.95, 0.92, 0.8)
+@export var cinema_player_color: Color = Color(0.80, 0.86, 0.95, 0.72)
+@export var cinema_choice_color: Color = Color(0.92, 0.92, 0.92, 0.5)
+@export var cinema_choice_picked_color: Color = Color(1.0, 0.98, 0.94, 0.92)
+@export_file("*.ttf") var cinema_font_path: String = "res://ramon/Demo/fonts/Montserrat/static/Montserrat-Regular.ttf"
+@export_file("*.ttf") var cinema_player_font_path: String = "res://ramon/Demo/fonts/Montserrat/static/Montserrat-Italic.ttf"
+
 @export_group("Font")
 ## Montserrat, and specifically the STATIC faces. The variable file's wght axis is inert in
 ## this build, and a variable font's default instance is its axis minimum - which for
@@ -128,6 +152,9 @@ var _camera: Camera4D
 var _head: Node4D
 var _rasp: AudioStreamPlayer
 var _rng := RandomNumberGenerator.new()
+var _cinema_font: Font
+var _cinema_player_font: Font
+var _cinema_size: int = 0
 
 var _full: String = ""
 var _speaker: String = ""
@@ -173,7 +200,12 @@ func say(speaker: String, line: String) -> void:
 	_speaker = speaker
 	_full = line
 	_plate_label.text = speaker
-	_body_panel.add_theme_stylebox_override("panel", _body_style(speaker == player_name))
+	if layout == Layout.CINEMA:
+		var own: bool = speaker == player_name
+		_body_label.add_theme_color_override("font_color", cinema_player_color if own else cinema_text_color)
+		_apply_font(_body_label, _cinema_player_font if own else _cinema_font)
+	else:
+		_body_panel.add_theme_stylebox_override("panel", _body_style(speaker == player_name))
 	_body_label.text = line
 	_body_label.visible_characters = 0
 	_stops = _word_stops(line)
@@ -204,6 +236,9 @@ func offer(choices: Array) -> void:
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		label.add_theme_font_size_override("font_size", choice_size)
 		_apply_font(label, _choice_font)
+		if layout == Layout.CINEMA:
+			_cinema_label(label, _cinema_font, maxi(int(round(float(_cinema_size) * 0.82)), 10))
+			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_choice_box.add_child(label)
 		_choice_labels.append(label)
@@ -322,7 +357,27 @@ func _place() -> void:
 		return
 	var screen: Vector2 = get_viewport_rect().size
 
-	if layout == Layout.BOTTOM_BAND:
+	if layout == Layout.CINEMA:
+		var size_now: int = maxi(int(round(screen.y * cinema_text_ratio)), 12)
+		if size_now != _cinema_size:
+			_cinema_size = size_now
+			_body_label.add_theme_font_size_override("font_size", size_now)
+			for label in _choice_labels:
+				label.add_theme_font_size_override("font_size", maxi(int(round(float(size_now) * 0.82)), 10))
+		var w: float = screen.x * cinema_width_ratio
+		var h: float = _wrapped(_body_label, w)
+		_speech.size = Vector2(w, h)
+		# Centred on the bar; a third line grows upward into the picture, not off the screen.
+		var centre_y: float = screen.y * (1.0 - cinema_bottom_ratio)
+		_speech.position = Vector2((screen.x - w) * 0.5, minf(centre_y - h * 0.5, screen.y - h - 4.0))
+		# The replies hang in the left third, clear of the middle of the frame, where the
+		# shot puts whoever is talking and, over your shoulder, you.
+		var cw: float = screen.x * 0.34
+		var ch: float = _choice_height(cw)
+		_choice_panel.size = Vector2(cw, ch)
+		_choice_panel.position = Vector2(screen.x * 0.07, _speech.position.y - ch - screen.y * 0.04)
+
+	elif layout == Layout.BOTTOM_BAND:
 		var band_w: float = maxf(screen.x - side_margin * 2.0, 200.0)
 		var speech_h: float = maxf(_speech_height(band_w), _plate_height() + BODY_PAD_Y + band_text_height)
 		var choice_h: float = _choice_height(minf(choice_width, band_w))
@@ -475,6 +530,17 @@ func _build() -> void:
 	_choice_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_choice_panel.add_child(_choice_box)
 
+	if layout == Layout.CINEMA:
+		_cinema_font = _face(cinema_font_path, "cinema")
+		_cinema_player_font = _face(cinema_player_font_path, "cinema player")
+		_plate.visible = false
+		var none := StyleBoxEmpty.new()
+		_body_panel.add_theme_stylebox_override("panel", none)
+		_choice_panel.add_theme_stylebox_override("panel", none)
+		_choice_box.add_theme_constant_override("separation", 6)
+		_cinema_size = maxi(int(round(get_viewport_rect().size.y * cinema_text_ratio)), 12)
+		_cinema_label(_body_label, _cinema_font, _cinema_size)
+
 	_place()
 
 	if audio_enabled:
@@ -494,7 +560,28 @@ func _clear_choices() -> void:
 		_choice_panel.visible = false
 
 
+## A label dressed as a subtitle: centred, off-white, with a soft shadow and a faint dark
+## edge in place of a box behind it.
+func _cinema_label(label: Label, font: Font, size_px: int) -> void:
+	_apply_font(label, font)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", size_px)
+	label.add_theme_color_override("font_color", cinema_text_color)
+	label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.7))
+	label.add_theme_constant_override("shadow_offset_x", 0)
+	label.add_theme_constant_override("shadow_offset_y", 2)
+	label.add_theme_constant_override("shadow_outline_size", 6)
+	label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.35))
+	label.add_theme_constant_override("outline_size", 2)
+
+
 func _paint_choices() -> void:
+	if layout == Layout.CINEMA:
+		for i in _choice_labels.size():
+			var on: bool = i == _picked
+			_choice_labels[i].text = ("›  %s" if on else "    %s") % _choices[i]
+			_choice_labels[i].add_theme_color_override("font_color", cinema_choice_picked_color if on else cinema_choice_color)
+		return
 	for i in _choice_labels.size():
 		var on: bool = i == _picked
 		_choice_labels[i].text = "%s %d. %s" % [">" if on else " ", i + 1, _choices[i]]

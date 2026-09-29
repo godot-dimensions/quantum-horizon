@@ -56,6 +56,8 @@ const SHOTS := {
 	"menu_three": ["low"],
 	"topic_what": ["mouth", "wide_pan", "face"],
 	"topic_cube": ["side", "mouth"],
+	"topic_name": ["mouth_push", "side", "mouth"],
+	"topic_name_again": ["mouth"],
 	"topic_where": ["side", "wide_pan"],
 	"topic_music": ["mouth", "face"],
 	"topic_you": ["face", "side"],

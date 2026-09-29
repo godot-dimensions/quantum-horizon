@@ -48,7 +48,8 @@ const NODES: Dictionary = {
 		"Most of you only ever meet one slice of me. You walked along it instead.",
 	],
 	"choices": [
-		{"text": "What are you?", "goto": "topic_what"},
+		{"text": "What are you?", "goto": "topic_what", "once": true},
+		{"text": "Are you Azathoth?", "goto": "topic_name", "needs": "asked_what"},
 		{"text": "What is the cube?", "goto": "topic_cube"},
 		{"text": "Something else.", "goto": "menu_two"},
 		{"text": "I'll go.", "goto": "bye", "leave": true},
@@ -70,7 +71,8 @@ const NODES: Dictionary = {
 	"do": "calm",
 	"lines": ["Ask."],
 	"choices": [
-		{"text": "What are you?", "goto": "topic_what"},
+		{"text": "What are you?", "goto": "topic_what", "once": true},
+		{"text": "Are you Azathoth?", "goto": "topic_name", "needs": "asked_what"},
 		{"text": "What is the cube?", "goto": "topic_cube"},
 		{"text": "Something else.", "goto": "menu_two"},
 		{"text": "I'll go.", "goto": "bye", "leave": true},
@@ -104,6 +106,7 @@ const NODES: Dictionary = {
 "topic_what": {
 	"speaker": "???",
 	"do": "calm",
+	"sets": "asked_what",
 	"instead": "topic_what_again",
 	"lines": [
 		"What speaks to you is a sliver of me that happens to be awake. A candle held up in a house with no walls.",
@@ -111,6 +114,29 @@ const NODES: Dictionary = {
 		"But this much the sliver knows: I am the one dreaming, and the dream, and every shape the dream takes on.",
 	],
 	"topic": true,
+	"goto": "menu",
+},
+
+## Its name, once you have asked what it is (the reply takes the place of "What are you?").
+## Azathoth is the drummers' name for it, and the azoth your people dig is where it held a
+## dream too tightly - which is why you leave with a drop of it (pen_dream_wake_4d.gd).
+"topic_name": {
+	"speaker": "???",
+	"do": "calm",
+	"instead": "topic_name_again",
+	"lines": [
+		"Azathoth. That is the name the drummers gave the part of me that does not listen.",
+		"A name is a handle, for things small enough to pick up. They made that one so they would have something to hold on to while they played.",
+		"The violet stone your people dig and quarrel over, the one they call azoth, is where I held a dream too tightly. A drop of me, gone hard.",
+	],
+	"topic": true,
+	"goto": "menu",
+},
+
+"topic_name_again": {
+	"speaker": "???",
+	"do": "calm",
+	"lines": ["A handle. Hold it, if it helps. It is not wrong. It is only far too small."],
 	"goto": "menu",
 },
 
@@ -143,7 +169,7 @@ const NODES: Dictionary = {
 	"do": "calm",
 	"instead": "topic_music_again",
 	"lines": [
-		"It is not for you. Somewhere, always, something is playing - a pipe, a drum, a hum in the rock - so that I stay under.",
+		"It is not for you. Somewhere there is always something playing. A pipe, a drum, a hum in the rock. It keeps me under.",
 		"Every note of it is a lullaby. If you ever hear it stop, sing.",
 	],
 	"topic": true,
@@ -266,7 +292,7 @@ const NODES: Dictionary = {
 	"do": "calm",
 	"do_on_line": 0,
 	"lines": [
-		"Not you in there. You, out there - in the chair, with a finger still on {key}.",
+		"Not you in there. You, out there, in the chair, with a finger still on {key}.",
 		"It is {time} where you are. The light on your face right now is mine.",
 		"I dream that as well, player: the desk, the hands, the one who believes they are only watching. There is no outside of a dream to skip to.",
 		"So. Where were we.",
@@ -297,7 +323,7 @@ const NODES: Dictionary = {
 	"speaker": "???",
 	"do": "leave_dream",
 	"do_on_line": 0,
-	"lines": ["Go gently, thin one. Wake."],
+	"lines": ["Go gently, thin one. Take a drop of me with you. Wake."],
 },
 
 }

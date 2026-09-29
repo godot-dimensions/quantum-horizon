@@ -28,6 +28,7 @@ var _windowed := false
 var _tap := 0.0
 var _seen_flinch := false
 var _asking := -1.0
+var _drops_before := 0
 
 
 func _initialize() -> void:
@@ -243,6 +244,7 @@ func _process(d: float) -> bool:
 			# Goodbye: a flash, and home.
 			_hold(ROOM + Vector4(0, 0.05, 7.0, 0))
 			if _t > 0.8:
+				_drops_before = int(_room.get_node("UI/Inventory").call("count_of", "found_azoth"))
 				_far("Systems/DreamerTalk").call("begin", "bye")
 				_step = 16; _t = 0.0
 		16:
@@ -274,6 +276,8 @@ func _process(d: float) -> bool:
 				_check("walking again", _player().is_physics_processing())
 				var thought: Node = _room.get_node("UI/ThoughtBox")
 				_check("wondering what that was", thought.visible and String(thought.get("_full")) == "...What was that?", String(thought.get("_full")))
+				var drops: int = int(_room.get_node("UI/Inventory").call("count_of", "found_azoth"))
+				_check("with a drop of azoth in your belt", drops == _drops_before + 1, "%d -> %d" % [_drops_before, drops])
 				_save(2, "wake")
 				print("DREAMER: %s" % ("ALL PASS" if _failed == 0 else "%d FAILED" % _failed))
 				quit()

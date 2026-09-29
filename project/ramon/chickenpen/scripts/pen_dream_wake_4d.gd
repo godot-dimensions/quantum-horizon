@@ -9,6 +9,11 @@ extends Node
 ## are out of the cave, and the cave with it leaves the tree, so whatever runs the waking has
 ## to be somewhere that stays: here. The dreamer's conversation calls [method wake].
 ##
+## AND A DROP OF IT IN YOUR BELT (Ramon, 29 Sept: "when you wake up, you will have one
+## extra drop of the azatoth ore"). Every waking, once you are on your feet: azoth, the
+## same token the rock gives up, so it stacks with what you have dug and the keeper takes
+## it all the same.
+##
 ## The flash is its own layer above everything, the fade's included. You are carried home
 ## at its brightest, by the cave's own crossing, and set down a few metres out from the
 ## arch, on the flat slice, looking back at it - the camera behind you, the cave in front,
@@ -26,6 +31,8 @@ const CaveHill := preload("res://ramon/chickenpen/terrain/pen_cave_hill_4d.gd")
 @export var crossing_path: NodePath = NodePath("../../CaveCrossing")
 @export var player_path: NodePath = NodePath("../../Player")
 @export var box_path: NodePath = NodePath("../../UI/ThoughtBox")
+@export var inventory_path: NodePath = NodePath("../../UI/Inventory")
+@export var gift: String = "found_azoth"
 @export var flash: Color = Color(0.86, 0.93, 1.0)
 @export_range(0.05, 2.0, 0.05) var rise_seconds: float = 0.35
 @export_range(0.0, 3.0, 0.05) var hold_seconds: float = 0.55
@@ -127,6 +134,9 @@ func _process(delta: float) -> void:
 			if _head != null:
 				_head.basis = _head_rest
 			player.set_physics_process(true)
+			var belt: Node = get_node_or_null(inventory_path)
+			if belt != null and gift != "":
+				belt.call("add_item", gift)
 			_think()
 			_t = -1.0
 			_layer.visible = false

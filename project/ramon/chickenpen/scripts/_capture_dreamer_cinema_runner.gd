@@ -15,7 +15,7 @@ extends SceneTree
 
 const ROOM := Vector4(0, 0, -36, 46)
 ## Replies to pick, in order, each time replies are offered.
-const PICKS := [0, 2, 2, 2, 3, 3]
+const PICKS := [0, 0, 2, 2, 2, 3, 3]
 
 var _room: Node
 var _cave: Node4D
