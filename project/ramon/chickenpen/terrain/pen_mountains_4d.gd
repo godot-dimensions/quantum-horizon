@@ -61,7 +61,7 @@ enum Style { CLASSIC, PEAKS }
 @export_range(60.0, 580.0, 1.0) var rim_distance: float = 115.0
 @export_range(5.0, 200.0, 1.0) var rim_depth: float = 30.0
 @export_range(3.0, 90.0, 0.5) var rim_spacing_degrees: float = 9.0
-@export_range(0.0, 300.0, 0.5) var rim_height: float = 24.0
+@export_range(0.0, 300.0, 0.5) var rim_height: float = 27.0
 @export_range(0.0, 1.0, 0.01) var rim_variation: float = 0.6
 @export_range(0.0, 1.0, 0.01) var rim_coverage: float = 0.85
 @export_range(0.05, 1.2, 0.01) var rim_width: float = 0.75
@@ -72,7 +72,7 @@ enum Style { CLASSIC, PEAKS }
 @export_range(60.0, 580.0, 1.0) var medium_distance: float = 240.0
 @export_range(5.0, 200.0, 1.0) var medium_depth: float = 50.0
 @export_range(3.0, 90.0, 0.5) var medium_spacing_degrees: float = 14.0
-@export_range(0.0, 300.0, 0.5) var medium_height: float = 75.0
+@export_range(0.0, 300.0, 0.5) var medium_height: float = 84.0
 @export_range(0.0, 1.0, 0.01) var medium_variation: float = 0.5
 @export_range(0.0, 1.0, 0.01) var medium_coverage: float = 0.8
 @export_range(0.05, 1.2, 0.01) var medium_width: float = 0.8
@@ -83,7 +83,7 @@ enum Style { CLASSIC, PEAKS }
 @export_range(60.0, 580.0, 1.0) var large_distance: float = 450.0
 @export_range(5.0, 200.0, 1.0) var large_depth: float = 80.0
 @export_range(3.0, 90.0, 0.5) var large_spacing_degrees: float = 20.0
-@export_range(0.0, 400.0, 0.5) var large_height: float = 190.0
+@export_range(0.0, 400.0, 0.5) var large_height: float = 213.0
 @export_range(0.0, 1.0, 0.01) var large_variation: float = 0.45
 @export_range(0.0, 1.0, 0.01) var large_coverage: float = 0.6
 @export_range(0.05, 1.2, 0.01) var large_width: float = 0.85

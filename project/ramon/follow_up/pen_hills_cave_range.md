@@ -242,6 +242,26 @@ Test: `scripts/_verify_dreamer_runner.gd` (22 checks, now through the threat and
 waking) and `scripts/_capture_dreamer_cinema_runner.gd` (plays the scene through and saves a
 frame of every shot, `cine_*.png`, plus 18 checks on the staging and the refused skip). `_verify_talk_runner.gd` was already stale before this (it looks for `UI/Radar`, long gone).
 
+### Ramon's list, 29 Sept
+
+| Note | What is there now |
+|---|---|
+| No gold in the lattice: a purple ore tied to Azathoth that the white suits study | **Azoth** (the alchemists' first matter). Violet 4D crystals in the rock (`pen_rock_gold_4d.gd`, file and node keep their names), the belt item `found_azoth` with a crystal icon and its count always shown. The professor, Hale, the keeper and Mithra talk about it; the dreamer calls it where it "held a dream too tightly. A drop of me, gone hard." |
+| The laptops glow less | Cave: screen colour down to a blue-grey in the bake, its light 0.45 to 0.28. Cinema: the same screen colour, light 1.0 to 0.4. |
+| The cinema laptop next to the stage and booth, on the chairs' side, further off, turned 90 degrees, near Trym after the show | On its own stand at (-7.9, 0, 1.2): past the podium on the flank of the seating, clear of the seats and the backdrop, screen facing out. Trym's after-show reach is 3 m (was 6), so from the laptop he is out of range. |
+| Laptops open Menu2 (with its toggle to the Frontier Map); Escape asks "back to the pen?"; all three laptops; a tucked-in return button | `pen_laptop_4d.gd` at Trym's desk, the cave table and the cinema stand; `pen_laptop_trip_4d.gd` parks the whole pen the way the range trip does. Escape asks only after the menus have had it; Enter is yes, Escape no. "ESC  RETURN TO THE PEN" sits in the menus' top bar, placed from `menu_banner.gd`'s own numbers. No menu script was changed. |
+| People talking must not clash with laptops: a laptop only takes F when no NPC could talk | Every conversation joins group `npc_talk`; a laptop asks each whether it could start and yields if so, and to a chicken in reach or in your arms. Trym's desk laptop is his while he sits at it. |
+| In the cave, names too close to their icons; "the cube" should be "Artifact"; "anomalous reading" a space further right | Names now stand off by the icon's own size and a space (`_icon_clearance`); the cube's dial label is "Artifact". |
+| The view wedge on the dial: narrower than 90 degrees, a red gradient instead of lines and fill | 0.76 of the lens's real sweep (about 69 degrees), red fading from you to its edge in five rings, no outline. |
+| F for the dreamer from a distance, saying talk | "F talk" hangs on a spot 4.5 m up, not 11 m; reach 16 m and 7.5 through W; it fades out only past 22 m. |
+| The dreamer's talk more like a film; "Are you Azathoth?"; a drop of the ore when you wake | A CINEMA layout in `dialogue_box_4d.gd` (no box, centred, off-white at 80%, soft shadow, on the lower bar, your lines in italics, replies a quiet list on the left). "Are you Azathoth?" takes the place of "What are you?" once asked (a node's new `"sets"` key raises the flag). Waking puts one azoth in your belt, every time. |
+| Press 1 to mine at the Artifact without the pickaxe in hand | `cave_mine_prompt_4d.gd`: "Press N to mine" over it within 4.5 m, N the pickaxe's own slot, only with the pickaxe on the belt and not in hand. |
+| The range: pick up a gun to shoot; different signs in 4D; the range master still sends you on | The first click at the counter takes a rifle off it and into your hands (then clicks shoot, and you face your aim); it goes back when you leave. Every board has a letter on one side of its rings through W and a red glyph on the other; read left to right the letters spell AZOTH. The range master is unchanged. |
+| The mountains a little bigger | Rim, medium and far bands 12% taller (27 / 84 / 213 m), rebaked. |
+| No em dashes in the dreamer's lines | Taken out, and out of the new lines for the others. |
+
+Tests: `_verify_laptop_runner.gd` (16 checks), `_verify_range_shooting_runner.gd` (now 27, with the rifle and the signs), `_verify_dreamer_runner.gd` (24, with the drop of azoth), `_capture_dreamer_cinema_runner.gd` (19, now through "Are you Azathoth?"). `_verify_hud_runner.gd` still expects the top-left card to size itself to its text, which it has not done since it was fixed in size on 28 Sept.
+
 ## For Aaron
 
 `engine/modules/4d/nodes/node_4d.cpp`, `Node4D::set_global_position`:
