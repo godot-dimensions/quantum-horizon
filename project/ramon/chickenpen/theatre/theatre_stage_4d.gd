@@ -321,16 +321,21 @@ func rebuild() -> void:
 	# laptop with glowing screen ... close to Trym's booth"; 29 Sept: "next to the stage, and
 	# next to the booth, but on the side of the chairs ... a bit further away ... never facing
 	# the crowd or the backside, more like rotated 90"). Clear of the seating fan, which ends
-	# 76 degrees round, and of the backdrop, which begins at 112; its screen faces out, away
-	# from the stage, so whoever uses it stands on the far side of it from the podium - four
-	# and a half metres from where Trym finishes, outside his reach (theatre.tscn AfterShow
-	# talk_range), so F means the laptop there and not him. A soft screen and a small light:
-	# lit, not a lamp (Ramon, 29 Sept: "the laptops glow without it overpowering").
+	# 76 degrees round, and of the backdrop, which begins at 112.
+	#
+	# TURNED A FURTHER 90 DEGREES (Ramon, 30 Sept: "rotated 90 degrees so that the screen
+	# faces the backside of the theater" - the backdrop behind the stage, not the house).
+	# The screen faces the stand's local +Z; from_zx(PI) points that at world -Z, where it
+	# used to point out to the side at -X. Whoever uses it stands on the backdrop side of
+	# it, about three and a half metres from where Trym finishes - still outside his reach
+	# (theatre.tscn AfterShow talk_range 3), so F means the laptop there and not him. A soft
+	# screen and a small light: lit, not a lamp (Ramon, 29 Sept: "the laptops glow without
+	# it overpowering").
 	var stand := Node4D.new()
 	stand.name = "LaptopStand"
 	add_child(stand)
 	stand.position = laptop_spot
-	stand.basis = Basis4D.from_zx(-PI * 0.5)
+	stand.basis = Basis4D.from_zx(PI)
 	_own(stand)
 	_slab(stand, "Stem", Vector4(0.0, 0.42, 0.0, 0.0), Vector3(0.10, 0.84, 0.10), drum_color)
 	_slab(stand, "Top", Vector4(0.0, 0.86, 0.0, 0.0), Vector3(0.46, 0.04, 0.36), drum_color)

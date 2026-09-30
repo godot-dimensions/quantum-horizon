@@ -1,6 +1,9 @@
 extends SceneTree
 
-## Does the theatre stand up, and does the show run through all three acts?
+## Does the theatre stand up, and does the show run slide I and hand on to part two?
+##
+## One presentation since 30 Sept: part one is the walk-in and slide I (the rock turned
+## through W), then part two takes the floor with no closing line and no question.
 
 var _root: Node
 var _f := 0
@@ -8,7 +11,9 @@ var _fails: Array = []
 var _show: Node
 var _seen: Array = []
 var _lit_on_approach: float = 0.0
-var _exhibits_at: int = 0
+var _rock_at_slide: bool = false
+var _carved_at_slide: bool = false
+var _handed_on: bool = false
 
 
 func _initialize() -> void:
@@ -48,13 +53,12 @@ func _process(_d) -> bool:
 			"%d motes" % stage.get_node_or_null("Motes").get_child_count())
 		print("\n--- the exhibits ---")
 		var table: Node4D = stage.get_node("Turntable")
-		# NOT YET, AND THAT IS THE POINT. The three acts used to be built inside the Show's
-		# _ready, which is paid on the frame you walk through the door - 209 ms of it in a
-		# debug build, on top of part two's 3,500, for about four seconds at the threshold.
-		# They are made one an act per frame now, so the door costs a fraction of what it
-		# did and they are still standing long before act one is wanted.
+		# NOT YET, AND THAT IS THE POINT. The exhibits used to be built inside the Show's
+		# _ready, which is paid on the frame you walk through the door. The rock is made on
+		# a still beat now - in the chair, or once the opening has run - so the door costs a
+		# fraction of what it did and the rock is still standing before slide I is wanted.
 		_check("they are not built on the frame you arrive",
-			table.get_node_or_null("ActThree") == null,
+			table.get_node_or_null("SliceRock") == null,
 			"a doorway is not the place to pay for a mined rock")
 		# AND THE CARVE HAS NOT HAPPENED YET EITHER. It used to fire at a third of a
 		# second, from back when every exhibit was built inside _ready. Once the acts were
@@ -64,7 +68,6 @@ func _process(_d) -> bool:
 		_check("and the rock has not been carved before it exists",
 			not bool(_show.get("_carved")),
 			"a carve that runs early runs on nothing and marks itself done")
-		_exhibits_at = _f + 6
 		_check("the way out is standing when you get there", bool(_root.get_node("ExitArch").get("armed")),
 			"open at the head of the walkway")
 		# AND ALREADY LIT, before anybody has walked near it or finished anything. It is
@@ -80,6 +83,11 @@ func _process(_d) -> bool:
 		_show.set("opening_seconds", 1.0)
 		_show.set("act_seconds", 0.5)
 		_show.set("closing_seconds", 0.3)
+		# And part two, which carries the talk on; long enough that the walk to the way out
+		# below still happens mid-talk.
+		var two: Node = _root.get_node("PartTwo")
+		two.set("moment_seconds", 1.5)
+		two.set("closing_seconds", 0.3)
 		# He holds his mark until somebody sits down, and nobody sits down in this test -
 		# the chair has a runner of its own. Zero is what he waits for a player who never
 		# finds it, which is the case this one is standing in for.
@@ -87,30 +95,17 @@ func _process(_d) -> bool:
 		print("\n--- the run ---")
 		return false
 
-	# AND THEY TURN UP ON THEIR OWN, with nobody calling finish_building(). Six frames is
-	# twice the three they take, and still well inside the opening.
-	if _exhibits_at > 0 and _f >= _exhibits_at:
-		_exhibits_at = 0
-		var table: Node4D = _root.get_node("Stage/Turntable")
-		_check("all three arrive within a few frames",
-			table.get_node_or_null("ActOne") != null
-				and table.get_node_or_null("ActTwo") != null
-				and table.get_node_or_null("ActThree") != null,
-			"built by the pump, before the opening was over")
-		_check("act one really does carry a 3D node",
-			table.get_node_or_null("ActOne/ThreeD") is MeshInstance3D,
-			"a MeshInstance3D, which the renderer will never draw")
-		_check("act two has a hull and a swarm",
-			table.get_node_or_null("ActTwo/Hull") != null
-				and table.get_node_or_null("ActTwo/Swarm") != null, "both")
-		_check("act three is a real mined block",
-			table.get_node_or_null("ActThree/Rock") != null
-				and table.get_node_or_null("ActThree/Rock/Voxels") != null,
-			"a VoxelMiningBlock with its own colliders")
-
 	var act: int = int(_show.get("_act"))
 	if _seen.is_empty() or _seen[-1] != act:
 		_seen.append(act)
+		# THE ROCK IS THERE, AND CUT, BY THE TIME SLIDE I STARTS. Nobody sits in this test,
+		# so it is the opening-has-run path that builds it, not the chair.
+		if act == 0:
+			var table: Node4D = _root.get_node("Stage/Turntable")
+			_rock_at_slide = table.get_node_or_null("SliceRock/Rock/Voxels") != null
+			_carved_at_slide = bool(_show.get("_carved"))
+	if act == 1 and bool(_root.get_node("PartTwo").call("is_running")):
+		_handed_on = true
 
 	# Walk up to the way out part way through, to see whether it notices you rather
 	# than waiting for the talk to finish.
@@ -120,10 +115,19 @@ func _process(_d) -> bool:
 	if _f == 640:
 		_lit_on_approach = float(_root.get_node("ExitArch").get("_lit"))
 		(_root.get_node("Player") as Node4D).global_position = Vector4(0, 2.0, 0, 0)
-	if _f < 900: return false
+	if _f < 900 or not bool(_show.call("is_over")):
+		if _f > 30000:
+			print("   FAIL the talk never ended (acts %s)" % [_seen])
+			quit(1); return true
+		return false
 	print("   acts in order: %s" % [_seen])
-	_check("it ran all three and closed", _seen.has(0) and _seen.has(1) and _seen.has(2)
-		and _seen.has(3), "%s" % [_seen])
+	print("\n--- slide I ---")
+	_check("the rock is a real mined block", _rock_at_slide,
+		"a VoxelMiningBlock with its own colliders, on the drum as the slide opens")
+	_check("and already cut", _carved_at_slide,
+		"the carve was taken before the slide, not on its first frame")
+	_check("it ran slide I and handed on", _seen.slice(-2) == [0, 1] and _handed_on,
+		"%s, then part two had the floor" % [_seen])
 	_check("and it is still there at the end", bool(_root.get_node("ExitArch").get("armed"))
 		and _root.get_node("ExitArch").visible, "you can walk out of it")
 	_check("it lights up when you walk to it, mid-talk", _lit_on_approach > 0.5,
@@ -135,7 +139,7 @@ func _process(_d) -> bool:
 		float(_root.get_node("ExitArch").get("highlight")) > 0.9,
 		"highlight %.2f - usable all along, announced at the end"
 			% float(_root.get_node("ExitArch").get("highlight")))
-	var voxels: Node = _root.get_node_or_null("Stage/Turntable/ActThree/Rock/Voxels")
+	var voxels: Node = _root.get_node_or_null("Stage/Turntable/SliceRock/Rock/Voxels")
 	_check("and somebody had been at the rock with a pick", bool(_show.get("_carved"))
 		and voxels != null and voxels.get_child_count() > 0,
 		"%d surface colliders round the tunnel" % (voxels.get_child_count()

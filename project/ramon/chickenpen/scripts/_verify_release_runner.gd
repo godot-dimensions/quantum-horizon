@@ -24,7 +24,7 @@ var _two: Node
 var _exit: Node
 var _their: Camera4D
 var _sat := false
-var _answered := false
+var _started := false
 var _ended_at := 0
 
 
@@ -76,21 +76,17 @@ func _process(_d) -> bool:
 		print("\n--- sat down, and the show runs ---")
 		return false
 
-	# Say yes when he asks, so the whole of part two runs too.
-	var prompt: Node = _root.get_node("UI/Prompt")
-	if not _answered and bool(prompt.call("is_asking")):
-		_answered = true
-		_check("it got all the way to the offer while you sat there", bool(_sat),
-			"part one played to an audience of one, seated")
-		var key := InputEventKey.new()
-		key.keycode = int(prompt.get("yes_key"))
-		key.pressed = true
-		Input.parse_input_event(key)
+	# Slide I hands straight on to part two; nobody is asked.
+	if not _started and bool(_two.call("is_running")):
+		_started = true
+		_check("it got all the way to slide II while you sat there", bool(_sat),
+			"slide I played to an audience of one, seated, and handed on by itself")
 		return false
 
 	# The end of part two: not running any more, and no moment left to show.
-	var over: bool = _answered and not bool(_two.call("is_running")) \
-		and int(_two.call("current_moment")) >= 5
+	var count: int = (_two.get_script().get_script_constant_map()["MOMENTS"] as Array).size()
+	var over: bool = _started and not bool(_two.call("is_running")) \
+		and int(_two.call("current_moment")) >= count
 	if over and _ended_at == 0:
 		_ended_at = _f
 		return false
@@ -115,8 +111,8 @@ func _process(_d) -> bool:
 		return true
 
 	if _f > 20000:
-		print("   FAIL never reached the end (sat=%s answered=%s moment=%d)"
-			% [_sat, _answered, int(_two.call("current_moment"))])
+		print("   FAIL never reached the end (sat=%s started=%s moment=%d)"
+			% [_sat, _started, int(_two.call("current_moment"))])
 		quit(1)
 		return true
 	return false

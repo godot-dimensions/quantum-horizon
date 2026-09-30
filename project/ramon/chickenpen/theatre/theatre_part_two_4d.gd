@@ -1,25 +1,23 @@
 extends Node
 
-## PART TWO. The three engine findings were for whoever builds this. These five are for
-## whoever funds it, and the audience is the October gate: Scott, Brandon, Aggelos,
-## Nicolas, Charles — not designers, not 4D specialists, and several of them have
-## questioned the funding of the comprehension seat specifically.
+## PART TWO: slides II to IV of the one presentation. Slide I, the rock turned through
+## W, is theatre_show_4d's; it hands the floor straight here when it ends, with no closing
+## line and no question in between (Ramon, 30 Sept: "one presentation from now on"). Two
+## slides that used to be here are gone - the three copies of one object, and the stop
+## conditions - and the three left are the ones standing on something the team built.
+##
+## The audience is the October gate: Scott, Brandon, Aggelos, Nicolas, Charles - not
+## designers, not 4D specialists.
 ##
 ## EVERY CLAIM CARRIES ITS TIER, because that is the rule the real deck runs on: MEASURED,
-## OBSERVED n=7, or NOT YET MEASURED, stated rather than implied. Overclaiming has cost
-## this project credibility once already and the honesty is the deck's main asset with this
-## audience. Nothing here softens a gap, and the accent marks the gap rather than the
-## achievement — which is a deliberate inversion of normal practice and the reason the
-## first exhibit's loudest column is the empty one.
+## DEMONSTRATED, OBSERVED or NOT YET MEASURED, stated rather than implied. Overclaiming has
+## cost this project credibility once already and the honesty is the deck's main asset
+## with this audience. Nothing here softens a gap.
 ##
-## THE NUMBERS COME FROM THE PROGRAMME, NOT FROM ME. The three engine thresholds and the
-## 0-of-3, the N=7 playtest and its caveats, the seven stop conditions and which of them
-## cannot be read until 2027, the gate date and the three outcomes — all of it is from the
-## stakeholder deck in follow_up/presentation temp, the Notion Work Log (current to
-## 16 September 2026) and the Round 1 playtest results page. Where the source says a figure
-## is provisional, so does the caption.
-##
-## IT IS GATED ON A QUESTION. Part one ends, Trym asks, and this only runs on a yes.
+## THE NUMBERS COME FROM THE PROGRAMME OR FROM THE EXHIBIT ITSELF, NOT FROM ME. The goat's
+## and the creature's counts are read off the objects on the drum (see _fill); the walk's
+## timing is the 19 Sept measurement the deck quotes. The deck is in follow_up/presentation
+## temp and the rest of the record is the Notion Work Log.
 ##
 ## THE TWO EXHIBITS THAT ARE REAL WORK RATHER THAN DIAGRAM - the goat and the walking
 ## creature - are both ADOPTED out of the Model scene rather than invented for the
@@ -35,7 +33,6 @@ const SHOW := preload("res://ramon/chickenpen/theatre/theatre_show_4d.gd")
 
 @export var stage_path: NodePath
 @export var caption_path: NodePath
-@export var prompt_path: NodePath
 @export var show_path: NodePath
 @export var presenter_path: NodePath
 @export var metrics_path: NodePath
@@ -45,63 +42,32 @@ const SHOW := preload("res://ramon/chickenpen/theatre/theatre_show_4d.gd")
 @export_range(4.0, 60.0, 0.5) var moment_seconds: float = 17.0
 @export_range(1.0, 20.0, 0.5) var closing_seconds: float = 10.0
 
-## Seven moments. `tint` recolours the backdrop; the palette is the deck's own chapter
-## coding - Engine lime, Player pink, Developer violet, and the gate itself amber. The
-## walking creature is teal rather than lime ON PURPOSE: it carries a real engine
-## measurement, but it is not one of the three thresholds moment IV says are unmeasured,
-## and colouring it as though it were would fill that empty column by implication.
+## Three moments. `tint` recolours the backdrop; the palette is the deck's own chapter
+## coding - Developer violet for the goat. The walking creature is teal rather than
+## Engine lime ON PURPOSE: it carries a real engine measurement, but it is not one of the
+## deck's three engine thresholds, and colouring it as though it were would claim one of
+## them by implication.
 ##
 ## `shot` is how the camera frames the moment once you are sitting down, and every one of
-## them is named in theatre_camera_4d.SHOTS. Four of the seven hold still. The two that
-## move, move because the move IS the sentence: the camera drifts toward the plinth with
-## nothing on it, and tracks away from the stop conditions that are not on your slice and
-## finds empty floor where they would be.
+## them is named in theatre_camera_4d.SHOTS.
+##
+## `piece` is which of this node's exhibits the moment stands on - an index into BUILDERS,
+## named rather than assumed, because two moments stand on the same goat.
 ##
 ## Two optional keys, both used by the walking creature and by nothing else yet. `pace`
 ## multiplies the shared moment length for a slide that needs longer than the rest - a
 ## MULTIPLIER rather than a number of seconds, so changing the pace of the presentation
 ## still changes this one too - and `later` re-issues the figures part way through, at a
 ## fraction of that length.
-## How far apart the three copies of moment IV stand along W. The parts of the solid are
-## built at these same depths, so each copy has exactly one of them on your slice.
-const DEPTHS: PackedFloat32Array = [0.0, 1.45, 2.90]
 
 const MOMENTS := [
 	{
-		"title": "IV. THESE THREE ARE THE SAME OBJECT",
-		"body": "One solid, standing at three different depths along the axis you cannot see, so your slice cuts it in three different places. Nobody reads them as one thing on their first look - and everybody can be taught to. That is the whole player question, and it is the only pillar with evidence from outside this room.",
-		"figure": "Seven testers, seven who had it by the end of one session, 8.4 of 10 forward interest. Recruited Cardano-adjacent, no non-gamers, and a form bug destroyed 5 of 7 written answers.",
-		"tier": "OBSERVED - N=7, ROUND 1, MAY-JUNE 2026",
-		"tint": Color(0.78, 0.35, 0.51),
-		"piece": 0,
-		"shot": "low",
-		"pace": 1.45,
-		"metrics": [
-			{"at": Vector4(-4.6, 3.9, 0.0, 0.0), "value": "7 / 7", "side": -1.0,
-				"label": "developed 4D intuition", "colour": Color(1.0, 0.55, 0.74)},
-			{"at": Vector4(4.6, 2.6, 0.0, 0.0), "value": "8.4", "side": 1.0,
-				"label": "forward interest, out of 10", "colour": Color(1.0, 0.55, 0.74)},
-		],
-		"later": [
-			{"at": 0.40, "metrics": [
-				{"at": Vector4(2.4, 4.4, 0.0, 0.0), "value": "1", "side": 1.0,
-					"label": "object, on one slice at last",
-					"colour": Color(1.0, 0.55, 0.74)},
-			]},
-			{"at": 0.64, "metrics": [
-				{"at": Vector4(2.4, 4.4, 0.0, 0.0), "value": "3", "side": 1.0,
-					"label": "of its cross-sections, in lockstep",
-					"colour": Color(1.0, 0.55, 0.74)},
-			]},
-		],
-	},
-	{
-		"title": "V. NOBODY BUILT THIS SURFACE",
+		"title": "II. NOBODY BUILT THIS SURFACE",
 		"body": "A designer made this goat, and made it without modelling anything. {balls} handles were placed - rump, barrel, chest, neck, skull, horns - and the tool generated every tetrahedron between them. Two of the four people who have built on this engine are not engine programmers, and nine Godot prototypes have come out of it.",
 		"figure": "{tetra} tetrahedra from {balls} handles. {each} generated for every one placed.",
 		"tier": "MEASURED - THIS BUILD, THIS SCENE",
 		"tint": Color(0.52, 0.42, 0.85),
-		"piece": 1,
+		"piece": 0,
 		"shot": "close",
 		"metrics": [
 			{"at": Vector4(-2.7, 2.5, 0.0, 0.0), "value": "{balls}", "side": -1.0,
@@ -122,12 +88,12 @@ const MOMENTS := [
 		],
 	},
 	{
-		"title": "VI. IT IS A TOOL, NOT A GOAT",
+		"title": "III. IT IS A TOOL, NOT A GOAT",
 		"body": "Watch it being made, and then watch four handles move: the neck, the skull and both horns. Nothing is remodelled and no surface is touched - the tool regenerates it. That is what separates something an artist shapes creatures and characters with from a pipeline that happened to produce one goat. And a handle is something a machine can take hold of just as easily: the interface a designer uses is the interface an AI can drive.",
 		"figure": "Same {balls} handles, same tool. Four of them moved; {tetra} tetrahedra followed.",
 		"tier": "DEMONSTRATED - BUILT AND RESHAPED IN FRONT OF YOU",
 		"tint": Color(0.42, 0.56, 0.92),
-		"piece": 1,
+		"piece": 0,
 		"shot": "quarter",
 		"metrics": [
 			{"at": Vector4(-2.7, 2.5, 0.0, 0.0), "value": "{balls}", "side": -1.0,
@@ -136,12 +102,12 @@ const MOMENTS := [
 		],
 	},
 	{
-		"title": "VII. NOBODY ANIMATED THIS WALK EITHER",
+		"title": "IV. NOBODY ANIMATED THIS WALK EITHER",
 		"body": "There is no 4D motion capture and no 4D animation package, so there is no clip to play. This is procedural animation in the strict sense - every frame of it is solved. A gait clock fires the footfalls, a FABRIK chain resolves each of the {legs} legs onto its own moving target, and the solvers above it flex the spine, hold the head steady against the bob and lag the tail behind the sway. Then the skin comes off, and the handles that shaped this animal turn out to be the joints that move it.",
 		"figure": "{segments} rigid transforms a frame, under the noise floor. Skinning what has to deform instead: 79.31 ms to 19.76.",
 		"tier": "MEASURED - ONE MACHINE, VSYNC OFF, 350 FRAMES AVERAGED, 19 SEP 2026",
 		"tint": Color(0.10, 0.34, 0.40),
-		"piece": 3,
+		"piece": 1,
 		"shot": "profile",
 		"pace": 1.55,
 		"metrics": [
@@ -168,24 +134,10 @@ const MOMENTS := [
 			]},
 		],
 	},
-	{
-		"title": "VIII. WHAT WOULD STOP THIS",
-		"body": "Seven conditions, written down before the tests rather than after them. Three can be read today. The other four cannot be evaluated until the end of 2027, so they are not standing where you are standing - and nothing you do from that chair will bring them into view. Four empty marks on the floor is the honest position, and it is the one the programme is in.",
-		"figure": "3 readable now. 4 not yet measurable. One of the three is whether 4D content still needs a specialist.",
-		"tier": "PROPOSED - DELIVERABLE 2 SEVEN IS THE RECORD",
-		"tint": Color(0.62, 0.30, 0.24),
-		"piece": 2,
-		"shot": "drift",
-		"metrics": [
-			{"at": Vector4(0.0, 2.2, -1.2, 0.0), "value": "3 of 7", "side": 1.0,
-				"label": "readable today", "colour": Color(1.0, 0.52, 0.38)},
-		],
-	},
 ]
 
 var _stage: Node4D
 var _caption: Node
-var _prompt: Node
 var _show: Node
 var _presenter: Node4D
 var _table: Node4D
@@ -199,8 +151,6 @@ var _goat: Node4D
 var _creature: Node4D
 var _camera: Node
 var _told: int = 0
-var _copies: Array[Node4D] = []
-var _stones: Array[Node4D] = []
 var _metrics: Node
 var _turned: bool = false
 var _done: bool = false
@@ -210,7 +160,6 @@ var _lent_back: bool = false
 func _ready() -> void:
 	_stage = get_node_or_null(stage_path) as Node4D
 	_caption = get_node_or_null(caption_path)
-	_prompt = get_node_or_null(prompt_path)
 	_show = get_node_or_null(show_path)
 	_presenter = get_node_or_null(presenter_path) as Node4D
 	_metrics = get_node_or_null(metrics_path)
@@ -223,31 +172,11 @@ func _ready() -> void:
 			if _stage.get_node_or_null("Backdrop") != null else []):
 		if panel is MeshInstance4D:
 			_panels.append(panel)
-	if _prompt != null and _prompt.has_signal("answered"):
-		_prompt.connect("answered", _on_answered)
 	# NOT BUILT HERE ANY MORE. See the header on _pump_build: this was 3.5 of the 3.9
-	# seconds it cost to walk through the door, paid up front for the optional half of a
-	# talk you had not agreed to watch yet.
+	# seconds it cost to walk through the door.
 
 
-## Asked by the first show when it runs out of findings.
-func offer() -> void:
-	if _done or _running:
-		return
-	if _prompt != null:
-		_prompt.call("ask")
-
-
-func _on_answered(yes: bool) -> void:
-	if not yes:
-		_say("", "Fair enough. The way out is behind you.", "", "")
-		_done = true
-		if _show != null and _show.has_method("let_them_go"):
-			_show.call("let_them_go")
-		return
-	begin()
-
-
+## Called by the show the moment slide I ends, by the clock or by a click.
 func begin() -> void:
 	finish_building()
 	if _running or _done:
@@ -291,11 +220,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if step > 0 and _moment >= MOMENTS.size():
 		_finish()
 		return
-	# BACKWARD OFF THE FRONT GOES INTO PART ONE. From the audience there is one
-	# presentation, not two, and a back arrow that does nothing on the first slide reads
-	# as the controls having stopped working - which is exactly what an audience concludes
-	# the moment a key stops responding. The yes/no question sits between the two halves
-	# and that does make this an odd seam, but the seam is ours and should not be theirs.
+	# BACKWARD OFF THE FRONT GOES BACK TO SLIDE I. From the audience there is one
+	# presentation, not two, and a back arrow that does nothing on slide II reads as the
+	# controls having stopped working - which is exactly what an audience concludes the
+	# moment a key stops responding. The seam between the two nodes is ours, not theirs.
 	if step < 0 and _moment == 0 and _show != null 			and _show.has_method("step_back_from_part_two"):
 		lend_back()
 		_show.call("step_back_from_part_two")
@@ -304,8 +232,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 ## Part one has the floor for a moment. The clock stops, the input goes quiet, and the
-## exhibits come off the drum - without that last part, act three would be demonstrated
-## with three solids from moment IV still standing behind it.
+## exhibits come off the drum - without that last part, slide I's rock would turn with the
+## goat still standing behind it.
 func lend_back() -> void:
 	if _lent_back:
 		return
@@ -399,23 +327,18 @@ func _enter(which: int) -> void:
 	# Square again, or the next slide inherits a rotation it never asked for.
 	for piece in _pieces:
 		piece.basis = Basis4D.from_zx(0.0)
-	# In on the drum for the goat, which is small enough to stand beside. Out front for
-	# everything else - the three copies fill the drum and the creature is very nearly as
-	# long as the drum is wide.
+	# AT THE DRUM FOR ANYTHING HE CAN STAND BESIDE, out front for anything else. The goat
+	# and the walking creature (pieces 0 and 1) are both things he stands beside, so on
+	# every slide here he is in on the drum, and out front only for the closing line. The
+	# rule is what he can stand BESIDE, not which slide it is.
 	if _show != null and _show.has_method("hold_at"):
-		# AT THE DRUM FOR ANYTHING HE CAN STAND BESIDE. The goat, and now the stop
-		# conditions - seven stones, four of them off-slice, which is the one exhibit in
-		# here you genuinely have to be next to for the point to land.
-		#
-		# Still out front for the three copies and the walking creature: those two fill
-		# the drum edge to edge, and a presenter standing in them is a presenter you
-		# cannot see. The rule is what he can stand BESIDE, not which slide it is.
-		var beside: bool = which < MOMENTS.size() 			and int(MOMENTS[which].get("piece", which)) in [1, 3]
+		var beside: bool = which < MOMENTS.size() \
+			and int(MOMENTS[which].get("piece", which)) in [0, 1]
 		_show.call("hold_at", 1 if beside else 0)
-	# Still for everything that is a comparison; turning for the goat, which is one object
-	# and wants to be seen from more than one side.
+	# Still for everything that is a comparison; turning for the goat on slide II, which is
+	# one object and wants to be seen from more than one side.
 	if _show != null and _show.has_method("set_spin"):
-		_show.call("set_spin", which == 1)
+		_show.call("set_spin", which == 0)
 	if which < MOMENTS.size():
 		var m: Dictionary = MOMENTS[which]
 		_say(String(m["title"]), _fill(String(m["body"])), _fill(String(m["figure"])),
@@ -506,31 +429,28 @@ func _tint(to: Color) -> void:
 
 # ---------------------------------------------------------------- the exhibits
 
-## THE FOUR EXHIBITS, ONE PER FRAME, STARTING A BEAT AFTER THE ROOM OPENS.
+## THE TWO EXHIBITS, ONE PER FRAME, STARTING A BEAT AFTER THE ROOM OPENS.
 ##
 ## WHY THIS WAS THE WHOLE PROBLEM. Walking through the sci-fi door cost about four seconds
 ## and this function was three and a half of them - measured child by child, 89% of the
 ## entire theatre. It ran in `_ready`, so it was paid on the frame the door was crossed,
-## building the goat and the eight-legged creature and the three copies, and then hiding
-## all of them. For the optional second half of a talk nobody had said yes to yet.
+## building the goat and the eight-legged creature, and then hiding both of them.
 ##
 ## Preloading could never have helped with that, which is the thing that made it look
 ## mysterious: the PackedScene is held as an exported reference and is already resident,
 ## so `load()` is a cache hit at 0.0 ms and `instantiate()` is 0.3. A scene file is a
 ## blueprint. All the cost is construction, and construction cannot start before you ask.
 ##
-## SO IT IS ASKED FOR LATER, AND IN PIECES. Part one runs for the best part of a minute
-## before the prompt, and the player spends the first of those seconds walking down a ramp
-## and being sat in a chair. One exhibit a frame across that window costs four frames of
-## about a second each in a debug build - well under a frame each in a real one - and the
-## door itself drops to around 450 ms.
+## SO IT IS ASKED FOR LATER, AND IN PIECES. The opening and slide I come first, and the
+## player spends the opening walking down a ramp and being sat in a chair. One exhibit a
+## frame across that window costs a frame of about a second each in a debug build - well
+## under a frame in a real one - and the door itself drops to around 450 ms.
 ##
 ## ANYTHING THAT NEEDS THEM ALL CALLS finish_building() FIRST, which runs whatever is left
 ## on the spot. That is the safety net: the timing above has seconds of slack, but a slow
 ## machine, a paused tree or somebody hammering the arrow keys should not be able to get a
 ## half-built set on stage.
-const BUILDERS: Array[StringName] = [&"_the_same_thing", &"_the_goat", &"_stop_conditions",
-	&"_the_creature"]
+const BUILDERS: Array[StringName] = [&"_the_goat", &"_the_creature"]
 ## How long after the room opens the first one starts. Not zero: the arrival has its own
 ## camera move, and a frame of it lost to a lofted goat is the first frame you see.
 @export_range(0.0, 60.0, 0.5) var build_delay: float = 14.0
@@ -544,7 +464,7 @@ var _build_wait: float = -1.0
 
 
 ## Is everything this half needs actually made? The exhibits AND the goat's lofts - the
-## four appends finish in four frames and the goat takes another twelve after that.
+## two appends finish in two frames and the goat takes another twelve after that.
 func is_built() -> bool:
 	if _built < BUILDERS.size():
 		return false
@@ -601,109 +521,24 @@ func _show_piece(which: int) -> void:
 		_pieces[i].visible = on
 		_pieces[i].position = Vector4(0.0, 0.0 if on else -40.0, 0.0, 0.0)
 	if _goat != null and _goat.has_method("set_markers_visible"):
-		_goat.call("set_markers_visible", which == 1)
+		_goat.call("set_markers_visible", which == 0)
 	if _goat != null:
-		# Moment V wants the finished animal in its own colours; moment VI starts it from
+		# Slide II wants the finished animal in its own colours; slide III starts it from
 		# nothing and plain, so the geometry is the thing being looked at.
-		if which == 2:
+		if which == 1:
 			_goat.call("show_stage", 0)
 		else:
 			_goat.call("show_finished")
-	# And the three copies back to their own depths, whichever way this slide was reached.
-	for i in _copies.size():
-		_copies[i].position.w = -DEPTHS[i]
 	# Back to a dressed creature walking, whichever slide this is and whichever direction
-	# it was arrived from. Stepping backward out of moment VIII half way through used to
-	# leave a skinless animal cantering behind the next exhibit.
+	# it was arrived from. Stepping backward out of the walk half way through used to leave
+	# a skinless animal cantering behind the next exhibit.
 	if _creature != null:
 		_creature.call("show_rig", false)
 		_creature.call("set_gait", "walk")
 
 
-## THREE PLINTHS, AND ONE OF THEM IS EMPTY.
-##
-## Built the way the first act was built, because that act worked: two plinths, one
-## carrying something and one carrying a thing the renderer will never draw, and the
-## ABSENCE is the exhibit. A bar chart would have said the same and been a bar chart.
-##
-## The developer plinth stacks up nine prototypes, one at a time, while you watch. The
-## engine plinth holds three gauges that are open frames with nothing in them - the
-## thresholds exist and the measurements do not. The player plinth holds nothing at all
-## and nothing arrives on it, which is the whole slide.
-## THE SAME OBJECT, STANDING AT THREE DEPTHS.
-##
-## THIS REPLACED TWO SLIDES AND IS BETTER THAN EITHER. One was three plinths with bricks
-## stacked on one of them, the other was seven little figures in a row losing five little
-## cards; both were bar charts built out of boxes, and a room whose whole argument is that
-## you should look at the thing rather than read about it cannot open with two diagrams.
-##
-## ONE SOLID IS BUILT, AND THREE COPIES OF IT ARE STOOD AT DIFFERENT W. Every copy is the
-## same parts in the same places - the only difference between them is where they sit
-## along the axis you cannot see, so your slice cuts each in a different place and you get
-## three solids that share no visible feature. Then they slide to w = 0 together and are
-## revealed as identical, which is the whole 4D comprehension problem in one move and
-## takes eight seconds.
-##
-## THE SHAPE IS DESIGNED TO CUT DIFFERENTLY, which is the only demanding part. A column
-## that runs the full depth is in every slice and gives the eye something to hold on to;
-## the arms and the cap sit at their own depths with a shallow reach through W, so each
-## one belongs to exactly one of the three cross-sections.
-func _the_same_thing() -> Node4D:
-	var piece := Node4D.new()
-	piece.name = "SameThing"
-	_table.add_child(piece)
-	_copies.clear()
-	for i in DEPTHS.size():
-		var copy := Node4D.new()
-		copy.name = "Copy%d" % i
-		piece.add_child(copy)
-		# NEGATIVE, and that sign is the whole exhibit. A part built at local w = +1.45
-		# only lands on the viewer's slice when its copy is standing at w = -1.45; the
-		# first version offset them the other way, so every copy showed the one feature
-		# that lives at the far end of W and the three came out nearly identical from the
-		# start. It looked like a bug in the geometry and was a sign.
-		copy.position = Vector4((float(i) - 1.0) * 2.35, 0.0, 0.0, -DEPTHS[i])
-		_one_solid(copy)
-		_copies.append(copy)
-	return piece
-
-
-## One object, built once and built three times over. Nothing here is per-copy: if two of
-## these differed by so much as a colour the slide would be a lie, and an invisible one,
-## because they are never seen at the same depth until the last four seconds.
-##
-## EACH FEATURE IS ITS OWN COLOUR, which is not decoration. The three cross-sections have
-## to be told apart at a glance from the back of a house, and a pale slab with a pale slab
-## on it reads as one shape however differently it is cut. The colour belongs to the PART,
-## so all three copies still carry all four of them.
-func _one_solid(into: Node4D) -> void:
-	# The column runs the full depth, so it is in every slice there is. Without it the
-	# three cross-sections share nothing at all and read as three objects somebody put on
-	# a table rather than as one object cut three ways.
-	_block(into, "Column", Vector4(0.0, 1.10, 0.0, 0.0),
-		Vector3(0.46, 2.20, 0.46), Color(0.90, 0.86, 0.92), 7.0)
-	# A low cross, at the depth you are standing on.
-	for side in [-1.0, 1.0]:
-		_block(into, "Arm%d" % int(side), Vector4(side * 0.66, 0.66, 0.0, 0.0),
-			Vector3(1.18, 0.30, 0.30), Color(1.0, 0.55, 0.74), 0.90)
-	# A ring of blades one step further along W, which that first slice has no trace of.
-	for i in 6:
-		var a: float = TAU * float(i) / 6.0
-		var blade := _block(into, "Blade%d" % i,
-			Vector4(sin(a) * 0.74, 1.62, cos(a) * 0.74, DEPTHS[1]),
-			Vector3(0.22, 0.58, 0.54), Color(1.0, 0.85, 0.42), 0.90)
-		blade.basis = Basis4D.from_zx(a)
-	# And a wide cap at the far depth, which neither of the others sees.
-	_block(into, "Cap", Vector4(0.0, 2.42, 0.0, DEPTHS[2]),
-		Vector3(1.60, 0.30, 1.60), Color(0.62, 0.78, 1.0), 0.90)
-	_block(into, "Finial", Vector4(0.0, 2.84, 0.0, DEPTHS[2]),
-		Vector3(0.34, 0.54, 0.34), Color(0.78, 0.88, 1.0), 0.90)
-
-
-## THE WALKING CREATURE. Added last so the five exhibits that were here first keep the
-## indices their moments already name - a moment says which piece it stands on, and
-## renumbering the list to put this one in narrative order would have silently moved four
-## other slides onto the wrong exhibit.
+## THE WALKING CREATURE. A moment says which piece it stands on by its index in
+## BUILDERS, so reordering that list moves slides onto the wrong exhibit.
 func _the_creature() -> Node4D:
 	var piece := Node4D.new()
 	piece.name = "CreatureStand"
@@ -731,109 +566,12 @@ func _the_goat() -> Node4D:
 	return piece
 
 
-## SEVEN STONES, AND FOUR OF THEM ARE NOT HERE. The three readable this October stand at
-## w = 0 where you are. The four that cannot be evaluated until the end of 2027 sit at a W
-## offset, so they are genuinely absent from your slice until you turn it — which is the
-## same sentence as "not yet measurable", written in geometry instead of in a caption.
-func _stop_conditions() -> Node4D:
-	var piece := Node4D.new()
-	piece.name = "Stones"
-	_table.add_child(piece)
-	_stones.clear()
-	var now := [
-		["Bespoke", 0.0],
-		["Engine", 0.0],
-		["Roadmap", 0.0],
-	]
-	var later := [
-		["NoUnderstanding", 3.4],
-		["NoAppeal", -3.4],
-		["NoTurnout", 3.4],
-		["NoPartner", -3.4],
-	]
-	var all: Array = now + later
-	for i in all.size():
-		var a: float = lerpf(-1.15, 1.15, float(i) / float(all.size() - 1))
-		var readable: bool = i < now.size()
-		var stone := Node4D.new()
-		stone.name = String(all[i][0])
-		piece.add_child(stone)
-		stone.position = Vector4(sin(a) * 2.4, 0.0, cos(a) * 2.4 - 1.2, float(all[i][1]))
-		stone.basis = Basis4D.from_zx(a)
-		var shade: Color = Color(0.72, 0.30, 0.24) if readable \
-			else Color(0.30, 0.30, 0.34)
-		_block(stone, "Stone", Vector4(0.0, 0.70, 0.0, 0.0),
-			Vector3(0.44, 1.40, 0.30), shade, 0.7)
-		_block(stone, "Cap", Vector4(0.0, 1.44, 0.0, 0.0),
-			Vector3(0.50, 0.10, 0.36),
-			shade.lerp(Color(1.0, 0.85, 0.42), 0.5 if readable else 0.0), 0.7)
-		# AN EMPTY MARK ON THE FLOOR for each one that is not here. The stone itself sits
-		# at a W offset and is genuinely absent from your slice; without something at
-		# w = 0 to show where it WOULD stand, four of the seven are not merely unreadable,
-		# they are invisible - and a gap you cannot see is not an exhibit, it is an
-		# oversight. The mark is the same move act one makes with a plinth carrying a box
-		# the renderer will never draw.
-		if not readable:
-			var mark := Node4D.new()
-			# Named after the condition it stands in for. Four nodes all called "Mark"
-			# get renamed by Godot on the way in, and anything looking for them by name
-			# then finds exactly one.
-			mark.name = "Mark%s" % String(all[i][0])
-			piece.add_child(mark)
-			mark.position = Vector4(stone.position.x, 0.0, stone.position.z, 0.0)
-			mark.basis = stone.basis
-			for edge in [Vector4(0.0, 0.0, 0.20, 0.0), Vector4(0.0, 0.0, -0.20, 0.0)]:
-				_block(mark, "EdgeZ%d" % int(signf(edge.z)),
-					edge + Vector4(0.0, 0.03, 0.0, 0.0),
-					Vector3(0.56, 0.04, 0.05), Color(0.42, 0.40, 0.44), 0.5)
-			for edge in [Vector4(0.28, 0.0, 0.0, 0.0), Vector4(-0.28, 0.0, 0.0, 0.0)]:
-				_block(mark, "EdgeX%d" % int(signf(edge.x)),
-					edge + Vector4(0.0, 0.03, 0.0, 0.0),
-					Vector3(0.05, 0.04, 0.44), Color(0.42, 0.40, 0.44), 0.5)
-		_stones.append(stone)
-	return piece
-
-
 func _demonstrate(which: int, t: float) -> void:
 	# Every fraction below is a fraction of THIS moment's length, which is not the shared
 	# pace for all of them.
 	var span: float = _length(which)
 	match which:
 		0:
-			# THREE SOLIDS, AND THEN ONE. They stand at their own depths for the first
-			# half, which is long enough to be sure they have nothing in common. Then the
-			# two that are further along W slide back to where you are standing, and every
-			# feature that was only in one of them arrives in all three at once.
-			#
-			# THEY SLIDE, THEY DO NOT TURN. A rotation through W changes the cross-section
-			# in a way that depends on where each part sits, so the three would resolve at
-			# different rates and the moment they become identical would be a smear. A
-			# translation moves the whole object through your slice at one speed, which is
-			# the same sentence said cleanly.
-			# THREE BEATS. Apart, together, and then together THROUGH the whole depth.
-			#
-			# It used to stop at the second one, which proved the point and then threw
-			# away the better half of it: once the three are on one slice they all show
-			# the near cross-section, which is the plainest of the three, so the reveal
-			# was three identical dull things. Sweeping the shared depth afterwards makes
-			# all three become the ring and then the cap IN LOCKSTEP - which says the same
-			# sentence a second time and much louder, because now you are watching one
-			# object contain all of it rather than being told that it does.
-			# BRISKER THAN IT WAS. The three used to stand apart for the first 42% of the
-			# slide before anything moved, on the reasoning that you need long enough to
-			# be sure they have nothing in common. True, but 42% of the longest slide in
-			# the talk is a long time to look at three motionless blocks - you have made
-			# up your mind well before then, and the rest is waiting. They now set off at
-			# 28% and the sweep follows at 46%, so the same three beats happen with less
-			# dead air in front of each.
-			var home: float = clampf((t - span * 0.28) / maxf(span * 0.14, 0.01), 0.0, 1.0)
-			home = home * home * (3.0 - 2.0 * home)
-			var sweep: float = clampf((t - span * 0.46) / maxf(span * 0.34, 0.01), 0.0, 1.0)
-			sweep = sweep * sweep * (3.0 - 2.0 * sweep)
-			for i in _copies.size():
-				_copies[i].position.w = lerpf(-DEPTHS[i],
-					-DEPTHS[DEPTHS.size() - 1] * sweep, home)
-		1:
 			# The handles first, then the finished animal turning through W.
 			#
 			# THE STAND TURNS, NOT THE GOAT. The goat's own basis carries the uniform scale
@@ -844,8 +582,8 @@ func _demonstrate(which: int, t: float) -> void:
 			_goat.call("set_markers_visible", t < span * 0.34)
 			if t > span * 0.45:
 				var sweep: float = sin((t - span * 0.45) * 0.55) * 0.95
-				_pieces[1].basis = Basis4D.from_xw(sweep) * Basis4D.from_zw(sweep * 0.4)
-		2:
+				_pieces[0].basis = Basis4D.from_xw(sweep) * Basis4D.from_zw(sweep * 0.4)
+		1:
 			# THE BUILD, PLAYED BACK. Every stage was lofted during the arrival, so this is
 			# a sequence of node swaps and costs nothing - which is the only reason it can
 			# happen while somebody is watching. It assembles over the first two thirds and
@@ -856,9 +594,9 @@ func _demonstrate(which: int, t: float) -> void:
 				_goat.call("show_stage", step)
 				# The handle count climbs with it, so the figure beside the animal is
 				# counting the thing you are watching arrive.
-				_retell(2)
+				_retell(1)
 			_goat.call("set_markers_visible", step < int(_goat.call("first_morph_stage")))
-		3:
+		2:
 			# THREE BEATS, AND THE CAMERA DOES NOT MOVE. A walk cycle is read side-on -
 			# turning the drum under it would hide the one thing the slide is about - so
 			# everything that changes here is the creature itself.
@@ -878,23 +616,3 @@ func _demonstrate(which: int, t: float) -> void:
 				_creature.call("set_gait", "trot")
 			else:
 				_creature.call("set_gait", "walk")
-		4:
-			# Nothing moves. Four of the seven are simply not on this slice, and the way to
-			# make that land is to let the player notice the gap rather than animate it.
-			pass
-
-
-func _block(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color,
-		w: float) -> MeshInstance4D:
-	var node := MeshInstance4D.new()
-	node.name = part
-	var mesh := BoxTetraMesh4D.new()
-	# A real extent through W, or it vanishes the moment the player turns their slice.
-	mesh.size = Vector4(size.x, size.y, size.z, w)
-	node.mesh = mesh
-	var material := TetraMaterial4D.new()
-	material.albedo_color = colour
-	node.material_override = material
-	parent.add_child(node)
-	node.position = at
-	return node

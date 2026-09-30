@@ -2,12 +2,13 @@ extends SceneTree
 
 ## What happens when somebody clicks through it instead of watching it.
 ##
-## THE BUG THIS EXISTS FOR. Both parts end on a closing beat that waits out a clock before
-## it does the thing that matters - part one offers part two, part two stands you out of
-## the chair. Stepping forward re-entered whichever beat you were already on, because the
-## index clamps, and re-entering reset that clock. So clicking to hurry the end along was
-## the one action that held it open, for ever. The more impatient you were, the longer it
-## took, and from the seat it looked like the offer simply never came.
+## THE BUG THIS EXISTS FOR. The talk ends on a closing beat that waits out a clock before
+## it stands you out of the chair. Stepping forward re-entered whichever beat you were
+## already on, because the index clamps, and re-entering reset that clock. So clicking to
+## hurry the end along was the one action that held it open, for ever. The more impatient
+## you were, the longer it took. (It used to happen at the question between the two parts
+## as well; since 30 Sept there is no question, and clicking off slide I must go straight
+## on to slide II.)
 ##
 ## Nothing else could have caught it. Every other runner lets the clock run: they are
 ## testing what the room does, and this is testing what a person does to it.
@@ -26,8 +27,8 @@ var _camera: Node
 var _their: Camera4D
 var _player: CharacterBody4D
 var _clicking := false
-var _answered := false
-var _offered_at := 0
+var _handed := false
+var _handed_at := 0
 var _sat := false
 var _down := false
 
@@ -94,26 +95,22 @@ func _process(_d) -> bool:
 		_down = bool(_seat.call("is_settled"))
 		return false
 
-	var prompt: Node = _root.get_node("UI/Prompt")
-	if not _answered and bool(prompt.call("is_asking")):
-		_answered = true
-		_offered_at = _f
-		print("\n--- clicked through part one ---")
-		_check("the offer arrives for somebody who clicks", true,
-			"reached on frame %d with the closing clock set to 30 seconds" % _f)
-		var key := InputEventKey.new()
-		key.keycode = int(prompt.get("yes_key"))
-		key.pressed = true
-		Input.parse_input_event(key)
-		return false
+	if not _handed and bool(_two.call("is_running")):
+		_handed = true
+		_handed_at = _f
+		print("\n--- clicked through slide I ---")
+		_check("slide II arrives for somebody who clicks", true,
+			"reached on frame %d with every clock set to 30 seconds" % _f)
+		_check("with nobody asked anything", _root.get_node_or_null("UI/Prompt") == null,
+			"no question between slide I and slide II")
 
 	# Click on every frame, both parts.
 	_clicking = true
 	_click()
 
-	if not _answered:
+	if not _handed:
 		if _f > 4000:
-			print("   FAIL clicking through part one never reached the offer")
+			print("   FAIL clicking through slide I never reached slide II")
 			print("        act %d, phase %.1f" % [int(_show.call("current_act")),
 				float(_show.get("_phase"))])
 			quit(1)
@@ -122,7 +119,7 @@ func _process(_d) -> bool:
 
 	# And through part two, to the end.
 	if bool(_two.call("is_running")):
-		if _f > _offered_at + 4000:
+		if _f > _handed_at + 4000:
 			print("   FAIL clicking through part two never reached the end, at moment %d"
 				% int(_two.call("current_moment")))
 			quit(1)
@@ -130,7 +127,8 @@ func _process(_d) -> bool:
 		return false
 
 	print("\n--- and clicked through part two ---")
-	_check("it ends for somebody who clicks", int(_two.call("current_moment")) >= 5,
+	var count: int = (_two.get_script().get_script_constant_map()["MOMENTS"] as Array).size()
+	_check("it ends for somebody who clicks", int(_two.call("current_moment")) >= count,
 		"ran out of moments on frame %d rather than holding on the last one" % _f)
 	_check("and it lets go of them", not bool(_seat.call("is_seated"))
 		and _their.is_current() and not bool(_camera.call("is_holding")),

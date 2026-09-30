@@ -228,7 +228,7 @@ func _process(_d) -> bool:
 					int(_two.call("current_moment")) == 0, "moment 0")
 				_stage = 2
 			elif _f >= _mark:
-				# Nobody answered the prompt, so answer it.
+				# Slide I hands on by itself; if it has not by now, start part two directly.
 				if _two.has_method("begin"):
 					_two.call("begin")
 					_mark = _f + 600

@@ -26,6 +26,8 @@ var _seen := {}
 
 
 func _initialize() -> void:
+	# His typing must not land in a capture window.
+	root.unfocusable = true
 	_root = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
 	root.add_child(_root); current_scene = _root
 
@@ -145,14 +147,15 @@ func _process(_d) -> bool:
 		var key: String = "act%d" % act
 		# Late in the act, not on the frame it turns over: the exhibit has risen by then,
 		# the caption has faded up, and he has crossed to the drum and put his arm out.
+		# One act since 30 Sept - slide I - and then part two has the floor.
 		var late: bool = float(show.get("_phase")) > float(show.get("act_seconds")) * 0.75
-		if act >= 0 and late and not _seen.has(key):
+		if act == 0 and late and not _seen.has(key):
 			_seen[key] = true
 			# From the house, over the drum, with the presenter down on the left.
 			_look_from(Vector4(1.4, 3.6, 9.2, 0.0), Vector4(-0.6, 1.5, 0.0, 0.0))
-			_save("%d_act%d" % [4 + act, act])
+			_save("4_slide1")
 			return false
-		if act >= 3 and _seen.has("act2"):
+		if _seen.has("act0") and bool(_theatre.get_node("PartTwo").call("is_running")):
 			print("%d pictures" % _shot)
 			quit()
 			return true

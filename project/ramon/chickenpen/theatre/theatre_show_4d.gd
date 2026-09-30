@@ -1,18 +1,25 @@
 extends Node4D
 
-## The presentation: three findings, staged.
+## The presentation's opening and its first slide, staged.
 ##
-## THE EXHIBITS ARE NOT ILLUSTRATIONS OF THE FINDINGS, THEY ARE THE FINDINGS. Act one puts
-## a real MeshInstance3D on a plinth and it is really invisible - nothing is faked, the
-## renderer simply never draws it. Act two puts a real BoxShape4D hull round a shape that
-## is not a box. Act three turns a real VoxelMiningBlock through W and the cross-section
-## really does become a different solid. A presentation that mimes its own subject is a
-## slideshow; this one can be checked by walking up to it.
+## ONE PRESENTATION (Ramon, 30 Sept). There used to be two: three engine findings here,
+## then a question - "there's a second part, want it?" - and five more slides in
+## theatre_part_two_4d. The question is gone and so are four of the eight slides (the
+## invisible MeshInstance3D, the box-only collision hull, the three copies of one object,
+## the stop conditions). What is left runs straight through: this node walks Trym in, sits
+## you down and plays slide I, then hands the floor to part two for II to IV without a
+## pause. Part two is still its own node because its exhibits are its own, not because
+## anybody is asked about it.
 ##
-## ONE RUNNER, NOT THREE ANIMATION PLAYERS. Every act is rise, hold, demonstrate, sink, and
-## the differences between them are a handful of numbers and one callback each - so the
-## sequence lives in a table and the acts supply only what makes them themselves. That is
-## the same shape the dialogue takes, for the same reason.
+## THE EXHIBIT IS NOT AN ILLUSTRATION OF THE FINDING, IT IS THE FINDING. Slide I turns a
+## real VoxelMiningBlock through W and the cross-section really does become a different
+## solid. A presentation that mimes its own subject is a slideshow; this one can be checked
+## by walking up to it.
+##
+## ONE RUNNER, NOT AN ANIMATION PLAYER PER SLIDE. Every act is rise, hold, demonstrate,
+## sink, and the differences between them are a handful of numbers and one callback each -
+## so the sequence lives in a table and the acts supply only what makes them themselves.
+## That is the same shape the dialogue takes, for the same reason.
 ##
 ## IT RUNS ON A CLOCK AND CANNOT BE FAILED. There is no input in here beyond walking about.
 ## A player who wanders off mid-act comes back to the next one, and the way out stands
@@ -45,7 +52,7 @@ const TRYM := preload("res://ramon/chickenpen/scripts/pen_trym_4d.gd")
 ## point the person may well not be standing at.
 ## The way out, so the end of the talk can light it up.
 @export var exit_path: NodePath
-## Part two, which is offered rather than played. It only runs on a yes.
+## Part two, which takes over the moment the last slide here ends. Nobody is asked.
 @export var part_two_path: NodePath
 @export var audience_path: NodePath
 ## He comes in the same way you do - through the door, down the walkway, ahead of you -
@@ -100,24 +107,10 @@ const TRYM := preload("res://ramon/chickenpen/scripts/pen_trym_4d.gd")
 @export_range(0.0, 6.0, 0.1, "suffix:s") var hold_on_seat_seconds: float = 1.3
 
 ## Each act: the title, the finding in one line, the measured figure, and the colour the
-## room turns while it is running.
+## room turns while it is running. One now; the rest of the numbered slides are part two's.
 const ACTS := [
 	{
-		"title": "I. THE RENDERER DRAWS ONLY FOUR DIMENSIONS",
-		"body": "A MeshInstance3D is not badly drawn here. It is never drawn at all - the 4D renderer swaps the viewport onto its own World3D, and everything built for the old one simply stops existing.",
-		"figure": "342 lit pixels for a 4D box. 0 for the 3D one beside it.",
-		"aside": "Both plinths are loaded. Only one of them has anything on it.",
-		"tint": Color(0.10, 0.30, 0.52),
-	},
-	{
-		"title": "II. COLLISION REMEMBERS ONLY BOXES",
-		"body": "Hand the physics any shape that is not a BoxShape4D and it keeps the bounding volume and throws the shape away. One enormous invisible crate, and no way to ask which part of it you touched.",
-		"figure": "So a mined rock is 544 little boxes, one per surface voxel, and none buried.",
-		"aside": "The hull does not move because the hull is all it ever had.",
-		"tint": Color(0.46, 0.22, 0.10),
-	},
-	{
-		"title": "III. A SLICE IS NOT A CAMERA ANGLE",
+		"title": "I. A SLICE IS NOT A CAMERA ANGLE",
 		"body": "Turn through W and you are not looking at the same solid from somewhere else. You are looking at a different solid. The hole stays where it was; the cross-section through it does not.",
 		"figure": "One rock. One tunnel. Every angle a shape nobody made on purpose.",
 		"aside": "This is the one worth the walk.",
@@ -136,8 +129,8 @@ var _act: int = -1
 var _clock: float = 0.0
 var _phase: float = 0.0
 ## Announced as well as acted on. This is the single point where the talk is over by any
-## route - part one ending with no part two, part two ending, or the offer declined - so
-## it is the only honest thing for anybody downstream to listen to.
+## route - part two ending, or this node's closing line in a room without one - so it is
+## the only honest thing for anybody downstream to listen to.
 signal finished
 
 ## How long the closing caption stays up once the talk is over.
@@ -145,19 +138,12 @@ signal finished
 var _clear_in: float = -1.0
 
 var _done: bool = false
-## The WHOLE talk is over - both halves, whichever way you went. `_done` is only part one
-## finishing, which is not the same thing at all: saying yes to part two means the
-## presentation carries on for another nine slides with `_done` already set.
+## The WHOLE talk is over. `_done` is only this node's slides finishing, which is not the
+## same thing at all: part two carries the presentation on for three more slides with
+## `_done` already set.
 var _over: bool = false
-var _hull: Node4D
-var _swarm: Node4D
 var _rock: Node4D
 var _carved: bool = false
-## How much bigger than life the two built exhibits are. They read at arm's length and
-## vanish from the back row at 1:1, and there is no reason a thing on a plinth in a
-## theatre should be the size it is in the world. Applied as a basis on the piece rather
-## than to every number inside it, so the shapes stay described in their own terms.
-const EXHIBIT_SCALE: float = 1.5
 var _audience: Node4D
 var _exit: Node
 var _part_two: Node
@@ -218,37 +204,26 @@ func _ready() -> void:
 
 # ---------------------------------------------------------------- the exhibits
 
-## ONE ACT A FRAME, STARTING IMMEDIATELY.
+## BUILT WHEN YOU SIT DOWN, not when you walk in.
 ##
-## The same change part two needed and for the same reason, in smaller numbers: these three
-## were built inside `_ready`, so they were paid on the frame the door was crossed. 209 ms
-## of the theatre's 510 in a debug build - not the disaster part two was, but the largest
-## thing left once that was dealt with, and a handful of dropped frames at exactly the
-## moment the player is looking for a reaction to having walked through a door.
+## These were built inside `_ready` once, so they were paid on the frame the door was
+## crossed - a handful of dropped frames at exactly the moment the player is looking for a
+## reaction to having walked through a door. Then they were spread out on a timer, the
+## first 1.2 seconds in, which was fine while the first exhibit was two plinths and a box.
 ##
-## SPREAD AGAINST WHEN EACH IS ACTUALLY WANTED, which is much further apart than it first
-## looks. Act one is needed when the opening ends, eleven seconds in. Act two is not wanted
-## until sixteen seconds after that, and act three sixteen after that again - so only ONE
-## of the three has any urgency at all, and the other two have half a minute each.
+## THE FIRST EXHIBIT IS THE ROCK NOW, and the rock is the expensive one: a lattice to
+## contour and three blows that re-contour it, most of a second between them. A dropped
+## frame during motion is exactly when a dropped frame is visible, and 1.2 seconds in you
+## are walking down the rake with the camera following. So it is made on the beat the
+## camera holds still on you in the chair (theatre_seat_4d's is_settled), which is the one
+## moment in the arrival where losing a few frames costs nothing.
 ##
-## AND A CAMERA MOVE IS THE WORST PLACE TO PUT ONE, not the best. It is tempting to hide
-## the work under the arrival, because something is already happening - but a dropped frame
-## during motion is exactly when a dropped frame is visible. The image is supposed to be
-## changing smoothly and suddenly is not. The same frame lost while you are sitting still
-## looking at a slide is close to invisible. So one act is made early enough to be ready
-## for the opening, and the rest are made while you are seated and the shot is still.
-##
-## Anything that needs them sooner calls finish_building(), which `_enter` does.
-const ACT_BUILDERS: Array[StringName] = [&"_act_one", &"_act_two", &"_act_three"]
-## Before the first one. Early, because act one has to exist by the end of the opening -
-## it is the only one of the three that is in any hurry.
-@export_range(0.0, 20.0, 0.1) var build_delay: float = 1.2
-## And between each. Long, because acts two and three have half a minute apiece and every
-## second of that is a second further from the arrival.
-@export_range(0.0, 30.0, 0.5) var build_gap: float = 8.0
+## SOMEBODY WHO DOES NOT SIT gets it once the opening has run and he is standing on his
+## mark waiting for them - the other still point, and still well before the slide. Anything
+## that needs it sooner than either gets it from finish_building(), which `_enter` calls.
+const ACT_BUILDERS: Array[StringName] = [&"_the_rock"]
 
 var _built: int = 0
-var _build_wait: float = -1.0
 
 
 func _build_one() -> void:
@@ -265,106 +240,18 @@ func finish_building() -> void:
 		_build_one()
 
 
-## Two plinths. One carries a MeshInstance3D and is therefore empty.
-func _act_one() -> Node4D:
-	var piece := Node4D.new()
-	piece.name = "ActOne"
-	_table.add_child(piece)
-	piece.basis = _bigger()
-	for side in [-1.0, 1.0]:
-		var tag: String = "Old" if side < 0.0 else "New"
-		_block(piece, "Plinth" + tag, Vector4(side * 1.15, 0.30, 0.0, 0.0),
-			Vector3(0.9, 0.6, 0.9), Color(0.17, 0.19, 0.26), 1.1)
-	# The one that is really there.
-	var solid := _block(piece, "FourD", Vector4(1.15, 1.30, 0.0, 0.0),
-		Vector3(0.78, 0.78, 0.78), Color(0.35, 0.86, 1.0), 0.9)
-	solid.name = "FourD"
-	# And the one that really is not. A genuine 3D node, loaded, positioned, lit and
-	# invisible - which is the entire finding, standing on a plinth.
-	var ghost := MeshInstance3D.new()
-	ghost.name = "ThreeD"
-	var box := BoxMesh.new()
-	box.size = Vector3(0.78, 0.78, 0.78)
-	ghost.mesh = box
-	piece.add_child(ghost)
-	ghost.position = Vector3(-1.15, 1.30, 0.0)
-	return piece
-
-
-## A shape that is not a box, inside the only thing the physics kept of it.
-func _act_two() -> Node4D:
-	var piece := Node4D.new()
-	piece.name = "ActTwo"
-	_table.add_child(piece)
-	piece.basis = _bigger()
-	var form := Node4D.new()
-	form.name = "Form"
-	piece.add_child(form)
-	form.position = Vector4(0.0, 1.35, 0.0, 0.0)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 31337
-	for i in 9:
-		var at := Vector4(rng.randf_range(-0.42, 0.42), rng.randf_range(-0.42, 0.42),
-			rng.randf_range(-0.42, 0.42), 0.0)
-		var lump := _block(form, "Lump%d" % i, at,
-			Vector3(rng.randf_range(0.22, 0.46), rng.randf_range(0.22, 0.46),
-				rng.randf_range(0.22, 0.46)), Color(0.95, 0.62, 0.28), 0.7)
-		lump.basis = Basis4D.from_zx(rng.randf_range(0.0, TAU)) \
-			* Basis4D.from_yz(rng.randf_range(0.0, TAU))
-	# The hull: twelve thin bars, because an outline says "this is not the shape" in a way
-	# a translucent block never manages.
-	_hull = Node4D.new()
-	_hull.name = "Hull"
-	piece.add_child(_hull)
-	_hull.position = Vector4(0.0, 1.35, 0.0, 0.0)
-	var r: float = 0.78
-	for axis in 3:
-		for a in [-1.0, 1.0]:
-			for b in [-1.0, 1.0]:
-				var at := Vector4.ZERO
-				var size := Vector3.ONE * 0.05
-				match axis:
-					0:
-						at = Vector4(0.0, a * r, b * r, 0.0)
-						size = Vector3(r * 2.0, 0.05, 0.05)
-					1:
-						at = Vector4(a * r, 0.0, b * r, 0.0)
-						size = Vector3(0.05, r * 2.0, 0.05)
-					_:
-						at = Vector4(a * r, b * r, 0.0, 0.0)
-						size = Vector3(0.05, 0.05, r * 2.0)
-				_block(_hull, "Edge%d_%d_%d" % [axis, int(a), int(b)], at, size,
-					Color(0.98, 0.86, 0.35), 0.5)
-	# And the answer: the grid of small boxes a mined rock actually uses.
-	_swarm = Node4D.new()
-	_swarm.name = "Swarm"
-	piece.add_child(_swarm)
-	_swarm.position = Vector4(0.0, 1.35, 0.0, 0.0)
-	_swarm.visible = false
-	for x in 3:
-		for y in 3:
-			for z in 3:
-				if x == 1 and y == 1 and z == 1:
-					continue
-				var at := Vector4((float(x) - 1.0) * 0.5, (float(y) - 1.0) * 0.5,
-					(float(z) - 1.0) * 0.5, 0.0)
-				_block(_swarm, "Cell%d%d%d" % [x, y, z], at, Vector3.ONE * 0.42,
-					Color(0.55, 0.92, 0.70), 0.5)
-	return piece
-
-
 ## A real mined block, turned through W so its cross-section changes.
-func _act_three() -> Node4D:
+func _the_rock() -> Node4D:
 	var piece := Node4D.new()
-	piece.name = "ActThree"
+	piece.name = "SliceRock"
 	_table.add_child(piece)
 	var rock: Node4D = ROCK.instantiate()
 	rock.name = "Rock"
 	piece.add_child(rock)
 	rock.position = Vector4(0.0, 1.9, 0.0, 0.0)
-	# Act three is NOT scaled by a basis - it is a real physics object and its colliders
-	# are built in its own frame. It gets bigger the way the professor says a rock gets
-	# bigger: fatter CELLS, same 8^4 lattice, so it costs exactly what it cost before.
+	# NOT scaled by a basis - it is a real physics object and its colliders are built in
+	# its own frame. It gets bigger the way the professor says a rock gets bigger: fatter
+	# CELLS, same 8^4 lattice, so it costs exactly what it cost before.
 	rock.set("grid_size", 8)
 	rock.set("cell_size", 0.42)
 	# A theatre blow is a bigger blow. At the size a pickaxe takes out of the rock in the
@@ -382,14 +269,14 @@ func _process(delta: float) -> void:
 		_clear_in -= delta
 		if _clear_in <= 0.0 and _caption != null and _caption.has_method("show_act"):
 			_caption.call("show_act", "", "", "", "", "")
-	# Before anything else: the exhibits are made while the opening plays.
+	# Before anything else: the rock is made on the still beat in the chair - or, for
+	# somebody who has not sat down by the time the opening has run, while he stands on his
+	# mark waiting for them. See the header on ACT_BUILDERS.
 	if _built < ACT_BUILDERS.size():
-		if _build_wait < 0.0:
-			_build_wait = build_delay
-		_build_wait -= delta
-		if _build_wait <= 0.0:
+		var settled: bool = _seat != null and _seat.has_method("is_settled") \
+			and bool(_seat.call("is_settled"))
+		if settled or (_act < 0 and _phase >= opening_seconds):
 			_build_one()
-			_build_wait = build_gap
 	if _stage == null:
 		return
 	_clock += delta
@@ -414,26 +301,23 @@ func _process(delta: float) -> void:
 		_greeted = true
 		_phase = maxf(0.0, opening_seconds - after_sit_seconds)
 		_frame(-1)
-	# The carve is taken early, not when act three starts. Every blow re-contours the whole
-	# field - about a sixth of a second each - and four of them is most of a second of
-	# frozen frames. Spent while the room is still assembling and nobody is watching
-	# anything in particular it is invisible; spent on the turn into the act it is a
-	# stutter in the middle of the presentation.
+	# The carve is taken as soon as the rock exists, not when its slide starts. Every blow
+	# re-contours the whole field - about a sixth of a second each - and three of them is
+	# most of a second of frozen frames. Spent on the still beat in the chair it is
+	# invisible; spent on the turn into the slide it is a stutter in the middle of the
+	# presentation.
 	#
-	# BUT NOT BEFORE THE ROCK EXISTS, which is the bit that broke. This used to fire at a
-	# third of a second, back when every exhibit was built inside _ready. The acts are made
-	# a few seconds apart now, so act three - and `_rock` with it - does not exist until
-	# about seventeen seconds in. The carve ran on nothing, took the `_rock == null` exit,
-	# and set `_carved` on the way out, so the block went on stage solid. The tunnel you
-	# turn a slice to look through was simply never cut.
-	if not _carved and _phase > 0.35 and _rock != null:
+	# NOT BEFORE THE ROCK EXISTS, which is the bit that broke once: the carve ran on
+	# nothing, took the `_rock == null` exit, set `_carved` on the way out, and the block
+	# went on stage solid. The tunnel you turn a slice to look through was never cut.
+	if not _carved and _rock != null:
 		_carve_once()
 
 	if _act < 0 and _phase >= opening_seconds and _ready_for_you(delta):
 		_enter(0)
 	elif _act >= 0 and _act < ACTS.size() and _phase >= act_seconds:
 		_enter(_act + 1)
-	elif _act == ACTS.size() and _phase >= closing_seconds:
+	elif _act == ACTS.size() and not _done and _phase >= closing_seconds:
 		_finish()
 
 	if _act >= 0 and _act < ACTS.size():
@@ -468,13 +352,6 @@ func _frame(act: int) -> void:
 		shot = "presenter"
 		over = opening_seconds
 	elif act == 0:
-		# The exhibit is an ABSENCE. The camera goes toward it anyway, which is the joke.
-		shot = "push"
-	elif act == 1:
-		# A box round a thing that is not a box: a comparison, and comparisons are read
-		# from one place. Held.
-		shot = "house"
-	elif act == 2:
 		# The rock turning through W. Held close, because it is already turning and a
 		# camera turning with it would cancel the turn out.
 		shot = "close"
@@ -722,21 +599,17 @@ func _carve_once() -> void:
 		_rock.call("mine_at_shape", best)
 
 
-## A uniform scale as a 4D basis. Node4D has no scale property of its own; the basis IS
-## the transform, so a scale is the identity with its diagonal opened up.
-func _bigger() -> Projection:
-	var k: float = EXHIBIT_SCALE
-	return Projection(Vector4(k, 0.0, 0.0, 0.0), Vector4(0.0, k, 0.0, 0.0),
-		Vector4(0.0, 0.0, k, 0.0), Vector4(0.0, 0.0, 0.0, k))
-
-
-## Which act is on: -1 while the room is still arriving, then 0..2, then 3 for the close.
+## Which act is on: -1 while the room is still arriving, 0 for slide I, then ACTS.size()
+## once part two has the floor.
 func current_act() -> int:
 	return _act
 
 
 func _enter(act: int) -> void:
 	finish_building()
+	if act >= ACTS.size() and _part_two != null and _part_two.has_method("begin"):
+		_hand_over()
+		return
 	_act = act
 	_phase = 0.0
 	_show(act)
@@ -746,8 +619,32 @@ func _enter(act: int) -> void:
 		_say(String(a["title"]), String(a["body"]), String(a["figure"]))
 		_tint(a["tint"])
 	else:
-		_say("", "Three findings. One field. I should like it recorded that I asked for a lectern and was given a drum.", "")
+		# Only without a part two, which the theatre always has. A room assembled without
+		# one still ends on a line rather than on the last slide's caption.
+		_say("", "That is the lot. The way out is behind you - mind the step, it is further through W than it looks.", "")
 		_tint(Color(0.10, 0.12, 0.20))
+
+
+## STRAIGHT ON INTO PART TWO, off the end of the last slide here - whether the clock got
+## there or a click did. No closing line and no question in between: from the chair it is
+## one presentation, so there is nothing to close and nobody to ask.
+##
+## AND IF THE FLOOR WAS ONLY BORROWED, IT GOES BACK. Stepping backwards off part two's
+## first slide lends the floor to this node for a replay of slide I; running off the end of
+## that replay is the same as stepping forward out of it, and must return to part two
+## rather than try to start it a second time. Starting it again does nothing - it is still
+## running - so part two sat lent-back with its clock stopped and the room froze.
+func _hand_over() -> void:
+	_act = ACTS.size()
+	_phase = 0.0
+	_show(-1)
+	if _lent:
+		_lent = false
+		if _part_two.has_method("resume"):
+			_part_two.call("resume")
+		return
+	_done = true
+	_part_two.call("begin")
 
 
 ## Which exhibit is on the table. One at a time, and the rest are not merely hidden but
@@ -757,32 +654,12 @@ func _show(act: int) -> void:
 		var on: bool = i == act
 		_exhibits[i].visible = on
 		_exhibits[i].position = Vector4(0.0, 0.0 if on else -40.0, 0.0, 0.0)
-	if _hull != null:
-		_hull.visible = true
-	if _swarm != null:
-		_swarm.visible = false
 
 
 ## What each act DOES, as opposed to what it looks like.
 func _demonstrate(act: int, t: float) -> void:
 	match act:
 		0:
-			# The real one turns; the absent one would too, if it were there.
-			var solid: Node4D = _exhibits[0].get_node_or_null("FourD") as Node4D
-			if solid != null:
-				solid.basis = Basis4D.from_zx(t * 1.1) * Basis4D.from_yz(t * 0.7)
-		1:
-			# The form tumbles inside a hull that cannot follow it, and half way through
-			# the hull gives way to the grid of boxes that is the real answer.
-			var form: Node4D = _exhibits[1].get_node_or_null("Form") as Node4D
-			if form != null:
-				form.basis = Basis4D.from_zx(t * 0.8) * Basis4D.from_yz(t * 0.55)
-			var swap: bool = t > act_seconds * 0.62
-			if _hull != null:
-				_hull.visible = not swap
-			if _swarm != null:
-				_swarm.visible = swap
-		2:
 			# The money shot: the block turns through W, not about a spatial axis, so what
 			# you are watching is not the rock rotating but the WORLD being cut somewhere
 			# else. Paused at the ends so the eye can settle on each cross-section.
@@ -823,7 +700,7 @@ func _say(title: String, body: String, figure: String) -> void:
 ## the sort of bug that only shows up in front of somebody.
 func _unhandled_input(event: InputEvent) -> void:
 	# `_done` IS NOT THE END WHEN THE FLOOR HAS BEEN LENT BACK. Part one sets `_done` when
-	# it finishes and offers part two; this used to return on it unconditionally, which
+	# it hands over to part two; this used to return on it unconditionally, which
 	# killed the arrow keys for the rest of the night. So stepping BACK off part two's
 	# first slide worked - part two has its own handler and called in here - and stepping
 	# forward again did nothing at all, because the key never got past this line.
@@ -852,20 +729,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	get_viewport().set_input_as_handled()
 	# BORROWED, SO FORWARD GIVES IT BACK. Part two lent the floor for one step;
-	# stepping forward from here returns to its first slide rather than walking into
-	# part one's closing beat and offering part two all over again.
+	# stepping forward from here returns to its first slide rather than starting it again.
 	if _lent and step > 0:
 		_lent = false
 		if _part_two != null and _part_two.has_method("resume"):
 			_part_two.call("resume")
 		return
-	# FORWARD OFF THE END FINISHES IT, rather than saying the last line again.
+	# FORWARD OFF THE END FINISHES IT, rather than saying the last line again. Only reached
+	# in a room without a part two; with one, stepping off slide I hands over in _enter.
 	#
-	# This is the bug that stopped the offer ever arriving. _enter resets the phase clock,
-	# and stepping forward while already on the closing beat clamped to the same index and
-	# re-entered it - so every click restarted the nine seconds the offer is waiting on.
-	# Clicking to hurry the end along was the one thing that held it open, which is a
-	# nasty shape of bug: the more impatient you are, the longer it takes, for ever.
+	# _enter resets the phase clock, and stepping forward while already on the closing beat
+	# once clamped to the same index and re-entered it - so every click restarted the
+	# seconds the ending was waiting on. The more impatient you were, the longer it took.
 	if step > 0 and _act >= ACTS.size():
 		_finish()
 		return
@@ -873,8 +748,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	_enter(clampi(_act + step, -1, ACTS.size()))
 
 
-## The end of part one: light the way out, and either ask them about part two or let them
-## go. Once, whether it was the clock that got here or somebody clicking.
+## The end of the talk in a room with no part two: light the way out and let them go.
+## Once, whether it was the clock that got here or somebody clicking. With a part two,
+## that node ends the talk and this is never reached.
 func _finish() -> void:
 	if _done:
 		return
@@ -883,20 +759,15 @@ func _finish() -> void:
 	# the thing to look at, so it is turned up.
 	if _exit != null:
 		_exit.set("highlight", 1.0)
-	if _part_two != null and _part_two.has_method("offer"):
-		_part_two.call("offer")
-	else:
-		# Nobody is going to ask them anything, so this is the end of it.
-		let_them_go()
-	_say("", "That is the lot. The way out is behind you - mind the step, it is further through W than it looks.", "")
+	let_them_go()
 
 
 ## Part two stepping backwards off its own first slide. It has already taken its
-## exhibits off the drum and handed the presenter back, so this only has to put the
-## last finding up again and start listening.
+## exhibits off the drum and handed the presenter back, so this only has to put slide I
+## up again and start listening.
 ##
 ## `_done` is deliberately left set. This is a replay, not the talk running a second
-## time, and the offer must not fire again on the way past.
+## time, and part two must not be started again on the way past - see _hand_over.
 func step_back_from_part_two() -> void:
 	_lent = true
 	_enter(ACTS.size() - 1)
@@ -908,13 +779,13 @@ func step_back_from_part_two() -> void:
 ## THIS IS WHAT WAS MISSING AT THE END. The show finished, the camera stayed held, and the
 ## player stayed pinned in a seat with no way out but a movement key nobody had told them
 ## about - which is not a presentation ending, it is a room that will not let you leave.
-## Take part one's exhibits off the stage, without touching anything else.
+## Take part one's exhibit off the stage, without touching anything else.
 ##
 ## Part two needs this when it takes the floor back after lending it. Stepping backwards
-## off part two's first slide puts part one's last finding up - which means making the
-## mined rock visible again - and stepping forward returns to part two. Nothing used to
-## clear the rock on the way back, so from then on every part two slide was played with
-## act three standing in the middle of it, and the goat came up inside the voxel block.
+## off part two's first slide puts slide I up again - which means making the mined rock
+## visible again - and stepping forward returns to part two. Nothing used to clear the
+## rock on the way back, so from then on every part two slide was played with the rock
+## standing in the middle of it, and the goat came up inside the voxel block.
 func clear_stage() -> void:
 	_show(-1)
 
@@ -927,7 +798,7 @@ func let_them_go() -> void:
 	if not _over:
 		_over = true
 		# AND THE BAND GOES AWAY, eventually. The last caption - "that is the case as it
-		# stands" after part two, or "that is the lot" after part one - used to sit across
+		# stands" - used to sit across
 		# the bottom of the screen for the rest of the visit, because nothing ever cleared
 		# it. It is the presentation's voice, and the presentation has finished; leaving it
 		# up made the room look like it was still mid-sentence while you walked about.
@@ -940,18 +811,3 @@ func let_them_go() -> void:
 		_exit.set("highlight", 1.0)
 	if _seat != null and _seat.has_method("is_seated") and bool(_seat.call("is_seated")):
 		_seat.call("stand")
-
-
-func _block(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color,
-		w_depth: float) -> MeshInstance4D:
-	var node := MeshInstance4D.new()
-	node.name = part
-	var mesh := BoxTetraMesh4D.new()
-	mesh.size = Vector4(size.x, size.y, size.z, w_depth)
-	node.mesh = mesh
-	var material := TetraMaterial4D.new()
-	material.albedo_color = colour
-	node.material_override = material
-	parent.add_child(node)
-	node.position = at
-	return node
