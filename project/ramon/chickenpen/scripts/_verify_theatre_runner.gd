@@ -1,9 +1,12 @@
 extends SceneTree
 
-## Does the theatre stand up, and does the show run slide I and hand on to part two?
+## Does the theatre stand up, and does the show run slides I to V and hand on to part two?
 ##
-## One presentation since 30 Sept: part one is the walk-in and slide I (the rock turned
-## through W), then part two takes the floor with no closing line and no question.
+## One presentation since 30 Sept: part one is the walk-in and slides I to V (the chicken's
+## sheet, the visitors along W, the rock turned through W, the shape parade and the one you
+## turn yourself), then part two takes the floor with no closing line and no question. The
+## primer's own exhibits have a runner of their own (_verify_primer_runner); this one checks
+## the room and the running order.
 
 var _root: Node
 var _f := 0
@@ -14,6 +17,9 @@ var _lit_on_approach: float = 0.0
 var _rock_at_slide: bool = false
 var _carved_at_slide: bool = false
 var _handed_on: bool = false
+var _pieces_at_start: Array = []
+## Slide III, the rock: its index in the show's table of acts.
+const ROCK_ACT := 2
 
 
 func _initialize() -> void:
@@ -100,11 +106,15 @@ func _process(_d) -> bool:
 		_seen.append(act)
 		# THE ROCK IS THERE, AND CUT, BY THE TIME SLIDE I STARTS. Nobody sits in this test,
 		# so it is the opening-has-run path that builds it, not the chair.
+		var table: Node4D = _root.get_node("Stage/Turntable")
 		if act == 0:
-			var table: Node4D = _root.get_node("Stage/Turntable")
+			for piece in ["FlatWorld", "Visitors", "SliceRock", "Zoo", "Toy"]:
+				if table.get_node_or_null(piece) != null:
+					_pieces_at_start.append(piece)
+		if act == ROCK_ACT:
 			_rock_at_slide = table.get_node_or_null("SliceRock/Rock/Voxels") != null
 			_carved_at_slide = bool(_show.get("_carved"))
-	if act == 1 and bool(_root.get_node("PartTwo").call("is_running")):
+	if act == 5 and bool(_root.get_node("PartTwo").call("is_running")):
 		_handed_on = true
 
 	# Walk up to the way out part way through, to see whether it notices you rather
@@ -121,12 +131,14 @@ func _process(_d) -> bool:
 			quit(1); return true
 		return false
 	print("   acts in order: %s" % [_seen])
-	print("\n--- slide I ---")
+	print("\n--- slides I to V ---")
+	_check("all five exhibits stand before slide I starts", _pieces_at_start.size() == 5,
+		"%s" % [_pieces_at_start])
 	_check("the rock is a real mined block", _rock_at_slide,
 		"a VoxelMiningBlock with its own colliders, on the drum as the slide opens")
 	_check("and already cut", _carved_at_slide,
 		"the carve was taken before the slide, not on its first frame")
-	_check("it ran slide I and handed on", _seen.slice(-2) == [0, 1] and _handed_on,
+	_check("it ran all five in order and handed on", _seen.slice(-6) == [0, 1, 2, 3, 4, 5] and _handed_on,
 		"%s, then part two had the floor" % [_seen])
 	_check("and it is still there at the end", bool(_root.get_node("ExitArch").get("armed"))
 		and _root.get_node("ExitArch").visible, "you can walk out of it")

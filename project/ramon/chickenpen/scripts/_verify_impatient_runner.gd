@@ -7,8 +7,8 @@ extends SceneTree
 ## already on, because the index clamps, and re-entering reset that clock. So clicking to
 ## hurry the end along was the one action that held it open, for ever. The more impatient
 ## you were, the longer it took. (It used to happen at the question between the two parts
-## as well; since 30 Sept there is no question, and clicking off slide I must go straight
-## on to slide II.)
+## as well; since 30 Sept there is no question, and clicking off slide V must go straight
+## on to slide VI.)
 ##
 ## Nothing else could have caught it. Every other runner lets the clock run: they are
 ## testing what the room does, and this is testing what a person does to it.
@@ -98,11 +98,11 @@ func _process(_d) -> bool:
 	if not _handed and bool(_two.call("is_running")):
 		_handed = true
 		_handed_at = _f
-		print("\n--- clicked through slide I ---")
-		_check("slide II arrives for somebody who clicks", true,
+		print("\n--- clicked through slides I to V ---")
+		_check("slide VI arrives for somebody who clicks", true,
 			"reached on frame %d with every clock set to 30 seconds" % _f)
 		_check("with nobody asked anything", _root.get_node_or_null("UI/Prompt") == null,
-			"no question between slide I and slide II")
+			"no question between slide V and slide VI")
 
 	# Click on every frame, both parts.
 	_clicking = true
@@ -110,7 +110,7 @@ func _process(_d) -> bool:
 
 	if not _handed:
 		if _f > 4000:
-			print("   FAIL clicking through slide I never reached slide II")
+			print("   FAIL clicking through slides I to V never reached slide VI")
 			print("        act %d, phase %.1f" % [int(_show.call("current_act")),
 				float(_show.get("_phase"))])
 			quit(1)

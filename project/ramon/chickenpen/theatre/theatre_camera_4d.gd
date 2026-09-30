@@ -85,6 +85,15 @@ const SHOTS := {
 	# this slice: the camera arrives where they would be and they are not there.
 	"drift": {"eye": Vector4(-3.6, 2.4, 7.4, 0.0), "focus": Vector4(-2.2, 1.4, 0.0, 0.0),
 		"eye_to": Vector4(3.8, 2.4, 7.4, 0.0), "focus_to": Vector4(3.0, 1.4, 0.0, 0.0)},
+	# The chicken's sheet from three-quarters, easing round towards the front. NOT square on:
+	# the ghosts travel through the sheet towards you, and from straight in front a ball
+	# coming at you only grows - from the side you see it cross.
+	"sheet": {"eye": Vector4(4.6, 2.9, 6.2, 0.0), "focus": Vector4(0.1, 2.0, 0.0, 0.0),
+		"eye_to": Vector4(2.8, 2.6, 7.2, 0.0), "focus_to": Vector4(0.0, 1.9, 0.0, 0.0)},
+	# Back far enough for the largest of the zoo, a shade above so the tiger's two rings do
+	# not stack on top of each other in the picture.
+	"zoo": {"eye": Vector4(1.8, 3.6, 7.4, 0.0), "focus": Vector4(0.0, 2.7, 0.0, 0.0),
+		"eye_to": Vector4(1.2, 3.3, 6.6, 0.0)},
 }
 
 var _player: Node4D

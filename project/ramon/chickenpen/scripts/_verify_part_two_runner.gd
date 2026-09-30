@@ -1,7 +1,7 @@
 extends SceneTree
 
-## One presentation: does slide I hand straight on to II with nobody asked, do all four
-## slides run in order and carry the numbers I to IV, and are the claims made of the
+## One presentation: does slide V hand straight on to VI with nobody asked, do all eight
+## slides run in order and carry the numbers I to VIII, and are the claims made of the
 ## things they say they are made of?
 ##
 ## ONE PRESENTATION SINCE 30 SEPT. This used to wait for a yes to "there's a second part,
@@ -70,7 +70,7 @@ func _process(_d) -> bool:
 
 	var act: int = int(_show.call("current_act"))
 	var running: bool = bool(_two.call("is_running"))
-	if act == 0:
+	if act >= 0 and act < 5:
 		_slide_one_seen = true
 		if running:
 			_part_two_before_slide_one = true
@@ -140,16 +140,17 @@ func _process(_d) -> bool:
 	_check("nobody is asked anything", _root.get_node_or_null("UI/Prompt") == null
 			and not _two.has_method("offer"),
 		"no prompt in the room and no offer on part two")
-	_check("slide I plays first", _slide_one_seen and not _part_two_before_slide_one,
-		"part two was not running while slide I was up")
-	_check("and hands straight on to II", _handed_over_at_act == 0,
+	_check("slides I to V play first", _slide_one_seen and not _part_two_before_slide_one,
+		"part two was not running while part one's slides were up")
+	_check("and V hands straight on to VI", _handed_over_at_act == 4,
 		"part two took the floor off act %d, with no closing beat between" % _handed_over_at_act)
 	_check("and all three of part two's ran, in order", _seen == [0, 1, 2, count],
 		"%s" % [_seen])
-	_check("numbered I to IV, in the order they are shown", _titles.size() == 4
-			and String(_titles[0]).begins_with("I. ") and String(_titles[1]).begins_with("II. ")
-			and String(_titles[2]).begins_with("III. ") and String(_titles[3]).begins_with("IV. "),
-		"%s" % [_titles])
+	var numerals: Array = ["I. ", "II. ", "III. ", "IV. ", "V. ", "VI. ", "VII. ", "VIII. "]
+	var in_order: bool = _titles.size() == numerals.size()
+	for i in mini(_titles.size(), numerals.size()):
+		in_order = in_order and String(_titles[i]).begins_with(numerals[i])
+	_check("numbered I to VIII, in the order they are shown", in_order, "%s" % [_titles])
 
 	print("\n--- the cut slides are gone, exhibits and all ---")
 	var gone: Array = []

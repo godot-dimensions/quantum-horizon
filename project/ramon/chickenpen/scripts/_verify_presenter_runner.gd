@@ -92,7 +92,10 @@ func _process(_d) -> bool:
 						% [_p.position.z, _p.position.y, _high])
 				_high = -99.0
 			# Out front for the claim.
-			if act == 0 and t > 1.0:
+			# Fractions of the act rather than seconds: act 0 is the chicken's sheet, which
+			# runs longer than the shared act length (its own pace).
+			var span: float = float(_show.call("_length", 0))
+			if act == 0 and t > span * 0.12:
 				_claim_at = _p.position
 				_rest = _arm()
 				_check("and arrives at floor level", _claim_at.y < 0.2,
@@ -104,7 +107,8 @@ func _process(_d) -> bool:
 				_stage = 2
 		2:
 			# Then in on the drum to demonstrate it, arm out.
-			if act == 0 and t > 5.2:
+			var span: float = float(_show.call("_length", 0))
+			if act == 0 and t > span * 0.87:
 				_reach = _arm()
 				print("\n--- and works the exhibit ---")
 				_check("he moves in for the demonstration",

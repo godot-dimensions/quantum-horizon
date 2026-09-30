@@ -79,8 +79,8 @@ func _process(_d) -> bool:
 	# Slide I hands straight on to part two; nobody is asked.
 	if not _started and bool(_two.call("is_running")):
 		_started = true
-		_check("it got all the way to slide II while you sat there", bool(_sat),
-			"slide I played to an audience of one, seated, and handed on by itself")
+		_check("it got all the way to slide VI while you sat there", bool(_sat),
+			"slides I to V played to an audience of one, seated, and handed on by themselves")
 		return false
 
 	# The end of part two: not running any more, and no moment left to show.

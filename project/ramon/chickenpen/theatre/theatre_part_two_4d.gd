@@ -1,10 +1,11 @@
 extends Node
 
-## PART TWO: slides II to IV of the one presentation. Slide I, the rock turned through
-## W, is theatre_show_4d's; it hands the floor straight here when it ends, with no closing
-## line and no question in between (Ramon, 30 Sept: "one presentation from now on"). Two
-## slides that used to be here are gone - the three copies of one object, and the stop
-## conditions - and the three left are the ones standing on something the team built.
+## PART TWO: slides VI to VIII of the one presentation, what the team built to work in 4D.
+## Slides I to V - how to look at it - are theatre_show_4d's and theatre_primer_4d's; the
+## last of them hands the floor straight here, with no closing line and no question in
+## between (Ramon, 30 Sept: "one presentation from now on"). Two slides that used to be
+## here are gone - the three copies of one object, and the stop conditions - and the three
+## left are the ones standing on something the team built.
 ##
 ## The audience is the October gate: Scott, Brandon, Aggelos, Nicolas, Charles - not
 ## designers, not 4D specialists.
@@ -62,7 +63,7 @@ const SHOW := preload("res://ramon/chickenpen/theatre/theatre_show_4d.gd")
 
 const MOMENTS := [
 	{
-		"title": "II. NOBODY BUILT THIS SURFACE",
+		"title": "VI. NOBODY BUILT THIS SURFACE",
 		"body": "A designer made this goat, and made it without modelling anything. {balls} handles were placed - rump, barrel, chest, neck, skull, horns - and the tool generated every tetrahedron between them. Two of the four people who have built on this engine are not engine programmers, and nine Godot prototypes have come out of it.",
 		"figure": "{tetra} tetrahedra from {balls} handles. {each} generated for every one placed.",
 		"tier": "MEASURED - THIS BUILD, THIS SCENE",
@@ -88,7 +89,7 @@ const MOMENTS := [
 		],
 	},
 	{
-		"title": "III. IT IS A TOOL, NOT A GOAT",
+		"title": "VII. IT IS A TOOL, NOT A GOAT",
 		"body": "Watch it being made, and then watch four handles move: the neck, the skull and both horns. Nothing is remodelled and no surface is touched - the tool regenerates it. That is what separates something an artist shapes creatures and characters with from a pipeline that happened to produce one goat. And a handle is something a machine can take hold of just as easily: the interface a designer uses is the interface an AI can drive.",
 		"figure": "Same {balls} handles, same tool. Four of them moved; {tetra} tetrahedra followed.",
 		"tier": "DEMONSTRATED - BUILT AND RESHAPED IN FRONT OF YOU",
@@ -102,7 +103,7 @@ const MOMENTS := [
 		],
 	},
 	{
-		"title": "IV. NOBODY ANIMATED THIS WALK EITHER",
+		"title": "VIII. NOBODY ANIMATED THIS WALK EITHER",
 		"body": "There is no 4D motion capture and no 4D animation package, so there is no clip to play. This is procedural animation in the strict sense - every frame of it is solved. A gait clock fires the footfalls, a FABRIK chain resolves each of the {legs} legs onto its own moving target, and the solvers above it flex the spine, hold the head steady against the bob and lag the tail behind the sway. Then the skin comes off, and the handles that shaped this animal turn out to be the joints that move it.",
 		"figure": "{segments} rigid transforms a frame, under the noise floor. Skinning what has to deform instead: 79.31 ms to 19.76.",
 		"tier": "MEASURED - ONE MACHINE, VSYNC OFF, 350 FRAMES AVERAGED, 19 SEP 2026",
@@ -220,8 +221,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if step > 0 and _moment >= MOMENTS.size():
 		_finish()
 		return
-	# BACKWARD OFF THE FRONT GOES BACK TO SLIDE I. From the audience there is one
-	# presentation, not two, and a back arrow that does nothing on slide II reads as the
+	# BACKWARD OFF THE FRONT GOES BACK TO SLIDE V. From the audience there is one
+	# presentation, not two, and a back arrow that does nothing on slide VI reads as the
 	# controls having stopped working - which is exactly what an audience concludes the
 	# moment a key stops responding. The seam between the two nodes is ours, not theirs.
 	if step < 0 and _moment == 0 and _show != null 			and _show.has_method("step_back_from_part_two"):
@@ -232,8 +233,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 ## Part one has the floor for a moment. The clock stops, the input goes quiet, and the
-## exhibits come off the drum - without that last part, slide I's rock would turn with the
-## goat still standing behind it.
+## exhibits come off the drum - without that last part, slide V's shapes would turn with
+## the goat still standing behind them.
 func lend_back() -> void:
 	if _lent_back:
 		return
@@ -335,7 +336,7 @@ func _enter(which: int) -> void:
 		var beside: bool = which < MOMENTS.size() \
 			and int(MOMENTS[which].get("piece", which)) in [0, 1]
 		_show.call("hold_at", 1 if beside else 0)
-	# Still for everything that is a comparison; turning for the goat on slide II, which is
+	# Still for everything that is a comparison; turning for the goat on slide VI, which is
 	# one object and wants to be seen from more than one side.
 	if _show != null and _show.has_method("set_spin"):
 		_show.call("set_spin", which == 0)
@@ -523,7 +524,7 @@ func _show_piece(which: int) -> void:
 	if _goat != null and _goat.has_method("set_markers_visible"):
 		_goat.call("set_markers_visible", which == 0)
 	if _goat != null:
-		# Slide II wants the finished animal in its own colours; slide III starts it from
+		# Slide VI wants the finished animal in its own colours; slide VII starts it from
 		# nothing and plain, so the geometry is the thing being looked at.
 		if which == 1:
 			_goat.call("show_stage", 0)

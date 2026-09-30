@@ -1,20 +1,28 @@
 extends Node4D
 
-## The presentation's opening and its first slide, staged.
+## The presentation's opening and its first five slides, staged: how to look at 4D.
 ##
-## ONE PRESENTATION (Ramon, 30 Sept). There used to be two: three engine findings here,
-## then a question - "there's a second part, want it?" - and five more slides in
-## theatre_part_two_4d. The question is gone and so are four of the eight slides (the
-## invisible MeshInstance3D, the box-only collision hull, the three copies of one object,
-## the stop conditions). What is left runs straight through: this node walks Trym in, sits
-## you down and plays slide I, then hands the floor to part two for II to IV without a
-## pause. Part two is still its own node because its exhibits are its own, not because
-## anybody is asked about it.
+## ONE PRESENTATION (Ramon, 30 Sept), in two halves that run straight through. This node
+## walks Trym in, sits you down and plays slides I to V - how to look at four dimensions -
+## then hands the floor to theatre_part_two_4d for VI to VIII, what the team built to work
+## in them. No closing line and no question between the two: part two is its own node
+## because its exhibits are its own, not because anybody is asked about it.
 ##
-## THE EXHIBIT IS NOT AN ILLUSTRATION OF THE FINDING, IT IS THE FINDING. Slide I turns a
+##   I    WHAT YOU SEE IS A SLICE       a flat chicken on a sheet        theatre_primer_4d
+##   II   THINGS ARRIVE FROM NOWHERE    a 4D ball and a tesseract        theatre_primer_4d
+##   III  A SLICE IS NOT A CAMERA ANGLE the mined rock, turned through W here
+##   IV   SHAPES WITH NO 3D TWIN        the tiger, the Klein bottle...   theatre_primer_4d
+##   V    NOW YOU TURN IT               you hold them, then the glove    theatre_primer_4d
+##
+## Trym, 30 Sept: show some interesting 4D shapes, borrow the "2D slice of a 3D world"
+## intro for now, and let people hold a weird shape and turn it themselves. That is I, IV
+## and V; II is the bridge from the chicken's world to ours.
+##
+## THE EXHIBIT IS NOT AN ILLUSTRATION OF THE FINDING, IT IS THE FINDING. Slide III turns a
 ## real VoxelMiningBlock through W and the cross-section really does become a different
-## solid. A presentation that mimes its own subject is a slideshow; this one can be checked
-## by walking up to it.
+## solid; the shapes of IV and V are meshed from their own equations and sliced by the same
+## renderer as everything else. A presentation that mimes its own subject is a slideshow;
+## this one can be checked by walking up to it.
 ##
 ## ONE RUNNER, NOT AN ANIMATION PLAYER PER SLIDE. Every act is rise, hold, demonstrate,
 ## sink, and the differences between them are a handful of numbers and one callback each -
@@ -32,6 +40,8 @@ const ROCK := preload("res://ramon/VoxelMining/voxel_mining_block.tscn")
 const NAV := "\u2190  \u2192   step through      \u00b7      click   forward"
 ## The man in the shed, for his clothes. See _dress_presenter.
 const TRYM := preload("res://ramon/chickenpen/scripts/pen_trym_4d.gd")
+## Slides I, II, IV and V: their exhibits and how they move.
+const PRIMER := preload("res://ramon/chickenpen/theatre/theatre_primer_4d.gd")
 
 @export var stage_path: NodePath
 @export var caption_path: NodePath
@@ -39,6 +49,10 @@ const TRYM := preload("res://ramon/chickenpen/scripts/pen_trym_4d.gd")
 ## The shot camera, and the chair that hands it the job.
 @export var camera_path: NodePath
 @export var seat_path: NodePath
+## The figures set beside an exhibit, and the screen over the stage (the chicken's flat
+## world, and the shadows). Both belong to the primer's slides.
+@export var metrics_path: NodePath
+@export var screen_path: NodePath
 
 @export_group("Pacing")
 ## Long enough for him to walk the house and for you to follow him down it.
@@ -106,15 +120,65 @@ const TRYM := preload("res://ramon/chickenpen/scripts/pen_trym_4d.gd")
 ## And how long the camera stays on you once you are down, before it turns to find him.
 @export_range(0.0, 6.0, 0.1, "suffix:s") var hold_on_seat_seconds: float = 1.3
 
-## Each act: the title, the finding in one line, the measured figure, and the colour the
-## room turns while it is running. One now; the rest of the numbered slides are part two's.
+## Each act: the title, the finding in one line, the figure under it, and the colour the
+## room turns while it is running. `id` says which exhibit it is; `pace` multiplies the
+## shared act length, the way part two's moments do; `shot` is the camera's framing (see
+## theatre_camera_4d.SHOTS); `spin` is whether the turntable turns under it. The figures'
+## {placeholders} are counted off the exhibits themselves (theatre_primer_4d.fill).
+##
+## NO SPACED DASHES in any of these lines: they are read by people, and a " - " clause
+## reads as machine-written (Ramon's rule for every player-facing line).
 const ACTS := [
 	{
-		"title": "I. A SLICE IS NOT A CAMERA ANGLE",
+		"id": "chicken",
+		"title": "I. WHAT YOU SEE IS A SLICE",
+		"body": "This chicken lives on a flat sheet. It can move only inside it, and it sees only what the sheet cuts through. A ball passing through its world is, to the chicken, a circle that comes from nowhere, grows, shrinks and is gone. Your screen is the chicken's sheet, one dimension up.",
+		"figure": "The ball was never in the chicken's world. Only the circle was.",
+		"tint": Color(0.10, 0.30, 0.46),
+		"shot": "sheet",
+		"pace": 1.4,
+		"spin": false,
+	},
+	{
+		"id": "visitors",
+		"title": "II. THINGS ARRIVE FROM NOWHERE",
+		"body": "The same thing, one dimension up. This ball is round in four directions and is travelling along the one you cannot see. Your slice meets it as a point, then a sphere that grows and shrinks, then nothing. A tesseract arrives face first as a cube that is simply there, and corner first as a point that swells into a pyramid and then an octahedron.",
+		"figure": "One ball, {ball_tetra} tetrahedra. You only ever see one slice of it. The screen shows its shadow, all of it at once.",
+		"tint": Color(0.20, 0.12, 0.40),
+		"shot": "push",
+		"pace": 1.8,
+		"spin": true,
+	},
+	{
+		"id": "rock",
+		"title": "III. A SLICE IS NOT A CAMERA ANGLE",
 		"body": "Turn through W and you are not looking at the same solid from somewhere else. You are looking at a different solid. The hole stays where it was; the cross-section through it does not.",
 		"figure": "One rock. One tunnel. Every angle a shape nobody made on purpose.",
 		"aside": "This is the one worth the walk.",
 		"tint": Color(0.16, 0.44, 0.24),
+		"shot": "close",
+		"pace": 1.0,
+		"spin": true,
+	},
+	{
+		"id": "zoo",
+		"title": "IV. SHAPES WITH NO 3D TWIN",
+		"body": "None of these has a three-dimensional version. The tiger is a flat torus given thickness, a surface that only fits in four dimensions. The Klein bottle has to pass through itself in 3D; here it never touches itself. On the drum you see their slices, and on the screen their shadows, coloured by how far along W each part is.",
+		"figure": "Five shapes built from their equations, {zoo_tetra} tetrahedra between them.",
+		"tint": Color(0.36, 0.14, 0.30),
+		"shot": "zoo",
+		"pace": 2.4,
+		"spin": true,
+	},
+	{
+		"id": "toy",
+		"title": "V. NOW YOU TURN IT",
+		"body": "Hold the right mouse button and drag to turn it through W, the same way you turn your slice in the field. Scroll for the next shape. Then the last trick: a left glove turned half way round through W comes back as a right glove. In three dimensions only a mirror can do that.",
+		"figure": "Turn the left glove until it matches the right one.",
+		"tint": Color(0.12, 0.34, 0.34),
+		"shot": "house",
+		"pace": 2.2,
+		"spin": false,
 	},
 ]
 
@@ -159,6 +223,7 @@ var _waited: float = 0.0
 var _greeted: bool = false
 var _sat_for: float = 0.0
 var _lent: bool = false
+var _primer: Node
 
 
 func _ready() -> void:
@@ -194,6 +259,12 @@ func _ready() -> void:
 			if _stage.get_node_or_null("Beams") != null else []):
 		if beam is MeshInstance4D:
 			_beams.append(beam)
+	# The primer's shapes start on a worker thread now, so they are long made by the time
+	# anybody sits down; see theatre_primer_4d.
+	_primer = PRIMER.new()
+	_primer.name = "Primer"
+	add_child(_primer)
+	_primer.call("setup", _table, get_node_or_null(metrics_path), get_node_or_null(screen_path), _seat)
 	# Built across the next few frames rather than here - see _build_exhibits. Nothing is
 	# on stage for the opening anyway; the room is dark and he is still walking on.
 	# The way out is NOT switched off here. It stands open from the moment you arrive,
@@ -204,24 +275,26 @@ func _ready() -> void:
 
 # ---------------------------------------------------------------- the exhibits
 
-## BUILT WHEN YOU SIT DOWN, not when you walk in.
+## BUILT WHEN YOU SIT DOWN, not when you walk in. All five, one a frame.
 ##
 ## These were built inside `_ready` once, so they were paid on the frame the door was
 ## crossed - a handful of dropped frames at exactly the moment the player is looking for a
 ## reaction to having walked through a door. Then they were spread out on a timer, the
 ## first 1.2 seconds in, which was fine while the first exhibit was two plinths and a box.
 ##
-## THE FIRST EXHIBIT IS THE ROCK NOW, and the rock is the expensive one: a lattice to
-## contour and three blows that re-contour it, most of a second between them. A dropped
-## frame during motion is exactly when a dropped frame is visible, and 1.2 seconds in you
-## are walking down the rake with the camera following. So it is made on the beat the
-## camera holds still on you in the chair (theatre_seat_4d's is_settled), which is the one
-## moment in the arrival where losing a few frames costs nothing.
+## THE ROCK IS THE EXPENSIVE ONE: a lattice to contour and three blows that re-contour it,
+## most of a second between them. A dropped frame during motion is exactly when a dropped
+## frame is visible, and 1.2 seconds in you are walking down the rake with the camera
+## following. So they are made on the beat the camera holds still on you in the chair
+## (theatre_seat_4d's is_settled), which is the one moment in the arrival where losing a
+## few frames costs nothing. The primer's four are cheap by then: their meshes were made on
+## a worker thread while you walked in, and building them is placing nodes.
 ##
 ## SOMEBODY WHO DOES NOT SIT gets it once the opening has run and he is standing on his
 ## mark waiting for them - the other still point, and still well before the slide. Anything
 ## that needs it sooner than either gets it from finish_building(), which `_enter` calls.
-const ACT_BUILDERS: Array[StringName] = [&"_the_rock"]
+const ACT_BUILDERS: Array[StringName] = [&"_the_chicken", &"_the_visitors", &"_the_rock",
+	&"_the_zoo", &"_the_toy"]
 
 var _built: int = 0
 
@@ -238,6 +311,22 @@ func _build_one() -> void:
 func finish_building() -> void:
 	while _built < ACT_BUILDERS.size():
 		_build_one()
+
+
+func _the_chicken() -> Node4D:
+	return _primer.call("build", "chicken") as Node4D
+
+
+func _the_visitors() -> Node4D:
+	return _primer.call("build", "visitors") as Node4D
+
+
+func _the_zoo() -> Node4D:
+	return _primer.call("build", "zoo") as Node4D
+
+
+func _the_toy() -> Node4D:
+	return _primer.call("build", "toy") as Node4D
 
 
 ## A real mined block, turned through W so its cross-section changes.
@@ -315,13 +404,21 @@ func _process(delta: float) -> void:
 
 	if _act < 0 and _phase >= opening_seconds and _ready_for_you(delta):
 		_enter(0)
-	elif _act >= 0 and _act < ACTS.size() and _phase >= act_seconds:
+	elif _act >= 0 and _act < ACTS.size() and _phase >= _length(_act):
 		_enter(_act + 1)
 	elif _act == ACTS.size() and not _done and _phase >= closing_seconds:
 		_finish()
 
 	if _act >= 0 and _act < ACTS.size():
-		_demonstrate(_act, _phase)
+		_demonstrate(_act, _phase, delta)
+
+
+## How long an act runs: the shared length times its own pace, so slowing the whole talk
+## down still slows the long ones with it.
+func _length(act: int) -> float:
+	if act < 0 or act >= ACTS.size():
+		return act_seconds
+	return act_seconds * float(ACTS[act].get("pace", 1.0))
 
 
 ## HE WAITS FOR YOU TO SIT. The whole opening is him crossing the room and you following
@@ -347,14 +444,14 @@ func _frame(act: int) -> void:
 	if _camera == null or not _camera.has_method("shoot"):
 		return
 	var shot: String = "house"
-	var over: float = act_seconds
+	var over: float = _length(act)
 	if act < 0:
 		shot = "presenter"
 		over = opening_seconds
-	elif act == 0:
-		# The rock turning through W. Held close, because it is already turning and a
-		# camera turning with it would cancel the turn out.
-		shot = "close"
+	elif act < ACTS.size():
+		# Each act names its own framing. The rock's is held close, because it is already
+		# turning and a camera turning with it would cancel the turn out.
+		shot = String(ACTS[act].get("shot", "house"))
 	else:
 		shot = "presenter"
 		over = closing_seconds
@@ -461,7 +558,7 @@ func _perform(delta: float) -> void:
 	var drum := Vector4(0.0, 1.3, 0.0, 0.0)
 	var goes_to: Vector4 = mark_claim
 	var looks_at: Vector4 = house
-	var t: float = _phase / maxf(act_seconds, 0.01)
+	var t: float = _phase / maxf(_length(_act), 0.01)
 	if _held >= 0:
 		# Part two is running the show now.
 		goes_to = mark_exhibit if _held == 1 else mark_claim
@@ -599,8 +696,8 @@ func _carve_once() -> void:
 		_rock.call("mine_at_shape", best)
 
 
-## Which act is on: -1 while the room is still arriving, 0 for slide I, then ACTS.size()
-## once part two has the floor.
+## Which act is on: -1 while the room is still arriving, 0 to 4 for slides I to V, then
+## ACTS.size() once part two has the floor.
 func current_act() -> int:
 	return _act
 
@@ -616,8 +713,23 @@ func _enter(act: int) -> void:
 	_frame(act)
 	if act < ACTS.size():
 		var a: Dictionary = ACTS[act]
-		_say(String(a["title"]), String(a["body"]), String(a["figure"]))
+		set_spin(bool(a.get("spin", true)))
+		# The primer's slides are started (and a previous one of theirs ended) here; the
+		# rock and the arrival are not the primer's, and leaving it clears its screen.
+		var id: String = String(a.get("id", ""))
+		if _primer != null:
+			if id == "rock":
+				_primer.call("leave")
+			else:
+				_primer.call("enter", id)
+		var figure: String = String(a["figure"])
+		if _primer != null:
+			figure = String(_primer.call("fill", figure))
+		_say(String(a["title"]), String(a["body"]), figure)
 		_tint(a["tint"])
+	elif act < 0:
+		if _primer != null:
+			_primer.call("leave")
 	else:
 		# Only without a part two, which the theatre always has. A room assembled without
 		# one still ends on a line rather than on the last slide's caption.
@@ -638,6 +750,9 @@ func _hand_over() -> void:
 	_act = ACTS.size()
 	_phase = 0.0
 	_show(-1)
+	if _primer != null:
+		_primer.call("leave")
+	set_spin(true)
 	if _lent:
 		_lent = false
 		if _part_two.has_method("resume"):
@@ -656,16 +771,19 @@ func _show(act: int) -> void:
 		_exhibits[i].position = Vector4(0.0, 0.0 if on else -40.0, 0.0, 0.0)
 
 
-## What each act DOES, as opposed to what it looks like.
-func _demonstrate(act: int, t: float) -> void:
-	match act:
-		0:
-			# The money shot: the block turns through W, not about a spatial axis, so what
-			# you are watching is not the rock rotating but the WORLD being cut somewhere
-			# else. Paused at the ends so the eye can settle on each cross-section.
-			if _rock != null:
-				var sweep: float = sin(t * 0.55) * 0.95
-				_rock.basis = Basis4D.from_xw(sweep) * Basis4D.from_zw(sweep * 0.45)
+## What each act DOES, as opposed to what it looks like. The rock is this node's; the rest
+## are the primer's.
+func _demonstrate(act: int, t: float, delta: float = 0.0) -> void:
+	var id: String = String(ACTS[act].get("id", ""))
+	if id == "rock":
+		# The money shot: the block turns through W, not about a spatial axis, so what
+		# you are watching is not the rock rotating but the WORLD being cut somewhere
+		# else. Paused at the ends so the eye can settle on each cross-section.
+		if _rock != null:
+			var sweep: float = sin(t * 0.55) * 0.95
+			_rock.basis = Basis4D.from_xw(sweep) * Basis4D.from_zw(sweep * 0.45)
+	elif _primer != null:
+		_primer.call("demonstrate", id, t, _length(act), delta)
 
 
 ## The backdrop drifts to the act's colour and the beams breathe. Nothing here is a light -
@@ -763,7 +881,7 @@ func _finish() -> void:
 
 
 ## Part two stepping backwards off its own first slide. It has already taken its
-## exhibits off the drum and handed the presenter back, so this only has to put slide I
+## exhibits off the drum and handed the presenter back, so this only has to put slide V
 ## up again and start listening.
 ##
 ## `_done` is deliberately left set. This is a replay, not the talk running a second
@@ -788,6 +906,10 @@ func step_back_from_part_two() -> void:
 ## standing in the middle of it, and the goat came up inside the voxel block.
 func clear_stage() -> void:
 	_show(-1)
+	# And the primer's screen and figures with it, or slide V's shadow would hang over the
+	# goat after a step back and forward across the seam.
+	if _primer != null:
+		_primer.call("leave")
 
 
 func is_over() -> bool:
