@@ -70,14 +70,38 @@ const BALL := preload("res://ramon/chickenpen/scripts/loft_ball_4d.gd")
 @export_range(0.5, 10.0, 0.5) var cruise_beats: float = 3.2
 ## How much of a cruise is spent gliding with the wings held out and still.
 @export_range(0.0, 0.9, 0.05) var glide_share: float = 0.45
-## How far back a folded wing lies, in radians. About 75 degrees tucks it along the body
-## while leaving the shoulder visible; a full right angle reads as a bird with no wings.
-@export_range(0.0, 1.6, 0.05) var fold_sweep: float = 1.30
+## How far back a folded wing lies, in radians. Just past a right angle, so the two tips
+## close in over the tail the way a sitting bird's do. (It was 75 degrees while a folded
+## wing still lay flat on its back - see _pose_wings - where a right angle had laid it
+## across the bird's back and read as no wings at all.)
+@export_range(0.0, 2.0, 0.05) var fold_sweep: float = 1.65
+## How far a folded wing is ROLLED about its own length, so that its flat face lies against
+## the body's side instead of facing the sky. Ramon, 30 Sept: "when they sit the wings are
+## not rotated adjacent to the body ... the side of the wings are facing upward, not flat
+## to the body mass."
+@export_range(0.0, 1.8, 0.05) var fold_roll: float = 1.45
+## How quickly the wings fold and open, in whole folds a second.
+@export_range(0.5, 20.0, 0.5) var fold_rate: float = 4.5
+## How much of its width a folded wing keeps. A spread wing's feathers fan out; folded,
+## they stack, and a wing hanging at its full flight chord stood above the bird's back
+## and below its belly - two fins rather than two wings.
+@export_range(0.2, 1.0, 0.05) var fold_chord: float = 0.55
 
 enum Mood { PERCHED, TAKEOFF, FLYING, LANDING }
 
 var _hide: MeshInstance4D
 var _wings: Array[Node4D] = []
+## Where each wing's shoulder sits in flight, and where it moves to when folded: down and
+## out onto the flank, so the folded wing lies ON the body's side rather than inside it.
+var _wing_rest: Array[Vector4] = []
+var _wing_folded: Array[Vector4] = []
+## 0 is spread for flight, 1 folded against the body; eased toward _fold_target, so the
+## wings fold and open rather than snapping between two poses.
+var _fold_amount: float = 1.0
+var _fold_target: float = 1.0
+var _flap_depth: float = 0.0
+## How far a perched shrug opens the folded wings, 0 to 1, for this frame.
+var _shrug_lift: float = 0.0
 var _head: Node4D
 var _head_rest := Vector4.ZERO
 var _legs: Array[Node4D] = []
@@ -129,6 +153,8 @@ func rebuild() -> void:
 	for child in get_children():
 		child.free()
 	_wings.clear()
+	_wing_rest.clear()
+	_wing_folded.clear()
 	_legs.clear()
 	_leg_rest.clear()
 	var u: float = length
@@ -210,8 +236,15 @@ func rebuild() -> void:
 			quill.reparent(pivot, false)
 			quill.position = Vector4(side * float(span[0]) * u, 0.0, -0.02 * u, 0.0)
 		_wings.append(pivot)
+		_wing_rest.append(pivot.position)
+		# The body is 0.13 wide at 0.42 to 0.46 up; the folded wing's shoulder goes to its
+		# side, a little above the middle, so the rolled wing covers the flank.
+		_wing_folded.append(Vector4(side * 0.125 * u, 0.455 * u, 0.03 * u, 0.0))
 
+	# Built sitting down: folded at once, not folding in from spread.
 	_fold(1.0)
+	_fold_amount = 1.0
+	_pose_wings()
 
 
 func _ball(parent: Node, part: String, at: Vector4, radius: float,
@@ -264,6 +297,8 @@ func _process(delta: float) -> void:
 			_do_flying(delta)
 		Mood.LANDING:
 			_do_landing(delta)
+	_fold_amount = move_toward(_fold_amount, _fold_target, delta * fold_rate)
+	_pose_wings()
 
 
 ## Sat still, with the head doing most of the work. A perched crow is never quite still -
@@ -285,11 +320,8 @@ func _do_perched(delta: float) -> void:
 	_shrug = maxf(_shrug - delta, 0.0)
 	if _shrug <= 0.0 and _rng.randf() < delta * 0.35:
 		_shrug = 0.45
-	if _shrug > 0.0:
-		var flick: float = sin((1.0 - _shrug / 0.45) * PI)
-		for i in _wings.size():
-			var side: float = 1.0 if i == 0 else -1.0
-			_wings[i].basis = Basis4D.from_zx(side * fold_sweep) 				* Basis4D.from_xy(-side * (-0.16 - flick * 0.55))
+	# A shrug opens the folded wings a little way and closes them again.
+	_shrug_lift = sin((1.0 - _shrug / 0.45) * PI) * 0.3 if _shrug > 0.0 else 0.0
 	if _mood_left <= 0.0:
 		_from = position
 		_to = position + Vector4(0.0, cruise_height, 0.0, 0.0)
@@ -487,13 +519,11 @@ func _rail_spot() -> Vector4:
 	return Vector4(local.x + spot.x, height, local.z + spot.z, position.w)
 
 
-## Wings. 0 is held out flat and still - a glide - and 1 is a full beat.
+## Wings. 0 is held out flat and still - a glide - and 1 is a full beat. Opens folded
+## wings first (see _pose_wings, which does the actual posing).
 func _flap(depth: float) -> void:
-	for i in _wings.size():
-		var side: float = 1.0 if i == 0 else -1.0
-		# Folded against the body when there is nothing to do, swept when there is.
-		var swing: float = sin(_beat * TAU) * depth
-		_wings[i].basis = Basis4D.from_xy(-side * (swing * 1.15 - 0.12))
+	_flap_depth = depth
+	_fold_target = 0.0
 
 
 ## Legs. 1 is down on a perch, 0 is tucked up under the tail.
@@ -507,12 +537,36 @@ func _stand(down: float) -> void:
 
 ## Folded wings, for sitting. Kept separate from _flap so a perched bird is not holding a
 ## beat at amplitude zero - it is holding a pose.
+func _fold(amount: float) -> void:
+	_fold_target = amount
+	_flap_depth = 0.0
+
+
+## Poses both wings between spread (fold 0, beating by _flap_depth) and folded (fold 1).
 ##
-## SWEPT BACK, NOT JUST LOWERED. A wing is modelled along the bird's X, so drooping it
-## leaves a perched crow sitting with both wings held straight out like a weather vane -
-## which is what the first version did. Folding is mostly a turn in the z-x plane that
-## lays the wing along the body, with a little droop on top of it.
-func _fold(_amount: float) -> void:
+## A wing is modelled spanning the bird's X, its chord along Z and thin in Y - flat, face
+## to the sky, which is right in the air. Folding it is two turns and a move:
+##
+##   SWEPT BACK, in the z-x plane, so it lies along the body rather than out from it. A
+##   first version only drooped it and sat with both wings held out like a weather vane.
+##   ROLLED about its own length, in the y-z plane, so the chord hangs down and the flat
+##   face lies against the flank. Swept alone, the folded wing still faced the sky - a
+##   plank laid on the bird's back, edge to the body (Ramon, 30 Sept).
+##   MOVED from the shoulder out and down onto the side, so the rolled wing lies on the
+##   body instead of standing inside it.
+##   NARROWED to fold_chord of its width, applied first in the wing's own frame (along
+##   its chord), so it covers the flank from the back line to the belly and no further.
+##
+## Everything eases together with the fold, so taking off opens the wings and landing
+## closes them, instead of the pose jumping between the two.
+func _pose_wings() -> void:
+	var fold: float = clampf(_fold_amount * (1.0 - _shrug_lift), 0.0, 1.0)
+	var eased: float = smoothstep(0.0, 1.0, fold)
+	var swing: float = sin(_beat * TAU) * _flap_depth * (1.0 - eased)
 	for i in _wings.size():
 		var side: float = 1.0 if i == 0 else -1.0
-		_wings[i].basis = Basis4D.from_zx(side * fold_sweep) 			* Basis4D.from_xy(-side * -0.16)
+		var droop: float = (swing * 1.15 - 0.12) * (1.0 - eased)
+		var chord: float = lerpf(1.0, fold_chord, eased)
+		_wings[i].basis = Basis4D.from_zx(side * fold_sweep * eased) 			* Basis4D.from_yz(fold_roll * eased) * Basis4D.from_xy(-side * droop) 			* Projection(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, chord, 0), Vector4(0, 0, 0, 1))
+		if i < _wing_rest.size() and i < _wing_folded.size():
+			_wings[i].position = _wing_rest[i].lerp(_wing_folded[i], eased)
