@@ -170,6 +170,22 @@ var new_branch_direction: int = 0
 		flatten_w = value
 		request_rebuild()
 
+## How much of the ball a branch hangs off its root takes on, from 0 to 1.
+##
+## A branch is lofted FROM the ball it hangs off, so its first cross-section is that
+## ball's. At 1 - the default, and what every rig did before this existed - a limb
+## flares out of the body the full width of the body ball, which is what gives a cat a
+## shoulder rather than a seam. On a body much wider than its limbs the flare runs
+## almost along the body's own skin, and where the two surfaces cross, slivers of it
+## poke through as thin dark slits: Nike's flanks, above each leg (Ramon, 30 Sept:
+## "some little mesh bits going through surfaces here and there"). Lower it and the root
+## section shrinks toward the branch's first ball, so the flare stays inside the body and
+## the limb comes out of it clean.
+@export_range(0.0, 1.0, 0.05) var branch_root_size: float = 1.0:
+	set(value):
+		branch_root_size = value
+		request_rebuild()
+
 ## Tilts each cross-section to sit square to the line the balls make, instead of
 ## leaving it a flat horizontal slice.
 ##
@@ -637,6 +653,14 @@ func _build_chain(chain: Array, announce: bool, is_branch: bool = false, run_che
 			flat.w = 0.0
 			section["center"] = flat
 		sections.append(section)
+
+	# See branch_root_size: a branch's first section is the ball it hangs off, shrunk
+	# toward the branch's own first ball by as much as asked.
+	if is_branch and branch_root_size < 1.0 and sections.size() > 1:
+		var root: Dictionary = sections[0]
+		var first: Dictionary = sections[1]
+		for key in ["radius", "v_scale", "w_scale"]:
+			root[key] = lerpf(float(first[key]), float(root[key]), branch_root_size)
 
 	# Two sections in the same place would loft into a zero-thickness slab of
 	# degenerate tetrahedra, which reads as an invisible or flickering band rather

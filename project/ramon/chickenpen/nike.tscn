@@ -23,6 +23,7 @@ use_ball_colors = true
 smoothing = 2
 profile_sides = 12
 profile_rings = 4
+branch_root_size = 0.3
 
 [node name="Rump" type="MeshInstance4D" parent="Hide"]
 position = Vector4(0.0, 1.24, -1.48, 0.0)
