@@ -377,6 +377,7 @@ func _bind_mesh() -> void:
 		var best: int = -1
 		var best_weight: float = 0.0
 		var best_shank: float = 0.0
+		var best_reach: float = INF
 		var nearest: int = -1
 		var nearest_reach: float = INF
 		var below_foot: bool = false
@@ -416,9 +417,21 @@ func _bind_mesh() -> void:
 			# under the hip, where a swinging leg barely moves, instead of a fifth of the
 			# way down it, where the body's still copy was plainly visible.
 			var weight: float = smoothstep(0.0, 0.2, down) * near
-			if weight > best_weight:
+			# A TIE GOES TO THE NEARER LEG, not to whichever leg was tested first. On a
+			# small animal the influence radius (a third of the leg's drop) is wider than
+			# the gap between its left and right legs, so both claim the same skin at the
+			# same weight; with a plain ">" the leg sorted first won every tie. On the cat
+			# that handed a quarter of each right leg to the left one (measured 30 of 102
+			# and 24 of 104 vertices on the wrong side), and the stolen skin swung in the
+			# left leg's phase - a second set of legs walking out of step (Ramon, 30 Sept:
+			# "like it has 8 legs").
+			var better: bool = weight > best_weight + 0.000001
+			if not better and weight > 0.0 and absf(weight - best_weight) <= 0.000001:
+				better = reach < best_reach
+			if better:
 				best_weight = weight
 				best = index
+				best_reach = reach
 				var at_knee: float = (hip.y - knee.y) / drop
 				best_shank = smoothstep(at_knee - 0.18, at_knee + 0.18, down)
 		# ANYTHING BELOW THE LAST IK BALL RIDES RIGIDLY WITH THE SHANK.
