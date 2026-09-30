@@ -38,7 +38,7 @@ extends Control
 const DEFAULT_STYLE: String = "res://ramon/Menu/style/frontier_style.tres"
 const DEFAULT_LAYOUT: String = "res://ramon/Menu/entries/frontier_layout.tres"
 const DEFAULT_CATALOGUE: String = "res://ramon/Menu/entries/catalogue.tres"
-const LIST_MENU_SCENE: String = "res://ramon/Menu2.tscn"
+const LIST_MENU_SCENE: String = "res://ramon/menu_final.tscn"
 
 ## The space the reference art is measured in. Everything is authored against
 ## this and the whole map is scaled uniformly into the window, which is why the

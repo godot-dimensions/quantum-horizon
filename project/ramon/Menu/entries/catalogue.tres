@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="MenuCatalogue" load_steps=21 format=3 uid="uid://b6ehjm0dis877"]
+[gd_resource type="Resource" script_class="MenuCatalogue" load_steps=23 format=3 uid="uid://b6ehjm0dis877"]
 
 [ext_resource type="Script" uid="uid://c12nskqorjkfu" path="res://ramon/Menu/scripts/menu_entry.gd" id="1_i2ljj"]
 [ext_resource type="Texture2D" uid="uid://bqd3858vvcqby" path="res://ramon/Menu/icons/icon_slice_vision.png" id="2_wp3od"]
@@ -17,79 +17,82 @@ script = ExtResource("1_i2ljj")
 title = "Slice Vision"
 blurb = "Camera and avatar tuned for reading a 4D cross-section"
 maturity = "Playable"
-duration = "90 sec"
+duration = "90 sec a level"
 detail = "Three chambers that teach reading a cross-section before asking anything of you."
 clip = "slice_vision"
 icon = ExtResource("2_wp3od")
 preview_focus = 0.64
 scene_path = "res://ramon/MiegakureLook/levels/level_1_wall.tscn"
-extra_launch_labels = PackedStringArray()
-extra_launch_scenes = PackedStringArray()
+launch_label = "LEVEL 1 · WALL"
+extra_launch_labels = PackedStringArray("LEVEL 2 · BRIDGE", "LEVEL 3 · DETOUR")
+extra_launch_scenes = PackedStringArray("res://ramon/MiegakureLook/levels/level_2_bridge.tscn", "res://ramon/MiegakureLook/levels/level_3_detour.tscn")
 control_keys = PackedStringArray("WASD", "RMB")
 control_actions = PackedStringArray("move", "rotate slice 90°")
 question = "Can anyone read a 4D scene at all without training?"
 approach = "Third-person diorama, discrete 90° turns, floor banded along w."
 finding = "Banding is load-bearing; an unbanded rotated view is a blank diamond."
-benchmark = "10 / 10 scripted checks pass · 3 levels · 90° turn eased over 0.7 s"
+benchmark = "6 / 6 / 5 scripted checks across the three levels · 90° turn eased over 0.7 s"
 
 [sub_resource type="Resource" id="Resource_3f7jf"]
 script = ExtResource("1_i2ljj")
 title = "Phase Maze"
-blurb = "Walls you pass by rotating, not by walking"
+blurb = "Walls you pass by stepping through w, not by walking round them"
 maturity = "Playable"
+section = "Lab"
 duration = "2 min"
-detail = "A maze whose walls occupy bands of w, so the route exists only at the right slice."
+detail = "A maze whose gates are open only in a narrow band of w, so the route exists only at the right depth."
 clip = "phase_maze"
 icon = ExtResource("3_boe22")
 preview_focus = 0.5
 scene_path = "res://ramon/PhaseMaze/phase_maze.tscn"
 extra_launch_labels = PackedStringArray()
 extra_launch_scenes = PackedStringArray()
-control_keys = PackedStringArray("WASD", "RMB", "Q / E")
-control_actions = PackedStringArray("move", "rotate slice", "through w")
-question = "Does rotation work as a navigation verb rather than a camera trick?"
-approach = "Maze walls occupy w-bands; rotating changes which ones are solid."
+control_keys = PackedStringArray("WASD", "Q / E")
+control_actions = PackedStringArray("move", "through w")
+question = "Can moving through w work as a navigation verb?"
+approach = "A single-path maze whose three gates each open in a 3 m band of w."
 finding = "It reads immediately, but only where the route is signposted."
-benchmark = "2 levels · walls 0.4 m thick in z · slice rotation on right mouse"
+benchmark = "3 gates, at w −6, 2 and 7 · each open for 3 m of w · walls 0.4 m thick in z"
 
 [sub_resource type="Resource" id="Resource_snm5f"]
 script = ExtResource("1_i2ljj")
 title = "4D Ascent"
-blurb = "A vertical course climbed by rotating as much as jumping"
+blurb = "An obstacle course you cross by stepping through w as much as by jumping"
 maturity = "Greybox"
 duration = "2 min"
-detail = "A vertical course where the next foothold is often a rotation away rather than a jump."
+detail = "A runway with a gap too wide to jump. The bridge across it exists only in one band of w, and the course goes on over a ramp, a lift and a braid of two paths."
 clip = "ascent"
 icon = ExtResource("4_lnafe")
 preview_focus = 0.7000000000000001
 scene_path = "res://ramon/ObstacleCourse/w_gap.tscn"
 extra_launch_labels = PackedStringArray()
 extra_launch_scenes = PackedStringArray()
-control_keys = PackedStringArray("WASD", "SPACE", "RMB")
-control_actions = PackedStringArray("move", "jump", "rotate slice")
-question = "Can a vertical course stay legible once the slice can change?"
-approach = "Bounded tower, tier-coloured back wall as the only HUD."
-finding = "Physics is axis-aligned boxes only: no ramps, every rise is a step."
-benchmark = "Gap 7 m vs 4.59 m jump reach - uncrossable until w changes"
+control_keys = PackedStringArray("WASD", "SPACE", "Q / E")
+control_actions = PackedStringArray("move", "jump", "through w")
+question = "Can moving through w carry a platforming course?"
+approach = "Ground banded in colour along w, so leaving a band shows under your feet."
+finding = "Collision is boxes only, so a ramp is a slope drawn over hidden steps."
+benchmark = "Gap 7 m against a 4.59 m jump, so it cannot be crossed until w changes · bridge at w 5"
 
 [sub_resource type="Resource" id="Resource_d6obk"]
 script = ExtResource("1_i2ljj")
 title = "Portal"
 blurb = "Blast a hole in a wall, and step through to somewhere else"
+maturity = "Prototype"
 duration = "2 min"
-detail = "Two tests. One wall you can shoot openings through anywhere, cumulatively; one chamber of linked openings that carry your momentum across."
+detail = "Two tests. A chamber of linked openings that carry your momentum across, and a wall you can shoot openings through anywhere."
 clip = "portal"
 icon = ExtResource("5_rlsh1")
 preview_focus = 0.5
-scene_path = "res://ramon/Portal/portal_test_1.tscn"
-launch_label = "TEST 1 · WALL"
-extra_launch_labels = PackedStringArray("TEST 2 · PORTALS")
-extra_launch_scenes = PackedStringArray("res://ramon/Portal/portal_test_2.tscn")
+scene_path = "res://ramon/Portal/portal_test_2.tscn"
+launch_label = "TEST 2 · PORTALS"
+extra_launch_labels = PackedStringArray("TEST 1 · WALL")
+extra_launch_scenes = PackedStringArray("res://ramon/Portal/portal_test_1.tscn")
 control_keys = PackedStringArray("LMB", "F", "RMB")
 control_actions = PackedStringArray("shoot / blue portal", "yellow portal", "rotate slice")
 question = "Does Portal's momentum-preserving link survive four dimensions?"
 approach = "Chunked voxel walls cut anywhere; two apertures carrying position, orientation and velocity."
-finding = "Both hold: cuts merge cumulatively, and crossings accelerate 7.7 to 22.2 m/s."
+finding = "Within one slice, yes. Both ends still share a w, and openings are opaque."
 benchmark = "40.5 ms per chunk rebuild · 10,752 tetrahedra · 7.7 → 22.2 m/s over five crossings"
 
 [sub_resource type="Resource" id="Resource_fmw2o"]
@@ -116,8 +119,9 @@ benchmark = "True 4D raycasts against 4D colliders, independent of the camera"
 script = ExtResource("1_i2ljj")
 title = "Voxel Mining"
 blurb = "Destructible geometry by dual contouring in four dimensions"
+maturity = "Prototype"
 duration = "2 min"
-detail = "A rock made of 4D voxels that you can carve into, re-meshed on every hit."
+detail = "A rock made of 4D voxels that you can carve into, re-meshed on every hit. Carve a crater, then step through w and watch it change."
 clip = "voxel_mining"
 icon = ExtResource("7_h1wdl")
 preview_focus = 0.73
@@ -128,13 +132,15 @@ control_keys = PackedStringArray("WASD", "LMB", "Q / E")
 control_actions = PackedStringArray("move", "carve", "through w")
 question = "Can 4D matter be destroyed at interactive rates?"
 approach = "Persistent voxel field, dual contoured, re-meshed per hit."
-finding = "Yes: about 130 ms per carve at room scale, around 58 fps."
-benchmark = "~130 ms per carve at room scale · ~58 fps · 10,752 tetrahedra"
+finding = "Yes at hand-held scale: each hit re-meshes the rock while you watch."
+benchmark = "Not yet timed on this rock · the same carve on the Portal chamber's panels: ~130 ms a hit, ~58 fps"
 
 [sub_resource type="Resource" id="Resource_ph57d"]
 script = ExtResource("1_i2ljj")
 title = "Shrubbery Lab"
 blurb = "A single tree grown in four dimensions, previewed across the slice"
+maturity = "Prototype"
+section = "Lab"
 duration = "90 sec"
 detail = "One tree grown by space colonisation, light enough to render with the projected preview turned on."
 clip = "shrubbery"
@@ -153,9 +159,11 @@ benchmark = "1 tree · combined renderer · plane sharpness 0.2, skewness 0.35"
 [sub_resource type="Resource" id="Resource_b8wcl"]
 script = ExtResource("1_i2ljj")
 title = "Sky Box Clouds"
-blurb = "A sky built from geometry, so it exists in every slice"
+blurb = "Clouds built from 4D solids, so the weather changes from slice to slice"
+maturity = "Prototype"
+section = "Lab"
 duration = "60 sec"
-detail = "A sky built from sliced 4D solids - the cloud deck exists at every w, not only the one you are looking at."
+detail = "A cloud deck made of sliced 4D shapes. It exists at every w, not only the one you are looking at, so turning the slice moves you into different weather."
 clip = "skybox_clouds"
 icon = ExtResource("10_uy7oo")
 preview_focus = 0.0
@@ -173,21 +181,64 @@ benchmark = "24-cell (96 tets) as the workhorse, 600-cell for hero puffs · thre
 script = ExtResource("1_i2ljj")
 title = "Motion Lab"
 blurb = "A creature that walks without a single baked animation"
+maturity = "Greybox"
+section = "Lab"
 duration = "2 min"
-detail = "A quadruped whose gait is solved every frame from IK, with limb count and segments changeable live."
+detail = "A quadruped whose gait is solved every frame from IK, with limb count and segments changeable live. It starts standing still: press 0."
 clip = "creature"
 icon = ExtResource("8_jn372")
 preview_focus = 0.22
 scene_path = "res://sandbox/limb_prototype/limb_prototype_treadmill.tscn"
 extra_launch_labels = PackedStringArray()
 extra_launch_scenes = PackedStringArray()
-control_keys = PackedStringArray("1 – 5", "K / L", "N / M")
-control_actions = PackedStringArray("gait", "limbs", "segments")
+control_keys = PackedStringArray("1 2 4 5", "0", "K / L", "N / M")
+control_actions = PackedStringArray("gait", "start / stop", "limbs", "segments")
 question = "Can a creature animate convincingly with no baked clips at all?"
-approach = "FABRIK limbs, a gait state machine, hip suspension and spine IK, solved per tick."
+approach = "FABRIK limbs, a gait state machine and hip suspension, solved every tick."
 finding = "Limb count and proportions fall out of parameters, so a new creature needs no rig."
-benchmark = "5 gaits · limbs and segments per limb changed live · per-foot ground raycast"
+benchmark = "4 gaits · limbs and segments per limb changed live · per-foot ground raycast"
+
+[sub_resource type="Resource" id="Resource_lofty"]
+script = ExtResource("1_i2ljj")
+title = "Lofted Creatures"
+blurb = "Animals modelled by lofting through 4D, walking on procedural solvers"
+maturity = "Prototype"
+duration = "60 sec"
+detail = "Five chickens, a brachiosaurus and Trym's rigged creature, every one modelled with the loft tool, all walking at once with no baked animation."
+clip = "lofted_creatures"
+icon = ExtResource("8_jn372")
+scene_path = "res://ramon/Model/rigged_creature_ramon.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "RMB", "Q / E")
+control_actions = PackedStringArray("move", "rotate slice", "through w")
+question = "Can one modelling tool make creatures that walk in 4D?"
+approach = "Bodies lofted from balls along a spine; legs and neck moved by IK and gait solvers."
+finding = "Geometry is nearly free; deformation is the whole cost."
+finding_tier = "Measured"
+benchmark = "~25 ms a frame, seven creatures walking · 73,020 tetrahedra drawn in 1.2 ms · one machine, 19 Sep"
+
+[sub_resource type="Resource" id="Resource_penhr"]
+script = ExtResource("1_i2ljj")
+title = "Chicken Pen"
+blurb = "A small 4D world: bring nine loose chickens home"
+maturity = "Playable"
+duration = "about 10 min"
+detail = "A farm with a keeper, a cave with a secret along w, a shooting range and Trym's talk in the cinema. About ten minutes to learn, an hour to see everything."
+clip = "chicken_pen"
+scene_path = "res://ramon/chickenpen/chickenpen.tscn"
+launch_label = "PLAY THE WORLD"
+opens_as_scene = true
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "E / Q", "RMB", "F")
+control_actions = PackedStringArray("move", "through w", "turn the slice", "pick up, talk")
+question = "Can 4D carry a whole game loop, not only a test chamber?"
+approach = "An open farm with a fetch quest, dialogue, mining and a range, all on the one 4D module."
+finding = "A room in 4D needs eight walls, not six, or it opens when the slice turns."
+benchmark = "2.46 ms a frame with 862 meshes and nine animated chickens · RTX 5080, editor build, 28 Sep"
 
 [resource]
 script = ExtResource("10_ajynb")
-entries = Array[ExtResource("1_i2ljj")]([SubResource("Resource_uy7oo"), SubResource("Resource_3f7jf"), SubResource("Resource_snm5f"), SubResource("Resource_d6obk"), SubResource("Resource_fmw2o"), SubResource("Resource_3ffix"), SubResource("Resource_ph57d"), SubResource("Resource_b8wcl"), SubResource("Resource_0k6x8")])
+hero = SubResource("Resource_penhr")
+entries = Array[ExtResource("1_i2ljj")]([SubResource("Resource_uy7oo"), SubResource("Resource_3f7jf"), SubResource("Resource_snm5f"), SubResource("Resource_d6obk"), SubResource("Resource_fmw2o"), SubResource("Resource_3ffix"), SubResource("Resource_ph57d"), SubResource("Resource_b8wcl"), SubResource("Resource_0k6x8"), SubResource("Resource_lofty")])

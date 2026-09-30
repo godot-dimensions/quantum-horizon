@@ -32,6 +32,17 @@ class_name MenuEntry
 		maturity = value
 		emit_changed()
 
+## Which half of the list this sits in. The TOUR is the running order a first-time visitor
+## is walked through; the LAB holds the earlier and rougher experiments, still one click
+## away, listed below the tour so a greybox never sets the tone of a first impression.
+##
+## Only menu_final.gd reads this. Menu2 and the Frontier Map ignore it, so it cannot
+## change either of them.
+@export_enum("Tour", "Lab") var section: String = "Tour":
+	set(value):
+		section = value
+		emit_changed()
+
 ## Roughly how long this takes to see, e.g. "90 sec". Shown next to the maturity
 ## badge and in the row.
 ##
@@ -95,6 +106,19 @@ class_name MenuEntry
 		launch_label = value
 		emit_changed()
 
+## Starts the scene IN PLACE OF the menu instead of on top of it.
+##
+## A prototype normally runs as a child of the root with the menu kept alive underneath,
+## so Esc and H can unwind it losslessly. That breaks a scene that is a place rather than
+## a test: the chicken pen treats itself as the current scene everywhere (its cinema, cave,
+## laptops and range all hang off `current_scene`), and it uses Esc and H itself. So an
+## entry like that is changed to, and it comes back to the menu its own way - the pen
+## through its laptops.
+@export var opens_as_scene: bool = false:
+	set(value):
+		opens_as_scene = value
+		emit_changed()
+
 ## Further scenes this entry can start, each getting its own button beside the
 ## primary one. Parallel arrays, same reasoning as the control strip above.
 ##
@@ -156,6 +180,16 @@ class_name MenuEntry
 @export_multiline var finding: String = "":
 	set(value):
 		finding = value
+		emit_changed()
+
+## How sure the finding is, in the stakeholder deck's own tier words, printed small under
+## the finding so the menu never claims more than the deck does. Nearly every finding here
+## was observed by the person who built it, once, with no naive player involved - the
+## default says exactly that. (A middle dot rather than the deck's comma, because an enum
+## hint splits on commas.)
+@export_enum("Observed while building · n = 1", "Measured", "Not yet tested") var finding_tier: String = "Observed while building · n = 1":
+	set(value):
+		finding_tier = value
 		emit_changed()
 
 ## Measured numbers, as a single line - "130 ms per carve · ~58 fps · 10,752

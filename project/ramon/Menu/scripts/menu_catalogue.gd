@@ -125,6 +125,40 @@ func notice_text() -> String:
 		benchmark_label = value
 		emit_changed()
 
+@export_group("Hero and sections")
+## What the big banner at the top of the list opens (menu_final only). Kept OUT of
+## `entries` on purpose: it is not one of the prototypes in the running order, it is the
+## place they live in, and Menu2 and the Frontier Map - which read only `entries` - never
+## see it. Left empty, the banner falls back to START THE TOUR and its notice.
+@export var hero: MenuEntry = null:
+	set(value):
+		hero = value
+		emit_changed()
+
+## The banner's call to action. The entry's own blurb and duration go underneath it.
+@export var hero_heading: String = "PLAY THE WORLD":
+	set(value):
+		hero_heading = value
+		emit_changed()
+
+## What the banner says instead when the menu was opened from a laptop inside that world,
+## where it takes you back rather than starting a second copy.
+@export var hero_return_heading: String = "BACK TO THE PEN":
+	set(value):
+		hero_return_heading = value
+		emit_changed()
+
+@export var hero_return_subtitle: String = "Carry on where you left off":
+	set(value):
+		hero_return_subtitle = value
+		emit_changed()
+
+## Heading over the entries whose `section` is Lab.
+@export var lab_heading: String = "THE LAB  ·  EARLIER, ROUGHER EXPERIMENTS":
+	set(value):
+		lab_heading = value
+		emit_changed()
+
 
 func subtitle_text() -> String:
 	return tour_subtitle.replace("{count}", str(entries.size()))

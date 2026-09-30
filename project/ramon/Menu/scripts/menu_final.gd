@@ -207,9 +207,21 @@ const LOOP_FPS: float = 12.0
 const RETURN_KEY: Key = KEY_ESCAPE
 const PROTOTYPE_RETURN_KEY: Key = KEY_H
 
-var _selected: int = 0
+## `_selected` is an index into `catalogue.entries`, or HERO for the banner above the list
+## (`catalogue.hero`, which is deliberately not one of the entries). Everything that reads
+## the selection goes through _entry() / _selected_entry() so the two cannot be confused.
+const HERO: int = -1
+
+## Starts on the banner, so the first thing the detail pane describes is the world rather
+## than the first test chamber. Inside a laptop trip rebuild() moves it to the first tour
+## entry instead, since the banner there only takes you back.
+var _selected: int = HERO
 var _played: Array[bool] = []
+## Indexed by ENTRY index, not by screen position - the tour and the lab are drawn in two
+## groups, so the two orders differ. `_order` is the screen order, top to bottom.
 var _rows: Array[PanelContainer] = []
+var _order: Array[int] = []
+var _hero_panel: PanelContainer = null
 var _shell: Control = null
 ## The banner's reference-space host, and the content margin beneath it. Both
 ## are re-fitted on every resize so the bar matches the Frontier Map's exactly.
@@ -326,9 +338,58 @@ func _connect_resource(resource: Resource) -> void:
 func _connect_entries() -> void:
 	if catalogue == null:
 		return
-	for entry in catalogue.entries:
+	var all: Array[MenuEntry] = catalogue.entries.duplicate()
+	if catalogue.hero != null:
+		all.append(catalogue.hero)
+	for entry in all:
 		if entry != null and not entry.changed.is_connected(_on_entry_changed):
 			entry.changed.connect(_on_entry_changed)
+
+
+## The entry behind an index: HERO is the banner's `catalogue.hero`, anything else an
+## index into `catalogue.entries`. Null for anything out of range.
+func _entry(index: int) -> MenuEntry:
+	if catalogue == null:
+		return null
+	if index == HERO:
+		return catalogue.hero
+	if index < 0 or index >= catalogue.entries.size():
+		return null
+	return catalogue.entries[index]
+
+
+func _selected_entry() -> MenuEntry:
+	return _entry(_selected)
+
+
+## Entry indices in the order they are drawn: the tour first, then the lab, each keeping
+## the catalogue's own order - so "order is the curriculum" still holds inside each half.
+func _display_order() -> Array[int]:
+	var tour: Array[int] = []
+	var lab: Array[int] = []
+	for i in catalogue.entries.size():
+		var entry: MenuEntry = catalogue.entries[i]
+		if entry != null and entry.section == "Lab":
+			lab.append(i)
+		else:
+			tour.append(i)
+	tour.append_array(lab)
+	return tour
+
+
+## The laptop trip that opened this menu from inside the chicken pen, or null.
+##
+## pen_laptop_trip_4d.gd parks the game, marks the root with `laptop_trip` and stays at
+## the root as "LaptopTrip" until you go home; its come_back() is the way back. Duck
+## typed, because the menu must not depend on the pen's scripts.
+func _laptop_trip() -> Node:
+	if Engine.is_editor_hint() or not is_inside_tree():
+		return null
+	var root: Window = get_tree().root
+	if not root.has_meta(&"laptop_trip"):
+		return null
+	var trip: Node = root.get_node_or_null(^"LaptopTrip")
+	return trip if trip != null and trip.has_method("come_back") else null
 
 
 func move_selected_up() -> void:
@@ -340,7 +401,8 @@ func move_selected_down() -> void:
 
 
 func _move_selected(delta: int) -> void:
-	if catalogue == null:
+	# The banner is not in the running order, so there is nothing to move.
+	if catalogue == null or _selected == HERO:
 		return
 	var to: int = _selected + delta
 	if to < 0 or to >= catalogue.entries.size():
@@ -416,9 +478,7 @@ func _on_entry_changed() -> void:
 func _push_focus_to_entry() -> void:
 	if not is_inside_tree() or catalogue == null:
 		return
-	if _selected < 0 or _selected >= catalogue.entries.size():
-		return
-	var entry: MenuEntry = catalogue.entries[_selected]
+	var entry: MenuEntry = _selected_entry()
 	if entry == null or is_equal_approx(entry.preview_focus, preview_focus_live):
 		return
 	entry.preview_focus = preview_focus_live
@@ -428,9 +488,7 @@ func _push_focus_to_entry() -> void:
 ## Pulls the selected entry's crop back onto the slider, so selecting a
 ## different prototype moves the handle to that one's value.
 func _pull_focus_from_entry() -> void:
-	if catalogue == null or _selected >= catalogue.entries.size():
-		return
-	var entry: MenuEntry = catalogue.entries[_selected]
+	var entry: MenuEntry = _selected_entry()
 	if entry == null:
 		return
 	var focus: float = entry.preview_focus if entry.preview_focus >= 0.0 else style.preview_focus_default
@@ -442,9 +500,7 @@ func _pull_focus_from_entry() -> void:
 func _refresh_details() -> void:
 	if catalogue == null or _detail_title == null:
 		return
-	if _selected >= catalogue.entries.size():
-		return
-	var entry: MenuEntry = catalogue.entries[_selected]
+	var entry: MenuEntry = _selected_entry()
 	if entry == null:
 		return
 	_apply_entry_text(entry)
@@ -482,11 +538,19 @@ func rebuild() -> void:
 	if _shell != null and is_instance_valid(_shell):
 		_shell.queue_free()
 	_rows.clear()
+	_rows.resize(catalogue.entries.size())
+	_order = _display_order()
+	_hero_panel = null
 	_preview_atlas = null
 
 	_played.resize(catalogue.entries.size())
 	if _played.count(true) == 0:
 		_played.fill(false)
+
+	# The banner is only a way back inside a laptop trip, so there the pane starts on the
+	# first prototype instead; and with no hero configured there is nothing to start on.
+	if _selected == HERO and (catalogue.hero == null or _laptop_trip() != null):
+		_selected = _order[0] if not _order.is_empty() else 0
 
 	_shell = Control.new()
 	_shell.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -667,6 +731,11 @@ func _apply_window_mode() -> void:
 	# mode and size alone (pen_laptop_trip_4d.gd puts the scaling above back on return).
 	if get_tree().root.has_meta(&"laptop_trip"):
 		return
+	# Nor when a runner drives it (`--script`): a test has no business filling the author's
+	# screen. The same check pen_fullscreen_4d.gd makes, for the same reason.
+	for argument in OS.get_cmdline_args():
+		if String(argument) == "--script" or String(argument) == "-s":
+			return
 
 	match WINDOW_MODE:
 		WindowMode.BORDERLESS_FULLSCREEN:
@@ -681,7 +750,62 @@ func _apply_window_mode() -> void:
 			window.position = (screen_size - WINDOWED_SIZE) / 2
 
 
+## Hands the window's scaling back to the PROJECT's own settings, before a scene that
+## owns the window replaces this menu (an `opens_as_scene` entry - the chicken pen).
+##
+## _apply_window_mode() switched the window to canvas-items scaling at 1920x1080 so this
+## layout fits any screen, and nothing else puts that back: the pen's HUD, laid out for
+## the project's unscaled window, came back scaled off the screen the first time a menu
+## had changed it (pen_laptop_trip_4d.gd documents the same bug). Read from
+## ProjectSettings rather than remembered at _ready, because arriving here from the
+## Frontier Map the window already carries this menu's scaling.
+func _restore_project_scaling() -> void:
+	var window := get_window()
+	match str(ProjectSettings.get_setting("display/window/stretch/mode", "disabled")):
+		"canvas_items":
+			window.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+		"viewport":
+			window.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
+		_:
+			window.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+	match str(ProjectSettings.get_setting("display/window/stretch/aspect", "keep")):
+		"ignore":
+			window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_IGNORE
+		"keep_width":
+			window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP_WIDTH
+		"keep_height":
+			window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP_HEIGHT
+		"expand":
+			window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
+		_:
+			window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+	window.content_scale_size = Vector2i(
+		int(ProjectSettings.get_setting("display/window/size/viewport_width", 1152)),
+		int(ProjectSettings.get_setting("display/window/size/viewport_height", 648)))
+	window.content_scale_factor = float(ProjectSettings.get_setting("display/window/stretch/scale", 1.0))
+
+
+## STOPGAP for a 4D-module bug, reported to Aaron on 30 Sept 2026. Remove once his fix lands.
+##
+## When a Cross-section (or other Godot-3D) rendering engine lets go of the root Window - its
+## last Camera4D leaving, as when a prototype closes or a laptop parks the pen, or another
+## engine taking over - its cleanup sets the root's World3D to null
+## (godot_3d_rendering_engine_4d.cpp, cleanup_for_viewport). The root has no parent to fall
+## back on, so it is left with no 3D world at all. The Combined engine then adds its
+## SubViewports under it, and Godot's Viewport dereferences the missing world: a hard crash,
+## every time a Combined scene (Voxel Mining, Shrubbery Lab, Lofted Creatures) followed a
+## Cross-section one. Handing the root a fresh, empty World3D while the menu is up - and
+## again just before a launch - removes the crash; the next engine replaces it as usual.
+## Measured with _repro_sequence_runner.gd: six mixed launches in a row survive with it,
+## the second one crashes without it.
+static func ensure_root_world_3d(tree: SceneTree) -> void:
+	if tree != null and tree.root != null and tree.root.world_3d == null:
+		tree.root.world_3d = World3D.new()
+
+
 func _process(delta: float) -> void:
+	if not Engine.is_editor_hint():
+		ensure_root_world_3d(get_tree())
 	if _running != null or _preview_atlas == null:
 		return
 	# Sprite-sheet fallback playback: one PNG, an AtlasTexture region walking
@@ -719,9 +843,19 @@ func _build_list_column() -> Control:
 	rows.add_theme_constant_override("separation", style.space(1))
 	scroll.add_child(rows)
 
-	for i in catalogue.entries.size():
+	# Tour first, then the lab under its own heading. Rows are stored by entry index, so
+	# selection, played dots and auto-advance do not care which group a row sits in.
+	var lab_started: bool = false
+	for i in _order:
+		var entry: MenuEntry = catalogue.entries[i]
+		if not lab_started and entry != null and entry.section == "Lab":
+			lab_started = true
+			var gap := Control.new()
+			gap.custom_minimum_size.y = style.space(1.5)
+			rows.add_child(gap)
+			rows.add_child(_label(catalogue.lab_heading, MenuStyle.MICRO, style.text_dim, true))
 		var row := _build_row(i)
-		_rows.append(row)
+		_rows[i] = row
 		rows.add_child(row)
 
 	# States the interaction rather than leaving it to be guessed at.
@@ -782,23 +916,57 @@ func _on_frontier_map() -> void:
 ## Deliberately much larger than a row: it is the difference between "a menu of
 ## tech demos" and "a thing somebody sequenced for you", and if it reads as just
 ## another list item the whole argument collapses.
+##
+## It opens the WORLD - `catalogue.hero`, the chicken pen - where the prototypes' ideas
+## come together, and the list beneath stays the way to jump to one of them. That answers
+## the select-or-sequence question without a tour system, which was never built: the
+## banner used to promise one and then show a COMING SOON notice, and still does when no
+## hero is configured. Opened from a laptop inside the pen it reads BACK TO THE PEN and
+## takes you home instead of starting a second copy.
 func _build_hero() -> Control:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _stylebox(style.accent))
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	panel.gui_input.connect(_on_hero_input)
+	_hero_panel = panel
 
 	var margin := MarginContainer.new()
 	_set_margins(margin, style.space(2.5), style.space(2))
 	panel.add_child(margin)
 
+	var heading: String = catalogue.tour_title
+	var subtitle: String = catalogue.subtitle_text()
+	var hero: MenuEntry = catalogue.hero
+	if hero != null:
+		if _laptop_trip() != null:
+			heading = catalogue.hero_return_heading
+			subtitle = catalogue.hero_return_subtitle
+		else:
+			heading = catalogue.hero_heading
+			subtitle = hero.blurb
+			if hero.duration != "":
+				subtitle = "%s  ·  %s" % [hero.blurb, hero.duration]
+
 	var text := VBoxContainer.new()
 	text.add_theme_constant_override("separation", style.space(0.25))
 	margin.add_child(text)
-	text.add_child(_label(catalogue.tour_title, MenuStyle.TITLE, style.text, false))
-	text.add_child(_label(catalogue.subtitle_text(), MenuStyle.BODY, Color(0.78, 0.85, 0.95), false))
+	text.add_child(_label(heading, MenuStyle.TITLE, style.text, false))
+	var line := _label(subtitle, MenuStyle.BODY, Color(0.78, 0.85, 0.95), false)
+	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text.add_child(line)
 	return panel
+
+
+## Marks the banner selected the way a row is marked: a lighter fill and the selection bar.
+func _style_hero(chosen: bool) -> void:
+	if _hero_panel == null:
+		return
+	var box := _stylebox(style.accent.lightened(0.12) if chosen else style.accent)
+	if chosen and style.selection_bar > 0:
+		box.border_color = style.text
+		box.border_width_left = style.selection_bar
+	_hero_panel.add_theme_stylebox_override("panel", box)
 
 
 func _build_row(index: int) -> PanelContainer:
@@ -1035,6 +1203,9 @@ func _build_launch_buttons(entry: MenuEntry) -> void:
 		_launch_row.remove_child(child)
 		child.queue_free()
 	_launch_targets = entry.launch_targets(catalogue.launch_label)
+	# From a laptop, the world's own entry is a way home, never a second copy of it.
+	if entry == catalogue.hero and _laptop_trip() != null:
+		_launch_targets = [{"label": catalogue.hero_return_heading, "path": ""}]
 	for i in _launch_targets.size():
 		var button := _make_launch_button(str(_launch_targets[i]["label"]))
 		# Bound by index rather than by path so the handler runs the same
@@ -1108,10 +1279,12 @@ func _build_info(entry: MenuEntry) -> void:
 
 	_add_info_cell(catalogue.question_label, entry.question)
 	_add_info_cell(catalogue.approach_label, entry.approach)
-	_add_info_cell(catalogue.finding_label, entry.finding)
+	_add_info_cell(catalogue.finding_label, entry.finding, entry.finding_tier)
 
 
-func _add_info_cell(label_text: String, body_text: String) -> void:
+## `tier` is printed small under the body - the finding's evidence tier, so the menu never
+## claims more certainty than the stakeholder deck does for the same sentence.
+func _add_info_cell(label_text: String, body_text: String, tier: String = "") -> void:
 	if body_text == "":
 		return
 	var cell := VBoxContainer.new()
@@ -1125,6 +1298,13 @@ func _add_info_cell(label_text: String, body_text: String) -> void:
 	body.custom_minimum_size.x = style.scaled(150)
 	cell.add_child(body)
 
+	if tier != "":
+		# Capitals like every other label here, except the sample size, which the deck
+		# writes as a lowercase n.
+		var tag := _label(tier.to_upper().replace("N = ", "n = "), MenuStyle.MICRO, style.text_faint, true)
+		tag.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		cell.add_child(tag)
+
 	_info_host.add_child(cell)
 
 
@@ -1133,13 +1313,22 @@ func _add_info_cell(label_text: String, body_text: String) -> void:
 # --------------------------------------------------------------------------
 
 func _select(index: int) -> void:
-	_selected = clampi(index, 0, catalogue.entries.size() - 1)
-	# Kept in step so the inspector dropdown always names what is on screen,
-	# including when selection moves from a click or from auto-advance.
-	_preview_entry = _selected
-	var entry: MenuEntry = catalogue.entries[_selected]
+	if index == HERO and catalogue.hero != null:
+		_selected = HERO
+	else:
+		_selected = clampi(index, 0, catalogue.entries.size() - 1)
+		# Kept in step so the inspector dropdown always names what is on screen,
+		# including when selection moves from a click or from auto-advance. (The
+		# banner has no place in that dropdown, so selecting it leaves it alone.)
+		_preview_entry = _selected
+	var entry: MenuEntry = _selected_entry()
+	if entry == null:
+		return
 
+	_style_hero(_selected == HERO)
 	for i in _rows.size():
+		if _rows[i] == null:
+			continue
 		var chosen: bool = i == _selected
 		var box := _stylebox(style.surface_raised if chosen else style.surface)
 		if chosen and style.selection_bar > 0:
@@ -1211,7 +1400,8 @@ func _load_preview(entry: MenuEntry) -> void:
 
 	_preview_icon.texture = entry.icon
 	_preview_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_preview_caption.text = "NO CAPTURE YET  ·  RUN _capture_clip.gd FOR THIS ONE"
+	# Seen by stakeholders, so it says what is missing rather than which tool makes it.
+	_preview_caption.text = "NO RECORDING YET"
 
 
 ## Pushes the pane's actual pixel size to the shader. Without this the SDF would
@@ -1250,10 +1440,9 @@ func _layout_video() -> void:
 		size = Vector2(frame_size.y * aspect, frame_size.y)
 
 	var focus: float = style.preview_focus_default
-	if catalogue != null and _selected < catalogue.entries.size():
-		var entry: MenuEntry = catalogue.entries[_selected]
-		if entry != null and entry.preview_focus >= 0.0:
-			focus = entry.preview_focus
+	var entry: MenuEntry = _selected_entry()
+	if entry != null and entry.preview_focus >= 0.0:
+		focus = entry.preview_focus
 
 	var overflow: Vector2 = size - frame_size
 	var offset := Vector2(-overflow.x * 0.5, -overflow.y * clampf(focus, 0.0, 1.0))
@@ -1303,7 +1492,7 @@ func _load_loose_texture(path: String) -> Texture2D:
 
 
 func _on_row_hover(index: int, entered: bool) -> void:
-	if index == _selected or _running != null:
+	if index == _selected or _running != null or _rows[index] == null:
 		return
 	_rows[index].add_theme_stylebox_override("panel", _stylebox(style.surface_raised if entered else style.surface))
 
@@ -1324,11 +1513,27 @@ func _on_row_input(event: InputEvent, index: int) -> void:
 			_select(index)
 
 
+## The banner behaves like a row - click to show it in the pane, again to go - so the
+## world can be read about before committing ten minutes to it. Two exceptions: with no
+## hero configured it shows the old COMING SOON notice, and from a laptop it takes you
+## home on the first click, because going back needs no description.
 func _on_hero_input(event: InputEvent) -> void:
-	if _running != null or _launching or Engine.is_editor_hint():
+	if _running != null or _launching:
 		return
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
+		return
+	if Engine.is_editor_hint():
+		if catalogue.hero != null:
+			_select(HERO)
+		return
+	if catalogue.hero == null:
 		_show_notice()
+		return
+	if _selected == HERO or _laptop_trip() != null:
+		_select(HERO)
+		_on_launch_pressed()
+	else:
+		_select(HERO)
 
 
 ## _input rather than _unhandled_input, so the return keys reach the menu even
@@ -1366,11 +1571,25 @@ func _input(event: InputEvent) -> void:
 
 	match key.keycode:
 		KEY_DOWN:
-			_select(_selected + 1)
+			_step_selection(1)
 		KEY_UP:
-			_select(_selected - 1)
+			_step_selection(-1)
 		KEY_ENTER, KEY_KP_ENTER:
 			_on_launch_pressed()
+
+
+## Up and down walk the rows in SCREEN order - the banner, then the tour, then the lab -
+## not in catalogue order, which the two groups no longer match.
+func _step_selection(delta: int) -> void:
+	var position_now: int = -1 if _selected == HERO else _order.find(_selected)
+	var next: int = position_now + delta
+	if next < 0:
+		if catalogue.hero != null:
+			_select(HERO)
+		return
+	if next >= _order.size():
+		return
+	_select(_order[next])
 
 
 # --------------------------------------------------------------------------
@@ -1389,7 +1608,9 @@ func _input(event: InputEvent) -> void:
 ## identifies itself by current_scene.scene_file_path - MiegakureLook's level
 ## base does - will not know which level it is and will not auto-advance.
 func _launch(index: int, target: int = 0) -> void:
-	var entry: MenuEntry = catalogue.entries[index]
+	var entry: MenuEntry = _entry(index)
+	if entry == null:
+		return
 	var targets: Array[Dictionary] = entry.launch_targets(catalogue.launch_label)
 	if targets.is_empty():
 		_detail_path.text = "no scene wired yet - nothing to launch"
@@ -1402,6 +1623,8 @@ func _launch(index: int, target: int = 0) -> void:
 		return
 
 	_launching = true
+	# See ensure_root_world_3d(): the scene about to arrive may use the Combined engine.
+	ensure_root_world_3d(get_tree())
 	_preview_video.stop()
 	# The overlay names the SCENE when an entry has more than one, because
 	# "PORTAL" over a loading bar does not say which of the two is coming.
@@ -1448,6 +1671,16 @@ func _launch(index: int, target: int = 0) -> void:
 		push_error("menu_final: could not load %s" % path)
 		_hide_overlay()
 		_launching = false
+		return
+
+	# A place rather than a test (the chicken pen): it REPLACES the menu instead of
+	# running on top of it, so it is the current scene its own code expects, and it owns
+	# Esc and H. The window's scaling goes back to the project's first, or the pen's HUD
+	# is laid out on this menu's 1920x1080 canvas. The overlay stays up until the menu is
+	# freed at the end of the frame, so there is no flash of the list in between.
+	if entry.opens_as_scene:
+		_restore_project_scaling()
+		get_tree().change_scene_to_packed(packed)
 		return
 
 	_running = packed.instantiate()
@@ -1527,21 +1760,34 @@ func _close_running() -> void:
 	if next >= 0:
 		_select(next)
 	else:
-		_load_preview(catalogue.entries[_selected])
+		_load_preview(_selected_entry())
 
 
-## The next unplayed entry after `from`, wrapping. -1 when everything is played.
+## The next unplayed TOUR entry after `from`, in screen order, wrapping. -1 when the whole
+## tour is played. The lab is left out on purpose: it is there to be chosen, not steered
+## into, and finishing the tour should leave you where you were.
 func _next_unplayed(from: int) -> int:
-	var count: int = catalogue.entries.size()
-	for step in range(1, count + 1):
-		var candidate: int = (from + step) % count
+	var tour: Array[int] = []
+	for i in _order:
+		if catalogue.entries[i] != null and catalogue.entries[i].section != "Lab":
+			tour.append(i)
+	if tour.is_empty():
+		return -1
+	# From the banner or a lab entry, find() gives -1, which starts the search at the top.
+	var start: int = tour.find(from)
+	for step in range(1, tour.size() + 1):
+		var candidate: int = tour[(start + step) % tour.size()]
 		if candidate < _played.size() and not _played[candidate]:
 			return candidate
 	return -1
 
 
 func _mark_played(index: int) -> void:
+	if index < 0 or index >= _played.size():
+		return
 	_played[index] = true
+	if _rows[index] == null:
+		return
 	var dot := _rows[index].find_child("PlayedDot", true, false) as ColorRect
 	if dot != null:
 		dot.color = style.positive
@@ -1554,6 +1800,12 @@ func _on_launch_pressed(target: int = 0) -> void:
 	# people do when a screen looks stuck.
 	if _running != null or _launching or Engine.is_editor_hint():
 		return
+	# From a laptop the banner - and its entry's launch button - is the way home.
+	if _selected == HERO:
+		var trip: Node = _laptop_trip()
+		if trip != null:
+			trip.call("come_back")
+			return
 	_launch(_selected, target)
 
 

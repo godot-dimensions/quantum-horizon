@@ -5,7 +5,7 @@ extends CanvasLayer
 ##
 ## THE RANGE TRIP'S TRICK (pen_range_trip_4d.gd): the current scene - the pen, with the cave
 ## or the cinema inside it if that is where the laptop was - is taken out of the tree and
-## held, not freed, and Menu2 becomes the current scene. Menu2's toggle to the Frontier Map
+## held, not freed, and the menu (menu_final) becomes the current scene. Its toggle to the Frontier Map
 ## and back is an ordinary change of scene; it frees only the current scene, which is the
 ## menu, so the parked game is untouched however often you switch.
 ##
@@ -19,7 +19,7 @@ extends CanvasLayer
 ##
 ## AND IT PUTS BACK WHAT THE MENUS CHANGE AROUND THE GAME (Ramon, 29 Sept: "after I return
 ## from the laptop ... the cave is browner, and no HUD"). Two things outlive a menu:
-##   - The window. Menu2 sets its own content scale (canvas items, 1920x1080, expand) and
+##   - The window. The menu sets its own content scale (canvas items, 1920x1080, expand) and
 ##     goes borderless fullscreen, and nothing set them back - the HUD, laid out for the
 ##     game's own window, came back scaled off the screen, the dial with it.
 ##   - The environment. The pen and the cave (and the cinema) each carry a
@@ -65,7 +65,7 @@ func _process(_delta: float) -> void:
 
 
 ## A prototype launched from the menu runs on top of it, the menu still current underneath:
-## Menu2 holds it in `_running`, the Frontier Map in its launcher. The button is not offered
+## The menu holds it in `_running`, the Frontier Map in its launcher. The button is not offered
 ## over one - Escape there closes the prototype, as the menus have always done.
 func _prototype_running() -> bool:
 	var here: Node = get_tree().current_scene
@@ -99,7 +99,7 @@ func _swap(menu_path: String) -> void:
 	_pen = tree.current_scene
 	_window = _window_state()
 	_environment = _environment_in_use(_pen)
-	# Tells Menu2 not to take over the window's mode and size - only its scaling, which this
+	# Tells the menu not to take over the window's mode and size - only its scaling, which this
 	# puts back.
 	tree.root.set_meta(&"laptop_trip", true)
 	tree.root.remove_child(_pen)

@@ -5,9 +5,11 @@ extends SceneTree
 ##
 ## THREE TRIPS, ONE FOR EACH LAPTOP - the cave's table, Trym's desk in the pen (Trym's talk
 ## switched off, standing in for his having left it) and the cinema's stand. Each: the
-## laptop offers F; F takes you to Menu2 with the game parked; the way home is in its top
-## bar; Escape asks, Escape again stays; the toggle to the Frontier Map keeps the way home;
-## Escape there asks and Enter brings you back. And coming back, everything is as it was
+## laptop offers F; F takes you to the menu (menu_final) with the game parked, its banner
+## reading BACK TO THE PEN; the way home is in its top bar; Escape asks, Escape again stays;
+## the toggle to the Frontier Map keeps the way home; Escape there asks and Enter brings you
+## back. At Trym's desk the way back is the other one instead: EXPLORE FREELY back to the
+## menu, and its banner. And coming back, everything is as it was
 ## (Ramon, 29 Sept: "the cave is browner when you return, and no HUD ... make sure it's
 ## also fixed at the pen laptop and theatre ... make it remember states like previous
 ## things collected, mined"): the window, the light (the same view comes out the same
@@ -20,6 +22,7 @@ extends SceneTree
 ## Windowed, it saves res://smoke_test_output/laptop_<n>_<what>.png.
 
 const Trip := preload("res://ramon/chickenpen/scripts/pen_laptop_trip_4d.gd")
+const MENU := "res://ramon/menu_final.tscn"
 
 var _room: Node
 var _cave: Node4D
@@ -154,7 +157,8 @@ func _run_cycle() -> bool:
 		1:
 			if _t > 1.2:
 				var here: Node = current_scene
-				_check("%s: F opens Menu2" % _where, here != null and here.scene_file_path == "res://ramon/Menu2.tscn", here.scene_file_path if here != null else "none")
+				_check("%s: F opens the menu" % _where, here != null and here.scene_file_path == MENU, here.scene_file_path if here != null else "none")
+				_check("%s: its banner offers the way back, not a second pen" % _where, _banner_text(here) == "BACK TO THE PEN", _banner_text(here))
 				_check("%s: the game parked, not freed" % _where, is_instance_valid(_room) and not _room.is_inside_tree())
 				var home: Button = _trip().get("_home") if _trip() != null else null
 				_check("%s: the way home in the top bar" % _where, home != null and home.visible and home.position.y < 90.0)
@@ -171,7 +175,7 @@ func _run_cycle() -> bool:
 				_cycle = 3; _t = 0.0
 		3:
 			if _t > 0.4:
-				_check("%s: Escape again stays" % _where, not bool(_trip().call("is_asking")) and current_scene.scene_file_path == "res://ramon/Menu2.tscn")
+				_check("%s: Escape again stays" % _where, not bool(_trip().call("is_asking")) and current_scene.scene_file_path == MENU)
 				current_scene.call("_on_frontier_map")
 				_cycle = 4; _t = 0.0
 		4:
@@ -180,8 +184,12 @@ func _run_cycle() -> bool:
 					current_scene.scene_file_path == "res://ramon/FrontierMap.tscn" and (_trip().get("_home") as Button).visible)
 				if _where == "cave":
 					_save("frontier")
-				_key(KEY_ESCAPE)
-				_cycle = 5; _t = 0.0
+				if _where == "pen":
+					current_scene.call("_on_explore_freely")
+					_cycle = 10; _t = 0.0
+				else:
+					_key(KEY_ESCAPE)
+					_cycle = 5; _t = 0.0
 		5:
 			if _t > 0.4:
 				_check("%s: Escape asks on the map as well" % _where, bool(_trip().call("is_asking")))
@@ -215,7 +223,28 @@ func _run_cycle() -> bool:
 				_save("%s_after" % _where)
 				_cycle = -1
 				return true
+		10:
+			if _t > 1.5:
+				_check("%s: EXPLORE FREELY comes back to the menu, the way home still there" % _where,
+					current_scene.scene_file_path == MENU and (_trip().get("_home") as Button).visible)
+				_check("%s: and its banner still offers the way back" % _where, _banner_text(current_scene) == "BACK TO THE PEN", _banner_text(current_scene))
+				_save("%s_menu_again" % _where)
+				# The banner, clicked: the way home that does not ask, because it is the question.
+				var click := InputEventMouseButton.new()
+				click.button_index = MOUSE_BUTTON_LEFT
+				click.pressed = true
+				current_scene.call("_on_hero_input", click)
+				_cycle = 6; _t = 0.0
 	return false
+
+
+## The first line of the menu's banner, or "" when there is none.
+func _banner_text(menu: Node) -> String:
+	var panel: Node = menu.get("_hero_panel") if menu != null else null
+	if panel == null:
+		return ""
+	var labels: Array[Node] = panel.find_children("*", "Label", true, false)
+	return (labels[0] as Label).text if not labels.is_empty() else ""
 
 
 func _process(d: float) -> bool:

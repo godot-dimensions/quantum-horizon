@@ -84,6 +84,12 @@ func launch(path: String) -> bool:
 	progress_changed.emit(0.0)
 
 	var tree: SceneTree = _host.get_tree()
+	# STOPGAP for a 4D-module bug reported to Aaron on 30 Sept 2026: after a Cross-section
+	# scene has let go of the root Window it has no World3D, and a Combined scene launched
+	# then crashes the engine. menu_final.gd's ensure_root_world_3d() explains it at length;
+	# this is the same one-line guard for the Frontier Map, which launches through here.
+	if tree.root.world_3d == null:
+		tree.root.world_3d = World3D.new()
 	# TWO frames, not one. Showing an overlay only QUEUES a redraw; the first
 	# frame after this is when it reaches the screen. Blocking on the load before
 	# that gives the frozen click the overlay exists to remove.

@@ -1,7 +1,7 @@
 extends Node4D
 
-## A laptop you can use: stand at it, F, and you are at the prototypes menu - Menu2, with its
-## toggle to the Frontier Map - until Escape brings you back (pen_laptop_trip_4d.gd). One of
+## A laptop you can use: stand at it, F, and you are at the prototypes menu - menu_final, with
+## its toggle to the Frontier Map - until Escape brings you back (pen_laptop_trip_4d.gd). One of
 ## these at each laptop in the game: Trym's desk in the pen, the research table in the cave,
 ## the stand by the cinema's podium (Ramon, 29 Sept: "laptops will make you enter the menu2
 ## ... this menu should appear for all laptops in all scenes").
@@ -26,7 +26,7 @@ const Trip := preload("res://ramon/chickenpen/scripts/pen_laptop_trip_4d.gd")
 @export_range(0.3, 4.0, 0.1) var reach: float = 1.4
 @export_range(0.2, 4.0, 0.1) var reach_w: float = 1.0
 @export var prompt: String = "use laptop"
-@export_file("*.tscn") var menu_path: String = "res://ramon/Menu2.tscn"
+@export_file("*.tscn") var menu_path: String = "res://ramon/menu_final.tscn"
 
 var _player: Node4D
 var _camera: Camera4D
