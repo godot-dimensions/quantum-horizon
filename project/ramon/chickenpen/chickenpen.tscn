@@ -1,4 +1,4 @@
-[gd_scene load_steps=732 format=3 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=733 format=3 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -77,6 +77,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_scenery_release_4d.gd" id="scenery_release"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_dream_wake_4d.gd" id="dream_wake"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_laptop_4d.gd" id="laptop"]
+[ext_resource type="Script" path="res://ramon/chickenpen/flock/pen_flock_4d.gd" id="pen_flock"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 shader_parameter/horizon_color = Color(0.98, 0.71, 0.35, 1)
@@ -4141,6 +4142,9 @@ mesh = SubResource("post_mesh")
 position = Vector4(-2, 1.1, 9, 2.4)
 material_override = SubResource("post_far")
 mesh = SubResource("post_mesh")
+
+[node name="Flock" type="Node4D" parent="World"]
+script = ExtResource("pen_flock")
 
 [node name="Chickens" type="Node4D" parent="."]
 script = ExtResource("pen_chickens")
