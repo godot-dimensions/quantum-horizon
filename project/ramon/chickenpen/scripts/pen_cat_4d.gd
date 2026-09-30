@@ -27,6 +27,13 @@ extends Node4D
 const RIG := preload("res://ramon/chickenpen/scripts/loft_rig_4d.gd")
 const BALL := preload("res://ramon/chickenpen/scripts/loft_ball_4d.gd")
 const WALKER := preload("res://ramon/chickenpen/scripts/strider_walker.gd")
+const EAR_PINK := Color(0.85, 0.52, 0.58)
+const NOSE := Color(0.62, 0.34, 0.40)
+const PUPIL := Color(0.02, 0.02, 0.02)
+## Sides round each cross-section, for the build AND for the walker's rebuild. The walker's
+## own default is 6, which made the cat a hexagonal slab; the pieces move rigidly, so the
+## extra tetrahedra cost a little video memory and no frame time.
+const SIDES := 10
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
 
@@ -42,8 +49,9 @@ const WALKER := preload("res://ramon/chickenpen/scripts/strider_walker.gd")
 ## planted feet. At the walker's default of 1.6 this animal crawled - measured at under a
 ## tenth of a unit per second, which is a body length every ten seconds.
 @export_range(0.5, 20.0, 0.1) var pace: float = 6.0
-@export_range(0.05, 4.0, 0.05) var stride_length: float = 0.42
-@export_range(0.02, 2.0, 0.02) var step_height: float = 0.11
+## Scaled with the legs when they were shortened (0.42 and 0.11 on the longer ones).
+@export_range(0.05, 4.0, 0.05) var stride_length: float = 0.36
+@export_range(0.02, 2.0, 0.02) var step_height: float = 0.1
 @export_range(0.0, 0.3, 0.005) var body_bob: float = 0.02
 ## How far it strays from where it was put, and how sharply it can turn.
 @export_range(0.5, 20.0, 0.5) var roam_radius: float = 5.0
@@ -108,6 +116,9 @@ const WALKER := preload("res://ramon/chickenpen/scripts/strider_walker.gd")
 enum Mood { WANDER, TO_CRATE, JUMP, SIT, FLEE, CARRIED, THROWN, TO_PERCH, TO_DEN, INSIDE }
 
 var _walker: Node4D
+var _hide: Node4D
+var _face: Array[Node4D] = []
+var _face_rest: Array[Vector4] = []
 var _crate: Node4D
 var _perch: Node4D
 var _den: Node4D
@@ -164,6 +175,8 @@ func _later() -> void:
 func rebuild() -> void:
 	for child in get_children():
 		child.free()
+	_face.clear()
+	_face_rest.clear()
 	var u: float = length
 
 	var hide := MeshInstance4D.new()
@@ -173,21 +186,30 @@ func rebuild() -> void:
 	coat.albedo_color = fur
 	hide.material_override = coat
 	add_child(hide)
-	hide.set("profile_sides", 8)
+	hide.set("profile_sides", SIDES)
 	hide.set("profile_rings", 3)
 	# Off before any ball goes in, or each one re-lofts the whole animal as it is added.
 	hide.set("live_rebuild", false)
 	_own(hide)
+	_hide = hide
 
 	# Spine, nose to rump, as DIRECT children of the rig in order. Not nested one inside
 	# the next: strider_walker looks exactly one level down for a limb - body balls under
 	# the rig, hips under those - so a nested spine hides every leg from it and it reports
 	# finding none. The horse is authored the same flat way.
-	var head := _ball(hide, "Head", Vector4(0.0, 0.40 * u, 0.50 * u, 0.0), 0.075 * u)
-	var neck := _ball(hide, "Neck", Vector4(0.0, 0.40 * u, 0.37 * u, 0.0), 0.095 * u)
-	var chest := _ball(hide, "Chest", Vector4(0.0, 0.40 * u, 0.22 * u, 0.0), 0.125 * u)
-	var mid := _ball(hide, "Mid", Vector4(0.0, 0.40 * u, 0.02 * u, 0.0), 0.130 * u)
-	var rump := _ball(hide, "Rump", Vector4(0.0, 0.39 * u, -0.18 * u, 0.0), 0.110 * u)
+	# A CAT, NOT A GREYHOUND (Ramon, 30 Sept: "fix it a little bit so it looks more like a
+	# cat"). The first build was all slab and stick: a thin even body, a small head level
+	# with the back, a long snout. A cat carries a ROUND head a little above its shoulders,
+	# a deep chest, a slight waist and round haunches, so the radii below swell and pinch
+	# along the spine - and it stands LOWER, on shorter legs: the whole body came down by
+	# 0.06 and each leg segment shortened by 0.03, so a foot at rest sits exactly as far
+	# below this node as it did (0.06 of a length, the slack a stride needs), and the crate,
+	# perch and den numbers, all measured to this node, still hold.
+	var head := _ball(hide, "Head", Vector4(0.0, 0.40 * u, 0.50 * u, 0.0), 0.095 * u)
+	var neck := _ball(hide, "Neck", Vector4(0.0, 0.37 * u, 0.38 * u, 0.0), 0.092 * u)
+	var chest := _ball(hide, "Chest", Vector4(0.0, 0.34 * u, 0.22 * u, 0.0), 0.138 * u)
+	var mid := _ball(hide, "Mid", Vector4(0.0, 0.34 * u, 0.03 * u, 0.0), 0.122 * u)
+	var rump := _ball(hide, "Rump", Vector4(0.0, 0.33 * u, -0.17 * u, 0.0), 0.126 * u)
 
 	# Legs, as branches. Named so strider_walker can be told exactly which chains are legs
 	# rather than having to guess from which ones descend - the guess is what made the
@@ -195,32 +217,41 @@ func rebuild() -> void:
 	for side in [1.0, -1.0]:
 		var tag: String = "L" if side > 0.0 else "R"
 		var shoulder := _ball(chest, "FrontHip" + tag,
-			Vector4(side * 0.070 * u, -0.02 * u, 0.02 * u, 0.0), 0.050 * u, true)
+			Vector4(side * 0.074 * u, -0.02 * u, 0.02 * u, 0.0), 0.058 * u, true)
 		# Long enough to reach the ground AND have slack for a stride - at 0.14 + 0.14
 		# against a shoulder 0.38 up, the leg fell short of the floor and the IK clamped
-		# flat out, which is why the paw barely swung however fast the cat went.
+		# flat out, which is why the paw barely swung however fast the cat went. Now
+		# 0.19 + 0.19 against a shoulder 0.32 up: the same 0.06 of slack, on a lower cat.
 		var fknee := _ball(shoulder, "FrontKnee" + tag,
-			Vector4(side * 0.004 * u, -0.22 * u, -0.01 * u, 0.0), 0.038 * u)
-		_ball(fknee, "FrontFoot" + tag, Vector4(0.0, -0.22 * u, 0.03 * u, 0.0), 0.042 * u)
+			Vector4(side * 0.004 * u, -0.19 * u, -0.01 * u, 0.0), 0.039 * u)
+		# A paw: a touch wider than the wrist above it, which is most of what separates a
+		# cat's foot from a hoof or a stick.
+		_ball(fknee, "FrontFoot" + tag, Vector4(0.0, -0.19 * u, 0.03 * u, 0.0), 0.048 * u)
 
+		# The haunch: a big round thigh where the hind leg meets the rump.
 		var hip := _ball(rump, "HindHip" + tag,
-			Vector4(side * 0.075 * u, -0.01 * u, 0.0, 0.0), 0.055 * u, true)
+			Vector4(side * 0.080 * u, -0.01 * u, 0.0, 0.0), 0.074 * u, true)
 		var hknee := _ball(hip, "HindKnee" + tag,
-			Vector4(side * 0.004 * u, -0.22 * u, -0.02 * u, 0.0), 0.040 * u)
-		_ball(hknee, "HindFoot" + tag, Vector4(0.0, -0.22 * u, 0.04 * u, 0.0), 0.042 * u)
+			Vector4(side * 0.004 * u, -0.19 * u, -0.02 * u, 0.0), 0.041 * u)
+		_ball(hknee, "HindFoot" + tag, Vector4(0.0, -0.19 * u, 0.04 * u, 0.0), 0.048 * u)
 
 	# A snout: two small balls branching forward off the head. Forward rather than down,
 	# so the slope test never mistakes it for a limb - and the walker is name-restricted
 	# to hips anyway.
-	var snout := _ball(head, "SnoutBase", Vector4(0.0, -0.012 * u, 0.055 * u, 0.0), 0.045 * u, true)
-	_ball(snout, "SnoutTip", Vector4(0.0, -0.008 * u, 0.045 * u, 0.0), 0.030 * u)
+	# Short, and a little low on the face: a cat's muzzle is a small bump on a round head,
+	# not the dog's snout it was.
+	var snout := _ball(head, "SnoutBase", Vector4(0.0, -0.024 * u, 0.066 * u, 0.0), 0.050 * u, true)
+	_ball(snout, "SnoutTip", Vector4(0.0, -0.006 * u, 0.030 * u, 0.0), 0.034 * u)
 
-	# The tail, also a branch, rising away from the rump so it never reads as a fifth leg.
-	var tail := _ball(rump, "TailBase", Vector4(0.0, 0.05 * u, -0.13 * u, 0.0), 0.036 * u, true)
-	var t2 := _ball(tail, "TailB", Vector4(0.0, 0.08 * u, -0.14 * u, 0.0), 0.030 * u)
-	var t3 := _ball(t2, "TailC", Vector4(0.0, 0.09 * u, -0.13 * u, 0.0), 0.025 * u)
-	var t4 := _ball(t3, "TailD", Vector4(0.0, 0.08 * u, -0.12 * u, 0.0), 0.021 * u)
-	_ball(t4, "TailE", Vector4(0.0, 0.05 * u, -0.10 * u, 0.0), 0.017 * u)
+	# The tail, also a branch. A cat's is long, thin and even, and carried low off the back
+	# before it curves up - the straight stick rising at forty degrees read as a lizard's.
+	# (The walker is told its legs by name, so a tail that dips cannot be walked on.)
+	var tail := _ball(rump, "TailBase", Vector4(0.0, 0.05 * u, -0.12 * u, 0.0), 0.033 * u, true)
+	var t2 := _ball(tail, "TailB", Vector4(0.0, -0.01 * u, -0.12 * u, 0.0), 0.030 * u)
+	var t3 := _ball(t2, "TailC", Vector4(0.0, 0.00 * u, -0.12 * u, 0.0), 0.029 * u)
+	var t4 := _ball(t3, "TailD", Vector4(0.0, 0.06 * u, -0.10 * u, 0.0), 0.027 * u)
+	var t5 := _ball(t4, "TailE", Vector4(0.0, 0.11 * u, -0.05 * u, 0.0), 0.025 * u)
+	_ball(t5, "TailF", Vector4(0.0, 0.09 * u, 0.0, 0.0), 0.022 * u)
 
 	# Kept so the sitting pose can write them directly. Safe ONLY while the walker is
 	# switched off: it owns these positions the rest of the time and would overwrite any
@@ -239,13 +270,23 @@ func rebuild() -> void:
 	if hide.has_method("build"):
 		hide.call("build", false)
 
-	# Ears and eyes: a loft cannot make a point, and a cat without ears is an otter.
+	# The face. A loft cannot make a point, and a cat without ears is an otter, so each ear
+	# is a box turned 45 degrees: a diamond whose lower half sits inside the head, leaving a
+	# triangle standing up, leaning a little outward, with a pink lining just in front. The
+	# eyes get a slit pupil and the muzzle a nose. All of it is placed on the round head's
+	# surface (head at 0.40 up and 0.50 forward, radius 0.095).
 	for side in [1.0, -1.0]:
 		var tag: String = "L" if side > 0.0 else "R"
-		_block("Ear" + tag, Vector4(side * 0.050 * u, 0.48 * u, 0.48 * u, 0.0),
-			Vector3(0.045 * u, 0.085 * u, 0.035 * u), fur)
-		_block("Eye" + tag, Vector4(side * 0.042 * u, 0.42 * u, 0.555 * u, 0.0),
-			Vector3(0.026 * u, 0.020 * u, 0.02 * u), eye)
+		var lean: float = deg_to_rad(45.0 - 14.0 * side)
+		_block("Ear" + tag, Vector4(side * 0.056 * u, 0.475 * u, 0.49 * u, 0.0),
+			Vector3(0.070 * u, 0.070 * u, 0.018 * u), fur, lean)
+		_block("EarLining" + tag, Vector4(side * 0.056 * u, 0.470 * u, 0.500 * u, 0.0),
+			Vector3(0.040 * u, 0.040 * u, 0.006 * u), EAR_PINK, lean)
+		_block("Eye" + tag, Vector4(side * 0.040 * u, 0.418 * u, 0.586 * u, 0.0),
+			Vector3(0.032 * u, 0.024 * u, 0.012 * u), eye)
+		_block("Pupil" + tag, Vector4(side * 0.040 * u, 0.418 * u, 0.593 * u, 0.0),
+			Vector3(0.007 * u, 0.022 * u, 0.004 * u), PUPIL)
+	_block("Nose", Vector4(0.0, 0.385 * u, 0.628 * u, 0.0), Vector3(0.022 * u, 0.014 * u, 0.010 * u), NOSE)
 
 	# And the rig that walks it: the same script that walks the horse and the sauropod.
 	var walker := Node4D.new()
@@ -255,6 +296,7 @@ func rebuild() -> void:
 	# and this one resolves rig_path there - setting it afterwards left the walker having
 	# already given up, reporting that rig_path did not point at a loft rig.
 	walker.set("rig_path", NodePath("../Hide"))
+	walker.set("animation_sides", SIDES)
 	walker.set("leg_name_prefixes", PackedStringArray(["FrontHip", "HindHip"]))
 	walker.set("stride_length", stride_length)
 	walker.set("step_height", step_height)
@@ -286,7 +328,9 @@ func _ball(parent: Node, part: String, at: Vector4, radius: float,
 	return node
 
 
-func _block(part: String, at: Vector4, box: Vector3, colour: Color) -> void:
+## A box of the face, turned `xy_turn` radians in the XY plane (the ears' diamonds). Kept,
+## with where it rests, so it can ride the walker's bob with the head it belongs to.
+func _block(part: String, at: Vector4, box: Vector3, colour: Color, xy_turn: float = 0.0) -> void:
 	var node := MeshInstance4D.new()
 	node.name = part
 	var mesh := BoxTetraMesh4D.new()
@@ -297,7 +341,23 @@ func _block(part: String, at: Vector4, box: Vector3, colour: Color) -> void:
 	node.material_override = material
 	add_child(node)
 	node.position = at
+	if xy_turn != 0.0:
+		node.basis = Basis4D.from_xy(xy_turn)
 	_own(node)
+	_face.append(node)
+	_face_rest.append(at)
+
+
+## THE FACE RIDES THE BOB. The walker lifts and drops the whole hide at twice the gait
+## frequency by moving its node, and the ears, eyes and nose are not part of the hide
+## (they are boxes on this node - see the header), so they stayed put while the head bobbed
+## under them. They follow the hide's offset instead.
+func _follow_hide() -> void:
+	if _hide == null:
+		return
+	var lift: Vector4 = _hide.position
+	for i in _face.size():
+		_face[i].position = _face_rest[i] + lift
 
 
 func _own(node: Node) -> void:
@@ -339,6 +399,7 @@ func _process(delta: float) -> void:
 		Mood.INSIDE:
 			_do_inside(delta)
 	_keep_out_of_den()
+	_follow_hide()
 
 
 ## The walker owns the feet while it runs, so anything that poses them by hand has to

@@ -29,9 +29,9 @@ func _initialize() -> void:
 	current_scene = _root
 
 
-func _frame() -> void:
-	# Its own camera, side-on to the cat and following it: the player's third-person rig
-	# put the avatar between the lens and a small black animal on dark grass.
+func _frame(view: String = "side") -> void:
+	# Its own camera, following the cat: the player's third-person rig put the avatar
+	# between the lens and a small black animal on dark grass.
 	if _camera == null:
 		_camera = Camera4D.new()
 		_camera.name = "CatCamera"
@@ -39,8 +39,19 @@ func _frame() -> void:
 		_root.add_child(_camera)
 	var at: Vector4 = _cat.global_position
 	var side: Vector4 = (_cat.global_basis * Vector4(1, 0, 0, 0)).normalized()
-	_camera.global_position = at + side * 1.1 + Vector4(0, 0.32, 0, 0)
-	_camera.look_at(at + Vector4(0, 0.2, 0, 0))
+	var ahead: Vector4 = (_cat.global_basis * Vector4(0, 0, 1, 0)).normalized()
+	match view:
+		"face":
+			# Close on the head, from in front and a little to one side.
+			var head: Vector4 = at + ahead * 0.47 + Vector4(0, 0.44, 0, 0)
+			_camera.global_position = head + ahead * 0.55 + side * 0.28 + Vector4(0, 0.06, 0, 0)
+			_camera.look_at(head)
+		"three_quarter":
+			_camera.global_position = at + ahead * 1.0 + side * 0.75 + Vector4(0, 0.45, 0, 0)
+			_camera.look_at(at + Vector4(0, 0.3, 0, 0))
+		_:
+			_camera.global_position = at + side * 1.1 + Vector4(0, 0.32, 0, 0)
+			_camera.look_at(at + Vector4(0, 0.2, 0, 0))
 	_camera.make_current()
 
 
@@ -107,35 +118,45 @@ func _process(d: float) -> bool:
 			for child in _root.get_node("UI").get_children():
 				if child is CanvasItem or child is CanvasLayer:
 					child.set("visible", false)
+			_step = 1; _t = 0.0
+		1:
+			# Where the game starts it: sat on its crate.
+			_frame("three_quarter")
+			if _t > 1.0:
+				_pending = "crate"
+				_step = 2; _t = 0.0
+		2:
 			# Off the crate and onto open ground, walking, and staying that way.
 			_cat.position = Vector4(-4.0, 0.0, 4.0, 0.0)
 			_cat.set("_mood", 0)
 			_cat.set("_mood_left", 999.0)
 			_cat.set("roam_radius", 50.0)
 			_cat.set("_home", _cat.position)
-			_step = 1; _t = 0.0
-		1:
+			_step = 3; _t = 0.0
+		3:
 			_frame()
 			if _t > 2.5:
 				_report_all()
-				_step = 2; _t = 0.0
-		2:
+				_step = 4; _t = 0.0
+		4:
 			_frame()
 			# A burst through about one stride.
 			if _t > 0.12:
 				_pending = "walk"
 				_t = 0.0
-				if _n >= 8:
-					_step = 3
-		3:
-			# Its own _process would switch the walker straight back on in WANDER.
-			_cat.set("walks", false)
-			_cat.call("_walking", false)
-			_frame()
-			if _t > 1.0:
-				_pending = "still"
-				_step = 4; _t = 0.0
-		4:
+				if _n >= 6:
+					_step = 5
+		5:
+			_frame("three_quarter")
+			if _t > 0.4:
+				_pending = "walk_front"
+				_step = 6; _t = 0.0
+		6:
+			_frame("face")
+			if _t > 0.4:
+				_pending = "face"
+				_step = 7; _t = 0.0
+		7:
 			if _t > 0.3:
 				print("CAT WALK: done")
 				quit()
