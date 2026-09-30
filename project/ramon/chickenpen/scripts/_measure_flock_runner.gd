@@ -14,6 +14,11 @@ extends SceneTree
 ##            degrees has been reached by the turn. Arrival time against distance gives the
 ##            wave's speed; the largest difference against distance says whether it fades.
 ##            Twins take everything else the flock was doing out of the measurement.
+##   agitate  the dark band: at wave_at seconds a few birds on one flank start the escape
+##            roll a hawk would set off, and every bird's first roll is timed. Arrival time
+##            against distance gives the agitation wave's speed - about 13 m/s measured over
+##            real murmurations (Hemelrijk et al. 2015) - and the share reached says whether
+##            it crosses the flock or dies out.
 ##   timing   the CPU cost of a step at several flock sizes, in microseconds. GDScript is
 ##            the same speed headless, so this one number is real without a window.
 ##
@@ -63,6 +68,8 @@ func _initialize() -> void:
 		_metrics()
 	if "wave" in _parts:
 		_wave()
+	if "agitate" in _parts:
+		_agitate()
 	if "timing" in _parts:
 		_timing()
 	print("FLOCK MEASURE: done")
@@ -73,6 +80,8 @@ func _make(n: int) -> Node4D:
 	var flock: Node4D = FLOCK.new()
 	flock.set("count", n)
 	flock.set("manual", true)
+	# CPU on purpose, so Auto's cut to cpu_count does not apply.
+	flock.set("backend", 1)
 	for key in _settings:
 		var current: Variant = flock.get(key)
 		if current == null:
@@ -128,6 +137,10 @@ func _wave() -> void:
 	print("-- wave  (a held 60 degree turn on one flank at %.0f s, twins compared; real turns cross at 20-40 m/s without fading)" % _wave_at)
 	var a: Node4D = _make(_count)
 	var b: Node4D = _make(_count)
+	# No hawk: after one, the birds furthest out along a flank are stragglers it scattered,
+	# not the flock's edge, and a turn they start reaches nobody.
+	a.set("hawk_enabled", false)
+	b.set("hawk_enabled", false)
 	var t: float = 0.0
 	while t < _wave_at - 0.001:
 		a.call("step", DT)
@@ -207,6 +220,67 @@ func _wave() -> void:
 		starters, reached * 100.0, reach, width, speed, fade])
 	a.free()
 	b.free()
+
+
+func _agitate() -> void:
+	print("-- agitate  (an escape roll started on one flank at %.0f s; real agitation waves run at about 13 m/s)" % _wave_at)
+	var flock: Node4D = _make(_count)
+	flock.set("hawk_enabled", false)
+	var t: float = 0.0
+	while t < _wave_at - 0.001:
+		flock.call("step", DT)
+		t += DT
+	var pos: PackedVector4Array = (flock.call("positions") as PackedVector4Array).duplicate()
+	var head: PackedVector4Array = flock.call("headings")
+	var mean_head := Vector4.ZERO
+	for h in head:
+		mean_head += h
+	mean_head = mean_head.normalized()
+	var side := Vector4(mean_head.z, 0.0, -mean_head.x, 0.0).normalized()
+	var c: Vector4 = METRICS.centre(pos)
+	var order: Array = range(pos.size())
+	order.sort_custom(func(i: int, j: int) -> bool: return (pos[i] - c).dot(side) > (pos[j] - c).dot(side))
+	var starters: int = maxi(pos.size() / 50, 3)
+	var start_centre := Vector4.ZERO
+	for k in starters:
+		flock.call("startle", order[k], 1.0)
+		start_centre += pos[order[k]]
+	start_centre /= float(starters)
+	var first := PackedFloat32Array()
+	first.resize(pos.size())
+	first.fill(-1.0)
+	var elapsed: float = 0.0
+	while elapsed < 5.0:
+		flock.call("step", DT)
+		elapsed += DT
+		var ag: PackedFloat32Array = flock.call("agitation")
+		for i in pos.size():
+			if first[i] < 0.0 and ag[i] > 0.9:
+				first[i] = elapsed
+	var sx: float = 0.0
+	var sy: float = 0.0
+	var sxx: float = 0.0
+	var sxy: float = 0.0
+	var m: int = 0
+	var width: float = 0.0
+	var reach: float = 0.0
+	for k in range(starters, pos.size()):
+		var i: int = order[k]
+		var dist: float = (pos[i] - start_centre).length()
+		width = maxf(width, dist)
+		if first[i] < 0.0:
+			continue
+		reach = maxf(reach, dist)
+		sx += dist
+		sy += first[i]
+		sxx += dist * dist
+		sxy += dist * first[i]
+		m += 1
+	var slope: float = (float(m) * sxy - sx * sy) / maxf(float(m) * sxx - sx * sx, 1e-6)
+	var speed: float = 1.0 / slope if slope > 1e-4 else INF
+	print("   started by %d birds; reached %.0f%% of the rest, out to %.0f m of %.0f m  -  speed %.1f m/s" % [
+		starters, 100.0 * float(m) / float(maxi(pos.size() - starters, 1)), reach, width, speed])
+	flock.free()
 
 
 func _timing() -> void:

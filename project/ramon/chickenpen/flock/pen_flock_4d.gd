@@ -19,6 +19,14 @@ extends Node4D
 ##   4. A roost, a height band and a band in W. Birds that stray past [member roost_radius]
 ##      are called back, which is where the sweeping turns come from.
 ##
+## A HAWK COMES THROUGH EVERY HALF MINUTE OR SO, and the flock's answer is the dark band
+## that runs across a murmuration (Hemelrijk et al. 2015, "Agitation waves"). Birds close to
+## it flee - which opens a hole around it - and roll hard to one side. A bird that sees a
+## neighbour roll copies it after [member reaction_delay], and that copying is the wave: it
+## is a wave of ORIENTATION, not of crowding. The rolled birds show the viewer their wings
+## edge-on or flat instead of the usual, so the band is a change in how dark the flock looks,
+## travelling at hop distance / reaction time.
+##
 ## IT IS DRAWN AS ONE 3D MULTIMESH, NOT A NODE PER BIRD. The Cross-section engine renders in
 ## camera space into its own World3D (godot_3d_rendering_engine_4d.cpp: the 3D camera sits
 ## at the origin with no transform), so an instance added to that world is in the same
@@ -42,6 +50,8 @@ const FLOATS := 20
 ## workgroup the scan runs in.
 const BUCKETS := 16384
 const GROUP := 256
+## vec4 rows of settings the compute shader reads.
+const PARAM_ROWS := 12
 
 @export_group("Flock")
 ## 300 is about all the CPU step manages (1.65 ms); on the GPU, measured in the pen on an
@@ -50,6 +60,9 @@ const GROUP := 256
 ## Where the flock is stepped. Auto is the GPU when the renderer has a RenderingDevice
 ## (Forward+ and Mobile do; Compatibility and --headless do not), the CPU otherwise.
 @export_enum("Auto", "CPU", "GPU") var backend: int = 0
+## On Auto without a GPU, the flock is cut to this many birds: the CPU step costs 4 us a
+## bird, so the GPU's 5,000 would be a 20 ms frame.
+@export_range(0, 2000) var cpu_count: int = 300
 @export var flock_seed: int = 5213
 ## Metres the drawn bird is scaled by. A starling is 0.22 m long with a 0.38 m span; at
 ## the distances the field is seen from, true size is a few pixels.
@@ -62,8 +75,11 @@ const GROUP := 256
 ## Birds each one pays attention to. 6.5 in StarDisplay, "about seven" in the field.
 @export_range(1.0, 20.0, 0.5) var neighbours: float = 6.5
 ## The largest search radius, which is also the grid cell. Birds out on their own look
-## this far and no further.
-@export_range(1.0, 20.0, 0.5, "suffix:m") var radius_max: float = 5.0
+## this far and no further. Every bird tests the 27 cells around its own, so this is the
+## GPU cost: 5,000 birds took 2.85 ms at 5 m and 1.6 ms at 3 m once a hawk had squeezed the
+## flock (11.5 birds within reach, 0.74 m apart), 0.4 ms at 3 m spread out. Birds inside
+## the flock settle at 1.2-2.4 m anyway.
+@export_range(1.0, 20.0, 0.1, "suffix:m") var radius_max: float = 2.2
 @export_range(0.1, 5.0, 0.1, "suffix:m") var separation_radius: float = 1.1
 ## Social rules are re-evaluated for 1 bird in this many each frame, round-robin. A bird
 ## reacting at 20 Hz is still faster than a starling's ~75 ms reaction time allows.
@@ -82,7 +98,8 @@ const GROUP := 256
 @export_range(0.0, 40.0, 0.5, "suffix:m/s²") var rule_cohesion: float = 7.0
 @export_range(0.0, 10.0, 0.05, "suffix:m/s²") var rule_noise: float = 5.0
 ## A weak pull towards the whole flock's middle, felt only beyond [member rule_gather_from]
-## metres of it. Seven-neighbour cohesion on its own lets a flock of hundreds come apart
+## metres of it - scaled by the cube root of the flock's size against 300 birds, or a big
+## flock is squeezed into a ball (5,000 birds are ~30 m across; 8 m pulled them all in). Seven-neighbour cohesion on its own lets a flock of hundreds come apart
 ## into clumps of twenty within seconds (measured: the biggest group held 13-30% of the
 ## birds). In a real murmuration the roost and the sight of the mass hold it together;
 ## this is that, stated plainly.
@@ -129,6 +146,32 @@ const GROUP := 256
 ## shrinking to nothing this far off it.
 @export_range(0.05, 5.0, 0.01, "suffix:m") var bird_w_radius: float = 0.35
 
+@export_group("Hawk")
+@export var hawk_enabled: bool = true
+## Seconds between hawks, drawn between these two.
+@export_range(5.0, 300.0, 1.0, "suffix:s") var hawk_every_min: float = 25.0
+@export_range(5.0, 300.0, 1.0, "suffix:s") var hawk_every_max: float = 45.0
+## Faster than the flock: a sparrowhawk in a stoop does 15-20 m/s against the starlings' 10.
+@export_range(5.0, 40.0, 0.5, "suffix:m/s") var hawk_speed: float = 17.0
+## Birds this close to the hawk flee and roll without waiting for a neighbour.
+@export_range(1.0, 30.0, 0.5, "suffix:m") var scare_radius: float = 7.0
+@export_range(0.0, 80.0, 0.5, "suffix:m/s²") var flee: float = 22.0
+## How long a bird takes to copy a rolling neighbour - with the distance between them,
+## this is the agitation wave's speed. Measured in real murmurations: about 13 m/s. Measured
+## here (_measure_flock_runner.gd agitate, CPU, 300 birds): 0.08 s ran at 9.2 m/s, 0.12 s at
+## 6.8 m/s, both across the whole flock - about a metre a hop. The CPU path adds ~25 ms a
+## hop by only looking at neighbours every third frame; the GPU path looks every frame, so
+## 0.07 s is about 14 m/s there, 10 on the CPU.
+@export_range(0.01, 1.0, 0.005, "suffix:s") var reaction_delay: float = 0.07
+@export_range(0.1, 3.0, 0.05, "suffix:s") var agitation_time: float = 0.7
+## How far over a startled bird rolls, radians. The band is made of this.
+@export_range(0.0, 1.6, 0.05) var agitation_roll: float = 1.3
+## After a roll, how long before a bird will copy another one. Without it the wave bounces
+## back and forth through the flock for ever.
+@export_range(0.0, 5.0, 0.05, "suffix:s") var agitation_rest: float = 1.4
+## The sideways jink that goes with the roll.
+@export_range(0.0, 40.0, 0.5, "suffix:m/s²") var jink: float = 9.0
+
 ## Set while a runner drives step() itself.
 var manual: bool = false
 ## Set by runners: time the GPU step with RenderingDevice timestamps into [member gpu_usec].
@@ -153,6 +196,19 @@ var _wander := PackedVector4Array()
 ## A heading a bird has been told to take (zero when none) and for how much longer.
 var _lead := PackedVector4Array()
 var _lead_left := PackedFloat32Array()
+## Agitation: how far through its roll a bird is (1 fresh, 0 calm), the reaction time left
+## before it starts one, the rest left before it will copy again, and which way it rolls.
+var _agit := PackedFloat32Array()
+var _agit_wait := PackedFloat32Array()
+var _agit_rest := PackedFloat32Array()
+var _agit_sign := PackedFloat32Array()
+
+enum HawkState { AWAY, HUNTING, LEAVING }
+var _hawk_state: int = HawkState.AWAY
+var _hawk_timer: float = 12.0
+var _hawk_pos := Vector4(0.0, -1000.0, 0.0, 0.0)
+var _hawk_head := Vector4(1.0, 0.0, 0.0, 0.0)
+var _middle_pending: bool = false
 var _buffer := PackedFloat32Array()
 
 var _keys := PackedInt64Array()
@@ -212,6 +268,8 @@ func _ready() -> void:
 	_gpu = backend != 1 and _rd != null
 	if backend == 2 and _rd == null:
 		push_warning("Flock: no RenderingDevice here (Compatibility or headless), stepping on the CPU.")
+	if not _gpu and backend == 0:
+		count = mini(count, cpu_count)
 	respawn()
 	if not RenderingServer4D.pre_render.is_connected(_on_pre_render):
 		RenderingServer4D.pre_render.connect(_on_pre_render)
@@ -246,6 +304,10 @@ func respawn() -> void:
 	_wander.resize(n)
 	_lead.resize(n)
 	_lead_left.resize(n)
+	_agit.resize(n)
+	_agit_wait.resize(n)
+	_agit_rest.resize(n)
+	_agit_sign.resize(n)
 	_speed.resize(n)
 	_bank.resize(n)
 	_radius.resize(n)
@@ -255,7 +317,8 @@ func respawn() -> void:
 	_seen.resize(n)
 	_keys.resize(n)
 	_sorted.resize(n)
-	_buffer.resize(n * FLOATS)
+	# One row more than there are birds: the last one is the hawk.
+	_buffer.resize((n + 1) * FLOATS)
 	var mid: float = (height_low + height_high) * 0.5
 	# About a metre between birds from the start: sparser, and the flock begins as clumps.
 	var spread: float = pow(float(maxi(n, 1)), 1.0 / 3.0) * 0.55
@@ -270,6 +333,10 @@ func respawn() -> void:
 		_wander[i] = Vector4.ZERO
 		_lead[i] = Vector4.ZERO
 		_lead_left[i] = 0.0
+		_agit[i] = 0.0
+		_agit_wait[i] = 0.0
+		_agit_rest[i] = 0.0
+		_agit_sign[i] = 1.0
 		_speed[i] = cruise_speed * _rng.randf_range(0.9, 1.1)
 		_bank[i] = 0.0
 		_radius[i] = radius_max * 0.5
@@ -281,7 +348,10 @@ func respawn() -> void:
 	_time = 0.0
 	_middle = METRICS.centre(_pos)
 	_mean_heading = METRICS.centre(_head)
-	RenderingServer.multimesh_allocate_data(_multimesh, n, RenderingServer.MULTIMESH_TRANSFORM_3D, true, true)
+	_hawk_state = HawkState.AWAY
+	_hawk_timer = 12.0
+	_hawk_pos = Vector4(0.0, -1000.0, 0.0, 0.0)
+	RenderingServer.multimesh_allocate_data(_multimesh, n + 1, RenderingServer.MULTIMESH_TRANSFORM_3D, true, true)
 	_upload()
 	if _gpu:
 		_gpu_free()
@@ -308,10 +378,12 @@ func step(dt: float) -> void:
 	if _pos.size() != count:
 		respawn()
 	if count > 0:
+		_hawk_step(dt)
 		_build_grid()
 		for i in range(_frame % social_every, count, social_every):
 			_social_rules(i)
 		_integrate(dt)
+		_write_hawk_row()
 		_upload()
 	_frame += 1
 	_time += dt
@@ -388,6 +460,7 @@ func _social_rules(i: int) -> void:
 	var toward := Vector4.ZERO
 	var lean := Vector4.ZERO
 	var seen: int = 0
+	var alarm: float = 0.0
 	for gz in range(z0, z1):
 		for gy in range(y0, y1):
 			var row: int = (gz * _dim_y + gy) * _dim_x
@@ -411,6 +484,12 @@ func _social_rules(i: int) -> void:
 					align += _head[j]
 					if dd < sep2:
 						sep -= u * (1.0 - dl / sep_r)
+					# A neighbour just starting its roll: copy it, same way over.
+					if _agit[j] > 0.5:
+						alarm = _agit_sign[j]
+	if alarm != 0.0 and _agit[i] <= 0.0 and _agit_wait[i] <= 0.0 and _agit_rest[i] <= 0.0:
+		_agit_wait[i] = reaction_delay * _rng.randf_range(0.7, 1.3)
+		_agit_sign[i] = alarm
 	# Grow or shrink the search until about `neighbours` birds are in it.
 	_radius[i] = clampf(r * (1.0 + 0.12 * (neighbours - float(seen)) / neighbours), separation_radius, radius_max)
 	_seen[i] = seen
@@ -472,7 +551,10 @@ func _integrate(dt: float) -> void:
 			var ramp: float = smoothstep(roost_radius * 0.6, roost_radius * 1.4, home_d)
 			side_push = Vector4(-mean.y, 0.0, mean.x, 0.0) * (turn_sign * roost_pull * ramp * as_one * clampf(away + 0.2, 0.0, 1.0))
 	var gather: float = rule_gather
-	var gather_from: float = rule_gather_from
+	var gather_from: float = _gather_from()
+	var hawk_here: bool = _hawk_state != HawkState.AWAY
+	var hawk: Vector4 = _hawk_pos
+	var scare: float = scare_radius
 	var sum := Vector4.ZERO
 	var heading_sum := Vector4.ZERO
 	for i in n:
@@ -480,6 +562,31 @@ func _integrate(dt: float) -> void:
 		var h: Vector4 = _head[i]
 		var s: float = _speed[i]
 		var acc: Vector4 = _social[i]
+		var side := Vector4(h.z, 0.0, -h.x, 0.0)
+		var side_l: float = side.length()
+		side = side / side_l if side_l > 0.05 else Vector4(1.0, 0.0, 0.0, 0.0)
+		if hawk_here:
+			var from_hawk: Vector4 = p - hawk
+			var fh: float = from_hawk.length()
+			if fh < scare and fh > 0.001:
+				acc += from_hawk * (flee * (1.0 - fh / scare) / fh)
+				if _agit[i] <= 0.0 and _agit_wait[i] <= 0.0 and _agit_rest[i] <= 0.0:
+					_agit_wait[i] = reaction_delay * 0.5
+					_agit_sign[i] = 1.0 if from_hawk.dot(side) >= 0.0 else -1.0
+		if _agit_wait[i] > 0.0:
+			_agit_wait[i] -= dt
+			if _agit_wait[i] <= 0.0:
+				_agit[i] = 1.0
+				_agit_rest[i] = agitation_time + agitation_rest
+		if _agit_rest[i] > 0.0:
+			_agit_rest[i] -= dt
+		var ag: float = _agit[i]
+		var roll: float = 0.0
+		if ag > 0.0:
+			var envelope: float = sin(ag * PI)
+			roll = _agit_sign[i] * agitation_roll * envelope
+			acc += side * (_agit_sign[i] * jink * envelope)
+			_agit[i] = maxf(ag - dt / agitation_time, 0.0)
 		if _lead_left[i] > 0.0:
 			# Told to go somewhere - startled, or fleeing - and meaning it: this outweighs the
 			# neighbours, so the others have to follow rather than the bird giving in.
@@ -537,8 +644,8 @@ func _integrate(dt: float) -> void:
 		var ul: float = up.length()
 		up = up / ul if ul > 0.05 else Vector4(0.0, 0.0, 1.0, 0.0)
 		var bank: float = lerpf(_bank[i], -atan(turn.dot(right) * s / G), bank_follow)
-		var cb: float = cos(bank)
-		var sb: float = sin(bank)
+		var cb: float = cos(bank + roll)
+		var sb: float = sin(bank + roll)
 		var wing: Vector4 = right * cb + up * sb
 		_pos[i] = p
 		sum += p
@@ -550,6 +657,8 @@ func _integrate(dt: float) -> void:
 		# Beating hard when climbing or slow, gliding in stretches otherwise.
 		var glide: float = sin(_time * 0.9 + _phase[i] * TAU)
 		var beat: float = clampf(0.55 + h.y * 3.0 + (cruise_speed - s) * 0.15 + (0.35 if glide > 0.2 else -0.45), 0.0, 1.0)
+		if ag > 0.0:
+			beat = 1.0
 		var o: int = i * FLOATS
 		_buffer[o] = p.x
 		_buffer[o + 1] = p.y
@@ -583,7 +692,7 @@ func _integrate(dt: float) -> void:
 func _upload() -> void:
 	if _gpu:
 		return
-	if _multimesh.is_valid() and _buffer.size() == count * FLOATS and count > 0:
+	if _multimesh.is_valid() and _buffer.size() == (count + 1) * FLOATS and count > 0:
 		RenderingServer.multimesh_set_buffer(_multimesh, _buffer)
 
 
@@ -670,6 +779,93 @@ func _face(verts: PackedVector3Array, normals: PackedVector3Array, uvs: PackedVe
 		normals.append(normal)
 		uvs.append(Vector2(float(wing[k]), 0.0))
 		colours.append(Color.WHITE)
+
+
+func _gather_from() -> float:
+	return rule_gather_from * pow(maxf(float(count), 1.0) / 300.0, 1.0 / 3.0)
+
+
+## The hawk: away for a while, then in from one side at the flock's height, chasing a point
+## a little ahead of the flock's middle, straight through, and up and away.
+func _hawk_step(dt: float) -> void:
+	if not hawk_enabled:
+		_hawk_state = HawkState.AWAY
+		_hawk_pos = Vector4(0.0, -1000.0, 0.0, 0.0)
+		return
+	_hawk_timer -= dt
+	match _hawk_state:
+		HawkState.AWAY:
+			if _hawk_timer <= 0.0:
+				var angle: float = _rng.randf() * TAU
+				_hawk_pos = _middle + Vector4(cos(angle) * 70.0, 5.0, sin(angle) * 70.0, 0.0)
+				_hawk_head = (_middle - _hawk_pos).normalized()
+				_hawk_state = HawkState.HUNTING
+				_hawk_timer = 9.0
+		HawkState.HUNTING:
+			var target: Vector4 = _middle + _mean_heading * 5.0
+			var want: Vector4 = (target - _hawk_pos).normalized()
+			_hawk_head = _hawk_head.lerp(want, minf(dt * 1.8, 1.0)).normalized()
+			_hawk_pos += _hawk_head * (hawk_speed * dt)
+			if (_middle - _hawk_pos).length() < 3.0 or _hawk_timer <= 0.0:
+				_hawk_state = HawkState.LEAVING
+				_hawk_timer = 4.0
+		HawkState.LEAVING:
+			_hawk_head = (_hawk_head + Vector4(0.0, 0.35 * dt, 0.0, 0.0)).normalized()
+			_hawk_pos += _hawk_head * (hawk_speed * dt)
+			if _hawk_timer <= 0.0:
+				_hawk_state = HawkState.AWAY
+				_hawk_timer = _rng.randf_range(hawk_every_min, hawk_every_max)
+				_hawk_pos = Vector4(0.0, -1000.0, 0.0, 0.0)
+
+
+## The hawk's twenty floats: the same bird, 2.4 times the size, gliding.
+func _hawk_row() -> PackedFloat32Array:
+	var h: Vector4 = _hawk_head
+	var right := Vector4(h.z, 0.0, -h.x, 0.0)
+	right = right.normalized() if right.length() > 0.05 else Vector4(1.0, 0.0, 0.0, 0.0)
+	var p: Vector4 = _hawk_pos
+	return PackedFloat32Array([p.x, p.y, p.z, p.w, h.x, h.y, h.z, h.w, right.x, right.y, right.z, right.w,
+		0.8, 0.7, 0.62, 1.0, 0.37, 0.2, bird_scale * 2.4, 0.0])
+
+
+func _write_hawk_row() -> void:
+	var row: PackedFloat32Array = _hawk_row()
+	var o: int = count * FLOATS
+	for k in FLOATS:
+		_buffer[o + k] = row[k]
+
+
+## Where the hawk is, or null while it is away - for runners.
+func hawk_position() -> Variant:
+	return null if _hawk_state == HawkState.AWAY else _hawk_pos
+
+
+## Sends the hawk in now rather than when its time comes.
+func call_hawk() -> void:
+	_hawk_state = HawkState.AWAY
+	_hawk_timer = 0.0
+
+
+## Starts a roll on bird [param i], as if it had seen the hawk - for runners measuring the
+## agitation wave without one.
+func startle(i: int, way: float = 1.0) -> void:
+	_agit[i] = 1.0
+	_agit_rest[i] = agitation_time + agitation_rest
+	_agit_sign[i] = way
+	if _gpu and _gpu_buffers.has("agit_a"):
+		var row := PackedFloat32Array([1.0, 0.0, agitation_time + agitation_rest, way]).to_byte_array()
+		var key: String = "agit_a" if _parity == 0 else "agit_b"
+		RenderingServer.call_on_render_thread(func() -> void: _rd.buffer_update(_gpu_buffers[key], i * 16, 16, row))
+
+
+## How far through its roll each bird is, 0 calm.
+func agitation() -> PackedFloat32Array:
+	if not _gpu:
+		return _agit
+	var out := PackedFloat32Array()
+	for v in _gpu_read_vec4("agit_a" if _parity == 0 else "agit_b"):
+		out.append(v.x)
+	return out
 
 
 ## For runners and the metrics. On the GPU these read the buffers back, which waits for the
@@ -789,7 +985,7 @@ func _gpu_init() -> void:
 	buckets.resize(BUCKETS)
 	var flock_state := PackedVector4Array([_middle, _mean_heading, Vector4.ZERO, Vector4.ZERO])
 	_gpu_buffers = {
-		"params": _rd.storage_buffer_create(16 * 10, _gpu_params()),
+		"params": _rd.storage_buffer_create(16 * PARAM_ROWS, _gpu_params()),
 		"pos_a": _rd.storage_buffer_create(n * 16, _floats(_pos)),
 		"head_a": _rd.storage_buffer_create(n * 16, _floats(_head)),
 		"pos_b": _rd.storage_buffer_create(n * 16, _floats(_pos)),
@@ -805,6 +1001,8 @@ func _gpu_init() -> void:
 		"cursor": _rd.storage_buffer_create(BUCKETS * 4, buckets.to_byte_array()),
 		"sorted": _rd.storage_buffer_create(n * 4, uints.to_byte_array()),
 		"flock": _rd.storage_buffer_create(16 * 4, _floats(flock_state)),
+		"agit_a": _rd.storage_buffer_create(n * 16, _floats(empty)),
+		"agit_b": _rd.storage_buffer_create(n * 16, _floats(empty)),
 	}
 	var draw: RID = RenderingServer.multimesh_get_buffer_rd_rid(_multimesh)
 	var order_a: Array = ["params", "pos_a", "head_a", "pos_b", "head_b", "turn", "misc", "wander", "lead", "misc2",
@@ -820,6 +1018,10 @@ func _gpu_init() -> void:
 		for k in order.size():
 			uniforms.append(_storage_uniform(k, _gpu_buffers[order[k]]))
 		uniforms.append(_storage_uniform(16, draw))
+		# Agitation is read from neighbours, so it is double-buffered like positions.
+		var reading_a: bool = order[1] == "pos_a"
+		uniforms.append(_storage_uniform(17, _gpu_buffers["agit_a" if reading_a else "agit_b"]))
+		uniforms.append(_storage_uniform(18, _gpu_buffers["agit_b" if reading_a else "agit_a"]))
 		_gpu_sets.append(_rd.uniform_set_create(uniforms, _gpu_shader, 0))
 	_parity = 0
 
@@ -862,12 +1064,14 @@ func _gpu_params() -> PackedByteArray:
 		cruise_speed, min_speed, max_speed, neighbours,
 		radius_max, separation_radius, blind_cos, radius_max,
 		rule_separation, rule_alignment, rule_cohesion, rule_noise,
-		rule_gather, rule_gather_from, turn_inertia, max_turn_rate,
+		rule_gather, _gather_from(), turn_inertia, max_turn_rate,
 		speed_spring, bank_rate, roost_radius, roost_pull,
 		roost_as_one, height_low, height_high, height_pull,
 		altitude_pull, altitude, w_half_depth, w_pull,
 		level_flight, w_level, bird_scale, lead_gain,
-		0.0, 0.0, 0.0, 0.0,
+		_hawk_pos.x, _hawk_pos.y, _hawk_pos.z, _hawk_pos.w,
+		1.0 if _hawk_state != HawkState.AWAY else 0.0, scare_radius, flee, reaction_delay,
+		agitation_time, agitation_roll, agitation_rest, jink,
 	]).to_byte_array()
 
 
@@ -877,6 +1081,8 @@ func gpu_step(dt: float) -> void:
 	if _gpu_sets.size() != 2:
 		return
 	var started: int = Time.get_ticks_usec()
+	_hawk_step(dt)
+	_ask_for_middle()
 	if profile_gpu:
 		# The timestamps read back are a frame or two old, which is fine for a mean.
 		var begin: int = -1
@@ -888,7 +1094,7 @@ func gpu_step(dt: float) -> void:
 				# The GPU times come back in nanoseconds, whatever the name says.
 				gpu_usec = float(_rd.get_captured_timestamp_gpu_time(k) - begin) / 1000.0
 	var params: PackedByteArray = _gpu_params()
-	RenderingServer.call_on_render_thread(_gpu_dispatch.bind(params, dt, _time, _frame, _parity))
+	RenderingServer.call_on_render_thread(_gpu_dispatch.bind(params, _hawk_row().to_byte_array(), dt, _time, _frame, _parity))
 	_parity = 1 - _parity
 	_frame += 1
 	_time += dt
@@ -896,12 +1102,14 @@ func gpu_step(dt: float) -> void:
 	mean_step_usec = last_step_usec if _frame <= 1 else lerpf(mean_step_usec, last_step_usec, 0.05)
 
 
-func _gpu_dispatch(params: PackedByteArray, dt: float, now: float, frame: int, parity: int) -> void:
+func _gpu_dispatch(params: PackedByteArray, hawk_row: PackedByteArray, dt: float, now: float, frame: int, parity: int) -> void:
 	if _gpu_sets.size() != 2:
 		return
 	var n: int = count
 	var groups: int = (n + GROUP - 1) / GROUP
 	_rd.buffer_update(_gpu_buffers["params"], 0, params.size(), params)
+	# The hawk is the multimesh's last row, past the birds the shader writes.
+	_rd.buffer_update(RenderingServer.multimesh_get_buffer_rd_rid(_multimesh), n * FLOATS * 4, hawk_row.size(), hawk_row)
 	_rd.buffer_clear(_gpu_buffers["counts"], 0, BUCKETS * 4)
 	var here: RID = _gpu_sets[parity]
 	var there: RID = _gpu_sets[1 - parity]
@@ -928,6 +1136,25 @@ func _gpu_dispatch(params: PackedByteArray, dt: float, now: float, frame: int, p
 	_rd.compute_list_end()
 	if profile_gpu:
 		_rd.capture_timestamp("Flock end")
+
+
+## The flock's middle and mean heading come back from the GPU a frame or so late, without
+## waiting for it - the hawk needs somewhere to aim, and the roost pull is worked out on
+## the GPU already.
+func _ask_for_middle() -> void:
+	if _middle_pending or not _gpu_buffers.has("flock"):
+		return
+	_middle_pending = true
+	RenderingServer.call_on_render_thread(func() -> void:
+		_rd.buffer_get_data_async(_gpu_buffers["flock"], _got_middle, 0, 32))
+
+
+func _got_middle(data: PackedByteArray) -> void:
+	_middle_pending = false
+	var f: PackedFloat32Array = data.to_float32_array()
+	if f.size() >= 8:
+		_middle = Vector4(f[0], f[1], f[2], f[3])
+		_mean_heading = Vector4(f[4], f[5], f[6], f[7])
 
 
 func _gpu_read_vec4(key: String) -> PackedVector4Array:

@@ -20,6 +20,7 @@ extends SceneTree
 ## lands in the next ones, and alternate-frame toggling booked the flock a NEGATIVE cost.
 ## Blocks still beat two separate runs, whose drift (1-2 ms) swamps the difference.
 
+const METRICS := preload("res://ramon/chickenpen/flock/flock_metrics_4d.gd")
 const VIEWS := ["spawn", "below", "far_side", "near", "sequence_0", "sequence_1", "sequence_2", "sequence_3"]
 
 var _room: Node
@@ -27,6 +28,9 @@ var _flock: Node4D
 var _cam: Camera4D
 var _count: int = 300
 var _backend: int = 0
+var _hawk: bool = true
+var _w_depth: float = -1.0
+var _views: Array = VIEWS.duplicate()
 var _gpu_usec := PackedFloat64Array()
 var _f := 0
 var _t := 0.0
@@ -40,6 +44,7 @@ var _on_times := PackedFloat64Array()
 var _off_times := PackedFloat64Array()
 var _sim_usec := PackedFloat64Array()
 var _flock_on: bool = true
+var _hawk_shots: int = 0
 var _block_frame: int = 0
 const BLOCK := 40
 const SETTLE := 10
@@ -53,10 +58,20 @@ func _initialize() -> void:
 			_count = int(kv[1])
 		elif kv.size() == 2 and kv[0] == "backend":
 			_backend = int(kv[1])
+		elif kv.size() == 2 and kv[0] == "hawk":
+			_hawk = kv[1] == "1"
+		elif kv.size() == 2 and kv[0] == "w_depth":
+			# Step 7: how deep in W the flock is, and the same flock from three places along W
+			# and through a slice turned 30 degrees into it.
+			_w_depth = float(kv[1])
+			_views = ["slice_w0", "slice_w1", "slice_w2", "slice_turned"]
 	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
 	(_room.get_node("World/Flock") as Node4D).set("count", _count)
 	(_room.get_node("World/Flock") as Node4D).set("backend", _backend)
 	(_room.get_node("World/Flock") as Node4D).set("profile_gpu", true)
+	(_room.get_node("World/Flock") as Node4D).set("hawk_enabled", _hawk)
+	if _w_depth >= 0.0:
+		(_room.get_node("World/Flock") as Node4D).set("w_half_depth", _w_depth)
 	# No debug keys. A test window can still catch keystrokes in the moment before it is
 	# made unfocusable, and Ramon typing a "c" opened the cinema over this run (30 Sept).
 	for node in _room.find_children("*", "", true, false):
@@ -92,6 +107,19 @@ func _aim(view: String) -> void:
 			_cam.global_position = ground + Vector4(14.0, 1.6, 10.0, 0.0)
 		"near":
 			_cam.global_position = m + Vector4(9.0, -2.0, 7.0, 0.0)
+		"side":
+			_cam.global_position = Vector4(m.x + 26.0, m.y - 4.0, m.z + 20.0, m.w)
+		"slice_w0", "slice_w1", "slice_w2", "slice_turned":
+			# From across the field, the slice at the flock's middle and then half and a
+			# whole half-depth along W from it.
+			var along_w: float = {"slice_w0": 0.0, "slice_w1": 0.5, "slice_w2": 1.0, "slice_turned": 0.0}[view] * maxf(_w_depth, 0.0)
+			_cam.global_basis = Projection.IDENTITY
+			_cam.global_position = Vector4(m.x + 48.0, 8.0, m.z + 36.0, m.w + along_w)
+			_cam.look_at(Vector4(m.x, m.y, m.z, m.w + along_w))
+			if view == "slice_turned":
+				_cam.global_basis = _cam.global_basis * Basis4D.from_xw(deg_to_rad(30.0))
+			_cam.make_current()
+			return
 		_:
 			_cam.global_position = Vector4(m.x + 55.0, 6.0, m.z + 40.0, m.w)
 	_cam.look_at(m)
@@ -132,13 +160,13 @@ func _process(d: float) -> bool:
 				_step = 2
 				_t = 0.0
 		2:
-			_aim(VIEWS[_view])
-			var wait: float = 0.3 if VIEWS[_view].begins_with("sequence") else 0.6
+			_aim(_views[_view])
+			var wait: float = 0.3 if _views[_view].begins_with("sequence") else 0.6
 			if _t > wait:
-				_pending = VIEWS[_view] + ("_gpu" if bool(_flock.call("on_gpu")) else "")
+				_pending = _views[_view] + ("_gpu" if bool(_flock.call("on_gpu")) else "")
 				_view += 1
 				_t = 0.0
-				if _view >= VIEWS.size():
+				if _view >= _views.size():
 					_step = 3
 		3:
 			# Calibration pins birds from the CPU; on the GPU the shader drawing them is the
@@ -169,6 +197,33 @@ func _process(d: float) -> bool:
 			_boxes.clear()
 			_flock.set("manual", false)
 			_flock.call("respawn")
+			_step = 8
+			_t = 0.0
+		8:
+			# The hawk: let the flock settle, send it in, and watch from the side as it goes
+			# through - the flee hole and the band of rolling birds. The band is seen side-on
+			# in real murmurations: level birds are thin lines, rolled ones show their wings.
+			if not _hawk:
+				_step = 10
+				return false
+			_aim("side")
+			if _t > 8.0:
+				_flock.call("call_hawk")
+				_step = 9
+				_t = 0.0
+				_hawk_shots = 0
+		9:
+			_aim("side")
+			var hawk: Variant = _flock.call("hawk_position")
+			var close: bool = hawk != null and ((hawk as Vector4) - _middle()).length() < 40.0
+			if (close or _hawk_shots > 0) and _t > 0.2 and _hawk_shots < 24:
+				_pending = "hawk_%02d%s" % [_hawk_shots, "_gpu" if bool(_flock.call("on_gpu")) else ""]
+				_hawk_shots += 1
+				_t = 0.0
+			if _hawk_shots >= 24 or _t > 14.0:
+				_step = 10
+				_t = 0.0
+		10:
 			_aim("far_side")
 			if _t > 3.0:
 				DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
@@ -243,6 +298,23 @@ func _report() -> void:
 	print("   frame without it        %.3f ms   p95 %.3f" % [off, _p95(_off_times)])
 	print("   the flock costs         %.3f ms a frame; its step on the CPU %.3f ms, the compute on the GPU %.3f ms" % [on - off, _mean(_sim_usec) / 1000.0, _mean(_gpu_usec) / 1000.0])
 	print("   video memory %.0f MB" % (Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0))
+	# What the flock was like while it was being timed - a flock crushed into a knot costs
+	# more than one spread out, for the same number of birds.
+	var pos: PackedVector4Array = _flock.call("positions")
+	var head: PackedVector4Array = _flock.call("headings")
+	var seen: PackedInt32Array = _flock.call("neighbour_counts")
+	var sample := PackedInt32Array()
+	for i in range(0, pos.size(), maxi(pos.size() / 80, 1)):
+		sample.append(i)
+	var seen_sum: int = 0
+	var seen_max: int = 0
+	for n in seen:
+		seen_sum += n
+		seen_max = maxi(seen_max, n)
+	var shape: PackedFloat32Array = METRICS.shape(pos)
+	print("   the flock then: order %.3f  nearest %.2f m  shape 1 : %.1f : %.1f (%.1f m thin)  W %.2f m  neighbours seen %.1f (most %d)" % [
+		METRICS.order(head), METRICS.mean(METRICS.nearest_distances(pos, sample)), shape[1] / maxf(shape[0], 0.001),
+		shape[2] / maxf(shape[0], 0.001), shape[0], shape[4], float(seen_sum) / maxf(float(seen.size()), 1.0), seen_max])
 	print("CAPTURE FLOCK: done")
 
 

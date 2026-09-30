@@ -52,6 +52,10 @@ layout(set = 0, binding = 14, std430) restrict buffer Sorted { uint v[]; } sorte
 // 0 middle, 1 mean heading
 layout(set = 0, binding = 15, std430) restrict buffer Flock { vec4 v[]; } flock;
 layout(set = 0, binding = 16, std430) restrict writeonly buffer Draw { float v[]; } draw;
+// Agitation, double-buffered because neighbours read it: roll left (1 fresh, 0 calm),
+// reaction time left, rest left, which way.
+layout(set = 0, binding = 17, std430) restrict readonly buffer AgitIn { vec4 v[]; } agit_in;
+layout(set = 0, binding = 18, std430) restrict writeonly buffer AgitOut { vec4 v[]; } agit_out;
 
 shared uint scan_part[256];
 shared vec4 sum_pos[256];
@@ -155,7 +159,17 @@ void update_pass(uint i) {
 	float w_level = params.p[8].y;
 	float bird_scale = params.p[8].z;
 	float lead_gain = params.p[8].w;
+	vec4 hawk = params.p[9];
+	bool hawk_here = params.p[10].x > 0.5;
+	float scare = params.p[10].y;
+	float flee = params.p[10].z;
+	float reaction_delay = params.p[10].w;
+	float agitation_time = params.p[11].x;
+	float agitation_roll = params.p[11].y;
+	float agitation_rest = params.p[11].z;
+	float jink = params.p[11].w;
 	float dt = pc.dt;
+	vec4 agit = agit_in.v[i];
 
 	vec4 p = pos_in.v[i];
 	vec4 h = head_in.v[i];
@@ -193,6 +207,7 @@ void update_pass(uint i) {
 	vec4 toward = vec4(0.0);
 	vec4 lean = vec4(0.0);
 	int seen = 0;
+	float alarm = 0.0;
 	for (int k = 0; k < bucket_count; k++) {
 		uint b = buckets[k];
 		uint start = starts.v[b];
@@ -219,6 +234,10 @@ void update_pass(uint i) {
 			if (dd < sep2) {
 				sep -= u * (1.0 - dl / sep_r);
 			}
+			vec4 other = agit_in.v[j];
+			if (other.x > 0.5) {
+				alarm = other.w;
+			}
 		}
 	}
 	r = clamp(r * (1.0 + 0.12 * (neighbours - float(seen)) / neighbours), sep_r, radius_max);
@@ -235,9 +254,54 @@ void update_pass(uint i) {
 		}
 	}
 	uint seed = pcg(i * 9781u + pc.frame * 6271u + 1u);
+	// Agitation: copy a neighbour starting its roll, after a reaction time; flee the hawk
+	// and roll away from it without waiting. Same rules as pen_flock_4d.gd.
+	vec4 side = vec4(h.z, 0.0, -h.x, 0.0);
+	float side_l = length(side);
+	side = side_l > 0.05 ? side / side_l : vec4(1.0, 0.0, 0.0, 0.0);
+	bool calm = agit.x <= 0.0 && agit.y <= 0.0 && agit.z <= 0.0;
+	if (alarm != 0.0 && calm) {
+		seed = pcg(seed);
+		agit.y = reaction_delay * (0.7 + 0.6 * float(seed) / 4294967295.0);
+		agit.w = alarm;
+		calm = false;
+	}
 	vec4 wander = mix(wander_buf.v[i], vec4(noise_n(seed), noise_n(seed) * 0.3, noise_n(seed), noise_n(seed) * 0.3), 0.08 * dt * 20.0);
 	wander_buf.v[i] = wander;
 	acc += wander * rule_noise;
+
+	vec4 hawk_push = vec4(0.0);
+	if (hawk_here) {
+		vec4 from_hawk = p - hawk;
+		float fh = length(from_hawk);
+		if (fh < scare && fh > 0.001) {
+			hawk_push = from_hawk * (flee * (1.0 - fh / scare) / fh);
+			if (calm) {
+				agit.y = reaction_delay * 0.5;
+				agit.w = dot(from_hawk, side) >= 0.0 ? 1.0 : -1.0;
+			}
+		}
+	}
+	acc += hawk_push;
+	if (agit.y > 0.0) {
+		agit.y -= dt;
+		if (agit.y <= 0.0) {
+			agit.x = 1.0;
+			agit.z = agitation_time + agitation_rest;
+		}
+	}
+	if (agit.z > 0.0) {
+		agit.z -= dt;
+	}
+	float roll = 0.0;
+	float ag = agit.x;
+	if (ag > 0.0) {
+		float envelope = sin(ag * 3.14159265);
+		roll = agit.w * agitation_roll * envelope;
+		acc += side * (agit.w * jink * envelope);
+		agit.x = max(ag - dt / agitation_time, 0.0);
+	}
+	agit_out.v[i] = agit;
 
 	float lead_left = m2.x;
 	if (lead_left > 0.0) {
@@ -313,7 +377,7 @@ void update_pass(uint i) {
 	float ul = length(up);
 	up = ul > 0.05 ? up / ul : vec4(0.0, 0.0, 1.0, 0.0);
 	float bank = mix(m.y, -atan(dot(turn, right) * s / G), min(dt * bank_rate, 1.0));
-	vec4 wing = right * cos(bank) + up * sin(bank);
+	vec4 wing = right * cos(bank + roll) + up * sin(bank + roll);
 
 	pos_out.v[i] = p;
 	head_out.v[i] = h;
@@ -323,6 +387,9 @@ void update_pass(uint i) {
 
 	float glide = sin(pc.time * 0.9 + m2.y * TAU);
 	float beat = clamp(0.55 + h.y * 3.0 + (cruise - s) * 0.15 + (glide > 0.2 ? 0.35 : -0.45), 0.0, 1.0);
+	if (ag > 0.0) {
+		beat = 1.0;
+	}
 	uint o = i * 20u;
 	draw.v[o + 0u] = p.x;
 	draw.v[o + 1u] = p.y;
