@@ -196,6 +196,8 @@ var _phase: float = 0.0
 ## route - part two ending, or this node's closing line in a room without one - so it is
 ## the only honest thing for anybody downstream to listen to.
 signal finished
+## And the other direction: somebody sat down again after the end, and it is on again.
+signal restarted
 
 ## How long the closing caption stays up once the talk is over.
 @export_range(0.0, 30.0, 0.5) var caption_hold: float = 3.0
@@ -224,6 +226,8 @@ var _greeted: bool = false
 var _sat_for: float = 0.0
 var _lent: bool = false
 var _primer: Node
+## The way out's highlight while the talk is on, so a second showing can put it back.
+var _exit_rest: float = 0.75
 
 
 func _ready() -> void:
@@ -265,6 +269,10 @@ func _ready() -> void:
 	_primer.name = "Primer"
 	add_child(_primer)
 	_primer.call("setup", _table, get_node_or_null(metrics_path), get_node_or_null(screen_path), _seat)
+	if _exit != null:
+		_exit_rest = float(_exit.get("highlight"))
+	if _seat != null and _seat.has_signal("sat"):
+		_seat.connect("sat", _on_sat)
 	# Built across the next few frames rather than here - see _build_exhibits. Nothing is
 	# on stage for the opening anyway; the room is dark and he is still walking on.
 	# The way out is NOT switched off here. It stands open from the moment you arrive,
@@ -914,6 +922,45 @@ func clear_stage() -> void:
 
 func is_over() -> bool:
 	return _over
+
+
+## SIT DOWN AGAIN AND IT PLAYS AGAIN. Ramon, 30 Sept: after the presentation, F in the
+## chair "I can't watch it over. Instead I'm locked in a freeze." The chair still took the
+## camera, and nothing was ever going to give it back: the talk was over, so no slide came
+## and nothing stood you up, and the only way out was a movement key nobody had mentioned.
+## A chair in a cinema after the film is an offer to see it again, so that is what it is.
+func _on_sat() -> void:
+	if _over:
+		replay()
+
+
+## Everything back to the moment before slide I, with Trym already on stage - he does not
+## walk in a second time, he simply goes to his mark and waits for you to settle, the way
+## the first showing waits. The exhibits are kept: they were built once, and the slides put
+## each one back where it starts whenever it is entered.
+func replay() -> void:
+	_over = false
+	_done = false
+	_lent = false
+	_greeted = false
+	_sat_for = 0.0
+	_waited = 0.0
+	_clear_in = -1.0
+	_held = -1
+	_act = -1
+	# Past the beat in the doorway (see _perform), so he heads for his mark, not the wings.
+	_phase = 1.5
+	_show(-1)
+	set_spin(true)
+	if _primer != null:
+		_primer.call("leave")
+	if _part_two != null and _part_two.has_method("reset"):
+		_part_two.call("reset")
+	if _exit != null:
+		_exit.set("highlight", _exit_rest)
+	if _caption != null and _caption.has_method("show_act"):
+		_caption.call("show_act", "", "", "", "", "")
+	restarted.emit()
 
 
 func let_them_go() -> void:

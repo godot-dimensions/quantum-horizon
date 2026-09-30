@@ -157,6 +157,12 @@ func _process(delta: float) -> void:
 	_measure()
 	_pulse += delta
 	if _settle > 0.0 and _settle < 1.0:
+		# The way out works while you are still sitting down, too: two seconds of animation
+		# in which no key does anything is two seconds of feeling stuck.
+		if _wants_out():
+			stand()
+			queue_redraw()
+			return
 		_settle = minf(_settle + delta / maxf(sit_seconds, 0.05), 1.0)
 		_place()
 		if _settle >= 1.0:
@@ -167,6 +173,7 @@ func _process(delta: float) -> void:
 		_place()
 		if _wants_out():
 			stand()
+		queue_redraw()
 		return
 	# ONE REACH WAS SERVING TWO DIFFERENT SITUATIONS. During the talk the chair is the
 	# thing to do and should be findable from halfway down the rake. Afterwards it is
@@ -358,15 +365,26 @@ func _fold(t: float) -> void:
 
 ## Any of the four, plus jump. Deliberately not a dedicated "stand up" key: the reflex
 ## when a camera has taken over and you want out is to press forward.
+##
+## AND ESCAPE, which is the other reflex. Ramon, 30 Sept, sitting down again after the
+## talk: "locked in a freeze, nothing works anymore ... double esc didn't work". Escape is
+## the camera rig's key (free the cursor, then quit), and the rig's input is off while you
+## sit - so the key everybody presses when they feel stuck did nothing at all, and nothing
+## on screen said that forward would have worked. Escape stands you up now, and the chair
+## says so while you are in it (see _draw).
 func _wants_out() -> bool:
-	for action in [&"move_forward", &"move_back", &"move_left", &"move_right", &"move_jump"]:
+	for action in [&"move_forward", &"move_back", &"move_left", &"move_right", &"move_jump",
+			&"ui_cancel"]:
 		if InputMap.has_action(action) and Input.is_action_just_pressed(action):
 			return true
 	return false
 
 
 func _draw() -> void:
-	if _seated or not _offered or _their_camera == null or _chair == null:
+	if _seated:
+		_draw_way_up()
+		return
+	if not _offered or _their_camera == null or _chair == null:
 		return
 	var at: Vector4 = _chair.global_position + Vector4(0.0, 1.35, 0.0, 0.0)
 	var ahead: Vector4 = at - _their_camera.global_position
@@ -387,6 +405,24 @@ func _draw() -> void:
 	draw_rect(box, edge_color, false, 1.5)
 	draw_string(font, Vector2(box.position.x + pad, box.position.y + pad + size * 0.78),
 		label, HORIZONTAL_ALIGNMENT_LEFT, -1, size, text_color)
+
+
+## While you sit: how to get up, small, in the top corner the stage does not use.
+func _draw_way_up() -> void:
+	if not is_settled():
+		return
+	var font: Font = ThemeDB.fallback_font
+	var screen: Vector2 = get_viewport_rect().size
+	var size: int = int(screen.y * 0.019)
+	var label: String = "Esc   stand up"
+	var wide: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	var pad: float = screen.y * 0.012
+	var box := Rect2(Vector2(screen.y * 0.03, screen.y * 0.03),
+		Vector2(wide + pad * 2.0, size + pad * 2.0))
+	draw_rect(box, Color(bubble_color, bubble_color.a * 0.7), true)
+	draw_rect(box, Color(edge_color, 0.45), false, 1.0)
+	draw_string(font, Vector2(box.position.x + pad, box.position.y + pad + size * 0.78),
+		label, HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(text_color, 0.8))
 
 
 ## Read off the InputMap, because a printed key stops being true the moment somebody

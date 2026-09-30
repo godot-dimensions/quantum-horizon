@@ -57,6 +57,10 @@ func _configure() -> void:
 	_presenter = get_node_or_null(presenter_path) as Node4D
 	if _show != null and _show.has_signal("finished"):
 		_show.connect("finished", func() -> void: _over = true)
+	# A second showing (sitting down again after the end): he is presenting again, so he
+	# is not available to talk until it is over again.
+	if _show != null and _show.has_signal("restarted"):
+		_show.connect("restarted", func() -> void: _over = false)
 
 
 ## Not until the whole thing has finished - both halves, whichever way you went. And not

@@ -191,6 +191,22 @@ func is_running() -> bool:
 	return _running
 
 
+## Back to before its first slide, for a second showing (theatre_show_4d.replay). The
+## exhibits stay built; they are only taken off the drum.
+func reset() -> void:
+	_running = false
+	_done = false
+	_lent_back = false
+	_moment = -1
+	_phase = 0.0
+	_told = 0
+	_show_piece(-1)
+	if _show != null and _show.has_method("hold_at"):
+		_show.call("hold_at", -1)
+	if _metrics != null and _metrics.has_method("clear"):
+		_metrics.call("clear")
+
+
 func current_moment() -> int:
 	return _moment
 
