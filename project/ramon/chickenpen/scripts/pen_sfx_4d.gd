@@ -345,11 +345,23 @@ func _ready() -> void:
 	_start_crows()
 
 
-## Back from the shooting gallery. The pen was taken out of the tree while you were there
-## (pen_range_trip_4d.gd), and a player leaving the tree stops playing and does not start
-## again on its own when it comes back - so the farm would come home silent.
+## Back from the shooting gallery or a laptop. The pen was taken out of the tree while you
+## were away (pen_range_trip_4d.gd, pen_laptop_trip_4d.gd), and a player leaving the tree
+## stops playing and does not start again on its own when it comes back - so the farm would
+## come home silent.
+##
+## DEFERRED, because _enter_tree runs on this node BEFORE its children re-enter, and a
+## player outside the tree refuses to play: done here directly it printed "Playback can only
+## happen when a node is inside the scene tree" on every trip home, and the farm came home
+## silent anyway. One idle frame later the players are back.
 func _enter_tree() -> void:
-	if not is_node_ready() or _inside or _in_cave:
+	if not is_node_ready():
+		return
+	_resume_after_trip.call_deferred()
+
+
+func _resume_after_trip() -> void:
+	if not is_inside_tree() or _inside or _in_cave:
 		return
 	if _bed != null and not _bed.playing:
 		_bed.play(ambience_loop_trim)
