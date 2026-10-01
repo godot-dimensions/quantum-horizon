@@ -1,4 +1,4 @@
-[gd_scene load_steps=736 format=3 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=737 format=3 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -81,6 +81,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/flock/flock_stats_panel_4d.gd" id="flock_stats"]
 [ext_resource type="Script" path="res://ramon/chickenpen/flock/flock_sound_4d.gd" id="flock_sound"]
 [ext_resource type="Script" path="res://ramon/chickenpen/cinematics/pen_cinematics_4d.gd" id="pen_cinematics"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cinematics/pen_cinematics_card_4d.gd" id="pen_cinematics_card"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 shader_parameter/horizon_color = Color(0.98, 0.71, 0.35, 1)
@@ -4943,6 +4944,11 @@ camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 anchor_path = NodePath("../../Player")
 lift = 40.0
 w_range = 6.0
+
+[node name="Cinematics" type="Control" parent="UI"]
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("pen_cinematics_card")
 
 [node name="Systems" type="Node" parent="."]
 
