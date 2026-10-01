@@ -92,7 +92,9 @@ func _process(d: float) -> bool:
 			_station = _lookout.get("station")
 			_tower = _room.get_node("World/Lookout") as Node4D
 			_player = _room.get_node("Player") as Node4D
-			_check("the tower is built", _tower != null and _tower.get_child_count() > 100, "%d parts" % _tower.get_child_count())
+			var parts: Array = _tower.find_children("Parts_*", "MeshInstance4D", false, false)
+			_check("the tower is built, one mesh per colour", _tower != null and parts.size() >= 5 and _tower.get_node_or_null("Colliders") != null,
+				"%d meshes" % parts.size())
 			var ground: RefCounted = _lookout.get("ground")
 			_check("the ground is mapped", ground != null)
 			if ground != null:

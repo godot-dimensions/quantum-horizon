@@ -426,11 +426,15 @@ func _sound_burner(lit: bool, delta: float) -> void:
 			stream.loop_end = int(stream.get_length() * float(stream.mix_rate))
 		_burner_sound.volume_db = -60.0
 		_burner_sound.play()
+	if not lit and _burner_sound.volume_db <= -59.0:
+		return
 	# Loud in the basket, distant from the ground.
-	var cam: Camera4D = lookout.call("current_camera")
-	var near: float = 1.0
-	if cam != null:
-		var d: Vector4 = cam.global_position - global_position
-		near = clampf(6.0 / maxf(Vector3(d.x, d.y, d.z).length(), 6.0), 0.05, 1.0)
-	var want: float = (-4.0 + linear_to_db(near)) if lit else -60.0
+	var want: float = -60.0
+	if lit:
+		var cam: Camera4D = lookout.call("current_camera")
+		var near: float = 1.0
+		if cam != null:
+			var d: Vector4 = cam.global_position - global_position
+			near = clampf(6.0 / maxf(Vector3(d.x, d.y, d.z).length(), 6.0), 0.05, 1.0)
+		want = -4.0 + linear_to_db(near)
 	_burner_sound.volume_db = move_toward(_burner_sound.volume_db, want, delta * (160.0 if lit else 60.0))

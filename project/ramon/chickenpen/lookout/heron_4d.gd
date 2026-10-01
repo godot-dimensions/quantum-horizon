@@ -86,6 +86,9 @@ var _walk_dir: float = 1.0
 var _home: Vector4
 var _voice: AudioStreamPlayer
 var _wing_voice: AudioStreamPlayer
+## As the owl's: posed only while a camera could see it (it lives at w +8).
+var _seen: bool = true
+var _seen_check: float = 0.0
 
 
 func _changed() -> void:
@@ -354,6 +357,10 @@ func _process(delta: float) -> void:
 	_state_t += delta
 	_cool = maxf(_cool - delta, 0.0)
 	_check_disturbed()
+	_seen_check -= delta
+	if _seen_check <= 0.0:
+		_seen_check = 0.5
+		_seen = _visible_to_camera()
 	match state:
 		State.STAND, State.ALERT, State.ONE_LEG:
 			if _state_t > _state_len:
@@ -378,7 +385,19 @@ func _process(delta: float) -> void:
 			_fly(delta)
 		State.FLY, State.LAND:
 			_fly(delta)
-	_animate(delta)
+	if _seen or state in [State.TAKE_OFF, State.FLY, State.LAND]:
+		_animate(delta)
+
+
+func _visible_to_camera() -> bool:
+	var lookout: Node = get_node_or_null(lookout_path)
+	if lookout == null:
+		return true
+	var cam: Camera4D = lookout.call("current_camera")
+	if cam == null:
+		return true
+	var rel: Vector4 = global_position - cam.global_position
+	return absf(rel.dot(cam.global_basis.w)) < 3.0 and rel.length() < 80.0
 
 
 func _next_idle() -> void:

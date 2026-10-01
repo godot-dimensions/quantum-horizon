@@ -13,14 +13,23 @@ extends Node4D
 ##
 ## Everything is boxes, sharing one mesh per size, as the tower is. This node sits at the
 ## marsh's middle (its own w is the marsh's w).
+##
+## ONE MESH PER COLOUR, NOT ONE NODE PER BOX. Every MeshInstance4D costs something each
+## frame whether or not it is on screen, and this is a few hundred boxes that never move.
+## So with [member merge_parts] on (the default) the boxes of each colour are merged into a
+## single ArrayTetraMesh4D (TetraMesh4D.to_array_tetra_mesh, ArrayTetraMesh4D.merge_with)
+## and drawn by one node. Off, every box is its own named node, for picking parts apart.
 
 @export_range(1.0, 6.0, 0.1, "suffix:m") var w_depth: float = 3.0
 @export_range(4.0, 30.0, 0.5, "suffix:m") var pond_size_x: float = 11.0
 @export_range(4.0, 30.0, 0.5, "suffix:m") var pond_size_z: float = 7.0
 @export var reed_count: int = 90
 @export var marsh_seed: int = 808
+@export var merge_parts: bool = true
 
 var _meshes: Dictionary = {}
+var _batches: Dictionary = {}
+var _arrays: Dictionary = {}
 var _materials: Dictionary = {}
 
 
@@ -57,7 +66,7 @@ func rebuild() -> void:
 		var a: float = rng.randf() * TAU
 		var at := Vector4(cos(a) * px * rng.randf_range(0.6, 0.85), 0.12, sin(a) * pz * rng.randf_range(0.6, 0.9), rng.randf_range(-1.0, 1.0))
 		var r: float = rng.randf_range(0.3, 0.6)
-		_box("Tussock%d" % i, at, Vector4(r, 0.22, r, 0.6), Color(0.40, 0.44, 0.20).lerp(Color(0.5, 0.48, 0.26), rng.randf()), Basis4D.from_zx(rng.randf() * TAU))
+		_box("Tussock%d" % i, at, Vector4(r, 0.22, r, 0.6), [Color(0.40, 0.44, 0.20), Color(0.45, 0.46, 0.23), Color(0.5, 0.48, 0.26)][rng.randi() % 3], Basis4D.from_zx(rng.randf() * TAU))
 	# Lily pads: flat octagons on the water.
 	for i in 9:
 		var at := Vector4(rng.randf_range(-px * 0.35, px * 0.35), 0.11, rng.randf_range(-pz * 0.35, pz * 0.35), rng.randf_range(-0.8, 0.8))
@@ -92,6 +101,7 @@ func rebuild() -> void:
 	_box("Snag", snag + Vector4(0, 1.5, 0, 0), Vector4(0.26, 3.0, 0.26, 0.6), Color(0.48, 0.46, 0.42))
 	_box("SnagBranch", snag + Vector4(0.45, 2.4, 0, 0), Vector4(0.12, 1.2, 0.12, 0.5), Color(0.48, 0.46, 0.42), Basis4D.from_xy(-0.9))
 	_box("SnagBranch2", snag + Vector4(-0.35, 2.9, 0.1, 0), Vector4(0.1, 0.9, 0.1, 0.5), Color(0.48, 0.46, 0.42), Basis4D.from_xy(0.8))
+	_flush()
 
 
 ## Where the heron stands to fish, in the marsh's own space.
@@ -105,6 +115,9 @@ func refuge_spot() -> Vector4:
 
 
 func _box(part: String, at: Vector4, size: Vector4, colour: Color, basis: Projection = Projection.IDENTITY) -> void:
+	if merge_parts:
+		_batch(part, at, size, colour, basis)
+		return
 	var key: String = "%.3f,%.3f,%.3f,%.3f" % [size.x, size.y, size.z, size.w]
 	if not _meshes.has(key):
 		var mesh := BoxTetraMesh4D.new()
@@ -123,3 +136,29 @@ func _box(part: String, at: Vector4, size: Vector4, colour: Color, basis: Projec
 	node.position = at
 	if basis != Projection.IDENTITY:
 		node.basis = basis
+
+## Into this colour's merged mesh, or a node of its own when merging is off.
+func _batch(_part: String, at: Vector4, size: Vector4, colour: Color, basis: Projection) -> MeshInstance4D:
+	var key: String = colour.to_html()
+	if not _batches.has(key):
+		_batches[key] = [ArrayTetraMesh4D.new(), colour]
+	var skey: String = "%.3f,%.3f,%.3f,%.3f" % [size.x, size.y, size.z, size.w]
+	if not _arrays.has(skey):
+		var box := BoxTetraMesh4D.new()
+		box.size = size
+		_arrays[skey] = box.to_array_tetra_mesh()
+	(_batches[key][0] as ArrayTetraMesh4D).merge_with(_arrays[skey], at, basis)
+	return null
+
+
+## The merged meshes, one node each.
+func _flush() -> void:
+	for key in _batches:
+		var node := MeshInstance4D.new()
+		node.name = "Parts_" + String(key)
+		node.mesh = _batches[key][0]
+		var m := TetraMaterial4D.new()
+		m.albedo_color = _batches[key][1]
+		node.material_override = m
+		add_child(node, true)
+	_batches.clear()

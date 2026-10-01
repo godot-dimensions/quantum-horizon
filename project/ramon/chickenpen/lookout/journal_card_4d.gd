@@ -66,7 +66,21 @@ func _step() -> float:
 	return float(text_size) + 9.0
 
 
+var _cached: Array = []
+var _cached_at: int = -100000
+
+
+## The card's two lines, worked out four times a second rather than every frame.
 func _lines() -> Array:
+	var now: int = Time.get_ticks_msec()
+	if not _cached.is_empty() and now - _cached_at < 250:
+		return _cached
+	_cached_at = now
+	_cached = _work_lines()
+	return _cached
+
+
+func _work_lines() -> Array:
 	if _lookout == null or _lookout.get("journal") == null:
 		return ["", ""]
 	var journal: Node = _lookout.get("journal")

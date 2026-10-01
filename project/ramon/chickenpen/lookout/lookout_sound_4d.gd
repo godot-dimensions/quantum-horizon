@@ -31,6 +31,7 @@ const FILES := {
 	&"owl": "lookout_owl.wav",
 	&"heron": "lookout_heron.wav",
 	&"wings": "lookout_wings.wav",
+	&"wind": "lookout_wind.wav",
 }
 const FOLDER := "res://ramon/chickenpen/audio/sfx/"
 ## Loudness of each, in dB, so the bakes can all sit at one level.
@@ -38,7 +39,7 @@ const LEVEL := {
 	&"shutter": -4.0, &"winder": -9.0, &"reload": -8.0, &"empty": -10.0, &"rung": -14.0, &"rung_start": -14.0,
 	&"hatch": -10.0, &"focus": -22.0, &"af": -14.0, &"af_miss": -16.0, &"page": -10.0, &"new_page": -6.0,
 	&"radio_on": -12.0, &"radio_off": -12.0, &"burner": -6.0, &"whistle": -6.0, &"owl": -8.0, &"heron": -6.0,
-	&"wings": -8.0,
+	&"wings": -8.0, &"wind": -16.0,
 }
 
 @export_range(0.01, 0.5, 0.01, "suffix:m") var focus_tick: float = 0.08
@@ -48,6 +49,8 @@ var _streams: Dictionary = {}
 var _players: Array[AudioStreamPlayer] = []
 var _next: int = 0
 var _focus_travel: float = 0.0
+## Held loops by name: {player, target dB}.
+var _loops: Dictionary = {}
 
 
 func _ready() -> void:
@@ -91,3 +94,32 @@ func held(id: StringName) -> AudioStreamPlayer:
 	p.volume_db = float(LEVEL.get(id, -8.0))
 	add_child(p)
 	return p
+
+
+## A loop held on or off, faded to [param db] (or out): the wind up the tower and in the
+## basket. Seamless loops only (they are baked to repeat without a join).
+func loop(id: StringName, on: bool, db: float = 0.0) -> void:
+	if not _streams.has(id):
+		return
+	if not _loops.has(id):
+		var p: AudioStreamPlayer = held(id)
+		var stream := p.stream as AudioStreamWAV
+		if stream != null:
+			stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+			stream.loop_end = int(stream.get_length() * float(stream.mix_rate))
+		p.volume_db = -60.0
+		_loops[id] = {"player": p, "db": -60.0}
+	var entry: Dictionary = _loops[id]
+	entry["db"] = (float(LEVEL.get(id, -8.0)) + db) if on else -60.0
+	var player: AudioStreamPlayer = entry["player"]
+	if on and not player.playing:
+		player.play()
+
+
+func _process(delta: float) -> void:
+	for id in _loops:
+		var entry: Dictionary = _loops[id]
+		var player: AudioStreamPlayer = entry["player"]
+		player.volume_db = move_toward(player.volume_db, float(entry["db"]), delta * 30.0)
+		if player.playing and player.volume_db <= -59.0 and float(entry["db"]) <= -59.0:
+			player.stop()

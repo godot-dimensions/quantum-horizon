@@ -90,6 +90,8 @@ var _board: Node4D
 var _board_tag: WorldTag4D
 var _board_shown: String = ""
 var _slow: float = 0.0
+var _current_cam: Camera4D
+var _camera_search_at: int = -100000
 
 var _ladder: Node4D
 var _tag: WorldTag4D
@@ -252,11 +254,28 @@ func _behave_wren(_s: Dictionary) -> Array:
 
 
 ## The camera drawing the picture now: the station's, a cutscene's, or the farm's.
+##
+## CACHED, AND THE KNOWN ONES FIRST. Searching the pen's whole tree for cameras is thousands
+## of nodes; the balloon's burner asked every frame and it cost 2.5 ms at the spawn point and
+## 15 in the basket. So: the one found last time if it is still current, then the cameras this
+## subgame and the pen are known to use, and the full search only if none of them is.
 func current_camera() -> Camera4D:
-	for cam in room.find_children("*", "Camera4D", true, false):
-		if (cam as Camera4D).is_current():
+	if is_instance_valid(_current_cam) and _current_cam.is_inside_tree() and _current_cam.is_current():
+		return _current_cam
+	var known: Array = [station.get("camera") if station != null else null, cutscene.get("_cam") if cutscene != null else null,
+		farm_camera, room.get_node_or_null("World/TalkCam")]
+	for cam in known:
+		if cam is Camera4D and is_instance_valid(cam) and (cam as Camera4D).is_inside_tree() and (cam as Camera4D).is_current():
+			_current_cam = cam
 			return cam
-	return farm_camera
+	var now: int = Time.get_ticks_msec()
+	if now - _camera_search_at > 1000:
+		_camera_search_at = now
+		for cam in room.find_children("*", "Camera4D", true, false):
+			if (cam as Camera4D).is_current():
+				_current_cam = cam
+				return cam
+	return _current_cam if is_instance_valid(_current_cam) else farm_camera
 
 
 func next_hint() -> String:
@@ -454,6 +473,11 @@ func on_photo(photo: Dictionary) -> void:
 func sound(id: StringName, amount: float = 1.0) -> void:
 	if sounds != null:
 		sounds.call("play", id, amount)
+
+
+func sound_loop(id: StringName, on: bool, db: float = 0.0) -> void:
+	if sounds != null:
+		sounds.call("loop", id, on, db)
 
 
 func _catch_key() -> String:

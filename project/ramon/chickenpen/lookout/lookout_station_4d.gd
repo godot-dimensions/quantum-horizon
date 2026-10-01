@@ -262,6 +262,7 @@ func _give_back(facing_yaw: float) -> void:
 		_layer.queue_free()
 	_layer = null
 	view = null
+	lookout.call("sound_loop", &"wind", false)
 	_set_mode(Mode.OFF)
 	set_process(false)
 	set_process_input(false)
@@ -411,6 +412,10 @@ func _process(delta: float) -> void:
 func _run_camera(delta: float) -> void:
 	if _shutter_cool > 0.0:
 		_shutter_cool -= delta
+	# Wind: a breath of it at the cab's windows, more of it in the open basket, rising with
+	# the height.
+	var height: float = _eye_now.y if _eye_now != Vector4.ZERO else 10.0
+	lookout.call("sound_loop", &"wind", true, (-4.0 if mode == Mode.CAB else 4.0) + clampf((height - 10.0) * 0.2, -4.0, 3.0))
 	# The lens: zoom eased in log space, so every notch takes the same time.
 	zoom = exp(lerpf(log(zoom), log(zoom_goal), clampf(delta * 9.0, 0.0, 1.0)))
 	camera.set("field_of_view_4d", 2.0 * atan(tan(wide_fov * 0.5) / zoom))

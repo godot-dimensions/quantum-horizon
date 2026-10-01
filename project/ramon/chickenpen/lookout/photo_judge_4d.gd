@@ -154,10 +154,15 @@ func verdict(look: Dictionary) -> String:
 	return "good"
 
 
+## Which subject a photo is OF, when several are in it. A secret wins whenever it is in
+## the picture and good: the white starling in a photo of five thousand starlings is a
+## photo of the white starling.
 func _rank(look: Dictionary) -> float:
 	var r: float = float(look.get("points", 0))
 	if verdict(look) != "good":
 		r *= 0.25
+	elif String(look.get("page", "")) in ["owl", "white_starling", "heron"]:
+		r += 100000.0
 	return r
 
 

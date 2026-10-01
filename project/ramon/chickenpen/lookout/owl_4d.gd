@@ -71,6 +71,11 @@ const SIDES := 14
 @export var hoot_sound: AudioStream = preload("res://ramon/chickenpen/audio/sfx/lookout_owl.wav")
 
 var state: int = State.SIT
+## Whether anyone can see it: checked twice a second, and while nobody can, it keeps its
+## clock and its timers but does not pose (it is at w +1.5, off the farm's slice nearly all
+## the time).
+var _seen: bool = true
+var _seen_check: float = 0.0
 
 var _head_pivot: Node4D
 var _wings: Array[Node4D] = []
@@ -304,7 +309,11 @@ func _enter(s: int) -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	_state_t += delta
-	var watcher: Variant = _watcher()
+	_seen_check -= delta
+	if _seen_check <= 0.0:
+		_seen_check = 0.5
+		_seen = _visible_to_camera()
+	var watcher: Variant = _watcher() if _seen else null
 	if watcher != null:
 		_watched = _watched + delta if bool(watcher["on_me"]) else maxf(_watched - delta * 2.0, 0.0)
 	match state:
@@ -337,7 +346,22 @@ func _process(delta: float) -> void:
 		State.HOOT:
 			if _state_t > 2.8:
 				_enter(State.SIT)
-	_pose(delta)
+	if _seen:
+		_pose(delta)
+
+
+## Near enough to the camera drawing the picture, across the ground and through W, to be
+## worth posing: within 30 m, and within 2 m of its slice (so it lives while you are in the
+## cab, whatever the focus ring says, and sleeps while you are out on the farm).
+func _visible_to_camera() -> bool:
+	var lookout: Node = get_node_or_null(lookout_path)
+	if lookout == null:
+		return true
+	var cam: Camera4D = lookout.call("current_camera")
+	if cam == null:
+		return true
+	var rel: Vector4 = global_position - cam.global_position
+	return absf(rel.dot(cam.global_basis.w)) < 2.0 and rel.length() < 30.0
 
 
 func _idle(delta: float) -> void:

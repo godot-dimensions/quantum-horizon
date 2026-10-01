@@ -86,6 +86,8 @@ void vertex() {
 
 void fragment() {
 	ALBEDO = mix(albedo.rgb * COLOR.rgb, white_albedo, white);
+	// A little of its own light: backlit against the dusk sky, plain white reads grey.
+	EMISSION = white_albedo * white * 0.3;
 	ROUGHNESS = roughness;
 	SPECULAR = specular_amount;
 }

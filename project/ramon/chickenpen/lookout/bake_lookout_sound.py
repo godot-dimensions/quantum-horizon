@@ -20,6 +20,7 @@ by changing a number. What each one is modelled on:
   owl         three hoots, the last with a tremolo, low for an owl: it is not from here
   heron       a grey heron's harsh "fraank"
   wings       a big bird's wingbeats lifting off
+  wind        wind round the cab and the basket: a seamless loop, gusting slowly
 
 One-shots are peak-normalised to -1 dBFS; lookout_sound_4d.gd sets each one's level.
 Mono, 44.1 kHz, 16-bit.
@@ -261,6 +262,22 @@ def wings():
     return total
 
 
+def wind():
+    """Periodic: noise shaped in the frequency domain is circular, and the gusts are whole
+    cycles over the loop, so it repeats without a seam."""
+    seconds = 8.0
+    n = int(RATE * seconds)
+    f = np.maximum(np.fft.rfftfreq(n, 1.0 / RATE), 1.0)
+    low = 1.0 / (1.0 + (f / 260.0) ** 2) * (f / 30.0) ** 2 / (1.0 + (f / 30.0) ** 2)
+    whistle = 0.25 * np.exp(-((np.log(f / 820.0)) ** 2) / 0.08)
+    mag = low + whistle
+    mag[0] = 0.0
+    body = np.fft.irfft(mag * np.exp(1j * RNG.uniform(0, 6.28, f.size)), n)
+    t = np.arange(n) / RATE
+    gust = 0.62 + 0.25 * np.sin(2 * np.pi * 1 * t / seconds + 0.4) + 0.13 * np.sin(2 * np.pi * 3 * t / seconds + 1.9)
+    return body * gust
+
+
 def save(name, x, peak=True):
     x = np.asarray(x, dtype=np.float64)
     if peak:
@@ -297,6 +314,7 @@ def main():
     save("lookout_owl.wav", owl())
     save("lookout_heron.wav", heron())
     save("lookout_wings.wav", wings())
+    save("lookout_wind.wav", wind(), peak=False)
 
 
 if __name__ == "__main__":

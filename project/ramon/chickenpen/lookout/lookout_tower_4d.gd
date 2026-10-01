@@ -30,6 +30,12 @@ extends Node4D
 ## foot, a step ana, it is a lone pole in the field.
 ##
 ## Everything is boxes, as the pen's own buildings are, sharing one mesh per size.
+##
+## ONE MESH PER COLOUR, NOT ONE NODE PER BOX. Every MeshInstance4D costs something each
+## frame whether or not it is on screen, and this is a few hundred boxes that never move.
+## So with [member merge_parts] on (the default) the boxes of each colour are merged into a
+## single ArrayTetraMesh4D (TetraMesh4D.to_array_tetra_mesh, ArrayTetraMesh4D.merge_with)
+## and drawn by one node. Off, every box is its own named node, for picking parts apart.
 
 @export_group("Size")
 ## Height of the cab floor above the tower's feet.
@@ -57,8 +63,11 @@ extends Node4D
 @export var timber_dark: Color = Color(0.22, 0.16, 0.12)
 @export var roof_colour: Color = Color(0.16, 0.18, 0.17)
 @export var inside: Color = Color(0.10, 0.08, 0.07)
+@export var merge_parts: bool = true
 
 var _meshes: Dictionary = {}
+var _batches: Dictionary = {}
+var _arrays: Dictionary = {}
 var _materials: Dictionary = {}
 
 
@@ -104,6 +113,7 @@ func rebuild() -> void:
 	_build_catwalk(h, half, wd)
 	if ana_post:
 		_build_ana_post(h, half)
+	_flush()
 	_build_colliders(h, half, wd)
 
 
@@ -302,6 +312,8 @@ func _material(colour: Color) -> TetraMaterial4D:
 
 
 func _box(part: String, at: Vector4, size: Vector4, colour: Color, basis: Projection = Projection.IDENTITY) -> MeshInstance4D:
+	if merge_parts:
+		return _batch(part, at, size, colour, basis)
 	var node := MeshInstance4D.new()
 	node.name = part
 	node.mesh = _mesh(size)
@@ -332,3 +344,29 @@ func _strut(part: String, a: Vector4, b: Vector4, thick: float, wd: float, colou
 	var w: Vector4 = Vector4(0, 0, 0, 1) - y * y.w - x * x.w - z * z.w
 	w = w.normalized()
 	return _box(part, (a + b) * 0.5, Vector4(thick, length, thick, wd), colour, Projection(x, y, z, w))
+
+## Into this colour's merged mesh, or a node of its own when merging is off.
+func _batch(_part: String, at: Vector4, size: Vector4, colour: Color, basis: Projection) -> MeshInstance4D:
+	var key: String = colour.to_html()
+	if not _batches.has(key):
+		_batches[key] = [ArrayTetraMesh4D.new(), colour]
+	var skey: String = "%.3f,%.3f,%.3f,%.3f" % [size.x, size.y, size.z, size.w]
+	if not _arrays.has(skey):
+		var box := BoxTetraMesh4D.new()
+		box.size = size
+		_arrays[skey] = box.to_array_tetra_mesh()
+	(_batches[key][0] as ArrayTetraMesh4D).merge_with(_arrays[skey], at, basis)
+	return null
+
+
+## The merged meshes, one node each.
+func _flush() -> void:
+	for key in _batches:
+		var node := MeshInstance4D.new()
+		node.name = "Parts_" + String(key)
+		node.mesh = _batches[key][0]
+		var m := TetraMaterial4D.new()
+		m.albedo_color = _batches[key][1]
+		node.material_override = m
+		add_child(node, true)
+	_batches.clear()
