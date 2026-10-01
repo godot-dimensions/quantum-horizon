@@ -76,6 +76,10 @@ var _envelope: Node4D
 var _flame: Array[Node4D] = []
 var _basket_body: StaticBody4D
 var _tether: Array[Node4D] = []
+## The burner's four rods: hidden while you ride, because from the middle of the basket
+## they pass right by your eye and cut across every picture; nobody sees them from outside
+## then.
+var _rods: Array[Node4D] = []
 var _moor: Vector4
 var _inflate: float = 1.0
 var _burn: float = 0.0
@@ -111,6 +115,7 @@ func rebuild() -> void:
 		child.free()
 	_flame.clear()
 	_tether.clear()
+	_rods.clear()
 	_build_envelope()
 	_build_basket()
 	_build_burner_and_ropes()
@@ -213,7 +218,7 @@ func _build_burner_and_ropes() -> void:
 	for cx in [-1.0, 1.0]:
 		for cz in [-1.0, 1.0]:
 			var corner := Vector4(cx * 0.6, 1.05, cz * 0.6, 0.0)
-			_strut(self, "Rod", corner, top + Vector4(cx * 0.25, 0.0, cz * 0.25, 0.0), 0.035, 0.3, steel)
+			_rods.append(_strut(self, "Rod", corner, top + Vector4(cx * 0.25, 0.0, cz * 0.25, 0.0), 0.022, 0.3, steel))
 			# The ropes, from the basket corners up to the mouth ring.
 			_strut(self, "Rope", corner, Vector4(cx * 0.42, 3.0, cz * 0.42, 0.0), 0.025, 0.25, Color(0.55, 0.48, 0.36))
 	_box(self, "BurnerFrame", top, Vector4(0.56, 0.05, 0.56, 0.5), steel)
@@ -311,6 +316,8 @@ func board() -> void:
 	position = _moor
 	for t in _tether:
 		t.visible = false
+	for r in _rods:
+		r.visible = false
 	_basket_body.process_mode = Node.PROCESS_MODE_DISABLED
 	var station: Node = lookout.get("station")
 	station.call("ride", Callable(self, "eye"), 36, 0.0, PI)
@@ -399,6 +406,8 @@ func _land() -> void:
 	basis = Projection.IDENTITY
 	for t in _tether:
 		t.visible = true
+	for r in _rods:
+		r.visible = true
 	_basket_body.process_mode = Node.PROCESS_MODE_INHERIT
 	var station: Node = lookout.get("station")
 	var step_out: Vector4 = _moor + Vector4(1.6, 0.05, 1.2, 0.0)

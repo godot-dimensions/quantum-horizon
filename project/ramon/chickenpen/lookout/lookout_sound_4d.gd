@@ -32,6 +32,7 @@ const FILES := {
 	&"heron": "lookout_heron.wav",
 	&"wings": "lookout_wings.wav",
 	&"wind": "lookout_wind.wav",
+	&"secret": "res://ramon/chickenpen/audio/music/CB Sounddesign - All That Glitters - Cinematic and Bright Pad with Chimes.wav",
 }
 const FOLDER := "res://ramon/chickenpen/audio/sfx/"
 ## Loudness of each, in dB, so the bakes can all sit at one level.
@@ -39,7 +40,7 @@ const LEVEL := {
 	&"shutter": -4.0, &"winder": -9.0, &"reload": -8.0, &"empty": -10.0, &"rung": -14.0, &"rung_start": -14.0,
 	&"hatch": -10.0, &"focus": -22.0, &"af": -14.0, &"af_miss": -16.0, &"page": -10.0, &"new_page": -6.0,
 	&"radio_on": -12.0, &"radio_off": -12.0, &"burner": -6.0, &"whistle": -6.0, &"owl": -8.0, &"heron": -6.0,
-	&"wings": -8.0, &"wind": -16.0,
+	&"wings": -8.0, &"wind": -16.0, &"secret": -9.0,
 }
 
 @export_range(0.01, 0.5, 0.01, "suffix:m") var focus_tick: float = 0.08
@@ -55,7 +56,7 @@ var _loops: Dictionary = {}
 
 func _ready() -> void:
 	for id in FILES:
-		var path: String = FOLDER + String(FILES[id])
+		var path: String = String(FILES[id]) if String(FILES[id]).begins_with("res://") else FOLDER + String(FILES[id])
 		if ResourceLoader.exists(path):
 			_streams[id] = load(path)
 	for i in 8:

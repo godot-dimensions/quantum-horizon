@@ -167,6 +167,9 @@ func ride(eye: Callable, film_count: int, yaw_centre: float = 0.0, yaw_half: flo
 		_borrow()
 		_make_camera()
 	_ride_eye = eye
+	# Anything a hand's breadth from the eye is not drawn: the burner's rods pass right by
+	# it in the basket, and drawn they cut across the picture as great orange bars.
+	camera.set("clip_near", 0.6)
 	_ride_yaw_centre = yaw_centre
 	_ride_yaw_half = yaw_half
 	film = film_count
@@ -386,15 +389,26 @@ func _run_climb(delta: float, up: bool) -> void:
 # --- In the cab ------------------------------------------------------------------------------
 
 ## The eye at the window you face: [param look_yaw] decides which, leaning out to it.
+##
+## AT THE WALL YOU LOOK MOST TOWARDS, AND NEVER INTO A CORNER. Leaning straight along the
+## view put the eye on the cab's diagonal whenever you looked diagonally - right behind the
+## corner post, which a long lens then filled the frame with. So the eye goes to the wall
+## facing the view, slides along it towards the view's side, and stops short of the corner;
+## a diagonal view then goes out through that wall's end pane.
 func _cab_eye(look_yaw: float, look_pitch: float) -> Vector4:
 	var h: float = float(_tower.get("deck_height"))
 	var inner: float = float(_tower.get("cab_size")) * 0.5 - 0.12
 	var forward := Vector2(-sin(look_yaw), -cos(look_yaw))
-	var most: float = maxf(absf(forward.x), absf(forward.y))
-	var lean: float = clampf((inner - lean_gap) / maxf(most, 0.0001), 0.0, 1.6)
-	# Leaning over the sill to look down, a little further out.
-	lean += clampf(-look_pitch, 0.0, 1.0) * 0.12
-	return _tower.global_position + Vector4(forward.x * lean, h + eye_height, forward.y * lean, 0.0)
+	var out: float = inner - lean_gap + clampf(-look_pitch, 0.0, 1.0) * 0.12
+	var along_limit: float = inner - 1.0
+	var at := Vector2.ZERO
+	if absf(forward.x) >= absf(forward.y):
+		at.x = signf(forward.x) * out
+		at.y = clampf(forward.y / maxf(absf(forward.x), 0.0001) * out, -along_limit, along_limit)
+	else:
+		at.y = signf(forward.y) * out
+		at.x = clampf(forward.x / maxf(absf(forward.y), 0.0001) * out, -along_limit, along_limit)
+	return _tower.global_position + Vector4(at.x, h + eye_height, at.y, 0.0)
 
 
 func _process(delta: float) -> void:

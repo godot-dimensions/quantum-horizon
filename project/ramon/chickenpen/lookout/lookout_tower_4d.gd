@@ -188,17 +188,16 @@ func _build_cab(h: float, half: float, wd: float) -> void:
 		var at: Vector4 = axis * (half - t * 0.5)
 		var long_size: Vector4 = _orient(along, cab_size, t, wd)
 		if face == 2:
-			# The south face has the door, between the middle mullions, where the ladder
-			# comes up: two short sill panels either side, and the door leaf folded back
-			# flat against the outside of the wall.
+			# The south face has the doorway, between the middle mullions, where the ladder
+			# comes up: two short sill panels either side and no door. A door leaf folded back
+			# against the wall covered a pane from outside, and every long-lens view out of
+			# it was a close-up of planks.
 			var side_len: float = half - half / 3.0
 			for sx in [-1.0, 1.0]:
 				_box("Sill", at + along * (sx * (half - side_len * 0.5)) + Vector4(0, h + sill * 0.5, 0, 0),
 					_with_y(_orient(along, side_len, t, wd), sill), timber)
 				_box("SillShelf", at - axis * 0.16 + along * (sx * (half - side_len * 0.5)) + Vector4(0, h + sill + 0.02, 0, 0),
 					_with_y(_orient(along, side_len - 0.15, 0.32, wd), 0.04), timber_dark)
-			_box("Door", at + axis * 0.1 + along * (-half * 0.72) + Vector4(0, h + lintel * 0.5, 0, 0),
-				_with_y(_orient(along, half * 0.62, 0.05, wd - 0.2), lintel - 0.05), timber)
 		else:
 			_box("Sill", at + Vector4(0, h + sill * 0.5, 0, 0), _with_y(long_size, sill), timber)
 			_box("SillShelf", at - axis * 0.16 + Vector4(0, h + sill + 0.02, 0, 0), _with_y(_orient(along, cab_size - 0.3, 0.32, wd), 0.04), timber_dark)

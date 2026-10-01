@@ -464,7 +464,9 @@ func on_photo(photo: Dictionary) -> void:
 	if view != null:
 		view.call("toast", result)
 	if bool(result.get("new_page", false)):
-		sound(&"new_page")
+		# A secret found: the pad and chimes, the subgame's one piece of music.
+		var page: String = String(result.get("look", {}).get("page", ""))
+		sound(&"secret" if page in ["owl", "white_starling", "heron"] else &"new_page")
 	elif bool(result.get("new_slot", false)) or bool(result.get("better", false)):
 		sound(&"page")
 	story.call("on_photo", result)
