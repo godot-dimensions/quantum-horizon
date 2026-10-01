@@ -38,7 +38,7 @@ const ONE := [
 	[4, 0.25, "v_toy"], [4, 0.75, "v_toy_later"],
 	[5, 0.20, "vi_gloves"], [5, 0.66, "vi_glove_turning"], [5, 0.95, "vi_gloves_matched"],
 ]
-const TWO := [[0, 0.6, "vii_goat"], [1, 0.6, "viii_tool"], [2, 0.4, "ix_walk"]]
+const TWO := [[0, 0.6, "vii_goat"], [1, 0.6, "viii_tool"], [2, 0.4, "ix_walk"], [3, 0.35, "x_the_end"]]
 
 
 func _initialize() -> void:
@@ -111,7 +111,7 @@ func _process(_d) -> bool:
 				_pending = beat[2]
 				_wait = 2
 				return false
-	if _seen.has("ix_walk") or _f > 60000:
+	if _seen.has("x_the_end") or _f > 60000:
 		print("%d pictures" % _n)
 		quit()
 		return true

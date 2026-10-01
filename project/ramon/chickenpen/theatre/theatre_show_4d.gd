@@ -54,6 +54,14 @@ const PRIMER := preload("res://ramon/chickenpen/theatre/theatre_primer_4d.gd")
 ## world, and the shadows). Both belong to the primer's slides.
 @export var metrics_path: NodePath
 @export var screen_path: NodePath
+## The end of the talk: the card in the middle of the screen, and the room's lamps, whose
+## house lights come up as it ends (see curtain).
+@export var endcard_path: NodePath = NodePath("../UI/EndCard")
+@export var lamps_path: NodePath = NodePath("../Lamps")
+## How much brighter the house lights get at the end.
+@export_range(1.0, 4.0, 0.1) var house_lights_up: float = 2.3
+## How long the end card stays after the talk lets you go, on top of the caption's hold.
+@export_range(0.0, 20.0, 0.5) var card_hold: float = 5.0
 
 @export_group("Pacing")
 ## Long enough for him to walk the house and for you to follow him down it.
@@ -239,6 +247,13 @@ var _lent: bool = false
 var _primer: Node
 ## The way out's highlight while the talk is on, so a second showing can put it back.
 var _exit_rest: float = 0.75
+var _endcard: Node
+var _house: Array[OmniLight4D] = []
+var _house_rest: PackedFloat32Array = PackedFloat32Array()
+var _house_up: bool = false
+## The bow: below zero, counting up to it; then its own clock; INF when there is none.
+var _bow: float = INF
+var _card_left: float = -1.0
 
 
 func _ready() -> void:
@@ -284,6 +299,14 @@ func _ready() -> void:
 		_exit_rest = float(_exit.get("highlight"))
 	if _seat != null and _seat.has_signal("sat"):
 		_seat.connect("sat", _on_sat)
+	_endcard = get_node_or_null(endcard_path)
+	var lamps: Node = get_node_or_null(lamps_path)
+	if lamps != null:
+		for name in ["HouseLeft", "HouseRight"]:
+			var lamp := lamps.get_node_or_null(name) as OmniLight4D
+			if lamp != null:
+				_house.append(lamp)
+				_house_rest.append(lamp.light_energy)
 	# Built across the next few frames rather than here - see _build_exhibits. Nothing is
 	# on stage for the opening anyway; the room is dark and he is still walking on.
 	# The way out is NOT switched off here. It stands open from the moment you arrive,
@@ -393,6 +416,7 @@ func _process(delta: float) -> void:
 		return
 	_clock += delta
 	_phase += delta
+	_end_of_show(delta)
 	if _table != null and _spin:
 		# Everything on the turntable turns, slowly, the whole time.
 		_table.basis = Basis4D.from_zx(_clock * 0.22)
@@ -677,12 +701,14 @@ func _perform(delta: float) -> void:
 			# anything in particular.
 			elbow.basis = Basis4D.from_yz(
 				-(0.38 * (1.0 - lift / 1.35) + absf(counter) * 0.3))
+	# And the bow at the end, from the waist, head following.
+	var bow: float = _bowing()
 	var torso: Node4D = _presenter.get("torso") as Node4D
 	if torso != null:
-		torso.basis = Basis4D.from_yz(-reach * 0.14 + idle * 0.5)
+		torso.basis = Basis4D.from_yz(-reach * 0.14 + idle * 0.5 - bow * 0.55)
 	var head: Node4D = _presenter.get("head") as Node4D
 	if head != null:
-		head.basis = Basis4D.from_yz(idle * 1.4)
+		head.basis = Basis4D.from_yz(idle * 1.4 - bow * 0.35)
 
 
 ## Takes a bite out of the rock, once, before anybody sees it.
@@ -947,6 +973,61 @@ func is_over() -> bool:
 	return _over
 
 
+## THE END, SAID BY THE ROOM. Part two calls this as its closing line starts. Ramon,
+## 1 Oct: "when he's like, that's it, it feels very empty". A real theatre does three
+## things at the end and this does all three: the house lights come up, the presenter
+## takes a bow, and something tells you it is over - the card in the middle of the
+## screen, with what you can do now under it. Undone by uncurtain (a step back off the
+## closing line) and by replay.
+func curtain() -> void:
+	_house_up = true
+	_bow = -0.8
+	_tint(Color(0.22, 0.18, 0.14))
+	if _endcard != null and _endcard.has_method("show_card"):
+		var key: String = _key(&"catch_target")
+		_endcard.call("show_card",
+			"%s at your chair to watch it again      ·      %s to talk to Trym      ·      the way out is up the steps behind you"
+				% [key, key])
+
+
+func uncurtain() -> void:
+	_house_up = false
+	_bow = INF
+	_card_left = -1.0
+	if _endcard != null and _endcard.has_method("hide_card"):
+		_endcard.call("hide_card")
+
+
+## The house lights easing up or down, the card's hold after the end, and the bow's clock.
+func _end_of_show(delta: float) -> void:
+	for i in _house.size():
+		var want: float = _house_rest[i] * (house_lights_up if _house_up else 1.0)
+		_house[i].light_energy = move_toward(_house[i].light_energy, want, delta * _house_rest[i] * 0.9)
+	if _card_left > 0.0:
+		_card_left -= delta
+		if _card_left <= 0.0 and _endcard != null and _endcard.has_method("hide_card"):
+			_endcard.call("hide_card")
+	if _bow != INF:
+		_bow += delta
+
+
+## How far into his bow he is, 0 to 1 and back: down over half a second, held, and up.
+func _bowing() -> float:
+	if _bow == INF or _bow < 0.0:
+		return 0.0
+	return smoothstep(0.0, 0.5, _bow) * (1.0 - smoothstep(1.3, 1.9, _bow))
+
+
+## A key as the InputMap has it, so the card never names one that has been rebound.
+func _key(action: StringName) -> String:
+	if InputMap.has_action(action):
+		for event in InputMap.action_get_events(action):
+			if event is InputEventKey:
+				var code: int = event.physical_keycode if event.physical_keycode != 0 else event.keycode
+				return OS.get_keycode_string(code)
+	return "?"
+
+
 ## SIT DOWN AGAIN AND IT PLAYS AGAIN. Ramon, 30 Sept: after the presentation, F in the
 ## chair "I can't watch it over. Instead I'm locked in a freeze." The chair still took the
 ## camera, and nothing was ever going to give it back: the talk was over, so no slide came
@@ -962,6 +1043,7 @@ func _on_sat() -> void:
 ## the first showing waits. The exhibits are kept: they were built once, and the slides put
 ## each one back where it starts whenever it is entered.
 func replay() -> void:
+	uncurtain()
 	_over = false
 	_done = false
 	_lent = false
@@ -998,6 +1080,7 @@ func let_them_go() -> void:
 		# Not immediately, though: the line is the closing line and it should be readable
 		# after the talk has stopped.
 		_clear_in = caption_hold
+		_card_left = caption_hold + card_hold
 		finished.emit()
 	if _exit != null:
 		_exit.set("highlight", 1.0)

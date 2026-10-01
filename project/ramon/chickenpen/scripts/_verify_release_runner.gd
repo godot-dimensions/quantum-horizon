@@ -106,6 +106,13 @@ func _process(_d) -> bool:
 		_check("with the way out lit", float(_exit.get("highlight")) > 0.9,
 			"highlight %.2f - the exit is the thing to look at now"
 				% float(_exit.get("highlight")))
+		# And the room says it is over: the card in the middle, the house lights rising.
+		var card: Node = _root.get_node_or_null("UI/EndCard")
+		_check("the end card is up", card != null and bool(card.call("is_showing")),
+			"END OF PRESENTATION, with what you can do now")
+		var lamp: OmniLight4D = _root.get_node_or_null("Lamps/HouseLeft") as OmniLight4D
+		_check("and the house lights are coming up", lamp != null and lamp.light_energy > 1.1 * 1.1,
+			"house left at %.2f, resting at 1.10" % (lamp.light_energy if lamp != null else -1.0))
 		print("\n%d FAIL(s)" % _fails.size())
 		quit(1 if _fails.size() > 0 else 0)
 		return true

@@ -362,11 +362,17 @@ func _enter(which: int) -> void:
 			String(m["tier"]))
 		_tint(m["tint"])
 		_issue(m["metrics"] as Array)
+		# Back off the closing line onto a slide: the end is not the end any more.
+		if _show != null and _show.has_method("uncurtain"):
+			_show.call("uncurtain")
 	else:
 		if _metrics != null and _metrics.has_method("clear"):
 			_metrics.call("clear")
 		_say("", "That is the case as it stands, gaps included. The rest is somebody else's decision, which is the correct place for it to be.", "", "")
 		_tint(Color(0.10, 0.12, 0.20))
+		# The house lights, the bow and the card: theatre_show_4d.curtain.
+		if _show != null and _show.has_method("curtain"):
+			_show.call("curtain")
 
 
 ## The goat's figures are whatever the goat actually came out at. Writing them into the

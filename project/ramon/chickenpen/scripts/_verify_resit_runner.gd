@@ -130,6 +130,8 @@ func _process(_d) -> bool:
 				_check("F sits you down again", bool(_seat.call("is_seated")), "")
 				_check("and does not also start Trym's talk", not bool(_talk.call("is_running")), "")
 				_check("and the talk starts over from slide I", true, "act 0, not over")
+				var card: Node = _root.get_node_or_null("UI/EndCard")
+				_check("with the end card gone", card != null and not bool(card.call("is_showing")), "")
 				print("
 --- Escape to stand up ---")
 				_press(&"ui_cancel")

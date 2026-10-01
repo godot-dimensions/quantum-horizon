@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_stage_4d.gd" id="stage"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_show_4d.gd" id="show"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_part_two_4d.gd" id="part_two"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_metric_4d.gd" id="metric"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_screen_4d.gd" id="screen"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_endcard_4d.gd" id="endcard"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_arch_4d.gd" id="arch"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_camera_4d.gd" id="shotcam"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_seat_4d.gd" id="seat"]
@@ -132,7 +133,7 @@ dialogue_path = NodePath("../TrymTalk")
 tag_path = NodePath("../UI/TrymTag")
 dialogue_box_path = NodePath("../UI/TrymBox")
 show_path = NodePath("../Show")
-hide_while_talking = Array[NodePath]([NodePath("../UI/Caption"), NodePath("../UI/Metrics"), NodePath("../UI/Screen"), NodePath("../UI/Aside"), NodePath("../UI/Seat")])
+hide_while_talking = Array[NodePath]([NodePath("../UI/Caption"), NodePath("../UI/Metrics"), NodePath("../UI/Screen"), NodePath("../UI/EndCard"), NodePath("../UI/Aside"), NodePath("../UI/Seat")])
 talk_range = 3.0
 talk_range_w = 4.0
 
@@ -178,6 +179,11 @@ shot_rig_path = NodePath("../../ShotCamera")
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("screen")
+
+[node name="EndCard" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("endcard")
 
 [node name="Aside" type="Control" parent="UI"]
 anchor_right = 1.0
