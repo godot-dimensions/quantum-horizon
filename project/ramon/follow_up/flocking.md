@@ -131,3 +131,21 @@ blocks of 40 frames.
    `debug_key_enabled` in the pen.
 8. **`.glsl` compute shaders are only imported by the editor.** Runners launched with
    `--script` compile from the text (`RDShaderSource`) when there is no import.
+
+## 1 Oct: sound, the cinematic, and the menus
+
+- **The flock is heard**: `flock/flock_sound_4d.gd` on `World/Flock/Sound`. Three baked loops (`bake_flock_sound.py` -> `audio/sfx/flock_*.wav`) mixed from every bird's sound power at the camera, so near birds and a big clump are both louder; a low-pass that closes with distance and a panner, on a `Flock` bus made at run time (sent to Ambience).
+- **The hawk** has its own shape (broad fingered wings, long tail, slow beats), grows with distance (`hawk_near_scale` to `hawk_scale`), and three in four come in over the far side of the flock from the camera (`hawk_seen_share`).
+- **Cinematic 1, "Flight of the 4D Starlings"**: `cinematics/cinematic_murmuration_4d.gd`, played by name through the pen's root node `Cinematics` (`pen_cinematics_4d.gd`). Letterbox 2.39:1, title card from black (kicker BOID STUDY 01, Ramon's title), a fly-over opening planned once (no easing jitter), six shots, captions, Romeo - Heaven at -6 dB to Master with the flock bus raised +6 dB, fades on picture and sound, Esc skips. It borrows the pen (HUD hidden, player frozen AND hidden, farm buses muted, Ramon's teal SkyFill off) and gives it all back.
+- **The film** is the movie writer pointed at that node: `scripts/_film_flock_runner.gd`. Finished films go in `smoke_test_output/video/` (gitignored). Encode only; the sound is the game's.
+- **In the pen**: the Cinematics card (`cinematics/pen_cinematics_card_4d.gd`, `UI/Cinematics`), right column under the controls card, camera picker under it. K steps in, Up/Down, Enter plays, Esc leaves. No number keys: 1-5 are the inventory belt's.
+- **In menu_final** (built without being asked; Ramon will evaluate): a CINEMATICS section from the catalogue's own `cinematics` list (Menu2 and the Frontier Map read `entries` only). Commit `edbe4fe` alone reverts it.
+
+Traps found:
+1. **A runner's `_initialize` runs before the scene's `_ready`s**: anything a node sets up in `_ready` (the flock's bus, `respawn()`'s hawk timer) overwrites what the runner set there. Set it from the first `_process` frame.
+2. **`Romeo - Heaven.wav` uses WAVE_FORMAT_EXTENSIBLE (0xFFFE)**: Godot's importer refuses it as "not PCM" though the audio is plain 24-bit PCM. The cinematic plays an `.ogg` copy. Prefer .ogg/.mp3 for music.
+3. **RenderingDevice timestamps never come back under `--write-movie`**: the panel reads "GPU not timed" in films.
+4. **The pen's debug keys 1-5 have been dead since 22 Sep**: the belt takes 1-5 in `_input` first. Only 6, 7, 0 work. Left alone; Ramon did not know the tool existed (a Claude session added it for brief item 81).
+5. **The camera picker lays itself out on redraw only**: it now listens to its anchor's `item_rect_changed`.
+
+Open: the slice dial is overlapped by the right column (controls, Cinematics, camera picker) - Ramon's call whether it moves down. The Mountain Range cinematic is a placeholder in both lists.
