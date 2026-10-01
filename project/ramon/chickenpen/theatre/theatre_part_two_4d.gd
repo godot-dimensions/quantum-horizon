@@ -234,8 +234,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	# _enter resets the phase clock, and stepping forward while already on the closing
 	# beat clamps to the same index and re-enters it, so every click restarts the seconds
 	# the ending is waiting on - and the ending is what stands you out of the chair.
+	#
+	# AND IT IS LEAVING, not just the clock running out early. Ramon, 1 Oct: forward on
+	# the outro "should also just kick you out of the presentation". It used to stand you
+	# up with the closing line and the last exhibit still up behind you; now it is the
+	# same as F or Escape in the chair (theatre_show_4d.walk_out), which clears the floor
+	# and the caption as it lets you go.
 	if step > 0 and _moment >= MOMENTS.size():
-		_finish()
+		_running = false
+		if _show != null and _show.has_method("walk_out"):
+			_show.call("walk_out")
+		else:
+			_finish()
 		return
 	# BACKWARD OFF THE FRONT GOES BACK TO SLIDE VI. From the audience there is one
 	# presentation, not two, and a back arrow that does nothing on slide VII reads as the

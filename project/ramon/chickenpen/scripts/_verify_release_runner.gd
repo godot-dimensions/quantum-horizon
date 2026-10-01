@@ -26,6 +26,7 @@ var _their: Camera4D
 var _sat := false
 var _started := false
 var _ended_at := 0
+var _card_seated := false
 
 
 func _initialize() -> void:
@@ -83,6 +84,11 @@ func _process(_d) -> bool:
 			"slides I to V played to an audience of one, seated, and handed on by themselves")
 		return false
 
+	# The end card, up for the closing line while you are still in the chair.
+	var card_now: Node = _root.get_node_or_null("UI/EndCard")
+	if _started and card_now != null and bool(card_now.call("is_showing")) and bool(_seat.call("is_seated")):
+		_card_seated = true
+
 	# The end of part two: not running any more, and no moment left to show.
 	var count: int = (_two.get_script().get_script_constant_map()["MOMENTS"] as Array).size()
 	var over: bool = _started and not bool(_two.call("is_running")) \
@@ -106,10 +112,13 @@ func _process(_d) -> bool:
 		_check("with the way out lit", float(_exit.get("highlight")) > 0.9,
 			"highlight %.2f - the exit is the thing to look at now"
 				% float(_exit.get("highlight")))
-		# And the room says it is over: the card in the middle, the house lights rising.
+		# And the room says it is over: the house lights rising. The card was up for the
+		# closing line in the chair, and goes the moment you are on your feet (Ramon, 1 Oct).
 		var card: Node = _root.get_node_or_null("UI/EndCard")
-		_check("the end card is up", card != null and bool(card.call("is_showing")),
-			"END OF PRESENTATION, with what you can do now")
+		_check("the end card was up for the closing line", _card_seated,
+			"END OF PRESENTATION in the middle, while you were still seated")
+		_check("the end card went with the chair", card != null and not bool(card.call("is_showing")),
+			"END OF PRESENTATION is for the seated; it fades once you stand")
 		var lamp: OmniLight4D = _root.get_node_or_null("Lamps/HouseLeft") as OmniLight4D
 		_check("and the house lights are coming up", lamp != null and lamp.light_energy > 1.1 * 1.1,
 			"house left at %.2f, resting at 1.10" % (lamp.light_energy if lamp != null else -1.0))

@@ -127,9 +127,11 @@ func _process(_d) -> bool:
 		return false
 
 	print("\n--- and clicked through part two ---")
-	var count: int = (_two.get_script().get_script_constant_map()["MOMENTS"] as Array).size()
-	_check("it ends for somebody who clicks", int(_two.call("current_moment")) >= count,
-		"ran out of moments on frame %d rather than holding on the last one" % _f)
+	# Over, not parked on the last moment: forward off the closing beat leaves the
+	# presentation the way F or Escape does (Ramon, 1 Oct), and leaving puts part two
+	# back to before its first slide, so current_moment is no longer the thing to read.
+	_check("it ends for somebody who clicks", bool(_show.call("is_over")),
+		"over on frame %d rather than holding on the last one" % _f)
 	_check("and it lets go of them", not bool(_seat.call("is_seated"))
 		and _their.is_current() and not bool(_camera.call("is_holding")),
 		"out of the chair with the camera back, the same as sitting it out")

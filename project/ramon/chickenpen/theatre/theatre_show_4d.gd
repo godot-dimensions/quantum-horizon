@@ -62,8 +62,9 @@ const PRIMER := preload("res://ramon/chickenpen/theatre/theatre_primer_4d.gd")
 @export var lamps_path: NodePath = NodePath("../Lamps")
 ## How much brighter the house lights get at the end.
 @export_range(1.0, 4.0, 0.1) var house_lights_up: float = 2.3
-## How long the end card stays after the talk lets you go, on top of the caption's hold.
-@export_range(0.0, 20.0, 0.5) var card_hold: float = 5.0
+## How long the end card stays once you are on your feet. None by default: the card is
+## the chair's (see let_them_go).
+@export_range(0.0, 20.0, 0.5) var card_hold: float = 0.0
 
 @export_group("Pacing")
 ## Long enough for him to walk the house and for you to follow him down it.
@@ -1117,7 +1118,16 @@ func let_them_go() -> void:
 		# Not immediately, though: the line is the closing line and it should be readable
 		# after the talk has stopped.
 		_clear_in = caption_hold
-		_card_left = caption_hold + card_hold
+		# THE CARD IS THE CHAIR'S. It used to hold for eight seconds after you were let go,
+		# full strength in the middle of the screen while you walked about, which Ramon
+		# read as stuck (1 Oct: "it stays.. just that i can walk around now"). It is up for
+		# the whole closing line while you are seated, which is when it is read; once you
+		# are on your feet it fades. This also means walking out (F or Escape) shows no
+		# card at all: you are already standing by the time it would come up.
+		if card_hold > 0.0:
+			_card_left = card_hold
+		elif _endcard != null and _endcard.has_method("hide_card"):
+			_endcard.call("hide_card")
 		finished.emit()
 	if _exit != null:
 		_exit.set("highlight", 1.0)
