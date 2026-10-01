@@ -156,10 +156,10 @@ var _preview_entry: int = 0
 
 func _get_property_list() -> Array[Dictionary]:
 	var list: Array[Dictionary] = []
-	if catalogue == null or catalogue.entries.is_empty():
+	if catalogue == null or _entries().is_empty():
 		return list
 	var names := PackedStringArray()
-	for entry in catalogue.entries:
+	for entry in _entries():
 		names.append(entry.title if entry != null and entry.title != "" else "(untitled)")
 	list.append({
 		"name": "preview_entry",
@@ -338,7 +338,7 @@ func _connect_resource(resource: Resource) -> void:
 func _connect_entries() -> void:
 	if catalogue == null:
 		return
-	var all: Array[MenuEntry] = catalogue.entries.duplicate()
+	var all: Array[MenuEntry] = _entries()
 	if catalogue.hero != null:
 		all.append(catalogue.hero)
 	for entry in all:
@@ -346,16 +346,29 @@ func _connect_entries() -> void:
 			entry.changed.connect(_on_entry_changed)
 
 
+## Every row this menu lists: the catalogue's entries and, after them, its cinematics. Row
+## indices, `_selected` and the played dots all count through this one list. Menu2 and the
+## Frontier Map read `entries` alone, so the cinematics live apart in the resource.
+func _entries() -> Array[MenuEntry]:
+	var all: Array[MenuEntry] = []
+	if catalogue == null:
+		return all
+	all.append_array(catalogue.entries)
+	all.append_array(catalogue.cinematics)
+	return all
+
+
 ## The entry behind an index: HERO is the banner's `catalogue.hero`, anything else an
-## index into `catalogue.entries`. Null for anything out of range.
+## index into `_entries()`. Null for anything out of range.
 func _entry(index: int) -> MenuEntry:
 	if catalogue == null:
 		return null
 	if index == HERO:
 		return catalogue.hero
-	if index < 0 or index >= catalogue.entries.size():
+	var all: Array[MenuEntry] = _entries()
+	if index < 0 or index >= all.size():
 		return null
-	return catalogue.entries[index]
+	return all[index]
 
 
 func _selected_entry() -> MenuEntry:
@@ -366,15 +379,38 @@ func _selected_entry() -> MenuEntry:
 ## the catalogue's own order - so "order is the curriculum" still holds inside each half.
 func _display_order() -> Array[int]:
 	var tour: Array[int] = []
+	var films: Array[int] = []
 	var lab: Array[int] = []
-	for i in catalogue.entries.size():
-		var entry: MenuEntry = catalogue.entries[i]
+	var all: Array[MenuEntry] = _entries()
+	for i in all.size():
+		var entry: MenuEntry = all[i]
 		if entry != null and entry.section == "Lab":
 			lab.append(i)
+		elif entry != null and entry.section == "Cinematic":
+			films.append(i)
 		else:
 			tour.append(i)
+	tour.append_array(films)
 	tour.append_array(lab)
 	return tour
+
+
+## The cinematics, in the order listed: index 0 is the one the 1 key plays.
+func _cinematic_order() -> Array[int]:
+	var films: Array[int] = []
+	var all: Array[MenuEntry] = _entries()
+	for i in _order:
+		var entry: MenuEntry = all[i]
+		if entry != null and entry.section == "Cinematic":
+			films.append(i)
+	return films
+
+
+## "CINEMATICS  ·  PRESS 1 OR 2", counted from the entries.
+func _cinematics_heading() -> String:
+	var n: int = _cinematic_order().size()
+	var keys: String = "PRESS 1" if n == 1 else ("PRESS 1 OR 2" if n == 2 else "PRESS 1 TO %d" % n)
+	return "%s  ·  %s" % [catalogue.cinematics_heading, keys]
 
 
 ## The laptop trip that opened this menu from inside the chicken pen, or null.
@@ -405,7 +441,8 @@ func _move_selected(delta: int) -> void:
 	if catalogue == null or _selected == HERO:
 		return
 	var to: int = _selected + delta
-	if to < 0 or to >= catalogue.entries.size():
+	# The reorder tool works on `entries` only; the cinematics keep their own order.
+	if _selected >= catalogue.entries.size() or to < 0 or to >= catalogue.entries.size():
 		return
 
 	var entries: Array[MenuEntry] = catalogue.entries
@@ -538,12 +575,12 @@ func rebuild() -> void:
 	if _shell != null and is_instance_valid(_shell):
 		_shell.queue_free()
 	_rows.clear()
-	_rows.resize(catalogue.entries.size())
+	_rows.resize(_entries().size())
 	_order = _display_order()
 	_hero_panel = null
 	_preview_atlas = null
 
-	_played.resize(catalogue.entries.size())
+	_played.resize(_entries().size())
 	if _played.count(true) == 0:
 		_played.fill(false)
 
@@ -843,17 +880,19 @@ func _build_list_column() -> Control:
 	rows.add_theme_constant_override("separation", style.space(1))
 	scroll.add_child(rows)
 
-	# Tour first, then the lab under its own heading. Rows are stored by entry index, so
-	# selection, played dots and auto-advance do not care which group a row sits in.
+	# Tour first, then the cinematics and the lab under their own headings. Rows are stored
+	# by entry index, so selection, played dots and auto-advance do not care which group a
+	# row sits in.
 	var lab_started: bool = false
+	var films_started: bool = false
 	for i in _order:
-		var entry: MenuEntry = catalogue.entries[i]
+		var entry: MenuEntry = _entry(i)
+		if not films_started and entry != null and entry.section == "Cinematic":
+			films_started = true
+			_add_group_heading(rows, _cinematics_heading())
 		if not lab_started and entry != null and entry.section == "Lab":
 			lab_started = true
-			var gap := Control.new()
-			gap.custom_minimum_size.y = style.space(1.5)
-			rows.add_child(gap)
-			rows.add_child(_label(catalogue.lab_heading, MenuStyle.MICRO, style.text_dim, true))
+			_add_group_heading(rows, catalogue.lab_heading)
 		var row := _build_row(i)
 		_rows[i] = row
 		rows.add_child(row)
@@ -861,6 +900,13 @@ func _build_list_column() -> Control:
 	# States the interaction rather than leaving it to be guessed at.
 	column.add_child(_label(catalogue.hint, MenuStyle.MICRO, style.text_dim, false))
 	return column
+
+
+func _add_group_heading(rows: VBoxContainer, text: String) -> void:
+	var gap := Control.new()
+	gap.custom_minimum_size.y = style.space(1.5)
+	rows.add_child(gap)
+	rows.add_child(_label(text, MenuStyle.MICRO, style.text_dim, true))
 
 
 ## The shared banner, identical to the Frontier Map's. See [MenuBanner].
@@ -970,7 +1016,7 @@ func _style_hero(chosen: bool) -> void:
 
 
 func _build_row(index: int) -> PanelContainer:
-	var entry: MenuEntry = catalogue.entries[index]
+	var entry: MenuEntry = _entry(index)
 
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _stylebox(style.surface))
@@ -1014,6 +1060,11 @@ func _build_row(index: int) -> PanelContainer:
 	var title_row := HBoxContainer.new()
 	title_row.add_theme_constant_override("separation", style.space(1))
 	text.add_child(title_row)
+	# A cinematic's row says which number key plays it.
+	var films: Array[int] = _cinematic_order()
+	if films.has(index):
+		var key := _label(str(films.find(index) + 1), MenuStyle.SUBTITLE, style.accent.lightened(0.35), false)
+		title_row.add_child(key)
 	title_row.add_child(_label(entry.title.to_upper(), MenuStyle.SUBTITLE, style.text, false))
 
 	if entry.maturity != "":
@@ -1316,7 +1367,7 @@ func _select(index: int) -> void:
 	if index == HERO and catalogue.hero != null:
 		_selected = HERO
 	else:
-		_selected = clampi(index, 0, catalogue.entries.size() - 1)
+		_selected = clampi(index, 0, _entries().size() - 1)
 		# Kept in step so the inspector dropdown always names what is on screen,
 		# including when selection moves from a click or from auto-advance. (The
 		# banner has no place in that dropdown, so selecting it leaves it alone.)
@@ -1569,6 +1620,16 @@ func _input(event: InputEvent) -> void:
 			_close_running()
 		return
 
+	# The number keys play the cinematics, in the order they are listed.
+	if key.keycode >= KEY_1 and key.keycode <= KEY_9:
+		var films: Array[int] = _cinematic_order()
+		var n: int = int(key.keycode - KEY_1)
+		if n < films.size():
+			get_viewport().set_input_as_handled()
+			_select(films[n])
+			_on_launch_pressed()
+		return
+
 	match key.keycode:
 		KEY_DOWN:
 			_step_selection(1)
@@ -1611,6 +1672,18 @@ func _launch(index: int, target: int = 0) -> void:
 	var entry: MenuEntry = _entry(index)
 	if entry == null:
 		return
+	if entry.section == "Cinematic" and entry.cinematic == "":
+		_detail_path.text = "a placeholder - this cinematic is not made yet"
+		return
+	# A cinematic, opened from a laptop inside the pen: play it in that pen rather than a
+	# second copy, and give the pen back afterwards (pen_cinematics_4d.gd reads both metas).
+	if entry.cinematic != "":
+		var trip: Node = _laptop_trip()
+		get_tree().root.set_meta(&"pen_cinematic", entry.cinematic)
+		get_tree().root.set_meta(&"pen_cinematic_return", "pen" if trip != null else "menu")
+		if trip != null:
+			trip.call("come_back")
+			return
 	var targets: Array[Dictionary] = entry.launch_targets(catalogue.launch_label)
 	if targets.is_empty():
 		_detail_path.text = "no scene wired yet - nothing to launch"
@@ -1769,7 +1842,7 @@ func _close_running() -> void:
 func _next_unplayed(from: int) -> int:
 	var tour: Array[int] = []
 	for i in _order:
-		if catalogue.entries[i] != null and catalogue.entries[i].section != "Lab":
+		if _entry(i) != null and _entry(i).section != "Lab":
 			tour.append(i)
 	if tour.is_empty():
 		return -1

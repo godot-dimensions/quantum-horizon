@@ -25,6 +25,7 @@ const MENU := "res://ramon/menu_final.tscn"
 const PEN := "res://ramon/chickenpen/chickenpen.tscn"
 const MAP := "res://ramon/FrontierMap.tscn"
 const TOUR := ["Slice Vision", "4D Ascent", "Portal", "Quantum Range", "Voxel Mining", "Lofted Creatures"]
+const FILMS := ["Flight of the 4D Starlings", "Mountain Range"]
 const LAB := ["Phase Maze", "Shrubbery Lab", "Sky Box Clouds", "Motion Lab"]
 
 var _menu: Node
@@ -150,10 +151,10 @@ func _process(d: float) -> bool:
 				_check("with one button, PLAY THE WORLD", buttons.size() == 1 and (buttons[0] as Button).text == "PLAY THE WORLD")
 				var titles: Array[String] = []
 				for i in (_menu.get("_order") as Array):
-					titles.append(String(catalogue.entries[i].title))
+					titles.append(String((_menu.call("_entry", i) as Resource).get("title")))
 				var expected: Array[String] = []
-				expected.assign(TOUR + LAB)
-				_check("the tour above the lab, in screen order", titles == expected, "%s" % [titles])
+				expected.assign(TOUR + FILMS + LAB)
+				_check("the tour, the cinematics, then the lab, in screen order", titles == expected, "%s" % [titles])
 				_check("the lab has its heading", _has_label(_menu, String(catalogue.get("lab_heading"))))
 				_save("start")
 				_menu.call("_step_selection", 1)
@@ -164,9 +165,11 @@ func _process(d: float) -> bool:
 					_menu.call("_step_selection", 1)
 				_check("five more down is the last of the tour", _selected_title(_menu) == "Lofted Creatures", _selected_title(_menu))
 				_menu.call("_step_selection", 1)
-				_check("and one more is the first of the lab", _selected_title(_menu) == "Phase Maze", _selected_title(_menu))
+				_check("one more is the first cinematic", _selected_title(_menu) == "Flight of the 4D Starlings", _selected_title(_menu))
+				_menu.call("_step_selection", 2)
+				_check("and past the cinematics, the first of the lab", _selected_title(_menu) == "Phase Maze", _selected_title(_menu))
 				_check("the lab's finding tier too, where it has a finding", _has_label_containing(_menu, "n = 1"))
-				for i in 7:
+				for i in 9:
 					_menu.call("_step_selection", -1)
 				_check("and all the way up is the banner again", int(_menu.get("_selected")) == -1)
 				# Slice Vision's second level, on top of the menu as prototypes are.

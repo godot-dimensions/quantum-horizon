@@ -153,6 +153,22 @@ func notice_text() -> String:
 		hero_return_subtitle = value
 		emit_changed()
 
+## The cinematics, in the order the number keys play them. A list of their own rather than
+## more `entries`, because Menu2 (frozen) and the Frontier Map read `entries` too and must
+## not grow a films row; only menu_final.gd reads this.
+@export var cinematics: Array[MenuEntry] = []:
+	set(value):
+		cinematics = value
+		emit_changed()
+
+## Heading over the cinematics. The keys that play them are added
+## after it ("PRESS 1 OR 2"), counted from the entries, so it never names a key that does
+## nothing.
+@export var cinematics_heading: String = "CINEMATICS":
+	set(value):
+		cinematics_heading = value
+		emit_changed()
+
 ## Heading over the entries whose `section` is Lab.
 @export var lab_heading: String = "THE LAB  ·  EARLIER, ROUGHER EXPERIMENTS":
 	set(value):

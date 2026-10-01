@@ -38,7 +38,12 @@ class_name MenuEntry
 ##
 ## Only menu_final.gd reads this. Menu2 and the Frontier Map ignore it, so it cannot
 ## change either of them.
-@export_enum("Tour", "Lab") var section: String = "Tour":
+##
+## CINEMATIC (Ramon, 1 Oct: "a 'cinematics' menu ... press 1 ... press 2") is a film played
+## in a place rather than a prototype played by hand: kept in the catalogue's own
+## `cinematics` list, shown under its own heading between the tour and the lab, and started
+## by the number keys in the order listed. See [member cinematic].
+@export_enum("Tour", "Lab", "Cinematic") var section: String = "Tour":
 	set(value):
 		section = value
 		emit_changed()
@@ -117,6 +122,16 @@ class_name MenuEntry
 @export var opens_as_scene: bool = false:
 	set(value):
 		opens_as_scene = value
+		emit_changed()
+
+## A cinematic by name in the scene this entry opens - the chicken pen's list is in
+## pen_cinematics_4d.gd. Set, launching opens the scene and plays the cinematic instead of
+## handing over control; when it ends, or Escape skips it, it comes back to this menu. Use it
+## with [member opens_as_scene]. Empty for anything that is played rather than watched; and
+## a Cinematic entry left empty is a placeholder that launches nothing.
+@export var cinematic: String = "":
+	set(value):
+		cinematic = value
 		emit_changed()
 
 ## Further scenes this entry can start, each getting its own button beside the

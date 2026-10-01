@@ -11,9 +11,11 @@ extends Node
 ##
 ## IT BORROWS THE PEN AND GIVES IT BACK. While it plays: the HUD is hidden (the stats panel
 ## shows in the first shot, inside the letterbox), the player is frozen, its own camera
-## flies, the sky-fill light is off (its sun disc is the blue orb behind the flock in upward
-## shots), and the only sound is the music and the flock - the farm's music, bed and effects
-## buses muted. Afterwards every one of those is put back as it was.
+## flies, and the only sound is the music and the flock - the farm's music, bed and effects
+## buses muted - and the sky-fill light is off: its sun disc is a teal glow behind the flock
+## in every upward shot. Ramon tried it on and settled it, 1 Oct: "still best to turn off my
+## teal blue light when showing the cinematics". Afterwards every one of those is put back
+## as it was.
 ##
 ## THE MIX: the music at half volume (-6 dB) straight to Master; the flock's bus raised and
 ## sent straight to Master too, so the birds sit on top of the music when the camera is among
@@ -25,9 +27,12 @@ signal finished
 
 const STYLE := preload("res://ramon/Menu/style/menu_final_style.tres")
 
-## [title, line, seconds]. The first was 9 s; Ramon: "cut the first shot after 4 seconds".
+## [title, line, seconds]. The first shot flies over the farm and up to the flock (see
+## _plan_crane); Ramon, 1 Oct, of the one before it: "you see the main character flying in the air, and
+## its bumpy ... make a new starter shot showing the farm overview and then leading up?
+## maybe mithra overshoulder and then moving forward and up".
 const SHOTS := [
-	["Over the pen at dusk", "5,000 starlings, one compute shader, 0.4 ms a frame", 4.0],
+	["Over the pen at dusk", "5,000 starlings, one compute shader, 0.4 ms a frame", 6.0],
 	["Underneath", "Seven neighbours each, not a radius: the flock holds its spacing at any density", 8.0],
 	["Alongside", "Turning inertia: a turn crosses the flock as a wave instead of fading", 8.0],
 	["Inside the flock", "Every bird is a 4D body, cut by the camera's slice like the rest of the farm", 7.0],
@@ -162,7 +167,8 @@ func _borrow() -> void:
 		"hud": hud, "buses": buses, "flock_bus": flock_bus,
 		"flock_send": AudioServer.get_bus_send(flock_bus) if flock_bus >= 0 else &"Ambience",
 		"flock_volume": AudioServer.get_bus_volume_db(flock_bus) if flock_bus >= 0 else 0.0,
-		"player_mode": player.process_mode, "sky": sky.visible if sky else true,
+		"player_mode": player.process_mode, "player_shown": (player as Node4D).visible,
+		"sky": sky.visible if sky else true,
 		"seen_share": _flock.get("hawk_seen_share"), "near_scale": _flock.get("hawk_near_scale"),
 		"profile": _flock.get("profile_gpu"), "pin": stats.get("pin_top_left") if stats else false,
 		"pin_at": stats.get("pin_at") if stats else Vector2(32.0, 32.0),
@@ -171,7 +177,9 @@ func _borrow() -> void:
 	if flock_bus >= 0:
 		AudioServer.set_bus_send(flock_bus, &"Master")
 		AudioServer.set_bus_volume_db(flock_bus, -60.0)
+	# Frozen and hidden: frozen as the pen starts, it hangs in the air where it spawned.
 	player.process_mode = Node.PROCESS_MODE_DISABLED
+	(player as Node4D).visible = false
 	if sky:
 		sky.visible = false
 	# The hawk always comes in where the camera can see it, timed for the hawk shot, and a
@@ -204,6 +212,7 @@ func _give_back() -> void:
 		AudioServer.set_bus_send(flock_bus, _saved["flock_send"])
 		AudioServer.set_bus_volume_db(flock_bus, _saved["flock_volume"])
 	(_room.get_node("Player") as Node).process_mode = _saved["player_mode"]
+	(_room.get_node("Player") as Node4D).visible = _saved["player_shown"]
 	var sky := _room.get_node_or_null("World/SkyFill") as Node4D
 	if sky:
 		sky.visible = _saved["sky"]
@@ -294,18 +303,22 @@ func _build_overlay() -> void:
 	var kicker := _label(KICKER, 15, Color(1.0, 1.0, 1.0, 0.5), STYLE.font)
 	kicker.add_theme_constant_override("outline_size", 0)
 	var title := _label(TITLE, 76, Color(1.0, 1.0, 1.0, 0.96), STYLE.font)
-	var subtitle := _label(SUBTITLE, 24, Color(1.0, 1.0, 1.0, 0.75))
-	var method := _label(METHOD, 16, Color(1.0, 1.0, 1.0, 0.45))
+	# One size for the two lines under the title (Ramon); the method line a little dimmer,
+	# so the subtitle still reads first.
+	var subtitle := _label(SUBTITLE, 21, Color(1.0, 1.0, 1.0, 0.75))
+	var method := _label(METHOD, 21, Color(1.0, 1.0, 1.0, 0.5))
 	for l in [kicker, title, subtitle, method]:
 		(l as Label).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stack.add_child(cue)
 	stack.add_child(kicker)
 	stack.add_child(title)
-	stack.add_child(subtitle)
-	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 14)
-	stack.add_child(gap)
-	stack.add_child(method)
+	# The two lines under the title as one block: the gap above them kept, the gap between
+	# them small (Ramon: "the two sentences closer together").
+	var lines := VBoxContainer.new()
+	lines.add_theme_constant_override("separation", 0)
+	lines.add_child(subtitle)
+	lines.add_child(method)
+	stack.add_child(lines)
 	centre.add_child(stack)
 	centre.modulate.a = 0.0
 	_layer.add_child(centre)
@@ -440,8 +453,8 @@ func _process(scaled: float) -> void:
 		_caption.modulate.a = caption_a * down
 		_cue.modulate.a = _caption.modulate.a
 		_frame_camera(_shot, clampf(_shot_t / length, 0.0, 1.0), d)
-	else:
-		_frame_camera(0, 0.0, d)
+	# Under the title the screen is black and the camera waits: the fly-over is planned as
+	# the first shot starts, from where the flock is by then.
 	_lay_out()
 	if _ending >= _end_length + 0.4:
 		_finish()
@@ -462,7 +475,44 @@ func _hide_hud() -> void:
 	(_room.get_node("Player/StateLabel") as CanvasItem).visible = false
 
 
+## The first shot's path, worked out once as it starts and then followed exactly - no
+## easing towards a moving target, which is what made the old one bumpy. A fly-over: from
+## high behind the farm, looking across the pen the way the flock is, forward and up until
+## the flock fills the view. Nothing in the farm is stopped for it (Ramon: "a simple
+## solution for now, just having the camera fly over the scene without oddities"), and the
+## whole path is lifted if a hill is in its way.
+var _crane: Dictionary = {}
+## The flock's middle, eased: it comes back from the GPU a frame or two at a time, and a
+## camera aimed straight at it steps.
+var _m_smooth := Vector4.ZERO
+
+
+func _plan_crane() -> void:
+	var m: Vector4 = _middle()
+	var pen := _room.get_node_or_null("Pen") as Node4D
+	var farm: Vector4 = pen.global_position if pen != null else Vector4.ZERO
+	farm.w = m.w
+	var dir := Vector4(m.x - farm.x, 0.0, m.z - farm.z, 0.0)
+	dir = dir.normalized() if dir.length() > 1.0 else Vector4(0.0, 0.0, -1.0, 0.0)
+	var right := Vector4(-dir.z, 0.0, dir.x, 0.0)
+	var up := Vector4(0, 1, 0, 0)
+	var e0: Vector4 = farm - dir * 22.0 + right * 6.0 + up * 7.0
+	var l0: Vector4 = farm + dir * 10.0 + up * 0.5
+	var e1: Vector4 = farm + dir * 14.0 + right * 3.0 + up * 13.0
+	# Clear of the hills all the way: the largest shortfall along the path lifts all of it.
+	var lift: float = 0.0
+	for k in 21:
+		var t: float = float(k) / 20.0
+		var p: Vector4 = e0.lerp(e1, smoothstep(0.0, 1.0, t))
+		lift = maxf(lift, _ground(p.x, p.z) + 2.5 - p.y)
+	e0.y += lift
+	e1.y += lift
+	_crane = {"e0": e0, "l0": l0, "e1": e1}
+
+
 func _start_shot() -> void:
+	if _shot == 0:
+		_plan_crane()
 	_caption_title.text = String(SHOTS[_shot][0])
 	_caption_line.text = String(SHOTS[_shot][1])
 	Engine.time_scale = 0.5 if _shot == 4 else 1.0
@@ -484,6 +534,7 @@ func _heading() -> Vector4:
 ## Where each shot puts the camera, [param k] from 0 to 1 through it.
 func _frame_camera(shot: int, k: float, d: float) -> void:
 	var m: Vector4 = _middle()
+	_m_smooth = m if _m_smooth == Vector4.ZERO else _m_smooth.lerp(m, minf(d * 3.0, 1.0))
 	var ahead: Vector4 = _heading()
 	var side := Vector4(ahead.z, 0.0, -ahead.x, 0.0)
 	var up := Vector4(0, 1, 0, 0)
@@ -494,11 +545,18 @@ func _frame_camera(shot: int, k: float, d: float) -> void:
 	var turn: float = 0.0
 	match shot:
 		0:
-			# From beside the farm towards the roost, low, the farm in the foreground. Four
-			# seconds now, so it covers the first part of the old nine-second move.
-			eye = Vector4(lerpf(9.0, 5.0, k), lerpf(2.0, 2.6, k), lerpf(10.0, 1.0, k), m.w)
-			look = m + Vector4(0.0, -2.0, 0.0, 0.0)
-			follow = 6.0
+			# The crane (see _plan_crane), placed exactly rather than eased towards.
+			if _crane.is_empty():
+				_plan_crane()
+			var move: float = smoothstep(0.0, 1.0, k)
+			var turn_up: float = smoothstep(0.1, 0.95, k)
+			_eye = (_crane["e0"] as Vector4).lerp(_crane["e1"], move)
+			_look = (_crane["l0"] as Vector4).lerp(_m_smooth, turn_up)
+			_cam.global_basis = Projection.IDENTITY
+			_cam.global_position = _eye
+			_cam.look_at(_look)
+			_cam.make_current()
+			return
 		1:
 			# On the ground below the flock, circling slowly, looking up.
 			var a: float = k * 1.2
