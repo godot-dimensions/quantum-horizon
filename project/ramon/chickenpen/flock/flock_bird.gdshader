@@ -30,6 +30,11 @@ uniform float flap_rate = 11.0;
 uniform vec4 albedo : source_color = vec4(0.045, 0.043, 0.05, 1.0);
 uniform float roughness : hint_range(0.0, 1.0) = 0.42;
 uniform float specular_amount : hint_range(0.0, 1.0) = 0.6;
+// One bird drawn white, or none (-1): the Lookout's white starling (lookout/, opt in from
+// pen_flock_4d.gd's white_bird). Never the hawk, whose custom w is its beat rate.
+uniform int white_index = -1;
+uniform vec3 white_albedo : source_color = vec3(0.93, 0.91, 0.86);
+varying float white;
 
 void vertex() {
 	vec4 p = vec4(MODEL_MATRIX[0][0], MODEL_MATRIX[1][0], MODEL_MATRIX[2][0], MODEL_MATRIX[3][0]);
@@ -40,6 +45,7 @@ void vertex() {
 	vec4 ahead_4d = view_basis * f;
 	vec4 right_4d = view_basis * r;
 
+	white = (INSTANCE_ID == white_index && INSTANCE_CUSTOM.w <= 0.0) ? 1.0 : 0.0;
 	float size = INSTANCE_CUSTOM.z;
 	float depth = max(w_radius * size, 0.0001);
 	float left = 1.0 - (rel.w * rel.w) / (depth * depth);
@@ -79,7 +85,7 @@ void vertex() {
 }
 
 void fragment() {
-	ALBEDO = albedo.rgb * COLOR.rgb;
+	ALBEDO = mix(albedo.rgb * COLOR.rgb, white_albedo, white);
 	ROUGHNESS = roughness;
 	SPECULAR = specular_amount;
 }

@@ -151,6 +151,12 @@ func _build_ladder(h: float, half: float, wd: float) -> void:
 	var rungs: int = int(h / 0.35)
 	for i in rungs:
 		_box("Rung", Vector4(0.0, 0.3 + float(i) * 0.35, z, 0.0), Vector4(0.64, 0.04, 0.04, wd), steel)
+	# At the foot: a slab to stand on, and Wren's notice board on its post beside it.
+	_box("LadderSlab", Vector4(0.0, 0.04, z + 0.7, 0.0), Vector4(1.8, 0.08, 1.6, wd), Color(0.42, 0.41, 0.38))
+	_box("BoardPost", Vector4(1.35, 0.75, z + 1.05, 0.0), Vector4(0.1, 1.5, 0.1, 0.3), timber_dark)
+	_box("Board", Vector4(1.35, 1.35, z + 1.0, 0.0), Vector4(0.9, 0.6, 0.05, 0.6), timber)
+	_box("BoardFace", Vector4(1.35, 1.35, z + 1.03, 0.0), Vector4(0.78, 0.48, 0.02, 0.5), Color(0.86, 0.82, 0.70))
+	_box("BoardRoof", Vector4(1.35, 1.7, z + 1.0, 0.0), Vector4(1.04, 0.05, 0.22, 0.7), roof_colour)
 	# A stand-off to the catwalk at the top, and a cage hoop or two.
 	_box("LadderTop", Vector4(0.0, h - 0.05, (z + half + 0.6) * 0.5, 0.0), Vector4(0.8, 0.08, z - half, wd), timber)
 	for y in [h - 2.6, h - 1.2]:
@@ -171,8 +177,21 @@ func _build_cab(h: float, half: float, wd: float) -> void:
 		var along: Vector4 = Vector4(-axis.z, 0.0, axis.x, 0.0)
 		var at: Vector4 = axis * (half - t * 0.5)
 		var long_size: Vector4 = _orient(along, cab_size, t, wd)
-		_box("Sill", at + Vector4(0, h + sill * 0.5, 0, 0), _with_y(long_size, sill), timber)
-		_box("SillShelf", at - axis * 0.16 + Vector4(0, h + sill + 0.02, 0, 0), _with_y(_orient(along, cab_size - 0.3, 0.32, wd), 0.04), timber_dark)
+		if face == 2:
+			# The south face has the door, between the middle mullions, where the ladder
+			# comes up: two short sill panels either side, and the door leaf folded back
+			# flat against the outside of the wall.
+			var side_len: float = half - half / 3.0
+			for sx in [-1.0, 1.0]:
+				_box("Sill", at + along * (sx * (half - side_len * 0.5)) + Vector4(0, h + sill * 0.5, 0, 0),
+					_with_y(_orient(along, side_len, t, wd), sill), timber)
+				_box("SillShelf", at - axis * 0.16 + along * (sx * (half - side_len * 0.5)) + Vector4(0, h + sill + 0.02, 0, 0),
+					_with_y(_orient(along, side_len - 0.15, 0.32, wd), 0.04), timber_dark)
+			_box("Door", at + axis * 0.1 + along * (-half * 0.72) + Vector4(0, h + lintel * 0.5, 0, 0),
+				_with_y(_orient(along, half * 0.62, 0.05, wd - 0.2), lintel - 0.05), timber)
+		else:
+			_box("Sill", at + Vector4(0, h + sill * 0.5, 0, 0), _with_y(long_size, sill), timber)
+			_box("SillShelf", at - axis * 0.16 + Vector4(0, h + sill + 0.02, 0, 0), _with_y(_orient(along, cab_size - 0.3, 0.32, wd), 0.04), timber_dark)
 		_box("Header", at + Vector4(0, h + (lintel + ch) * 0.5, 0, 0), _with_y(long_size, ch - lintel), timber)
 		for k in [-1.0, -1.0 / 3.0, 1.0 / 3.0]:
 			var post_at: Vector4 = at + along * (k * half) + Vector4(0, h + (sill + lintel) * 0.5, 0, 0)
@@ -211,8 +230,17 @@ func _build_catwalk(h: float, half: float, wd: float) -> void:
 	for face in 4:
 		var c0: Vector2 = _corner(face, out - 0.05)
 		var c1: Vector2 = _corner(face + 1, out - 0.05)
-		_strut("Rail", Vector4(c0.x, h + 1.0, c0.y, 0), Vector4(c1.x, h + 1.0, c1.y, 0), 0.06, wd, steel)
-		_strut("Rail", Vector4(c0.x, h + 0.5, c0.y, 0), Vector4(c1.x, h + 0.5, c1.y, 0), 0.04, wd, steel)
+		# The south rail has a gap where the ladder comes over the top.
+		var runs: Array = [[c0, c1]]
+		if face == 2:
+			runs = [[c0, Vector2(0.5, c0.y)], [Vector2(-0.5, c1.y), c1]]
+			for gx in [-0.5, 0.5]:
+				_box("RailPost", Vector4(gx, h + 0.5, c0.y, 0), Vector4(0.06, 1.0, 0.06, wd), steel)
+		for run in runs:
+			var a: Vector2 = run[0]
+			var b: Vector2 = run[1]
+			_strut("Rail", Vector4(a.x, h + 1.0, a.y, 0), Vector4(b.x, h + 1.0, b.y, 0), 0.06, wd, steel)
+			_strut("Rail", Vector4(a.x, h + 0.5, a.y, 0), Vector4(b.x, h + 0.5, b.y, 0), 0.04, wd, steel)
 		_box("RailPost", Vector4(c0.x, h + 0.5, c0.y, 0), Vector4(0.06, 1.0, 0.06, wd), steel)
 
 

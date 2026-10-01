@@ -111,6 +111,7 @@ var _ride_yaw_centre: float = 0.0
 var _ride_yaw_half: float = PI
 var _eye_now: Vector4 = Vector4.ZERO
 var _last_rung: int = -1
+var _ride_lean: Vector4 = Vector4.ZERO
 
 
 func setup(owner_lookout: Node) -> void:
@@ -436,9 +437,15 @@ func _run_camera(delta: float) -> void:
 			exposures = 0
 	var eye: Vector4
 	if mode == Mode.RIDE and _ride_eye.is_valid():
-		eye = _ride_eye.call()
 		var off: float = wrapf(yaw - _ride_yaw_centre, -PI, PI)
 		yaw = _ride_yaw_centre + clampf(off, -_ride_yaw_half, _ride_yaw_half)
+		# Leaning on the rim towards where you look, and over it to look down - or the
+		# basket's own walls fill the bottom of every picture.
+		var forward := Vector2(-sin(yaw), -cos(yaw))
+		var lean: float = 0.3 + 0.55 * clampf(-pitch / 0.9, 0.0, 1.0)
+		var target: Vector4 = (_ride_eye.call() as Vector4) + Vector4(forward.x * lean, -0.08 * clampf(-pitch, 0.0, 1.0), forward.y * lean, 0.0)
+		_ride_lean = _ride_lean.lerp(target - (_ride_eye.call() as Vector4), clampf(delta * 6.0, 0.0, 1.0))
+		eye = (_ride_eye.call() as Vector4) + _ride_lean
 	else:
 		var target: Vector4 = _cab_eye(yaw, pitch)
 		eye = _eye_now.lerp(target, clampf(delta * 6.0, 0.0, 1.0)) if _eye_now != Vector4.ZERO else target
@@ -521,6 +528,8 @@ func _input(event: InputEvent) -> void:
 				climb_down()
 			else:
 				lookout.call("on_ride_escape")
+		elif code == KEY_X and mode == Mode.RIDE:
+			lookout.call("on_whistle")
 		elif code == KEY_R:
 			_straightening = 0.45
 		elif code == KEY_T:

@@ -103,7 +103,26 @@ func _process(d: float) -> bool:
 			_check("subjects collected", (_lookout.get("subjects").call("all") as Array).size() >= 10,
 				"%d" % (_lookout.get("subjects").call("all") as Array).size())
 			_check("not climbable from the spawn point", not bool(_lookout.call("can_climb")))
+			var card := _room.get_node_or_null("UI/Journal") as Control
+			var cine := _room.get_node("UI/Cinematics") as Control
+			var picker := _room.get_node("UI/CameraPicker") as Control
+			# Under the Cinematics card when there is room; beside it, tops level, when a small
+			# window at a big UI size leaves none.
+			var under: bool = card != null and absf(card.position.y - (cine.position.y + cine.size.y + 10.0)) < 1.5
+			var beside: bool = card != null and absf(card.position.y - cine.position.y) < 1.5 and absf(card.position.x + card.size.x + 10.0 - cine.position.x) < 1.5
+			var screen: Vector2 = card.get_viewport_rect().size if card else Vector2.ZERO
+			_check("the Journal card under the Cinematics card, or beside it when short of room",
+				under or (beside and cine.position.y + cine.size.y + 10.0 + card.size.y > screen.y - 6.0),
+				"card %s cine %s screen %s" % [str(Rect2(card.position, card.size)) if card else "-", str(Rect2(cine.position, cine.size)), str(screen)])
+			_check("the card on screen", card != null and card.position.y + card.size.y <= screen.y and card.position.x >= 0.0)
+			_check("the camera picker clear of the Journal card", card != null and not Rect2(card.position, card.size).intersects(Rect2(picker.position, picker.size)),
+				"picker %s" % str(Rect2(picker.position, picker.size)))
+			_check("Wren is there", _room.get_node_or_null("World/Wren") != null)
+			_check("the owl is on its post", _lookout.get("owl") != null and (_lookout.get("owl") as Node4D).global_position.w > 1.4)
 			_save("spawn_view")
+			# This runner tests the camera: the story is skipped (its own runner walks it).
+			_lookout.get("journal").call("set_flag", "approached", true)
+			_lookout.get("journal").call("set_flag", "met_wren", true)
 			_next()
 		1:
 			# Look at the tower from the field, with a camera of our own.
@@ -177,43 +196,62 @@ func _process(d: float) -> bool:
 		11:
 			_save("ana_post_focus0")
 			_station.set("focus_goal", 1.5)
-			_next(0.8)
+			_station.set("zoom_goal", 3.5)
+			_aim((_lookout.get("owl") as Node4D).call("head_point"))
+			_next(1.0)
 		12:
 			_check("the focus ring got there", absf(float(_station.get("focus")) - 1.5) < 0.05, "%.3f" % float(_station.get("focus")))
-			_save("ana_post_focus15")
+			_save("owl_focus15")
+			var owl_seen: bool = false
+			for v in _lookout.get("subjects").call("in_view", _station.get("camera"), _station.call("home_eye"), _station.call("slice_normal"), 3.0):
+				if v["subject"]["id"] == "owl":
+					owl_seen = absf(float(v["w"]) - 1.5) < 0.2
+			_check("the owl is in view at about w +1.5", owl_seen)
+			_key(KEY_J)
+			_next(0.5)
+		13:
+			var book: Control = _lookout.get("book")
+			_check("J opens the journal in the cab", bool(book.call("is_open")))
+			_save("book_in_cab")
+			_key(KEY_DOWN)
+			_next(0.3)
+		14:
+			_save("book_page2")
+			_key(KEY_J)
 			_station.set("focus_goal", 0.0)
 			_station.set("slice_xw", PI * 0.5)
 			_station.set("zoom_goal", 1.0)
 			_station.set("yaw", 0.0)
 			_station.set("pitch", 0.0)
 			_next(0.8)
-		13:
+		15:
+			_check("J closes it again", not bool((_lookout.get("book") as Control).call("is_open")))
 			_save("slice_quarter_xw")
 			_station.set("slice_xw", 0.0)
 			_station.set("slice_zw", PI * 0.5)
 			_next(0.6)
-		14:
+		16:
 			_save("slice_quarter_zw")
 			_station.set("yaw", PI * 0.5)
 			_next(0.5)
-		15:
+		17:
 			_save("slice_quarter_zw_west")
 			_station.set("slice_zw", 0.0)
 			_station.set("slice_xw", PI * 0.5)
 			_station.set("yaw", -PI * 0.5)
 			_next(0.5)
-		16:
+		18:
 			_save("slice_quarter_xw_east")
 			_station.set("slice_xw", 0.0)
 			_station.set("yaw", 0.0)
 			_next(0.2)
-		17:
+		19:
 			_station.set("slice_zw", 0.0)
 			var nike := _room.get_node("World/Nike") as Node4D
 			_aim(nike.global_position + Vector4(0, 0.5, 0, 0))
 			_station.set("zoom_goal", 8.0)
 			_next(1.2)
-		18:
+		20:
 			_save("nike_zoom8")
 			var seen: Array = []
 			for v in _lookout.get("subjects").call("in_view", _station.get("camera"), _station.call("home_eye"), _station.call("slice_normal"), 3.0):
@@ -221,7 +259,7 @@ func _process(d: float) -> bool:
 			print("      in view: ", ", ".join(seen))
 			_click()
 			_next(0.8)
-		19:
+		21:
 			var journal: Node = _lookout.get("journal")
 			var recent: Array = journal.get("recent")
 			_check("a photo was taken", recent.size() == 1)
@@ -231,10 +269,10 @@ func _process(d: float) -> bool:
 			_save("after_shot")
 			_key(KEY_ESCAPE)
 			_next(0.4)
-		20:
+		22:
 			_check("climbing down", int(_station.get("mode")) == 3)
 			_next(float(_station.get("down_seconds")) + 0.6)
-		21:
+		23:
 			_check("off the tower", int(_station.get("mode")) == 0)
 			_check("the player back, shown, in control", _player.visible and _player.get("input_enabled") == true \
 				and _player.process_mode != Node.PROCESS_MODE_DISABLED)
@@ -242,7 +280,7 @@ func _process(d: float) -> bool:
 			_check("the HUD back", hud_back)
 			_save("back_down")
 			_next()
-		22:
+		24:
 			var book: String = ProjectSettings.globalize_path(TEST_BOOK)
 			if FileAccess.file_exists(TEST_BOOK):
 				DirAccess.remove_absolute(book)

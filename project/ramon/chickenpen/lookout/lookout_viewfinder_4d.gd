@@ -63,8 +63,11 @@ func _process(delta: float) -> void:
 		_black = maxf(_black - delta, 0.0)
 	if _note_t > 0.0:
 		_note_t -= delta
+	# A cutscene's bars would cut them in half: they wait for it, then carry on.
+	var held: bool = station != null and bool(station.get("lookout").call("story_busy"))
 	for t in _toasts:
-		t["t"] = float(t["t"]) + delta
+		if not held:
+			t["t"] = float(t["t"]) + delta
 	while not _toasts.is_empty() and float(_toasts[0]["t"]) > 4.2:
 		_toasts.pop_front()
 	queue_redraw()
@@ -205,6 +208,8 @@ func _meter_y(s: Vector2) -> float:
 
 
 func _draw_toasts(s: Vector2) -> void:
+	if station != null and bool(station.get("lookout").call("story_busy")):
+		return
 	var y: float = 26.0
 	for t in _toasts:
 		var r: Dictionary = t["r"]

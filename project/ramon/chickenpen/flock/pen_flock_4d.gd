@@ -148,6 +148,9 @@ const SOUND_NEAR := 6.0
 ## Half a bird's own depth along W at bird_scale 1. The slice shows it whole at its w and
 ## shrinking to nothing this far off it.
 @export_range(0.05, 5.0, 0.01, "suffix:m") var bird_w_radius: float = 0.35
+## One bird drawn white, by index, or none (-1). Off in the pen; the Lookout turns it on for
+## its white starling (lookout/photo_judge_4d.gd finds it by this index at the shutter).
+@export var white_bird: int = -1
 
 @export_group("Hawk")
 @export var hawk_enabled: bool = true
@@ -821,6 +824,7 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngi
 	_material.set_shader_parameter("view_basis_w", basis.w)
 	_material.set_shader_parameter("view_origin", origin)
 	_material.set_shader_parameter("w_radius", bird_w_radius)
+	_material.set_shader_parameter("white_index", white_bird if white_bird < count else -1)
 
 
 ## A starling at size 1, modelled +Z ahead: a pointed body, a short square tail and two

@@ -1,8 +1,15 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="PackedScene" uid="uid://bcgq82wcbp0g0" path="res://ramon/chickenpen/chickenpen.tscn" id="1_pen"]
 [ext_resource type="Script" path="res://ramon/chickenpen/lookout/lookout_tower_4d.gd" id="2_tower"]
 [ext_resource type="Script" path="res://ramon/chickenpen/lookout/lookout_4d.gd" id="3_lookout"]
+[ext_resource type="Script" path="res://ramon/chickenpen/lookout/lookout_wren_4d.gd" id="4_wren"]
+[ext_resource type="Script" uid="uid://cu6xoypl3i6xf" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="5_face"]
+[ext_resource type="Script" uid="uid://bvklfrydaxyio" path="res://ramon/dialogue/world_tag_4d.gd" id="6_tag"]
+[ext_resource type="Script" uid="uid://wi7i76jsegki" path="res://ramon/dialogue/dialogue_box_4d.gd" id="7_box"]
+[ext_resource type="Script" uid="uid://ddjd5gskmnqr3" path="res://ramon/dialogue/dialogue_player_4d.gd" id="8_talk"]
+[ext_resource type="Script" path="res://ramon/chickenpen/lookout/lookout_wren_talk_4d.gd" id="9_wren_talk"]
+[ext_resource type="Script" path="res://ramon/chickenpen/lookout/journal_card_4d.gd" id="10_card"]
 
 [node name="ChickenPen" instance=ExtResource("1_pen")]
 metadata/lookout = "The pen plus the Lookout (follow_up/lookout_plan.md). The pen file is untouched; these nodes move into it when Ramon says so."
@@ -11,5 +18,78 @@ metadata/lookout = "The pen plus the Lookout (follow_up/lookout_plan.md). The pe
 position = Vector4(-16, 0, -36, 0)
 script = ExtResource("2_tower")
 
+[node name="Wren" type="Node4D" parent="World"]
+position = Vector4(-12.7, 0, -29.8, 0)
+script = ExtResource("4_wren")
+
+[node name="WrenHead" type="Node4D" parent="World"]
+position = Vector4(-12.7, 1.45, -29.8, 0)
+
+[node name="WrenFacing" type="Node4D" parent="World"]
+script = ExtResource("5_face")
+figure_path = NodePath("../Wren")
+player_path = NodePath("../../Player")
+notice_within = 4.0
+
+[node name="CameraPicker" parent="UI"]
+under_path = NodePath("../Journal")
+
+[node name="Journal" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("10_card")
+
+[node name="WrenTag" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("6_tag")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../World/WrenHead")
+lift = 12.0
+
+[node name="WrenBox" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("7_box")
+choice_side = 1
+choice_width = 470.0
+choice_gap = 10.0
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../World/WrenHead")
+over_head_width = 470.0
+name_size = 17
+text_size = 20
+choice_size = 19
+
 [node name="Lookout" type="Node" parent="Systems"]
 script = ExtResource("3_lookout")
+
+[node name="WrenTalk" type="Node" parent="Systems"]
+script = ExtResource("8_talk")
+box_path = NodePath("../../UI/WrenBox")
+
+[node name="WrenDriver" type="Node" parent="Systems"]
+script = ExtResource("9_wren_talk")
+facing_path = NodePath("../../World/WrenFacing")
+lookout_path = NodePath("../Lookout")
+player_path = NodePath("../../Player")
+character_path = NodePath("../../Player")
+catcher_path = NodePath("../../Player/Catcher")
+dialogue_path = NodePath("../WrenTalk")
+tag_path = NodePath("../../UI/WrenTag")
+camera_rig_path = NodePath("../../Player/CameraRig")
+hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint"), NodePath("../../UI/Objective"), NodePath("../../UI/Progress"), NodePath("../../UI/Debug"), NodePath("../../UI/CameraPicker"), NodePath("../../UI/Quests"), NodePath("../../UI/Journal"), NodePath("../../UI/Cinematics"), NodePath("../../UI/FlockStats")])
+talk_range = 2.4
+two_shot = true
+two_shot_seconds = 2.5
+two_shot_side = 1.9
+two_shot_back = 1.7
+two_shot_rise = 0.35
+two_shot_bias = 0.8
+camera_marker_path = NodePath("../../World/TalkCam")
+camera_target_path = NodePath("../../World/WrenHead")
+main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/WrenBox")
