@@ -153,11 +153,11 @@ func _draw_lines(eye: Camera4D) -> void:
 	var f: float = _fade
 	for i in range(1, grid_across):
 		var u: float = float(i) / float(grid_across)
-		draw_line(_at(eye, u, 0.0), _at(eye, u, 1.0), Color(grid_color, grid_color.a * f), 1.2 * px, true)
+		draw_line(_at(eye, u, 0.0), _at(eye, u, 1.0), Color(grid_color, grid_color.a * f), 0.8 * px, true)
 	for j in range(1, grid_up):
 		var v: float = lerpf(_floor, 1.0, float(j) / float(grid_up))
-		draw_line(_at(eye, 0.0, v), _at(eye, 1.0, v), Color(grid_color, grid_color.a * f), 1.2 * px, true)
+		draw_line(_at(eye, 0.0, v), _at(eye, 1.0, v), Color(grid_color, grid_color.a * f), 0.8 * px, true)
 	var corners: Array = [_at(eye, 0.0, 0.0), _at(eye, 1.0, 0.0), _at(eye, 1.0, 1.0), _at(eye, 0.0, 1.0)]
 	for k in 4:
-		draw_line(corners[k], corners[(k + 1) % 4], Color(edge_color, edge_color.a * f), 2.2 * px, true)
-	draw_line(_at(eye, 0.0, _floor), _at(eye, 1.0, _floor), Color(floor_color, floor_color.a * f), 3.2 * px, true)
+		draw_line(corners[k], corners[(k + 1) % 4], Color(edge_color, edge_color.a * f), 1.7 * px, true)
+	draw_line(_at(eye, 0.0, _floor), _at(eye, 1.0, _floor), Color(floor_color, floor_color.a * f), 2.6 * px, true)

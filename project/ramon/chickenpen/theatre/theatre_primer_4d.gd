@@ -67,8 +67,14 @@ var _current: String = ""
 var _pieces: Dictionary = {}
 
 # Slide I.
-const SHEET_W := 4.6
-const SHEET_H := 2.5
+## A little larger than the ghosts need (Ramon, 1 Oct), so the world has room round them.
+const SHEET_W := 5.2
+const SHEET_H := 2.8
+## How thick everything IN the sheet is - the chicken and the cuts alike, one depth for
+## all of it. A slice has no thickness to speak of, and the first version's chicken (three
+## centimetres) and cuts (six) read as cut-outs standing in front of the sheet rather than
+## things living in it.
+const SLICE := 0.012
 ## The chicken's ground, above the turntable, and how far below it the sheet runs.
 const FLOOR_Y := 0.55
 const SHEET_DROP := 0.3
@@ -333,9 +339,9 @@ func _build_sheet() -> Node4D:
 	# sheet makes through the ghost at each height. Strips rather than a mesh because they
 	# can be re-sized by their basis alone, with no mesh rebuilt.
 	for i in STRIPS:
-		_ball_cut.append(_box(piece, "BallCut%d" % i, Vector4.ZERO, Vector4(0.01, 0.01, 0.06, 0.5),
+		_ball_cut.append(_box(piece, "BallCut%d" % i, Vector4.ZERO, Vector4(0.01, 0.01, SLICE, 0.5),
 			Color(1.0, 0.62, 0.20)))
-		_cone_cut.append(_box(piece, "ConeCut%d" % i, Vector4.ZERO, Vector4(0.01, 0.01, 0.06, 0.5),
+		_cone_cut.append(_box(piece, "ConeCut%d" % i, Vector4.ZERO, Vector4(0.01, 0.01, SLICE, 0.5),
 			Color(0.45, 1.0, 0.55)))
 	for strip in _ball_cut + _cone_cut:
 		strip.visible = false
@@ -356,13 +362,16 @@ func _flat_chicken(parent: Node) -> Node4D:
 	var shade := Color(0.86, 0.84, 0.80)
 	var red := Color(0.92, 0.18, 0.16)
 	var yellow := Color(1.0, 0.76, 0.18)
-	var thin: float = 0.02
+	# The slice's depth in the bird's own (scaled) frame, and how far the wing and the eye
+	# sit proud of the body - just enough to be drawn over it, no more.
+	var thin: float = SLICE / 1.55
+	var proud: float = thin * 0.6
 	var w: float = 0.5
 	_box(body, "Belly", Vector4(0.0, 0.30, 0.0, 0.0), Vector4(0.46, 0.20, thin, w), white)
 	_box(body, "Back", Vector4(-0.01, 0.32, 0.0, 0.0), Vector4(0.34, 0.30, thin, w), white)
 	_box(body, "Tail", Vector4(-0.25, 0.42, 0.0, 0.0), Vector4(0.12, 0.20, thin, w), white,
 		Basis4D.from_xy(-0.45))
-	_box(body, "Wing", Vector4(-0.03, 0.31, 0.012, 0.0), Vector4(0.24, 0.11, thin, w), shade)
+	_box(body, "Wing", Vector4(-0.03, 0.31, proud, 0.0), Vector4(0.24, 0.11, thin, w), shade)
 	for dx in [-0.05, 0.05]:
 		_box(body, "Leg%d" % int(signf(dx)), Vector4(dx, 0.10, 0.0, 0.0), Vector4(0.03, 0.20, thin, w), yellow)
 		_box(body, "Foot%d" % int(signf(dx)), Vector4(dx + 0.035, 0.012, 0.0, 0.0),
@@ -376,7 +385,7 @@ func _flat_chicken(parent: Node) -> Node4D:
 	_box(_chicken_head, "Comb", Vector4(0.06, 0.255, 0.0, 0.0), Vector4(0.13, 0.05, thin, w), red)
 	_box(_chicken_head, "Beak", Vector4(0.165, 0.15, 0.0, 0.0), Vector4(0.07, 0.045, thin, w), yellow)
 	_box(_chicken_head, "Wattle", Vector4(0.115, 0.09, 0.0, 0.0), Vector4(0.04, 0.06, thin, w), red)
-	_box(_chicken_head, "Eye", Vector4(0.095, 0.175, 0.014, 0.0), Vector4(0.03, 0.03, thin, w),
+	_box(_chicken_head, "Eye", Vector4(0.095, 0.175, proud, 0.0), Vector4(0.03, 0.03, thin, w),
 		Color(0.05, 0.05, 0.08))
 	return bird
 
@@ -632,7 +641,7 @@ func _size_strips(strips: Array[MeshInstance4D], x: float, y0: float, y1: float,
 		strip.visible = on and h > 0.004
 		if strip.visible:
 			strip.position = Vector4(x, y, 0.0, 0.0)
-			strip.basis = Basis4D.from_scale(Vector4(h * 2.0, step * 1.08, 0.06, 0.5))
+			strip.basis = Basis4D.from_scale(Vector4(h * 2.0, step * 1.08, SLICE, 0.5))
 			left.append(Vector2(x - h, y))
 			right.append(Vector2(x + h, y))
 	if left.size() < 2:
