@@ -574,9 +574,9 @@ func _run_sheet(tau: float, delta: float) -> void:
 	var ball_outline: PackedVector2Array = _cut_ball(ball_z if _ghost_ball.visible else 99.0)
 	var cone_outline: PackedVector2Array = _cut_cone(cone_z if _ghost_cone.visible else 99.0)
 	if ball_outline.size() > 2:
-		shapes.append([ball_outline, Color(1.0, 0.62, 0.20)])
+		shapes.append([_on_floor(ball_outline), Color(1.0, 0.62, 0.20)])
 	if cone_outline.size() > 2:
-		shapes.append([cone_outline, Color(0.45, 1.0, 0.55)])
+		shapes.append([_on_floor(cone_outline), Color(0.45, 1.0, 0.55)])
 
 	# The chicken: pecks, and jumps when something appears in its world out of nowhere.
 	var something: bool = not shapes.is_empty()
@@ -627,6 +627,19 @@ func _cut_cone(z: float) -> PackedVector2Array:
 	return _size_strips(_cone_cut, CONE_X, FLOOR_Y, top, func(y: float) -> float:
 		var rho: float = CONE_R * (1.0 - (y - FLOOR_Y) / CONE_H)
 		return sqrt(maxf(0.0, rho * rho - d * d)), d < CONE_R - 0.02)
+
+
+## An outline from the turntable's frame into the flat view's, whose ground is at y = 0.
+##
+## THE FLAT VIEW STANDS ON ITS OWN FLOOR. It draws its ground line at zero and the chicken
+## on it; the cuts were handed over measured from the turntable top, where the floor line
+## is FLOOR_Y up - so every shape on the screen floated 0.55 m above the ground while the
+## same shape on the sheet sat on it (Ramon spotted it, 1 Oct).
+func _on_floor(outline: PackedVector2Array) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for p in outline:
+		out.append(Vector2(p.x, p.y - FLOOR_Y))
+	return out
 
 
 func _size_strips(strips: Array[MeshInstance4D], x: float, y0: float, y1: float, half: Callable,

@@ -85,13 +85,14 @@ const SHOTS := {
 	# this slice: the camera arrives where they would be and they are not there.
 	"drift": {"eye": Vector4(-3.6, 2.4, 7.4, 0.0), "focus": Vector4(-2.2, 1.4, 0.0, 0.0),
 		"eye_to": Vector4(3.8, 2.4, 7.4, 0.0), "focus_to": Vector4(3.0, 1.4, 0.0, 0.0)},
-	# The chicken's sheet from three-quarters and ABOVE, easing round towards the front. NOT
-	# square on: the ghosts travel through the sheet towards you, and from straight in front
-	# a ball coming at you only grows - from the side you see it cross. And looking down on
-	# it (Ramon, 1 Oct: "a little bit looking down to see the perspective better"), so the
-	# sheet reads as a thin plane standing in a deeper space rather than as a picture frame.
-	"sheet": {"eye": Vector4(4.3, 5.0, 6.0, 0.0), "focus": Vector4(0.2, 2.0, 0.0, 0.0),
-		"eye_to": Vector4(2.7, 4.5, 7.1, 0.0), "focus_to": Vector4(0.1, 1.9, 0.0, 0.0)},
+	# The chicken's sheet from LOW ON THE LEFT, looking up at it, with a slow push in. Chosen
+	# by Ramon (1 Oct) from six candidates: the sheet fills the frame, the chicken - on the
+	# left of its world - is near and large, and looking up makes the sheet a world standing
+	# in the room rather than a diagram on a table. Still from the side rather than square
+	# on: the ghosts travel through the sheet towards you, and from straight in front a ball
+	# coming at you only grows - from the side you see it cross.
+	"sheet": {"eye": Vector4(-3.2, 2.25, 5.9, 0.0), "focus": Vector4(0.2, 2.4, 0.0, 0.0),
+		"eye_to": Vector4(-2.8, 2.35, 5.3, 0.0), "focus_to": Vector4(0.25, 2.35, 0.0, 0.0)},
 	# Back far enough for the largest of the zoo, a shade above so the tiger's two rings do
 	# not stack on top of each other in the picture.
 	"zoo": {"eye": Vector4(1.8, 3.6, 7.4, 0.0), "focus": Vector4(0.0, 2.7, 0.0, 0.0),
