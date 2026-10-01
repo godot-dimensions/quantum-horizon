@@ -7,7 +7,8 @@ extends SceneTree
 ## orbit camera and none of the framing anybody will actually get.
 ##
 ## Windowed (--headless has no rendering device). Args after --: fast=<seconds> sets the
-## shared act length (default 9, which keeps each beat in proportion but the run short).
+## shared act length (default 9, which keeps each beat in proportion but the run short);
+## until=<name> stops once that frame is saved (e.g. until=i_cone_cut for slide I alone).
 ## Writes res://smoke_test_output/talk_<nn>_<what>.png.
 
 var _root: Node
@@ -22,6 +23,7 @@ var _seen := {}
 var _pending := ""
 var _wait := 0
 var _fast := 9.0
+var _until := ""
 
 ## Part one's beats: [act, fraction of its length, name].
 const ONE := [
@@ -46,6 +48,8 @@ func _initialize() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("fast="):
 			_fast = float(a.substr(5))
+		elif a.begins_with("until="):
+			_until = a.substr(6)
 	_root = load("res://ramon/chickenpen/theatre/theatre.tscn").instantiate()
 	root.add_child(_root)
 	current_scene = _root
@@ -88,6 +92,10 @@ func _process(_d) -> bool:
 		print("saved %s   video memory %.0f MB" % [path.get_file(),
 			Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0])
 		_n += 1
+		if _until != "" and _pending == _until:
+			print("%d pictures" % _n)
+			quit()
+			return true
 		_pending = ""
 		return false
 
