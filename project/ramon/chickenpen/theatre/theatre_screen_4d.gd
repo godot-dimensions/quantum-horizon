@@ -34,8 +34,15 @@ extends Control
 ## picture's own. Close enough that depth reads, far enough that nothing crosses the eye.
 @export_range(1.5, 10.0, 0.1) var w_eye: float = 3.4
 @export_range(2.0, 20.0, 0.1) var z_eye: float = 7.0
+## The cameras, so the shadow is seen from where you are looking at the drum from.
+@export var camera_path: NodePath
+@export var shot_rig_path: NodePath
 
 var _font: Font
+var _camera: Camera4D
+var _shot_rig: Node
+## The live camera's right, up and back, read once per drawing (see _project).
+var _view: Array[Vector3] = []
 var _mode: String = ""
 var _title: String = ""
 var _fade: float = 0.0
@@ -98,6 +105,10 @@ func mode() -> String:
 
 
 func _process(delta: float) -> void:
+	if _camera == null:
+		_camera = get_node_or_null(camera_path) as Camera4D
+	if _shot_rig == null:
+		_shot_rig = get_node_or_null(shot_rig_path)
 	var was: float = _fade
 	_fade = move_toward(_fade, 1.0 if _showing else 0.0, delta / maxf(fade_seconds, 0.01))
 	# ONE MORE REDRAW ON THE WAY TO NOTHING. A CanvasItem keeps its last drawing until it is
@@ -201,19 +212,45 @@ func _ellipse(centre: Vector2, radii: Vector2, colour: Color) -> void:
 
 # ---------------------------------------------------------------- shadow
 
+## Whichever camera is rendering: the shot camera once you sit, your own before that.
+func _live() -> Camera4D:
+	if _shot_rig != null and _shot_rig.has_method("live_camera"):
+		var shot: Camera4D = _shot_rig.call("live_camera") as Camera4D
+		if shot != null and shot.is_current():
+			return shot
+	return _camera
+
+
+## SEEN FROM WHERE YOU ARE. The 3D shadow is turned into the live camera's own frame before
+## it is drawn, so it faces you the way the slice on the drum does: when the camera is off
+## to one side (fifteen degrees from the seat, more on some shots) the two still turn
+## together. It used to be drawn from a fixed spot in front and a little above, which was
+## right only for a camera standing there, and on the ditorus the slice faced you at an
+## angle while its shadow stood edge on (Ramon asked for the panels to be checked, 1 Oct).
+## The camera is read once per drawing into _view; without one it falls back to that fixed
+## view.
 func _project(inner: Rect2, p: Vector4) -> Vector3:
 	var q: Vector4 = _basis * p + _offset
 	var k: float = w_eye / maxf(w_eye - q.w, 0.2)
 	var v := Vector3(q.x, q.y, q.z) * k
-	# A fixed three-quarter view of the 3D shadow, looking a little down on it.
-	var tilt: float = 0.32
-	v = Vector3(v.x, v.y * cos(tilt) - v.z * sin(tilt), v.y * sin(tilt) + v.z * cos(tilt))
+	if _view.size() == 3:
+		v = Vector3(v.dot(_view[0]), v.dot(_view[1]), v.dot(_view[2]))
+	else:
+		var tilt: float = 0.32
+		v = Vector3(v.x, v.y * cos(tilt) - v.z * sin(tilt), v.y * sin(tilt) + v.z * cos(tilt))
 	var s: float = z_eye / maxf(z_eye - v.z, 0.5)
 	var scale: float = minf(inner.size.x, inner.size.y) * 0.29
 	return Vector3(inner.get_center().x + v.x * s * scale, inner.get_center().y - v.y * s * scale, q.w)
 
 
 func _draw_shadow(inner: Rect2, a: float, h: float) -> void:
+	_view.clear()
+	var eye: Camera4D = _live()
+	if eye != null:
+		var b: Projection = eye.global_basis
+		_view.append(Vector3(b.x.x, b.x.y, b.x.z))
+		_view.append(Vector3(b.y.x, b.y.y, b.y.z))
+		_view.append(Vector3(b.z.x, b.z.y, b.z.z))
 	var width: float = maxf(1.2, h / 720.0)
 	for line in _lines:
 		var pts: PackedVector4Array = line

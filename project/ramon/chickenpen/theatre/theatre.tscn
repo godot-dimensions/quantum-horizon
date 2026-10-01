@@ -187,6 +187,8 @@ shot_rig_path = NodePath("../../ShotCamera")
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("screen")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+shot_rig_path = NodePath("../../ShotCamera")
 
 [node name="EndCard" type="Control" parent="UI"]
 anchor_right = 1.0
