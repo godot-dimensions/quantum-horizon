@@ -56,6 +56,7 @@ var _table: Node4D
 var _metrics: Node
 var _screen: Node
 var _seat: Node
+var _pane: Node
 var _material: TetraMaterial4D
 var _unit: BoxTetraMesh4D
 var _paints: Dictionary = {}
@@ -127,11 +128,12 @@ var _left_moved: float = 0.0
 var _last_turn_msec: int = -100000
 
 
-func setup(table: Node4D, metrics: Node, screen: Node, seat: Node) -> void:
+func setup(table: Node4D, metrics: Node, screen: Node, seat: Node, pane: Node = null) -> void:
 	_table = table
 	_metrics = metrics
 	_screen = screen
 	_seat = seat
+	_pane = pane
 	# On the main thread: the colour cube is a texture, and textures are the renderer's.
 	_material = TerrainBake.material()
 	_unit = BoxTetraMesh4D.new()
@@ -294,26 +296,10 @@ func build(id: String) -> Node4D:
 ## you see the ball AND the bright disc where it meets the sheet.
 func _build_sheet() -> Node4D:
 	var piece := _piece("FlatWorld")
-	var edge := Color(0.30, 0.85, 1.0)
-	var faint := Color(0.16, 0.32, 0.46)
-	var x0: float = -SHEET_W * 0.5
-	var x1: float = SHEET_W * 0.5
-	var y0: float = FLOOR_Y - SHEET_DROP
-	var y1: float = y0 + SHEET_H
-	for side in [x0, x1]:
-		_bar(piece, "Edge%d" % int(signf(side)), Vector3(side, y0, 0.0), Vector3(side, y1, 0.0), 0.04, edge)
-	_bar(piece, "Top", Vector3(x0, y1, 0.0), Vector3(x1, y1, 0.0), 0.04, edge)
-	_bar(piece, "Bottom", Vector3(x0, y0, 0.0), Vector3(x1, y0, 0.0), 0.04, edge)
-	# The ground, which is all the "down" a flat world has.
-	_bar(piece, "Floor", Vector3(x0, FLOOR_Y, 0.0), Vector3(x1, FLOOR_Y, 0.0), 0.06,
-		Color(0.55, 0.85, 1.0))
-	for i in range(1, 6):
-		var x: float = lerpf(x0, x1, float(i) / 6.0)
-		_bar(piece, "GridV%d" % i, Vector3(x, y0, 0.0), Vector3(x, y1, 0.0), 0.012, faint)
-	for i in range(1, 3):
-		var y: float = lerpf(FLOOR_Y, y1, float(i) / 3.0)
-		_bar(piece, "GridH%d" % i, Vector3(x0, y, 0.0), Vector3(x1, y, 0.0), 0.012, faint)
-	_pane(piece, x0, x1, y0, y1)
+	# THE SHEET ITSELF IS NOT BUILT HERE AT ALL - its glow, its edges, its floor line and
+	# its grid are all drawn over the picture, translucent, by theatre_pane_4d (see that
+	# file for why the renderer cannot do it). The mesh frame they replace read as a solid
+	# object; Ramon, 1 Oct: brighter, and a bit transparent.
 
 	_chicken = _flat_chicken(piece)
 	_chicken.position = Vector4(-1.35, FLOOR_Y, 0.0, 0.0)
@@ -354,44 +340,6 @@ func _build_sheet() -> Node4D:
 	for strip in _ball_cut + _cone_cut:
 		strip.visible = false
 	return piece
-
-
-## THE PANE, NOT JUST ITS FRAME. Ramon, 1 Oct: the square "feels very very empty and not
-## like a slit". So the sheet is lit from its edges: bands of blue at the left, the right
-## and the top, fading towards the middle, and below the floor line a lit strip of ground,
-## which is the chicken's earth.
-##
-## THE MIDDLE STAYS OPEN, because nothing in this renderer is translucent: a filled pane
-## would hide the ghosts while they are behind it, and seeing them come is half the slide.
-## The bands stop short of where the ball and the cone pass (they never reach past
-## x = 1.4), and they sit a few centimetres behind the sheet's plane, so the chicken and
-## the bright cuts are drawn in front of them.
-const PANE_SIDE := 0.62
-const PANE_TOP := 0.38
-const PANE_STEPS := 7
-
-
-func _pane(piece: Node4D, x0: float, x1: float, y0: float, y1: float) -> void:
-	var lit := Color(0.24, 0.60, 0.95)
-	var deep := Color(0.05, 0.10, 0.20)
-	var z: float = -0.035
-	var step_w: float = PANE_SIDE / float(PANE_STEPS)
-	var step_h: float = PANE_TOP / float(PANE_STEPS)
-	for i in PANE_STEPS:
-		var c: Color = lit.lerp(deep, pow(float(i) / float(PANE_STEPS), 0.75))
-		for side in [-1.0, 1.0]:
-			var x: float = (x1 if side > 0.0 else x0) - side * step_w * (float(i) + 0.5)
-			_box(piece, "PaneSide%d_%d" % [int(side), i], Vector4(x, (y0 + y1) * 0.5, z, 0.0),
-				Vector4(step_w * 1.04, y1 - y0, 0.02, 0.5), c)
-		_box(piece, "PaneTop%d" % i, Vector4(0.0, y1 - step_h * (float(i) + 0.5), z, 0.0),
-			Vector4(x1 - x0 - PANE_SIDE * 2.0, step_h * 1.04, 0.02, 0.5), c)
-	# The ground: brightest just under the floor line, dark at the sheet's foot.
-	var ground: int = 4
-	var depth: float = FLOOR_Y - y0
-	for i in ground:
-		var c: Color = Color(0.32, 0.68, 1.0).lerp(deep, float(i) / float(ground - 1))
-		_box(piece, "PaneGround%d" % i, Vector4(0.0, FLOOR_Y - depth / float(ground) * (float(i) + 0.5), z, 0.0),
-			Vector4(x1 - x0 - PANE_SIDE * 2.0, depth / float(ground) * 1.04, 0.02, 0.5), c)
 
 
 ## The chicken, flat: a paper cut-out of boxes standing in the sheet, side on, facing the
@@ -525,11 +473,16 @@ func enter(id: String) -> void:
 	_glove_started = false
 	_left_down = false
 	_left_moved = 0.0
+	if _pane != null and id != "chicken":
+		_pane.call("hide_pane")
 	match id:
 		"chicken":
 			if _screen != null:
 				_screen.call("show_flat", "THE CHICKEN'S WHOLE WORLD",
 					Rect2(-SHEET_W * 0.5, -SHEET_DROP, SHEET_W, SHEET_H))
+			if _pane != null and _pieces.has("FlatWorld"):
+				_pane.call("show_pane", _pieces["FlatWorld"],
+					Rect2(-SHEET_W * 0.5, FLOOR_Y - SHEET_DROP, SHEET_W, SHEET_H), FLOOR_Y)
 		"visitors", "zoo":
 			if _screen != null:
 				_screen.call("hide_screen")
@@ -557,6 +510,8 @@ func leave() -> void:
 	_current = ""
 	if _screen != null:
 		_screen.call("hide_screen")
+	if _pane != null:
+		_pane.call("hide_pane")
 	_clear_metrics()
 
 

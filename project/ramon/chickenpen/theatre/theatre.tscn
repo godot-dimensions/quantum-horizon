@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_stage_4d.gd" id="stage"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_show_4d.gd" id="show"]
@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_metric_4d.gd" id="metric"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_screen_4d.gd" id="screen"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_endcard_4d.gd" id="endcard"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_pane_4d.gd" id="pane"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_arch_4d.gd" id="arch"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_camera_4d.gd" id="shotcam"]
 [ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_seat_4d.gd" id="seat"]
@@ -138,6 +139,13 @@ talk_range = 3.0
 talk_range_w = 4.0
 
 [node name="UI" type="Node4D" parent="."]
+
+[node name="Pane" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("pane")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+shot_rig_path = NodePath("../../ShotCamera")
 
 [node name="TrymBox" type="Control" parent="UI"]
 anchors_preset = 15

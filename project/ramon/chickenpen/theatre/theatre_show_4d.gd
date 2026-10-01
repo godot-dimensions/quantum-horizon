@@ -57,6 +57,8 @@ const PRIMER := preload("res://ramon/chickenpen/theatre/theatre_primer_4d.gd")
 ## The end of the talk: the card in the middle of the screen, and the room's lamps, whose
 ## house lights come up as it ends (see curtain).
 @export var endcard_path: NodePath = NodePath("../UI/EndCard")
+## The translucent glow on slide I's sheet (theatre_pane_4d).
+@export var pane_path: NodePath = NodePath("../UI/Pane")
 @export var lamps_path: NodePath = NodePath("../Lamps")
 ## How much brighter the house lights get at the end.
 @export_range(1.0, 4.0, 0.1) var house_lights_up: float = 2.3
@@ -294,11 +296,14 @@ func _ready() -> void:
 	_primer = PRIMER.new()
 	_primer.name = "Primer"
 	add_child(_primer)
-	_primer.call("setup", _table, get_node_or_null(metrics_path), get_node_or_null(screen_path), _seat)
+	_primer.call("setup", _table, get_node_or_null(metrics_path), get_node_or_null(screen_path), _seat,
+		get_node_or_null(pane_path))
 	if _exit != null:
 		_exit_rest = float(_exit.get("highlight"))
 	if _seat != null and _seat.has_signal("sat"):
 		_seat.connect("sat", _on_sat)
+	if _seat != null and _seat.has_signal("stood"):
+		_seat.connect("stood", _on_stood)
 	_endcard = get_node_or_null(endcard_path)
 	var lamps: Node = get_node_or_null(lamps_path)
 	if lamps != null:
@@ -1036,6 +1041,38 @@ func _key(action: StringName) -> String:
 func _on_sat() -> void:
 	if _over:
 		replay()
+
+
+## Getting up before the end. The talk ending stands you up too (let_them_go), and by
+## then it is over, so this only acts on somebody leaving.
+func _on_stood() -> void:
+	if not _over:
+		walk_out()
+
+
+## LEAVING THE CHAIR LEAVES THE TALK. Ramon, 1 Oct: standing up and walking about while it
+## carries on "loses the cinematic touch", so getting up (F or Escape, see theatre_seat_4d)
+## ends the presentation where it is: the exhibits come off, the house lights come up and
+## the end card says what you can do now - which includes sitting down again to see it
+## from the top. No bow: he does not bow to somebody walking out.
+func walk_out() -> void:
+	finish_building()
+	_show(-1)
+	if _primer != null:
+		_primer.call("leave")
+	if _part_two != null and _part_two.has_method("reset"):
+		_part_two.call("reset")
+	_held = -1
+	_lent = false
+	_greeted = true
+	_act = ACTS.size()
+	_phase = 0.0
+	_done = true
+	set_spin(true)
+	_say("", "", "")
+	curtain()
+	_bow = INF
+	let_them_go()
 
 
 ## Everything back to the moment before slide I, with Trym already on stage - he does not

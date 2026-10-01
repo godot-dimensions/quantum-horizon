@@ -169,8 +169,10 @@ func _process(_d) -> bool:
 
 	if _stage_at == 2 and _f > _settled_at + 70:
 		_gave_back = _their.is_current() and not bool(_camera.call("is_holding"))
-		_check("walking away takes the camera back", _gave_back,
-			"one movement key, no confirmation, no delay")
+		_check("F takes the camera back", _gave_back,
+			"the sit key again, no confirmation, no delay")
+		_check("and leaves the presentation with you", bool(_root.get_node("Show").call("is_over")),
+			"the talk ends where it was, rather than carrying on without you")
 		_check("and puts him back where he was standing", _walked < 0.5,
 			"%.2f from the spot he sat down from, on the frame he stood up" % _walked)
 		var hip: Node4D = _root.get_node_or_null("Player/Avatar").get("hip_left") as Node4D
@@ -207,10 +209,11 @@ func _clashes(chair: Node4D) -> int:
 	return count
 
 
-## The real binding rather than a guessed key: move_forward is bound by PHYSICAL keycode,
-## and a printed key stops being true the moment somebody rebinds it.
+## The real binding rather than a guessed key: the sit key, which is also the way out of
+## the chair since 1 Oct (getting up is leaving the talk - the movement keys no longer do
+## it). Bound by PHYSICAL keycode, and a printed key stops being true when it is rebound.
 func _press(down: bool) -> void:
-	for event in InputMap.action_get_events(&"move_forward"):
+	for event in InputMap.action_get_events(&"catch_target"):
 		if not (event is InputEventKey):
 			continue
 		var key := (event as InputEventKey).duplicate() as InputEventKey

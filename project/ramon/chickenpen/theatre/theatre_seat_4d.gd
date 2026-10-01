@@ -14,11 +14,14 @@ extends Control
 ## only works because the player's camera is already third person; in a first-person game
 ## the same beat would be a jump cut to a stranger.
 ##
-## STANDING UP IS ANY MOVEMENT KEY, always, with no confirmation and no delay. A cinematic
-## camera you cannot escape is the thing everybody hates about cinematic cameras, and the
-## escape has to be the key you would press by reflex when you felt trapped. The player
-## goes back to exactly where they were standing, rather than being dropped from the seat
-## onto the floor half a metre below it.
+## GETTING UP IS F OR ESCAPE, always, with no confirmation and no delay. A cinematic camera
+## you cannot escape is the thing everybody hates about cinematic cameras. But getting up
+## is LEAVING THE TALK (theatre_show_4d.walk_out), not wandering off while it carries on:
+## Ramon, 1 Oct, standing up mid-talk meant "you can walk around but lose the cinematic
+## touch". So the movement keys no longer get you up - a nudge of W does not break the
+## film - and the key you sat down with is the key that gets you out. The player goes back
+## to exactly where they were standing, rather than being dropped from the seat onto the
+## floor half a metre below it.
 
 @export var player_path: NodePath
 @export var stage_path: NodePath
@@ -363,18 +366,18 @@ func _fold(t: float) -> void:
 			ankle.basis = Basis4D.from_yz(-(THIGH_SIT + SHIN_SIT) * t)
 
 
-## Any of the four, plus jump. Deliberately not a dedicated "stand up" key: the reflex
-## when a camera has taken over and you want out is to press forward.
+## F, the key you sat down with, and Escape.
 ##
-## AND ESCAPE, which is the other reflex. Ramon, 30 Sept, sitting down again after the
-## talk: "locked in a freeze, nothing works anymore ... double esc didn't work". Escape is
-## the camera rig's key (free the cursor, then quit), and the rig's input is off while you
-## sit - so the key everybody presses when they feel stuck did nothing at all, and nothing
-## on screen said that forward would have worked. Escape stands you up now, and the chair
-## says so while you are in it (see _draw).
+## ESCAPE because it is the reflex. Ramon, 30 Sept, sitting down again after the talk:
+## "locked in a freeze, nothing works anymore ... double esc didn't work". Escape is the
+## camera rig's key (free the cursor, then quit), and the rig's input is off while you sit -
+## so the key everybody presses when they feel stuck did nothing at all. The chair says
+## what gets you out while you are in it (see _draw).
+##
+## NOT THE MOVEMENT KEYS any more (Ramon, 1 Oct): getting up is leaving the talk, and a
+## brush of W should not end a film.
 func _wants_out() -> bool:
-	for action in [&"move_forward", &"move_back", &"move_left", &"move_right", &"move_jump",
-			&"ui_cancel"]:
+	for action in [&"catch_target", &"ui_cancel"]:
 		if InputMap.has_action(action) and Input.is_action_just_pressed(action):
 			return true
 	return false
@@ -414,7 +417,7 @@ func _draw_way_up() -> void:
 	var font: Font = ThemeDB.fallback_font
 	var screen: Vector2 = get_viewport_rect().size
 	var size: int = int(screen.y * 0.019)
-	var label: String = "Esc   stand up"
+	var label: String = "%s / Esc   leave the presentation" % _sit_key()
 	var wide: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 	var pad: float = screen.y * 0.012
 	var box := Rect2(Vector2(screen.y * 0.03, screen.y * 0.03),

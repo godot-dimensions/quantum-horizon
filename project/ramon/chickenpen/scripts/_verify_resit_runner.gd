@@ -149,6 +149,8 @@ func _process(_d) -> bool:
 				return false
 			_state("after Esc")
 			_check("Escape stands you up", not bool(_seat.call("is_seated")), "")
+			_check("and ends the presentation with you", bool(_show.call("is_over")),
+				"walked out of, not left running")
 			_check("with the camera back", _their.is_current() and not bool(_camera.call("is_holding")), "")
 			_check("and your legs back", bool(_player.get("input_enabled")) and _player.is_physics_processing()
 				and _rig.is_processing_unhandled_input(), "")
