@@ -39,12 +39,16 @@ func _process(delta: float) -> void:
 	if not _said and _player != null and _stage != null and _on_the_spot():
 		_said = true
 		_left = holds_seconds
+	var was: float = _fade
 	if _left > 0.0:
 		_left -= delta
 		_fade = minf(_fade + delta / fade_seconds, 1.0)
 	else:
 		_fade = maxf(_fade - delta / fade_seconds, 0.0)
-	if _fade > 0.0:
+	# One more redraw on the frame it reaches nothing: a Control keeps its last drawing until
+	# told to draw again, so stopping at the last faint frame left the line on screen, barely
+	# visible, over every slide of the talk.
+	if _fade > 0.0 or was > 0.0:
 		queue_redraw()
 
 
