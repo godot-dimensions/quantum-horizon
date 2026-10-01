@@ -25,8 +25,8 @@ const COMPACT_ROWS := ["Birds", "Step", "Order", "Spacing", "Hawk"]
 @export var todo_path: NodePath = NodePath("../Quests")
 @export var toggle_key: Key = KEY_F3
 @export_range(9, 28, 1) var text_size: int = 13
-## The to-do card's, so the two read as one family.
-@export_range(0.0, 1.0, 0.05) var panel_alpha: float = 0.62
+## The controls card's (top right), as every info card in the HUD now is (Ramon, 1 Oct).
+@export_range(0.0, 1.0, 0.01) var panel_alpha: float = 0.34
 @export_range(200.0, 500.0, 1.0, "suffix:px") var panel_width: float = 320.0
 @export_range(0.0, 40.0, 1.0) var gap_below: float = 8.0
 ## Whole, at [member pin_at], wherever the other cards are - for the cinematic, where the

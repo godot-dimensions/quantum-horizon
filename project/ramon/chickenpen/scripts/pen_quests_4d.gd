@@ -31,7 +31,9 @@ class_name PenQuests4D
 @export var trym_path: NodePath = NodePath("../../Systems/TrymDriver")
 
 @export_range(9, 28, 1) var text_size: int = 13
-@export_range(0.0, 1.0, 0.05) var panel_alpha: float = 0.62
+## The controls card's (top right) - Ramon, 1 Oct: "all of these info brackets should
+## match the style of top right menu". It was 0.62.
+@export_range(0.0, 1.0, 0.01) var panel_alpha: float = 0.34
 @export_range(0.0, 40.0, 1.0) var gap_below: float = 8.0
 ## Bottom left, sitting on the inventory row - Ramon, 1 Oct, when the murmuration's stats
 ## took the place under the info card. Off, it follows the card above as it used to.
