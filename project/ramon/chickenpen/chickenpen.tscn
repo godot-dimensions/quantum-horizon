@@ -1,4 +1,4 @@
-[gd_scene load_steps=733 format=3 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=734 format=3 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -78,6 +78,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_dream_wake_4d.gd" id="dream_wake"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_laptop_4d.gd" id="laptop"]
 [ext_resource type="Script" path="res://ramon/chickenpen/flock/pen_flock_4d.gd" id="pen_flock"]
+[ext_resource type="Script" path="res://ramon/chickenpen/flock/flock_stats_panel_4d.gd" id="flock_stats"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 shader_parameter/horizon_color = Color(0.98, 0.71, 0.35, 1)
@@ -4637,6 +4638,11 @@ label_paths = Array[NodePath]([NodePath("../Fps"), NodePath("../Objective"), Nod
 anchors_preset = 0
 mouse_filter = 2
 script = ExtResource("pen_quests")
+
+[node name="FlockStats" type="Control" parent="UI"]
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("flock_stats")
 
 [node name="Fps" type="Label" parent="UI"]
 offset_left = 16.0

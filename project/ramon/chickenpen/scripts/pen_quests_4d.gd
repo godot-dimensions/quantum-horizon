@@ -33,6 +33,9 @@ class_name PenQuests4D
 @export_range(9, 28, 1) var text_size: int = 13
 @export_range(0.0, 1.0, 0.05) var panel_alpha: float = 0.62
 @export_range(0.0, 40.0, 1.0) var gap_below: float = 8.0
+## Bottom left, sitting on the inventory row - Ramon, 1 Oct, when the murmuration's stats
+## took the place under the info card. Off, it follows the card above as it used to.
+@export var at_bottom_left: bool = true
 @export_range(0.05, 2.0, 0.05) var poll_seconds: float = 0.25
 
 ## The places beyond the field you have been to this run. STATIC, and that is the point:
@@ -137,6 +140,13 @@ func _follow() -> void:
 		return
 	# The drawn panel, not the Control's rect - see pen_info_card_4d.drawn_rect.
 	var r: Rect2 = above.call("drawn_rect") if above.has_method("drawn_rect") else Rect2(above.position, above.size)
+	if at_bottom_left:
+		var bottom: float = get_viewport_rect().size.y - gap_below
+		var inventory: Node = get_node_or_null(inventory_path)
+		if inventory != null and inventory.has_method("_slot_rect"):
+			bottom = (inventory.call("_slot_rect", 0) as Rect2).position.y - gap_below * 1.5
+		position = Vector2(r.position.x, bottom - size.y)
+		return
 	position = Vector2(r.position.x, r.position.y + r.size.y + gap_below)
 
 

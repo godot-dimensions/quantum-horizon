@@ -56,10 +56,16 @@ layout(set = 0, binding = 16, std430) restrict writeonly buffer Draw { float v[]
 // reaction time left, rest left, which way.
 layout(set = 0, binding = 17, std430) restrict readonly buffer AgitIn { vec4 v[]; } agit_in;
 layout(set = 0, binding = 18, std430) restrict writeonly buffer AgitOut { vec4 v[]; } agit_out;
+// For the stats panel: nearest neighbour, neighbours followed, rolling (0/1), in the
+// camera's slice (0/1). Summed by REDUCE; nothing steers by it.
+layout(set = 0, binding = 19, std430) restrict buffer Stats { vec4 v[]; } stats;
 
 shared uint scan_part[256];
 shared vec4 sum_pos[256];
 shared vec4 sum_head[256];
+shared vec4 sum_sq[256];
+shared vec4 sum_cross[256];
+shared vec4 sum_stats[256];
 
 const float G = 9.81;
 const float TAU = 6.28318530718;
@@ -208,6 +214,7 @@ void update_pass(uint i) {
 	vec4 lean = vec4(0.0);
 	int seen = 0;
 	float alarm = 0.0;
+	float closest = 1e30;
 	for (int k = 0; k < bucket_count; k++) {
 		uint b = buckets[k];
 		uint start = starts.v[b];
@@ -219,6 +226,7 @@ void update_pass(uint i) {
 			}
 			vec4 d = pos_in.v[j] - p;
 			float dd = dot(d, d);
+			closest = min(closest, dd);
 			if (dd > r2 || dd < 1e-8) {
 				continue;
 			}
@@ -384,6 +392,11 @@ void update_pass(uint i) {
 	turn_buf.v[i] = turn;
 	misc.v[i] = vec4(s, bank, r, centrality);
 	misc2.v[i] = vec4(max(lead_left, 0.0), m2.y, m2.z, float(seen));
+	vec4 viewer = params.p[12];
+	vec4 ana = params.p[13];
+	float slice_depth = params.p[14].x;
+	float in_slice = abs(dot(p - viewer, ana)) < slice_depth ? 1.0 : 0.0;
+	stats.v[i] = vec4(closest < 1e29 ? sqrt(closest) : radius_max, float(seen), agit.x > 0.0 ? 1.0 : 0.0, in_slice);
 
 	float glide = sin(pc.time * 0.9 + m2.y * TAU);
 	float beat = clamp(0.55 + h.y * 3.0 + (cruise - s) * 0.15 + (glide > 0.2 ? 0.35 : -0.45), 0.0, 1.0);
@@ -416,19 +429,32 @@ void update_pass(uint i) {
 void reduce_pass(uint t) {
 	vec4 sp = vec4(0.0);
 	vec4 sh = vec4(0.0);
+	vec4 sq = vec4(0.0);
+	vec4 sc = vec4(0.0);
+	vec4 st = vec4(0.0);
 	// Reads what UPDATE just wrote: after the swap those are this frame's *_out, bound
 	// here as *_in by the next frame's set - so REDUCE runs with the other set bound.
 	for (uint i = t; i < pc.count; i += 256u) {
-		sp += pos_in.v[i];
+		vec4 q = pos_in.v[i];
+		sp += q;
 		sh += head_in.v[i];
+		sq += q * q;
+		sc += vec4(q.x * q.y, q.x * q.z, q.y * q.z, 0.0);
+		st += stats.v[i];
 	}
 	sum_pos[t] = sp;
 	sum_head[t] = sh;
+	sum_sq[t] = sq;
+	sum_cross[t] = sc;
+	sum_stats[t] = st;
 	barrier();
 	for (uint half_size = 128u; half_size > 0u; half_size >>= 1u) {
 		if (t < half_size) {
 			sum_pos[t] += sum_pos[t + half_size];
 			sum_head[t] += sum_head[t + half_size];
+			sum_sq[t] += sum_sq[t + half_size];
+			sum_cross[t] += sum_cross[t + half_size];
+			sum_stats[t] += sum_stats[t + half_size];
 		}
 		barrier();
 	}
@@ -436,6 +462,10 @@ void reduce_pass(uint t) {
 		float n = max(float(pc.count), 1.0);
 		flock.v[0] = sum_pos[0] / n;
 		flock.v[1] = sum_head[0] / n;
+		flock.v[2] = sum_sq[0] / n;
+		flock.v[3] = sum_cross[0] / n;
+		// Means of nearest distance and neighbours; counts of rolling and in-slice birds.
+		flock.v[4] = vec4(sum_stats[0].x / n, sum_stats[0].y / n, sum_stats[0].z, sum_stats[0].w);
 	}
 }
 

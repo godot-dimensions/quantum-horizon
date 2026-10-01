@@ -51,7 +51,7 @@ const FLOATS := 20
 const BUCKETS := 16384
 const GROUP := 256
 ## vec4 rows of settings the compute shader reads.
-const PARAM_ROWS := 12
+const PARAM_ROWS := 15
 
 @export_group("Flock")
 ## 300 is about all the CPU step manages (1.65 ms); on the GPU, measured in the pen on an
@@ -155,11 +155,13 @@ const PARAM_ROWS := 12
 ## against the starlings' 10.
 @export_range(5.0, 40.0, 0.5, "suffix:m/s") var hawk_speed: float = 14.0
 @export_range(5.0, 60.0, 0.5, "suffix:m/s") var hawk_stoop_speed: float = 24.0
-## Its size against a starling's at bird_scale. Ramon, 1 Oct: the first hawk, a starling
-## scaled up, "I thought it was some stray starlings". At 1.5 (a 1.6 m span) the new shape
-## was a few pixels from the spawn point, 100 m off; 2.4 (2.5 m) is too big for a
-## sparrowhawk and about right to read there.
+## Its size against a starling's at bird_scale, far from the camera. Ramon, 1 Oct: the first
+## hawk, a starling scaled up, "I thought it was some stray starlings". At 1.5 (a 1.6 m
+## span) the new shape was a few pixels from the spawn point, 100 m off; 2.4 (2.5 m) reads
+## there - and was a pterodactyl when it flew past the camera. So it grows with distance,
+## from [member hawk_near_scale] within 20 m to this beyond 90 m.
 @export_range(0.5, 4.0, 0.05) var hawk_scale: float = 2.4
+@export_range(0.5, 4.0, 0.05) var hawk_near_scale: float = 1.0
 ## The share of hawks that dive in over the far side of the flock from wherever the camera
 ## is, at a random angle of up to [member hawk_spread_degrees] either side, so the attack is
 ## seen; the rest come from anywhere. Ramon: "slightly offset the randomizer so it feels
@@ -230,9 +232,15 @@ var _hawk_aim := Vector4.ZERO
 var _hawk_mesh: ArrayMesh
 var _hawk_multimesh := RID()
 var _hawk_instance := RID()
-## Where the camera was at the last draw - the hawk comes in where it can be seen.
+## Where the camera was at the last draw - the hawk comes in where it can be seen - and
+## its W axis, both in the flock's space, for counting the birds in the camera's slice.
 var _viewer := Vector4.ZERO
+var _viewer_ana := Vector4(0.0, 0.0, 0.0, 1.0)
 var _viewer_known: bool = false
+## The numbers the stats panel shows, refreshed as they come in: from the GPU's reduce pass
+## a frame or so late, or summed by the CPU step. See stats().
+var _sums := PackedFloat32Array()
+var _nearest := PackedFloat32Array()
 var _middle_pending: bool = false
 var _buffer := PackedFloat32Array()
 
@@ -357,6 +365,8 @@ func respawn() -> void:
 	_phase.resize(n)
 	_tint.resize(n)
 	_seen.resize(n)
+	_nearest.resize(n)
+	_nearest.fill(0.0)
 	_keys.resize(n)
 	_sorted.resize(n)
 	_buffer.resize(n * FLOATS)
@@ -502,6 +512,7 @@ func _social_rules(i: int) -> void:
 	var lean := Vector4.ZERO
 	var seen: int = 0
 	var alarm: float = 0.0
+	var closest: float = INF
 	for gz in range(z0, z1):
 		for gy in range(y0, y1):
 			var row: int = (gz * _dim_y + gy) * _dim_x
@@ -513,6 +524,8 @@ func _social_rules(i: int) -> void:
 						continue
 					var d: Vector4 = _pos[j] - p
 					var dd: float = d.length_squared()
+					if dd < closest:
+						closest = dd
 					if dd > r2 or dd < 1e-8:
 						continue
 					var dl: float = sqrt(dd)
@@ -534,6 +547,7 @@ func _social_rules(i: int) -> void:
 	# Grow or shrink the search until about `neighbours` birds are in it.
 	_radius[i] = clampf(r * (1.0 + 0.12 * (neighbours - float(seen)) / neighbours), separation_radius, radius_max)
 	_seen[i] = seen
+	_nearest[i] = sqrt(closest) if closest < INF else radius_max
 	var acc: Vector4 = sep * rule_separation
 	if seen > 0:
 		var n: float = float(seen)
@@ -598,6 +612,15 @@ func _integrate(dt: float) -> void:
 	var scare: float = scare_radius
 	var sum := Vector4.ZERO
 	var heading_sum := Vector4.ZERO
+	var squares := Vector4.ZERO
+	var crosses := Vector3.ZERO
+	var nearest_sum: float = 0.0
+	var seen_sum: int = 0
+	var rolling: int = 0
+	var in_slice: int = 0
+	var slice_depth: float = bird_w_radius * bird_scale
+	var viewer: Vector4 = _viewer
+	var ana: Vector4 = _viewer_ana
 	for i in n:
 		var p: Vector4 = _pos[i]
 		var h: Vector4 = _head[i]
@@ -691,6 +714,14 @@ func _integrate(dt: float) -> void:
 		_pos[i] = p
 		sum += p
 		heading_sum += h
+		squares += p * p
+		crosses += Vector3(p.x * p.y, p.x * p.z, p.y * p.z)
+		nearest_sum += _nearest[i]
+		seen_sum += _seen[i]
+		if ag > 0.0:
+			rolling += 1
+		if absf((p - viewer).dot(ana)) < slice_depth:
+			in_slice += 1
 		_head[i] = h
 		_turn[i] = turn
 		_speed[i] = s
@@ -722,8 +753,13 @@ func _integrate(dt: float) -> void:
 		_buffer[o + 17] = beat
 		_buffer[o + 18] = scale
 		_buffer[o + 19] = 0.0
-	_middle = sum / float(maxi(n, 1))
-	_mean_heading = heading_sum / float(maxi(n, 1))
+	var inv_n: float = 1.0 / float(maxi(n, 1))
+	_middle = sum * inv_n
+	_mean_heading = heading_sum * inv_n
+	var sq: Vector4 = squares * inv_n
+	var cr: Vector3 = crosses * inv_n
+	_sums = PackedFloat32Array([_middle.x, _middle.y, _middle.z, _middle.w, _mean_heading.x, _mean_heading.y, _mean_heading.z, _mean_heading.w,
+		sq.x, sq.y, sq.z, sq.w, cr.x, cr.y, cr.z, 0.0, nearest_sum * inv_n, float(seen_sum) * inv_n, float(rolling), float(in_slice)])
 
 
 ## Never on the GPU: the compute shader writes the buffer itself. It also must not: a
@@ -756,6 +792,7 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngi
 		return
 	# In the flock's own space, which is where the hawk flies.
 	_viewer = global_basis.inverse() * (camera.global_position - global_position)
+	_viewer_ana = (global_basis.inverse() * (camera.global_basis * Vector4(0.0, 0.0, 0.0, 1.0))).normalized()
 	_viewer_known = true
 	var inverse: Projection = camera.global_basis.inverse()
 	var basis: Projection = inverse * global_basis
@@ -974,10 +1011,47 @@ func _draw_hawk() -> void:
 	elif _hawk_state == HawkState.HUNTING and h.y > -0.3:
 		beat = 1.1 if fmod(_time, 2.4) < 1.0 else 0.0
 	var p: Vector4 = _hawk_pos
+	var away: float = (p - _viewer).length() if _viewer_known else 100.0
+	var grow: float = lerpf(hawk_near_scale, hawk_scale, smoothstep(20.0, 90.0, away))
 	# Custom w is the beat rate against a starling's: about 4 a second, not 11.
 	var row := PackedFloat32Array([p.x, p.y, p.z, p.w, h.x, h.y, h.z, h.w, wing.x, wing.y, wing.z, wing.w,
-		2.6, 2.2, 1.9, 1.0, 0.37, beat, bird_scale * hawk_scale, 0.36])
+		2.6, 2.2, 1.9, 1.0, 0.37, beat, bird_scale * grow, 0.36])
 	RenderingServer.multimesh_set_buffer(_hawk_multimesh, row)
+
+
+## The flock in numbers, for the stats panel: how many and where they are stepped, what a
+## step costs, how ordered and how spaced they are, the shape, how many birds each one
+## follows, how many the camera's slice cuts through, how many are rolling, and the hawk.
+## Built from moments summed over every bird, on whichever side steps it - nothing here
+## walks the flock.
+func stats() -> Dictionary:
+	var out: Dictionary = {
+		"birds": count, "backend": "GPU" if _gpu else "CPU",
+		"cpu_ms": last_step_usec / 1000.0, "gpu_ms": gpu_usec / 1000.0 if _gpu else -1.0,
+		"hawk": ["away", "diving", "leaving"][_hawk_state] if hawk_enabled else "off",
+		"hawk_next": _hawk_timer if _hawk_state == HawkState.AWAY and hawk_enabled else -1.0,
+		"wave_ms": reaction_delay * 1000.0,
+	}
+	if _sums.size() < 20 or count == 0:
+		return out
+	var f: PackedFloat32Array = _sums
+	var m := Vector4(f[0], f[1], f[2], f[3])
+	var heading := Vector4(f[4], f[5], f[6], f[7])
+	var cov := Basis(
+		Vector3(f[8] - m.x * m.x, f[12] - m.x * m.y, f[13] - m.x * m.z),
+		Vector3(f[12] - m.x * m.y, f[9] - m.y * m.y, f[14] - m.y * m.z),
+		Vector3(f[13] - m.x * m.z, f[14] - m.y * m.z, f[10] - m.z * m.z))
+	var axes: Array = METRICS._symmetric_eigen(cov)
+	var thin: float = sqrt(maxf(float(axes[0][0]), 0.0001))
+	out["order"] = heading.length()
+	out["shape"] = Vector2(sqrt(maxf(float(axes[1][0]), 0.0)) / thin, sqrt(maxf(float(axes[2][0]), 0.0)) / thin)
+	out["thickness"] = thin * 2.0
+	out["w_depth"] = sqrt(maxf(f[11] - m.w * m.w, 0.0)) * 2.0
+	out["nearest"] = f[16]
+	out["neighbours"] = f[17]
+	out["rolling"] = int(f[18])
+	out["in_slice"] = f[19] / float(count)
+	return out
 
 
 ## Where the hawk is, or null while it is away - for runners.
@@ -1128,7 +1202,7 @@ func _gpu_init() -> void:
 	uints.resize(n)
 	var buckets := PackedInt32Array()
 	buckets.resize(BUCKETS)
-	var flock_state := PackedVector4Array([_middle, _mean_heading, Vector4.ZERO, Vector4.ZERO])
+	var flock_state := PackedVector4Array([_middle, _mean_heading, Vector4.ZERO, Vector4.ZERO, Vector4.ZERO, Vector4.ZERO, Vector4.ZERO, Vector4.ZERO])
 	_gpu_buffers = {
 		"params": _rd.storage_buffer_create(16 * PARAM_ROWS, _gpu_params()),
 		"pos_a": _rd.storage_buffer_create(n * 16, _floats(_pos)),
@@ -1145,7 +1219,8 @@ func _gpu_init() -> void:
 		"starts": _rd.storage_buffer_create(BUCKETS * 4, buckets.to_byte_array()),
 		"cursor": _rd.storage_buffer_create(BUCKETS * 4, buckets.to_byte_array()),
 		"sorted": _rd.storage_buffer_create(n * 4, uints.to_byte_array()),
-		"flock": _rd.storage_buffer_create(16 * 4, _floats(flock_state)),
+		"flock": _rd.storage_buffer_create(16 * 8, _floats(flock_state)),
+		"stats": _rd.storage_buffer_create(n * 16, _floats(empty)),
 		"agit_a": _rd.storage_buffer_create(n * 16, _floats(empty)),
 		"agit_b": _rd.storage_buffer_create(n * 16, _floats(empty)),
 	}
@@ -1167,6 +1242,7 @@ func _gpu_init() -> void:
 		var reading_a: bool = order[1] == "pos_a"
 		uniforms.append(_storage_uniform(17, _gpu_buffers["agit_a" if reading_a else "agit_b"]))
 		uniforms.append(_storage_uniform(18, _gpu_buffers["agit_b" if reading_a else "agit_a"]))
+		uniforms.append(_storage_uniform(19, _gpu_buffers["stats"]))
 		_gpu_sets.append(_rd.uniform_set_create(uniforms, _gpu_shader, 0))
 	_parity = 0
 
@@ -1179,20 +1255,22 @@ static func _storage_uniform(binding: int, rid: RID) -> RDUniform:
 	return u
 
 
-## The imported shader when the editor has imported it, else compiled here from the text -
-## a runner launched from the command line never runs the importer.
+## Compiled here from the text whenever the text can be read, and the editor's import only
+## when it cannot (an exported build). Not the other way round: the import is refreshed only
+## when the editor next scans, so a game or runner launched from the command line loaded a
+## stale shader - the stats panel read zeros for every sum the new one added (1 Oct).
 func _compute_spirv() -> RDShaderSPIRV:
 	var spirv: RDShaderSPIRV = null
-	if ResourceLoader.exists(COMPUTE):
-		var file: RDShaderFile = load(COMPUTE) as RDShaderFile
-		if file != null:
-			spirv = file.get_spirv()
-	if spirv == null:
-		var text: String = FileAccess.get_file_as_string(COMPUTE)
+	var text: String = FileAccess.get_file_as_string(COMPUTE)
+	if text != "":
 		var source := RDShaderSource.new()
 		source.language = RenderingDevice.SHADER_LANGUAGE_GLSL
 		source.source_compute = text.replace("#[compute]", "")
 		spirv = _rd.shader_compile_spirv_from_source(source)
+	elif ResourceLoader.exists(COMPUTE):
+		var file: RDShaderFile = load(COMPUTE) as RDShaderFile
+		if file != null:
+			spirv = file.get_spirv()
 	if spirv == null or spirv.compile_error_compute != "":
 		push_error("Flock: the compute shader did not compile: %s" % (spirv.compile_error_compute if spirv != null else "no SPIR-V"))
 		return null
@@ -1217,6 +1295,9 @@ func _gpu_params() -> PackedByteArray:
 		_hawk_pos.x, _hawk_pos.y, _hawk_pos.z, _hawk_pos.w,
 		1.0 if _hawk_state != HawkState.AWAY else 0.0, scare_radius, flee, reaction_delay,
 		agitation_time, agitation_roll, agitation_rest, jink,
+		_viewer.x, _viewer.y, _viewer.z, _viewer.w,
+		_viewer_ana.x, _viewer_ana.y, _viewer_ana.z, _viewer_ana.w,
+		bird_w_radius * bird_scale, 0.0, 0.0, 0.0,
 	]).to_byte_array()
 
 
@@ -1290,7 +1371,7 @@ func _ask_for_middle() -> void:
 		return
 	_middle_pending = true
 	RenderingServer.call_on_render_thread(func() -> void:
-		_rd.buffer_get_data_async(_gpu_buffers["flock"], _got_middle, 0, 32))
+		_rd.buffer_get_data_async(_gpu_buffers["flock"], _got_middle, 0, 80))
 
 
 func _got_middle(data: PackedByteArray) -> void:
@@ -1299,6 +1380,8 @@ func _got_middle(data: PackedByteArray) -> void:
 	if f.size() >= 8:
 		_middle = Vector4(f[0], f[1], f[2], f[3])
 		_mean_heading = Vector4(f[4], f[5], f[6], f[7])
+	if f.size() >= 20:
+		_sums = f
 
 
 func _gpu_read_vec4(key: String) -> PackedVector4Array:
