@@ -157,3 +157,13 @@ heron taking off in slow motion when you get it (payoff).
 
 Pivot rule: if a step fails or a better way shows up while building, take it, and write
 down why here.
+
+## Status, 2 Oct 2026, morning
+
+All 70 steps built and run; the handover is `lookout.md` (how to play, where everything is,
+cost, traps). The pivots, in short (each explained there): the cab 6.4 m deep in W; the ana
+post at w +1.5 rather than +2.6; zoom through `field_of_view_4d`; the owl and heron stretched
+in W; the heron's neck as rigid segments; the balloon moored on the ground, its departure
+folded into boarding; secrets win the photo; the whistle also sends a wave through the flock;
+the cab eye keeps off the corner posts; no door leaf; the Journal card moves beside the
+Cinematics card when there is no room below; the tower and marsh merged to one mesh per colour.
