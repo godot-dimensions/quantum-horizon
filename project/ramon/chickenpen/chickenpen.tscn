@@ -4769,8 +4769,7 @@ offset_right = 260.0
 offset_bottom = 60.0
 script = ExtResource("pen_campick")
 rig_path = NodePath("../../Player/CameraRig")
-under_path = NodePath("../Controls")
-clear_of_path = NodePath("../SlicePlane")
+under_path = NodePath("../Cinematics")
 
 [node name="Inventory" type="Control" parent="UI"]
 layout_mode = 3

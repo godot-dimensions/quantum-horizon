@@ -96,6 +96,10 @@ func _ready() -> void:
 	_under = get_node_or_null(under_path) as Control
 	_avoid = get_node_or_null(avoid_path) as Control
 	_clear_of = get_node_or_null(clear_of_path) as Control
+	# Laid out on redraw, so it has to hear when the card it hangs under moves or changes
+	# size - the Cinematics card above it places itself every frame, after this one has.
+	if _under != null and not _under.item_rect_changed.is_connected(queue_redraw):
+		_under.item_rect_changed.connect(queue_redraw)
 	_rig = get_node_or_null(rig_path)
 	if _rig == null:
 		push_warning("%s: no camera rig - nothing to report." % name)

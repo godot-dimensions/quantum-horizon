@@ -73,6 +73,13 @@ func _process(d: float) -> bool:
 					and absf((_card.position.x + _card.size.x) - (controls.position.x + controls.size.x)) < 1.5
 				_check("right under the controls card, right edges lined up", under,
 					"card %s, controls %s" % [str(Rect2(_card.position, _card.size)), str(Rect2(controls.position, controls.size))])
+				var picker := _room.get_node("UI/CameraPicker") as Control
+				var card_rect := Rect2(_card.position, _card.size)
+				var picker_rect := Rect2(picker.position, picker.size)
+				_check("the camera picker clear of the Cinematics card", not card_rect.intersects(picker_rect),
+					"picker %s" % str(picker_rect))
+				_check("and listed under it, right edges lined up", picker_rect.position.y >= card_rect.end.y - 0.5
+					and absf(picker_rect.end.x - card_rect.end.x) < 1.5, "card %s" % str(card_rect))
 				var before: int = int(_belt.get("selected"))
 				_key(KEY_1)
 				_check("1 outside the card still selects the belt's first slot", int(_belt.get("selected")) == (0 if before != 0 else -1),
