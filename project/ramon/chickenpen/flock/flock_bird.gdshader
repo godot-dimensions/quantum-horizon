@@ -60,7 +60,9 @@ void vertex() {
 	float wing = UV.x;
 	if (wing > 0.0) {
 		float phase = INSTANCE_CUSTOM.x;
-		float beat = sin(TIME * TAU * flap_rate * (0.92 + 0.16 * fract(phase * 7.31)) + phase * TAU);
+		// Custom w scales the beat rate - 0 for a starling, about 0.36 for the hawk.
+		float rate = flap_rate * (INSTANCE_CUSTOM.w > 0.0 ? INSTANCE_CUSTOM.w : 1.0);
+		float beat = sin(TIME * TAU * rate * (0.92 + 0.16 * fract(phase * 7.31)) + phase * TAU);
 		// Gliding holds a shallow V; beating swings through it.
 		float angle = (0.16 + beat * 0.75 * INSTANCE_CUSTOM.y) * (0.75 + 0.5 * wing);
 		float side = v.x >= 0.0 ? 1.0 : -1.0;

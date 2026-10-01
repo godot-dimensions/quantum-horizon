@@ -1,7 +1,8 @@
 extends SceneTree
 
-## A clip of the murmuration for Ramon: from the spawn point first, then from beside the
-## flock as a hawk comes through. Run with Godot's movie writer, which steps at a fixed rate
+## A clip of the murmuration for Ramon: from the spawn point while a hawk stoops into the
+## flock, then from beside the flock as it settles. For the clip the hawk always takes the
+## seen entry (hawk_seen_share 1); in the game it does three times in four. Run with Godot's movie writer, which steps at a fixed rate
 ## and so records smoothly whatever the machine does:
 ##
 ##   godot... --path project --resolution 1280x720 --write-movie <out>.avi --fixed-fps 30
@@ -9,8 +10,9 @@ extends SceneTree
 ##
 ## HUD hidden, debug keys off, the flock at its in-game settings.
 
-const SPAWN_SECONDS := 5.0
-const TOTAL_SECONDS := 16.0
+const SPAWN_SECONDS := 11.0
+const TOTAL_SECONDS := 18.0
+const HAWK_AT := 1.0
 
 var _room: Node
 var _flock: Node4D
@@ -33,6 +35,7 @@ func _initialize() -> void:
 	# Let it settle into its sweep before the clip starts: the hawk is held back, and the
 	# first seconds are the spawn camera anyway.
 	_flock.set("hawk_enabled", true)
+	_flock.set("hawk_seen_share", 1.0)
 
 
 func _hide_hud(node: Node) -> void:
@@ -62,8 +65,7 @@ func _process(d: float) -> bool:
 	if _f < 3:
 		return false
 	_t += d
-	if _t >= SPAWN_SECONDS - 2.0 and not _called:
-		# In from the side while the camera moves over, so it arrives on screen.
+	if _t >= HAWK_AT and not _called:
 		_flock.call("call_hawk")
 		_called = true
 	if _t >= SPAWN_SECONDS:

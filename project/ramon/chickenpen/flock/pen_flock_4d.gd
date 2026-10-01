@@ -151,10 +151,23 @@ const PARAM_ROWS := 12
 ## Seconds between hawks, drawn between these two.
 @export_range(5.0, 300.0, 1.0, "suffix:s") var hawk_every_min: float = 25.0
 @export_range(5.0, 300.0, 1.0, "suffix:s") var hawk_every_max: float = 45.0
-## Faster than the flock: a sparrowhawk in a stoop does 15-20 m/s against the starlings' 10.
-@export_range(5.0, 40.0, 0.5, "suffix:m/s") var hawk_speed: float = 17.0
+## Faster than the flock: a sparrowhawk cruises at about 12 m/s and stoops at 20-25,
+## against the starlings' 10.
+@export_range(5.0, 40.0, 0.5, "suffix:m/s") var hawk_speed: float = 14.0
+@export_range(5.0, 60.0, 0.5, "suffix:m/s") var hawk_stoop_speed: float = 24.0
+## Its size against a starling's at bird_scale. Ramon, 1 Oct: the first hawk, a starling
+## scaled up, "I thought it was some stray starlings". At 1.5 (a 1.6 m span) the new shape
+## was a few pixels from the spawn point, 100 m off; 2.4 (2.5 m) is too big for a
+## sparrowhawk and about right to read there.
+@export_range(0.5, 4.0, 0.05) var hawk_scale: float = 2.4
+## The share of hawks that dive in over the far side of the flock from wherever the camera
+## is, at a random angle of up to [member hawk_spread_degrees] either side, so the attack is
+## seen; the rest come from anywhere. Ramon: "slightly offset the randomizer so it feels
+## less staged".
+@export_range(0.0, 1.0, 0.05) var hawk_seen_share: float = 0.75
+@export_range(0.0, 180.0, 1.0, "suffix:°") var hawk_spread_degrees: float = 55.0
 ## Birds this close to the hawk flee and roll without waiting for a neighbour.
-@export_range(1.0, 30.0, 0.5, "suffix:m") var scare_radius: float = 7.0
+@export_range(1.0, 30.0, 0.5, "suffix:m") var scare_radius: float = 9.0
 @export_range(0.0, 80.0, 0.5, "suffix:m/s²") var flee: float = 22.0
 ## How long a bird takes to copy a rolling neighbour - with the distance between them,
 ## this is the agitation wave's speed. Measured in real murmurations: about 13 m/s. Measured
@@ -208,6 +221,18 @@ var _hawk_state: int = HawkState.AWAY
 var _hawk_timer: float = 12.0
 var _hawk_pos := Vector4(0.0, -1000.0, 0.0, 0.0)
 var _hawk_head := Vector4(1.0, 0.0, 0.0, 0.0)
+var _hawk_speed_now: float = 14.0
+var _hawk_bank: float = 0.0
+## Where in the flock it is going: an offset from the middle, so it does not always hit
+## the dead centre.
+var _hawk_aim := Vector4.ZERO
+## The hawk has its own shape, so its own one-bird multimesh, drawn by the same material.
+var _hawk_mesh: ArrayMesh
+var _hawk_multimesh := RID()
+var _hawk_instance := RID()
+## Where the camera was at the last draw - the hawk comes in where it can be seen.
+var _viewer := Vector4.ZERO
+var _viewer_known: bool = false
 var _middle_pending: bool = false
 var _buffer := PackedFloat32Array()
 
@@ -264,6 +289,17 @@ func _ready() -> void:
 	# never calls set_buffer, and its flock stepped perfectly and drew nothing.
 	RenderingServer.instance_set_custom_aabb(_instance, AABB(Vector3(-5000, -5000, -5000), Vector3(10000, 10000, 10000)))
 	RenderingServer.instance_set_visible(_instance, false)
+	_hawk_mesh = _hawk_shape()
+	_hawk_multimesh = RenderingServer.multimesh_create()
+	RenderingServer.multimesh_set_mesh(_hawk_multimesh, _hawk_mesh.get_rid())
+	RenderingServer.multimesh_allocate_data(_hawk_multimesh, 1, RenderingServer.MULTIMESH_TRANSFORM_3D, true, true)
+	_hawk_instance = RenderingServer.instance_create()
+	RenderingServer.instance_set_base(_hawk_instance, _hawk_multimesh)
+	RenderingServer.instance_geometry_set_material_override(_hawk_instance, _material.get_rid())
+	RenderingServer.instance_geometry_set_cast_shadows_setting(_hawk_instance, RenderingServer.SHADOW_CASTING_SETTING_OFF)
+	RenderingServer.instance_set_ignore_culling(_hawk_instance, true)
+	RenderingServer.instance_set_custom_aabb(_hawk_instance, AABB(Vector3(-5000, -5000, -5000), Vector3(10000, 10000, 10000)))
+	RenderingServer.instance_set_visible(_hawk_instance, false)
 	_rd = RenderingServer.get_rendering_device()
 	_gpu = backend != 1 and _rd != null
 	if backend == 2 and _rd == null:
@@ -278,6 +314,8 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	if _instance.is_valid():
 		RenderingServer.instance_set_visible(_instance, false)
+	if _hawk_instance.is_valid():
+		RenderingServer.instance_set_visible(_hawk_instance, false)
 
 
 func _notification(what: int) -> void:
@@ -289,6 +327,10 @@ func _notification(what: int) -> void:
 			RenderingServer.free_rid(_instance)
 		if _multimesh.is_valid():
 			RenderingServer.free_rid(_multimesh)
+		if _hawk_instance.is_valid():
+			RenderingServer.free_rid(_hawk_instance)
+		if _hawk_multimesh.is_valid():
+			RenderingServer.free_rid(_hawk_multimesh)
 
 
 ## Start over: [member count] birds in a loose cloud over the roost, heading roughly the
@@ -317,8 +359,7 @@ func respawn() -> void:
 	_seen.resize(n)
 	_keys.resize(n)
 	_sorted.resize(n)
-	# One row more than there are birds: the last one is the hawk.
-	_buffer.resize((n + 1) * FLOATS)
+	_buffer.resize(n * FLOATS)
 	var mid: float = (height_low + height_high) * 0.5
 	# About a metre between birds from the start: sparser, and the flock begins as clumps.
 	var spread: float = pow(float(maxi(n, 1)), 1.0 / 3.0) * 0.55
@@ -349,9 +390,9 @@ func respawn() -> void:
 	_middle = METRICS.centre(_pos)
 	_mean_heading = METRICS.centre(_head)
 	_hawk_state = HawkState.AWAY
-	_hawk_timer = 12.0
+	_hawk_timer = _rng.randf_range(10.0, 16.0)
 	_hawk_pos = Vector4(0.0, -1000.0, 0.0, 0.0)
-	RenderingServer.multimesh_allocate_data(_multimesh, n + 1, RenderingServer.MULTIMESH_TRANSFORM_3D, true, true)
+	RenderingServer.multimesh_allocate_data(_multimesh, n, RenderingServer.MULTIMESH_TRANSFORM_3D, true, true)
 	_upload()
 	if _gpu:
 		_gpu_free()
@@ -383,7 +424,7 @@ func step(dt: float) -> void:
 		for i in range(_frame % social_every, count, social_every):
 			_social_rules(i)
 		_integrate(dt)
-		_write_hawk_row()
+		_draw_hawk()
 		_upload()
 	_frame += 1
 	_time += dt
@@ -692,7 +733,7 @@ func _integrate(dt: float) -> void:
 func _upload() -> void:
 	if _gpu:
 		return
-	if _multimesh.is_valid() and _buffer.size() == (count + 1) * FLOATS and count > 0:
+	if _multimesh.is_valid() and _buffer.size() == count * FLOATS and count > 0:
 		RenderingServer.multimesh_set_buffer(_multimesh, _buffer)
 
 
@@ -707,10 +748,15 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngi
 	if scenario != _scenario:
 		_scenario = scenario
 		RenderingServer.instance_set_scenario(_instance, scenario)
+		RenderingServer.instance_set_scenario(_hawk_instance, scenario)
 	var shown: bool = is_visible_in_tree() and count > 0 and scenario.is_valid()
 	RenderingServer.instance_set_visible(_instance, shown)
+	RenderingServer.instance_set_visible(_hawk_instance, shown and _hawk_state != HawkState.AWAY)
 	if not shown:
 		return
+	# In the flock's own space, which is where the hawk flies.
+	_viewer = global_basis.inverse() * (camera.global_position - global_position)
+	_viewer_known = true
 	var inverse: Projection = camera.global_basis.inverse()
 	var basis: Projection = inverse * global_basis
 	var origin: Vector4 = inverse * (global_position - camera.global_position)
@@ -765,6 +811,59 @@ func _bird_mesh() -> ArrayMesh:
 	return mesh
 
 
+## A sparrowhawk at size 1, +Z ahead: about 0.36 m long and 0.66 m across - a heavier body,
+## broad wings with rounded, fingered tips, and a long tail. The silhouette is what tells it
+## from the starlings at a distance: theirs are short-tailed little crosses with pointed,
+## swept wings.
+func _hawk_shape() -> ArrayMesh:
+	var verts := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var colours := PackedColorArray()
+	var centre := Vector3(0.0, 0.004, 0.02)
+	var nose := Vector3(0.0, 0.004, 0.12)
+	var tail := Vector3(0.0, 0.006, -0.08)
+	var left := Vector3(-0.042, 0.0, 0.02)
+	var right := Vector3(0.042, 0.0, 0.02)
+	var top := Vector3(0.0, 0.036, 0.03)
+	var bottom := Vector3(0.0, -0.032, 0.02)
+	var body: Array = [[nose, top, right], [nose, right, bottom], [nose, bottom, left], [nose, left, top],
+		[tail, right, top], [tail, bottom, right], [tail, left, bottom], [tail, top, left]]
+	for tri in body:
+		_face(verts, normals, uvs, colours, tri, [0.0, 0.0, 0.0], centre)
+	# The long tail, a little fanned and squared off.
+	var below := centre + Vector3(0.0, -1.0, 0.0)
+	var t0 := Vector3(-0.026, 0.006, -0.07)
+	var t1 := Vector3(0.026, 0.006, -0.07)
+	var t2 := Vector3(0.042, 0.006, -0.235)
+	var t3 := Vector3(0.0, 0.006, -0.25)
+	var t4 := Vector3(-0.042, 0.006, -0.235)
+	_face(verts, normals, uvs, colours, [t0, t1, t2], [0.0, 0.0, 0.0], below)
+	_face(verts, normals, uvs, colours, [t0, t2, t3], [0.0, 0.0, 0.0], below)
+	_face(verts, normals, uvs, colours, [t0, t3, t4], [0.0, 0.0, 0.0], below)
+	# Each wing a convex outline from the shoulder round the rounded tip, fanned from the
+	# leading root. UV.x rises from the shoulder to the tip for the shader's flap.
+	for side in [1.0, -1.0]:
+		var outline: Array = [Vector2(0.035, 0.07), Vector2(0.16, 0.078), Vector2(0.26, 0.058), Vector2(0.33, 0.012),
+			Vector2(0.325, -0.03), Vector2(0.29, -0.06), Vector2(0.2, -0.078), Vector2(0.12, -0.08), Vector2(0.035, -0.06)]
+		var points: Array = []
+		var flex: Array = []
+		for o in outline:
+			points.append(Vector3(o.x * side, 0.01, o.y))
+			flex.append(clampf((o.x - 0.035) / 0.29, 0.01, 1.0))
+		for k in range(1, points.size() - 1):
+			_face(verts, normals, uvs, colours, [points[0], points[k], points[k + 1]], [flex[0], flex[k], flex[k + 1]], below)
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_COLOR] = colours
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+
 ## One flat triangle, its normal turned away from [param inside].
 func _face(verts: PackedVector3Array, normals: PackedVector3Array, uvs: PackedVector2Array, colours: PackedColorArray,
 		tri: Array, wing: Array, inside: Vector3) -> void:
@@ -785,54 +884,100 @@ func _gather_from() -> float:
 	return rule_gather_from * pow(maxf(float(count), 1.0) / 300.0, 1.0 / 3.0)
 
 
-## The hawk: away for a while, then in from one side at the flock's height, chasing a point
-## a little ahead of the flock's middle, straight through, and up and away.
+## The hawk. Away for a while; then, most times, out beyond the far side of the flock from
+## the camera at a random angle either side, a little above it, so it comes in across the
+## view and stoops into the flock - and otherwise in from anywhere, so it is not always the same show. It dives at
+## a point near the middle, not on it, goes through, and climbs away.
 func _hawk_step(dt: float) -> void:
 	if not hawk_enabled:
 		_hawk_state = HawkState.AWAY
 		_hawk_pos = Vector4(0.0, -1000.0, 0.0, 0.0)
 		return
 	_hawk_timer -= dt
+	var before: Vector4 = _hawk_head
 	match _hawk_state:
 		HawkState.AWAY:
 			if _hawk_timer <= 0.0:
-				var angle: float = _rng.randf() * TAU
-				_hawk_pos = _middle + Vector4(cos(angle) * 70.0, 5.0, sin(angle) * 70.0, 0.0)
-				_hawk_head = (_middle - _hawk_pos).normalized()
-				_hawk_state = HawkState.HUNTING
-				_hawk_timer = 9.0
+				_hawk_start()
 		HawkState.HUNTING:
-			var target: Vector4 = _middle + _mean_heading * 5.0
-			var want: Vector4 = (target - _hawk_pos).normalized()
-			_hawk_head = _hawk_head.lerp(want, minf(dt * 1.8, 1.0)).normalized()
-			_hawk_pos += _hawk_head * (hawk_speed * dt)
-			if (_middle - _hawk_pos).length() < 3.0 or _hawk_timer <= 0.0:
+			var target: Vector4 = _middle + _mean_heading * 4.0 + _hawk_aim
+			var to_target: Vector4 = target - _hawk_pos
+			var want: Vector4 = to_target.normalized()
+			_hawk_head = _hawk_head.lerp(want, minf(dt * 2.2, 1.0)).normalized()
+			# Faster the steeper it dives.
+			var stoop: float = clampf(-_hawk_head.y * 1.6, 0.0, 1.0)
+			_hawk_speed_now = move_toward(_hawk_speed_now, lerpf(hawk_speed, hawk_stoop_speed, stoop), dt * 12.0)
+			_hawk_pos += _hawk_head * (_hawk_speed_now * dt)
+			# Through: close to the aim, or past it - a stoop that misses does not turn back.
+			var past: bool = to_target.dot(_hawk_head) < 0.0 and to_target.length() < 15.0
+			if to_target.length() < 2.5 or past or _hawk_timer <= 0.0:
 				_hawk_state = HawkState.LEAVING
-				_hawk_timer = 4.0
+				_hawk_timer = 5.0
 		HawkState.LEAVING:
-			_hawk_head = (_hawk_head + Vector4(0.0, 0.35 * dt, 0.0, 0.0)).normalized()
-			_hawk_pos += _hawk_head * (hawk_speed * dt)
+			# Out the other side, levelling off and then climbing away.
+			_hawk_head = (_hawk_head + Vector4(0.0, 0.5 * dt, 0.0, 0.0)).normalized()
+			_hawk_speed_now = move_toward(_hawk_speed_now, hawk_speed, dt * 4.0)
+			_hawk_pos += _hawk_head * (_hawk_speed_now * dt)
 			if _hawk_timer <= 0.0:
 				_hawk_state = HawkState.AWAY
 				_hawk_timer = _rng.randf_range(hawk_every_min, hawk_every_max)
 				_hawk_pos = Vector4(0.0, -1000.0, 0.0, 0.0)
+	# Bank into its turns like the starlings do, a little slower.
+	var turned: Vector4 = (_hawk_head - before) / maxf(dt, 0.0001)
+	var side := Vector4(_hawk_head.z, 0.0, -_hawk_head.x, 0.0)
+	side = side.normalized() if side.length() > 0.05 else Vector4(1.0, 0.0, 0.0, 0.0)
+	_hawk_bank = lerpf(_hawk_bank, clampf(-atan(turned.dot(side) * _hawk_speed_now / G), -1.1, 1.1), minf(dt * 4.0, 1.0))
 
 
-## The hawk's twenty floats: the same bird, 2.4 times the size, gliding.
-func _hawk_row() -> PackedFloat32Array:
+func _hawk_start() -> void:
+	var flock_middle := Vector2(_middle.x, _middle.z)
+	var from_viewer := Vector2(1.0, 0.0)
+	var seen: bool = _viewer_known and _rng.randf() < hawk_seen_share
+	if seen:
+		var d := flock_middle - Vector2(_viewer.x, _viewer.z)
+		if d.length() > 1.0:
+			from_viewer = d.normalized()
+		from_viewer = from_viewer.rotated(deg_to_rad(_rng.randf_range(-hawk_spread_degrees, hawk_spread_degrees)))
+	else:
+		from_viewer = Vector2.RIGHT.rotated(_rng.randf() * TAU)
+	# Seen: far out beyond the flock and only a little above it, so whoever is watching the
+	# flock has the hawk in view the whole way in - from high above it stayed off the top of
+	# the spawn camera until it was already in the flock.
+	var out: float = _rng.randf_range(60.0, 80.0) if seen else _rng.randf_range(35.0, 55.0)
+	var up: float = _rng.randf_range(5.0, 12.0) if seen else _rng.randf_range(2.0, 14.0)
+	# In the camera's slice along W when it can be seen, so a deep flock is still hit where
+	# the player is looking; the flock's own W otherwise.
+	var w: float = _viewer.w if seen else _middle.w
+	_hawk_pos = Vector4(_middle.x + from_viewer.x * out, _middle.y + up, _middle.z + from_viewer.y * out, w)
+	_hawk_head = (Vector4(_middle.x, _middle.y, _middle.z, w) - _hawk_pos).normalized()
+	_hawk_aim = Vector4(_rng.randfn(0.0, 4.0), _rng.randfn(0.0, 1.5), _rng.randfn(0.0, 4.0), w - _middle.w)
+	_hawk_speed_now = hawk_speed
+	_hawk_bank = 0.0
+	_hawk_state = HawkState.HUNTING
+	_hawk_timer = 12.0
+
+
+## The hawk's twenty floats and its draw. Slow deep beats in short bursts with glides
+## between while it closes; wings held still in the stoop; flapping hard on the way out.
+func _draw_hawk() -> void:
+	if not _hawk_multimesh.is_valid():
+		return
 	var h: Vector4 = _hawk_head
 	var right := Vector4(h.z, 0.0, -h.x, 0.0)
 	right = right.normalized() if right.length() > 0.05 else Vector4(1.0, 0.0, 0.0, 0.0)
+	var up := Vector4(-h.x * h.y, 1.0 - h.y * h.y, -h.z * h.y, -h.w * h.y)
+	up = up.normalized() if up.length() > 0.05 else Vector4(0.0, 0.0, 1.0, 0.0)
+	var wing: Vector4 = right * cos(_hawk_bank) + up * sin(_hawk_bank)
+	var beat: float = 0.0
+	if _hawk_state == HawkState.LEAVING:
+		beat = 1.1
+	elif _hawk_state == HawkState.HUNTING and h.y > -0.3:
+		beat = 1.1 if fmod(_time, 2.4) < 1.0 else 0.0
 	var p: Vector4 = _hawk_pos
-	return PackedFloat32Array([p.x, p.y, p.z, p.w, h.x, h.y, h.z, h.w, right.x, right.y, right.z, right.w,
-		0.8, 0.7, 0.62, 1.0, 0.37, 0.2, bird_scale * 2.4, 0.0])
-
-
-func _write_hawk_row() -> void:
-	var row: PackedFloat32Array = _hawk_row()
-	var o: int = count * FLOATS
-	for k in FLOATS:
-		_buffer[o + k] = row[k]
+	# Custom w is the beat rate against a starling's: about 4 a second, not 11.
+	var row := PackedFloat32Array([p.x, p.y, p.z, p.w, h.x, h.y, h.z, h.w, wing.x, wing.y, wing.z, wing.w,
+		2.6, 2.2, 1.9, 1.0, 0.37, beat, bird_scale * hawk_scale, 0.36])
+	RenderingServer.multimesh_set_buffer(_hawk_multimesh, row)
 
 
 ## Where the hawk is, or null while it is away - for runners.
@@ -1094,7 +1239,8 @@ func gpu_step(dt: float) -> void:
 				# The GPU times come back in nanoseconds, whatever the name says.
 				gpu_usec = float(_rd.get_captured_timestamp_gpu_time(k) - begin) / 1000.0
 	var params: PackedByteArray = _gpu_params()
-	RenderingServer.call_on_render_thread(_gpu_dispatch.bind(params, _hawk_row().to_byte_array(), dt, _time, _frame, _parity))
+	_draw_hawk()
+	RenderingServer.call_on_render_thread(_gpu_dispatch.bind(params, dt, _time, _frame, _parity))
 	_parity = 1 - _parity
 	_frame += 1
 	_time += dt
@@ -1102,14 +1248,12 @@ func gpu_step(dt: float) -> void:
 	mean_step_usec = last_step_usec if _frame <= 1 else lerpf(mean_step_usec, last_step_usec, 0.05)
 
 
-func _gpu_dispatch(params: PackedByteArray, hawk_row: PackedByteArray, dt: float, now: float, frame: int, parity: int) -> void:
+func _gpu_dispatch(params: PackedByteArray, dt: float, now: float, frame: int, parity: int) -> void:
 	if _gpu_sets.size() != 2:
 		return
 	var n: int = count
 	var groups: int = (n + GROUP - 1) / GROUP
 	_rd.buffer_update(_gpu_buffers["params"], 0, params.size(), params)
-	# The hawk is the multimesh's last row, past the birds the shader writes.
-	_rd.buffer_update(RenderingServer.multimesh_get_buffer_rd_rid(_multimesh), n * FLOATS * 4, hawk_row.size(), hawk_row)
 	_rd.buffer_clear(_gpu_buffers["counts"], 0, BUCKETS * 4)
 	var here: RID = _gpu_sets[parity]
 	var there: RID = _gpu_sets[1 - parity]
