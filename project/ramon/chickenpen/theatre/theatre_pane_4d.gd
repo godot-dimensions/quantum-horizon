@@ -160,4 +160,4 @@ func _draw_lines(eye: Camera4D) -> void:
 	var corners: Array = [_at(eye, 0.0, 0.0), _at(eye, 1.0, 0.0), _at(eye, 1.0, 1.0), _at(eye, 0.0, 1.0)]
 	for k in 4:
 		draw_line(corners[k], corners[(k + 1) % 4], Color(edge_color, edge_color.a * f), 1.7 * px, true)
-	draw_line(_at(eye, 0.0, _floor), _at(eye, 1.0, _floor), Color(floor_color, floor_color.a * f), 2.6 * px, true)
+	draw_line(_at(eye, 0.0, _floor), _at(eye, 1.0, _floor), Color(floor_color, floor_color.a * f), 1.8 * px, true)
