@@ -8,10 +8,15 @@ extends Node
 ##                                      tesseract travel through your slice along W
 ##   IV   SHAPES WITH NO 3D TWIN        the tiger, spheritorus, ditorus, duocylinder and a
 ##                                      Klein bottle, each rising and turning through W
-##   V    NOW YOU TURN IT               you hold them yourself, then turn a left glove into
-##                                      a right one, which no rotation in 3D can do
+##   V    NOW YOU TURN IT               you hold the shapes yourself and turn them
+##   VI   A LEFT GLOVE, TURNED, IS A    you turn a left glove into a right one, which no
+##        RIGHT GLOVE                   rotation in 3D can do
 ##
-## (III is the mined rock, which theatre_show_4d keeps; VI to VIII are part two's.)
+## (III is the mined rock, which theatre_show_4d keeps; VII to IX are part two's.)
+##
+## THE GLOVE WAS THE BACK HALF OF V, and Ramon did not notice it (30 Sept). Nineteen
+## seconds into an open-ended toy is where a thing gets skipped, so it is its own slide
+## now, with its own title, its own stop for the arrow keys, and the camera moving in.
 ##
 ## WHY A CHICKEN AND NOT FLATLAND'S SQUARE. The audience has just spent the afternoon
 ## catching these, and the device is the old one - a two-dimensional being on a slice of a
@@ -32,9 +37,13 @@ extends Node
 ## the frame you walk in. The pieces that hold them are built on the still beat in the
 ## chair, with the rest of part one's exhibits.
 ##
-## THE TALK DOES NOT WAIT for you on slide V: it keeps its clock, like every slide, and the
-## arrows still step back and forth. Somebody who does not touch anything sees the shapes
-## turn by themselves, and the glove turned for them at the end.
+## THE TALK DOES NOT WAIT for you on slides V and VI: they keep their clock, like every
+## slide, and the arrows still step back and forth. Somebody who does not touch anything
+## sees the shapes turn by themselves, and the glove turned for them.
+##
+## A LEFT DRAG TURNS THINGS TOO, on those two slides, and only a clean left click moves the
+## talk on (see is_hands_on and was_clean_click). A click is "forward" everywhere else, and
+## on the one slide that asks you to use the mouse it was an easy way to lose the slide.
 
 const Shapes := preload("res://ramon/chickenpen/theatre/theatre_shapes_4d.gd")
 const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd")
@@ -110,6 +119,12 @@ var _glove_turn: float = 0.0
 var _glove_done: bool = false
 var _toy_stage: String = ""
 var _touched: bool = false
+var _glove_started: bool = false
+# The left button on the hands-on slides: held, how far it has moved, and when anything
+# last turned an exhibit - so a drag is never mistaken for a click.
+var _left_down: bool = false
+var _left_moved: float = 0.0
+var _last_turn_msec: int = -100000
 
 
 func setup(table: Node4D, metrics: Node, screen: Node, seat: Node) -> void:
@@ -265,6 +280,8 @@ func build(id: String) -> Node4D:
 			return _build_zoo()
 		"toy":
 			return _build_toy()
+		"glove":
+			return _build_gloves()
 	return null
 
 
@@ -415,12 +432,16 @@ func _build_toy() -> Node4D:
 		pivot.position = Vector4(0.0, SHAPE_Y, 0.0, 0.0)
 		pivot.visible = false
 		_toy.append(pivot)
+	return piece
+
+
+## Two gloves on the drum, a left and a right.
+func _build_gloves() -> Node4D:
+	var piece := _piece("Gloves")
 	_left_glove = _glove(piece, "LeftGlove", 1.0)
 	_left_glove.position = Vector4(-1.15, 1.0, 0.0, 0.0)
 	_right_glove = _glove(piece, "RightGlove", -1.0)
 	_right_glove.position = Vector4(1.15, 1.0, 0.0, 0.0)
-	_left_glove.visible = false
-	_right_glove.visible = false
 	return piece
 
 
@@ -462,6 +483,9 @@ func enter(id: String) -> void:
 	_visitor_beat = ""
 	_zoo_slot = -1
 	_toy_stage = ""
+	_glove_started = false
+	_left_down = false
+	_left_moved = 0.0
 	match id:
 		"chicken":
 			if _screen != null:
@@ -476,9 +500,15 @@ func enter(id: String) -> void:
 			_toy_zw = 0.0
 			_toy_idle = 99.0
 			_toy_cycle = 0.0
+			_touched = false
+			if _screen != null:
+				_screen.call("hide_screen")
+		"glove":
 			_glove_turn = 0.0
 			_glove_done = false
 			_touched = false
+			if _left_glove != null:
+				_left_glove.basis = Projection.IDENTITY
 			if _screen != null:
 				_screen.call("hide_screen")
 
@@ -516,6 +546,8 @@ func demonstrate(id: String, t: float, span: float, delta: float) -> void:
 			_run_zoo(tau, span)
 		"toy":
 			_run_toy(tau, delta)
+		"glove":
+			_run_gloves(tau, delta)
 
 
 ## Where [param at] above the turntable is in the room, for anchoring a figure to it. Not
@@ -735,45 +767,43 @@ func _run_zoo(tau: float, _span: float) -> void:
 
 # ---- V
 
-func _run_toy(tau: float, delta: float) -> void:
-	var stage: String = "shapes" if tau < 0.55 else "gloves"
-	if stage != _toy_stage:
-		_toy_stage = stage
-		for pivot in _toy:
-			pivot.visible = false
-		_left_glove.visible = stage == "gloves"
-		_right_glove.visible = stage == "gloves"
-		if stage == "shapes":
-			_say_figures([{"at": _world(Vector4(-1.7, 3.1, 0.0, 0.0)), "value": "YOUR TURN",
-				"side": -1.0, "label": "hold the right mouse button and drag. Scroll for the next shape",
-				"colour": Color(0.80, 0.90, 1.0)}])
-			if _screen != null:
-				_screen.call("show_shadow", "ITS SHADOW", Shapes.shadow_lines(String(Shapes.ZOO[_toy_index]["id"])))
-		else:
-			if _screen != null:
-				_screen.call("hide_screen")
-			_glove_figures()
-	_toy_idle += delta
-	if stage == "shapes":
-		# Nobody at the controls: it turns itself and moves on every few seconds, so the
-		# slide is never a still picture of a shape waiting to be touched.
-		if _toy_idle > 2.5:
-			_toy_xw += delta * 0.55
-			_toy_zw = 0.35 * sin(_toy_xw * 0.7)
-			_toy_cycle += delta
-			if _toy_cycle > 6.0:
-				_toy_cycle = 0.0
-				_next_toy(1)
-		for i in _toy.size():
-			_toy[i].visible = i == _toy_index
-		var pivot: Node4D = _toy[_toy_index]
-		pivot.basis = Basis4D.from_xw(_toy_xw) * Basis4D.from_zw(_toy_zw)
+func _run_toy(_tau: float, delta: float) -> void:
+	if _toy_stage == "":
+		_toy_stage = "shapes"
+		_say_figures([{"at": _world(Vector4(-1.7, 3.1, 0.0, 0.0)), "value": "YOUR TURN",
+			"side": -1.0, "label": "hold the right mouse button and drag. Scroll for the next shape",
+			"colour": Color(0.80, 0.90, 1.0)}])
 		if _screen != null:
-			_screen.call("set_shadow", _table.basis * pivot.basis)
-		return
-	# The gloves. Turned for you near the end if you have not done it.
-	if not _glove_done and tau > 0.82:
-		_glove_turn = move_toward(_glove_turn, PI, delta * 1.3)
+			_screen.call("show_shadow", "ITS SHADOW", Shapes.shadow_lines(String(Shapes.ZOO[_toy_index]["id"])))
+	_toy_idle += delta
+	# Nobody at the controls: it turns itself and moves on every few seconds, so the slide
+	# is never a still picture of a shape waiting to be touched.
+	if _toy_idle > 2.5:
+		_toy_xw += delta * 0.55
+		_toy_zw = 0.35 * sin(_toy_xw * 0.7)
+		_toy_cycle += delta
+		if _toy_cycle > 6.0:
+			_toy_cycle = 0.0
+			_next_toy(1)
+	for i in _toy.size():
+		_toy[i].visible = i == _toy_index
+	var pivot: Node4D = _toy[_toy_index]
+	pivot.basis = Basis4D.from_xw(_toy_xw) * Basis4D.from_zw(_toy_zw)
+	if _screen != null:
+		_screen.call("set_shadow", _table.basis * pivot.basis)
+
+
+# ---- VI
+
+## Two gloves; turn the left one half way round through W. Turned for you if you have not
+## done it by just past half way, so a player who only watches still sees it happen - and
+## then it holds, matched, for the rest of the slide.
+func _run_gloves(tau: float, delta: float) -> void:
+	if not _glove_started:
+		_glove_started = true
+		_glove_figures()
+	if not _glove_done and tau > 0.58:
+		_glove_turn = move_toward(_glove_turn, PI, delta * 1.1)
 	_check_glove()
 	_left_glove.basis = Basis4D.from_xw(_glove_turn)
 
@@ -807,23 +837,48 @@ func _glove_figures() -> void:
 
 func _next_toy(step: int) -> void:
 	_toy_index = posmod(_toy_index + step, _toy.size())
-	if _screen != null and _toy_stage == "shapes":
+	if _screen != null and _current == "toy":
 		_screen.call("show_shadow", "ITS SHADOW", Shapes.shadow_lines(String(Shapes.ZOO[_toy_index]["id"])))
 
 
-## Right mouse held and dragged turns whatever you are holding; the wheel changes shape.
-## Only while you are seated: on your feet the same drag already turns your own slice
-## (pen_orbit_rig_4d), and doing both at once would be two hands on one wheel.
+## Whether the slide on now is one you drive with the mouse (V and VI).
+func is_hands_on() -> bool:
+	return _current == "toy" or _current == "glove"
+
+
+## Whether the left button just went up as a CLICK rather than the end of a drag: it barely
+## moved while it was down, and nothing was being turned a moment ago. The show asks this
+## on the release, and only moves on if it is.
+func was_clean_click() -> bool:
+	return _left_moved < 8.0 and Time.get_ticks_msec() - _last_turn_msec > 600
+
+
+## Right mouse held and dragged turns whatever you are holding - and so does the left,
+## here, because it is the drag people reach for first; the wheel changes shape. Turning
+## only while you are seated: on your feet the same drag already turns your own slice
+## (pen_orbit_rig_4d), and doing both at once would be two hands on one wheel. The left
+## button is followed either way, so the show can tell a click from a drag.
 func _unhandled_input(event: InputEvent) -> void:
-	if _current != "toy" or _toy_stage == "":
+	if not is_hands_on():
 		return
-	if _seat != null and _seat.has_method("is_seated") and not bool(_seat.call("is_seated")):
+	var button := event as InputEventMouseButton
+	if button != null and button.button_index == MOUSE_BUTTON_LEFT:
+		if button.pressed:
+			_left_down = true
+			_left_moved = 0.0
+		else:
+			_left_down = false
 		return
 	var motion := event as InputEventMouseMotion
-	if motion != null and Input.is_action_pressed(&"rotate_4d"):
+	if motion != null and _left_down:
+		_left_moved += motion.relative.length()
+	if _seat != null and _seat.has_method("is_seated") and not bool(_seat.call("is_seated")):
+		return
+	if motion != null and (Input.is_action_pressed(&"rotate_4d") or _left_down):
 		_toy_idle = 0.0
 		_touched = true
-		if _toy_stage == "shapes":
+		_last_turn_msec = Time.get_ticks_msec()
+		if _current == "toy":
 			_toy_xw -= motion.relative.x * turn_per_pixel
 			_toy_zw += motion.relative.y * turn_per_pixel
 		elif not _glove_done:
@@ -832,7 +887,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	var wheel := event as InputEventMouseButton
-	if wheel != null and wheel.pressed and _toy_stage == "shapes" \
+	if wheel != null and wheel.pressed and _current == "toy" \
 			and (wheel.button_index == MOUSE_BUTTON_WHEEL_UP or wheel.button_index == MOUSE_BUTTON_WHEEL_DOWN):
 		_toy_idle = 0.0
 		_toy_cycle = 0.0

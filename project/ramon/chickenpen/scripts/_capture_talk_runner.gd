@@ -35,10 +35,10 @@ const ONE := [
 	[3, 0.45, "iv_ditorus_slice"], [3, 0.52, "iv_ditorus_turned"],
 	[3, 0.65, "iv_duocylinder_slice"], [3, 0.72, "iv_duocylinder_turned"],
 	[3, 0.85, "iv_klein_slice"], [3, 0.92, "iv_klein_turned"],
-	[4, 0.20, "v_toy"], [4, 0.45, "v_toy_later"], [4, 0.62, "v_gloves"], [4, 0.88, "v_glove_turning"],
-	[4, 0.99, "v_gloves_matched"],
+	[4, 0.25, "v_toy"], [4, 0.75, "v_toy_later"],
+	[5, 0.20, "vi_gloves"], [5, 0.66, "vi_glove_turning"], [5, 0.95, "vi_gloves_matched"],
 ]
-const TWO := [[0, 0.6, "vi_goat"], [1, 0.6, "vii_tool"], [2, 0.4, "viii_walk"]]
+const TWO := [[0, 0.6, "vii_goat"], [1, 0.6, "viii_tool"], [2, 0.4, "ix_walk"]]
 
 
 func _initialize() -> void:
@@ -93,7 +93,7 @@ func _process(_d) -> bool:
 
 	var act: int = int(_show.call("current_act"))
 	var phase: float = float(_show.get("_phase"))
-	if act >= 0 and act < 5:
+	if act >= 0 and act < 6:
 		var span: float = float(_show.call("_length", act))
 		for beat in ONE:
 			if int(beat[0]) == act and phase >= span * float(beat[1]) and not _seen.has(beat[2]):
@@ -111,7 +111,7 @@ func _process(_d) -> bool:
 				_pending = beat[2]
 				_wait = 2
 				return false
-	if _seen.has("viii_walk") or _f > 60000:
+	if _seen.has("ix_walk") or _f > 60000:
 		print("%d pictures" % _n)
 		quit()
 		return true

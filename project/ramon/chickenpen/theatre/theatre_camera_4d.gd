@@ -94,6 +94,10 @@ const SHOTS := {
 	# not stack on top of each other in the picture.
 	"zoo": {"eye": Vector4(1.8, 3.6, 7.4, 0.0), "focus": Vector4(0.0, 2.7, 0.0, 0.0),
 		"eye_to": Vector4(1.2, 3.3, 6.6, 0.0)},
+	# In on the two gloves, square on, so left and right are the picture's own left and
+	# right and the gold thumbs say which is which at a glance.
+	"gloves": {"eye": Vector4(0.0, 3.0, 7.6, 0.0), "focus": Vector4(0.0, 2.55, 0.0, 0.0),
+		"eye_to": Vector4(0.0, 2.75, 5.0, 0.0)},
 }
 
 var _player: Node4D

@@ -70,7 +70,7 @@ func _process(_d) -> bool:
 
 	var act: int = int(_show.call("current_act"))
 	var running: bool = bool(_two.call("is_running"))
-	if act >= 0 and act < 5:
+	if act >= 0 and act < 6:
 		_slide_one_seen = true
 		if running:
 			_part_two_before_slide_one = true
@@ -142,15 +142,15 @@ func _process(_d) -> bool:
 		"no prompt in the room and no offer on part two")
 	_check("slides I to V play first", _slide_one_seen and not _part_two_before_slide_one,
 		"part two was not running while part one's slides were up")
-	_check("and V hands straight on to VI", _handed_over_at_act == 4,
+	_check("and VI hands straight on to VII", _handed_over_at_act == 5,
 		"part two took the floor off act %d, with no closing beat between" % _handed_over_at_act)
 	_check("and all three of part two's ran, in order", _seen == [0, 1, 2, count],
 		"%s" % [_seen])
-	var numerals: Array = ["I. ", "II. ", "III. ", "IV. ", "V. ", "VI. ", "VII. ", "VIII. "]
+	var numerals: Array = ["I. ", "II. ", "III. ", "IV. ", "V. ", "VI. ", "VII. ", "VIII. ", "IX. "]
 	var in_order: bool = _titles.size() == numerals.size()
 	for i in mini(_titles.size(), numerals.size()):
 		in_order = in_order and String(_titles[i]).begins_with(numerals[i])
-	_check("numbered I to VIII, in the order they are shown", in_order, "%s" % [_titles])
+	_check("numbered I to IX, in the order they are shown", in_order, "%s" % [_titles])
 
 	print("\n--- the cut slides are gone, exhibits and all ---")
 	var gone: Array = []

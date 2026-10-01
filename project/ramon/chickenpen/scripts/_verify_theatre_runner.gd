@@ -108,13 +108,13 @@ func _process(_d) -> bool:
 		# so it is the opening-has-run path that builds it, not the chair.
 		var table: Node4D = _root.get_node("Stage/Turntable")
 		if act == 0:
-			for piece in ["FlatWorld", "Visitors", "SliceRock", "Zoo", "Toy"]:
+			for piece in ["FlatWorld", "Visitors", "SliceRock", "Zoo", "Toy", "Gloves"]:
 				if table.get_node_or_null(piece) != null:
 					_pieces_at_start.append(piece)
 		if act == ROCK_ACT:
 			_rock_at_slide = table.get_node_or_null("SliceRock/Rock/Voxels") != null
 			_carved_at_slide = bool(_show.get("_carved"))
-	if act == 5 and bool(_root.get_node("PartTwo").call("is_running")):
+	if act == 6 and bool(_root.get_node("PartTwo").call("is_running")):
 		_handed_on = true
 
 	# Walk up to the way out part way through, to see whether it notices you rather
@@ -131,14 +131,14 @@ func _process(_d) -> bool:
 			quit(1); return true
 		return false
 	print("   acts in order: %s" % [_seen])
-	print("\n--- slides I to V ---")
-	_check("all five exhibits stand before slide I starts", _pieces_at_start.size() == 5,
+	print("\n--- slides I to VI ---")
+	_check("all six exhibits stand before slide I starts", _pieces_at_start.size() == 6,
 		"%s" % [_pieces_at_start])
 	_check("the rock is a real mined block", _rock_at_slide,
 		"a VoxelMiningBlock with its own colliders, on the drum as the slide opens")
 	_check("and already cut", _carved_at_slide,
 		"the carve was taken before the slide, not on its first frame")
-	_check("it ran all five in order and handed on", _seen.slice(-6) == [0, 1, 2, 3, 4, 5] and _handed_on,
+	_check("it ran all six in order and handed on", _seen.slice(-7) == [0, 1, 2, 3, 4, 5, 6] and _handed_on,
 		"%s, then part two had the floor" % [_seen])
 	_check("and it is still there at the end", bool(_root.get_node("ExitArch").get("armed"))
 		and _root.get_node("ExitArch").visible, "you can walk out of it")

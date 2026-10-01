@@ -3,8 +3,8 @@ extends Node4D
 ## The presentation's opening and its first five slides, staged: how to look at 4D.
 ##
 ## ONE PRESENTATION (Ramon, 30 Sept), in two halves that run straight through. This node
-## walks Trym in, sits you down and plays slides I to V - how to look at four dimensions -
-## then hands the floor to theatre_part_two_4d for VI to VIII, what the team built to work
+## walks Trym in, sits you down and plays slides I to VI - how to look at four dimensions -
+## then hands the floor to theatre_part_two_4d for VII to IX, what the team built to work
 ## in them. No closing line and no question between the two: part two is its own node
 ## because its exhibits are its own, not because anybody is asked about it.
 ##
@@ -12,11 +12,12 @@ extends Node4D
 ##   II   THINGS ARRIVE FROM NOWHERE    a 4D ball and a tesseract        theatre_primer_4d
 ##   III  A SLICE IS NOT A CAMERA ANGLE the mined rock, turned through W here
 ##   IV   SHAPES WITH NO 3D TWIN        the tiger, the Klein bottle...   theatre_primer_4d
-##   V    NOW YOU TURN IT               you hold them, then the glove    theatre_primer_4d
+##   V    NOW YOU TURN IT               you hold the shapes yourself     theatre_primer_4d
+##   VI   A LEFT GLOVE, TURNED, IS A RIGHT GLOVE                        theatre_primer_4d
 ##
 ## Trym, 30 Sept: show some interesting 4D shapes, borrow the "2D slice of a 3D world"
-## intro for now, and let people hold a weird shape and turn it themselves. That is I, IV
-## and V; II is the bridge from the chicken's world to ours.
+## intro for now, and let people hold a weird shape and turn it themselves. That is I, IV,
+## V and VI; II is the bridge from the chicken's world to ours.
 ##
 ## THE EXHIBIT IS NOT AN ILLUSTRATION OF THE FINDING, IT IS THE FINDING. Slide III turns a
 ## real VoxelMiningBlock through W and the cross-section really does become a different
@@ -173,11 +174,21 @@ const ACTS := [
 	{
 		"id": "toy",
 		"title": "V. NOW YOU TURN IT",
-		"body": "Hold the right mouse button and drag to turn it through W, the same way you turn your slice in the field. Scroll for the next shape. Then the last trick: a left glove turned half way round through W comes back as a right glove. In three dimensions only a mirror can do that.",
-		"figure": "Turn the left glove until it matches the right one.",
+		"body": "Hold the right mouse button and drag to turn it through W, the same way you turn your slice in the field. Scroll for the next shape. Every shape you see here is a slice of the same object, and you are the one choosing which.",
+		"figure": "Left alone, it turns itself. Take hold of it and it is yours.",
 		"tint": Color(0.12, 0.34, 0.34),
 		"shot": "house",
-		"pace": 2.2,
+		"pace": 1.5,
+		"spin": false,
+	},
+	{
+		"id": "glove",
+		"title": "VI. A LEFT GLOVE, TURNED, IS A RIGHT GLOVE",
+		"body": "In three dimensions no turn will ever make a left glove into a right one. Only a mirror can. Drag sideways and turn the left one half way round through W: it thins to nothing as it leaves your slice, and comes back the other way round.",
+		"figure": "No mirror and no cut. Just a turn, in a direction you cannot point to.",
+		"tint": Color(0.30, 0.24, 0.10),
+		"shot": "gloves",
+		"pace": 1.3,
 		"spin": false,
 	},
 ]
@@ -302,7 +313,7 @@ func _ready() -> void:
 ## mark waiting for them - the other still point, and still well before the slide. Anything
 ## that needs it sooner than either gets it from finish_building(), which `_enter` calls.
 const ACT_BUILDERS: Array[StringName] = [&"_the_chicken", &"_the_visitors", &"_the_rock",
-	&"_the_zoo", &"_the_toy"]
+	&"_the_zoo", &"_the_toy", &"_the_gloves"]
 
 var _built: int = 0
 
@@ -335,6 +346,10 @@ func _the_zoo() -> Node4D:
 
 func _the_toy() -> Node4D:
 	return _primer.call("build", "toy") as Node4D
+
+
+func _the_gloves() -> Node4D:
+	return _primer.call("build", "glove") as Node4D
 
 
 ## A real mined block, turned through W so its cross-section changes.
@@ -704,7 +719,7 @@ func _carve_once() -> void:
 		_rock.call("mine_at_shape", best)
 
 
-## Which act is on: -1 while the room is still arriving, 0 to 4 for slides I to V, then
+## Which act is on: -1 while the room is still arriving, 0 to 5 for slides I to VI, then
 ## ACTS.size() once part two has the floor.
 func current_act() -> int:
 	return _act
@@ -843,8 +858,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	var step := 0
 	var click := event as InputEventMouseButton
-	if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
-		step = 1
+	# ON THE HANDS-ON SLIDES A CLICK IS THE RELEASE, NOT THE PRESS, and only if it was a click:
+	# the left button also turns the exhibit there, and moving on the moment it went down
+	# would throw away every slide somebody tried to take hold of (see the primer's
+	# is_hands_on and was_clean_click).
+	var hands_on: bool = _primer != null and bool(_primer.call("is_hands_on"))
+	if click != null and click.button_index == MOUSE_BUTTON_LEFT:
+		if click.pressed and not hands_on:
+			step = 1
+		elif not click.pressed and hands_on and bool(_primer.call("was_clean_click")):
+			step = 1
 	var key := event as InputEventKey
 	if key != null and key.pressed and not key.echo:
 		if key.keycode == KEY_RIGHT:
@@ -889,7 +912,7 @@ func _finish() -> void:
 
 
 ## Part two stepping backwards off its own first slide. It has already taken its
-## exhibits off the drum and handed the presenter back, so this only has to put slide V
+## exhibits off the drum and handed the presenter back, so this only has to put slide VI
 ## up again and start listening.
 ##
 ## `_done` is deliberately left set. This is a replay, not the talk running a second
@@ -914,7 +937,7 @@ func step_back_from_part_two() -> void:
 ## standing in the middle of it, and the goat came up inside the voxel block.
 func clear_stage() -> void:
 	_show(-1)
-	# And the primer's screen and figures with it, or slide V's shadow would hang over the
+	# And the primer's screen and figures with it, or slide VI's labels would hang over the
 	# goat after a step back and forward across the seam.
 	if _primer != null:
 		_primer.call("leave")

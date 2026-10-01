@@ -8,8 +8,9 @@ extends SceneTree
 ##   II   the 4D ball really crosses your slice (its w goes through zero), and the
 ##        corner-first turn really stands the tesseract's long diagonal along W
 ##   IV   all five shapes come up, in order, and each is turned through W while it is up
-##   V    a right-button drag turns the shape, the wheel changes it, and turning the left
-##        glove half way round through W makes it a right glove
+##   V    a right-button drag turns the shape, the wheel changes it, a left drag turns it
+##        too without moving the talk on, and a clean left click still does
+##   VI   turning the left glove half way round through W makes it a right glove
 ##
 ## SEATED, because slide V only takes the controls from somebody in the chair - on your
 ## feet the same drag turns your own slice. The input is handed to the primer directly:
@@ -42,6 +43,9 @@ var _toy_turned := false
 var _toy_swapped := false
 var _glove_tried := false
 var _glove_matched := false
+var _left_drag_turned := false
+var _left_drag_stayed := false
+var _clean_click_moved_on := false
 var _last_act := -9
 
 
@@ -132,6 +136,19 @@ func _process(_d) -> bool:
 					_zoo_turned.append(i)
 		4:
 			var stage: String = String(_primer.get("_toy_stage"))
+			if stage == "shapes" and _toy_tried and not _left_drag_turned and tau > 0.3:
+				# A drag with the LEFT button: it turns the shape, and the talk stays put.
+				var before: float = float(_primer.get("_toy_xw"))
+				_left_click(true)
+				_left_motion(Vector2(-90.0, 0.0))
+				_left_click(false)
+				_left_drag_turned = absf(float(_primer.get("_toy_xw")) - before) > 0.3
+				_left_drag_stayed = int(_show.call("current_act")) == 4
+				# A moment later, a clean click - press and release, no movement - moves on.
+				_primer.set("_last_turn_msec", -100000)
+				_left_click(true)
+				_left_click(false)
+				_clean_click_moved_on = int(_show.call("current_act")) == 5
 			if stage == "shapes" and not _toy_tried and tau > 0.1:
 				_toy_tried = true
 				var before: float = float(_primer.get("_toy_xw"))
@@ -143,20 +160,38 @@ func _process(_d) -> bool:
 				wheel.pressed = true
 				_primer.call("_unhandled_input", wheel)
 				_toy_swapped = int(_primer.get("_toy_index")) != index
-			if stage == "gloves" and not _glove_tried:
+		5:
+			if not _glove_tried and tau > 0.05:
 				_glove_tried = true
 				# Half a turn through W, in the direction a drag to the left turns it.
 				var pixels: float = PI / float(_primer.get("turn_per_pixel"))
 				for i in 20:
 					_drag(Vector2(-pixels / 20.0, 0.0))
 				_glove_matched = bool(_primer.call("glove_done"))
-	if act == 5 and _last_act == 4:
+	if act == 6 and _last_act == 5:
 		return _report()
 	_last_act = act
 	if _f > 40000:
-		print("   FAIL never got through slide V (act %d)" % act)
+		print("   FAIL never got through slide VI (act %d)" % act)
 		return _report()
 	return false
+
+
+## The left button, handed to both the primer and the show the way the viewport would:
+## the primer first (it is the show's child), then the show.
+func _left_click(down: bool) -> void:
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = down
+	_primer.call("_unhandled_input", ev)
+	_show.call("_unhandled_input", ev)
+
+
+func _left_motion(by: Vector2) -> void:
+	var motion := InputEventMouseMotion.new()
+	motion.relative = by
+	_primer.call("_unhandled_input", motion)
+	_show.call("_unhandled_input", motion)
 
 
 ## A right-button drag, the way the primer reads it: the action held, the motion relative.
@@ -188,6 +223,10 @@ func _report() -> bool:
 	print("\n--- V. now you turn it ---")
 	_check("a right-button drag turns it", _toy_tried and _toy_turned, "the x-w angle moved")
 	_check("and the wheel changes the shape", _toy_swapped, "next one along")
+	_check("a left drag turns it too", _left_drag_turned, "the x-w angle moved")
+	_check("and does not move the talk on", _left_drag_stayed, "still on slide V")
+	_check("while a clean left click still does", _clean_click_moved_on, "on to slide VI")
+	print("\n--- VI. a left glove, turned, is a right glove ---")
 	_check("half a turn through W makes a left glove a right one", _glove_tried and _glove_matched,
 		"matched and snapped")
 	print("\n%d FAIL(s)" % _fails.size())
