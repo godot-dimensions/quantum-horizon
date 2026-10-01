@@ -52,6 +52,9 @@ const BUCKETS := 16384
 const GROUP := 256
 ## vec4 rows of settings the compute shader reads.
 const PARAM_ROWS := 15
+## For the sound: a bird this far from the camera counts half, and then it falls with the
+## square of distance, as sound power does.
+const SOUND_NEAR := 6.0
 
 @export_group("Flock")
 ## 300 is about all the CPU step manages (1.65 ms); on the GPU, measured in the pen on an
@@ -236,6 +239,7 @@ var _hawk_instance := RID()
 ## its W axis, both in the flock's space, for counting the birds in the camera's slice.
 var _viewer := Vector4.ZERO
 var _viewer_ana := Vector4(0.0, 0.0, 0.0, 1.0)
+var _viewer_right := Vector4(1.0, 0.0, 0.0, 0.0)
 var _viewer_known: bool = false
 ## The numbers the stats panel shows, refreshed as they come in: from the GPU's reduce pass
 ## a frame or so late, or summed by the CPU step. See stats().
@@ -621,6 +625,10 @@ func _integrate(dt: float) -> void:
 	var slice_depth: float = bird_w_radius * bird_scale
 	var viewer: Vector4 = _viewer
 	var ana: Vector4 = _viewer_ana
+	var heard: float = 0.0
+	var heard_rolling: float = 0.0
+	var heard_from := Vector4.ZERO
+	var near2: float = SOUND_NEAR * SOUND_NEAR
 	for i in n:
 		var p: Vector4 = _pos[i]
 		var h: Vector4 = _head[i]
@@ -720,8 +728,16 @@ func _integrate(dt: float) -> void:
 		seen_sum += _seen[i]
 		if ag > 0.0:
 			rolling += 1
-		if absf((p - viewer).dot(ana)) < slice_depth:
+		var off: Vector4 = p - viewer
+		if absf(off.dot(ana)) < slice_depth:
 			in_slice += 1
+		# What the camera hears of this bird: power falling with the square of distance.
+		var d2: float = off.length_squared()
+		var loud: float = 1.0 / (1.0 + d2 / near2)
+		heard += loud
+		if ag > 0.0:
+			heard_rolling += loud
+		heard_from += off * (loud / sqrt(d2 + 0.01))
 		_head[i] = h
 		_turn[i] = turn
 		_speed[i] = s
@@ -759,7 +775,8 @@ func _integrate(dt: float) -> void:
 	var sq: Vector4 = squares * inv_n
 	var cr: Vector3 = crosses * inv_n
 	_sums = PackedFloat32Array([_middle.x, _middle.y, _middle.z, _middle.w, _mean_heading.x, _mean_heading.y, _mean_heading.z, _mean_heading.w,
-		sq.x, sq.y, sq.z, sq.w, cr.x, cr.y, cr.z, 0.0, nearest_sum * inv_n, float(seen_sum) * inv_n, float(rolling), float(in_slice)])
+		sq.x, sq.y, sq.z, sq.w, cr.x, cr.y, cr.z, 0.0, nearest_sum * inv_n, float(seen_sum) * inv_n, float(rolling), float(in_slice),
+		heard, heard_rolling, 0.0, 0.0, heard_from.x, heard_from.y, heard_from.z, heard_from.w])
 
 
 ## Never on the GPU: the compute shader writes the buffer itself. It also must not: a
@@ -793,6 +810,7 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngi
 	# In the flock's own space, which is where the hawk flies.
 	_viewer = global_basis.inverse() * (camera.global_position - global_position)
 	_viewer_ana = (global_basis.inverse() * (camera.global_basis * Vector4(0.0, 0.0, 0.0, 1.0))).normalized()
+	_viewer_right = (global_basis.inverse() * (camera.global_basis * Vector4(1.0, 0.0, 0.0, 0.0))).normalized()
 	_viewer_known = true
 	var inverse: Projection = camera.global_basis.inverse()
 	var basis: Projection = inverse * global_basis
@@ -1054,6 +1072,20 @@ func stats() -> Dictionary:
 	return out
 
 
+## What the camera hears, for flock_sound_4d.gd: [code]loud[/code], every bird's sound power
+## at the camera summed (1 for a bird SOUND_NEAR metres away) - so near birds and a big clump
+## both make it louder, as they would; [code]rolling[/code], the share of that coming from
+## birds mid-roll; [code]from[/code], the way it comes from, as a unit vector in the flock's
+## space, shorter the more it surrounds you; [code]right[/code], the camera's right, the
+## same space. Empty until the first sums are in.
+func sound() -> Dictionary:
+	if _sums.size() < 28 or count == 0:
+		return {}
+	var loud: float = _sums[20]
+	var from := Vector4(_sums[24], _sums[25], _sums[26], _sums[27]) / maxf(loud, 0.0001)
+	return {"loud": loud, "rolling": _sums[21] / maxf(loud, 0.0001), "from": from, "right": _viewer_right}
+
+
 ## Where the hawk is, or null while it is away - for runners.
 func hawk_position() -> Variant:
 	return null if _hawk_state == HawkState.AWAY else _hawk_pos
@@ -1297,7 +1329,7 @@ func _gpu_params() -> PackedByteArray:
 		agitation_time, agitation_roll, agitation_rest, jink,
 		_viewer.x, _viewer.y, _viewer.z, _viewer.w,
 		_viewer_ana.x, _viewer_ana.y, _viewer_ana.z, _viewer_ana.w,
-		bird_w_radius * bird_scale, 0.0, 0.0, 0.0,
+		bird_w_radius * bird_scale, SOUND_NEAR, 0.0, 0.0,
 	]).to_byte_array()
 
 
@@ -1371,7 +1403,7 @@ func _ask_for_middle() -> void:
 		return
 	_middle_pending = true
 	RenderingServer.call_on_render_thread(func() -> void:
-		_rd.buffer_get_data_async(_gpu_buffers["flock"], _got_middle, 0, 80))
+		_rd.buffer_get_data_async(_gpu_buffers["flock"], _got_middle, 0, 112))
 
 
 func _got_middle(data: PackedByteArray) -> void:

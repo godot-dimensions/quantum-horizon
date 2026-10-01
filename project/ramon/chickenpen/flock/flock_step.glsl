@@ -66,6 +66,8 @@ shared vec4 sum_head[256];
 shared vec4 sum_sq[256];
 shared vec4 sum_cross[256];
 shared vec4 sum_stats[256];
+shared vec4 sum_sound[256];
+shared vec4 sum_from[256];
 
 const float G = 9.81;
 const float TAU = 6.28318530718;
@@ -432,6 +434,12 @@ void reduce_pass(uint t) {
 	vec4 sq = vec4(0.0);
 	vec4 sc = vec4(0.0);
 	vec4 st = vec4(0.0);
+	// What the camera hears: each bird's sound power at it, which part of that is rolling,
+	// and the way it comes from. Same sums as the CPU step's.
+	vec4 viewer = params.p[12];
+	float near2 = params.p[14].y * params.p[14].y;
+	vec4 so = vec4(0.0);
+	vec4 sd = vec4(0.0);
 	// Reads what UPDATE just wrote: after the swap those are this frame's *_out, bound
 	// here as *_in by the next frame's set - so REDUCE runs with the other set bound.
 	for (uint i = t; i < pc.count; i += 256u) {
@@ -440,13 +448,21 @@ void reduce_pass(uint t) {
 		sh += head_in.v[i];
 		sq += q * q;
 		sc += vec4(q.x * q.y, q.x * q.z, q.y * q.z, 0.0);
-		st += stats.v[i];
+		vec4 bird = stats.v[i];
+		st += bird;
+		vec4 off = q - viewer;
+		float d2 = dot(off, off);
+		float loud = 1.0 / (1.0 + d2 / near2);
+		so += vec4(loud, loud * bird.z, 0.0, 0.0);
+		sd += off * (loud / sqrt(d2 + 0.01));
 	}
 	sum_pos[t] = sp;
 	sum_head[t] = sh;
 	sum_sq[t] = sq;
 	sum_cross[t] = sc;
 	sum_stats[t] = st;
+	sum_sound[t] = so;
+	sum_from[t] = sd;
 	barrier();
 	for (uint half_size = 128u; half_size > 0u; half_size >>= 1u) {
 		if (t < half_size) {
@@ -455,6 +471,8 @@ void reduce_pass(uint t) {
 			sum_sq[t] += sum_sq[t + half_size];
 			sum_cross[t] += sum_cross[t + half_size];
 			sum_stats[t] += sum_stats[t + half_size];
+			sum_sound[t] += sum_sound[t + half_size];
+			sum_from[t] += sum_from[t + half_size];
 		}
 		barrier();
 	}
@@ -466,6 +484,8 @@ void reduce_pass(uint t) {
 		flock.v[3] = sum_cross[0] / n;
 		// Means of nearest distance and neighbours; counts of rolling and in-slice birds.
 		flock.v[4] = vec4(sum_stats[0].x / n, sum_stats[0].y / n, sum_stats[0].z, sum_stats[0].w);
+		flock.v[5] = sum_sound[0];
+		flock.v[6] = sum_from[0];
 	}
 }
 

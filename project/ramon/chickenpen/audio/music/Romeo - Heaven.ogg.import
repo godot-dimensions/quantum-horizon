@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dptnja8pkuwv5"
+path="res://.godot/imported/Romeo - Heaven.ogg-386d8e4dbeab0f454ae8ee455af9ffe9.oggvorbisstr"
+
+[deps]
+
+source_file="res://ramon/chickenpen/audio/music/Romeo - Heaven.ogg"
+dest_files=["res://.godot/imported/Romeo - Heaven.ogg-386d8e4dbeab0f454ae8ee455af9ffe9.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

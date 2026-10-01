@@ -29,6 +29,10 @@ const COMPACT_ROWS := ["Birds", "Step", "Order", "Spacing", "Hawk"]
 @export_range(0.0, 1.0, 0.05) var panel_alpha: float = 0.62
 @export_range(200.0, 500.0, 1.0, "suffix:px") var panel_width: float = 320.0
 @export_range(0.0, 40.0, 1.0) var gap_below: float = 8.0
+## Whole, at [member pin_at], wherever the other cards are - for the cinematic, where the
+## rest of the HUD is hidden and the top of the screen is letterbox.
+@export var pin_top_left: bool = false
+@export var pin_at: Vector2 = Vector2(32.0, 32.0)
 @export_range(0.05, 2.0, 0.05, "suffix:s") var refresh_seconds: float = 0.25
 ## How much history the rolling-birds sparkline holds.
 @export_range(5.0, 120.0, 1.0, "suffix:s") var history_seconds: float = 45.0
@@ -98,8 +102,11 @@ func _rows() -> Array:
 	var rows: Array = []
 	var gpu_ms: float = float(s.get("gpu_ms", -1.0))
 	rows.append(["Birds", "%s, stepped on the %s" % [_thousands(int(s.get("birds", 0))), str(s.get("backend", "-"))]])
-	if gpu_ms >= 0.0:
+	if gpu_ms > 0.0:
 		rows.append(["Step", "%.2f ms GPU, %.2f ms CPU" % [gpu_ms, float(s.get("cpu_ms", 0.0))]])
+	elif gpu_ms == 0.0:
+		# On the GPU, but no timestamps back yet - or none at all, as under the movie writer.
+		rows.append(["Step", "%.2f ms CPU, GPU not timed" % float(s.get("cpu_ms", 0.0))])
 	else:
 		rows.append(["Step", "%.2f ms CPU" % float(s.get("cpu_ms", 0.0))])
 	if s.has("order"):
@@ -133,6 +140,11 @@ func _layout_height() -> float:
 
 
 func _place() -> void:
+	if pin_top_left:
+		_compact = false
+		size = Vector2(panel_width, _layout_height())
+		position = pin_at
+		return
 	var above := get_node_or_null(above_path) as Control
 	if above == null:
 		_compact = false
