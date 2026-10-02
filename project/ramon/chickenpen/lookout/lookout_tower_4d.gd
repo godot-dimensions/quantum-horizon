@@ -229,12 +229,8 @@ func _build_ladder(h: float, half: float, wd: float) -> void:
 	var rungs: int = int(h / 0.35)
 	for i in rungs:
 		_box("Rung", Vector4(0.0, 0.3 + float(i) * 0.35, z, 0.0), Vector4(0.64, 0.04, 0.04, wd), steel)
-	# At the foot: a slab to stand on, and Wren's notice board on its post beside it.
+	# At the foot: a slab to stand on. (Wren's notice board stood beside it; removed, Ramon, 2 Oct.)
 	_box("LadderSlab", Vector4(0.0, 0.04, z + 0.7, 0.0), Vector4(1.8, 0.08, 1.6, wd), Color(0.42, 0.41, 0.38))
-	_box("BoardPost", Vector4(1.35, 0.75, z + 1.05, 0.0), Vector4(0.1, 1.5, 0.1, 0.3), timber_dark)
-	_box("Board", Vector4(1.35, 1.35, z + 1.0, 0.0), Vector4(0.9, 0.6, 0.05, 0.6), timber)
-	_box("BoardFace", Vector4(1.35, 1.35, z + 1.03, 0.0), Vector4(0.78, 0.48, 0.02, 0.5), Color(0.86, 0.82, 0.70))
-	_box("BoardRoof", Vector4(1.35, 1.7, z + 1.0, 0.0), Vector4(1.04, 0.05, 0.22, 0.7), roof_colour)
 	# A stand-off to the catwalk at the top. (Two "cage hoop" bars stood behind the ladder's top
 	# with nothing joining them to it - sticks in the air, like the knee braces; gone, 2 Oct.)
 	if design == Design.CAB:
