@@ -148,7 +148,7 @@ Getting there:
 - **the bands on tiles culled to the view: +0.47 ms**, with grass round you in every direction.
 
 Thinner (2 Oct, spacing unchanged): `blade_width` 0.016 -> 0.009. Shorter, to test (2 Oct):
-`blade_height` 0.5 -> 0.4.
+`blade_height` 0.5 -> 0.4 -> 0.3.
 
 **The tip hook** (Ramon, 2 Oct: "at the top of each blade there's a small tiny curl ... is that
 normal?"). It was not: the Bezier's middle points were at 40% and 90% of the height, which left
@@ -169,7 +169,7 @@ all the bend for the last few centimetres, so every leaning blade hooked over at
 ## Knobs (on the Grass node)
 
 Field (`spacing` 0.085, `spacing_far` 0.30, `spacing_from` 3, `radius` 44, `band_radii`,
-`band_vertices`, `layers`, `layer_spacing`, `w_radius`), blades (`blade_height` 0.4,
+`band_vertices`, `layers`, `layer_spacing`, `w_radius`), blades (`blade_height` 0.3,
 `blade_width` 0.009, `min_pixels` 0.8, `clump_size`, the colours, `region_deep`,
 `region_bright`, `region_size`, `region_share`, `region_strength`, `hue_jitter`), wind (`wind_speed`,
 `gustiness`, `gust_length`, `gust_width`, `bend_max`, `stiffness`, `sheen`), `enabled`. A

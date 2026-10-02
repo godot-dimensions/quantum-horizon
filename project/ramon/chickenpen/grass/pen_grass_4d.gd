@@ -52,7 +52,7 @@ const MAX_TILES := 384
 @export_range(0.05, 1.0, 0.01, "suffix:m") var w_radius: float = 0.3
 
 @export_group("Blades")
-@export_range(0.05, 2.0, 0.01, "suffix:m") var blade_height: float = 0.4
+@export_range(0.05, 2.0, 0.01, "suffix:m") var blade_height: float = 0.3
 ## A blade's width at its root; where that would be under min_pixels on screen, it is
 ## min_pixels wide instead (thinner, and a far field flickers and goes bare).
 @export_range(0.002, 0.2, 0.001, "suffix:m") var blade_width: float = 0.009
