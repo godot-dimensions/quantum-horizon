@@ -88,6 +88,8 @@ enum Design { CAB, BALCONY }
 @export var timber: Color = Color(0.36, 0.27, 0.19)
 @export var timber_dark: Color = Color(0.22, 0.16, 0.12)
 @export var roof_colour: Color = Color(0.16, 0.18, 0.17)
+## The deck's floor (and the cabin's): darker than the steel.
+@export var floor_colour: Color = Color(0.10, 0.11, 0.11)
 @export var inside: Color = Color(0.10, 0.08, 0.07)
 @export var merge_parts: bool = true
 
@@ -191,8 +193,10 @@ func _build_legs(h: float, half: float, wd: float) -> void:
 			_strut("Leg", a, b, 0.26, wd, steel)
 			# One concrete block under each leg, standing well proud of the ground (Ramon,
 			# 2 Oct: "a bit higher ... stronger base", one block per corner).
-			_box("Pad", Vector4(sx * foot, 0.35, sz * foot, 0.0), Vector4(1.1, 1.0, 1.1, wd), Color(0.44, 0.43, 0.40))
-	# X braces on the four faces, in three tiers, and a ring at the top of each.
+			_box("Pad", Vector4(sx * foot, 0.1, sz * foot, 0.0), Vector4(1.1, 1.0, 1.1, wd), Color(0.44, 0.43, 0.40))
+	# X braces on the four faces, in three tiers, and a ring at the top of each - except the
+	# bottom tier's X, which ran down into the concrete blocks (Ramon, 2 Oct: "remove the cross
+	# bars from the bottom row"); its ring stays, tying the legs together.
 	var tiers: int = 3
 	for t in tiers:
 		var y0: float = h * float(t) / float(tiers)
@@ -204,8 +208,9 @@ func _build_legs(h: float, half: float, wd: float) -> void:
 			var cb: Vector2 = _corner(face + 1, r0)
 			var cc: Vector2 = _corner(face, r1)
 			var cd: Vector2 = _corner(face + 1, r1)
-			_strut("Brace", Vector4(ca.x, y0, ca.y, 0.0), Vector4(cd.x, y1, cd.y, 0.0), 0.09, wd, steel)
-			_strut("Brace", Vector4(cb.x, y0, cb.y, 0.0), Vector4(cc.x, y1, cc.y, 0.0), 0.09, wd, steel)
+			if t > 0:
+				_strut("Brace", Vector4(ca.x, y0, ca.y, 0.0), Vector4(cd.x, y1, cd.y, 0.0), 0.09, wd, steel)
+				_strut("Brace", Vector4(cb.x, y0, cb.y, 0.0), Vector4(cc.x, y1, cc.y, 0.0), 0.09, wd, steel)
 			_strut("Girt", Vector4(cc.x, y1, cc.y, 0.0), Vector4(cd.x, y1, cd.y, 0.0), 0.12, wd, steel)
 
 
@@ -449,16 +454,18 @@ static func _frame_along(y: Vector4) -> Projection:
 ## The deck on the frame's top, its railings, the cabin and its hip roof.
 func _build_balcony(h: float, _frame_half: float, wd: float) -> void:
 	var half: float = deck_size * 0.5
-	var deck := Color(0.55, 0.42, 0.28)
-	var rail := Color(0.62, 0.48, 0.32)
+	# ALL ONE DARK METAL (Ramon, 2 Oct): the deck's rails, edge, joists, roof and furniture are
+	# the frame's steel; the floor darker still; only the white cabin keeps its own colours.
+	var deck := floor_colour
+	var rail := steel
 	# Boards, and the joists under them. (There were knee braces too, twelve struts from the
 	# frame out to the deck's edge; they met no member of the frame and read as sticks hanging
 	# in the air, so they went - Ramon, 2 Oct.)
 	_box("Deck", Vector4(0.0, h - 0.06, 0.0, 0.0), Vector4(deck_size, 0.12, deck_size, wd), deck)
-	_box("Fascia", Vector4(0.0, h - 0.2, 0.0, 0.0), Vector4(deck_size - 0.1, 0.16, deck_size - 0.1, wd - 0.1), timber_dark)
+	_box("Fascia", Vector4(0.0, h - 0.2, 0.0, 0.0), Vector4(deck_size - 0.1, 0.16, deck_size - 0.1, wd - 0.1), steel)
 	for k in 5:
 		var x: float = lerpf(-half + 0.3, half - 0.3, float(k) / 4.0)
-		_box("Joist", Vector4(x, h - 0.36, 0.0, 0.0), Vector4(0.14, 0.2, deck_size - 0.2, wd), timber_dark)
+		_box("Joist", Vector4(x, h - 0.36, 0.0, 0.0), Vector4(0.14, 0.2, deck_size - 0.2, wd), steel)
 	# Railings: posts, a top rail and a mid rail on the four edges, a gap at the ladder.
 	var posts: int = 6
 	for face in 4:
@@ -482,14 +489,14 @@ func _build_balcony(h: float, _frame_half: float, wd: float) -> void:
 	# The railing's W ends: a low panel, thin in W, over the whole deck - the eight-walls rule
 	# for a railing, so the deck is fenced along W too.
 	for sw in [-1.0, 1.0]:
-		_box("WRail", Vector4(0.0, h + rail_height * 0.5, 0.0, sw * (wd * 0.5 - 0.06)), Vector4(deck_size, rail_height, deck_size, 0.12), rail.darkened(0.15))
+		_box("WRail", Vector4(0.0, h + rail_height * 0.5, 0.0, sw * (wd * 0.5 - 0.06)), Vector4(deck_size, rail_height, deck_size, 0.12), rail)
 	# The cabin: small, windows all round, dark inside - looked into, not walked into.
 	var ch: float = cabin_height
 	var cs: float = cabin_size
 	var cw: float = cs * 0.5
 	var wall := Color(0.82, 0.80, 0.74)
 	var frame_c := Color(0.92, 0.91, 0.88)
-	_box("CabinFloor", Vector4(0.0, h + 0.02, 0.0, 0.0), Vector4(cs, 0.04, cs, wd), timber_dark)
+	_box("CabinFloor", Vector4(0.0, h + 0.02, 0.0, 0.0), Vector4(cs, 0.04, cs, wd), floor_colour)
 	for face in 4:
 		var axis: Vector4 = [Vector4(0, 0, -1, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(-1, 0, 0, 0)][face]
 		var along: Vector4 = Vector4(-axis.z, 0.0, axis.x, 0.0)
@@ -508,21 +515,21 @@ func _build_balcony(h: float, _frame_half: float, wd: float) -> void:
 	var rise: float = 0.75
 	var slope: float = atan2(rise, over)
 	var board: float = sqrt(over * over + rise * rise)
-	var roof := Color(0.80, 0.82, 0.82)
+	var roof := steel
 	for face in 4:
 		var turn: float = float(face) * PI * 0.5
 		var plank := Basis4D.from_zx(turn) * Basis4D.from_yz(slope)
 		var centre: Vector4 = Basis4D.from_zx(turn) * Vector4(0.0, h + ch + rise * 0.5, over * 0.5, 0.0)
 		_box("Roof", centre, Vector4(over * 2.0, 0.06, board, wd + 0.5), roof, plank)
-	_box("RoofCap", Vector4(0.0, h + ch + rise, 0.0, 0.0), Vector4(0.3, 0.12, 0.3, wd * 0.4), roof.darkened(0.2))
+	_box("RoofCap", Vector4(0.0, h + ch + rise, 0.0, 0.0), Vector4(0.3, 0.12, 0.3, wd * 0.4), steel)
 	_box("Rod", Vector4(0.0, h + ch + rise + 0.7, 0.0, 0.0), Vector4(0.04, 1.3, 0.04, 0.04), steel)
 	# Inside, seen through the panes: the fire finder on its stand.
-	_box("FinderStand", Vector4(0, h + 0.5, 0, 0), Vector4(0.16, 1.0, 0.16, 0.16), timber_dark)
-	_box("FinderTop", Vector4(0, h + 1.02, 0, 0), Vector4(0.6, 0.05, 0.6, 0.6), Color(0.52, 0.47, 0.36))
+	_box("FinderStand", Vector4(0, h + 0.5, 0, 0), Vector4(0.16, 1.0, 0.16, 0.16), steel)
+	_box("FinderTop", Vector4(0, h + 1.02, 0, 0), Vector4(0.6, 0.05, 0.6, 0.6), steel)
 	# Wren's film box and a bench on the deck, against the cabin's south wall.
-	_box("Bench", Vector4(-0.7, h + 0.42, cw + 0.35, 0.0), Vector4(1.1, 0.06, 0.38, 0.5), timber)
+	_box("Bench", Vector4(-0.7, h + 0.42, cw + 0.35, 0.0), Vector4(1.1, 0.06, 0.38, 0.5), steel)
 	for bx in [-1.15, -0.25]:
-		_box("BenchLeg", Vector4(bx, h + 0.2, cw + 0.35, 0.0), Vector4(0.06, 0.4, 0.3, 0.3), timber_dark)
+		_box("BenchLeg", Vector4(bx, h + 0.2, cw + 0.35, 0.0), Vector4(0.06, 0.4, 0.3, 0.3), steel)
 	_box("FilmBox", Vector4(0.75, h + 0.15, cw + 0.3, 0.0), Vector4(0.42, 0.3, 0.3, 0.3), Color(0.55, 0.16, 0.10))
 
 
