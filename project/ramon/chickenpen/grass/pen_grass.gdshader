@@ -89,8 +89,10 @@ uniform float gust_width = 18.0;
 uniform float bend_max = 0.5;
 // The wind pressure, (m/s)^2, that lays a blade half way over.
 uniform float stiffness = 30.0;
-// Where the grid of blades is centred: ahead of the camera, so few are made behind it.
-uniform vec2 grid_shift = vec2(0.0);
+// The middle of the rings, in x and z: you. The player when the camera is following them, the
+// camera itself when it is your eye (the hawk, the Lookout's camera). The slice and the frustum
+// are still the camera's.
+uniform vec2 ring_centre = vec2(0.0);
 // tan of half the camera's horizontal view, with a margin: blades off the sides are dropped.
 uniform float frustum_x = 1.6;
 
@@ -154,7 +156,7 @@ void vertex() {
 	int ix = id % n;
 	int iz = (id / n) % n;
 	int k = id / (n * n);
-	vec2 cam_cell = floor((camera_world.xz + grid_shift) / spacing);
+	vec2 cam_cell = floor(ring_centre / spacing);
 	vec2 cell = cam_cell + vec2(float(ix), float(iz)) - float(n / 2);
 	vec2 root_xz = (cell + hash22(cell)) * spacing;
 	// The w where the camera's slice crosses this spot of ground, and the layers round it.
@@ -179,7 +181,7 @@ void vertex() {
 	// The ring's edges THIN the grass, blade by blade (Ghost of Tsushima drops three in four
 	// before it hands over), and shrink and recolour what is left a little, so neither the near
 	// ring's edge nor the far ring's is a line.
-	float dist = length(root_xz - camera_world.xz);
+	float dist = length(root_xz - ring_centre);
 	float ring = 1.0 - smoothstep(radius_out - radius_out_band, radius_out, dist);
 	if (radius_in > 0.0) {
 		ring *= smoothstep(radius_in, radius_in + radius_in_band, dist);

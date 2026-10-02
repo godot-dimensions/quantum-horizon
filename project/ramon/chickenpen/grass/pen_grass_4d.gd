@@ -41,8 +41,8 @@ const GROUND := preload("res://ramon/chickenpen/lookout/lookout_ground_4d.gd")
 
 @export_group("Blades")
 @export_range(0.05, 2.0, 0.01, "suffix:m") var blade_height: float = 0.5
-@export_range(0.005, 0.2, 0.001, "suffix:m") var blade_width: float = 0.016
-@export_range(0.005, 0.3, 0.001, "suffix:m") var far_blade_width: float = 0.045
+@export_range(0.002, 0.2, 0.001, "suffix:m") var blade_width: float = 0.009
+@export_range(0.002, 0.3, 0.001, "suffix:m") var far_blade_width: float = 0.025
 @export_range(0.3, 5.0, 0.05, "suffix:m") var clump_size: float = 1.3
 @export var colour_root: Color = Color(0.07, 0.10, 0.05)
 @export var colour_base: Color = Color(0.20, 0.31, 0.12)
@@ -65,9 +65,6 @@ const GROUND := preload("res://ramon/chickenpen/lookout/lookout_ground_4d.gd")
 @export_range(0.0, 0.95, 0.01) var bend_max: float = 0.42
 @export_range(1.0, 200.0, 0.5) var stiffness: float = 30.0
 @export_range(0.0, 1.0, 0.01) var sheen: float = 0.2
-## The blade grid is centred this share of its radius ahead of the camera, so little is made
-## behind it, where it is never seen; its half-size is (1 - this / 2) of the radius.
-@export_range(0.0, 0.6, 0.01) var grid_ahead: float = 0.3
 
 @export_group("Ground")
 ## The pen's ground slab reaches this far in x, z and w (chickenpen.tscn: 120 m a side).
@@ -158,7 +155,7 @@ func _material(wind: Texture2D, spacing: float, radius: float, inner: float, wid
 
 
 func _cells(spacing: float, radius: float) -> int:
-	return int(ceil(radius * 2.0 * (1.0 - grid_ahead * 0.5) / spacing))
+	return int(ceil(radius * 2.0 / spacing))
 
 
 ## A blade: pairs of vertices up its length, closer together towards the tip where it bends,
@@ -254,17 +251,22 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 	var origin: Vector4 = inverse * (global_position - camera.global_position)
 	var here: Vector4 = global_basis.inverse() * (camera.global_position - global_position)
 	var normal: Vector4 = (global_basis.inverse() * camera.global_basis.w).normalized()
+	# The rings' middle is you: the player, when this is their own camera (the orbit rig, 8 m
+	# behind them), so the field spreads out round them and not ahead of the view; else (the
+	# hawk, the Lookout's camera, a cutscene) the camera.
+	var centre := Vector2(here.x, here.z)
+	var player := _room.get_node_or_null("Player") as Node4D
+	if player != null and player.is_ancestor_of(camera):
+		var at_player: Vector4 = global_basis.inverse() * (player.global_position - global_position)
+		centre = Vector2(at_player.x, at_player.z)
 	var pushers := PackedVector4Array()
 	for p in _pushers:
 		if is_instance_valid(p) and p.is_visible_in_tree() and pushers.size() < 16:
 			var at: Vector4 = global_basis.inverse() * (p.global_position - global_position)
-			if Vector2(at.x - here.x, at.z - here.z).length() < near_radius + 2.0:
+			if Vector2(at.x - centre.x, at.z - centre.y).length() < near_radius + 2.0:
 				pushers.append(at)
-	var ahead: Vector4 = global_basis.inverse() * (camera.global_basis * Vector4(0.0, 0.0, -1.0, 0.0))
-	var flat := Vector2(ahead.x, ahead.z)
-	flat = flat.normalized() if flat.length() > 0.05 else Vector2.ZERO
-	_material_near.set_shader_parameter("grid_shift", flat * near_radius * grid_ahead)
-	_material_far.set_shader_parameter("grid_shift", flat * far_radius * grid_ahead)
+	_material_near.set_shader_parameter("ring_centre", centre)
+	_material_far.set_shader_parameter("ring_centre", centre)
 	# The view's half-width, as a tangent, with a margin: blades off the sides are dropped early.
 	var view: Vector2 = viewport.get_visible_rect().size
 	var fov: float = float(camera.get("field_of_view_4d")) if int(camera.get("projection_type")) == 1 else float(camera.get("field_of_view_3d"))

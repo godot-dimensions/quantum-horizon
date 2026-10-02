@@ -2,7 +2,8 @@ extends SceneTree
 
 ## Frames of the grass, for judging it by eye: the farm camera as you play, low across the
 ## field into the sun, a wide view, the wind over six frames, a step through W, the marsh and
-## the tower's foot (where the mask should leave bare ground). Prints the blade count and the
+## the tower's foot (where the mask should leave bare ground), then from high above the player
+## (the near ring should be a disc round them). Prints the blade count and the
 ## mask's numbers. Saves res://smoke_test_output/grass_<n>_<view>.png.
 ##
 ##   godot... --path project --windowed --resolution 1280x720 --position 40,40
@@ -123,6 +124,18 @@ func _process(d: float) -> bool:
 			_next(0.6)
 		17:
 			_save("kata_wood")
+			# From high above the player, on a camera that is the player's own (a child of it, as
+			# the farm camera is): the near ring should be a disc round them.
+			var top := Camera4D.new()
+			top.set("rendering_engine_name", "Cross-section")
+			top.set("field_of_view_4d", 1.0)
+			_room.get_node("Player").add_child(top)
+			top.make_current()
+			top.global_position = (_room.get_node("Player") as Node4D).global_position + Vector4(0.0, 34.0, 14.0, 0.0)
+			top.global_basis = Basis4D.from_yz(-1.18)
+			_next(0.8)
+		18:
+			_save("above_player")
 			print("GRASS CAPTURE DONE")
 			if FileAccess.file_exists("user://lookout_journal_grass_test.cfg"):
 				DirAccess.remove_absolute(ProjectSettings.globalize_path("user://lookout_journal_grass_test.cfg"))

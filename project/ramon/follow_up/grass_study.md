@@ -35,8 +35,13 @@ blades are ordinary 3D geometry made by the GPU; only the shader knows about W:
 - **Three layers along W** at every spot, set round **the w where the camera's slice crosses
   that spot of ground** - so a turned slice (RMB) still finds grass wherever it passes, instead
   of only along a line.
-- **Nothing is stored.** Instance n is a cell of a grid round the camera, snapped to the world
-  (so a blade never swims); a hash of the cell gives its jitter, height, facing and w.
+- **Nothing is stored.** Instance n is a cell of a grid round you, snapped to the world (so a
+  blade never swims); a hash of the cell gives its jitter, height, facing and w.
+- **"You" is the player, not the camera** (Ramon, 2 Oct: "the detailed circle area should always
+  take you as its middle point"). When the camera is the player's own (the orbit rig, a few
+  metres behind them) both rings are centred on the player, so the detail spreads out round
+  them, behind as far as ahead; on any other camera (the hawk, the Lookout's camera, a cutscene)
+  on the camera. The slice and the frustum are always the camera's.
 
 ## The blade, the clumps, the wind
 
@@ -77,10 +82,10 @@ grows in when it is done. Moving things (people, animals, the balloon) are left 
 
 | | |
 |---|---|
-| blades | 337,068 (near ring 12 m at 8.5 cm, far ring 44 m at 32 cm, 3 layers in W) |
-| GPU | **+0.79 ms** a frame (1.88 -> 2.67) |
-| CPU | +0.02 ms (a dozen uniforms a frame) |
-| video memory | about +13 MB (the MultiMesh buffers and the mask) |
+| blades | 467,142 (near ring 12 m at 8.5 cm, far ring 44 m at 32 cm, 3 layers in W) |
+| GPU | **+1.10 ms** a frame from the farm camera (1.87 -> 2.97), +1.04 ms low in the field |
+| CPU | under +0.01 ms (a dozen uniforms a frame) |
+| video memory | about +19 MB (the MultiMesh buffers and the mask; the scene read 848 MB at 337k blades, 854 MB now) |
 
 Getting there: the first dense version was +1.28 ms with 520k blades. Two things did it:
 - **dead blades skip the work**: out of the slice, thinned out, masked, behind the camera or off
@@ -89,7 +94,14 @@ Getting there: the first dense version was +1.28 ms with 520k blades. Two things
 - **the far ring has fewer, wider blades**: they are a pixel or two wide out there, and tiny
   triangles are what costs.
 
-The grid is also centred 30% of its radius ahead of the camera, so little is made behind it.
+It was +0.79 ms (337k blades) while the grid sat 30% of its radius ahead of the camera, so
+little was made behind it. That pushed the detailed ring's near edge forward of the player and
+broke the field spreading round you, so the rings were centred on the player (2 Oct) and the
+full square is made: +0.3 ms, mostly the blades behind the camera that are made and dropped,
+plus more of the detailed disc in view. A round grid (rows of varying length) would make 21%
+fewer and win most of that back.
+
+Thinner (2 Oct, spacing unchanged): `blade_width` 0.016 -> 0.009, `far_blade_width` 0.045 -> 0.025.
 
 ## Traps found
 
@@ -105,9 +117,9 @@ The grid is also centred 30% of its radius ahead of the camera, so little is mad
 ## Knobs (on the Grass node)
 
 Rings (`near_spacing`, `near_radius`, `far_spacing`, `far_radius`, `layers`, `layer_spacing`,
-`w_radius`), blades (`blade_height` 0.5, `blade_width` 0.016, `clump_size`, the colours), wind
-(`wind_speed`, `gustiness`, `gust_length`, `gust_width`, `bend_max`, `stiffness`, `sheen`),
-`grid_ahead`, `enabled`.
+`w_radius`), blades (`blade_height` 0.5, `blade_width` 0.009, `far_blade_width` 0.025,
+`clump_size`, the colours), wind (`wind_speed`, `gustiness`, `gust_length`, `gust_width`,
+`bend_max`, `stiffness`, `sheen`), `enabled`.
 
 ## Not done yet
 
