@@ -643,13 +643,20 @@ func _input(event: InputEvent) -> void:
 	elif key.keycode == KEY_Z and station.call("can_raise"):
 		get_viewport().set_input_as_handled()
 		station.call("raise")
-	elif key.keycode == KEY_Z and station.call("can_raise", true):
-		# Everything but the place: Wren says where the camera is for.
+	elif key.keycode == KEY_Z and station.call("can_raise", true) and _at_lookout():
+		# Everything but the place: Wren says where the camera is for. Only round the Lookout:
+		# out in the pen the subgame says nothing ("it should never carry over").
 		get_viewport().set_input_as_handled()
 		story.call("on_camera_not_here")
 	elif key.keycode == KEY_B and can_board():
 		get_viewport().set_input_as_handled()
 		balloon.call("board")
+
+
+## Whether you are round the Lookout, as the HUD card judges it (journal_card_4d.gd).
+func _at_lookout() -> bool:
+	var card: Node = room.get_node_or_null("UI/Journal")
+	return card == null or not card.has_method("at_lookout") or bool(card.call("at_lookout"))
 
 
 # --- What the station tells us -----------------------------------------------------------------

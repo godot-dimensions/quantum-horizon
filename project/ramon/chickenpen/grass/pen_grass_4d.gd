@@ -24,6 +24,8 @@ extends Node4D
 ## does the tiles in view x cells^2 x layers x the band's vertices (see _measure_grass_runner.gd).
 
 const SHADER := preload("res://ramon/chickenpen/grass/pen_grass.gdshader")
+const LOOKS := preload("res://ramon/chickenpen/grass/pen_grass_looks.gd")
+const PANEL := preload("res://ramon/chickenpen/grass/pen_grass_panel_4d.gd")
 const GROUND := preload("res://ramon/chickenpen/lookout/lookout_ground_4d.gd")
 ## Tiles a band can draw at once (the shader's tiles[] array is this long).
 const MAX_TILES := 384
@@ -32,6 +34,13 @@ const MAX_TILES := 384
 	set(v):
 		enabled = v
 		_set_visible()
+## The look to start in, from pen_grass_looks.gd (1 Meadow, 2 Barley); 0 keeps the values set
+## on this node. The grass panel (and G) switches between them while playing.
+@export_range(0, 9) var start_preset: int = 2
+## The see-through HUD panel of looks, at the right edge.
+@export var show_panel: bool = true
+
+signal preset_changed(index: int)
 
 @export_group("Field")
 ## The gap between blades at your feet and at the field's edge. It starts widening this far
@@ -110,6 +119,13 @@ const MAX_TILES := 384
 @export_range(0.0, 0.95, 0.01) var bend_max: float = 0.42
 @export_range(1.0, 200.0, 0.5) var stiffness: float = 30.0
 @export_range(0.0, 1.0, 0.01) var sheen: float = 0.2
+## BARLEY WAVES (0 off, 1 full): long soft crests lying across the wind that roll downwind
+## through the field, in sets, as over a field of barley; wave_length between crests,
+## wave_speed they travel at, wave_width how long a crest is across the wind before it breaks.
+@export_range(0.0, 2.0, 0.01) var wave_strength: float = 0.0
+@export_range(2.0, 40.0, 0.5, "suffix:m") var wave_length: float = 8.0
+@export_range(0.5, 15.0, 0.1, "suffix:m/s") var wave_speed: float = 3.2
+@export_range(2.0, 80.0, 0.5, "suffix:m") var wave_width: float = 22.0
 
 @export_group("Trampling")
 ## Grass the player walks through lies the way they went, stays down a moment and comes up
@@ -146,6 +162,8 @@ var clearing_cells: int = 0
 var clearing_msec: int = 0
 ## The script's own time in the last pre_render, microseconds, for runners.
 var prerender_usec: int = 0
+## The look in use (pen_grass_looks.gd), 0 for the node's own values.
+var preset: int = 0
 
 
 ## One band of the field: a ring round you with its own grid gap and its own blade.
@@ -187,6 +205,9 @@ var _trail: Array = []
 var _ways: Dictionary = {}
 var _pushers: Array[Node4D] = []
 var _room: Node
+var _noise_image: Image
+var _wind_texture: ImageTexture
+var _clearing_w := Vector3(0.0, 8.0, -8.0)
 
 const MASK_CELL := 0.5
 const MASK_CELLS := 240
@@ -200,15 +221,77 @@ func _ready() -> void:
 	noise.fractal_octaves = 3
 	# Made here, not by a NoiseTexture2D (which makes it on a thread, later), so the regions'
 	# cuts can be read off it now.
-	var noise_image: Image = noise.get_seamless_image(256, 256)
-	var wind := ImageTexture.create_from_image(noise_image)
-	_region_cuts = _cuts(noise_image)
+	_noise_image = noise.get_seamless_image(256, 256)
+	_wind_texture = ImageTexture.create_from_image(_noise_image)
 	_mask_image = Image.create_empty(MASK_CELLS, MASK_CELLS, false, Image.FORMAT_RGBAF)
 	_mask_image.fill(Color(1e4, -1e4, 1e4, -1e4))
 	_mask_texture = ImageTexture.create_from_image(_mask_image)
 	var clear_image := Image.create_empty(MASK_CELLS, MASK_CELLS, false, Image.FORMAT_RGBF)
 	clear_image.fill(Color(-10.0, -10.0, -10.0))
 	_clearing_texture = ImageTexture.create_from_image(clear_image)
+	if start_preset > 0:
+		_take(start_preset)
+	_build_bands()
+	if not RenderingServer4D.pre_render.is_connected(_on_pre_render):
+		RenderingServer4D.pre_render.connect(_on_pre_render)
+	_set_visible()
+	_find_pushers.call_deferred()
+	_build_mask.call_deferred()
+	if show_panel:
+		_add_panel.call_deferred()
+
+
+## Switches to look [param n] from pen_grass_looks.gd, rebuilding the bands (their grids and
+## blades depend on the gaps and heights); the mask and the clearings stay as they are.
+func apply_preset(n: int) -> void:
+	if not LOOKS.PRESETS.has(n):
+		return
+	_take(n)
+	_free_bands()
+	_build_bands()
+	_tiles_centre = Vector2(INF, INF)
+	_scenario = RID()
+	_set_visible()
+	preset_changed.emit(n)
+
+
+## Sets look [param n]'s values on this node: look 1's for anything it does not name.
+func _take(n: int) -> void:
+	for look in [LOOKS.PRESETS[1], LOOKS.PRESETS[n]]:
+		for key in look:
+			if key != "name" and key in self:
+				set(key, look[key])
+	preset = n
+
+
+func _add_panel() -> void:
+	var ui: Node = _room.get_node_or_null("UI")
+	var panel := PANEL.new()
+	panel.grass = self
+	if ui != null:
+		panel.above = ui.get_node_or_null("Quests") as Control
+	if ui == null:
+		var layer := CanvasLayer.new()
+		add_child(layer)
+		ui = layer
+	ui.add_child(panel)
+
+
+func _free_bands() -> void:
+	for inst in _instances:
+		RenderingServer.free_rid(inst)
+	for mm in _multimeshes:
+		RenderingServer.free_rid(mm)
+	_instances.clear()
+	_multimeshes.clear()
+	_meshes.clear()
+	_bands.clear()
+	_drawn = 0
+
+
+func _build_bands() -> void:
+	_region_cuts = _cuts(_noise_image)
+	var wind: Texture2D = _wind_texture
 	var bounds: Array[float] = [0.0]
 	for r in band_radii:
 		if r > bounds.back() + 0.5 and r < radius - 0.5:
@@ -231,11 +314,6 @@ func _ready() -> void:
 		band.material = _material(wind, band, float(i) * 37.1)
 		_add_band(band)
 		_bands.append(band)
-	if not RenderingServer4D.pre_render.is_connected(_on_pre_render):
-		RenderingServer4D.pre_render.connect(_on_pre_render)
-	_set_visible()
-	_find_pushers.call_deferred()
-	_build_mask.call_deferred()
 
 
 ## Where the regions' noise turns deep and bright: its quantiles, so each offset covers
@@ -290,6 +368,7 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("clump_size", clump_size)
 	m.set_shader_parameter("mask", _mask_texture)
 	m.set_shader_parameter("clearing", _clearing_texture)
+	m.set_shader_parameter("clearing_w", _clearing_w)
 	m.set_shader_parameter("clearing_ragged", clearing_ragged)
 	m.set_shader_parameter("clearing_fringe", clearing_fringe)
 	m.set_shader_parameter("taper", taper)
@@ -303,6 +382,10 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("bend_max", bend_max)
 	m.set_shader_parameter("stiffness", stiffness)
 	m.set_shader_parameter("sheen", sheen)
+	m.set_shader_parameter("wave_strength", wave_strength)
+	m.set_shader_parameter("wave_length", wave_length)
+	m.set_shader_parameter("wave_speed", wave_speed)
+	m.set_shader_parameter("wave_width", wave_width)
 	m.set_shader_parameter("region_size", region_size)
 	m.set_shader_parameter("region_cuts", _region_cuts)
 	m.set_shader_parameter("region_strength", region_strength)
@@ -782,6 +865,7 @@ func _build_clearings(seeds: PackedFloat32Array, group_w: PackedFloat32Array, ou
 	for g in 3:
 		if group_w[g * 2 + 1] > 0.0:
 			ws[g] = group_w[g * 2] / group_w[g * 2 + 1]
+	_clearing_w = ws
 	for band in _bands:
 		band.material.set_shader_parameter("clearing_w", ws)
 	clearing_cells = 0

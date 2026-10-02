@@ -120,6 +120,17 @@ uniform float gust_width = 18.0;
 uniform float bend_max = 0.5;
 // The wind pressure, (m/s)^2, that lays a blade half way over.
 uniform float stiffness = 30.0;
+// BARLEY WAVES (Ramon, 2 Oct: "make it flow like on barley fields, even though its not"). On
+// barley the wind shows as long soft crests lying across it that roll downwind through the
+// field, one after another, in sets - each laying the ears over as it passes, the light running
+// along the crest. Here: a travelling wave down the wind (wave_length apart, at wave_speed),
+// its crests bent and broken by noise so they are wavy and wave_width long, not ruled lines;
+// its pressure added to the wind's, so the stalks lean and come back in step, the tall ones a
+// moment after (the lag). 0 is off.
+uniform float wave_strength = 0.0;
+uniform float wave_length = 8.0;
+uniform float wave_speed = 3.2;
+uniform float wave_width = 22.0;
 
 // Whoever walks through: where (x, strength, z, w), and the way they went (x, z), with the
 // reach of their push (w). Grass is laid the way they move, not away from them; the player
@@ -340,13 +351,29 @@ void vertex() {
 		float g2 = texture(wind_noise, guv * 2.3 + vec2(0.31, 0.77) - vec2(0.05 * tw, 0.0)).r;
 		float swell = 0.75 + 0.25 * sin(TIME * 0.21) * sin(TIME * 0.077 + 1.3);
 		float gust = smoothstep(0.32, 0.8, g1 * 0.75 + g2 * 0.25) * swell;
-		float speed = wind_speed * (1.0 - gustiness * 0.5 + gustiness * 1.6 * gust);
+		float wave = 0.0;
+		if (wave_strength > 0.0) {
+			float down = dot(root_xz, wind_dir);
+			float moving = down - wave_speed * tw;
+			// The crests' bend: a slow noise across them, drifting with them.
+			float warp = texture(wind_noise, vec2(side_pos / (wave_width * 2.2), moving / (wave_length * 5.0)) + vec2(0.41, 0.83)).r;
+			float crest = 0.5 + 0.5 * sin((moving / wave_length + warp * 1.6) * 6.2831853);
+			crest = smoothstep(0.3, 1.0, crest);
+			// Where a crest is, along it: each one wave_width or so long, then it breaks off.
+			float run = smoothstep(0.28, 0.68, texture(wind_noise, vec2(side_pos / (wave_width * 3.1), moving / (wave_length * 3.1)) + vec2(0.17, 0.29)).r);
+			// The sets: a few strong crests, then a few weak.
+			float sets = 0.6 + 0.4 * sin(moving / (wave_length * 4.0) * 6.2831853 + warp * 2.0);
+			wave = crest * mix(0.25, 1.0, run) * sets * wave_strength;
+		}
+		float speed = wind_speed * (1.0 - gustiness * 0.5 + gustiness * 1.6 * gust + 1.2 * wave);
 		float bend = bend_max * tanh(speed * speed / stiffness);
 		// The rock about the bent pose, at the blade's own frequency: shorter ones faster.
 		float freq = mix(2.2, 1.1, clamp(h / max(blade_height * 1.3, 0.01), 0.0, 1.0)) * mix(0.85, 1.15, rnd);
-		float rock = sin(TIME * 6.2831853 * freq + rnd * 40.0) * (0.03 + 0.07 * gust) * bend_max;
+		// Under the waves the stalks move together, so each one's own rock and flutter are less.
+		float together = 1.0 - 0.6 * min(wave_strength, 1.0);
+		float rock = sin(TIME * 6.2831853 * freq + rnd * 40.0) * (0.03 + 0.07 * gust) * bend_max * together;
 		// (The flutter is the wind's too: none in still air, as at the usual 3 m/s.)
-		float flutter = (texture(wind_noise, root_xz * 0.9 + vec2(TIME * 0.6, TIME * 0.37)).r - 0.5) * 0.08 * (0.3 + gust) * min(wind_speed / 3.0, 2.0);
+		float flutter = (texture(wind_noise, root_xz * 0.9 + vec2(TIME * 0.6, TIME * 0.37)).r - 0.5) * 0.08 * (0.3 + gust) * min(wind_speed / 3.0, 2.0) * mix(1.0, together, 0.8);
 		vec2 push = wind_dir * (bend + rock) + across_wind * flutter;
 		// Whoever walks through lays it the way they are going (a little aside too, so it does
 		// not stand up through their legs); the player's trail keeps it down behind them, less
@@ -442,7 +469,8 @@ void vertex() {
 		}
 		c *= 1.0 - cloud * 0.4;
 		v_haze = haze_amount * (1.0 - exp(-length(rel.xyz) / haze_distance));
-		c += sheen * gust * t * t * vec3(0.5, 0.52, 0.3) * shade;
+		// The light on the tips as a gust or a crest lays them over.
+		c += sheen * max(gust, wave) * t * t * vec3(0.5, 0.52, 0.3) * shade;
 		if (flower > 0.5 && t > 0.86) {
 			float pick = hash13(vec3(cell, layer + 6.6));
 			c = pick < 0.5 ? flower_a : (pick < 0.8 ? flower_b : flower_c);

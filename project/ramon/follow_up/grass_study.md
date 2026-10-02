@@ -188,6 +188,30 @@ blades, coming from center" and "less complex blades in radial rows behind cente
   and `taper` 0.5 (was 0.75: the blade stays broad further up).
 - Cost now: **+0.64 ms GPU** from the farm camera (+0.35 low), the script about 0.11-0.14 ms.
 
+## Looks: presets and the grass panel (2 Oct, night)
+
+Ramon: "make transparent hud buttons for a grass panel, save this as preset 1. now lets work in
+preset 2. longer grass, thinner grass and more grass, yes more, and improve the wind animation,
+make it flow like on barley fields, even though its not".
+
+- `grass/pen_grass_looks.gd` holds the looks: **1 Meadow** names every value a look sets (the
+  field as it was then); **2 Barley** names only what it changes (0.62 m tall, 7.5 mm wide,
+  taper 0.6, 5.8 cm apart near and 21 cm far, the barley waves on, softer gusts, more sheen).
+  `start_preset` on the Grass node picks the look to start in (2 now; 0 keeps the node's own
+  values); `apply_preset(n)` switches, rebuilding the bands (their grids depend on the gaps).
+- **The panel** (`grass/pen_grass_panel_4d.gd`, made by the Grass node when `show_panel`): the
+  camera picker's see-through style, one button per look, on the left just above the to-do list
+  (on 2560 x 1440 the right side is full). Click one (Esc first, for the mouse) or **G** for
+  the next. `_panel_grass_runner.gd` checks it switches.
+- **Barley waves** (`wave_strength`, `wave_length` 8 m, `wave_speed` 3.2 m/s, `wave_width`
+  22 m): a travelling wave down the wind whose crests are bent and broken by noise, in sets of
+  stronger and weaker; its pressure adds to the wind's, so the stalks lean and come back
+  together (the tall ones a moment after, by the lag), each stalk's own rock and flutter cut
+  by 60% under it, and the tips catch the light as a crest lays them over (sheen). Film:
+  `smoke_test_output/video/Grass barley.mp4`.
+- Cost of Barley: **+1.08 ms GPU** from the farm camera (+0.58 low), 1.3 million blades handed
+  over in view; Meadow stays at +0.64.
+
 ## Cost (RTX 5080, 1280x720, interleaved on/off, after the pen's warm-up)
 
 | | |

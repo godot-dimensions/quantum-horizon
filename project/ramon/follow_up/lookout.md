@@ -226,6 +226,13 @@ the merged meshes.
 - **The balcony** from Ramon's reference photo, walkable, colliders for boards, rails, both W
   ends and the cabin; the cab kept as a design option. The owl moved 5 m out.
 - **The HUD card lists every way in** (Z J B F); **B boards the balloon** from anywhere.
+- **The card is only there at the Lookout** (Ramon, 2 Oct: "tower subgame should change the hud,
+  but it should never carry over"): within 18 m of the tower (and the marsh, and the wood, in
+  their own w), or with the camera raised, on the balloon ride or in a cutscene; it fades out
+  as you walk off and folds to no height so the camera picker moves back up. Z away from it no
+  longer gets Wren's "Not down here" line. The keys themselves (J, B, U, P, F4) still work
+  anywhere: asked Ramon whether they should be held to the Lookout too.
+  `lookout/_verify_card_local_runner.gd` checks it.
 - **The pond is round** (discs of turned boxes); the heron dressed from field guides (brow,
   plumes, two lines of neck streaks, black flanks over white thighs, darker grey) with round
   joints in the neck and at the heels - it had looked broken at the bends. The owl is an

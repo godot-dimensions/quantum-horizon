@@ -14,6 +14,12 @@ extends Control
 ## and text sizes as pen_cinematics_card_4d.gd), right-aligned under it and as wide; beside it
 ## when a small window at a big UI size leaves no room below. The camera picker hangs under
 ## this one (the inherited scene repoints its under_path).
+##
+## ONLY AT THE LOOKOUT (Ramon, 2 Oct: "tower subgame should change the hud, but it should
+## never carry over"). The card fades in as you come up to the tower, Wren and the mooring
+## (site_radius), or at the marsh and in the wood in their own w, or while the subgame has you
+## (the camera raised, the balloon ride, one of its cutscenes); walk away into the pen and it
+## fades out. Gone, it folds to no height, so the camera picker under it moves back up.
 
 const STYLE := preload("res://ramon/Menu/style/menu_final_style.tres")
 const JOURNAL := preload("res://ramon/chickenpen/lookout/field_journal_4d.gd")
@@ -23,6 +29,12 @@ const JOURNAL := preload("res://ramon/chickenpen/lookout/field_journal_4d.gd")
 @export_range(9, 28, 1) var text_size: int = 13
 @export_range(0.0, 1.0, 0.01) var panel_alpha: float = 0.34
 @export_range(0.0, 40.0, 1.0) var gap: float = 10.0
+## How near the tower (and the marsh, and the wood) you have to be for the card, in x and z,
+## and in w.
+@export_range(4.0, 60.0, 0.5, "suffix:m") var site_radius: float = 18.0
+@export_range(0.5, 10.0, 0.1, "suffix:m") var site_w: float = 3.0
+## How long it takes to fade in or out.
+@export_range(0.05, 2.0, 0.05, "suffix:s") var fade_seconds: float = 0.4
 
 var _panel: StyleBoxFlat
 var _chip: StyleBoxFlat
@@ -31,6 +43,8 @@ var _lookout: Node
 var _glow: float = 0.0
 var _cached: Array = []
 var _cached_at: int = -100000
+## 1 at the Lookout, 0 away, fading between.
+var _here: float = 0.0
 
 
 func _ready() -> void:
@@ -65,8 +79,39 @@ func glow() -> void:
 func _process(delta: float) -> void:
 	if _glow > 0.0:
 		_glow = maxf(_glow - delta, 0.0)
+	_here = move_toward(_here, 1.0 if at_lookout() else 0.0, delta / maxf(fade_seconds, 0.01))
+	modulate.a = _here
+	visible = _here > 0.0
 	_place()
-	queue_redraw()
+	if visible:
+		queue_redraw()
+
+
+## Whether you are at the Lookout: near the tower, the marsh or the wood (each in its own w), or
+## in the middle of it (the camera raised, riding the balloon, a cutscene).
+func at_lookout() -> bool:
+	if _lookout == null:
+		return false
+	var player := _lookout.get("player") as Node4D
+	var station: Node = _lookout.get("station")
+	if station != null and int(station.get("mode")) != 0:
+		return true
+	var balloon: Node = _lookout.get("balloon")
+	if balloon != null and bool(balloon.get("riding")):
+		return true
+	var cutscene: Node = _lookout.get("cutscene")
+	if cutscene != null and bool(cutscene.get("_playing")):
+		return true
+	if player == null or not player.is_inside_tree():
+		return false
+	for key in ["tower", "marsh", "wood"]:
+		var place := _lookout.get(key) as Node4D
+		if place == null or not place.is_inside_tree():
+			continue
+		var gap4: Vector4 = place.global_position - player.global_position
+		if Vector2(gap4.x, gap4.z).length() <= site_radius and absf(gap4.w) <= site_w:
+			return true
+	return false
 
 
 func _step() -> float:
@@ -141,6 +186,9 @@ func _place() -> void:
 	# And never off the bottom: taller than the room beside it too (seven rows since round
 	# three), it rises until it fits.
 	top = minf(top, screen.y - 6.0 - want.y)
+	# Away from the Lookout, no height: what hangs under it moves back up.
+	if _here <= 0.0:
+		want.y = 0.0
 	if want != size:
 		size = want
 	var at := Vector2(right - size.x, top)
