@@ -189,15 +189,9 @@ func _build_legs(h: float, half: float, wd: float) -> void:
 			var a := Vector4(sx * foot, -0.6, sz * foot, 0.0)
 			var b := Vector4(sx * top, h, sz * top, 0.0)
 			_strut("Leg", a, b, 0.26, wd, steel)
-			# A strong concrete footing under each leg (Ramon, 2 Oct: "make the concrete blocks a
-			# little higher ... stronger base"): a wide slab at the ground, a pier in two steps
-			# standing a metre proud, and a steel plate on top where the leg lands.
-			var concrete := Color(0.46, 0.45, 0.42)
-			_box("Footing", Vector4(sx * foot, 0.05, sz * foot, 0.0), Vector4(1.7, 0.3, 1.7, wd), concrete.darkened(0.08))
-			_box("Pier", Vector4(sx * foot, 0.45, sz * foot, 0.0), Vector4(1.2, 0.6, 1.2, wd), concrete)
-			_box("PierTop", Vector4(sx * foot, 0.9, sz * foot, 0.0), Vector4(0.95, 0.3, 0.95, wd), concrete.lightened(0.04))
-			var plate: Vector4 = a.lerp(b, (1.05 + 0.6) / (h + 0.6))
-			_box("BasePlate", Vector4(plate.x, 1.07, plate.z, 0.0), Vector4(0.62, 0.05, 0.62, wd), steel.darkened(0.2))
+			# One concrete block under each leg, standing well proud of the ground (Ramon,
+			# 2 Oct: "a bit higher ... stronger base", one block per corner).
+			_box("Pad", Vector4(sx * foot, 0.35, sz * foot, 0.0), Vector4(1.1, 1.0, 1.1, wd), Color(0.44, 0.43, 0.40))
 	# X braces on the four faces, in three tiers, and a ring at the top of each.
 	var tiers: int = 3
 	for t in tiers:
@@ -342,9 +336,9 @@ func _build_colliders(_h: float, half: float, wd: float) -> void:
 		for sz in [-1.0, 1.0]:
 			var shape := CollisionShape4D.new()
 			var box := BoxShape4D.new()
-			box.size = Vector4(1.2, 2.4, 1.2, wd)
+			box.size = Vector4(1.1, 2.4, 1.1, wd)
 			shape.shape = box
-			# Round the pier, which is the widest thing at the height you walk into.
+			# Round the block, which is the widest thing at the height you walk into.
 			shape.position = Vector4(sx * foot, 1.2, sz * foot, 0.0)
 			body.add_child(shape)
 
