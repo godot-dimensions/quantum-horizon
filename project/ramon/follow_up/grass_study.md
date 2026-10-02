@@ -75,12 +75,13 @@ blades are ordinary 3D geometry made by the GPU; only the shader knows about W:
   - **darker, to sit with the ground** (Ramon: "the groundplan color offsets too much"): every
     blade colour times `shade` 0.7 in linear light (about 0.85 on the sRGB numbers), so the
     field's edge and the bare ground between blades no longer read as a different green;
-  - **sap green and its bright offset pulled 35% towards the ground's colour** (`toward_ground`),
+  - **sap green and its bright offset pulled towards the ground's colour** (`toward_ground`; 0.35
+    first, then 0.18, "somewhere in between"),
     with the lush clumps and the tips; the deep region left alone (Ramon: "i like that one of the
     3 color codes merges with the base green ground ... darkening the remaining 2 colors closer
     to the base ground color too");
-  - **saturation 1.25** (`saturation`), about each blade's own brightness, so greener at the same
-    values ("can you saturate the grass a bit?").
+  - **saturation 1.45** (`saturation`; 1.25 first, then "more saturation"), about each blade's
+    own brightness, so greener at the same values ("can you saturate the grass a bit?").
 - **Light** (Ramon, 2 Oct: "what would you do to make it look better colorwise"; my answer was
   that the colours were nearly right and the light was missing - the sky is a low warm sunset,
   the grass was lit as on an overcast day):
