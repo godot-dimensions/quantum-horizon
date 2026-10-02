@@ -74,13 +74,21 @@ blades are ordinary 3D geometry made by the GPU; only the shader knows about W:
   - less contrast all over: a lighter root, the dry clumps half as strong;
   - **darker, to sit with the ground** (Ramon: "the groundplan color offsets too much"): every
     blade colour times `shade` 0.7 in linear light (about 0.85 on the sRGB numbers), so the
-    field's edge and the bare ground between blades no longer read as a different green.
+    field's edge and the bare ground between blades no longer read as a different green;
+  - **sap green and its bright offset pulled 35% towards the ground's colour** (`toward_ground`),
+    with the lush clumps and the tips; the deep region left alone (Ramon: "i like that one of the
+    3 color codes merges with the base green ground ... darkening the remaining 2 colors closer
+    to the base ground color too");
+  - **saturation 1.25** (`saturation`), about each blade's own brightness, so greener at the same
+    values ("can you saturate the grass a bit?").
 - **Light** (Ramon, 2 Oct: "what would you do to make it look better colorwise"; my answer was
   that the colours were nearly right and the light was missing - the sky is a low warm sunset,
   the grass was lit as on an overcast day):
-  - **the sun through the tips** (`tip_glow` 0.3): a blade between the eye and the sun glows the
-    sun's colour (World/Sun's, linear, times its energy) at its tip, (eye . sun)^6 x t^4, as
-    thin leaves do against a low sun; nothing with the sun behind you;
+  - **the sun through the tips**: tried and taken out (Ramon: "i doubt the tip thing works"). At
+    0.3 it moved the field's brightness 2% looking into the sun - measured, glow off against on -
+    and the yellow you see against the sun was already there, from Godot's BACKLIGHT on the
+    blades; at ten times it only bleached a pale band along the horizon, where far blades lie
+    straight towards the sun;
   - **cool roots** (`colour_root` a dark blue-green, not olive-black): the warm-over-cool split;
   - **haze with distance**: built, and off (`haze_amount` 0). At 0.5 it washed the field
     grey-beige while the bare ground and the buildings beside it stayed clear, so the grass stood
@@ -187,7 +195,7 @@ all the bend for the last few centimetres, so every leaning blade hooked over at
 Field (`spacing` 0.085, `spacing_far` 0.30, `spacing_from` 3, `radius` 44, `band_radii`,
 `band_vertices`, `layers`, `layer_spacing`, `w_radius`), blades (`blade_height` 0.3,
 `blade_width` 0.009, `min_pixels` 0.8, `clump_size`, the colours, `region_deep`,
-`region_bright`, `region_size`, `region_share`, `region_strength`, `hue_jitter`, `shade` 0.7), light (`tip_glow`, `haze_*`, `cloud_shadows`, `cloud_size`, `sun_path`), wind (`wind_speed`,
+`region_bright`, `region_size`, `region_share`, `region_strength`, `hue_jitter`, `shade` 0.7, `toward_ground` 0.35, `saturation` 1.25), light (`haze_*`, `cloud_shadows`, `cloud_size`), wind (`wind_speed`,
 `gustiness`, `gust_length`, `gust_width`, `bend_max`, `stiffness`, `sheen`), `enabled`. A
 revert point for the two-ring version: the local branch `grass-before-lod`.
 

@@ -79,10 +79,13 @@ const MAX_TILES := 384
 ## How light the blades are, all their colours together, so they sit with the ground between
 ## and beyond them (in linear light: 0.7 is about 0.85 on the colour numbers).
 @export_range(0.2, 1.5, 0.01) var shade: float = 0.7
+## How far sap green, the bright offset, the lush clumps and the tips go towards ground_colour
+## (0 none, 1 all of it); the deep region stays put, as it already merges with the ground.
+@export_range(0.0, 1.0, 0.01) var toward_ground: float = 0.35
+## How saturated the blades are (1 as the colours say; more is greener, at the same brightness).
+@export_range(0.0, 2.0, 0.01) var saturation: float = 1.25
 
 @export_group("Light")
-## The low sun through the tips: blades between you and the sun glow its colour at the tips.
-@export_range(0.0, 3.0, 0.01) var tip_glow: float = 0.3
 ## Haze with distance: the far field fades towards this colour. Off (2 Oct): at 0.5 it washed
 ## the field grey while the bare ground and buildings beside it stayed clear.
 @export var haze_colour: Color = Color(0.62, 0.56, 0.45)
@@ -91,8 +94,6 @@ const MAX_TILES := 384
 ## Cloud shadows drifting over the field with the wind (0 off), about cloud_size across.
 @export_range(0.0, 1.0, 0.01) var cloud_shadows: float = 0.0
 @export_range(5.0, 200.0, 1.0, "suffix:m") var cloud_size: float = 40.0
-## The light whose colour comes through the tips.
-@export var sun_path: NodePath = ^"World/Sun"
 
 @export_group("Wind")
 @export var wind_direction: Vector2 = Vector2(0.82, 0.57)
@@ -272,7 +273,8 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("region_strength", region_strength)
 	m.set_shader_parameter("hue_jitter", hue_jitter)
 	m.set_shader_parameter("shade", shade)
-	m.set_shader_parameter("tip_glow", tip_glow)
+	m.set_shader_parameter("toward_ground", toward_ground)
+	m.set_shader_parameter("saturation", saturation)
 	m.set_shader_parameter("haze_distance", haze_distance)
 	m.set_shader_parameter("haze_amount", haze_amount)
 	m.set_shader_parameter("cloud_shadows", cloud_shadows)
@@ -478,21 +480,8 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 	var ax := Vector3(cx.x, cx.y, cx.z)
 	var az := Vector3(cz.x, cz.y, cz.z)
 	var c0 := Vector3(c4.x, c4.y, c4.z)
-	# The sun: the way to it (a DirectionalLight4D shines down its -z) in the camera's frame, and
-	# its colour in linear light, times its energy.
-	var to_sun := Vector4.ZERO
-	var sun_colour := Vector4.ZERO
-	var sun := _room.get_node_or_null(sun_path) as Node4D
-	if sun != null and sun.is_visible_in_tree():
-		var d: Vector4 = inverse * sun.global_basis.z
-		var d3 := Vector3(d.x, d.y, d.z)
-		if d3.length() > 0.01:
-			d3 = d3.normalized()
-			to_sun = Vector4(d3.x, d3.y, d3.z, 0.0)
-		var lc: Color = (sun.get("light_color") as Color).srgb_to_linear() * float(sun.get("light_energy"))
-		sun_colour = Vector4(lc.r, lc.g, lc.b, 0.0)
 	var frame := PackedVector4Array([basis.x, basis.y, basis.z, basis.w, origin, here, normal,
-		Vector4(centre.x, centre.y, fx, pixel_angle), to_sun, sun_colour])
+		Vector4(centre.x, centre.y, fx, pixel_angle)])
 	_drawn = 0
 	for band in _bands:
 		var r: float = band.tile_size() * 0.7072 + 0.7
