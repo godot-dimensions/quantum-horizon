@@ -4,7 +4,7 @@ extends Control
 ##
 ## A STUDY TOOL THAT LOOKS LIKE THE GAME. The point of the three presets is to decide
 ## between them by playing, and that decision is worth nothing if you cannot tell which
-## one you are in - after two Tabs the difference between 55 and 45 degrees is a feeling,
+## one you are in - after two Tabs the difference between 8 and 9.7 m back is a feeling,
 ## not a fact. So the active one is named, and the lens and distance are printed under it.
 ##
 ## IT READS THE RIG RATHER THAN REPEATING IT. The names and numbers come out of the rig's

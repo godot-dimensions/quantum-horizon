@@ -1,9 +1,9 @@
 @tool
 extends Node4D
 
-## The ana owl: a tawny owl that sits on a post outside the Lookout's north window, at
-## w +1.5 - off the farm's slice, so from the cab there is nothing there until the camera's
-## focus ring finds it. The first secret, and the one that teaches the ring.
+## The ana owl: an eagle owl that sits on a twig of a dead tree off the Lookout's north side,
+## at w +1.5 (lookout_tree_4d.gd) - off the farm's slice, so from the deck there is nothing
+## there until the camera's focus ring finds it. The first secret, and the one that teaches the ring.
 ##
 ## BUILT THE WAY THE PEN'S ANIMALS ARE (pen_cat_4d.gd): a lofted body of balls, plus boxes
 ## for what a loft cannot make - the facial disc, the eyes and beak, the ear tufts, the

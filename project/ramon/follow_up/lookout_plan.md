@@ -167,3 +167,11 @@ in W; the heron's neck as rigid segments; the balloon moored on the ground, its 
 folded into boarding; secrets win the photo; the whistle also sends a wave through the flock;
 the cab eye keeps off the corner posts; no door leaf; the Journal card moves beside the
 Cinematics card when there is no room below; the tower and marsh merged to one mesh per colour.
+
+## Status, 2 Oct 2026, evening
+
+Rounds two and three are past the plan and are written up in `lookout.md` ("Round two",
+"Round three"). Round three's pivots from what the plan had: the owl's post became a lofted
+dead tree; the balloon got a burner and an ana/kata fork decided by the focus ring; a second
+place along W (the kata wood, chipmunks) so the fork has somewhere to go; the hawk can be
+flown; the projection is a toggle rather than a mode.

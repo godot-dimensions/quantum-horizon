@@ -5615,7 +5615,6 @@ talk_pivot_height = 1.1
 [node name="Camera4D" type="Camera4D" parent="Player/CameraRig/Pitch"]
 position = Vector4(0, 0, 5, 0)
 current = true
-field_of_view_3d = 0.9599310886
 rendering_engine_name = "Cross-section"
 w_fade_distance = 6.0
 

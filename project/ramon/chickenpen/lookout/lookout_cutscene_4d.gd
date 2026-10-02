@@ -52,6 +52,16 @@ func play(keys: Array, seconds: float, title: String = "", light: bool = false, 
 	_on_done = then
 	_t = 0.0
 	var room: Node = lookout.get("room")
+	# The camera raised on foot comes down FIRST: it is holding the HUD too, and if it gave it
+	# back mid-cutscene, this would then give back its own hidden copy and the HUD would stay
+	# gone.
+	var station: Node = lookout.get("station")
+	if not light and station != null and int(station.get("mode")) == 5:
+		station.call("lower")
+	# The same for the hawk: you land first.
+	var hawk: Node = lookout.get("hawk_flight")
+	if not light and hawk != null and bool(hawk.get("flying")):
+		hawk.call("stop")
 	_back_to = lookout.call("current_camera")
 	if not light:
 		var hud: Dictionary = {}

@@ -29,12 +29,19 @@ var _heron_seen: bool = false
 var _shot_heron: bool = false
 var _slow_seen: bool = false
 var _flock_seen: int = 0
+## -- branch=kata: turn the ring kata at the fork and go to the wood instead of the marsh.
+var _kata: bool = false
+var _min_w: float = 0.0
+var _lift_max: float = 0.0
+var _space_down: bool = false
 
 
 func _initialize() -> void:
 	root.unfocusable = true
 	_clean()
 	for arg in OS.get_cmdline_user_args():
+		if arg == "branch=kata":
+			_kata = true
 		if arg.begins_with("speed="):
 			_speed = float(arg.substr(6))
 	_room = load("res://ramon/chickenpen/chickenpen_lookout.tscn").instantiate()
@@ -56,6 +63,14 @@ func _check(what: String, ok: bool, detail: String = "") -> void:
 func _save(what: String) -> void:
 	root.get_texture().get_image().save_png("res://smoke_test_output/ride_%d_%s.png" % [_n, what])
 	_n += 1
+
+
+func _hold(code: Key, down: bool) -> void:
+	var e := InputEventKey.new()
+	e.keycode = code
+	e.physical_keycode = code
+	e.pressed = down
+	Input.parse_input_event(e)
 
 
 func _key(code: Key) -> void:
@@ -118,6 +133,18 @@ func _process(d: float) -> bool:
 			var cam: Camera4D = _station.get("camera")
 			if cam != null:
 				_max_w = maxf(_max_w, cam.global_position.w)
+				_min_w = minf(_min_w, cam.global_position.w)
+			# The burner: Space held for a stretch early on.
+			if rt > 20.0 and rt < 30.0 and not _space_down:
+				_space_down = true
+				_hold(KEY_SPACE, true)
+			elif rt >= 30.0 and _space_down:
+				_space_down = false
+				_hold(KEY_SPACE, false)
+			_lift_max = maxf(_lift_max, float(_balloon.get("lift")))
+			# The fork: the ring turned kata before it comes, for the kata ride.
+			if _kata and rt > 63.0 and rt < 70.5:
+				_station.set("focus_goal", -1.5)
 			# Look where a passenger would: down at the farm early, into the flock, then at
 			# the heron once the marsh is near.
 			if rt < 50.0:
@@ -129,12 +156,14 @@ func _process(d: float) -> bool:
 					_flock_seen = 1
 					_key(KEY_X)
 			else:
-				var at: Vector4 = _heron.call("centre")
+				var target: Node4D = (_lookout.get("chipmunks") as Array)[0] if _kata else _heron
+				var target_id: String = "chipmunk0" if _kata else "heron"
+				var at: Vector4 = target.call("centre")
 				_station.call("look_along", at - _station.call("home_eye"))
 				_station.set("zoom_goal", 3.0)
 				var seen: bool = false
 				for v in _lookout.get("subjects").call("in_view", cam, _station.call("home_eye"), _station.call("slice_normal"), 3.0):
-					if v["subject"]["id"] == "heron":
+					if v["subject"]["id"] == target_id:
 						seen = true
 						# Pull focus to it, as T would.
 						_station.set("focus_goal", clampf(float(v["w"]), -3.0, 3.0))
@@ -143,7 +172,7 @@ func _process(d: float) -> bool:
 				if seen and rt > 118.0 and not _shot_heron and absf(float(_station.get("focus")) - float(_station.get("focus_goal"))) < 0.05:
 					_shot_heron = true
 					_station.call("take_photo")
-					print("      shot the heron at ride time %.1f" % rt)
+					print("      shot the %s at ride time %.1f" % [target_id, rt])
 			if Engine.time_scale < 0.9:
 				_slow_seen = true
 			if _t >= _next_frame:
@@ -156,11 +185,19 @@ func _process(d: float) -> bool:
 			if _t < 1.0:
 				return false
 			var journal: Node = _lookout.get("journal")
-			_check("the camera went out along W with the basket", _max_w > 7.0, "max w %.2f" % _max_w)
-			_check("the heron was in view from the basket", _heron_seen)
-			_check("a photo of the heron was taken", _shot_heron)
-			_check("the heron is in the journal", bool(journal.call("found", "heron")), str(journal.get("recent").back() if not (journal.get("recent") as Array).is_empty() else ""))
-			_check("the payoff slowed time", _slow_seen)
+			_check("Space: the burner took the basket up over the rail", _lift_max > 3.0, "%.1f m" % _lift_max)
+			if _kata:
+				_check("the ring turned kata at the fork: the ride went kata", float(_balloon.get("branch")) < 0.0)
+				_check("the camera went out along kata with the basket", _min_w < -7.0, "min w %.2f" % _min_w)
+				_check("a chipmunk was in view from the basket", _heron_seen)
+				_check("a photo of it was taken", _shot_heron)
+				_check("the chipmunks are in the journal", bool(journal.call("found", "chipmunks")), str(journal.get("recent").back() if not (journal.get("recent") as Array).is_empty() else ""))
+			else:
+				_check("the camera went out along W with the basket", _max_w > 7.0, "max w %.2f" % _max_w)
+				_check("the heron was in view from the basket", _heron_seen)
+				_check("a photo of the heron was taken", _shot_heron)
+				_check("the heron is in the journal", bool(journal.call("found", "heron")), str(journal.get("recent").back() if not (journal.get("recent") as Array).is_empty() else ""))
+				_check("the payoff slowed time", _slow_seen)
 			_check("and time is back to normal", is_equal_approx(Engine.time_scale, 1.0))
 			_check("landed: the pen given back", int(_station.get("mode")) == 0 and (_room.get_node("Player") as Node4D).visible)
 			var p: Vector4 = (_room.get_node("Player") as Node4D).global_position

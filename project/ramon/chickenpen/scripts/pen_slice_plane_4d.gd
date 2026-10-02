@@ -135,9 +135,10 @@ extends Control
 ## sooner, it's very red from the start").
 @export_range(1.0, 5.0, 0.1) var view_cone_falloff: float = 2.6
 ## The wedge is drawn this much narrower than the lens really sees (Ramon, 29 Sept: "a bit
-## less than perfect 90 degrees cutout ... less wide"): at the pen's 16:9 and 55-degree lens
-## the true sweep is 88 degrees, which read as a quarter of a pie rather than a look.
-@export_range(0.3, 1.0, 0.01) var view_cone_narrowing: float = 0.76
+## less than perfect 90 degrees cutout ... less wide"): at the pen's 16:9 and its real 77.3-degree
+## lens the true sweep is 110 degrees, a third of a pie rather than a look; 0.59 draws it at
+## 65, the width it was tuned to when the lens was thought to be 55.
+@export_range(0.3, 1.0, 0.01) var view_cone_narrowing: float = 0.59
 @export var view_cone_color: Color = Color(1.0, 0.24, 0.2)
 ## How big the birds are drawn, on top of the panel's own scaling.
 @export_range(0.4, 2.0, 0.05) var bird_size: float = 0.9
@@ -546,15 +547,17 @@ func _draw_you(shrink: float, origin: Vector2, mid: Vector2, u: float) -> void:
 ## chicken is on the dial and not on your screen - is it in front of me and off to one
 ## side, or behind me altogether.
 ##
-## The real field of view, not a pretty angle. The rig's lens changes with its presets, and
-## Camera4D's field_of_view_3d is the vertical angle, so it is widened by the viewport's
-## aspect into the horizontal one the eye actually sweeps. Drawn flat on the ground at your
+## The real field of view, not a pretty angle: the one the camera renders with, which under
+## the default projection is `field_of_view_4d` (it used to read `field_of_view_3d`, 55
+## degrees, which the renderer ignores; the narrowing was cut from 0.76 to 0.59 at the same
+## time, so the wedge on the map is the same width it always was). It is the vertical angle,
+## so it is widened by the viewport's aspect into the horizontal one the eye actually sweeps. Drawn flat on the ground at your
 ## own w, under the arrow, faint enough that the birds on top of it still read first.
 func _draw_view_cone(here: Vector4, ahead: Vector4, w: float, origin: Vector2, mid: Vector2) -> void:
 	var cam: Camera4D = _frame.get("_camera") as Camera4D if _frame != null else null
-	var vertical: float = deg_to_rad(55.0)
-	if cam != null and cam.get("field_of_view_3d") != null:
-		vertical = float(cam.get("field_of_view_3d"))
+	var vertical: float = deg_to_rad(77.3)
+	if cam != null:
+		vertical = cam.field_of_view_4d if cam.projection_type == Camera4D.PROJECTION4D_PERSPECTIVE_4D else cam.field_of_view_3d
 	var view: Vector2 = get_viewport_rect().size
 	var aspect: float = view.x / maxf(view.y, 1.0)
 	var half: float = atan(tan(vertical * 0.5) * aspect) * view_cone_narrowing

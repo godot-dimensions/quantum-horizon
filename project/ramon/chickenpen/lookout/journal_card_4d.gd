@@ -104,6 +104,9 @@ func _work_rows() -> Array:
 		["J", "Field journal", "%d / %d pages, %d photos" % [int(journal.call("pages_found")), total, int(journal.call("star_count"))], true],
 		["B", "Balloon", "up by the tower, B to go" if balloon_up else "not yet", balloon_up],
 		["F", "Climb", climb, climb_now],
+		["U", "Fly as the hawk", "the flock's own, any time on foot", true],
+		["P", "Projection", "on: the cut, and a ghost of W" if bool(_lookout.get("projection")) else "off: the plain cut", true],
+		["F4", "Developer overlay", "W depths, the slice, the numbers", true],
 	]
 	var next: String = String(_lookout.call("next_hint")) if _lookout.has_method("next_hint") else ""
 	return [rows, next]
@@ -134,6 +137,9 @@ func _place() -> void:
 		want.x = maxf(14.0 + widest + 18.0, 260.0)
 		top = above.position.y
 		right = above.position.x - gap
+	# And never off the bottom: taller than the room beside it too (seven rows since round
+	# three), it rises until it fits.
+	top = minf(top, screen.y - 6.0 - want.y)
 	if want != size:
 		size = want
 	var at := Vector2(right - size.x, top)

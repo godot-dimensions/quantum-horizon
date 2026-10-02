@@ -102,16 +102,17 @@ func _input(event: InputEvent) -> void:
 			open_book()
 			get_viewport().set_input_as_handled()
 		return
-	var pages: Array = JOURNAL.PAGES
+	# One more page than the journal has: the roll, last in the book.
+	var count: int = JOURNAL.PAGES.size() + 1
 	match key.keycode:
 		KEY_J, KEY_ESCAPE:
 			close_book()
 		KEY_UP, KEY_W:
-			_page = posmod(_page - 1, pages.size())
+			_page = posmod(_page - 1, count)
 			_wipe_armed = 0.0
 			lookout.call("sound", &"page")
 		KEY_DOWN, KEY_S:
-			_page = posmod(_page + 1, pages.size())
+			_page = posmod(_page + 1, count)
 			_wipe_armed = 0.0
 			lookout.call("sound", &"page")
 		KEY_BACKSPACE:
@@ -166,7 +167,7 @@ func _draw() -> void:
 	draw_string(_font, Vector2(x0, y + 8.0), "Wren's, from the Lookout", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 1, 1, 0.45))
 	# The pages, down the left.
 	var list_w: float = panel.size.x * 0.27
-	var row_h: float = minf(34.0, (panel.size.y - 140.0) / float(pages.size()))
+	var row_h: float = minf(34.0, (panel.size.y - 140.0) / float(pages.size() + 1))
 	var ly: float = y + 36.0
 	for i in pages.size():
 		var p: Dictionary = pages[i]
@@ -182,6 +183,19 @@ func _draw() -> void:
 			var full: bool = bool(journal.call("filled", p["id"], k + 1))
 			VIEWFINDER.star(self, Vector2(x0 + list_w - 78.0 + float(k) * 15.0, ly + row_h * 0.5 - 5.0), 5.5, full, Color(1, 1, 1, 0.9), accent)
 		ly += row_h
+	# The roll, last in the list.
+	var roll_lit: bool = _page >= pages.size()
+	if roll_lit:
+		draw_rect(Rect2(Vector2(x0 - 8.0, ly - 4.0), Vector2(list_w, row_h - 4.0)), Color(1, 1, 1, 0.08))
+		draw_rect(Rect2(Vector2(x0 - 8.0, ly - 4.0), Vector2(3.0, row_h - 4.0)), accent)
+	var recent: Array = journal.get("recent")
+	draw_string(_font, Vector2(x0, ly + row_h * 0.5), "The roll  ·  %d this time out" % recent.size(), HORIZONTAL_ALIGNMENT_LEFT, list_w - 20.0, 16,
+		Color(1, 1, 1, 0.92 if roll_lit else 0.75))
+	if roll_lit:
+		var px0: float = x0 + list_w + 24.0
+		_draw_roll(Rect2(px0, y + 40.0, panel.end.x - 26.0 - px0, panel.end.y - 52.0 - (y + 40.0)), recent, accent)
+		_draw_foot(panel, accent)
+		return
 	# The open page.
 	var page: Dictionary = pages[_page]
 	var found_page: bool = bool(journal.call("found", page["id"]))
@@ -223,6 +237,44 @@ func _draw() -> void:
 			draw_string(_font, Vector2(cx, frame.end.y + 22.0), name_text, HORIZONTAL_ALIGNMENT_LEFT, cell.x - 110.0, 15, Color(1, 1, 1, 0.45))
 		for st in 4:
 			VIEWFINDER.star(self, Vector2(cx + cell.x - 74.0 + float(st) * 17.0, frame.end.y + 17.0), 6.5, st <= k and filled, Color(1, 1, 1, 0.6 if st <= k else 0.15), accent)
+	_draw_foot(panel, accent)
+
+
+## Every shot this time out, newest first, each with how it was judged - the four bars the toast
+## showed - including the ones that did not make the journal, and why.
+func _draw_roll(area: Rect2, recent: Array, accent: Color) -> void:
+	draw_string(_font, Vector2(area.position.x, area.position.y + 8.0), "The roll", HORIZONTAL_ALIGNMENT_LEFT, area.size.x, 24, Color(1, 1, 1, 0.95))
+	draw_string(_font, Vector2(area.position.x, area.position.y + 32.0), "Every shot this time out, and how each was judged: from the game's state, not the pixels",
+		HORIZONTAL_ALIGNMENT_LEFT, area.size.x, 14, Color(1, 1, 1, 0.5))
+	if recent.is_empty():
+		draw_string(_font, Vector2(area.position.x, area.position.y + 80.0), "Nothing yet. Z raises the camera, click takes a photo.", HORIZONTAL_ALIGNMENT_LEFT, area.size.x, 15, Color(1, 1, 1, 0.55))
+		return
+	var cols: int = 3
+	var top: float = area.position.y + 52.0
+	var cw: float = (area.size.x - 16.0 * float(cols - 1)) / float(cols)
+	var ch: float = 150.0
+	var shown: int = mini(recent.size(), cols * int(maxf(floor((area.end.y - top) / (ch + 12.0)), 1.0)))
+	for i in shown:
+		var r: Dictionary = recent[recent.size() - 1 - i]
+		var cx: float = area.position.x + float(i % cols) * (cw + 16.0)
+		var cy: float = top + float(i / cols) * (ch + 12.0)
+		var frame := Rect2(cx, cy, cw, ch - 62.0)
+		var tex: Texture2D = r.get("thumb") as Texture2D
+		if tex != null:
+			draw_texture_rect(tex, _fit(tex.get_size(), frame), false)
+		else:
+			draw_rect(frame, Color(1, 1, 1, 0.08))
+		var verdict: String = String(r.get("verdict", ""))
+		var name_text: String = String(r.get("name", "")) if verdict != "nothing" else "Nothing in it"
+		var why: String = {"good": "%s pts" % VIEWFINDER._thousands(int(r.get("points", 0))), "soft": "out of focus", "small": "too far away"}.get(verdict, "")
+		draw_string(_font, Vector2(cx, frame.end.y + 16.0), name_text, HORIZONTAL_ALIGNMENT_LEFT, cw - 70.0, 13, Color(1, 1, 1, 0.88))
+		var ww: float = _font.get_string_size(why, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+		draw_string(_font, Vector2(cx + cw - ww, frame.end.y + 16.0), why, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, accent if verdict == "good" else Color(1, 1, 1, 0.5))
+		if verdict != "nothing":
+			VIEWFINDER.bars(self, _font, Vector2(cx, frame.end.y + 36.0), cw, r, 1.0, accent)
+
+
+func _draw_foot(panel: Rect2, accent: Color) -> void:
 	var foot: String = "Up / Down  pages     ·     J or Esc  closes     ·     Ctrl+Backspace twice  a fresh journal"
 	if _wipe_armed > 0.0:
 		foot = "Press Ctrl+Backspace again to wipe the journal and every photo in it"

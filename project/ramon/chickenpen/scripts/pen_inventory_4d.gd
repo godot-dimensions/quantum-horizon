@@ -166,6 +166,11 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		var digit: int = (event as InputEventKey).keycode - KEY_1
 		if digit >= 0 and digit < slot_count:
+			# Mid-conversation the numbers are the answers' (dialogue_player_4d.gd), not the
+			# belt's: the belt hears input first, so it has to step aside or no answer is ever
+			# picked by its number.
+			if _in_conversation():
+				return
 			_choose(digit)
 			get_viewport().set_input_as_handled()
 		return
@@ -181,6 +186,16 @@ func _input(event: InputEvent) -> void:
 			_choose(index)
 			get_viewport().set_input_as_handled()
 			return
+
+
+## Whether anyone is talking (every conversation is a PenNpcTalk4D in the group "npc_talk",
+## its DialoguePlayer4D as `_talk`).
+func _in_conversation() -> bool:
+	for talker in get_tree().get_nodes_in_group(&"npc_talk"):
+		var talk: Node = talker.get("_talk")
+		if talk != null and talk.has_method("is_running") and bool(talk.call("is_running")):
+			return true
+	return false
 
 
 ## Clicking the slot you are already holding puts it away, which is the only way to stop

@@ -101,17 +101,20 @@ func _process(d: float) -> bool:
 		_gpu.append(RenderingServer.viewport_get_measured_render_time_gpu(vp))
 		_script.append(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0)
 		_samples.append(d)
-		if _samples.size() >= 240:
+		if _samples.size() >= (90 if _step == 50 else 240):
 			_report()
 			_label = ""
-			_step += 1
+			if _step != 50:
+				_step += 1
 			_t = 0.0
 		return false
 	if _scene == "profile":
 		return _profile()
 	match _step:
 		0:
-			if _t > 5.0:
+			# Past the pen's own warm-up (about 10 s of its scripts settling), or the first
+			# numbers are the pen's start-up, not anybody's steady state.
+			if _t > 25.0:
 				_measure("spawn")
 		1:
 			if _lookout == null:
@@ -146,7 +149,29 @@ func _process(d: float) -> bool:
 		5:
 			if _t > 1.5:
 				_lookout.get("station").call("look_along", Vector4(0.0, 0.1, -1.0, 0.0))
+				if OS.get_cmdline_user_args().has("suspects"):
+					_suspect = 0
+					_step = 50
+					_t = 0.0
+					return false
 				_measure("balloon, in the flock")
+		50:
+			# -- suspects: at the flock in the balloon, each candidate asleep in turn.
+			if _suspect >= SUSPECTS.size():
+				print("MEASURE DONE")
+				return true
+			if _t < 0.4:
+				return false
+			var node: Node = _room.get_node_or_null(String(SUSPECTS[_suspect]))
+			if _asleep != null:
+				_asleep.process_mode = Node.PROCESS_MODE_INHERIT
+				_asleep = null
+			if node != null and _suspect > 0:
+				node.process_mode = Node.PROCESS_MODE_DISABLED
+				_asleep = node
+			_measure("less " + String(SUSPECTS[_suspect]) if _suspect > 0 else "all on")
+			_suspect += 1
+			_step = 50
 		6:
 			var balloon: Node = _lookout.get("balloon")
 			balloon.set("ride_time", 118.0)
@@ -161,6 +186,12 @@ func _process(d: float) -> bool:
 			print("MEASURE DONE")
 			return true
 	return false
+
+
+const SUSPECTS := ["", "Systems/Lookout/Station", "Systems/Lookout", "World/Flock", "World/Chickens", "Player", "World/Balloon", "UI",
+	"World/AnaMarsh", "World/AnaHeron", "World/KataWood", "World/Chipmunk0", "World/AnaOwl", "World/Wren"]
+var _suspect: int = 0
+var _asleep: Node
 
 
 ## -- scene=profile: the Lookout's pieces switched off one at a time, at the spawn point,

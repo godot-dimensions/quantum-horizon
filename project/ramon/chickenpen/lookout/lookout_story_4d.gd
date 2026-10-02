@@ -9,7 +9,7 @@ extends Node
 ##   first climb    on the radio: E and Q, the scale at the bottom, the shutter
 ##   first photo    "that's in the book, J"
 ##   the owl hint   after a few photos, or a minute and a half up there, if you have not
-##                  found it yet: "outside the north window ... about one and a half, ana"
+##                  found it yet: "a dead tree north of the tower ... about one and a half, ana"
 ##   the owl        the first good photo of it: the camera goes to it, it turns its head
 ##                  through W (the payoff), and Wren is delighted
 ##   the balloon    once the owl and eight photos are in the book: "come down, I want to
@@ -82,11 +82,15 @@ func next_hint() -> String:
 	if int(journal.call("star_count")) == 0:
 		return "Next: take a photo, click"
 	if not bool(journal.call("found", "owl")):
-		return "Next: what sits outside the north window?" if _flag("owl_hint") else "Next: fill Wren's journal"
+		return "Next: what sits in the dead tree, north of the tower?" if _flag("owl_hint") else "Next: fill Wren's journal"
 	if balloon_open() and not _flag("balloon_ridden"):
 		return "Next: Wren has something to show you"
+	if _flag("balloon_ridden") and not bool(journal.call("found", "heron")) and not bool(journal.call("found", "chipmunks")):
+		return "Next: something lives out along W, ana or kata"
 	if _flag("balloon_ridden") and not bool(journal.call("found", "heron")):
-		return "Next: something stands in the water, out along W"
+		return "Next: something stands in the water, ana"
+	if _flag("balloon_ridden") and not bool(journal.call("found", "chipmunks")):
+		return "Next: there are trees out along kata"
 	if pages >= total and int(journal.call("star_count")) >= total * 4:
 		return "Every photo in the book"
 	if pages >= total:
@@ -98,7 +102,7 @@ func next_hint() -> String:
 func tip() -> String:
 	var journal: Node = _journal()
 	if not bool(journal.call("found", "owl")):
-		return "Outside the north window, there's a post I can only hear. Try the ring at about one and a half, ana."
+		return "North of the tower there's a dead tree I can only hear. Try the ring at about one and a half, ana."
 	for page in JOURNAL.PAGES:
 		if bool(page["secret"]) and not bool(journal.call("found", page["id"])):
 			match String(page["id"]):
@@ -106,6 +110,8 @@ func tip() -> String:
 					return "One of the starlings is white. One in five thousand. You'll want the long lens, and patience."
 				"heron":
 					return "There's water out along W. You can only reach it in the balloon, or on foot if you walk a long way ana."
+				"chipmunks":
+					return "The marsh is ana of the field. Kata of it, the same field has trees. Take the balloon kata, or walk it, Q."
 		for k in 4:
 			if not bool(journal.call("filled", page["id"], k + 1)):
 				if bool(page["secret"]) and not bool(journal.call("found", page["id"])):
@@ -154,6 +160,18 @@ func on_camera_raised() -> void:
 		"It doesn't focus near and far. It focuses in W.",
 		"See the scale at the bottom? Every mark on it is something out there. Put the needle on one, and there it is.",
 		"Click to take a picture. T finds the focus for you. Z puts the camera down.",
+		"Try me first. I'm the easy one.",
+	])
+
+
+## The owl's tick has come up on the scale for the first time, not found yet.
+func on_owl_tick() -> void:
+	if _flag("owl_tick") or _flag("owl_found") or busy():
+		return
+	_raise("owl_tick")
+	_radio([
+		"See that mark on the scale, pulsing? Something's out there, ana of you, about one and a half.",
+		"Turn the ring to it. E.",
 	])
 
 
@@ -192,7 +210,7 @@ func on_photo(result: Dictionary) -> void:
 func _owl_hint() -> void:
 	_raise("owl_hint")
 	_radio([
-		"One more thing. Outside the north window there's a post. I can hear something on it at night.",
+		"One more thing. North of the tower there's an old dead tree, a little way along W. I hear something in it at night.",
 		"I've never seen it. Try the ring at about one and a half, ana.",
 	])
 

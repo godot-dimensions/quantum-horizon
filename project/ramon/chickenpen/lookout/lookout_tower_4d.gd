@@ -74,7 +74,9 @@ enum Design { CAB, BALCONY }
 @export_range(0.0, 4.0, 0.1, "suffix:m") var splay: float = 1.4
 
 @export_group("The ana post")
-@export var ana_post: bool = true
+## Off: the owl sits in a dead tree now (lookout_tree_4d.gd, built by lookout_4d.gd with its
+## twig at [method ana_perch]). The post is kept as the plain version.
+@export var ana_post: bool = false
 ## Its W, and how far out from the north side it stands (Ramon, 2 Oct: "a bit further in the
 ## back" - it was 3.2 m out of the window).
 @export_range(-4.0, 4.0, 0.05, "suffix:m") var ana_post_w: float = 1.5

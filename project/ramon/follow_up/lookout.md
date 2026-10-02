@@ -18,16 +18,20 @@ lists every way in, each on a key the pen did not use, and says what to do next:
 | **J** | Field journal | the book, on the ground, on the deck or in the balloon |
 | **B** | Balloon | once it is up beside the tower: straight up, from anywhere on the farm |
 | **F** | Climb | at the ladder; on the deck, at the gap in the rail, climbs down |
+| **U** | Fly as the hawk | the flock's own; U or Esc lands |
+| **P** | Projection | the cut, or the cut plus a ghost of everything along W |
+| **F4** | Developer overlay | W depths, the slice, the numbers |
+| **L** | Lens (camera up) | the next prime, 18 to 200 mm; Shift+L back |
 
 - Walk towards the tower: a short camera move up it ("The Lookout") and down onto **Wren**.
-  **F** to talk to her: she gives you her camera. (Replies: Up/Down and Space. The number
-  keys never reach the dialogue in the pen - the inventory belt takes 1-5 first.)
+  **F** to talk to her: she gives you her camera. (Replies: Up/Down and Space, or the number
+  keys since round three.)
 - **Camera up** (Z, or after the climb): you walk as ever with WASD, the view at your eyes,
   and the viewfinder says it is a camera - a matte top and bottom, frame corners, the mode and
   the film in the top strip, and two of the pen's own cards over it: the **metrics** (the
   slice offset, the lens, what is in your slice and how much of it, how a photo is judged)
   and **every key** the camera has right now, F's current job lit at the top. F3 hides both.
-  - **wheel** zooms, 19 mm to 222 mm: a W-T bar up the right with stops at 1 2 4 8 12x,
+  - **wheel** zooms, 18 mm to 216 mm (L steps through the primes): a W-T bar up the right marked in mm,
     the mm and the field of view beside it, the magnification big while you zoom and the
     old framing shrinking away as corner marks
   - **E / Q** turn the focus ring (not a step through W while the camera is up): it slides
@@ -124,12 +128,31 @@ Outside the folder, three small changes: the flock got an opt-in white bird
 
 ## Cost (RTX 5080, 1280x720, after the pen's own warm-up)
 
+Round two:
+
 | | pen alone | with the Lookout |
 |---|---|---|
 | scripts | 4.3 ms | 4.8 ms |
 | render CPU | 0.48 ms | 0.55 ms |
 | render GPU | 1.55 ms | 1.7 ms |
 | video memory | 710 MB | 734 MB (751 with the balloon up) |
+
+Round three (owl tree, marsh, kata wood, chipmunks, hawk, overlays), spawn point:
+
+| | pen alone | with the Lookout |
+|---|---|---|
+| scripts, A/B on the field | | +0.06 ms (method floor about 0.06) |
+| scripts, A/B in the balloon over the flock, camera up | | +0.18 ms |
+| the viewfinder's own draw | | 0.17 ms a frame (F4 shows it; `draw_usec`) |
+| render CPU | 0.47 ms | 0.64 ms |
+| render GPU | 1.54 ms | 1.92 ms |
+| video memory | 710 MB | 871 MB |
+| tetrahedra | 227k | +101k (wood 33k, marsh 23k, balloon 13k, owl tree 11k, tower 7.5k, heron 7.4k) |
+
+The scripts' A/B is `_measure_ab_runner.gd` (see trap 11); geometry is
+`_count_cells_runner.gd` (headless). The render and memory growth is the new lofted geometry;
+it was 135k tetrahedra before the trees were trimmed (one twig a limb, six-sided trunks,
+two-ball leaf clumps, fewer ring segments).
 
 In the cab and the basket the frame is cheaper than at the spawn (less of the farm in view).
 Three fixes got it there from ~2 ms extra: a cached current camera (a whole-tree search every
@@ -140,13 +163,18 @@ the merged meshes.
 
 1. **`Camera4D.field_of_view_3d` does nothing under the default projection.** `projection_type`
    defaults to `PERSPECTIVE_4D`, and then `godot_3d_rendering_engine_4d.cpp _update_3d_camera`
-   uses `field_of_view_4d` (default 77°). So the pen's camera (set to 55° 3D) and the cinematic's
-   camera actually draw at 77°. Your call whether the pen should be 55° (set the 4D one).
-2. **The pen's inventory belt takes the number keys in `_input`**, before any dialogue: reply
-   choices by number never work in the pen. Arrows and Space do.
-3. **A GDScript setter must store its own value.** `pen_range_master_4d.gd`'s
-   `set = _set_colour` with `func _set_colour(_v)` never stores it, so inspector edits of the
-   range master's colours are ignored. Not touched.
+   uses `field_of_view_4d` (default 77.3°). FIXED for the pen camera in round three, keeping the
+   look (Ramon: "keep the actual look and distance ... adjust incorrect numbers"): the orbit
+   rig's presets all say 77.3 and set `field_of_view_4d`, the scene's dead 55° line is gone,
+   and the minimap wedge reads the real angle with its narrowing cut 0.76 -> 0.59 so it draws
+   the same width. Still set on the dead property, not touched: the cinematics
+   (`cave_dreamer_cinema_4d.gd`, `cinematic_murmuration_4d.gd`), `cave/cave_far.tscn` and three
+   capture runners.
+2. **The pen's inventory belt takes the number keys in `_input`**, before any dialogue. FIXED in
+   round three: it steps aside while any `npc_talk` conversation is running.
+3. **A GDScript setter must store its own value.** `pen_range_master_4d.gd` FIXED in round three
+   (one setter each). `cave/cave_suit_4d.gd` has the same pattern (`func _set_colour(_v)`), not
+   touched.
 4. **Godot smooths the frame delta**: 240 deltas came back identical. Measure with
    `viewport_get_measured_render_time_cpu/gpu` and `Performance.TIME_PROCESS`. The pen also
    has a ~10 s warm-up (14 ms of scripts) before it settles.
@@ -159,6 +187,22 @@ the merged meshes.
 9. **A runner killed by `timeout` leaves its test journal behind**: the runners clean at start.
 10. **Under the movie writer, `Engine.time_scale` slow motion records as slow motion**; a timer
     meant in real seconds divides by the time scale.
+11. **`Performance.TIME_PROCESS` lies in two ways.** It is coarse (90 frames in a row can read
+    the same value), and the pen's own scripts swing between about 4 and 15 ms over a minute.
+    The balloon numbers of `_measure_lookout_runner.gd` (10 to 23 ms) were that swing, not the
+    Lookout. An interleaved A/B is the only honest number, and even that needs a settle after
+    any set-up (toggling an EMPTY node "cost" 1.8 ms until the first block stopped landing on
+    the boarding) and an on/off/off/on order.
+12. **The Combined renderer draws its cut into a SubViewport two deep**
+    (`CombinedProjectedSubViewport4D/CombinedCrossSectionSubViewport4D`). Anything that puts its
+    own 3D instances into the cut's World3D (the flock) has to look there. And its projection
+    pass only covers 4D meshes, so the flock draws its own ghost (`flock_ghost.gdshader`).
+13. **Switching a live camera between Cross-section and Combined works now** (Aaron's
+    world-restore fix, 4d `da3586b`, in the 1 Oct build): the menu crash of 30 Sept is gone for
+    this path.
+14. **A cutscene that starts while the camera is raised** used to leave the pen's HUD hidden for
+    good (both saved and restored it, in the wrong order). The camera, and the hawk, now come
+    down before a cutscene takes the HUD.
 
 ## Still your call
 
@@ -167,7 +211,6 @@ the merged meshes.
   `balloon_4d.gd` RADIO): written in her voice, no dashes; yours to rewrite.
 - **Tuning**: balloon after the owl and 8 photos; heron flushes at 8 m; 24 a roll in the cab,
   36 in the basket; the focus ring's 3 m; the white starling is bird 2731.
-- **The pen camera's FOV** (trap 1).
 - **The approach plays once per journal.** A fresh journal (Ctrl+Backspace twice) replays
   the whole story.
 - **"Above the hawk"** (the hawk page's fourth star) needs the balloon to pass above the hawk;
@@ -193,3 +236,53 @@ the merged meshes.
 - Fixed on the way: bars along x or z were built flat (a degenerate frame, 22 errors a load);
   a killed runner left its journal behind (runners now clean at the start too).
 - Still for a dedicated session (Ramon): the heron's animation and the marsh's look.
+
+## Round three (2 Oct, evening)
+
+Ramon: "make the suggested changes", the projection, a lens toggle, a round pond from real
+shapes, the heron's feet, a proper study of how it moves, the owl in a dead tree, a tree with
+chipmunks, fly as a hawk, keep the pen camera's look but make its numbers true. Film:
+`smoke_test_output/video/The Lookout, round 3.mp4` (77 s, `_film_round3_runner.gd`).
+
+- **P, the projection**, anywhere: the current camera goes to the Combined renderer (the cut,
+  plus a see-through projection of everything along W, tinted ana/kata). The marsh shows as a
+  ghost from the farm. The flock draws its own ghost of the birds off your slice.
+  `projection_opacity` 0.55 and `projection_opacity_base` 0.05 on the Lookout node.
+- **L, the lens primes**: 18, 24, 35, 50, 85, 135, 200 mm (Shift+L back), each with its angle;
+  the zoom bar is marked in mm. The widest is now exactly 18 mm (`wide_fov` 1.176).
+- **U, fly as the hawk** (`hawk_flight_4d.gd`): the flock's own sparrowhawk handed to you
+  (`pen_flock_4d.gd pilot_hawk / fly_hawk`), so the starlings flee and roll by their own rules.
+  Mouse steers, W flaps, S brakes, Space climbs, Shift stoops (24 m/s measured), E/Q slide
+  through W: 2.5 m ana and you are out of their slice and they stop fleeing. Chase camera, its
+  own HUD cards, an arrow to the flock.
+- **F4, the developer overlay** (`lookout_dev_overlay_4d.gd`): each creature's whole extent
+  (dashed), the part the slice cuts (solid), a W gauge, its numbers; a card with the camera's
+  four coordinates, the slice normal and angles, the renderer, the frame.
+- **Judging shown**: four bars on every photo toast (size, in focus, centred, behaviour), and
+  **the roll**, a last page in the journal with every shot this time out and its bars.
+- **A guided first photo**: Wren asks to be first and gets a pulsing frame; the owl's tick
+  pulses on the W-meter until it is found (and secret names show as "?" on the meter).
+- **The balloon**: Space works the burner (+10 m over the rail, -5 under it, never under 3 m
+  over the ground, none of it near take-off and landing); at 70 s **the fork**: wherever the
+  focus ring points (kata below -0.3) the ride goes ana to the marsh or kata to the wood.
+- **The owl's dead tree** (`lookout_tree_4d.gd`): lofted, one merged mesh, its twig exactly
+  where the post's top was. The post is off (`ana_post`).
+- **The kata wood** (`kata_wood_4d.gd`) at w -8 over the same field as the marsh: four lofted
+  trees, a log, litter, mushrooms, ferns, a burrow; **three chipmunks** (`chipmunk_4d.gd`):
+  forage in dashes, sit up, stuff their cheeks, climb, perch, come down head first, and run
+  round the trunk THROUGH W (the trunk is round in W too, `w_scale` 0.85), leaving your slice
+  halfway round. A fourth secret page; the hint "The marsh is ana. What is kata of it?"
+- **The heron** rebuilt from `follow_up/heron_motion_study.md`: legs trailing in flight,
+  crouch-and-jump take-off, braking landing, planted-foot IK wading with a gliding head, a coiled
+  strike, a swallowed fish.
+- **The marsh**: real cubinder discs (pond, shallows band, mud, stones, tussocks), a lofted
+  snag, reeds swaying in clumps, rings on the water (where the heron steps and stabs, too),
+  glints. The 4D material has only a colour, so water is told by motion.
+- **Pen fixes** (asked for): the pen camera's numbers (trap 1), the belt and dialogue numbers
+  (trap 2), the range master's colours (trap 3).
+- **Showcase**: an idle chipmunk beside the owl and heron.
+- **Runners**: lookout 29, story 25, ride (ana, and `-- branch=kata`), extras white/marsh/
+  showcase, hawk, round3 capture all pass; pen regressions (flock, cave, crossing, scenery
+  release, UI scale, laptop, cinematics card, menu final) all pass.
+- Open: trees are a first design (Ramon: "trees is still an issue to design"); the chipmunks
+  have no sound; the kata wood is reached on foot by eight metres of Q.

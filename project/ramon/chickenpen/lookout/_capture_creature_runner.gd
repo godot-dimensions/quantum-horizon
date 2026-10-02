@@ -13,6 +13,7 @@ const SCRIPTS := {
 	"owl": "res://ramon/chickenpen/lookout/owl_4d.gd",
 	"heron": "res://ramon/chickenpen/lookout/heron_4d.gd",
 	"balloon": "res://ramon/chickenpen/lookout/balloon_4d.gd",
+	"chipmunk": "res://ramon/chickenpen/lookout/chipmunk_4d.gd",
 }
 ## [name, yaw of the camera round the creature, height, distance, behaviour to show, seconds into it]
 const VIEWS := {
@@ -20,9 +21,16 @@ const VIEWS := {
 		["back", 3.14, 0.4, 1.6, "", 0.0], ["look", 0.0, 0.35, 1.3, "look", 1.5], ["turn_w_mid", 0.0, 0.4, 1.3, "turn_w", 1.3],
 		["turn_w_full", 0.0, 0.4, 1.3, "turn_w", 1.7], ["stretch", 0.4, 0.35, 1.8, "stretch", 1.4], ["hoot", 0.3, 0.35, 1.4, "hoot", 0.4],
 		["far", 0.0, 1.2, 6.0, "", 0.0]],
+	# The heron's views run on from one another (the last six are one flight), so their
+	# seconds add up: a capture lands view[5] + 0.25 s after its view starts.
 	"heron": [["front", 0.0, 0.9, 3.2, "", 0.0], ["three_quarter", 0.7, 1.0, 3.2, "", 0.0], ["side", 1.57, 0.9, 3.4, "", 0.0],
-		["back", 3.14, 1.0, 3.2, "", 0.0], ["one_leg", 1.2, 0.9, 3.2, "one_leg", 1.5], ["stalk", 1.57, 0.8, 3.4, "stalk", 1.0],
-		["strike", 1.57, 0.7, 3.0, "strike", 0.35], ["take_off", 0.9, 1.4, 4.5, "take_off", 0.9], ["flying", 1.2, 2.5, 6.0, "take_off", 2.2]],
+		["back", 3.14, 1.0, 3.2, "", 0.0], ["one_leg", 1.2, 0.9, 3.2, "one_leg", 1.5],
+		["stalk_swing", 1.57, 0.8, 3.4, "stalk", 0.15], ["stalk_pause", 1.57, 0.8, 3.4, "", 0.3],
+		["strike_coiled", 1.57, 0.7, 3.0, "strike", 0.2], ["strike_stab", 1.57, 0.7, 3.0, "", 0.0], ["strike_after", 1.2, 0.8, 3.0, "", 0.95],
+		["take_off_crouch", 0.9, 1.2, 4.5, "take_off", 0.0], ["take_off_jump", 0.9, 1.4, 5.0, "", 0.35], ["flying", 1.57, 2.5, 7.0, "", 1.0],
+		["landing_glide", 1.57, 1.5, 7.0, "", 1.0], ["landing_brake", 1.57, 1.2, 7.0, "", 0.3], ["landed", 1.57, 1.0, 7.0, "", 0.6]],
+	"chipmunk": [["front", 0.0, 0.16, 0.75, "sit", 0.3], ["three_quarter", 0.7, 0.2, 0.8, "sit", 0.3], ["side", 1.57, 0.14, 0.8, "sit", 0.3],
+		["back", 3.14, 0.22, 0.8, "sit", 0.3], ["stuff", 0.5, 0.16, 0.7, "stuff", 2.6], ["forage", 1.57, 0.12, 0.9, "", 1.2], ["far", 0.3, 0.8, 3.5, "", 0.2]],
 	"balloon": [["front", 0.0, 6.0, 22.0, "", 0.0], ["three_quarter", 0.7, 9.0, 20.0, "", 0.0], ["below", 0.3, -2.0, 14.0, "", 0.0],
 		["basket", 0.5, 1.2, 4.5, "", 0.0], ["burning", 0.2, 3.0, 9.0, "burn", 0.6]],
 }
@@ -114,6 +122,8 @@ func _look_height() -> float:
 			return 0.32
 		"heron":
 			return 0.75
+		"chipmunk":
+			return 0.1
 		"balloon":
 			return 7.0
 	return 0.5

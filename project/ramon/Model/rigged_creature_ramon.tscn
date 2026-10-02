@@ -1,4 +1,4 @@
-[gd_scene load_steps=160 format=3 uid="uid://bk3wq1apxrv7m"]
+[gd_scene load_steps=161 format=3 uid="uid://bk3wq1apxrv7m"]
 
 [ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="1_sun"]
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="2_player"]
@@ -16,6 +16,7 @@
 [ext_resource type="Script" uid="uid://d1x2ef38ksbba" path="res://ramon/Model/scripts/chicken_walker.gd" id="chk_walker"]
 [ext_resource type="Script" path="res://ramon/chickenpen/lookout/owl_4d.gd" id="lk_owl"]
 [ext_resource type="Script" path="res://ramon/chickenpen/lookout/heron_4d.gd" id="lk_heron"]
+[ext_resource type="Script" path="res://ramon/chickenpen/lookout/chipmunk_4d.gd" id="lk_chip"]
 
 [sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
 shader_parameter/horizon_color = Color(0.18, 0.22, 0.3, 1)
@@ -2936,5 +2937,12 @@ basis = Projection(0.8195771002013803, 0, 0.5729552855838397, 0, 0, 1, 0, 0, -0.
 script = ExtResource("lk_heron")
 idle_only = true
 metadata/from = "The Lookout's heron (res://ramon/chickenpen/lookout/heron_4d.gd), standing idle."
+
+[node name="Chipmunk" type="Node4D" parent="."]
+position = Vector4(5.3, 0, 8.1, 0)
+basis = Projection(0.8195771002013803, 0, 0.5729552855838397, 0, 0, 1, 0, 0, -0.5729552855838397, 0, 0.8195771002013803, 0, 0, 0, 0, 1)
+script = ExtResource("lk_chip")
+idle_only = true
+metadata/from = "The Lookout's chipmunk (res://ramon/chickenpen/lookout/chipmunk_4d.gd), sitting up and nibbling."
 
 [editable path="Player"]

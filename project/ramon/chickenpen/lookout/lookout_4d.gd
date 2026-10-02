@@ -22,7 +22,7 @@ extends Node
 ##   lookout_radio_4d.gd      Wren on the radio: subtitles that take no input
 ##   lookout_cutscene_4d.gd   the short camera moves: the approach, the owl
 ##   journal_card_4d.gd       the HUD card (UI/Journal); journal_book_4d.gd, the book (J)
-##   owl_4d.gd                the ana owl, on its post at w +1.5
+##   owl_4d.gd                the ana owl, on a twig of a dead tree at w +1.5 (lookout_tree_4d.gd)
 ##   lookout_wren_4d.gd       Wren, with lookout_wren_talk_4d.gd and wren_script.gd
 ##   balloon_4d.gd            Wren's balloon and its ride, over the farm and out ana
 ##   ana_marsh_4d.gd          the marsh that is only there along W, at w +8
@@ -42,6 +42,11 @@ const RADIO := preload("res://ramon/chickenpen/lookout/lookout_radio_4d.gd")
 const CUTSCENE := preload("res://ramon/chickenpen/lookout/lookout_cutscene_4d.gd")
 const BOOK := preload("res://ramon/chickenpen/lookout/journal_book_4d.gd")
 const OWL := preload("res://ramon/chickenpen/lookout/owl_4d.gd")
+const TREE := preload("res://ramon/chickenpen/lookout/lookout_tree_4d.gd")
+const HAWK := preload("res://ramon/chickenpen/lookout/hawk_flight_4d.gd")
+const DEV := preload("res://ramon/chickenpen/lookout/lookout_dev_overlay_4d.gd")
+const WOOD := preload("res://ramon/chickenpen/lookout/kata_wood_4d.gd")
+const CHIPMUNK := preload("res://ramon/chickenpen/lookout/chipmunk_4d.gd")
 const BALLOON := preload("res://ramon/chickenpen/lookout/balloon_4d.gd")
 const MARSH := preload("res://ramon/chickenpen/lookout/ana_marsh_4d.gd")
 const HERON := preload("res://ramon/chickenpen/lookout/heron_4d.gd")
@@ -62,8 +67,24 @@ const HERON := preload("res://ramon/chickenpen/lookout/heron_4d.gd")
 ## The marsh's middle, out along W. Inside the pen's bounds (a 46 m sphere in x, z and w),
 ## so it can be walked to.
 @export var marsh_at: Vector4 = Vector4(-26.0, 0.0, -24.0, 8.0)
+## The kata wood (kata_wood_4d.gd), with the chipmunks: over the same field as the marsh, the
+## other way along W - where the balloon goes if the fork goes kata.
+@export var wood_at: Vector4 = Vector4(-26.0, 0.0, -24.0, -8.0)
+@export_range(0, 6) var chipmunk_count: int = 3
 ## Which of the five thousand starlings is white. The pen's flock draws none unless told.
 @export var white_starling: int = 2731
+## P: the PROJECTION on or off, for whichever camera is drawing (Ramon, 2 Oct: "try to turn on
+## projection ... make a toggle button for it"). Off is the plain cut, the Cross-section
+## renderer; on is the Combined renderer, which draws the cut and over it a see-through
+## projection of the whole 4D scene along W - so what is ana or kata of your slice shows as a
+## ghost, tinted by which side it is on. It is a camera setting, so it costs nothing while off.
+@export var projection_key: Key = KEY_P
+## How strongly the ghost is drawn over the cut, and the opacity each tetrahedron adds to it.
+## The ground is a slab hundreds of metres deep in W, so a high base turns into a haze over the
+## whole field (lofting_gotchas.md, "the fog over the floor is the projection pass").
+@export_range(0.0, 1.0, 0.01) var projection_opacity: float = 0.55
+@export_range(0.0, 1.0, 0.005) var projection_opacity_base: float = 0.05
+var projection: bool = false
 
 var room: Node
 var tower: Node4D
@@ -81,6 +102,14 @@ var radio: Control
 var cutscene: Node
 var book: Control
 var owl: Node4D
+## The dead tree the owl sits in, out at its w.
+var owl_tree: Node4D
+## U: flying the flock's hawk.
+var hawk_flight: Node
+## F4: the developer overlay.
+var dev_overlay: Control
+var wood: Node4D
+var chipmunks: Array[Node4D] = []
 var balloon: Node
 var wren: Node4D
 var wren_head: Node4D
@@ -141,13 +170,20 @@ func _ready() -> void:
 	radio.set("lookout", self)
 	book = _overlay(BOOK, "Book", 8) as Control
 	book.set("lookout", self)
+	dev_overlay = _overlay(DEV, "DevOverlay", 9) as Control
+	dev_overlay.set("lookout", self)
 	cutscene = CUTSCENE.new()
 	cutscene.name = "Cutscene"
 	cutscene.set("lookout", self)
 	add_child(cutscene)
+	hawk_flight = HAWK.new()
+	hawk_flight.name = "Hawk"
+	add_child(hawk_flight)
+	hawk_flight.call("setup", self)
 	_build_owl()
 	_build_balloon()
 	_build_marsh()
+	_build_wood()
 	_build_ladder_prompt()
 	# The chickens are made in their manager's _ready and the hills' meshes are loaded by
 	# then: collect the subjects and map the ground once everything is up.
@@ -203,9 +239,31 @@ func _build_marsh() -> void:
 	heron.set("player_path", player.get_path() if player != null else NodePath())
 	heron.set("lookout_path", get_path())
 	heron.position = marsh_at + marsh.call("fishing_spot")
+	marsh.set("lookout_path", get_path())
 	# Facing along the open water, its back to the reeds.
 	heron.basis = Basis4D.from_zx(-PI * 0.5)
 	room.get_node("World").add_child(heron)
+	marsh.set("heron_path", heron.get_path())
+
+
+func _build_wood() -> void:
+	wood = Node4D.new()
+	wood.name = "KataWood"
+	wood.set_script(WOOD)
+	wood.position = wood_at
+	room.get_node("World").add_child(wood)
+	for i in chipmunk_count:
+		var c := Node4D.new()
+		c.name = "Chipmunk%d" % i
+		c.set_script(CHIPMUNK)
+		c.set("chipmunk_seed", 11 + i * 7)
+		c.set("wood_path", wood.get_path())
+		c.set("player_path", player.get_path() if player != null else NodePath())
+		c.set("lookout_path", get_path())
+		var a: float = float(i) / float(maxi(chipmunk_count, 1)) * TAU
+		c.position = wood_at + Vector4(cos(a) * 1.6, 0.0, sin(a) * 1.6, 0.0)
+		room.get_node("World").add_child(c)
+		chipmunks.append(c)
 
 
 func _overlay(script: Script, part: String, layer: int) -> Node:
@@ -220,16 +278,33 @@ func _overlay(script: Script, part: String, layer: int) -> Node:
 	return node
 
 
-## The owl, on the ana post outside the north window.
+## The owl, on a twig of a dead tree off the north side, out at w +1.5 (Ramon, 2 Oct: "make
+## the owl a tree, could be a bare dead tree of lofted shapes, so it can sit on a twig").
+## The twig ends where the old post's top was, so everything aimed at the owl still is.
 func _build_owl() -> void:
 	if tower == null:
 		return
+	var perch: Vector4 = tower.call("ana_perch")
+	owl_tree = Node4D.new()
+	owl_tree.name = "OwlTree"
+	owl_tree.set_script(TREE)
+	# Its trunk back and to one side of the twig, so the limb reaches out towards the deck.
+	var base: Vector4 = perch + tower.global_basis * Vector4(-1.3, 0.0, -1.4, 0.0)
+	base.y = tower.global_position.y
+	owl_tree.set("height", 13.5)
+	owl_tree.set("trunk_radius", 0.42)
+	owl_tree.set("limb_count", 5)
+	owl_tree.set("use_perch", true)
+	owl_tree.set("perch", tower.global_basis.inverse() * (perch - base))
+	room.get_node("World").add_child(owl_tree)
+	owl_tree.global_position = base
+	owl_tree.global_basis = tower.global_basis
 	owl = Node4D.new()
 	owl.name = "AnaOwl"
 	owl.set_script(OWL)
 	owl.set("lookout_path", get_path())
 	room.get_node("World").add_child(owl)
-	owl.global_position = tower.call("ana_perch") + Vector4(0.0, 0.03, 0.0, 0.0)
+	owl.global_position = owl_tree.call("perch_point") + Vector4(0.0, 0.03, 0.0, 0.0)
 	# Facing the cab it sits outside: its face to the window, its back to the field.
 	owl.global_basis = Basis4D.from_zx(0.0)
 
@@ -246,6 +321,13 @@ func _register_own_subjects() -> void:
 			"radius": 0.5 * hu, "w_radius": 0.12 * hu * float(heron.get("w_stretch")),
 			"point": func(_s: Dictionary) -> Variant: return heron.call("centre") if heron.is_visible_in_tree() else null,
 			"behave": func(_s: Dictionary) -> Array: return heron.call("behaviour")})
+	for c in chipmunks:
+		var cu: float = float(c.get("size"))
+		var chip: Node4D = c
+		subjects.call("add", {"id": String(c.name).to_lower(), "page": "chipmunks", "name": "A chipmunk", "node": c, "lift": 0.0,
+			"radius": 0.09 * cu, "w_radius": 0.05 * cu * float(c.get("w_stretch")),
+			"point": func(_s: Dictionary) -> Variant: return chip.call("centre") if chip.is_visible_in_tree() else null,
+			"behave": func(_s: Dictionary) -> Array: return chip.call("behaviour")})
 	if wren != null:
 		subjects.call("add", {"id": "wren", "page": "folk", "name": "Wren", "node": wren, "lift": 0.85, "radius": 0.85,
 			"w_radius": 0.24, "behave": _behave_wren})
@@ -267,7 +349,7 @@ func current_camera() -> Camera4D:
 	if is_instance_valid(_current_cam) and _current_cam.is_inside_tree() and _current_cam.is_current():
 		return _current_cam
 	var known: Array = [station.get("camera") if station != null else null, cutscene.get("_cam") if cutscene != null else null,
-		farm_camera, room.get_node_or_null("World/TalkCam")]
+		hawk_flight.get("camera") if hawk_flight != null else null, farm_camera, room.get_node_or_null("World/TalkCam")]
 	for cam in known:
 		if cam is Camera4D and is_instance_valid(cam) and (cam as Camera4D).is_inside_tree() and (cam as Camera4D).is_current():
 			_current_cam = cam
@@ -280,6 +362,30 @@ func current_camera() -> Camera4D:
 				_current_cam = cam
 				return cam
 	return _current_cam if is_instance_valid(_current_cam) else farm_camera
+
+
+func set_projection(on: bool) -> void:
+	projection = on
+	_apply_projection(current_camera())
+	# The starlings are not 4D meshes, so the projection pass leaves them out; the flock draws
+	# its own ghost of the birds off your slice instead.
+	var flock: Node = room.get_node_or_null("World/Flock")
+	if flock != null and "ghost" in flock:
+		flock.set("ghost", on)
+
+
+## Puts the camera on the renderer the toggle asks for, if it is not on it already. Run every
+## frame on whichever camera is current, so a camera made later (raising the camera, a
+## cutscene) picks the setting up as soon as it draws.
+func _apply_projection(cam: Camera4D) -> void:
+	if cam == null:
+		return
+	var want: String = "Combined" if projection else "Cross-section"
+	if String(cam.get("rendering_engine_name")) == want:
+		return
+	cam.set("projection_opacity", projection_opacity)
+	cam.set("projection_opacity_base", projection_opacity_base)
+	cam.set("rendering_engine_name", want)
 
 
 func next_hint() -> String:
@@ -332,6 +438,10 @@ func on_whistle() -> void:
 		var d: Vector4 = heron.global_position - eye
 		if Vector3(d.x, d.y, d.z).length() < 45.0 and absf(d.w) < 5.0:
 			heron.call("hear")
+	for c in chipmunks:
+		var dc: Vector4 = c.global_position - eye
+		if Vector3(dc.x, dc.y, dc.z).length() < 45.0 and absf(dc.w) < 5.0:
+			c.call("hear")
 	if owl != null and owl.global_position.distance_to(eye) < 40.0:
 		owl.call("perform", "look")
 	var flock: Node4D = room.get_node_or_null("World/Flock") as Node4D
@@ -462,6 +572,7 @@ func _process(delta: float) -> void:
 				_board_tag.show_text(board_text)
 	# The prompts are placed through whichever camera is drawing: the farm's, or the raised one.
 	var cam: Camera4D = current_camera()
+	_apply_projection(cam)
 	for t in [_tag, _board_tag, _down_tag]:
 		if t != null:
 			t.set("_camera", cam)
@@ -502,7 +613,10 @@ func _input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if key == null or not key.pressed or key.echo:
 		return
-	if key.keycode == KEY_Z and station.call("can_raise"):
+	if key.keycode == projection_key:
+		get_viewport().set_input_as_handled()
+		set_projection(not projection)
+	elif key.keycode == KEY_Z and station.call("can_raise"):
 		get_viewport().set_input_as_handled()
 		station.call("raise")
 	elif key.keycode == KEY_B and can_board():
@@ -540,7 +654,7 @@ func on_photo(photo: Dictionary) -> void:
 	if bool(result.get("new_page", false)):
 		# A secret found: the pad and chimes, the subgame's one piece of music.
 		var page: String = String(result.get("look", {}).get("page", ""))
-		sound(&"secret" if page in ["owl", "white_starling", "heron"] else &"new_page")
+		sound(&"secret" if page in ["owl", "white_starling", "heron", "chipmunks"] else &"new_page")
 	elif bool(result.get("new_slot", false)) or bool(result.get("better", false)):
 		sound(&"page")
 	story.call("on_photo", result)

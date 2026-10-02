@@ -9,14 +9,31 @@ extends Node4D
 
 const AVATAR := preload("res://ramon/chickenpen/scripts/block_avatar_4d.gd")
 
-@export var jacket: Color = Color(0.20, 0.24, 0.17): set = _set_colour
-@export var skin: Color = Color(0.78, 0.60, 0.46): set = _set_colour
-@export var cap: Color = Color(0.13, 0.12, 0.11): set = _set_colour
-@export var trousers: Color = Color(0.17, 0.16, 0.15): set = _set_colour
-@export var defenders: Color = Color(0.85, 0.52, 0.10): set = _set_colour
+## Each colour has its own setter that STORES the value: one shared setter could not know which
+## property it was setting, so it stored nothing and the inspector's colours never took.
+@export var jacket: Color = Color(0.20, 0.24, 0.17):
+	set(v):
+		jacket = v
+		_changed()
+@export var skin: Color = Color(0.78, 0.60, 0.46):
+	set(v):
+		skin = v
+		_changed()
+@export var cap: Color = Color(0.13, 0.12, 0.11):
+	set(v):
+		cap = v
+		_changed()
+@export var trousers: Color = Color(0.17, 0.16, 0.15):
+	set(v):
+		trousers = v
+		_changed()
+@export var defenders: Color = Color(0.85, 0.52, 0.10):
+	set(v):
+		defenders = v
+		_changed()
 
 
-func _set_colour(_v: Color) -> void:
+func _changed() -> void:
 	if is_node_ready():
 		rebuild()
 

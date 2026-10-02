@@ -43,6 +43,7 @@ extends Node4D
 
 const METRICS := preload("res://ramon/chickenpen/flock/flock_metrics_4d.gd")
 const SHADER := preload("res://ramon/chickenpen/flock/flock_bird.gdshader")
+const GHOST := preload("res://ramon/chickenpen/flock/flock_ghost.gdshader")
 const COMPUTE := "res://ramon/chickenpen/flock/flock_step.glsl"
 const G := 9.81
 const FLOATS := 20
@@ -168,6 +169,8 @@ const SOUND_NEAR := 6.0
 ## from [member hawk_near_scale] within 20 m to this beyond 90 m.
 @export_range(0.5, 4.0, 0.05) var hawk_scale: float = 2.4
 @export_range(0.5, 4.0, 0.05) var hawk_near_scale: float = 1.0
+## The hawk's size while the player flies it (the Lookout's U).
+@export_range(0.5, 4.0, 0.05) var hawk_pilot_scale: float = 1.6
 ## The share of hawks that dive in over the far side of the flock from wherever the camera
 ## is, at a random angle of up to [member hawk_spread_degrees] either side, so the attack is
 ## seen; the rest come from anywhere. Ramon: "slightly offset the randomizer so it feels
@@ -224,7 +227,7 @@ var _agit_wait := PackedFloat32Array()
 var _agit_rest := PackedFloat32Array()
 var _agit_sign := PackedFloat32Array()
 
-enum HawkState { AWAY, HUNTING, LEAVING }
+enum HawkState { AWAY, HUNTING, LEAVING, PILOTED }
 var _hawk_state: int = HawkState.AWAY
 var _hawk_timer: float = 12.0
 var _hawk_pos := Vector4(0.0, -1000.0, 0.0, 0.0)
@@ -234,6 +237,14 @@ var _hawk_bank: float = 0.0
 ## Where in the flock it is going: an offset from the middle, so it does not always hit
 ## the dead centre.
 var _hawk_aim := Vector4.ZERO
+## Flown by the player (the Lookout's U, hawk_flight_4d.gd): how hard it is flapping, 0 gliding.
+var _pilot_beat: float = 0.0
+## The flock's ghost (flock_ghost.gdshader): the birds out of the camera's slice, drawn faint
+## and see-through by a second instance of the same multimesh. Off unless something asks for
+## it - the Lookout's projection toggle does.
+var ghost: bool = false
+var _ghost_material: ShaderMaterial
+var _ghost_instance := RID()
 ## The hawk has its own shape, so its own one-bird multimesh, drawn by the same material.
 var _hawk_mesh: ArrayMesh
 var _hawk_multimesh := RID()
@@ -315,6 +326,15 @@ func _ready() -> void:
 	RenderingServer.instance_set_ignore_culling(_hawk_instance, true)
 	RenderingServer.instance_set_custom_aabb(_hawk_instance, AABB(Vector3(-5000, -5000, -5000), Vector3(10000, 10000, 10000)))
 	RenderingServer.instance_set_visible(_hawk_instance, false)
+	_ghost_material = ShaderMaterial.new()
+	_ghost_material.shader = GHOST
+	_ghost_instance = RenderingServer.instance_create()
+	RenderingServer.instance_set_base(_ghost_instance, _multimesh)
+	RenderingServer.instance_geometry_set_material_override(_ghost_instance, _ghost_material.get_rid())
+	RenderingServer.instance_geometry_set_cast_shadows_setting(_ghost_instance, RenderingServer.SHADOW_CASTING_SETTING_OFF)
+	RenderingServer.instance_set_ignore_culling(_ghost_instance, true)
+	RenderingServer.instance_set_custom_aabb(_ghost_instance, AABB(Vector3(-5000, -5000, -5000), Vector3(10000, 10000, 10000)))
+	RenderingServer.instance_set_visible(_ghost_instance, false)
 	_rd = RenderingServer.get_rendering_device()
 	_gpu = backend != 1 and _rd != null
 	if backend == 2 and _rd == null:
@@ -331,6 +351,8 @@ func _exit_tree() -> void:
 		RenderingServer.instance_set_visible(_instance, false)
 	if _hawk_instance.is_valid():
 		RenderingServer.instance_set_visible(_hawk_instance, false)
+	if _ghost_instance.is_valid():
+		RenderingServer.instance_set_visible(_ghost_instance, false)
 
 
 func _notification(what: int) -> void:
@@ -346,6 +368,8 @@ func _notification(what: int) -> void:
 			RenderingServer.free_rid(_hawk_instance)
 		if _hawk_multimesh.is_valid():
 			RenderingServer.free_rid(_hawk_multimesh)
+		if _ghost_instance.is_valid():
+			RenderingServer.free_rid(_ghost_instance)
 
 
 ## Start over: [member count] birds in a loose cloud over the roost, heading roughly the
@@ -800,14 +824,23 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngi
 	if viewport != get_viewport() or not _instance.is_valid():
 		return
 	var world: World3D = viewport.find_world_3d()
+	# Under the Combined renderer (the Lookout's P, the projection) the cut is drawn into a
+	# SubViewport of its own, two deep (combined_rendering_engine_4d.cpp), and that is the
+	# picture the birds belong in.
+	if _engine != null and _engine.get_friendly_name() == "Combined":
+		var inner := viewport.get_node_or_null(^"CombinedProjectedSubViewport4D/CombinedCrossSectionSubViewport4D") as Viewport
+		if inner != null:
+			world = inner.find_world_3d()
 	var scenario: RID = world.scenario if world != null else RID()
 	if scenario != _scenario:
 		_scenario = scenario
 		RenderingServer.instance_set_scenario(_instance, scenario)
 		RenderingServer.instance_set_scenario(_hawk_instance, scenario)
+		RenderingServer.instance_set_scenario(_ghost_instance, scenario)
 	var shown: bool = is_visible_in_tree() and count > 0 and scenario.is_valid()
 	RenderingServer.instance_set_visible(_instance, shown)
 	RenderingServer.instance_set_visible(_hawk_instance, shown and _hawk_state != HawkState.AWAY)
+	RenderingServer.instance_set_visible(_ghost_instance, shown and ghost)
 	if not shown:
 		return
 	# In the flock's own space, which is where the hawk flies.
@@ -825,6 +858,12 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngi
 	_material.set_shader_parameter("view_origin", origin)
 	_material.set_shader_parameter("w_radius", bird_w_radius)
 	_material.set_shader_parameter("white_index", white_bird if white_bird < count else -1)
+	if ghost:
+		for key in ["view_basis_x", "view_basis_y", "view_basis_z", "view_basis_w", "view_origin", "w_radius"]:
+			_ghost_material.set_shader_parameter(key, _material.get_shader_parameter(key))
+		_ghost_material.set_shader_parameter("ana_colour", camera.get("w_fade_color_positive"))
+		_ghost_material.set_shader_parameter("kata_colour", camera.get("w_fade_color_negative"))
+		_ghost_material.set_shader_parameter("ghost_range", maxf(float(camera.get("w_fade_distance")), 2.0))
 
 
 ## A starling at size 1, modelled +Z ahead: a pointed body, a short square tail and two
@@ -948,6 +987,8 @@ func _gather_from() -> float:
 ## view and stoops into the flock - and otherwise in from anywhere, so it is not always the same show. It dives at
 ## a point near the middle, not on it, goes through, and climbs away.
 func _hawk_step(dt: float) -> void:
+	if _hawk_state == HawkState.PILOTED:
+		return
 	if not hawk_enabled:
 		_hawk_state = HawkState.AWAY
 		_hawk_pos = Vector4(0.0, -1000.0, 0.0, 0.0)
@@ -1028,13 +1069,18 @@ func _draw_hawk() -> void:
 	up = up.normalized() if up.length() > 0.05 else Vector4(0.0, 0.0, 1.0, 0.0)
 	var wing: Vector4 = right * cos(_hawk_bank) + up * sin(_hawk_bank)
 	var beat: float = 0.0
-	if _hawk_state == HawkState.LEAVING:
+	if _hawk_state == HawkState.PILOTED:
+		beat = _pilot_beat
+	elif _hawk_state == HawkState.LEAVING:
 		beat = 1.1
 	elif _hawk_state == HawkState.HUNTING and h.y > -0.3:
 		beat = 1.1 if fmod(_time, 2.4) < 1.0 else 0.0
 	var p: Vector4 = _hawk_pos
 	var away: float = (p - _viewer).length() if _viewer_known else 100.0
 	var grow: float = lerpf(hawk_near_scale, hawk_scale, smoothstep(20.0, 90.0, away))
+	if _hawk_state == HawkState.PILOTED:
+		# Flown, it is a few metres ahead of the camera, the thing you watch: drawn a size up.
+		grow = hawk_pilot_scale
 	# Custom w is the beat rate against a starling's: about 4 a second, not 11.
 	var row := PackedFloat32Array([p.x, p.y, p.z, p.w, h.x, h.y, h.z, h.w, wing.x, wing.y, wing.z, wing.w,
 		2.6, 2.2, 1.9, 1.0, 0.37, beat, bird_scale * grow, 0.36])
@@ -1050,7 +1096,7 @@ func stats() -> Dictionary:
 	var out: Dictionary = {
 		"birds": count, "backend": "GPU" if _gpu else "CPU",
 		"cpu_ms": last_step_usec / 1000.0, "gpu_ms": gpu_usec / 1000.0 if _gpu else -1.0,
-		"hawk": ["away", "diving", "leaving"][_hawk_state] if hawk_enabled else "off",
+		"hawk": ["away", "diving", "leaving", "flown by you"][_hawk_state] if hawk_enabled or _hawk_state == HawkState.PILOTED else "off",
 		"hawk_next": _hawk_timer if _hawk_state == HawkState.AWAY and hawk_enabled else -1.0,
 		"wave_ms": reaction_delay * 1000.0,
 	}
@@ -1095,8 +1141,36 @@ func hawk_position() -> Variant:
 	return null if _hawk_state == HawkState.AWAY else _hawk_pos
 
 
+## Someone takes the hawk (on) or gives it back (off). Taken, the hunt stands down and the hawk
+## goes wherever [method fly_hawk] puts it; the flock flees it and rolls away from it exactly as
+## it does from the hunting hawk, so the wave you see is the flock's own answer to your flying.
+## Given back, it flies on out as a hawk does after a stoop, and the timer starts again.
+func pilot_hawk(on: bool) -> void:
+	if on:
+		_hawk_state = HawkState.PILOTED
+		_pilot_beat = 0.0
+	elif _hawk_state == HawkState.PILOTED:
+		_hawk_state = HawkState.LEAVING
+		_hawk_timer = 5.0
+
+
+## The flown hawk, in the world: where it is, which way it is heading (a unit Vector4), its
+## speed, how far it is banked (radians, + to the right) and how hard it is flapping (0 to 1).
+func fly_hawk(at: Vector4, heading: Vector4, speed: float, bank: float, flapping: float) -> void:
+	if _hawk_state != HawkState.PILOTED:
+		return
+	var inverse: Projection = global_basis.inverse()
+	_hawk_pos = inverse * (at - global_position)
+	_hawk_head = (inverse * heading).normalized()
+	_hawk_speed_now = speed
+	_hawk_bank = bank
+	_pilot_beat = flapping * 1.1
+
+
 ## Sends the hawk in now rather than when its time comes.
 func call_hawk() -> void:
+	if _hawk_state == HawkState.PILOTED:
+		return
 	_hawk_state = HawkState.AWAY
 	_hawk_timer = 0.0
 

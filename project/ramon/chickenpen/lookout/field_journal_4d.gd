@@ -55,7 +55,7 @@ const PAGES := [
 			"From the air, looking back at the tower."]},
 	{"id": "owl", "title": "The ana owl", "latin": "Bubo, an eagle owl, from somewhere else", "secret": true,
 		"slots": ["The ana owl", "It's seen you", "The wing stretch", "A head turned through W"],
-		"hints": ["Something sits outside the north window. Not on this slice.",
+		"hints": ["Something sits in a dead tree north of the tower. Not on this slice.",
 			"Wait until it looks at you.", "Now and then it stretches a wing.",
 			"Its head turns further than a head should. Through W."]},
 	{"id": "white_starling", "title": "The white starling", "latin": "Sturnus vulgaris, leucistic", "secret": true,
@@ -67,6 +67,11 @@ const PAGES := [
 		"slots": ["The ana heron", "On one leg", "The strike", "Heron rising"],
 		"hints": ["There is water out along W, if you go far enough.",
 			"It rests on one leg.", "Stalking, and the stab.", "When it lifts off."]},
+	{"id": "chipmunks", "title": "Chipmunks", "latin": "Tamias striatus, out along kata", "secret": true,
+		"slots": ["A chipmunk", "Cheeks full", "Up the tree", "Round the back, through W"],
+		"hints": ["The marsh is ana. What is kata of it?",
+			"When one sits up with something in its paws.", "They run up the big tree in the middle.",
+			"Up the trunk, one goes round it through W. Follow it with the ring."]},
 ]
 
 @export var save_path: String = "user://lookout_journal.cfg"
@@ -156,7 +161,8 @@ func record(photo: Dictionary, verdict: String) -> Dictionary:
 		small.resize(thumb_width, maxi(int(float(thumb_width) * float(image.get_height()) / float(maxi(image.get_width(), 1))), 1), Image.INTERPOLATE_BILINEAR)
 		out["thumb"] = ImageTexture.create_from_image(small)
 	recent.append({"thumb": out.get("thumb"), "page": look.get("page", ""), "stars": look.get("stars", 0),
-		"points": look.get("points", 0), "doing": look.get("doing", ""), "verdict": verdict, "name": look.get("name", "")})
+		"points": look.get("points", 0), "doing": look.get("doing", ""), "verdict": verdict, "name": look.get("name", ""),
+		"size": look.get("size", 0.0), "sharp": look.get("sharp", 0.0), "centred": look.get("centred", 0.0)})
 	while recent.size() > 36:
 		recent.pop_front()
 	if verdict != "good" or not slots.has(look.get("page", "")):

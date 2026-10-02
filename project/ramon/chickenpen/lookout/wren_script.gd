@@ -68,7 +68,7 @@ static func nodes(tip: String, can_ride: bool) -> Dictionary:
 	"speaker": "Wren",
 	"lines": [
 		"The starlings are up all evening. When the hawk dives, they open round it. Nobody's got that picture.",
-		"And something sits on a post outside the north window. I hear it at night. I've never seen it.",
+		"And something sits in an old dead tree north of the tower. I hear it at night. I've never seen it.",
 	],
 	"goto": "go_up",
 },

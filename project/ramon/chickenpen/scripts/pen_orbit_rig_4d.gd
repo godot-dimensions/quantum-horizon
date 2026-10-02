@@ -22,28 +22,29 @@ extends Node4D
 ## THREE CAMERAS TO CHOOSE BETWEEN, cycled with Tab, because this is being decided by
 ## playing rather than by argument and the only useful comparison is an immediate one.
 ##
-## SUBJECT SIZE IS HELD ROUGHLY CONSTANT across the three: the distance rises as the lens
-## narrows, by 1/tan(fov/2). Narrowing the lens on its own is only a zoom, and of course a
-## zoomed picture looks different - what these three actually differ in is PERSPECTIVE.
-## Wide throws the world away from you and leaves a large empty foreground; narrow
-## compresses it, so the pen reads as a box you can judge distances across.
+## ALL FOUR ARE THE SAME 77.3 DEGREE LENS, and differ in distance, height and tilt. They
+## were written as 77.3, 55 and 45 degrees, but the lens was set on `field_of_view_3d`, and
+## under the camera's default projection (Perspective 4D) the renderer reads
+## `field_of_view_4d` instead - so every preset has always rendered at the engine's default
+## 77.3. The farm's feel was tuned on what rendered, so the numbers were made to say that
+## (Ramon, 2 Oct: keep the look and the distance, fix the numbers) rather than the lens being
+## changed to match the old numbers. A narrower lens is now one edit to the second column.
 ##
-## The height and the downward tilt climb with the narrowing, and they are doing at least
-## as much of the work as the lens is. Most of what makes the third one legible is simply
-## that it can see the ground.
+## The height and the downward tilt climb from 1 to 3, and they are what makes the third
+## one legible: most of it is simply that it can see the ground.
 ##
-##   1 - 77.3 degrees at 5 m. Where this started: the engine's default focal length.
-##   2 - 55 degrees at 8 m. A compromise that keeps a good amount of sky.
-##   3 - 45 degrees at 9.7 m, higher and tilted further down. The diorama.
-##   4 - the cinema's own framing, copied from theatre_camera_4d: wide, close, and up at
-##       1.7 m. It is there to be compared against, not because the farm should use a
-##       shot built for one seated figure on a stage.
+##   1 - 5 m back. Where this started.
+##   2 - 8 m back, up a little, tilted 15 degrees down. A compromise that keeps some sky.
+##   3 - 9.7 m back, higher and tilted further down. The diorama.
+##   4 - the cinema's own framing, copied from theatre_camera_4d: close, and up at 1.7 m.
+##       It is there to be compared against, not because the farm should use a shot built
+##       for one seated figure on a stage.
 ##
 ## Each row is: name, field of view in degrees, distance, pivot height, pitch in degrees.
 const PRESETS: Array = [
 	["Camera 1", 77.3, 5.00, 1.10, -8.6],
-	["Camera 2", 55.0, 8.00, 1.50, -15.0],
-	["Camera 3", 45.0, 9.70, 1.90, -22.0],
+	["Camera 2", 77.3, 8.00, 1.50, -15.0],
+	["Camera 3", 77.3, 9.70, 1.90, -22.0],
 	["Camera 4", 77.3, 4.20, 1.70, -6.0],
 ]
 
@@ -229,7 +230,8 @@ func use_preset(index: int) -> void:
 	_home_pivot = pivot_height
 	pitch = deg_to_rad(float(p[4]))
 	if _camera != null:
-		_camera.set("field_of_view_3d", deg_to_rad(float(p[1])))
+		# The 4D one: it is the one the default projection renders with.
+		_camera.set("field_of_view_4d", deg_to_rad(float(p[1])))
 	_apply()
 	preset_changed.emit(preset)
 

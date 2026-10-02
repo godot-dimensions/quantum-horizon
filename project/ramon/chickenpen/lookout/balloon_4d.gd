@@ -9,8 +9,19 @@ extends Node4D
 ## A RAIL, AS POKEMON SNAP'S IS, because a rail solves the hardest problem a 4D game has:
 ## steering through W. The ride's path is (x, y, z AND w), planned (RIDE below), and the
 ## camera's slice rides with the basket - so as the balloon drifts ana the farm thins and
-## goes, not because anything moved but because you did. You only look, zoom, focus and
-## shoot: 36 shots, no reloads up there. X whistles, and what can hear it looks up.
+## goes, not because anything moved but because you did. You look, zoom, focus and shoot:
+## 36 shots, no reloads up there. X whistles, and what can hear it looks up.
+##
+## TWO SAYS IN IT (Ramon, 2 Oct: "more say in the balloon"), both inside the rail's safety:
+##   height  SPACE works the burner: held, you rise, up to [member lift_max] over the rail;
+##           let go and the air cools and you sink back, down to [member lift_min] under it,
+##           never lower than [member ground_clearance] over the ground. The offset fades out
+##           near the take-off and the landing, so those stay as planned.
+##   the fork  as you leave the farm, Wren asks which way: ANA to the marsh (the heron), or
+##           KATA to a wood that is only there on the other side (the chipmunks). The focus
+##           ring decides - wherever it is pointing when the moment comes - so the choice is
+##           made with the same control that has been finding things in W all along. The
+##           kata leg is the ana leg mirrored in W, so it is as safe as the planned one.
 ##
 ## BUILT FROM THE SAME PARTS AS EVERYTHING ELSE:
 ##   the envelope  a loft of balls stacked up a teardrop (loft_rig_4d.gd), coloured per ball
@@ -48,16 +59,21 @@ const RIDE := [
 	[156.0, Vector4(-0.3, 2.0, 1.0, 0.8)],
 	[164.0, Vector4(0.0, 0.0, 0.0, 0.0)],
 ]
-## [seconds, Wren's lines].
+## [seconds, Wren's lines, and her lines instead if the fork went kata].
 const RADIO := [
-	[1.0, ["Off we go. Mind your head on the burner."]],
+	[1.0, ["Off we go. Mind your head on the burner. Space if you want more of it."]],
 	[30.0, ["There's the pen. Everything's in it, for once."]],
-	[58.0, ["Starlings, dead ahead. Into them. Thirty six shots, don't spend them all."]],
-	[84.0, ["Now we go ana. Don't worry, the farm's still there.", "We just aren't."]],
-	[108.0, ["There. Water. I told you.", "Something's standing in it. Quiet, now. X if you want it to look up."]],
-	[142.0, ["Back we come. Kata, and down."]],
+	[50.0, ["Starlings, dead ahead. Into them. Thirty six shots, don't spend them all."]],
+	[62.0, ["Next we leave the farm. Which way, ana or kata?", "Turn the ring the way you want to go. E for ana, Q for kata. I'll take us there."]],
+	[84.0, ["Now we go ana. Don't worry, the farm's still there.", "We just aren't."],
+		["Now we go kata. Don't worry, the farm's still there.", "We just aren't."]],
+	[108.0, ["There. Water. I told you.", "Something's standing in it. Quiet, now. X if you want it to look up."],
+		["There. Trees. Nobody planted them, nobody's ever cut them.", "Chipmunks, if you're lucky. Quiet, now. X if you want them to look up."]],
+	[142.0, ["Back we come. Kata, and down."], ["Back we come. Ana, and down."]],
 	[158.0, ["And down. Gently."]],
 ]
+## When the fork is taken: the rail's w is 0 there, so either way is smooth.
+const FORK_AT := 70.0
 
 @export var envelope_colours: Array[Color] = [Color(0.62, 0.14, 0.10), Color(0.90, 0.84, 0.70), Color(0.66, 0.16, 0.11),
 	Color(0.88, 0.62, 0.16), Color(0.16, 0.42, 0.44), Color(0.62, 0.14, 0.10)]
@@ -67,10 +83,22 @@ const RADIO := [
 @export_range(1.0, 20.0, 0.5, "suffix:s") var inflate_seconds: float = 6.0
 ## Faster than real, for tests: 1 is the ride as planned.
 @export_range(0.1, 10.0, 0.1) var ride_speed: float = 1.0
+@export var burner_key: Key = KEY_SPACE
+## How far over and under the rail the burner can take you, and how fast.
+@export_range(0.0, 30.0, 0.5, "suffix:m") var lift_max: float = 10.0
+@export_range(-15.0, 0.0, 0.5, "suffix:m") var lift_min: float = -5.0
+@export_range(0.1, 5.0, 0.05, "suffix:m/s") var rise_rate: float = 1.4
+@export_range(0.05, 3.0, 0.05, "suffix:m/s") var sink_rate: float = 0.45
+@export_range(1.0, 10.0, 0.5, "suffix:m") var ground_clearance: float = 3.0
 
 var lookout: Node
 var riding: bool = false
 var ride_time: float = 0.0
+## The burner's offset over the rail, now.
+var lift: float = 0.0
+## The fork: +1 ana (the marsh), -1 kata (the wood), and whether it has been taken yet.
+var branch: float = 1.0
+var forked: bool = false
 
 var _envelope: Node4D
 var _flame: Array[Node4D] = []
@@ -302,6 +330,9 @@ func board() -> void:
 		return
 	riding = true
 	ride_time = 0.0
+	lift = 0.0
+	branch = 1.0
+	forked = false
 	_said = 0
 	_hurry = 0.0
 	position = _moor
@@ -362,7 +393,27 @@ func _process(delta: float) -> void:
 func _ride(delta: float) -> void:
 	ride_time += delta * ride_speed
 	var end: float = float(RIDE[-1][0])
-	position = _moor + _path(minf(ride_time, end))
+	# The fork, decided by the focus ring when the moment comes.
+	if not forked and ride_time >= FORK_AT:
+		forked = true
+		var focus: float = float(lookout.get("station").get("focus"))
+		branch = -1.0 if focus < -0.3 else 1.0
+		var view: Node = lookout.get("station").get("view")
+		if view != null:
+			view.call("flash_note", "Kata it is." if branch < 0.0 else "Ana it is.")
+	# The burner: up while held, sinking back while cooling; none of it near the ends.
+	var allowed: float = smoothstep(8.0, 16.0, ride_time) * (1.0 - smoothstep(end - 26.0, end - 12.0, ride_time))
+	if Input.is_physical_key_pressed(burner_key) and allowed > 0.0:
+		lift = minf(lift + rise_rate * delta * ride_speed, lift_max)
+		_burn = maxf(_burn, 0.25)
+	else:
+		lift = move_toward(lift, lift_min if allowed > 0.0 else 0.0, sink_rate * delta * ride_speed * (1.0 if allowed > 0.0 else 3.0))
+	var on_rail: Vector4 = _moor + _path(minf(ride_time, end))
+	var floor_y: float = on_rail.y
+	var ground: RefCounted = lookout.get("ground")
+	if ground != null:
+		floor_y = minf(on_rail.y, float(ground.call("height", on_rail.x, on_rail.z)) + ground_clearance)
+	position = on_rail + Vector4(0.0, maxf(lift * allowed, floor_y - on_rail.y), 0.0, 0.0)
 	# A slow turn, as a basket under a balloon always has.
 	basis = Basis4D.from_zx(sin(ride_time * 0.05) * 0.8)
 	# Burner bursts while climbing.
@@ -370,7 +421,8 @@ func _ride(delta: float) -> void:
 	if ahead.y > 0.25 * ride_speed and _burn <= 0.0:
 		_burn = 1.6
 	while _said < RADIO.size() and ride_time >= float(RADIO[_said][0]):
-		lookout.get("radio").call("say", RADIO[_said][1])
+		var entry: Array = RADIO[_said]
+		lookout.get("radio").call("say", entry[2] if branch < 0.0 and entry.size() > 2 else entry[1])
 		_said += 1
 	if ride_time >= end:
 		_land()
@@ -388,7 +440,11 @@ func _path(t: float) -> Vector4:
 	var u: float = clampf((t - float(RIDE[i][0])) / maxf(float(RIDE[i + 1][0]) - float(RIDE[i][0]), 0.0001), 0.0, 1.0)
 	var u2: float = u * u
 	var u3: float = u2 * u
-	return 0.5 * ((2.0 * p1) + (-p0 + p2) * u + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * u2 + (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * u3)
+	var p: Vector4 = 0.5 * ((2.0 * p1) + (-p0 + p2) * u + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * u2 + (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * u3)
+	# Past the fork, kata is the same leg mirrored in W.
+	if t >= FORK_AT:
+		p.w *= branch
+	return p
 
 
 func _land() -> void:

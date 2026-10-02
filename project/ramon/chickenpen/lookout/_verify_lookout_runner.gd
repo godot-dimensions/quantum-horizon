@@ -127,7 +127,8 @@ func _process(d: float) -> bool:
 			var cine := _room.get_node("UI/Cinematics") as Control
 			var screen: Vector2 = card.get_viewport_rect().size
 			var under: bool = absf(card.position.y - (cine.position.y + cine.size.y + 10.0)) < 1.5
-			var beside: bool = absf(card.position.y - cine.position.y) < 1.5 and absf(card.position.x + card.size.x + 10.0 - cine.position.x) < 1.5
+			# Beside it, top edges level - or raised until it fits, when it is taller than the room.
+			var beside: bool = (absf(card.position.y - cine.position.y) < 1.5 or absf(card.position.y + card.size.y - (screen.y - 6.0)) < 1.5) 				and absf(card.position.x + card.size.x + 10.0 - cine.position.x) < 1.5
 			_check("the Lookout card under the Cinematics card, or beside it when short of room", under or beside,
 				"card %s cine %s screen %s" % [str(Rect2(card.position, card.size)), str(Rect2(cine.position, cine.size)), str(screen)])
 			_check("the card on screen", card.position.y + card.size.y <= screen.y + 0.5 and card.position.x >= 0.0)

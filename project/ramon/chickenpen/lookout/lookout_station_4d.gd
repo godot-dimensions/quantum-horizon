@@ -68,12 +68,19 @@ const VIEWFINDER := preload("res://ramon/chickenpen/lookout/lookout_viewfinder_4
 ## SET AS field_of_view_4d, NOT field_of_view_3d: a Camera4D's projection type defaults to
 ## PERSPECTIVE_4D, and then the cross-section renderer's 3D camera takes its angle from the
 ## 4D field of view (godot_3d_rendering_engine_4d.cpp _update_3d_camera) - the 3D one is
-## ignored. The pen's own camera sets only the 3D one, so it actually draws at the 4D
-## default, 77 degrees.
-@export_range(0.3, 1.6, 0.01) var wide_fov: float = 1.15
+## ignored. (The pen's own camera used to set only the 3D one; it now says the 77.3 it draws at.)
+##
+## 1.176 rad is an 18 mm lens on a full-frame camera (12 / tan(fov / 2)), so the widest lens
+## is a round number and the primes below are true multiples of it.
+@export_range(0.3, 1.6, 0.001) var wide_fov: float = 1.176
 @export_range(1.0, 20.0, 0.1) var zoom_max: float = 12.0
 ## One wheel notch.
 @export_range(1.02, 1.6, 0.01) var zoom_step: float = 1.18
+## L steps through these, as a photographer swaps primes (Ramon, 2 Oct: "a camera lens toggle
+## button to have different mm lenses, or degrees"); Shift+L steps back. The wheel still zooms
+## between them. Full-frame focal lengths in mm; the viewfinder gives each its angle too.
+@export var lenses: PackedInt32Array = PackedInt32Array([18, 24, 35, 50, 85, 135, 200])
+@export var lens_key: Key = KEY_L
 @export_range(0.0005, 0.01, 0.0001) var mouse_sensitivity: float = 0.0032
 @export_range(-1.5, 0.0, 0.01) var pitch_min: float = -1.15
 @export_range(0.0, 1.5, 0.01) var pitch_max: float = 0.95
@@ -96,6 +103,9 @@ var slice_xw: float = 0.0
 var slice_zw: float = 0.0
 var zoom: float = 1.0
 var zoom_goal: float = 1.0
+## The prime last chosen with L, in mm, and how long ago (for the viewfinder's big readout).
+var lens_chosen: int = 0
+var lens_chosen_t: float = 99.0
 var focus: float = 0.0
 var focus_goal: float = 0.0
 var film: int = 24
@@ -528,7 +538,10 @@ func _give_back(facing_yaw: float) -> void:
 func _make_camera() -> void:
 	camera = Camera4D.new()
 	camera.name = "LookoutCamera"
-	camera.set("rendering_engine_name", "Cross-section")
+	# The projection toggle's renderer from the start, so raising the camera is one switch.
+	camera.set("rendering_engine_name", "Combined" if bool(lookout.get("projection")) else "Cross-section")
+	camera.set("projection_opacity", float(lookout.get("projection_opacity")))
+	camera.set("projection_opacity_base", float(lookout.get("projection_opacity_base")))
 	camera.set("field_of_view_4d", wide_fov)
 	_room.add_child(camera)
 	camera.make_current()
@@ -720,6 +733,7 @@ func _run_camera(delta: float) -> void:
 		lookout.call("sound_loop", &"wind", false)
 	else:
 		lookout.call("sound_loop", &"wind", true, (-4.0 if mode != Mode.RIDE else 4.0) + clampf((height - 10.0) * 0.2, -4.0, 3.0))
+	lens_chosen_t += delta
 	# The lens: zoom eased in log space, so every notch takes the same time.
 	zoom = exp(lerpf(log(zoom), log(zoom_goal), clampf(delta * 9.0, 0.0, 1.0)))
 	camera.set("field_of_view_4d", 2.0 * atan(tan(wide_fov * 0.5) / zoom))
@@ -811,6 +825,42 @@ func lens_mm() -> float:
 	return 12.0 / tan(float(camera.get("field_of_view_4d")) * 0.5) if camera != null else 0.0
 
 
+## The widest lens, in mm: what zoom 1 is.
+func base_mm() -> float:
+	return 12.0 / tan(wide_fov * 0.5)
+
+
+## The vertical angle a lens of [param mm] sees, in degrees.
+func lens_degrees(mm: float) -> float:
+	return rad_to_deg(2.0 * atan(12.0 / maxf(mm, 1.0)))
+
+
+## The next prime up from the lens the zoom is heading for (or back down, [param step] -1),
+## round to the widest after the longest.
+func next_lens(step: int = 1) -> void:
+	if lenses.is_empty():
+		return
+	var now: float = base_mm() * zoom_goal
+	var pick: int = -1
+	if step > 0:
+		for mm in lenses:
+			if float(mm) > now + 0.5:
+				pick = mm
+				break
+		if pick < 0:
+			pick = lenses[0]
+	else:
+		for k in range(lenses.size() - 1, -1, -1):
+			if float(lenses[k]) < now - 0.5:
+				pick = lenses[k]
+				break
+		if pick < 0:
+			pick = lenses[lenses.size() - 1]
+	zoom_goal = clampf(float(pick) / base_mm(), 1.0, zoom_max)
+	lens_chosen = pick
+	lens_chosen_t = 0.0
+
+
 func _input(event: InputEvent) -> void:
 	if mode == Mode.OFF:
 		return
@@ -848,6 +898,8 @@ func _input(event: InputEvent) -> void:
 		if not taking:
 			# Mid-climb, keys wait; Escape is still yours.
 			handled = code == KEY_ESCAPE
+		elif code == lens_key:
+			next_lens(-1 if (event as InputEventKey).shift_pressed else 1)
 		elif mode == Mode.HELD and (code == KEY_ESCAPE or code == raise_key):
 			lower()
 		elif mode == Mode.HELD and code == KEY_R:
