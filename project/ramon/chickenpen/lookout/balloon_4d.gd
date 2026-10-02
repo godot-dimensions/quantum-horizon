@@ -92,6 +92,9 @@ const FORK_AT := 70.0
 @export_range(1.0, 10.0, 0.5, "suffix:m") var ground_clearance: float = 3.0
 
 var lookout: Node
+## The Lookout site's turn: the ride's planned path is turned with it, so it still reaches the
+## marsh and the wood wherever the site is put.
+var ride_basis: Projection = Projection.IDENTITY
 var riding: bool = false
 var ride_time: float = 0.0
 ## The burner's offset over the rail, now.
@@ -408,7 +411,7 @@ func _ride(delta: float) -> void:
 		_burn = maxf(_burn, 0.25)
 	else:
 		lift = move_toward(lift, lift_min if allowed > 0.0 else 0.0, sink_rate * delta * ride_speed * (1.0 if allowed > 0.0 else 3.0))
-	var on_rail: Vector4 = _moor + _path(minf(ride_time, end))
+	var on_rail: Vector4 = _moor + ride_basis * _path(minf(ride_time, end))
 	var floor_y: float = on_rail.y
 	var ground: RefCounted = lookout.get("ground")
 	if ground != null:

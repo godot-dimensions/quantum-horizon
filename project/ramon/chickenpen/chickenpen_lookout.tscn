@@ -14,22 +14,34 @@
 [node name="ChickenPen" instance=ExtResource("1_pen")]
 metadata/lookout = "The pen plus the Lookout (follow_up/lookout_plan.md). The pen file is untouched; these nodes move into it when Ramon says so."
 
-[node name="Lookout" type="Node4D" parent="World"]
+[node name="LookoutSite" type="Node4D" parent="World"]
 position = Vector4(-16, 0, -36, 0)
+metadata/move_me = "Move (or turn) this node to move the whole Lookout: the tower, Wren, and the markers for the balloon's mooring and for the marsh (w +8) and the kata wood (w -8). The tower stands at this node's height: put it on level ground."
+
+[node name="Lookout" type="Node4D" parent="World/LookoutSite"]
 script = ExtResource("2_tower")
 
-[node name="Wren" type="Node4D" parent="World"]
-position = Vector4(-12.7, 0, -29.8, 0)
+[node name="Wren" type="Node4D" parent="World/LookoutSite"]
+position = Vector4(3.3, 0, 6.2, 0)
 script = ExtResource("4_wren")
 
-[node name="WrenHead" type="Node4D" parent="World"]
-position = Vector4(-12.7, 1.45, -29.8, 0)
+[node name="WrenHead" type="Node4D" parent="World/LookoutSite"]
+position = Vector4(3.3, 1.45, 6.2, 0)
 
-[node name="WrenFacing" type="Node4D" parent="World"]
+[node name="WrenFacing" type="Node4D" parent="World/LookoutSite"]
 script = ExtResource("5_face")
 figure_path = NodePath("../Wren")
-player_path = NodePath("../../Player")
+player_path = NodePath("../../../Player")
 notice_within = 4.0
+
+[node name="MooringSpot" type="Node4D" parent="World/LookoutSite"]
+position = Vector4(-7.5, 0, 6, 0)
+
+[node name="MarshSpot" type="Node4D" parent="World/LookoutSite"]
+position = Vector4(-10, 0, 12, 8)
+
+[node name="WoodSpot" type="Node4D" parent="World/LookoutSite"]
+position = Vector4(-10, 0, 12, -8)
 
 [node name="CameraPicker" parent="UI"]
 under_path = NodePath("../Journal")
@@ -45,7 +57,7 @@ layout_mode = 3
 anchors_preset = 0
 script = ExtResource("6_tag")
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
-anchor_path = NodePath("../../World/WrenHead")
+anchor_path = NodePath("../../World/LookoutSite/WrenHead")
 lift = 12.0
 
 [node name="WrenBox" type="Control" parent="UI"]
@@ -58,7 +70,7 @@ choice_side = 1
 choice_width = 470.0
 choice_gap = 10.0
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
-head_anchor_path = NodePath("../../World/WrenHead")
+head_anchor_path = NodePath("../../World/LookoutSite/WrenHead")
 over_head_width = 470.0
 name_size = 17
 text_size = 20
@@ -73,7 +85,7 @@ box_path = NodePath("../../UI/WrenBox")
 
 [node name="WrenDriver" type="Node" parent="Systems"]
 script = ExtResource("9_wren_talk")
-facing_path = NodePath("../../World/WrenFacing")
+facing_path = NodePath("../../World/LookoutSite/WrenFacing")
 lookout_path = NodePath("../Lookout")
 player_path = NodePath("../../Player")
 character_path = NodePath("../../Player")
@@ -90,6 +102,6 @@ two_shot_back = 1.7
 two_shot_rise = 0.35
 two_shot_bias = 0.8
 camera_marker_path = NodePath("../../World/TalkCam")
-camera_target_path = NodePath("../../World/WrenHead")
+camera_target_path = NodePath("../../World/LookoutSite/WrenHead")
 main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 dialogue_box_path = NodePath("../../UI/WrenBox")

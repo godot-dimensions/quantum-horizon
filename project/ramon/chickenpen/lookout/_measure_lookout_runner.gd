@@ -191,14 +191,14 @@ func _process(d: float) -> bool:
 
 
 const SUSPECTS := ["", "Systems/Lookout/Station", "Systems/Lookout", "World/Flock", "World/Chickens", "Player", "World/Balloon", "UI",
-	"World/AnaMarsh", "World/AnaHeron", "World/KataWood", "World/Chipmunk0", "World/AnaOwl", "World/Wren"]
+	"World/AnaMarsh", "World/AnaHeron", "World/KataWood", "World/Chipmunk0", "World/AnaOwl", "World/LookoutSite/Wren"]
 var _suspect: int = 0
 var _asleep: Node
 
 
 ## -- scene=profile: the Lookout's pieces switched off one at a time, at the spawn point,
 ## to find which costs what.
-const PIECES := ["World/AnaOwl", "World/AnaHeron", "World/Balloon", "World/AnaMarsh", "World/Wren", "World/WrenFacing",
+const PIECES := ["World/AnaOwl", "World/AnaHeron", "World/Balloon", "World/AnaMarsh", "World/LookoutSite/Wren", "World/LookoutSite/WrenFacing",
 	"UI/Journal", "UI/WrenTag", "UI/WrenBox", "Systems/WrenDriver", "Systems/WrenTalk", "Systems/Lookout"]
 var _piece: int = -1
 

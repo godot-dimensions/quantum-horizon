@@ -14,7 +14,7 @@ lists every way in, each on a key the pen did not use, and says what to do next:
 
 | key | | |
 |---|---|---|
-| **Z** | Camera | raises it anywhere once Wren has given it to you; Z or Esc lowers it |
+| **Z** | Camera | on the deck, once Wren has given it to you; Z or Esc lowers it (it is the lookout's: on the ground Wren says so; the balloon has its own) |
 | **J** | Field journal | the book, on the ground, on the deck or in the balloon |
 | **B** | Balloon | once it is up beside the tower: straight up, from anywhere on the farm |
 | **F** | Climb | at the ladder; on the deck, at the gap in the rail, climbs down |
@@ -302,3 +302,30 @@ Later the same evening, from Ramon watching the film:
 - **Measured on a real ride**: ridden into the flock rather than dropped into it, scripts are
   3.0 ms. Every "spike" in `_measure_lookout_runner.gd` came straight after one of its own
   jumps of the ride time (`-- natural` rides in instead).
+
+And after that:
+- **The camera is the lookout's** (Ramon chose "tower and balloon only"): Z raises it only on
+  the deck; on the ground Wren says it's for up there; it comes down if you leave the deck.
+  The first guided photo is Wren from the south rail. Round two's "Z anywhere" was my reading
+  of his notes, not his ask.
+- **One node moves the whole Lookout**: `World/LookoutSite` holds the tower, Wren and three
+  markers (MooringSpot, MarshSpot, WoodSpot); the owl's tree, the balloon, the marsh, the wood
+  and their creatures are built from it, turned with it, and the balloon's ride turns with
+  it (`_verify_site_runner.gd` moves it 17 m and a quarter turn and checks it all). Keep the
+  marsh and wood inside the pen's 46 m bounds, and the tower on level ground.
+- **What each piece costs** (`_measure_pieces_runner.gd`, after the warm-up):
+
+| piece | video memory | GPU | render CPU |
+|---|---|---|---|
+| the kata wood | 43.2 MB | +0.065 ms | +0.016 ms |
+| the marsh | 24.8 MB | +0.024 ms | +0.029 ms |
+| the balloon | 17.1 MB | +0.015 ms | +0.024 ms |
+| the owl's tree | 13.4 MB | +0.023 ms | 0 |
+| the tower | 9.2 MB | +0.011 ms | +0.009 ms |
+| the heron | 9.1 MB | +0.024 ms | +0.036 ms |
+| the chipmunks | 8.1 MB | +0.025 ms | +0.054 ms |
+| the owl | 6.2 MB | +0.019 ms | +0.021 ms |
+| Wren | 1.6 MB | +0.012 ms | +0.016 ms |
+
+  About 1.3 KB of video memory a tetrahedron. If memory matters, the wood and the marsh could
+  be built only when someone heads their way (68 MB until then).

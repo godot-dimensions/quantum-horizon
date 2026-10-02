@@ -4,9 +4,9 @@ extends SceneTree
 ## ladder's F climbs to the balcony and puts the camera up, the wheel zooms, the focus ring
 ## finds the owl at w +1.5, the journal opens over the camera, walking the deck works with the
 ## camera up, a quarter turn of the slice still shows the deck, a photo lands in the journal, F
-## at the gap climbs down. And on the ground: Z raises the camera, E turns the ring rather
-## than stepping you through W, Z lowers it and E steps you again. And the tower's cost, on
-## and off in blocks.
+## at the gap climbs down. And on the ground Z does NOT raise it (the camera is the lookout's,
+## and Wren says so); back on the deck Z raises it, E turns the ring rather than stepping you
+## through W, Z lowers it and E steps you again. And the tower's cost, on and off in blocks.
 ##
 ## Windowed, small, unfocused; saves res://smoke_test_output/lookout_<n>_<what>.png. Uses
 ## its own journal (user://lookout_journal_test.cfg), deleted at the start and the end.
@@ -115,7 +115,7 @@ func _process(d: float) -> bool:
 			if _t < 3.0:
 				return false
 			_station = _lookout.get("station")
-			_tower = _room.get_node("World/Lookout") as Node4D
+			_tower = _room.get_node("World/LookoutSite/Lookout") as Node4D
 			_player = _room.get_node("Player") as Node4D
 			_rig = _room.get_node("Player/CameraRig")
 			var parts: Array = _tower.find_children("Parts_*", "MeshInstance4D", false, false)
@@ -285,9 +285,24 @@ func _process(d: float) -> bool:
 			_next(0.6)
 		22:
 			_key(KEY_Z)
-			_next(0.5)
+			_step = 27
+			_wait = 0.5
+			_t = 0.0
+		27:
+			_check("on the ground, Z leaves the camera down", int(_station.get("mode")) == 0)
+			_check("and Wren says it is the lookout's", int(_lookout.get("story").get("_not_here_at")) > 0)
+			# Back up on the deck for the rest.
+			_put(_tower.global_position + Vector4(0.6, float(_tower.get("deck_height")) + 0.05, -2.9, 0.0))
+			_step = 28
+			_wait = 0.5
+			_t = 0.0
+		28:
+			_key(KEY_Z)
+			_step = 23
+			_wait = 0.5
+			_t = 0.0
 		23:
-			_check("Z raises the camera on the ground", int(_station.get("mode")) == 5)
+			_check("on the deck, Z raises the camera", int(_station.get("mode")) == 5)
 			_did_w = _player.global_position.w
 			_station.set("focus_goal", 0.0)
 			_hold(KEY_E, true)
@@ -296,12 +311,12 @@ func _process(d: float) -> bool:
 			_hold(KEY_E, false)
 			_check("E turns the ring with the camera up", float(_station.get("focus_goal")) > 0.3, "%.2f" % float(_station.get("focus_goal")))
 			_check("and does not step you through W", absf(_player.global_position.w - _did_w) < 0.05, "w %.3f" % _player.global_position.w)
-			_save("ground_camera")
+			_save("deck_camera")
 			_key(KEY_Z)
 			_next(0.5)
 		25:
 			_check("Z lowers it, and E and Q are back", int(_station.get("mode")) == 0 and not InputMap.action_get_events(&"move_ana").is_empty())
-			_save("ground_after")
+			_save("deck_after")
 			_next()
 		26:
 			_clean()

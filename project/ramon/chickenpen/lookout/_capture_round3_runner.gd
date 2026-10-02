@@ -118,6 +118,8 @@ func _process(d: float) -> bool:
 			var cam: Camera4D = _lookout.call("current_camera")
 			_check("and off again: back on Cross-section, still running", String(cam.get("rendering_engine_name")) == "Cross-section")
 			_save("proj_off_again")
+			# The camera is the lookout's: up on the deck to raise it.
+			(_room.get_node("Player") as Node4D).global_position = tower.global_position + Vector4(0.6, float(tower.get("deck_height")) + 0.05, -2.9, 0.0)
 			station.call("raise")
 			_next(1.2)
 		7:
@@ -187,8 +189,8 @@ func _process(d: float) -> bool:
 			_save("ripples")
 			(_room.get_node("Player/CameraRig/Pitch/Camera4D") as Camera4D).make_current()
 			_cam.queue_free()
-			var wren: Node4D = _lookout.get("wren")
-			(_room.get_node("Player") as Node4D).global_position = wren.global_position + Vector4(3.0, 0.05, 3.0, 0.0)
+			# On the deck's south side, over Wren at the foot of the tower.
+			(_room.get_node("Player") as Node4D).global_position = tower.global_position + Vector4(0.0, float(tower.get("deck_height")) + 0.05, 2.9, 0.0)
 			_next(0.6)
 		20:
 			station.call("raise")

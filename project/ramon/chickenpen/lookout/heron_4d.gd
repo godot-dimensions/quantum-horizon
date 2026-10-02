@@ -457,7 +457,7 @@ func _take_off() -> void:
 	var to: Vector4
 	if marsh != null:
 		var spot: Vector4 = marsh.call("fishing_spot") if _at_refuge else marsh.call("refuge_spot")
-		to = marsh.position + spot
+		to = marsh.position + marsh.basis * spot
 	else:
 		to = _home + Vector4(6.0, 0.0, 2.0, 0.0) * (-1.0 if _at_refuge else 1.0)
 	_at_refuge = not _at_refuge

@@ -5,8 +5,8 @@ extends SceneTree
 ##
 ##   godot... --headless --path project --script res://ramon/chickenpen/lookout/_count_cells_runner.gd
 
-const PIECES := ["World/Lookout", "World/OwlTree", "World/AnaOwl", "World/Balloon", "World/AnaMarsh", "World/AnaHeron",
-	"World/KataWood", "World/Chipmunk0", "World/Wren"]
+const PIECES := ["World/LookoutSite/Lookout", "World/OwlTree", "World/AnaOwl", "World/Balloon", "World/AnaMarsh", "World/AnaHeron",
+	"World/KataWood", "World/Chipmunk0", "World/LookoutSite/Wren"]
 
 var _room: Node
 var _t: float = 0.0

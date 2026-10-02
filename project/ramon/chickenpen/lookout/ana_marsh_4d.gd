@@ -246,6 +246,7 @@ func _process(delta: float) -> void:
 	var heron := get_node_or_null(heron_path) as Node4D
 	if heron != null and heron.is_visible_in_tree():
 		var here: Vector4 = global_basis.inverse() * (heron.global_position - global_position)
+		# (In the marsh's own space: the rings are its children.)
 		var st: int = int(heron.get("state"))
 		# A step (it moved) or the stab (state 4) puts a ring on the water.
 		if here.distance_to(_heron_last) > 0.12 and st == 3:

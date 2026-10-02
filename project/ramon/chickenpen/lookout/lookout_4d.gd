@@ -51,7 +51,13 @@ const BALLOON := preload("res://ramon/chickenpen/lookout/balloon_4d.gd")
 const MARSH := preload("res://ramon/chickenpen/lookout/ana_marsh_4d.gd")
 const HERON := preload("res://ramon/chickenpen/lookout/heron_4d.gd")
 
-@export var tower_path: NodePath = NodePath("../../World/Lookout")
+## THE SITE: one node to move (or turn) the whole Lookout in the editor (Ramon, 2 Oct: "a gizmo
+## for the whole tower, so I can move it easily"). Under it, the tower, Wren, and three
+## markers - MooringSpot, MarshSpot, WoodSpot - that say where the balloon is moored and
+## where the marsh (w +8) and the kata wood (w -8) are; the owl's tree goes with the tower.
+## Without a site, the fixed positions below are used.
+@export var site_path: NodePath = NodePath("../../World/LookoutSite")
+@export var tower_path: NodePath = NodePath("../../World/LookoutSite/Lookout")
 @export var player_path: NodePath = NodePath("../../Player")
 @export var camera_path: NodePath = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 @export var catcher_path: NodePath = NodePath("../../Player/Catcher")
@@ -60,12 +66,12 @@ const HERON := preload("res://ramon/chickenpen/lookout/heron_4d.gd")
 ## How close to the ladder's foot F climbs, across the ground and through W.
 @export_range(0.5, 4.0, 0.1) var ladder_reach: float = 1.6
 @export_range(0.2, 4.0, 0.1) var ladder_reach_w: float = 1.2
-@export var wren_path: NodePath = NodePath("../../World/Wren")
-@export var wren_head_path: NodePath = NodePath("../../World/WrenHead")
-## Where the balloon is moored, west of the tower.
+@export var wren_path: NodePath = NodePath("../../World/LookoutSite/Wren")
+@export var wren_head_path: NodePath = NodePath("../../World/LookoutSite/WrenHead")
+## Where the balloon is moored, west of the tower (the site's MooringSpot, when there is one).
 @export var balloon_mooring: Vector4 = Vector4(-23.5, 0.0, -30.0, 0.0)
-## The marsh's middle, out along W. Inside the pen's bounds (a 46 m sphere in x, z and w),
-## so it can be walked to.
+## The marsh's middle, out along W (the site's MarshSpot, when there is one). Inside the pen's
+## bounds (a 46 m sphere in x, z and w), so it can be walked to.
 @export var marsh_at: Vector4 = Vector4(-26.0, 0.0, -24.0, 8.0)
 ## The kata wood (kata_wood_4d.gd), with the chipmunks: over the same field as the marsh, the
 ## other way along W - where the balloon goes if the fork goes kata.
@@ -110,6 +116,8 @@ var hawk_flight: Node
 var dev_overlay: Control
 var wood: Node4D
 var chipmunks: Array[Node4D] = []
+## The site's turn: the marsh, the wood and the balloon's ride are turned with it.
+var site_basis: Projection = Projection.IDENTITY
 var balloon: Node
 var wren: Node4D
 var wren_head: Node4D
@@ -133,6 +141,7 @@ var _shown: String = ""
 
 func _ready() -> void:
 	room = get_node("../..")
+	_read_site()
 	tower = get_node_or_null(tower_path) as Node4D
 	player = get_node_or_null(player_path) as Node4D
 	farm_camera = get_node_or_null(camera_path) as Camera4D
@@ -205,6 +214,18 @@ func _late_setup() -> void:
 		flock.set("white_bird", white_starling)
 
 
+## The site's markers, if it has them, in place of the fixed positions.
+func _read_site() -> void:
+	var site := get_node_or_null(site_path) as Node4D
+	if site == null:
+		return
+	site_basis = site.global_basis
+	for pair in [["MooringSpot", "balloon_mooring"], ["MarshSpot", "marsh_at"], ["WoodSpot", "wood_at"]]:
+		var spot := site.get_node_or_null(String(pair[0])) as Node4D
+		if spot != null:
+			set(String(pair[1]), spot.global_position)
+
+
 func _build_balloon() -> void:
 	balloon = Node4D.new()
 	balloon.name = "Balloon"
@@ -212,6 +233,7 @@ func _build_balloon() -> void:
 	balloon.set("lookout", self)
 	# Placed before it enters the tree: it takes its mooring from where it starts.
 	balloon.position = balloon_mooring
+	balloon.set("ride_basis", site_basis)
 	room.get_node("World").add_child(balloon)
 	_board = Node4D.new()
 	_board.name = "BalloonBoard"
@@ -231,6 +253,7 @@ func _build_marsh() -> void:
 	marsh.name = "AnaMarsh"
 	marsh.set_script(MARSH)
 	marsh.position = marsh_at
+	marsh.basis = site_basis
 	room.get_node("World").add_child(marsh)
 	heron = Node4D.new()
 	heron.name = "AnaHeron"
@@ -238,10 +261,10 @@ func _build_marsh() -> void:
 	heron.set("marsh_path", marsh.get_path())
 	heron.set("player_path", player.get_path() if player != null else NodePath())
 	heron.set("lookout_path", get_path())
-	heron.position = marsh_at + marsh.call("fishing_spot")
+	heron.position = marsh_at + site_basis * (marsh.call("fishing_spot") as Vector4)
 	marsh.set("lookout_path", get_path())
 	# Facing along the open water, its back to the reeds.
-	heron.basis = Basis4D.from_zx(-PI * 0.5)
+	heron.basis = site_basis * Basis4D.from_zx(-PI * 0.5)
 	room.get_node("World").add_child(heron)
 	marsh.set("heron_path", heron.get_path())
 
@@ -251,6 +274,7 @@ func _build_wood() -> void:
 	wood.name = "KataWood"
 	wood.set_script(WOOD)
 	wood.position = wood_at
+	wood.basis = site_basis
 	room.get_node("World").add_child(wood)
 	for i in chipmunk_count:
 		var c := Node4D.new()
@@ -261,7 +285,7 @@ func _build_wood() -> void:
 		c.set("player_path", player.get_path() if player != null else NodePath())
 		c.set("lookout_path", get_path())
 		var a: float = float(i) / float(maxi(chipmunk_count, 1)) * TAU
-		c.position = wood_at + Vector4(cos(a) * 1.6, 0.0, sin(a) * 1.6, 0.0)
+		c.position = wood_at + site_basis * Vector4(cos(a) * 1.6, 0.0, sin(a) * 1.6, 0.0)
 		room.get_node("World").add_child(c)
 		chipmunks.append(c)
 
@@ -619,6 +643,10 @@ func _input(event: InputEvent) -> void:
 	elif key.keycode == KEY_Z and station.call("can_raise"):
 		get_viewport().set_input_as_handled()
 		station.call("raise")
+	elif key.keycode == KEY_Z and station.call("can_raise", true):
+		# Everything but the place: Wren says where the camera is for.
+		get_viewport().set_input_as_handled()
+		story.call("on_camera_not_here")
 	elif key.keycode == KEY_B and can_board():
 		get_viewport().set_input_as_handled()
 		balloon.call("board")

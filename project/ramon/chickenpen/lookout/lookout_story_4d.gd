@@ -31,6 +31,8 @@ const JOURNAL := preload("res://ramon/chickenpen/lookout/field_journal_4d.gd")
 ## Photos in the book, besides the owl, before the balloon is offered.
 @export_range(1, 40) var balloon_after: int = 8
 
+## When Wren last said the camera is not for down here (ms).
+var _not_here_at: int = -100000
 var lookout: Node
 var _cab_time: float = 0.0
 var _photos: int = 0
@@ -78,7 +80,7 @@ func next_hint() -> String:
 	if not met():
 		return "Next: meet Wren at the lookout tower"
 	if not _flag("first_climb"):
-		return "Next: climb the lookout (F at the ladder), or Z for the camera"
+		return "Next: climb the lookout (F at the ladder); the camera is for up there"
 	if int(journal.call("star_count")) == 0:
 		return "Next: take a photo, click"
 	if not bool(journal.call("found", "owl")):
@@ -149,7 +151,7 @@ func on_wren_spoken() -> void:
 	pass
 
 
-## The camera explained the first time it comes up, wherever that is: on the ground with Z or
+## The camera explained the first time it comes up, on the deck with Z or
 ## on the deck after the climb.
 func on_camera_raised() -> void:
 	if _flag("first_raise"):
@@ -162,6 +164,15 @@ func on_camera_raised() -> void:
 		"Click to take a picture. T finds the focus for you. Z puts the camera down.",
 		"Try me first. I'm the easy one.",
 	])
+
+
+## Z on the ground: the camera is the lookout's. Said by Wren, not more than once in a while.
+func on_camera_not_here() -> void:
+	var now: int = Time.get_ticks_msec()
+	if busy() or now - _not_here_at < 8000:
+		return
+	_not_here_at = now
+	_radio(["Not down here. The camera's for the lookout. Up on the deck, or in the balloon."])
 
 
 ## The owl's tick has come up on the scale for the first time, not found yet.

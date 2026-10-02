@@ -4,7 +4,7 @@ extends Control
 ## the next thing to do (Ramon, 2 Oct: "it's better if all options to access stuff is already
 ## in the temporary hud, with keys to access that are previously unused").
 ##
-##   Z  Camera         raise it anywhere, once Wren has given it to you
+##   Z  Camera         raise it on the deck, once Wren has given it to you
 ##   J  Field journal  pages and photos so far
 ##   B  Balloon        up by the tower once you have earned it; B takes you straight up
 ##   F  Climb          at the ladder (or down, at the gap in the deck's rail)
@@ -100,7 +100,8 @@ func _work_rows() -> Array:
 	elif not met:
 		climb = "meet Wren first"
 	var rows: Array = [
-		["Z", "Camera", "raise it anywhere" if met else "Wren has it", met],
+		["Z", "Camera", ("up on the deck, Z" if bool(_lookout.get("station").call("can_raise")) else "on the deck, or in the balloon") if met else "Wren has it",
+			met and bool(_lookout.get("station").call("can_raise"))],
 		["J", "Field journal", "%d / %d pages, %d photos" % [int(journal.call("pages_found")), total, int(journal.call("star_count"))], true],
 		["B", "Balloon", "up by the tower, B to go" if balloon_up else "not yet", balloon_up],
 		["F", "Climb", climb, climb_now],

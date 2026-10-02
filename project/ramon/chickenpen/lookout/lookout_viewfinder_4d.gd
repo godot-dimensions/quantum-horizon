@@ -496,7 +496,7 @@ func _draw_guide(s: Vector2, accent: Color, bottom: float, top: float) -> void:
 		var lw: float = _font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13)).x
 		draw_string(_font, Vector2(p.x - lw * 0.5, p.y + half.y + float(_px(20))), line, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13), col)
 		return
-	var hint: String = "Your first photo: Wren, by the tower. Turn until she is in the frame."
+	var hint: String = "Your first photo: Wren, down at the foot of the tower. Look over the south rail."
 	var hw: float = _font.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13)).x
 	draw_string(_font, Vector2((s.x - hw) * 0.5, top + float(_px(64))), hint, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13), col)
 

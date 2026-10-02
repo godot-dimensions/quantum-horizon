@@ -155,15 +155,16 @@ func _start(beat: String) -> void:
 		"lenses":
 			_lookout.call("set_projection", false)
 			_farm_camera()
-			_player.global_position = (_lookout.get("tower") as Node4D).global_position + Vector4(4.0, 0.05, 10.0, 0.0)
+			var tower: Node4D = _lookout.get("tower")
+			# The camera is the lookout's: on the deck.
+			_player.global_position = tower.global_position + Vector4(0.6, float(tower.get("deck_height")) + 0.05, -2.9, 0.0)
 			_station.call("raise")
 			_say("L: the lenses, 18 to 200 mm, and the angle each one sees")
 		"first_photo":
 			_station.set("zoom_goal", 1.0)
-			# Round the far side of her, looking back at the farm: no flock behind her to win the
-			# picture.
-			var wren: Node4D = _lookout.get("wren")
-			_player.global_position = wren.global_position + Vector4(1.5, 0.05, -4.0, 0.0)
+			# From the deck's south side, down at her at the foot of the tower.
+			var tower: Node4D = _lookout.get("tower")
+			_player.global_position = tower.global_position + Vector4(0.0, float(tower.get("deck_height")) + 0.05, 2.9, 0.0)
 			_say("Your first photo is guided: Wren. Then how it was judged")
 		"overlay":
 			_station.call("lower")

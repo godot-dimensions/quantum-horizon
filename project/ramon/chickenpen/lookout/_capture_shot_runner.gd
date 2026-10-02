@@ -44,7 +44,7 @@ func _process(d: float) -> bool:
 		for child in _room.get_node("UI").get_children():
 			if child is CanvasItem:
 				(child as CanvasItem).visible = false
-		var tower: Node4D = _room.get_node("World/Lookout")
+		var tower: Node4D = _room.get_node("World/LookoutSite/Lookout")
 		var cam := Camera4D.new()
 		cam.set("rendering_engine_name", "Cross-section")
 		cam.set("field_of_view_4d", 1.0)

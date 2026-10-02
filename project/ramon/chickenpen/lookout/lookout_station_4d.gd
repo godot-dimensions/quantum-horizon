@@ -183,8 +183,15 @@ func up_tower() -> bool:
 
 
 ## Whether Z would raise the camera now: Wren has given it to you, you are on your feet and
-## free, nobody is talking to you.
-func can_raise() -> bool:
+## free, nobody is talking to you - and you are up on the lookout's deck.
+##
+## THE CAMERA IS THE LOOKOUT'S (Ramon, 2 Oct: "Tower and balloon only"). Round two let Z raise
+## it anywhere, which turned the whole pen into camera country; now the pen is the pen, and the
+## tower and the balloon are where photographs are taken. [param anywhere] asks the same
+## question without the deck, so a Z on the ground can say why nothing happened.
+func can_raise(anywhere: bool = false) -> bool:
+	if not anywhere and not on_lookout():
+		return false
 	if mode != Mode.OFF or _player == null or not _player.is_visible_in_tree():
 		return false
 	if _player.get("input_enabled") == false or _player.process_mode == Node.PROCESS_MODE_DISABLED:
@@ -198,7 +205,13 @@ func can_raise() -> bool:
 	return true
 
 
-## Up to your eye, wherever you are.
+## Whether you are standing on the lookout's deck (the balcony; the cab design has no deck to
+## walk, its camera comes with the climb).
+func on_lookout() -> bool:
+	return _tower != null and _player != null and bool(_tower.call("is_balcony")) and bool(_tower.call("on_deck", _player.global_position))
+
+
+## Up to your eye, on the deck.
 func raise() -> void:
 	if mode != Mode.OFF:
 		return
@@ -759,6 +772,10 @@ func _run_camera(delta: float) -> void:
 			film = roll
 			exposures = 0
 	if mode == Mode.HELD:
+		# Off the deck (a fall, a teleport): the camera comes down, it is the lookout's.
+		if not on_lookout():
+			lower()
+			return
 		if _rig != null:
 			# Slower the longer the lens: the rig turns you, at a rate cut by the zoom.
 			_rig.set("mouse_sensitivity", float(_held_saved.get("sensitivity", 0.005)) / zoom)
