@@ -65,7 +65,10 @@ func _process(d: float) -> bool:
 			_grass = _room.get_node("World/Grass")
 			if not bool(_grass.get("mask_ready")) and _t < 20.0:
 				return false
-			print("      grass: %d blades, mask %d cells marked in %d ms" % [int(_grass.call("blade_count")), int(_grass.get("mask_cells")), int(_grass.get("mask_msec"))])
+			print("      grass: %d blades in view, mask %d cells marked in %d ms, script %d us a frame" % [int(_grass.call("blade_count")), int(_grass.get("mask_cells")),
+				int(_grass.get("mask_msec")), int(_grass.get("prerender_usec"))])
+			for row in _grass.call("band_report"):
+				print("        band %4.1f-%4.1f m: gap %.3f m, %d cells a side a tile (%.2f m), %d vertices, %d tiles in view" % row)
 			for f in ["approached", "met_wren"]:
 				_room.get_node("Systems/Lookout").get("journal").call("set_flag", f, true)
 			_hide_hud()

@@ -1,15 +1,18 @@
 extends Node4D
 
-## Grass over the pen's field: a few hundred thousand blades round the camera, built and blown
-## about entirely on the GPU (pen_grass.gdshader), cut by the slice like everything else.
+## Grass over the pen's field: a few hundred thousand blades round you, built and blown about
+## entirely on the GPU (pen_grass.gdshader), cut by the slice like everything else.
 ## follow_up/grass_study.md is the case study it comes from.
 ##
 ## WHAT THIS NODE DOES, AND ALL IT DOES. The blades have no stored positions: the shader makes
-## each from its instance number, round wherever the camera is. So this script only
-##   - builds two blade meshes (15 vertices near, 7 far) and two MultiMeshes of N instances,
-##     drawn by RenderingServer into the Cross-section engine's own World3D, as the flock is;
-##   - every render, hands the shader the camera's frame (pre_render, as the flock does), and
-##     the people and animals that push the grass aside;
+## each from its tile and its cell. So this script only
+##   - builds the BANDS round you (band_radii): each a mesh of one tile's blades, simpler than
+##     the band inside it (band_vertices), and a MultiMesh of tiles, drawn by RenderingServer
+##     into the Cross-section engine's own World3D, as the flock is;
+##   - lists, when you have moved half a metre, the world-snapped tiles each band covers, and
+##     every render keeps only those in the camera's view and hands them to the shader with the
+##     camera's frame (pre_render, as the flock does) and the people and animals that push the
+##     grass aside;
 ##   - once, after the scene is up, builds the MASK: for each half metre of the field, up to two
 ##     stretches of W where something stands on the ground - a floor, a pond, a hill - so no
 ##     blade grows inside it. From the real geometry: every tetrahedron of every still thing that
@@ -17,22 +20,31 @@ extends Node4D
 ##     Lookout's height map (lookout_ground_4d.gd). It runs a few thousand cells at a time, and
 ##     the grass grows in when it is done.
 ##
-## COST, by design: no script work per frame beyond a dozen uniforms; the GPU does
-## near_cells^2 x layers x 15 + far_cells^2 x layers x 7 vertices (see _measure_grass_runner.gd).
+## COST, by design: a few hundred tile tests and a dozen uniforms a frame on the CPU; the GPU
+## does the tiles in view x cells^2 x layers x the band's vertices (see _measure_grass_runner.gd).
 
 const SHADER := preload("res://ramon/chickenpen/grass/pen_grass.gdshader")
 const GROUND := preload("res://ramon/chickenpen/lookout/lookout_ground_4d.gd")
+## Tiles a band can draw at once (the shader's tiles[] array is this long).
+const MAX_TILES := 384
 
 @export var enabled: bool = true:
 	set(v):
 		enabled = v
 		_set_visible()
 
-@export_group("Rings")
-@export_range(0.04, 0.5, 0.005, "suffix:m") var near_spacing: float = 0.085
-@export_range(3.0, 30.0, 0.5, "suffix:m") var near_radius: float = 12.0
-@export_range(0.1, 1.0, 0.01, "suffix:m") var far_spacing: float = 0.32
-@export_range(10.0, 80.0, 1.0, "suffix:m") var far_radius: float = 44.0
+@export_group("Field")
+## The gap between blades at your feet and at the field's edge. It starts widening this far
+## out and grows smoothly (as a power of the distance) out to the edge.
+@export_range(0.04, 0.5, 0.005, "suffix:m") var spacing: float = 0.085
+@export_range(0.04, 1.0, 0.01, "suffix:m") var spacing_far: float = 0.30
+@export_range(0.5, 20.0, 0.5, "suffix:m") var spacing_from: float = 3.0
+## How far round you the grass reaches.
+@export_range(10.0, 80.0, 1.0, "suffix:m") var radius: float = 44.0
+## The bands of simpler blades: where each ends (the last one ends at the radius), and the
+## vertices a blade has in each, from your feet out. Same blade, fewer bends.
+@export var band_radii: PackedFloat32Array = PackedFloat32Array([5.0, 10.0, 18.0, 28.0])
+@export var band_vertices: PackedInt32Array = PackedInt32Array([11, 9, 7, 5, 3])
 ## Blades stacked along W at each spot, and how far apart.
 @export_range(1, 5) var layers: int = 3
 @export_range(0.05, 1.0, 0.01, "suffix:m") var layer_spacing: float = 0.22
@@ -41,15 +53,17 @@ const GROUND := preload("res://ramon/chickenpen/lookout/lookout_ground_4d.gd")
 
 @export_group("Blades")
 @export_range(0.05, 2.0, 0.01, "suffix:m") var blade_height: float = 0.5
+## A blade's width at its root; where that would be under min_pixels on screen, it is
+## min_pixels wide instead (thinner, and a far field flickers and goes bare).
 @export_range(0.002, 0.2, 0.001, "suffix:m") var blade_width: float = 0.009
-@export_range(0.002, 0.3, 0.001, "suffix:m") var far_blade_width: float = 0.025
+@export_range(0.0, 3.0, 0.05) var min_pixels: float = 0.8
 @export_range(0.3, 5.0, 0.05, "suffix:m") var clump_size: float = 1.3
 @export var colour_root: Color = Color(0.07, 0.10, 0.05)
 @export var colour_base: Color = Color(0.20, 0.31, 0.12)
 @export var colour_lush: Color = Color(0.14, 0.30, 0.13)
 @export var colour_dry: Color = Color(0.47, 0.44, 0.22)
 @export var colour_tip: Color = Color(0.46, 0.55, 0.24)
-## The field's own colour (the pen's ground material): what the ring's edge turns into.
+## The field's own colour (the pen's ground material): what the field's edge turns into.
 @export var ground_colour: Color = Color(0.16, 0.22, 0.11)
 
 @export_group("Wind")
@@ -78,13 +92,39 @@ var mask_ready: bool = false
 ## Mask cells marked, and how long the mask took, for runners.
 var mask_cells: int = 0
 var mask_msec: int = 0
+## The script's own time in the last pre_render, microseconds, for runners.
+var prerender_usec: int = 0
 
-var _material_near: ShaderMaterial
-var _material_far: ShaderMaterial
+
+## One band of the field: a ring round you with its own grid gap and its own blade.
+class Band:
+	var inner: float
+	var outer: float
+	var inner_fade: float
+	var outer_fade: float
+	var last: bool
+	var spacing: float
+	var cells: int
+	var vertices: int
+	var material: ShaderMaterial
+	## The tiles (world-snapped indices) that reach this band round the centre, nearest first,
+	## their middles, and the ones in view this frame.
+	var tiles := PackedVector2Array()
+	var middles := PackedVector2Array()
+	var shown := PackedVector2Array()
+	var multimesh := RID()
+
+	func tile_size() -> float:
+		return float(cells) * spacing
+
+
+var _bands: Array[Band] = []
 var _meshes: Array = []
 var _multimeshes: Array = []
 var _instances: Array = []
 var _scenario := RID()
+var _tiles_centre := Vector2(INF, INF)
+var _drawn: int = 0
 var _mask_image: Image
 var _mask_texture: ImageTexture
 var _pushers: Array[Node4D] = []
@@ -108,10 +148,28 @@ func _ready() -> void:
 	_mask_image = Image.create_empty(MASK_CELLS, MASK_CELLS, false, Image.FORMAT_RGBAF)
 	_mask_image.fill(Color(1e4, -1e4, 1e4, -1e4))
 	_mask_texture = ImageTexture.create_from_image(_mask_image)
-	_material_near = _material(wind, near_spacing, near_radius, 0.0, blade_width)
-	_material_far = _material(wind, far_spacing, far_radius, near_radius - 5.0, far_blade_width)
-	_add_ring(_material_near, near_spacing, near_radius, 11)
-	_add_ring(_material_far, far_spacing, far_radius, 7)
+	var bounds: Array[float] = [0.0]
+	for r in band_radii:
+		if r > bounds.back() + 0.5 and r < radius - 0.5:
+			bounds.append(r)
+	bounds.append(radius)
+	for i in bounds.size() - 1:
+		var band := Band.new()
+		band.inner = bounds[i]
+		band.outer = bounds[i + 1]
+		band.last = i == bounds.size() - 2
+		band.inner_fade = _fade(band.inner) if i > 0 else 0.0
+		band.outer_fade = band.outer * 0.35 if band.last else _fade(band.outer)
+		# As fine as the gap wanted where its cross-fade starts, so it is never too coarse.
+		band.spacing = _wanted(maxf(band.inner - band.inner_fade, 0.0))
+		var reach: float = band.outer + (0.0 if band.last else band.outer_fade)
+		# Tiles of about 2 m near you to about 7 m at the edge: fine enough to cull well, few
+		# enough to test every frame.
+		band.cells = clampi(roundi((1.5 + 0.12 * reach) / band.spacing), 6, 40)
+		band.vertices = band_vertices[mini(i, band_vertices.size() - 1)] if not band_vertices.is_empty() else 7
+		band.material = _material(wind, band, float(i) * 37.1)
+		_add_band(band)
+		_bands.append(band)
 	if not RenderingServer4D.pre_render.is_connected(_on_pre_render):
 		RenderingServer4D.pre_render.connect(_on_pre_render)
 	_set_visible()
@@ -119,22 +177,41 @@ func _ready() -> void:
 	_build_mask.call_deferred()
 
 
-func _material(wind: Texture2D, spacing: float, radius: float, inner: float, width: float) -> ShaderMaterial:
+## How wide the cross-fade between two bands is, where they meet at [param r].
+func _fade(r: float) -> float:
+	return 0.75 + 0.03 * r
+
+
+## The power the gap grows by: spacing at spacing_from, spacing_far at the radius.
+func _power() -> float:
+	return maxf(log(maxf(spacing_far, spacing) / spacing) / log(radius / spacing_from), 0.0)
+
+
+## The gap wanted between blades [param d] from you (the shader's own curve).
+func _wanted(d: float) -> float:
+	return spacing if d <= spacing_from else spacing * pow(d / spacing_from, _power())
+
+
+func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
 	m.shader = SHADER
-	m.set_shader_parameter("spacing", spacing)
-	m.set_shader_parameter("cells", _cells(spacing, radius))
+	m.set_shader_parameter("spacing", band.spacing)
+	m.set_shader_parameter("tile_cells", band.cells)
+	m.set_shader_parameter("seed", hash_seed)
 	m.set_shader_parameter("layers", layers)
 	m.set_shader_parameter("layer_spacing", layer_spacing)
 	m.set_shader_parameter("w_radius", w_radius)
-	m.set_shader_parameter("radius_in", inner)
-	# The near ring thins out over its last five metres while the far one thins in over the
-	# same five; the far one thins out over its last third into the bare field.
-	m.set_shader_parameter("radius_in_band", 5.0)
-	m.set_shader_parameter("radius_out", radius)
-	m.set_shader_parameter("radius_out_band", 5.0 if inner <= 0.0 else radius * 0.35)
+	m.set_shader_parameter("band_in", band.inner)
+	m.set_shader_parameter("band_in_fade", band.inner_fade)
+	m.set_shader_parameter("band_out", band.outer)
+	m.set_shader_parameter("band_out_fade", band.outer_fade)
+	m.set_shader_parameter("last_band", band.last)
+	m.set_shader_parameter("spacing_near", spacing)
+	m.set_shader_parameter("spacing_from", spacing_from)
+	m.set_shader_parameter("spacing_power", _power())
 	m.set_shader_parameter("blade_height", blade_height)
-	m.set_shader_parameter("blade_width", width)
+	m.set_shader_parameter("blade_width", blade_width)
+	m.set_shader_parameter("min_pixels", min_pixels)
 	m.set_shader_parameter("ground_extent", ground_extent)
 	m.set_shader_parameter("clump_size", clump_size)
 	m.set_shader_parameter("mask", _mask_texture)
@@ -154,60 +231,90 @@ func _material(wind: Texture2D, spacing: float, radius: float, inner: float, wid
 	return m
 
 
-func _cells(spacing: float, radius: float) -> int:
-	return int(ceil(radius * 2.0 / spacing))
-
-
-## A blade: pairs of vertices up its length, closer together towards the tip where it bends,
-## and the tip. UV is (side -1 / +1 / 0, t from root to tip); the shader does the rest.
-func _blade_mesh(vertices: int) -> ArrayMesh:
-	var levels: int = (vertices - 1) / 2
-	var uv := PackedVector2Array()
-	var pos := PackedVector3Array()
+## One tile's blades: [param cells]^2 x layers of them, each pairs of vertices up its length,
+## closer together towards the tip where it bends, and the tip. UV is (side -1 / +1 / 0, t from
+## root to tip); UV2 is the blade's cell in the tile, (i + layer x cells, j). The shader does the
+## rest.
+func _tile_mesh(vertices: int, cells: int) -> ArrayMesh:
+	var levels: int = maxi((vertices - 1) / 2, 1)
+	var per: int = levels * 2 + 1
+	var blade_uv := PackedVector2Array()
 	for i in levels:
 		var t: float = 1.0 - pow(1.0 - float(i) / float(levels), 1.25)
-		for side in [-1.0, 1.0]:
-			uv.append(Vector2(side, t))
-			pos.append(Vector3(side * 0.02, t * 0.4, 0.0))
-	uv.append(Vector2(0.0, 1.0))
-	pos.append(Vector3(0.0, 0.4, 0.0))
-	var index := PackedInt32Array()
+		blade_uv.append(Vector2(-1.0, t))
+		blade_uv.append(Vector2(1.0, t))
+	blade_uv.append(Vector2(0.0, 1.0))
+	var blade_index := PackedInt32Array()
 	for i in levels - 1:
 		var a: int = i * 2
-		index.append_array([a, a + 1, a + 2, a + 1, a + 3, a + 2])
+		blade_index.append_array([a, a + 1, a + 2, a + 1, a + 3, a + 2])
 	var last: int = (levels - 1) * 2
-	index.append_array([last, last + 1, vertices - 1])
+	blade_index.append_array([last, last + 1, per - 1])
+	var count: int = cells * cells * layers
+	var uv := PackedVector2Array()
+	var uv2 := PackedVector2Array()
+	var pos := PackedVector3Array()
+	var index := PackedInt32Array()
+	uv.resize(count * per)
+	uv2.resize(count * per)
+	pos.resize(count * per)
+	index.resize(count * blade_index.size())
+	var b: int = 0
+	for k in layers:
+		for j in cells:
+			for i in cells:
+				var cell := Vector2(float(i + k * cells), float(j))
+				var v0: int = b * per
+				for v in per:
+					uv[v0 + v] = blade_uv[v]
+					uv2[v0 + v] = cell
+					pos[v0 + v] = Vector3(blade_uv[v].x * 0.02, blade_uv[v].y * 0.4, 0.0)
+				var i0: int = b * blade_index.size()
+				for n in blade_index.size():
+					index[i0 + n] = v0 + blade_index[n]
+				b += 1
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = pos
 	arrays[Mesh.ARRAY_TEX_UV] = uv
+	arrays[Mesh.ARRAY_TEX_UV2] = uv2
 	arrays[Mesh.ARRAY_INDEX] = index
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return mesh
 
 
-func _add_ring(material: ShaderMaterial, spacing: float, radius: float, vertices: int) -> void:
-	var mesh := _blade_mesh(vertices)
-	var count: int = _cells(spacing, radius) * _cells(spacing, radius) * layers
+func _add_band(band: Band) -> void:
+	var mesh := _tile_mesh(band.vertices, band.cells)
 	var mm := RenderingServer.multimesh_create()
 	RenderingServer.multimesh_set_mesh(mm, mesh.get_rid())
-	RenderingServer.multimesh_allocate_data(mm, count, RenderingServer.MULTIMESH_TRANSFORM_3D, false, false)
+	RenderingServer.multimesh_allocate_data(mm, MAX_TILES, RenderingServer.MULTIMESH_TRANSFORM_3D, false, false)
+	RenderingServer.multimesh_set_visible_instances(mm, 0)
 	var inst := RenderingServer.instance_create()
 	RenderingServer.instance_set_base(inst, mm)
-	RenderingServer.instance_geometry_set_material_override(inst, material.get_rid())
+	RenderingServer.instance_geometry_set_material_override(inst, band.material.get_rid())
 	RenderingServer.instance_geometry_set_cast_shadows_setting(inst, RenderingServer.SHADOW_CASTING_SETTING_OFF)
 	# Its transforms are unused - the shader places every blade - so its bounds are anywhere.
 	RenderingServer.instance_set_ignore_culling(inst, true)
 	RenderingServer.instance_set_custom_aabb(inst, AABB(Vector3(-5000, -5000, -5000), Vector3(10000, 10000, 10000)))
 	RenderingServer.instance_set_visible(inst, false)
+	band.multimesh = mm
 	_meshes.append(mesh)
 	_multimeshes.append(mm)
 	_instances.append(inst)
 
 
+## The blades handed to the GPU last frame (the tiles in view, whole), for runners.
 func blade_count() -> int:
-	return (_cells(near_spacing, near_radius) * _cells(near_spacing, near_radius) + _cells(far_spacing, far_radius) * _cells(far_spacing, far_radius)) * layers
+	return _drawn
+
+
+## Per band: [inner, outer, gap, cells per tile side, tile size, vertices, tiles in view].
+func band_report() -> Array:
+	var out: Array = []
+	for band in _bands:
+		out.append([band.inner, band.outer, band.spacing, band.cells, band.tile_size(), band.vertices, band.shown.size()])
+	return out
 
 
 func _set_visible() -> void:
@@ -230,11 +337,39 @@ func _notification(what: int) -> void:
 			RenderingServer.free_rid(mm)
 
 
-## The camera's frame for the shader, every render; the instances into whichever World3D the
-## cut is drawn in (the Combined renderer's is a SubViewport two deep).
+## The tiles each band covers round [param centre], nearest first: every world-snapped tile
+## that reaches the band (with its cross-fades, and half a metre to spare, so this need only run
+## again when you have moved that far).
+func _list_tiles(centre: Vector2) -> void:
+	_tiles_centre = centre
+	for band in _bands:
+		var t: float = band.tile_size()
+		var lo: float = maxf(band.inner - band.inner_fade - 0.6, 0.0)
+		var hi: float = band.outer + (0.0 if band.last else band.outer_fade) + 0.6
+		var found: Array = []
+		for tz in range(floori((centre.y - hi) / t), floori((centre.y + hi) / t) + 1):
+			for tx in range(floori((centre.x - hi) / t), floori((centre.x + hi) / t) + 1):
+				var x0: float = float(tx) * t
+				var z0: float = float(tz) * t
+				var nearest: float = Vector2(clampf(centre.x, x0, x0 + t), clampf(centre.y, z0, z0 + t)).distance_to(centre)
+				var fx: float = maxf(absf(centre.x - x0), absf(centre.x - x0 - t))
+				var fz: float = maxf(absf(centre.y - z0), absf(centre.y - z0 - t))
+				if nearest <= hi and fx * fx + fz * fz >= lo * lo:
+					found.append([nearest, Vector2(tx, tz)])
+		found.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+		band.tiles.clear()
+		band.middles.clear()
+		for f in found:
+			band.tiles.append(f[1])
+			band.middles.append((f[1] + Vector2(0.5, 0.5)) * t)
+
+
+## The camera's frame for the shader, every render, and the tiles in its view; the instances
+## into whichever World3D the cut is drawn in (the Combined renderer's is a SubViewport two deep).
 func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngine4D) -> void:
 	if viewport != get_viewport() or _instances.is_empty():
 		return
+	var started: int = Time.get_ticks_usec()
 	var world: World3D = viewport.find_world_3d()
 	if engine != null and engine.get_friendly_name() == "Combined":
 		var inner := viewport.get_node_or_null(^"CombinedProjectedSubViewport4D/CombinedCrossSectionSubViewport4D") as Viewport
@@ -251,38 +386,74 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 	var origin: Vector4 = inverse * (global_position - camera.global_position)
 	var here: Vector4 = global_basis.inverse() * (camera.global_position - global_position)
 	var normal: Vector4 = (global_basis.inverse() * camera.global_basis.w).normalized()
-	# The rings' middle is you: the player, when this is their own camera (the orbit rig, 8 m
-	# behind them), so the field spreads out round them and not ahead of the view; else (the
-	# hawk, the Lookout's camera, a cutscene) the camera.
+	# The rings' middle is you: the player, when this is their own camera (the orbit rig, a few
+	# metres behind them), so the field spreads out round them and not ahead of the view; else
+	# (the hawk, the Lookout's camera, a cutscene) the camera.
 	var centre := Vector2(here.x, here.z)
 	var player := _room.get_node_or_null("Player") as Node4D
 	if player != null and player.is_ancestor_of(camera):
 		var at_player: Vector4 = global_basis.inverse() * (player.global_position - global_position)
 		centre = Vector2(at_player.x, at_player.z)
+	if centre.distance_to(_tiles_centre) > 0.5:
+		_list_tiles(centre)
 	var pushers := PackedVector4Array()
 	for p in _pushers:
 		if is_instance_valid(p) and p.is_visible_in_tree() and pushers.size() < 16:
 			var at: Vector4 = global_basis.inverse() * (p.global_position - global_position)
-			if Vector2(at.x - centre.x, at.z - centre.y).length() < near_radius + 2.0:
+			if Vector2(at.x - centre.x, at.z - centre.y).length() < 14.0:
 				pushers.append(at)
-	_material_near.set_shader_parameter("ring_centre", centre)
-	_material_far.set_shader_parameter("ring_centre", centre)
-	# The view's half-width, as a tangent, with a margin: blades off the sides are dropped early.
+	# The view's half-width and half-height, as tangents, with a margin; a pixel's angle.
 	var view: Vector2 = viewport.get_visible_rect().size
 	var fov: float = float(camera.get("field_of_view_4d")) if int(camera.get("projection_type")) == 1 else float(camera.get("field_of_view_3d"))
-	var frustum_x: float = tan(fov * 0.5) * view.x / maxf(view.y, 1.0) * 1.15
-	_material_near.set_shader_parameter("frustum_x", frustum_x)
-	_material_far.set_shader_parameter("frustum_x", frustum_x)
-	for m in [_material_near, _material_far]:
-		m.set_shader_parameter("view_basis_x", basis.x)
-		m.set_shader_parameter("view_basis_y", basis.y)
-		m.set_shader_parameter("view_basis_z", basis.z)
-		m.set_shader_parameter("view_basis_w", basis.w)
-		m.set_shader_parameter("view_origin", origin)
-		m.set_shader_parameter("camera_world", here)
-		m.set_shader_parameter("slice_normal", normal)
-		m.set_shader_parameter("pushers", pushers)
-		m.set_shader_parameter("pusher_count", pushers.size())
+	var fy: float = tan(fov * 0.5) * 1.15
+	var fx: float = fy * view.x / maxf(view.y, 1.0)
+	var kx: float = sqrt(1.0 + fx * fx)
+	var ky: float = sqrt(1.0 + fy * fy)
+	var pixel_angle: float = 2.0 * tan(fov * 0.5) / maxf(view.y, 1.0)
+	# Only the tiles in view, tested as balls round their middles at the slice's w there. The
+	# slice's w over the ground is linear in x and z, so a middle's place in the camera's frame
+	# is too: ax * x + az * z + c0.
+	var gx: float = 0.0
+	var gz: float = 0.0
+	var w0: float = here.w
+	if absf(normal.w) > 0.25:
+		gx = -normal.x / normal.w
+		gz = -normal.z / normal.w
+		w0 = here.w + (normal.x * here.x + normal.y * here.y + normal.z * here.z) / normal.w
+	var cx: Vector4 = basis.x + basis.w * gx
+	var cz: Vector4 = basis.z + basis.w * gz
+	var c4: Vector4 = basis.y * 0.3 + basis.w * w0 + origin
+	var ax := Vector3(cx.x, cx.y, cx.z)
+	var az := Vector3(cz.x, cz.y, cz.z)
+	var c0 := Vector3(c4.x, c4.y, c4.z)
+	var frame := PackedVector4Array([basis.x, basis.y, basis.z, basis.w, origin, here, normal,
+		Vector4(centre.x, centre.y, fx, pixel_angle)])
+	_drawn = 0
+	for band in _bands:
+		var r: float = band.tile_size() * 0.7072 + 0.7
+		var rx: float = r * kx
+		var ry: float = r * ky
+		band.shown.clear()
+		var middles: PackedVector2Array = band.middles
+		for i in middles.size():
+			var m: Vector2 = middles[i]
+			var rel: Vector3 = ax * m.x + az * m.y + c0
+			var ahead: float = -rel.z
+			if ahead > -r and absf(rel.x) - ahead * fx < rx and absf(rel.y) - ahead * fy < ry:
+				band.shown.append(band.tiles[i])
+		if band.shown.size() > MAX_TILES:
+			band.shown.resize(MAX_TILES)
+		var n: int = band.shown.size()
+		_drawn += n * band.cells * band.cells * layers
+		var upload: PackedVector2Array = band.shown.duplicate()
+		upload.resize(MAX_TILES)
+		var mat: ShaderMaterial = band.material
+		mat.set_shader_parameter("tiles", upload)
+		mat.set_shader_parameter("frame", frame)
+		mat.set_shader_parameter("pushers", pushers)
+		mat.set_shader_parameter("pusher_count", pushers.size())
+		RenderingServer.multimesh_set_visible_instances(band.multimesh, n)
+	prerender_usec = Time.get_ticks_usec() - started
 
 
 ## The player, the chickens, Nike, the cats, the people: whoever walks through the grass.

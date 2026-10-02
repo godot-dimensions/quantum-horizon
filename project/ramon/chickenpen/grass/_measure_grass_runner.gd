@@ -71,7 +71,8 @@ func _process(d: float) -> bool:
 					if _view >= 2:
 						_grass.set("enabled", true)
 						var vram_on: float = Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0
-						print("      blades %d, video memory with the scene %.0f MB" % [int(_grass.call("blade_count")), vram_on])
+						print("      blades in view %d, grass script %d us a frame, video memory with the scene %.0f MB" % [int(_grass.call("blade_count")),
+							int(_grass.get("prerender_usec")), vram_on])
 						print("GRASS MEASURE DONE")
 						return true
 					_cam = Camera4D.new()

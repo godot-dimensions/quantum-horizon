@@ -11,11 +11,12 @@ render_mode skip_vertex_transform, cull_disabled, diffuse_lambert_wrap, specular
 // its own slice, shrinking to nothing as it leaves (the section of a 4D body, sqrt(1-(w/r)^2)).
 // Walk ana and the grass round you shrinks away while the next grass grows in.
 //
-// WHERE THE BLADES ARE. No positions are stored. Instance n is cell (i, j) of a square grid
-// round the camera, snapped to the world so a blade never swims, and layer k along W: the
-// layers sit round the w where the camera's slice crosses that spot of ground, so a turned
-// slice still finds grass wherever it passes. A hash of the cell gives the jitter, the height,
-// the facing and the w within the layer.
+// WHERE THE BLADES ARE. No positions are stored. The field is cut into square TILES, snapped
+// to the world so a blade never swims; pen_grass_4d.gd lists the tiles in view every frame
+// (tiles[], one per instance) and the mesh is one tile's blades, each knowing its cell (i, j)
+// and its layer k along W from UV2. The layers sit round the w where the camera's slice crosses
+// that spot of ground, so a turned slice still finds grass wherever it passes. A hash of the
+// cell gives the jitter, the height, the facing and the w within the layer.
 //
 // WHAT A BLADE IS (Ghost of Tsushima's, GDC 2021): a cubic Bezier from the root to the tip,
 // rebuilt every frame from four points - so bending it is moving the points. Widest at the
@@ -41,30 +42,47 @@ render_mode skip_vertex_transform, cull_disabled, diffuse_lambert_wrap, specular
 //     harder in a gust, with a little turbulent flutter across the wind.
 // People and animals walking through push the blades aside.
 //
-// THE RING. Two of these, a near ring of fine blades and a far ring of fewer, wider ones; each
-// fades by shrinking and by turning the ground's colour at its edges, so there is no line.
+// THE BANDS (Ramon, 2 Oct: "a radial gradient of widening the space in between the blades,
+// coming from center", and "less complex blades in radial rows"). Several of these materials,
+// one per band round you, each with simpler blades than the one inside it (11 vertices at your
+// feet down to 3 at the edge) but the SAME blade. The gap between blades widens smoothly with
+// distance, not band by band: each band's grid is as fine as the gap at its inner edge and
+// drops blades, by hash, to the gap wanted where each one stands. Neighbouring bands overlap and
+// cross-fade, and a dropped blade shrinks away rather than vanishing, so walking moves no line.
+// The width never steps either: it is the blade's own until the blade would be thinner than
+// about a pixel, then a pixel.
 // Not inside things: a mask texture gives, for each half metre of ground, up to two stretches
 // of W where something stands on it (a floor, a pond, a hill), and no blade grows there.
 
-uniform vec4 view_basis_x;
-uniform vec4 view_basis_y;
-uniform vec4 view_basis_z;
-uniform vec4 view_basis_w;
-uniform vec4 view_origin;
-uniform vec4 camera_world;
-uniform vec4 slice_normal = vec4(0.0, 0.0, 0.0, 1.0);
+// The camera's frame, set every render in one go (pen_grass_4d.gd): 0-3 the view basis (grass
+// space to camera space), 4 its origin, 5 the camera's position in grass space, 6 the slice's
+// normal, 7 the rings' middle (x, z), the view's half-width as a tangent, a pixel's angle.
+uniform vec4 frame[8];
 
-uniform float spacing = 0.11;
-uniform int cells = 180;
+// This band: its grid's gap, a tile's cells per side, the tiles in view (as tile indices), a
+// seed so no two bands' blades line up.
+uniform float spacing = 0.085;
+uniform int tile_cells = 24;
+uniform vec2 tiles[384];
+uniform float seed = 0.0;
 uniform int layers = 3;
 uniform float layer_spacing = 0.22;
 uniform float w_radius = 0.3;
-uniform float radius_in = 0.0;
-uniform float radius_in_band = 2.0;
-uniform float radius_out = 10.0;
-uniform float radius_out_band = 2.5;
+// Where this band starts and ends round you, and how wide each cross-fade is (the last band's
+// outer one is the long fade into the bare field).
+uniform float band_in = 0.0;
+uniform float band_in_fade = 1.0;
+uniform float band_out = 5.0;
+uniform float band_out_fade = 1.0;
+uniform bool last_band = false;
+// The gap wanted at distance d: spacing_near out to spacing_from, then growing as a power of d.
+uniform float spacing_near = 0.085;
+uniform float spacing_from = 3.0;
+uniform float spacing_power = 0.5;
 uniform float blade_height = 0.42;
-uniform float blade_width = 0.032;
+uniform float blade_width = 0.009;
+// The fewest pixels wide a blade may be.
+uniform float min_pixels = 0.8;
 uniform float ground_extent = 59.0;
 uniform float clump_size = 1.3;
 // One blade in this many is a flower stem: a little coloured head on a thin stalk.
@@ -89,12 +107,6 @@ uniform float gust_width = 18.0;
 uniform float bend_max = 0.5;
 // The wind pressure, (m/s)^2, that lays a blade half way over.
 uniform float stiffness = 30.0;
-// The middle of the rings, in x and z: you. The player when the camera is following them, the
-// camera itself when it is your eye (the hawk, the Lookout's camera). The slice and the frustum
-// are still the camera's.
-uniform vec2 ring_centre = vec2(0.0);
-// tan of half the camera's horizontal view, with a margin: blades off the sides are dropped.
-uniform float frustum_x = 1.6;
 
 uniform vec4 pushers[16];
 uniform int pusher_count = 0;
@@ -150,15 +162,25 @@ vec3 clump(vec2 p, float band) {
 }
 
 void vertex() {
-	mat4 vb = mat4(view_basis_x, view_basis_y, view_basis_z, view_basis_w);
-	int n = cells;
-	int id = INSTANCE_ID;
-	int ix = id % n;
-	int iz = (id / n) % n;
-	int k = id / (n * n);
-	vec2 cam_cell = floor(ring_centre / spacing);
-	vec2 cell = cam_cell + vec2(float(ix), float(iz)) - float(n / 2);
-	vec2 root_xz = (cell + hash22(cell)) * spacing;
+	mat4 vb = mat4(frame[0], frame[1], frame[2], frame[3]);
+	vec4 view_origin = frame[4];
+	vec4 camera_world = frame[5];
+	vec4 slice_normal = frame[6];
+	// The middle of the rings, in x and z, is you: the player when the camera is following them,
+	// the camera itself when it is your eye (the hawk, the Lookout's camera). The slice and the
+	// frustum are still the camera's.
+	vec2 ring_centre = frame[7].xy;
+	// tan of half the camera's horizontal view, with a margin: blades off the sides are dropped.
+	float frustum_x = frame[7].z;
+	// A pixel's width at one metre (2 tan(fov / 2) / the view's height).
+	float pixel_angle = frame[7].w;
+	int n = tile_cells;
+	int ixk = int(UV2.x + 0.5);
+	int k = ixk / n;
+	int ix = ixk - k * n;
+	int iz = int(UV2.y + 0.5);
+	vec2 cell = tiles[INSTANCE_ID] * float(n) + vec2(float(ix), float(iz));
+	vec2 root_xz = (cell + hash22(cell + seed)) * spacing;
 	// The w where the camera's slice crosses this spot of ground, and the layers round it.
 	vec3 dp = vec3(root_xz.x - camera_world.x, -camera_world.y, root_xz.y - camera_world.z);
 	float nw = slice_normal.w;
@@ -178,19 +200,20 @@ void vertex() {
 			alive = 0.0;
 		}
 	}
-	// The ring's edges THIN the grass, blade by blade (Ghost of Tsushima drops three in four
-	// before it hands over), and shrink and recolour what is left a little, so neither the near
-	// ring's edge nor the far ring's is a line.
+	// THE GAP GROWS WITH DISTANCE, blade by blade: this band's grid is as fine as the gap at its
+	// inner edge, so it keeps (its gap / the gap wanted here)^2 of its blades, chosen by hash,
+	// and hands over to the next band across the cross-fade. A blade near its hash's cut is
+	// shrunk, not dropped, so walking grows and shrinks blades instead of popping them.
 	float dist = length(root_xz - ring_centre);
-	float ring = 1.0 - smoothstep(radius_out - radius_out_band, radius_out, dist);
-	if (radius_in > 0.0) {
-		ring *= smoothstep(radius_in, radius_in + radius_in_band, dist);
-	}
-	float keep = hash12(cell + vec2(7.7, 1.3));
-	if (keep > ring * 1.15) {
-		alive = 0.0;
-	}
-	ring = mix(0.55, 1.0, ring);
+	float wanted = dist <= spacing_from ? spacing_near : spacing_near * pow(dist / spacing_from, spacing_power);
+	float share = min(1.0, (spacing / wanted) * (spacing / wanted));
+	float w_in = band_in > 0.0 ? smoothstep(band_in - band_in_fade, band_in + band_in_fade, dist) : 1.0;
+	float w_out = last_band ? 1.0 - smoothstep(band_out - band_out_fade, band_out, dist)
+			: 1.0 - smoothstep(band_out - band_out_fade, band_out + band_out_fade, dist);
+	float keep = hash12(cell + vec2(7.7, 1.3) + seed);
+	float ring = clamp((share * w_in * w_out * 1.25 - keep) / 0.25, 0.0, 1.0);
+	// Only the field's far edge turns the ground's colour.
+	float tint = last_band ? mix(0.55, 1.0, w_out) : 1.0;
 	// The cut: as much of the blade as the slice passes through.
 	vec4 rel_root = vb * root + view_origin;
 	float s2 = 1.0 - (rel_root.w / w_radius) * (rel_root.w / w_radius);
@@ -253,10 +276,13 @@ void vertex() {
 			hz *= 0.9 / hl;
 		}
 
-		// The Bezier: root at the origin, the tip where the lean and the wind put it.
+		// The Bezier: root at the origin, the tip where the lean and the wind put it, bending all
+		// along its length as a stalk held at the root does: upright at the root, the tip's slope
+		// about one and a half times the lean. (The middle points were at 40% and 90% of the
+		// height, which left all the bend for the last few centimetres: a hook at every tip.)
 		vec3 p3 = vec3(hz.x, sqrt(max(1.0 - dot(hz, hz), 0.1)), hz.y) * h;
-		vec3 p1 = vec3(hz.x * 0.05, 0.4, hz.y * 0.05) * h;
-		vec3 p2 = vec3(hz.x * 0.5, 0.0, hz.y * 0.5) * h + vec3(0.0, p3.y * 0.9, 0.0);
+		vec3 p1 = vec3(0.0, p3.y * 0.35, 0.0);
+		vec3 p2 = vec3(hz.x * 0.45 * h, p3.y * 0.7, hz.y * 0.45 * h);
 		float t = UV.y;
 		float side = UV.x;
 		float u = 1.0 - t;
@@ -264,10 +290,12 @@ void vertex() {
 		vec3 tangent = 3.0 * u * u * p1 + 6.0 * u * t * (p2 - p1) + 3.0 * t * t * (p3 - p2);
 		tangent = normalize(tangent + vec3(0.0, 1e-5, 0.0));
 		vec3 across = vec3(-sin(facing), 0.0, cos(facing));
-		float width = blade_width * grow * pow(u, 0.75) * mix(0.8, 1.25, rnd);
+		// Never thinner than about a pixel: past that a blade flickers and the field goes bare.
+		float bw = max(blade_width, length(rel_root.xyz) * pixel_angle * min_pixels);
+		float width = bw * grow * pow(u, 0.75) * mix(0.8, 1.25, rnd);
 		if (flower > 0.5) {
 			// A thin stalk, and a head: wide for the last fifth of it.
-			width = blade_width * grow * (t > 0.86 ? 1.25 * sin((t - 0.86) / 0.14 * 3.14159) + 0.2 : 0.35);
+			width = bw * grow * (t > 0.86 ? 1.25 * sin((t - 0.86) / 0.14 * 3.14159) + 0.2 : 0.35);
 		}
 		vec3 pos = b + across * side * width;
 		vec3 normal = normalize(cross(across, tangent));
@@ -298,7 +326,7 @@ void vertex() {
 			float pick = hash13(vec3(cell, layer + 6.6));
 			c = pick < 0.5 ? flower_a : (pick < 0.8 ? flower_b : flower_c);
 		}
-		v_colour = mix(ground_colour, c, ring);
+		v_colour = mix(ground_colour, c, tint);
 		v_t = t;
 	}
 }

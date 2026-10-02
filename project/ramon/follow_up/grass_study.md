@@ -35,25 +35,30 @@ blades are ordinary 3D geometry made by the GPU; only the shader knows about W:
 - **Three layers along W** at every spot, set round **the w where the camera's slice crosses
   that spot of ground** - so a turned slice (RMB) still finds grass wherever it passes, instead
   of only along a line.
-- **Nothing is stored.** Instance n is a cell of a grid round you, snapped to the world (so a
-  blade never swims); a hash of the cell gives its jitter, height, facing and w.
+- **Nothing is stored.** The field is cut into square **tiles**, snapped to the world (so a
+  blade never swims). The mesh is one tile's blades, each knowing its cell and layer (UV2); the
+  script lists the tiles in view every frame and the MultiMesh draws one instance per tile. A
+  hash of the cell gives its jitter, height, facing and w.
 - **"You" is the player, not the camera** (Ramon, 2 Oct: "the detailed circle area should always
   take you as its middle point"). When the camera is the player's own (the orbit rig, a few
-  metres behind them) both rings are centred on the player, so the detail spreads out round
+  metres behind them) the bands are centred on the player, so the detail spreads out round
   them, behind as far as ahead; on any other camera (the hawk, the Lookout's camera, a cutscene)
   on the camera. The slice and the frustum are always the camera's.
 
 ## The blade, the clumps, the wind
 
-- **Blade:** a cubic Bezier from root to tip; 11 vertices near, 7 far, more of them towards
-  the tip; widest at the root, a point at the tip. Normals turned out at the edges (rounded),
-  thickened in view space when seen edge-on.
+- **Blade:** a flat strip of ordinary 3D triangles bent along a cubic Bezier from root to tip,
+  rebuilt every frame from four points: upright at the root, the tip's slope about 1.5x the lean
+  (as a stalk held at its root bends). 11 vertices at your feet (9 triangles), then 9, 7, 5 and
+  3 (one triangle) band by band out; more of them towards the tip; widest at the root, a point
+  at the tip. Normals turned out at the edges (rounded), thickened in view space when seen
+  edge-on.
 - **Clumps:** a Voronoi of clump points (1.3 m), banded along W too; each blade takes its nearest
   clump's height (0.82-1.18x), colour (lush, ordinary or dry) and a slight lean to its middle.
   Kept gentle on purpose: strong clumps read as tufts.
 - **Colour:** dark root, the clump's green, a pale tip; the passing gust brightens the tips (the
   silver waves on a field); one blade in 80 a flower stalk with a small head (white, yellow,
-  violet); the ring's edge turning the field's own colour.
+  violet); the field's far edge turning the field's own colour.
 - **Wind, modelled on wind in a crop:**
   - a mean wind (3 m/s) leans everything a little downwind;
   - **gusts travel downwind at 0.8 of the wind speed, in bands lying across the wind** (honami,
@@ -78,30 +83,62 @@ the foot of a wall - not a tower leg) marks the cells under it with its W reach;
 cave hill come from the Lookout's height map. 7,311 cells, 0.33 s, spread over frames; the grass
 grows in when it is done. Moving things (people, animals, the balloon) are left out.
 
+## The bands: the gap widens from you, the blade gets simpler, nothing steps
+
+Ramon, 2 Oct: two rings (fine blades to 12 m, then wider ones further apart) read as "the second
+row has bigger blades". He asked for "a radial gradient of widening the space in between the
+blades, coming from center" and "less complex blades in radial rows behind center circle". So:
+
+- **The gap is a smooth curve of distance from you**, not a step: 8.5 cm out to 3 m
+  (`spacing`, `spacing_from`), then growing as a power of the distance to 30 cm at 44 m
+  (`spacing_far`, `radius`).
+- **Five bands** (`band_radii` 5, 10, 18, 28, 44 m), **the same blade in each, with fewer
+  vertices** (`band_vertices` 11, 9, 7, 5, 3). A band's grid is as fine as the gap wanted at its
+  inner edge and keeps (its gap / the gap wanted)^2 of its blades, by hash, so the density follows
+  the curve inside the band too.
+- **Neighbouring bands overlap and cross-fade** (0.75 m + 3% of the radius each side), and a blade
+  near its hash's cut is shrunk rather than dropped, so walking grows and shrinks blades and
+  never moves a line.
+- **The width does not step either.** A blade is `blade_width` (9 mm) until that would be thinner
+  than `min_pixels` (0.8) on screen, then that. At 30 m 9 mm is a fifth of a pixel: it flickers
+  and the field goes bare, which is why the old far ring had wider blades - but as a step.
+- **Tiles, culled on the CPU**: about 2 m near you to 7 m at the edge; listed round you when you
+  have moved half a metre, tested against the view every frame (a ball round each middle, at the
+  slice's w there). Only tiles in view are drawn, so there is no work behind the camera.
+
+| band | gap at its start | tile | vertices | tiles in view (farm camera) |
+|---|---|---|---|---|
+| 0-5 m | 8.5 cm | 2.2 m | 11 | 39 |
+| 5-10 m | 9.8 cm | 2.9 m | 9 | 58 |
+| 10-18 m | 14.2 cm | 3.8 m | 7 | 60 |
+| 18-28 m | 19.0 cm | 5.1 m | 5 | 55 |
+| 28-44 m | 23.6 cm | 6.9 m | 3 | 54 |
+
 ## Cost (RTX 5080, 1280x720, interleaved on/off, after the pen's warm-up)
 
 | | |
 |---|---|
-| blades | 467,142 (near ring 12 m at 8.5 cm, far ring 44 m at 32 cm, 3 layers in W) |
-| GPU | **+1.10 ms** a frame from the farm camera (1.87 -> 2.97), +1.04 ms low in the field |
-| CPU | under +0.01 ms (a dozen uniforms a frame) |
-| video memory | about +19 MB (the MultiMesh buffers and the mask; the scene read 848 MB at 337k blades, 854 MB now) |
+| blades handed to the GPU | about 380,000-610,000, depending on the view (whole tiles in view, 3 layers in W) |
+| GPU | **+0.47 ms** a frame from the farm camera, +0.25 ms low in the field |
+| CPU | the grass script about 0.09-0.12 ms a frame (the tile tests; the frame's uniforms packed into one array) |
+| video memory | the scene read 836 MB with it (854 MB with the two rings): the tile meshes are small, the old per-blade instance buffers are gone |
 
-Getting there: the first dense version was +1.28 ms with 520k blades. Two things did it:
+Getting there:
+- the first dense version was +1.28 ms with 520k blades;
 - **dead blades skip the work**: out of the slice, thinned out, masked, behind the camera or off
   the side of the view, all their vertices go to one point before any of the clump, wind and
   curve work;
-- **the far ring has fewer, wider blades**: they are a pixel or two wide out there, and tiny
-  triangles are what costs.
+- two rings, the far one fewer and wider blades: +0.79 ms, but the grid sat ahead of the camera,
+  which put the detailed ring's edge in front of the player; centred on the player, the full
+  square was made: +1.10 ms;
+- **the bands on tiles culled to the view: +0.47 ms**, with grass round you in every direction.
 
-It was +0.79 ms (337k blades) while the grid sat 30% of its radius ahead of the camera, so
-little was made behind it. That pushed the detailed ring's near edge forward of the player and
-broke the field spreading round you, so the rings were centred on the player (2 Oct) and the
-full square is made: +0.3 ms, mostly the blades behind the camera that are made and dropped,
-plus more of the detailed disc in view. A round grid (rows of varying length) would make 21%
-fewer and win most of that back.
+Thinner (2 Oct, spacing unchanged): `blade_width` 0.016 -> 0.009.
 
-Thinner (2 Oct, spacing unchanged): `blade_width` 0.016 -> 0.009, `far_blade_width` 0.045 -> 0.025.
+**The tip hook** (Ramon, 2 Oct: "at the top of each blade there's a small tiny curl ... is that
+normal?"). It was not: the Bezier's middle points were at 40% and 90% of the height, which left
+all the bend for the last few centimetres, so every leaning blade hooked over at the tip. Now at
+35% and 70%, the second pushed 45% of the way to the tip's lean.
 
 ## Traps found
 
@@ -116,10 +153,11 @@ Thinner (2 Oct, spacing unchanged): `blade_width` 0.016 -> 0.009, `far_blade_wid
 
 ## Knobs (on the Grass node)
 
-Rings (`near_spacing`, `near_radius`, `far_spacing`, `far_radius`, `layers`, `layer_spacing`,
-`w_radius`), blades (`blade_height` 0.5, `blade_width` 0.009, `far_blade_width` 0.025,
-`clump_size`, the colours), wind (`wind_speed`, `gustiness`, `gust_length`, `gust_width`,
-`bend_max`, `stiffness`, `sheen`), `enabled`.
+Field (`spacing` 0.085, `spacing_far` 0.30, `spacing_from` 3, `radius` 44, `band_radii`,
+`band_vertices`, `layers`, `layer_spacing`, `w_radius`), blades (`blade_height` 0.5,
+`blade_width` 0.009, `min_pixels` 0.8, `clump_size`, the colours), wind (`wind_speed`,
+`gustiness`, `gust_length`, `gust_width`, `bend_max`, `stiffness`, `sheen`), `enabled`. A
+revert point for the two-ring version: the local branch `grass-before-lod`.
 
 ## Not done yet
 
