@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="PackedScene" uid="uid://bcgq82wcbp0g0" path="res://ramon/chickenpen/chickenpen.tscn" id="1_pen"]
 [ext_resource type="Script" path="res://ramon/chickenpen/lookout/lookout_tower_4d.gd" id="2_tower"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" uid="uid://ddjd5gskmnqr3" path="res://ramon/dialogue/dialogue_player_4d.gd" id="8_talk"]
 [ext_resource type="Script" path="res://ramon/chickenpen/lookout/lookout_wren_talk_4d.gd" id="9_wren_talk"]
 [ext_resource type="Script" path="res://ramon/chickenpen/lookout/journal_card_4d.gd" id="10_card"]
+[ext_resource type="Script" path="res://ramon/chickenpen/grass/pen_grass_4d.gd" id="11_grass"]
 
 [node name="ChickenPen" instance=ExtResource("1_pen")]
 metadata/lookout = "The pen plus the Lookout (follow_up/lookout_plan.md). The pen file is untouched; these nodes move into it when Ramon says so."
@@ -42,6 +43,10 @@ position = Vector4(-10, 0, 12, 8)
 
 [node name="WoodSpot" type="Node4D" parent="World/LookoutSite"]
 position = Vector4(-10, 0, 12, -8)
+
+[node name="Grass" type="Node4D" parent="World"]
+script = ExtResource("11_grass")
+metadata/what = "Grass over the field, made and blown about on the GPU (grass/pen_grass.gdshader, follow_up/grass_study.md)."
 
 [node name="CameraPicker" parent="UI"]
 under_path = NodePath("../Journal")
