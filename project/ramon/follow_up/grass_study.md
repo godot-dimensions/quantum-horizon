@@ -153,6 +153,41 @@ blades, coming from center" and "less complex blades in radial rows behind cente
 | 18-28 m | 19.0 cm | 5.1 m | 5 | 55 |
 | 28-44 m | 23.6 cm | 6.9 m | 3 | 54 |
 
+## Rings that moved with you, the trail, the clearings (2 Oct, late)
+
+- **The rings** (Ramon: "i see subtle rings move with the character grass in the distance").
+  Measured with `_rings_grass_runner.gd`: still air, a camera held still that is the player's own,
+  the player stepped a metre at a time; any change far off is the bands. The thinning had
+  overshot by a quarter (`share x 1.25`), so each band ended 5-12% denser than the next began:
+  a step at every band edge, moving with you. Now the hash cut is centred on the share kept,
+  and the shrink is in height only, so two cross-fading bands add up to one. What is left is
+  unstructured: blades near their cut grow and shrink as you walk, as any distance thinning
+  does. (The flutter now scales with the wind, so still air is still.)
+- **Laid the way you walk, and a trail** (Ramon: "it shouldnt go down radial, but in the
+  direction you move ... stay down but a bit, and slowly veer up again, 3 meter behind you"):
+  every pusher has a way (where it has gone since it last moved 5 cm), and the grass is laid
+  along it, a little aside too so it does not stand up through the legs. The player drops a
+  trail point every 30 cm; each keeps the grass down, at full strength for the first 40 cm,
+  coming up smoothly by 3 m behind (`trail_length`), and over 6 s if you stand
+  (`trail_seconds`). Pushers are now (x, strength, z, w) plus (way, reach), 24 at most;
+  `_trail_grass_runner.gd` films it.
+- **Clearings** (Ramon: "the marsh, the pen, and the tower, should have a radius around it that
+  doesn't have the grass, the edges shouldnt be straight square or round, but uneven like
+  realistic"): `clearings` names what gets one and how far out (AnaMarsh 1.2 m, Lookout 2.5,
+  Pen 1.5); `clearing_fill` names those cleared inside their whole outline too (the pen's run,
+  the ground under the tower). Built with the mask: what they stand on seeds a grid, a two-pass
+  distance sweep spreads it (18 ms), per group of w (the farm's, ana, kata) so the marsh at w +8
+  clears only there. The shader breaks the edge with two scales of noise (`clearing_ragged`
+  1.2 m) and thins and shortens the grass over a fringe outside it (`clearing_fringe` 1.5 m).
+- **The mask follows the real shape.** A tetrahedron marks only the cells its shadow on the
+  ground covers, not its bounding box: the marsh's mud is a fan of long thin wedges whose boxes
+  bared a square in front of it. The mask now takes 0.85 s (was 0.33), still spread over frames.
+  `_probe_bare_runner.gd` says what keeps grass off a spot.
+- **A test look** (Ramon: "slightly higher, slightly more, and slightly broader from the start,
+  to the tip"): `blade_height` 0.38, `spacing` 0.075 near and 0.27 far, `blade_width` 0.011
+  and `taper` 0.5 (was 0.75: the blade stays broad further up).
+- Cost now: **+0.64 ms GPU** from the farm camera (+0.35 low), the script about 0.11-0.14 ms.
+
 ## Cost (RTX 5080, 1280x720, interleaved on/off, after the pen's warm-up)
 
 | | |
@@ -193,11 +228,11 @@ all the bend for the last few centimetres, so every leaning blade hooked over at
 
 ## Knobs (on the Grass node)
 
-Field (`spacing` 0.085, `spacing_far` 0.30, `spacing_from` 3, `radius` 44, `band_radii`,
-`band_vertices`, `layers`, `layer_spacing`, `w_radius`), blades (`blade_height` 0.3,
-`blade_width` 0.009, `min_pixels` 0.8, `clump_size`, the colours, `region_deep`,
+Field (`spacing` 0.075, `spacing_far` 0.27, `spacing_from` 3, `radius` 44, `band_radii`,
+`band_vertices`, `layers`, `layer_spacing`, `w_radius`), blades (`blade_height` 0.38,
+`blade_width` 0.011, `taper` 0.5, `min_pixels` 0.8, `clump_size`, the colours, `region_deep`,
 `region_bright`, `region_size`, `region_share`, `region_strength`, `hue_jitter`, `shade` 0.7, `toward_ground` 0.18, `saturation` 1.45), light (`haze_*`, `cloud_shadows`, `cloud_size`), wind (`wind_speed`,
-`gustiness`, `gust_length`, `gust_width`, `bend_max`, `stiffness`, `sheen`), `enabled`. A
+`gustiness`, `gust_length`, `gust_width`, `bend_max`, `stiffness`, `sheen`), trampling (`trail_length`, `trail_spacing`, `trail_seconds`), clearings (`clearings`, `clearing_fill`, `clearing_ragged`, `clearing_fringe`), `enabled`. A
 revert point for the two-ring version: the local branch `grass-before-lod`.
 
 ## Not done yet

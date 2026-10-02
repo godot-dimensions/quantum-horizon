@@ -36,8 +36,8 @@ const MAX_TILES := 384
 @export_group("Field")
 ## The gap between blades at your feet and at the field's edge. It starts widening this far
 ## out and grows smoothly (as a power of the distance) out to the edge.
-@export_range(0.04, 0.5, 0.005, "suffix:m") var spacing: float = 0.085
-@export_range(0.04, 1.0, 0.01, "suffix:m") var spacing_far: float = 0.30
+@export_range(0.04, 0.5, 0.005, "suffix:m") var spacing: float = 0.075
+@export_range(0.04, 1.0, 0.01, "suffix:m") var spacing_far: float = 0.27
 @export_range(0.5, 20.0, 0.5, "suffix:m") var spacing_from: float = 3.0
 ## How far round you the grass reaches.
 @export_range(10.0, 80.0, 1.0, "suffix:m") var radius: float = 44.0
@@ -52,10 +52,12 @@ const MAX_TILES := 384
 @export_range(0.05, 1.0, 0.01, "suffix:m") var w_radius: float = 0.3
 
 @export_group("Blades")
-@export_range(0.05, 2.0, 0.01, "suffix:m") var blade_height: float = 0.3
+@export_range(0.05, 2.0, 0.01, "suffix:m") var blade_height: float = 0.38
 ## A blade's width at its root; where that would be under min_pixels on screen, it is
 ## min_pixels wide instead (thinner, and a far field flickers and goes bare).
-@export_range(0.002, 0.2, 0.001, "suffix:m") var blade_width: float = 0.009
+@export_range(0.002, 0.2, 0.001, "suffix:m") var blade_width: float = 0.011
+## How the blade narrows to its point: 1 straight from root to tip, less stays broad longer.
+@export_range(0.2, 2.0, 0.05) var taper: float = 0.5
 @export_range(0.0, 3.0, 0.05) var min_pixels: float = 0.8
 @export_range(0.3, 5.0, 0.05, "suffix:m") var clump_size: float = 1.3
 @export var colour_root: Color = Color(0.11, 0.17, 0.07)
@@ -109,6 +111,24 @@ const MAX_TILES := 384
 @export_range(1.0, 200.0, 0.5) var stiffness: float = 30.0
 @export_range(0.0, 1.0, 0.01) var sheen: float = 0.2
 
+@export_group("Trampling")
+## Grass the player walks through lies the way they went, stays down a moment and comes up
+## again slowly over this far behind them (a trail point every trail_spacing); standing still,
+## the trail comes up over trail_seconds.
+@export_range(0.0, 10.0, 0.1, "suffix:m") var trail_length: float = 3.0
+@export_range(0.1, 1.0, 0.05, "suffix:m") var trail_spacing: float = 0.3
+@export_range(0.5, 30.0, 0.5, "suffix:s") var trail_seconds: float = 6.0
+
+@export_group("Clearings")
+## No grass round these (node name: how far out from what stands on the ground, m), the edge
+## broken up by noise (clearing_ragged) with a fringe of thinner, trodden grass outside it.
+## Names in clearing_fill are cleared inside their whole outline too (the pen's run, the
+## ground under the tower).
+@export var clearings: Dictionary = {"AnaMarsh": 1.2, "Lookout": 2.5, "Pen": 1.5}
+@export var clearing_fill: PackedStringArray = PackedStringArray(["Pen", "Lookout"])
+@export_range(0.0, 4.0, 0.05, "suffix:m") var clearing_ragged: float = 1.2
+@export_range(0.1, 5.0, 0.05, "suffix:m") var clearing_fringe: float = 1.5
+
 @export_group("Ground")
 ## The pen's ground slab reaches this far in x, z and w (chickenpen.tscn: 120 m a side).
 @export var ground_extent: float = 59.0
@@ -121,6 +141,9 @@ var mask_ready: bool = false
 ## Mask cells marked, and how long the mask took, for runners.
 var mask_cells: int = 0
 var mask_msec: int = 0
+## Cells inside a clearing, and how long the clearings took, for runners.
+var clearing_cells: int = 0
+var clearing_msec: int = 0
 ## The script's own time in the last pre_render, microseconds, for runners.
 var prerender_usec: int = 0
 
@@ -157,6 +180,11 @@ var _drawn: int = 0
 var _region_cuts := Vector4(0.36, 0.46, 0.55, 0.65)
 var _mask_image: Image
 var _mask_texture: ImageTexture
+var _clearing_texture: ImageTexture
+## The player's trail: [where (grass space), the way they went, when], newest first.
+var _trail: Array = []
+## Per pusher: [where it was when its way was last taken, its way].
+var _ways: Dictionary = {}
 var _pushers: Array[Node4D] = []
 var _room: Node
 
@@ -178,6 +206,9 @@ func _ready() -> void:
 	_mask_image = Image.create_empty(MASK_CELLS, MASK_CELLS, false, Image.FORMAT_RGBAF)
 	_mask_image.fill(Color(1e4, -1e4, 1e4, -1e4))
 	_mask_texture = ImageTexture.create_from_image(_mask_image)
+	var clear_image := Image.create_empty(MASK_CELLS, MASK_CELLS, false, Image.FORMAT_RGBF)
+	clear_image.fill(Color(-10.0, -10.0, -10.0))
+	_clearing_texture = ImageTexture.create_from_image(clear_image)
 	var bounds: Array[float] = [0.0]
 	for r in band_radii:
 		if r > bounds.back() + 0.5 and r < radius - 0.5:
@@ -258,6 +289,10 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("ground_extent", ground_extent)
 	m.set_shader_parameter("clump_size", clump_size)
 	m.set_shader_parameter("mask", _mask_texture)
+	m.set_shader_parameter("clearing", _clearing_texture)
+	m.set_shader_parameter("clearing_ragged", clearing_ragged)
+	m.set_shader_parameter("clearing_fringe", clearing_fringe)
+	m.set_shader_parameter("taper", taper)
 	m.set_shader_parameter("mask_rect", Vector4(-MASK_CELL * MASK_CELLS * 0.5, -MASK_CELL * MASK_CELLS * 0.5, MASK_CELL, float(MASK_CELLS)))
 	m.set_shader_parameter("wind_noise", wind)
 	m.set_shader_parameter("wind_dir", wind_direction.normalized())
@@ -451,11 +486,8 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 	if centre.distance_to(_tiles_centre) > 0.5:
 		_list_tiles(centre)
 	var pushers := PackedVector4Array()
-	for p in _pushers:
-		if is_instance_valid(p) and p.is_visible_in_tree() and pushers.size() < 16:
-			var at: Vector4 = global_basis.inverse() * (p.global_position - global_position)
-			if Vector2(at.x - centre.x, at.z - centre.y).length() < 14.0:
-				pushers.append(at)
+	var motions := PackedVector4Array()
+	_push(pushers, motions, centre)
 	# The view's half-width and half-height, as tangents, with a margin; a pixel's angle.
 	var view: Vector2 = viewport.get_visible_rect().size
 	var fov: float = float(camera.get("field_of_view_4d")) if int(camera.get("projection_type")) == 1 else float(camera.get("field_of_view_3d"))
@@ -505,9 +537,89 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 		mat.set_shader_parameter("tiles", upload)
 		mat.set_shader_parameter("frame", frame)
 		mat.set_shader_parameter("pushers", pushers)
+		mat.set_shader_parameter("pusher_motion", motions)
 		mat.set_shader_parameter("pusher_count", pushers.size())
 		RenderingServer.multimesh_set_visible_instances(band.multimesh, n)
 	prerender_usec = Time.get_ticks_usec() - started
+
+
+## Whoever walks through the grass near [param centre], as the shader takes them: where
+## (x, strength, z, w) and the way they went (x, z, -, reach). The player first, then the
+## player's trail behind them, then the rest, 24 at most.
+func _push(pushers: PackedVector4Array, motions: PackedVector4Array, centre: Vector2) -> void:
+	var now: float = Time.get_ticks_msec() / 1000.0
+	var player := _room.get_node_or_null("Player") as Node4D
+	for p in _pushers:
+		if pushers.size() >= 24:
+			break
+		if not is_instance_valid(p) or not p.is_visible_in_tree():
+			continue
+		var at: Vector4 = global_basis.inverse() * (p.global_position - global_position)
+		var way: Vector2 = _way(p, at)
+		if p == player:
+			_lay_trail(at, way, now)
+		if Vector2(at.x - centre.x, at.z - centre.y).length() >= 14.0:
+			continue
+		pushers.append(Vector4(at.x, 1.0, at.z, at.w))
+		motions.append(Vector4(way.x, way.y, 0.0, 0.85))
+		if p != player:
+			continue
+		# The trail: down at first, then up slowly over trail_length behind them, and over
+		# trail_seconds if they stand.
+		var along: float = 0.0
+		var last := at
+		for point in _trail:
+			if pushers.size() >= 20:
+				break
+			var where: Vector4 = point[0]
+			along += Vector2(where.x - last.x, where.z - last.z).length()
+			last = where
+			var strength: float = (1.0 - smoothstep(0.4, trail_length, along)) * (1.0 - smoothstep(trail_seconds * 0.4, trail_seconds, now - float(point[2])))
+			if strength > 0.03:
+				pushers.append(Vector4(where.x, strength, where.z, where.w))
+				var w: Vector2 = point[1]
+				motions.append(Vector4(w.x, w.y, 0.0, 0.6))
+
+
+## The way [param node] has been going, from how it has moved since it last went 5 cm.
+func _way(node: Node4D, at: Vector4) -> Vector2:
+	var id: int = node.get_instance_id()
+	var rec: Array = _ways.get(id, [at, Vector2.ZERO])
+	var was: Vector4 = rec[0]
+	var moved := Vector2(at.x - was.x, at.z - was.z)
+	if moved.length() > 2.0:
+		rec[0] = at
+	elif moved.length() > 0.05:
+		var dir: Vector2 = moved.normalized()
+		var way: Vector2 = rec[1]
+		rec[1] = dir if way == Vector2.ZERO else way.lerp(dir, 0.5).normalized()
+		rec[0] = at
+	_ways[id] = rec
+	return rec[1]
+
+
+## A trail point where the player is, every trail_spacing they go; the old ones dropped once
+## they are past trail_length behind or trail_seconds old. A jump of more than 2 m (a teleport,
+## a respawn) starts the trail again.
+func _lay_trail(at: Vector4, way: Vector2, now: float) -> void:
+	if not _trail.is_empty():
+		var newest: Vector4 = _trail[0][0]
+		var gap: float = Vector2(at.x - newest.x, at.z - newest.z).length()
+		if gap > 2.0:
+			_trail.clear()
+		elif gap < trail_spacing:
+			return
+	_trail.push_front([at, way, now])
+	var along: float = 0.0
+	var keep: int = _trail.size()
+	for i in range(1, _trail.size()):
+		var a: Vector4 = _trail[i - 1][0]
+		var b: Vector4 = _trail[i][0]
+		along += Vector2(a.x - b.x, a.z - b.z).length()
+		if along > trail_length + trail_spacing or now - float(_trail[i][2]) > trail_seconds:
+			keep = i
+			break
+	_trail.resize(keep)
 
 
 ## The player, the chickens, Nike, the cats, the people: whoever walks through the grass.
@@ -543,11 +655,23 @@ func _build_mask() -> void:
 	var meshes: Array = []
 	_collect(_room, meshes)
 	var budget: int = 0
+	# The clearings' seeds: per cell and per group (the farm's w, ana, kata), how far out the
+	# clearing goes from there; and per filled name, its outline in x and z.
+	var seeds := PackedFloat32Array()
+	seeds.resize(MASK_CELLS * MASK_CELLS * 3)
+	seeds.fill(-10.0)
+	var group_w := PackedFloat32Array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+	var outlines: Dictionary = {}
 	for mi in meshes:
-		budget += _mark_mesh(mi, data)
+		var owner_name: String = _clearing_owner(mi)
+		var radius: float = float(clearings.get(owner_name, 0.0))
+		budget += _mark_mesh(mi, data, seeds, radius, group_w, outlines, owner_name if clearing_fill.has(owner_name) else "")
 		if budget > 6000:
 			budget = 0
 			await get_tree().process_frame
+	var clear_msec: int = Time.get_ticks_msec()
+	_build_clearings(seeds, group_w, outlines)
+	clearing_msec = Time.get_ticks_msec() - clear_msec
 	# The hills and the cave hill, from the Lookout's height map at the farm's w.
 	var ground: RefCounted = GROUND.build(_room, 0.0, 3.0)
 	var half: float = MASK_CELL * MASK_CELLS * 0.5
@@ -577,10 +701,108 @@ func _collect(node: Node, out: Array) -> void:
 		_collect(child, out)
 
 
+## The name in [member clearings] that [param node] is part of (itself or a parent), or "".
+func _clearing_owner(node: Node) -> String:
+	var n: Node = node
+	while n != null and n != _room:
+		if clearings.has(String(n.name)):
+			return String(n.name)
+		n = n.get_parent()
+	return ""
+
+
+## The clearings from their seeds: for each group, how far inside a clearing every cell is
+## (a seed's reach less the distance to it, the most of any), by two sweeps of the grid, over
+## the seeds' bounds and the furthest reach only.
+func _build_clearings(seeds: PackedFloat32Array, group_w: PackedFloat32Array, outlines: Dictionary) -> void:
+	var half: float = MASK_CELL * MASK_CELLS * 0.5
+	var n: int = MASK_CELLS
+	for key in outlines:
+		var o: Array = outlines[key]
+		var radius: float = float(clearings.get(key, 0.0))
+		var g: int = o[4]
+		for j in range(clampi(int(floor((o[2] + half) / MASK_CELL)), 0, n - 1), clampi(int(floor((o[3] + half) / MASK_CELL)), 0, n - 1) + 1):
+			for i in range(clampi(int(floor((o[0] + half) / MASK_CELL)), 0, n - 1), clampi(int(floor((o[1] + half) / MASK_CELL)), 0, n - 1) + 1):
+				var s: int = (j * n + i) * 3 + g
+				seeds[s] = maxf(seeds[s], radius)
+	var reach: float = 0.0
+	for r in clearings.values():
+		reach = maxf(reach, float(r))
+	var margin: int = int(ceil((reach + 1.0) / MASK_CELL))
+	var diag: float = MASK_CELL * 1.41421
+	for g in 3:
+		var i0: int = n
+		var i1: int = -1
+		var j0: int = n
+		var j1: int = -1
+		for j in n:
+			for i in n:
+				if seeds[(j * n + i) * 3 + g] > -10.0:
+					i0 = mini(i0, i)
+					i1 = maxi(i1, i)
+					j0 = mini(j0, j)
+					j1 = maxi(j1, j)
+		if i1 < 0:
+			continue
+		i0 = maxi(i0 - margin, 0)
+		i1 = mini(i1 + margin, n - 1)
+		j0 = maxi(j0 - margin, 0)
+		j1 = mini(j1 + margin, n - 1)
+		for j in range(j0, j1 + 1):
+			for i in range(i0, i1 + 1):
+				var s: int = (j * n + i) * 3 + g
+				var v: float = seeds[s]
+				if i > i0:
+					v = maxf(v, seeds[s - 3] - MASK_CELL)
+				if j > j0:
+					v = maxf(v, seeds[s - n * 3] - MASK_CELL)
+					if i > i0:
+						v = maxf(v, seeds[s - n * 3 - 3] - diag)
+					if i < i1:
+						v = maxf(v, seeds[s - n * 3 + 3] - diag)
+				seeds[s] = v
+		for j in range(j1, j0 - 1, -1):
+			for i in range(i1, i0 - 1, -1):
+				var s: int = (j * n + i) * 3 + g
+				var v: float = seeds[s]
+				if i < i1:
+					v = maxf(v, seeds[s + 3] - MASK_CELL)
+				if j < j1:
+					v = maxf(v, seeds[s + n * 3] - MASK_CELL)
+					if i < i1:
+						v = maxf(v, seeds[s + n * 3 + 3] - diag)
+					if i > i0:
+						v = maxf(v, seeds[s + n * 3 - 3] - diag)
+				seeds[s] = v
+	for i in seeds.size():
+		seeds[i] = maxf(seeds[i], -10.0)
+	var image := Image.create_from_data(n, n, false, Image.FORMAT_RGBF, seeds.to_byte_array())
+	_clearing_texture.update(image)
+	var ws := Vector3(0.0, 8.0, -8.0)
+	for g in 3:
+		if group_w[g * 2 + 1] > 0.0:
+			ws[g] = group_w[g * 2] / group_w[g * 2 + 1]
+	for band in _bands:
+		band.material.set_shader_parameter("clearing_w", ws)
+	clearing_cells = 0
+	for j in n:
+		for i in n:
+			if seeds[(j * n + i) * 3] > 0.0 or seeds[(j * n + i) * 3 + 1] > 0.0 or seeds[(j * n + i) * 3 + 2] > 0.0:
+				clearing_cells += 1
+
+
+## The group of things a w belongs to: the farm's (0), ana (1) or kata (2).
+func _group(w: float) -> int:
+	return 0 if absf(w) < 4.0 else (1 if w > 0.0 else 2)
+
+
 ## Every tetrahedron of [param mi] that touches the ground and stays low (a floor, a pond, the
-## foot of a wall - not a whole leg of the tower) marks the cells under it with its W reach.
-## Returns how many tetrahedra it looked at.
-func _mark_mesh(mi: MeshInstance4D, data: PackedFloat32Array) -> int:
+## foot of a wall - not a whole leg of the tower) marks the cells under it with its W reach,
+## and, when [param radius] is more than 0, seeds a clearing there, in [param seeds] by its
+## group (whose mean w goes into [param group_w]); with a [param fill] name, it widens that
+## name's outline in [param outlines]. Returns how many tetrahedra it looked at.
+func _mark_mesh(mi: MeshInstance4D, data: PackedFloat32Array, seeds: PackedFloat32Array, radius: float,
+		group_w: PackedFloat32Array, outlines: Dictionary, fill: String) -> int:
 	var mesh: TetraMesh4D = mi.mesh as TetraMesh4D
 	var rb: PackedVector4Array = mesh.get_rect_bounds()
 	var basis: Projection = mi.global_basis
@@ -611,10 +833,56 @@ func _mark_mesh(mi: MeshInstance4D, data: PackedFloat32Array) -> int:
 		var i1: int = clampi(int(floor((hi.x + half) / MASK_CELL)), 0, MASK_CELLS - 1)
 		var j0: int = clampi(int(floor((lo.z + half) / MASK_CELL)), 0, MASK_CELLS - 1)
 		var j1: int = clampi(int(floor((hi.z + half) / MASK_CELL)), 0, MASK_CELLS - 1)
+		# Only the cells its shadow on the ground covers, not its whole bounding box: the
+		# marsh's mud is a fan of long thin wedges, whose boxes bared a square in front of it.
+		var small: bool = i1 - i0 <= 1 and j1 - j0 <= 1
+		var pa := Vector2(a.x, a.z)
+		var pb := Vector2(b.x, b.z)
+		var pc := Vector2(c.x, c.z)
+		var pd := Vector2(d.x, d.z)
+		var covered := PackedInt32Array()
 		for j in range(j0, j1 + 1):
 			for i in range(i0, i1 + 1):
-				_mark(data, i, j, lo.w, hi.w)
+				if small or _shadow_has(Vector2(-half + (float(i) + 0.5) * MASK_CELL, -half + (float(j) + 0.5) * MASK_CELL), pa, pb, pc, pd):
+					_mark(data, i, j, lo.w, hi.w)
+					covered.append(j * MASK_CELLS + i)
+		if radius > 0.0 and not covered.is_empty():
+			var mid_w: float = (lo.w + hi.w) * 0.5
+			var g: int = _group(mid_w)
+			group_w[g * 2] += mid_w
+			group_w[g * 2 + 1] += 1.0
+			for cell in covered:
+				var s: int = cell * 3 + g
+				seeds[s] = maxf(seeds[s], radius)
+			if fill != "":
+				var o: Array = outlines.get(fill, [INF, -INF, INF, -INF, g])
+				o[0] = minf(o[0], lo.x)
+				o[1] = maxf(o[1], hi.x)
+				o[2] = minf(o[2], lo.z)
+				o[3] = maxf(o[3], hi.z)
+				outlines[fill] = o
 	return cells.size() / 4
+
+
+## Whether [param p] is under a tetrahedron whose corners, seen from above, are [param a] to
+## [param d] (in one of the four triangles they make), with a third of a cell to spare.
+func _shadow_has(p: Vector2, a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> bool:
+	return _triangle_has(p, a, b, c) or _triangle_has(p, a, b, d) or _triangle_has(p, a, c, d) or _triangle_has(p, b, c, d)
+
+
+func _triangle_has(p: Vector2, a: Vector2, b: Vector2, c: Vector2) -> bool:
+	var area: float = (b - a).cross(c - a)
+	if absf(area) < 1e-6:
+		return false
+	var turn: float = 1.0 if area > 0.0 else -1.0
+	var tol: float = MASK_CELL * 0.35
+	for e in [[a, b], [b, c], [c, a]]:
+		var e0: Vector2 = e[0]
+		var e1: Vector2 = e[1]
+		var edge: Vector2 = e1 - e0
+		if edge.cross(p - e0) * turn < -tol * edge.length():
+			return false
+	return true
 
 
 ## Adds the W stretch [param a]..[param b] to cell (i, j): joined to a stretch it touches, or in

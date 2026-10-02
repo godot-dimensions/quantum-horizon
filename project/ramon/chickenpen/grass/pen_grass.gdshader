@@ -80,7 +80,9 @@ uniform float spacing_near = 0.085;
 uniform float spacing_from = 3.0;
 uniform float spacing_power = 0.5;
 uniform float blade_height = 0.42;
-uniform float blade_width = 0.009;
+uniform float blade_width = 0.011;
+// How the blade narrows to its point: 1 straight, less stays broad longer.
+uniform float taper = 0.5;
 // The fewest pixels wide a blade may be.
 uniform float min_pixels = 0.8;
 uniform float ground_extent = 59.0;
@@ -94,6 +96,17 @@ uniform vec3 flower_c : source_color = vec3(0.62, 0.45, 0.78);
 uniform sampler2D mask : filter_nearest, repeat_disable;
 // x, z of the mask's corner, its cell size, its cells per side.
 uniform vec4 mask_rect = vec4(-60.0, -60.0, 0.5, 240.0);
+// CLEARINGS (Ramon, 2 Oct: "the marsh, the pen, and the tower, should have a radius around it
+// that doesn't have the grass, the edges shouldnt be straight square or round, but uneven like
+// realistic"). Over the same cells as the mask, how far inside a clearing each spot is, m
+// (> 0 inside), for the things at the farm's w, ana and kata (r, g, b); each group's w; the
+// clearing's edge broken up by two scales of noise, and a fringe outside it where the grass
+// thins and is trodden short.
+uniform sampler2D clearing : filter_linear, repeat_disable;
+uniform vec3 clearing_w = vec3(0.0, 8.0, -8.0);
+uniform float clearing_w_reach = 1.5;
+uniform float clearing_ragged = 1.2;
+uniform float clearing_fringe = 1.5;
 
 uniform sampler2D wind_noise : filter_linear, repeat_enable;
 uniform vec2 wind_dir = vec2(0.82, 0.57);
@@ -108,7 +121,11 @@ uniform float bend_max = 0.5;
 // The wind pressure, (m/s)^2, that lays a blade half way over.
 uniform float stiffness = 30.0;
 
-uniform vec4 pushers[16];
+// Whoever walks through: where (x, strength, z, w), and the way they went (x, z), with the
+// reach of their push (w). Grass is laid the way they move, not away from them; the player
+// leaves a trail of these that fades over the metres behind them.
+uniform vec4 pushers[24];
+uniform vec4 pusher_motion[24];
 uniform int pusher_count = 0;
 
 // Cool at the root, not black or brown: the painted warm-over-cool split.
@@ -243,10 +260,30 @@ void vertex() {
 			alive = 0.0;
 		}
 	}
+	// The clearings: in one, no blade; in the fringe outside it, fewer, and trodden short.
+	float trodden = 1.0;
+	vec2 cuv = (root_xz - mask_rect.xy) / (mask_rect.z * mask_rect.w);
+	if (cuv.x > 0.0 && cuv.y > 0.0 && cuv.x < 1.0 && cuv.y < 1.0) {
+		vec3 inside = texture(clearing, cuv).rgb - smoothstep(vec3(clearing_w_reach), vec3(clearing_w_reach + 1.0), abs(vec3(root_w) - clearing_w)) * 8.0;
+		float inward = max(max(inside.r, inside.g), inside.b);
+		if (inward > -clearing_fringe - clearing_ragged * 1.3) {
+			inward += (texture(wind_noise, root_xz / 6.0 + vec2(0.21, 0.83)).r - 0.5) * 2.0 * clearing_ragged
+					+ (texture(wind_noise, root_xz / 1.7 + vec2(0.57, 0.19)).r - 0.5) * 0.7 * clearing_ragged;
+			float out_by = clamp(-inward / clearing_fringe, 0.0, 1.0);
+			if (inward > 0.0 || hash12(cell + vec2(3.3, 9.1) + seed) > mix(0.25, 1.0, out_by)) {
+				alive = 0.0;
+			}
+			trodden = mix(0.4, 1.0, smoothstep(0.0, 1.0, out_by));
+		}
+	}
 	// THE GAP GROWS WITH DISTANCE, blade by blade: this band's grid is as fine as the gap at its
 	// inner edge, so it keeps (its gap / the gap wanted here)^2 of its blades, chosen by hash,
 	// and hands over to the next band across the cross-fade. A blade near its hash's cut is
-	// shrunk, not dropped, so walking grows and shrinks blades instead of popping them.
+	// shrunk, not dropped, so walking grows and shrinks blades instead of popping them. The cut
+	// is centred on the share kept, so a band gives exactly its share and two cross-fading
+	// bands add up to one (it had overshot by a quarter, so each band ended denser than the next
+	// began: the faint rings that moved with you). The shrink is in height only, so a shrunk
+	// blade's area falls as its share does.
 	float dist = length(root_xz - ring_centre);
 	float wanted = dist <= spacing_from ? spacing_near : spacing_near * pow(dist / spacing_from, spacing_power);
 	float share = min(1.0, (spacing / wanted) * (spacing / wanted));
@@ -254,7 +291,9 @@ void vertex() {
 	float w_out = last_band ? 1.0 - smoothstep(band_out - band_out_fade, band_out, dist)
 			: 1.0 - smoothstep(band_out - band_out_fade, band_out + band_out_fade, dist);
 	float keep = hash12(cell + vec2(7.7, 1.3) + seed);
-	float ring = clamp((share * w_in * w_out * 1.25 - keep) / 0.25, 0.0, 1.0);
+	float kept = share * w_in * w_out;
+	float soft = min(0.2, 2.0 * min(kept, 1.0 - kept));
+	float ring = soft > 0.001 ? clamp(0.5 + (kept - keep) / soft, 0.0, 1.0) : (keep < kept ? 1.0 : 0.0);
 	// Only the field's far edge turns the ground's colour.
 	float tint = last_band ? mix(0.55, 1.0, w_out) : 1.0;
 	// The cut: as much of the blade as the slice passes through.
@@ -262,6 +301,8 @@ void vertex() {
 	float s2 = 1.0 - (rel_root.w / w_radius) * (rel_root.w / w_radius);
 	float section = s2 > 0.0 ? sqrt(s2) : 0.0;
 	float grow = ring * section * alive;
+	// What the slice leaves of it, for its width: thinning shrinks a blade's height only.
+	float cut = section * alive;
 	// DEAD BLADES COST NOTHING MORE: out of the slice, thinned out, under a floor, behind the
 	// camera or off the side of the view - all its vertices go to one point behind the camera,
 	// before any of the clump, wind and curve work below.
@@ -283,7 +324,7 @@ void vertex() {
 		float lush = 1.0 - smoothstep(0.0, 0.5, hash12(vec2(cl.z, 1.9)));
 		float rnd = hash13(vec3(cell, layer + 4.2));
 		float flower = step(hash13(vec3(cell, layer + 2.6)), flower_share);
-		float h = blade_height * clump_h * mix(0.7, 1.25, rnd) * grow * (1.0 + flower * 0.5);
+		float h = blade_height * clump_h * mix(0.7, 1.25, rnd) * grow * trodden * (1.0 + flower * 0.5);
 		float facing = hash13(vec3(cell, layer + 9.1)) * 6.2831853;
 		vec2 lean = cl.xy * 0.06 + vec2(cos(facing), sin(facing)) * 0.08;
 
@@ -304,15 +345,25 @@ void vertex() {
 		// The rock about the bent pose, at the blade's own frequency: shorter ones faster.
 		float freq = mix(2.2, 1.1, clamp(h / max(blade_height * 1.3, 0.01), 0.0, 1.0)) * mix(0.85, 1.15, rnd);
 		float rock = sin(TIME * 6.2831853 * freq + rnd * 40.0) * (0.03 + 0.07 * gust) * bend_max;
-		float flutter = (texture(wind_noise, root_xz * 0.9 + vec2(TIME * 0.6, TIME * 0.37)).r - 0.5) * 0.08 * (0.3 + gust);
+		// (The flutter is the wind's too: none in still air, as at the usual 3 m/s.)
+		float flutter = (texture(wind_noise, root_xz * 0.9 + vec2(TIME * 0.6, TIME * 0.37)).r - 0.5) * 0.08 * (0.3 + gust) * min(wind_speed / 3.0, 2.0);
 		vec2 push = wind_dir * (bend + rock) + across_wind * flutter;
-		// Whoever walks through pushes it aside.
-		for (int i = 0; i < pusher_count; i++) {
-			vec4 p = pushers[i];
-			vec2 d = root_xz - p.xz;
-			float dl = length(d);
-			float near = (1.0 - smoothstep(0.1, 0.85, dl)) * (1.0 - smoothstep(0.25, 0.6, abs(root_w - p.w)));
-			push += (d / max(dl, 0.01)) * near * 1.5;
+		// Whoever walks through lays it the way they are going (a little aside too, so it does
+		// not stand up through their legs); the player's trail keeps it down behind them, less
+		// and less over the metres. They are all within reach of the middle of the rings.
+		if (dist < 16.0) {
+			for (int i = 0; i < pusher_count; i++) {
+				vec4 p = pushers[i];
+				vec4 m = pusher_motion[i];
+				vec2 d = root_xz - p.xz;
+				float dl = length(d);
+				float near = (1.0 - smoothstep(0.1, m.w, dl)) * (1.0 - smoothstep(0.25, 0.6, abs(root_w - p.w))) * p.y;
+				if (near > 0.0) {
+					vec2 radial = d / max(dl, 0.01);
+					vec2 way = dot(m.xy, m.xy) > 0.01 ? m.xy : radial;
+					push += normalize(way + radial * 0.25) * near * 1.5;
+				}
+			}
 		}
 		vec2 hz = lean + push;
 		float hl = length(hz);
@@ -336,10 +387,10 @@ void vertex() {
 		vec3 across = vec3(-sin(facing), 0.0, cos(facing));
 		// Never thinner than about a pixel: past that a blade flickers and the field goes bare.
 		float bw = max(blade_width, length(rel_root.xyz) * pixel_angle * min_pixels);
-		float width = bw * grow * pow(u, 0.75) * mix(0.8, 1.25, rnd);
+		float width = bw * cut * pow(u, taper) * mix(0.8, 1.25, rnd);
 		if (flower > 0.5) {
 			// A thin stalk, and a head: wide for the last fifth of it.
-			width = bw * grow * (t > 0.86 ? 1.25 * sin((t - 0.86) / 0.14 * 3.14159) + 0.2 : 0.35);
+			width = bw * cut * (t > 0.86 ? 1.25 * sin((t - 0.86) / 0.14 * 3.14159) + 0.2 : 0.35);
 		}
 		vec3 pos = b + across * side * width;
 		vec3 normal = normalize(cross(across, tangent));

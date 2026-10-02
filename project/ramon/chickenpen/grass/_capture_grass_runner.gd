@@ -85,6 +85,7 @@ func _process(d: float) -> bool:
 				return false
 			print("      grass: %d blades in view, mask %d cells marked in %d ms, script %d us a frame" % [int(_grass.call("blade_count")), int(_grass.get("mask_cells")),
 				int(_grass.get("mask_msec")), int(_grass.get("prerender_usec"))])
+			print("      clearings: %d cells, %d ms" % [int(_grass.get("clearing_cells")), int(_grass.get("clearing_msec"))])
 			for row in _grass.call("band_report"):
 				print("        band %4.1f-%4.1f m: gap %.3f m, %d cells a side a tile (%.2f m), %d vertices, %d tiles in view" % row)
 			for f in ["approached", "met_wren"]:
