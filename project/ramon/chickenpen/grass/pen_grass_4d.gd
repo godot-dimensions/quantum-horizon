@@ -52,7 +52,7 @@ const MAX_TILES := 384
 @export_range(0.05, 1.0, 0.01, "suffix:m") var w_radius: float = 0.3
 
 @export_group("Blades")
-@export_range(0.05, 2.0, 0.01, "suffix:m") var blade_height: float = 0.5
+@export_range(0.05, 2.0, 0.01, "suffix:m") var blade_height: float = 0.4
 ## A blade's width at its root; where that would be under min_pixels on screen, it is
 ## min_pixels wide instead (thinner, and a far field flickers and goes bare).
 @export_range(0.002, 0.2, 0.001, "suffix:m") var blade_width: float = 0.009
@@ -65,6 +65,16 @@ const MAX_TILES := 384
 @export var colour_tip: Color = Color(0.46, 0.55, 0.24)
 ## The field's own colour (the pen's ground material): what the field's edge turns into.
 @export var ground_colour: Color = Color(0.16, 0.22, 0.11)
+## The painted look: broad regions of three colours over the field - deep blue-green, bright
+## sunlit yellow-green, fresh green - about region_size across, the field going region_strength
+## of the way to their colours; and each blade's hue nudged by up to hue_jitter towards yellow or
+## blue.
+@export var region_deep: Color = Color(0.05, 0.19, 0.16)
+@export var region_bright: Color = Color(0.58, 0.66, 0.20)
+@export var region_fresh: Color = Color(0.34, 0.64, 0.16)
+@export_range(2.0, 40.0, 0.5, "suffix:m") var region_size: float = 9.0
+@export_range(0.0, 1.0, 0.01) var region_strength: float = 0.85
+@export_range(0.0, 0.2, 0.005) var hue_jitter: float = 0.05
 
 @export_group("Wind")
 @export var wind_direction: Vector2 = Vector2(0.82, 0.57)
@@ -225,7 +235,10 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("bend_max", bend_max)
 	m.set_shader_parameter("stiffness", stiffness)
 	m.set_shader_parameter("sheen", sheen)
-	for key in ["colour_root", "colour_base", "colour_lush", "colour_dry", "colour_tip", "ground_colour"]:
+	m.set_shader_parameter("region_size", region_size)
+	m.set_shader_parameter("region_strength", region_strength)
+	m.set_shader_parameter("hue_jitter", hue_jitter)
+	for key in ["colour_root", "colour_base", "colour_lush", "colour_dry", "colour_tip", "ground_colour", "region_deep", "region_bright", "region_fresh"]:
 		var c: Color = get(key)
 		m.set_shader_parameter(key, Vector3(c.r, c.g, c.b))
 	return m

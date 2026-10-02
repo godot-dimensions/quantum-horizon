@@ -59,6 +59,14 @@ blades are ordinary 3D geometry made by the GPU; only the shader knows about W:
 - **Colour:** dark root, the clump's green, a pale tip; the passing gust brightens the tips (the
   silver waves on a field); one blade in 80 a flower stalk with a small head (white, yellow,
   violet); the field's far edge turning the field's own colour.
+- **The painted look** (Ramon, 2 Oct, from a Ghibli-style meadow: "a very subtle color/hue offset
+  for each blade, and clump parts with different color regions", "the brighter grass regions ...
+  3 color coded region types", "a fresh green"): broad **regions** about 9 m across (`region_size`)
+  from slow world-space noise at the root, so whole patches of blades share a colour as brush
+  strokes do - **deep** blue-green and **bright** sunlit yellow-green as the two ends of one noise
+  field (they never overlap, passing through the field's own green), **fresh** green from a
+  second field over either; `region_strength` 0.85. Each blade's **hue** also wanders a little
+  towards yellow or blue (`hue_jitter` 0.05). Two texture reads a vertex, about +0.02 ms.
 - **Wind, modelled on wind in a crop:**
   - a mean wind (3 m/s) leans everything a little downwind;
   - **gusts travel downwind at 0.8 of the wind speed, in bands lying across the wind** (honami,
@@ -133,7 +141,8 @@ Getting there:
   square was made: +1.10 ms;
 - **the bands on tiles culled to the view: +0.47 ms**, with grass round you in every direction.
 
-Thinner (2 Oct, spacing unchanged): `blade_width` 0.016 -> 0.009.
+Thinner (2 Oct, spacing unchanged): `blade_width` 0.016 -> 0.009. Shorter, to test (2 Oct):
+`blade_height` 0.5 -> 0.4.
 
 **The tip hook** (Ramon, 2 Oct: "at the top of each blade there's a small tiny curl ... is that
 normal?"). It was not: the Bezier's middle points were at 40% and 90% of the height, which left
@@ -154,8 +163,9 @@ all the bend for the last few centimetres, so every leaning blade hooked over at
 ## Knobs (on the Grass node)
 
 Field (`spacing` 0.085, `spacing_far` 0.30, `spacing_from` 3, `radius` 44, `band_radii`,
-`band_vertices`, `layers`, `layer_spacing`, `w_radius`), blades (`blade_height` 0.5,
-`blade_width` 0.009, `min_pixels` 0.8, `clump_size`, the colours), wind (`wind_speed`,
+`band_vertices`, `layers`, `layer_spacing`, `w_radius`), blades (`blade_height` 0.4,
+`blade_width` 0.009, `min_pixels` 0.8, `clump_size`, the colours, `region_deep`,
+`region_bright`, `region_fresh`, `region_size`, `region_strength`, `hue_jitter`), wind (`wind_speed`,
 `gustiness`, `gust_length`, `gust_width`, `bend_max`, `stiffness`, `sheen`), `enabled`. A
 revert point for the two-ring version: the local branch `grass-before-lod`.
 
