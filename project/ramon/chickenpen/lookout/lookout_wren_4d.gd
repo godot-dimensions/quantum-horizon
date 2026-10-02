@@ -113,14 +113,14 @@ func rebuild() -> void:
 		# The camera, until it is handed over: on a strap across, at the hip.
 		_box(torso, "Strap", Vector4(0.0, 0.02, 0.14, 0.0), Vector3(0.04, 0.42, 0.02), Color(0.16, 0.10, 0.08)).basis = Basis4D.from_xy(0.6)
 		_box(torso, "Camera", Vector4(0.15, -0.16, 0.12, 0.0), Vector3(0.14, 0.09, 0.08), Color(0.10, 0.10, 0.11))
-	# Binoculars in the right hand, the forearm brought up to hold them in front.
-	var elbow: Node4D = figure.get_node_or_null("ShoulderR/ElbowR") as Node4D
+	# Binoculars in the right hand, the arm down at the side, held sideways by the bridge -
+	# carried, not lifted like a cup (Ramon, 2 Oct): the two barrels one over the other,
+	# pointing ahead.
 	var hand: Node4D = figure.get_node_or_null("ShoulderR/ElbowR/HandR") as Node4D
-	if elbow != null and hand != null:
-		elbow.basis = Basis4D.from_yz(-1.25)
-		for side in [-1.0, 1.0]:
-			_box(hand, "Barrel%d" % int(side), Vector4(side * 0.03, -0.02, 0.04, 0.0), Vector3(0.05, 0.05, 0.12), Color(0.10, 0.10, 0.10))
-		_box(hand, "Bridge", Vector4(0.0, -0.02, 0.03, 0.0), Vector3(0.04, 0.025, 0.04), Color(0.16, 0.16, 0.15))
+	if hand != null:
+		for k in [-1.0, 1.0]:
+			_box(hand, "Barrel%d" % int(k), Vector4(0.0, -0.045 + k * 0.03, 0.03, 0.0), Vector3(0.05, 0.05, 0.12), Color(0.10, 0.10, 0.10))
+		_box(hand, "Bridge", Vector4(0.0, -0.045, 0.01, 0.0), Vector3(0.025, 0.04, 0.04), Color(0.16, 0.16, 0.15))
 	_set_camera(has_camera)
 
 
