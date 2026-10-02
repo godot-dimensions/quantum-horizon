@@ -111,25 +111,30 @@ uniform float stiffness = 30.0;
 uniform vec4 pushers[16];
 uniform int pusher_count = 0;
 
-uniform vec3 colour_root : source_color = vec3(0.07, 0.10, 0.05);
-uniform vec3 colour_base : source_color = vec3(0.20, 0.31, 0.12);
-uniform vec3 colour_lush : source_color = vec3(0.14, 0.30, 0.13);
+uniform vec3 colour_root : source_color = vec3(0.11, 0.17, 0.07);
+// The field's main colour: sap green.
+uniform vec3 colour_base : source_color = vec3(0.31, 0.49, 0.16);
+uniform vec3 colour_lush : source_color = vec3(0.27, 0.47, 0.18);
 uniform vec3 colour_dry : source_color = vec3(0.47, 0.44, 0.22);
-uniform vec3 colour_tip : source_color = vec3(0.46, 0.55, 0.24);
+uniform vec3 colour_tip : source_color = vec3(0.48, 0.62, 0.26);
 uniform vec3 ground_colour : source_color = vec3(0.16, 0.22, 0.11);
 uniform float sheen = 0.32;
 // THE PAINTED LOOK (Ramon, 2 Oct, after Ghibli's meadows: "a very subtle color/hue offset for each
 // blade, and clump parts with different color regions", then "the brighter grass regions ... 3
-// color coded region types ... and dont forget a fresh green"). Broad regions over the field,
-// from slow world-space noise at the root - a deep blue-green, a bright sunlit yellow-green and
-// a fresh green - so whole patches of blades share a colour, as brush strokes do; and each
-// blade's hue nudged a little towards yellow or towards blue.
-uniform vec3 region_deep : source_color = vec3(0.05, 0.19, 0.16);
-uniform vec3 region_bright : source_color = vec3(0.58, 0.66, 0.20);
-uniform vec3 region_fresh : source_color = vec3(0.34, 0.64, 0.16);
+// color coded region types", and at last "sapgreen as main ... and 2 corresponding offsets ...
+// so sapgreen has the highest ratio", less contrasty). Broad regions over the field, from slow
+// world-space noise at the root, so whole patches of blades share a colour as brush strokes do:
+// sap green over half of it, and two offsets of it - lighter and warmer, deeper and cooler -
+// over a quarter each. Each region moves the whole blade by its offset from sap green, root to
+// tip. And each blade's hue is nudged a little towards yellow or towards blue.
+uniform vec3 region_deep : source_color = vec3(0.21, 0.40, 0.19);
+uniform vec3 region_bright : source_color = vec3(0.40, 0.56, 0.17);
 // About how big a region is, m, and how far the field goes over to its colours (0 none, 1 all).
-uniform float region_size = 9.0;
-uniform float region_strength = 0.85;
+uniform float region_size = 13.0;
+uniform float region_strength = 1.0;
+// Where the noise turns deep (below x..y) and bright (above z..w): its quantiles, worked out
+// by pen_grass_4d.gd so each offset covers region_share of the field.
+uniform vec4 region_cuts = vec4(0.36, 0.46, 0.55, 0.65);
 // How far one blade's hue may wander from its neighbours'.
 uniform float hue_jitter = 0.05;
 
@@ -331,28 +336,22 @@ void vertex() {
 		// small hue shift; the passing gust bright on the tips; the field's far edge going over to
 		// the ground's colour.
 		vec3 base = mix(colour_base, colour_lush, lush);
-		base = mix(base, colour_dry, dry * 0.85);
-		vec3 tip = mix(colour_tip, colour_dry * 1.2, dry * 0.65);
-		// The regions, from two slow fields of the noise (a feature of it is about a third of the
-		// texture), shaped so each region has an edge, not a blur. Deep and bright are the two
-		// ends of one field, so they never overlap but pass through the field's own green; the
-		// fresh green is a second field, over either.
+		base = mix(base, colour_dry, dry * 0.45);
+		vec3 tip = mix(colour_tip, colour_dry * 1.2, dry * 0.35);
+		// The regions, from one slow field of the noise (a feature of it is about a third of the
+		// texture), its low end deep, its high end bright, sap green between; each with a soft
+		// edge, not a blur. A region moves the blade by its offset from sap green.
 		vec2 ruv = root_xz / (region_size * 3.1);
-		float field_a = texture(wind_noise, ruv + vec2(0.37, 0.11)).r;
-		float field_b = texture(wind_noise, vec2(ruv.y, -ruv.x) * 1.3 + vec2(0.71, 0.53)).r;
-		float deep = (1.0 - smoothstep(0.36, 0.46, field_a)) * region_strength;
-		float bright = smoothstep(0.55, 0.65, field_a) * region_strength;
-		float fresh = smoothstep(0.56, 0.66, field_b) * region_strength;
-		base = mix(base, region_deep, deep);
-		tip = mix(tip, region_deep * 1.8, deep * 0.55);
-		base = mix(base, region_bright, bright);
-		tip = mix(tip, region_bright * 1.25, bright * 0.6);
-		base = mix(base, region_fresh, fresh * 0.9);
-		tip = mix(tip, region_fresh * 1.3, fresh * 0.6);
+		float field = texture(wind_noise, ruv + vec2(0.37, 0.11)).r;
+		float deep = (1.0 - smoothstep(region_cuts.x, region_cuts.y, field)) * region_strength;
+		float bright = smoothstep(region_cuts.z, region_cuts.w, field) * region_strength;
+		vec3 offset = (region_deep - colour_base) * deep + (region_bright - colour_base) * bright;
+		base += offset;
+		tip += offset * 0.8;
 		// The blade's own hue: a little towards yellow (red up, blue down) or towards blue.
 		float hue = hash13(vec3(cell, layer + 11.3)) - 0.5;
 		vec3 shift = vec3(1.0, 0.3, -0.8) * hue * hue_jitter * 2.0;
-		base = max(base + shift, vec3(0.0)) * mix(0.86, 1.12, rnd);
+		base = max(base + shift, vec3(0.0)) * mix(0.9, 1.08, rnd);
 		tip = max(tip + shift, vec3(0.0));
 		vec3 c = mix(colour_root, base, smoothstep(0.0, 0.45, t));
 		c = mix(c, tip, smoothstep(0.55, 1.0, t));

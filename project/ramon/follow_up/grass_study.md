@@ -60,13 +60,19 @@ blades are ordinary 3D geometry made by the GPU; only the shader knows about W:
   silver waves on a field); one blade in 80 a flower stalk with a small head (white, yellow,
   violet); the field's far edge turning the field's own colour.
 - **The painted look** (Ramon, 2 Oct, from a Ghibli-style meadow: "a very subtle color/hue offset
-  for each blade, and clump parts with different color regions", "the brighter grass regions ...
-  3 color coded region types", "a fresh green"): broad **regions** about 9 m across (`region_size`)
-  from slow world-space noise at the root, so whole patches of blades share a colour as brush
-  strokes do - **deep** blue-green and **bright** sunlit yellow-green as the two ends of one noise
-  field (they never overlap, passing through the field's own green), **fresh** green from a
-  second field over either; `region_strength` 0.85. Each blade's **hue** also wanders a little
-  towards yellow or blue (`hue_jitter` 0.05). Two texture reads a vertex, about +0.02 ms.
+  for each blade, and clump parts with different color regions"; then, after three strong
+  regions read off, "the scale slightly bigger and the colors on a whole less contrasty ...
+  sapgreen as main and 2 corresponding offsets ... so sapgreen has the highest ratio"):
+  - **sap green** (`colour_base`, #507D2A) is the field's main colour, over half of it;
+  - **two offsets of it**, deeper and cooler (`region_deep`) and lighter and warmer
+    (`region_bright`), each over a quarter (`region_share` 0.25), as the two ends of one slow
+    world-space noise field about 13 m across (`region_size`). The cuts are the noise's own
+    quantiles, read off its image at start, so the shares are what they say. A region moves the
+    whole blade, root to tip, by its offset from sap green;
+  - each blade's **hue** wanders a little towards yellow or blue (`hue_jitter` 0.05), its
+    brightness by +-9%;
+  - less contrast all over: a lighter root, the dry clumps half as strong.
+  One texture read a vertex, about +0.02 ms.
 - **Wind, modelled on wind in a crop:**
   - a mean wind (3 m/s) leans everything a little downwind;
   - **gusts travel downwind at 0.8 of the wind speed, in bands lying across the wind** (honami,
@@ -165,7 +171,7 @@ all the bend for the last few centimetres, so every leaning blade hooked over at
 Field (`spacing` 0.085, `spacing_far` 0.30, `spacing_from` 3, `radius` 44, `band_radii`,
 `band_vertices`, `layers`, `layer_spacing`, `w_radius`), blades (`blade_height` 0.4,
 `blade_width` 0.009, `min_pixels` 0.8, `clump_size`, the colours, `region_deep`,
-`region_bright`, `region_fresh`, `region_size`, `region_strength`, `hue_jitter`), wind (`wind_speed`,
+`region_bright`, `region_size`, `region_share`, `region_strength`, `hue_jitter`), wind (`wind_speed`,
 `gustiness`, `gust_length`, `gust_width`, `bend_max`, `stiffness`, `sheen`), `enabled`. A
 revert point for the two-ring version: the local branch `grass-before-lod`.
 

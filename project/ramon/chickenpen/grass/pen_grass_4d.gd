@@ -58,22 +58,23 @@ const MAX_TILES := 384
 @export_range(0.002, 0.2, 0.001, "suffix:m") var blade_width: float = 0.009
 @export_range(0.0, 3.0, 0.05) var min_pixels: float = 0.8
 @export_range(0.3, 5.0, 0.05, "suffix:m") var clump_size: float = 1.3
-@export var colour_root: Color = Color(0.07, 0.10, 0.05)
-@export var colour_base: Color = Color(0.20, 0.31, 0.12)
-@export var colour_lush: Color = Color(0.14, 0.30, 0.13)
+@export var colour_root: Color = Color(0.11, 0.17, 0.07)
+## The field's main colour: sap green.
+@export var colour_base: Color = Color(0.31, 0.49, 0.16)
+@export var colour_lush: Color = Color(0.27, 0.47, 0.18)
 @export var colour_dry: Color = Color(0.47, 0.44, 0.22)
-@export var colour_tip: Color = Color(0.46, 0.55, 0.24)
+@export var colour_tip: Color = Color(0.48, 0.62, 0.26)
 ## The field's own colour (the pen's ground material): what the field's edge turns into.
 @export var ground_colour: Color = Color(0.16, 0.22, 0.11)
-## The painted look: broad regions of three colours over the field - deep blue-green, bright
-## sunlit yellow-green, fresh green - about region_size across, the field going region_strength
-## of the way to their colours; and each blade's hue nudged by up to hue_jitter towards yellow or
-## blue.
-@export var region_deep: Color = Color(0.05, 0.19, 0.16)
-@export var region_bright: Color = Color(0.58, 0.66, 0.20)
-@export var region_fresh: Color = Color(0.34, 0.64, 0.16)
-@export_range(2.0, 40.0, 0.5, "suffix:m") var region_size: float = 9.0
-@export_range(0.0, 1.0, 0.01) var region_strength: float = 0.85
+## The painted look: broad regions over the field, about region_size across - sap green
+## (colour_base) the most of it, and two offsets of it, deeper and cooler, lighter and warmer,
+## each over region_share of the field - the field going region_strength of the way to them;
+## and each blade's hue nudged by up to hue_jitter towards yellow or blue.
+@export var region_deep: Color = Color(0.21, 0.40, 0.19)
+@export var region_bright: Color = Color(0.40, 0.56, 0.17)
+@export_range(2.0, 40.0, 0.5, "suffix:m") var region_size: float = 13.0
+@export_range(0.0, 0.45, 0.01) var region_share: float = 0.25
+@export_range(0.0, 1.0, 0.01) var region_strength: float = 1.0
 @export_range(0.0, 0.2, 0.005) var hue_jitter: float = 0.05
 
 @export_group("Wind")
@@ -135,6 +136,7 @@ var _instances: Array = []
 var _scenario := RID()
 var _tiles_centre := Vector2(INF, INF)
 var _drawn: int = 0
+var _region_cuts := Vector4(0.36, 0.46, 0.55, 0.65)
 var _mask_image: Image
 var _mask_texture: ImageTexture
 var _pushers: Array[Node4D] = []
@@ -150,11 +152,11 @@ func _ready() -> void:
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	noise.frequency = 0.012
 	noise.fractal_octaves = 3
-	var wind := NoiseTexture2D.new()
-	wind.width = 256
-	wind.height = 256
-	wind.seamless = true
-	wind.noise = noise
+	# Made here, not by a NoiseTexture2D (which makes it on a thread, later), so the regions'
+	# cuts can be read off it now.
+	var noise_image: Image = noise.get_seamless_image(256, 256)
+	var wind := ImageTexture.create_from_image(noise_image)
+	_region_cuts = _cuts(noise_image)
 	_mask_image = Image.create_empty(MASK_CELLS, MASK_CELLS, false, Image.FORMAT_RGBAF)
 	_mask_image.fill(Color(1e4, -1e4, 1e4, -1e4))
 	_mask_texture = ImageTexture.create_from_image(_mask_image)
@@ -185,6 +187,19 @@ func _ready() -> void:
 	_set_visible()
 	_find_pushers.call_deferred()
 	_build_mask.call_deferred()
+
+
+## Where the regions' noise turns deep and bright: its quantiles, so each offset covers
+## region_share of the field (half-way into its soft edge), sap green the rest.
+func _cuts(image: Image) -> Vector4:
+	var grey: Image = image.duplicate()
+	grey.convert(Image.FORMAT_L8)
+	var values: PackedByteArray = grey.get_data()
+	values.sort()
+	var n: int = values.size()
+	var at := func(f: float) -> float: return float(values[clampi(int(f * float(n)), 0, n - 1)]) / 255.0
+	var soft: float = 0.06
+	return Vector4(at.call(region_share - soft), at.call(region_share + soft), at.call(1.0 - region_share - soft), at.call(1.0 - region_share + soft))
 
 
 ## How wide the cross-fade between two bands is, where they meet at [param r].
@@ -236,9 +251,10 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("stiffness", stiffness)
 	m.set_shader_parameter("sheen", sheen)
 	m.set_shader_parameter("region_size", region_size)
+	m.set_shader_parameter("region_cuts", _region_cuts)
 	m.set_shader_parameter("region_strength", region_strength)
 	m.set_shader_parameter("hue_jitter", hue_jitter)
-	for key in ["colour_root", "colour_base", "colour_lush", "colour_dry", "colour_tip", "ground_colour", "region_deep", "region_bright", "region_fresh"]:
+	for key in ["colour_root", "colour_base", "colour_lush", "colour_dry", "colour_tip", "ground_colour", "region_deep", "region_bright"]:
 		var c: Color = get(key)
 		m.set_shader_parameter(key, Vector3(c.r, c.g, c.b))
 	return m
