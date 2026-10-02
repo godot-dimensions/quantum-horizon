@@ -263,16 +263,7 @@ func _strut(parent: Node, part: String, a: Vector4, b: Vector4, thick: float, wd
 	var d: Vector4 = b - a
 	var length: float = d.length()
 	var y: Vector4 = d / maxf(length, 0.0001)
-	var x: Vector4 = Vector4(1, 0, 0, 0) - y * y.x
-	if x.length() < 0.2:
-		x = Vector4(0, 0, 1, 0) - y * y.z
-	x = x.normalized()
-	var z: Vector4 = Vector4(0, 0, 1, 0) - y * y.z - x * x.z
-	if z.length() < 0.2:
-		z = Vector4(1, 0, 0, 0) - y * y.x - x * x.x
-	z = z.normalized()
-	var w: Vector4 = (Vector4(0, 0, 0, 1) - y * y.w - x * x.w - z * z.w).normalized()
-	return _box(parent, part, (a + b) * 0.5, Vector4(thick, length, thick, wd), colour, Projection(x, y, z, w))
+	return _box(parent, part, (a + b) * 0.5, Vector4(thick, length, thick, wd), colour, _frame_along(y))
 
 
 func _own(node: Node) -> void:
@@ -447,3 +438,24 @@ func _sound_burner(lit: bool, delta: float) -> void:
 			near = clampf(6.0 / maxf(Vector3(d.x, d.y, d.z).length(), 6.0), 0.05, 1.0)
 		want = -4.0 + linear_to_db(near)
 	_burner_sound.volume_db = move_toward(_burner_sound.volume_db, want, delta * (160.0 if lit else 60.0))
+
+## An orthonormal frame whose y is [param y]: the other three columns by Gram-Schmidt from
+## whichever of x, z, y and w are not along it, in that order, kept right-handed.
+##
+## THE FIRST VERSION DEGENERATED for a bar lying exactly along x or z: its fallback axis
+## Gram-Schmidted to nothing, the basis had a zero column, and every catwalk rail and girt was
+## built flat (22 "Basis4D.inverse: zero determinant" errors a load).
+static func _frame_along(y: Vector4) -> Projection:
+	var picks: Array[Vector4] = []
+	for axis in [Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 1)]:
+		var v: Vector4 = axis - y * y.dot(axis)
+		for p in picks:
+			v -= p * p.dot(v)
+		if v.length() > 0.2:
+			picks.append(v.normalized())
+		if picks.size() == 3:
+			break
+	var frame := Projection(picks[0], y, picks[1], picks[2])
+	if frame.determinant() < 0.0:
+		frame.w = -frame.w
+	return frame
