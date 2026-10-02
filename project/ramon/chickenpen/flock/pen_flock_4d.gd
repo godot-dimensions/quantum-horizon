@@ -239,6 +239,8 @@ var _hawk_bank: float = 0.0
 var _hawk_aim := Vector4.ZERO
 ## Flown by the player (the Lookout's U, hawk_flight_4d.gd): how hard it is flapping, 0 gliding.
 var _pilot_beat: float = 0.0
+## Not drawn while it is flown from its own eyes (the camera would be inside it).
+var hawk_hidden: bool = false
 ## The flock's ghost (flock_ghost.gdshader): the birds out of the camera's slice, drawn faint
 ## and see-through by a second instance of the same multimesh. Off unless something asks for
 ## it - the Lookout's projection toggle does.
@@ -839,7 +841,7 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngi
 		RenderingServer.instance_set_scenario(_ghost_instance, scenario)
 	var shown: bool = is_visible_in_tree() and count > 0 and scenario.is_valid()
 	RenderingServer.instance_set_visible(_instance, shown)
-	RenderingServer.instance_set_visible(_hawk_instance, shown and _hawk_state != HawkState.AWAY)
+	RenderingServer.instance_set_visible(_hawk_instance, shown and _hawk_state != HawkState.AWAY and not hawk_hidden)
 	RenderingServer.instance_set_visible(_ghost_instance, shown and ghost)
 	if not shown:
 		return

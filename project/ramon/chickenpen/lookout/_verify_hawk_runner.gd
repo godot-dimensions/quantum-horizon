@@ -107,9 +107,21 @@ func _process(d: float) -> bool:
 			_check("U: you are the hawk", bool(_hawk.get("flying")))
 			_check("the flock says its hawk is flown by you", String(_flock.call("stats").get("hawk", "")) == "flown by you", String(_flock.call("stats").get("hawk", "")))
 			_check("the pen's HUD is put away", not (_room.get_node("UI/Controls") as CanvasItem).visible if _room.get_node_or_null("UI/Controls") else true)
-			_save("swoop_in")
+			_check("the intro first: you watch it come in", bool(_hawk.call("in_intro")) and not bool(_flock.get("hawk_hidden")))
+			_save("intro_watching")
+			_step = 21
+			_wait = 1.9
+			_t = 0.0
+		21:
+			_save("intro_into_its_eyes")
+			_next(1.0)
+		22:
+			_check("after the intro: from its eyes, the hawk itself not drawn", not bool(_hawk.call("in_intro")) and bool(_flock.get("hawk_hidden")))
+			_save("from_its_eyes")
 			_steer = true
-			_next(2.0)
+			_step = 3
+			_wait = 2.0
+			_t = 0.0
 		3:
 			if not has_meta("chased"):
 				set_meta("chased", true)

@@ -206,6 +206,8 @@ func _showcase() -> bool:
 			var heron := _room.get_node_or_null("Heron") as Node4D
 			_check("the showcase has the owl, built", owl != null and owl.get_child_count() > 10)
 			_check("and the heron, built", heron != null and heron.get_node_or_null("Body") != null and heron.get_node("Body").get_child_count() > 5)
+			var chip := _room.get_node_or_null("Chipmunk") as Node4D
+			_check("and the chipmunk, built and idle", chip != null and chip.get_node_or_null("Body") != null and bool(chip.get("idle_only")))
 			_cam = Camera4D.new()
 			_cam.set("rendering_engine_name", "Cross-section")
 			_cam.set("field_of_view_4d", 0.9)
@@ -225,6 +227,17 @@ func _showcase() -> bool:
 			_next(0.8)
 		3:
 			_save("together")
+			var chip := _room.get_node("Chipmunk") as Node4D
+			_look(_cam, chip.global_position + Vector4(0.9, 0.35, 1.1, 0.0), chip.global_position + Vector4(0, 0.12, 0, 0))
+			_next(0.8)
+		4:
+			_save("chipmunk")
+			var owl := _room.get_node("Owl") as Node4D
+			# Side on, for the head and the face on it.
+			_look(_cam, owl.global_position + Vector4(1.6, 0.75, 0.0, 0.0), owl.global_position + Vector4(0, 0.72, 0, 0))
+			_next(0.8)
+		5:
+			_save("owl_side")
 			return true
 	return false
 

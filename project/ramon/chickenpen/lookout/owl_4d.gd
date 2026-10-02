@@ -28,6 +28,9 @@ extends Node4D
 enum State { SIT, LOOK, STRETCH, TURN_W, HOOT }
 
 const RIG := preload("res://ramon/chickenpen/scripts/loft_rig_4d.gd")
+## The head: a ball of this radius (at size 1), squashed front to back by HEAD_FLAT.
+const HEAD_R := 0.19
+const HEAD_FLAT := 0.84
 const BALL := preload("res://ramon/chickenpen/scripts/loft_ball_4d.gd")
 const SIDES := 14
 
@@ -155,31 +158,49 @@ func rebuild() -> void:
 	add_child(_head_pivot)
 	_own(_head_pivot)
 	_head_pivot.position = Vector4(0.0, 0.72 * u, 0.0, 0.0)
+	# A REAL BALL, NOT TWO. A loft's sections stand across its spine and each end gets a
+	# cone half a radius deep; two balls made a short tilted lozenge, and from the side the
+	# face stood out in front of it with daylight between (Ramon, 2 Oct: "the head ball and
+	# the eyes have a hole in it when viewed from the side"). Five sections up a circle make
+	# a round head, and squashed front to back a little it is an owl's flat-faced one.
 	var head := _rig("Head", plumage, _head_pivot)
-	_ball(head, "Crown", Vector4(0.0, 0.035 * u, -0.035 * u, 0.0), 0.18 * u, ws * 0.95)
-	_ball(head, "Face", Vector4(0.0, -0.01 * u, 0.02 * u, 0.0), 0.19 * u, ws * 0.95)
+	var r_head: float = HEAD_R * u
+	for k in 5:
+		var y: float = (float(k) - 2.0) * 0.065 * u
+		_ball(head, "Ring%d" % k, Vector4(0.0, y, 0.0, 0.0), sqrt(maxf(r_head * r_head - y * y, 0.0001)), ws * 0.95)
+	head.set("smoothing", 2)
 	head.call("build", false)
+	head.basis = Basis4D.from_scale(Vector4(1.0, 0.92, HEAD_FLAT, 1.0))
 	var face_w: float = 0.3 * u * ws
 	for side in [-1.0, 1.0]:
 		var tag: String = "L" if side < 0.0 else "R"
-		var at := Vector4(side * 0.078 * u, -0.005 * u, 0.0, 0.0)
 		# The facial disc: an octagon (a square and a diamond) of pale feathers round each
-		# eye, a dark rim behind it - together the owl's round, flat face.
-		_octagon(_head_pivot, "Rim" + tag, at + Vector4(0, 0, 0.178 * u, 0), 0.175 * u, 0.012 * u, face_w, plumage_dark)
-		_octagon(_head_pivot, "Disc" + tag, at + Vector4(0, 0, 0.19 * u, 0), 0.15 * u, 0.02 * u, face_w, disc)
-		var e := _box(_head_pivot, "Eye" + tag, at + Vector4(side * 0.004 * u, 0.012 * u, 0.205 * u, 0.0), Vector4(0.072 * u, 0.072 * u, 0.012 * u, face_w * 0.8), eye)
+		# eye, a dark rim behind it - together the owl's round, flat face. Each half sits ON
+		# the head's front, turned out a little to follow its curve, so nothing hangs in front
+		# of the head with a gap behind it.
+		var face := Node4D.new()
+		face.name = "Face" + tag
+		_head_pivot.add_child(face)
+		_own(face)
+		var fx: float = side * 0.078 * u
+		face.position = Vector4(fx, -0.005 * u, _front(fx, -0.005 * u) - 0.004 * u, 0.0)
+		face.basis = Basis4D.from_zx(side * 0.42)
+		_octagon(face, "Rim" + tag, Vector4(0.0, 0.0, -0.004 * u, 0.0), 0.175 * u, 0.016 * u, face_w, plumage_dark)
+		_octagon(face, "Disc" + tag, Vector4(0.0, 0.0, 0.006 * u, 0.0), 0.15 * u, 0.012 * u, face_w, disc)
+		var e := _box(face, "Eye" + tag, Vector4(side * 0.004 * u, 0.012 * u, 0.014 * u, 0.0), Vector4(0.072 * u, 0.072 * u, 0.012 * u, face_w * 0.8), eye)
 		_box(e, "Pupil", Vector4(0.0, 0.0, 0.005 * u, 0.0), Vector4(0.04 * u, 0.044 * u, 0.008 * u, face_w * 0.8), Color(0.05, 0.04, 0.03))
 		_box(e, "Glint", Vector4(0.013 * u, 0.015 * u, 0.009 * u, 0.0), Vector4(0.012 * u, 0.012 * u, 0.004 * u, face_w * 0.6), Color(1, 1, 0.95))
 		_eyes.append(e)
 		# Brows: pale, from above the beak out over each eye - the V that makes the face.
-		var brow := _box(_head_pivot, "Brow" + tag, Vector4(side * 0.05 * u, 0.075 * u, 0.2 * u, 0.0), Vector4(0.11 * u, 0.022 * u, 0.014 * u, face_w * 0.8), disc.lightened(0.18))
-		brow.basis = Basis4D.from_xy(side * 0.42)
-		# Ear tufts: feathers, not ears - short, broad and leaning out.
-		var tuft := _box(_head_pivot, "Tuft" + tag, Vector4(side * 0.115 * u, 0.165 * u, 0.02 * u, 0.0), Vector4(0.055 * u, 0.09 * u, 0.035 * u, face_w * 0.7), plumage_dark)
+		var bx: float = side * 0.05 * u
+		var brow := _box(_head_pivot, "Brow" + tag, Vector4(bx, 0.075 * u, _front(bx, 0.075 * u) + 0.006 * u, 0.0), Vector4(0.11 * u, 0.022 * u, 0.014 * u, face_w * 0.8), disc.lightened(0.18))
+		brow.basis = Basis4D.from_xy(side * 0.42) * Basis4D.from_zx(side * 0.3)
+		# Ear tufts: feathers, not ears - short, broad and leaning out, rooted in the crown.
+		var tuft := _box(_head_pivot, "Tuft" + tag, Vector4(side * 0.11 * u, 0.14 * u, 0.0, 0.0), Vector4(0.055 * u, 0.09 * u, 0.035 * u, face_w * 0.7), plumage_dark)
 		tuft.basis = Basis4D.from_xy(-side * 0.5)
-	var beak := _box(_head_pivot, "Beak", Vector4(0.0, -0.045 * u, 0.208 * u, 0.0), Vector4(0.04 * u, 0.04 * u, 0.03 * u, face_w * 0.6), Color(0.30, 0.29, 0.25))
+	var beak := _box(_head_pivot, "Beak", Vector4(0.0, -0.045 * u, _front(0.0, -0.045 * u) + 0.008 * u, 0.0), Vector4(0.04 * u, 0.04 * u, 0.03 * u, face_w * 0.6), Color(0.30, 0.29, 0.25))
 	beak.basis = Basis4D.from_xy(PI * 0.25)
-	_throat = _box(_head_pivot, "Throat", Vector4(0.0, -0.13 * u, 0.15 * u, 0.0), Vector4(0.11 * u, 0.06 * u, 0.05 * u, face_w * 0.8), disc.lightened(0.15))
+	_throat = _box(_head_pivot, "Throat", Vector4(0.0, -0.13 * u, _front(0.0, -0.13 * u) - 0.01 * u, 0.0), Vector4(0.11 * u, 0.06 * u, 0.05 * u, face_w * 0.8), disc.lightened(0.15))
 	_throat.visible = false
 	# Wings, folded against the sides - part of the outline - each on a shoulder pivot. The
 	# flight feathers stay tucked away until the stretch fans them out.
@@ -208,6 +229,14 @@ func rebuild() -> void:
 		for k in 3:
 			_box(self, "Talon%s%d" % [tag, k], Vector4(side * 0.06 * u + (float(k) - 1.0) * 0.022 * u, -0.005 * u, 0.12 * u, 0.0),
 				Vector4(0.012 * u, 0.025 * u, 0.02 * u, 0.12 * u * ws), Color(0.12, 0.11, 0.10))
+
+
+## How far forward the head's surface is at ([param x], [param y]) of its pivot: the front of
+## the squashed ball, for setting the face on it.
+func _front(x: float, y: float) -> float:
+	var r: float = HEAD_R * size
+	var yy: float = y / 0.92
+	return sqrt(maxf(r * r - x * x - yy * yy, 0.0)) * HEAD_FLAT
 
 
 ## A pale disc of feathers as an octagon: a square and the same square turned 45 degrees.

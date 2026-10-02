@@ -229,11 +229,10 @@ func _build_ladder(h: float, half: float, wd: float) -> void:
 	_box("Board", Vector4(1.35, 1.35, z + 1.0, 0.0), Vector4(0.9, 0.6, 0.05, 0.6), timber)
 	_box("BoardFace", Vector4(1.35, 1.35, z + 1.03, 0.0), Vector4(0.78, 0.48, 0.02, 0.5), Color(0.86, 0.82, 0.70))
 	_box("BoardRoof", Vector4(1.35, 1.7, z + 1.0, 0.0), Vector4(1.04, 0.05, 0.22, 0.7), roof_colour)
-	# A stand-off to the catwalk at the top, and a cage hoop or two.
+	# A stand-off to the catwalk at the top. (Two "cage hoop" bars stood behind the ladder's top
+	# with nothing joining them to it - sticks in the air, like the knee braces; gone, 2 Oct.)
 	if design == Design.CAB:
 		_box("LadderTop", Vector4(0.0, h - 0.05, (z + half + 0.6) * 0.5, 0.0), Vector4(0.8, 0.08, z - half, wd), timber)
-	for y in [h - 2.6, h - 1.2]:
-		_box("Hoop", Vector4(0.0, y, z + 0.38, 0.0), Vector4(0.86, 0.05, 0.05, wd), steel)
 
 
 # --- The cab -----------------------------------------------------------------------------------
@@ -446,24 +445,18 @@ static func _frame_along(y: Vector4) -> Projection:
 # --- The balcony -------------------------------------------------------------------------------
 
 ## The deck on the frame's top, its railings, the cabin and its hip roof.
-func _build_balcony(h: float, frame_half: float, wd: float) -> void:
+func _build_balcony(h: float, _frame_half: float, wd: float) -> void:
 	var half: float = deck_size * 0.5
 	var deck := Color(0.55, 0.42, 0.28)
 	var rail := Color(0.62, 0.48, 0.32)
-	# Boards, and the joists and knee braces that carry the overhang out past the frame.
+	# Boards, and the joists under them. (There were knee braces too, twelve struts from the
+	# frame out to the deck's edge; they met no member of the frame and read as sticks hanging
+	# in the air, so they went - Ramon, 2 Oct.)
 	_box("Deck", Vector4(0.0, h - 0.06, 0.0, 0.0), Vector4(deck_size, 0.12, deck_size, wd), deck)
 	_box("Fascia", Vector4(0.0, h - 0.2, 0.0, 0.0), Vector4(deck_size - 0.1, 0.16, deck_size - 0.1, wd - 0.1), timber_dark)
 	for k in 5:
 		var x: float = lerpf(-half + 0.3, half - 0.3, float(k) / 4.0)
 		_box("Joist", Vector4(x, h - 0.36, 0.0, 0.0), Vector4(0.14, 0.2, deck_size - 0.2, wd), timber_dark)
-	for face in 4:
-		for t in [-0.6, 0.0, 0.6]:
-			var c: Vector2 = _corner(face, frame_half - 0.12)
-			var d: Vector2 = _corner(face + 1, frame_half - 0.12)
-			var on_frame: Vector2 = c.lerp(d, 0.5 + t * 0.5)
-			var out_dir: Vector2 = (c + d).normalized()
-			var at_edge: Vector2 = on_frame + out_dir * (half - frame_half - 0.15)
-			_strut("Knee", Vector4(on_frame.x, h - 2.2, on_frame.y, 0.0), Vector4(at_edge.x, h - 0.3, at_edge.y, 0.0), 0.1, wd, steel)
 	# Railings: posts, a top rail and a mid rail on the four edges, a gap at the ladder.
 	var posts: int = 6
 	for face in 4:

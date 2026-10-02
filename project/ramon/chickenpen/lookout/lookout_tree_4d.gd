@@ -103,8 +103,11 @@ func rebuild() -> void:
 	# on it), leaning a touch, and narrowing to the top - a snapped spike on a dead one.
 	var lean := Vector2(rng.randf_range(-0.05, 0.05), rng.randf_range(-0.05, 0.05)) * h
 	var trunk_top: float = h * (0.92 if style == Style.DEAD else 0.8)
-	var trunk: Array = []
-	var radii: Array = []
+	# The loft collapses a chain's first and last sections to a point (taper_ends), so the
+	# first ball is buried well under the ground: the trunk is its full width where it comes
+	# out of the earth, not pinched to half of it (which left climbing chipmunks floating).
+	var trunk: Array = [Vector4(0.0, -1.6, 0.0, 0.0)]
+	var radii: Array = [r * 1.5]
 	for k in 7:
 		var f: float = float(k) / 6.0
 		var y: float = lerpf(-0.4, trunk_top, f)
@@ -271,11 +274,22 @@ func trunk_at(y: float) -> Vector4:
 	return global_position + global_basis * _on_trunk(limbs[0]["points"], y)
 
 
+## The trunk's real radius at [param y]: the lofted surface runs straight between its balls,
+## and the first and last are collapsed to points by the loft (taper_ends).
 func trunk_radius_at(y: float) -> float:
 	if limbs.is_empty():
 		return trunk_radius
-	var trunk: Array = limbs[0]["points"]
-	return _radius_on_trunk(limbs[0]["radii"], clampf((y - (trunk[0] as Vector4).y) / maxf((trunk.back() as Vector4).y - (trunk[0] as Vector4).y, 0.01), 0.0, 1.0))
+	var pts: Array = limbs[0]["points"]
+	var rad: Array = limbs[0]["radii"]
+	var last: int = pts.size() - 1
+	for k in range(1, pts.size()):
+		var a: Vector4 = pts[k - 1]
+		var b: Vector4 = pts[k]
+		if y <= b.y or k == last:
+			var ra: float = 0.0 if k - 1 == 0 else float(rad[k - 1])
+			var rb: float = 0.0 if k == last else float(rad[k])
+			return lerpf(ra, rb, clampf((y - a.y) / maxf(b.y - a.y, 0.001), 0.0, 1.0))
+	return 0.0
 
 
 ## Where the perch twig's top is, in the world.

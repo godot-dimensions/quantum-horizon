@@ -143,11 +143,13 @@ func _process(d: float) -> bool:
 				var balloon: Node = _lookout.get("balloon")
 				balloon.call("set_ready", true, true)
 				balloon.call("board")
-				balloon.set("ride_time", 60.0)
+				# -- natural: ridden into the flock rather than dropped into it, and settled -
+				# a jump to the flock costs seconds of start-up that are not the ride's.
+				balloon.set("ride_time", 44.0 if OS.get_cmdline_user_args().has("natural") else 60.0)
 				_step = 5
 				_t = 0.0
 		5:
-			if _t > 1.5:
+			if _t > (8.0 if OS.get_cmdline_user_args().has("natural") else 1.5):
 				_lookout.get("station").call("look_along", Vector4(0.0, 0.1, -1.0, 0.0))
 				if OS.get_cmdline_user_args().has("suspects"):
 					_suspect = 0

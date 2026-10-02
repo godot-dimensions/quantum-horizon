@@ -286,3 +286,19 @@ chipmunks, fly as a hawk, keep the pen camera's look but make its numbers true. 
   release, UI scale, laptop, cinematics card, menu final) all pass.
 - Open: trees are a first design (Ramon: "trees is still an issue to design"); the chipmunks
   have no sound; the kata wood is reached on foot by eight metres of Q.
+
+Later the same evening, from Ramon watching the film:
+- **The hawk is flown from its eyes**, with the hawk seen only in a 3 s intro (it comes in over
+  you, the camera swoops into its eyes; a click skips). The flock hides its drawn hawk while
+  you are inside it (`hawk_hidden`).
+- **The owl's head is a real ball**: a two-ball loft is a short tilted lozenge (each end gets a
+  cone half a radius deep, `loft_builder_4d.gd`), and the face had stood in front of it with a
+  gap. Five sections up a circle, squashed front to back; the face halves sit on it.
+- **No sticks in the air under the deck**: the twelve knee braces and the two ladder "hoops"
+  met nothing and are gone.
+- **The chipmunks climb on the bark**: the loft collapses a chain's END sections to points, so
+  the trunk was half as thick near the ground as the radius they climbed against. The trunk's
+  first ball is buried now, and `trunk_radius_at` follows the real surface (6 mm off the bark).
+- **Measured on a real ride**: ridden into the flock rather than dropped into it, scripts are
+  3.0 ms. Every "spike" in `_measure_lookout_runner.gd` came straight after one of its own
+  jumps of the ride time (`-- natural` rides in instead).

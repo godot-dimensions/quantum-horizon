@@ -449,7 +449,8 @@ func _on_trunk(tree: Node4D, y: float, angle: float, through_w: bool) -> Diction
 	var frame := Projection(tangent, out, up, other)
 	if frame.determinant() < 0.0:
 		frame.w = -frame.w
-	return {"at": centre + out * (reach + 0.035 * size), "basis": frame}
+	# Its feet (its origin) on the bark.
+	return {"at": centre + out * (reach + 0.004 * size), "basis": frame}
 
 
 # --- Posing -----------------------------------------------------------------------------------

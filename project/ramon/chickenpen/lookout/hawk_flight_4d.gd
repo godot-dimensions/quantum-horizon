@@ -19,7 +19,12 @@ extends Node
 ## climbs, Shift folds the wings - the stoop: no flapping, and gravity takes you as fast as
 ## the dive is steep. Speed follows a target with gravity along the flight path added in, so a
 ## climb bleeds speed and a dive builds it. It cannot fly into the ground (lookout_ground_4d).
-## A third-person chase camera, its view widening with speed.
+##
+## FROM ITS EYES (Ramon, 2 Oct: "you can just spawn in its eyes, no need to see the hawk ...
+## maybe only as intro cinematic before you fly"). U plays a three-second intro: from where
+## you stand you watch the hawk come in over you, and the camera swoops into its eyes; from
+## then on you fly first person - the hawk itself is hidden, the view rolls into the turns
+## and widens with speed. A click skips the intro.
 ##
 ## While you fly, the pen's HUD is put away and the player stands where they were, still and
 ## visible below. U or Esc gives the hawk back: it flies on out, and you are on the ground.
@@ -34,9 +39,12 @@ const G := 9.81
 @export_range(10.0, 60.0, 0.5, "suffix:m/s") var stoop_speed: float = 32.0
 @export_range(0.0005, 0.01, 0.0001) var mouse_sensitivity: float = 0.0028
 @export_range(0.5, 10.0, 0.1, "suffix:m/s") var w_speed: float = 2.5
-@export_range(2.0, 20.0, 0.1, "suffix:m") var chase_distance: float = 4.5
-@export_range(0.0, 6.0, 0.1, "suffix:m") var chase_height: float = 1.0
 @export_range(0.5, 10.0, 0.1, "suffix:m") var min_height: float = 2.0
+## The intro: watching it come in, then into its eyes.
+@export_range(0.5, 6.0, 0.1, "suffix:s") var intro_seconds: float = 3.0
+@export_range(0.1, 3.0, 0.05, "suffix:s") var into_eyes_seconds: float = 1.1
+## How far the view rolls into a turn, against the hawk's own bank.
+@export_range(0.0, 1.0, 0.05) var roll_with_bank: float = 0.6
 
 var lookout: Node
 var flock: Node4D
@@ -59,11 +67,9 @@ var _turn: Vector2 = Vector2.ZERO
 var _yaw_rate: float = 0.0
 var _saved: Dictionary = {}
 var _t: float = 0.0
+## Where the intro watches from: where the camera was when U was pressed.
 var _from_pos: Vector4
-var _from_basis: Projection
-var _eye: Vector4
 var _stats_t: float = 0.0
-var _chase: float = 6.0
 var _hud: Control
 var _layer: CanvasLayer
 
@@ -71,7 +77,6 @@ var _layer: CanvasLayer
 func setup(owner_lookout: Node) -> void:
 	lookout = owner_lookout
 	flock = lookout.get("room").get_node_or_null("World/Flock") as Node4D
-	_chase = chase_distance
 	_layer = CanvasLayer.new()
 	_layer.name = "HawkHUD"
 	_layer.layer = 6
@@ -102,13 +107,18 @@ func start() -> void:
 	var room: Node = lookout.get("room")
 	var player: Node4D = lookout.get("player")
 	var farm: Camera4D = lookout.call("current_camera")
-	# Up behind the player and above, heading the way they were looking.
-	var look: Vector4 = farm.global_basis * Vector4(0.0, 0.0, -1.0, 0.0)
-	yaw = atan2(-look.x, -look.z)
-	pitch = -0.12
-	speed = cruise_speed
+	# It comes in from behind you and above, heading for the flock, and passes over you: so
+	# the intro, watching from where you stand, sees it arrive and go by.
+	var middle: Vector4 = flock.global_position + flock.global_basis * (flock.get("_middle") as Vector4)
+	var to_flock := Vector2(middle.x - player.global_position.x, middle.z - player.global_position.z)
+	if to_flock.length() < 1.0:
+		to_flock = Vector2(0.0, -1.0)
+	to_flock = to_flock.normalized()
+	yaw = atan2(-to_flock.x, -to_flock.y)
+	pitch = -0.06
+	speed = cruise_speed + 2.0
 	bank = 0.0
-	at = player.global_position + Vector4(0.0, 10.0, 0.0, 0.0) - _flat_ahead() * 4.0
+	at = player.global_position + Vector4(-to_flock.x * 26.0 + to_flock.y * 4.0, 14.0, -to_flock.y * 26.0 - to_flock.x * 4.0, 0.0)
 	# The pen put away: its HUD, the player's legs, the cursor.
 	var hud: Dictionary = {}
 	for child in room.get_node("UI").get_children():
@@ -124,18 +134,19 @@ func start() -> void:
 	camera.set("rendering_engine_name", "Combined" if bool(lookout.get("projection")) else "Cross-section")
 	camera.set("projection_opacity", float(lookout.get("projection_opacity")))
 	camera.set("projection_opacity_base", float(lookout.get("projection_opacity_base")))
-	camera.set("field_of_view_4d", 1.2)
+	camera.set("field_of_view_4d", 1.0)
 	camera.set("w_fade_distance", 6.0)
+	camera.set("clip_near", 0.05)
 	room.add_child(camera)
 	camera.global_position = farm.global_position
 	camera.global_basis = farm.global_basis
 	camera.make_current()
-	_from_pos = farm.global_position
-	_from_basis = farm.global_basis
-	_eye = _chase_eye()
+	_from_pos = farm.global_position + Vector4(0.0, 0.3, 0.0, 0.0)
 	_t = 0.0
 	flock.call("pilot_hawk", true)
+	flock.set("hawk_hidden", false)
 	_fly_flock()
+	# The cards come with the controls, when the intro is over.
 	_hud.visible = true
 
 
@@ -144,6 +155,7 @@ func stop() -> void:
 		return
 	flying = false
 	flock.call("pilot_hawk", false)
+	flock.set("hawk_hidden", false)
 	var room: Node = lookout.get("room")
 	var player: Node4D = lookout.get("player")
 	var hud: Dictionary = _saved.get("hud", {})
@@ -177,14 +189,13 @@ func _input(event: InputEvent) -> void:
 			start()
 		return
 	if event is InputEventMouseMotion:
-		_turn += (event as InputEventMouseMotion).relative * mouse_sensitivity
+		# Not during the intro: it is a shot, and the hawk flies itself in.
+		if not in_intro():
+			_turn += (event as InputEventMouseMotion).relative * mouse_sensitivity
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
-		var button: int = (event as InputEventMouseButton).button_index
-		if button == MOUSE_BUTTON_WHEEL_UP:
-			_chase = clampf(_chase / 1.15, 3.0, 20.0)
-		elif button == MOUSE_BUTTON_WHEEL_DOWN:
-			_chase = clampf(_chase * 1.15, 3.0, 20.0)
+		if in_intro() and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+			_t = intro_seconds
 		get_viewport().set_input_as_handled()
 	elif press != null and press.pressed and not press.echo:
 		if press.keycode == key or press.keycode == KEY_ESCAPE:
@@ -201,23 +212,30 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
+## Whether the intro is still playing (and the hawk flying itself).
+func in_intro() -> bool:
+	return flying and _t < intro_seconds
+
+
 func _process(delta: float) -> void:
 	if not flying:
 		return
 	_t += delta
 	var dt: float = minf(delta, 1.0 / 20.0)
+	var intro: bool = in_intro()
+	flock.set("hawk_hidden", not intro)
 	# Steering: the mouse turns and climbs; the turn rate is what banks it.
 	var before: float = yaw
 	yaw -= _turn.x
-	stooping = Input.is_physical_key_pressed(KEY_SHIFT)
+	stooping = Input.is_physical_key_pressed(KEY_SHIFT) and not intro
 	pitch = clampf(pitch - _turn.y, -1.4 if stooping else -1.0, 0.9)
 	_turn = Vector2.ZERO
 	_yaw_rate = lerpf(_yaw_rate, (yaw - before) / maxf(dt, 0.0001), clampf(dt * 6.0, 0.0, 1.0))
 	bank = lerpf(bank, clampf(atan(_yaw_rate * speed / G), -1.1, 1.1), clampf(dt * 4.0, 0.0, 1.0))
 	# Speed: a target from the keys, with gravity along the path added in.
-	var flap_key: bool = Input.is_physical_key_pressed(KEY_W)
-	var brake: bool = Input.is_physical_key_pressed(KEY_S)
-	var climb: bool = Input.is_physical_key_pressed(KEY_SPACE)
+	var flap_key: bool = Input.is_physical_key_pressed(KEY_W) and not intro
+	var brake: bool = Input.is_physical_key_pressed(KEY_S) and not intro
+	var climb: bool = Input.is_physical_key_pressed(KEY_SPACE) and not intro
 	var target: float = cruise_speed
 	if flap_key:
 		target = flap_speed
@@ -237,7 +255,7 @@ func _process(delta: float) -> void:
 	if climb and not stooping:
 		at.y += 4.5 * dt
 	# Along W: E ana, Q kata, the camera's slice going with you.
-	var w_in: float = (1.0 if Input.is_physical_key_pressed(KEY_E) else 0.0) - (1.0 if Input.is_physical_key_pressed(KEY_Q) else 0.0)
+	var w_in: float = 0.0 if intro else (1.0 if Input.is_physical_key_pressed(KEY_E) else 0.0) - (1.0 if Input.is_physical_key_pressed(KEY_Q) else 0.0)
 	at.w += w_in * w_speed * dt
 	# Not into the ground, not off into space, not out of the world.
 	var ground: RefCounted = lookout.get("ground")
@@ -270,24 +288,32 @@ func _fly_flock() -> void:
 	flock.call("fly_hawk", at, _heading(), speed, bank, flapping)
 
 
-func _chase_eye() -> Vector4:
-	return at - _flat_ahead() * _chase + Vector4(0.0, chase_height + _chase * 0.12, 0.0, 0.0) - Vector4(0.0, sin(pitch) * _chase * 0.5, 0.0, 0.0)
+## The hawk's eye: a hand's breadth ahead of its middle, looking where it flies, rolled into
+## its turns.
+func _eye_pose() -> Array:
+	var eye: Vector4 = at + _heading() * 0.14 + Vector4(0.0, 0.04, 0.0, 0.0)
+	var basis: Projection = Basis4D.from_zx(yaw) * Basis4D.from_yz(pitch) * Basis4D.from_xy(bank * roll_with_bank)
+	return [eye, basis]
 
 
-## Behind and a little above, easing after the hawk; swooping in from the farm camera at first.
-func _place_camera(dt: float) -> void:
-	_eye = _eye.lerp(_chase_eye(), clampf(dt * 5.0, 0.0, 1.0))
-	_eye.w = at.w
-	# A little ahead of the hawk and above it, so the hawk sits low in the frame with the
-	# flock ahead of it.
-	var look_at: Vector4 = at + _heading() * 5.0 + Vector4(0.0, 0.6, 0.0, 0.0)
-	var d: Vector4 = look_at - _eye
-	var basis: Projection = Basis4D.from_zx(atan2(-d.x, -d.z)) * Basis4D.from_yz(atan2(d.y, Vector2(d.x, d.z).length())) * Basis4D.from_xy(-bank * 0.25)
-	var k: float = smoothstep(0.0, 1.3, _t)
-	camera.global_position = _from_pos.lerp(_eye, k)
-	camera.global_basis = basis if k >= 1.0 else _blend_basis(_from_basis, basis, k)
+## The intro watches the hawk from where you stood, then swoops into its eyes; after it, the
+## camera is the hawk's eye.
+func _place_camera(_dt: float) -> void:
+	var pose: Array = _eye_pose()
+	var fast: float = clampf((speed - cruise_speed) / (stoop_speed - cruise_speed), 0.0, 1.0)
+	var fov: float = lerpf(1.3, 1.62, fast)
+	if in_intro():
+		var d: Vector4 = at - _from_pos
+		var watch: Projection = Basis4D.from_zx(atan2(-d.x, -d.z)) * Basis4D.from_yz(atan2(d.y, Vector2(d.x, d.z).length()))
+		var k: float = smoothstep(intro_seconds - into_eyes_seconds, intro_seconds, _t)
+		camera.global_position = _from_pos.lerp(pose[0], k * k)
+		camera.global_basis = watch if k <= 0.0 else _blend_basis(watch, pose[1], k)
+		camera.set("field_of_view_4d", lerpf(0.75, fov, k))
+		return
+	camera.global_position = pose[0]
+	camera.global_basis = pose[1]
 	# Wider the faster: the sense of speed in a stoop.
-	camera.set("field_of_view_4d", lerpf(1.15, 1.5, clampf((speed - cruise_speed) / (stoop_speed - cruise_speed), 0.0, 1.0)))
+	camera.set("field_of_view_4d", fov)
 
 
 func _blend_basis(a: Projection, b: Projection, k: float) -> Projection:
@@ -314,7 +340,7 @@ func _measure() -> void:
 class Hud extends Control:
 	const STYLE := preload("res://ramon/Menu/style/menu_final_style.tres")
 	const KEYS := [["Mouse", "steer: turn and climb"], ["W", "flap: faster"], ["S", "brake"], ["Space", "climb"],
-		["Shift", "fold the wings: stoop"], ["E  Q", "slide ana / kata, through W"], ["Wheel", "camera nearer / further"],
+		["Shift", "fold the wings: stoop"], ["E  Q", "slide ana / kata, through W"],
 		["P", "projection on / off"], ["U  Esc", "land: give the hawk back"], ["F3", "hide the cards"], ["F4", "developer overlay"]]
 	var flight: Node
 	var _font: Font
@@ -344,6 +370,12 @@ class Hud extends Control:
 		if flight == null or not bool(flight.get("flying")):
 			return
 		var s: Vector2 = get_viewport_rect().size
+		if bool(flight.call("in_intro")):
+			# The intro is a shot: only a line to say what it is and that it can be skipped.
+			var line: String = "THE HAWK  ·  click to skip"
+			var lw: float = _font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+			draw_string(_font, Vector2((s.x - lw) * 0.5, s.y - 40.0), line, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(1, 1, 1, 0.7))
+			return
 		# The strip: what you are, in the camera's red-dot manner.
 		draw_rect(Rect2(0, 0, s.x, 40.0), Color(0.0, 0.0, 0.0, 0.45))
 		draw_circle(Vector2(30.0, 20.0), 5.0, STYLE.accent.lightened(0.2))
