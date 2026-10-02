@@ -53,7 +53,7 @@ const PAGES := [
 		"slots": ["Farm folk", "Two of them", "A crowd of three", "Wren at her tower"],
 		"hints": ["Anyone on the farm.", "Two people in one picture.", "Three in one picture.",
 			"From the air, looking back at the tower."]},
-	{"id": "owl", "title": "The ana owl", "latin": "Strix, from somewhere else", "secret": true,
+	{"id": "owl", "title": "The ana owl", "latin": "Bubo, an eagle owl, from somewhere else", "secret": true,
 		"slots": ["The ana owl", "It's seen you", "The wing stretch", "A head turned through W"],
 		"hints": ["Something sits outside the north window. Not on this slice.",
 			"Wait until it looks at you.", "Now and then it stretches a wing.",

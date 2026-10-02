@@ -25,6 +25,15 @@ extends Node
 ## mirror's blackout. A roll is [member roll] shots; in the cab an empty roll reloads itself
 ## on a 1.2 s winder.
 ##
+## THE CAMERA ANYWHERE (HELD). Ramon, 2 Oct: "maybe we should just allow the player to walk as
+## in first person mode". Z raises the camera wherever you are, once Wren has given it to you:
+## the view goes to your eyes, you walk as ever (WASD, the orbit rig still turning you and the
+## slice), and the camera's keys are live - wheel, E and Q as the focus ring, T, click. On the
+## balcony that is how you are up there: you walk round the deck with the camera raised.
+## E and Q are the pen's ana/kata keys; while the camera is up their bindings are lifted out
+## of the InputMap (so you do not step through W) and read here as the ring, and put back
+## the moment it comes down.
+##
 ## IT BORROWS THE PEN AS THE CINEMATIC DOES: the player frozen and hidden at the ladder's
 ## foot, the HUD put away, its own Camera4D standing in the world (a camera parented to
 ## nothing that moves cannot be dragged anywhere - pen_npc_talk_4d.gd's header). The farm's
@@ -33,7 +42,7 @@ extends Node
 signal mode_changed(mode: int)
 signal shot(photo: Dictionary)
 
-enum Mode { OFF, CLIMB_UP, CAB, CLIMB_DOWN, RIDE }
+enum Mode { OFF, CLIMB_UP, CAB, CLIMB_DOWN, RIDE, HELD }
 
 const VIEWFINDER := preload("res://ramon/chickenpen/lookout/lookout_viewfinder_4d.gd")
 
@@ -44,6 +53,14 @@ const VIEWFINDER := preload("res://ramon/chickenpen/lookout/lookout_viewfinder_4
 @export_range(1.0, 2.0, 0.01, "suffix:m") var eye_height: float = 1.55
 ## How close to the window you face the eye leans: this far inside the wall.
 @export_range(0.1, 1.5, 0.01, "suffix:m") var lean_gap: float = 0.33
+
+@export_group("Held")
+## The key that raises and lowers the camera, anywhere. Z was free in the pen.
+@export var raise_key: Key = KEY_Z
+## Eye height above your feet, with the camera up.
+@export_range(1.0, 2.0, 0.01, "suffix:m") var held_eye_height: float = 1.5
+## Walking pace with the camera up: a photographer's, not a run.
+@export_range(0.5, 6.0, 0.1, "suffix:m/s") var held_walk_speed: float = 2.4
 
 @export_group("Lens")
 ## The widest the lens goes, vertical field of view.
@@ -112,6 +129,16 @@ var _ride_yaw_half: float = PI
 var _eye_now: Vector4 = Vector4.ZERO
 var _last_rung: int = -1
 var _ride_lean: Vector4 = Vector4.ZERO
+## Which segment of the climb path is the ladder itself (rung by rung).
+var _ladder_seg: int = 1
+## What raising the camera changed, to put back.
+var _held_saved: Dictionary = {}
+## The ana/kata key bindings, lifted out while the camera is up.
+var _held_keys: Dictionary = {}
+var _rig: Node
+var _pitch_node: Node4D
+## The pen's world tags, pointed at the raised camera while it is up.
+var _tags: Array = []
 
 
 func setup(owner_lookout: Node) -> void:
@@ -120,6 +147,8 @@ func setup(owner_lookout: Node) -> void:
 	_tower = lookout.get("tower")
 	_player = lookout.get("player")
 	_farm_camera = lookout.get("farm_camera")
+	_rig = _room.get_node_or_null("Player/CameraRig")
+	_pitch_node = _room.get_node_or_null("Player/CameraRig/Pitch") as Node4D
 	film = roll
 
 
@@ -136,8 +165,59 @@ func in_cab() -> bool:
 	return mode == Mode.CAB
 
 
+## Up the tower with the camera: in the cab, or on the balcony with it raised.
+func up_tower() -> bool:
+	if mode == Mode.CAB:
+		return true
+	return mode == Mode.HELD and _tower != null and bool(_tower.call("on_deck", _player.global_position))
+
+
+## Whether Z would raise the camera now: Wren has given it to you, you are on your feet and
+## free, nobody is talking to you.
+func can_raise() -> bool:
+	if mode != Mode.OFF or _player == null or not _player.is_visible_in_tree():
+		return false
+	if _player.get("input_enabled") == false or _player.process_mode == Node.PROCESS_MODE_DISABLED:
+		return false
+	if not bool(lookout.get("journal").call("flag", "met_wren")) or bool(lookout.call("story_busy")):
+		return false
+	for talker in get_tree().get_nodes_in_group(&"npc_talk"):
+		var talk: Node = talker.get("_talk")
+		if talk != null and bool(talk.call("is_running")):
+			return false
+	return true
+
+
+## Up to your eye, wherever you are.
+func raise() -> void:
+	if mode != Mode.OFF:
+		return
+	_hold_borrow()
+	_make_camera()
+	reloads = true
+	if film <= 0:
+		film = roll
+		exposures = 0
+	_set_mode(Mode.HELD)
+	_place_held_camera()
+	lookout.call("sound", &"winder")
+	if view != null:
+		view.call("raised")
+	lookout.call("on_camera_raised")
+
+
+## Down again: the orbit camera back behind you.
+func lower() -> void:
+	if mode != Mode.HELD:
+		return
+	_hold_give_back()
+	lookout.call("sound", &"hatch")
+
+
 ## Up the ladder, from wherever the player is standing at its foot.
 func climb() -> void:
+	if mode == Mode.HELD:
+		lower()
 	if mode != Mode.OFF or _tower == null:
 		return
 	_borrow()
@@ -152,8 +232,21 @@ func climb() -> void:
 	lookout.call("sound", &"rung_start")
 
 
-## Back down, and the pen handed back with the player at the ladder's foot.
+## Back down, and the pen handed back with the player at the ladder's foot. From the cab, or
+## from the balcony's ladder gap (camera up or not).
 func climb_down() -> void:
+	if mode == Mode.HELD:
+		lower()
+	if mode == Mode.OFF and _tower != null and bool(_tower.call("is_balcony")):
+		var from_eye: Vector4 = _player.global_position + Vector4(0.0, held_eye_height, 0.0, 0.0)
+		_borrow()
+		_make_camera()
+		_eye_now = from_eye
+		yaw = _rig_yaw()
+		pitch = 0.0
+		_plan_climb(from_eye, false)
+		_set_mode(Mode.CLIMB_DOWN)
+		return
 	if mode != Mode.CAB:
 		return
 	_plan_climb(_eye_now, false)
@@ -163,6 +256,8 @@ func climb_down() -> void:
 ## A ride - the balloon's basket. [param eye] is called each frame for where the eye is;
 ## the view may turn [param yaw_half] either side of [param yaw_centre].
 func ride(eye: Callable, film_count: int, yaw_centre: float = 0.0, yaw_half: float = PI) -> void:
+	if mode == Mode.HELD:
+		lower()
 	if mode == Mode.OFF:
 		_borrow()
 		_make_camera()
@@ -188,17 +283,170 @@ func end_ride(at: Vector4, facing_yaw: float) -> void:
 	_give_back(facing_yaw)
 
 
-## Look along [param direction], for a cutscene or the first view out of the window.
+## Look along [param direction], for a cutscene or the first view out of the window. With the
+## camera held, it turns you: the orbit rig owns the look then.
 func look_along(direction: Vector4) -> void:
 	var flat := Vector2(direction.x, direction.z)
 	if flat.length() > 0.0001:
 		yaw = atan2(-flat.x, -flat.y)
 	pitch = clampf(atan2(direction.y, maxf(flat.length(), 0.0001)), pitch_min, pitch_max)
+	if mode == Mode.HELD and _rig != null:
+		_rig.set("yaw", yaw)
+		_rig.set("pitch", pitch)
+		_rig.call("_apply")
 
 
 func set_view_visible(on: bool) -> void:
 	if view != null:
 		view.visible = on
+
+
+# --- Holding the camera up, anywhere ------------------------------------------------------------
+
+func _hold_borrow() -> void:
+	var hud: Dictionary = {}
+	_tags.clear()
+	for child in _room.get_node("UI").get_children():
+		# The people's "F talk" tags stay, drawn through the raised camera: F still talks.
+		if child is WorldTag4D:
+			_tags.append(child)
+			continue
+		if child is CanvasItem:
+			hud[child] = (child as CanvasItem).visible
+			(child as CanvasItem).visible = false
+	var label := _room.get_node_or_null("Player/StateLabel") as CanvasItem
+	var avatar := _room.get_node_or_null("Player/Avatar") as Node4D
+	_held_saved = {
+		"hud": hud, "label": label.visible if label else false,
+		"avatar": avatar.visible if avatar else true,
+		"pitch_min": _rig.get("pitch_min_degrees") if _rig else -75.0,
+		"pitch_max": _rig.get("pitch_max_degrees") if _rig else 25.0,
+		"sensitivity": _rig.get("mouse_sensitivity") if _rig else 0.005,
+		"run": _player.get("run_speed"), "sprint": _player.get("sprint_speed"),
+	}
+	if label:
+		label.visible = false
+	# Your own head would fill the picture.
+	if avatar:
+		avatar.visible = false
+	if _rig:
+		_rig.set("pitch_min_degrees", -80.0)
+		_rig.set("pitch_max_degrees", 80.0)
+	_player.set("run_speed", held_walk_speed)
+	_player.set("sprint_speed", held_walk_speed * 1.6)
+	_held_keys.clear()
+	for action in [&"move_ana", &"move_kata"]:
+		if InputMap.has_action(action):
+			_held_keys[action] = InputMap.action_get_events(action)
+			InputMap.action_erase_events(action)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_make_view()
+	set_process(true)
+	set_process_input(true)
+
+
+func _hold_give_back() -> void:
+	for tag in _tags:
+		if is_instance_valid(tag):
+			tag.set("_camera", _farm_camera)
+	_tags.clear()
+	var hud: Dictionary = _held_saved.get("hud", {})
+	for item in hud:
+		if is_instance_valid(item):
+			(item as CanvasItem).visible = hud[item]
+	var label := _room.get_node_or_null("Player/StateLabel") as CanvasItem
+	if label:
+		label.visible = _held_saved.get("label", false)
+	var avatar := _room.get_node_or_null("Player/Avatar") as Node4D
+	if avatar:
+		avatar.visible = _held_saved.get("avatar", true)
+	if _rig:
+		_rig.set("pitch_min_degrees", _held_saved.get("pitch_min", -75.0))
+		_rig.set("pitch_max_degrees", _held_saved.get("pitch_max", 25.0))
+		_rig.set("mouse_sensitivity", _held_saved.get("sensitivity", 0.005))
+		# The orbit camera allows only 25 degrees up: bring a skyward look back within it.
+		_rig.set("pitch", clampf(float(_rig.get("pitch")), deg_to_rad(float(_held_saved.get("pitch_min", -75.0))), deg_to_rad(float(_held_saved.get("pitch_max", 25.0)))))
+		_rig.call("_apply")
+	_player.set("run_speed", _held_saved.get("run", 3.0))
+	_player.set("sprint_speed", _held_saved.get("sprint", 4.2))
+	_restore_keys()
+	if _farm_camera != null:
+		_farm_camera.make_current()
+	if is_instance_valid(camera):
+		camera.queue_free()
+	camera = null
+	if is_instance_valid(_layer):
+		_layer.queue_free()
+	_layer = null
+	view = null
+	lookout.call("sound_loop", &"wind", false)
+	_set_mode(Mode.OFF)
+	set_process(false)
+	set_process_input(false)
+
+
+func _restore_keys() -> void:
+	for action in _held_keys:
+		if InputMap.has_action(action):
+			for e in _held_keys[action]:
+				InputMap.action_add_event(action, e)
+	_held_keys.clear()
+
+
+## The pen going away with the camera up (a scene change, a quit): the keys must come back.
+func _exit_tree() -> void:
+	_restore_keys()
+
+
+## The focus ring's keys while held: the lifted ana/kata bindings, read directly.
+func _held_axis() -> float:
+	var axis: float = 0.0
+	for action in _held_keys:
+		var pressed: bool = false
+		for e in _held_keys[action]:
+			var key := e as InputEventKey
+			if key == null:
+				continue
+			var code: int = key.physical_keycode if key.physical_keycode != 0 else key.keycode
+			if Input.is_physical_key_pressed(code) or Input.is_key_pressed(code):
+				pressed = true
+		if pressed:
+			axis += 1.0 if action == &"move_ana" else -1.0
+	return axis
+
+
+func _talking() -> bool:
+	for talker in get_tree().get_nodes_in_group(&"npc_talk"):
+		var talk: Node = talker.get("_talk")
+		if talk != null and bool(talk.call("is_running")):
+			return true
+	return false
+
+
+func _someone_to_talk_to() -> bool:
+	for talker in get_tree().get_nodes_in_group(&"npc_talk"):
+		if talker.is_inside_tree() and talker.can_process() and talker.has_method("_in_reach") and bool(talker.call("_in_reach")):
+			return true
+	return false
+
+
+func _rig_yaw() -> float:
+	return float(_rig.get("yaw")) if _rig != null else 0.0
+
+
+## The camera at your eyes, looking where the orbit rig looks - its slice turns and all - and
+## the focus ring sliding it along that slice's normal.
+func _place_held_camera() -> void:
+	if camera == null or _pitch_node == null:
+		return
+	var basis: Projection = _pitch_node.global_basis
+	_eye_now = _player.global_position + Vector4(0.0, held_eye_height, 0.0, 0.0)
+	camera.global_basis = basis
+	camera.global_position = _eye_now + basis.w.normalized() * focus
+	yaw = _rig_yaw()
+	pitch = float(_rig.get("pitch"))
+	slice_xw = float(_rig.get("_slice_xw"))
+	slice_zw = float(_rig.get("_slice_zw"))
 
 
 # --- Borrowing the pen, and giving it back -------------------------------------------------
@@ -224,6 +472,14 @@ func _borrow() -> void:
 	_player.process_mode = Node.PROCESS_MODE_DISABLED
 	_player.visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_make_view()
+	set_process(true)
+	set_process_input(true)
+
+
+func _make_view() -> void:
+	if is_instance_valid(_layer):
+		return
 	_layer = CanvasLayer.new()
 	_layer.name = "LookoutView"
 	_layer.layer = 6
@@ -233,8 +489,6 @@ func _borrow() -> void:
 	view.set_script(VIEWFINDER)
 	view.set("station", self)
 	_layer.add_child(view)
-	set_process(true)
-	set_process_input(true)
 
 
 func _give_back(facing_yaw: float) -> void:
@@ -310,9 +564,32 @@ func _plan_climb(from_eye: Vector4, up: bool) -> void:
 	var t: Node4D = _tower
 	var h: float = float(t.get("deck_height"))
 	var half: float = float(t.get("cab_size")) * 0.5
-	var splay: float = float(t.get("splay"))
-	var ladder_z: float = half + splay * 0.8 + 0.35
+	var ladder_z: float = float(t.call("ladder_z"))
 	var base: Vector4 = t.global_position
+	if bool(t.call("is_balcony")):
+		# Up the ladder and over the edge of the deck, through the gap in the rail, facing
+		# north - the way the deck looks out over the field to the starlings.
+		var b_ladder: Vector4 = base + Vector4(0.0, 1.6, ladder_z + 0.5, 0.0)
+		var b_top: Vector4 = base + Vector4(0.0, h + 1.5, ladder_z + 0.5, 0.0)
+		var b_on: Vector4 = (t.call("ladder_top") as Vector4) + Vector4(0.0, held_eye_height, 0.0, 0.0)
+		_ladder_seg = 1
+		_path = [
+			[0.0, from_eye, _yaw_to(from_eye, b_ladder), 0.0],
+			[0.14, b_ladder, 0.0, 0.32],
+			[0.84, b_top, 0.0, 0.1],
+			[1.0, b_on, 0.0, -0.05],
+		]
+		if not up:
+			var b_foot: Vector4 = (t.call("ladder_foot") as Vector4) + Vector4(0.0, 1.55, 0.25, 0.0)
+			_path = [
+				[0.0, from_eye, yaw, pitch],
+				[0.16, b_top, 0.0, -0.2],
+				[0.86, b_ladder, 0.0, 0.15],
+				[1.0, b_foot, PI, -0.05],
+			]
+		_last_rung = -1
+		return
+	_ladder_seg = 1
 	var at_ladder: Vector4 = base + Vector4(0.0, 1.6, ladder_z + 0.5, 0.0)
 	var at_top: Vector4 = base + Vector4(0.0, h + 1.6, ladder_z + 0.5, 0.0)
 	var on_walk: Vector4 = base + Vector4(0.0, h + eye_height, half + 0.55, 0.0)
@@ -338,6 +615,7 @@ func _plan_climb(from_eye: Vector4, up: bool) -> void:
 			[0.88, at_ladder, 0.0, 0.18],
 			[1.0, foot, PI, -0.05],
 		]
+		_ladder_seg = 3
 	_path = keys
 	_last_rung = -1
 
@@ -358,7 +636,7 @@ func _run_climb(delta: float, up: bool) -> void:
 	var b: Array = _path[i + 1]
 	var u: float = clampf((k - float(a[0])) / maxf(float(b[0]) - float(a[0]), 0.0001), 0.0, 1.0)
 	var eye: Vector4
-	var on_ladder: bool = (up and i == 1) or (not up and i == 3)
+	var on_ladder: bool = i == _ladder_seg
 	if on_ladder:
 		# Rung by rung: each rung a pull and a pause, and the weight going from hand to hand.
 		var rungs: float = 18.0
@@ -377,11 +655,20 @@ func _run_climb(delta: float, up: bool) -> void:
 	_eye_now = eye
 	_place_camera(eye)
 	if k >= 1.0:
-		if up:
+		if up and bool(_tower.call("is_balcony")):
+			# On the deck: on your feet, the camera already up.
+			_player.global_position = (_tower.call("ladder_top") as Vector4) + Vector4(0.0, 0.05, 0.0, 0.0)
+			_player.set("linear_velocity", Vector4.ZERO)
+			# Facing out over the farm, towards the pen: the cabin is behind you.
+			_give_back(_yaw_to(_player.global_position, _home_ground()))
+			raise()
+			lookout.call("on_cab_entered")
+		elif up:
 			_set_mode(Mode.CAB)
 			lookout.call("on_cab_entered")
 		else:
-			_player.global_position = _tower.global_position + Vector4(0.0, 0.05, float(_tower.get("cab_size")) * 0.5 + float(_tower.get("splay")) * 0.8 + 1.4, 0.0)
+			_player.global_position = (_tower.call("ladder_foot") as Vector4) + Vector4(0.0, 0.05, 0.4, 0.0)
+			_player.set("linear_velocity", Vector4.ZERO)
 			_give_back(_yaw_to(_player.global_position, _home_ground()))
 			lookout.call("on_cab_left")
 
@@ -417,7 +704,7 @@ func _process(delta: float) -> void:
 			_run_climb(delta, true)
 		Mode.CLIMB_DOWN:
 			_run_climb(delta, false)
-		Mode.CAB, Mode.RIDE:
+		Mode.CAB, Mode.RIDE, Mode.HELD:
 			_run_camera(delta)
 	if view != null:
 		view.queue_redraw()
@@ -429,12 +716,15 @@ func _run_camera(delta: float) -> void:
 	# Wind: a breath of it at the cab's windows, more of it in the open basket, rising with
 	# the height.
 	var height: float = _eye_now.y if _eye_now != Vector4.ZERO else 10.0
-	lookout.call("sound_loop", &"wind", true, (-4.0 if mode == Mode.CAB else 4.0) + clampf((height - 10.0) * 0.2, -4.0, 3.0))
+	if mode == Mode.HELD and height < 6.0:
+		lookout.call("sound_loop", &"wind", false)
+	else:
+		lookout.call("sound_loop", &"wind", true, (-4.0 if mode != Mode.RIDE else 4.0) + clampf((height - 10.0) * 0.2, -4.0, 3.0))
 	# The lens: zoom eased in log space, so every notch takes the same time.
 	zoom = exp(lerpf(log(zoom), log(zoom_goal), clampf(delta * 9.0, 0.0, 1.0)))
 	camera.set("field_of_view_4d", 2.0 * atan(tan(wide_fov * 0.5) / zoom))
 	# The focus ring: held keys turn it, fine with Shift; it eases after the hand.
-	var turn: float = Input.get_axis(&"move_kata", &"move_ana")
+	var turn: float = _held_axis() if mode == Mode.HELD else Input.get_axis(&"move_kata", &"move_ana")
 	if absf(turn) > 0.01:
 		_straightening = 0.0
 		var rate: float = focus_speed * (focus_fine if Input.is_key_pressed(KEY_SHIFT) else 1.0)
@@ -454,6 +744,19 @@ func _run_camera(delta: float) -> void:
 		if reloading <= 0.0:
 			film = roll
 			exposures = 0
+	if mode == Mode.HELD:
+		if _rig != null:
+			# Slower the longer the lens: the rig turns you, at a rate cut by the zoom.
+			_rig.set("mouse_sensitivity", float(_held_saved.get("sensitivity", 0.005)) / zoom)
+		_place_held_camera()
+		for tag in _tags:
+			if is_instance_valid(tag):
+				tag.set("_camera", camera)
+		# A conversation took you out of it: the camera comes down. (Not for the owl's reveal:
+		# that borrows the picture for a moment and gives the raised camera back.)
+		if _talking():
+			lower()
+		return
 	var eye: Vector4
 	if mode == Mode.RIDE and _ride_eye.is_valid():
 		var off: float = wrapf(yaw - _ride_yaw_centre, -PI, PI)
@@ -493,6 +796,8 @@ func _slice_frame() -> Projection:
 
 ## The direction the focus ring slides along, in the world.
 func slice_normal() -> Vector4:
+	if mode == Mode.HELD and _pitch_node != null:
+		return _pitch_node.global_basis.w.normalized()
 	return (_slice_frame() * Vector4(0.0, 0.0, 0.0, 1.0)).normalized()
 
 
@@ -510,9 +815,10 @@ func _input(event: InputEvent) -> void:
 	if mode == Mode.OFF:
 		return
 	var handled: bool = true
-	var taking: bool = mode == Mode.CAB or mode == Mode.RIDE
+	var taking: bool = mode == Mode.CAB or mode == Mode.RIDE or mode == Mode.HELD
 	if event is InputEventMouseMotion:
-		if not taking:
+		# Held, the orbit rig turns you (and the slice); the camera follows it.
+		if not taking or mode == Mode.HELD:
 			return
 		var motion: Vector2 = (event as InputEventMouseMotion).relative * mouse_sensitivity
 		if Input.is_action_pressed(&"rotate_4d"):
@@ -542,6 +848,19 @@ func _input(event: InputEvent) -> void:
 		if not taking:
 			# Mid-climb, keys wait; Escape is still yours.
 			handled = code == KEY_ESCAPE
+		elif mode == Mode.HELD and (code == KEY_ESCAPE or code == raise_key):
+			lower()
+		elif mode == Mode.HELD and code == KEY_R:
+			# The rig straightens the slice and brings you home in W; the ring comes home too.
+			focus_goal = 0.0
+			handled = false
+		elif mode == Mode.HELD and event.is_action_pressed(&"catch_target") and _someone_to_talk_to():
+			# F to somebody: the camera comes down first, and the conversation has the view.
+			lower()
+			handled = false
+		elif mode == Mode.HELD and code != KEY_T:
+			# Everything else is the pen's: F to climb down, WASD, the belt.
+			handled = false
 		elif code == KEY_ESCAPE or event.is_action_pressed(&"catch_target"):
 			if mode == Mode.CAB:
 				climb_down()
@@ -587,7 +906,7 @@ func take_photo() -> void:
 	exposures += 1
 	var photo: Dictionary = lookout.get("judge").call("judge", camera, _viewport_size())
 	photo["time"] = Time.get_unix_time_from_system()
-	photo["from"] = "balloon" if mode == Mode.RIDE else "tower"
+	photo["from"] = "balloon" if mode == Mode.RIDE else ("tower" if up_tower() else "ground")
 	photo["focus"] = focus
 	photo["zoom"] = zoom
 	lookout.call("sound", &"shutter")

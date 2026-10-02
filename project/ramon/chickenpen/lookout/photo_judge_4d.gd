@@ -177,7 +177,7 @@ func _blocked(eye: Vector4, point: Vector4) -> bool:
 ## lintel.
 func _blocked_by_cab(eye: Vector4, point: Vector4) -> bool:
 	var tower: Node4D = lookout.get("tower")
-	if tower == null:
+	if tower == null or bool(tower.call("is_balcony")):
 		return false
 	var local_eye: Vector4 = eye - tower.global_position
 	var local_to: Vector4 = point - tower.global_position

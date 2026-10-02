@@ -33,6 +33,7 @@ var _flock_seen: int = 0
 
 func _initialize() -> void:
 	root.unfocusable = true
+	_clean()
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("speed="):
 			_speed = float(arg.substr(6))
@@ -167,14 +168,20 @@ func _process(d: float) -> bool:
 				str(p))
 			_check("the ride is in the story", bool(journal.call("flag", "balloon_ridden")))
 			_save("landed")
-			var book: String = ProjectSettings.globalize_path(TEST_BOOK)
-			if FileAccess.file_exists(TEST_BOOK):
-				DirAccess.remove_absolute(book)
-			var photos: String = ProjectSettings.globalize_path("user://lookout_journal_ride_test_photos")
-			if DirAccess.dir_exists_absolute(photos):
-				for f in DirAccess.get_files_at(photos):
-					DirAccess.remove_absolute(photos + "/" + f)
-				DirAccess.remove_absolute(photos)
+			_clean()
 			print("RIDE RUNNER: %s (%d failed)" % ["PASS" if _failed == 0 else "FAIL", _failed])
 			return true
 	return false
+
+
+## The test journal and its photos gone - at the start too: a killed run leaves the heron
+## already found, and then there is no payoff to see.
+func _clean() -> void:
+	var book: String = ProjectSettings.globalize_path(TEST_BOOK)
+	if FileAccess.file_exists(TEST_BOOK):
+		DirAccess.remove_absolute(book)
+	var photos: String = ProjectSettings.globalize_path("user://lookout_journal_ride_test_photos")
+	if DirAccess.dir_exists_absolute(photos):
+		for f in DirAccess.get_files_at(photos):
+			DirAccess.remove_absolute(photos + "/" + f)
+		DirAccess.remove_absolute(photos)

@@ -78,7 +78,7 @@ func next_hint() -> String:
 	if not met():
 		return "Next: meet Wren at the lookout tower"
 	if not _flag("first_climb"):
-		return "Next: climb the lookout, F at the ladder"
+		return "Next: climb the lookout (F at the ladder), or Z for the camera"
 	if int(journal.call("star_count")) == 0:
 		return "Next: take a photo, click"
 	if not bool(journal.call("found", "owl")):
@@ -143,16 +143,25 @@ func on_wren_spoken() -> void:
 	pass
 
 
+## The camera explained the first time it comes up, wherever that is: on the ground with Z or
+## on the deck after the climb.
+func on_camera_raised() -> void:
+	if _flag("first_raise"):
+		return
+	_raise("first_raise")
+	_radio([
+		"Can you hear me? Good, that's the radio. The ring on the lens is the clever part: E and Q.",
+		"It doesn't focus near and far. It focuses in W.",
+		"See the scale at the bottom? Every mark on it is something out there. Put the needle on one, and there it is.",
+		"Click to take a picture. T finds the focus for you. Z puts the camera down.",
+	])
+
+
 func on_cab_entered() -> void:
 	_cab_time = 0.0
 	if not _flag("first_climb"):
 		_raise("first_climb")
-		_radio([
-			"Can you hear me? Good. That's the radio.",
-			"The ring on the lens is the clever part. E and Q. It doesn't focus near and far. It focuses in W.",
-			"See the scale at the bottom? Every mark on it is something out there. Put the needle on one, and there it is.",
-			"Click to take a picture. T, and the camera finds the focus for you.",
-		])
+		_radio(["Walk round, the deck goes all the way. The best of it is north, over the field."])
 	elif balloon_open() and not _flag("balloon_ridden") and not _flag("balloon_said"):
 		_balloon_call()
 
@@ -173,7 +182,7 @@ func on_photo(result: Dictionary) -> void:
 		return
 	if good and bool(result.get("new_page", false)) and String(look.get("page", "")) == "heron":
 		lookout.call("on_heron_found")
-	if good and balloon_open() and not _flag("balloon_said") and int(lookout.get("station").get("mode")) == 2:
+	if good and balloon_open() and not _flag("balloon_said") and bool(lookout.get("station").call("up_tower")):
 		_balloon_call()
 		return
 	if not bool(_journal().call("found", "owl")) and not _flag("owl_hint") and _photos >= owl_hint_photos:
@@ -193,7 +202,7 @@ func _balloon_call() -> void:
 	lookout.call("show_balloon", true)
 	_radio([
 		"You've an eye for this.",
-		"Come down when you're ready. I want to show you something.",
+		"My balloon's up by the tower. B when you're ready, and up you go.",
 	])
 
 
@@ -236,7 +245,7 @@ func on_ride_started() -> void:
 
 func _process(delta: float) -> void:
 	var station: Node = lookout.get("station")
-	if int(station.get("mode")) == 2:
+	if bool(station.call("up_tower")):
 		_cab_time += delta
 		if _cab_time > owl_hint_after and not _flag("owl_hint") and not bool(_journal().call("found", "owl")):
 			_owl_hint()

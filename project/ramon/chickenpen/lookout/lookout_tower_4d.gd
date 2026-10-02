@@ -29,6 +29,14 @@ extends Node4D
 ## window - and on it, whatever lives there. It runs all the way down to the ground, so on
 ## foot, a step ana, it is a lone pole in the field.
 ##
+## TWO DESIGNS ([member design]). The CAB is the first one: a closed hide you stand in at a
+## window. The BALCONY (Ramon, 2 Oct, from a reference photo of a lookout with a wide deck)
+## is an open deck you walk round in first person with the camera raised, a very small cabin
+## with a hip roof in the middle, and timber railings - so looking out, nothing stands between
+## you and the farm but a rail below your eye. Same frame, same ladder. The deck is a real
+## floor: colliders for the boards, the railings (and both W ends, so stepping along W cannot
+## drop you off) and the cabin.
+##
 ## Everything is boxes, as the pen's own buildings are, sharing one mesh per size.
 ##
 ## ONE MESH PER COLOUR, NOT ONE NODE PER BOX. Every MeshInstance4D costs something each
@@ -37,6 +45,15 @@ extends Node4D
 ## single ArrayTetraMesh4D (TetraMesh4D.to_array_tetra_mesh, ArrayTetraMesh4D.merge_with)
 ## and drawn by one node. Off, every box is its own named node, for picking parts apart.
 
+enum Design { CAB, BALCONY }
+
+## Which tower: the closed cab you stand in, or the open balcony you walk round.
+@export var design: Design = Design.BALCONY:
+	set(v):
+		design = v
+		if is_node_ready():
+			rebuild()
+
 @export_group("Size")
 ## Height of the cab floor above the tower's feet.
 @export_range(4.0, 30.0, 0.5, "suffix:m") var deck_height: float = 10.0
@@ -44,6 +61,12 @@ extends Node4D
 @export_range(2.0, 8.0, 0.1, "suffix:m") var cab_size: float = 4.0
 @export_range(2.0, 10.0, 0.1, "suffix:m") var cab_w_depth: float = 6.4
 @export_range(2.0, 4.0, 0.05, "suffix:m") var cab_height: float = 2.6
+## The balcony's deck, edge to edge, and its little cabin.
+@export_range(4.0, 12.0, 0.1, "suffix:m") var deck_size: float = 7.2
+@export_range(1.2, 4.0, 0.1, "suffix:m") var cabin_size: float = 2.4
+@export_range(1.6, 3.5, 0.05, "suffix:m") var cabin_height: float = 2.3
+## Rail height above the deck: under the eye, so looking out you look over it.
+@export_range(0.6, 1.4, 0.05, "suffix:m") var rail_height: float = 1.0
 ## Sill and lintel of the windows, from the cab floor. A hide's slot sits about 1 m up.
 @export_range(0.3, 1.5, 0.05, "suffix:m") var sill: float = 1.0
 @export_range(1.6, 3.0, 0.05, "suffix:m") var lintel: float = 2.2
@@ -52,9 +75,10 @@ extends Node4D
 
 @export_group("The ana post")
 @export var ana_post: bool = true
-## Its W, and how far out of the north window it stands.
+## Its W, and how far out from the north side it stands (Ramon, 2 Oct: "a bit further in the
+## back" - it was 3.2 m out of the window).
 @export_range(-4.0, 4.0, 0.05, "suffix:m") var ana_post_w: float = 1.5
-@export_range(1.0, 8.0, 0.1, "suffix:m") var ana_post_out: float = 3.2
+@export_range(1.0, 12.0, 0.1, "suffix:m") var ana_post_out: float = 5.0
 @export_range(-3.0, 3.0, 0.05, "suffix:m") var ana_post_side: float = 0.7
 
 @export_group("Look")
@@ -75,9 +99,40 @@ func _ready() -> void:
 	rebuild()
 
 
+## Half the width of what you stand on up there: the deck, or the cab's catwalk.
+func top_half() -> float:
+	return deck_size * 0.5 if design == Design.BALCONY else cab_size * 0.5
+
+
+## The ladder's line, in z from the middle: outside the deck's edge, or the cab's legs.
+func ladder_z() -> float:
+	if design == Design.BALCONY:
+		return deck_size * 0.5 + 0.35
+	return cab_size * 0.5 + splay * 0.8 + 0.35
+
+
 ## The point a climber stands at, at the ladder's foot, in global space.
 func ladder_foot() -> Vector4:
-	return global_position + global_basis * Vector4(0.0, 0.0, cab_size * 0.5 + splay * 0.8 + 0.9, 0.0)
+	return global_position + global_basis * Vector4(0.0, 0.0, ladder_z() + 0.55, 0.0)
+
+
+## Where you step onto the deck at the top of the ladder, in global space (the balcony).
+func ladder_top() -> Vector4:
+	return global_position + global_basis * Vector4(0.0, deck_height, deck_size * 0.5 - 0.65, 0.0)
+
+
+func is_balcony() -> bool:
+	return design == Design.BALCONY
+
+
+## Whether [param p] (global) is up on the deck.
+func on_deck(p: Vector4) -> bool:
+	if design != Design.BALCONY:
+		return false
+	var local: Vector4 = global_basis.inverse() * (p - global_position)
+	var half: float = deck_size * 0.5
+	return absf(local.x) < half and absf(local.z) < half and local.y > deck_height - 0.6 and local.y < deck_height + 3.0 \
+		and absf(local.w) < cab_w_depth * 0.5
 
 
 ## Where the eye is in the cab, standing at the north window, in global space.
@@ -92,7 +147,7 @@ func cab_floor() -> Vector4:
 
 ## The top of the ana post - where its perch is - in global space.
 func ana_perch() -> Vector4:
-	return global_position + global_basis * Vector4(ana_post_side, deck_height + 1.05, -cab_size * 0.5 - ana_post_out, ana_post_w)
+	return global_position + global_basis * Vector4(ana_post_side, deck_height + 1.05, -top_half() - ana_post_out, ana_post_w)
 
 
 ## The north direction the windows look out of: -z of this node.
@@ -108,13 +163,18 @@ func rebuild() -> void:
 	var half: float = cab_size * 0.5
 	var wd: float = cab_w_depth
 	_build_legs(h, half, wd)
-	_build_cab(h, half, wd)
+	if design == Design.BALCONY:
+		_build_balcony(h, half, wd)
+	else:
+		_build_cab(h, half, wd)
+		_build_catwalk(h, half, wd)
 	_build_ladder(h, half, wd)
-	_build_catwalk(h, half, wd)
 	if ana_post:
-		_build_ana_post(h, half)
+		_build_ana_post(h, top_half())
 	_flush()
 	_build_colliders(h, half, wd)
+	if design == Design.BALCONY:
+		_build_deck_colliders(h, wd)
 
 
 # --- The frame -------------------------------------------------------------------------------
@@ -155,7 +215,7 @@ func _corner(i: int, r: float) -> Vector2:
 func _build_ladder(h: float, half: float, wd: float) -> void:
 	# On the south face, the pen's side. Straight up from the ground to a hatch in the catwalk,
 	# well clear of the splayed legs.
-	var z: float = half + splay * 0.8 + 0.35
+	var z: float = ladder_z()
 	for side in [-0.32, 0.32]:
 		_box("LadderRail", Vector4(side, h * 0.5 - 0.3, z, 0.0), Vector4(0.06, h + 0.6, 0.06, wd), steel)
 	var rungs: int = int(h / 0.35)
@@ -168,7 +228,8 @@ func _build_ladder(h: float, half: float, wd: float) -> void:
 	_box("BoardFace", Vector4(1.35, 1.35, z + 1.03, 0.0), Vector4(0.78, 0.48, 0.02, 0.5), Color(0.86, 0.82, 0.70))
 	_box("BoardRoof", Vector4(1.35, 1.7, z + 1.0, 0.0), Vector4(1.04, 0.05, 0.22, 0.7), roof_colour)
 	# A stand-off to the catwalk at the top, and a cage hoop or two.
-	_box("LadderTop", Vector4(0.0, h - 0.05, (z + half + 0.6) * 0.5, 0.0), Vector4(0.8, 0.08, z - half, wd), timber)
+	if design == Design.CAB:
+		_box("LadderTop", Vector4(0.0, h - 0.05, (z + half + 0.6) * 0.5, 0.0), Vector4(0.8, 0.08, z - half, wd), timber)
 	for y in [h - 2.6, h - 1.2]:
 		_box("Hoop", Vector4(0.0, y, z + 0.38, 0.0), Vector4(0.86, 0.05, 0.05, wd), steel)
 
@@ -379,3 +440,116 @@ static func _frame_along(y: Vector4) -> Projection:
 	if frame.determinant() < 0.0:
 		frame.w = -frame.w
 	return frame
+
+# --- The balcony -------------------------------------------------------------------------------
+
+## The deck on the frame's top, its railings, the cabin and its hip roof.
+func _build_balcony(h: float, frame_half: float, wd: float) -> void:
+	var half: float = deck_size * 0.5
+	var deck := Color(0.55, 0.42, 0.28)
+	var rail := Color(0.62, 0.48, 0.32)
+	# Boards, and the joists and knee braces that carry the overhang out past the frame.
+	_box("Deck", Vector4(0.0, h - 0.06, 0.0, 0.0), Vector4(deck_size, 0.12, deck_size, wd), deck)
+	_box("Fascia", Vector4(0.0, h - 0.2, 0.0, 0.0), Vector4(deck_size - 0.1, 0.16, deck_size - 0.1, wd - 0.1), timber_dark)
+	for k in 5:
+		var x: float = lerpf(-half + 0.3, half - 0.3, float(k) / 4.0)
+		_box("Joist", Vector4(x, h - 0.36, 0.0, 0.0), Vector4(0.14, 0.2, deck_size - 0.2, wd), timber_dark)
+	for face in 4:
+		for t in [-0.6, 0.0, 0.6]:
+			var c: Vector2 = _corner(face, frame_half - 0.12)
+			var d: Vector2 = _corner(face + 1, frame_half - 0.12)
+			var on_frame: Vector2 = c.lerp(d, 0.5 + t * 0.5)
+			var out_dir: Vector2 = (c + d).normalized()
+			var at_edge: Vector2 = on_frame + out_dir * (half - frame_half - 0.15)
+			_strut("Knee", Vector4(on_frame.x, h - 2.2, on_frame.y, 0.0), Vector4(at_edge.x, h - 0.3, at_edge.y, 0.0), 0.1, wd, steel)
+	# Railings: posts, a top rail and a mid rail on the four edges, a gap at the ladder.
+	var posts: int = 6
+	for face in 4:
+		var a: Vector2 = _corner(face, half - 0.06)
+		var b: Vector2 = _corner(face + 1, half - 0.06)
+		for k in posts + 1:
+			var p: Vector2 = a.lerp(b, float(k) / float(posts))
+			if face == 2 and absf(p.x) < 0.55:
+				continue
+			_box("Post", Vector4(p.x, h + rail_height * 0.5, p.y, 0.0), Vector4(0.09, rail_height, 0.09, wd), rail)
+		var runs: Array = [[a, b]]
+		if face == 2:
+			runs = [[a, Vector2(0.55, a.y)], [Vector2(-0.55, b.y), b]]
+			for gx in [-0.55, 0.55]:
+				_box("GatePost", Vector4(gx, h + rail_height * 0.55, a.y, 0.0), Vector4(0.11, rail_height * 1.1, 0.11, wd), rail)
+		for run in runs:
+			var r0: Vector2 = run[0]
+			var r1: Vector2 = run[1]
+			_strut("Rail", Vector4(r0.x, h + rail_height, r0.y, 0.0), Vector4(r1.x, h + rail_height, r1.y, 0.0), 0.08, wd, rail)
+			_strut("MidRail", Vector4(r0.x, h + rail_height * 0.5, r0.y, 0.0), Vector4(r1.x, h + rail_height * 0.5, r1.y, 0.0), 0.05, wd, rail)
+	# The railing's W ends: a low panel, thin in W, over the whole deck - the eight-walls rule
+	# for a railing, so the deck is fenced along W too.
+	for sw in [-1.0, 1.0]:
+		_box("WRail", Vector4(0.0, h + rail_height * 0.5, 0.0, sw * (wd * 0.5 - 0.06)), Vector4(deck_size, rail_height, deck_size, 0.12), rail.darkened(0.15))
+	# The cabin: small, windows all round, dark inside - looked into, not walked into.
+	var ch: float = cabin_height
+	var cs: float = cabin_size
+	var cw: float = cs * 0.5
+	var wall := Color(0.82, 0.80, 0.74)
+	var frame_c := Color(0.92, 0.91, 0.88)
+	_box("CabinFloor", Vector4(0.0, h + 0.02, 0.0, 0.0), Vector4(cs, 0.04, cs, wd), timber_dark)
+	for face in 4:
+		var axis: Vector4 = [Vector4(0, 0, -1, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(-1, 0, 0, 0)][face]
+		var along: Vector4 = Vector4(-axis.z, 0.0, axis.x, 0.0)
+		var at: Vector4 = axis * (cw - 0.05)
+		_box("CabinSill", at + Vector4(0, h + 0.45, 0, 0), _with_y(_orient(along, cs, 0.1, wd), 0.9), wall)
+		_box("CabinHead", at + Vector4(0, h + (ch + 2.0) * 0.5, 0, 0), _with_y(_orient(along, cs, 0.1, wd), ch - 2.0), wall)
+		# Window frames over a dark pane: from outside it reads as glass with a room behind.
+		_box("Pane", at - axis * 0.02 + Vector4(0, h + 1.45, 0, 0), _with_y(_orient(along, cs - 0.1, 0.03, wd - 0.2), 1.1), Color(0.10, 0.12, 0.14))
+		for k in [-1.0, -0.33, 0.33, 1.0]:
+			_box("CabinMullion", at + along * (k * (cw - 0.04)) + Vector4(0, h + 1.45, 0, 0), _with_y(_orient(along, 0.07, 0.12, wd), 1.1), frame_c)
+		_box("CabinTransom", at + Vector4(0, h + 1.45, 0, 0), _with_y(_orient(along, cs, 0.12, wd), 0.05), frame_c)
+	for sw in [-1.0, 1.0]:
+		_box("CabinW", Vector4(0.0, h + ch * 0.5, 0.0, sw * (wd * 0.5 - 0.1)), Vector4(cs, ch, cs, 0.1), wall)
+	# The hip roof: four boards falling from a ridge cap to an overhang, and a lightning rod.
+	var over: float = cw + 0.45
+	var rise: float = 0.75
+	var slope: float = atan2(rise, over)
+	var board: float = sqrt(over * over + rise * rise)
+	var roof := Color(0.80, 0.82, 0.82)
+	for face in 4:
+		var turn: float = float(face) * PI * 0.5
+		var plank := Basis4D.from_zx(turn) * Basis4D.from_yz(slope)
+		var centre: Vector4 = Basis4D.from_zx(turn) * Vector4(0.0, h + ch + rise * 0.5, over * 0.5, 0.0)
+		_box("Roof", centre, Vector4(over * 2.0, 0.06, board, wd + 0.5), roof, plank)
+	_box("RoofCap", Vector4(0.0, h + ch + rise, 0.0, 0.0), Vector4(0.3, 0.12, 0.3, wd * 0.4), roof.darkened(0.2))
+	_box("Rod", Vector4(0.0, h + ch + rise + 0.7, 0.0, 0.0), Vector4(0.04, 1.3, 0.04, 0.04), steel)
+	# Inside, seen through the panes: the fire finder on its stand.
+	_box("FinderStand", Vector4(0, h + 0.5, 0, 0), Vector4(0.16, 1.0, 0.16, 0.16), timber_dark)
+	_box("FinderTop", Vector4(0, h + 1.02, 0, 0), Vector4(0.6, 0.05, 0.6, 0.6), Color(0.52, 0.47, 0.36))
+	# Wren's film box and a bench on the deck, against the cabin's south wall.
+	_box("Bench", Vector4(-0.7, h + 0.42, cw + 0.35, 0.0), Vector4(1.1, 0.06, 0.38, 0.5), timber)
+	for bx in [-1.15, -0.25]:
+		_box("BenchLeg", Vector4(bx, h + 0.2, cw + 0.35, 0.0), Vector4(0.06, 0.4, 0.3, 0.3), timber_dark)
+	_box("FilmBox", Vector4(0.75, h + 0.15, cw + 0.3, 0.0), Vector4(0.42, 0.3, 0.3, 0.3), Color(0.55, 0.16, 0.10))
+
+
+## What you walk on and against up there: the boards, the railings (and a bar across the
+## ladder's gap, so you cannot step off it - F climbs down), both W ends, and the cabin.
+func _build_deck_colliders(h: float, wd: float) -> void:
+	var body := StaticBody4D.new()
+	body.name = "DeckColliders"
+	add_child(body)
+	var half: float = deck_size * 0.5
+	var shapes: Array = [
+		[Vector4(0.0, h - 0.12, 0.0, 0.0), Vector4(deck_size, 0.24, deck_size, wd)],
+		[Vector4(0.0, h + 0.6, -half + 0.06, 0.0), Vector4(deck_size, 1.2, 0.14, wd)],
+		[Vector4(half - 0.06, h + 0.6, 0.0, 0.0), Vector4(0.14, 1.2, deck_size, wd)],
+		[Vector4(-half + 0.06, h + 0.6, 0.0, 0.0), Vector4(0.14, 1.2, deck_size, wd)],
+		[Vector4(0.0, h + 0.6, half - 0.06, 0.0), Vector4(deck_size, 1.2, 0.14, wd)],
+		[Vector4(0.0, h + 0.6, 0.0, wd * 0.5 - 0.06), Vector4(deck_size, 1.2, deck_size, 0.14)],
+		[Vector4(0.0, h + 0.6, 0.0, -wd * 0.5 + 0.06), Vector4(deck_size, 1.2, deck_size, 0.14)],
+		[Vector4(0.0, h + cabin_height * 0.5, 0.0, 0.0), Vector4(cabin_size, cabin_height, cabin_size, wd)],
+	]
+	for sh in shapes:
+		var shape := CollisionShape4D.new()
+		var box := BoxShape4D.new()
+		box.size = sh[1]
+		shape.shape = box
+		shape.position = sh[0]
+		body.add_child(shape)

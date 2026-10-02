@@ -2921,20 +2921,20 @@ body_bob = 0.12
 position = Vector4(2.6, 0.45, 5.4, 0)
 material_override = SubResource("lk_stump_mat")
 mesh = SubResource("lk_stump_mesh")
-metadata/from = "The Lookout's ana owl (res://ramon/chickenpen/lookout/owl_4d.gd), on show at w 0."
+metadata/from = "The Lookout's ana owl (res://ramon/chickenpen/lookout/owl_4d.gd), at w 0, sitting idle."
 
 [node name="Owl" type="Node4D" parent="."]
 position = Vector4(2.6, 0.9, 5.4, 0)
 basis = Projection(0.9284766908852593, 0, 0.3713906763541037, 0, 0, 1, 0, 0, -0.3713906763541037, 0, 0.9284766908852593, 0, 0, 0, 0, 1)
 script = ExtResource("lk_owl")
 look_target_path = NodePath("../Player")
+idle_only = true
 
 [node name="Heron" type="Node4D" parent="."]
 position = Vector4(4.4, 0, 2.6, 0)
 basis = Projection(0.8195771002013803, 0, 0.5729552855838397, 0, 0, 1, 0, 0, -0.5729552855838397, 0, 0.8195771002013803, 0, 0, 0, 0, 1)
 script = ExtResource("lk_heron")
-player_path = NodePath("../Player")
-flush_within = 2.5
-metadata/from = "The Lookout's heron (res://ramon/chickenpen/lookout/heron_4d.gd). Walk right up to it and it flies."
+idle_only = true
+metadata/from = "The Lookout's heron (res://ramon/chickenpen/lookout/heron_4d.gd), standing idle."
 
 [editable path="Player"]

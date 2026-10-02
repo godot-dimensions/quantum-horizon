@@ -45,8 +45,8 @@ func open_book(page_id: String = "") -> void:
 	if page_id != "":
 		_page = _index_of(page_id)
 	var player: Node = lookout.get("player")
-	var station: Node = lookout.get("station")
-	if not bool(station.call("busy")) and player != null:
+	# Still while reading, camera up or not.
+	if player != null:
 		_player_input = player.get("input_enabled")
 		player.set("input_enabled", false)
 	lookout.call("sound", &"page")

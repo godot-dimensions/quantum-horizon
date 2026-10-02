@@ -166,7 +166,7 @@ func _process(d: float) -> bool:
 			_key(KEY_F)
 			_next(float(_station.get("climb_seconds")) + 0.8)
 		10:
-			_check("up in the cab", int(_station.get("mode")) == 2)
+			_check("up on the deck, the camera raised", bool(_station.call("up_tower")))
 			_check("Wren on the radio for the first climb", bool(_lookout.get("radio").call("busy")))
 			_save("first_climb_radio")
 			_photos = 0
@@ -174,8 +174,8 @@ func _process(d: float) -> bool:
 		11:
 			# A few photos of the field, wherever the lens points.
 			if _t > 0.6:
-				_station.set("yaw", float(_photos) * 0.9 + 2.2)
-				_station.set("pitch", -0.35)
+				var a: float = float(_photos) * 0.9 + 2.2
+				_station.call("look_along", Vector4(-sin(a), -0.35, -cos(a), 0.0))
 				_station.call("take_photo")
 				_photos += 1
 				_t = 0.0
@@ -183,6 +183,10 @@ func _process(d: float) -> bool:
 					_next(1.0)
 		12:
 			_check("four photos in, the owl hint", bool(_journal.call("flag", "owl_hint")))
+			# Round to the north side of the deck, where the owl's post is.
+			var tower: Node4D = _lookout.get("tower")
+			_player.global_position = tower.global_position + Vector4(0.6, float(tower.get("deck_height")) + 0.05, -2.9, 0.0)
+			_player.set("linear_velocity", Vector4.ZERO)
 			var owl: Node4D = _lookout.get("owl")
 			_station.call("look_along", (owl.call("head_point") as Vector4) - (_station.call("home_eye") as Vector4))
 			_station.set("zoom_goal", 3.0)
@@ -226,7 +230,8 @@ func _process(d: float) -> bool:
 		17:
 			_check("Wren calls you down for the balloon", bool(_journal.call("flag", "balloon_said")))
 			_check("the balloon is going up by the tower", (_lookout.get("balloon") as Node4D).visible)
-			_key(KEY_ESCAPE)
+			_check("and the HUD card says B", bool(_lookout.call("can_board")))
+			_station.call("climb_down")
 			_next(float(_station.get("down_seconds")) + 1.0)
 		18:
 			_check("back on the ground", int(_station.get("mode")) == 0)

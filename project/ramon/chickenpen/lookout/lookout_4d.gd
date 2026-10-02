@@ -28,7 +28,8 @@ extends Node
 ##   ana_marsh_4d.gd          the marsh that is only there along W, at w +8
 ##   heron_4d.gd              the heron that fishes in it
 ##
-## F at the ladder's foot climbs; J opens the journal anywhere.
+## F at the ladder's foot climbs (and at the deck's ladder gap, climbs down); Z raises the
+## camera anywhere; J opens the journal anywhere; B takes you up in the balloon once it is up.
 
 const STATION := preload("res://ramon/chickenpen/lookout/lookout_station_4d.gd")
 const SUBJECTS := preload("res://ramon/chickenpen/lookout/photo_subjects_4d.gd")
@@ -89,6 +90,9 @@ var heron: Node4D
 var _board: Node4D
 var _board_tag: WorldTag4D
 var _board_shown: String = ""
+var _down: Node4D
+var _down_tag: WorldTag4D
+var _down_shown: String = ""
 var _slow: float = 0.0
 var _current_cam: Camera4D
 var _camera_search_at: int = -100000
@@ -358,6 +362,17 @@ func _build_ladder_prompt() -> void:
 	_tag.anchor_path = _ladder.get_path()
 	_tag.lift = 8.0
 	_ladder.add_child(_tag)
+	# And at the top, on the balcony: F at the gap in the rail climbs down.
+	if bool(tower.call("is_balcony")):
+		_down = Node4D.new()
+		_down.name = "LookoutLadderTop"
+		room.get_node("World").add_child(_down)
+		_down.global_position = tower.call("ladder_top") + Vector4(0.0, 1.0, 0.0, 0.0)
+		_down_tag = WorldTag4D.new()
+		_down_tag.name = "Prompt"
+		_down_tag.anchor_path = _down.get_path()
+		_down_tag.lift = 8.0
+		_down.add_child(_down_tag)
 
 
 func _near_ladder() -> bool:
@@ -367,14 +382,28 @@ func _near_ladder() -> bool:
 	return Vector2(gap.x, gap.z).length() <= ladder_reach and absf(gap.w) <= ladder_reach_w
 
 
+## Whether F would climb down now: on the balcony at the gap in the rail.
+func can_climb_down() -> bool:
+	if _down == null or station == null or story_busy() or player == null or not player.is_visible_in_tree():
+		return false
+	var mode: int = int(station.get("mode"))
+	if mode != 0 and mode != 5:
+		return false
+	if mode == 0 and player.get("input_enabled") == false:
+		return false
+	var gap: Vector4 = (tower.call("ladder_top") as Vector4) - player.global_position
+	return Vector2(gap.x, gap.z).length() <= 1.3 and absf(gap.y) < 1.0 and absf(gap.w) < 1.2
+
+
 ## Whether F would climb right now: at the ladder's foot, with Wren's camera, hands free,
-## nobody to talk to.
+## nobody to talk to. With the camera raised too: it comes down for the climb.
 func can_climb() -> bool:
-	if station == null or bool(station.call("busy")) or story_busy() or _ladder == null or player == null:
+	var mode: int = int(station.get("mode")) if station != null else -1
+	if station == null or (mode != 0 and mode != 5) or story_busy() or _ladder == null or player == null:
 		return false
 	if not player.is_inside_tree() or not player.is_visible_in_tree() or player.get("input_enabled") == false:
 		return false
-	if not _near_ladder():
+	if not _near_ladder() or bool(tower.call("on_deck", player.global_position)):
 		return false
 	if wren != null and not bool(journal.call("flag", "met_wren")):
 		return false
@@ -391,13 +420,24 @@ func can_climb() -> bool:
 	return true
 
 
+## Whether B (or F at the basket) would take you up: the balloon is up by the tower and you
+## are free - on the farm, the camera raised or not. From anywhere: Ramon, 2 Oct, "how do you
+## enter the balloon, that's not clear to me".
 func can_board() -> bool:
 	if balloon == null or not bool(balloon.get("ready_now")) or bool(balloon.get("riding")) or _board == null:
 		return false
-	if bool(station.call("busy")) or story_busy() or player == null or not player.is_visible_in_tree() or player.get("input_enabled") == false:
+	var mode: int = int(station.get("mode"))
+	if (mode != 0 and mode != 5) or story_busy() or player == null or not player.is_visible_in_tree():
 		return false
-	if not bool(story.call("balloon_open")):
+	if mode == 0 and player.get("input_enabled") == false:
 		return false
+	var world := room.get_node_or_null("World") as Node4D
+	if world == null or not world.is_visible_in_tree():
+		return false
+	return bool(story.call("balloon_open"))
+
+
+func _near_basket() -> bool:
 	var gap: Vector4 = _board.global_position - player.global_position
 	return Vector2(gap.x, gap.z).length() <= 2.2 and absf(gap.w) <= 1.2
 
@@ -409,13 +449,31 @@ func _process(delta: float) -> void:
 		if _slow <= 0.0:
 			Engine.time_scale = 1.0
 	if _board_tag != null:
-		var board_text: String = ("%s  board the balloon" % _catch_key()) if can_board() else ""
+		var board_text: String = ""
+		if can_board():
+			board_text = ("%s or B  board the balloon" % _catch_key()) if _near_basket() else "Wren's balloon  ·  B to go up"
+		_board_tag.fade_to = 60.0
+		_board_tag.fade_from = 45.0
 		if board_text != _board_shown:
 			_board_shown = board_text
 			if board_text == "":
 				_board_tag.clear()
 			else:
 				_board_tag.show_text(board_text)
+	# The prompts are placed through whichever camera is drawing: the farm's, or the raised one.
+	var cam: Camera4D = current_camera()
+	for t in [_tag, _board_tag, _down_tag]:
+		if t != null:
+			t.set("_camera", cam)
+	if _down_tag != null:
+		# With the camera up, the keys card says it; the tag would sit under the viewfinder.
+		var down_text: String = ("%s  climb down" % _catch_key()) if can_climb_down() and int(station.get("mode")) == 0 else ""
+		if down_text != _down_shown:
+			_down_shown = down_text
+			if down_text == "":
+				_down_tag.clear()
+			else:
+				_down_tag.show_text(down_text)
 	if _tag == null:
 		return
 	var text: String = ""
@@ -432,10 +490,22 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed(&"catch_target") and can_climb():
+	if event.is_action_pressed(&"catch_target") and can_climb_down():
+		get_viewport().set_input_as_handled()
+		station.call("climb_down")
+	elif event.is_action_pressed(&"catch_target") and can_climb():
 		get_viewport().set_input_as_handled()
 		station.call("climb")
-	elif event.is_action_pressed(&"catch_target") and can_board():
+	elif event.is_action_pressed(&"catch_target") and can_board() and _near_basket():
+		get_viewport().set_input_as_handled()
+		balloon.call("board")
+	var key := event as InputEventKey
+	if key == null or not key.pressed or key.echo:
+		return
+	if key.keycode == KEY_Z and station.call("can_raise"):
+		get_viewport().set_input_as_handled()
+		station.call("raise")
+	elif key.keycode == KEY_B and can_board():
 		get_viewport().set_input_as_handled()
 		balloon.call("board")
 
@@ -445,6 +515,10 @@ func _input(event: InputEvent) -> void:
 func on_cab_entered() -> void:
 	sound(&"hatch")
 	story.call("on_cab_entered")
+
+
+func on_camera_raised() -> void:
+	story.call("on_camera_raised")
 
 
 func on_cab_left() -> void:

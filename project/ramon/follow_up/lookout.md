@@ -9,28 +9,48 @@ what changed on the way and why, what was measured, and what is still your call.
 
 Open `res://ramon/chickenpen/chickenpen_lookout.tscn` and run it (F6). It is the pen,
 inherited: `chickenpen.tscn` is untouched, and the Lookout's nodes move into it when you say
-so. The tower is behind the pen as you spawn.
+so. The tower is behind the pen as you spawn. **The Lookout card** in the HUD's right column
+lists every way in, each on a key the pen did not use, and says what to do next:
+
+| key | | |
+|---|---|---|
+| **Z** | Camera | raises it anywhere once Wren has given it to you; Z or Esc lowers it |
+| **J** | Field journal | the book, on the ground, on the deck or in the balloon |
+| **B** | Balloon | once it is up beside the tower: straight up, from anywhere on the farm |
+| **F** | Climb | at the ladder; on the deck, at the gap in the rail, climbs down |
 
 - Walk towards the tower: a short camera move up it ("The Lookout") and down onto **Wren**.
-- **F** to talk to her: she gives you her camera. (Replies: Up/Down and Space. The number
+  **F** to talk to her: she gives you her camera. (Replies: Up/Down and Space. The number
   keys never reach the dialogue in the pen - the inventory belt takes 1-5 first.)
-- **F at the ladder** climbs to the cab. In the cab:
-  - mouse looks, **wheel** zooms (19 mm to 222 mm), **click** shoots (24 a roll, it reloads)
-  - **E / Q** turn the focus ring: it slides your slice along W, up to 3 m either way
-  - **T** autofocus on whatever is nearest the middle
-  - **right-drag** turns the slice through W, **R** straightens it
-  - **J** the journal (works on the ground too), **Esc** or **F** climbs down
-- The **W-meter** along the bottom has a tick for every creature in front of you, at its W:
-  bright if the journal still wants it. Put the needle on a tick and it is in your slice.
-- Outside the north window, at **w +1.5**, sits the ana owl. You will not see it at focus 0.
-- With the owl and eight photos in the book, Wren calls you down: her **balloon** is up
-  beside the tower. Talk to her (or F at the basket). The ride is 2 min 44 s: over the pen,
-  through the starlings, then ana to a marsh at w +8 and back. **X** whistles. **Esc** once
-  tells you how to get down; twice brings it straight down.
-- The journal: 10 pages, 4 behaviours each (40 photos). Three pages are secrets: the ana
-  owl, the white starling (one in five thousand, long lens), the heron (in the marsh).
+- **Camera up** (Z, or after the climb): you walk as ever with WASD, the view at your eyes,
+  and the viewfinder says it is a camera - a matte top and bottom, frame corners, the mode and
+  the film in the top strip, and two of the pen's own cards over it: the **metrics** (the
+  slice offset, the lens, what is in your slice and how much of it, how a photo is judged)
+  and **every key** the camera has right now, F's current job lit at the top. F3 hides both.
+  - **wheel** zooms, 19 mm to 222 mm: a W-T bar up the right with stops at 1 2 4 8 12x,
+    the mm and the field of view beside it, the magnification big while you zoom and the
+    old framing shrinking away as corner marks
+  - **E / Q** turn the focus ring (not a step through W while the camera is up): it slides
+    your slice along W, up to 3 m either way. **T** autofocus. **Right-drag** turns the
+    slice, **R** straightens it. **Click** shoots (24 a roll; it reloads).
+  - **The W-meter** along the bottom: a tick for every creature in front of you at its W,
+    bright if the journal still wants it, taller and named as the needle nears it, a band
+    round the needle for the depth of field. **The ghost rings**, the second locator: a
+    dashed ring in the picture where each creature off your slice is, with its W.
+- **The balcony**: F at the ladder climbs to an open deck with a very small cabin in the
+  middle, railings below your eye and nothing else in the way. You arrive facing the pen with
+  the camera up and can walk all the way round. The ana owl sits on its post off the north
+  side, at **w +1.5**, five metres out.
+- With the owl and eight photos in the book, Wren's **balloon** goes up beside the tower:
+  **B** from anywhere (or F at the basket, or ask Wren). The ride is 2 min 44 s: over the
+  pen, through the starlings, then ana to a round pond at w +8 and back. **X** whistles. Esc
+  once tells you how to get down; twice brings it straight down.
+- The journal: 10 pages, 4 behaviours each (40 photos). Three secrets: the ana owl, the white
+  starling (one in five thousand, long lens), the heron (in the marsh).
 - The journal is saved (`user://lookout_journal.cfg`, photos beside it). **Ctrl+Backspace
   twice** in the book starts a fresh one, and the story with it.
+- The first design, the closed cab you stand in at a window, is still there:
+  `World/Lookout` > Design > Cab.
 
 The film: `smoke_test_output/video/The Lookout.mp4` (96 s, 1080p, the game's own sound),
 made by `lookout/_film_lookout_runner.gd`.
@@ -42,13 +62,13 @@ Everything is in `chickenpen/lookout/` (21 scripts and 7 runners, each with a he
 | | |
 |---|---|
 | `lookout_4d.gd` | the game's root (`Systems/Lookout`): finds the pen's nodes, builds the rest |
-| `lookout_tower_4d.gd` | the tower (`World/Lookout`), a closed 4D cab on a steel frame, the ana post |
-| `lookout_station_4d.gd` | the climb, the cab, the camera: zoom, focus ring, slice turn, shutter, the ride |
-| `lookout_viewfinder_4d.gd` | frame lines, focus point, W-meter, lens and film, blackout, toasts |
+| `lookout_tower_4d.gd` | the tower (`World/Lookout`): the balcony (default) or the closed cab, the frame, the ana post |
+| `lookout_station_4d.gd` | the climb, the camera raised anywhere (HELD), the cab, the ride: zoom, focus ring, slice turn, shutter |
+| `lookout_viewfinder_4d.gd` | the matte, the W-T zoom bar, the W-meter and ghost rings, the metrics and keys cards, blackout, toasts |
 | `photo_subjects_4d.gd` | who can be photographed, read by duck typing from the pen's own state |
 | `photo_judge_4d.gd` | judging from game state: in frame, sharp in W, size, centring, behaviour, blocked |
 | `field_journal_4d.gd` | pages, slots, best photo per slot, saving |
-| `journal_card_4d.gd`, `journal_book_4d.gd` | the HUD card (`UI/Journal`) and the J book |
+| `journal_card_4d.gd`, `journal_book_4d.gd` | the Lookout card (`UI/Journal`: Z J B F) and the J book |
 | `lookout_story_4d.gd`, `lookout_radio_4d.gd`, `lookout_cutscene_4d.gd` | the beats, Wren on the radio, the camera moves |
 | `lookout_wren_4d.gd`, `lookout_wren_talk_4d.gd`, `wren_script.gd` | Wren (the shared avatar, dressed) and her dialogue |
 | `owl_4d.gd`, `heron_4d.gd` | the creatures; both also stand in `Model/rigged_creature_ramon.tscn` |
@@ -152,3 +172,24 @@ the merged meshes.
   the whole story.
 - **"Above the hawk"** (the hawk page's fourth star) needs the balloon to pass above the hawk;
   it can happen but is rare.
+
+## Round two (2 Oct, from Ramon's first play)
+
+- **Camera mode made obvious**: the viewfinder matte, the strip, two pen-style cards (metrics,
+  keys). **Zoom made obvious**: the W-T bar, the big readout and the shrinking frame (from
+  camcorder W-T bars, DJI's focal-length bar and its 1/2/4/7/14/28x stops).
+- **The camera anywhere** (Z), walking in first person. E and Q's ana/kata bindings are lifted
+  out of the InputMap while it is up and put back when it comes down (and if the scene goes).
+- **The balcony** from Ramon's reference photo, walkable, colliders for boards, rails, both W
+  ends and the cabin; the cab kept as a design option. The owl moved 5 m out.
+- **The HUD card lists every way in** (Z J B F); **B boards the balloon** from anywhere.
+- **The pond is round** (discs of turned boxes); the heron dressed from field guides (brow,
+  plumes, two lines of neck streaks, black flanks over white thighs, darker grey) with round
+  joints in the neck and at the heels - it had looked broken at the bends. The owl is an
+  eagle owl (orange eyes, tufts), so its page says Bubo. Both stand idle in the showcase
+  (`idle_only`).
+- **Talking with the camera up** lowers it first; the pen's "F talk" tags follow the raised
+  camera.
+- Fixed on the way: bars along x or z were built flat (a degenerate frame, 22 errors a load);
+  a killed runner left its journal behind (runners now clean at the start too).
+- Still for a dedicated session (Ramon): the heron's animation and the marsh's look.

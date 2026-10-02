@@ -11,6 +11,13 @@ extends Node4D
 ## a hip and a heel pivot, and the wings are boxes on shoulder pivots; every pose is a few
 ## rotations. Only the body is one loft, and it never changes.
 ##
+## DRESSED FROM THE FIELD GUIDES (the Heron Specialist Group's and eBird's grey heron): grey
+## above, a white head and neck, a broad black brow running back into the black plumes, two
+## lines of black streaks down the front of the neck to the breast, black shoulder patches and
+## black on the flanks over white thighs, a yellow dagger of a bill; in flight the neck pulled
+## in to a bulge, the legs trailing, the flight feathers dark. Round joints at every bend of
+## the neck and at the heels, so the segments read as one neck, not a chain of tubes.
+##
 ## THICK IN W, like the owl, so the ring has a fair width to find it in: the balls are
 ## stretched along W and the bars and boxes are as deep in W as the body is.
 ##
@@ -46,13 +53,16 @@ const POSES := {
 		w_stretch = v
 		_changed()
 ## Blue-grey: a plain grey lit by the pen's sunset reads as beige.
-@export var grey: Color = Color(0.46, 0.51, 0.58)
+@export var grey: Color = Color(0.38, 0.43, 0.52)
 @export var pale: Color = Color(0.86, 0.87, 0.86)
 @export var dark: Color = Color(0.13, 0.13, 0.15)
 @export var bill: Color = Color(0.86, 0.62, 0.22)
 @export var leg: Color = Color(0.62, 0.52, 0.30)
 
 @export_group("Life")
+## Only stand and look about: for the creature showcase (Ramon, 2 Oct: "just doing an idle
+## animation standing"). No wading, no striking, no flying off.
+@export var idle_only: bool = false
 ## The marsh it lives in (ana_marsh_4d.gd): its fishing spot and its refuge.
 @export var marsh_path: NodePath
 ## Who can put it up by walking close.
@@ -86,6 +96,9 @@ var _walk_dir: float = 1.0
 var _home: Vector4
 var _voice: AudioStreamPlayer
 var _wing_voice: AudioStreamPlayer
+var _head_yaw: float = 0.0
+var _head_yaw_goal: float = 0.0
+var _next_look: float = 2.0
 ## As the owl's: posed only while a camera could see it (it lives at w +8).
 var _seen: bool = true
 var _seen_check: float = 0.0
@@ -142,6 +155,8 @@ func rebuild() -> void:
 	_box(_body, "Plumes", Vector4(0.0, 0.6 * u, 0.12 * u, 0.0), Vector4(0.08 * u, 0.12 * u, 0.03 * u, deep), pale)
 	for side in [-1.0, 1.0]:
 		_box(_body, "Shoulder%d" % int(side), Vector4(side * 0.085 * u, 0.73 * u, 0.07 * u, 0.0), Vector4(0.03 * u, 0.05 * u, 0.06 * u, deep), dark)
+		_box(_body, "Flank%d" % int(side), Vector4(side * 0.1 * u, 0.6 * u, -0.02 * u, 0.0), Vector4(0.03 * u, 0.07 * u, 0.16 * u, deep), dark)
+		_box(_body, "ThighCover%d" % int(side), Vector4(side * 0.055 * u, 0.55 * u, -0.03 * u, 0.0), Vector4(0.05 * u, 0.06 * u, 0.06 * u, deep * 0.7), pale)
 	# Wings: folded along the back, or spread wide in flight - two sets, one shown at a time.
 	for side in [-1.0, 1.0]:
 		var pivot := Node4D.new()
@@ -155,7 +170,9 @@ func rebuild() -> void:
 		_folded.append(fold)
 		var arm := _box(pivot, "Arm", Vector4(side * 0.24 * u, 0.0, -0.03 * u, 0.0), Vector4(0.44 * u, 0.025 * u, 0.28 * u, deep), grey)
 		_box(arm, "Hand", Vector4(side * 0.4 * u, 0.0, -0.01 * u, 0.0), Vector4(0.38 * u, 0.022 * u, 0.24 * u, deep), grey.darkened(0.12))
-		_box(arm, "Tip", Vector4(side * 0.52 * u, 0.0, -0.02 * u, 0.0), Vector4(0.16 * u, 0.024 * u, 0.22 * u, deep), dark)
+		for f in 4:
+			var finger := _box(arm, "Primary%d" % f, Vector4(side * (0.5 + 0.03 * float(f)) * u, 0.0, (0.06 - 0.055 * float(f)) * u, 0.0), Vector4(0.2 * u, 0.02 * u, 0.045 * u, deep), dark)
+			finger.basis = Basis4D.from_zx(side * (0.1 + 0.12 * float(f)))
 		arm.visible = false
 		_spread.append(arm)
 		_wing_pivots.append(pivot)
@@ -172,6 +189,7 @@ func rebuild() -> void:
 		hip.add_child(heel)
 		_own(heel)
 		heel.position = Vector4(0.0, -0.27 * u, -0.025 * u, 0.0)
+		_sphere(heel, "HeelJoint", Vector4.ZERO, 0.02 * u, leg.darkened(0.1), ws * 0.6)
 		_box(heel, "Shank", Vector4(0.0, -0.145 * u, 0.012 * u, 0.0), Vector4(0.022 * u, 0.29 * u, 0.022 * u, deep * 0.6), leg)
 		var foot := Node4D.new()
 		foot.name = "Foot"
@@ -198,10 +216,14 @@ func rebuild() -> void:
 		_ball(seg, "A", Vector4.ZERO, float(radii[k][0]) * u, ws * 0.85)
 		_ball(seg, "B", Vector4(0.0, float(lengths[k]) * u, 0.0, 0.0), float(radii[k][1]) * u, ws * 0.85)
 		seg.call("build", false)
-		# The black streaks down the front of the neck.
+		# A round joint where this segment meets the last, so the neck bends rather than breaks.
+		_sphere(parent, "Joint%d" % k, Vector4.ZERO, float(radii[k][0]) * u * 1.04, pale if k > 0 else pale.lerp(grey, 0.5), ws * 0.85)
+		# Two lines of black streaks down the front of the neck, to the breast.
 		if k < 2:
-			for j in 2:
-				_box(parent, "Streak%d_%d" % [k, j], Vector4(0.0, (0.04 + 0.06 * float(j)) * u, float(radii[k][0]) * u * 0.92, 0.0), Vector4(0.012 * u, 0.04 * u, 0.008 * u, deep * 0.5), dark)
+			for j in 3:
+				for side in [-1.0, 1.0]:
+					_box(parent, "Streak%d_%d_%d" % [k, j, int(side)], Vector4(side * 0.011 * u, (0.03 + 0.045 * float(j)) * u, float(radii[k][0]) * u * 0.9, 0.0),
+						Vector4(0.008 * u, 0.026 * u, 0.008 * u, deep * 0.5), dark)
 		_neck.append(parent)
 		var next := Node4D.new()
 		next.name = "Neck%d" % (k + 1)
@@ -210,6 +232,7 @@ func rebuild() -> void:
 		next.position = Vector4(0.0, float(lengths[k]) * u, 0.0, 0.0)
 		parent = next
 	_head = parent
+	_sphere(_head, "HeadJoint", Vector4.ZERO, 0.034 * u, pale, ws * 0.8)
 	var head := _rig(_head, "Skull", pale)
 	_ball(head, "Back", Vector4(0.0, 0.01 * u, -0.025 * u, 0.0), 0.035 * u, ws * 0.8)
 	_ball(head, "Front", Vector4(0.0, 0.012 * u, 0.025 * u, 0.0), 0.03 * u, ws * 0.8)
@@ -220,7 +243,8 @@ func rebuild() -> void:
 	for side in [-1.0, 1.0]:
 		var eye := _box(_head, "Eye%d" % int(side), Vector4(side * 0.026 * u, 0.018 * u, 0.03 * u, 0.0), Vector4(0.01 * u, 0.014 * u, 0.014 * u, deep * 0.4), Color(0.95, 0.85, 0.2))
 		_box(eye, "Pupil", Vector4(side * 0.002 * u, 0.0, 0.0, 0.0), Vector4(0.008 * u, 0.007 * u, 0.007 * u, deep * 0.4), Color(0.02, 0.02, 0.02))
-		_box(_head, "Stripe%d" % int(side), Vector4(side * 0.027 * u, 0.03 * u, -0.02 * u, 0.0), Vector4(0.008 * u, 0.012 * u, 0.07 * u, deep * 0.4), dark)
+		# The broad black brow, from over the eye back to the plumes.
+		_box(_head, "Brow%d" % int(side), Vector4(side * 0.025 * u, 0.032 * u, -0.025 * u, 0.0), Vector4(0.012 * u, 0.014 * u, 0.085 * u, deep * 0.4), dark)
 	for k in 2:
 		var plume := _box(_head, "Plume%d" % k, Vector4((float(k) - 0.5) * 0.012 * u, 0.03 * u, -0.1 * u, 0.0), Vector4(0.006 * u, 0.006 * u, 0.15 * u, deep * 0.3), dark)
 		plume.basis = Basis4D.from_yz(-0.45 - 0.12 * float(k))
@@ -244,6 +268,15 @@ func _rig(parent: Node, part: String, colour: Color) -> MeshInstance4D:
 	hide.set("live_rebuild", false)
 	_own(hide)
 	return hide
+
+
+## A round knob: a loft of two balls a hair apart.
+func _sphere(parent: Node, part: String, at: Vector4, radius: float, colour: Color, w_scale: float) -> void:
+	var knob := _rig(parent, part, colour)
+	knob.position = at
+	_ball(knob, "A", Vector4(0.0, -radius * 0.15, 0.0, 0.0), radius, w_scale)
+	_ball(knob, "B", Vector4(0.0, radius * 0.15, 0.0, 0.0), radius, w_scale)
+	knob.call("build", false)
 
 
 func _ball(parent: Node, part: String, at: Vector4, radius: float, w_scale: float) -> void:
@@ -361,6 +394,17 @@ func _process(delta: float) -> void:
 	if _seen_check <= 0.0:
 		_seen_check = 0.5
 		_seen = _visible_to_camera()
+	# Looking about while it stands: the head turns, holds, turns back.
+	_next_look -= delta
+	if _next_look <= 0.0:
+		_next_look = _rng.randf_range(2.0, 5.0)
+		_head_yaw_goal = _rng.randf_range(-0.9, 0.9) if _rng.randf() < 0.7 else 0.0
+	if idle_only:
+		state = State.STAND
+		_state_t = 0.0
+		if _seen:
+			_animate(delta)
+		return
 	match state:
 		State.STAND, State.ALERT, State.ONE_LEG:
 			if _state_t > _state_len:
@@ -416,7 +460,7 @@ func _next_idle() -> void:
 
 
 func _check_disturbed() -> void:
-	if _cool > 0.0 or state in [State.TAKE_OFF, State.FLY, State.LAND]:
+	if idle_only or _cool > 0.0 or state in [State.TAKE_OFF, State.FLY, State.LAND]:
 		return
 	var player := get_node_or_null(player_path) as Node4D
 	if player == null or not player.is_visible_in_tree():
@@ -517,4 +561,6 @@ func _apply_neck(pose: Array) -> void:
 	for i in mini(_neck.size(), 3):
 		_neck[i].basis = Basis4D.from_yz(float(pose[i]))
 	if _head != null:
-		_head.basis = Basis4D.from_yz(float(pose[3]) - (float(pose[0]) + float(pose[1]) + float(pose[2])) * 0.0)
+		var looking: bool = state in [State.STAND, State.ONE_LEG, State.ALERT]
+		_head_yaw = lerpf(_head_yaw, _head_yaw_goal if looking else 0.0, 0.08)
+		_head.basis = Basis4D.from_zx(_head_yaw) * Basis4D.from_yz(float(pose[3]))

@@ -53,7 +53,7 @@ static func nodes(tip: String, can_ride: bool) -> Dictionary:
 "camera": {
 	"speaker": "Wren",
 	"lines": [
-		"Here. Take my camera. The ring on the lens doesn't focus near and far. It focuses in W.",
+		"Here. Take my camera. Z puts it to your eye, anywhere you like. The ring on the lens doesn't focus near and far. It focuses in W.",
 		"Fill the journal for me. Every animal, doing every thing it does. J to read it.",
 	],
 	"do": "give_camera",
@@ -111,7 +111,7 @@ static func nodes(tip: String, can_ride: bool) -> Dictionary:
 	"lines": [
 		"You've an eye for it. I want to show you something.",
 		"She's my balloon. She goes up on her rope and drifts where the wind says, and the wind out here blows a little ana.",
-		"One roll of thirty six, no reloads up there. X to whistle, if you want something to look up. Ready?",
+		"One roll of thirty six, no reloads up there. X to whistle, if you want something to look up. B any time you want to go up. Ready?",
 	],
 	"choices": [
 		{"text": "Let's go.", "goto": "board"},

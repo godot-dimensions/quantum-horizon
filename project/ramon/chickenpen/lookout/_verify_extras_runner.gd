@@ -139,7 +139,10 @@ func _aim_white(station: Node) -> void:
 	station.call("look_along", p - eye)
 	station.set("focus", clampf(p.w - eye.w, -3.0, 3.0))
 	station.set("focus_goal", clampf(p.w - eye.w, -3.0, 3.0))
-	station.call("_place_camera", eye)
+	if int(station.get("mode")) == 5:
+		station.call("_place_held_camera")
+	else:
+		station.call("_place_camera", eye)
 	_white_seen = {"bird": str(p), "distance": "%.1f" % (p - eye).length()}
 
 

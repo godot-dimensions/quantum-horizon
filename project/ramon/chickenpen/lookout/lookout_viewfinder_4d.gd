@@ -1,27 +1,46 @@
 extends Control
 
-## What you see through the camera at the Lookout: frame lines, the focus point, the lens
-## and the film, and the W-METER - the subgame's locator.
+## What you see through the camera: a viewfinder, so it is never in doubt that you are
+## looking through one (Ramon, 2 Oct: "it's not clear to me I'm in a camera mode").
 ##
-## THE W-METER is the focus ring drawn as a scale along the bottom: kata to the left, ana to
-## the right, the needle where the ring is. Every creature in front of you - inside the
-## frame, wherever it is in W - puts a tick on the scale at its W, so you can see there is
-## something out there before you can see it, and pull focus to it. A bright tick is a
-## photo the journal still wants; a dim one is something you have already got. When the
-## needle sits on a tick, that creature is in your slice. Kept on the scale rather than over
-## the creatures, so it says WHERE in W without saying where in the picture: finding it in
-## the frame is still yours to do.
+## THE MATTE. Dark bars top and bottom slide in when the camera comes up (raised()), and the
+## picture area between them gets a camera's frame corners and focus point. The bars carry
+## the camera's state the way a real viewfinder's strip does: the mode and the film above,
+## the W-meter and the keys below.
 ##
-## THE FOCUS POINT in the middle lights up in the HUD's colour when what is under it is
-## sharp - a camera's focus-confirm.
+## THE ZOOM, ON A W-T BAR (camcorders, DJI's focal-length bar, Fujifilm's display): a scale up
+## the right side from W (wide) to T (tele), logarithmic, with stops at 1x 2x 4x 8x and 12x as
+## DJI's app marks them, the slider moving the same way as the wheel. Beside it the focal
+## length in mm and the field of view. While you zoom, it lights up, the magnification shows
+## big at the top of the frame, and the frame you had a moment ago is drawn shrinking away -
+## so the zoom is felt as well as read.
 ##
-## THE SHUTTER, on the photo: the frame goes black for the mirror (blackout()), then a toast
-## comes in at the top with the thumbnail, what it was, its stars and points, and NEW PAGE
-## when it is.
+## THE W-METER, the first locator: the focus ring drawn as a scale, kata to ana, the needle
+## where the ring is, a tick for every creature in front of you at its W. Bright ticks are
+## photos the journal still wants. A shaded band round the needle is the depth of field - what
+## is inside it is in your slice - and creatures near the needle are named.
+##
+## THE GHOST RINGS, the second locator: where in the PICTURE the creatures off your slice are.
+## A dashed ring at each one's place in the frame, with the W to turn the ring to. The meter
+## says where in W, the rings say where in the frame; the two together find anything.
+##
+## TWO OF THE PEN'S OWN CARDS, over the viewfinder (Ramon, 2 Oct: "a metric hud that is
+## similar in style to the hud of the original chicken pen ... like an overlay"; "all
+## features or modes should also be keymapped in this transparent hud"). Top left, the
+## camera's metrics in the murmuration card's style - the slice offset, the lens, what is in
+## your slice and how much of it, what the judge goes by - with F3 to hide it; top right,
+## every key the camera has in this mode, on the controls card's chips. The Playable World
+## is visibly experimental; this is where the camera says so.
 
 const STYLE := preload("res://ramon/Menu/style/menu_final_style.tres")
-const HINT := "Click  shoot   ·   Wheel  zoom   ·   E / Q  focus in W   ·   T  autofocus   ·   Right-drag  turn slice   ·   R  straighten   ·   J  journal   ·   Esc  climb down"
-const RIDE_HINT := "Click  shoot   ·   Wheel  zoom   ·   E / Q  focus in W   ·   T  autofocus   ·   X  whistle   ·   J  journal"
+## [key, what it does] per mode, for the keys card.
+const KEYS_HELD := [["Click", "shoot"], ["Wheel", "zoom"], ["E  Q", "focus ring, through W"], ["T", "autofocus"], ["RMB", "hold and drag: turn the slice"],
+	["R", "straighten the slice"], ["WASD", "walk"], ["J", "field journal"], ["B", "balloon, when it is up"], ["Z", "lower the camera"], ["F3", "metrics card"]]
+const KEYS_CAB := [["Click", "shoot"], ["Wheel", "zoom"], ["E  Q", "focus ring, through W"], ["T", "autofocus"], ["RMB", "hold and drag: turn the slice"],
+	["R", "straighten the slice"], ["J", "field journal"], ["Esc", "climb down"], ["F3", "metrics card"]]
+const KEYS_RIDE := [["Click", "shoot"], ["Wheel", "zoom"], ["E  Q", "focus ring, through W"], ["T", "autofocus"], ["X", "whistle"],
+	["J", "field journal"], ["Esc", "ask Wren to land"], ["F3", "metrics card"]]
+const STOPS := [1.0, 2.0, 4.0, 8.0, 12.0]
 
 var station: Node
 
@@ -30,14 +49,39 @@ var _black_len: float = 0.1
 var _toasts: Array = []
 var _note: String = ""
 var _note_t: float = 0.0
-var _hint_t: float = 0.0
 var _font: Font
+## The matte's slide-in: 0 down, 1 up.
+var _up: float = 0.0
+var _readout: bool = true
+## Zoom activity: seconds since the last change, and the frames drawn shrinking away.
+var _zoom_seen: float = 1.0
+var _zoom_last: float = 1.0
+var _zoom_rings: Array = []
+## Where the keys card ends, so the zoom bar starts under it.
+var _keys_bottom: float = 0.0
+var _card: StyleBoxFlat
+var _chip: StyleBoxFlat
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_font = get_theme_default_font()
+	# The pen's card and key chip (flock_stats_panel_4d.gd, pen_controls_4d.gd).
+	_card = StyleBoxFlat.new()
+	_card.bg_color = Color(0.04, 0.05, 0.08, 0.34)
+	_card.border_color = Color(1.0, 1.0, 1.0, 0.07)
+	_card.set_border_width_all(1)
+	_card.set_corner_radius_all(9)
+	_chip = StyleBoxFlat.new()
+	_chip.bg_color = Color(1.0, 1.0, 1.0, 0.11)
+	_chip.border_color = Color(1.0, 1.0, 1.0, 0.20)
+	_chip.set_border_width_all(1)
+	_chip.set_corner_radius_all(4)
+
+
+func raised() -> void:
+	_up = 0.0
 
 
 func blackout(seconds: float) -> void:
@@ -50,105 +94,141 @@ func flash_note(text: String) -> void:
 	_note_t = 1.6
 
 
-## A toast: [param result] from the journal's record().
 func toast(result: Dictionary) -> void:
 	_toasts.append({"r": result, "t": 0.0})
 	while _toasts.size() > 3:
 		_toasts.pop_front()
 
 
+func _input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if key != null and key.pressed and not key.echo and key.keycode == KEY_F3:
+		_readout = not _readout
+		get_viewport().set_input_as_handled()
+
+
 func _process(delta: float) -> void:
-	_hint_t += delta
+	_up = move_toward(_up, 1.0, delta / 0.35)
 	if _black > 0.0:
 		_black = maxf(_black - delta, 0.0)
 	if _note_t > 0.0:
 		_note_t -= delta
-	# A cutscene's bars would cut them in half: they wait for it, then carry on.
 	var held: bool = station != null and bool(station.get("lookout").call("story_busy"))
 	for t in _toasts:
 		if not held:
 			t["t"] = float(t["t"]) + delta
 	while not _toasts.is_empty() and float(_toasts[0]["t"]) > 4.2:
 		_toasts.pop_front()
+	# Zoom activity, and a ring of the old framing each time it moves on far enough.
+	if station != null:
+		var z: float = float(station.get("zoom"))
+		if absf(log(z) - log(_zoom_last)) > 0.004:
+			_zoom_seen = 0.0
+			if absf(log(z) - log(_zoom_last)) > 0.18:
+				_zoom_rings.append({"from": _zoom_last, "t": 0.0})
+				_zoom_last = z
+				while _zoom_rings.size() > 3:
+					_zoom_rings.pop_front()
+		else:
+			_zoom_seen += delta
+	for r in _zoom_rings:
+		r["t"] = float(r["t"]) + delta
+	while not _zoom_rings.is_empty() and float(_zoom_rings[0]["t"]) > 0.5:
+		_zoom_rings.pop_front()
 	queue_redraw()
+
+
+## Sizes in canvas units, as the pen's cards are: the window's UI scale (pen_ui_scale_4d.gd)
+## does the rest.
+func _px(base: float) -> int:
+	return int(round(base))
 
 
 func _draw() -> void:
 	if station == null:
 		return
-	# The viewport's own size: a control under a CanvasLayer can lay out to nothing on
-	# its first frames.
 	var s: Vector2 = get_viewport_rect().size
 	var mode: int = int(station.get("mode"))
-	if mode != 2 and mode != 4:
-		# Climbing: nothing but the toasts.
-		_draw_toasts(s)
+	if mode != 2 and mode != 4 and mode != 5:
+		_draw_toasts(s, 0.0)
 		return
-	var white := Color(1.0, 1.0, 1.0, 0.82)
-	var dim := Color(1.0, 1.0, 1.0, 0.38)
 	var accent: Color = STYLE.accent.lightened(0.35)
-	# Frame lines: corners of the picture area, a little in from the edge.
-	var inset := Vector2(s.x * 0.06, s.y * 0.08)
-	var arm: float = minf(s.x, s.y) * 0.05
+	var white := Color(1.0, 1.0, 1.0, 0.85)
+	var dim := Color(1.0, 1.0, 1.0, 0.42)
+	var k: float = smoothstep(0.0, 1.0, _up)
+	var top_h: float = s.y * 0.075 * k
+	var bot_h: float = s.y * 0.115 * k
+	# The matte, and a soft darkening at its inner edges.
+	var matte := Color(0.02, 0.025, 0.03, 0.82)
+	draw_rect(Rect2(0, 0, s.x, top_h), matte)
+	draw_rect(Rect2(0, s.y - bot_h, s.x, bot_h), matte)
+	for i in 6:
+		var a: float = 0.05 * (1.0 - float(i) / 6.0) * k
+		draw_rect(Rect2(0, top_h + float(i) * 3.0, s.x, 3.0), Color(0, 0, 0, a))
+		draw_rect(Rect2(0, s.y - bot_h - float(i + 1) * 3.0, s.x, 3.0), Color(0, 0, 0, a))
+	# Frame corners and the focus point.
+	var inset := Vector2(s.x * 0.04, top_h + s.y * 0.04)
+	var arm: float = minf(s.x, s.y) * 0.045
+	var bottom: float = s.y - bot_h - s.y * 0.04
 	for corner in [Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(1, 1)]:
-		var p := Vector2(lerpf(inset.x, s.x - inset.x, corner.x), lerpf(inset.y, s.y - inset.y, corner.y))
+		var p := Vector2(lerpf(inset.x, s.x - inset.x, corner.x), lerpf(inset.y, bottom, corner.y))
 		var sx: float = 1.0 if corner.x == 0.0 else -1.0
 		var sy: float = 1.0 if corner.y == 0.0 else -1.0
-		draw_line(p, p + Vector2(arm * sx, 0.0), white, 1.5)
-		draw_line(p, p + Vector2(0.0, arm * sy), white, 1.5)
-	# The focus point, lit when what is under it is sharp.
+		draw_line(p, p + Vector2(arm * sx, 0.0), white, 2.0)
+		draw_line(p, p + Vector2(0.0, arm * sy), white, 2.0)
 	var centre: Vector2 = s * 0.5
 	var lit: bool = _sharp_under_centre()
 	var ring: Color = accent if lit else white
-	draw_arc(centre, 13.0, 0.0, TAU, 40, ring, 1.5 if not lit else 2.2)
-	draw_line(centre - Vector2(22, 0), centre - Vector2(15, 0), ring, 1.2)
-	draw_line(centre + Vector2(15, 0), centre + Vector2(22, 0), ring, 1.2)
-	draw_line(centre - Vector2(0, 22), centre - Vector2(0, 15), ring, 1.2)
-	draw_line(centre + Vector2(0, 15), centre + Vector2(0, 22), ring, 1.2)
-	_draw_meter(s, white, dim, accent)
-	# The lens, bottom left; the film, bottom right.
-	var size_text: int = 15
-	# The lens and the film sit level with the W-meter's line, either side of it.
-	var base_y: float = _meter_y(s) + 5.0
-	var lens: String = "%d mm   ×%.1f" % [int(round(float(station.call("lens_mm")))), float(station.get("zoom"))]
-	draw_string(_font, Vector2(inset.x, base_y), lens, HORIZONTAL_ALIGNMENT_LEFT, -1, size_text, white)
+	draw_arc(centre, _px(13), 0.0, TAU, 40, ring, 2.2 if lit else 1.5)
+	for d in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
+		draw_line(centre + d * _px(15), centre + d * _px(22), ring, 1.3)
+	# The top strip: the camera's mode and its film.
+	var fs: int = _px(14)
+	var title: String = ["", "", "LOOKOUT CAMERA  ·  in the cab", "", "LOOKOUT CAMERA  ·  in the balloon", "LOOKOUT CAMERA"][mode]
+	if mode == 5 and bool(station.call("up_tower")):
+		title = "LOOKOUT CAMERA  ·  on the deck"
+	draw_circle(Vector2(inset.x + 6.0, top_h * 0.5 + 1.0), 4.5, Color(0.95, 0.3, 0.25, 0.9 * k))
+	draw_string(_font, Vector2(inset.x + 18.0, top_h * 0.5 + fs * 0.36), title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, white * Color(1, 1, 1, k))
 	var film_text: String
 	if float(station.get("reloading")) > 0.0:
 		film_text = "Winding on a new roll"
 	elif int(station.get("film")) <= 0:
 		film_text = "Out of film"
 	else:
-		film_text = "%d left" % int(station.get("film"))
-	var fw: float = _font.get_string_size(film_text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_text).x
-	draw_string(_font, Vector2(s.x - inset.x - fw, base_y), film_text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_text, white)
-	# The slice, top left, only when it is turned.
+		film_text = "%d shots left" % int(station.get("film"))
+	var fw: float = _font.get_string_size(film_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	draw_string(_font, Vector2(s.x - inset.x - fw, top_h * 0.5 + fs * 0.36), film_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, white * Color(1, 1, 1, k))
 	var xw: float = rad_to_deg(float(station.get("slice_xw")))
 	var zw: float = rad_to_deg(float(station.get("slice_zw")))
 	if absf(xw) > 0.5 or absf(zw) > 0.5:
-		var tilt: String = "Slice turned   xw %+.0f°   zw %+.0f°   (R straightens)" % [xw, zw]
-		draw_string(_font, Vector2(inset.x, inset.y - 14.0), tilt, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, accent)
-	# The keys, for the first while.
-	var hint_alpha: float = clampf(1.0 - (_hint_t - 14.0) / 2.0, 0.0, 1.0) * 0.62
-	if hint_alpha > 0.01:
-		var hint: String = RIDE_HINT if mode == 4 else HINT
-		var hw: float = _font.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
-		draw_string(_font, Vector2((s.x - hw) * 0.5, s.y - 10.0), hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 1, 1, hint_alpha))
+		var tilt: String = "SLICE TURNED   xw %+.0f°   zw %+.0f°   R straightens" % [xw, zw]
+		var tw: float = _font.get_string_size(tilt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		draw_string(_font, Vector2((s.x - tw) * 0.5, top_h * 0.5 + fs * 0.36), tilt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, accent * Color(1, 1, 1, k))
+	_draw_ghosts(s, accent, bottom, inset.y)
+	_draw_zoom(s, white, dim, accent, inset, bottom)
+	_draw_meter(s, bot_h, white, dim, accent)
+	if _readout:
+		_draw_readout(s, inset, accent)
+		_draw_keys(s, inset, mode)
+	else:
+		_keys_bottom = inset.y
 	if _note_t > 0.0:
-		var nw: float = _font.get_string_size(_note, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
-		draw_string(_font, Vector2((s.x - nw) * 0.5, centre.y + 58.0), _note, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1, 1, 1, clampf(_note_t, 0.0, 1.0)))
-	_draw_toasts(s)
+		var nw: float = _font.get_string_size(_note, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(18)).x
+		draw_string(_font, Vector2((s.x - nw) * 0.5, centre.y + _px(58)), _note, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(18), Color(1, 1, 1, clampf(_note_t, 0.0, 1.0)))
+	_draw_toasts(s, top_h)
 	if _black > 0.0:
-		var k: float = _black / _black_len
-		draw_rect(Rect2(Vector2.ZERO, s), Color(0, 0, 0, clampf(k * 1.4, 0.0, 1.0)))
+		draw_rect(Rect2(Vector2.ZERO, s), Color(0, 0, 0, clampf(_black / _black_len * 1.4, 0.0, 1.0)))
 	elif _toasts.size() > 0 and float(_toasts[-1]["t"]) < 0.12:
-		# The flash edge, a frame after the mirror comes back.
-		draw_rect(Rect2(Vector2.ZERO, s), Color(1, 1, 1, 0.5), false, 3.0)
+		draw_rect(Rect2(Vector2(0, top_h), Vector2(s.x, s.y - top_h - bot_h)), Color(1, 1, 1, 0.5), false, 3.0)
+
+
+func _in_view() -> Array:
+	var subjects: Node = station.get("lookout").get("subjects")
+	return subjects.call("in_view", station.get("camera"), station.call("home_eye"), station.call("slice_normal"), float(station.get("focus_range")))
 
 
 func _sharp_under_centre() -> bool:
-	var subjects: Node = station.get("lookout").get("subjects")
-	var cam: Camera4D = station.get("camera")
-	for v in subjects.call("in_view", cam, station.call("home_eye"), station.call("slice_normal"), float(station.get("focus_range"))):
+	for v in _in_view():
 		if (v["screen"] as Vector2).length() > 0.12:
 			continue
 		var off: float = float(v["w"]) - float(station.get("focus"))
@@ -157,60 +237,250 @@ func _sharp_under_centre() -> bool:
 	return false
 
 
-func _draw_meter(s: Vector2, white: Color, dim: Color, accent: Color) -> void:
+## The zoom on a W-T bar up the right side, with its stops, the slider, the lens in mm and the
+## field of view; while zooming, the magnification big and the old framing shrinking away.
+func _draw_zoom(s: Vector2, white: Color, dim: Color, accent: Color, inset: Vector2, bottom: float) -> void:
+	var zoom: float = float(station.get("zoom"))
+	var zmax: float = float(station.get("zoom_max"))
+	var active: float = clampf(1.0 - (_zoom_seen - 0.6) / 0.6, 0.0, 1.0)
+	var x: float = s.x - inset.x - _px(10)
+	var y0: float = bottom - 26.0
+	var y1: float = maxf(_keys_bottom + 46.0, inset.y + 60.0)
+	var at := func(z: float) -> float: return lerpf(y0, y1, log(z) / log(zmax))
+	var bar_c: Color = white.lerp(accent, active)
+	draw_line(Vector2(x, y0), Vector2(x, y1), Color(1, 1, 1, 0.3 + 0.4 * active), 2.0)
+	draw_rect(Rect2(x - 2.0, at.call(zoom), 4.0, y0 - at.call(zoom)), bar_c * Color(1, 1, 1, 0.8))
+	var fs: int = _px(11)
+	for z in STOPS:
+		if z > zmax + 0.01:
+			continue
+		var y: float = at.call(z)
+		draw_line(Vector2(x - 7.0, y), Vector2(x + 7.0, y), dim, 1.0)
+		var label: String = "%d×" % int(z)
+		var lw: float = _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		draw_string(_font, Vector2(x - 12.0 - lw, y + fs * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, dim)
+	draw_string(_font, Vector2(x - _font.get_string_size("T", HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13)).x * 0.5, y1 - 10.0), "T", HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13), white)
+	draw_string(_font, Vector2(x - _font.get_string_size("W", HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13)).x * 0.5, y0 + _px(20)), "W", HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13), white)
+	# The slider, and what it says.
+	var ty: float = at.call(zoom)
+	draw_colored_polygon(PackedVector2Array([Vector2(x - 9.0, ty - 6.0), Vector2(x - 1.0, ty), Vector2(x - 9.0, ty + 6.0)]), bar_c)
+	var fov: float = rad_to_deg(float(station.get("camera").get("field_of_view_4d"))) if station.get("camera") != null else 0.0
+	var lines: Array = ["×%.1f" % zoom, "%d mm" % int(round(float(station.call("lens_mm")))), "FOV %d°" % int(round(fov))]
+	var ly: float = ty - _px(14)
+	for i in lines.size():
+		var size_i: int = _px(16) if i == 0 else _px(11)
+		var w: float = _font.get_string_size(String(lines[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, size_i).x
+		draw_string(_font, Vector2(x - 40.0 - w, ly), String(lines[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, size_i, (bar_c if i == 0 else white) * Color(1, 1, 1, 0.9))
+		ly += float(size_i) + 3.0
+	# Zooming: the magnification big, and the frame you had shrinking away into the middle.
+	if active > 0.01:
+		var big: String = "×%.1f" % zoom
+		var bs: int = _px(34)
+		var bw: float = _font.get_string_size(big, HORIZONTAL_ALIGNMENT_LEFT, -1, bs).x
+		draw_string(_font, Vector2((s.x - bw) * 0.5, inset.y + _px(40)), big, HORIZONTAL_ALIGNMENT_LEFT, -1, bs, Color(1, 1, 1, 0.85 * active))
+	for r in _zoom_rings:
+		var age: float = float(r["t"]) / 0.5
+		var ratio: float = float(r["from"]) / maxf(zoom, 0.01)
+		if absf(ratio - 1.0) < 0.01:
+			continue
+		# The framing you had, as four corners, shrinking away into the middle.
+		var half := Vector2(s.x, bottom - inset.y) * 0.5 * clampf(ratio, 0.05, 3.0)
+		var c: Vector2 = Vector2(s.x * 0.5, (inset.y + bottom) * 0.5)
+		var col := Color(1, 1, 1, 0.45 * (1.0 - age))
+		var arm: float = minf(half.x, half.y) * 0.25
+		for corner in [Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1)]:
+			var p: Vector2 = c + half * corner
+			draw_line(p, p - Vector2(corner.x * arm, 0.0), col, 1.5)
+			draw_line(p, p - Vector2(0.0, corner.y * arm), col, 1.5)
+
+
+## The W-meter in the bottom strip: kata to ana, the needle and its depth of field, a tick for
+## every creature in front of you, the near ones named.
+func _draw_meter(s: Vector2, bot_h: float, white: Color, dim: Color, accent: Color) -> void:
 	var reach: float = float(station.get("focus_range"))
-	var width: float = minf(s.x * 0.42, 640.0)
+	var width: float = minf(s.x * 0.6, 980.0)
 	var left: float = (s.x - width) * 0.5
-	var y: float = _meter_y(s)
+	var y: float = s.y - bot_h + bot_h * 0.48
 	var at := func(w: float) -> float: return left + (w + reach) / (2.0 * reach) * width
-	draw_line(Vector2(left, y), Vector2(left + width, y), dim, 1.0)
-	var step: float = 0.5
+	var focus: float = float(station.get("focus"))
+	# The depth of field round the needle: what is inside it is in your slice.
+	var band: float = 0.2
+	var b0: float = at.call(clampf(focus - band, -reach, reach))
+	var b1: float = at.call(clampf(focus + band, -reach, reach))
+	draw_rect(Rect2(Vector2(b0, y - _px(16)), Vector2(b1 - b0, _px(22))), accent * Color(1, 1, 1, 0.16))
+	draw_line(Vector2(left, y), Vector2(left + width, y), Color(1, 1, 1, 0.5), 1.5)
 	var w: float = -reach
+	var fs: int = _px(11)
 	while w <= reach + 0.001:
 		var major: bool = is_equal_approx(fmod(absf(w), 1.0), 0.0)
 		var x: float = at.call(w)
-		draw_line(Vector2(x, y), Vector2(x, y + (7.0 if major else 4.0)), dim if not is_zero_approx(w) else white, 1.0)
+		draw_line(Vector2(x, y), Vector2(x, y + (_px(8) if major else _px(4))), white if is_zero_approx(w) else dim, 1.0)
 		if major:
 			var label: String = "0" if is_zero_approx(w) else "%+d" % int(round(w))
-			var lw: float = _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
-			draw_string(_font, Vector2(x - lw * 0.5, y + 22.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, dim)
-		w += step
-	draw_string(_font, Vector2(left - 46.0, y + 4.0), "kata", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, dim)
-	draw_string(_font, Vector2(left + width + 10.0, y + 4.0), "ana", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, dim)
-	# The ticks: what is out there, at its W.
+			var lw: float = _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			draw_string(_font, Vector2(x - lw * 0.5, y + _px(21)), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, dim)
+		w += 0.5
+	var ends: int = _px(13)
+	draw_string(_font, Vector2(left - _font.get_string_size("kata", HORIZONTAL_ALIGNMENT_LEFT, -1, ends).x - 14.0, y + ends * 0.36), "kata", HORIZONTAL_ALIGNMENT_LEFT, -1, ends, white)
+	draw_string(_font, Vector2(left + width + 14.0, y + ends * 0.36), "ana", HORIZONTAL_ALIGNMENT_LEFT, -1, ends, white)
+	draw_string(_font, Vector2(left, y - _px(22)), "FOCUS RING  ·  W", HORIZONTAL_ALIGNMENT_LEFT, -1, _px(11), dim)
 	var lookout: Node = station.get("lookout")
 	var journal: Node = lookout.get("journal")
-	var focus: float = float(station.get("focus"))
-	var subjects: Array = lookout.get("subjects").call("in_view", station.get("camera"), station.call("home_eye"), station.call("slice_normal"), reach)
-	for v in subjects:
+	var named: Array = []
+	for v in _in_view():
 		var subject: Dictionary = v["subject"]
-		var tw: float = clampf(float(v["w"]), -reach, reach)
-		var x: float = at.call(tw)
+		var sw: float = float(v["w"])
+		var x: float = at.call(clampf(sw, -reach, reach))
 		var b: Array = lookout.get("subjects").call("behaviour", subject)
 		var fresh: bool = not bool(journal.call("filled", subject["page"], int(b[0])))
-		var on: bool = absf(float(v["w"]) - focus) < float(subject["w_radius"]) * 0.7
-		var c: Color = accent if fresh else Color(1, 1, 1, 0.45)
+		var off: float = absf(sw - focus)
+		var on: bool = off < float(subject["w_radius"]) * 0.7
+		var c: Color = accent if fresh else Color(1, 1, 1, 0.5)
 		if on:
-			c = c.lightened(0.3)
-		var r: float = 4.5 if on else 3.5
-		draw_colored_polygon(PackedVector2Array([Vector2(x, y - 6.0 - r * 2.0), Vector2(x + r, y - 6.0 - r), Vector2(x, y - 6.0), Vector2(x - r, y - 6.0 - r)]), c)
-	# The needle.
+			c = c.lightened(0.35)
+		# Taller the nearer the needle: how close it is to coming into your slice.
+		var tall: float = lerpf(float(_px(7)), float(_px(16)), clampf(1.0 - off / 1.5, 0.0, 1.0))
+		var r: float = float(_px(4)) + (1.5 if on else 0.0)
+		draw_colored_polygon(PackedVector2Array([Vector2(x, y - 3.0 - tall), Vector2(x + r, y - 3.0 - tall + r), Vector2(x, y - 3.0), Vector2(x - r, y - 3.0 - tall + r)]), c)
+		var label_name: String = String(subject["name"]).trim_prefix("The ").trim_prefix("A ")
+		var nw: float = _font.get_string_size(label_name, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(11)).x
+		var clear: bool = true
+		for span in named:
+			if x + nw * 0.5 + 6.0 > float(span.x) and x - nw * 0.5 - 6.0 < float(span.y):
+				clear = false
+		if off < 0.8 and clear and named.size() < 3:
+			named.append(Vector2(x - nw * 0.5, x + nw * 0.5))
+			draw_string(_font, Vector2(x - nw * 0.5, y - tall - _px(8)), label_name, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(11), c)
+	# The needle and its reading.
 	var nx: float = at.call(focus)
-	draw_colored_polygon(PackedVector2Array([Vector2(nx, y + 2.0), Vector2(nx - 6.0, y + 12.0), Vector2(nx + 6.0, y + 12.0)]), white)
+	draw_colored_polygon(PackedVector2Array([Vector2(nx, y + 2.0), Vector2(nx - _px(7), y + _px(13)), Vector2(nx + _px(7), y + _px(13))]), white)
 	var readout: String = "W %+.2f m" % focus
-	var rw: float = _font.get_string_size(readout, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
-	draw_string(_font, Vector2(nx - rw * 0.5, y - 22.0), readout, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, white)
+	var rw: float = _font.get_string_size(readout, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13)).x
+	draw_string(_font, Vector2(left + width - rw, y - _px(22)), readout, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13), white)
 
 
-## The W-meter's line: above the key hints, below the frame lines' bottom corners.
-func _meter_y(s: Vector2) -> float:
-	return s.y - 58.0
+## The second locator: a dashed ring in the frame where each creature off your slice is, and
+## the W to turn the ring to. Five at most, the nearest the middle first.
+func _draw_ghosts(s: Vector2, accent: Color, bottom: float, top: float) -> void:
+	var focus: float = float(station.get("focus"))
+	var lookout: Node = station.get("lookout")
+	var journal: Node = lookout.get("journal")
+	var list: Array = []
+	for v in _in_view():
+		var off: float = float(v["w"]) - focus
+		if absf(off) < float(v["subject"]["w_radius"]) * 0.9:
+			continue
+		list.append(v)
+	list.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return (a["screen"] as Vector2).length() < (b["screen"] as Vector2).length())
+	for i in mini(list.size(), 4):
+		var v: Dictionary = list[i]
+		var sc: Vector2 = v["screen"]
+		var p := Vector2((sc.x + 1.0) * 0.5 * s.x, (1.0 - sc.y) * 0.5 * s.y)
+		if p.y < top or p.y > bottom:
+			continue
+		var subject: Dictionary = v["subject"]
+		var b: Array = lookout.get("subjects").call("behaviour", subject)
+		var fresh: bool = not bool(journal.call("filled", subject["page"], int(b[0])))
+		var nearness: float = clampf(1.0 - absf(float(v["w"]) - focus) / 3.5, 0.25, 1.0)
+		var c: Color = (accent if fresh else Color(1, 1, 1, 1)) * Color(1, 1, 1, 0.75 * nearness)
+		var r: float = float(_px(16))
+		var steps: int = 16
+		for k in steps:
+			if k % 2 == 1:
+				continue
+			draw_arc(p, r, float(k) / float(steps) * TAU, float(k + 1) / float(steps) * TAU, 4, c, 1.5)
+		draw_string(_font, p + Vector2(r + 4.0, _px(4)), "W %+.1f" % float(v["w"]), HORIZONTAL_ALIGNMENT_LEFT, -1, _px(11), c)
 
 
-func _draw_toasts(s: Vector2) -> void:
+## The metrics card (F3), in the murmuration card's style: a cue bar above, a heading that
+## names the method, label and value rows.
+func _draw_readout(_s: Vector2, inset: Vector2, accent: Color) -> void:
+	var focus: float = float(station.get("focus"))
+	var sharpest: String = "nothing"
+	var best: float = 0.0
+	var in_view: int = 0
+	var in_slice: int = 0
+	for v in _in_view():
+		in_view += 1
+		var wr: float = float(v["subject"]["w_radius"])
+		var off: float = float(v["w"]) - focus
+		var ratio: float = 1.0 - (off / wr) * (off / wr)
+		if ratio > 0.25:
+			in_slice += 1
+		if ratio > best:
+			best = ratio
+			sharpest = "%s, %d%% of it" % [String(v["subject"]["name"]).to_lower().trim_prefix("the ").trim_prefix("a "), int(round(sqrt(ratio) * 100.0))]
+	var cam: Camera4D = station.get("camera")
+	var fov_deg: int = int(round(rad_to_deg(float(cam.get("field_of_view_4d"))))) if cam != null else 0
+	var rows: Array = [
+		["slice", "%+.2f m along its own W" % focus],
+		["lens", "%d mm  ·  ×%.1f  ·  %d° view" % [int(round(float(station.call("lens_mm")))), float(station.get("zoom")), fov_deg]],
+		["in view", "%d %s, %d in your slice" % [in_view, "creature" if in_view == 1 else "creatures", in_slice]],
+		["sharpest", sharpest],
+		["judged", "from the game's state, not pixels"],
+	]
+	var ts: int = 12
+	var step: float = float(ts) + 7.0
+	var w: float = 286.0
+	var at := Vector2(inset.x - 8.0, inset.y + 4.0)
+	var h: float = 12.0 + step * float(rows.size() + 2)
+	draw_style_box(_card, Rect2(at, Vector2(w, h)))
+	draw_rect(Rect2(at + Vector2(14.0, -6.0), Vector2(34.0, 3.0)), STYLE.accent.lightened(0.3))
+	var x: float = at.x + 14.0
+	var y: float = at.y + 12.0
+	var asc: float = _font.get_ascent(ts)
+	draw_string(_font, Vector2(x, y + asc), "Camera  ·  a slice of 4D, live", HORIZONTAL_ALIGNMENT_LEFT, -1, ts, Color(1, 1, 1, 0.55))
+	y += step
+	for row in rows:
+		draw_string(_font, Vector2(x, y + asc), String(row[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, ts, Color(1, 1, 1, 0.45))
+		draw_string(_font, Vector2(x + 66.0, y + asc), String(row[1]), HORIZONTAL_ALIGNMENT_LEFT, w - 84.0, ts, Color(1, 1, 1, 0.9))
+		y += step
+	draw_string(_font, Vector2(x, y + _font.get_ascent(ts - 2)), "F3 hides both cards", HORIZONTAL_ALIGNMENT_LEFT, -1, ts - 2, Color(1, 1, 1, 0.4))
+
+
+## The keys card: every key the camera has in this mode, on the controls card's chips.
+func _draw_keys(s: Vector2, inset: Vector2, mode: int) -> void:
+	var keys: Array = (KEYS_RIDE if mode == 4 else (KEYS_CAB if mode == 2 else KEYS_HELD)).duplicate()
+	# What F does here and now, at the top, lit.
+	var context: int = 0
+	if mode == 5:
+		if bool(station.get("lookout").call("can_climb_down")):
+			keys.push_front(["F", "climb down"])
+			context = 1
+		elif bool(station.call("_someone_to_talk_to")):
+			keys.push_front(["F", "talk (lowers the camera)"])
+			context = 1
+	var ts: int = 12
+	var step: float = float(ts) + 7.0
+	var chip_w: float = 0.0
+	var label_w: float = 0.0
+	for k in keys:
+		chip_w = maxf(chip_w, _font.get_string_size(String(k[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, ts - 1).x + 14.0)
+		label_w = maxf(label_w, _font.get_string_size(String(k[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, ts).x)
+	var w: float = 14.0 + chip_w + 10.0 + label_w + 16.0
+	var h: float = 12.0 + step * float(keys.size() + 1)
+	var at := Vector2(s.x - inset.x + 8.0 - w, inset.y + 4.0)
+	draw_style_box(_card, Rect2(at, Vector2(w, h)))
+	var asc: float = _font.get_ascent(ts)
+	var y: float = at.y + 12.0
+	draw_string(_font, Vector2(at.x + 14.0, y + asc), "Camera keys", HORIZONTAL_ALIGNMENT_LEFT, -1, ts, Color(1, 1, 1, 0.55))
+	y += step
+	var lit: Color = STYLE.accent.lightened(0.45)
+	for i in keys.size():
+		var k: Array = keys[i]
+		var chip := Rect2(Vector2(at.x + 14.0, y - 1.0), Vector2(chip_w, float(ts) + 5.0))
+		draw_style_box(_chip, chip)
+		var kw: float = _font.get_string_size(String(k[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, ts - 1).x
+		draw_string(_font, Vector2(chip.position.x + (chip.size.x - kw) * 0.5, y + asc), String(k[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, ts - 1, Color(1, 1, 1, 0.9))
+		draw_string(_font, Vector2(chip.end.x + 10.0, y + asc), String(k[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, ts, lit if i < context else Color(1, 1, 1, 0.82))
+		y += step
+	_keys_bottom = at.y + h
+
+
+func _draw_toasts(s: Vector2, top: float) -> void:
 	if station != null and bool(station.get("lookout").call("story_busy")):
 		return
-	var y: float = 26.0
+	var y: float = top + 14.0
 	for t in _toasts:
 		var r: Dictionary = t["r"]
 		var age: float = float(t["t"])
@@ -218,11 +488,11 @@ func _draw_toasts(s: Vector2) -> void:
 		if a <= 0.0:
 			continue
 		var look: Dictionary = r.get("look", {})
-		var w: float = 470.0
+		var w: float = 410.0
 		var h: float = 96.0
 		var x: float = (s.x - w) * 0.5
 		var panel := Rect2(x, y, w, h)
-		draw_rect(panel, Color(0.04, 0.05, 0.08, 0.72 * a))
+		draw_rect(panel, Color(0.04, 0.05, 0.08, 0.78 * a))
 		draw_rect(panel, Color(1, 1, 1, 0.12 * a), false, 1.0)
 		var tex: Texture2D = r.get("thumb") as Texture2D
 		var thumb := Rect2(x + 8.0, y + 8.0, 142.0, 80.0)

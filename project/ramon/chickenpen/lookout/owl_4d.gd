@@ -68,6 +68,8 @@ const SIDES := 14
 @export_range(5.0, 120.0, 1.0, "suffix:s") var stretch_every: float = 26.0
 @export_range(5.0, 240.0, 1.0, "suffix:s") var turn_w_every: float = 44.0
 @export_range(5.0, 240.0, 1.0, "suffix:s") var hoot_every: float = 32.0
+## Only sit and look about: for the creature showcase. No stretch, no turn through W, no hoot.
+@export var idle_only: bool = false
 @export var hoot_sound: AudioStream = preload("res://ramon/chickenpen/audio/sfx/lookout_owl.wav")
 
 var state: int = State.SIT
@@ -319,7 +321,9 @@ func _process(delta: float) -> void:
 	match state:
 		State.SIT:
 			_idle(delta)
-			if watcher != null and _watched >= watched_for:
+			if idle_only:
+				pass
+			elif watcher != null and _watched >= watched_for:
 				_enter(State.LOOK)
 			else:
 				for s in [State.TURN_W, State.STRETCH, State.HOOT]:

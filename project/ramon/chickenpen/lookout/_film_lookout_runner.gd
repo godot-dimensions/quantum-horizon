@@ -138,11 +138,11 @@ func _start(beat: String) -> void:
 			_lookout.get("story").call("on_camera_given")
 			_player.global_position = (_lookout.get("tower") as Node4D).call("ladder_foot") + Vector4(0, 0.05, 0.3, 0)
 			_did["climb_at"] = _t + 0.3
-			_say("F at the ladder")
+			_say("F at the ladder. Or Z, and the camera comes up anywhere")
 		"photo":
 			var nike := _room.get_node("World/Nike") as Node4D
 			_station.call("look_along", nike.global_position + Vector4(0, 0.5, 0, 0) - (_station.call("home_eye") as Vector4))
-			_say("Up in the cab: a hide. Nothing sees you, nothing blocks you")
+			_say("Up on the deck, the camera raised. A photo is judged from the game's state")
 		"owl_focus":
 			_say("The focus ring doesn't focus in depth. It slides your slice along W")
 		"owl_reveal":
@@ -223,6 +223,12 @@ func _during(beat: String, _d: float) -> void:
 				_did["nike_shot"] = true
 				_station.call("take_photo")
 		"owl_focus":
+			if not _did.has("north"):
+				# Round to the north side of the deck, where the owl's post is.
+				_did["north"] = true
+				var tower: Node4D = _lookout.get("tower")
+				_player.global_position = tower.global_position + Vector4(0.6, float(tower.get("deck_height")) + 0.05, -2.9, 0.0)
+				_player.set("linear_velocity", Vector4.ZERO)
 			var owl: Node4D = _lookout.get("owl")
 			_aim_at(owl.call("head_point"), 0.06)
 			_station.set("zoom_goal", 3.2)
@@ -232,9 +238,6 @@ func _during(beat: String, _d: float) -> void:
 		"lift_off":
 			if _did.has("board_at") and _t >= float(_did["board_at"]) and not _did.has("boarded"):
 				_did["boarded"] = true
-				if int(_station.get("mode")) == 2:
-					_station.call("climb_down")
-				_climb_down_now()
 				_balloon.call("set_ready", true, true)
 				_balloon.call("board")
 				_black_goal = 0.0
@@ -284,7 +287,8 @@ func _during(beat: String, _d: float) -> void:
 				_key(KEY_DOWN)
 
 
-## Turns the station's camera towards [param p], easing by [param rate] a frame.
+## Turns the station's camera towards [param p], easing by [param rate] a frame - through
+## look_along, so with the camera held it is the orbit rig that turns.
 func _aim_at(p: Vector4, rate: float) -> void:
 	if _station == null or _station.get("camera") == null:
 		return
@@ -293,8 +297,9 @@ func _aim_at(p: Vector4, rate: float) -> void:
 	var flat := Vector2(d.x, d.z)
 	var yaw_goal: float = atan2(-flat.x, -flat.y)
 	var pitch_goal: float = atan2(d.y, maxf(flat.length(), 0.0001))
-	_station.set("yaw", lerp_angle(float(_station.get("yaw")), yaw_goal, rate))
-	_station.set("pitch", lerpf(float(_station.get("pitch")), pitch_goal, rate))
+	var yaw_now: float = lerp_angle(float(_station.get("yaw")), yaw_goal, rate)
+	var pitch_now: float = lerpf(float(_station.get("pitch")), pitch_goal, rate)
+	_station.call("look_along", Vector4(-sin(yaw_now) * cos(pitch_now), sin(pitch_now), -cos(yaw_now) * cos(pitch_now), 0.0))
 
 
 ## For the cut to the balloon: off the tower at once.
@@ -310,8 +315,9 @@ func _draw_overlay() -> void:
 	if _caption != "" and _black < 0.5:
 		var a: float = clampf(_caption_t / 0.5, 0.0, 1.0) * 0.92
 		var size_text: int = int(s.y * 0.022)
-		var at := Vector2(s.x * 0.06, s.y * 0.08 + size_text + 34.0)
+		# On the left, under the camera's metrics card and clear of the photo toasts above.
 		var w: float = font.get_string_size(_caption, HORIZONTAL_ALIGNMENT_LEFT, -1, size_text).x
+		var at := Vector2(s.x * 0.045, s.y * 0.36)
 		_overlay.draw_rect(Rect2(at - Vector2(14.0, size_text + 10.0), Vector2(w + 28.0, size_text + 22.0)), Color(0.03, 0.04, 0.06, 0.55 * a / 0.92))
 		_overlay.draw_rect(Rect2(at - Vector2(14.0, size_text + 10.0), Vector2(4.0, size_text + 22.0)), STYLE.accent.lightened(0.35) * Color(1, 1, 1, a))
 		_overlay.draw_string(font, at, _caption, HORIZONTAL_ALIGNMENT_LEFT, -1, size_text, Color(1, 1, 1, a))
