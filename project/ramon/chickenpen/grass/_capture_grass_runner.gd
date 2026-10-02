@@ -19,16 +19,34 @@ var _n: int = 0
 var _shots: Array = []
 
 
+## After "--": tag=<name> prefixes the frames' names; any other key=value is set on the Grass
+## node before it is ready (numbers, or colours as r,g,b), for A/B looks.
+var _tag: String = ""
+
+
 func _initialize() -> void:
 	root.unfocusable = true
 	_room = load("res://ramon/chickenpen/chickenpen_lookout.tscn").instantiate()
 	_room.get_node("Systems/Lookout").set("journal_path", "user://lookout_journal_grass_test.cfg")
+	var grass: Node = _room.get_node("World/Grass")
+	for arg in OS.get_cmdline_user_args():
+		var kv: PackedStringArray = arg.split("=", true, 1)
+		if kv.size() != 2:
+			continue
+		if kv[0] == "tag":
+			_tag = kv[1] + "_"
+		elif kv[1].count(",") == 2:
+			var c: PackedFloat64Array = kv[1].split_floats(",")
+			grass.set(kv[0], Color(c[0], c[1], c[2]))
+		else:
+			grass.set(kv[0], float(kv[1]))
+		print("      grass.%s = %s" % [kv[0], kv[1]])
 	root.add_child(_room)
 	current_scene = _room
 
 
 func _save(view: String) -> void:
-	root.get_texture().get_image().save_png("res://smoke_test_output/grass_%d_%s.png" % [_n, view])
+	root.get_texture().get_image().save_png("res://smoke_test_output/grass_%s%d_%s.png" % [_tag, _n, view])
 	_n += 1
 
 
@@ -139,6 +157,11 @@ func _process(d: float) -> bool:
 			_next(0.8)
 		18:
 			_save("above_player")
+			# Into the low sun (it is in the +x, 14 degrees up): where the tips should glow.
+			_look(Vector4(-8.0, 1.1, 3.0, 0.0), Vector4(8.0, 0.4, 5.0, 0.0))
+			_next(0.6)
+		19:
+			_save("into_sun")
 			print("GRASS CAPTURE DONE")
 			if FileAccess.file_exists("user://lookout_journal_grass_test.cfg"):
 				DirAccess.remove_absolute(ProjectSettings.globalize_path("user://lookout_journal_grass_test.cfg"))

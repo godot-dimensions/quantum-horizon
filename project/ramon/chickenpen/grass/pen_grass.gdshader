@@ -56,8 +56,9 @@ render_mode skip_vertex_transform, cull_disabled, diffuse_lambert_wrap, specular
 
 // The camera's frame, set every render in one go (pen_grass_4d.gd): 0-3 the view basis (grass
 // space to camera space), 4 its origin, 5 the camera's position in grass space, 6 the slice's
-// normal, 7 the rings' middle (x, z), the view's half-width as a tangent, a pixel's angle.
-uniform vec4 frame[8];
+// normal, 7 the rings' middle (x, z), the view's half-width as a tangent, a pixel's angle,
+// 8 the way to the sun in camera space, 9 the sun's colour (linear, times its energy).
+uniform vec4 frame[10];
 
 // This band: its grid's gap, a tile's cells per side, the tiles in view (as tile indices), a
 // seed so no two bands' blades line up.
@@ -111,7 +112,8 @@ uniform float stiffness = 30.0;
 uniform vec4 pushers[16];
 uniform int pusher_count = 0;
 
-uniform vec3 colour_root : source_color = vec3(0.11, 0.17, 0.07);
+// Cool at the root, not black or brown: the painted warm-over-cool split.
+uniform vec3 colour_root : source_color = vec3(0.07, 0.15, 0.14);
 // The field's main colour: sap green.
 uniform vec3 colour_base : source_color = vec3(0.31, 0.49, 0.16);
 uniform vec3 colour_lush : source_color = vec3(0.27, 0.47, 0.18);
@@ -140,9 +142,23 @@ uniform float hue_jitter = 0.05;
 // How light the blades are, all colours together (Ramon, 2 Oct: darker, to sit with the ground
 // between and beyond them). In linear light: 0.7 is about 0.85 on the sRGB numbers.
 uniform float shade = 0.7;
+// LIGHT (Ramon, 2 Oct, "what would you do to make it look better colorwise"). The low sun
+// through the tips: blades between you and the sun glow its colour at their tips, more the
+// nearer you look into it, as thin leaves do against a low sun.
+uniform float tip_glow = 0.3;
+// Haze with distance, towards the horizon's colour. Off: tried at 0.5, it washed the field grey
+// while the bare ground and the buildings beside it stayed clear, so the grass stood out more.
+uniform vec3 haze_colour : source_color = vec3(0.62, 0.56, 0.45);
+uniform float haze_distance = 45.0;
+uniform float haze_amount = 0.0;
+// Cloud shadows: big soft dark patches drifting across the field with the wind (0 off).
+uniform float cloud_shadows = 0.0;
+uniform float cloud_size = 40.0;
 
 varying vec3 v_colour;
 varying float v_t;
+varying vec3 v_glow;
+varying float v_haze;
 
 float hash12(vec2 p) {
 	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -252,6 +268,8 @@ void vertex() {
 		NORMAL = vec3(0.0, 1.0, 0.0);
 		v_colour = vec3(0.0);
 		v_t = 0.0;
+		v_glow = vec3(0.0);
+		v_haze = 0.0;
 	} else {
 
 		// The blade's own numbers, from its cell and its clump.
@@ -359,6 +377,19 @@ void vertex() {
 		vec3 c = mix(colour_root, base, smoothstep(0.0, 0.45, t));
 		c = mix(c, tip, smoothstep(0.55, 1.0, t));
 		c *= shade;
+		// Under a passing cloud: darker, and no sun through the tips.
+		float cloud = 0.0;
+		if (cloud_shadows > 0.0) {
+			vec2 cuv = (root_xz - wind_dir * wind_speed * 0.6 * TIME) / (cloud_size * 3.1);
+			cloud = smoothstep(0.42, 0.62, texture(wind_noise, cuv + vec2(0.13, 0.61)).r) * cloud_shadows;
+		}
+		c *= 1.0 - cloud * 0.4;
+		// The sun through the tips: how nearly this blade lies between the eye and the sun.
+		vec3 eye_dir = normalize(rel.xyz);
+		float into_sun = max(dot(eye_dir, frame[8].xyz), 0.0);
+		float tip4 = t * t * t * t;
+		v_glow = frame[9].rgb * tip_glow * pow(into_sun, 6.0) * tip4 * (1.0 - cloud);
+		v_haze = haze_amount * (1.0 - exp(-length(rel.xyz) / haze_distance));
 		c += sheen * gust * t * t * vec3(0.5, 0.52, 0.3) * shade;
 		if (flower > 0.5 && t > 0.86) {
 			float pick = hash13(vec3(cell, layer + 6.6));
@@ -370,7 +401,9 @@ void vertex() {
 }
 
 void fragment() {
-	ALBEDO = v_colour;
+	// The haze takes the place of the blade's own colour, lit or not.
+	ALBEDO = v_colour * (1.0 - v_haze);
+	EMISSION = v_glow * (1.0 - v_haze) + haze_colour * v_haze * 0.55;
 	ROUGHNESS = 0.72;
 	SPECULAR = 0.22;
 	BACKLIGHT = v_colour * 0.5 * v_t;
