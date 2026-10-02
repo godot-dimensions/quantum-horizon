@@ -137,6 +137,9 @@ uniform float region_strength = 1.0;
 uniform vec4 region_cuts = vec4(0.36, 0.46, 0.55, 0.65);
 // How far one blade's hue may wander from its neighbours'.
 uniform float hue_jitter = 0.05;
+// How light the blades are, all colours together (Ramon, 2 Oct: darker, to sit with the ground
+// between and beyond them). In linear light: 0.7 is about 0.85 on the sRGB numbers.
+uniform float shade = 0.7;
 
 varying vec3 v_colour;
 varying float v_t;
@@ -355,7 +358,8 @@ void vertex() {
 		tip = max(tip + shift, vec3(0.0));
 		vec3 c = mix(colour_root, base, smoothstep(0.0, 0.45, t));
 		c = mix(c, tip, smoothstep(0.55, 1.0, t));
-		c += sheen * gust * t * t * vec3(0.5, 0.52, 0.3);
+		c *= shade;
+		c += sheen * gust * t * t * vec3(0.5, 0.52, 0.3) * shade;
 		if (flower > 0.5 && t > 0.86) {
 			float pick = hash13(vec3(cell, layer + 6.6));
 			c = pick < 0.5 ? flower_a : (pick < 0.8 ? flower_b : flower_c);

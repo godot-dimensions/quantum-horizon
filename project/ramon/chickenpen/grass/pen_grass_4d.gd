@@ -76,6 +76,9 @@ const MAX_TILES := 384
 @export_range(0.0, 0.45, 0.01) var region_share: float = 0.25
 @export_range(0.0, 1.0, 0.01) var region_strength: float = 1.0
 @export_range(0.0, 0.2, 0.005) var hue_jitter: float = 0.05
+## How light the blades are, all their colours together, so they sit with the ground between
+## and beyond them (in linear light: 0.7 is about 0.85 on the colour numbers).
+@export_range(0.2, 1.5, 0.01) var shade: float = 0.7
 
 @export_group("Wind")
 @export var wind_direction: Vector2 = Vector2(0.82, 0.57)
@@ -254,6 +257,7 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("region_cuts", _region_cuts)
 	m.set_shader_parameter("region_strength", region_strength)
 	m.set_shader_parameter("hue_jitter", hue_jitter)
+	m.set_shader_parameter("shade", shade)
 	for key in ["colour_root", "colour_base", "colour_lush", "colour_dry", "colour_tip", "ground_colour", "region_deep", "region_bright"]:
 		var c: Color = get(key)
 		m.set_shader_parameter(key, Vector3(c.r, c.g, c.b))

@@ -71,7 +71,10 @@ blades are ordinary 3D geometry made by the GPU; only the shader knows about W:
     whole blade, root to tip, by its offset from sap green;
   - each blade's **hue** wanders a little towards yellow or blue (`hue_jitter` 0.05), its
     brightness by +-9%;
-  - less contrast all over: a lighter root, the dry clumps half as strong.
+  - less contrast all over: a lighter root, the dry clumps half as strong;
+  - **darker, to sit with the ground** (Ramon: "the groundplan color offsets too much"): every
+    blade colour times `shade` 0.7 in linear light (about 0.85 on the sRGB numbers), so the
+    field's edge and the bare ground between blades no longer read as a different green.
   One texture read a vertex, about +0.02 ms.
 - **Wind, modelled on wind in a crop:**
   - a mean wind (3 m/s) leans everything a little downwind;
@@ -171,7 +174,7 @@ all the bend for the last few centimetres, so every leaning blade hooked over at
 Field (`spacing` 0.085, `spacing_far` 0.30, `spacing_from` 3, `radius` 44, `band_radii`,
 `band_vertices`, `layers`, `layer_spacing`, `w_radius`), blades (`blade_height` 0.3,
 `blade_width` 0.009, `min_pixels` 0.8, `clump_size`, the colours, `region_deep`,
-`region_bright`, `region_size`, `region_share`, `region_strength`, `hue_jitter`), wind (`wind_speed`,
+`region_bright`, `region_size`, `region_share`, `region_strength`, `hue_jitter`, `shade` 0.7), wind (`wind_speed`,
 `gustiness`, `gust_length`, `gust_width`, `bend_max`, `stiffness`, `sheen`), `enabled`. A
 revert point for the two-ring version: the local branch `grass-before-lod`.
 
