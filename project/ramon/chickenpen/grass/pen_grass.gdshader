@@ -145,10 +145,10 @@ uniform float shade = 0.7;
 // colour (Ramon, 2 Oct: the deep region "merges with the base green ground" and he likes it;
 // "darkening the remaining 2 colors closer to the base ground color too"). The deep region is
 // left where it is.
-uniform float toward_ground = 0.35;
+uniform float toward_ground = 0.18;
 // How saturated the blades are: 1 as the colours say, more is greener (Ramon, 2 Oct: "saturate
 // the grass a bit"). About the blade's own brightness, so it changes no values.
-uniform float saturation = 1.25;
+uniform float saturation = 1.45;
 // (A glow of the sun's colour through the tips you see against it was tried and taken out: at
 // 0.3 it moved the field's brightness 2%, and the yellow against the sun was already there, from
 // BACKLIGHT; at ten times it only bleached a band along the horizon.)

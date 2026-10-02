@@ -195,7 +195,7 @@ all the bend for the last few centimetres, so every leaning blade hooked over at
 Field (`spacing` 0.085, `spacing_far` 0.30, `spacing_from` 3, `radius` 44, `band_radii`,
 `band_vertices`, `layers`, `layer_spacing`, `w_radius`), blades (`blade_height` 0.3,
 `blade_width` 0.009, `min_pixels` 0.8, `clump_size`, the colours, `region_deep`,
-`region_bright`, `region_size`, `region_share`, `region_strength`, `hue_jitter`, `shade` 0.7, `toward_ground` 0.35, `saturation` 1.25), light (`haze_*`, `cloud_shadows`, `cloud_size`), wind (`wind_speed`,
+`region_bright`, `region_size`, `region_share`, `region_strength`, `hue_jitter`, `shade` 0.7, `toward_ground` 0.18, `saturation` 1.45), light (`haze_*`, `cloud_shadows`, `cloud_size`), wind (`wind_speed`,
 `gustiness`, `gust_length`, `gust_width`, `bend_max`, `stiffness`, `sheen`), `enabled`. A
 revert point for the two-ring version: the local branch `grass-before-lod`.
 

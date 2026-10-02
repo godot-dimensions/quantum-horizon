@@ -81,9 +81,9 @@ const MAX_TILES := 384
 @export_range(0.2, 1.5, 0.01) var shade: float = 0.7
 ## How far sap green, the bright offset, the lush clumps and the tips go towards ground_colour
 ## (0 none, 1 all of it); the deep region stays put, as it already merges with the ground.
-@export_range(0.0, 1.0, 0.01) var toward_ground: float = 0.35
+@export_range(0.0, 1.0, 0.01) var toward_ground: float = 0.18
 ## How saturated the blades are (1 as the colours say; more is greener, at the same brightness).
-@export_range(0.0, 2.0, 0.01) var saturation: float = 1.25
+@export_range(0.0, 2.0, 0.01) var saturation: float = 1.45
 
 @export_group("Light")
 ## Haze with distance: the far field fades towards this colour. Off (2 Oct): at 0.5 it washed
