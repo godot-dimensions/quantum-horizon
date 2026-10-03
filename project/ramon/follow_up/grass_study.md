@@ -372,6 +372,18 @@ make it flow like on barley fields, even though its not".
   gale (`_measure_grass_runner.gd -- toggle=bits_enabled wind_scale=2.5`). `_leaves_runner.gd`
   checks the counts; films: `video/Leaves on the wind, gale.mp4` and `..., breeze.mp4`.
 
+## 3 Oct, late: names, the darkness picked, the paint layer calmer
+
+- Panel names (Ramon): "Pen's own" -> **Base color**, "Painted" -> **Paint layer**, "Centre glow"
+  -> **Centre falloff**.
+- **Grass shade 0.39** for every look: Ramon's pick, 0.61 on the first Darkness slider (which ran
+  from 1 - shade). The slider now reads darkness against the looks' own, 0 at the default
+  ("which you can also direct to become 0"), -0.3 lighter to +0.3 darker.
+- **The paint layer** ("slightly darker and a touch less saturated"): every colour it is painted
+  from - the field's green, the falloff, the sand - `paint_brightness` 0.88 and
+  `paint_saturation` 0.85, in linear light (the painting only mixes them, so that is the same
+  as adjusting the ground itself); the grass's far edge fades to the same colours.
+
 ## Cost (RTX 5080, 1280x720, interleaved on/off, after the pen's warm-up)
 
 | | |

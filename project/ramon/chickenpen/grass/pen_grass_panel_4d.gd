@@ -79,20 +79,23 @@ func _ready() -> void:
 		_buttons.append(b)
 	_label("Ground   Shift+O", Color(1.0, 1.0, 1.0, 0.58))
 	for painted in [false, true]:
-		var b := _button("Painted" if painted else "Pen's own")
+		var b := _button("Paint layer" if painted else "Base color")
 		b.set_meta("painted", painted)
 		b.pressed.connect(_set_ground.bind(painted))
 		_ground_buttons.append(b)
 	# The centre glow alone, on or off, the sand staying (Ctrl+O).
-	_glow_button = _button("Centre glow   Ctrl+O")
+	_glow_button = _button("Centre falloff   Ctrl+O")
 	_glow_button.pressed.connect(_toggle_glow)
 	# Darkness, a test for every look (3 Oct: "a darkness toggle slider so i can test and tell
 	# you later which number to pick"): the number is what to tell Claude.
 	_dark_label = _label("", Color(1.0, 1.0, 1.0, 0.58))
 	# (No focus on the sliders, as the buttons: the arrow keys are the player's.)
-	_dark_slider = _slider(0.0, 0.75, 0.01)
-	var shade_now: float = float(grass.call("_shade")) if grass != null else 0.6
-	_dark_slider.value = 1.0 - shade_now
+	# Darkness against the looks' own (0): right is darker, left lighter. (3 Oct: Ramon picked
+	# 0.61 on the first slider, which ran from the shade itself, and asked for it to be the
+	# default and to read 0.)
+	_dark_slider = _slider(-0.3, 0.3, 0.01)
+	var shade_now: float = float(grass.call("_shade")) if grass != null else 0.39
+	_dark_slider.value = float(grass.get("shade")) - shade_now if grass != null else 0.0
 	_dark_slider.value_changed.connect(_on_dark)
 	_on_dark(_dark_slider.value)
 	# Wind, all of it at once: calm to a gale, 1 the look's own.
@@ -192,9 +195,12 @@ func _on_wind(scale: float) -> void:
 
 
 func _on_dark(darkness: float) -> void:
-	_dark_label.text = "Darkness   %.2f" % darkness
-	if grass != null and absf((1.0 - darkness) - float(grass.call("_shade"))) > 0.001:
-		grass.set("shade_test", 1.0 - darkness)
+	_dark_label.text = "Darkness   %+.2f" % darkness
+	if grass == null:
+		return
+	var want: float = maxf(float(grass.get("shade")) - darkness, 0.05)
+	if absf(want - float(grass.call("_shade"))) > 0.001:
+		grass.set("shade_test", -1.0 if absf(darkness) < 0.001 else want)
 
 
 func _toggle_grass() -> void:

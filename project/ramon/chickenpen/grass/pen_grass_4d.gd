@@ -90,6 +90,11 @@ const MAX_TILES := 384
 ## pen also here surrounding it").
 @export var sand_round: Dictionary = {"Pen": 1.8, "AnaMarsh": 2.4}
 @export var sand_colour: Color = Color(0.54, 0.44, 0.28)
+## The paint layer, all of it (the field's green, the falloff, the sand), this much darker and
+## this much less saturated (3 Oct: "make it slightly darker and a touch less saturated"); the
+## grass's far edge fades to the same.
+@export_range(0.3, 1.5, 0.01) var paint_brightness: float = 0.88
+@export_range(0.0, 1.5, 0.01) var paint_saturation: float = 0.85
 @export_range(0.0, 4.0, 0.05, "suffix:m") var sand_ragged: float = 1.0
 
 signal ground_changed(painted: bool)
@@ -434,9 +439,24 @@ func _shade() -> float:
 ## The glow, for the grass's far edge to fade to the ground actually under it.
 func _glow_to(m: ShaderMaterial) -> void:
 	var on: bool = ground_glow and ground_paint
+	var glow: Color = _paint_adjust(glow_colour)
+	# The far edge fades to the ground as it is drawn: the paint layer's colour when it is on.
+	var edge: Color = _paint_adjust(ground_colour) if ground_paint else ground_colour
 	m.set_shader_parameter("glow_area", Vector4(glow_centre.x, glow_centre.y, glow_in, glow_out))
-	m.set_shader_parameter("glow_colour", Vector3(glow_colour.r, glow_colour.g, glow_colour.b))
+	m.set_shader_parameter("glow_colour", Vector3(glow.r, glow.g, glow.b))
 	m.set_shader_parameter("glow_on", 1.0 if on else 0.0)
+	m.set_shader_parameter("edge_colour", Vector3(edge.r, edge.g, edge.b))
+
+
+## A paint layer colour (sRGB) made paint_brightness as bright and paint_saturation as
+## saturated, in linear light (so it is the same as adjusting the painted ground itself: the
+## painting only mixes these colours).
+func _paint_adjust(c: Color) -> Color:
+	var lin: Color = c.srgb_to_linear()
+	var grey: float = lin.r * 0.2126 + lin.g * 0.7152 + lin.b * 0.0722
+	var out := Color(lerpf(grey, lin.r, paint_saturation), lerpf(grey, lin.g, paint_saturation), lerpf(grey, lin.b, paint_saturation)) * paint_brightness
+	out.a = 1.0
+	return out.linear_to_srgb()
 
 
 func _glow_to_grass() -> void:
@@ -466,7 +486,7 @@ func _paint_ground() -> void:
 			sands.append(_sand_field(key, float(sand_round[key])))
 	_ground_painted = PAINT.build(box.size, {
 		"centre": glow_centre, "glow_in": glow_in, "glow_out": glow_out, "glow_w": glow_w,
-		"own": own, "glow": glow_colour if ground_glow else own, "sand": sand_colour, "sand_ragged": sand_ragged,
+		"own": _paint_adjust(own), "glow": _paint_adjust(glow_colour if ground_glow else own), "sand": _paint_adjust(sand_colour), "sand_ragged": sand_ragged,
 		"sands": sands, "grid_cell": MASK_CELL, "grid_cells": MASK_CELLS, "grid_half": MASK_CELL * MASK_CELLS * 0.5,
 	})
 	paint_msec = Time.get_ticks_msec() - started
