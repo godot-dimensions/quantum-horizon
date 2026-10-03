@@ -46,3 +46,25 @@ static func sun_direction(elevation: float, azimuth: float, ana: float = 0.0) ->
 static func ease01(t: float) -> float:
 	var x: float = clampf(t, 0.0, 1.0)
 	return x * x * (3.0 - 2.0 * x)
+
+
+static var _cam: Camera4D = null
+static var _cam_at: int = -1000000
+
+
+## The Camera4D that is drawing (its `current` is set), found by a scan of the tree at most four
+## times a second and remembered in between. There is no viewport getter for the 4D camera.
+static func current_camera(tree: SceneTree) -> Camera4D:
+	if tree == null:
+		return null
+	var now: int = Time.get_ticks_msec()
+	if now - _cam_at < 250 and is_instance_valid(_cam) and _cam.is_inside_tree() and _cam.current:
+		return _cam
+	_cam_at = now
+	_cam = null
+	for c in tree.root.find_children("*", "Camera4D", true, false):
+		var cam: Camera4D = c as Camera4D
+		if cam != null and cam.current and cam.is_inside_tree():
+			_cam = cam
+			break
+	return _cam

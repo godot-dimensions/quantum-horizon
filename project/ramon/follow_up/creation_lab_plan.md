@@ -97,6 +97,29 @@ on for four more animals, below).
 - The symmetry creature in a plain slice shows only its body: its repeated legs lie off the
   slice through W, by design. Bay 4 shows them with P.
 
+### Section C: done (3 Oct, night)
+
+`LabKit/lab_rig_4d.gd`, the test rig, on a bench of its own (`CreationLab/_rig_test.tscn`):
+- **The drum** is a cubinder (a disc swept through height and W), stepped: a body and a deck a
+  step smaller, a glowing rim in the part's colour, a dark contact disc under the animal.
+- **The belt** runs back along the animal's walking direction at the speed its planted feet
+  slide, and stops when it pauses.
+- **The boom** stands on one post behind the animal and reaches over its back, so the side,
+  front and three-quarter views stay clear; the tether drops straight from its tip. Flyers fly
+  between two cyan halo rings; perchers sit on a stand.
+- **The light pool** from the boom tip carries the dark mood.
+- **The view switch** (`LabKit/lab_views_4d.gd`): Skin; Blocks (every rigid piece its own
+  colour); Lines (Marey: bones and joint dots, filled feet when planted and hollow when
+  swinging, each foot's path as a loop; drawn by `LabKit/lab_overlay_4d.gd` through the live
+  camera); Balls (the loft rig's own cross-sections, carried along with the walking pieces).
+  Each animal offers only the views it has.
+- **The W spin** turns the animal through the fourth axis, eased: at 45 and 90 degrees the
+  wolf's legs leave the slice and Trym's creature becomes one leg and a head.
+- **Sleep:** a far animal, or one behind the camera, holds its pose; bending joints run only
+  near.
+- `_verify_rig_runner.gd`, 10 checks, passing on the wolf, Trym's creature and the chicken: the
+  belt's direction and stop, the spin, sleep and wake, and every view switch restoring exactly.
+
 **Animals that needed lab versions** (subclasses, so fixes to the originals reach the lab):
 the chicken's walker and the cat walk in place (`creatures/lab_chicken_walker.gd`,
 `lab_cat.gd`); the heron flies straight up and down its column (`lab_heron.gd`); the people's
