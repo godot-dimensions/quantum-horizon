@@ -386,8 +386,10 @@ make it flow like on barley fields, even though its not".
 - **The sand is left out of that** (Ramon, evening: "the sand in the pen is not slightly yellow,
   its grey now?"). Calmed with the greens, the tan only just read as tan, and under the teal sky
   fill it went olive-grey: measured from above (`_probe_yard_runner.gd`) the yard was
-  (107, 107, 78), red equal to green; with the sky fill off, (101, 70, 35). Now `sand_colour`
-  0.62/0.48/0.27, uncalmed, and the marsh's rim (`shore_colour`) the same: (135, 124, 71).
+  (107, 107, 78), red equal to green; with the sky fill off, (101, 70, 35). Then `sand_colour`
+  0.62/0.48/0.27, uncalmed: (135, 124, 71), which Ramon found "a bit green ... it somewhat
+  blends but this is a bit much"; now 0.64/0.45/0.31, the marsh's rim (`shore_colour`) the
+  same: (139, 116, 83) on screen, warm without the olive.
 
 ## 3 Oct, evening: Nike's trail, and the meadow film
 
