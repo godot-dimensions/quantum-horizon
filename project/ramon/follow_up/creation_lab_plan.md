@@ -39,7 +39,11 @@ Found while building. None blocks the lab; each is outside its scope, so nothing
 
 ## Status
 
-Approved 3 Oct, evening; building from step 1.
+**Built, all 70 steps (4 Oct).** Open it from the menu: Lab section, "Creation Lab", with GUIDED,
+WATCH and EXPLORE (or `CreationLab/creation_lab.tscn` directly). How the kit is reused:
+`follow_up/lab_kit.md`. The film of Watch mode: `smoke_test_output/video/creation_lab_watch.mp4`.
+
+Approved 3 Oct, evening; built from step 1 through the night and the next day.
 
 ### Sections A and B: done (3 Oct, night)
 
@@ -266,6 +270,34 @@ on for four more animals, below).
   re-sent to the GPU every frame), and the big animals were awake. Now animals sleep beyond
   12 m and only the one you stand at bends its joints. Bay 9 goes over on purpose while its
   re-lofted leg is switched on: that is its lesson.
+
+### Section I: done (4 Oct)
+
+- **The autopilot** (`LabKit/lab_autopilot_4d.gd`): its own camera; per bay a wide shot while a
+  lower-third caption says the step's idea, the bay's own `demo(t)` performing its task while the
+  camera moves in, a closer shot while the caption says what just happened, then the lift filmed
+  from beside the pad, riding along W with it. The Hall's reveal ends it. Esc hands control back
+  (Watch only). The shots come from each bay's rig spot and arrival framing; big or several
+  exhibits give their own (`film_marks()`: bays 7 to 10).
+- **Camera marks** (step 66) became computed marks rather than LabMark nodes on the shell: every
+  bay is shot the same way unless its content says otherwise, which is what the step asked for,
+  and nothing has to be placed by hand in 12 bays.
+- **Found in the stills** (`_film_creation_lab_runner.gd stills`, a frame per shot): the lift
+  frame's posts stood in front of every side shot (now shown only while riding); the shared
+  back-to-menu prompt was in the film; a departing bay's chart floated on through the ride (a bay
+  now ends when its ride starts); the close shots cropped the bays with several exhibits and Trym's
+  creature.
+- **The film:** `lab_run.sh movie creation_lab_watch ...` renders Watch mode with Godot's movie
+  writer at a fixed 30 fps; encoded with ffmpeg.
+
+### Section J: done (4 Oct)
+
+- **The menu entry** "Creation Lab" in `Menu/entries/catalogue.tres`, in the Lab section just before
+  the Motion Lab (which stays, with Lofted Creatures, until you say). GUIDED opens
+  `creation_lab.tscn`, WATCH `creation_lab_watch.tscn`, EXPLORE `creation_lab_explore.tscn` (the
+  first with `mode` set). Its preview clip is cut from the film. `Menu/_verify_menu_final_runner.gd`
+  knows about it. Putting it in the tour instead is your call.
+- `follow_up/lab_kit.md`: how another prototype uses the kit, and the traps found.
 
 **Animals that needed lab versions** (subclasses, so fixes to the originals reach the lab):
 the chicken's walker and the cat walk in place (`creatures/lab_chicken_walker.gd`,

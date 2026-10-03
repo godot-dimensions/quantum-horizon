@@ -22,6 +22,8 @@ const GROUP := "lab_overlay"
 
 var canvas: Control
 var camera: Camera4D
+## True while the autopilot films: the lectern cards and the lift's tag step aside for its captions.
+var film: bool = false
 var _scale: Vector2 = Vector2.ONE
 
 

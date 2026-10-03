@@ -115,7 +115,7 @@ func set_step(s: Resource, is_done: bool) -> void:
 # -- the card ------------------------------------------------------------------------------------
 
 func draw_overlay(canvas: Control, overlay: Node) -> void:
-	if step == null or not is_visible_in_tree():
+	if step == null or not is_visible_in_tree() or bool(overlay.get("film")):
 		return
 	var anchor: Vector4 = global_position + Vector4(0.0, 1.0, 0.0, 0.0)
 	var s = overlay.to_screen(anchor)

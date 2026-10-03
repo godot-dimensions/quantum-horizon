@@ -72,6 +72,8 @@ var _slow: bool = false
 var all_controls: bool = false
 ## How many times you have ridden the lift: the Hall says it back to you.
 var rides: int = 0
+## The autopilot (LabKit/lab_autopilot_4d.gd) locks the keys while it drives.
+var locked: bool = false
 ## The projection (P): the cut plus a faint projection of everything along W.
 var projection_on: bool = false
 ## In the last bay, P also shows every bay you passed at once (they stand at the same place, one
@@ -367,6 +369,9 @@ func ride(to: int) -> void:
 		player.set_physics_process(false)
 		player.linear_velocity = Vector4.ZERO
 	_wake(to)
+	var leaving: Node = bays[current]["content"]
+	if leaving != null and leaving.has_method("end"):
+		leaving.call("end")
 	hud.call("chime", "W " + w_label(to), "w", false)
 	apply_mood(_mood, true)
 	lift_started.emit(current, to)
@@ -470,7 +475,7 @@ func _physics_process(_delta: float) -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	var k := event as InputEventKey
-	if k == null or not k.pressed or k.echo or not _lift.is_empty():
+	if k == null or not k.pressed or k.echo or not _lift.is_empty() or locked:
 		return
 	if bool(hud.call("floor_list_open")):
 		match k.keycode:
@@ -611,7 +616,7 @@ func draw_overlay(canvas: Control, overlay: Node) -> void:
 	var root: Node4D = b["root"]
 	# Beside the pad, to the left of whoever stands on it (the lectern's card is on the right).
 	var anchor: Vector4 = root.global_position + shell.call("spot", "pad") + Vector4(-2.0, 0.9, 0.0, 0.0)
-	if not _lift.is_empty():
+	if not _lift.is_empty() or bool(overlay.get("film")):
 		return
 	var at = overlay.to_screen(anchor)
 	if at == null:

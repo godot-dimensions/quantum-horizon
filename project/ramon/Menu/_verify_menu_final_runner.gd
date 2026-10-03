@@ -26,7 +26,7 @@ const PEN := "res://ramon/chickenpen/playable_world.tscn"
 const MAP := "res://ramon/FrontierMap.tscn"
 const TOUR := ["Slice Vision", "4D Ascent", "Portal", "Quantum Range", "Voxel Mining", "Lofted Creatures"]
 const FILMS := ["Flight of the 4D Starlings", "Mountain Range"]
-const LAB := ["Phase Maze", "Shrubbery Lab", "Sky Box Clouds", "Motion Lab"]
+const LAB := ["Phase Maze", "Shrubbery Lab", "Sky Box Clouds", "Creation Lab", "Motion Lab"]
 
 var _menu: Node
 var _pen: Node
