@@ -34,6 +34,10 @@ const MAX_BITS := 6000
 const GROUND := preload("res://ramon/chickenpen/lookout/lookout_ground_4d.gd")
 ## Tiles a band can draw at once (the shader's tiles[] array is this long).
 const MAX_TILES := 384
+## As many as the shader's pushers[] holds.
+const MAX_PUSHERS := 32
+## The most points of one trail sent to the shader, so two trails and the rest all fit.
+const TRAIL_POINTS := 12
 
 @export var enabled: bool = true:
 	set(v):
@@ -273,6 +277,9 @@ var shade_test: float = -1.0:
 ## Whether anything walking through pushes the grass aside at all (off for Pasture: 3 Oct,
 ## "when you walk over it, it should stay as is, and not have the walkthrough mechanic").
 @export var trample: bool = true
+## Who leaves a trail, as paths from the pen's root; everyone else only pushes the grass where
+## they stand. Nike too (3 Oct: "nikepig doesnt leave a grass trail when he walks").
+@export var trail_paths: Array[String] = ["Player", "World/Nike"]
 
 @export_group("Clearings")
 ## No grass round these (node name: how far out from what stands on the ground, m), the edge
@@ -348,8 +355,11 @@ var _marking_sand: String = ""
 ## The ground as the pen has it, and painted: [mesh, material] each.
 var _ground_own: Array = []
 var _ground_painted: Array = []
-## The player's trail: [where (grass space), the way they went, when], newest first.
-var _trail: Array = []
+## The trails, by the walker's instance id: [where (grass space), the way they went, when],
+## newest first.
+var _trails: Dictionary = {}
+## Walkers lent for a while (add_walker): first in line, each with a trail.
+var _walkers: Array[Node4D] = []
 ## Per pusher: [where it was when its way was last taken, its way].
 var _ways: Dictionary = {}
 var _pushers: Array[Node4D] = []
@@ -1051,34 +1061,41 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 
 ## Whoever walks through the grass near [param centre], as the shader takes them: where
 ## (x, strength, z, w) and the way they went (x, z, -, reach). The player first, then the
-## player's trail behind them, then the rest, 24 at most.
+## player's trail behind them, then the rest (Nike and Nike's trail among them),
+## MAX_PUSHERS at most.
 func _push(pushers: PackedVector4Array, motions: PackedVector4Array, centre: Vector2) -> void:
 	if not trample:
-		_trail.clear()
+		_trails.clear()
 		return
 	var now: float = Time.get_ticks_msec() / 1000.0
-	var player := _room.get_node_or_null("Player") as Node4D
-	for p in _pushers:
-		if pushers.size() >= 24:
+	var makers: Array = _walkers.duplicate()
+	for path in trail_paths:
+		var maker := _room.get_node_or_null(path) as Node4D
+		if maker != null:
+			makers.append(maker)
+	for p in _walkers + _pushers:
+		if pushers.size() >= MAX_PUSHERS:
 			break
 		if not is_instance_valid(p) or not p.is_visible_in_tree():
 			continue
 		var at: Vector4 = global_basis.inverse() * (p.global_position - global_position)
 		var way: Vector2 = _way(p, at)
-		if p == player:
-			_lay_trail(at, way, now)
+		var trail: Array = []
+		if makers.has(p):
+			trail = _trails.get(p.get_instance_id(), [])
+			_lay_trail(trail, at, way, now)
+			_trails[p.get_instance_id()] = trail
 		if Vector2(at.x - centre.x, at.z - centre.y).length() >= 14.0:
 			continue
 		pushers.append(Vector4(at.x, 1.0, at.z, at.w))
 		motions.append(Vector4(way.x, way.y, 0.0, 0.85))
-		if p != player:
-			continue
 		# The trail: down at first, then up slowly over trail_length behind them, and over
-		# trail_seconds if they stand.
+		# trail_seconds if they stand. A few slots kept back for whoever comes after.
 		var along: float = 0.0
 		var last := at
-		for point in _trail:
-			if pushers.size() >= 20:
+		var sent: int = 0
+		for point in trail:
+			if sent >= TRAIL_POINTS or pushers.size() >= MAX_PUSHERS - 4:
 				break
 			var where: Vector4 = point[0]
 			along += Vector2(where.x - last.x, where.z - last.z).length()
@@ -1088,6 +1105,7 @@ func _push(pushers: PackedVector4Array, motions: PackedVector4Array, centre: Vec
 				pushers.append(Vector4(where.x, strength, where.z, where.w))
 				var w: Vector2 = point[1]
 				motions.append(Vector4(w.x, w.y, 0.0, 0.6))
+				sent += 1
 
 
 ## The way [param node] has been going, from how it has moved since it last went 5 cm.
@@ -1107,28 +1125,43 @@ func _way(node: Node4D, at: Vector4) -> Vector2:
 	return rec[1]
 
 
-## A trail point where the player is, every trail_spacing they go; the old ones dropped once
-## they are past trail_length behind or trail_seconds old. A jump of more than 2 m (a teleport,
-## a respawn) starts the trail again.
-func _lay_trail(at: Vector4, way: Vector2, now: float) -> void:
-	if not _trail.is_empty():
-		var newest: Vector4 = _trail[0][0]
+## A point on [param trail] where its walker is, every trail_spacing they go; the old ones
+## dropped once they are past trail_length behind or trail_seconds old. A jump of more than
+## 2 m (a teleport, a respawn) starts the trail again.
+func _lay_trail(trail: Array, at: Vector4, way: Vector2, now: float) -> void:
+	if not trail.is_empty():
+		var newest: Vector4 = trail[0][0]
 		var gap: float = Vector2(at.x - newest.x, at.z - newest.z).length()
 		if gap > 2.0:
-			_trail.clear()
+			trail.clear()
 		elif gap < trail_spacing:
 			return
-	_trail.push_front([at, way, now])
+	trail.push_front([at, way, now])
 	var along: float = 0.0
-	var keep: int = _trail.size()
-	for i in range(1, _trail.size()):
-		var a: Vector4 = _trail[i - 1][0]
-		var b: Vector4 = _trail[i][0]
+	var keep: int = trail.size()
+	for i in range(1, trail.size()):
+		var a: Vector4 = trail[i - 1][0]
+		var b: Vector4 = trail[i][0]
 		along += Vector2(a.x - b.x, a.z - b.z).length()
-		if along > trail_length + trail_spacing or now - float(_trail[i][2]) > trail_seconds:
+		if along > trail_length + trail_spacing or now - float(trail[i][2]) > trail_seconds:
 			keep = i
 			break
-	_trail.resize(keep)
+	trail.resize(keep)
+
+
+## Someone else walking through for a while (the meadow cinematic's walker, which is its
+## camera): pushes the grass aside and leaves a trail, as the player does, until
+## [method remove_walker].
+func add_walker(node: Node4D) -> void:
+	if node != null and not _walkers.has(node):
+		_walkers.append(node)
+
+
+func remove_walker(node: Node4D) -> void:
+	_walkers.erase(node)
+	if node != null:
+		_trails.erase(node.get_instance_id())
+		_ways.erase(node.get_instance_id())
 
 
 ## The player, the chickens, Nike, the cats, the people: whoever walks through the grass.

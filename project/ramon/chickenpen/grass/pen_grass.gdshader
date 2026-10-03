@@ -175,8 +175,8 @@ uniform float big_gust_lean = 0.3;
 // Whoever walks through: where (x, strength, z, w), and the way they went (x, z), with the
 // reach of their push (w). Grass is laid the way they move, not away from them; the player
 // leaves a trail of these that fades over the metres behind them.
-uniform vec4 pushers[24];
-uniform vec4 pusher_motion[24];
+uniform vec4 pushers[32];
+uniform vec4 pusher_motion[32];
 uniform int pusher_count = 0;
 
 // Cool at the root, not black or brown: the painted warm-over-cool split.
@@ -449,8 +449,8 @@ void vertex() {
 		float flutter = (texture(wind_noise, root_xz * 0.9 + vec2(TIME * 0.6, TIME * 0.37)).r - 0.5) * 0.08 * (0.3 + gust) * min(wind_speed / 3.0, 2.0) * mix(1.0, together, 0.8);
 		vec2 push = wind_dir * (bend + rock) + across_wind * flutter;
 		// Whoever walks through lays it the way they are going (a little aside too, so it does
-		// not stand up through their legs); the player's trail keeps it down behind them, less
-		// and less over the metres. They are all within reach of the middle of the rings.
+		// not stand up through their legs); the trails of the player and Nike keep it down behind
+		// them, less and less over the metres. They are all within reach of the middle of the rings.
 		if (dist < 16.0) {
 			for (int i = 0; i < pusher_count; i++) {
 				vec4 p = pushers[i];
