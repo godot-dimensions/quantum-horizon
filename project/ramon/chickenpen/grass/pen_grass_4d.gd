@@ -831,6 +831,7 @@ func _set_visible() -> void:
 
 # --- Leaves and bits on the wind --------------------------------------------------------------
 
+var _was_shown: bool = true
 var _bits_instance := RID()
 var _bits_multimesh := RID()
 var _bits_mesh: ArrayMesh
@@ -948,6 +949,16 @@ func _list_tiles(centre: Vector2) -> void:
 ## The camera's frame for the shader, every render, and the tiles in its view; the instances
 ## into whichever World3D the cut is drawn in (the Combined renderer's is a SubViewport two deep).
 func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngine4D) -> void:
+	# THE FARM GOES TO SLEEP ON A TRIP (pen_crossing_4d.gd hides World for the theatre and the
+	# cave): the grass and the leaves are drawn by RenderingServer, not by nodes under World, so
+	# they do not hide with it - the theatre had a meadow for a floor (3 Oct). Checked every
+	# render, as hiding a parent tells nothing below it.
+	var shown: bool = is_visible_in_tree()
+	if shown != _was_shown:
+		_was_shown = shown
+		_set_visible()
+	if not shown:
+		return
 	if viewport != get_viewport() or _instances.is_empty():
 		return
 	var started: int = Time.get_ticks_usec()

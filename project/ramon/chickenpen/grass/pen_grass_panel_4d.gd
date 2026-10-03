@@ -168,6 +168,14 @@ func _style(fill: Color, border: Color, corner: int) -> StyleBoxFlat:
 
 
 func _process(_delta: float) -> void:
+	# Only on the farm (3 Oct: "the grass and its menu should only correspond to the pen scene"):
+	# away in the cave the farm is asleep and the grass hidden, and so is this. (The theatre's
+	# crossing hides the HUD itself, and puts it back.)
+	var on_farm: bool = grass != null and is_instance_valid(grass) and grass.is_visible_in_tree()
+	if visible != on_farm:
+		visible = on_farm
+	if not on_farm:
+		return
 	var view: Vector2 = get_viewport_rect().size
 	var back: Control = get_child(0) as Control
 	size = back.get_combined_minimum_size()
