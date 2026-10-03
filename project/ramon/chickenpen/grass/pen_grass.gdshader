@@ -96,6 +96,16 @@ uniform float ground_extent = 59.0;
 uniform float clump_size = 1.3;
 // One blade in this many is a flower stem: a little coloured head on a thin stalk.
 uniform float flower_share = 0.012;
+// DAISIES (Ramon, 3 Oct, for Pasture: "patches of these very little white flowers"): flowers in
+// patches, flower_patch_size across, flower_share of the blades inside a patch and none between
+// (0 size: scattered evenly, as the meadows have them); drawn as small dots facing you,
+// flower_dot across, white with a warm heart, instead of stems with heads; flower_white is the
+// share that are white (the rest from the meadow palette).
+uniform float flower_patch_size = 0.0;
+uniform float flower_dot = 0.0;
+uniform float flower_white = 0.5;
+// Pairs of vertices up this band's blade (the tip apart): 1 for a single triangle.
+uniform int blade_levels = 5;
 // A flower stem's height against a blade's (1.5: they stand above the grass, as in a meadow;
 // under 1: low among it, as clover and daisies in a pasture).
 uniform float flower_height = 1.5;
@@ -377,7 +387,11 @@ void vertex() {
 		float dry = smoothstep(0.62, 0.95, hash12(vec2(cl.z, 8.7)));
 		float lush = max(1.0 - smoothstep(0.0, 0.5, hash12(vec2(cl.z, 1.9))), step(1.0 - tuft_share, hash12(vec2(cl.z, 4.4))) * 0.7);
 		float rnd = hash13(vec3(cell, layer + 4.2));
-		float flower = step(hash13(vec3(cell, layer + 2.6)), flower_share);
+		float patch = 1.0;
+		if (flower_patch_size > 0.0) {
+			patch = smoothstep(0.58, 0.72, texture(wind_noise, root_xz / (flower_patch_size * 3.1) + vec2(0.63, 0.27)).r);
+		}
+		float flower = step(hash13(vec3(cell, layer + 2.6)), flower_share * patch);
 		float tuft = step(1.0 - tuft_share, hash12(vec2(cl.z, 4.4)));
 		float h = blade_height * clump_h * mix(0.7, 1.25, rnd) * mix(1.0, tuft_height, tuft) * grow * trodden * mix(1.0, flower_height, flower);
 		float facing = hash13(vec3(cell, layer + 9.1)) * 6.2831853;
@@ -493,6 +507,26 @@ void vertex() {
 		rel.xyz += a_view * side * width * edge * 1.4;
 		VERTEX = rel.xyz;
 		NORMAL = n_view;
+		if (flower > 0.5 && flower_dot > 0.0) {
+			// A daisy: a small dot facing you at the top of the stem, whatever the blade's shape;
+			// its three corners around the head, in the camera's own right and up.
+			vec4 head = vb * (root + vec4(p3, 0.0)) + view_origin;
+			float s = max(flower_dot, length(head.xyz) * pixel_angle * 1.6) * cut;
+			// A triangle on a one-triangle blade; on more, a pentagon from its first five corners
+			// (the root pair, the next pair, the tip: their triangles cover it), the rest folded
+			// into the tip. Up close a triangle reads as a triangle.
+			vec2 corner = vec2(0.0, 1.0);
+			if (blade_levels <= 1) {
+				corner = side < -0.5 ? vec2(-0.87, -0.5) : (side > 0.5 ? vec2(0.87, -0.5) : vec2(0.0, 1.0));
+			} else if (t < 0.001) {
+				corner = side < 0.0 ? vec2(-0.59, -0.81) : vec2(0.59, -0.81);
+			} else if (side < -0.5 || side > 0.5) {
+				corner = t < 0.6 ? (side < 0.0 ? vec2(-0.95, 0.31) : vec2(0.95, 0.31)) : vec2(0.0, 1.0);
+			}
+			VERTEX = head.xyz + vec3(corner * s, 0.0);
+			// Lit as a flower facing the sky, not as a card facing you: it stays white.
+			NORMAL = normalize((vb * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+		}
 
 		// Colour: dark at the root, the clump's green, a pale tip; the region it stands in; its own
 		// small hue shift; the passing gust bright on the tips; the field's far edge going over to
@@ -530,9 +564,14 @@ void vertex() {
 		v_haze = haze_amount * (1.0 - exp(-length(rel.xyz) / haze_distance));
 		// The light on the tips as a gust or a crest lays them over.
 		c += sheen * max(max(gust, wave), big * 2.0) * t * t * vec3(0.5, 0.52, 0.3) * shade;
-		if (flower > 0.5 && t > 0.86) {
+		if (flower > 0.5 && (t > 0.86 || flower_dot > 0.0)) {
 			float pick = hash13(vec3(cell, layer + 6.6));
-			c = pick < 0.5 ? flower_a : (pick < 0.8 ? flower_b : flower_c);
+			c = pick < flower_white ? flower_a : (pick < flower_white + (1.0 - flower_white) * 0.6 ? flower_b : flower_c);
+			if (flower_dot > 0.0 && pick < flower_white) {
+				// White petals, the heart a little warm: the top corner gets the yellow.
+				c = flower_a;
+			}
+
 		}
 		float glow_here = glow_on * (1.0 - smoothstep(glow_area.z, glow_area.w, length(root_xz - glow_area.xy)));
 		v_colour = mix(mix(edge_colour, glow_colour, glow_here), c, tint);

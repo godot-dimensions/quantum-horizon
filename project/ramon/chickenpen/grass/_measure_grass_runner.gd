@@ -22,6 +22,9 @@ var _off: Array = [[], []]
 var _frames: int = 0
 var _view: int = 0
 var _cam: Camera4D
+## What the A/B switches: the grass ("enabled", the default) or, with toggle=bits_enabled after
+## "--", the leaves and bits on the wind.
+var _toggle: String = "enabled"
 
 
 func _initialize() -> void:
@@ -33,7 +36,9 @@ func _initialize() -> void:
 	# After "--": key=value sets a Grass knob before it is ready (as the capture runner does).
 	for arg in OS.get_cmdline_user_args():
 		var kv: PackedStringArray = arg.split("=", true, 1)
-		if kv.size() == 2:
+		if kv.size() == 2 and kv[0] == "toggle":
+			_toggle = kv[1]
+		elif kv.size() == 2:
 			_room.get_node("World/Grass").set(kv[0], float(kv[1]))
 			print("      grass.%s = %s" % [kv[0], kv[1]])
 	root.add_child(_room)
@@ -60,7 +65,7 @@ func _process(d: float) -> bool:
 				return false
 			_phase = 1
 			_block = 0
-			_grass.set("enabled", ORDER[0])
+			_grass.set(_toggle, ORDER[0])
 		1:
 			var vp: RID = root.get_viewport_rid()
 			var on: bool = ORDER[_block % 4]
@@ -79,7 +84,7 @@ func _process(d: float) -> bool:
 					_off = [[], []]
 					_view += 1
 					if _view >= 2:
-						_grass.set("enabled", true)
+						_grass.set(_toggle, true)
 						var vram_on: float = Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0
 						print("      blades in view %d, grass script %d us a frame, video memory with the scene %.0f MB" % [int(_grass.call("blade_count")),
 							int(_grass.get("prerender_usec")), vram_on])
@@ -93,5 +98,5 @@ func _process(d: float) -> bool:
 					_cam.global_position = Vector4(4.0, 0.9, 8.0, 0.0)
 					_cam.global_basis = Basis4D.from_zx(atan2(10.0, 12.0)) * Basis4D.from_yz(-0.05)
 					_block = 0
-				_grass.set("enabled", ORDER[_block % 4])
+				_grass.set(_toggle, ORDER[_block % 4])
 	return false

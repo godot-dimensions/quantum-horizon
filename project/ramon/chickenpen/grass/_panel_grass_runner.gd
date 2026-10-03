@@ -77,6 +77,14 @@ func _process(d: float) -> bool:
 	elif _step == 7 and _t > 1.5:
 		print("      darkness 0.55 -> shade %.2f, after a change of look %.2f (look %s)" % [_grass.get("shade_test"), _grass.call("_shade"), _grass.get("preset")])
 		root.get_texture().get_image().save_png("res://smoke_test_output/grass_panel_4_dark.png")
+		var wind_slider: HSlider = _room.get_node("UI/GrassPanel").get("_wind_slider")
+		wind_slider.value = 2.0
+		_step = 8
+		_t = 0.0
+	elif _step == 8 and _t > 2.0:
+		var m: ShaderMaterial = (_grass.get("_bands") as Array)[0].material
+		print("      wind x2 -> scale %.2f, shader wind %.2f m/s (look's own %.2f), leaves and bits up %d" % [_grass.get("wind_scale"),
+			m.get_shader_parameter("wind_speed"), _grass.get("wind_speed"), int(_grass.call("bits_count"))])
 		print("PANEL DONE")
 		if FileAccess.file_exists("user://lookout_journal_panel_test.cfg"):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path("user://lookout_journal_panel_test.cfg"))

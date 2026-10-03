@@ -27,6 +27,10 @@ const SHADER := preload("res://ramon/chickenpen/grass/pen_grass.gdshader")
 const LOOKS := preload("res://ramon/chickenpen/grass/pen_grass_looks.gd")
 const PANEL := preload("res://ramon/chickenpen/grass/pen_grass_panel_4d.gd")
 const PAINT := preload("res://ramon/chickenpen/grass/pen_ground_paint_4d.gd")
+const BITS_SHADER := preload("res://ramon/chickenpen/grass/pen_wind_bits.gdshader")
+## Leaves and bits on the wind, at most (pen_wind_bits.gdshader): how many are up follows the
+## wind, from none in still air to all of them in a gale.
+const MAX_BITS := 6000
 const GROUND := preload("res://ramon/chickenpen/lookout/lookout_ground_4d.gd")
 ## Tiles a band can draw at once (the shader's tiles[] array is this long).
 const MAX_TILES := 384
@@ -93,6 +97,19 @@ signal ground_changed(painted: bool)
 ## for turning the grass off").
 signal enabled_changed(on: bool)
 signal glow_changed(on: bool)
+signal wind_changed(scale: float)
+
+@export_group("Leaves and bits")
+## Leaves and bits on the wind (3 Oct: "i want some flying leaves in the sky, but in a way that
+## is natural. more wind would mean more leaves and bits"). At the wind below bits_calm none
+## are up; by bits_gale, all MAX_BITS. Leaves are leaf_share of them.
+@export var bits_enabled: bool = true:
+	set(v):
+		bits_enabled = v
+		_set_bits_visible()
+@export_range(0.0, 10.0, 0.1, "suffix:m/s") var bits_calm: float = 0.8
+@export_range(1.0, 30.0, 0.5, "suffix:m/s") var bits_gale: float = 9.0
+@export_range(0.0, 1.0, 0.01) var leaf_share: float = 0.3
 
 signal preset_changed(index: int)
 
@@ -152,6 +169,11 @@ signal preset_changed(index: int)
 @export_range(1.0, 4.0, 0.05) var tuft_height: float = 1.9
 @export_range(0.3, 3.0, 0.05) var flower_height: float = 1.5
 @export_range(0.0, 0.1, 0.001) var flower_share: float = 0.012
+## Flowers in patches this big (0: scattered evenly), drawn as dots this big (0: stems with
+## heads), this share of them white.
+@export_range(0.0, 30.0, 0.5, "suffix:m") var flower_patch_size: float = 0.0
+@export_range(0.0, 0.05, 0.001, "suffix:m") var flower_dot: float = 0.0
+@export_range(0.0, 1.0, 0.01) var flower_white: float = 0.5
 ## How light the blades are, all their colours together, so they sit with the ground between
 ## and beyond them (in linear light: 0.7 is about 0.85 on the colour numbers).
 @export_range(0.2, 1.5, 0.01) var shade: float = 0.7
@@ -159,6 +181,15 @@ signal preset_changed(index: int)
 ## so i can test and tell you later which number to pick?"): when 0 or more, the shade every
 ## look uses, over the look's own, and kept when the look changes. Darkness on the slider is
 ## 1 - this.
+## THE WIND, ALL OF IT, from the grass panel's Wind slider (3 Oct: "can we add a windstrength
+## slide or toggle?"): 1 is each look's own wind; the breeze, its gusts and their speed, the
+## rolling waves, the big fronts and the leaves in the air all follow it. Kept across looks.
+var wind_scale: float = 1.0:
+	set(v):
+		wind_scale = v
+		for band in _bands:
+			_wind_to(band.material)
+		wind_changed.emit(v)
 var shade_test: float = -1.0:
 	set(v):
 		shade_test = v
@@ -333,6 +364,7 @@ func _ready() -> void:
 	if start_preset > 0:
 		_take(start_preset)
 	_build_bands()
+	_build_bits()
 	if not RenderingServer4D.pre_render.is_connected(_on_pre_render):
 		RenderingServer4D.pre_render.connect(_on_pre_render)
 	_set_visible()
@@ -382,6 +414,16 @@ func _apply_ground() -> void:
 		node.material_override = use[1]
 	_glow_to_grass()
 	ground_changed.emit(ground_paint)
+
+
+## The look's wind times wind_scale onto a material. The bend follows the speed by itself; the
+## waves and the big fronts' extra lean are capped a little past the look's own so a gale does
+## not fold the field flat.
+func _wind_to(m: ShaderMaterial) -> void:
+	m.set_shader_parameter("wind_speed", wind_speed * wind_scale)
+	m.set_shader_parameter("wave_strength", wave_strength * minf(wind_scale, 1.6))
+	m.set_shader_parameter("big_gust_strength", big_gust_strength * wind_scale)
+	m.set_shader_parameter("big_gust_lean", big_gust_lean * minf(wind_scale, 1.5))
 
 
 ## The shade in use: the Darkness slider's test value when it is set, else the look's.
@@ -617,23 +659,23 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("mask_rect", Vector4(-MASK_CELL * MASK_CELLS * 0.5, -MASK_CELL * MASK_CELLS * 0.5, MASK_CELL, float(MASK_CELLS)))
 	m.set_shader_parameter("wind_noise", wind)
 	m.set_shader_parameter("wind_dir", wind_direction.normalized())
-	m.set_shader_parameter("wind_speed", wind_speed)
+	_wind_to(m)
 	m.set_shader_parameter("gustiness", gustiness)
 	m.set_shader_parameter("gust_length", gust_length)
 	m.set_shader_parameter("gust_width", gust_width)
 	m.set_shader_parameter("bend_max", bend_max)
 	m.set_shader_parameter("stiffness", stiffness)
 	m.set_shader_parameter("sheen", sheen)
-	m.set_shader_parameter("wave_strength", wave_strength)
+
 	m.set_shader_parameter("wave_length", wave_length)
 	m.set_shader_parameter("wave_speed", wave_speed)
 	m.set_shader_parameter("wave_width", wave_width)
-	m.set_shader_parameter("big_gust_strength", big_gust_strength)
+
 	m.set_shader_parameter("big_gust_every", big_gust_every)
 	m.set_shader_parameter("big_gust_chance", big_gust_chance)
 	m.set_shader_parameter("big_gust_width", big_gust_width)
 	m.set_shader_parameter("big_gust_speed", big_gust_speed)
-	m.set_shader_parameter("big_gust_lean", big_gust_lean)
+
 	m.set_shader_parameter("region_size", region_size)
 	m.set_shader_parameter("region_cuts", _region_cuts)
 	m.set_shader_parameter("region_strength", region_strength)
@@ -643,6 +685,10 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("tuft_height", tuft_height)
 	m.set_shader_parameter("flower_height", flower_height)
 	m.set_shader_parameter("flower_share", flower_share)
+	m.set_shader_parameter("flower_patch_size", flower_patch_size)
+	m.set_shader_parameter("flower_dot", flower_dot)
+	m.set_shader_parameter("flower_white", flower_white)
+	m.set_shader_parameter("blade_levels", maxi((band.vertices - 1) / 2, 1))
 	m.set_shader_parameter("shade", _shade())
 	m.set_shader_parameter("root_dark", root_dark)
 	m.set_shader_parameter("toward_ground", toward_ground)
@@ -748,11 +794,82 @@ func band_report() -> Array:
 func _set_visible() -> void:
 	for inst in _instances:
 		RenderingServer.instance_set_visible(inst, enabled and mask_ready and _scenario.is_valid() and is_visible_in_tree())
+	_set_bits_visible()
+
+
+# --- Leaves and bits on the wind --------------------------------------------------------------
+
+var _bits_instance := RID()
+var _bits_multimesh := RID()
+var _bits_mesh: ArrayMesh
+var _bits_material: ShaderMaterial
+## How far the air has gone (m), added up a frame at a time, and the wind now, smoothed: the
+## shader moves them by these, so a change of wind changes their speed, not where they are.
+var _bits_travel: float = 0.0
+var _bits_wind: float = -1.0
+var _bits_msec: int = 0
+
+
+## One diamond (base, two sides, tip), drawn MAX_BITS times; the shader shapes, places and turns
+## each.
+func _build_bits() -> void:
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([Vector3(0, 0, 0), Vector3(-0.02, 0.02, 0), Vector3(0.02, 0.02, 0), Vector3(0, 0.04, 0)])
+	arrays[Mesh.ARRAY_TEX_UV] = PackedVector2Array([Vector2(0.0, 0.0), Vector2(-1.0, 0.45), Vector2(1.0, 0.45), Vector2(0.0, 1.0)])
+	arrays[Mesh.ARRAY_INDEX] = PackedInt32Array([0, 1, 3, 0, 3, 2])
+	_bits_mesh = ArrayMesh.new()
+	_bits_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	_bits_material = ShaderMaterial.new()
+	_bits_material.shader = BITS_SHADER
+	_bits_material.set_shader_parameter("wind_noise", _wind_texture)
+	_bits_material.set_shader_parameter("leaf_share", leaf_share)
+	_bits_multimesh = RenderingServer.multimesh_create()
+	RenderingServer.multimesh_set_mesh(_bits_multimesh, _bits_mesh.get_rid())
+	RenderingServer.multimesh_allocate_data(_bits_multimesh, MAX_BITS, RenderingServer.MULTIMESH_TRANSFORM_3D, false, false)
+	RenderingServer.multimesh_set_visible_instances(_bits_multimesh, 0)
+	_bits_instance = RenderingServer.instance_create()
+	RenderingServer.instance_set_base(_bits_instance, _bits_multimesh)
+	RenderingServer.instance_geometry_set_material_override(_bits_instance, _bits_material.get_rid())
+	RenderingServer.instance_geometry_set_cast_shadows_setting(_bits_instance, RenderingServer.SHADOW_CASTING_SETTING_OFF)
+	RenderingServer.instance_set_ignore_culling(_bits_instance, true)
+	RenderingServer.instance_set_custom_aabb(_bits_instance, AABB(Vector3(-5000, -5000, -5000), Vector3(10000, 10000, 10000)))
+	RenderingServer.instance_set_visible(_bits_instance, false)
+
+
+func _set_bits_visible() -> void:
+	if _bits_instance.is_valid():
+		RenderingServer.instance_set_visible(_bits_instance, bits_enabled and _scenario.is_valid() and is_visible_in_tree())
+
+
+## A frame of the leaves and bits: the air moved on, how many are up, the camera's frame.
+func _bits_frame(frame: PackedVector4Array) -> void:
+	if not _bits_instance.is_valid():
+		return
+	var now: int = Time.get_ticks_msec()
+	var delta: float = clampf(float(now - _bits_msec) / 1000.0, 0.0, 0.1) if _bits_msec > 0 else 0.0
+	_bits_msec = now
+	var wind: float = wind_speed * wind_scale
+	_bits_wind = wind if _bits_wind < 0.0 else lerpf(_bits_wind, wind, clampf(delta * 1.5, 0.0, 1.0))
+	_bits_travel += _bits_wind * delta
+	var amount: float = clampf((_bits_wind - bits_calm) / maxf(bits_gale - bits_calm, 0.1), 0.0, 1.0)
+	RenderingServer.multimesh_set_visible_instances(_bits_multimesh, roundi(float(MAX_BITS) * amount))
+	_bits_material.set_shader_parameter("frame", frame)
+	_bits_material.set_shader_parameter("wind_dir", wind_direction.normalized())
+	_bits_material.set_shader_parameter("wind_now", _bits_wind)
+	_bits_material.set_shader_parameter("travel", _bits_travel)
+
+
+## How many leaves and bits are up now, for runners.
+func bits_count() -> int:
+	return RenderingServer.multimesh_get_visible_instances(_bits_multimesh) if _bits_multimesh.is_valid() else 0
 
 
 func _exit_tree() -> void:
 	for inst in _instances:
 		RenderingServer.instance_set_visible(inst, false)
+	if _bits_instance.is_valid():
+		RenderingServer.instance_set_visible(_bits_instance, false)
 
 
 func _notification(what: int) -> void:
@@ -763,6 +880,10 @@ func _notification(what: int) -> void:
 			RenderingServer.free_rid(inst)
 		for mm in _multimeshes:
 			RenderingServer.free_rid(mm)
+		if _bits_instance.is_valid():
+			RenderingServer.free_rid(_bits_instance)
+		if _bits_multimesh.is_valid():
+			RenderingServer.free_rid(_bits_multimesh)
 
 
 ## The tiles each band covers round [param centre], nearest first: every world-snapped tile
@@ -808,6 +929,8 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 		_scenario = scenario
 		for inst in _instances:
 			RenderingServer.instance_set_scenario(inst, scenario)
+		if _bits_instance.is_valid():
+			RenderingServer.instance_set_scenario(_bits_instance, scenario)
 		_set_visible()
 	var inverse: Projection = camera.global_basis.inverse()
 	var basis: Projection = inverse * global_basis
@@ -853,6 +976,7 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 	var c0 := Vector3(c4.x, c4.y, c4.z)
 	var frame := PackedVector4Array([basis.x, basis.y, basis.z, basis.w, origin, here, normal,
 		Vector4(centre.x, centre.y, fx, pixel_angle)])
+	_bits_frame(frame)
 	_drawn = 0
 	for band in _bands:
 		var r: float = band.tile_size() * 0.7072 + 0.7

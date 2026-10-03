@@ -335,6 +335,43 @@ make it flow like on barley fields, even though its not".
   wildflowers standing a little above it. **+1.19 ms** GPU from the farm camera against Hay
   meadow's +0.87 (measured the same session). O cycles the three looks.
 
+## 3 Oct, afternoon: big gusts, sliders, daisies, leaves on the wind
+
+- **Hay meadow II**: wildflowers 2% -> 0.7% ("its all over now"); **big gusts** ("sometimes
+  have a stronger and larger gust of wind blow over"): one broad front (its line bowed by noise,
+  steep in front, a longer tail) sweeps downwind across the whole field round you, a chance every
+  16 s taken 70% of the time, +6 m/s and `big_gust_lean` 0.32 past the wind's own bend limit,
+  14 m deep at 14 m/s, the tips lit as it passes. A speed alone barely showed (bend saturates
+  at `bend_max`); the extra lean is what makes it read. The front runs from 90 m upwind to 110 m
+  past you, so its tail has left the field before the next cycle (cut short, it ended in a
+  flash). `_big_gust_runner.gd` stills every other wind and prints the field's brightness: a
+  front lifts it ~95 -> ~105 and lets it down over a few seconds.
+- **Darkness slider** ("so i can test and tell you later which number to pick"): the panel's
+  Darkness, 0-0.75; it sets `shade_test` = 1 - darkness over every look's own shade, kept across
+  looks. The number on the panel is the one to pick.
+- **Wind slider** ("a windstrength slide or toggle? what you think is best" - a slider, one
+  control for all of it): `wind_scale` 0-3 times the look's breeze, its gusts and their travel,
+  the waves (capped at 1.6x) and the big fronts; the leaves follow it too. Kept across looks.
+- **Daisies in Pasture** ("patches of these very little white flowers"): `flower_patch_size` 4 m
+  patches from the noise, one blade in ten inside a patch a flower and none between;
+  `flower_dot` 1.1 cm: a flower is drawn as a small dot facing you at its stem's top (a pentagon
+  on the nearest band, which now has 5 vertices; a triangle beyond), lit as if facing the sky so
+  it stays white; `flower_white` 1.
+- **Leaves and bits on the wind** (`grass/pen_wind_bits.gdshader`; "flying leaves in the sky,
+  but in a way that is natural. more wind would mean more leaves and bits"): up to 6,000 small
+  diamonds in one MultiMesh, the same route as the grass (the camera frame by hand, in the
+  Cross-section world). 30% leaves (7 cm, dry greens and browns, tumbling end over end), the
+  rest seed fluff and specks (2 cm, pale, a little light of their own - lit only by the low sun
+  from behind, they read as dark specks against the sky). In a 44 m box round you, wrapped so
+  they stay put in the world; downwind by `travel` (the air's distance, added up by the script
+  from a smoothed wind, so moving the slider speeds them up rather than throwing them across
+  the sky), each at its own share of it, swirling and bobbing on the noise; leaves low, fluff up
+  to 14 m, higher in more wind. Each has a w and drifts through W round the slice, 0.5 m thick:
+  now and then one blows in from ana. How many are up: none below `bits_calm` 0.8 m/s, all by
+  `bits_gale` 9 m/s (~1,900 at Hay meadow's 3.4, ~5,600 at 2.5x). Cost: **+0.016 ms** GPU in a
+  gale (`_measure_grass_runner.gd -- toggle=bits_enabled wind_scale=2.5`). `_leaves_runner.gd`
+  checks the counts; films: `video/Leaves on the wind, gale.mp4` and `..., breeze.mp4`.
+
 ## Cost (RTX 5080, 1280x720, interleaved on/off, after the pen's warm-up)
 
 | | |

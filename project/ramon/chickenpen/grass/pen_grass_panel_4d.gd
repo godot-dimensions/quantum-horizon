@@ -34,6 +34,8 @@ var _glow_button: Button
 var _grass_button: Button
 var _dark_label: Label
 var _dark_slider: HSlider
+var _wind_label: Label
+var _wind_slider: HSlider
 var _title: Label
 var _hint: Label
 var _box: VBoxContainer
@@ -87,19 +89,18 @@ func _ready() -> void:
 	# Darkness, a test for every look (3 Oct: "a darkness toggle slider so i can test and tell
 	# you later which number to pick"): the number is what to tell Claude.
 	_dark_label = _label("", Color(1.0, 1.0, 1.0, 0.58))
-	_dark_slider = HSlider.new()
-	_dark_slider.min_value = 0.0
-	_dark_slider.max_value = 0.75
-	_dark_slider.step = 0.01
-	_dark_slider.custom_minimum_size = Vector2(150.0, 18.0)
-	# No focus, as the buttons: the arrow keys are the player's.
-	_dark_slider.focus_mode = Control.FOCUS_NONE
-	_dark_slider.mouse_filter = Control.MOUSE_FILTER_STOP
-	_box.add_child(_dark_slider)
+	# (No focus on the sliders, as the buttons: the arrow keys are the player's.)
+	_dark_slider = _slider(0.0, 0.75, 0.01)
 	var shade_now: float = float(grass.call("_shade")) if grass != null else 0.6
 	_dark_slider.value = 1.0 - shade_now
 	_dark_slider.value_changed.connect(_on_dark)
 	_on_dark(_dark_slider.value)
+	# Wind, all of it at once: calm to a gale, 1 the look's own.
+	_wind_label = _label("", Color(1.0, 1.0, 1.0, 0.58))
+	_wind_slider = _slider(0.0, 3.0, 0.05)
+	_wind_slider.value = float(grass.get("wind_scale")) if grass != null else 1.0
+	_wind_slider.value_changed.connect(_on_wind)
+	_on_wind(_wind_slider.value)
 	if grass != null and grass.has_signal("preset_changed"):
 		grass.connect("preset_changed", _on_changed)
 	if grass != null and grass.has_signal("ground_changed"):
@@ -170,6 +171,24 @@ func _pick(n: int) -> void:
 func _set_ground(painted: bool) -> void:
 	if grass != null:
 		grass.set("ground_paint", painted)
+
+
+func _slider(lo: float, hi: float, step: float) -> HSlider:
+	var s := HSlider.new()
+	s.min_value = lo
+	s.max_value = hi
+	s.step = step
+	s.custom_minimum_size = Vector2(150.0, 18.0)
+	s.focus_mode = Control.FOCUS_NONE
+	s.mouse_filter = Control.MOUSE_FILTER_STOP
+	_box.add_child(s)
+	return s
+
+
+func _on_wind(scale: float) -> void:
+	_wind_label.text = "Wind   x%.2f" % scale
+	if grass != null and absf(scale - float(grass.get("wind_scale"))) > 0.001:
+		grass.set("wind_scale", scale)
 
 
 func _on_dark(darkness: float) -> void:

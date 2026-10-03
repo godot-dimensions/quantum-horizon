@@ -71,6 +71,9 @@ const BASE := {
 	"flower_height": 1.5,
 	"flower_share": 0.012,
 	"big_gust_strength": 0.0,
+	"flower_patch_size": 0.0,
+	"flower_dot": 0.0,
+	"flower_white": 0.5,
 }
 
 const PRESETS := {
@@ -85,7 +88,8 @@ const PRESETS := {
 		"spacing": 0.03,
 		"spacing_far": 0.14,
 		"spacing_from": 2.0,
-		"band_vertices": [3, 3, 3, 3, 3],
+		# Five at your feet, for the daisies' shape (and a bend); one triangle beyond.
+		"band_vertices": [5, 3, 3, 3, 3],
 		"root_dark": 0.0,
 		"min_pixels": 0.7,
 		# Stays as it is when walked over ("not have the walkthrough mechanic"), and more of it,
@@ -99,7 +103,12 @@ const PRESETS := {
 		"tuft_share": 0.12,
 		"tuft_height": 1.9,
 		"flower_height": 0.75,
-		"flower_share": 0.02,
+		# Daisies, in patches (3 Oct: "patches of these very little white flowers"): one blade in
+		# ten inside a patch is a little white dot, a patch every few metres, none between.
+		"flower_share": 0.1,
+		"flower_patch_size": 4.0,
+		"flower_dot": 0.011,
+		"flower_white": 1.0,
 		"clump_size": 1.1,
 		# Short grass hardly bends; it shimmers as the gusts pass.
 		"gustiness": 0.45,
