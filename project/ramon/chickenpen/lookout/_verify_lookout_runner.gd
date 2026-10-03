@@ -123,15 +123,11 @@ func _process(d: float) -> bool:
 			_check("it is the balcony, with a walkable deck", bool(_tower.call("is_balcony")) and _tower.get_node_or_null("DeckColliders") != null)
 			_check("subjects collected", (_lookout.get("subjects").call("all") as Array).size() >= 10,
 				"%d" % (_lookout.get("subjects").call("all") as Array).size())
+			# In the pen, at the spawn, the Lookout card is folded away (3 Oct: nothing of the
+			# Lookout carries over). Where it goes when it shows is _hud_layout_runner.gd's.
 			var card := _room.get_node_or_null("UI/Journal") as Control
-			var cine := _room.get_node("UI/Cinematics") as Control
-			var screen: Vector2 = card.get_viewport_rect().size
-			var under: bool = absf(card.position.y - (cine.position.y + cine.size.y + 10.0)) < 1.5
-			# Beside it, top edges level - or raised until it fits, when it is taller than the room.
-			var beside: bool = (absf(card.position.y - cine.position.y) < 1.5 or absf(card.position.y + card.size.y - (screen.y - 6.0)) < 1.5) 				and absf(card.position.x + card.size.x + 10.0 - cine.position.x) < 1.5
-			_check("the Lookout card under the Cinematics card, or beside it when short of room", under or beside,
-				"card %s cine %s screen %s" % [str(Rect2(card.position, card.size)), str(Rect2(cine.position, cine.size)), str(screen)])
-			_check("the card on screen", card.position.y + card.size.y <= screen.y + 0.5 and card.position.x >= 0.0)
+			_check("the Lookout card folded away in the pen", card.size.y < 1.0 or not card.visible or card.modulate.a < 0.05,
+				"card %s" % str(Rect2(card.position, card.size)))
 			_check("Z does nothing before Wren", not bool(_station.call("can_raise")))
 			_check("the owl is on its post", (_lookout.get("owl") as Node4D).global_position.w > 1.4)
 			_save("spawn_view")
@@ -284,13 +280,34 @@ func _process(d: float) -> bool:
 			_put(Vector4(2.0, 0.05, -6.0, 0.0))
 			_next(0.6)
 		22:
+			# On the ground by the tower: Z says the camera is the lookout's. (Out in the pen it
+			# says nothing: 3 Oct, nothing of the Lookout carries over. Checked after.)
+			_put(_tower.global_position + Vector4(4.0, 0.05, 6.0, 0.0))
+			_step = 40
+			_wait = 0.6
+			_t = 0.0
+		40:
 			_key(KEY_Z)
-			_step = 27
+			_step = 41
 			_wait = 0.5
 			_t = 0.0
-		27:
+		41:
 			_check("on the ground, Z leaves the camera down", int(_station.get("mode")) == 0)
 			_check("and Wren says it is the lookout's", int(_lookout.get("story").get("_not_here_at")) > 0)
+			_lookout.get("story").set("_not_here_at", 0)
+			_put(Vector4(2.0, 0.05, -6.0, 0.0))
+			_step = 42
+			_wait = 0.6
+			_t = 0.0
+		42:
+			_key(KEY_Z)
+			_step = 43
+			_wait = 0.5
+			_t = 0.0
+		43:
+			_check("out in the pen, Z says nothing", int(_lookout.get("story").get("_not_here_at")) == 0)
+			_step = 27
+		27:
 			# Back up on the deck for the rest.
 			_put(_tower.global_position + Vector4(0.6, float(_tower.get("deck_height")) + 0.05, -2.9, 0.0))
 			_step = 28

@@ -657,6 +657,14 @@ func _near_basket() -> bool:
 
 
 func _process(delta: float) -> void:
+	# Leaving the Lookout leaves its views behind: the projection and the developer overlay go
+	# off once you are away from it (they stayed on, out in the pen).
+	if not _at_lookout():
+		if projection:
+			set_projection(false)
+		if dev_overlay != null and bool(dev_overlay.get("on")):
+			dev_overlay.set("on", false)
+			dev_overlay.visible = false
 	if _slow > 0.0:
 		# Real seconds, not scaled ones: the slow motion must end on time.
 		_slow -= delta / maxf(Engine.time_scale, 0.01)
@@ -664,7 +672,7 @@ func _process(delta: float) -> void:
 			Engine.time_scale = 1.0
 	if _board_tag != null:
 		var board_text: String = ""
-		if can_board():
+		if can_board() and _at_lookout():
 			board_text = ("%s or B  board the balloon" % _catch_key()) if _near_basket() else "Wren's balloon  ·  B to go up"
 		_board_tag.fade_to = 60.0
 		_board_tag.fade_from = 45.0
@@ -722,7 +730,11 @@ func _input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if key == null or not key.pressed or key.echo:
 		return
-	if key.keycode == projection_key:
+	if key.keycode == projection_key and (projection or _at_lookout()):
+		# NOTHING OF THE LOOKOUT OUT IN THE PEN (Ramon, 3 Oct: "no watchtower hud or ui elements
+		# are allowed to carry over to the main scene when you're down the tower again"): every
+		# key on the Lookout card works where the card shows, and nowhere else. (P can always
+		# turn the projection off.)
 		get_viewport().set_input_as_handled()
 		set_projection(not projection)
 	elif key.keycode == KEY_Z and station.call("can_raise"):
@@ -733,7 +745,7 @@ func _input(event: InputEvent) -> void:
 		# out in the pen the subgame says nothing ("it should never carry over").
 		get_viewport().set_input_as_handled()
 		story.call("on_camera_not_here")
-	elif key.keycode == KEY_B and can_board():
+	elif key.keycode == KEY_B and can_board() and _at_lookout():
 		get_viewport().set_input_as_handled()
 		balloon.call("board")
 	elif key.keycode == align_key and can_align():

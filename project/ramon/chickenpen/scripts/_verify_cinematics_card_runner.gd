@@ -78,8 +78,15 @@ func _process(d: float) -> bool:
 				var picker_rect := Rect2(picker.position, picker.size)
 				_check("the camera picker clear of the Cinematics card", not card_rect.intersects(picker_rect),
 					"picker %s" % str(picker_rect))
-				_check("and listed under it, right edges lined up", picker_rect.position.y >= card_rect.end.y - 0.5
-					and absf(picker_rect.end.x - card_rect.end.x) < 1.5, "card %s" % str(card_rect))
+				# Under it, right edges lined up, where there is room; else beside it (3 Oct, the first
+				# free spot: pen_hud_spot_4d.gd). In a 960 x 540 window under it is off the screen.
+				var screen: Vector2 = root.get_visible_rect().size
+				var under_it: bool = picker_rect.position.y >= card_rect.end.y - 0.5 and absf(picker_rect.end.x - card_rect.end.x) < 1.5
+				var beside_it: bool = picker_rect.end.x <= card_rect.position.x + 0.5
+				# (On the screen in window pixels: the UI may be scaled, pen_ui_scale_4d.gd.)
+				var on_screen: bool = Rect2(Vector2.ZERO, screen).grow(0.5).encloses(picker.get_global_transform_with_canvas() * Rect2(Vector2.ZERO, picker.size))
+				_check("and under it (or beside it if there is no room), on the screen", (under_it or beside_it) and on_screen,
+					"card %s, screen %s" % [str(card_rect), str(screen)])
 				var before: int = int(_belt.get("selected"))
 				_key(KEY_1)
 				_check("1 outside the card still selects the belt's first slot", int(_belt.get("selected")) == (0 if before != 0 else -1),

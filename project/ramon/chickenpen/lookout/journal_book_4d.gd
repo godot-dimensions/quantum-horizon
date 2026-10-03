@@ -90,6 +90,9 @@ func can_open() -> bool:
 		var cinematics: Node = lookout.get("room").get_node_or_null("Cinematics")
 		if cinematics != null and bool(cinematics.call("is_playing")):
 			return false
+		# Only at the Lookout, where its card is: not out in the pen (3 Oct).
+		if not bool(lookout.call("_at_lookout")):
+			return false
 	return not bool(lookout.call("story_busy"))
 
 

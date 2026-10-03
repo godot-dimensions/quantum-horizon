@@ -91,7 +91,9 @@ func setup(owner_lookout: Node) -> void:
 func can_fly() -> bool:
 	if flock == null or flying or not flock.has_method("pilot_hawk"):
 		return false
-	# Not from the cave or the theatre: the flock is the farm's.
+	# Not from the cave or the theatre: the flock is the farm's. Anywhere on the farm: the hawk is
+	# the pen's own now, on its controls card (3 Oct, "the hawk flight is the only thing i want to
+	# have in the main hud on the top right"), not one of the Lookout's.
 	if not bool(lookout.call("farm_awake")):
 		return false
 	var station: Node = lookout.get("station")

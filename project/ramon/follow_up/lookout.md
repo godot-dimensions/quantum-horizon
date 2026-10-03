@@ -7,9 +7,10 @@ what changed on the way and why, what was measured, and what is still your call.
 
 ## Play it
 
-Open `res://ramon/chickenpen/chickenpen_lookout.tscn` and run it (F6). It is the pen,
-inherited: `chickenpen.tscn` is untouched, and the Lookout's nodes move into it when you say
-so. The tower is behind the pen as you spawn. **The Lookout card** in the HUD's right column
+The Lookout is part of the pen's own scene since 3 Oct (merged from the inherited
+`chickenpen_lookout.tscn`, now gone; `chickenpen_old.tscn` keeps the pen as it was, and the
+branch `pen-before-merge` the commit before). Run the pen. The tower is behind the pen as you
+spawn. **The Lookout card** in the HUD's right column
 lists every way in, each on a key the pen did not use, and says what to do next:
 
 | key | | |
@@ -357,3 +358,43 @@ And after that:
 
   About 1.3 KB of video memory a tetrahedron. If memory matters, the wood and the marsh could
   be built only when someone heads their way (68 MB until then).
+
+## Merged into the pen (3 Oct)
+
+Ramon: "moving the inherited scene to the final chicken pen file ... in reality i wont need the
+inherited scene anymore". What was checked first, and what came of it:
+
+- **The merge itself**: the inherited scene's 16 nodes and 6 script references written into
+  `chickenpen.tscn` in the same places (World, UI, Systems, after the pen's own children), the
+  camera picker's `under_path` the inherited scene's (`../Journal`). A text merge, checked line
+  for line: 101 lines added, 2 changed. `chickenpen_old.tscn` is the pen before it, with no uid of
+  its own in the header (a copy keeping the pen's would make two files answer to it).
+- **Grass in the theatre**: the grass and the leaves are RenderingServer instances, and the pen
+  switches the farm off on a trip by hiding World - which they did not follow: the theatre had a
+  meadow for a floor. They now check every render (`_crossing_grass_runner.gd`).
+- **Keys underground**: the cave puts only some of Systems to sleep, so the Lookout's P, B, V, F,
+  the hawk's U and the grass panel's O went on working there (B would have boarded the balloon
+  from the cave). All now only while the farm is awake (`lookout_4d.gd farm_awake()`). No key
+  clashed with the pen's (U, L and V appear in pen scripts not in the pen scene; T and R only with
+  the camera up), so no key changed.
+- **The HUD**: at 2560 x 1440 and 125% the right column ends where the dial starts - the Lookout
+  card hung across the dial, the camera picker sat in its circle (already so before the merge),
+  and the tall grass panel ran into the murmuration card. The three now take the first free spot
+  (`scripts/pen_hud_spot_4d.gd`: candidates in order, checked against every panel on screen and
+  the dial's circle; the one covering least if none is free). `_hud_layout_runner.gd` prints
+  every panel's rect and overlap: clear at 2560 x 1440 and 1920 x 1080; 1280 x 720 at 125% is too
+  small for the pen's own HUD (its controls card and dial overlap there before any of this).
+- **Cost**, the whole frame from the spawn (RTX 5080, 1280 x 720, twice each): GPU 1.57-1.66 ms
+  -> 3.18-3.27 ms, render CPU 0.47 -> 0.85 ms, video memory 710 -> 853 MB, load 0.86 -> 1.18 s,
+  and **the grass comes up about 7.4 s after loading** (the mask is built over frames after the
+  Lookout's builds) - the field is bare until then.
+- **Runners**: every Lookout and grass runner points at `chickenpen.tscn`.
+- **Nothing of it carries over** (Ramon: "no watchtower hud or ui elements are allowed to carry
+  over to the main scene when you're down the tower again"). Away from the Lookout P (the
+  projection) and F4 (the developer overlay) switch themselves off and do nothing, J does not
+  open the journal, and the balloon's B tag is gone; the card already folded away. The hawk is
+  the one exception, on Ramon's word ("the hawk flight is the only thing i want to have in the
+  main hud on the top right. cool feature"): U flies from anywhere on the farm, and the hawk is a
+  row on the pen's controls card, no longer on the Lookout card.
+  `lookout/_verify_no_carry_over_runner.gd`. The rule in general: a subgame may change the HUD
+  at its own site, but nothing of it follows you out.

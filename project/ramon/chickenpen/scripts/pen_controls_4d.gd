@@ -96,6 +96,13 @@ func _ready() -> void:
 	_build()
 	queue_redraw()
 	_make_hint.call_deferred()
+	# Again once everything is up: the hawk is made by the Lookout, after this card is ready.
+	_rebuild.call_deferred()
+
+
+func _rebuild() -> void:
+	_build()
+	queue_redraw()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -175,6 +182,14 @@ func _build() -> void:
 		[_chip_for(&"fire"), "put down where you stand", false],
 		[_chip_for(&"rotate_4d"), "hold and drag - turn through W", false],
 		[_chip_for(&"move_jump"), "jump", false],
+	]
+	# Flying as the flock's hawk, a key of the pen's own (Ramon, 3 Oct: "the hawk flight is the
+	# only thing i want to have in the main hud on the top right. cool feature"): read off the
+	# hawk, which the Lookout makes; no hawk in the scene, no row.
+	var hawk: Node = get_node_or_null(^"../../Systems/Lookout/Hawk")
+	if hawk != null and int(hawk.get("key")) != 0:
+		_rows.append([OS.get_keycode_string(int(hawk.get("key"))), "fly as the hawk", false])
+	_rows += [
 		["R", "back to your starting slice", false],
 		[OS.get_keycode_string(toggle_key), "hide this card", false],
 		["ESC", "free the cursor, then quit", false],

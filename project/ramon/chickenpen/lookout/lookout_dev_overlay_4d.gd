@@ -40,7 +40,7 @@ func _ready() -> void:
 
 func _input(event: InputEvent) -> void:
 	var press := event as InputEventKey
-	if press != null and press.pressed and not press.echo and press.keycode == key:
+	if press != null and press.pressed and not press.echo and press.keycode == key 			and (on or lookout == null or bool(lookout.call("_at_lookout"))):
 		on = not on
 		visible = on
 		get_viewport().set_input_as_handled()
