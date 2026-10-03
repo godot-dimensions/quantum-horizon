@@ -30,7 +30,8 @@ const WATER_DROP := 0.06
 @export_range(1.0, 6.0, 0.1, "suffix:m") var w_depth: float = 3.0
 @export_range(4.0, 30.0, 0.5, "suffix:m") var pond_size_x: float = 11.0
 ## The rim round the water: the pen's sand (pen_grass_4d.gd's sand_colour).
-@export var shore_colour: Color = Color(0.54, 0.44, 0.28)
+## The pen's sand (pen_grass_4d.gd sand_colour), so the rim and the painted sand round it match.
+@export var shore_colour: Color = Color(0.62, 0.48, 0.27)
 @export_range(4.0, 30.0, 0.5, "suffix:m") var pond_size_z: float = 7.0
 @export var reed_count: int = 90
 @export var marsh_seed: int = 808

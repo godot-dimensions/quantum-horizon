@@ -379,10 +379,15 @@ make it flow like on barley fields, even though its not".
 - **Grass shade 0.39** for every look: Ramon's pick, 0.61 on the first Darkness slider (which ran
   from 1 - shade). The slider now reads darkness against the looks' own, 0 at the default
   ("which you can also direct to become 0"), -0.3 lighter to +0.3 darker.
-- **The paint layer** ("slightly darker and a touch less saturated"): every colour it is painted
-  from - the field's green, the falloff, the sand - `paint_brightness` 0.88 and
-  `paint_saturation` 0.85, in linear light (the painting only mixes them, so that is the same
-  as adjusting the ground itself); the grass's far edge fades to the same colours.
+- **The paint layer** ("slightly darker and a touch less saturated"): the colours it is painted
+  from - the field's green and the falloff - `paint_brightness` 0.88 and `paint_saturation`
+  0.85, in linear light (the painting only mixes them, so that is the same as adjusting the
+  ground itself); the grass's far edge fades to the same colours.
+- **The sand is left out of that** (Ramon, evening: "the sand in the pen is not slightly yellow,
+  its grey now?"). Calmed with the greens, the tan only just read as tan, and under the teal sky
+  fill it went olive-grey: measured from above (`_probe_yard_runner.gd`) the yard was
+  (107, 107, 78), red equal to green; with the sky fill off, (101, 70, 35). Now `sand_colour`
+  0.62/0.48/0.27, uncalmed, and the marsh's rim (`shore_colour`) the same: (135, 124, 71).
 
 ## 3 Oct, evening: Nike's trail, and the meadow film
 

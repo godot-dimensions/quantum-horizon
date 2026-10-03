@@ -94,7 +94,11 @@ const TRAIL_POINTS := 12
 ## The pen's yard, and the marsh's banks (3 Oct: "just water, sand ... place the sand from the
 ## pen also here surrounding it").
 @export var sand_round: Dictionary = {"Pen": 1.8, "AnaMarsh": 2.4}
-@export var sand_colour: Color = Color(0.54, 0.44, 0.28)
+## Warmer than it looks it should be, and NOT calmed with the paint layer (paint_brightness and
+## paint_saturation are for the field's greens): under the teal sky fill a duller tan reads grey
+## (Ramon, 3 Oct: "the sand in the pen is not slightly yellow, its grey now?"). Measured from
+## above with _probe_yard_runner.gd: 0.50/0.42/0.29 came out olive-grey, R = G.
+@export var sand_colour: Color = Color(0.62, 0.48, 0.27)
 ## The paint layer, all of it (the field's green, the falloff, the sand), this much darker and
 ## this much less saturated (3 Oct: "make it slightly darker and a touch less saturated"); the
 ## grass's far edge fades to the same.
@@ -508,7 +512,7 @@ func _paint_ground() -> void:
 			sands.append(_sand_field(key, float(sand_round[key])))
 	_ground_painted = PAINT.build(box.size, {
 		"centre": glow_centre, "glow_in": glow_in, "glow_out": glow_out, "glow_w": glow_w,
-		"own": _paint_adjust(own), "glow": _paint_adjust(glow_colour if ground_glow else own), "sand": _paint_adjust(sand_colour), "sand_ragged": sand_ragged,
+		"own": _paint_adjust(own), "glow": _paint_adjust(glow_colour if ground_glow else own), "sand": sand_colour, "sand_ragged": sand_ragged,
 		"sands": sands, "grid_cell": MASK_CELL, "grid_cells": MASK_CELLS, "grid_half": MASK_CELL * MASK_CELLS * 0.5,
 	})
 	paint_msec = Time.get_ticks_msec() - started
