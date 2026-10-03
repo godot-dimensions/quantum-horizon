@@ -6,7 +6,7 @@ var _root: Node
 var _f := 0
 var _start := Vector4.ZERO
 func _initialize() -> void:
-	_load("res://ramon/chickenpen/chickenpen.tscn")
+	_load("res://ramon/chickenpen/playable_world.tscn")
 func _load(path: String) -> void:
 	if _root != null: _root.queue_free()
 	_root = load(path).instantiate()

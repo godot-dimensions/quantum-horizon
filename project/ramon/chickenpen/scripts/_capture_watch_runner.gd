@@ -4,7 +4,7 @@ extends SceneTree
 ## along W either way - three pictures, three different times, one watch.
 ## Windowed. Writes res://smoke_test_output/watch_<w>.png
 
-const SCENE := "res://ramon/chickenpen/chickenpen.tscn"
+const SCENE := "res://ramon/chickenpen/playable_world.tscn"
 const STEPS := [-0.16, 0.0, 0.16]
 
 var _room: Node

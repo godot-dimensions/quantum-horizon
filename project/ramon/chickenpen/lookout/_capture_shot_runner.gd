@@ -27,7 +27,7 @@ func _initialize() -> void:
 			_at = _vec(arg.substr(3))
 		elif arg.begins_with("name="):
 			_name = arg.substr(5)
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	_room.get_node("Systems/Lookout").set("journal_path", "user://lookout_journal_shot_test.cfg")
 	root.add_child(_room)
 	current_scene = _room

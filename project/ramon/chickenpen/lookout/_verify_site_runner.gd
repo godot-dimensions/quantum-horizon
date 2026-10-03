@@ -22,7 +22,7 @@ var _was: Dictionary = {}
 
 func _initialize() -> void:
 	root.unfocusable = true
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	_lookout = _room.get_node("Systems/Lookout")
 	_lookout.set("journal_path", "user://lookout_journal_site_test.cfg")
 	_site = _room.get_node("World/LookoutSite")

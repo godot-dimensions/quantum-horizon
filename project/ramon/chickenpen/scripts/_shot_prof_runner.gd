@@ -9,7 +9,7 @@ var _handed: int = 0
 
 
 func _initialize() -> void:
-	_s = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_s = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_s)
 	current_scene = _s
 	var rig: Node = _s.get_node_or_null("Player/CameraRig") if _s != null else null

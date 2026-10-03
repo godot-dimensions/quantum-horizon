@@ -16,7 +16,7 @@ var _f: int = 0
 func _initialize() -> void:
 	root.unfocusable = true
 	if "pen=1" in OS.get_cmdline_user_args():
-		var room: Node = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+		var room: Node = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 		_flock = room.get_node("World/Flock") as Node4D
 		_flock.set("count", 2000)
 		_flock.set("profile_gpu", true)

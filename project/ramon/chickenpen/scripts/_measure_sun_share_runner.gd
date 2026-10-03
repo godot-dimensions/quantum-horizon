@@ -16,7 +16,7 @@ var _energy: float = 0.0
 
 
 func _initialize() -> void:
-	var scene: Node = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	var scene: Node = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(scene)
 	current_scene = scene
 	_sun = scene.get_node("World/Sun")

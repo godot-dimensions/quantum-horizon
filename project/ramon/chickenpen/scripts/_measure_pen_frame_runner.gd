@@ -29,7 +29,7 @@ extends SceneTree
 ##   cave=1     go into the cave through the pen's crossing first, and measure standing at
 ##              the mouth of the chamber looking at the plinth
 
-const SCENE := "res://ramon/chickenpen/chickenpen.tscn"
+const SCENE := "res://ramon/chickenpen/playable_world.tscn"
 const WARMUP := 150
 
 var _room: Node

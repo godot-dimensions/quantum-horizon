@@ -3,7 +3,7 @@ const BearingUtility4D = preload("res://scripts/bearing_utility_4d.gd")
 var _root: Node
 var _f := 0
 func _initialize() -> void:
-	_root = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_root = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_root); current_scene = _root
 func _process(_d) -> bool:
 	_f += 1

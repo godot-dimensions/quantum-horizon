@@ -15,7 +15,7 @@ var _shots: Array = [[150, "spawn"], [520, "hawk"], [560, "hidden"]]
 
 func _initialize() -> void:
 	root.unfocusable = true
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	for node in _room.find_children("*", "", true, false):
 		if "debug_key_enabled" in node:
 			node.set("debug_key_enabled", false)

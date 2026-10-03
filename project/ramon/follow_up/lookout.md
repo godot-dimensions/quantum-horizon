@@ -388,7 +388,9 @@ inherited scene anymore". What was checked first, and what came of it:
   -> 3.18-3.27 ms, render CPU 0.47 -> 0.85 ms, video memory 710 -> 853 MB, load 0.86 -> 1.18 s,
   and **the grass comes up about 7.4 s after loading** (the mask is built over frames after the
   Lookout's builds) - the field is bare until then.
-- **Runners**: every Lookout and grass runner points at `chickenpen.tscn`.
+- **Runners**: every Lookout and grass runner points at the pen's scene, `playable_world.tscn`
+  since the rename the same day (Ramon: "rename the tscn to 'playable_world.tscn' ... so just the
+  scene name. nothing else").
 - **Nothing of it carries over** (Ramon: "no watchtower hud or ui elements are allowed to carry
   over to the main scene when you're down the tower again"). Away from the Lookout P (the
   projection) and F4 (the developer overlay) switch themselves off and do nothing, J does not

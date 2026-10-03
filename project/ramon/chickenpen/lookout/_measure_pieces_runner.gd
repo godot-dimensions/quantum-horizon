@@ -36,7 +36,7 @@ func _initialize() -> void:
 	root.unfocusable = true
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(), true)
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	_room.get_node("Systems/Lookout").set("journal_path", "user://lookout_journal_pieces_test.cfg")
 	root.add_child(_room)
 	current_scene = _room

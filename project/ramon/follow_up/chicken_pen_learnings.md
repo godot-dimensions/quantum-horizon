@@ -7,7 +7,7 @@ Ramon likes to work.
 
 ## Where things are
 
-- **The pen**: `chickenpen/chickenpen.tscn`, run it directly (`--path project res://ramon/chickenpen/chickenpen.tscn`).
+- **The pen**: `chickenpen/playable_world.tscn` (named `chickenpen.tscn` until 3 Oct; only the file was renamed, the code still says pen), run it directly (`--path project res://ramon/chickenpen/playable_world.tscn`). `chickenpen_old.tscn` is the pen before the Lookout and the grass were merged in.
 - **The cave**: `cave/cave.tscn`, opened beside the pen by `CaveCrossing` (`pen_crossing_4d.gd`, `bring_player`, `keep_scene`), hung 1 km along x. The pen's own player walks in.
 - **The far room (the secret)**: `cave/cave_far.tscn`, out along W at w 46, streamed by `cave/cave_far_stream_4d.gd` only while it can be seen. Reached through the arch in the chamber that only shows when the slice is turned through W (`cave_w_sheet_4d.gd`).
 - **The cinema**: `theatre/theatre.tscn`, opened by `Crossing`. While it is open the pen's `Player`, `UI` and `Systems` are ASLEEP; the cinema has its own `Player`. Anything that must work there cannot live in pen `Systems`.

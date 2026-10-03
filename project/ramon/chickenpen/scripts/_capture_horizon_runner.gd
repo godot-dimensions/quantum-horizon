@@ -36,7 +36,7 @@ func _initialize() -> void:
 			_ui = true
 		elif a.begins_with("hills="):
 			_hills = a.substr(6)
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	if _hills != "":
 		(_room.get_node("World/Hills") as MeshInstance4D).mesh = load(_hills) as Mesh4D
 	root.add_child(_room)

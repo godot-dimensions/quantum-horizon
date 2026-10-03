@@ -26,7 +26,7 @@ func _initialize() -> void:
 			_dist = float(a.substr(5))
 		elif a == "still=1":
 			_still = true
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_room)
 	current_scene = _room
 

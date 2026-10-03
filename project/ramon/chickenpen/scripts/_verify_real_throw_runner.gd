@@ -24,7 +24,7 @@ var _fence: Node
 
 
 func _initialize() -> void:
-	_root = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_root = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_root); current_scene = _root
 
 

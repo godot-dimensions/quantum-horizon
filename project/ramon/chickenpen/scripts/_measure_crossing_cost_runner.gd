@@ -16,7 +16,7 @@ var _worst := 0.0
 
 func _initialize() -> void:
 	var t0: int = Time.get_ticks_usec()
-	_root = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_root = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_root)
 	current_scene = _root
 	print("\nthe farm itself took %.0f ms to build" % ((Time.get_ticks_usec() - t0) / 1000.0))

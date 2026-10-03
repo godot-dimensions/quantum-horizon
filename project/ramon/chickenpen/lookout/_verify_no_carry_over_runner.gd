@@ -21,7 +21,7 @@ var _fails: int = 0
 
 func _initialize() -> void:
 	root.unfocusable = true
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	_room.get_node("Systems/Lookout").set("journal_path", "user://lookout_journal_carry_test.cfg")
 	root.add_child(_room)
 	current_scene = _room

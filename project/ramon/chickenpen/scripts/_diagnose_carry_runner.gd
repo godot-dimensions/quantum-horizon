@@ -6,7 +6,7 @@ var _catcher: Node
 var _anchor: Node4D
 var _body: Node4D
 func _initialize() -> void:
-	_root = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_root = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_root); current_scene = _root
 func _process(_d) -> bool:
 	_f += 1

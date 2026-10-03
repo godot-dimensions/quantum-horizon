@@ -12,7 +12,7 @@ extends SceneTree
 ##
 ## Windowed (the headless renderer draws nothing). Writes res://smoke_test_output/legs_N.png
 
-const SCENE := "res://ramon/chickenpen/chickenpen.tscn"
+const SCENE := "res://ramon/chickenpen/playable_world.tscn"
 const SHOTS := [150, 162, 174, 186]
 
 var _who: String = "Chickens/Chicken01"

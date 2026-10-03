@@ -12,7 +12,7 @@ extends SceneTree
 ##       --resolution 1280x720 --position 40,40 --script res://ramon/Menu/_verify_menu_cinematic_runner.gd
 
 const MENU := "res://ramon/menu_final.tscn"
-const PEN := "res://ramon/chickenpen/chickenpen.tscn"
+const PEN := "res://ramon/chickenpen/playable_world.tscn"
 
 var _f: int = 0
 var _t: float = 0.0

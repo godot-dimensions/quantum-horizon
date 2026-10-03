@@ -12,7 +12,7 @@ var _t: float = 0.0
 
 
 func _initialize() -> void:
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	_room.get_node("Systems/Lookout").set("journal_path", "user://lookout_journal_probe_test.cfg")
 	_grass = _room.get_node("World/Grass")
 	root.add_child(_room)

@@ -22,7 +22,7 @@ extends SceneTree
 ## has a budget: at ~2.5 us per tetrahedron rebuilt, BUDGET_TETS per tick is well under a
 ## millisecond. Anything above that is a regression somebody should look at.
 
-const SCENE := "res://ramon/chickenpen/chickenpen.tscn"
+const SCENE := "res://ramon/chickenpen/playable_world.tscn"
 const WARMUP_TICKS := 60
 const WINDOW_TICKS := 240
 const BUDGET_TETS := 300

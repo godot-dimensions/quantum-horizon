@@ -44,7 +44,7 @@ func _initialize() -> void:
 			_kata = true
 		if arg.begins_with("speed="):
 			_speed = float(arg.substr(6))
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	for node in _room.find_children("*", "", true, false):
 		if "debug_key_enabled" in node:
 			node.set("debug_key_enabled", false)

@@ -17,7 +17,7 @@ var _fails := 0
 
 
 func _initialize() -> void:
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_room)
 	current_scene = _room
 

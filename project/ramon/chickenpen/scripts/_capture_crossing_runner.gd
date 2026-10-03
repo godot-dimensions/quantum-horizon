@@ -28,7 +28,7 @@ var _seen := {}
 func _initialize() -> void:
 	# His typing must not land in a capture window.
 	root.unfocusable = true
-	_root = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_root = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_root); current_scene = _root
 
 

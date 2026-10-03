@@ -26,7 +26,7 @@ extends SceneTree
 ## project concluded the opposite of the truth.
 
 const BASELINE := "res://ramon/chickenpen/chickenpen_proceduralwalker.tscn"
-const PROTOTYPE := "res://ramon/chickenpen/chickenpen.tscn"
+const PROTOTYPE := "res://ramon/chickenpen/playable_world.tscn"
 
 const WARMUP: int = 40
 const WINDOW: int = 220

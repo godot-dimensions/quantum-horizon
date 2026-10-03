@@ -25,7 +25,7 @@ var _start := Vector4(4.0, 0.05, 8.0, 0.0)
 
 func _initialize() -> void:
 	root.unfocusable = true
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	_room.get_node("Systems/Lookout").set("journal_path", "user://lookout_journal_rings_test.cfg")
 	_grass = _room.get_node("World/Grass")
 	# Still air: no gusts, no rock, no flutter, so only the bands can change a far blade.

@@ -7,7 +7,7 @@ extends SceneTree
 ## rotated the slice would show a chicken you still could not reach, which is the one
 ## misunderstanding this level exists to undo.
 
-const SCENE := "res://ramon/chickenpen/chickenpen.tscn"
+const SCENE := "res://ramon/chickenpen/playable_world.tscn"
 
 var _room: Node
 var _rig: Node4D

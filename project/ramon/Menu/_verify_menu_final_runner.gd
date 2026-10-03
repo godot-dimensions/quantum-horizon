@@ -22,7 +22,7 @@ extends SceneTree
 ##       --resolution 1280x720 --position 40,40 --script res://ramon/Menu/_verify_menu_final_runner.gd
 
 const MENU := "res://ramon/menu_final.tscn"
-const PEN := "res://ramon/chickenpen/chickenpen.tscn"
+const PEN := "res://ramon/chickenpen/playable_world.tscn"
 const MAP := "res://ramon/FrontierMap.tscn"
 const TOUR := ["Slice Vision", "4D Ascent", "Portal", "Quantum Range", "Voxel Mining", "Lofted Creatures"]
 const FILMS := ["Flight of the 4D Starlings", "Mountain Range"]

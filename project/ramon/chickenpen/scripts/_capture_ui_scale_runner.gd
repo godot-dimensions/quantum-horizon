@@ -24,7 +24,7 @@ func _initialize() -> void:
 			_tag = a.substr(4)
 		elif a.begins_with("percent="):
 			_percent = float(a.substr(8))
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_room)
 	current_scene = _room
 

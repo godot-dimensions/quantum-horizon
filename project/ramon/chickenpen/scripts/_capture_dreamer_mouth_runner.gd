@@ -11,7 +11,7 @@ var _t := 0.0
 var _eye: Camera4D
 func _initialize() -> void:
 	root.unfocusable = true
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_room); current_scene = _room
 func _process(d: float) -> bool:
 	_f += 1

@@ -13,7 +13,7 @@ var _f: int = 0
 
 
 func _initialize() -> void:
-	_scene = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_scene = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_scene)
 	current_scene = _scene
 	var cam := Camera4D.new()

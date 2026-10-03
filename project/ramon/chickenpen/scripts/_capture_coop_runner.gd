@@ -10,7 +10,7 @@ const SHOTS := [
 	[Vector4(0.0, 0.7, -11.6, 0.0), Vector4(0.0, 0.45, -14.1, 0.0), "coop_low"],
 ]
 func _initialize() -> void:
-	_root = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_root = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_root); current_scene = _root
 func _look(eye: Vector4, at: Vector4) -> void:
 	var f: Vector4 = (at - eye).normalized()

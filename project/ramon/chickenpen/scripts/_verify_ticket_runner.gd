@@ -20,7 +20,7 @@ var _seen: Array = []
 
 
 func _initialize() -> void:
-	_scene = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_scene = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_scene)
 	current_scene = _scene
 	_driver = _scene.get_node("Systems/TrymDriver")

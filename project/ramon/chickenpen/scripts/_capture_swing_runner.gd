@@ -18,7 +18,7 @@ var from_front: bool = false
 
 func _initialize() -> void:
 	from_front = OS.get_cmdline_user_args().has("front")
-	_root = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_root = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_root); current_scene = _root
 
 

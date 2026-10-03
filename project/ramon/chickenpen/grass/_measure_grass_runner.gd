@@ -31,7 +31,7 @@ func _initialize() -> void:
 	root.unfocusable = true
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(), true)
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	_room.get_node("Systems/Lookout").set("journal_path", "user://lookout_journal_grassm_test.cfg")
 	# After "--": key=value sets a Grass knob before it is ready (as the capture runner does).
 	for arg in OS.get_cmdline_user_args():

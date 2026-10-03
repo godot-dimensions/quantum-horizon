@@ -18,7 +18,7 @@ var _shots: Array = [
 
 
 func _initialize() -> void:
-	var scene: Node = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	var scene: Node = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(scene)
 	current_scene = scene
 	var clouds: Resource = scene.get_node("World/Environment").get("cloud_material")

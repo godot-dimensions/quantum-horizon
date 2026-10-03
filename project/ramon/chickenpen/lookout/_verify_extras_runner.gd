@@ -33,7 +33,7 @@ func _initialize() -> void:
 		if arg.begins_with("what="):
 			_what = arg.substr(5)
 	_clean()
-	var path: String = "res://ramon/Model/rigged_creature_ramon.tscn" if _what == "showcase" else "res://ramon/chickenpen/chickenpen.tscn"
+	var path: String = "res://ramon/Model/rigged_creature_ramon.tscn" if _what == "showcase" else "res://ramon/chickenpen/playable_world.tscn"
 	_room = load(path).instantiate()
 	for node in _room.find_children("*", "", true, false):
 		if "debug_key_enabled" in node:

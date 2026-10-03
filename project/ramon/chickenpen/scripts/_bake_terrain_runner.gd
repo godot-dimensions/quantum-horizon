@@ -36,7 +36,7 @@ func _initialize() -> void:
 		"cave_far":
 			b = CaveRock.new().bake_far()
 		"mountains":
-			var room: Node = (load("res://ramon/chickenpen/chickenpen.tscn") as PackedScene).instantiate()
+			var room: Node = (load("res://ramon/chickenpen/playable_world.tscn") as PackedScene).instantiate()
 			var hills: Node = room.get_node("World/Hills")
 			if not hills.has_method("bake"):
 				print("World/Hills is not the mountains node")

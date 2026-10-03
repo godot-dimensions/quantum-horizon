@@ -25,7 +25,7 @@ var _drop_from: Vector4 = Vector4.ZERO
 
 
 func _initialize() -> void:
-	_root = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_root = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_root)
 	current_scene = _root
 	_player = _root.get_node("Player")

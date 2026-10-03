@@ -6,7 +6,7 @@ was built, what was measured, what is still his call, and the traps found on the
 
 ## Where it is
 
-- `chickenpen/flock/pen_flock_4d.gd`: the flock node (`World/Flock` in `chickenpen.tscn`).
+- `chickenpen/flock/pen_flock_4d.gd`: the flock node (`World/Flock` in `playable_world.tscn`, the pen's scene, `chickenpen.tscn` until 3 Oct).
   The model, the hawk, a GDScript step (CPU) and the GPU driver.
 - `chickenpen/flock/flock_step.glsl`: the same model as a compute shader, five passes
   (count, scan, scatter, update, reduce).

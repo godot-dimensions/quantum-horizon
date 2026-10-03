@@ -19,7 +19,7 @@ var _max_scale: float = 0.0
 func _initialize() -> void:
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	Engine.max_fps = 0
-	var scene: Node = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	var scene: Node = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(scene)
 	current_scene = scene
 	_nike = scene.get_node("World/Nike")

@@ -23,7 +23,7 @@ var _first: Array[float] = []
 func _initialize() -> void:
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	Engine.max_fps = 0
-	_scene = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_scene = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_scene)
 	current_scene = _scene
 	_up = _scene.get_node("Pen/Upgrades")

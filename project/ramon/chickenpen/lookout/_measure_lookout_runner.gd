@@ -27,11 +27,11 @@ func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("scene="):
 			_scene = arg.substr(6)
-	var path: String = "res://ramon/chickenpen/chickenpen.tscn" if _scene == "pen" else "res://ramon/chickenpen/chickenpen.tscn"
+	var path: String = "res://ramon/chickenpen/playable_world.tscn" if _scene == "pen" else "res://ramon/chickenpen/playable_world.tscn"
 	if _scene == "profile":
-		path = "res://ramon/chickenpen/chickenpen.tscn"
+		path = "res://ramon/chickenpen/playable_world.tscn"
 	if _scene == "profile_pen":
-		path = "res://ramon/chickenpen/chickenpen.tscn"
+		path = "res://ramon/chickenpen/playable_world.tscn"
 		_scene = "profile"
 	RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(), true)
 	_room = load(path).instantiate()

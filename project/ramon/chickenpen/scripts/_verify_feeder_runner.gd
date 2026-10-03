@@ -20,7 +20,7 @@ var _peaked: float = 0.0
 
 func _initialize() -> void:
 	physics_frame.connect(func() -> void: _ticks += 1)
-	_root = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_root = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_root)
 	current_scene = _root
 

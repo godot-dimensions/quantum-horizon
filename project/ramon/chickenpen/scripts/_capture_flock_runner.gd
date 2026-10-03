@@ -65,7 +65,7 @@ func _initialize() -> void:
 			# and through a slice turned 30 degrees into it.
 			_w_depth = float(kv[1])
 			_views = ["slice_w0", "slice_w1", "slice_w2", "slice_turned"]
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	(_room.get_node("World/Flock") as Node4D).set("count", _count)
 	(_room.get_node("World/Flock") as Node4D).set("backend", _backend)
 	(_room.get_node("World/Flock") as Node4D).set("profile_gpu", true)

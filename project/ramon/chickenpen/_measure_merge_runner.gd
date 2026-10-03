@@ -13,7 +13,7 @@ extends SceneTree
 const FRAMES := 900
 
 var _room: Node
-var _path: String = "res://ramon/chickenpen/chickenpen.tscn"
+var _path: String = "res://ramon/chickenpen/playable_world.tscn"
 var _t: float = 0.0
 var _load_msec: int = 0
 var _ready_msec: int = -1

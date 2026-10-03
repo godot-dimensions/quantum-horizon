@@ -32,7 +32,7 @@ func _initialize() -> void:
 	# the pen (C opens the theatre, E and Q step through W).
 	root.unfocusable = true
 	_windowed = DisplayServer.get_name() != "headless"
-	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_room)
 	current_scene = _room
 

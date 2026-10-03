@@ -12,7 +12,7 @@ extends SceneTree
 const PANELS := ["Debug", "FlockStats", "GrassPanel", "Quests", "Inventory", "Controls", "Cinematics", "Journal", "CameraPicker", "SlicePlane"]
 
 var _room: Node
-var _path: String = "res://ramon/chickenpen/chickenpen.tscn"
+var _path: String = "res://ramon/chickenpen/playable_world.tscn"
 var _t: float = 0.0
 var _step: int = -1
 var _wait: float = 0.0
