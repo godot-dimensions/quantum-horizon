@@ -129,6 +129,10 @@ var _saved: Dictionary = {}
 var _t: float = 0.0
 var _straightening: float = 0.0
 var _shutter_cool: float = 0.0
+var _on_ladder: bool = false
+var _climb_player: AudioStreamPlayer
+var _climb_db: float = -8.0
+var _climb_fade: Tween
 var _grab_pending: Dictionary = {}
 ## The climb, as eye points and look angles over time.
 var _path: Array = []
@@ -223,7 +227,7 @@ func raise() -> void:
 		exposures = 0
 	_set_mode(Mode.HELD)
 	_place_held_camera()
-	lookout.call("sound", &"winder")
+	# No winder (Ramon, 3 Oct: "no i dont want a winder sound").
 	if view != null:
 		view.call("raised")
 	lookout.call("on_camera_raised")
@@ -252,7 +256,6 @@ func climb() -> void:
 	var from_eye: Vector4 = _player.global_position + Vector4(0.0, 1.55, 0.0, 0.0)
 	_plan_climb(from_eye, true)
 	_set_mode(Mode.CLIMB_UP)
-	lookout.call("sound", &"rung_start")
 
 
 ## Back down, and the pen handed back with the player at the ladder's foot. From the cab, or
@@ -644,6 +647,29 @@ func _plan_climb(from_eye: Vector4, up: bool) -> void:
 		_ladder_seg = 3
 	_path = keys
 	_last_rung = -1
+	_on_ladder = false
+
+
+## THE LADDER'S SOUND is one recording of a climb (Ramon, 3 Oct: "use climbin off metalic ladder
+## for when climbin the ladder"), not a clank a rung: on as you step onto the ladder, up or down,
+## and faded out over a quarter of a second as you step off it.
+func _climb_noise(on: bool) -> void:
+	var sounds: Node = lookout.get("sounds")
+	if _climb_player == null and sounds != null and bool(sounds.call("has", &"climb")):
+		_climb_player = sounds.call("held", &"climb")
+		_climb_db = _climb_player.volume_db
+	if _climb_player == null:
+		return
+	if _climb_fade != null:
+		_climb_fade.kill()
+		_climb_fade = null
+	if on:
+		_climb_player.volume_db = _climb_db
+		_climb_player.play()
+	elif _climb_player.playing:
+		_climb_fade = create_tween()
+		_climb_fade.tween_property(_climb_player, "volume_db", -50.0, 0.25)
+		_climb_fade.tween_callback(_climb_player.stop)
 
 
 func _yaw_to(from: Vector4, to: Vector4) -> float:
@@ -663,6 +689,9 @@ func _run_climb(delta: float, up: bool) -> void:
 	var u: float = clampf((k - float(a[0])) / maxf(float(b[0]) - float(a[0]), 0.0001), 0.0, 1.0)
 	var eye: Vector4
 	var on_ladder: bool = i == _ladder_seg
+	if on_ladder != _on_ladder:
+		_on_ladder = on_ladder
+		_climb_noise(on_ladder)
 	if on_ladder:
 		# Rung by rung: each rung a pull and a pause, and the weight going from hand to hand.
 		var rungs: float = 18.0
@@ -671,9 +700,7 @@ func _run_climb(delta: float, up: bool) -> void:
 		var s: float = step / rungs
 		eye = (a[1] as Vector4).lerp(b[1], s)
 		eye.x += sin(r * PI) * 0.045
-		if int(r) != _last_rung:
-			_last_rung = int(r)
-			lookout.call("sound", &"rung")
+		_last_rung = int(r)
 	else:
 		eye = (a[1] as Vector4).lerp(b[1], smoothstep(0.0, 1.0, u))
 	yaw = lerp_angle(float(a[2]), float(b[2]), smoothstep(0.0, 1.0, u))
@@ -681,6 +708,8 @@ func _run_climb(delta: float, up: bool) -> void:
 	_eye_now = eye
 	_place_camera(eye)
 	if k >= 1.0:
+		_on_ladder = false
+		_climb_noise(false)
 		if up and bool(_tower.call("is_balcony")):
 			# On the deck: on your feet, the camera already up.
 			_player.global_position = (_tower.call("ladder_top") as Vector4) + Vector4(0.0, 0.05, 0.0, 0.0)
@@ -999,8 +1028,9 @@ func _grab() -> void:
 		view.call("blackout", blackout_seconds)
 	shot.emit(photo)
 	lookout.call("on_photo", photo)
-	if film > 0:
-		lookout.call("sound", &"winder")
+	# One sound for a photo, the shutter (Ramon, 3 Oct: "right now you hear 2 sounds when
+	# snapping a picture, should be just one"): no winder after it. The winder is for the camera
+	# coming up and a new roll going in.
 
 
 func _viewport_size() -> Vector2:

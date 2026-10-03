@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://djvnsuldg4y2g"
+path="res://.godot/imported/SpillAudio - The Attic - Climbing Off Metallic Ladder.wav-4e295a1dca2c4d3c7528f9bac451a5ea.sample"
+
+[deps]
+
+source_file="res://ramon/chickenpen/audio/sfx/SpillAudio - The Attic - Climbing Off Metallic Ladder.wav"
+dest_files=["res://.godot/imported/SpillAudio - The Attic - Climbing Off Metallic Ladder.wav-4e295a1dca2c4d3c7528f9bac451a5ea.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

@@ -53,8 +53,11 @@ enum GateSide { NONE, X_POSITIVE, X_NEGATIVE, Z_POSITIVE, Z_NEGATIVE }
 @export_range(0.0, 8.0, 0.1) var gate_width: float = 2.4: set = _set_gate_width
 
 @export_group("Look")
-@export var post_color: Color = Color(0.55, 0.40, 0.26): set = _set_post_color
-@export var rail_color: Color = Color(0.62, 0.47, 0.31): set = _set_rail_color
+## Weathered timber, greyer than it looks it should be: the low sun is orange, and the first
+## colours (0.55/0.40/0.26, 0.62/0.47/0.31) went orange under it (Ramon, 3 Oct: "make the pen
+## wood less orangy and more believable wood color").
+@export var post_color: Color = Color(0.40, 0.34, 0.28): set = _set_post_color
+@export var rail_color: Color = Color(0.48, 0.42, 0.35): set = _set_rail_color
 
 
 func _set_x_pos(v: float) -> void: extend_x_positive = v; _rebuild_later()

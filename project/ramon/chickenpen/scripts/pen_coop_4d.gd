@@ -25,7 +25,8 @@ extends Node4D
 ## Cap it at both ends of W, so it is a closed hut in four dimensions.
 @export var close_in_w: bool = true: set = _set_close
 
-@export var wall_color: Color = Color(0.72, 0.56, 0.38): set = _set_wall_color
+## Weathered planks, as the fence (was 0.72/0.56/0.38, orange under the low sun).
+@export var wall_color: Color = Color(0.54, 0.47, 0.39): set = _set_wall_color
 @export var roof_color: Color = Color(0.42, 0.26, 0.20): set = _set_roof_color
 
 ## Idle targets a penned chicken can be sent to (item 48), as offsets FROM THE COOP.

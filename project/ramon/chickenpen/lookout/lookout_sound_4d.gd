@@ -12,11 +12,14 @@ extends Node
 ## what a real ring's detents sound like. [method play] is told how fast it is turning.
 
 const FILES := {
-	&"shutter": "lookout_shutter.wav",
+	# Ramon's own recording (3 Oct), the one sound a photo makes.
+	&"shutter": "DB studios - Camera shutter button shoot.wav",
 	&"winder": "lookout_winder.wav",
 	&"reload": "lookout_reload.wav",
 	&"empty": "lookout_empty.wav",
 	&"rung": "lookout_rung.wav",
+	# Ramon's own recording (3 Oct): the whole climb, played while you are on the ladder.
+	&"climb": "SpillAudio - The Attic - Climbing Off Metallic Ladder.wav",
 	&"rung_start": "lookout_rung.wav",
 	&"hatch": "lookout_hatch.wav",
 	&"focus": "lookout_focus.wav",
@@ -37,7 +40,7 @@ const FILES := {
 const FOLDER := "res://ramon/chickenpen/audio/sfx/"
 ## Loudness of each, in dB, so the bakes can all sit at one level.
 const LEVEL := {
-	&"shutter": -4.0, &"winder": -9.0, &"reload": -8.0, &"empty": -10.0, &"rung": -14.0, &"rung_start": -14.0,
+	&"shutter": -2.0, &"climb": -8.0, &"winder": -9.0, &"reload": -8.0, &"empty": -10.0, &"rung": -14.0, &"rung_start": -14.0,
 	&"hatch": -10.0, &"focus": -22.0, &"af": -14.0, &"af_miss": -16.0, &"page": -10.0, &"new_page": -6.0,
 	&"radio_on": -12.0, &"radio_off": -12.0, &"burner": -6.0, &"whistle": -6.0, &"owl": -8.0, &"heron": -6.0,
 	&"wings": -8.0, &"wind": -16.0, &"secret": -9.0,
