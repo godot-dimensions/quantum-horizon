@@ -32,6 +32,8 @@ var _buttons: Array[Button] = []
 var _ground_buttons: Array[Button] = []
 var _glow_button: Button
 var _grass_button: Button
+var _leaves_button: Button
+var _flowers_button: Button
 var _dark_label: Label
 var _dark_slider: HSlider
 var _wind_label: Label
@@ -69,6 +71,11 @@ func _ready() -> void:
 	# The grass itself, on or off (Alt+O). Not G: G picks Nike up.
 	_grass_button = _button("Grass on   Alt+O")
 	_grass_button.pressed.connect(_toggle_grass)
+	# The leaves and fluff in the air, and the flowers, each on or off.
+	_leaves_button = _button("Leaves on")
+	_leaves_button.pressed.connect(func() -> void: grass.set("bits_enabled", not bool(grass.get("bits_enabled"))))
+	_flowers_button = _button("Flowers on")
+	_flowers_button.pressed.connect(func() -> void: grass.set("flowers_enabled", not bool(grass.get("flowers_enabled"))))
 	_hint = _label("Look   O      (Esc for the mouse)", Color(1.0, 1.0, 1.0, 0.38))
 	var keys: Array = LOOKS.PRESETS.keys()
 	keys.sort()
@@ -112,6 +119,12 @@ func _ready() -> void:
 		grass.connect("glow_changed", _on_glow)
 	if grass != null and grass.has_signal("enabled_changed"):
 		grass.connect("enabled_changed", _on_enabled)
+	if grass != null and grass.has_signal("bits_changed"):
+		grass.connect("bits_changed", _on_switch.bind(_leaves_button, "Leaves"))
+		_on_switch(bool(grass.get("bits_enabled")), _leaves_button, "Leaves")
+	if grass != null and grass.has_signal("flowers_changed"):
+		grass.connect("flowers_changed", _on_switch.bind(_flowers_button, "Flowers"))
+		_on_switch(bool(grass.get("flowers_enabled")), _flowers_button, "Flowers")
 	_on_enabled(bool(grass.get("enabled")) if grass != null else false)
 	_on_glow(bool(grass.get("ground_glow")) if grass != null else false)
 	_on_changed(int(grass.get("preset")) if grass != null else 0)
@@ -201,6 +214,11 @@ func _on_dark(darkness: float) -> void:
 	var want: float = maxf(float(grass.get("shade")) - darkness, 0.05)
 	if absf(want - float(grass.call("_shade"))) > 0.001:
 		grass.set("shade_test", -1.0 if absf(darkness) < 0.001 else want)
+
+
+func _on_switch(on: bool, button: Button, what: String) -> void:
+	button.text = "%s %s" % [what, "on" if on else "off"]
+	_paint(button, on)
 
 
 func _toggle_grass() -> void:

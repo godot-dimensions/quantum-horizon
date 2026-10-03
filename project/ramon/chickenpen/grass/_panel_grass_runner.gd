@@ -85,6 +85,12 @@ func _process(d: float) -> bool:
 		var m: ShaderMaterial = (_grass.get("_bands") as Array)[0].material
 		print("      wind x2 -> scale %.2f, shader wind %.2f m/s (look's own %.2f), leaves and bits up %d" % [_grass.get("wind_scale"),
 			m.get_shader_parameter("wind_speed"), _grass.get("wind_speed"), int(_grass.call("bits_count"))])
+		# The Leaves and Flowers buttons, as a click would press them.
+		var panel: Node = _room.get_node("UI/GrassPanel")
+		(panel.get("_leaves_button") as Button).pressed.emit()
+		(panel.get("_flowers_button") as Button).pressed.emit()
+		print("      after Leaves and Flowers: leaves %s, flowers %s, shader flower share %.3f (look's own %.3f)" % [_grass.get("bits_enabled"),
+			_grass.get("flowers_enabled"), m.get_shader_parameter("flower_share"), _grass.get("flower_share")])
 		print("PANEL DONE")
 		if FileAccess.file_exists("user://lookout_journal_panel_test.cfg"):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path("user://lookout_journal_panel_test.cfg"))

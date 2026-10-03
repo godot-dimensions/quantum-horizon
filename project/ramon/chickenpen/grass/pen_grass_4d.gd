@@ -104,6 +104,8 @@ signal ground_changed(painted: bool)
 signal enabled_changed(on: bool)
 signal glow_changed(on: bool)
 signal wind_changed(scale: float)
+signal bits_changed(on: bool)
+signal flowers_changed(on: bool)
 
 @export_group("Leaves and bits")
 ## Leaves and bits on the wind (3 Oct: "i want some flying leaves in the sky, but in a way that
@@ -113,6 +115,15 @@ signal wind_changed(scale: float)
 	set(v):
 		bits_enabled = v
 		_set_bits_visible()
+		bits_changed.emit(v)
+## The flowers in every look - the meadows' wildflowers, Pasture's daisies - on or off (the
+## panel's Flowers button: 3 Oct, "is there a toggle for the flying leaves and flowers?").
+@export var flowers_enabled: bool = true:
+	set(v):
+		flowers_enabled = v
+		for band in _bands:
+			band.material.set_shader_parameter("flower_share", flower_share if v else 0.0)
+		flowers_changed.emit(v)
 @export_range(0.0, 10.0, 0.1, "suffix:m/s") var bits_calm: float = 0.8
 @export_range(1.0, 30.0, 0.5, "suffix:m/s") var bits_gale: float = 9.0
 @export_range(0.0, 1.0, 0.01) var leaf_share: float = 0.3
@@ -705,7 +716,7 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("tuft_share", tuft_share)
 	m.set_shader_parameter("tuft_height", tuft_height)
 	m.set_shader_parameter("flower_height", flower_height)
-	m.set_shader_parameter("flower_share", flower_share)
+	m.set_shader_parameter("flower_share", flower_share if flowers_enabled else 0.0)
 	m.set_shader_parameter("flower_patch_size", flower_patch_size)
 	m.set_shader_parameter("flower_dot", flower_dot)
 	m.set_shader_parameter("flower_white", flower_white)
