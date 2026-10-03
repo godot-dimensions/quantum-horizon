@@ -43,8 +43,8 @@ const BASE := {
 	"region_strength": 1.0,
 	"hue_jitter": 0.05,
 	# Darker: 0.7, then 0.6 (3 Oct, "make both grasses a bit darker"), then 0.39 - Ramon's pick on
-	# the Darkness slider (0.61 there, which ran from 1 - shade).
-	"shade": 0.39,
+	# the Darkness slider (0.61 there, which ran from 1 - shade) - then 0.46 (-0.07 on the new one).
+	"shade": 0.46,
 	"toward_ground": 0.18,
 	"saturation": 1.45,
 	"wind_speed": 3.0,

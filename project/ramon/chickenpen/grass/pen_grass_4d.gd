@@ -40,9 +40,10 @@ const MAX_TILES := 384
 		enabled = v
 		_set_visible()
 		enabled_changed.emit(v)
-## The look to start in, from pen_grass_looks.gd (1 Pasture, 2 Hay meadow); 0 keeps the values set
-## on this node. The grass panel (and O) switches between them while playing.
-@export_range(0, 9) var start_preset: int = 2
+## The look to start in, from pen_grass_looks.gd (1 Pasture, 2 Hay meadow, 3 Hay meadow II -
+## the default since 3 Oct); 0 keeps the values set on this node. The grass panel (and O)
+## switches between them while playing.
+@export_range(0, 9) var start_preset: int = 3
 ## The see-through HUD panel of looks, at the right edge.
 @export var show_panel: bool = true
 ## THE GROUND, PAINTED (pen_ground_paint_4d.gd), and reversible: a broad glow of green in the
