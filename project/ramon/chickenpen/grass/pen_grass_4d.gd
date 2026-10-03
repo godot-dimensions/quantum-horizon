@@ -98,7 +98,7 @@ const TRAIL_POINTS := 12
 ## paint_saturation are for the field's greens): under the teal sky fill a duller tan reads grey
 ## (Ramon, 3 Oct: "the sand in the pen is not slightly yellow, its grey now?"). Measured from
 ## above with _probe_yard_runner.gd: 0.50/0.42/0.29 came out olive-grey, R = G.
-@export var sand_colour: Color = Color(0.64, 0.45, 0.31)
+@export var sand_colour: Color = Color(0.64, 0.47, 0.29)
 ## The paint layer, all of it (the field's green, the falloff, the sand), this much darker and
 ## this much less saturated (3 Oct: "make it slightly darker and a touch less saturated"); the
 ## grass's far edge fades to the same.

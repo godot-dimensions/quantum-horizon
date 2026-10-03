@@ -3,8 +3,9 @@ extends SceneTree
 ## Nothing of the Lookout carries over into the pen (Ramon, 3 Oct: "no watchtower hud or ui elements
 ## are allowed to carry over to the main scene when you're down the tower again"). At the tower:
 ## the card shows, the journal can open, the hawk can fly, P turns the projection on and F4 the
-## developer overlay. Then back in the pen: the card gone, the journal and the hawk shut, the
-## projection and the overlay switched themselves off, P and F4 doing nothing, no balloon tag.
+## developer overlay. Then back in the pen: the card gone, the journal shut, the overlay switched
+## itself off, F4 and J doing nothing, no balloon tag. The hawk (U) and the projection (P) are the
+## pen's own (Ramon, 3 Oct): on its controls card, and working out here.
 ## Prints PASS or FAIL per check. Gives up after 90 s.
 ##
 ##   godot... --path project --windowed --resolution 1280x720 --position 40,40
@@ -87,7 +88,7 @@ func _process(d: float) -> bool:
 			_wait = 2.0
 		2:
 			_check("in the pen: the Lookout card is gone", not _card_shown())
-			_check("in the pen: the projection switched itself off", not bool(_lookout.get("projection")))
+			_check("in the pen: the projection stays on (a pen key)", bool(_lookout.get("projection")))
 			_check("in the pen: the developer overlay switched itself off", not bool(_lookout.get("dev_overlay").get("on")))
 			_check("in the pen: the journal cannot open", not bool(_lookout.get("book").call("can_open")))
 			# The hawk is the pen's own (on its controls card), not the Lookout's: it flies from here.
@@ -99,6 +100,11 @@ func _process(d: float) -> bool:
 				if String(row[1]) == "fly as the hawk":
 					listed = true
 			_check("in the pen: the controls card lists the hawk", listed)
+			var lists_p: bool = false
+			for row in rows:
+				if String(row[1]).begins_with("projection"):
+					lists_p = true
+			_check("in the pen: the controls card lists the projection", lists_p)
 			var tag: Node = _lookout.get("_board_tag")
 			_check("in the pen: no balloon tag", tag == null or not (tag as CanvasItem).visible)
 			_key(KEY_P)
@@ -107,7 +113,7 @@ func _process(d: float) -> bool:
 			_step = 3
 			_wait = 0.6
 		3:
-			_check("in the pen: P does nothing", not bool(_lookout.get("projection")))
+			_check("in the pen: P turns the projection off again", not bool(_lookout.get("projection")))
 			_check("in the pen: F4 does nothing", not bool(_lookout.get("dev_overlay").get("on")))
 			_check("in the pen: J does nothing", not (_lookout.get("book") as CanvasItem).visible)
 			print("NO CARRY OVER %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))

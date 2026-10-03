@@ -657,11 +657,10 @@ func _near_basket() -> bool:
 
 
 func _process(delta: float) -> void:
-	# Leaving the Lookout leaves its views behind: the projection and the developer overlay go
-	# off once you are away from it (they stayed on, out in the pen).
+	# Leaving the Lookout leaves its developer overlay behind (it stayed on, out in the pen). Not
+	# the projection: that is the pen's own now (Ramon, 3 Oct: "can you also make p for
+	# projection in the main scene?"), on its controls card, as the hawk is.
 	if not _at_lookout():
-		if projection:
-			set_projection(false)
 		if dev_overlay != null and bool(dev_overlay.get("on")):
 			dev_overlay.set("on", false)
 			dev_overlay.visible = false
@@ -730,11 +729,11 @@ func _input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if key == null or not key.pressed or key.echo:
 		return
-	if key.keycode == projection_key and (projection or _at_lookout()):
-		# NOTHING OF THE LOOKOUT OUT IN THE PEN (Ramon, 3 Oct: "no watchtower hud or ui elements
-		# are allowed to carry over to the main scene when you're down the tower again"): every
-		# key on the Lookout card works where the card shows, and nowhere else. (P can always
-		# turn the projection off.)
+	if key.keycode == projection_key:
+		# Anywhere on the farm: P is the pen's own, on its controls card (Ramon, 3 Oct: "can you
+		# also make p for projection in the main scene?"). Everything else on the Lookout card
+		# still works only where the card shows (Ramon: "no watchtower hud or ui elements are
+		# allowed to carry over to the main scene").
 		get_viewport().set_input_as_handled()
 		set_projection(not projection)
 	elif key.keycode == KEY_Z and station.call("can_raise"):

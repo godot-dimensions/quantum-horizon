@@ -189,6 +189,11 @@ func _build() -> void:
 	var hawk: Node = get_node_or_null(^"../../Systems/Lookout/Hawk")
 	if hawk != null and int(hawk.get("key")) != 0:
 		_rows.append([OS.get_keycode_string(int(hawk.get("key"))), "fly as the hawk", false])
+	# And the projection, the pen's own too (Ramon, 3 Oct: "can you also make p for projection
+	# in the main scene?"): the cut, and over it a ghost of what is ana and kata of it.
+	var lookout: Node = get_node_or_null(^"../../Systems/Lookout")
+	if lookout != null and int(lookout.get("projection_key")) != 0:
+		_rows.append([OS.get_keycode_string(int(lookout.get("projection_key"))), "projection, a ghost of W", false])
 	_rows += [
 		["R", "back to your starting slice", false],
 		[OS.get_keycode_string(toggle_key), "hide this card", false],

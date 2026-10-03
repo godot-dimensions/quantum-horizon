@@ -392,12 +392,14 @@ inherited scene anymore". What was checked first, and what came of it:
   since the rename the same day (Ramon: "rename the tscn to 'playable_world.tscn' ... so just the
   scene name. nothing else").
 - **Nothing of it carries over** (Ramon: "no watchtower hud or ui elements are allowed to carry
-  over to the main scene when you're down the tower again"). Away from the Lookout P (the
-  projection) and F4 (the developer overlay) switch themselves off and do nothing, J does not
+  over to the main scene when you're down the tower again"). Away from the Lookout F4 (the
+  developer overlay) switches itself off and does nothing, J does not
   open the journal, and the balloon's B tag is gone; the card already folded away. The hawk is
   the one exception, on Ramon's word ("the hawk flight is the only thing i want to have in the
   main hud on the top right. cool feature"): U flies from anywhere on the farm, and the hawk is a
-  row on the pen's controls card, no longer on the Lookout card.
+  row on the pen's controls card, no longer on the Lookout card. That evening P (the projection)
+  went the same way ("can you also make p for projection in the main scene?"): it works anywhere
+  on the farm, stays on when you walk away from the tower, and is a row on the controls card.
   `lookout/_verify_no_carry_over_runner.gd`. The rule in general: a subgame may change the HUD
   at its own site, but nothing of it follows you out.
 - **On the pen's dial** (Ramon: "I want the marsh, the watchtower, the owl, the cave, all to show
