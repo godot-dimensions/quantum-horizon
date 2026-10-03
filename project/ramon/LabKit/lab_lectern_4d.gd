@@ -151,8 +151,9 @@ func draw_overlay(canvas: Control, overlay: Node) -> void:
 	rows.append(["kick", String(step.get("code")) + "   " + String(step.get("part")).to_upper()])
 	rows.append(["title", String(step.get("title"))])
 	if not done:
-		rows.append(["body", String(step.get("idea"))])
-		rows.append(["hint", "Do the task to open the full card."])
+		# Compact until the task is done: the guide panel already says the idea, and a big card
+		# here would sit over the exhibit's neighbours.
+		rows.append(["hint", "The full card opens when the task is done."])
 	else:
 		var any: bool = false
 		for pair in [["METHOD", "method"], ["SHOWS", "shows"], ["LIMITS", "limits"], ["MEASURED", "measured"]]:
@@ -161,9 +162,10 @@ func draw_overlay(canvas: Control, overlay: Node) -> void:
 				rows.append(["label", pair[0]])
 				rows.append(["body", t])
 				any = true
-		if any:
+		# The evidence tier qualifies MEASURED, so it only shows beside a measurement.
+		if not String(step.get("measured")).is_empty():
 			rows.append(["tier", String(step.get("tier"))])
-		else:
+		elif not any:
 			rows.append(["body", String(step.get("idea"))])
 	if not metrics.is_empty():
 		rows.append(["label", "LIVE"])

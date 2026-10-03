@@ -87,10 +87,13 @@ func _later() -> void:
 func spot(which: String) -> Vector4:
 	var h: float = size * 0.5
 	match which:
+		# Found by eye from the player's camera (4 Oct): with the lectern straight in front, its
+		# card and your own avatar both sat on the exhibit. Now the lectern stands beside the rig
+		# like a museum label, and the pad is near enough that the exhibit fills the view.
 		"rig": return Vector4(0.0, 0.0, -h * 0.22, 0.0)
-		"lectern": return Vector4(0.0, 0.0, h * 0.18, 0.0)
-		"zone": return Vector4(0.0, 0.0, h * 0.34, 0.0)
-		"pad": return Vector4(0.0, 0.0, h * 0.66, 0.0)
+		"lectern": return Vector4(h * 0.33, 0.0, h * 0.03, 0.0)
+		"zone": return Vector4(0.0, 0.0, h * 0.14, 0.0)
+		"pad": return Vector4(0.0, 0.0, h * 0.38, 0.0)
 		"numeral": return Vector4(0.0, wall_height * 0.55, -h + 0.25, 0.0)
 	return Vector4.ZERO
 
@@ -256,7 +259,7 @@ func apply_mood(mood: String, _instant: bool = false) -> void:
 		if role == "pad":
 			mi.material_override = Mats.surface(Style.surface("pad", mood), p[1], 1.0)
 		else:
-			mi.material_override = Mats.surface(Style.surface(role, mood), p[1], 2.0)
+			mi.material_override = Mats.surface(Style.surface(role, mood), p[1], 2.0, Style.tint(part, role, mood))
 	var part_col: Color = Style.code(part + "_fill", mood) if part != "neutral" else Color(0.72, 0.76, 0.82)
 	var strip_col: Color = Color(0.86, 0.90, 0.96) if mood == Style.DARK else Color(0.78, 0.80, 0.84)
 	var off_col: Color = Color(0.90, 0.90, 0.90) if mood == Style.BRIGHT else Color(0.10, 0.11, 0.14)

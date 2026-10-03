@@ -181,6 +181,30 @@ const _SURFACE := {
 
 
 ## The dev texture name (ramdev_<name>.png) a part of the room wears in a mood.
+## THE PART TINTS (Ramon, 4 Oct: "make color variations of mine"): the colour code reaches the
+## surfaces as a cast on his dev textures, so a room says which half of the explanation you are
+## in before any text does. Build is violet, Motion blue; the Atrium, the Hall and anything
+## neutral stay untinted. Faint on purpose: the cast is felt on the light walls and trim of the
+## bright mood and on the floor and trim of the dark one (black walls take no tint); the glow
+## strips and the numeral carry the full colour.
+const _TINTS := {
+	BRIGHT: {
+		"build": {"wall": Color(0.95, 0.93, 1.0), "trim": Color(0.86, 0.82, 1.0), "rig": Color(0.97, 0.95, 1.0)},
+		"motion": {"wall": Color(0.92, 0.95, 1.0), "trim": Color(0.80, 0.88, 1.0), "rig": Color(0.95, 0.97, 1.0)},
+	},
+	DARK: {
+		"build": {"floor": Color(0.96, 0.90, 1.0), "trim": Color(0.92, 0.80, 1.0), "rig": Color(0.95, 0.88, 1.0)},
+		"motion": {"floor": Color(0.88, 0.95, 1.0), "trim": Color(0.78, 0.90, 1.0), "rig": Color(0.88, 0.95, 1.0)},
+	},
+}
+
+
+## The cast a surface role takes in a part ("build", "motion"), white for none.
+static func tint(part: String, role: String, mood: String = BRIGHT) -> Color:
+	var by_part: Dictionary = (_TINTS.get(mood, {}) as Dictionary).get(part, {})
+	return by_part.get(role, Color.WHITE)
+
+
 static func surface(part: String, mood: String = BRIGHT) -> String:
 	var table: Dictionary = _SURFACE.get(mood, _SURFACE[BRIGHT])
 	return table.get(part, "grey")

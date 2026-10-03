@@ -30,6 +30,13 @@ const LabMath := preload("res://ramon/LabKit/lab_math.gd")
 const Style := preload("res://ramon/LabKit/lab_style.gd")
 const Overlay := preload("res://ramon/LabKit/lab_overlay_4d.gd")
 const Mats := preload("res://ramon/LabKit/lab_materials.gd")
+## Where the camera stands when you arrive on a pad, found by eye (CreationLab/scripts/
+## _framing_runner.gd, 4 Oct). The orbit camera always centres the avatar, so from straight behind
+## it the exhibit sits right behind the avatar's head; from 30 degrees to the left it stands clear
+## beside the avatar, with the lectern and its card on the other side.
+const ARRIVAL_YAW := -0.52
+const ARRIVAL_PITCH := -0.28
+const ARRIVAL_DISTANCE := 4.2
 
 signal step_changed(index: int)
 signal task_completed(index: int)
@@ -60,6 +67,9 @@ var player: CharacterBody4D
 var _lift: Dictionary = {}
 var _metrics_t: float = 0.0
 var _slow: bool = false
+## The controls card shows the step's own keys and the lift; C opens the rest (the rig's keys,
+## the curious rows, the lab's), which at 720 p otherwise filled two thirds of the screen's height.
+var all_controls: bool = false
 var _frame_parts: Array = []   # [MeshInstance4D, size, "post" or "glow"]
 var _mood: String = "bright"
 
@@ -129,6 +139,9 @@ func _build() -> void:
 		lectern.name = "Lectern"
 		lectern.set("part", _shell_part(String(st.get("part"))))
 		lectern.position = shell.call("spot", "lectern")
+		# Turned to face whoever stands on the pad.
+		var to_pad: Vector4 = shell.call("spot", "pad") - lectern.position
+		lectern.basis = Basis4D.from_zx(atan2(to_pad.x, to_pad.z))
 		root.add_child(lectern)
 		lectern.call("set_step", st, false)
 		bays.append({"root": root, "shell": shell, "content": content, "lectern": lectern, "step": st, "done": false})
@@ -149,14 +162,15 @@ func _build_lift_frame() -> void:
 	var pad: Vector4 = (bays[0]["shell"] as Node).call("spot", "pad")
 	frame.position = Vector4(pad.x, 0.0, pad.z, 0.0) + axis_n() * spacing * float(n - 1) * 0.5
 	add_child(frame)
-	var r: float = 1.25
+	# Two posts each side of the pad, like a gate you stand in: kept off the line from the
+	# arrival camera (behind and to the left) to the exhibit.
 	var height: float = 2.4
 	for sx in [-1.0, 1.0]:
 		for sz in [-1.0, 1.0]:
-			var at := Vector4(sx * r, 0.0, sz * r, 0.0)
+			var at := Vector4(sx * 1.55, 0.0, sz * 0.6, 0.0)
 			_frame_box(frame, Vector4(0.05, height, 0.05, span), at + Vector4(0.0, height * 0.5, 0.0, 0.0), "post")
 			# A strip of light on the face towards the pad, and a cap.
-			var inward := Vector4(-sx * 0.045, 0.0, -sz * 0.045, 0.0)
+			var inward := Vector4(-sx * 0.045, 0.0, 0.0, 0.0)
 			_frame_box(frame, Vector4(0.025, height * 0.86, 0.025, span * 0.999), at + inward + Vector4(0.0, height * 0.5, 0.0, 0.0), "glow")
 			_frame_box(frame, Vector4(0.11, 0.03, 0.11, span * 0.999), at + Vector4(0.0, height + 0.015, 0.0, 0.0), "glow")
 	apply_mood(_mood, true)
@@ -227,12 +241,17 @@ func _stand_on_pad(i: int) -> void:
 	_face_exhibit()
 
 
-## Avatar and camera both towards the rig (-Z from the pad): the walker's facing PI is -Z.
+## The avatar towards the rig (-Z from the pad: the walker's facing PI) and the camera at the
+## arrival framing (ARRIVAL_YAW and the rest).
 func _face_exhibit() -> void:
 	player.set("_facing", PI)
 	var rig: Node = player.get_node_or_null("CameraRig")
 	if rig != null:
-		rig.set("yaw", 0.0)
+		rig.set("yaw", ARRIVAL_YAW)
+		rig.set("pitch", ARRIVAL_PITCH)
+		rig.set("_zoom_target", ARRIVAL_DISTANCE)
+		# The orbit rig only rebuilds its basis on mouse motion; values written from code need this.
+		rig.call("_apply")
 
 
 func _refresh_hud() -> void:
@@ -260,12 +279,6 @@ func _control_rows() -> Array:
 	var c: Node = bays[current]["content"]
 	if c != null and c.has_method("controls"):
 		rows.append_array(c.call("controls"))
-	if _rig() != null:
-		rows.append(["Space", "play / pause"])
-		rows.append([".", "step one frame"])
-		rows.append([",", "slow motion"])
-		rows.append(["V", "view: skin, blocks, lines, balls"])
-		rows.append(["U", "turn it through W"])
 	var b: Dictionary = bays[current]
 	if current < bays.size() - 1:
 		rows.append(["N", "ride the lift" if (b["done"] or mode == "explore") else "ride the lift (after the task)"])
@@ -274,6 +287,18 @@ func _control_rows() -> Array:
 
 func _extra_rows() -> Array:
 	var rows: Array = []
+	if not all_controls:
+		rows.append(["C", "all controls"])
+		return rows
+	var own: Array = []
+	var c: Node = bays[current]["content"]
+	if c != null and c.has_method("controls"):
+		for r in c.call("controls"):
+			own.append(String(r[0]))
+	if _rig() != null:
+		for r in [["Space", "play / pause"], [".", "step one frame"], [",", "slow motion"], ["V", "view: skin, blocks, lines, balls"], ["U", "turn it through W"]]:
+			if not own.has(r[0]):
+				rows.append(r)
 	var st: Resource = bays[current]["step"]
 	for e in st.get("extras"):
 		var parts: PackedStringArray = String(e).split("|", true, 1)
@@ -285,6 +310,8 @@ func _extra_rows() -> Array:
 	rows.append(["R", "straighten the slice"])
 	rows.append(["B", "bright / dark"])
 	rows.append(["P", "projection"])
+	rows.append(["F3", "hide every panel"])
+	rows.append(["C", "fewer controls"])
 	return rows
 
 
@@ -338,7 +365,10 @@ func _advance_lift(delta: float) -> void:
 				var p: Vector4 = _lift["pad"]
 				player.global_position = Vector4(lerpf(s.x, p.x, k), lerpf(s.y, p.y, k), lerpf(s.z, p.z, k), lerpf(s.w, p.w, k))
 			if rig != null:
-				rig.set("yaw", lerp_angle(float(rig.get("yaw")), 0.0, k))
+				rig.set("yaw", lerp_angle(float(rig.get("yaw")), ARRIVAL_YAW, k))
+				rig.set("pitch", lerpf(float(rig.get("pitch")), ARRIVAL_PITCH, k))
+				rig.set("_zoom_target", ARRIVAL_DISTANCE)
+				rig.call("_apply")
 			if player != null:
 				player.set("_facing", lerp_angle(float(player.get("_facing")), PI, k))
 			if float(_lift["t"]) >= 0.45:
@@ -441,6 +471,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_toggle_projection()
 			get_viewport().set_input_as_handled()
 			return
+		KEY_C:
+			all_controls = not all_controls
+			hud.call("show_controls", _control_rows(), _extra_rows())
+			get_viewport().set_input_as_handled()
+			return
 		KEY_F3:
 			# Every panel and card off, for a clean look or a screenshot; F3 again brings them back.
 			var overlay: CanvasLayer = Overlay.ensure(get_tree()) as CanvasLayer
@@ -516,8 +551,8 @@ func draw_overlay(canvas: Control, overlay: Node) -> void:
 	var b: Dictionary = bays[current]
 	var shell: Node = b["shell"]
 	var root: Node4D = b["root"]
-	# Beside the pad, to the right of whoever stands on it.
-	var anchor: Vector4 = root.global_position + shell.call("spot", "pad") + Vector4(2.1, 0.9, 0.0, 0.0)
+	# Beside the pad, to the left of whoever stands on it (the lectern's card is on the right).
+	var anchor: Vector4 = root.global_position + shell.call("spot", "pad") + Vector4(-2.0, 0.9, 0.0, 0.0)
 	if not _lift.is_empty():
 		return
 	var at = overlay.to_screen(anchor)

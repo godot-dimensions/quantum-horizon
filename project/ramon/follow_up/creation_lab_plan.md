@@ -19,8 +19,8 @@ Found while building. None blocks the lab; each is outside its scope, so nothing
 1. **The cats' sit and wash may never show in the pen.** By the code they pose ball nodes after
    the hide has been cut into rigid pieces, and nothing re-lofts (`pen_cat_4d.gd`, `_tuck`,
    `_wash`). Shall I check it in the pen and fix it there?
-2. **The wolf's and Nike's lofts have a few folded tetrahedra** (the wolf 7 of 1,656 on one
-   chain; Nike up to 3% on two). Small, but the loft tool warns. Fixing means nudging balls in
+2. **The wolf's and Nike's lofts have a few folded tetrahedra** (the wolf 7 on each hind leg,
+   from the knee down, counted in bay 3; Nike up to 3% on two chains). Small, but the loft tool warns. Fixing means nudging balls in
    `Model/wolf.tscn` and `chickenpen/nike.tscn`, which the pen uses too. Shall I?
 3. **Two older shader forks read wrong texture coordinates on today's engine.** Since godot-4d
    `b288c8d` (30 Sept) the engine packs corner UVWs into the bone weights; `Demo/shaders/
@@ -165,6 +165,42 @@ on for four more animals, below).
 - **Keys checked free:** the orbit rig has Tab, T, R and Esc, the shared return button H, the
   walker F, Space and Q/E; bay 7's W offset moved from H to O.
 - `_verify_lift_runner.gd`: 34 checks a mood, passing in both, with frames during every slide.
+
+### Section F: done (4 Oct)
+
+- **The Atrium** (`CreationLab/bays/atrium.tscn`): the wolf walking on its rig at 1.7x, an axis
+  gizmo (X, Y, Z as real boxes; W drawn as a dashed cyan diagonal "out of your slice"); the task
+  is walking up to the lectern.
+- **Bay 1, a ball is a slice:** a 4D ball lofted by the builder (9 sections, 3,640 tetrahedra,
+  45 ms once), floating over a pedestal; = and - push it through W; a dashed ring for its true
+  size and a side view of the cut. The ball's offset is measured from your slice along your
+  camera's W, so where you stand counts too.
+- **Bay 2, two balls make a limb:** the wolf's foreleg as its own loft rig at 2.7x; holding ]
+  or [ moves the knee and re-lofts every frame (12.4 ms median, 1,008 tetrahedra), with the
+  builder's own sections drawn as rings.
+- **Bay 3, many balls make a body:** **baked after all.** Measured, a whole-wolf loft is 164 ms
+  (210 with checks), not a frame or two, so `_bake_wolf_stages_runner.gd` lofts the 19 stages
+  with the real rig (spine first, then each branch), saves each mesh with its colour ramp, and
+  runs the loft's own checks (`CreationLab/scripts/loft_checks.gd`: closed skin, folds) into
+  `baked/wolf_stages.cfg`. 8.8 MB in LFS.
+- **Bay 4, mirror, branch, through W:** Trym's symmetry creature. **Changed from the plan:**
+  turning your slice pivots about your camera, six metres away, so a few degrees slides the
+  slice clean through the creature and 50 degrees loses the whole bay. U spins the creature
+  through W on its rig instead, in the very plane its legs go round in, and the task is seeing
+  six of the twelve hooves. A diagram shows the ring of hooves and where your slice cuts it.
+- **Found by eye from the player's own camera** (`_framing_runner.gd`): the lectern in front of
+  the rig put its card and your avatar on the exhibit. The lectern now stands beside the rig
+  like a museum label, the pad is closer, and you arrive with the camera 30 degrees to the left
+  (the orbit camera always centres the avatar, so from straight behind, the exhibit hid behind
+  your head). The orbit rig only applies yaw and pitch on mouse motion; code that writes them
+  must call `_apply()`.
+- **The controls card** shows the step's keys and the lift; C opens everything else. Diagrams
+  drawn over the world step clear of the HUD's panels (`overlay.clear_of_hud`).
+- **Part tints** (Ramon, 4 Oct: "make color variations of mine"): Build bays cast violet and
+  Motion bays blue on his dev textures (`LabStyle.tint`): the light walls and trim in bright, the
+  floor and trim in dark; neutral elsewhere. Faint, so the glow strips keep the full colour.
+- `_guided_run_runner.gd` plays bays 0 to 4 as a player would (keys held through Input), 15
+  checks a mood, passing in both, frames at every beat.
 
 **Animals that needed lab versions** (subclasses, so fixes to the originals reach the lab):
 the chicken's walker and the cat walk in place (`creatures/lab_chicken_walker.gd`,

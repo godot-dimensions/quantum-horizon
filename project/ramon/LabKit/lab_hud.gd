@@ -420,6 +420,18 @@ func _draw_ladder() -> void:
 		_ladder.draw_line(Vector2(x + 12.0 * _ui, ym), Vector2(x + 22.0 * _ui, ym), w_col, 2.0 * _ui, true)
 
 
+## The screen rectangles the HUD's panels take, for panels drawn over the world to keep clear of.
+func occupied_rects() -> Array:
+	var out: Array = []
+	if not visible:
+		return out
+	for p in [_guide, _controls]:
+		var c: Control = p
+		if c.visible:
+			out.append(Rect2(c.position, c.size).grow(6.0))
+	return out
+
+
 func set_ladder_marker(f: float) -> void:
 	ladder_marker = f
 	_ladder.queue_redraw()

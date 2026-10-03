@@ -336,7 +336,7 @@ func apply_mood(mood: String, _instant: bool = false) -> void:
 		if role == "contact":
 			mi.material_override = Mats.flat(Color(0.30, 0.31, 0.33) if mood == Style.BRIGHT else Color(0.03, 0.032, 0.04))
 		else:
-			mi.material_override = Mats.surface(Style.surface(role, mood), entry[1], 1.0 if entry[1].x < 3.0 else 2.0)
+			mi.material_override = Mats.surface(Style.surface(role, mood), entry[1], 1.0 if entry[1].x < 3.0 else 2.0, Style.tint(part, "rig" if role in ["rig", "rig_top"] else role, mood))
 	var accent: Color = Style.code(part + "_fill", mood) if part != "neutral" else (Color(0.85, 0.87, 0.9) if mood == Style.BRIGHT else Color(0.72, 0.78, 0.86))
 	if part == "neutral" and mood == Style.BRIGHT:
 		accent = Color(0.62, 0.64, 0.68)

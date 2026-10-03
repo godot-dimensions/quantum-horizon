@@ -66,6 +66,20 @@ func to_screen(p: Vector4):
 	return camera.world_to_viewport(p) * _scale
 
 
+## A panel's rectangle moved clear of the HUD's panels (LabKit/lab_hud.gd `occupied_rects`):
+## to the right of one it overlaps, the HUD being on the left edge.
+func clear_of_hud(r: Rect2) -> Rect2:
+	var out: Rect2 = r
+	for hud in get_tree().get_nodes_in_group("lab_hud"):
+		if not hud.has_method("occupied_rects"):
+			continue
+		for o in hud.call("occupied_rects"):
+			var rect: Rect2 = o
+			if out.intersects(rect):
+				out.position.x = rect.end.x
+	return out
+
+
 ## 1 on the camera's slice, falling to 0 at `slice_reach` metres off it along its W.
 func slice_fade(p: Vector4) -> float:
 	if camera == null:
