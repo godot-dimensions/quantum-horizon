@@ -1,4 +1,4 @@
-[gd_scene load_steps=743 format=3 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=742 format=3 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -65,6 +65,7 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/terrain/pen_mountains_4d.gd" id="pen_mountains"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_bounds_4d.gd" id="pen_bounds"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cave_hill_4d.gd" id="pen_cave_hill"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_rock_pile_4d.gd" id="pen_rock_pile"]
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/cave_hill.res" id="cave_hill_mesh"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/cave/cave.tscn" id="cave_scene"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_range_booth_4d.gd" id="range_booth"]
@@ -291,12 +292,6 @@ albedo_color = Color(1, 0.94, 0.62, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_rr3dw"]
 size = Vector4(0.15, 0.132, 0.054, 0.5)
-
-[sub_resource type="TetraMaterial4D" id="crate_mat"]
-albedo_color = Color(0.56, 0.42, 0.26, 1)
-
-[sub_resource type="BoxTetraMesh4D" id="crate_mesh"]
-size = Vector4(0.62, 0.6, 0.62, 0.62)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_wx1ap"]
 albedo_color = Color(0.07, 0.07, 0.09, 1)
@@ -2385,10 +2380,9 @@ mesh = SubResource("BoxTetraMesh4D_rr3dw")
 position = Vector4(7.5, 0, 2, 0)
 basis = Projection(0.6, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0.6)
 
-[node name="Crate" type="MeshInstance4D" parent="World"]
-position = Vector4(-7.4, 0.3, 1.8, 0)
-material_override = SubResource("crate_mat")
-mesh = SubResource("crate_mesh")
+[node name="RockPile" type="Node4D" parent="World"]
+position = Vector4(-7.4, 0, 1.8, 0)
+script = ExtResource("pen_rock_pile")
 
 [node name="KeeperFacing" type="Node4D" parent="World"]
 script = ExtResource("pen_face")
@@ -2398,7 +2392,9 @@ player_path = NodePath("../../Player")
 [node name="Cat" type="Node4D" parent="World"]
 position = Vector4(-7.4, 0.64, 1.8, 0)
 script = ExtResource("pen_cat")
-crate_path = NodePath("../Crate")
+crate_path = NodePath("../RockPile")
+crate_top = 0.64
+crate_reach = 1.15
 player_path = NodePath("../../Player")
 perch_path = NodePath("../../Pen/Coop")
 
@@ -3707,7 +3703,7 @@ script = ExtResource("pen_crow")
 flock_seed = 20873
 fence_path = NodePath("../../Pen/Fence")
 ground_radius = 7.5
-perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate")])
+perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed")])
 
 [node name="Hide" type="MeshInstance4D" parent="World/Crow"]
 material_override = SubResource("TetraMaterial4D_b77hk")
@@ -3852,7 +3848,7 @@ script = ExtResource("pen_crow")
 flock_seed = 51199
 fence_path = NodePath("../../Pen/Fence")
 ground_radius = 8.5
-perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate")])
+perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed")])
 
 [node name="Hide" type="MeshInstance4D" parent="World/Crow2"]
 material_override = SubResource("TetraMaterial4D_5o40q")
@@ -3997,7 +3993,7 @@ script = ExtResource("pen_crow")
 flock_seed = 77341
 fence_path = NodePath("../../Pen/Fence")
 ground_radius = 8.0
-perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate")])
+perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed")])
 
 [node name="Hide" type="MeshInstance4D" parent="World/Crow3"]
 material_override = SubResource("TetraMaterial4D_h8yy2")

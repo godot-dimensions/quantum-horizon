@@ -112,6 +112,38 @@ The chicken's neck base sat 0.234 from the chest ball's centre, just outside its
 radius, and read as a join; moved to 0.139 it is swallowed by the chest and the seam is
 inside the body where nothing can see it. Visually as good as merging, and free.
 
+## Joints that bend, on a walking creature (3 Oct, the cat)
+
+`strider_walker.gd` cuts the hide into rigid pieces (body, a thigh and a shank per leg) and
+moves them by transform. The band of skin either side of each joint goes to BOTH pieces, so a
+bend never opens a notch. On a small animal that band reaches into the body: long thin
+tetrahedra from the hip out to the haunch's skin, which the thigh's copy swings out of the body
+as **needles**, and the thigh's copy past the knee stands out behind it as a **step** (Ramon:
+"something still looks a bit off with the legs and stretch artifacts").
+
+Trimming those slivers out of the leg pieces (the first attempt) only traded needles for holes.
+What works is **`blend_joints`**: the band tetrahedra, plus any whose corners' weights differ by
+more than 0.6 (`STRADDLE`), go to a small mesh per hip and per knee, posed vertex by vertex every
+frame: body still, thigh about its hip, shank about its knee, blended by the binding's weights.
+Its border vertices are pinned to whichever rigid piece shares them, so there is no seam. On for
+the cats; off by default, so Nike, the horse and the sauropod look as they did.
+
+**What re-posing costs is per cell, and worse per cell in a bigger mesh** (writing
+`vertex_positions` every frame, the renderer rebuilding the proxy;
+`_measure_mesh_upload_runner.gd`, vsync off):
+
+| re-posed each frame | added per frame |
+|---|---|
+| 200 cells, one mesh | +0.25 ms |
+| 800 cells, one mesh | +2.7 ms |
+| 800 cells as four meshes of 200 | +1.9 ms |
+| 1,600 cells | +5 to +6.6 ms |
+
+So bend only what has to bend, in small meshes: the cat's whole thigh posed cost 4 ms; the band
+alone, split hip and knee (about 230 and 28 cells a leg), costs about 1.2 to 1.8 ms while it
+walks (`_measure_cat_joints_runner.gd`), nothing while it sits (the walker stops), and nothing
+beyond `joint_detail_distance` (20 m) of the player, where the joints hold their last pose.
+
 ---
 
 ## Authoring traps

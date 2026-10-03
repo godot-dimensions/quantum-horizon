@@ -25,8 +25,16 @@ var _pending := ""
 func _initialize() -> void:
 	root.unfocusable = true
 	_root = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
+	# The grass off, and the HUD: Hay meadow II is twice the cat's height, so with it on the
+	# frames are all grass (3 Oct). The pen's ground stays as it is.
+	var grass: Node = _root.get_node_or_null("World/Grass")
+	if grass != null:
+		(grass as Node4D).visible = false
 	root.add_child(_root)
 	current_scene = _root
+	for c in _root.get_node("UI").get_children():
+		if c is CanvasItem:
+			(c as CanvasItem).visible = false
 
 
 func _frame(view: String = "side") -> void:

@@ -60,8 +60,8 @@ func _process(_d) -> bool:
 			if elapsed < 5.0: return false
 			print("\n--- outcome two: throw it in time ---")
 			# Put it back on its crate and face the player at the coop.
-			var crate: Node4D = _root.get_node("World/Crate")
-			_cat.position = crate.position + Vector4(0.0, 0.55, 0.0, 0.0)
+			var crate: Node4D = _root.get_node("World/RockPile")
+			_cat.position = crate.position + Vector4(0.0, float(_cat.get("crate_top")), 0.0, 0.0)
 			_cat.set("_mood", 3)
 			_player.position = Vector4(_cat.global_position.x + 0.8, 1.3,
 				_cat.global_position.z + 0.8, _cat.global_position.w)

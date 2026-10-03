@@ -41,7 +41,7 @@ func _process(_d) -> bool:
 	if _f < 80: return false
 	if _cat == null:
 		_cat = _root.get_node("World/Cat")
-		_crate = _root.get_node("World/Crate")
+		_crate = _root.get_node("World/RockPile")
 		_grab = _root.get_node("Systems/CatGrab")
 		_player = _root.get_node("Player")
 		_player.position = Vector4(30.0, 1.3, 30.0, 0.0)
@@ -51,7 +51,7 @@ func _process(_d) -> bool:
 	match _stage:
 		0:
 			if elapsed < 1.0: return false
-			var top: float = _crate.global_position.y + 0.3
+			var top: float = _crate.global_position.y + float(_crate.get("top"))
 			print("crate surface is at y %.2f" % top)
 			print("cat origin  y %.2f, its lowest point y %.2f" % [_cat.global_position.y, _lowest()])
 			print("gap between cat and crate: %.3f  (negative = standing in it)" % (_lowest() - top))

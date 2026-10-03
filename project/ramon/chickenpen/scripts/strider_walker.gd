@@ -62,6 +62,21 @@ const _GaitController = preload("res://scripts/gait_controller.gd")
 ## has caught the whole body or none of it.
 @export var verbose_skin: bool = false
 
+## Bend the skin round the hips and knees instead of hinging it. Cut into rigid pieces, the band
+## of skin either side of a joint is given to BOTH pieces (see JOINT_LO), so the outside of a bend
+## never opens - but on a small animal that band reaches into the body, and the copy the leg
+## carries swings out of it: needles at the hips, and a step behind each bent knee (Ramon, 3 Oct,
+## of the cat: "something still looks a bit off with the legs and stretch artifacts"). On, the band
+## tetrahedra go to one small mesh per leg instead, posed vertex by vertex every frame - the body
+## still, each thigh about its hip, each shank about its knee, blended by the binding's own
+## weights, as the skinning before the cut was. Only those few hundred tetrahedra are handed back
+## to the renderer each time; everything else still moves by its transform. Off by default, so
+## the creatures tuned without it look as they did.
+@export var blend_joints: bool = false
+## Whether the joints are posed this frame, with blend_joints on. The creature turns it off when
+## nobody is near enough to see a knee: the joints then hold their last pose, and cost nothing.
+var pose_joints: bool = true
+
 @export var animation_sides: int = 6
 @export var animation_rings: int = 3
 
@@ -115,6 +130,9 @@ var _rest_verts := PackedVector4Array()
 var _posed := PackedVector4Array()
 ## The body and a thigh and shank per leg, once the hide has been cut - see _cut_into_pieces.
 var _pieces: Array[MeshInstance4D] = []
+## With blend_joints, per leg its hip and its knee: {mesh, rest (its own vertices), weight,
+## shank}, or null.
+var _joints: Array = []
 var _skin_index := PackedInt32Array()
 var _skin_leg := PackedInt32Array()
 var _skin_weight := PackedFloat32Array()
@@ -461,6 +479,9 @@ func _bind_mesh() -> void:
 ## At rest the copies coincide exactly, in the same colour, and cannot be seen.
 const JOINT_LO: float = 0.38
 const JOINT_HI: float = 0.62
+## With blend_joints, a tetrahedron whose corners' weights differ by more than this straddles the
+## joint and bends with it rather than riding one side.
+const STRADDLE: float = 0.6
 
 
 ## Cuts the hide into a body and a thigh and shank per leg, each moved and never reshaped.
@@ -505,16 +526,34 @@ func _cut_into_pieces(mesh: ArrayTetraMesh4D) -> void:
 	var buckets: Array = []
 	for p in pieces:
 		buckets.append([[], [], [], []])
+	# With blend_joints, the band tetrahedra of each leg, kept apart for its joint mesh.
+	var used_by_body := PackedInt32Array()
+	var used_by_thigh := PackedInt32Array()
+	var used_by_shank := PackedInt32Array()
+	used_by_body.resize(count)
+	used_by_thigh.resize(count)
+	used_by_thigh.fill(-1)
+	used_by_shank.resize(count)
+	used_by_shank.fill(-1)
+	var bands: Array = []
+	for l in _legs.size() * 2:
+		bands.append([])
 	for cell in cells.size() / 4:
 		var k: int = cell * 4
 		# Which leg, if any: the one owning most of this tetrahedron's corners.
 		var votes: Dictionary = {}
 		var w: float = 0.0
 		var s: float = 0.0
+		# How far apart its corners' weights are: one that straddles body and leg, or thigh and
+		# shank, cannot be carried rigidly by either.
+		var spread_w: Vector2 = Vector2(INF, -INF)
+		var spread_s: Vector2 = Vector2(INF, -INF)
 		for j in 4:
 			var v: int = cells[k + j]
 			w += weight[v]
 			s += shank[v]
+			spread_w = Vector2(minf(spread_w.x, weight[v]), maxf(spread_w.y, weight[v]))
+			spread_s = Vector2(minf(spread_s.x, shank[v]), maxf(spread_s.y, shank[v]))
 			if owner[v] >= 0:
 				votes[owner[v]] = int(votes.get(owner[v], 0)) + 1
 		w *= 0.25
@@ -525,6 +564,17 @@ func _cut_into_pieces(mesh: ArrayTetraMesh4D) -> void:
 			if votes[l] > most:
 				most = votes[l]
 				leg = l
+		# The band round each joint, and what strongly straddles it; the hip's and the knee's in
+		# separate small meshes. Posing costs the renderer per cell, and more per cell the bigger
+		# the mesh (measured 3 Oct: 200 cells +0.25 ms a frame, 800 in one mesh +2.7 ms, in four
+		# +1.9 ms), so only what has to bend bends; a whole thigh posed cost the cat 4 ms.
+		if blend_joints and leg >= 0:
+			if (w > JOINT_LO and w < JOINT_HI) or spread_w.y - spread_w.x > STRADDLE:
+				(bands[leg * 2] as Array).append(cell)
+				continue
+			if w >= JOINT_HI and ((s > JOINT_LO and s < JOINT_HI) or spread_s.y - spread_s.x > STRADDLE):
+				(bands[leg * 2 + 1] as Array).append(cell)
+				continue
 		var into: Array = []
 		if leg < 0 or w < JOINT_HI:
 			into.append(0)
@@ -537,6 +587,14 @@ func _cut_into_pieces(mesh: ArrayTetraMesh4D) -> void:
 			var b: Array = buckets[p]
 			for j in 4:
 				(b[0] as Array).append(cells[k + j])
+				# Which rigid pieces each corner belongs to: the joint skin's border is pinned
+				# to them, so it meets them without a seam.
+				if p == 0:
+					used_by_body[cells[k + j]] = 1
+				elif p % 2 == 1:
+					used_by_thigh[cells[k + j]] = (p - 1) / 2
+				else:
+					used_by_shank[cells[k + j]] = (p - 2) / 2
 				if textures.size() == cells.size():
 					(b[1] as Array).append(textures[k + j])
 				if normals.size() == cells.size():
@@ -562,8 +620,75 @@ func _cut_into_pieces(mesh: ArrayTetraMesh4D) -> void:
 		node.material_override = rig.material_override
 		rig.add_child(node)
 		_pieces.append(node)
+	_joints.clear()
+	for j in bands.size():
+		_joints.append(_joint_mesh(mesh, bands[j], j / 2, owner, weight, shank, rig, used_by_body, used_by_thigh, used_by_shank,
+			"Leg%d%s" % [j / 2, "Hip" if j % 2 == 0 else "Knee"]))
 	# The rig keeps its balls and moves the body with its own bob, but draws nothing itself.
 	rig.mesh = null
+
+
+## One leg's joint skin, for blend_joints: the band tetrahedra with a vertex array of their own,
+## so posing it each frame hands the renderer only these.
+func _joint_mesh(mesh: ArrayTetraMesh4D, band: Array, leg: int, owner: PackedInt32Array,
+		weight: PackedFloat32Array, shank: PackedFloat32Array, rig: MeshInstance4D,
+		by_body: PackedInt32Array, by_thigh: PackedInt32Array, by_shank: PackedInt32Array, called: String) -> Variant:
+	if band.is_empty():
+		return null
+	var cells: PackedInt32Array = mesh.simplex_cell_vertex_indices
+	var textures: PackedInt32Array = mesh.simplex_cell_texture_map_indices
+	var normals: PackedInt32Array = mesh.simplex_cell_normal_indices
+	var boundary: PackedVector4Array = mesh.simplex_cell_boundary_normals
+	var local: Dictionary = {}
+	var rest := PackedVector4Array()
+	var w := PackedFloat32Array()
+	var s := PackedFloat32Array()
+	var indices := PackedInt32Array()
+	var tex := PackedInt32Array()
+	var nor := PackedInt32Array()
+	var bnd := PackedVector4Array()
+	for cell in band:
+		for j in 4:
+			var v: int = cells[cell * 4 + j]
+			if not local.has(v):
+				local[v] = rest.size()
+				rest.append(_rest_verts[v])
+				# Its border goes with the rigid piece it shares a corner with - still with the
+				# body, turned with the thigh or the shank - so there is no seam; the inside of
+				# the band blends. Another leg's vertex stays where it is.
+				if by_body[v] == 1 or owner[v] != leg:
+					w.append(0.0)
+					s.append(0.0)
+				elif by_thigh[v] == leg and by_shank[v] != leg:
+					w.append(1.0)
+					s.append(0.0)
+				elif by_shank[v] == leg and by_thigh[v] != leg:
+					w.append(1.0)
+					s.append(1.0)
+				else:
+					w.append(weight[v])
+					s.append(shank[v])
+			indices.append(local[v])
+			if textures.size() == cells.size():
+				tex.append(textures[cell * 4 + j])
+			if normals.size() == cells.size():
+				nor.append(normals[cell * 4 + j])
+		if boundary.size() == cells.size() / 4:
+			bnd.append(boundary[cell])
+	var joint := ArrayTetraMesh4D.new()
+	joint.vertex_positions = rest
+	joint.normal_values = mesh.normal_values
+	joint.texture_map_values = mesh.texture_map_values
+	joint.simplex_cell_vertex_indices = indices
+	joint.simplex_cell_texture_map_indices = tex
+	joint.simplex_cell_normal_indices = nor
+	joint.simplex_cell_boundary_normals = bnd
+	var node := MeshInstance4D.new()
+	node.name = called
+	node.mesh = joint
+	node.material_override = rig.material_override
+	rig.add_child(node)
+	return {"mesh": joint, "rest": rest, "weight": w, "shank": s}
 
 
 ## Poses the legs by moving their pieces - two plane rotations per leg, the same two the
@@ -577,8 +702,33 @@ func _skin() -> void:
 		var rest_knee: Vector4 = leg["rest_knee"]
 		var knee: Vector4 = leg["knee_now"]
 		_carry(_pieces[1 + l * 2], _Plane.between(rest_knee - hip, knee - hip), hip, hip)
-		_carry(_pieces[2 + l * 2], _Plane.between((leg["rest_foot"] as Vector4) - rest_knee,
-			(leg["foot_now"] as Vector4) - knee), rest_knee, knee)
+		var r_shank: Array = _Plane.between((leg["rest_foot"] as Vector4) - rest_knee, (leg["foot_now"] as Vector4) - knee)
+		_carry(_pieces[2 + l * 2], r_shank, rest_knee, knee)
+		if blend_joints and pose_joints and l * 2 + 1 < _joints.size():
+			var r_thigh: Array = _Plane.between(rest_knee - hip, knee - hip)
+			for j in [l * 2, l * 2 + 1]:
+				if _joints[j] != null:
+					_pose_joint(_joints[j], r_thigh, r_shank, hip, rest_knee, knee)
+
+
+## Poses one joint mesh: each vertex where the body (still), the thigh (turned by [param r_thigh]
+## about the hip) and the shank (turned by [param r_shank], its knee carried to [param knee]) would
+## put it, blended by its weights - the skinning the pieces replaced, on a few hundred vertices.
+func _pose_joint(joint: Dictionary, r_thigh: Array, r_shank: Array, hip: Vector4, rest_knee: Vector4, knee: Vector4) -> void:
+	var rest: PackedVector4Array = joint["rest"]
+	var w: PackedFloat32Array = joint["weight"]
+	var s: PackedFloat32Array = joint["shank"]
+	var posed := PackedVector4Array()
+	posed.resize(rest.size())
+	for i in rest.size():
+		var v: Vector4 = rest[i]
+		if w[i] <= 0.0:
+			posed[i] = v
+			continue
+		var on_thigh: Vector4 = hip + _Plane.apply(v - hip, r_thigh)
+		var on_shank: Vector4 = knee + _Plane.apply(v - rest_knee, r_shank)
+		posed[i] = v.lerp(on_thigh.lerp(on_shank, s[i]), w[i])
+	(joint["mesh"] as ArrayTetraMesh4D).vertex_positions = posed
 
 
 ## Moves a piece so that its point `from` lands on `to`, turned by plane rotation `r`:

@@ -59,6 +59,11 @@ const SIDES := 10
 @export_range(0.5, 12.0, 0.1) var pause_min: float = 1.5
 @export_range(0.5, 20.0, 0.1) var pause_max: float = 5.0
 
+## Within this of the player the cat's hips and knees bend with it, which costs the renderer
+## about a millisecond a frame while it walks (measured 3 Oct, strider_walker.gd blend_joints);
+## further off its joints hold their last pose, too small to see.
+@export_range(0.0, 100.0, 1.0, "suffix:m") var joint_detail_distance: float = 20.0
+
 @export_group("Sitting and fleeing")
 ## Something to sit on. It goes there of its own accord, jumps up, and stays until it is
 ## disturbed - which is most of what makes a cat read as a cat rather than as livestock.
@@ -68,6 +73,13 @@ const SIDES := 10
 ## crate sits at 0.3 and is 0.6 tall, so its surface is 0.3 above itself - measuring from
 ## the floor instead put the cat a quarter of a unit into the air above it.
 @export_range(0.1, 3.0, 0.05) var crate_top: float = 0.34
+## How near the crate's middle it comes before it jumps: outside what it is jumping onto.
+@export_range(0.3, 3.0, 0.05) var crate_reach: float = 0.85
+## The floor it walks on, in its parent's space. NOT the height it was put at: the black cat
+## is put on its crate in the scene (0.64), and taking that for the floor it hopped "down" to
+## the crate's own height and walked off along the air (Ramon, 3 Oct: "the black cat jumps on
+## the box but then it starts walking in the air").
+@export var ground_y: float = 0.0
 @export_range(0.2, 2.0, 0.05) var jump_seconds: float = 0.55
 @export_range(0.5, 20.0, 0.5) var sit_min: float = 6.0
 @export_range(0.5, 40.0, 0.5) var sit_max: float = 16.0
@@ -147,7 +159,7 @@ func _set_eye(v: Color) -> void: eye = v; _later()
 
 func _ready() -> void:
 	_rng.seed = 5150
-	_home = position
+	_home = Vector4(position.x, ground_y, position.z, position.w)
 	_heading = _rng.randf_range(0.0, TAU)
 	_crate = get_node_or_null(crate_path) as Node4D
 	_player = get_node_or_null(player_path) as Node4D
@@ -298,6 +310,8 @@ func rebuild() -> void:
 	walker.set("rig_path", NodePath("../Hide"))
 	walker.set("animation_sides", SIDES)
 	walker.set("leg_name_prefixes", PackedStringArray(["FrontHip", "HindHip"]))
+	# The skin bends round the hips and knees: no needles, no step (strider_walker.gd's note).
+	walker.set("blend_joints", true)
 	walker.set("stride_length", stride_length)
 	walker.set("step_height", step_height)
 	walker.set("body_bob", body_bob)
@@ -400,6 +414,8 @@ func _process(delta: float) -> void:
 			_do_inside(delta)
 	_keep_out_of_den()
 	_follow_hide()
+	if _player != null:
+		_walker.set("pose_joints", global_position.distance_to(_player.global_position) < joint_detail_distance)
 
 
 ## The walker owns the feet while it runs, so anything that poses them by hand has to
@@ -474,7 +490,7 @@ func _do_to_crate(delta: float) -> void:
 	_heading = rotate_toward(_heading, atan2(to.x, to.z),
 		deg_to_rad(turn_rate_degrees) * delta * 3.0)
 	basis = Basis4D.from_zx(_heading)
-	if flat < 0.85:
+	if flat < crate_reach:
 		_leap_to(_crate.position + Vector4(0.0, crate_top, 0.0, 0.0))
 
 
