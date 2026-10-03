@@ -30,6 +30,7 @@ var at_height: float = 0.5
 
 var _buttons: Array[Button] = []
 var _ground_buttons: Array[Button] = []
+var _glow_button: Button
 var _title: Label
 var _hint: Label
 var _box: VBoxContainer
@@ -74,10 +75,16 @@ func _ready() -> void:
 		b.set_meta("painted", painted)
 		b.pressed.connect(_set_ground.bind(painted))
 		_ground_buttons.append(b)
+	# The centre glow alone, on or off, the sand staying (Ctrl+O).
+	_glow_button = _button("Centre glow   Ctrl+O")
+	_glow_button.pressed.connect(_toggle_glow)
 	if grass != null and grass.has_signal("preset_changed"):
 		grass.connect("preset_changed", _on_changed)
 	if grass != null and grass.has_signal("ground_changed"):
 		grass.connect("ground_changed", _on_ground)
+	if grass != null and grass.has_signal("glow_changed"):
+		grass.connect("glow_changed", _on_glow)
+	_on_glow(bool(grass.get("ground_glow")) if grass != null else false)
 	_on_changed(int(grass.get("preset")) if grass != null else 0)
 	_on_ground(bool(grass.get("ground_paint")) if grass != null else false)
 
@@ -140,6 +147,16 @@ func _set_ground(painted: bool) -> void:
 		grass.set("ground_paint", painted)
 
 
+func _toggle_glow() -> void:
+	if grass != null:
+		grass.set("ground_glow", not bool(grass.get("ground_glow")))
+
+
+func _on_glow(on: bool) -> void:
+	if _glow_button != null:
+		_paint(_glow_button, on)
+
+
 func _on_changed(on: int) -> void:
 	for b in _buttons:
 		_paint(b, int(b.get_meta("look")) == on)
@@ -161,7 +178,10 @@ func _paint(b: Button, mine: bool) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).keycode == KEY_O):
 		return
-	if (event as InputEventKey).shift_pressed:
+	if (event as InputEventKey).ctrl_pressed:
+		_toggle_glow()
+		get_viewport().set_input_as_handled()
+	elif (event as InputEventKey).shift_pressed:
 		_set_ground(not bool(grass.get("ground_paint")))
 		get_viewport().set_input_as_handled()
 	else:

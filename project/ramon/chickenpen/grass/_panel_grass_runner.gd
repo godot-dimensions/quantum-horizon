@@ -25,6 +25,9 @@ func _initialize() -> void:
 func _process(d: float) -> bool:
 	_t += d
 	if _step == 0:
+		if _t > 90.0:
+			print("PANEL FAIL: no grass after 90 s")
+			return true
 		if not bool(_grass.get("mask_ready")) or _t < 5.0:
 			return false
 		var panel: Node = _room.get_node_or_null("UI/GrassPanel")
@@ -41,6 +44,19 @@ func _process(d: float) -> bool:
 		_t = 0.0
 	elif _step == 2 and _t > 1.5:
 		print("      after O again: look ", _grass.get("preset"), "  blades ", _grass.call("blade_count"))
+		# Ctrl+O: the centre glow off, the ground still painted (the sand stays).
+		_press_o(true)
+		_step = 3
+		_t = 0.0
+	elif _step == 3 and _t > 1.0:
+		var ground := _room.get_node("World/Ground/GroundMesh") as MeshInstance4D
+		print("      after Ctrl+O: glow %s, ground painted %s" % [_grass.get("ground_glow"), ground.mesh is ArrayTetraMesh4D])
+		root.get_texture().get_image().save_png("res://smoke_test_output/grass_panel_2_glow_off.png")
+		_press_o(true)
+		_step = 4
+		_t = 0.0
+	elif _step == 4 and _t > 1.0:
+		print("      after Ctrl+O again: glow %s" % _grass.get("ground_glow"))
 		print("PANEL DONE")
 		if FileAccess.file_exists("user://lookout_journal_panel_test.cfg"):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path("user://lookout_journal_panel_test.cfg"))
@@ -48,10 +64,11 @@ func _process(d: float) -> bool:
 	return false
 
 
-func _press_o() -> void:
+func _press_o(ctrl: bool = false) -> void:
 	var e := InputEventKey.new()
 	e.keycode = KEY_O
 	e.physical_keycode = KEY_O
+	e.ctrl_pressed = ctrl
 	e.pressed = true
 	Input.parse_input_event(e)
 	var up := InputEventKey.new()

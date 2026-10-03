@@ -55,7 +55,15 @@ const MAX_TILES := 384
 			_apply_ground()
 @export var ground_path: NodePath = ^"World/Ground/GroundMesh"
 ## The glow: its middle (x, z; the farm's buildings are round it), full out to glow_in, the
-## pen's own green by glow_out; along W it is gone by glow_w.
+## pen's own green by glow_out; along W it is gone by glow_w. ground_glow switches it alone,
+## the sand staying (3 Oct: "can you make a toggle for me for the subtle brighter center
+## falloff?"; the panel's Centre glow button, Ctrl+O): the ground is painted again, ~30 ms.
+@export var ground_glow: bool = true:
+	set(v):
+		ground_glow = v
+		if is_inside_tree() and not _ground_painted.is_empty():
+			_paint_ground()
+		glow_changed.emit(v)
 @export var glow_centre: Vector2 = Vector2(-4.0, -14.0)
 @export var glow_colour: Color = Color(0.25, 0.31, 0.095)
 @export_range(0.0, 60.0, 0.5, "suffix:m") var glow_in: float = 8.0
@@ -70,6 +78,7 @@ const MAX_TILES := 384
 @export_range(0.0, 4.0, 0.05, "suffix:m") var sand_ragged: float = 1.0
 
 signal ground_changed(painted: bool)
+signal glow_changed(on: bool)
 
 signal preset_changed(index: int)
 
@@ -343,7 +352,7 @@ func _paint_ground() -> void:
 			sands.append(_sand_field(key, float(sand_round[key])))
 	_ground_painted = PAINT.build((node.mesh as BoxTetraMesh4D).size, {
 		"centre": glow_centre, "glow_in": glow_in, "glow_out": glow_out, "glow_w": glow_w,
-		"own": own, "glow": glow_colour, "sand": sand_colour, "sand_ragged": sand_ragged,
+		"own": own, "glow": glow_colour if ground_glow else own, "sand": sand_colour, "sand_ragged": sand_ragged,
 		"sands": sands, "grid_cell": MASK_CELL, "grid_cells": MASK_CELLS, "grid_half": MASK_CELL * MASK_CELLS * 0.5,
 	})
 	paint_msec = Time.get_ticks_msec() - started

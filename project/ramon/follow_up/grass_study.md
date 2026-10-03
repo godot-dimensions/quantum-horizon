@@ -290,7 +290,9 @@ make it flow like on barley fields, even though its not".
   it?"): subtle. The grass covers the middle, so it shows in the strip of bare ground past the
   grass and in the clearings: past the grass on the left (62, 71, 41) -> (70, 83, 39), behind the
   pen (55, 72, 37) -> (67, 88, 35), the far corners unchanged. It costs nothing a frame and rides
-  on the painted ground the sand needs anyway.
+  on the painted ground the sand needs anyway. **Its own toggle** ("can you make a toggle for me
+  for the subtle brighter center falloff?"): `ground_glow`, the panel's "Centre glow" button,
+  Ctrl+O; the ground is painted again without it (the sand stays), ~30 ms.
 
 ## Cost (RTX 5080, 1280x720, interleaved on/off, after the pen's warm-up)
 
