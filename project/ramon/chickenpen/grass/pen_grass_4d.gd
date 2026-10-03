@@ -342,10 +342,15 @@ func _apply_ground() -> void:
 ## Paints the ground, after the mask (the footprints of what gets sand come from it).
 func _paint_ground() -> void:
 	var node := _room.get_node_or_null(ground_path) as MeshInstance4D
-	if node == null or not (node.mesh is BoxTetraMesh4D):
+	if node == null:
 		return
 	if _ground_own.is_empty():
 		_ground_own = [node.mesh, node.material_override]
+	# The pen's own box, not whatever is on the node: painted once, it is the painted mesh, and
+	# checking that (as this did) made every repaint after the first - the glow toggle - quit.
+	var box := _ground_own[0] as BoxTetraMesh4D
+	if box == null:
+		return
 	var own: Color = Color(0.16, 0.22, 0.11)
 	if _ground_own[1] != null and _ground_own[1].get("albedo_color") != null:
 		own = _ground_own[1].get("albedo_color")
@@ -354,7 +359,7 @@ func _paint_ground() -> void:
 	for key in sand_round:
 		if _sand_cells.has(key):
 			sands.append(_sand_field(key, float(sand_round[key])))
-	_ground_painted = PAINT.build((node.mesh as BoxTetraMesh4D).size, {
+	_ground_painted = PAINT.build(box.size, {
 		"centre": glow_centre, "glow_in": glow_in, "glow_out": glow_out, "glow_w": glow_w,
 		"own": own, "glow": glow_colour if ground_glow else own, "sand": sand_colour, "sand_ragged": sand_ragged,
 		"sands": sands, "grid_cell": MASK_CELL, "grid_cells": MASK_CELLS, "grid_half": MASK_CELL * MASK_CELLS * 0.5,
