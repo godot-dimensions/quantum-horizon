@@ -228,6 +228,44 @@ make it flow like on barley fields, even though its not".
   (82, 96, 37), so the field ends without an edge; the pen's own was (62, 71, 41). The far
   edge of the grass fades to whichever ground is drawn (`edge_colour`).
 
+## 3 Oct, later: the painted ground, Pasture, fewer vertices
+
+- **The flat lighter ground is gone** (Ramon: "the original, darker green still makes more
+  sense in regards to the dusk or dawn mood"). In its place **the painted ground**
+  (`grass/pen_ground_paint_4d.gd`, `ground_paint` on the Grass node): the ground slab's
+  material colours it from a 3D texture through each cell corner's UVW, as the baked terrain
+  does, with every corner's UVW its own x, z and w - so the texture is a map of the field, lit
+  and cut like any 4D surface. On it:
+  - **a glow**: `glow_colour` (0.25, 0.31, 0.095), a touch darker than the grass, full out to
+    `glow_in` 8 m round `glow_centre` (-4, -14) (the farm's buildings are round it), the pen's
+    own dark green by `glow_out` 85 m; along W gone by `glow_w` 30 m. Measured: the ground
+    behind the pen (66, 88, 36) against the pen's own (55, 72, 38), the far corners unchanged;
+  - **the sandy yard** ("keep the surface of the pen inside, and a little beyond 'sandy'"):
+    within `sand_beyond` 1.8 m of the pen's outline (taken from the mask's footprints, at the
+    pen's w), the edge broken by `sand_ragged` 1 m of noise, mottled, worn towards the grass.
+  - **W is piecewise**: the slab is nine boxes stacked along W at -60, -24, -10, -4, -1.5, 1.5,
+    4, 10, 24, 60, a texture layer at each break: fine near w 0, coarse where it is all dark.
+  - **Cost**: painting it is 10 layers of 256 x 256 texels in GDScript, about 0.3 s **once, at
+    the start**, a layer a frame (after the mask). Nothing a frame after that: one texture read
+    where the ground is drawn. About 5 MB of video memory. It could be baked to a file to make
+    the start free too.
+  - Reversible: off puts the pen's own mesh and material back (panel: Ground, "Pen's own" /
+    "Painted"; Shift+O). Nothing is saved into `chickenpen.tscn`.
+- **Preset 1 is now Pasture** ("option one could be the shorter grazed grass ... start from
+  scratch ... less thick, more, and shorter, feel free to reduce polycount"): 16 cm, 6 mm wide,
+  4.5 cm apart near, 5 vertices a blade near you and 3 beyond 10 m, small clumps, a stiff short
+  bend and more sheen. +0.82 ms GPU from the farm camera, 1.5 million blades handed over.
+  The old 38 cm Meadow is `BASE` in `pen_grass_looks.gd` now; each look names only what it
+  changes from it, so reworking one cannot move another.
+- **Hay meadow, one bend fewer** ("if you'd remove one vertex on each grass, would that help?
+  ... the general style is low poly"): bands 9, 7, 5, 3, 3 vertices (from 11, 9, 7, 5, 3).
+  Measured the same session: +1.31 ms -> **+0.85 ms** GPU from the farm camera; side by side
+  at play distance the bend reads the same.
+- **The looks file: no packed arrays in a constant.** Godot will not parse
+  `PackedInt32Array([...])` inside a `const` dictionary, and a Grass script that fails to load
+  leaves the measure runner waiting for the grass for ever: it now gives up after 90 s. The
+  looks list plain arrays; `_take` turns them into packed ones.
+
 ## Cost (RTX 5080, 1280x720, interleaved on/off, after the pen's warm-up)
 
 | | |

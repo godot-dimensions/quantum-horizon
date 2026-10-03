@@ -39,7 +39,7 @@ notice_within = 4.0
 position = Vector4(-7.5, 0, 6, 0)
 
 [node name="MarshSpot" type="Node4D" parent="World/LookoutSite"]
-position = Vector4(-10, 0, 12, 8)
+position = Vector4(-14, 0, 12, 8)
 
 [node name="WoodSpot" type="Node4D" parent="World/LookoutSite"]
 position = Vector4(-10, 0, 12, -8)

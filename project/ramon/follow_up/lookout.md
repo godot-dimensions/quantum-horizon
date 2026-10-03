@@ -240,6 +240,10 @@ the merged meshes.
   pond says "V  align to the slice" (and the card has a V row); V eases the slice flat and you
   to its w, as R does for the pen's (the rig's new `align_to(w)`, the same trip as
   `go_home`). `lookout/_verify_marsh_align_runner.gd` checks it.
+- **The marsh moved 4 m left** (Ramon, 3 Oct: "place the marsh a bit further to the left"):
+  `MarshSpot` in `chickenpen_lookout.tscn` from (-10, 0, 12, 8) to (-14, 0, 12, 8) under
+  LookoutSite, i.e. world (-30, 0, -24, 8); "left" taken as the farm's left, -x, looking north
+  from the pen. The kata wood (WoodSpot) did not move.
 - **The pond is round** (discs of turned boxes); the heron dressed from field guides (brow,
   plumes, two lines of neck streaks, black flanks over white thighs, darker grey) with round
   joints in the neck and at the heels - it had looked broken at the bends. The owl is an

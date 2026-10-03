@@ -147,8 +147,8 @@ uniform vec3 colour_lush : source_color = vec3(0.27, 0.47, 0.18);
 uniform vec3 colour_dry : source_color = vec3(0.47, 0.44, 0.22);
 uniform vec3 colour_tip : source_color = vec3(0.48, 0.62, 0.26);
 uniform vec3 ground_colour : source_color = vec3(0.16, 0.22, 0.11);
-// What the field's far edge turns into: the ground as it is drawn now (lighter, with
-// pen_grass_4d.gd's lighter_ground on), so the edge never rings it.
+// What the field's far edge turns into: the ground there (the pen's own dark green, which the
+// painted ground also is that far out).
 uniform vec3 edge_colour : source_color = vec3(0.16, 0.22, 0.11);
 uniform float sheen = 0.32;
 // THE PAINTED LOOK (Ramon, 2 Oct, after Ghibli's meadows: "a very subtle color/hue offset for each

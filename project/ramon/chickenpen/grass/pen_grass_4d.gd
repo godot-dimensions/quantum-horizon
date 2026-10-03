@@ -26,6 +26,7 @@ extends Node4D
 const SHADER := preload("res://ramon/chickenpen/grass/pen_grass.gdshader")
 const LOOKS := preload("res://ramon/chickenpen/grass/pen_grass_looks.gd")
 const PANEL := preload("res://ramon/chickenpen/grass/pen_grass_panel_4d.gd")
+const PAINT := preload("res://ramon/chickenpen/grass/pen_ground_paint_4d.gd")
 const GROUND := preload("res://ramon/chickenpen/lookout/lookout_ground_4d.gd")
 ## Tiles a band can draw at once (the shader's tiles[] array is this long).
 const MAX_TILES := 384
@@ -34,25 +35,40 @@ const MAX_TILES := 384
 	set(v):
 		enabled = v
 		_set_visible()
-## The look to start in, from pen_grass_looks.gd (1 Meadow, 2 Hay meadow); 0 keeps the values set
+## The look to start in, from pen_grass_looks.gd (1 Pasture, 2 Hay meadow); 0 keeps the values set
 ## on this node. The grass panel (and O) switches between them while playing.
 @export_range(0, 9) var start_preset: int = 2
 ## The see-through HUD panel of looks, at the right edge.
 @export var show_panel: bool = true
-## A TEST, AND REVERSIBLE (Ramon, 3 Oct: "align the darker green ground color to the barley,
-## meaning, making the ground floor lighter. but i do want to be able to revert"). On, the
-## pen's ground is drawn in lighter_ground_colour while the scene runs; off, in its own colour
-## again. Nothing is saved into the pen: its material is only changed in memory. The grass
-## panel's Ground buttons (and Shift+O) switch it.
-@export var lighter_ground: bool = true:
+## THE GROUND, PAINTED (pen_ground_paint_4d.gd), and reversible: a broad glow of green in the
+## middle of the farm falling off to the pen's own dark green far out, and a sandy yard round
+## the chicken pen. Ramon, 3 Oct, after a flat lighter ground (tried and dropped: "the original,
+## darker green still makes more sense in regards to the dusk or dawn mood"): "some kind of
+## huge falloff, brighter green like the grass but a tiny bit darker for the center of the whole
+## scene", and "keep the surface of the pen inside, and a little beyond 'sandy'". Only in memory
+## while the scene runs: off puts the pen's own mesh and material back. The grass panel's
+## Ground buttons (and Shift+O) switch it.
+@export var ground_paint: bool = true:
 	set(v):
-		lighter_ground = v
+		ground_paint = v
 		if is_inside_tree():
 			_apply_ground()
-@export var lighter_ground_colour: Color = Color(0.28, 0.34, 0.10)
 @export var ground_path: NodePath = ^"World/Ground/GroundMesh"
+## The glow: its middle (x, z; the farm's buildings are round it), full out to glow_in, the
+## pen's own green by glow_out; along W it is gone by glow_w.
+@export var glow_centre: Vector2 = Vector2(-4.0, -14.0)
+@export var glow_colour: Color = Color(0.25, 0.31, 0.095)
+@export_range(0.0, 60.0, 0.5, "suffix:m") var glow_in: float = 8.0
+@export_range(5.0, 150.0, 0.5, "suffix:m") var glow_out: float = 85.0
+@export_range(3.0, 60.0, 0.5, "suffix:m") var glow_w: float = 30.0
+## The yard: sand round these (their outline in x and z, at their w), sand_beyond past it, the
+## edge broken by sand_ragged of noise.
+@export var sand_round: PackedStringArray = PackedStringArray(["Pen"])
+@export var sand_colour: Color = Color(0.54, 0.44, 0.28)
+@export_range(0.0, 8.0, 0.1, "suffix:m") var sand_beyond: float = 1.8
+@export_range(0.0, 4.0, 0.05, "suffix:m") var sand_ragged: float = 1.0
 
-signal ground_changed(lighter: bool)
+signal ground_changed(painted: bool)
 
 signal preset_changed(index: int)
 
@@ -171,6 +187,8 @@ var mask_ready: bool = false
 ## Mask cells marked, and how long the mask took, for runners.
 var mask_cells: int = 0
 var mask_msec: int = 0
+## How long painting the ground took, for runners.
+var paint_msec: int = 0
 ## Cells inside a clearing, and how long the clearings took, for runners.
 var clearing_cells: int = 0
 var clearing_msec: int = 0
@@ -213,6 +231,11 @@ var _region_cuts := Vector4(0.36, 0.46, 0.55, 0.65)
 var _mask_image: Image
 var _mask_texture: ImageTexture
 var _clearing_texture: ImageTexture
+## The outlines of the clearing_fill names (x0, x1, z0, z1, group, w0, w1), from the mask.
+var _outlines: Dictionary = {}
+## The ground as the pen has it, and painted: [mesh, material] each.
+var _ground_own: Array = []
+var _ground_painted: Array = []
 ## The player's trail: [where (grass space), the way they went, when], newest first.
 var _trail: Array = []
 ## Per pusher: [where it was when its way was last taken, its way].
@@ -251,7 +274,6 @@ func _ready() -> void:
 	_set_visible()
 	_find_pushers.call_deferred()
 	_build_mask.call_deferred()
-	_apply_ground.call_deferred()
 	if show_panel:
 		_add_panel.call_deferred()
 
@@ -270,29 +292,56 @@ func apply_preset(n: int) -> void:
 	preset_changed.emit(n)
 
 
-## Sets look [param n]'s values on this node: look 1's for anything it does not name.
+## Sets look [param n]'s values on this node: BASE's for anything it does not name.
 func _take(n: int) -> void:
-	for look in [LOOKS.PRESETS[1], LOOKS.PRESETS[n]]:
+	for look in [LOOKS.BASE, LOOKS.PRESETS[n]]:
 		for key in look:
 			if key != "name" and key in self:
-				set(key, look[key])
+				var value: Variant = look[key]
+				# (A constant cannot hold packed arrays, so the looks list plain ones.)
+				if value is Array:
+					value = PackedInt32Array(value) if get(key) is PackedInt32Array else PackedFloat32Array(value)
+				set(key, value)
 	preset = n
 
 
-## The pen's ground in its own colour or the lighter one, and the field's far edge with it.
+## The pen's ground as it has it, or painted (once the painting is done).
 func _apply_ground() -> void:
-	var mesh := _room.get_node_or_null(ground_path) as MeshInstance4D if _room != null else null
-	var colour: Color = ground_colour
-	if mesh != null and mesh.material_override != null:
-		var mat: Resource = mesh.material_override
-		if not mat.has_meta("pen_own_albedo"):
-			mat.set_meta("pen_own_albedo", mat.get("albedo_color"))
-		var own: Color = mat.get_meta("pen_own_albedo")
-		colour = lighter_ground_colour if lighter_ground else own
-		mat.set("albedo_color", colour)
-	for band in _bands:
-		band.material.set_shader_parameter("edge_colour", Vector3(colour.r, colour.g, colour.b))
-	ground_changed.emit(lighter_ground)
+	var node := _room.get_node_or_null(ground_path) as MeshInstance4D if _room != null else null
+	if node == null:
+		return
+	if _ground_own.is_empty():
+		_ground_own = [node.mesh, node.material_override]
+	var use: Array = _ground_painted if ground_paint and not _ground_painted.is_empty() else _ground_own
+	if node.mesh != use[0]:
+		node.mesh = use[0]
+		node.material_override = use[1]
+	ground_changed.emit(ground_paint)
+
+
+## Paints the ground, after the mask (the pen's outline comes from it), a layer a frame.
+func _paint_ground() -> void:
+	var node := _room.get_node_or_null(ground_path) as MeshInstance4D
+	if node == null or not (node.mesh is BoxTetraMesh4D):
+		return
+	if _ground_own.is_empty():
+		_ground_own = [node.mesh, node.material_override]
+	var own: Color = Color(0.16, 0.22, 0.11)
+	if _ground_own[1] != null and _ground_own[1].get("albedo_color") != null:
+		own = _ground_own[1].get("albedo_color")
+	var rects: Array = []
+	for key in sand_round:
+		if _outlines.has(key):
+			var o: Array = _outlines[key]
+			rects.append([o[0], o[1], o[2], o[3], o[5], o[6]])
+	var started: int = Time.get_ticks_msec()
+	_ground_painted = await PAINT.build((node.mesh as BoxTetraMesh4D).size, {
+		"centre": glow_centre, "glow_in": glow_in, "glow_out": glow_out, "glow_w": glow_w,
+		"own": own, "glow": glow_colour, "sand": sand_colour, "sand_rects": rects,
+		"sand_beyond": sand_beyond, "sand_ragged": sand_ragged,
+	}, get_tree())
+	paint_msec = Time.get_ticks_msec() - started
+	_apply_ground()
 
 
 func _add_panel() -> void:
@@ -428,8 +477,7 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("haze_amount", haze_amount)
 	m.set_shader_parameter("cloud_shadows", cloud_shadows)
 	m.set_shader_parameter("cloud_size", cloud_size)
-	var edge: Color = lighter_ground_colour if lighter_ground else ground_colour
-	m.set_shader_parameter("edge_colour", Vector3(edge.r, edge.g, edge.b))
+	m.set_shader_parameter("edge_colour", Vector3(ground_colour.r, ground_colour.g, ground_colour.b))
 	for key in ["colour_root", "colour_base", "colour_lush", "colour_dry", "colour_tip", "ground_colour", "region_deep", "region_bright", "haze_colour"]:
 		var c: Color = get(key)
 		m.set_shader_parameter(key, Vector3(c.r, c.g, c.b))
@@ -788,6 +836,7 @@ func _build_mask() -> void:
 	var clear_msec: int = Time.get_ticks_msec()
 	_build_clearings(seeds, group_w, outlines)
 	clearing_msec = Time.get_ticks_msec() - clear_msec
+	_outlines = outlines
 	# The hills and the cave hill, from the Lookout's height map at the farm's w.
 	var ground: RefCounted = GROUND.build(_room, 0.0, 3.0)
 	var half: float = MASK_CELL * MASK_CELLS * 0.5
@@ -806,6 +855,7 @@ func _build_mask() -> void:
 	mask_msec = Time.get_ticks_msec() - started
 	mask_ready = true
 	_set_visible()
+	_paint_ground()
 
 
 func _collect(node: Node, out: Array) -> void:
@@ -972,11 +1022,13 @@ func _mark_mesh(mi: MeshInstance4D, data: PackedFloat32Array, seeds: PackedFloat
 				var s: int = cell * 3 + g
 				seeds[s] = maxf(seeds[s], radius)
 			if fill != "":
-				var o: Array = outlines.get(fill, [INF, -INF, INF, -INF, g])
+				var o: Array = outlines.get(fill, [INF, -INF, INF, -INF, g, INF, -INF])
 				o[0] = minf(o[0], lo.x)
 				o[1] = maxf(o[1], hi.x)
 				o[2] = minf(o[2], lo.z)
 				o[3] = maxf(o[3], hi.z)
+				o[5] = minf(o[5], lo.w)
+				o[6] = maxf(o[6], hi.w)
 				outlines[fill] = o
 	return cells.size() / 4
 

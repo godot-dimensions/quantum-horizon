@@ -2,7 +2,7 @@ extends Control
 
 ## The grass panel: a see-through block of buttons on the HUD, one per look in
 ## pen_grass_looks.gd; click one (Esc first, to have the mouse) or press O for the next. Under
-## them, the ground: the pen's own colour or the lighter test one (Shift+O). Made by the Grass
+## them, the ground: the pen's own or painted (the glow and the sandy yard; Shift+O). Made by the Grass
 ## node (pen_grass_4d.gd, show_panel), so no scene has to carry it.
 ##
 ## O, NOT G: G is the project's carry_pig action (Nike); it was G for a night by mistake.
@@ -69,17 +69,17 @@ func _ready() -> void:
 		b.pressed.connect(_pick.bind(n))
 		_buttons.append(b)
 	_label("Ground   Shift+O", Color(1.0, 1.0, 1.0, 0.58))
-	for lighter in [false, true]:
-		var b := _button("Lighter (test)" if lighter else "Pen's own")
-		b.set_meta("lighter", lighter)
-		b.pressed.connect(_set_ground.bind(lighter))
+	for painted in [false, true]:
+		var b := _button("Painted" if painted else "Pen's own")
+		b.set_meta("painted", painted)
+		b.pressed.connect(_set_ground.bind(painted))
 		_ground_buttons.append(b)
 	if grass != null and grass.has_signal("preset_changed"):
 		grass.connect("preset_changed", _on_changed)
 	if grass != null and grass.has_signal("ground_changed"):
 		grass.connect("ground_changed", _on_ground)
 	_on_changed(int(grass.get("preset")) if grass != null else 0)
-	_on_ground(bool(grass.get("lighter_ground")) if grass != null else false)
+	_on_ground(bool(grass.get("ground_paint")) if grass != null else false)
 
 
 func _button(text: String) -> Button:
@@ -135,9 +135,9 @@ func _pick(n: int) -> void:
 		grass.call("apply_preset", n)
 
 
-func _set_ground(lighter: bool) -> void:
+func _set_ground(painted: bool) -> void:
 	if grass != null:
-		grass.set("lighter_ground", lighter)
+		grass.set("ground_paint", painted)
 
 
 func _on_changed(on: int) -> void:
@@ -145,9 +145,9 @@ func _on_changed(on: int) -> void:
 		_paint(b, int(b.get_meta("look")) == on)
 
 
-func _on_ground(lighter: bool) -> void:
+func _on_ground(painted: bool) -> void:
 	for b in _ground_buttons:
-		_paint(b, bool(b.get_meta("lighter")) == lighter)
+		_paint(b, bool(b.get_meta("painted")) == painted)
 
 
 func _paint(b: Button, mine: bool) -> void:
@@ -162,7 +162,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).keycode == KEY_O):
 		return
 	if (event as InputEventKey).shift_pressed:
-		_set_ground(not bool(grass.get("lighter_ground")))
+		_set_ground(not bool(grass.get("ground_paint")))
 		get_viewport().set_input_as_handled()
 	else:
 		var keys: Array = LOOKS.PRESETS.keys()

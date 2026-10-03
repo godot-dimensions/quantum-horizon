@@ -3,7 +3,7 @@ extends SceneTree
 ## V at the marsh aligns you to its slice: the player stood by the marsh a little off its w with
 ## the slice turned (the marsh cut to a sliver), the prompt offered, V pressed, then the slice
 ## flat and the player at the marsh's w, the prompt gone. Frames before and after; also the
-## ground's lighter test colour and the pen's own. Saves res://smoke_test_output/marsh_align_<n>.png.
+## painted ground (the glow and the sandy yard) and the pen's own put back. Saves res://smoke_test_output/marsh_align_<n>.png.
 ##
 ##   godot... --path project --windowed --resolution 1280x720 --position 40,40
 ##       --script res://ramon/chickenpen/lookout/_verify_marsh_align_runner.gd
@@ -83,17 +83,17 @@ func _process(d: float) -> bool:
 		2:
 			if _t < 1.5:
 				return false
-			var mat: Resource = (_room.get_node("World/Ground/GroundMesh") as MeshInstance4D).material_override
-			_check("ground lighter while the test is on", (mat.get("albedo_color") as Color).is_equal_approx(_grass.get("lighter_ground_colour")))
-			root.get_texture().get_image().save_png("res://smoke_test_output/marsh_align_2_ground_lighter.png")
-			_grass.set("lighter_ground", false)
+			var ground := _room.get_node("World/Ground/GroundMesh") as MeshInstance4D
+			_check("ground painted (%d ms)" % int(_grass.get("paint_msec")), ground.mesh is ArrayTetraMesh4D)
+			root.get_texture().get_image().save_png("res://smoke_test_output/marsh_align_2_ground_painted.png")
+			_grass.set("ground_paint", false)
 			_step = 3
 			_t = 0.0
 		3:
 			if _t < 0.8:
 				return false
-			var mat: Resource = (_room.get_node("World/Ground/GroundMesh") as MeshInstance4D).material_override
-			_check("ground back to the pen's own", (mat.get("albedo_color") as Color).is_equal_approx(Color(0.16, 0.22, 0.11, 1.0)))
+			var ground := _room.get_node("World/Ground/GroundMesh") as MeshInstance4D
+			_check("ground back to the pen's own", ground.mesh is BoxTetraMesh4D and (ground.material_override.get("albedo_color") as Color).is_equal_approx(Color(0.16, 0.22, 0.11, 1.0)))
 			root.get_texture().get_image().save_png("res://smoke_test_output/marsh_align_3_ground_own.png")
 			print("MARSH ALIGN %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 			if FileAccess.file_exists("user://lookout_journal_marsh_align_test.cfg"):

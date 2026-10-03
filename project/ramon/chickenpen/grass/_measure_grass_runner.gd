@@ -30,6 +30,12 @@ func _initialize() -> void:
 	RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(), true)
 	_room = load("res://ramon/chickenpen/chickenpen_lookout.tscn").instantiate()
 	_room.get_node("Systems/Lookout").set("journal_path", "user://lookout_journal_grassm_test.cfg")
+	# After "--": key=value sets a Grass knob before it is ready (as the capture runner does).
+	for arg in OS.get_cmdline_user_args():
+		var kv: PackedStringArray = arg.split("=", true, 1)
+		if kv.size() == 2:
+			_room.get_node("World/Grass").set(kv[0], float(kv[1]))
+			print("      grass.%s = %s" % [kv[0], kv[1]])
 	root.add_child(_room)
 	current_scene = _room
 
@@ -46,6 +52,10 @@ func _process(d: float) -> bool:
 	match _phase:
 		0:
 			_grass = _room.get_node("World/Grass")
+			if _t > 90.0:
+				# The grass never came up (a script that failed to load, say): stop, not hang.
+				print("GRASS MEASURE FAILED: no grass after 90 s")
+				return true
 			if _t < 25.0 or not bool(_grass.get("mask_ready")):
 				return false
 			_phase = 1
