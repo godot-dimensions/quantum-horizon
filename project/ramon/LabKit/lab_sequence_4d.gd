@@ -70,6 +70,14 @@ var _slow: bool = false
 ## The controls card shows the step's own keys and the lift; C opens the rest (the rig's keys,
 ## the curious rows, the lab's), which at 720 p otherwise filled two thirds of the screen's height.
 var all_controls: bool = false
+## How many times you have ridden the lift: the Hall says it back to you.
+var rides: int = 0
+## The projection (P): the cut plus a faint projection of everything along W.
+var projection_on: bool = false
+## In the last bay, P also shows every bay you passed at once (they stand at the same place, one
+## lift apart in W), drawn but not running: the route's reveal.
+@export var reveal_on_last: bool = true
+var _revealed: bool = false
 var _frame_parts: Array = []   # [MeshInstance4D, size, "post" or "glow"]
 var _mood: String = "bright"
 
@@ -214,6 +222,8 @@ func enter(i: int, instant: bool = false) -> void:
 	if bays.is_empty():
 		return
 	var prev: int = current
+	if _revealed:
+		_set_reveal(false)
 	if prev >= 0 and prev != i:
 		var pc: Node = bays[prev]["content"]
 		if pc != null and pc.has_method("end"):
@@ -398,6 +408,7 @@ func _advance_lift(delta: float) -> void:
 			if float(_lift["t"]) >= lift_seconds:
 				var to: int = int(_lift["to"])
 				_lift = {}
+				rides += 1
 				hud.call("set_ladder_marker", -1.0)
 				enter(to, false)
 				if player != null:
@@ -537,9 +548,42 @@ func _toggle_projection() -> void:
 	if cam == null:
 		return
 	var on: bool = String(cam.get("rendering_engine_name")) != "Combined"
-	cam.set("projection_opacity", 0.55)
-	cam.set("projection_opacity_base", 0.05)
+	set_projection(on)
+
+
+func set_projection(on: bool) -> void:
+	var cam: Camera4D = LabMath.current_camera(get_tree())
+	if cam == null:
+		return
+	projection_on = on
+	var reveal: bool = on and reveal_on_last and current == bays.size() - 1
+	# The reveal is drawn stronger than an ordinary P: eleven bays' walls are thin and far apart.
+	cam.set("projection_opacity", 0.85 if reveal else 0.55)
+	cam.set("projection_opacity_base", 0.09 if reveal else 0.05)
 	cam.set("rendering_engine_name", "Combined" if on else "Cross-section")
+	_set_reveal(reveal)
+
+
+## Every bay drawn at once (the reveal), or only the one you are in again. Drawn, not woken: the
+## others keep their processing off. Their shells only, not their exhibits: all twelve bays with
+## every rig and animal overflow the engine's buffer for shader instance variables ("Too many
+## instances", 4 Oct), and the walls and numerals standing in one place are the point.
+func _set_reveal(on: bool) -> void:
+	if on == _revealed:
+		return
+	_revealed = on
+	for i in bays.size():
+		if i == current:
+			continue
+		var b: Dictionary = bays[i]
+		(b["root"] as Node4D).visible = on
+		if b["content"] != null:
+			(b["content"] as Node4D).visible = not on
+		(b["lectern"] as Node4D).visible = not on
+		# Each bay's floor is twelve metres deep in W: projected, eleven of them are a haze.
+		var floor_mesh: Node4D = (b["shell"] as Node).get_node_or_null("Floor") as Node4D
+		if floor_mesh != null:
+			floor_mesh.visible = not on
 
 
 ## A bay's place along the axis as signage: "0", "+12", "+132".

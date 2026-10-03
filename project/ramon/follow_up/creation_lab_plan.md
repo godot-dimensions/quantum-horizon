@@ -243,6 +243,30 @@ on for four more animals, below).
   lectern, over open floor.
 - The guided runner plays the whole route, Atrium to bay 10: 33 checks a mood, passing in both.
 
+### Section H: done (4 Oct)
+
+- **The Hall** (`CreationLab/bays/hall.tscn`, a 40 m shell): all 17 animals on rigs either side of
+  an aisle, small ones on the inner rows, large ones on the outer rows (scaled where their
+  drivers allow), the brachiosaurus at the back. Name tags in range; the nearest animal's card
+  (its own built / animated / limits texts) opens when you walk up; V switches every rig's view
+  at once; G, U, Space, . and , act on the nearest. No boom arms here (seventeen were a thicket);
+  the rig's light pool no longer needs a boom.
+- **The reveal:** the Hall says how many lift rides got you here (or how many bays stand here, if
+  you started in it); P switches on every bay's shell and the projection. **Found on the way:**
+  all twelve bays with their exhibits overflowed the engine's buffer for shader instance
+  variables (every 4D instance takes five), so the reveal shows the shells only, and each shell's
+  ~110 glow segments are now merged into one mesh per kind. The projection fades with distance in
+  W, so the far bays barely show in it: the reveal also draws the shared footprint on the floor
+  and lists every floor with its W.
+- **The pad stands in the same place in every bay** whatever the shell's size (the lift is one
+  object through all of W), so the Hall lines up with the lift.
+- **Performance, measured** (`_perf_lab_runner.gd`, 1280x720, vsync off): every bay under 2.3 ms
+  median, the Hall 3.1 ms from the middle of its aisle, 3.4 ms in the dark mood; target 8 ms.
+  The first Hall measure was 14 ms: every strider within 14 m was re-posing its joint bands (each
+  re-sent to the GPU every frame), and the big animals were awake. Now animals sleep beyond
+  12 m and only the one you stand at bends its joints. Bay 9 goes over on purpose while its
+  re-lofted leg is switched on: that is its lesson.
+
 **Animals that needed lab versions** (subclasses, so fixes to the originals reach the lab):
 the chicken's walker and the cat walk in place (`creatures/lab_chicken_walker.gd`,
 `lab_cat.gd`); the heron flies straight up and down its column (`lab_heron.gd`); the people's

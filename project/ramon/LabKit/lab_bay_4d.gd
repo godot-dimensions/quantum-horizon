@@ -62,6 +62,7 @@ var lift_lit: bool = true
 var _mood: String = "bright"
 var _parts: Array = []     # [MeshInstance4D, size, role]
 var _exhibit_light: OmniLight4D
+var _batches: Dictionary = {}    # glow kind -> ArrayTetraMesh4D being merged
 var _glows: Array = []     # [MeshInstance4D, kind] kind: "part" or "strip" or "pad"
 var _built: bool = false
 
@@ -86,7 +87,10 @@ func _later() -> void:
 ## enough to read from the zone (the first layout put the rig nine metres from the pad and the
 ## wolf read small). The back wall, with the step's number, stands well behind the rig.
 func spot(which: String) -> Vector4:
-	var h: float = size * 0.5
+	# The pad, the lectern and the rig stand at the same place in every bay, whatever its size:
+	# the lift is one object through all of W (LabKit/lab_sequence_4d.gd), so a big room (the
+	# Hall) has to keep its pad where the others have theirs. Only the back wall moves.
+	var h: float = 7.0
 	match which:
 		# Found by eye from the player's camera (4 Oct): with the lectern straight in front, its
 		# card and your own avatar both sat on the exhibit. Now the lectern stands beside the rig
@@ -95,7 +99,7 @@ func spot(which: String) -> Vector4:
 		"lectern": return Vector4(h * 0.33, 0.0, h * 0.03, 0.0)
 		"zone": return Vector4(0.0, 0.0, h * 0.14, 0.0)
 		"pad": return Vector4(0.0, 0.0, h * 0.38, 0.0)
-		"numeral": return Vector4(0.0, wall_height * 0.55, -h + 0.25, 0.0)
+		"numeral": return Vector4(0.0, wall_height * 0.55, -size * 0.5 + 0.25, 0.0)
 	return Vector4.ZERO
 
 
@@ -136,8 +140,8 @@ func _build() -> void:
 		var a1: float = TAU * float(i + 1) / float(segs)
 		var p0 := Vector4(cos(a0) * ring_r, ring_y, sin(a0) * ring_r - h * 0.1, 0.0)
 		var p1 := Vector4(cos(a1) * ring_r, ring_y, sin(a1) * ring_r - h * 0.1, 0.0)
-		var g := _glow_box("Ring%d" % i, Vector4((p1 - p0).length() * 1.03, 0.05, 0.05, floor_w * 0.3), (p0 + p1) * 0.5, "strip")
-		g.basis = Basis4D.from_zx(atan2(p1.x - p0.x, p1.z - p0.z) - PI * 0.5)
+		_glow_box("Ring%d" % i, Vector4((p1 - p0).length() * 1.03, 0.05, 0.05, floor_w * 0.3), (p0 + p1) * 0.5, "strip",
+			Basis4D.from_zx(atan2(p1.x - p0.x, p1.z - p0.z) - PI * 0.5))
 	for k in 4:
 		var ang: float = PI * 0.25 + float(k) * PI * 0.5
 		var dir := Vector4(cos(ang), 0.0, sin(ang), 0.0)
@@ -161,6 +165,7 @@ func _build() -> void:
 	_exhibit_light.light_color = Color(0.92, 0.94, 1.0)
 	_exhibit_light.set("omni_range_meters", size * 0.55)
 	add_child(_exhibit_light)
+	_flush_glows()
 	_built = true
 	apply_mood(_mood, true)
 
@@ -189,15 +194,26 @@ func _box(nm: String, sz: Vector4, at: Vector4, role: String, solid: bool) -> Me
 	return m
 
 
-func _glow_box(nm: String, sz: Vector4, at: Vector4, kind: String) -> MeshInstance4D:
-	var m := MeshInstance4D.new()
-	m.name = nm
-	m.mesh = Mats.box_mesh(sz)
-	m.position = at
-	m.set_meta(GENERATED, true)
-	add_child(m)
-	_glows.append([m, kind])
-	return m
+## A strip of light: not a node of its own but a box merged into one mesh per kind (the kinds share
+## a material), drawn by `_flush_glows`. A shell used to be about 110 MeshInstance4Ds, nearly all
+## of them ring and digit segments, and every 4D instance takes five shader instance variables:
+## the reveal (all bays at once) overflowed the engine's buffer for them (4 Oct).
+func _glow_box(_nm: String, sz: Vector4, at: Vector4, kind: String, b: Projection = Projection.IDENTITY) -> void:
+	var piece: ArrayTetraMesh4D = Mats.box_mesh(sz).to_array_tetra_mesh()
+	if not _batches.has(kind):
+		_batches[kind] = ArrayTetraMesh4D.new()
+	(_batches[kind] as ArrayTetraMesh4D).merge_with(piece, at, b)
+
+
+func _flush_glows() -> void:
+	for kind in _batches:
+		var m := MeshInstance4D.new()
+		m.name = "Glow_" + String(kind)
+		m.mesh = _batches[kind]
+		m.set_meta(GENERATED, true)
+		add_child(m)
+		_glows.append([m, kind])
+	_batches.clear()
 
 
 func _cubinder_part(nm: String, r: float, hgt: float, thick: float, at: Vector4, role: String) -> void:
@@ -221,8 +237,8 @@ func _ring_glow(nm: String, r: float, at: Vector4, kind: String) -> void:
 		var a1: float = TAU * float(i + 1) / float(n)
 		var p0 := Vector4(cos(a0) * r, 0.0, sin(a0) * r, 0.0)
 		var p1 := Vector4(cos(a1) * r, 0.0, sin(a1) * r, 0.0)
-		var g := _glow_box("%s%d" % [nm, i], Vector4((p1 - p0).length() * 1.05, 0.02, 0.05, floor_w * 0.99), at + (p0 + p1) * 0.5, kind)
-		g.basis = Basis4D.from_zx(atan2(p1.x - p0.x, p1.z - p0.z) - PI * 0.5)
+		_glow_box("%s%d" % [nm, i], Vector4((p1 - p0).length() * 1.05, 0.02, 0.05, floor_w * 0.99), at + (p0 + p1) * 0.5, kind,
+			Basis4D.from_zx(atan2(p1.x - p0.x, p1.z - p0.z) - PI * 0.5))
 
 
 ## Large segmented digits on the back wall, as on a seven-segment display.
@@ -253,7 +269,7 @@ func _numeral(n: int) -> void:
 			var at2: Vector2 = spec[sname][0]
 			var horizontal: bool = spec[sname][1]
 			var sz: Vector4 = Vector4(digit_w - bar * 0.4, bar, 0.04, floor_w * 0.36) if horizontal else Vector4(bar, half_h - bar * 0.4, 0.04, floor_w * 0.36)
-			var g := _glow_box("Digit%d%s" % [i, sname], sz, centre + Vector4(at2.x, at2.y, 0.0, 0.0), "digit_on" if on.contains(sname) else "digit_off")
+			_glow_box("Digit%d%s" % [i, sname], sz, centre + Vector4(at2.x, at2.y, 0.0, 0.0), "digit_on" if on.contains(sname) else "digit_off")
 
 
 # -- the mood ----------------------------------------------------------------------------------

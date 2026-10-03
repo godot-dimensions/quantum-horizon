@@ -223,14 +223,15 @@ func _build() -> void:
 			_tether.mesh = _box_mesh_unit()
 			_tether.set_meta(GENERATED, true)
 			add_child(_tether)
-		_pool = OmniLight4D.new()
-		_pool.name = "Pool"
-		_pool.set_meta(GENERATED, true)
-		_pool.position = Vector4(0.0, top_y - 0.2, 0.0, 0.0)
-		_pool.light_color = Color(0.93, 0.96, 1.0)
-		_pool.set("omni_range_meters", top_y + _r * 1.2 + 2.0)
-		add_child(_pool)
 
+	# The light pool over the animal, for the dark mood: with or without a boom to hang from.
+	_pool = OmniLight4D.new()
+	_pool.name = "Pool"
+	_pool.set_meta(GENERATED, true)
+	_pool.position = Vector4(0.0, top_y - 0.2, 0.0, 0.0)
+	_pool.light_color = Color(0.93, 0.96, 1.0)
+	_pool.set("omni_range_meters", top_y + _r * 1.2 + 2.0)
+	add_child(_pool)
 	if animal != null:
 		animal.position = Vector4(0.0, deck_height + stand_top, 0.0, 0.0)
 		animal.basis = Basis4D.from_zx(deg_to_rad(animal_yaw)) * Basis4D.from_xw(_spin_now)

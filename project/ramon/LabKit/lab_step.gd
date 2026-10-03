@@ -37,6 +37,9 @@ extends Resource
 @export var extras: PackedStringArray = PackedStringArray()
 ## The film's captions for this step, in order.
 @export var captions: PackedStringArray = PackedStringArray()
+## The bay shell's size in metres (0: the sequence's own `bay_size`). The Hall at the end of a
+## route is a big room.
+@export var shell_size: float = 0.0
 ## The bay's content: rigs, props and the step's own behaviour (a scene whose root extends
 ## CreationLab/scripts/bay_content_4d.gd or follows the same duck-typed surface).
 @export var content: PackedScene
