@@ -55,6 +55,9 @@ const MOODS := {
 ## A ground slab under the room, in metres (x, y thickness, z, w); zero size builds none. Bays
 ## build their own floors; this is for open rooms like the Hall and for tests.
 @export var ground_size: Vector4 = Vector4.ZERO
+## Where the ground slab's centre sits (its top stays at y 0): a W stack of bays wants it halfway
+## along the stack.
+@export var ground_offset: Vector4 = Vector4.ZERO
 ## Metres one floor texture covers.
 @export_range(0.25, 8.0, 0.25) var ground_texture_metres: float = 2.0
 
@@ -107,7 +110,7 @@ func _build() -> void:
 		_ground = MeshInstance4D.new()
 		_ground.name = "Ground"
 		_ground.mesh = Mats.box_mesh(ground_size)
-		_ground.position = Vector4(0.0, -ground_size.y * 0.5, 0.0, 0.0)
+		_ground.position = Vector4(ground_offset.x, -ground_size.y * 0.5, ground_offset.z, ground_offset.w)
 		_ground.set_meta(GENERATED, true)
 		add_child(_ground)
 		var body := StaticBody4D.new()

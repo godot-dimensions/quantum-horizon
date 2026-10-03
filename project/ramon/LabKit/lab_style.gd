@@ -135,6 +135,15 @@ const _UI := {
 
 ## A UI colour ("panel", "panel_border", "text", "text_dim", "text_faint", "rule", "chip",
 ## "chip_border", "chip_text", "shadow") in a mood.
+## The mood the scene's room is in now (the node in the group "lab_mood"), for kit pieces built
+## after the room broadcast it: a piece reads this when it is built and listens for changes after.
+static func mood_of(tree: SceneTree) -> String:
+	if tree == null or Engine.is_editor_hint():
+		return BRIGHT
+	var room: Node = tree.get_first_node_in_group("lab_mood")
+	return String(room.get("mood")) if room != null else BRIGHT
+
+
 static func ui(role: String, mood: String = BRIGHT) -> Color:
 	var table: Dictionary = _UI.get(mood, _UI[BRIGHT])
 	return table.get(role, Color.MAGENTA)
@@ -166,7 +175,7 @@ const _SURFACE := {
 	},
 	DARK: {
 		"floor": "dark_grey", "wall": "black", "trim": "dark_grey", "rig": "dark_grey", "rig_top": "black",
-		"metal": "black_metal", "lectern": "black_metal", "pad": "black",
+		"metal": "black_metal", "lectern": "black_metal", "pad": "dark_grey",
 	},
 }
 

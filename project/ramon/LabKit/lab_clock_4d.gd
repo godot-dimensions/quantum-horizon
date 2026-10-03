@@ -199,6 +199,9 @@ func _physics_process(delta: float) -> void:
 		if not is_instance_valid(entry["root"]):
 			_roots.erase(id)
 			continue
+		# A root in a disabled branch (a bay you are not in) sleeps with it.
+		if not (entry["root"] as Node).can_process():
+			continue
 		var stepping: bool = int(entry["pstep"]) > 0
 		var dt: float = _dt_for(entry, delta, stepping)
 		if stepping:
@@ -225,6 +228,8 @@ func _process(delta: float) -> void:
 			continue
 		if rescan:
 			_scan(entry)
+		if not (entry["root"] as Node).can_process():
+			continue
 		var stepping: bool = int(entry["fstep"]) > 0
 		var dt: float = _dt_for(entry, delta, stepping)
 		if stepping:

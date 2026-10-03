@@ -105,6 +105,7 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
+	_mood = Style.mood_of(get_tree())
 	_build()
 
 

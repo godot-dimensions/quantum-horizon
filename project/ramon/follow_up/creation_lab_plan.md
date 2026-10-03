@@ -138,6 +138,34 @@ on for four more animals, below).
   a rim of light and the white animals glow without blowing out.
 - An outer floor a step below the bays, so their open front looks onto floor, not sky.
 
+### Section E: done (3 Oct, night)
+
+- **The sequence** (`LabKit/lab_sequence_4d.gd`): one bay per step resource, stacked along W at
+  12 m (or along X, one setting), each bay a shell, the step's content scene and a lectern. Only
+  the bay you are in is visible and processing; the lab clock skips creatures in a disabled bay.
+- **The lift:** N glides you onto the pad facing the exhibit (0.45 s), then slides you and the
+  camera along W (1.4 s) with your physics frozen and both bays awake; Shift+N goes back, M opens
+  the floor list (arrows, Enter). Guided mode refuses to skip past an unfinished step; explore
+  opens every floor. A leash keeps you within 2 m of your bay in W.
+- **What changed on the way, by eye:** the slide first showed nothing at its midpoint (every bay
+  piece ends within a few metres in W), so it read as a cut, not a ride. Now a **lift frame**,
+  four slim posts round the pad spanning the whole stack, is the one thing that stays put while
+  the bays thin away and grow in, and the W ladder's marker slides with you. The bay goes
+  details first (rig, lectern, ring) and shell last, and the next arrives shell first: the plan
+  said the other way round, but the animals are thin in W whatever the rig does, so this is
+  the order that can be built.
+- **The beat:** the guide panel (step x of n, title, idea, task with key chips and a drawn tick,
+  then what just happened and the N line), the controls card (task keys first, the curious rows
+  dimmed), the lectern card (summary until done, then the full card), the chime, the pad and the
+  frame lighting cyan, a tag beside the pad saying where the lift goes. F3 hides every panel.
+- **Twelve step resources** (`CreationLab/steps/`), texts in place for every bay; the card rows
+  (method, limits, measured) are filled as each bay is built. Bay 1's idea changed: stretching
+  a ball through W does not shrink a slice through its centre, moving it through W does, so the
+  task is now pushing the ball out of your slice and back.
+- **Keys checked free:** the orbit rig has Tab, T, R and Esc, the shared return button H, the
+  walker F, Space and Q/E; bay 7's W offset moved from H to O.
+- `_verify_lift_runner.gd`: 34 checks a mood, passing in both, with frames during every slide.
+
 **Animals that needed lab versions** (subclasses, so fixes to the originals reach the lab):
 the chicken's walker and the cat walk in place (`creatures/lab_chicken_walker.gd`,
 `lab_cat.gd`); the heron flies straight up and down its column (`lab_heron.gd`); the people's

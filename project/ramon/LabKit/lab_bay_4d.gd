@@ -52,6 +52,8 @@ const GROUP := "lab_bay"
 	set(v):
 		floor_w = v
 		_later()
+## The lift's pad lights in the W colour once you may ride on, and stays a dim grey until then.
+var lift_lit: bool = true
 @export var show_pad: bool = true:
 	set(v):
 		show_pad = v
@@ -69,6 +71,7 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
+	_mood = Style.mood_of(get_tree())
 	_build()
 
 
@@ -265,6 +268,14 @@ func apply_mood(mood: String, _instant: bool = false) -> void:
 			"digit_off":
 				mi2.material_override = Mats.glow(off_col, 1.0)
 			"pad":
-				mi2.material_override = Mats.glow(Style.code("w_fill", mood), 1.0)
+				var dim: Color = Color(0.62, 0.64, 0.68) if mood == Style.BRIGHT else Color(0.22, 0.24, 0.28)
+				mi2.material_override = Mats.glow(Style.code("w_fill", mood) if lift_lit else dim, 1.0)
 			_:
 				mi2.material_override = Mats.glow(strip_col, 1.0)
+
+
+func set_lift_lit(on: bool) -> void:
+	if lift_lit == on:
+		return
+	lift_lit = on
+	apply_mood(_mood, true)
