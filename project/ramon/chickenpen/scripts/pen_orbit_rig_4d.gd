@@ -167,6 +167,8 @@ var _slice_zw: float = 0.0
 var _zoom_target: float = 0.0
 ## Seconds left on the way back to the default slice. Zero means nothing is happening.
 var _homing: float = 0.0
+## The w the trip home ends at: 0 for R, a place's own w for align_to.
+var _home_w: float = 0.0
 ## Seconds during which an implausibly large mouse jump is treated as the cursor being
 ## warped rather than as a look. See _unhandled_input.
 var _ignore_mouse: float = 1.5
@@ -268,7 +270,22 @@ func set_aiming(on: bool) -> void:
 ## Bring the slice back to flat over `home_seconds`. The R key does it, and so does the
 ## full restart - one way in, so the two can never drift apart.
 func go_home() -> void:
+	_home_w = 0.0
 	_homing = home_seconds
+
+
+## The same trip, but to [param w] instead of the pen's own w: the slice flat and you at a
+## place's w, so a thing that lives along W (the Lookout's marsh at w +8) is cut square through
+## its middle and seen whole.
+func align_to(w: float) -> void:
+	_home_w = w
+	_homing = home_seconds
+
+
+## Whether the slice is flat and you are at [param w], near enough to see no difference.
+func is_aligned_to(w: float) -> bool:
+	var body: Node4D = get_parent() as Node4D
+	return absf(_slice_xw) < 0.01 and absf(_slice_zw) < 0.01 and body != null and absf(body.position.w - w) < 0.05
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -394,7 +411,8 @@ func _apply() -> void:
 		_pitch_node.basis = Basis4D.from_yz(pitch)
 
 
-## The trip back to the default slice: both rotations and your w, eased to zero together.
+## The trip back to the default slice: both rotations eased to zero and your w to the home w
+## (0, or the place align_to was given), together.
 ##
 ## The step is delta over the time REMAINING, not a fixed fraction, so the three of them
 ## arrive at zero at the same moment and exactly on time - a plain lerp toward zero is
@@ -410,7 +428,7 @@ func _go_home(delta: float) -> void:
 	_slice_zw = lerpf(_slice_zw, 0.0, step)
 	var body: Node4D = get_parent() as Node4D
 	if body != null:
-		body.position.w = lerpf(body.position.w, 0.0, step)
+		body.position.w = lerpf(body.position.w, _home_w, step)
 		if body.get("linear_velocity") != null:
 			var speed: Vector4 = body.get("linear_velocity")
 			speed.w = 0.0
@@ -420,7 +438,7 @@ func _go_home(delta: float) -> void:
 		_slice_xw = 0.0
 		_slice_zw = 0.0
 		if body != null:
-			body.position.w = 0.0
+			body.position.w = _home_w
 	_apply()
 
 

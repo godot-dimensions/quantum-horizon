@@ -34,11 +34,25 @@ const MAX_TILES := 384
 	set(v):
 		enabled = v
 		_set_visible()
-## The look to start in, from pen_grass_looks.gd (1 Meadow, 2 Barley); 0 keeps the values set
-## on this node. The grass panel (and G) switches between them while playing.
+## The look to start in, from pen_grass_looks.gd (1 Meadow, 2 Hay meadow); 0 keeps the values set
+## on this node. The grass panel (and O) switches between them while playing.
 @export_range(0, 9) var start_preset: int = 2
 ## The see-through HUD panel of looks, at the right edge.
 @export var show_panel: bool = true
+## A TEST, AND REVERSIBLE (Ramon, 3 Oct: "align the darker green ground color to the barley,
+## meaning, making the ground floor lighter. but i do want to be able to revert"). On, the
+## pen's ground is drawn in lighter_ground_colour while the scene runs; off, in its own colour
+## again. Nothing is saved into the pen: its material is only changed in memory. The grass
+## panel's Ground buttons (and Shift+O) switch it.
+@export var lighter_ground: bool = true:
+	set(v):
+		lighter_ground = v
+		if is_inside_tree():
+			_apply_ground()
+@export var lighter_ground_colour: Color = Color(0.28, 0.34, 0.10)
+@export var ground_path: NodePath = ^"World/Ground/GroundMesh"
+
+signal ground_changed(lighter: bool)
 
 signal preset_changed(index: int)
 
@@ -237,6 +251,7 @@ func _ready() -> void:
 	_set_visible()
 	_find_pushers.call_deferred()
 	_build_mask.call_deferred()
+	_apply_ground.call_deferred()
 	if show_panel:
 		_add_panel.call_deferred()
 
@@ -262,6 +277,22 @@ func _take(n: int) -> void:
 			if key != "name" and key in self:
 				set(key, look[key])
 	preset = n
+
+
+## The pen's ground in its own colour or the lighter one, and the field's far edge with it.
+func _apply_ground() -> void:
+	var mesh := _room.get_node_or_null(ground_path) as MeshInstance4D if _room != null else null
+	var colour: Color = ground_colour
+	if mesh != null and mesh.material_override != null:
+		var mat: Resource = mesh.material_override
+		if not mat.has_meta("pen_own_albedo"):
+			mat.set_meta("pen_own_albedo", mat.get("albedo_color"))
+		var own: Color = mat.get_meta("pen_own_albedo")
+		colour = lighter_ground_colour if lighter_ground else own
+		mat.set("albedo_color", colour)
+	for band in _bands:
+		band.material.set_shader_parameter("edge_colour", Vector3(colour.r, colour.g, colour.b))
+	ground_changed.emit(lighter_ground)
 
 
 func _add_panel() -> void:
@@ -397,6 +428,8 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("haze_amount", haze_amount)
 	m.set_shader_parameter("cloud_shadows", cloud_shadows)
 	m.set_shader_parameter("cloud_size", cloud_size)
+	var edge: Color = lighter_ground_colour if lighter_ground else ground_colour
+	m.set_shader_parameter("edge_colour", Vector3(edge.r, edge.g, edge.b))
 	for key in ["colour_root", "colour_base", "colour_lush", "colour_dry", "colour_tip", "ground_colour", "region_deep", "region_bright", "haze_colour"]:
 		var c: Color = get(key)
 		m.set_shader_parameter(key, Vector3(c.r, c.g, c.b))

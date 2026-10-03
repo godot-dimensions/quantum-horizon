@@ -1,8 +1,11 @@
 extends Control
 
 ## The grass panel: a see-through block of buttons on the HUD, one per look in
-## pen_grass_looks.gd; click one (Esc first, to have the mouse) or press G for the next. Made by
-## the Grass node (pen_grass_4d.gd, show_panel), so no scene has to carry it.
+## pen_grass_looks.gd; click one (Esc first, to have the mouse) or press O for the next. Under
+## them, the ground: the pen's own colour or the lighter test one (Shift+O). Made by the Grass
+## node (pen_grass_4d.gd, show_panel), so no scene has to carry it.
+##
+## O, NOT G: G is the project's carry_pig action (Nike); it was G for a night by mistake.
 ##
 ## ON THE LEFT, JUST ABOVE THE TO-DO LIST: on a 2560 x 1440 screen the right side is full (the
 ## controls, the Cinematics and Lookout cards, the dial, the camera picker) and the left has an
@@ -26,6 +29,7 @@ var gap: float = 10.0
 var at_height: float = 0.5
 
 var _buttons: Array[Button] = []
+var _ground_buttons: Array[Button] = []
 var _title: Label
 var _hint: Label
 var _box: VBoxContainer
@@ -56,25 +60,39 @@ func _ready() -> void:
 	_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pad.add_child(_box)
 	_title = _label("Grass", Color(1.0, 1.0, 1.0, 0.58))
-	_hint = _label("G to switch, Esc for the mouse", Color(1.0, 1.0, 1.0, 0.38))
+	_hint = _label("O to switch, Esc for the mouse", Color(1.0, 1.0, 1.0, 0.38))
 	var keys: Array = LOOKS.PRESETS.keys()
 	keys.sort()
 	for n in keys:
-		var b := Button.new()
-		b.text = "%d   %s" % [n, LOOKS.PRESETS[n].get("name", "")]
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.custom_minimum_size = Vector2(150.0, 0.0)
-		# No focus: Space is jump, and a focused button would take it.
-		b.focus_mode = Control.FOCUS_NONE
-		b.mouse_filter = Control.MOUSE_FILTER_STOP
-		b.add_theme_font_size_override("font_size", text_size)
+		var b := _button("%d   %s" % [n, LOOKS.PRESETS[n].get("name", "")])
 		b.set_meta("look", n)
 		b.pressed.connect(_pick.bind(n))
-		_box.add_child(b)
 		_buttons.append(b)
+	_label("Ground   Shift+O", Color(1.0, 1.0, 1.0, 0.58))
+	for lighter in [false, true]:
+		var b := _button("Lighter (test)" if lighter else "Pen's own")
+		b.set_meta("lighter", lighter)
+		b.pressed.connect(_set_ground.bind(lighter))
+		_ground_buttons.append(b)
 	if grass != null and grass.has_signal("preset_changed"):
 		grass.connect("preset_changed", _on_changed)
+	if grass != null and grass.has_signal("ground_changed"):
+		grass.connect("ground_changed", _on_ground)
 	_on_changed(int(grass.get("preset")) if grass != null else 0)
+	_on_ground(bool(grass.get("lighter_ground")) if grass != null else false)
+
+
+func _button(text: String) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.custom_minimum_size = Vector2(150.0, 0.0)
+	# No focus: Space is jump, and a focused button would take it.
+	b.focus_mode = Control.FOCUS_NONE
+	b.mouse_filter = Control.MOUSE_FILTER_STOP
+	b.add_theme_font_size_override("font_size", text_size)
+	_box.add_child(b)
+	return b
 
 
 func _label(text: String, colour: Color) -> Label:
@@ -117,18 +135,36 @@ func _pick(n: int) -> void:
 		grass.call("apply_preset", n)
 
 
+func _set_ground(lighter: bool) -> void:
+	if grass != null:
+		grass.set("lighter_ground", lighter)
+
+
 func _on_changed(on: int) -> void:
 	for b in _buttons:
-		var mine: bool = int(b.get_meta("look")) == on
-		b.add_theme_stylebox_override("normal", _chip_on if mine else _chip)
-		b.add_theme_stylebox_override("hover", _chip_on if mine else _chip_hover)
-		b.add_theme_stylebox_override("pressed", _chip_on)
-		b.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.95 if mine else 0.55))
-		b.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 1.0, 0.95))
+		_paint(b, int(b.get_meta("look")) == on)
+
+
+func _on_ground(lighter: bool) -> void:
+	for b in _ground_buttons:
+		_paint(b, bool(b.get_meta("lighter")) == lighter)
+
+
+func _paint(b: Button, mine: bool) -> void:
+	b.add_theme_stylebox_override("normal", _chip_on if mine else _chip)
+	b.add_theme_stylebox_override("hover", _chip_on if mine else _chip_hover)
+	b.add_theme_stylebox_override("pressed", _chip_on)
+	b.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.95 if mine else 0.55))
+	b.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 1.0, 0.95))
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).keycode == KEY_G:
+	if not (event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).keycode == KEY_O):
+		return
+	if (event as InputEventKey).shift_pressed:
+		_set_ground(not bool(grass.get("lighter_ground")))
+		get_viewport().set_input_as_handled()
+	else:
 		var keys: Array = LOOKS.PRESETS.keys()
 		keys.sort()
 		var at: int = keys.find(int(grass.get("preset")))

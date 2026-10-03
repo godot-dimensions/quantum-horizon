@@ -136,6 +136,10 @@ var _camera_search_at: int = -100000
 
 var _ladder: Node4D
 var _tag: WorldTag4D
+## The marsh's "align to the slice" prompt, and where it hangs (over the marsh, at your w).
+var _marsh_tag: WorldTag4D
+var _marsh_anchor: Node4D
+var _marsh_shown: String = ""
 var _shown: String = ""
 
 
@@ -194,6 +198,7 @@ func _ready() -> void:
 	_build_marsh()
 	_build_wood()
 	_build_ladder_prompt()
+	_build_marsh_prompt()
 	# The chickens are made in their manager's _ready and the hills' meshes are loaded by
 	# then: collect the subjects and map the ground once everything is up.
 	_late_setup.call_deferred()
@@ -516,6 +521,80 @@ func _near_ladder() -> bool:
 	return Vector2(gap.x, gap.z).length() <= ladder_reach and absf(gap.w) <= ladder_reach_w
 
 
+## THE MARSH, SEEN SQUARE (Ramon, 3 Oct: "when you reach the marsh, can we create a button
+## there that says, align to slice? so we can see it properly"). The marsh lives along W, at
+## w +8 and only a few metres thick in it: walk up to it a little off its w, or with the slice
+## turned, and the cut takes a sliver of it. V there turns the slice flat and puts you at the
+## marsh's own w, as R does for the pen's.
+@export var align_key: Key = KEY_V
+## How near the marsh, in x and z and in w, the prompt is offered.
+@export_range(2.0, 40.0, 0.5, "suffix:m") var align_reach: float = 14.0
+@export_range(0.5, 8.0, 0.1, "suffix:m") var align_reach_w: float = 3.5
+
+
+func _build_marsh_prompt() -> void:
+	if marsh == null:
+		return
+	_marsh_anchor = Node4D.new()
+	_marsh_anchor.name = "MarshAlign"
+	room.get_node("World").add_child(_marsh_anchor)
+	_marsh_tag = WorldTag4D.new()
+	_marsh_tag.name = "Prompt"
+	if farm_camera != null:
+		_marsh_tag.camera_path = farm_camera.get_path()
+	_marsh_tag.anchor_path = _marsh_anchor.get_path()
+	_marsh_tag.lift = 8.0
+	_marsh_tag.fade_from = 20.0
+	_marsh_tag.fade_to = 30.0
+	_marsh_anchor.add_child(_marsh_tag)
+
+
+## Whether V would align you to the marsh now: on foot, near it, near its w, and not already
+## square to it.
+func can_align() -> bool:
+	if marsh == null or player == null or not player.is_inside_tree() or not player.is_visible_in_tree():
+		return false
+	if station != null and int(station.get("mode")) != 0:
+		return false
+	if story_busy() or player.get("input_enabled") == false:
+		return false
+	var gap: Vector4 = marsh.global_position - player.global_position
+	if Vector2(gap.x, gap.z).length() > align_reach or absf(gap.w) > align_reach_w:
+		return false
+	var rig: Node = _rig()
+	return rig != null and not bool(rig.call("is_aligned_to", marsh.global_position.w))
+
+
+func align_to_marsh() -> void:
+	var rig: Node = _rig()
+	if rig != null and marsh != null:
+		rig.call("align_to", marsh.global_position.w)
+
+
+func _rig() -> Node:
+	var rig: Node = room.get_node_or_null("Player/CameraRig")
+	return rig if rig != null and rig.has_method("align_to") else null
+
+
+func _update_marsh_prompt() -> void:
+	if _marsh_tag == null:
+		return
+	_marsh_tag.set("_camera", current_camera())
+	var text: String = ""
+	if can_align():
+		# Over the pond, at your own w so the tag is on your slice whatever the marsh's is.
+		var at: Vector4 = marsh.global_position + Vector4(0.0, 2.2, 0.0, 0.0)
+		at.w = player.global_position.w
+		_marsh_anchor.global_position = at
+		text = "%s  align to the slice" % OS.get_keycode_string(align_key)
+	if text != _marsh_shown:
+		_marsh_shown = text
+		if text == "":
+			_marsh_tag.clear()
+		else:
+			_marsh_tag.show_text(text)
+
+
 ## Whether F would climb down now: on the balcony at the gap in the rail.
 func can_climb_down() -> bool:
 	if _down == null or station == null or story_busy() or player == null or not player.is_visible_in_tree():
@@ -609,6 +688,7 @@ func _process(delta: float) -> void:
 				_down_tag.clear()
 			else:
 				_down_tag.show_text(down_text)
+	_update_marsh_prompt()
 	if _tag == null:
 		return
 	var text: String = ""
@@ -651,6 +731,9 @@ func _input(event: InputEvent) -> void:
 	elif key.keycode == KEY_B and can_board():
 		get_viewport().set_input_as_handled()
 		balloon.call("board")
+	elif key.keycode == align_key and can_align():
+		get_viewport().set_input_as_handled()
+		align_to_marsh()
 
 
 ## Whether you are round the Lookout, as the HUD card judges it (journal_card_4d.gd).

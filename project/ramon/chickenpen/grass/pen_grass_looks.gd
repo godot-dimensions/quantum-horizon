@@ -1,15 +1,17 @@
 extends RefCounted
 
 ## The grass's looks, by number: each a set of the Grass node's exports (pen_grass_4d.gd's
-## apply_preset, the grass panel's buttons, G). Look 1 names everything a look sets; any other
+## apply_preset, the grass panel's buttons, O). Look 1 names everything a look sets; any other
 ## look names only what it changes from 1.
 ##
 ## 1, MEADOW: the field as it was on 2 Oct when Ramon said "save this as preset 1" - 38 cm,
 ##    sap green with a deeper and a brighter offset, gusts in bands across the wind.
-## 2, BARLEY: "longer grass, thinner grass and more grass, yes more, and improve the wind
+## 2, HAY MEADOW: "longer grass, thinner grass and more grass, yes more, and improve the wind
 ##    animation, make it flow like on barley fields, even though its not". Long thin blades
 ##    closer together, and the wind in long soft crests that roll downwind through it, in sets,
-##    the tips catching the light as each crest lays them over.
+##    the tips catching the light as each crest lays them over. First called Barley; Ramon, 3
+##    Oct: "i wouldn't call it barley ... its more like longer beautiful grass" - a hay meadow,
+##    the long grass left uncut till summer.
 
 const PRESETS := {
 	1: {
@@ -49,7 +51,7 @@ const PRESETS := {
 		"wave_width": 22.0,
 	},
 	2: {
-		"name": "Barley",
+		"name": "Hay meadow",
 		# Longer, thinner, and more of it.
 		"blade_height": 0.62,
 		"blade_width": 0.0075,

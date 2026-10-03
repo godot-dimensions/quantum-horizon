@@ -1,6 +1,6 @@
 extends SceneTree
 
-## The grass panel: it is on the HUD, and G switches the look while playing (the bands rebuilt,
+## The grass panel: it is on the HUD, and O switches the look while playing (the bands rebuilt,
 ## no errors). A frame of the HUD in each look; prints the look and the blades after each switch.
 ## Saves res://smoke_test_output/grass_panel_<n>.png.
 ##
@@ -30,17 +30,17 @@ func _process(d: float) -> bool:
 		var panel: Node = _room.get_node_or_null("UI/GrassPanel")
 		print("      panel: ", panel != null, "  look ", _grass.get("preset"), "  blades ", _grass.call("blade_count"))
 		root.get_texture().get_image().save_png("res://smoke_test_output/grass_panel_0.png")
-		_press_g()
+		_press_o()
 		_step = 1
 		_t = 0.0
 	elif _step == 1 and _t > 1.5:
-		print("      after G: look ", _grass.get("preset"), "  blades ", _grass.call("blade_count"))
+		print("      after O: look ", _grass.get("preset"), "  blades ", _grass.call("blade_count"))
 		root.get_texture().get_image().save_png("res://smoke_test_output/grass_panel_1.png")
-		_press_g()
+		_press_o()
 		_step = 2
 		_t = 0.0
 	elif _step == 2 and _t > 1.5:
-		print("      after G again: look ", _grass.get("preset"), "  blades ", _grass.call("blade_count"))
+		print("      after O again: look ", _grass.get("preset"), "  blades ", _grass.call("blade_count"))
 		print("PANEL DONE")
 		if FileAccess.file_exists("user://lookout_journal_panel_test.cfg"):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path("user://lookout_journal_panel_test.cfg"))
@@ -48,14 +48,14 @@ func _process(d: float) -> bool:
 	return false
 
 
-func _press_g() -> void:
+func _press_o() -> void:
 	var e := InputEventKey.new()
-	e.keycode = KEY_G
-	e.physical_keycode = KEY_G
+	e.keycode = KEY_O
+	e.physical_keycode = KEY_O
 	e.pressed = true
 	Input.parse_input_event(e)
 	var up := InputEventKey.new()
-	up.keycode = KEY_G
-	up.physical_keycode = KEY_G
+	up.keycode = KEY_O
+	up.physical_keycode = KEY_O
 	up.pressed = false
 	Input.parse_input_event(up)

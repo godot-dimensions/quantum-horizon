@@ -195,7 +195,7 @@ preset 2. longer grass, thinner grass and more grass, yes more, and improve the 
 make it flow like on barley fields, even though its not".
 
 - `grass/pen_grass_looks.gd` holds the looks: **1 Meadow** names every value a look sets (the
-  field as it was then); **2 Barley** names only what it changes (0.62 m tall, 7.5 mm wide,
+  field as it was then); **2 Hay meadow** (first called Barley) names only what it changes (0.62 m tall, 7.5 mm wide,
   taper 0.6, 5.8 cm apart near and 21 cm far, the barley waves on, softer gusts, more sheen).
   `start_preset` on the Grass node picks the look to start in (2 now; 0 keeps the node's own
   values); `apply_preset(n)` switches, rebuilding the bands (their grids depend on the gaps).
@@ -211,6 +211,22 @@ make it flow like on barley fields, even though its not".
   `smoke_test_output/video/Grass barley.mp4`.
 - Cost of Barley: **+1.08 ms GPU** from the farm camera (+0.58 low), 1.3 million blades handed
   over in view; Meadow stays at +0.64.
+
+## 3 Oct: Hay meadow, the lighter ground, O not G
+
+- Preset 2 renamed **Hay meadow** (Ramon: "i wouldn't call it barley ... its more like longer
+  beautiful grass"). The waves are still the barley-field motion he asked for.
+- **The panel's key is O** (Shift+O the ground). It was G for a night, but G is the project's
+  `carry_pig` action (picking Nike up): checking the input map first would have caught it.
+- **Lighter ground, a reversible test** (Ramon: "align the darker green ground color to the
+  barley, meaning, making the ground floor lighter. but i do want to be able to revert"):
+  `lighter_ground` on the Grass node (on), `lighter_ground_colour` (0.28, 0.34, 0.10). The
+  pen's ground material is only changed in memory while the scene runs, its own colour kept on
+  the material as metadata and put back when it is off; nothing in `chickenpen.tscn` changes.
+  The panel's Ground buttons ("Pen's own", "Lighter (test)") and Shift+O switch it. Measured
+  on the wide view: bare ground past the grass (80, 97, 39) against the grass at 15-25 m
+  (82, 96, 37), so the field ends without an edge; the pen's own was (62, 71, 41). The far
+  edge of the grass fades to whichever ground is drawn (`edge_colour`).
 
 ## Cost (RTX 5080, 1280x720, interleaved on/off, after the pen's warm-up)
 

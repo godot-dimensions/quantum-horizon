@@ -233,6 +233,13 @@ the merged meshes.
   longer gets Wren's "Not down here" line. The keys themselves (J, B, U, P, F4) still work
   anywhere: asked Ramon whether they should be held to the Lookout too.
   `lookout/_verify_card_local_runner.gd` checks it.
+- **V at the marsh: align to the slice** (Ramon, 3 Oct: "when you reach the marsh, can we
+  create a button there that says, align to slice? so we can see it properly"). The marsh is
+  at w +8 and only a few metres thick in W, so a little off its w, or with the slice turned,
+  the cut takes a sliver of it. Within 14 m of it and 3.5 m of its w, on foot, a tag over the
+  pond says "V  align to the slice" (and the card has a V row); V eases the slice flat and you
+  to its w, as R does for the pen's (the rig's new `align_to(w)`, the same trip as
+  `go_home`). `lookout/_verify_marsh_align_runner.gd` checks it.
 - **The pond is round** (discs of turned boxes); the heron dressed from field guides (brow,
   plumes, two lines of neck streaks, black flanks over white thighs, darker grey) with round
   joints in the neck and at the heels - it had looked broken at the bends. The owl is an

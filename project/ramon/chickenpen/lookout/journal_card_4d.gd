@@ -150,6 +150,7 @@ func _work_rows() -> Array:
 		["J", "Field journal", "%d / %d pages, %d photos" % [int(journal.call("pages_found")), total, int(journal.call("star_count"))], true],
 		["B", "Balloon", "up by the tower, B to go" if balloon_up else "not yet", balloon_up],
 		["F", "Climb", climb, climb_now],
+		["V", "Align to the slice", "the marsh square on, here" if bool(_lookout.call("can_align")) else "at the marsh, along W", bool(_lookout.call("can_align"))],
 		["U", "Fly as the hawk", "the flock's own, any time on foot", true],
 		["P", "Projection", "on: the cut, and a ghost of W" if bool(_lookout.get("projection")) else "off: the plain cut", true],
 		["F4", "Developer overlay", "W depths, the slice, the numbers", true],
