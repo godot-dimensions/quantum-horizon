@@ -22,6 +22,7 @@ const RETURN_META := &"pen_cinematic_return"
 ## Name to script. Names are what the menu stores.
 const CINEMATICS := {
 	"murmuration": preload("res://ramon/chickenpen/cinematics/cinematic_murmuration_4d.gd"),
+	"meadow": preload("res://ramon/chickenpen/cinematics/cinematic_meadow_4d.gd"),
 }
 
 var _playing: Node = null

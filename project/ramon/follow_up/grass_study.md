@@ -6,7 +6,7 @@ amazing ... i wanna see wavey grass", then "thinner ... medium long ... a realis
 algorithm ... the movement more subtle".
 
 Built: `chickenpen/grass/pen_grass_4d.gd` + `pen_grass.gdshader`, a node `World/Grass` in the
-Lookout scene (`chickenpen_lookout.tscn`; the pen file is untouched). Film:
+pen's own scene (since 3 Oct; it was in the inherited Lookout scene until then). Film:
 `smoke_test_output/video/Grass test.mp4`.
 
 ## What the research said
@@ -383,6 +383,30 @@ make it flow like on barley fields, even though its not".
   from - the field's green, the falloff, the sand - `paint_brightness` 0.88 and
   `paint_saturation` 0.85, in linear light (the painting only mixes them, so that is the same
   as adjusting the ground itself); the grass's far edge fades to the same colours.
+
+## 3 Oct, evening: Nike's trail, and the meadow film
+
+- **Nike leaves a trail too** (Ramon: "nikepig doesnt leave a grass trail when he walks"). Nike
+  always pushed the grass aside where Nike stood; only the player laid a trail behind. Trails are now
+  per walker (`_trails`, by instance id) for everyone in `trail_paths` (the player and
+  `World/Nike`), each at most `TRAIL_POINTS` 12 points, and the shader's pushers went from 24 to
+  32 (`MAX_PUSHERS`) so two trails and the rest still fit. The chickens, cats and people still
+  push only where they stand.
+- **Walkers on loan**: `add_walker(node)` / `remove_walker(node)` let something else walk
+  through with a trail for a while. The meadow film's walk-through shot uses it: the camera is
+  the walker, so the grass parts with no one in the picture.
+- **Cinematic 2, "Wind Through the 4D Meadow"** (Ramon: "an explainer cinematic about the
+  meadow, not unlike the one for the starlings ... also talk about the wind and other stuff"):
+  `cinematics/cinematic_meadow_4d.gd`, listed under the starlings on the pen's Cinematics card
+  (K). Built as the starlings' is (letterbox, title from black, caption cards, Esc skips, the
+  pen borrowed and given back), set in the open meadow east of the start, towards the low sun.
+  Eight shots: the research test case; Ghost of Tsushima; semi-4D (one step along W by the
+  pen's fence); why not true 4D (up to 27 tetrahedra a blade as real 4D geometry, so millions
+  for the field, against about 330,000 for the whole farm); the wind (raised 1.8x for the shot,
+  a big gust certain); leaves on the wind (2.4x); walking through; where it grows. The title
+  holds until the grass has grown in, since from the menu the film starts with the pen. Music:
+  the farm's own track, an export to change. `_verify_meadow_cinematic_runner.gd` checks that it
+  gives everything back; `_film_meadow_runner.gd` films it.
 
 ## Cost (RTX 5080, 1280x720, interleaved on/off, after the pen's warm-up)
 

@@ -25,8 +25,11 @@ extends Control
 
 const STYLE := preload("res://ramon/Menu/style/menu_final_style.tres")
 ## [title, cinematic name - "" for a placeholder]
+## The meadow under the starlings (Ramon, 3 Oct: "place the cinematic in the menu on the right
+## under the [starlings]").
 const LISTING := [
 	["Flight of the 4D Starlings", "murmuration"],
+	["Wind Through the 4D Meadow", "meadow"],
 	["Mountain Range", ""],
 ]
 const OPEN_HINT := "Up / Down choose  ·  Enter plays  ·  Esc leaves"

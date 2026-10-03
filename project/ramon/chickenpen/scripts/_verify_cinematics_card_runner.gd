@@ -106,7 +106,9 @@ func _process(d: float) -> bool:
 				_check("a number key in the card plays nothing", not _playing())
 				_key(KEY_1)
 				_key(KEY_DOWN)
-				_check("Down moves to the placeholder", int(_card.call("chosen")) == 1)
+				_check("Down moves to the meadow", int(_card.call("chosen")) == 1)
+				_key(KEY_DOWN)
+				_check("Down again to the placeholder", int(_card.call("chosen")) == 2)
 				_step = 2
 				_t = 0.0
 		2:
@@ -121,7 +123,8 @@ func _process(d: float) -> bool:
 			if _t > 0.2:
 				_save("placeholder")
 				_key(KEY_UP)
-				_check("Up goes back to the first", int(_card.call("chosen")) == 0)
+				_key(KEY_UP)
+				_check("Up twice goes back to the first", int(_card.call("chosen")) == 0)
 				_key(KEY_ESCAPE)
 				_check("Escape steps out", not bool(_card.call("is_open")))
 				_check("without freeing the cursor or anything else Escape does", Input.mouse_mode == _mouse and _room.is_inside_tree(),
