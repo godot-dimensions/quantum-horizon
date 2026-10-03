@@ -24,8 +24,13 @@ extends Node4D
 
 const TREE := preload("res://ramon/chickenpen/lookout/lookout_tree_4d.gd")
 
+## How far the water (and what is on it) was lowered on 3 Oct, so the marsh sits flat.
+const WATER_DROP := 0.06
+
 @export_range(1.0, 6.0, 0.1, "suffix:m") var w_depth: float = 3.0
 @export_range(4.0, 30.0, 0.5, "suffix:m") var pond_size_x: float = 11.0
+## The rim round the water: the pen's sand (pen_grass_4d.gd's sand_colour).
+@export var shore_colour: Color = Color(0.54, 0.44, 0.28)
 @export_range(4.0, 30.0, 0.5, "suffix:m") var pond_size_z: float = 7.0
 @export var reed_count: int = 90
 @export var marsh_seed: int = 808
@@ -73,25 +78,31 @@ func rebuild() -> void:
 	rng.seed = marsh_seed
 	var px: float = pond_size_x
 	var pz: float = pond_size_z
-	# Wet ground round the water, then the water, darker where it is deep: round, as a pond
+	# A sandy rim round the water, then the water, darker where it is deep: round, as a pond
 	# is - real discs, stretched a little to an oval. (Ramon, 2 Oct: "instead of a boxed pond
-	# why not try a cylinder shape".)
+	# why not try a cylinder shape".) No wide mud round it any more (3 Oct: "for this marsh we
+	# dont need the last outer layer. just water, sand, and thats it"): the rim is the pen's
+	# sand colour, and the ground round it is painted sandy by the grass (pen_grass_4d.gd's
+	# sand_round), the edge ragged where the grass comes in.
 	var oval: float = pz / px
-	_disc("Mud", Vector4(0.0, 0.03, 0.0, 0.0), px * 0.5 + 3.2, 0.05, w_depth + 1.0, Color(0.23, 0.25, 0.15), oval)
-	_disc("Shore", Vector4(0.0, 0.05, 0.0, 0.0), px * 0.5 + 1.0, 0.05, w_depth + 0.6, Color(0.30, 0.29, 0.20), oval)
-	_disc("Water", Vector4(0.0, 0.075, 0.0, 0.0), px * 0.5, 0.05, w_depth, WATER, oval)
+	# All of it a notch over the ground, so the marsh reads flat (3 Oct: "place the water and the
+	# sand, to be just a notch above ground level so it reads relatively more flat"): the sand
+	# rim's top 2 cm up, the water's 4 to 5 cm; everything that sits on or in the water went
+	# down by the same 6 cm (WATER_DROP). A taller rim also caught the low sun along its side.
+	_disc("Shore", Vector4(0.0, 0.01, 0.0, 0.0), px * 0.5 + 1.0, 0.02, w_depth + 0.6, shore_colour, oval)
+	_disc("Water", Vector4(0.0, 0.075 - WATER_DROP, 0.0, 0.0), px * 0.5, 0.05, w_depth, WATER, oval)
 	# The shallows: a paler band just inside the edge, so the water has an edge to read by.
-	_disc("Shallows", Vector4(0.0, 0.078, 0.0, 0.0), px * 0.5 - 0.15, 0.05, w_depth * 0.95, WATER.lerp(Color(0.40, 0.46, 0.40), 0.45), oval)
-	_disc("Open", Vector4(0.0, 0.08, 0.0, 0.0), px * 0.5 - 0.75, 0.05, w_depth * 0.92, WATER, oval)
-	_disc("Deep", Vector4(0.5, 0.082, -0.3, 0.0), px * 0.27, 0.05, w_depth * 0.7, Color(0.16, 0.25, 0.28), oval)
+	_disc("Shallows", Vector4(0.0, 0.078 - WATER_DROP, 0.0, 0.0), px * 0.5 - 0.15, 0.05, w_depth * 0.95, WATER.lerp(Color(0.40, 0.46, 0.40), 0.45), oval)
+	_disc("Open", Vector4(0.0, 0.08 - WATER_DROP, 0.0, 0.0), px * 0.5 - 0.75, 0.05, w_depth * 0.92, WATER, oval)
+	_disc("Deep", Vector4(0.5, 0.082 - WATER_DROP, -0.3, 0.0), px * 0.27, 0.05, w_depth * 0.7, Color(0.16, 0.25, 0.28), oval)
 	# Lily pads: small discs on the water.
 	for i in 9:
-		var at := Vector4(rng.randf_range(-px * 0.33, px * 0.33), 0.11, rng.randf_range(-pz * 0.33, pz * 0.33), rng.randf_range(-0.8, 0.8))
+		var at := Vector4(rng.randf_range(-px * 0.33, px * 0.33), 0.11 - WATER_DROP, rng.randf_range(-pz * 0.33, pz * 0.33), rng.randf_range(-0.8, 0.8))
 		_disc("Pad%d" % i, at, rng.randf_range(0.2, 0.36), 0.02, 0.5, Color(0.30, 0.46, 0.22), 1.0, 10)
 	# Tussocks of rough grass on the wet ground.
 	for i in 18:
 		var a: float = rng.randf() * TAU
-		var at := Vector4(cos(a) * px * rng.randf_range(0.6, 0.85), 0.12, sin(a) * pz * rng.randf_range(0.6, 0.9), rng.randf_range(-1.0, 1.0))
+		var at := Vector4(cos(a) * px * rng.randf_range(0.6, 0.85), 0.12 - WATER_DROP, sin(a) * pz * rng.randf_range(0.6, 0.9), rng.randf_range(-1.0, 1.0))
 		var r: float = rng.randf_range(0.3, 0.6)
 		# Round tufts, two tiers, the top one narrower.
 		var tuft: Color = [Color(0.40, 0.44, 0.20), Color(0.45, 0.46, 0.23), Color(0.5, 0.48, 0.26)][rng.randi() % 3]
@@ -118,7 +129,7 @@ func rebuild() -> void:
 	# Stones at the water's edge, and one to stand on.
 	for i in 7:
 		var angle: float = rng.randf() * TAU
-		var at := Vector4(cos(angle) * px * 0.52, 0.1, sin(angle) * pz * 0.52, rng.randf_range(-0.6, 0.6))
+		var at := Vector4(cos(angle) * px * 0.52, 0.1 - WATER_DROP, sin(angle) * pz * 0.52, rng.randf_range(-0.6, 0.6))
 		var s: float = rng.randf_range(0.3, 0.7)
 		# Rounded, and a little rounder on top: a wide low disc under a smaller one.
 		_disc("Stone%d" % i, at, s * 0.5, s * 0.3, s * 0.8, Color(0.45, 0.45, 0.42), rng.randf_range(0.7, 1.0), 8)
@@ -205,7 +216,7 @@ func _build_rings_and_glints(rng: RandomNumberGenerator) -> void:
 		g.mesh = glint
 		g.material_override = gm
 		add_child(g)
-		g.position = Vector4(rng.randf_range(-pond_size_x * 0.32, pond_size_x * 0.32), 0.087, rng.randf_range(-pond_size_z * 0.3, pond_size_z * 0.3), rng.randf_range(-0.6, 0.6))
+		g.position = Vector4(rng.randf_range(-pond_size_x * 0.32, pond_size_x * 0.32), 0.087 - WATER_DROP, rng.randf_range(-pond_size_z * 0.3, pond_size_z * 0.3), rng.randf_range(-0.6, 0.6))
 		g.basis = Basis4D.from_zx(rng.randf_range(-0.3, 0.3))
 		_glints.append({"node": g, "phase": rng.randf() * TAU, "rate": rng.randf_range(0.7, 1.6)})
 
@@ -216,7 +227,7 @@ func ripple(at: Vector4, size: float = 0.9) -> void:
 		if float(r["t"]) > 2.2:
 			r["t"] = 0.0
 			r["size"] = size
-			(r["node"] as Node4D).position = Vector4(at.x, 0.084, at.z, at.w)
+			(r["node"] as Node4D).position = Vector4(at.x, 0.084 - WATER_DROP, at.z, at.w)
 			(r["node"] as Node4D).visible = true
 			return
 
@@ -283,12 +294,12 @@ func _visible_to_camera() -> bool:
 
 ## Where the heron stands to fish, in the marsh's own space.
 func fishing_spot() -> Vector4:
-	return Vector4(pond_size_x * 0.32, 0.08, -pond_size_z * 0.12, 0.0)
+	return Vector4(pond_size_x * 0.32, 0.08 - WATER_DROP, -pond_size_z * 0.12, 0.0)
 
 
 ## Where it goes when it is put up: the far bank, by the dead tree.
 func refuge_spot() -> Vector4:
-	return Vector4(-pond_size_x * 0.38, 0.08, pond_size_z * 0.3, 0.2)
+	return Vector4(-pond_size_x * 0.38, 0.08 - WATER_DROP, pond_size_z * 0.3, 0.2)
 
 
 ## A flat round of radius [param r], [param thick] high and [param deep] in W, stretched along

@@ -35,6 +35,9 @@ func _initialize() -> void:
 func _process(d: float) -> bool:
 	_t += d
 	if not _go:
+		if _t > 60.0:
+			print("TRAIL FAILED: no grass after 60 s")
+			return true
 		if not bool(_grass.get("mask_ready")) or _t < 4.0:
 			return false
 		for child in _room.get_node("UI").get_children():

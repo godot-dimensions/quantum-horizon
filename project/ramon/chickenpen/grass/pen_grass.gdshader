@@ -172,6 +172,10 @@ uniform float hue_jitter = 0.05;
 // How light the blades are, all colours together (Ramon, 2 Oct: darker, to sit with the ground
 // between and beyond them). In linear light: 0.7 is about 0.85 on the sRGB numbers.
 uniform float shade = 0.7;
+// How dark a blade is at its root: the colour ramp from colour_root and the light it loses there
+// (fake ambient occlusion). 1 as the meadows have it; 0 a blade the one colour root to tip
+// (Pasture: Ramon, 3 Oct, "remove the strong brown gradient from the bottom entirely").
+uniform float root_dark = 1.0;
 // How far sap green, its bright offset, the lush clumps and the tips go towards the ground's own
 // colour (Ramon, 2 Oct: the deep region "merges with the base green ground" and he likes it;
 // "darkening the remaining 2 colors closer to the base ground color too"). The deep region is
@@ -460,7 +464,7 @@ void vertex() {
 		vec3 shift = vec3(1.0, 0.3, -0.8) * hue * hue_jitter * 2.0;
 		base = max(base + shift, vec3(0.0)) * mix(0.9, 1.08, rnd);
 		tip = max(tip + shift, vec3(0.0));
-		vec3 c = mix(colour_root, base, smoothstep(0.0, 0.45, t));
+		vec3 c = mix(mix(base, colour_root, root_dark), base, smoothstep(0.0, 0.45, t));
 		c = mix(c, tip, smoothstep(0.55, 1.0, t));
 		c = max(mix(vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), c, saturation), vec3(0.0));
 		c *= shade;
@@ -490,6 +494,6 @@ void fragment() {
 	ROUGHNESS = 0.72;
 	SPECULAR = 0.22;
 	BACKLIGHT = v_colour * 0.5 * v_t;
-	AO = mix(0.5, 1.0, v_t);
+	AO = mix(1.0 - 0.5 * root_dark, 1.0, v_t);
 	AO_LIGHT_AFFECT = 0.5;
 }

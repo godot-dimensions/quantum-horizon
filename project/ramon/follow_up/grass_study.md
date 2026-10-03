@@ -266,6 +266,32 @@ make it flow like on barley fields, even though its not".
   leaves the measure runner waiting for the grass for ever: it now gives up after 90 s. The
   looks list plain arrays; `_take` turns them into packed ones.
 
+## 3 Oct, afternoon: sand round the marsh too, a faster painter, Pasture again, a longer trail
+
+- **Sand by footprint, not by rectangle.** `sand_round` is a dictionary now (Pen 1.8 m,
+  AnaMarsh 2.4 m): while the mask is built, every ground-touching tetrahedron of a named thing
+  records the cells its shadow covers (and a `clearing_fill` name its whole outline too), and a
+  two-pass distance sweep turns that into "how far inside the sand" per half-metre cell. So the
+  pen's yard follows the fence and the marsh's sand follows the pond's oval, each at its own w
+  (the marsh's at w +8).
+- **The painter is about ten times faster** (Ramon: "0.3 seconds for what painted ground? seems
+  like a lot"): the glow is smooth, so it is worked out on a 48 x 48 grid and scaled up, once
+  per distinct strength along W; only the sand is painted texel by texel, and only round the
+  sand. 321 ms -> 14-34 ms, once, at the start. The W layers now follow the sand: a pair either
+  side of each patch, so the marsh's sand at w 8 is sharp.
+- **Pasture, second pass** ("remove the strong brown gradient from the bottom entirely ...
+  lower the vertexes and add more grass"): `root_dark` 0 (no ramp from the root colour and no
+  shadow at the root - a new knob, 1 for the other looks), one triangle a blade everywhere, 3.6
+  cm apart near and 16 cm far.
+- **Hay meadow's trail** ("make the walked down trail longer, but let the grass recover a little
+  faster"): `trail_length` 3 -> 5 m, `trail_seconds` 6 -> 4 s, a point every 35 cm. The trail
+  knobs are in the looks now (BASE 3 m, 6 s).
+- **The glow, judged** (Ramon: "i cant judge the brighter center falloff well, was it worth
+  it?"): subtle. The grass covers the middle, so it shows in the strip of bare ground past the
+  grass and in the clearings: past the grass on the left (62, 71, 41) -> (70, 83, 39), behind the
+  pen (55, 72, 37) -> (67, 88, 35), the far corners unchanged. It costs nothing a frame and rides
+  on the painted ground the sand needs anyway.
+
 ## Cost (RTX 5080, 1280x720, interleaved on/off, after the pen's warm-up)
 
 | | |

@@ -73,7 +73,7 @@ const SFX := &"SFX"
 @export_file("*.wav") var ambience_file: String = "res://ramon/chickenpen/audio/sfx/Craig Carter Collection - Australian Soundscapes - Backyard Farm Chicken Clucks Birds Chirping.wav"
 ## Half volume, which is -6 dB: an amplitude of 0.5. (Half as LOUD would be about -10 dB -
 ## loudness is not linear in amplitude - but half volume is the fader at the halfway mark,
-## and that is -6.)
+## and that is -6.) +4, as the farm was first mixed against the birds.
 @export_range(-60.0, 6.0, 0.5) var ambience_db: float = 4.0
 ## How much to cut off each end before looping.
 ##
@@ -83,6 +83,18 @@ const SFX := &"SFX"
 ## other, which in a bed this diffuse is nothing.
 @export_range(0.0, 5.0, 0.1) var ambience_loop_trim: float = 0.5
 @export var ambience_enabled: bool = true
+## THE FARM COMES AND GOES (Ramon, 3 Oct: "too many chicken sounds at all times ... i dont want
+## the volume to be less, just less frequent"). The recording is chickens all the way through,
+## so rather than turn it down it plays in spells: in over spell_fade seconds, on for
+## spell_on_min..max, out again, then quiet for spell_off_min..max, each spell from a new place
+## in the loop. The player itself keeps running (the trips stop and restart it as before):
+## only its volume follows the spells. Off: the bed plays all the time, as it did.
+@export var ambience_spells: bool = true
+@export_range(2.0, 120.0, 0.5, "suffix:s") var spell_on_min: float = 18.0
+@export_range(2.0, 120.0, 0.5, "suffix:s") var spell_on_max: float = 35.0
+@export_range(0.0, 180.0, 0.5, "suffix:s") var spell_off_min: float = 25.0
+@export_range(0.0, 180.0, 0.5, "suffix:s") var spell_off_max: float = 55.0
+@export_range(0.1, 15.0, 0.1, "suffix:s") var spell_fade: float = 4.0
 
 @export_group("Picking a chicken up")
 ## Two takes, played alternately rather than at random. Two sounds picked randomly repeat
@@ -296,6 +308,10 @@ const SFX := &"SFX"
 @export var randomise: bool = true
 
 var _bed: AudioStreamPlayer
+## Where the bed is in its spells: on (true) or quiet, and the seconds left of that.
+var _spell_on: bool = true
+var _spell_left: float = 0.0
+var _spell_length: float = 1.0
 var _cluck: AudioStreamPlayer
 var _blip: AudioStreamPlayer
 var _cat: AudioStreamPlayer
@@ -677,6 +693,7 @@ func _process(delta: float) -> void:
 		if below != _in_cave:
 			_in_cave = below
 			_went_underground(below)
+	_bed_spells(delta)
 	if _crow == null:
 		return
 	if _crow_left > 0.0 and not _inside and not _in_cave:
@@ -721,6 +738,29 @@ func _start_crow_event() -> void:
 ## no difference to the sound, because there is nowhere to play it from.
 ## Through the door, or back out of it.
 ##
+## The bed's volume through its spells (see ambience_spells): full while on, faded in and out
+## at the ends - linear in amplitude, as the crows are - and silent between.
+func _bed_spells(delta: float) -> void:
+	if _bed == null:
+		return
+	if not ambience_spells:
+		_bed.volume_db = ambience_db
+		return
+	if _spell_left <= 0.0:
+		_spell_on = not _spell_on if _spell_length > 1.0 else true
+		_spell_length = _rng.randf_range(spell_on_min, maxf(spell_on_max, spell_on_min)) if _spell_on 				else _rng.randf_range(spell_off_min, maxf(spell_off_max, spell_off_min))
+		_spell_left = _spell_length
+		# A new spell from a new place in the loop, so it is not the same minute each time.
+		if _spell_on and _bed.playing and _bed.stream != null:
+			_bed.seek(_rng.randf_range(ambience_loop_trim, maxf(_bed.stream.get_length() - ambience_loop_trim - 1.0, ambience_loop_trim)))
+	_spell_left -= delta
+	var gain: float = 0.0
+	if _spell_on:
+		var done: float = _spell_length - _spell_left
+		gain = 1.0 if spell_fade <= 0.0 else minf(minf(done / spell_fade, _spell_left / spell_fade), 1.0)
+	_bed.volume_db = ambience_db + linear_to_db(clampf(gain, 0.0001, 1.0))
+
+
 ## THIS NODE HAS TO SURVIVE THE CROSSING TO DO ANY OF IT. pen_crossing_4d disables the
 ## whole of `Systems` on the way in - that is how the farm is switched off rather than
 ## unloaded - and Systems/Sfx is inside it. So the node is set to PROCESS_MODE_ALWAYS in

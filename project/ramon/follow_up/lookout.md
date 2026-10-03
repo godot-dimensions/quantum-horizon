@@ -244,6 +244,16 @@ the merged meshes.
   `MarshSpot` in `chickenpen_lookout.tscn` from (-10, 0, 12, 8) to (-14, 0, 12, 8) under
   LookoutSite, i.e. world (-30, 0, -24, 8); "left" taken as the farm's left, -x, looking north
   from the pen. The kata wood (WoodSpot) did not move.
+- **The marsh is water and sand** (Ramon, 3 Oct: "for this marsh we dont need the last outer
+  layer. just water, sand, and thats it. do place the sand from the pen also here surrounding
+  it", then "place the water and the sand, to be just a notch above ground level so it reads
+  relatively more flat"): no Mud disc; the Shore rim in the pen's sand colour (`shore_colour`),
+  its top 2 cm up; the water 6 cm lower than it was (`WATER_DROP`), its top 4-5 cm up, with the
+  pads, ripples, glints, stones, tussocks and the heron's spots lowered with it; the ground round
+  it painted sandy by the grass (`sand_round` AnaMarsh 2.4 m), ragged into the grass.
+- The marsh test failed once in five: V not offered with the player 0.9 off the marsh's w. Most
+  likely the story was busy (a radio line, the heron), which holds V back by design; the runner
+  now prints why if it happens again.
 - **The pond is round** (discs of turned boxes); the heron dressed from field guides (brow,
   plumes, two lines of neck streaks, black flanks over white thighs, darker grey) with round
   joints in the neck and at the heels - it had looked broken at the bends. The owl is an

@@ -37,6 +37,9 @@ func _process(d: float) -> bool:
 	_t += d
 	match _step:
 		-1:
+			if _t > 60.0:
+				print("MARSH ALIGN FAIL: no grass after 60 s")
+				return true
 			if not bool(_grass.get("mask_ready")) or _t < 5.0:
 				return false
 			_lookout = _room.get_node("Systems/Lookout")
@@ -54,7 +57,14 @@ func _process(d: float) -> bool:
 		0:
 			if _t < 1.5:
 				return false
-			_check("prompt offered by the marsh", bool(_lookout.call("can_align")))
+			var offered: bool = bool(_lookout.call("can_align"))
+			_check("prompt offered by the marsh", offered)
+			if not offered:
+				var gap: Vector4 = (_lookout.get("marsh") as Node4D).global_position - _player.global_position
+				print("        why not: story busy %s, input %s, station mode %s, x-z %.1f m, w %.2f, aligned %s, visible %s" % [
+					_lookout.call("story_busy"), _player.get("input_enabled"), _lookout.get("station").get("mode"),
+					Vector2(gap.x, gap.z).length(), gap.w, _rig.call("is_aligned_to", (_lookout.get("marsh") as Node4D).global_position.w),
+					_player.is_visible_in_tree()])
 			_check("card shown at the marsh", bool(_room.get_node("UI/Journal").call("at_lookout")))
 			root.get_texture().get_image().save_png("res://smoke_test_output/marsh_align_0_before.png")
 			var e := InputEventKey.new()

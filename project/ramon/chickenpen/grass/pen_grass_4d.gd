@@ -61,11 +61,12 @@ const MAX_TILES := 384
 @export_range(0.0, 60.0, 0.5, "suffix:m") var glow_in: float = 8.0
 @export_range(5.0, 150.0, 0.5, "suffix:m") var glow_out: float = 85.0
 @export_range(3.0, 60.0, 0.5, "suffix:m") var glow_w: float = 30.0
-## The yard: sand round these (their outline in x and z, at their w), sand_beyond past it, the
-## edge broken by sand_ragged of noise.
-@export var sand_round: PackedStringArray = PackedStringArray(["Pen"])
+## Sand round these (node name: how far past what stands on the ground; for clearing_fill
+## names, past their whole outline), at their own w, the edge broken by sand_ragged of noise.
+## The pen's yard, and the marsh's banks (3 Oct: "just water, sand ... place the sand from the
+## pen also here surrounding it").
+@export var sand_round: Dictionary = {"Pen": 1.8, "AnaMarsh": 2.4}
 @export var sand_colour: Color = Color(0.54, 0.44, 0.28)
-@export_range(0.0, 8.0, 0.1, "suffix:m") var sand_beyond: float = 1.8
 @export_range(0.0, 4.0, 0.05, "suffix:m") var sand_ragged: float = 1.0
 
 signal ground_changed(painted: bool)
@@ -120,6 +121,9 @@ signal preset_changed(index: int)
 ## How light the blades are, all their colours together, so they sit with the ground between
 ## and beyond them (in linear light: 0.7 is about 0.85 on the colour numbers).
 @export_range(0.2, 1.5, 0.01) var shade: float = 0.7
+## How dark a blade is at its root (1 the full ramp from colour_root and the shadow there; 0
+## none, the blade one colour root to tip).
+@export_range(0.0, 1.0, 0.01) var root_dark: float = 1.0
 ## How far sap green, the bright offset, the lush clumps and the tips go towards ground_colour
 ## (0 none, 1 all of it); the deep region stays put, as it already merges with the ground.
 @export_range(0.0, 1.0, 0.01) var toward_ground: float = 0.18
@@ -233,6 +237,9 @@ var _mask_texture: ImageTexture
 var _clearing_texture: ImageTexture
 ## The outlines of the clearing_fill names (x0, x1, z0, z1, group, w0, w1), from the mask.
 var _outlines: Dictionary = {}
+## Per sand_round name: the mask cells its footprint covers and its reach along W.
+var _sand_cells: Dictionary = {}
+var _marking_sand: String = ""
 ## The ground as the pen has it, and painted: [mesh, material] each.
 var _ground_own: Array = []
 var _ground_painted: Array = []
@@ -319,7 +326,7 @@ func _apply_ground() -> void:
 	ground_changed.emit(ground_paint)
 
 
-## Paints the ground, after the mask (the pen's outline comes from it), a layer a frame.
+## Paints the ground, after the mask (the footprints of what gets sand come from it).
 func _paint_ground() -> void:
 	var node := _room.get_node_or_null(ground_path) as MeshInstance4D
 	if node == null or not (node.mesh is BoxTetraMesh4D):
@@ -329,19 +336,90 @@ func _paint_ground() -> void:
 	var own: Color = Color(0.16, 0.22, 0.11)
 	if _ground_own[1] != null and _ground_own[1].get("albedo_color") != null:
 		own = _ground_own[1].get("albedo_color")
-	var rects: Array = []
-	for key in sand_round:
-		if _outlines.has(key):
-			var o: Array = _outlines[key]
-			rects.append([o[0], o[1], o[2], o[3], o[5], o[6]])
 	var started: int = Time.get_ticks_msec()
-	_ground_painted = await PAINT.build((node.mesh as BoxTetraMesh4D).size, {
+	var sands: Array = []
+	for key in sand_round:
+		if _sand_cells.has(key):
+			sands.append(_sand_field(key, float(sand_round[key])))
+	_ground_painted = PAINT.build((node.mesh as BoxTetraMesh4D).size, {
 		"centre": glow_centre, "glow_in": glow_in, "glow_out": glow_out, "glow_w": glow_w,
-		"own": own, "glow": glow_colour, "sand": sand_colour, "sand_rects": rects,
-		"sand_beyond": sand_beyond, "sand_ragged": sand_ragged,
-	}, get_tree())
+		"own": own, "glow": glow_colour, "sand": sand_colour, "sand_ragged": sand_ragged,
+		"sands": sands, "grid_cell": MASK_CELL, "grid_cells": MASK_CELLS, "grid_half": MASK_CELL * MASK_CELLS * 0.5,
+	})
 	paint_msec = Time.get_ticks_msec() - started
 	_apply_ground()
+
+
+## For sand round [param key]: on the mask's grid, how far inside the sand each cell is (m,
+## > 0 inside), [param beyond] past its footprint (and its outline, for a clearing_fill name),
+## spread by two sweeps; with its reach along W and the box of cells near it.
+func _sand_field(key: String, beyond: float) -> Dictionary:
+	var n: int = MASK_CELLS
+	var half: float = MASK_CELL * n * 0.5
+	var rec: Dictionary = _sand_cells[key]
+	var field := PackedFloat32Array()
+	field.resize(n * n)
+	field.fill(-10.0)
+	for cell in rec["cells"]:
+		field[cell] = beyond
+	if clearing_fill.has(key) and _outlines.has(key):
+		var o: Array = _outlines[key]
+		for j in range(clampi(int(floor((o[2] + half) / MASK_CELL)), 0, n - 1), clampi(int(floor((o[3] + half) / MASK_CELL)), 0, n - 1) + 1):
+			for i in range(clampi(int(floor((o[0] + half) / MASK_CELL)), 0, n - 1), clampi(int(floor((o[1] + half) / MASK_CELL)), 0, n - 1) + 1):
+				field[j * n + i] = beyond
+	var i0: int = n
+	var i1: int = -1
+	var j0: int = n
+	var j1: int = -1
+	for c in n * n:
+		if field[c] > -10.0:
+			i0 = mini(i0, c % n)
+			i1 = maxi(i1, c % n)
+			j0 = mini(j0, c / n)
+			j1 = maxi(j1, c / n)
+	var margin: int = int(ceil((beyond + sand_ragged * 1.5 + 1.0) / MASK_CELL))
+	i0 = maxi(i0 - margin, 0)
+	i1 = mini(i1 + margin, n - 1)
+	j0 = maxi(j0 - margin, 0)
+	j1 = mini(j1 + margin, n - 1)
+	var diag: float = MASK_CELL * 1.41421
+	for j in range(j0, j1 + 1):
+		for i in range(i0, i1 + 1):
+			var c: int = j * n + i
+			var v: float = field[c]
+			if i > i0:
+				v = maxf(v, field[c - 1] - MASK_CELL)
+			if j > j0:
+				v = maxf(v, field[c - n] - MASK_CELL)
+				if i > i0:
+					v = maxf(v, field[c - n - 1] - diag)
+				if i < i1:
+					v = maxf(v, field[c - n + 1] - diag)
+			field[c] = v
+	for j in range(j1, j0 - 1, -1):
+		for i in range(i1, i0 - 1, -1):
+			var c: int = j * n + i
+			var v: float = field[c]
+			if i < i1:
+				v = maxf(v, field[c + 1] - MASK_CELL)
+			if j < j1:
+				v = maxf(v, field[c + n] - MASK_CELL)
+				if i < i1:
+					v = maxf(v, field[c + n + 1] - diag)
+				if i > i0:
+					v = maxf(v, field[c + n - 1] - diag)
+			field[c] = v
+	return {"field": field, "w0": rec["w0"], "w1": rec["w1"], "box": [i0, i1, j0, j1]}
+
+
+## The name in [param names] that [param node] is part of (itself or a parent), or "".
+func _owner_in(node: Node, names: Dictionary) -> String:
+	var n: Node = node
+	while n != null and n != _room:
+		if names.has(String(n.name)):
+			return String(n.name)
+		n = n.get_parent()
+	return ""
 
 
 func _add_panel() -> void:
@@ -471,6 +549,7 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("region_strength", region_strength)
 	m.set_shader_parameter("hue_jitter", hue_jitter)
 	m.set_shader_parameter("shade", shade)
+	m.set_shader_parameter("root_dark", root_dark)
 	m.set_shader_parameter("toward_ground", toward_ground)
 	m.set_shader_parameter("saturation", saturation)
 	m.set_shader_parameter("haze_distance", haze_distance)
@@ -829,6 +908,7 @@ func _build_mask() -> void:
 	for mi in meshes:
 		var owner_name: String = _clearing_owner(mi)
 		var radius: float = float(clearings.get(owner_name, 0.0))
+		_marking_sand = _owner_in(mi, sand_round)
 		budget += _mark_mesh(mi, data, seeds, radius, group_w, outlines, owner_name if clearing_fill.has(owner_name) else "")
 		if budget > 6000:
 			budget = 0
@@ -1013,6 +1093,15 @@ func _mark_mesh(mi: MeshInstance4D, data: PackedFloat32Array, seeds: PackedFloat
 				if small or _shadow_has(Vector2(-half + (float(i) + 0.5) * MASK_CELL, -half + (float(j) + 0.5) * MASK_CELL), pa, pb, pc, pd):
 					_mark(data, i, j, lo.w, hi.w)
 					covered.append(j * MASK_CELLS + i)
+		if _marking_sand != "" and not covered.is_empty():
+			var rec: Dictionary = _sand_cells.get(_marking_sand, {"cells": PackedInt32Array(), "w0": INF, "w1": -INF})
+			# (A packed array out of a dictionary is a copy: append, then put it back.)
+			var under: PackedInt32Array = rec["cells"]
+			under.append_array(covered)
+			rec["cells"] = under
+			rec["w0"] = minf(float(rec["w0"]), lo.w)
+			rec["w1"] = maxf(float(rec["w1"]), hi.w)
+			_sand_cells[_marking_sand] = rec
 		if radius > 0.0 and not covered.is_empty():
 			var mid_w: float = (lo.w + hi.w) * 0.5
 			var g: int = _group(mid_w)

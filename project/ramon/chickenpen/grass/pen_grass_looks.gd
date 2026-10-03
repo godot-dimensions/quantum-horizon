@@ -7,8 +7,8 @@ extends RefCounted
 ## 1, PASTURE: grazed grass. Ramon, 3 Oct: "option one could be the shorter grazed grass .. i
 ##    would start from scratch in terms of the grass design parameters. probably less thick,
 ##    more, and shorter, feel free to reduce polycount, we dont need it for such short grass".
-##    16 cm, thinner than either look before it and closer together than any, two bends to a
-##    blade near you and one further out; a breeze barely moves it, it shimmers. (It was
+##    16 cm, thinner than either look before it and closer together than any, one triangle to
+##    a blade, the one colour root to tip; a breeze barely moves it, it shimmers. (It was
 ##    "Meadow", 38 cm, saved as preset 1 on 2 Oct: that look is BASE now.)
 ## 2, HAY MEADOW: "longer grass, thinner grass and more grass, yes more, and improve the wind
 ##    animation, make it flow like on barley fields, even though its not". Long thin blades
@@ -54,19 +54,26 @@ const BASE := {
 	"wave_length": 8.0,
 	"wave_speed": 3.2,
 	"wave_width": 22.0,
+	"root_dark": 1.0,
+	"trail_length": 3.0,
+	"trail_spacing": 0.3,
+	"trail_seconds": 6.0,
 }
 
 const PRESETS := {
 	1: {
 		"name": "Pasture",
-		# Short, thin, many, and cheap: two bends are plenty at 16 cm, one further out.
+		# Short, thin, many, and cheap: one triangle a blade, everywhere (3 Oct: "lower the
+		# vertexes and add more grass"), and the same colour root to tip ("remove the strong
+		# brown gradient from the bottom entirely").
 		"blade_height": 0.16,
 		"blade_width": 0.006,
 		"taper": 0.85,
-		"spacing": 0.045,
-		"spacing_far": 0.2,
+		"spacing": 0.036,
+		"spacing_far": 0.16,
 		"spacing_from": 2.0,
-		"band_vertices": [5, 5, 3, 3, 3],
+		"band_vertices": [3, 3, 3, 3, 3],
+		"root_dark": 0.0,
 		"min_pixels": 0.7,
 		# Grazed: small patches a little taller or shorter, not tussocks.
 		"clump_size": 0.7,
@@ -100,5 +107,10 @@ const PRESETS := {
 		"wave_length": 8.0,
 		"wave_speed": 3.2,
 		"wave_width": 22.0,
+		# Walking through: a longer trail behind you, up again sooner once you stop (3 Oct:
+		# "make the walked down trail longer, but let the grass recover a little faster").
+		"trail_length": 5.0,
+		"trail_spacing": 0.35,
+		"trail_seconds": 4.0,
 	},
 }
