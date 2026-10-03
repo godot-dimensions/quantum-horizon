@@ -276,6 +276,15 @@ func _w_px() -> float:
 ## For the things that should grow with the panel but not linearly - dots, rings and
 ## lettering, which have a size below which they stop being readable and above which they
 ## start being shouty. 560 is the width this was drawn at.
+## The circle the dial draws, on the canvas: Vector3(centre x, centre y, radius). The panels
+## placed round it (pen_hud_spot_4d.gd) keep out of the circle, not out of its square.
+func dial_circle() -> Vector3:
+	var t: Transform2D = get_global_transform()
+	var centre: Vector2 = t * (size * 0.5)
+	var radius: float = (minf(size.x, size.y) * 0.5 - 12.0 * _ui()) * t.x.length()
+	return Vector3(centre.x, centre.y, radius)
+
+
 func _ui() -> float:
 	return clampf(size.x / 560.0, 0.85, 1.7)
 

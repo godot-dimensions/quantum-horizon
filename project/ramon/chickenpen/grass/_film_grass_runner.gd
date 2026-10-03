@@ -21,7 +21,7 @@ var _shots: Array = SHOTS
 
 func _initialize() -> void:
 	root.unfocusable = true
-	_room = load("res://ramon/chickenpen/chickenpen_lookout.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
 	_room.get_node("Systems/Lookout").set("journal_path", "user://lookout_journal_grassfilm_test.cfg")
 	# After "--": shots=across:30 films only that shot for that long; key=value sets a Grass knob
 	# before it is ready (start_preset=3, say).

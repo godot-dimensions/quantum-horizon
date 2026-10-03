@@ -23,9 +23,13 @@ extends Control
 
 const STYLE := preload("res://ramon/Menu/style/menu_final_style.tres")
 const JOURNAL := preload("res://ramon/chickenpen/lookout/field_journal_4d.gd")
+const SPOT := preload("res://ramon/chickenpen/scripts/pen_hud_spot_4d.gd")
 
 @export var lookout_path: NodePath = NodePath("../../Systems/Lookout")
 @export var above_path: NodePath = NodePath("../Cinematics")
+## The controls card, to stand beside at the top when the column under the Cinematics card is the
+## dial's (2560 x 1440 at 125%: 3 Oct).
+@export var beside_path: NodePath = NodePath("../Controls")
 @export_range(9, 28, 1) var text_size: int = 13
 @export_range(0.0, 1.0, 0.01) var panel_alpha: float = 0.34
 @export_range(0.0, 40.0, 1.0) var gap: float = 10.0
@@ -178,21 +182,35 @@ func _place() -> void:
 		right = above.position.x + above.size.x
 		width = maxf(width, above.size.x)
 	var want := Vector2(width, 12.0 + _step() * float(rows.size() + 2) + 2.0)
-	# The right column runs out of room on a small window at a big UI size: then the card
-	# sits to the left of the one above, top edges level, rather than off the bottom.
-	if above != null and above.visible and top + want.y > screen.y - 6.0:
-		want.x = maxf(14.0 + widest + 18.0, 260.0)
-		top = above.position.y
-		right = above.position.x - gap
-	# And never off the bottom: taller than the room beside it too (seven rows since round
-	# three), it rises until it fits.
-	top = minf(top, screen.y - 6.0 - want.y)
+	# FIRST FREE SPOT (pen_hud_spot_4d.gd): under the Cinematics card, right edges flush, as it
+	# was drawn; else beside the controls card at the top; else to the left of the Cinematics
+	# card; else beside the dial at the bottom. The camera picker and the grass panel give way to
+	# this, not the other way round, so it is placed without them.
+	var places: Array = [Vector2(right - want.x, top)]
+	var beside := get_node_or_null(beside_path) as Control
+	if beside != null and beside.visible:
+		var b: Rect2 = SPOT.rect_of(beside)
+		places.append(Vector2(b.position.x - gap - want.x, b.position.y))
+	if above != null and above.visible:
+		var a: Rect2 = SPOT.rect_of(above)
+		places.append(Vector2(a.position.x - gap - want.x, a.position.y))
+	var dial := get_node_or_null(^"../SlicePlane") as Control
+	if dial != null and dial.visible and dial.has_method("dial_circle"):
+		var c: Vector3 = dial.call("dial_circle")
+		places.append(Vector2(c.x - c.z - gap - want.x, c.y + c.z - want.y))
+	var ignore: Array = []
+	for other in [^"../CameraPicker", ^"../GrassPanel"]:
+		var n: Node = get_node_or_null(other)
+		if n != null:
+			ignore.append(n)
+	var at: Vector2 = SPOT.first(places, want, SPOT.taken(get_parent(), self, ignore), screen)
+	# And never off the bottom.
+	at.y = minf(at.y, screen.y - 6.0 - want.y)
 	# Away from the Lookout, no height: what hangs under it moves back up.
 	if _here <= 0.0:
 		want.y = 0.0
 	if want != size:
 		size = want
-	var at := Vector2(right - size.x, top)
 	if at != position:
 		position = at
 

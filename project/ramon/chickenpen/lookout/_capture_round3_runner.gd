@@ -27,7 +27,7 @@ func _initialize() -> void:
 	root.unfocusable = true
 	if FileAccess.file_exists(TEST_BOOK):
 		DirAccess.remove_absolute(TEST_BOOK)
-	_room = load("res://ramon/chickenpen/chickenpen_lookout.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
 	for node in _room.find_children("*", "", true, false):
 		if "debug_key_enabled" in node:
 			node.set("debug_key_enabled", false)

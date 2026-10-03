@@ -18,7 +18,7 @@ var _tree: Node4D
 
 func _initialize() -> void:
 	root.unfocusable = true
-	_room = load("res://ramon/chickenpen/chickenpen_lookout.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
 	_lookout = _room.get_node("Systems/Lookout")
 	_lookout.set("journal_path", "user://lookout_journal_climb_test.cfg")
 	root.add_child(_room)

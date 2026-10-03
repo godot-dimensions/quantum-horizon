@@ -25,7 +25,7 @@ var _dir := Vector4(-0.8, 0.0, -0.6, 0.0)
 
 func _initialize() -> void:
 	root.unfocusable = true
-	_room = load("res://ramon/chickenpen/chickenpen_lookout.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
 	_room.get_node("Systems/Lookout").set("journal_path", "user://lookout_journal_trail_test.cfg")
 	_grass = _room.get_node("World/Grass")
 	root.add_child(_room)

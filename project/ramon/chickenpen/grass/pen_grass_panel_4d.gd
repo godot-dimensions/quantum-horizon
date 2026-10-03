@@ -15,6 +15,7 @@ extends Control
 ## filled. A test tool, and labelled as one.
 
 const LOOKS := preload("res://ramon/chickenpen/grass/pen_grass_looks.gd")
+const SPOT := preload("res://ramon/chickenpen/scripts/pen_hud_spot_4d.gd")
 
 ## The Grass node it works.
 var grass: Node
@@ -180,11 +181,35 @@ func _process(_delta: float) -> void:
 	var back: Control = get_child(0) as Control
 	size = back.get_combined_minimum_size()
 	back.size = size
+	# FIRST FREE SPOT (pen_hud_spot_4d.gd, 3 Oct): above the to-do list, left edges level, as it
+	# was; grown tall, that ran up into the murmuration card - then beside the list, bottoms
+	# level, or beside the murmuration card, tops level. The camera picker and the Lookout card
+	# keep to the right and are not counted.
+	var places: Array = []
 	if above != null and above.is_visible_in_tree():
-		var r: Rect2 = above.get_global_rect()
-		position = Vector2(r.position.x, r.position.y - size.y - gap)
-	else:
-		position = Vector2(margin, view.y * at_height - size.y)
+		var r: Rect2 = SPOT.rect_of(above)
+		places.append(Vector2(r.position.x, r.position.y - size.y - gap))
+		places.append(Vector2(r.end.x + gap, r.end.y - size.y))
+	var stats := get_parent().get_node_or_null(^"FlockStats") as Control
+	var column_right: float = margin
+	if above != null and above.is_visible_in_tree():
+		column_right = maxf(column_right, SPOT.rect_of(above).end.x)
+	if stats != null and stats.is_visible_in_tree():
+		var s: Rect2 = SPOT.rect_of(stats)
+		places.append(Vector2(s.end.x + gap, s.position.y))
+		column_right = maxf(column_right, s.end.x)
+	# Right of the whole left column, just under the info card at the top (1920 x 1080: the
+	# column is full from the top of the screen to the belt).
+	var info := get_parent().get_node_or_null(^"InfoCard") as Control
+	var under_info: float = SPOT.rect_of(info).end.y + gap if info != null and info.is_visible_in_tree() else margin
+	places.append(Vector2(column_right + gap, under_info))
+	places.append(Vector2(margin, view.y * at_height - size.y))
+	var ignore: Array = []
+	for other in [^"CameraPicker", ^"Journal"]:
+		var n: Node = get_parent().get_node_or_null(other)
+		if n != null:
+			ignore.append(n)
+	position = SPOT.first(places, size, SPOT.taken(get_parent(), self, ignore), view)
 
 
 func _pick(n: int) -> void:
@@ -269,6 +294,9 @@ func _paint(b: Button, mine: bool) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Only on the farm, as the panel itself.
+	if not visible:
+		return
 	if not (event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).keycode == KEY_O):
 		return
 	if (event as InputEventKey).alt_pressed:

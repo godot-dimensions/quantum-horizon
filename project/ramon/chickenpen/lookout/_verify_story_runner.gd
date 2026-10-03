@@ -38,7 +38,7 @@ var _aimed: bool = false
 func _initialize() -> void:
 	root.unfocusable = true
 	_clean()
-	_room = load("res://ramon/chickenpen/chickenpen_lookout.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
 	for node in _room.find_children("*", "", true, false):
 		if "debug_key_enabled" in node:
 			node.set("debug_key_enabled", false)

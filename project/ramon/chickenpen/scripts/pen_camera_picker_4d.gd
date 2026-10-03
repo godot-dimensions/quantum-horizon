@@ -67,6 +67,8 @@ extends Control
 @export_range(0.0, 200.0, 1.0) var lift: float = 118.0
 
 var _rig: Node
+const SPOT := preload("res://ramon/chickenpen/scripts/pen_hud_spot_4d.gd")
+
 var _under: Control
 var _avoid: Control
 var _clear_of: Control
@@ -175,12 +177,35 @@ func _lay_out() -> void:
 		# Right edges flush, which is what makes two separate panels read as a pair
 		# rather than as two things that happen to be in the same corner - unless
 		# something else is already sitting there.
-		var right: float = _under.position.x + _under.size.x
+		# FIRST FREE SPOT (pen_hud_spot_4d.gd, 3 Oct): what it hangs under may be away (the
+		# Lookout card, folded up off the Lookout) - then the Cinematics card above that; under
+		# it, else beside it, else beside the controls card at its foot or its top. At 2560 x
+		# 1440 the column under the cards is the dial's, and the picker sat inside its circle.
+		var host: Control = _under
+		if not host.visible or host.size.y < 1.0:
+			var up: Variant = host.get("above_path")
+			var fallback := host.get_node_or_null(up) as Control if up is NodePath else null
+			if fallback != null and fallback.visible:
+				host = fallback
+		var hr: Rect2 = SPOT.rect_of(host)
+		var right: float = hr.end.x
 		if _avoid != null:
 			right = minf(right, _avoid.position.x - gap)
-		position = Vector2(right - w, _under.position.y + _under.size.y + gap)
-		if _clear_of != null and _clear_of.visible and position.y + h > _clear_of.position.y:
-			position = Vector2(_under.position.x - gap - w, _under.position.y + _under.size.y - h)
+		var places: Array = [Vector2(right - w, hr.end.y + gap), Vector2(hr.position.x - gap - w, hr.end.y - h),
+			Vector2(hr.position.x - gap - w, hr.position.y), Vector2(right - w, hr.position.y - gap - h)]
+		var controls := get_node_or_null(^"../Controls") as Control
+		if controls != null and controls.visible:
+			var cr: Rect2 = SPOT.rect_of(controls)
+			places.append(Vector2(cr.position.x - gap - w, cr.end.y - h))
+			places.append(Vector2(cr.position.x - gap - w, cr.position.y))
+		# And to the left of the dial, at its foot.
+		var dial := get_node_or_null(^"../SlicePlane") as Control
+		if dial != null and dial.visible and dial.has_method("dial_circle"):
+			var c: Vector3 = dial.call("dial_circle")
+			places.append(Vector2(c.x - c.z - gap - w, c.y + c.z - h))
+		# The grass panel is counted: it does not count this one, so the two cannot push each
+		# other back and forth.
+		position = SPOT.first(places, Vector2(w, h), SPOT.taken(get_parent(), self), get_viewport_rect().size)
 	else:
 		position = Vector2(side_margin, get_viewport_rect().size.y - lift - h)
 	size = Vector2(w, h)

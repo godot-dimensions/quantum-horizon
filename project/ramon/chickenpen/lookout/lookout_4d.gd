@@ -7,8 +7,9 @@ extends Node
 ## nothing sees you and nothing blocks you; the camera's focus ring slides your slice along W,
 ## so focusing is finding a thing in W.
 ##
-## THIS NODE OWNS THE GAME and nothing in the pen knows it is here: it sits in the inherited
-## scene chickenpen_lookout.tscn, finds the pen's nodes by path and leaves them as they are.
+## THIS NODE OWNS THE GAME and nothing in the pen knows it is here: it sits in the pen's scene
+## (Systems/Lookout; it was an inherited scene on top of it until 3 Oct), finds the pen's nodes by
+## path and leaves them as they are.
 ## The pieces, each its own script in this folder:
 ##
 ##   lookout_tower_4d.gd      the tower (World/Lookout), built from boxes
@@ -705,6 +706,10 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Only on the farm: in the cave the farm sleeps but this node does not (the cave puts only
+	# some of Systems to sleep), and P, B and the rest went on working underground.
+	if not farm_awake():
+		return
 	if event.is_action_pressed(&"catch_target") and can_climb_down():
 		get_viewport().set_input_as_handled()
 		station.call("climb_down")
@@ -734,6 +739,12 @@ func _input(event: InputEvent) -> void:
 	elif key.keycode == align_key and can_align():
 		get_viewport().set_input_as_handled()
 		align_to_marsh()
+
+
+## Whether the farm is up: not away in the theatre or the cave (pen_crossing_4d.gd hides World).
+func farm_awake() -> bool:
+	var world := room.get_node_or_null("World") as Node4D
+	return world != null and world.is_visible_in_tree()
 
 
 ## Whether you are round the Lookout, as the HUD card judges it (journal_card_4d.gd).

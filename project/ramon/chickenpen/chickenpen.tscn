@@ -1,4 +1,4 @@
-[gd_scene load_steps=737 format=3 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=743 format=3 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -82,6 +82,12 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/flock/flock_sound_4d.gd" id="flock_sound"]
 [ext_resource type="Script" path="res://ramon/chickenpen/cinematics/pen_cinematics_4d.gd" id="pen_cinematics"]
 [ext_resource type="Script" path="res://ramon/chickenpen/cinematics/pen_cinematics_card_4d.gd" id="pen_cinematics_card"]
+[ext_resource type="Script" uid="uid://d4c545be47j6q" path="res://ramon/chickenpen/lookout/lookout_tower_4d.gd" id="lk_tower"]
+[ext_resource type="Script" uid="uid://dosf6wkopje1t" path="res://ramon/chickenpen/lookout/lookout_4d.gd" id="lk_lookout"]
+[ext_resource type="Script" uid="uid://dboaa0fauf8dw" path="res://ramon/chickenpen/lookout/lookout_wren_4d.gd" id="lk_wren"]
+[ext_resource type="Script" uid="uid://bv7qyng6evjk4" path="res://ramon/chickenpen/lookout/lookout_wren_talk_4d.gd" id="lk_wren_talk"]
+[ext_resource type="Script" uid="uid://ukkenueag1y8" path="res://ramon/chickenpen/lookout/journal_card_4d.gd" id="lk_card"]
+[ext_resource type="Script" uid="uid://kk2kmbxqaear" path="res://ramon/chickenpen/grass/pen_grass_4d.gd" id="pen_grass"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 shader_parameter/horizon_color = Color(0.98, 0.71, 0.35, 1)
@@ -4153,6 +4159,39 @@ script = ExtResource("pen_flock")
 [node name="Sound" type="Node" parent="World/Flock"]
 script = ExtResource("flock_sound")
 
+[node name="LookoutSite" type="Node4D" parent="World"]
+position = Vector4(-16, 0, -36, 0)
+metadata/move_me = "Move (or turn) this node to move the whole Lookout: the tower, Wren, and the markers for the balloon's mooring and for the marsh (w +8) and the kata wood (w -8). The tower stands at this node's height: put it on level ground."
+
+[node name="Lookout" type="Node4D" parent="World/LookoutSite"]
+script = ExtResource("lk_tower")
+
+[node name="Wren" type="Node4D" parent="World/LookoutSite"]
+position = Vector4(3.3, 0, 6.2, 0)
+script = ExtResource("lk_wren")
+
+[node name="WrenHead" type="Node4D" parent="World/LookoutSite"]
+position = Vector4(3.3, 1.45, 6.2, 0)
+
+[node name="WrenFacing" type="Node4D" parent="World/LookoutSite"]
+script = ExtResource("pen_face")
+figure_path = NodePath("../Wren")
+player_path = NodePath("../../../Player")
+notice_within = 4.0
+
+[node name="MooringSpot" type="Node4D" parent="World/LookoutSite"]
+position = Vector4(-7.5, 0, 6, 0)
+
+[node name="MarshSpot" type="Node4D" parent="World/LookoutSite"]
+position = Vector4(-14, 0, 12, 8)
+
+[node name="WoodSpot" type="Node4D" parent="World/LookoutSite"]
+position = Vector4(-10, 0, 12, -8)
+
+[node name="Grass" type="Node4D" parent="World"]
+script = ExtResource("pen_grass")
+metadata/what = "Grass over the field, made and blown about on the GPU (grass/pen_grass.gdshader, follow_up/grass_study.md)."
+
 [node name="Chickens" type="Node4D" parent="."]
 script = ExtResource("pen_chickens")
 coop_path = NodePath("../Pen/Coop")
@@ -4769,7 +4808,7 @@ offset_right = 260.0
 offset_bottom = 60.0
 script = ExtResource("pen_campick")
 rig_path = NodePath("../../Player/CameraRig")
-under_path = NodePath("../Cinematics")
+under_path = NodePath("../Journal")
 
 [node name="Inventory" type="Control" parent="UI"]
 layout_mode = 3
@@ -4948,6 +4987,36 @@ w_range = 6.0
 anchors_preset = 0
 mouse_filter = 2
 script = ExtResource("pen_cinematics_card")
+
+[node name="Journal" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("lk_card")
+
+[node name="WrenTag" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("pen_world_tag")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../World/LookoutSite/WrenHead")
+lift = 12.0
+
+[node name="WrenBox" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("dlg_box")
+choice_side = 1
+choice_width = 470.0
+choice_gap = 10.0
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../World/LookoutSite/WrenHead")
+over_head_width = 470.0
+name_size = 17
+text_size = 20
+choice_size = 19
 
 [node name="Systems" type="Node" parent="."]
 
@@ -5252,6 +5321,36 @@ progress_label_path = NodePath("../../UI/Progress")
 objective_label_path = NodePath("../../UI/Objective")
 locator_path = NodePath("../Locator")
 cues_path = NodePath("../Cues")
+
+[node name="Lookout" type="Node" parent="Systems"]
+script = ExtResource("lk_lookout")
+
+[node name="WrenTalk" type="Node" parent="Systems"]
+script = ExtResource("dlg_talk")
+box_path = NodePath("../../UI/WrenBox")
+
+[node name="WrenDriver" type="Node" parent="Systems"]
+script = ExtResource("lk_wren_talk")
+facing_path = NodePath("../../World/LookoutSite/WrenFacing")
+lookout_path = NodePath("../Lookout")
+player_path = NodePath("../../Player")
+character_path = NodePath("../../Player")
+catcher_path = NodePath("../../Player/Catcher")
+dialogue_path = NodePath("../WrenTalk")
+tag_path = NodePath("../../UI/WrenTag")
+camera_rig_path = NodePath("../../Player/CameraRig")
+hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint"), NodePath("../../UI/Objective"), NodePath("../../UI/Progress"), NodePath("../../UI/Debug"), NodePath("../../UI/CameraPicker"), NodePath("../../UI/Quests"), NodePath("../../UI/Journal"), NodePath("../../UI/Cinematics"), NodePath("../../UI/FlockStats")])
+talk_range = 2.4
+two_shot = true
+two_shot_seconds = 2.5
+two_shot_side = 1.9
+two_shot_back = 1.7
+two_shot_rise = 0.35
+two_shot_bias = 0.8
+camera_marker_path = NodePath("../../World/TalkCam")
+camera_target_path = NodePath("../../World/LookoutSite/WrenHead")
+main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/WrenBox")
 
 [node name="Mithra" type="CharacterBody4D" parent="."]
 position = Vector4(-13, 1.2, 3.5, 0)

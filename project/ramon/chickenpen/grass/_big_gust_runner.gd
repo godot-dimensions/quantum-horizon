@@ -22,7 +22,7 @@ var _low: float = 999.0
 
 func _initialize() -> void:
 	root.unfocusable = true
-	_room = load("res://ramon/chickenpen/chickenpen_lookout.tscn").instantiate()
+	_room = load("res://ramon/chickenpen/chickenpen.tscn").instantiate()
 	_room.get_node("Systems/Lookout").set("journal_path", "user://lookout_journal_gust_test.cfg")
 	_grass = _room.get_node("World/Grass")
 	root.add_child(_room)
