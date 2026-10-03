@@ -145,6 +145,13 @@ signal preset_changed(index: int)
 @export_range(0.0, 0.45, 0.01) var region_share: float = 0.25
 @export_range(0.0, 1.0, 0.01) var region_strength: float = 1.0
 @export_range(0.0, 0.2, 0.005) var hue_jitter: float = 0.05
+## The blade's shape in the field: how far each leans its own way (share of its height), the
+## share of clumps left long and how much taller, and a flower stem's height against a blade's.
+@export_range(0.0, 0.6, 0.01) var splay: float = 0.08
+@export_range(0.0, 0.6, 0.01) var tuft_share: float = 0.0
+@export_range(1.0, 4.0, 0.05) var tuft_height: float = 1.9
+@export_range(0.3, 3.0, 0.05) var flower_height: float = 1.5
+@export_range(0.0, 0.1, 0.001) var flower_share: float = 0.012
 ## How light the blades are, all their colours together, so they sit with the ground between
 ## and beyond them (in linear light: 0.7 is about 0.85 on the colour numbers).
 @export_range(0.2, 1.5, 0.01) var shade: float = 0.7
@@ -600,6 +607,11 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("region_cuts", _region_cuts)
 	m.set_shader_parameter("region_strength", region_strength)
 	m.set_shader_parameter("hue_jitter", hue_jitter)
+	m.set_shader_parameter("splay", splay)
+	m.set_shader_parameter("tuft_share", tuft_share)
+	m.set_shader_parameter("tuft_height", tuft_height)
+	m.set_shader_parameter("flower_height", flower_height)
+	m.set_shader_parameter("flower_share", flower_share)
 	m.set_shader_parameter("shade", shade)
 	m.set_shader_parameter("root_dark", root_dark)
 	m.set_shader_parameter("toward_ground", toward_ground)

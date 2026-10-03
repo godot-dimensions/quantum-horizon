@@ -321,6 +321,20 @@ make it flow like on barley fields, even though its not".
   the new (`_free_bands`). The other look is a dictionary of numbers. So there is no budget held
   by Pasture while Hay meadow shows.
 
+## 3 Oct: darker, Pasture grazed, a third look
+
+- **Both looks darker** ("make both grasses a bit darker"): `shade` 0.7 -> 0.6 in BASE.
+- **Pasture, grazed** ("improve the pasture as you see fit"): up close it read as a combed
+  carpet, every blade upright. Three new knobs, BASE values keeping the meadows as they were:
+  `splay` (each blade's own lean, 0.08 -> 0.3: tousled), `tuft_share`/`tuft_height` (12% of
+  clumps left long where the animals passed over, 1.9x and lusher), `flower_height` (stems 0.75 of
+  a blade, so clover and daisies sit low among it; 2% of blades). Clumps 1.1 m. +1.07 ms GPU.
+- **Hay meadow II** ("make a second grass meadow with changes you suggest"): Hay meadow with the
+  budget it could have as the main field - 11 vertices at your feet (then 7, 5, 3, 3), 5 cm
+  apart near and 20 cm far, 66 cm tall, reaching 52 m (the fade into the ground from 29 m), 2%
+  wildflowers standing a little above it. **+1.19 ms** GPU from the farm camera against Hay
+  meadow's +0.87 (measured the same session). O cycles the three looks.
+
 ## Cost (RTX 5080, 1280x720, interleaved on/off, after the pen's warm-up)
 
 | | |

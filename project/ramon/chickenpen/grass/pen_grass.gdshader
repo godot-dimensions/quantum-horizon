@@ -96,6 +96,15 @@ uniform float ground_extent = 59.0;
 uniform float clump_size = 1.3;
 // One blade in this many is a flower stem: a little coloured head on a thin stalk.
 uniform float flower_share = 0.012;
+// A flower stem's height against a blade's (1.5: they stand above the grass, as in a meadow;
+// under 1: low among it, as clover and daisies in a pasture).
+uniform float flower_height = 1.5;
+// How far a blade leans its own way, as a share of its height (0.08: a meadow standing up;
+// more: a grazed field, tousled).
+uniform float splay = 0.08;
+// The share of clumps left long - the tufts grazing animals pass over - and how much taller.
+uniform float tuft_share = 0.0;
+uniform float tuft_height = 1.9;
 uniform vec3 flower_a : source_color = vec3(0.92, 0.90, 0.80);
 uniform vec3 flower_b : source_color = vec3(0.95, 0.78, 0.22);
 uniform vec3 flower_c : source_color = vec3(0.62, 0.45, 0.78);
@@ -352,12 +361,13 @@ void vertex() {
 		vec3 cl = clump(root_xz, floor(root_w / 1.2));
 		float clump_h = mix(0.82, 1.18, hash12(vec2(cl.z, 3.1)));
 		float dry = smoothstep(0.62, 0.95, hash12(vec2(cl.z, 8.7)));
-		float lush = 1.0 - smoothstep(0.0, 0.5, hash12(vec2(cl.z, 1.9)));
+		float lush = max(1.0 - smoothstep(0.0, 0.5, hash12(vec2(cl.z, 1.9))), step(1.0 - tuft_share, hash12(vec2(cl.z, 4.4))) * 0.7);
 		float rnd = hash13(vec3(cell, layer + 4.2));
 		float flower = step(hash13(vec3(cell, layer + 2.6)), flower_share);
-		float h = blade_height * clump_h * mix(0.7, 1.25, rnd) * grow * trodden * (1.0 + flower * 0.5);
+		float tuft = step(1.0 - tuft_share, hash12(vec2(cl.z, 4.4)));
+		float h = blade_height * clump_h * mix(0.7, 1.25, rnd) * mix(1.0, tuft_height, tuft) * grow * trodden * mix(1.0, flower_height, flower);
 		float facing = hash13(vec3(cell, layer + 9.1)) * 6.2831853;
-		vec2 lean = cl.xy * 0.06 + vec2(cos(facing), sin(facing)) * 0.08;
+		vec2 lean = cl.xy * 0.06 + vec2(cos(facing), sin(facing)) * splay * mix(0.4, 1.0, rnd);
 
 		// Wind (see the top): gust bands advected downwind, a pressure-driven bend, a lag by
 		// height, a natural rock and a flutter.

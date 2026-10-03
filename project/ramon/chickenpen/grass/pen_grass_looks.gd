@@ -16,6 +16,8 @@ extends RefCounted
 ##    the tips catching the light as each crest lays them over. First called Barley; Ramon, 3
 ##    Oct: "i wouldn't call it barley ... its more like longer beautiful grass" - a hay meadow,
 ##    the long grass left uncut till summer.
+## 3, HAY MEADOW II: Hay meadow given more of the budget - one bend more near you, denser,
+##    reaching further, more wildflowers.
 
 ## The 2 Oct meadow, every value a look sets.
 const BASE := {
@@ -40,7 +42,8 @@ const BASE := {
 	"region_share": 0.25,
 	"region_strength": 1.0,
 	"hue_jitter": 0.05,
-	"shade": 0.7,
+	# Both looks a bit darker (3 Oct: "make both grasses a bit darker"; was 0.7).
+	"shade": 0.6,
 	"toward_ground": 0.18,
 	"saturation": 1.45,
 	"wind_speed": 3.0,
@@ -61,6 +64,12 @@ const BASE := {
 	"trample": true,
 	"far_fade_from": 0.5,
 	"far_fade": 1.0,
+	"radius": 44.0,
+	"splay": 0.08,
+	"tuft_share": 0.0,
+	"tuft_height": 1.9,
+	"flower_height": 1.5,
+	"flower_share": 0.012,
 }
 
 const PRESETS := {
@@ -81,8 +90,16 @@ const PRESETS := {
 		# Stays as it is when walked over ("not have the walkthrough mechanic"), and more of it,
 		# a little wider (3 Oct).
 		"trample": false,
-		# Grazed: small patches a little taller or shorter, not tussocks.
-		"clump_size": 0.7,
+		# Grazed, as a field with animals on it is (3 Oct, "improve the pasture as you see fit"):
+		# tousled, every blade leaning its own way, not combed upright; a few clumps left long
+		# where the animals passed over, lusher; clover and daisies low among the blades, not
+		# stalks standing out of them.
+		"splay": 0.3,
+		"tuft_share": 0.12,
+		"tuft_height": 1.9,
+		"flower_height": 0.75,
+		"flower_share": 0.02,
+		"clump_size": 1.1,
 		# Short grass hardly bends; it shimmers as the gusts pass.
 		"gustiness": 0.45,
 		"bend_max": 0.24,
@@ -102,6 +119,46 @@ const PRESETS := {
 		"taper": 0.6,
 		"spacing": 0.058,
 		"spacing_far": 0.21,
+		"min_pixels": 0.7,
+		"clump_size": 1.6,
+		# The wind as on barley: long crests, a softer, more even blow under them, less of each
+		# stalk's own rocking, and the light on the tips as a crest lays them over.
+		"wind_speed": 3.4,
+		"gustiness": 0.3,
+		"bend_max": 0.55,
+		"stiffness": 26.0,
+		"sheen": 0.45,
+		"wave_strength": 1.0,
+		"wave_length": 8.0,
+		"wave_speed": 3.2,
+		"wave_width": 22.0,
+		# Walking through: a longer trail behind you, up again sooner once you stop (3 Oct:
+		# "make the walked down trail longer, but let the grass recover a little faster").
+		"trail_length": 5.0,
+		"trail_spacing": 0.35,
+		"trail_seconds": 4.0,
+	},
+	3: {
+		# Hay meadow with the grass budget it could have as the main field (3 Oct: "make a
+		# second grass meadow with changes you suggest"): one bend more at your feet, denser,
+		# reaching 52 m instead of 44 so the fade into the ground starts further out, a few more
+		# wildflowers.
+		"name": "Hay meadow II",
+		# Eleven vertices at your feet, as BASE, then as Hay meadow.
+		"band_vertices": [11, 7, 5, 3, 3],
+		# No dark root here either (3 Oct: "hay meadow still has the darker roots").
+		"root_dark": 0.0,
+		"blade_height": 0.66,
+		"blade_width": 0.007,
+		"taper": 0.6,
+		"spacing": 0.05,
+		"spacing_far": 0.2,
+		# Further out, so the fade into the ground starts further away.
+		"radius": 52.0,
+		"far_fade_from": 0.55,
+		# A few more wildflowers, standing a little above the grass.
+		"flower_share": 0.02,
+		"flower_height": 1.3,
 		"min_pixels": 0.7,
 		"clump_size": 1.6,
 		# The wind as on barley: long crests, a softer, more even blow under them, less of each
