@@ -14,11 +14,94 @@ Sketch: `follow_up/creation_lab_layout.png` (one bay from above, and the stack o
 
 ## Questions for Ramon
 
-(None open. During the build, new questions and out-of-plan ideas go here.)
+Found while building. None blocks the lab; each is outside its scope, so nothing was changed.
+
+1. **The cats' sit and wash may never show in the pen.** By the code they pose ball nodes after
+   the hide has been cut into rigid pieces, and nothing re-lofts (`pen_cat_4d.gd`, `_tuck`,
+   `_wash`). Shall I check it in the pen and fix it there?
+2. **The wolf's and Nike's lofts have a few folded tetrahedra** (the wolf 7 of 1,656 on one
+   chain; Nike up to 3% on two). Small, but the loft tool warns. Fixing means nudging balls in
+   `Model/wolf.tscn` and `chickenpen/nike.tscn`, which the pen uses too. Shall I?
+3. **Two older shader forks read wrong texture coordinates on today's engine.** Since godot-4d
+   `b288c8d` (30 Sept) the engine packs corner UVWs into the bone weights; `Demo/shaders/
+   hub_tiled_surface.gdshader` and `PhaseMaze/shaders/phase_maze_flat_shaded.gdshader` still
+   read the old slots. Phase Maze is in the menu. Shall I bring them up to date (the kit's
+   `lab_surface.gdshader` shows how)?
+4. **`ramdev_dark_grey.png` imports as a 2D texture**, the rest of the set as 3D, so any code
+   that loads it as a Texture3D gets nothing (the kit reads either). Change its import to 3D?
+5. **The strider's `belt_speed` only counts in `_ready`.** Writing it later does nothing, so
+   the cat's flee pace and the wolf raid's run speed never take effect in the pen (the lab
+   writes `speed` instead). Fix it in `strider_walker.gd`?
 
 ## Status
 
 Approved 3 Oct, evening; building from step 1.
+
+### Sections A and B: done (3 Oct, night)
+
+**Ground work.** `CreationLab/scripts/lab_run.sh` launches every Godot run: it checks and takes
+the lock in the same process, logs to `smoke_test_output/creation_lab/logs/`, and greps the log
+for errors (a deliberately broken script proved it catches parse errors). Runners: smoke,
+capture (every mark in both moods), measure, verify-creature, filmstrip, measure-roster.
+
+**One control surface over six drivers.** `LabKit/lab_clock_4d.gd` takes over an animal's whole
+subtree and steps it in Godot's own order with a scaled delta: exact pause, slow motion and
+frame steps for every animal without touching a single creature script. (Pulled forward from
+step 50: every rig needs it.) `CreationLab/scripts/lab_creature_4d.gd` is the root of every
+animal: card text, tether, and adapters for the strider, the chicken walker, Trym's solvers,
+the birds, the dreamer, the people's walk and the first armature. Each animal passes a
+headless control test (12 checks for walkers: the clock adopts it, phase rate, half speed,
+exact pause, one-frame step, gait change keeping the phase, legs, belt, pieces; a pose test
+for the rest, with flyers made to take off and kept over the rig's centre).
+
+**The roster** (`CreationLab/creature_roster.tscn`, 17 animals, frames from three sides in both
+moods): measured windowed, vsync off, 3 Oct. "Unique" counts a mesh shared by many instances
+once, which is what video memory follows. Script ms is the animal's own stepping per frame at
+60 Hz, timed by the lab clock.
+
+| Animal | Drawn tetrahedra | Unique | Script ms |
+|---|---|---|---|
+| Wolf | 7,440 | 7,400 | 0.16 |
+| Nike | 7,893 | 7,893 | 0.05 |
+| Chicken | 9,948 | 9,908 | 0.02 |
+| Black cat / red cat | 5,360 | 5,360 | 0.22 |
+| Crow | 3,272 | 3,272 | 0.01 |
+| Owl | 4,668 | 4,668 | 0.01 |
+| Heron | 6,880 | 6,880 | 0.02 |
+| Chipmunk | 2,040 | 2,040 | 0.01 |
+| Horse | 4,429 | 4,429 | 0.03 |
+| Goat | 4,434 | 4,434 | 0.03 |
+| Trym's creature | 20,340 | 20,340 | 0.24 |
+| Symmetry creature | 34,480 | 34,480 | 0.05 |
+| The people's walk | 760 | 760 | 0.03 |
+| The first armature | 296 | 296 | 0.17 |
+| The dreamer | 213,504 | 540 | 1.37 |
+| Brachiosaurus | 3,043 | 3,043 | 0.03 |
+| **All 17** | **334,147** | **121,103** | **2.7** |
+
+The whole roster frame: median 1.6 ms, 95th percentile 2.8 ms (before bending joints were turned
+on for four more animals, below).
+
+**The review pass (step 18), from filmstrips of each gait cycle:**
+- Horse, goat, brachiosaurus and Nike walked on rigid pieces with no bending joints, so needles
+  stuck out at the hips and hocks (the cat's old artifact). `blend_joints` on for all four; the
+  horse's frames beside its original walker show the same pose and clean joints.
+- The horse's cadence was a slow default (`belt_speed` 1.6): now 3.6.
+- The heron's column flight peaked at 1.65 m (a Bezier never reaches its control points):
+  `column_rise` 2.9 gives about 2.2 m.
+- The first armature at its own scale is a 4 m giant: `body_scale` 0.45.
+- The dreamer at a quarter scale read as a small urchin: now half the far room's size.
+- Trym's creature faces -X, so `front_axis` tells cameras where its front is (it cannot be
+  turned: its foot solver works along world -X). The symmetry creature, static, is turned to
+  face +Z (`display_yaw`).
+- The symmetry creature in a plain slice shows only its body: its repeated legs lie off the
+  slice through W, by design. Bay 4 shows them with P.
+
+**Animals that needed lab versions** (subclasses, so fixes to the originals reach the lab):
+the chicken's walker and the cat walk in place (`creatures/lab_chicken_walker.gd`,
+`lab_cat.gd`); the heron flies straight up and down its column (`lab_heron.gd`); the people's
+walk runs on a treadmill (`lab_person.gd`: a real body that tells the gait it walks, snaps back,
+and slides the planted feet back like a belt).
 
 ## What the research said
 
