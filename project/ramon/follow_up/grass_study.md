@@ -300,6 +300,27 @@ make it flow like on barley fields, even though its not".
 - **Grass on / off** ("i also need a toggle for turning the grass off"): the panel's Grass
   button and Alt+O (`enabled`; not G, which picks Nike up).
 
+## 3 Oct, later still: the far field fades out, the glow kept to the middle, Pasture stays put
+
+- **The hard cutoff in the distance** (Ramon: "the centre glow was intended to fix the hard
+  cutoff of the grass in the distance. right now, the center glow is not a gradient and cuts
+  directly into the mountains, so the experiment failed"). Two things were wrong:
+  - the glow reached 85 m, past the field's edge 46 m north of its middle, so it was still half
+    on where the ground meets the hills and stopped there in a line: now `glow_in` 12 m,
+    `glow_out` 40 m, gone well before the hills;
+  - the real edge was the grass's: the far blades kept 55% of their own colour to the end (and
+    only the last band faded at all), so the field ended bright against the dark ground. Now
+    every band fades the blades to the colour of the ground under them from `far_fade_from`
+    (half the radius, 22 m) to the edge, `far_fade` 1 of the way, glow included (the shader
+    works the glow out too: `glow_area`, `glow_colour`, `glow_on`). The field ends without a
+    line, and it is round you, wherever you are.
+- **Pasture** ("should be more, and slightly wider. and when you walk over it, it should stay as
+  is"): 3 cm apart near, 14 cm far, 7.5 mm wide; `trample` off (no pushing aside, no trail).
+  +0.97 ms GPU from the farm camera, 1.6 million blades handed over.
+- **Two looks cost one**: only the look in use exists; switching frees the old bands and builds
+  the new (`_free_bands`). The other look is a dictionary of numbers. So there is no budget held
+  by Pasture while Hay meadow shows.
+
 ## Cost (RTX 5080, 1280x720, interleaved on/off, after the pen's warm-up)
 
 | | |

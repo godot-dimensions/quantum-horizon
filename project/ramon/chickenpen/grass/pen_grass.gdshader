@@ -75,6 +75,13 @@ uniform float band_in_fade = 1.0;
 uniform float band_out = 5.0;
 uniform float band_out_fade = 1.0;
 uniform bool last_band = false;
+// THE FAR FIELD FADES INTO THE GROUND (Ramon, 3 Oct: the hard cutoff of the grass in the
+// distance). From far_from to far_to round you the blades go over to the colour of the ground
+// under them, far_amount of the way, so the field has no edge to see: it was 55% at most, and
+// only in the last band, and ended bright against the dark ground in a line.
+uniform float far_from = 22.0;
+uniform float far_to = 44.0;
+uniform float far_amount = 1.0;
 // The gap wanted at distance d: spacing_near out to spacing_from, then growing as a power of d.
 uniform float spacing_near = 0.085;
 uniform float spacing_from = 3.0;
@@ -150,6 +157,12 @@ uniform vec3 ground_colour : source_color = vec3(0.16, 0.22, 0.11);
 // What the field's far edge turns into: the ground there (the pen's own dark green, which the
 // painted ground also is that far out).
 uniform vec3 edge_colour : source_color = vec3(0.16, 0.22, 0.11);
+// The painted ground's glow (pen_grass_4d.gd, pen_ground_paint_4d.gd), worked out the same way
+// here so the far edge fades to the ground actually under it: its middle (x, z), full out to
+// z, gone by w; its colour; 0 or 1, whether it is on.
+uniform vec4 glow_area = vec4(-4.0, -14.0, 12.0, 40.0);
+uniform vec3 glow_colour : source_color = vec3(0.25, 0.31, 0.095);
+uniform float glow_on = 0.0;
 uniform float sheen = 0.32;
 // THE PAINTED LOOK (Ramon, 2 Oct, after Ghibli's meadows: "a very subtle color/hue offset for each
 // blade, and clump parts with different color regions", then "the brighter grass regions ... 3
@@ -313,7 +326,7 @@ void vertex() {
 	float soft = min(0.2, 2.0 * min(kept, 1.0 - kept));
 	float ring = soft > 0.001 ? clamp(0.5 + (kept - keep) / soft, 0.0, 1.0) : (keep < kept ? 1.0 : 0.0);
 	// Only the field's far edge turns the ground's colour.
-	float tint = last_band ? mix(0.55, 1.0, w_out) : 1.0;
+	float tint = 1.0 - far_amount * smoothstep(far_from, far_to, dist);
 	// The cut: as much of the blade as the slice passes through.
 	vec4 rel_root = vb * root + view_origin;
 	float s2 = 1.0 - (rel_root.w / w_radius) * (rel_root.w / w_radius);
@@ -482,7 +495,8 @@ void vertex() {
 			float pick = hash13(vec3(cell, layer + 6.6));
 			c = pick < 0.5 ? flower_a : (pick < 0.8 ? flower_b : flower_c);
 		}
-		v_colour = mix(edge_colour, c, tint);
+		float glow_here = glow_on * (1.0 - smoothstep(glow_area.z, glow_area.w, length(root_xz - glow_area.xy)));
+		v_colour = mix(mix(edge_colour, glow_colour, glow_here), c, tint);
 		v_t = t;
 	}
 }

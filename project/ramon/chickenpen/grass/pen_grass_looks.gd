@@ -58,6 +58,9 @@ const BASE := {
 	"trail_length": 3.0,
 	"trail_spacing": 0.3,
 	"trail_seconds": 6.0,
+	"trample": true,
+	"far_fade_from": 0.5,
+	"far_fade": 1.0,
 }
 
 const PRESETS := {
@@ -67,14 +70,17 @@ const PRESETS := {
 		# vertexes and add more grass"), and the same colour root to tip ("remove the strong
 		# brown gradient from the bottom entirely").
 		"blade_height": 0.16,
-		"blade_width": 0.006,
+		"blade_width": 0.0075,
 		"taper": 0.85,
-		"spacing": 0.036,
-		"spacing_far": 0.16,
+		"spacing": 0.03,
+		"spacing_far": 0.14,
 		"spacing_from": 2.0,
 		"band_vertices": [3, 3, 3, 3, 3],
 		"root_dark": 0.0,
 		"min_pixels": 0.7,
+		# Stays as it is when walked over ("not have the walkthrough mechanic"), and more of it,
+		# a little wider (3 Oct).
+		"trample": false,
 		# Grazed: small patches a little taller or shorter, not tussocks.
 		"clump_size": 0.7,
 		# Short grass hardly bends; it shimmers as the gusts pass.

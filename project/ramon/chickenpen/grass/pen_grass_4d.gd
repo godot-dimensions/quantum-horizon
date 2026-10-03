@@ -59,16 +59,26 @@ const MAX_TILES := 384
 ## pen's own green by glow_out; along W it is gone by glow_w. ground_glow switches it alone,
 ## the sand staying (3 Oct: "can you make a toggle for me for the subtle brighter center
 ## falloff?"; the panel's Centre glow button, Ctrl+O): the ground is painted again, ~30 ms.
+##
+## WHAT IT IS FOR (Ramon, 3 Oct): "the centre glow was intended to fix the hard cutoff of the
+## grass in the distance. right now, the center glow is not a gradient and cuts directly into
+## the mountains" - and "the green of the painted floor looks better". Two faults, both fixed:
+## glow_out was 85 m, past the field's edge (46 m north of the middle), so the glow was still
+## half on where the ground meets the hills and stopped there in a line; now it is gone by
+## glow_out 40 m, the pen's own green from there to the hills. And the grass's far edge faded
+## to the pen's own dark green whatever the ground under it was, so over the glow it ended in a
+## dark ring: the grass shader now works the glow out too and fades to the ground actually there.
 @export var ground_glow: bool = true:
 	set(v):
 		ground_glow = v
 		if is_inside_tree() and not _ground_painted.is_empty():
 			_paint_ground()
+		_glow_to_grass()
 		glow_changed.emit(v)
 @export var glow_centre: Vector2 = Vector2(-4.0, -14.0)
 @export var glow_colour: Color = Color(0.25, 0.31, 0.095)
-@export_range(0.0, 60.0, 0.5, "suffix:m") var glow_in: float = 8.0
-@export_range(5.0, 150.0, 0.5, "suffix:m") var glow_out: float = 85.0
+@export_range(0.0, 60.0, 0.5, "suffix:m") var glow_in: float = 12.0
+@export_range(5.0, 150.0, 0.5, "suffix:m") var glow_out: float = 40.0
 @export_range(3.0, 60.0, 0.5, "suffix:m") var glow_w: float = 30.0
 ## Sand round these (node name: how far past what stands on the ground; for clearing_fill
 ## names, past their whole outline), at their own w, the edge broken by sand_ragged of noise.
@@ -94,6 +104,10 @@ signal preset_changed(index: int)
 @export_range(0.5, 20.0, 0.5, "suffix:m") var spacing_from: float = 3.0
 ## How far round you the grass reaches.
 @export_range(10.0, 80.0, 1.0, "suffix:m") var radius: float = 44.0
+## The far field goes over to the ground's colour from this share of the radius out to its
+## edge, far_fade of the way: so it has no edge to see.
+@export_range(0.0, 1.0, 0.01) var far_fade_from: float = 0.5
+@export_range(0.0, 1.0, 0.01) var far_fade: float = 1.0
 ## The bands of simpler blades: where each ends (the last one ends at the radius), and the
 ## vertices a blade has in each, from your feet out. Same blade, fewer bends.
 @export var band_radii: PackedFloat32Array = PackedFloat32Array([5.0, 10.0, 18.0, 28.0])
@@ -181,6 +195,9 @@ signal preset_changed(index: int)
 @export_range(0.0, 10.0, 0.1, "suffix:m") var trail_length: float = 3.0
 @export_range(0.1, 1.0, 0.05, "suffix:m") var trail_spacing: float = 0.3
 @export_range(0.5, 30.0, 0.5, "suffix:s") var trail_seconds: float = 6.0
+## Whether anything walking through pushes the grass aside at all (off for Pasture: 3 Oct,
+## "when you walk over it, it should stay as is, and not have the walkthrough mechanic").
+@export var trample: bool = true
 
 @export_group("Clearings")
 ## No grass round these (node name: how far out from what stands on the ground, m), the edge
@@ -336,7 +353,21 @@ func _apply_ground() -> void:
 	if node.mesh != use[0]:
 		node.mesh = use[0]
 		node.material_override = use[1]
+	_glow_to_grass()
 	ground_changed.emit(ground_paint)
+
+
+## The glow, for the grass's far edge to fade to the ground actually under it.
+func _glow_to(m: ShaderMaterial) -> void:
+	var on: bool = ground_glow and ground_paint
+	m.set_shader_parameter("glow_area", Vector4(glow_centre.x, glow_centre.y, glow_in, glow_out))
+	m.set_shader_parameter("glow_colour", Vector3(glow_colour.r, glow_colour.g, glow_colour.b))
+	m.set_shader_parameter("glow_on", 1.0 if on else 0.0)
+
+
+func _glow_to_grass() -> void:
+	for band in _bands:
+		_glow_to(band.material)
 
 
 ## Paints the ground, after the mask (the footprints of what gets sand come from it).
@@ -534,6 +565,9 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("band_out", band.outer)
 	m.set_shader_parameter("band_out_fade", band.outer_fade)
 	m.set_shader_parameter("last_band", band.last)
+	m.set_shader_parameter("far_from", radius * far_fade_from)
+	m.set_shader_parameter("far_to", radius)
+	m.set_shader_parameter("far_amount", far_fade)
 	m.set_shader_parameter("spacing_near", spacing)
 	m.set_shader_parameter("spacing_from", spacing_from)
 	m.set_shader_parameter("spacing_power", _power())
@@ -575,6 +609,7 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("cloud_shadows", cloud_shadows)
 	m.set_shader_parameter("cloud_size", cloud_size)
 	m.set_shader_parameter("edge_colour", Vector3(ground_colour.r, ground_colour.g, ground_colour.b))
+	_glow_to(m)
 	for key in ["colour_root", "colour_base", "colour_lush", "colour_dry", "colour_tip", "ground_colour", "region_deep", "region_bright", "haze_colour"]:
 		var c: Color = get(key)
 		m.set_shader_parameter(key, Vector3(c.r, c.g, c.b))
@@ -808,6 +843,9 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 ## (x, strength, z, w) and the way they went (x, z, -, reach). The player first, then the
 ## player's trail behind them, then the rest, 24 at most.
 func _push(pushers: PackedVector4Array, motions: PackedVector4Array, centre: Vector2) -> void:
+	if not trample:
+		_trail.clear()
+		return
 	var now: float = Time.get_ticks_msec() / 1000.0
 	var player := _room.get_node_or_null("Player") as Node4D
 	for p in _pushers:
