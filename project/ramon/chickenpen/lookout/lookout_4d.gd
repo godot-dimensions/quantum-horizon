@@ -418,6 +418,25 @@ func _apply_projection(cam: Camera4D) -> void:
 	cam.set("rendering_engine_name", want)
 
 
+## THE HUD STAYS ON TOP OF THE PROJECTION (Ramon, 3 Oct: "when you press P why does the hud
+## dissapear?"). The Combined renderer shows its picture through a CanvasLayer of its own,
+## added to the viewport at the default layer 1, beside its "CombinedProjectedSubViewport4D";
+## the pen's HUD is drawn on the viewport's own canvas, layer 0, so the picture covered all of
+## it. Put behind it at -1: still over the world it replaces, under the HUD.
+func _hud_over_projection() -> void:
+	var viewport: Viewport = get_viewport()
+	if viewport.get_node_or_null(^"CombinedProjectedSubViewport4D") == null:
+		return
+	for child in viewport.get_children():
+		var layer := child as CanvasLayer
+		if layer == null or layer.layer < 0:
+			continue
+		for rect in layer.get_children():
+			if rect is TextureRect and (rect as TextureRect).texture is ViewportTexture:
+				layer.layer = -1
+				break
+
+
 func next_hint() -> String:
 	return String(story.call("next_hint")) if story != null else ""
 
@@ -684,6 +703,8 @@ func _process(delta: float) -> void:
 	# The prompts are placed through whichever camera is drawing: the farm's, or the raised one.
 	var cam: Camera4D = current_camera()
 	_apply_projection(cam)
+	if projection:
+		_hud_over_projection()
 	for t in [_tag, _board_tag, _down_tag]:
 		if t != null:
 			t.set("_camera", cam)
