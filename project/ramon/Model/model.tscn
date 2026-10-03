@@ -1,9 +1,10 @@
-[gd_scene load_steps=70 format=4 uid="uid://b8kmq3wd4mlnt"]
+[gd_scene load_steps=71 format=4 uid="uid://b8kmq3wd4mlnt"]
 
 [ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="1_sun"]
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="2_player"]
 [ext_resource type="Script" uid="uid://cuceuwghr0d4v" path="res://ramon/Model/scripts/loft_rig_4d.gd" id="4_rig"]
 [ext_resource type="Script" uid="uid://cdkwbv02fti2x" path="res://ramon/Model/scripts/loft_ball_4d.gd" id="5_ball"]
+[ext_resource type="PackedScene" path="res://ramon/Model/wolf.tscn" id="wolf_scene"]
 
 [sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
 
@@ -642,6 +643,10 @@ material_override = SubResource("WireMaterial4D_goswe")
 script = ExtResource("5_ball")
 radius = 0.06
 color = Color(0.86, 0.8, 0.68, 1)
+
+[node name="Wolf" parent="Models" instance=ExtResource("wolf_scene")]
+position = Vector4(-3, 0, 0, 0)
+basis = Projection(4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 4)
 
 [node name="Player" parent="." instance=ExtResource("2_player")]
 position = Vector4(15.344864544847418, 2, 22.775545562154775, 0)

@@ -64,6 +64,7 @@ const WALK_SHOT := 6
 var _room: Node
 var _grass: Node
 var _cam: Camera4D
+var _wide: float = 1.3
 var _walker: Node4D
 var _music: AudioStreamPlayer
 var _layer: CanvasLayer
@@ -100,7 +101,9 @@ func play(room: Node) -> void:
 	_cam = Camera4D.new()
 	_cam.name = "CinematicCamera"
 	_cam.set("rendering_engine_name", "Cross-section")
-	_cam.set("field_of_view_3d", 0.96)
+	# The 4D lens: a Camera4D projects in 4D by default, and field_of_view_3d does nothing then.
+	# Its own default for the wide shots, as they were framed.
+	_wide = float(_cam.get("field_of_view_4d"))
 	_room.add_child(_cam)
 	_cam.make_current()
 	_music = AudioStreamPlayer.new()
@@ -424,9 +427,9 @@ func _hide_hud() -> void:
 func _start_shot() -> void:
 	_caption_title.text = String(SHOTS[_shot][0])
 	_caption_line.text = String(SHOTS[_shot][1])
-	# Close on the blades, and on the leaves against the sky: a longer lens. Everything else: the
-	# starlings' 0.96.
-	_cam.set("field_of_view_3d", 0.62 if _shot == 1 or _shot == LEAVES_SHOT else 0.96)
+	# Close on the blades, and on the leaves against the sky: a longer lens. Everything else as
+	# the camera comes.
+	_cam.set("field_of_view_4d", _wide * 0.6 if _shot == 1 or _shot == LEAVES_SHOT else _wide)
 	_lend_walker(_shot == WALK_SHOT)
 
 

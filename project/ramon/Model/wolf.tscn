@@ -1,0 +1,182 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="1_rig"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="2_ball"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/strider_walker.gd" id="3_walker"]
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_wolf"]
+albedo_color = Color(0.33, 0.34, 0.37, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_eye"]
+size = Vector4(0.026, 0.016, 0.012, 0.02)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_eye"]
+albedo_color = Color(0.86, 0.6, 0.16, 1)
+
+[node name="Wolf" type="Node4D"]
+
+[node name="Hide" type="MeshInstance4D" parent="."]
+material_override = SubResource("TetraMaterial4D_wolf")
+script = ExtResource("1_rig")
+use_ball_colors = true
+smoothing = 2
+profile_sides = 12
+profile_rings = 4
+branch_root_size = 0.3
+
+[node name="Rump" type="MeshInstance4D" parent="Hide"]
+position = Vector4(0, 0.66, -0.44, 0)
+script = ExtResource("2_ball")
+radius = 0.15
+v_scale = 1.2
+color = Color(0.22, 0.23, 0.27, 1)
+
+[node name="Loin" type="MeshInstance4D" parent="Hide"]
+position = Vector4(0, 0.68, -0.22, 0)
+script = ExtResource("2_ball")
+radius = 0.13
+v_scale = 1.2
+color = Color(0.24, 0.25, 0.29, 1)
+
+[node name="Barrel" type="MeshInstance4D" parent="Hide"]
+position = Vector4(0, 0.65, 0.02, 0)
+script = ExtResource("2_ball")
+radius = 0.155
+v_scale = 1.4
+color = Color(0.29, 0.3, 0.34, 1)
+
+[node name="Chest" type="MeshInstance4D" parent="Hide"]
+position = Vector4(0, 0.65, 0.24, 0)
+script = ExtResource("2_ball")
+radius = 0.165
+v_scale = 1.4
+color = Color(0.42, 0.42, 0.44, 1)
+
+[node name="Ruff" type="MeshInstance4D" parent="Hide"]
+position = Vector4(0, 0.74, 0.39, 0)
+script = ExtResource("2_ball")
+radius = 0.16
+v_scale = 1.2
+color = Color(0.56, 0.55, 0.55, 1)
+
+[node name="Skull" type="MeshInstance4D" parent="Hide"]
+position = Vector4(0, 0.8, 0.53, 0)
+script = ExtResource("2_ball")
+radius = 0.12
+color = Color(0.36, 0.36, 0.39, 1)
+
+[node name="Muzzle" type="MeshInstance4D" parent="Hide"]
+position = Vector4(0, 0.76, 0.69, 0)
+script = ExtResource("2_ball")
+radius = 0.065
+v_scale = 0.95
+color = Color(0.66, 0.64, 0.62, 1)
+
+[node name="Nose" type="MeshInstance4D" parent="Hide"]
+position = Vector4(0, 0.755, 0.78, 0)
+script = ExtResource("2_ball")
+radius = 0.032
+color = Color(0.05, 0.05, 0.05, 1)
+
+[node name="ForeHip" type="MeshInstance4D" parent="Hide/Chest"]
+position = Vector4(0.085, -0.09, 0.02, 0)
+script = ExtResource("2_ball")
+radius = 0.085
+v_scale = 1.3
+starts_branch = true
+color = Color(0.4, 0.4, 0.42, 1)
+
+[node name="ForeKnee" type="MeshInstance4D" parent="Hide/Chest/ForeHip"]
+position = Vector4(0, -0.29, -0.09, 0)
+script = ExtResource("2_ball")
+radius = 0.05
+color = Color(0.55, 0.54, 0.54, 1)
+
+[node name="ForeFoot" type="MeshInstance4D" parent="Hide/Chest/ForeHip/ForeKnee"]
+position = Vector4(0, -0.245, 0.09, 0)
+script = ExtResource("2_ball")
+radius = 0.05
+color = Color(0.62, 0.6, 0.58, 1)
+
+[node name="HindHip" type="MeshInstance4D" parent="Hide/Rump"]
+position = Vector4(0.085, -0.1, 0.02, 0)
+script = ExtResource("2_ball")
+radius = 0.1
+v_scale = 1.3
+starts_branch = true
+color = Color(0.34, 0.35, 0.38, 1)
+
+[node name="HindKnee" type="MeshInstance4D" parent="Hide/Rump/HindHip"]
+position = Vector4(0, -0.265, -0.13, 0)
+script = ExtResource("2_ball")
+radius = 0.052
+color = Color(0.5, 0.5, 0.51, 1)
+
+[node name="HindFoot" type="MeshInstance4D" parent="Hide/Rump/HindHip/HindKnee"]
+position = Vector4(0, -0.26, 0.11, 0)
+script = ExtResource("2_ball")
+radius = 0.05
+color = Color(0.62, 0.6, 0.58, 1)
+
+[node name="TailBase" type="MeshInstance4D" parent="Hide/Rump"]
+position = Vector4(0, 0.03, -0.13, 0)
+script = ExtResource("2_ball")
+radius = 0.055
+starts_branch = true
+symmetry_type = 0
+color = Color(0.26, 0.27, 0.3, 1)
+
+[node name="TailMid" type="MeshInstance4D" parent="Hide/Rump/TailBase"]
+position = Vector4(0, -0.1, -0.12, 0)
+script = ExtResource("2_ball")
+radius = 0.08
+color = Color(0.3, 0.31, 0.34, 1)
+
+[node name="TailEnd" type="MeshInstance4D" parent="Hide/Rump/TailBase/TailMid"]
+position = Vector4(0, -0.13, -0.05, 0)
+script = ExtResource("2_ball")
+radius = 0.065
+color = Color(0.25, 0.25, 0.28, 1)
+
+[node name="TailTip" type="MeshInstance4D" parent="Hide/Rump/TailBase/TailMid/TailEnd"]
+position = Vector4(0, -0.08, 0, 0)
+script = ExtResource("2_ball")
+radius = 0.022
+color = Color(0.1, 0.1, 0.11, 1)
+
+[node name="EarBase" type="MeshInstance4D" parent="Hide/Skull"]
+position = Vector4(0.06, 0.09, -0.02, 0)
+script = ExtResource("2_ball")
+radius = 0.042
+v_scale = 0.55
+w_scale = 0.8
+starts_branch = true
+color = Color(0.28, 0.28, 0.31, 1)
+
+[node name="EarTip" type="MeshInstance4D" parent="Hide/Skull/EarBase"]
+position = Vector4(0.015, 0.085, 0, 0)
+script = ExtResource("2_ball")
+radius = 0.008
+color = Color(0.12, 0.12, 0.13, 1)
+
+[node name="EyeL" type="MeshInstance4D" parent="Hide"]
+position = Vector4(0.052, 0.84, 0.62, 0)
+mesh = SubResource("BoxTetraMesh4D_eye")
+material_override = SubResource("TetraMaterial4D_eye")
+
+[node name="EyeR" type="MeshInstance4D" parent="Hide"]
+position = Vector4(-0.052, 0.84, 0.62, 0)
+mesh = SubResource("BoxTetraMesh4D_eye")
+material_override = SubResource("TetraMaterial4D_eye")
+
+[node name="Walker" type="Node4D" parent="."]
+script = ExtResource("3_walker")
+rig_path = NodePath("../Hide")
+leg_name_prefixes = PackedStringArray("ForeHip", "HindHip")
+animation_sides = 10
+animation_rings = 3
+belt_speed = 6.0
+stride_length = 0.3
+step_height = 0.12
+body_bob = 0.03
+blend_joints = true

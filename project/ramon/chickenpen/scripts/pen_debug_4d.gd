@@ -24,6 +24,7 @@ extends Node
 @export var cues_path: NodePath
 @export var game_path: NodePath
 @export var readout_path: NodePath
+@export var wolf_raid_path: NodePath = NodePath("../WolfRaid")
 
 var _manager: Node
 var _player: Node4D
@@ -47,7 +48,7 @@ func _ready() -> void:
 	_readout = get_node_or_null(readout_path) as Label
 	_set_enabled(enabled)
 	if enabled:
-		_say("Debug on: 1 bring chicken  2 teleport to it  3 reveal all  4/5 pen size  6 scatter  7 finish  0 off")
+		_say("Debug on: 1 bring chicken  2 teleport to it  3 reveal all  4/5 pen size  6 scatter  7 finish  8 wolf  0 off")
 
 
 ## One place decides what "off" means, so switching it off in the Inspector, in code and
@@ -90,6 +91,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			_scatter()
 		KEY_7:
 			_finish()
+		KEY_8:
+			# The wolf now, rather than in its own good time (wolf_raid_4d.gd).
+			var raid: Node = get_node_or_null(wolf_raid_path)
+			if raid == null or not bool(raid.call("start_raid")):
+				_say("No wolf: it needs a chicken at home, the pen not full, and you free.")
+				_left = 3.0
 		KEY_0:
 			_say("Debug off.")
 			_left = 2.0

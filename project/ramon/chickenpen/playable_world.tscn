@@ -1,4 +1,4 @@
-[gd_scene load_steps=742 format=3 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=744 format=3 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -66,6 +66,8 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_bounds_4d.gd" id="pen_bounds"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_cave_hill_4d.gd" id="pen_cave_hill"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_rock_pile_4d.gd" id="pen_rock_pile"]
+[ext_resource type="PackedScene" path="res://ramon/Model/wolf.tscn" id="wolf_scene"]
+[ext_resource type="Script" path="res://ramon/chickenpen/wolf/wolf_raid_4d.gd" id="wolf_raid"]
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/cave_hill.res" id="cave_hill_mesh"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/cave/cave.tscn" id="cave_scene"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_range_booth_4d.gd" id="range_booth"]
@@ -4188,6 +4190,10 @@ position = Vector4(-10, 0, 12, -8)
 script = ExtResource("pen_grass")
 metadata/what = "Grass over the field, made and blown about on the GPU (grass/pen_grass.gdshader, follow_up/grass_study.md)."
 
+[node name="Wolf" parent="World" instance=ExtResource("wolf_scene")]
+visible = false
+position = Vector4(30, 0, 30, 0)
+
 [node name="Chickens" type="Node4D" parent="."]
 script = ExtResource("pen_chickens")
 coop_path = NodePath("../Pen/Coop")
@@ -5112,6 +5118,9 @@ player_path = NodePath("../../Player")
 catcher_path = NodePath("../../Player/Catcher")
 locator_path = NodePath("../Locator")
 label_path = NodePath("../../UI/Hint")
+
+[node name="WolfRaid" type="Node" parent="Systems"]
+script = ExtResource("wolf_raid")
 
 [node name="Debug" type="Node" parent="Systems"]
 script = ExtResource("pen_debug")
