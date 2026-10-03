@@ -89,6 +89,8 @@ const PRESETS := {
 		# (Ramon, 3 Oct: "the general style is low poly, we only need enough to make sure it can
 		# bend and not look off").
 		"band_vertices": [9, 7, 5, 3, 3],
+		# No dark root here either (3 Oct: "hay meadow still has the darker roots").
+		"root_dark": 0.0,
 		"blade_height": 0.62,
 		"blade_width": 0.0075,
 		"taper": 0.6,
