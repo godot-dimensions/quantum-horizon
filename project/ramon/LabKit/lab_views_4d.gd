@@ -279,11 +279,15 @@ func _sample_trails(a: Node) -> void:
 
 
 func draw_overlay(canvas: Control, overlay: Node) -> void:
+	# Only while its rig is shown: a rig in a bay you have left is hidden, not gone.
+	if _rig == null or not (_rig as Node4D).is_visible_in_tree():
+		return
 	var a: Node = animal()
 	if a == null:
 		return
 	var ink: Color = Color(0.08, 0.09, 0.11) if mood == Style.BRIGHT else Color(0.96, 0.97, 1.0)
 	var accent: Color = Style.code("motion", mood)
+	var ui: float = clampf(canvas.get_viewport_rect().size.y / 1080.0, 0.7, 2.2)
 	if view == "lines":
 		var root: Node4D = a as Node4D
 		# The foot paths, one loop per foot, in the creature's own frame (on a treadmill a foot
@@ -296,11 +300,11 @@ func draw_overlay(canvas: Control, overlay: Node) -> void:
 				if s != null:
 					pts.append(s)
 			if pts.size() > 2:
-				canvas.draw_polyline(pts, Color(accent, 0.55), 1.6, true)
+				canvas.draw_polyline(pts, Color(accent, 0.55), 1.6 * ui, true)
 		# The body, thinner than the legs: on Trym's creature a bone through each segment (its two
 		# handles); on a lofted animal the spine and branches through its balls, skipping the leg
 		# balls (the legs are drawn from the walker's solved pose below).
-		_draw_skeleton(canvas, overlay, a, Color(ink, 0.85), 2.0)
+		_draw_skeleton(canvas, overlay, a, Color(ink, 0.85), 2.0 * ui)
 		for leg in a.call("legs"):
 			var chain: Array = [leg["hip"], leg["knee"]]
 			if leg.has("ankle"):
@@ -313,18 +317,21 @@ func draw_overlay(canvas: Control, overlay: Node) -> void:
 			for p in chain:
 				var s = overlay.to_screen(p)
 				if s != null and prev != null:
-					canvas.draw_line(prev, s, Color(ink, fade), 3.0, true)
+					canvas.draw_line(prev, s, Color(ink, fade), 3.0 * ui, true)
 				prev = s
 			for j in chain.size() - 1:
 				var sj = overlay.to_screen(chain[j])
 				if sj != null:
-					canvas.draw_circle(sj, 4.5, Color(ink, fade))
+					canvas.draw_circle(sj, 4.5 * ui, Color(ink, fade))
 			var sf = overlay.to_screen(leg["foot"])
 			if sf != null:
 				if bool(leg["planted"]):
-					canvas.draw_circle(sf, 7.0, Color(accent, fade))
+					canvas.draw_circle(sf, 7.0 * ui, Color(accent, fade))
 				else:
-					canvas.draw_arc(sf, 7.0, 0.0, TAU, 20, Color(accent, fade), 2.0, true)
+					canvas.draw_arc(sf, 7.0 * ui, 0.0, TAU, 20, Color(accent, fade), 2.0 * ui, true)
+			# The stepping circle: where a foot in the air will come down, drawn flat on the ground.
+			if not bool(leg["planted"]) and leg.has("land"):
+				_ground_ring(canvas, overlay, leg["land"], 0.075, Color(accent, 0.9 * fade), 1.6 * ui)
 	if view == "balls":
 		# The spine: a line through the balls of each chain, in the build colour.
 		# A chain is the rig's direct ball children in order (the spine) plus each branch nested
@@ -349,6 +356,20 @@ func draw_overlay(canvas: Control, overlay: Node) -> void:
 			var s1 = overlay.to_screen(ball.global_position)
 			if s0 != null and s1 != null:
 				canvas.draw_line(s0, s1, Color(c, 0.75), 2.0, true)
+
+
+## A dashed ring lying on the ground (the X-Z plane) round `centre`, `r` metres across.
+func _ground_ring(canvas: Control, overlay: Node, centre: Vector4, r: float, col: Color, width: float) -> void:
+	var n: int = 20
+	for i in n:
+		if i % 2 == 1:
+			continue
+		var a0: float = TAU * float(i) / float(n)
+		var a1: float = TAU * float(i + 1) / float(n)
+		var p0 = overlay.to_screen(centre + Vector4(cos(a0) * r, 0.0, sin(a0) * r, 0.0))
+		var p1 = overlay.to_screen(centre + Vector4(cos(a1) * r, 0.0, sin(a1) * r, 0.0))
+		if p0 != null and p1 != null:
+			canvas.draw_line(p0, p1, col, width, true)
 
 
 func _draw_skeleton(canvas: Control, overlay: Node, a: Node, ink: Color, width: float) -> void:

@@ -117,7 +117,7 @@ func set_step(s: Resource, is_done: bool) -> void:
 func draw_overlay(canvas: Control, overlay: Node) -> void:
 	if step == null or not is_visible_in_tree():
 		return
-	var anchor: Vector4 = global_position + Vector4(0.0, 1.35, 0.0, 0.0)
+	var anchor: Vector4 = global_position + Vector4(0.0, 1.0, 0.0, 0.0)
 	var s = overlay.to_screen(anchor)
 	if s == null:
 		return
@@ -184,8 +184,10 @@ func draw_overlay(canvas: Control, overlay: Node) -> void:
 		heights.append(rh)
 		h += rh
 	h += pad
-	var pos: Vector2 = (s as Vector2) - Vector2(width * 0.5, h + 10.0 * k)
-	pos.x = clampf(pos.x, 8.0, vp.x - width - 8.0)
+	# Hung below and to the right of the lectern's top, like a label on it: over open floor, not
+	# over the exhibit behind or the avatar beside (found by eye, 4 Oct).
+	var pos: Vector2 = (s as Vector2) + Vector2(-width * 0.12, 16.0 * k)
+	pos.x = clampf(pos.x, 8.0, vp.x - width - 90.0 * ui)
 	pos.y = clampf(pos.y, 8.0, vp.y - h - 8.0)
 	var box: StyleBoxFlat = Style.panel_box(mood, k)
 	box.bg_color.a *= fade
@@ -213,5 +215,5 @@ func draw_overlay(canvas: Control, overlay: Node) -> void:
 			"metric":
 				canvas.draw_string(f_title, Vector2(x, y + fs_kick * 1.2), r[1], HORIZONTAL_ALIGNMENT_LEFT, inner, fs_kick, dim)
 		y += float(heights[i])
-	# A thin leader from the card down to the lectern.
-	canvas.draw_line(Vector2((s as Vector2).x, pos.y + h), s as Vector2, Color(accent, 0.6 * fade), 1.2 * k, true)
+	# A thin leader from the lectern's top to the card.
+	canvas.draw_line(s as Vector2, Vector2(clampf((s as Vector2).x, pos.x + 6.0, pos.x + width - 6.0), pos.y), Color(accent, 0.6 * fade), 1.2 * k, true)

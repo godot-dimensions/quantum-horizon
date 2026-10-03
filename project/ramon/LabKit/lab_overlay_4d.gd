@@ -66,17 +66,30 @@ func to_screen(p: Vector4):
 	return camera.world_to_viewport(p) * _scale
 
 
-## A panel's rectangle moved clear of the HUD's panels (LabKit/lab_hud.gd `occupied_rects`):
-## to the right of one it overlaps, the HUD being on the left edge.
+## A panel's rectangle moved clear of the HUD's panels (LabKit/lab_hud.gd `occupied_rects`).
+## The HUD sits down the left edge with a gap between its guide and its controls card, so a
+## panel first tries that gap (just below the panel it overlaps), and only moves to the right,
+## over the world, when the gap is too small.
 func clear_of_hud(r: Rect2) -> Rect2:
-	var out: Rect2 = r
+	var rects: Array = []
 	for hud in get_tree().get_nodes_in_group("lab_hud"):
-		if not hud.has_method("occupied_rects"):
+		if hud.has_method("occupied_rects"):
+			rects.append_array(hud.call("occupied_rects"))
+	var screen_h: float = canvas.get_viewport_rect().size.y
+	var out: Rect2 = r
+	for o in rects:
+		var rect: Rect2 = o
+		if not out.intersects(rect):
 			continue
-		for o in hud.call("occupied_rects"):
-			var rect: Rect2 = o
-			if out.intersects(rect):
-				out.position.x = rect.end.x
+		var below := Rect2(Vector2(out.position.x, rect.end.y), out.size)
+		var fits: bool = below.end.y < screen_h - 8.0
+		for o2 in rects:
+			if (o2 as Rect2) != rect and below.intersects(o2):
+				fits = false
+		if fits:
+			out = below
+		else:
+			out.position.x = rect.end.x
 	return out
 
 

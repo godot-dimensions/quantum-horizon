@@ -61,6 +61,7 @@ var lift_lit: bool = true
 
 var _mood: String = "bright"
 var _parts: Array = []     # [MeshInstance4D, size, role]
+var _exhibit_light: OmniLight4D
 var _glows: Array = []     # [MeshInstance4D, kind] kind: "part" or "strip" or "pad"
 var _built: bool = false
 
@@ -152,6 +153,14 @@ func _build() -> void:
 		var pad_at: Vector4 = spot("pad")
 		_cubinder_part("Pad", 1.5, 0.05, floor_w * 0.995, pad_at + Vector4(0.0, 0.025, 0.0, 0.0), "pad")
 		_ring_glow("PadRing", 1.55, pad_at + Vector4(0.0, 0.055, 0.0, 0.0), "pad")
+	# A soft light over the exhibit, for the dark mood: a rig without a boom brings no pool of its own.
+	_exhibit_light = OmniLight4D.new()
+	_exhibit_light.name = "ExhibitLight"
+	_exhibit_light.set_meta(GENERATED, true)
+	_exhibit_light.position = spot("rig") + Vector4(0.0, wall_height * 0.8, 1.2, 0.0)
+	_exhibit_light.light_color = Color(0.92, 0.94, 1.0)
+	_exhibit_light.set("omni_range_meters", size * 0.55)
+	add_child(_exhibit_light)
 	_built = true
 	apply_mood(_mood, true)
 
@@ -253,6 +262,9 @@ func apply_mood(mood: String, _instant: bool = false) -> void:
 	_mood = mood
 	if not _built:
 		return
+	if _exhibit_light != null:
+		_exhibit_light.visible = mood == Style.DARK
+		_exhibit_light.light_energy = 1.6
 	for p in _parts:
 		var mi: MeshInstance4D = p[0]
 		var role: String = p[2]

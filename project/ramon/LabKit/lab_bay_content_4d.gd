@@ -14,6 +14,8 @@ extends Node4D
 ##   demo(t) -> float       the autopilot: perform the step's own task at t seconds into its
 ##                          demonstration; return how long the whole demonstration lasts
 ##   rig() -> Node          the bay's main rig, if it has one (for the global view and spin keys)
+##   framing() -> Dictionary  the arrival camera, if this bay's exhibit needs another than the
+##                          kit's: any of "yaw", "pitch" (radians) and "distance" (metres)
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -51,6 +53,10 @@ func metrics() -> Array:
 
 func demo(_t: float) -> float:
 	return 0.0
+
+
+func framing() -> Dictionary:
+	return {}
 
 
 func rig() -> Node:

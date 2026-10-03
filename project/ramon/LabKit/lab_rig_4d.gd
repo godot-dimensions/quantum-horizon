@@ -62,6 +62,13 @@ const GROUP := "lab_rig"
 	set(v):
 		part = v
 		_later()
+## Turns the animal on its rig (degrees, about Y): 90 shows a forward-facing animal in profile,
+## walking to your right, the way motion is read best (Muybridge shot his horses side on). The
+## belt and the boom follow it.
+@export_range(-180.0, 180.0, 1.0) var animal_yaw: float = 0.0:
+	set(v):
+		animal_yaw = v
+		_later()
 @export var show_boom: bool = true:
 	set(v):
 		show_boom = v
@@ -226,6 +233,7 @@ func _build() -> void:
 
 	if animal != null:
 		animal.position = Vector4(0.0, deck_height + stand_top, 0.0, 0.0)
+		animal.basis = Basis4D.from_zx(deg_to_rad(animal_yaw)) * Basis4D.from_xw(_spin_now)
 		if animal.get_parent() == null:
 			add_child(animal)
 	views = Node.new()
@@ -239,7 +247,7 @@ func _build() -> void:
 
 func _front() -> Vector4:
 	var f: Vector4 = animal.get("front_axis") if animal != null else Vector4(0, 0, 1, 0)
-	f = Vector4(f.x, 0.0, f.z, 0.0)
+	f = Basis4D.from_zx(deg_to_rad(animal_yaw)) * Vector4(f.x, 0.0, f.z, 0.0)
 	return f.normalized() if f.length() > 0.5 else Vector4(0.0, 0.0, 1.0, 0.0)
 
 
@@ -422,7 +430,7 @@ func _process(delta: float) -> void:
 	# The W spin, eased.
 	if not is_equal_approx(_spin_now, _spin_goal):
 		_spin_now = move_toward(_spin_now, _spin_goal, delta * 1.6 * maxf(absf(_spin_goal - _spin_now), 0.15))
-		animal.basis = Basis4D.from_xw(_spin_now)
+		animal.basis = Basis4D.from_zx(deg_to_rad(animal_yaw)) * Basis4D.from_xw(_spin_now)
 
 
 func _update_sleep() -> void:

@@ -29,6 +29,10 @@ Found while building. None blocks the lab; each is outside its scope, so nothing
    `lab_surface.gdshader` shows how)?
 4. **`ramdev_dark_grey.png` imports as a 2D texture**, the rest of the set as 3D, so any code
    that loads it as a Texture3D gets nothing (the kit reads either). Change its import to 3D?
+6. **A wolf with layers needs its cut changed.** The strider cuts the whole body into one rigid
+   piece, so the tail and head cannot sway or look on their own (bay 10 uses Trym's creature
+   instead). Giving the tail and the head pieces of their own means changing
+   `chickenpen/scripts/strider_walker.gd`, which the pen's animals share. Shall I?
 5. **The strider's `belt_speed` only counts in `_ready`.** Writing it later does nothing, so
    the cat's flee pace and the wolf raid's run speed never take effect in the pen (the lab
    writes `speed` instead). Fix it in `strider_walker.gd`?
@@ -201,6 +205,43 @@ on for four more animals, below).
   floor and trim in dark; neutral elsewhere. Faint, so the glow strips keep the full colour.
 - `_guided_run_runner.gd` plays bays 0 to 4 as a player would (keys held through Input), 15
   checks a mood, passing in both, frames at every beat.
+
+### Section G: done (4 Oct)
+
+- **Bay 5, cut into pieces:** X drifts the wolf's rigid pieces out in their Blocks colours while it
+  walks, and back. The drift rides on the walk: each frame takes the piece where the walker left
+  it and adds the offset. Measured: 9 pieces, 6 joint bands (333 vertices), 0.92 ms a frame.
+- **Bay 6, the feet find the ground:** the Lines view now draws a dashed stepping circle where
+  each swinging foot will land (the strider's own pure `_foot_position` at the start of stance),
+  with a legend; the task is four seconds of slow motion.
+- **Bay 7, a clock drives the gait:** Trym's creature in profile; G steps through its five gaits,
+  O puts the ana and kata halves of every leg half a cycle apart; a live footfall chart (eight
+  rows, after Hildebrand) read from the driver's own offsets and duty.
+- **Bay 8, three views, one walk:** three wolves set in step, skin, blocks and lines; Space and .
+  act on all three; a strip of the middle wolf's bones at eight even moments of the stride,
+  recorded from the live walk, drawn along the top.
+- **Bay 9, what it costs:** the foreleg four ways from one swing: standing (0 ms), two rigid
+  pieces moved (0.001 ms), skinned per vertex (0.018 ms of script), re-lofted every frame
+  (12.6 ms). The card says plainly that skinning's real price is the engine's vertex upload,
+  outside script timers, and a whole-frame bar shows it.
+- **Bay 10, layers:** Trym's solvers faded through their own strengths (no on/off exists, and
+  stopping one freezes its last pose); the ground solver, which has no strength, has its ground
+  lowered out of reach instead. 0.27 ms a frame for all six.
+- **Changed from the plan, and why:**
+  - *No wolf tail and head layers* (steps 9 and 58): the strider cuts the wolf's whole body into
+    one rigid piece, so a tail that sways on its own needs the cut changed, in a script the pen's
+    animals share. Left as a question.
+  - *No wolf beside Trym in bay 7*: two exhibits plus the chart crowded a 1280x720 view; the
+    wolf's trot and canter presets work through the same G key on the Hall's wolf.
+  - *The chicken's steady head and pecks* go to the Hall, for the same reason.
+- **Kit additions found on the way:** `animal_yaw` on the rig (motion reads side on); a per-bay
+  `framing()` for the arrival camera (Trym's creature is four metres long); a soft exhibit light
+  in every bay for the dark mood (rigs without a boom had no light); `pieces()` no longer counts
+  the loft balls (before the cut it returned the ten balls, which are MeshInstance4D too); the
+  Lines overlay stops drawing when its bay is hidden; overlay panels drop into the gap under the
+  guide panel before moving over the world; the lectern card hangs below and right of the
+  lectern, over open floor.
+- The guided runner plays the whole route, Atrium to bay 10: 33 checks a mood, passing in both.
 
 **Animals that needed lab versions** (subclasses, so fixes to the originals reach the lab):
 the chicken's walker and the cat walk in place (`creatures/lab_chicken_walker.gd`,

@@ -241,15 +241,28 @@ func _stand_on_pad(i: int) -> void:
 	_face_exhibit()
 
 
+## The arrival camera for bay `i`: the kit's (ARRIVAL_YAW and the rest), or what its content's
+## framing() asks for (a big exhibit wants the camera further out).
+func arrival(i: int) -> Dictionary:
+	var out: Dictionary = {"yaw": ARRIVAL_YAW, "pitch": ARRIVAL_PITCH, "distance": ARRIVAL_DISTANCE}
+	var c: Node = bays[i]["content"] if i >= 0 and i < bays.size() else null
+	if c != null and c.has_method("framing"):
+		var f: Dictionary = c.call("framing")
+		for k in f:
+			out[k] = f[k]
+	return out
+
+
 ## The avatar towards the rig (-Z from the pad: the walker's facing PI) and the camera at the
-## arrival framing (ARRIVAL_YAW and the rest).
+## arrival framing.
 func _face_exhibit() -> void:
 	player.set("_facing", PI)
 	var rig: Node = player.get_node_or_null("CameraRig")
 	if rig != null:
-		rig.set("yaw", ARRIVAL_YAW)
-		rig.set("pitch", ARRIVAL_PITCH)
-		rig.set("_zoom_target", ARRIVAL_DISTANCE)
+		var a: Dictionary = arrival(current)
+		rig.set("yaw", float(a["yaw"]))
+		rig.set("pitch", float(a["pitch"]))
+		rig.set("_zoom_target", float(a["distance"]))
 		# The orbit rig only rebuilds its basis on mouse motion; values written from code need this.
 		rig.call("_apply")
 
@@ -365,9 +378,10 @@ func _advance_lift(delta: float) -> void:
 				var p: Vector4 = _lift["pad"]
 				player.global_position = Vector4(lerpf(s.x, p.x, k), lerpf(s.y, p.y, k), lerpf(s.z, p.z, k), lerpf(s.w, p.w, k))
 			if rig != null:
-				rig.set("yaw", lerp_angle(float(rig.get("yaw")), ARRIVAL_YAW, k))
-				rig.set("pitch", lerpf(float(rig.get("pitch")), ARRIVAL_PITCH, k))
-				rig.set("_zoom_target", ARRIVAL_DISTANCE)
+				var a: Dictionary = arrival(int(_lift["to"]))
+				rig.set("yaw", lerp_angle(float(rig.get("yaw")), float(a["yaw"]), k))
+				rig.set("pitch", lerpf(float(rig.get("pitch")), float(a["pitch"]), k))
+				rig.set("_zoom_target", float(a["distance"]))
 				rig.call("_apply")
 			if player != null:
 				player.set("_facing", lerp_angle(float(player.get("_facing")), PI, k))
