@@ -54,6 +54,16 @@ extends Control
 ## place as what the dial is centred on and levels against, while it is in the tree: the
 ## cave hangs a kilometre from the pen, and anchored on the pen the dial pushed you out to
 ## its rim and everything round you with you.
+##
+## PLACES, AS OUTLINES (Ramon, 3 Oct: "I want the marsh, the watchtower, the owl, the cave, all
+## to show up on the gizmo dynamically ... the same way you show the pen", and "if i want to
+## move something, the gizmo gets updated"). Anything in "slice_dial_outline" with a
+## dial_outline() is drawn as its footprint, asked for afresh every frame, so a place moved in
+## the editor or during play is drawn where it is now. Each is its footprint on the ground; one
+## off the pen's w (the marsh at +8, the owl at +1.5) has its w in its name and fills in while
+## your slice passes through it. NOT RAISED TO ITS W, as a chicken is: eight metres of W is two
+## fifths of the panel's height here, so the marsh drawn at its w was always off the top of the
+## dial. One wholly off the dial is a notch on the rim, pointing the way it lies.
 
 @export var player_path: NodePath
 ## The pen, whose footprint is the fixed half of the picture.
@@ -161,6 +171,7 @@ extends Control
 const FALLBACK := Rect2(-5.0, -4.5, 10.0, 9.0)
 const LANDMARK_GROUP := &"slice_dial_landmark"
 const ANCHOR_GROUP := &"slice_dial_anchor"
+const OUTLINE_GROUP := &"slice_dial_outline"
 ## ISOMETRIC, AND NOT THE OBLIQUE VIEW THIS STARTED WITH.
 ##
 ## Any fixed projection from three dimensions to two collapses one direction, and every
@@ -388,6 +399,7 @@ func _draw() -> void:
 	var birds: Array = _flock()
 	var folk: Array = _folk()
 	var marks: Array = _landmarks()
+	var places: Array = _places(origin, mid, radius)
 	var sheet_heights: Array = []
 	for c in sheet_corners:
 		sheet_heights.append(_w_above(c.x, c.y))
@@ -400,6 +412,14 @@ func _draw() -> void:
 		everything.append(mark[2])
 	var fitted_all: Array = _fitted(everything)
 	var drawn: Array = fitted_all.slice(0, sheet_corners.size())
+
+	# The places, on the ground under the sheet.
+	var place_tags: Array = []
+	for place in places:
+		if bool(place[5]):
+			place_tags.append(_draw_place(place, origin, mid, radius))
+		else:
+			place_tags.append(_rim_mark(place, origin, mid, radius))
 
 	var live := PackedVector2Array()
 	for i in sheet_corners.size():
@@ -456,6 +476,19 @@ func _draw() -> void:
 	for i in marks.size():
 		if fades[folk.size() + i] > 0.4:
 			_name_tag(font, String(marks[i][3]), tags[folk.size() + i], marks[i][4], _icon_clearance(font, String(marks[i][6])))
+	# A place's name centred on where it says, and always there: one whose middle is past the rim
+	# (only part of it on the dial) has its name brought in to just inside the rim, that way.
+	for i in places.size():
+		var spot: Vector2 = place_tags[i]
+		var keep: float = radius - 30.0 * u
+		if (spot - origin).length() > keep:
+			spot = origin + (spot - origin).normalized() * keep
+		var called: String = String(places[i][1])
+		var w: float = (places[i][6] as Vector4).w
+		if absf(w) > 0.3:
+			called += "  w %s" % ("%+.1f" % w).trim_suffix(".0")
+		var width: float = font.get_string_size(called, HORIZONTAL_ALIGNMENT_LEFT, -1, int(round(13.0 * u))).x
+		_name_tag(font, called, spot - Vector2(width * 0.5, 0.0), places[i][2], 0.0)
 
 	_draw_you(shrink, origin, mid, u)
 
@@ -710,6 +743,83 @@ func _landmarks() -> Array:
 			float(n.get_meta(&"dial_tolerance", home_tolerance)),
 			String(n.get_meta(&"dial_icon", "arch"))])
 	return out
+
+
+## The places drawn as outlines, as [points (world), name, colour, half its depth in W, where
+## the name goes (world), on the dial at least in part, middle (world)]: those that are up (the
+## farm's are asleep in the theatre and the cave). One wholly off the dial gets a mark on its rim.
+func _places(origin: Vector2, mid: Vector2, radius: float) -> Array:
+	var out: Array = []
+	for node in get_tree().get_nodes_in_group(OUTLINE_GROUP):
+		var n := node as Node4D
+		if n == null or not n.is_visible_in_tree() or not n.has_method("dial_outline"):
+			continue
+		var d: Dictionary = n.call("dial_outline")
+		var points: PackedVector4Array = d.get("points", PackedVector4Array())
+		if points.size() < 3:
+			continue
+		var seen: bool = false
+		var centre := Vector4.ZERO
+		for p in points:
+			centre += p
+			seen = seen or _fade(Vector2(p.x, p.z), origin, mid, radius) > 0.01
+		centre /= float(points.size())
+		out.append([points, String(d.get("label", n.name)), d.get("colour", Color(0.85, 0.85, 0.85, 0.9)),
+			float(d.get("depth", home_tolerance)), d.get("label_at", centre), seen, centre])
+	return out
+
+
+## One place: its footprint on the ground, in its colour, cut off at the rim; if it is off the
+## pen's w, filled while your slice passes through its middle within its depth in W. Returns
+## where its name goes.
+func _draw_place(place: Array, origin: Vector2, mid: Vector2, radius: float) -> Vector2:
+	var u: float = _ui()
+	var points: PackedVector4Array = place[0]
+	var tint: Color = place[2]
+	var at: Vector4 = place[4]
+	var disc := PackedVector2Array()
+	for i in 64:
+		var a: float = TAU * float(i) / 64.0
+		disc.append(origin + Vector2(cos(a), sin(a)) * (radius - 2.0 * u))
+	var ground := PackedVector2Array()
+	var off_ground: bool = false
+	for p in points:
+		ground.append(_plan(p.x, p.z, 0.0, origin, mid))
+		off_ground = off_ground or absf(p.w) > 0.3
+	var true_w: float = _w_above(at.x, at.z)
+	var on_slice: bool = off_ground and not is_nan(true_w) and absf(true_w - at.w) <= float(place[3])
+	if on_slice:
+		for piece in Geometry2D.intersect_polygons(ground, disc):
+			if Geometry2D.triangulate_polygon(piece).size() > 0:
+				draw_colored_polygon(piece, Color(tint.r, tint.g, tint.b, 0.2))
+	_rim_cut(_closed(ground), disc, tint, (2.2 if on_slice else 1.4) * minf(u, 1.3))
+	return _plan(at.x, at.z, 0.0, origin, mid)
+
+
+## A place wholly off the dial: a notch on the rim in its colour, pointing the way it lies, and
+## its name just inside (Ramon, 3 Oct: "all to show up on the gizmo"). The dial is centred on the
+## pen and holds you on a ring inside its rim, so a place much past you is past the rim too.
+## Returns where its name goes.
+func _rim_mark(place: Array, origin: Vector2, mid: Vector2, radius: float) -> Vector2:
+	var u: float = _ui()
+	var middle: Vector4 = place[6]
+	var way: Vector2 = _plan(middle.x, middle.z, 0.0, origin, mid) - origin
+	if way.length() < 0.001:
+		return origin
+	way = way.normalized()
+	var tip: Vector2 = origin + way * (radius - 3.0 * u)
+	var across := Vector2(-way.y, way.x)
+	var foot: Vector2 = tip - way * 10.0 * u
+	var tint: Color = place[2]
+	draw_colored_polygon(PackedVector2Array([tip, foot + across * 5.5 * u, foot - across * 5.5 * u]), tint)
+	return tip - way * 26.0 * u
+
+
+## [param line] drawn only where it is inside [param disc], the dial's circle.
+func _rim_cut(line: PackedVector2Array, disc: PackedVector2Array, colour: Color, width: float) -> void:
+	for piece in Geometry2D.intersect_polyline_with_polygon(line, disc):
+		if piece.size() >= 2:
+			draw_polyline(piece, colour, width, true)
 
 
 ## A landmark: drawn like a person - stem, rung, a ring once your slice goes through it -

@@ -101,12 +101,24 @@ var _rng := RandomNumberGenerator.new()
 var _voice: AudioStreamPlayer
 
 
+## On the pen's dial (pen_slice_plane_4d.gd, Ramon, 3 Oct: "I want the marsh, the watchtower,
+## the owl, the cave, all to show up on the gizmo dynamically"): a small ring under its perch, at its w, where it is now - asked
+## for every frame, so moving it moves it on the dial too.
+func dial_outline() -> Dictionary:
+	var points := PackedVector4Array()
+	for i in 12:
+		var a: float = TAU * float(i) / 12.0
+		points.append(global_position * Vector4(1.0, 0.0, 1.0, 1.0) + Vector4(cos(a), 0.0, sin(a), 0.0) * 1.3)
+	return {"points": points, "label": "owl", "colour": Color(0.82, 0.70, 1.0, 0.9), "depth": 0.5}
+
+
 func _changed() -> void:
 	if is_node_ready():
 		rebuild()
 
 
 func _ready() -> void:
+	add_to_group(&"slice_dial_outline")
 	_rng.seed = 41
 	rebuild()
 	if Engine.is_editor_hint():

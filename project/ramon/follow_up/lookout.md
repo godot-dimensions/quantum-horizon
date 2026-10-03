@@ -400,3 +400,14 @@ inherited scene anymore". What was checked first, and what came of it:
   row on the pen's controls card, no longer on the Lookout card.
   `lookout/_verify_no_carry_over_runner.gd`. The rule in general: a subgame may change the HUD
   at its own site, but nothing of it follows you out.
+- **On the pen's dial** (Ramon: "I want the marsh, the watchtower, the owl, the cave, all to show
+  up on the gizmo dynamically ... if i want to move something, the gizmo gets updated"). The
+  Lookout's deck square, the marsh's sandy oval, a ring under the owl and the cave hill's
+  footprint are drawn on the slice dial as outlines on the ground, each in its own colour and
+  named; one off the pen's w has it in its name ("marsh  w +8", "owl  w +1.5") and fills in
+  while your slice passes through it. Not raised to its w as a chicken is: 8 m of W is two fifths
+  of the panel's height, so the marsh drawn at its w was always off the top. A place wholly off
+  the dial is a notch on the rim, pointing the way it lies, with its name; one partly on has its
+  name brought in to the rim. Each place answers `dial_outline()` (group `slice_dial_outline`)
+  and the dial asks every frame, so moving the LookoutSite (or the CaveHill) moves them on it.
+  `scripts/_verify_dial_places_runner.gd`.

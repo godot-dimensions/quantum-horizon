@@ -32,6 +32,7 @@ func _ready() -> void:
 	super()
 	if Engine.is_editor_hint():
 		return
+	add_to_group(&"slice_dial_outline")
 	var recipe = CaveHill.new()
 	var body := StaticBody4D.new()
 	body.name = "Solid"
@@ -62,6 +63,22 @@ func _physics_process(_delta: float) -> void:
 		# Deferred: the crossing swaps whole branches of the tree, which is not something to
 		# do from inside a physics step (hub_demo_lessons.md: scene changes from physics crash).
 		entered.emit.call_deferred()
+
+
+## On the pen's dial (pen_slice_plane_4d.gd, Ramon, 3 Oct: "I want the marsh, the watchtower,
+## the owl, the cave, all to show up on the gizmo dynamically"): the hill's footprint, named at its mouth, where it is now - asked
+## for every frame, so moving it moves it on the dial too.
+func dial_outline() -> Dictionary:
+	var points := PackedVector4Array()
+	var bend: float = 2.0 / CaveHill.ROUNDNESS
+	for i in 32:
+		var a: float = TAU * float(i) / 32.0
+		var c: float = cos(a)
+		var s: float = sin(a)
+		var edge := Vector4(signf(c) * pow(absf(c), bend) * CaveHill.HALF.x, 0.0, signf(s) * pow(absf(s), bend) * CaveHill.HALF.y, 0.0)
+		points.append(global_position + global_basis * (CaveHill.HILL + edge))
+	return {"points": points, "label": "cave", "colour": Color(0.50, 0.88, 0.78, 0.9), "depth": CaveHill.HALF.z,
+		"label_at": global_position + global_basis * CaveHill.MOUTH}
 
 
 ## Walkable again after coming back out - the crossing calls this on everything.

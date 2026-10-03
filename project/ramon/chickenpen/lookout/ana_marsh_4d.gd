@@ -67,7 +67,21 @@ var _materials: Dictionary = {}
 
 
 func _ready() -> void:
+	add_to_group(&"slice_dial_outline")
 	rebuild()
+
+
+## On the pen's dial (pen_slice_plane_4d.gd, Ramon, 3 Oct: "I want the marsh, the watchtower,
+## the owl, the cave, all to show up on the gizmo dynamically"): the sandy rim's oval, at the marsh's w, where it is now - asked
+## for every frame, so moving it moves it on the dial too.
+func dial_outline() -> Dictionary:
+	var rx: float = pond_size_x * 0.5 + 1.0
+	var rz: float = rx * pond_size_z / pond_size_x
+	var points := PackedVector4Array()
+	for i in 24:
+		var a: float = TAU * float(i) / 24.0
+		points.append(global_position + global_basis * Vector4(cos(a) * rx, 0.0, sin(a) * rz, 0.0))
+	return {"points": points, "label": "marsh", "colour": Color(0.45, 0.72, 1.0, 0.9), "depth": w_depth * 0.5}
 
 
 func rebuild() -> void:

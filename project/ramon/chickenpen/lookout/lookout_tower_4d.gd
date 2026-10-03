@@ -100,7 +100,19 @@ var _materials: Dictionary = {}
 
 
 func _ready() -> void:
+	add_to_group(&"slice_dial_outline")
 	rebuild()
+
+
+## On the pen's dial (pen_slice_plane_4d.gd, Ramon, 3 Oct: "I want the marsh, the watchtower,
+## the owl, the cave, all to show up on the gizmo dynamically"): the deck's square, where it is now - asked
+## for every frame, so moving it moves it on the dial too.
+func dial_outline() -> Dictionary:
+	var h: float = top_half()
+	var points := PackedVector4Array()
+	for c in [Vector2(-h, -h), Vector2(h, -h), Vector2(h, h), Vector2(-h, h)]:
+		points.append(global_position + global_basis * Vector4(c.x, 0.0, c.y, 0.0))
+	return {"points": points, "label": "Lookout", "colour": Color(0.95, 0.70, 0.42, 0.9), "depth": cab_w_depth * 0.5}
 
 
 ## Half the width of what you stand on up there: the deck, or the cab's catwalk.
