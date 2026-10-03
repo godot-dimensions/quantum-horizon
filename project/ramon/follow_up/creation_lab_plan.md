@@ -120,6 +120,24 @@ on for four more animals, below).
 - `_verify_rig_runner.gd`, 10 checks, passing on the wolf, Trym's creature and the chicken: the
   belt's direction and stop, the spin, sleep and wake, and every view switch restoring exactly.
 
+### Section D: done (3 Oct, night)
+
+- **The bay shell** (`LabKit/lab_bay_4d.gd`, bench `CreationLab/_bay_test.tscn`): a 14 m test cell,
+  open at the front where you arrive; walls on three sides with chamfered corners; Ramon's grid
+  at 2 m a tile; a skirting light and a cap light along the walls; a light ring and four thin
+  crossbars overhead; the step's number as large segmented digits on the back wall, built from
+  bars; the W-lift's pad. Every piece has its own W thickness for the dissolve.
+- **Spacing found by eye:** the first bay (18 m, rig nine metres from the pad) showed a small wolf
+  far off. Now pad, learning zone, lectern and rig sit on one line about six metres long, and a
+  rig can show a small animal enlarged (`animal_scale`, as exhibitions show models; the wolf at
+  1.4x in its teaching bays, said on its card). Trym's creature is never scaled.
+- **Moods tuned for both:** bright is a clean white studio (front-left key, so faces turned right
+  fall into shade and white boxes read against white floor); dark is a blue-black room carried by
+  the rigs' light pools and the glow strips. Checked with the extremes side by side: the white
+  goat and chicken on grey decks, the black cat against white; under the dark pools the cat gets
+  a rim of light and the white animals glow without blowing out.
+- An outer floor a step below the bays, so their open front looks onto floor, not sky.
+
 **Animals that needed lab versions** (subclasses, so fixes to the originals reach the lab):
 the chicken's walker and the cat walk in place (`creatures/lab_chicken_walker.gd`,
 `lab_cat.gd`); the heron flies straight up and down its column (`lab_heron.gd`); the people's

@@ -43,6 +43,14 @@ const GROUP := "lab_rig"
 	set(v):
 		animal_scene = v
 		_later()
+## Shows the animal enlarged (or reduced) on this rig, as an exhibition shows a model at a
+## scale: a 0.9 m wolf in a 14 m bay reads small from where you arrive. Multiplies the animal's
+## own display_scale, and its footprint and height with it, before it is built. Ignored for an
+## animal driven by FABRIK (Trym's creature), which cannot be scaled.
+@export_range(0.25, 4.0, 0.05) var animal_scale: float = 1.0:
+	set(v):
+		animal_scale = v
+		_later()
 ## The drum's radius in metres; 0 sizes it from the animal's footprint.
 @export_range(0.0, 20.0, 0.05) var radius: float = 0.0:
 	set(v):
@@ -122,6 +130,11 @@ func _build() -> void:
 		var a: Node = animal_scene.instantiate()
 		a.name = "Animal"
 		a.set_meta(GENERATED, true)
+		if not is_equal_approx(animal_scale, 1.0) and String(a.get("driver")) != "trym":
+			a.set("display_scale", float(a.get("display_scale")) * animal_scale)
+			a.set("footprint_radius", float(a.get("footprint_radius")) * animal_scale)
+			a.set("height", float(a.get("height")) * animal_scale)
+			a.set("column_height", float(a.get("column_height")) * animal_scale)
 		animal = a as Node4D
 	else:
 		animal = get_node_or_null("Animal") as Node4D
