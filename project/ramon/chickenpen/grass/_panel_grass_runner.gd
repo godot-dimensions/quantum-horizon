@@ -57,6 +57,17 @@ func _process(d: float) -> bool:
 		_t = 0.0
 	elif _step == 4 and _t > 1.0:
 		print("      after Ctrl+O again: glow %s" % _grass.get("ground_glow"))
+		_press_o(false, true)
+		_step = 5
+		_t = 0.0
+	elif _step == 5 and _t > 1.0:
+		print("      after Alt+O: grass %s" % ("on" if _grass.get("enabled") else "off"))
+		root.get_texture().get_image().save_png("res://smoke_test_output/grass_panel_3_grass_off.png")
+		_press_o(false, true)
+		_step = 6
+		_t = 0.0
+	elif _step == 6 and _t > 1.0:
+		print("      after Alt+O again: grass %s" % ("on" if _grass.get("enabled") else "off"))
 		print("PANEL DONE")
 		if FileAccess.file_exists("user://lookout_journal_panel_test.cfg"):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path("user://lookout_journal_panel_test.cfg"))
@@ -64,11 +75,12 @@ func _process(d: float) -> bool:
 	return false
 
 
-func _press_o(ctrl: bool = false) -> void:
+func _press_o(ctrl: bool = false, alt: bool = false) -> void:
 	var e := InputEventKey.new()
 	e.keycode = KEY_O
 	e.physical_keycode = KEY_O
 	e.ctrl_pressed = ctrl
+	e.alt_pressed = alt
 	e.pressed = true
 	Input.parse_input_event(e)
 	var up := InputEventKey.new()

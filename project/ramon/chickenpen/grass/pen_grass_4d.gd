@@ -35,6 +35,7 @@ const MAX_TILES := 384
 	set(v):
 		enabled = v
 		_set_visible()
+		enabled_changed.emit(v)
 ## The look to start in, from pen_grass_looks.gd (1 Pasture, 2 Hay meadow); 0 keeps the values set
 ## on this node. The grass panel (and O) switches between them while playing.
 @export_range(0, 9) var start_preset: int = 2
@@ -78,6 +79,9 @@ const MAX_TILES := 384
 @export_range(0.0, 4.0, 0.05, "suffix:m") var sand_ragged: float = 1.0
 
 signal ground_changed(painted: bool)
+## The grass switched on or off (the panel's Grass button, Alt+O: 3 Oct, "i also need a toggle
+## for turning the grass off").
+signal enabled_changed(on: bool)
 signal glow_changed(on: bool)
 
 signal preset_changed(index: int)

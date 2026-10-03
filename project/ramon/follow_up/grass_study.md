@@ -292,7 +292,13 @@ make it flow like on barley fields, even though its not".
   pen (55, 72, 37) -> (67, 88, 35), the far corners unchanged. It costs nothing a frame and rides
   on the painted ground the sand needs anyway. **Its own toggle** ("can you make a toggle for me
   for the subtle brighter center falloff?"): `ground_glow`, the panel's "Centre glow" button,
-  Ctrl+O; the ground is painted again without it (the sand stays), ~30 ms.
+  Ctrl+O; the ground is painted again without it (the sand stays), ~30 ms. Ramon found it hard
+  to see ("center glow doesnt work, maybe overwritten by the paint layer"): measured, it does
+  switch - with it off the painted ground IS the pen's own colour past the grass (62, 71, 41),
+  only the sand added; with it on (70, 83, 39), and (73, 96, 37) behind the pen. It just hides
+  under the grass except in the strip of bare ground past it.
+- **Grass on / off** ("i also need a toggle for turning the grass off"): the panel's Grass
+  button and Alt+O (`enabled`; not G, which picks Nike up).
 
 ## Cost (RTX 5080, 1280x720, interleaved on/off, after the pen's warm-up)
 

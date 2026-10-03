@@ -31,6 +31,7 @@ var at_height: float = 0.5
 var _buttons: Array[Button] = []
 var _ground_buttons: Array[Button] = []
 var _glow_button: Button
+var _grass_button: Button
 var _title: Label
 var _hint: Label
 var _box: VBoxContainer
@@ -61,7 +62,10 @@ func _ready() -> void:
 	_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pad.add_child(_box)
 	_title = _label("Grass", Color(1.0, 1.0, 1.0, 0.58))
-	_hint = _label("O to switch, Esc for the mouse", Color(1.0, 1.0, 1.0, 0.38))
+	# The grass itself, on or off (Alt+O). Not G: G picks Nike up.
+	_grass_button = _button("Grass on   Alt+O")
+	_grass_button.pressed.connect(_toggle_grass)
+	_hint = _label("Look   O      (Esc for the mouse)", Color(1.0, 1.0, 1.0, 0.38))
 	var keys: Array = LOOKS.PRESETS.keys()
 	keys.sort()
 	for n in keys:
@@ -84,6 +88,9 @@ func _ready() -> void:
 		grass.connect("ground_changed", _on_ground)
 	if grass != null and grass.has_signal("glow_changed"):
 		grass.connect("glow_changed", _on_glow)
+	if grass != null and grass.has_signal("enabled_changed"):
+		grass.connect("enabled_changed", _on_enabled)
+	_on_enabled(bool(grass.get("enabled")) if grass != null else false)
 	_on_glow(bool(grass.get("ground_glow")) if grass != null else false)
 	_on_changed(int(grass.get("preset")) if grass != null else 0)
 	_on_ground(bool(grass.get("ground_paint")) if grass != null else false)
@@ -147,6 +154,17 @@ func _set_ground(painted: bool) -> void:
 		grass.set("ground_paint", painted)
 
 
+func _toggle_grass() -> void:
+	if grass != null:
+		grass.set("enabled", not bool(grass.get("enabled")))
+
+
+func _on_enabled(on: bool) -> void:
+	if _grass_button != null:
+		_grass_button.text = "Grass on   Alt+O" if on else "Grass off   Alt+O"
+		_paint(_grass_button, on)
+
+
 func _toggle_glow() -> void:
 	if grass != null:
 		grass.set("ground_glow", not bool(grass.get("ground_glow")))
@@ -178,7 +196,10 @@ func _paint(b: Button, mine: bool) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).keycode == KEY_O):
 		return
-	if (event as InputEventKey).ctrl_pressed:
+	if (event as InputEventKey).alt_pressed:
+		_toggle_grass()
+		get_viewport().set_input_as_handled()
+	elif (event as InputEventKey).ctrl_pressed:
 		_toggle_glow()
 		get_viewport().set_input_as_handled()
 	elif (event as InputEventKey).shift_pressed:
