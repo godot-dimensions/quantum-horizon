@@ -70,6 +70,7 @@ const BASE := {
 	"tuft_height": 1.9,
 	"flower_height": 1.5,
 	"flower_share": 0.012,
+	"big_gust_strength": 0.0,
 }
 
 const PRESETS := {
@@ -156,9 +157,18 @@ const PRESETS := {
 		# Further out, so the fade into the ground starts further away.
 		"radius": 52.0,
 		"far_fade_from": 0.55,
-		# A few more wildflowers, standing a little above the grass.
-		"flower_share": 0.02,
+		# Wildflowers standing a little above the grass, but not all over it (3 Oct: "make the
+		# colored top bits a bit less often, its all over now"; was 2%).
+		"flower_share": 0.007,
 		"flower_height": 1.3,
+		# Now and then a big gust over the whole field ("sometimes have a stronger and larger
+		# gust of wind blow over").
+		"big_gust_strength": 6.0,
+		"big_gust_every": 16.0,
+		"big_gust_chance": 0.7,
+		"big_gust_width": 14.0,
+		"big_gust_speed": 14.0,
+		"big_gust_lean": 0.32,
 		"min_pixels": 0.7,
 		"clump_size": 1.6,
 		# The wind as on barley: long crests, a softer, more even blow under them, less of each

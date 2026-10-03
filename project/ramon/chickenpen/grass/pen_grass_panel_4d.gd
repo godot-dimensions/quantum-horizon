@@ -32,6 +32,8 @@ var _buttons: Array[Button] = []
 var _ground_buttons: Array[Button] = []
 var _glow_button: Button
 var _grass_button: Button
+var _dark_label: Label
+var _dark_slider: HSlider
 var _title: Label
 var _hint: Label
 var _box: VBoxContainer
@@ -82,6 +84,22 @@ func _ready() -> void:
 	# The centre glow alone, on or off, the sand staying (Ctrl+O).
 	_glow_button = _button("Centre glow   Ctrl+O")
 	_glow_button.pressed.connect(_toggle_glow)
+	# Darkness, a test for every look (3 Oct: "a darkness toggle slider so i can test and tell
+	# you later which number to pick"): the number is what to tell Claude.
+	_dark_label = _label("", Color(1.0, 1.0, 1.0, 0.58))
+	_dark_slider = HSlider.new()
+	_dark_slider.min_value = 0.0
+	_dark_slider.max_value = 0.75
+	_dark_slider.step = 0.01
+	_dark_slider.custom_minimum_size = Vector2(150.0, 18.0)
+	# No focus, as the buttons: the arrow keys are the player's.
+	_dark_slider.focus_mode = Control.FOCUS_NONE
+	_dark_slider.mouse_filter = Control.MOUSE_FILTER_STOP
+	_box.add_child(_dark_slider)
+	var shade_now: float = float(grass.call("_shade")) if grass != null else 0.6
+	_dark_slider.value = 1.0 - shade_now
+	_dark_slider.value_changed.connect(_on_dark)
+	_on_dark(_dark_slider.value)
 	if grass != null and grass.has_signal("preset_changed"):
 		grass.connect("preset_changed", _on_changed)
 	if grass != null and grass.has_signal("ground_changed"):
@@ -152,6 +170,12 @@ func _pick(n: int) -> void:
 func _set_ground(painted: bool) -> void:
 	if grass != null:
 		grass.set("ground_paint", painted)
+
+
+func _on_dark(darkness: float) -> void:
+	_dark_label.text = "Darkness   %.2f" % darkness
+	if grass != null and absf((1.0 - darkness) - float(grass.call("_shade"))) > 0.001:
+		grass.set("shade_test", 1.0 - darkness)
 
 
 func _toggle_grass() -> void:

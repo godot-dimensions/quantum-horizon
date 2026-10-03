@@ -68,6 +68,15 @@ func _process(d: float) -> bool:
 		_t = 0.0
 	elif _step == 6 and _t > 1.0:
 		print("      after Alt+O again: grass %s" % ("on" if _grass.get("enabled") else "off"))
+		# The Darkness slider: set to 0.55, kept across a change of look.
+		var slider: HSlider = _room.get_node("UI/GrassPanel").get("_dark_slider")
+		slider.value = 0.55
+		_press_o()
+		_step = 7
+		_t = 0.0
+	elif _step == 7 and _t > 1.5:
+		print("      darkness 0.55 -> shade %.2f, after a change of look %.2f (look %s)" % [_grass.get("shade_test"), _grass.call("_shade"), _grass.get("preset")])
+		root.get_texture().get_image().save_png("res://smoke_test_output/grass_panel_4_dark.png")
 		print("PANEL DONE")
 		if FileAccess.file_exists("user://lookout_journal_panel_test.cfg"):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path("user://lookout_journal_panel_test.cfg"))

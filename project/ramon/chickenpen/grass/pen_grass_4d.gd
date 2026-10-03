@@ -155,6 +155,16 @@ signal preset_changed(index: int)
 ## How light the blades are, all their colours together, so they sit with the ground between
 ## and beyond them (in linear light: 0.7 is about 0.85 on the colour numbers).
 @export_range(0.2, 1.5, 0.01) var shade: float = 0.7
+## A TEST, from the grass panel's Darkness slider (3 Oct: "can we make a darkness toggle slider
+## so i can test and tell you later which number to pick?"): when 0 or more, the shade every
+## look uses, over the look's own, and kept when the look changes. Darkness on the slider is
+## 1 - this.
+var shade_test: float = -1.0:
+	set(v):
+		shade_test = v
+		for band in _bands:
+			band.material.set_shader_parameter("shade", _shade())
+
 ## How dark a blade is at its root (1 the full ramp from colour_root and the shadow there; 0
 ## none, the blade one colour root to tip).
 @export_range(0.0, 1.0, 0.01) var root_dark: float = 1.0
@@ -194,6 +204,16 @@ signal preset_changed(index: int)
 @export_range(2.0, 40.0, 0.5, "suffix:m") var wave_length: float = 8.0
 @export_range(0.5, 15.0, 0.1, "suffix:m/s") var wave_speed: float = 3.2
 @export_range(2.0, 80.0, 0.5, "suffix:m") var wave_width: float = 22.0
+## BIG GUSTS (0 off): now and then one broad front sweeping the whole field round you, adding
+## big_gust_strength m/s; a chance every big_gust_every seconds, taken big_gust_chance of the
+## time; big_gust_width deep, at big_gust_speed.
+@export_range(0.0, 20.0, 0.1, "suffix:m/s") var big_gust_strength: float = 0.0
+@export_range(4.0, 120.0, 0.5, "suffix:s") var big_gust_every: float = 18.0
+@export_range(0.0, 1.0, 0.01) var big_gust_chance: float = 0.6
+@export_range(2.0, 40.0, 0.5, "suffix:m") var big_gust_width: float = 9.0
+@export_range(1.0, 30.0, 0.5, "suffix:m/s") var big_gust_speed: float = 9.0
+## How much further over a big gust lays the grass than the wind's own limit.
+@export_range(0.0, 0.6, 0.01) var big_gust_lean: float = 0.3
 
 @export_group("Trampling")
 ## Grass the player walks through lies the way they went, stays down a moment and comes up
@@ -362,6 +382,11 @@ func _apply_ground() -> void:
 		node.material_override = use[1]
 	_glow_to_grass()
 	ground_changed.emit(ground_paint)
+
+
+## The shade in use: the Darkness slider's test value when it is set, else the look's.
+func _shade() -> float:
+	return shade_test if shade_test >= 0.0 else shade
 
 
 ## The glow, for the grass's far edge to fade to the ground actually under it.
@@ -603,6 +628,12 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("wave_length", wave_length)
 	m.set_shader_parameter("wave_speed", wave_speed)
 	m.set_shader_parameter("wave_width", wave_width)
+	m.set_shader_parameter("big_gust_strength", big_gust_strength)
+	m.set_shader_parameter("big_gust_every", big_gust_every)
+	m.set_shader_parameter("big_gust_chance", big_gust_chance)
+	m.set_shader_parameter("big_gust_width", big_gust_width)
+	m.set_shader_parameter("big_gust_speed", big_gust_speed)
+	m.set_shader_parameter("big_gust_lean", big_gust_lean)
 	m.set_shader_parameter("region_size", region_size)
 	m.set_shader_parameter("region_cuts", _region_cuts)
 	m.set_shader_parameter("region_strength", region_strength)
@@ -612,7 +643,7 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("tuft_height", tuft_height)
 	m.set_shader_parameter("flower_height", flower_height)
 	m.set_shader_parameter("flower_share", flower_share)
-	m.set_shader_parameter("shade", shade)
+	m.set_shader_parameter("shade", _shade())
 	m.set_shader_parameter("root_dark", root_dark)
 	m.set_shader_parameter("toward_ground", toward_ground)
 	m.set_shader_parameter("saturation", saturation)

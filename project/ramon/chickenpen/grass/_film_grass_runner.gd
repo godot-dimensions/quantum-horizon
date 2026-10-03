@@ -16,12 +16,24 @@ var _t: float = 0.0
 var _shot: int = -1
 var _shot_t: float = 0.0
 var _started: bool = false
+var _shots: Array = SHOTS
 
 
 func _initialize() -> void:
 	root.unfocusable = true
 	_room = load("res://ramon/chickenpen/chickenpen_lookout.tscn").instantiate()
 	_room.get_node("Systems/Lookout").set("journal_path", "user://lookout_journal_grassfilm_test.cfg")
+	# After "--": shots=across:30 films only that shot for that long; key=value sets a Grass knob
+	# before it is ready (start_preset=3, say).
+	for arg in OS.get_cmdline_user_args():
+		var kv: PackedStringArray = arg.split("=", true, 1)
+		if kv.size() != 2:
+			continue
+		if kv[0] == "shots":
+			var parts: PackedStringArray = kv[1].split(":")
+			_shots = [[float(parts[1]), parts[0]]]
+		else:
+			_room.get_node("World/Grass").set(kv[0], float(kv[1]))
 	root.add_child(_room)
 	current_scene = _room
 
@@ -41,6 +53,9 @@ func _look(eye: Vector4, at: Vector4) -> void:
 func _process(d: float) -> bool:
 	_t += d
 	if not _started:
+		if _t > 90.0:
+			print("GRASS FILM FAIL: no grass after 90 s")
+			return true
 		var grass: Node = _room.get_node("World/Grass")
 		if not bool(grass.get("mask_ready")) or _t < 4.0:
 			return false
@@ -51,14 +66,14 @@ func _process(d: float) -> bool:
 			_room.get_node("Systems/Lookout").get("journal").call("set_flag", f, true)
 		_started = true
 	_shot_t += d
-	if _shot < 0 or _shot_t >= float(SHOTS[_shot][0]):
+	if _shot < 0 or _shot_t >= float(_shots[_shot][0]):
 		_shot += 1
 		_shot_t = 0.0
-		if _shot >= SHOTS.size():
+		if _shot >= _shots.size():
 			print("GRASS FILM DONE")
 			return true
-	var k: float = _shot_t / float(SHOTS[_shot][0])
-	match String(SHOTS[_shot][1]):
+	var k: float = _shot_t / float(_shots[_shot][0])
+	match String(_shots[_shot][1]):
 		"low":
 			_look(Vector4(6.0 - 6.0 * k, 0.95, 9.0, 0.0), Vector4(-8.0 - 6.0 * k, 0.45, -6.0, 0.0))
 		"across":

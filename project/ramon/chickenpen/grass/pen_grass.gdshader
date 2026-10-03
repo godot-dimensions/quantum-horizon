@@ -147,6 +147,20 @@ uniform float wave_strength = 0.0;
 uniform float wave_length = 8.0;
 uniform float wave_speed = 3.2;
 uniform float wave_width = 22.0;
+// BIG GUSTS (Ramon, 3 Oct: "sometimes have a stronger and larger gust of wind blow over"): now
+// and then one broad front, its line bent by noise, sweeps downwind across the whole field round
+// you, laying the grass over well past the usual gusts and lighting the tips as it goes. One
+// chance every big_gust_every seconds, taken big_gust_chance of the time; it adds
+// big_gust_strength m/s over a band big_gust_width deep, travelling at big_gust_speed.
+uniform float big_gust_strength = 0.0;
+uniform float big_gust_every = 18.0;
+uniform float big_gust_chance = 0.6;
+uniform float big_gust_width = 9.0;
+uniform float big_gust_speed = 9.0;
+// How much further over a big gust lays the grass than the wind's own limit (bend_max), as a
+// share of its height: a speed alone saturates against bend_max, so the front would barely
+// show over grass already leaning in the breeze.
+uniform float big_gust_lean = 0.3;
 
 // Whoever walks through: where (x, strength, z, w), and the way they went (x, z), with the
 // reach of their push (w). Grass is laid the way they move, not away from them; the player
@@ -395,8 +409,23 @@ void vertex() {
 			float sets = 0.6 + 0.4 * sin(moving / (wave_length * 4.0) * 6.2831853 + warp * 2.0);
 			wave = crest * mix(0.25, 1.0, run) * sets * wave_strength;
 		}
-		float speed = wind_speed * (1.0 - gustiness * 0.5 + gustiness * 1.6 * gust + 1.2 * wave);
-		float bend = bend_max * tanh(speed * speed / stiffness);
+		float big = 0.0;
+		if (big_gust_strength > 0.0) {
+			// The front's place along the wind, from 90 m upwind of you to 110 m past you, once a
+			// cycle (so its tail has left the field before the next can start: cut short, it ended
+			// in a flash); whether this cycle has one at all, from the cycle's own hash.
+			float cycle = floor(tw / big_gust_every);
+			float into = tw - cycle * big_gust_every;
+			float on = step(hash12(vec2(cycle, 9.7)), big_gust_chance);
+			float front = -90.0 + big_gust_speed * into;
+			float rel_along = dot(root_xz - ring_centre, wind_dir);
+			float bow = (texture(wind_noise, vec2(side_pos / 90.0, cycle * 0.137)).r - 0.5) * 30.0;
+			float d = (rel_along - front - bow) / big_gust_width;
+			// Steep in front, a longer tail behind, as a gust front is.
+			big = on * exp(-d * d * (d > 0.0 ? 2.5 : 0.6)) * step(front, 110.0);
+		}
+		float speed = wind_speed * (1.0 - gustiness * 0.5 + gustiness * 1.6 * gust + 1.2 * wave) + big_gust_strength * big;
+		float bend = bend_max * tanh(speed * speed / stiffness) + big_gust_lean * big;
 		// The rock about the bent pose, at the blade's own frequency: shorter ones faster.
 		float freq = mix(2.2, 1.1, clamp(h / max(blade_height * 1.3, 0.01), 0.0, 1.0)) * mix(0.85, 1.15, rnd);
 		// Under the waves the stalks move together, so each one's own rock and flutter are less.
@@ -500,7 +529,7 @@ void vertex() {
 		c *= 1.0 - cloud * 0.4;
 		v_haze = haze_amount * (1.0 - exp(-length(rel.xyz) / haze_distance));
 		// The light on the tips as a gust or a crest lays them over.
-		c += sheen * max(gust, wave) * t * t * vec3(0.5, 0.52, 0.3) * shade;
+		c += sheen * max(max(gust, wave), big * 2.0) * t * t * vec3(0.5, 0.52, 0.3) * shade;
 		if (flower > 0.5 && t > 0.86) {
 			float pick = hash13(vec3(cell, layer + 6.6));
 			c = pick < 0.5 ? flower_a : (pick < 0.8 ? flower_b : flower_c);
