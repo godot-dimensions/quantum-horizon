@@ -75,20 +75,22 @@ func _process(delta: float) -> void:
 	if Engine.is_editor_hint() or _done:
 		return
 	_t += delta
-	if _t < 2.0:
-		return
-	var sc: Node = get_node_or_null(showcase) if not showcase.is_empty() else null
-	if sc == null or not sc.has_method("data"):
-		return
-	var d: Dictionary = sc.call("data")
-	if d.is_empty():
+	if _t < 0.5:
 		return
 	_done = true
 	var tree: SceneTree = get_tree()
-	var rec: Dictionary = await RD.print_box(tree, _top, Vector4(0, 1, 0, 0), Vector2(2.7, 1.35),
-		func(c: Control, ink: Dictionary) -> void: _paint(c, ink, d), {"bright": 0.75, "dark": 0.9})
+	var rec: Dictionary = await RD.print_box(tree, _top, Vector4(0, 1, 0, 0), Vector2(2.7, 1.35), _paint_label, {"bright": 0.75, "dark": 0.9})
 	_prints.append(rec)
 	RD.apply(rec, Style.mood)
+
+
+func _paint_label(c: Control, ink: Dictionary) -> void:
+	var on: Color = ink["on_accent"]
+	c.draw_string(LabPrint.font("black"), Vector2(0.0, c.size.y * 0.5), "RESEARCH DATA", HORIZONTAL_ALIGNMENT_CENTER, c.size.x, _px(0.2), on)
+	c.draw_string(LabPrint.font("body"), Vector2(0.0, c.size.y * 0.5 + _px(0.2)), "Step up to read the goat's measurements", HORIZONTAL_ALIGNMENT_CENTER, c.size.x, _px(0.085), Color(on, 0.8))
+	for i in 8:
+		var bh: float = _px(0.08 + 0.04 * float(i))
+		c.draw_rect(Rect2(Vector2(c.size.x * 0.5 - _px(0.5) + _px(0.125) * float(i), c.size.y * 0.32 - bh), Vector2(_px(0.08), bh)), Color(on, 0.4 + 0.07 * float(i)))
 
 
 func _px(m: float) -> int:

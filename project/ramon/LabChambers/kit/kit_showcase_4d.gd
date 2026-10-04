@@ -276,6 +276,19 @@ func data() -> Dictionary:
 	return exhibit.call("data") if exhibit != null and exhibit.has_method("data") else {}
 
 
+## What is happening right now, for the data panel: [label, value] rows.
+func live() -> Array:
+	var rows: Array = [
+		["W-slice", "%d / %d" % [slice_index + 1, SLICES]],
+		["Offset through W", "%+.2f m" % _slice_w],
+		["Turned through W", "%.0f°, %.0f°" % [rad_to_deg(turn.x), rad_to_deg(turn.y)]],
+		["Playing", "its sequence" if _looping else "in your hands"],
+	]
+	if exhibit != null and exhibit.has_method("live"):
+		rows.append_array(exhibit.call("live"))
+	return rows
+
+
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint() or exhibit == null:
 		return

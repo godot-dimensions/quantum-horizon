@@ -22,6 +22,11 @@ const PPM := 160.0
 	set(v):
 		side = v
 		_changed()
+## For a polygon room (KitRoom `outline`): which edge it is painted on (-1: use `side`).
+@export var edge: int = -1:
+	set(v):
+		edge = v
+		_changed()
 @export var along: Vector2 = Vector2(-2.0, 6.0):
 	set(v):
 		along = v

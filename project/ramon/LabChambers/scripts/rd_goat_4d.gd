@@ -193,3 +193,14 @@ static func _grouped(n: int) -> String:
 		out = "," + s.substr(s.length() - 3) + out
 		s = s.substr(0, s.length() - 3)
 	return s + out
+
+
+## What the goat is showing right now, for the data panel.
+func live() -> Array:
+	if _goat == null or int(_goat.call("stage_count")) == 0:
+		return []
+	var plain: bool = bool(_goat.call("showing_plain"))
+	return [
+		["Showing", "build stage %d of %d" % [int(_goat.call("shown_stage")) + 1, _stages()] if plain else "the finished coat"],
+		["Balls in view", str(int(_goat.call("balls_shown")) if plain else int(_goat.call("ball_count")))],
+	]

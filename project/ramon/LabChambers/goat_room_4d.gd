@@ -24,6 +24,7 @@ const LabMath := preload("res://ramon/LabKit/lab_math.gd")
 const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 const Hud := preload("res://ramon/LabChambers/scripts/rd_hud.gd")
 const Tuner := preload("res://ramon/LabChambers/kit/kit_tuner.gd")
+const DataPanel := preload("res://ramon/LabChambers/kit/kit_data_panel.gd")
 
 ## Where the player starts, facing -Z.
 @export var start_at: Vector2 = Vector2(0.0, 15.2)
@@ -33,6 +34,7 @@ const Tuner := preload("res://ramon/LabChambers/kit/kit_tuner.gd")
 var player: CharacterBody4D
 var hud: Control
 var tuner: PanelContainer
+var data_panel: Control
 var showcase: Node
 var _cine: Dictionary = {}
 var _film: Camera4D
@@ -82,6 +84,10 @@ func _ready() -> void:
 	hud.connect("mood_pressed", func() -> void:
 		if room != null:
 			room.call("toggle_mood"))
+	data_panel = Control.new()
+	data_panel.set_script(DataPanel)
+	data_panel.set("showcase", showcase)
+	layer.add_child(data_panel)
 	tuner = PanelContainer.new()
 	tuner.set_script(Tuner)
 	tuner.set("room", room)
@@ -110,7 +116,7 @@ func _strip() -> Array:
 	if not _in_room or showcase == null:
 		return [["WASD", "Move"], ["Mouse", "Look"], ["B", "Dark / bright"]]
 	if _desk_ease > 0.5:
-		return [["", "Research data, measured live from the goat"]]
+		return [["", "Research data, measured live from the goat"], ["Wheel", "Slice through W"], ["E", String(showcase.call("action_label"))]]
 	var out: Array = []
 	if bool(showcase.call("near_button", player.global_position)):
 		out.append(["Click", "Watch"])
@@ -120,25 +126,16 @@ func _strip() -> Array:
 	return out
 
 
-## Standing at a desk tips the camera down over your shoulder to read it; stepping away gives it
-## back.
-func _read_desk(delta: float) -> void:
+## Standing at a desk brings up the research data panel (kit_data_panel.gd), a fixed 2D panel;
+## stepping away puts it away. The camera stays yours.
+func _read_desk(_delta: float) -> void:
 	var at: bool = false
 	for d in get_tree().get_nodes_in_group("kit_desk"):
 		if is_ancestor_of(d) and bool(d.call("near", player.global_position)):
 			at = true
-	var rig: Node = player.get_node_or_null("CameraRig")
-	if rig == null:
-		return
-	var was: float = _desk_ease
-	_desk_ease = move_toward(_desk_ease, 1.0 if at else 0.0, delta / 0.7)
-	if was == 0.0 and _desk_ease > 0.0:
-		_rig_pitch = float(rig.get("pitch"))
-	if _desk_ease > 0.0 or was > 0.0:
-		var k: float = LabMath.ease01(_desk_ease)
-		rig.set("pitch", lerpf(_rig_pitch, deg_to_rad(-38.0), k))
-		rig.set("_zoom_target", lerpf(8.0, 3.2, k))
-		rig.call("_apply")
+	_desk_ease = 1.0 if at else 0.0
+	if data_panel != null:
+		data_panel.set("shown", at)
 
 
 # -- the mouse and keys ----------------------------------------------------------------------------
