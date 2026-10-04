@@ -1,12 +1,13 @@
 extends Control
 
 ## Kit: the presentation on screen. As each part of the exhibit's story begins, a title card comes
-## down at the top (the part, its name, its one line) and then folds into a small chip that keeps
-## the part's progress and the hint that a click moves on; through the part, short callouts rise
-## above the control strip at their times, carrying the animal's own measured numbers (Ramon, 4 Oct:
-## "when something is playing ... a title card should appear with that explainer"; "think of what
-## explainer callouts can appear to educate"). The parts, their lines and their callouts are
-## kit_presentation.gd's, so every animal tells the same story.
+## down at the top (the part, its name, its one line, the hint that a click moves on) and stays the
+## same for the whole part, its progress filling along its foot (Ramon, 4 Oct: "its annoying how the
+## info label disappears half way and turns into a smaller one ... keep consistent"); through the
+## part, short callouts rise above the control strip at their times, carrying the animal's own
+## measured numbers ("when something is playing ... a title card should appear with that
+## explainer"; "think of what explainer callouts can appear to educate"). The parts, their lines and
+## their callouts are kit_presentation.gd's, so every animal tells the same story.
 ##
 ## It stays out of the way: nothing over the exhibit's middle, the card at the top, the callouts
 ## low and narrow enough to clear the slice view; hidden while the watched cinematic has its own
@@ -17,8 +18,6 @@ extends Control
 const Presentation := preload("res://ramon/LabChambers/kit/kit_presentation.gd")
 const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
 
-## How long the big title card stays before it folds into the chip, seconds.
-const CARD_SECONDS := 3.2
 const CALLOUT_SECONDS := 3.6
 
 var showcase: Node
@@ -83,12 +82,7 @@ func _draw() -> void:
 		var ch: Dictionary = parts[_part]
 		var age: float = _clock - _part_at
 		var progress: float = clampf(float(showcase.get("seq_t")) / maxf(float(showcase.get("seq_len")), 0.01), 0.0, 1.0)
-		var card_a: float = _ease(age / 0.35) * (1.0 - _ease((age - CARD_SECONDS + 0.4) / 0.4))
-		if card_a > 0.01:
-			_draw_card(u, ch, parts.size(), card_a, progress, age)
-		var chip_a: float = _ease((age - CARD_SECONDS + 0.2) / 0.3)
-		if chip_a > 0.01:
-			_draw_chip(u, ch, parts.size(), chip_a, progress)
+		_draw_card(u, ch, parts.size(), _ease(age / 0.35), progress, age)
 	var ca: float = _ease((_clock - _callout_at) / 0.3) * (1.0 - _ease((_clock - _callout_until + 0.35) / 0.35))
 	if ca > 0.01 and not _callout.is_empty():
 		_draw_callout(u, ca)
@@ -112,30 +106,11 @@ func _draw_card(u: float, ch: Dictionary, count: int, a: float, progress: float,
 	var name: String = String((showcase.call("data") as Dictionary).get("name", "")).to_upper()
 	var x: float = r.position.x + 28.0 * u
 	draw_string(fs, Vector2(x, r.position.y + 32.0 * u), "PART %d OF %d   ·   %s" % [_part + 1, count, name], HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), Color(0.55, 0.76, 1.0, a))
+	draw_string(fl, Vector2(r.position.x, r.position.y + 32.0 * u), "CLICK FOR THE NEXT PART", HORIZONTAL_ALIGNMENT_RIGHT, w - 28.0 * u, int(10 * u), Color(1, 1, 1, 0.5 * a))
 	draw_string(fb, Vector2(x, r.position.y + 68.0 * u), String(ch["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(30 * u), Color(1, 1, 1, a))
 	draw_multiline_string(fl, Vector2(x, r.position.y + 96.0 * u), line, HORIZONTAL_ALIGNMENT_LEFT, w - 56.0 * u, int(15 * u), 2, Color(1, 1, 1, 0.88 * a))
 	var bar := Rect2(Vector2(x, r.end.y - 14.0 * u), Vector2(w - 56.0 * u, 2.0 * u))
 	draw_rect(bar, Color(1, 1, 1, 0.12 * a))
-	draw_rect(Rect2(bar.position, Vector2(bar.size.x * progress, bar.size.y)), Color(0.36, 0.62, 1.0, a))
-
-
-func _draw_chip(u: float, ch: Dictionary, count: int, a: float, progress: float) -> void:
-	var fs: Font = LabPrint.font("bold")
-	var fl: Font = LabPrint.font("body")
-	var left: String = "%d / %d   %s" % [_part + 1, count, String(ch["title"])]
-	var hint: String = "CLICK FOR THE NEXT PART"
-	var lw: float = fs.get_string_size(left, HORIZONTAL_ALIGNMENT_LEFT, -1, int(12 * u)).x
-	var hw: float = fl.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u)).x
-	var w: float = lw + hw + 64.0 * u
-	var r := Rect2(Vector2((size.x - w) * 0.5, 20.0 * u), Vector2(w, 34.0 * u))
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.06, 0.085, 0.80 * a)
-	sb.set_corner_radius_all(int(17 * u))
-	sb.anti_aliasing = true
-	draw_style_box(sb, r)
-	draw_string(fs, Vector2(r.position.x + 20.0 * u, r.position.y + 22.0 * u), left, HORIZONTAL_ALIGNMENT_LEFT, -1, int(12 * u), Color(1, 1, 1, a))
-	draw_string(fl, Vector2(r.position.x + 44.0 * u + lw, r.position.y + 21.5 * u), hint, HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u), Color(1, 1, 1, 0.55 * a))
-	var bar := Rect2(Vector2(r.position.x + 17.0 * u, r.end.y - 3.0 * u), Vector2(w - 34.0 * u, 2.0 * u))
 	draw_rect(Rect2(bar.position, Vector2(bar.size.x * progress, bar.size.y)), Color(0.36, 0.62, 1.0, a))
 
 
