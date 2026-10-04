@@ -4,12 +4,12 @@ extends SceneTree
 ## 4D module's main) does today, and whether the pen's voxel work could move onto it.
 ##
 ## Measures: how long the world takes to stream in around a load trigger, how many chunk
-## meshes and tetrahedra that makes, and what one SphereVoxelEdit (a carve, like a pickaxe
+## meshes and tetrahedra that makes, and what one SphereVoxelEdit4D (a carve, like a pickaxe
 ## blow) costs to apply and re-mesh - against the 172 ms a blow the GDScript slab in the
 ## cave takes. Headless: the meshing is CPU work.
 ##
 ## WHAT IT CANNOT DO YET, read from the source rather than guessed: the generator is
-## hard-coded (VoxelData's constructor: "Temporary: hard-coded test data" - a TigerTestGenerator
+## hard-coded (VoxelData4D's constructor: "Temporary: hard-coded test data" - a TigerTestGenerator4D
 ## torus, major radius 10, minor 4.5, in voxels) and set_generator is not bound to scripts,
 ## so nothing of our own - a slab, a cave - can be generated in it from GDScript yet.
 
@@ -59,7 +59,7 @@ func _process(_d: float) -> bool:
 		_stream_ms += frame_ms
 	if _f == 40:
 		print("   streamed in over 40 frames: %.0f ms total, %d chunk meshes, %d tetrahedra" % [_stream_ms, _meshes().size(), _tets()])
-		var edit = ClassDB.instantiate("SphereVoxelEdit")
+		var edit = ClassDB.instantiate("SphereVoxelEdit4D")
 		# On the tiger's surface: xy on its core circle, zw one minor radius out.
 		edit.set("center", Vector4(10.0, 0.0, 14.5, 0.0))
 		edit.set("radius", 2.0)
