@@ -98,10 +98,6 @@ uniform float ring_on : hint_range(0.0, 1.0) = 0.0;
 // (`holo_falloff` the curve), and a pixel is drawn only where its place in a 4x4 Bayer matrix is
 // under that coverage; the eye averages the pattern into a fade. Being real geometry it sorts with
 // everything in front of and behind it, and survives the slice turning. Thin bands rise through it.
-// THE GRAIN is per pixel and moves every frame (interleaved gradient noise, shifted by the frame):
-// a fixed 4x4 matrix repeated every four pixels read as a coarse dot grid (Ramon: "much too large,
-// should be 1/6 the size"); nothing finer than a pixel exists, so the grid itself had to go, and the
-// eye averages the moving grain into a fade. `holo_still` 1 freezes it.
 uniform float holo_on : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 holo_color : source_color = vec4(0.25, 0.60, 1.0, 1.0);
 uniform float holo_base : hint_range(0.0, 1.0) = 0.8;
@@ -110,28 +106,41 @@ uniform float holo_glow = 0.6;
 uniform float holo_scan = 0.35;
 uniform float holo_scan_density = 2.2;
 uniform float holo_scan_speed = 0.35;
-uniform float holo_still : hint_range(0.0, 1.0) = 0.0;
+uniform float holo_fine : hint_range(0.0, 1.0) = 0.0;
 // PATH (LabChambers/kit/kit_path_4d.gd): this surface is a path's strip, a thin band of tetrahedra a
 // hair above the floor that follows a curve through the floor's own space (x, z and W). Its texture
 // coordinates are metres along the curve, -1..1 across it, and -1..1 through its thickness in W.
 // The floor's own grid is drawn on it (the same swatch, the same world offset), so the strip
-// itself is invisible and only its marks show. The marks move on along the curve at `path_speed`,
-// and thin out towards the strip's edges in W, so a path that leaves your slice fades out of it.
+// itself is invisible and only its marks show, moving on along the curve at `path_speed`.
+// THE MARKS ARE RIGID (Ramon, 5 Oct: "the curved arrows deform, better keep them intact and let them
+// do a rotational turn, like a shape following a path"): the curve itself is handed in
+// (`path_curve_tex`, points evenly spaced along it), and each arrow or block is drawn in a straight frame
+// of its own, turned to the curve's direction at its middle, so it turns as it goes round a bend
+// instead of bending. The marks end in a fixed line across the strip at either end of an open path
+// (they run into it and are gone, no fade), and are cut only where the strip itself ends, in W too:
+// what the slice leaves is gone, as the renderer slices the strip.
 //   path_style 0  RAMON'S ARROW (the route's chevron pair, measured from arrow.png)
-//              1  ZEBRA (stripes across the strip, slanted)
-//              2  DOTS
-//              3  LINE (a thin line with bright pulses running along it)
+//              1  ZEBRA (stripes across the strip, slanted; they follow the curve, as a road's do)
+//              2  BLOCKS (squares)
+//              3  LINE (a thin line with balls running along it)
+//              4  SOLID (the whole strip)
 uniform float path_on : hint_range(0.0, 1.0) = 0.0;
 uniform float path_style = 0.0;
-uniform vec4 path_color : source_color = vec4(0.12, 0.45, 1.0, 1.0);
-uniform float path_glow = 0.35;
+uniform vec4 path_color : source_color = vec4(0.13, 0.40, 0.86, 1.0);
+uniform float path_glow = 0.0;
 uniform float path_spacing = 3.0;
 uniform float path_speed = 0.7;
 uniform float path_length = 10.0;
 uniform float path_width = 1.15;
-uniform float path_fade = 0.6;
 uniform float path_closed = 0.0;
 uniform float path_pair = 0.76;
+uniform float path_cap = 0.08;
+// The strip is this much wider than its marks, so a rigid arrow turning on a bend is not cut off.
+uniform float path_margin = 1.4;
+// The curve as a 1-pixel-high float texture, one point per texel: (x, z, w). A texture, not a uniform
+// array: arrays were not kept per material here (every path drew with the last path's curve).
+uniform sampler2D path_curve_tex : filter_nearest, repeat_disable;
+uniform int path_curve_n = 0;
 uniform vec4 ring_at = vec4(0.0, 0.0, 3.0, 0.08);
 uniform vec4 ring_color : source_color = vec4(0.12, 0.45, 1.0, 1.0);
 
@@ -316,6 +325,40 @@ vec2 print_uv(vec4 n, vec4 pc) {
 	return vec2(uv.x, 1.0 - uv.y);
 }
 
+// The path's curve at `s` metres along: (x, z, w) in the strip's own space, and its direction on the
+// floor.
+vec3 path_point(float s) {
+	float n1 = float(max(path_curve_n - 1, 1));
+	float f = clamp(s / max(path_length, 0.001), 0.0, 1.0) * n1;
+	int i = int(min(floor(f), n1 - 1.0));
+	return mix(texelFetch(path_curve_tex, ivec2(i, 0), 0).xyz, texelFetch(path_curve_tex, ivec2(i + 1, 0), 0).xyz, f - float(i));
+}
+
+vec2 path_dir(float s) {
+	float n1 = float(max(path_curve_n - 1, 1));
+	float f = clamp(s / max(path_length, 0.001), 0.0, 1.0) * n1;
+	int i = int(min(floor(f), n1 - 1.0));
+	int j = min(i + 1, path_curve_n - 1);
+	int h = max(i - 1, 0);
+	int k = min(i + 2, path_curve_n - 1);
+	vec2 cj = texelFetch(path_curve_tex, ivec2(j, 0), 0).xy;
+	vec2 ch = texelFetch(path_curve_tex, ivec2(h, 0), 0).xy;
+	vec2 ck = texelFetch(path_curve_tex, ivec2(k, 0), 0).xy;
+	vec2 ci = texelFetch(path_curve_tex, ivec2(i, 0), 0).xy;
+	vec2 t = mix(cj - ch, ck - ci, f - float(i));
+	return length(t) > 1e-5 ? normalize(t) : vec2(0.0, 1.0);
+}
+
+// Where this fragment is in the straight frame of a mark whose middle is `sc` metres along: (along,
+// across), metres.
+vec2 path_frame(float sc, vec2 p) {
+	float sm = path_closed > 0.5 ? mod(sc, path_length) : sc;
+	vec2 c = path_point(sm).xy;
+	vec2 t = path_dir(sm);
+	vec2 rel = p - c;
+	return vec2(dot(rel, t), dot(rel, vec2(t.y, -t.x)));
+}
+
 void fragment() {
 	NORMAL = normalize(NORMAL);
 	vec4 world = local_pos + grid_offset;
@@ -458,57 +501,83 @@ void fragment() {
 	}
 	if (path_on > 0.5) {
 		float s = uvw.x;
-		float vac = clamp(uvw.y, -1.0, 1.0);
-		float wq = uvw.z;
+		float vac = uvw.y * path_margin;
+		vec2 p2 = local_pos.xz;
 		float fws = max(fwidth(s), 0.0001);
 		float soft = max(fws, 0.004);
-		float d = fract((s - TIME * path_speed) / path_spacing) * path_spacing;
+		float sp = max(path_spacing, 0.05);
+		float off = TIME * path_speed;
 		float k = 0.0;
 		if (path_style < 0.5) {
-			float wdt = path_width;
-			float au = abs(vac) * wdt * 0.5;
+			// The chevron pair, measured in its own straight frame.
+			float wdt = path_width * 0.9;
 			float t1 = 0.2056 * wdt;
 			float g1 = 0.0234 * wdt;
 			float t2 = 0.0981 * wdt;
 			float half_w = 0.4463 * wdt;
 			float tab_w = 0.0537 * wdt;
 			float span = 0.768 * wdt;
-			for (int n = 0; n < 2; n++) {
-				if (n == 1 && path_pair <= 0.0) {
-					break;
+			float pair = path_pair;
+			float mid = (span + 0.02 + pair * 0.5) - (t1 + g1 + t2 * 2.0 + 0.685 * half_w) * 0.5;
+			float base = floor((s - off - mid) / sp);
+			for (int j = -1; j <= 1; j++) {
+				float sc = (base + float(j)) * sp + off + mid;
+				vec2 fr = path_frame(sc, p2);
+				float d = fr.x + mid;
+				float au = abs(fr.y);
+				for (int n = 0; n < 2; n++) {
+					if (n == 1 && pair <= 0.0) {
+						break;
+					}
+					float apex = span + 0.02 + (n == 1 ? pair : 0.0);
+					float e = (apex - d) - 0.685 * au;
+					float in_x = 1.0 - smoothstep(half_w - soft, half_w, au);
+					float tab_x = smoothstep(half_w, half_w + soft, au) * (1.0 - smoothstep(half_w + tab_w - soft, half_w + tab_w, au));
+					float thick = smoothstep(0.0, soft, e) * (1.0 - smoothstep(t1 - soft, t1, e));
+					float thin = smoothstep(t1 + g1, t1 + g1 + soft, e) * (1.0 - smoothstep(t1 + g1 + t2 - soft, t1 + g1 + t2, e));
+					float tab = smoothstep(t1 + g1 + t2, t1 + g1 + t2 + soft, e) * (1.0 - smoothstep(t1 + g1 + t2 * 2.0 - soft, t1 + g1 + t2 * 2.0, e));
+					k = max(k, max(thick, thin) * in_x + tab * tab_x);
 				}
-				float apex = span + 0.02 + (n == 1 ? path_pair : 0.0);
-				float e = (apex - d) - 0.685 * au;
-				float in_x = 1.0 - smoothstep(half_w - soft, half_w, au);
-				float tab_x = smoothstep(half_w, half_w + soft, au) * (1.0 - smoothstep(half_w + tab_w - soft, half_w + tab_w, au));
-				float thick = smoothstep(0.0, soft, e) * (1.0 - smoothstep(t1 - soft, t1, e));
-				float thin = smoothstep(t1 + g1, t1 + g1 + soft, e) * (1.0 - smoothstep(t1 + g1 + t2 - soft, t1 + g1 + t2, e));
-				float tab = smoothstep(t1 + g1 + t2, t1 + g1 + t2 + soft, e) * (1.0 - smoothstep(t1 + g1 + t2 * 2.0 - soft, t1 + g1 + t2 * 2.0, e));
-				k = max(k, max(thick, thin) * in_x + tab * tab_x);
 			}
 		} else if (path_style < 1.5) {
-			// Stripes across, slanted forward, each half a period wide, the strip's edges rounded off.
-			float z = fract((s + vac * path_width * 0.35 - TIME * path_speed) / path_spacing);
-			float stripe = smoothstep(0.0, soft / path_spacing * 2.0, z) * (1.0 - smoothstep(0.5 - soft / path_spacing * 2.0, 0.5, z));
+			float z = fract((s + vac * path_width * 0.35 - off) / sp);
+			float stripe = smoothstep(0.0, soft / sp * 2.0, z) * (1.0 - smoothstep(0.5 - soft / sp * 2.0, 0.5, z));
 			k = stripe * (1.0 - smoothstep(0.82, 0.98, abs(vac)));
 		} else if (path_style < 2.5) {
-			// Round dots on the middle line, a third of the strip wide.
-			float r = path_width * 0.22;
-			vec2 q = vec2(d - path_spacing * 0.5, vac * path_width * 0.5);
-			float dist = length(q);
-			k = 1.0 - smoothstep(r - soft, r + soft, dist);
+			// Square blocks, each in its own straight frame.
+			float hs = path_width * 0.2;
+			float base2 = floor((s - off) / sp);
+			for (int j = -1; j <= 1; j++) {
+				vec2 fr = path_frame((base2 + float(j)) * sp + off + sp * 0.5, p2);
+				float bx = 1.0 - smoothstep(hs - soft, hs + soft, abs(fr.x));
+				float by = 1.0 - smoothstep(hs - soft, hs + soft, abs(fr.y));
+				k = max(k, bx * by);
+			}
+		} else if (path_style < 3.5) {
+			// A thin line, and solid balls running along it.
+			float line = 1.0 - smoothstep(0.1, 0.1 + soft * 4.0, abs(vac));
+			float r = path_width * 0.17;
+			float base3 = floor((s - off) / sp);
+			float ball = 0.0;
+			for (int j = -1; j <= 1; j++) {
+				vec2 fr = path_frame((base3 + float(j)) * sp + off + sp * 0.5, p2);
+				ball = max(ball, 1.0 - smoothstep(r - soft, r + soft, length(fr)));
+			}
+			k = max(line, ball);
 		} else {
-			// A thin line, and pulses running along it.
-			float line = 1.0 - smoothstep(0.07, 0.07 + soft * 4.0, abs(vac));
-			float pulse = exp(-pow((d - path_spacing * 0.5) / (path_spacing * 0.06), 2.0));
-			float bead = 1.0 - smoothstep(0.32, 0.32 + soft * 4.0, length(vec2((d - path_spacing * 0.5) / (path_width * 0.5), vac)));
-			k = max(line * 0.6, bead * pulse);
+			k = 1.0 - smoothstep(0.96, 1.0, abs(vac));
 		}
-		float ends = path_closed > 0.5 ? 1.0 : smoothstep(0.0, path_fade, s) * smoothstep(0.0, path_fade, path_length - s);
-		float wfade = 1.0 - smoothstep(0.5, 0.95, abs(wq));
 		float calm = 1.0 - smoothstep(0.06, 0.16, fws);
-		k = clamp(k, 0.0, 1.0) * ends * wfade * calm;
-		c = mix(c, path_color.rgb, k * 0.95);
+		k = clamp(k, 0.0, 1.0) * calm;
+		if (path_closed < 0.5) {
+			// The marks run into a fixed line across each end, and are gone there.
+			float cap = path_cap;
+			float inside = smoothstep(cap * 1.8, cap * 1.8 + soft, s) * (1.0 - smoothstep(path_length - cap * 1.8 - soft, path_length - cap * 1.8, s));
+			float bar = (1.0 - smoothstep(cap - soft, cap, s)) + smoothstep(path_length - cap, path_length - cap + soft, s);
+			bar *= 1.0 - smoothstep(0.92, 1.0, abs(vac));
+			k = max(k * inside, clamp(bar, 0.0, 1.0));
+		}
+		c = mix(c, path_color.rgb, k);
 		glow += path_color.rgb * k * path_glow;
 	}
 	if (holo_on > 0.5) {
@@ -516,8 +585,14 @@ void fragment() {
 		float cover = holo_base * pow(1.0 - hf, holo_falloff);
 		float scan = smoothstep(0.9, 1.0, fract(local_pos.y * holo_scan_density - TIME * holo_scan_speed));
 		cover = min(1.0, cover + scan * holo_scan * (1.0 - hf));
-		vec2 gp = floor(FRAGCOORD.xy) + (1.0 - holo_still) * mod(floor(TIME * 60.0), 64.0) * 5.588238;
-		float threshold = fract(52.9829189 * fract(dot(gp, vec2(0.06711056, 0.00583715))));
+		ivec2 cell = ivec2(FRAGCOORD.xy) % 4;
+		int bayer[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
+		float threshold = (float(bayer[cell.y * 4 + cell.x]) + 0.5) / 16.0;
+		if (holo_fine > 0.5) {
+			// The finer grain: per pixel, moving every frame, no repeating 4x4 pattern.
+			vec2 gp = floor(FRAGCOORD.xy) + mod(floor(TIME * 60.0), 64.0) * 5.588238;
+			threshold = fract(52.9829189 * fract(dot(gp, vec2(0.06711056, 0.00583715))));
+		}
 		if (cover <= threshold) {
 			discard;
 		}

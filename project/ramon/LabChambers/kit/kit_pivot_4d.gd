@@ -1,40 +1,48 @@
 @tool
 extends Node4D
 
-## Kit: a pivot point, where a path asks you to stop and turn (Ramon, 4 Oct: "a ball for rotation
-## point, and a bigger rotating circle for highlight point"). A glowing ball floating at eye level
-## over a small ring of dots on the floor, bobbing slowly. Put a highlight (a kit_path_4d.gd circle)
-## round it for a place to stand, or face it towards what to look at with `look`.
+## Kit: an arrival pad, where a path asks you to stop and turn (Ramon, 4 Oct: "a ball for rotation
+## point, and a bigger rotating circle for highlight point"; 5 Oct: "3 is pretty good as an arrival
+## pad ... make a blue circle inside the chopped circle, and remove the green balls, also remove the
+## floating ball for now"). A chopped ring turning slowly on the floor round a solid blue disc, all
+## in the wall's blue, painted, not glowing.
 ##
-## The ball is a real 4D ball, lofted by the loft builder from round sections, as deep through W as
-## it is wide, so it is sliced like everything else: it shrinks and goes as the slice leaves it. The
-## floor ring is a small dotted circle path.
+## Both are 4D: the ring is a kit_path_4d.gd circle (zebra), the disc a flat cubinder as deep through
+## W as the ring, so the slice cuts them like the floor marks round them. `ball` brings back the
+## floating ball over it (lofted, also 4D).
 ##
 ## NO class_name (engine_gotchas.md).
 
 const LoftBuilder := preload("res://ramon/LabKit/carried/chickenpen/scripts/loft_builder_4d.gd")
-const Mats := preload("res://ramon/LabKit/lab_materials.gd")
 const Path := preload("res://ramon/LabChambers/kit/kit_path_4d.gd")
 
-@export_range(0.05, 1.0, 0.01) var ball_radius: float = 0.16:
+## The chopped ring's radius and width, and the disc's radius, m.
+@export_range(0.3, 4.0, 0.05) var ring_radius: float = 1.0:
 	set(v):
-		ball_radius = v
+		ring_radius = v
 		_later()
-## How high the ball floats, m, and how far it bobs.
-@export_range(0.2, 3.0, 0.05) var float_height: float = 1.45
-@export_range(0.0, 0.3, 0.01) var bob: float = 0.06
-@export var color: Color = Color(0.45, 0.78, 1.0):
+@export_range(0.05, 1.0, 0.01) var ring_width: float = 0.22:
+	set(v):
+		ring_width = v
+		_later()
+@export_range(0.05, 2.0, 0.01) var disc_radius: float = 0.42:
+	set(v):
+		disc_radius = v
+		_later()
+@export var color: Color = Color(0.13, 0.40, 0.86):
 	set(v):
 		color = v
 		_later()
-## A point to face (world x, z); a small arrow on the floor ring turns to it. Zero for none.
-@export var look: Vector3 = Vector3.ZERO:
+## The floating ball over the pad (off for now).
+@export var ball: bool = false:
 	set(v):
-		look = v
+		ball = v
 		_later()
+@export_range(0.05, 1.0, 0.01) var ball_radius: float = 0.16
+@export_range(0.2, 3.0, 0.05) var float_height: float = 1.45
+@export_range(0.0, 0.3, 0.01) var bob: float = 0.06
 
 var _ball: MeshInstance4D
-var _ring: Node4D
 var _clock: float = 0.0
 var _queued: bool = false
 
@@ -56,33 +64,47 @@ func rebuild() -> void:
 	for c in get_children():
 		if c.has_meta("kit_pivot_generated"):
 			c.free()
-	# The ball: five round sections up through it, lofted into a ball.
+	_ball = null
+	var ring := Node4D.new()
+	ring.name = "Ring"
+	ring.set_meta("kit_pivot_generated", true)
+	ring.set_script(Path)
+	ring.set("shape", "circle")
+	ring.set("radius", ring_radius)
+	ring.set("style", "zebra")
+	ring.set("width", ring_width)
+	ring.set("spacing", 0.55)
+	ring.set("speed", 0.3)
+	ring.set("color", color)
+	add_child(ring)
+	var disc := MeshInstance4D.new()
+	disc.name = "Disc"
+	disc.set_meta("kit_pivot_generated", true)
+	var cub := CubinderShape4D.new()
+	cub.radius = disc_radius
+	cub.height = 0.012
+	cub.thickness = 0.6
+	disc.mesh = cub.to_tetra_mesh({"segments": 64})
+	disc.position = Vector4(0.0, 0.008, 0.0, 0.0)
+	var m := TetraMaterial4D.new()
+	m.albedo_color = color
+	disc.material_override = m
+	add_child(disc)
+	if not ball:
+		return
 	var secs: Array[Dictionary] = []
 	for f in [-0.86, -0.5, 0.0, 0.5, 0.86]:
 		secs.append({"center": Vector4(0.0, f * ball_radius, 0.0, 0.0), "radius": ball_radius * sqrt(maxf(1.0 - f * f, 0.05)),
 			"v_scale": 1.0, "w_scale": 1.0, "roll": 0.0, "squareness": 0.0, "color": color, "basis": Projection.IDENTITY})
-	var mesh: ArrayTetraMesh4D = LoftBuilder.build(secs, 6, 12, true, false, false, 1, false)
 	_ball = MeshInstance4D.new()
 	_ball.name = "Ball"
 	_ball.set_meta("kit_pivot_generated", true)
-	_ball.mesh = mesh
-	_ball.material_override = Mats.glow(color, 1.4)
+	_ball.mesh = LoftBuilder.build(secs, 6, 12, true, false, false, 1, false)
+	var bm := TetraMaterial4D.new()
+	bm.albedo_color = color
+	_ball.material_override = bm
 	_ball.position = Vector4(0.0, float_height, 0.0, 0.0)
 	add_child(_ball)
-	# The floor ring: a small dotted circle, the dots running round it.
-	_ring = Node4D.new()
-	_ring.name = "Ring"
-	_ring.set_meta("kit_pivot_generated", true)
-	_ring.set_script(Path)
-	_ring.set("shape", "circle")
-	_ring.set("radius", 0.5)
-	_ring.set("style", "dots")
-	_ring.set("width", 0.22)
-	_ring.set("spacing", 0.3)
-	_ring.set("speed", 0.25)
-	_ring.set("color", color)
-	_ring.set("glow", 0.6)
-	add_child(_ring)
 
 
 func _process(delta: float) -> void:

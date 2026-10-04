@@ -68,6 +68,19 @@ func _run() -> void:
 	_look(Vector4(4.4, 1.7, 6.4, 0), Vector4(7.5, 1.2, 2.4, 0))
 	await _wait(0.4)
 	await _shot("wall_pivot")
+	# The curved arrows close, from above: each should stay a chevron, turned to the curve.
+	_look(Vector4(3.2, 4.2, 6.6, 0), Vector4(3.4, 0.0, 3.9, 0))
+	await _wait(0.4)
+	await _shot("curve_arrows_close")
+	await _wait(0.5)
+	await _shot("curve_arrows_close_later")
+	# The pad, and where the entrance arrows end in their line.
+	_look(Vector4(6.6, 3.0, 6.2, 0), Vector4(6.6, 0.0, 3.0, 0))
+	await _wait(0.4)
+	await _shot("wall_pad")
+	_look(Vector4(1.6, 2.2, 6.8, 0), Vector4(0.0, 0.0, 3.6, 0))
+	await _wait(0.4)
+	await _shot("entrance_end_line")
 	_look(Vector4(-4.2, 1.9, 5.6, 0), Vector4(-8.6, 0.9, 2.8, 0))
 	await _wait(0.4)
 	await _shot("desk_on_left_wall")
@@ -87,6 +100,17 @@ func _run() -> void:
 	_look(Vector4(0.0, 9.6, -14.5, 0.9), Vector4(0.0, 0.0, -27.5, 0.9))
 	await _wait(0.4)
 	await _shot("room2_above_w09")
+	# The slice turned through W (as the playable world's player turns it): the marks are sliced with
+	# their strips, so they thin and go further off, the way the slice leaves them.
+	for deg in [15.0, 35.0]:
+		_look(Vector4(0.0, 9.6, -14.5, 0), Vector4(0.0, 0.0, -27.5, 0))
+		_cam.global_basis = _cam.global_basis * Basis4D.from_xw(deg_to_rad(deg))
+		await _wait(0.4)
+		await _shot("room2_slice_turned_%d" % int(deg))
+	_look(Vector4(0.5, 9.4, 4.5, 0), Vector4(0.5, 0.0, -1.0, 0))
+	_cam.global_basis = _cam.global_basis * Basis4D.from_xw(deg_to_rad(25.0))
+	await _wait(0.4)
+	await _shot("goat_room_slice_turned_25")
 	_look(Vector4(-3.0, 2.0, -13.0, 0), Vector4(0.0, 0.0, -24.0, 0))
 	await _wait(0.4)
 	await _shot("room2_from_door")

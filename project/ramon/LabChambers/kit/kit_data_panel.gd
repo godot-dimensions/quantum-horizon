@@ -12,8 +12,7 @@ extends Control
 ##   HOW THE TOOL WORKS         the four steps from balls to a walking animal, and when each runs
 ##   RIGHT NOW                  the slice, its offset, the turn, what is shown     showcase.live()
 ##   FRAME COST                 the engine's process time against a 60 fps budget
-##   WHERE THE TOOL STANDS      what the tool can do yet, and authoring time per creature: SAMPLES,
-##                              tagged as such, until someone measures them (ROADMAP below)
+##   WHERE THE TOOL STANDS      what the tool can do so far (ROADMAP below)
 ## Everything is laid out in _draw() in window-height units (`u`), so it never scales with
 ## distance and is easy to rearrange.
 ##
@@ -32,8 +31,6 @@ const ROADMAP := [
 	["half", "Animate it: walk cycles"],
 	["todo", "Collide with its true shape"],
 ]
-## Placeholders: days to author each creature.
-const AUTHORING := [["Goat", 1.0], ["Wolf", 2.0], ["Horse", 3.0], ["Chicken", 0.5]]
 ## The tool's four steps: [icon, what, when it runs].
 const PIPELINE := [["ball", "Place balls", "By hand, in the editor"], ["tetra", "Loft the skin", "Once, when a ball moves"],
 	["slice", "Slice through W", "Every frame, on the GPU"], ["creatures", "Animate", "Rigid pieces, transforms only"]]
@@ -121,7 +118,7 @@ func _draw() -> void:
 	Glyphs.icon(self, "live", Rect2(Vector2(x + cw - 62.0 * u, top + 21.0 * u), Vector2(18.0 * u, 18.0 * u)), Color(0.5, 1.0, 0.68, a * pulse))
 	draw_string(fs, Vector2(x + cw - 40.0 * u, top + 35.0 * u), "LIVE", HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("caption", u), soft)
 	draw_string(fb, Vector2(x, top + 64.0 * u), "About the tool", HORIZONTAL_ALIGNMENT_LEFT, cw, Style.type_px("title", u), white)
-	draw_string(fl, Vector2(x, top + 83.0 * u), "How it works, and where it stands. Numbers tagged SAMPLE are placeholders until measured.", HORIZONTAL_ALIGNMENT_LEFT, cw, Style.type_px("caption", u), dim)
+	draw_string(fl, Vector2(x, top + 83.0 * u), "How it works, and where it stands.", HORIZONTAL_ALIGNMENT_LEFT, cw, Style.type_px("caption", u), dim)
 	# How the tool works: four steps, an arrow between each, the step the story is on lit.
 	var ty: float = top + 98.0 * u
 	var pipe := Rect2(Vector2(x, ty), Vector2(cw, 210.0 * u))
@@ -181,28 +178,17 @@ func _draw() -> void:
 	var y4: float = y3 + 144.0 * u
 	var road := Rect2(Vector2(x, y4), Vector2(cw, r.end.y - y4 - 16.0 * u))
 	_card(road, u, a)
-	var hw: float = _section(road, u, a, "check", "WHERE THE TOOL STANDS", accent)
-	Glyphs.tag(self, Vector2(road.position.x + 40.0 * u + hw + 10.0 * u, road.position.y + 21.0 * u), "SAMPLE", Style.type_px("micro", u), sample)
-	var ly: float = road.position.y + 40.0 * u
-	for item in ROADMAP:
-		var it: Array = item
+	_section(road, u, a, "check", "WHERE THE TOOL STANDS", accent)
+	# Two columns of what the tool can do so far (Ramon, 5 Oct: the days-to-author chart is gone).
+	var col_w: float = (road.size.x - 24.0 * u) * 0.5
+	for i in ROADMAP.size():
+		var it: Array = ROADMAP[i]
 		var done: bool = String(it[0]) == "check"
-		Glyphs.icon(self, String(it[0]), Rect2(Vector2(road.position.x + 12.0 * u, ly - 1.0 * u), Vector2(15.0, 15.0) * u),
-			Color(0.5, 1.0, 0.68, a) if done else Color(accent.lightened(0.3), a) if String(it[0]) == "half" else dim)
-		draw_string(fl, Vector2(road.position.x + 34.0 * u, ly + 11.0 * u), String(it[1]), HORIZONTAL_ALIGNMENT_LEFT, road.size.x * 0.5 - 40.0 * u, Style.type_px("caption", u), white if done else soft)
-		ly += 17.0 * u
-	var ax: float = road.position.x + road.size.x * 0.52
-	draw_string(fs, Vector2(ax, road.position.y + 50.0 * u), "Days to author a creature", HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("caption", u), soft)
-	var by: float = road.position.y + 62.0 * u
-	var most: float = 0.0
-	for e in AUTHORING:
-		most = maxf(most, float(e[1]))
-	for e in AUTHORING:
-		var bw: float = (road.end.x - ax - 96.0 * u) * float(e[1]) / most
-		draw_string(fl, Vector2(ax, by + 9.0 * u), String(e[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("caption", u), dim)
-		draw_rect(Rect2(Vector2(ax + 52.0 * u, by), Vector2(bw, 10.0 * u)), Color(sample, 0.75 * a))
-		draw_string(fs, Vector2(ax + 58.0 * u + bw, by + 9.0 * u), ("%.1f" % float(e[1])).trim_suffix(".0"), HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("caption", u), soft)
-		by += 15.0 * u
+		var cx: float = road.position.x + 12.0 * u + col_w * float(i % 2)
+		var ly: float = road.position.y + 44.0 * u + float(i / 2) * 20.0 * u
+		Glyphs.icon(self, String(it[0]), Rect2(Vector2(cx, ly - 1.0 * u), Vector2(15.0, 15.0) * u),
+			Color(Style.UI_LIVE, a) if done else Color(accent.lightened(0.3), a) if String(it[0]) == "half" else dim)
+		draw_string(fl, Vector2(cx + 22.0 * u, ly + 11.0 * u), String(it[1]), HORIZONTAL_ALIGNMENT_LEFT, col_w - 30.0 * u, Style.type_px("caption", u), white if done else soft)
 
 
 func _card(rect: Rect2, u: float, a: float) -> void:

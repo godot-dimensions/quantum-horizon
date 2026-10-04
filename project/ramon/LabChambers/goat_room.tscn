@@ -153,47 +153,33 @@ position = Vector4(0, 0, 5.2, 0)
 [node name="P3" type="Node4D" parent="Guides/ToPedestal"]
 position = Vector4(0, 0, 3.4, 0)
 
-[node name="ToResearchWall" type="Node4D" parent="Guides"]
+[node name="ToWallPad" type="Node4D" parent="Guides"]
 script = ExtResource("13_path")
 width = 0.9
 
-[node name="P0" type="Node4D" parent="Guides/ToResearchWall"]
+[node name="P0" type="Node4D" parent="Guides/ToWallPad"]
 position = Vector4(0.9, 0, 3.5, 0)
 
-[node name="P1" type="Node4D" parent="Guides/ToResearchWall"]
+[node name="P1" type="Node4D" parent="Guides/ToWallPad"]
 position = Vector4(2.6, 0, 4.4, 0)
 
-[node name="P2" type="Node4D" parent="Guides/ToResearchWall"]
-position = Vector4(4.6, 0, 3.8, 0)
+[node name="P2" type="Node4D" parent="Guides/ToWallPad"]
+position = Vector4(4.3, 0, 3.9, 0)
 
-[node name="P3" type="Node4D" parent="Guides/ToResearchWall"]
-position = Vector4(5.9, 0, 3, 0)
+[node name="P3" type="Node4D" parent="Guides/ToWallPad"]
+position = Vector4(5.45, 0, 3.15, 0)
 
-[node name="WallPivot" type="Node4D" parent="Guides"]
+[node name="WallPad" type="Node4D" parent="Guides"]
 position = Vector4(6.6, 0, 3, 0)
 script = ExtResource("14_pivot")
-look = Vector3(10, 0, 3)
-
-[node name="WallSpot" type="Node4D" parent="Guides"]
-position = Vector4(6.6, 0, 3, 0)
-script = ExtResource("13_path")
-style = "zebra"
-shape = "circle"
-radius = 1
-width = 0.22
-spacing = 0.55
-speed = 0.3
-glow = 0.5
+ring_radius = 1
 
 [node name="ToBackDoor" type="Node4D" parent="Guides"]
 script = ExtResource("13_path")
-style = "dots"
-width = 0.8
-spacing = 0.75
-speed = 0.6
+width = 0.9
 
 [node name="P0" type="Node4D" parent="Guides/ToBackDoor"]
-position = Vector4(6.9, 0, 1.8, 0)
+position = Vector4(6.75, 0, 1.75, 0)
 
 [node name="P1" type="Node4D" parent="Guides/ToBackDoor"]
 position = Vector4(6.6, 0, -1.5, 0)
@@ -202,28 +188,23 @@ position = Vector4(6.6, 0, -1.5, 0)
 position = Vector4(5.2, 0, -5.4, 0)
 
 [node name="P3" type="Node4D" parent="Guides/ToBackDoor"]
-position = Vector4(2.6, 0, -8.3, 0)
+position = Vector4(2.8, 0, -7.9, 0)
 
 [node name="P4" type="Node4D" parent="Guides/ToBackDoor"]
-position = Vector4(0, 0, -9.6, 0)
+position = Vector4(1.05, 0, -8.75, 0)
 
-[node name="DoorSpot" type="Node4D" parent="Guides"]
+[node name="DoorPad" type="Node4D" parent="Guides"]
 position = Vector4(0, 0, -9.6, 0)
-script = ExtResource("13_path")
-style = "zebra"
-shape = "circle"
-radius = 1.25
-width = 0.22
-spacing = 0.55
-speed = 0.3
-glow = 0.5
+script = ExtResource("14_pivot")
+ring_radius = 1.25
+disc_radius = 0.5
 
 [node name="ToDesk" type="Node4D" parent="Guides"]
 script = ExtResource("13_path")
 style = "line"
-width = 0.7
-spacing = 2.2
-speed = 0.9
+width = 0.6
+spacing = 1.6
+speed = 0.7
 
 [node name="P0" type="Node4D" parent="Guides/ToDesk"]
 position = Vector4(-0.9, 0, 3.5, 0)
@@ -232,21 +213,16 @@ position = Vector4(-0.9, 0, 3.5, 0)
 position = Vector4(-2.8, 0, 4.3, 0)
 
 [node name="P2" type="Node4D" parent="Guides/ToDesk"]
-position = Vector4(-5, 0, 3.6, 0)
+position = Vector4(-4.9, 0, 3.6, 0)
 
 [node name="P3" type="Node4D" parent="Guides/ToDesk"]
-position = Vector4(-6.7, 0, 3, 0)
+position = Vector4(-6.35, 0, 3.05, 0)
 
-[node name="DeskSpot" type="Node4D" parent="Guides"]
-position = Vector4(-7.4, 0, 3, 0)
-script = ExtResource("13_path")
-style = "zebra"
-shape = "circle"
-radius = 0.9
-width = 0.22
-spacing = 0.55
-speed = 0.3
-glow = 0.5
+[node name="DeskPad" type="Node4D" parent="Guides"]
+position = Vector4(-7.3, 0, 3, 0)
+script = ExtResource("14_pivot")
+ring_radius = 0.85
+disc_radius = 0.34
 
 [node name="PathLab" type="Node4D" parent="."]
 position = Vector4(0, 0, -27, 0)
@@ -260,7 +236,7 @@ up = Vector2(1.6, 8.6)
 number = 2
 title = "Paths"
 subtitle = "Guides that curve, loop and live in 4D."
-body = "1  Arrows follow any curve.   2  Dots keep their spacing round a spiral.   3  A loop round a ball marks where to stand and turn.   4  This path bends out through W and is gone, then comes back.   5  A loop drifting through W: only what is at your W is there. Turn the slice.   6  A line with pulses crossing itself.   7  Two speeds, two ways."
+body = "1  Arrows follow any curve, turning as they go.   2  Blocks round a spiral, each turning with it.   3  Arrows arriving at a pad: stand here.   4  This path bends out through W and is gone, then comes back.   5  A loop drifting through W: only what is at your W is there. Turn the slice.   6  A line with pulses crossing itself.   7  Two speeds, two ways."
 code = "blue"
 
 [node name="Downlight" type="Node4D" parent="."]

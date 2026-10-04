@@ -6,12 +6,12 @@ extends Node4D
 ## kit_pivot_4d.gd, built here round this node, each with a number painted beside it that the wall
 ## sign explains:
 ##   1  arrows through an S-bend            the chevrons follow any curve
-##   2  dots on a spiral                    tight curves, a pattern that keeps its spacing
-##   3  a zebra loop round a pivot ball     a highlight: stand here, turn here
+##   2  blocks on a spiral                  tight curves; each block turns with the curve
+##   3  an arrival pad                      a chopped ring round a blue disc: stand here
 ##   4  a path that leaves the slice        it bends through W and is gone, then comes back
 ##   5  a loop drifting through W           only the part at your W is there; turn the slice
 ##   6  a figure of eight                   a line with pulses, crossing itself
-##   7  two speeds, two ways                gold dots running back against blue arrows
+##   7  two speeds, two ways                blocks running back against arrows
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -19,7 +19,6 @@ const Path := preload("res://ramon/LabChambers/kit/kit_path_4d.gd")
 const Pivot := preload("res://ramon/LabChambers/kit/kit_pivot_4d.gd")
 const Mats := preload("res://ramon/LabKit/lab_materials.gd")
 
-const GOLD := Color(1.0, 0.72, 0.18)
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
 
@@ -41,16 +40,18 @@ func rebuild() -> void:
 		var a: float = float(i) * 0.36
 		var r: float = 0.5 + float(i) * 0.075
 		spiral.append(Vector4(-2.5 + sin(a) * r, 0, 6.5 + cos(a) * r, 0))
-	_path("Case2Spiral", "dots", spiral, {"width": 0.5, "spacing": 0.42, "speed": 0.5})
+	_path("Case2Spiral", "blocks", spiral, {"width": 0.55, "spacing": 0.5, "speed": 0.5})
 	_number(2, Vector2(-6.4, 10.4))
-	# 3. A zebra loop round a pivot ball.
-	var loop: Node4D = _path("Case3Loop", "zebra", PackedVector4Array(), {"shape": "circle", "radius": 2.0, "width": 0.3, "spacing": 0.55, "speed": 0.35, "glow": 0.5})
-	loop.position = Vector4(6.0, 0.0, 6.5, 0.0)
+	# 3. An arrival pad, and arrows arriving at it.
 	var piv := Node4D.new()
-	piv.name = "Case3Pivot"
+	piv.name = "Case3Pad"
 	piv.set_script(Pivot)
+	piv.set("ring_radius", 1.6)
+	piv.set("ring_width", 0.28)
+	piv.set("disc_radius", 0.6)
 	piv.position = Vector4(6.0, 0.0, 6.5, 0.0)
 	add_child(piv)
+	_path("Case3In", "arrows", [Vector4(6.0, 0, 12.5, 0), Vector4(6.0, 0, 8.3, 0)], {"width": 0.9})
 	_number(3, Vector2(9.0, 9.4))
 	# 4. A path that leaves the slice: out through W in the middle, back again at the end.
 	_path("Case4Leaves", "arrows", [Vector4(-4, 0, -1, 0), Vector4(-1, 0, -1, 0), Vector4(1.5, 0, -1, 1.3), Vector4(4.5, 0, -1, 1.3),
@@ -72,7 +73,7 @@ func rebuild() -> void:
 	_number(6, Vector2(-6.2, -11.6))
 	# 7. Two speeds, two ways: gold dots back, blue arrows on.
 	_path("Case7On", "arrows", [Vector4(-13, 0, -13, 0), Vector4(13, 0, -13, 0)], {"width": 0.8, "speed": 1.6})
-	_path("Case7Back", "dots", [Vector4(-13, 0, -14.1, 0), Vector4(13, 0, -14.1, 0)], {"width": 0.65, "spacing": 0.6, "speed": -0.5, "color": GOLD, "glow": 0.6})
+	_path("Case7Back", "blocks", [Vector4(-13, 0, -14.1, 0), Vector4(13, 0, -14.1, 0)], {"width": 0.6, "spacing": 0.7, "speed": -0.5})
 	_number(7, Vector2(-14.2, -12.2))
 
 
@@ -94,7 +95,7 @@ func _number(n: int, at: Vector2) -> void:
 	var post := MeshInstance4D.new()
 	post.name = "Number%d" % n
 	post.mesh = Mats.box_mesh(Vector4(0.08, 0.6, 0.08, 0.3))
-	post.material_override = Mats.glow(Color(0.45, 0.78, 1.0), 1.0)
+	post.material_override = _paint()
 	post.position = Vector4(at.x, 0.3, at.y, 0.0)
 	add_child(post)
 	# A seven-segment figure on top of the post: segments top, upper left, upper right, middle,
@@ -105,7 +106,14 @@ func _number(n: int, at: Vector2) -> void:
 		var m := MeshInstance4D.new()
 		var horizontal: bool = idx == 0 or idx == 3 or idx == 6
 		m.mesh = Mats.box_mesh(Vector4(0.28 if horizontal else 0.06, 0.06 if horizontal else 0.3, 0.06, 0.3))
-		m.material_override = Mats.glow(Color(0.45, 0.78, 1.0), 1.4)
+		m.material_override = _paint()
 		var pl: Vector3 = places[idx]
 		m.position = Vector4(at.x + pl.x, 1.25 + pl.y, at.y, 0.0)
 		add_child(m)
+
+
+## The wall's blue, painted.
+func _paint() -> TetraMaterial4D:
+	var m := TetraMaterial4D.new()
+	m.albedo_color = Color(0.13, 0.40, 0.86)
+	return m

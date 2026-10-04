@@ -14,7 +14,9 @@ extends Node4D
 ## W 0 is simply a path on the floor.
 ##
 ## THE MARKS are drawn by the grid shader's path mode (lab_grid.gdshader): your chevron pair, zebra
-## stripes, dots, or a line with pulses, moving on along the curve. The strip carries the floor's own
+## stripes, square blocks, a line with balls running along it, or solid, moving on along the curve.
+## Arrows, blocks and balls are rigid: each turns to the curve at its middle rather than bending
+## with it (the shader is handed the curve). An open path ends in a fixed line at each end. The strip carries the floor's own
 ## grid, so it is invisible and only the marks show; the strip is built once, the movement is the
 ## shader's, so a path costs nothing a frame.
 ##
@@ -28,9 +30,11 @@ extends Node4D
 
 const LabGrid := preload("res://ramon/LabKit/lab_grid.gd")
 const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
+## The strip is this much wider than `width`, so rigid marks turning on a bend are not cut off.
+const MARGIN := 1.4
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
-@export_enum("arrows", "zebra", "dots", "line") var style: String = "arrows":
+@export_enum("arrows", "zebra", "blocks", "line", "solid") var style: String = "arrows":
 	set(v):
 		style = v
 		_params()
@@ -74,18 +78,20 @@ const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 	set(v):
 		speed = v
 		_params()
-@export var color: Color = Color(0.12, 0.40, 0.86):
+## The wall's blue by default (Ramon, 5 Oct: "it should be the wall blue").
+@export var color: Color = Color(0.13, 0.40, 0.86):
 	set(v):
 		color = v
 		_params()
-@export_range(0.0, 2.0, 0.01) var glow: float = 0.35:
+## None by default: paint, not light (Ramon: "not emit light").
+@export_range(0.0, 2.0, 0.01) var glow: float = 0.0:
 	set(v):
 		glow = v
 		_params()
-## How far the marks take to fade in at the start and out at the end, m (open paths).
-@export_range(0.0, 4.0, 0.05) var fade: float = 0.8:
+## The fixed line across each end of an open path, m thick: the marks run into it and are gone.
+@export_range(0.0, 0.5, 0.01) var cap: float = 0.08:
 	set(v):
-		fade = v
+		cap = v
 		_params()
 ## How high above the floor the strip lies, m.
 @export_range(0.002, 0.2, 0.001) var height: float = 0.012:
@@ -200,6 +206,7 @@ static func _catmull(p0: Vector4, p1: Vector4, p2: Vector4, p3: Vector4, t: floa
 
 
 func rebuild() -> void:
+	_cached = []
 	if is_instance_valid(_strip):
 		_strip.free()
 	_strip = null
@@ -224,7 +231,7 @@ func rebuild() -> void:
 		var c: Vector4 = Vector4(pts[k].x, height, pts[k].z, pts[k].w)
 		for ws in [-1.0, 1.0]:
 			for side in [-1.0, 1.0]:
-				verts.append(c + across * (side * width * 0.5) + Vector4(0.0, 0.0, 0.0, ws * w_thickness))
+				verts.append(c + across * (side * width * 0.5 * MARGIN) + Vector4(0.0, 0.0, 0.0, ws * w_thickness))
 				tex.append(Vector3(at[k], side, ws))
 	# Between two samples a box in (along, across, W): six tetrahedra (one per order of its three
 	# axes, which tiles neighbouring boxes consistently), each laid down both ways round so it shows
@@ -264,7 +271,7 @@ func _params() -> void:
 	var cs: ShaderMaterial = (_strip.material_override as TetraMaterial4D).get_cross_section_material_3d()
 	cs.set_shader_parameter("grid_offset", global_position if is_inside_tree() else Vector4.ZERO)
 	cs.set_shader_parameter("path_on", 1.0)
-	cs.set_shader_parameter("path_style", float(["arrows", "zebra", "dots", "line"].find(style)))
+	cs.set_shader_parameter("path_style", float(maxi(0, ["arrows", "zebra", "blocks", "line", "solid", "dots"].find(style)) if style != "dots" else 2))
 	cs.set_shader_parameter("path_color", color)
 	cs.set_shader_parameter("path_glow", glow)
 	# A loop's pattern has to meet itself: its period is the nearest that fits a whole number of times.
@@ -275,14 +282,28 @@ func _params() -> void:
 	cs.set_shader_parameter("path_speed", speed)
 	cs.set_shader_parameter("path_length", length)
 	cs.set_shader_parameter("path_width", width)
-	cs.set_shader_parameter("path_fade", fade)
+	cs.set_shader_parameter("path_margin", MARGIN)
+	cs.set_shader_parameter("path_cap", cap)
+	# The curve itself, 128 points evenly spaced along it, for the rigid marks.
+	var n: int = 128
+	var img := Image.create(n, 1, false, Image.FORMAT_RGBAF)
+	for i in n:
+		var q: Vector4 = point_at(length * float(i) / float(n - 1))
+		img.set_pixel(i, 0, Color(q.x, q.z, q.w, 1.0))
+	cs.set_shader_parameter("path_curve_tex", ImageTexture.create_from_image(img))
+	cs.set_shader_parameter("path_curve_n", n)
 	cs.set_shader_parameter("path_closed", 1.0 if _is_closed() else 0.0)
 	cs.set_shader_parameter("path_pair", 0.76 * width / 1.15)
 
 
+var _cached: Array = []
+
+
 ## The point at `s` metres along, in this node's space (for markers riding the path).
 func point_at(s: float) -> Vector4:
-	var sm: Array = samples()
+	if _cached.is_empty():
+		_cached = samples()
+	var sm: Array = _cached
 	var pts: PackedVector4Array = sm[0]
 	var at: PackedFloat32Array = sm[1]
 	if pts.is_empty():

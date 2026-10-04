@@ -23,6 +23,8 @@ extends Node4D
 ##                     settles forward past upright for a moment before it stands
 ##   the arms          relaxed and swinging a little at a walk; at a run, elbows folded near a right
 ##                     angle, pumping against the opposite leg, the shoulders turning with them
+## RELAXED (Ramon, 5 Oct: "it should be a more relaxed run"): an easy jog rather than a sprint, a
+## shorter flight, a small heel kick, arms loose and low, little lean.
 ## THE STOP: the body sheds its speed over a few tenths of a second (kit_player sets the
 ## acceleration); the clock slows with the distance so the legs plant mid-stride, the hips dip and
 ## the body rocks back, then the feet come together under the hips.
@@ -31,32 +33,32 @@ extends Node4D
 
 @export var avatar_path: NodePath = NodePath("../Avatar")
 ## The speed the run is fully a run by, and the speed below which it is fully a walk, m/s.
-@export var run_from: float = 2.9
+@export var run_from: float = 2.5
 @export var walk_until: float = 1.5
 ## One step's length (half a cycle), m, at a walk and at a run.
 @export var step_walk: float = 0.62
-@export var step_run: float = 1.12
+@export var step_run: float = 0.92
 ## How much of a cycle each foot is down at a walk and at a run.
 @export_range(0.2, 0.8, 0.01) var duty_walk: float = 0.62
-@export_range(0.15, 0.5, 0.01) var duty_run: float = 0.28
+@export_range(0.15, 0.5, 0.01) var duty_run: float = 0.36
 ## How high the swinging foot rises, m: a walk's clearance, a run's heel kick.
 @export var lift_walk: float = 0.07
-@export var lift_run: float = 0.34
+@export var lift_run: float = 0.22
 ## The body's rise and fall, m: a walk's bob; a run's sink on landing and rise through the flight.
 @export var bob_walk: float = 0.035
-@export var sink_run: float = 0.075
-@export var float_run: float = 0.07
+@export var sink_run: float = 0.045
+@export var float_run: float = 0.035
 ## Lean from the ankles, radians: at a walk, at a run, and per m/s² of acceleration.
 @export var lean_walk: float = 0.02
-@export var lean_run: float = 0.13
+@export var lean_run: float = 0.07
 @export var lean_accel: float = 0.02
 ## Arms: swing at a walk and a run (radians at the shoulder), elbow fold at a walk and a run.
 @export var arm_walk: float = 0.2
-@export var arm_run: float = 0.7
+@export var arm_run: float = 0.42
 @export var elbow_walk: float = 0.18
-@export var elbow_run: float = 1.45
+@export var elbow_run: float = 1.15
 ## How far the shoulders turn with the arms at a run, radians.
-@export var twist_run: float = 0.12
+@export var twist_run: float = 0.06
 ## The lean's spring: stiffness and damping (lower damping, more rock after a stop).
 @export var spring_k: float = 110.0
 @export var spring_c: float = 12.0

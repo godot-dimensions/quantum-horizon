@@ -11,6 +11,7 @@ extends PanelContainer
 ##                height, warmth
 ##   SUN          its strength, height and turn (the Sun handle, kit_sun_4d.gd)
 ##   ROOM         ceiling height, pedestal radius
+##   HOLOGRAM     the pedestal's hologram: height, strength at its foot, fade, fine grain
 ##   ROOM SHAPE   the goat room's five outline numbers and its back door (goat_room_4d.gd)
 ##   SAVE         writes everything to SAVE_PATH; the panel reads it back when the room starts,
 ##                so what he saved is where the room begins
@@ -40,6 +41,10 @@ const SUN_ROWS := [["sun", "Strength", 0.0, 3.0, 0.01], ["sun_up", "Height, degr
 const SPOT_ROWS := [["strength", "Strength", 0.0, 15.0, 0.01], ["cone", "Cone, degrees", 10.0, 120.0, 0.1], ["softness", "Edge softness", 0.1, 10.0, 0.01],
 	["reach", "Reach, m", 2.0, 30.0, 0.05], ["falloff", "Falloff", 0.01, 2.0, 0.01], ["height", "Height, m", 3.0, 13.5, 0.01], ["warmth", "Warmth", 0.0, 1.0, 0.01]]
 const ROOM_ROWS := [["ceiling", "Ceiling, m", 6.0, 14.0, 0.05], ["pedestal", "Pedestal radius, m", 2.0, 5.0, 0.05]]
+## The pedestal's hologram (Ramon, 5 Oct: "make a height adjustment in my dev panel for the
+## hologram"): its height, how solid at its foot, how fast it fades, and the fine grain (0 or 1).
+const HOLO_ROWS := [["holo_height", "Height, m", 0.1, 4.0, 0.01], ["holo_base", "Strength at the foot", 0.0, 1.0, 0.01],
+	["holo_falloff", "Fade upward", 0.3, 6.0, 0.05], ["holo_fine", "Fine grain (0 / 1)", 0.0, 1.0, 1.0]]
 const SHAPE_ROWS := [["room_half_width", "Half width, m", 5.0, 20.0, 0.1], ["room_back", "Back wall from middle, m", 4.0, 20.0, 0.1],
 	["room_front", "Entrance wall from middle, m", 4.0, 20.0, 0.1], ["back_wall_half", "Back wall half width, m", 1.0, 10.0, 0.1],
 	["corner_z", "Angled walls start at z", -15.0, 15.0, 0.1], ["door_width", "Back door width, m", 0.0, 8.0, 0.1], ["door_height", "Back door height, m", 2.0, 8.0, 0.1]]
@@ -73,6 +78,10 @@ var _box: VBoxContainer
 
 
 func _ready() -> void:
+	# Hidden until its key is pressed, and nothing on screen mentions the key (Ramon, 5 Oct: "keep the
+	# dev panel closed by default, don't even let it show ... so someone can only find it by
+	# accident"): F1 for the room's panel, F2 for Room 2's.
+	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	position = Vector2(14, 14)
 	var sb := StyleBoxFlat.new()
@@ -96,7 +105,7 @@ func _ready() -> void:
 	_scroll.add_child(box)
 	_box = box
 	var title := Label.new()
-	title.text = "TUNING  ·  Esc frees the mouse  ·  F1 hides  ·  B mood"
+	title.text = "ARTIST DEV PANEL  ·  internal use  ·  F1 to close  ·  Esc frees the mouse"
 	title.add_theme_font_override("font", LabPrint.font("bold"))
 	title.add_theme_font_size_override("font_size", FONT)
 	box.add_child(title)
@@ -117,6 +126,10 @@ func _ready() -> void:
 	_section(box, "ROOM")
 	for r in ROOM_ROWS:
 		_row(box, r)
+	if showcase != null:
+		_section(box, "HOLOGRAM")
+		for r in HOLO_ROWS:
+			_row(box, r)
 	if shape_root != null:
 		_section(box, "ROOM SHAPE")
 		for r in SHAPE_ROWS:
@@ -141,7 +154,7 @@ func _build_room2() -> void:
 	_scroll.add_child(box)
 	_box = box
 	var title := Label.new()
-	title.text = "ROOM 2  ·  F2 hides"
+	title.text = "ARTIST DEV PANEL, ROOM 2  ·  internal use  ·  F2 to close"
 	title.add_theme_font_override("font", LabPrint.font("bold"))
 	title.add_theme_font_size_override("font_size", FONT)
 	box.add_child(title)
@@ -233,6 +246,10 @@ func _read_value(key: String) -> float:
 			return (goat_room.get("size") as Vector3).y if goat_room != null else 10.0
 		"pedestal":
 			return float(showcase.get("radius")) if showcase != null else 3.4
+		"holo_height", "holo_base", "holo_falloff":
+			return float(showcase.get(key)) if showcase != null else 0.0
+		"holo_fine":
+			return 1.0 if showcase != null and bool(showcase.get("holo_fine_grain")) else 0.0
 		"sun_up":
 			return (sun.call("angles") as Vector2).x if sun != null else 64.0
 		"sun_turn":
@@ -274,6 +291,12 @@ func _write_value(key: String, v: float) -> void:
 		"pedestal":
 			if showcase != null:
 				showcase.set("radius", v)
+		"holo_height", "holo_base", "holo_falloff":
+			if showcase != null:
+				showcase.set(key, v)
+		"holo_fine":
+			if showcase != null:
+				showcase.set("holo_fine_grain", v > 0.5)
 		"sun_up", "sun_turn":
 			if sun != null:
 				var a: Vector2 = sun.call("angles")
@@ -391,6 +414,9 @@ func _save() -> void:
 		cfg.set_value("spot", "height", (spot as Node4D).position.y)
 	for r in ROOM_ROWS:
 		cfg.set_value("room", r[0], float(_pending.get(r[0], _read_value(r[0]))))
+	if showcase != null:
+		for r in HOLO_ROWS:
+			cfg.set_value("hologram", r[0], float(_pending.get(r[0], _read_value(r[0]))))
 	if sun != null:
 		for k in ["sun_up", "sun_turn"]:
 			cfg.set_value("room", k, float(_read_value(k)))
@@ -437,6 +463,9 @@ func _load() -> void:
 	if cfg.has_section("room"):
 		for k in cfg.get_section_keys("room"):
 			_write_value(k, float(cfg.get_value("room", k)))
+	if cfg.has_section("hologram"):
+		for k in cfg.get_section_keys("hologram"):
+			_write_value(k, float(cfg.get_value("hologram", k)))
 
 
 func _unhandled_key_input(event: InputEvent) -> void:

@@ -86,8 +86,9 @@ const SLICES := 9
 	set(v):
 		hologram = v
 		_later()
-## Its height above the deck, metres; how solid it is at its foot (0 to 1), and how fast it fades.
-@export_range(0.5, 8.0, 0.05) var holo_height: float = 3.8:
+## Its height above the deck, metres (Ramon, 5 Oct: "just a subtle touch at the start"); how solid
+## it is at its foot (0 to 1), and how fast it fades.
+@export_range(0.1, 8.0, 0.05) var holo_height: float = 0.65:
 	set(v):
 		holo_height = v
 		_later()
@@ -95,13 +96,18 @@ const SLICES := 9
 	set(v):
 		holo_base = v
 		_holo_params()
-@export_range(0.3, 6.0, 0.05) var holo_falloff: float = 2.2:
+@export_range(0.3, 6.0, 0.05) var holo_falloff: float = 1.4:
 	set(v):
 		holo_falloff = v
 		_holo_params()
 @export var holo_color: Color = Color(0.25, 0.60, 1.0):
 	set(v):
 		holo_color = v
+		_holo_params()
+## The finer, moving grain instead of the repeating 4x4 pattern.
+@export var holo_fine_grain: bool = false:
+	set(v):
+		holo_fine_grain = v
 		_holo_params()
 ## A round bead in every hip and knee of a walking animal, filling the notch where its leg pieces
 ## meet (goat_walk_4d.gd); off puts the plain cut joints back. Handed to each exhibit as it is built.
@@ -625,3 +631,4 @@ func _holo_params() -> void:
 	cs.set_shader_parameter("holo_base", holo_base)
 	cs.set_shader_parameter("holo_falloff", holo_falloff)
 	cs.set_shader_parameter("holo_color", holo_color)
+	cs.set_shader_parameter("holo_fine", 1.0 if holo_fine_grain else 0.0)
