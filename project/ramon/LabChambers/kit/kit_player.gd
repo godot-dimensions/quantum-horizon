@@ -23,8 +23,8 @@ static func make() -> CharacterBody4D:
 	body.get_node("Gait").set("knee_slack", 0.002)
 	var shape: CollisionShape4D = body.get_node("CollisionShape4D")
 	var capsule := CapsuleShape4D.new()
-	capsule.radius = 0.28
-	capsule.full_height = 1.9
+	capsule.radius = 0.26
+	capsule.full_height = 1.84
 	shape.shape = capsule
-	shape.position = Vector4(0.0, 0.95, 0.0, 0.0)
+	shape.position = Vector4(0.0, 0.92, 0.0, 0.0)
 	return body

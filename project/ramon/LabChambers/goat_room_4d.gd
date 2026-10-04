@@ -8,7 +8,7 @@ extends Node4D
 ## You start in a short entrance, walk under CREATION LAB painted over the doorway, and into a
 ## grey tiled room in blue light: the lesson on the left wall, the goat on a lit plinth under one
 ## downlight with its slices standing behind it, the W-slice and cross-section screens on the
-## right wall, and the research panel floating in front of the plinth where the arrows end.
+## right wall, and the research panel floating off to the left under the lesson, to walk to.
 ##
 ## Everything in the room is a kit node in the scene, so it can be moved and tuned in the editor.
 ## THIS NODE: the moods (kit_style.gd; LabKit's Room owns the light and the B key), the player
@@ -30,7 +30,7 @@ const DataPanel := preload("res://ramon/LabChambers/kit/kit_data_panel.gd")
 ## Where the player starts, facing -Z.
 @export var start_at: Vector2 = Vector2(0.0, 15.2)
 ## The arrows painted into the floors, world x/z.
-@export var route: PackedVector2Array = PackedVector2Array([Vector2(0, 14.6), Vector2(0, 5.3)])
+@export var route: PackedVector2Array = PackedVector2Array([Vector2(0, 14.6), Vector2(0, 4.2)])
 
 @export_group("Camera")
 ## How far behind you the camera sits, in metres. The concept frames have you close and large in
@@ -51,6 +51,9 @@ var _film: Camera4D
 var _desk_ease: float = 0.0
 var _rig_pitch: float = 0.0
 var _in_room: bool = false
+## The research panel you stand at (null: none), and whether you have clicked its CHECK DATA.
+var _at_desk: Node = null
+var _desk_open: bool = false
 
 
 func _enter_tree() -> void:
@@ -129,7 +132,7 @@ func _strip() -> Array:
 	if not _in_room or showcase == null:
 		return [["WASD", "Move"], ["Mouse", "Look"], ["B", "Dark / bright"]]
 	if _desk_ease > 0.5:
-		return [["", "Research data, measured live from the goat"], ["Wheel", "Slice through W"], ["E", String(showcase.call("action_label"))]]
+		return [["Click", "Close the data" if _desk_open else "Check the data"], ["Wheel", "Slice through W"], ["E", String(showcase.call("action_label"))]]
 	var out: Array = []
 	if bool(showcase.call("near_button", player.global_position)):
 		out.append(["Click", "Watch"])
@@ -139,16 +142,29 @@ func _strip() -> Array:
 	return out
 
 
-## Standing at a desk brings up the research data panel (kit_data_panel.gd), a fixed 2D panel;
-## stepping away puts it away. The camera stays yours.
+## Standing at a research panel lights its CHECK DATA button; clicking it brings up the 2D data
+## panel (kit_data_panel.gd), clicking again or stepping away puts it away (Ramon, 4 Oct: "a check
+## button, before you see the flipover screen"). The camera stays yours.
 func _read_desk(_delta: float) -> void:
-	var at: bool = false
+	var at: Node = null
 	for d in get_tree().get_nodes_in_group("kit_desk"):
 		if is_ancestor_of(d) and bool(d.call("near", player.global_position)):
-			at = true
-	_desk_ease = 1.0 if at else 0.0
+			at = d
+	if at == null:
+		_desk_open = false
+	_at_desk = at
+	for d in get_tree().get_nodes_in_group("kit_desk"):
+		if is_ancestor_of(d) and d.has_method("set_near"):
+			d.call("set_near", d == at, d == at and _desk_open)
+	_desk_ease = 1.0 if at != null else 0.0
 	if data_panel != null:
-		data_panel.set("shown", at)
+		data_panel.set("shown", at != null and _desk_open)
+
+
+## Opens or closes the data at the panel you stand at (a click; the runner calls it too).
+func toggle_desk() -> void:
+	if _at_desk != null:
+		_desk_open = not _desk_open
 
 
 # -- the mouse and keys ----------------------------------------------------------------------------
@@ -167,6 +183,10 @@ func _input(event: InputEvent) -> void:
 	if mb != null and mb.pressed:
 		if mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			showcase.call("step_slice", 1 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else -1)
+			get_viewport().set_input_as_handled()
+			return
+		if mb.button_index == MOUSE_BUTTON_LEFT and _at_desk != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			toggle_desk()
 			get_viewport().set_input_as_handled()
 			return
 		if mb.button_index == MOUSE_BUTTON_LEFT and bool(showcase.call("near_button", player.global_position)) \

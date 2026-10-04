@@ -40,7 +40,7 @@ func _run() -> void:
 	await _wait(3.0)
 	(_g.get("tuner") as Control).visible = false
 	var p: CharacterBody4D = _g.get("player")
-	p.global_position = Vector4(-4.0, 0.05, 3.0, 0.0)
+	p.global_position = Vector4(3.0, 0.05, 4.0, 0.0)
 	p.set("_facing", PI * 0.75 + PI * 0.5)
 	var rig: Node = p.get_node("CameraRig")
 	rig.set("yaw", PI * 0.75)

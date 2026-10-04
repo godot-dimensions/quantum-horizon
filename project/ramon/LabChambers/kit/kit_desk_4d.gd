@@ -4,9 +4,13 @@ extends Node4D
 ## Kit: the research panel. A long, thin slab floating low over the floor and tilted towards you:
 ## a white frame with a raised rim round a recessed blue screen, a glowing line along its
 ## underside and a soft light on the floor under it (Ramon, 4 Oct, from his concept sheet: "make a
-## floating panel like the first top in the ref", "place it logically in the scene"). In the goat
-## room it floats in front of the plinth where the floor arrows end, so you read it with the goat
-## standing right behind it.
+## floating panel like the first top in the ref"; then "not centered but offset on the left side,
+## like something you could walk to for more info, and maybe a check button, before you see the
+## flipover screen"). In the goat room it stands off the route to the left, under the lesson wall.
+##
+## THE CHECK BUTTON floats upright above its back edge, CHECK DATA, seen from across the room. Its
+## frame lights when you stand at the panel (set_near); the room then lets you click it, and only
+## then does the 2D data panel come up (goat_room_4d.gd).
 ##
 ## THE SCREEN is printed once (rd_build.gd print_box, both moods) when the exhibit's numbers are
 ## in, and carries what the 2D data panel shows (kit_data_panel.gd, which comes up while you
@@ -17,8 +21,9 @@ extends Node4D
 ##   Slice through W                the W profile, its slice stops, and a glowing line laid on the
 ##                                  screen where the slice you see cuts it, moved every frame
 ##   Build stage by stage           tetrahedra per stage
-## The body is boxes: the slab, its rim and screen are tilted together; the collision is one
-## upright box under it (the physics here is box-only). Faces the node's +Z, turned to `face`.
+## The body is boxes: the slab, its rim and screen are tilted together; the collision is a row of
+## upright boxes under it, square to the world (the physics here is box-only). Faces the node's +Z,
+## turned to `face`.
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -29,6 +34,7 @@ const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
 const Mats := preload("res://ramon/LabKit/lab_materials.gd")
 const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 const Glyphs := preload("res://ramon/LabChambers/kit/kit_glyphs.gd")
+const Batch := preload("res://ramon/LabKit/lab_batch.gd")
 ## Print resolution of the screen, pixels a metre.
 const SCREEN_PPM := 400.0
 const SLAB := 0.08
@@ -65,6 +71,16 @@ const DRAWN_FOR := 1.09
 		underglow = v
 		_paint_parts()
 @export var title: String = "Research data"
+## The floating CHECK DATA button over its back edge.
+@export var check_button: bool = true:
+	set(v):
+		check_button = v
+		_later()
+## How high the button floats, metres off the floor.
+@export_range(0.8, 3.0, 0.05) var button_height: float = 1.6:
+	set(v):
+		button_height = v
+		_later()
 
 var _screen: MeshInstance4D
 var _marker: MeshInstance4D
@@ -78,6 +94,10 @@ var _queued: bool = false
 var _sw: float = 3.24
 var _sh: float = 1.09
 var _band: Rect2 = Rect2()
+var _button: MeshInstance4D
+var _button_frame: MeshInstance4D
+var _near: bool = false
+var _open: bool = false
 
 
 func _enter_tree() -> void:
@@ -176,18 +196,43 @@ func rebuild() -> void:
 	_light.position = Vector4(0.0, maxf(0.12, hover * 0.4), 0.0, 0.0)
 	_light.set_meta(Build.GENERATED, true)
 	add_child(_light)
-	# The physics: one upright box under the whole slab.
-	var body := StaticBody4D.new()
-	body.name = "Body"
+	# The physics is box-only and a turned box collides as its square in the world, which for a
+	# panel turned 45 degrees covers the place you stand to read it. So: a row of upright boxes
+	# along the slab, each kept square to the world.
 	var high: float = hover + d * sin(th) + SLAB
-	body.position = Vector4(0.0, high * 0.5, 0.0, 0.0)
-	var shape := CollisionShape4D.new()
-	var bs := BoxShape4D.new()
-	bs.size = Vector4(w, high, d * cos(th), Build.W_DEPTH)
-	shape.shape = bs
-	body.add_child(shape)
-	body.set_meta(Build.GENERATED, true)
-	add_child(body)
+	var f2 := Vector2(face.x, face.z)
+	var square: Projection = Basis4D.from_zx(-atan2(f2.x, f2.y)) if f2.length() > 0.001 else Projection.IDENTITY
+	var cell: float = minf(d * cos(th), 0.8)
+	var count: int = maxi(1, int(ceil(w / (cell * 0.7))))
+	for i in count:
+		var body := StaticBody4D.new()
+		body.name = "Body%d" % i
+		var lx: float = lerpf(-w * 0.5 + cell * 0.5, w * 0.5 - cell * 0.5, float(i) / maxf(float(count - 1), 1.0))
+		body.position = Vector4(lx, high * 0.5, 0.0, 0.0)
+		body.basis = square
+		var shape := CollisionShape4D.new()
+		var bs := BoxShape4D.new()
+		bs.size = Vector4(cell, high, cell, Build.W_DEPTH)
+		shape.shape = bs
+		body.add_child(shape)
+		body.set_meta(Build.GENERATED, true)
+		add_child(body)
+	_button = null
+	_button_frame = null
+	if check_button:
+		var bs2 := Vector2(1.2, 0.36)
+		var at := Vector3(0.0, button_height, -d * 0.5 + 0.1)
+		_button = Build.box(self, "CheckButton", at, Vector3(bs2.x, bs2.y, 0.06), "kit_screen", false)
+		var bb := Batch.new()
+		var bw: float = 0.03
+		var bc := Vector4(at.x, at.y, at.z + 0.035, 0.0)
+		bb.box("f", Vector4(bs2.x + 0.12, bw, bw, 0.5), bc + Vector4(0, bs2.y * 0.5 + 0.06, 0, 0))
+		bb.box("f", Vector4(bs2.x + 0.12, bw, bw, 0.5), bc - Vector4(0, bs2.y * 0.5 + 0.06, 0, 0))
+		bb.box("f", Vector4(bw, bs2.y + 0.12, bw, 0.5), bc + Vector4(bs2.x * 0.5 + 0.06, 0, 0, 0))
+		bb.box("f", Vector4(bw, bs2.y + 0.12, bw, 0.5), bc - Vector4(bs2.x * 0.5 + 0.06, 0, 0, 0))
+		_button_frame = bb.instance("f")
+		_button_frame.set_meta(Build.GENERATED, true)
+		add_child(_button_frame)
 	_paint_parts()
 
 
@@ -198,6 +243,8 @@ func _paint_parts() -> void:
 			(g as MeshInstance4D).material_override = Mats.glow(c, 1.8)
 	if is_instance_valid(_marker):
 		_marker.material_override = Mats.glow(Color(0.86, 0.96, 1.0), 2.2)
+	if is_instance_valid(_button_frame):
+		_button_frame.material_override = Mats.glow(Style.pick(Style.FRAME_LIT) if _near else Style.pick(Style.FRAME_DIM), 2.0 if _open else 1.0)
 	if is_instance_valid(_light):
 		_light.set("light_energy", float(underglow.get(Style.mood, 1.0)))
 		_light.set("light_color", c)
@@ -217,6 +264,15 @@ func _layout() -> Dictionary:
 	var prof := Rect2(Vector2(right0 + 0.05, card_y + 0.12 * s), Vector2(mid - 0.025 - right0 - 0.1, 0.26 * s))
 	var band := Rect2(prof.position, Vector2(prof.size.x, prof.size.y * 0.84))
 	return {"s": s, "mg": mg, "right0": right0, "right1": right1, "mid": mid, "card_y": card_y, "profile": prof, "band": band}
+
+
+## The room says whether you stand at it (the button lights) and whether the data is open.
+func set_near(near_it: bool, open: bool = false) -> void:
+	if near_it == _near and open == _open:
+		return
+	_near = near_it
+	_open = open
+	_paint_parts()
 
 
 ## Where you stand to read it: in front of it, within its width.
@@ -253,6 +309,11 @@ func _print_all(sc: Node) -> void:
 		return
 	_prints.append(rec)
 	RD.apply(rec, Style.mood)
+	if is_instance_valid(_button):
+		var brec: Dictionary = await RD.print_box(get_tree(), _button, Vector4(0, 0, 1, 0), Vector2(1.2, 0.36), _paint_button, {"bright": 0.85, "dark": 0.95}, 300.0)
+		if is_instance_valid(_button):
+			_prints.append(brec)
+			RD.apply(brec, Style.mood)
 
 
 # -- the print -------------------------------------------------------------------------------------
@@ -323,6 +384,14 @@ func _paint_screen(c: Control, _ink: Dictionary, d: Dictionary, prof: Dictionary
 	for i in bars.size():
 		labels.append(str(i + 1))
 	Glyphs.bars(c, Rect2(at.call(mid + 0.075, cy + 0.13), at.call(r1 - mid - 0.125, 0.37)), bars, cyan, labels, px.call(0.034), dim)
+
+
+func _paint_button(c: Control, _ink: Dictionary) -> void:
+	var s: float = c.size.y
+	var white := Color(1, 1, 1)
+	Glyphs.icon(c, "graph", Rect2(Vector2(s * 0.16, s * 0.16), Vector2(s * 0.68, s * 0.68)), white)
+	c.draw_string(LabPrint.font("black"), Vector2(s * 1.0, s * 0.6), "CHECK DATA", HORIZONTAL_ALIGNMENT_LEFT, -1, int(s * 0.34), white)
+	c.draw_string(LabPrint.font("bold"), Vector2(s * 1.0, s * 0.86), "CLICK", HORIZONTAL_ALIGNMENT_LEFT, -1, int(s * 0.16), Color(white, 0.75))
 
 
 func apply_mood(_m: String, _instant: bool = false) -> void:
