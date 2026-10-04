@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://ramon/LabChambers/goat_room_4d.gd" id="1_root"]
 [ext_resource type="Script" path="res://ramon/LabKit/lab_room_4d.gd" id="2_room"]
@@ -9,7 +9,6 @@
 [ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_panel_4d.gd" id="7_panel"]
 [ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_desk_4d.gd" id="8_desk"]
 [ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_light_4d.gd" id="9_light"]
-[ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="10_return"]
 
 [node name="GoatRoomScene" type="Node4D"]
 script = ExtResource("1_root")
@@ -93,21 +92,6 @@ energy = {
 "dark": 3.6
 }
 
-[node name="FrontWash" type="Node4D" parent="."]
-position = Vector4(0, 8.1, 5.5, 0)
-script = ExtResource("9_light")
-kind = "spot"
-aim = Vector3(0, 0.6, -2.0)
-angle = 70.0
-softness = 4.0
-reach = 14.0
-attenuation = 0.35
-energy = {
-"bright": 1.2,
-"dark": 1.5
-}
-fixture = false
-
 [node name="TextWash" type="Node4D" parent="."]
 position = Vector4(-4.6, 6.0, -2.4, 0)
 script = ExtResource("9_light")
@@ -132,5 +116,3 @@ energy = {
 "bright": 1.4,
 "dark": 1.8
 }
-
-[node name="ReturnButton" parent="." instance=ExtResource("10_return")]

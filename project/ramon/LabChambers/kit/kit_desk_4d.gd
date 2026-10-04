@@ -1,29 +1,31 @@
 @tool
 extends Node4D
 
-## Kit: the research panel. A long, thin slab floating low over the floor and tilted towards you:
-## a white frame with a raised rim round a recessed blue screen, a glowing line along its
-## underside and a soft light on the floor under it (Ramon, 4 Oct, from his concept sheet: "make a
-## floating panel like the first top in the ref"; then "not centered but offset on the left side,
-## like something you could walk to for more info, and maybe a check button, before you see the
-## flipover screen"). In the goat room it stands off the route to the left, under the lesson wall.
+## Kit: the research panel. A long, thin slab with rounded corners floating over the floor and
+## tilted towards you: a white frame round a blue screen and a glowing line along its underside
+## (Ramon, 4 Oct, from his concept sheet: "make a floating panel like the first top in the ref";
+## "not centered but offset on the left side, like something you could walk to for more info";
+## "place info floater higher"; "can the info panel have rounded edges, and is it truly dynamic?
+## because it looks like an image"). In the goat room it stands off the route to the left, under
+## the lesson wall.
 ##
-## THE CHECK BUTTON floats upright above its back edge, CHECK DATA, seen from across the room. Its
-## frame lights when you stand at the panel (set_near); the room then lets you click it, and only
-## then does the 2D data panel come up (goat_room_4d.gd).
+## THE CHECK BUTTON appears at its front right corner only when you walk up (set_near), CHECK DATA; the room
+## lets you click it, and only then does the 2D data panel come up (goat_room_4d.gd).
 ##
-## THE SCREEN is printed once (rd_build.gd print_box, both moods) when the exhibit's numbers are
-## in, and carries what the 2D data panel shows (kit_data_panel.gd, which comes up while you
-## stand here) in the concept's layout:
-##   Research data, LIVE           the title, and a live dot
-##   the exhibit as a wireframe     its own mesh and balls, seen from the side (kit_glyphs wire())
-##   four tiles                     balls, tetrahedra, build stages, reach through W
-##   Slice through W                the W profile, its slice stops, and a glowing line laid on the
-##                                  screen where the slice you see cuts it, moved every frame
-##   Build stage by stage           tetrahedra per stage
-## The body is boxes: the slab, its rim and screen are tilted together; the collision is a row of
-## upright boxes under it, square to the world (the physics here is box-only). Faces the node's +Z,
-## turned to `face`.
+## THE SCREEN IS LIVE: a 2D canvas in a SubViewport, redrawn `refresh_hz` times a second and shown
+## on the screen through the grid shader's print (LabGrid.set_print takes the viewport's texture),
+## in the concept's layout:
+##   Research data, LIVE           the title, and a pulsing live dot
+##   the exhibit as a wireframe     its own mesh and balls seen from the side (kit_glyphs wire);
+##                                  the balls it has in view now are lit, the rest dim
+##   four tiles                     balls in view, tetrahedra now, build stage now, W reach and the
+##                                  slice's offset
+##   Slice through W                the W profile, its slice stops, the slice you see as a line
+##   Build stage by stage           tetrahedra per stage, the stage on show picked out
+## A viewport texture has no mipmaps, so it is drawn at about the size it is seen (`live_ppm`).
+## The body is boxes and cylinders: the slab and the screen are tilted together; the collision is a
+## row of upright boxes under it, square to the world (the physics here is box-only). Faces the
+## node's +Z, turned to `face`.
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -35,11 +37,8 @@ const Mats := preload("res://ramon/LabKit/lab_materials.gd")
 const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 const Glyphs := preload("res://ramon/LabChambers/kit/kit_glyphs.gd")
 const Batch := preload("res://ramon/LabKit/lab_batch.gd")
-## Print resolution of the screen, pixels a metre.
-const SCREEN_PPM := 400.0
 const SLAB := 0.08
-const RIM := 0.07
-const RIM_UP := 0.035
+const SCREEN := 0.02
 ## The screen's layout was drawn for this screen depth; others scale it.
 const DRAWN_FOR := 1.09
 
@@ -61,43 +60,49 @@ const DRAWN_FOR := 1.09
 		size = v
 		_later()
 ## How high its front edge floats over the floor, in metres.
-@export_range(0.1, 1.5, 0.01) var hover: float = 0.5:
+@export_range(0.1, 1.5, 0.01) var hover: float = 0.85:
 	set(v):
 		hover = v
 		_later()
-## The light under it, on the floor: how strong, per mood.
-@export var underglow: Dictionary = {"bright": 1.2, "dark": 1.6}:
+## The radius of its rounded corners, in metres.
+@export_range(0.0, 0.4, 0.01) var corner: float = 0.14:
 	set(v):
-		underglow = v
-		_paint_parts()
+		corner = v
+		_later()
 @export var title: String = "Research data"
-## The floating CHECK DATA button over its back edge.
+## The CHECK DATA button that comes up in front of it when you walk up.
 @export var check_button: bool = true:
 	set(v):
 		check_button = v
 		_later()
-## How high the button floats, metres off the floor.
-@export_range(0.8, 3.0, 0.05) var button_height: float = 1.6:
-	set(v):
-		button_height = v
-		_later()
+## How sharp the live screen is drawn, pixels a metre, and how often it is redrawn.
+@export_range(100.0, 600.0, 10.0) var live_ppm: float = 260.0
+@export_range(1.0, 60.0, 1.0) var refresh_hz: float = 20.0
 
 var _screen: MeshInstance4D
-var _marker: MeshInstance4D
 var _glow: Array = []
-var _light: OmniLight4D
 var _prints: Array = []
-var _printed: bool = false
-var _t: float = 0.0
-var _next_try: float = 0.6
 var _queued: bool = false
 var _sw: float = 3.24
 var _sh: float = 1.09
-var _band: Rect2 = Rect2()
+var _screen_rect: Rect2 = Rect2()
+var _button_root: Node4D
 var _button: MeshInstance4D
 var _button_frame: MeshInstance4D
+var _button_tilt: Projection = Projection.IDENTITY
+var _pop: float = 0.0
 var _near: bool = false
 var _open: bool = false
+# The live screen.
+var _vp: SubViewport
+var _canvas: Control
+var _redraw: float = 0.0
+var _clock: float = 0.0
+var _data: Dictionary = {}
+var _profile: Dictionary = {}
+var _stops: Array = []
+var _wire: Dictionary = {}
+var _shape: Dictionary = {}
 
 
 func _enter_tree() -> void:
@@ -131,57 +136,33 @@ func rebuild() -> void:
 	Build.clear(self)
 	_prints = []
 	_glow = []
-	_printed = false
-	_t = 0.0
-	_next_try = 0.6
+	_vp = null
+	_canvas = null
 	var th: float = deg_to_rad(tilt_degrees)
 	var w: float = size.x
 	var d: float = size.y
 	var origin: Vector4 = global_position if is_inside_tree() else Vector4.ZERO
 	# The slab, tilted about its own middle so its front edge floats `hover` over the floor.
-	var slab := MeshInstance4D.new()
+	var slab := Node4D.new()
 	slab.name = "Slab"
-	var ss := Vector4(w, SLAB, d, Build.W_DEPTH)
-	slab.mesh = Mats.box_mesh(ss)
 	slab.position = Vector4(0.0, hover + d * 0.5 * sin(th) + SLAB * 0.5 * cos(th), 0.0, 0.0)
 	slab.basis = Basis4D.from_yz(th)
-	slab.material_override = LabGrid.material("kit_bezel", ss, origin)
 	slab.set_meta(Build.GENERATED, true)
 	add_child(slab)
-	# The rim, raised round the screen: front, back, left, right.
-	var top: float = SLAB * 0.5
-	for r in [[Vector3(0, 0, d * 0.5 - RIM * 0.5), Vector3(w, RIM_UP, RIM)], [Vector3(0, 0, -d * 0.5 + RIM * 0.5), Vector3(w, RIM_UP, RIM)],
-			[Vector3(-w * 0.5 + RIM * 0.5, 0, 0), Vector3(RIM, RIM_UP, d - RIM * 2.0)], [Vector3(w * 0.5 - RIM * 0.5, 0, 0), Vector3(RIM, RIM_UP, d - RIM * 2.0)]]:
-		var at: Vector3 = r[0]
-		var sz: Vector3 = r[1]
-		var rim := MeshInstance4D.new()
-		rim.name = "Rim"
-		var rs := Vector4(sz.x, sz.y, sz.z, Build.W_DEPTH)
-		rim.mesh = Mats.box_mesh(rs)
-		rim.position = Vector4(at.x, top + RIM_UP * 0.5, at.z, 0.0)
-		rim.material_override = LabGrid.material("kit_bezel", rs, origin)
-		slab.add_child(rim)
-	# The screen, set in the rim.
-	_sw = w - RIM * 2.0 - 0.02
-	_sh = d - RIM * 2.0 - 0.02
-	var sc := Vector4(_sw, 0.02, _sh, Build.W_DEPTH)
-	_screen = MeshInstance4D.new()
-	_screen.name = "Screen"
-	_screen.mesh = Mats.box_mesh(sc)
-	_screen.position = Vector4(0.0, top + 0.004, 0.0, 0.0)
-	_screen.material_override = LabGrid.material("kit_screen", sc, origin)
-	slab.add_child(_screen)
-	# The live line: where the slice you see cuts the profile, laid on the screen.
-	_band = _layout()["band"]
-	_marker = MeshInstance4D.new()
-	_marker.name = "SliceLine"
-	_marker.mesh = Mats.box_mesh(Vector4(0.016, 0.008, _band.size.y + 0.04, Build.W_DEPTH))
-	_marker.position = Vector4(_band.get_center().x - _sw * 0.5, 0.014, _band.get_center().y - _sh * 0.5, 0.0)
-	_screen.add_child(_marker)
-	# A glowing line round the underside, set in a little from the edge: front, left, right, back.
+	_rounded(slab, "Frame", Vector2(w, d), SLAB, 0.0, corner, "kit_bezel", origin)
+	# The screen on it, a margin in, its corners rounded to match.
+	var margin: float = 0.08
+	_sw = w - margin * 2.0
+	_sh = d - margin * 2.0
+	var rs: float = maxf(corner - margin * 0.6, 0.02)
+	_screen = _rounded(slab, "Screen", Vector2(_sw, _sh), SCREEN, SLAB * 0.5 + SCREEN * 0.5 + 0.002, rs, "kit_screen", origin)
+	# The middle box is the one printed on: it is `rs` short of the screen at each end.
+	_screen_rect = Rect2(Vector2(0.0, -rs), Vector2(_sw, _sh))
+	# A glowing line round the underside, set in from the edge: front, left, right, back.
 	var under: float = -SLAB * 0.5 - 0.008
-	for g in [[Vector3(0, under, d * 0.5 - 0.05), Vector3(w - 0.12, 0.016, 0.03)], [Vector3(-w * 0.5 + 0.05, under, 0), Vector3(0.03, 0.016, d - 0.12)],
-			[Vector3(w * 0.5 - 0.05, under, 0), Vector3(0.03, 0.016, d - 0.12)], [Vector3(0, under, -d * 0.5 + 0.05), Vector3(w - 0.12, 0.016, 0.03)]]:
+	var inset: float = corner + 0.04
+	for g in [[Vector3(0, under, d * 0.5 - 0.05), Vector3(w - inset * 2.0, 0.016, 0.03)], [Vector3(-w * 0.5 + 0.05, under, 0), Vector3(0.03, 0.016, d - inset * 2.0)],
+			[Vector3(w * 0.5 - 0.05, under, 0), Vector3(0.03, 0.016, d - inset * 2.0)], [Vector3(0, under, -d * 0.5 + 0.05), Vector3(w - inset * 2.0, 0.016, 0.03)]]:
 		var at2: Vector3 = g[0]
 		var sz2: Vector3 = g[1]
 		var line := MeshInstance4D.new()
@@ -190,12 +171,6 @@ func rebuild() -> void:
 		line.position = Vector4(at2.x, at2.y, at2.z, 0.0)
 		slab.add_child(line)
 		_glow.append(line)
-	# A soft light on the floor under it, so it reads as floating.
-	_light = OmniLight4D.new()
-	_light.name = "UnderLight"
-	_light.position = Vector4(0.0, maxf(0.12, hover * 0.4), 0.0, 0.0)
-	_light.set_meta(Build.GENERATED, true)
-	add_child(_light)
 	# The physics is box-only and a turned box collides as its square in the world, which for a
 	# panel turned 45 degrees covers the place you stand to read it. So: a row of upright boxes
 	# along the slab, each kept square to the world.
@@ -217,23 +192,69 @@ func rebuild() -> void:
 		body.add_child(shape)
 		body.set_meta(Build.GENERATED, true)
 		add_child(body)
+	# The CHECK DATA button: hidden, it comes up in front of the front edge when you walk up.
+	_button_root = null
 	_button = null
 	_button_frame = null
 	if check_button:
-		var bs2 := Vector2(1.2, 0.36)
-		var at := Vector3(0.0, button_height, -d * 0.5 + 0.1)
-		_button = Build.box(self, "CheckButton", at, Vector3(bs2.x, bs2.y, 0.06), "kit_screen", false)
+		_button_root = Node4D.new()
+		_button_root.name = "CheckButton"
+		# At the front right corner, not the middle: you stand in front of the middle, and from
+		# the camera behind you a button there is hidden by your own head.
+		_button_root.position = Vector4(w * 0.5 - 0.55, hover + 0.12, d * 0.5 * cos(th) + 0.22, 0.0)
+		_button_tilt = Basis4D.from_yz(-0.5)
+		_button_root.basis = _button_tilt
+		_button_root.visible = false
+		_button_root.set_meta(Build.GENERATED, true)
+		add_child(_button_root)
+		var bs2 := Vector2(0.9, 0.27)
+		_button = Build.box(_button_root, "Plate", Vector3.ZERO, Vector3(bs2.x, bs2.y, 0.05), "kit_screen", false)
 		var bb := Batch.new()
-		var bw: float = 0.03
-		var bc := Vector4(at.x, at.y, at.z + 0.035, 0.0)
-		bb.box("f", Vector4(bs2.x + 0.12, bw, bw, 0.5), bc + Vector4(0, bs2.y * 0.5 + 0.06, 0, 0))
-		bb.box("f", Vector4(bs2.x + 0.12, bw, bw, 0.5), bc - Vector4(0, bs2.y * 0.5 + 0.06, 0, 0))
-		bb.box("f", Vector4(bw, bs2.y + 0.12, bw, 0.5), bc + Vector4(bs2.x * 0.5 + 0.06, 0, 0, 0))
-		bb.box("f", Vector4(bw, bs2.y + 0.12, bw, 0.5), bc - Vector4(bs2.x * 0.5 + 0.06, 0, 0, 0))
+		var bw: float = 0.025
+		var bc := Vector4(0.0, 0.0, 0.03, 0.0)
+		bb.box("f", Vector4(bs2.x + 0.1, bw, bw, 0.5), bc + Vector4(0, bs2.y * 0.5 + 0.05, 0, 0))
+		bb.box("f", Vector4(bs2.x + 0.1, bw, bw, 0.5), bc - Vector4(0, bs2.y * 0.5 + 0.05, 0, 0))
+		bb.box("f", Vector4(bw, bs2.y + 0.1, bw, 0.5), bc + Vector4(bs2.x * 0.5 + 0.05, 0, 0, 0))
+		bb.box("f", Vector4(bw, bs2.y + 0.1, bw, 0.5), bc - Vector4(bs2.x * 0.5 + 0.05, 0, 0, 0))
 		_button_frame = bb.instance("f")
-		_button_frame.set_meta(Build.GENERATED, true)
-		add_child(_button_frame)
+		_button_root.add_child(_button_frame)
 	_paint_parts()
+	if not Engine.is_editor_hint() and is_inside_tree():
+		_start_screen()
+		if is_instance_valid(_button):
+			_print_button.call_deferred()
+
+
+## A rounded plate `s` (x, z) by `t` thick, `y` up its parent: a box the full width with the corners'
+## depth taken off, a box the full depth with their width taken off, and a cylinder in each corner.
+## The second box sits a hair lower, so where the two overlap only the first one shows. Returns the
+## first (the one a print goes on).
+func _rounded(parent: Node4D, nm: String, s: Vector2, t: float, y: float, r: float, swatch: String, origin: Vector4) -> MeshInstance4D:
+	var a := MeshInstance4D.new()
+	a.name = nm
+	var sa := Vector4(s.x, t, s.y - r * 2.0, Build.W_DEPTH)
+	a.mesh = Mats.box_mesh(sa)
+	a.position = Vector4(0.0, y, 0.0, 0.0)
+	a.material_override = LabGrid.material(swatch, sa, origin)
+	parent.add_child(a)
+	if r <= 0.001:
+		return a
+	var b := MeshInstance4D.new()
+	b.name = nm + "Ends"
+	var sb := Vector4(s.x - r * 2.0, t - 0.002, s.y, Build.W_DEPTH)
+	b.mesh = Mats.box_mesh(sb)
+	b.position = Vector4(0.0, y - 0.001, 0.0, 0.0)
+	b.material_override = LabGrid.material(swatch, sb, origin)
+	parent.add_child(b)
+	for cx in [-1.0, 1.0]:
+		for cz in [-1.0, 1.0]:
+			var c := MeshInstance4D.new()
+			c.name = nm + "Corner"
+			c.mesh = Build._cubinder(r, t - 0.002, 32)
+			c.position = Vector4(cx * (s.x * 0.5 - r), y - 0.001, cz * (s.y * 0.5 - r), 0.0)
+			c.material_override = LabGrid.material(swatch, Vector4(r * 2.0, t, r * 2.0, Build.W_DEPTH), origin)
+			parent.add_child(c)
+	return a
 
 
 func _paint_parts() -> void:
@@ -241,32 +262,15 @@ func _paint_parts() -> void:
 	for g in _glow:
 		if is_instance_valid(g):
 			(g as MeshInstance4D).material_override = Mats.glow(c, 1.8)
-	if is_instance_valid(_marker):
-		_marker.material_override = Mats.glow(Color(0.86, 0.96, 1.0), 2.2)
 	if is_instance_valid(_button_frame):
-		_button_frame.material_override = Mats.glow(Style.pick(Style.FRAME_LIT) if _near else Style.pick(Style.FRAME_DIM), 2.0 if _open else 1.0)
-	if is_instance_valid(_light):
-		_light.set("light_energy", float(underglow.get(Style.mood, 1.0)))
-		_light.set("light_color", c)
-		_light.set("omni_range_meters", maxf(size.x, size.y) * 0.75)
-		_light.set("omni_range_attenuation", 0.6)
+		_button_frame.material_override = Mats.glow(Style.pick(Style.FRAME_LIT), 2.0 if _open else 1.2)
+	if is_instance_valid(_screen) and _vp != null:
+		LabGrid.set_print(_screen.material_override as TetraMaterial4D, _vp.get_texture(), Vector4(0, 1, 0, 0), _screen_rect, Color.WHITE,
+			0.8 if Style.mood == "bright" else 0.9)
+		LabGrid.set_print_strength(_screen.material_override as TetraMaterial4D, 1.0)
 
 
-## The screen's layout, in metres from its top-left (the far edge, as you read it), scaled to its
-## depth: `s` the scale, and the rects the paint and the live line share.
-func _layout() -> Dictionary:
-	var s: float = _sh / DRAWN_FOR
-	var mg: float = 0.06
-	var right0: float = 1.08 * s
-	var right1: float = _sw - mg
-	var mid: float = (right0 + right1) * 0.5
-	var card_y: float = 0.5 * s
-	var prof := Rect2(Vector2(right0 + 0.05, card_y + 0.12 * s), Vector2(mid - 0.025 - right0 - 0.1, 0.26 * s))
-	var band := Rect2(prof.position, Vector2(prof.size.x, prof.size.y * 0.84))
-	return {"s": s, "mg": mg, "right0": right0, "right1": right1, "mid": mid, "card_y": card_y, "profile": prof, "band": band}
-
-
-## The room says whether you stand at it (the button lights) and whether the data is open.
+## The room says whether you stand at it (the button comes up) and whether the data is open.
 func set_near(near_it: bool, open: bool = false) -> void:
 	if near_it == _near and open == _open:
 		return
@@ -282,43 +286,57 @@ func near(p: Vector4) -> bool:
 
 
 func _process(delta: float) -> void:
-	if Engine.is_editor_hint() or _screen == null:
+	if Engine.is_editor_hint():
+		return
+	_clock += delta
+	# The button pops up and away.
+	if _button_root != null:
+		_pop = move_toward(_pop, 1.0 if _near else 0.0, delta / 0.18)
+		var k: float = ease(_pop, 0.5)
+		_button_root.visible = _pop > 0.01
+		if _button_root.visible:
+			_button_root.basis = _button_tilt * Projection(Vector4(k, 0, 0, 0), Vector4(0, k, 0, 0), Vector4(0, 0, k, 0), Vector4(0, 0, 0, 1))
+	# The screen.
+	if _canvas == null:
 		return
 	var sc: Node = get_node_or_null(showcase)
-	if not _printed:
-		_t += delta
-		if _t >= _next_try:
-			_next_try = _t + 0.25
-			var ready_now: bool = sc != null and not (sc.call("data") as Dictionary).is_empty() and not (sc.call("profile") as Dictionary).is_empty()
-			if ready_now or _t > 12.0:
-				_printed = true
-				_print_all(sc)
-	if sc != null and _marker != null and sc.has_method("slice_fraction"):
-		var f: float = float(sc.call("slice_fraction"))
-		_marker.position.x = _band.position.x + _band.size.x * (f * 0.5 + 0.5) - _sw * 0.5
+	if sc != null:
+		if _data.is_empty():
+			_data = sc.call("data")
+		if _profile.is_empty() and sc.has_method("profile"):
+			_profile = sc.call("profile")
+			_stops = sc.call("slice_stops") if sc.has_method("slice_stops") else []
+		if _shape.is_empty() and sc.has_method("shape"):
+			_shape = sc.call("shape")
+	_redraw -= delta
+	if _redraw <= 0.0:
+		_redraw = 1.0 / refresh_hz
+		_canvas.queue_redraw()
 
 
-func _print_all(sc: Node) -> void:
-	var d: Dictionary = sc.call("data") if sc != null else {}
-	var prof: Dictionary = sc.call("profile") if sc != null and sc.has_method("profile") else {}
-	var shp: Dictionary = sc.call("shape") if sc != null and sc.has_method("shape") else {}
-	var stops: Array = sc.call("slice_stops") if sc != null and sc.has_method("slice_stops") else []
-	var rec: Dictionary = await RD.print_box(get_tree(), _screen, Vector4(0, 1, 0, 0), Vector2(_sw, _sh),
-		func(c: Control, ink: Dictionary) -> void: _paint_screen(c, ink, d, prof, shp, stops), {"bright": 0.8, "dark": 0.9}, SCREEN_PPM)
-	if not is_instance_valid(_screen):
-		return
-	_prints.append(rec)
-	RD.apply(rec, Style.mood)
-	if is_instance_valid(_button):
-		var brec: Dictionary = await RD.print_box(get_tree(), _button, Vector4(0, 0, 1, 0), Vector2(1.2, 0.36), _paint_button, {"bright": 0.85, "dark": 0.95}, 300.0)
-		if is_instance_valid(_button):
-			_prints.append(brec)
-			RD.apply(brec, Style.mood)
+# -- the live screen -------------------------------------------------------------------------------
+
+func _start_screen() -> void:
+	_vp = SubViewport.new()
+	_vp.name = "ScreenView"
+	_vp.size = Vector2i(int(_sw * live_ppm), int(_sh * live_ppm))
+	_vp.transparent_bg = true
+	_vp.disable_3d = true
+	_vp.msaa_2d = Viewport.MSAA_4X
+	_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_vp.set_meta(Build.GENERATED, true)
+	_canvas = Control.new()
+	_canvas.size = Vector2(_vp.size)
+	_canvas.draw.connect(_draw_screen)
+	_vp.add_child(_canvas)
+	add_child(_vp)
+	_paint_parts()
 
 
-# -- the print -------------------------------------------------------------------------------------
-
-func _paint_screen(c: Control, _ink: Dictionary, d: Dictionary, prof: Dictionary, shp: Dictionary, stops: Array) -> void:
+func _draw_screen() -> void:
+	var c: Control = _canvas
+	var sc: Node = get_node_or_null(showcase)
+	var ex: Node = sc.get("exhibit") if sc != null else null
 	var lay: Dictionary = _layout()
 	var k: float = c.size.x / _sw
 	var s: float = float(lay["s"])
@@ -335,27 +353,34 @@ func _paint_screen(c: Control, _ink: Dictionary, d: Dictionary, prof: Dictionary
 	var r0: float = float(lay["right0"])
 	var r1: float = float(lay["right1"])
 	var mid: float = float(lay["mid"])
-	var st: Dictionary = d.get("stats", {})
+	var st: Dictionary = _data.get("stats", {})
+	var bars: Array = _data.get("bars", [])
+	var balls_now: int = int(ex.call("balls_in_view")) if ex != null and ex.has_method("balls_in_view") else int(st.get("balls", 0))
+	var stage_now: int = int(ex.call("stage_in_view")) if ex != null and ex.has_method("stage_in_view") else -1
 	# The title, the live dot.
 	c.draw_string(fb, at.call(mg, 0.13), title, HORIZONTAL_ALIGNMENT_LEFT, -1, px.call(0.075), white)
 	var live_w: float = fs.get_string_size("LIVE", HORIZONTAL_ALIGNMENT_LEFT, -1, px.call(0.04)).x
-	c.draw_circle(at.call(r1, 0.1) - Vector2(live_w + px.call(0.05), 0.0), px.call(0.017), Color(0.45, 1.0, 0.62))
+	var pulse: float = 0.55 + 0.45 * sin(_clock * 4.0)
+	c.draw_circle(at.call(r1, 0.1) - Vector2(live_w + px.call(0.05), 0.0), px.call(0.017), Color(0.45, 1.0, 0.62, pulse))
 	c.draw_string(fs, at.call(r1, 0.115) - Vector2(live_w, 0.0), "LIVE", HORIZONTAL_ALIGNMENT_LEFT, -1, px.call(0.04), soft)
-	# The exhibit, drawn from its own mesh and balls.
-	var goat := Rect2(at.call(mg + 0.04, 0.22), at.call(r0 - mg - 0.14, 0.68))
+	# The exhibit, drawn from its own mesh and balls; the balls it has in view lit.
 	var card := StyleBoxFlat.new()
 	card.bg_color = Color(1, 1, 1, 0.06)
 	card.set_corner_radius_all(int(px.call(0.03)))
 	card.anti_aliasing = true
 	c.draw_style_box(card, Rect2(at.call(mg, 0.18), at.call(r0 - mg - 0.06, 0.86)))
-	Glyphs.wire(c, goat, shp, Color(0.70, 0.88, 1.0, 0.7), white, Color(0.55, 0.80, 1.0, 0.12))
-	c.draw_string(fl, at.call(mg + 0.04, 0.99), "Goat 01, lofted from %d balls" % int(st.get("balls", 0)), HORIZONTAL_ALIGNMENT_LEFT, -1, px.call(0.034), dim)
-	# Four tiles.
+	if _wire.is_empty() and not _shape.is_empty():
+		_wire = Glyphs.wire_geometry(Rect2(at.call(mg + 0.04, 0.22), at.call(r0 - mg - 0.14, 0.68)), _shape)
+	Glyphs.wire_draw(c, _wire, Color(0.70, 0.88, 1.0, 0.7), white, Color(0.55, 0.80, 1.0, 0.12), balls_now)
+	c.draw_string(fl, at.call(mg + 0.04, 0.99), "Goat 01, %d of %d balls in view" % [balls_now, int(st.get("balls", 0))], HORIZONTAL_ALIGNMENT_LEFT, -1, px.call(0.034), dim)
+	# Four tiles, live.
+	var tetra_now: int = int(bars[stage_now]) if stage_now >= 0 and stage_now < bars.size() else int(st.get("tetra", 0))
+	var slice_w: float = float(sc.get("_slice_w")) if sc != null else 0.0
 	var tiles: Array = [
-		["ball", str(int(st.get("balls", 0))), "Balls"],
-		["tetra", Glyphs.short(int(st.get("tetra", 0))), "Tetrahedra"],
-		["stages", str(int(st.get("stages", 0))), "Build stages"],
-		["axes", "%.2f m" % float(st.get("reach", 0.0)), "W reach"],
+		["ball", "%d" % balls_now, "Balls in view"],
+		["tetra", Glyphs.short(tetra_now), "Tetrahedra now"],
+		["stages", ("%d / %d" % [stage_now + 1, int(st.get("stages", 0))]) if stage_now >= 0 else "coat", "Build stage"],
+		["axes", "%+.2f m" % slice_w, "Slice, of %.2f m reach" % float(st.get("reach", 0.0))],
 	]
 	var gap: float = 0.05
 	var tw: float = (r1 - r0 - gap * 3.0) / 4.0
@@ -365,25 +390,62 @@ func _paint_screen(c: Control, _ink: Dictionary, d: Dictionary, prof: Dictionary
 		c.draw_style_box(card, Rect2(at.call(x0, 0.18), at.call(tw, 0.27)))
 		var ic: float = px.call(0.11)
 		Glyphs.icon(c, String(t[0]), Rect2(at.call(x0 + 0.04, 0.215), Vector2(ic, ic)), cyan)
-		c.draw_string(fb, at.call(x0 + 0.19, 0.3), String(t[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, px.call(0.08), white)
-		c.draw_string(fl, at.call(x0 + 0.19, 0.39), String(t[2]), HORIZONTAL_ALIGNMENT_LEFT, (tw - 0.21) * k, px.call(0.038), soft)
+		c.draw_string(fb, at.call(x0 + 0.19, 0.3), String(t[1]), HORIZONTAL_ALIGNMENT_LEFT, (tw - 0.21) * k, px.call(0.075), white)
+		c.draw_string(fl, at.call(x0 + 0.19, 0.39), String(t[2]), HORIZONTAL_ALIGNMENT_LEFT, (tw - 0.21) * k, px.call(0.034), soft)
 	# Slice through W, and the build, stage by stage.
 	var cy: float = float(lay["card_y"]) / s
 	c.draw_style_box(card, Rect2(at.call(r0, cy), at.call(mid - 0.025 - r0, 0.54)))
 	c.draw_style_box(card, Rect2(at.call(mid + 0.025, cy), at.call(r1 - mid - 0.025, 0.54)))
 	c.draw_string(fs, at.call(r0 + 0.05, cy + 0.08), "Slice through W", HORIZONTAL_ALIGNMENT_LEFT, -1, px.call(0.042), white)
 	var pr: Rect2 = lay["profile"]
-	Glyphs.profile(c, Rect2(pr.position * k, pr.size * k), prof.get("bins", PackedFloat32Array()), Color(cyan, 0.35), Color(cyan.lightened(0.3), 1.0), stops)
+	var lit: int = int(sc.get("slice_index")) if sc != null else -1
+	var frac: float = float(sc.call("slice_fraction")) if sc != null and sc.has_method("slice_fraction") else NAN
+	Glyphs.profile(c, Rect2(pr.position * k, pr.size * k), _profile.get("bins", PackedFloat32Array()), Color(cyan, 0.35), Color(cyan.lightened(0.3), 1.0),
+		_stops, lit, frac, white)
 	var cap: float = cy + 0.48
 	c.draw_string(fl, at.call(r0 + 0.05, cap), "-W", HORIZONTAL_ALIGNMENT_LEFT, -1, px.call(0.034), dim)
 	c.draw_string(fl, at.call(r0 + 0.05, cap), "+W", HORIZONTAL_ALIGNMENT_RIGHT, (mid - 0.025 - r0 - 0.1) * k, px.call(0.034), dim)
 	c.draw_string(fl, at.call(r0 + 0.05, cap), "The line is the slice you see", HORIZONTAL_ALIGNMENT_CENTER, (mid - 0.025 - r0 - 0.1) * k, px.call(0.034), soft)
 	c.draw_string(fs, at.call(mid + 0.075, cy + 0.08), "Build stage by stage", HORIZONTAL_ALIGNMENT_LEFT, -1, px.call(0.042), white)
-	var bars: Array = d.get("bars", [])
 	var labels: Array = []
 	for i in bars.size():
 		labels.append(str(i + 1))
-	Glyphs.bars(c, Rect2(at.call(mid + 0.075, cy + 0.13), at.call(r1 - mid - 0.125, 0.37)), bars, cyan, labels, px.call(0.034), dim)
+	var br := Rect2(at.call(mid + 0.075, cy + 0.13), at.call(r1 - mid - 0.125, 0.37))
+	Glyphs.bars(c, br, bars, cyan, labels, px.call(0.034), dim)
+	if stage_now >= 0 and stage_now < bars.size():
+		# The stage on show, picked out in white over its bar.
+		var most: float = 0.0001
+		for b in bars:
+			most = maxf(most, float(b))
+		var lab_h: float = float(px.call(0.034)) * 1.5
+		var hh: float = br.size.y - lab_h
+		var bw: float = br.size.x / float(bars.size())
+		var bh: float = maxf(1.0, hh * float(bars[stage_now]) / most)
+		c.draw_rect(Rect2(Vector2(br.position.x + bw * float(stage_now) + bw * 0.16, br.position.y + hh - bh), Vector2(bw * 0.68, bh)), white)
+
+
+## The screen's layout, in metres from its top-left (the far edge, as you read it), scaled to its
+## depth: `s` the scale, and the profile's rect.
+func _layout() -> Dictionary:
+	var s: float = _sh / DRAWN_FOR
+	var mg: float = 0.06
+	var right0: float = 1.08 * s
+	var right1: float = _sw - mg
+	var mid: float = (right0 + right1) * 0.5
+	var card_y: float = 0.5 * s
+	var prof := Rect2(Vector2(right0 + 0.05, card_y + 0.12 * s), Vector2(mid - 0.025 - right0 - 0.1, 0.26 * s))
+	return {"s": s, "mg": mg, "right0": right0, "right1": right1, "mid": mid, "card_y": card_y, "profile": prof}
+
+
+# -- the button ------------------------------------------------------------------------------------
+
+func _print_button() -> void:
+	if not is_instance_valid(_button):
+		return
+	var rec: Dictionary = await RD.print_box(get_tree(), _button, Vector4(0, 0, 1, 0), Vector2(0.9, 0.27), _paint_button, {"bright": 0.85, "dark": 0.95}, 300.0)
+	if is_instance_valid(_button):
+		_prints.append(rec)
+		RD.apply(rec, Style.mood)
 
 
 func _paint_button(c: Control, _ink: Dictionary) -> void:

@@ -186,11 +186,17 @@ static func short(n: int) -> String:
 ## wireframe in `rect`: the points thinned to an even spread, joined by a Delaunay triangulation
 ## with every long edge dropped (so the web hugs the body and does not bridge the gaps between
 ## legs), faintly filled; the balls' centres as bright nodes. Faces left, as an animal on a label.
+## wire_geometry() works it out once (the triangulation is the costly part); wire_draw() draws it,
+## the first `lit` balls bright and the rest dim (-1: all bright).
 static func wire(c: CanvasItem, rect: Rect2, shape: Dictionary, line: Color, node: Color, fill: Color) -> void:
+	wire_draw(c, wire_geometry(rect, shape), line, node, fill)
+
+
+static func wire_geometry(rect: Rect2, shape: Dictionary) -> Dictionary:
 	var pts: PackedVector2Array = shape.get("points", PackedVector2Array())
 	var balls: Array = shape.get("balls", [])
 	if pts.size() < 3:
-		return
+		return {}
 	var lo := Vector2(INF, INF)
 	var hi := Vector2(-INF, -INF)
 	for p in pts:
@@ -220,25 +226,41 @@ static func wire(c: CanvasItem, rect: Rect2, shape: Dictionary, line: Color, nod
 	for p in keep.values():
 		px.append(to_px.call(p))
 	var nodes: int = px.size()
+	var ball_px := PackedVector2Array()
 	for b in balls:
-		px.append(to_px.call(b[0]))
+		var bp: Vector2 = to_px.call(b[0])
+		px.append(bp)
+		ball_px.append(bp)
 	var tris: PackedInt32Array = Geometry2D.triangulate_delaunay(px)
 	var longest: float = cell * s * 2.6
+	var keep_tris: Array = []
 	var edges: Dictionary = {}
-	var lw: float = maxf(1.0, rect.size.y * 0.004)
 	for t in range(0, tris.size() - 2, 3):
 		var a: Vector2 = px[tris[t]]
 		var b2: Vector2 = px[tris[t + 1]]
 		var d: Vector2 = px[tris[t + 2]]
 		if a.distance_to(b2) > longest or b2.distance_to(d) > longest or d.distance_to(a) > longest:
 			continue
-		c.draw_colored_polygon(PackedVector2Array([a, b2, d]), fill)
+		keep_tris.append(PackedVector2Array([a, b2, d]))
 		for e in [[tris[t], tris[t + 1]], [tris[t + 1], tris[t + 2]], [tris[t + 2], tris[t]]]:
-			var key := Vector2i(mini(e[0], e[1]), maxi(e[0], e[1]))
-			edges[key] = true
+			edges[Vector2i(mini(e[0], e[1]), maxi(e[0], e[1]))] = true
+	var lines := PackedVector2Array()
 	for key in edges:
-		c.draw_line(px[key.x], px[key.y], line, lw, true)
-	for i in nodes:
-		c.draw_circle(px[i], lw * 1.1, Color(line, line.a * 0.9))
-	for i in range(nodes, px.size()):
-		c.draw_circle(px[i], lw * 2.6, node)
+		lines.append(px[key.x])
+		lines.append(px[key.y])
+	return {"tris": keep_tris, "lines": lines, "nodes": px.slice(0, nodes), "balls": ball_px, "lw": maxf(1.0, rect.size.y * 0.004)}
+
+
+static func wire_draw(c: CanvasItem, geo: Dictionary, line: Color, node: Color, fill: Color, lit: int = -1) -> void:
+	if geo.is_empty():
+		return
+	var lw: float = float(geo["lw"])
+	for t in geo["tris"]:
+		c.draw_colored_polygon(t, fill)
+	c.draw_multiline(geo["lines"], line, lw, true)
+	for p in geo["nodes"]:
+		c.draw_circle(p, lw * 1.1, Color(line, line.a * 0.9))
+	var balls: PackedVector2Array = geo["balls"]
+	for i in balls.size():
+		var on: bool = lit < 0 or i < lit
+		c.draw_circle(balls[i], lw * (2.6 if on else 1.8), node if on else Color(node, node.a * 0.3))

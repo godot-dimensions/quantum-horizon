@@ -21,6 +21,8 @@ const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
 const Mats := preload("res://ramon/LabKit/lab_materials.gd")
 const Batch := preload("res://ramon/LabKit/lab_batch.gd")
 const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
+const Pedestal := preload("res://ramon/LabChambers/kit/kit_pedestal.gd")
+const Glyphs := preload("res://ramon/LabChambers/kit/kit_glyphs.gd")
 
 const SLICES := 9
 
@@ -75,9 +77,9 @@ var turn: Vector2 = Vector2.ZERO
 var cinematic: bool = false
 var watched: bool = false
 var _slice_node: Node4D
-var _deck: MeshInstance4D
-var _body: MeshInstance4D
-var _rim: MeshInstance4D
+## The pedestal's parts (kit_pedestal.gd), and whether its side text is printed yet.
+var _ped: Dictionary = {}
+var _band_done: bool = false
 var _frames: Array = []
 var _button: MeshInstance4D
 var _button_frame: MeshInstance4D
@@ -115,12 +117,9 @@ func rebuild() -> void:
 	Build.clear(self)
 	_frames = []
 	_prints = []
-	var deck_h: float = Build.drum(self, "Plinth", Vector2.ZERO, radius, height, Style.pick(Style.DECK))
-	_deck = get_node_or_null("PlinthDeck")
-	_body = get_node_or_null("PlinthBody")
-	for c in get_children():
-		if c is MeshInstance4D and String(c.name).begins_with("Batch_rim"):
-			_rim = c
+	_ped = Pedestal.build(self, radius, height)
+	_band_done = false
+	var deck_h: float = float(_ped["deck_h"])
 	_slice_node = Node4D.new()
 	_slice_node.name = "Slice"
 	_slice_node.position = Vector4(0, deck_h, 0, 0)
@@ -182,12 +181,8 @@ func apply_mood(_m: String, _instant: bool = false) -> void:
 func _apply_mood_now() -> void:
 	for rec in _prints:
 		RD.apply(rec, Style.mood)
-	if is_instance_valid(_deck):
-		_deck.material_override = Mats.flat(Style.pick(Style.DECK))
-	if is_instance_valid(_body):
-		_body.material_override = Mats.flat(Style.pick(Style.PLINTH))
-	if is_instance_valid(_rim):
-		_rim.material_override = Mats.glow(Style.pick(Style.RIM), 1.0)
+	if not _ped.is_empty():
+		Pedestal.apply_mood(_ped)
 	_show_slice()
 	_show_button()
 
@@ -276,6 +271,46 @@ func data() -> Dictionary:
 	return exhibit.call("data") if exhibit != null and exhibit.has_method("data") else {}
 
 
+## The pedestal's side text, printed across its three front panels: the specimen's tag and its
+## measured numbers, in the decal sheet's manner (Ramon's my-own-01 decals: brackets, crosshairs,
+## hazard stripes, a serial), in Montserrat.
+func _paint_band(c: Control) -> void:
+	var h: float = c.size.y
+	var w: float = c.size.x
+	var ink := Color(0.88, 0.90, 0.94, 0.9)
+	var dim := Color(0.88, 0.90, 0.94, 0.55)
+	var st: Dictionary = data().get("stats", {})
+	var fb: Font = LabPrint.font("black")
+	var fs: Font = LabPrint.font("bold")
+	var fl: Font = LabPrint.font("body")
+	var x: float = h * 0.5
+	# Hazard stripes at both ends.
+	for side in [0.0, 1.0]:
+		var x0: float = h * 0.15 if side == 0.0 else w - h * 1.15
+		for k in 4:
+			var sx: float = x0 + float(k) * h * 0.26
+			c.draw_colored_polygon(PackedVector2Array([Vector2(sx, h * 0.85), Vector2(sx + h * 0.13, h * 0.85), Vector2(sx + h * 0.33, h * 0.15), Vector2(sx + h * 0.2, h * 0.15)]), dim)
+	x = h * 1.35
+	Glyphs.icon(c, "live", Rect2(Vector2(x, h * 0.25), Vector2(h * 0.5, h * 0.5)), ink)
+	x += h * 0.7
+	c.draw_string(fb, Vector2(x, h * 0.66), "SPECIMEN 01", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.42), ink)
+	x += fb.get_string_size("SPECIMEN 01", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.42)).x + h * 0.4
+	c.draw_line(Vector2(x, h * 0.2), Vector2(x, h * 0.8), dim, maxf(1.0, h * 0.03))
+	x += h * 0.4
+	var line: String = "THE GOAT  ·  LOFTED FROM %d BALLS  ·  %s TETRAHEDRA  ·  W REACH %.2f M" % [int(st.get("balls", 0)), Glyphs.short(int(st.get("tetra", 0))), float(st.get("reach", 0.0))]
+	c.draw_string(fs, Vector2(x, h * 0.64), line, HORIZONTAL_ALIGNMENT_LEFT, w - x - h * 1.6, int(h * 0.3), ink)
+	c.draw_string(fl, Vector2(w - h * 1.3 - fl.get_string_size("QH-LAB GT-01", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.2)).x, h * 0.98), "QH-LAB GT-01", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.2), dim)
+	# Corner brackets round the whole band.
+	var t: float = maxf(1.0, h * 0.04)
+	var arm: float = h * 0.3
+	for cx in [h * 1.2, w - h * 1.3]:
+		var dir: float = 1.0 if cx < w * 0.5 else -1.0
+		c.draw_line(Vector2(cx, h * 0.08), Vector2(cx + arm * dir, h * 0.08), ink, t)
+		c.draw_line(Vector2(cx, h * 0.08), Vector2(cx, h * 0.08 + arm), ink, t)
+		c.draw_line(Vector2(cx, h * 0.92), Vector2(cx + arm * dir, h * 0.92), ink, t)
+		c.draw_line(Vector2(cx, h * 0.92), Vector2(cx, h * 0.92 - arm), ink, t)
+
+
 ## The exhibit's W profile ({"bins", "reach"}), for the research console; empty if it has none.
 func profile() -> Dictionary:
 	return exhibit.call("w_profile") if exhibit != null and exhibit.has_method("w_profile") else {}
@@ -318,6 +353,9 @@ func _process(delta: float) -> void:
 	if Engine.is_editor_hint() or exhibit == null:
 		return
 	_t += delta
+	if not _band_done and _t > 0.5 and not data().is_empty():
+		_band_done = true
+		Pedestal.print_band(get_tree(), _ped, 3, 0.18, 0.40, _paint_band)
 	if autoplay and _t - _touched_at > resume_after and _t > 2.0:
 		_run_loop(delta)
 	elif not cinematic and exhibit.has_method("idle"):

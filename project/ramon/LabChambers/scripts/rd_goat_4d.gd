@@ -318,3 +318,17 @@ func shape() -> Dictionary:
 			bones.append([j, i])
 	_shape = {"points": pts, "balls": out_balls, "bones": bones}
 	return _shape
+
+
+## How many of its balls the goat shows now (all of them once its coat is on), and which build
+## stage (-1 for the finished coat): the research panel lights its diagram's balls from these.
+func balls_in_view() -> int:
+	if _goat == null:
+		return 0
+	return int(_goat.call("balls_shown")) if bool(_goat.call("showing_plain")) else int(_goat.call("ball_count"))
+
+
+func stage_in_view() -> int:
+	if _goat == null or not bool(_goat.call("showing_plain")):
+		return -1
+	return int(_goat.call("shown_stage"))

@@ -24,6 +24,7 @@ const SWATCHES := {
 		"kit_desk": [Color(0.80, 0.81, 0.82), Color(0.80, 0.81, 0.82), Color(0.80, 0.81, 0.82), 0.0],
 		"kit_bezel": [Color(0.90, 0.91, 0.92), Color(0.90, 0.91, 0.92), Color(0.90, 0.91, 0.92), 0.0],
 		"kit_code_blue": [Color(0.13, 0.40, 0.86), Color(0.20, 0.48, 0.93), Color(0.16, 0.44, 0.90), 0.5],
+		"kit_metal": [Color(0.24, 0.25, 0.28), Color(0.24, 0.25, 0.28), Color(0.24, 0.25, 0.28), 0.0],
 	},
 	"dark": {
 		"kit_wall": [Color(0.62, 0.63, 0.64), Color(0.50, 0.51, 0.53), Color(0.58, 0.59, 0.60), 0.6],
@@ -34,6 +35,7 @@ const SWATCHES := {
 		"kit_desk": [Color(0.70, 0.71, 0.72), Color(0.70, 0.71, 0.72), Color(0.70, 0.71, 0.72), 0.0],
 		"kit_bezel": [Color(0.80, 0.81, 0.82), Color(0.80, 0.81, 0.82), Color(0.80, 0.81, 0.82), 0.0],
 		"kit_code_blue": [Color(0.08, 0.27, 0.64), Color(0.14, 0.35, 0.74), Color(0.11, 0.31, 0.69), 0.5],
+		"kit_metal": [Color(0.15, 0.155, 0.17), Color(0.15, 0.155, 0.17), Color(0.15, 0.155, 0.17), 0.0],
 	},
 }
 
@@ -67,6 +69,9 @@ const FIXTURE := {"bright": Color(1.0, 0.98, 0.94), "dark": Color(1.0, 0.92, 0.8
 const RIM := {"bright": Color(0.96, 0.98, 1.0), "dark": Color(1.0, 0.90, 0.75)}
 const DECK := {"bright": Color(0.12, 0.42, 0.92), "dark": Color(0.08, 0.32, 0.78)}
 const PLINTH := {"bright": Color(0.22, 0.23, 0.26), "dark": Color(0.12, 0.125, 0.14)}
+## The pedestal's white lip, and the warm light lines tucked under it and round its foot.
+const LIP := {"bright": Color(0.90, 0.91, 0.92), "dark": Color(0.80, 0.81, 0.82)}
+const GLOW_WARM := {"bright": Color(1.0, 0.86, 0.64), "dark": Color(1.0, 0.80, 0.55)}
 const ROUTE := {"bright": Color(0.12, 0.45, 1.0), "dark": Color(0.35, 0.72, 1.0)}
 const FRAME_DIM := {"bright": Color(0.62, 0.70, 0.82), "dark": Color(0.26, 0.32, 0.42)}
 const FRAME_LIT := {"bright": Color(0.10, 0.42, 0.95), "dark": Color(0.40, 0.78, 1.0)}
@@ -87,7 +92,9 @@ const ROOM_LIGHT := {
 
 static var mood: String = "bright"
 ## Live multipliers from the tuning sliders (kit_tuner.gd): spots and downlights, washes.
-static var gain: Dictionary = {"spot": 1.0, "wash": 1.0}
+## Washes start off (Ramon, 4 Oct: "as for the wash, I have no use for it now, but keep the
+## slider, make default inactive").
+static var gain: Dictionary = {"spot": 1.0, "wash": 0.0}
 
 
 static func apply(m: String) -> void:

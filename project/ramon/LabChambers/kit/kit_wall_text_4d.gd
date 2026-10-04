@@ -97,7 +97,7 @@ func paint(c: Control, ink: Dictionary) -> void:
 	LabPrint.block_fit(c, Vector2(0.0, 0.0), w, c.size.y - icon_band, [
 		["%02d" % number, "bold", _px(0.6), ink["accent"], 0.0],
 		[title, "black", _px(1.45), ink["text"], _px(0.2)],
-		[subtitle, "bold", _px(0.46), ink["text"], _px(0.4)],
+		[subtitle, "body", _px(0.46), ink["text"], _px(0.4)],
 		[body, "body", _px(0.3), ink["dim"], 0.0],
 	])
 	if not icons.is_empty():

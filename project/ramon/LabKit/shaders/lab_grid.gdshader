@@ -82,15 +82,15 @@ uniform float route_on : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 route_seg[8];
 uniform float route_start[8];
 uniform int route_count = 0;
-uniform float route_width = 0.8;
+// The arrow's full width, metres; its whole design scales with it (Ramon, 4 Oct: "a bit wider").
+uniform float route_width = 1.15;
 uniform vec4 route_color : source_color = vec4(0.12, 0.45, 1.0, 1.0);
 uniform float route_speed = 0.7;
 // One pair of arrows to the next, metres: two close together, then a gap (Ramon, 4 Oct).
-uniform float route_spacing = 2.6;
-// How far the second arrow of a pair trails the first, metres (0: single arrows).
-uniform float route_pair = 0.5;
-// Each arrow's thickness along the route, metres.
-uniform float route_thick = 0.24;
+uniform float route_spacing = 3.0;
+// How far the second arrow of a pair trails the first, metres (0: single arrows). His own arrow
+// sheet stacks them 0.661 of an arrow's width apart.
+uniform float route_pair = 0.76;
 uniform float route_glow : hint_range(0.0, 1.0) = 0.6;
 group_uniforms;
 
@@ -325,21 +325,41 @@ void fragment() {
 			if (along < -0.05 || along > len + 0.05 || abs(across) > 1.0) {
 				continue;
 			}
-			// A soft chevron: its tip leads, its arms trail back to the sides.
-			float s2 = route_start[i] + along + abs(across) * route_width * 0.42;
+			// RAMON'S ARROW (my-own-01/_textures/decals/test/arrow.png, measured in pixels on its
+			// 428 px width): a thick chevron band, a hair of a gap, a thin band, both cut square at
+			// 0.446 of the width out from the middle, and past each cut a small tab, the thin band
+			// stepped down by its own depth. Depths are measured along the route behind the
+			// arm's front edge, which slopes back 0.685 per unit out from the middle.
+			float wdt = route_width;
+			float au = abs(across) * wdt * 0.5;
+			float t1 = 0.2056 * wdt;
+			float g1 = 0.0234 * wdt;
+			float t2 = 0.0981 * wdt;
+			float half_w = 0.4463 * wdt;
+			float tab_w = 0.0537 * wdt;
+			float span = 0.768 * wdt;
+			float fw = max(fwidth(along), 0.0001);
+			float soft = max(fw, 0.004);
 			// Metres into the current pair, the pattern sliding on at route_speed.
-			float d = fract((s2 - TIME * route_speed) / route_spacing) * route_spacing;
-			float fw = max(fwidth(s2), 0.0001);
-			float soft = max(fw * 1.5, 0.03);
-			float band = smoothstep(0.0, soft, d) * (1.0 - smoothstep(route_thick - soft, route_thick, d));
-			if (route_pair > 0.0) {
-				band = max(band, smoothstep(route_pair, route_pair + soft, d) * (1.0 - smoothstep(route_pair + route_thick - soft, route_pair + route_thick, d)));
+			float d = fract((route_start[i] + along - TIME * route_speed) / route_spacing) * route_spacing;
+			float band = 0.0;
+			for (int n = 0; n < 2; n++) {
+				if (n == 1 && route_pair <= 0.0) {
+					break;
+				}
+				float apex = span + 0.02 + (n == 1 ? route_pair : 0.0);
+				float e = (apex - d) - 0.685 * au;
+				float in_x = 1.0 - smoothstep(half_w - soft, half_w, au);
+				float tab_x = smoothstep(half_w, half_w + soft, au) * (1.0 - smoothstep(half_w + tab_w - soft, half_w + tab_w, au));
+				float thick = smoothstep(0.0, soft, e) * (1.0 - smoothstep(t1 - soft, t1, e));
+				float thin = smoothstep(t1 + g1, t1 + g1 + soft, e) * (1.0 - smoothstep(t1 + g1 + t2 - soft, t1 + g1 + t2, e));
+				float tab = smoothstep(t1 + g1 + t2, t1 + g1 + t2 + soft, e) * (1.0 - smoothstep(t1 + g1 + t2 * 2.0 - soft, t1 + g1 + t2 * 2.0, e));
+				band = max(band, max(thick, thin) * in_x + tab * tab_x);
 			}
-			float edge = 1.0 - smoothstep(0.62, 0.92, abs(across));
 			// Far away an arrow is a few pixels across: let it go rather than shimmer.
-			float calm = 1.0 - smoothstep(0.2, 0.48, fw);
-			float ends = smoothstep(0.0, 0.6, route_start[i] + along) ;
-			best = max(best, band * edge * calm * ends);
+			float calm = 1.0 - smoothstep(0.06, 0.16, fw);
+			float ends = smoothstep(0.0, 0.6, route_start[i] + along);
+			best = max(best, band * calm * ends);
 		}
 		float k = best * route_on;
 		c = mix(c, route_color.rgb, k * 0.9);

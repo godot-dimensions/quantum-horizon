@@ -107,6 +107,7 @@ func _ready() -> void:
 	tuner = PanelContainer.new()
 	tuner.set_script(Tuner)
 	tuner.set("room", room)
+	tuner.set("spot", get_node_or_null("Downlight"))
 	layer.add_child(tuner)
 	apply_mood(String(room.get("mood")) if room != null else "bright")
 

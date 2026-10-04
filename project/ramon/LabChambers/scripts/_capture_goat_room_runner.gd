@@ -145,10 +145,9 @@ func _run() -> void:
 		await _wait(0.6)
 		await _shot("console_close")
 		var panel: Node = _g.get_node_or_null("ResearchPanel")
-		if panel != null and not (panel.get("_prints") as Array).is_empty():
-			var tex: Texture2D = ((panel.get("_prints") as Array)[0]["tex"] as Dictionary).get(_mood)
-			if tex != null:
-				tex.get_image().save_png("%spanel_print_%s.png" % [OUT, _mood])
+		var vp: SubViewport = panel.get("_vp") if panel != null else null
+		if vp != null:
+			vp.get_texture().get_image().save_png("%spanel_screen_%s.png" % [OUT, _mood])
 		_g.get("data_panel").visible = true
 		for k in [["_zoom_target", "camera_distance"], ["distance", "camera_distance"], ["pivot_height", "camera_height"], ["_home_pivot", "camera_height"]]:
 			rig.set(k[0], _g.get(k[1]))
