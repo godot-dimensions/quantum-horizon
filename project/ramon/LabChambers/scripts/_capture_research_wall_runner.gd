@@ -123,6 +123,39 @@ func _run() -> void:
 	await _wait(0.6)
 	_page("chicken_in_your_hands")
 	await _shot("chicken_in_your_hands")
+	# 3: the wolf, arriving from its real size, then its story.
+	_put(0.8, 5.5, -0.5)
+	var t_pick: int = Time.get_ticks_usec()
+	_g.call("pick", 2)
+	print("wolf picked in %.1f ms" % (float(Time.get_ticks_usec() - t_pick) / 1000.0))
+	var s3: Script = sc.get("exhibit_script")
+	_check(s3 != null and s3.resource_path.ends_with("rd_wolf_4d.gd"), "3 puts the wolf on the plinth")
+	await _wait(0.4)
+	await _shot("wolf_arriving")
+	await _story(sc, "wolf")
+	b = sc.call("bench")
+	print("wolf bench: ", b.get("build_ms"), " build, ", b.get("limb_ms"), " limb, ", b.get("anim_ms"), " walk")
+	_check(float(b.get("anim_ms", -1.0)) > 0.0, "the wolf's walk is timed")
+	# Close, side on, walking and in the x-ray.
+	var rig: Node = (_g.get("player") as Node).get_node("CameraRig")
+	rig.set("_zoom_target", 3.0)
+	rig.set("distance", 3.0)
+	rig.set("pivot_height", 2.3)
+	rig.set("_home_pivot", 2.3)
+	_put(0.9, 4.4, 0.2)
+	sc.set("autoplay", false)
+	sc.set("cinematic", true)
+	for i in 40:
+		sc.call("play", 4, 2.0 + float(i) * 0.03)
+		await process_frame
+	await _shot("wolf_walk_close")
+	for i in 20:
+		sc.call("play", 3, 1.0 + float(i) * 0.03)
+		await process_frame
+	await _shot("wolf_rig_close")
+	sc.call("end_cinematic")
+	await _wait(0.4)
+	await _shot("wolf_standing_close")
 	print("WALL %s: %d failed, %.1f s" % ["PASS" if _fails.is_empty() else "FAIL", _fails.size(), (Time.get_ticks_msec() - started) / 1000.0])
 	for f in _fails:
 		print("  failed: ", f)

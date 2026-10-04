@@ -14,16 +14,17 @@ extends "res://ramon/LabChambers/kit/kit_desk_4d.gd"
 ## prompt pops up over it.
 ##
 ## THE SLOTS are three lists of the same length, in the inspector: each animal's exhibit script,
-## its name and its icon (kit_glyphs animal(): "goat", "chicken"). Slots past the end are drawn
+## its name and its icon (kit_glyphs animal(): "goat", "chicken", "wolf"). Slots past the end are drawn
 ## empty, waiting.
 ##
 ## NO class_name (engine_gotchas.md).
 
 const SLOTS := 6
 
-@export var slot_scripts: PackedStringArray = ["res://ramon/LabChambers/scripts/rd_goat_4d.gd", "res://ramon/LabChambers/scripts/rd_chicken_4d.gd"]
-@export var slot_names: PackedStringArray = ["GOAT", "CHICKEN"]
-@export var slot_icons: PackedStringArray = ["goat", "chicken"]
+@export var slot_scripts: PackedStringArray = ["res://ramon/LabChambers/scripts/rd_goat_4d.gd", "res://ramon/LabChambers/scripts/rd_chicken_4d.gd",
+	"res://ramon/LabChambers/scripts/rd_wolf_4d.gd"]
+@export var slot_names: PackedStringArray = ["GOAT", "CHICKEN", "WOLF"]
+@export var slot_icons: PackedStringArray = ["goat", "chicken", "wolf"]
 
 var _lit_at: float = -10.0
 var _last_active: int = -2

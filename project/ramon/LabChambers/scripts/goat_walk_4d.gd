@@ -28,6 +28,12 @@ extends Node4D
 ## from each ball to the next (the bones), hung on the same joints as the pieces, so they walk with
 ## them; set_xray(true) hides the skin and shows only those.
 ##
+## FOR ANY FOUR-LEGGED RIG, not only the goat: `leg_tops` names a leg's first ball (a chain whose
+## second ball's name ends with one of them is a leg: the goat's "LegTop", the wolf's "Hip"), and
+## `bake_tag` keeps each animal's baked pieces apart (the goat's are "walk_*", as before). Which beat
+## a leg walks on follows its name: Rear/Hind legs lead, Front/Fore a quarter behind, the right side
+## half a cycle after the left.
+##
 ## NO class_name (engine_gotchas.md).
 
 const Builder := preload("res://ramon/LabKit/carried/Model/scripts/loft_builder_4d.gd")
@@ -41,8 +47,10 @@ const BAKED := "res://ramon/LabKit/carried/chickenpen/theatre/baked/"
 @export var roll: float = 0.025
 @export_range(0.3, 0.9, 0.01) var duty: float = 0.6
 
-## Where in the cycle each leg is, by name: a four-beat lateral walk.
-const PHASE := {"RearLegTop_L": 0.0, "FrontLegTop_L": 0.25, "RearLegTop_R": 0.5, "FrontLegTop_R": 0.75}
+## A leg's first ball ends with one of these (see the note at the top).
+@export var leg_tops: PackedStringArray = ["LegTop"]
+## The baked pieces' file names start with this, beside the goat's baked stages.
+@export var bake_tag: String = "walk"
 
 var _rig: MeshInstance4D
 var _body: Node4D
@@ -62,10 +70,10 @@ func attach(rig: MeshInstance4D) -> bool:
 		return false
 	position = rig.position
 	basis = rig.basis
-	var pieces: Dictionary = load_pieces()
+	var pieces: Dictionary = load_pieces(bake_tag)
 	if pieces.is_empty():
-		pieces = build_pieces(rig)
-		save_pieces(pieces)
+		pieces = build_pieces(rig, leg_tops)
+		save_pieces(pieces, bake_tag)
 	if pieces.is_empty():
 		return false
 	var coat: Material4D = rig.material_override
@@ -98,8 +106,8 @@ func attach(rig: MeshInstance4D) -> bool:
 		var a1: float = atan2(u1.x, u1.y)
 		var a2: float = atan2(u2.x, u2.y)
 		_legs.append({"hip": hip, "knee": knee, "top": top, "hoof": hoof, "l1": u1.length(), "l2": u2.length(),
-			"rest1": a1, "rest_k": a2 - a1, "bend": signf(a2 - a1) if absf(a2 - a1) > 0.001 else (1.0 if String(l["name"]).begins_with("Rear") else -1.0),
-			"phase": float(PHASE.get(String(l["name"]), 0.0))})
+			"rest1": a1, "rest_k": a2 - a1, "bend": signf(a2 - a1) if absf(a2 - a1) > 0.001 else (1.0 if _is_hind(String(l["name"])) else -1.0),
+			"phase": _phase_of(String(l["name"]))})
 	_build_xray(rig, leg_nodes)
 	set_xray(false)
 	visible = false
@@ -114,6 +122,15 @@ func _piece(nm: String, mesh: ArrayTetraMesh4D, offset: Vector4, coat: Material4
 	m.position = offset
 	m.material_override = _material(mesh, coat)
 	return m
+
+
+static func _is_hind(nm: String) -> bool:
+	return nm.begins_with("Rear") or nm.begins_with("Hind")
+
+
+## A four-beat lateral walk: left hind, left fore, right hind, right fore, a quarter cycle apart.
+static func _phase_of(nm: String) -> float:
+	return (0.0 if _is_hind(nm) else 0.25) + (0.0 if nm.ends_with("_L") else 0.5)
 
 
 ## Walking or not: the pieces show and the rig's own mesh hides, or the other way round.
@@ -150,12 +167,32 @@ func _build_xray(rig: MeshInstance4D, leg_nodes: Dictionary) -> void:
 	var balls: Array = []
 	_collect(rig, balls)
 	# Which ball hangs where: the legs' three balls on their joints, both sides; the rest on the body.
+	# A leg's balls are its top ball and the next two down its chain, whatever they are called.
+	var leg_balls: Dictionary = {}
 	var on_leg: Dictionary = {}
 	for nm in leg_nodes:
 		var base: String = String(nm).trim_suffix("_L").trim_suffix("_R")
-		on_leg[base] = true
-		on_leg[base.replace("Top", "Mid")] = true
-		on_leg[base.replace("LegTop", "Hoof")] = true
+		if leg_balls.has(base):
+			continue
+		for b in balls:
+			if String((b as Node).name) != base:
+				continue
+			var chain: Array = [b]
+			var cur: Node = b
+			while chain.size() < 3:
+				var nxt: Node = null
+				for ch in cur.get_children():
+					if ch.has_method("get_loft_section"):
+						nxt = ch
+						break
+				if nxt == null:
+					break
+				chain.append(nxt)
+				cur = nxt
+			leg_balls[base] = chain
+			for cb in chain:
+				on_leg[String((cb as Node).name)] = true
+			break
 	for b in balls:
 		var ball: Node4D = b
 		var pos: Vector4 = rig.call("_position_in_rig", ball)
@@ -187,19 +224,19 @@ func _build_xray(rig: MeshInstance4D, leg_nodes: Dictionary) -> void:
 		var knee: Node4D = parts[4]
 		var base: String = String(nm).trim_suffix("_L").trim_suffix("_R")
 		var side: float = 1.0 if String(nm).ends_with("_L") else -1.0
-		for b in balls:
-			var ball: Node4D = b
-			var bn: String = String(ball.name)
+		var chain: Array = leg_balls.get(base, [])
+		for ci in chain.size():
+			var ball: Node4D = chain[ci]
 			var br: Projection = _basis_in_rig(rig, ball)
-			if bn == base:
+			if ci == 0:
 				_ring(hip, ball, Vector4.ZERO, br, gold)
 				var anchor: Node = ball.get_parent()
 				if anchor != null and anchor.has_method("get_loft_section"):
 					var ap: Vector4 = rig.call("_position_in_rig", anchor)
 					_bone(_body, Vector4(ap.x * side, ap.y, ap.z, ap.w) - _pivot, top - _pivot, bone_mat)
-			elif bn == base.replace("Top", "Mid"):
+			elif ci == 1:
 				_ring(knee, ball, Vector4.ZERO, br, gold)
-			elif bn == base.replace("LegTop", "Hoof"):
+			else:
 				_ring(knee, ball, hoof - mid, br, gold)
 		_bone(hip, Vector4.ZERO, mid - top, bone_mat)
 		_bone(knee, Vector4.ZERO, hoof - mid, bone_mat)
@@ -308,13 +345,13 @@ func _solve(leg: Dictionary, d: Vector2) -> void:
 # -- the pieces ------------------------------------------------------------------------------------
 
 ## Lofts the pieces from the rig's balls (all of them must be on the rig). In the rig's space.
-static func build_pieces(rig: MeshInstance4D) -> Dictionary:
+static func build_pieces(rig: MeshInstance4D, tops: PackedStringArray = ["LegTop"]) -> Dictionary:
 	var chains: Array = rig.call("_collect_chains")
 	var body_chains: Array = []
 	var legs: Array = []
 	for ch in chains:
 		var chain: Array = ch
-		if chain.size() >= 4 and String((chain[1] as Node).name).ends_with("LegTop"):
+		if chain.size() >= 4 and _ends_with_any(String((chain[1] as Node).name), tops):
 			body_chains.append([chain[0], chain[1]])
 			for side in [1.0, -1.0]:
 				var tag: String = "_L" if side > 0.0 else "_R"
@@ -348,6 +385,13 @@ static func build_pieces(rig: MeshInstance4D) -> Dictionary:
 		hi = Vector4(maxf(hi.x, v.x), maxf(hi.y, v.y), maxf(hi.z, v.z), 0.0)
 	var pivot := Vector4((lo.x + hi.x) * 0.5, (lo.y + hi.y) * 0.55, (lo.z + hi.z) * 0.5, 0.0)
 	return {"body": body, "legs": legs, "pivot": pivot}
+
+
+static func _ends_with_any(nm: String, tops: PackedStringArray) -> bool:
+	for t in tops:
+		if nm.ends_with(t):
+			return true
+	return false
 
 
 ## A ball's loft section in the rig's space; side -1 mirrors it across the rig's middle (as the
@@ -406,39 +450,39 @@ static func _material(mesh: ArrayTetraMesh4D, coat: Material4D) -> Material4D:
 	return mat
 
 
-static func save_pieces(pieces: Dictionary) -> void:
+static func save_pieces(pieces: Dictionary, tag: String = "walk") -> void:
 	if pieces.is_empty():
 		return
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(BAKED))
-	ResourceSaver.save(pieces["body"], BAKED + "walk_body.res")
+	ResourceSaver.save(pieces["body"], BAKED + tag + "_body.res")
 	var cfg := ConfigFile.new()
 	cfg.set_value("walk", "pivot", pieces["pivot"])
 	var names: Array = []
 	for leg in pieces["legs"]:
 		var nm: String = String(leg["name"])
 		names.append(nm)
-		ResourceSaver.save(leg["upper"], BAKED + "walk_%s_upper.res" % nm)
-		ResourceSaver.save(leg["lower"], BAKED + "walk_%s_lower.res" % nm)
+		ResourceSaver.save(leg["upper"], BAKED + tag + "_%s_upper.res" % nm)
+		ResourceSaver.save(leg["lower"], BAKED + tag + "_%s_lower.res" % nm)
 		cfg.set_value(nm, "top", leg["top"])
 		cfg.set_value(nm, "mid", leg["mid"])
 		cfg.set_value(nm, "hoof", leg["hoof"])
 	cfg.set_value("walk", "legs", names)
-	cfg.save(BAKED + "walk.cfg")
+	cfg.save(BAKED + tag + ".cfg")
 
 
-static func load_pieces() -> Dictionary:
-	if not FileAccess.file_exists(BAKED + "walk.cfg"):
+static func load_pieces(tag: String = "walk") -> Dictionary:
+	if not FileAccess.file_exists(BAKED + tag + ".cfg"):
 		return {}
 	var cfg := ConfigFile.new()
-	if cfg.load(BAKED + "walk.cfg") != OK:
+	if cfg.load(BAKED + tag + ".cfg") != OK:
 		return {}
-	var body := load(BAKED + "walk_body.res") as ArrayTetraMesh4D
+	var body := load(BAKED + tag + "_body.res") as ArrayTetraMesh4D
 	if body == null:
 		return {}
 	var legs: Array = []
 	for nm in cfg.get_value("walk", "legs", []):
-		var upper := load(BAKED + "walk_%s_upper.res" % nm) as ArrayTetraMesh4D
-		var lower := load(BAKED + "walk_%s_lower.res" % nm) as ArrayTetraMesh4D
+		var upper := load(BAKED + tag + "_%s_upper.res" % nm) as ArrayTetraMesh4D
+		var lower := load(BAKED + tag + "_%s_lower.res" % nm) as ArrayTetraMesh4D
 		if upper == null or lower == null:
 			return {}
 		legs.append({"name": nm, "top": cfg.get_value(nm, "top"), "mid": cfg.get_value(nm, "mid"), "hoof": cfg.get_value(nm, "hoof"), "upper": upper, "lower": lower})

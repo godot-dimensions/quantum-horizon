@@ -477,7 +477,7 @@ func _dashed(c: Control, a: Vector2, b: Vector2, col: Color) -> void:
 
 ## Every specimen measured so far, the same columns for each, the one on the plinth in the accent.
 func _draw_bench_strip(c: Control, code: String, vh: float) -> void:
-	var y: float = 718.0
+	var y: float = 712.0
 	_line(c, Vector2(52, y), Vector2(VW - 52, y), HAIR, 1.5)
 	var fb: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")
@@ -501,7 +501,7 @@ func _draw_bench_strip(c: Control, code: String, vh: float) -> void:
 				rec[k] = _bench_live[k]
 			rec["balls"] = int(_data.get("stats", {}).get("balls", rec.get("balls", 0)))
 			rec["tetra"] = int(_data.get("stats", {}).get("tetra", rec.get("tetra", 0)))
-		var ry: float = y + 82.0 + float(row) * 24.0
+		var ry: float = y + 80.0 + float(row) * 22.0
 		if ry > vh - 34.0:
 			break
 		var now: bool = cd == code

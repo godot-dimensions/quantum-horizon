@@ -11,7 +11,7 @@ extends RefCounted
 ##   bars(c, rect, values, col)   a bar chart, brightest last
 ##   tag(c, pos, text, ...)       a small rounded label (SAMPLE, LIVE, MEASURED)
 ##   wire(c, rect, shape, ...)    the exhibit as a triangulated wireframe from its own points
-##   animal(c, kind, rect, ...)   an animal in profile, filled: goat, chicken
+##   animal(c, kind, rect, ...)   an animal in profile, filled: goat, chicken, wolf
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -129,6 +129,21 @@ static func animal(c: CanvasItem, kind: String, rect: Rect2, col: Color, cut: Co
 			poly.call([Vector2(77, 21), Vector2(67, 24.5), Vector2(76.5, 25.5)])
 			poly.call([Vector2(85.5, 29), Vector2(90.5, 29), Vector2(87.5, 38)])
 			dot.call(Vector2(84.5, 21.5), 1.7, cut)
+		"wolf":
+			# The far legs, the tail hanging bushy, the body, the near legs, the neck and long head,
+			# the two upright ears.
+			poly.call([Vector2(57, 56), Vector2(62, 56), Vector2(61, 74), Vector2(62, 91), Vector2(58, 91), Vector2(57.5, 74)])
+			poly.call([Vector2(32, 56), Vector2(37, 56), Vector2(36, 73), Vector2(37, 91), Vector2(33, 91), Vector2(32.5, 73)])
+			poly.call([Vector2(24, 45), Vector2(15, 53), Vector2(10, 66), Vector2(12.5, 72), Vector2(17, 69), Vector2(21, 58), Vector2(27, 50)])
+			poly.call([Vector2(20, 49), Vector2(26, 41), Vector2(40, 39), Vector2(56, 40), Vector2(66, 37), Vector2(72, 41), Vector2(73.5, 50),
+				Vector2(69, 58), Vector2(56, 60), Vector2(40, 61), Vector2(28, 60), Vector2(22, 56)])
+			poly.call([Vector2(25, 54), Vector2(32.5, 55), Vector2(31, 73), Vector2(32, 91), Vector2(27.5, 91), Vector2(27, 73)])
+			poly.call([Vector2(63, 54), Vector2(69.5, 54), Vector2(67.5, 74), Vector2(68.5, 91), Vector2(64, 91), Vector2(63.5, 74)])
+			poly.call([Vector2(63, 41), Vector2(71, 30), Vector2(80, 29), Vector2(79, 43), Vector2(71, 49)])
+			poly.call([Vector2(72, 31), Vector2(76, 24.5), Vector2(84, 23), Vector2(91, 26.5), Vector2(97.5, 30), Vector2(96.5, 33.5), Vector2(88, 35.5), Vector2(80, 37), Vector2(75, 36)])
+			poly.call([Vector2(74.5, 26.5), Vector2(76, 14.5), Vector2(80.5, 24)])
+			poly.call([Vector2(79.5, 24.5), Vector2(82.5, 14.5), Vector2(85, 25)])
+			dot.call(Vector2(85.5, 27.5), 1.6, cut)
 		"chicken":
 			# The legs and feet, the tail fan, the body, the neck and head, comb, beak and wattle.
 			line.call([Vector2(44, 72), Vector2(42, 88)], 3.0, col)
