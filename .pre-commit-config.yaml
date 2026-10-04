@@ -7,6 +7,11 @@
 default_language_version:
   python: python3
 
+exclude: |
+  (?x)^(
+    .*\.glsl\.import
+  )$
+
 repos:
   - repo: local
     hooks:
