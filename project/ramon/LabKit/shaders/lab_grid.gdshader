@@ -98,6 +98,10 @@ uniform float ring_on : hint_range(0.0, 1.0) = 0.0;
 // (`holo_falloff` the curve), and a pixel is drawn only where its place in a 4x4 Bayer matrix is
 // under that coverage; the eye averages the pattern into a fade. Being real geometry it sorts with
 // everything in front of and behind it, and survives the slice turning. Thin bands rise through it.
+// THE GRAIN is per pixel and moves every frame (interleaved gradient noise, shifted by the frame):
+// a fixed 4x4 matrix repeated every four pixels read as a coarse dot grid (Ramon: "much too large,
+// should be 1/6 the size"); nothing finer than a pixel exists, so the grid itself had to go, and the
+// eye averages the moving grain into a fade. `holo_still` 1 freezes it.
 uniform float holo_on : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 holo_color : source_color = vec4(0.25, 0.60, 1.0, 1.0);
 uniform float holo_base : hint_range(0.0, 1.0) = 0.8;
@@ -106,6 +110,28 @@ uniform float holo_glow = 0.6;
 uniform float holo_scan = 0.35;
 uniform float holo_scan_density = 2.2;
 uniform float holo_scan_speed = 0.35;
+uniform float holo_still : hint_range(0.0, 1.0) = 0.0;
+// PATH (LabChambers/kit/kit_path_4d.gd): this surface is a path's strip, a thin band of tetrahedra a
+// hair above the floor that follows a curve through the floor's own space (x, z and W). Its texture
+// coordinates are metres along the curve, -1..1 across it, and -1..1 through its thickness in W.
+// The floor's own grid is drawn on it (the same swatch, the same world offset), so the strip
+// itself is invisible and only its marks show. The marks move on along the curve at `path_speed`,
+// and thin out towards the strip's edges in W, so a path that leaves your slice fades out of it.
+//   path_style 0  RAMON'S ARROW (the route's chevron pair, measured from arrow.png)
+//              1  ZEBRA (stripes across the strip, slanted)
+//              2  DOTS
+//              3  LINE (a thin line with bright pulses running along it)
+uniform float path_on : hint_range(0.0, 1.0) = 0.0;
+uniform float path_style = 0.0;
+uniform vec4 path_color : source_color = vec4(0.12, 0.45, 1.0, 1.0);
+uniform float path_glow = 0.35;
+uniform float path_spacing = 3.0;
+uniform float path_speed = 0.7;
+uniform float path_length = 10.0;
+uniform float path_width = 1.15;
+uniform float path_fade = 0.6;
+uniform float path_closed = 0.0;
+uniform float path_pair = 0.76;
 uniform vec4 ring_at = vec4(0.0, 0.0, 3.0, 0.08);
 uniform vec4 ring_color : source_color = vec4(0.12, 0.45, 1.0, 1.0);
 
@@ -430,14 +456,68 @@ void fragment() {
 		c = mix(c, route_color.rgb, k * 0.95);
 		glow += route_color.rgb * k * route_glow;
 	}
+	if (path_on > 0.5) {
+		float s = uvw.x;
+		float vac = clamp(uvw.y, -1.0, 1.0);
+		float wq = uvw.z;
+		float fws = max(fwidth(s), 0.0001);
+		float soft = max(fws, 0.004);
+		float d = fract((s - TIME * path_speed) / path_spacing) * path_spacing;
+		float k = 0.0;
+		if (path_style < 0.5) {
+			float wdt = path_width;
+			float au = abs(vac) * wdt * 0.5;
+			float t1 = 0.2056 * wdt;
+			float g1 = 0.0234 * wdt;
+			float t2 = 0.0981 * wdt;
+			float half_w = 0.4463 * wdt;
+			float tab_w = 0.0537 * wdt;
+			float span = 0.768 * wdt;
+			for (int n = 0; n < 2; n++) {
+				if (n == 1 && path_pair <= 0.0) {
+					break;
+				}
+				float apex = span + 0.02 + (n == 1 ? path_pair : 0.0);
+				float e = (apex - d) - 0.685 * au;
+				float in_x = 1.0 - smoothstep(half_w - soft, half_w, au);
+				float tab_x = smoothstep(half_w, half_w + soft, au) * (1.0 - smoothstep(half_w + tab_w - soft, half_w + tab_w, au));
+				float thick = smoothstep(0.0, soft, e) * (1.0 - smoothstep(t1 - soft, t1, e));
+				float thin = smoothstep(t1 + g1, t1 + g1 + soft, e) * (1.0 - smoothstep(t1 + g1 + t2 - soft, t1 + g1 + t2, e));
+				float tab = smoothstep(t1 + g1 + t2, t1 + g1 + t2 + soft, e) * (1.0 - smoothstep(t1 + g1 + t2 * 2.0 - soft, t1 + g1 + t2 * 2.0, e));
+				k = max(k, max(thick, thin) * in_x + tab * tab_x);
+			}
+		} else if (path_style < 1.5) {
+			// Stripes across, slanted forward, each half a period wide, the strip's edges rounded off.
+			float z = fract((s + vac * path_width * 0.35 - TIME * path_speed) / path_spacing);
+			float stripe = smoothstep(0.0, soft / path_spacing * 2.0, z) * (1.0 - smoothstep(0.5 - soft / path_spacing * 2.0, 0.5, z));
+			k = stripe * (1.0 - smoothstep(0.82, 0.98, abs(vac)));
+		} else if (path_style < 2.5) {
+			// Round dots on the middle line, a third of the strip wide.
+			float r = path_width * 0.22;
+			vec2 q = vec2(d - path_spacing * 0.5, vac * path_width * 0.5);
+			float dist = length(q);
+			k = 1.0 - smoothstep(r - soft, r + soft, dist);
+		} else {
+			// A thin line, and pulses running along it.
+			float line = 1.0 - smoothstep(0.07, 0.07 + soft * 4.0, abs(vac));
+			float pulse = exp(-pow((d - path_spacing * 0.5) / (path_spacing * 0.06), 2.0));
+			float bead = 1.0 - smoothstep(0.32, 0.32 + soft * 4.0, length(vec2((d - path_spacing * 0.5) / (path_width * 0.5), vac)));
+			k = max(line * 0.6, bead * pulse);
+		}
+		float ends = path_closed > 0.5 ? 1.0 : smoothstep(0.0, path_fade, s) * smoothstep(0.0, path_fade, path_length - s);
+		float wfade = 1.0 - smoothstep(0.5, 0.95, abs(wq));
+		float calm = 1.0 - smoothstep(0.06, 0.16, fws);
+		k = clamp(k, 0.0, 1.0) * ends * wfade * calm;
+		c = mix(c, path_color.rgb, k * 0.95);
+		glow += path_color.rgb * k * path_glow;
+	}
 	if (holo_on > 0.5) {
 		float hf = clamp(local_pos.y / max(abs(surface_size.y), 0.001) + 0.5, 0.0, 1.0);
 		float cover = holo_base * pow(1.0 - hf, holo_falloff);
 		float scan = smoothstep(0.9, 1.0, fract(local_pos.y * holo_scan_density - TIME * holo_scan_speed));
 		cover = min(1.0, cover + scan * holo_scan * (1.0 - hf));
-		ivec2 cell = ivec2(FRAGCOORD.xy) % 4;
-		int bayer[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
-		float threshold = (float(bayer[cell.y * 4 + cell.x]) + 0.5) / 16.0;
+		vec2 gp = floor(FRAGCOORD.xy) + (1.0 - holo_still) * mod(floor(TIME * 60.0), 64.0) * 5.588238;
+		float threshold = fract(52.9829189 * fract(dot(gp, vec2(0.06711056, 0.00583715))));
 		if (cover <= threshold) {
 			discard;
 		}

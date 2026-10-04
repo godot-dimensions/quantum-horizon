@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://biqddcxhqxnor"]
+[gd_scene load_steps=15 format=3 uid="uid://biqddcxhqxnor"]
 
 [ext_resource type="Script" uid="uid://crnwat3v2ppga" path="res://ramon/LabChambers/goat_room_4d.gd" id="1_root"]
 [ext_resource type="Script" uid="uid://cq1aeo3fdysn4" path="res://ramon/LabKit/lab_room_4d.gd" id="2_room"]
@@ -11,6 +11,9 @@
 [ext_resource type="Script" uid="uid://bf6jsusv08tmp" path="res://ramon/LabChambers/kit/kit_light_4d.gd" id="9_light"]
 [ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_sun_4d.gd" id="11_sun"]
 [ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_exhibit_picker_4d.gd" id="12_picker"]
+[ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_path_4d.gd" id="13_path"]
+[ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_pivot_4d.gd" id="14_pivot"]
+[ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_path_lab_4d.gd" id="15_pathlab"]
 
 [node name="GoatRoomScene" type="Node4D"]
 script = ExtResource("1_root")
@@ -87,8 +90,9 @@ script = ExtResource("4_text")
 edge = 1
 along = Vector2(1, 9.6)
 up = Vector2(1.3, 7.6)
-subtitle = "See, slice and understand the fourth dimension."
-body = "This {name} is made of {balls} balls placed in 4D space. Each ball is a cross-section of the body, and the tool lofts a skin from one to the next. Move the slice through W and watch its shape change."
+title = "Creation Lab"
+subtitle = "Build a 4D animal, then bring it to life."
+body = "This room joins two of our tools. The loft creator builds an animal from a handful of balls, each a cross-section of its body. The Motion Lab brings it to life, cut into rigid pieces that walk without being rebuilt. Built and moving in one place, which is why we call it the Creation Lab. This {name} is made of {balls} balls."
 icons = [["wheel", "Slice through W"], ["rdrag", "Rotate in 4D"], ["key:E", "{action}"]]
 code = "blue"
 live = true
@@ -117,19 +121,147 @@ look = "painted"
 wall_edge = 4
 
 [node name="ResearchPanel" type="Node4D" parent="."]
-position = Vector4(-5.5, 0, 3.5, 0)
-basis = Projection(0.7071067811865476, 0, -0.7071067811865476, 0, 0, 1, 0, 0, 0.7071067811865476, 0, 0.7071067811865476, 0, 0, 0, 0, 1)
+position = Vector4(-9.15, 0, 3, 0)
 script = ExtResource("8_desk")
 showcase = NodePath("../Showcase")
+face = Vector3(1, 0, 0)
 
 [node name="ExhibitPicker" type="Node4D" parent="."]
-position = Vector4(0, 0, 2.85, 0)
+position = Vector4(0, 0, 2.2, 0)
 script = ExtResource("12_picker")
 showcase = NodePath("../Showcase")
 tilt_degrees = 38.0
 size = Vector2(2.3, 0.62)
-hover = 0.3
+hover = 0.1
 corner = 0.1
+
+[node name="Guides" type="Node4D" parent="."]
+
+[node name="ToPedestal" type="Node4D" parent="Guides"]
+script = ExtResource("13_path")
+speed = 0.8
+
+[node name="P0" type="Node4D" parent="Guides/ToPedestal"]
+position = Vector4(0, 0, 11.5, 0)
+
+[node name="P1" type="Node4D" parent="Guides/ToPedestal"]
+position = Vector4(0, 0, 8, 0)
+
+[node name="P2" type="Node4D" parent="Guides/ToPedestal"]
+position = Vector4(0, 0, 5.2, 0)
+
+[node name="P3" type="Node4D" parent="Guides/ToPedestal"]
+position = Vector4(0, 0, 3.4, 0)
+
+[node name="ToResearchWall" type="Node4D" parent="Guides"]
+script = ExtResource("13_path")
+width = 0.9
+
+[node name="P0" type="Node4D" parent="Guides/ToResearchWall"]
+position = Vector4(0.9, 0, 3.5, 0)
+
+[node name="P1" type="Node4D" parent="Guides/ToResearchWall"]
+position = Vector4(2.6, 0, 4.4, 0)
+
+[node name="P2" type="Node4D" parent="Guides/ToResearchWall"]
+position = Vector4(4.6, 0, 3.8, 0)
+
+[node name="P3" type="Node4D" parent="Guides/ToResearchWall"]
+position = Vector4(5.9, 0, 3, 0)
+
+[node name="WallPivot" type="Node4D" parent="Guides"]
+position = Vector4(6.6, 0, 3, 0)
+script = ExtResource("14_pivot")
+look = Vector3(10, 0, 3)
+
+[node name="WallSpot" type="Node4D" parent="Guides"]
+position = Vector4(6.6, 0, 3, 0)
+script = ExtResource("13_path")
+style = "zebra"
+shape = "circle"
+radius = 1
+width = 0.22
+spacing = 0.55
+speed = 0.3
+glow = 0.5
+
+[node name="ToBackDoor" type="Node4D" parent="Guides"]
+script = ExtResource("13_path")
+style = "dots"
+width = 0.8
+spacing = 0.75
+speed = 0.6
+
+[node name="P0" type="Node4D" parent="Guides/ToBackDoor"]
+position = Vector4(6.9, 0, 1.8, 0)
+
+[node name="P1" type="Node4D" parent="Guides/ToBackDoor"]
+position = Vector4(6.6, 0, -1.5, 0)
+
+[node name="P2" type="Node4D" parent="Guides/ToBackDoor"]
+position = Vector4(5.2, 0, -5.4, 0)
+
+[node name="P3" type="Node4D" parent="Guides/ToBackDoor"]
+position = Vector4(2.6, 0, -8.3, 0)
+
+[node name="P4" type="Node4D" parent="Guides/ToBackDoor"]
+position = Vector4(0, 0, -9.6, 0)
+
+[node name="DoorSpot" type="Node4D" parent="Guides"]
+position = Vector4(0, 0, -9.6, 0)
+script = ExtResource("13_path")
+style = "zebra"
+shape = "circle"
+radius = 1.25
+width = 0.22
+spacing = 0.55
+speed = 0.3
+glow = 0.5
+
+[node name="ToDesk" type="Node4D" parent="Guides"]
+script = ExtResource("13_path")
+style = "line"
+width = 0.7
+spacing = 2.2
+speed = 0.9
+
+[node name="P0" type="Node4D" parent="Guides/ToDesk"]
+position = Vector4(-0.9, 0, 3.5, 0)
+
+[node name="P1" type="Node4D" parent="Guides/ToDesk"]
+position = Vector4(-2.8, 0, 4.3, 0)
+
+[node name="P2" type="Node4D" parent="Guides/ToDesk"]
+position = Vector4(-5, 0, 3.6, 0)
+
+[node name="P3" type="Node4D" parent="Guides/ToDesk"]
+position = Vector4(-6.7, 0, 3, 0)
+
+[node name="DeskSpot" type="Node4D" parent="Guides"]
+position = Vector4(-7.4, 0, 3, 0)
+script = ExtResource("13_path")
+style = "zebra"
+shape = "circle"
+radius = 0.9
+width = 0.22
+spacing = 0.55
+speed = 0.3
+glow = 0.5
+
+[node name="PathLab" type="Node4D" parent="."]
+position = Vector4(0, 0, -27, 0)
+script = ExtResource("15_pathlab")
+
+[node name="PathLabSign" type="Node" parent="BigRoom"]
+script = ExtResource("4_text")
+side = "n"
+along = Vector2(-11, 11)
+up = Vector2(1.6, 8.6)
+number = 2
+title = "Paths"
+subtitle = "Guides that curve, loop and live in 4D."
+body = "1  Arrows follow any curve.   2  Dots keep their spacing round a spiral.   3  A loop round a ball marks where to stand and turn.   4  This path bends out through W and is gone, then comes back.   5  A loop drifting through W: only what is at your W is there. Turn the slice.   6  A line with pulses crossing itself.   7  Two speeds, two ways."
+code = "blue"
 
 [node name="Downlight" type="Node4D" parent="."]
 position = Vector4(0, 8.37, -1.5, 0)

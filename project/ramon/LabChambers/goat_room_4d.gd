@@ -34,6 +34,9 @@ const Presenter := preload("res://ramon/LabChambers/kit/kit_presenter.gd")
 @export var start_at: Vector2 = Vector2(0.0, 15.2)
 ## The arrows painted into the floors, world x/z.
 @export var route: PackedVector2Array = PackedVector2Array([Vector2(0, 14.6), Vector2(0, -1.5)])
+## The old chevrons painted into the floor along `route` (off: the guide paths under "Guides",
+## kit_path_4d.gd, show the way now).
+@export var painted_route: bool = false
 
 @export_group("Room shape")
 ## The goat room's shape in five numbers (Ramon, 4 Oct: "sliders to manipulate the walls' sizes in
@@ -139,7 +142,7 @@ func _ready() -> void:
 		room.call("set_mood", String(room.get("mood")), true, false)
 	for r in get_tree().get_nodes_in_group("kit_room"):
 		if is_ancestor_of(r):
-			r.set("route", route)
+			r.set("route", route if painted_route else PackedVector2Array())
 	if Engine.is_editor_hint():
 		return
 	showcase = get_node_or_null("Showcase")
@@ -290,7 +293,7 @@ func apply_shape() -> void:
 	start_at = Vector2(0.0, f + 6.2)
 	for r in get_tree().get_nodes_in_group("kit_room"):
 		if is_ancestor_of(r):
-			_set_if(r, "route", route)
+			_set_if(r, "route", route if painted_route else PackedVector2Array())
 
 
 ## Sets a property only when it changes: each change rebuilds a room, and rebuilding one that is
@@ -522,7 +525,7 @@ func _run_cinematic(delta: float) -> void:
 		_place((_cine["from_eye"] as Vector4).lerp((shot[0] as Vector4) + drift, k),
 			Vector2(lerp_angle(a0.x, a1.x, k), lerpf(a0.y, a1.y, k)), lerpf(float(_cine["from_lens"]), float(shot[2]), k))
 		showcase.call("play", i, t)
-		hud.call("show_caption", "01  4D BASICS   ·   " + String(s["title"]), "%d / %d" % [i + 1, seqs.size()], String(s["line"]))
+		hud.call("show_caption", "CREATION LAB   ·   " + String(s["title"]), "%d / %d" % [i + 1, seqs.size()], String(s["line"]))
 		if t >= float(s["length"]):
 			if i + 1 < seqs.size():
 				_cine["i"] = i + 1

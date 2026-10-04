@@ -134,8 +134,8 @@ func _run() -> void:
 		await _wait(0.05)
 	await _wait(2.2)
 	await _shot("title_card_and_callout")
-	p.global_position = Vector4(-4.35, 0.05, 4.65, 0.0)
-	rig.set("yaw", PI * 0.25)
+	p.global_position = Vector4(-7.6, 0.05, 3.0, 0.0)
+	rig.set("yaw", PI * 0.5)
 	rig.call("_apply")
 	await _wait(1.0)
 	if not bool(_g.get("_desk_open")):

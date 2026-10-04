@@ -133,7 +133,7 @@ func _run() -> void:
 		_put(0.5, 6.5, 1.107)
 		await _wait(0.8)
 		await _shot("console")
-		_put(-4.35, 4.65, PI * 0.25)
+		_put(-7.6, 3.0, PI * 0.5)
 		await _wait(1.0)
 		_check(not bool(_g.get("data_panel").get("shown")), "the data waits for the engage key")
 		_check(bool(_g.get("prompt").get("shown")), "the key prompt pops up at the panel")

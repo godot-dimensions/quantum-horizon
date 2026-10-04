@@ -9,6 +9,7 @@ extends RefCounted
 
 const LabPlayer := preload("res://ramon/LabKit/lab_player.gd")
 const Avatar := preload("res://ramon/LabChambers/kit/kit_avatar_4d.gd")
+const RunGait := preload("res://ramon/LabChambers/kit/kit_run_gait_4d.gd")
 
 
 static func make() -> CharacterBody4D:
@@ -18,24 +19,16 @@ static func make() -> CharacterBody4D:
 	avatar.set_script(Avatar)
 	avatar.set("skin", LabPlayer.GREY_TRIM)
 	avatar.set("hair", LabPlayer.GREY_HAIR)
-	# Standing straighter than the chibi: see kit_avatar_4d.gd and the gait's reach_fraction.
+	# The run (Ramon, 4 Oct: "he should run, and very elegantly ... a run is like a jump almost ...
+	# a dynamic stop"): the lab's own gait in place of the block gait (kit_run_gait_4d.gd), a run by
+	# default, ALT to walk, SHIFT to sprint; and momentum: about 0.4 s to get up to a run, and as long
+	# to stop (some 0.65 m of slide), so the stop has something to carry.
 	var gait: Node = body.get_node("Gait")
-	gait.set("reach_fraction", 0.995)
-	gait.set("knee_slack", 0.002)
-	# A grown-up's walk, not the chibi's bounce (Ramon, 4 Oct: "walks very weird, with his arms
-	# swinging harshly ... legs move weird too ... as natural as possible"). A museum pace; the
-	# gait's reference speed close to it, so the stride is not cut short at a walk (the stride is
-	# scaled by speed against 60% of it) and the clock runs about one cycle in 0.85 s rather than
-	# a quick shuffle; arms swinging some 13 degrees, not 34; a 6 cm bob, not 9.5; feet lifting
-	# 7 cm; barely any lean.
-	body.set("walk_speed", 1.25)
-	gait.set("run_speed", 2.4)
-	gait.set("stride_length", 0.75)
-	gait.set("body_bob", 0.06)
-	gait.set("step_height", 0.07)
-	gait.set("arm_swing", 0.22)
-	gait.set("elbow_bend", 0.15)
-	gait.set("run_lean", 0.05)
+	gait.set_script(RunGait)
+	body.set("walk_speed", 1.3)
+	body.set("run_speed", 3.4)
+	body.set("sprint_speed", 4.6)
+	body.set("acceleration", 2.6)
 	var shape: CollisionShape4D = body.get_node("CollisionShape4D")
 	var capsule := CapsuleShape4D.new()
 	capsule.radius = 0.26
