@@ -362,3 +362,36 @@ func stage_in_view() -> int:
 	if _goat == null or not bool(_goat.call("showing_plain")):
 		return -1
 	return int(_goat.call("shown_stage"))
+
+
+var _cloud: PackedVector4Array = PackedVector4Array()
+
+
+## The goat as a cloud of its own points in 4D, for the slice view (kit_slice_view.gd): the finished
+## coat's vertices and the middles of its tetrahedra, thinned to one per cell of a grid about 26
+## cells along the goat, in the rig's space (W included). Worked out once.
+func cloud() -> PackedVector4Array:
+	if not _cloud.is_empty() or _goat == null:
+		return _cloud
+	var m: ArrayTetraMesh4D = _goat.get("_finished")
+	if m == null:
+		return _cloud
+	var verts: PackedVector4Array = m.get_vertex_positions()
+	var cells: PackedInt32Array = m.get_simplex_cell_vertex_indices()
+	var all := PackedVector4Array(verts)
+	for t in range(0, cells.size() - 3, 4):
+		all.append((verts[cells[t]] + verts[cells[t + 1]] + verts[cells[t + 2]] + verts[cells[t + 3]]) * 0.25)
+	var lo := Vector4(INF, INF, INF, INF)
+	var hi := Vector4(-INF, -INF, -INF, -INF)
+	for p in all:
+		lo = Vector4(minf(lo.x, p.x), minf(lo.y, p.y), minf(lo.z, p.z), minf(lo.w, p.w))
+		hi = Vector4(maxf(hi.x, p.x), maxf(hi.y, p.y), maxf(hi.z, p.z), maxf(hi.w, p.w))
+	var cell: float = maxf(maxf(hi.x - lo.x, hi.z - lo.z), 0.001) / 26.0
+	var keep: Dictionary = {}
+	for p in all:
+		var key := Vector4i(int(floor(p.x / cell)), int(floor(p.y / cell)), int(floor(p.z / cell)), int(floor(p.w / cell)))
+		if not keep.has(key):
+			keep[key] = p
+	for p in keep.values():
+		_cloud.append(p)
+	return _cloud

@@ -335,6 +335,11 @@ func profile() -> Dictionary:
 	return exhibit.call("w_profile") if exhibit != null and exhibit.has_method("w_profile") else {}
 
 
+## The exhibit as a cloud of its 4D points, for the slice view; empty if it has none.
+func cloud() -> PackedVector4Array:
+	return exhibit.call("cloud") if exhibit != null and exhibit.has_method("cloud") else PackedVector4Array()
+
+
 ## The exhibit drawn flat ({"points", "balls", "bones"}), for the research panel; empty if none.
 func shape() -> Dictionary:
 	return exhibit.call("shape") if exhibit != null and exhibit.has_method("shape") else {}

@@ -36,6 +36,16 @@ var _room_sliders: Dictionary = {}
 var _room_labels: Dictionary = {}
 var _room_pending: Dictionary = {}
 var _room_wait: float = 0.0
+## The goat room's root (goat_room_4d.gd), whose five shape numbers the ROOM SHAPE sliders set.
+var shape_root: Node
+var _shape_sliders: Dictionary = {}
+var _shape_labels: Dictionary = {}
+var _shape_pending: Dictionary = {}
+var _shape_wait: float = 0.0
+const SHAPE_KEYS := ["room_half_width", "room_back", "room_front", "back_wall_half", "corner_z"]
+const SHAPE_RANGES := {"room_half_width": [5.0, 20.0], "room_back": [4.0, 20.0], "room_front": [4.0, 20.0], "back_wall_half": [1.0, 10.0], "corner_z": [-15.0, 15.0]}
+const SHAPE_NAMES := {"room_half_width": "Half width, m", "room_back": "Back wall, m from middle", "room_front": "Entrance wall, m from middle",
+	"back_wall_half": "Back wall half width, m", "corner_z": "Angled walls start at z"}
 var _spot_sliders: Dictionary = {}
 var _spot_labels: Dictionary = {}
 var _spot_read: Label
@@ -128,6 +138,31 @@ func _ready() -> void:
 		_room_sliders[k] = s
 		_room_labels[k] = name_label
 	_show_room()
+	if shape_root != null:
+		var shape_head := Label.new()
+		shape_head.text = "ROOM SHAPE"
+		shape_head.add_theme_font_override("font", LabPrint.font("bold"))
+		shape_head.add_theme_font_size_override("font_size", 12)
+		box.add_child(shape_head)
+		for k in SHAPE_KEYS:
+			var row := HBoxContainer.new()
+			var name_label := Label.new()
+			name_label.custom_minimum_size = Vector2(150, 0)
+			name_label.add_theme_font_size_override("font_size", 12)
+			row.add_child(name_label)
+			var s := HSlider.new()
+			s.custom_minimum_size = Vector2(200, 18)
+			s.min_value = float(SHAPE_RANGES[k][0])
+			s.max_value = float(SHAPE_RANGES[k][1])
+			s.step = 0.1
+			s.focus_mode = Control.FOCUS_NONE
+			s.value = float(shape_root.get(k))
+			s.value_changed.connect(func(v: float) -> void: _on_shape(k, v))
+			row.add_child(s)
+			box.add_child(row)
+			_shape_sliders[k] = s
+			_shape_labels[k] = name_label
+		_show_shape()
 	if spot == null:
 		return
 	var head := Label.new()
@@ -185,6 +220,21 @@ func _on_room(k: String, v: float) -> void:
 		_room_pending[k] = v
 		_room_wait = 0.3
 	_show_room()
+
+
+## The shape rebuilds the room, so it waits for the slider to settle a moment.
+func _on_shape(k: String, v: float) -> void:
+	if _quiet:
+		return
+	_shape_pending[k] = v
+	_shape_wait = 0.35
+	_show_shape()
+
+
+func _show_shape() -> void:
+	for k in _shape_labels:
+		var v: float = float(_shape_pending.get(k, shape_root.get(k) if shape_root != null else 0.0))
+		(_shape_labels[k] as Label).text = "%s  %.1f" % [SHAPE_NAMES[k], v]
 
 
 func _show_room() -> void:
@@ -259,6 +309,13 @@ func _defaults(m: String) -> Dictionary:
 
 
 func _process(delta: float) -> void:
+	if not _shape_pending.is_empty():
+		_shape_wait -= delta
+		if _shape_wait <= 0.0:
+			for k in _shape_pending:
+				shape_root.set(k, float(_shape_pending[k]))
+			_shape_pending.clear()
+			_show_shape()
 	if not _room_pending.is_empty():
 		_room_wait -= delta
 		if _room_wait <= 0.0:

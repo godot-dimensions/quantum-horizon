@@ -27,11 +27,40 @@ const Hud := preload("res://ramon/LabChambers/scripts/rd_hud.gd")
 const Tuner := preload("res://ramon/LabChambers/kit/kit_tuner.gd")
 const DataPanel := preload("res://ramon/LabChambers/kit/kit_data_panel.gd")
 const Prompt := preload("res://ramon/LabChambers/kit/kit_prompt.gd")
+const SliceView := preload("res://ramon/LabChambers/kit/kit_slice_view.gd")
 
 ## Where the player starts, facing -Z.
 @export var start_at: Vector2 = Vector2(0.0, 15.2)
 ## The arrows painted into the floors, world x/z.
 @export var route: PackedVector2Array = PackedVector2Array([Vector2(0, 14.6), Vector2(0, 4.2)])
+
+@export_group("Room shape")
+## The goat room's shape in five numbers (Ramon, 4 Oct: "sliders to manipulate the walls' sizes in
+## this octagonal-ish room"): half its width, how far its back wall and its entrance wall are from
+## the middle, half the back wall's width, and how far forward (z) the angled walls begin. The
+## outline is built from them, and everything that hangs off a wall follows: the doorway and its
+## sign, the lesson's text (keeping its share of its wall), the two screens on the right (flush to
+## their wall), the entrance corridor with its light, the route and where you start.
+@export_range(5.0, 20.0, 0.1) var room_half_width: float = 10.0:
+	set(v):
+		room_half_width = v
+		_shape_later()
+@export_range(4.0, 20.0, 0.1) var room_back: float = 9.0:
+	set(v):
+		room_back = v
+		_shape_later()
+@export_range(4.0, 20.0, 0.1) var room_front: float = 9.0:
+	set(v):
+		room_front = v
+		_shape_later()
+@export_range(1.0, 10.0, 0.1) var back_wall_half: float = 3.0:
+	set(v):
+		back_wall_half = v
+		_shape_later()
+@export_range(-15.0, 15.0, 0.1) var corner_z: float = -1.0:
+	set(v):
+		corner_z = v
+		_shape_later()
 
 @export_group("Camera")
 ## How far behind you the camera sits, in metres. The concept frames have you close and large in
@@ -55,6 +84,7 @@ var _rig_pitch: float = 0.0
 var _in_room: bool = false
 ## The research panel you stand at (null: none), and whether you have clicked its CHECK DATA.
 var _at_desk: Node = null
+var _shape_queued: bool = false
 var _desk_open: bool = false
 
 
@@ -106,6 +136,11 @@ func _ready() -> void:
 	data_panel.set_script(DataPanel)
 	data_panel.set("showcase", showcase)
 	layer.add_child(data_panel)
+	var slice_view := Control.new()
+	slice_view.name = "SliceView"
+	slice_view.set_script(SliceView)
+	slice_view.set("showcase", showcase)
+	layer.add_child(slice_view)
 	prompt = Control.new()
 	prompt.set_script(Prompt)
 	prompt.set("camera", player.get_node_or_null("CameraRig/Pitch/Camera4D"))
@@ -117,11 +152,71 @@ func _ready() -> void:
 	tuner.set("sun", get_node_or_null("Sun"))
 	tuner.set("showcase", showcase)
 	tuner.set("goat_room", get_node_or_null("GoatRoom"))
+	tuner.set("shape_root", self)
 	layer.add_child(tuner)
 	apply_mood(String(room.get("mood")) if room != null else "bright")
 
 
 # -- each frame ------------------------------------------------------------------------------------
+
+func _shape_later() -> void:
+	if _shape_queued or not is_inside_tree():
+		return
+	_shape_queued = true
+	(func() -> void:
+		_shape_queued = false
+		apply_shape()).call_deferred()
+
+
+## Builds the room's outline from the five numbers and moves what hangs off its walls.
+func apply_shape() -> void:
+	var gr: Node = get_node_or_null("GoatRoom")
+	if gr == null:
+		return
+	var w: float = room_half_width
+	var f: float = room_front
+	var d: float = room_back
+	var b: float = minf(back_wall_half, w - 0.5)
+	var c: float = clampf(corner_z, -d + 0.5, f - 1.0)
+	var outline := PackedVector2Array([Vector2(-w, f), Vector2(-w, c), Vector2(-b, -d), Vector2(b, -d), Vector2(w, c), Vector2(w, f)])
+	var h: float = (gr.get("size") as Vector3).y
+	gr.set("size", Vector3(w * 2.0, h, f + d))
+	gr.set("outline", outline)
+	# The doorway in the middle of the entrance wall (edge 5 runs from (w, f) to (-w, f)).
+	gr.set("doorways", [[5, w - 2.2, w + 2.2, 3.8]])
+	var sign: Node = gr.get_node_or_null("Sign")
+	if sign != null:
+		sign.set("along", Vector2(w - 3.8, w + 3.8))
+	# The lesson keeps its share of the angled wall on the left (edge 1).
+	var lesson: Node = gr.get_node_or_null("Lesson")
+	if lesson != null:
+		var len1: float = outline[1].distance_to(outline[2])
+		lesson.set("along", Vector2(len1 * 0.094, len1 * 0.903))
+	# The two screens stay flush to the angled wall on the right (edge 3), facing into the room.
+	var a: Vector2 = outline[3]
+	var e: Vector2 = outline[4]
+	var dir: Vector2 = (e - a).normalized()
+	var inward := Vector2(-dir.y, dir.x)
+	var mid: Vector2 = (a + e) * 0.5 + inward * 0.13
+	for nm in ["WSlicePanel", "SectionsPanel"]:
+		var panel: Node4D = get_node_or_null(nm) as Node4D
+		if panel != null:
+			panel.position = Vector4(mid.x, panel.position.y, mid.y, 0.0)
+			panel.set("face", Vector3(inward.x, 0.0, inward.y))
+	# The entrance corridor and its light sit outside the entrance wall.
+	var ent: Node4D = get_node_or_null("Entrance") as Node4D
+	if ent != null:
+		ent.position = Vector4(0.0, 0.0, f + 7.5, 0.0)
+	var el: Node4D = get_node_or_null("EntranceLight") as Node4D
+	if el != null:
+		el.position = Vector4(0.0, el.position.y, f + 3.5, 0.0)
+		el.set("aim", Vector3(0.0, 0.0, f + 3.5))
+	route = PackedVector2Array([Vector2(0.0, f + 5.6), Vector2(0.0, minf(4.2, f - 1.0))])
+	start_at = Vector2(0.0, f + 6.2)
+	for r in get_tree().get_nodes_in_group("kit_room"):
+		if is_ancestor_of(r):
+			r.set("route", route)
+
 
 ## Keeps the floor ring round the pedestal and the spot's fixture at the ceiling, when either is
 ## changed (the light panel's sliders, or the inspector).
