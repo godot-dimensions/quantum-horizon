@@ -13,6 +13,7 @@ extends Node4D
 ## NO class_name (engine_gotchas.md).
 
 const GOAT := preload("res://ramon/LabKit/carried/chickenpen/theatre/theatre_goat_4d.gd")
+const WALK := preload("res://ramon/LabChambers/scripts/goat_walk_4d.gd")
 
 ## How tall the goat stands on the plinth, in metres.
 @export var stand_height: float = 3.6
@@ -23,6 +24,7 @@ var _stand: Node4D
 var _goat: Node4D
 var _yaw: float = 0.6
 var _step: int = -1          # E's build stage; -1 shows the finished goat
+var _walker: Node4D          # the goat in rigid pieces, for THE WALK (goat_walk_4d.gd)
 
 
 func _ready() -> void:
@@ -37,6 +39,16 @@ func _ready() -> void:
 	_stand.basis = Basis4D.from_zx(_yaw)
 	if not Engine.is_editor_hint():
 		shape()
+		var rig: MeshInstance4D = _goat.get("_rig")
+		var model: Node4D = _goat.get("_goat")
+		if rig != null and model != null:
+			_walker = Node4D.new()
+			_walker.name = "Walk"
+			_walker.set_script(WALK)
+			model.add_child(_walker)
+			if not bool(_walker.call("attach", rig)):
+				_walker.queue_free()
+				_walker = null
 
 
 func _stages() -> int:
@@ -84,6 +96,8 @@ func sequences() -> Array:
 			"eye": Vector4(-5.4, 2.6, 4.2, 0.0), "look": Vector4(0.0, 1.5, 0.0, 0.0), "fov": 0.85},
 		{"title": "THE SLICE", "line": "It is four-dimensional. Move the slice through W and the shape changes.", "length": 7.5,
 			"eye": Vector4(-1.0, 3.0, 8.4, 0.0), "look": Vector4(0.6, 1.3, -1.0, 0.0), "fov": 0.95},
+		{"title": "THE WALK", "line": "Cut into rigid pieces on joints, it walks without lofting again.", "length": 9.0,
+			"eye": Vector4(-4.5, 2.4, 5.5, 0.0), "look": Vector4(0.0, 1.4, 0.0, 0.0), "fov": 0.9},
 	]
 
 
@@ -91,6 +105,7 @@ func sequences() -> Array:
 func play(i: int, t: float) -> Dictionary:
 	if _goat == null or int(_goat.call("stage_count")) == 0:
 		return {}
+	_walk(i == 3)
 	match i:
 		0:
 			_stand.basis = Basis4D.from_zx(0.55)
@@ -106,10 +121,24 @@ func play(i: int, t: float) -> Dictionary:
 				_show(-1)
 			_stand.basis = Basis4D.from_zx(0.2)
 			return {"slice": sin(clampf(t / 7.0, 0.0, 1.0) * TAU) * 0.55}
+		3:
+			if bool(_goat.call("showing_plain")):
+				_show(-1)
+			# Side on, turning a little, so the legs read.
+			_stand.basis = Basis4D.from_zx(1.25 + t * 0.03)
+			if _walker != null:
+				_walker.call("pose", t)
 	return {}
 
 
+## Walking or standing: the rigid pieces or the lofted goat.
+func _walk(on: bool) -> void:
+	if _walker != null:
+		_walker.call("set_walking", on)
+
+
 func end_cinematic() -> void:
+	_walk(false)
 	_step = -1
 	_show(-1)
 	_stand.basis = Basis4D.from_zx(_yaw)
@@ -125,6 +154,7 @@ func action_label() -> String:
 func action() -> String:
 	if _goat == null:
 		return ""
+	_walk(false)
 	var n: int = _stages()
 	if _step < 0:
 		_step = 0
