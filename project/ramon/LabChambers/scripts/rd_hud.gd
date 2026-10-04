@@ -71,7 +71,7 @@ func _style_button() -> void:
 	_button.text = ("BRIGHT  ·  B" if dark else "DARK  ·  B")
 	if glass:
 		_button.add_theme_font_override("font", LabPrint.font("bold"))
-		_button.add_theme_font_size_override("font_size", int(13 * u))
+		_button.add_theme_font_size_override("font_size", Style.type_px("caption", u))
 		for state in ["normal", "hover", "pressed"]:
 			var gb: StyleBoxFlat = Style.glass_box(16 * u)
 			if state == "hover":
@@ -135,7 +135,7 @@ func _draw() -> void:
 	if _toast_t > 0.0:
 		var a: float = clampf(_toast_t / 0.4, 0.0, 1.0)
 		var f: Font = LabPrint.font("bold")
-		var px: int = int(15 * u)
+		var px: int = Style.type_px("lead", u) if glass else int(15 * u)
 		var w: float = f.get_string_size(_toast, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x + 40.0 * u
 		var r := Rect2(Vector2((size.x - w) * 0.5, 22.0 * u), Vector2(w, 36.0 * u))
 		var sb := StyleBoxFlat.new()
@@ -148,8 +148,9 @@ func _draw() -> void:
 func _draw_strip(u: float, bg: Color, ink: Color, accent: Color) -> void:
 	var fk: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")
-	var kpx: int = int(11 * u)
-	var lpx: int = int(13 * u)
+	# On the lab's type ladder when it is the glass HUD: the key a caption, its label body text.
+	var kpx: int = Style.type_px("caption", u) if glass else int(11 * u)
+	var lpx: int = Style.type_px("body", u) if glass else int(13 * u)
 	var gap: float = 22.0 * u
 	var widths: Array = []
 	var total: float = 0.0

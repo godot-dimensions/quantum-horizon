@@ -9,7 +9,8 @@ extends PanelContainer
 ##                (the blue in every shadow), the sun's strength, exposure
 ##   CENTRE SPOT  the one spotlight: strength (per mood), cone, edge softness, reach, falloff,
 ##                height, warmth
-##   ROOM         ceiling height, pedestal radius, the sun's height and turn (the Sun handle)
+##   SUN          its strength, height and turn (the Sun handle, kit_sun_4d.gd)
+##   ROOM         ceiling height, pedestal radius
 ##   ROOM SHAPE   the goat room's five outline numbers and its back door (goat_room_4d.gd)
 ##   SAVE         writes everything to SAVE_PATH; the panel reads it back when the room starts,
 ##                so what he saved is where the room begins
@@ -31,11 +32,14 @@ const WARM := Color(1.0, 0.84, 0.62)
 
 ## Rows: [key, label, min, max, step].
 const LIGHT_ROWS := [["spots", "Spots", 0.0, 4.0, 0.01], ["washes", "Washes", 0.0, 4.0, 0.01], ["fill", "Sky fill (shadows)", 0.0, 3.0, 0.01],
-	["sun", "Sun strength", 0.0, 3.0, 0.01], ["exposure", "Exposure", 0.4, 2.5, 0.01]]
+	["exposure", "Exposure", 0.4, 2.5, 0.01]]
+## The sun in a section of its own, near the top (Ramon, 4 Oct: "I still need a way to rotate the sun
+## in the tweaker dev panel"): its strength, how high it stands and which way it shines from, the
+## angles moving the Sun handle (kit_sun_4d.gd), which turns the room's key light.
+const SUN_ROWS := [["sun", "Strength", 0.0, 3.0, 0.01], ["sun_up", "Height, degrees", 5.0, 90.0, 0.5], ["sun_turn", "Turn, degrees", -180.0, 180.0, 0.5]]
 const SPOT_ROWS := [["strength", "Strength", 0.0, 15.0, 0.01], ["cone", "Cone, degrees", 10.0, 120.0, 0.1], ["softness", "Edge softness", 0.1, 10.0, 0.01],
 	["reach", "Reach, m", 2.0, 30.0, 0.05], ["falloff", "Falloff", 0.01, 2.0, 0.01], ["height", "Height, m", 3.0, 13.5, 0.01], ["warmth", "Warmth", 0.0, 1.0, 0.01]]
-const ROOM_ROWS := [["ceiling", "Ceiling, m", 6.0, 14.0, 0.05], ["pedestal", "Pedestal radius, m", 2.0, 5.0, 0.05],
-	["sun_up", "Sun height, degrees", 5.0, 90.0, 0.5], ["sun_turn", "Sun turn, degrees", -180.0, 180.0, 0.5]]
+const ROOM_ROWS := [["ceiling", "Ceiling, m", 6.0, 14.0, 0.05], ["pedestal", "Pedestal radius, m", 2.0, 5.0, 0.05]]
 const SHAPE_ROWS := [["room_half_width", "Half width, m", 5.0, 20.0, 0.1], ["room_back", "Back wall from middle, m", 4.0, 20.0, 0.1],
 	["room_front", "Entrance wall from middle, m", 4.0, 20.0, 0.1], ["back_wall_half", "Back wall half width, m", 1.0, 10.0, 0.1],
 	["corner_z", "Angled walls start at z", -15.0, 15.0, 0.1], ["door_width", "Back door width, m", 0.0, 8.0, 0.1], ["door_height", "Back door height, m", 2.0, 8.0, 0.1]]
@@ -102,6 +106,10 @@ func _ready() -> void:
 	_readout = Label.new()
 	_readout.add_theme_font_size_override("font_size", FONT - 2)
 	box.add_child(_readout)
+	_section(box, "SUN")
+	for r in SUN_ROWS:
+		if sun != null or String(r[0]) == "sun":
+			_row(box, r)
 	if spot != null:
 		_section(box, "CENTRE SPOT")
 		for r in SPOT_ROWS:
@@ -383,6 +391,9 @@ func _save() -> void:
 		cfg.set_value("spot", "height", (spot as Node4D).position.y)
 	for r in ROOM_ROWS:
 		cfg.set_value("room", r[0], float(_pending.get(r[0], _read_value(r[0]))))
+	if sun != null:
+		for k in ["sun_up", "sun_turn"]:
+			cfg.set_value("room", k, float(_read_value(k)))
 	if shape_root != null:
 		for r in SHAPE_ROWS:
 			cfg.set_value("shape", r[0], float(_pending.get(r[0], _read_value(r[0]))))

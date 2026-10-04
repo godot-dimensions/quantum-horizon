@@ -31,6 +31,16 @@ extends Node4D
 ## row of upright boxes under it, square to the world (the physics here is box-only). Faces the
 ## node's +Z, turned to `face`.
 ##
+## THE LOFT BUILDER SCREEN (Ramon, 4 Oct: "maybe the panel can be more about the loft builder"; "think of what to do with the info panel ... make sure the
+## infos on the panel and overlay are different from the blue graphs"): the research wall tells the
+## story and its measurements, so this screen shows the one thing it does not, what a designer
+## actually sets. Every ball of the animal from the side, sized as placed, one picked out at a time
+## (stepping on every few seconds, or following the build while its balls arrive); that ball's
+## cross-section drawn large, with its width, its height and how far it reaches into W, and the ring
+## of points the builder makes of it at the rig's own resolution; and its handful of numbers and how
+## it is lofted. `screen_page` "metrics" puts back the first screen. Type on the lab's ladder
+## (kit_style.gd), in metres.
+##
 ## NO class_name (engine_gotchas.md).
 
 const Build := preload("res://ramon/LabChambers/scripts/chamber_build.gd")
@@ -41,6 +51,7 @@ const Mats := preload("res://ramon/LabKit/lab_materials.gd")
 const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 const Glyphs := preload("res://ramon/LabChambers/kit/kit_glyphs.gd")
 const Batch := preload("res://ramon/LabKit/lab_batch.gd")
+const LoftBuilder := preload("res://ramon/LabKit/carried/chickenpen/scripts/loft_builder_4d.gd")
 const SLAB := 0.08
 const SCREEN := 0.02
 ## The screen's layout was drawn for this screen depth; others scale it.
@@ -79,6 +90,10 @@ const DRAWN_FOR := 1.09
 ## How sharp the live screen is drawn, pixels a metre, and how often it is redrawn.
 @export_range(100.0, 900.0, 10.0) var live_ppm: float = 600.0
 @export_range(1.0, 60.0, 1.0) var refresh_hz: float = 20.0
+## What the screen shows: the ball inspector, or the first version's metrics.
+@export_enum("inspector", "metrics") var screen_page: String = "inspector"
+## Seconds on each ball before the inspector steps on.
+@export_range(0.5, 10.0, 0.1) var inspect_seconds: float = 2.4
 ## Whether it stands in the way (a row of boxes under it); off for a panel hung on a wall.
 @export var collide: bool = true
 
@@ -309,6 +324,179 @@ func _start_screen() -> void:
 
 
 func _draw_screen() -> void:
+	if screen_page == "inspector":
+		_draw_inspector()
+		return
+	_draw_metrics()
+
+
+var _inspect_i: int = 0
+var _inspect_at: float = 0.0
+var _inspect_seen: int = -1
+
+
+## The ball inspector (see the note at the top). Laid out on a page 1000 units wide.
+func _draw_inspector() -> void:
+	var c: Control = _canvas
+	var k: float = c.size.x / 1000.0
+	var ph: float = c.size.y / k
+	var sc: Node = get_node_or_null(showcase)
+	var balls: Array = sc.call("ball_sections") if sc != null and sc.has_method("ball_sections") else []
+	var ex: Node = sc.get("exhibit") if sc != null else null
+	var white: Color = Style.UI_INK
+	var soft: Color = Style.UI_INK_SOFT
+	var dim: Color = Style.UI_INK_DIM
+	var acc: Color = Style.UI_ACCENT_SCREEN
+	var fb: Font = Style.ui_font("title")
+	var fs: Font = Style.ui_font("heading")
+	var fl: Font = Style.ui_font("text")
+	var upm: float = 1000.0 / maxf(_sw, 0.1)
+	var tp := func(step: int) -> int: return int(round(Style.type_m(step) * upm * k))
+	var at := func(x: float, y: float) -> Vector2: return Vector2(x, y) * k
+	var card := func(r: Rect2) -> void: c.draw_style_box(Style.veil_box(14.0 * k), Rect2(r.position * k, r.size * k))
+	# The header.
+	var nm: String = String(_data.get("name", "specimen"))
+	c.draw_string(fb, at.call(24, 46), "Loft builder", HORIZONTAL_ALIGNMENT_LEFT, -1, tp.call(-2), white)
+	c.draw_string(fl, at.call(26, 72), "The balls a designer sets for the %s, and the rings the builder lofts between them." % nm.to_lower(), HORIZONTAL_ALIGNMENT_LEFT, -1, tp.call(-5), dim)
+	if balls.is_empty():
+		c.draw_string(fl, at.call(26, 150), "Waiting for a specimen.", HORIZONTAL_ALIGNMENT_LEFT, -1, tp.call(-4), dim)
+		return
+	# Which ball: following the build while its balls arrive, otherwise one after another.
+	var in_view: int = int(ex.call("balls_in_view")) if ex != null and ex.has_method("balls_in_view") else balls.size()
+	var building: bool = ex != null and ex.has_method("stage_in_view") and int(ex.call("stage_in_view")) >= 0
+	if building and in_view != _inspect_seen:
+		_inspect_seen = in_view
+		_inspect_i = clampi(in_view - 1, 0, balls.size() - 1)
+		_inspect_at = _clock
+	elif not building and _clock - _inspect_at > inspect_seconds:
+		_inspect_i = (_inspect_i + 1) % balls.size()
+		_inspect_at = _clock
+	_inspect_i = clampi(_inspect_i, 0, balls.size() - 1)
+	var b: Dictionary = balls[_inspect_i]
+	var count := "Ball %d of %d" % [_inspect_i + 1, balls.size()]
+	var cw: float = fs.get_string_size(count, HORIZONTAL_ALIGNMENT_LEFT, -1, tp.call(-5)).x / k
+	c.draw_string(fs, at.call(976 - cw, 46), count, HORIZONTAL_ALIGNMENT_LEFT, -1, tp.call(-5), soft)
+	var pulse: float = 0.55 + 0.45 * sin(_clock * 4.0)
+	c.draw_circle(at.call(966 - cw - 14, 40), 5.0 * k, Color(Style.UI_LIVE, pulse))
+	# Left: every ball from the side, sized as placed, the one inspected picked out.
+	var lr := Rect2(20, 92, 360, ph - 112)
+	card.call(lr)
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for e in balls:
+		var p: Vector2 = e["at"]
+		var r: float = float(e["radius"])
+		lo = Vector2(minf(lo.x, p.x - r), minf(lo.y, p.y - r))
+		hi = Vector2(maxf(hi.x, p.x + r), maxf(hi.y, p.y + r))
+	var span: Vector2 = (hi - lo).max(Vector2(0.001, 0.001))
+	var inner := Rect2(lr.position + Vector2(18, 18), lr.size - Vector2(36, 36))
+	var fit: float = minf(inner.size.x / span.x, inner.size.y / span.y)
+	var o: Vector2 = inner.get_center() - Vector2((lo.x + hi.x) * 0.5, -(lo.y + hi.y) * 0.5) * fit
+	for i in balls.size():
+		var e: Dictionary = balls[i]
+		var q: Vector2 = (o + Vector2((e["at"] as Vector2).x, -(e["at"] as Vector2).y) * fit) * k
+		var rr: float = maxf(float(e["radius"]) * fit, 2.0) * k
+		if i == _inspect_i:
+			c.draw_circle(q, rr, Color(acc, 0.35))
+			c.draw_arc(q, rr, 0.0, TAU, 40, acc, maxf(1.5, 3.0 * k), true)
+		else:
+			c.draw_arc(q, rr, 0.0, TAU, 32, Color(white, 0.35 if i < in_view else 0.12), maxf(1.0, 1.4 * k), true)
+	# Middle: that ball's cross-section, large, its width and height marked, its reach into W below.
+	var mr := Rect2(394, 92, 270, ph - 112)
+	card.call(mr)
+	var rad: float = float(b["radius"])
+	var vs: float = float(b["v"])
+	var ws: float = float(b["w"])
+	var expo: float = LoftBuilder._squareness_exponent(float(b["square"]))
+	var big: float = maxf(rad, rad * vs)
+	var box_h: float = mr.size.y - 128.0
+	var sfit: float = minf((mr.size.x - 80.0) * 0.5, box_h * 0.5) / maxf(big, 0.001)
+	var cc := Vector2(mr.position.x + mr.size.x * 0.5, mr.position.y + 24.0 + box_h * 0.5)
+	var roll: float = float(b["roll"])
+	var pts := PackedVector2Array()
+	for n in 64:
+		var t: float = TAU * float(n) / 64.0
+		var d: Vector3 = LoftBuilder._apply_squareness(Vector3(cos(t), sin(t), 0.0), expo)
+		var v2 := Vector2(d.x * rad, -d.y * rad * vs).rotated(-roll) * sfit
+		pts.append((cc + v2) * k)
+	c.draw_colored_polygon(pts, Color(acc, 0.14))
+	pts.append(pts[0])
+	c.draw_polyline(pts, Color(acc, 0.45), maxf(1.0, 1.4 * k), true)
+	# The ring the builder makes of it: as many points as the rig's profile has sides, the faces between
+	# them flat; the next ball's ring is joined to this one by tetrahedra.
+	var sides: int = maxi(3, int(b.get("sides", 12)))
+	var ring := PackedVector2Array()
+	for n in sides:
+		var t2: float = TAU * float(n) / float(sides)
+		var d2: Vector3 = LoftBuilder._apply_squareness(Vector3(cos(t2), sin(t2), 0.0), expo)
+		ring.append((cc + Vector2(d2.x * rad, -d2.y * rad * vs).rotated(-roll) * sfit) * k)
+	var ring_closed := PackedVector2Array(ring)
+	ring_closed.append(ring[0])
+	c.draw_polyline(ring_closed, acc, maxf(1.5, 2.6 * k), true)
+	for q2 in ring:
+		c.draw_circle(q2, maxf(2.0, 3.6 * k), white)
+	var wx: float = rad * sfit
+	var hy: float = rad * vs * sfit
+	_dim_line(c, (cc + Vector2(-wx, hy + 16)) * k, (cc + Vector2(wx, hy + 16)) * k, "%.2f m" % (rad * 2.0), soft, tp.call(-6), k)
+	_dim_line(c, (cc + Vector2(wx + 18, -hy)) * k, (cc + Vector2(wx + 18, hy)) * k, "%.2f m" % (rad * vs * 2.0), soft, tp.call(-6), k)
+	var wy: float = mr.end.y - 30.0
+	var wmax: float = (mr.size.x - 60.0) * 0.5
+	var wlen: float = clampf(rad * ws * sfit, 4.0, wmax)
+	c.draw_line(at.call(cc.x - wmax, wy), at.call(cc.x + wmax, wy), Color(white, 0.12), maxf(1.0, 6.0 * k), true)
+	c.draw_line(at.call(cc.x - wlen, wy), at.call(cc.x + wlen, wy), Style.UI_GOLD, maxf(1.0, 6.0 * k), true)
+	c.draw_string(fs, at.call(mr.position.x + 16, wy - 12), "REACH INTO W", HORIZONTAL_ALIGNMENT_LEFT, -1, tp.call(-6), Style.UI_GOLD)
+	c.draw_string(fl, at.call(mr.position.x, wy - 12), "± %.2f m" % (rad * ws), HORIZONTAL_ALIGNMENT_RIGHT, (mr.size.x - 16.0) * k, tp.call(-6), soft)
+	# Right: its numbers.
+	var rr2 := Rect2(678, 92, 302, ph - 112)
+	card.call(rr2)
+	var x: float = rr2.position.x + 20.0
+	var y: float = rr2.position.y + 44.0
+	c.draw_string(fb, at.call(x, y), String(b["name"]), HORIZONTAL_ALIGNMENT_LEFT, (rr2.size.x - 70.0) * k, tp.call(-3), white)
+	var col: Color = b["color"]
+	var sw := Rect2(rr2.end.x - 48, rr2.position.y + 20, 28, 28)
+	c.draw_style_box(_swatch_box(col, k), Rect2(sw.position * k, sw.size * k))
+	var rows: Array = [["Size", "%.2f m across" % (rad * 2.0)], ["Up and down", "× %.2f" % vs], ["Into W", "× %.2f" % ws],
+		["Squareness", ("round" if absf(float(b["square"])) < 0.05 else ("%.2f, boxier" % float(b["square"]) if float(b["square"]) > 0.0 else "%.2f, pointier" % float(b["square"])))],
+		["Roll", "%d°" % int(round(rad_to_deg(roll)))],
+		["Lofted as", "%d sides × %d rings" % [int(b.get("sides", 12)), int(b.get("rings", 4))]]]
+	y += 24.0
+	var row_h: float = (rr2.end.y - 44.0 - y) / float(rows.size())
+	for i in rows.size():
+		var ry: float = y + row_h * float(i) + row_h * 0.62
+		c.draw_string(fl, at.call(x, ry), String(rows[i][0]), HORIZONTAL_ALIGNMENT_LEFT, -1, tp.call(-5), dim)
+		c.draw_string(fs, at.call(x, ry), String(rows[i][1]), HORIZONTAL_ALIGNMENT_RIGHT, (rr2.size.x - 40.0) * k, tp.call(-5), white)
+		if i < rows.size() - 1:
+			c.draw_line(at.call(x, y + row_h * float(i + 1)), at.call(rr2.end.x - 20.0, y + row_h * float(i + 1)), Color(white, 0.08), maxf(1.0, k), true)
+	c.draw_multiline_string(fl, at.call(x, rr2.end.y - 30.0), "A handful of numbers per ball. The builder does the rest.", HORIZONTAL_ALIGNMENT_LEFT, (rr2.size.x - 40.0) * k, tp.call(-6), 2, acc)
+
+
+## A measured line with end ticks and its length written beside it.
+func _dim_line(c: Control, a: Vector2, b: Vector2, text: String, col: Color, px: int, k: float) -> void:
+	c.draw_line(a, b, Color(col, 0.7), maxf(1.0, 1.4 * k), true)
+	var n: Vector2 = (b - a).normalized().orthogonal() * 5.0 * k
+	c.draw_line(a - n, a + n, Color(col, 0.7), maxf(1.0, 1.4 * k), true)
+	c.draw_line(b - n, b + n, Color(col, 0.7), maxf(1.0, 1.4 * k), true)
+	var mid: Vector2 = (a + b) * 0.5
+	var f: Font = Style.ui_font("text")
+	var w: float = f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	if absf(b.x - a.x) > absf(b.y - a.y):
+		c.draw_string(f, mid + Vector2(-w * 0.5, float(px) * 1.3), text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, col)
+	else:
+		c.draw_string(f, mid + Vector2(8.0 * k, float(px) * 0.35), text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, col)
+
+
+func _swatch_box(col: Color, k: float) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = col
+	sb.border_color = Color(1, 1, 1, 0.5)
+	sb.set_border_width_all(int(maxf(1.0, 1.5 * k)))
+	sb.set_corner_radius_all(int(6.0 * k))
+	sb.anti_aliasing = true
+	return sb
+
+
+## The first screen: the exhibit's wireframe, four live tiles, its W profile and its build.
+func _draw_metrics() -> void:
 	var c: Control = _canvas
 	var sc: Node = get_node_or_null(showcase)
 	var ex: Node = sc.get("exhibit") if sc != null else null

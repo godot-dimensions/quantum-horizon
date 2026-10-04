@@ -18,6 +18,9 @@ extends "res://ramon/LabChambers/kit/kit_desk_4d.gd"
 ## cost each frame, timed while it walks. "If re-lofted" is one leg's loft times its legs: what
 ## the walk would cost if the legs were rebuilt every frame, as the first creatures did.
 ##
+## TYPE is on the lab's ladder (kit_style.gd) in metres, converted to page units by _t(): captions
+## and column heads, body text, headline claims and figures, the specimen's name a hero.
+##
 ## THE LOOK follows the lab's one style (kit_style.gd, "teaching surfaces"): the room's blue screen
 ## under the print, white type, cards as a white veil with an icon each (the research desk's
 ## tiles), light blue for what is live, gold for the slice, warm orange for the costly
@@ -214,6 +217,12 @@ func _paint_parts() -> void:
 
 # -- drawing helpers, in page units ------------------------------------------------------------------
 
+## A step of the lab's type ladder (kit_style.gd), in page units: its metres times the page's units
+## a metre, so the wall's type relates to the lesson wall's exactly as their sizes on the ladder do.
+func _t(role: String) -> float:
+	return Style.type_m(role) * VW / maxf(size.x, 0.1)
+
+
 func _p(x: float, y: float) -> Vector2:
 	return Vector2(x, y) * _k
 
@@ -259,7 +268,7 @@ func _draw_screen() -> void:
 	if PAPER.a > 0.0:
 		c.draw_rect(Rect2(Vector2.ZERO, c.size), PAPER)
 	if sc == null or _data.is_empty():
-		_text(c, _f_light, 52, vh * 0.5, "Waiting for a specimen", 40, GREY)
+		_text(c, _f_light, 52, vh * 0.5, "Waiting for a specimen", _t("title"), GREY)
 		return
 	var ex: Node = sc.get("exhibit")
 	_bench_live = sc.call("bench")
@@ -283,10 +292,10 @@ func _draw_screen() -> void:
 	var playing: bool = want >= 0
 	var progress: float = clampf(float(sc.get("seq_t")) / maxf(float(sc.get("seq_len")), 0.01), 0.0, 1.0) if playing else 0.0
 	# The header.
-	_text(c, LabPrint.font("bold"), 52, 46, "CREATION LAB   /   RESEARCH WALL", 14, INK)
+	_text(c, LabPrint.font("bold"), 52, 46, "CREATION LAB   /   RESEARCH WALL", _t("caption"), INK)
 	var live_s: String = "MEASURED LIVE ON THIS MACHINE"
 	var lw: float = _width(LabPrint.font("bold"), live_s, 13)
-	_text(c, LabPrint.font("bold"), VW - 52 - lw, 46, live_s, 13, GREY)
+	_text(c, LabPrint.font("bold"), VW - 52 - lw, 46, live_s, _t("caption"), GREY)
 	c.draw_circle(_p(VW - 52 - lw - 16, 41), 5.0 * _k, Color(0.25, 0.75, 0.45, 0.55 + 0.45 * sin(_clock * 4.0)))
 	_line(c, Vector2(52, 64), Vector2(VW - 52, 64), HAIR, 1.5)
 	_line(c, Vector2(52, 64), Vector2(52 + 180.0 * (progress if playing else 1.0), 64), ACCENT, 3.5)
@@ -302,21 +311,21 @@ func _draw_screen() -> void:
 	_draw_bench_strip(c, code, vh)
 	var adapter: String = RenderingServer.get_video_adapter_name()
 	var when: String = String(_bench_live.get("measured", Time.get_date_string_from_system()))
-	_text(c, LabPrint.font("body"), 52, vh - 14, "Measured in this room on %s, %s. Loft times recorded %s; the walk is timed every frame it plays. One machine, one scene." % [adapter, OS.get_name(), when], 12, GREY)
+	_text(c, LabPrint.font("body"), 52, vh - 14, "Measured in this room on %s, %s. Loft times recorded %s; the walk is timed every frame it plays. One machine, one scene." % [adapter, OS.get_name(), when], _t("micro"), GREY)
 
 
 ## The left column: the specimen, and its story with the part playing lit.
 func _draw_specimen(c: Control, ex: Node, playing: bool, want: int, progress: float) -> void:
 	var st: Dictionary = _data.get("stats", {})
 	var fade: float = _ease((_clock - _page_at) / 0.6) if _page_prev == -2 else 1.0
-	_text(c, LabPrint.font("bold"), 52, 106, "SPECIMEN  " + String(_data.get("code", "")), 13, GREY)
-	_text(c, _f_light, 50, 172, String(_data.get("name", "")), 66, Color(INK, fade))
-	_text(c, LabPrint.font("bold"), 52, 204, "%d BALLS   ·   %s TETRAHEDRA" % [int(st.get("balls", 0)), Presentation.thousands(int(st.get("tetra", 0)))], 13, GREY)
+	_text(c, LabPrint.font("bold"), 52, 106, "SPECIMEN  " + String(_data.get("code", "")), _t("caption"), GREY)
+	_text(c, _f_light, 50, 172, String(_data.get("name", "")), _t("hero"), Color(INK, fade))
+	_text(c, LabPrint.font("bold"), 52, 204, "%d BALLS   ·   %s TETRAHEDRA" % [int(st.get("balls", 0)), Presentation.thousands(int(st.get("tetra", 0)))], _t("caption"), GREY)
 	var cut: Color = PAPER if PAPER.a > 0.0 else (Style.pick(Style.CODE_BLUE) if look == "painted" else Style.pick({"bright": Color(0.12, 0.40, 0.88), "dark": Color(0.08, 0.28, 0.66)}))
 	Glyphs.animal(c, String(_data.get("icon", String(_data.get("name", "")).to_lower())), Rect2(_p(52, 226), _p(360, 170)), Color(INK, 0.9 * fade), cut)
-	_text(c, LabPrint.font("bold"), 52, 438, "THE STORY", 13, GREY)
+	_text(c, LabPrint.font("bold"), 52, 438, "THE STORY", _t("caption"), GREY)
 	var status: String = "PLAYING   ·   CLICK FOR THE NEXT PART" if playing else ("ARRIVING" if bool(get_node(showcase).call("arriving")) else "PAUSED   ·   CLICK TO PLAY")
-	_text(c, LabPrint.font("bold"), 52, 438, status, 11, ACCENT if playing else GREY, HORIZONTAL_ALIGNMENT_RIGHT, 368)
+	_text(c, LabPrint.font("bold"), 52, 438, status, _t("micro"), ACCENT if playing else GREY, HORIZONTAL_ALIGNMENT_RIGHT, 368)
 	_line(c, Vector2(52, 452), Vector2(420, 452), HAIR, 1.5)
 	var parts: Array = Presentation.chapters()
 	for i in parts.size():
@@ -324,9 +333,9 @@ func _draw_specimen(c: Control, ex: Node, playing: bool, want: int, progress: fl
 		var now: bool = i == want
 		var done: bool = playing and i < want
 		var col: Color = ACCENT if now else (INK if done else GREY)
-		_text(c, LabPrint.font("bold"), 52, y0 + 18, "%02d" % (i + 1), 13, col)
-		_text(c, _f_regular if now else _f_light, 92, y0 + 19, String(parts[i]["title"]).capitalize(), 20, INK if now or done else Color(GREY, GREY.a * (0.7 if look == "screen" else 1.0)))
-		_text(c, LabPrint.font("body"), 52, y0 + 18, String(STEP_LINES.get(String(parts[i]["key"]), "")), 12, Color(GREY, 0.9), HORIZONTAL_ALIGNMENT_RIGHT, 368)
+		_text(c, LabPrint.font("bold"), 52, y0 + 18, "%02d" % (i + 1), _t("caption"), col)
+		_text(c, _f_regular if now else _f_light, 92, y0 + 19, String(parts[i]["title"]).capitalize(), _t("body"), INK if now or done else Color(GREY, GREY.a * (0.7 if look == "screen" else 1.0)))
+		_text(c, LabPrint.font("body"), 52, y0 + 18, String(STEP_LINES.get(String(parts[i]["key"]), "")), _t("micro"), Color(GREY, 0.9), HORIZONTAL_ALIGNMENT_RIGHT, 368)
 		if now:
 			_line(c, Vector2(92, y0 + 30), Vector2(420, y0 + 30), Color(ACCENT, 0.18), 3.0)
 			_line(c, Vector2(92, y0 + 30), Vector2(92 + 328.0 * progress, y0 + 30), ACCENT, 3.0)
@@ -398,10 +407,10 @@ func _draw_page(c: Control, sc: Node, ex: Node, page: int, a: float, dy: float, 
 	var col := func(base: Color, i: int) -> Color: return Color(base, base.a * a * float(stag.call(i)))
 	var rise := func(i: int) -> float: return dy + 16.0 * (1.0 - float(stag.call(i)))
 	var kick: String = ("%02d / %02d   ·   %s" % [page + 1, Presentation.chapters().size(), String(Presentation.chapters()[page]["title"])]) if page >= 0 else "SPECIMEN FILE   ·   %s" % String(_data.get("name", "")).to_upper()
-	_text(c, LabPrint.font("bold"), 492, 106 + rise.call(0), kick, 14, col.call(ACCENT, 0))
-	_text(c, _f_regular, 490, 166 + rise.call(1), String(head[0]), 46, col.call(INK, 1))
-	_text(c, _f_regular, 490, 222 + rise.call(1), String(head[1]), 46, col.call(INK, 1))
-	_wrap(c, LabPrint.font("body"), 492, 262 + rise.call(2), explain, 17, col.call(GREY, 2), 1050, 2)
+	_text(c, LabPrint.font("bold"), 492, 106 + rise.call(0), kick, _t("caption"), col.call(ACCENT, 0))
+	_text(c, _f_regular, 490, 166 + rise.call(1), String(head[0]), _t("headline"), col.call(INK, 1))
+	_text(c, _f_regular, 490, 222 + rise.call(1), String(head[1]), _t("headline"), col.call(INK, 1))
+	_wrap(c, LabPrint.font("body"), 492, 262 + rise.call(2), explain, _t("body"), col.call(GREY, 2), 1050, 2)
 	# The live drawing.
 	var ha: float = a * float(stag.call(3))
 	if ha > 0.01:
@@ -419,7 +428,7 @@ func _draw_page(c: Control, sc: Node, ex: Node, page: int, a: float, dy: float, 
 				_hero_cost(c, inner, ha, anim, reloft)
 			_:
 				_hero_balls(c, inner, ha, false)
-	_text(c, LabPrint.font("body"), 492, 688 + rise.call(3), caption, 13, col.call(GREY, 3))
+	_text(c, LabPrint.font("body"), 492, 688 + rise.call(3), caption, _t("caption"), col.call(GREY, 3))
 	# The three figures.
 	for i in figs.size():
 		var f: Array = figs[i]
@@ -436,9 +445,9 @@ func _draw_page(c: Control, sc: Node, ex: Node, page: int, a: float, dy: float, 
 			_rect(c, Rect2(1120, y0 - 2 + rise.call(4 + i), 428, 106), Color(INSET, INSET.a * fa), 14)
 			Glyphs.icon(c, String(f[4]), Rect2(_p(1136, y0 + 18 + rise.call(4 + i)), _p(40, 40)), Color(ACCENT, fa))
 			fx = 1192.0
-		var fsize: float = (46.0 if look == "screen" else 52.0) if known else 28.0
+		var fsize: float = _t("headline") if known else _t("subhead")
 		_text(c, _f_light, fx, y0 + 52 + rise.call(4 + i), big if known else "measuring", fsize, Color(ACCENT if bool(f[3]) else INK, fa) if known else Color(GREY, fa))
-		_wrap(c, LabPrint.font("body"), fx + 2, y0 + 80 + rise.call(4 + i), String(f[2]), 14, Color(GREY, fa), 1540.0 - fx, 2)
+		_wrap(c, LabPrint.font("body"), fx + 2, y0 + 80 + rise.call(4 + i), String(f[2]), _t("caption"), Color(GREY, fa), 1540.0 - fx, 2)
 		if i < figs.size() - 1 and look == "paper":
 			_line(c, Vector2(1128, y0 + 114), Vector2(1548, y0 + 114), Color(HAIR, fa), 1.2)
 
@@ -511,14 +520,14 @@ func _hero_balls(c: Control, r: Rect2, a: float, gold: bool) -> void:
 		var on: bool = i < lit
 		if gold:
 			var hot: bool = absi(i - pulse) <= 1
-			c.draw_arc(at.call(b[0]), rad, 0.0, TAU, 40, Color(GOLD, a * (1.0 if hot else 0.75)), maxf(1.0, (3.0 if hot else 2.0) * _k), true)
+			c.draw_arc(at.call(b[0]), rad, 0.0, TAU, _t("title"), Color(GOLD, a * (1.0 if hot else 0.75)), maxf(1.0, (3.0 if hot else 2.0) * _k), true)
 			c.draw_circle(at.call(b[0]), maxf(2.5, 3.5 * _k), Color(GOLD, a))
 		elif on:
 			var pop: float = 1.0 + 0.25 * (1.0 - _ease((_clock - _lit_at) / 0.4)) if i == lit - 1 else 1.0
 			c.draw_circle(at.call(b[0]), rad * pop, Color(1, 1, 1, 0.20 * a))
-			c.draw_arc(at.call(b[0]), rad * pop, 0.0, TAU, 40, Color(0.86, 0.95, 1.0, a), maxf(1.0, 2.0 * _k), true)
+			c.draw_arc(at.call(b[0]), rad * pop, 0.0, TAU, _t("title"), Color(0.86, 0.95, 1.0, a), maxf(1.0, 2.0 * _k), true)
 		else:
-			c.draw_arc(at.call(b[0]), rad, 0.0, TAU, 40, Color(0.86, 0.95, 1.0, 0.22 * a), maxf(1.0, 1.2 * _k), true)
+			c.draw_arc(at.call(b[0]), rad, 0.0, TAU, _t("title"), Color(0.86, 0.95, 1.0, 0.22 * a), maxf(1.0, 1.2 * _k), true)
 
 
 ## Tetrahedra after each build step, the bars growing in one after another, the step on show lit.
@@ -537,7 +546,7 @@ func _hero_bars(c: Control, r: Rect2, a: float, age: float) -> void:
 	while gv <= top * 1.001:
 		var gy: float = chart.end.y - chart.size.y * gv / top
 		c.draw_line(Vector2(chart.position.x, gy) * _k, Vector2(chart.end.x, gy) * _k, Color(1, 1, 1, 0.08 * a), maxf(1.0, _k), true)
-		c.draw_string(fs, Vector2(r.position.x, gy + 5) * _k, Presentation.thousands(int(gv)), HORIZONTAL_ALIGNMENT_LEFT, -1, int(12 * _k), Color(1, 1, 1, 0.45 * a))
+		c.draw_string(fs, Vector2(r.position.x, gy + 5) * _k, Presentation.thousands(int(gv)), HORIZONTAL_ALIGNMENT_LEFT, -1, int(_t("micro") * _k), Color(1, 1, 1, 0.45 * a))
 		gv += step_v
 	var n: int = bars.size()
 	var slot: float = chart.size.x / float(n)
@@ -554,9 +563,9 @@ func _hero_bars(c: Control, r: Rect2, a: float, age: float) -> void:
 		sb.corner_radius_bottom_left = 0
 		sb.corner_radius_bottom_right = 0
 		c.draw_style_box(sb, Rect2(br.position * _k, br.size * _k))
-		c.draw_string(fs, Vector2(br.position.x, chart.end.y + 22) * _k, str(i + 1), HORIZONTAL_ALIGNMENT_CENTER, br.size.x * _k, int(12 * _k), Color(1, 1, 1, 0.5 * a))
+		c.draw_string(fs, Vector2(br.position.x, chart.end.y + 22) * _k, str(i + 1), HORIZONTAL_ALIGNMENT_CENTER, br.size.x * _k, int(_t("micro") * _k), Color(1, 1, 1, 0.5 * a))
 		if lit and grow > 0.99:
-			c.draw_string(LabPrint.font("bold"), Vector2(br.position.x - 40, br.position.y - 10) * _k, Presentation.thousands(int(bars[i])), HORIZONTAL_ALIGNMENT_CENTER, (br.size.x + 80) * _k, int(14 * _k), Color(1, 1, 1, a))
+			c.draw_string(LabPrint.font("bold"), Vector2(br.position.x - 40, br.position.y - 10) * _k, Presentation.thousands(int(bars[i])), HORIZONTAL_ALIGNMENT_CENTER, (br.size.x + 80) * _k, int(_t("caption") * _k), Color(1, 1, 1, a))
 
 
 ## The W profile: how much of the body each W holds, the slice stops along its foot, the live slice.
@@ -569,15 +578,15 @@ func _hero_profile(c: Control, r: Rect2, a: float, sc: Node) -> void:
 	Glyphs.profile(c, Rect2(pr.position * _k, pr.size * _k), bins, Color(0.80, 0.92, 1.0, 0.24 * a), Color(BAR_LIT.lightened(0.25), a),
 		_stops, int(sc.get("slice_index")), frac, Color(GOLD, a))
 	var fs: Font = LabPrint.font("bold")
-	c.draw_string(fs, Vector2(r.position.x, r.end.y - 4) * _k, "−W", HORIZONTAL_ALIGNMENT_LEFT, -1, int(14 * _k), Color(1, 1, 1, 0.6 * a))
-	c.draw_string(fs, Vector2(r.position.x, r.end.y - 4) * _k, "+W", HORIZONTAL_ALIGNMENT_RIGHT, r.size.x * _k, int(14 * _k), Color(1, 1, 1, 0.6 * a))
+	c.draw_string(fs, Vector2(r.position.x, r.end.y - 4) * _k, "−W", HORIZONTAL_ALIGNMENT_LEFT, -1, int(_t("caption") * _k), Color(1, 1, 1, 0.6 * a))
+	c.draw_string(fs, Vector2(r.position.x, r.end.y - 4) * _k, "+W", HORIZONTAL_ALIGNMENT_RIGHT, r.size.x * _k, int(_t("caption") * _k), Color(1, 1, 1, 0.6 * a))
 	var mx: float = pr.position.x + pr.size.x * (clampf(frac, -1.0, 1.0) * 0.5 + 0.5)
 	var tag: String = "THE SLICE YOU SEE"
 	var tw: float = _width(fs, tag, 12)
 	var tx: float = mx + 14.0 if mx + 14.0 + tw < r.end.x else mx - 14.0 - tw
 	# On a small dark pill, so the tag reads where it crosses the silhouette.
 	_rect(c, Rect2(tx - 8.0, pr.position.y - 4.0, tw + 16.0, 24.0), Color(0.03, 0.05, 0.10, 0.78 * a), 12)
-	c.draw_string(fs, Vector2(tx, pr.position.y + 13) * _k, tag, HORIZONTAL_ALIGNMENT_LEFT, -1, int(12 * _k), Color(GOLD, a))
+	c.draw_string(fs, Vector2(tx, pr.position.y + 13) * _k, tag, HORIZONTAL_ALIGNMENT_LEFT, -1, int(_t("micro") * _k), Color(GOLD, a))
 
 
 ## Milliseconds a frame on a log scale: the walk's own cost, frame by frame, against re-lofting its
@@ -595,16 +604,16 @@ func _hero_cost(c: Control, r: Rect2, a: float, anim: float, reloft: float) -> v
 	for d in [[0.01, "0.01 ms"], [0.1, "0.1 ms"], [1.0, "1 ms"], [10.0, "10 ms"]]:
 		var gy: float = y_of.call(float(d[0]))
 		c.draw_line(Vector2(chart.position.x, gy) * _k, Vector2(chart.end.x, gy) * _k, Color(1, 1, 1, 0.07 * a), maxf(1.0, _k), true)
-		c.draw_string(fs, Vector2(r.position.x, gy + 5) * _k, String(d[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(12 * _k), Color(1, 1, 1, 0.42 * a))
+		c.draw_string(fs, Vector2(r.position.x, gy + 5) * _k, String(d[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(_t("micro") * _k), Color(1, 1, 1, 0.42 * a))
 	var by: float = y_of.call(16.7)
 	_dashed(c, Vector2(chart.position.x, by), Vector2(chart.end.x, by), Color(1, 1, 1, 0.45 * a))
-	c.draw_string(fs, Vector2(chart.position.x + 8, by + 18) * _k, "one whole frame at 60 fps", HORIZONTAL_ALIGNMENT_LEFT, -1, int(12 * _k), Color(1, 1, 1, 0.6 * a))
+	c.draw_string(fs, Vector2(chart.position.x + 8, by + 18) * _k, "one whole frame at 60 fps", HORIZONTAL_ALIGNMENT_LEFT, -1, int(_t("micro") * _k), Color(1, 1, 1, 0.6 * a))
 	if reloft > 0.0:
 		var ry: float = y_of.call(reloft)
 		c.draw_line(Vector2(chart.position.x, ry) * _k, Vector2(chart.end.x, ry) * _k, Color(WARM, a), maxf(1.0, 2.4 * _k), true)
-		c.draw_string(fb, Vector2(chart.position.x + 8, ry - 8) * _k, "re-lofting its legs every frame: " + Presentation.ms(reloft), HORIZONTAL_ALIGNMENT_LEFT, -1, int(13 * _k), Color(WARM, a))
+		c.draw_string(fb, Vector2(chart.position.x + 8, ry - 8) * _k, "re-lofting its legs every frame: " + Presentation.ms(reloft), HORIZONTAL_ALIGNMENT_LEFT, -1, int(_t("caption") * _k), Color(WARM, a))
 	if samples.size() < 2:
-		c.draw_string(fb, Vector2(chart.position.x, chart.end.y - 20) * _k, "Measured as soon as it walks", HORIZONTAL_ALIGNMENT_LEFT, -1, int(14 * _k), Color(1, 1, 1, 0.6 * a))
+		c.draw_string(fb, Vector2(chart.position.x, chart.end.y - 20) * _k, "Measured as soon as it walks", HORIZONTAL_ALIGNMENT_LEFT, -1, int(_t("caption") * _k), Color(1, 1, 1, 0.6 * a))
 		return
 	var pts := PackedVector2Array()
 	for i in samples.size():
@@ -613,7 +622,7 @@ func _hero_cost(c: Control, r: Rect2, a: float, anim: float, reloft: float) -> v
 	if anim > 0.0:
 		var ay: float = y_of.call(anim)
 		c.draw_line(Vector2(chart.position.x, ay) * _k, Vector2(chart.end.x, ay) * _k, Color(BAR_LIT, a), maxf(1.0, 2.4 * _k), true)
-		c.draw_string(fb, Vector2(chart.position.x + 8, ay - 10) * _k, "the walk, live: " + Presentation.ms(anim), HORIZONTAL_ALIGNMENT_LEFT, -1, int(13 * _k), Color(0.75, 0.88, 1.0, a))
+		c.draw_string(fb, Vector2(chart.position.x + 8, ay - 10) * _k, "the walk, live: " + Presentation.ms(anim), HORIZONTAL_ALIGNMENT_LEFT, -1, int(_t("caption") * _k), Color(0.75, 0.88, 1.0, a))
 
 
 func _dashed(c: Control, a: Vector2, b: Vector2, col: Color) -> void:
@@ -629,11 +638,11 @@ func _draw_bench_strip(c: Control, code: String, vh: float) -> void:
 	_line(c, Vector2(52, y), Vector2(VW - 52, y), HAIR, 1.5)
 	var fb: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")
-	_text(c, fb, 52, y + 28, "BENCHMARK", 13, ACCENT)
-	_text(c, fl, 52 + _width(fb, "BENCHMARK", 13) + 14, y + 28, "every specimen, measured the same way in this room", 13, GREY)
+	_text(c, fb, 52, y + 28, "BENCHMARK", _t("caption"), ACCENT)
+	_text(c, fl, 52 + _width(fb, "BENCHMARK", 13) + 14, y + 28, "every specimen, measured the same way in this room", _t("caption"), GREY)
 	var cols: Array = [[52, "SPECIMEN"], [300, "BALLS"], [430, "TETRAHEDRA"], [610, "LOFTED IN"], [790, "ONE LEG"], [950, "WALK, EACH FRAME"], [1170, "IF RE-LOFTED"], [1370, "RIGID IS"]]
 	for col in cols:
-		_text(c, fb, float(col[0]), y + 56, String(col[1]), 11, GREY)
+		_text(c, fb, float(col[0]), y + 56, String(col[1]), _t("micro"), GREY)
 	var codes: Array = _records.keys()
 	codes.sort()
 	if not codes.has(code):
@@ -659,12 +668,12 @@ func _draw_bench_strip(c: Control, code: String, vh: float) -> void:
 		var rl: float = float(rec.get("limb_ms", -1.0)) * float(rec.get("limbs", 0))
 		if now:
 			c.draw_circle(_p(42, ry - 5), 4.0 * _k, ACCENT)
-		_text(c, f, 52, ry, "%s  %s" % [String(rec.get("name", cd)), String(cd)], 14, ink)
-		_text(c, f, 300, ry, str(int(rec.get("balls", 0))), 14, ink)
-		_text(c, f, 430, ry, Presentation.thousands(int(rec.get("tetra", 0))), 14, ink)
-		_text(c, f, 610, ry, Presentation.ms(float(rec["build_ms"])) if float(rec.get("build_ms", -1.0)) > 0.0 else "not yet", 14, ink if rec.has("build_ms") else GREY)
-		_text(c, f, 790, ry, Presentation.ms(float(rec["limb_ms"])) if float(rec.get("limb_ms", -1.0)) > 0.0 else "not yet", 14, ink if rec.has("limb_ms") else GREY)
-		_text(c, f, 950, ry, Presentation.ms(an) if an > 0.0 else "not yet", 14, ink if an > 0.0 else GREY)
-		_text(c, f, 1170, ry, Presentation.ms(rl) if rl > 0.0 else "not yet", 14, ink if rl > 0.0 else GREY)
-		_text(c, f, 1370, ry, ("%s× cheaper" % Presentation.thousands(int(round(rl / an)))) if an > 0.0 and rl > 0.0 else "not yet", 14, ink if an > 0.0 and rl > 0.0 else GREY)
+		_text(c, f, 52, ry, "%s  %s" % [String(rec.get("name", cd)), String(cd)], _t("caption"), ink)
+		_text(c, f, 300, ry, str(int(rec.get("balls", 0))), _t("caption"), ink)
+		_text(c, f, 430, ry, Presentation.thousands(int(rec.get("tetra", 0))), _t("caption"), ink)
+		_text(c, f, 610, ry, Presentation.ms(float(rec["build_ms"])) if float(rec.get("build_ms", -1.0)) > 0.0 else "not yet", _t("caption"), ink if rec.has("build_ms") else GREY)
+		_text(c, f, 790, ry, Presentation.ms(float(rec["limb_ms"])) if float(rec.get("limb_ms", -1.0)) > 0.0 else "not yet", _t("caption"), ink if rec.has("limb_ms") else GREY)
+		_text(c, f, 950, ry, Presentation.ms(an) if an > 0.0 else "not yet", _t("caption"), ink if an > 0.0 else GREY)
+		_text(c, f, 1170, ry, Presentation.ms(rl) if rl > 0.0 else "not yet", _t("caption"), ink if rl > 0.0 else GREY)
+		_text(c, f, 1370, ry, ("%s× cheaper" % Presentation.thousands(int(round(rl / an)))) if an > 0.0 and rl > 0.0 else "not yet", _t("caption"), ink if an > 0.0 and rl > 0.0 else GREY)
 		row += 1

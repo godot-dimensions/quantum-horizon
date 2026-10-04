@@ -263,17 +263,20 @@ func apply_shape() -> void:
 	if lesson != null:
 		var len1: float = outline[1].distance_to(outline[2])
 		_set_if(lesson, "along", Vector2(snappedf(len1 * 0.094, 0.01), snappedf(len1 * 0.903, 0.01)))
-	# The research wall stays flush to the angled wall on the right (edge 3), facing into the room.
-	var a: Vector2 = outline[3]
-	var e: Vector2 = outline[4]
-	var dir: Vector2 = (e - a).normalized()
-	var inward := Vector2(-dir.y, dir.x)
-	var mid: Vector2 = (a + e) * 0.5 + inward * 0.13
+	# The research wall stays flush to its wall (its `wall_edge`: the first wall on the right, edge 4),
+	# facing into the room; painted, it is printed into that wall itself.
 	for nm in ["ResearchWall"]:
 		var panel: Node4D = get_node_or_null(nm) as Node4D
-		if panel != null:
-			panel.position = Vector4(mid.x, panel.position.y, mid.y, 0.0)
-			panel.set("face", Vector3(inward.x, 0.0, inward.y))
+		if panel == null:
+			continue
+		var we: int = int(panel.get("wall_edge")) if panel.get("wall_edge") != null else 3
+		var a: Vector2 = outline[we % outline.size()]
+		var e: Vector2 = outline[(we + 1) % outline.size()]
+		var dir: Vector2 = (e - a).normalized()
+		var inward := Vector2(-dir.y, dir.x)
+		var mid: Vector2 = (a + e) * 0.5 + inward * 0.13
+		panel.position = Vector4(mid.x, panel.position.y, mid.y, 0.0)
+		panel.set("face", Vector3(inward.x, 0.0, inward.y))
 	# The entrance corridor and its light sit outside the entrance wall.
 	var ent: Node4D = get_node_or_null("Entrance") as Node4D
 	if ent != null:

@@ -80,6 +80,29 @@ const SLICES := 9
 ## animation playing over and over again"); the camera is never taken. Touching it (the wheel, a
 ## right drag, its key) pauses the loop until you have let it be for `resume_after` seconds.
 @export var autoplay: bool = true
+## A see-through blue cylinder standing on the deck round the animal, fading out upward (Ramon, 4 Oct:
+## "a subtle holographic bounding box"); faked with the grid shader's dithered hologram mode.
+@export var hologram: bool = true:
+	set(v):
+		hologram = v
+		_later()
+## Its height above the deck, metres; how solid it is at its foot (0 to 1), and how fast it fades.
+@export_range(0.5, 8.0, 0.05) var holo_height: float = 3.8:
+	set(v):
+		holo_height = v
+		_later()
+@export_range(0.0, 1.0, 0.01) var holo_base: float = 0.8:
+	set(v):
+		holo_base = v
+		_holo_params()
+@export_range(0.3, 6.0, 0.05) var holo_falloff: float = 2.2:
+	set(v):
+		holo_falloff = v
+		_holo_params()
+@export var holo_color: Color = Color(0.25, 0.60, 1.0):
+	set(v):
+		holo_color = v
+		_holo_params()
 ## A round bead in every hip and knee of a walking animal, filling the notch where its leg pieces
 ## meet (goat_walk_4d.gd); off puts the plain cut joints back. Handed to each exhibit as it is built.
 @export var joint_balls: bool = true:
@@ -115,6 +138,7 @@ var _queued: bool = false
 var serial: int = 0
 var _swapping: bool = false
 var _wait_grow: bool = false
+var _holo: MeshInstance4D
 ## The part of the exhibit's loop playing now (-1 when it is in your hands or arriving), how far
 ## into it, and how long it is: the research wall turns its pages by these.
 var seq_index: int = -1
@@ -150,6 +174,9 @@ func _rebuild_pedestal() -> void:
 			c.free()
 	_ped = Pedestal.build(self, radius, height)
 	_band_done = false
+	if is_instance_valid(_holo):
+		_holo.free()
+	_build_holo(float(_ped["deck_h"]))
 	_apply_mood_now()
 
 
@@ -172,6 +199,7 @@ func rebuild() -> void:
 		exhibit.set_script(exhibit_script)
 		exhibit.set("joint_balls", joint_balls)
 		_slice_node.add_child(exhibit)
+	_build_holo(deck_h)
 	for i in (SLICES if slice_frames else 0):
 		var fb := Batch.new()
 		var c: Vector3 = frames_at + frames_step * float(i)
@@ -565,3 +593,35 @@ func arriving() -> bool:
 ## The exhibit's measured numbers (kit_bench.gd keys); empty if it measures nothing.
 func bench() -> Dictionary:
 	return exhibit.call("bench") if exhibit != null and exhibit.has_method("bench") else {}
+
+
+## Every ball of the exhibit as the designer set it (name, side position, numbers); empty if none.
+func ball_sections() -> Array:
+	return exhibit.call("ball_sections") if exhibit != null and exhibit.has_method("ball_sections") else []
+
+
+## The hologram: one cylinder as wide as the deck, standing on it.
+func _build_holo(deck_h: float) -> void:
+	_holo = null
+	if not hologram:
+		return
+	var r: float = radius - Pedestal.DECK_IN
+	var h: float = holo_height
+	_holo = MeshInstance4D.new()
+	_holo.name = "Hologram"
+	_holo.mesh = Build._cubinder(r, h, 96)
+	_holo.position = Vector4(0.0, deck_h + h * 0.5, 0.0, 0.0)
+	_holo.material_override = LabGrid.material("kit_code_blue", Vector4(r * 2.0, h, r * 2.0, Build.W_DEPTH), global_position if is_inside_tree() else Vector4.ZERO)
+	_holo.set_meta(Build.GENERATED, true)
+	add_child(_holo)
+	_holo_params()
+
+
+func _holo_params() -> void:
+	if not is_instance_valid(_holo):
+		return
+	var cs: ShaderMaterial = (_holo.material_override as TetraMaterial4D).get_cross_section_material_3d()
+	cs.set_shader_parameter("holo_on", 1.0)
+	cs.set_shader_parameter("holo_base", holo_base)
+	cs.set_shader_parameter("holo_falloff", holo_falloff)
+	cs.set_shader_parameter("holo_color", holo_color)

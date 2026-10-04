@@ -32,6 +32,7 @@ const LabGrid := preload("res://ramon/LabKit/lab_grid.gd")
 const Mats := preload("res://ramon/LabKit/lab_materials.gd")
 const Batch := preload("res://ramon/LabKit/lab_batch.gd")
 const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
+const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
 ## The interior corners for a polygon room (empty: a rectangle of `size`). `size.y` is the height.
@@ -230,8 +231,13 @@ func _rebuild_outline() -> void:
 			# [box, p, q, y0, y1] along the edge; print_wall reads u from the face as an axis wall
 			# would, so hand it the face's own frame: inner face +Z (u from p), outer -Z (u from q).
 			pieces.append(pc)
-		var rec: Dictionary = await RD.print_wall(tree, pieces, Vector4(0, 0, -1 if outside else 1, 0),
-			minf(al2.x, al2.y), maxf(al2.x, al2.y), up.x, up.y, _painter(tx), {"bright": float(tx.get("glow")), "dark": float(tx.get("glow")) + 0.15})
+		var glow2: Dictionary = {"bright": float(tx.get("glow")), "dark": float(tx.get("glow")) + 0.15}
+		var rec: Dictionary
+		if bool(tx.get("live")):
+			rec = _live_print(tx, pieces, Vector4(0, 0, -1 if outside else 1, 0), minf(al2.x, al2.y), maxf(al2.x, al2.y), up.x, up.y, glow2)
+		else:
+			rec = await RD.print_wall(tree, pieces, Vector4(0, 0, -1 if outside else 1, 0),
+				minf(al2.x, al2.y), maxf(al2.x, al2.y), up.x, up.y, _painter(tx), glow2)
 		_prints.append(rec)
 	_apply_mood_now()
 
@@ -337,6 +343,64 @@ func _texts() -> Array:
 	return out
 
 
+## A live wall text (its `live` on): the same targets as RD.print_wall works out, but the picture is
+## a viewport of its own, drawn by the text's painter and re-rendered only when asked (UPDATE_ONCE):
+## on a change of mood, or when the text says what it says has changed (refresh_text).
+func _live_print(tx: Node, pieces: Array, normal: Vector4, a0: float, a1: float, y0: float, y1: float, glow: Dictionary) -> Dictionary:
+	var rec: Dictionary = {"targets": [], "tex": {}, "glow": glow, "live_text": tx}
+	for piece in pieces:
+		var p: float = piece[1]
+		var q: float = piece[2]
+		var py0: float = piece[3]
+		var py1: float = piece[4]
+		if q <= a0 or p >= a1 or py1 <= y0 or py0 >= y1:
+			continue
+		var u0: float = (a0 - p) if normal.z > 0.0 else (q - a1)
+		(rec["targets"] as Array).append([piece[0], normal, Rect2(Vector2(u0, y0 - py0), Vector2(a1 - a0, y1 - y0))])
+	var ppm: float = float(tx.get("live_ppm")) if tx.get("live_ppm") != null else 200.0
+	var vp := SubViewport.new()
+	vp.name = "LiveText"
+	vp.size = Vector2i(maxi(8, int((a1 - a0) * ppm)), maxi(8, int((y1 - y0) * ppm)))
+	vp.transparent_bg = true
+	vp.disable_3d = true
+	vp.msaa_2d = Viewport.MSAA_4X
+	vp.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
+	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	vp.set_meta(Build.GENERATED, true)
+	var painter: Callable = _painter(tx)
+	var c := LabPrint.Canvas.new()
+	c.size = Vector2(vp.size)
+	c.paint = func(cc: Control) -> void: painter.call(cc, RD.INK[Style.mood])
+	vp.add_child(c)
+	add_child(vp)
+	rec["tex"] = {"bright": vp.get_texture(), "dark": vp.get_texture()}
+	rec["vp"] = vp
+	rec["canvas"] = c
+	return rec
+
+
+func _redraw_live(rec: Dictionary) -> void:
+	var c: Control = rec.get("canvas")
+	var vp: SubViewport = rec.get("vp")
+	if is_instance_valid(c) and is_instance_valid(vp):
+		c.queue_redraw()
+		vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+
+## The live print's texture has no mipmaps: the shader samples it four times when it is small.
+func _aa(rec: Dictionary) -> void:
+	for t in rec.get("targets", []):
+		if is_instance_valid(t[0]):
+			((t[0] as MeshInstance4D).material_override as TetraMaterial4D).get_cross_section_material_3d().set_shader_parameter("print_aa", 1.0)
+
+
+## A live wall text says what it shows has changed: its print is drawn again.
+func refresh_text(tx: Node) -> void:
+	for rec in _prints:
+		if rec.get("live_text") == tx:
+			_redraw_live(rec)
+
+
 ## A wall text's painter: its own paint(), handed its colour code's ink when it has one.
 func _painter(tx: Node) -> Callable:
 	var code: String = String(tx.get("code"))
@@ -376,7 +440,11 @@ func apply_mood(_m: String, _instant: bool = false) -> void:
 
 func _apply_mood_now() -> void:
 	for rec in _prints:
+		if rec.has("canvas"):
+			_redraw_live(rec)
 		RD.apply(rec, Style.mood)
+		if rec.has("canvas"):
+			_aa(rec)
 	if is_instance_valid(_cove):
 		_cove.material_override = Mats.glow(Style.pick(Style.COVE), 1.0)
 	_show_route()

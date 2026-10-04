@@ -92,8 +92,8 @@ func _draw() -> void:
 	var hot: Color = Style.UI_GOLD
 	var fs: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")
-	draw_string(fs, r.position + Vector2(14.0, 22.0) * u, "WHERE THE SLICE CUTS", HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), Color(1, 1, 1))
-	draw_string(fl, r.position + Vector2(14.0, 38.0) * u, "The room shows you this plane through the 4D %s" % _name(), HORIZONTAL_ALIGNMENT_LEFT, w - 28.0 * u, int(9 * u), Style.UI_INK_SOFT)
+	draw_string(fs, r.position + Vector2(14.0, 22.0) * u, "WHERE THE SLICE CUTS", HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("caption", u), Color(1, 1, 1))
+	draw_string(fl, r.position + Vector2(14.0, 38.0) * u, "The room shows you this plane through the 4D %s" % _name(), HORIZONTAL_ALIGNMENT_LEFT, w - 28.0 * u, Style.type_px("micro", u), Style.UI_INK_SOFT)
 	var lo: Vector4 = _box[0]
 	var hi: Vector4 = _box[1]
 	var long_z: bool = (hi.z - lo.z) >= (hi.x - lo.x)
@@ -179,16 +179,16 @@ func _draw() -> void:
 		for q in hits:
 			draw_circle(q, maxf(1.5, 1.8 * u), hot)
 	else:
-		draw_string(fl, Vector2(r.position.x + 14.0 * u, r.end.y - 28.0 * u), "The slice misses the %s here" % _name(), HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Color(1.0, 0.75, 0.6))
+		draw_string(fl, Vector2(r.position.x + 14.0 * u, r.end.y - 28.0 * u), "The slice misses the %s here" % _name(), HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("micro", u), Style.UI_WARM)
 	# The W axis, labelled.
 	var w0: Vector2 = proj.call(Vector4(lo.x, lo.y, lo.z, lo.w))
 	var w1: Vector2 = proj.call(Vector4(lo.x, lo.y, lo.z, hi.w))
 	draw_line(w0, w1, Color(1, 1, 1, 0.6), maxf(1.0, u), true)
-	draw_string(fs, w1 + Vector2(-14.0, -2.0) * u, "W", HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), Color(1, 1, 1, 0.8))
+	draw_string(fs, w1 + Vector2(-14.0, -2.0) * u, "W", HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("caption", u), Color(1, 1, 1, 0.8))
 	var idx: int = int(showcase.get("slice_index")) + 1 if showcase != null else 0
 	var tn: Vector2 = showcase.get("turn") if showcase != null else Vector2.ZERO
 	draw_string(fl, Vector2(r.position.x + 14.0 * u, r.end.y - 12.0 * u), "Slice %d of 9   swung %.0f°, tilted %.0f°" % [idx, rad_to_deg(tn.x), rad_to_deg(tn.y)],
-		HORIZONTAL_ALIGNMENT_LEFT, w - 28.0 * u, int(10 * u), hot)
+		HORIZONTAL_ALIGNMENT_LEFT, w - 28.0 * u, Style.type_px("micro", u), hot)
 
 
 ## The exhibit's name in lower case, for the lines under the drawing.

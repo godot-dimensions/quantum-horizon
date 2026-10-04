@@ -53,7 +53,7 @@ func _draw() -> void:
 	var t: float = _a
 	var k: float = (1.0 + 0.18 * sin(t * PI)) * ease(t, 0.5)
 	var f: Font = LabPrint.font("bold")
-	var px: int = int(15 * u)
+	var px: int = Style.type_px("body", u)
 	var tw: float = f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
 	var cap: float = 28.0 * u
 	var pad: float = 10.0 * u
@@ -78,7 +78,7 @@ func _draw() -> void:
 	kb.anti_aliasing = true
 	draw_style_box(kb, kr)
 	var kf: Font = LabPrint.font("black")
-	var kpx: int = int(16 * u)
+	var kpx: int = Style.type_px("lead", u)
 	draw_string(kf, Vector2(kr.position.x, kr.get_center().y + kf.get_ascent(kpx) * 0.36), key, HORIZONTAL_ALIGNMENT_CENTER, cap, kpx, Color(Style.UI_GLASS, _a))
 	draw_string(f, Vector2(kr.end.x + 10.0 * u, r.get_center().y + f.get_ascent(px) * 0.36), text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, Color(1, 1, 1, _a))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

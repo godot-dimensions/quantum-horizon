@@ -121,6 +121,39 @@ const UI_WARM := Color(1.0, 0.55, 0.36)
 const UI_LIVE := Color(0.45, 1.0, 0.62)
 
 
+## THE TYPE LADDER (Ramon, 4 Oct: "we will also need some consistency in font sizes and how it
+## compares to one another"): every size of type in the lab is a step on one ladder, each step 1.25
+## times the one below, so a title is always the same number of steps above its text wherever it
+## is. Overlays on the screen count from TYPE_PX pixels (at a 720-high window), surfaces in the room
+## (the walls, the desk, the picker) from TYPE_M metres. The named steps:
+##   micro -2   footnotes, column heads, the key on a key cap
+##   caption -1 labels, kickers ("PART 2 OF 5"), small print you still read
+##   body 0     reading text, callouts, list items
+##   lead 1     a line under a title, a toast
+##   subhead 2  a title on an overlay card, an icon's label on a wall
+##   title 3    a panel's title
+##   headline 4 a wall's claim, a big figure, the lesson's paragraph
+##   display 5  a specimen's name on a screen
+##   hero 6     a wall's subtitle, a specimen's name on a wall
+##   poster 11  the lesson's own title
+const TYPE_RATIO := 1.25
+const TYPE_PX := 11.0
+const TYPE_M := 0.12
+const TYPE_STEP := {"micro": -2, "caption": -1, "body": 0, "lead": 1, "subhead": 2, "title": 3, "headline": 4, "display": 5, "hero": 6, "poster": 11}
+
+
+## A step's size in screen pixels for an overlay; `u` is the window's height over 720. Never below
+## seven pixels, so the smallest print stays legible in a small window.
+static func type_px(role: String, u: float) -> int:
+	return maxi(7, int(round(TYPE_PX * pow(TYPE_RATIO, float(TYPE_STEP.get(role, 0))) * u)))
+
+
+## A step's size in metres for a surface in the room; a number is a step counted from body.
+static func type_m(role: Variant) -> float:
+	var step: float = float(role) if (role is int or role is float) else float(TYPE_STEP.get(String(role), 0))
+	return TYPE_M * pow(TYPE_RATIO, step)
+
+
 ## A dark-glass box for a control or an overlay, `radius` in pixels, faded by `a`.
 static func glass_box(radius: float, a: float = 1.0, alpha: float = UI_GLASS_ALPHA) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()

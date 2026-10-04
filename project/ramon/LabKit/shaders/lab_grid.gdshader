@@ -92,6 +92,20 @@ uniform vec2 chevron_dir = vec2(0.0, -1.0);
 // turn speed in radians a second; ring_on 0 hides it.
 group_uniforms ring;
 uniform float ring_on : hint_range(0.0, 1.0) = 0.0;
+// HOLOGRAM (Ramon, 4 Oct: "a cylinder with an opacity falloff upward ... from 80% blue opaque to 0%
+// ... a subtle holographic bounding box"). The renderer has no translucency, so it is faked with an
+// ordered dither: the surface's coverage falls from `holo_base` at its foot to nothing at its top
+// (`holo_falloff` the curve), and a pixel is drawn only where its place in a 4x4 Bayer matrix is
+// under that coverage; the eye averages the pattern into a fade. Being real geometry it sorts with
+// everything in front of and behind it, and survives the slice turning. Thin bands rise through it.
+uniform float holo_on : hint_range(0.0, 1.0) = 0.0;
+uniform vec4 holo_color : source_color = vec4(0.25, 0.60, 1.0, 1.0);
+uniform float holo_base : hint_range(0.0, 1.0) = 0.8;
+uniform float holo_falloff = 1.6;
+uniform float holo_glow = 0.6;
+uniform float holo_scan = 0.35;
+uniform float holo_scan_density = 2.2;
+uniform float holo_scan_speed = 0.35;
 uniform vec4 ring_at = vec4(0.0, 0.0, 3.0, 0.08);
 uniform vec4 ring_color : source_color = vec4(0.12, 0.45, 1.0, 1.0);
 
@@ -415,6 +429,20 @@ void fragment() {
 		float k = best * route_on;
 		c = mix(c, route_color.rgb, k * 0.95);
 		glow += route_color.rgb * k * route_glow;
+	}
+	if (holo_on > 0.5) {
+		float hf = clamp(local_pos.y / max(abs(surface_size.y), 0.001) + 0.5, 0.0, 1.0);
+		float cover = holo_base * pow(1.0 - hf, holo_falloff);
+		float scan = smoothstep(0.9, 1.0, fract(local_pos.y * holo_scan_density - TIME * holo_scan_speed));
+		cover = min(1.0, cover + scan * holo_scan * (1.0 - hf));
+		ivec2 cell = ivec2(FRAGCOORD.xy) % 4;
+		int bayer[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
+		float threshold = (float(bayer[cell.y * 4 + cell.x]) + 0.5) / 16.0;
+		if (cover <= threshold) {
+			discard;
+		}
+		c = holo_color.rgb;
+		glow = holo_color.rgb * (holo_glow + scan * 0.8);
 	}
 	ALBEDO = c;
 	EMISSION = glow;

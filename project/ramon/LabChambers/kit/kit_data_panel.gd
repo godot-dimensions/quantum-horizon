@@ -6,10 +6,10 @@ extends Control
 ## metrics"; then "a bunch of metrics and diagrams ... relevant info for stakeholders, and add
 ## some icons").
 ##
-## WHAT IT SHOWS, refreshed four times a second (the graphs every frame):
-##   four tiles                 balls, tetrahedra, build stages, reach through W   showcase.data()
-##   WHERE IT EXISTS THROUGH W  the W profile, its slice stops, the live slice      showcase.profile()
-##   BUILD, STAGE BY STAGE      tetrahedra per stage, and the meshes' memory       showcase.data()
+## WHAT IT SHOWS, refreshed four times a second (the graphs every frame). Nothing the research wall
+## already shows (Ramon, 4 Oct: "make sure the infos on the panel and overlay are different from
+## the blue graphs"): the wall has the animal's measurements, the desk its balls, this the tool.
+##   HOW THE TOOL WORKS         the four steps from balls to a walking animal, and when each runs
 ##   RIGHT NOW                  the slice, its offset, the turn, what is shown     showcase.live()
 ##   FRAME COST                 the engine's process time against a 60 fps budget
 ##   WHERE THE TOOL STANDS      what the tool can do yet, and authoring time per creature: SAMPLES,
@@ -34,6 +34,9 @@ const ROADMAP := [
 ]
 ## Placeholders: days to author each creature.
 const AUTHORING := [["Goat", 1.0], ["Wolf", 2.0], ["Horse", 3.0], ["Chicken", 0.5]]
+## The tool's four steps: [icon, what, when it runs].
+const PIPELINE := [["ball", "Place balls", "By hand, in the editor"], ["tetra", "Loft the skin", "Once, when a ball moves"],
+	["slice", "Slice through W", "Every frame, on the GPU"], ["creatures", "Animate", "Rigid pieces, transforms only"]]
 const BUDGET_MS := 16.7
 
 var showcase: Node
@@ -113,53 +116,47 @@ func _draw() -> void:
 	var top: float = r.position.y
 	var st: Dictionary = _data.get("stats", {})
 	# The header.
-	Glyphs.tag(self, Vector2(x, top + 30.0 * u), ("%s %s" % [String(_data.get("name", "specimen")).to_upper(), String(_data.get("code", "XX-01")).get_slice("-", 1)]), int(10 * u), white, true)
+	Glyphs.tag(self, Vector2(x, top + 30.0 * u), ("%s %s" % [String(_data.get("name", "specimen")).to_upper(), String(_data.get("code", "XX-01")).get_slice("-", 1)]), Style.type_px("caption", u), white, true)
 	var pulse: float = 0.6 + 0.4 * sin(_clock * 4.0)
 	Glyphs.icon(self, "live", Rect2(Vector2(x + cw - 62.0 * u, top + 21.0 * u), Vector2(18.0 * u, 18.0 * u)), Color(0.5, 1.0, 0.68, a * pulse))
-	draw_string(fs, Vector2(x + cw - 40.0 * u, top + 35.0 * u), "LIVE", HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), soft)
-	draw_string(fb, Vector2(x, top + 64.0 * u), "Research data", HORIZONTAL_ALIGNMENT_LEFT, cw, int(22 * u), white)
-	draw_string(fl, Vector2(x, top + 83.0 * u), "Measured live from the exhibit. Numbers tagged SAMPLE are placeholders until measured.", HORIZONTAL_ALIGNMENT_LEFT, cw, int(11 * u), dim)
-	# Four tiles.
+	draw_string(fs, Vector2(x + cw - 40.0 * u, top + 35.0 * u), "LIVE", HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("caption", u), soft)
+	draw_string(fb, Vector2(x, top + 64.0 * u), "About the tool", HORIZONTAL_ALIGNMENT_LEFT, cw, Style.type_px("title", u), white)
+	draw_string(fl, Vector2(x, top + 83.0 * u), "How it works, and where it stands. Numbers tagged SAMPLE are placeholders until measured.", HORIZONTAL_ALIGNMENT_LEFT, cw, Style.type_px("caption", u), dim)
+	# How the tool works: four steps, an arrow between each, the step the story is on lit.
 	var ty: float = top + 98.0 * u
-	var tiles: Array = [
-		["ball", str(int(st.get("balls", 0))), "Balls, placed by hand"],
-		["tetra", Glyphs.short(int(st.get("tetra", 0))), "Tetrahedra in its skin"],
-		["stages", str(int(st.get("stages", 0))), "Build stages, baked"],
-		["axes", "%.2f m" % float(st.get("reach", 0.0)), "Reach through W"],
-	]
-	var gap: float = 10.0 * u
-	var tw: float = (cw - gap * 3.0) / 4.0
-	for i in tiles.size():
-		var tr := Rect2(Vector2(x + (tw + gap) * float(i), ty), Vector2(tw, 70.0 * u))
-		_card(tr, u, a)
-		var t: Array = tiles[i]
-		Glyphs.icon(self, String(t[0]), Rect2(tr.position + Vector2(10.0, 10.0) * u, Vector2(24.0, 24.0) * u), Color(accent.lightened(0.25), a))
-		draw_string(fb, tr.position + Vector2(42.0, 32.0) * u, String(t[1]), HORIZONTAL_ALIGNMENT_LEFT, tw - 48.0 * u, int(21 * u), white)
-		draw_string(fl, tr.position + Vector2(10.0, 58.0) * u, String(t[2]), HORIZONTAL_ALIGNMENT_LEFT, tw - 16.0 * u, int(10.5 * u), soft)
-	# Two cards: the W profile, the build.
+	var pipe := Rect2(Vector2(x, ty), Vector2(cw, 210.0 * u))
+	_card(pipe, u, a)
+	_section(pipe, u, a, "chip", "HOW THE TOOL WORKS", accent)
+	var lit_step: int = -1
+	if showcase != null:
+		var key: String = ""
+		var si: int = int(showcase.get("seq_index"))
+		if si >= 0:
+			key = String((showcase.call("sequences") as Array)[si]["key"])
+		lit_step = {"balls": 0, "skin": 1, "slice": 2, "rig": 3, "walk": 3}.get(key, -1)
+	var gap: float = 12.0 * u
+	var sw: float = (pipe.size.x - 24.0 * u - gap * 3.0) / 4.0
+	for i in PIPELINE.size():
+		var st2: Array = PIPELINE[i]
+		var sr := Rect2(Vector2(pipe.position.x + 12.0 * u + (sw + gap) * float(i), pipe.position.y + 42.0 * u), Vector2(sw, 152.0 * u))
+		var on: bool = i == lit_step
+		var bx := StyleBoxFlat.new()
+		bx.bg_color = Color(accent, 0.16 * a) if on else Color(1, 1, 1, 0.04 * a)
+		bx.border_color = Color(accent, 0.9 * a) if on else Color(1, 1, 1, 0.0)
+		bx.set_border_width_all(int(maxf(1.0, 2.0 * u)) if on else 0)
+		bx.set_corner_radius_all(Style.type_px("caption", u))
+		bx.anti_aliasing = true
+		draw_style_box(bx, sr)
+		draw_string(fb, sr.position + Vector2(12.0, 30.0) * u, "%d" % (i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("subhead", u), Color(accent.lightened(0.3), a))
+		Glyphs.icon(self, String(st2[0]), Rect2(sr.position + Vector2(sw - 46.0 * u, 12.0 * u), Vector2(34.0, 34.0) * u), Color(accent.lightened(0.25) if on else Color(1, 1, 1, 0.75), a))
+		draw_multiline_string(fs, sr.position + Vector2(12.0, 82.0) * u, String(st2[1]), HORIZONTAL_ALIGNMENT_LEFT, sw - 24.0 * u, Style.type_px("body", u), 2, white)
+		draw_multiline_string(fl, sr.position + Vector2(12.0, 118.0) * u, String(st2[2]), HORIZONTAL_ALIGNMENT_LEFT, sw - 24.0 * u, Style.type_px("caption", u), 2, soft)
+		if i < PIPELINE.size() - 1:
+			var ax2: float = sr.end.x + gap * 0.5
+			var ay: float = sr.position.y + 26.0 * u
+			draw_colored_polygon(PackedVector2Array([Vector2(ax2 - 4.0 * u, ay - 6.0 * u), Vector2(ax2 + 5.0 * u, ay), Vector2(ax2 - 4.0 * u, ay + 6.0 * u)]), Color(1, 1, 1, 0.5 * a))
 	var col: float = (cw - 14.0 * u) * 0.5
-	var y2: float = ty + 82.0 * u
-	var left := Rect2(Vector2(x, y2), Vector2(col, 128.0 * u))
-	var right := Rect2(Vector2(x + col + 14.0 * u, y2), Vector2(col, 128.0 * u))
-	_card(left, u, a)
-	_card(right, u, a)
-	_section(left, u, a, "slice", "WHERE IT EXISTS THROUGH W", accent)
-	var bins: PackedFloat32Array = _profile.get("bins", PackedFloat32Array())
-	var lit: int = int(showcase.get("slice_index")) if showcase != null else -1
-	var frac: float = float(showcase.call("slice_fraction")) if showcase != null and showcase.has_method("slice_fraction") else NAN
-	Glyphs.profile(self, Rect2(left.position + Vector2(12.0, 34.0) * u, Vector2(left.size.x - 24.0 * u, 66.0 * u)), bins,
-		Color(accent, 0.22 * a), Color(accent.lightened(0.35), a), _stops, lit, frac, Color(1, 1, 1, a))
-	draw_string(fl, left.position + Vector2(12.0, 118.0) * u, "-W", HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u), dim)
-	draw_string(fl, left.position + Vector2(12.0, 118.0) * u, "+W", HORIZONTAL_ALIGNMENT_RIGHT, left.size.x - 24.0 * u, int(10 * u), dim)
-	draw_string(fs, left.position + Vector2(12.0, 118.0) * u, "the line is the slice you see", HORIZONTAL_ALIGNMENT_CENTER, left.size.x - 24.0 * u, int(10 * u), soft)
-	_section(right, u, a, "stages", "BUILD, STAGE BY STAGE", accent)
-	var bars: Array = _data.get("bars", [])
-	var labels: Array = []
-	for i in bars.size():
-		labels.append(str(i + 1))
-	Glyphs.bars(self, Rect2(right.position + Vector2(12.0, 34.0) * u, Vector2(right.size.x - 24.0 * u, 70.0 * u)), bars, Color(accent.lightened(0.2), a), labels, int(9 * u), dim)
-	Glyphs.icon(self, "chip", Rect2(right.position + Vector2(10.0, 106.0) * u, Vector2(16.0, 16.0) * u), soft)
-	draw_string(fl, right.position + Vector2(32.0, 118.0) * u, "Tetrahedra per stage.  Meshes hold %.1f MB" % float(st.get("mb", 0.0)), HORIZONTAL_ALIGNMENT_LEFT, right.size.x - 40.0 * u, int(10 * u), soft)
+	var y2: float = ty + 222.0 * u - 140.0 * u
 	# Two cards: right now, the frame cost.
 	var y3: float = y2 + 140.0 * u
 	var left2 := Rect2(Vector2(x, y3), Vector2(col, 132.0 * u))
@@ -169,8 +166,8 @@ func _draw() -> void:
 	_section(left2, u, a, "live", "RIGHT NOW", accent)
 	var ry: float = left2.position.y + 46.0 * u
 	for row in _live.slice(0, 5):
-		draw_string(fl, Vector2(left2.position.x + 12.0 * u, ry), String(row[0]), HORIZONTAL_ALIGNMENT_LEFT, left2.size.x - 24.0 * u, int(10.5 * u), soft)
-		draw_string(fs, Vector2(left2.position.x + 12.0 * u, ry), String(row[1]), HORIZONTAL_ALIGNMENT_RIGHT, left2.size.x - 24.0 * u, int(11 * u), Color(accent.lightened(0.4), a))
+		draw_string(fl, Vector2(left2.position.x + 12.0 * u, ry), String(row[0]), HORIZONTAL_ALIGNMENT_LEFT, left2.size.x - 24.0 * u, Style.type_px("caption", u), soft)
+		draw_string(fs, Vector2(left2.position.x + 12.0 * u, ry), String(row[1]), HORIZONTAL_ALIGNMENT_RIGHT, left2.size.x - 24.0 * u, Style.type_px("body", u), Color(accent.lightened(0.4), a))
 		ry += 17.5 * u
 	_section(right2, u, a, "graph", "FRAME COST", accent)
 	_frame_graph(Rect2(right2.position + Vector2(12.0, 34.0) * u, Vector2(right2.size.x - 24.0 * u, 54.0 * u)), u, a, accent, dim)
@@ -179,39 +176,39 @@ func _draw() -> void:
 	draw_rect(bar, Color(1, 1, 1, 0.08 * a))
 	var share: float = clampf(last / BUDGET_MS, 0.0, 1.0)
 	draw_rect(Rect2(bar.position, Vector2(bar.size.x * share, bar.size.y)), Color(accent.lightened(0.2), a) if share < 0.8 else Color(1.0, 0.55, 0.35, a))
-	draw_string(fl, right2.position + Vector2(12.0, 124.0) * u, "%.2f ms of a %.1f ms frame (60 fps)" % [last, BUDGET_MS], HORIZONTAL_ALIGNMENT_LEFT, right2.size.x - 24.0 * u, int(10 * u), soft)
+	draw_string(fl, right2.position + Vector2(12.0, 124.0) * u, "%.2f ms of a %.1f ms frame (60 fps)" % [last, BUDGET_MS], HORIZONTAL_ALIGNMENT_LEFT, right2.size.x - 24.0 * u, Style.type_px("caption", u), soft)
 	# The stakeholder card.
 	var y4: float = y3 + 144.0 * u
 	var road := Rect2(Vector2(x, y4), Vector2(cw, r.end.y - y4 - 16.0 * u))
 	_card(road, u, a)
 	var hw: float = _section(road, u, a, "check", "WHERE THE TOOL STANDS", accent)
-	Glyphs.tag(self, Vector2(road.position.x + 40.0 * u + hw + 10.0 * u, road.position.y + 21.0 * u), "SAMPLE", int(8.5 * u), sample)
+	Glyphs.tag(self, Vector2(road.position.x + 40.0 * u + hw + 10.0 * u, road.position.y + 21.0 * u), "SAMPLE", Style.type_px("micro", u), sample)
 	var ly: float = road.position.y + 40.0 * u
 	for item in ROADMAP:
 		var it: Array = item
 		var done: bool = String(it[0]) == "check"
 		Glyphs.icon(self, String(it[0]), Rect2(Vector2(road.position.x + 12.0 * u, ly - 1.0 * u), Vector2(15.0, 15.0) * u),
 			Color(0.5, 1.0, 0.68, a) if done else Color(accent.lightened(0.3), a) if String(it[0]) == "half" else dim)
-		draw_string(fl, Vector2(road.position.x + 34.0 * u, ly + 11.0 * u), String(it[1]), HORIZONTAL_ALIGNMENT_LEFT, road.size.x * 0.5 - 40.0 * u, int(10.5 * u), white if done else soft)
+		draw_string(fl, Vector2(road.position.x + 34.0 * u, ly + 11.0 * u), String(it[1]), HORIZONTAL_ALIGNMENT_LEFT, road.size.x * 0.5 - 40.0 * u, Style.type_px("caption", u), white if done else soft)
 		ly += 17.0 * u
 	var ax: float = road.position.x + road.size.x * 0.52
-	draw_string(fs, Vector2(ax, road.position.y + 50.0 * u), "Days to author a creature", HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u), soft)
+	draw_string(fs, Vector2(ax, road.position.y + 50.0 * u), "Days to author a creature", HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("caption", u), soft)
 	var by: float = road.position.y + 62.0 * u
 	var most: float = 0.0
 	for e in AUTHORING:
 		most = maxf(most, float(e[1]))
 	for e in AUTHORING:
 		var bw: float = (road.end.x - ax - 96.0 * u) * float(e[1]) / most
-		draw_string(fl, Vector2(ax, by + 9.0 * u), String(e[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u), dim)
+		draw_string(fl, Vector2(ax, by + 9.0 * u), String(e[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("caption", u), dim)
 		draw_rect(Rect2(Vector2(ax + 52.0 * u, by), Vector2(bw, 10.0 * u)), Color(sample, 0.75 * a))
-		draw_string(fs, Vector2(ax + 58.0 * u + bw, by + 9.0 * u), ("%.1f" % float(e[1])).trim_suffix(".0"), HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u), soft)
+		draw_string(fs, Vector2(ax + 58.0 * u + bw, by + 9.0 * u), ("%.1f" % float(e[1])).trim_suffix(".0"), HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("caption", u), soft)
 		by += 15.0 * u
 
 
 func _card(rect: Rect2, u: float, a: float) -> void:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(1, 1, 1, 0.045 * a)
-	sb.set_corner_radius_all(int(9 * u))
+	sb.set_corner_radius_all(Style.type_px("micro", u))
 	sb.anti_aliasing = true
 	draw_style_box(sb, rect)
 
@@ -220,8 +217,8 @@ func _card(rect: Rect2, u: float, a: float) -> void:
 func _section(rect: Rect2, u: float, a: float, kind: String, text: String, accent: Color) -> float:
 	Glyphs.icon(self, kind, Rect2(rect.position + Vector2(10.0, 9.0) * u, Vector2(18.0, 18.0) * u), Color(accent.lightened(0.3), a))
 	var f: Font = LabPrint.font("bold")
-	draw_string(f, rect.position + Vector2(36.0, 24.0) * u, text, HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), Color(1, 1, 1, a))
-	return f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u)).x
+	draw_string(f, rect.position + Vector2(36.0, 24.0) * u, text, HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("body", u), Color(1, 1, 1, a))
+	return f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("body", u)).x
 
 
 func _frame_graph(gr: Rect2, u: float, a: float, accent: Color, dim: Color) -> void:
@@ -233,7 +230,7 @@ func _frame_graph(gr: Rect2, u: float, a: float, accent: Color, dim: Color) -> v
 	for i in 24:
 		var x0: float = gr.position.x + gr.size.x * float(i) / 24.0
 		draw_line(Vector2(x0, budget_y), Vector2(x0 + gr.size.x / 48.0, budget_y), Color(1.0, 0.86, 0.45, 0.6 * a), maxf(1.0, u))
-	draw_string(LabPrint.font("body"), Vector2(gr.position.x + 4.0 * u, budget_y - 3.0 * u), "60 fps", HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), dim)
+	draw_string(LabPrint.font("body"), Vector2(gr.position.x + 4.0 * u, budget_y - 3.0 * u), "60 fps", HORIZONTAL_ALIGNMENT_LEFT, -1, Style.type_px("micro", u), dim)
 	if _frames.size() > 2:
 		var pts := PackedVector2Array()
 		for i in _frames.size():

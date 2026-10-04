@@ -530,3 +530,25 @@ func slice_in_rig() -> Array:
 		return []
 	var gb: Projection = _model.global_basis
 	return [Vector4(gb.x.w, gb.y.w, gb.z.w, gb.w.w), _model.global_position.w]
+
+
+var _sections: Array = []
+
+
+## Every ball as the designer set it, for the ball inspector (kit_desk_4d.gd): its name, where it
+## sits seen from the side (along, up), and its handful of numbers.
+func ball_sections() -> Array:
+	if not _sections.is_empty():
+		return _sections
+	for b in _balls:
+		var s: Dictionary = (b as Node).call("get_loft_section")
+		var p: Vector4 = _rig.call("_position_in_rig", b)
+		var rig: Node = b
+		while rig != null and not rig.has_method("build"):
+			rig = rig.get_parent()
+		_sections.append({"name": String((b as Node).name), "at": Vector2(p.z, p.y), "radius": float(s.get("radius", 0.0)),
+			"sides": int(rig.get("profile_sides")) if rig != null else 12, "rings": int(rig.get("profile_rings")) if rig != null else 4,
+			"smoothing": int(rig.get("smoothing")) if rig != null and rig.get("smoothing") != null else 1,
+			"v": float(s.get("v_scale", 1.0)), "w": float(s.get("w_scale", 1.0)), "square": float(s.get("squareness", 0.0)),
+			"roll": float(s.get("roll", 0.0)), "color": s.get("color", Color.WHITE)})
+	return _sections
