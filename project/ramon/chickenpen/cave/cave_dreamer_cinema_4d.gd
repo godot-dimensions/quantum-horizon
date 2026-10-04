@@ -116,7 +116,8 @@ var _on := false
 var _bars_k := 0.0
 var _shot := ""
 var _u := 0.0
-var _slice_was := Vector2.ZERO
+## The orbit rig's frame before the cinema flattened it, put back after.
+var _ground_was: Projection = Projection.IDENTITY
 var _flinch := -1.0
 var _flinch_from := Vector4.ZERO
 var _glow: OmniLight4D
@@ -174,15 +175,15 @@ func begin() -> void:
 	_u = 0.0
 	_playing = 0.0
 	_skip_k = 0.0
-	if _rig != null:
-		_slice_was = Vector2(float(_rig.get("_slice_xw")), float(_rig.get("_slice_zw")))
-		_rig.set("_slice_xw", 0.0)
-		_rig.set("_slice_zw", 0.0)
-		_rig.set("_homing", 0.0)
-		if _rig.has_method("lock_look"):
-			_rig.call("lock_look", true)
-		if _rig.has_method("_apply"):
-			_rig.call("_apply")
+	var rig := _rig as Node4D
+	if rig != null:
+		_ground_was = rig.basis
+		rig.basis = GroundBasis4D.flattened(rig.basis)
+		rig.set("_homing", 0.0)
+		if rig.has_method("lock_look"):
+			rig.call("lock_look", true)
+		if rig.has_method("_apply"):
+			rig.call("_apply")
 
 
 ## And closed. [param waking] keeps the scene on screen for the flash that takes you home
@@ -195,13 +196,13 @@ func end(waking: bool) -> void:
 	_on = false
 	_flinch = -1.0
 	_glow.visible = false
-	if _rig != null:
-		_rig.set("_slice_xw", _slice_was.x)
-		_rig.set("_slice_zw", _slice_was.y)
-		if _rig.has_method("lock_look"):
-			_rig.call("lock_look", false)
-		if _rig.has_method("_apply"):
-			_rig.call("_apply")
+	var rig := _rig as Node4D
+	if rig != null:
+		rig.basis = _ground_was
+		if rig.has_method("lock_look"):
+			rig.call("lock_look", false)
+		if rig.has_method("_apply"):
+			rig.call("_apply")
 
 
 func is_playing() -> bool:

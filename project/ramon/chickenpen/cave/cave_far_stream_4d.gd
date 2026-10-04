@@ -81,8 +81,9 @@ func _process(delta: float) -> void:
 	var cave := get_parent() as Node4D
 	var local: Vector4 = cave.global_basis.inverse() * (_player.global_position - cave.global_position)
 	var turned := 0.0
-	if _rig != null:
-		turned = maxf(absf(float(_rig.get("_slice_xw"))), absf(float(_rig.get("_slice_zw"))))
+	var rig := _rig as Node4D
+	if rig != null:
+		turned = GroundBasis4D.tilt(rig.basis)
 	var wanted: bool = turned > deg_to_rad(turn_degrees) or absf(local.w) > step_w
 	_idle = 0.0 if wanted else _idle + delta
 	if wanted and not is_loaded() and _task < 0:

@@ -15,8 +15,9 @@ extends Node
 ## it pulls to whatever is nearest the middle of the frame.
 ##
 ## THE SLICE TURN IS THE PEN'S OWN: hold the right button and move the mouse to tilt the
-## slice through W (xw and zw, outermost, so looking round never re-cuts the world - the
-## orbit rig's header explains why); R straightens it and brings the focus home.
+## slice through W. Heading and slice turns are one level rotation, [member ground]
+## (GroundBasis4D, as the orbit rig's basis is), with the pitch kept apart; R straightens it
+## and brings the focus home.
 ##
 ## THE SHUTTER IS STATE, NOT PIXELS. On the press, the judge (photo_judge_4d.gd) reads who is
 ## in frame, how big, how central, how sharp in W and what they are doing, from the game's
@@ -97,10 +98,16 @@ const VIEWFINDER := preload("res://ramon/chickenpen/lookout/lookout_viewfinder_4
 @export_range(0.02, 0.5, 0.01, "suffix:s") var blackout_seconds: float = 0.11
 
 var mode: int = Mode.OFF
-var yaw: float = 0.0
+## The horizontal frame: heading and slice turns together. Pitch is kept apart.
+var ground: Projection = Projection.IDENTITY
+## The heading read off [member ground] (GroundBasis4D.heading); setting it turns in place
+## and leaves the slice alone.
+var yaw: float:
+	get:
+		return GroundBasis4D.heading(ground)
+	set(value):
+		ground = GroundBasis4D.turned_to(ground, value)
 var pitch: float = 0.0
-var slice_xw: float = 0.0
-var slice_zw: float = 0.0
 var zoom: float = 1.0
 var zoom_goal: float = 1.0
 ## The prime last chosen with L, in mm, and how long ago (for the viewfinder's big readout).
@@ -300,26 +307,26 @@ func ride(eye: Callable, film_count: int, yaw_centre: float = 0.0, yaw_half: flo
 	_set_mode(Mode.RIDE)
 
 
-## The ride is over: the pen back, the player put down at [param at].
-func end_ride(at: Vector4, facing_yaw: float) -> void:
+## The ride is over: the pen back, the player put down at [param at], looking along [param facing].
+func end_ride(at: Vector4, facing: Vector4) -> void:
 	if mode != Mode.RIDE:
 		return
 	_ride_eye = Callable()
 	_player.global_position = at
-	_give_back(facing_yaw)
+	_give_back(facing)
 
 
 ## Look along [param direction], for a cutscene or the first view out of the window. With the
 ## camera held, it turns you: the orbit rig owns the look then.
 func look_along(direction: Vector4) -> void:
 	var flat := Vector2(direction.x, direction.z)
-	if flat.length() > 0.0001:
-		yaw = atan2(-flat.x, -flat.y)
 	pitch = clampf(atan2(direction.y, maxf(flat.length(), 0.0001)), pitch_min, pitch_max)
 	if mode == Mode.HELD and _rig != null:
-		_rig.set("yaw", yaw)
+		_rig.call("face_toward", direction)
 		_rig.set("pitch", pitch)
 		_rig.call("_apply")
+	else:
+		ground = GroundBasis4D.faced(ground, direction)
 
 
 func set_view_visible(on: bool) -> void:
@@ -469,10 +476,10 @@ func _place_held_camera() -> void:
 	_eye_now = _player.global_position + Vector4(0.0, held_eye_height, 0.0, 0.0)
 	camera.global_basis = basis
 	camera.global_position = _eye_now + basis.w.normalized() * focus
-	yaw = _rig_yaw()
+	var rig := _rig as Node4D
+	if rig != null:
+		ground = rig.global_basis
 	pitch = float(_rig.get("pitch"))
-	slice_xw = float(_rig.get("_slice_xw"))
-	slice_zw = float(_rig.get("_slice_zw"))
 
 
 # --- Borrowing the pen, and giving it back -------------------------------------------------
@@ -517,7 +524,7 @@ func _make_view() -> void:
 	_layer.add_child(view)
 
 
-func _give_back(facing_yaw: float) -> void:
+func _give_back(facing: Vector4) -> void:
 	var hud: Dictionary = _saved.get("hud", {})
 	for item in hud:
 		if is_instance_valid(item):
@@ -532,7 +539,7 @@ func _give_back(facing_yaw: float) -> void:
 	# the ground is the field you were just looking at from above, not a ladder.
 	var rig: Node = _room.get_node_or_null("Player/CameraRig")
 	if rig != null:
-		rig.set("yaw", facing_yaw)
+		rig.call("face_toward", facing)
 		rig.set("pitch", -0.2)
 		if rig.has_method("_apply"):
 			rig.call("_apply")
@@ -565,8 +572,7 @@ func _make_camera() -> void:
 	zoom_goal = 1.0
 	focus = 0.0
 	focus_goal = 0.0
-	slice_xw = 0.0
-	slice_zw = 0.0
+	ground = GroundBasis4D.flattened(ground)
 
 
 func _set_mode(value: int) -> void:
@@ -715,7 +721,7 @@ func _run_climb(delta: float, up: bool) -> void:
 			_player.global_position = (_tower.call("ladder_top") as Vector4) + Vector4(0.0, 0.05, 0.0, 0.0)
 			_player.set("linear_velocity", Vector4.ZERO)
 			# Facing out over the farm, towards the pen: the cabin is behind you.
-			_give_back(_yaw_to(_player.global_position, _home_ground()))
+			_give_back(_home_ground() - _player.global_position)
 			raise()
 			lookout.call("on_cab_entered")
 		elif up:
@@ -724,7 +730,7 @@ func _run_climb(delta: float, up: bool) -> void:
 		else:
 			_player.global_position = (_tower.call("ladder_foot") as Vector4) + Vector4(0.0, 0.05, 0.4, 0.0)
 			_player.set("linear_velocity", Vector4.ZERO)
-			_give_back(_yaw_to(_player.global_position, _home_ground()))
+			_give_back(_home_ground() - _player.global_position)
 			lookout.call("on_cab_left")
 
 
@@ -788,9 +794,10 @@ func _run_camera(delta: float) -> void:
 	if _straightening > 0.0:
 		_straightening = maxf(_straightening - delta, 0.0)
 		var step: float = clampf(delta / maxf(_straightening + delta, 0.0001), 0.0, 1.0)
-		slice_xw = lerpf(slice_xw, 0.0, step)
-		slice_zw = lerpf(slice_zw, 0.0, step)
+		ground = GroundBasis4D.eased_flat(ground, step)
 		focus_goal = lerpf(focus_goal, 0.0, step)
+		if _straightening <= 0.0:
+			ground = GroundBasis4D.flattened(ground)
 	var before: float = focus
 	focus = lerpf(focus, focus_goal, clampf(delta * 10.0, 0.0, 1.0))
 	if absf(focus - before) > 0.0005:
@@ -835,30 +842,26 @@ func _run_camera(delta: float) -> void:
 	_place_camera(eye)
 
 
-## The slice turns outermost, then yaw, then pitch - the orbit rig's order - and the focus
-## slides the eye along the slice's normal, which yaw and pitch never touch.
+## The ground frame, then pitch - the orbit rig's split - and the focus slides the eye along
+## the slice's normal, which turning and pitch never touch.
 func _place_camera(eye: Vector4) -> void:
 	if camera == null:
 		return
-	var frame: Projection = _slice_frame() * Basis4D.from_zx(yaw)
-	camera.global_basis = Basis4D.orthonormalized(frame * Basis4D.from_yz(pitch))
+	ground = GroundBasis4D.cleaned(ground)
+	camera.global_basis = ground * Basis4D.from_yz(pitch)
 	camera.global_position = eye + slice_normal() * focus
-
-
-func _slice_frame() -> Projection:
-	var frame: Projection = Projection.IDENTITY
-	if not is_zero_approx(slice_xw):
-		frame *= Basis4D.from_xw(slice_xw)
-	if not is_zero_approx(slice_zw):
-		frame *= Basis4D.from_zw(slice_zw)
-	return frame
 
 
 ## The direction the focus ring slides along, in the world.
 func slice_normal() -> Vector4:
 	if mode == Mode.HELD and _pitch_node != null:
 		return _pitch_node.global_basis.w.normalized()
-	return (_slice_frame() * Vector4(0.0, 0.0, 0.0, 1.0)).normalized()
+	return ground.w.normalized()
+
+
+## How far the slice is tilted off the world's W, for the viewfinder's readout.
+func slice_tilt() -> float:
+	return GroundBasis4D.tilt(ground)
 
 
 ## Where the eye is with the focus ring at zero - what the W-meter measures from.
@@ -919,12 +922,11 @@ func _input(event: InputEvent) -> void:
 		var motion: Vector2 = (event as InputEventMouseMotion).relative * mouse_sensitivity
 		if Input.is_action_pressed(&"rotate_4d"):
 			_straightening = 0.0
-			slice_xw -= motion.x
-			slice_zw += motion.y
+			ground = GroundBasis4D.sliced(ground, motion)
 		else:
 			# Slower the longer the lens, so a 10x view does not whip about.
 			var scale: float = 1.0 / zoom
-			yaw -= motion.x * scale
+			ground = GroundBasis4D.looked(ground, motion * scale)
 			pitch = clampf(pitch - motion.y * scale, pitch_min, pitch_max)
 	elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 		var button: int = (event as InputEventMouseButton).button_index

@@ -237,10 +237,9 @@ func _draw_frame() -> void:
 		film_text = "%d shots left" % int(station.get("film"))
 	var fw: float = _font.get_string_size(film_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	draw_string(_font, Vector2(s.x - inset.x - fw, top_h * 0.5 + fs * 0.36), film_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, white * Color(1, 1, 1, k))
-	var xw: float = rad_to_deg(float(station.get("slice_xw")))
-	var zw: float = rad_to_deg(float(station.get("slice_zw")))
-	if absf(xw) > 0.5 or absf(zw) > 0.5:
-		var tilt: String = "SLICE TURNED   xw %+.0f°   zw %+.0f°   R straightens" % [xw, zw]
+	var tilted: float = rad_to_deg(float(station.call("slice_tilt")))
+	if tilted > 0.5:
+		var tilt: String = "SLICE TURNED   %.0f° off W   R straightens" % tilted
 		var tw: float = _font.get_string_size(tilt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		draw_string(_font, Vector2((s.x - tw) * 0.5, top_h * 0.5 + fs * 0.36), tilt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, accent * Color(1, 1, 1, k))
 	_draw_ghosts(s, accent, bottom, inset.y)
