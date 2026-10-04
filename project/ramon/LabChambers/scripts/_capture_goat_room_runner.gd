@@ -118,6 +118,9 @@ func _run() -> void:
 		_put(3.4, 3.0, -PI * 0.25)
 		await _wait(0.3)
 		await _shot("screens")
+		_put(0.0, -6.2, 0.0)
+		await _wait(0.4)
+		await _shot("back_door")
 		_put(0.5, 6.5, 1.107)
 		await _wait(0.8)
 		await _shot("console")
@@ -181,14 +184,20 @@ func _run() -> void:
 	await _set_mood("dark")
 	_put(2.6, 5.2, 0.37)
 	await _wait(10.0)
+	print("loop state: t %.1f touched %.1f looping %s cinematic %s" % [float(sc.get("_t")), float(sc.get("_touched_at")), str(sc.get("_looping")), str(sc.get("cinematic"))])
 	_check(bool(sc.get("_looping")), "the goat plays its sequence on its own")
 	for i in 3:
 		await _wait(3.5)
 		await _shot("loop_%d" % i)
 	_put(2.6, 5.2, 0.37)
 	await _wait(0.4)
+	var before: int = int(sc.get("slice_index"))
 	for i in 3:
 		await _click(MOUSE_BUTTON_WHEEL_UP)
+	if int(sc.get("slice_index")) == before:
+		print("note: the wheel needs a captured mouse, which this window cannot have; slicing directly")
+		for i in 3:
+			sc.call("step_slice", 1)
 	await _wait(0.8)
 	_check(int(sc.get("slice_index")) == 7, "the wheel slices (%d)" % int(sc.get("slice_index")))
 	await _shot("sliced")

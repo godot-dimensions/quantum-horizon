@@ -4,10 +4,10 @@ extends RefCounted
 ## like ref, and with the blue circle a little bit smaller, a decal text on the side of the
 ## pedestal would be nice too"). From the floor up:
 ##
-##   a dark foot, set in, with a warm light line round it on the floor
+##   a dark foot, set in
 ##   the body: one dark metal cylinder (Ramon, 4 Oct: "remove the separately placed blocks
 ##     around the grey part, one cylinder shape please"), its label wrapped round its front
-##   a dark band, set in under the lip, with a warm light line in it
+##   a dark band, set in under the lip (the warm light lines that were here are gone: Ramon, 4 Oct)
 ##   the lip: a white ring, and the blue disc set into it, smaller than the lip
 ##
 ## build() makes it and returns its parts; apply_mood() recolours them; print_band() wraps a
@@ -45,15 +45,6 @@ static func build(parent: Node4D, r: float, h: float) -> Dictionary:
 	parts["body"] = body
 	parts["body_r"] = r - 0.04
 	parts["body_y"] = FOOT + ph * 0.5
-	# The light lines: one in the band under the lip, one round the foot.
-	var b := Batch.new()
-	b.ring("glow", Vector4(0, body_top + BAND * 0.5, 0, 0), r - 0.095, 0.02, 0.022, Build.W_DEPTH * 0.5, 96)
-	b.ring("glow", Vector4(0, FOOT * 0.45, 0, 0), r - 0.115, 0.02, 0.022, Build.W_DEPTH * 0.5, 96)
-	var glow: MeshInstance4D = b.instance("glow")
-	glow.name = "PedestalGlow"
-	glow.set_meta(Build.GENERATED, true)
-	parent.add_child(glow)
-	parts["glow"].append(glow)
 	parts["lip"] = _drum(parent, "PedestalLip", r, LIP, h - LIP * 0.5)
 	parts["deck"] = _drum(parent, "PedestalDeck", r - DECK_IN, 0.02, h + 0.004)
 	var solid := StaticBody4D.new()

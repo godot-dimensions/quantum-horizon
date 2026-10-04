@@ -414,3 +414,48 @@ func slice_in_rig() -> Array:
 		return []
 	var gb: Projection = rig.global_basis
 	return [Vector4(gb.x.w, gb.y.w, gb.z.w, gb.w.w), rig.global_position.w]
+
+
+var _wire: PackedVector4Array = PackedVector4Array()
+
+
+## The goat as a wireframe in 4D, for the slice view: the finished coat's tetrahedron edges, each
+## once, thinned to one edge per cell of a grid about 30 cells along the goat (by its middle), as
+## pairs of points in the rig's space. Worked out once.
+func wire() -> PackedVector4Array:
+	if not _wire.is_empty() or _goat == null:
+		return _wire
+	var m: ArrayTetraMesh4D = _goat.get("_finished")
+	if m == null:
+		return _wire
+	var verts: PackedVector4Array = m.get_vertex_positions()
+	var cells: PackedInt32Array = m.get_simplex_cell_vertex_indices()
+	var lo := Vector4(INF, INF, INF, INF)
+	var hi := Vector4(-INF, -INF, -INF, -INF)
+	for v in verts:
+		lo = Vector4(minf(lo.x, v.x), minf(lo.y, v.y), minf(lo.z, v.z), minf(lo.w, v.w))
+		hi = Vector4(maxf(hi.x, v.x), maxf(hi.y, v.y), maxf(hi.z, v.z), maxf(hi.w, v.w))
+	var cell: float = maxf(maxf(hi.x - lo.x, hi.z - lo.z), 0.001) / 30.0
+	var seen: Dictionary = {}
+	var keep: Dictionary = {}
+	for t in range(0, cells.size() - 3, 4):
+		for e in [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]]:
+			var i0: int = cells[t + e[0]]
+			var i1: int = cells[t + e[1]]
+			var key := Vector2i(mini(i0, i1), maxi(i0, i1))
+			if seen.has(key):
+				continue
+			seen[key] = true
+			var c: Vector4 = (verts[i0] + verts[i1]) * 0.5
+			var ck := Vector4i(int(floor(c.x / cell)), int(floor(c.y / cell)), int(floor(c.z / cell)), int(floor(c.w / cell)))
+			if not keep.has(ck):
+				keep[ck] = key
+	for key in keep.values():
+		_wire.append(verts[key.x])
+		_wire.append(verts[key.y])
+	return _wire
+
+
+## The stand's turn (about the vertical), so the slice can be turned in the goat's own frame.
+func stand_basis() -> Projection:
+	return _stand.basis if _stand != null else Projection.IDENTITY

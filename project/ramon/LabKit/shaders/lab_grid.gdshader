@@ -63,6 +63,9 @@ uniform float print_glow : hint_range(0.0, 1.0) = 0.35;
 // A print wrapped round a cylinder's side instead (the pedestal's label): x and y of
 // print_cylinder are the angles it runs between (radians from +Z towards +X, so it reads left to
 // right from outside), z and w the heights (in the mesh's own space) it runs between.
+// A live print (a viewport's texture) has no mipmaps: 1 samples it four times across its own
+// footprint on screen instead, so it stays smooth from a distance.
+uniform float print_aa = 0.0;
 uniform float print_cyl = 0.0;
 uniform vec4 print_cylinder = vec4(-0.4, 0.4, -0.1, 0.1);
 
@@ -301,6 +304,12 @@ void fragment() {
 		if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0) {
 			// Premultiplied (LabKit/lab_print.gd): the ink already carries its coverage.
 			vec4 t = texture(print_texture, uv);
+			if (print_aa > 0.5) {
+				vec2 du = dFdx(uv) * 0.375;
+				vec2 dv = dFdy(uv) * 0.375;
+				t = 0.25 * (texture(print_texture, uv + du + dv * 0.33) + texture(print_texture, uv - du - dv * 0.33)
+					+ texture(print_texture, uv + dv - du * 0.33) + texture(print_texture, uv - dv + du * 0.33));
+			}
 			float k = t.a * print_on;
 			vec3 ink = t.rgb * print_tint.rgb * print_on;
 			c = c * (1.0 - k) + ink;
@@ -335,7 +344,7 @@ void fragment() {
 		float r = length(rel);
 		float fr = max(fwidth(r), 0.0005);
 		float rr = ring_at.z;
-		if (r > rr - 0.1 && r < rr + 0.5) {
+		if (r > rr - 0.1 && r < rr + 0.6) {
 			float ang = atan(rel.y, rel.x) + TIME * ring_at.w;
 			// A ring of dashes, few and long.
 			float dash = step(fract(ang / TAU * 28.0), 0.42);
@@ -343,7 +352,7 @@ void fragment() {
 			// Outside it, six arcs with wide breaks, turning the other way.
 			float ang2 = atan(rel.y, rel.x) - TIME * ring_at.w * 0.6;
 			float arcs = step(fract(ang2 / TAU * 6.0), 0.55);
-			k = max(k, arcs * (1.0 - smoothstep(0.035, 0.035 + fr, abs(r - (rr + 0.24)))));
+			k = max(k, arcs * (1.0 - smoothstep(0.105, 0.105 + fr, abs(r - (rr + 0.3)))));
 			k *= ring_on * (1.0 - smoothstep(0.03, 0.08, fr));
 			c = mix(c, ring_color.rgb, k * 0.95);
 			glow += ring_color.rgb * k * 0.2;

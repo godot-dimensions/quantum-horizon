@@ -32,7 +32,7 @@ const SliceView := preload("res://ramon/LabChambers/kit/kit_slice_view.gd")
 ## Where the player starts, facing -Z.
 @export var start_at: Vector2 = Vector2(0.0, 15.2)
 ## The arrows painted into the floors, world x/z.
-@export var route: PackedVector2Array = PackedVector2Array([Vector2(0, 14.6), Vector2(0, 4.2)])
+@export var route: PackedVector2Array = PackedVector2Array([Vector2(0, 14.6), Vector2(0, -1.5)])
 
 @export_group("Room shape")
 ## The goat room's shape in five numbers (Ramon, 4 Oct: "sliders to manipulate the walls' sizes in
@@ -60,6 +60,22 @@ const SliceView := preload("res://ramon/LabChambers/kit/kit_slice_view.gd")
 @export_range(-15.0, 15.0, 0.1) var corner_z: float = -1.0:
 	set(v):
 		corner_z = v
+		_shape_later()
+## The door in the middle of the back wall, into the big square room behind (Ramon, 4 Oct: "a
+## door opening behind the goat that leads in to a new room, just a much bigger square room";
+## "customizable"). 0 wide: no door.
+@export_range(0.0, 8.0, 0.1) var door_width: float = 2.4:
+	set(v):
+		door_width = v
+		_shape_later()
+@export_range(2.0, 8.0, 0.1) var door_height: float = 3.6:
+	set(v):
+		door_height = v
+		_shape_later()
+## The big room's side, metres (square).
+@export_range(10.0, 80.0, 1.0) var big_room_size: float = 30.0:
+	set(v):
+		big_room_size = v
 		_shape_later()
 
 @export_group("Camera")
@@ -99,6 +115,7 @@ func apply_mood(m: String, _instant: bool = false) -> void:
 
 
 func _ready() -> void:
+	apply_shape()
 	var room: Node = get_node_or_null("Room")
 	if room != null:
 		room.set("mood_overrides", Style.ROOM_LIGHT.duplicate(true))
@@ -180,18 +197,30 @@ func apply_shape() -> void:
 	var c: float = clampf(corner_z, -d + 0.5, f - 1.0)
 	var outline := PackedVector2Array([Vector2(-w, f), Vector2(-w, c), Vector2(-b, -d), Vector2(b, -d), Vector2(w, c), Vector2(w, f)])
 	var h: float = (gr.get("size") as Vector3).y
-	gr.set("size", Vector3(w * 2.0, h, f + d))
-	gr.set("outline", outline)
-	# The doorway in the middle of the entrance wall (edge 5 runs from (w, f) to (-w, f)).
-	gr.set("doorways", [[5, w - 2.2, w + 2.2, 3.8]])
+	_set_if(gr, "size", Vector3(w * 2.0, h, f + d))
+	_set_if(gr, "outline", outline)
+	# The doorway in the middle of the entrance wall (edge 5 runs from (w, f) to (-w, f)), and the
+	# back door in the middle of the back wall (edge 2 runs from (-b, -d) to (b, -d)).
+	var dw: float = minf(door_width, b * 2.0 - 0.4)
+	var doors: Array = [[5, w - 2.2, w + 2.2, 3.8]]
+	if dw > 0.1:
+		doors.append([2, b - dw * 0.5, b + dw * 0.5, minf(door_height, h - 0.5)])
+	_set_if(gr, "doorways", doors)
+	# The big room behind it, its own front wall just behind the back wall, a door to match.
+	var big: Node4D = get_node_or_null("BigRoom") as Node4D
+	if big != null:
+		var s2: float = big_room_size
+		big.position = Vector4(0.0, 0.0, -d - 1.0 - s2 * 0.5, 0.0)
+		_set_if(big, "size", Vector3(s2, h, s2))
+		_set_if(big, "doorways", [["s", -dw * 0.5, dw * 0.5, minf(door_height, h - 0.5)]] if dw > 0.1 else [])
 	var sign: Node = gr.get_node_or_null("Sign")
 	if sign != null:
-		sign.set("along", Vector2(w - 3.8, w + 3.8))
+		_set_if(sign, "along", Vector2(w - 3.8, w + 3.8))
 	# The lesson keeps its share of the angled wall on the left (edge 1).
 	var lesson: Node = gr.get_node_or_null("Lesson")
 	if lesson != null:
 		var len1: float = outline[1].distance_to(outline[2])
-		lesson.set("along", Vector2(len1 * 0.094, len1 * 0.903))
+		_set_if(lesson, "along", Vector2(snappedf(len1 * 0.094, 0.01), snappedf(len1 * 0.903, 0.01)))
 	# The two screens stay flush to the angled wall on the right (edge 3), facing into the room.
 	var a: Vector2 = outline[3]
 	var e: Vector2 = outline[4]
@@ -211,11 +240,19 @@ func apply_shape() -> void:
 	if el != null:
 		el.position = Vector4(0.0, el.position.y, f + 3.5, 0.0)
 		el.set("aim", Vector3(0.0, 0.0, f + 3.5))
-	route = PackedVector2Array([Vector2(0.0, f + 5.6), Vector2(0.0, minf(4.2, f - 1.0))])
+	# The arrows run on under the pedestal and vanish there.
+	route = PackedVector2Array([Vector2(0.0, f + 5.6), Vector2(0.0, -1.5)])
 	start_at = Vector2(0.0, f + 6.2)
 	for r in get_tree().get_nodes_in_group("kit_room"):
 		if is_ancestor_of(r):
-			r.set("route", route)
+			_set_if(r, "route", route)
+
+
+## Sets a property only when it changes: each change rebuilds a room, and rebuilding one that is
+## still printing its walls wastes the print.
+static func _set_if(n: Object, key: String, v: Variant) -> void:
+	if n.get(key) != v:
+		n.set(key, v)
 
 
 ## Keeps the floor ring round the pedestal and the spot's fixture at the ceiling, when either is
@@ -311,7 +348,7 @@ func _input(event: InputEvent) -> void:
 	if showcase == null or not _in_room:
 		return
 	if mb != null and mb.pressed:
-		if mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		if (mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			showcase.call("step_slice", 1 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else -1)
 			get_viewport().set_input_as_handled()
 			return
@@ -326,7 +363,7 @@ func _input(event: InputEvent) -> void:
 			return
 	var mm := event as InputEventMouseMotion
 	if mm != null and (mm.button_mask & MOUSE_BUTTON_MASK_RIGHT) != 0:
-		showcase.call("turn_by", -mm.relative.x * 0.006, mm.relative.y * 0.006)
+		showcase.call("turn_by", mm.relative.x * 0.006, mm.relative.y * 0.006)
 		get_viewport().set_input_as_handled()
 
 

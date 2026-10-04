@@ -142,9 +142,10 @@ static func apply(rec: Dictionary, mood: String, k: float = 1.0) -> void:
 	var tex: Texture2D = (rec.get("tex", {}) as Dictionary).get(mood)
 	var glow: float = float((rec.get("glow", {}) as Dictionary).get(mood, 0.3))
 	for t in rec.get("targets", []):
-		var b: MeshInstance4D = t[0]
-		if not is_instance_valid(b):
+		# Checked before it is typed: a room rebuilt while this print was rendering has freed it.
+		if not is_instance_valid(t[0]):
 			continue
+		var b: MeshInstance4D = t[0]
 		LabGrid.set_print(b.material_override as TetraMaterial4D, tex, t[1], t[2], Color.WHITE, glow)
 		LabGrid.set_print_strength(b.material_override as TetraMaterial4D, k if tex != null else 0.0)
 

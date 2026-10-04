@@ -1,253 +1,174 @@
 extends PanelContainer
 
-## Kit: a temporary tuning panel for the light, live while playing (Ramon, 4 Oct: "sliders i can
-## use to attenuate light strength and darkness of bg environment fill strength ... then i can give
-## you the numbered settings and you can default set it").
+## Kit: Ramon's tuning panel for the goat room, live while playing (4 Oct: "sliders I can use ...
+## in realtime, then I can give you the numbers"; "a bit bigger text, centre spot under light,
+## category labels blue, and a save button which immediately saves the settings, so I can close
+## without issues"). Temporary and for him: plain, but every number in the room he asked to turn.
 ##
-##   Spots     multiplies every downlight and spot (KitLight)
-##   Washes    multiplies every wash (KitLight)
-##   Sky fill  multiplies the room's ambient light, the blue in every shadow
-##   Sun       multiplies the room's key light
-##   Exposure  the room's tone-map exposure
+##   LIGHT        per mood: spots and washes (multiplying every KitLight of that kind), sky fill
+##                (the blue in every shadow), the sun's strength, exposure
+##   CENTRE SPOT  the one spotlight: strength (per mood), cone, edge softness, reach, falloff,
+##                height, warmth
+##   ROOM         ceiling height, pedestal radius, the sun's height and turn (the Sun handle)
+##   ROOM SHAPE   the goat room's five outline numbers and its back door (goat_room_4d.gd)
+##   SAVE         writes everything to SAVE_PATH; the panel reads it back when the room starts,
+##                so what he saved is where the room begins
 ##
-## THE CENTRE SPOT (Ramon, 4 Oct: "I want only one spotlight in the room, the middle one. For this
-## spotlight I also want more controls"): its strength (per mood), cone, edge softness, reach,
-## falloff, height and warmth, set straight on the KitLight `spot` (kit_light_4d.gd).
-##
-## Per mood: B switches mood and the sliders show that mood's values. The numbers are printed on
-## the panel to read back. Esc frees the mouse to drag them; F1 hides the panel.
+## B switches mood (the LIGHT and spot strength rows show that mood's values); Esc frees the mouse
+## to drag; F1 hides the panel. Rows that rebuild something (ceiling, pedestal, shape) wait for
+## the slider to settle a moment.
 ##
 ## NO class_name (engine_gotchas.md).
 
 const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 const RoomScript := preload("res://ramon/LabKit/lab_room_4d.gd")
 const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
+const SAVE_PATH := "res://ramon/LabChambers/goat_room_tuning.cfg"
+const FONT := 15
+const HEAD := Color(0.42, 0.72, 1.0)
+const COOL := Color(0.86, 0.92, 1.0)
+const WARM := Color(1.0, 0.84, 0.62)
 
-## The LabKit room whose light this tunes.
+## Rows: [key, label, min, max, step].
+const LIGHT_ROWS := [["spots", "Spots", 0.0, 4.0, 0.01], ["washes", "Washes", 0.0, 4.0, 0.01], ["fill", "Sky fill (shadows)", 0.0, 3.0, 0.01],
+	["sun", "Sun strength", 0.0, 3.0, 0.01], ["exposure", "Exposure", 0.4, 2.5, 0.01]]
+const SPOT_ROWS := [["strength", "Strength", 0.0, 15.0, 0.01], ["cone", "Cone, degrees", 10.0, 120.0, 0.1], ["softness", "Edge softness", 0.1, 10.0, 0.01],
+	["reach", "Reach, m", 2.0, 30.0, 0.05], ["falloff", "Falloff", 0.01, 2.0, 0.01], ["height", "Height, m", 3.0, 13.5, 0.01], ["warmth", "Warmth", 0.0, 1.0, 0.01]]
+const ROOM_ROWS := [["ceiling", "Ceiling, m", 6.0, 14.0, 0.05], ["pedestal", "Pedestal radius, m", 2.0, 5.0, 0.05],
+	["sun_up", "Sun height, degrees", 5.0, 90.0, 0.5], ["sun_turn", "Sun turn, degrees", -180.0, 180.0, 0.5]]
+const SHAPE_ROWS := [["room_half_width", "Half width, m", 5.0, 20.0, 0.1], ["room_back", "Back wall from middle, m", 4.0, 20.0, 0.1],
+	["room_front", "Entrance wall from middle, m", 4.0, 20.0, 0.1], ["back_wall_half", "Back wall half width, m", 1.0, 10.0, 0.1],
+	["corner_z", "Angled walls start at z", -15.0, 15.0, 0.1], ["door_width", "Back door width, m", 0.0, 8.0, 0.1], ["door_height", "Back door height, m", 2.0, 8.0, 0.1]]
+## Where the light starts per mood when nothing is saved (Ramon's numbers for bright).
+const START := {"bright": {"spots": 3.26, "washes": 0.0, "fill": 1.52, "sun": 0.66, "exposure": 1.05}}
+
 var room: Node
-## The centre spotlight (a KitLight) the spot sliders drive.
 var spot: Node
-## The sun handle (kit_sun_4d.gd), the showcase (its pedestal's radius) and the goat room (its
-## ceiling), for the ROOM sliders.
 var sun: Node
 var showcase: Node
 var goat_room: Node
-var _room_sliders: Dictionary = {}
-var _room_labels: Dictionary = {}
-var _room_pending: Dictionary = {}
-var _room_wait: float = 0.0
-## The goat room's root (goat_room_4d.gd), whose five shape numbers the ROOM SHAPE sliders set.
 var shape_root: Node
-var _shape_sliders: Dictionary = {}
-var _shape_labels: Dictionary = {}
-var _shape_pending: Dictionary = {}
-var _shape_wait: float = 0.0
-const SHAPE_KEYS := ["room_half_width", "room_back", "room_front", "back_wall_half", "corner_z"]
-const SHAPE_RANGES := {"room_half_width": [5.0, 20.0], "room_back": [4.0, 20.0], "room_front": [4.0, 20.0], "back_wall_half": [1.0, 10.0], "corner_z": [-15.0, 15.0]}
-const SHAPE_NAMES := {"room_half_width": "Half width, m", "room_back": "Back wall, m from middle", "room_front": "Entrance wall, m from middle",
-	"back_wall_half": "Back wall half width, m", "corner_z": "Angled walls start at z"}
-var _spot_sliders: Dictionary = {}
-var _spot_labels: Dictionary = {}
-var _spot_read: Label
-## Values per mood: spots, washes, fill, sun, exposure.
+## LIGHT values per mood.
 var values: Dictionary = {}
 var _sliders: Dictionary = {}
 var _labels: Dictionary = {}
+var _names: Dictionary = {}
 var _readout: Label
 var _mood: String = ""
 var _quiet: bool = false
-
-const KEYS := ["spots", "washes", "fill", "sun", "exposure"]
-## Where the sliders start, per mood: Ramon's numbers for bright (4 Oct, "keep the sliders for
-## now"); a mood not listed starts at 1, washes off, and its own exposure.
-const START := {"bright": {"spots": 3.26, "washes": 0.0, "fill": 1.52, "sun": 0.66, "exposure": 1.05}}
-const SPOT_KEYS := ["strength", "cone", "softness", "reach", "falloff", "height", "warmth"]
-const ROOM_KEYS := ["ceiling", "pedestal", "sun_up", "sun_turn"]
-const ROOM_RANGES := {"ceiling": [6.0, 14.0], "pedestal": [2.0, 5.0], "sun_up": [5.0, 90.0], "sun_turn": [-180.0, 180.0]}
-const ROOM_NAMES := {"ceiling": "Ceiling, m", "pedestal": "Pedestal radius, m", "sun_up": "Sun height, degrees", "sun_turn": "Sun turn, degrees"}
-const SPOT_RANGES := {"strength": [0.0, 15.0], "cone": [10.0, 120.0], "softness": [0.1, 10.0], "reach": [2.0, 30.0],
-	"falloff": [0.01, 2.0], "height": [3.0, 8.4], "warmth": [0.0, 1.0]}
-const SPOT_NAMES := {"strength": "Strength", "cone": "Cone, degrees", "softness": "Edge softness", "reach": "Reach, m",
-	"falloff": "Falloff", "height": "Height, m", "warmth": "Warmth"}
-## Warmth 0 is this cool white, 1 this warm one.
-const COOL := Color(0.86, 0.92, 1.0)
-const WARM := Color(1.0, 0.84, 0.62)
-const RANGES := {"spots": [0.0, 4.0], "washes": [0.0, 4.0], "fill": [0.0, 3.0], "sun": [0.0, 3.0], "exposure": [0.4, 2.5]}
+var _pending: Dictionary = {}
+var _wait: float = 0.0
+var _saved_note: Label
+var _scroll: ScrollContainer
+var _box: VBoxContainer
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	position = Vector2(14, 14)
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.06, 0.08, 0.82)
+	sb.bg_color = Color(0.05, 0.06, 0.08, 0.86)
 	sb.set_corner_radius_all(10)
-	sb.content_margin_left = 14
-	sb.content_margin_right = 14
-	sb.content_margin_top = 10
-	sb.content_margin_bottom = 10
+	sb.content_margin_left = 16
+	sb.content_margin_right = 16
+	sb.content_margin_top = 12
+	sb.content_margin_bottom = 12
 	add_theme_stylebox_override("panel", sb)
+	_load()
+	# It scrolls when it is taller than the window (free the mouse with Esc, then wheel over it).
+	_scroll = ScrollContainer.new()
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(_scroll)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
-	add_child(box)
+	box.add_theme_constant_override("separation", 3)
+	_scroll.add_child(box)
+	_box = box
 	var title := Label.new()
-	title.text = "LIGHT  ·  Esc frees the mouse  ·  F1 hides"
+	title.text = "TUNING  ·  Esc frees the mouse  ·  F1 hides  ·  B mood"
 	title.add_theme_font_override("font", LabPrint.font("bold"))
-	title.add_theme_font_size_override("font_size", 12)
+	title.add_theme_font_size_override("font_size", FONT)
 	box.add_child(title)
-	for k in KEYS:
-		var row := HBoxContainer.new()
-		var name_label := Label.new()
-		name_label.custom_minimum_size = Vector2(150, 0)
-		name_label.add_theme_font_size_override("font_size", 12)
-		row.add_child(name_label)
-		var s := HSlider.new()
-		s.custom_minimum_size = Vector2(200, 18)
-		s.min_value = float(RANGES[k][0])
-		s.max_value = float(RANGES[k][1])
-		s.step = 0.01
-		s.focus_mode = Control.FOCUS_NONE
-		s.value_changed.connect(func(v: float) -> void: _on_change(k, v))
-		row.add_child(s)
-		box.add_child(row)
-		_sliders[k] = s
-		_labels[k] = name_label
+	_section(box, "LIGHT")
+	for r in LIGHT_ROWS:
+		_row(box, r)
 	_readout = Label.new()
-	_readout.add_theme_font_size_override("font_size", 11)
+	_readout.add_theme_font_size_override("font_size", FONT - 2)
 	box.add_child(_readout)
-	var room_head := Label.new()
-	room_head.text = "ROOM"
-	room_head.add_theme_font_override("font", LabPrint.font("bold"))
-	room_head.add_theme_font_size_override("font_size", 12)
-	box.add_child(room_head)
-	for k in ROOM_KEYS:
-		var row := HBoxContainer.new()
-		var name_label := Label.new()
-		name_label.custom_minimum_size = Vector2(150, 0)
-		name_label.add_theme_font_size_override("font_size", 12)
-		row.add_child(name_label)
-		var s := HSlider.new()
-		s.custom_minimum_size = Vector2(200, 18)
-		s.min_value = float(ROOM_RANGES[k][0])
-		s.max_value = float(ROOM_RANGES[k][1])
-		s.step = 0.05
-		s.focus_mode = Control.FOCUS_NONE
-		s.value = _room_value(k)
-		s.value_changed.connect(func(v: float) -> void: _on_room(k, v))
-		row.add_child(s)
-		box.add_child(row)
-		_room_sliders[k] = s
-		_room_labels[k] = name_label
-	_show_room()
+	if spot != null:
+		_section(box, "CENTRE SPOT")
+		for r in SPOT_ROWS:
+			_row(box, r)
+	_section(box, "ROOM")
+	for r in ROOM_ROWS:
+		_row(box, r)
 	if shape_root != null:
-		var shape_head := Label.new()
-		shape_head.text = "ROOM SHAPE"
-		shape_head.add_theme_font_override("font", LabPrint.font("bold"))
-		shape_head.add_theme_font_size_override("font_size", 12)
-		box.add_child(shape_head)
-		for k in SHAPE_KEYS:
-			var row := HBoxContainer.new()
-			var name_label := Label.new()
-			name_label.custom_minimum_size = Vector2(150, 0)
-			name_label.add_theme_font_size_override("font_size", 12)
-			row.add_child(name_label)
-			var s := HSlider.new()
-			s.custom_minimum_size = Vector2(200, 18)
-			s.min_value = float(SHAPE_RANGES[k][0])
-			s.max_value = float(SHAPE_RANGES[k][1])
-			s.step = 0.1
-			s.focus_mode = Control.FOCUS_NONE
-			s.value = float(shape_root.get(k))
-			s.value_changed.connect(func(v: float) -> void: _on_shape(k, v))
-			row.add_child(s)
-			box.add_child(row)
-			_shape_sliders[k] = s
-			_shape_labels[k] = name_label
-		_show_shape()
-	if spot == null:
-		return
-	var head := Label.new()
-	head.text = "CENTRE SPOT"
-	head.add_theme_font_override("font", LabPrint.font("bold"))
-	head.add_theme_font_size_override("font_size", 12)
-	box.add_child(head)
-	for k in SPOT_KEYS:
-		var row := HBoxContainer.new()
-		var name_label := Label.new()
-		name_label.custom_minimum_size = Vector2(150, 0)
-		name_label.add_theme_font_size_override("font_size", 12)
-		row.add_child(name_label)
-		var s := HSlider.new()
-		s.custom_minimum_size = Vector2(200, 18)
-		s.min_value = float(SPOT_RANGES[k][0])
-		s.max_value = float(SPOT_RANGES[k][1])
-		s.step = 0.01
-		s.focus_mode = Control.FOCUS_NONE
-		s.value = _spot_value(k)
-		s.value_changed.connect(func(v: float) -> void: _on_spot(k, v))
-		row.add_child(s)
-		box.add_child(row)
-		_spot_sliders[k] = s
-		_spot_labels[k] = name_label
-	_spot_read = Label.new()
-	_spot_read.add_theme_font_size_override("font_size", 11)
-	box.add_child(_spot_read)
-	_show_spot()
+		_section(box, "ROOM SHAPE")
+		for r in SHAPE_ROWS:
+			_row(box, r)
+	var save := Button.new()
+	save.text = "SAVE SETTINGS"
+	save.focus_mode = Control.FOCUS_NONE
+	save.add_theme_font_size_override("font_size", FONT)
+	save.pressed.connect(_save)
+	box.add_child(save)
+	_saved_note = Label.new()
+	_saved_note.add_theme_font_size_override("font_size", FONT - 3)
+	box.add_child(_saved_note)
 
 
-func _room_value(k: String) -> float:
-	match k:
-		"ceiling":
-			return (goat_room.get("size") as Vector3).y if goat_room != null else 8.5
-		"pedestal":
-			return float(showcase.get("radius")) if showcase != null else 3.0
-		"sun_up":
-			return (sun.call("angles") as Vector2).x if sun != null else 64.0
-		"sun_turn":
-			return (sun.call("angles") as Vector2).y if sun != null else 25.0
-	return 0.0
+func _section(box: VBoxContainer, text: String) -> void:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_override("font", LabPrint.font("bold"))
+	l.add_theme_font_size_override("font_size", FONT)
+	l.add_theme_color_override("font_color", HEAD)
+	box.add_child(l)
 
 
-## The sun moves at once; the ceiling and the pedestal rebuild, so they wait for the slider to
-## settle a moment.
-func _on_room(k: String, v: float) -> void:
-	if _quiet:
-		return
-	if k == "sun_up" or k == "sun_turn":
-		if sun != null:
-			var a: Vector2 = sun.call("angles")
-			sun.call("set_angles", v if k == "sun_up" else a.x, v if k == "sun_turn" else a.y)
-	else:
-		_room_pending[k] = v
-		_room_wait = 0.3
-	_show_room()
+func _row(box: VBoxContainer, r: Array) -> void:
+	var key: String = r[0]
+	var row := HBoxContainer.new()
+	var name_label := Label.new()
+	name_label.custom_minimum_size = Vector2(250, 0)
+	name_label.add_theme_font_size_override("font_size", FONT)
+	row.add_child(name_label)
+	var s := HSlider.new()
+	s.custom_minimum_size = Vector2(240, 22)
+	s.min_value = float(r[2])
+	s.max_value = float(r[3])
+	s.step = float(r[4])
+	s.focus_mode = Control.FOCUS_NONE
+	_quiet = true
+	s.value = _read_value(key)
+	_quiet = false
+	s.value_changed.connect(func(v: float) -> void: _on_change(key, v))
+	row.add_child(s)
+	box.add_child(row)
+	_sliders[key] = s
+	_labels[key] = name_label
+	_names[key] = r[1]
+	_show(key)
 
 
-## The shape rebuilds the room, so it waits for the slider to settle a moment.
-func _on_shape(k: String, v: float) -> void:
-	if _quiet:
-		return
-	_shape_pending[k] = v
-	_shape_wait = 0.35
-	_show_shape()
+# -- reading and writing the room ------------------------------------------------------------------
+
+func _light(m: String) -> Dictionary:
+	if not values.has(m):
+		if START.has(m):
+			values[m] = (START[m] as Dictionary).duplicate()
+		else:
+			var exp_v: float = float((Style.ROOM_LIGHT.get(m, {}) as Dictionary).get("exposure", (RoomScript.MOODS[m] as Dictionary)["exposure"]))
+			values[m] = {"spots": 1.0, "washes": float(Style.gain.get("wash", 0.0)), "fill": 1.0, "sun": 1.0, "exposure": exp_v}
+	return values[m]
 
 
-func _show_shape() -> void:
-	for k in _shape_labels:
-		var v: float = float(_shape_pending.get(k, shape_root.get(k) if shape_root != null else 0.0))
-		(_shape_labels[k] as Label).text = "%s  %.1f" % [SHAPE_NAMES[k], v]
-
-
-func _show_room() -> void:
-	for k in _room_labels:
-		var v: float = float(_room_pending.get(k, _room_value(k)))
-		(_room_labels[k] as Label).text = "%s  %.2f" % [ROOM_NAMES[k], v]
-
-
-## The spot's current value for a slider.
-func _spot_value(k: String) -> float:
-	match k:
+func _read_value(key: String) -> float:
+	var m: String = Style.mood
+	match key:
+		"spots", "washes", "fill", "sun", "exposure":
+			return float(_light(m)[key])
 		"strength":
-			return float((spot.get("energy") as Dictionary).get(Style.mood, 1.0))
+			return float((spot.get("energy") as Dictionary).get(m, 1.0))
 		"cone":
 			return float(spot.get("angle"))
 		"softness":
@@ -259,18 +180,30 @@ func _spot_value(k: String) -> float:
 		"height":
 			return float((spot as Node4D).position.y)
 		"warmth":
-			var c: Color = (spot.get("color") as Dictionary).get(Style.mood, COOL)
+			var c: Color = (spot.get("color") as Dictionary).get(m, COOL)
 			return clampf((COOL.b - c.b) / maxf(COOL.b - WARM.b, 0.001), 0.0, 1.0)
+		"ceiling":
+			return (goat_room.get("size") as Vector3).y if goat_room != null else 10.0
+		"pedestal":
+			return float(showcase.get("radius")) if showcase != null else 3.4
+		"sun_up":
+			return (sun.call("angles") as Vector2).x if sun != null else 64.0
+		"sun_turn":
+			return (sun.call("angles") as Vector2).y if sun != null else 25.0
+	if shape_root != null and shape_root.get(key) != null:
+		return float(shape_root.get(key))
 	return 0.0
 
 
-func _on_spot(k: String, v: float) -> void:
-	if _quiet or spot == null:
-		return
-	match k:
+func _write_value(key: String, v: float) -> void:
+	var m: String = Style.mood
+	match key:
+		"spots", "washes", "fill", "sun", "exposure":
+			_light(m)[key] = v
+			_push_light()
 		"strength":
 			var e: Dictionary = (spot.get("energy") as Dictionary).duplicate()
-			e[Style.mood] = v
+			e[m] = v
 			spot.set("energy", e)
 		"cone":
 			spot.set("angle", v)
@@ -285,104 +218,143 @@ func _on_spot(k: String, v: float) -> void:
 			n.position = Vector4(n.position.x, v, n.position.z, n.position.w)
 		"warmth":
 			var cd: Dictionary = (spot.get("color") as Dictionary).duplicate()
-			cd[Style.mood] = COOL.lerp(WARM, v)
+			cd[m] = COOL.lerp(WARM, v)
 			spot.set("color", cd)
-	spot.call("apply_mood", Style.mood, true)
-	_show_spot()
+		"ceiling":
+			if goat_room != null:
+				var sz: Vector3 = goat_room.get("size")
+				goat_room.set("size", Vector3(sz.x, v, sz.z))
+		"pedestal":
+			if showcase != null:
+				showcase.set("radius", v)
+		"sun_up", "sun_turn":
+			if sun != null:
+				var a: Vector2 = sun.call("angles")
+				sun.call("set_angles", v if key == "sun_up" else a.x, v if key == "sun_turn" else a.y)
+		_:
+			if shape_root != null:
+				shape_root.set(key, v)
+	if spot != null and key in ["strength", "cone", "softness", "reach", "falloff", "height", "warmth"]:
+		spot.call("apply_mood", m, true)
 
 
-func _show_spot() -> void:
-	if spot == null or _spot_read == null:
+## The light rows act at once; the rows that rebuild something wait for the slider to settle.
+func _on_change(key: String, v: float) -> void:
+	if _quiet:
 		return
-	for k in SPOT_KEYS:
-		(_spot_labels[k] as Label).text = "%s  %.2f" % [SPOT_NAMES[k], _spot_value(k)]
-	_spot_read.text = "SPOT %s:  strength %.2f  cone %.0f  softness %.2f  reach %.1f  falloff %.2f  height %.2f  warmth %.2f" % [
-		Style.mood.to_upper(), _spot_value("strength"), _spot_value("cone"), _spot_value("softness"), _spot_value("reach"),
-		_spot_value("falloff"), _spot_value("height"), _spot_value("warmth")]
+	if key in ["ceiling", "pedestal"] or (shape_root != null and shape_root.get(key) != null):
+		_pending[key] = v
+		_wait = 0.35
+	else:
+		_write_value(key, v)
+	_show(key)
+	_saved_note.text = ""
 
 
-func _defaults(m: String) -> Dictionary:
-	if START.has(m):
-		return (START[m] as Dictionary).duplicate()
-	var exp_v: float = float((Style.ROOM_LIGHT.get(m, {}) as Dictionary).get("exposure", (RoomScript.MOODS[m] as Dictionary)["exposure"]))
-	return {"spots": 1.0, "washes": float(Style.gain.get("wash", 0.0)), "fill": 1.0, "sun": 1.0, "exposure": exp_v}
+func _push_light() -> void:
+	if room == null:
+		return
+	var v: Dictionary = _light(Style.mood)
+	Style.gain["spot"] = float(v["spots"])
+	Style.gain["wash"] = float(v["washes"])
+	get_tree().call_group("kit_light", "apply_mood", Style.mood, true)
+	var base: Dictionary = (RoomScript.MOODS[Style.mood] as Dictionary).duplicate()
+	base.merge(Style.ROOM_LIGHT.get(Style.mood, {}), true)
+	var all: Dictionary = (room.get("mood_overrides") as Dictionary).duplicate(true)
+	var over: Dictionary = (Style.ROOM_LIGHT.get(Style.mood, {}) as Dictionary).duplicate()
+	# Keep what others set (the sun handle's angles).
+	for key in ["key_elevation", "key_azimuth"]:
+		if (all.get(Style.mood, {}) as Dictionary).has(key):
+			over[key] = all[Style.mood][key]
+	over["ambient"] = (base["ambient"] as Color) * float(v["fill"])
+	over["key_energy"] = float(base["key_energy"]) * float(v["sun"])
+	over["exposure"] = float(v["exposure"])
+	all[Style.mood] = over
+	room.set("mood_overrides", all)
+	room.call("set_mood", Style.mood, true, false)
+
+
+func _show(key: String) -> void:
+	if not _labels.has(key):
+		return
+	var v: float = float(_pending.get(key, _read_value(key)))
+	(_labels[key] as Label).text = "%s  %.2f" % [_names[key], v]
+	if _readout != null:
+		var l: Dictionary = _light(Style.mood)
+		_readout.text = "%s: spots %.2f  washes %.2f  fill %.2f  sun %.2f  exposure %.2f" % [Style.mood.to_upper(), l["spots"], l["washes"], l["fill"], l["sun"], l["exposure"]]
 
 
 func _process(delta: float) -> void:
-	if not _shape_pending.is_empty():
-		_shape_wait -= delta
-		if _shape_wait <= 0.0:
-			for k in _shape_pending:
-				shape_root.set(k, float(_shape_pending[k]))
-			_shape_pending.clear()
-			_show_shape()
-	if not _room_pending.is_empty():
-		_room_wait -= delta
-		if _room_wait <= 0.0:
-			if _room_pending.has("ceiling") and goat_room != null:
-				var sz: Vector3 = goat_room.get("size")
-				goat_room.set("size", Vector3(sz.x, float(_room_pending["ceiling"]), sz.z))
-			if _room_pending.has("pedestal") and showcase != null:
-				showcase.set("radius", float(_room_pending["pedestal"]))
-			_room_pending.clear()
-			_show_room()
+	if _scroll != null and _box != null:
+		var want := Vector2(_box.get_combined_minimum_size().x + 14.0, minf(_box.get_combined_minimum_size().y, get_viewport_rect().size.y - 52.0))
+		if _scroll.custom_minimum_size != want:
+			_scroll.custom_minimum_size = want
+	if not _pending.is_empty():
+		_wait -= delta
+		if _wait <= 0.0:
+			for k in _pending:
+				_write_value(k, float(_pending[k]))
+			_pending.clear()
 	if room == null:
 		return
 	var m: String = String(room.get("mood"))
 	if m != _mood:
 		_mood = m
-		if not values.has(m):
-			values[m] = _defaults(m)
+		_push_light()
 		_quiet = true
-		for k in KEYS:
-			(_sliders[k] as HSlider).value = float(values[m][k])
-		for k in _spot_sliders:
-			(_spot_sliders[k] as HSlider).value = _spot_value(k)
+		for k in _sliders:
+			(_sliders[k] as HSlider).value = _read_value(k)
 		_quiet = false
-		_push()
-		_show()
-		_show_spot()
+		for k in _sliders:
+			_show(k)
 
 
-func _on_change(k: String, v: float) -> void:
-	if _quiet or _mood.is_empty():
+# -- saving ----------------------------------------------------------------------------------------
+
+func _save() -> void:
+	var cfg := ConfigFile.new()
+	for m in ["bright", "dark"]:
+		for k in (_light(m) as Dictionary):
+			cfg.set_value("light_" + m, k, _light(m)[k])
+	if spot != null:
+		cfg.set_value("spot", "energy", spot.get("energy"))
+		cfg.set_value("spot", "color", spot.get("color"))
+		for k in ["angle", "softness", "reach", "attenuation"]:
+			cfg.set_value("spot", k, spot.get(k))
+		cfg.set_value("spot", "height", (spot as Node4D).position.y)
+	for r in ROOM_ROWS:
+		cfg.set_value("room", r[0], float(_pending.get(r[0], _read_value(r[0]))))
+	if shape_root != null:
+		for r in SHAPE_ROWS:
+			cfg.set_value("shape", r[0], float(_pending.get(r[0], _read_value(r[0]))))
+	var err: int = cfg.save(SAVE_PATH)
+	_saved_note.text = ("Saved to %s at %s" % [SAVE_PATH, Time.get_time_string_from_system()]) if err == OK else "Could not save (%d)" % err
+
+
+## Reads the saved settings, if any, into the room before the panel is built.
+func _load() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(SAVE_PATH) != OK:
 		return
-	values[_mood][k] = v
-	_push()
-	_show()
-
-
-func _push() -> void:
-	var v: Dictionary = values[_mood]
-	Style.gain["spot"] = float(v["spots"])
-	Style.gain["wash"] = float(v["washes"])
-	get_tree().call_group("kit_light", "apply_mood", _mood, true)
-	# The room's own light: LabKit's numbers for this mood, the kit's changes over them, scaled.
-	var base: Dictionary = (RoomScript.MOODS[_mood] as Dictionary).duplicate()
-	base.merge(Style.ROOM_LIGHT.get(_mood, {}), true)
-	var all_now: Dictionary = room.get("mood_overrides") as Dictionary
-	var over: Dictionary = (Style.ROOM_LIGHT.get(_mood, {}) as Dictionary).duplicate()
-	# Keep what others set (the sun handle's angles).
-	for key in ["key_elevation", "key_azimuth"]:
-		if (all_now.get(_mood, {}) as Dictionary).has(key):
-			over[key] = all_now[_mood][key]
-	over["ambient"] = (base["ambient"] as Color) * float(v["fill"])
-	over["key_energy"] = float(base["key_energy"]) * float(v["sun"])
-	over["exposure"] = float(v["exposure"])
-	var all: Dictionary = (room.get("mood_overrides") as Dictionary).duplicate()
-	all[_mood] = over
-	room.set("mood_overrides", all)
-	room.call("set_mood", _mood, true, false)
-
-
-func _show() -> void:
-	var v: Dictionary = values.get(_mood, {})
-	if v.is_empty():
-		return
-	var names := {"spots": "Spots", "washes": "Washes", "fill": "Sky fill (shadows)", "sun": "Sun", "exposure": "Exposure"}
-	for k in KEYS:
-		(_labels[k] as Label).text = "%s  %.2f" % [names[k], float(v[k])]
-	_readout.text = "%s:  spots %.2f  washes %.2f  fill %.2f  sun %.2f  exposure %.2f" % [_mood.to_upper(), v["spots"], v["washes"], v["fill"], v["sun"], v["exposure"]]
+	for m in ["bright", "dark"]:
+		if cfg.has_section("light_" + m):
+			var d: Dictionary = {}
+			for k in cfg.get_section_keys("light_" + m):
+				d[k] = float(cfg.get_value("light_" + m, k))
+			values[m] = d
+	if spot != null and cfg.has_section("spot"):
+		spot.set("energy", cfg.get_value("spot", "energy", spot.get("energy")))
+		spot.set("color", cfg.get_value("spot", "color", spot.get("color")))
+		for k in ["angle", "softness", "reach", "attenuation"]:
+			spot.set(k, cfg.get_value("spot", k, spot.get(k)))
+		var n := spot as Node4D
+		n.position = Vector4(n.position.x, float(cfg.get_value("spot", "height", n.position.y)), n.position.z, n.position.w)
+	if shape_root != null and cfg.has_section("shape"):
+		for k in cfg.get_section_keys("shape"):
+			shape_root.set(k, float(cfg.get_value("shape", k)))
+	if cfg.has_section("room"):
+		for k in cfg.get_section_keys("room"):
+			_write_value(k, float(cfg.get_value("room", k)))
 
 
 func _unhandled_key_input(event: InputEvent) -> void:

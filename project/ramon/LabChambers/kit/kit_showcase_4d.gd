@@ -341,6 +341,11 @@ func slice_plane() -> Array:
 	return exhibit.call("slice_in_rig") if exhibit != null and exhibit.has_method("slice_in_rig") else []
 
 
+## The exhibit as a wireframe in 4D (pairs of points), for the slice view; empty if it has none.
+func wire() -> PackedVector4Array:
+	return exhibit.call("wire") if exhibit != null and exhibit.has_method("wire") else PackedVector4Array()
+
+
 ## The exhibit as a cloud of its 4D points, for the slice view; empty if it has none.
 func cloud() -> PackedVector4Array:
 	return exhibit.call("cloud") if exhibit != null and exhibit.has_method("cloud") else PackedVector4Array()
@@ -371,7 +376,7 @@ func live() -> Array:
 	var rows: Array = [
 		["W-slice", "%d / %d" % [slice_index + 1, SLICES]],
 		["Offset through W", "%+.2f m" % _slice_w],
-		["Turned through W", "%.0f°, %.0f°" % [rad_to_deg(turn.x), rad_to_deg(turn.y)]],
+		["Turned through W", "swung %.0f°, tilted %.0f°" % [rad_to_deg(turn.x), rad_to_deg(turn.y)]],
 		["Playing", "its sequence" if _looping else "in your hands"],
 	]
 	if exhibit != null and exhibit.has_method("live"):
@@ -398,7 +403,11 @@ func _process(delta: float) -> void:
 		want_w = _cine_slice * ext
 	_slice_w = lerpf(_slice_w, want_w, 1.0 - exp(-8.0 * delta))
 	_slice_node.position.w = _slice_w
-	_slice_node.basis = Basis4D.from_xw(turn.x) * Basis4D.from_zw(turn.y)
+	# Turned in the goat's own frame (its stand's turn undone, the turn, the stand's turn done
+	# again): across swings the slice along its length (z into W), up and down tilts it through
+	# its height (y into W) (Ramon, 4 Oct: "why doesn't the slicing work up and down also?").
+	var yaw_b: Projection = exhibit.call("stand_basis") if exhibit.has_method("stand_basis") else Projection.IDENTITY
+	_slice_node.basis = yaw_b * (Basis4D.from_zw(turn.x) * Basis4D.from_wy(turn.y)) * yaw_b.inverse()
 	if is_instance_valid(_button):
 		_button.visible = not cinematic
 		_button_frame.visible = not cinematic
