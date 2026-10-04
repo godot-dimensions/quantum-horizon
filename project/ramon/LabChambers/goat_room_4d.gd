@@ -26,6 +26,7 @@ const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 const Hud := preload("res://ramon/LabChambers/scripts/rd_hud.gd")
 const Tuner := preload("res://ramon/LabChambers/kit/kit_tuner.gd")
 const DataPanel := preload("res://ramon/LabChambers/kit/kit_data_panel.gd")
+const Prompt := preload("res://ramon/LabChambers/kit/kit_prompt.gd")
 
 ## Where the player starts, facing -Z.
 @export var start_at: Vector2 = Vector2(0.0, 15.2)
@@ -45,6 +46,7 @@ var player: CharacterBody4D
 var hud: Control
 var tuner: PanelContainer
 var data_panel: Control
+var prompt: Control
 var showcase: Node
 var _cine: Dictionary = {}
 var _film: Camera4D
@@ -104,6 +106,10 @@ func _ready() -> void:
 	data_panel.set_script(DataPanel)
 	data_panel.set("showcase", showcase)
 	layer.add_child(data_panel)
+	prompt = Control.new()
+	prompt.set_script(Prompt)
+	prompt.set("camera", player.get_node_or_null("CameraRig/Pitch/Camera4D"))
+	layer.add_child(prompt)
 	tuner = PanelContainer.new()
 	tuner.set_script(Tuner)
 	tuner.set("room", room)
@@ -133,7 +139,7 @@ func _strip() -> Array:
 	if not _in_room or showcase == null:
 		return [["WASD", "Move"], ["Mouse", "Look"], ["B", "Dark / bright"]]
 	if _desk_ease > 0.5:
-		return [["Click", "Close the data" if _desk_open else "Check the data"], ["Wheel", "Slice through W"], ["E", String(showcase.call("action_label"))]]
+		return [["E", "Close the data" if _desk_open else "Check the data"], ["Wheel", "Slice through W"]]
 	var out: Array = []
 	if bool(showcase.call("near_button", player.global_position)):
 		out.append(["Click", "Watch"])
@@ -143,9 +149,10 @@ func _strip() -> Array:
 	return out
 
 
-## Standing at a research panel lights its CHECK DATA button; clicking it brings up the 2D data
-## panel (kit_data_panel.gd), clicking again or stepping away puts it away (Ramon, 4 Oct: "a check
-## button, before you see the flipover screen"). The camera stays yours.
+## Walking up to a research panel pops up a key prompt over it (kit_prompt.gd); E, the engage key,
+## brings up the 2D data panel (kit_data_panel.gd), E again or stepping away puts it away (Ramon,
+## 4 Oct: "just you get a button that pops up when you get near, with the engage key stroke").
+## The camera stays yours.
 func _read_desk(_delta: float) -> void:
 	var at: Node = null
 	for d in get_tree().get_nodes_in_group("kit_desk"):
@@ -160,6 +167,11 @@ func _read_desk(_delta: float) -> void:
 	_desk_ease = 1.0 if at != null else 0.0
 	if data_panel != null:
 		data_panel.set("shown", at != null and _desk_open)
+	if prompt != null:
+		prompt.set("shown", at != null)
+		if at != null:
+			prompt.set("target", at)
+			prompt.set("text", "Close data" if _desk_open else "Check data")
 
 
 ## Opens or closes the data at the panel you stand at (a click; the runner calls it too).
@@ -186,10 +198,6 @@ func _input(event: InputEvent) -> void:
 			showcase.call("step_slice", 1 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else -1)
 			get_viewport().set_input_as_handled()
 			return
-		if mb.button_index == MOUSE_BUTTON_LEFT and _at_desk != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			toggle_desk()
-			get_viewport().set_input_as_handled()
-			return
 		if mb.button_index == MOUSE_BUTTON_LEFT and bool(showcase.call("near_button", player.global_position)) \
 				and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			watch()
@@ -205,6 +213,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if Engine.is_editor_hint() or player == null or not _cine.is_empty() or showcase == null:
 		return
 	var k := event as InputEventKey
+	if k != null and k.pressed and not k.echo and k.keycode == KEY_E and _at_desk != null:
+		# At a research panel E engages it instead of acting on the exhibit.
+		toggle_desk()
+		get_viewport().set_input_as_handled()
+		return
 	if k != null and k.pressed and not k.echo and k.keycode == KEY_E and _in_room:
 		var said: String = String(showcase.call("action"))
 		if not said.is_empty():

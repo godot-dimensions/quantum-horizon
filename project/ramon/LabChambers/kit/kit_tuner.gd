@@ -39,6 +39,9 @@ var _mood: String = ""
 var _quiet: bool = false
 
 const KEYS := ["spots", "washes", "fill", "sun", "exposure"]
+## Where the sliders start, per mood: Ramon's numbers for bright (4 Oct, "keep the sliders for
+## now"); a mood not listed starts at 1, washes off, and its own exposure.
+const START := {"bright": {"spots": 3.26, "washes": 0.0, "fill": 1.52, "sun": 0.66, "exposure": 1.05}}
 const SPOT_KEYS := ["strength", "cone", "softness", "reach", "falloff", "height", "warmth"]
 const SPOT_RANGES := {"strength": [0.0, 15.0], "cone": [10.0, 120.0], "softness": [0.1, 10.0], "reach": [2.0, 30.0],
 	"falloff": [0.01, 2.0], "height": [3.0, 8.4], "warmth": [0.0, 1.0]}
@@ -179,6 +182,8 @@ func _show_spot() -> void:
 
 
 func _defaults(m: String) -> Dictionary:
+	if START.has(m):
+		return (START[m] as Dictionary).duplicate()
 	var exp_v: float = float((Style.ROOM_LIGHT.get(m, {}) as Dictionary).get("exposure", (RoomScript.MOODS[m] as Dictionary)["exposure"]))
 	return {"spots": 1.0, "washes": float(Style.gain.get("wash", 0.0)), "fill": 1.0, "sun": 1.0, "exposure": exp_v}
 
@@ -197,6 +202,7 @@ func _process(_delta: float) -> void:
 		for k in _spot_sliders:
 			(_spot_sliders[k] as HSlider).value = _spot_value(k)
 		_quiet = false
+		_push()
 		_show()
 		_show_spot()
 

@@ -123,15 +123,15 @@ func _run() -> void:
 		await _shot("console")
 		_put(-4.35, 4.65, PI * 0.25)
 		await _wait(1.0)
-		_check(not bool(_g.get("data_panel").get("shown")), "the data waits for the check button")
+		_check(not bool(_g.get("data_panel").get("shown")), "the data waits for the engage key")
+		_check(bool(_g.get("prompt").get("shown")), "the key prompt pops up at the panel")
 		await _shot("at_the_panel")
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		await _click(MOUSE_BUTTON_LEFT)
+		await _key(KEY_E)
 		if not bool(_g.get("_desk_open")):
-			print("note: the click did not reach the room (mouse not captured in this window); toggling directly")
+			print("note: the key did not reach the room in this window; toggling directly")
 			_g.call("toggle_desk")
 		await _wait(0.6)
-		_check(bool(_g.get("data_panel").get("shown")), "the data panel comes up on CHECK DATA")
+		_check(bool(_g.get("data_panel").get("shown")), "E brings up the data panel")
 		await _shot("desk")
 		# The console's screen, close, from high over your shoulder, the panel put aside.
 		var rig: Node = (_g.get("player") as Node).get_node("CameraRig")

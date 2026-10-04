@@ -116,6 +116,28 @@ static func set_print(m: TetraMaterial4D, texture: Texture2D, normal: Vector4, r
 	cs.set_shader_parameter("print_on", 1.0 if texture != null else 0.0)
 
 
+## Wraps `texture` round a cylinder's side (the material must be on a cylinder centred on its own
+## origin): between angles `a0`..`a1` (radians from +Z towards +X) and heights `y0`..`y1` in the
+## mesh's own space.
+static func set_print_cylinder(m: TetraMaterial4D, texture: Texture2D, a0: float, a1: float, y0: float, y1: float, tint: Color = Color.WHITE, glow: float = 0.3) -> void:
+	var cs: ShaderMaterial = m.get_cross_section_material_3d()
+	cs.set_shader_parameter("print_texture", texture)
+	cs.set_shader_parameter("print_cyl", 1.0)
+	cs.set_shader_parameter("print_cylinder", Vector4(a0, a1, y0, y1))
+	cs.set_shader_parameter("print_tint", tint)
+	cs.set_shader_parameter("print_glow", glow)
+	cs.set_shader_parameter("print_on", 1.0 if texture != null else 0.0)
+
+
+## Paints a slowly turning ring into a floor material round world `centre` (x, z), `radius` out;
+## `speed` in radians a second. `on` 0 hides it.
+static func set_ring(m: TetraMaterial4D, centre: Vector2, radius: float, on: float = 1.0, color: Color = Color(0.12, 0.45, 1.0), speed: float = 0.08) -> void:
+	var cs: ShaderMaterial = m.get_cross_section_material_3d()
+	cs.set_shader_parameter("ring_at", Vector4(centre.x, centre.y, radius, speed))
+	cs.set_shader_parameter("ring_color", color)
+	cs.set_shader_parameter("ring_on", clampf(on, 0.0, 1.0) if radius > 0.0 else 0.0)
+
+
 ## How strongly the print shows (0 hides it, so a sign can fade in).
 static func set_print_strength(m: TetraMaterial4D, k: float) -> void:
 	m.get_cross_section_material_3d().set_shader_parameter("print_on", clampf(k, 0.0, 1.0))

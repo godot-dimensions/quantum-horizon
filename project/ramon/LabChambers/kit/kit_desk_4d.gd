@@ -9,8 +9,8 @@ extends Node4D
 ## because it looks like an image"). In the goat room it stands off the route to the left, under
 ## the lesson wall.
 ##
-## THE CHECK BUTTON appears at its front right corner only when you walk up (set_near), CHECK DATA; the room
-## lets you click it, and only then does the 2D data panel come up (goat_room_4d.gd).
+## WALK UP and the room pops up a key prompt over it (kit_prompt.gd); the engage key opens the 2D
+## data panel (goat_room_4d.gd). set_near() tells it you are there and whether the data is open.
 ##
 ## THE SCREEN IS LIVE: a 2D canvas in a SubViewport, redrawn `refresh_hz` times a second and shown
 ## on the screen through the grid shader's print (LabGrid.set_print takes the viewport's texture),
@@ -70,11 +70,6 @@ const DRAWN_FOR := 1.09
 		corner = v
 		_later()
 @export var title: String = "Research data"
-## The CHECK DATA button that comes up in front of it when you walk up.
-@export var check_button: bool = true:
-	set(v):
-		check_button = v
-		_later()
 ## How sharp the live screen is drawn, pixels a metre, and how often it is redrawn.
 @export_range(100.0, 600.0, 10.0) var live_ppm: float = 260.0
 @export_range(1.0, 60.0, 1.0) var refresh_hz: float = 20.0
@@ -86,11 +81,6 @@ var _queued: bool = false
 var _sw: float = 3.24
 var _sh: float = 1.09
 var _screen_rect: Rect2 = Rect2()
-var _button_root: Node4D
-var _button: MeshInstance4D
-var _button_frame: MeshInstance4D
-var _button_tilt: Projection = Projection.IDENTITY
-var _pop: float = 0.0
 var _near: bool = false
 var _open: bool = false
 # The live screen.
@@ -192,37 +182,9 @@ func rebuild() -> void:
 		body.add_child(shape)
 		body.set_meta(Build.GENERATED, true)
 		add_child(body)
-	# The CHECK DATA button: hidden, it comes up in front of the front edge when you walk up.
-	_button_root = null
-	_button = null
-	_button_frame = null
-	if check_button:
-		_button_root = Node4D.new()
-		_button_root.name = "CheckButton"
-		# At the front right corner, not the middle: you stand in front of the middle, and from
-		# the camera behind you a button there is hidden by your own head.
-		_button_root.position = Vector4(w * 0.5 - 0.55, hover + 0.12, d * 0.5 * cos(th) + 0.22, 0.0)
-		_button_tilt = Basis4D.from_yz(-0.5)
-		_button_root.basis = _button_tilt
-		_button_root.visible = false
-		_button_root.set_meta(Build.GENERATED, true)
-		add_child(_button_root)
-		var bs2 := Vector2(0.9, 0.27)
-		_button = Build.box(_button_root, "Plate", Vector3.ZERO, Vector3(bs2.x, bs2.y, 0.05), "kit_screen", false)
-		var bb := Batch.new()
-		var bw: float = 0.025
-		var bc := Vector4(0.0, 0.0, 0.03, 0.0)
-		bb.box("f", Vector4(bs2.x + 0.1, bw, bw, 0.5), bc + Vector4(0, bs2.y * 0.5 + 0.05, 0, 0))
-		bb.box("f", Vector4(bs2.x + 0.1, bw, bw, 0.5), bc - Vector4(0, bs2.y * 0.5 + 0.05, 0, 0))
-		bb.box("f", Vector4(bw, bs2.y + 0.1, bw, 0.5), bc + Vector4(bs2.x * 0.5 + 0.05, 0, 0, 0))
-		bb.box("f", Vector4(bw, bs2.y + 0.1, bw, 0.5), bc - Vector4(bs2.x * 0.5 + 0.05, 0, 0, 0))
-		_button_frame = bb.instance("f")
-		_button_root.add_child(_button_frame)
 	_paint_parts()
 	if not Engine.is_editor_hint() and is_inside_tree():
 		_start_screen()
-		if is_instance_valid(_button):
-			_print_button.call_deferred()
 
 
 ## A rounded plate `s` (x, z) by `t` thick, `y` up its parent: a box the full width with the corners'
@@ -262,15 +224,13 @@ func _paint_parts() -> void:
 	for g in _glow:
 		if is_instance_valid(g):
 			(g as MeshInstance4D).material_override = Mats.glow(c, 1.8)
-	if is_instance_valid(_button_frame):
-		_button_frame.material_override = Mats.glow(Style.pick(Style.FRAME_LIT), 2.0 if _open else 1.2)
 	if is_instance_valid(_screen) and _vp != null:
 		LabGrid.set_print(_screen.material_override as TetraMaterial4D, _vp.get_texture(), Vector4(0, 1, 0, 0), _screen_rect, Color.WHITE,
 			0.8 if Style.mood == "bright" else 0.9)
 		LabGrid.set_print_strength(_screen.material_override as TetraMaterial4D, 1.0)
 
 
-## The room says whether you stand at it (the button comes up) and whether the data is open.
+## The room says whether you stand at it and whether the data is open.
 func set_near(near_it: bool, open: bool = false) -> void:
 	if near_it == _near and open == _open:
 		return
@@ -289,13 +249,6 @@ func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
 	_clock += delta
-	# The button pops up and away.
-	if _button_root != null:
-		_pop = move_toward(_pop, 1.0 if _near else 0.0, delta / 0.18)
-		var k: float = ease(_pop, 0.5)
-		_button_root.visible = _pop > 0.01
-		if _button_root.visible:
-			_button_root.basis = _button_tilt * Projection(Vector4(k, 0, 0, 0), Vector4(0, k, 0, 0), Vector4(0, 0, k, 0), Vector4(0, 0, 0, 1))
 	# The screen.
 	if _canvas == null:
 		return
@@ -435,25 +388,6 @@ func _layout() -> Dictionary:
 	var card_y: float = 0.5 * s
 	var prof := Rect2(Vector2(right0 + 0.05, card_y + 0.12 * s), Vector2(mid - 0.025 - right0 - 0.1, 0.26 * s))
 	return {"s": s, "mg": mg, "right0": right0, "right1": right1, "mid": mid, "card_y": card_y, "profile": prof}
-
-
-# -- the button ------------------------------------------------------------------------------------
-
-func _print_button() -> void:
-	if not is_instance_valid(_button):
-		return
-	var rec: Dictionary = await RD.print_box(get_tree(), _button, Vector4(0, 0, 1, 0), Vector2(0.9, 0.27), _paint_button, {"bright": 0.85, "dark": 0.95}, 300.0)
-	if is_instance_valid(_button):
-		_prints.append(rec)
-		RD.apply(rec, Style.mood)
-
-
-func _paint_button(c: Control, _ink: Dictionary) -> void:
-	var s: float = c.size.y
-	var white := Color(1, 1, 1)
-	Glyphs.icon(c, "graph", Rect2(Vector2(s * 0.16, s * 0.16), Vector2(s * 0.68, s * 0.68)), white)
-	c.draw_string(LabPrint.font("black"), Vector2(s * 1.0, s * 0.6), "CHECK DATA", HORIZONTAL_ALIGNMENT_LEFT, -1, int(s * 0.34), white)
-	c.draw_string(LabPrint.font("bold"), Vector2(s * 1.0, s * 0.86), "CLICK", HORIZONTAL_ALIGNMENT_LEFT, -1, int(s * 0.16), Color(white, 0.75))
 
 
 func apply_mood(_m: String, _instant: bool = false) -> void:

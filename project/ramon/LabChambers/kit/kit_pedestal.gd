@@ -5,13 +5,13 @@ extends RefCounted
 ## pedestal would be nice too"). From the floor up:
 ##
 ##   a dark foot, set in, with a warm light line round it on the floor
-##   the body: dark metal panels round a polygon (the seams between them are the concept's
-##     vertical panel joints), each panel a box, so text can be printed across the front ones
+##   the body: one dark metal cylinder (Ramon, 4 Oct: "remove the separately placed blocks
+##     around the grey part, one cylinder shape please"), its label wrapped round its front
 ##   a dark band, set in under the lip, with a warm light line in it
 ##   the lip: a white ring, and the blue disc set into it, smaller than the lip
 ##
-## build() makes it and returns its parts; apply_mood() recolours them; print_band() prints a
-## picture across the front panels (the side text), the picture running on from panel to panel.
+## build() makes it and returns its parts; apply_mood() recolours them; print_band() wraps a
+## picture round the front of the body (the side text; lab_grid's cylinder print).
 ## The physics is one box (box-only physics).
 ##
 ## NO class_name (engine_gotchas.md).
@@ -23,7 +23,6 @@ const LabGrid := preload("res://ramon/LabKit/lab_grid.gd")
 const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
 const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 
-const PANELS := 24
 const FOOT := 0.09
 const BAND := 0.07
 const LIP := 0.13
@@ -39,25 +38,13 @@ static func build(parent: Node4D, r: float, h: float) -> Dictionary:
 	var ph: float = body_top - FOOT
 	var parts: Dictionary = {"dark": [], "glow": [], "panels": []}
 	parts["dark"].append(_drum(parent, "PedestalFoot", r - 0.13, FOOT, FOOT * 0.5))
-	parts["dark"].append(_drum(parent, "PedestalCore", r - 0.12, ph, FOOT + ph * 0.5))
 	parts["dark"].append(_drum(parent, "PedestalBand", r - 0.11, BAND, body_top + BAND * 0.5))
-	# The panels: a polygon round the core, a hair of a gap between each.
-	var apo: float = r - 0.04
-	var side: float = 2.0 * apo * tan(PI / float(PANELS))
-	for i in PANELS:
-		var a: float = TAU * float(i) / float(PANELS)
-		var p := MeshInstance4D.new()
-		p.name = "PedestalPanel%d" % i
-		var s := Vector4(side - 0.014, ph, 0.05, Build.W_DEPTH)
-		p.mesh = Mats.box_mesh(s)
-		p.position = Vector4(sin(a) * (apo - 0.025), FOOT + ph * 0.5, cos(a) * (apo - 0.025), 0.0)
-		p.basis = Basis4D.from_zx(a)
-		p.material_override = LabGrid.material("kit_metal", s, origin + p.position)
-		p.set_meta(Build.GENERATED, true)
-		parent.add_child(p)
-		parts["panels"].append([p, a])
-	parts["side"] = side
-	parts["panel_h"] = ph
+	# The body: one cylinder, on the grid shader so its label can be printed round it.
+	var body := _drum(parent, "PedestalBody", r - 0.04, ph, FOOT + ph * 0.5)
+	body.material_override = LabGrid.material("kit_metal", Vector4((r - 0.04) * 2.0, ph, (r - 0.04) * 2.0, Build.W_DEPTH), origin)
+	parts["body"] = body
+	parts["body_r"] = r - 0.04
+	parts["body_y"] = FOOT + ph * 0.5
 	# The light lines: one in the band under the lip, one round the foot.
 	var b := Batch.new()
 	b.ring("glow", Vector4(0, body_top + BAND * 0.5, 0, 0), r - 0.095, 0.02, 0.022, Build.W_DEPTH * 0.5, 96)
@@ -109,26 +96,15 @@ static func apply_mood(parts: Dictionary) -> void:
 		(parts["deck"] as MeshInstance4D).material_override = Mats.flat(Style.pick(Style.DECK))
 
 
-## Prints `paint` across the `count` panels facing the front (+Z), at `y0`..`y1` up the panels,
-## the picture running on from one panel to the next as if the band were one strip.
-static func print_band(tree: SceneTree, parts: Dictionary, count: int, y0: float, y1: float, paint: Callable, ppm: float = 320.0) -> void:
-	var side: float = float(parts.get("side", 0.8))
-	var total: float = side * float(count)
-	var tex: Texture2D = await LabPrint.render(tree, Vector2i(int(total * ppm), int((y1 - y0) * ppm)), paint)
-	if tex == null:
+## Wraps `paint` round the front (+Z) of the body, `width` metres of its circumference, at heights
+## `y0`..`y1` from the floor.
+static func print_band(tree: SceneTree, parts: Dictionary, width: float, y0: float, y1: float, paint: Callable, ppm: float = 320.0) -> void:
+	var body: MeshInstance4D = parts.get("body")
+	if not is_instance_valid(body):
 		return
-	# The front panels, left to right as you face the pedestal from the front.
-	var front: Array = []
-	for pa in parts.get("panels", []):
-		var a: float = wrapf(float(pa[1]), -PI, PI)
-		front.append([a, pa[0]])
-	front.sort_custom(func(x: Array, y: Array) -> bool: return absf(x[0]) < absf(y[0]))
-	front = front.slice(0, count)
-	front.sort_custom(func(x: Array, y: Array) -> bool: return x[0] < y[0])
-	for k in front.size():
-		var p: MeshInstance4D = front[k][1]
-		if not is_instance_valid(p):
-			continue
-		var mat := p.material_override as TetraMaterial4D
-		LabGrid.set_print(mat, tex, Vector4(0, 0, 1, 0), Rect2(Vector2(-side * float(k), y0), Vector2(total, y1 - y0)), Color.WHITE, 0.25)
-		LabGrid.set_print_strength(mat, 1.0)
+	var tex: Texture2D = await LabPrint.render(tree, Vector2i(int(width * ppm), int((y1 - y0) * ppm)), paint)
+	if tex == null or not is_instance_valid(body):
+		return
+	var half: float = width * 0.5 / float(parts["body_r"])
+	var by: float = float(parts["body_y"])
+	LabGrid.set_print_cylinder(body.material_override as TetraMaterial4D, tex, -half, half, y0 - by, y1 - by, Color.WHITE, 0.25)

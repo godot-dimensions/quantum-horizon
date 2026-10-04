@@ -64,6 +64,11 @@ const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 	set(v):
 		route = v
 		_show_route()
+## A slowly turning ring painted into the floor: world x, z of its centre and its radius (0: none).
+@export var ring: Vector3 = Vector3.ZERO:
+	set(v):
+		ring = v
+		_show_route()
 @export var route_lit: bool = true:
 	set(v):
 		route_lit = v
@@ -355,3 +360,4 @@ func _show_route() -> void:
 	if not is_instance_valid(_floor):
 		return
 	LabGrid.set_route(_floor.material_override as TetraMaterial4D, route, 1.0 if route_lit else 0.0, Style.pick(Style.ROUTE))
+	LabGrid.set_ring(_floor.material_override as TetraMaterial4D, Vector2(ring.x, ring.y), ring.z, 1.0, Style.pick(Style.ROUTE))

@@ -60,6 +60,11 @@ uniform vec4 print_normal = vec4(0.0, 0.0, 1.0, 0.0);
 uniform vec4 print_rect = vec4(0.0, 0.0, 1.0, 1.0);
 uniform vec4 print_tint : source_color = vec4(1.0);
 uniform float print_glow : hint_range(0.0, 1.0) = 0.35;
+// A print wrapped round a cylinder's side instead (the pedestal's label): x and y of
+// print_cylinder are the angles it runs between (radians from +Z towards +X, so it reads left to
+// right from outside), z and w the heights (in the mesh's own space) it runs between.
+uniform float print_cyl = 0.0;
+uniform vec4 print_cylinder = vec4(-0.4, 0.4, -0.1, 0.1);
 
 group_uniforms chevrons;
 uniform float chevron_on : hint_range(0.0, 1.0) = 0.0;
@@ -77,6 +82,15 @@ uniform vec2 chevron_dir = vec2(0.0, -1.0);
 // segment to the next and from one floor box to the next. No geometry above the floor, so nothing
 // can fight it for depth or flicker (Ramon, 4 Oct, of the raised chevron strips). The arrows
 // fade as they shrink to a few pixels, so the far end of a route stays calm.
+// A RING painted into a floor round a point (the pedestal's): a thin line, a ring of dashes
+// and three long arcs, turning slowly (Ramon, 4 Oct: "a circle decal around the pedestal, that
+// rotates slowly, keep it simple"). ring_at is world x, z, the radius, and the turn speed in
+// radians a second; ring_on 0 hides it.
+group_uniforms ring;
+uniform float ring_on : hint_range(0.0, 1.0) = 0.0;
+uniform vec4 ring_at = vec4(0.0, 0.0, 3.0, 0.08);
+uniform vec4 ring_color : source_color = vec4(0.12, 0.45, 1.0, 1.0);
+
 group_uniforms route;
 uniform float route_on : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 route_seg[8];
@@ -275,6 +289,14 @@ void fragment() {
 	vec4 pc = local_pos + abs(surface_size) * 0.5;
 	if (print_on > 0.0) {
 		vec2 uv = print_uv(local_normal_4d, pc);
+		if (print_cyl > 0.5) {
+			uv = vec2(-1.0);
+			if (abs(local_normal_4d.y) < 0.5) {
+				float ang = atan(local_pos.x, local_pos.z);
+				uv = vec2((ang - print_cylinder.x) / (print_cylinder.y - print_cylinder.x),
+					1.0 - (local_pos.y - print_cylinder.z) / (print_cylinder.w - print_cylinder.z));
+			}
+		}
 		if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0) {
 			// Premultiplied (LabKit/lab_print.gd): the ink already carries its coverage.
 			vec4 t = texture(print_texture, uv);
@@ -306,6 +328,26 @@ void fragment() {
 		float k = band * edge * ends * chevron_on;
 		c = mix(c, chevron_color.rgb, k);
 		glow += chevron_color.rgb * k * chevron_glow;
+	}
+	if (ring_on > 0.0 && local_normal_4d.y > 0.9) {
+		vec2 rel = world.xz - ring_at.xy;
+		float r = length(rel);
+		float fr = max(fwidth(r), 0.0005);
+		float rr = ring_at.z;
+		if (r > rr - 0.1 && r < rr + 0.5) {
+			float ang = atan(rel.y, rel.x) + TIME * ring_at.w;
+			// The thin line.
+			float k = 1.0 - smoothstep(0.012, 0.012 + fr, abs(r - rr));
+			// A ring of dashes outside it.
+			float dash = step(fract(ang / TAU * 72.0), 0.45);
+			k = max(k, dash * (1.0 - smoothstep(0.03, 0.03 + fr, abs(r - (rr + 0.12)))));
+			// Three long arcs further out, the gaps between them turning with the rest.
+			float arcs = step(fract(ang / TAU * 3.0), 0.78);
+			k = max(k, arcs * (1.0 - smoothstep(0.02, 0.02 + fr, abs(r - (rr + 0.3)))));
+			k *= ring_on * (1.0 - smoothstep(0.03, 0.08, fr));
+			c = mix(c, ring_color.rgb, k * 0.85);
+			glow += ring_color.rgb * k * 0.5;
+		}
 	}
 	if (route_on > 0.0 && route_count > 0 && local_normal_4d.y > 0.9) {
 		vec2 p2 = world.xz;

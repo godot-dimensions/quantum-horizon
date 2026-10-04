@@ -271,7 +271,7 @@ func data() -> Dictionary:
 	return exhibit.call("data") if exhibit != null and exhibit.has_method("data") else {}
 
 
-## The pedestal's side text, printed across its three front panels: the specimen's tag and its
+## The pedestal's side text, wrapped round its front: the specimen's tag and its
 ## measured numbers, in the decal sheet's manner (Ramon's my-own-01 decals: brackets, crosshairs,
 ## hazard stripes, a serial), in Montserrat.
 func _paint_band(c: Control) -> void:
@@ -355,7 +355,7 @@ func _process(delta: float) -> void:
 	_t += delta
 	if not _band_done and _t > 0.5 and not data().is_empty():
 		_band_done = true
-		Pedestal.print_band(get_tree(), _ped, 3, 0.18, 0.40, _paint_band)
+		Pedestal.print_band(get_tree(), _ped, 2.4, 0.27, 0.49, _paint_band)
 	if autoplay and _t - _touched_at > resume_after and _t > 2.0:
 		_run_loop(delta)
 	elif not cinematic and exhibit.has_method("idle"):
