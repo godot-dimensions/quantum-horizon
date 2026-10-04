@@ -1,0 +1,131 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://ramon/LabChambers/goat_room_4d.gd" id="1_root"]
+[ext_resource type="Script" path="res://ramon/LabKit/lab_room_4d.gd" id="2_room"]
+[ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_room_4d.gd" id="3_kitroom"]
+[ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_wall_text_4d.gd" id="4_text"]
+[ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_showcase_4d.gd" id="5_showcase"]
+[ext_resource type="Script" path="res://ramon/LabChambers/scripts/rd_goat_4d.gd" id="6_goat"]
+[ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_panel_4d.gd" id="7_panel"]
+[ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_desk_4d.gd" id="8_desk"]
+[ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_light_4d.gd" id="9_light"]
+[ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="10_return"]
+
+[node name="GoatRoomScene" type="Node4D"]
+script = ExtResource("1_root")
+
+[node name="Room" type="Node4D" parent="."]
+script = ExtResource("2_room")
+start_mood = "dark"
+
+[node name="Entrance" type="Node4D" parent="."]
+position = Vector4(0, 0, 16.5, 0)
+script = ExtResource("3_kitroom")
+size = Vector3(8, 5.5, 14)
+open_sides = ["n"]
+
+[node name="GoatRoom" type="Node4D" parent="."]
+script = ExtResource("3_kitroom")
+size = Vector3(20, 8.5, 18)
+doorways = [["s", -2.2, 2.2, 3.8]]
+
+[node name="Sign" type="Node" parent="GoatRoom"]
+script = ExtResource("4_text")
+side = "s"
+along = Vector2(-3.8, 3.8)
+up = Vector2(3.95, 5.4)
+outside = true
+kind = "sign"
+title = "CREATION LAB"
+subtitle = "QUANTUM HORIZON  ·  R&D GALLERY"
+glow = 0.3
+
+[node name="Lesson" type="Node" parent="GoatRoom"]
+script = ExtResource("4_text")
+side = "w"
+along = Vector2(-6.6, 4.6)
+up = Vector2(1.3, 7.6)
+title = "4D Basics"
+subtitle = "See, slice and understand the fourth dimension."
+body = "This goat is made of 24 balls placed in 4D space. Each ball is a cross-section of the body, and the tool lofts a skin from one to the next. Move the slice through W and watch its shape change."
+icons = [["wheel", "Slice through W"], ["rdrag", "Rotate in 4D"], ["key:E", "Add a ball"]]
+
+[node name="Showcase" type="Node4D" parent="."]
+position = Vector4(1.5, 0, -2.5, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("6_goat")
+bounds = Rect2(-10, -9, 20, 18)
+
+[node name="WSlicePanel" type="Node4D" parent="."]
+position = Vector4(9.9, 5.7, -2.4, 0)
+script = ExtResource("7_panel")
+size = Vector2(3.8, 1.5)
+showcase = NodePath("../Showcase")
+face = Vector3(-1, 0, 0)
+
+[node name="SectionsPanel" type="Node4D" parent="."]
+position = Vector4(9.9, 3.2, -2.4, 0)
+script = ExtResource("7_panel")
+kind = "sections"
+size = Vector2(3.8, 3.0)
+showcase = NodePath("../Showcase")
+face = Vector3(-1, 0, 0)
+
+[node name="Desk" type="Node4D" parent="."]
+position = Vector4(-4.8, 0, 3.2, 0)
+script = ExtResource("8_desk")
+showcase = NodePath("../Showcase")
+face = Vector3(0.35, 0, 1)
+
+[node name="Downlight" type="Node4D" parent="."]
+position = Vector4(1.5, 8.15, -2.5, 0)
+script = ExtResource("9_light")
+aim = Vector3(1.5, 0, -2.5)
+reach = 12.0
+attenuation = 0.3
+energy = {
+"bright": 3.0,
+"dark": 3.6
+}
+
+[node name="FrontWash" type="Node4D" parent="."]
+position = Vector4(1.5, 8.1, 5.5, 0)
+script = ExtResource("9_light")
+kind = "spot"
+aim = Vector3(1.0, 0.6, -3.0)
+angle = 70.0
+softness = 4.0
+reach = 14.0
+attenuation = 0.35
+energy = {
+"bright": 1.2,
+"dark": 1.5
+}
+fixture = false
+
+[node name="TextWash" type="Node4D" parent="."]
+position = Vector4(-6.8, 6.0, -1.0, 0)
+script = ExtResource("9_light")
+kind = "wash"
+reach = 9.0
+attenuation = 0.25
+energy = {
+"bright": 0.45,
+"dark": 0.6
+}
+fixture = false
+
+[node name="EntranceLight" type="Node4D" parent="."]
+position = Vector4(0, 5.3, 12.5, 0)
+script = ExtResource("9_light")
+aim = Vector3(0, 0, 12.5)
+angle = 70.0
+softness = 4.0
+reach = 9.0
+attenuation = 0.3
+energy = {
+"bright": 1.4,
+"dark": 1.8
+}
+
+[node name="ReturnButton" parent="." instance=ExtResource("10_return")]

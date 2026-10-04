@@ -43,7 +43,10 @@ static func box(parent: Node4D, nm: String, centre: Vector3, size: Vector3, swat
 	m.name = nm
 	m.mesh = Mats.box_mesh(s4)
 	m.position = at
-	m.material_override = LabGrid.material(swatch, s4, at)
+	# The grid continues across boxes from where each stands in the world: the parent's own place
+	# counts (a kit piece moved in the editor), its turn does not (kit rooms stay square).
+	var origin: Vector4 = at + (parent.global_position if parent.is_inside_tree() else Vector4.ZERO)
+	m.material_override = LabGrid.material(swatch, s4, origin)
 	_mark(m)
 	parent.add_child(m)
 	if collide:
@@ -151,22 +154,23 @@ static func print_on(tree: SceneTree, m: MeshInstance4D, face: String, size_m: V
 	LabGrid.set_print(m.material_override as TetraMaterial4D, tex, normal, Rect2(Vector2.ZERO, size_m), Color.WHITE, glow)
 
 
-## A strip of floor 2 cm proud from `a` to `b` (x, z; axis-aligned), `width` wide, carrying
+## A strip of floor `proud` metres high (6 cm: at 2 cm the floor showed through it at a distance,
+## Ramon 4 Oct) from `a` to `b` (x, z; axis-aligned), `width` wide, carrying
 ## chevrons that run from a to b. `phase` is how far along the route the strip starts, so strips
 ## laid end to end continue one stream. Returns the strip; LabGrid.set_chevrons turns it on.
-static func strip(parent: Node4D, nm: String, a: Vector2, b: Vector2, width: float, phase: float) -> MeshInstance4D:
+static func strip(parent: Node4D, nm: String, a: Vector2, b: Vector2, width: float, phase: float, swatch: String = "floor", proud: float = 0.06) -> MeshInstance4D:
 	var d: Vector2 = b - a
 	var along_x: bool = absf(d.x) >= absf(d.y)
-	var c := Vector3((a.x + b.x) * 0.5, 0.01, (a.y + b.y) * 0.5)
+	var c := Vector3((a.x + b.x) * 0.5, proud * 0.5, (a.y + b.y) * 0.5)
 	var size: Vector3
 	var dir: Vector2
 	if along_x:
-		size = Vector3(absf(d.x), 0.02, width)
+		size = Vector3(absf(d.x), proud, width)
 		dir = Vector2(signf(d.x), 0.0)
 	else:
-		size = Vector3(width, 0.02, absf(d.y))
+		size = Vector3(width, proud, absf(d.y))
 		dir = Vector2(0.0, signf(d.y))
-	var m: MeshInstance4D = box(parent, nm, c, size, "floor", false)
+	var m: MeshInstance4D = box(parent, nm, c, size, swatch, false)
 	m.set_meta("chevron_dir", dir)
 	m.set_meta("chevron_phase", -phase)
 	LabGrid.set_chevrons(m.material_override as TetraMaterial4D, 0.0, LabGrid.ACID, 1.2, 1.1, -phase, dir)
@@ -174,7 +178,7 @@ static func strip(parent: Node4D, nm: String, a: Vector2, b: Vector2, width: flo
 
 
 ## Strips along a route of axis-aligned points; returns them, all off.
-static func route(parent: Node4D, nm: String, points: PackedVector2Array, width: float = 0.9) -> Array:
+static func route(parent: Node4D, nm: String, points: PackedVector2Array, width: float = 0.9, swatch: String = "floor") -> Array:
 	var out: Array = []
 	var run: float = 0.0
 	for i in range(points.size() - 1):
@@ -182,17 +186,17 @@ static func route(parent: Node4D, nm: String, points: PackedVector2Array, width:
 		var b: Vector2 = points[i + 1]
 		if a.distance_to(b) < 0.05:
 			continue
-		out.append(strip(parent, "%s%d" % [nm, i], a, b, width, run))
+		out.append(strip(parent, "%s%d" % [nm, i], a, b, width, run, swatch))
 		run += a.distance_to(b)
 	return out
 
 
-## Turns a route's chevrons on (1) or off (0).
-static func route_on(strips: Array, on: float) -> void:
+## Turns a route's chevrons on (1) or off (0), in `color`.
+static func route_on(strips: Array, on: float, color: Color = LabGrid.ACID) -> void:
 	for s in strips:
 		if is_instance_valid(s):
 			var m: MeshInstance4D = s
-			LabGrid.set_chevrons(m.material_override as TetraMaterial4D, on, LabGrid.ACID, 1.2, 1.1,
+			LabGrid.set_chevrons(m.material_override as TetraMaterial4D, on, color, 1.2, 1.1,
 				float(m.get_meta("chevron_phase", 0.0)), m.get_meta("chevron_dir", Vector2(0, -1)))
 
 

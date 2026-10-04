@@ -1,0 +1,73 @@
+@tool
+extends RefCounted
+
+## The gallery kit's look in one place: the grid swatches, the glow colours, the plinth's deck,
+## the route's blue and the lights, each for both moods. Every kit piece reads from here, so the
+## room, the showcase and the lights stay one style (Ramon, 4 Oct: "nail the style together, and
+## hence create the kit").
+##
+## THE LOOK (Ramon, 4 Oct, picking frame 4 of the light bench): mid-grey tiled surfaces under a dim
+## blue sky light, so every shadow is blue, and broad soft white spots washing the subjects. DARK is
+## exactly that; BRIGHT is the same look lifted a little, not a different one.
+
+## NO class_name (engine_gotchas.md): preload it.
+
+const LabGrid := preload("res://ramon/LabKit/lab_grid.gd")
+
+const SWATCHES := {
+	"bright": {
+		"kit_wall": [Color(0.70, 0.71, 0.72), Color(0.58, 0.59, 0.61), Color(0.66, 0.67, 0.68), 0.6],
+		"kit_floor": [Color(0.64, 0.65, 0.66), Color(0.52, 0.53, 0.55), Color(0.60, 0.61, 0.62), 0.5],
+		"kit_ceiling": [Color(0.82, 0.83, 0.84), Color(0.74, 0.75, 0.76), Color(0.79, 0.80, 0.81), 0.3],
+		"kit_screen": [Color(0.12, 0.40, 0.88), Color(0.12, 0.40, 0.88), Color(0.12, 0.40, 0.88), 0.0],
+		"kit_screen2": [Color(0.18, 0.22, 0.30), Color(0.18, 0.22, 0.30), Color(0.18, 0.22, 0.30), 0.0],
+		"kit_desk": [Color(0.80, 0.81, 0.82), Color(0.80, 0.81, 0.82), Color(0.80, 0.81, 0.82), 0.0],
+	},
+	"dark": {
+		"kit_wall": [Color(0.62, 0.63, 0.64), Color(0.50, 0.51, 0.53), Color(0.58, 0.59, 0.60), 0.6],
+		"kit_floor": [Color(0.58, 0.59, 0.60), Color(0.46, 0.47, 0.49), Color(0.54, 0.55, 0.56), 0.5],
+		"kit_ceiling": [Color(0.78, 0.79, 0.80), Color(0.70, 0.71, 0.72), Color(0.75, 0.76, 0.77), 0.3],
+		"kit_screen": [Color(0.08, 0.28, 0.66), Color(0.08, 0.28, 0.66), Color(0.08, 0.28, 0.66), 0.0],
+		"kit_screen2": [Color(0.12, 0.15, 0.21), Color(0.12, 0.15, 0.21), Color(0.12, 0.15, 0.21), 0.0],
+		"kit_desk": [Color(0.70, 0.71, 0.72), Color(0.70, 0.71, 0.72), Color(0.70, 0.71, 0.72), 0.0],
+	},
+}
+
+const COVE := {"bright": Color(0.96, 0.97, 1.0), "dark": Color(1.0, 0.80, 0.56)}
+const FIXTURE := {"bright": Color(1.0, 0.98, 0.94), "dark": Color(1.0, 0.92, 0.80)}
+const RIM := {"bright": Color(0.96, 0.98, 1.0), "dark": Color(1.0, 0.90, 0.75)}
+const DECK := {"bright": Color(0.12, 0.42, 0.92), "dark": Color(0.08, 0.32, 0.78)}
+const PLINTH := {"bright": Color(0.22, 0.23, 0.26), "dark": Color(0.12, 0.125, 0.14)}
+const ROUTE := {"bright": Color(0.12, 0.45, 1.0), "dark": Color(0.35, 0.72, 1.0)}
+const FRAME_DIM := {"bright": Color(0.62, 0.70, 0.82), "dark": Color(0.26, 0.32, 0.42)}
+const FRAME_LIT := {"bright": Color(0.10, 0.42, 0.95), "dark": Color(0.40, 0.78, 1.0)}
+
+## The room light per mood, merged over LabKit's (lab_room_4d.gd `mood_overrides`). Dark is LabKit's
+## own dark (the bench's frame 4). Bright is that same blue night lifted: more sky light, a little
+## more key, a touch more exposure.
+const ROOM_LIGHT := {
+	"bright": {
+		"sky_top": Color(0.06, 0.08, 0.13), "sky_horizon": Color(0.12, 0.15, 0.22), "sky_bottom": Color(0.05, 0.06, 0.08),
+		"ambient": Color(0.20, 0.24, 0.33), "ambient_sky": 0.0,
+		"tonemap": 2, "exposure": 1.25, "white": 4.0,
+		"key_color": Color(0.72, 0.82, 1.0), "key_energy": 0.42, "key_elevation": 64.0, "key_azimuth": 25.0,
+		"fill_color": Color(0.80, 0.87, 1.0), "fill_energy": 0.08, "fill_elevation": 30.0, "fill_azimuth": -150.0,
+	},
+	"dark": {},
+}
+
+static var mood: String = "bright"
+## Live multipliers from the tuning sliders (kit_tuner.gd): spots and downlights, washes.
+static var gain: Dictionary = {"spot": 1.0, "wash": 1.0}
+
+
+static func apply(m: String) -> void:
+	mood = m
+	var sw: Dictionary = SWATCHES.get(m, SWATCHES["bright"])
+	for k in sw:
+		var v: Array = sw[k]
+		LabGrid.set_swatch(String(k), v[0], v[1], v[2], float(v[3]))
+
+
+static func pick(d: Dictionary) -> Color:
+	return d.get(mood, d["bright"])

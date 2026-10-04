@@ -58,6 +58,9 @@ const MOODS := {
 ## Where the ground slab's centre sits (its top stays at y 0): a W stack of bays wants it halfway
 ## along the stack.
 @export var ground_offset: Vector4 = Vector4.ZERO
+## Per-scene changes to a mood's numbers, merged over MOODS: {"bright": {"key_energy": 1.0}, ...}.
+## A scene can dim its bright mood without touching every other lab's.
+@export var mood_overrides: Dictionary = {}
 ## Metres one floor texture covers.
 @export_range(0.25, 8.0, 0.25) var ground_texture_metres: float = 2.0
 
@@ -133,6 +136,7 @@ func set_mood(new_mood: String, instant: bool = false, remember: bool = false) -
 	mood = new_mood
 	_from = _current_values()
 	_to = MOODS[new_mood].duplicate()
+	_to.merge(mood_overrides.get(new_mood, {}), true)
 	_t = 1.0 if instant or ease_seconds <= 0.0 else 0.0
 	_apply(_to if _t >= 1.0 else _from, 1.0)
 	if _ground != null:

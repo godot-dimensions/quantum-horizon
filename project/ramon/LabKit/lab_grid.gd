@@ -134,6 +134,29 @@ static func set_chevrons(m: TetraMaterial4D, on: float, color: Color = ACID, spe
 	cs.set_shader_parameter("chevron_phase", phase)
 
 
+## Paints a route into a floor material: `points` in world x/z, up to nine, the arrows running
+## from the first towards the last. `on` 0 hides it.
+static func set_route(m: TetraMaterial4D, points: PackedVector2Array, on: float = 1.0, color: Color = Color(0.12, 0.45, 1.0)) -> void:
+	var cs: ShaderMaterial = m.get_cross_section_material_3d()
+	var segs: Array = []
+	var starts: Array = []
+	var run: float = 0.0
+	for i in range(mini(points.size() - 1, 8)):
+		var a: Vector2 = points[i]
+		var b: Vector2 = points[i + 1]
+		segs.append(Vector4(a.x, a.y, b.x, b.y))
+		starts.append(run)
+		run += a.distance_to(b)
+	while segs.size() < 8:
+		segs.append(Vector4.ZERO)
+		starts.append(0.0)
+	cs.set_shader_parameter("route_seg", segs)
+	cs.set_shader_parameter("route_start", PackedFloat32Array(starts))
+	cs.set_shader_parameter("route_count", mini(points.size() - 1, 8))
+	cs.set_shader_parameter("route_color", color)
+	cs.set_shader_parameter("route_on", clampf(on, 0.0, 1.0) if points.size() > 1 else 0.0)
+
+
 static func _apply(cs: ShaderMaterial, v: Array) -> void:
 	cs.set_shader_parameter("surface_color", v[0])
 	cs.set_shader_parameter("line_color", v[1])
