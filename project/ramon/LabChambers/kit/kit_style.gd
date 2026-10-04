@@ -73,6 +73,8 @@ const PLINTH := {"bright": Color(0.22, 0.23, 0.26), "dark": Color(0.12, 0.125, 0
 const LIP := {"bright": Color(0.90, 0.91, 0.92), "dark": Color(0.80, 0.81, 0.82)}
 const GLOW_WARM := {"bright": Color(1.0, 0.86, 0.64), "dark": Color(1.0, 0.80, 0.55)}
 const ROUTE := {"bright": Color(0.12, 0.45, 1.0), "dark": Color(0.35, 0.72, 1.0)}
+## The 4D Basics wall's blue, for the floor's arrows and the pedestal's ring (Ramon, 4 Oct, a test).
+const CODE_BLUE := {"bright": Color(0.13, 0.40, 0.86), "dark": Color(0.12, 0.36, 0.80)}
 const FRAME_DIM := {"bright": Color(0.62, 0.70, 0.82), "dark": Color(0.26, 0.32, 0.42)}
 const FRAME_LIT := {"bright": Color(0.10, 0.42, 0.95), "dark": Color(0.40, 0.78, 1.0)}
 

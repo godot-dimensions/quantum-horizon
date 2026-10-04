@@ -114,13 +114,34 @@ func _ready() -> void:
 	tuner.set_script(Tuner)
 	tuner.set("room", room)
 	tuner.set("spot", get_node_or_null("Downlight"))
+	tuner.set("sun", get_node_or_null("Sun"))
+	tuner.set("showcase", showcase)
+	tuner.set("goat_room", get_node_or_null("GoatRoom"))
 	layer.add_child(tuner)
 	apply_mood(String(room.get("mood")) if room != null else "bright")
 
 
 # -- each frame ------------------------------------------------------------------------------------
 
+## Keeps the floor ring round the pedestal and the spot's fixture at the ceiling, when either is
+## changed (the light panel's sliders, or the inspector).
+func _keep_in_step() -> void:
+	var sc: Node = get_node_or_null("Showcase")
+	var gr: Node = get_node_or_null("GoatRoom")
+	var dl: Node = get_node_or_null("Downlight")
+	if sc != null and gr != null:
+		var sp: Vector4 = (sc as Node4D).position
+		var want := Vector3(sp.x, sp.z, float(sc.get("radius")) + 0.35)
+		if gr.get("ring") != want:
+			gr.set("ring", want)
+	if gr != null and dl != null:
+		var top: float = (gr.get("size") as Vector3).y - 0.06
+		if absf(float(dl.get("fixture_at")) - top) > 0.001:
+			dl.set("fixture_at", top)
+
+
 func _process(delta: float) -> void:
+	_keep_in_step()
 	if Engine.is_editor_hint() or player == null:
 		return
 	if not _cine.is_empty():
@@ -150,8 +171,9 @@ func _strip() -> Array:
 
 
 ## Walking up to a research panel pops up a key prompt over it (kit_prompt.gd); E, the engage key,
-## brings up the 2D data panel (kit_data_panel.gd), E again or stepping away puts it away (Ramon,
-## 4 Oct: "just you get a button that pops up when you get near, with the engage key stroke").
+## or a left click brings up the 2D data panel (kit_data_panel.gd), again or stepping away puts it
+## away (Ramon, 4 Oct: "just you get a button that pops up when you get near, with the engage key
+## stroke"; "if you see the button to open data, a left mouse click will also open it").
 ## The camera stays yours.
 func _read_desk(_delta: float) -> void:
 	var at: Node = null
@@ -196,6 +218,10 @@ func _input(event: InputEvent) -> void:
 	if mb != null and mb.pressed:
 		if mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			showcase.call("step_slice", 1 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else -1)
+			get_viewport().set_input_as_handled()
+			return
+		if mb.button_index == MOUSE_BUTTON_LEFT and _at_desk != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			toggle_desk()
 			get_viewport().set_input_as_handled()
 			return
 		if mb.button_index == MOUSE_BUTTON_LEFT and bool(showcase.call("near_button", player.global_position)) \

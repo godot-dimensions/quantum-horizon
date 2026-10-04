@@ -34,7 +34,7 @@ const SLICES := 9
 @export_range(1.0, 8.0, 0.05) var radius: float = 3.0:
 	set(v):
 		radius = v
-		_later()
+		_rebuild_pedestal()
 @export_range(0.2, 2.0, 0.05) var height: float = 0.9:
 	set(v):
 		height = v
@@ -61,6 +61,12 @@ const SLICES := 9
 ## Where the cinematic's camera may stand (world x, z).
 @export var bounds: Rect2 = Rect2(-10, -18, 20, 18)
 ## The floating WATCH button (for a camera cinematic; off while the exhibit simply loops).
+## The row of slice frames standing behind the exhibit (Ramon, 4 Oct: "remove the slices behind
+## him, they distract"). Off; the W-slice wall panel still shows the slice.
+@export var slice_frames: bool = false:
+	set(v):
+		slice_frames = v
+		_later()
 @export var watch_button: bool = false:
 	set(v):
 		watch_button = v
@@ -113,6 +119,19 @@ func _later() -> void:
 		rebuild()).call_deferred()
 
 
+## A new radius: the pedestal alone is rebuilt (the exhibit on it stays, it is costly to make).
+func _rebuild_pedestal() -> void:
+	if _ped.is_empty() or not is_inside_tree():
+		_later()
+		return
+	for c in get_children():
+		if String(c.name).begins_with("Pedestal"):
+			c.free()
+	_ped = Pedestal.build(self, radius, height)
+	_band_done = false
+	_apply_mood_now()
+
+
 func rebuild() -> void:
 	Build.clear(self)
 	_frames = []
@@ -131,7 +150,7 @@ func rebuild() -> void:
 		exhibit.name = "Exhibit"
 		exhibit.set_script(exhibit_script)
 		_slice_node.add_child(exhibit)
-	for i in SLICES:
+	for i in (SLICES if slice_frames else 0):
 		var fb := Batch.new()
 		var c: Vector3 = frames_at + frames_step * float(i)
 		var at := Vector4(c.x, c.y, c.z, 0.0)

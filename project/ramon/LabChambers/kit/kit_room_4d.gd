@@ -359,5 +359,5 @@ func _apply_mood_now() -> void:
 func _show_route() -> void:
 	if not is_instance_valid(_floor):
 		return
-	LabGrid.set_route(_floor.material_override as TetraMaterial4D, route, 1.0 if route_lit else 0.0, Style.pick(Style.ROUTE))
-	LabGrid.set_ring(_floor.material_override as TetraMaterial4D, Vector2(ring.x, ring.y), ring.z, 1.0, Style.pick(Style.ROUTE))
+	LabGrid.set_route(_floor.material_override as TetraMaterial4D, route, 1.0 if route_lit else 0.0, Style.pick(Style.CODE_BLUE))
+	LabGrid.set_ring(_floor.material_override as TetraMaterial4D, Vector2(ring.x, ring.y), ring.z, 1.0, Style.pick(Style.CODE_BLUE))

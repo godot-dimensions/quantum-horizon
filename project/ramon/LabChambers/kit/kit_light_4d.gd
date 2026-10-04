@@ -55,6 +55,12 @@ const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 		color = v
 		_set_params()
 ## Draw the fixture: a glowing disc where a downlight hangs.
+## Where the fixture disc hangs, world height in metres (below 0: just above the light). The goat
+## room keeps it at the ceiling, wherever the light is.
+@export var fixture_at: float = -1.0:
+	set(v):
+		fixture_at = v
+		_place_fixture()
 @export var fixture: bool = true:
 	set(v):
 		fixture = v
@@ -81,6 +87,7 @@ func _process(_delta: float) -> void:
 	if at != _last_at:
 		_last_at = at
 		_aim()
+		_place_fixture()
 
 
 func _ready() -> void:
@@ -114,9 +121,9 @@ func rebuild() -> void:
 		c.height = 0.04
 		c.thickness = 0.4
 		_disc.mesh = c.to_tetra_mesh({"segments": 40})
-		_disc.position = Vector4(0, 0.15, 0, 0)
 		_disc.set_meta(Build.GENERATED, true)
 		add_child(_disc)
+		_place_fixture()
 	_set_params()
 	_aim()
 
@@ -150,3 +157,12 @@ func _set_params() -> void:
 
 func apply_mood(_m: String, _instant: bool = false) -> void:
 	_set_params()
+
+
+func _place_fixture() -> void:
+	if not is_instance_valid(_disc):
+		return
+	var y: float = 0.15
+	if fixture_at >= 0.0 and is_inside_tree():
+		y = fixture_at - global_position.y
+	_disc.position = Vector4(0, y, 0, 0)

@@ -44,8 +44,10 @@ const DRAWN_FOR := 1.09
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
 @export var showcase: NodePath
-## The way its face looks, in the world (x, z): the node turns itself to it.
-@export var face: Vector3 = Vector3(0, 0, 1):
+## The way its face looks, in the world (x, z), if set: the node turns itself to it. Left at zero,
+## the node's own rotation (the editor's rotate gizmo) decides (Ramon, 4 Oct: "give it a gizmo in
+## the editor so I can move it, and rotate it").
+@export var face: Vector3 = Vector3.ZERO:
 	set(v):
 		face = v
 		_turn()
@@ -165,8 +167,8 @@ func rebuild() -> void:
 	# panel turned 45 degrees covers the place you stand to read it. So: a row of upright boxes
 	# along the slab, each kept square to the world.
 	var high: float = hover + d * sin(th) + SLAB
-	var f2 := Vector2(face.x, face.z)
-	var square: Projection = Basis4D.from_zx(-atan2(f2.x, f2.y)) if f2.length() > 0.001 else Projection.IDENTITY
+	var fwd: Vector4 = (global_basis if is_inside_tree() else basis) * Vector4(0, 0, 1, 0)
+	var square: Projection = Basis4D.from_zx(-atan2(fwd.x, fwd.z))
 	var cell: float = minf(d * cos(th), 0.8)
 	var count: int = maxi(1, int(ceil(w / (cell * 0.7))))
 	for i in count:

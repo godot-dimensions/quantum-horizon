@@ -27,6 +27,15 @@ const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
 var room: Node
 ## The centre spotlight (a KitLight) the spot sliders drive.
 var spot: Node
+## The sun handle (kit_sun_4d.gd), the showcase (its pedestal's radius) and the goat room (its
+## ceiling), for the ROOM sliders.
+var sun: Node
+var showcase: Node
+var goat_room: Node
+var _room_sliders: Dictionary = {}
+var _room_labels: Dictionary = {}
+var _room_pending: Dictionary = {}
+var _room_wait: float = 0.0
 var _spot_sliders: Dictionary = {}
 var _spot_labels: Dictionary = {}
 var _spot_read: Label
@@ -43,6 +52,9 @@ const KEYS := ["spots", "washes", "fill", "sun", "exposure"]
 ## now"); a mood not listed starts at 1, washes off, and its own exposure.
 const START := {"bright": {"spots": 3.26, "washes": 0.0, "fill": 1.52, "sun": 0.66, "exposure": 1.05}}
 const SPOT_KEYS := ["strength", "cone", "softness", "reach", "falloff", "height", "warmth"]
+const ROOM_KEYS := ["ceiling", "pedestal", "sun_up", "sun_turn"]
+const ROOM_RANGES := {"ceiling": [6.0, 14.0], "pedestal": [2.0, 5.0], "sun_up": [5.0, 90.0], "sun_turn": [-180.0, 180.0]}
+const ROOM_NAMES := {"ceiling": "Ceiling, m", "pedestal": "Pedestal radius, m", "sun_up": "Sun height, degrees", "sun_turn": "Sun turn, degrees"}
 const SPOT_RANGES := {"strength": [0.0, 15.0], "cone": [10.0, 120.0], "softness": [0.1, 10.0], "reach": [2.0, 30.0],
 	"falloff": [0.01, 2.0], "height": [3.0, 8.4], "warmth": [0.0, 1.0]}
 const SPOT_NAMES := {"strength": "Strength", "cone": "Cone, degrees", "softness": "Edge softness", "reach": "Reach, m",
@@ -92,6 +104,30 @@ func _ready() -> void:
 	_readout = Label.new()
 	_readout.add_theme_font_size_override("font_size", 11)
 	box.add_child(_readout)
+	var room_head := Label.new()
+	room_head.text = "ROOM"
+	room_head.add_theme_font_override("font", LabPrint.font("bold"))
+	room_head.add_theme_font_size_override("font_size", 12)
+	box.add_child(room_head)
+	for k in ROOM_KEYS:
+		var row := HBoxContainer.new()
+		var name_label := Label.new()
+		name_label.custom_minimum_size = Vector2(150, 0)
+		name_label.add_theme_font_size_override("font_size", 12)
+		row.add_child(name_label)
+		var s := HSlider.new()
+		s.custom_minimum_size = Vector2(200, 18)
+		s.min_value = float(ROOM_RANGES[k][0])
+		s.max_value = float(ROOM_RANGES[k][1])
+		s.step = 0.05
+		s.focus_mode = Control.FOCUS_NONE
+		s.value = _room_value(k)
+		s.value_changed.connect(func(v: float) -> void: _on_room(k, v))
+		row.add_child(s)
+		box.add_child(row)
+		_room_sliders[k] = s
+		_room_labels[k] = name_label
+	_show_room()
 	if spot == null:
 		return
 	var head := Label.new()
@@ -121,6 +157,40 @@ func _ready() -> void:
 	_spot_read.add_theme_font_size_override("font_size", 11)
 	box.add_child(_spot_read)
 	_show_spot()
+
+
+func _room_value(k: String) -> float:
+	match k:
+		"ceiling":
+			return (goat_room.get("size") as Vector3).y if goat_room != null else 8.5
+		"pedestal":
+			return float(showcase.get("radius")) if showcase != null else 3.0
+		"sun_up":
+			return (sun.call("angles") as Vector2).x if sun != null else 64.0
+		"sun_turn":
+			return (sun.call("angles") as Vector2).y if sun != null else 25.0
+	return 0.0
+
+
+## The sun moves at once; the ceiling and the pedestal rebuild, so they wait for the slider to
+## settle a moment.
+func _on_room(k: String, v: float) -> void:
+	if _quiet:
+		return
+	if k == "sun_up" or k == "sun_turn":
+		if sun != null:
+			var a: Vector2 = sun.call("angles")
+			sun.call("set_angles", v if k == "sun_up" else a.x, v if k == "sun_turn" else a.y)
+	else:
+		_room_pending[k] = v
+		_room_wait = 0.3
+	_show_room()
+
+
+func _show_room() -> void:
+	for k in _room_labels:
+		var v: float = float(_room_pending.get(k, _room_value(k)))
+		(_room_labels[k] as Label).text = "%s  %.2f" % [ROOM_NAMES[k], v]
 
 
 ## The spot's current value for a slider.
@@ -188,7 +258,17 @@ func _defaults(m: String) -> Dictionary:
 	return {"spots": 1.0, "washes": float(Style.gain.get("wash", 0.0)), "fill": 1.0, "sun": 1.0, "exposure": exp_v}
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if not _room_pending.is_empty():
+		_room_wait -= delta
+		if _room_wait <= 0.0:
+			if _room_pending.has("ceiling") and goat_room != null:
+				var sz: Vector3 = goat_room.get("size")
+				goat_room.set("size", Vector3(sz.x, float(_room_pending["ceiling"]), sz.z))
+			if _room_pending.has("pedestal") and showcase != null:
+				showcase.set("radius", float(_room_pending["pedestal"]))
+			_room_pending.clear()
+			_show_room()
 	if room == null:
 		return
 	var m: String = String(room.get("mood"))
@@ -223,7 +303,12 @@ func _push() -> void:
 	# The room's own light: LabKit's numbers for this mood, the kit's changes over them, scaled.
 	var base: Dictionary = (RoomScript.MOODS[_mood] as Dictionary).duplicate()
 	base.merge(Style.ROOM_LIGHT.get(_mood, {}), true)
+	var all_now: Dictionary = room.get("mood_overrides") as Dictionary
 	var over: Dictionary = (Style.ROOM_LIGHT.get(_mood, {}) as Dictionary).duplicate()
+	# Keep what others set (the sun handle's angles).
+	for key in ["key_elevation", "key_azimuth"]:
+		if (all_now.get(_mood, {}) as Dictionary).has(key):
+			over[key] = all_now[_mood][key]
 	over["ambient"] = (base["ambient"] as Color) * float(v["fill"])
 	over["key_energy"] = float(base["key_energy"]) * float(v["sun"])
 	over["exposure"] = float(v["exposure"])

@@ -95,7 +95,7 @@ func _draw() -> void:
 	var h: float = 600.0 * u
 	var r := Rect2(Vector2(24.0 * u + (1.0 - a) * -60.0 * u, (size.y - h) * 0.5), Vector2(w, h))
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.035, 0.05, 0.085, 0.9 * a)
+	sb.bg_color = Color(0.035, 0.05, 0.085, 0.6 * a)
 	sb.set_corner_radius_all(int(14 * u))
 	sb.border_color = Color(accent, 0.85 * a)
 	sb.border_width_left = int(maxf(2.0, 3.0 * u))

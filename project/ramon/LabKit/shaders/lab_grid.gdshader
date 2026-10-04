@@ -82,10 +82,11 @@ uniform vec2 chevron_dir = vec2(0.0, -1.0);
 // segment to the next and from one floor box to the next. No geometry above the floor, so nothing
 // can fight it for depth or flicker (Ramon, 4 Oct, of the raised chevron strips). The arrows
 // fade as they shrink to a few pixels, so the far end of a route stays calm.
-// A RING painted into a floor round a point (the pedestal's): a thin line, a ring of dashes
-// and three long arcs, turning slowly (Ramon, 4 Oct: "a circle decal around the pedestal, that
-// rotates slowly, keep it simple"). ring_at is world x, z, the radius, and the turn speed in
-// radians a second; ring_on 0 hides it.
+// A RING painted into a floor round a point (the pedestal's): a ring of dashes and outside it a
+// ring of arcs with wide breaks, turning slowly (Ramon, 4 Oct: "a circle decal around the
+// pedestal, that rotates slowly, keep it simple"; then "more breaks, the line on the inside gone,
+// less dots, a thicker blue like the 4D Basics blue"). ring_at is world x, z, the radius, and the
+// turn speed in radians a second; ring_on 0 hides it.
 group_uniforms ring;
 uniform float ring_on : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 ring_at = vec4(0.0, 0.0, 3.0, 0.08);
@@ -105,7 +106,7 @@ uniform float route_spacing = 3.0;
 // How far the second arrow of a pair trails the first, metres (0: single arrows). His own arrow
 // sheet stacks them 0.661 of an arrow's width apart.
 uniform float route_pair = 0.76;
-uniform float route_glow : hint_range(0.0, 1.0) = 0.6;
+uniform float route_glow : hint_range(0.0, 1.0) = 0.25;
 group_uniforms;
 
 varying vec3 uvw;
@@ -336,17 +337,16 @@ void fragment() {
 		float rr = ring_at.z;
 		if (r > rr - 0.1 && r < rr + 0.5) {
 			float ang = atan(rel.y, rel.x) + TIME * ring_at.w;
-			// The thin line.
-			float k = 1.0 - smoothstep(0.012, 0.012 + fr, abs(r - rr));
-			// A ring of dashes outside it.
-			float dash = step(fract(ang / TAU * 72.0), 0.45);
-			k = max(k, dash * (1.0 - smoothstep(0.03, 0.03 + fr, abs(r - (rr + 0.12)))));
-			// Three long arcs further out, the gaps between them turning with the rest.
-			float arcs = step(fract(ang / TAU * 3.0), 0.78);
-			k = max(k, arcs * (1.0 - smoothstep(0.02, 0.02 + fr, abs(r - (rr + 0.3)))));
+			// A ring of dashes, few and long.
+			float dash = step(fract(ang / TAU * 28.0), 0.42);
+			float k = dash * (1.0 - smoothstep(0.045, 0.045 + fr, abs(r - rr)));
+			// Outside it, six arcs with wide breaks, turning the other way.
+			float ang2 = atan(rel.y, rel.x) - TIME * ring_at.w * 0.6;
+			float arcs = step(fract(ang2 / TAU * 6.0), 0.55);
+			k = max(k, arcs * (1.0 - smoothstep(0.035, 0.035 + fr, abs(r - (rr + 0.24)))));
 			k *= ring_on * (1.0 - smoothstep(0.03, 0.08, fr));
-			c = mix(c, ring_color.rgb, k * 0.85);
-			glow += ring_color.rgb * k * 0.5;
+			c = mix(c, ring_color.rgb, k * 0.95);
+			glow += ring_color.rgb * k * 0.2;
 		}
 	}
 	if (route_on > 0.0 && route_count > 0 && local_normal_4d.y > 0.9) {
@@ -404,7 +404,7 @@ void fragment() {
 			best = max(best, band * calm * ends);
 		}
 		float k = best * route_on;
-		c = mix(c, route_color.rgb, k * 0.9);
+		c = mix(c, route_color.rgb, k * 0.95);
 		glow += route_color.rgb * k * route_glow;
 	}
 	ALBEDO = c;
