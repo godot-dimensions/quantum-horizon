@@ -39,9 +39,14 @@ const ROOM_ROWS := [["ceiling", "Ceiling, m", 6.0, 14.0, 0.05], ["pedestal", "Pe
 const SHAPE_ROWS := [["room_half_width", "Half width, m", 5.0, 20.0, 0.1], ["room_back", "Back wall from middle, m", 4.0, 20.0, 0.1],
 	["room_front", "Entrance wall from middle, m", 4.0, 20.0, 0.1], ["back_wall_half", "Back wall half width, m", 1.0, 10.0, 0.1],
 	["corner_z", "Angled walls start at z", -15.0, 15.0, 0.1], ["door_width", "Back door width, m", 0.0, 8.0, 0.1], ["door_height", "Back door height, m", 2.0, 8.0, 0.1]]
+const ROOM2_ROWS := [["big_room_width", "Width, m", 10.0, 80.0, 0.5], ["big_room_depth", "Depth, m", 10.0, 80.0, 0.5], ["big_room_height", "Height, m", 4.0, 24.0, 0.1]]
+const BIG_SPOT_ROWS := [["strength", "Strength", 0.0, 30.0, 0.05], ["cone", "Cone, degrees", 10.0, 120.0, 0.1], ["softness", "Edge softness", 0.1, 10.0, 0.01],
+	["reach", "Reach, m", 2.0, 60.0, 0.1], ["falloff", "Falloff", 0.01, 2.0, 0.01], ["height", "Height, m", 3.0, 23.5, 0.01], ["warmth", "Warmth", 0.0, 1.0, 0.01]]
 ## Where the light starts per mood when nothing is saved (Ramon's numbers for bright).
 const START := {"bright": {"spots": 3.26, "washes": 0.0, "fill": 1.52, "sun": 0.66, "exposure": 1.05}}
 
+## "main" (the goat room's panel, on the left) or "room2" (Room 2 and its big spot, on the right).
+var panel: String = "main"
 var room: Node
 var spot: Node
 var sun: Node
@@ -75,6 +80,9 @@ func _ready() -> void:
 	sb.content_margin_bottom = 12
 	add_theme_stylebox_override("panel", sb)
 	_load()
+	if panel == "room2":
+		_build_room2()
+		return
 	# It scrolls when it is taller than the window (free the mouse with Esc, then wheel over it).
 	_scroll = ScrollContainer.new()
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -104,6 +112,37 @@ func _ready() -> void:
 	if shape_root != null:
 		_section(box, "ROOM SHAPE")
 		for r in SHAPE_ROWS:
+			_row(box, r)
+	var save := Button.new()
+	save.text = "SAVE SETTINGS"
+	save.focus_mode = Control.FOCUS_NONE
+	save.add_theme_font_size_override("font_size", FONT)
+	save.pressed.connect(_save)
+	box.add_child(save)
+	_saved_note = Label.new()
+	_saved_note.add_theme_font_size_override("font_size", FONT - 3)
+	box.add_child(_saved_note)
+
+
+func _build_room2() -> void:
+	_scroll = ScrollContainer.new()
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(_scroll)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 3)
+	_scroll.add_child(box)
+	_box = box
+	var title := Label.new()
+	title.text = "ROOM 2  ·  F2 hides"
+	title.add_theme_font_override("font", LabPrint.font("bold"))
+	title.add_theme_font_size_override("font_size", FONT)
+	box.add_child(title)
+	_section(box, "ROOM 2 SIZE")
+	for r in ROOM2_ROWS:
+		_row(box, r)
+	if spot != null:
+		_section(box, "BIG SPOT")
+		for r in BIG_SPOT_ROWS:
 			_row(box, r)
 	var save := Button.new()
 	save.text = "SAVE SETTINGS"
@@ -286,9 +325,15 @@ func _show(key: String) -> void:
 
 func _process(delta: float) -> void:
 	if _scroll != null and _box != null:
-		var want := Vector2(_box.get_combined_minimum_size().x + 14.0, minf(_box.get_combined_minimum_size().y, get_viewport_rect().size.y - 52.0))
+		var vh: float = get_viewport_rect().size.y
+		var room_for: float = (vh * 0.42) if panel == "room2" else (vh - 52.0)
+		var want := Vector2(_box.get_combined_minimum_size().x + 14.0, minf(_box.get_combined_minimum_size().y, room_for))
 		if _scroll.custom_minimum_size != want:
 			_scroll.custom_minimum_size = want
+		if panel == "room2":
+			var at := Vector2(get_viewport_rect().size.x - size.x - 14.0, 64.0)
+			if position != at:
+				position = at
 	if not _pending.is_empty():
 		_wait -= delta
 		if _wait <= 0.0:
@@ -300,7 +345,8 @@ func _process(delta: float) -> void:
 	var m: String = String(room.get("mood"))
 	if m != _mood:
 		_mood = m
-		_push_light()
+		if panel == "main":
+			_push_light()
 		_quiet = true
 		for k in _sliders:
 			(_sliders[k] as HSlider).value = _read_value(k)
@@ -313,6 +359,19 @@ func _process(delta: float) -> void:
 
 func _save() -> void:
 	var cfg := ConfigFile.new()
+	cfg.load(SAVE_PATH)
+	if panel == "room2":
+		if spot != null:
+			cfg.set_value("spot_room2", "energy", spot.get("energy"))
+			cfg.set_value("spot_room2", "color", spot.get("color"))
+			for k in ["angle", "softness", "reach", "attenuation"]:
+				cfg.set_value("spot_room2", k, spot.get(k))
+			cfg.set_value("spot_room2", "height", (spot as Node4D).position.y)
+		for r in ROOM2_ROWS:
+			cfg.set_value("room2", r[0], float(_pending.get(r[0], _read_value(r[0]))))
+		var err2: int = cfg.save(SAVE_PATH)
+		_saved_note.text = ("Saved to %s at %s" % [SAVE_PATH, Time.get_time_string_from_system()]) if err2 == OK else "Could not save (%d)" % err2
+		return
 	for m in ["bright", "dark"]:
 		for k in (_light(m) as Dictionary):
 			cfg.set_value("light_" + m, k, _light(m)[k])
@@ -335,6 +394,18 @@ func _save() -> void:
 func _load() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(SAVE_PATH) != OK:
+		return
+	if panel == "room2":
+		if spot != null and cfg.has_section("spot_room2"):
+			spot.set("energy", cfg.get_value("spot_room2", "energy", spot.get("energy")))
+			spot.set("color", cfg.get_value("spot_room2", "color", spot.get("color")))
+			for k in ["angle", "softness", "reach", "attenuation"]:
+				spot.set(k, cfg.get_value("spot_room2", k, spot.get(k)))
+			var n2 := spot as Node4D
+			n2.position = Vector4(n2.position.x, float(cfg.get_value("spot_room2", "height", n2.position.y)), n2.position.z, n2.position.w)
+		if shape_root != null and cfg.has_section("room2"):
+			for k in cfg.get_section_keys("room2"):
+				shape_root.set(k, float(cfg.get_value("room2", k)))
 		return
 	for m in ["bright", "dark"]:
 		if cfg.has_section("light_" + m):
@@ -359,5 +430,5 @@ func _load() -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	var k := event as InputEventKey
-	if k != null and k.pressed and not k.echo and k.keycode == KEY_F1:
+	if k != null and k.pressed and not k.echo and k.keycode == (KEY_F2 if panel == "room2" else KEY_F1):
 		visible = not visible

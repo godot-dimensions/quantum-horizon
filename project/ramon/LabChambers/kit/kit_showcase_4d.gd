@@ -11,6 +11,9 @@ extends Node4D
 ##   watching  begin_cinematic, play(shot, t) per frame, end_cinematic; shot(i) gives each of the
 ##             exhibit's shots as [eye, look, lens] in the world, kept inside `bounds`.
 ##   acting    action() is the exhibit's one key (add a ball).
+##   swapping  set_exhibit(script) puts another animal on the plinth (the room's 1 to 6 keys): the
+##             old one goes at once, the new one grows in from its real size, and `serial` counts up
+##             so the panels reading the exhibit start again from the new one.
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -30,7 +33,8 @@ const SLICES := 9
 @export var exhibit_script: Script:
 	set(v):
 		exhibit_script = v
-		_later()
+		if not _swapping:
+			_later()
 @export_range(1.0, 8.0, 0.05) var radius: float = 3.0:
 	set(v):
 		radius = v
@@ -99,6 +103,11 @@ var _loop_t: float = 0.0
 var _looping: bool = false
 var _touched_at: float = -1000.0
 var _queued: bool = false
+## Counts the exhibits put on the plinth: the research panel, the slice view and the data panel
+## drop what they read from the old one when it changes.
+var serial: int = 0
+var _swapping: bool = false
+var _wait_grow: bool = false
 
 
 func _enter_tree() -> void:
@@ -218,6 +227,36 @@ func _show_button() -> void:
 
 # -- in play ---------------------------------------------------------------------------------------
 
+## Another animal on the plinth (Ramon, 4 Oct: "goat ends, disappears when you click the button.
+## chicken grows from small to big on the pedestal and keeps rotating"): the old exhibit goes at
+## once, the new one arrives at its real size and grows while the plinth turns, and its loop starts
+## a few seconds after it has grown. The same script again does nothing.
+func set_exhibit(script: Script) -> void:
+	if script == null or script == exhibit_script or _slice_node == null:
+		return
+	_swapping = true
+	exhibit_script = script
+	_swapping = false
+	if exhibit != null:
+		_slice_node.remove_child(exhibit)
+		exhibit.queue_free()
+	serial += 1
+	exhibit = Node4D.new()
+	exhibit.name = "Exhibit%d" % serial
+	exhibit.set_script(script)
+	exhibit.set("grow_in", true)
+	_slice_node.add_child(exhibit)
+	_looping = false
+	cinematic = false
+	_cine_slice = -3.0
+	turn = Vector2.ZERO
+	slice_index = SLICES / 2
+	_extent = -1.0
+	_wait_grow = true
+	_band_done = false
+	_show_slice()
+
+
 func near_button(p: Vector4) -> bool:
 	if not watch_button:
 		return false
@@ -312,13 +351,16 @@ func _paint_band(c: Control) -> void:
 	x = h * 1.35
 	Glyphs.icon(c, "live", Rect2(Vector2(x, h * 0.25), Vector2(h * 0.5, h * 0.5)), ink)
 	x += h * 0.7
-	c.draw_string(fb, Vector2(x, h * 0.66), "SPECIMEN 01", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.42), ink)
-	x += fb.get_string_size("SPECIMEN 01", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.42)).x + h * 0.4
+	var code: String = String(data().get("code", "XX-01"))
+	var tag: String = "SPECIMEN " + code.get_slice("-", 1)
+	c.draw_string(fb, Vector2(x, h * 0.66), tag, HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.42), ink)
+	x += fb.get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.42)).x + h * 0.4
 	c.draw_line(Vector2(x, h * 0.2), Vector2(x, h * 0.8), dim, maxf(1.0, h * 0.03))
 	x += h * 0.4
-	var line: String = "THE GOAT  ·  LOFTED FROM %d BALLS  ·  %s TETRAHEDRA  ·  W REACH %.2f M" % [int(st.get("balls", 0)), Glyphs.short(int(st.get("tetra", 0))), float(st.get("reach", 0.0))]
+	var line: String = "THE %s  ·  LOFTED FROM %d BALLS  ·  %s TETRAHEDRA  ·  W REACH %.2f M" % [String(data().get("name", "specimen")).to_upper(), int(st.get("balls", 0)), Glyphs.short(int(st.get("tetra", 0))), float(st.get("reach", 0.0))]
 	c.draw_string(fs, Vector2(x, h * 0.64), line, HORIZONTAL_ALIGNMENT_LEFT, w - x - h * 1.6, int(h * 0.3), ink)
-	c.draw_string(fl, Vector2(w - h * 1.3 - fl.get_string_size("QH-LAB GT-01", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.2)).x, h * 0.98), "QH-LAB GT-01", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.2), dim)
+	var serial_tag: String = "QH-LAB " + code
+	c.draw_string(fl, Vector2(w - h * 1.3 - fl.get_string_size(serial_tag, HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.2)).x, h * 0.98), serial_tag, HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.2), dim)
 	# Corner brackets round the whole band.
 	var t: float = maxf(1.0, h * 0.04)
 	var arm: float = h * 0.3
@@ -391,11 +433,16 @@ func _process(delta: float) -> void:
 	if not _band_done and _t > 0.5 and not data().is_empty():
 		_band_done = true
 		Pedestal.print_band(get_tree(), _ped, 2.4, 0.27, 0.49, _paint_band)
-	if autoplay and _t - _touched_at > resume_after and _t > 2.0:
+	# A new exhibit turns and grows; its loop starts three seconds after it has grown.
+	if _wait_grow and (not exhibit.has_method("grown") or bool(exhibit.call("grown"))):
+		_wait_grow = false
+		_extent = -1.0
+		_touched_at = _t - resume_after + 3.0
+	if autoplay and not _wait_grow and _t - _touched_at > resume_after and _t > 2.0:
 		_run_loop(delta)
 	elif not cinematic and exhibit.has_method("idle"):
 		exhibit.call("idle", delta)
-	if _extent < 0.0 and exhibit.has_method("w_extent") and _t > 1.0:
+	if _extent < 0.0 and exhibit.has_method("w_extent") and _t > 1.0 and not _wait_grow:
 		_extent = float(exhibit.call("w_extent"))
 	var ext: float = maxf(_extent, 0.3)
 	var want_w: float = (float(slice_index) - float(SLICES - 1) * 0.5) / (float(SLICES - 1) * 0.5) * ext * 0.6

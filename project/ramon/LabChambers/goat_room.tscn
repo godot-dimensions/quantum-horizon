@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://biqddcxhqxnor"]
+[gd_scene load_steps=12 format=3 uid="uid://biqddcxhqxnor"]
 
 [ext_resource type="Script" uid="uid://crnwat3v2ppga" path="res://ramon/LabChambers/goat_room_4d.gd" id="1_root"]
 [ext_resource type="Script" uid="uid://cq1aeo3fdysn4" path="res://ramon/LabKit/lab_room_4d.gd" id="2_room"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" uid="uid://tbfct1sshjt0" path="res://ramon/LabChambers/kit/kit_desk_4d.gd" id="8_desk"]
 [ext_resource type="Script" uid="uid://bf6jsusv08tmp" path="res://ramon/LabChambers/kit/kit_light_4d.gd" id="9_light"]
 [ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_sun_4d.gd" id="11_sun"]
+[ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_exhibit_picker_4d.gd" id="12_picker"]
 
 [node name="GoatRoomScene" type="Node4D"]
 script = ExtResource("1_root")
@@ -116,6 +117,15 @@ basis = Projection(0.7071067811865476, 0, -0.7071067811865476, 0, 0, 1, 0, 0, 0.
 script = ExtResource("8_desk")
 showcase = NodePath("../Showcase")
 
+[node name="ExhibitPicker" type="Node4D" parent="."]
+position = Vector4(0, 0, 2.85, 0)
+script = ExtResource("12_picker")
+showcase = NodePath("../Showcase")
+tilt_degrees = 38.0
+size = Vector2(2.3, 0.62)
+hover = 0.3
+corner = 0.1
+
 [node name="Downlight" type="Node4D" parent="."]
 position = Vector4(0, 8.37, -1.5, 0)
 script = ExtResource("9_light")
@@ -161,3 +171,17 @@ energy = {
 [node name="Sun" type="Node4D" parent="."]
 position = Vector4(1.48, 7.19, 1.68, 0)
 script = ExtResource("11_sun")
+
+[node name="BigSpot" type="Node4D" parent="."]
+position = Vector4(0, 9.7, -25, 0)
+script = ExtResource("9_light")
+aim = Vector3(0, 0, -25)
+angle = 120.0
+softness = 3.0
+reach = 30.0
+attenuation = 0.12
+energy = {
+"bright": 8.0,
+"dark": 9.0
+}
+fixture_at = 9.94

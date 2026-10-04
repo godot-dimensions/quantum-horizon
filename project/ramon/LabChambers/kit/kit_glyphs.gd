@@ -11,6 +11,7 @@ extends RefCounted
 ##   bars(c, rect, values, col)   a bar chart, brightest last
 ##   tag(c, pos, text, ...)       a small rounded label (SAMPLE, LIVE, MEASURED)
 ##   wire(c, rect, shape, ...)    the exhibit as a triangulated wireframe from its own points
+##   animal(c, kind, rect, ...)   an animal in profile, filled: goat, chicken
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -92,6 +93,62 @@ static func icon(c: CanvasItem, kind: String, rect: Rect2, col: Color) -> void:
 			c.draw_arc(o, s * 0.32, 0.0, TAU, 40, Color(col, col.a * 0.5), lw * 0.8, true)
 		_:
 			RD.icon(c as Control, kind, rect, col)
+
+
+## An animal in profile, facing right, filled in `col`, its eye and inner lines cut in `cut` (the
+## colour behind it): "goat" or "chicken". Drawn in a 100-unit square, fitted to `rect` and stood
+## on its foot. For the specimen picker's slots (kit_exhibit_picker_4d.gd).
+static func animal(c: CanvasItem, kind: String, rect: Rect2, col: Color, cut: Color) -> void:
+	var s: float = minf(rect.size.x, rect.size.y) / 100.0
+	var o: Vector2 = Vector2(rect.get_center().x - 50.0 * s, rect.end.y - 94.0 * s)
+	var poly := func(pts: Array) -> void:
+		var out := PackedVector2Array()
+		for p in pts:
+			out.append(o + (p as Vector2) * s)
+		c.draw_colored_polygon(out, col)
+	var line := func(pts: Array, w: float, ink: Color) -> void:
+		var out := PackedVector2Array()
+		for p in pts:
+			out.append(o + (p as Vector2) * s)
+		c.draw_polyline(out, ink, maxf(1.0, w * s), true)
+	var dot := func(p: Vector2, r: float, ink: Color) -> void:
+		c.draw_circle(o + p * s, r * s, ink)
+	match kind:
+		"goat":
+			# The far legs, the body, the near legs, the neck and head, then the horns, ear, beard.
+			poly.call([Vector2(56, 58), Vector2(61, 58), Vector2(60, 75), Vector2(60.5, 91), Vector2(56.5, 91), Vector2(56, 75)])
+			poly.call([Vector2(33, 58), Vector2(39, 58), Vector2(37, 74), Vector2(37.5, 91), Vector2(33.5, 91), Vector2(33.5, 74)])
+			poly.call([Vector2(21, 50), Vector2(24, 40), Vector2(34, 37), Vector2(50, 38.5), Vector2(64, 37), Vector2(70, 40), Vector2(72, 48),
+				Vector2(70, 57), Vector2(62, 61.5), Vector2(44, 63), Vector2(30, 62), Vector2(24, 58)])
+			poly.call([Vector2(24, 41), Vector2(18.5, 33), Vector2(21.5, 31.5), Vector2(27.5, 39)])
+			poly.call([Vector2(26.5, 56), Vector2(34, 57), Vector2(31, 74), Vector2(31.5, 91), Vector2(27, 91), Vector2(27, 74)])
+			poly.call([Vector2(62, 56), Vector2(68.5, 56), Vector2(67, 75), Vector2(68, 91), Vector2(63.5, 91), Vector2(63, 75)])
+			poly.call([Vector2(63, 40), Vector2(71, 23), Vector2(79, 21), Vector2(81, 30), Vector2(72.5, 47)])
+			poly.call([Vector2(72, 24), Vector2(76, 17), Vector2(84, 15.5), Vector2(92, 21), Vector2(95.5, 26.5), Vector2(92.5, 30), Vector2(85, 29.5), Vector2(79, 30)])
+			line.call([Vector2(79.5, 17.5), Vector2(77, 10.5), Vector2(72, 6.5), Vector2(66.5, 7.5), Vector2(64.5, 12)], 3.6, col)
+			poly.call([Vector2(77, 21), Vector2(67, 24.5), Vector2(76.5, 25.5)])
+			poly.call([Vector2(85.5, 29), Vector2(90.5, 29), Vector2(87.5, 38)])
+			dot.call(Vector2(84.5, 21.5), 1.7, cut)
+		"chicken":
+			# The legs and feet, the tail fan, the body, the neck and head, comb, beak and wattle.
+			line.call([Vector2(44, 72), Vector2(42, 88)], 3.0, col)
+			line.call([Vector2(53, 72), Vector2(55, 88)], 3.0, col)
+			line.call([Vector2(35.5, 91), Vector2(42, 88), Vector2(48, 91)], 2.4, col)
+			line.call([Vector2(48.5, 91), Vector2(55, 88), Vector2(61.5, 91)], 2.4, col)
+			poly.call([Vector2(29, 50), Vector2(20, 27), Vector2(25.5, 22), Vector2(32, 34), Vector2(31, 19), Vector2(37.5, 18.5), Vector2(40, 42)])
+			poly.call([Vector2(26, 52), Vector2(30, 45), Vector2(40, 41.5), Vector2(54, 42), Vector2(63, 45.5), Vector2(70, 54), Vector2(68.5, 64),
+				Vector2(60, 72), Vector2(46, 75.5), Vector2(34, 71.5), Vector2(27, 62)])
+			poly.call([Vector2(57, 47), Vector2(61.5, 31), Vector2(73, 29.5), Vector2(71, 49)])
+			dot.call(Vector2(68, 28), 8.5, col)
+			dot.call(Vector2(62.5, 19.5), 3.3, col)
+			dot.call(Vector2(67.5, 17.5), 3.8, col)
+			dot.call(Vector2(72.5, 19.5), 3.2, col)
+			poly.call([Vector2(75, 24.5), Vector2(84.5, 28.5), Vector2(75, 31.5)])
+			dot.call(Vector2(74.5, 37), 3.2, col)
+			dot.call(Vector2(70.5, 26.5), 1.7, cut)
+			line.call([Vector2(38, 52), Vector2(48, 50), Vector2(58, 53), Vector2(55, 61), Vector2(46, 64)], 2.2, cut)
+		_:
+			c.draw_arc(rect.get_center(), minf(rect.size.x, rect.size.y) * 0.3, 0.0, TAU, 40, col, maxf(1.5, s * 3.0), true)
 
 
 static func _ellipse(c: CanvasItem, o: Vector2, r: Vector2, col: Color, lw: float) -> void:

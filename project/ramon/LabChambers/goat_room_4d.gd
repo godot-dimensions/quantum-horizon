@@ -72,10 +72,20 @@ const SliceView := preload("res://ramon/LabChambers/kit/kit_slice_view.gd")
 	set(v):
 		door_height = v
 		_shape_later()
-## The big room's side, metres (square).
-@export_range(10.0, 80.0, 1.0) var big_room_size: float = 30.0:
+## Room 2, the big room behind the back door (Ramon, 4 Oct: "size attributes for room 2, and one
+## large spot in the middle which will need to light the whole giant room"): its width, depth and
+## height; its spot (BigSpot) stays over its middle with its fixture on the ceiling.
+@export_range(10.0, 80.0, 0.5) var big_room_width: float = 30.0:
 	set(v):
-		big_room_size = v
+		big_room_width = v
+		_shape_later()
+@export_range(10.0, 80.0, 0.5) var big_room_depth: float = 30.0:
+	set(v):
+		big_room_depth = v
+		_shape_later()
+@export_range(4.0, 24.0, 0.1) var big_room_height: float = 10.0:
+	set(v):
+		big_room_height = v
 		_shape_later()
 
 @export_group("Camera")
@@ -90,6 +100,7 @@ const SliceView := preload("res://ramon/LabChambers/kit/kit_slice_view.gd")
 var player: CharacterBody4D
 var hud: Control
 var tuner: PanelContainer
+var tuner_room2: PanelContainer
 var data_panel: Control
 var prompt: Control
 var showcase: Node
@@ -170,6 +181,15 @@ func _ready() -> void:
 	tuner.set("showcase", showcase)
 	tuner.set("goat_room", get_node_or_null("GoatRoom"))
 	tuner.set("shape_root", self)
+	# Room 2's own panel, on the right.
+	var tuner2 := PanelContainer.new()
+	tuner2.set_script(Tuner)
+	tuner2.set("panel", "room2")
+	tuner2.set("room", room)
+	tuner2.set("spot", get_node_or_null("BigSpot"))
+	tuner2.set("shape_root", self)
+	layer.add_child(tuner2)
+	tuner_room2 = tuner2
 	layer.add_child(tuner)
 	apply_mood(String(room.get("mood")) if room != null else "bright")
 
@@ -209,10 +229,17 @@ func apply_shape() -> void:
 	# The big room behind it, its own front wall just behind the back wall, a door to match.
 	var big: Node4D = get_node_or_null("BigRoom") as Node4D
 	if big != null:
-		var s2: float = big_room_size
-		big.position = Vector4(0.0, 0.0, -d - 1.0 - s2 * 0.5, 0.0)
-		_set_if(big, "size", Vector3(s2, h, s2))
-		_set_if(big, "doorways", [["s", -dw * 0.5, dw * 0.5, minf(door_height, h - 0.5)]] if dw > 0.1 else [])
+		var bz: float = -d - 1.0 - big_room_depth * 0.5
+		big.position = Vector4(0.0, 0.0, bz, 0.0)
+		_set_if(big, "size", Vector3(big_room_width, big_room_height, big_room_depth))
+		_set_if(big, "doorways", [["s", -dw * 0.5, dw * 0.5, minf(door_height, minf(h, big_room_height) - 0.5)]] if dw > 0.1 else [])
+		var bs: Node4D = get_node_or_null("BigSpot") as Node4D
+		if bs != null:
+			var by: float = minf(bs.position.y, big_room_height - 0.3)
+			if bs.position.x != 0.0 or absf(bs.position.z - bz) > 0.001 or bs.position.y != by:
+				bs.position = Vector4(0.0, by, bz, 0.0)
+			_set_if(bs, "aim", Vector3(0.0, 0.0, bz))
+			_set_if(bs, "fixture_at", big_room_height - 0.06)
 	var sign: Node = gr.get_node_or_null("Sign")
 	if sign != null:
 		_set_if(sign, "along", Vector2(w - 3.8, w + 3.8))
@@ -299,6 +326,7 @@ func _strip() -> Array:
 	out.append(["Wheel", "Slice through W"])
 	out.append(["Right drag", "Turn in 4D"])
 	out.append(["E", String(showcase.call("action_label"))])
+	out.append(["1 to 6", "Specimen"])
 	return out
 
 
@@ -381,6 +409,26 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if not said.is_empty():
 			hud.call("toast", said)
 		get_viewport().set_input_as_handled()
+		return
+	# 1 to 6: another animal on the plinth, from the specimen picker's slots (Ramon, 4 Oct: "press
+	# 1, is goat. press 2, and you get the same presentation for the chicken").
+	if k != null and k.pressed and not k.echo and k.keycode >= KEY_1 and k.keycode <= KEY_6:
+		pick(int(k.keycode - KEY_1))
+		get_viewport().set_input_as_handled()
+
+
+## Puts slot `i`'s animal on the plinth (the runner calls this too). False for an empty slot or the
+## animal already there.
+func pick(i: int) -> bool:
+	var picker: Node = get_node_or_null("ExhibitPicker")
+	var s: Script = picker.call("choose", i) if picker != null else null
+	if s == null or s == showcase.get("exhibit_script"):
+		return false
+	showcase.call("set_exhibit", s)
+	var names: PackedStringArray = picker.get("slot_names")
+	if i < names.size():
+		hud.call("toast", "%s on the plinth" % names[i].capitalize())
+	return true
 
 
 # -- the cinematic ---------------------------------------------------------------------------------

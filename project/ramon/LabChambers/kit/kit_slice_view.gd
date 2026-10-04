@@ -7,10 +7,11 @@ extends Control
 ## doesn't"; "why not a wireframe? turn it slightly more ... why doesn't the slicing work up and
 ## down also?").
 ##
-## THE GOAT stays put, drawn as a wireframe of its own mesh (kit_showcase wire(): edges of its
-## tetrahedra, thinned), in a three-quarter view whose three axes are its length, its height and W
-## (W drawn a little larger than life, so its 4D depth reads; there is no true scale between W and
-## the other three anyway).
+## THE GOAT stays put, drawn as a wireframe of its own mesh (kit_showcase wire(): its longer
+## tetrahedron edges, thinned), seen in gentle perspective from in front of its head, a little to
+## the W side and above (Ramon: "face with its head to us ... add some subtle perspective"), in a
+## space whose three axes are its length, its height and W (W drawn a little larger than life, so
+## its 4D depth reads; there is no true scale between W and the other three anyway).
 ## THE SLICE MOVES: it is the plane where the room's slice meets the goat, read from where the goat
 ## actually is in the world (kit_showcase slice_plane()), so it follows whoever moves it: the wheel
 ## slides it, a right drag across swings it along the goat's length, a right drag up and down
@@ -25,9 +26,11 @@ extends Control
 
 const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
 const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
-## The view: turned this far round from side on, looking down this far, W drawn this much larger.
-const YAW := 50.0
-const PITCH := 22.0
+## The view: where the eye sits, as a direction from the goat's middle in (length, height, W)
+## (length towards the head), how far off as a multiple of the goat's size (far: gentle
+## perspective), and how much larger W is drawn.
+const EYE := Vector3(0.62, 0.38, 0.68)
+const EYE_DISTANCE := 3.2
 const W_BOOST := 1.5
 
 var showcase: Node
@@ -35,6 +38,7 @@ var _edges: PackedVector4Array = PackedVector4Array()
 var _box: Array = []          # [lo, hi] of the goat, Vector4s
 var _plane: Array = []        # [n, d], the slice in the goat's space, eased
 var _tick: float = 0.0
+var _serial: int = -1
 
 
 func _ready() -> void:
@@ -48,6 +52,11 @@ func _process(delta: float) -> void:
 		size = want
 	if showcase == null:
 		return
+	if int(showcase.get("serial")) != _serial:
+		_serial = int(showcase.get("serial"))
+		_edges = PackedVector4Array()
+		_box = []
+		_plane = []
 	if _edges.is_empty() and showcase.has_method("wire"):
 		_edges = showcase.call("wire")
 		if not _edges.is_empty():
@@ -88,39 +97,48 @@ func _draw() -> void:
 	var fs: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")
 	draw_string(fs, r.position + Vector2(14.0, 22.0) * u, "WHERE THE SLICE CUTS", HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), Color(1, 1, 1))
-	draw_string(fl, r.position + Vector2(14.0, 38.0) * u, "The room shows you this plane through the 4D goat", HORIZONTAL_ALIGNMENT_LEFT, w - 28.0 * u, int(9 * u), Color(0.8, 0.86, 0.95, 0.8))
+	draw_string(fl, r.position + Vector2(14.0, 38.0) * u, "The room shows you this plane through the 4D %s" % _name(), HORIZONTAL_ALIGNMENT_LEFT, w - 28.0 * u, int(9 * u), Color(0.8, 0.86, 0.95, 0.8))
 	var lo: Vector4 = _box[0]
 	var hi: Vector4 = _box[1]
 	var long_z: bool = (hi.z - lo.z) >= (hi.x - lo.x)
 	var length: float = (hi.z - lo.z) if long_z else (hi.x - lo.x)
 	var height: float = hi.y - lo.y
 	var depth: float = maxf(hi.w - lo.w, 0.001)
-	# The view's axes on screen for (length, height, W).
-	var yaw: float = deg_to_rad(YAW)
-	var pitch: float = deg_to_rad(PITCH)
-	var ax := Vector2(cos(yaw), -sin(yaw) * sin(pitch))
-	var aw := Vector2(-sin(yaw), -cos(yaw) * sin(pitch)) * W_BOOST
-	var ay := Vector2(0.0, -cos(pitch))
+	# The eye: in (length, height, W) space, W scaled up; length runs towards the head (the goat's
+	# head is at its +length end), and the eye looks at the goat's middle from in front of it.
+	var to3 := func(p: Vector4) -> Vector3:
+		var l: float = ((p.z - lo.z) if long_z else (p.x - lo.x))
+		return Vector3(l, p.y - lo.y, (p.w - lo.w) * W_BOOST)
+	var mid3 := Vector3(length * 0.5, height * 0.5, depth * W_BOOST * 0.5)
+	var size3: float = Vector3(length, height, depth * W_BOOST).length()
+	var eye: Vector3 = mid3 + EYE.normalized() * size3 * EYE_DISTANCE
+	var fwd: Vector3 = (mid3 - eye).normalized()
+	var right: Vector3 = fwd.cross(Vector3.UP).normalized()
+	var upv: Vector3 = right.cross(fwd)
+	var view := func(p3: Vector3) -> Vector2:
+		var v: Vector3 = p3 - eye
+		var zc: float = maxf(v.dot(fwd), 0.001)
+		return Vector2(v.dot(right) / zc, -v.dot(upv) / zc)
 	var area := Rect2(r.position + Vector2(16.0, 48.0) * u, r.size - Vector2(32.0, 76.0) * u)
 	var bmin := Vector2(INF, INF)
 	var bmax := Vector2(-INF, -INF)
 	for cl in [0.0, length]:
 		for cy in [0.0, height]:
-			for cw in [0.0, depth]:
-				var q0: Vector2 = ax * cl + ay * cy + aw * cw
+			for cw in [0.0, depth * W_BOOST]:
+				var q0: Vector2 = view.call(Vector3(cl, cy, cw))
 				bmin = Vector2(minf(bmin.x, q0.x), minf(bmin.y, q0.y))
 				bmax = Vector2(maxf(bmax.x, q0.x), maxf(bmax.y, q0.y))
-	var bsize: Vector2 = (bmax - bmin).max(Vector2(0.001, 0.001))
+	var bsize: Vector2 = (bmax - bmin).max(Vector2(0.0001, 0.0001))
 	var k: float = minf(area.size.x / bsize.x, area.size.y / bsize.y)
 	var origin: Vector2 = area.get_center() - (bmin + bmax) * 0.5 * k
 	var proj := func(p: Vector4) -> Vector2:
-		var l: float = ((p.z - lo.z) if long_z else (p.x - lo.x))
-		return origin + (ax * l + ay * (p.y - lo.y) + aw * (p.w - lo.w)) * k
+		return origin + (view.call(to3.call(p)) as Vector2) * k
 	var n: Vector4 = _plane[0]
 	var d: float = float(_plane[1])
 	# The wireframe: the edges the slice passes through glow.
 	var dim := PackedVector2Array()
 	var cut := PackedVector2Array()
+	var hits := PackedVector2Array()
 	for i in range(0, _edges.size() - 1, 2):
 		var a: Vector4 = _edges[i]
 		var b: Vector4 = _edges[i + 1]
@@ -129,6 +147,7 @@ func _draw() -> void:
 		if (fa > 0.0) != (fb > 0.0):
 			cut.append(proj.call(a))
 			cut.append(proj.call(b))
+			hits.append(proj.call(a.lerp(b, fa / (fa - fb))))
 		else:
 			dim.append(proj.call(a))
 			dim.append(proj.call(b))
@@ -160,15 +179,23 @@ func _draw() -> void:
 		draw_polyline(sq, Color(hot, 0.85), maxf(1.0, 1.5 * u), true)
 		draw_circle(proj.call(c2), maxf(2.0, 2.5 * u), Color(hot, 0.95))
 	if not cut.is_empty():
-		draw_multiline(cut, hot, maxf(1.5, 2.0 * u))
+		draw_multiline(cut, Color(hot, 0.4), maxf(1.0, u))
+		for q in hits:
+			draw_circle(q, maxf(1.5, 1.8 * u), hot)
 	else:
-		draw_string(fl, Vector2(r.position.x + 14.0 * u, r.end.y - 28.0 * u), "The slice misses the goat here", HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Color(1.0, 0.75, 0.6))
+		draw_string(fl, Vector2(r.position.x + 14.0 * u, r.end.y - 28.0 * u), "The slice misses the %s here" % _name(), HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Color(1.0, 0.75, 0.6))
 	# The W axis, labelled.
-	var w0: Vector2 = proj.call(Vector4(lo.x, lo.y, lo.z, lo.w)) + Vector2(10.0, 12.0) * u
-	var w1: Vector2 = w0 + aw * depth * k
+	var w0: Vector2 = proj.call(Vector4(lo.x, lo.y, lo.z, lo.w))
+	var w1: Vector2 = proj.call(Vector4(lo.x, lo.y, lo.z, hi.w))
 	draw_line(w0, w1, Color(1, 1, 1, 0.6), maxf(1.0, u), true)
 	draw_string(fs, w1 + Vector2(-14.0, -2.0) * u, "W", HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), Color(1, 1, 1, 0.8))
 	var idx: int = int(showcase.get("slice_index")) + 1 if showcase != null else 0
 	var tn: Vector2 = showcase.get("turn") if showcase != null else Vector2.ZERO
 	draw_string(fl, Vector2(r.position.x + 14.0 * u, r.end.y - 12.0 * u), "Slice %d of 9   swung %.0f°, tilted %.0f°" % [idx, rad_to_deg(tn.x), rad_to_deg(tn.y)],
 		HORIZONTAL_ALIGNMENT_LEFT, w - 28.0 * u, int(10 * u), hot)
+
+
+## The exhibit's name in lower case, for the lines under the drawing.
+func _name() -> String:
+	var d: Dictionary = showcase.call("data") if showcase != null and showcase.has_method("data") else {}
+	return String(d.get("name", "animal")).to_lower()

@@ -19,6 +19,14 @@ const WALK := preload("res://ramon/LabChambers/scripts/goat_walk_4d.gd")
 @export var stand_height: float = 3.6
 ## The turntable, in degrees a second, outside the cinematic.
 @export var turn_speed: float = 5.0
+## Whether it arrives at a real goat's size and grows (the showcase sets this when it swaps
+## exhibits; at the room's start it simply stands there).
+var grow_in: bool = false
+
+## A real goat's height, metres (where it grows from), and how long it takes.
+const REAL_HEIGHT := 1.0
+const GROW_SECONDS := 2.6
+var _grow: float = 1.0
 
 var _stand: Node4D
 var _goat: Node4D
@@ -38,6 +46,8 @@ func _ready() -> void:
 	_stand.add_child(_goat)
 	_stand.basis = Basis4D.from_zx(_yaw)
 	if not Engine.is_editor_hint():
+		_grow = 0.0 if grow_in else 1.0
+		_turn(_yaw)
 		shape()
 		var rig: MeshInstance4D = _goat.get("_rig")
 		var model: Node4D = _goat.get("_goat")
@@ -49,6 +59,22 @@ func _ready() -> void:
 			if not bool(_walker.call("attach", rig)):
 				_walker.queue_free()
 				_walker = null
+
+
+## The stand's turn, with the grow-in's scale.
+func _turn(yaw: float) -> void:
+	var g: float = lerpf(clampf(REAL_HEIGHT / maxf(stand_height, 0.01), 0.02, 1.0), 1.0, ease(_grow, -2.2))
+	_stand.basis = Basis4D.from_zx(yaw) * Projection(Vector4(g, 0, 0, 0), Vector4(0, g, 0, 0), Vector4(0, 0, g, 0), Vector4(0, 0, 0, g))
+
+
+func _process(delta: float) -> void:
+	if not Engine.is_editor_hint() and _grow < 1.0:
+		_grow = minf(_grow + delta / GROW_SECONDS, 1.0)
+
+
+## Whether the grow-in is over (the showcase waits for it before measuring).
+func grown() -> bool:
+	return _grow >= 1.0
 
 
 func _stages() -> int:
@@ -112,25 +138,25 @@ func play(i: int, t: float) -> Dictionary:
 		_walker.call("set_xray", i == 4)
 	match i:
 		0:
-			_stand.basis = Basis4D.from_zx(0.55)
+			_turn(0.55)
 			var step: int = clampi(int(floor((t - 0.3) / 0.85)), 0, _stages() - 1)
 			if step != int(_goat.call("shown_stage")) or not bool(_goat.call("showing_plain")):
 				_show(step)
 		1:
 			if bool(_goat.call("showing_plain")):
 				_show(-1)
-			_stand.basis = Basis4D.from_zx(0.55 + t * 0.12)
+			_turn(0.55 + t * 0.12)
 		2:
 			if bool(_goat.call("showing_plain")):
 				_show(-1)
-			_stand.basis = Basis4D.from_zx(0.2)
+			_turn(0.2)
 			return {"slice": sin(clampf(t / 7.0, 0.0, 1.0) * TAU) * 0.55}
 		3, 4:
 			if bool(_goat.call("showing_plain")):
 				_show(-1)
 			# Side on, turning a little, so the legs read; the rig goes on from where the walk was.
 			var tw: float = t + (9.0 if i == 4 else 0.0)
-			_stand.basis = Basis4D.from_zx(1.25 + tw * 0.03)
+			_turn(1.25 + tw * 0.03)
 			if _walker != null:
 				_walker.call("pose", tw)
 	return {}
@@ -146,7 +172,7 @@ func end_cinematic() -> void:
 	_walk(false)
 	_step = -1
 	_show(-1)
-	_stand.basis = Basis4D.from_zx(_yaw)
+	_turn(_yaw)
 
 
 # -- afterwards ------------------------------------------------------------------------------------
@@ -177,7 +203,7 @@ func idle(delta: float) -> void:
 	if _stand == null:
 		return
 	_yaw += deg_to_rad(turn_speed) * delta
-	_stand.basis = Basis4D.from_zx(_yaw)
+	_turn(_yaw)
 
 
 ## How far through W the goat reaches either side of its centre, in metres, read off its
@@ -213,6 +239,8 @@ func data() -> Dictionary:
 	var finished: ArrayTetraMesh4D = _goat.get("_finished")
 	var whole: int = int(finished.get_simplex_cell_vertex_indices().size() / 4) if finished != null else 0
 	return {
+		"name": "Goat",
+		"code": "GT-01",
 		"title": "THE GOAT, MEASURED",
 		"rows": [["Balls placed by hand", str(int(_goat.call("ball_count")))],
 			["Tetrahedra, finished", _grouped(whole)],
@@ -435,7 +463,8 @@ func wire() -> PackedVector4Array:
 	for v in verts:
 		lo = Vector4(minf(lo.x, v.x), minf(lo.y, v.y), minf(lo.z, v.z), minf(lo.w, v.w))
 		hi = Vector4(maxf(hi.x, v.x), maxf(hi.y, v.y), maxf(hi.z, v.z), maxf(hi.w, v.w))
-	var cell: float = maxf(maxf(hi.x - lo.x, hi.z - lo.z), 0.001) / 30.0
+	# Coarse, and only the longer edges: a simpler web reads as the animal, a fine one as fur.
+	var cell: float = maxf(maxf(hi.x - lo.x, hi.z - lo.z), 0.001) / 17.0
 	var seen: Dictionary = {}
 	var keep: Dictionary = {}
 	for t in range(0, cells.size() - 3, 4):
@@ -446,6 +475,8 @@ func wire() -> PackedVector4Array:
 			if seen.has(key):
 				continue
 			seen[key] = true
+			if verts[i0].distance_to(verts[i1]) < cell * 0.45:
+				continue
 			var c: Vector4 = (verts[i0] + verts[i1]) * 0.5
 			var ck := Vector4i(int(floor(c.x / cell)), int(floor(c.y / cell)), int(floor(c.z / cell)), int(floor(c.w / cell)))
 			if not keep.has(ck):

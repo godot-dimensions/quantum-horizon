@@ -45,6 +45,7 @@ var _profile: Dictionary = {}
 var _stops: Array = []
 var _frames: PackedFloat32Array = PackedFloat32Array()
 var _tick: float = 0.0
+var _serial: int = -1
 var _clock: float = 0.0
 
 
@@ -66,6 +67,11 @@ func _process(delta: float) -> void:
 	_tick -= delta
 	if _tick <= 0.0 and showcase != null and _a > 0.0:
 		_tick = 0.25
+		if int(showcase.get("serial")) != _serial:
+			_serial = int(showcase.get("serial"))
+			_data = {}
+			_profile = {}
+			_stops = []
 		if _data.is_empty() and showcase.has_method("data"):
 			_data = showcase.call("data")
 		if _profile.is_empty() and showcase.has_method("profile"):
@@ -106,7 +112,7 @@ func _draw() -> void:
 	var top: float = r.position.y
 	var st: Dictionary = _data.get("stats", {})
 	# The header.
-	Glyphs.tag(self, Vector2(x, top + 30.0 * u), "GOAT 01", int(10 * u), white, true)
+	Glyphs.tag(self, Vector2(x, top + 30.0 * u), ("%s %s" % [String(_data.get("name", "specimen")).to_upper(), String(_data.get("code", "XX-01")).get_slice("-", 1)]), int(10 * u), white, true)
 	var pulse: float = 0.6 + 0.4 * sin(_clock * 4.0)
 	Glyphs.icon(self, "live", Rect2(Vector2(x + cw - 62.0 * u, top + 21.0 * u), Vector2(18.0 * u, 18.0 * u)), Color(0.5, 1.0, 0.68, a * pulse))
 	draw_string(fs, Vector2(x + cw - 40.0 * u, top + 35.0 * u), "LIVE", HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), soft)

@@ -99,6 +99,7 @@ var _profile: Dictionary = {}
 var _stops: Array = []
 var _wire: Dictionary = {}
 var _shape: Dictionary = {}
+var _serial: int = -1
 
 
 func _enter_tree() -> void:
@@ -266,6 +267,13 @@ func _process(delta: float) -> void:
 		return
 	var sc: Node = get_node_or_null(showcase)
 	if sc != null:
+		if int(sc.get("serial")) != _serial:
+			_serial = int(sc.get("serial"))
+			_data = {}
+			_profile = {}
+			_stops = []
+			_shape = {}
+			_wire = {}
 		if _data.is_empty():
 			_data = sc.call("data")
 		if _profile.is_empty() and sc.has_method("profile"):
@@ -337,7 +345,7 @@ func _draw_screen() -> void:
 	if _wire.is_empty() and not _shape.is_empty():
 		_wire = Glyphs.wire_geometry(Rect2(at.call(mg + 0.04, 0.22), at.call(r0 - mg - 0.14, 0.68)), _shape)
 	Glyphs.wire_draw(c, _wire, Color(0.70, 0.88, 1.0, 0.7), white, Color(0.55, 0.80, 1.0, 0.12), balls_now)
-	c.draw_string(fl, at.call(mg + 0.04, 0.99), "Goat 01, %d of %d balls in view" % [balls_now, int(st.get("balls", 0))], HORIZONTAL_ALIGNMENT_LEFT, -1, px.call(0.034), dim)
+	c.draw_string(fl, at.call(mg + 0.04, 0.99), "%s %s, %d of %d balls in view" % [String(_data.get("name", "Specimen")), String(_data.get("code", "XX-01")).get_slice("-", 1), balls_now, int(st.get("balls", 0))], HORIZONTAL_ALIGNMENT_LEFT, -1, px.call(0.034), dim)
 	# Four tiles, live.
 	var tetra_now: int = int(bars[stage_now]) if stage_now >= 0 and stage_now < bars.size() else int(st.get("tetra", 0))
 	var slice_w: float = float(sc.get("_slice_w")) if sc != null else 0.0

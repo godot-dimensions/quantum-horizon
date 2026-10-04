@@ -101,6 +101,8 @@ func _run() -> void:
 	var sc: Node = _g.get_node("Showcase")
 	var tuner: Control = _g.get("tuner")
 	tuner.visible = false
+	var tuner2: Control = _g.get("tuner_room2")
+	tuner2.visible = false
 	for m in ["dark", "bright"]:
 		await _set_mood(m)
 		_put(0.0, 15.2, 0.0)
@@ -121,6 +123,13 @@ func _run() -> void:
 		_put(0.0, -6.2, 0.0)
 		await _wait(0.4)
 		await _shot("back_door")
+		# Room 2, lit by its one big spot: from just inside the door, and from a corner.
+		_put(0.0, -13.0, 0.0)
+		await _wait(0.4)
+		await _shot("room2")
+		_put(11.0, -36.0, PI * 0.78)
+		await _wait(0.4)
+		await _shot("room2_corner")
 		_put(0.5, 6.5, 1.107)
 		await _wait(0.8)
 		await _shot("console")
@@ -157,8 +166,10 @@ func _run() -> void:
 		_put(0.0, 6.0, 0.0)
 		await _wait(1.2)
 	tuner.visible = true
+	tuner2.visible = true
 	await _shot("with_the_sliders")
 	tuner.visible = false
+	tuner2.visible = false
 	# The player: from the front, close, and walking past side on.
 	var rig: Node = (_g.get("player") as Node).get_node("CameraRig")
 	rig.set("_zoom_target", 3.4)
@@ -176,9 +187,9 @@ func _run() -> void:
 	await _wait(0.6)
 	Input.action_press(&"move_right")
 	await _wait(0.9)
-	await _shot("walking_1")
-	await _wait(0.2)
-	await _shot("walking_2")
+	for i in 4:
+		await _shot("walking_%d" % i)
+		await _wait(0.13)
 	Input.action_release(&"move_right")
 	await _wait(0.6)
 	await _set_mood("dark")
