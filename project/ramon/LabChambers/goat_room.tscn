@@ -15,6 +15,8 @@
 [node name="GoatRoomScene" type="Node4D"]
 script = ExtResource("1_root")
 route = PackedVector2Array(0, 14.6, 0, -1.5)
+room_back = 11.0
+corner_z = -3.0
 
 [node name="Room" type="Node4D" parent="."]
 script = ExtResource("2_room")
@@ -52,8 +54,8 @@ route = PackedVector2Array(0, 14.6, 0, -1.5)
 
 [node name="GoatRoom" type="Node4D" parent="."]
 script = ExtResource("3_kitroom")
-outline = PackedVector2Array(-10, 9, -10, -1, -3, -9, 3, -9, 10, -1, 10, 9)
-size = Vector3(20, 10, 18)
+outline = PackedVector2Array(-10, 9, -10, -3, -3, -11, 3, -11, 10, -3, 10, 9)
+size = Vector3(20, 10, 20)
 doorways = [[5, 7.8, 12.2, 3.8], [2, 1.8, 4.2, 3.6]]
 edge_codes = {
 3: "blue"
@@ -63,7 +65,7 @@ route = PackedVector2Array(0, 14.6, 0, -1.5)
 ring = Vector3(0, -1.5, 3.75)
 
 [node name="BigRoom" type="Node4D" parent="."]
-position = Vector4(0, 0, -25, 0)
+position = Vector4(0, 0, -27, 0)
 script = ExtResource("3_kitroom")
 size = Vector3(30, 10, 30)
 doorways = [["s", -1.2, 1.2, 3.6]]
@@ -98,7 +100,7 @@ radius = 3.4
 bounds = Rect2(-10, -9, 20, 18)
 
 [node name="ResearchWall" type="Node4D" parent="."]
-position = Vector4(6.4, 0, -4.93, 0)
+position = Vector4(6.402, 0, -6.914, 0)
 basis = Projection(0.6584904486653127, 0, 0.7525890837745093, 0, 0, 1, 0, 0, -0.7525890837745093, 0, 0.6584904486653127, 0, 0, 0, 0, 1)
 script = ExtResource("7_wall")
 showcase = NodePath("../Showcase")
@@ -174,9 +176,9 @@ position = Vector4(1.48, 7.19, 1.68, 0)
 script = ExtResource("11_sun")
 
 [node name="BigSpot" type="Node4D" parent="."]
-position = Vector4(0, 9.7, -25, 0)
+position = Vector4(0, 9.7, -27, 0)
 script = ExtResource("9_light")
-aim = Vector3(0, 0, -25)
+aim = Vector3(0, 0, -27)
 angle = 120.0
 softness = 3.0
 reach = 30.0
