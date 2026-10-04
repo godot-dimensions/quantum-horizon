@@ -26,6 +26,14 @@ extends "res://ramon/LabChambers/kit/kit_desk_4d.gd"
 ## breaks consistency with the other design"; "the info wall is bright white"). `look` "paper" puts
 ## back the first version: a paper page after the October slides.
 ##
+## LOOK "PAINTED" (Ramon, 4 Oct, a test: "create a blue wall on the right panel wall, non emissive
+## like on the left, add the info diagram on top of it, and remove the emissive quality so the colors
+## blend, and remove the tv frame, and make it seamless"): no body at all. The room builds the wall
+## behind it (`room_path`, edge `wall_edge`) in the lesson wall's code blue, and the live page is
+## printed straight into that wall's surface, centred along it, `size` big, `hover` off the floor,
+## glowing only as much as the lesson wall's paint does (`paint_glow`), so the room's light and
+## shadow fall on it as on the wall around it.
+##
 ## The body is the research panel's (kit_desk_4d.gd) stood upright: tilt 90, no collision, its
 ## screen redrawn `refresh_hz` times a second into a viewport printed on its face.
 ##
@@ -52,12 +60,20 @@ const STEP_LINES := {"balls": "placed by a designer", "skin": "lofted by the too
 	"rig": "joints from the balls", "walk": "rigid pieces in motion"}
 
 ## "screen" (the lab's style) or "paper" (the first version, after the October slides).
-@export_enum("screen", "paper") var look: String = "screen":
+@export_enum("screen", "paper", "painted") var look: String = "screen":
 	set(v):
 		look = v
 		_palette()
-		if is_inside_tree():
-			_paint_parts()
+		_painted_key = ""
+		_later()
+## For the "painted" look: the room whose wall it is printed on, and which of its edges.
+@export var room_path: NodePath = NodePath("../GoatRoom")
+@export var wall_edge: int = 3
+## How much the painted page glows in bright (dark adds 0.15), as the lesson wall's paint does.
+@export_range(0.0, 1.0, 0.01) var paint_glow: float = 0.15:
+	set(v):
+		paint_glow = v
+		_painted_key = ""
 ## How bright the paper page glows in each mood (the screen look glows as the desk does).
 @export var glow_dark: float = 0.5
 @export var glow_bright: float = 0.42
@@ -72,6 +88,7 @@ var BAR: Color
 var BAR_LIT: Color
 var _f_light: Font
 var _f_regular: Font
+var _painted_key: String = ""
 
 var _page: int = -2            # the part shown (-1: the summary)
 var _page_prev: int = -2
@@ -96,7 +113,7 @@ func near(_p: Vector4) -> bool:
 
 
 func _palette() -> void:
-	var pal: Array = LOOKS.get(look, LOOKS["screen"])
+	var pal: Array = LOOKS.get("screen" if look == "painted" else look, LOOKS["screen"])
 	PAPER = pal[0]
 	INK = pal[1]
 	GREY = pal[2]
@@ -106,10 +123,90 @@ func _palette() -> void:
 	BAR = pal[6]
 	BAR_LIT = pal[7]
 	_f_light = F_LIGHT if look == "paper" else LabPrint.font("black")
+	if look == "painted":
+		# Cards a touch stronger: the room's light dims the whole print, the veil with it.
+		INSET = Color(1, 1, 1, 0.10)
 	_f_regular = F_REGULAR if look == "paper" else LabPrint.font("bold")
 
 
+## The "painted" look builds no body: only the live page, printed on the room's wall.
+func rebuild() -> void:
+	if look != "painted":
+		_ask_wall(false)
+		super()
+		return
+	Build.clear(self)
+	_prints = []
+	_glow = []
+	_screen = null
+	_vp = null
+	_canvas = null
+	_sw = size.x
+	_sh = size.y
+	_screen_rect = Rect2(Vector2.ZERO, Vector2(_sw, _sh))
+	_painted_key = ""
+	_ask_wall(true)
+	if not Engine.is_editor_hint() and is_inside_tree():
+		_start_screen()
+
+
+## Asks the room to build our wall in code blue, or to stop.
+func _ask_wall(on: bool) -> void:
+	var room: Node = get_node_or_null(room_path)
+	if room == null or room.get("edge_codes") == null:
+		return
+	var codes: Dictionary = (room.get("edge_codes") as Dictionary).duplicate()
+	if on and String(codes.get(wall_edge, "")) != "blue":
+		codes[wall_edge] = "blue"
+		room.set("edge_codes", codes)
+	elif not on and codes.has(wall_edge):
+		codes.erase(wall_edge)
+		room.set("edge_codes", codes)
+
+
+func _process(delta: float) -> void:
+	super(delta)
+	if look == "painted" and not Engine.is_editor_hint() and _vp != null:
+		_print_on_wall()
+
+
+## The live page into the wall's surface, again whenever the room has rebuilt its wall.
+func _print_on_wall() -> void:
+	var room: Node = get_node_or_null(room_path)
+	if room == null or not room.has_method("wall_pieces"):
+		return
+	var pieces: Array = room.call("wall_pieces", wall_edge)
+	if pieces.is_empty():
+		return
+	var key: String = Style.mood
+	for pc in pieces:
+		key += ":%d" % (pc[0] as Object).get_instance_id()
+	if key == _painted_key:
+		return
+	_painted_key = key
+	var len: float = float(room.call("edge_length", wall_edge))
+	var a0: float = len * 0.5 - size.x * 0.5
+	var a1: float = a0 + size.x
+	var y0: float = hover
+	var y1: float = hover + size.y
+	var glow: float = paint_glow + (0.15 if Style.mood == "dark" else 0.0)
+	for pc in pieces:
+		var b: MeshInstance4D = pc[0]
+		var p: float = float(pc[1])
+		var q: float = float(pc[2])
+		if q <= a0 or p >= a1 or float(pc[4]) <= y0 or float(pc[3]) >= y1:
+			continue
+		var m: TetraMaterial4D = b.material_override as TetraMaterial4D
+		if m == null:
+			continue
+		# As the room's own wall prints (rd_build print_wall): the inner face is +Z, u runs from p.
+		LabGrid.set_print(m, _vp.get_texture(), Vector4(0, 0, 1, 0), Rect2(Vector2(a0 - p, y0 - float(pc[3])), Vector2(a1 - a0, y1 - y0)), Color.WHITE, glow)
+		LabGrid.set_print_strength(m, 1.0)
+		m.get_cross_section_material_3d().set_shader_parameter("print_aa", 1.0)
+
+
 func _paint_parts() -> void:
+	_painted_key = ""
 	super()
 	if look == "paper" and is_instance_valid(_screen) and _vp != null:
 		(_screen.material_override as TetraMaterial4D).get_cross_section_material_3d().set_shader_parameter("print_glow", glow_bright if Style.mood == "bright" else glow_dark)
@@ -215,10 +312,10 @@ func _draw_specimen(c: Control, ex: Node, playing: bool, want: int, progress: fl
 	_text(c, LabPrint.font("bold"), 52, 106, "SPECIMEN  " + String(_data.get("code", "")), 13, GREY)
 	_text(c, _f_light, 50, 172, String(_data.get("name", "")), 66, Color(INK, fade))
 	_text(c, LabPrint.font("bold"), 52, 204, "%d BALLS   ·   %s TETRAHEDRA" % [int(st.get("balls", 0)), Presentation.thousands(int(st.get("tetra", 0)))], 13, GREY)
-	var cut: Color = PAPER if PAPER.a > 0.0 else Style.pick({"bright": Color(0.12, 0.40, 0.88), "dark": Color(0.08, 0.28, 0.66)})
+	var cut: Color = PAPER if PAPER.a > 0.0 else (Style.pick(Style.CODE_BLUE) if look == "painted" else Style.pick({"bright": Color(0.12, 0.40, 0.88), "dark": Color(0.08, 0.28, 0.66)}))
 	Glyphs.animal(c, String(_data.get("icon", String(_data.get("name", "")).to_lower())), Rect2(_p(52, 226), _p(360, 170)), Color(INK, 0.9 * fade), cut)
 	_text(c, LabPrint.font("bold"), 52, 438, "THE STORY", 13, GREY)
-	var status: String = "PLAYING   ·   CLICK FOR THE NEXT PART" if playing else ("ARRIVING" if bool(get_node(showcase).call("arriving")) else "IN YOUR HANDS")
+	var status: String = "PLAYING   ·   CLICK FOR THE NEXT PART" if playing else ("ARRIVING" if bool(get_node(showcase).call("arriving")) else "PAUSED   ·   CLICK TO PLAY")
 	_text(c, LabPrint.font("bold"), 52, 438, status, 11, ACCENT if playing else GREY, HORIZONTAL_ALIGNMENT_RIGHT, 368)
 	_line(c, Vector2(52, 452), Vector2(420, 452), HAIR, 1.5)
 	var parts: Array = Presentation.chapters()

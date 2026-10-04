@@ -340,6 +340,8 @@ func _strip() -> Array:
 		out.append(["Click", "Watch"])
 	if int(showcase.get("seq_index")) >= 0:
 		out.append(["Click", "Next part"])
+	elif bool(showcase.call("can_skip")):
+		out.append(["Click", "Play from the start"])
 	out.append(["Wheel", "Slice through W"])
 	out.append(["Right drag", "Turn in 4D"])
 	out.append(["E", String(showcase.call("action_label"))])
@@ -408,7 +410,7 @@ func _input(event: InputEvent) -> void:
 			return
 		# While the presentation plays, a left click goes on to its next part (Ramon, 4 Oct: "skip
 		# to the next sequence by pressing left mouse button").
-		if mb.button_index == MOUSE_BUTTON_LEFT and int(showcase.get("seq_index")) >= 0 and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		if mb.button_index == MOUSE_BUTTON_LEFT and bool(showcase.call("can_skip")) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			showcase.call("skip")
 			get_viewport().set_input_as_handled()
 			return

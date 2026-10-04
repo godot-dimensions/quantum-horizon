@@ -486,9 +486,16 @@ func sequences() -> Array:
 	return Presentation.chapters() if exhibit != null else []
 
 
-## Left click while it plays: on to the start of the next part, the loop going on from there.
+## Left click: while it plays, on to the start of the next part (after the last, the first again);
+## while it is paused in your hands, the story starts over from its first part (Ramon, 4 Oct: "it
+## halts when i keep left clicking ... it should just start over with the next click"). Nothing while
+## a new animal is still growing in.
 func skip() -> void:
+	if _wait_grow:
+		return
 	if not _looping or seq_index < 0:
+		_touched_at = -1000.0
+		_looping = false
 		return
 	var seqs: Array = sequences()
 	var total: float = 0.0
@@ -543,6 +550,11 @@ func end_cinematic() -> void:
 			_prints = []
 			_prints.append(await RD.print_box(tree, _button, Vector4(0, 0, 1, 0), Vector2(1.5, 0.62), _paint_button, {"bright": 0.85, "dark": 0.95}))
 			_apply_mood_now()
+
+
+## Whether a left click would do something (skip on, or start the story over).
+func can_skip() -> bool:
+	return exhibit != null and autoplay and not _wait_grow
 
 
 ## Whether a new exhibit is still growing in.

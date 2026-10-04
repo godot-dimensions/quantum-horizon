@@ -74,6 +74,13 @@ const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 		route_lit = v
 		_show_route()
 
+## Colour codes by edge for walls with no wall text on them, {edge: "blue"} (kit_style.gd CODES):
+## a panel printed straight onto a wall (kit_research_wall_4d.gd, look "painted") asks for its wall.
+@export var edge_codes: Dictionary = {}:
+	set(v):
+		edge_codes = v
+		_later()
+
 var _floor: MeshInstance4D
 var _walls: Dictionary = {}       # side -> pieces
 var _prints: Array = []
@@ -193,6 +200,8 @@ func _rebuild_outline() -> void:
 				cuts.append(al.x)
 				cuts.append(al.y)
 				swatch = Style.code_swatch(String(tx.get("code")), swatch)
+		if edge_codes.has(e):
+			swatch = Style.code_swatch(String(edge_codes[e]), swatch)
 		_walls[e] = _edge_wall(e, a, c, h, t, ops, cuts, swatch)
 		if cove:
 			var d2: Vector2 = (c - a).normalized()
@@ -301,6 +310,23 @@ func _edge_wall(e: int, a: Vector2, c: Vector2, h: float, t: float, openings: Ar
 			body.set_meta(Build.GENERATED, true)
 			add_child(body)
 	return out
+
+
+## Edge `e`'s wall pieces as built: [[box, p, q, y0, y1], ...], p and q along the edge from its
+## first corner, each box's +Z looking into the room (empty before the room is built).
+func wall_pieces(e: int) -> Array:
+	var out: Array = []
+	for pc in _walls.get(e, []):
+		if is_instance_valid(pc[0]):
+			out.append(pc)
+	return out
+
+
+## How long edge `e` is, metres.
+func edge_length(e: int) -> float:
+	if outline.size() < 2:
+		return 0.0
+	return outline[e % outline.size()].distance_to(outline[(e + 1) % outline.size()])
 
 
 func _texts() -> Array:

@@ -55,6 +55,9 @@ script = ExtResource("3_kitroom")
 outline = PackedVector2Array(-10, 9, -10, -1, -3, -9, 3, -9, 10, -1, 10, 9)
 size = Vector3(20, 10, 18)
 doorways = [[5, 7.8, 12.2, 3.8], [2, 1.8, 4.2, 3.6]]
+edge_codes = {
+3: "blue"
+}
 cove = false
 route = PackedVector2Array(0, 14.6, 0, -1.5)
 ring = Vector3(0, -1.5, 3.75)
@@ -107,6 +110,7 @@ corner = 0.12
 live_ppm = 360.0
 refresh_hz = 30.0
 collide = false
+look = "painted"
 
 [node name="ResearchPanel" type="Node4D" parent="."]
 position = Vector4(-5.5, 0, 3.5, 0)
