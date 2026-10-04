@@ -28,6 +28,8 @@ extends Node4D
 const SOURCE := "res://ramon/LabKit/carried/chickenpen/chicken.tscn"
 const WALKER := preload("res://ramon/LabChambers/scripts/exhibit_chicken_walker_4d.gd")
 const Mats := preload("res://ramon/LabKit/lab_materials.gd")
+const Bench := preload("res://ramon/LabChambers/kit/kit_bench.gd")
+const Presentation := preload("res://ramon/LabChambers/kit/kit_presentation.gd")
 ## The order the rigs come in during the build.
 const ORDER: PackedStringArray = ["Body", "LegL", "LegR", "Wing", "NeckHead"]
 ## A real chicken's height, metres: where it starts growing from.
@@ -56,6 +58,7 @@ var _xray: bool = false
 var _xray_parts: Array = []
 var _leg_bones: Array = []     # [rig, upper ball, lower ball, bone mesh], laid each frame
 var _grow: float = 1.0
+var _bench: Dictionary = {}
 var _small: float = 0.2
 
 
@@ -84,7 +87,10 @@ func _ready() -> void:
 		_walker.set("peck_interval_max", 3.5)
 	_model = bird as Node4D
 	_model.position = Vector4.ZERO
+	# Its rigs loft themselves from their balls as they enter the tree: that is its build, timed.
+	var t_build: int = Time.get_ticks_usec()
 	_stand.add_child(_model)
+	var build_ms: float = Bench.ms_since(t_build)
 	# Standing still until THE WALK (a node with _physics_process turns it on when it is ready).
 	if _walker != null:
 		_walker.set_physics_process(false)
@@ -108,6 +114,17 @@ func _ready() -> void:
 	shape()
 	wire()
 	_turn(_yaw)
+	# One leg lofted again: what re-lofting a limb every frame would cost (the walker has not cut
+	# the legs yet, so this is the whole leg the pen used to rebuild).
+	var leg: Node = _model.get_node_or_null("LegL")
+	var limb_ms: float = -1.0
+	if leg != null and leg.has_method("build"):
+		var t_limb: int = Time.get_ticks_usec()
+		leg.call("build", false)
+		limb_ms = Bench.ms_since(t_limb)
+	_bench = {"name": "Chicken", "icon": "chicken", "balls": _all_balls().size(), "tetra": int(data()["stats"]["tetra"]),
+		"build_ms": build_ms, "limb_ms": limb_ms, "limbs": 2, "pieces": 8, "measured": Time.get_date_string_from_system()}
+	Bench.write("CK-02", _bench)
 
 
 ## Scaled to the stage, stood on its floor and centred over the plinth's middle (so it turns on
@@ -202,46 +219,34 @@ func _show(step: int) -> void:
 				(b as MeshInstance4D).material_override = _gold
 
 
-func sequences() -> Array:
-	return [
-		{"title": "THE BALLS", "line": "A designer places its balls, rig by rig. Each one is a cross-section of the body.", "length": 6.5,
-			"eye": Vector4(-3.0, 2.4, 5.0, 0.0), "look": Vector4(0.0, 1.0, 0.0, 0.0), "fov": 0.85},
-		{"title": "THE SKIN", "line": "The tool lofts a skin between them. Nothing is modelled by hand.", "length": 5.5,
-			"eye": Vector4(-4.0, 2.2, 3.6, 0.0), "look": Vector4(0.0, 1.1, 0.0, 0.0), "fov": 0.85},
-		{"title": "THE SLICE", "line": "It is four-dimensional. Move the slice through W and the shape changes.", "length": 7.5,
-			"eye": Vector4(-1.0, 2.4, 6.4, 0.0), "look": Vector4(0.4, 1.0, -0.6, 0.0), "fov": 0.95},
-		{"title": "THE WALK", "line": "It walks, pecks and flutters on rigid pieces, without lofting again.", "length": 10.0,
-			"eye": Vector4(-3.5, 2.0, 4.5, 0.0), "look": Vector4(0.0, 1.0, 0.0, 0.0), "fov": 0.9},
-		{"title": "THE RIG", "line": "Under the skin: the balls are the joints, and they walk.", "length": 6.0,
-			"eye": Vector4(-3.5, 2.0, 4.5, 0.0), "look": Vector4(0.0, 1.0, 0.0, 0.0), "fov": 0.9},
-	]
-
-
-func play(i: int, t: float) -> Dictionary:
+## Drives part `key` of the presentation (kit_presentation.gd, the same story for every animal) at
+## `t` of its `length` seconds. Returns {"slice": -1..1} when the part moves the slice.
+func play_part(key: String, t: float, length: float) -> Dictionary:
 	if _model == null:
 		return {}
-	_set_walking(i == 3 or i == 4)
-	_set_xray(i == 4)
-	match i:
-		0:
+	_set_walking(key == "rig" or key == "walk")
+	_set_xray(key == "rig")
+	match key:
+		"balls":
 			_turn(0.55)
-			var step: int = clampi(int(floor((t - 0.3) / 1.1)), 0, _rigs.size() - 1)
+			var every: float = maxf((length - 1.2) / float(_rigs.size()), 0.1)
+			var step: int = clampi(int(floor((t - 0.3) / every)), 0, _rigs.size() - 1)
 			if step != _shown_step:
 				_show(step)
-		1:
+		"skin":
 			if _shown_step != -1:
 				_show(-1)
 			_turn(0.55 + t * 0.12)
-		2:
+		"slice":
 			if _shown_step != -1:
 				_show(-1)
 			_turn(0.2)
-			return {"slice": sin(clampf(t / 7.0, 0.0, 1.0) * TAU) * 0.55}
-		3, 4:
+			return {"slice": sin(clampf(t / maxf(length - 0.5, 0.1), 0.0, 1.0) * TAU) * 0.55}
+		"rig", "walk":
 			if _shown_step != -1:
 				_show(-1)
 			# Side on, turning a little, so the legs read.
-			_turn(1.25 + (t + (10.0 if i == 4 else 0.0)) * 0.03)
+			_turn(1.25 + (t + (Presentation.length_of("rig") if key == "walk" else 0.0)) * 0.03)
 	return {}
 
 
@@ -424,6 +429,7 @@ func data() -> Dictionary:
 	var balls: int = _all_balls().size()
 	_data = {
 		"name": "Chicken",
+		"icon": "chicken",
 		"code": "CK-02",
 		"title": "THE CHICKEN, MEASURED",
 		"rows": [["Balls placed by hand", str(balls)], ["Tetrahedra", str(total)], ["Rigs, built in turn", str(_rigs.size())], ["Reach through W", "%.2f m" % w_extent()]],
@@ -507,8 +513,27 @@ func shape() -> Dictionary:
 	for b in _all_balls():
 		var p: Vector4 = _in_model(b)
 		out_balls.append([Vector2(p.z, p.y), float(b.get("radius")), String(b.name)])
-	_shape = {"points": pts, "balls": out_balls, "bones": []}
+	# Bones: ball to ball along each rig, the joints the x-ray shows.
+	var bones: Array = []
+	var at: int = 0
+	for r in _rigs:
+		var n: int = _balls_of(r).size()
+		for i in range(n - 1):
+			if (out_balls[at + i][0] as Vector2).distance_to(out_balls[at + i + 1][0]) < 0.6:
+				bones.append([at + i, at + i + 1])
+		at += n
+	_shape = {"points": pts, "balls": out_balls, "bones": bones}
 	return _shape
+
+
+## The measured numbers for the research wall (kit_bench.gd keys), the walk's own cost live.
+func bench() -> Dictionary:
+	var out: Dictionary = _bench.duplicate()
+	if _walker != null:
+		out["anim_ms"] = float(_walker.get("cost_ms"))
+		out["samples"] = _walker.get("samples")
+	out["walking"] = _walking
+	return out
 
 
 func cloud() -> PackedVector4Array:

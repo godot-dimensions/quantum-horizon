@@ -14,6 +14,9 @@ extends Node4D
 
 const GOAT := preload("res://ramon/LabKit/carried/chickenpen/theatre/theatre_goat_4d.gd")
 const WALK := preload("res://ramon/LabChambers/scripts/goat_walk_4d.gd")
+const Bench := preload("res://ramon/LabChambers/kit/kit_bench.gd")
+const CODE := "GT-01"
+const Presentation := preload("res://ramon/LabChambers/kit/kit_presentation.gd")
 
 ## How tall the goat stands on the plinth, in metres.
 @export var stand_height: float = 3.6
@@ -27,6 +30,12 @@ var grow_in: bool = false
 const REAL_HEIGHT := 1.0
 const GROW_SECONDS := 2.6
 var _grow: float = 1.0
+## The research wall's numbers: lofting the goat whole and one leg, timed once on this machine and
+## kept in the bench book (a full loft is over a hundred milliseconds, a visible hitch, so it is not
+## repeated every visit); the walk's own cost, timed every frame it walks.
+var _bench: Dictionary = {}
+var _cost_ms: float = -1.0
+var _samples: PackedFloat32Array = PackedFloat32Array()
 
 var _stand: Node4D
 var _goat: Node4D
@@ -59,6 +68,10 @@ func _ready() -> void:
 			if not bool(_walker.call("attach", rig)):
 				_walker.queue_free()
 				_walker = null
+		_bench = Bench.read(CODE)
+		var tetra: int = int(_goat.call("tetra_count"))
+		if not _bench.has("build_ms") or int(_bench.get("tetra", -1)) != tetra:
+			get_tree().create_timer(2.5).timeout.connect(_measure)
 
 
 ## The stand's turn, with the grow-in's scale.
@@ -113,53 +126,77 @@ func _show(step: int) -> void:
 
 # -- the cinematic ---------------------------------------------------------------------------------
 
-## The three shots: a title, a line, seconds, and the camera in the exhibit's frame (eye, look, lens).
-func sequences() -> Array:
-	return [
-		{"title": "THE BALLS", "line": "A designer places 24 balls. Each one is a cross-section of the body.", "length": 6.5,
-			"eye": Vector4(-3.6, 3.0, 6.4, 0.0), "look": Vector4(0.2, 1.3, 0.0, 0.0), "fov": 0.85},
-		{"title": "THE SKIN", "line": "The tool lofts a skin between them. Nothing is modelled by hand.", "length": 5.5,
-			"eye": Vector4(-5.4, 2.6, 4.2, 0.0), "look": Vector4(0.0, 1.5, 0.0, 0.0), "fov": 0.85},
-		{"title": "THE SLICE", "line": "It is four-dimensional. Move the slice through W and the shape changes.", "length": 7.5,
-			"eye": Vector4(-1.0, 3.0, 8.4, 0.0), "look": Vector4(0.6, 1.3, -1.0, 0.0), "fov": 0.95},
-		{"title": "THE WALK", "line": "Cut into rigid pieces on joints, it walks without lofting again.", "length": 9.0,
-			"eye": Vector4(-4.5, 2.4, 5.5, 0.0), "look": Vector4(0.0, 1.4, 0.0, 0.0), "fov": 0.9},
-		{"title": "THE RIG", "line": "Under the skin: the balls are the joints, and they walk.", "length": 6.0,
-			"eye": Vector4(-4.5, 2.4, 5.5, 0.0), "look": Vector4(0.0, 1.4, 0.0, 0.0), "fov": 0.9},
-	]
-
-
-## Drives shot `i` at `t` seconds. Returns {"slice": -1..1} when the shot moves the slice.
-func play(i: int, t: float) -> Dictionary:
+## Drives part `key` of the presentation (kit_presentation.gd, the same story for every animal) at
+## `t` of its `length` seconds. Returns {"slice": -1..1} when the part moves the slice.
+func play_part(key: String, t: float, length: float) -> Dictionary:
 	if _goat == null or int(_goat.call("stage_count")) == 0:
 		return {}
-	_walk(i == 3 or i == 4)
+	_walk(key == "rig" or key == "walk")
 	if _walker != null:
-		_walker.call("set_xray", i == 4)
-	match i:
-		0:
+		_walker.call("set_xray", key == "rig")
+	match key:
+		"balls":
 			_turn(0.55)
-			var step: int = clampi(int(floor((t - 0.3) / 0.85)), 0, _stages() - 1)
+			var every: float = maxf((length - 1.2) / float(_stages()), 0.1)
+			var step: int = clampi(int(floor((t - 0.3) / every)), 0, _stages() - 1)
 			if step != int(_goat.call("shown_stage")) or not bool(_goat.call("showing_plain")):
 				_show(step)
-		1:
+		"skin":
 			if bool(_goat.call("showing_plain")):
 				_show(-1)
 			_turn(0.55 + t * 0.12)
-		2:
+		"slice":
 			if bool(_goat.call("showing_plain")):
 				_show(-1)
 			_turn(0.2)
-			return {"slice": sin(clampf(t / 7.0, 0.0, 1.0) * TAU) * 0.55}
-		3, 4:
+			return {"slice": sin(clampf(t / maxf(length - 0.5, 0.1), 0.0, 1.0) * TAU) * 0.55}
+		"rig", "walk":
 			if bool(_goat.call("showing_plain")):
 				_show(-1)
-			# Side on, turning a little, so the legs read; the rig goes on from where the walk was.
-			var tw: float = t + (9.0 if i == 4 else 0.0)
+			# Side on, turning a little, so the legs read; the walk goes on from where the rig was.
+			var tw: float = t + (Presentation.length_of("rig") if key == "walk" else 0.0)
 			_turn(1.25 + tw * 0.03)
 			if _walker != null:
+				var t0: int = Time.get_ticks_usec()
 				_walker.call("pose", tw)
+				var ms: float = Bench.ms_since(t0)
+				_cost_ms = ms if _cost_ms < 0.0 else lerpf(_cost_ms, ms, 0.05)
+				_samples.append(ms)
+				if _samples.size() > 180:
+					_samples = _samples.slice(_samples.size() - 180)
 	return {}
+
+## Lofts the goat whole from its balls, and one foreleg pair, without showing either: the times go
+## in the bench book. Once per machine (or when the goat's mesh changes).
+func _measure() -> void:
+	var rig: MeshInstance4D = _goat.get("_rig") if _goat != null else null
+	if rig == null or not is_inside_tree():
+		return
+	var chains: Array = rig.call("_collect_chains")
+	var t0: int = Time.get_ticks_usec()
+	for i in chains.size():
+		rig.call("_build_chain", chains[i], false, i > 0, false)
+	var build_ms: float = Bench.ms_since(t0)
+	var limb_ms: float = -1.0
+	for ch in chains:
+		var chain: Array = ch
+		if chain.size() >= 4 and String((chain[1] as Node).name).ends_with("LegTop"):
+			var t1: int = Time.get_ticks_usec()
+			rig.call("_build_chain", chain, false, true, false)
+			limb_ms = Bench.ms_since(t1) * 0.5   # a leg chain lofts its mirrored twin too
+			break
+	_bench = {"name": "Goat", "icon": "goat", "balls": int(_goat.call("ball_count")), "tetra": int(_goat.call("tetra_count")),
+		"build_ms": build_ms, "limb_ms": limb_ms, "limbs": 4, "pieces": 9, "measured": Time.get_date_string_from_system()}
+	Bench.write(CODE, _bench)
+
+
+## The measured numbers for the research wall (kit_bench.gd keys), the walk's own cost live.
+func bench() -> Dictionary:
+	var out: Dictionary = _bench.duplicate()
+	out["anim_ms"] = _cost_ms
+	out["samples"] = _samples
+	out["walking"] = _walker != null and bool(_walker.call("is_walking"))
+	return out
 
 
 ## Walking or standing: the rigid pieces or the lofted goat.
@@ -240,6 +277,7 @@ func data() -> Dictionary:
 	var whole: int = int(finished.get_simplex_cell_vertex_indices().size() / 4) if finished != null else 0
 	return {
 		"name": "Goat",
+		"icon": "goat",
 		"code": "GT-01",
 		"title": "THE GOAT, MEASURED",
 		"rows": [["Balls placed by hand", str(int(_goat.call("ball_count")))],

@@ -35,7 +35,7 @@ func _run() -> void:
 	var outline: PackedVector2Array = gr.get("outline")
 	print("outline ", outline)
 	print("doorways ", gr.get("doorways"))
-	print("panel at ", (g.get_node("WSlicePanel") as Node4D).position, " face ", g.get_node("WSlicePanel").get("face"))
+	print("panel at ", (g.get_node("ResearchWall") as Node4D).position, " face ", g.get_node("ResearchWall").get("face"))
 	var ok: bool = outline.size() == 6 and absf(outline[0].x + 12.5) < 0.01 and absf(outline[2].y + 11.0) < 0.01
 	print(("PASS" if ok else "FAIL") + " the outline follows the shape numbers")
 	var p: CharacterBody4D = g.get("player")

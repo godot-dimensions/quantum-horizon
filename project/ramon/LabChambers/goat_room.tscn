@@ -6,7 +6,7 @@
 [ext_resource type="Script" uid="uid://bi80xulp3i5gu" path="res://ramon/LabChambers/kit/kit_wall_text_4d.gd" id="4_text"]
 [ext_resource type="Script" uid="uid://cyqtxjehuaji7" path="res://ramon/LabChambers/kit/kit_showcase_4d.gd" id="5_showcase"]
 [ext_resource type="Script" uid="uid://b1o3yfxs02pm" path="res://ramon/LabChambers/scripts/rd_goat_4d.gd" id="6_goat"]
-[ext_resource type="Script" uid="uid://bii4jaqr7svlx" path="res://ramon/LabChambers/kit/kit_panel_4d.gd" id="7_panel"]
+[ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_research_wall_4d.gd" id="7_wall"]
 [ext_resource type="Script" uid="uid://tbfct1sshjt0" path="res://ramon/LabChambers/kit/kit_desk_4d.gd" id="8_desk"]
 [ext_resource type="Script" uid="uid://bf6jsusv08tmp" path="res://ramon/LabChambers/kit/kit_light_4d.gd" id="9_light"]
 [ext_resource type="Script" path="res://ramon/LabChambers/kit/kit_sun_4d.gd" id="11_sun"]
@@ -94,22 +94,19 @@ exhibit_script = ExtResource("6_goat")
 radius = 3.4
 bounds = Rect2(-10, -9, 20, 18)
 
-[node name="WSlicePanel" type="Node4D" parent="."]
-position = Vector4(6.4, 5.7, -4.93, 0)
+[node name="ResearchWall" type="Node4D" parent="."]
+position = Vector4(6.4, 0, -4.93, 0)
 basis = Projection(0.6584904486653127, 0, 0.7525890837745093, 0, 0, 1, 0, 0, -0.7525890837745093, 0, 0.6584904486653127, 0, 0, 0, 0, 1)
-script = ExtResource("7_panel")
-size = Vector2(3.8, 1.5)
+script = ExtResource("7_wall")
 showcase = NodePath("../Showcase")
 face = Vector3(-0.7526, 0, 0.6585)
-
-[node name="SectionsPanel" type="Node4D" parent="."]
-position = Vector4(6.4, 3.2, -4.93, 0)
-basis = Projection(0.6584904486653127, 0, 0.7525890837745093, 0, 0, 1, 0, 0, -0.7525890837745093, 0, 0.6584904486653127, 0, 0, 0, 0, 1)
-script = ExtResource("7_panel")
-kind = "sections"
-size = Vector2(3.8, 3)
-showcase = NodePath("../Showcase")
-face = Vector3(-0.7526, 0, 0.6585)
+tilt_degrees = 90.0
+size = Vector2(7.2, 4.05)
+hover = 1.15
+corner = 0.12
+live_ppm = 360.0
+refresh_hz = 30.0
+collide = false
 
 [node name="ResearchPanel" type="Node4D" parent="."]
 position = Vector4(-5.5, 0, 3.5, 0)

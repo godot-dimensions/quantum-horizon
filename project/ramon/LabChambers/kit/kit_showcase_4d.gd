@@ -26,6 +26,7 @@ const Batch := preload("res://ramon/LabKit/lab_batch.gd")
 const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 const Pedestal := preload("res://ramon/LabChambers/kit/kit_pedestal.gd")
 const Glyphs := preload("res://ramon/LabChambers/kit/kit_glyphs.gd")
+const Presentation := preload("res://ramon/LabChambers/kit/kit_presentation.gd")
 
 const SLICES := 9
 
@@ -108,6 +109,11 @@ var _queued: bool = false
 var serial: int = 0
 var _swapping: bool = false
 var _wait_grow: bool = false
+## The part of the exhibit's loop playing now (-1 when it is in your hands or arriving), how far
+## into it, and how long it is: the research wall turns its pages by these.
+var seq_index: int = -1
+var seq_t: float = 0.0
+var seq_len: float = 0.0
 
 
 func _enter_tree() -> void:
@@ -253,6 +259,7 @@ func set_exhibit(script: Script) -> void:
 	slice_index = SLICES / 2
 	_extent = -1.0
 	_wait_grow = true
+	seq_index = -1
 	_band_done = false
 	_show_slice()
 
@@ -289,6 +296,7 @@ func action() -> String:
 ## Someone is handling it: the loop stops and the exhibit is theirs.
 func _touch() -> void:
 	_touched_at = _t
+	seq_index = -1
 	if _looping:
 		_looping = false
 		cinematic = false
@@ -318,6 +326,9 @@ func _run_loop(delta: float) -> void:
 	while i < seqs.size() - 1 and t >= float(seqs[i]["length"]):
 		t -= float(seqs[i]["length"])
 		i += 1
+	seq_index = i
+	seq_t = t
+	seq_len = float(seqs[i]["length"])
 	play(i, t)
 
 
@@ -462,8 +473,23 @@ func _process(delta: float) -> void:
 		_button_frame.position.y = sin(_t * 1.6) * 0.04
 
 
+## The presentation's parts, the same for every exhibit (kit_presentation.gd).
 func sequences() -> Array:
-	return exhibit.call("sequences") if exhibit != null else []
+	return Presentation.chapters() if exhibit != null else []
+
+
+## Left click while it plays: on to the start of the next part, the loop going on from there.
+func skip() -> void:
+	if not _looping or seq_index < 0:
+		return
+	var seqs: Array = sequences()
+	var total: float = 0.0
+	for s in seqs:
+		total += float(s["length"])
+	var start: float = 0.0
+	for k in seq_index + 1:
+		start += float(seqs[k]["length"])
+	_loop_t = floor(_loop_t / total) * total + start + 0.001
 
 
 func shot(i: int) -> Array:
@@ -483,8 +509,12 @@ func begin_cinematic() -> void:
 
 
 func play(i: int, t: float) -> void:
-	var r: Dictionary = exhibit.call("play", i, t)
+	var s: Dictionary = sequences()[i]
+	var r: Dictionary = exhibit.call("play_part", String(s["key"]), t, float(s["length"])) if exhibit.has_method("play_part") else {}
 	_cine_slice = float(r.get("slice", -3.0))
+	if _cine_slice <= -2.0 and slice_index != SLICES / 2:
+		slice_index = SLICES / 2
+		_show_slice()
 	if _cine_slice > -2.0:
 		var idx: int = clampi(int(round((_cine_slice / 0.6 + 1.0) * 0.5 * float(SLICES - 1))), 0, SLICES - 1)
 		if idx != slice_index:
@@ -505,3 +535,13 @@ func end_cinematic() -> void:
 			_prints = []
 			_prints.append(await RD.print_box(tree, _button, Vector4(0, 0, 1, 0), Vector2(1.5, 0.62), _paint_button, {"bright": 0.85, "dark": 0.95}))
 			_apply_mood_now()
+
+
+## Whether a new exhibit is still growing in.
+func arriving() -> bool:
+	return _wait_grow
+
+
+## The exhibit's measured numbers (kit_bench.gd keys); empty if it measures nothing.
+func bench() -> Dictionary:
+	return exhibit.call("bench") if exhibit != null and exhibit.has_method("bench") else {}

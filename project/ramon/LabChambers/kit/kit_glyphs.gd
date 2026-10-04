@@ -146,7 +146,6 @@ static func animal(c: CanvasItem, kind: String, rect: Rect2, col: Color, cut: Co
 			poly.call([Vector2(75, 24.5), Vector2(84.5, 28.5), Vector2(75, 31.5)])
 			dot.call(Vector2(74.5, 37), 3.2, col)
 			dot.call(Vector2(70.5, 26.5), 1.7, cut)
-			line.call([Vector2(38, 52), Vector2(48, 50), Vector2(58, 53), Vector2(55, 61), Vector2(46, 64)], 2.2, cut)
 		_:
 			c.draw_arc(rect.get_center(), minf(rect.size.x, rect.size.y) * 0.3, 0.0, TAU, 40, col, maxf(1.5, s * 3.0), true)
 

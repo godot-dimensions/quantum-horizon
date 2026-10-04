@@ -28,6 +28,7 @@ const Tuner := preload("res://ramon/LabChambers/kit/kit_tuner.gd")
 const DataPanel := preload("res://ramon/LabChambers/kit/kit_data_panel.gd")
 const Prompt := preload("res://ramon/LabChambers/kit/kit_prompt.gd")
 const SliceView := preload("res://ramon/LabChambers/kit/kit_slice_view.gd")
+const Presenter := preload("res://ramon/LabChambers/kit/kit_presenter.gd")
 
 ## Where the player starts, facing -Z.
 @export var start_at: Vector2 = Vector2(0.0, 15.2)
@@ -169,6 +170,13 @@ func _ready() -> void:
 	slice_view.set_script(SliceView)
 	slice_view.set("showcase", showcase)
 	layer.add_child(slice_view)
+	# The presentation on screen: a title card as each part begins, its callouts as it plays.
+	var presenter := Control.new()
+	presenter.name = "Presenter"
+	presenter.set_script(Presenter)
+	presenter.set("showcase", showcase)
+	presenter.set("room", self)
+	layer.add_child(presenter)
 	prompt = Control.new()
 	prompt.set_script(Prompt)
 	prompt.set("camera", player.get_node_or_null("CameraRig/Pitch/Camera4D"))
@@ -248,13 +256,13 @@ func apply_shape() -> void:
 	if lesson != null:
 		var len1: float = outline[1].distance_to(outline[2])
 		_set_if(lesson, "along", Vector2(snappedf(len1 * 0.094, 0.01), snappedf(len1 * 0.903, 0.01)))
-	# The two screens stay flush to the angled wall on the right (edge 3), facing into the room.
+	# The research wall stays flush to the angled wall on the right (edge 3), facing into the room.
 	var a: Vector2 = outline[3]
 	var e: Vector2 = outline[4]
 	var dir: Vector2 = (e - a).normalized()
 	var inward := Vector2(-dir.y, dir.x)
 	var mid: Vector2 = (a + e) * 0.5 + inward * 0.13
-	for nm in ["WSlicePanel", "SectionsPanel"]:
+	for nm in ["ResearchWall"]:
 		var panel: Node4D = get_node_or_null(nm) as Node4D
 		if panel != null:
 			panel.position = Vector4(mid.x, panel.position.y, mid.y, 0.0)
@@ -323,6 +331,8 @@ func _strip() -> Array:
 	var out: Array = []
 	if bool(showcase.call("near_button", player.global_position)):
 		out.append(["Click", "Watch"])
+	if int(showcase.get("seq_index")) >= 0:
+		out.append(["Click", "Next part"])
 	out.append(["Wheel", "Slice through W"])
 	out.append(["Right drag", "Turn in 4D"])
 	out.append(["E", String(showcase.call("action_label"))])
@@ -387,6 +397,12 @@ func _input(event: InputEvent) -> void:
 		if mb.button_index == MOUSE_BUTTON_LEFT and bool(showcase.call("near_button", player.global_position)) \
 				and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			watch()
+			get_viewport().set_input_as_handled()
+			return
+		# While the presentation plays, a left click goes on to its next part (Ramon, 4 Oct: "skip
+		# to the next sequence by pressing left mouse button").
+		if mb.button_index == MOUSE_BUTTON_LEFT and int(showcase.get("seq_index")) >= 0 and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			showcase.call("skip")
 			get_viewport().set_input_as_handled()
 			return
 	var mm := event as InputEventMouseMotion

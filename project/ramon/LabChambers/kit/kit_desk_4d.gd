@@ -79,6 +79,8 @@ const DRAWN_FOR := 1.09
 ## How sharp the live screen is drawn, pixels a metre, and how often it is redrawn.
 @export_range(100.0, 900.0, 10.0) var live_ppm: float = 600.0
 @export_range(1.0, 60.0, 1.0) var refresh_hz: float = 20.0
+## Whether it stands in the way (a row of boxes under it); off for a panel hung on a wall.
+@export var collide: bool = true
 
 var _screen: MeshInstance4D
 var _glow: Array = []
@@ -179,8 +181,8 @@ func rebuild() -> void:
 	var high: float = hover + d * sin(th) + SLAB
 	var fwd: Vector4 = (global_basis if is_inside_tree() else basis) * Vector4(0, 0, 1, 0)
 	var square: Projection = Basis4D.from_zx(-atan2(fwd.x, fwd.z))
-	var cell: float = minf(d * cos(th), 0.8)
-	var count: int = maxi(1, int(ceil(w / (cell * 0.7))))
+	var cell: float = maxf(minf(d * cos(th), 0.8), 0.05)
+	var count: int = maxi(1, int(ceil(w / (cell * 0.7)))) if collide else 0
 	for i in count:
 		var body := StaticBody4D.new()
 		body.name = "Body%d" % i

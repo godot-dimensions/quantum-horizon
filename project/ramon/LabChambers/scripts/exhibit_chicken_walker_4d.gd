@@ -23,6 +23,10 @@ extends "res://ramon/LabKit/carried/chickenpen/scripts/chicken_walker.gd"
 ## How high the hop goes, in the bird's own units.
 @export var hop_height: float = 0.32
 
+## What a frame of this walk costs, milliseconds: averaged, and the recent frames one by one (the
+## research wall draws them). The first frame, which cuts the legs in two, is left out.
+var cost_ms: float = -1.0
+var samples: PackedFloat32Array = PackedFloat32Array()
 var _flutter_t: float = 0.0
 var _rest_y: float = NAN
 var _wing: Node4D
@@ -53,8 +57,17 @@ func _foot_position(leg: Dictionary, local_phase: float, duty: float) -> Vector4
 
 
 func _physics_process(delta: float) -> void:
+	var was_bound: bool = _bound
+	var t0: int = Time.get_ticks_usec()
 	super(delta)
 	_flutter(delta)
+	if not was_bound:
+		return
+	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+	cost_ms = ms if cost_ms < 0.0 else lerpf(cost_ms, ms, 0.05)
+	samples.append(ms)
+	if samples.size() > 180:
+		samples = samples.slice(samples.size() - 180)
 
 
 ## A hop now and then: up and down on a sine, the wings opening out and beating while it is up
