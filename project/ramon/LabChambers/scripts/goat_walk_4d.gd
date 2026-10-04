@@ -23,6 +23,11 @@ extends Node4D
 ## the way it was authored (fore knees forward, hind hocks back); the body bobs twice a cycle and
 ## rolls a little. No hoof planting, no physics: pose(t) is a pure function of time.
 ##
+## THE X-RAY (Ramon, 4 Oct: "the part with the thin lines and ellipses that show the joints walk,
+## remember in the cinema"): every ball's guide ring (the ellipses) in gold, and thin gold lines
+## from each ball to the next (the bones), hung on the same joints as the pieces, so they walk with
+## them; set_xray(true) hides the skin and shows only those.
+##
 ## NO class_name (engine_gotchas.md).
 
 const Builder := preload("res://ramon/LabKit/carried/Model/scripts/loft_builder_4d.gd")
@@ -44,6 +49,9 @@ var _body: Node4D
 var _legs: Array = []
 var _walking: bool = false
 var _pivot: Vector4 = Vector4.ZERO
+var _skins: Array = []
+var _xray_parts: Array = []
+var _xray_on: bool = false
 
 
 ## Sets it up on the theatre goat's rig: loads the pieces (or lofts and saves them) and hangs
@@ -67,6 +75,7 @@ func attach(rig: MeshInstance4D) -> bool:
 	_body.position = _pivot
 	add_child(_body)
 	_body.add_child(_piece("BodyMesh", pieces["body"], -_pivot, coat))
+	var leg_nodes: Dictionary = {}
 	for leg in pieces["legs"]:
 		var l: Dictionary = leg
 		var top: Vector4 = l["top"]
@@ -77,11 +86,13 @@ func attach(rig: MeshInstance4D) -> bool:
 		hip.position = top - _pivot
 		_body.add_child(hip)
 		hip.add_child(_piece("Upper", l["upper"], -top, coat))
+		leg_nodes[String(l["name"])] = [hip, top, mid, hoof]
 		var knee := Node4D.new()
 		knee.name = "Knee"
 		knee.position = mid - top
 		hip.add_child(knee)
 		knee.add_child(_piece("Lower", l["lower"], -mid, coat))
+		leg_nodes[String(l["name"])].append(knee)
 		var u1 := Vector2(mid.z - top.z, top.y - mid.y)
 		var u2 := Vector2(hoof.z - mid.z, mid.y - hoof.y)
 		var a1: float = atan2(u1.x, u1.y)
@@ -89,12 +100,15 @@ func attach(rig: MeshInstance4D) -> bool:
 		_legs.append({"hip": hip, "knee": knee, "top": top, "hoof": hoof, "l1": u1.length(), "l2": u2.length(),
 			"rest1": a1, "rest_k": a2 - a1, "bend": signf(a2 - a1) if absf(a2 - a1) > 0.001 else (1.0 if String(l["name"]).begins_with("Rear") else -1.0),
 			"phase": float(PHASE.get(String(l["name"]), 0.0))})
+	_build_xray(rig, leg_nodes)
+	set_xray(false)
 	visible = false
 	return true
 
 
 func _piece(nm: String, mesh: ArrayTetraMesh4D, offset: Vector4, coat: Material4D) -> MeshInstance4D:
 	var m := MeshInstance4D.new()
+	_skins.append(m)
 	m.name = nm
 	m.mesh = mesh
 	m.position = offset
@@ -115,6 +129,130 @@ func set_walking(on: bool) -> void:
 
 func is_walking() -> bool:
 	return _walking
+
+
+## The x-ray: only the rings and the bones, the skin hidden.
+func set_xray(on: bool) -> void:
+	_xray_on = on
+	for s in _skins:
+		(s as Node4D).visible = not on
+	for x in _xray_parts:
+		(x as Node4D).visible = on
+
+
+# -- the x-ray -------------------------------------------------------------------------------------
+
+func _build_xray(rig: MeshInstance4D, leg_nodes: Dictionary) -> void:
+	var gold := WireMaterial4D.new()
+	gold.albedo_color = Color(1.0, 0.74, 0.12)
+	gold.set("line_thickness", 4.0)
+	var bone_mat: Material4D = preload("res://ramon/LabKit/lab_materials.gd").glow(Color(1.0, 0.80, 0.35), 1.2)
+	var balls: Array = []
+	_collect(rig, balls)
+	# Which ball hangs where: the legs' three balls on their joints, both sides; the rest on the body.
+	var on_leg: Dictionary = {}
+	for nm in leg_nodes:
+		var base: String = String(nm).trim_suffix("_L").trim_suffix("_R")
+		on_leg[base] = true
+		on_leg[base.replace("Top", "Mid")] = true
+		on_leg[base.replace("LegTop", "Hoof")] = true
+	for b in balls:
+		var ball: Node4D = b
+		var pos: Vector4 = rig.call("_position_in_rig", ball)
+		var basis_r: Projection = _basis_in_rig(rig, ball)
+		var parent_ball: Node = ball.get_parent() if ball.get_parent() != rig else null
+		if on_leg.has(String(ball.name)):
+			continue
+		for side in ([1.0, -1.0] if absf(pos.x) > 0.01 else [1.0]):
+			var p2: Vector4 = Vector4(pos.x * side, pos.y, pos.z, pos.w)
+			_ring(_body, ball, p2 - _pivot, basis_r, gold)
+			if parent_ball != null and parent_ball.has_method("get_loft_section"):
+				var pp: Vector4 = rig.call("_position_in_rig", parent_ball)
+				_bone(_body, Vector4(pp.x * side, pp.y, pp.z, pp.w) - _pivot, p2 - _pivot, bone_mat)
+	# The body's own chain (the balls straight on the rig), joined in order.
+	var roots: Array = []
+	for b in balls:
+		if (b as Node).get_parent() == rig:
+			roots.append(b)
+	for i in range(roots.size() - 1):
+		_bone(_body, (rig.call("_position_in_rig", roots[i]) as Vector4) - _pivot, (rig.call("_position_in_rig", roots[i + 1]) as Vector4) - _pivot, bone_mat)
+	# The legs: rings on their joints, bones from joint to joint, and the bone from the body ball
+	# the leg hangs from to its top.
+	for nm in leg_nodes:
+		var parts: Array = leg_nodes[nm]
+		var hip: Node4D = parts[0]
+		var top: Vector4 = parts[1]
+		var mid: Vector4 = parts[2]
+		var hoof: Vector4 = parts[3]
+		var knee: Node4D = parts[4]
+		var base: String = String(nm).trim_suffix("_L").trim_suffix("_R")
+		var side: float = 1.0 if String(nm).ends_with("_L") else -1.0
+		for b in balls:
+			var ball: Node4D = b
+			var bn: String = String(ball.name)
+			var br: Projection = _basis_in_rig(rig, ball)
+			if bn == base:
+				_ring(hip, ball, Vector4.ZERO, br, gold)
+				var anchor: Node = ball.get_parent()
+				if anchor != null and anchor.has_method("get_loft_section"):
+					var ap: Vector4 = rig.call("_position_in_rig", anchor)
+					_bone(_body, Vector4(ap.x * side, ap.y, ap.z, ap.w) - _pivot, top - _pivot, bone_mat)
+			elif bn == base.replace("Top", "Mid"):
+				_ring(knee, ball, Vector4.ZERO, br, gold)
+			elif bn == base.replace("LegTop", "Hoof"):
+				_ring(knee, ball, hoof - mid, br, gold)
+		_bone(hip, Vector4.ZERO, mid - top, bone_mat)
+		_bone(knee, Vector4.ZERO, hoof - mid, bone_mat)
+
+
+func _collect(node: Node, out: Array) -> void:
+	for c in node.get_children():
+		if c.has_method("get_loft_section"):
+			out.append(c)
+			_collect(c, out)
+
+
+static func _basis_in_rig(rig: Node, ball: Node4D) -> Projection:
+	var b: Projection = ball.basis
+	var n: Node = ball.get_parent()
+	while n != null and n != rig and n.has_method("get_loft_section"):
+		b = (n as Node4D).basis * b
+		n = n.get_parent()
+	return b
+
+
+## A ball's guide ring (its own wire mesh) in gold, at `at` under `parent`.
+func _ring(parent: Node4D, ball: Node4D, at: Vector4, b: Projection, mat: Material4D) -> void:
+	if not (ball is MeshInstance4D) or (ball as MeshInstance4D).mesh == null:
+		return
+	var m := MeshInstance4D.new()
+	m.name = "Ring"
+	m.mesh = (ball as MeshInstance4D).mesh
+	m.position = at
+	m.basis = b
+	m.material_override = mat
+	parent.add_child(m)
+	_xray_parts.append(m)
+
+
+## A thin bone from `a` to `b` under `parent`.
+func _bone(parent: Node4D, a: Vector4, b: Vector4, mat: Material4D) -> void:
+	var d: Vector4 = b - a
+	var len: float = d.length()
+	if len < 0.01:
+		return
+	var y3 := Vector3(d.x, d.y, d.z).normalized()
+	var ref := Vector3(0, 0, 1) if absf(y3.z) < 0.9 else Vector3(1, 0, 0)
+	var x3: Vector3 = y3.cross(ref).normalized()
+	var z3: Vector3 = x3.cross(y3)
+	var m := MeshInstance4D.new()
+	m.name = "Bone"
+	m.mesh = preload("res://ramon/LabKit/lab_materials.gd").box_mesh(Vector4(0.035, len, 0.035, 0.3))
+	m.position = (a + b) * 0.5
+	m.basis = Projection(Vector4(x3.x, x3.y, x3.z, 0.0), Vector4(y3.x, y3.y, y3.z, 0.0), Vector4(z3.x, z3.y, z3.z, 0.0), Vector4(0, 0, 0, 1))
+	m.material_override = mat
+	parent.add_child(m)
+	_xray_parts.append(m)
 
 
 func pose_rest() -> void:

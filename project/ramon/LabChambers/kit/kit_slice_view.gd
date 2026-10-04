@@ -5,13 +5,15 @@ extends Control
 ## that allows you to see an actual model of the goat, and a slice over it, so you actually see
 ## what's happening ... the goat could be isometric and in an angle that makes sense").
 ##
-## THE IDEA: the room shows you one 3D slice of a 4D goat. Here the goat is drawn as a cloud of its
-## own points (kit_showcase cloud()), but with W as one of the three drawn axes, isometric: along
-## the goat's length to the right, up the page for its height, and W receding into the corner. The
-## slice you are looking at is a translucent plane standing at its W; the points the plane cuts,
-## the part of the goat the room is showing you, glow; the rest is dim. Wheel the slice and the
-## plane slides through the goat. Drawn back to front: the far half of the cloud, the plane, the
-## near half.
+## THE IDEA: the room shows you one 3D slice of a 4D goat. Here the goat stays put, drawn as a cloud
+## of its own points (kit_showcase cloud()) with W as one of the three drawn axes, isometric:
+## along the goat's length to the right, up the page for its height, and W receding into the
+## corner. The SLICE MOVES (Ramon, 4 Oct: "you always see the base goat, and when YOU slice ...
+## when you right drag, you see the slice rotating around the goat, showing where it cuts and
+## where it doesn't"): it is drawn as the plane where the room's slice meets the goat, taken from
+## where the goat actually is in the world (kit_showcase slice_plane()), so the wheel slides it and
+## a right drag tilts it round the goat. The points it cuts, the part of the goat the room is
+## showing you, glow; the rest is dim; where it misses the goat altogether, nothing glows.
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -21,7 +23,7 @@ const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 var showcase: Node
 var _cloud: PackedVector4Array = PackedVector4Array()
 var _box: Array = []          # [lo, hi] of the cloud, Vector4s
-var _plane_w: float = 0.0
+var _plane: Array = []        # [n, d], the slice in the goat's space, eased
 var _tick: float = 0.0
 
 
@@ -47,11 +49,12 @@ func _process(delta: float) -> void:
 			_box = [lo, hi]
 	if _box.is_empty():
 		return
-	# Where the slice cuts, in the goat's own W (the showcase gives -1..1 of its reach).
-	var frac: float = float(showcase.call("slice_fraction")) if showcase.has_method("slice_fraction") else 0.0
-	var reach: float = maxf(absf((_box[0] as Vector4).w), absf((_box[1] as Vector4).w))
-	var want_w: float = frac * reach
-	_plane_w = lerpf(_plane_w, want_w, 1.0 - exp(-10.0 * delta))
+	var pl: Array = showcase.call("slice_plane") if showcase.has_method("slice_plane") else []
+	if pl.size() == 2:
+		if _plane.is_empty():
+			_plane = pl.duplicate()
+		var k: float = 1.0 - exp(-12.0 * delta)
+		_plane = [(_plane[0] as Vector4).lerp(pl[0], k), lerpf(float(_plane[1]), float(pl[1]), k)]
 	_tick -= delta
 	if _tick <= 0.0:
 		_tick = 1.0 / 30.0
@@ -103,36 +106,64 @@ func _draw() -> void:
 	var proj := func(p: Vector4) -> Vector2:
 		var l: float = ((p.z - lo.z) if long_z else (p.x - lo.x))
 		return origin + (ax * l + ay * (p.y - lo.y) + aw * (p.w - lo.w)) * k
-	var band: float = depth * 0.06
+	if _plane.size() != 2:
+		return
+	var n: Vector4 = _plane[0]
+	var d: float = float(_plane[1])
+	var reach_world: float = float(showcase.get("_extent")) if showcase != null else 1.0
+	var band: float = maxf(reach_world, 0.2) * 0.07
 	var ptsz: float = maxf(1.2, 1.6 * u)
-	# The far half, the plane, the near half.
-	for pass_i in 2:
-		for p in _cloud:
-			var behind: bool = p.w > _plane_w
-			if (pass_i == 0) != behind:
-				continue
-			var on: bool = absf(p.w - _plane_w) < band
-			var col: Color = Color(1.0, 0.92, 0.55) if on else Color(blue, 0.42)
-			var s: float = ptsz * (1.6 if on else 1.0)
-			var q: Vector2 = proj.call(p)
-			draw_rect(Rect2(q - Vector2(s, s) * 0.5, Vector2(s, s)), col)
-		if pass_i == 0:
-			var corners := PackedVector2Array()
-			for c in [Vector2(0.0, 0.0), Vector2(1.0, 0.0), Vector2(1.0, 1.0), Vector2(0.0, 1.0)]:
-				var pl := Vector4(lo.x, lo.y, lo.z, _plane_w)
-				if long_z:
-					pl.z = lo.z - length * 0.06 + length * 1.12 * c.x
-				else:
-					pl.x = lo.x - length * 0.06 + length * 1.12 * c.x
-				pl.y = lo.y - height * 0.04 + height * 1.08 * c.y
-				corners.append(proj.call(pl))
-			draw_colored_polygon(corners, Color(1.0, 0.85, 0.35, 0.16))
-			corners.append(corners[0])
-			draw_polyline(corners, Color(1.0, 0.85, 0.35, 0.8), maxf(1.0, 1.5 * u), true)
+	# The dim cloud, then the plane, then the points it cuts.
+	var lit := PackedVector2Array()
+	for p in _cloud:
+		var q: Vector2 = proj.call(p)
+		if absf(n.dot(p) + d) < band:
+			lit.append(q)
+		else:
+			draw_rect(Rect2(q - Vector2(ptsz, ptsz) * 0.5, Vector2(ptsz, ptsz)), Color(blue, 0.42))
+	# The slice as a square with its pivot in the middle of the goat (Ramon, 4 Oct: "the slice is a
+	# square and has its pivot in the middle"): it is as long and tall as the goat, centred where
+	# the slice passes the goat's middle, lying in the slice. Turning through W never touches
+	# height, so one side of the square stays upright; the other runs along the goat's length
+	# where the slice lets it, tilting into W as you turn.
+	var mid_across: float = ((lo.x + hi.x) if long_z else (lo.z + hi.z)) * 0.5
+	var centre := Vector4((lo.x + hi.x) * 0.5, (lo.y + hi.y) * 0.5, (lo.z + hi.z) * 0.5, (lo.w + hi.w) * 0.5)
+	if long_z:
+		centre.x = mid_across
+	else:
+		centre.z = mid_across
+	# The drawn space is (length, height, W): the slice's normal there, without the width part.
+	var n3 := Vector4(n.x if not long_z else 0.0, 0.0, n.z if long_z else 0.0, n.w)
+	var nn: float = n3.length_squared()
+	if nn > 0.000001:
+		var c2: Vector4 = centre - n3 * ((n.dot(centre) + d) / nn)
+		var along_axis := Vector4(0.0 if long_z else 1.0, 0.0, 1.0 if long_z else 0.0, 0.0)
+		var e1: Vector4 = along_axis - n3 * (along_axis.dot(n3) / nn)
+		if e1.length() < 0.0001:
+			e1 = Vector4(0, 0, 0, 1)
+		e1 = e1.normalized()
+		var half_l: float = length * 0.56
+		var half_h: float = height * 0.54
+		var e2 := Vector4(0, 1, 0, 0)
+		var sq := PackedVector2Array()
+		for c in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
+			sq.append(proj.call(c2 + e1 * (c.x * half_l) + e2 * (c.y * half_h)))
+		draw_colored_polygon(sq, Color(1.0, 0.85, 0.35, 0.16))
+		sq.append(sq[0])
+		draw_polyline(sq, Color(1.0, 0.85, 0.35, 0.8), maxf(1.0, 1.5 * u), true)
+		var pv: Vector2 = proj.call(c2)
+		draw_circle(pv, maxf(2.0, 2.5 * u), Color(1.0, 0.85, 0.35, 0.95))
+	for q in lit:
+		var s2: float = ptsz * 1.6
+		draw_rect(Rect2(q - Vector2(s2, s2) * 0.5, Vector2(s2, s2)), Color(1.0, 0.92, 0.55))
+	if lit.is_empty():
+		draw_string(fl, Vector2(r.position.x + 14.0 * u, r.end.y - 28.0 * u), "The slice misses the goat here", HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Color(1.0, 0.75, 0.6))
 	# The W axis, labelled.
 	var w0: Vector2 = proj.call(Vector4(lo.x, lo.y, lo.z, lo.w)) + Vector2(-8.0, 10.0) * u
 	var w1: Vector2 = w0 + aw * depth * k
 	draw_line(w0, w1, Color(1, 1, 1, 0.6), maxf(1.0, u), true)
 	draw_string(fs, w1 + Vector2(4.0, 4.0) * u, "W", HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), Color(1, 1, 1, 0.8))
 	var idx: int = int(showcase.get("slice_index")) + 1 if showcase != null else 0
-	draw_string(fl, Vector2(r.position.x + 14.0 * u, r.end.y - 12.0 * u), "Slice %d of 9" % idx, HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u), Color(1.0, 0.92, 0.55))
+	var tn: Vector2 = showcase.get("turn") if showcase != null else Vector2.ZERO
+	draw_string(fl, Vector2(r.position.x + 14.0 * u, r.end.y - 12.0 * u), "Slice %d of 9   turned %.0f°, %.0f° through W" % [idx, rad_to_deg(tn.x), rad_to_deg(tn.y)],
+		HORIZONTAL_ALIGNMENT_LEFT, w - 28.0 * u, int(10 * u), Color(1.0, 0.92, 0.55))

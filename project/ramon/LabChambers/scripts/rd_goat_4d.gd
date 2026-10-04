@@ -98,6 +98,8 @@ func sequences() -> Array:
 			"eye": Vector4(-1.0, 3.0, 8.4, 0.0), "look": Vector4(0.6, 1.3, -1.0, 0.0), "fov": 0.95},
 		{"title": "THE WALK", "line": "Cut into rigid pieces on joints, it walks without lofting again.", "length": 9.0,
 			"eye": Vector4(-4.5, 2.4, 5.5, 0.0), "look": Vector4(0.0, 1.4, 0.0, 0.0), "fov": 0.9},
+		{"title": "THE RIG", "line": "Under the skin: the balls are the joints, and they walk.", "length": 6.0,
+			"eye": Vector4(-4.5, 2.4, 5.5, 0.0), "look": Vector4(0.0, 1.4, 0.0, 0.0), "fov": 0.9},
 	]
 
 
@@ -105,7 +107,9 @@ func sequences() -> Array:
 func play(i: int, t: float) -> Dictionary:
 	if _goat == null or int(_goat.call("stage_count")) == 0:
 		return {}
-	_walk(i == 3)
+	_walk(i == 3 or i == 4)
+	if _walker != null:
+		_walker.call("set_xray", i == 4)
 	match i:
 		0:
 			_stand.basis = Basis4D.from_zx(0.55)
@@ -121,13 +125,14 @@ func play(i: int, t: float) -> Dictionary:
 				_show(-1)
 			_stand.basis = Basis4D.from_zx(0.2)
 			return {"slice": sin(clampf(t / 7.0, 0.0, 1.0) * TAU) * 0.55}
-		3:
+		3, 4:
 			if bool(_goat.call("showing_plain")):
 				_show(-1)
-			# Side on, turning a little, so the legs read.
-			_stand.basis = Basis4D.from_zx(1.25 + t * 0.03)
+			# Side on, turning a little, so the legs read; the rig goes on from where the walk was.
+			var tw: float = t + (9.0 if i == 4 else 0.0)
+			_stand.basis = Basis4D.from_zx(1.25 + tw * 0.03)
 			if _walker != null:
-				_walker.call("pose", t)
+				_walker.call("pose", tw)
 	return {}
 
 
@@ -395,3 +400,17 @@ func cloud() -> PackedVector4Array:
 	for p in keep.values():
 		_cloud.append(p)
 	return _cloud
+
+
+## The slice the camera sees, in the goat's own (rig) space: a rig point p sits at world
+## W = n.dot(p) + d, so the slice is where that is the viewer's W. n and d come straight from the
+## rig's place in the world, so they hold whoever moves the slice: the wheel, a right drag turning
+## it through W, or the sequence. Returns [n, d], or [] before the goat is built.
+func slice_in_rig() -> Array:
+	if _goat == null:
+		return []
+	var rig: Node4D = _goat.get("_rig")
+	if rig == null or not rig.is_inside_tree():
+		return []
+	var gb: Projection = rig.global_basis
+	return [Vector4(gb.x.w, gb.y.w, gb.z.w, gb.w.w), rig.global_position.w]

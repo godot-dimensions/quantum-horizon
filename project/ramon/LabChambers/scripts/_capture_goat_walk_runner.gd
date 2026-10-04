@@ -73,5 +73,11 @@ func _run() -> void:
 	for i in 6:
 		await _wait(0.2)
 		await _shot("walk_%d" % i)
+	# The rig: the x-ray walk, 28.5 s into the loop.
+	sc.set("_loop_t", 28.5 + 0.3)
+	await _wait(0.4)
+	for i in 3:
+		await _wait(0.3)
+		await _shot("rig_%d" % i)
 	print("GOAT WALK done, %.1f s" % ((Time.get_ticks_msec() - t0) / 1000.0))
 	quit(0)

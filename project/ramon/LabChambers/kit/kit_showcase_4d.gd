@@ -335,6 +335,12 @@ func profile() -> Dictionary:
 	return exhibit.call("w_profile") if exhibit != null and exhibit.has_method("w_profile") else {}
 
 
+## The slice in the exhibit's own space ([n, d]: a point p is at world W = n.dot(p) + d), for the
+## slice view; empty if the exhibit cannot say.
+func slice_plane() -> Array:
+	return exhibit.call("slice_in_rig") if exhibit != null and exhibit.has_method("slice_in_rig") else []
+
+
 ## The exhibit as a cloud of its 4D points, for the slice view; empty if it has none.
 func cloud() -> PackedVector4Array:
 	return exhibit.call("cloud") if exhibit != null and exhibit.has_method("cloud") else PackedVector4Array()

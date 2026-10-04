@@ -192,6 +192,13 @@ func _run() -> void:
 	await _wait(0.8)
 	_check(int(sc.get("slice_index")) == 7, "the wheel slices (%d)" % int(sc.get("slice_index")))
 	await _shot("sliced")
+	# A right drag turns the slice through W: the corner view's plane tilts round the goat.
+	sc.call("turn_by", 0.0, 0.7)
+	await _wait(0.8)
+	await _shot("turned_zw")
+	sc.call("turn_by", 0.8, 0.0)
+	await _wait(0.8)
+	await _shot("turned_both")
 	for i in 3:
 		await _key(KEY_E)
 		await _wait(0.3)
