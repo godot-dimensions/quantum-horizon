@@ -276,6 +276,26 @@ func data() -> Dictionary:
 	return exhibit.call("data") if exhibit != null and exhibit.has_method("data") else {}
 
 
+## The exhibit's W profile ({"bins", "reach"}), for the research console; empty if it has none.
+func profile() -> Dictionary:
+	return exhibit.call("w_profile") if exhibit != null and exhibit.has_method("w_profile") else {}
+
+
+## Where the slice you see cuts the exhibit, from -1 (its -W end) to 1 (its +W end): the slice
+## node moves the exhibit through W, so what is at your W is the exhibit's own -offset.
+func slice_fraction() -> float:
+	var ext: float = _extent if _extent > 0.0 else 1.0
+	return clampf(-_slice_w / ext, -1.0, 1.0)
+
+
+## The nine slice stops as fractions (as slice_fraction() reads them), first to last.
+func slice_stops() -> Array:
+	var out: Array = []
+	for i in SLICES:
+		out.append(-(float(i) - float(SLICES - 1) * 0.5) / (float(SLICES - 1) * 0.5) * 0.6)
+	return out
+
+
 ## What is happening right now, for the data panel: [label, value] rows.
 func live() -> Array:
 	var rows: Array = [

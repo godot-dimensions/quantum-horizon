@@ -183,7 +183,69 @@ func data() -> Dictionary:
 			["Reach through W", "%.2f m" % w_extent()]],
 		"bars": bars.slice(0, int(_goat.call("first_morph_stage"))),
 		"bar_label": "Tetrahedra at each build stage",
+		"stats": {"balls": int(_goat.call("ball_count")), "tetra": whole, "stages": int(_goat.call("first_morph_stage")),
+			"reach": w_extent(), "verts": finished.get_vertex_positions().size() if finished != null else 0, "mb": _megabytes(baked, finished)},
 	}
+
+
+## Roughly what the goat's meshes hold in memory: each vertex is four doubles, each tetrahedron
+## four indices, for the finished coat and every baked stage.
+static func _megabytes(baked: Array, finished: ArrayTetraMesh4D) -> float:
+	var bytes: float = 0.0
+	var all: Array = baked.duplicate()
+	if finished != null:
+		all.append(finished)
+	for m in all:
+		var tm: ArrayTetraMesh4D = m
+		bytes += float(tm.get_vertex_positions().size()) * 32.0 + float(tm.get_simplex_cell_vertex_indices().size()) * 4.0
+	return bytes / 1048576.0
+
+
+var _profile: Dictionary = {}
+
+
+## How much of the goat each W cuts: the finished coat's tetrahedra counted into `count` bins
+## from -reach to +reach (a tetrahedron counts in every bin its own W span crosses), scaled so
+## the fullest is 1. A slice at that W shows that many tetrahedra cut, so it is the size of
+## what you see there: big through the middle, nothing past the ends. Worked out once.
+func w_profile(count: int = 48) -> Dictionary:
+	if not _profile.is_empty() or _goat == null:
+		return _profile
+	var m: ArrayTetraMesh4D = _goat.get("_finished")
+	if m == null:
+		return {}
+	var verts: PackedVector4Array = m.get_vertex_positions()
+	var cells: PackedInt32Array = m.get_simplex_cell_vertex_indices()
+	var lo: float = INF
+	var hi: float = -INF
+	for v in verts:
+		lo = minf(lo, v.w)
+		hi = maxf(hi, v.w)
+	var reach: float = maxf(absf(lo), absf(hi))
+	if not is_finite(reach) or reach <= 0.0:
+		return {}
+	var bins := PackedFloat32Array()
+	bins.resize(count)
+	bins.fill(0.0)
+	for t in range(0, cells.size() - 3, 4):
+		var a: float = INF
+		var b: float = -INF
+		for k in 4:
+			var w: float = verts[cells[t + k]].w
+			a = minf(a, w)
+			b = maxf(b, w)
+		var i0: int = clampi(int(floor((a / reach * 0.5 + 0.5) * float(count - 1))), 0, count - 1)
+		var i1: int = clampi(int(ceil((b / reach * 0.5 + 0.5) * float(count - 1))), 0, count - 1)
+		for i in range(i0, i1 + 1):
+			bins[i] += 1.0
+	var most: float = 0.0
+	for x in bins:
+		most = maxf(most, x)
+	if most > 0.0:
+		for i in count:
+			bins[i] /= most
+	_profile = {"bins": bins, "reach": w_extent()}
+	return _profile
 
 
 static func _grouped(n: int) -> String:

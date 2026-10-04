@@ -74,7 +74,7 @@ showcase = NodePath("../Showcase")
 face = Vector3(-0.7526, 0, 0.6585)
 
 [node name="Desk" type="Node4D" parent="."]
-position = Vector4(-6.2, 0, 4.6, 0)
+position = Vector4(-6, 0, 3, 0)
 script = ExtResource("8_desk")
 showcase = NodePath("../Showcase")
 face = Vector3(0.3, 0, 1)

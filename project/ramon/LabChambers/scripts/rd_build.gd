@@ -125,12 +125,14 @@ static func print_wall(tree: SceneTree, pieces: Array, normal: Vector4, a0: floa
 
 
 ## Prints over one whole face of one box (a floating panel or a button), as print_wall.
+## `ppm` is the pixels per metre to render at (more for small detail you read up close).
 static func print_box(tree: SceneTree, b: MeshInstance4D, normal: Vector4, size_m: Vector2, paint: Callable,
-		glow: Dictionary = {"bright": 0.6, "dark": 0.8}) -> Dictionary:
+		glow: Dictionary = {"bright": 0.6, "dark": 0.8}, ppm: float = 0.0) -> Dictionary:
 	var rec: Dictionary = {"targets": [[b, normal, Rect2(Vector2.ZERO, size_m)]], "tex": {}, "glow": glow}
+	var res: float = ppm if ppm > 0.0 else Build.PRINT_PPM
 	for mood in MOODS:
 		var ink: Dictionary = INK[mood]
-		var px := Vector2i(maxi(8, int(size_m.x * Build.PRINT_PPM)), maxi(8, int(size_m.y * Build.PRINT_PPM)))
+		var px := Vector2i(maxi(8, int(size_m.x * res)), maxi(8, int(size_m.y * res)))
 		rec["tex"][mood] = await LabPrint.render(tree, px, func(c: Control) -> void: paint.call(c, ink))
 	return rec
 

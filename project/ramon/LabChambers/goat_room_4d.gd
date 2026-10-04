@@ -12,7 +12,7 @@ extends Node4D
 ##
 ## Everything in the room is a kit node in the scene, so it can be moved and tuned in the editor.
 ## THIS NODE: the moods (kit_style.gd; LabKit's Room owns the light and the B key), the player
-## (camera 8 m back, as in the concept frames), the HUD strip, the light sliders (kit_tuner.gd), and
+## (the camera close behind and above, looking down past you, as in the concept frames), the HUD strip, the light sliders (kit_tuner.gd), and
 ## the mouse and keys: the wheel slices, a right drag turns the goat through W, E adds a ball. The
 ## goat plays its own sequence in place on a loop (the showcase's autoplay); the camera-taking
 ## cinematic (watch()) is kept for later but nothing starts it yet.
@@ -30,6 +30,15 @@ const DataPanel := preload("res://ramon/LabChambers/kit/kit_data_panel.gd")
 @export var start_at: Vector2 = Vector2(0.0, 15.2)
 ## The arrows painted into the floors, world x/z.
 @export var route: PackedVector2Array = PackedVector2Array([Vector2(0, 14.6), Vector2(0, 3.8)])
+
+@export_group("Camera")
+## How far behind you the camera sits, in metres. The concept frames have you close and large in
+## the lower middle with the room opening up past you (Ramon, 4 Oct: "look more like ref").
+@export_range(2.0, 12.0, 0.1) var camera_distance: float = 4.4
+## What the camera looks at, metres above your feet: above your head puts you low in the frame.
+@export_range(0.5, 3.5, 0.05) var camera_height: float = 1.95
+## How far it looks down, in degrees (negative is down).
+@export_range(-45.0, 20.0, 0.5) var camera_pitch_degrees: float = -11.0
 
 var player: CharacterBody4D
 var hud: Control
@@ -71,9 +80,12 @@ func _ready() -> void:
 	var rig: Node = player.get_node_or_null("CameraRig")
 	if rig != null:
 		rig.set("slice_turning", false)
-		rig.set("pitch", deg_to_rad(6.0))
-		rig.set("distance", 8.0)
-		rig.set("_zoom_target", 8.0)
+		rig.set("pitch", deg_to_rad(camera_pitch_degrees))
+		rig.set("distance", camera_distance)
+		rig.set("_zoom_target", camera_distance)
+		rig.set("_rest_distance", camera_distance)
+		rig.set("pivot_height", camera_height)
+		rig.set("_home_pivot", camera_height)
 		rig.call("_apply")
 	var layer := CanvasLayer.new()
 	layer.name = "HUD"

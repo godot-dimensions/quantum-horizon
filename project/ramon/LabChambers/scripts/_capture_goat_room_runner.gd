@@ -45,7 +45,11 @@ func _check(ok: bool, what: String) -> void:
 		_fails.append(what)
 
 
-func _put(x: float, z: float, face: float, pitch_deg: float = 4.0) -> void:
+## Stands the player at x, z looking `face` (0 is -Z); the pitch is the room's own camera pitch
+## unless one is given.
+func _put(x: float, z: float, face: float, pitch_deg: float = NAN) -> void:
+	if not is_finite(pitch_deg):
+		pitch_deg = float(_g.get("camera_pitch_degrees"))
 	var p: CharacterBody4D = _g.get("player")
 	p.global_position = Vector4(x, 0.05, z, 0.0)
 	p.linear_velocity = Vector4.ZERO
@@ -99,38 +103,58 @@ func _run() -> void:
 	tuner.visible = false
 	for m in ["dark", "bright"]:
 		await _set_mood(m)
-		_put(0.0, 15.2, 0.0, 6.0)
+		_put(0.0, 15.2, 0.0)
 		await _wait(0.3)
 		await _shot("entrance")
-		_put(0.0, 8.0, 0.0, 2.0)
+		_put(0.0, 8.0, 0.0)
 		await _wait(0.3)
 		await _shot("arrival")
-		_put(0.0, 4.0, 0.0, 0.0)
+		_put(0.0, 4.0, 0.0)
 		await _wait(0.3)
 		await _shot("in_the_room")
-		_put(-1.0, 3.5, PI * 0.25, 2.0)
+		_put(-1.0, 3.5, PI * 0.25)
 		await _wait(0.3)
 		await _shot("lesson")
-		_put(1.0, 3.5, -PI * 0.25, 2.0)
+		_put(1.0, 3.5, -PI * 0.25)
 		await _wait(0.3)
 		await _shot("screens")
-		_put(-5.8, 6.0, 0.29, -2.0)
+		_put(-3.8, 5.5, 0.72)
+		await _wait(0.8)
+		await _shot("console")
+		_put(-2.4, 3.2, 1.51)
+		await _wait(0.8)
+		await _shot("console_side")
+		_put(-5.6, 4.4, 0.28)
 		await _wait(1.0)
 		_check(bool(_g.get("data_panel").get("shown")), "the data panel comes up at the desk")
 		await _shot("desk")
-		_put(0.0, 6.0, 0.0, 0.0)
+		# The console's screen, close, from high over your shoulder, the panel put aside.
+		var rig: Node = (_g.get("player") as Node).get_node("CameraRig")
+		_g.get("data_panel").visible = false
+		rig.set("_zoom_target", 2.2)
+		rig.set("distance", 2.2)
+		rig.set("pivot_height", 2.6)
+		rig.set("_home_pivot", 2.6)
+		rig.set("pitch", deg_to_rad(-38.0))
+		rig.call("_apply")
+		await _wait(0.6)
+		await _shot("console_close")
+		_g.get("data_panel").visible = true
+		for k in [["_zoom_target", "camera_distance"], ["distance", "camera_distance"], ["pivot_height", "camera_height"], ["_home_pivot", "camera_height"]]:
+			rig.set(k[0], _g.get(k[1]))
+		_put(0.0, 6.0, 0.0)
 		await _wait(1.2)
 	tuner.visible = true
 	await _shot("with_the_sliders")
 	tuner.visible = false
 	await _set_mood("dark")
-	_put(0.0, 3.4, 0.0, 2.0)
+	_put(0.0, 3.4, 0.0)
 	await _wait(10.0)
 	_check(bool(sc.get("_looping")), "the goat plays its sequence on its own")
 	for i in 3:
 		await _wait(3.5)
 		await _shot("loop_%d" % i)
-	_put(0.0, 4.6, 0.0, 2.0)
+	_put(0.0, 4.6, 0.0)
 	await _wait(0.4)
 	for i in 3:
 		await _click(MOUSE_BUTTON_WHEEL_UP)
