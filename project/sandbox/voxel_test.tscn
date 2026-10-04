@@ -1,0 +1,45 @@
+[gd_scene load_steps=8 format=3 uid="uid://bd2fubkm3lnk5"]
+
+[ext_resource type="Script" uid="uid://dwx3j7sg5uyd4" path="res://scripts/voxel_edit_tester.gd" id="1_1g82y"]
+
+[sub_resource type="PlaneVoxelGenerator4D" id="PlaneVoxelGenerator_1g82y"]
+material_over = 254
+material_under = 3
+
+[sub_resource type="LandscapeVoxelGenerator4D" id="LandscapeVoxelGenerator_mqvps"]
+seed = 2
+intensity = 12.32
+materials = PackedInt32Array(2, 1, 0, 255)
+material_cutoffs = PackedFloat32Array(-6, -1.5, 0)
+
+[sub_resource type="CaveVoxelGenerator4D" id="CaveVoxelGenerator_1g82y"]
+seed = 1
+persistence = 0.4
+diameter = 6.18
+
+[sub_resource type="ClippedVoxelGenerator4D" id="ClippedVoxelGenerator_642qb"]
+base = SubResource("LandscapeVoxelGenerator_mqvps")
+modifier = SubResource("CaveVoxelGenerator_1g82y")
+
+[sub_resource type="LayeredVoxelGenerator4D" id="LayeredVoxelGenerator_ku8cq"]
+layers = Array[VoxelGenerator4D]([SubResource("PlaneVoxelGenerator_1g82y"), SubResource("ClippedVoxelGenerator_642qb"), null])
+
+[sub_resource type="VoxelMaterialPalette4D" id="VoxelMaterialPalette_mqvps"]
+colors = PackedColorArray(0.40036744, 0.739238, 0.21569988, 1, 0.56327784, 0.32320568, 0.11818946, 1, 0.33660764, 0.3366076, 0.3366076, 1, 0.253321, 0.47389543, 1, 1)
+
+[node name="Node4D" type="Node4D"]
+script = ExtResource("1_1g82y")
+
+[node name="VoxelWorld4D" type="VoxelWorld4D" parent="."]
+generator = SubResource("LayeredVoxelGenerator_ku8cq")
+material_palette = SubResource("VoxelMaterialPalette_mqvps")
+
+[node name="Camera4D" type="Camera4D" parent="."]
+position = Vector4(0, 0, 37.12683445192006, 0)
+current = true
+rendering_engine_name = "Cross-section"
+
+[node name="DirectionalLight4D" type="DirectionalLight4D" parent="."]
+position = Vector4(0, 30.585042491160745, 0, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.09074822868933856, -0.9958738670081404, 0, 0, 0.9958738670081404, 0.09074822868933856, 0, 0, 0, 0, 1)
+light_energy = 0.304
