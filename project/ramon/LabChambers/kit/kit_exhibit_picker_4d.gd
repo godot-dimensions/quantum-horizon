@@ -62,10 +62,10 @@ func _draw_screen() -> void:
 	if on != _last_active:
 		_last_active = on
 		_lit_at = _clock
-	var blue := Color(0.30, 0.62, 1.0)
-	var grey := Color(0.80, 0.82, 0.86)
-	var faint := Color(0.80, 0.82, 0.86, 0.28)
-	var bg := Color(0.045, 0.06, 0.09)
+	var blue: Color = Style.UI_ACCENT
+	var grey: Color = Style.UI_GREY
+	var faint := Color(Style.UI_GREY, 0.28)
+	var bg := Color(Style.UI_GLASS, 1.0)
 	var fb: Font = LabPrint.font("black")
 	var fs: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")

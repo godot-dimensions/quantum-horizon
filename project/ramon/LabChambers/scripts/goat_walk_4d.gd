@@ -28,6 +28,14 @@ extends Node4D
 ## from each ball to the next (the bones), hung on the same joints as the pieces, so they walk with
 ## them; set_xray(true) hides the skin and shows only those.
 ##
+## JOINT BALLS (Ramon, 4 Oct: "the legs of the wolf and the goat now have cuts at the joints"): the
+## two pieces of a leg end where they meet, so as a joint bends they pivot apart and leave a pinched
+## notch. A round bead sits in every hip and knee: the leg's own cross-section at that ball, lofted
+## into a ball shape (narrowing above and below like a sphere), riding the joint. A ball looks the
+## same however it turns, so it fills the notch at any bend, and it is one more rigid piece: nothing
+## is written to a mesh while it walks. `joint_balls` false puts the old cut joints back. The beads
+## are lofted once and kept beside the pieces.
+##
 ## FOR ANY FOUR-LEGGED RIG, not only the goat: `leg_tops` names a leg's first ball (a chain whose
 ## second ball's name ends with one of them is a leg: the goat's "LegTop", the wolf's "Hip"), and
 ## `bake_tag` keeps each animal's baked pieces apart (the goat's are "walk_*", as before). Which beat
@@ -51,6 +59,8 @@ const BAKED := "res://ramon/LabKit/carried/chickenpen/theatre/baked/"
 @export var leg_tops: PackedStringArray = ["LegTop"]
 ## The baked pieces' file names start with this, beside the goat's baked stages.
 @export var bake_tag: String = "walk"
+## A round bead in every hip and knee (see the note at the top); false for the plain cut joints.
+@export var joint_balls: bool = true
 
 var _rig: MeshInstance4D
 var _body: Node4D
@@ -101,6 +111,17 @@ func attach(rig: MeshInstance4D) -> bool:
 		hip.add_child(knee)
 		knee.add_child(_piece("Lower", l["lower"], -mid, coat))
 		leg_nodes[String(l["name"])].append(knee)
+		if joint_balls:
+			var lname: String = String(l["name"])
+			var chain: Array = _leg_chain(rig, lname.trim_suffix("_L").trim_suffix("_R"))
+			var side: float = 1.0 if lname.ends_with("_L") else -1.0
+			if chain.size() >= 2:
+				var hb: ArrayTetraMesh4D = _bead_cached(rig, chain[0], side, lname + "_hip", 0.88)
+				var kb: ArrayTetraMesh4D = _bead_cached(rig, chain[1], side, lname + "_knee", 1.0)
+				if hb != null:
+					hip.add_child(_piece("HipBall", hb, -top, coat))
+				if kb != null:
+					knee.add_child(_piece("KneeBall", kb, -mid, coat))
 		var u1 := Vector2(mid.z - top.z, top.y - mid.y)
 		var u2 := Vector2(hoof.z - mid.z, mid.y - hoof.y)
 		var a1: float = atan2(u1.x, u1.y)
@@ -122,6 +143,63 @@ func _piece(nm: String, mesh: ArrayTetraMesh4D, offset: Vector4, coat: Material4
 	m.position = offset
 	m.material_override = _material(mesh, coat)
 	return m
+
+
+## A leg's top ball and the balls down its chain from it, by the top ball's name.
+static func _leg_chain(rig: Node, base: String) -> Array:
+	var top: Node = _find(rig, base)
+	var chain: Array = []
+	var cur: Node = top
+	while cur != null and chain.size() < 3:
+		chain.append(cur)
+		var nxt: Node = null
+		for c in cur.get_children():
+			if c.has_method("get_loft_section"):
+				nxt = c
+				break
+		cur = nxt
+	return chain
+
+
+static func _find(n: Node, nm: String) -> Node:
+	for c in n.get_children():
+		if c.has_method("get_loft_section"):
+			if String(c.name) == nm:
+				return c
+			var deeper: Node = _find(c, nm)
+			if deeper != null:
+				return deeper
+	return null
+
+
+## A joint's bead, from disk if it was lofted before. A hip's is a little smaller than the leg there
+## (`size`), so it fills the joint inside the haunch without bulging out of it.
+func _bead_cached(rig: MeshInstance4D, ball: Node, side: float, key: String, size: float) -> ArrayTetraMesh4D:
+	var path: String = BAKED + bake_tag + "_bead_%s_%d.res" % [key, int(round(size * 100.0))]
+	if ResourceLoader.exists(path):
+		var m := load(path) as ArrayTetraMesh4D
+		if m != null:
+			return m
+	var made: ArrayTetraMesh4D = bead(rig, ball, side, size)
+	if made != null:
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(BAKED))
+		ResourceSaver.save(made, path)
+	return made
+
+
+## The ball's own cross-section lofted into a round bead: five sections up through the ball, each as
+## wide as a sphere is at that height, the ends closed. In the rig's space, centred on the ball.
+static func bead(rig: MeshInstance4D, ball: Node, side: float, size: float = 1.0) -> ArrayTetraMesh4D:
+	var s: Dictionary = _section(rig, ball, side)
+	var c: Vector4 = s["center"]
+	var r: float = float(s.get("radius", 0.05)) * size
+	var secs: Array = []
+	for f in [-0.82, -0.45, 0.0, 0.45, 0.82]:
+		var d: Dictionary = s.duplicate()
+		d["center"] = c + Vector4(0.0, f * r, 0.0, 0.0)
+		d["radius"] = r * sqrt(maxf(1.0 - f * f, 0.05))
+		secs.append(d)
+	return _loft(rig, secs)
 
 
 static func _is_hind(nm: String) -> bool:

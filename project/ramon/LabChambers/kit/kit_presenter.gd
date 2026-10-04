@@ -17,6 +17,7 @@ extends Control
 
 const Presentation := preload("res://ramon/LabChambers/kit/kit_presentation.gd")
 const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
+const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 
 const CALLOUT_SECONDS := 3.6
 
@@ -97,21 +98,17 @@ func _draw_card(u: float, ch: Dictionary, count: int, a: float, progress: float,
 	var lines: int = 1 if fl.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, int(15 * u)).x < w - 60.0 * u else 2
 	var h: float = (104.0 + 20.0 * float(lines)) * u
 	var r := Rect2(Vector2((size.x - w) * 0.5, (30.0 - 14.0 * (1.0 - _ease(age / 0.45))) * u), Vector2(w, h))
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.06, 0.085, 0.86 * a)
-	sb.set_corner_radius_all(int(14 * u))
-	sb.anti_aliasing = true
-	draw_style_box(sb, r)
-	draw_rect(Rect2(r.position + Vector2(0.0, 18.0 * u), Vector2(4.0 * u, h - 36.0 * u)), Color(0.36, 0.62, 1.0, a))
+	draw_style_box(Style.glass_box(14 * u, a), r)
+	draw_rect(Rect2(r.position + Vector2(0.0, 18.0 * u), Vector2(4.0 * u, h - 36.0 * u)), Color(Style.UI_ACCENT, a))
 	var name: String = String((showcase.call("data") as Dictionary).get("name", "")).to_upper()
 	var x: float = r.position.x + 28.0 * u
-	draw_string(fs, Vector2(x, r.position.y + 32.0 * u), "PART %d OF %d   ·   %s" % [_part + 1, count, name], HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), Color(0.55, 0.76, 1.0, a))
-	draw_string(fl, Vector2(r.position.x, r.position.y + 32.0 * u), "CLICK FOR THE NEXT PART", HORIZONTAL_ALIGNMENT_RIGHT, w - 28.0 * u, int(10 * u), Color(1, 1, 1, 0.5 * a))
-	draw_string(fb, Vector2(x, r.position.y + 68.0 * u), String(ch["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(30 * u), Color(1, 1, 1, a))
-	draw_multiline_string(fl, Vector2(x, r.position.y + 96.0 * u), line, HORIZONTAL_ALIGNMENT_LEFT, w - 56.0 * u, int(15 * u), 2, Color(1, 1, 1, 0.88 * a))
+	draw_string(fs, Vector2(x, r.position.y + 32.0 * u), "PART %d OF %d   ·   %s" % [_part + 1, count, name], HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), Color(Style.UI_ACCENT, a))
+	draw_string(fl, Vector2(r.position.x, r.position.y + 32.0 * u), "CLICK FOR THE NEXT PART", HORIZONTAL_ALIGNMENT_RIGHT, w - 28.0 * u, int(10 * u), Color(Style.UI_INK_DIM, Style.UI_INK_DIM.a * a))
+	draw_string(fb, Vector2(x, r.position.y + 68.0 * u), String(ch["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(30 * u), Color(Style.UI_INK, a))
+	draw_multiline_string(fl, Vector2(x, r.position.y + 96.0 * u), line, HORIZONTAL_ALIGNMENT_LEFT, w - 56.0 * u, int(15 * u), 2, Color(Style.UI_INK_SOFT, Style.UI_INK_SOFT.a * a))
 	var bar := Rect2(Vector2(x, r.end.y - 14.0 * u), Vector2(w - 56.0 * u, 2.0 * u))
 	draw_rect(bar, Color(1, 1, 1, 0.12 * a))
-	draw_rect(Rect2(bar.position, Vector2(bar.size.x * progress, bar.size.y)), Color(0.36, 0.62, 1.0, a))
+	draw_rect(Rect2(bar.position, Vector2(bar.size.x * progress, bar.size.y)), Color(Style.UI_ACCENT, a))
 
 
 func _draw_callout(u: float, a: float) -> void:
@@ -124,10 +121,6 @@ func _draw_callout(u: float, a: float) -> void:
 	var h: float = (24.0 + 21.0 * float(lines)) * u
 	var rise: float = 10.0 * u * (1.0 - _ease((_clock - _callout_at) / 0.35))
 	var r := Rect2(Vector2((size.x - w) * 0.5, size.y - 96.0 * u - h + rise), Vector2(w, h))
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.965, 0.955, 0.93, 0.95 * a)
-	sb.set_corner_radius_all(int(12 * u))
-	sb.anti_aliasing = true
-	draw_style_box(sb, r)
-	draw_rect(Rect2(r.position + Vector2(14.0 * u, 12.0 * u), Vector2(3.0 * u, h - 24.0 * u)), Color(0.13, 0.40, 0.86, a))
-	draw_multiline_string(fl, Vector2(r.position.x + 28.0 * u, r.position.y + 28.0 * u), _callout, HORIZONTAL_ALIGNMENT_LEFT, w - 46.0 * u, px, 2, Color(0.10, 0.10, 0.12, a))
+	draw_style_box(Style.glass_box(12 * u, a), r)
+	draw_rect(Rect2(r.position + Vector2(14.0 * u, 12.0 * u), Vector2(3.0 * u, h - 24.0 * u)), Color(Style.UI_ACCENT, a))
+	draw_multiline_string(fl, Vector2(r.position.x + 28.0 * u, r.position.y + 28.0 * u), _callout, HORIZONTAL_ALIGNMENT_LEFT, w - 46.0 * u, px, 2, Color(Style.UI_INK, a))

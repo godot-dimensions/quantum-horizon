@@ -12,6 +12,7 @@ extends Control
 ## NO class_name (engine_gotchas.md).
 
 const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
+const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 const RD := preload("res://ramon/LabChambers/scripts/rd_build.gd")
 
 var camera: Camera4D
@@ -61,14 +62,14 @@ func _draw() -> void:
 	draw_set_transform(p, 0.0, Vector2(k, k))
 	var r := Rect2(Vector2(-w * 0.5, -h), Vector2(w, h))
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.04, 0.06, 0.10, 0.88 * _a)
+	sb.bg_color = Color(Style.UI_GLASS, Style.UI_GLASS_ALPHA * _a)
 	sb.set_corner_radius_all(int(h * 0.5))
-	sb.border_color = Color((RD.INK["dark"] as Dictionary)["accent"], 0.9 * _a)
+	sb.border_color = Color(Style.UI_ACCENT, 0.9 * _a)
 	sb.set_border_width_all(int(maxf(1.0, 1.5 * u)))
 	sb.anti_aliasing = true
 	draw_style_box(sb, r)
 	# A small point under it, towards the thing.
-	draw_colored_polygon(PackedVector2Array([Vector2(-6.0 * u, 0.0), Vector2(6.0 * u, 0.0), Vector2(0.0, 7.0 * u)]), Color(0.04, 0.06, 0.10, 0.88 * _a))
+	draw_colored_polygon(PackedVector2Array([Vector2(-6.0 * u, 0.0), Vector2(6.0 * u, 0.0), Vector2(0.0, 7.0 * u)]), Color(Style.UI_GLASS, Style.UI_GLASS_ALPHA * _a))
 	# The key cap.
 	var kr := Rect2(Vector2(r.position.x + pad, r.position.y + (h - cap) * 0.5), Vector2(cap, cap))
 	var kb := StyleBoxFlat.new()
@@ -78,6 +79,6 @@ func _draw() -> void:
 	draw_style_box(kb, kr)
 	var kf: Font = LabPrint.font("black")
 	var kpx: int = int(16 * u)
-	draw_string(kf, Vector2(kr.position.x, kr.get_center().y + kf.get_ascent(kpx) * 0.36), key, HORIZONTAL_ALIGNMENT_CENTER, cap, kpx, Color(0.04, 0.06, 0.10, _a))
+	draw_string(kf, Vector2(kr.position.x, kr.get_center().y + kf.get_ascent(kpx) * 0.36), key, HORIZONTAL_ALIGNMENT_CENTER, cap, kpx, Color(Style.UI_GLASS, _a))
 	draw_string(f, Vector2(kr.end.x + 10.0 * u, r.get_center().y + f.get_ascent(px) * 0.36), text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, Color(1, 1, 1, _a))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

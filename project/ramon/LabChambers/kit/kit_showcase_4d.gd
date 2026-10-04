@@ -80,6 +80,12 @@ const SLICES := 9
 ## animation playing over and over again"); the camera is never taken. Touching it (the wheel, a
 ## right drag, its key) pauses the loop until you have let it be for `resume_after` seconds.
 @export var autoplay: bool = true
+## A round bead in every hip and knee of a walking animal, filling the notch where its leg pieces
+## meet (goat_walk_4d.gd); off puts the plain cut joints back. Handed to each exhibit as it is built.
+@export var joint_balls: bool = true:
+	set(v):
+		joint_balls = v
+		_later()
 @export_range(1.0, 60.0, 0.5) var resume_after: float = 8.0
 
 var exhibit: Node4D
@@ -164,6 +170,7 @@ func rebuild() -> void:
 		exhibit = Node4D.new()
 		exhibit.name = "Exhibit"
 		exhibit.set_script(exhibit_script)
+		exhibit.set("joint_balls", joint_balls)
 		_slice_node.add_child(exhibit)
 	for i in (SLICES if slice_frames else 0):
 		var fb := Batch.new()
@@ -251,6 +258,7 @@ func set_exhibit(script: Script) -> void:
 	exhibit.name = "Exhibit%d" % serial
 	exhibit.set_script(script)
 	exhibit.set("grow_in", true)
+	exhibit.set("joint_balls", joint_balls)
 	_slice_node.add_child(exhibit)
 	_looping = false
 	cinematic = false

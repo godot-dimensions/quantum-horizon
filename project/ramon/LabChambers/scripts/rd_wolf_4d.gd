@@ -38,6 +38,8 @@ const STAGES := [4, 8, 11, 14, 18, 20]
 ## How tall it stands on the plinth, metres, once grown (it arrives at its real height).
 @export var stand_height: float = 3.0
 @export var turn_speed: float = 5.0
+## The showcase's joint_balls switch, for the walk's pieces.
+var joint_balls: bool = true
 var grow_in: bool = true
 
 var _stand: Node4D
@@ -98,6 +100,7 @@ func _ready() -> void:
 	_walker.set_script(WALK)
 	_walker.set("leg_tops", PackedStringArray(["Hip"]))
 	_walker.set("bake_tag", "wolf_walk")
+	_walker.set("joint_balls", joint_balls)
 	_walker.set("period", 1.0)
 	_walker.set("stride", 0.3)
 	_walker.set("lift", 0.12)

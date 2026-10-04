@@ -20,6 +20,7 @@ extends Control
 ## NO class_name (engine_gotchas.md).
 
 const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
+const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 const RD := preload("res://ramon/LabChambers/scripts/rd_build.gd")
 const Glyphs := preload("res://ramon/LabChambers/kit/kit_glyphs.gd")
 
@@ -93,7 +94,7 @@ func _draw() -> void:
 	var white := Color(1, 1, 1, a)
 	var soft := Color(0.84, 0.89, 0.96, 0.85 * a)
 	var dim := Color(0.70, 0.76, 0.86, 0.7 * a)
-	var sample := Color(1.0, 0.86, 0.45, a)
+	var sample := Color(Style.UI_GOLD, a)
 	var fb: Font = LabPrint.font("black")
 	var fs: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")
@@ -101,7 +102,7 @@ func _draw() -> void:
 	var h: float = 600.0 * u
 	var r := Rect2(Vector2(24.0 * u + (1.0 - a) * -60.0 * u, (size.y - h) * 0.5), Vector2(w, h))
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.035, 0.05, 0.085, 0.6 * a)
+	sb.bg_color = Color(Style.UI_GLASS, 0.6 * a)
 	sb.set_corner_radius_all(int(14 * u))
 	sb.border_color = Color(accent, 0.85 * a)
 	sb.border_width_left = int(maxf(2.0, 3.0 * u))

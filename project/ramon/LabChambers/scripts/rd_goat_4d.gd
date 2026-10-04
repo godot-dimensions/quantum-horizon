@@ -24,6 +24,8 @@ const Presentation := preload("res://ramon/LabChambers/kit/kit_presentation.gd")
 @export var turn_speed: float = 5.0
 ## Whether it arrives at a real goat's size and grows (the showcase sets this when it swaps
 ## exhibits; at the room's start it simply stands there).
+## The showcase's joint_balls switch, for the walk's pieces.
+var joint_balls: bool = true
 var grow_in: bool = false
 
 ## A real goat's height, metres (where it grows from), and how long it takes.
@@ -64,6 +66,7 @@ func _ready() -> void:
 			_walker = Node4D.new()
 			_walker.name = "Walk"
 			_walker.set_script(WALK)
+			_walker.set("joint_balls", joint_balls)
 			model.add_child(_walker)
 			if not bool(_walker.call("attach", rig)):
 				_walker.queue_free()

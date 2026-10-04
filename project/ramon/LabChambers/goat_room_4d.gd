@@ -73,6 +73,11 @@ const Presenter := preload("res://ramon/LabChambers/kit/kit_presenter.gd")
 	set(v):
 		door_height = v
 		_shape_later()
+
+## The control strip, the toasts and the mood switch in the lab's dark glass (kit_style.gd); off
+## puts back the strip that follows the mood (light in bright, dark in dark).
+@export var glass_hud: bool = true
+
 ## Room 2, the big room behind the back door (Ramon, 4 Oct: "size attributes for room 2, and one
 ## large spot in the middle which will need to light the whole giant room"): its width, depth and
 ## height; its spot (BigSpot) stays over its middle with its fixture on the ceiling.
@@ -157,6 +162,8 @@ func _ready() -> void:
 	add_child(layer)
 	hud = Control.new()
 	hud.set_script(Hud)
+	# The lab's one style: the control strip, the toasts and the mood switch in dark glass.
+	hud.set("glass", glass_hud)
 	layer.add_child(hud)
 	hud.connect("mood_pressed", func() -> void:
 		if room != null:

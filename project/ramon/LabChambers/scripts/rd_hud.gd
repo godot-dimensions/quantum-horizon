@@ -14,11 +14,15 @@ extends Control
 
 const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
 const RD := preload("res://ramon/LabChambers/scripts/rd_build.gd")
+const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 
 signal mood_pressed
 
 var mood: String = "bright"
 var strip: Array = []                 # [[key, label], ...]
+## Dark glass in both moods, with white type, as the lab's other overlays (kit_style.gd); the goat
+## room turns it on, the other rooms keep the mood-following strip.
+var glass: bool = false
 var caption_title: String = ""
 var caption_line: String = ""
 var caption_count: String = ""
@@ -65,6 +69,21 @@ func _style_button() -> void:
 	var u: float = maxf(size.y, 360.0) / 720.0
 	var dark: bool = mood == "dark"
 	_button.text = ("BRIGHT  ·  B" if dark else "DARK  ·  B")
+	if glass:
+		_button.add_theme_font_override("font", LabPrint.font("bold"))
+		_button.add_theme_font_size_override("font_size", int(13 * u))
+		for state in ["normal", "hover", "pressed"]:
+			var gb: StyleBoxFlat = Style.glass_box(16 * u)
+			if state == "hover":
+				gb.bg_color = gb.bg_color.lightened(0.12)
+			gb.content_margin_left = 16 * u
+			gb.content_margin_right = 16 * u
+			gb.content_margin_top = 6 * u
+			gb.content_margin_bottom = 6 * u
+			_button.add_theme_stylebox_override(state, gb)
+		for c in ["font_color", "font_hover_color", "font_pressed_color"]:
+			_button.add_theme_color_override(c, Style.UI_INK)
+		return
 	_button.add_theme_font_override("font", LabPrint.font("bold"))
 	_button.add_theme_font_size_override("font_size", int(13 * u))
 	for state in ["normal", "hover", "pressed"]:
@@ -105,6 +124,9 @@ func _draw() -> void:
 	var dark: bool = mood == "dark"
 	var bg: Color = Color(0.06, 0.07, 0.09, 0.86) if dark else Color(0.98, 0.98, 0.97, 0.92)
 	var ink: Color = Color(0.95, 0.95, 0.93) if dark else Color(0.09, 0.10, 0.12)
+	if glass:
+		bg = Color(Style.UI_GLASS, Style.UI_GLASS_ALPHA)
+		ink = Style.UI_INK
 	var accent: Color = RD.INK[mood]["accent"]
 	if not strip.is_empty() and _caption_a < 0.5:
 		_draw_strip(u, bg, ink, accent)

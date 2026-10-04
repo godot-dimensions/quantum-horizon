@@ -87,17 +87,13 @@ func _draw() -> void:
 	var w: float = 320.0 * u
 	var h: float = 250.0 * u
 	var r := Rect2(Vector2(size.x - w - 20.0 * u, size.y - h - 84.0 * u), Vector2(w, h))
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.035, 0.05, 0.085, 0.62)
-	sb.set_corner_radius_all(int(12 * u))
-	sb.anti_aliasing = true
-	draw_style_box(sb, r)
-	var blue: Color = Style.pick(Style.CODE_BLUE).lightened(0.4)
-	var hot := Color(1.0, 0.86, 0.35)
+	draw_style_box(Style.glass_box(12 * u), r)
+	var blue: Color = Style.UI_ACCENT
+	var hot: Color = Style.UI_GOLD
 	var fs: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")
 	draw_string(fs, r.position + Vector2(14.0, 22.0) * u, "WHERE THE SLICE CUTS", HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), Color(1, 1, 1))
-	draw_string(fl, r.position + Vector2(14.0, 38.0) * u, "The room shows you this plane through the 4D %s" % _name(), HORIZONTAL_ALIGNMENT_LEFT, w - 28.0 * u, int(9 * u), Color(0.8, 0.86, 0.95, 0.8))
+	draw_string(fl, r.position + Vector2(14.0, 38.0) * u, "The room shows you this plane through the 4D %s" % _name(), HORIZONTAL_ALIGNMENT_LEFT, w - 28.0 * u, int(9 * u), Style.UI_INK_SOFT)
 	var lo: Vector4 = _box[0]
 	var hi: Vector4 = _box[1]
 	var long_z: bool = (hi.z - lo.z) >= (hi.x - lo.x)

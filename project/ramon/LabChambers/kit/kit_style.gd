@@ -94,6 +94,63 @@ const ROOM_LIGHT := {
 	"dark": {},
 }
 
+## THE LAB'S SCREENS AND OVERLAYS, one set for all of them (Ramon, 4 Oct: "keep consistent"; "a
+## solution for the stylistic changes across the whole room and ui"). Two families and one rule:
+##   TEACHING SURFACES in the room (the lesson wall, the research desk, the research wall): the
+##                     room's blue (the "kit_screen" swatch under the print), white type, cards as a
+##                     white veil, light blue (UI_ACCENT_SCREEN) for what is live
+##   CONTROLS AND      (the specimen picker, the title card and callouts, the control strip, the
+##   OVERLAYS          slice view, the data panel, the key prompt): dark glass, white type, light blue
+##                     (UI_ACCENT) for what is active or live
+##   gold is the slice and the joints wherever they are drawn; warm orange is the costly
+##   alternative; green is "live"
+## Montserrat throughout: ExtraBold for titles and figures, Bold for headings and keys, SemiBold
+## for reading text (ui_font).
+const UI_GLASS := Color(0.04, 0.06, 0.10)
+const UI_GLASS_ALPHA := 0.86
+const UI_EDGE := Color(1, 1, 1, 0.08)
+const UI_INK := Color(1, 1, 1)
+const UI_INK_SOFT := Color(0.86, 0.91, 1.0, 0.92)
+const UI_INK_DIM := Color(0.72, 0.80, 0.94, 0.72)
+const UI_GREY := Color(0.80, 0.82, 0.86)
+const UI_ACCENT := Color(0.40, 0.76, 1.0)
+const UI_ACCENT_SCREEN := Color(0.55, 0.85, 1.0)
+const UI_VEIL := Color(1, 1, 1, 0.07)
+const UI_GOLD := Color(1.0, 0.80, 0.35)
+const UI_WARM := Color(1.0, 0.55, 0.36)
+const UI_LIVE := Color(0.45, 1.0, 0.62)
+
+
+## A dark-glass box for a control or an overlay, `radius` in pixels, faded by `a`.
+static func glass_box(radius: float, a: float = 1.0, alpha: float = UI_GLASS_ALPHA) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(UI_GLASS, alpha * a)
+	sb.border_color = Color(UI_EDGE, UI_EDGE.a * a)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(int(radius))
+	sb.anti_aliasing = true
+	return sb
+
+
+## A card on a teaching surface: the white veil, `radius` in pixels.
+static func veil_box(radius: float, a: float = 1.0) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(UI_VEIL, UI_VEIL.a * a)
+	sb.set_corner_radius_all(int(radius))
+	sb.anti_aliasing = true
+	return sb
+
+
+## The type for a role: "title", "figure" (ExtraBold), "heading", "key" (Bold), "text" (SemiBold).
+static func ui_font(role: String) -> Font:
+	match role:
+		"title", "figure":
+			return preload("res://ramon/LabKit/lab_print.gd").font("black")
+		"heading", "key":
+			return preload("res://ramon/LabKit/lab_print.gd").font("bold")
+	return preload("res://ramon/LabKit/lab_print.gd").font("body")
+
+
 static var mood: String = "bright"
 ## Live multipliers from the tuning sliders (kit_tuner.gd): spots and downlights, washes.
 ## Washes start off (Ramon, 4 Oct: "as for the wash, I have no use for it now, but keep the

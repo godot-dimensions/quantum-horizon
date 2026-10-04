@@ -315,10 +315,10 @@ func _draw_screen() -> void:
 	var lay: Dictionary = _layout()
 	var k: float = c.size.x / _sw
 	var s: float = float(lay["s"])
-	var white := Color(1, 1, 1)
-	var soft := Color(0.84, 0.91, 1.0, 0.92)
-	var dim := Color(0.74, 0.83, 0.98, 0.78)
-	var cyan := Color(0.52, 0.84, 1.0)
+	var white: Color = Style.UI_INK
+	var soft: Color = Style.UI_INK_SOFT
+	var dim: Color = Style.UI_INK_DIM
+	var cyan: Color = Style.UI_ACCENT_SCREEN
 	var fb: Font = LabPrint.font("black")
 	var fs: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")
@@ -340,7 +340,7 @@ func _draw_screen() -> void:
 	c.draw_string(fs, at.call(r1, 0.115) - Vector2(live_w, 0.0), "LIVE", HORIZONTAL_ALIGNMENT_LEFT, -1, px.call(0.04), soft)
 	# The exhibit, drawn from its own mesh and balls; the balls it has in view lit.
 	var card := StyleBoxFlat.new()
-	card.bg_color = Color(1, 1, 1, 0.06)
+	card.bg_color = Style.UI_VEIL
 	card.set_corner_radius_all(int(px.call(0.03)))
 	card.anti_aliasing = true
 	c.draw_style_box(card, Rect2(at.call(mg, 0.18), at.call(r0 - mg - 0.06, 0.86)))
@@ -376,7 +376,7 @@ func _draw_screen() -> void:
 	var lit: int = int(sc.get("slice_index")) if sc != null else -1
 	var frac: float = float(sc.call("slice_fraction")) if sc != null and sc.has_method("slice_fraction") else NAN
 	Glyphs.profile(c, Rect2(pr.position * k, pr.size * k), _profile.get("bins", PackedFloat32Array()), Color(cyan, 0.35), Color(cyan.lightened(0.3), 1.0),
-		_stops, lit, frac, white)
+		_stops, lit, frac, Style.UI_GOLD)
 	var cap: float = cy + 0.48
 	c.draw_string(fl, at.call(r0 + 0.05, cap), "-W", HORIZONTAL_ALIGNMENT_LEFT, -1, px.call(0.034), dim)
 	c.draw_string(fl, at.call(r0 + 0.05, cap), "+W", HORIZONTAL_ALIGNMENT_RIGHT, (mid - 0.025 - r0 - 0.1) * k, px.call(0.034), dim)
