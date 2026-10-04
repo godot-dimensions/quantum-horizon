@@ -11,13 +11,21 @@ extends RefCounted
 ##
 ## NO class_name (engine_gotchas.md): preload and call `make()`.
 
-const Walker := preload("res://ramon/chickenpen/scripts/block_walker_character_4d.gd")
-const Avatar := preload("res://ramon/chickenpen/scripts/block_avatar_4d.gd")
-const Gait := preload("res://ramon/chickenpen/scripts/block_gait_4d.gd")
-const OrbitRig := preload("res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd")
+const Walker := preload("res://ramon/LabKit/carried/chickenpen/scripts/block_walker_character_4d.gd")
+const Avatar := preload("res://ramon/LabKit/carried/chickenpen/scripts/block_avatar_4d.gd")
+const Gait := preload("res://ramon/LabKit/carried/chickenpen/scripts/block_gait_4d.gd")
+const OrbitRig := preload("res://ramon/LabKit/carried/chickenpen/scripts/pen_orbit_rig_4d.gd")
 
 
-static func make(suit: Color = Color(0.92, 0.93, 0.95), trim: Color = Color(0.20, 0.72, 0.80)) -> CharacterBody4D:
+## The gallery's greys (Ramon, 4 Oct: "make main character more a grey, not too colorful"): a mid
+## grey tunic, darker head, hands and legs, charcoal hair. Pass them as make(GREY_SUIT, GREY_TRIM,
+## GREY_HAIR).
+const GREY_SUIT := Color(0.58, 0.59, 0.62)
+const GREY_TRIM := Color(0.38, 0.39, 0.42)
+const GREY_HAIR := Color(0.20, 0.20, 0.22)
+
+
+static func make(suit: Color = Color(0.92, 0.93, 0.95), trim: Color = Color(0.20, 0.72, 0.80), hair: Color = Color(-1, -1, -1)) -> CharacterBody4D:
 	var body := CharacterBody4D.new()
 	body.name = "Player"
 	body.set_script(Walker)
@@ -38,6 +46,8 @@ static func make(suit: Color = Color(0.92, 0.93, 0.95), trim: Color = Color(0.20
 	avatar.set("skin", suit)
 	avatar.set("accent", trim)
 	avatar.set("wear_cap", false)
+	if hair.r >= 0.0:
+		avatar.set("hair", hair)
 	body.add_child(avatar)
 	var gait := Node4D.new()
 	gait.name = "Gait"
