@@ -95,6 +95,10 @@ signal preset_changed(index: int)
 ## How much of the pulled-in distance to keep clear of the obstruction.
 @export var collision_margin: float = 0.3
 
+## Whether holding rotate_4d turns the slice. The Lab Chambers test switches it off (lab copy
+## only, 4 Oct): Ramon found the whole world rotating confusing, so there only the exhibits turn.
+@export var slice_turning: bool = true
+
 @export_group("Conversation")
 ## While somebody is talking, the camera comes in and the point it orbits drops, so the
 ## two of you fill the frame instead of standing as small figures under a wide sky.
@@ -337,7 +341,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			# somebody who grabs the mouse immediately is not ignored.
 			return
 		var motion: Vector2 = event.relative * mouse_sensitivity
-		if Input.is_action_pressed(&"rotate_4d"):
+		if slice_turning and Input.is_action_pressed(&"rotate_4d"):
 			# Taking hold of the slice cancels the trip home. Fighting the player for
 			# control of the same two angles is worse than either behaviour alone.
 			_homing = 0.0

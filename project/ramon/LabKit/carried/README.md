@@ -10,7 +10,7 @@ headed with where it came from.
 
 | Folder | From | What |
 |---|---|---|
-| `chickenpen/` | `res://ramon/chickenpen/` (the pen, the playable world) | the third-person walker, avatar, gait and orbit camera; the loft rig, ball and builder; the strider; the cat, crow, chicken, Nike, owl, heron, chipmunk, the dreamer, the theatre's adoption of Trym's creature |
+| `chickenpen/` | `res://ramon/chickenpen/` (the pen, the playable world) | the third-person walker, avatar, gait and orbit camera; the loft rig, ball and builder; the strider; the cat, crow, chicken, Nike, owl, heron, chipmunk, the dreamer, the theatre's adoption of Trym's creature, and the theatre's goat with its baked build (`theatre/baked/`, carried 4 Oct for the Lab Chambers test) |
 | `Model/` | `res://ramon/Model/` (the loft-modelling prototype) | the wolf, the goat (`model.tscn`), the horse (`animation_test.tscn`), Trym's creatures and their solvers, the symmetry creature |
 | `Demo/scripts/hub_sun_4d.gd` | the hub | the sun the Model scenes carry |
 
