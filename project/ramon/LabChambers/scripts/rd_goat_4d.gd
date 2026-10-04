@@ -35,6 +35,8 @@ func _ready() -> void:
 	_goat.set("stand_height", stand_height)
 	_stand.add_child(_goat)
 	_stand.basis = Basis4D.from_zx(_yaw)
+	if not Engine.is_editor_hint():
+		shape()
 
 
 func _stages() -> int:
@@ -266,3 +268,53 @@ func live() -> Array:
 		["Showing", "build stage %d of %d" % [int(_goat.call("shown_stage")) + 1, _stages()] if plain else "the finished coat"],
 		["Balls in view", str(int(_goat.call("balls_shown")) if plain else int(_goat.call("ball_count")))],
 	]
+
+
+var _shape: Dictionary = {}
+
+
+## The goat drawn flat, for the research panel: its finished mesh's points and its balls
+## (centre, radius, name) seen from the side in the loft rig's own frame (whichever of x and z
+## it is longer along, across; y up), in metres, and which ball hangs from which. Worked out once,
+## while every ball is still on the goat (the build sequence takes some off).
+func shape() -> Dictionary:
+	if not _shape.is_empty() or _goat == null:
+		return _shape
+	var rig: Node4D = _goat.get("_rig")
+	var m: ArrayTetraMesh4D = _goat.get("_finished")
+	if rig == null or m == null or not rig.is_inside_tree():
+		return {}
+	var balls: Array = _goat.get("_balls")
+	for b in balls:
+		if not (b as Node).is_inside_tree():
+			return {}
+	var verts: PackedVector4Array = m.get_vertex_positions()
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for v in verts:
+		lo = Vector2(minf(lo.x, v.x), minf(lo.y, v.z))
+		hi = Vector2(maxf(hi.x, v.x), maxf(hi.y, v.z))
+	var across_x: bool = hi.x - lo.x >= hi.y - lo.y
+	# The vertices sit only on the loft's rings, round each ball; the middle of every tetrahedron
+	# fills in the body between them.
+	var pts := PackedVector2Array()
+	for v in verts:
+		pts.append(Vector2(v.x if across_x else v.z, v.y))
+	var cells: PackedInt32Array = m.get_simplex_cell_vertex_indices()
+	for t in range(0, cells.size() - 3, 4):
+		var cv: Vector4 = (verts[cells[t]] + verts[cells[t + 1]] + verts[cells[t + 2]] + verts[cells[t + 3]]) * 0.25
+		pts.append(Vector2(cv.x if across_x else cv.z, cv.y))
+	var inv: Projection = rig.global_basis.inverse()
+	var unit: float = maxf((rig.global_basis * Vector4(1, 0, 0, 0)).length(), 0.000001)
+	var out_balls: Array = []
+	var bones: Array = []
+	for i in balls.size():
+		var b: Node4D = balls[i]
+		var l: Vector4 = inv * (b.global_position - rig.global_position)
+		var r: float = float(b.get("radius")) * (b.global_basis * Vector4(1, 0, 0, 0)).length() / unit
+		out_balls.append([Vector2(l.x if across_x else l.z, l.y), r, String(b.name)])
+		var j: int = balls.find(b.get_parent())
+		if j >= 0:
+			bones.append([j, i])
+	_shape = {"points": pts, "balls": out_balls, "bones": bones}
+	return _shape

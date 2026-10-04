@@ -8,18 +8,19 @@ extends Node4D
 ## You start in a short entrance, walk under CREATION LAB painted over the doorway, and into a
 ## grey tiled room in blue light: the lesson on the left wall, the goat on a lit plinth under one
 ## downlight with its slices standing behind it, the W-slice and cross-section screens on the
-## right wall, a data desk at the front left, a floating WATCH button.
+## right wall, and the research panel floating in front of the plinth where the arrows end.
 ##
 ## Everything in the room is a kit node in the scene, so it can be moved and tuned in the editor.
 ## THIS NODE: the moods (kit_style.gd; LabKit's Room owns the light and the B key), the player
-## (the camera close behind and above, looking down past you, as in the concept frames), the HUD strip, the light sliders (kit_tuner.gd), and
+## (the gallery's grown-up figure, kit_player.gd; the camera close behind and above, looking down
+## past you, as in the concept frames), the HUD strip, the light sliders (kit_tuner.gd), and
 ## the mouse and keys: the wheel slices, a right drag turns the goat through W, E adds a ball. The
 ## goat plays its own sequence in place on a loop (the showcase's autoplay); the camera-taking
 ## cinematic (watch()) is kept for later but nothing starts it yet.
 ##
 ## NO class_name (engine_gotchas.md).
 
-const LabPlayer := preload("res://ramon/LabKit/lab_player.gd")
+const KitPlayer := preload("res://ramon/LabChambers/kit/kit_player.gd")
 const LabMath := preload("res://ramon/LabKit/lab_math.gd")
 const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 const Hud := preload("res://ramon/LabChambers/scripts/rd_hud.gd")
@@ -29,14 +30,14 @@ const DataPanel := preload("res://ramon/LabChambers/kit/kit_data_panel.gd")
 ## Where the player starts, facing -Z.
 @export var start_at: Vector2 = Vector2(0.0, 15.2)
 ## The arrows painted into the floors, world x/z.
-@export var route: PackedVector2Array = PackedVector2Array([Vector2(0, 14.6), Vector2(0, 3.8)])
+@export var route: PackedVector2Array = PackedVector2Array([Vector2(0, 14.6), Vector2(0, 5.3)])
 
 @export_group("Camera")
 ## How far behind you the camera sits, in metres. The concept frames have you close and large in
 ## the lower middle with the room opening up past you (Ramon, 4 Oct: "look more like ref").
-@export_range(2.0, 12.0, 0.1) var camera_distance: float = 4.4
+@export_range(2.0, 12.0, 0.1) var camera_distance: float = 5.0
 ## What the camera looks at, metres above your feet: above your head puts you low in the frame.
-@export_range(0.5, 3.5, 0.05) var camera_height: float = 1.95
+@export_range(0.5, 3.5, 0.05) var camera_height: float = 2.45
 ## How far it looks down, in degrees (negative is down).
 @export_range(-45.0, 20.0, 0.5) var camera_pitch_degrees: float = -11.0
 
@@ -73,7 +74,7 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 	showcase = get_node_or_null("Showcase")
-	player = LabPlayer.make(LabPlayer.GREY_SUIT, LabPlayer.GREY_TRIM, LabPlayer.GREY_HAIR)
+	player = KitPlayer.make()
 	add_child(player)
 	player.global_position = Vector4(start_at.x, 0.05, start_at.y, 0.0)
 	player.set("_facing", PI)

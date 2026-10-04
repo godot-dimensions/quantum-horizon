@@ -64,6 +64,12 @@ const PPM := 160.0
 	set(v):
 		icons = v
 		_changed()
+## A colour code for the wall it is painted on (kit_style.gd CODES): "blue" paints that whole wall
+## blue and the text white; the text and its layout stay as they are.
+@export_enum("none", "blue") var code: String = "none":
+	set(v):
+		code = v
+		_changed()
 ## How much the paint glows (0 is plain paint, lit by the room).
 @export_range(0.0, 1.0, 0.01) var glow: float = 0.15
 

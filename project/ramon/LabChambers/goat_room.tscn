@@ -51,6 +51,7 @@ title = "4D Basics"
 subtitle = "See, slice and understand the fourth dimension."
 body = "This goat is made of 24 balls placed in 4D space. Each ball is a cross-section of the body, and the tool lofts a skin from one to the next. Move the slice through W and watch its shape change."
 icons = [["wheel", "Slice through W"], ["rdrag", "Rotate in 4D"], ["key:E", "Add a ball"]]
+code = "blue"
 
 [node name="Showcase" type="Node4D" parent="."]
 position = Vector4(0, 0, -1.5, 0)
@@ -73,11 +74,10 @@ size = Vector2(3.8, 3.0)
 showcase = NodePath("../Showcase")
 face = Vector3(-0.7526, 0, 0.6585)
 
-[node name="Desk" type="Node4D" parent="."]
-position = Vector4(-6, 0, 3, 0)
+[node name="ResearchPanel" type="Node4D" parent="."]
+position = Vector4(0, 0, 3.2, 0)
 script = ExtResource("8_desk")
 showcase = NodePath("../Showcase")
-face = Vector3(0.3, 0, 1)
 
 [node name="Downlight" type="Node4D" parent="."]
 position = Vector4(0, 8.15, -1.5, 0)

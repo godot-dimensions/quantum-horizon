@@ -281,6 +281,11 @@ func profile() -> Dictionary:
 	return exhibit.call("w_profile") if exhibit != null and exhibit.has_method("w_profile") else {}
 
 
+## The exhibit drawn flat ({"points", "balls", "bones"}), for the research panel; empty if none.
+func shape() -> Dictionary:
+	return exhibit.call("shape") if exhibit != null and exhibit.has_method("shape") else {}
+
+
 ## Where the slice you see cuts the exhibit, from -1 (its -W end) to 1 (its +W end): the slice
 ## node moves the exhibit through W, so what is at your W is the exhibit's own -offset.
 func slice_fraction() -> float:

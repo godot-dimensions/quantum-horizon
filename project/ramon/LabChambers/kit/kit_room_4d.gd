@@ -117,12 +117,14 @@ func rebuild() -> void:
 			if String(d[0]) == side:
 				ops.append([float(d[1]), float(d[2]), float(d[3]) if d.size() > 3 else 3.6])
 		var cuts: Array = []
+		var swatch: String = "kit_wall"
 		for tx in texts:
 			if String(tx.get("side")) == side:
 				var a: Vector2 = tx.get("along")
 				cuts.append(a.x)
 				cuts.append(a.y)
-		_walls[side] = RD.wall(self, "Wall" + side.to_upper(), side, x0, z0, x1, z1, h, t, ops, cuts, "kit_wall")
+				swatch = Style.code_swatch(String(tx.get("code")), swatch)
+		_walls[side] = RD.wall(self, "Wall" + side.to_upper(), side, x0, z0, x1, z1, h, t, ops, cuts, swatch)
 	if ceiling:
 		RD.ceiling(self, "Ceiling", x0 - t, z0 - t, x1 + t, z1 + t, h, "kit_ceiling")
 	if cove:
@@ -143,7 +145,7 @@ func rebuild() -> void:
 		var a: Vector2 = tx.get("along")
 		var up: Vector2 = tx.get("up")
 		var rec: Dictionary = await RD.print_wall(tree, _walls[side], RD.wall_normal(side, not bool(tx.get("outside"))),
-			minf(a.x, a.y), maxf(a.x, a.y), up.x, up.y, Callable(tx, "paint"), {"bright": float(tx.get("glow")), "dark": float(tx.get("glow")) + 0.15})
+			minf(a.x, a.y), maxf(a.x, a.y), up.x, up.y, _painter(tx), {"bright": float(tx.get("glow")), "dark": float(tx.get("glow")) + 0.15})
 		_prints.append(rec)
 	_apply_mood_now()
 
@@ -179,12 +181,14 @@ func _rebuild_outline() -> void:
 			if int(d[0]) == e:
 				ops.append([float(d[1]), float(d[2]), float(d[3]) if d.size() > 3 else 3.6])
 		var cuts: Array = []
+		var swatch: String = "kit_wall"
 		for tx in texts:
 			if int(tx.get("edge")) == e:
 				var al: Vector2 = tx.get("along")
 				cuts.append(al.x)
 				cuts.append(al.y)
-		_walls[e] = _edge_wall(e, a, c, h, t, ops, cuts)
+				swatch = Style.code_swatch(String(tx.get("code")), swatch)
+		_walls[e] = _edge_wall(e, a, c, h, t, ops, cuts, swatch)
 		if cove:
 			var d2: Vector2 = (c - a).normalized()
 			var inward := Vector2(-d2.y, d2.x)
@@ -213,7 +217,7 @@ func _rebuild_outline() -> void:
 			# would, so hand it the face's own frame: inner face +Z (u from p), outer -Z (u from q).
 			pieces.append(pc)
 		var rec: Dictionary = await RD.print_wall(tree, pieces, Vector4(0, 0, -1 if outside else 1, 0),
-			minf(al2.x, al2.y), maxf(al2.x, al2.y), up.x, up.y, Callable(tx, "paint"), {"bright": float(tx.get("glow")), "dark": float(tx.get("glow")) + 0.15})
+			minf(al2.x, al2.y), maxf(al2.x, al2.y), up.x, up.y, _painter(tx), {"bright": float(tx.get("glow")), "dark": float(tx.get("glow")) + 0.15})
 		_prints.append(rec)
 	_apply_mood_now()
 
@@ -222,7 +226,7 @@ func _rebuild_outline() -> void:
 ## ends), each a box turned to the edge, its +Z looking into the room; then, for an angled edge, a
 ## row of small upright boxes behind it for the physics. Returns [[box, p, q, y0, y1], ...] with p
 ## and q measured along the edge.
-func _edge_wall(e: int, a: Vector2, c: Vector2, h: float, t: float, openings: Array, cuts: Array) -> Array:
+func _edge_wall(e: int, a: Vector2, c: Vector2, h: float, t: float, openings: Array, cuts: Array, swatch: String = "kit_wall") -> Array:
 	var len: float = a.distance_to(c)
 	var d: Vector2 = (c - a) / maxf(len, 0.0001)
 	var inward := Vector2(-d.y, d.x)
@@ -252,7 +256,7 @@ func _edge_wall(e: int, a: Vector2, c: Vector2, h: float, t: float, openings: Ar
 		if y0 >= h:
 			continue
 		var centre2: Vector2 = a + d * m - inward * t * 0.5
-		var box: MeshInstance4D = Build.box(self, "Edge%d_%d" % [e, i], Vector3(centre2.x, (y0 + h) * 0.5, centre2.y), Vector3(q - p, h - y0, t), "kit_wall", false)
+		var box: MeshInstance4D = Build.box(self, "Edge%d_%d" % [e, i], Vector3(centre2.x, (y0 + h) * 0.5, centre2.y), Vector3(q - p, h - y0, t), swatch, false)
 		box.basis = turn
 		if axis:
 			# A square edge: one box for the physics, in the world's own axes.
@@ -300,6 +304,14 @@ func _texts() -> Array:
 		if c.has_method("paint") and c.get("side") != null:
 			out.append(c)
 	return out
+
+
+## A wall text's painter: its own paint(), handed its colour code's ink when it has one.
+func _painter(tx: Node) -> Callable:
+	var code: String = String(tx.get("code"))
+	if code.is_empty() or code == "none":
+		return Callable(tx, "paint")
+	return func(c: Control, ink: Dictionary) -> void: tx.call("paint", c, Style.code_ink(code, ink))
 
 
 ## True if `p` (world) stands inside the room's outline (or its rectangle).

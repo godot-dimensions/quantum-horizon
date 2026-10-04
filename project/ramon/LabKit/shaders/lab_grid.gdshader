@@ -85,7 +85,12 @@ uniform int route_count = 0;
 uniform float route_width = 0.8;
 uniform vec4 route_color : source_color = vec4(0.12, 0.45, 1.0, 1.0);
 uniform float route_speed = 0.7;
-uniform float route_spacing = 1.6;
+// One pair of arrows to the next, metres: two close together, then a gap (Ramon, 4 Oct).
+uniform float route_spacing = 2.6;
+// How far the second arrow of a pair trails the first, metres (0: single arrows).
+uniform float route_pair = 0.5;
+// Each arrow's thickness along the route, metres.
+uniform float route_thick = 0.24;
 uniform float route_glow : hint_range(0.0, 1.0) = 0.6;
 group_uniforms;
 
@@ -322,13 +327,17 @@ void fragment() {
 			}
 			// A soft chevron: its tip leads, its arms trail back to the sides.
 			float s2 = route_start[i] + along + abs(across) * route_width * 0.42;
-			float f = fract((s2 - TIME * route_speed) / route_spacing);
-			float fw = max(fwidth(s2) / route_spacing, 0.0001);
-			float soft = max(fw * 1.5, 0.04);
-			float band = smoothstep(0.0, soft, f) * (1.0 - smoothstep(0.30 - soft, 0.30, f));
+			// Metres into the current pair, the pattern sliding on at route_speed.
+			float d = fract((s2 - TIME * route_speed) / route_spacing) * route_spacing;
+			float fw = max(fwidth(s2), 0.0001);
+			float soft = max(fw * 1.5, 0.03);
+			float band = smoothstep(0.0, soft, d) * (1.0 - smoothstep(route_thick - soft, route_thick, d));
+			if (route_pair > 0.0) {
+				band = max(band, smoothstep(route_pair, route_pair + soft, d) * (1.0 - smoothstep(route_pair + route_thick - soft, route_pair + route_thick, d)));
+			}
 			float edge = 1.0 - smoothstep(0.62, 0.92, abs(across));
 			// Far away an arrow is a few pixels across: let it go rather than shimmer.
-			float calm = 1.0 - smoothstep(0.12, 0.3, fw);
+			float calm = 1.0 - smoothstep(0.2, 0.48, fw);
 			float ends = smoothstep(0.0, 0.6, route_start[i] + along) ;
 			best = max(best, band * edge * calm * ends);
 		}

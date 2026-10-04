@@ -57,6 +57,7 @@ func _process(delta: float) -> void:
 	if size != want or position != Vector2.ZERO:
 		position = Vector2.ZERO
 		size = want
+	var was: float = _a
 	_a = move_toward(_a, 1.0 if shown else 0.0, delta / 0.3)
 	_clock += delta
 	_frames.append(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0)
@@ -72,7 +73,8 @@ func _process(delta: float) -> void:
 			_stops = showcase.call("slice_stops")
 		if showcase.has_method("live"):
 			_live = showcase.call("live")
-	if _a > 0.0:
+	# Once more as it reaches nothing, or the last faint frame stays on screen.
+	if _a > 0.0 or was > 0.0:
 		queue_redraw()
 
 

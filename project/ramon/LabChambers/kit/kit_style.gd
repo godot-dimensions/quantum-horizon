@@ -22,6 +22,8 @@ const SWATCHES := {
 		"kit_screen": [Color(0.12, 0.40, 0.88), Color(0.12, 0.40, 0.88), Color(0.12, 0.40, 0.88), 0.0],
 		"kit_screen2": [Color(0.18, 0.22, 0.30), Color(0.18, 0.22, 0.30), Color(0.18, 0.22, 0.30), 0.0],
 		"kit_desk": [Color(0.80, 0.81, 0.82), Color(0.80, 0.81, 0.82), Color(0.80, 0.81, 0.82), 0.0],
+		"kit_bezel": [Color(0.90, 0.91, 0.92), Color(0.90, 0.91, 0.92), Color(0.90, 0.91, 0.92), 0.0],
+		"kit_code_blue": [Color(0.13, 0.40, 0.86), Color(0.20, 0.48, 0.93), Color(0.16, 0.44, 0.90), 0.5],
 	},
 	"dark": {
 		"kit_wall": [Color(0.62, 0.63, 0.64), Color(0.50, 0.51, 0.53), Color(0.58, 0.59, 0.60), 0.6],
@@ -30,8 +32,35 @@ const SWATCHES := {
 		"kit_screen": [Color(0.08, 0.28, 0.66), Color(0.08, 0.28, 0.66), Color(0.08, 0.28, 0.66), 0.0],
 		"kit_screen2": [Color(0.12, 0.15, 0.21), Color(0.12, 0.15, 0.21), Color(0.12, 0.15, 0.21), 0.0],
 		"kit_desk": [Color(0.70, 0.71, 0.72), Color(0.70, 0.71, 0.72), Color(0.70, 0.71, 0.72), 0.0],
+		"kit_bezel": [Color(0.80, 0.81, 0.82), Color(0.80, 0.81, 0.82), Color(0.80, 0.81, 0.82), 0.0],
+		"kit_code_blue": [Color(0.08, 0.27, 0.64), Color(0.14, 0.35, 0.74), Color(0.11, 0.31, 0.69), 0.5],
 	},
 }
+
+## COLOUR CODES (Ramon, 4 Oct: "since we need to colorcode, make the wall with the text blue
+## coded"): a wall carrying text with a `code` is painted in that code's swatch, and its text
+## in that code's ink (white on blue) instead of the room's.
+const CODES := {"blue": "kit_code_blue"}
+const CODE_INK := {
+	"blue": {
+		"bright": {"name": "bright", "text": Color(1, 1, 1), "dim": Color(0.84, 0.91, 1.0), "accent": Color(0.62, 0.86, 1.0),
+			"on_accent": Color(0.06, 0.18, 0.42), "line": Color(0.55, 0.74, 1.0), "panel": Color(1, 1, 1)},
+		"dark": {"name": "dark", "text": Color(0.95, 0.97, 1.0), "dim": Color(0.76, 0.85, 0.98), "accent": Color(0.55, 0.82, 1.0),
+			"on_accent": Color(0.04, 0.12, 0.30), "line": Color(0.45, 0.64, 0.95), "panel": Color(0.95, 0.97, 1.0)},
+	},
+}
+
+
+## The wall swatch for a colour code ("" or "none": `fallback`, the room's own).
+static func code_swatch(code: String, fallback: String = "kit_wall") -> String:
+	return String(CODES.get(code, fallback))
+
+
+## The ink to print with on a wall of colour code `code`, for the mood `ink` was made for.
+static func code_ink(code: String, ink: Dictionary) -> Dictionary:
+	if not CODE_INK.has(code):
+		return ink
+	return (CODE_INK[code] as Dictionary).get(String(ink.get("name", "bright")), ink)
 
 const COVE := {"bright": Color(0.96, 0.97, 1.0), "dark": Color(1.0, 0.80, 0.56)}
 const FIXTURE := {"bright": Color(1.0, 0.98, 0.94), "dark": Color(1.0, 0.92, 0.80)}

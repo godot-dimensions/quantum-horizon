@@ -10,6 +10,7 @@ extends RefCounted
 ##                                mirrored silhouette with the slice ticks along its foot
 ##   bars(c, rect, values, col)   a bar chart, brightest last
 ##   tag(c, pos, text, ...)       a small rounded label (SAMPLE, LIVE, MEASURED)
+##   wire(c, rect, shape, ...)    the exhibit as a triangulated wireframe from its own points
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -24,21 +25,21 @@ static func icon(c: CanvasItem, kind: String, rect: Rect2, col: Color) -> void:
 	match kind:
 		"ball":
 			c.draw_arc(o, s * 0.38, 0.0, TAU, 48, col, lw, true)
-			_ellipse(c, o, Vector2(s * 0.38, s * 0.12), Color(col, 0.55), lw * 0.7)
+			_ellipse(c, o, Vector2(s * 0.38, s * 0.12), Color(col, col.a * 0.55), lw * 0.7)
 			c.draw_circle(o + Vector2(-s * 0.13, -s * 0.15), s * 0.07, col)
 		"stages":
 			for i in 3:
 				var hh: float = s * (0.25 + 0.22 * float(i))
-				c.draw_rect(Rect2(Vector2(o.x - s * 0.36 + s * 0.26 * float(i), o.y + s * 0.38 - hh), Vector2(s * 0.18, hh)), Color(col, 0.55 + 0.22 * float(i)))
+				c.draw_rect(Rect2(Vector2(o.x - s * 0.36 + s * 0.26 * float(i), o.y + s * 0.38 - hh), Vector2(s * 0.18, hh)), Color(col, col.a * (0.55 + 0.22 * float(i))))
 		"tetra":
 			var a := o + Vector2(0.0, -s * 0.4)
 			var b := o + Vector2(-s * 0.38, s * 0.3)
 			var d := o + Vector2(s * 0.38, s * 0.3)
 			var e := o + Vector2(s * 0.08, s * 0.08)
 			c.draw_polyline(PackedVector2Array([a, b, d, a]), col, lw, true)
-			c.draw_line(a, e, Color(col, 0.6), lw * 0.7, true)
-			c.draw_line(b, e, Color(col, 0.6), lw * 0.7, true)
-			c.draw_line(d, e, Color(col, 0.6), lw * 0.7, true)
+			c.draw_line(a, e, Color(col, col.a * 0.6), lw * 0.7, true)
+			c.draw_line(b, e, Color(col, col.a * 0.6), lw * 0.7, true)
+			c.draw_line(d, e, Color(col, col.a * 0.6), lw * 0.7, true)
 		"slice":
 			RD.icon(c as Control, "slice", rect, col)
 		"clock":
@@ -56,7 +57,7 @@ static func icon(c: CanvasItem, kind: String, rect: Rect2, col: Color) -> void:
 			for i in 3:
 				var k: float = float(i) - 1.0
 				var at: Vector2 = o + Vector2(k * s * 0.26, (0.0 if i == 1 else -s * 0.06))
-				c.draw_arc(at, s * (0.16 if i == 1 else 0.12), 0.0, TAU, 32, Color(col, 1.0 if i == 1 else 0.6), lw, true)
+				c.draw_arc(at, s * (0.16 if i == 1 else 0.12), 0.0, TAU, 32, Color(col, col.a * (1.0 if i == 1 else 0.6)), lw, true)
 			c.draw_line(o + Vector2(-s * 0.4, s * 0.32), o + Vector2(s * 0.4, s * 0.32), col, lw, true)
 		"check":
 			c.draw_arc(o, s * 0.38, 0.0, TAU, 48, col, lw, true)
@@ -71,12 +72,12 @@ static func icon(c: CanvasItem, kind: String, rect: Rect2, col: Color) -> void:
 		"todo":
 			for i in 12:
 				var t0: float = TAU * float(i) / 12.0
-				c.draw_arc(o, s * 0.38, t0, t0 + TAU / 24.0, 6, Color(col, 0.8), lw, true)
+				c.draw_arc(o, s * 0.38, t0, t0 + TAU / 24.0, 6, Color(col, col.a * 0.8), lw, true)
 		"axes":
 			var arms := [Vector2(1, 0), Vector2(0, -1), Vector2(-0.6, 0.55), Vector2(0.62, 0.5)]
 			for i in arms.size():
 				var tip: Vector2 = o + (arms[i] as Vector2).normalized() * s * 0.4
-				c.draw_line(o, tip, Color(col, 1.0 if i < 3 else 0.55), lw, true)
+				c.draw_line(o, tip, Color(col, col.a * (1.0 if i < 3 else 0.55)), lw, true)
 				c.draw_circle(tip, lw * 0.9, col)
 		"brush":
 			var p0 := o + Vector2(-s * 0.3, s * 0.3)
@@ -85,10 +86,10 @@ static func icon(c: CanvasItem, kind: String, rect: Rect2, col: Color) -> void:
 			c.draw_colored_polygon(PackedVector2Array([p0 + Vector2(-s * 0.06, -s * 0.02), p0 + Vector2(s * 0.02, s * 0.06), p0 + Vector2(-s * 0.1, s * 0.1)]), col)
 		"graph":
 			c.draw_polyline(PackedVector2Array([o + Vector2(-s * 0.38, s * 0.2), o + Vector2(-s * 0.14, -s * 0.04), o + Vector2(s * 0.06, s * 0.1), o + Vector2(s * 0.38, -s * 0.28)]), col, lw, true)
-			c.draw_line(o + Vector2(-s * 0.4, s * 0.36), o + Vector2(s * 0.4, s * 0.36), Color(col, 0.6), lw * 0.7, true)
+			c.draw_line(o + Vector2(-s * 0.4, s * 0.36), o + Vector2(s * 0.4, s * 0.36), Color(col, col.a * 0.6), lw * 0.7, true)
 		"live":
 			c.draw_circle(o, s * 0.16, col)
-			c.draw_arc(o, s * 0.32, 0.0, TAU, 40, Color(col, 0.5), lw * 0.8, true)
+			c.draw_arc(o, s * 0.32, 0.0, TAU, 40, Color(col, col.a * 0.5), lw * 0.8, true)
 		_:
 			RD.icon(c as Control, kind, rect, col)
 
@@ -110,7 +111,7 @@ static func profile(c: CanvasItem, rect: Rect2, bins: PackedFloat32Array, fill: 
 	var band := Rect2(rect.position, Vector2(rect.size.x, rect.size.y - foot))
 	var mid: float = band.get_center().y
 	var lw: float = maxf(1.0, rect.size.y * 0.018)
-	c.draw_line(Vector2(band.position.x, mid), Vector2(band.end.x, mid), Color(line, 0.35), lw, true)
+	c.draw_line(Vector2(band.position.x, mid), Vector2(band.end.x, mid), Color(line, line.a * 0.35), lw, true)
 	if bins.size() >= 2:
 		var top := PackedVector2Array()
 		var bottom := PackedVector2Array()
@@ -130,7 +131,7 @@ static func profile(c: CanvasItem, rect: Rect2, bins: PackedFloat32Array, fill: 
 		var x2: float = band.position.x + band.size.x * (float(ticks[i]) * 0.5 + 0.5)
 		var on: bool = i == lit
 		var th: float = foot * (0.75 if on else 0.45)
-		c.draw_line(Vector2(x2, rect.end.y - th), Vector2(x2, rect.end.y), Color(line, 1.0 if on else 0.55), lw * (2.4 if on else 1.4), true)
+		c.draw_line(Vector2(x2, rect.end.y - th), Vector2(x2, rect.end.y), Color(line, line.a * (1.0 if on else 0.55)), lw * (2.4 if on else 1.4), true)
 	if is_finite(marker):
 		var x3: float = band.position.x + band.size.x * (clampf(marker, -1.0, 1.0) * 0.5 + 0.5)
 		c.draw_line(Vector2(x3, band.position.y - lw * 2.0), Vector2(x3, band.end.y + lw * 2.0), mark, lw * 2.6, true)
@@ -149,11 +150,11 @@ static func bars(c: CanvasItem, rect: Rect2, values: Array, col: Color, labels: 
 	for i in values.size():
 		var hh: float = maxf(1.0, h * float(values[i]) / most)
 		c.draw_rect(Rect2(Vector2(rect.position.x + bw * float(i) + bw * 0.16, rect.position.y + h - hh), Vector2(bw * 0.68, hh)),
-			Color(col, 0.35 + 0.65 * float(i + 1) / float(values.size())))
+			Color(col, col.a * (0.35 + 0.65 * float(i + 1) / float(values.size()))))
 		if i < labels.size():
 			c.draw_string(LabPrint.font("body"), Vector2(rect.position.x + bw * float(i), rect.end.y - float(label_px) * 0.2), String(labels[i]),
 				HORIZONTAL_ALIGNMENT_CENTER, bw, label_px, label_col)
-	c.draw_line(Vector2(rect.position.x, rect.position.y + h), Vector2(rect.end.x, rect.position.y + h), Color(col, 0.5), maxf(1.0, rect.size.y * 0.01))
+	c.draw_line(Vector2(rect.position.x, rect.position.y + h), Vector2(rect.end.x, rect.position.y + h), Color(col, col.a * 0.5), maxf(1.0, rect.size.y * 0.01))
 
 
 ## A small rounded tag with `text`, its left edge at `pos.x` and centred on `pos.y`; returns its width.
@@ -170,7 +171,7 @@ static func tag(c: CanvasItem, pos: Vector2, text: String, px: int, col: Color, 
 	sb.anti_aliasing = true
 	c.draw_style_box(sb, r)
 	c.draw_string(f, Vector2(r.position.x, pos.y + f.get_ascent(px) * 0.36), text, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, px,
-		Color(0.04, 0.06, 0.10) if filled else col)
+		Color(0.04, 0.06, 0.10, col.a) if filled else col)
 	return r.size.x
 
 
@@ -179,3 +180,65 @@ static func short(n: int) -> String:
 	if n >= 10000:
 		return "%.1fk" % (float(n) / 1000.0)
 	return str(n)
+
+
+## The exhibit (kit_showcase shape(): its mesh's points and its balls, seen from the side) as a
+## wireframe in `rect`: the points thinned to an even spread, joined by a Delaunay triangulation
+## with every long edge dropped (so the web hugs the body and does not bridge the gaps between
+## legs), faintly filled; the balls' centres as bright nodes. Faces left, as an animal on a label.
+static func wire(c: CanvasItem, rect: Rect2, shape: Dictionary, line: Color, node: Color, fill: Color) -> void:
+	var pts: PackedVector2Array = shape.get("points", PackedVector2Array())
+	var balls: Array = shape.get("balls", [])
+	if pts.size() < 3:
+		return
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for p in pts:
+		lo = Vector2(minf(lo.x, p.x), minf(lo.y, p.y))
+		hi = Vector2(maxf(hi.x, p.x), maxf(hi.y, p.y))
+	var size: Vector2 = (hi - lo).max(Vector2(0.0001, 0.0001))
+	var s: float = minf(rect.size.x / size.x, rect.size.y / size.y)
+	var mid: Vector2 = (lo + hi) * 0.5
+	# The head is the highest ball: keep it on the left.
+	var flip: float = 1.0
+	var top: float = -INF
+	for b in balls:
+		var bc: Vector2 = b[0]
+		if bc.y > top:
+			top = bc.y
+			flip = -1.0 if bc.x > mid.x else 1.0
+	var o: Vector2 = rect.get_center()
+	var to_px := func(p: Vector2) -> Vector2: return o + Vector2((p.x - mid.x) * flip, -(p.y - mid.y)) * s
+	# An even spread: one point per cell of a grid about 30 cells tall.
+	var cell: float = size.y / 30.0
+	var keep: Dictionary = {}
+	for p in pts:
+		var k := Vector2i(int(floor(p.x / cell)), int(floor(p.y / cell)))
+		if not keep.has(k):
+			keep[k] = p
+	var px := PackedVector2Array()
+	for p in keep.values():
+		px.append(to_px.call(p))
+	var nodes: int = px.size()
+	for b in balls:
+		px.append(to_px.call(b[0]))
+	var tris: PackedInt32Array = Geometry2D.triangulate_delaunay(px)
+	var longest: float = cell * s * 2.6
+	var edges: Dictionary = {}
+	var lw: float = maxf(1.0, rect.size.y * 0.004)
+	for t in range(0, tris.size() - 2, 3):
+		var a: Vector2 = px[tris[t]]
+		var b2: Vector2 = px[tris[t + 1]]
+		var d: Vector2 = px[tris[t + 2]]
+		if a.distance_to(b2) > longest or b2.distance_to(d) > longest or d.distance_to(a) > longest:
+			continue
+		c.draw_colored_polygon(PackedVector2Array([a, b2, d]), fill)
+		for e in [[tris[t], tris[t + 1]], [tris[t + 1], tris[t + 2]], [tris[t + 2], tris[t]]]:
+			var key := Vector2i(mini(e[0], e[1]), maxi(e[0], e[1]))
+			edges[key] = true
+	for key in edges:
+		c.draw_line(px[key.x], px[key.y], line, lw, true)
+	for i in nodes:
+		c.draw_circle(px[i], lw * 1.1, Color(line, line.a * 0.9))
+	for i in range(nodes, px.size()):
+		c.draw_circle(px[i], lw * 2.6, node)

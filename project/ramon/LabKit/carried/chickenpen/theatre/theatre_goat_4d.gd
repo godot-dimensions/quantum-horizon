@@ -227,7 +227,10 @@ const BAKED := "res://ramon/LabKit/carried/chickenpen/theatre/baked/"
 ## True if every stage was found and read. All or nothing: a half-loaded set would show
 ## the animal jumping between a baked stage and a lofted one.
 func _load_baked() -> bool:
-	if not ResourceLoader.exists(BAKED + "goat.cfg"):
+	# FileAccess, not ResourceLoader: a .cfg is not a resource, so ResourceLoader.exists() is
+	# always false for it, and every load fell back to lofting all eleven stages live (the
+	# hitch, and the goat flickering through its stages before it settled; LabChambers, 4 Oct).
+	if not FileAccess.file_exists(BAKED + "goat.cfg"):
 		return false
 	var counts := ConfigFile.new()
 	if counts.load(BAKED + "goat.cfg") != OK:

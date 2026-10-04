@@ -73,6 +73,16 @@ extends Node4D
 ## this is, the more the knee folds.
 @export_range(0.5, 1.0, 0.01) var min_swing_extension: float = 0.80
 
+## How much of the leg's length the IK may use: the rest is held back so the knee never locks
+## dead straight. It also sets how bent a standing leg is - 0.97 of a two-segment leg is a 28
+## degree knee - which a chibi carries off and a grown-up figure does not, so the gallery's
+## player (LabChambers/kit/kit_player.gd) asks for 0.995, about 12 degrees. LAB COPY ONLY: the
+## pen's own gait keeps its fixed 0.97, and this default is that same 0.97.
+@export_range(0.9, 0.999, 0.001) var reach_fraction: float = 0.97
+## And the leg solver's own hold-back, in metres: a straight leg is never quite reached. 1 cm is
+## nothing on a chibi and still 18 degrees of knee on the gallery player's longer leg, which sets
+## 2 mm. LAB COPY ONLY, and this default is the 1 cm the pen's gait has.
+@export_range(0.0, 0.05, 0.001) var knee_slack: float = 0.01
 ## How much of the leg's rotation the ankle undoes. 1.0 keeps the foot perfectly flat;
 ## slightly less lets it tip a little with the leg, which looks less mechanical.
 @export_range(0.0, 1.0, 0.05) var foot_levelling: float = 0.85
@@ -199,7 +209,7 @@ func _measure() -> void:
 	# promised a stride the IK then clamped, and a clamped target is a foot that cannot
 	# reach its plant: the player's feet went from planting perfectly to slipping 0.10.
 	var low: float = maxf(stand - body_bob, 0.01)
-	var usable: float = reach_len * 0.97
+	var usable: float = reach_len * reach_fraction
 	var sweep: float = sqrt(maxf(usable * usable - low * low, 0.0))
 	stride_length = minf(stride_length, sweep * 2.0 * 0.82)
 	if stride_length < 0.05:
@@ -335,7 +345,7 @@ func _physics_process(delta: float) -> void:
 ## rising to step_height on the way.
 func _step(index: int, hip: Node4D, knee: Node4D, ankle: Node4D, local_phase: float,
 		duty: float, stride: float, _delta: float) -> void:
-	var reach: float = (_thigh + _shin) * 0.97
+	var reach: float = (_thigh + _shin) * reach_fraction
 	var hip_world: Vector4 = hip.global_position
 	# THE ANKLE'S HEIGHT IS SET BY THE FLOOR, NOT BY THE LEG. It sits one sole above the
 	# ground, so the drop from hip to ankle is whatever that distance happens to be -
@@ -404,7 +414,7 @@ func _step(index: int, hip: Node4D, knee: Node4D, ankle: Node4D, local_phase: fl
 ## other root of the same triangle bends it backwards, like a bird's.
 func _solve_leg(hip: Node4D, knee: Node4D, ankle: Node4D, target_z: float, target_y: float) -> void:
 	var d: float = clampf(sqrt(target_z * target_z + target_y * target_y),
-		absf(_thigh - _shin) + 0.01, _thigh + _shin - 0.01)
+		absf(_thigh - _shin) + 0.01, _thigh + _shin - knee_slack)
 	# Angle of the hip-to-foot line, measured from straight down.
 	var line: float = atan2(target_z, -target_y)
 	# Angle between that line and the thigh.
