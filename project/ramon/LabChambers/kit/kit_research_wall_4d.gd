@@ -106,6 +106,11 @@ var _lit_at: float = -10.0
 var _k: float = 1.0
 
 
+func _init() -> void:
+	# Its "screen" look is the blue page it was designed as.
+	screen_swatch = "kit_screen"
+
+
 func _enter_tree() -> void:
 	add_to_group("lab_mood_listener")
 	_palette()

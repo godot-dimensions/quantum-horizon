@@ -31,9 +31,24 @@ const ROADMAP := [
 	["half", "Animate it: walk cycles"],
 	["todo", "Collide with its true shape"],
 ]
-## The tool's four steps: [icon, what, when it runs].
-const PIPELINE := [["ball", "Place balls", "By hand, in the editor"], ["tetra", "Loft the skin", "Once, when a ball moves"],
-	["slice", "Slice through W", "Every frame, on the GPU"], ["creatures", "Animate", "Rigid pieces, transforms only"]]
+## The tool's four steps: [icon, what, when it runs, what happens]. They are buttons: the arrow
+## keys or a click step through them while the panel is open (Ramon, 5 Oct: "the 1,2,3,4 makes you
+## feel like you can click it, but instead it's tethered to the sequence ... I'd rather you press a key,
+## maybe the arrows or mouse").
+const PIPELINE := [
+	["ball", "Place balls", "By hand, in the editor", "A designer drops balls into the scene and shapes each one: a size, two stretches, how square it is, and how far it reaches into W."],
+	["tetra", "Loft the skin", "Once, when a ball moves", "The builder rings every ball with points and fills between neighbouring rings with tetrahedra. It runs once, whenever a ball moves."],
+	["slice", "Slice through W", "Every frame, on the GPU", "The graphics card cuts every tetrahedron by the 3D slice you stand in, every frame. That cut is all you ever see of the animal."],
+	["creatures", "Animate", "Rigid pieces, transforms only", "The skin is cut once into rigid pieces on the balls' joints. A walk moves those pieces, never a vertex, so it costs almost nothing."],
+]
+## The step picked (0..3).
+var step_sel: int = 0
+
+
+## The arrow keys and a click (goat_room_4d.gd): the next or the previous step.
+func select_step(d: int) -> void:
+	step_sel = posmod(step_sel + d, PIPELINE.size())
+	queue_redraw()
 const BUDGET_MS := 16.7
 
 var showcase: Node
@@ -121,21 +136,16 @@ func _draw() -> void:
 	draw_string(fl, Vector2(x, top + 83.0 * u), "How it works, and where it stands.", HORIZONTAL_ALIGNMENT_LEFT, cw, Style.type_px("caption", u), dim)
 	# How the tool works: four steps, an arrow between each, the step the story is on lit.
 	var ty: float = top + 98.0 * u
-	var pipe := Rect2(Vector2(x, ty), Vector2(cw, 210.0 * u))
+	var pipe := Rect2(Vector2(x, ty), Vector2(cw, 262.0 * u))
 	_card(pipe, u, a)
 	_section(pipe, u, a, "chip", "HOW THE TOOL WORKS", accent)
-	var lit_step: int = -1
-	if showcase != null:
-		var key: String = ""
-		var si: int = int(showcase.get("seq_index"))
-		if si >= 0:
-			key = String((showcase.call("sequences") as Array)[si]["key"])
-		lit_step = {"balls": 0, "skin": 1, "slice": 2, "rig": 3, "walk": 3}.get(key, -1)
+	draw_string(fs, Vector2(pipe.position.x, pipe.position.y + 23.0 * u), "← →  OR CLICK", HORIZONTAL_ALIGNMENT_RIGHT, pipe.size.x - 14.0 * u, Style.type_px("micro", u), Color(accent.lightened(0.3), a))
+	var lit_step: int = step_sel
 	var gap: float = 12.0 * u
 	var sw: float = (pipe.size.x - 24.0 * u - gap * 3.0) / 4.0
 	for i in PIPELINE.size():
 		var st2: Array = PIPELINE[i]
-		var sr := Rect2(Vector2(pipe.position.x + 12.0 * u + (sw + gap) * float(i), pipe.position.y + 42.0 * u), Vector2(sw, 152.0 * u))
+		var sr := Rect2(Vector2(pipe.position.x + 12.0 * u + (sw + gap) * float(i), pipe.position.y + 42.0 * u), Vector2(sw, 140.0 * u))
 		var on: bool = i == lit_step
 		var bx := StyleBoxFlat.new()
 		bx.bg_color = Color(accent, 0.16 * a) if on else Color(1, 1, 1, 0.04 * a)
@@ -152,8 +162,11 @@ func _draw() -> void:
 			var ax2: float = sr.end.x + gap * 0.5
 			var ay: float = sr.position.y + 26.0 * u
 			draw_colored_polygon(PackedVector2Array([Vector2(ax2 - 4.0 * u, ay - 6.0 * u), Vector2(ax2 + 5.0 * u, ay), Vector2(ax2 - 4.0 * u, ay + 6.0 * u)]), Color(1, 1, 1, 0.5 * a))
+	# The step picked, said in full under the four.
+	var det := Rect2(Vector2(pipe.position.x + 12.0 * u, pipe.position.y + 192.0 * u), Vector2(pipe.size.x - 24.0 * u, 60.0 * u))
+	draw_multiline_string(fl, det.position + Vector2(0.0, 18.0 * u), String(PIPELINE[step_sel][3]), HORIZONTAL_ALIGNMENT_LEFT, det.size.x, Style.type_px("body", u), 3, white)
 	var col: float = (cw - 14.0 * u) * 0.5
-	var y2: float = ty + 222.0 * u - 140.0 * u
+	var y2: float = ty + 274.0 * u - 140.0 * u
 	# Two cards: right now, the frame cost.
 	var y3: float = y2 + 140.0 * u
 	var left2 := Rect2(Vector2(x, y3), Vector2(col, 132.0 * u))

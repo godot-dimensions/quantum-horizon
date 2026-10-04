@@ -80,6 +80,8 @@ const Presenter := preload("res://ramon/LabChambers/kit/kit_presenter.gd")
 ## The control strip, the toasts and the mood switch in the lab's dark glass (kit_style.gd); off
 ## puts back the strip that follows the mood (light in bright, dark in dark).
 @export var glass_hud: bool = true
+## How close to the pedestal the story plays and its text shows, m.
+@export_range(2.0, 30.0, 0.5) var story_radius: float = 10.0
 
 ## Room 2, the big room behind the back door (Ramon, 4 Oct: "size attributes for room 2, and one
 ## large spot in the middle which will need to light the whole giant room"): its width, depth and
@@ -122,10 +124,29 @@ var _in_room: bool = false
 var _at_desk: Node = null
 var _shape_queued: bool = false
 var _desk_open: bool = false
+var _near_story: bool = false
+var presenter: Control
 
 
 func _enter_tree() -> void:
 	add_to_group("lab_mood_listener")
+
+
+## The palette switch (B, or the button at the top right): the light surfaces grey or near-black, the
+## lights untouched (kit_style.gd palette).
+func toggle_palette() -> void:
+	Style.palette = "grey" if Style.palette == "black" else "black"
+	Style.apply(Style.mood)
+	for n in get_tree().get_nodes_in_group("lab_mood_listener"):
+		if n != self and is_ancestor_of(n) and n.has_method("apply_mood"):
+			n.call("apply_mood", Style.mood, true)
+	_label_switch()
+
+
+func _label_switch() -> void:
+	if hud != null:
+		hud.set("switch_text", "GREY  ·  B" if Style.palette == "black" else "BLACK  ·  B")
+		hud.call("refresh_switch")
 
 
 func apply_mood(m: String, _instant: bool = false) -> void:
@@ -168,9 +189,11 @@ func _ready() -> void:
 	# The lab's one style: the control strip, the toasts and the mood switch in dark glass.
 	hud.set("glass", glass_hud)
 	layer.add_child(hud)
-	hud.connect("mood_pressed", func() -> void:
-		if room != null:
-			room.call("toggle_mood"))
+	# The switch and B flip the palette (grey or black); the room's light stays as it is.
+	hud.connect("mood_pressed", toggle_palette)
+	if room != null:
+		room.set("mood_key", KEY_NONE)
+	_label_switch()
 	data_panel = Control.new()
 	data_panel.set_script(DataPanel)
 	data_panel.set("showcase", showcase)
@@ -181,7 +204,7 @@ func _ready() -> void:
 	slice_view.set("showcase", showcase)
 	layer.add_child(slice_view)
 	# The presentation on screen: a title card as each part begins, its callouts as it plays.
-	var presenter := Control.new()
+	presenter = Control.new()
 	presenter.name = "Presenter"
 	presenter.set_script(Presenter)
 	presenter.set("showcase", showcase)
@@ -330,6 +353,15 @@ func _process(delta: float) -> void:
 	var p: Vector4 = player.global_position
 	var goat_room: Node = get_node_or_null("GoatRoom")
 	_in_room = goat_room != null and bool(goat_room.call("inside", p))
+	# The story plays near the pedestal only: coming within `story_radius` of it starts it once; the
+	# title card and callouts show only while you are that close (Ramon, 5 Oct: "it never stops, even
+	# when you're in the other room ... there should be a radius").
+	var near_story: bool = _in_room and showcase != null and Vector2(p.x - showcase.global_position.x, p.z - showcase.global_position.z).length() < story_radius
+	if near_story and not _near_story and showcase != null and not bool(showcase.get("armed")) and int(showcase.get("seq_index")) < 0:
+		showcase.call("replay")
+	_near_story = near_story
+	if presenter != null:
+		presenter.set("active", near_story)
 	if showcase != null:
 		showcase.call("set_near", _in_room and bool(showcase.call("near_button", p)))
 	_read_desk(delta)
@@ -340,14 +372,16 @@ func _strip() -> Array:
 	if not _in_room or showcase == null:
 		return [["WASD", "Move"], ["Mouse", "Look"], ["B", "Dark / bright"]]
 	if _desk_ease > 0.5:
-		return [["E", "Close the data" if _desk_open else "Check the data"], ["Wheel", "Slice through W"]]
+		if _desk_open:
+			return [["← → / Click", "Step through the tool"], ["E", "Close the data"]]
+		return [["E / Click", "Check the data"], ["Wheel", "Slice through W"]]
 	var out: Array = []
 	if bool(showcase.call("near_button", player.global_position)):
 		out.append(["Click", "Watch"])
 	if int(showcase.get("seq_index")) >= 0:
-		out.append(["Click", "Next part"])
+		out.append(["Click / ← →", "Next part"])
 	elif bool(showcase.call("can_skip")):
-		out.append(["Click", "Play from the start"])
+		out.append(["Click", "Play the story"])
 	out.append(["Wheel", "Slice through W"])
 	out.append(["Right drag", "Turn in 4D"])
 	out.append(["E", String(showcase.call("action_label"))])
@@ -406,7 +440,11 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 		if mb.button_index == MOUSE_BUTTON_LEFT and _at_desk != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			toggle_desk()
+			# A click opens the data; while it is open a click steps through its four steps (E closes).
+			if _desk_open:
+				data_panel.call("select_step", 1)
+			else:
+				toggle_desk()
 			get_viewport().set_input_as_handled()
 			return
 		if mb.button_index == MOUSE_BUTTON_LEFT and bool(showcase.call("near_button", player.global_position)) \
@@ -439,6 +477,21 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		var said: String = String(showcase.call("action"))
 		if not said.is_empty():
 			hud.call("toast", said)
+		get_viewport().set_input_as_handled()
+		return
+	# B: the palette, grey or near-black; the light stays (Ramon, 5 Oct).
+	if k != null and k.pressed and not k.echo and k.keycode == KEY_B and not k.shift_pressed and not k.ctrl_pressed:
+		toggle_palette()
+		get_viewport().set_input_as_handled()
+		return
+	# With the data open the arrow keys step through its four steps.
+	if k != null and k.pressed and not k.echo and (k.keycode == KEY_RIGHT or k.keycode == KEY_LEFT) and _desk_open and _at_desk != null:
+		data_panel.call("select_step", 1 if k.keycode == KEY_RIGHT else -1)
+		get_viewport().set_input_as_handled()
+		return
+	# The arrow keys step through the story as a click does (Ramon, 5 Oct): right on, left back.
+	if k != null and k.pressed and not k.echo and (k.keycode == KEY_RIGHT or k.keycode == KEY_LEFT) and bool(showcase.call("can_skip")):
+		showcase.call("skip" if k.keycode == KEY_RIGHT else "skip_back")
 		get_viewport().set_input_as_handled()
 		return
 	# 1 to 6: another animal on the plinth, from the specimen picker's slots (Ramon, 4 Oct: "press

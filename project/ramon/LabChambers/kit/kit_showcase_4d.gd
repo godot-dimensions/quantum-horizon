@@ -80,6 +80,18 @@ const SLICES := 9
 ## animation playing over and over again"); the camera is never taken. Touching it (the wheel, a
 ## right drag, its key) pauses the loop until you have let it be for `resume_after` seconds.
 @export var autoplay: bool = true
+## Plays the story once and stops (Ramon, 5 Oct: "text from the pedestal area keeps playing, it never
+## stops ... it will finish the text cycle, but then it stops eventually"); replay() arms it again
+## (the room calls it when you come near, a new animal arms it, a click or an arrow key starts it).
+@export var play_once: bool = true
+## Where round the pedestal its side text sits, degrees from the front towards +X (90: the right
+## side as you walk in; Ramon, 5 Oct: "place pedestal decals on the right now instead of front").
+@export_range(-180.0, 180.0, 1.0) var band_angle: float = 90.0:
+	set(v):
+		band_angle = v
+		_band_done = false
+## Whether the story may start (play_once): set by replay(), cleared when a pass ends.
+var armed: bool = false
 ## A see-through blue cylinder standing on the deck round the animal, fading out upward (Ramon, 4 Oct:
 ## "a subtle holographic bounding box"); faked with the grid shader's dithered hologram mode.
 @export var hologram: bool = true:
@@ -144,6 +156,7 @@ var _queued: bool = false
 var serial: int = 0
 var _swapping: bool = false
 var _wait_grow: bool = false
+var _start_at: float = 0.0
 var _holo: MeshInstance4D
 ## The part of the exhibit's loop playing now (-1 when it is in your hands or arriving), how far
 ## into it, and how long it is: the research wall turns its pages by these.
@@ -301,6 +314,7 @@ func set_exhibit(script: Script) -> void:
 	slice_index = SLICES / 2
 	_extent = -1.0
 	_wait_grow = true
+	armed = true
 	seq_index = -1
 	_band_done = false
 	_show_slice()
@@ -356,13 +370,17 @@ func _run_loop(delta: float) -> void:
 		return
 	if not _looping:
 		_looping = true
-		_loop_t = 0.0
+		_loop_t = _start_at
+		_start_at = 0.0
 		cinematic = true
 		turn = Vector2.ZERO
 	_loop_t += delta
 	var total: float = 0.0
 	for s in seqs:
 		total += float(s["length"])
+	if play_once and _loop_t >= total:
+		_finish()
+		return
 	var t: float = fposmod(_loop_t, total)
 	var i: int = 0
 	while i < seqs.size() - 1 and t >= float(seqs[i]["length"]):
@@ -485,13 +503,13 @@ func _process(delta: float) -> void:
 	_t += delta
 	if not _band_done and _t > 0.5 and not data().is_empty():
 		_band_done = true
-		Pedestal.print_band(get_tree(), _ped, 2.4, 0.27, 0.49, _paint_band)
+		Pedestal.print_band(get_tree(), _ped, 2.4, 0.27, 0.49, _paint_band, 320.0, deg_to_rad(band_angle))
 	# A new exhibit turns and grows; its loop starts three seconds after it has grown.
 	if _wait_grow and (not exhibit.has_method("grown") or bool(exhibit.call("grown"))):
 		_wait_grow = false
 		_extent = -1.0
 		_touched_at = _t - resume_after + 3.0
-	if autoplay and not _wait_grow and _t - _touched_at > resume_after and _t > 2.0:
+	if autoplay and (armed or not play_once) and not _wait_grow and _t - _touched_at > resume_after and _t > 2.0:
 		_run_loop(delta)
 	elif not cinematic and exhibit.has_method("idle"):
 		exhibit.call("idle", delta)
@@ -528,8 +546,7 @@ func skip() -> void:
 	if _wait_grow:
 		return
 	if not _looping or seq_index < 0:
-		_touched_at = -1000.0
-		_looping = false
+		replay()
 		return
 	var seqs: Array = sequences()
 	var total: float = 0.0
@@ -538,7 +555,49 @@ func skip() -> void:
 	var start: float = 0.0
 	for k in seq_index + 1:
 		start += float(seqs[k]["length"])
+	if start >= total - 0.001:
+		start = 0.0   # past the last part: from the first again
 	_loop_t = floor(_loop_t / total) * total + start + 0.001
+
+
+## The left arrow: back to the start of this part, or, early in it, to the part before.
+func skip_back() -> void:
+	if _wait_grow:
+		return
+	var seqs: Array = sequences()
+	if not _looping or seq_index < 0:
+		replay()
+		return
+	var to: int = seq_index if seq_t > 1.5 else maxi(seq_index - 1, 0)
+	var start: float = 0.0
+	for k in to:
+		start += float(seqs[k]["length"])
+	var total: float = 0.0
+	for s in seqs:
+		total += float(s["length"])
+	_loop_t = floor(_loop_t / total) * total + start + 0.001
+
+
+## Arms the story and starts it from its first part.
+func replay() -> void:
+	armed = true
+	_start_at = 0.0
+	_touched_at = -1000.0
+	if _looping:
+		_loop_t = 0.0
+
+
+## A pass is over: the exhibit is handed back to its turntable and the story waits.
+func _finish() -> void:
+	_looping = false
+	cinematic = false
+	armed = false
+	seq_index = -1
+	_cine_slice = -3.0
+	slice_index = SLICES / 2
+	_show_slice()
+	if exhibit != null:
+		exhibit.call("end_cinematic")
 
 
 func shot(i: int) -> Array:

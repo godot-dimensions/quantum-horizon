@@ -359,6 +359,23 @@ vec2 path_frame(float sc, vec2 p) {
 	return vec2(dot(rel, t), dot(rel, vec2(t.y, -t.x)));
 }
 
+// As path_frame, but a mark near an open path's end straightens out to the end's direction over its
+// last 1.8 m (and from its start's over its first), so it meets the end line square and slides under
+// it cleanly instead of being cut across at a slant.
+vec2 path_frame_ends(float sc, vec2 p) {
+	if (path_closed > 0.5) {
+		return path_frame(sc, p);
+	}
+	vec2 c = path_point(clamp(sc, 0.0, path_length)).xy;
+	vec2 t = path_dir(clamp(sc, 0.0, path_length));
+	float we = smoothstep(path_length - 1.8, path_length - 0.4, sc);
+	float ws = 1.0 - smoothstep(0.4, 1.8, sc);
+	t = normalize(mix(t, path_dir(path_length - path_cap * 0.5), we));
+	t = normalize(mix(t, path_dir(path_cap * 0.5), ws));
+	vec2 rel = p - c;
+	return vec2(dot(rel, t), dot(rel, vec2(t.y, -t.x)));
+}
+
 void fragment() {
 	NORMAL = normalize(NORMAL);
 	vec4 world = local_pos + grid_offset;
@@ -522,7 +539,7 @@ void fragment() {
 			float base = floor((s - off - mid) / sp);
 			for (int j = -1; j <= 1; j++) {
 				float sc = (base + float(j)) * sp + off + mid;
-				vec2 fr = path_frame(sc, p2);
+				vec2 fr = path_frame_ends(sc, p2);
 				float d = fr.x + mid;
 				float au = abs(fr.y);
 				for (int n = 0; n < 2; n++) {
@@ -548,7 +565,7 @@ void fragment() {
 			float hs = path_width * 0.2;
 			float base2 = floor((s - off) / sp);
 			for (int j = -1; j <= 1; j++) {
-				vec2 fr = path_frame((base2 + float(j)) * sp + off + sp * 0.5, p2);
+				vec2 fr = path_frame_ends((base2 + float(j)) * sp + off + sp * 0.5, p2);
 				float bx = 1.0 - smoothstep(hs - soft, hs + soft, abs(fr.x));
 				float by = 1.0 - smoothstep(hs - soft, hs + soft, abs(fr.y));
 				k = max(k, bx * by);
@@ -570,12 +587,30 @@ void fragment() {
 		float calm = 1.0 - smoothstep(0.06, 0.16, fws);
 		k = clamp(k, 0.0, 1.0) * calm;
 		if (path_closed < 0.5) {
-			// The marks run into a fixed line across each end, and are gone there.
+			// A fixed line across each end, straight, in the end's own frame; the marks slide under it:
+			// whatever of them lies past the line's near edge is not drawn (Ramon, 5 Oct: "the arrows
+			// should disappear like they're sliding under the line"). Only near the ends, so a path
+			// that curls back past its own end is not cut elsewhere.
 			float cap = path_cap;
-			float inside = smoothstep(cap * 1.8, cap * 1.8 + soft, s) * (1.0 - smoothstep(path_length - cap * 1.8 - soft, path_length - cap * 1.8, s));
-			float bar = (1.0 - smoothstep(cap - soft, cap, s)) + smoothstep(path_length - cap, path_length - cap + soft, s);
-			bar *= 1.0 - smoothstep(0.92, 1.0, abs(vac));
-			k = max(k * inside, clamp(bar, 0.0, 1.0));
+			float hw = path_width * 0.5;
+			float inside = 1.0;
+			float bar = 0.0;
+			if (s > path_length - 3.0) {
+				vec2 fe = path_frame(path_length - cap * 0.5, p2);
+				inside *= 1.0 - smoothstep(-cap * 0.5 - soft, -cap * 0.5, fe.x);
+				bar = max(bar, (1.0 - smoothstep(cap * 0.5 - soft, cap * 0.5, abs(fe.x))) * (1.0 - smoothstep(hw - soft, hw, abs(fe.y))));
+			}
+			if (s < 3.0) {
+				vec2 fs = path_frame(cap * 0.5, p2);
+				inside *= smoothstep(cap * 0.5, cap * 0.5 + soft, fs.x);
+				bar = max(bar, (1.0 - smoothstep(cap * 0.5 - soft, cap * 0.5, abs(fs.x))) * (1.0 - smoothstep(hw - soft, hw, abs(fs.y))));
+			}
+			k = max(k * inside, bar);
+		}
+		// Only the marks are drawn: the rest of the strip lets the floor through, so strips that
+		// overlap at a crossroad never hide each other's marks.
+		if (k < 0.02) {
+			discard;
 		}
 		c = mix(c, path_color.rgb, k);
 		glow += path_color.rgb * k * path_glow;

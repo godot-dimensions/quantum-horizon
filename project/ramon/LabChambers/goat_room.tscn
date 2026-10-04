@@ -23,7 +23,7 @@ corner_z = -3.0
 
 [node name="Room" type="Node4D" parent="."]
 script = ExtResource("2_room")
-start_mood = "dark"
+start_mood = "bright"
 mood_overrides = {
 "bright": {
 "ambient": Color(0.2, 0.24, 0.33, 1),
@@ -111,10 +111,10 @@ script = ExtResource("7_wall")
 showcase = NodePath("../Showcase")
 face = Vector3(-1, 0, 0)
 tilt_degrees = 90.0
-size = Vector2(10.4, 6.3)
+size = Vector2(11.4, 6.9)
 hover = 1.3
 corner = 0.12
-live_ppm = 300.0
+live_ppm = 260.0
 refresh_hz = 30.0
 collide = false
 look = "painted"
@@ -151,23 +151,30 @@ position = Vector4(0, 0, 8, 0)
 position = Vector4(0, 0, 5.2, 0)
 
 [node name="P3" type="Node4D" parent="Guides/ToPedestal"]
-position = Vector4(0, 0, 3.4, 0)
+position = Vector4(0, 0, 3.75, 0)
+
+[node name="Crossroad" type="Node4D" parent="Guides"]
+position = Vector4(0, 0, 3.3, 0)
+script = ExtResource("14_pivot")
+ring_radius = 0.6
+ring_width = 0.18
+disc = false
 
 [node name="ToWallPad" type="Node4D" parent="Guides"]
 script = ExtResource("13_path")
 width = 0.9
 
 [node name="P0" type="Node4D" parent="Guides/ToWallPad"]
-position = Vector4(0.9, 0, 3.5, 0)
+position = Vector4(0.8, 0, 3.3, 0)
 
 [node name="P1" type="Node4D" parent="Guides/ToWallPad"]
-position = Vector4(2.6, 0, 4.4, 0)
+position = Vector4(2.4, 0, 3.9, 0)
 
 [node name="P2" type="Node4D" parent="Guides/ToWallPad"]
 position = Vector4(4.3, 0, 3.9, 0)
 
 [node name="P3" type="Node4D" parent="Guides/ToWallPad"]
-position = Vector4(5.45, 0, 3.15, 0)
+position = Vector4(5.4, 0, 3.0, 0)
 
 [node name="WallPad" type="Node4D" parent="Guides"]
 position = Vector4(6.6, 0, 3, 0)
@@ -207,7 +214,7 @@ spacing = 1.6
 speed = 0.7
 
 [node name="P0" type="Node4D" parent="Guides/ToDesk"]
-position = Vector4(-0.9, 0, 3.5, 0)
+position = Vector4(-0.8, 0, 3.3, 0)
 
 [node name="P1" type="Node4D" parent="Guides/ToDesk"]
 position = Vector4(-2.8, 0, 4.3, 0)

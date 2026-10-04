@@ -23,6 +23,8 @@ var strip: Array = []                 # [[key, label], ...]
 ## Dark glass in both moods, with white type, as the lab's other overlays (kit_style.gd); the goat
 ## room turns it on, the other rooms keep the mood-following strip.
 var glass: bool = false
+## The mood switch's label, if the room gives one (the goat room's palette switch).
+var switch_text: String = ""
 var caption_title: String = ""
 var caption_line: String = ""
 var caption_count: String = ""
@@ -68,7 +70,7 @@ func _style_button() -> void:
 		return
 	var u: float = maxf(size.y, 360.0) / 720.0
 	var dark: bool = mood == "dark"
-	_button.text = ("BRIGHT  ·  B" if dark else "DARK  ·  B")
+	_button.text = switch_text if not switch_text.is_empty() else ("BRIGHT  ·  B" if dark else "DARK  ·  B")
 	if glass:
 		_button.add_theme_font_override("font", LabPrint.font("bold"))
 		_button.add_theme_font_size_override("font_size", Style.type_px("caption", u))
@@ -201,3 +203,8 @@ func _draw_caption(u: float, ink: Color, accent: Color) -> void:
 	draw_string(fb, Vector2(pad, r.position.y + 34.0 * u), caption_title, HORIZONTAL_ALIGNMENT_LEFT, -1, int(18 * u), Color(accent.lightened(0.2), a))
 	draw_string(fs, Vector2(0.0, r.position.y + 34.0 * u), caption_count + "      CLICK TO SKIP", HORIZONTAL_ALIGNMENT_RIGHT, size.x - pad, int(12 * u), Color(1, 1, 1, 0.65 * a))
 	draw_string(fl, Vector2(pad, r.position.y + 66.0 * u), caption_line, HORIZONTAL_ALIGNMENT_LEFT, size.x - pad * 2.0, int(18 * u), Color(1, 1, 1, a))
+
+
+## The switch's label has changed.
+func refresh_switch() -> void:
+	_style_button()

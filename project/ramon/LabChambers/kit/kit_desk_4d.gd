@@ -96,6 +96,12 @@ const DRAWN_FOR := 1.09
 @export_range(0.5, 10.0, 0.1) var inspect_seconds: float = 2.4
 ## Whether it stands in the way (a row of boxes under it); off for a panel hung on a wall.
 @export var collide: bool = true
+## The screen's own colour under its picture: black glass, as every screen (kit_style.gd: blue is
+## for walls, black for screens).
+@export var screen_swatch: String = "kit_glass":
+	set(v):
+		screen_swatch = v
+		_later()
 
 var _screen: MeshInstance4D
 var _glow: Array = []
@@ -174,7 +180,7 @@ func rebuild() -> void:
 	var sc := Vector4(_sw, SCREEN, _sh, Build.W_DEPTH)
 	_screen.mesh = Mats.box_mesh(sc)
 	_screen.position = Vector4(0.0, SLAB * 0.5 + SCREEN * 0.5 + 0.002, 0.0, 0.0)
-	_screen.material_override = LabGrid.material("kit_screen", sc, origin)
+	_screen.material_override = LabGrid.material(screen_swatch, sc, origin)
 	slab.add_child(_screen)
 	_screen_rect = Rect2(Vector2.ZERO, Vector2(_sw, _sh))
 	# A glowing line round the underside, set in from the edge: front, left, right, back.

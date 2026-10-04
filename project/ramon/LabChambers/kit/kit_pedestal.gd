@@ -82,14 +82,14 @@ static func apply_mood(parts: Dictionary) -> void:
 		if is_instance_valid(m):
 			(m as MeshInstance4D).material_override = Mats.glow(Style.pick(Style.GLOW_WARM), 1.6)
 	if is_instance_valid(parts.get("lip")):
-		(parts["lip"] as MeshInstance4D).material_override = Mats.flat(Style.pick(Style.LIP))
+		(parts["lip"] as MeshInstance4D).material_override = Mats.flat(Style.lip())
 	if is_instance_valid(parts.get("deck")):
 		(parts["deck"] as MeshInstance4D).material_override = Mats.flat(Style.pick(Style.DECK))
 
 
-## Wraps `paint` round the front (+Z) of the body, `width` metres of its circumference, at heights
-## `y0`..`y1` from the floor.
-static func print_band(tree: SceneTree, parts: Dictionary, width: float, y0: float, y1: float, paint: Callable, ppm: float = 320.0) -> void:
+## Wraps `paint` round the body, `width` metres of its circumference centred at `centre` (radians from
+## the front, +Z, towards +X), at heights `y0`..`y1` from the floor.
+static func print_band(tree: SceneTree, parts: Dictionary, width: float, y0: float, y1: float, paint: Callable, ppm: float = 320.0, centre: float = 0.0) -> void:
 	var body: MeshInstance4D = parts.get("body")
 	if not is_instance_valid(body):
 		return
@@ -98,4 +98,4 @@ static func print_band(tree: SceneTree, parts: Dictionary, width: float, y0: flo
 		return
 	var half: float = width * 0.5 / float(parts["body_r"])
 	var by: float = float(parts["body_y"])
-	LabGrid.set_print_cylinder(body.material_override as TetraMaterial4D, tex, -half, half, y0 - by, y1 - by, Color.WHITE, 0.25)
+	LabGrid.set_print_cylinder(body.material_override as TetraMaterial4D, tex, centre - half, centre + half, y0 - by, y1 - by, Color.WHITE, 0.25)

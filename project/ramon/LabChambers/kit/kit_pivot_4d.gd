@@ -33,6 +33,18 @@ const Path := preload("res://ramon/LabChambers/kit/kit_path_4d.gd")
 	set(v):
 		color = v
 		_later()
+## The chopped ring; off for a corner ball, the disc alone, where paths meet (Ramon, 5 Oct: "at
+## important intersections a corner ball should happen").
+@export var ring: bool = true:
+	set(v):
+		ring = v
+		_later()
+## The solid disc inside the ring; off for a crossroad, where the marker is the turning ring alone
+## (Ramon, 5 Oct: "with ball as corner point, I always meant rotating circle").
+@export var disc: bool = true:
+	set(v):
+		disc = v
+		_later()
 ## The floating ball over the pad (off for now).
 @export var ball: bool = false:
 	set(v):
@@ -65,31 +77,34 @@ func rebuild() -> void:
 		if c.has_meta("kit_pivot_generated"):
 			c.free()
 	_ball = null
-	var ring := Node4D.new()
-	ring.name = "Ring"
-	ring.set_meta("kit_pivot_generated", true)
-	ring.set_script(Path)
-	ring.set("shape", "circle")
-	ring.set("radius", ring_radius)
-	ring.set("style", "zebra")
-	ring.set("width", ring_width)
-	ring.set("spacing", 0.55)
-	ring.set("speed", 0.3)
-	ring.set("color", color)
-	add_child(ring)
-	var disc := MeshInstance4D.new()
-	disc.name = "Disc"
-	disc.set_meta("kit_pivot_generated", true)
+	if ring:
+		var rn := Node4D.new()
+		rn.name = "Ring"
+		rn.set_meta("kit_pivot_generated", true)
+		rn.set_script(Path)
+		rn.set("shape", "circle")
+		rn.set("radius", ring_radius)
+		rn.set("style", "zebra")
+		rn.set("width", ring_width)
+		rn.set("spacing", 0.55)
+		rn.set("speed", 0.3)
+		rn.set("color", color)
+		add_child(rn)
+	if not disc:
+		return
+	var dm := MeshInstance4D.new()
+	dm.name = "Disc"
+	dm.set_meta("kit_pivot_generated", true)
 	var cub := CubinderShape4D.new()
 	cub.radius = disc_radius
 	cub.height = 0.012
 	cub.thickness = 0.6
-	disc.mesh = cub.to_tetra_mesh({"segments": 64})
-	disc.position = Vector4(0.0, 0.008, 0.0, 0.0)
+	dm.mesh = cub.to_tetra_mesh({"segments": 64})
+	dm.position = Vector4(0.0, 0.008, 0.0, 0.0)
 	var m := TetraMaterial4D.new()
 	m.albedo_color = color
-	disc.material_override = m
-	add_child(disc)
+	dm.material_override = m
+	add_child(dm)
 	if not ball:
 		return
 	var secs: Array[Dictionary] = []

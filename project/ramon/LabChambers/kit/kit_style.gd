@@ -26,6 +26,7 @@ const SWATCHES := {
 		"kit_code_blue": [Color(0.13, 0.40, 0.86), Color(0.20, 0.48, 0.93), Color(0.16, 0.44, 0.90), 0.5],
 		"kit_metal": [Color(0.24, 0.25, 0.28), Color(0.24, 0.25, 0.28), Color(0.24, 0.25, 0.28), 0.0],
 		"kit_card": [Color(0.22, 0.52, 0.96), Color(0.22, 0.52, 0.96), Color(0.22, 0.52, 0.96), 0.0],
+		"kit_glass": [Color(0.035, 0.042, 0.055), Color(0.035, 0.042, 0.055), Color(0.035, 0.042, 0.055), 0.0],
 	},
 	"dark": {
 		"kit_wall": [Color(0.62, 0.63, 0.64), Color(0.50, 0.51, 0.53), Color(0.58, 0.59, 0.60), 0.6],
@@ -38,6 +39,7 @@ const SWATCHES := {
 		"kit_code_blue": [Color(0.08, 0.27, 0.64), Color(0.14, 0.35, 0.74), Color(0.11, 0.31, 0.69), 0.5],
 		"kit_metal": [Color(0.15, 0.155, 0.17), Color(0.15, 0.155, 0.17), Color(0.15, 0.155, 0.17), 0.0],
 		"kit_card": [Color(0.14, 0.38, 0.80), Color(0.14, 0.38, 0.80), Color(0.14, 0.38, 0.80), 0.0],
+		"kit_glass": [Color(0.03, 0.036, 0.048), Color(0.03, 0.036, 0.048), Color(0.03, 0.036, 0.048), 0.0],
 	},
 }
 
@@ -95,13 +97,19 @@ const ROOM_LIGHT := {
 }
 
 ## THE LAB'S SCREENS AND OVERLAYS, one set for all of them (Ramon, 4 Oct: "keep consistent"; "a
-## solution for the stylistic changes across the whole room and ui"). Two families and one rule:
-##   TEACHING SURFACES in the room (the lesson wall, the research desk, the research wall): the
-##                     room's blue (the "kit_screen" swatch under the print), white type, cards as a
-##                     white veil, light blue (UI_ACCENT_SCREEN) for what is live
-##   CONTROLS AND      (the specimen picker, the title card and callouts, the control strip, the
-##   OVERLAYS          slice view, the data panel, the key prompt): dark glass, white type, light blue
+## solution for the stylistic changes across the whole room and ui"). Two families and one rule
+## (Ramon, 5 Oct: "we can have blue and black, black for the screens, and blue for the walls"):
+##   BLUE: THE WALLS   painted walls that teach (the Creation Lab wall, the research wall, Room 2's
+##                     sign): the code blue ("kit_code_blue"), white type, cards as a white veil, light
+##                     blue (UI_ACCENT_SCREEN) for what is live
+##   BLACK: SCREENS    every screen and overlay (the loft-builder desk, the specimen picker, the title
+##   AND OVERLAYS      card and callouts, the control strip, the slice view, the data panel, the key
+##                     prompt): black glass ("kit_glass" on a screen in the room, UI_GLASS on the
+##                     screen), a white frame round a screen in the room, white type, light blue
 ##                     (UI_ACCENT) for what is active or live
+##   A NUMBERED BOX IS A BUTTON: it does something when you press it (the arrows, a click), never a
+##                     display that lights by itself (Ramon: "the 1,2,3,4 makes you feel like you can
+##                     click it"); what only follows along is drawn without numbers or borders
 ##   gold is the slice and the joints wherever they are drawn; warm orange is the costly
 ##   alternative; green is "live"
 ## Montserrat throughout: ExtraBold for titles and figures, Bold for headings and keys, SemiBold
@@ -184,6 +192,29 @@ static func ui_font(role: String) -> Font:
 	return preload("res://ramon/LabKit/lab_print.gd").font("body")
 
 
+## THE PALETTE, on top of the mood (Ramon, 5 Oct: "keep [the B switch] and replace all white textures
+## with a dark near black one ... keep the light settings the same, just darken the texture palette
+## on the whites"; "keep the light settings of the bright room ... and then only change the textures
+## for the dark mode"): the goat room stays in its bright light for both; "grey" is the lab as it is;
+## "black" keeps every light exactly as it is and swaps
+## the light surfaces (walls, floor, ceiling, frames, the pedestal's lip) for near-black, their grid
+## lines a little lighter than the surface so the tiles still read. The blues stay.
+static var palette: String = "grey"
+const BLACK := {
+	"kit_wall": [Color(0.075, 0.078, 0.085), Color(0.17, 0.175, 0.19), Color(0.11, 0.115, 0.125), 0.6],
+	"kit_floor": [Color(0.06, 0.062, 0.068), Color(0.15, 0.155, 0.17), Color(0.095, 0.098, 0.106), 0.5],
+	"kit_ceiling": [Color(0.045, 0.047, 0.052), Color(0.10, 0.104, 0.112), Color(0.07, 0.072, 0.078), 0.3],
+	"kit_desk": [Color(0.09, 0.093, 0.10), Color(0.09, 0.093, 0.10), Color(0.09, 0.093, 0.10), 0.0],
+	"kit_bezel": [Color(0.11, 0.114, 0.122), Color(0.11, 0.114, 0.122), Color(0.11, 0.114, 0.122), 0.0],
+}
+const LIP_BLACK := Color(0.12, 0.124, 0.132)
+
+
+## The pedestal's lip in the current palette.
+static func lip() -> Color:
+	return LIP_BLACK if palette == "black" else pick(LIP)
+
+
 static var mood: String = "bright"
 ## Live multipliers from the tuning sliders (kit_tuner.gd): spots and downlights, washes.
 ## Washes start off (Ramon, 4 Oct: "as for the wash, I have no use for it now, but keep the
@@ -195,7 +226,7 @@ static func apply(m: String) -> void:
 	mood = m
 	var sw: Dictionary = SWATCHES.get(m, SWATCHES["bright"])
 	for k in sw:
-		var v: Array = sw[k]
+		var v: Array = BLACK[k] if palette == "black" and BLACK.has(k) else sw[k]
 		LabGrid.set_swatch(String(k), v[0], v[1], v[2], float(v[3]))
 
 

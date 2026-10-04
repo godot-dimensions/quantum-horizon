@@ -26,6 +26,8 @@ const CALLOUT_SCALE := 0.72
 
 var showcase: Node
 var room: Node
+## Whether you are near enough to the pedestal for the story's text (set by the room).
+var active: bool = true
 var _clock: float = 0.0
 var _part: int = -1
 var _part_at: float = -10.0
@@ -48,7 +50,9 @@ func _process(delta: float) -> void:
 	_clock += delta
 	if showcase == null:
 		return
-	var i: int = int(showcase.get("seq_index"))
+	var i: int = int(showcase.get("seq_index")) if active else -1
+	if not active:
+		_callout_until = minf(_callout_until, _clock)
 	var cine = room.get("_cine") if room != null else null
 	if cine != null and not cine.is_empty():
 		i = -1
