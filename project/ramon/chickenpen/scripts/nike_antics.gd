@@ -180,7 +180,7 @@ var _leashed: bool = false
 ## frame to save one variable would be the kind of saving that goes wrong once.
 var _feed_at: Vector4 = Vector4.ZERO
 var _going_to_eat: bool = false
-var _fence: Node4D
+var _fence: FenceGenerator4D
 var _hop_from: Vector4 = Vector4.ZERO
 var _hop_to: Vector4 = Vector4.ZERO
 var _hop_peak: float = 0.0
@@ -201,7 +201,7 @@ func _ready() -> void:
 		_heading = _yaw
 		_scale = maxf(_mover.basis.x.length(), 0.0001)
 	_limit = randf_range(walk_seconds.x, walk_seconds.y)
-	_fence = get_node_or_null(fence_path) as Node4D
+	_fence = get_node_or_null(fence_path) as FenceGenerator4D
 	var feeders: Node = get_node_or_null(feeder_path)
 	if feeders != null and feeders.has_signal("feeder_raised"):
 		feeders.connect("feeder_raised", go_and_eat)
@@ -341,12 +341,11 @@ func go_and_eat(at: Vector4) -> void:
 func _inside_pen(at: Vector4) -> bool:
 	if _fence == null:
 		return false
-	var centre: Vector4 = _fence.global_position
-	var half_x: float = maxf(float(_fence.get("extend_x_positive")),
-		float(_fence.get("extend_x_negative")))
-	var half_z: float = maxf(float(_fence.get("extend_z_positive")),
-		float(_fence.get("extend_z_negative")))
-	return absf(at.x - centre.x) <= half_x and absf(at.z - centre.z) <= half_z
+	var relative_abs: Vector4 = _fence.global_to_local(at).abs()
+	# This assumes that the fence is using a box shape.
+	var box_extent: Vector3 = _fence.box_size * 0.5
+	# The box's Vector3 XYZ maps to world space XZW.
+	return relative_abs.x <= box_extent.x and relative_abs.z <= box_extent.y and relative_abs.w <= box_extent.z
 
 
 ## Is the next stride going to put him through the rails?
