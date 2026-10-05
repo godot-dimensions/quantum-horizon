@@ -1,0 +1,154 @@
+# Pen layout: plan (6 Oct 2026, for Ramon to approve)
+
+Ramon's goals for today:
+- make every important unit its own scene, instanced in the pen, so each one can be tuned in 4D
+- a watchtower case study with the fence tech
+- then an intelligent layout around the pen
+- then paths that stay tied to the units when they move
+
+Agreed so far:
+- Straight into the live pen (`chickenpen/playable_world.tscn`), with a backup
+  (`chickenpen/.backup/2026-10-06_before_units/`) and the local tag `before-units-2026-10-06`.
+- The pen itself stays as it is.
+- Units turn in 90 degree steps.
+- Where a unit stands (position, W, turn) lives in the pen scene; what a unit is (its shape, its
+  W depth, the offsets between its parts) lives in its own scene, built round its own middle at W 0.
+
+What the units are tied to (measured):
+- **Links stored in the scene:** 402 in all. 50 point into the units: Trym's cabin 17, the keeper 15,
+  the professor 6, the range 5, the tower 4, the rock pile 3, the cave 0. They can be rewritten
+  automatically.
+- **Paths typed into scripts:** about 15 lines in 11 files. These are found and fixed by hand.
+- **Fixed world coordinates:**
+  - the cave (its hill, mouth and block are constants: HILL (17, -40), MOUTH (16.5, -28.6))
+  - the invitation's door spot
+  - the theatre's laptop spot
+  - the Lookout's balloon, marsh and wood defaults
+
+## Phase 0: the fence fix (prepared, waiting for go)
+
+1. Through the editor's own open and save (Aaron's advice): Pen/Fence gets
+   `pen_fence_compat_4d.gd` (the old fence's questions answered by Aaron's fence, and its footprint
+   built at load). The eight links cleared in the swap are set again.
+2. Rerun the pen's own tests against this evening's baseline. In the broken state now:
+   - script errors: fence 10,924; returns 43,224; flow 9,893
+   - the celebration test fails
+3. Play-check:
+   - a chicken thrown in the pen is counted
+   - the twelfth return throws the party
+   - crows perch on the rail
+   - the wolf leaps the fence
+   - Nike hops it
+4. Commit.
+
+## Phase A: units as scenes (instancing)
+
+5. **A tool that does a unit in one go**, run inside the editor so Godot writes the files. It:
+   - makes the unit's root at the unit's anchor
+   - moves the unit's nodes under it, keeping where they are in the world
+   - rewrites every stored link that pointed at a moved node
+   - saves the branch as its own scene (`chickenpen/units/<unit>/<unit>.tscn`) and puts an
+     instance of it back
+   - saves the pen
+
+   A dry run first prints every change.
+6. Its checks after each unit: the pen still loads, every link still resolves, nothing moved in the
+   world (positions compared before and after), and the pen's tests are no worse than the baseline.
+7. Script paths and fixed coordinates, made relative to their unit.
+
+8. The units, one commit each:
+
+| # | Unit | Nodes that go into it | Also |
+|---|---|---|---|
+| 1 | Trym's cabin | Shed, Trym, TrymHead, TrymStand, TrymLaptopUse, TrymDoor, RedCat (her den is the shed) | the invitation's door spot and the theatre's laptop spot made relative to the cabin |
+| 2 | The keeper | Keeper, KeeperHead, KeeperFacing, TalkCam | |
+| 3 | The range | RangeBooth, RangeMaster, RangeMasterHead, RangeMasterFacing | |
+| 4 | The professor | Professor, ProfessorHead, ProfessorFacing | |
+| 5 | The watchtower | the LookoutSite (tower, Wren, the owl's perch) | |
+| 6 | Balloon, marsh, kata wood | one small unit each: their placement node, out of the tower site | the Lookout reads them by their own paths |
+| 7 | The rock pile | RockPile, Cat | |
+| 8 | The cave | CaveHill, with its mouth, block and hill constants made relative | the cave fade and the dream wake use the unit's place |
+
+9. **Turning:** check that a unit turned 90 degrees keeps working, colliders included (the physics
+   is boxes that do not turn, so this is tested, not assumed). Try it on the range first.
+10. **The 4D pass per unit:** its W depth and closing in W (`follow_up/4d_enclosure_rule.md`), and
+    frames at several W and in volume view, as in `STUDY.md`. This is where each unit is tuned
+    against the fence tech.
+11. **Proof:**
+    - every pen test against the baseline
+    - one scripted walk through the pen, with frames
+    - the tower open and saved once in the editor to confirm it saves clean
+12. Commit; tell Aaron and Andrew the pen is now split, and that the split is one large change to
+    pull.
+
+## Phase B: watchtower case study
+
+Done last (Ramon). It works in `PenLayout/Watchtower/` and does not touch the pen.
+
+13. Measure today's tower (`lookout/lookout_tower_4d.gd`): its legs, X braces, cab, catwalk and
+    ladder; its tetrahedra and frame cost; frames at W 0, ±2 and its W ends, tilted, in Combined
+    and in Projected.
+14. A study copy without the diagonals (a fork of the tower script, so the live tower is
+    untouched).
+15. The base rebuilt with FenceGenerator4D:
+    - a box footprint the size of the legs' spread, as deep in W as the cab (6.4 m)
+    - posts as tall as the deck (about 10 m)
+    - `top_footprint_ratio` = the cab's width over the legs' spread, so the legs lean in
+    - three to five rings of rails
+    - no filler, so only the corner legs
+    - steel colours
+16. The same measurements and frames as step 13, side by side. Variants: the ratio, the ring count,
+    and filler legs.
+17. A short verdict: how the fence tech serves structures here, and where else it fits (the cab's
+    railing, a gate, the range's frame, scaffolding).
+18. If Ramon likes it, the tower unit's base is swapped for the fence-built one.
+
+## Phase C: the layout (after Phase A)
+
+19. **A layout brief:**
+    - the pen at the centre
+    - the places in rings by how often they are visited (keeper and Trym close, then the range,
+      the rock pile and the professor, then the tower and the cave)
+    - sight lines: from the tower, the pen and the cave mouth
+    - room kept for the flock and the cinematics
+    - the field's edge (the hills start at 50 m)
+    - the W places: the marsh at +8, the wood at -8, the owl at +1.5
+20. **Two or three layouts drawn from above** for Ramon to choose.
+21. The chosen one placed: unit instances moved and turned in the pen scene only.
+22. **What else depends on where things stand** (found, then adjusted):
+    - the chickens' spawn spots
+    - Mithra's walk
+    - the crows' perches
+    - the cinematic cameras
+    - the Lookout's photo spots
+    - the wolf's run-in
+    - Nike's ground
+23. Proof: the pen's tests, and a walk-through with frames.
+
+## Phase D: paths (after Phase C)
+
+24. **Each unit gets an Arrival marker** in its scene (the spot and the way you come in).
+25. **PathCreator's anchors learn to turn with their object:** today an anchored destination keeps
+    a fixed offset; it should keep it in the object's own frame.
+26. **The pen's path graph:**
+    - a loop round the pen with spurs to each unit's arrival, each destination anchored to its
+      unit, so moving or turning a unit carries its path
+    - draped where the ground steps
+27. **Routes to Mithra:** a route set of their own, shown in the dev look only, until Ramon decides
+    on the walk look.
+28. **Bringing the path network into the pen:** the kit scripts used from the pen. Nothing in the
+    pen's own scripts changes for it.
+29. Proof: rule 10 at the pen's camera (PathCreator's proof runner, pointed at the pen).
+
+## Order and answers (Ramon, 6 Oct)
+
+- Order: Phase 0, then A (units), C (layout), D (paths), and B (the watchtower) last: "much less
+  important than the layout for now".
+- RedCat goes with Trym's cabin.
+- Phase D is the first real use of PathCreator's path tooling, in the pen.
+
+## Open questions for Ramon (answered above)
+
+- **Phase B, now or after Phase A?** Running beside A is possible, since B never touches the pen.
+- **RedCat:** in Trym's cabin (her den is the shed), or a unit of her own?
+- **Scenery and Pickups:** they stay in the pen as they are for now. They are not buildings.
