@@ -27,7 +27,7 @@ const BASE := {
 	"band_radii": [5.0, 10.0, 18.0, 28.0],
 	"band_vertices": [11, 9, 7, 5, 3],
 	"blade_height": 0.38,
-	"blade_width": 0.011,
+	"blade_width": 0.015,
 	"taper": 0.5,
 	"min_pixels": 0.8,
 	"clump_size": 1.3,
@@ -84,7 +84,7 @@ const PRESETS := {
 		# vertexes and add more grass"), and the same colour root to tip ("remove the strong
 		# brown gradient from the bottom entirely").
 		"blade_height": 0.16,
-		"blade_width": 0.0075,
+		"blade_width": 0.010,
 		"taper": 0.85,
 		"spacing": 0.03,
 		"spacing_far": 0.14,
@@ -126,7 +126,7 @@ const PRESETS := {
 		# No dark root here either (3 Oct: "hay meadow still has the darker roots").
 		"root_dark": 0.0,
 		"blade_height": 0.62,
-		"blade_width": 0.0075,
+		"blade_width": 0.010,
 		"taper": 0.6,
 		"spacing": 0.058,
 		"spacing_far": 0.21,
@@ -160,7 +160,7 @@ const PRESETS := {
 		# No dark root here either (3 Oct: "hay meadow still has the darker roots").
 		"root_dark": 0.0,
 		"blade_height": 0.66,
-		"blade_width": 0.007,
+		"blade_width": 0.0095,
 		"taper": 0.6,
 		"spacing": 0.05,
 		"spacing_far": 0.2,

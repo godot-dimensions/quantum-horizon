@@ -11,12 +11,16 @@ render_mode skip_vertex_transform, cull_disabled, diffuse_lambert_wrap, specular
 // its own slice, shrinking to nothing as it leaves (the section of a 4D body, sqrt(1-(w/r)^2)).
 // Walk ana and the grass round you shrinks away while the next grass grows in.
 //
-// WHERE THE BLADES ARE. No positions are stored. The field is cut into square TILES, snapped
-// to the world so a blade never swims; pen_grass_4d.gd lists the tiles in view every frame
-// (tiles[], one per instance) and the mesh is one tile's blades, each knowing its cell (i, j)
-// and its layer k along W from UV2. The layers sit round the w where the camera's slice crosses
-// that spot of ground, so a turned slice still finds grass wherever it passes. A hash of the
-// cell gives the jitter, the height, the facing and the w within the layer.
+// WHERE THE BLADES ARE. No positions are stored. The blades are the points of one world LATTICE
+// over the floor's three horizontal dimensions (x, z, w), at this band's pitch `spacing`, each
+// jittered within its cell by a hash of the cell alone - so a blade is the same blade from every
+// camera and every slice. The slice meets the floor in a plane; pen_grass_4d.gd picks the axis d
+// of (x, z, w) that plane is steepest along and cuts the other two into square TILES, snapped to
+// the world; it lists the tiles in view every frame (tiles[], one per instance), and the mesh is
+// one tile's blades, each knowing its column (iu, iv) and its place k among the `layers` lattice
+// cells along d that can reach the slice from that column, from UV2. Level, that is the floor
+// tiled in x and z with a few cells of w each; turned a quarter onto W it is x and w tiled, with
+// cells of z - the same lattice either way, so nothing moves when the axis changes.
 //
 // WHAT A BLADE IS (Ghost of Tsushima's, GDC 2021): a cubic Bezier from the root to the tip,
 // rebuilt every frame from four points - so bending it is moving the points. Widest at the
@@ -56,8 +60,10 @@ render_mode skip_vertex_transform, cull_disabled, diffuse_lambert_wrap, specular
 
 // The camera's frame, set every render in one go (pen_grass_4d.gd): 0-3 the view basis (grass
 // space to camera space), 4 its origin, 5 the camera's position in grass space, 6 the slice's
-// normal, 7 the rings' middle (x, z), the view's half-width as a tangent, a pixel's angle.
-uniform vec4 frame[8];
+// normal, 7 the rings' middle (x, z), the view's half-width as a tangent, a pixel's angle; 8 the
+// rings' middle's w, the dominant axis d (0 x, 1 z, 2 w), and c of the plane m . p = c where the
+// slice meets the floor (m being the normal's x, z, w).
+uniform vec4 frame[9];
 
 // This band: its grid's gap, a tile's cells per side, the tiles in view (as tile indices), a
 // seed so no two bands' blades line up.
@@ -65,9 +71,9 @@ uniform float spacing = 0.085;
 uniform int tile_cells = 24;
 uniform vec2 tiles[384];
 uniform float seed = 0.0;
-uniform int layers = 3;
-uniform float layer_spacing = 0.22;
-uniform float w_radius = 0.3;
+// Lattice cells a column holds along d, and a blade's thickness in W, in lattice pitches.
+uniform int layers = 8;
+uniform float w_radius_cells = 1.0;
 // Where this band starts and ends round you, and how wide each cross-fade is (the last band's
 // outer one is the long fade into the bare field).
 uniform float band_in = 0.0;
@@ -264,21 +270,43 @@ float hash13(vec3 p3) {
 	return fract((p3.x + p3.y) * p3.z);
 }
 
-// The nearest clump point: its offset from p (x, z) and its id.
-vec3 clump(vec2 p, float band) {
-	vec2 g = floor(p / clump_size);
-	vec2 f = p / clump_size - g;
+vec3 hash33(vec3 p3) {
+	p3 = fract(p3 * vec3(0.1031, 0.1030, 0.0973));
+	p3 += dot(p3, p3.yxz + 33.33);
+	return fract((p3.xxy + p3.yxx) * p3.zyx);
+}
+
+// Noise over the floor's three dimensions (x, z, w) from the one 2D texture: the texture read
+// over each pair of axes and averaged, so the field is a little stripey along three directions
+// instead of wholly stripey along one - a 2D field is constant along SOME line through (x, z, w),
+// however it is turned. The average has a third of the texture's variance, so the spread is put
+// back (x sqrt(3) about 1/2): the mean and spread are a single read's, and the thresholds tuned
+// against the texture keep their sense. pen_grass_4d.gd's _cuts takes the regions' quantiles
+// from this same distribution.
+float noise3(vec3 p, vec2 shift) {
+	float sum = texture(wind_noise, p.xy + shift).r
+			+ texture(wind_noise, p.yz + shift + vec2(0.37, 0.59)).r
+			+ texture(wind_noise, p.zx + shift + vec2(0.71, 0.13)).r;
+	return 0.5 + (sum / 3.0 - 0.5) * 1.7320508;
+}
+
+// The nearest clump point in (x, z, w): its offset from p (x, z, w) and its id.
+vec4 clump(vec3 p) {
+	vec3 g = floor(p / clump_size);
+	vec3 f = p / clump_size - g;
 	float best = 1e9;
-	vec3 out_value = vec3(0.0);
-	for (int j = -1; j <= 1; j++) {
-		for (int i = -1; i <= 1; i++) {
-			vec2 o = vec2(float(i), float(j));
-			vec2 key = g + o + vec2(band * 17.31, band * 3.7);
-			vec2 d = o + hash22(key) - f;
-			float dd = dot(d, d);
-			if (dd < best) {
-				best = dd;
-				out_value = vec3(d * clump_size, hash12(key + 5.3));
+	vec4 out_value = vec4(0.0);
+	for (int k = -1; k <= 1; k++) {
+		for (int j = -1; j <= 1; j++) {
+			for (int i = -1; i <= 1; i++) {
+				vec3 o = vec3(float(i), float(j), float(k));
+				vec3 key = g + o;
+				vec3 d = o + hash33(key) - f;
+				float dd = dot(d, d);
+				if (dd < best) {
+					best = dd;
+					out_value = vec4(d * clump_size, hash13(key + 5.3));
+				}
 			}
 		}
 	}
@@ -293,7 +321,7 @@ void vertex() {
 	// The middle of the rings, in x and z, is you: the player when the camera is following them,
 	// the camera itself when it is your eye (the hawk, the Lookout's camera). The slice and the
 	// frustum are still the camera's.
-	vec2 ring_centre = frame[7].xy;
+	vec3 ring_centre = vec3(frame[7].xy, frame[8].x);
 	// tan of half the camera's horizontal view, with a margin: blades off the sides are dropped.
 	float frustum_x = frame[7].z;
 	// A pixel's width at one metre (2 tan(fov / 2) / the view's height).
@@ -301,17 +329,27 @@ void vertex() {
 	int n = tile_cells;
 	int ixk = int(UV2.x + 0.5);
 	int k = ixk / n;
-	int ix = ixk - k * n;
-	int iz = int(UV2.y + 0.5);
-	vec2 cell = tiles[INSTANCE_ID] * float(n) + vec2(float(ix), float(iz));
-	vec2 root_xz = (cell + hash22(cell + seed)) * spacing;
-	// The w where the camera's slice crosses this spot of ground, and the layers round it.
-	vec3 dp = vec3(root_xz.x - camera_world.x, -camera_world.y, root_xz.y - camera_world.z);
-	float nw = slice_normal.w;
-	float w_slice = abs(nw) > 0.25 ? camera_world.w - dot(slice_normal.xyz, dp) / nw : camera_world.w;
-	float layer = floor(w_slice / layer_spacing) + float(k) - float(layers / 2);
-	float root_w = (layer + hash13(vec3(cell, layer))) * layer_spacing;
-	vec4 root = vec4(root_xz.x, 0.0, root_xz.y, root_w);
+	int iu = ixk - k * n;
+	int iv = int(UV2.y + 0.5);
+	// This column of the lattice, (iu, iv) over the plane's (u, v), and the plane's own numbers:
+	// which axis is d, and m . p = c with m the slice normal's (x, z, w).
+	int axis = int(frame[8].y + 0.5);
+	float plane_c = frame[8].z;
+	vec3 plane_m = vec3(slice_normal.x, slice_normal.z, slice_normal.w);
+	vec2 muv = axis == 0 ? plane_m.yz : (axis == 1 ? plane_m.xz : plane_m.xy);
+	float md = axis == 0 ? plane_m.x : (axis == 1 ? plane_m.y : plane_m.z);
+	vec2 column = tiles[INSTANCE_ID] * float(n) + vec2(float(iu), float(iv));
+	// Where the plane crosses this column, in cells along d, and the first cell that can reach it
+	// (a blade's own jitter and its column's each move it by up to a cell; pen_grass_4d.gd sizes
+	// `layers` so the last cell that can is covered too). The k-th cell on from there is this one.
+	float pd = (plane_c - dot(muv, (column + 0.5) * spacing)) / (md * spacing);
+	float kd = ceil(pd - w_radius_cells / abs(md) - 2.0) + float(k);
+	// The cell in the lattice's own order (x, z, w), whatever d is, so its hash is its own.
+	vec3 cell3 = axis == 0 ? vec3(kd, column) : (axis == 1 ? vec3(column.x, kd, column.y) : vec3(column, kd));
+	vec3 root3 = (cell3 + hash33(cell3 + seed)) * spacing;
+	vec2 root_xz = root3.xy;
+	float root_w = root3.z;
+	vec4 root = vec4(root3.x, 0.0, root3.y, root3.z);
 
 	float alive = 1.0;
 	if (abs(root.x) > ground_extent || abs(root.z) > ground_extent || abs(root.w) > ground_extent) {
@@ -334,7 +372,7 @@ void vertex() {
 			inward += (texture(wind_noise, root_xz / 6.0 + vec2(0.21, 0.83)).r - 0.5) * 2.0 * clearing_ragged
 					+ (texture(wind_noise, root_xz / 1.7 + vec2(0.57, 0.19)).r - 0.5) * 0.7 * clearing_ragged;
 			float out_by = clamp(-inward / clearing_fringe, 0.0, 1.0);
-			if (inward > 0.0 || hash12(cell + vec2(3.3, 9.1) + seed) > mix(0.25, 1.0, out_by)) {
+			if (inward > 0.0 || hash13(cell3 + vec3(3.3, 9.1, 0.0) + seed) > mix(0.25, 1.0, out_by)) {
 				alive = 0.0;
 			}
 			trodden = mix(0.4, 1.0, smoothstep(0.0, 1.0, out_by));
@@ -348,13 +386,14 @@ void vertex() {
 	// bands add up to one (it had overshot by a quarter, so each band ended denser than the next
 	// began: the faint rings that moved with you). The shrink is in height only, so a shrunk
 	// blade's area falls as its share does.
-	float dist = length(root_xz - ring_centre);
+	// Distance in the floor's (x, z, w): in the slice, that is how far away the blade is.
+	float dist = length(root3 - ring_centre);
 	float wanted = dist <= spacing_from ? spacing_near : spacing_near * pow(dist / spacing_from, spacing_power);
 	float share = min(1.0, (spacing / wanted) * (spacing / wanted));
 	float w_in = band_in > 0.0 ? smoothstep(band_in - band_in_fade, band_in + band_in_fade, dist) : 1.0;
 	float w_out = last_band ? 1.0 - smoothstep(band_out - band_out_fade, band_out, dist)
 			: 1.0 - smoothstep(band_out - band_out_fade, band_out + band_out_fade, dist);
-	float keep = hash12(cell + vec2(7.7, 1.3) + seed);
+	float keep = hash13(cell3 + vec3(7.7, 1.3, 0.0) + seed);
 	float kept = share * w_in * w_out;
 	float soft = min(0.2, 2.0 * min(kept, 1.0 - kept));
 	float ring = soft > 0.001 ? clamp(0.5 + (kept - keep) / soft, 0.0, 1.0) : (keep < kept ? 1.0 : 0.0);
@@ -362,6 +401,7 @@ void vertex() {
 	float tint = 1.0 - far_amount * smoothstep(far_from, far_to, dist);
 	// The cut: as much of the blade as the slice passes through.
 	vec4 rel_root = vb * root + view_origin;
+	float w_radius = w_radius_cells * spacing;
 	float s2 = 1.0 - (rel_root.w / w_radius) * (rel_root.w / w_radius);
 	float section = s2 > 0.0 ? sqrt(s2) : 0.0;
 	float grow = ring * section * alive;
@@ -382,20 +422,39 @@ void vertex() {
 	} else {
 
 		// The blade's own numbers, from its cell and its clump.
-		vec3 cl = clump(root_xz, floor(root_w / 1.2));
-		float clump_h = mix(0.82, 1.18, hash12(vec2(cl.z, 3.1)));
-		float dry = smoothstep(0.62, 0.95, hash12(vec2(cl.z, 8.7)));
-		float lush = max(1.0 - smoothstep(0.0, 0.5, hash12(vec2(cl.z, 1.9))), step(1.0 - tuft_share, hash12(vec2(cl.z, 4.4))) * 0.7);
-		float rnd = hash13(vec3(cell, layer + 4.2));
+		vec4 cl = clump(root3);
+		float clump_h = mix(0.82, 1.18, hash12(vec2(cl.w, 3.1)));
+		float dry = smoothstep(0.62, 0.95, hash12(vec2(cl.w, 8.7)));
+		float lush = max(1.0 - smoothstep(0.0, 0.5, hash12(vec2(cl.w, 1.9))), step(1.0 - tuft_share, hash12(vec2(cl.w, 4.4))) * 0.7);
+		float rnd = hash13(cell3 + 4.2);
 		float patch = 1.0;
 		if (flower_patch_size > 0.0) {
-			patch = smoothstep(0.58, 0.72, texture(wind_noise, root_xz / (flower_patch_size * 3.1) + vec2(0.63, 0.27)).r);
+			patch = smoothstep(0.58, 0.72, noise3(root3 / (flower_patch_size * 3.1), vec2(0.63, 0.27)));
 		}
-		float flower = step(hash13(vec3(cell, layer + 2.6)), flower_share * patch);
-		float tuft = step(1.0 - tuft_share, hash12(vec2(cl.z, 4.4)));
+		float flower = step(hash13(cell3 + 2.6), flower_share * patch);
+		float tuft = step(1.0 - tuft_share, hash12(vec2(cl.w, 4.4)));
 		float h = blade_height * clump_h * mix(0.7, 1.25, rnd) * mix(1.0, tuft_height, tuft) * grow * trodden * mix(1.0, flower_height, flower);
-		float facing = hash13(vec3(cell, layer + 9.1)) * 6.2831853;
-		vec2 lean = cl.xy * 0.06 + vec2(cos(facing), sin(facing)) * splay * mix(0.4, 1.0, rnd);
+		// A BLADE IS A BLADE FROM EVERY SIDE. Its width, its splay and its lean to its clump lie in
+		// the horizontal plane of the SLICE - the two horizontal directions perpendicular to the
+		// slice normal - not in the floor's x and z: a width laid along z is a line, seen edge-on,
+		// to a slice turned onto W. h1 is the camera's own right, on the floor; h2 is perpendicular
+		// to it and to the slice normal within the floor's (x, z, w).
+		vec4 h1 = vec4(vb[0].x, 0.0, vb[2].x, vb[3].x);
+		if (dot(h1, h1) < 1e-6) {
+			h1 = vec4(1.0, 0.0, 0.0, 0.0);
+		}
+		h1 = normalize(h1);
+		vec3 h2f = cross(normalize(plane_m), vec3(h1.x, h1.z, h1.w));
+		vec4 h2 = vec4(h2f.x, 0.0, h2f.y, h2f.z);
+		if (dot(h2, h2) < 1e-6) {
+			h2 = vec4(0.0, 0.0, 1.0, 0.0);
+		}
+		h2 = normalize(h2);
+		float facing = hash13(cell3 + 9.1) * 6.2831853;
+		vec4 splay_dir = cos(facing) * h1 + sin(facing) * h2;
+		// The clump's pull, as seen in the slice.
+		vec4 toward = vec4(cl.x, 0.0, cl.y, cl.z);
+		vec4 lean = (h1 * dot(toward, h1) + h2 * dot(toward, h2)) * 0.06 + splay_dir * splay * mix(0.4, 1.0, rnd);
 
 		// Wind (see the top): gust bands advected downwind, a pressure-driven bend, a lag by
 		// height, a natural rock and a flutter.
@@ -404,9 +463,11 @@ void vertex() {
 		float tw = TIME - lag;
 		float along = dot(root_xz, wind_dir) - wind_speed * 0.8 * tw;
 		float side_pos = dot(root_xz, across_wind);
-		vec2 guv = vec2(along / gust_length, side_pos / gust_width) * 0.18;
-		float g1 = texture(wind_noise, guv).r;
-		float g2 = texture(wind_noise, guv * 2.3 + vec2(0.31, 0.77) - vec2(0.05 * tw, 0.0)).r;
+		// Across the wind is two directions on this floor, the floor's own and W: the gust bands
+		// vary over both, and still travel down the wind.
+		vec3 gust_at = vec3(along / gust_length, side_pos / gust_width, root_w / gust_width) * 0.18;
+		float g1 = noise3(gust_at, vec2(0.0));
+		float g2 = noise3(gust_at * 2.3 + vec3(0.31, 0.77, 0.0), -vec2(0.05 * tw, 0.0));
 		float swell = 0.75 + 0.25 * sin(TIME * 0.21) * sin(TIME * 0.077 + 1.3);
 		float gust = smoothstep(0.32, 0.8, g1 * 0.75 + g2 * 0.25) * swell;
 		float wave = 0.0;
@@ -414,11 +475,11 @@ void vertex() {
 			float down = dot(root_xz, wind_dir);
 			float moving = down - wave_speed * tw;
 			// The crests' bend: a slow noise across them, drifting with them.
-			float warp = texture(wind_noise, vec2(side_pos / (wave_width * 2.2), moving / (wave_length * 5.0)) + vec2(0.41, 0.83)).r;
+			float warp = noise3(vec3(side_pos / (wave_width * 2.2), moving / (wave_length * 5.0), root_w / (wave_width * 2.2)), vec2(0.41, 0.83));
 			float crest = 0.5 + 0.5 * sin((moving / wave_length + warp * 1.6) * 6.2831853);
 			crest = smoothstep(0.3, 1.0, crest);
 			// Where a crest is, along it: each one wave_width or so long, then it breaks off.
-			float run = smoothstep(0.28, 0.68, texture(wind_noise, vec2(side_pos / (wave_width * 3.1), moving / (wave_length * 3.1)) + vec2(0.17, 0.29)).r);
+			float run = smoothstep(0.28, 0.68, noise3(vec3(side_pos / (wave_width * 3.1), moving / (wave_length * 3.1), root_w / (wave_width * 3.1)), vec2(0.17, 0.29)));
 			// The sets: a few strong crests, then a few weak.
 			float sets = 0.6 + 0.4 * sin(moving / (wave_length * 4.0) * 6.2831853 + warp * 2.0);
 			wave = crest * mix(0.25, 1.0, run) * sets * wave_strength;
@@ -432,8 +493,8 @@ void vertex() {
 			float into = tw - cycle * big_gust_every;
 			float on = step(hash12(vec2(cycle, 9.7)), big_gust_chance);
 			float front = -90.0 + big_gust_speed * into;
-			float rel_along = dot(root_xz - ring_centre, wind_dir);
-			float bow = (texture(wind_noise, vec2(side_pos / 90.0, cycle * 0.137)).r - 0.5) * 30.0;
+			float rel_along = dot(root_xz - ring_centre.xy, wind_dir);
+			float bow = (noise3(vec3(side_pos / 90.0, cycle * 0.137, root_w / 90.0), vec2(0.0)) - 0.5) * 30.0;
 			float d = (rel_along - front - bow) / big_gust_width;
 			// Steep in front, a longer tail behind, as a gust front is.
 			big = on * exp(-d * d * (d > 0.0 ? 2.5 : 0.6)) * step(front, 110.0);
@@ -446,7 +507,7 @@ void vertex() {
 		float together = 1.0 - 0.6 * min(wave_strength, 1.0);
 		float rock = sin(TIME * 6.2831853 * freq + rnd * 40.0) * (0.03 + 0.07 * gust) * bend_max * together;
 		// (The flutter is the wind's too: none in still air, as at the usual 3 m/s.)
-		float flutter = (texture(wind_noise, root_xz * 0.9 + vec2(TIME * 0.6, TIME * 0.37)).r - 0.5) * 0.08 * (0.3 + gust) * min(wind_speed / 3.0, 2.0) * mix(1.0, together, 0.8);
+		float flutter = (noise3(root3 * 0.9, vec2(TIME * 0.6, TIME * 0.37)) - 0.5) * 0.08 * (0.3 + gust) * min(wind_speed / 3.0, 2.0) * mix(1.0, together, 0.8);
 		vec2 push = wind_dir * (bend + rock) + across_wind * flutter;
 		// Whoever walks through lays it the way they are going (a little aside too, so it does
 		// not stand up through their legs); the trails of the player and Nike keep it down behind
@@ -465,7 +526,9 @@ void vertex() {
 				}
 			}
 		}
-		vec2 hz = lean + push;
+		// The wind and whoever walks through act on the floor's x and z, as they do in the world;
+		// what you see of that lean is its part within the slice.
+		vec4 hz = lean + vec4(push.x, 0.0, push.y, 0.0);
 		float hl = length(hz);
 		if (hl > 0.9) {
 			hz *= 0.9 / hl;
@@ -475,16 +538,17 @@ void vertex() {
 		// along its length as a stalk held at the root does: upright at the root, the tip's slope
 		// about one and a half times the lean. (The middle points were at 40% and 90% of the
 		// height, which left all the bend for the last few centimetres: a hook at every tip.)
-		vec3 p3 = vec3(hz.x, sqrt(max(1.0 - dot(hz, hz), 0.1)), hz.y) * h;
-		vec3 p1 = vec3(0.0, p3.y * 0.35, 0.0);
-		vec3 p2 = vec3(hz.x * 0.45 * h, p3.y * 0.7, hz.y * 0.45 * h);
+		vec4 up = vec4(0.0, 1.0, 0.0, 0.0);
+		vec4 p3 = (hz + up * sqrt(max(1.0 - dot(hz, hz), 0.1))) * h;
+		vec4 p1 = up * (p3.y * 0.35);
+		vec4 p2 = hz * 0.45 * h + up * (p3.y * 0.7);
 		float t = UV.y;
 		float side = UV.x;
 		float u = 1.0 - t;
-		vec3 b = 3.0 * u * u * t * p1 + 3.0 * u * t * t * p2 + t * t * t * p3;
-		vec3 tangent = 3.0 * u * u * p1 + 6.0 * u * t * (p2 - p1) + 3.0 * t * t * (p3 - p2);
-		tangent = normalize(tangent + vec3(0.0, 1e-5, 0.0));
-		vec3 across = vec3(-sin(facing), 0.0, cos(facing));
+		vec4 b = 3.0 * u * u * t * p1 + 3.0 * u * t * t * p2 + t * t * t * p3;
+		vec4 tangent = 3.0 * u * u * p1 + 6.0 * u * t * (p2 - p1) + 3.0 * t * t * (p3 - p2);
+		tangent = normalize(tangent + up * 1e-5);
+		vec4 across = -sin(facing) * h1 + cos(facing) * h2;
 		// Never thinner than about a pixel: past that a blade flickers and the field goes bare.
 		float bw = max(blade_width, length(rel_root.xyz) * pixel_angle * min_pixels);
 		float width = bw * cut * pow(u, taper) * mix(0.8, 1.25, rnd);
@@ -492,17 +556,19 @@ void vertex() {
 			// A thin stalk, and a head: wide for the last fifth of it.
 			width = bw * cut * (t > 0.86 ? 1.25 * sin((t - 0.86) / 0.14 * 3.14159) + 0.2 : 0.35);
 		}
-		vec3 pos = b + across * side * width;
-		vec3 normal = normalize(cross(across, tangent));
-		if (normal.y < 0.0) {
-			normal = -normal;
-		}
-		normal = normalize(normal + across * side * 0.6);
+		vec4 pos = b + across * side * width;
 
-		// Into the camera's frame, thickened when seen edge-on.
-		vec4 rel = vb * (root + vec4(pos, 0.0)) + view_origin;
-		vec3 n_view = normalize((vb * vec4(normal, 0.0)).xyz);
-		vec3 a_view = (vb * vec4(across, 0.0)).xyz;
+		// Into the camera's frame. The strip is drawn there, so its normal is taken there, from its
+		// two directions; turned out at the edges so a flat strip shades like a rounded blade, and
+		// the strip thickened when seen edge-on.
+		vec4 rel = vb * (root + pos) + view_origin;
+		vec3 a_view = (vb * across).xyz;
+		vec3 t_view = (vb * tangent).xyz;
+		vec3 n_view = normalize(cross(a_view, t_view) + vec3(0.0, 0.0, 1e-6));
+		if (n_view.y < 0.0) {
+			n_view = -n_view;
+		}
+		n_view = normalize(n_view + a_view * side * 0.6);
 		float edge = 1.0 - abs(dot(n_view, normalize(-rel.xyz)));
 		rel.xyz += a_view * side * width * edge * 1.4;
 		VERTEX = rel.xyz;
@@ -510,7 +576,7 @@ void vertex() {
 		if (flower > 0.5 && flower_dot > 0.0) {
 			// A daisy: a small dot facing you at the top of the stem, whatever the blade's shape;
 			// its three corners around the head, in the camera's own right and up.
-			vec4 head = vb * (root + vec4(p3, 0.0)) + view_origin;
+			vec4 head = vb * (root + p3) + view_origin;
 			float s = max(flower_dot, length(head.xyz) * pixel_angle * 1.6) * cut;
 			// A triangle on a one-triangle blade; on more, a pentagon from its first five corners
 			// (the root pair, the next pair, the tip: their triangles cover it), the rest folded
@@ -537,16 +603,17 @@ void vertex() {
 		vec3 tip = mix(mix(colour_tip, ground_colour, toward_ground), colour_dry * 1.2, dry * 0.35);
 		// The regions, from one slow field of the noise (a feature of it is about a third of the
 		// texture), its low end deep, its high end bright, sap green between; each with a soft
-		// edge, not a blur. A region moves the blade by its offset from sap green.
-		vec2 ruv = root_xz / (region_size * 3.1);
-		float field = texture(wind_noise, ruv + vec2(0.37, 0.11)).r;
+		// edge, not a blur. A region moves the blade by its offset from sap green. Read over all
+		// three of the floor's dimensions (noise3), so the regions change along W as they do along
+		// x and z.
+		float field = noise3(root3 / (region_size * 3.1), vec2(0.37, 0.11));
 		float deep = (1.0 - smoothstep(region_cuts.x, region_cuts.y, field)) * region_strength;
 		float bright = smoothstep(region_cuts.z, region_cuts.w, field) * region_strength;
 		vec3 offset = (region_deep - sap) * deep + (mix(region_bright, ground_colour, toward_ground) - sap) * bright;
 		base += offset;
 		tip += offset * 0.8;
 		// The blade's own hue: a little towards yellow (red up, blue down) or towards blue.
-		float hue = hash13(vec3(cell, layer + 11.3)) - 0.5;
+		float hue = hash13(cell3 + 11.3) - 0.5;
 		vec3 shift = vec3(1.0, 0.3, -0.8) * hue * hue_jitter * 2.0;
 		base = max(base + shift, vec3(0.0)) * mix(0.9, 1.08, rnd);
 		tip = max(tip + shift, vec3(0.0));
@@ -557,15 +624,15 @@ void vertex() {
 		// Under a passing cloud: darker.
 		float cloud = 0.0;
 		if (cloud_shadows > 0.0) {
-			vec2 cuv = (root_xz - wind_dir * wind_speed * 0.6 * TIME) / (cloud_size * 3.1);
-			cloud = smoothstep(0.42, 0.62, texture(wind_noise, cuv + vec2(0.13, 0.61)).r) * cloud_shadows;
+			vec3 cloud_at = (root3 - vec3(wind_dir * wind_speed * 0.6 * TIME, 0.0)) / (cloud_size * 3.1);
+			cloud = smoothstep(0.42, 0.62, noise3(cloud_at, vec2(0.13, 0.61))) * cloud_shadows;
 		}
 		c *= 1.0 - cloud * 0.4;
 		v_haze = haze_amount * (1.0 - exp(-length(rel.xyz) / haze_distance));
 		// The light on the tips as a gust or a crest lays them over.
 		c += sheen * max(max(gust, wave), big * 2.0) * t * t * vec3(0.5, 0.52, 0.3) * shade;
 		if (flower > 0.5 && (t > 0.86 || flower_dot > 0.0)) {
-			float pick = hash13(vec3(cell, layer + 6.6));
+			float pick = hash13(cell3 + 6.6);
 			c = pick < flower_white ? flower_a : (pick < flower_white + (1.0 - flower_white) * 0.6 ? flower_b : flower_c);
 			if (flower_dot > 0.0 && pick < flower_white) {
 				// White petals, the heart a little warm: the top corner gets the yellow.
