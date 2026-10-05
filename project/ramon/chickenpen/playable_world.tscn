@@ -1,4 +1,4 @@
-[gd_scene load_steps=381 format=4 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=386 format=4 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -83,6 +83,11 @@
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/rock_pile/rock_pile.tscn" id="unit_rockpile"]
 [ext_resource type="ImageTexture3D" path="res://ramon/chickenpen/terrain/terrain_tint_3d.tres" id="shared_ImageTexture3D_umeec"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/cave/cave.tscn" id="unit_cave"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_stone_wall_4d.gd" id="pen_wall"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_stones_4d.gd" id="pen_stones"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_paths_4d.gd" id="pen_paths"]
+[ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/graph/path_network_4d.gd" id="pc_network"]
+[ext_resource type="Resource" path="res://ramon/PenLayout/paths/pen_a.tres" id="pen_paths_graph"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 shader_parameter/horizon_color = Color(0.98, 0.71, 0.35, 1)
@@ -1081,7 +1086,7 @@ mesh = ExtResource("mountains_mesh")
 script = ExtResource("pen_mountains")
 
 [node name="Cave" parent="World" instance=ExtResource("unit_cave")]
-position = Vector4(17, 0, -40, 0)
+position = Vector4(8, 0, 15, 4)
 
 [node name="Range" parent="World" instance=ExtResource("unit_range")]
 position = Vector4(-19, 0, -9, 0)
@@ -1489,17 +1494,18 @@ material_override = SubResource("TetraMaterial4D_t0neu")
 mesh = SubResource("BoxTetraMesh4D_b5dab")
 
 [node name="Nike" parent="World" instance=ExtResource("nike_scene")]
-position = Vector4(7.5, 0, 2, 0)
+position = Vector4(13, 0, -5, 0)
 basis = Projection(0.6, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0.6)
 
 [node name="RockPileSpot" parent="World" instance=ExtResource("unit_rockpile")]
 position = Vector4(-7.4, 0, 1.8, 0)
 
 [node name="TrymCabin" parent="World" instance=ExtResource("unit_cabin")]
-position = Vector4(-10, 0, -14, 0)
+position = Vector4(-9, 0, 37, 0)
+basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
 
 [node name="ProfessorPost" parent="World" instance=ExtResource("unit_professor")]
-position = Vector4(12.6, 0, -23.2, 0)
+position = Vector4(3.6, 0, 31.8, 0)
 
 [node name="Crow" type="Node4D" parent="World"]
 position = Vector4(0, 0, -11, 0)
@@ -1944,12 +1950,12 @@ material_override = SubResource("post_far")
 mesh = SubResource("post_mesh")
 
 [node name="Post6" type="MeshInstance4D" parent="World/Scenery"]
-position = Vector4(7, 1.1, 5, -1.6)
+position = Vector4(14, 1.1, -1, -1.6)
 material_override = SubResource("post_far")
 mesh = SubResource("post_mesh")
 
 [node name="Post7" type="MeshInstance4D" parent="World/Scenery"]
-position = Vector4(-2, 1.1, 9, 2.4)
+position = Vector4(-15, 1.1, 12, 2.4)
 material_override = SubResource("post_far")
 mesh = SubResource("post_mesh")
 
@@ -1964,6 +1970,7 @@ position = Vector4(-16, 0, -36, 0)
 
 [node name="Grass" type="Node4D" parent="World"]
 script = ExtResource("pen_grass")
+enabled = false
 metadata/what = "Grass over the field, made and blown about on the GPU (grass/pen_grass.gdshader, follow_up/grass_study.md)."
 
 [node name="Wolf" parent="World" instance=ExtResource("wolf_scene")]
@@ -2806,6 +2813,8 @@ progress_label_path = NodePath("../../UI/Progress")
 objective_label_path = NodePath("../../UI/Objective")
 locator_path = NodePath("../Locator")
 cues_path = NodePath("../Cues")
+opening_text = "Follow the path round the hill to the keeper at the pen."
+opening_until_path = NodePath("../../World/KeeperPost/Keeper")
 
 [node name="Lookout" type="Node" parent="Systems"]
 script = ExtResource("lk_lookout")
@@ -3028,7 +3037,7 @@ run_speed = 2.4
 position = Vector4(0, 1.3, 0, 0)
 
 [node name="Player" type="CharacterBody4D" parent="."]
-position = Vector4(4.6, 1.2, -2, 0)
+position = Vector4(4, 1.2, 38, 0)
 script = ExtResource("character")
 
 [node name="CollisionShape4D" type="CollisionShape4D" parent="Player"]
@@ -3203,8 +3212,8 @@ script = ExtResource("rig")
 start_preset = 1
 pivot_height = 1.5
 distance = 8.0
-start_yaw_degrees = 27.1
-start_pitch_degrees = -15.0
+start_yaw_degrees = 0.0
+start_pitch_degrees = -8.0
 talk_distance = 5.2
 talk_pivot_height = 1.1
 locator_path = NodePath("../../Systems/Locator")
@@ -3261,3 +3270,48 @@ head_path = NodePath("../World/TrymCabin/TrymHead")
 
 [node name="Cinematics" type="Node" parent="."]
 script = ExtResource("pen_cinematics")
+
+[node name="StoneWall" type="Node4D" parent="World"]
+position = Vector4(-23.75, 0, 16, 0)
+script = ExtResource("pen_wall")
+length = 42.5
+metadata/what = "The dry stone wall across the field's west side, thin in W: the opening's first lesson in the fourth direction (PenLayout/PLAN_A.md step 19). Step 1.5 ana and it is gone; the long way round is east."
+
+[node name="EggStones" type="Node4D" parent="World"]
+position = Vector4(16, 0, 2, -2.5)
+script = ExtResource("pen_stones")
+metadata/what = "Standing stones in the meadow's middle, 2.5 m kata: easter egg 1, with a bag of azoth inside (PLAN_A.md step 29)."
+
+[node name="EggCairn" type="Node4D" parent="World"]
+position = Vector4(25, 0, 12, 7)
+script = ExtResource("pen_stones")
+shape = 1
+count = 5
+stone_size = 0.75
+w_depth = 1.4
+metadata/what = "A cairn at the cave hill's east foot, 7 m ana: easter egg 2, a bag of azoth beside it (PLAN_A.md step 30)."
+
+[node name="AzothBag1" type="Node4D" parent="World/Pickups"]
+position = Vector4(16, 0.35, 2, -2.5)
+script = ExtResource("pen_pickup")
+kind = 2
+
+[node name="AzothBag2" type="Node4D" parent="World/Pickups"]
+position = Vector4(25.9, 0.35, 12.3, 7)
+script = ExtResource("pen_pickup")
+kind = 2
+
+[node name="Paths" type="Node4D" parent="World"]
+script = ExtResource("pc_network")
+graph = ExtResource("pen_paths_graph")
+targets = NodePath("..")
+under_color = Color(0.16, 0.22, 0.11, 1)
+drape = true
+p_scale = 1.4
+show_sand = true
+reveal_from = NodePath("../../Player")
+targets_deep = true
+metadata/what = "The pen's paths (PathCreator's network, PenLayout/paths/pen_a.tres, written by PenLayout/scripts/_make_pen_paths_runner.gd). F5 F6 F7 switch reveal, icons and sand (Systems/Paths)."
+
+[node name="Paths" type="Node" parent="Systems"]
+script = ExtResource("pen_paths")

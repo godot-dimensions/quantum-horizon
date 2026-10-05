@@ -93,6 +93,42 @@ enum Design { CAB, BALCONY }
 @export var inside: Color = Color(0.10, 0.08, 0.07)
 @export var merge_parts: bool = true
 
+@export_group("Fence frame")
+## THE FRAME FROM THE FENCE TECH (6 Oct 2026, PenLayout/PLAN_A.md phase 7; Ramon: "it's so flat ...
+## use the fence tech ... the base and the hut above"). Off: the tower as it was, legs and braces
+## of solid struts each as deep in W as the cab (turned into W they read as plates). On:
+##   the base   one FenceGenerator4D box as wide as the legs' spread and as deep in W as the cab:
+##              posts at its corners and every `fence_spacing` along its edges, W edges too, leaning
+##              in to the deck (top_footprint_ratio), tied by `fence_rings` rings of girts. So the
+##              legs stand at whole W places and step out of view between them: a 4D tower.
+##   the rail   the deck's railing is a fence box round the deck, its W ends included
+##   the hut    the cabin's walls are a fence box of slats, its dark panes left behind them
+## The pads, deck, ladder, roof, colliders and everything the Lookout calls stay as they are, so the
+## switch changes what you see and nothing else.
+@export var fence_frame: bool = false:
+	set(v):
+		fence_frame = v
+		if is_node_ready():
+			rebuild()
+## The spacing decides where the grid's layers fall in W, and on a layer its ribs read as solid
+## walls; 2.2 keeps every layer off the farm's slice (at +-1.07 and +-3.2 for a 6.4 m cab), so from
+## there the base is an open lattice and the solid layers are what you pass through in W.
+@export_range(0.5, 10.0, 0.1, "suffix:m") var fence_spacing: float = 2.2:
+	set(v):
+		fence_spacing = v
+		if is_node_ready() and fence_frame:
+			rebuild()
+@export_range(0, 12) var fence_rings: int = 4:
+	set(v):
+		fence_rings = v
+		if is_node_ready() and fence_frame:
+			rebuild()
+@export_range(0.05, 0.6, 0.01, "suffix:m") var fence_post: float = 0.24:
+	set(v):
+		fence_post = v
+		if is_node_ready() and fence_frame:
+			rebuild()
+
 var _meshes: Dictionary = {}
 var _batches: Dictionary = {}
 var _arrays: Dictionary = {}
@@ -178,7 +214,11 @@ func rebuild() -> void:
 	var h: float = deck_height
 	var half: float = cab_size * 0.5
 	var wd: float = cab_w_depth
-	_build_legs(h, half, wd)
+	if fence_frame:
+		_build_pads(h, half, wd)
+		_fence_base(h, half, wd)
+	else:
+		_build_legs(h, half, wd)
 	if design == Design.BALCONY:
 		_build_balcony(h, half, wd)
 	else:
@@ -224,6 +264,50 @@ func _build_legs(h: float, half: float, wd: float) -> void:
 				_strut("Brace", Vector4(ca.x, y0, ca.y, 0.0), Vector4(cd.x, y1, cd.y, 0.0), 0.09, wd, steel)
 				_strut("Brace", Vector4(cb.x, y0, cb.y, 0.0), Vector4(cc.x, y1, cc.y, 0.0), 0.09, wd, steel)
 			_strut("Girt", Vector4(cc.x, y1, cc.y, 0.0), Vector4(cd.x, y1, cd.y, 0.0), 0.12, wd, steel)
+
+
+## The concrete blocks under the legs alone, for the fence frame (whose posts are the legs).
+func _build_pads(_h: float, half: float, wd: float) -> void:
+	var foot: float = half + splay
+	for sx in [-1.0, 1.0]:
+		for sz in [-1.0, 1.0]:
+			_box("Pad", Vector4(sx * foot, 0.1, sz * foot, 0.0), Vector4(1.1, 1.0, 1.1, wd), Color(0.44, 0.43, 0.40))
+
+
+## The base as one fence box (see fence_frame): from the pads' tops to the deck, leaning in from
+## the legs' spread at the foot to just inside the deck's corners at the top.
+func _fence_base(h: float, half: float, wd: float) -> void:
+	var foot: float = half + splay
+	var top: float = half - 0.12
+	_fence("FenceBase", Vector3(foot * 2.0, foot * 2.0, wd), h - 0.5, fence_spacing, fence_rings, 0.05,
+		fence_post, top / foot, Vector4(0.0, 0.5, 0.0, 0.0), steel)
+
+
+## A FenceGenerator4D box: [param box] is its size in x, z and W; [param height] its posts'; built
+## at once, in one colour.
+func _fence(part: String, box: Vector3, height: float, spacing: float, rings: int, coverage: float,
+		post: float, ratio: float, at: Vector4, colour: Color) -> FenceGenerator4D:
+	var f := FenceGenerator4D.new()
+	f.name = part
+	f.update_automatically = false
+	f.input_shape_type = FenceGenerator4D.INPUT_SHAPE_BOX
+	f.box_size = box
+	f.output_mesh_type = FenceGenerator4D.OUTPUT_MESH_TETRA
+	f.desired_spacing_meters = spacing
+	f.post_height_meters = height
+	f.post_thickness_meters = post
+	f.top_footprint_ratio = ratio
+	f.beam_count = rings
+	f.beam_coverage = coverage
+	f.beam_max_height_ratio = 0.98
+	var m: TetraMaterial4D = _material(colour)
+	f.post_material = m
+	f.rib_material = m
+	f.beam_material = m
+	f.position = at
+	add_child(f, true)
+	f.update_fence_mesh_now()
+	return f
 
 
 ## Corner [param i] of the square of half-size [param r], going round.
@@ -474,9 +558,13 @@ func _build_balcony(h: float, _frame_half: float, wd: float) -> void:
 	for k in 5:
 		var x: float = lerpf(-half + 0.3, half - 0.3, float(k) / 4.0)
 		_box("Joist", Vector4(x, h - 0.36, 0.0, 0.0), Vector4(0.14, 0.2, deck_size - 0.2, wd), steel)
-	# Railings: posts, a top rail and a mid rail on the four edges, a gap at the ladder.
-	var posts: int = 6
-	for face in 4:
+	# Railings: posts, a top rail and a mid rail on the four edges, a gap at the ladder. (With the
+	# fence frame, one fence box round the deck instead, its W ends included; it has no gap.)
+	var posts: int = 6 if not fence_frame else -1
+	if fence_frame:
+		_fence("FenceRail", Vector3(deck_size - 0.12, deck_size - 0.12, wd - 0.12), rail_height, 1.2, 2, 0.12,
+			0.08, 1.0, Vector4(0.0, h, 0.0, 0.0), rail)
+	for face in (4 if not fence_frame else 0):
 		var a: Vector2 = _corner(face, half - 0.06)
 		var b: Vector2 = _corner(face + 1, half - 0.06)
 		for k in posts + 1:
@@ -496,7 +584,7 @@ func _build_balcony(h: float, _frame_half: float, wd: float) -> void:
 			_strut("MidRail", Vector4(r0.x, h + rail_height * 0.5, r0.y, 0.0), Vector4(r1.x, h + rail_height * 0.5, r1.y, 0.0), 0.05, wd, rail)
 	# The railing's W ends: a low panel, thin in W, over the whole deck - the eight-walls rule
 	# for a railing, so the deck is fenced along W too.
-	for sw in [-1.0, 1.0]:
+	for sw in ([-1.0, 1.0] if not fence_frame else []):
 		_box("WRail", Vector4(0.0, h + rail_height * 0.5, 0.0, sw * (wd * 0.5 - 0.06)), Vector4(deck_size, rail_height, deck_size, 0.12), rail)
 	# The cabin: small, windows all round, dark inside - looked into, not walked into.
 	var ch: float = cabin_height
@@ -505,7 +593,14 @@ func _build_balcony(h: float, _frame_half: float, wd: float) -> void:
 	var wall := Color(0.82, 0.80, 0.74)
 	var frame_c := Color(0.92, 0.91, 0.88)
 	_box("CabinFloor", Vector4(0.0, h + 0.02, 0.0, 0.0), Vector4(cs, 0.04, cs, wd), floor_colour)
-	for face in 4:
+	if fence_frame:
+		# Slatted walls, the same white, as deep in W as the cabin, the dark panes left behind them.
+		_fence("FenceHut", Vector3(cs, cs, wd), ch, 0.6, 5, 0.45, 0.07, 1.0, Vector4(0.0, h, 0.0, 0.0), wall)
+		for face in 4:
+			var ax: Vector4 = [Vector4(0, 0, -1, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(-1, 0, 0, 0)][face]
+			var al: Vector4 = Vector4(-ax.z, 0.0, ax.x, 0.0)
+			_box("Pane", ax * (cw - 0.12) + Vector4(0, h + 1.45, 0, 0), _with_y(_orient(al, cs - 0.2, 0.03, wd - 0.3), 1.1), Color(0.10, 0.12, 0.14))
+	for face in (4 if not fence_frame else 0):
 		var axis: Vector4 = [Vector4(0, 0, -1, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(-1, 0, 0, 0)][face]
 		var along: Vector4 = Vector4(-axis.z, 0.0, axis.x, 0.0)
 		var at: Vector4 = axis * (cw - 0.05)
@@ -516,7 +611,7 @@ func _build_balcony(h: float, _frame_half: float, wd: float) -> void:
 		for k in [-1.0, -0.33, 0.33, 1.0]:
 			_box("CabinMullion", at + along * (k * (cw - 0.04)) + Vector4(0, h + 1.45, 0, 0), _with_y(_orient(along, 0.07, 0.12, wd), 1.1), frame_c)
 		_box("CabinTransom", at + Vector4(0, h + 1.45, 0, 0), _with_y(_orient(along, cs, 0.12, wd), 0.05), frame_c)
-	for sw in [-1.0, 1.0]:
+	for sw in ([-1.0, 1.0] if not fence_frame else []):
 		_box("CabinW", Vector4(0.0, h + ch * 0.5, 0.0, sw * (wd * 0.5 - 0.1)), Vector4(cs, ch, cs, 0.1), wall)
 	# The hip roof: four boards falling from a ridge cap to an overhang, and a lightning rod.
 	var over: float = cw + 0.45

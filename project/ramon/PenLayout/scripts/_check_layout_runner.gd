@@ -8,6 +8,11 @@ extends SceneTree
 ##   - no chicken's home inside a unit
 ##   - the professor in front of the cave mouth, 3 to 9 m out and clear of the hill: the story has
 ##     him pointing people at it, so he goes where the cave goes
+##   - room for the wolf: it comes in from 16 m off the pen's far side, whichever side that is
+##     (wolf_raid_4d.gd), so a unit 15 to 22 m from the pen blocks a direction (a warning)
+##   - the east meadow left open: the meadow film is shot at (16, 2) toward the low sun (a warning)
+##   - the starlings: the ride flies into the flock's roost about 70 s in, drawn from the mooring,
+##     so a Lookout moved far or turned misses them (a warning)
 ##   - the balloon ride's bend toward the pen: the ride is drawn for the Lookout where it first
 ##     stood, and bends its pass over the farm toward the pen wherever the pen now is from the
 ##     mooring. A small bend is invisible; a big one makes the balloon swing (a warning, not a fail).
@@ -29,6 +34,13 @@ const HILLS_R := 50.0
 const PROF_GAP := Vector2(3.0, 9.0)
 ## Above this the balloon's swing toward the pen shows (metres).
 const BEND_WARN_M := 25.0
+const PEN := Vector2(0.0, -11.0)
+## How far out from the pen's middle the wolf's run-in starts and ends, roughly (metres).
+const WOLF_RING := Vector2(15.0, 22.0)
+const MEADOW := Vector2(16.0, 2.0)
+const MEADOW_R := 9.0
+## The player's run (block_walker_character_4d.gd speed), for the walk times.
+const RUN := 3.0
 
 var _root: Node
 var _fails: int = 0
@@ -209,8 +221,10 @@ func _run() -> void:
 			var d: Vector4 = (at - box[0]).abs() - (box[1] as Vector4) * 0.5
 			if d.x < 0.3 and d.y < 0.0 and d.z < 0.3 and d.w < 0.3:
 				clear = false
-		_check(gap > PROF_GAP.x and gap < PROF_GAP.y and dw < 0.5 and clear,
-			"the professor stands in front of the cave mouth (%.1f m from it, %.1f apart in W, %s; he goes with the cave)" % [gap, dw, "clear of the hill" if clear else "INSIDE the hill"])
+		_check(gap > PROF_GAP.x and gap < PROF_GAP.y and clear,
+			"the professor stands in front of the cave mouth (%.1f m from it, %s; he goes with the cave)" % [gap, "clear of the hill" if clear else "INSIDE the hill"])
+		if dw > 0.5:
+			print("    the door is %.1f m %s of him in W" % [dw, "ana" if mouth.w > prof.global_position.w else "kata"])
 	# 5. The balloon's bend toward the pen.
 	var lookout: Node = _root.get_node_or_null("Systems/Lookout")
 	var balloon: Node = lookout.get("balloon") if lookout != null else null
@@ -219,5 +233,104 @@ func _run() -> void:
 		print("    the ride bends %.1f m toward the pen over the farm" % bend)
 		if bend > BEND_WARN_M:
 			_warn("the balloon swings %.1f m off its drawn line to pass over the pen; worth a look in the ride" % bend)
+	# 6. The starlings: where the ride is 70 s in (no bend left by then) against the roost.
+	var flock: Node = _root.find_child("Flock", true, false)
+	if balloon != null and flock != null and flock.get("roost") != null:
+		var host: Node4D = (balloon as Node).get_parent() as Node4D
+		var moor: Vector4 = balloon.get("_moor")
+		var ride_basis: Projection = balloon.get("ride_basis")
+		var at70: Vector4 = host.global_position + host.global_basis * (moor + ride_basis * (balloon.call("_path", 70.0) as Vector4))
+		var roost: Vector4 = flock.get("roost")
+		var off: float = Vector2(at70.x - roost.x, at70.z - roost.z).length()
+		print("    70 s into the ride the basket is %.1f m from the starlings' roost" % off)
+		if off > float(flock.get("roost_radius")):
+			_warn("the ride misses the starlings (%.1f m from their roost, which is %.0f m across)" % [off, 2.0 * float(flock.get("roost_radius"))])
+	# 7. Room for the wolf, in eight directions from the pen.
+	var blocked: Array = []
+	for i in 8:
+		var dir := Vector2(sin(i * PI / 4.0), -cos(i * PI / 4.0))
+		for k in keys:
+			if (k as String).begins_with("Pen/"):
+				continue
+			var hit := false
+			for r in [WOLF_RING.x, (WOLF_RING.x + WOLF_RING.y) * 0.5, WOLF_RING.y]:
+				var q: Vector2 = PEN + dir * r
+				if _inside(Vector4(q.x, 0.0, q.y, 0.0), parts[k]):
+					hit = true
+			if hit:
+				blocked.append("%s by %s" % [["N", "NE", "E", "SE", "S", "SW", "W", "NW"][i], k])
+				break
+	if not blocked.is_empty():
+		_warn("the wolf's run-in is blocked to the %s" % str(blocked))
+	# 8. The east meadow, where the meadow film is shot toward the low sun.
+	var in_meadow: Array = []
+	for k in keys:
+		var b: Array = parts[k]
+		var lo: Vector4 = b[0]
+		var hi: Vector4 = lo + (b[1] as Vector4)
+		var near := Vector2(clampf(MEADOW.x, lo.x, hi.x), clampf(MEADOW.y, lo.z, hi.z))
+		if near.distance_to(MEADOW) < MEADOW_R and lo.w < 1.0 and hi.w > -1.0:
+			in_meadow.append(k)
+	if not in_meadow.is_empty():
+		_warn("in the east meadow, where the meadow film looks at the low sun: %s" % str(in_meadow))
+	# 9. Where you start, and how far everything is from there and from the pen (straight lines).
+	var player := _root.get_node("Player") as Node4D
+	var start: Vector4 = player.global_position
+	var in_start: Array = []
+	for k in keys:
+		if _inside(start, parts[k]):
+			in_start.append(k)
+	_check(in_start.is_empty(), "you start in the open at (%.1f, %.1f, W %.1f) %s" % [start.x, start.z, start.w, str(in_start)])
+	var spots := {"keeper": "KeeperPost/Keeper", "Trym's door": "", "range": "Range/RangeMaster", "professor": "ProfessorPost/Professor",
+		"tower": "LookoutSite/Wren", "rock pile": "RockPileSpot/RockPile"}
+	var inv: Node = _root.get_node_or_null("Invitation")
+	for what in spots:
+		var p: Vector4
+		if spots[what] == "":
+			if inv == null or not inv.has_method("_door_spot"):
+				continue
+			p = inv.call("_door_spot")
+		else:
+			var n := world.get_node_or_null(spots[what]) as Node4D
+			if n == null:
+				continue
+			p = n.global_position
+		var from_start: float = Vector3(p.x - start.x, p.z - start.z, p.w - start.w).length()
+		var from_pen: float = Vector3(p.x - PEN.x, p.z - PEN.y, p.w).length()
+		print("    %-12s at (%.1f, %.1f, W %.1f): %.0f m from the start (%.0f s), %.0f m from the pen (%.0f s)" % [what, p.x, p.z, p.w, from_start, from_start / RUN, from_pen, from_pen / RUN])
+	if hill != null:
+		var m: Vector4 = CaveHill.to_world(hill, CaveHill.MOUTH)
+		print("    %-12s at (%.1f, %.1f, W %.1f): %.0f m from the start, %.0f m from the pen" % ["cave mouth", m.x, m.z, m.w, Vector2(m.x - start.x, m.z - start.z).length(), Vector2(m.x - PEN.x, m.z - PEN.y).length()])
+	# 10. The paths (World/Paths, if the pen has them): the network's own notes, and no route
+	# through a unit, the pen's fence or a chicken's home (sampled every metre, at the route's W).
+	var net: Node = world.get_node_or_null("Paths")
+	if net != null and net.get("graph") != null:
+		for note in net.call("notes"):
+			_warn("paths: %s" % note)
+		var graph: Resource = net.get("graph")
+		var through: Array = []
+		for ei in (graph.get("edges") as Array).size():
+			var e: Dictionary = graph.edges[ei]
+			var a: Vector4 = (graph.call("node", int(e["from"])) as Dictionary)["pos"]
+			var b: Vector4 = (graph.call("node", int(e["to"])) as Dictionary)["pos"]
+			var steps: int = maxi(1, int(Vector2(b.x - a.x, b.z - a.z).length()))
+			for k in range(1, steps):
+				var p: Vector4 = a.lerp(b, float(k) / float(steps))
+				if String(e.get("w_mode", "")) == "reveal":
+					p.w = b.w
+				elif String(e.get("w_mode", "")) == "here":
+					p.w = a.w
+				for key in keys:
+					if (key as String).ends_with("Arrival") or (key as String) == "Pen/Coop":
+						continue
+					var box: Array = parts[key]
+					if _inside(p, [(box[0] as Vector4) - Vector4(0.3, 0, 0.3, 0.3), (box[1] as Vector4) + Vector4(0.6, 0, 0.6, 0.6)]):
+						through.append("edge %d through %s" % [ei, key])
+						break
+		var uniq: Array = []
+		for t in through:
+			if not (t in uniq):
+				uniq.append(t)
+		_check(uniq.is_empty(), "no route runs through a unit or the pen %s" % str(uniq))
 	print("LAYOUT: %s (%d failed, %d warnings)" % ["PASS" if _fails == 0 else "FAIL", _fails, _warns])
 	quit(0 if _fails == 0 else 1)

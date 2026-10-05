@@ -30,6 +30,11 @@ const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd"
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
 @export var wood: Color = Color(0.105, 0.088, 0.072): set = _set_colour
+## THE FENCE TECH'S POSTS (6 Oct 2026, PenLayout/PLAN_A.md step 70): the eight posts below (four at
+## the corners, four at the W walls' corners) become one FenceGenerator4D frame, its grid every
+## 1.1 m, W edges too, with every layer off the farm's slice (on a layer its ribs read as solid
+## walls), so from there it shows as uprights. Walls, roof, counter and colliders as before.
+@export var fence_posts: bool = false: set = _set_fence
 @export var wood_edge: Color = Color(0.17, 0.14, 0.11): set = _set_colour
 @export var steel: Color = Color(0.20, 0.21, 0.23): set = _set_colour
 @export var stock: Color = Color(0.36, 0.22, 0.12): set = _set_colour
@@ -93,6 +98,12 @@ func _set_colour(_v: Color) -> void:
 		rebuild()
 
 
+func _set_fence(v: bool) -> void:
+	fence_posts = v
+	if is_node_ready():
+		rebuild()
+
+
 func _ready() -> void:
 	rebuild()
 
@@ -109,13 +120,13 @@ func boxes() -> Array:
 	# Posts at the four corners in (x, z), each running the booth's whole W depth. Posts at
 	# the eight corners in (x, z, w) with a post's own thin W depth looked right on paper
 	# and left the roof floating: every one of them sat off the home slice.
-	for sx in [-1.0, 1.0]:
+	for sx in ([-1.0, 1.0] if not fence_posts else []):
 		for sz in [-1.0, 1.0]:
 			out.append([Vector4(sx * (HALF.x - 0.1), ROOF_Y * 0.5, sz * (HALF.y - 0.1), 0.0), Vector4(0.16, ROOF_Y, 0.16, HALF.z * 2.0), wood, true])
 	# And the same four again for the w walls: at the corners in (w, z), running the whole X
 	# depth. A slice turned a quarter into W sees these as its corner posts, the way the
 	# home slice sees the ones above; in between it cuts parts of both.
-	for sw in [-1.0, 1.0]:
+	for sw in ([-1.0, 1.0] if not fence_posts else []):
 		for sz in [-1.0, 1.0]:
 			out.append([Vector4(0.0, ROOF_Y * 0.5, sz * (HALF.y - 0.1), sw * (HALF.z - 0.1)), Vector4(HALF.x * 2.0, ROOF_Y, 0.16, 0.16), wood, false])
 	# Roof, and a ridge along it.
@@ -208,6 +219,26 @@ func rebuild() -> void:
 			holder.shape = shape
 			holder.position = b[0]
 			body.add_child(holder)
+	if fence_posts:
+		var f := FenceGenerator4D.new()
+		f.name = "FencePosts"
+		f.set_meta("range_booth_built", true)
+		f.update_automatically = false
+		f.input_shape_type = FenceGenerator4D.INPUT_SHAPE_BOX
+		f.box_size = Vector3(HALF.x * 2.0 - 0.2, HALF.y * 2.0 - 0.2, HALF.z * 2.0 - 0.2)
+		f.output_mesh_type = FenceGenerator4D.OUTPUT_MESH_TETRA
+		f.desired_spacing_meters = 1.1
+		f.post_height_meters = ROOF_Y
+		f.post_thickness_meters = 0.16
+		f.rib_height_ratio = 0.97
+		f.beam_count = 0
+		var fm := TetraMaterial4D.new()
+		fm.albedo_color = wood
+		f.post_material = fm
+		f.rib_material = fm
+		f.beam_material = fm
+		add_child(f)
+		f.update_fence_mesh_now()
 	var mesh := MeshInstance4D.new()
 	mesh.name = "Booth"
 	mesh.set_meta("range_booth_built", true)

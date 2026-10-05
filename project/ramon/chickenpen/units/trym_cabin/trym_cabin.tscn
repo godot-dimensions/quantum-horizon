@@ -1825,3 +1825,7 @@ omni_range_meters = 9.0
 [node name="Chime" type="AudioStreamPlayer" parent="TrymDoor"]
 stream = SubResource("AudioStreamWAV_rs83v")
 volume_db = -9.0
+
+[node name="TrymArrival" type="Node4D" parent="."]
+position = Vector4(-2, 0, 4, 0)
+metadata/what = "Where the pen's path arrives (PenLayout/paths/pen_a.tres): its destination is anchored here, so it goes where the unit goes."

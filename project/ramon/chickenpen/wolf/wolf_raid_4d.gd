@@ -233,8 +233,18 @@ func _plan_route() -> void:
 	var n_in := Vector2(-signf(to_you.x) if in_x else 0.0, 0.0 if in_x else -signf(to_you.y))
 	if n_in == Vector2.ZERO:
 		n_in = Vector2(0.0, -1.0)
+	# Something standing where it would start (6 Oct: in the pen's new layout the cave hill is
+	# 16 m south of the pen, so from the north it would have come out of the hill): in over a
+	# side across your view instead, the first one that is clear.
+	if not _run_clear(middle, half, n_in, run_in):
+		for side in [Vector2(n_in.y, n_in.x), -Vector2(n_in.y, n_in.x)]:
+			if _run_clear(middle, half, side, run_in):
+				n_in = side
+				break
 	var across := Vector2(n_in.y, n_in.x)
 	if across.dot(to_you) > 0.0:
+		across = -across
+	if not _run_clear(middle, half, across, run_off) and _run_clear(middle, half, -across, run_off):
 		across = -across
 	var n_out: Vector2 = across.normalized()
 	var at_bird := Vector2(bird.x - middle.x, bird.z - middle.z)
@@ -263,6 +273,23 @@ func _plan_route() -> void:
 		"end": fence_out_out + Vector4(n_out.x, 0.0, n_out.y, 0.0) * run_off,
 		"heading_in": atan2(-n_in.x, -n_in.y), "n_in": n_in, "n_out": n_out, "bird": bird, "shot_b": shot_b,
 	}
+
+
+## Whether the ground off side [param n] of the pen is open for [param run] metres: rays straight
+## down at its start, middle and end find nothing standing taller than the grass.
+func _run_clear(middle: Vector4, half: Vector2, n: Vector2, run: float) -> bool:
+	var edge: float = (half.x if absf(n.x) > 0.5 else half.y) + 1.7
+	for k in [0.15, 0.5, 1.0]:
+		var at: Vector2 = Vector2(middle.x, middle.z) + n * (edge + run * float(k))
+		var params := RaycastParameters4D.new()
+		params.global_ray_origin = Vector4(at.x, 30.0, at.y, middle.w)
+		params.global_ray_direction = Vector4(0.0, -1.0, 0.0, 0.0)
+		params.max_distance = 31.0
+		var hit: Dictionary = PhysicsServer4D.raycast_physics_objects(params)
+		# Buildings and hills, not a chicken or you passing under the ray.
+		if not hit.is_empty() and hit.get("body") is StaticBody4D and hit.has("global_point") and (hit["global_point"] as Vector4).y > 0.6:
+			return false
+	return true
 
 
 ## Where along a side it crosses: as near level with the chicken as it can be while the camera

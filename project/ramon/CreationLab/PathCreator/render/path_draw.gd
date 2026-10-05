@@ -22,6 +22,8 @@ const SEGMENT := 0
 const NODE := 1
 const PIVOT := 2
 const FRAME := 3
+## The pen's sand under the marks: a soft-edged strip, or a round patch at a node.
+const SAND := 4
 
 static var _packed: Dictionary = {}
 
@@ -58,7 +60,10 @@ static func material(mode: int) -> TetraMaterial4D:
 	var cs: ShaderMaterial = m.get_cross_section_material_3d()
 	# The shader before anything else: Material4D only fills an empty slot with its own.
 	cs.shader = MarkShader
-	m.albedo_color = Color.WHITE
+	# The colour the projected half of the volume view (Combined, Projected) draws these boxes in;
+	# the cross-section has its own shader and never reads it. White read as a missing texture,
+	# the sheet's blue as a heavy band over the marks: sand, so a route reads there as one path.
+	m.albedo_color = Spec.SAND
 	var p: Dictionary = symbols()
 	cs.set_shader_parameter("seg_tex", p["segments"])
 	cs.set_shader_parameter("segcap_tex", p["segcaps"])

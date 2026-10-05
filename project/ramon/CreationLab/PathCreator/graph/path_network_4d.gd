@@ -124,6 +124,44 @@ const FRAME_GAP := 1.6
 		p_scale = v
 		_later()
 
+## THE PEN'S LOOKS (6 Oct 2026, PenLayout/PLAN_A.md phase 5): the marks (the sheet's chevrons, balls,
+## symbols, frames and W cues) and a sand strip under them are shown separately, so a route can be
+## icons, a sandy path, both or neither.
+@export var show_marks: bool = true:
+	set(v):
+		show_marks = v
+		_apply_visible()
+@export var show_sand: bool = false:
+	set(v):
+		show_sand = v
+		_apply_visible()
+## The sand strip's width, metres (a secondary route's is narrower); every node gets a round patch a
+## quarter wider, so bends and joints are smooth, and a destination one `sand_patch` times wider.
+@export_range(0.3, 4.0, 0.05) var sand_width: float = 1.3:
+	set(v):
+		sand_width = v
+		_later()
+@export_range(1.0, 4.0, 0.05) var sand_patch: float = 2.0:
+	set(v):
+		sand_patch = v
+		_later()
+## REVEAL: a stretch of route shows only once you have been near it (within `reveal_radius`, W
+## counted as distance too), fading in at its ends, and it stays found; a route leaving a found node
+## shows its first `reveal_tease` metres, so you can see that a way goes on. Off (static): every
+## route shows all the time.
+@export var reveal: bool = false:
+	set(v):
+		reveal = v
+		_push_reveal()
+## Whose nearness finds routes (the player).
+@export var reveal_from: NodePath
+@export_range(2.0, 60.0, 0.5) var reveal_radius: float = 14.0
+@export_range(0.0, 20.0, 0.5) var reveal_tease: float = 3.0
+@export_range(0.1, 6.0, 0.1) var reveal_fade: float = 1.5
+## Look destinations' objects up anywhere under `targets`, not only among its children (the pen's
+## arrival markers live inside its units).
+@export var targets_deep: bool = false
+
 var _items: Dictionary = {}
 var _queued: bool = false
 var _notes: PackedStringArray = PackedStringArray()
@@ -135,6 +173,10 @@ var _anchor_at: Dictionary = {}
 var _s0: Dictionary = {}
 var _gaps: Dictionary = {}
 var _geo: Dictionary = {}
+## Reveal: edge -> the stretch found, metres along it (x to y); node id -> how far it has faded in.
+var _found: Dictionary = {}
+var _node_found: Dictionary = {}
+var _reveal_t: float = 0.0
 ## Routes shut now (route index -> its edge indices), and the time to the next check.
 var _shut: Dictionary = {}
 var _block_t: float = 0.0
@@ -269,6 +311,7 @@ func rebuild() -> void:
 				_notes.append("Route %d changes height by %.2f m at once, more than a step (%.2f m)." % [int(i), rise, Spec.STEP_MAX_M])
 	_apply_look()
 	_apply_shut()
+	_push_reveal()
 
 
 func _floor_len(e: Dictionary) -> float:
@@ -292,7 +335,12 @@ func _pos(n: Dictionary) -> Vector4:
 ## The object a node is for (under `targets`), or null.
 func _target_of(n: Dictionary) -> Node4D:
 	var host: Node = get_node_or_null(targets) if not targets.is_empty() else null
-	return host.get_node_or_null(String(n.get("target", ""))) as Node4D if host != null and String(n.get("target", "")) != "" else null
+	var nm: String = String(n.get("target", ""))
+	if host == null or nm == "":
+		return null
+	if targets_deep:
+		return host.find_child(nm, true, false) as Node4D
+	return host.get_node_or_null(nm) as Node4D
 
 
 func _process(dt: float) -> void:
@@ -321,6 +369,12 @@ func _process(dt: float) -> void:
 		if _block_t <= 0.0:
 			_block_t = Spec.BLOCK_CHECK_S
 			check_blocked()
+	if reveal:
+		_fade_in(dt)
+		_reveal_t -= dt
+		if _reveal_t <= 0.0:
+			_reveal_t = 0.15
+			_find_near()
 
 
 ## Lays again only what touches the nodes `ids`: their edges (each keeps its start along its route,
@@ -333,6 +387,7 @@ func _relay(ids: Array) -> void:
 		if int(e["from"]) in ids or int(e["to"]) in ids:
 			_lay_edge(i, e, float(_s0.get(i, 0.0)), _gaps.get(i, []), used)
 			prefixes.append("Edge%d_" % i)
+			prefixes.append("Sand%d_" % i)
 	for n in graph.nodes:
 		if int(n["id"]) in ids:
 			_lay_node(n, used)
@@ -350,6 +405,7 @@ func _relay(ids: Array) -> void:
 				break
 	_apply_look()
 	_apply_shut()
+	_push_reveal()
 
 
 ## Rule 09: which routes are shut now. A route is shut when any of its edges is.
@@ -492,14 +548,124 @@ func shut_routes() -> Dictionary:
 
 
 func _apply_shut() -> void:
+	_apply_visible()
+
+
+## What shows: the marks or the sand by their switches, and no part of a shut route.
+func _apply_visible() -> void:
 	var hidden: Dictionary = {}
 	for ri in _shut:
 		for ei in _shut[ri]:
 			hidden[int(ei)] = true
 	for key in _items:
 		var mi: MeshInstance4D = _items[key]
-		if is_instance_valid(mi) and String(key).begins_with("Edge"):
-			mi.visible = not hidden.has(int(mi.get_meta("edge", -1)))
+		if not is_instance_valid(mi):
+			continue
+		var k: String = String(key)
+		var on: bool = show_sand if (k.begins_with("Sand") or k.begins_with("Pad")) else show_marks
+		if mi.has_meta("edge") and hidden.has(int(mi.get_meta("edge", -1))):
+			on = false
+		mi.visible = on
+
+
+# -- reveal --------------------------------------------------------------------------------------
+
+## Forget what has been found (a restart).
+func reset_reveal() -> void:
+	_found.clear()
+	_node_found.clear()
+	_push_reveal()
+
+
+## How much of `edge` has been found, metres along it (x to y; x > y: none).
+func found_of(edge: int) -> Vector2:
+	return _found.get(edge, Vector2(1.0e9, -1.0e9))
+
+
+## The reveal state onto every box: a stretch's found part (in its own run's metres), a node's fade.
+func _push_reveal() -> void:
+	for key in _items:
+		var mi: MeshInstance4D = _items[key]
+		if not is_instance_valid(mi):
+			continue
+		Draw.set_param(mi, "reveal_on", 1.0 if reveal else 0.0)
+		if not reveal:
+			continue
+		Draw.set_param(mi, "reveal_fade", reveal_fade)
+		if mi.has_meta("edge"):
+			var f: Vector2 = found_of(int(mi.get_meta("edge")))
+			var t0: float = float(mi.get_meta("t0", 0.0))
+			Draw.set_param(mi, "found0", f.x - t0)
+			Draw.set_param(mi, "found1", f.y - t0)
+		elif mi.has_meta("node"):
+			Draw.set_param(mi, "found", float(_node_found.get(int(mi.get_meta("node")), 0.0)))
+
+
+## Found nodes fade in over 0.6 s.
+func _fade_in(dt: float) -> void:
+	var fading: Array = []
+	for id in _node_found:
+		if float(_node_found[id]) < 1.0:
+			_node_found[id] = minf(float(_node_found[id]) + dt / 0.6, 1.0)
+			fading.append(int(id))
+	if fading.is_empty():
+		return
+	for key in _items:
+		var mi: MeshInstance4D = _items[key]
+		if is_instance_valid(mi) and mi.has_meta("node") and int(mi.get_meta("node")) in fading:
+			Draw.set_param(mi, "found", float(_node_found[int(mi.get_meta("node"))]))
+
+
+## What the player is near now: nodes within reach, and the stretch of each edge within reach (the
+## edge is straight, so that is one stretch, and what is found is kept as one: from the first
+## metre found to the last).
+func _find_near() -> void:
+	var who: Node4D = get_node_or_null(reveal_from) as Node4D
+	if who == null or graph == null:
+		return
+	var p: Vector4 = global_basis.inverse() * (who.global_position - global_position)
+	var r: float = reveal_radius
+	var changed: bool = false
+	for n in graph.nodes:
+		var id: int = int(n["id"])
+		if _node_found.has(id):
+			continue
+		var q: Vector4 = _pos(n)
+		if Vector3(q.x - p.x, q.z - p.z, q.w - p.w).length() <= r:
+			_node_found[id] = 0.0
+			changed = true
+	for i in _geo:
+		var g: Dictionary = _geo[i]
+		var a: Vector4 = g["A"]
+		var dir: Vector2 = g["dir"]
+		var length: float = g["L"]
+		var t: float = clampf((p.x - a.x) * dir.x + (p.z - a.z) * dir.y, 0.0, length)
+		var dx: float = a.x + dir.x * t - p.x
+		var dz: float = a.z + dir.y * t - p.z
+		var dw: float = float((g["w_at"] as Callable).call(t)) - p.w
+		var d2: float = dx * dx + dz * dz + dw * dw
+		var lo: float = 1.0e9
+		var hi: float = -1.0e9
+		if d2 < r * r:
+			var h: float = sqrt(r * r - d2)
+			lo = maxf(t - h, 0.0)
+			hi = minf(t + h, length)
+		var e: Dictionary = graph.edges[int(i)]
+		if _node_found.has(int(e["from"])):
+			lo = minf(lo, 0.0)
+			hi = maxf(hi, minf(reveal_tease, length))
+		if _node_found.has(int(e["to"])):
+			lo = minf(lo, maxf(length - reveal_tease, 0.0))
+			hi = maxf(hi, length)
+		if lo > hi:
+			continue
+		var f: Vector2 = found_of(int(i))
+		var nf := Vector2(minf(f.x, lo), maxf(f.y, hi))
+		if nf != f:
+			_found[int(i)] = nf
+			changed = true
+	if changed:
+		_push_reveal()
 
 
 ## A static box across edge `i` at BLOCK_H_M above each run of its ground, its own two ends' objects
@@ -661,6 +827,18 @@ func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictiona
 			g.w = float(gap_list[1]) + GAP_HALF - t0
 		Draw.set_param(mi, "gap0", g)
 		mi.set_meta("edge", i)
+		mi.set_meta("t0", t0)
+		# The sand under it: the run's own length (the node patches cover the joints), a little
+		# below the marks, as deep in W and as sheared as they are.
+		var sb: MeshInstance4D = _item("Sand%d" % i if first else "Sand%d_%d" % [i, k], Draw.SAND, used)
+		var sm: float = t0 + seg * 0.5
+		_size(sb, Vector4(seg, Spec.BOX_H_M, sand_width * (1.0 if primary else 0.6), depth))
+		sb.position = Vector4(A.x + dir.x * sm, float(runs[k][2]) + Spec.PROUD_M - 0.004, A.z + dir.y * sm, float(w_at.call(sm)))
+		sb.basis = mi.basis
+		Draw.set_param(sb, "s0", s0 + t0)
+		Draw.set_param(sb, "sand_round", 0.0)
+		sb.set_meta("edge", i)
+		sb.set_meta("t0", t0)
 
 
 func _lay_node(n: Dictionary, used: Dictionary) -> void:
@@ -695,12 +873,23 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 	mi.position = Vector4(P.x, gy + Spec.PROUD_M + 0.002, P.z, P.w)
 	mi.basis = Projection.IDENTITY
 	mi.set_meta("node", id)
+	# The sand patch: a little wider than the strip at a node on the way, so it covers the corners
+	# two strips' square ends leave where they meet at an angle; wider again at a destination.
+	var pad: MeshInstance4D = _item("Pad%d" % id, Draw.SAND, used)
+	var pad_d: float = sand_width * (sand_patch if kind == "destination" else 1.25)
+	_size(pad, Vector4(pad_d, Spec.BOX_H_M, pad_d, band))
+	pad.position = Vector4(P.x, gy + Spec.PROUD_M - 0.004, P.z, P.w)
+	pad.basis = Projection.IDENTITY
+	Draw.set_param(pad, "sand_round", 1.0)
+	Draw.set_param(pad, "s0", float(id) * 7.31)
+	pad.set_meta("node", id)
 	Draw.set_param(mi, "w_step", 0.0)
 	# The W cue: where the route goes on at another W, a row of dots beside the node, shown at the W
 	# you arrive from (the end of the stretch you can see), not at the node's own.
 	var wsi: Array = w_step_info(id)
 	if not wsi.is_empty() and absf(float(wsi[0])) > 0.25:
 		var cue: MeshInstance4D = _item("Cue%d" % id, Draw.PIVOT, used)
+		cue.set_meta("node", id)
 		var reach: float = (art_radius(n) / _u() + 4.0 + Spec.W_CUE_GAP * float(Spec.W_CUE_MAX)) * _u() * 2.0 + 0.1
 		_size(cue, Vector4(reach, Spec.BOX_H_M, 0.3, float(wsi[2])))
 		cue.position = Vector4(P.x, ground_at(P.x, P.z, float(wsi[1]), P.y) + Spec.PROUD_M + 0.003, P.z, float(wsi[1]))
@@ -718,8 +907,7 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 
 
 func _lay_frame(n: Dictionary, used: Dictionary) -> void:
-	var host: Node = get_node_or_null(targets) if not targets.is_empty() else null
-	var t: Node4D = host.get_node_or_null(String(n.get("target", ""))) as Node4D if host != null else null
+	var t: Node4D = _target_of(n)
 	if t == null or not t.has_method("footprint"):
 		return
 	var round_frame: bool = String(n["frame"]) == "round"
@@ -729,6 +917,7 @@ func _lay_frame(n: Dictionary, used: Dictionary) -> void:
 	var foot: Vector2 = t.call("footprint")
 	var outer: Vector2 = foot + Vector2.ONE * FRAME_MARGIN * 2.0
 	var mi: MeshInstance4D = _item("Frame%d" % int(n["id"]), Draw.FRAME, used)
+	mi.set_meta("node", int(n["id"]))
 	var band: float = float(n.get("band", 1.2))
 	_size(mi, Vector4(outer.x + 0.3, Spec.BOX_H_M, outer.y + 0.3, band))
 	var tp: Vector4 = t.global_position - global_position

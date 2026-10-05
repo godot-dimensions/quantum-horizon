@@ -263,6 +263,12 @@ func _on_enabled(on: bool) -> void:
 	if _grass_button != null:
 		_grass_button.text = "Grass on   Alt+O" if on else "Grass off   Alt+O"
 		_paint(_grass_button, on)
+	# Off (the pen's default since 6 Oct, "so we can design clearly"): the panel folds down to
+	# the one switch, and opens again with the grass.
+	if _box != null:
+		for row in _box.get_children():
+			if row != _title and row != _grass_button and row is CanvasItem:
+				(row as CanvasItem).visible = on
 
 
 func _toggle_glow() -> void:

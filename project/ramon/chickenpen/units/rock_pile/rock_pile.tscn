@@ -388,3 +388,7 @@ travel = true
 stride_length = 0.36
 step_height = 0.1
 body_bob = 0.02
+
+[node name="RockArrival" type="Node4D" parent="."]
+position = Vector4(1.6, 0, -0.4, 0)
+metadata/what = "Where the pen's path arrives (PenLayout/paths/pen_a.tres): its destination is anchored here, so it goes where the unit goes."

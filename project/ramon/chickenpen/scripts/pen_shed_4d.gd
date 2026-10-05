@@ -62,6 +62,11 @@ extends Node4D
 ## The floorboards. Thin, so the step up from the grass is barely a step.
 @export_range(0.02, 0.4, 0.01) var floor_thick: float = 0.06: set = _set_floor_thick
 @export_range(0.5, 8.0, 0.1) var w_depth: float = 3.4: set = _set_w_depth
+## The fence tech's timber frame round the walls (see _fence_frame), and its spacing: 1.2 keeps
+## the grid's layers (where its ribs read as solid walls) off the farm's slice for this shed's
+## depth in W, so from there the frame shows as uprights.
+@export var fence_frame: bool = false: set = _set_fence_frame
+@export_range(0.5, 6.0, 0.1, "suffix:m") var fence_spacing: float = 1.2: set = _set_fence_spacing
 ## Cap the shed at both ends of W, so it is a closed room in four dimensions and not a
 ## 3D shed stretched through the fourth. See _close_in_w.
 @export var close_in_w: bool = true: set = _set_close
@@ -127,6 +132,8 @@ func _set_w_depth(v: float) -> void: w_depth = v; _later()
 func _set_door_w(v: float) -> void: door_width = v; _later()
 func _set_door_h(v: float) -> void: door_height = v; _later()
 func _set_door_side(v: int) -> void: door_side = v; _later()
+func _set_fence_frame(v: bool) -> void: fence_frame = v; _later()
+func _set_fence_spacing(v: float) -> void: fence_spacing = v; _later()
 func _set_a(v: Color) -> void: wall_color = v; _later()
 func _set_b(v: Color) -> void: frame_color = v; _later()
 func _set_c(v: Color) -> void: roof_color = v; _later()
@@ -191,6 +198,8 @@ func rebuild() -> void:
 	if close_in_w:
 		_close_in_w()
 	_roof()
+	if fence_frame:
+		_fence_frame()
 	_update_cutaway()
 
 
@@ -209,6 +218,35 @@ func rebuild() -> void:
 ## the room from that side too. They go into the cutaway list like the others, with normals
 ## along W, and the cutaway's dot product is already four-dimensional, so it hides the near
 ## one from a rotated camera exactly as it hides a near side wall from an ordinary one.
+## A TIMBER FRAME FROM THE FENCE TECH (6 Oct 2026, PenLayout/PLAN_A.md step 69; Ramon: "it's so
+## flat"). One FenceGenerator4D box just outside the walls, posts and top plates only: posts at its
+## corners and every `fence_spacing` along its edges, W edges too, so they stand at whole W places
+## (one row of them on the farm's slice) and the shed reads as a frame with depth in W rather than
+## a slab. The walls stay as they are, so the cutaway in Trym's scene still takes them away one by
+## one; the frame is open and stays.
+func _fence_frame() -> void:
+	var f := FenceGenerator4D.new()
+	f.name = "FenceFrame"
+	f.update_automatically = false
+	f.input_shape_type = FenceGenerator4D.INPUT_SHAPE_BOX
+	f.box_size = Vector3(length + 0.16, width + 0.16, w_depth + 0.16)
+	f.output_mesh_type = FenceGenerator4D.OUTPUT_MESH_TETRA
+	f.desired_spacing_meters = fence_spacing
+	f.post_height_meters = wall_height
+	f.post_thickness_meters = 0.14
+	f.rib_height_ratio = 0.97
+	f.rib_thickness_ratio = 0.8
+	f.beam_count = 0
+	var m := TetraMaterial4D.new()
+	m.albedo_color = frame_color
+	f.post_material = m
+	f.rib_material = m
+	f.beam_material = m
+	add_child(f)
+	_own(f)
+	f.update_fence_mesh_now()
+
+
 func _close_in_w() -> void:
 	var half_w: float = w_depth * 0.5 - wall_thick * 0.5
 	for sw in [-1.0, 1.0]:

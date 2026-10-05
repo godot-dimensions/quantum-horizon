@@ -13,6 +13,17 @@ extends Node
 ## What is left is what nothing else owns: how to move, what the fourth direction is, and
 ## what to do with a chicken once you are holding it.
 ##
+## HINTS IN PLACES (6 Oct 2026, the pen's new opening): a marker in the group "tutor_spot"
+## teaches the first time you reach it, so a wall or a door can explain itself without this
+## node knowing it exists. Its metadata:
+##   tutor_key     the hint's name (each still fires once)
+##   tutor_text    the words; {ana} and {kata} become those keys, {dir} the way to the
+##                 marker's own W (ana or kata) and {key} the key for it
+##   tutor_radius  how near, on the ground, in metres
+##   tutor_w       how near in W
+##   tutor_when    "in": shown within tutor_w of the marker's W; "off": shown further than
+##                 that from it (a door that is somewhere else in W)
+##
 ## EACH HINT FIRES ONCE. A hint that reappears is no longer teaching - it is nagging, and
 ## the player has already demonstrated they understood it by triggering the next one.
 
@@ -24,6 +35,8 @@ extends Node
 ## How long a hint stays up. Long enough to read twice, short enough that it is gone before
 ## it becomes furniture.
 @export_range(2.0, 20.0, 0.5) var hint_seconds: float = 7.0
+## Seconds spent off the slice you started in before R is named as the way back.
+@export_range(2.0, 60.0, 0.5) var home_after: float = 8.0
 
 var _player: Node4D
 var _catcher: Node
@@ -33,6 +46,7 @@ var _shown: Dictionary = {}
 var _showing: String = ""
 var _left: float = 0.0
 var _start_w: float = 0.0
+var _off_for: float = 0.0
 
 
 func _ready() -> void:
@@ -56,6 +70,8 @@ func _process(delta: float) -> void:
 		if _left <= 0.0:
 			_showing = ""
 			_label.text = ""
+	if absf(_player.global_position.w - _start_w) > 0.5:
+		_off_for += delta
 	_check()
 
 
@@ -63,6 +79,9 @@ func _check() -> void:
 	# Holding a chicken: the only thing left to learn is where it goes.
 	if _catcher != null and _catcher.get("carried") != null:
 		_show("deliver", "Carry it inside the fence, or throw it over.")
+		return
+
+	if _spot_hint():
 		return
 
 	# The fourth direction, introduced the first time the locator says a chicken is off the
@@ -78,6 +97,35 @@ func _check() -> void:
 		# moment the mechanic is understood rather than merely obeyed.
 		if absf(_player.global_position.w - _start_w) > 0.5:
 			_show("moved", "You are now standing in a different slice of the world.")
+	# And a while later, still off it: the way back.
+	if _off_for > home_after:
+		_show("home", "R takes you back to the farm's slice.")
+
+
+## The place hints (see the top of the file). True when one was shown.
+func _spot_hint() -> bool:
+	var me: Vector4 = _player.global_position
+	for spot in get_tree().get_nodes_in_group(&"tutor_spot"):
+		var marker := spot as Node4D
+		if marker == null or not marker.is_visible_in_tree():
+			continue
+		var key: String = String(marker.get_meta(&"tutor_key", marker.name))
+		if _shown.has(key):
+			continue
+		var at: Vector4 = marker.global_position
+		if Vector2(at.x - me.x, at.z - me.z).length() > float(marker.get_meta(&"tutor_radius", 5.0)):
+			continue
+		var dw: float = at.w - me.w
+		var near_w: bool = absf(dw) <= float(marker.get_meta(&"tutor_w", 1.0))
+		if near_w != (String(marker.get_meta(&"tutor_when", "in")) == "in"):
+			continue
+		var text: String = String(marker.get_meta(&"tutor_text", ""))
+		text = text.replace("{ana}", _key_for(&"move_ana")).replace("{kata}", _key_for(&"move_kata"))
+		text = text.replace("{dir}", "ana" if dw > 0.0 else "kata")
+		text = text.replace("{key}", _key_for(&"move_ana") if dw > 0.0 else _key_for(&"move_kata"))
+		_show(key, text)
+		return _showing == key
+	return false
 
 
 ## One hint at a time, and each of them only ever once.
@@ -117,4 +165,5 @@ func reset() -> void:
 		_label.text = ""
 	if _player != null:
 		_start_w = _player.global_position.w
+	_off_for = 0.0
 	_show("move", "Move with %s   Look with the mouse" % _movement_keys())

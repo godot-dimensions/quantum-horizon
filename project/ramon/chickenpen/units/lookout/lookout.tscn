@@ -31,3 +31,7 @@ position = Vector4(-14, 0, 12, 8)
 
 [node name="WoodSpot" type="Node4D" parent="."]
 position = Vector4(-10, 0, 12, -8)
+
+[node name="TowerArrival" type="Node4D" parent="."]
+position = Vector4(3.3, 0, 8.4, 0)
+metadata/what = "Where the pen's path arrives (PenLayout/paths/pen_a.tres): its destination is anchored here, so it goes where the unit goes."

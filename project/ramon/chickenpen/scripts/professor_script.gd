@@ -70,7 +70,7 @@ const NODES: Dictionary = {
 "how_to_mine": {
 	"speaker": "Professor Miner",
 	"lines": [
-		"The hole behind me. Walk in until it gets dark, then keep walking. The miner at the bottom is called Hale; he has newer numbers than mine and fewer opinions.",
+		"The hole behind me. Not in this slice; four metres ana of it. Step that way until the arch opens, then walk in until it gets dark. The miner at the bottom is called Hale; he has newer numbers than mine and fewer opinions.",
 		"My instruments have not agreed with one another since the day they opened that hill. I mention it only because nobody down there will.",
 		"Pick is on your belt. Press its number, stand close, swing. Each blow takes a sphere about two metres across; the azoth sits a hand's depth under the skin.",
 		"Bring what you find to the keeper. He has been waiting years for someone to hand him something.",

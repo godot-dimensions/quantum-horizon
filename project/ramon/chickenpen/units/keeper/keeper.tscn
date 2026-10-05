@@ -283,3 +283,7 @@ position = Vector4(-2.3, 0, 5.9, 0)
 script = ExtResource("pen_face")
 figure_path = NodePath("../Keeper")
 player_path = NodePath("../../../Player")
+
+[node name="KeeperArrival" type="Node4D" parent="."]
+position = Vector4(0.9, 0, 1.5, 0)
+metadata/what = "Where the pen's path arrives (PenLayout/paths/pen_a.tres): its destination is anchored here, so it goes where the unit goes."

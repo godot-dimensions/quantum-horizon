@@ -25,6 +25,14 @@ signal completed()
 
 @export var completion_text: String = "All nine chickens are home."
 
+## The line before that one, while the pen is still a walk away (6 Oct: you start at Trym's shed,
+## on the far side of the cave hill). Empty: the chickens' line from the start.
+@export var opening_text: String = ""
+## Who the opening line sends you to; within [member opening_until_m] of them it gives way to the
+## chickens' line.
+@export var opening_until_path: NodePath
+@export_range(2.0, 40.0, 0.5, "suffix:m") var opening_until_m: float = 12.0
+
 ## Everybody who walks about and therefore has to be put back. The player first, because
 ## that is the one the card's promise is really about.
 @export var restore_paths: Array[NodePath] = [NodePath("../../Player"),
@@ -46,6 +54,7 @@ var _locator: Node
 var _cues: Node
 var _finished: bool = false
 var _last_returned: int = 0
+var _opening: bool = false
 
 
 func _ready() -> void:
@@ -62,13 +71,32 @@ func _ready() -> void:
 	_manager.call("bind_player", _player)
 	if not _manager.is_connected("progress_changed", _on_progress):
 		_manager.connect("progress_changed", _on_progress)
-	if _objective != null:
-		_objective.text = objective_text
+	_show_opening()
 	_reset_everyone()
 	_on_progress(_manager.call("returned_count"), (_manager.get("agents") as Array).size())
 
 	# Taken at the end of _ready, once the scene has placed everybody.
 	_snapshot()
+
+## The opening line if there is one, else straight to the chickens'.
+func _show_opening() -> void:
+	_opening = opening_text != "" and get_node_or_null(opening_until_path) != null
+	if _objective != null:
+		_objective.text = opening_text if _opening else objective_text
+
+
+func _process(_delta: float) -> void:
+	if not _opening or _player == null:
+		return
+	var until: Node4D = get_node_or_null(opening_until_path) as Node4D
+	if until == null:
+		return
+	var gap: Vector4 = until.global_position - _player.global_position
+	if Vector2(gap.x, gap.z).length() <= opening_until_m:
+		_opening = false
+		if _objective != null and not _finished:
+			_objective.text = objective_text
+
 
 ## Where each of them was when the scene loaded.
 var _spawns: Dictionary = {}
@@ -178,8 +206,7 @@ func restart() -> void:
 	if _manager != null:
 		_manager.call("reset")
 		_manager.call("bind_player", _player)
-	if _objective != null:
-		_objective.text = objective_text
+	_show_opening()
 	# AND EVERYTHING THAT HOLDS QUEST STATE, which is the half this never did. The comment
 	# up in _ready has always said item 73's restart is not one if it leaves that behind -
 	# and then the sweep it describes only ever ran at load. Ctrl+R put the chickens back

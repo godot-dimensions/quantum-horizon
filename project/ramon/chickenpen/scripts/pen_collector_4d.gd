@@ -62,9 +62,20 @@ func _process(delta: float) -> void:
 
 
 func _take(item: Node4D) -> void:
-	var id: String = "found_watch" if int(item.get("kind")) == 0 else "found_egg"
+	var kind: int = int(item.get("kind"))
 	item.visible = false
 	item.set_process(false)
+	# A bag of azoth (kind 2) is azoth, so the keeper can take it: the same item as a mined piece.
+	if kind == 2:
+		var worth: int = int(item.get("bag_worth"))
+		if _inventory != null:
+			for i in worth:
+				_inventory.call("add_item", "found_azoth")
+		if _readout != null:
+			_readout.text = "Found: a bag of azoth, %d pieces. Somebody hid this." % worth
+			_left = message_seconds
+		return
+	var id: String = "found_watch" if kind == 0 else "found_egg"
 	if _inventory != null:
 		_inventory.call("add_item", id)
 	if _readout != null:

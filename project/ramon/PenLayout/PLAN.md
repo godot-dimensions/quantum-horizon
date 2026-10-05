@@ -237,6 +237,17 @@ Done last (Ramon). It works in `PenLayout/Watchtower/` and does not touch the pe
   - TalkCam frames every conversation from where it stands
   - the balloon's ride crosses the pen
 
+## Later: tests that already failed before the layout work (Ramon, 6 Oct: "we can tackle them at a later time")
+
+Each failed the same way on the pen before any unit moved, so they are not caused by the units.
+- `_verify_trym_runner`, 3 checks: Trym does not get up from his chair ("he got up", "he turned
+  to face you" 1.48 rad off, "he is taller standing than sat")
+- `_verify_dreamer_runner`, 1 check: "its prompt is on screen coming in along W" (inside the cave
+  interior)
+- `_verify_slice_plane`, 3 checks; `_verify_sfx_mix`, 4 checks
+- `_verify_range` expects the old shooting gallery; `_verify_talk` looks for UI/Radar, which is gone
+- the keeper's first speech comes up empty in its test
+
 ## Order and answers (Ramon, 6 Oct)
 
 - Order: Phase 0, then A (units), C (layout), D (paths), and B (the watchtower) last: "much less

@@ -50,6 +50,9 @@ const OWNED: Array = [
 	["../../Crossing", "debug_key", "into the cinema, and back"],
 	["../../Systems/Celebration", "test_key", "finish the round - again restarts"],
 	["../../UI/SlicePlane", "toggle_key", "the dial, on or off"],
+	["../../Systems/Paths", "key_reveal", "paths found as you go, or all shown"],
+	["../../Systems/Paths", "key_icons", "path icons, on or off"],
+	["../../Systems/Paths", "key_sand", "sand paths, on or off"],
 ]
 
 var _rows: Array = []

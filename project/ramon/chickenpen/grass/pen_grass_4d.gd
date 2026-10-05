@@ -886,7 +886,7 @@ func _build_bits() -> void:
 
 func _set_bits_visible() -> void:
 	if _bits_instance.is_valid():
-		RenderingServer.instance_set_visible(_bits_instance, bits_enabled and _scenario.is_valid() and is_visible_in_tree())
+		RenderingServer.instance_set_visible(_bits_instance, enabled and bits_enabled and _scenario.is_valid() and is_visible_in_tree())
 
 
 ## A frame of the leaves and bits: the air moved on, how many are up, the camera's frame.
@@ -989,6 +989,10 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 		if _bits_instance.is_valid():
 			RenderingServer.instance_set_scenario(_bits_instance, scenario)
 		_set_visible()
+	# Switched off (the pen's default since 6 Oct, Alt+O for on): nothing to lay out. The scenario
+	# above is still kept, so switching on shows the grass the next frame.
+	if not enabled:
+		return
 	var inverse: Projection = camera.global_basis.inverse()
 	var basis: Projection = inverse * global_basis
 	var origin: Vector4 = inverse * (global_position - camera.global_position)

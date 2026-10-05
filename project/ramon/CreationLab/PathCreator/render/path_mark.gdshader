@@ -18,6 +18,12 @@
 //   3 FRAME    an object's frame (slot H or I) grown to the footprint without growing its strokes:
 //              the plane is folded so the symbol's straight middles stretch and its corners only
 //              move; an opening is cut toward the approach.
+//   4 SAND     the pen's sand under the marks (6 Oct 2026): a strip as wide as the box, its edges
+//              broken by noise that runs on unbroken from stretch to stretch (`s0` + along), or a
+//              round patch at a node (`sand_round`); speckled, lit like the ground.
+//
+// REVEAL (6 Oct 2026): with `reveal_on`, a stretch shows only its found part, `found0` to `found1`
+// metres along it, fading over `reveal_fade` at each end; a node's box shows as `found` (0 to 1).
 //
 // W: the box is as deep in W as the route is visible (its band). Over `w_soft` at the band's edges the
 // marks shrink to nothing, so a route recedes as you slice out of it rather than being cut off.
@@ -131,6 +137,17 @@ uniform float walk = 0.0;
 uniform float ink_gain = 1.0;
 uniform float motion = 1.0;
 uniform float scissor = 0.0;
+
+// SAND
+uniform float sand_round = 0.0;
+uniform float sand_rough = 0.18;
+
+// REVEAL
+uniform float reveal_on = 0.0;
+uniform float found0 = -1.0e9;
+uniform float found1 = 1.0e9;
+uniform float found = 1.0;
+uniform float reveal_fade = 1.5;
 
 // W (metres, in the box's own W)
 uniform float w_half = 100.0;
@@ -366,6 +383,22 @@ vec4 draw_symbol(int sym, vec2 p, float px, float erode, float arc, float show_a
 	return out_col;
 }
 
+float hash1(float n) {
+	return fract(sin(n) * 43758.5453);
+}
+
+// Smooth value noise along a line, -1 to 1.
+float vnoise(float x) {
+	float i = floor(x);
+	float f = fract(x);
+	float u = f * f * (3.0 - 2.0 * f);
+	return mix(hash1(i), hash1(i + 1.0), u) * 2.0 - 1.0;
+}
+
+float hash2(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
 float disc(vec2 p, float r, float px) {
 	return clamp(0.5 - (length(p) - r) / max(px, 1e-5), 0.0, 1.0);
 }
@@ -466,6 +499,21 @@ void fragment() {
 			discard;
 		}
 		col = draw_symbol(frame_sym, q, px, erode_m / unit_m, 0.0, 1.0, 1.0, 0.0);
+	} else if (mode == 4) {
+		float hw = box_size.z * 0.5;
+		float d;
+		if (sand_round > 0.5) {
+			float ang = atan(m.y, m.x);
+			float rr = hw * (1.0 + sand_rough * (0.6 * vnoise(ang * 2.5 + s0) + 0.4 * vnoise(ang * 6.0 + s0 * 1.7)));
+			d = length(m) - rr;
+		} else {
+			float sx = s0 + m.x + box_size.x * 0.5;
+			float rr = hw * (1.0 + sand_rough * (0.6 * vnoise(sx * 0.9) + 0.4 * vnoise(sx * 2.7 + 13.0)));
+			d = abs(m.y) - rr;
+		}
+		float cov = (1.0 - smoothstep(-0.12, 0.03, d)) * band;
+		float speck = hash2(floor((m + vec2(s0, 0.0)) * 9.0));
+		col = over(col, sand.rgb * (0.9 + 0.16 * speck), cov);
 	}
 	if (abs(w_step) > 0.25 && (mode == 1 || mode == 2)) {
 		// The W cue: dots in a row east of the node, one a metre of W, warm ana, cool kata.
@@ -481,11 +529,19 @@ void fragment() {
 			col = over(col, cc, disc(pc - c, cue_dot_r * shrink, pxu));
 		}
 	}
+	if (reveal_on > 0.5) {
+		float vis = found;
+		if (mode == 0 || (mode == 4 && sand_round < 0.5)) {
+			float al = m.x + box_size.x * 0.5 - (mode == 0 ? ext0 : 0.0);
+			vis = clamp(min((al - (found0 - reveal_fade)) / reveal_fade, ((found1 + reveal_fade) - al) / reveal_fade), 0.0, 1.0);
+		}
+		col.a *= vis;
+	}
 	if (col.a < (scissor > 0.5 ? 0.5 : 0.01)) {
 		discard;
 	}
 	float a = scissor > 0.5 ? 1.0 : col.a;
-	if (walk > 0.5) {
+	if (walk > 0.5 || mode == 4) {
 		ALBEDO = mix(under_color.rgb, col.rgb, a);
 	} else {
 		// The mark's own colour, emitted; its antialiased edge blends into the lit floor beneath.

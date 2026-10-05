@@ -1,7 +1,7 @@
 @tool
 extends Node4D
 
-## Something to find: Mithra's 4D pocket watch, or a golden egg.
+## Something to find: Mithra's 4D pocket watch, a golden egg, or a bag of azoth.
 ##
 ## IT WAS AN ADA COIN, with the Cardano mark built from dots. Trym asked on 25 Sept for every
 ## mention of money to come out of the scene, and it became the watch Mithra lost.
@@ -22,7 +22,12 @@ extends Node4D
 ## over in conversation; these are what the gauntlet is FOR, so they are only reachable by
 ## doing the thing it teaches.
 
-enum Kind { POCKET_WATCH, GOLDEN_EGG }
+## THE BAG OF AZOTH (6 Oct 2026, layout A's easter eggs): somebody's stash, hidden off the
+## farm's slice at the end of a faint path. A sack tied at the neck with violet crystals
+## standing out of it, each at its own depth in W, because azoth is "never wholly in the slice
+## you are looking at" (professor_script.gd): step through W and the crystals change. Worth
+## [member bag_worth] azoth, which the keeper takes for troughs.
+enum Kind { POCKET_WATCH, GOLDEN_EGG, AZOTH_BAG }
 
 @export var kind: Kind = Kind.POCKET_WATCH: set = _set_kind
 @export_range(0.05, 2.0, 0.01) var size: float = 0.34: set = _set_size
@@ -37,6 +42,13 @@ enum Kind { POCKET_WATCH, GOLDEN_EGG }
 @export var watch_hands: Color = Color(0.10, 0.09, 0.12): set = _set_e
 @export var egg_shell: Color = Color(0.98, 0.80, 0.24): set = _set_c
 @export var egg_shine: Color = Color(1.0, 0.94, 0.62): set = _set_d
+@export var sack: Color = Color(0.56, 0.44, 0.29): set = _set_f
+@export var sack_tie: Color = Color(0.33, 0.24, 0.15): set = _set_g
+@export var azoth: Color = Color(0.62, 0.36, 0.95): set = _set_h
+
+@export_group("Bag")
+## How many pieces of azoth a bag is worth.
+@export_range(1, 6) var bag_worth: int = 2
 
 var _rest_y: float = 0.0
 var _clock: float = 0.0
@@ -50,6 +62,9 @@ func _set_b(v: Color) -> void: watch_face = v; _later()
 func _set_e(v: Color) -> void: watch_hands = v; _later()
 func _set_c(v: Color) -> void: egg_shell = v; _later()
 func _set_d(v: Color) -> void: egg_shine = v; _later()
+func _set_f(v: Color) -> void: sack = v; _later()
+func _set_g(v: Color) -> void: sack_tie = v; _later()
+func _set_h(v: Color) -> void: azoth = v; _later()
 
 
 func _ready() -> void:
@@ -75,6 +90,8 @@ func rebuild() -> void:
 		child.free()
 	if kind == Kind.POCKET_WATCH:
 		_build_watch()
+	elif kind == Kind.AZOTH_BAG:
+		_build_bag()
 	else:
 		_build_egg()
 
@@ -176,6 +193,37 @@ func _build_egg() -> void:
 	# as a single flat colour whatever angle it is at.
 	_box("Shine", Vector4(0.0, -size * 0.10, size * 0.72, 0.0),
 		Vector3(size * 0.5, size * 0.44, size * 0.18), shine)
+
+
+## A sack: stacked slabs, fat at the bottom and pinched at the neck, a tie round the neck,
+## and four crystals standing out of the mouth at four depths in W.
+func _build_bag() -> void:
+	var cloth := TetraMaterial4D.new()
+	cloth.albedo_color = sack
+	var tie := TetraMaterial4D.new()
+	tie.albedo_color = sack_tie
+	var glass := TetraMaterial4D.new()
+	glass.albedo_color = azoth
+	# height fraction, half-width fraction, from the floor up.
+	var slabs := [[-1.0, 0.50], [-0.70, 0.66], [-0.30, 0.70], [0.10, 0.62], [0.40, 0.42], [0.56, 0.22]]
+	for i in slabs.size() - 1:
+		var low: Array = slabs[i]
+		var high: Array = slabs[i + 1]
+		var mid: float = (float(low[0]) + float(high[0])) * 0.5
+		var span: float = (float(high[0]) - float(low[0])) * size
+		var half: float = maxf(float(low[1]), float(high[1])) * size
+		_box("Sack%d" % i, Vector4(0.0, mid * size, 0.0, 0.0), Vector3(half * 2.0, span, half * 2.0), cloth)
+	_box("Tie", Vector4(0.0, 0.52 * size, 0.0, 0.0), Vector3(size * 0.52, size * 0.08, size * 0.52), tie)
+	# [x, z, w, height, tilt]: thin in W, each where a different slice catches it.
+	var crystals := [[0.0, 0.0, 0.0, 0.62, 0.0], [0.10, 0.04, 0.14, 0.46, 0.35],
+		[-0.08, -0.05, -0.12, 0.50, -0.30], [0.02, -0.09, 0.24, 0.36, 0.2]]
+	for i in crystals.size():
+		var c: Array = crystals[i]
+		var h: float = float(c[3]) * size
+		var node: MeshInstance4D = _box("Azoth%d" % i, Vector4(float(c[0]) * size, 0.56 * size + h * 0.5, float(c[1]) * size, float(c[2]) * size),
+			Vector3(size * 0.12, h, size * 0.12), glass)
+		(node.mesh as BoxTetraMesh4D).size.w = w_depth * 0.22
+		node.basis = Basis4D.from_xy(float(c[4]))
 
 
 func _box(part: String, at: Vector4, box: Vector3, material: TetraMaterial4D) -> MeshInstance4D:

@@ -168,6 +168,10 @@ func _borrow() -> void:
 	if _grass != null:
 		_saved["wind_scale"] = _grass.get("wind_scale")
 		_saved["big_gust_chance"] = _grass.get("big_gust_chance")
+		# The film is the grass: on for it even while the pen keeps it off (its default since 6 Oct),
+		# and back as it was after.
+		_saved["grass_on"] = _grass.get("enabled")
+		_grass.set("enabled", true)
 	player.process_mode = Node.PROCESS_MODE_DISABLED
 	(player as Node4D).visible = false
 	if sky:
@@ -191,6 +195,8 @@ func _give_back() -> void:
 	if _grass != null and _saved.has("wind_scale"):
 		_grass.set("wind_scale", _saved["wind_scale"])
 		_grass.set("big_gust_chance", _saved["big_gust_chance"])
+	if _grass != null and _saved.has("grass_on"):
+		_grass.set("enabled", _saved["grass_on"])
 	_lend_walker(false)
 	var farm := _room.get_node_or_null("Player/CameraRig/Pitch/Camera4D") as Camera4D
 	if farm:

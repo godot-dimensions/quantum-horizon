@@ -24,3 +24,7 @@ script = ExtResource("pen_face")
 figure_path = NodePath("../RangeMaster")
 player_path = NodePath("../../../Player")
 notice_within = 4.0
+
+[node name="RangeArrival" type="Node4D" parent="."]
+position = Vector4(3, 0, 1.5, 0)
+metadata/what = "Where the pen's path arrives (PenLayout/paths/pen_a.tres): its destination is anchored here, so it goes where the unit goes."
