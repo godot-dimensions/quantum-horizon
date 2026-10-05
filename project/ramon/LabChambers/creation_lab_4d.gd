@@ -1,9 +1,10 @@
 @tool
 extends Node4D
 
-## THE GOAT ROOM: one feature room, done properly, to set the style and grow the kit
-## (LabChambers/kit/). Ramon, 4 Oct: "an simple entrance to walk through, and then the goat room
-## ... nail the style together. and hence create the kit."
+## THE CREATION LAB (begun as "the goat room", renamed 5 Oct: Ramon, "goat room is essentially
+## creation labs so just rename it"): one feature room, done properly, to set the style and grow
+## the kit (LabChambers/kit/). Ramon, 4 Oct: "an simple entrance to walk through, and then the goat
+## room ... nail the style together. and hence create the kit."
 ##
 ## You start in a short entrance, walk under CREATION LAB painted over the doorway, and into a
 ## grey tiled room in blue light: the lesson on the left wall, the goat on a lit plinth under one

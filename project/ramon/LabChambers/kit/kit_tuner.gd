@@ -25,7 +25,7 @@ extends PanelContainer
 const Style := preload("res://ramon/LabChambers/kit/kit_style.gd")
 const RoomScript := preload("res://ramon/LabKit/lab_room_4d.gd")
 const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
-const SAVE_PATH := "res://ramon/LabChambers/goat_room_tuning.cfg"
+const SAVE_PATH := "res://ramon/LabChambers/creation_lab_tuning.cfg"
 const FONT := 15
 const HEAD := Color(0.42, 0.72, 1.0)
 const COOL := Color(0.86, 0.92, 1.0)

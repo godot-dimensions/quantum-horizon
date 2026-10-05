@@ -4,9 +4,9 @@ extends SceneTree
 ## res://smoke_test_output/goat_room/<nn>_<mood>_<what>.png; checks the cinematic, the slice, the
 ## turn and E as it goes.
 ##
-##   LabChambers/scripts/lab_run.sh windowed goat_room res://ramon/LabChambers/scripts/_capture_goat_room_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed goat_room res://ramon/LabChambers/scripts/_capture_creation_lab_runner.gd
 
-const SCENE := "res://ramon/LabChambers/goat_room.tscn"
+const SCENE := "res://ramon/LabChambers/creation_lab.tscn"
 const OUT := "res://smoke_test_output/goat_room/"
 
 var _g: Node
@@ -223,7 +223,7 @@ func _run() -> void:
 		await _key(KEY_E)
 		await _wait(0.3)
 	await _shot("added_balls")
-	print("GOAT ROOM %s: %d failed, %.1f s" % ["PASS" if _fails.is_empty() else "FAIL", _fails.size(), (Time.get_ticks_msec() - started) / 1000.0])
+	print("CREATION LAB %s: %d failed, %.1f s" % ["PASS" if _fails.is_empty() else "FAIL", _fails.size(), (Time.get_ticks_msec() - started) / 1000.0])
 	for f in _fails:
 		print("  failed: ", f)
 	quit(0 if _fails.is_empty() else 1)

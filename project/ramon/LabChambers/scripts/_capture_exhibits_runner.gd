@@ -7,7 +7,7 @@ extends SceneTree
 ##
 ##   LabChambers/scripts/lab_run.sh windowed exhibits res://ramon/LabChambers/scripts/_capture_exhibits_runner.gd
 
-const SCENE := "res://ramon/LabChambers/goat_room.tscn"
+const SCENE := "res://ramon/LabChambers/creation_lab.tscn"
 const OUT := "res://smoke_test_output/goat_room/exhibits/"
 const CHICKEN := "res://ramon/LabChambers/scripts/rd_chicken_4d.gd"
 const GOAT := "res://ramon/LabChambers/scripts/rd_goat_4d.gd"

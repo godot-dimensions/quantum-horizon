@@ -6,7 +6,7 @@ extends SceneTree
 ##
 ##   LabChambers/scripts/lab_run.sh windowed skip res://ramon/LabChambers/scripts/_probe_skip_runner.gd
 
-const SCENE := "res://ramon/LabChambers/goat_room.tscn"
+const SCENE := "res://ramon/LabChambers/creation_lab.tscn"
 
 var _g: Node
 

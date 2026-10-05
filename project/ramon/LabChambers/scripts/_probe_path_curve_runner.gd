@@ -5,7 +5,7 @@ extends SceneTree
 ##
 ##   LabChambers/scripts/lab_run.sh windowed curve res://ramon/LabChambers/scripts/_probe_path_curve_runner.gd
 
-const SCENE := "res://ramon/LabChambers/goat_room.tscn"
+const SCENE := "res://ramon/LabChambers/creation_lab.tscn"
 const Path := preload("res://ramon/LabChambers/kit/kit_path_4d.gd")
 const Mark := preload("res://ramon/LabKit/lab_mark_4d.gd")
 const OUT := "res://smoke_test_output/goat_room/"
