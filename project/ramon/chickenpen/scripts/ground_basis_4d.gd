@@ -93,6 +93,19 @@ static func eased_flat(ground: Projection, step: float) -> Projection:
 	return ground * _from_3d(Basis(Quaternion.IDENTITY.slerp(to_flat, step)))
 
 
+## [param ground] turned toward [param target], another level frame, by at most [param max_angle]
+## radians along the one rotation that takes it there. Two level frames differ by a rotation of
+## the floor's (x, z, w), so, as in eased_flat, this is a quaternion slerp on that block.
+static func rotated_toward(ground: Projection, target: Projection, max_angle: float) -> Projection:
+	var rel: Quaternion = _to_3d(Basis4D.transposed(ground) * target).get_rotation_quaternion()
+	if rel.w < 0.0:
+		rel = -rel
+	var angle: float = 2.0 * acos(clampf(rel.w, -1.0, 1.0))
+	if angle <= max_angle:
+		return target
+	return ground * _from_3d(Basis(Quaternion.IDENTITY.slerp(rel, max_angle / angle)))
+
+
 ## The xzw block of a level frame as a 3D basis (x, z, w -> X, Y, Z), and back. A level frame
 ## is a rotation of the xzw space, which is three-dimensional.
 static func _to_3d(level: Projection) -> Basis:

@@ -143,10 +143,9 @@ func _best_candidate() -> Node:
 	# PLUS Z, because that is the direction this character walks.
 	#
 	# Basis4D.looking_at treats -Z as forward, and following that convention here was
-	# wrong: the avatar is not posed with looking_at, it is posed with from_zx(_facing)
-	# where _facing comes from atan2(wish.x, wish.z). That makes the basis' +Z column the
-	# movement direction. Using -Z aimed the catch, and the throw, at whatever was directly
-	# behind the character as it walked.
+	# wrong: the avatar is not posed with looking_at, it is posed by the walker's _pose,
+	# which puts the basis' +Z column along the movement direction. Using -Z aimed the
+	# catch, and the throw, at whatever was directly behind the character as it walked.
 	var facing: Node4D = get_node_or_null(facing_path) as Node4D
 	var frame: Projection = facing.global_basis if facing != null else global_basis
 	var forward: Vector4 = frame * Vector4(0.0, 0.0, 1.0, 0.0)
