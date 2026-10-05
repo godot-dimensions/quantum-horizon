@@ -1,0 +1,294 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/graph/path_graph.gd" id="1_xty8v"]
+
+[resource]
+script = ExtResource("1_xty8v")
+nodes = [{
+"approach": Vector2(0, 1),
+"band": 30.0,
+"frame": "none",
+"id": 1,
+"kind": "start",
+"pos": Vector4(-16, 0, 12, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 30.0,
+"frame": "none",
+"id": 2,
+"kind": "bend",
+"pos": Vector4(-16, 0, 22, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 30.0,
+"frame": "none",
+"id": 3,
+"kind": "bend",
+"pos": Vector4(-13, 0, 25, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, -1),
+"band": 30.0,
+"frame": "rect",
+"id": 4,
+"kind": "destination",
+"pos": Vector4(-13, 0, 34, 4),
+"state": "available",
+"target": "PadA"
+}, {
+"approach": Vector2(0, 1),
+"band": 1.2,
+"frame": "none",
+"id": 5,
+"kind": "start",
+"pos": Vector4(-8, 0, 12, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 1.2,
+"frame": "none",
+"id": 6,
+"kind": "bend",
+"pos": Vector4(-8, 0, 22, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 1.2,
+"frame": "none",
+"id": 7,
+"kind": "bend",
+"pos": Vector4(-5, 0, 25, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, -1),
+"band": 1.2,
+"frame": "rect",
+"id": 8,
+"kind": "destination",
+"pos": Vector4(-5, 0, 34, 4),
+"state": "available",
+"target": "PadB"
+}, {
+"approach": Vector2(0, 1),
+"band": 1.4,
+"frame": "none",
+"id": 9,
+"kind": "start",
+"pos": Vector4(0, 0, 12, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 1.4,
+"frame": "none",
+"id": 10,
+"kind": "bend",
+"pos": Vector4(0, 0, 22, 1.6),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 1.4,
+"frame": "none",
+"id": 11,
+"kind": "bend",
+"pos": Vector4(3, 0, 25, 2.2),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, -1),
+"band": 1.4,
+"frame": "rect",
+"id": 12,
+"kind": "destination",
+"pos": Vector4(3, 0, 34, 4),
+"state": "available",
+"target": "PadC"
+}, {
+"approach": Vector2(0, 1),
+"band": 1.2,
+"frame": "none",
+"id": 13,
+"kind": "start",
+"pos": Vector4(8, 0, 12, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 1.2,
+"frame": "none",
+"id": 14,
+"kind": "bend",
+"pos": Vector4(8, 0, 22, 4),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 1.2,
+"frame": "none",
+"id": 15,
+"kind": "bend",
+"pos": Vector4(11, 0, 25, 4),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, -1),
+"band": 1.2,
+"frame": "rect",
+"id": 16,
+"kind": "destination",
+"pos": Vector4(11, 0, 34, 4),
+"state": "available",
+"target": "PadD"
+}, {
+"approach": Vector2(0, 1),
+"band": 1.0,
+"frame": "none",
+"id": 17,
+"kind": "start",
+"pos": Vector4(16, 0, 12, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 1.0,
+"frame": "none",
+"id": 18,
+"kind": "chord",
+"pos": Vector4(16, 0, 17, 1),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 1.0,
+"frame": "none",
+"id": 19,
+"kind": "chord",
+"pos": Vector4(16, 0, 22, 2),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 1.0,
+"frame": "none",
+"id": 20,
+"kind": "chord",
+"pos": Vector4(19, 0, 25, 3),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, -1),
+"band": 1.0,
+"frame": "rect",
+"id": 21,
+"kind": "destination",
+"pos": Vector4(19, 0, 34, 4),
+"state": "available",
+"target": "PadE"
+}]
+edges = [{
+"band": 1.2,
+"from": 1,
+"priority": "primary",
+"to": 2,
+"w_mode": "static"
+}, {
+"band": 1.2,
+"from": 2,
+"priority": "primary",
+"to": 3,
+"w_mode": "static"
+}, {
+"band": 1.2,
+"from": 3,
+"priority": "primary",
+"to": 4,
+"w_mode": "static"
+}, {
+"band": 1.2,
+"from": 5,
+"priority": "primary",
+"to": 6,
+"w_mode": "here"
+}, {
+"band": 1.2,
+"from": 6,
+"priority": "primary",
+"to": 7,
+"w_mode": "here"
+}, {
+"band": 1.2,
+"from": 7,
+"priority": "primary",
+"to": 8,
+"w_mode": "here"
+}, {
+"band": 1.4,
+"from": 9,
+"priority": "primary",
+"to": 10,
+"w_mode": "follow"
+}, {
+"band": 1.4,
+"from": 10,
+"priority": "primary",
+"to": 11,
+"w_mode": "follow"
+}, {
+"band": 1.4,
+"from": 11,
+"priority": "primary",
+"to": 12,
+"w_mode": "follow"
+}, {
+"band": 1.2,
+"from": 13,
+"priority": "primary",
+"to": 14,
+"w_mode": "reveal"
+}, {
+"band": 1.2,
+"from": 14,
+"priority": "primary",
+"to": 15,
+"w_mode": "reveal"
+}, {
+"band": 1.2,
+"from": 15,
+"priority": "primary",
+"to": 16,
+"w_mode": "reveal"
+}, {
+"band": 1.0,
+"from": 17,
+"priority": "primary",
+"to": 18,
+"w_mode": "here"
+}, {
+"band": 1.0,
+"from": 18,
+"priority": "primary",
+"to": 19,
+"w_mode": "here"
+}, {
+"band": 1.0,
+"from": 19,
+"priority": "primary",
+"to": 20,
+"w_mode": "here"
+}, {
+"band": 1.0,
+"from": 20,
+"priority": "primary",
+"to": 21,
+"w_mode": "here"
+}]
+next_id = 22
