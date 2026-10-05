@@ -134,7 +134,13 @@ func _run() -> void:
 	_check(not bool(net.get("reveal")), "F5 again: every route shown")
 	var cfg := ConfigFile.new()
 	cfg.load("user://pen_settings.cfg")
-	_check(cfg.get_value("paths", "reveal", null) == false and cfg.get_value("paths", "icons", null) == true and cfg.get_value("paths", "sand", null) == true,
-		"the switches are remembered", "%s %s %s" % [cfg.get_value("paths", "reveal", "?"), cfg.get_value("paths", "icons", "?"), cfg.get_value("paths", "sand", "?")])
+	_check(cfg.get_value("path_looks", "reveal", null) == false and cfg.get_value("path_looks", "icons", null) == true and cfg.get_value("path_looks", "sand", null) == true,
+		"the switches are remembered", "%s %s %s" % [cfg.get_value("path_looks", "reveal", "?"), cfg.get_value("path_looks", "icons", "?"), cfg.get_value("path_looks", "sand", "?")])
+	_check(String(net.get("look")) == "walk", "with sand showing, the icons are in the sand's colours, not blue", String(net.get("look")))
+	# Leave the player's switches as a first run has them (this test pressed them).
+	cfg.set_value("path_looks", "reveal", false)
+	cfg.set_value("path_looks", "icons", false)
+	cfg.set_value("path_looks", "sand", true)
+	cfg.save("user://pen_settings.cfg")
 	print("EGGS AND PATHS: %s (%d failed)" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	quit(0 if _fails == 0 else 1)

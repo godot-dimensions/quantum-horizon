@@ -65,24 +65,6 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 2.4,
 "frame": "none",
-"id": 7,
-"kind": "bend",
-"pos": Vector4(-5, 0, 31, 0),
-"state": "arrival",
-"target": ""
-}, {
-"approach": Vector2(0, 1),
-"band": 2.4,
-"frame": "none",
-"id": 8,
-"kind": "bend",
-"pos": Vector4(-10, 0, 23, 0),
-"state": "arrival",
-"target": ""
-}, {
-"approach": Vector2(0, 1),
-"band": 2.4,
-"frame": "none",
 "id": 9,
 "kind": "chord",
 "pos": Vector4(-10.8, 0, 18.5, 0),
@@ -104,15 +86,6 @@ nodes = [{
 "id": 11,
 "kind": "chord",
 "pos": Vector4(-11.5, 0, 13.5, 0),
-"state": "arrival",
-"target": ""
-}, {
-"approach": Vector2(0, 1),
-"band": 2.4,
-"frame": "none",
-"id": 12,
-"kind": "bend",
-"pos": Vector4(-10, 0, 7, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -157,24 +130,6 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 2.4,
 "frame": "none",
-"id": 17,
-"kind": "bend",
-"pos": Vector4(14, 0, 37, 0),
-"state": "arrival",
-"target": ""
-}, {
-"approach": Vector2(0, 1),
-"band": 2.4,
-"frame": "none",
-"id": 18,
-"kind": "bend",
-"pos": Vector4(25, 0, 30, 0),
-"state": "arrival",
-"target": ""
-}, {
-"approach": Vector2(0, 1),
-"band": 2.4,
-"frame": "none",
 "id": 19,
 "kind": "junction",
 "pos": Vector4(27.5, 0, 16, 0),
@@ -184,18 +139,9 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 2.4,
 "frame": "none",
-"id": 20,
-"kind": "bend",
-"pos": Vector4(25.5, 0, 7, 0),
-"state": "arrival",
-"target": ""
-}, {
-"approach": Vector2(0, 1),
-"band": 2.4,
-"frame": "none",
 "id": 21,
 "kind": "junction",
-"pos": Vector4(21.86, 0, 2, 0),
+"pos": Vector4(25.86, 0, -2, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -204,7 +150,7 @@ nodes = [{
 "frame": "none",
 "id": 22,
 "kind": "chord",
-"pos": Vector4(21.074908866176813, 0, 4.93, 0),
+"pos": Vector4(25.074908866176813, 0, 0.9299999999999997, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -213,7 +159,7 @@ nodes = [{
 "frame": "none",
 "id": 23,
 "kind": "chord",
-"pos": Vector4(18.93, 0, 7.07490886617681, 0),
+"pos": Vector4(22.93, 0, 3.07490886617681, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -222,7 +168,7 @@ nodes = [{
 "frame": "none",
 "id": 24,
 "kind": "junction",
-"pos": Vector4(16, 0, 7.86, 0),
+"pos": Vector4(20, 0, 3.8600000000000003, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -231,7 +177,7 @@ nodes = [{
 "frame": "none",
 "id": 25,
 "kind": "chord",
-"pos": Vector4(13.07, 0, 7.074908866176811, 0),
+"pos": Vector4(17.07, 0, 3.074908866176811, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -240,7 +186,7 @@ nodes = [{
 "frame": "none",
 "id": 26,
 "kind": "chord",
-"pos": Vector4(10.925091133823189, 0, 4.93, 0),
+"pos": Vector4(14.925091133823189, 0, 0.9299999999999997, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -249,7 +195,7 @@ nodes = [{
 "frame": "none",
 "id": 27,
 "kind": "junction",
-"pos": Vector4(10.14, 0, 2.000000000000001, 0),
+"pos": Vector4(14.14, 0, -1.9999999999999993, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -258,7 +204,7 @@ nodes = [{
 "frame": "none",
 "id": 28,
 "kind": "chord",
-"pos": Vector4(10.92509113382319, 0, -0.9300000000000006, 0),
+"pos": Vector4(14.92509113382319, 0, -4.930000000000001, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -267,7 +213,7 @@ nodes = [{
 "frame": "none",
 "id": 29,
 "kind": "chord",
-"pos": Vector4(13.069999999999997, 0, -3.07490886617681, 0),
+"pos": Vector4(17.069999999999997, 0, -7.07490886617681, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -276,7 +222,7 @@ nodes = [{
 "frame": "none",
 "id": 30,
 "kind": "chord",
-"pos": Vector4(15.999999999999998, 0, -3.8600000000000003, 0),
+"pos": Vector4(20, 0, -7.86, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -285,7 +231,7 @@ nodes = [{
 "frame": "none",
 "id": 31,
 "kind": "chord",
-"pos": Vector4(18.93, 0, -3.07490886617681, 0),
+"pos": Vector4(22.93, 0, -7.07490886617681, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -294,7 +240,7 @@ nodes = [{
 "frame": "none",
 "id": 32,
 "kind": "chord",
-"pos": Vector4(21.07490886617681, 0, -0.9300000000000028, 0),
+"pos": Vector4(25.07490886617681, 0, -4.930000000000003, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -351,7 +297,7 @@ nodes = [{
 "frame": "none",
 "id": 38,
 "kind": "destination",
-"pos": Vector4(16, 0, 3.4, -2.5),
+"pos": Vector4(20, 0, -0.6000000000000001, -2.5),
 "state": "available",
 "target": ""
 }, {
@@ -361,8 +307,264 @@ nodes = [{
 "frame": "none",
 "id": 39,
 "kind": "destination",
-"pos": Vector4(25, 0, 12.9, 7),
+"pos": Vector4(25.8, 0, 13.3, 7),
 "state": "available",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-5, 0, 31, 0)
+},
+"curve": 1,
+"curve_r": 4.0,
+"frame": "none",
+"id": 40,
+"kind": "chord",
+"pos": Vector4(-3.7442132321814663, 0, 31.478394959168966, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-5, 0, 31, 0)
+},
+"curve": 1,
+"curve_r": 4.0,
+"frame": "none",
+"id": 41,
+"kind": "chord",
+"pos": Vector4(-4.860477461242199, 0, 30.83029071458421, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-5, 0, 31, 0)
+},
+"curve": 1,
+"curve_r": 4.0,
+"frame": "none",
+"id": 42,
+"kind": "chord",
+"pos": Vector4(-5.712225137833867, 0, 29.860439779465814, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-10, 0, 23, 0)
+},
+"curve": 2,
+"curve_r": 4.0,
+"frame": "none",
+"id": 43,
+"kind": "chord",
+"pos": Vector4(-9.589358468589895, 0, 23.65702645025617, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-10, 0, 23, 0)
+},
+"curve": 2,
+"curve_r": 4.0,
+"frame": "none",
+"id": 44,
+"kind": "chord",
+"pos": Vector4(-10.135615283713168, 0, 22.23716402911343, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-10, 0, 7, 0)
+},
+"curve": 3,
+"curve_r": 4.0,
+"frame": "none",
+"id": 45,
+"kind": "chord",
+"pos": Vector4(-10.220978746786948, 0, 7.957574569410104, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-10, 0, 7, 0)
+},
+"curve": 3,
+"curve_r": 4.0,
+"frame": "none",
+"id": 46,
+"kind": "chord",
+"pos": Vector4(-9.360440373469654, 0, 6.253847102381263, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(14, 0, 37, 0)
+},
+"curve": 4,
+"curve_r": 4.0,
+"frame": "none",
+"id": 47,
+"kind": "chord",
+"pos": Vector4(12.358783999709166, 0, 36.61383152934334, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(14, 0, 37, 0)
+},
+"curve": 4,
+"curve_r": 4.0,
+"frame": "none",
+"id": 48,
+"kind": "chord",
+"pos": Vector4(13.943071971862626, 0, 36.66396830906655, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(14, 0, 37, 0)
+},
+"curve": 4,
+"curve_r": 4.0,
+"frame": "none",
+"id": 49,
+"kind": "chord",
+"pos": Vector4(15.422443303383995, 0, 36.09480880693746, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(25, 0, 30, 0)
+},
+"curve": 5,
+"curve_r": 7.0,
+"frame": "none",
+"id": 50,
+"kind": "chord",
+"pos": Vector4(22.40735525762937, 0, 31.649864836054036, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(25, 0, 30, 0)
+},
+"curve": 5,
+"curve_r": 7.0,
+"frame": "none",
+"id": 51,
+"kind": "chord",
+"pos": Vector4(23.87346424431818, 0, 30.403348420713005, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(25, 0, 30, 0)
+},
+"curve": 5,
+"curve_r": 7.0,
+"frame": "none",
+"id": 52,
+"kind": "chord",
+"pos": Vector4(24.944740427203065, 0, 28.804709601420814, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(25, 0, 30, 0)
+},
+"curve": 5,
+"curve_r": 7.0,
+"frame": "none",
+"id": 53,
+"kind": "chord",
+"pos": Vector4(25.540219840836627, 0, 26.974768891314888, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(25.5, 0, 7, 0)
+},
+"curve": 6,
+"curve_r": 4.0,
+"frame": "none",
+"id": 54,
+"kind": "chord",
+"pos": Vector4(25.612846909778092, 0, 7.507811094001424, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(25.5, 0, 7, 0)
+},
+"curve": 6,
+"curve_r": 4.0,
+"frame": "none",
+"id": 55,
+"kind": "chord",
+"pos": Vector4(25.52079131562675, 0, 6.480217109331315, 0),
+"state": "arrival",
 "target": ""
 }]
 edges = [{
@@ -399,17 +601,17 @@ edges = [{
 "band": 2.4,
 "from": 2,
 "priority": "primary",
-"to": 7,
+"to": 40,
 "w_mode": "here"
 }, {
 "band": 2.4,
-"from": 7,
+"from": 42,
 "priority": "primary",
-"to": 8,
+"to": 43,
 "w_mode": "here"
 }, {
 "band": 2.4,
-"from": 8,
+"from": 44,
 "priority": "primary",
 "to": 9,
 "w_mode": "here"
@@ -429,11 +631,11 @@ edges = [{
 "band": 2.4,
 "from": 11,
 "priority": "primary",
-"to": 12,
+"to": 45,
 "w_mode": "here"
 }, {
 "band": 2.4,
-"from": 12,
+"from": 46,
 "priority": "primary",
 "to": 13,
 "w_mode": "here"
@@ -459,17 +661,17 @@ edges = [{
 "band": 2.4,
 "from": 2,
 "priority": "primary",
-"to": 17,
+"to": 47,
 "w_mode": "here"
 }, {
 "band": 2.4,
-"from": 17,
+"from": 49,
 "priority": "primary",
-"to": 18,
+"to": 50,
 "w_mode": "here"
 }, {
 "band": 2.4,
-"from": 18,
+"from": 53,
 "priority": "primary",
 "to": 19,
 "w_mode": "here"
@@ -477,7 +679,7 @@ edges = [{
 "band": 2.4,
 "from": 19,
 "priority": "primary",
-"to": 20,
+"to": 54,
 "w_mode": "here"
 }, {
 "band": 2.4,
@@ -553,7 +755,7 @@ edges = [{
 "w_mode": "here"
 }, {
 "band": 2.4,
-"from": 20,
+"from": 55,
 "priority": "primary",
 "to": 21,
 "w_mode": "here"
@@ -605,5 +807,65 @@ edges = [{
 "priority": "secondary",
 "to": 39,
 "w_mode": "reveal"
+}, {
+"band": 2.4,
+"from": 40,
+"priority": "primary",
+"to": 41,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 41,
+"priority": "primary",
+"to": 42,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 43,
+"priority": "primary",
+"to": 44,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 45,
+"priority": "primary",
+"to": 46,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 47,
+"priority": "primary",
+"to": 48,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 48,
+"priority": "primary",
+"to": 49,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 50,
+"priority": "primary",
+"to": 51,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 51,
+"priority": "primary",
+"to": 52,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 52,
+"priority": "primary",
+"to": 53,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 54,
+"priority": "primary",
+"to": 55,
+"w_mode": "here"
 }]
-next_id = 40
+next_id = 56

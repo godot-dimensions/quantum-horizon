@@ -25,8 +25,13 @@ fix, units made movable): `PenLayout/PLAN.md`.
 - **F7** sand paths on or off
 - **Alt+O** grass on or off (off by default now; its panel folds to that one switch)
 
-The three path switches are remembered between runs (`user://pen_settings.cfg`); a first run is
-static, icons on, sand on.
+The three path switches are remembered between runs (`user://pen_settings.cfg`). Two looks, never
+mixed (Ramon, 6 Oct): the field's is sand alone, so a first run is sand on, icons off, static; the
+sheet's blue icons are for a white dev floor, and while sand is showing any icons switched on are
+drawn in the sand's colours instead. Checked on PathCreator's white lab floor (capture set
+devfloor): icons alone there look as clean as in the path lab, with the network's `under_color`
+set to the floor's colour. The sand's edge is dithered grain by grain rather than blended, so where
+strips and patches overlap there are no dark seams.
 
 ## Where things are
 

@@ -20,7 +20,11 @@
 //              move; an opening is cut toward the approach.
 //   4 SAND     the pen's sand under the marks (6 Oct 2026): a strip as wide as the box, its edges
 //              broken by noise that runs on unbroken from stretch to stretch (`s0` + along), or a
-//              round patch at a node (`sand_round`); speckled, lit like the ground.
+//              round patch at a node (`sand_round`); speckled, lit like the ground. Its edge is
+//              dithered, not blended: a pixel is all sand or not drawn, by a 5 cm grain. The
+//              cross-section is opaque, so a soft edge mixes toward the floor's colour even where
+//              another strip's sand lies beneath it, and the joints showed dark seams. The W band
+//              and the reveal thin the sand out grain by grain the same way.
 //
 // REVEAL (6 Oct 2026): with `reveal_on`, a stretch shows only its found part, `found0` to `found1`
 // metres along it, fading over `reveal_fade` at each end; a node's box shows as `found` (0 to 1).
@@ -512,8 +516,20 @@ void fragment() {
 			d = abs(m.y) - rr;
 		}
 		float cov = (1.0 - smoothstep(-0.12, 0.03, d)) * band;
+		if (reveal_on > 0.5) {
+			float vis = found;
+			if (sand_round < 0.5) {
+				float al = m.x + box_size.x * 0.5;
+				vis = clamp(min((al - (found0 - reveal_fade)) / reveal_fade, ((found1 + reveal_fade) - al) / reveal_fade), 0.0, 1.0);
+			}
+			cov *= vis;
+		}
+		vec2 grain_at = floor((m + vec2(s0, 0.0)) * 20.0);
+		if (cov < 0.02 + 0.96 * hash2(grain_at + vec2(17.0, 3.0))) {
+			discard;
+		}
 		float speck = hash2(floor((m + vec2(s0, 0.0)) * 9.0));
-		col = over(col, sand.rgb * (0.9 + 0.16 * speck), cov);
+		col = vec4(sand.rgb * (0.9 + 0.16 * speck), 1.0);
 	}
 	if (abs(w_step) > 0.25 && (mode == 1 || mode == 2)) {
 		// The W cue: dots in a row east of the node, one a metre of W, warm ana, cool kata.
@@ -529,9 +545,9 @@ void fragment() {
 			col = over(col, cc, disc(pc - c, cue_dot_r * shrink, pxu));
 		}
 	}
-	if (reveal_on > 0.5) {
+	if (reveal_on > 0.5 && mode != 4) {
 		float vis = found;
-		if (mode == 0 || (mode == 4 && sand_round < 0.5)) {
+		if (mode == 0) {
 			float al = m.x + box_size.x * 0.5 - (mode == 0 ? ext0 : 0.0);
 			vis = clamp(min((al - (found0 - reveal_fade)) / reveal_fade, ((found1 + reveal_fade) - al) / reveal_fade), 0.0, 1.0);
 		}

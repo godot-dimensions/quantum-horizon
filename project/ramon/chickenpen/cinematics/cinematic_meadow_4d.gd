@@ -55,8 +55,10 @@ const WALK_SHOT := 6
 @export_file("*.ogg", "*.wav") var music_file: String = "res://ramon/chickenpen/audio/music/Yotam Agam - Unconscious Mind Delta.wav"
 @export_range(-40.0, 6.0, 0.5, "suffix:dB") var music_db: float = -6.0
 @export_range(1.5, 3.0, 0.01) var letterbox_aspect: float = 2.39
-## The middle of the open meadow the shots are set in: east of the start, towards the low sun.
-@export var meadow: Vector4 = Vector4(16.0, 0.0, 2.0, 0.0)
+## The middle of the open meadow the shots are set in: east of the pen, towards the low sun. It was
+## (16, 2) until 6 Oct, when the pen's new layout put the cave hill just south-west of there and
+## "The wind" was looking straight at it: now the open ground east of the pen, clear of the hill.
+@export var meadow: Vector4 = Vector4(28.0, 0.0, -8.0, 0.0)
 ## The grass's wind for the wind shot and the leaves shot, times its own.
 @export_range(1.0, 3.0, 0.05) var wind_shot_scale: float = 1.8
 @export_range(1.0, 3.0, 0.05) var leaves_shot_scale: float = 2.4
@@ -172,6 +174,11 @@ func _borrow() -> void:
 		# and back as it was after.
 		_saved["grass_on"] = _grass.get("enabled")
 		_grass.set("enabled", true)
+	# Nor the pen's paths: a film about the grass, not the way to the keeper.
+	var paths := _room.get_node_or_null("World/Paths") as Node4D
+	if paths != null:
+		_saved["paths_shown"] = paths.visible
+		paths.visible = false
 	player.process_mode = Node.PROCESS_MODE_DISABLED
 	(player as Node4D).visible = false
 	if sky:
@@ -197,6 +204,9 @@ func _give_back() -> void:
 		_grass.set("big_gust_chance", _saved["big_gust_chance"])
 	if _grass != null and _saved.has("grass_on"):
 		_grass.set("enabled", _saved["grass_on"])
+	var paths := _room.get_node_or_null("World/Paths") as Node4D
+	if paths != null and _saved.has("paths_shown"):
+		paths.visible = _saved["paths_shown"]
 	_lend_walker(false)
 	var farm := _room.get_node_or_null("Player/CameraRig/Pitch/Camera4D") as Camera4D
 	if farm:

@@ -7,8 +7,14 @@ extends Node
 ##       every path shown all the time
 ##   F6  the icons (the sheet's chevrons, balls and W dots) on or off
 ##   F7  the sand on or off
-## Remembered between runs in user://pen_settings.cfg, next to the interface size. A first run is
-## static, with icons and sand both on. A full restart (Ctrl+R) forgets what reveal has found.
+## Remembered between runs in user://pen_settings.cfg, next to the interface size. A full restart
+## (Ctrl+R) forgets what reveal has found.
+##
+## TWO LOOKS, NEVER MIXED (Ramon, 6 Oct: "the blue will never render on the sand versions. the toggle
+## will be at some point between just sand, or icons on white"). The field's look is sand alone, so
+## a first run is sand on, icons off, static. The sheet's blue icons are the dev look, for a white
+## floor: while there is sand the icons, if switched on, are drawn in the sand's own colours
+## (the network's "walk" look), and only with the sand off are they blue.
 
 @export var network_path: NodePath = NodePath("../../World/Paths")
 @export var key_reveal: Key = KEY_F5
@@ -18,6 +24,9 @@ extends Node
 @export_range(10, 40, 1) var text_size: int = 18
 
 const SETTINGS := "user://pen_settings.cfg"
+## "path_looks", not "paths": the earlier section was written while icons-and-sand was the start,
+## and a new name lets the sand-only start take over.
+const SECTION := "path_looks"
 
 var _network: Node
 var _label: Label
@@ -31,9 +40,10 @@ func _ready() -> void:
 		return
 	var cfg := ConfigFile.new()
 	cfg.load(SETTINGS)
-	_network.set("reveal", bool(cfg.get_value("paths", "reveal", false)))
-	_network.set("show_marks", bool(cfg.get_value("paths", "icons", true)))
-	_network.set("show_sand", bool(cfg.get_value("paths", "sand", true)))
+	_network.set("reveal", bool(cfg.get_value(SECTION, "reveal", false)))
+	_network.set("show_marks", bool(cfg.get_value(SECTION, "icons", false)))
+	_network.set("show_sand", bool(cfg.get_value(SECTION, "sand", true)))
+	_match_look()
 	var layer := CanvasLayer.new()
 	layer.layer = 20
 	add_child(layer)
@@ -71,8 +81,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		_say("Sand paths: on" if bool(_network.get("show_sand")) else "Sand paths: off")
 	else:
 		return
+	_match_look()
 	get_viewport().set_input_as_handled()
 	_save()
+
+
+## The icons' look by the sand: in sand colours over sand, the sheet's blue only without it.
+func _match_look() -> void:
+	_network.set("look", "walk" if bool(_network.get("show_sand")) else "dev")
 
 
 func _say(text: String) -> void:
@@ -88,9 +104,9 @@ func _say(text: String) -> void:
 func _save() -> void:
 	var cfg := ConfigFile.new()
 	cfg.load(SETTINGS)
-	cfg.set_value("paths", "reveal", bool(_network.get("reveal")))
-	cfg.set_value("paths", "icons", bool(_network.get("show_marks")))
-	cfg.set_value("paths", "sand", bool(_network.get("show_sand")))
+	cfg.set_value(SECTION, "reveal", bool(_network.get("reveal")))
+	cfg.set_value(SECTION, "icons", bool(_network.get("show_marks")))
+	cfg.set_value(SECTION, "sand", bool(_network.get("show_sand")))
 	cfg.save(SETTINGS)
 
 

@@ -29,7 +29,8 @@ const BAND := 2.4
 const EGG_BAND := 2.0
 ## The meadow's ring: its middle, and a radius that makes its 12 chords a whole number of the
 ## secondary marks' 1.3 m spacing (28 of them), so they flow round without a jump.
-const RING_AT := Vector2(16.0, 2.0)
+## (20, -2): north-east of the hill's foot (at (16, 2) its south side ran onto the hill, 6 Oct).
+const RING_AT := Vector2(20.0, -2.0)
 const RING_R := 5.86
 
 
@@ -122,7 +123,7 @@ func _initialize() -> void:
 
 	# The eggs. Kata from the ring's south to the stones in the meadow's middle; ana from the hill's
 	# east side to the cairn.
-	var egg1: int = dest.call(16.0, 3.4, -2.5, "", Vector2(0, 1), EGG_BAND)
+	var egg1: int = dest.call(RING_AT.x, RING_AT.y + 1.4, -2.5, "", Vector2(0, 1), EGG_BAND)
 	g.call("node", egg1)["anchor"] = false
 	e.call(ring[3], egg1, "secondary", "reveal", EGG_BAND)
 	# In front of the cairn (at 25, 12), on the side the path comes from, not over its stones.

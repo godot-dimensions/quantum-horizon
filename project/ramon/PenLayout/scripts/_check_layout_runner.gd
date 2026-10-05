@@ -37,7 +37,8 @@ const BEND_WARN_M := 25.0
 const PEN := Vector2(0.0, -11.0)
 ## How far out from the pen's middle the wolf's run-in starts and ends, roughly (metres).
 const WOLF_RING := Vector2(15.0, 22.0)
-const MEADOW := Vector2(16.0, 2.0)
+## The meadow film's centre (cinematic_meadow_4d.gd, moved there 6 Oct).
+const MEADOW := Vector2(28.0, -8.0)
 const MEADOW_R := 9.0
 ## The player's run (block_walker_character_4d.gd speed), for the walk times.
 const RUN := 3.0

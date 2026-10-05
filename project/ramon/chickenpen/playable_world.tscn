@@ -3278,7 +3278,7 @@ length = 42.5
 metadata/what = "The dry stone wall across the field's west side, thin in W: the opening's first lesson in the fourth direction (PenLayout/PLAN_A.md step 19). Step 1.5 ana and it is gone; the long way round is east."
 
 [node name="EggStones" type="Node4D" parent="World"]
-position = Vector4(16, 0, 2, -2.5)
+position = Vector4(20, 0, -2, -2.5)
 script = ExtResource("pen_stones")
 metadata/what = "Standing stones in the meadow's middle, 2.5 m kata: easter egg 1, with a bag of azoth inside (PLAN_A.md step 29)."
 
@@ -3292,7 +3292,7 @@ w_depth = 1.4
 metadata/what = "A cairn at the cave hill's east foot, 7 m ana: easter egg 2, a bag of azoth beside it (PLAN_A.md step 30)."
 
 [node name="AzothBag1" type="Node4D" parent="World/Pickups"]
-position = Vector4(16, 0.35, 2, -2.5)
+position = Vector4(20, 0.35, -2, -2.5)
 script = ExtResource("pen_pickup")
 kind = 2
 
