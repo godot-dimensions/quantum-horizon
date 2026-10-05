@@ -672,6 +672,178 @@ TEST_CASE("[FenceGenerator4D] Points inside the fence are those within the footp
 	memdelete(fence);
 }
 
+// On level ground the leaning fence is the upright fence with every vertex pulled toward the origin by the scale for
+// its height: 1 on the ground, the ratio at the top of the posts. Every upright vertex, scaled that way, must be a
+// vertex of the leaning fence, which is what makes the parts lean as one and still meet.
+static void check_leans_like_upright(const Ref<SingleSurfaceMesh4D> &p_upright, const Ref<SingleSurfaceMesh4D> &p_leaning, const real_t p_ratio, const real_t p_post_height) {
+	const Ref<ArrayPolyMesh4D> upright = p_upright;
+	const Ref<ArrayPolyMesh4D> leaning = p_leaning;
+	REQUIRE(upright.is_valid());
+	REQUIRE(leaning.is_valid());
+	const PackedVector4Array leaning_positions = leaning->get_poly_cell_vertex_positions();
+	const PackedVector4Array upright_positions = upright->get_poly_cell_vertex_positions();
+	REQUIRE(leaning_positions.size() == upright_positions.size());
+	for (const Vector4 &position : upright_positions) {
+		const real_t scale = Math::lerp((real_t)1.0, p_ratio, position.y / p_post_height);
+		const Vector4 expected = Vector4(position.x * scale, position.y, position.z * scale, position.w * scale);
+		bool found = false;
+		for (const Vector4 &candidate : leaning_positions) {
+			if (candidate.is_equal_approx(expected)) {
+				found = true;
+				break;
+			}
+		}
+		CHECK_MESSAGE(found, vformat("The upright vertex at %s should lean to %s.", position, expected));
+	}
+}
+
+// On any ground, every leaning vertex is an upright vertex whose ground point was scaled toward the origin, height
+// included, by the factor for its height above the ground, and then raised by that height again. The horizontal shrink
+// gives the factor, the factor gives the height, and the vertex's Y has to agree with both.
+static void check_shrunk_toward_origin(const Ref<SingleSurfaceMesh4D> &p_upright, const Ref<SingleSurfaceMesh4D> &p_leaning, const real_t p_ratio, const real_t p_post_height) {
+	const Ref<ArrayPolyMesh4D> upright = p_upright;
+	const Ref<ArrayPolyMesh4D> leaning = p_leaning;
+	REQUIRE(upright.is_valid());
+	REQUIRE(leaning.is_valid());
+	const PackedVector4Array upright_positions = upright->get_poly_cell_vertex_positions();
+	const PackedVector4Array leaning_positions = leaning->get_poly_cell_vertex_positions();
+	REQUIRE(leaning_positions.size() == upright_positions.size());
+	for (const Vector4 &position : leaning_positions) {
+		const Vector4 flat = Vector4(position.x, 0, position.z, position.w);
+		bool found = false;
+		for (const Vector4 &candidate : upright_positions) {
+			const Vector4 candidate_flat = Vector4(candidate.x, 0, candidate.z, candidate.w);
+			if (candidate_flat.length_squared() < (real_t)1e-12) {
+				continue; // On the Y axis the shrink cannot be read off, and no part stands exactly there.
+			}
+			const real_t factor = flat.dot(candidate_flat) / candidate_flat.length_squared();
+			if (!(flat - candidate_flat * factor).is_zero_approx() || factor < p_ratio - (real_t)1e-6 || factor > (real_t)1.0 + (real_t)1e-6) {
+				continue;
+			}
+			const real_t height = ((real_t)1.0 - factor) / ((real_t)1.0 - p_ratio) * p_post_height;
+			const real_t ground = candidate.y - height;
+			if (Math::is_equal_approx(position.y, factor * ground + height)) {
+				found = true;
+				break;
+			}
+		}
+		CHECK_MESSAGE(found, vformat("The leaning vertex at %s is not an upright vertex scaled toward the origin by the factor for its height.", position));
+	}
+}
+
+// A top footprint ratio below 1 leans the whole fence inward toward the origin, like a guard tower: the parts lean as
+// one, still meet, and keep every cell flat, on level and on uneven ground alike.
+TEST_CASE("[FenceGenerator4D] The top footprint ratio leans the fence inward toward the origin") {
+	FenceGenerator4D *fence = make_manual_fence();
+	CHECK(fence->get_top_footprint_ratio() == 1.0);
+	ERR_PRINT_OFF;
+	fence->set_top_footprint_ratio(0.0);
+	fence->set_top_footprint_ratio(1.5);
+	ERR_PRINT_ON;
+	CHECK_MESSAGE(fence->get_top_footprint_ratio() == 1.0, "The ratio is above 0 and at most 1.");
+	const real_t ratio = 0.5;
+
+	SUBCASE("A level box leans as one, filler included") {
+		fence->set_desired_spacing_meters(2.0);
+		fence->update_fence_mesh_now();
+		Ref<MultiSurfaceMesh4D> upright = fence->get_mesh();
+		REQUIRE(upright.is_valid());
+		const Vector<Ref<SingleSurfaceMesh4D>> upright_surfaces = upright->get_surface_meshes();
+		REQUIRE(upright_surfaces.size() == 3);
+		fence->set_top_footprint_ratio(ratio);
+		fence->update_fence_mesh_now();
+		Ref<MultiSurfaceMesh4D> leaning = fence->get_mesh();
+		REQUIRE(leaning.is_valid());
+		const Vector<Ref<SingleSurfaceMesh4D>> leaning_surfaces = leaning->get_surface_meshes();
+		REQUIRE(leaning_surfaces.size() == 3);
+		for (int64_t surface = 0; surface < 3; surface++) {
+			CHECK(count_volumes(leaning_surfaces[surface]) == count_volumes(upright_surfaces[surface]));
+			check_leans_like_upright(upright_surfaces[surface], leaning_surfaces[surface], ratio, fence->get_post_height_meters());
+			CHECK(cells_are_flat(leaning_surfaces[surface]));
+		}
+		CHECK_MESSAGE(fence->is_local_point_inside(Vector4(4.9, 0, 4.9, 4.9)), "The footprint on the ground is unchanged.");
+	}
+
+	SUBCASE("On uneven ground the parts still meet and every cell stays flat") {
+		// A planar quad rising 1 m across its short side, with filler. Its beams and the ribs along its sloping edges
+		// have vertices at several heights, which a lean that scaled the horizontal part alone would skew out of any
+		// hyperplane.
+		fence->set_input_shape_type(FenceGenerator4D::INPUT_SHAPE_SEED_MESH_4D);
+		fence->set_desired_spacing_meters(1.0);
+		Ref<ArrayPolyMesh4D> seed;
+		seed.instantiate();
+		seed->set_poly_cell_vertex_positions(PackedVector4Array{ Vector4(-2, 0, -1.5, 0), Vector4(2, 0, -1.5, 0), Vector4(2, 1, 1.5, 0), Vector4(-2, 1, 1.5, 0) });
+		seed->set_edge_vertex_indices(PackedInt32Array{ 0, 1, 1, 2, 2, 3, 0, 3 });
+		seed->set_poly_cell_indices(Vector<Vector<PackedInt32Array>>{ { PackedInt32Array{ 0, 1, 2, 3 } } });
+		fence->set_seed_mesh_4d(seed);
+		fence->update_fence_mesh_now();
+		Ref<MultiSurfaceMesh4D> upright = fence->get_mesh();
+		REQUIRE(upright.is_valid());
+		const Vector<Ref<SingleSurfaceMesh4D>> upright_surfaces = upright->get_surface_meshes();
+		REQUIRE(upright_surfaces.size() == 3);
+		fence->set_top_footprint_ratio(ratio);
+		fence->update_fence_mesh_now();
+		Ref<MultiSurfaceMesh4D> leaning = fence->get_mesh();
+		REQUIRE(leaning.is_valid());
+		CHECK(fence->get_configuration_warnings().is_empty());
+		const Vector<Ref<SingleSurfaceMesh4D>> leaning_surfaces = leaning->get_surface_meshes();
+		REQUIRE(leaning_surfaces.size() == 3);
+		for (int64_t surface = 0; surface < 3; surface++) {
+			CHECK(count_volumes(leaning_surfaces[surface]) == count_volumes(upright_surfaces[surface]));
+			check_shrunk_toward_origin(upright_surfaces[surface], leaning_surfaces[surface], ratio, fence->get_post_height_meters());
+			CHECK_MESSAGE(cells_are_flat(leaning_surfaces[surface]), "A leaning cell that fits no hyperplane renders as a blob.");
+		}
+	}
+
+	SUBCASE("Guide posts lean toward the fence's origin like merged posts") {
+		fence->set_desired_spacing_meters(0.0);
+		fence->set_top_footprint_ratio(ratio);
+		PackedVector4Array corners;
+		for (const real_t w : { -5.0, 5.0 }) {
+			for (const real_t z : { -5.0, 5.0 }) {
+				for (const real_t x : { -5.0, 5.0 }) {
+					corners.push_back(Vector4(x, 0, z, w));
+				}
+			}
+		}
+		corners.set(7, Vector4(5, 1, 5, 5));
+		fence->set_input_shape_type(FenceGenerator4D::INPUT_SHAPE_RADIAL_POINTS);
+		fence->set_fence_corners(corners);
+		fence->update_fence_mesh_now();
+		Ref<MultiSurfaceMesh4D> merged = fence->get_mesh();
+		REQUIRE(merged.is_valid());
+		const PackedVector4Array merged_posts = sorted_positions(merged->get_surface_meshes()[0]);
+		// The same fence with a guide post at every corner: each post's mesh, in the post's own coordinates, stands
+		// at the post, so put together they must be the merged posts.
+		FenceGenerator4D *post_fence = make_manual_fence();
+		post_fence->set_desired_spacing_meters(0.0);
+		post_fence->set_top_footprint_ratio(ratio);
+		post_fence->set_input_shape_type(FenceGenerator4D::INPUT_SHAPE_RADIAL_POST_NODES);
+		for (const Vector4 &corner : corners) {
+			FenceGuidePost4D *post = memnew(FenceGuidePost4D);
+			post->set_position(corner);
+			post_fence->add_child(post);
+		}
+		post_fence->update_fence_mesh_now();
+		REQUIRE(post_fence->get_mesh().is_valid());
+		PackedVector4Array from_posts;
+		for (int child_index = 0; child_index < post_fence->get_child_count(); child_index++) {
+			const FenceGuidePost4D *post = Object::cast_to<FenceGuidePost4D>(post_fence->get_child(child_index));
+			REQUIRE(post != nullptr);
+			const Ref<ArrayPolyMesh4D> post_mesh = post->get_mesh();
+			REQUIRE(post_mesh.is_valid());
+			for (const Vector4 &position : post_mesh->get_poly_cell_vertex_positions()) {
+				from_posts.push_back(position + post->get_position());
+			}
+		}
+		from_posts.sort();
+		CHECK(positions_match(from_posts, merged_posts));
+		memdelete(post_fence);
+	}
+
+	memdelete(fence);
+}
+
 // Leaving a seed mesh shape for a corner shape hands the seed's vertices over as the corners, so that the shape the fence
 // had can be edited as points or posts without editing the seed mesh. They are written when the fence is built from the
 // seed, and again when the shape changes with updates off, from the seed as last built.

@@ -41,6 +41,7 @@ private:
 	double _desired_spacing_meters = 2.0; // How far apart to try and place fence posts and ribs.
 	double _post_height_meters = 1.25;
 	double _post_thickness_meters = 0.1;
+	double _top_footprint_ratio = 1.0; // The footprint at the top of the posts as a ratio of the one on the ground: below 1 the fence leans inward.
 	double _rib_height_ratio = 0.8; // Ratio of _post_height_meters.
 	double _rib_thickness_ratio = 0.5; // Ratio of _post_thickness_meters.
 	double _beam_max_height_ratio = 0.8; // Ratio of _rib_height_ratio of _post_height_meters.
@@ -121,6 +122,9 @@ public:
 
 	double get_post_thickness_meters() const { return _post_thickness_meters; }
 	void set_post_thickness_meters(const double p_post_thickness_meters);
+
+	double get_top_footprint_ratio() const { return _top_footprint_ratio; }
+	void set_top_footprint_ratio(const double p_top_footprint_ratio);
 
 	double get_rib_height_ratio() const { return _rib_height_ratio; }
 	void set_rib_height_ratio(const double p_rib_height_ratio);
