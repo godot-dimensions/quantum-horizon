@@ -1,9 +1,9 @@
 #include "register_types.h"
 
+#include "example_node.h"
+
 #include "core/config/engine.h"
 #include "core/core_bind.h"
-
-#include "example_node.h"
 
 inline void add_godot_singleton(const StringName &p_singleton_name, Object *p_object) {
 	CoreBind::Engine::get_singleton()->register_singleton(p_singleton_name, p_object);
