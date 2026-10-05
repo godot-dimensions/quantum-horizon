@@ -76,7 +76,7 @@ extends Node4D
 ## How much of the leg's length the IK may use: the rest is held back so the knee never locks
 ## dead straight. It also sets how bent a standing leg is - 0.97 of a two-segment leg is a 28
 ## degree knee - which a chibi carries off and a grown-up figure does not, so the gallery's
-## player (LabChambers/kit/kit_player.gd) asks for 0.995, about 12 degrees. LAB COPY ONLY: the
+## player (CreationLab/kit/kit_player.gd) asks for 0.995, about 12 degrees. LAB COPY ONLY: the
 ## pen's own gait keeps its fixed 0.97, and this default is that same 0.97.
 @export_range(0.9, 0.999, 0.001) var reach_fraction: float = 0.97
 ## And the leg solver's own hold-back, in metres: a straight leg is never quite reached. 1 cm is

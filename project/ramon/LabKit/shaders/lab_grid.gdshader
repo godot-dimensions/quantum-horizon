@@ -107,7 +107,7 @@ uniform float holo_scan = 0.35;
 uniform float holo_scan_density = 2.2;
 uniform float holo_scan_speed = 0.35;
 uniform float holo_fine : hint_range(0.0, 1.0) = 0.0;
-// PATH (LabChambers/kit/kit_path_4d.gd): this surface is a path's strip, a thin band of tetrahedra a
+// PATH (CreationLab/kit/kit_path_4d.gd): this surface is a path's strip, a thin band of tetrahedra a
 // hair above the floor that follows a curve through the floor's own space (x, z and W). Its texture
 // coordinates are metres along the curve, -1..1 across it, and -1..1 through its thickness in W.
 // The floor's own grid is drawn on it (the same swatch, the same world offset), so the strip
