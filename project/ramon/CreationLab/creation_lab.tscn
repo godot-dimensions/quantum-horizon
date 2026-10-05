@@ -358,7 +358,7 @@ softness = 3.0
 reach = 30.0
 attenuation = 0.12
 energy = {
-"bright": 8.0,
-"dark": 9.0
+"bright": 0.0,
+"dark": 0.0
 }
 fixture_at = 9.94
