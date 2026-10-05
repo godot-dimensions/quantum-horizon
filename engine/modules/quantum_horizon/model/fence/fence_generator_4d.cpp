@@ -134,6 +134,14 @@ void FenceGenerator4D::set_post_thickness_meters(const double p_post_thickness_m
 	}
 }
 
+void FenceGenerator4D::set_top_footprint_ratio(const double p_top_footprint_ratio) {
+	ERR_FAIL_COND(p_top_footprint_ratio <= 0.0 || p_top_footprint_ratio > 1.0);
+	_top_footprint_ratio = p_top_footprint_ratio;
+	if (_is_ready && _update_automatically) {
+		_request_deferred_update();
+	}
+}
+
 void FenceGenerator4D::set_rib_height_ratio(const double p_rib_height_ratio) {
 	ERR_FAIL_COND(p_rib_height_ratio <= 0.0 || p_rib_height_ratio > 1.0);
 	_rib_height_ratio = p_rib_height_ratio;
@@ -923,6 +931,8 @@ void FenceGenerator4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_post_height_meters", "post_height_meters"), &FenceGenerator4D::set_post_height_meters);
 	ClassDB::bind_method(D_METHOD("get_post_thickness_meters"), &FenceGenerator4D::get_post_thickness_meters);
 	ClassDB::bind_method(D_METHOD("set_post_thickness_meters", "post_thickness_meters"), &FenceGenerator4D::set_post_thickness_meters);
+	ClassDB::bind_method(D_METHOD("get_top_footprint_ratio"), &FenceGenerator4D::get_top_footprint_ratio);
+	ClassDB::bind_method(D_METHOD("set_top_footprint_ratio", "top_footprint_ratio"), &FenceGenerator4D::set_top_footprint_ratio);
 	ClassDB::bind_method(D_METHOD("get_rib_height_ratio"), &FenceGenerator4D::get_rib_height_ratio);
 	ClassDB::bind_method(D_METHOD("set_rib_height_ratio", "rib_height_ratio"), &FenceGenerator4D::set_rib_height_ratio);
 	ClassDB::bind_method(D_METHOD("get_rib_thickness_ratio"), &FenceGenerator4D::get_rib_thickness_ratio);
@@ -930,6 +940,7 @@ void FenceGenerator4D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "desired_spacing_meters", PROPERTY_HINT_RANGE, "0,10,0.01,or_greater,suffix:m"), "set_desired_spacing_meters", "get_desired_spacing_meters");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "post_height_meters", PROPERTY_HINT_RANGE, "0.01,10,0.01,or_greater,suffix:m"), "set_post_height_meters", "get_post_height_meters");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "post_thickness_meters", PROPERTY_HINT_RANGE, "0.01,1,0.001,or_greater,suffix:m"), "set_post_thickness_meters", "get_post_thickness_meters");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "top_footprint_ratio", PROPERTY_HINT_RANGE, "0.001,1,0.001"), "set_top_footprint_ratio", "get_top_footprint_ratio");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "rib_height_ratio", PROPERTY_HINT_RANGE, "0.001,0.999,0.001"), "set_rib_height_ratio", "get_rib_height_ratio");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "rib_thickness_ratio", PROPERTY_HINT_RANGE, "0.001,0.999,0.001"), "set_rib_thickness_ratio", "get_rib_thickness_ratio");
 

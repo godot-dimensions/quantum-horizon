@@ -31,6 +31,7 @@ class FenceBuildJob4D : public RefCounted {
 	double _rib_thickness_ratio = 0.5;
 	double _beam_max_height_ratio = 0.8;
 	double _beam_thickness_ratio = 0.5;
+	double _top_footprint_ratio = 1.0;
 	double _beam_coverage = 0.25;
 	int32_t _beam_count = 3;
 	FenceGenerator4D::InputShapeType _input_shape_type = FenceGenerator4D::INPUT_SHAPE_BOX;
@@ -59,6 +60,10 @@ class FenceBuildJob4D : public RefCounted {
 	static void _set_seams_between_cell_groups(const Ref<ArrayPolyMesh4D> &p_mesh, const PackedInt32Array &p_cell_groups);
 	PackedInt32Array _beam_cell_seed_faces(const Ref<ArrayPolyMesh4D> &p_beam_mesh) const;
 	Ref<ArrayPolyMesh4D> _build_fence_single_post(const PackedVector4Array &p_hull_point_offsets) const;
+	PackedInt32Array _nearest_seed_vertices(const PackedVector4Array &p_positions) const;
+	real_t _taper_scale(const real_t p_height_above_ground) const;
+	void _taper_part(const Ref<ArrayPolyMesh4D> &p_part, const Vector4 &p_origin, const Vector<real_t> &p_ground_heights = Vector<real_t>()) const;
+	void _lean_post(const Ref<ArrayPolyMesh4D> &p_post, const Vector4 &p_post_position) const;
 	Ref<SingleSurfaceMesh4D> _convert_to_output_mesh_type(const Ref<ArrayPolyMesh4D> &p_mesh) const;
 	static Ref<Mesh4D> _validate_finished_mesh(const Ref<Mesh4D> &p_mesh);
 	Ref<ArrayPolyMesh4D> _build_fence_single_post_shared(const PackedVector4Array &p_hull_point_offsets, HashMap<String, Ref<ArrayPolyMesh4D>> &r_post_mesh_cache) const;
