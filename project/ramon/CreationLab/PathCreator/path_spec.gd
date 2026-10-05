@@ -39,6 +39,12 @@ const CLEAR_M := 0.25 * P_M
 ## A segment shorter than this carries only the guide line (B1: "short segments may use only a
 ## guide when an arrow would crowd the end markers"): room for one mark and both clearances.
 const SHORT_SEGMENT_M := 1.2
+## THE CURVE TOOL (the builder's R): a rounded corner is short straight chords between small balls,
+## as the sheet draws the survey's approach (chords about 2.5 m apart, turning 20-30° each). The
+## radii R steps through, metres, then back to sharp; the longest chord, and the most a chord turns.
+const CURVE_RADII := [2.0, 4.0, 7.0]
+const CURVE_STEP_M := 2.4
+const CURVE_MAX_TURN_DEG := 30.0
 
 ## The guide line under the marks (Ramon, 5 Oct: "one subtle blue line under the icons to clearly
 ## see the path yet subtle"), metres wide.

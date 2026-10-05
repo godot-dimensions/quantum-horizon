@@ -65,6 +65,15 @@ uniform float repeat_m = 1.2;
 uniform float s0 = 0.0;
 uniform float clear0 = 0.0;
 uniform float clear1 = 0.0;
+// JOINTS: an end at a chord the route runs on through. There a mark is never cut: it is drawn
+// whole by the stretch that holds its middle, reaching past the joint over the ball (the box is
+// `ext0` / `ext1` longer at that end), so it turns as it moves on rather than breaking in two.
+// `mark_half` is how far a mark reaches either side of its middle, metres.
+uniform float join0 = 0.0;
+uniform float join1 = 0.0;
+uniform float ext0 = 0.0;
+uniform float ext1 = 0.0;
+uniform float mark_half = 0.2;
 uniform float flow = 0.55;
 uniform vec4 gap0 = vec4(-1.0, -1.0, -1.0, -1.0);
 uniform float guide_on = 1.0;
@@ -378,11 +387,22 @@ void fragment() {
 	float shrink = mix(0.25, 1.0, band);
 	float erode_m = 0.0;
 	if (mode == 0) {
-		float L = box_size.x;
-		float along = m.x + L * 0.5;
-		bool in_clear = along < clear0 || along > L - clear1;
+		// `along` from the segment's start; the box may reach past either end at a joint.
+		float L = box_size.x - ext0 - ext1;
+		float along = m.x + box_size.x * 0.5 - ext0;
+		bool past = along < 0.0 || along > L;
+		bool in_clear = (join0 < 0.5 && along < clear0) || (join1 < 0.5 && along > L - clear1);
 		bool in_gap = (along > gap0.x && along < gap0.y) || (along > gap0.z && along < gap0.w);
-		if (guide_on > 0.5 && !in_clear && !in_gap) {
+		// The nearest mark's middle, and whether it is this stretch's to draw.
+		float s = s0 + along;
+		float phase = mod(TIME * flow * motion, repeat_m);
+		float c_s = floor((s - phase) / repeat_m + 0.5) * repeat_m + phase;
+		float lc = c_s - s0;
+		bool mine = !((join0 > 0.5 && lc < 0.0) || (join1 > 0.5 && lc >= L));
+		// No guide past the ends, nor under a neighbour's mark reaching over the joint (the two boxes
+		// lie at one height and would fight for the pixel).
+		bool under_other = !mine && abs(s - c_s) < mark_half;
+		if (guide_on > 0.5 && !in_clear && !in_gap && !past && !under_other) {
 			float g;
 			if (guide_dot > 0.0) {
 				float sd = s0 + along;
@@ -393,10 +413,7 @@ void fragment() {
 			}
 			col = over(col, mix(under_color.rgb, role_color(0), guide_strength), g);
 		}
-		if (mark_sym >= 0 && !in_clear && !in_gap) {
-			float s = s0 + along;
-			float phase = mod(TIME * flow * motion, repeat_m);
-			float c_s = floor((s - phase) / repeat_m + 0.5) * repeat_m + phase;
+		if (mark_sym >= 0 && !in_clear && !in_gap && mine) {
 			vec2 p = vec2(s - c_s, m.y) / (unit_m * mark_scale * shrink);
 			float px = px_m / (unit_m * mark_scale * shrink);
 			vec4 mk = draw_symbol(mark_sym, p, px, erode_m / (unit_m * mark_scale), 0.0, 0.0, 0.0, 0.0);

@@ -119,6 +119,32 @@ A scripted session through its own mouse and key handling passes every check:
 
 It edits the same `.tres` files the scene loads.
 
+### The curve tool (step 74)
+
+R over a corner in the builder rounds it the way the sheet draws curves: short straight chords
+between small balls, as on the survey's approach. The corner is replaced by chords on an arc that
+meets both legs tangentially, so the route runs straight into and out of the curve. R on the curve
+again makes it wider (2, 4, 7 m), and after the widest it is a sharp corner again. Each chord is
+at most 2.4 m long and turns at most 30°. Where a leg is too short for the radius, the curve
+shrinks to fit (it uses at most 45% of the shorter leg). On a follow route, W climbs along the
+curve as it did through the corner. The chords remember the corner they replaced, so making a
+curve sharp again gives back the same corner (`img/14_curve_radii.png`: sharp, 2, 4 and 7 m on
+16 m legs).
+
+The work lives in the graph (`round_corner`, `curve_nodes`, `sharpen` in `path_graph.gd`), not in
+the builder, so an editor dock can use the same three calls. It is tested two ways:
+- `scripts/_capture_curve_runner.gd` checks where each radius meets its legs, and that W climbs on
+  a follow curve.
+- The builder session runs R on the yard's hut turn: round, wider, sharp again, with the same node
+  count as before.
+
+**Joints.** The first curves showed a fault that was already on the survey's approach: a chevron
+crossing a chord was drawn half by each stretch, at two angles, so it looked broken. Now a
+chevron is drawn whole by the stretch that holds its middle, reaching a little past the joint
+(that stretch's box is half a chevron longer there). It crosses the joint whole and turns as it
+moves on, and the small ball sits over it, as at any node (`img/15_curve_joints.png`, the 7 m
+curve close up). Bends, junctions and destinations keep their clear floor.
+
 ## 5. The symbols against an independent renderer (step 35)
 
 Every master was rasterised by Godot's own SVG renderer at 4 px a sheet unit and laid against our

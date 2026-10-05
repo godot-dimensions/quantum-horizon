@@ -13,6 +13,8 @@ extends Control
 ##            bend, junction, destination)
 ##         X  split the route under the mouse with a chord     C  join the picked node to the hovered
 ##         Del  remove the picked node   K  its kind   S  a destination's state   F  its frame
+##         R  round the corner under the mouse (or the picked one) with chords, the sheet's curve;
+##            R on a curve again: wider (2, 4, 7 m), then sharp again
 ##         P / M  the hovered route's priority / its W mode (static, here, follow, reveal)
 ##         L  the next library for just this symbol (the picked node's, or the hovered route's
 ##            chevron): one slot at a time (Ramon: "toggle not entire sets at once, but subicons
@@ -281,6 +283,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				_connect()
 			KEY_DELETE, KEY_BACKSPACE:
 				_delete()
+			KEY_R:
+				_round()
 			KEY_K:
 				_cycle_node("kind", (load("res://ramon/CreationLab/PathCreator/graph/path_graph.gd") as Script).get_script_constant_map()["KINDS"])
 			KEY_S:
@@ -379,6 +383,44 @@ func _delete() -> void:
 	_before_edit()
 	g.call("remove_node", int(_pick[1]))
 	_pick = []
+	_changed(g)
+
+
+## The curve tool (path_graph.gd round_corner): R on a corner rounds it at the first radius, R on
+## one of a curve's chords takes it to the next radius, and past the widest makes it sharp again.
+func _round() -> void:
+	var over: Array = _node_at(_mouse)
+	if over.is_empty():
+		over = _pick
+	if over.is_empty():
+		return
+	var g: Resource = _graph_of(over)
+	var n: Dictionary = g.call("node", int(over[1]))
+	if n.is_empty():
+		return
+	_before_edit()
+	var radii: Array = Spec.CURVE_RADII
+	if n.has("curve"):
+		var asked: float = float(n.get("curve_r", radii[0]))
+		var nid: int = g.call("sharpen", int(n["curve"]))
+		_pick = [over[0], nid]
+		for r in radii:
+			if float(r) > asked + 0.01:
+				var cid: int = g.call("round_corner", nid, float(r))
+				_pick = [over[0], int((g.call("curve_nodes", cid) as Array)[0])] if cid > 0 else [over[0], nid]
+				_saved_note = "curve: %.0f m" % float(r)
+				break
+		if g.call("node", int(_pick[1])).get("curve", 0) == 0:
+			_saved_note = "curve: sharp again"
+	else:
+		var cid: int = g.call("round_corner", int(over[1]), float(radii[0]))
+		if cid < 0:
+			_undo.pop_back()
+			_saved_note = "R rounds a corner: a bend or chord with one route in and one out"
+			queue_redraw()
+			return
+		_pick = [over[0], int((g.call("curve_nodes", cid) as Array)[0])]
+		_saved_note = "curve: %.0f m" % float(radii[0])
 	_changed(g)
 
 
@@ -595,7 +637,8 @@ func _draw_panel(f: Font, fb: Font) -> void:
 	else:
 		line.call("Pick a node (left click).", fb, 13, Style.UI_INK_DIM)
 	cur[0] = float(cur[0]) + 6.0
-	for t in ["N new node (1-5 its kind)   X split   C join", "Del remove   K kind   S state   F frame", "P / M  hovered route: priority / W mode",
+	for t in ["N new node (1-5 its kind)   X split   C join", "Del remove   K kind   S state   F frame",
+			"R  round a corner (again: wider, then sharp)", "P / M  hovered route: priority / W mode",
 			"L  this symbol's library (one slot)",
 			"wheel on a node: W   shift: band", "[ ]  slice W   G snap   Ctrl+Z / Y   Ctrl+S save", "drag: move   middle or right drag: pan", "F4  back to walking"]:
 		line.call(t, fb, 12, Style.UI_INK_DIM)

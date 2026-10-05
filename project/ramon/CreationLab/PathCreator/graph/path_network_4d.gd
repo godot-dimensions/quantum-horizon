@@ -213,16 +213,31 @@ func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictiona
 			wc = (A.w + B.w) * 0.5
 			depth = band
 			shear = (B.w - A.w) / L
-	var mi: MeshInstance4D = _item("Edge%d" % i, Draw.SEGMENT, used)
-	_size(mi, Vector4(L, Spec.BOX_H_M, EDGE_W, depth))
-	mi.position = Vector4((A.x + B.x) * 0.5, Spec.PROUD_M, (A.z + B.z) * 0.5, wc)
-	mi.basis = Projection(Vector4(dir.x, 0, dir.y, shear), Vector4(0, 1, 0, 0), Vector4(-dir.y, 0, dir.x, 0), Vector4(0, 0, 0, 1))
 	var primary: bool = String(e.get("priority", "primary")) == "primary"
+	var mark: int = sym("A" if primary else "B")
+	# A chord the route runs on through is a joint: marks are whole there, drawn by the stretch that
+	# holds their middle and reaching over the joint, so the box is that much longer at that end.
+	var join0: bool = String(na.get("kind", "")) == "chord" and bool(graph.call("is_pass_through", int(na["id"])))
+	var join1: bool = String(nb.get("kind", "")) == "chord" and bool(graph.call("is_pass_through", int(nb["id"])))
+	var half: float = Draw.sym_size(mark).x * 0.5 * Spec.UNIT_M + 0.04
+	var ext0: float = half if join0 else 0.0
+	var ext1: float = half if join1 else 0.0
+	var mid: float = (L - ext0 + ext1) * 0.5
+	var mi: MeshInstance4D = _item("Edge%d" % i, Draw.SEGMENT, used)
+	_size(mi, Vector4(L + ext0 + ext1, Spec.BOX_H_M, EDGE_W, depth))
+	mi.position = Vector4(A.x + dir.x * mid, Spec.PROUD_M, A.z + dir.y * mid, wc + shear * (mid - L * 0.5))
+	mi.basis = Projection(Vector4(dir.x, 0, dir.y, shear), Vector4(0, 1, 0, 0), Vector4(-dir.y, 0, dir.x, 0), Vector4(0, 0, 0, 1))
 	var pad: float = Spec.HIDE_GAP_M if clear_style == "hide" else Spec.CLEAR_M
 	var c0: float = art_radius(na) + pad
 	var c1: float = art_radius(nb) + pad
-	var room: float = L - c0 - c1
-	Draw.set_param(mi, "mark_sym", sym("A" if primary else "B") if room >= Spec.SHORT_SEGMENT_M * 0.5 else -1)
+	# The short-segment rule is about crowding end markers; a joint has none.
+	var room: float = L - (0.0 if join0 else c0) - (0.0 if join1 else c1)
+	Draw.set_param(mi, "mark_sym", mark if (room >= Spec.SHORT_SEGMENT_M * 0.5 or (join0 and join1)) else -1)
+	Draw.set_param(mi, "join0", 1.0 if join0 else 0.0)
+	Draw.set_param(mi, "join1", 1.0 if join1 else 0.0)
+	Draw.set_param(mi, "ext0", ext0)
+	Draw.set_param(mi, "ext1", ext1)
+	Draw.set_param(mi, "mark_half", half)
 	Draw.set_param(mi, "repeat_m", Spec.PRIMARY_REPEAT_M if primary else Spec.SECONDARY_REPEAT_M)
 	Draw.set_param(mi, "guide_dot", 0.0 if primary else Spec.GUIDE_DOT_M)
 	Draw.set_param(mi, "s0", s0)

@@ -16,6 +16,8 @@ extends Resource
 ##             footprint its frame goes round; "" for none
 ##   frame     "none", "rect" or "round" (slots H, I)
 ##   approach  Vector2, the way you arrive from (x, z), where the frame opens
+##   curve     (a rounded corner's chords only) its curve's id; curve_r the radius asked for; corner
+##             the corner it replaced ({kind, pos, band}), so it can be made sharp again
 ## EDGES, each a Dictionary:
 ##   from, to  node ids; the route runs from -> to (marks point that way)
 ##   priority  "primary" or "secondary" (rule 06: priority belongs to the route)
@@ -29,6 +31,7 @@ extends Resource
 ##
 ## NO class_name (engine_gotchas.md).
 
+const Spec := preload("res://ramon/CreationLab/PathCreator/path_spec.gd")
 const KINDS := ["start", "chord", "bend", "junction", "destination"]
 const STATES := ["arrival", "available", "focused", "completed"]
 const W_MODES := ["static", "here", "follow", "reveal"]
@@ -137,6 +140,107 @@ func routes() -> Array:
 			guard += 1
 		out.append({"edges": r_edges, "nodes": r_nodes})
 	return out
+
+
+## THE CURVE TOOL (PLAN.md step 74). Rounds the corner at node `id` (a bend or chord with one route
+## in and one out): the corner is replaced by chords on an arc of `radius` that meets both legs
+## where they would have reached it, tangent to each, so the route runs on straight into and out
+## of the curve. Chords are about CURVE_STEP_M apart and turn at most CURVE_MAX_TURN_DEG each.
+## When the legs are too short for the radius, it shrinks to fit (the arc may use up to 45% of the
+## shorter leg). Their W: a follow route climbs along the curve as it did along the corner; any
+## other mode keeps the corner's own W. Returns the curve's id, or -1 if `id` is no corner.
+func round_corner(id: int, radius: float) -> int:
+	if not is_pass_through(id):
+		return -1
+	var c: Dictionary = node(id)
+	var e_in: Dictionary = edges[_edge_into(id)]
+	var e_out: Dictionary = edges[_edge_out_of(id)]
+	var a: Vector4 = node(int(e_in["from"]))["pos"]
+	var b: Vector4 = node(int(e_out["to"]))["pos"]
+	var cp: Vector4 = c["pos"]
+	var c2 := Vector2(cp.x, cp.z)
+	var ua := Vector2(a.x, a.z) - c2
+	var ub := Vector2(b.x, b.z) - c2
+	var la: float = ua.length()
+	var lb: float = ub.length()
+	if la < 0.05 or lb < 0.05:
+		return -1
+	ua /= la
+	ub /= lb
+	# The angle between the legs at the corner: 180° is no turn at all, near 0 a U-turn.
+	var phi: float = acos(clampf(ua.dot(ub), -1.0, 1.0))
+	if phi > deg_to_rad(170.0) or phi < deg_to_rad(10.0):
+		return -1
+	var r: float = radius
+	var t: float = r / tan(phi * 0.5)
+	if t > 0.45 * minf(la, lb):
+		t = 0.45 * minf(la, lb)
+		r = t * tan(phi * 0.5)
+	var p1: Vector2 = c2 + ua * t
+	var p2: Vector2 = c2 + ub * t
+	var o: Vector2 = c2 + (ua + ub).normalized() * (r / sin(phi * 0.5))
+	var a0: float = (p1 - o).angle()
+	var da: float = wrapf((p2 - o).angle() - a0, -PI, PI)
+	var steps: int = maxi(1, maxi(ceili(r * absf(da) / Spec.CURVE_STEP_M), ceili(rad_to_deg(absf(da)) / Spec.CURVE_MAX_TURN_DEG)))
+	var follow: bool = String(e_in.get("w_mode", "static")) == "follow" or String(e_out.get("w_mode", "static")) == "follow"
+	var w1: float = lerpf(cp.w, a.w, t / la) if follow else cp.w
+	var w2: float = lerpf(cp.w, b.w, t / lb) if follow else cp.w
+	var cid: int = 1
+	for n in nodes:
+		cid = maxi(cid, int(n.get("curve", 0)) + 1)
+	var corner := {"kind": String(c["kind"]), "pos": cp, "band": float(c.get("band", 1.2))}
+	var ids: Array = []
+	for i in steps + 1:
+		var f: float = float(i) / float(steps)
+		var p: Vector2 = o + Vector2.from_angle(a0 + da * f) * r
+		ids.append(add_node("chord", Vector4(p.x, cp.y, p.y, lerpf(w1, w2, f)),
+			{"band": float(c.get("band", 1.2)), "curve": cid, "curve_r": radius, "corner": corner.duplicate()}))
+	e_in["to"] = ids[0]
+	e_out["from"] = ids[-1]
+	for i in steps:
+		var src: Dictionary = e_in if i * 2 < steps else e_out
+		add_edge(int(ids[i]), int(ids[i + 1]), String(src["priority"]), String(src["w_mode"]), float(src.get("band", 1.2)))
+	remove_node(id)
+	return cid
+
+
+## A curve's chords in route order, first to last.
+func curve_nodes(cid: int) -> Array:
+	var members: Dictionary = {}
+	for n in nodes:
+		if int(n.get("curve", 0)) == cid:
+			members[int(n["id"])] = true
+	var first: int = -1
+	for id in members:
+		var ei: int = _edge_into(id)
+		if ei < 0 or not members.has(int(edges[ei]["from"])):
+			first = id
+			break
+	var out: Array = []
+	var cur: int = first
+	while cur >= 0 and members.has(cur) and not (cur in out):
+		out.append(cur)
+		var eo: int = _edge_out_of(cur)
+		cur = int(edges[eo]["to"]) if eo >= 0 else -1
+	return out
+
+
+## Puts a rounded corner back as the one node it was. Returns that node's (new) id, or -1.
+func sharpen(cid: int) -> int:
+	var ids: Array = curve_nodes(cid)
+	if ids.is_empty() or not node(ids[0]).has("corner"):
+		return -1
+	var corner: Dictionary = node(ids[0])["corner"]
+	var ei: int = _edge_into(int(ids[0]))
+	var eo: int = _edge_out_of(int(ids[-1]))
+	var nid: int = add_node(String(corner["kind"]), corner["pos"], {"band": float(corner.get("band", 1.2))})
+	if ei >= 0:
+		edges[ei]["to"] = nid
+	if eo >= 0:
+		edges[eo]["from"] = nid
+	for id in ids:
+		remove_node(int(id))
+	return nid
 
 
 func _edge_into(id: int) -> int:

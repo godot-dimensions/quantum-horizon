@@ -2,7 +2,8 @@ extends SceneTree
 
 ## PathCreator's builder (PLAN.md step 79): F4 into build mode, then a scripted session through the
 ## builder's own mouse and key handling: pick a node and drag it, add a node joined to it, change
-## its W on the wheel, split a route, cycle a route's W mode, undo, redo, save; the saved file read
+## its W on the wheel, split a route, cycle a route's W mode, undo, redo, save, round a corner with
+## the curve tool (R: 2 m, wider, sharp again); the saved file read
 ## back and compared. It works on a copy of the yard's graph in user://, so the real graph files are
 ## never touched. Frames of the builder's view to res://smoke_test_output/pathcreator/builder/.
 ##
@@ -176,6 +177,82 @@ func _run() -> void:
 	await _wait(0.3)
 	_check(String(net.get("default_library")) != "07", "F5 moves every slot to the next library (%s)" % String(net.get("default_library")))
 	await _shot("builder_all_06")
+	# The curve tool on the hut's turn (the yard's bend at 6, 10.6 on the sheet; a right angle).
+	var corner_id: int = -1
+	for n in copy.nodes:
+		var q: Vector4 = n["pos"]
+		if String(n["kind"]) == "bend" and Vector2(q.x, q.z).distance_to(Vector2(-17.0, -39.4)) < 0.2:
+			corner_id = int(n["id"])
+	_check(corner_id > 0, "the hut's turn is a bend")
+	var cpos: Vector4 = copy.call("node", corner_id)["pos"]
+	var n_before: int = copy.nodes.size()
+	var routes_before: int = (copy.call("routes") as Array).size()
+	var notes_before: int = (copy.call("validate") as PackedStringArray).size()
+	# Where a 2 m radius meets a right angle's legs: 2 m from the corner, unless a leg is short (the
+	# drag above brought the choice 2 m nearer), when the curve takes at most 45% of it.
+	var legs: Array = []
+	for e in copy.edges:
+		if int(e["to"]) == corner_id or int(e["from"]) == corner_id:
+			var other: Vector4 = copy.call("node", int(e["from"]) if int(e["to"]) == corner_id else int(e["to"]))["pos"]
+			legs.append(Vector2(other.x, other.z).distance_to(Vector2(cpos.x, cpos.z)))
+	var t_expect: float = minf(2.0, 0.45 * minf(float(legs[0]), float(legs[1])))
+	_b.set("_pick", [])
+	await _mouse("move", _b.call("to_screen", cpos.x, cpos.z))
+	await _key(KEY_R)
+	var curve: Array = []
+	for n in copy.nodes:
+		if int(n.get("curve", 0)) > 0:
+			curve.append(n)
+	var first: Vector4 = (curve[0]["pos"] as Vector4) if not curve.is_empty() else Vector4.ZERO
+	var last: Vector4 = (curve[-1]["pos"] as Vector4) if not curve.is_empty() else Vector4.ZERO
+	var d_first: float = Vector2(first.x, first.z).distance_to(Vector2(cpos.x, cpos.z))
+	var d_last: float = Vector2(last.x, last.z).distance_to(Vector2(cpos.x, cpos.z))
+	var on_legs: bool = absf(d_first - t_expect) < 0.05 and absf(d_last - t_expect) < 0.05
+	_check(curve.size() == 4 and copy.call("node", corner_id).is_empty(), "R rounds the corner: the bend becomes %d chords" % curve.size())
+	_check(on_legs, "the curve meets both legs where it should (%.2f and %.2f m from the old corner, expected %.2f)" % [d_first, d_last, t_expect])
+	_check((copy.call("validate") as PackedStringArray).size() == notes_before and (copy.call("routes") as Array).size() == routes_before, "the routes still run through it, and the graph's notes are unchanged (%d)" % notes_before)
+	await _wait(0.4)
+	await _shot("builder_curve_2m")
+	var keep_size: float = float(_b.cam.get("orthographic_size"))
+	var keep_at: Vector4 = _b.cam.global_position
+	_b.cam.set("orthographic_size", 9.0)
+	_b.cam.global_position = Vector4(cpos.x + 1.0, keep_at.y, cpos.z + 1.5, keep_at.w)
+	_b.visible = false
+	await _shot("curve_close_2m")
+	_b.visible = true
+	# Again on one of its chords: wider, until it is a corner again.
+	var arc_mid: Vector4 = curve[1]["pos"]
+	_b.cam.set("orthographic_size", keep_size)
+	_b.cam.global_position = keep_at
+	await _wait(0.2)
+	await _mouse("move", _b.call("to_screen", arc_mid.x, arc_mid.z))
+	await _key(KEY_R)
+	var r_now: float = 0.0
+	for n in copy.nodes:
+		if int(n.get("curve", 0)) > 0:
+			r_now = float(n["curve_r"])
+	_check(absf(r_now - 4.0) < 0.01, "R on the curve again: 4 m (it fits what the legs allow)")
+	_b.cam.set("orthographic_size", 9.0)
+	_b.cam.global_position = Vector4(cpos.x + 1.0, keep_at.y, cpos.z + 1.5, keep_at.w)
+	_b.visible = false
+	await _shot("curve_close_4m")
+	_b.visible = true
+	_b.cam.set("orthographic_size", keep_size)
+	_b.cam.global_position = keep_at
+	await _wait(0.2)
+	for i in 2:
+		var any: Vector4 = Vector4.ZERO
+		for n in copy.nodes:
+			if int(n.get("curve", 0)) > 0:
+				any = n["pos"]
+		await _mouse("move", _b.call("to_screen", any.x, any.z))
+		await _key(KEY_R)
+	var sharp: Dictionary = {}
+	for n in copy.nodes:
+		var q: Vector4 = n["pos"]
+		if Vector2(q.x, q.z).distance_to(Vector2(cpos.x, cpos.z)) < 0.01:
+			sharp = n
+	_check(copy.nodes.size() == n_before and String(sharp.get("kind", "")) == "bend", "past 7 m, R makes it a sharp bend again (%d nodes, as before)" % copy.nodes.size())
 	_g.call("set_build", false)
 	await _wait(0.4)
 	_check(not bool(_g.get("building")), "F4 again walks")
