@@ -3,7 +3,7 @@ extends SceneTree
 ## Does a path's curve reach the shader? One straight path on the goat room's floor, photographed with
 ## the curve handed over three ways: as colours, as flat floats, as Vector4s.
 ##
-##   CreationLab/scripts/lab_run.sh windowed curve res://ramon/LabChambers/scripts/_probe_path_curve_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed curve res://ramon/LabChambers/scripts/_probe_path_curve_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const Path := preload("res://ramon/LabChambers/kit/kit_path_4d.gd")

@@ -4,7 +4,7 @@ extends SceneTree
 ## the dev panel, the player's view of them, and a straight-on view of both, with the story playing
 ## and not. To res://smoke_test_output/goat_room/compare/.
 ##
-##   CreationLab/scripts/lab_run.sh windowed compare res://ramon/LabChambers/scripts/_capture_compare_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed compare res://ramon/LabChambers/scripts/_capture_compare_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_room/compare/"

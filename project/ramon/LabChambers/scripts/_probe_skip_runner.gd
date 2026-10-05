@@ -4,7 +4,7 @@ extends SceneTree
 ## Calls the showcase's skip() a dozen times, then sends real left clicks through the room's input
 ## (with the mouse captured if the window lets it), printing the part after each.
 ##
-##   CreationLab/scripts/lab_run.sh windowed skip res://ramon/LabChambers/scripts/_probe_skip_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed skip res://ramon/LabChambers/scripts/_probe_skip_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 

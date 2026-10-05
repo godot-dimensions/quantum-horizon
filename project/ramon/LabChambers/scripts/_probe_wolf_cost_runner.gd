@@ -7,7 +7,7 @@ extends SceneTree
 ## wolf filling the frame; prints frame time, script time and the walk's own cost, and saves a frame
 ## of each to res://smoke_test_output/goat_room/wolf_probe/. Its rigid pieces are baked on the way.
 ##
-##   CreationLab/scripts/lab_run.sh windowed wolf_probe res://ramon/LabChambers/scripts/_probe_wolf_cost_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed wolf_probe res://ramon/LabChambers/scripts/_probe_wolf_cost_runner.gd
 
 const WOLF := "res://ramon/LabKit/carried/Model/wolf.tscn"
 const WALK := preload("res://ramon/LabChambers/scripts/goat_walk_4d.gd")

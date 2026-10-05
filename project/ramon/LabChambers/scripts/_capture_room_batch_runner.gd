@@ -6,7 +6,7 @@ extends SceneTree
 ## the tuner's SUN section (and that its turn moves the key light), and the live lesson text naming
 ## the chicken after 2. To res://smoke_test_output/goat_room/batch/.
 ##
-##   CreationLab/scripts/lab_run.sh windowed batch res://ramon/LabChambers/scripts/_capture_room_batch_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed batch res://ramon/LabChambers/scripts/_capture_room_batch_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_room/batch/"

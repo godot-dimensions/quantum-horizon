@@ -3,7 +3,7 @@ extends SceneTree
 ## The research wall painted onto the right-hand wall (look "painted"), straight on, in both moods,
 ## at a few parts of the story. To res://smoke_test_output/goat_room/painted/.
 ##
-##   CreationLab/scripts/lab_run.sh windowed painted res://ramon/LabChambers/scripts/_capture_painted_wall_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed painted res://ramon/LabChambers/scripts/_capture_painted_wall_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_room/painted/"

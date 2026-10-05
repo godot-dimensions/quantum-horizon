@@ -3,7 +3,7 @@ extends SceneTree
 ## The goat's walk, photographed: the goat standing in its coat (for its proportions), then six
 ## frames across one walk cycle, side on, to res://smoke_test_output/goat_walk/.
 ##
-##   CreationLab/scripts/lab_run.sh windowed goat_walk res://ramon/LabChambers/scripts/_capture_goat_walk_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed goat_walk res://ramon/LabChambers/scripts/_capture_goat_walk_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_walk/"

@@ -3,7 +3,7 @@ extends SceneTree
 ## Probe: the goat room's shape numbers. Widens and deepens the room, then photographs it from
 ## inside and checks the outline, the doorway and the right-wall screens followed.
 ##
-##   CreationLab/scripts/lab_run.sh windowed shape res://ramon/LabChambers/scripts/_probe_shape_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed shape res://ramon/LabChambers/scripts/_probe_shape_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_room/"

@@ -5,7 +5,7 @@ extends SceneTree
 ## cross-section renderer before the gallery leans on them. Frames to
 ## res://smoke_test_output/light_test/<nn>_<what>.png.
 ##
-##   CreationLab/scripts/lab_run.sh windowed light_test res://ramon/LabChambers/scripts/_light_test_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed light_test res://ramon/LabChambers/scripts/_light_test_runner.gd
 
 const Build := preload("res://ramon/LabChambers/scripts/chamber_build.gd")
 const LabGrid := preload("res://ramon/LabKit/lab_grid.gd")

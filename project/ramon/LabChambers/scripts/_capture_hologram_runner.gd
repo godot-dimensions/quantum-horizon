@@ -5,7 +5,7 @@ extends SceneTree
 ## entrance with the sun as it is and turned to -20 degrees (where both walls catch about the same
 ## light), and the fixed desk and lesson prints. To res://smoke_test_output/goat_room/holo/.
 ##
-##   CreationLab/scripts/lab_run.sh windowed holo res://ramon/LabChambers/scripts/_capture_hologram_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed holo res://ramon/LabChambers/scripts/_capture_hologram_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_room/holo/"

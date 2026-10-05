@@ -6,7 +6,7 @@ extends SceneTree
 ## LabKit/carried/Model/model.tscn) changes: the theatre loads whatever is on disk, so a stale bake
 ## shows the old goat.
 ##
-##   CreationLab/scripts/lab_run.sh headless bake res://ramon/LabChambers/scripts/_bake_lab_goat_runner.gd
+##   LabChambers/scripts/lab_run.sh headless bake res://ramon/LabChambers/scripts/_bake_lab_goat_runner.gd
 
 const OUT := "res://ramon/LabKit/carried/chickenpen/theatre/baked/"
 const GOAT := "res://ramon/LabKit/carried/chickenpen/theatre/theatre_goat_4d.gd"

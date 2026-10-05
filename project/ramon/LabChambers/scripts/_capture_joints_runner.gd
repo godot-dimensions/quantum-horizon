@@ -3,7 +3,7 @@ extends SceneTree
 ## The legs close up while they walk, goat then wolf, to check the joints (the round beads in every
 ## hip and knee, goat_walk_4d.gd joint_balls). To res://smoke_test_output/goat_room/joints/.
 ##
-##   CreationLab/scripts/lab_run.sh windowed joints res://ramon/LabChambers/scripts/_capture_joints_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed joints res://ramon/LabChambers/scripts/_capture_joints_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_room/joints/"

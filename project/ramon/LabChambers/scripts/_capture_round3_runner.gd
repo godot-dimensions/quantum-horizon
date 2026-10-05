@@ -5,7 +5,7 @@ extends SceneTree
 ## the arrow keys start and step it; the bigger research page; the pedestal's text on its right; the
 ## black palette (B). To res://smoke_test_output/goat_room/round3/.
 ##
-##   CreationLab/scripts/lab_run.sh windowed round3 res://ramon/LabChambers/scripts/_capture_round3_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed round3 res://ramon/LabChambers/scripts/_capture_round3_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_room/round3/"

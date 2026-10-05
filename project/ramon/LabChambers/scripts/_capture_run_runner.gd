@@ -5,7 +5,7 @@ extends SceneTree
 ## foot slides (it should not), the run's step rate and the flight time. Also a walk (ALT). To
 ## res://smoke_test_output/goat_room/run/.
 ##
-##   CreationLab/scripts/lab_run.sh windowed run res://ramon/LabChambers/scripts/_capture_run_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed run res://ramon/LabChambers/scripts/_capture_run_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_room/run/"

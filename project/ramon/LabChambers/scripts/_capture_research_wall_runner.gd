@@ -5,7 +5,7 @@ extends SceneTree
 ## the wall's own page saved at full size; the goat first, then the chicken. To
 ## res://smoke_test_output/goat_room/wall/.
 ##
-##   CreationLab/scripts/lab_run.sh windowed wall res://ramon/LabChambers/scripts/_capture_research_wall_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed wall res://ramon/LabChambers/scripts/_capture_research_wall_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_room/wall/"

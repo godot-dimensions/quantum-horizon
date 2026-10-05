@@ -6,7 +6,7 @@ extends SceneTree
 ## from the door, at our W and moved 0.9 m through W (cases 4 and 5 change). To
 ## res://smoke_test_output/goat_room/guides/.
 ##
-##   CreationLab/scripts/lab_run.sh windowed guides res://ramon/LabChambers/scripts/_capture_guides_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed guides res://ramon/LabChambers/scripts/_capture_guides_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_room/guides/"

@@ -5,7 +5,7 @@ extends SceneTree
 ## Photographs to res://smoke_test_output/goat_room/exhibits/<nn>_<what>.png and saves the picker's
 ## and the research panel's screens as they are drawn.
 ##
-##   CreationLab/scripts/lab_run.sh windowed exhibits res://ramon/LabChambers/scripts/_capture_exhibits_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed exhibits res://ramon/LabChambers/scripts/_capture_exhibits_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_room/exhibits/"

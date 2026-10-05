@@ -4,7 +4,7 @@ extends SceneTree
 ## res://smoke_test_output/goat_room/<nn>_<mood>_<what>.png; checks the cinematic, the slice, the
 ## turn and E as it goes.
 ##
-##   CreationLab/scripts/lab_run.sh windowed goat_room res://ramon/LabChambers/scripts/_capture_goat_room_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed goat_room res://ramon/LabChambers/scripts/_capture_goat_room_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_room/"

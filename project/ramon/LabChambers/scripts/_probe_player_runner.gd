@@ -3,7 +3,7 @@ extends SceneTree
 ## Probe: the gallery player's legs at rest and walking, numbers to the log and a side-on frame,
 ## to res://smoke_test_output/goat_room/probe_*.png.
 ##
-##   CreationLab/scripts/lab_run.sh windowed probe res://ramon/LabChambers/scripts/_probe_player_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed probe res://ramon/LabChambers/scripts/_probe_player_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_room/"

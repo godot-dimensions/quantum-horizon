@@ -6,7 +6,7 @@ extends SceneTree
 ## and that W really hides its marks. Prints each strip's tetrahedra. To
 ## res://smoke_test_output/goat_room/paths_probe/.
 ##
-##   CreationLab/scripts/lab_run.sh windowed paths_probe res://ramon/LabChambers/scripts/_probe_paths_runner.gd
+##   LabChambers/scripts/lab_run.sh windowed paths_probe res://ramon/LabChambers/scripts/_probe_paths_runner.gd
 
 const SCENE := "res://ramon/LabChambers/goat_room.tscn"
 const OUT := "res://smoke_test_output/goat_room/paths_probe/"
