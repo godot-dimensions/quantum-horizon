@@ -87,6 +87,15 @@ uniform float ball_r = 0.075;
 uniform float ring_r = 0.135;
 uniform float ring_w = 0.0225;
 
+// W CUE: a row of dots to the node's east, `w_step` metres of W to go (+ ana, - kata), starting
+// `cue_from` sheet units from its middle.
+uniform float w_step = 0.0;
+uniform float cue_from = 10.0;
+uniform vec4 cue_ana : source_color = vec4(1.0, 0.6, 0.22, 1.0);
+uniform vec4 cue_kata : source_color = vec4(0.34, 0.6, 1.0, 1.0);
+uniform float cue_dot_r = 2.4;
+uniform float cue_gap = 7.0;
+
 // FRAME (sheet units)
 uniform int frame_sym = -1;
 uniform vec2 frame_grow = vec2(0.0);
@@ -421,6 +430,20 @@ void fragment() {
 			discard;
 		}
 		col = draw_symbol(frame_sym, q, px, erode_m / unit_m, 0.0, 1.0, 1.0, 0.0);
+	}
+	if (abs(w_step) > 0.25 && (mode == 1 || mode == 2)) {
+		// The W cue: dots in a row east of the node, one a metre of W, warm ana, cool kata.
+		float n = min(round(abs(w_step)), 4.0);
+		vec2 pc = m / unit_m;
+		float pxu = px_m / unit_m;
+		vec3 cc = walk > 0.5 ? sand.rgb : (w_step > 0.0 ? cue_ana.rgb : cue_kata.rgb);
+		for (float i = 0.0; i < 4.0; i += 1.0) {
+			if (i >= max(n, 1.0)) {
+				break;
+			}
+			vec2 c = vec2(cue_from + cue_gap * (i + 0.5), 0.0);
+			col = over(col, cc, disc(pc - c, cue_dot_r * shrink, pxu));
+		}
 	}
 	if (col.a < (scissor > 0.5 ? 0.5 : 0.01)) {
 		discard;

@@ -115,6 +115,14 @@ const SAND := Color("#cdb48c")
 const W_REACH := 15.0
 ## A band's edge: marks dissolve over this much W rather than stopping dead, metres.
 const W_SOFT := 0.35
+## THE W CUE (PathCreator's own; the sheet has no symbol for W): where a route goes on at another W,
+## a row of small dots beside the node says which way and how far. Warm for ana, cool for kata (the
+## builder's colours), one dot a metre of W, at most four. Sheet units.
+const W_CUE_ANA := Color(1.0, 0.6, 0.22)
+const W_CUE_KATA := Color(0.34, 0.6, 1.0)
+const W_CUE_DOT_R := 4.0
+const W_CUE_GAP := 11.0
+const W_CUE_MAX := 4
 
 
 ## A slot's size in metres.

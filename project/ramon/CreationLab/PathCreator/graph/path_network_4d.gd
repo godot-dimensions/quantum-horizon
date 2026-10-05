@@ -270,6 +270,24 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 	mi.position = Vector4(P.x, Spec.PROUD_M + 0.002, P.z, P.w)
 	mi.basis = Projection.IDENTITY
 	mi.set_meta("node", id)
+	Draw.set_param(mi, "w_step", 0.0)
+	# The W cue: where the route goes on at another W, a row of dots beside the node, shown at the W
+	# you arrive from (the end of the stretch you can see), not at the node's own.
+	var wsi: Array = w_step_info(id)
+	if not wsi.is_empty() and absf(float(wsi[0])) > 0.25:
+		var cue: MeshInstance4D = _item("Cue%d" % id, Draw.PIVOT, used)
+		var reach: float = (art_radius(n) / Spec.UNIT_M + 4.0 + Spec.W_CUE_GAP * float(Spec.W_CUE_MAX)) * Spec.UNIT_M * 2.0 + 0.1
+		_size(cue, Vector4(reach, Spec.BOX_H_M, 0.3, float(wsi[2])))
+		cue.position = Vector4(P.x, Spec.PROUD_M + 0.003, P.z, float(wsi[1]))
+		cue.basis = Projection.IDENTITY
+		Draw.set_param(cue, "ball_r", 0.0)
+		Draw.set_param(cue, "ring_on", 0.0)
+		Draw.set_param(cue, "w_step", float(wsi[0]))
+		Draw.set_param(cue, "cue_from", art_radius(n) / Spec.UNIT_M + 4.0)
+		Draw.set_param(cue, "cue_ana", Spec.W_CUE_ANA)
+		Draw.set_param(cue, "cue_kata", Spec.W_CUE_KATA)
+		Draw.set_param(cue, "cue_dot_r", Spec.W_CUE_DOT_R)
+		Draw.set_param(cue, "cue_gap", Spec.W_CUE_GAP)
 	if kind == "destination" and String(n.get("frame", "none")) != "none":
 		_lay_frame(n, used)
 
@@ -309,6 +327,41 @@ func _clear_unused(used: Dictionary) -> void:
 			if is_instance_valid(mi):
 				mi.queue_free()
 			_items.erase(key)
+
+
+## The W a route lies at where it leaves (or, for a destination, reaches) node `id`, against the W
+## it arrived at: what the W cue shows. Edges at a fixed W ("here", "reveal") step; "follow" climbs
+## smoothly (no step) and "static" lies everywhere.
+func w_step_at(id: int) -> float:
+	var info: Array = w_step_info(id)
+	return float(info[0]) if not info.is_empty() else 0.0
+
+
+## [the step in W, the W you arrive at the node from, that stretch's band], or [] if no step.
+func w_step_info(id: int) -> Array:
+	var n: Dictionary = graph.call("node", id)
+	if n.is_empty():
+		return []
+	var in_w: Variant = null
+	var out_w: Variant = null
+	var in_band: float = 1.2
+	for e in graph.edges:
+		var mode: String = String(e.get("w_mode", "static"))
+		if mode in ["static", "follow"]:
+			continue
+		var a: Dictionary = graph.call("node", int(e["from"]))
+		var b: Dictionary = graph.call("node", int(e["to"]))
+		var ew: float = float((a["pos"] as Vector4).w) if mode == "here" else float((b["pos"] as Vector4).w)
+		if int(e["to"]) == id:
+			in_w = ew
+			in_band = float(e.get("band", 1.2))
+		if int(e["from"]) == id:
+			out_w = ew
+	if String(n.get("kind", "")) == "destination" and in_w != null:
+		return [float((n["pos"] as Vector4).w) - float(in_w), float(in_w), in_band]
+	if in_w != null and out_w != null:
+		return [float(out_w) - float(in_w), float(in_w), in_band]
+	return []
 
 
 ## Where routes cross without a node (rule 05): {edge index: [distances along it to break at]},

@@ -94,5 +94,13 @@ func _run() -> void:
 			_cam.global_basis = Mark.basis_looking(_cam.global_position, Vector4(x + 1.5, 0.0, 24.0, w))
 			var img2: Image = await _grab()
 			img2.save_png(OUT + "station_%s_w%d.png" % [String(st[1]).to_lower(), int(w)])
+	# Close, straight down: the ladder's first step at W 0 and W 1, station B's arrival at W 0 and W 4 (the W cue).
+	for close in [["cue_ladder_w0", 16.0, 17.0, 0.0], ["cue_ladder_w1", 16.0, 17.0, 1.0], ["cue_b_arrival_w0", -5.0, 34.0, 0.0], ["cue_b_arrival_w4", -5.0, 34.0, 4.0]]:
+		_cam.set("projection_type", 0)
+		_cam.set("orthographic_size", 4.0)
+		_cam.global_position = Vector4(float(close[1]), 30.0, float(close[2]), float(close[3]))
+		_cam.global_basis = Projection(Vector4(1, 0, 0, 0), Vector4(0, 0, -1, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 0, 1))
+		var ci: Image = await _grab()
+		ci.save_png(OUT + String(close[0]) + ".png")
 	print("WFIELD %s: %d failed" % ["PASS" if _fails.is_empty() else "FAIL", _fails.size()])
 	quit(0 if _fails.is_empty() else 1)

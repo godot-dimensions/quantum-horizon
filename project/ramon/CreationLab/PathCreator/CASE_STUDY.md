@@ -65,6 +65,15 @@ Five stations, each a route from W 0 to its own blue cube at W +4. From above at
 | **D reveal** | Only the start at W 0; at W +4 the whole route and the cube. |
 | **E ladder** | One leg per metre of W: walk a leg, walk ana, the next leg appears. |
 
+**The W cue (step 59).** On B and E a route stops where it goes on at another W, and nothing
+said which way. The sheet has no symbol for this, so PathCreator adds one: a row of dots beside
+the end you can see, one per metre of W still to go (at most four), warm for ana and cool for
+kata (the builder's colours). It sits at the W you arrive from, not at the node's own, because
+that is where you stand when you need it. On the ladder at W 0 one warm dot means walk ana a
+metre; at station B's end, four warm dots, and at W +4 the dots are gone and the destination is
+there (`img/11_w_cue.png`: ladder at W 0 and W 1 on top, station B at W 0 and W 4 below).
+Follow and static routes get no dots: follow climbs as you walk, and static is already everywhere.
+
 ## 4. The builder (steps 67 to 79)
 
 F4 in the running space:
