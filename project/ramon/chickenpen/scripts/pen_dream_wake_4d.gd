@@ -165,13 +165,12 @@ func _carry_home(player: CharacterBody4D) -> void:
 	_head = _avatar.get("head") as Node4D if _avatar != null else null
 	if _head != null:
 		_head_rest = _head.basis
-	var rig: Node = player.get_node_or_null("CameraRig")
+	var rig := player.get_node_or_null("CameraRig") as Node4D
 	if rig != null:
-		# Back on the flat slice - you walked here through W - and looking at the cave.
-		rig.set("_slice_xw", 0.0)
-		rig.set("_slice_zw", 0.0)
+		# Back on the flat slice - you walked here through W - and looking at the cave,
+		# which is heading 0: the identity ground frame.
+		rig.basis = Projection.IDENTITY
 		rig.set("_homing", 0.0)
-		rig.set("yaw", 0.0)
 		# The camera starts low, by your head on the grass, and the rig eases it back up.
 		rig.set("pivot_height", 0.35)
 		rig.set("pitch", deg_to_rad(-4.0))

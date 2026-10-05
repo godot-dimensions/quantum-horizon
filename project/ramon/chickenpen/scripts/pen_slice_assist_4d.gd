@@ -23,11 +23,11 @@ extends Node
 ## xw or zw, and picking the wrong one moves the offset almost not at all. So this says
 ## which way to drag, watches you do it, and tells you when you have arrived.
 ##
-## SOLVED BY MEASUREMENT, NOT BY ALGEBRA. Rather than derive which xw and zw put a given
-## chicken on the slice - which depends on the exact order the rig composes its rotations,
-## and would silently rot if that order ever changed - this nudges each angle and watches
-## what the offset does. Two extra basis multiplies a frame, and it cannot disagree with
-## the rig about how the rig works.
+## SOLVED BY MEASUREMENT, NOT BY ALGEBRA. Rather than derive the drag that puts a given
+## chicken on the slice, this makes a small sideways drag and a small vertical one on the
+## rig's frame - the very operation the mouse makes, GroundBasis4D.sliced - and watches what
+## the offset does. Two extra basis multiplies a frame, and it cannot disagree with the rig
+## about how the rig works.
 
 const BearingUtility4D = preload("res://scripts/bearing_utility_4d.gd")
 
@@ -101,48 +101,45 @@ func _physics_process(delta: float) -> void:
 	if body == null:
 		return
 	if is_zero_approx(_first_offset):
-		_first_offset = absf(_ana(body, 0.0, 0.0))
-	var offset: float = _ana(body, 0.0, 0.0)
+		_first_offset = absf(_ana(body, Vector2.ZERO))
+	var offset: float = _ana(body, Vector2.ZERO)
 	var name: String = str(_held.get("chicken_id"))
 	if absf(offset) <= settled:
 		_say("Chicken %s is on your slice now - catch it." % name)
 		return
 
-	# Which plane moves this chicken, and how much? Nudge each, look at what the offset
-	# does. The bigger gradient is the plane worth dragging in; the other one can be
-	# almost useless, which is the whole reason this readout exists.
+	# Which way of dragging moves this chicken, and how much? Nudge each, look at what the
+	# offset does. The bigger gradient is the direction worth dragging in; the other one can
+	# be almost useless, which is the whole reason this readout exists.
 	var probe: float = 0.01
-	var d_xw: float = (_ana(body, probe, 0.0) - offset) / probe
-	var d_zw: float = (_ana(body, 0.0, probe) - offset) / probe
-	if absf(d_xw) < 0.0001 and absf(d_zw) < 0.0001:
+	var d_x: float = (_ana(body, Vector2(probe, 0.0)) - offset) / probe
+	var d_y: float = (_ana(body, Vector2(0.0, probe)) - offset) / probe
+	if absf(d_x) < 0.0001 and absf(d_y) < 0.0001:
 		_say("Chicken %s cannot be turned onto your slice from here - walk closer." % name)
 		return
 
 	if rotate_for_me:
-		var scale: float = d_xw * d_xw + d_zw * d_zw
+		var scale: float = d_x * d_x + d_y * d_y
 		var step: float = clampf(ease_speed * delta, 0.0, 1.0) * -offset / scale
-		_rig.set("_slice_xw", float(_rig.get("_slice_xw")) + d_xw * step)
-		_rig.set("_slice_zw", float(_rig.get("_slice_zw")) + d_zw * step)
-		_rig.call("_apply")
+		_rig.call("drag_slice", Vector2(d_x, d_y) * step)
 		_say("Locked on chicken %s - turning the slice to it." % name)
 		return
 
 	_say("Chicken %s: hold %s and drag %s.   %s" % [
-		name, _rotate_key(), _drag_words(offset, d_xw, d_zw), _closeness(offset)])
+		name, _rotate_key(), _drag_words(offset, d_x, d_y), _closeness(offset)])
 
 
 ## Which way to move the mouse, in the player's words.
 ##
-## The rig maps a drag to the slice as _slice_xw -= motion.x and _slice_zw += motion.y, so
-## increasing xw means dragging LEFT and increasing zw means dragging DOWN. Both signs are
-## read off that mapping rather than guessed, and the plane is whichever one actually moves
-## this chicken - the failure being fixed here is a player dragging hard in the plane that
-## does nothing.
-func _drag_words(offset: float, d_xw: float, d_zw: float) -> String:
-	var use_xw: bool = absf(d_xw) >= absf(d_zw)
-	var needed: float = -offset / (d_xw if use_xw else d_zw)
-	if use_xw:
-		return "left" if needed > 0.0 else "right"
+## The gradients are per unit of mouse motion - positive x rightwards, positive y downwards,
+## as the rig hands it to GroundBasis4D.sliced - so the words read straight off their signs,
+## and the direction is whichever one actually moves this chicken: the failure being fixed
+## here is a player dragging hard in the direction that does nothing.
+func _drag_words(offset: float, d_x: float, d_y: float) -> String:
+	var sideways: bool = absf(d_x) >= absf(d_y)
+	var needed: float = -offset / (d_x if sideways else d_y)
+	if sideways:
+		return "right" if needed > 0.0 else "left"
 	return "down" if needed > 0.0 else "up"
 
 
@@ -154,23 +151,12 @@ func _closeness(offset: float) -> String:
 	return "[%s]" % "".lpad(filled, "=").rpad(6, ".")
 
 
-## The target's offset from the slice, as it WOULD be with the rig nudged by these amounts.
-##
-## Applied through the rig itself and then put back, so this asks the rig how it composes
-## its own rotations rather than assuming. The rig is restored before anything renders.
-func _ana(body: Node4D, add_xw: float, add_zw: float) -> float:
-	var xw: float = float(_rig.get("_slice_xw"))
-	var zw: float = float(_rig.get("_slice_zw"))
-	if not is_zero_approx(add_xw) or not is_zero_approx(add_zw):
-		_rig.set("_slice_xw", xw + add_xw)
-		_rig.set("_slice_zw", zw + add_zw)
-		_rig.call("_apply")
+## The target's offset from the slice, as it WOULD be after [param drag] on the rig's frame.
+## Nothing on the rig is touched: the dragged frame is built beside it.
+func _ana(body: Node4D, drag: Vector2) -> float:
+	var frame: Projection = GroundBasis4D.sliced(_rig.global_basis, drag)
 	var bearing: Dictionary = BearingUtility4D.compute_raw(
-		_player.global_position, _rig.global_basis, body.global_position)
-	if not is_zero_approx(add_xw) or not is_zero_approx(add_zw):
-		_rig.set("_slice_xw", xw)
-		_rig.set("_slice_zw", zw)
-		_rig.call("_apply")
+		_player.global_position, frame, body.global_position)
 	return float(bearing["ana_offset"])
 
 

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="FenceGenerator4D" inherits="MeshInstance4D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Generates a 4D fence mesh from a footprint shape.
+	</brief_description>
+	<description>
+		FenceGenerator4D builds a 4D fence and sets it as its own mesh. Where a 3D fence follows a 1D outline on 2D ground, a 4D fence follows a 2D surface, the "seed mesh", spread over the 3D ground hyperplane XZW, with Y pointing up. The seed mesh may rise and fall along Y, like a fence on uneven ground: each post stands at the height of its vertex, and the ribs and beams follow the slopes between the vertices, sheared so that their thickness stays horizontal and their height vertical. Every face has to be flat for its beams to be, so faces that are not, such as box faces warped by a raised corner, are split into flat ones with [method PolyMeshBuilder4D.make_coplanar], see [method build_seed_mesh_from_corners]. The seed mesh is a [PolyMesh4D] with vertices, edges, and faces, and each kind of element becomes one kind of fence part:
+		- Each face becomes a stack of beams: the face pushed outward and pulled inward by half the beam thickness within the ground hyperplane, extruded vertically. The corners are mitered so that the beams are exactly as thick everywhere as [member post_thickness_meters] times [member rib_thickness_ratio] times [member beam_thickness_ratio].
+		- Each edge becomes a rib, a vertical bar with a square cross-section, standing where two beams meet. Ribs are what make the fence look like a fence in every 3D cross-section, since a cross-section of the footprint surface is a polygon whose corners are exactly where the cross-section hyperplane crosses seed edges.
+		- Each vertex that an edge uses becomes a post, a vertical column whose footprint is the convex hull of the cross-sections of the ribs meeting there, scaled up to the post thickness. At a box corner this is exactly a cube. Posts stand on the ground, at the Y of their vertex.
+		- Faces that are large compared to [member desired_spacing_meters] get filler ribs across them and filler posts where those meet, so that every stretch of beam has vertical supports.
+		The seed mesh comes from the [member input_shape_type]: a box, a star-shaped set of corner points, [FenceGuidePost4D] child nodes that can be moved with the editor gizmo, a 3D [Mesh], or a ready-made [PolyMesh4D]. Whenever a property changes and [member update_automatically] is enabled, the fence is regenerated on a worker thread, see [method queue_update_fence_mesh]. A fence also knows what it encloses: [method is_global_point_inside] tells whether a point lies within the footprint, whatever its height.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="build_fence_from_seed_mesh">
+			<return type="Mesh4D" />
+			<description>
+				Builds the fence mesh from the current [member seed_mesh_4d] and returns it, without setting it as this node's mesh. Beams, ribs, and posts are built as separate meshes. When [member beam_material], [member rib_material], and [member post_material] are all the same, they are merged into a single [ArrayPolyMesh4D] with that material. Otherwise the result is a [MultiSurfaceMesh4D] with one surface for the posts, one for the ribs, and, when there are beams, one for the beams, in that order. The result is converted according to [member output_mesh_type]. When the corners come from [FenceGuidePost4D] children, each post's mesh is given to the guide post at its position instead of being included in the posts surface, so a degenerate guide post, such as a second one at the same position or one at the origin, gets no mesh.
+				[b]Note:[/b] The seed mesh must have per-face normals, which this method computes for any face missing one. Its faces are assumed to be oriented so that these normals point outward.
+			</description>
+		</method>
+		<method name="build_seed_mesh_from_corners" qualifiers="const">
+			<return type="ArrayPolyMesh4D" />
+			<description>
+				Builds a seed mesh from [member fence_corners] and returns it. The corners are projected onto a sphere around the origin before taking their convex hull, so every corner ends up as a vertex of the seed mesh, and the footprint may be any star-shaped polyhedron around the origin rather than only a convex one. Each hull vertex is then given the position of the corner nearest to it in direction. Adjacent coplanar faces are merged, so a box footprint gives six quads rather than twelve triangles. Since the hull is taken on the corners' directions, a face whose corners are not all at one height comes out warped, and is split into flat triangles by [method PolyMeshBuilder4D.make_coplanar], because a beam has to be flat. That cuts off the corner standing out of the others' plane, so a box face with one corner raised becomes a flat triangle and a leaning one with a level crease between them, and the diagonals get ribs like any other edge.
+				Fails and returns [code]null[/code] if the corners do not span a 3D volume in XZW, for example if they are all coplanar, or if they do not surround this node's origin, since the footprint has to be star-shaped around it.
+			</description>
+		</method>
+		<method name="is_global_point_inside" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="global_point" type="Vector4" />
+			<description>
+				Returns [code]true[/code] if [param global_point], in global coordinates, is inside the fence. The point is converted with [method Node4D.global_to_local] and tested with [method is_local_point_inside], so this is the method to call with a position taken from another node.
+			</description>
+		</method>
+		<method name="is_local_point_inside" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="local_point" type="Vector4" />
+			<description>
+				Returns [code]true[/code] if [param local_point], in this node's local coordinates, is inside the fence: its projection onto the ground, dropping Y, lies within the footprint, which is the closed surface of the seed mesh's faces, see [member seed_mesh_4d]. The height does not matter, so a point high above the fence or below the ground counts as inside like one between the posts. The footprint is the seed as last built, so with [member update_automatically] disabled it matches the fence on screen until the next manual update. Returns [code]false[/code] when there is no footprint: before the first update, while the shape's source is incomplete, or for a seed whose faces do not close up, such as a single sheet, since an open footprint encloses nothing. This is [method PolyMesh4D.compute_face_winding_number] within the ground hyperplane, so the footprint may be any closed surface, convex or not, such as the star-shaped one that corners pulled inward make.
+			</description>
+		</method>
+		<method name="is_updating" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] while a build started by [method queue_update_fence_mesh] has not been applied yet, which includes the time between its finishing on the worker thread and the message queue delivering it. [signal fence_mesh_updated] is emitted when it is applied.
+			</description>
+		</method>
+		<method name="queue_update_fence_mesh">
+			<return type="void" />
+			<description>
+				Rebuilds the seed mesh from the current [member input_shape_type] and its source data right away, then builds the fence from it on a worker thread, validates it there so that the first frame to render it does not stall on decomposing it into tetrahedra, and sets the result as this node's mesh once it is done, which is how the automatic updates of [member update_automatically] work. While a build runs, calling this again only asks for one more build once it has finished, with the inputs as they are then, so a guide post being dragged keeps at most one build running and one waiting. The [member mesh] is unchanged until the build finishes, and [signal fence_mesh_updated] says when it has. On a platform without worker threads the build runs on the calling thread instead, and the result still arrives through the message queue, so scripts can treat both the same. See [method update_fence_mesh_now] for a build that is in place when the call returns.
+			</description>
+		</method>
+		<method name="update_fence_mesh_now">
+			<return type="void" />
+			<description>
+				Rebuilds the seed mesh from the current [member input_shape_type] and its source data, builds the fence from it with [method build_fence_from_seed_mesh], and sets the result as this node's mesh, all on the calling thread, so that the mesh is in place when this returns. A build that [method queue_update_fence_mesh] has running meanwhile is from older inputs, so its result is dropped when it arrives.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="beam_count" type="int" setter="set_beam_count" getter="get_beam_count" default="3">
+			The number of beams stacked on each face of the footprint. The vertical space from the ground up to the beams' maximum height is divided into this many equal slots, and each slot holds one beam. Set to [code]0[/code] for a fence with only ribs and posts.
+		</member>
+		<member name="beam_coverage" type="float" setter="set_beam_coverage" getter="get_beam_coverage" default="0.25">
+			The fraction of each beam's vertical slot that the beam fills, from the top of the slot downward. At [code]1.0[/code] the beams touch each other and form a solid wall up to the beams' maximum height. At smaller values they are thinner rails with gaps between them, always ending at the top of their slot, so the topmost beam always reaches the maximum height. Set to [code]0.0[/code] for a fence with only ribs and posts, like a [member beam_count] of [code]0[/code].
+		</member>
+		<member name="beam_material" type="Material4D" setter="set_beam_material" getter="get_beam_material">
+			The material of the beams. See [method build_fence_from_seed_mesh] for how the materials decide the structure of the output mesh.
+		</member>
+		<member name="beam_max_height_ratio" type="float" setter="set_beam_max_height_ratio" getter="get_beam_max_height_ratio" default="0.8">
+			The height of the top of the topmost beam, as a ratio of the ribs' height. The ribs' height is in turn a ratio of the posts' height, see [member rib_height_ratio], so the beams are always lower than the ribs, which are always lower than the posts.
+		</member>
+		<member name="beam_thickness_ratio" type="float" setter="set_beam_thickness_ratio" getter="get_beam_thickness_ratio" default="0.5">
+			The thickness of the beams, as a ratio of the ribs' thickness. The ribs' thickness is in turn a ratio of the posts' thickness, see [member rib_thickness_ratio], so the beams are always thinner than the ribs, which are always thinner than the posts. The beam thickness is measured perpendicular to the beam's face and is exact everywhere, including around corners, thanks to mitering.
+		</member>
+		<member name="box_size" type="Vector3" setter="set_box_size" getter="get_box_size" default="Vector3(10, 10, 10)">
+			The size of the box footprint used by [constant INPUT_SHAPE_BOX], in meters. The three components are the extents along X, Z, and W, since the footprint lies on the XZW ground hyperplane. The box is centered on this node's origin. Only shown in the inspector for the box shape, but always stored.
+		</member>
+		<member name="desired_spacing_meters" type="float" setter="set_desired_spacing_meters" getter="get_desired_spacing_meters" default="2.0">
+			The distance to aim for between the vertical supports of a face, in meters, or [code]0[/code] to add no filler. A face whose edges are much longer than this gets filler ribs across it, and filler posts where those ribs meet each other and the ribs along the edges, so that no stretch of the fence is far from a vertical support in any 3D cross-section. Each edge is divided into a whole number of spans as close to this length as possible, up to 100, and the division is decided per edge before any face is filled: the opposite edges of a quad share one division, so quads get a regular grid of filler ribs, and the face on the other side of an edge continues from the same points, so filler ribs line up across edges wherever a point is roughly across from one. A triangle or larger polygon pairs the division points on its boundary across the face along its longest edge and across it. The existing ribs and beams are not split where the filler meets them, and the filler is purely added on top of them. The filler pairs the division points across a face as a whole, which assumes a convex face; every shape but a user-provided [member seed_mesh_4d] produces convex faces, and a concave face there gets fewer filler ribs.
+		</member>
+		<member name="fence_corners" type="PackedVector4Array" setter="set_fence_corners" getter="get_fence_corners">
+			The corner points of the footprint used by [constant INPUT_SHAPE_RADIAL_POINTS], see [method build_seed_mesh_from_corners]. The Y component of each corner is where that post meets the ground. Only shown in the inspector for the radial points shape. Every other shape overwrites this array when it generates the fence, the box with its corners, the guide posts with their positions, and the seed meshes with their vertices, so that switching to a corner shape continues from the shape the fence had, and setting it only has a lasting effect for the radial points shape. In those shapes the array is saved with the scene only as a backup: when [member update_automatically] is disabled, or when the shape's source is missing, such as a seed mesh that is not set or a fence without guide posts.
+		</member>
+		<member name="input_shape_type" type="int" setter="set_input_shape_type" getter="get_input_shape_type" enum="FenceGenerator4D.InputShapeType" default="0">
+			Where the footprint comes from. See [enum InputShapeType]. Changing this also changes which of the source data properties are shown in the inspector. A shape whose source is missing or incomplete, such as fewer than 4 corners, corners that do not span a 3D volume, or corners that do not surround this node's origin, leaves the fence empty and shows a configuration warning.
+		</member>
+		<member name="output_mesh_type" type="int" setter="set_output_mesh_type" getter="get_output_mesh_type" enum="FenceGenerator4D.OutputMeshType" default="0">
+			What kind of mesh to generate. See [enum OutputMeshType].
+		</member>
+		<member name="post_height_meters" type="float" setter="set_post_height_meters" getter="get_post_height_meters" default="1.25">
+			The height of the posts in meters, from the ground at each footprint vertex. Every other height in the fence is a ratio of this, see [member rib_height_ratio] and [member beam_max_height_ratio].
+		</member>
+		<member name="post_material" type="Material4D" setter="set_post_material" getter="get_post_material">
+			The material of the posts. See [method build_fence_from_seed_mesh] for how the materials decide the structure of the output mesh.
+		</member>
+		<member name="post_thickness_meters" type="float" setter="set_post_thickness_meters" getter="get_post_thickness_meters" default="0.1">
+			The thickness of the posts in meters. A post's footprint is at least this wide in every direction, and exactly a cube of this size at a box corner. Every other thickness in the fence is a ratio of this, see [member rib_thickness_ratio] and [member beam_thickness_ratio].
+		</member>
+		<member name="rib_height_ratio" type="float" setter="set_rib_height_ratio" getter="get_rib_height_ratio" default="0.8">
+			The height of the ribs, as a ratio of the posts' height. This is also the reference for the beams' height, see [member beam_max_height_ratio]. Keeping ribs shorter than posts keeps the posts visible as distinct columns even in cross-sections that run along a footprint edge.
+		</member>
+		<member name="rib_material" type="Material4D" setter="set_rib_material" getter="get_rib_material">
+			The material of the ribs. See [method build_fence_from_seed_mesh] for how the materials decide the structure of the output mesh.
+		</member>
+		<member name="rib_thickness_ratio" type="float" setter="set_rib_thickness_ratio" getter="get_rib_thickness_ratio" default="0.5">
+			The thickness of the ribs, as a ratio of the posts' thickness. Each rib has a square cross-section of this size, aligned with the two beams that meet at its edge when they meet at a sharp angle, or with the edge's outward direction when they meet nearly flat. This is also the reference for the beams' thickness, see [member beam_thickness_ratio]. Posts are built to contain the ends of their ribs at any value of this ratio.
+		</member>
+		<member name="seed_mesh_3d" type="Mesh" setter="set_seed_mesh_3d" getter="get_seed_mesh_3d">
+			The 3D mesh whose triangles become the footprint faces for [constant INPUT_SHAPE_SEED_MESH_3D]. The mesh's own X, Y, and Z map to the fence's X, Z, and W, so a mesh modeled with Y up in a 3D tool lies flat on the ground hyperplane, at Y = 0, since all three of its coordinates are ground coordinates. Coplanar adjacent triangles are merged back into single faces, so quads triangulated by an exporter become single beams again. Triangles without area are dropped, and a vertex that no triangle uses gets no post. Only shown in the inspector for the 3D seed mesh shape, but always stored.
+		</member>
+		<member name="seed_mesh_4d" type="PolyMesh4D" setter="set_seed_mesh_4d" getter="get_seed_mesh_4d">
+			The footprint mesh itself. For [constant INPUT_SHAPE_SEED_MESH_4D] this is the source, set by the user: a [PolyMesh4D] with vertices, edges, and faces and nothing of higher dimension, spread over the XZW ground hyperplane, with each vertex's Y the height of the ground there. Each face has to be flat, since its beams are, so a face that is not is split into flat faces in place by [method PolyMeshBuilder4D.make_coplanar], the way a missing normal is computed in place. Its faces should be oriented so that their normals point outward, and per-face normals are computed for any face missing one, which replaces a seed that is not an [ArrayPolyMesh4D] with its [ArrayPolyMesh4D] conversion. The fence uses the normals' directions within the ground hyperplane only. For every other shape it is derived from the source data by an update, see [method queue_update_fence_mesh], and in that case it is not saved with the scene, and is empty while the shape's source is incomplete.
+		</member>
+		<member name="update_automatically" type="bool" setter="set_update_automatically" getter="get_update_automatically" default="true">
+			If [code]true[/code], the fence mesh is regenerated with [method queue_update_fence_mesh] whenever a property changes, once this node is ready in the scene tree, which builds it on a worker thread and puts it in place when done. Moving, adding, or removing [FenceGuidePost4D] children counts as such a change and regenerates the fence at the end of the frame. Disable this to change several properties without regenerating in between, then call [method update_fence_mesh_now] manually or press the [b]Update Fence Mesh[/b] button, which the inspector shows while this is disabled.
+			While this is enabled, the generated mesh is not saved with the scene, since it is rebuilt when the scene loads, and neither are the corners derived from a box, guide posts, or seed mesh, see [member fence_corners]. Disable it to save the mesh with the scene instead, which then shows that mesh until the next manual update.
+		</member>
+	</members>
+	<signals>
+		<signal name="fence_mesh_updated">
+			<description>
+				Emitted when an update of the fence has finished, whether started by [method queue_update_fence_mesh], by [method update_fence_mesh_now], or automatically, and whether or not it produced a mesh: an incomplete source leaves the fence empty with a configuration warning and still emits this, so that a script waiting for it is not left waiting.
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="INPUT_SHAPE_BOX" value="0" enum="InputShapeType">
+			The footprint is a box of [member box_size], centered on this node's origin. Its 8 corners are written to [member fence_corners] and passed through [method build_seed_mesh_from_corners].
+		</constant>
+		<constant name="INPUT_SHAPE_RADIAL_POINTS" value="1" enum="InputShapeType">
+			The footprint is built from [member fence_corners] with [method build_seed_mesh_from_corners]. The corners may form any star-shaped polyhedron around this node's origin.
+		</constant>
+		<constant name="INPUT_SHAPE_RADIAL_POST_NODES" value="2" enum="InputShapeType">
+			Like [constant INPUT_SHAPE_RADIAL_POINTS], but the corners are the positions of the [FenceGuidePost4D] children. Switching to this shape creates a guide post at every corner in [member fence_corners], and switching away copies the guide posts' positions back into that array before removing them, so a layout survives the round trip. Moving a guide post with the editor's transform gizmo, adding one, deleting one, or undoing any of those regenerates the fence at the end of the frame. Each guide post is given the mesh of the post standing at its position, so it stays visible and selectable, and the posts surface of this node's own mesh only holds posts without a guide post. Two guide posts at the same position count as one corner, and only the first gets a mesh, which the second reports as a configuration warning, as does a degenerate guide post, one at the origin or in the same direction from it as an earlier one, which adds no corner, and a fence whose guide posts are fewer than 4, do not span a 3D volume in XZW, or do not surround this node's origin. The guide posts are saved with the scene and used at runtime as well, but a node per corner costs more than the corners as data, so exported projects warn about this shape and [constant INPUT_SHAPE_RADIAL_POINTS] is recommended for shipping.
+		</constant>
+		<constant name="INPUT_SHAPE_SEED_MESH_3D" value="3" enum="InputShapeType">
+			The footprint is converted from [member seed_mesh_3d], a regular 3D [Mesh]. Its vertices are written to [member fence_corners], so switching to [constant INPUT_SHAPE_RADIAL_POINTS] or [constant INPUT_SHAPE_RADIAL_POST_NODES] continues from the mesh's shape, which can then be edited without editing the mesh.
+		</constant>
+		<constant name="INPUT_SHAPE_SEED_MESH_4D" value="4" enum="InputShapeType">
+			The footprint is [member seed_mesh_4d], a [PolyMesh4D] provided directly. Its vertices are written to [member fence_corners], so switching to [constant INPUT_SHAPE_RADIAL_POINTS] or [constant INPUT_SHAPE_RADIAL_POST_NODES] continues from the mesh's shape, which can then be edited without editing the mesh.
+		</constant>
+		<constant name="OUTPUT_MESH_POLY_VOLUMETRIC" value="0" enum="OutputMeshType">
+			Generate an [ArrayPolyMesh4D] that keeps the beams' 4D hypervolumes, including the cells shared between neighboring hypervolumes on the inside of the beams. This is the most complete data, useful for further editing.
+		</constant>
+		<constant name="OUTPUT_MESH_POLY_SURFACE" value="1" enum="OutputMeshType">
+			Generate an [ArrayPolyMesh4D] with only the visible boundary cells. Cells on the inside of the beams, shared between two hypervolumes, are removed, which reduces the amount of geometry to render.
+		</constant>
+		<constant name="OUTPUT_MESH_TETRA" value="2" enum="OutputMeshType">
+			Generate an [ArrayTetraMesh4D], converted from the surface poly mesh. This is the fastest to load and render via the cross-section and projected renderers, at the cost of no longer being editable as polytopes.
+		</constant>
+		<constant name="OUTPUT_MESH_WIRE" value="3" enum="OutputMeshType">
+			Generate an [ArrayWireMesh4D] of the fence's edges, converted from the surface poly mesh. This is the best format for the wireframe renderer, but is the only option that does not render solid in the cross-section or projected renderers.
+		</constant>
+	</constants>
+</class>

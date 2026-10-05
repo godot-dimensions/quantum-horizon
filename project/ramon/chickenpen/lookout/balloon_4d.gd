@@ -462,10 +462,9 @@ func _land() -> void:
 	var station: Node = lookout.get("station")
 	var step_out: Vector4 = _moor + Vector4(1.6, 0.05, 1.2, 0.0)
 	var tower: Node4D = lookout.get("tower")
-	var facing: float = 0.0
+	var facing: Vector4 = Vector4(0.0, 0.0, -1.0, 0.0)
 	if tower != null:
-		var d: Vector4 = tower.global_position - step_out
-		facing = atan2(-d.x, -d.z)
+		facing = tower.global_position - step_out
 	station.call("end_ride", step_out, facing)
 	lookout.call("on_ride_ended")
 	ride_finished.emit()

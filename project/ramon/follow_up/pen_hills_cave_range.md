@@ -145,7 +145,7 @@ and memory figures are from before the evening notes and were not re-measured af
   chunk meshes; a radius-2 carve applies in 0.25 ms and the next frame costs about 25 ms
   more than the ones either side of it - roughly seven times cheaper than a blow on our
   GDScript slab, and only in the chunks it touches. It cannot be used here yet: the
-  generator is hard-coded (`VoxelData()`: "Temporary: hard-coded test data") and
+  generator is hard-coded (`VoxelData4D()`: "Temporary: hard-coded test data") and
   `set_generator` is not bound to scripts, so nothing of ours can be generated in it. And
   the torus alone is 890,880 tetrahedra - over a gigabyte of video memory at 1.25 KB each.
   Worth revisiting when generators are bindable.

@@ -1,0 +1,133 @@
+[gd_scene load_steps=24 format=3]
+
+[ext_resource type="Script" uid="uid://dwx3j7sg5uyd4" path="res://scripts/voxel_edit_tester.gd" id="1_tester"]
+
+[sub_resource type="BoxVoxelGenerator4D" id="Box"]
+size = Vector4(21, 21, 21, 21)
+material_inner = 0
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_pppp"]
+normal = Vector4(0.5, 0.5, 0.5, 0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_pppm"]
+normal = Vector4(0.5, 0.5, 0.5, -0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_ppmp"]
+normal = Vector4(0.5, 0.5, -0.5, 0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_ppmm"]
+normal = Vector4(0.5, 0.5, -0.5, -0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_pmpp"]
+normal = Vector4(0.5, -0.5, 0.5, 0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_pmpm"]
+normal = Vector4(0.5, -0.5, 0.5, -0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_pmmp"]
+normal = Vector4(0.5, -0.5, -0.5, 0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_pmmm"]
+normal = Vector4(0.5, -0.5, -0.5, -0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_mppp"]
+normal = Vector4(-0.5, 0.5, 0.5, 0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_mppm"]
+normal = Vector4(-0.5, 0.5, 0.5, -0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_mpmp"]
+normal = Vector4(-0.5, 0.5, -0.5, 0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_mpmm"]
+normal = Vector4(-0.5, 0.5, -0.5, -0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_mmpp"]
+normal = Vector4(-0.5, -0.5, 0.5, 0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_mmpm"]
+normal = Vector4(-0.5, -0.5, 0.5, -0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_mmmp"]
+normal = Vector4(-0.5, -0.5, -0.5, 0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="PlaneVoxelGenerator4D" id="Plane_mmmm"]
+normal = Vector4(-0.5, -0.5, -0.5, -0.5)
+distance = 10.5
+material_over = 254
+
+[sub_resource type="LayeredVoxelGenerator4D" id="LayeredFull"]
+layers = Array[VoxelGenerator4D]([SubResource("Box"), SubResource("Plane_pppp"), SubResource("Plane_pppm"), SubResource("Plane_ppmp"), SubResource("Plane_ppmm"), SubResource("Plane_pmpp"), SubResource("Plane_pmpm"), SubResource("Plane_pmmp"), SubResource("Plane_pmmm"), SubResource("Plane_mppp"), SubResource("Plane_mppm"), SubResource("Plane_mpmp"), SubResource("Plane_mpmm"), SubResource("Plane_mmpp"), SubResource("Plane_mmpm"), SubResource("Plane_mmmp"), SubResource("Plane_mmmm")])
+
+[sub_resource type="LayeredVoxelGenerator4D" id="LayeredPlanes"]
+layers = Array[VoxelGenerator4D]([SubResource("Plane_pppp"), SubResource("Plane_pppm"), SubResource("Plane_ppmp"), SubResource("Plane_ppmm"), SubResource("Plane_pmpp"), SubResource("Plane_pmpm"), SubResource("Plane_pmmp"), SubResource("Plane_pmmm"), SubResource("Plane_mppp"), SubResource("Plane_mppm"), SubResource("Plane_mpmp"), SubResource("Plane_mpmm"), SubResource("Plane_mmpp"), SubResource("Plane_mmpm"), SubResource("Plane_mmmp"), SubResource("Plane_mmmm")])
+
+[sub_resource type="ClippedVoxelGenerator4D" id="Clipped"]
+base = SubResource("Box")
+modifier = SubResource("LayeredPlanes")
+
+[sub_resource type="VoxelMaterialPalette4D" id="PaletteBlue"]
+colors = PackedColorArray(0.45, 0.55, 0.85, 1)
+
+[sub_resource type="VoxelMaterialPalette4D" id="PaletteRed"]
+colors = PackedColorArray(0.9089213, 0.2843172, 0.22508785, 1)
+
+[node name="Node4D" type="Node4D"]
+editor_description = "This is a test of a case where the current voxel meshing algorithm is known to behave poorly. The edges of the 24-cells pass through the voxel grid points, so it must arbitrarily choose which of the multiple relevant surface normals to use, and if it chooses badly, the mesh ends up with spurious fringes around the edges. The same geometry, if aligned slightly differently, is handled much better."
+script = ExtResource("1_tester")
+
+[node name="LayeredWorld" type="VoxelWorld4D" parent="."]
+position = Vector4(-25, 0, 0, 0)
+generator = SubResource("LayeredFull")
+material_palette = SubResource("PaletteBlue")
+world_bounds_enabled = true
+world_bounds_position = Vector4i(-20, -20, -20, -20)
+world_bounds_size = Vector4i(40, 40, 40, 40)
+
+[node name="ClippedWorld" type="VoxelWorld4D" parent="."]
+position = Vector4(25, 0, 0, 0)
+generator = SubResource("Clipped")
+material_palette = SubResource("PaletteRed")
+world_bounds_enabled = true
+world_bounds_position = Vector4i(-20, -20, -20, -20)
+world_bounds_size = Vector4i(40, 40, 40, 40)
+
+[node name="Camera4D" type="Camera4D" parent="."]
+position = Vector4(0, 0, 37.12683445192006, 0)
+current = true
+rendering_engine_name = "Cross-section"
+
+[node name="DirectionalLight4D" type="DirectionalLight4D" parent="."]
+position = Vector4(0, 30.585042491160745, 0, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.09074822868933856, -0.9958738670081404, 0, 0, 0.9958738670081404, 0.09074822868933856, 0, 0, 0, 0, 1)
+light_energy = 0.304

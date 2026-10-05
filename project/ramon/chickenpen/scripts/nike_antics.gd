@@ -138,8 +138,8 @@ enum State { WALK, ROOT, GOING_DOWN, LYING, GETTING_UP, HOP }
 ## clear of the rails rather than astride them.
 @export_range(0.5, 6.0, 0.1) var hop_distance: float = 2.2
 @export_range(0.2, 2.0, 0.05) var hop_seconds: float = 0.85
-## Over the top rail. The fence's own height is read off the fence, so raising it in the
-## inspector raises the jump.
+## Over the posts, the fence's tallest part. Their height is read off the fence, so raising
+## it in the inspector raises the jump.
 @export_range(0.0, 1.5, 0.05) var hop_clearance: float = 0.35
 ## Nose up off the ground, level at the top, nose down into the landing.
 @export_range(0.0, 40.0, 1.0, "suffix:°") var hop_pitch_degrees: float = 14.0
@@ -180,7 +180,7 @@ var _leashed: bool = false
 ## frame to save one variable would be the kind of saving that goes wrong once.
 var _feed_at: Vector4 = Vector4.ZERO
 var _going_to_eat: bool = false
-var _fence: Node4D
+var _fence: FenceGenerator4D
 var _hop_from: Vector4 = Vector4.ZERO
 var _hop_to: Vector4 = Vector4.ZERO
 var _hop_peak: float = 0.0
@@ -201,7 +201,7 @@ func _ready() -> void:
 		_heading = _yaw
 		_scale = maxf(_mover.basis.x.length(), 0.0001)
 	_limit = randf_range(walk_seconds.x, walk_seconds.y)
-	_fence = get_node_or_null(fence_path) as Node4D
+	_fence = get_node_or_null(fence_path) as FenceGenerator4D
 	var feeders: Node = get_node_or_null(feeder_path)
 	if feeders != null and feeders.has_signal("feeder_raised"):
 		feeders.connect("feeder_raised", go_and_eat)
@@ -341,12 +341,8 @@ func go_and_eat(at: Vector4) -> void:
 func _inside_pen(at: Vector4) -> bool:
 	if _fence == null:
 		return false
-	var centre: Vector4 = _fence.global_position
-	var half_x: float = maxf(float(_fence.get("extend_x_positive")),
-		float(_fence.get("extend_x_negative")))
-	var half_z: float = maxf(float(_fence.get("extend_z_positive")),
-		float(_fence.get("extend_z_negative")))
-	return absf(at.x - centre.x) <= half_x and absf(at.z - centre.z) <= half_z
+	# The fence knows its own footprint, whatever shape it was given, and ignores height.
+	return _fence.is_global_point_inside(at)
 
 
 ## Is the next stride going to put him through the rails?
@@ -377,7 +373,7 @@ func _take_off() -> void:
 	var dir := Vector4(sin(_yaw), 0.0, cos(_yaw), 0.0)
 	_hop_from = _mover.position
 	_hop_to = _mover.position + dir * hop_distance * _size_ratio()
-	_hop_peak = float(_fence.get("height")) + hop_clearance
+	_hop_peak = _fence.post_height_meters + hop_clearance
 	_enter(State.HOP, hop_seconds)
 
 
