@@ -74,6 +74,37 @@ metre; at station B's end, four warm dots, and at W +4 the dots are gone and the
 there (`img/11_w_cue.png`: ladder at W 0 and W 1 on top, station B at W 0 and W 4 below).
 Follow and static routes get no dots: follow climbs as you walk, and static is already everywhere.
 
+### Tilting instead of walking (steps 62, 64, 66)
+
+The pen mostly moves you through W by tilting the slice (right mouse), not by walking. Tilted,
+the slice is no longer one W: it pivots on you and climbs or falls with distance, about 0.09 m of
+W a metre at 5° and 0.18 at 10°. So the same five stations were shot with the slice tilted
+instead of moved (`scripts/_capture_tilt_runner.gd`, `img/12_w_stations_tilted.png`: stations
+across; flat, 5° along, 10.3° along, 20° along and 15° across, down). 10.3° is the tilt that
+matches the routes' own climb, W 0 to 4 over 22 m. Ink is counted in three stretches of each route
+so this rests on numbers, and five checks pass.
+
+| Mode | Under a tilt |
+|---|---|
+| **Static** | Holds at every tilt, every stretch. |
+| **Here** | Becomes a short lamp around you: it shows while the slice stays inside its band, 7 m at 5°, 3 m at 10°. Its middle is gone at the matched tilt. |
+| **Follow** | The find of this pass. At the tilt that matches its climb **the whole route shows at once, and the cube at its end with it**. Too little or too much tilt and it shrinks back to a stretch. |
+| **Reveal** | Tilting toward its W brings its end into view from the start, before you get there. |
+| **Ladder** | A piece of every leg at once, which reads as broken. The ladder is for walking. |
+
+From the player's camera (`img/13_tilt_player_view.png`: station B flat and matched on top,
+station C below) the follow result is the strongest picture in the study: flat, three chevrons and
+nothing; tilted to match, the route runs out to its cube, and the other W +4 cubes stand up
+behind it.
+
+What it suggests for the pen (step 65, Ramon's call):
+- **Main routes static.** They are the one mode that survives whatever the player does with the slice.
+- **Routes into W follow, ending in a bracketed destination.** Walking through W unrolls them, and
+  tilting to line one up shows all of it plus the place it leads. This is the pen's own trick
+  (line up on a chicken by tilting) used for wayfinding.
+- **Here and reveal** for local hints: "this belongs to your slice" and "something is over there in W".
+- **The ladder** only where the player is meant to walk W step by step.
+
 ## 4. The builder (steps 67 to 79)
 
 F4 in the running space:
