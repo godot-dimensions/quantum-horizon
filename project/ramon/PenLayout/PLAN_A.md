@@ -74,6 +74,21 @@ Done and checked by frames and the pen's tests:
 - Phase 7, first pass: a fence frame switch on the tower (`fence_frame`), the shed (`fence_frame`)
   and the booth (`fence_posts`), all off by default.
 
+Later the same night (Ramon's notes while it ran):
+- Two looks, never mixed: sand alone on the field (the first run's look), blue icons only on a
+  white dev floor. Checked on PathCreator's lab floor: icons alone are as clean as the path lab.
+- The "edges": the sand's soft edges darkened toward the floor's colour where strips and patches
+  overlap (the cross-section is opaque). The sand's edge is now dithered, and the patches at joints
+  are a quarter wider than the strips; no seams left.
+- Route turns are curves now (the sheet's chords between small balls). The meadow ring sat on the
+  hill's foot (the route check caught it): it and the kata stones moved to (20, -2).
+- The meadow film turns the grass on for itself, hides the paths, and centres on (28, -8), clear of
+  the hill. Its close-up shot may want its height tuned there.
+- Cost: the paths add about 1.1 ms a frame (each stretch its own box and material; merging the
+  sand per route would cut it). The fence frames multiply the buildings' tetrahedra (tower 6,480
+  to 34,664, shed 1,120 to 6,304, booth 7,240 to 12,104) with no measurable change in frame time.
+- Still open from the plan: the bags on the dial and a checklist line (31), a tilted-slice check (63).
+
 Learned on the way:
 - **The fence generator's ribs are full-height plates along its grid lines.** Where the slice falls
   on a grid layer in W they read as solid walls (the tower's base was a solid pyramid from the

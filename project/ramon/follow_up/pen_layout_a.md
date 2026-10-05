@@ -51,7 +51,9 @@ strips and patches overlap there are no dark seams.
 Each hero building has a switch that swaps its frame for one built by Aaron's FenceGenerator4D:
 the tower `fence_frame` (base, deck railing, cabin walls), Trym's shed `fence_frame` (a timber
 frame round the walls; the walls stay for the cutaway in his scene), the range booth `fence_posts`.
-All off. Frames to compare: `smoke_test_output/pen_layout/tower/` and `.../hut/`.
+All off. Frames to compare: `smoke_test_output/pen_layout/tower/` and `.../hut/`. They multiply the
+buildings' tetrahedra (tower 6,480 to 34,664) with no measurable change in frame time; the paths
+cost about 1.1 ms a frame.
 
 The one thing to know about the generator: its ribs are full-height plates on its grid lines, so
 where the slice falls on a grid layer in W the frame reads as solid walls, and between layers as an
