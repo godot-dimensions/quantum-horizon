@@ -154,6 +154,8 @@ public:
 	void notify_guide_post_changed(); // Do not expose.
 	void queue_update_fence_mesh();
 	void update_fence_mesh_now();
+	bool is_local_point_inside(const Vector4 &p_local_point) const;
+	bool is_global_point_inside(const Vector4 &p_global_point) const;
 	bool is_updating() const { return _is_fence_currently_generating; }
 	virtual PackedStringArray get_configuration_warnings() const override;
 	Callable _get_update_fence_mesh_button() const;

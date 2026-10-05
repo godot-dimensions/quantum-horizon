@@ -556,8 +556,11 @@ void FenceGenerator4D::_deferred_update() {
 	_refresh_configuration_warnings();
 }
 
-// Clears the fence and its guide posts. Without a footprint no post can be called degenerate, so that warning is cleared too.
+// Clears the fence, its footprint, and its guide posts' meshes, for a shape whose source is incomplete. Without a
+// footprint nothing is inside the fence, see `is_local_point_inside`, and no post can be called degenerate, so that
+// warning is cleared too.
 void FenceGenerator4D::_clear_fence_mesh() {
+	_seed_mesh_4d.unref();
 	set_mesh(Ref<Mesh4D>());
 	for (FenceGuidePost4D *guide_post : _get_guide_posts()) {
 		guide_post->set_mesh(Ref<Mesh4D>());
@@ -768,6 +771,23 @@ void FenceGenerator4D::_apply_guide_post_results(FenceBuildJob4D *p_job) {
 		guide_post->set_is_degenerate(p_job->_guide_post_degenerate[post_index]);
 	}
 }
+
+// Whether a point is inside the fence: its projection onto the ground lies within the footprint, which is the seed as
+// last built, whatever the point's height. The footprint is a closed surface of faces over the ground hyperplane, so
+// the test is the winding number of the point around it, measured within that hyperplane, which handles the
+// star-shaped footprint a pushed corner makes as well as a convex one, and gives an open footprint, which encloses
+// nothing, less than a half everywhere. The sign only tells which way the faces are oriented, so it is dropped.
+bool FenceGenerator4D::is_local_point_inside(const Vector4 &p_local_point) const {
+	if (_seed_mesh_4d.is_null()) {
+		return false; // No footprint yet, or a shape whose source is incomplete, see `_clear_fence_mesh`.
+	}
+	return Math::abs(_seed_mesh_4d->compute_face_winding_number(p_local_point, Vector4(0, 1, 0, 0))) > (real_t)0.5;
+}
+
+bool FenceGenerator4D::is_global_point_inside(const Vector4 &p_global_point) const {
+	return is_local_point_inside(global_to_local(p_global_point));
+}
+
 // A shape whose source is incomplete is a warning rather than an error, see `_update_seed_mesh`. Whether the corners
 // surround the origin is known from the last build, so with automatic updates off it reflects the last manual update.
 PackedStringArray FenceGenerator4D::get_configuration_warnings() const {
@@ -932,6 +952,8 @@ void FenceGenerator4D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("queue_update_fence_mesh"), &FenceGenerator4D::queue_update_fence_mesh);
 	ClassDB::bind_method(D_METHOD("update_fence_mesh_now"), &FenceGenerator4D::update_fence_mesh_now);
 	ClassDB::bind_method(D_METHOD("is_updating"), &FenceGenerator4D::is_updating);
+	ClassDB::bind_method(D_METHOD("is_local_point_inside", "local_point"), &FenceGenerator4D::is_local_point_inside);
+	ClassDB::bind_method(D_METHOD("is_global_point_inside", "global_point"), &FenceGenerator4D::is_global_point_inside);
 	ADD_SIGNAL(MethodInfo("fence_mesh_updated"));
 
 	BIND_ENUM_CONSTANT(INPUT_SHAPE_BOX);
