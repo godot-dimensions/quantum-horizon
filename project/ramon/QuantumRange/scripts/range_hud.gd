@@ -41,6 +41,7 @@ var _glow_k: float = 0.0
 ## they keep a quiet glow (a steady full glow, whenever anything was in your slice, was noise).
 var _was_cut: bool = false
 var _flash: float = 0.0
+var _out_for: float = 0.0
 var _toast: String = ""
 var _toast_col: Color = Color.WHITE
 var _toast_t: float = 0.0
@@ -90,10 +91,15 @@ func countdown(text: String, seconds: float = 0.8) -> void:
 
 func show_results(r: Dictionary) -> void:
 	_results = r
+	# The card stands alone: the radar, its readout and the crosshair step aside.
+	radar.visible = false
+	crosshair.visible = false
 
 
 func hide_results() -> void:
 	_results = {}
+	radar.visible = true
+	crosshair.visible = true
 
 
 ## The part you are going for: [target, world position, role, w reach], or [] when there is none.
@@ -164,12 +170,15 @@ func _process(delta: float) -> void:
 		var cam: Camera4D = player.get("camera")
 		var dist: float = (_current[1] as Vector4).distance_to(cam.global_position)
 		if off <= reach:
-			g = 0.22
-			if not _was_cut:
-				_flash = 1.0
+			g = 0.12
+			# A flash only after a real search: the part was out of your slice for a moment first.
+			if not _was_cut and _out_for > 0.4:
+				_flash = 0.75
 			_was_cut = true
+			_out_for = 0.0
 		else:
 			_was_cut = false
+			_out_for += delta
 			var ang: float = rad_to_deg(asin(clampf((off - reach) / maxf(dist, 0.01), 0.0, 1.0)))
 			var t: float = clampf((30.0 - ang) / 30.0, 0.0, 1.0)
 			g = t * t * 0.55
@@ -194,7 +203,8 @@ func _draw() -> void:
 	if u <= 0.0:
 		return
 	_draw_card(u)
-	_draw_readout(u)
+	if _results.is_empty():
+		_draw_readout(u)
 	_draw_keys(u)
 	if _toast_t > 0.0:
 		var a: float = clampf(_toast_t / 0.35, 0.0, 1.0)
@@ -312,7 +322,7 @@ func _draw_stage_card(u: float) -> void:
 	var ft: Font = Kit.ui_font("title")
 	var fh: Font = Kit.ui_font("heading")
 	var w: float = 520.0 * u
-	var r := Rect2(Vector2((size.x - w) * 0.5, size.y * 0.22), Vector2(w, 86.0 * u))
+	var r := Rect2(Vector2((size.x - w) * 0.5, size.y * 0.30), Vector2(w, 86.0 * u))
 	_glass(r, 12.0 * u, a)
 	draw_string(fh, Vector2(r.position.x, r.position.y + 28.0 * u), _stage_sub, HORIZONTAL_ALIGNMENT_CENTER, w, Kit.type_px("caption", u), Color(Kit.UI_ACCENT, a))
 	draw_string(ft, Vector2(r.position.x, r.position.y + 64.0 * u), _stage_title, HORIZONTAL_ALIGNMENT_CENTER, w, Kit.type_px("title", u), Color(1, 1, 1, a))

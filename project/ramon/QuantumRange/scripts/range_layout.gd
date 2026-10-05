@@ -40,6 +40,9 @@ const COUNTER := Vector3(28.0, 1.05, 0.6)
 ## The wings: the middle of the left one's foot (x, z); the right one mirrors it. Each turns to face
 ## the firing position.
 const WING := Vector2(-9.0, -5.2)
+## The console stands on its own to your left in the bay, facing you across it (+X): not on the counter
+## in front, where it covered the radar (frame play/00_lobby, 5 Oct).
+const CONSOLE_AT := Vector4(-2.3, 0.0, 1.5, 0.0)
 const WING_FACES := Vector2(0.0, 1.5)
 
 

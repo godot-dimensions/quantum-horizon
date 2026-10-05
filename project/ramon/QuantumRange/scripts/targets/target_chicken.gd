@@ -21,7 +21,8 @@ func build() -> void:
 	family = "chicken"
 	var s: float = Shapes.CHICKEN_SCALE
 	# The hitbox: the bird, wings folded; the body is the part, everything else hangs off it.
-	var core: Dictionary = add_part("Bird", "core", null, Vector4(0.55, 0.7, 0.85, 0.45), {"radar": true})
+	var k: float = s / 0.5
+	var core: Dictionary = add_part("Bird", "core", null, Vector4(0.55, 0.7, 0.85, 0.45) * k, {"radar": true})
 	var body: Node4D = core["node"]
 	for piece in Shapes.chicken(get_tree()):
 		var nm: String = piece[0]
