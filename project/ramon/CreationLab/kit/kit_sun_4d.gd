@@ -13,8 +13,8 @@ extends Node4D
 ## NO class_name (engine_gotchas.md).
 
 const Build := preload("res://ramon/CreationLab/scripts/chamber_build.gd")
-const Batch := preload("res://ramon/LabKit/lab_batch.gd")
-const Mats := preload("res://ramon/LabKit/lab_materials.gd")
+const Batch := preload("res://ramon/CreationLab/LabKit/lab_batch.gd")
+const Mats := preload("res://ramon/CreationLab/LabKit/lab_materials.gd")
 
 ## The LabKit Room whose sun this sets.
 @export var room: NodePath = NodePath("../Room")

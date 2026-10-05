@@ -22,7 +22,7 @@ extends Node4D
 ## NO class_name (engine_gotchas.md).
 
 const KitPlayer := preload("res://ramon/CreationLab/kit/kit_player.gd")
-const LabMath := preload("res://ramon/LabKit/lab_math.gd")
+const LabMath := preload("res://ramon/CreationLab/LabKit/lab_math.gd")
 const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
 const Hud := preload("res://ramon/CreationLab/scripts/rd_hud.gd")
 const Tuner := preload("res://ramon/CreationLab/kit/kit_tuner.gd")

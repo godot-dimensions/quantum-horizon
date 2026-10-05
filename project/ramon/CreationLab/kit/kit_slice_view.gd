@@ -24,7 +24,7 @@ extends Control
 ##
 ## NO class_name (engine_gotchas.md).
 
-const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
+const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
 const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
 ## The view: where the eye sits, as a direction from the goat's middle in (length, height, W)
 ## (length towards the head), how far off as a multiple of the goat's size (far: gentle

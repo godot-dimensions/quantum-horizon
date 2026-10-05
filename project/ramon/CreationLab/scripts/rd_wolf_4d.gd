@@ -23,11 +23,11 @@ extends Node4D
 ##
 ## NO class_name (engine_gotchas.md).
 
-const SOURCE := "res://ramon/LabKit/carried/Model/wolf.tscn"
+const SOURCE := "res://ramon/CreationLab/LabKit/carried/Model/wolf.tscn"
 const WALK := preload("res://ramon/CreationLab/scripts/goat_walk_4d.gd")
 const Bench := preload("res://ramon/CreationLab/kit/kit_bench.gd")
 const Presentation := preload("res://ramon/CreationLab/kit/kit_presentation.gd")
-const BAKED := "res://ramon/LabKit/carried/chickenpen/theatre/baked/"
+const BAKED := "res://ramon/CreationLab/LabKit/carried/chickenpen/theatre/baked/"
 const CODE := "WF-03"
 const GROW_SECONDS := 2.6
 ## The order the balls come in, and how many are in after each build step.

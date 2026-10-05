@@ -12,7 +12,7 @@ const SCENE := "res://ramon/CreationLab/creation_lab.tscn"
 const OUT := "res://smoke_test_output/goat_room/paths_probe/"
 const Path := preload("res://ramon/CreationLab/kit/kit_path_4d.gd")
 const Pivot := preload("res://ramon/CreationLab/kit/kit_pivot_4d.gd")
-const Mark := preload("res://ramon/LabKit/lab_mark_4d.gd")
+const Mark := preload("res://ramon/CreationLab/LabKit/lab_mark_4d.gd")
 
 var _g: Node
 

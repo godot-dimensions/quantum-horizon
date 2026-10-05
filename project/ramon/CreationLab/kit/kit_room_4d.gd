@@ -28,11 +28,11 @@ extends Node4D
 
 const Build := preload("res://ramon/CreationLab/scripts/chamber_build.gd")
 const RD := preload("res://ramon/CreationLab/scripts/rd_build.gd")
-const LabGrid := preload("res://ramon/LabKit/lab_grid.gd")
-const Mats := preload("res://ramon/LabKit/lab_materials.gd")
-const Batch := preload("res://ramon/LabKit/lab_batch.gd")
+const LabGrid := preload("res://ramon/CreationLab/LabKit/lab_grid.gd")
+const Mats := preload("res://ramon/CreationLab/LabKit/lab_materials.gd")
+const Batch := preload("res://ramon/CreationLab/LabKit/lab_batch.gd")
 const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
-const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
+const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
 ## The interior corners for a polygon room (empty: a rectangle of `size`). `size.y` is the height.

@@ -1,4 +1,4 @@
-# The lab kit (`res://ramon/LabKit/`)
+# The lab kit (`res://ramon/CreationLab/LabKit/`)
 
 A design kit for explaining things in 4D, step by step, in the R&D lab look. The Creation Lab
 (`CreationLab/creation_lab.tscn`) is its first user and its reference: open it next to this page.
@@ -22,7 +22,7 @@ Nothing in it has a `class_name` (engine_gotchas.md): preload the scripts.
    - `LabClock` (a plain `Node`) running `lab_clock_4d.gd`,
    - `Sequence` running `lab_sequence_4d.gd`, its `steps` array filled with step resources.
 2. A root script that adds the player and hands it to the sequence:
-   `var p := preload("res://ramon/LabKit/lab_player.gd").make(); add_child(p); $Sequence.player = p`
+   `var p := preload("res://ramon/CreationLab/LabKit/lab_player.gd").make(); add_child(p); $Sequence.player = p`
    (see `CreationLab/creation_lab_4d.gd`, which also picks the way in: guided, watch, explore).
 3. One step resource per bay (`lab_step.gd`): code, part (atrium / build / motion / hall), number,
    title, idea, task and its key chips, the line said after the task, the card (method, shows,

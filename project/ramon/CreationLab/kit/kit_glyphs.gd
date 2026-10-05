@@ -15,7 +15,7 @@ extends RefCounted
 ##
 ## NO class_name (engine_gotchas.md).
 
-const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
+const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
 const RD := preload("res://ramon/CreationLab/scripts/rd_build.gd")
 
 

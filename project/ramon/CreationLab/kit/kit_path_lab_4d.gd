@@ -17,7 +17,7 @@ extends Node4D
 
 const Path := preload("res://ramon/CreationLab/kit/kit_path_4d.gd")
 const Pivot := preload("res://ramon/CreationLab/kit/kit_pivot_4d.gd")
-const Mats := preload("res://ramon/LabKit/lab_materials.gd")
+const Mats := preload("res://ramon/CreationLab/LabKit/lab_materials.gd")
 
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild

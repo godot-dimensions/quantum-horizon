@@ -7,7 +7,7 @@ extends RefCounted
 ##
 ## NO class_name (engine_gotchas.md): preload it and call make().
 
-const LabPlayer := preload("res://ramon/LabKit/lab_player.gd")
+const LabPlayer := preload("res://ramon/CreationLab/LabKit/lab_player.gd")
 const Avatar := preload("res://ramon/CreationLab/kit/kit_avatar_4d.gd")
 const RunGait := preload("res://ramon/CreationLab/kit/kit_run_gait_4d.gd")
 

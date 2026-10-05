@@ -9,10 +9,10 @@ extends RefCounted
 ##
 ## NO class_name (engine_gotchas.md): preload it.
 
-const LabGrid := preload("res://ramon/LabKit/lab_grid.gd")
-const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
-const Mats := preload("res://ramon/LabKit/lab_materials.gd")
-const Batch := preload("res://ramon/LabKit/lab_batch.gd")
+const LabGrid := preload("res://ramon/CreationLab/LabKit/lab_grid.gd")
+const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
+const Mats := preload("res://ramon/CreationLab/LabKit/lab_materials.gd")
+const Batch := preload("res://ramon/CreationLab/LabKit/lab_batch.gd")
 
 ## Every box's depth through W. The player never turns the slice here (the orbit rig's
 ## `slice_turning` is off), so this only has to cover the exhibits' own turns through W.

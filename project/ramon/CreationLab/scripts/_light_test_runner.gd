@@ -8,9 +8,9 @@ extends SceneTree
 ##   CreationLab/scripts/lab_run.sh windowed light_test res://ramon/CreationLab/scripts/_light_test_runner.gd
 
 const Build := preload("res://ramon/CreationLab/scripts/chamber_build.gd")
-const LabGrid := preload("res://ramon/LabKit/lab_grid.gd")
-const Mark := preload("res://ramon/LabKit/lab_mark_4d.gd")
-const Room := preload("res://ramon/LabKit/lab_room_4d.gd")
+const LabGrid := preload("res://ramon/CreationLab/LabKit/lab_grid.gd")
+const Mark := preload("res://ramon/CreationLab/LabKit/lab_mark_4d.gd")
+const Room := preload("res://ramon/CreationLab/LabKit/lab_room_4d.gd")
 const OUT := "res://smoke_test_output/light_test/"
 
 var _g: Node4D

@@ -25,9 +25,9 @@ extends Node4D
 ##
 ## NO class_name (engine_gotchas.md).
 
-const SOURCE := "res://ramon/LabKit/carried/chickenpen/chicken.tscn"
+const SOURCE := "res://ramon/CreationLab/LabKit/carried/chickenpen/chicken.tscn"
 const WALKER := preload("res://ramon/CreationLab/scripts/exhibit_chicken_walker_4d.gd")
-const Mats := preload("res://ramon/LabKit/lab_materials.gd")
+const Mats := preload("res://ramon/CreationLab/LabKit/lab_materials.gd")
 const Bench := preload("res://ramon/CreationLab/kit/kit_bench.gd")
 const Presentation := preload("res://ramon/CreationLab/kit/kit_presentation.gd")
 ## The order the rigs come in during the build.

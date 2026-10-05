@@ -12,7 +12,7 @@ extends RefCounted
 
 ## NO class_name (engine_gotchas.md): preload it.
 
-const LabGrid := preload("res://ramon/LabKit/lab_grid.gd")
+const LabGrid := preload("res://ramon/CreationLab/LabKit/lab_grid.gd")
 
 const SWATCHES := {
 	"bright": {
@@ -186,10 +186,10 @@ static func veil_box(radius: float, a: float = 1.0) -> StyleBoxFlat:
 static func ui_font(role: String) -> Font:
 	match role:
 		"title", "figure":
-			return preload("res://ramon/LabKit/lab_print.gd").font("black")
+			return preload("res://ramon/CreationLab/LabKit/lab_print.gd").font("black")
 		"heading", "key":
-			return preload("res://ramon/LabKit/lab_print.gd").font("bold")
-	return preload("res://ramon/LabKit/lab_print.gd").font("body")
+			return preload("res://ramon/CreationLab/LabKit/lab_print.gd").font("bold")
+	return preload("res://ramon/CreationLab/LabKit/lab_print.gd").font("body")
 
 
 ## THE PALETTE, on top of the mood (Ramon, 5 Oct: "keep [the B switch] and replace all white textures

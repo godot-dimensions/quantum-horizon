@@ -12,7 +12,7 @@ extends Control
 ##
 ## NO class_name (engine_gotchas.md).
 
-const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
+const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
 const RD := preload("res://ramon/CreationLab/scripts/rd_build.gd")
 const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
 

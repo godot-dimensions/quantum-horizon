@@ -18,10 +18,10 @@ extends RefCounted
 ## NO class_name (engine_gotchas.md): preload it.
 
 const Build := preload("res://ramon/CreationLab/scripts/chamber_build.gd")
-const LabGrid := preload("res://ramon/LabKit/lab_grid.gd")
-const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
-const Mats := preload("res://ramon/LabKit/lab_materials.gd")
-const Batch := preload("res://ramon/LabKit/lab_batch.gd")
+const LabGrid := preload("res://ramon/CreationLab/LabKit/lab_grid.gd")
+const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
+const Mats := preload("res://ramon/CreationLab/LabKit/lab_materials.gd")
+const Batch := preload("res://ramon/CreationLab/LabKit/lab_batch.gd")
 
 ## The ink each mood prints with: text, a dimmer line, the accent (the gallery's blue), what sits
 ## on an accent fill, and fine line work.

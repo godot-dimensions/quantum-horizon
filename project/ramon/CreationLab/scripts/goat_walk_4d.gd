@@ -44,8 +44,8 @@ extends Node4D
 ##
 ## NO class_name (engine_gotchas.md).
 
-const Builder := preload("res://ramon/LabKit/carried/Model/scripts/loft_builder_4d.gd")
-const BAKED := "res://ramon/LabKit/carried/chickenpen/theatre/baked/"
+const Builder := preload("res://ramon/CreationLab/LabKit/carried/Model/scripts/loft_builder_4d.gd")
+const BAKED := "res://ramon/CreationLab/LabKit/carried/chickenpen/theatre/baked/"
 
 ## One step cycle, seconds; stride and lift in the rig's own units (about 1.3 to the metre here).
 @export var period: float = 1.3
@@ -241,7 +241,7 @@ func _build_xray(rig: MeshInstance4D, leg_nodes: Dictionary) -> void:
 	var gold := WireMaterial4D.new()
 	gold.albedo_color = Color(1.0, 0.74, 0.12)
 	gold.set("line_thickness", 4.0)
-	var bone_mat: Material4D = preload("res://ramon/LabKit/lab_materials.gd").glow(Color(1.0, 0.80, 0.35), 1.2)
+	var bone_mat: Material4D = preload("res://ramon/CreationLab/LabKit/lab_materials.gd").glow(Color(1.0, 0.80, 0.35), 1.2)
 	var balls: Array = []
 	_collect(rig, balls)
 	# Which ball hangs where: the legs' three balls on their joints, both sides; the rest on the body.
@@ -362,7 +362,7 @@ func _bone(parent: Node4D, a: Vector4, b: Vector4, mat: Material4D) -> void:
 	var z3: Vector3 = x3.cross(y3)
 	var m := MeshInstance4D.new()
 	m.name = "Bone"
-	m.mesh = preload("res://ramon/LabKit/lab_materials.gd").box_mesh(Vector4(0.035, len, 0.035, 0.3))
+	m.mesh = preload("res://ramon/CreationLab/LabKit/lab_materials.gd").box_mesh(Vector4(0.035, len, 0.035, 0.3))
 	m.position = (a + b) * 0.5
 	m.basis = Projection(Vector4(x3.x, x3.y, x3.z, 0.0), Vector4(y3.x, y3.y, y3.z, 0.0), Vector4(z3.x, z3.y, z3.z, 0.0), Vector4(0, 0, 0, 1))
 	m.material_override = mat

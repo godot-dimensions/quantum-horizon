@@ -1,4 +1,4 @@
-extends "res://ramon/LabKit/carried/chickenpen/scripts/chicken_walker.gd"
+extends "res://ramon/CreationLab/LabKit/carried/chickenpen/scripts/chicken_walker.gd"
 
 ## Lab: the pen chicken's own walker (LabKit/carried/chickenpen/scripts/chicken_walker.gd, the
 ## lab's copy, not edited: Ramon, 4 Oct, "never adjust anything from the playable world ... just

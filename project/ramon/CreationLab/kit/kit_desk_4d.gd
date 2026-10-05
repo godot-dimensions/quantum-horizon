@@ -45,13 +45,13 @@ extends Node4D
 
 const Build := preload("res://ramon/CreationLab/scripts/chamber_build.gd")
 const RD := preload("res://ramon/CreationLab/scripts/rd_build.gd")
-const LabGrid := preload("res://ramon/LabKit/lab_grid.gd")
-const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
-const Mats := preload("res://ramon/LabKit/lab_materials.gd")
+const LabGrid := preload("res://ramon/CreationLab/LabKit/lab_grid.gd")
+const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
+const Mats := preload("res://ramon/CreationLab/LabKit/lab_materials.gd")
 const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
 const Glyphs := preload("res://ramon/CreationLab/kit/kit_glyphs.gd")
-const Batch := preload("res://ramon/LabKit/lab_batch.gd")
-const LoftBuilder := preload("res://ramon/LabKit/carried/chickenpen/scripts/loft_builder_4d.gd")
+const Batch := preload("res://ramon/CreationLab/LabKit/lab_batch.gd")
+const LoftBuilder := preload("res://ramon/CreationLab/LabKit/carried/chickenpen/scripts/loft_builder_4d.gd")
 const SLAB := 0.08
 const SCREEN := 0.02
 ## The screen's layout was drawn for this screen depth; others scale it.

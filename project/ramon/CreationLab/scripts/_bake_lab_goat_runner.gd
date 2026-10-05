@@ -8,8 +8,8 @@ extends SceneTree
 ##
 ##   CreationLab/scripts/lab_run.sh headless bake res://ramon/CreationLab/scripts/_bake_lab_goat_runner.gd
 
-const OUT := "res://ramon/LabKit/carried/chickenpen/theatre/baked/"
-const GOAT := "res://ramon/LabKit/carried/chickenpen/theatre/theatre_goat_4d.gd"
+const OUT := "res://ramon/CreationLab/LabKit/carried/chickenpen/theatre/baked/"
+const GOAT := "res://ramon/CreationLab/LabKit/carried/chickenpen/theatre/theatre_goat_4d.gd"
 const WALK := preload("res://ramon/CreationLab/scripts/goat_walk_4d.gd")
 
 var _f := 0

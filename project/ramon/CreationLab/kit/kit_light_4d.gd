@@ -15,8 +15,8 @@ extends Node4D
 ## NO class_name (engine_gotchas.md).
 
 const Build := preload("res://ramon/CreationLab/scripts/chamber_build.gd")
-const Mats := preload("res://ramon/LabKit/lab_materials.gd")
-const Mark := preload("res://ramon/LabKit/lab_mark_4d.gd")
+const Mats := preload("res://ramon/CreationLab/LabKit/lab_materials.gd")
+const Mark := preload("res://ramon/CreationLab/LabKit/lab_mark_4d.gd")
 const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild

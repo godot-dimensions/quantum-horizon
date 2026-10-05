@@ -7,7 +7,7 @@ extends SceneTree
 
 const SCENE := "res://ramon/CreationLab/creation_lab.tscn"
 const Path := preload("res://ramon/CreationLab/kit/kit_path_4d.gd")
-const Mark := preload("res://ramon/LabKit/lab_mark_4d.gd")
+const Mark := preload("res://ramon/CreationLab/LabKit/lab_mark_4d.gd")
 const OUT := "res://smoke_test_output/goat_room/"
 
 

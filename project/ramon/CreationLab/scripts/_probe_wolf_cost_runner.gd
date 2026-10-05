@@ -9,9 +9,9 @@ extends SceneTree
 ##
 ##   CreationLab/scripts/lab_run.sh windowed wolf_probe res://ramon/CreationLab/scripts/_probe_wolf_cost_runner.gd
 
-const WOLF := "res://ramon/LabKit/carried/Model/wolf.tscn"
+const WOLF := "res://ramon/CreationLab/LabKit/carried/Model/wolf.tscn"
 const WALK := preload("res://ramon/CreationLab/scripts/goat_walk_4d.gd")
-const Mark := preload("res://ramon/LabKit/lab_mark_4d.gd")
+const Mark := preload("res://ramon/CreationLab/LabKit/lab_mark_4d.gd")
 const OUT := "res://smoke_test_output/goat_room/wolf_probe/"
 
 var _world: Node4D

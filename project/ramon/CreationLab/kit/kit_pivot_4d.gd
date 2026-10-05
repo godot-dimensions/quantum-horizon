@@ -13,7 +13,7 @@ extends Node4D
 ##
 ## NO class_name (engine_gotchas.md).
 
-const LoftBuilder := preload("res://ramon/LabKit/carried/chickenpen/scripts/loft_builder_4d.gd")
+const LoftBuilder := preload("res://ramon/CreationLab/LabKit/carried/chickenpen/scripts/loft_builder_4d.gd")
 const Path := preload("res://ramon/CreationLab/kit/kit_path_4d.gd")
 
 ## The chopped ring's radius and width, and the disc's radius, m.

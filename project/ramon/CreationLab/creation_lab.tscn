@@ -1,7 +1,7 @@
 [gd_scene load_steps=15 format=3 uid="uid://biqddcxhqxnor"]
 
 [ext_resource type="Script" uid="uid://crnwat3v2ppga" path="res://ramon/CreationLab/creation_lab_4d.gd" id="1_root"]
-[ext_resource type="Script" uid="uid://cq1aeo3fdysn4" path="res://ramon/LabKit/lab_room_4d.gd" id="2_room"]
+[ext_resource type="Script" uid="uid://cq1aeo3fdysn4" path="res://ramon/CreationLab/LabKit/lab_room_4d.gd" id="2_room"]
 [ext_resource type="Script" uid="uid://cb5shwdfmcco3" path="res://ramon/CreationLab/kit/kit_room_4d.gd" id="3_kitroom"]
 [ext_resource type="Script" uid="uid://bi80xulp3i5gu" path="res://ramon/CreationLab/kit/kit_wall_text_4d.gd" id="4_text"]
 [ext_resource type="Script" uid="uid://cyqtxjehuaji7" path="res://ramon/CreationLab/kit/kit_showcase_4d.gd" id="5_showcase"]

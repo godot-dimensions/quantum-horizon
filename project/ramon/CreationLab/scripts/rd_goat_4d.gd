@@ -12,7 +12,7 @@ extends Node4D
 ##
 ## NO class_name (engine_gotchas.md).
 
-const GOAT := preload("res://ramon/LabKit/carried/chickenpen/theatre/theatre_goat_4d.gd")
+const GOAT := preload("res://ramon/CreationLab/LabKit/carried/chickenpen/theatre/theatre_goat_4d.gd")
 const WALK := preload("res://ramon/CreationLab/scripts/goat_walk_4d.gd")
 const Bench := preload("res://ramon/CreationLab/kit/kit_bench.gd")
 const CODE := "GT-01"

@@ -14,9 +14,9 @@ extends Node4D
 
 const Build := preload("res://ramon/CreationLab/scripts/chamber_build.gd")
 const RD := preload("res://ramon/CreationLab/scripts/rd_build.gd")
-const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
-const Mats := preload("res://ramon/LabKit/lab_materials.gd")
-const Batch := preload("res://ramon/LabKit/lab_batch.gd")
+const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
+const Mats := preload("res://ramon/CreationLab/LabKit/lab_materials.gd")
+const Batch := preload("res://ramon/CreationLab/LabKit/lab_batch.gd")
 const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
 const SLICES := 9
 const PPM := 160.0

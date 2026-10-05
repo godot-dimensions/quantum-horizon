@@ -443,7 +443,7 @@ museum of interactive properties, after the lessons rather than instead of them.
 
 ## The kit (what the other prototypes reuse)
 
-`res://ramon/LabKit/` is separate from the lab, and the Creation Lab is its first user. The kit
+`res://ramon/CreationLab/LabKit/` is separate from the lab, and the Creation Lab is its first user. The kit
 is not only a look; it is the **explainer grammar**: bays along an axis, the lift, the beat,
 the guide panel, cards, autopilot and film. The Shrubbery Lab's three trees, Voxel Mining's
 demonstrations and the range's experiments can each become a sequence of bays.
@@ -490,7 +490,7 @@ that launches. Commits by explicit paths at the end of each section.
 
 ### A. Foundations
 1. Folders: `ramon/CreationLab/` (the scene, `bays/`, `creatures/`, `scripts/`, `baked/`) and
-   `ramon/LabKit/`.
+   `ramon/CreationLab/LabKit/`.
 2. Read every creature script in full and write down, per creature, what it needs from the pen
    (managers, groups, node paths, player references): the chickenpen strider and chicken walker,
    the cat, the crow, the owl, the heron, the chipmunk, Nike's antics, the block gait, the first

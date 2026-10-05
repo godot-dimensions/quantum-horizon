@@ -23,8 +23,8 @@ extends PanelContainer
 ## NO class_name (engine_gotchas.md).
 
 const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
-const RoomScript := preload("res://ramon/LabKit/lab_room_4d.gd")
-const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
+const RoomScript := preload("res://ramon/CreationLab/LabKit/lab_room_4d.gd")
+const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
 const SAVE_PATH := "res://ramon/CreationLab/creation_lab_tuning.cfg"
 const FONT := 15
 const HEAD := Color(0.42, 0.72, 1.0)

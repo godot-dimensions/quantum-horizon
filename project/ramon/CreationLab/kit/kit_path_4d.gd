@@ -28,7 +28,7 @@ extends Node4D
 ##
 ## NO class_name (engine_gotchas.md).
 
-const LabGrid := preload("res://ramon/LabKit/lab_grid.gd")
+const LabGrid := preload("res://ramon/CreationLab/LabKit/lab_grid.gd")
 const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
 ## The strip is this much wider than `width`, so rigid marks turning on a bend are not cut off.
 const MARGIN := 1.4

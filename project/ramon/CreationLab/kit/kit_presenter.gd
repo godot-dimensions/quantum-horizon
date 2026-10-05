@@ -16,7 +16,7 @@ extends Control
 ## NO class_name (engine_gotchas.md).
 
 const Presentation := preload("res://ramon/CreationLab/kit/kit_presentation.gd")
-const LabPrint := preload("res://ramon/LabKit/lab_print.gd")
+const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
 const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
 
 const CALLOUT_SECONDS := 3.6

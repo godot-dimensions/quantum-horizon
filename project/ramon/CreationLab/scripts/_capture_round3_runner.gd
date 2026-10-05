@@ -9,7 +9,7 @@ extends SceneTree
 
 const SCENE := "res://ramon/CreationLab/creation_lab.tscn"
 const OUT := "res://smoke_test_output/goat_room/round3/"
-const Mark := preload("res://ramon/LabKit/lab_mark_4d.gd")
+const Mark := preload("res://ramon/CreationLab/LabKit/lab_mark_4d.gd")
 
 var _g: Node
 var _cam: Camera4D
