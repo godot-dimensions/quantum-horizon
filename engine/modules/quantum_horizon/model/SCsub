@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+
+Import("env")
+Import("env_modules")
+
+env_quantum_horizon = env_modules.Clone()
+
+env_quantum_horizon.add_source_files(env.modules_sources, "*.cpp")
+env_quantum_horizon.add_source_files(env.modules_sources, "fence/*.cpp")

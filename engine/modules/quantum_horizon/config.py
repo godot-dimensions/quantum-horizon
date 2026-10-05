@@ -8,7 +8,8 @@ def configure(env):
 
 def get_doc_classes():
     return [
-        "ExampleNode",
+        "FenceGenerator4D",
+        "FenceGuidePost4D",
     ]
 
 

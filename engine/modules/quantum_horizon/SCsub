@@ -12,6 +12,8 @@ env_quantum_horizon = env_modules.Clone()
 
 env_quantum_horizon.add_source_files(env.modules_sources, "*.cpp")
 
+SConscript("model/SCsub")
+
 if env.editor_build:
     # If your module has editor-specific code, you can add it here.
     # env_quantum_horizon.add_source_files(env.modules_sources, "editor/*.cpp")
