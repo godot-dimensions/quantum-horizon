@@ -90,13 +90,19 @@ const PPM := 160.0
 @export_range(80.0, 400.0, 10.0) var live_ppm: float = 200.0
 ## How much the paint glows (0 is plain paint, lit by the room).
 @export_range(0.0, 1.0, 0.01) var glow: float = 0.15
+## Off: the room paints nothing of it, and its wall goes back to the room's own (a wall panel,
+## kit_wall_panel_4d.gd, has taken its place; creation_lab_4d.gd set_walls flips between them).
+@export var enabled: bool = true:
+	set(v):
+		enabled = v
+		_changed()
 
 
 var _said: String = ""
 
 
 func _process(_delta: float) -> void:
-	if not live or Engine.is_editor_hint():
+	if not live or not enabled or Engine.is_editor_hint():
 		return
 	# Redrawn only when what it would say has changed: a new animal, or its numbers arriving.
 	var now: String = _filled(body) + "|" + _filled(str(icons))

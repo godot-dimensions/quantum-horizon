@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/CreationLab/kit/panels/kit_room_info.gd" id="1_info"]
+
+[resource]
+script = ExtResource("1_info")
+number = 2
+title = "Panel Test"
+status = "KIT  /  WALL PANELS"
+lead = "The same two panels, in a room of their own."
+description = "A plain box room with no animal in it. The introduction hangs on the north wall, the comparison layout on the east wall and the three-step layout on the west wall. Outside, one more panel stands on a wall of its own, turned, to show the kit works without a room."
+interactions = [["click", "Pick"], ["drag", "Move"], ["arrows", "Step"], ["key:R", "Reset"]]
+research_title = "THREE STEPS"
+research_status = "REFERENCE NUMBERS"
+research_layout = "steps"

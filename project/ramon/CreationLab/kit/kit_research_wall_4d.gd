@@ -80,6 +80,13 @@ const STEP_LINES := {"balls": "placed by a designer", "skin": "lofted by the too
 ## How bright the paper page glows in each mood (the screen look glows as the desk does).
 @export var glow_dark: float = 0.5
 @export var glow_bright: float = 0.42
+## Off: it draws and prints nothing (the wall panels, kit_wall_panel_4d.gd, have taken its place;
+## creation_lab_4d.gd set_walls flips between them). Its print goes when the room next rebuilds.
+@export var enabled: bool = true:
+	set(v):
+		enabled = v
+		_painted_key = ""
+		visible = v
 
 var PAPER: Color
 var INK: Color
@@ -173,6 +180,8 @@ func _ask_wall(on: bool) -> void:
 
 
 func _process(delta: float) -> void:
+	if not enabled:
+		return
 	super(delta)
 	if look == "painted" and not Engine.is_editor_hint() and _vp != null:
 		_print_on_wall()

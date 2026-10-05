@@ -1,8 +1,9 @@
 extends SceneTree
 
-## The two blue walls side by side in the gallery beside the room (WallCompare): the review jump from
-## the dev panel, the player's view of them, and a straight-on view of both, with the story playing
-## and not. To res://smoke_test_output/goat_room/compare/.
+## The two blue walls side by side in the review gallery: the review jump from the dev panel, the
+## player's view of them, and a straight-on view of both, with the story playing and not. With the
+## wall panels hung (creation_lab_4d.gd `walls`, the default) the gallery is PanelGallery, the
+## Figma's frame 01; with the first walls it is WallCompare. To res://smoke_test_output/goat_room/compare/.
 ##
 ##   CreationLab/scripts/lab_run.sh windowed compare res://ramon/CreationLab/scripts/_capture_compare_runner.gd
 
@@ -58,11 +59,12 @@ func _run() -> void:
 	for c in _g.get_children():
 		if c is CanvasLayer:
 			(c as CanvasLayer).visible = false
-	var cr: Node4D = _g.get_node("WallCompare")
+	var panels: bool = String(_g.get("walls")) == "panels"
+	var cr: Node4D = _g.get_node("PanelGallery" if panels else "WallCompare")
 	var ol: PackedVector2Array = cr.get("outline")
 	var dir: Vector2 = (ol[2] - ol[1]).normalized()
 	var inward := Vector2(-dir.y, dir.x)
-	var mid: Vector2 = Vector2(cr.global_position.x, cr.global_position.z) + ol[2]
+	var mid: Vector2 = Vector2(cr.global_position.x, cr.global_position.z) + (((ol[1] + ol[2]) * 0.5) if panels else ol[2])
 	var cam := Camera4D.new()
 	cam.set("rendering_engine_name", "Cross-section")
 	_g.add_child(cam)
@@ -81,11 +83,16 @@ func _run() -> void:
 	await _wait(2.5)
 	await _shot("straight_on_playing")
 	# The flat files: each panel's own picture as it is drawn, unlit, for painting over.
-	for c in cr.get_children():
-		if c is SubViewport:
-			(c as SubViewport).get_texture().get_image().save_png(OUT + "flat_lesson_print.png")
-	var rw: Node = _g.get_node("ResearchWallCopy")
-	(rw.get("_vp") as SubViewport).get_texture().get_image().save_png(OUT + "flat_research_page.png")
+	if panels:
+		for nm in ["IntroPanelCopy", "ResearchBoardCopy"]:
+			var pv: SubViewport = _g.get_node(nm).get("_vp")
+			pv.get_texture().get_image().save_png(OUT + "flat_%s.png" % nm.to_lower())
+	else:
+		for c in cr.get_children():
+			if c is SubViewport:
+				(c as SubViewport).get_texture().get_image().save_png(OUT + "flat_lesson_print.png")
+		var rw: Node = _g.get_node("ResearchWallCopy")
+		(rw.get("_vp") as SubViewport).get_texture().get_image().save_png(OUT + "flat_research_page.png")
 	print("flat prints saved")
 	cam.current = false
 	for c in _g.get_children():

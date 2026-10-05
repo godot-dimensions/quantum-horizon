@@ -83,6 +83,15 @@ const Presenter := preload("res://ramon/CreationLab/kit/kit_presenter.gd")
 @export var glass_hud: bool = true
 ## How close to the pedestal the story plays and its text shows, m.
 @export_range(2.0, 30.0, 0.5) var story_radius: float = 10.0
+## The room's two walls (Ramon, 5 Oct, his Figma handoff): "panels" hangs the kit's wall panels
+## (kit/panels/kit_wall_panel_4d.gd: IntroPanel on the angled left wall, ResearchBoard on the first
+## wall on the right, and their copies in the review gallery); "first" puts back the first lesson
+## text and the painted research wall. Both stay in the scene; this, or F1's REVIEW button, flips.
+@export_enum("panels", "first") var walls: String = "panels":
+	set(v):
+		walls = v
+		if is_inside_tree():
+			set_walls(v)
 
 ## Room 2, the big room behind the back door (Ramon, 4 Oct: "size attributes for room 2, and one
 ## large spot in the middle which will need to light the whole giant room"): its width, depth and
@@ -157,7 +166,26 @@ func apply_mood(m: String, _instant: bool = false) -> void:
 		hud.call("set_mood", m)
 
 
+## Hangs the wall panels or the first walls (see `walls`).
+func set_walls(which: String) -> void:
+	var on: bool = which == "panels"
+	for nm in ["IntroPanel", "ResearchBoard", "IntroPanelCopy", "ResearchBoardCopy"]:
+		var n: Node = get_node_or_null(nm)
+		if n != null:
+			n.set("enabled", on)
+	for path in ["GoatRoom/Lesson", "WallCompare/LessonCopy", "ResearchWall", "ResearchWallCopy"]:
+		var n: Node = get_node_or_null(path)
+		if n != null:
+			n.set("enabled", not on)
+	# A fresh wall for whichever prints on it now.
+	for nm in ["GoatRoom", "WallCompare"]:
+		var r: Node = get_node_or_null(nm)
+		if r != null and r.has_method("_later"):
+			r.call("_later")
+
+
 func _ready() -> void:
+	set_walls(walls)
 	apply_shape()
 	var room: Node = get_node_or_null("Room")
 	if room != null:
@@ -612,7 +640,9 @@ func _run_cinematic(delta: float) -> void:
 ## Lab wall faces and under one light between them, so they are lit alike. The dev panel's button
 ## puts you in front of them; again, back where you were.
 func toggle_compare() -> bool:
-	var cr: Node4D = get_node_or_null("WallCompare") as Node4D
+	# The wall panels' gallery is the Figma's frame 01 (both panels on one wall); the first walls'
+	# is the side-by-side gallery they were reviewed in.
+	var cr: Node4D = get_node_or_null("PanelGallery" if walls == "panels" else "WallCompare") as Node4D
 	if cr == null or player == null:
 		return false
 	var rig: Node = player.get_node_or_null("CameraRig")
@@ -627,7 +657,9 @@ func toggle_compare() -> bool:
 	var c: Vector2 = ol[2]
 	var dir: Vector2 = (c - b).normalized()
 	var inward := Vector2(-dir.y, dir.x)
-	var at: Vector2 = Vector2(cr.global_position.x, cr.global_position.z) + c + inward * 11.0
+	# WallCompare's long wall is two edges meeting at its corner 2; PanelGallery's is edge 1 alone.
+	var wall_mid: Vector2 = c if cr.name == "WallCompare" else (b + c) * 0.5
+	var at: Vector2 = Vector2(cr.global_position.x, cr.global_position.z) + wall_mid + inward * 11.0
 	player.global_position = Vector4(at.x, 0.05, at.y, 0.0)
 	player.linear_velocity = Vector4.ZERO
 	var yaw: float = atan2(inward.x, inward.y)

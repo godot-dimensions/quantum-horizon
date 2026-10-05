@@ -120,6 +120,52 @@ animal's own foot speed, an optional boom, a light pool for the dark mood, and a
   writes `smoke_test_output/video/<name>.avi` at a fixed 30 fps; `windowed ... stills` gives a frame
   per shot to check before the long render. ffmpeg is installed for the encode.
 
+## Wall panels (`CreationLab/kit/panels/`, 5 Oct 2026)
+
+A room's two walls of explanation: an **introduction** (room number, title, lead, up to five lines,
+2–4 shortcuts) and a **research panel** (denser, live data). Both are built from Ramon's Figma
+handoff "Creation Lab / Aligned Layout": frame 01 is the layout, frame 02 the rules. They are
+native Godot 2D (every text, rule, icon, bar and row is its own named node) printed into the
+wall's own surface, so the room's light falls on them. The plan and its 20 steps are in
+`follow_up/wall_panels_plan.md`.
+
+**Add them to your prototype in five minutes:**
+
+1. **A room data file:** make a `.tres` with `kit_panels/kit_room_info.gd` holding number, title,
+   status, lead, description (`{tokens}` allowed), interactions `[[icon, label], ...]` and
+   `research_layout` (`specimen`, `compare` or `steps`). Words only: layout and type live in
+   `kit_panel_spec.gd`, never per room.
+2. **Two panels:** add two `Node4D`s running `kit_wall_panel_4d.gd`, `kind` intro and research.
+   - On a KitRoom wall: `room_path`, plus `wall_side` (a side of a rectangle room) or `wall_edge`
+     (an edge of a polygon room, any angle), and optionally `along`.
+   - No room: it builds its own blue wall facing its +Z, at any turn.
+3. **A pair:** add one `Node4D` running `kit_wall_panels_4d.gd`, with `intro`, `research`, `info`
+   and `source`. It keeps the two the same size, at the same height and on the same data.
+   - `size_mode` is "kit size" by default; "fit walls" grows or shrinks both together.
+4. **A source**, if it is live: a node with `fill(text)` and `research(info)`.
+   `kit_panel_source_showcase.gd` does it for a KitShowcase. With no source the panels show the
+   room's words and the Figma's reference numbers.
+
+**The fixed rules:**
+
+| What | Rule |
+|---|---|
+| Size | One kit size everywhere: 1 Figma unit = `UNIT_M` (12 mm), so a panel is 9.6 × 5.9 m with its foot 1.3 m up. |
+| Blue field | A 12 m (`FIELD_M`) field of the wall, however long the wall. |
+| Short walls | A wall too short gets a warning and a red frame in the editor, never a smaller panel. Only the pair's fit mode changes the size, and then for both. |
+| Type | Montserrat roles in units: hero 64/78, lead 26/36, body 18/26, specimen 34/42, value 24/30, section 22/28, control 12/18, small 10/14, label 8/12, micro 7/10, fine 6/10, tiny 5/10. |
+| Colour | The six Figma tokens; on a wall the blue tints are white veils. |
+| Overflow | Text is never shrunk; overflow is reported. |
+| Edge wiring | A wall is split where a panel begins and ends, so two panels can share one wall. |
+
+**Proof runners:**
+
+| Runner | What it proves |
+|---|---|
+| `_capture_panel_sheet_runner.gd` | Both panels flat on the Figma's 2048 × 732 canvas, plus the compare and steps families. Overlay it on frame 01 to measure. |
+| `_capture_panels_runner.gd` | The lab's panels straight on and through the story; the frame-01 gallery; the walls switch both ways; the legibility check from the resting player camera. |
+| `_capture_panel_test_room_runner.gd` | A second prototype (`tests/panel_test_room.tscn`): a box room, a freestanding turned panel, and the pair's fit mode. |
+
 ## Testing (`CreationLab/scripts/`)
 
 `lab_run.sh <mode> <name> <runner> [args]` takes the Godot lock in the same command that launches,

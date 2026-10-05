@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://biqddcxhqxnor"]
+[gd_scene load_steps=19 format=3 uid="uid://biqddcxhqxnor"]
 
 [ext_resource type="Script" uid="uid://crnwat3v2ppga" path="res://ramon/CreationLab/creation_lab_4d.gd" id="1_root"]
 [ext_resource type="Script" uid="uid://cq1aeo3fdysn4" path="res://ramon/CreationLab/LabKit/lab_room_4d.gd" id="2_room"]
@@ -14,6 +14,10 @@
 [ext_resource type="Script" path="res://ramon/CreationLab/kit/kit_path_4d.gd" id="13_path"]
 [ext_resource type="Script" path="res://ramon/CreationLab/kit/kit_pivot_4d.gd" id="14_pivot"]
 [ext_resource type="Script" path="res://ramon/CreationLab/kit/kit_path_lab_4d.gd" id="15_pathlab"]
+[ext_resource type="Script" path="res://ramon/CreationLab/kit/panels/kit_wall_panel_4d.gd" id="16_panel"]
+[ext_resource type="Script" path="res://ramon/CreationLab/kit/panels/kit_panel_source_showcase.gd" id="17_source"]
+[ext_resource type="Resource" path="res://ramon/CreationLab/creation_lab_info.tres" id="18_info"]
+[ext_resource type="Script" path="res://ramon/CreationLab/kit/panels/kit_wall_panels_4d.gd" id="19_pair"]
 
 [node name="CreationLab" type="Node4D"]
 script = ExtResource("1_root")
@@ -97,6 +101,7 @@ icons = [["wheel", "Slice through W"], ["rdrag", "Rotate in 4D"], ["key:E", "{ac
 code = "blue"
 live = true
 showcase = NodePath("../../Showcase")
+enabled = false
 
 [node name="Showcase" type="Node4D" parent="."]
 position = Vector4(0, 0, -1.5, 0)
@@ -119,6 +124,7 @@ refresh_hz = 30.0
 collide = false
 look = "painted"
 wall_edge = 4
+enabled = false
 
 [node name="ResearchPanel" type="Node4D" parent="."]
 position = Vector4(-9.15, 0, 3, 0)
@@ -270,6 +276,7 @@ along = Vector2(2.7, 11.3)
 up = Vector2(1.3, 7.6)
 showcase = NodePath("../../Showcase")
 live_ppm = 260.0
+enabled = false
 
 [node name="ResearchWallCopy" type="Node4D" parent="."]
 position = Vector4(40, 0, 0, 0)
@@ -285,6 +292,7 @@ collide = false
 look = "painted"
 room_path = NodePath("../WallCompare")
 wall_edge = 2
+enabled = false
 
 [node name="CompareLight" type="Node4D" parent="."]
 position = Vector4(45.2682, 8.37, 4.6095, 0)
@@ -362,3 +370,84 @@ energy = {
 "dark": 0.0
 }
 fixture_at = 9.94
+
+[node name="PanelSource" type="Node" parent="."]
+script = ExtResource("17_source")
+showcase = NodePath("../Showcase")
+
+[node name="IntroPanel" type="Node4D" parent="."]
+script = ExtResource("16_panel")
+info = ExtResource("18_info")
+source = NodePath("../PanelSource")
+room_path = NodePath("../GoatRoom")
+wall_edge = 1
+
+[node name="ResearchBoard" type="Node4D" parent="."]
+script = ExtResource("16_panel")
+kind = "research"
+info = ExtResource("18_info")
+source = NodePath("../PanelSource")
+room_path = NodePath("../GoatRoom")
+wall_edge = 4
+
+[node name="WallPanels" type="Node4D" parent="."]
+script = ExtResource("19_pair")
+intro = NodePath("../IntroPanel")
+research = NodePath("../ResearchBoard")
+info = ExtResource("18_info")
+source = NodePath("../PanelSource")
+
+[node name="PanelGallery" type="Node4D" parent="."]
+position = Vector4(90, 0, 0, 0)
+script = ExtResource("3_kitroom")
+outline = PackedVector2Array(-12.288, 7, -12.288, -7, 12.288, -7, 12.288, 7)
+size = Vector3(24.576, 8.784, 14)
+doorways = [[3, -0.5, 25.1, 8.784]]
+edge_codes = {
+1: "blue"
+}
+cove = false
+
+[node name="IntroPanelCopy" type="Node4D" parent="."]
+script = ExtResource("16_panel")
+info = ExtResource("18_info")
+source = NodePath("../PanelSource")
+room_path = NodePath("../PanelGallery")
+wall_edge = 1
+along = -5.76
+foot = 1.152
+
+[node name="ResearchBoardCopy" type="Node4D" parent="."]
+script = ExtResource("16_panel")
+kind = "research"
+info = ExtResource("18_info")
+source = NodePath("../PanelSource")
+room_path = NodePath("../PanelGallery")
+wall_edge = 1
+along = 5.76
+foot = 1.152
+
+[node name="WallPanelsCopy" type="Node4D" parent="."]
+script = ExtResource("19_pair")
+intro = NodePath("../IntroPanelCopy")
+research = NodePath("../ResearchBoardCopy")
+info = ExtResource("18_info")
+source = NodePath("../PanelSource")
+foot = 1.152
+
+[node name="PanelGalleryLight" type="Node4D" parent="."]
+position = Vector4(90, 8.3, -2.4, 0)
+script = ExtResource("9_light")
+aim = Vector3(90, 0, -2.4)
+angle = 60.0
+softness = 1.2
+reach = 16.0
+attenuation = 0.3
+energy = {
+"bright": 2.69,
+"dark": 3.6
+}
+color = {
+"bright": Color(0.8922, 0.9016, 0.9126, 1),
+"dark": Color(1, 0.95, 0.88, 1)
+}

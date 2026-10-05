@@ -154,6 +154,17 @@ func _ready() -> void:
 			var there: bool = bool(shape_root.call("toggle_compare"))
 			cmp.text = "BACK TO THE ROOM" if there else "BLUE WALLS SIDE BY SIDE")
 		box.add_child(cmp)
+	# The walls: the wall panels from the Figma handoff, or the first lesson and research walls.
+	if shape_root != null and shape_root.has_method("set_walls"):
+		var wb := Button.new()
+		var label := func() -> String: return "WALLS: FIGMA PANELS" if String(shape_root.get("walls")) == "panels" else "WALLS: FIRST VERSION"
+		wb.text = label.call()
+		wb.focus_mode = Control.FOCUS_NONE
+		wb.add_theme_font_size_override("font_size", FONT)
+		wb.pressed.connect(func() -> void:
+			shape_root.set("walls", "first" if String(shape_root.get("walls")) == "panels" else "panels")
+			wb.text = label.call())
+		box.add_child(wb)
 
 
 func _build_room2() -> void:
