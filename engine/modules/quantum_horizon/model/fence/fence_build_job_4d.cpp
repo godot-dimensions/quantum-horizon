@@ -838,7 +838,7 @@ static Vector<Vector2i> _match_fence_filler_points(const Vector<FenceFillerPoint
 	Vector<Alignment> table;
 	table.resize((near_count + 1) * (far_count + 1));
 	Alignment *cells = table.ptrw();
-	auto cell = [&](const int64_t p_near, const int64_t p_far) -> Alignment & { return cells[p_near * (far_count + 1) + p_far]; };
+	auto cell = [&](const int64_t p_near_index, const int64_t p_far_index) -> Alignment & { return cells[p_near_index * (far_count + 1) + p_far_index]; };
 	for (int64_t near = 1; near <= near_count; near++) {
 		cell(near, 0).step = 1;
 	}
