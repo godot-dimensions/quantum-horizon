@@ -80,6 +80,13 @@ func _run() -> void:
 		await process_frame
 	await _wait(2.5)
 	await _shot("straight_on_playing")
+	# The flat files: each panel's own picture as it is drawn, unlit, for painting over.
+	for c in cr.get_children():
+		if c is SubViewport:
+			(c as SubViewport).get_texture().get_image().save_png(OUT + "flat_lesson_print.png")
+	var rw: Node = _g.get_node("ResearchWallCopy")
+	(rw.get("_vp") as SubViewport).get_texture().get_image().save_png(OUT + "flat_research_page.png")
+	print("flat prints saved")
 	cam.current = false
 	for c in _g.get_children():
 		if c is CanvasLayer:
