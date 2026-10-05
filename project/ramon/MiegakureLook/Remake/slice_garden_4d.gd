@@ -10,7 +10,9 @@ extends Node4D
 ##
 ## KEYS: WASD walk (in the world you see), Space jump, right mouse or Tab turn the view into W, E lift
 ## or put down, left mouse strike, R restart the island, F a hint, V 4D sight, F1 the artist dev
-## panel, H back to the menu (the shared Demo/return_button.tscn).
+## panel, H back to the menu (the shared Demo/return_button.tscn). Right mouse held and dragged turns
+## the view by hand (scripts/mk_camera_4d.gd). [ and ] jump to the previous or next island, a cheat
+## for testing (Ramon, 6 Oct: "so you can go forward and back, maybe [ and ]").
 ##
 ## 4D SIGHT (V; PLAN.md step 55): the Combined renderer, which draws a faint projection of what lies
 ## ana and kata of your slice over it. Everything is switched out of that projection
@@ -296,6 +298,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		else:
 			restart_island()
 		get_viewport().set_input_as_handled()
+	elif k.keycode in [KEY_BRACKETRIGHT, KEY_BRACKETLEFT] or k.physical_keycode in [KEY_BRACKETRIGHT, KEY_BRACKETLEFT]:
+		# By the key's place as well as its letter, so it works on any keyboard layout.
+		var next: bool = k.keycode == KEY_BRACKETRIGHT or k.physical_keycode == KEY_BRACKETRIGHT
+		skip_to(island + (1 if next else -1))
+		get_viewport().set_input_as_handled()
 	elif k.keycode == KEY_V:
 		set_sight(not sight)
 		get_viewport().set_input_as_handled()
@@ -342,6 +349,21 @@ func set_sight(on: bool) -> void:
 func _on_fell() -> void:
 	falls += 1
 	_respawn(false)
+
+
+## The cheat: straight onto island `number`'s arrival ring (1-4), whatever you were carrying sent
+## home, the view kept.
+func skip_to(number: int) -> void:
+	number = clampi(number, 1, islands().size())
+	if done or _respawning:
+		return
+	hands.call("drop_carried")
+	var info: Dictionary = islands()[number - 1]
+	walker.call("place_at", info["spawn"], float(info.get("facing", PI)))
+	camera.call("snap_focus")
+	island = 0
+	_enter(number)
+	hud.call("show_note", "island %d" % number)
 
 
 ## R: the island as you found it, you on its arrival ring.

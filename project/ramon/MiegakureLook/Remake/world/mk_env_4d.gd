@@ -160,11 +160,11 @@ func _process(delta: float) -> void:
 		_spot_at = want
 		_spot_ready = true
 	else:
-		# Eased in the floor plane, but always exactly at his W and Z along the slice's normal (the
-		# camera keeps the slice on him; the pool must stay in it).
+		# Eased in the slice, but always exactly at him along the slice's normal, at any angle of
+		# the turn (the camera keeps the slice on him; the pool must stay in it).
 		_spot_at = _spot_at.lerp(want, clampf(delta * 3.0, 0.0, 1.0))
-		_spot_at.z = lerpf(_spot_at.z, want.z, 1.0 if turn > 0.5 else 0.0)
-		_spot_at.w = lerpf(_spot_at.w, want.w, 1.0 if turn < 0.5 else 0.0)
+		var n: Vector4 = view_basis.w
+		_spot_at += n * n.dot(want - _spot_at)
 		_spot_at.y = want.y
 	_spot.global_position = _spot_at
 

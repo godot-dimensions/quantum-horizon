@@ -6,11 +6,17 @@ extends Camera4D
 ## the slice always passes through what it follows, and the turn is composed as (turn * tilt),
 ## never (tilt * turn), which reads as the whole world tumbling.
 ##
-## THE TURN. The right mouse button (rotate_4d) or Tab swaps which horizontal axis the view shows:
+## THE TURN. A click of the right mouse button, or Tab, swaps which horizontal axis the view shows:
 ## Z (normal) or W (turned). It is a quarter turn in the Z-W plane about the walker, eased over
 ## `swap_seconds`; X and Y never change (Miegakure's rule: never the vertical, and one horizontal
 ## axis always stays). `turn_sign` picks which way: -1 makes "forward" after the turn walk ana
 ## (+W), so the W key walks into W. A press during a turn is remembered and played after it.
+##
+## THE DRAG (Ramon, 6 Oct: "yeah do the drag too"). Hold the right mouse button and drag sideways
+## and the view turns smoothly by as much as you drag, anywhere between the two views, and stays
+## where you let go: the slice in realtime, cutting walls and lanes on the diagonal. A click after a
+## drag goes to the nearer of the two views. The walker's keys follow the angle (W/S walk the view's
+## own depth axis), so you still only walk in what you see.
 ##
 ## THE SLICE STAYS ON HIM. The view follows a smoothed focus, but only within the slice: the
 ## focus's component along the slice's normal is snapped to the walker's every frame, or a lagging
@@ -55,6 +61,11 @@ signal turn_finished(turned: bool)
 @export var intro_yaw: float = 8.0
 @export var intro_distance: float = 62.0
 
+## Radians of turn per pixel of drag (about 260 px for the quarter turn), and how far the mouse must
+## move with the button held before a press counts as a drag rather than a click.
+@export var drag_rate: float = 0.006
+@export var drag_start_px: float = 6.0
+
 var frame_center: Vector4 = Vector4.ZERO
 var _intro_t: float = -1.0
 var frame_active: bool = false
@@ -74,6 +85,9 @@ var _focus: Vector4 = Vector4.ZERO
 var _focus_ready: bool = false
 var _ahead: Vector4 = Vector4.ZERO
 var _last_target: Vector4 = Vector4.ZERO
+var _rmb_down: bool = false
+var _dragging: bool = false
+var _drag_px: float = 0.0
 
 
 func _ready() -> void:
@@ -109,22 +123,64 @@ func _unhandled_input(event: InputEvent) -> void:
 	if locked:
 		return
 	var key := event as InputEventKey
-	var tab: bool = key != null and key.pressed and not key.echo and key.keycode == KEY_TAB
-	if tab or event.is_action_pressed(&"rotate_4d"):
+	if key != null and key.pressed and not key.echo and key.keycode == KEY_TAB:
 		request_turn()
+		get_viewport().set_input_as_handled()
+		return
+	# The right mouse button: a click turns a quarter, a drag turns by as much as you drag.
+	var mb := event as InputEventMouseButton
+	if mb != null and mb.button_index == MOUSE_BUTTON_RIGHT:
+		if mb.pressed:
+			_rmb_down = true
+			_dragging = false
+			_drag_px = 0.0
+		else:
+			if _rmb_down and not _dragging:
+				request_turn()
+			_rmb_down = false
+			_dragging = false
+		get_viewport().set_input_as_handled()
+		return
+	var mm := event as InputEventMouseMotion
+	if mm != null and _rmb_down:
+		_drag_px += absf(mm.relative.x)
+		if not _dragging and _drag_px >= drag_start_px:
+			_dragging = true
+			_t = 1.0
+			_queued = false
+			turn_started.emit(true)
+		if _dragging:
+			# Drag right to turn toward the W view, left to turn back.
+			drag_by(mm.relative.x * drag_rate * turn_sign)
 		get_viewport().set_input_as_handled()
 
 
-## Swap the view (or queue one swap if a turn is already under way).
+## Turn the view by `radians` at once (the drag), kept between the two views.
+func drag_by(radians: float) -> void:
+	var q: float = turn_sign * PI * 0.5
+	_angle = clampf(_angle + radians, minf(0.0, q), maxf(0.0, q))
+	_from = _angle
+	_to = _angle
+	_t = 1.0
+
+
+## Swap the view (or queue one swap if a turn is already under way). From in between (after a drag)
+## it goes to the nearer of the two views.
 func request_turn() -> void:
 	if is_turning():
 		_queued = true
 		return
+	var q: float = turn_sign * PI * 0.5
 	_from = _angle
-	_to = turn_sign * PI * 0.5 if is_zero_approx(_to) else 0.0
+	if absf(_angle) < 0.02:
+		_to = q
+	elif absf(_angle - q) < 0.02:
+		_to = 0.0
+	else:
+		_to = q if absf(_angle - q) < absf(_angle) else 0.0
 	_t = 0.0
 	swaps += 1
-	turn_started.emit(not is_zero_approx(_to))
+	turn_started.emit(is_turned())
 
 
 ## Straight to a view with no animation (resets, runners).
@@ -141,9 +197,14 @@ func is_turning() -> bool:
 	return _t < 1.0
 
 
-## True when the view shows W (or is heading there).
+## True when the view shows W (or is heading there; past halfway, during a drag).
 func is_turned() -> bool:
-	return not is_zero_approx(_to)
+	return absf(sin(_to)) > 0.5
+
+
+## True while the right mouse button is turning the view by hand.
+func is_dragging() -> bool:
+	return _dragging
 
 
 ## The view's quarter turn as an angle, radians (0 normal; turn_sign * PI/2 turned).

@@ -58,7 +58,7 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation", 3)
 	add_child(box)
 	var title := Label.new()
-	title.text = "ARTIST DEV PANEL  ·  internal use  ·  F1 to close  ·  Esc frees the mouse"
+	title.text = "ARTIST DEV PANEL  ·  internal use  ·  F1 to close  ·  [ ] previous / next island"
 	title.add_theme_font_override("font", load(FONT_BOLD))
 	title.add_theme_font_size_override("font_size", FONT)
 	box.add_child(title)

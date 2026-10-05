@@ -143,7 +143,10 @@ func _draw() -> void:
 	_text(Vector2(32, 52), "X  Y", _black, 26, INK)
 	var third: String = "W" if turned else "Z"
 	_text(Vector2(98, 52), third, _black, 26, Z_COL.lerp(W_COL, amount))
-	_text(Vector2(32, 74), "RIGHT MOUSE / TAB  turn", _bold, 10, INK_DIM)
+	if amount > 0.02 and amount < 0.98:
+		# Between the two views (a drag): how far round, in degrees.
+		_text(Vector2(132, 52), "%d°" % int(round(amount * 90.0)), _bold, 14, Z_COL.lerp(W_COL, amount))
+	_text(Vector2(32, 74), "RIGHT MOUSE click / drag  turn", _bold, 10, INK_DIM)
 	# W RULER: the island's lanes (ana up).
 	var ruler := Rect2(Vector2(18, 92), Vector2(186, 168))
 	_glass(ruler)
@@ -175,7 +178,7 @@ func _draw() -> void:
 		var wy: float = w_to_y.call(walker.global_position.w)
 		draw_rect(Rect2(Vector2(col_x - 4, wy - 2.5), Vector2(48, 5)), YOU)
 	# KEYS
-	var keys := "WASD walk    SPACE jump    RIGHT MOUSE turn into W    E lift / put down    CLICK strike    R restart    F hint"
+	var keys := "WASD walk    SPACE jump    RIGHT MOUSE turn into W (drag: by hand)    E lift / put down    CLICK strike    R restart    F hint"
 	var kw: float = _body.get_string_size(keys, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x + 40
 	# Centred in the room right of the shared BACK TO MENU button (bottom left, about 270 px wide).
 	var left: float = 296.0
