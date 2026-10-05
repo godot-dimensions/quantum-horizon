@@ -601,6 +601,77 @@ TEST_CASE("[FenceGenerator4D] Undoing a shape change restores the data it overwr
 	CHECK(linked.find("seed_mesh_4d") != nullptr);
 }
 
+// A point is inside the fence when its projection onto the ground lies within the footprint, at any height. The test
+// follows the seed as last built: the footprint's own shape rather than a box around it, and nothing without a
+// footprint.
+TEST_CASE("[FenceGenerator4D] Points inside the fence are those within the footprint, at any height") {
+	FenceGenerator4D *fence = make_manual_fence();
+	fence->set_desired_spacing_meters(0.0);
+	CHECK_MESSAGE(!fence->is_local_point_inside(Vector4()), "Nothing is inside before the first build.");
+
+	SUBCASE("The box, in local and in global coordinates") {
+		fence->update_fence_mesh_now();
+		CHECK(fence->is_local_point_inside(Vector4()));
+		CHECK(fence->is_local_point_inside(Vector4(4.9, 0, -4.9, 4.9)));
+		CHECK_MESSAGE(fence->is_local_point_inside(Vector4(0, 100, 0, 0)), "Height does not matter.");
+		CHECK(fence->is_local_point_inside(Vector4(0, -3, 0, 0)));
+		CHECK_FALSE(fence->is_local_point_inside(Vector4(5.1, 0, 0, 0)));
+		CHECK_FALSE(fence->is_local_point_inside(Vector4(0, 0, 0, -5.1)));
+		// A global point goes through the node's transform: a long thin box moved away and given a quarter turn in XZ,
+		// so that its long axis lies along global Z.
+		fence->set_box_size(Vector3(10, 2, 2));
+		fence->update_fence_mesh_now();
+		fence->set_position(Vector4(100, 0, 0, 0));
+		fence->set_basis(Basis4D::from_zx(Math_TAU / 4.0));
+		CHECK(fence->is_global_point_inside(Vector4(100, 0, 0, 0)));
+		CHECK(fence->is_global_point_inside(Vector4(100, 5, 4, 0)));
+		CHECK_FALSE(fence->is_global_point_inside(Vector4(104, 0, 0, 0)));
+		CHECK_FALSE(fence->is_global_point_inside(Vector4()));
+		CHECK_MESSAGE(fence->is_local_point_inside(Vector4(4, 0, 0, 0)), "Local coordinates do not see the node's transform.");
+	}
+
+	SUBCASE("A footprint that is not convex") {
+		// A box with one corner pulled in toward the origin, which dents the three faces around it inward.
+		fence->set_input_shape_type(FenceGenerator4D::INPUT_SHAPE_RADIAL_POINTS);
+		PackedVector4Array corners;
+		for (const real_t w : { -5.0, 5.0 }) {
+			for (const real_t z : { -5.0, 5.0 }) {
+				for (const real_t x : { -5.0, 5.0 }) {
+					corners.push_back(Vector4(x, 0, z, w));
+				}
+			}
+		}
+		corners.set(7, Vector4(2, 0, 2, 2));
+		fence->set_fence_corners(corners);
+		fence->update_fence_mesh_now();
+		REQUIRE(fence->get_mesh().is_valid());
+		CHECK(fence->is_local_point_inside(Vector4(1, 0, 1, 1)));
+		CHECK(fence->is_local_point_inside(Vector4(-4, 0, -4, -4)));
+		CHECK_MESSAGE(fence->is_local_point_inside(Vector4(4, 0, -4, -4)), "Away from the dent the box is whole.");
+		CHECK_MESSAGE(!fence->is_local_point_inside(Vector4(3.5, 0, 3.5, 3.5)), "In the dent: inside the box, outside the footprint.");
+		CHECK_FALSE(fence->is_local_point_inside(Vector4(6, 0, 0, 0)));
+	}
+
+	SUBCASE("Nothing is inside without a footprint") {
+		fence->set_input_shape_type(FenceGenerator4D::INPUT_SHAPE_SEED_MESH_4D);
+		fence->set_seed_mesh_4d(make_square_seed(Vector<PackedVector4Array>(), false));
+		fence->update_fence_mesh_now();
+		REQUIRE(fence->get_mesh().is_valid());
+		CHECK_MESSAGE(!fence->is_local_point_inside(Vector4(0, 0.5, 0, 0)), "A single sheet does not close, so it encloses nothing.");
+		// Corners that do not span a volume leave the fence without a footprint, after a box that had one.
+		fence->set_input_shape_type(FenceGenerator4D::INPUT_SHAPE_BOX);
+		fence->update_fence_mesh_now();
+		REQUIRE(fence->is_local_point_inside(Vector4()));
+		fence->set_input_shape_type(FenceGenerator4D::INPUT_SHAPE_RADIAL_POINTS);
+		fence->set_fence_corners(PackedVector4Array{ Vector4(-5, 0, -5, 0), Vector4(5, 0, -5, 0), Vector4(5, 0, 5, 0) });
+		fence->update_fence_mesh_now();
+		CHECK(fence->get_mesh().is_null());
+		CHECK_FALSE(fence->is_local_point_inside(Vector4()));
+	}
+
+	memdelete(fence);
+}
+
 // Leaving a seed mesh shape for a corner shape hands the seed's vertices over as the corners, so that the shape the fence
 // had can be edited as points or posts without editing the seed mesh. They are written when the fence is built from the
 // seed, and again when the shape changes with updates off, from the seed as last built.

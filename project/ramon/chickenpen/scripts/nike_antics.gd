@@ -138,8 +138,8 @@ enum State { WALK, ROOT, GOING_DOWN, LYING, GETTING_UP, HOP }
 ## clear of the rails rather than astride them.
 @export_range(0.5, 6.0, 0.1) var hop_distance: float = 2.2
 @export_range(0.2, 2.0, 0.05) var hop_seconds: float = 0.85
-## Over the top rail. The fence's own height is read off the fence, so raising it in the
-## inspector raises the jump.
+## Over the posts, the fence's tallest part. Their height is read off the fence, so raising
+## it in the inspector raises the jump.
 @export_range(0.0, 1.5, 0.05) var hop_clearance: float = 0.35
 ## Nose up off the ground, level at the top, nose down into the landing.
 @export_range(0.0, 40.0, 1.0, "suffix:°") var hop_pitch_degrees: float = 14.0
@@ -341,11 +341,8 @@ func go_and_eat(at: Vector4) -> void:
 func _inside_pen(at: Vector4) -> bool:
 	if _fence == null:
 		return false
-	var relative_abs: Vector4 = _fence.global_to_local(at).abs()
-	# This assumes that the fence is using a box shape.
-	var box_extent: Vector3 = _fence.box_size * 0.5
-	# The box's Vector3 XYZ maps to world space XZW.
-	return relative_abs.x <= box_extent.x and relative_abs.z <= box_extent.y and relative_abs.w <= box_extent.z
+	# The fence knows its own footprint, whatever shape it was given, and ignores height.
+	return _fence.is_global_point_inside(at)
 
 
 ## Is the next stride going to put him through the rails?
@@ -376,7 +373,7 @@ func _take_off() -> void:
 	var dir := Vector4(sin(_yaw), 0.0, cos(_yaw), 0.0)
 	_hop_from = _mover.position
 	_hop_to = _mover.position + dir * hop_distance * _size_ratio()
-	_hop_peak = float(_fence.get("height")) + hop_clearance
+	_hop_peak = _fence.post_height_meters + hop_clearance
 	_enter(State.HOP, hop_seconds)
 
 
