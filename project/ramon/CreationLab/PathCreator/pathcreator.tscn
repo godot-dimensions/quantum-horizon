@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/pathcreator_4d.gd" id="1_root"]
 [ext_resource type="Script" path="res://ramon/CreationLab/LabKit/lab_room_4d.gd" id="2_room"]
@@ -7,6 +7,8 @@
 [ext_resource type="Resource" path="res://ramon/CreationLab/PathCreator/graphs/yard.tres" id="5_yard"]
 [ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/space/pc_label_4d.gd" id="6_label"]
 [ext_resource type="Resource" path="res://ramon/CreationLab/PathCreator/graphs/wfield.tres" id="7_wfield"]
+[ext_resource type="Resource" path="res://ramon/CreationLab/PathCreator/graphs/pen.tres" id="8_pen"]
+[ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/space/pc_wander_4d.gd" id="9_wander"]
 
 [node name="PathCreator" type="Node4D"]
 script = ExtResource("1_root")
@@ -177,3 +179,113 @@ targets = NodePath("../Yard")
 script = ExtResource("4_network")
 graph = ExtResource("7_wfield")
 targets = NodePath("../Targets")
+
+[node name="PenPatch" type="Node4D" parent="."]
+position = Vector4(42, 0, -5, 0)
+
+[node name="StepLow" type="Node4D" parent="PenPatch"]
+position = Vector4(0, 0, -6, 0)
+script = ExtResource("3_target")
+label = "Step 0.25 m"
+size = Vector3(4, 0.25, 6)
+w_depth = 8.0
+color = Color(0.8, 0.78, 0.74, 1)
+
+[node name="Deck" type="Node4D" parent="PenPatch"]
+position = Vector4(0, 0, -6, 0)
+script = ExtResource("3_target")
+label = "Deck 0.5 m"
+size = Vector3(4, 0.5, 4)
+w_depth = 8.0
+color = Color(0.74, 0.72, 0.68, 1)
+
+[node name="FenceSouthWest" type="Node4D" parent="PenPatch"]
+position = Vector4(-2.5, 0, 0.2, 0)
+script = ExtResource("3_target")
+label = "Fence"
+size = Vector3(3.4, 0.95, 0.15)
+w_depth = 8.0
+color = Color(0.55, 0.42, 0.3, 1)
+
+[node name="FenceSouthEast" type="Node4D" parent="PenPatch"]
+position = Vector4(2.5, 0, 0.2, 0)
+script = ExtResource("3_target")
+label = "Fence"
+size = Vector3(3.4, 0.95, 0.15)
+w_depth = 8.0
+color = Color(0.55, 0.42, 0.3, 1)
+
+[node name="FenceNorth" type="Node4D" parent="PenPatch"]
+position = Vector4(0, 0, 7.8, 0)
+script = ExtResource("3_target")
+label = "Fence"
+size = Vector3(8.4, 0.95, 0.15)
+w_depth = 8.0
+color = Color(0.55, 0.42, 0.3, 1)
+
+[node name="FenceWest" type="Node4D" parent="PenPatch"]
+position = Vector4(-4.2, 0, 4, 0)
+script = ExtResource("3_target")
+label = "Fence"
+size = Vector3(0.15, 0.95, 7.6)
+w_depth = 8.0
+color = Color(0.55, 0.42, 0.3, 1)
+
+[node name="FenceEast" type="Node4D" parent="PenPatch"]
+position = Vector4(4.2, 0, 4, 0)
+script = ExtResource("3_target")
+label = "Fence"
+size = Vector3(0.15, 0.95, 7.6)
+w_depth = 8.0
+color = Color(0.55, 0.42, 0.3, 1)
+
+[node name="FenceAna" type="Node4D" parent="PenPatch"]
+position = Vector4(0, 0, 4, 4)
+script = ExtResource("3_target")
+label = "Fence W +4"
+size = Vector3(8.4, 0.95, 7.6)
+w_depth = 0.15
+color = Color(0.55, 0.42, 0.3, 1)
+
+[node name="FenceKata" type="Node4D" parent="PenPatch"]
+position = Vector4(0, 0, 4, -4)
+script = ExtResource("3_target")
+label = "Fence W -4"
+size = Vector3(8.4, 0.95, 7.6)
+w_depth = 0.15
+color = Color(0.55, 0.42, 0.3, 1)
+
+[node name="Feeder" type="Node4D" parent="PenPatch"]
+position = Vector4(-2.5, 0, 5.7, 0)
+script = ExtResource("3_target")
+label = "Feeder / W 0"
+size = Vector3(1.4, 0.4, 0.5)
+w_depth = 1.2
+color = Color(0.78, 0.62, 0.36, 1)
+
+[node name="Coop" type="Node4D" parent="PenPatch"]
+position = Vector4(2.5, 0, 6.6, 3)
+script = ExtResource("3_target")
+label = "Coop / W +3"
+size = Vector3(1.6, 1.4, 1.6)
+w_depth = 1.6
+color = Color(0.72, 0.3, 0.24, 1)
+
+[node name="Hen" type="Node4D" parent="PenPatch"]
+position = Vector4(1.6, 0, 4.5, 0)
+script = ExtResource("3_target")
+label = "Hen / wanders"
+size = Vector3(0.45, 0.45, 0.45)
+w_depth = 0.6
+color = Color(0.95, 0.94, 0.9, 1)
+collide = false
+
+[node name="Wander" type="Node" parent="PenPatch/Hen"]
+script = ExtResource("9_wander")
+
+[node name="PenNetwork" type="Node4D" parent="."]
+script = ExtResource("4_network")
+graph = ExtResource("8_pen")
+targets = NodePath("../PenPatch")
+drape = true
+hide_blocked = true

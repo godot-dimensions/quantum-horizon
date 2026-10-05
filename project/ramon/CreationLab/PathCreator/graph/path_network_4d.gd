@@ -28,6 +28,24 @@ extends Node4D
 ## LOOKS AND SETS: `look` DEV or WALK for every box at once; `libraries` says which library each
 ## symbol slot comes from (Ramon, 5 Oct: "toggle not entire sets at once, but subicons separately").
 ##
+## DRAPING (`drape`, PLAN.md step 85): the routes lie on whatever static box is under them rather
+## than on the floor at y 0. Each node sits on the top it stands over (a ray straight down at its x,
+## z and W), and each route is sampled every DRAPE_STEP_M and laid as runs, one per height, so it
+## climbs a step as a run on the lower box and a run on the upper. A mark never crosses a riser: it
+## shrinks as it nears the edge and the next run's grows back beyond it. Physics is boxes only (no
+## slope exists), so a step is the only bend ground can have. Rays are cast when the routes are
+## laid, never per frame.
+## In the editor there may be no physics to ask, and the routes lie at y 0.
+##
+## ANCHORS (PLAN.md step 86): a destination with "anchor" set follows its object as it moves (a
+## chicken, a cart), keeping the place it was authored at beside it in x, z and W. Only its own
+## edges, ball and frame are laid again, and the graph file keeps the authored place.
+##
+## BLOCKED ROUTES (rule 09: "invalid edges hide", `hide_blocked`): a route whose way is shut, a
+## static box across it BLOCK_H_M above its ground, hides, and shows again when the way opens.
+## Checked every BLOCK_CHECK_S, one ray along each run of each edge. Only routes hide; the nodes
+## stay, so a junction still says there was a way.
+##
 ## Moving a node rebuilds only what changed: boxes are kept by key and re-laid in place.
 ##
 ## NO class_name (engine_gotchas.md).
@@ -86,15 +104,107 @@ const FRAME_GAP := 1.6
 		flow = v
 		_apply_look()
 
+## Lay the routes on the static boxes under them (steps, platforms) instead of at y 0.
+@export var drape: bool = false:
+	set(v):
+		drape = v
+		_later()
+## Which physics layers draping stands on.
+@export_flags_3d_physics var drape_mask: int = 0xFFFFFFFF:
+	set(v):
+		drape_mask = v
+		_later()
+## Hide a route while a static box shuts its way (rule 09).
+@export var hide_blocked: bool = false
+
 var _items: Dictionary = {}
 var _queued: bool = false
 var _notes: PackedStringArray = PackedStringArray()
+## Anchored destinations: node id -> its offset from its object, and its place now.
+var _anchor_off: Dictionary = {}
+var _anchor_at: Dictionary = {}
+## From the last full layout: each edge's start along its route, its crossings' gaps, and where it
+## lies (for the blocked check).
+var _s0: Dictionary = {}
+var _gaps: Dictionary = {}
+var _geo: Dictionary = {}
+## Routes shut now (route index -> its edge indices), and the time to the next check.
+var _shut: Dictionary = {}
+var _block_t: float = 0.0
 
 
 func _ready() -> void:
 	if graph != null and not graph.changed.is_connected(_later):
 		graph.changed.connect(_later)
 	rebuild()
+	if drape and not Engine.is_editor_hint():
+		# Once more after the first physics frame, when every box in the scene is surely registered.
+		await get_tree().physics_frame
+		rebuild()
+
+
+## The height of the static ground under (x, z) at W `w`, in this network's own space: a ray down
+## from `from_y` + DRAPE_REACH_M. Characters, areas and anything in `skip` are looked through; no
+## ground, or draping off, is y 0.
+func ground_at(x: float, z: float, w: float, from_y: float = 0.0, skip: Array = []) -> float:
+	if not drape or not is_inside_tree():
+		return 0.0
+	var params := RaycastParameters4D.new()
+	var o: Vector4 = global_position
+	params.global_ray_origin = Vector4(o.x + x, o.y + from_y + Spec.DRAPE_REACH_M, o.z + z, o.w + w)
+	params.global_ray_direction = Vector4(0, -1, 0, 0)
+	params.max_distance = Spec.DRAPE_REACH_M + 6.0
+	params.collision_mask = drape_mask
+	var ex: Array[Node4D] = []
+	for s in skip:
+		if s is Node4D:
+			ex.append(s)
+	for i in 8:
+		params.set_exclude_nodes(ex)
+		var hit: Dictionary = PhysicsServer4D.raycast_physics_objects(params)
+		if hit.is_empty() or not bool(hit.get("hit", false)) or not hit.has("global_point"):
+			return 0.0
+		var body: Object = hit.get("body")
+		if body is StaticBody4D:
+			return (hit["global_point"] as Vector4).y - o.y
+		if not (body is Node4D):
+			return 0.0
+		ex.append(body as Node4D)
+	return 0.0
+
+
+## Where an edge's ground changes height: [[from, to, height], ...] along it, metres from its
+## start. One run (the whole edge at y 0) when draping is off. `w_at` gives the route's W at a
+## distance along it (a follow route climbs).
+func _runs(A: Vector4, dir: Vector2, L: float, w_at: Callable) -> Array:
+	if not drape:
+		return [[0.0, L, 0.0]]
+	var h_at := func(t: float) -> float:
+		return ground_at(A.x + dir.x * t, A.z + dir.y * t, float(w_at.call(t)), A.y)
+	var n: int = maxi(1, ceili(L / Spec.DRAPE_STEP_M))
+	var out: Array = []
+	var t0: float = 0.0
+	var h0: float = h_at.call(0.0)
+	var prev_t: float = 0.0
+	for i in range(1, n + 1):
+		var t: float = L * float(i) / float(n)
+		var h: float = h_at.call(t)
+		if absf(h - h0) > 0.005:
+			# A riser between prev_t and t: find it to a centimetre.
+			var lo: float = prev_t
+			var hi: float = t
+			for k in 6:
+				var mid: float = (lo + hi) * 0.5
+				if absf(float(h_at.call(mid)) - h0) > 0.005:
+					hi = mid
+				else:
+					lo = mid
+			out.append([t0, (lo + hi) * 0.5, h0])
+			t0 = (lo + hi) * 0.5
+			h0 = h
+		prev_t = t
+	out.append([t0, L, h0])
+	return out
 
 
 func _later() -> void:
@@ -128,26 +238,179 @@ func rebuild() -> void:
 		return
 	var used: Dictionary = {}
 	var routes: Array = graph.call("routes")
-	var info: Dictionary = {}   # edge index -> [route, s0]
+	_s0.clear()
 	for r in routes:
 		var s: float = 0.0
 		for ei in r["edges"]:
-			info[int(ei)] = [r, s]
+			_s0[int(ei)] = s
 			s += _floor_len(graph.edges[int(ei)])
-	var gaps: Dictionary = _crossings()
+	_gaps = _crossings()
+	_geo.clear()
 	for i in graph.edges.size():
-		_lay_edge(i, graph.edges[i], float(info.get(i, [null, 0.0])[1]), gaps.get(i, []), used)
+		_lay_edge(i, graph.edges[i], float(_s0.get(i, 0.0)), _gaps.get(i, []), used)
 	for n in graph.nodes:
 		_lay_node(n, used)
 	_clear_unused(used)
 	_notes = graph.call("validate")
+	# A draped route that climbs more at once than the walker can step.
+	for i in _geo:
+		var runs: Array = _geo[i]["runs"]
+		for k in range(1, runs.size()):
+			var rise: float = absf(float(runs[k][2]) - float(runs[k - 1][2]))
+			if rise > Spec.STEP_MAX_M + 0.005:
+				_notes.append("Route %d changes height by %.2f m at once, more than a step (%.2f m)." % [int(i), rise, Spec.STEP_MAX_M])
 	_apply_look()
+	_apply_shut()
 
 
 func _floor_len(e: Dictionary) -> float:
-	var a: Vector4 = graph.call("node", int(e["from"])).get("pos", Vector4.ZERO)
-	var b: Vector4 = graph.call("node", int(e["to"])).get("pos", Vector4.ZERO)
+	var a: Vector4 = _pos(graph.call("node", int(e["from"])))
+	var b: Vector4 = _pos(graph.call("node", int(e["to"])))
 	return Vector2(b.x - a.x, b.z - a.z).length()
+
+
+## A node's place now: where it was authored, or where its anchor has carried it.
+func _pos(n: Dictionary) -> Vector4:
+	if n.is_empty():
+		return Vector4.ZERO
+	return _anchor_at.get(int(n["id"]), n["pos"])
+
+
+## The object a node is for (under `targets`), or null.
+func _target_of(n: Dictionary) -> Node4D:
+	var host: Node = get_node_or_null(targets) if not targets.is_empty() else null
+	return host.get_node_or_null(String(n.get("target", ""))) as Node4D if host != null and String(n.get("target", "")) != "" else null
+
+
+func _process(dt: float) -> void:
+	if Engine.is_editor_hint() or graph == null:
+		return
+	var moved: Array = []
+	for n in graph.nodes:
+		if not bool(n.get("anchor", false)):
+			continue
+		var t: Node4D = _target_of(n)
+		if t == null:
+			continue
+		var id: int = int(n["id"])
+		var tp: Vector4 = t.global_position - global_position
+		if not _anchor_off.has(id):
+			_anchor_off[id] = (n["pos"] as Vector4) - tp
+		var want: Vector4 = tp + (_anchor_off[id] as Vector4)
+		want.y = (n["pos"] as Vector4).y
+		if (want - _pos(n)).length() > Spec.ANCHOR_MOVE_M:
+			_anchor_at[id] = want
+			moved.append(id)
+	if not moved.is_empty():
+		_relay(moved)
+	if hide_blocked:
+		_block_t -= dt
+		if _block_t <= 0.0:
+			_block_t = Spec.BLOCK_CHECK_S
+			check_blocked()
+
+
+## Lays again only what touches the nodes `ids`: their edges (each keeps its start along its route,
+## so the marks flow on unbroken), their balls and their frames.
+func _relay(ids: Array) -> void:
+	var used: Dictionary = {}
+	var prefixes: Array = []
+	for i in graph.edges.size():
+		var e: Dictionary = graph.edges[i]
+		if int(e["from"]) in ids or int(e["to"]) in ids:
+			_lay_edge(i, e, float(_s0.get(i, 0.0)), _gaps.get(i, []), used)
+			prefixes.append("Edge%d_" % i)
+	for n in graph.nodes:
+		if int(n["id"]) in ids:
+			_lay_node(n, used)
+			prefixes.append("Cue%d" % int(n["id"]))
+	# A relaid edge may have fewer runs, or a node no W cue, than before.
+	for key in _items.keys():
+		if used.has(key):
+			continue
+		for pre in prefixes:
+			if String(key).begins_with(pre):
+				var mi: MeshInstance4D = _items[key]
+				if is_instance_valid(mi):
+					mi.queue_free()
+				_items.erase(key)
+				break
+	_apply_look()
+	_apply_shut()
+
+
+## Rule 09: which routes are shut now. A route is shut when any of its edges is.
+func check_blocked() -> void:
+	if graph == null:
+		return
+	var routes: Array = graph.call("routes")
+	var shut: Dictionary = {}
+	for ri in routes.size():
+		for ei in routes[ri]["edges"]:
+			if _edge_shut(int(ei)):
+				shut[ri] = (routes[ri]["edges"] as Array).duplicate()
+				break
+	_shut = shut
+	_apply_shut()
+
+
+## Whether the routes are shut: route index -> its edges.
+func shut_routes() -> Dictionary:
+	return _shut
+
+
+func _apply_shut() -> void:
+	var hidden: Dictionary = {}
+	for ri in _shut:
+		for ei in _shut[ri]:
+			hidden[int(ei)] = true
+	for key in _items:
+		var mi: MeshInstance4D = _items[key]
+		if is_instance_valid(mi) and String(key).begins_with("Edge"):
+			mi.visible = not hidden.has(int(mi.get_meta("edge", -1)))
+
+
+## A static box across edge `i` at BLOCK_H_M above each run of its ground, its own two ends' objects
+## looked through.
+func _edge_shut(i: int) -> bool:
+	if not _geo.has(i):
+		return false
+	var geo: Dictionary = _geo[i]
+	var A: Vector4 = geo["A"]
+	var dir: Vector2 = geo["dir"]
+	var shear: float = geo["shear"]
+	var skip: Array[Node4D] = []
+	var e: Dictionary = graph.edges[i]
+	for id in [int(e["from"]), int(e["to"])]:
+		var t: Node4D = _target_of(graph.call("node", id))
+		if t != null:
+			for b in t.find_children("*", "StaticBody4D", true, false):
+				skip.append(b as Node4D)
+	var o: Vector4 = global_position
+	for r in geo["runs"]:
+		var t0: float = float(r[0]) + 0.05
+		var t1: float = float(r[1]) - 0.05
+		if t1 <= t0:
+			continue
+		var d4 := Vector4(dir.x, 0.0, dir.y, shear)
+		var params := RaycastParameters4D.new()
+		params.global_ray_origin = o + Vector4(A.x + dir.x * t0, float(r[2]) + Spec.BLOCK_H_M, A.z + dir.y * t0, float(geo["w_at"].call(t0)))
+		params.global_ray_direction = d4.normalized()
+		params.max_distance = (t1 - t0) * d4.length()
+		params.collision_mask = drape_mask
+		var ex: Array[Node4D] = skip.duplicate()
+		for k in 8:
+			params.set_exclude_nodes(ex)
+			var hit: Dictionary = PhysicsServer4D.raycast_physics_objects(params)
+			if hit.is_empty() or not bool(hit.get("hit", false)):
+				break
+			var body: Object = hit.get("body")
+			if body is StaticBody4D:
+				return true
+			if not (body is Node4D):
+				break
+			ex.append(body as Node4D)
+	return false
 
 
 ## The radius of a node's art on the floor, metres, which marks keep clear of (plus 0.25P).
@@ -190,8 +453,8 @@ func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictiona
 	var nb: Dictionary = graph.call("node", int(e["to"]))
 	if na.is_empty() or nb.is_empty():
 		return
-	var A: Vector4 = na["pos"]
-	var B: Vector4 = nb["pos"]
+	var A: Vector4 = _pos(na)
+	var B: Vector4 = _pos(nb)
 	var d := Vector2(B.x - A.x, B.z - A.z)
 	var L: float = d.length()
 	if L < 0.05:
@@ -220,44 +483,58 @@ func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictiona
 	var join0: bool = String(na.get("kind", "")) == "chord" and bool(graph.call("is_pass_through", int(na["id"])))
 	var join1: bool = String(nb.get("kind", "")) == "chord" and bool(graph.call("is_pass_through", int(nb["id"])))
 	var half: float = Draw.sym_size(mark).x * 0.5 * Spec.UNIT_M + 0.04
-	var ext0: float = half if join0 else 0.0
-	var ext1: float = half if join1 else 0.0
-	var mid: float = (L - ext0 + ext1) * 0.5
-	var mi: MeshInstance4D = _item("Edge%d" % i, Draw.SEGMENT, used)
-	_size(mi, Vector4(L + ext0 + ext1, Spec.BOX_H_M, EDGE_W, depth))
-	mi.position = Vector4(A.x + dir.x * mid, Spec.PROUD_M, A.z + dir.y * mid, wc + shear * (mid - L * 0.5))
-	mi.basis = Projection(Vector4(dir.x, 0, dir.y, shear), Vector4(0, 1, 0, 0), Vector4(-dir.y, 0, dir.x, 0), Vector4(0, 0, 0, 1))
 	var pad: float = Spec.HIDE_GAP_M if clear_style == "hide" else Spec.CLEAR_M
 	var c0: float = art_radius(na) + pad
 	var c1: float = art_radius(nb) + pad
 	# The short-segment rule is about crowding end markers; a joint has none.
 	var room: float = L - (0.0 if join0 else c0) - (0.0 if join1 else c1)
-	Draw.set_param(mi, "mark_sym", mark if (room >= Spec.SHORT_SEGMENT_M * 0.5 or (join0 and join1)) else -1)
-	Draw.set_param(mi, "join0", 1.0 if join0 else 0.0)
-	Draw.set_param(mi, "join1", 1.0 if join1 else 0.0)
-	Draw.set_param(mi, "ext0", ext0)
-	Draw.set_param(mi, "ext1", ext1)
-	Draw.set_param(mi, "mark_half", half)
-	Draw.set_param(mi, "repeat_m", Spec.PRIMARY_REPEAT_M if primary else Spec.SECONDARY_REPEAT_M)
-	Draw.set_param(mi, "guide_dot", 0.0 if primary else Spec.GUIDE_DOT_M)
-	Draw.set_param(mi, "s0", s0)
-	Draw.set_param(mi, "clear0", c0)
-	Draw.set_param(mi, "clear1", c1)
-	var g := Vector4(-1, -1, -1, -1)
-	if gap_list.size() > 0:
-		g.x = float(gap_list[0]) - GAP_HALF
-		g.y = float(gap_list[0]) + GAP_HALF
-	if gap_list.size() > 1:
-		g.z = float(gap_list[1]) - GAP_HALF
-		g.w = float(gap_list[1]) + GAP_HALF
-	Draw.set_param(mi, "gap0", g)
-	mi.set_meta("edge", i)
+	var marks_on: bool = room >= Spec.SHORT_SEGMENT_M * 0.5 or (join0 and join1)
+	var w_at := func(t: float) -> float:
+		return wc + shear * (t - L * 0.5)
+	# One box per run of ground at one height (one run unless draped over a step).
+	var runs: Array = _runs(A, dir, L, w_at)
+	_geo[i] = {"A": A, "dir": dir, "L": L, "shear": shear, "w_at": w_at, "runs": runs}
+	for k in runs.size():
+		var t0: float = float(runs[k][0])
+		var t1: float = float(runs[k][1])
+		var first: bool = k == 0
+		var last: bool = k == runs.size() - 1
+		var ext0: float = half if (join0 and first) else 0.0
+		var ext1: float = half if (join1 and last) else 0.0
+		var seg: float = t1 - t0
+		var mid: float = t0 + (seg - ext0 + ext1) * 0.5
+		var mi: MeshInstance4D = _item("Edge%d" % i if first else "Edge%d_%d" % [i, k], Draw.SEGMENT, used)
+		_size(mi, Vector4(seg + ext0 + ext1, Spec.BOX_H_M, EDGE_W, depth))
+		mi.position = Vector4(A.x + dir.x * mid, float(runs[k][2]) + Spec.PROUD_M, A.z + dir.y * mid, float(w_at.call(mid)))
+		mi.basis = Projection(Vector4(dir.x, 0, dir.y, shear), Vector4(0, 1, 0, 0), Vector4(-dir.y, 0, dir.x, 0), Vector4(0, 0, 0, 1))
+		Draw.set_param(mi, "mark_sym", mark if marks_on else -1)
+		Draw.set_param(mi, "join0", 1.0 if (join0 and first) else 0.0)
+		Draw.set_param(mi, "join1", 1.0 if (join1 and last) else 0.0)
+		Draw.set_param(mi, "drop0", 0.0 if first else 1.0)
+		Draw.set_param(mi, "drop1", 0.0 if last else 1.0)
+		Draw.set_param(mi, "ext0", ext0)
+		Draw.set_param(mi, "ext1", ext1)
+		Draw.set_param(mi, "mark_half", half)
+		Draw.set_param(mi, "repeat_m", Spec.PRIMARY_REPEAT_M if primary else Spec.SECONDARY_REPEAT_M)
+		Draw.set_param(mi, "guide_dot", 0.0 if primary else Spec.GUIDE_DOT_M)
+		Draw.set_param(mi, "s0", s0 + t0)
+		Draw.set_param(mi, "clear0", c0 if first else 0.0)
+		Draw.set_param(mi, "clear1", c1 if last else 0.0)
+		var g := Vector4(-1, -1, -1, -1)
+		if gap_list.size() > 0:
+			g.x = float(gap_list[0]) - GAP_HALF - t0
+			g.y = float(gap_list[0]) + GAP_HALF - t0
+		if gap_list.size() > 1:
+			g.z = float(gap_list[1]) - GAP_HALF - t0
+			g.w = float(gap_list[1]) + GAP_HALF - t0
+		Draw.set_param(mi, "gap0", g)
+		mi.set_meta("edge", i)
 
 
 func _lay_node(n: Dictionary, used: Dictionary) -> void:
 	var id: int = int(n["id"])
 	var kind: String = String(n["kind"])
-	var P: Vector4 = n["pos"]
+	var P: Vector4 = _pos(n)
 	var band: float = float(n.get("band", 1.2))
 	var mi: MeshInstance4D
 	match kind:
@@ -282,7 +559,8 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 			Draw.set_param(mi, "arc_on", 1.0 if slot in ["E", "F"] else 0.0)
 			Draw.set_param(mi, "accent_on", 1.0 if slot in ["E", "F"] else 0.0)
 			Draw.set_param(mi, "focus", 1.0 if slot == "F" else 0.0)
-	mi.position = Vector4(P.x, Spec.PROUD_M + 0.002, P.z, P.w)
+	var gy: float = ground_at(P.x, P.z, P.w, P.y)
+	mi.position = Vector4(P.x, gy + Spec.PROUD_M + 0.002, P.z, P.w)
 	mi.basis = Projection.IDENTITY
 	mi.set_meta("node", id)
 	Draw.set_param(mi, "w_step", 0.0)
@@ -293,7 +571,7 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 		var cue: MeshInstance4D = _item("Cue%d" % id, Draw.PIVOT, used)
 		var reach: float = (art_radius(n) / Spec.UNIT_M + 4.0 + Spec.W_CUE_GAP * float(Spec.W_CUE_MAX)) * Spec.UNIT_M * 2.0 + 0.1
 		_size(cue, Vector4(reach, Spec.BOX_H_M, 0.3, float(wsi[2])))
-		cue.position = Vector4(P.x, Spec.PROUD_M + 0.003, P.z, float(wsi[1]))
+		cue.position = Vector4(P.x, ground_at(P.x, P.z, float(wsi[1]), P.y) + Spec.PROUD_M + 0.003, P.z, float(wsi[1]))
 		cue.basis = Projection.IDENTITY
 		Draw.set_param(cue, "ball_r", 0.0)
 		Draw.set_param(cue, "ring_on", 0.0)
@@ -322,7 +600,10 @@ func _lay_frame(n: Dictionary, used: Dictionary) -> void:
 	var band: float = float(n.get("band", 1.2))
 	_size(mi, Vector4(outer.x + 0.3, Spec.BOX_H_M, outer.y + 0.3, band))
 	var tp: Vector4 = t.global_position - global_position
-	mi.position = Vector4(tp.x, Spec.PROUD_M, tp.z, float((n["pos"] as Vector4).w))
+	# Round the object's foot: the ground it stands on, looking through the object itself.
+	var fw: float = _pos(n).w
+	var fy: float = ground_at(tp.x, tp.z, fw, tp.y, t.find_children("*", "StaticBody4D", true, false))
+	mi.position = Vector4(tp.x, fy + Spec.PROUD_M, tp.z, fw)
 	mi.basis = Projection.IDENTITY
 	var ss: Vector2 = Draw.sym_size(s)
 	var grow: Vector2 = (outer / Spec.UNIT_M - ss) * 0.5
@@ -366,14 +647,14 @@ func w_step_info(id: int) -> Array:
 			continue
 		var a: Dictionary = graph.call("node", int(e["from"]))
 		var b: Dictionary = graph.call("node", int(e["to"]))
-		var ew: float = float((a["pos"] as Vector4).w) if mode == "here" else float((b["pos"] as Vector4).w)
+		var ew: float = _pos(a).w if mode == "here" else _pos(b).w
 		if int(e["to"]) == id:
 			in_w = ew
 			in_band = float(e.get("band", 1.2))
 		if int(e["from"]) == id:
 			out_w = ew
 	if String(n.get("kind", "")) == "destination" and in_w != null:
-		return [float((n["pos"] as Vector4).w) - float(in_w), float(in_w), in_band]
+		return [_pos(n).w - float(in_w), float(in_w), in_band]
 	if in_w != null and out_w != null:
 		return [float(out_w) - float(in_w), float(in_w), in_band]
 	return []
@@ -391,10 +672,10 @@ func _crossings() -> Dictionary:
 			var shared: bool = int(a["from"]) in [int(b["from"]), int(b["to"])] or int(a["to"]) in [int(b["from"]), int(b["to"])]
 			if shared:
 				continue
-			var p0: Vector4 = graph.call("node", int(a["from"])).get("pos", Vector4.ZERO)
-			var p1: Vector4 = graph.call("node", int(a["to"])).get("pos", Vector4.ZERO)
-			var q0: Vector4 = graph.call("node", int(b["from"])).get("pos", Vector4.ZERO)
-			var q1: Vector4 = graph.call("node", int(b["to"])).get("pos", Vector4.ZERO)
+			var p0: Vector4 = _pos(graph.call("node", int(a["from"])))
+			var p1: Vector4 = _pos(graph.call("node", int(a["to"])))
+			var q0: Vector4 = _pos(graph.call("node", int(b["from"])))
+			var q1: Vector4 = _pos(graph.call("node", int(b["to"])))
 			var hit: Variant = Geometry2D.segment_intersects_segment(Vector2(p0.x, p0.z), Vector2(p1.x, p1.z), Vector2(q0.x, q0.z), Vector2(q1.x, q1.z))
 			if hit == null:
 				continue

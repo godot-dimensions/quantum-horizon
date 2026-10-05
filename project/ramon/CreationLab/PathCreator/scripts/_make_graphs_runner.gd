@@ -14,7 +14,14 @@ extends SceneTree
 ##                 B here (the route at W 0, the arrival at W +4), C follow (the route climbs through W
 ##                 node by node), D reveal (all of it only at W +4), E ladder (one step of W a stretch).
 ##
-##   CreationLab/scripts/lab_run.sh headless pc_graphs res://ramon/CreationLab/PathCreator/scripts/_make_graphs_runner.gd [-- force]
+##   pen.tres      the pen patch (PLAN.md step 87): in from the south over two steps and a deck (the
+##                 network drapes it), through the fence's gate, then a choice: a static route to the
+##                 feeder at W 0, a follow route up through W to the coop at W +3, and a follow route
+##                 to the hen, anchored to her as she wanders the pen and drifts through W.
+##
+##   CreationLab/scripts/lab_run.sh headless pc_graphs res://ramon/CreationLab/PathCreator/scripts/_make_graphs_runner.gd [force | force=pen]
+##
+## `force` replaces every file, `force=<name>` only that one (the others may hold the builder's edits).
 
 const Graph := preload("res://ramon/CreationLab/PathCreator/graph/path_graph.gd")
 const Spec := preload("res://ramon/CreationLab/PathCreator/path_spec.gd")
@@ -22,16 +29,19 @@ const DIR := "res://ramon/CreationLab/PathCreator/graphs/"
 
 
 func _initialize() -> void:
-	var force: bool = "force" in OS.get_cmdline_user_args()
-	_save("yard.tres", _yard(), force)
-	_save("wfield.tres", _wfield(), force)
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	var force := func(name: String) -> bool:
+		return "force" in args or ("force=" + name) in args
+	_save("yard.tres", _yard(), force.call("yard"))
+	_save("wfield.tres", _wfield(), force.call("wfield"))
+	_save("pen.tres", _pen(), force.call("pen"))
 	quit(0)
 
 
 func _save(file: String, g: Resource, force: bool) -> void:
 	var path: String = DIR + file
 	if FileAccess.file_exists(path) and not force:
-		print("kept ", path, " (exists; pass -- force to replace)")
+		print("kept ", path, " (exists; pass force, or force=", file.get_basename(), ", to replace)")
 		return
 	var err: int = ResourceSaver.save(g, path)
 	print("wrote %s: %d nodes, %d edges, %s" % [path, g.nodes.size(), g.edges.size(), "ok" if err == OK else "error %d" % err])
@@ -93,6 +103,32 @@ func _yard() -> Resource:
 	e.call(tower_turn, tower)
 	e.call(tower_fork, store_turn, "secondary")
 	e.call(store_turn, store, "secondary")
+	return g
+
+
+## The pen patch, in the dev space's metres (PenPatch stands at x 42, z -5; its fence is the pen's,
+## 8.4 x 7.6 m and W -4 to +4, with a gate in the south side).
+func _pen() -> Resource:
+	var g: Resource = Graph.new()
+	var deep: float = 8.0
+	var n := func(kind: String, x: float, z: float, w: float, band: float, extra: Dictionary = {}) -> int:
+		var ex: Dictionary = {"band": band}
+		ex.merge(extra, true)
+		return g.call("add_node", kind, Vector4(x, 0.0, z, w), ex)
+	var start: int = n.call("start", 42.0, -17.0, 0.0, deep)
+	var gate: int = n.call("chord", 42.0, -4.2, 0.0, deep)
+	var choice: int = n.call("junction", 42.0, -2.6, 0.0, deep)
+	var feeder: int = n.call("destination", 39.5, -0.4, 0.0, deep, {"state": "available", "target": "Feeder", "frame": "rect", "approach": Vector2(0, -1)})
+	var turn: int = n.call("bend", 44.5, -2.6, 1.0, 1.4)
+	var coop: int = n.call("destination", 44.5, 0.0, 3.0, 1.4, {"state": "available", "target": "Coop", "frame": "rect", "approach": Vector2(0, -1)})
+	# The hen starts at (43.6, -0.5, W 0); her destination stands 0.8 m in front of her and goes where she goes.
+	var hen: int = n.call("destination", 43.6, -1.3, 0.0, 1.4, {"state": "available", "target": "Hen", "frame": "round", "approach": Vector2(0, -1), "anchor": true})
+	g.call("add_edge", start, gate, "primary", "static", deep)
+	g.call("add_edge", gate, choice, "primary", "static", deep)
+	g.call("add_edge", choice, feeder, "secondary", "static", deep)
+	g.call("add_edge", choice, turn, "primary", "follow", 1.4)
+	g.call("add_edge", turn, coop, "primary", "follow", 1.4)
+	g.call("add_edge", choice, hen, "secondary", "follow", 1.4)
 	return g
 
 

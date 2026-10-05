@@ -99,7 +99,8 @@ func _build_floor() -> void:
 	add_child(_floor)
 	var body := StaticBody4D.new()
 	body.name = "WalkplaneBody"
-	body.position = _floor.position
+	# A child of the floor, so it is already where the floor is (copying the floor's position here
+	# put the collision 0.25 m below the surface you see, and the player walked sunk into it).
 	var cs := CollisionShape4D.new()
 	var bs := BoxShape4D.new()
 	bs.size = s4

@@ -164,3 +164,79 @@ read; after the fixes every symbol of libraries 06 and 07 scores 0.92 or better,
 F5 moves every slot to the next library; in the builder, L moves only the slot under the hand (a
 picked node's symbol, or the hovered route's chevron), Ramon's "toggle sub-icons separately". F6
 flips DEV and WALK (`img/09_looks.png`: 07, 06, A from 06 with the rest from 07, WALK).
+
+## 7. Toward the pen (steps 85 to 88)
+
+**What the pen's ground is** (read from `playable_world.tscn`, nothing changed):
+- The walkable field is one flat static box (`World/Ground`).
+- The fence is six box walls: four in x and z, and two in W at -4 and +4.
+- The hills and the cave hill are baked meshes nobody walks on, because physics is boxes only.
+
+So uneven ground in the pen means boxes standing on the field (steps, platforms, crates), not a
+height field. The pen's places (the keeper, the shed, the range booth, the professor, the
+lookout) stand at W 0, over about 40 x 40 m, the yard's size. What lives in W is the chickens,
+wandering inside the fence between W -4 and +4, and the pickups at about W +1.15.
+
+**Draping (step 85).** A network with `drape` on lays its routes on whatever static box is under
+them.
+- Each node sits on the top it stands over (a ray straight down at its x, z and W).
+- Each route is sampled every 0.2 m and laid as runs, one box per height, with the riser found to
+  a centimetre.
+- A chevron never crosses a riser. It shrinks as it nears the step edge, the way it does at a W
+  band's edge, and the next run's chevron grows back beyond it. So the marks keep moving, and
+  nothing hangs over a step or gets cut by one.
+- A route that climbs more at once than the walker can step (0.32 m, its own `step_height`) gets
+  a note in the builder.
+
+Rays are cast only when routes are laid, never per frame.
+
+**The pen patch (step 87).** `PenPatch` in the dev space (x 42, z -5) is built from the pen's own
+numbers, a copy: nothing of the pen is loaded or changed.
+- The fence: 8.4 x 7.6 m, W -4 to +4, with a 1.6 m gate.
+- In front of the gate: a 0.25 m step and a 0.5 m deck.
+- Inside: a feeder at W 0, a coop at W +3, and a hen.
+
+The route (`graphs/pen.tres`) comes in over the steps, through the gate, to a choice:
+- static to the feeder
+- follow, up through W to the coop
+- follow to the hen
+
+`scripts/_capture_pen_runner.gd` passes 13 checks. The rays find floor, step, deck, step and floor;
+the way in is laid in five runs, with risers at 3, 4, 8 and 9 m. The player then walks it with the
+game's own input: up onto the deck (0.52 m at the highest), down, and through the gate into the
+pen (`img/16_pen_views.png`: on the deck, in the pen, the approach in DEV and in WALK;
+`img/17_pen_by_w.png`: from above at W 0, 1.5 and 3, where the coop route unrolls through W to its
+coop).
+
+**A bug found on the way.** The dev space's floor collider sat 0.25 m below the floor you see (it
+copied the floor mesh's offset while also being its child). The player had been walking sunk 25 cm
+into the floor everywhere in PathCreator, and it made the first 0.25 m step a 0.5 m wall the walker
+could not climb. Fixed in `pathcreator_4d.gd`.
+
+**Anchors (step 86).** A destination marked `anchor` follows its object. The hen wanders a loop in
+the pen while drifting 1.5 m ana and kata (`space/pc_wander_4d.gd`), and her destination keeps its
+place 0.8 m in front of her, in W as well. Only her own route, ball and frame are laid again, and
+the graph file keeps the authored place (`img/18_hen_door.png`, top: three moments).
+
+**Blocked routes (step 86, rule 09: "invalid edges hide").** With `hide_blocked`, a route whose way
+is shut hides, and shows again when the way opens. "Shut" means a static box across it 0.4 m above
+its ground: just over a step, so a step never counts. It is checked twice a second, one ray along
+each run. Only routes hide; the nodes stay, so the junction still says there was a way. A door
+across the gate hides the way in, while the routes on from the choice stay (`img/18_hen_door.png`,
+bottom: shut, then open).
+
+**What the pen will need (step 88).**
+- **Looks.** WALK is one sand albedo, and the guide line is mixed toward the white floor's colour
+  (`under_color`). On grass and dirt, `under_color` should be the ground's own colour, or the
+  guide reads as a white stripe (it already does on the patch's grey steps).
+- **W.** The places are at W 0, so their routes can be static. The chickens want anchored
+  destinations on follow routes (the hen here), and the pickups at W +1.15 want a follow route or
+  a W cue. The pen's W -4 to +4 is well inside the 15 m reach.
+- **Size and cost.** The pen's 40 x 40 m is the yard's size. The yard costs about 0.2 ms with 45
+  boxes. Draping adds rays only when a route is laid. Anchors re-lay one route each time their
+  object moves 3 cm, so a dozen anchored chickens each lay one route a frame or two while they
+  walk. Measure that in the pen before relying on it.
+- **Fit.** The patch's interior shows the crowding: the pen is 8.4 m across, and a junction, three
+  destinations and their frames fill it. In the pen itself, keep routes outside the fence to the
+  gate, and give the chickens one shared anchored destination rather than one each.
+

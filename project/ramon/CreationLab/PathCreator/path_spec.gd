@@ -45,6 +45,21 @@ const SHORT_SEGMENT_M := 1.2
 const CURVE_RADII := [2.0, 4.0, 7.0]
 const CURVE_STEP_M := 2.4
 const CURVE_MAX_TURN_DEG := 30.0
+## DRAPING (a network's `drape`): how far apart a route is sampled for the ground under it, and how
+## far above its node a ray starts looking down (so a platform up to this high is found, a roof
+## above it is not), metres.
+const DRAPE_STEP_M := 0.2
+const DRAPE_REACH_M := 2.5
+## The tallest riser a route may climb at once: the walker's own step height
+## (block_walker_character_4d.gd step_height). Taller, and the builder's notes say so.
+const STEP_MAX_M := 0.32
+## BLOCKED ROUTES (rule 09, a network's `hide_blocked`): a static box across a route this high above
+## its ground (just over a step, so a step never counts) shuts it, and the route hides. Checked this
+## often, seconds.
+const BLOCK_H_M := 0.4
+const BLOCK_CHECK_S := 0.5
+## ANCHORS: how far an anchored destination's object moves before its route is laid again, metres.
+const ANCHOR_MOVE_M := 0.03
 
 ## The guide line under the marks (Ramon, 5 Oct: "one subtle blue line under the icons to clearly
 ## see the path yet subtle"), metres wide.
