@@ -6,7 +6,7 @@
 script = ExtResource("1_snl4v")
 nodes = [{
 "approach": Vector2(0, 1),
-"band": 8.0,
+"band": 7.8,
 "frame": "none",
 "id": 1,
 "kind": "start",
@@ -15,7 +15,7 @@ nodes = [{
 "target": ""
 }, {
 "approach": Vector2(0, 1),
-"band": 8.0,
+"band": 7.8,
 "frame": "none",
 "id": 2,
 "kind": "chord",
@@ -24,7 +24,7 @@ nodes = [{
 "target": ""
 }, {
 "approach": Vector2(0, 1),
-"band": 8.0,
+"band": 7.8,
 "frame": "none",
 "id": 3,
 "kind": "junction",
@@ -33,7 +33,7 @@ nodes = [{
 "target": ""
 }, {
 "approach": Vector2(0, -1),
-"band": 8.0,
+"band": 7.8,
 "frame": "rect",
 "id": 4,
 "kind": "destination",
@@ -70,19 +70,19 @@ nodes = [{
 "target": "Hen"
 }]
 edges = [{
-"band": 8.0,
+"band": 7.8,
 "from": 1,
 "priority": "primary",
 "to": 2,
 "w_mode": "static"
 }, {
-"band": 8.0,
+"band": 7.8,
 "from": 2,
 "priority": "primary",
 "to": 3,
 "w_mode": "static"
 }, {
-"band": 8.0,
+"band": 7.8,
 "from": 3,
 "priority": "secondary",
 "to": 4,

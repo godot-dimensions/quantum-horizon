@@ -197,6 +197,47 @@ The shut dev panel and the wall panels cost about 0.03 ms a frame each; the firs
 about 1 ms (`_capture_dev_panel_runner.gd`). `_probe_shape_runner.gd` proves the plan: the saved
 shape, a longer Creation Lab wall, and a rectangle.
 
+## Paths (`CreationLab/PathCreator/`, 5 Oct 2026)
+
+Routes and destinations drawn on the floor as vectors, from Ramon's Figma sheet "Path_Indicator".
+The full story, with pictures, is in `PathCreator/CASE_STUDY.md`; the dev space to try them is
+`PathCreator/pathcreator.tscn` (F4 builder, F5 next library, F6 DEV or WALK, F7 volume view).
+
+**Routes in a scene of your own:**
+1. Add a Node4D with `graph/path_network_4d.gd`.
+2. Give it a `graph`: a `.tres` of `graph/path_graph.gd`. Start one in the builder, or write one in
+   code the way `scripts/_make_graphs_runner.gd` does.
+3. Point `targets` at a node whose children are the objects the routes lead to: anything with
+   `footprint()`, `size` and `w_depth` (`space/pc_target_4d.gd` is one). A destination names its
+   object in `target`; its frame grows round that object's footprint.
+
+**The network's settings:**
+- `look`: DEV (the sheet's blues) or WALK (one sand albedo).
+- `libraries` and `default_library`: which symbol set each slot comes from.
+- `p_scale`: the sheet's P (0.6 m, the player's width) times this. See the proof in the case study
+  before choosing one for the pen.
+- `drape`: lay routes on the static boxes under them (steps, decks).
+- `hide_blocked`: hide a route while a static box shuts its way.
+- `motion`, `clear_style`, `flow`.
+
+**In the graph:**
+- Each edge has a W mode:
+  - `static`: seen from any W
+  - `here`: at its start's W
+  - `follow`: climbs from W to W; the slice shows a stretch that moves as you go
+  - `reveal`: only at its end's W
+- A destination can carry `anchor: true` to follow a moving object.
+- The builder's R key rounds a corner into chords (`round_corner` in the graph, so an editor dock
+  can use it too).
+
+**Notes.** `notes()` lists what is wrong with a layout, in sentences: the graph's own checks and
+rule 10's (overlaps, objects kept clear, arrivals reachable, every route ending at a
+destination). The builder shows them under ROUTE NOTES.
+
+**Cost.** Every route in the dev space at once (112 boxes) costs 0.22 ms. Draping casts rays only
+when a route is laid. An anchored destination lays its own route again each time its object moves
+3 cm.
+
 ## Testing (`CreationLab/scripts/`)
 
 `lab_run.sh <mode> <name> <runner> [args]` takes the Godot lock in the same command that launches,

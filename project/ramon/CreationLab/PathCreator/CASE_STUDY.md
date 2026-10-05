@@ -240,3 +240,54 @@ bottom: shut, then open).
   destinations and their frames fill it. In the pen itself, keep routes outside the fence to the
   gate, and give the chickens one shared anchored destination rather than one each.
 
+## 8. The proof (step 89): rule 10 at the player's camera
+
+The sheet's acceptance list (rule 10): "Test at the actual player camera: direction readable,
+equal branches equally weighted, no symbol overlaps, object clearance maintained, arrival
+reachable, and every visible route ends at a valid destination." `scripts/_proof_runner.gd` runs
+all of it, and every PathCreator runner is green (twelve of them).
+
+**The layout's own half** is now in `path_network_4d.gd` `acceptance()`, and so in the builder's
+notes:
+- no two symbols overlapping where their W bands meet, and no other node inside an object's frame
+- no route within half a player of an object, measured in W where the route is walked (its nodes'
+  W), not how far off it shows
+- no destination standing inside an object
+- every route that stops, stopping at a destination
+
+The yard, the W field and the pen patch pass. The first run found a real fault in the patch: its
+static routes were 8 m deep in W, exactly the fence's span, so they reached into its W walls.
+They are 7.8 m now, just inside.
+
+**Equal branches.** The yard's equal choice, from above: ink on the two branches over the same
+3 m, averaged over five moments, comes out 0.91 to 1.
+
+**Cost.** Every route in the space on screen at once (three networks, 112 boxes): +0.22 ms a
+frame.
+
+**Direction readable** (`img/19_read_at_camera.png`: the pen's Camera 2 at P x1, x1.5 and x2, down;
+the yard's way in, the pen patch's steps and station C, across). Each blob of route ink on screen
+is measured. One counts as readable at 24 x 8 px or more at 1280 x 720, which is 36 x 12 at
+1080p: enough to see which way a chevron points. Each view has the player 8 m along a route,
+walking it, so the route runs from under the camera past the player:
+
+| | yard, static | pen steps, static | station C, follow |
+|---|---|---|---|
+| P x1 (0.6 m), Camera 2 | 22 readable | 5 | 1 |
+| P x1, Camera 3 | 3 | 2 | 0 |
+| P x1.5, Camera 2 | 27 | 4 | 2 |
+| P x2 (1.2 m), Camera 2 | 28 | 4 | 4 |
+
+What it says:
+- **At the sheet's own size, walking a static route reads well** from the pen's own camera
+  (Camera 2, the one it opens on).
+- **A follow route shows only its stretch near you**, about 9 m of it here. Its nearest marks are
+  4 to 12 m from the camera, about 20 x 8 px at the sheet's size, so their shape shows but they are
+  under the bar. It takes P x2 for three readable marks.
+- **Camera 3 (the diorama) reads worse at every size.** It is further back, so the marks are smaller.
+- **The first version of this test was wrong.** It stood the player at each route's start. With
+  the camera 8 m behind, nothing was near the camera, and the marks measured 12 x 3 px. The
+  numbers are only worth what the camera's position is worth.
+
+What size P should be in the pen is Ramon's call. It is a per-network setting (`p_scale`), and
+the sheet's proportions hold at any size.

@@ -1,5 +1,13 @@
 # PathCreator: plan (5 Oct 2026, draft for Ramon)
 
+**Status, 5 Oct evening:**
+- Done: steps 1 to 79 and 85 to 90; `CASE_STUDY.md` has what each one taught, with pictures.
+- Waiting on Ramon:
+  - 65, the W-mode defaults
+  - 80 to 84, the editor dock: it needs a plugin under `addons/` enabled in `project.godot`, both
+    shared files
+  - the size of P for the pen (case study, section 8)
+
 A kit prototype: rebuild the direction path system from scratch, as a graph of routes and
 destinations that also connects places in W, plus a builder to lay it out while you play. Source:
 Ramon's Figma sheet "Path_Indicator" (Creation Lab, Aligned Layout file, page 5:20). Everything goes

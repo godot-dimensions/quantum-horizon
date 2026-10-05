@@ -116,6 +116,13 @@ const FRAME_GAP := 1.6
 		_later()
 ## Hide a route while a static box shuts its way (rule 09).
 @export var hide_blocked: bool = false
+## How big the symbols are drawn: the sheet's P (0.6 m, the player's width) times this. Everything
+## the sheet gives in P scales with it (symbols, repeats, clear floor, the guide); what is given in
+## metres round objects (frames' margin, the approach gap) does not.
+@export_range(0.5, 3.0, 0.05) var p_scale: float = 1.0:
+	set(v):
+		p_scale = v
+		_later()
 
 var _items: Dictionary = {}
 var _queued: bool = false
@@ -252,6 +259,7 @@ func rebuild() -> void:
 		_lay_node(n, used)
 	_clear_unused(used)
 	_notes = graph.call("validate")
+	_notes.append_array(acceptance())
 	# A draped route that climbs more at once than the walker can step.
 	for i in _geo:
 		var runs: Array = _geo[i]["runs"]
@@ -267,6 +275,11 @@ func _floor_len(e: Dictionary) -> float:
 	var a: Vector4 = _pos(graph.call("node", int(e["from"])))
 	var b: Vector4 = _pos(graph.call("node", int(e["to"])))
 	return Vector2(b.x - a.x, b.z - a.z).length()
+
+
+## Metres a sheet unit, at this network's scale.
+func _u() -> float:
+	return Spec.UNIT_M * p_scale
 
 
 ## A node's place now: where it was authored, or where its anchor has carried it.
@@ -354,6 +367,125 @@ func check_blocked() -> void:
 	_apply_shut()
 
 
+## RULE 10's ACCEPTANCE, the parts a layout can check for itself (the sheet: "Test at the actual
+## player camera: direction readable, equal branches equally weighted, no symbol overlaps, object
+## clearance maintained, arrival reachable, and every visible route ends at a valid destination").
+## Reading direction and weighing branches need the camera, so scripts/_proof_runner.gd does them.
+## The rest, as sentences for the builder's notes (empty when all is well):
+##   no symbol overlaps   node art apart (chords excepted: they are a curve's own small balls)
+##                        where their W bands meet, and no other node inside an object's frame
+##   object clearance     no route through an object or within half a player of it, except into
+##                        its own destination, and except the objects a draped route stands on;
+##                        in W, where the route is walked (its nodes' W), not how far off it shows
+##   arrival reachable    no destination standing inside an object (at the destination's own W)
+##   valid ends           every route that stops, stops at a destination
+func acceptance() -> PackedStringArray:
+	var out := PackedStringArray()
+	if graph == null:
+		return out
+	var objs: Array = _objects()
+	var half_p: float = float(graph.get("player_diameter")) * 0.5
+	var nodes: Array = graph.nodes
+	var label := func(n: Dictionary) -> String:
+		return "%s %d" % [String(n["kind"]).capitalize(), int(n["id"])]
+	for i in nodes.size():
+		var a: Dictionary = nodes[i]
+		if String(a["kind"]) == "chord":
+			continue
+		for j in range(i + 1, nodes.size()):
+			var b: Dictionary = nodes[j]
+			if String(b["kind"]) == "chord":
+				continue
+			var pa: Vector4 = _pos(a)
+			var pb: Vector4 = _pos(b)
+			if absf(pa.w - pb.w) > (float(a.get("band", 1.2)) + float(b.get("band", 1.2))) * 0.5:
+				continue
+			var need: float = art_radius(a) + art_radius(b)
+			var d: float = Vector2(pa.x - pb.x, pa.z - pb.z).length()
+			if d < need:
+				out.append("%s and %s overlap (%.2f m apart, their art needs %.2f)." % [label.call(a), label.call(b), d, need])
+	for n in nodes:
+		var p: Vector4 = _pos(n)
+		for o in objs:
+			var rect: Rect2 = o["rect"]
+			if String(n["kind"]) == "destination" and rect.has_point(Vector2(p.x, p.z)) and absf(p.w - float(o["w"])) < float(o["wd"]) * 0.5 + half_p:
+				out.append("%s stands inside %s: nobody can arrive there." % [label.call(n), String(o["name"])])
+			if absf(p.w - float(o["w"])) > (float(n.get("band", 1.2)) + float(o["wd"])) * 0.5:
+				continue
+			if String(n.get("target", "")) != String(o["name"]):
+				var framed: bool = false
+				for m in nodes:
+					if String(m.get("target", "")) == String(o["name"]) and String(m.get("frame", "none")) != "none":
+						framed = true
+				if framed and rect.grow(FRAME_MARGIN).has_point(Vector2(p.x, p.z)) and String(n["kind"]) != "chord":
+					out.append("%s sits in the frame round %s." % [label.call(n), String(o["name"])])
+	for i in graph.edges.size():
+		var e: Dictionary = graph.edges[i]
+		var na: Dictionary = graph.call("node", int(e["from"]))
+		var nb: Dictionary = graph.call("node", int(e["to"]))
+		if na.is_empty() or nb.is_empty():
+			continue
+		var A: Vector4 = _pos(na)
+		var B: Vector4 = _pos(nb)
+		# Where in W the route is walked: from its from-node's W to its to-node's (a "here" route
+		# at its start's, a "reveal" route at its end's), half a player either side.
+		var w_lo: float = minf(A.w, B.w) - half_p
+		var w_hi: float = maxf(A.w, B.w) + half_p
+		match String(e.get("w_mode", "static")):
+			"here":
+				w_lo = A.w - half_p
+				w_hi = A.w + half_p
+			"reveal":
+				w_lo = B.w - half_p
+				w_hi = B.w + half_p
+		var stands: Dictionary = {}
+		if _geo.has(i):
+			for r in _geo[i]["runs"]:
+				stands[snappedf(float(r[2]), 0.01)] = true
+		for o in objs:
+			if String(o["name"]) in [String(na.get("target", "")), String(nb.get("target", ""))]:
+				continue
+			if float(o["w"]) + float(o["wd"]) * 0.5 < w_lo or float(o["w"]) - float(o["wd"]) * 0.5 > w_hi:
+				continue
+			if drape and stands.has(snappedf(float(o["top"]), 0.01)):
+				continue
+			var rect: Rect2 = (o["rect"] as Rect2).grow(half_p)
+			var L: float = Vector2(B.x - A.x, B.z - A.z).length()
+			var steps: int = maxi(1, ceili(L / 0.1))
+			for k in steps + 1:
+				var t: float = float(k) / float(steps)
+				if rect.has_point(Vector2(lerpf(A.x, B.x, t), lerpf(A.z, B.z, t))):
+					out.append("The route from %s to %s comes within half a player (%.1f m) of %s." % [label.call(na), label.call(nb), half_p, String(o["name"])])
+					break
+	var outs: Dictionary = {}
+	var ins: Dictionary = {}
+	for e in graph.edges:
+		outs[int(e["from"])] = true
+		ins[int(e["to"])] = true
+	for n in nodes:
+		if ins.has(int(n["id"])) and not outs.has(int(n["id"])) and String(n["kind"]) != "destination":
+			out.append("A route stops at %s, not at a destination." % label.call(n))
+	return out
+
+
+## The objects under `targets`: name, footprint (x, z, in this network's space), W, W depth, top.
+func _objects() -> Array:
+	var out: Array = []
+	var host: Node = get_node_or_null(targets) if not targets.is_empty() else null
+	if host == null:
+		return out
+	for c in host.get_children():
+		if not (c is Node4D) or not c.has_method("footprint"):
+			continue
+		var t := c as Node4D
+		var f: Vector2 = t.call("footprint")
+		var tp: Vector4 = t.global_position - global_position
+		var sz: Variant = t.get("size")
+		out.append({"name": String(t.name), "rect": Rect2(Vector2(tp.x, tp.z) - f * 0.5, f), "w": tp.w,
+			"wd": float(t.get("w_depth")) if t.get("w_depth") != null else 1.2, "top": tp.y + (float((sz as Vector3).y) if sz is Vector3 else 0.0)})
+	return out
+
+
 ## Whether the routes are shut: route index -> its edges.
 func shut_routes() -> Dictionary:
 	return _shut
@@ -417,13 +549,13 @@ func _edge_shut(i: int) -> bool:
 func art_radius(n: Dictionary) -> float:
 	match String(n.get("kind", "")):
 		"chord":
-			return Spec.CHORD_BALL_R * Spec.UNIT_M
+			return Spec.CHORD_BALL_R * _u()
 		"bend":
-			return (Spec.BEND_RING_R + Spec.BEND_RING_W * 0.5) * Spec.UNIT_M
+			return (Spec.BEND_RING_R + Spec.BEND_RING_W * 0.5) * _u()
 		"junction":
-			return Draw.sym_size(sym("C")).x * 0.5 * Spec.UNIT_M * Spec.JUNCTION_SCALE
+			return Draw.sym_size(sym("C")).x * 0.5 * _u() * Spec.JUNCTION_SCALE
 		"destination":
-			return Draw.sym_size(sym("D")).x * 0.5 * Spec.UNIT_M
+			return Draw.sym_size(sym("D")).x * 0.5 * _u()
 	return 0.12
 
 
@@ -482,13 +614,13 @@ func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictiona
 	# holds their middle and reaching over the joint, so the box is that much longer at that end.
 	var join0: bool = String(na.get("kind", "")) == "chord" and bool(graph.call("is_pass_through", int(na["id"])))
 	var join1: bool = String(nb.get("kind", "")) == "chord" and bool(graph.call("is_pass_through", int(nb["id"])))
-	var half: float = Draw.sym_size(mark).x * 0.5 * Spec.UNIT_M + 0.04
-	var pad: float = Spec.HIDE_GAP_M if clear_style == "hide" else Spec.CLEAR_M
+	var half: float = (Draw.sym_size(mark).x * 0.5 * Spec.UNIT_M + 0.04) * p_scale
+	var pad: float = (Spec.HIDE_GAP_M if clear_style == "hide" else Spec.CLEAR_M) * p_scale
 	var c0: float = art_radius(na) + pad
 	var c1: float = art_radius(nb) + pad
 	# The short-segment rule is about crowding end markers; a joint has none.
 	var room: float = L - (0.0 if join0 else c0) - (0.0 if join1 else c1)
-	var marks_on: bool = room >= Spec.SHORT_SEGMENT_M * 0.5 or (join0 and join1)
+	var marks_on: bool = room >= Spec.SHORT_SEGMENT_M * p_scale * 0.5 or (join0 and join1)
 	var w_at := func(t: float) -> float:
 		return wc + shear * (t - L * 0.5)
 	# One box per run of ground at one height (one run unless draped over a step).
@@ -504,7 +636,7 @@ func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictiona
 		var seg: float = t1 - t0
 		var mid: float = t0 + (seg - ext0 + ext1) * 0.5
 		var mi: MeshInstance4D = _item("Edge%d" % i if first else "Edge%d_%d" % [i, k], Draw.SEGMENT, used)
-		_size(mi, Vector4(seg + ext0 + ext1, Spec.BOX_H_M, EDGE_W, depth))
+		_size(mi, Vector4(seg + ext0 + ext1, Spec.BOX_H_M, EDGE_W * p_scale, depth))
 		mi.position = Vector4(A.x + dir.x * mid, float(runs[k][2]) + Spec.PROUD_M, A.z + dir.y * mid, float(w_at.call(mid)))
 		mi.basis = Projection(Vector4(dir.x, 0, dir.y, shear), Vector4(0, 1, 0, 0), Vector4(-dir.y, 0, dir.x, 0), Vector4(0, 0, 0, 1))
 		Draw.set_param(mi, "mark_sym", mark if marks_on else -1)
@@ -515,8 +647,8 @@ func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictiona
 		Draw.set_param(mi, "ext0", ext0)
 		Draw.set_param(mi, "ext1", ext1)
 		Draw.set_param(mi, "mark_half", half)
-		Draw.set_param(mi, "repeat_m", Spec.PRIMARY_REPEAT_M if primary else Spec.SECONDARY_REPEAT_M)
-		Draw.set_param(mi, "guide_dot", 0.0 if primary else Spec.GUIDE_DOT_M)
+		Draw.set_param(mi, "repeat_m", (Spec.PRIMARY_REPEAT_M if primary else Spec.SECONDARY_REPEAT_M) * p_scale)
+		Draw.set_param(mi, "guide_dot", 0.0 if primary else Spec.GUIDE_DOT_M * p_scale)
 		Draw.set_param(mi, "s0", s0 + t0)
 		Draw.set_param(mi, "clear0", c0 if first else 0.0)
 		Draw.set_param(mi, "clear1", c1 if last else 0.0)
@@ -540,11 +672,11 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 	match kind:
 		"chord", "bend", "start":
 			mi = _item("Node%d" % id, Draw.PIVOT, used)
-			_size(mi, Vector4(0.5, Spec.BOX_H_M, 0.5, band))
+			_size(mi, Vector4(0.5 * p_scale, Spec.BOX_H_M, 0.5 * p_scale, band))
 			Draw.set_param(mi, "ring_on", 1.0 if kind == "bend" else 0.0)
-			Draw.set_param(mi, "ball_r", (Spec.BEND_BALL_R if kind == "bend" else (Spec.CHORD_BALL_R if kind == "chord" else 8.0)) * Spec.UNIT_M)
-			Draw.set_param(mi, "ring_r", Spec.BEND_RING_R * Spec.UNIT_M)
-			Draw.set_param(mi, "ring_w", Spec.BEND_RING_W * Spec.UNIT_M)
+			Draw.set_param(mi, "ball_r", (Spec.BEND_BALL_R if kind == "bend" else (Spec.CHORD_BALL_R if kind == "chord" else 8.0)) * _u())
+			Draw.set_param(mi, "ring_r", Spec.BEND_RING_R * _u())
+			Draw.set_param(mi, "ring_w", Spec.BEND_RING_W * _u())
 		_:
 			var slot: String = "C"
 			if kind == "destination":
@@ -552,7 +684,7 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 			mi = _item("Node%d" % id, Draw.NODE, used)
 			var s: int = sym(slot)
 			var scale: float = Spec.JUNCTION_SCALE if kind == "junction" else 1.0
-			var sz: Vector2 = Draw.sym_size(s) * Spec.UNIT_M * scale
+			var sz: Vector2 = Draw.sym_size(s) * _u() * scale
 			_size(mi, Vector4(sz.x + 0.1, Spec.BOX_H_M, sz.y + 0.1, band))
 			Draw.set_param(mi, "node_sym", s)
 			Draw.set_param(mi, "node_scale", scale)
@@ -569,14 +701,14 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 	var wsi: Array = w_step_info(id)
 	if not wsi.is_empty() and absf(float(wsi[0])) > 0.25:
 		var cue: MeshInstance4D = _item("Cue%d" % id, Draw.PIVOT, used)
-		var reach: float = (art_radius(n) / Spec.UNIT_M + 4.0 + Spec.W_CUE_GAP * float(Spec.W_CUE_MAX)) * Spec.UNIT_M * 2.0 + 0.1
+		var reach: float = (art_radius(n) / _u() + 4.0 + Spec.W_CUE_GAP * float(Spec.W_CUE_MAX)) * _u() * 2.0 + 0.1
 		_size(cue, Vector4(reach, Spec.BOX_H_M, 0.3, float(wsi[2])))
 		cue.position = Vector4(P.x, ground_at(P.x, P.z, float(wsi[1]), P.y) + Spec.PROUD_M + 0.003, P.z, float(wsi[1]))
 		cue.basis = Projection.IDENTITY
 		Draw.set_param(cue, "ball_r", 0.0)
 		Draw.set_param(cue, "ring_on", 0.0)
 		Draw.set_param(cue, "w_step", float(wsi[0]))
-		Draw.set_param(cue, "cue_from", art_radius(n) / Spec.UNIT_M + 4.0)
+		Draw.set_param(cue, "cue_from", art_radius(n) / _u() + 4.0)
 		Draw.set_param(cue, "cue_ana", Spec.W_CUE_ANA)
 		Draw.set_param(cue, "cue_kata", Spec.W_CUE_KATA)
 		Draw.set_param(cue, "cue_dot_r", Spec.W_CUE_DOT_R)
@@ -606,14 +738,14 @@ func _lay_frame(n: Dictionary, used: Dictionary) -> void:
 	mi.position = Vector4(tp.x, fy + Spec.PROUD_M, tp.z, fw)
 	mi.basis = Projection.IDENTITY
 	var ss: Vector2 = Draw.sym_size(s)
-	var grow: Vector2 = (outer / Spec.UNIT_M - ss) * 0.5
+	var grow: Vector2 = (outer / _u() - ss) * 0.5
 	if round_frame:
-		grow = Vector2.ONE * (maxf(outer.x, outer.y) / Spec.UNIT_M - ss.x) * 0.5
+		grow = Vector2.ONE * (maxf(outer.x, outer.y) / _u() - ss.x) * 0.5
 	Draw.set_param(mi, "frame_sym", s)
 	Draw.set_param(mi, "frame_grow", grow)
 	Draw.set_param(mi, "frame_round", 1.0 if round_frame else 0.0)
 	var ap: Vector2 = n.get("approach", Vector2(0, 1))
-	Draw.set_param(mi, "approach", Vector3(ap.x, ap.y, FRAME_GAP / Spec.UNIT_M))
+	Draw.set_param(mi, "approach", Vector3(ap.x, ap.y, FRAME_GAP / _u()))
 
 
 func _clear_unused(used: Dictionary) -> void:
@@ -697,6 +829,8 @@ func _apply_look() -> void:
 		if not is_instance_valid(mi):
 			continue
 		Draw.set_param(mi, "walk", 1.0 if look == "walk" else 0.0)
+		Draw.set_param(mi, "unit_m", _u())
+		Draw.set_param(mi, "guide_w", Spec.GUIDE_W_M * p_scale)
 		Draw.set_param(mi, "under_color", under_color)
 		Draw.set_param(mi, "motion", 1.0 if motion else 0.0)
 		Draw.set_param(mi, "flow", flow)

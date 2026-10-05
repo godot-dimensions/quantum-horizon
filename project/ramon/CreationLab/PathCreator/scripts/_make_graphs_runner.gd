@@ -110,7 +110,8 @@ func _yard() -> Resource:
 ## 8.4 x 7.6 m and W -4 to +4, with a gate in the south side).
 func _pen() -> Resource:
 	var g: Resource = Graph.new()
-	var deep: float = 8.0
+	# The static routes reach as deep in W as the pen does, just inside its W walls at -4 and +4.
+	var deep: float = 7.8
 	var n := func(kind: String, x: float, z: float, w: float, band: float, extra: Dictionary = {}) -> int:
 		var ex: Dictionary = {"band": band}
 		ex.merge(extra, true)

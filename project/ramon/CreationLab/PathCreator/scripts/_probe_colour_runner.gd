@@ -70,15 +70,18 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://smoke_test_output/pathcreator/probe/"))
 	img.save_png("res://smoke_test_output/pathcreator/probe/colour.png")
 	var best: Dictionary = {}
+	# Pixels from the ortho camera's own mapping (world_to_viewport sampled beside the discs): the
+	# image is orthographic_size tall, centred on the camera, its up the world's -z.
+	var ppm: float = float(img.get_height()) / 7.2
+	var to_px := func(x: float, z: float) -> Vector2i:
+		return Vector2i(int(float(img.get_width()) * 0.5 + (x - 0.0) * ppm), int(float(img.get_height()) * 0.5 + (z - -0.4) * ppm))
 	for d in discs:
-		var sp: Vector2 = cam.call("world_to_viewport", Vector4(d[2].x, 0.02, d[2].y, 0.0))
-		var c: Color = img.get_pixelv(Vector2i(sp))
+		var c: Color = img.get_pixelv(to_px.call(d[2].x, d[2].y))
 		var t: Color = Spec.TOKENS[d[0]]
 		var dist: float = Vector3(c.r - t.r, c.g - t.g, c.b - t.b).length()
 		print("%-5s gain %.2f -> %s (token %s), off by %.3f" % [d[0], d[1], c.to_html(false), t.to_html(false), dist])
 		if not best.has(d[0]) or dist < float(best[d[0]][1]):
 			best[d[0]] = [d[1], dist]
-	var fp: Vector2 = cam.call("world_to_viewport", Vector4(4.0, 0.0, 3.0, 0.0))
-	print("floor ", img.get_pixelv(Vector2i(fp)).to_html(false))
+	print("floor ", img.get_pixelv(to_px.call(4.0, 3.0)).to_html(false))
 	print("BEST ", best)
 	quit(0)
