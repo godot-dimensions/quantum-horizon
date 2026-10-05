@@ -33,6 +33,7 @@ void FenceBuildJob4D::snapshot_from(const FenceGenerator4D *p_fence, const uint6
 	_rib_thickness_ratio = p_fence->_rib_thickness_ratio;
 	_beam_max_height_ratio = p_fence->_beam_max_height_ratio;
 	_beam_thickness_ratio = p_fence->_beam_thickness_ratio;
+	_top_footprint_ratio = p_fence->_top_footprint_ratio;
 	_beam_coverage = p_fence->_beam_coverage;
 	_beam_count = p_fence->_beam_count;
 	_input_shape_type = p_fence->_input_shape_type;
@@ -218,20 +219,15 @@ void FenceBuildJob4D::_set_seams_between_cell_groups(const Ref<ArrayPolyMesh4D> 
 	p_mesh->set_seam_face_indices(seam_faces);
 }
 
-// Which seed face each cell of the beam came from. `solidify_faces` and `extrude_linear` keep no record of that, but
-// every vertex of the beam is a mitered copy of a seed vertex, displaced by at most half a rib thickness, which is far
-// less than any seed edge, so the nearest seed vertex identifies it. A cell's set of seed vertices is then a face's
-// whole vertex set for that face's walls and caps, or one edge for the walls at the seed's border and between adjacent
-// faces, which go to a face using that edge. A cell that matches nothing gets -1, and such cells group among themselves.
-PackedInt32Array FenceBuildJob4D::_beam_cell_seed_faces(const Ref<ArrayPolyMesh4D> &p_beam_mesh) const {
+// The seed vertex nearest to each position on the ground, ignoring Y. The parts are built around the seed's vertices,
+// offset by at most half a post thickness, which is far less than any seed edge, so this identifies the seed vertex a
+// part's vertex stands on, and with it the ground under that vertex.
+PackedInt32Array FenceBuildJob4D::_nearest_seed_vertices(const PackedVector4Array &p_positions) const {
 	const PackedVector4Array seed_positions = _seed_mesh_4d->get_poly_cell_vertex_positions();
-	const Vector<PackedInt32Array> seed_face_vertices = _seed_mesh_4d->get_all_poly_cell_vertex_indices(2, false);
-	const PackedVector4Array beam_positions = p_beam_mesh->get_poly_cell_vertex_positions();
-	// The beam is extruded along Y from the seed, so only the ground coordinates are compared.
 	PackedInt32Array nearest_seed_vertex;
-	nearest_seed_vertex.resize(beam_positions.size());
-	for (int64_t vertex_index = 0; vertex_index < beam_positions.size(); vertex_index++) {
-		Vector4 position = beam_positions[vertex_index];
+	nearest_seed_vertex.resize(p_positions.size());
+	for (int64_t vertex_index = 0; vertex_index < p_positions.size(); vertex_index++) {
+		Vector4 position = p_positions[vertex_index];
 		position.y = 0.0;
 		int32_t nearest = -1;
 		real_t nearest_distance_squared = Math_INF;
@@ -246,6 +242,60 @@ PackedInt32Array FenceBuildJob4D::_beam_cell_seed_faces(const Ref<ArrayPolyMesh4
 		}
 		nearest_seed_vertex.set(vertex_index, nearest);
 	}
+	return nearest_seed_vertex;
+}
+
+// Leaning. A top footprint ratio below 1 makes the fence lean inward toward this node's origin, like the walls of a
+// guard tower: a vertex at a given height above the ground takes the position of its ground point scaled toward the
+// origin by this factor, 1 on the ground and the ratio at the top of the posts, linear in between, and stands that
+// height above the result. The whole position is scaled, height included, rather than the horizontal part alone, so
+// that on uneven ground each layer of a part is a homothetic copy of its ground, which keeps every cell flat, and so
+// that the parts still meet: a post's column is then a straight line, and the layers of the ribs and beams at a height
+// sit exactly where it passes that height. On level ground this is the same as scaling horizontally. Scaling the
+// horizontal part alone would skew the sides of ribs along sloping edges and of beams on sloping faces out of any
+// hyperplane, and scaling by absolute Y would move the bases of parts on raised ground off the footprint.
+real_t FenceBuildJob4D::_taper_scale(const real_t p_height_above_ground) const {
+	return (real_t)Math::lerp(1.0, _top_footprint_ratio, p_height_above_ground / _post_height_meters);
+}
+
+// Leans a part, see `_taper_scale`. `p_origin` is where this node's origin is in the part's coordinates, and
+// `p_ground_heights` is the ground under each vertex, or empty when the part stands on Y = 0 in its own coordinates.
+// The normals are recomputed from the new geometry, the way `extrude_linear` finishes a mesh, keeping the bindings the
+// part had.
+void FenceBuildJob4D::_taper_part(const Ref<ArrayPolyMesh4D> &p_part, const Vector4 &p_origin, const Vector<real_t> &p_ground_heights) const {
+	PackedVector4Array positions = p_part->get_poly_cell_vertex_positions();
+	ERR_FAIL_COND(!p_ground_heights.is_empty() && p_ground_heights.size() != positions.size());
+	for (int64_t vertex_index = 0; vertex_index < positions.size(); vertex_index++) {
+		const Vector4 position = positions[vertex_index];
+		const real_t ground = p_ground_heights.is_empty() ? (real_t)0.0 : p_ground_heights[vertex_index];
+		const real_t height = position.y - ground;
+		const Vector4 ground_point = Vector4(position.x, ground, position.z, position.w);
+		positions.set(vertex_index, p_origin + (ground_point - p_origin) * _taper_scale(height) + Vector4(0, height, 0, 0));
+	}
+	p_part->set_poly_cell_vertex_positions(positions);
+	if (p_part->get_all_poly_cell_normal_indices().has(PolyMesh4D::CELL_TO_VERT_KEY)) {
+		p_part->set_flat_shading_normals();
+	} else {
+		p_part->calculate_boundary_normals(ArrayPolyMesh4D::COMPUTE_NORMALS_MODE_CELL_ORIENTATION_ONLY);
+	}
+}
+
+// Leans a post built at the origin that will stand at `p_post_position`, see `_taper_part`: in the post's own
+// coordinates this node's origin is at minus that position, and the post's Y is its height above the ground.
+void FenceBuildJob4D::_lean_post(const Ref<ArrayPolyMesh4D> &p_post, const Vector4 &p_post_position) const {
+	if (_top_footprint_ratio < 1.0) {
+		_taper_part(p_post, -p_post_position);
+	}
+}
+
+// Which seed face each cell of the beam came from. `solidify_faces` and `extrude_linear` keep no record of that, but
+// every vertex of the beam is a mitered copy of a seed vertex, displaced by at most half a rib thickness, which is far
+// less than any seed edge, so the nearest seed vertex identifies it. A cell's set of seed vertices is then a face's
+// whole vertex set for that face's walls and caps, or one edge for the walls at the seed's border and between adjacent
+// faces, which go to a face using that edge. A cell that matches nothing gets -1, and such cells group among themselves.
+PackedInt32Array FenceBuildJob4D::_beam_cell_seed_faces(const Ref<ArrayPolyMesh4D> &p_beam_mesh) const {
+	const Vector<PackedInt32Array> seed_face_vertices = _seed_mesh_4d->get_all_poly_cell_vertex_indices(2, false);
+	const PackedInt32Array nearest_seed_vertex = _nearest_seed_vertices(p_beam_mesh->get_poly_cell_vertex_positions());
 	const Vector<PackedInt32Array> beam_cell_vertices = p_beam_mesh->get_all_poly_cell_vertex_indices(3, false);
 	PackedInt32Array cell_seed_faces;
 	cell_seed_faces.resize(beam_cell_vertices.size());
@@ -322,9 +372,27 @@ Ref<ArrayPolyMesh4D> FenceBuildJob4D::_build_fence_beams_from_seed_faces() const
 	// repeats about as often on the beams as on the ribs and posts. Every copy shares the map.
 	_set_seams_between_cell_groups(beam_mesh, _beam_cell_seed_faces(beam_mesh));
 	beam_mesh->unwrap_texture_map_upright(Vector4(0, 1, 0, 0), ArrayPolyMesh4D::UNWRAP_MODE_EACH_ISLAND_FILLS);
+	// Each beam is the template moved up into its slot. A leaning fence scales each copy by its own heights, see
+	// `_taper_part`, measured from the ground under each vertex, which is the seed vertex it is a mitered copy of.
+	Vector<real_t> ground_heights;
+	if (_top_footprint_ratio < 1.0) {
+		const PackedVector4Array seed_positions = _seed_mesh_4d->get_poly_cell_vertex_positions();
+		const PackedInt32Array nearest_seed_vertex = _nearest_seed_vertices(beam_mesh->get_poly_cell_vertex_positions());
+		ground_heights.resize(nearest_seed_vertex.size());
+		for (int64_t vertex_index = 0; vertex_index < nearest_seed_vertex.size(); vertex_index++) {
+			ground_heights.write[vertex_index] = seed_positions[nearest_seed_vertex[vertex_index]].y;
+		}
+	}
 	for (int64_t beam_num = 0; beam_num < _beam_count; beam_num++) {
-		const Vector4 offset = Vector4(0, beam_middle_height + beam_each_top * beam_num, 0, 0);
-		fence_beams_mesh->merge_with(beam_mesh, Transform4D(Basis4D(), offset));
+		const Transform4D offset = Transform4D(Basis4D(), Vector4(0, beam_middle_height + beam_each_top * beam_num, 0, 0));
+		if (ground_heights.is_empty()) {
+			fence_beams_mesh->merge_with(beam_mesh, offset);
+			continue;
+		}
+		Ref<ArrayPolyMesh4D> leaning_beam = beam_mesh->duplicate();
+		leaning_beam->transform_mesh(offset);
+		_taper_part(leaning_beam, Vector4(), ground_heights);
+		fence_beams_mesh->merge_with(leaning_beam);
 	}
 	return fence_beams_mesh;
 }
@@ -368,24 +436,27 @@ Ref<ArrayPolyMesh4D> FenceBuildJob4D::_build_fence_single_rib(const Vector4 &p_e
 	const Vector4 e1p1r0 = p_edge_vert_1 + r_base_corner_offsets[1];
 	const Vector4 e1p0r1 = p_edge_vert_1 + r_base_corner_offsets[2];
 	const Vector4 e1p1r1 = p_edge_vert_1 + r_base_corner_offsets[3];
-	const Vector4 rib_height_offset = Vector4(0.0, rib_height_meters, 0.0, 0.0);
+	// The top corners stand the rib's height above the base ones, which a leaning fence first scales toward this node's
+	// origin, see `_taper_scale`. The ribs are built in place, so that origin is the origin.
+	const real_t top_scale = _taper_scale((real_t)rib_height_meters);
+	auto top_of = [&](const Vector4 &p_base) { return p_base * top_scale + Vector4(0.0, rib_height_meters, 0.0, 0.0); };
 	PackedVector4Array rib_edge_vertex_pos = {
 		e0p0r0,
 		e1p0r0,
-		e0p0r0 + rib_height_offset,
-		e1p0r0 + rib_height_offset,
+		top_of(e0p0r0),
+		top_of(e1p0r0),
 		e0p0r1,
 		e1p0r1,
-		e0p0r1 + rib_height_offset,
-		e1p0r1 + rib_height_offset,
+		top_of(e0p0r1),
+		top_of(e1p0r1),
 		e0p1r0,
 		e1p1r0,
-		e0p1r0 + rib_height_offset,
-		e1p1r0 + rib_height_offset,
+		top_of(e0p1r0),
+		top_of(e1p1r0),
 		e0p1r1,
 		e1p1r1,
-		e0p1r1 + rib_height_offset,
-		e1p1r1 + rib_height_offset,
+		top_of(e0p1r1),
+		top_of(e1p1r1),
 	};
 	// Create this edge's rib mesh using the calculated vertex positions, the box indices, etc.
 	Ref<ArrayPolyMesh4D> single_rib_mesh;
@@ -698,6 +769,7 @@ Ref<ArrayPolyMesh4D> FenceBuildJob4D::_build_fence_posts_from_seed_vertices(cons
 				break;
 			}
 		}
+		_lean_post(single_post_mesh, post_position);
 		if (guide_post_at_vertex >= 0) {
 			// A part gets its material once it is complete, which for a guide post's mesh is here and for the merged parts is
 			// the end of `run`. Merging duplicates the destination's material, so a material set on every post before
@@ -1092,11 +1164,13 @@ void FenceBuildJob4D::_build_fence_filler_posts_and_ribs(const PackedVector4Arra
 	Vector<Ref<ArrayPolyMesh4D>> filler_post_meshes;
 	for (const KeyValue<Vector2i, Junction> &junction : junctions) {
 		const Ref<ArrayPolyMesh4D> post_mesh = _build_fence_single_post_shared(junction.value.hull_points, r_post_mesh_cache);
+		_lean_post(post_mesh, junction.value.position);
 		post_mesh->transform_mesh(Transform4D(Basis4D(), junction.value.position));
 		filler_post_meshes.push_back(post_mesh);
 	}
 	for (int64_t crossing_index = 0; crossing_index < crossing_positions.size(); crossing_index++) {
 		const Ref<ArrayPolyMesh4D> post_mesh = _build_fence_single_post_shared(crossing_hull_points[crossing_index], r_post_mesh_cache);
+		_lean_post(post_mesh, crossing_positions[crossing_index]);
 		post_mesh->transform_mesh(Transform4D(Basis4D(), crossing_positions[crossing_index]));
 		filler_post_meshes.push_back(post_mesh);
 	}
