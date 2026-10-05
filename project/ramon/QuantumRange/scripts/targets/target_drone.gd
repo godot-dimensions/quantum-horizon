@@ -11,7 +11,7 @@ const Shapes := preload("res://ramon/QuantumRange/scripts/range_shapes.gd")
 
 ## "red", "heavy" or "friendly".
 var kind: String = "red"
-var core_r: float = 0.28
+var core_r: float = 0.36
 
 var _fins: Node4D
 

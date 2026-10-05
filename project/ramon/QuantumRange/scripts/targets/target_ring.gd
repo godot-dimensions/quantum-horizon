@@ -10,8 +10,8 @@ extends "res://ramon/QuantumRange/scripts/range_target_4d.gd"
 
 const Shapes := preload("res://ramon/QuantumRange/scripts/range_shapes.gd")
 
-var core_r: float = 0.4
-var ring_r: float = 0.85
+var core_r: float = 0.5
+var ring_r: float = 1.1
 ## Where the ring hangs relative to the core.
 var ring_at: Vector4 = Vector4(0, 0, 6, 0)
 ## How deep through W the ring reaches either side.

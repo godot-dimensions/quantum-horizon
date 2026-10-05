@@ -7,7 +7,7 @@ extends "res://ramon/QuantumRange/scripts/range_target_4d.gd"
 
 const Shapes := preload("res://ramon/QuantumRange/scripts/range_shapes.gd")
 
-var radius: float = 0.34
+var radius: float = 0.42
 var bob: float = 0.10
 
 

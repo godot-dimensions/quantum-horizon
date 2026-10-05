@@ -61,6 +61,7 @@ func _run() -> void:
 	for i in 20:
 		await process_frame
 	_d = _r.get("director")
+	_d.set("keep_bests", false)
 	var player: CharacterBody4D = _r.get("player")
 	player.call("place", Vector4(0, 0.05, 1.5, 0), 0.0)
 	(_r.get("sfx") as Node).set("muted", true)

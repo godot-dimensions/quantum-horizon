@@ -11,15 +11,63 @@ It is a new scene. Neither old range is changed:
 
 The study of the two old ranges is in `quantum_range.md`.
 
+## Status (5 Oct, evening)
+
+**All 75 steps done.** Five experiments of four stages each, the target gallery, both walls,
+the console, the dev views, the flying chickens. A test bot plays every stage to the end
+(`_play_runner.gd`: 5 of 5 pass). The two old ranges still load and run unchanged
+(`_regress_runner.gd`).
+
+**To open it:** open `res://ramon/QuantumRange/quantum_range_final.tscn` and press F6. You
+start in the entrance corridor; walk through the door to the counter. The console is on your
+left: shoot a number or press 1 to 5, then START or F.
+
+**Measured** (windowed, vsync off, RTX 5080, `_perf_runner.gd`):
+
+| What | Cost |
+|---|---|
+| Opening the scene | 329 ms |
+| Baking every target shape (first gallery or first use) | 285 ms, once |
+| A frame in any stage | 1.28 to 1.51 ms (median), worst 1.78 ms |
+| A frame in the target gallery (12 families) | 2.18 ms, worst 2.33 ms |
+| GPU per frame | 0.20 to 0.34 ms |
+| All target shapes together | 27,552 tetrahedra |
+| One 4D raycast | 13 to 17 µs |
+
+Nothing came near the 8 ms budget, so step 65 had nothing to fix.
+
+**Frames:** `smoke_test_output/quantum_range/` holds `room/`, `moments/`, `play/` and
+`gallery/`. The films are in `smoke_test_output/video/`: the bot playing each experiment from the
+first card to the results, at 30 fps (`range_locate.avi` 18 s, `range_charge.avi` 41 s,
+`range_reveal.avi` 24 s, `range_incoming.avi` 80 s, `range_skeet.avi` 29 s; MJPEG, 75 to 320 MB).
+
 ## Questions for Ramon
 
-(Filled in during the run. Each one was settled with the most reversible option, and the run
-carried on.)
+Each was settled during the run with the most reversible option, and the run carried on.
 
-## Status
-
-Plan approved by the brief ("start executing it to finish without asking me"). See the step
-list below; each step is ticked as it lands.
+1. **Go live?** The menu card and the pen's range trip still point at the old range. A card is
+   drafted in "The menu card" below; nothing was added.
+2. **Walking out to the walls.** From the firing line the walls' headings read, but their
+   tables do not (about 13 m away, 60° to the side). So while no experiment runs you can walk
+   downrange as far as the walls, and START puts you back on the line facing downrange. During
+   a stage the counter holds you as before. Keep it, or hold the line always?
+   (`Layout.WALK_OUT`, `range_director_4d.gd` `_process`.)
+3. **The spot.** At energy 12 it reads as a bright pool on the floor between you and the
+   targets, in daylight. F1 has it (Spot, Spot cone); SAVE keeps your numbers.
+4. **Bests from my test runs.** The bot's times were being saved as your bests in
+   `user://quantum_range.cfg` until I stopped it. I moved that file aside to
+   `quantum_range_bot_runs.cfg` in the same folder (`%APPDATA%/Godot/app_userdata/Quantum
+   Horizon Main Godot Project/`) rather than delete it. Delete it when you like. The runners no
+   longer save bests (`keep_bests`).
+5. **The kit is a copy.** `QuantumRange/carried/` holds copies of the Creation Lab kit and
+   the chicken, so nothing in `CreationLab/` or `chickenpen/` changed. Point the range at the
+   shared kit once the kit settles?
+6. **Which idea next?** Experiments 6 to 14 in section 6 are ideas only.
+7. **The radar's size.** It is your radar's size, forked, and takes the bottom third of the
+   view. It reads well, but a smaller one would show more of the floor lanes in Incoming.
+8. **The chicken's neck** prints a loft warning (22 of 2,300 tetrahedra fold inwards) the
+   first time a chicken is baked. It comes with the carried rig and does not show at range
+   distance; I left the rig as it is.
 
 ---
 
@@ -76,20 +124,26 @@ Light R&D holodeck, after the Creation Lab, but lighter:
 A firing hall with one obvious direction, downrange:
 
 - **The approach:** you start in a short entrance corridor. "QUANTUM RANGE" is painted over the
-  doorway, and you walk through it into a 12 m wide firing bay.
-- **The firing line:** a counter across the bay, with the console on it. You play from here and
-  never walk downrange.
-- **The two walls:** just beyond the line, a blue wing stands at each side, turned to face the
-  firing position, like the flats of a stage.
-  - The left wing is the **explainer wall** (the kit's intro panel, freestanding).
-  - The right wing is the **metrics wall** (the kit's research panel, freestanding).
-  - Both face you from the line, so you can read left, play centre and check results right
-    without leaving your place.
-  - (Corrected while building: walls flaring out from the line would face downrange, about 70°
-    away from you.)
-- **The downrange hall:** 28 m wide, 36 m deep, no roof.
-- **Your W range:** the bay lets you step ±2 m through W. Anything further off in W has to be
-  reached by turning your slice.
+  doorway, and you walk through it into the firing bay.
+- **The firing line:** a counter across the hall at z = 0. The console stands on its own to your
+  left in the bay, facing across it (on the counter it covered the radar).
+- **The two walls:** the hall's side walls are split just past the line. From the line to 11 m
+  out, the left wall is the **explainer wall** (the kit's intro panel) and the right wall the
+  **metrics wall** (the kit's research panel), each with its panel in the middle. This is the
+  kit's rule for two panels on long walls: split them into walls in line.
+- **The downrange hall:** one rectangle, 23 m wide, from the bay's back at z = 10 to the far wall
+  at z = -36, no roof.
+- **Walking out:** while no experiment runs you can walk downrange as far as the walls, to read
+  them close. During a stage the counter holds you, and START brings you back to the line.
+- **Your W range:** you can step ±2 m through W. Anything further off in W has to be reached by
+  turning your slice.
+
+Built in three tries, each judged from the firing line by frame:
+
+1. A narrower bay opening onto the hall hid half of each panel behind the bay's own walls.
+2. Two blue wings standing past the line, turned to face you, took 80° of the view between
+   them at the kit's fixed 9.6 m panel width.
+3. The side walls (now): the view downrange is clear, and each wall is a turn of the head away.
 
 This is Ramon's "same room, see all, play there". The entrance door gives the "walk through a
 door and play" moment as well.
@@ -129,7 +183,7 @@ Nothing re-lofts per frame (`lofting_gotchas.md`: drawing is nearly free, re-lof
 
 ## 6. Experiments: the broad list
 
-Every experiment has a clear start (pick it at the console and press E), an objective (on the
+Every experiment has a clear start (pick it at the console and press F), an objective (on the
 HUD card), a completion condition (shown on the card as progress), and a restart: R restarts
 the stage, Shift+R the whole experiment. Each runs in four stages, after Nintendo's four-step
 level design (kishōtenketsu: introduce, develop, twist, conclude).
@@ -141,7 +195,7 @@ level design (kishōtenketsu: introduce, develop, twist, conclude).
 3. **Reveal the Core:** shells, clusters, capsules and sentinels. The way in is always through
    W. *W: highest.*
 4. **Incoming:** drones down painted lanes, some arriving from another slice. A miss costs a
-   point; strict mode pauses the round on a miss. *W: medium.*
+   point; in strict mode (T) a miss stops the stage, and R starts it again. *W: medium.*
 5. **Chicken Skeet:** "PULL" launches chickens on arcs, some crossing through W.
    *W: high.*
 6. **Selective Fire:** red among green decoys, then "only the cores that are ana", read from
@@ -202,10 +256,10 @@ the target gallery (F2). 6 to 14 stay as ideas, to narrow down after review.
 - B **From another slice:** drones that start ana or kata and fade into your slice partway
   down. The radar says which lane.
 - C **Mixed:** fast red drones, an amber heavy (charge it) and a green friendly (do not shoot).
-- D **Hold the line:** a final wave. In strict mode, one miss pauses the round.
+- D **Hold the line:** a final wave. In strict mode, one miss stops the stage.
 
 **05 Chicken Skeet**
-- A **Pull:** single birds on arcs in your slice.
+- A **Pull:** single birds on arcs in your slice, launched with F.
 - B **Doubles:** pairs from both traps.
 - C **Through W:** arcs that swoop in from kata and out to ana, so a bird is in your slice for
   part of its flight. The glow says when.
@@ -216,14 +270,14 @@ the target gallery (F2). 6 to 14 stay as ideas, to narrow down after review.
 | Input | Action |
 |---|---|
 | Mouse | Look |
-| WASD | Move in the bay |
+| WASD | Move: in the bay, or out to the walls while no experiment runs |
 | Q / E | Step kata / ana through W (±2 m) |
 | Hold right mouse + move | Turn the slice |
 | X | Snap the slice back |
 | Click | Quick shot |
 | Hold click, release | Charged shot (full at 0.9 s; vents if held 2.5 s more, as in Ramon's version) |
 | 1–5 | Pick an experiment |
-| E | Start / pull (skeet) / press a console button you look at |
+| F (or Enter) | Start / pull (skeet) / press a console button you look at. Not E: E is the step ana. |
 | R / Shift+R | Restart the stage / the experiment |
 | T | Strict mode (Incoming) |
 | F1 / F2 / F3 | Dev panel (lights, saved) / target gallery / hitbox view |
@@ -232,7 +286,7 @@ the target gallery (F2). 6 to 14 stay as ideas, to narrow down after review.
 ## 8. The two walls
 
 - **Explainer (intro panel):**
-  - running header "06 / QUANTUM RANGE";
+  - running header "04 / QUANTUM RANGE";
   - title, then the lead "Aim in four dimensions.";
   - the colour key in four lines;
   - four shortcuts (click and charge, Q/E, turn the slice, X).
@@ -241,8 +295,8 @@ the target gallery (F2). 6 to 14 stay as ideas, to narrow down after review.
   - the five experiments as the story rows (done, now, upcoming);
   - the current experiment's page: headline, what it shows, a chart (time per stage), and three
     live metrics such as accuracy, W travelled and slice turned;
-  - a results table: each experiment's time, shots, hits, accuracy, W travelled, best, and the
-    4D raycast cost per shot (µs, measured);
+  - a results table, four rows round the chosen experiment: time, shots, accuracy, wasted
+    shots, W travelled, slice turned, and what one 4D raycast cost (µs, measured);
   - footnote: GPU, OS and date, live.
 
 ## 9. Engineering calls
@@ -271,6 +325,12 @@ the target gallery (F2). 6 to 14 stay as ideas, to narrow down after review.
   - Motion moves nodes, nothing deforms.
   - Static strips are merged (`ArrayTetraMesh4D.merge_with`) to stay clear of the
     shader-instance limit.
+- **The line is a clamp, not a wall.** The player's `min_z` stops you at the counter. An
+  invisible collider there blocked every raycast, because the ray starts behind it.
+- **One number for distance.** `range_experiment.gd` `NEARER` (0.82) scales every stage's
+  distances together. The stages were written at 10 to 30 m, where the specimens were too small
+  to read how they are built.
+- **Test runs never save bests.** The director's `keep_bests` is off in every runner.
 - **No class_name anywhere** (`engine_gotchas.md`); everything is preloaded.
 - **Godot turns:**
   - `QuantumRange/scripts/range_run.sh` waits for the lock and for other Godot processes
@@ -368,7 +428,7 @@ the target gallery (F2). 6 to 14 stay as ideas, to narrow down after review.
 42. Experiments and stages as data: objective, spawns (family, place, W, motion), completion,
     failure and par.
 43. The console on the counter: a black-glass screen with numbered buttons 01–05. Press a
-    number key, or look at a button and press E.
+    number key, or look at a button and press F.
 44. The countdown and the holodeck materialise; the stage cards; the results card.
 45. Scoring:
     - time against par, shots, hits, accuracy, penalties, W travelled and slice turned;
@@ -390,7 +450,7 @@ the target gallery (F2). 6 to 14 stay as ideas, to narrow down after review.
 55. 03 tuned.
 56. 04 Incoming, stages A–D: lanes painted into the floor, strict mode.
 57. 04 tuned.
-58. 05 Chicken Skeet, stages A–D: the traps, and PULL on E.
+58. 05 Chicken Skeet, stages A–D: the traps, and PULL on F.
 59. 05 tuned.
 60. The sequence: finishing one offers the next; all five done puts a summary on the metrics
     wall.
@@ -424,6 +484,58 @@ the target gallery (F2). 6 to 14 stay as ideas, to narrow down after review.
     sources.
 74. `engine_capabilities.md` and memory updated with what was learned.
 75. A local commit by explicit paths, and a report that leads with frames.
+
+### What changed from the plan while building
+
+- **Step 6:** the 45° flares became one rectangular hall with split side walls (section 3).
+- **Step 43:** the console moved off the counter onto its own stand to your left; on the
+  counter it covered the radar.
+- **Steps 51 to 59:** every specimen grew about 25%, and the stages came 18% nearer (`NEARER`).
+- **Step 61:** the spot is driven by the director: it fades in while a stage runs and out
+  after. Its strength is on F1.
+- **Step 68:** the walls' tables do not read from the line, which led to walking out
+  (Question 2).
+- **Controls:** F (not E) starts, pulls and presses console buttons, because E steps ana.
+- **Not planned, added:** the console's titles wrap onto two lines, and the results card widens
+  for a long headline (both were cut off).
+
+### What is where (`project/ramon/QuantumRange/`)
+
+| Path | What |
+|---|---|
+| `quantum_range_final.tscn`, `quantum_range_4d.gd` | The scene and its root: builds the player, gun, HUD, director, console and dev panel at run time |
+| `range_info.tres` | The words on both walls (kit room info) |
+| `scripts/range_layout.gd` | Every position in the room, in one place |
+| `scripts/range_style.gd` | Swatches, light, and the colour of each role |
+| `scripts/range_director_4d.gd` | States, stages, keys, scoring, bests, the gallery |
+| `scripts/range_experiment.gd`, `scripts/experiments/` | The experiment base and the five experiments |
+| `scripts/range_target_4d.gd`, `scripts/targets/` | The target base (parts, roles, hit rules) and the ten families |
+| `scripts/range_shapes.gd` | Every target mesh, built once and shared |
+| `scripts/range_weapon_4d.gd`, `range_fx_4d.gd`, `range_gun_4d.gd` | The shot, its beams and bursts, and the gun |
+| `scripts/range_hud.gd`, `range_radar.gd`, `range_crosshair.gd` | The HUD, your radar forked, the charge ring |
+| `scripts/range_console_4d.gd` | The console and its six shootable buttons |
+| `scripts/range_panel_source.gd` | Feeds the metrics wall live |
+| `scripts/range_dev_panel.gd` | F1: the light, saved to `quantum_range_tuning.cfg` |
+| `scripts/range_player_4d.gd` | The first-person controller |
+| `scripts/range_run.sh` | Runs a runner when the engine is free (lock, wait, log) |
+| `scripts/_*_runner.gd`, `_range_bot.gd` | The proof runners and the test player |
+| `carried/` | The kit and chicken copies, with a README of what changed from the source |
+
+### The menu card (step 72, drafted only)
+
+Nothing was added to `Menu/entries/catalogue.tres`. When you decide it goes live:
+
+- **Title:** Quantum Range
+- **Blurb:** Aim in four dimensions: five experiments on a 4D shooting range
+- **Maturity:** Prototype
+- **Detail:** Targets that sit in slices you cannot see. Find them on the radar, step or turn
+  your slice to reach them, then choose the shot: quick for red, charged for amber. Five
+  experiments of four stages each, from finding a core in W to shooting chickens that fly
+  through it.
+- **Scene:** `res://ramon/QuantumRange/quantum_range_final.tscn`
+- **Controls:** Click: shoot, hold to charge. Q E: step through W. Right mouse: turn the slice.
+  X: snap it back. F: start.
+- **Clip:** one of `smoke_test_output/video/range_*.avi`, cut down.
 
 ## Sources
 

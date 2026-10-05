@@ -16,7 +16,7 @@ extends "res://ramon/QuantumRange/scripts/range_experiment.gd"
 const CHICKEN := "res://ramon/QuantumRange/scripts/targets/target_chicken.gd"
 const Build := preload("res://ramon/QuantumRange/carried/scripts/chamber_build.gd")
 
-const HOUSE_X := 9.5
+const HOUSE_X := 8.4
 const HOUSE_DIST := 12.5
 const G := -7.0
 const FLIGHT := 2.6

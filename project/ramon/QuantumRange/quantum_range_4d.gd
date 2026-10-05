@@ -24,6 +24,7 @@ const Director := preload("res://ramon/QuantumRange/scripts/range_director_4d.gd
 const Console := preload("res://ramon/QuantumRange/scripts/range_console_4d.gd")
 const Sfx := preload("res://ramon/QuantumRange/scripts/range_sfx.gd")
 const PanelSource := preload("res://ramon/QuantumRange/scripts/range_panel_source.gd")
+const DevPanel := preload("res://ramon/QuantumRange/scripts/range_dev_panel.gd")
 
 var player: CharacterBody4D
 var gun: Node4D
@@ -37,6 +38,9 @@ var director: Node
 var console: Node4D
 var sfx: Node
 var panel_source: Node
+var dev_panel: PanelContainer
+## The tuning in force (F1; scripts/range_dev_panel.gd).
+var tuning: Dictionary = {}
 
 
 func _enter_tree() -> void:
@@ -56,13 +60,12 @@ func _ready() -> void:
 	var light: Node = get_node_or_null("Light")
 	if light != null:
 		light.call("set_mood", "bright", true, false)
-	_place_wings()
 	if Engine.is_editor_hint():
 		return
 	player = PlayerScript.make()
 	add_child(player)
 	player.call("place", Layout.SPAWN, 0.0)
-	player.set("min_z", Layout.LINE_Z + Layout.COUNTER.z * 0.5 + 0.3)
+	player.set("min_z", Layout.WALK_OUT)
 	player.set("w_limit", Layout.W_LIMIT)
 	gun = Node4D.new()
 	gun.name = "Gun"
@@ -125,6 +128,14 @@ func _ready() -> void:
 	var pair: Node = get_node_or_null("WallPanels")
 	if pair != null:
 		pair.set("source", pair.get_path_to(panel_source))
+	dev_panel = PanelContainer.new()
+	dev_panel.name = "DevPanel"
+	dev_panel.set_script(DevPanel)
+	dev_panel.set("range_root", self)
+	layer.add_child(dev_panel)
+	director.set("spot", get_node_or_null("Spot"))
+	director.set("dev_panel", dev_panel)
+	apply_tuning(DevPanel.load_saved())
 	# The shared back-to-menu prompt (H), and the pen's way home when the pen sent you here.
 	var rb: Node = ReturnButton.instantiate()
 	rb.name = "ReturnButton"
@@ -152,12 +163,26 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## The two wings stand where the layout says, each turned to face the firing position.
-func _place_wings() -> void:
-	for pair in [["ExplainerWing", Layout.WING], ["MetricsWing", Vector2(-Layout.WING.x, Layout.WING.y)]]:
-		var wing: Node4D = get_node_or_null(String(pair[0])) as Node4D
-		if wing == null:
-			continue
-		var at: Vector2 = pair[1]
-		wing.position = Vector4(at.x, 0.0, at.y, 0.0)
-		wing.basis = Basis4D.from_zx(Layout.wing_yaw(at))
+## The F1 panel's values, applied: the light's numbers over the range's own, the spot's strength (the
+## director fades it to this while a stage runs) and cone, how far you can step through W.
+func apply_tuning(v: Dictionary) -> void:
+	tuning = v.duplicate()
+	var light: Node = get_node_or_null("Light")
+	if light != null:
+		var l: Dictionary = Style.LIGHT.duplicate(true)
+		for k in ["key_energy", "key_elevation", "key_azimuth", "fill_energy", "exposure"]:
+			if v.has(k):
+				l[k] = float(v[k])
+		var amb: Color = Style.LIGHT["ambient"]
+		var ka: float = float(v.get("ambient_k", 1.0))
+		l["ambient"] = Color(amb.r * ka, amb.g * ka, amb.b * ka)
+		light.set("mood_overrides", {"bright": l, "dark": l})
+		light.call("set_mood", "bright", true, false)
+	var spot: Node = get_node_or_null("Spot")
+	if spot != null:
+		spot.set("angle", float(v.get("spot_angle", 28.0)))
+	if player != null:
+		player.set("w_limit", float(v.get("w_limit", Layout.W_LIMIT)))
+	if hud != null:
+		hud.set("w_limit", float(v.get("w_limit", Layout.W_LIMIT)))
+

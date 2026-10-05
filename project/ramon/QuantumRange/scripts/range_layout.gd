@@ -4,14 +4,17 @@ extends RefCounted
 ## Where everything in the Quantum Range stands, in one place (world metres; you face -Z downrange).
 ##
 ##   entrance corridor   z 10.5 .. 17.5, 6 m wide, you start at its far end
-##   firing bay          z 0 .. 10, the hall's full 28 m, behind the counter on the firing line (z = 0)
-##   downrange hall      z -36 .. 0, 28 m wide, no roof
+##   firing bay          z 0 .. 10, the hall's full 23 m, behind the counter on the firing line (z = 0)
+##   downrange hall      z -36 .. 0, 23 m wide, no roof
+##   the two walls       the hall's side walls are split just past the line: from z 0 to -11 the left
+##                       one is the explainer and the right one the metrics wall, each a whole wall in
+##                       code blue with its panel in the middle (the kit's rule for two panels on long
+##                       walls: split them into walls in line). From the firing position each faces you
+##                       about 27 degrees off square, readable, and neither stands in the view downrange.
 ##
-## One rectangle, not a narrower bay opening onto the hall: the bay's own walls hid the outer half of
-## each wing from the firing line (frame room/03_explainer, 5 Oct).
-##   the two wings       blue walls standing just past the line, left and right, each turned to
-##                       face the firing position: the explainer on the left, the metrics on the
-##                       right (follow_up/quantum_range_final.md section 3)
+## Two tries before this, both measured from the firing line: a narrower bay opening onto the hall hid
+## half of each panel behind the bay's walls (room/03_explainer); two blue wings standing past the line,
+## turned to face you, took 80 degrees of the view between them at the kit's fixed 9.6 m (moments/, 5 Oct).
 ##
 ## Every box in the room is 24 m deep through W (carried/scripts/chamber_build.gd W_DEPTH), so the
 ## room is still there when you turn your slice to reach a core 7 m off in W. You can step only
@@ -21,7 +24,7 @@ extends RefCounted
 
 const LINE_Z := 0.0
 const BAY_BACK := 10.0
-const HALL_HALF := 14.0
+const HALL_HALF := 11.5
 const HALL_FAR := -36.0
 const WALL_H := 8.5
 ## The entrance door, along x, and its height.
@@ -36,30 +39,43 @@ const STAND := Vector4(0.0, 0.05, 1.5, 0.0)
 ## How far you can step through W yourself, either way.
 const W_LIMIT := 2.0
 ## The counter on the firing line.
-const COUNTER := Vector3(28.0, 1.05, 0.6)
-## The wings: the middle of the left one's foot (x, z); the right one mirrors it. Each turns to face
-## the firing position.
-const WING := Vector2(-9.0, -5.2)
+const COUNTER := Vector3(23.0, 1.05, 0.6)
+## Where the panel walls run along the side walls (z), from the line out.
+const PANEL_WALL := Vector2(0.0, -11.0)
+## How far downrange you can walk while no experiment runs: up to the two walls, to read them close
+## (their tables do not read from the line at 13 m, frame room/04_metrics, 5 Oct). While one runs the
+## counter holds you (line_hold()).
+const WALK_OUT := -10.4
 ## The console stands on its own to your left in the bay, facing you across it (+X): not on the counter
 ## in front, where it covered the radar (frame play/00_lobby, 5 Oct).
 const CONSOLE_AT := Vector4(-2.3, 0.0, 1.5, 0.0)
-const WING_FACES := Vector2(0.0, 1.5)
+
+
+## Where the counter stops you while an experiment runs (your z can go no lower).
+static func line_hold() -> float:
+	return LINE_Z + COUNTER.z * 0.5 + 0.3
 
 
 ## The hall's floor plan for KitRoom (carried/kit/kit_room_4d.gd): clockwise seen from above with -Z
 ## up the page, starting at the bay's back left corner.
 static func outline() -> PackedVector2Array:
+	var h: float = HALL_HALF
 	return PackedVector2Array([
-		Vector2(-HALL_HALF, BAY_BACK), Vector2(-HALL_HALF, HALL_FAR), Vector2(HALL_HALF, HALL_FAR), Vector2(HALL_HALF, BAY_BACK),
+		Vector2(-h, BAY_BACK), Vector2(-h, PANEL_WALL.x), Vector2(-h, PANEL_WALL.y), Vector2(-h, HALL_FAR),
+		Vector2(h, HALL_FAR), Vector2(h, PANEL_WALL.y), Vector2(h, PANEL_WALL.x), Vector2(h, BAY_BACK),
 	])
 
 
 ## The hall's walls, one name an edge of outline().
 static func wall_names() -> PackedStringArray:
-	return PackedStringArray(["left", "far", "right", "entrance"])
+	return PackedStringArray(["bay_left", "explainer", "left", "far", "right", "metrics", "bay_right", "entrance"])
 
 
-## How far along the entrance wall (edge 3 runs from x = +14 to x = -14) world x is.
+## The entrance wall's edge number.
+const ENTRANCE_EDGE := 7
+
+
+## How far along the entrance wall (it runs from x = +HALL_HALF to -HALL_HALF) world x is.
 static func entrance_along(x: float) -> float:
 	return HALL_HALF - x
 
@@ -68,8 +84,3 @@ static func entrance_along(x: float) -> float:
 static func doorway() -> Array:
 	return ["entrance", entrance_along(DOOR.y), entrance_along(DOOR.x), DOOR_H]
 
-
-## The turn that makes a wing at `at` face the firing position (its +Z towards it).
-static func wing_yaw(at: Vector2) -> float:
-	var n: Vector2 = (WING_FACES - at).normalized()
-	return atan2(n.x, n.y)

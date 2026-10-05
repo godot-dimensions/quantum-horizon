@@ -40,6 +40,26 @@ var sfx: Node
 var targets_parent: Node4D
 ## An experiment's own furniture (lanes, trap houses), cleared when the experiment changes.
 var props: Node4D
+## The one spot (Ramon: "only one spot when it matters"): on over the stage area while a stage runs.
+var spot: Node
+var dev_panel: Control
+var _spot_k: float = 0.0
+## F2's free range: every family on show, each back a moment after it is shot.
+const GALLERY := [
+	["Pip", "res://ramon/QuantumRange/scripts/targets/target_pip.gd", {}, Vector3(-4.5, 2.0, 9.5)],
+	["Amber block", "res://ramon/QuantumRange/scripts/targets/target_block.gd", {}, Vector3(-1.5, 2.0, 9.5)],
+	["Armoured core", "res://ramon/QuantumRange/scripts/targets/target_armoured.gd", {}, Vector3(1.5, 2.0, 9.5)],
+	["Shell", "res://ramon/QuantumRange/scripts/targets/target_shell.gd", {}, Vector3(4.5, 2.0, 9.5)],
+	["Cluster", "res://ramon/QuantumRange/scripts/targets/target_cluster.gd", {}, Vector3(-6.0, 2.6, 15.0)],
+	["Capsule", "res://ramon/QuantumRange/scripts/targets/target_capsule.gd", {}, Vector3(-2.0, 2.4, 15.0)],
+	["Sentinel", "res://ramon/QuantumRange/scripts/targets/target_sentinel.gd", {}, Vector3(2.0, 2.6, 15.0)],
+	["Ring gate", "res://ramon/QuantumRange/scripts/targets/target_ring.gd", {"ring_at": Vector4(0, 0, 0, 0)}, Vector3(6.0, 2.4, 15.0)],
+	["Drone", "res://ramon/QuantumRange/scripts/targets/target_drone.gd", {"kind": "red"}, Vector3(-5.0, 3.2, 21.0)],
+	["Heavy drone", "res://ramon/QuantumRange/scripts/targets/target_drone.gd", {"kind": "heavy"}, Vector3(-1.6, 3.2, 21.0)],
+	["Friendly", "res://ramon/QuantumRange/scripts/targets/target_drone.gd", {"kind": "friendly"}, Vector3(1.8, 3.2, 21.0)],
+	["Chicken", "res://ramon/QuantumRange/scripts/targets/target_chicken.gd", {}, Vector3(5.2, 2.8, 21.0)],
+]
+var _gallery_back: Array = []
 
 var experiments: Array = []
 var sel: int = 0
@@ -54,6 +74,8 @@ var stage_times: Array = []
 ## The last results per experiment id, and the best times.
 var results: Dictionary = {}
 var bests: Dictionary = {}
+## Off for the test runners, so the bot's times are never saved as yours.
+var keep_bests: bool = true
 ## Things the director says once per run (a first ping off a shell...).
 var _said: Dictionary = {}
 var _count_step: int = -1
@@ -189,6 +211,9 @@ func start(i: int) -> void:
 
 func _begin_stage(i: int) -> void:
 	clear_targets()
+	# Out by the walls when it starts: back to the line, facing downrange.
+	if player != null and player.global_position.z < Layout.line_hold():
+		player.call("place", Layout.STAND, 0.0)
 	stage = i
 	state = "intro"
 	t_state = 0.0
@@ -235,6 +260,7 @@ func _finish() -> void:
 	var is_best: bool = t_run < best_before
 	if is_best:
 		bests[id] = t_run
+	if is_best and keep_bests:
 		var cfg := ConfigFile.new()
 		cfg.load(SAVE)
 		cfg.set_value("best", id, t_run)
@@ -269,6 +295,9 @@ func _to_lobby() -> void:
 
 
 func _process(delta: float) -> void:
+	# The counter holds you while an experiment runs; otherwise you can walk out to the walls.
+	if player != null:
+		player.set("min_z", Layout.line_hold() if state in ["intro", "stage", "cleared"] else Layout.WALK_OUT)
 	if current() == null or hud == null:
 		return
 	t_state += delta
@@ -309,6 +338,14 @@ func _process(delta: float) -> void:
 					_begin_stage(stage + 1)
 				else:
 					_finish()
+	# The spot: up while a stage runs, down otherwise.
+	var want: float = 1.0 if state in ["stage", "cleared"] else 0.0
+	_spot_k = move_toward(_spot_k, want, delta / 0.6)
+	if spot != null and range_root != null:
+		var e2: float = _spot_k * float((range_root.get("tuning") as Dictionary).get("spot_energy", 12.0))
+		spot.set("energy", {"bright": e2, "dark": e2})
+	if state == "gallery":
+		_gallery_tick(delta)
 	_feed_hud()
 	_feed_console()
 
@@ -339,6 +376,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				start(sel)
 			else:
 				restart_stage()
+		KEY_F1:
+			if dev_panel != null:
+				dev_panel.call("toggle")
+		KEY_F2:
+			toggle_gallery()
+		KEY_F3:
+			hud.set("show_hitboxes", not bool(hud.get("show_hitboxes")))
+			hud.call("toast", "HITBOXES  %s" % ("ON: EVERY PART, DASHED WHEN OFF YOUR SLICE" if bool(hud.get("show_hitboxes")) else "OFF"), Color.WHITE, 1.6)
 		KEY_T:
 			if current() != null and bool(current().get("has_strict")):
 				strict = not strict
@@ -347,6 +392,43 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			used = false
 	if used:
 		get_viewport().set_input_as_handled()
+
+
+# -- the free range (F2) -------------------------------------------------------------------------------
+
+func toggle_gallery() -> void:
+	if state == "gallery":
+		clear_targets()
+		_gallery_back = []
+		_to_lobby()
+		return
+	clear_targets()
+	clear_props()
+	hud.call("hide_results")
+	state = "gallery"
+	weapon.call("reset_stats")
+	for g in GALLERY:
+		_gallery_spawn(g)
+	hud.call("toast", "TARGET GALLERY: EVERY FAMILY, NOTHING SCORED. F2 TO LEAVE", Color.WHITE, 2.4)
+
+
+func _gallery_spawn(g: Array) -> void:
+	var p: Vector3 = g[3]
+	var t: Node4D = spawn(String(g[1]), Vector4(p.x, p.y, Layout.STAND.z - p.z, 0.0), g[2])
+	t.set("tag", {"name": String(g[0]), "gallery": g})
+
+
+func _gallery_tick(delta: float) -> void:
+	for t in targets_parent.get_children():
+		if t.has_method("hit") and not bool(t.get("alive")) and not t.has_meta("respawn_queued"):
+			t.set_meta("respawn_queued", true)
+			var g: Variant = (t.get("tag") as Dictionary).get("gallery")
+			if g != null:
+				_gallery_back.append([1.6, g])
+	for b in _gallery_back:
+		b[0] = float(b[0]) - delta
+	while not _gallery_back.is_empty() and float(_gallery_back[0][0]) <= 0.0:
+		_gallery_spawn(_gallery_back.pop_front()[1])
 
 
 # -- what the hits say ---------------------------------------------------------------------------------
@@ -406,11 +488,15 @@ func _feed_hud() -> void:
 	var e: RefCounted = current()
 	var base_keys: Array = [["Click", "Shoot"], ["Hold", "Charge"], ["Q  E", "Step through W"], ["RMB", "Turn the slice"], ["X", "Snap it back"]]
 	match state:
-		"lobby", "gallery":
+		"gallery":
+			hud.set("card", {"kicker": "QUANTUM RANGE  ·  TARGET GALLERY", "title": "Every family, nothing scored", "clock": "",
+				"line": "Shoot anything; it comes back. The radar\nand the crosshair read every one.", "progress": Vector2.ZERO})
+			hud.set("keys", [["F2", "Leave the gallery"], ["F3", "Hitboxes"]] + base_keys)
+		"lobby":
 			hud.set("card", {"kicker": "QUANTUM RANGE", "title": "Choose an experiment", "clock": "",
 				"line": "The console is on your left. Shoot a number,\nor press 1 to 5. Then START, or F.", "progress": Vector2.ZERO,
 				"note": "%02d  %s   ·   W: %s" % [int(e.get("number")), String(e.get("title")).to_upper(), String(e.get("w_load"))]})
-			hud.set("keys", [["1 to 5", "Choose"], ["F", "Start"]] + base_keys)
+			hud.set("keys", [["1 to 5", "Choose"], ["F", "Start"], ["F2", "Target gallery"]] + base_keys)
 		"results":
 			hud.set("card", {})
 			hud.set("keys", [["F", "Next experiment"], ["R", "Again"], ["1 to 5", "Choose"]])

@@ -30,6 +30,9 @@ var w_limit: float = 2.0
 
 ## [[key, what], ...] for the key list.
 var keys: Array = []
+## F3: every target part's hitbox drawn over the world through the live camera (a developer's view:
+## the engine collides boxes, so this is what a shot really meets), dashed when off your slice.
+var show_hitboxes: bool = false
 ## The objective card: empty title hides it.
 var card: Dictionary = {}
 
@@ -202,6 +205,9 @@ func _draw() -> void:
 	var u: float = size.y / 720.0
 	if u <= 0.0:
 		return
+	if show_hitboxes:
+		_draw_hitboxes(u)
+	_draw_tags(u)
 	_draw_card(u)
 	if _results.is_empty():
 		_draw_readout(u)
@@ -334,7 +340,9 @@ func _draw_results(u: float) -> void:
 	var fb: Font = Kit.ui_font("text")
 	var fig: Font = Kit.ui_font("figure")
 	var rows: Array = _results.get("rows", [])
-	var w: float = 460.0 * u
+	# As wide as the title needs, so a long tagline is never cut (frame play/charge_9_results, 5 Oct).
+	var title: String = String(_results.get("title", ""))
+	var w: float = maxf(460.0 * u, ft.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, Kit.type_px("title", u)).x + 60.0 * u)
 	var h: float = 110.0 * u + 30.0 * u * float(rows.size()) + 40.0 * u
 	var r := Rect2(Vector2((size.x - w) * 0.5, (size.y - h) * 0.42), Vector2(w, h))
 	_glass(r, 14.0 * u)
@@ -342,7 +350,7 @@ func _draw_results(u: float) -> void:
 	var y: float = r.position.y + 34.0 * u
 	draw_string(fh, Vector2(x, y), String(_results.get("kicker", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, Kit.type_px("caption", u), Kit.UI_ACCENT)
 	y += 34.0 * u
-	draw_string(ft, Vector2(x, y), String(_results.get("title", "")), HORIZONTAL_ALIGNMENT_LEFT, w - 52.0 * u, Kit.type_px("title", u), Kit.UI_INK)
+	draw_string(ft, Vector2(x, y), title, HORIZONTAL_ALIGNMENT_LEFT, -1, Kit.type_px("title", u), Kit.UI_INK)
 	y += 34.0 * u
 	for row in rows:
 		draw_string(fb, Vector2(x, y), String(row[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, Kit.type_px("body", u), Kit.UI_INK_SOFT)
@@ -353,3 +361,72 @@ func _draw_results(u: float) -> void:
 		y += 30.0 * u
 	draw_line(Vector2(x, y - 12.0 * u), Vector2(r.end.x - 26.0 * u, y - 12.0 * u), Color(1, 1, 1, 0.15), 1.0)
 	draw_string(fh, Vector2(x, y + 10.0 * u), String(_results.get("hint", "")), HORIZONTAL_ALIGNMENT_LEFT, w - 52.0 * u, Kit.type_px("caption", u), Kit.UI_INK_SOFT)
+
+
+func _cam() -> Camera4D:
+	return player.get("camera") if player != null else null
+
+
+## The window's pixels to this canvas (world_to_viewport answers in window pixels, engine_gotchas.md).
+func _to_canvas(px: Vector2) -> Vector2:
+	var win: Vector2 = Vector2(get_viewport().get("size")) if get_viewport().get("size") != null else get_viewport_rect().size
+	if win.x <= 0.0 or win.y <= 0.0:
+		return px
+	return px * (get_viewport_rect().size / win)
+
+
+func _draw_hitboxes(u: float) -> void:
+	var cam: Camera4D = _cam()
+	if cam == null:
+		return
+	var areas: Array = []
+	for t in get_tree().get_nodes_in_group("range_target"):
+		if not is_instance_valid(t) or not bool(t.get("alive")):
+			continue
+		for p in t.get("parts"):
+			if bool(p["alive"]) and p["node"] is Area4D:
+				areas.append([(p["node"] as Node4D).global_position, p["box"], String(p["role"])])
+	for a in areas:
+		var c: Vector4 = a[0]
+		var b: Vector4 = a[1] * 0.5
+		var off: float = absf(slice_offset(c))
+		var cut: bool = off <= b.w
+		var col: Color = Style.glow(String(a[2])) if String(a[2]) in ["core", "armour", "friend"] else Color(0.9, 0.92, 0.95)
+		col.a = 0.95 if cut else 0.4
+		var pts: Array = []
+		for i in 8:
+			var v := Vector4(c.x + (b.x if i & 1 else -b.x), c.y + (b.y if i & 2 else -b.y), c.z + (b.z if i & 4 else -b.z), c.w)
+			if cam.is_position_behind(v):
+				pts = []
+				break
+			pts.append(_to_canvas(cam.world_to_viewport(v)))
+		if pts.size() < 8:
+			continue
+		for e in [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]]:
+			if cut:
+				draw_line(pts[e[0]], pts[e[1]], col, maxf(1.0, 1.5 * u), true)
+			else:
+				draw_dashed_line(pts[e[0]], pts[e[1]], col, maxf(1.0, 1.2 * u), 6.0 * u, true)
+
+
+## In the target gallery (F2): each family's name over it, while it is in your slice or near it.
+func _draw_tags(u: float) -> void:
+	var cam: Camera4D = _cam()
+	if cam == null:
+		return
+	var f: Font = Kit.ui_font("heading")
+	var px: int = Kit.type_px("caption", u)
+	for t in get_tree().get_nodes_in_group("range_target"):
+		if not is_instance_valid(t) or not bool(t.get("alive")):
+			continue
+		var nm: String = String((t.get("tag") as Dictionary).get("name", ""))
+		if nm.is_empty():
+			continue
+		var at: Vector4 = (t as Node4D).global_position + Vector4(0, 1.15, 0, 0)
+		if cam.is_position_behind(at) or absf(slice_offset(at)) > 1.2:
+			continue
+		var p: Vector2 = _to_canvas(cam.world_to_viewport(at))
+		var w: float = f.get_string_size(nm, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x + 18.0 * u
+		var r := Rect2(p - Vector2(w * 0.5, 11.0 * u), Vector2(w, 22.0 * u))
+		_glass(r, 11.0 * u, 0.85)
+		draw_string(f, Vector2(r.position.x, r.get_center().y + 4.0 * u), nm, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, px, Kit.UI_INK)

@@ -11,9 +11,9 @@ const Shapes := preload("res://ramon/QuantumRange/scripts/range_shapes.gd")
 const JOINTS := 4
 const RECOIL := 3.0
 
-var core_r: float = 0.3
-var seg_len: float = 0.34
-var seg_r: float = 0.075
+var core_r: float = 0.4
+var seg_len: float = 0.45
+var seg_r: float = 0.095
 
 var _tendrils: Array = []     # [root Node4D, [joint Node4D...], base angle, recoil seconds left]
 
