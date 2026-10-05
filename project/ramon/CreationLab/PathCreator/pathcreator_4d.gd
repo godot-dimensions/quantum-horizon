@@ -33,6 +33,17 @@ const FLOOR := Color(0.96, 0.965, 0.97)
 
 ## Where you start, x/z.
 @export var start_at: Vector2 = Vector2(0, 6)
+
+## Where the number keys take you while walking (Ramon, 5 Oct: "how do i spawn at the other
+## places"): name, where you stand (x, y, z, W), the way you face (the rig's yaw: 0 faces -z, PI
+## faces +z, -PI/2 faces +x). Each stands a few metres before the place, looking at it.
+const PLACES: Array = [
+	["the start", Vector4(0.0, 0.05, 6.0, 0.0), PI],
+	["the yard", Vector4(-25.5, 0.05, -34.0, 0.0), -PI * 0.5],
+	["the W field", Vector4(1.5, 0.05, 5.0, 0.0), PI],
+	["the pen patch", Vector4(42.0, 0.05, -20.0, 0.0), PI],
+	["the W targets", Vector4(40.0, 0.05, 12.0, 0.0), PI],
+]
 ## The walkplane, metres (x, z); it is W_REACH deep either side of W 0.
 @export var floor_size: Vector2 = Vector2(120, 120):
 	set(v):
@@ -147,6 +158,7 @@ func hud_text() -> String:
 		lines.append("%d route note%s (F4 shows them)" % [notes, "" if notes == 1 else "s"])
 	lines.append("Q / E  walk through W    right mouse  tilt the slice")
 	lines.append("F4 build    F5 set    F6 DEV / WALK    F7 volume view")
+	lines.append("1 start   2 yard   3 W field   4 pen patch   5 W targets")
 	return "\n".join(lines)
 
 
@@ -163,12 +175,37 @@ func _unhandled_input(event: InputEvent) -> void:
 			set_look("walk" if look == "dev" else "dev")
 		KEY_F7:
 			set_volume_view(not volume_view)
+		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5:
+			# The builder has its own use for the number keys (a new node's kind).
+			if not building:
+				var place: Array = PLACES[int((event as InputEventKey).keycode) - KEY_1]
+				go_to(place[1], float(place[2]))
+				get_viewport().set_input_as_handled()
+
+
+## Puts the player at `at` (x, y, z, W), standing still, the slice flat, facing `yaw` (the rig's;
+## NAN keeps the way the camera faces now).
+func go_to(at: Vector4, yaw: float = NAN) -> void:
+	if player == null:
+		return
+	player.global_position = at
+	player.set("linear_velocity", Vector4.ZERO)
+	var rig: Node = player.get_node_or_null("CameraRig")
+	if is_nan(yaw):
+		yaw = float(rig.get("yaw")) if rig != null else PI
+	player.set("_facing", yaw)
+	if rig != null:
+		rig.set("_slice_xw", 0.0)
+		rig.set("_slice_zw", 0.0)
+		rig.set("_homing", 0.0)
+		rig.set("yaw", yaw)
+		rig.call("_apply")
 
 
 ## Every target in the space (for the builder's map).
 func target_nodes() -> Array:
 	var out: Array = []
-	for group in ["Targets", "Yard"]:
+	for group in ["Targets", "Yard", "PenPatch"]:
 		var g: Node = get_node_or_null(group)
 		if g != null:
 			for c in g.get_children():

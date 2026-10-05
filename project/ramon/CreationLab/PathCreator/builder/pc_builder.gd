@@ -20,6 +20,7 @@ extends Control
 ##            chevron): one slot at a time (Ramon: "toggle not entire sets at once, but subicons
 ##            separately"); F5 still changes every slot
 ##         [ ]  the slice through W   G  snap to 0.25 m   Ctrl+Z / Ctrl+Y  undo, redo
+##         T  walk from here: the player put at the mouse, at the slice's W, and back to walking
 ##         Ctrl+S  save every graph   F4  back to walking
 ##
 ## The panels are black glass (kit_style.gd: screens and overlays are black).
@@ -30,7 +31,11 @@ const Spec := preload("res://ramon/CreationLab/PathCreator/path_spec.gd")
 const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
 const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
 const KIND_KEYS := {KEY_1: "start", KEY_2: "chord", KEY_3: "bend", KEY_4: "junction", KEY_5: "destination"}
-const LANE_H := 150.0
+const LANE_H := 190.0
+## All the builder's text at this times its first sizes (Ramon, 5 Oct: "make the text bigger"), and
+## the panel wide enough for it.
+const TEXT := 1.5
+const PANEL_W := 500.0
 const UNDO_MAX := 60
 
 var space: Node            # pathcreator_4d.gd
@@ -303,6 +308,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				set_slice(slice_w + 0.25)
 			KEY_G:
 				snap = not snap
+			KEY_T:
+				# Walk from here: at the mouse, at the slice's W.
+				var wp: Vector2 = to_world(_mouse)
+				space.call("go_to", Vector4(wp.x, 0.05, wp.y, slice_w))
+				space.call("set_build", false)
 			_:
 				handled = false
 	if handled:
@@ -500,7 +510,7 @@ func save_all() -> void:
 # -- the W lane ---------------------------------------------------------------------------------------
 
 func _lane_rect() -> Rect2:
-	return Rect2(Vector2(16, size.y - LANE_H + 8), Vector2(size.x - 380, LANE_H - 24))
+	return Rect2(Vector2(16, size.y - LANE_H + 8), Vector2(size.x - PANEL_W - 40.0, LANE_H - 24))
 
 
 func _lane_w(y: float) -> float:
@@ -553,7 +563,7 @@ func _draw() -> void:
 		var col: Color = (t.get("color") as Color)
 		draw_rect(r, Color(col, 0.28 if on else 0.08), true)
 		draw_rect(r, Color(col.lightened(0.3), 0.9 if on else 0.35), false, 2.0)
-		draw_string(fb, r.position + Vector2(4, -6), "%s   W %+.1f" % [String(t.get("label")), tp.w], HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 1, 1, 0.85 if on else 0.45))
+		draw_string(fb, r.position + Vector2(4, -6), "%s   W %+.1f" % [String(t.get("label")), tp.w], HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13), Color(1, 1, 1, 0.85 if on else 0.45))
 	# Routes.
 	for net in networks():
 		var g: Resource = net.get("graph")
@@ -587,7 +597,7 @@ func _draw() -> void:
 			var dir: Vector2 = (sb - sa).normalized()
 			draw_colored_polygon(PackedVector2Array([mid + dir * 7.0, mid - dir * 5.0 + dir.orthogonal() * 5.0, mid - dir * 5.0 - dir.orthogonal() * 5.0]), col)
 			if hot or mode != "static":
-				draw_string(fb, mid + Vector2(8, -8), "%s · %s%s" % [String(e["priority"]), mode, "" if mode == "static" else " %.1f" % float(e.get("band", 1.2))], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 1, 1, 0.85))
+				draw_string(fb, mid + Vector2(8, -8), "%s · %s%s" % [String(e["priority"]), mode, "" if mode == "static" else " %.1f" % float(e.get("band", 1.2))], HORIZONTAL_ALIGNMENT_LEFT, -1, _px(12), Color(1, 1, 1, 0.85))
 		for n in g.nodes:
 			var p: Vector4 = n["pos"]
 			var sp: Vector2 = to_screen(p.x, p.z)
@@ -606,7 +616,7 @@ func _draw() -> void:
 			if picked:
 				draw_arc(sp, r + 6.0, 0.0, TAU, 32, Color(1.0, 0.85, 0.3), 3.0, true)
 			if picked or absf(p.w) > 0.01:
-				draw_string(fb, sp + Vector2(r + 6, 4), "W %+.2f" % p.w, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 1, 1, 0.9 if on else 0.5))
+				draw_string(fb, sp + Vector2(r + 6, 4), "W %+.2f" % p.w, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(12), Color(1, 1, 1, 0.9 if on else 0.5))
 	_draw_panel(f, fb)
 	_draw_lane(fb)
 
@@ -615,15 +625,24 @@ func _glass(r: Rect2) -> void:
 	draw_style_box(Style.glass_box(10.0), r)
 
 
+## A text size at the builder's scale.
+func _px(n: float) -> int:
+	return int(round(n * TEXT))
+
+
 func _draw_panel(f: Font, fb: Font) -> void:
-	var r := Rect2(Vector2(size.x - 356, 16), Vector2(340, size.y - LANE_H - 24))
+	var r := Rect2(Vector2(size.x - PANEL_W - 16.0, 16), Vector2(PANEL_W, size.y - LANE_H - 24))
 	_glass(r)
 	# The writing line, held in an array: a lambda copies plain locals, so it could not move `y` on.
-	var cur: Array = [r.position.y + 28.0]
+	# A line too long for the panel wraps (up to three lines) rather than running off its edge.
+	var cur: Array = [r.position.y + 16.0 + float(_px(16))]
 	var x: float = r.position.x + 16.0
-	var line := func(t: String, font: Font, px: int, col: Color) -> void:
-		draw_string(font, Vector2(x, float(cur[0])), t, HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 32.0, px, col)
-		cur[0] = float(cur[0]) + float(px) + 8.0
+	var line := func(t: String, font: Font, size_: float, col: Color) -> void:
+		var px: int = _px(size_)
+		var wide: float = r.size.x - 32.0
+		draw_multiline_string(font, Vector2(x, float(cur[0])), t, HORIZONTAL_ALIGNMENT_LEFT, wide, px, 3, col)
+		var h: float = font.get_multiline_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, wide, px, 3).y
+		cur[0] = float(cur[0]) + maxf(h, float(px)) + 6.0
 	line.call("BUILDER", f, 16, Style.UI_ACCENT)
 	line.call("slice W %+.2f    snap %s    adding a %s" % [slice_w, "on" if snap else "off", add_kind], fb, 13, Style.UI_INK_SOFT)
 	cur[0] = float(cur[0]) + 6.0
@@ -640,7 +659,8 @@ func _draw_panel(f: Font, fb: Font) -> void:
 	for t in ["N new node (1-5 its kind)   X split   C join", "Del remove   K kind   S state   F frame",
 			"R  round a corner (again: wider, then sharp)", "P / M  hovered route: priority / W mode",
 			"L  this symbol's library (one slot)",
-			"wheel on a node: W   shift: band", "[ ]  slice W   G snap   Ctrl+Z / Y   Ctrl+S save", "drag: move   middle or right drag: pan", "F4  back to walking"]:
+			"wheel on a node: W   shift: band", "[ ]  slice W   G snap   Ctrl+Z / Y   Ctrl+S save", "drag: move   middle or right drag: pan",
+			"T  walk from here (at the mouse)", "F4  back to walking"]:
 		line.call(t, fb, 12, Style.UI_INK_DIM)
 	cur[0] = float(cur[0]) + 6.0
 	if not _saved_note.is_empty():
@@ -651,7 +671,7 @@ func _draw_panel(f: Font, fb: Font) -> void:
 	if not notes.is_empty():
 		line.call("ROUTE NOTES", f, 13, Style.UI_WARM)
 		for t in notes:
-			if float(cur[0]) > r.end.y - 16.0:
+			if float(cur[0]) > r.end.y - float(_px(12)):
 				break
 			line.call(t, fb, 12, Style.UI_INK_SOFT)
 
@@ -662,16 +682,19 @@ func _draw_lane(fb: Font) -> void:
 	for w in [-8.0, -4.0, 0.0, 4.0, 8.0]:
 		var y: float = _lane_y(w)
 		draw_line(Vector2(r.position.x, y), Vector2(r.end.x, y), Color(1, 1, 1, 0.08 if w != 0.0 else 0.18), 1.0)
-		draw_string(fb, Vector2(r.position.x + 4, y - 3), "W %+d" % int(w), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(1, 1, 1, 0.45))
+		draw_string(fb, Vector2(r.position.x + 4, y - 3), "W %+d" % int(w), HORIZONTAL_ALIGNMENT_LEFT, -1, _px(11), Color(1, 1, 1, 0.45))
 	var sy: float = _lane_y(slice_w)
 	draw_line(Vector2(r.position.x, sy), Vector2(r.end.x, sy), Color(Style.UI_ACCENT, 0.8), 2.0)
-	draw_string(fb, Vector2(r.end.x - 120, sy - 4), "your slice", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Style.UI_ACCENT)
+	var tag_w: float = fb.get_string_size("your slice", HORIZONTAL_ALIGNMENT_LEFT, -1, _px(11)).x
+	draw_string(fb, Vector2(r.end.x - tag_w - 8.0, sy - 4), "your slice", HORIZONTAL_ALIGNMENT_LEFT, -1, _px(11), Style.UI_ACCENT)
 	var route: Array = _lane_route()
 	if route.is_empty():
-		draw_string(fb, r.position + Vector2(60, r.size.y * 0.5), "THE W LANE  pick a node: its route laid out flat, distance against W; drag a node up or down", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Style.UI_INK_DIM)
+		# At the top, clear of the W 0 line and its tag, wrapped to the lane.
+		draw_multiline_string(fb, r.position + Vector2(80, float(_px(12)) + 4.0), "THE W LANE  pick a node: its route laid out flat, distance against W; drag a node up or down",
+			HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 100.0 - tag_w, _px(12), 2, Style.UI_INK_DIM)
 		return
 	var total: float = maxf(float(route.back()[1]), 1.0)
-	var at := func(s: float, w: float) -> Vector2: return Vector2(r.position.x + 60.0 + (r.size.x - 80.0) * s / total, _lane_y(w))
+	var at := func(s: float, w: float) -> Vector2: return Vector2(r.position.x + 80.0 + (r.size.x - 100.0) * s / total, _lane_y(w))
 	var prev: Vector2 = Vector2.INF
 	for item in route:
 		var n: Dictionary = item[0]

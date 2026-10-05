@@ -201,7 +201,9 @@ shape, a longer Creation Lab wall, and a rectangle.
 
 Routes and destinations drawn on the floor as vectors, from Ramon's Figma sheet "Path_Indicator".
 The full story, with pictures, is in `PathCreator/CASE_STUDY.md`; the dev space to try them is
-`PathCreator/pathcreator.tscn` (F4 builder, F5 next library, F6 DEV or WALK, F7 volume view).
+`PathCreator/pathcreator.tscn` (F4 builder, F5 next library, F6 DEV or WALK, F7 volume view;
+while walking 1 to 5 jump to the start, the yard, the W field, the pen patch and the W targets;
+in the builder T walks you from the mouse).
 
 **Routes in a scene of your own:**
 1. Add a Node4D with `graph/path_network_4d.gd`.
