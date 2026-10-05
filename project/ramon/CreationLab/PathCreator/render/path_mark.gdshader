@@ -85,7 +85,8 @@ uniform float guide_on = 1.0;
 uniform float guide_w = 0.035;
 // 0: a solid guide line; otherwise dots this far apart (the secondary route's, as the field map).
 uniform float guide_dot = 0.0;
-uniform float guide_strength = 0.4;
+// The guide's own light blue (path_spec.gd GUIDE_COLOR); sand in the WALK look.
+uniform vec4 col_guide : source_color = vec4(0.435, 0.651, 0.949, 1.0);
 
 // NODE
 uniform int node_sym = -1;
@@ -413,10 +414,14 @@ void fragment() {
 		}
 		riser = clamp(riser, 0.0, 1.0);
 		bool mine = !by_neighbour && riser > 0.2;
-		// No guide past the ends, nor under a neighbour's mark reaching over a joint (the two boxes
-		// lie at one height and would fight for the pixel).
-		bool under_other = by_neighbour && abs(s - c_s) < mark_half;
-		if (guide_on > 0.5 && !in_clear && !in_gap && !past && !under_other) {
+		// The guide runs under the marks: it gives way along each drawn mark's whole length (a
+		// little more), so it never shows through a chevron's gaps and reads as passing beneath. That
+		// also keeps it off a neighbour's mark reaching over a joint (the two boxes lie at one height
+		// and would fight for the pixel). It stops short of the nodes' art by their clear floor.
+		bool mark_drawn = mark_sym >= 0 && !in_clear && !in_gap && (mine || by_neighbour);
+		float cut = mark_half * shrink * (mine ? riser : 1.0);
+		bool under_mark = mark_drawn && abs(s - c_s) < cut;
+		if (guide_on > 0.5 && !in_clear && !in_gap && !past && !under_mark) {
 			float g;
 			if (guide_dot > 0.0) {
 				float sd = s0 + along;
@@ -425,7 +430,7 @@ void fragment() {
 			} else {
 				g = clamp(0.5 - (abs(m.y) - guide_w * 0.5 * band) / px_m, 0.0, 1.0);
 			}
-			col = over(col, mix(under_color.rgb, role_color(0), guide_strength), g);
+			col = over(col, walk > 0.5 ? sand.rgb : col_guide.rgb, g);
 		}
 		if (mark_sym >= 0 && !in_clear && !in_gap && mine) {
 			vec2 p = vec2(s - c_s, m.y) / (unit_m * mark_scale * shrink * riser);
