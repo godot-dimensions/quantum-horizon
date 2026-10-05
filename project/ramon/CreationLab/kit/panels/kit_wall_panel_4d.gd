@@ -5,15 +5,16 @@ extends Node4D
 ## panel, make a room's walls (Ramon's Figma handoff, 5 Oct 2026; the template is kit_panel_spec.gd,
 ## the words kit_room_info.gd, the live numbers a source such as kit_panel_source_showcase.gd).
 ##
-## WHERE IT HANGS. Give it a room (`room_path`, a KitRoom, kit_room_4d.gd) and a wall of it: an
-## edge number in a polygon room (any angle: the Creation Lab's angled walls take it as its square
-## ones do) or a side ("n", "s", "w", "e") in a rectangular one. It sits in the middle of that wall,
-## `along` metres to one side, its foot `foot` off the floor, and is printed into the wall's own
-## surface: the room paints a field of that wall in code blue for it (a claim, never saved with the
-## scene; FIELD_M wide, so the blue is the same size on a long wall as on the Creation Lab's), and
-## the room's light and shadow fall on it as on the paint around it. With no room it brings its
-## own wall: a blue slab a little bigger than the panel, standing on the node's floor and facing the
-## node's +Z, so it can stand anywhere at any angle.
+## WHERE IT HANGS. Give it a room (`room_path`, a KitRoom, kit_room_4d.gd) and a wall of it: its
+## name (`wall_name`, from the room's plan, kit_room_plan.gd: "left_corner", "right", ...), an edge
+## number in a polygon room (any angle: the Creation Lab's angled walls take it as its square ones
+## do) or a side ("n", "s", "w", "e") in a rectangular one. It always sits in the middle of that wall
+## (Ramon, 5 Oct: "text panels should always be align to mid of a wall in the horizontal"), its foot
+## `foot` off the floor, printed into the wall's own surface: the room paints the whole wall in code
+## blue for it, however long the wall and whatever the panel's size (a claim, never saved with the
+## scene), and the room's light and shadow fall on it as on the paint around it. With no room it
+## brings its own wall: a blue slab a little bigger than the panel, standing on the node's floor and
+## facing the node's +Z, so it can stand anywhere at any angle.
 ##
 ## ONE SIZE. 9.6 x 5.9 m in every prototype (kit_panel_spec.gd UNIT_M), whatever the wall. A wall too
 ## short or too low for it is flagged (a warning on the node and, in the editor, a red frame), never
@@ -61,6 +62,11 @@ const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
 	set(v):
 		room_path = v
 		_later()
+## The wall by its name in the room's plan (empty: `wall_side` / `wall_edge`).
+@export var wall_name: String = "":
+	set(v):
+		wall_name = v
+		_later()
 ## "edge" for a polygon room's edge `wall_edge`; a side for a rectangular room.
 @export_enum("edge", "n", "s", "w", "e") var wall_side: String = "edge":
 	set(v):
@@ -69,11 +75,6 @@ const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
 @export var wall_edge: int = 0:
 	set(v):
 		wall_edge = v
-		_later()
-## Metres from the middle of its wall (along the wall's own direction).
-@export var along: float = 0.0:
-	set(v):
-		along = v
 		_later()
 ## Its lower edge above the floor, metres.
 @export var foot: float = Spec.FOOT_M:
@@ -165,7 +166,7 @@ func fit_scale(margin: Vector2, at_foot: float) -> float:
 	if room == null or not bool(room.call("has_wall", wall())):
 		return INF
 	var ws: Vector2 = room.call("wall_span", wall())
-	var mid: float = (ws.x + ws.y) * 0.5 + along
+	var mid: float = (ws.x + ws.y) * 0.5
 	var room_w: float = (minf(mid - ws.x, ws.y - mid) - margin.x) * 2.0
 	var room_h: float = float(room.call("wall_height")) - at_foot - margin.y
 	var pm: Vector2 = Spec.panel_m()
@@ -181,6 +182,8 @@ func _room() -> Node:
 
 ## The wall it hangs on: an edge number or a side.
 func wall() -> Variant:
+	if not wall_name.is_empty():
+		return wall_name
 	return wall_edge if wall_side == "edge" else wall_side
 
 
@@ -230,12 +233,10 @@ func rebuild() -> void:
 	if room != null and bool(room.call("has_wall", wall())):
 		if not _same(_claimed, wall()) or _claimed_room != room:
 			_release()
-		# Its blue field, the same size on any wall, and the wall split where the panel begins and
-		# ends, so another panel can share it.
+		# Its whole wall blue, split where the panel begins and ends (a piece of wall carries one
+		# picture).
 		var span: Vector2 = _span(room)
-		var mid: float = (span.x + span.y) * 0.5
-		var field: float = Spec.FIELD_M * scale_factor
-		room.call("claim_wall", wall(), "blue", self, span.x, span.y, Vector2(mid - field * 0.5, mid + field * 0.5))
+		room.call("claim_wall", wall(), "blue", self, span.x, span.y)
 		_claimed = wall()
 		_claimed_room = room
 	else:
@@ -247,10 +248,20 @@ func rebuild() -> void:
 	update_configuration_warnings()
 
 
-## Where along its wall the panel runs: Vector2(from, to), metres.
+## For the plan view (kit_plan_view.gd): [room, wall, from, to] along that wall, or [] if it is not
+## on a room's wall.
+func plan_mark() -> Array:
+	var room: Node = _room()
+	if not enabled or room == null or not bool(room.call("has_wall", wall())):
+		return []
+	var sp: Vector2 = _span(room)
+	return [room, room.call("wall_key", wall()), sp.x, sp.y]
+
+
+## Where along its wall the panel runs, centred on it: Vector2(from, to), metres.
 func _span(room: Node) -> Vector2:
 	var ws: Vector2 = room.call("wall_span", wall())
-	var mid: float = (ws.x + ws.y) * 0.5 + along
+	var mid: float = (ws.x + ws.y) * 0.5
 	var w: float = panel_m().x
 	return Vector2(mid - w * 0.5, mid + w * 0.5)
 
@@ -401,13 +412,8 @@ func panel_frame() -> Array:
 	var room: Node = _room()
 	if room != null and bool(room.call("has_wall", wall())):
 		var fr: Array = room.call("wall_frame", wall())
-		var span: Vector2 = room.call("wall_span", wall())
-		var mid_along: float = (span.x + span.y) * 0.5 + along
 		var centre2: Vector2 = fr[0]
 		var normal2: Vector2 = fr[1]
-		var dir := Vector2(normal2.y, -normal2.x)
-		# The span's middle is the frame's middle; `along` and an off-centre span move it along.
-		centre2 += dir * (mid_along - (span.x + span.y) * 0.5)
 		var r4: Node4D = room as Node4D
 		var c4: Vector4 = r4.global_position + Vector4(centre2.x, foot + pm.y * 0.5, centre2.y, 0.0)
 		return [c4, Vector4(normal2.x, 0.0, normal2.y, 0.0)]
@@ -426,7 +432,7 @@ func _get_configuration_warnings() -> PackedStringArray:
 		elif not bool(room.call("has_wall", wall())):
 			out.append("That room has no wall %s." % str(wall()))
 	if _too_short:
-		out.append("The wall is too short or too low for a %.1f x %.1f m panel; the panel is never made smaller on its own. Move it (along, foot), pick a longer wall, or let its pair (kit_wall_panels_4d.gd) fit both panels to their walls." % [panel_m().x, panel_m().y])
+		out.append("The wall is too short or too low for a %.1f x %.1f m panel; the panel is never made smaller on its own. Lengthen the wall, lower its foot, pick a longer wall, or let its pair (kit_wall_panels_4d.gd) fit both panels to their walls." % [panel_m().x, panel_m().y])
 	if page != null:
 		for p in page.call("overflowed"):
 			out.append("Text runs over its lines (never shrunk; shorten it): " + String(p))

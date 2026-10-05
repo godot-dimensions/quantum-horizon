@@ -24,6 +24,11 @@ extends Node4D
 ## turned, but the physics here is box-only, so behind each one stands a row of small upright
 ## boxes instead of one big tilted one.
 ##
+## A PLAN (kit_room_plan.gd) works the outline out from what the room is for (its box, and a corner
+## wall of its own length and angle in each back corner) and names the walls (`wall_names`, one an
+## edge): doorways and wall panels can then say "back" or "left_corner" instead of an edge number.
+## An edge of no length (a corner wall at 0 m) is built as nothing and keeps its number.
+##
 ## NO class_name (engine_gotchas.md).
 
 const Build := preload("res://ramon/CreationLab/scripts/chamber_build.gd")
@@ -81,6 +86,12 @@ const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
 	set(v):
 		edge_codes = v
 		_later()
+## The walls' names, one an edge of the outline (kit_room_plan.gd gives them): a doorway, an edge
+## code or a wall panel can name its wall instead of numbering it.
+@export var wall_names: PackedStringArray = PackedStringArray():
+	set(v):
+		wall_names = v
+		_later()
 
 var _floor: MeshInstance4D
 var _walls: Dictionary = {}       # side -> pieces
@@ -88,11 +99,11 @@ var _prints: Array = []
 var _cove: MeshInstance4D
 var _queued: bool = false
 ## Walls claimed while running (or previewing) by wall panels (kit_wall_panel_4d.gd): {wall: {claimer
-## id: [code, claimer, from, to, field from, field to]}}, a wall being an edge number or a side ("n",
-## "s", "w", "e"). Only the claimed field (along the wall) is painted in the code; the wall is split
-## there and where the claimer's picture begins and ends (a piece of wall carries one picture), so
-## two panels can share a wall and a long wall stays the room's own beyond the field. Unlike
-## `edge_codes` a claim is never saved with the scene; it ends when its panel lets go or is freed.
+## id: [code, claimer, from, to]}}, a wall being an edge number or a side ("n", "s", "w", "e"). The
+## whole wall is painted in the code, however long it is (Ramon, 5 Oct: "even if i lengthen it, the
+## panel should always be blue"), and split where the claimer's picture begins and ends (a piece of
+## wall carries one picture). Unlike `edge_codes` a claim is never saved with the scene; it ends
+## when its panel lets go or is freed.
 var _claims: Dictionary = {}
 
 
@@ -149,7 +160,6 @@ func rebuild() -> void:
 		swatch = _claimed_swatch(side, swatch)
 		cuts.append_array(_claim_cuts(side))
 		_walls[side] = RD.wall(self, "Wall" + side.to_upper(), side, x0, z0, x1, z1, h, t, ops, cuts, swatch)
-		_paint_fields(side, _walls[side])
 	if ceiling:
 		RD.ceiling(self, "Ceiling", x0 - t, z0 - t, x1 + t, z1 + t, h, "kit_ceiling")
 	if cove:
@@ -201,9 +211,16 @@ func _rebuild_outline() -> void:
 	for e in n:
 		var a: Vector2 = outline[e]
 		var c: Vector2 = outline[(e + 1) % n]
+		if a.distance_to(c) < 0.05:
+			# A corner wall at 0 m: no wall, its number kept.
+			_walls[e] = []
+			continue
+		# Walls overlap a little at a corner so no seam opens; where the next wall goes on in line
+		# (one wall split into parts) they meet end to end instead.
+		var ends := Vector2(0.0 if _in_line(e - 1, e) else 1.0, 0.0 if _in_line(e, e + 1) else 1.0)
 		var ops: Array = []
 		for d in doorways:
-			if int(d[0]) == e:
+			if int(wall_key(d[0])) == e:
 				ops.append([float(d[1]), float(d[2]), float(d[3]) if d.size() > 3 else 3.6])
 		var cuts: Array = []
 		var swatch: String = "kit_wall"
@@ -215,10 +232,11 @@ func _rebuild_outline() -> void:
 				swatch = Style.code_swatch(String(tx.get("code")), swatch)
 		if edge_codes.has(e):
 			swatch = Style.code_swatch(String(edge_codes[e]), swatch)
+		elif e < wall_names.size() and edge_codes.has(wall_names[e]):
+			swatch = Style.code_swatch(String(edge_codes[wall_names[e]]), swatch)
 		swatch = _claimed_swatch(e, swatch)
 		cuts.append_array(_claim_cuts(e))
-		_walls[e] = _edge_wall(e, a, c, h, t, ops, cuts, swatch)
-		_paint_fields(e, _walls[e])
+		_walls[e] = _edge_wall(e, a, c, h, t, ops, cuts, swatch, ends)
 		if cove:
 			var d2: Vector2 = (c - a).normalized()
 			var inward := Vector2(-d2.y, d2.x)
@@ -261,15 +279,28 @@ func _rebuild_outline() -> void:
 ## ends), each a box turned to the edge, its +Z looking into the room; then, for an angled edge, a
 ## row of small upright boxes behind it for the physics. Returns [[box, p, q, y0, y1], ...] with p
 ## and q measured along the edge.
-func _edge_wall(e: int, a: Vector2, c: Vector2, h: float, t: float, openings: Array, cuts: Array, swatch: String = "kit_wall") -> Array:
+## True if edges `e0` and `e1` (taken round the outline) run on in one line.
+func _in_line(e0: int, e1: int) -> bool:
+	var n: int = outline.size()
+	var a0: Vector2 = outline[posmod(e0, n)]
+	var a1: Vector2 = outline[posmod(e0 + 1, n)]
+	var b0: Vector2 = outline[posmod(e1, n)]
+	var b1: Vector2 = outline[posmod(e1 + 1, n)]
+	if a0.distance_to(a1) < 0.05 or b0.distance_to(b1) < 0.05:
+		return false
+	return (a1 - a0).normalized().dot((b1 - b0).normalized()) > 0.9999
+
+
+func _edge_wall(e: int, a: Vector2, c: Vector2, h: float, t: float, openings: Array, cuts: Array, swatch: String = "kit_wall",
+		ext: Vector2 = Vector2.ONE) -> Array:
 	var len: float = a.distance_to(c)
 	var d: Vector2 = (c - a) / maxf(len, 0.0001)
 	var inward := Vector2(-d.y, d.x)
 	var turn: Projection = Basis4D.from_zx(atan2(d.x, d.y) - PI * 0.5)
 	var axis: bool = absf(d.x) < 0.001 or absf(d.y) < 0.001
-	# Walls overlap a little at the corners so no seam opens.
-	var a0: float = -t
-	var a1: float = len + t
+	# Walls overlap a little at the corners so no seam opens (not where the next one runs on in line).
+	var a0: float = -t * ext.x
+	var a1: float = len + t * ext.y
 	var points: Array = [a0, a1]
 	for o in openings:
 		points.append(clampf(float(o[0]), a0, a1))
@@ -355,15 +386,25 @@ func edge_length(e: int) -> float:
 # Along it is measured from the edge's first corner (polygon) or the room's centre (rectangle),
 # as wall text measures it.
 
-## True if the room has wall `wall` (a polygon edge needs an outline, a side needs none).
+## A wall as the room keeps it: in a polygon room a name becomes its edge number (-1 if it has
+## none); a number, or a side of a rectangular room, stays as it is.
+func wall_key(wall: Variant) -> Variant:
+	if wall is String and outline.size() >= 3:
+		return wall_names.find(String(wall))
+	return wall
+
+
+## True if the room has wall `wall` (a polygon edge needs an outline and a length, a side needs none).
 func has_wall(wall: Variant) -> bool:
+	wall = wall_key(wall)
 	if wall is String:
 		return outline.size() < 3 and String(wall) in ["n", "s", "w", "e"] and not (String(wall) in open_sides)
-	return outline.size() >= 3 and int(wall) >= 0 and int(wall) < outline.size()
+	return outline.size() >= 3 and int(wall) >= 0 and int(wall) < outline.size() and edge_length(int(wall)) >= 0.05
 
 
 ## Where wall `wall` runs, along it: Vector2(from, to), metres.
 func wall_span(wall: Variant) -> Vector2:
+	wall = wall_key(wall)
 	if wall is String:
 		var half: float = (size.x if String(wall) in ["n", "s"] else size.z) * 0.5
 		return Vector2(-half, half)
@@ -376,6 +417,7 @@ func wall_height() -> float:
 
 ## The wall's inner face: its middle and the way it looks into the room, in the room's x/z.
 func wall_frame(wall: Variant) -> Array:
+	wall = wall_key(wall)
 	if wall is String:
 		match String(wall):
 			"n": return [Vector2(0, -size.z * 0.5), Vector2(0, 1)]
@@ -389,12 +431,12 @@ func wall_frame(wall: Variant) -> Array:
 	return [(a + c) * 0.5, Vector2(-d.y, d.x)]
 
 
-## A wall panel claims wall `wall` in colour code `code` ("blue"); the room repaints it.
-## `from`..`to` is the claimer's picture, `field` the stretch of wall painted in `code` round it
-## (both along the wall; no field: the whole wall).
-func claim_wall(wall: Variant, code: String, who: Object, from: float = NAN, to: float = NAN, field: Vector2 = Vector2(NAN, NAN)) -> void:
+## A wall panel claims wall `wall` in colour code `code` ("blue"); the room repaints it, all of it.
+## `from`..`to` is the claimer's picture along the wall, where the wall is split.
+func claim_wall(wall: Variant, code: String, who: Object, from: float = NAN, to: float = NAN) -> void:
+	wall = wall_key(wall)
 	var on: Dictionary = _claims.get(wall, {})
-	var rec: Array = [code, who, from, to, field.x, field.y]
+	var rec: Array = [code, who, from, to]
 	if on.has(who.get_instance_id()) and str(on[who.get_instance_id()]) == str(rec):
 		return
 	on[who.get_instance_id()] = rec
@@ -404,6 +446,7 @@ func claim_wall(wall: Variant, code: String, who: Object, from: float = NAN, to:
 
 ## The panel `who` lets go of its wall.
 func release_wall(wall: Variant, who: Object) -> void:
+	wall = wall_key(wall)
 	var on: Dictionary = _claims.get(wall, {})
 	if not on.has(who.get_instance_id()):
 		return
@@ -413,38 +456,43 @@ func release_wall(wall: Variant, who: Object) -> void:
 	_later()
 
 
-## Where the claimers' pictures and fields begin and end along `wall`, for splitting it.
+## Where the claimers' pictures begin and end along `wall`, for splitting it.
 func _claim_cuts(wall: Variant) -> Array:
 	var out: Array = []
 	for cl in (_claims.get(wall, {}) as Dictionary).values():
 		if not is_instance_valid(cl[1]):
 			continue
-		for i in [2, 3, 4, 5]:
+		for i in [2, 3]:
 			if not is_nan(float(cl[i])):
 				out.append(float(cl[i]))
 	out.sort()
 	return out
 
 
-## A claim with no field paints the whole wall: the wall's swatch.
+## The colour code wall `wall` is painted in ("" for the room's own): a panel's claim, an edge code,
+## or the code of wall text on it. For the plan view (kit_plan_view.gd).
+func wall_code(wall: Variant) -> String:
+	wall = wall_key(wall)
+	for cl in (_claims.get(wall, {}) as Dictionary).values():
+		if is_instance_valid(cl[1]):
+			return String(cl[0])
+	if edge_codes.has(wall):
+		return String(edge_codes[wall])
+	if wall is int and int(wall) >= 0 and int(wall) < wall_names.size() and edge_codes.has(wall_names[int(wall)]):
+		return String(edge_codes[wall_names[int(wall)]])
+	for tx in _texts():
+		var on: Variant = tx.get("edge") if outline.size() >= 3 else tx.get("side")
+		if on == wall and not String(tx.get("code")) in ["", "none"]:
+			return String(tx.get("code"))
+	return ""
+
+
+## A claimed wall's swatch: its claim's code, all of it.
 func _claimed_swatch(wall: Variant, fallback: String) -> String:
 	for cl in (_claims.get(wall, {}) as Dictionary).values():
-		if is_instance_valid(cl[1]) and is_nan(float(cl[4])):
+		if is_instance_valid(cl[1]):
 			return Style.code_swatch(String(cl[0]), fallback)
 	return fallback
-
-
-## Paints the pieces of `wall` that stand in a claimed field in that claim's code.
-func _paint_fields(wall: Variant, pieces: Array) -> void:
-	for cl in (_claims.get(wall, {}) as Dictionary).values():
-		if not is_instance_valid(cl[1]) or is_nan(float(cl[4])):
-			continue
-		for pc in pieces:
-			var m: float = (float(pc[1]) + float(pc[2])) * 0.5
-			if m > float(cl[4]) and m < float(cl[5]):
-				var mat: TetraMaterial4D = (pc[0] as MeshInstance4D).material_override as TetraMaterial4D
-				if mat != null:
-					LabGrid.reswatch(mat, Style.code_swatch(String(cl[0])))
 
 
 ## What to print a picture `a0`..`a1` along wall `wall`, `y0`..`y1` up it, on: [[box, normal,
@@ -452,6 +500,7 @@ func _paint_fields(wall: Variant, pieces: Array) -> void:
 ## the picture where that piece's u is, as RD.print_wall works it out). Empty before the room is
 ## built or when the picture misses the wall.
 func print_targets(wall: Variant, a0: float, a1: float, y0: float, y1: float) -> Array:
+	wall = wall_key(wall)
 	var out: Array = []
 	var polygon: bool = not (wall is String)
 	var normal: Vector4 = Vector4(0, 0, 1, 0) if polygon else RD.wall_normal(String(wall), true)

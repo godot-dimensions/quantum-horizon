@@ -64,7 +64,7 @@ func _run() -> void:
 	var ol: PackedVector2Array = cr.get("outline")
 	var dir: Vector2 = (ol[2] - ol[1]).normalized()
 	var inward := Vector2(-dir.y, dir.x)
-	var mid: Vector2 = Vector2(cr.global_position.x, cr.global_position.z) + (((ol[1] + ol[2]) * 0.5) if panels else ol[2])
+	var mid: Vector2 = Vector2(cr.global_position.x, cr.global_position.z) + (((ol[1] + ol[4]) * 0.5) if panels else ol[2])
 	var cam := Camera4D.new()
 	cam.set("rendering_engine_name", "Cross-section")
 	_g.add_child(cam)

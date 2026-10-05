@@ -4,8 +4,8 @@ extends "res://ramon/CreationLab/kit/panels/kit_panel_page.gd"
 ## Kit: the introduction panel, a stable room introduction (rule 2), laid out as frame 01's left
 ## panel: the running header ("01 / CREATION LAB", the status on the right), the title on one line,
 ## the lead on one line, the description in at most five lines no wider than 680, the lower rule,
-## then CONTROLS and two to four shortcuts, an icon over each label. The shortcuts start on the
-## line where the research panel's benchmark starts.
+## then CONTROLS (on the line where the research panel's benchmark starts) and two to four
+## shortcuts, an icon over each label, the labels standing on the research panel's footnote line.
 ##
 ## refresh(d), d from the room's data (kit_room_info.gd) with its words filled in:
 ##   header_left, header_right, title, lead, body, heading, controls: [[icon, label], ...]
@@ -38,9 +38,9 @@ func _build() -> void:
 		var sc := group("Shortcut %d" % (i + 1), ctl)
 		var ic := E.Icon.new("Icon", k)
 		sc.add_child(ic)
-		ic.place(Vector2(float(i) * Spec.SHORTCUT_PITCH, Spec.SUPPORT_Y + Spec.SHORTCUTS_DY), Spec.ICON_BOX)
-		var lb := text(sc, "Shortcut label", "control", "white",
-			Vector2(float(i) * Spec.SHORTCUT_PITCH, Spec.SUPPORT_Y + Spec.SHORTCUTS_DY + Spec.SHORTCUT_LABEL_DY), Spec.SHORTCUT_W)
+		var label_y: float = Spec.shortcut_label_y()
+		ic.place(Vector2(float(i) * Spec.SHORTCUT_PITCH, label_y - Spec.SHORTCUT_LABEL_DY), Spec.ICON_BOX)
+		var lb := text(sc, "Shortcut label", "control", "white", Vector2(float(i) * Spec.SHORTCUT_PITCH, label_y), Spec.SHORTCUT_W)
 		_icons.append(ic)
 		_labels.append(lb)
 

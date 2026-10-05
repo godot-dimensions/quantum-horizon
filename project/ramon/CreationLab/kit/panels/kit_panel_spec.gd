@@ -37,11 +37,6 @@ extends RefCounted
 const UNIT_M := 0.012
 ## The panel's lower edge above the floor, metres.
 const FOOT_M := 1.3
-## The blue field a panel paints on its wall: this wide, centred on the panel, floor to top, on any
-## wall however long (Ramon, 5 Oct: "the sizing should match the main room, and not be scaled
-## bigger"). 12 m is the Creation Lab's right wall, whose whole length is the field; on a shorter
-## wall the field is the whole wall, on a longer one the rest keeps the room's own paint.
-const FIELD_M := 12.0
 ## Pixels a unit the panels are drawn at (250 px a metre in the room).
 const PPU := 3.0
 
@@ -69,12 +64,15 @@ const FOOTNOTE_Y := 479.0
 const BODY_MAX_W := 680.0
 const BODY_MAX_LINES := 5
 
-## The controls row: up to four shortcuts this wide, this far apart; an icon box, then its label.
+## The controls row: up to four shortcuts this wide, this far apart; an icon box, then its label 48
+## below its top. The row stands on the bottom line of the pair: its labels' baseline is the
+## research panel's footnote baseline (Ramon, 5 Oct: "move the icons of the creation lab panel
+## further down so they align at the bottom with the small text on the second panel");
+## shortcut_label_y() works it out from the two roles.
 const SHORTCUT_W := 180.0
 const SHORTCUT_PITCH := 216.0
 const ICON_BOX := Vector2(36, 40)
 const SHORTCUT_LABEL_DY := 48.0
-const SHORTCUTS_DY := 24.0
 
 ## The research panel's columns ("196 / 1 / 571, with 16 px gaps around the vertical divider").
 const LEFT_W := 196.0
@@ -170,6 +168,21 @@ static func size_of(role: String) -> float:
 
 static func line_of(role: String) -> float:
 	return float(ROLES.get(role, ROLES["body"])[2])
+
+
+## How far below the top of its line a line of `role` has its baseline, units (Figma's half
+## leading above the font's ascent).
+static func baseline(role: String) -> float:
+	var f: Font = font(role)
+	var px: int = int(round(size_of(role) * 16.0))
+	var asc: float = f.get_ascent(px) / 16.0
+	var desc: float = f.get_descent(px) / 16.0
+	return (line_of(role) - (asc + desc)) * 0.5 + asc
+
+
+## The top of the shortcuts' labels: their baseline on the footnote's.
+static func shortcut_label_y() -> float:
+	return FOOTNOTE_Y + baseline("fine") - baseline("control")
 
 
 # -- colour -------------------------------------------------------------------------------------------

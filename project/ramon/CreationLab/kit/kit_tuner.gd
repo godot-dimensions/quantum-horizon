@@ -12,7 +12,9 @@ extends PanelContainer
 ##   SUN          its strength, height and turn (the Sun handle, kit_sun_4d.gd)
 ##   ROOM         ceiling height, pedestal radius
 ##   HOLOGRAM     the pedestal's hologram: height, strength at its foot, fade, fine grain
-##   ROOM SHAPE   the goat room's five outline numbers and its back door (goat_room_4d.gd)
+##   ROOM SHAPE   the room's box, its two corner walls (length, angle) and its back door, with the
+##                walls' lengths as they come out and the room from above, drawn live
+##                (creation_lab_4d.gd, kit_room_plan.gd, kit_plan_view.gd)
 ##   SAVE         writes everything to SAVE_PATH; the panel reads it back when the room starts,
 ##                so what he saved is where the room begins
 ##
@@ -25,6 +27,7 @@ extends PanelContainer
 const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
 const RoomScript := preload("res://ramon/CreationLab/LabKit/lab_room_4d.gd")
 const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
+const PlanView := preload("res://ramon/CreationLab/kit/kit_plan_view.gd")
 const SAVE_PATH := "res://ramon/CreationLab/creation_lab_tuning.cfg"
 const FONT := 15
 const HEAD := Color(0.42, 0.72, 1.0)
@@ -45,9 +48,13 @@ const ROOM_ROWS := [["ceiling", "Ceiling, m", 6.0, 14.0, 0.05], ["pedestal", "Pe
 ## hologram"): its height, how solid at its foot, how fast it fades, and the fine grain (0 or 1).
 const HOLO_ROWS := [["holo_height", "Height, m", 0.1, 4.0, 0.01], ["holo_base", "Strength at the foot", 0.0, 1.0, 0.01],
 	["holo_falloff", "Fade upward", 0.3, 6.0, 0.05], ["holo_fine", "Fine grain (0 / 1)", 0.0, 1.0, 1.0]]
-const SHAPE_ROWS := [["room_half_width", "Half width, m", 5.0, 20.0, 0.1], ["room_back", "Back wall from middle, m", 4.0, 20.0, 0.1],
-	["room_front", "Entrance wall from middle, m", 4.0, 20.0, 0.1], ["back_wall_half", "Back wall half width, m", 1.0, 10.0, 0.1],
-	["corner_z", "Angled walls start at z", -15.0, 15.0, 0.1], ["door_width", "Back door width, m", 0.0, 8.0, 0.1], ["door_height", "Back door height, m", 2.0, 8.0, 0.1]]
+const SHAPE_ROWS := [["room_half_width", "Half width, m", 5.0, 20.0, 0.1], ["room_front", "Entrance wall from middle, m", 4.0, 20.0, 0.1],
+	["room_back", "Back wall from middle, m", 4.0, 20.0, 0.1],
+	["creation_wall_length", "Creation Lab wall length, m", 0.0, 20.0, 0.1], ["creation_wall_angle", "Creation Lab wall angle, degrees", 5.0, 85.0, 0.5],
+	["right_corner_length", "Right corner wall length, m", 0.0, 20.0, 0.1], ["right_corner_angle", "Right corner wall angle, degrees", 5.0, 85.0, 0.5],
+	["door_width", "Back door width, m", 0.0, 8.0, 0.1], ["door_height", "Back door height, m", 2.0, 8.0, 0.1]]
+## The shape's settings before the plan: read from an old save and turned into the corner walls.
+const OLD_SHAPE_KEYS := ["back_wall_half", "corner_z"]
 const ROOM2_ROWS := [["big_room_width", "Width, m", 10.0, 80.0, 0.5], ["big_room_depth", "Depth, m", 10.0, 80.0, 0.5], ["big_room_height", "Height, m", 4.0, 24.0, 0.1]]
 const BIG_SPOT_ROWS := [["strength", "Strength", 0.0, 30.0, 0.05], ["cone", "Cone, degrees", 10.0, 120.0, 0.1], ["softness", "Edge softness", 0.1, 10.0, 0.01],
 	["reach", "Reach, m", 2.0, 60.0, 0.1], ["falloff", "Falloff", 0.01, 2.0, 0.01], ["height", "Height, m", 3.0, 23.5, 0.01], ["warmth", "Warmth", 0.0, 1.0, 0.01]]
@@ -75,6 +82,7 @@ var _wait: float = 0.0
 var _saved_note: Label
 var _scroll: ScrollContainer
 var _box: VBoxContainer
+var _walls_note: Label
 
 
 func _ready() -> void:
@@ -134,6 +142,21 @@ func _ready() -> void:
 		_section(box, "ROOM SHAPE")
 		for r in SHAPE_ROWS:
 			_row(box, r)
+		# The walls' lengths as they come out, against the panels' width.
+		_walls_note = Label.new()
+		_walls_note.add_theme_font_size_override("font_size", FONT - 2)
+		box.add_child(_walls_note)
+		# The room from above, as the sliders move it.
+		var pv := Control.new()
+		pv.set_script(PlanView)
+		pv.set("room", goat_room)
+		pv.set("showcase", showcase)
+		var marks: Array = []
+		for nd in shape_root.find_children("*", "Node4D", true, false):
+			if nd.has_method("plan_mark"):
+				marks.append(nd)
+		pv.set("panels", marks)
+		box.add_child(pv)
 	var save := Button.new()
 	save.text = "SAVE SETTINGS"
 	save.focus_mode = Control.FOCUS_NONE
@@ -377,7 +400,8 @@ func _show(key: String) -> void:
 
 
 func _process(delta: float) -> void:
-	if _scroll != null and _box != null:
+	# Shut, the panel only carries on what must not wait: settling sliders and the mood's light.
+	if visible and _scroll != null and _box != null:
 		var vh: float = get_viewport_rect().size.y
 		var room_for: float = (vh * 0.42) if panel == "room2" else (vh - 52.0)
 		var want := Vector2(_box.get_combined_minimum_size().x + 14.0, minf(_box.get_combined_minimum_size().y, room_for))
@@ -387,6 +411,16 @@ func _process(delta: float) -> void:
 			var at := Vector2(get_viewport_rect().size.x - size.x - 14.0, 64.0)
 			if position != at:
 				position = at
+	if visible and _walls_note != null and shape_root != null and shape_root.has_method("wall_lengths"):
+		var L: Dictionary = shape_root.call("wall_lengths")
+		if not L.is_empty():
+			var need: float = 9.6
+			var t: String = "Walls: Creation Lab %.1f m  ·  right %.1f m  ·  back %.1f m  ·  left %.1f m   (panels %.1f m)" % [
+				float(L.get("left_corner", 0.0)), float(L.get("right", 0.0)), float(L.get("back", 0.0)), float(L.get("left", 0.0)), need]
+			if _walls_note.text != t:
+				_walls_note.text = t
+				var short: bool = float(L.get("left_corner", 0.0)) < need or float(L.get("right", 0.0)) < need
+				_walls_note.add_theme_color_override("font_color", WARM if short else COOL)
 	if not _pending.is_empty():
 		_wait -= delta
 		if _wait <= 0.0:
@@ -445,6 +479,9 @@ func _save() -> void:
 	if shape_root != null:
 		for r in SHAPE_ROWS:
 			cfg.set_value("shape", r[0], float(_pending.get(r[0], _read_value(r[0]))))
+		for k in OLD_SHAPE_KEYS:
+			if cfg.has_section_key("shape", k):
+				cfg.erase_section_key("shape", k)
 	var err: int = cfg.save(SAVE_PATH)
 	_saved_note.text = ("Saved to %s at %s" % [SAVE_PATH, Time.get_time_string_from_system()]) if err == OK else "Could not save (%d)" % err
 
@@ -480,8 +517,13 @@ func _load() -> void:
 		var n := spot as Node4D
 		n.position = Vector4(n.position.x, float(cfg.get_value("spot", "height", n.position.y)), n.position.z, n.position.w)
 	if shape_root != null and cfg.has_section("shape"):
-		for k in cfg.get_section_keys("shape"):
-			shape_root.set(k, float(cfg.get_value("shape", k)))
+		var keys: PackedStringArray = cfg.get_section_keys("shape")
+		for k in keys:
+			if not (k in OLD_SHAPE_KEYS):
+				shape_root.set(k, float(cfg.get_value("shape", k)))
+		# Saved before the plan: the room's corners as they were, turned into its corner walls.
+		if "back_wall_half" in keys and "corner_z" in keys and not ("creation_wall_length" in keys) and shape_root.has_method("from_points"):
+			shape_root.call("from_points", float(cfg.get_value("shape", "back_wall_half")), float(cfg.get_value("shape", "corner_z")))
 	if cfg.has_section("room"):
 		for k in cfg.get_section_keys("room"):
 			_write_value(k, float(cfg.get_value("room", k)))

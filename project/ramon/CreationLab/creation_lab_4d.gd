@@ -30,6 +30,7 @@ const DataPanel := preload("res://ramon/CreationLab/kit/kit_data_panel.gd")
 const Prompt := preload("res://ramon/CreationLab/kit/kit_prompt.gd")
 const SliceView := preload("res://ramon/CreationLab/kit/kit_slice_view.gd")
 const Presenter := preload("res://ramon/CreationLab/kit/kit_presenter.gd")
+const Plan := preload("res://ramon/CreationLab/kit/kit_room_plan.gd")
 
 ## Where the player starts, facing -Z.
 @export var start_at: Vector2 = Vector2(0.0, 15.2)
@@ -40,12 +41,16 @@ const Presenter := preload("res://ramon/CreationLab/kit/kit_presenter.gd")
 @export var painted_route: bool = false
 
 @export_group("Room shape")
-## The goat room's shape in five numbers (Ramon, 4 Oct: "sliders to manipulate the walls' sizes in
-## this octagonal-ish room"): half its width, how far its back wall and its entrance wall are from
-## the middle, half the back wall's width, and how far forward (z) the angled walls begin. The
-## outline is built from them, and everything that hangs off a wall follows: the doorway and its
-## sign, the lesson's text (keeping its share of its wall), the two screens on the right (flush to
-## their wall), the entrance corridor with its light, the route and where you start.
+## The room's shape from its plan (kit/kit_room_plan.gd; Ramon, 5 Oct: "change the length of the
+## creationlab wall without changing the overal width of the room ... feel free to redesign the
+## room modelling system"): a box (half its width, how far its entrance wall and its back wall are
+## from the middle) with a corner wall cut across each back corner, each its own length and its own
+## angle off its side wall. Lengthening a corner wall slides it into its corner: the box stays as it
+## is, and the side wall and back wall it meets get shorter. Both corner walls at 0 m make a
+## rectangle. The walls are named ("left", "left_corner" the Creation Lab wall, "back",
+## "right_corner", "right" the research wall, "entrance") and what hangs on them follows by name:
+## the two wall panels (always in the middle of their walls), the doorways and the sign, the first
+## lesson's text, the entrance corridor with its light, the route and where you start.
 @export_range(5.0, 20.0, 0.1) var room_half_width: float = 10.0:
 	set(v):
 		room_half_width = v
@@ -58,13 +63,24 @@ const Presenter := preload("res://ramon/CreationLab/kit/kit_presenter.gd")
 	set(v):
 		room_front = v
 		_shape_later()
-@export_range(1.0, 10.0, 0.1) var back_wall_half: float = 3.0:
+## The Creation Lab wall: the left corner wall, carrying the introduction. Its length, and its angle
+## off the left side wall (degrees).
+@export_range(0.0, 20.0, 0.1) var creation_wall_length: float = 10.63:
 	set(v):
-		back_wall_half = v
+		creation_wall_length = v
 		_shape_later()
-@export_range(-15.0, 15.0, 0.1) var corner_z: float = -1.0:
+@export_range(5.0, 85.0, 0.5) var creation_wall_angle: float = 41.2:
 	set(v):
-		corner_z = v
+		creation_wall_angle = v
+		_shape_later()
+## The right corner wall, the same way.
+@export_range(0.0, 20.0, 0.1) var right_corner_length: float = 10.63:
+	set(v):
+		right_corner_length = v
+		_shape_later()
+@export_range(5.0, 85.0, 0.5) var right_corner_angle: float = 41.2:
+	set(v):
+		right_corner_angle = v
 		_shape_later()
 ## The door in the middle of the back wall, into the big square room behind (Ramon, 4 Oct: "a
 ## door opening behind the goat that leads in to a new room, just a much bigger square room";
@@ -137,6 +153,8 @@ var _desk_open: bool = false
 var _near_story: bool = false
 var _compare_back: Vector4 = Vector4.INF
 var presenter: Control
+## The room's plan as last built (kit_room_plan.gd chamfered()).
+var plan: Dictionary = {}
 
 
 func _enter_tree() -> void:
@@ -164,6 +182,21 @@ func apply_mood(m: String, _instant: bool = false) -> void:
 	Style.apply(m)
 	if hud != null:
 		hud.call("set_mood", m)
+
+
+## Both corner walls from shape settings saved before the plan (half the back wall's width `b`, and
+## where the angled walls began, z `c`), the room's box kept: the room comes back as it was saved.
+func from_points(b: float, c: float) -> void:
+	var cw: Vector2 = Plan.corner_from_points(room_half_width, room_back, b, c)
+	creation_wall_length = snappedf(cw.x, 0.01)
+	creation_wall_angle = snappedf(cw.y, 0.1)
+	right_corner_length = creation_wall_length
+	right_corner_angle = creation_wall_angle
+
+
+## Every wall's length as the room is now, metres, by name.
+func wall_lengths() -> Dictionary:
+	return plan.get("lengths", {})
 
 
 ## Hangs the wall panels or the first walls (see `walls`).
@@ -284,18 +317,22 @@ func apply_shape() -> void:
 	var w: float = room_half_width
 	var f: float = room_front
 	var d: float = room_back
-	var b: float = minf(back_wall_half, w - 0.5)
-	var c: float = clampf(corner_z, -d + 0.5, f - 1.0)
-	var outline := PackedVector2Array([Vector2(-w, f), Vector2(-w, c), Vector2(-b, -d), Vector2(b, -d), Vector2(w, c), Vector2(w, f)])
+	# The back wall keeps room for its door, the side walls a metre.
+	plan = Plan.chamfered(w * 2.0, f, d, Vector2(creation_wall_length, creation_wall_angle), Vector2(right_corner_length, right_corner_angle),
+		1.0, maxf(door_width, 0.0) + 0.8)
+	var outline: PackedVector2Array = plan["outline"]
 	var h: float = (gr.get("size") as Vector3).y
 	_set_if(gr, "size", Vector3(w * 2.0, h, f + d))
+	_set_if(gr, "wall_names", plan["names"])
 	_set_if(gr, "outline", outline)
-	# The doorway in the middle of the entrance wall (edge 5 runs from (w, f) to (-w, f)), and the
-	# back door in the middle of the back wall (edge 2 runs from (-b, -d) to (b, -d)).
-	var dw: float = minf(door_width, b * 2.0 - 0.4)
-	var doors: Array = [[5, w - 2.2, w + 2.2, 3.8]]
+	# The doorway in the middle of the entrance wall (it runs from (w, f) to (-w, f)), and the back
+	# door on the room's middle line (the back wall runs from its left end, x = outline[2].x).
+	var back_len: float = float((plan["lengths"] as Dictionary)["back"])
+	var bl: float = -outline[2].x
+	var dw: float = minf(door_width, back_len - 0.4)
+	var doors: Array = [["entrance", w - 2.2, w + 2.2, 3.8]]
 	if dw > 0.1:
-		doors.append([2, b - dw * 0.5, b + dw * 0.5, minf(door_height, h - 0.5)])
+		doors.append(["back", bl - dw * 0.5, bl + dw * 0.5, minf(door_height, h - 0.5)])
 	_set_if(gr, "doorways", doors)
 	# The big room behind it, its own front wall just behind the back wall, a door to match.
 	var big: Node4D = get_node_or_null("BigRoom") as Node4D
@@ -657,8 +694,9 @@ func toggle_compare() -> bool:
 	var c: Vector2 = ol[2]
 	var dir: Vector2 = (c - b).normalized()
 	var inward := Vector2(-dir.y, dir.x)
-	# WallCompare's long wall is two edges meeting at its corner 2; PanelGallery's is edge 1 alone.
-	var wall_mid: Vector2 = c if cr.name == "WallCompare" else (b + c) * 0.5
+	# WallCompare's long wall is two edges meeting at its corner 2; PanelGallery's is three, corner 1
+	# to corner 4 (each panel in the middle of its own).
+	var wall_mid: Vector2 = c if cr.name == "WallCompare" else (b + ol[4]) * 0.5
 	var at: Vector2 = Vector2(cr.global_position.x, cr.global_position.z) + wall_mid + inward * 11.0
 	player.global_position = Vector4(at.x, 0.05, at.y, 0.0)
 	player.linear_velocity = Vector4.ZERO

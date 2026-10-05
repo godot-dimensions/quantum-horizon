@@ -23,7 +23,6 @@
 script = ExtResource("1_root")
 route = PackedVector2Array(0, 14.6, 0, -1.5)
 room_back = 11.0
-corner_z = -3.0
 
 [node name="Room" type="Node4D" parent="."]
 script = ExtResource("2_room")
@@ -63,10 +62,11 @@ route = PackedVector2Array(0, 14.6, 0, -1.5)
 script = ExtResource("3_kitroom")
 outline = PackedVector2Array(-10, 9, -10, -3, -3, -11, 3, -11, 10, -3, 10, 9)
 size = Vector3(20, 10, 20)
-doorways = [[5, 7.8, 12.2, 3.8], [2, 1.8, 4.2, 3.6]]
+doorways = [["entrance", 7.8, 12.2, 3.8], ["back", 1.8, 4.2, 3.6]]
 edge_codes = {
 4: "blue"
 }
+wall_names = PackedStringArray("left", "left_corner", "back", "right_corner", "right", "entrance")
 cove = false
 route = PackedVector2Array(0, 14.6, 0, -1.5)
 ring = Vector3(0, -1.5, 3.75)
@@ -380,7 +380,7 @@ script = ExtResource("16_panel")
 info = ExtResource("18_info")
 source = NodePath("../PanelSource")
 room_path = NodePath("../GoatRoom")
-wall_edge = 1
+wall_name = "left_corner"
 
 [node name="ResearchBoard" type="Node4D" parent="."]
 script = ExtResource("16_panel")
@@ -388,7 +388,7 @@ kind = "research"
 info = ExtResource("18_info")
 source = NodePath("../PanelSource")
 room_path = NodePath("../GoatRoom")
-wall_edge = 4
+wall_name = "right"
 
 [node name="WallPanels" type="Node4D" parent="."]
 script = ExtResource("19_pair")
@@ -400,12 +400,15 @@ source = NodePath("../PanelSource")
 [node name="PanelGallery" type="Node4D" parent="."]
 position = Vector4(90, 0, 0, 0)
 script = ExtResource("3_kitroom")
-outline = PackedVector2Array(-12.288, 7, -12.288, -7, 12.288, -7, 12.288, 7)
+outline = PackedVector2Array(-12.288, 7, -12.288, -7, 0.768, -7, 10.752, -7, 12.288, -7, 12.288, 7)
 size = Vector3(24.576, 8.784, 14)
-doorways = [[3, -0.5, 25.1, 8.784]]
+doorways = [[5, -0.5, 25.1, 8.784]]
 edge_codes = {
-1: "blue"
+1: "blue",
+2: "blue",
+3: "blue"
 }
+wall_names = PackedStringArray("left", "intro", "research", "margin", "right", "front")
 cove = false
 
 [node name="IntroPanelCopy" type="Node4D" parent="."]
@@ -413,8 +416,7 @@ script = ExtResource("16_panel")
 info = ExtResource("18_info")
 source = NodePath("../PanelSource")
 room_path = NodePath("../PanelGallery")
-wall_edge = 1
-along = -5.76
+wall_name = "intro"
 foot = 1.152
 
 [node name="ResearchBoardCopy" type="Node4D" parent="."]
@@ -423,8 +425,7 @@ kind = "research"
 info = ExtResource("18_info")
 source = NodePath("../PanelSource")
 room_path = NodePath("../PanelGallery")
-wall_edge = 1
-along = 5.76
+wall_name = "research"
 foot = 1.152
 
 [node name="WallPanelsCopy" type="Node4D" parent="."]

@@ -136,8 +136,9 @@ wall's own surface, so the room's light falls on them. The plan and its 20 steps
    `research_layout` (`specimen`, `compare` or `steps`). Words only: layout and type live in
    `kit_panel_spec.gd`, never per room.
 2. **Two panels:** add two `Node4D`s running `kit_wall_panel_4d.gd`, `kind` intro and research.
-   - On a KitRoom wall: `room_path`, plus `wall_side` (a side of a rectangle room) or `wall_edge`
-     (an edge of a polygon room, any angle), and optionally `along`.
+   - On a KitRoom wall: `room_path`, plus `wall_name` (a wall of the room's plan: "left_corner",
+     "right", ...), or `wall_side` (a side of a rectangle room) or `wall_edge` (an edge number).
+     A panel always hangs in the horizontal middle of its wall.
    - No room: it builds its own blue wall facing its +Z, at any turn.
 3. **A pair:** add one `Node4D` running `kit_wall_panels_4d.gd`, with `intro`, `research`, `info`
    and `source`. It keeps the two the same size, at the same height and on the same data.
@@ -151,12 +152,14 @@ wall's own surface, so the room's light falls on them. The plan and its 20 steps
 | What | Rule |
 |---|---|
 | Size | One kit size everywhere: 1 Figma unit = `UNIT_M` (12 mm), so a panel is 9.6 × 5.9 m with its foot 1.3 m up. |
-| Blue field | A 12 m (`FIELD_M`) field of the wall, however long the wall. |
+| Blue wall | A panel's whole wall is code blue, however long the wall and whatever the panel's size. |
 | Short walls | A wall too short gets a warning and a red frame in the editor, never a smaller panel. Only the pair's fit mode changes the size, and then for both. |
 | Type | Montserrat roles in units: hero 64/78, lead 26/36, body 18/26, specimen 34/42, value 24/30, section 22/28, control 12/18, small 10/14, label 8/12, micro 7/10, fine 6/10, tiny 5/10. |
 | Colour | The six Figma tokens; on a wall the blue tints are white veils. |
 | Overflow | Text is never shrunk; overflow is reported. |
-| Edge wiring | A wall is split where a panel begins and ends, so two panels can share one wall. |
+| Centred | Always in the middle of its wall. To put two panels on one long wall, split it into walls in line (the review gallery does: three edges, a panel in the middle of each). |
+| Bottom line | The introduction's shortcut labels stand on the research panel's footnote line (`shortcut_label_y()`). |
+| Edge wiring | A wall is split where a panel begins and ends (a piece of wall carries one picture). |
 
 **Proof runners:**
 
@@ -165,6 +168,34 @@ wall's own surface, so the room's light falls on them. The plan and its 20 steps
 | `_capture_panel_sheet_runner.gd` | Both panels flat on the Figma's 2048 × 732 canvas, plus the compare and steps families. Overlay it on frame 01 to measure. |
 | `_capture_panels_runner.gd` | The lab's panels straight on and through the story; the frame-01 gallery; the walls switch both ways; the legibility check from the resting player camera. |
 | `_capture_panel_test_room_runner.gd` | A second prototype (`tests/panel_test_room.tscn`): a box room, a freestanding turned panel, and the pair's fit mode. |
+
+## Room plans (`CreationLab/kit/kit_room_plan.gd`, 5 Oct 2026)
+
+A room's shape from what it is for, not from its corners. The plan starts from a box: its width,
+how far the entrance and back walls are from the middle. Each back corner can be cut across by a
+corner wall with its own length and its own angle off its side wall.
+
+- **Lengthening a corner wall** slides it into its corner. The box stays; the side wall and back
+  wall it meets get shorter.
+- **A rectangle** is both corner walls at 0 m. It is the same builder; a zero-length wall is built
+  as nothing and keeps its number.
+- **Wall names** are `left`, `left_corner`, `back`, `right_corner`, `right` and `entrance`. A
+  KitRoom carries them in `wall_names`; doorways, edge codes and wall panels can use them.
+- **A corner wall too long** for its box is shortened, so the side wall keeps a metre and the back
+  wall keeps room for its door.
+
+**In the Creation Lab** (`creation_lab_4d.gd`, F1 ROOM SHAPE):
+
+- the sliders are half width, entrance, back, the Creation Lab wall's length and angle, the right
+  corner wall's length and angle, and the back door
+- under them are every wall's length against the panels' width (warm if a panel wall is too
+  short) and a live diagram from above (`kit_plan_view.gd`), with blue walls, the panels, doors
+  and the plinth
+- settings saved before the plan are read back as the same room (`from_points`)
+
+The shut dev panel and the wall panels cost about 0.03 ms a frame each; the first walls cost
+about 1 ms (`_capture_dev_panel_runner.gd`). `_probe_shape_runner.gd` proves the plan: the saved
+shape, a longer Creation Lab wall, and a rectangle.
 
 ## Testing (`CreationLab/scripts/`)
 
