@@ -43,12 +43,20 @@ func _ready() -> void:
 	_facing = _rest
 
 
+## A direction in the field, in the frame the figure's basis is written in (its parent's).
+## Since 6 Oct the people stand in units that can be turned, and a field angle written as
+## a local one turns them away from you by however much their unit is turned.
+func _local(v: Vector4) -> Vector4:
+	var host := _figure.get_parent() as Node4D
+	return host.global_basis.inverse() * v if host != null else v
+
+
 ## Turn to the player at once, for when something other than proximity has decided the
 ## character is paying attention - a conversation opening, say.
 func face_now() -> void:
 	if _figure == null or _player == null:
 		return
-	var gap: Vector4 = _player.global_position - _figure.global_position
+	var gap: Vector4 = _local(_player.global_position - _figure.global_position)
 	_facing = atan2(gap.x, gap.z)
 	_figure.basis = Basis4D.from_zx(_facing)
 
@@ -61,7 +69,8 @@ func _process(delta: float) -> void:
 		and absf(gap.w) <= notice_within_w
 	var want: float = _rest
 	if near:
-		want = atan2(gap.x, gap.z)
+		var to: Vector4 = _local(gap)
+		want = atan2(to.x, to.z)
 	elif not settle_back:
 		return
 	_facing = rotate_toward(_facing, want, turn_speed * delta)

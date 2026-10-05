@@ -154,12 +154,16 @@ func _carry_home(player: CharacterBody4D) -> void:
 	if player == null:
 		return
 	var parent := player.get_parent() as Node4D
-	var spot: Vector4 = CaveHill.MOUTH + Vector4(0.0, 0.05, in_front, 0.0)
+	# In front of the mouth wherever the Cave unit stands, and facing it however it is turned.
+	var hill: Node4D = CaveHill.node_in(self)
+	var spot: Vector4 = CaveHill.to_world(hill, CaveHill.MOUTH + Vector4(0.0, 0.05, in_front, 0.0))
 	player.position = parent.global_basis.inverse() * (spot - parent.global_position) if parent != null else spot
 	player.linear_velocity = Vector4.ZERO
 	player.set_physics_process(false)
-	# Facing the cave, which is -z from its mouth; the walker picks up from this heading.
-	_facing = PI
+	# Facing the cave, which is -z from its mouth in the hill's frame; the walker picks up from
+	# this heading.
+	var into: Vector4 = hill.global_basis * Vector4(0.0, 0.0, -1.0, 0.0) if hill != null else Vector4(0.0, 0.0, -1.0, 0.0)
+	_facing = atan2(into.x, into.z)
 	player.set("_facing", _facing)
 	_avatar = player.get_node_or_null("Avatar") as Node4D
 	_head = _avatar.get("head") as Node4D if _avatar != null else null
@@ -167,9 +171,11 @@ func _carry_home(player: CharacterBody4D) -> void:
 		_head_rest = _head.basis
 	var rig := player.get_node_or_null("CameraRig") as Node4D
 	if rig != null:
-		# Back on the flat slice - you walked here through W - and looking at the cave,
-		# which is heading 0: the identity ground frame.
-		rig.basis = Projection.IDENTITY
+		# Back on the flat slice - you walked here through W - and looking at the cave. The rig
+		# looks along its -z, so that is the heading whose -z is the way in: 0 for the cave as it
+		# was first placed, turned with the Cave unit since 6 Oct.
+		var look: Vector4 = player.global_basis.inverse() * into
+		rig.basis = Basis4D.from_zx(atan2(-look.x, -look.z))
 		rig.set("_homing", 0.0)
 		# The camera starts low, by your head on the grass, and the rig eases it back up.
 		rig.set("pivot_height", 0.35)

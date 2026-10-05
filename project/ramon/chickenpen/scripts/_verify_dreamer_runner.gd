@@ -290,10 +290,13 @@ func _process(d: float) -> bool:
 				var crossing: Node = _room.get_node("CaveCrossing")
 				_check("and you are home", not bool(crossing.call("is_away")))
 				var at: Vector4 = _player().global_position
-				var spot: Vector4 = CaveHill.MOUTH + Vector4(0, 0.05, 4.5, 0)
-				_check("in front of the cave", Vector2(at.x - spot.x, at.z - spot.z).length() < 0.6 and absf(at.w) < 0.05, "at %s" % at)
+				var hill: Node4D = CaveHill.node_in(_room)
+				var spot: Vector4 = CaveHill.to_world(hill, CaveHill.MOUTH + Vector4(0, 0.05, 4.5, 0))
+				_check("in front of the cave", Vector2(at.x - spot.x, at.z - spot.z).length() < 0.6 and absf(at.w - spot.w) < 0.05, "at %s" % at)
 				var up: Vector4 = (_player().get_node("Avatar") as Node4D).basis.y
-				_check("lying on your back", up.y < 0.3 and up.z > 0.7, "avatar up %s" % up)
+				# Head toward the way out: +z from the mouth in the hill's frame, which turns with the cave.
+				var out: Vector4 = hill.global_basis * Vector4(0, 0, 1, 0) if hill != null else Vector4(0, 0, 1, 0)
+				_check("lying on your back", up.y < 0.3 and up.dot(out) > 0.7, "avatar up %s" % up)
 				_save(0, "wake")
 			if _t > 2.6 and _t - d <= 2.6:
 				_save(1, "wake")

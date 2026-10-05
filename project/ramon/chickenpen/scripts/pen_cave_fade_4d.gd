@@ -90,7 +90,8 @@ func _process(delta: float) -> void:
 
 ## 0 in the open, 1 at the point the dark is complete; only inside the tunnel's own width.
 func _into_the_hill() -> float:
-	var p: Vector4 = _player.global_position
+	# In the hill's own frame, where MOUTH and the tunnel are: the Cave unit can stand anywhere.
+	var p: Vector4 = CaveHill.to_local(CaveHill.node_in(self), _player.global_position)
 	var mouth: Vector4 = CaveHill.MOUTH
 	var half: float = CaveHill.ARCH_HALF_WIDTH + 0.5
 	if absf(p.x - mouth.x) > half or absf(p.w - mouth.w) > half:

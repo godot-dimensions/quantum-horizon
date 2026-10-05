@@ -45,6 +45,10 @@ extends Node
 @export var return_offset: Vector4 = Vector4(0.0, 0.0, 1.6, 0.0)
 ## Turn the camera on the way home, to face away from where you went in.
 @export var face_on_return: bool = false
+## Optional: a node whose turn turns return_offset and the facing on return. The cave sets its
+## hill here, so "a pace back out of the mouth" stays out of the mouth however the Cave unit is
+## turned (6 Oct).
+@export var return_frame_path: NodePath
 @export var return_yaw_degrees: float = 180.0
 ## Keep the place between visits instead of building it afresh each time. The theatre is
 ## rebuilt every visit, which is right for a show. The cave is not a show: a slab you have
@@ -222,9 +226,15 @@ func come_back() -> void:
 	var player: Node4D = get_node_or_null(player_path) as Node4D
 	if player != null and _was_at != Vector4.ZERO:
 		# A pace back from where they went in, and on the floor.
-		player.global_position = _was_at + return_offset
+		var frame: Node4D = get_node_or_null(return_frame_path) as Node4D if not return_frame_path.is_empty() else null
+		var offset: Vector4 = frame.global_basis * return_offset if frame != null else return_offset
+		var turn: float = 0.0
+		if frame != null:
+			var z: Vector4 = frame.global_basis.z
+			turn = rad_to_deg(atan2(z.x, z.z))
+		player.global_position = _was_at + offset
 		if face_on_return:
-			_face(player, return_yaw_degrees)
+			_face(player, return_yaw_degrees + turn)
 	# The door has to be walkable again, or the second visit never happens.
 	for node in get_tree().current_scene.get_children():
 		_rearm(node)

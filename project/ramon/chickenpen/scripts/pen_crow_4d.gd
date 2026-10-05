@@ -482,9 +482,13 @@ func _extent(thing: Node) -> Array:
 			var m: MeshInstance4D = child
 			var size: Vector4 = (m.mesh as BoxTetraMesh4D).size
 			var at: Vector4 = m.global_position
-			top = maxf(top, at.y + size.y * 0.5)
-			lo = Vector2(minf(lo.x, at.x - size.x * 0.5), minf(lo.y, at.z - size.z * 0.5))
-			hi = Vector2(maxf(hi.x, at.x + size.x * 0.5), maxf(hi.y, at.z + size.z * 0.5))
+			# Half the box's reach along each field axis, with its turn: a shed turned 90 degrees
+			# (the pen's units can be, since 6 Oct) is long in z, not x.
+			var b: Projection = m.global_basis
+			var half: Vector4 = (b.x.abs() * size.x + b.y.abs() * size.y + b.z.abs() * size.z + b.w.abs() * size.w) * 0.5
+			top = maxf(top, at.y + half.y)
+			lo = Vector2(minf(lo.x, at.x - half.x), minf(lo.y, at.z - half.z))
+			hi = Vector2(maxf(hi.x, at.x + half.x), maxf(hi.y, at.z + half.z))
 			any = true
 		var deeper: Array = _extent(child)
 		if not deeper.is_empty():

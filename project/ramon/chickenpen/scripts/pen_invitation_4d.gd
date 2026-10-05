@@ -56,7 +56,10 @@ enum Beat { WAITING, SPEAKING, WALKING, RAISING, CALLING, LEAVING, OPEN, HOME }
 @export var effect_name: String = "trym_invite"
 
 @export_group("The walk")
-## Where he goes, in WORLD space: out of the shed door, clear of it, and on to the spot he
+## The frame the walk and the door are in: Trym's cabin (World/TrymCabin) since 6 Oct, so they
+## move and turn with it. Empty: world space, as older scenes have them.
+@export var frame_path: NodePath
+## Where he goes, in the frame's space: out of the shed door, clear of it, and on to the spot he
 ## stops at - all of it in one direction, away from the shed.
 @export var route: Array[Vector4] = [Vector4(-10.0, 0.0, -12.1, 0.0),
 	Vector4(-9.4, 0.0, -9.0, 0.0), Vector4(-9.0, 0.0, -5.8, 0.0)]
@@ -204,7 +207,7 @@ func _process(delta: float) -> void:
 			if _leg >= route.size():
 				_raise()
 				return
-			var here: Vector4 = route[_leg]
+			var here: Vector4 = _in_world(route[_leg])
 			if _trym.call("walk_towards", here, walk_speed, delta):
 				_leg += 1
 			if _leg >= route.size():
@@ -235,8 +238,7 @@ func _process(delta: float) -> void:
 			# Straight on through it, the way he was already facing. Hidden rather than
 			# freed, because a freed Trym is one his own conversation still holds a
 			# reference to, and the desk he was sitting at is the same node.
-			var away: Vector4 = Basis4D.from_zx(deg_to_rad(door_yaw_degrees)) * Vector4(0.0, 0.0, vanish_beyond, 0.0)
-			var beyond := Vector4(door_at.x, 0.0, door_at.z, 0.0) + away
+			var beyond: Vector4 = _door_spot() + _door_basis() * Vector4(0.0, 0.0, vanish_beyond, 0.0)
 			if not _trym.call("walk_towards", beyond, walk_speed, delta):
 				return
 			if _trym.has_method("set_figure_visible"):
@@ -248,10 +250,10 @@ func _process(delta: float) -> void:
 func _put_door_up() -> void:
 	if _arch == null or not (_arch is Node4D):
 		return
-	# door_at is a spot in the field: placed in world terms, since the door is part of Trym's cabin
-	# unit (6 Oct) and its own position is relative to the cabin.
-	(_arch as Node4D).global_position = Vector4(door_at.x, 0.0, door_at.z, 0.0)
-	(_arch as Node4D).global_basis = Basis4D.from_zx(deg_to_rad(door_yaw_degrees))
+	# Placed in world terms: the arch is part of Trym's cabin unit (6 Oct), and door_at is in the
+	# cabin's frame, which the arch's own position is not.
+	(_arch as Node4D).global_position = _door_spot()
+	(_arch as Node4D).global_basis = _door_basis()
 	_arch.set("armed", true)
 
 
@@ -299,7 +301,7 @@ func stage_as_if_followed() -> void:
 	if _trym.has_method("take_over"):
 		_trym.call("take_over")
 	if _trym.has_method("place_at"):
-		_trym.call("place_at", Vector4(door_at.x, 0.0, door_at.z + vanish_beyond, 0.0))
+		_trym.call("place_at", _door_spot() + _door_basis() * Vector4(0.0, 0.0, vanish_beyond, 0.0))
 	if _trym.has_method("set_figure_visible"):
 		_trym.call("set_figure_visible", false)
 	# And YOU are standing in the doorway, because that is where you would be. The
@@ -307,8 +309,27 @@ func stage_as_if_followed() -> void:
 	# this the shortcut drops you home at whatever spot you happened to press the key on
 	# rather than out in front of the shed where the door was.
 	if _player != null:
-		_player.global_position = Vector4(door_at.x, _player.global_position.y,
-			door_at.z, _player.global_position.w)
+		var door: Vector4 = _door_spot()
+		_player.global_position = Vector4(door.x, _player.global_position.y, door.z, _player.global_position.w)
+
+
+## A spot in the walk's frame, in the world (world space when there is no frame).
+func _in_world(p: Vector4) -> Vector4:
+	var frame: Node4D = get_node_or_null(frame_path) as Node4D if not frame_path.is_empty() else null
+	return frame.global_position + frame.global_basis * p if frame != null else p
+
+
+## Where the arch goes up, on the ground, in the world.
+func _door_spot() -> Vector4:
+	var at: Vector4 = _in_world(Vector4(door_at.x, 0.0, door_at.z, door_at.w))
+	return Vector4(at.x, 0.0, at.z, at.w)
+
+
+## How the arch faces, in the world: door_yaw_degrees in the frame, turned with it.
+func _door_basis() -> Projection:
+	var frame: Node4D = get_node_or_null(frame_path) as Node4D if not frame_path.is_empty() else null
+	var yaw: Projection = Basis4D.from_zx(deg_to_rad(door_yaw_degrees))
+	return frame.global_basis * yaw if frame != null else yaw
 
 
 func _raise() -> void:
@@ -366,7 +387,7 @@ func rearm() -> void:
 	# a door up wherever you happen to be standing. So it is measured from YOU now, and he
 	# is placed on the mark rather than walked to it: the door folding away is the arrival,
 	# and he is part of it instead of a second event that happens afterwards.
-	var base: Vector4 = _player.global_position if _player != null else door_at
+	var base: Vector4 = _player.global_position if _player != null else _door_spot()
 	var spot := Vector4(base.x + 1.6, 0.0, base.z + 1.4, base.w)
 	# No walk. Anything non-zero here is a leg for him to cover in the HOME beat.
 	_home_to = Vector4.ZERO

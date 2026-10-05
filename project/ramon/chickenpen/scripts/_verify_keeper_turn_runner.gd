@@ -10,6 +10,8 @@ var _before: float = 0.0
 
 
 func _initialize() -> void:
+	# Never takes focus, so a mouse moving over the window cannot turn its camera.
+	root.unfocusable = true
 	_root = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_root); current_scene = _root
 
@@ -20,15 +22,18 @@ func _process(_d) -> bool:
 	if _keeper == null:
 		_keeper = _root.get_node("World/KeeperPost/Keeper")
 		_player = _root.get_node("Player")
-		_before = atan2(_keeper.basis.z.x, _keeper.basis.z.z)
+		_before = atan2(_keeper.global_basis.z.x, _keeper.global_basis.z.z)
 		# Walk up from the OTHER side, so facing him means turning right round.
 		var at: Vector4 = _keeper.global_position
 		_player.position = Vector4(at.x - 2.0, 1.3, at.z - 1.6, 0.0)
 		return false
 	if _f < 190: return false
-	var after: float = atan2(_keeper.basis.z.x, _keeper.basis.z.z)
+	var after: float = atan2(_keeper.global_basis.z.x, _keeper.global_basis.z.z)
 	var gap: Vector4 = _player.global_position - _keeper.global_position
 	var want: float = atan2(gap.x, gap.z)
 	print("keeper faced %.2f rad, now faces %.2f, player is at %.2f" % [_before, after, want])
 	print("turned to within %.2f rad of the player" % absf(wrapf(after - want, -PI, PI)))
+	# In the field's frame: since 6 Oct the keeper's unit can be turned, and his own basis is
+	# then not the way he faces.
+	print("KEEPER TURN: %s" % ("PASS" if absf(wrapf(after - want, -PI, PI)) < 0.2 else "FAIL"))
 	return true

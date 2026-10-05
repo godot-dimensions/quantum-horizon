@@ -26,6 +26,8 @@ var _stopped_at: float = 0.0
 
 
 func _initialize() -> void:
+	# Never takes focus, so a mouse moving over the window cannot turn its camera.
+	root.unfocusable = true
 	_root = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_root); current_scene = _root
 
@@ -196,15 +198,20 @@ func _process(delta: float) -> bool:
 				return false
 			print("\n--- he walks out and raises it ---")
 			var fig: Vector4 = _figure().global_position
-			_check("he left the shed", fig.z > -12.0,
+			# In the cabin's own frame (a unit since 6 Oct, which can stand anywhere and be turned):
+			# out of the shed is +z from the cabin's middle, whichever way the cabin faces.
+			var cabin: Node4D = _root.get_node("World/TrymCabin")
+			var fig_in: Vector4 = cabin.global_basis.inverse() * (fig - cabin.global_position)
+			var arch_in: Vector4 = cabin.global_basis.inverse() * (_arch.global_position - cabin.global_position)
+			_check("he left the shed", fig_in.z > 2.0,
 				"figure at %s, desk still at %s" % [_v(fig), _v(_desk_at)])
 			_check("the furniture stayed behind",
 				(_trym.get_node("DeskTop") as Node4D).global_position.is_equal_approx(_desk_at),
 				"desk has not moved")
 			_check("the door went up in front of him",
-				_arch.global_position.z > fig.z,
-				"door at z %.1f, he is at z %.1f - on the way he was already walking"
-					% [_arch.global_position.z, fig.z])
+				arch_in.z > fig_in.z,
+				"door %.1f m out from the cabin, he is %.1f m out - on the way he was already walking"
+					% [arch_in.z, fig_in.z])
 			_check("his tag came with him",
 				absf((_root.get_node("World/TrymCabin/TrymHead") as Node4D).global_position.z - fig.z) < 1.5,
 				"TrymHead follows the figure")

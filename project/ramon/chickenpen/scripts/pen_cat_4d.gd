@@ -447,6 +447,21 @@ func _do_wander(delta: float) -> void:
 
 
 ## The doorway if the den knows where its door is, the middle of it if not.
+## A direction in the field, in the frame the cat moves in. Its heading, basis and position are
+## all its parent's, and since 6 Oct the cats live in units that can be turned (the rock pile,
+## Trym's cabin): a field direction used as a local heading walks a cat in a turned unit the
+## wrong way, and a cat that flees toward you.
+func _local_dir(v: Vector4) -> Vector4:
+	var host := get_parent() as Node4D
+	return host.global_basis.inverse() * v if host != null else v
+
+
+## A place in the field, in the frame the cat moves in.
+func _local_point(p: Vector4) -> Vector4:
+	var host := get_parent() as Node4D
+	return host.global_basis.inverse() * (p - host.global_position) if host != null else p
+
+
 func _den_door() -> Vector4:
 	if _den != null and _den.has_method("door_point"):
 		return _den.call("door_point")
@@ -476,22 +491,22 @@ func _keep_out_of_den() -> void:
 		local.z = (half.y if local.z >= 0.0 else -half.y)
 	var fixed: Vector4 = _den.global_position + _den.global_basis * local
 	global_position = Vector4(fixed.x, global_position.y, fixed.z, global_position.w)
-	var away := Vector2(fixed.x - _den.global_position.x, fixed.z - _den.global_position.z)
-	if away.length() > 0.01:
-		_heading = atan2(away.x, away.y)
+	var away: Vector4 = _local_dir(Vector4(fixed.x - _den.global_position.x, 0.0, fixed.z - _den.global_position.z, 0.0))
+	if Vector2(away.x, away.z).length() > 0.01:
+		_heading = atan2(away.x, away.z)
 		basis = Basis4D.from_zx(_heading)
 
 
 func _do_to_crate(delta: float) -> void:
 	_walking(true)
 	_walker.set("belt_speed", pace)
-	var to: Vector4 = _crate.global_position - global_position
+	var to: Vector4 = _local_dir(_crate.global_position - global_position)
 	var flat: float = Vector2(to.x, to.z).length()
 	_heading = rotate_toward(_heading, atan2(to.x, to.z),
 		deg_to_rad(turn_rate_degrees) * delta * 3.0)
 	basis = Basis4D.from_zx(_heading)
 	if flat < crate_reach:
-		_leap_to(_crate.position + Vector4(0.0, crate_top, 0.0, 0.0))
+		_leap_to(_local_point(_crate.global_position) + Vector4(0.0, crate_top, 0.0, 0.0))
 
 
 ## An arc, with the legs held still - the walker plants feet on the floor and a cat in the
@@ -538,7 +553,7 @@ func _do_flee(delta: float) -> void:
 	# moving curves the path into an arc around the player, which covers a third of the
 	# ground and does not read as bolting.
 	if _player != null and _mood_left > flee_seconds - 0.2:
-		var away: Vector4 = global_position - _player.global_position
+		var away: Vector4 = _local_dir(global_position - _player.global_position)
 		_heading = atan2(away.x, away.z)
 	basis = Basis4D.from_zx(_heading)
 	position += Vector4(sin(_heading), 0.0, cos(_heading), 0.0) * flee_dash * delta
@@ -604,13 +619,13 @@ func _do_to_perch(delta: float) -> void:
 	# A trot, not a stroll: the coop can be fifteen units away and a cat ambling there at
 	# its own pace is two minutes of nothing.
 	_walker.set("belt_speed", pace * 4.0)
-	var to: Vector4 = _perch.global_position - global_position
+	var to: Vector4 = _local_dir(_perch.global_position - global_position)
 	var flat: float = Vector2(to.x, to.z).length()
 	_heading = rotate_toward(_heading, atan2(to.x, to.z),
 		deg_to_rad(turn_rate_degrees) * delta * 4.0)
 	basis = Basis4D.from_zx(_heading)
 	if flat < 1.6:
-		var top: Vector4 = _perch.global_position - (get_parent() as Node4D).global_position
+		var top: Vector4 = _local_point(_perch.global_position)
 		_leap_to(Vector4(top.x, top.y + perch_top, top.z, position.w))
 		# Landing above its home height sends it into SIT, which is where it stays.
 
@@ -620,7 +635,7 @@ func _do_to_perch(delta: float) -> void:
 func _do_to_den(delta: float) -> void:
 	_walking(true)
 	_walker.set("belt_speed", pace * 1.4)
-	var to: Vector4 = _den_door() - global_position
+	var to: Vector4 = _local_dir(_den_door() - global_position)
 	_heading = rotate_toward(_heading, atan2(to.x, to.z),
 		deg_to_rad(turn_rate_degrees) * delta * 3.0)
 	basis = Basis4D.from_zx(_heading)
@@ -647,8 +662,7 @@ func _do_inside(delta: float) -> void:
 ## than from wherever it last happened to be standing.
 func _indoors(shut_in: bool) -> void:
 	if _den != null:
-		var host: Node4D = get_parent() as Node4D
-		var door: Vector4 = _den_door() - (host.global_position if host != null else Vector4.ZERO)
+		var door: Vector4 = _local_point(_den_door())
 		position = Vector4(door.x, _home.y, door.z, position.w)
 		_home = position
 	visible = not shut_in

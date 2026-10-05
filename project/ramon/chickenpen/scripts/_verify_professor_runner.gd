@@ -15,6 +15,8 @@ var _fails: Array = []
 
 
 func _initialize() -> void:
+	# Never takes focus, so a mouse moving over the window cannot turn its camera.
+	root.unfocusable = true
 	_root = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_root); current_scene = _root
 
@@ -37,12 +39,16 @@ func _process(_d) -> bool:
 	# THE ROCK HAS GONE INTO THE HILL (28 Sept 2026), and he stands in front of the hole it
 	# went into, pointing people at it - near the mouth, and clear of the rock face and the
 	# hill's colliders, which a distance check alone would not prove.
+	# Since 6 Oct the cave is a unit that can be moved and turned, so the mouth and the hill's
+	# boxes are taken in the hill's own frame and put where the hill now stands.
 	var hill = CaveHill.new()
-	var mouth: Vector4 = CaveHill.MOUTH
+	var hill_node: Node4D = CaveHill.node_in(prof)
+	var mouth: Vector4 = CaveHill.to_world(hill_node, CaveHill.MOUTH) if hill_node != null else CaveHill.MOUTH
 	var gap: float = Vector2(prof.global_position.x - mouth.x, prof.global_position.z - mouth.z).length()
 	var clear := true
 	for box in hill.solid_boxes():
-		var d: Vector4 = (prof.global_position + Vector4(0.0, 0.9, 0.0, 0.0) - box[0]).abs() - (box[1] as Vector4) * 0.5
+		var at: Vector4 = CaveHill.to_local(hill_node, prof.global_position + Vector4(0.0, 0.9, 0.0, 0.0))
+		var d: Vector4 = (at - box[0]).abs() - (box[1] as Vector4) * 0.5
 		if d.x < 0.3 and d.y < 0.0 and d.z < 0.3 and d.w < 0.3:
 			clear = false
 	_check("he stands in front of the cave mouth", gap > 3.0 and gap < 9.0 and clear,

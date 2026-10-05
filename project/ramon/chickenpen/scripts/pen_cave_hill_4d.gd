@@ -23,7 +23,8 @@ signal entered
 var _player: Node4D
 var _crossing: Node
 var _used := false
-## The trigger, as a centre and half-size in world space.
+## The trigger, as a centre and half-size in the hill's own frame (it moves and turns with the
+## Cave unit).
 var _way_in := Vector4.ZERO
 var _way_in_half := Vector4.ZERO
 
@@ -56,7 +57,7 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	if Engine.is_editor_hint() or _used or _player == null:
 		return
-	var d: Vector4 = (_player.global_position - _way_in).abs()
+	var d: Vector4 = (CaveHill.to_local(self, _player.global_position) - _way_in).abs()
 	if d.x <= _way_in_half.x and d.y <= _way_in_half.y and d.z <= _way_in_half.z and d.w <= _way_in_half.w:
 		_used = true
 		preload("res://ramon/chickenpen/scripts/pen_quests_4d.gd").mark_visited("cave")

@@ -14,6 +14,7 @@ albedo_texture_3d = ExtResource("shared_ImageTexture3D_umeec")
 position = Vector4(-17, 0, 40, 0)
 material_override = SubResource("TetraMaterial4D_wbvub")
 mesh = ExtResource("cave_hill_mesh")
-script = ExtResource("pen_cave_hill")player_path = NodePath("../../../Player")
+script = ExtResource("pen_cave_hill")
+player_path = NodePath("../../../Player")
 crossing_path = NodePath("../../../CaveCrossing")
 

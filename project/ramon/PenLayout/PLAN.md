@@ -81,6 +81,73 @@ What the units are tied to (measured):
 12. Commit; tell Aaron and Andrew the pen is now split, and that the split is one large change to
     pull.
 
+## Phase C0: every unit movable (Ramon, 6 Oct: "the fixes now that the instances are made are the most important")
+
+Goal: any unit can be moved anywhere in the field, at any W, and turned in 90 degree steps, and
+everything that belongs to it follows. Found by reading every script tied to a unit (the ones on
+its nodes and the ones that link to them), every hard-coded position in the pen's scripts, and
+every position-like value set in the scene.
+
+Already safe:
+- talk triggers and staging (world distances to the speaker; TalkCam is staged per conversation)
+- the cats (their den door follows the shed's transform)
+- the range's counter (local)
+- the Lookout's balloon, marsh and wood (they follow the site)
+- grass clearings (keyed by node)
+- the walkable radius (a circle round the origin)
+
+Not part of this: the cave's inside is its own scene, loaded far away (1 km along x) when you
+walk in, and it never moves.
+
+30. **The cave:**
+    - the entrance trigger, the darkness fade on the way in, and the spot you wake at after the
+      dream all compare against the hill's world coordinates; they move into the cave node's own
+      frame
+    - the crossing's way back out (8.5 m in front, facing out) turns with the cave
+31. **Trym's walk and door:** the invitation's route (desk to door) and the door's spot are field
+    coordinates; they become the cabin's own.
+32. **The balloon ride:** its pass over the pen is drawn for the pen where it is now. The ride
+    bends toward wherever the pen is from the mooring on that stretch (and nowhere else: take-off,
+    landing and the W legs over the marsh and wood stay as drawn), so the Lookout can stand
+    anywhere and Wren's "There's the pen" still has the pen below.
+33. **Turning:** a unit turned 90 degrees keeps its colliders right (tested: the physics is boxes
+    that do not turn).
+34. **A layout check:** units not overlapping each other or the pen, inside the walkable circle,
+    and no chicken home inside a building.
+35. **Proof on a moved pen:**
+    - a scratch copy of the pen with every unit moved and turned
+    - the pen's tests run against it
+    - checks that the cave entrance, Trym's door, the ride and the colliders went with their units
+    - then the real pen put back
+
+**What the proof found (6 Oct):**
+- Fixed in the game:
+  - waking from the dream pointed the camera at heading 0, so with a turned cave you woke
+    looking away from it; it now faces the cave however the unit is turned
+  - the crows measured the shed's roof without its turn, so on a turned, non-square shed they
+    could land in the air beside it
+  - the cats worked out where to go in field directions but walked in their unit's frame: in a
+    turned unit the rock-pile cat never got back to its seat, and a cat could flee toward you.
+    Their seat, perch, den and flight, and the grab's carry and throw, are now in the unit's frame
+  - the people who turn to face you (keeper, professor, range master, Wren: one shared script)
+    would have faced off by however much their unit was turned; the keeper's test passed anyway
+    because it measured the same local angle, and now measures in the field
+- The same mistake every time: a direction in the field's coordinates used as one in the unit's.
+  Turning is kept (Ramon offered to drop it); each fix was two or three lines.
+  - the hill lookup (`CaveHill.node_in`) failed from a node inside a unit (its owner is the unit,
+    not the pen)
+  - one fused line in `units/cave/cave.tscn` (two properties on one line; Godot read it, but it
+    would not have survived much)
+- Fixed in the tests: five of them (cave, cave fade, dreamer, professor, crossing) walked to the
+  cave's old field coordinates; they now work in the hill's frame.
+- **A layout rule, not code: the professor goes with the cave.** He stands at the mouth
+  pointing people at it (his test checks 3 to 9 m), but nothing in his scripts reads the cave.
+  Moving one without the other breaks the story silently, so the layout check says so.
+- Already safe, checked: the crows find the shed by its node; the cat keeps out of the shed in
+  the shed's own frame.
+- The new layout check (`scripts/_check_layout_runner.gd`, step 34) caught the proof's own first
+  layout: the cave turned so the professor stood 48 m out, past the 46 m the player can walk.
+
 ## Phase B: watchtower case study
 
 Done last (Ramon). It works in `PenLayout/Watchtower/` and does not touch the pen.

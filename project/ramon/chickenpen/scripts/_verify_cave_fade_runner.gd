@@ -30,6 +30,8 @@ const GAPS := [6.0, 4.0, 2.5, 1.6]
 
 
 func _initialize() -> void:
+	# Never takes focus, so a mouse moving over the window cannot turn its camera.
+	root.unfocusable = true
 	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_room)
 	current_scene = _room
@@ -55,9 +57,10 @@ func _alpha() -> float:
 	return _fade.color.a if (_fade.get_parent() as CanvasLayer).visible else 0.0
 
 
-## A point [param into] metres into the hill's tunnel, on its middle line.
+## A point [param into] metres into the hill's tunnel, on its middle line. The hill's constants are
+## in its own frame; since 6 Oct the Cave unit can be moved and turned.
 func _in_tunnel(into: float) -> Vector4:
-	return Vector4(CaveHill.MOUTH.x, 1.05, CaveHill.MOUTH.z + 0.5 - into, CaveHill.MOUTH.w)
+	return CaveHill.to_world(CaveHill.node_in(_room), Vector4(CaveHill.MOUTH.x, 1.05, CaveHill.MOUTH.z + 0.5 - into, CaveHill.MOUTH.w))
 
 
 func _cave() -> Node4D:
@@ -98,7 +101,7 @@ func _process(d: float) -> bool:
 		1:
 			# On into the trigger, holding there until it fires.
 			var way: Array = _hill.way_in()
-			_hold(way[0] - Vector4(0.0, 0.15, 0.0, 0.0))
+			_hold(CaveHill.to_world(CaveHill.node_in(_room), way[0] - Vector4(0.0, 0.15, 0.0, 0.0)))
 			if bool(_crossing.call("is_away")):
 				var a := _alpha()
 				_check("black the moment you arrive", a > 0.95, "%.3f" % a)
@@ -147,7 +150,7 @@ func _process(d: float) -> bool:
 				_clear_at = _t
 			if _t > 2.5:
 				_check("clears on the field, not at once", _clear_at > 0.8 and _clear_at < 1.6, "after %.2f s" % _clear_at)
-				var p: Vector4 = _player().global_position
+				var p: Vector4 = CaveHill.to_local(CaveHill.node_in(_room), _player().global_position)
 				_check("home in the mouth", _hill.tunnel_into(p) < 3.0, "%.1f m in" % _hill.tunnel_into(p))
 				print("CAVE FADE: %s" % ("ALL PASS" if _failed == 0 else "%d FAILED" % _failed))
 				quit()

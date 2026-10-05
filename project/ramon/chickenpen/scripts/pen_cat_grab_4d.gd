@@ -122,16 +122,12 @@ func _process(delta: float) -> void:
 	if not scratches:
 		# A friendly one is simply carried. It still has to be put somewhere, which is
 		# what the throw is for.
-		var host_calm: Node4D = _cat.get_parent() as Node4D
-		_cat.position = _anchor.global_position \
-			- (host_calm.global_position if host_calm != null else Vector4.ZERO)
+		_cat.position = _in_cat_frame(_anchor.global_position)
 		return
 	# Held overhead, written as a LOCAL position: assigning global_position on a Node4D
 	# goes through the parent's transform and silently does nothing, which is a trap this
 	# project has already fallen into twice.
-	var host: Node4D = _cat.get_parent() as Node4D
-	var origin: Vector4 = host.global_position if host != null else Vector4.ZERO
-	_cat.position = _anchor.global_position - origin
+	_cat.position = _in_cat_frame(_anchor.global_position)
 	_left -= delta
 	if _left <= 0.0:
 		_scratch()
@@ -155,10 +151,15 @@ func _throw() -> void:
 	var forward: Vector4 = (frame * Vector4(0.0, 0.0, 1.0, 0.0)).normalized()
 	var landing: Vector4 = _cat.global_position + forward * throw_speed * 0.7 \
 		+ Vector4(0.0, throw_rise * 0.1, 0.0, 0.0)
-	var host: Node4D = _cat.get_parent() as Node4D
-	var origin: Vector4 = host.global_position if host != null else Vector4.ZERO
-	_cat.call("thrown_to", landing - origin)
+	_cat.call("thrown_to", _in_cat_frame(landing))
 	_say("")
+
+
+## A place in the field, in the frame the cat's position is written in: its parent's, which
+## since 6 Oct is a unit that can be moved and turned (the rock pile, Trym's cabin).
+func _in_cat_frame(p: Vector4) -> Vector4:
+	var host: Node4D = _cat.get_parent() as Node4D
+	return host.global_basis.inverse() * (p - host.global_position) if host != null else p
 
 
 func _say(text: String, seconds: float = 2.0) -> void:

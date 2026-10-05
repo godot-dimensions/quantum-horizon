@@ -1,5 +1,31 @@
 extends RefCounted
 
+## WHERE THE CONSTANTS LIVE. HILL, MOUTH, the boxes and the way in are in the hill's own frame, as
+## the baked mesh is. Since 6 Oct the hill is in the Cave unit, which can be moved and turned, so
+## anything comparing them with a place in the field goes through the hill's node: node_in()
+## finds it, to_local() and to_world() cross between the two frames.
+
+## The CaveHill node of the scene [param from] is in: by name under its World, where the Cave unit
+## holds it (straight under World in older scenes). Null when there is none.
+static func node_in(from: Node) -> Node4D:
+	# Up to the scene that has the World in it: from a node inside a unit, its owner is the unit.
+	var n: Node = from
+	while n != null and n.get_node_or_null("World") == null:
+		n = n.get_parent()
+	if n == null:
+		return null
+	return n.get_node("World").find_child("CaveHill", true, false) as Node4D
+
+
+## A place in the field, in the hill's own frame (the frame of MOUTH and HILL).
+static func to_local(hill: Node4D, p: Vector4) -> Vector4:
+	return hill.global_basis.inverse() * (p - hill.global_position) if hill != null else p
+
+
+## A place in the hill's own frame, in the field.
+static func to_world(hill: Node4D, p: Vector4) -> Vector4:
+	return hill.global_position + hill.global_basis * p if hill != null else p
+
 ## The hill with the hole in it, back and to the right of the pen: a round grassy hill with a
 ## rock face at its foot, and in the face a great half-sunk arch going into the dark.
 ## Walking to the back of it takes you to the cave (cave/cave.tscn).

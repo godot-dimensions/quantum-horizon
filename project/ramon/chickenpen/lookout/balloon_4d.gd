@@ -74,6 +74,16 @@ const RADIO := [
 ]
 ## When the fork is taken: the rail's w is 0 there, so either way is smooth.
 const FORK_AT := 70.0
+## WHERE THE PEN WAS WHEN THE RIDE WAS DRAWN, from the mooring, in the ride's own frame: the pen at
+## (0, -11), the mooring at (-23.5, -30). Since 6 Oct the Lookout is a unit that can be put anywhere,
+## so the stretch over the farm bends toward wherever the pen really is from the mooring (see
+## _pen_shift): "There's the pen" still has the pen below. Take-off, landing and the W legs over
+## the marsh and the wood stay as drawn; with the Lookout where it was drawn the bend is nothing.
+const DRAWN_PEN := Vector4(23.5, 0.0, 19.0, 0.0)
+## How much of that bend each moment of the ride takes: none until take-off is done, all of it over
+## the farm (the pen at 30 s, the starlings at 50 s), none again by the fork.
+const PEN_BEND_IN := Vector2(10.0, 26.0)
+const PEN_BEND_OUT := Vector2(44.0, 64.0)
 
 @export var envelope_colours: Array[Color] = [Color(0.62, 0.14, 0.10), Color(0.90, 0.84, 0.70), Color(0.66, 0.16, 0.11),
 	Color(0.88, 0.62, 0.16), Color(0.16, 0.42, 0.44), Color(0.62, 0.14, 0.10)]
@@ -411,7 +421,9 @@ func _ride(delta: float) -> void:
 		_burn = maxf(_burn, 0.25)
 	else:
 		lift = move_toward(lift, lift_min if allowed > 0.0 else 0.0, sink_rate * delta * ride_speed * (1.0 if allowed > 0.0 else 3.0))
-	var on_rail: Vector4 = _moor + ride_basis * _path(minf(ride_time, end))
+	var t_now: float = minf(ride_time, end)
+	var bend: float = smoothstep(PEN_BEND_IN.x, PEN_BEND_IN.y, t_now) * (1.0 - smoothstep(PEN_BEND_OUT.x, PEN_BEND_OUT.y, t_now))
+	var on_rail: Vector4 = _moor + ride_basis * (_path(t_now) + _pen_shift() * bend)
 	var floor_y: float = on_rail.y
 	var ground: RefCounted = lookout.get("ground")
 	if ground != null:
@@ -429,6 +441,19 @@ func _ride(delta: float) -> void:
 		_said += 1
 	if ride_time >= end:
 		_land()
+
+
+## How far the pen is from where the ride was drawn to find it, in the ride's frame, on the ground
+## (x and z only): zero while the Lookout stands where it was drawn.
+func _pen_shift() -> Vector4:
+	var room: Node = lookout.get("room") if lookout != null else null
+	var pen: Node4D = room.get_node_or_null("Pen") as Node4D if room != null else null
+	var host: Node4D = get_parent() as Node4D
+	if pen == null or host == null:
+		return Vector4.ZERO
+	var moor: Vector4 = host.global_position + host.global_basis * _moor
+	var rel: Vector4 = (host.global_basis * ride_basis).inverse() * (pen.global_position - moor)
+	return Vector4(rel.x - DRAWN_PEN.x, 0.0, rel.z - DRAWN_PEN.z, 0.0)
 
 
 ## Catmull-Rom through the ride's points, so it drifts rather than turning corners.

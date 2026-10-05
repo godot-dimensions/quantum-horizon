@@ -24,6 +24,8 @@ var _gold_before := 0
 
 
 func _initialize() -> void:
+	# Never takes focus, so a mouse moving over the window cannot turn its camera.
+	root.unfocusable = true
 	_room = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_room)
 	current_scene = _room
@@ -73,11 +75,13 @@ func _physics_process(_d: float) -> bool:
 	if _wait > 0:
 		return false
 	var hill = CaveHill.new()
+	# The hill's constants are in its own frame; since 6 Oct the Cave unit can be moved and turned.
+	var hill_node: Node4D = CaveHill.node_in(_room)
 	match _step:
 		0:
 			# Into the bore, where the hill's trigger is.
 			var way: Array = hill.way_in()
-			_hold(way[0] - Vector4(0.0, 1.2, 0.0, 0.0))
+			_hold(CaveHill.to_world(hill_node, way[0] - Vector4(0.0, 1.2, 0.0, 0.0)))
 			_step = 1
 			_wait = 10
 		1:
@@ -173,13 +177,16 @@ func _physics_process(_d: float) -> bool:
 			_check("and the farm's sound back, the cave's gone", (farm_bed == null or farm_bed.playing) and (cave_bed == null or not cave_bed.playing))
 			var p := _player()
 			var mouth_z: float = CaveHill.MOUTH.z
-			_check("set down in the mouth of the cave", absf(p.global_position.x - CaveHill.MOUTH.x) < 3.0 and p.global_position.z > mouth_z - 6.5 and p.global_position.z < mouth_z + 1.0, "at %s" % p.global_position)
+			var lp: Vector4 = CaveHill.to_local(hill_node, p.global_position)
+			_check("set down in the mouth of the cave", absf(lp.x - CaveHill.MOUTH.x) < 3.0 and lp.z > mouth_z - 6.5 and lp.z < mouth_z + 1.0, "at %s (%s in the hill's frame)" % [p.global_position, lp])
 			var yaw: float = float(_room.get_node("Player/CameraRig").get("yaw"))
-			_check("facing out of the hill", absf(angle_difference(yaw, PI)) < 0.2, "yaw %.2f" % yaw)
+			var hz: Vector4 = hill_node.global_basis.z if hill_node != null else Vector4(0, 0, 1, 0)
+			var out_yaw: float = PI + atan2(hz.x, hz.z)
+			_check("facing out of the hill", absf(angle_difference(yaw, out_yaw)) < 0.2, "yaw %.2f, out of the hill is %.2f" % [yaw, out_yaw])
 			_check("and the gold came home with you", _gold_count() > _gold_before)
 			# And again.
 			var way: Array = hill.way_in()
-			_hold(way[0] - Vector4(0.0, 1.2, 0.0, 0.0))
+			_hold(CaveHill.to_world(hill_node, way[0] - Vector4(0.0, 1.2, 0.0, 0.0)))
 			_step = 6
 			_wait = 10
 		6:

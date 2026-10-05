@@ -3237,6 +3237,7 @@ farm_camera_path = NodePath("../Player/CameraRig/Pitch/Camera4D")
 player_path = NodePath("../Player")
 bring_player = true
 return_offset = Vector4(0, 0, 8.5, 0)
+return_frame_path = NodePath("../World/Cave/CaveHill")
 face_on_return = true
 keep_scene = true
 blocked_by = Array[NodePath]([NodePath("../Crossing")])
@@ -3245,6 +3246,9 @@ stage_before_testing = false
 
 [node name="Invitation" type="Node" parent="."]
 script = ExtResource("pen_invite")
+frame_path = NodePath("../World/TrymCabin")
+route = Array[Vector4]([Vector4(0, 0, 1.9, 0), Vector4(0.6, 0, 5, 0), Vector4(1, 0, 8.2, 0)])
+door_at = Vector4(1, 0, 10.7, 0)
 dialogue_path = NodePath("../Systems/TrymTalk")
 trym_path = NodePath("../World/TrymCabin/Trym")
 tag_path = NodePath("../UI/TrymTag")
