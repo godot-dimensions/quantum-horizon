@@ -125,6 +125,7 @@ var _at_desk: Node = null
 var _shape_queued: bool = false
 var _desk_open: bool = false
 var _near_story: bool = false
+var _compare_back: Vector4 = Vector4.INF
 var presenter: Control
 
 
@@ -370,7 +371,7 @@ func _process(delta: float) -> void:
 
 func _strip() -> Array:
 	if not _in_room or showcase == null:
-		return [["WASD", "Move"], ["Mouse", "Look"], ["B", "Dark / bright"]]
+		return [["WASD", "Move"], ["Mouse", "Look"], ["B", "Black / grey"]]
 	if _desk_ease > 0.5:
 		if _desk_open:
 			return [["← → / Click", "Step through the tool"], ["E", "Close the data"]]
@@ -602,3 +603,35 @@ func _run_cinematic(delta: float) -> void:
 		_cine = {}
 		player.set("input_enabled", true)
 		showcase.call("end_cinematic")
+
+
+## The two blue walls side by side, for review (Ramon, 5 Oct: "make two separate walls next to the
+## room, with the two blue panels next to each other, so I can have a clear look"): the gallery
+## WallCompare beside the room carries a copy of each, on one back wall, facing the way the Creation
+## Lab wall faces and under one light between them, so they are lit alike. The dev panel's button
+## puts you in front of them; again, back where you were.
+func toggle_compare() -> bool:
+	var cr: Node4D = get_node_or_null("WallCompare") as Node4D
+	if cr == null or player == null:
+		return false
+	var rig: Node = player.get_node_or_null("CameraRig")
+	if _compare_back != Vector4.INF:
+		player.global_position = _compare_back
+		player.linear_velocity = Vector4.ZERO
+		_compare_back = Vector4.INF
+		return false
+	_compare_back = player.global_position
+	var ol: PackedVector2Array = cr.get("outline")
+	var b: Vector2 = ol[1]
+	var c: Vector2 = ol[2]
+	var dir: Vector2 = (c - b).normalized()
+	var inward := Vector2(-dir.y, dir.x)
+	var at: Vector2 = Vector2(cr.global_position.x, cr.global_position.z) + c + inward * 11.0
+	player.global_position = Vector4(at.x, 0.05, at.y, 0.0)
+	player.linear_velocity = Vector4.ZERO
+	var yaw: float = atan2(inward.x, inward.y)
+	player.set("_facing", yaw + PI)
+	if rig != null:
+		rig.set("yaw", yaw)
+		rig.call("_apply")
+	return true

@@ -143,6 +143,17 @@ func _ready() -> void:
 	_saved_note = Label.new()
 	_saved_note.add_theme_font_size_override("font_size", FONT - 3)
 	box.add_child(_saved_note)
+	# Review: the two blue walls side by side, in the gallery beside the room, and back.
+	if shape_root != null and shape_root.has_method("toggle_compare"):
+		_section(box, "REVIEW")
+		var cmp := Button.new()
+		cmp.text = "BLUE WALLS SIDE BY SIDE"
+		cmp.focus_mode = Control.FOCUS_NONE
+		cmp.add_theme_font_size_override("font_size", FONT)
+		cmp.pressed.connect(func() -> void:
+			var there: bool = bool(shape_root.call("toggle_compare"))
+			cmp.text = "BACK TO THE ROOM" if there else "BLUE WALLS SIDE BY SIDE")
+		box.add_child(cmp)
 
 
 func _build_room2() -> void:

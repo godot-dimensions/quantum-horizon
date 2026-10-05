@@ -246,6 +246,62 @@ subtitle = "Guides that curve, loop and live in 4D."
 body = "1  Arrows follow any curve, turning as they go.   2  Blocks round a spiral, each turning with it.   3  Arrows arriving at a pad: stand here.   4  This path bends out through W and is gone, then comes back.   5  A loop drifting through W: only what is at your W is there. Turn the slice.   6  A line with pulses crossing itself.   7  Two speeds, two ways."
 code = "blue"
 
+[node name="WallCompare" type="Node4D" parent="."]
+position = Vector4(40, 0, 0, 0)
+script = ExtResource("3_kitroom")
+outline = PackedVector2Array(1.317, 19.755, -9.219, 10.536, 0, 0, 9.219, -10.536, 19.755, -1.317)
+size = Vector3(28, 10, 14)
+doorways = [[4, -0.5, 28.5, 10.0]]
+edge_codes = {
+2: "blue"
+}
+cove = false
+
+[node name="LessonCopy" type="Node" parent="WallCompare"]
+script = ExtResource("4_text")
+title = "Creation Lab"
+subtitle = "Build a 4D animal, then bring it to life."
+body = "This room joins two of our tools. The loft creator builds an animal from a handful of balls, each a cross-section of its body. The Motion Lab brings it to life, cut into rigid pieces that walk without being rebuilt. Built and moving in one place, which is why we call it the Creation Lab. This {name} is made of {balls} balls."
+icons = [["wheel", "Slice through W"], ["rdrag", "Rotate in 4D"], ["key:E", "{action}"]]
+code = "blue"
+live = true
+edge = 1
+along = Vector2(2.7, 11.3)
+up = Vector2(1.3, 7.6)
+showcase = NodePath("../../Showcase")
+
+[node name="ResearchWallCopy" type="Node4D" parent="."]
+position = Vector4(40, 0, 0, 0)
+script = ExtResource("7_wall")
+showcase = NodePath("../Showcase")
+tilt_degrees = 90.0
+size = Vector2(11.4, 6.9)
+hover = 1.3
+corner = 0.12
+live_ppm = 260.0
+refresh_hz = 15.0
+collide = false
+look = "painted"
+room_path = NodePath("../WallCompare")
+wall_edge = 2
+
+[node name="CompareLight" type="Node4D" parent="."]
+position = Vector4(45.2682, 8.37, 4.6095, 0)
+script = ExtResource("9_light")
+aim = Vector3(45.2682, 0, 4.6095)
+angle = 60.0
+softness = 1.2
+reach = 16.0
+attenuation = 0.3
+energy = {
+"bright": 2.69,
+"dark": 3.6
+}
+color = {
+"bright": Color(0.8922, 0.9016, 0.9126, 1),
+"dark": Color(1, 0.95, 0.88, 1)
+}
+
 [node name="Downlight" type="Node4D" parent="."]
 position = Vector4(0, 8.37, -1.5, 0)
 script = ExtResource("9_light")
