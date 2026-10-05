@@ -63,6 +63,9 @@ func _run() -> void:
 	_d = _r.get("director")
 	_d.set("keep_bests", false)
 	var player: CharacterBody4D = _r.get("player")
+	# Nobody's mouse reaches this player (the range takes the mouse when it opens; see _capture_menu_clip_runner.gd).
+	player.set("input_enabled", false)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	player.call("place", Vector4(0, 0.05, 1.5, 0), 0.0)
 	(_r.get("sfx") as Node).set("muted", true)
 	await create_timer(0.5).timeout

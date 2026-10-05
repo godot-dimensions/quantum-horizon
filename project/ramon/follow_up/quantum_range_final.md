@@ -6,8 +6,9 @@ It is a new scene. Neither old range is changed:
 
 - Trym's `sandbox/shooting_gallery/shooting_gallery.tscn` stays as it is.
 - Ramon's `ShootingGalleryRamon/shooting_gallery_ramon.tscn` stays as it is.
-- The menu and the pen still point at the old range. Only Ramon decides when this one goes
-  live.
+- **The final menu opens this range** (Ramon, 5 Oct evening: "connect the new range to the
+  final menu"). Its Quantum Range entry points here and plays a new clip. The pen's range trip
+  still goes to the old range.
 
 The study of the two old ranges is in `quantum_range.md`.
 
@@ -45,8 +46,10 @@ first card to the results, at 30 fps (`range_locate.avi` 18 s, `range_charge.avi
 
 Each was settled during the run with the most reversible option, and the run carried on.
 
-1. **Go live?** The menu card and the pen's range trip still point at the old range. A card is
-   drafted in "The menu card" below; nothing was added.
+1. **The pen's range trip.** The final menu opens this range now (section "In the menu"). The
+   pen's range master still sends you to the old one
+   (`chickenpen/scripts/pen_range_trip_4d.gd`). Switch that too? The range already has the way
+   home for it (`range_way_home_4d.gd`).
 2. **Walking out to the walls.** From the firing line the walls' headings read, but their
    tables do not (about 13 m away, 60° to the side). So while no experiment runs you can walk
    downrange as far as the walls, and START puts you back on the line facing downrange. During
@@ -521,21 +524,64 @@ the target gallery (F2). 6 to 14 stay as ideas, to narrow down after review.
 | `scripts/_*_runner.gd`, `_range_bot.gd` | The proof runners and the test player |
 | `carried/` | The kit and chicken copies, with a README of what changed from the source |
 
-### The menu card (step 72, drafted only)
+### In the menu (5 Oct, evening)
 
-Nothing was added to `Menu/entries/catalogue.tres`. When you decide it goes live:
+The Quantum Range entry in `Menu/entries/catalogue.tres` (shared by menu_final, Menu, Menu2,
+the Frontier Map and the deck) now:
 
-- **Title:** Quantum Range
-- **Blurb:** Aim in four dimensions: five experiments on a 4D shooting range
-- **Maturity:** Prototype
-- **Detail:** Targets that sit in slices you cannot see. Find them on the radar, step or turn
-  your slice to reach them, then choose the shot: quick for red, charged for amber. Five
-  experiments of four stages each, from finding a core in W to shooting chickens that fly
-  through it.
-- **Scene:** `res://ramon/QuantumRange/quantum_range_final.tscn`
-- **Controls:** Click: shoot, hold to charge. Q E: step through W. Right mouse: turn the slice.
-  X: snap it back. F: start.
-- **Clip:** one of `smoke_test_output/video/range_*.avi`, cut down.
+- **opens** `res://ramon/QuantumRange/quantum_range_final.tscn`, on top of the menu like the
+  other prototypes; H and Escape bring the menu back;
+- **reads** "Aim in four dimensions: five experiments on a 4D shooting range", about 10 min,
+  with the drafted detail text;
+- **lists** WASD move, LMB shoot / hold to charge, Q / E through w, RMB rotate slice, F start;
+- **plays** `Menu/thumbs/quantum_range_final.ogv` with `preview_focus` 0.5. The old
+  `quantum_range.ogv` is still there, unused.
+
+Its question, approach, finding and measured line are unchanged, because the deck copies them.
+"True 4D raycasts" could become the measured "one 4D raycast 13 to 17 µs" if you want it.
+
+**Checked** by `scripts/_verify_menu_range_runner.gd` (14 checks): the entry, the clip playing
+in the pane, the range on top of the menu, a stage played there, H and Escape back, nothing
+left on the root, the mouse free. Frames in `smoke_test_output/quantum_range/menu/`.
+
+**The clip** (7.9 s, 1280x720, Theora, 2.1 MB) is three moments filmed from the player's eyes
+by `scripts/_capture_menu_clip_runner.gd`:
+
+1. a ring gate: the slice turns until the far core sits in its ring, one shot;
+2. a shell: a step through W past it, and the red core inside is shot;
+3. skeet: a chicken from each trap, met on its rise and shot in the air.
+
+What shaped it:
+
+- **The band.** The menu's pane is about 3.5:1 and shows the middle half of the 16:9 frame,
+  so the HUD is hidden except the crosshair and the slice glow (the HUD's `clean`), and
+  everything happens at the crosshair.
+- **The lens.** It is 60° (45° for the birds) instead of play's 80°, so the specimens fill the
+  band. The camera glides between poses where the test bot would jump.
+- **Real shots.** Each shot is the range's own weapon and hit. The birds are met where
+  their own flight path says they will be.
+
+To remake it after a change to the range:
+
+```
+range_run.sh clip menu_clip res://ramon/QuantumRange/scripts/_capture_menu_clip_runner.gd
+ffmpeg -framerate 30 -i smoke_test_output/quantum_range/clip_frames/%04d.png -c:v libtheora -q:v 8 -pix_fmt yuv420p -an ramon/Menu/thumbs/quantum_range_final.ogv
+```
+
+(the first from `project/ramon/QuantumRange`, the second from `project/`). The runner prints
+each shot's outcome. The ring gates are placed at random, so if a ring shot prints a miss,
+run it again.
+
+**Fixed on the way:**
+
+- **Starting a stage from the corridor.** Keys 1 to 5 and F work anywhere, and a stage started
+  from the entrance corridor was played through the door from 15 m back. Starting now puts
+  you on the line from the corridor too.
+- **The skeet traps.** They stood 2 m behind the point the birds launch from. They moved in
+  with the rest (`NEARER`).
+- **Test runs and your mouse.** The range takes the mouse when it opens, so in a test window
+  your mouse moving in another window turned the camera mid-run (once mid-take). Every runner
+  now switches the player's input off and frees the mouse.
 
 ## Sources
 

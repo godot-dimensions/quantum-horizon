@@ -79,6 +79,9 @@ func _run() -> void:
 	_d = _r.get("director")
 	_d.set("keep_bests", false)
 	_p = _r.get("player")
+	# Nobody's mouse reaches this player (the range takes the mouse when it opens; see _capture_menu_clip_runner.gd).
+	_p.set("input_enabled", false)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	(_r.get("sfx") as Node).set("muted", true)
 	_bot = Bot.new()
 	_bot.set("director", _d)

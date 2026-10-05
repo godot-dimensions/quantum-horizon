@@ -11,6 +11,7 @@
 #   range_run.sh headless <name> res://path/runner.gd [args after --]
 #   range_run.sh windowed <name> res://path/runner.gd [args after --]   (1280x720 at 40,40)
 #   range_run.sh movie    <name> res://path/runner.gd [args]            (smoke_test_output/video/<name>.avi)
+#   range_run.sh clip     <name> res://path/runner.gd [args]            (windowed, --fixed-fps 30; the runner saves frames)
 #   range_run.sh check    <name> res://a.gd res://b.gd ...              (parse check, --check-only)
 #
 # Exit codes: 0 ran clean, 1 errors in the log, 3 still busy after the wait.
@@ -67,6 +68,9 @@ else
 		timeout 1500 "$EXE" --path project --windowed --resolution 1280x720 --position 40,40 \
 			--write-movie "$ROOT/project/smoke_test_output/video/$name.avi" --fixed-fps 30 \
 			--script "$runner" "${extra[@]}" >> "$log" 2>&1
+	elif [ "$mode" = "clip" ]; then
+		# Fixed 30 fps without the movie writer: the runner saves the frames it wants (a menu clip).
+		timeout 900 "$EXE" --path project --windowed --resolution 1280x720 --position 40,40 --fixed-fps 30 --script "$runner" "${extra[@]}" >> "$log" 2>&1
 	elif [ "$mode" = "windowed" ]; then
 		timeout 900 "$EXE" --path project --windowed --resolution 1280x720 --position 40,40 --script "$runner" "${extra[@]}" >> "$log" 2>&1
 	else
