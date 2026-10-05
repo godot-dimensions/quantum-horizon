@@ -1,0 +1,1827 @@
+[gd_scene load_steps=291 format=4]
+
+[ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
+[ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
+[ext_resource type="Script" uid="uid://c5wyf0hlrekp0" path="res://ramon/chickenpen/scripts/strider_walker.gd" id="9_tusul"]
+[ext_resource type="Script" uid="uid://bjtv0p4kvlugq" path="res://ramon/chickenpen/scripts/block_avatar_4d.gd" id="avatar"]
+[ext_resource type="Script" uid="uid://xt7lwf35j34m" path="res://ramon/chickenpen/scripts/pen_laptop_4d.gd" id="laptop"]
+[ext_resource type="Script" uid="uid://dnwudppcswd5u" path="res://ramon/chickenpen/scripts/pen_cat_4d.gd" id="pen_cat"]
+[ext_resource type="Script" uid="uid://wrh7uxg15rhk" path="res://ramon/chickenpen/scripts/pen_shed_4d.gd" id="pen_shed"]
+[ext_resource type="Script" uid="uid://bivnk1yrmf804" path="res://ramon/chickenpen/scripts/pen_trym_4d.gd" id="pen_trym"]
+[ext_resource type="Script" uid="uid://c2kixgu1hst3e" path="res://ramon/chickenpen/theatre/theatre_arch_4d.gd" id="thr_arch"]
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_7ikgy"]
+albedo_color = Color(0.78, 0.33, 0.14, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_1qflj"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_xymwv"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_wbl4x"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_cdjlt"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_obqb1"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_cwf64"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_b75s0"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_tvs5b"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_s5kk7"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_qpcqx"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_5jb1i"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_2bfwm"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_o2j3t"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_46f3y"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_d0bbt"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_fg3u5"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_qercf"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_e44gu"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_hquvu"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_u77io"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_ly7v6"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_5jn2u"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_rgcd7"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_h3prr"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_foq5t"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_v7cxx"]
+albedo_color = Color(0.78, 0.33, 0.14, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ak1y2"]
+size = Vector4(0.0665, 0.0665, 0.017099999999999997, 0.0665)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_8owrd"]
+albedo_color = Color(0.85, 0.52, 0.58, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_7s5ow"]
+size = Vector4(0.038, 0.038, 0.0057, 0.038)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_4386v"]
+albedo_color = Color(0.45, 0.85, 0.35, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_qjxa6"]
+size = Vector4(0.0304, 0.0228, 0.0114, 0.0304)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_7wfnh"]
+albedo_color = Color(0.02, 0.02, 0.02, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_trbff"]
+size = Vector4(0.00665, 0.0209, 0.0038, 0.00665)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_aci5j"]
+albedo_color = Color(0.78, 0.33, 0.14, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_dy6w8"]
+size = Vector4(0.0665, 0.0665, 0.017099999999999997, 0.0665)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_um6k2"]
+albedo_color = Color(0.85, 0.52, 0.58, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_rm6ll"]
+size = Vector4(0.038, 0.038, 0.0057, 0.038)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_rl2qx"]
+albedo_color = Color(0.45, 0.85, 0.35, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_nhnfj"]
+size = Vector4(0.0304, 0.0228, 0.0114, 0.0304)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_bxxxy"]
+albedo_color = Color(0.02, 0.02, 0.02, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_nw661"]
+size = Vector4(0.00665, 0.0209, 0.0038, 0.00665)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_4u81l"]
+albedo_color = Color(0.62, 0.34, 0.4, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_woo0s"]
+size = Vector4(0.0209, 0.0133, 0.0095, 0.0209)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_c2avo"]
+albedo_color = Color(0.22, 0.17, 0.16, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_mrcdf"]
+size = Vector4(4.4, 0.06, 3.4, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_o6hr4"]
+albedo_color = Color(0.26, 0.2, 0.18, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_mek5q"]
+size = Vector4(4.4, 2.25, 0.14, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_fvsap"]
+albedo_color = Color(0.26, 0.2, 0.18, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_s1i2f"]
+size = Vector4(4.4, 2.25, 0.14, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_efciy"]
+albedo_color = Color(0.26, 0.2, 0.18, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_at3yq"]
+size = Vector4(0.14, 2.25, 1.075, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_f0v25"]
+albedo_color = Color(0.26, 0.2, 0.18, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_l55no"]
+size = Vector4(0.14, 2.25, 1.075, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_s8nwg"]
+albedo_color = Color(0.26, 0.2, 0.18, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_rynmp"]
+size = Vector4(0.14, 0.25, 1.25, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_c208k"]
+albedo_color = Color(0.26, 0.2, 0.18, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_e83on"]
+size = Vector4(0.14, 2.25, 3.4, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_6x8gd"]
+albedo_color = Color(0.26, 0.2, 0.18, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_2ncsy"]
+size = Vector4(4.4, 2.25, 3.4, 0.14)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_4denc"]
+albedo_color = Color(0.26, 0.2, 0.18, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ytuc1"]
+size = Vector4(4.4, 2.25, 3.4, 0.14)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_5lcaq"]
+albedo_color = Color(0.15, 0.10999999, 0.099999994, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ndua6"]
+size = Vector4(0.5497333333333334, 0.1, 2.0459066639522194, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_hrk7c"]
+albedo_color = Color(0.17, 0.13, 0.12, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_n38sa"]
+size = Vector4(0.5497333333333334, 0.1, 2.120187507560443, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_005d0"]
+albedo_color = Color(0.19, 0.14999999, 0.14, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_lv8ms"]
+size = Vector4(0.5497333333333334, 0.1, 2.290853867797887, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_7elsn"]
+albedo_color = Color(0.15, 0.10999999, 0.099999994, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_rl0al"]
+size = Vector4(0.5497333333333334, 0.1, 2.1846077732479268, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_gsxe6"]
+albedo_color = Color(0.17, 0.13, 0.12, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_2tmto"]
+size = Vector4(0.5497333333333334, 0.1, 2.3802520874898945, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_gk2w6"]
+albedo_color = Color(0.19, 0.14999999, 0.14, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_xvdxg"]
+size = Vector4(0.5497333333333334, 0.1, 2.2560153358726236, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_13ewt"]
+albedo_color = Color(0.15, 0.10999999, 0.099999994, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_uekgi"]
+size = Vector4(0.5497333333333334, 0.1, 2.290853867797887, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_7orm3"]
+albedo_color = Color(0.17, 0.13, 0.12, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_a2c0j"]
+size = Vector4(0.5497333333333334, 0.1, 2.0487799449357462, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_dklav"]
+albedo_color = Color(0.19, 0.14999999, 0.14, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_tqa74"]
+size = Vector4(0.5497333333333334, 0.1, 2.0459066639522194, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_iy0bu"]
+albedo_color = Color(0.15, 0.10999999, 0.099999994, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_mwpqm"]
+size = Vector4(0.5497333333333334, 0.1, 2.0459066639522194, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_qnb08"]
+albedo_color = Color(0.17, 0.13, 0.12, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_2ltih"]
+size = Vector4(0.5497333333333334, 0.1, 2.120187507560443, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ol0jr"]
+albedo_color = Color(0.19, 0.14999999, 0.14, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_0n4q0"]
+size = Vector4(0.5497333333333334, 0.1, 2.290853867797887, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_74bm1"]
+albedo_color = Color(0.15, 0.10999999, 0.099999994, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_adqde"]
+size = Vector4(0.5497333333333334, 0.1, 2.1846077732479268, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_b3ing"]
+albedo_color = Color(0.17, 0.13, 0.12, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_qha2k"]
+size = Vector4(0.5497333333333334, 0.1, 2.3802520874898945, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_dle2q"]
+albedo_color = Color(0.19, 0.14999999, 0.14, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_scu55"]
+size = Vector4(0.5497333333333334, 0.1, 2.2560153358726236, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_db7uf"]
+albedo_color = Color(0.15, 0.10999999, 0.099999994, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_81mrh"]
+size = Vector4(0.5497333333333334, 0.1, 2.290853867797887, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_tdlv1"]
+albedo_color = Color(0.17, 0.13, 0.12, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_hbn5i"]
+size = Vector4(0.5497333333333334, 0.1, 2.0487799449357462, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_un5jv"]
+albedo_color = Color(0.19, 0.14999999, 0.14, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_67wmq"]
+size = Vector4(0.5497333333333334, 0.1, 2.0459066639522194, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_t7f7g"]
+albedo_color = Color(0.19, 0.15, 0.14, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_wya06"]
+size = Vector4(5.32, 0.13, 0.2, 3.4)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_3uus0"]
+albedo_color = Color(0.21, 0.16, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_qcebf"]
+size = Vector4(1.05, 0.07, 0.56, 1.05)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_20i5w"]
+albedo_color = Color(0.21, 0.16, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ll6qp"]
+size = Vector4(0.07, 0.62, 0.07, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_yb4gj"]
+albedo_color = Color(0.21, 0.16, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_j0hss"]
+size = Vector4(0.07, 0.62, 0.07, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_illcf"]
+albedo_color = Color(0.21, 0.16, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_sirt3"]
+size = Vector4(0.07, 0.62, 0.07, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_a83xc"]
+albedo_color = Color(0.21, 0.16, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_4ad7g"]
+size = Vector4(0.07, 0.62, 0.07, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ndyk3"]
+albedo_color = Color(0.21, 0.16, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_25v48"]
+size = Vector4(0.4, 0.42, 0.4, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_lfaoc"]
+albedo_color = Color(0.21, 0.16, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_hwqa5"]
+size = Vector4(1.15, 1.55, 0.05, 1.15)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_mounk"]
+albedo_color = Color(0.21, 0.16, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_esatu"]
+size = Vector4(0.05, 1.55, 0.32, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_00lad"]
+albedo_color = Color(0.21, 0.16, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gc7jj"]
+size = Vector4(0.05, 1.55, 0.32, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ar2e0"]
+albedo_color = Color(0.21, 0.16, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_si5lq"]
+size = Vector4(1.15, 0.05, 0.32, 1.15)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_a8ftu"]
+albedo_color = Color(0.21, 0.16, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_00asg"]
+size = Vector4(1.15, 0.05, 0.32, 1.15)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_yoc8t"]
+albedo_color = Color(0.4, 0.17, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_3rr2g"]
+size = Vector4(0.035, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_hxtjr"]
+albedo_color = Color(0.21, 0.29, 0.21, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_w5tgr"]
+size = Vector4(0.057, 0.355, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_4quh3"]
+albedo_color = Color(0.19, 0.24, 0.35, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_1omem"]
+size = Vector4(0.079, 0.4, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_mb3g3"]
+albedo_color = Color(0.63, 0.53, 0.38, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_uhkom"]
+size = Vector4(0.101, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_4k1qc"]
+albedo_color = Color(0.34, 0.25, 0.19, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_57v36"]
+size = Vector4(0.035, 0.355, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_2qtde"]
+albedo_color = Color(0.25, 0.35, 0.34, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_xjoe1"]
+size = Vector4(0.057, 0.4, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_12okt"]
+albedo_color = Color(0.75, 0.69, 0.55, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_a6rh3"]
+size = Vector4(0.079, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_u2e6l"]
+albedo_color = Color(0.45, 0.31, 0.17, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_qhcj4"]
+size = Vector4(0.101, 0.355, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_wx685"]
+albedo_color = Color(0.3, 0.2, 0.22, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_pc5my"]
+size = Vector4(0.035, 0.4, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_f8aml"]
+albedo_color = Color(0.55, 0.45, 0.24, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_c3j1k"]
+size = Vector4(0.057, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_nbddg"]
+albedo_color = Color(0.4, 0.17, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_4cw38"]
+size = Vector4(0.079, 0.355, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_4os0v"]
+albedo_color = Color(0.21, 0.29, 0.21, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_h6gwp"]
+size = Vector4(0.101, 0.4, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_tqpu3"]
+albedo_color = Color(0.19, 0.24, 0.35, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_xb2cr"]
+size = Vector4(0.035, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_887ic"]
+albedo_color = Color(0.63, 0.53, 0.38, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_m71wy"]
+size = Vector4(0.057, 0.355, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_7fw0d"]
+albedo_color = Color(0.21, 0.16, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_dohj8"]
+size = Vector4(1.15, 0.05, 0.32, 1.15)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_1n86k"]
+albedo_color = Color(0.63, 0.53, 0.38, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_dtlqu"]
+size = Vector4(0.101, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_2tynk"]
+albedo_color = Color(0.34, 0.25, 0.19, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_f2fmm"]
+size = Vector4(0.035, 0.355, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_1qesy"]
+albedo_color = Color(0.25, 0.35, 0.34, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_rjcgj"]
+size = Vector4(0.057, 0.4, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_yceja"]
+albedo_color = Color(0.75, 0.69, 0.55, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_tr2q7"]
+size = Vector4(0.079, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_0vd7m"]
+albedo_color = Color(0.45, 0.31, 0.17, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_pxfeb"]
+size = Vector4(0.101, 0.355, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_iys5o"]
+albedo_color = Color(0.3, 0.2, 0.22, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_8k4jt"]
+size = Vector4(0.035, 0.4, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_788pk"]
+albedo_color = Color(0.55, 0.45, 0.24, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_2w5qd"]
+size = Vector4(0.057, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_3wswx"]
+albedo_color = Color(0.4, 0.17, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_07f8v"]
+size = Vector4(0.079, 0.355, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_jt3tl"]
+albedo_color = Color(0.21, 0.29, 0.21, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_x8kv1"]
+size = Vector4(0.101, 0.4, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_oqxyc"]
+albedo_color = Color(0.19, 0.24, 0.35, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_mfdtq"]
+size = Vector4(0.035, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_r0e7g"]
+albedo_color = Color(0.63, 0.53, 0.38, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_c6acy"]
+size = Vector4(0.057, 0.355, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ytcyl"]
+albedo_color = Color(0.34, 0.25, 0.19, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_dbu32"]
+size = Vector4(0.079, 0.4, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_fa21b"]
+albedo_color = Color(0.25, 0.35, 0.34, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ivkig"]
+size = Vector4(0.101, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_8mpqn"]
+albedo_color = Color(0.21, 0.16, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_44ke7"]
+size = Vector4(1.15, 0.05, 0.32, 1.15)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ra4iu"]
+albedo_color = Color(0.75, 0.69, 0.55, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_7easv"]
+size = Vector4(0.079, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_sja6e"]
+albedo_color = Color(0.45, 0.31, 0.17, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_bns52"]
+size = Vector4(0.101, 0.355, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_mtrmi"]
+albedo_color = Color(0.3, 0.2, 0.22, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_2hp5v"]
+size = Vector4(0.035, 0.4, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_mfyuq"]
+albedo_color = Color(0.55, 0.45, 0.24, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_mcygc"]
+size = Vector4(0.057, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_6nq82"]
+albedo_color = Color(0.4, 0.17, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_npsm0"]
+size = Vector4(0.079, 0.355, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_3oyce"]
+albedo_color = Color(0.21, 0.29, 0.21, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_fguc5"]
+size = Vector4(0.101, 0.4, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_moqpk"]
+albedo_color = Color(0.19, 0.24, 0.35, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_qmjuk"]
+size = Vector4(0.035, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_7j81c"]
+albedo_color = Color(0.63, 0.53, 0.38, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_wtl7g"]
+size = Vector4(0.057, 0.355, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_n7pjg"]
+albedo_color = Color(0.34, 0.25, 0.19, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_pqi4s"]
+size = Vector4(0.079, 0.4, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_7b734"]
+albedo_color = Color(0.25, 0.35, 0.34, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_uwxow"]
+size = Vector4(0.101, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_txc1q"]
+albedo_color = Color(0.75, 0.69, 0.55, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_c02gm"]
+size = Vector4(0.035, 0.355, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_gbogl"]
+albedo_color = Color(0.45, 0.31, 0.17, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_wwah0"]
+size = Vector4(0.057, 0.4, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_5j2rb"]
+albedo_color = Color(0.3, 0.2, 0.22, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_teb8k"]
+size = Vector4(0.079, 0.31, 0.24960000000000002, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_veqq3"]
+albedo_color = Color(0.21, 0.16, 0.15, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_qdwd7"]
+size = Vector4(1.15, 0.05, 0.32, 1.15)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_eoysl"]
+albedo_color = Color(0.21, 0.22, 0.25, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_fr7hb"]
+size = Vector4(0.4, 0.03, 0.28, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_y61nn"]
+albedo_color = Color(0.19, 0.2, 0.23, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_xgecg"]
+size = Vector4(0.4, 0.27, 0.025, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_k6upr"]
+albedo_color = Color(0.4, 0.66, 0.58, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_b24kc"]
+size = Vector4(0.35, 0.22, 0.004, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_2l3vy"]
+albedo_color = Color(0.1, 0.11, 0.13, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_osab8"]
+size = Vector4(0.38, 0.46, 0.24, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_efuxy"]
+albedo_color = Color(0.35, 0.22, 0.14, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_s2a00"]
+size = Vector4(0.4, 0.07, 0.26, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_6yhn5"]
+albedo_color = Color(0.91, 0.76, 0.63, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_1hr65"]
+size = Vector4(0.3, 0.32, 0.29, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_3pvke"]
+albedo_color = Color(0.13, 0.1, 0.08, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_16r2m"]
+size = Vector4(0.32, 0.1, 0.31, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_mmqow"]
+albedo_color = Color(0.13, 0.1, 0.08, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gwgqd"]
+size = Vector4(0.31, 0.22, 0.06, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_6hm0w"]
+albedo_color = Color(0.91, 0.76, 0.63, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_8gcts"]
+size = Vector4(0.09, 0.05, 0.05, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_midhm"]
+albedo_color = Color(0.91, 0.76, 0.63, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_72p25"]
+size = Vector4(0.09, 0.05, 0.05, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_72p3t"]
+albedo_color = Color(0.11, 0.12, 0.16, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_dd8qp"]
+size = Vector4(0.04, 0.044, 0.02, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_1vwbh"]
+albedo_color = Color(0.11, 0.12, 0.16, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_amc6e"]
+size = Vector4(0.04, 0.044, 0.02, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_qmu1e"]
+albedo_color = Color(0.91, 0.76, 0.63, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_sw3wt"]
+size = Vector4(0.13, 0.32, 0.14, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_0srv3"]
+albedo_color = Color(0.91, 0.76, 0.63, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_rohli"]
+size = Vector4(0.12, 0.32, 0.13, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_xaxlf"]
+albedo_color = Color(0.4, 0.26, 0.16, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_f6kxy"]
+size = Vector4(0.15, 0.1, 0.24, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_jbo8c"]
+albedo_color = Color(0.19, 0.21, 0.27, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_n7ftl"]
+size = Vector4(0.135, 0.33, 0.145, 0.47)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_s1dnh"]
+albedo_color = Color(0.19, 0.21, 0.27, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_2ophu"]
+size = Vector4(0.145, 0.33, 0.155, 0.47)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_5te2l"]
+albedo_color = Color(0.1, 0.11, 0.13, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_8w5ld"]
+size = Vector4(0.1, 0.18, 0.11, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_3vifl"]
+albedo_color = Color(0.91, 0.76, 0.63, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_632w0"]
+size = Vector4(0.09, 0.18, 0.1, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_cu5h6"]
+albedo_color = Color(0.91, 0.76, 0.63, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gyobn"]
+size = Vector4(0.09, 0.08, 0.1, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_pgbs7"]
+albedo_color = Color(0.91, 0.76, 0.63, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_k34p6"]
+size = Vector4(0.13, 0.32, 0.14, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_pre3x"]
+albedo_color = Color(0.91, 0.76, 0.63, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_mwuw5"]
+size = Vector4(0.12, 0.32, 0.13, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_o7qjp"]
+albedo_color = Color(0.4, 0.26, 0.16, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_s17an"]
+size = Vector4(0.15, 0.1, 0.24, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_fwd7c"]
+albedo_color = Color(0.19, 0.21, 0.27, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ksnub"]
+size = Vector4(0.135, 0.33, 0.145, 0.47)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_32dpn"]
+albedo_color = Color(0.19, 0.21, 0.27, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_xn4ho"]
+size = Vector4(0.145, 0.33, 0.155, 0.47)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_dw3em"]
+albedo_color = Color(0.1, 0.11, 0.13, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_myphv"]
+size = Vector4(0.1, 0.18, 0.11, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_62a4e"]
+albedo_color = Color(0.91, 0.76, 0.63, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_7mtfy"]
+size = Vector4(0.09, 0.18, 0.1, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_dk7al"]
+albedo_color = Color(0.91, 0.76, 0.63, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_i0euj"]
+size = Vector4(0.09, 0.08, 0.1, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_hh3ev"]
+albedo_color = Color(0.16, 0.19, 0.27, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_x70ra"]
+size = Vector4(0.26, 3.1, 0.26, 5)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_815n8"]
+albedo_color = Color(0.32, 0.86, 1, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_xag60"]
+size = Vector4(0.091, 2.9139999999999997, 0.078, 5)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_kw78w"]
+albedo_color = Color(0.16, 0.19, 0.27, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_s35ak"]
+size = Vector4(0.26, 3.1, 0.26, 5)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_lrpja"]
+albedo_color = Color(0.32, 0.86, 1, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ejeuf"]
+size = Vector4(0.091, 2.9139999999999997, 0.078, 5)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_rmxn5"]
+albedo_color = Color(0.16, 0.19, 0.27, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_bdg7w"]
+size = Vector4(2.46, 0.26, 0.26, 5)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_kk1as"]
+albedo_color = Color(0.32, 0.86, 1, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_cvdl2"]
+size = Vector4(2.112, 0.078, 0.078, 5)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_xjr21"]
+albedo_color = Color(0.32, 0.86, 1, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_c8nu6"]
+size = Vector4(2.46, 0.12, 0.338, 5)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_p7kud"]
+albedo_color = Color(0.2, 0.62, 0.95, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_dd26t"]
+size = Vector4(2.0240000000000005, 2.8520000000000003, 0.06, 5)
+
+[sub_resource type="AudioStreamWAV" id="AudioStreamWAV_rs83v"]
+data = PackedByteArray("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")
+format = 1
+mix_rate = 22050
+
+[node name="TrymCabin" type="Node4D"]
+
+[node name="RedCat" type="Node4D" parent="."]
+position = Vector4(0, 0, 2.75, 0)
+visible = false
+script = ExtResource("pen_cat")
+fur = Color(0.78, 0.33, 0.14, 1)
+eye = Color(0.45, 0.85, 0.35, 1)
+roam_radius = 4.0
+player_path = NodePath("../../../Player")
+starts_on_crate = false
+den_path = NodePath("../Shed")
+lives_in_den = true
+
+[node name="Hide" type="MeshInstance4D" parent="RedCat"]
+material_override = SubResource("TetraMaterial4D_7ikgy")
+script = ExtResource("7_cgmor")
+live_rebuild = false
+profile_sides = 10
+profile_rings = 3
+
+[node name="Head" type="MeshInstance4D" parent="RedCat/Hide"]
+position = Vector4(0, 0.38, 0.475, 0)
+material_override = SubResource("WireMaterial4D_1qflj")
+script = ExtResource("8_tf8lj")
+radius = 0.09025
+
+[node name="SnoutBase" type="MeshInstance4D" parent="RedCat/Hide/Head"]
+position = Vector4(0, -0.0228, 0.0627, 0)
+material_override = SubResource("WireMaterial4D_xymwv")
+script = ExtResource("8_tf8lj")
+radius = 0.0475
+starts_branch = true
+symmetry_type = 0
+mirror_branch = false
+
+[node name="SnoutTip" type="MeshInstance4D" parent="RedCat/Hide/Head/SnoutBase"]
+position = Vector4(0, -0.0057, 0.028499999999999998, 0)
+material_override = SubResource("WireMaterial4D_wbl4x")
+script = ExtResource("8_tf8lj")
+radius = 0.0323
+
+[node name="Neck" type="MeshInstance4D" parent="RedCat/Hide"]
+position = Vector4(0, 0.3515, 0.361, 0)
+material_override = SubResource("WireMaterial4D_cdjlt")
+script = ExtResource("8_tf8lj")
+radius = 0.08739999999999999
+
+[node name="Chest" type="MeshInstance4D" parent="RedCat/Hide"]
+position = Vector4(0, 0.323, 0.209, 0)
+material_override = SubResource("WireMaterial4D_obqb1")
+script = ExtResource("8_tf8lj")
+radius = 0.1311
+
+[node name="FrontHipL" type="MeshInstance4D" parent="RedCat/Hide/Chest"]
+position = Vector4(0.07029999999999999, -0.019, 0.019, 0)
+material_override = SubResource("WireMaterial4D_cwf64")
+script = ExtResource("8_tf8lj")
+radius = 0.0551
+starts_branch = true
+symmetry_type = 0
+mirror_branch = false
+
+[node name="FrontKneeL" type="MeshInstance4D" parent="RedCat/Hide/Chest/FrontHipL"]
+position = Vector4(0.0038, -0.1805, -0.0095, 0)
+material_override = SubResource("WireMaterial4D_b75s0")
+script = ExtResource("8_tf8lj")
+radius = 0.03705
+
+[node name="FrontFootL" type="MeshInstance4D" parent="RedCat/Hide/Chest/FrontHipL/FrontKneeL"]
+position = Vector4(0, -0.1805, 0.028499999999999998, 0)
+material_override = SubResource("WireMaterial4D_tvs5b")
+script = ExtResource("8_tf8lj")
+radius = 0.0456
+
+[node name="FrontHipR" type="MeshInstance4D" parent="RedCat/Hide/Chest"]
+position = Vector4(-0.07029999999999999, -0.019, 0.019, 0)
+material_override = SubResource("WireMaterial4D_s5kk7")
+script = ExtResource("8_tf8lj")
+radius = 0.0551
+starts_branch = true
+symmetry_type = 0
+mirror_branch = false
+
+[node name="FrontKneeR" type="MeshInstance4D" parent="RedCat/Hide/Chest/FrontHipR"]
+position = Vector4(-0.0038, -0.1805, -0.0095, 0)
+material_override = SubResource("WireMaterial4D_qpcqx")
+script = ExtResource("8_tf8lj")
+radius = 0.03705
+
+[node name="FrontFootR" type="MeshInstance4D" parent="RedCat/Hide/Chest/FrontHipR/FrontKneeR"]
+position = Vector4(0, -0.1805, 0.028499999999999998, 0)
+material_override = SubResource("WireMaterial4D_5jb1i")
+script = ExtResource("8_tf8lj")
+radius = 0.0456
+
+[node name="Mid" type="MeshInstance4D" parent="RedCat/Hide"]
+position = Vector4(0, 0.323, 0.028499999999999998, 0)
+material_override = SubResource("WireMaterial4D_2bfwm")
+script = ExtResource("8_tf8lj")
+radius = 0.11589999999999999
+
+[node name="Rump" type="MeshInstance4D" parent="RedCat/Hide"]
+position = Vector4(0, 0.3135, -0.1615, 0)
+material_override = SubResource("WireMaterial4D_o2j3t")
+script = ExtResource("8_tf8lj")
+radius = 0.1197
+
+[node name="HindHipL" type="MeshInstance4D" parent="RedCat/Hide/Rump"]
+position = Vector4(0.076, -0.0095, 0, 0)
+material_override = SubResource("WireMaterial4D_46f3y")
+script = ExtResource("8_tf8lj")
+radius = 0.07029999999999999
+starts_branch = true
+symmetry_type = 0
+mirror_branch = false
+
+[node name="HindKneeL" type="MeshInstance4D" parent="RedCat/Hide/Rump/HindHipL"]
+position = Vector4(0.0038, -0.1805, -0.019, 0)
+material_override = SubResource("WireMaterial4D_d0bbt")
+script = ExtResource("8_tf8lj")
+radius = 0.03895
+
+[node name="HindFootL" type="MeshInstance4D" parent="RedCat/Hide/Rump/HindHipL/HindKneeL"]
+position = Vector4(0, -0.1805, 0.038, 0)
+material_override = SubResource("WireMaterial4D_fg3u5")
+script = ExtResource("8_tf8lj")
+radius = 0.0456
+
+[node name="HindHipR" type="MeshInstance4D" parent="RedCat/Hide/Rump"]
+position = Vector4(-0.076, -0.0095, 0, 0)
+material_override = SubResource("WireMaterial4D_qercf")
+script = ExtResource("8_tf8lj")
+radius = 0.07029999999999999
+starts_branch = true
+symmetry_type = 0
+mirror_branch = false
+
+[node name="HindKneeR" type="MeshInstance4D" parent="RedCat/Hide/Rump/HindHipR"]
+position = Vector4(-0.0038, -0.1805, -0.019, 0)
+material_override = SubResource("WireMaterial4D_e44gu")
+script = ExtResource("8_tf8lj")
+radius = 0.03895
+
+[node name="HindFootR" type="MeshInstance4D" parent="RedCat/Hide/Rump/HindHipR/HindKneeR"]
+position = Vector4(0, -0.1805, 0.038, 0)
+material_override = SubResource("WireMaterial4D_hquvu")
+script = ExtResource("8_tf8lj")
+radius = 0.0456
+
+[node name="TailBase" type="MeshInstance4D" parent="RedCat/Hide/Rump"]
+position = Vector4(0, 0.0475, -0.11399999999999999, 0)
+material_override = SubResource("WireMaterial4D_u77io")
+script = ExtResource("8_tf8lj")
+radius = 0.03135
+starts_branch = true
+symmetry_type = 0
+mirror_branch = false
+
+[node name="TailB" type="MeshInstance4D" parent="RedCat/Hide/Rump/TailBase"]
+position = Vector4(0, -0.0095, -0.11399999999999999, 0)
+material_override = SubResource("WireMaterial4D_ly7v6")
+script = ExtResource("8_tf8lj")
+radius = 0.028499999999999998
+
+[node name="TailC" type="MeshInstance4D" parent="RedCat/Hide/Rump/TailBase/TailB"]
+position = Vector4(0, 0, -0.11399999999999999, 0)
+material_override = SubResource("WireMaterial4D_5jn2u")
+script = ExtResource("8_tf8lj")
+radius = 0.02755
+
+[node name="TailD" type="MeshInstance4D" parent="RedCat/Hide/Rump/TailBase/TailB/TailC"]
+position = Vector4(0, 0.056999999999999995, -0.095, 0)
+material_override = SubResource("WireMaterial4D_rgcd7")
+script = ExtResource("8_tf8lj")
+radius = 0.02565
+
+[node name="TailE" type="MeshInstance4D" parent="RedCat/Hide/Rump/TailBase/TailB/TailC/TailD"]
+position = Vector4(0, 0.1045, -0.0475, 0)
+material_override = SubResource("WireMaterial4D_h3prr")
+script = ExtResource("8_tf8lj")
+radius = 0.02375
+
+[node name="TailF" type="MeshInstance4D" parent="RedCat/Hide/Rump/TailBase/TailB/TailC/TailD/TailE"]
+position = Vector4(0, 0.08549999999999999, 0, 0)
+material_override = SubResource("WireMaterial4D_foq5t")
+script = ExtResource("8_tf8lj")
+radius = 0.0209
+
+[node name="EarL" type="MeshInstance4D" parent="RedCat"]
+position = Vector4(0.0532, 0.45125, 0.46549999999999997, 0)
+basis = Projection(0.8571673007021123, 0.5150380749100542, 0, 0, -0.5150380749100542, 0.8571673007021123, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_v7cxx")
+mesh = SubResource("BoxTetraMesh4D_ak1y2")
+
+[node name="EarLiningL" type="MeshInstance4D" parent="RedCat"]
+position = Vector4(0.0532, 0.44649999999999995, 0.475, 0)
+basis = Projection(0.8571673007021123, 0.5150380749100542, 0, 0, -0.5150380749100542, 0.8571673007021123, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_8owrd")
+mesh = SubResource("BoxTetraMesh4D_7s5ow")
+
+[node name="EyeL" type="MeshInstance4D" parent="RedCat"]
+position = Vector4(0.038, 0.39709999999999995, 0.5567, 0)
+material_override = SubResource("TetraMaterial4D_4386v")
+mesh = SubResource("BoxTetraMesh4D_qjxa6")
+
+[node name="PupilL" type="MeshInstance4D" parent="RedCat"]
+position = Vector4(0.038, 0.39709999999999995, 0.5633499999999999, 0)
+material_override = SubResource("TetraMaterial4D_7wfnh")
+mesh = SubResource("BoxTetraMesh4D_trbff")
+
+[node name="EarR" type="MeshInstance4D" parent="RedCat"]
+position = Vector4(-0.0532, 0.45125, 0.46549999999999997, 0)
+basis = Projection(0.5150380749100542, 0.8571673007021123, 0, 0, -0.8571673007021123, 0.5150380749100542, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_aci5j")
+mesh = SubResource("BoxTetraMesh4D_dy6w8")
+
+[node name="EarLiningR" type="MeshInstance4D" parent="RedCat"]
+position = Vector4(-0.0532, 0.44649999999999995, 0.475, 0)
+basis = Projection(0.5150380749100542, 0.8571673007021123, 0, 0, -0.8571673007021123, 0.5150380749100542, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_um6k2")
+mesh = SubResource("BoxTetraMesh4D_rm6ll")
+
+[node name="EyeR" type="MeshInstance4D" parent="RedCat"]
+position = Vector4(-0.038, 0.39709999999999995, 0.5567, 0)
+material_override = SubResource("TetraMaterial4D_rl2qx")
+mesh = SubResource("BoxTetraMesh4D_nhnfj")
+
+[node name="PupilR" type="MeshInstance4D" parent="RedCat"]
+position = Vector4(-0.038, 0.39709999999999995, 0.5633499999999999, 0)
+material_override = SubResource("TetraMaterial4D_bxxxy")
+mesh = SubResource("BoxTetraMesh4D_nw661")
+
+[node name="Nose" type="MeshInstance4D" parent="RedCat"]
+position = Vector4(0, 0.36574999999999996, 0.5966, 0)
+material_override = SubResource("TetraMaterial4D_4u81l")
+mesh = SubResource("BoxTetraMesh4D_woo0s")
+
+[node name="Walker" type="Node4D" parent="RedCat"]
+script = ExtResource("9_tusul")
+rig_path = NodePath("../Hide")
+leg_name_prefixes = PackedStringArray("FrontHip", "HindHip")
+blend_joints = true
+animation_sides = 10
+belt_speed = 6.0
+travel = true
+stride_length = 0.36
+step_height = 0.1
+body_bob = 0.02
+
+[node name="Shed" type="Node4D" parent="."]
+position = Vector4(0, 0, 0, 0)
+basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
+script = ExtResource("pen_shed")
+length = 4.4
+width = 3.4
+wall_height = 2.25
+ridge_rise = 1.0
+door_width = 1.25
+door_height = 2.0
+camera_path = NodePath("../../../Player/CameraRig/Pitch/Camera4D")
+
+[node name="Floor" type="MeshInstance4D" parent="Shed"]
+position = Vector4(0, 0.03, 0, 0)
+material_override = SubResource("TetraMaterial4D_c2avo")
+mesh = SubResource("BoxTetraMesh4D_mrcdf")
+
+[node name="LongWallN" type="MeshInstance4D" parent="Shed"]
+position = Vector4(0, 1.125, -1.7, 0)
+material_override = SubResource("TetraMaterial4D_o6hr4")
+mesh = SubResource("BoxTetraMesh4D_mek5q")
+
+[node name="LongWallP" type="MeshInstance4D" parent="Shed"]
+position = Vector4(0, 1.125, 1.7, 0)
+material_override = SubResource("TetraMaterial4D_fvsap")
+mesh = SubResource("BoxTetraMesh4D_s1i2f")
+
+[node name="GableEndN" type="Node4D" parent="Shed"]
+position = Vector4(-2.2, 0, 0, 0)
+
+[node name="JambN" type="MeshInstance4D" parent="Shed/GableEndN"]
+position = Vector4(0, 1.125, -1.1625, 0)
+material_override = SubResource("TetraMaterial4D_efciy")
+mesh = SubResource("BoxTetraMesh4D_at3yq")
+
+[node name="JambP" type="MeshInstance4D" parent="Shed/GableEndN"]
+position = Vector4(0, 1.125, 1.1625, 0)
+material_override = SubResource("TetraMaterial4D_f0v25")
+mesh = SubResource("BoxTetraMesh4D_l55no")
+
+[node name="Header" type="MeshInstance4D" parent="Shed/GableEndN"]
+position = Vector4(0, 2.125, 0, 0)
+material_override = SubResource("TetraMaterial4D_s8nwg")
+mesh = SubResource("BoxTetraMesh4D_rynmp")
+
+[node name="GableEndP" type="Node4D" parent="Shed"]
+position = Vector4(2.2, 0, 0, 0)
+
+[node name="Panel" type="MeshInstance4D" parent="Shed/GableEndP"]
+position = Vector4(0, 1.125, 0, 0)
+material_override = SubResource("TetraMaterial4D_c208k")
+mesh = SubResource("BoxTetraMesh4D_e83on")
+
+[node name="WWallN" type="MeshInstance4D" parent="Shed"]
+position = Vector4(0, 1.125, 0, -1.63)
+material_override = SubResource("TetraMaterial4D_6x8gd")
+mesh = SubResource("BoxTetraMesh4D_2ncsy")
+
+[node name="WWallP" type="MeshInstance4D" parent="Shed"]
+position = Vector4(0, 1.125, 0, 1.63)
+material_override = SubResource("TetraMaterial4D_4denc")
+mesh = SubResource("BoxTetraMesh4D_ytuc1")
+
+[node name="RoofPivotN" type="Node4D" parent="Shed"]
+position = Vector4(0, 3.09, 0, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.9074669071198411, -0.42012356811103757, 0, 0, 0.42012356811103757, 0.9074669071198411, 0, 0, 0, 0, 1)
+
+[node name="Plank0" type="MeshInstance4D" parent="Shed/RoofPivotN"]
+position = Vector4(-2.3644444444444446, 0, -1.0229533319761097, 0)
+material_override = SubResource("TetraMaterial4D_5lcaq")
+mesh = SubResource("BoxTetraMesh4D_ndua6")
+
+[node name="Plank1" type="MeshInstance4D" parent="Shed/RoofPivotN"]
+position = Vector4(-1.7733333333333334, 0, -1.0600937537802215, 0)
+material_override = SubResource("TetraMaterial4D_hrk7c")
+mesh = SubResource("BoxTetraMesh4D_n38sa")
+
+[node name="Plank2" type="MeshInstance4D" parent="Shed/RoofPivotN"]
+position = Vector4(-1.1822222222222223, 0, -1.1454269338989436, 0)
+material_override = SubResource("TetraMaterial4D_005d0")
+mesh = SubResource("BoxTetraMesh4D_lv8ms")
+
+[node name="Plank3" type="MeshInstance4D" parent="Shed/RoofPivotN"]
+position = Vector4(-0.5911111111111111, 0, -1.0923038866239634, 0)
+material_override = SubResource("TetraMaterial4D_7elsn")
+mesh = SubResource("BoxTetraMesh4D_rl0al")
+
+[node name="Plank4" type="MeshInstance4D" parent="Shed/RoofPivotN"]
+position = Vector4(0, 0, -1.1901260437449472, 0)
+material_override = SubResource("TetraMaterial4D_gsxe6")
+mesh = SubResource("BoxTetraMesh4D_2tmto")
+
+[node name="Plank5" type="MeshInstance4D" parent="Shed/RoofPivotN"]
+position = Vector4(0.5911111111111111, 0, -1.1280076679363118, 0)
+material_override = SubResource("TetraMaterial4D_gk2w6")
+mesh = SubResource("BoxTetraMesh4D_xvdxg")
+
+[node name="Plank6" type="MeshInstance4D" parent="Shed/RoofPivotN"]
+position = Vector4(1.1822222222222223, 0, -1.1454269338989436, 0)
+material_override = SubResource("TetraMaterial4D_13ewt")
+mesh = SubResource("BoxTetraMesh4D_uekgi")
+
+[node name="Plank7" type="MeshInstance4D" parent="Shed/RoofPivotN"]
+position = Vector4(1.7733333333333334, 0, -1.0243899724678731, 0)
+material_override = SubResource("TetraMaterial4D_7orm3")
+mesh = SubResource("BoxTetraMesh4D_a2c0j")
+
+[node name="Plank8" type="MeshInstance4D" parent="Shed/RoofPivotN"]
+position = Vector4(2.3644444444444446, 0, -1.0229533319761097, 0)
+material_override = SubResource("TetraMaterial4D_dklav")
+mesh = SubResource("BoxTetraMesh4D_tqa74")
+
+[node name="RoofPivotP" type="Node4D" parent="Shed"]
+position = Vector4(0, 3.09, 0, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.9074669071198411, 0.42012356811103757, 0, 0, -0.42012356811103757, 0.9074669071198411, 0, 0, 0, 0, 1)
+
+[node name="Plank0" type="MeshInstance4D" parent="Shed/RoofPivotP"]
+position = Vector4(-2.3644444444444446, 0, 1.0229533319761097, 0)
+material_override = SubResource("TetraMaterial4D_iy0bu")
+mesh = SubResource("BoxTetraMesh4D_mwpqm")
+
+[node name="Plank1" type="MeshInstance4D" parent="Shed/RoofPivotP"]
+position = Vector4(-1.7733333333333334, 0, 1.0600937537802215, 0)
+material_override = SubResource("TetraMaterial4D_qnb08")
+mesh = SubResource("BoxTetraMesh4D_2ltih")
+
+[node name="Plank2" type="MeshInstance4D" parent="Shed/RoofPivotP"]
+position = Vector4(-1.1822222222222223, 0, 1.1454269338989436, 0)
+material_override = SubResource("TetraMaterial4D_ol0jr")
+mesh = SubResource("BoxTetraMesh4D_0n4q0")
+
+[node name="Plank3" type="MeshInstance4D" parent="Shed/RoofPivotP"]
+position = Vector4(-0.5911111111111111, 0, 1.0923038866239634, 0)
+material_override = SubResource("TetraMaterial4D_74bm1")
+mesh = SubResource("BoxTetraMesh4D_adqde")
+
+[node name="Plank4" type="MeshInstance4D" parent="Shed/RoofPivotP"]
+position = Vector4(0, 0, 1.1901260437449472, 0)
+material_override = SubResource("TetraMaterial4D_b3ing")
+mesh = SubResource("BoxTetraMesh4D_qha2k")
+
+[node name="Plank5" type="MeshInstance4D" parent="Shed/RoofPivotP"]
+position = Vector4(0.5911111111111111, 0, 1.1280076679363118, 0)
+material_override = SubResource("TetraMaterial4D_dle2q")
+mesh = SubResource("BoxTetraMesh4D_scu55")
+
+[node name="Plank6" type="MeshInstance4D" parent="Shed/RoofPivotP"]
+position = Vector4(1.1822222222222223, 0, 1.1454269338989436, 0)
+material_override = SubResource("TetraMaterial4D_db7uf")
+mesh = SubResource("BoxTetraMesh4D_81mrh")
+
+[node name="Plank7" type="MeshInstance4D" parent="Shed/RoofPivotP"]
+position = Vector4(1.7733333333333334, 0, 1.0243899724678731, 0)
+material_override = SubResource("TetraMaterial4D_tdlv1")
+mesh = SubResource("BoxTetraMesh4D_hbn5i")
+
+[node name="Plank8" type="MeshInstance4D" parent="Shed/RoofPivotP"]
+position = Vector4(2.3644444444444446, 0, 1.0229533319761097, 0)
+material_override = SubResource("TetraMaterial4D_un5jv")
+mesh = SubResource("BoxTetraMesh4D_67wmq")
+
+[node name="Ridge" type="MeshInstance4D" parent="Shed"]
+position = Vector4(0, 3.1399999999999997, 0, 0)
+material_override = SubResource("TetraMaterial4D_t7f7g")
+mesh = SubResource("BoxTetraMesh4D_wya06")
+
+[node name="TrymHead" type="Node4D" parent="."]
+position = Vector4(-0.4, 1.5, -0.6, 0)
+
+[node name="TrymStand" type="Node4D" parent="."]
+position = Vector4(0.7, 0, 1.4, 0)
+
+[node name="TrymLaptopUse" type="Node4D" parent="."]
+position = Vector4(-0.7, 0.72, -0.6, 0)
+script = ExtResource("laptop")
+player_path = NodePath("../../../Player")
+camera_path = NodePath("../../../Player/CameraRig/Pitch/Camera4D")
+catcher_path = NodePath("../../../Player/Catcher")
+
+[node name="Trym" type="Node4D" parent="."]
+position = Vector4(-1, 0, -0.6, 0)
+basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
+script = ExtResource("pen_trym")
+player_path = NodePath("../../../Player")
+book_colors = PackedColorArray(0.4, 0.17, 0.15, 1, 0.21, 0.29, 0.21, 1, 0.19, 0.24, 0.35, 1, 0.63, 0.53, 0.38, 1, 0.34, 0.25, 0.19, 1, 0.25, 0.35, 0.34, 1, 0.75, 0.69, 0.55, 1, 0.45, 0.31, 0.17, 1, 0.3, 0.2, 0.22, 1, 0.55, 0.45, 0.24, 1)
+
+[node name="DeskTop" type="MeshInstance4D" parent="Trym"]
+position = Vector4(0, 0.62, 0, 0)
+material_override = SubResource("TetraMaterial4D_3uus0")
+mesh = SubResource("BoxTetraMesh4D_qcebf")
+
+[node name="DeskLegNN" type="MeshInstance4D" parent="Trym"]
+position = Vector4(-0.46, 0.31, -0.22, 0)
+material_override = SubResource("TetraMaterial4D_20i5w")
+mesh = SubResource("BoxTetraMesh4D_ll6qp")
+
+[node name="DeskLegNP" type="MeshInstance4D" parent="Trym"]
+position = Vector4(-0.46, 0.31, 0.22, 0)
+material_override = SubResource("TetraMaterial4D_yb4gj")
+mesh = SubResource("BoxTetraMesh4D_j0hss")
+
+[node name="DeskLegPN" type="MeshInstance4D" parent="Trym"]
+position = Vector4(0.46, 0.31, -0.22, 0)
+material_override = SubResource("TetraMaterial4D_illcf")
+mesh = SubResource("BoxTetraMesh4D_sirt3")
+
+[node name="DeskLegPP" type="MeshInstance4D" parent="Trym"]
+position = Vector4(0.46, 0.31, 0.22, 0)
+material_override = SubResource("TetraMaterial4D_a83xc")
+mesh = SubResource("BoxTetraMesh4D_4ad7g")
+
+[node name="Stool" type="MeshInstance4D" parent="Trym"]
+position = Vector4(0, 0.21, 0.62, 0)
+material_override = SubResource("TetraMaterial4D_ndyk3")
+mesh = SubResource("BoxTetraMesh4D_25v48")
+
+[node name="Bookshelf" type="Node4D" parent="Trym"]
+position = Vector4(1.37, 0.06, -0.06, 0)
+basis = Projection(6.123233995736766e-17, 0, 1, 0, 0, 1, 0, 0, -1, 0, 6.123233995736766e-17, 0, 0, 0, 0, 1)
+
+[node name="ShelfBack" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0, 0.775, -0.135, 0)
+material_override = SubResource("TetraMaterial4D_lfaoc")
+mesh = SubResource("BoxTetraMesh4D_hwqa5")
+
+[node name="ShelfSideN" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.5499999999999999, 0.775, 0, 0)
+material_override = SubResource("TetraMaterial4D_mounk")
+mesh = SubResource("BoxTetraMesh4D_esatu")
+
+[node name="ShelfSideP" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.5499999999999999, 0.775, 0, 0)
+material_override = SubResource("TetraMaterial4D_00lad")
+mesh = SubResource("BoxTetraMesh4D_gc7jj")
+
+[node name="ShelfTop" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0, 1.5250000000000001, 0, 0)
+material_override = SubResource("TetraMaterial4D_ar2e0")
+mesh = SubResource("BoxTetraMesh4D_si5lq")
+
+[node name="Shelf0" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0, 0.025, 0, 0)
+material_override = SubResource("TetraMaterial4D_a8ftu")
+mesh = SubResource("BoxTetraMesh4D_00asg")
+
+[node name="Book0_0" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.5075, 0.20500000000000002, 0, 0)
+material_override = SubResource("TetraMaterial4D_yoc8t")
+mesh = SubResource("BoxTetraMesh4D_3rr2g")
+
+[node name="Book0_1" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.4534999999999999, 0.22749999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_hxtjr")
+mesh = SubResource("BoxTetraMesh4D_w5tgr")
+
+[node name="Book0_2" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.37749999999999995, 0.25, 0, 0)
+material_override = SubResource("TetraMaterial4D_4quh3")
+mesh = SubResource("BoxTetraMesh4D_1omem")
+
+[node name="Book0_3" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.27949999999999997, 0.20500000000000002, 0, 0)
+material_override = SubResource("TetraMaterial4D_mb3g3")
+mesh = SubResource("BoxTetraMesh4D_uhkom")
+
+[node name="Book0_4" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.20349999999999996, 0.22749999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_4k1qc")
+mesh = SubResource("BoxTetraMesh4D_57v36")
+
+[node name="Book0_5" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.14949999999999994, 0.25, 0, 0)
+material_override = SubResource("TetraMaterial4D_2qtde")
+mesh = SubResource("BoxTetraMesh4D_xjoe1")
+
+[node name="Book0_6" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.07349999999999993, 0.20500000000000002, 0, 0)
+material_override = SubResource("TetraMaterial4D_12okt")
+mesh = SubResource("BoxTetraMesh4D_a6rh3")
+
+[node name="Book0_7" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.024500000000000063, 0.22749999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_u2e6l")
+mesh = SubResource("BoxTetraMesh4D_qhcj4")
+
+[node name="Book0_8" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.10050000000000008, 0.25, 0, 0)
+material_override = SubResource("TetraMaterial4D_wx685")
+mesh = SubResource("BoxTetraMesh4D_pc5my")
+
+[node name="Book0_9" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.15450000000000008, 0.20500000000000002, 0, 0)
+material_override = SubResource("TetraMaterial4D_f8aml")
+mesh = SubResource("BoxTetraMesh4D_c3j1k")
+
+[node name="Book0_10" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.2305000000000001, 0.22749999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_nbddg")
+mesh = SubResource("BoxTetraMesh4D_4cw38")
+
+[node name="Book0_11" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.32850000000000007, 0.25, 0, 0)
+material_override = SubResource("TetraMaterial4D_4os0v")
+mesh = SubResource("BoxTetraMesh4D_h6gwp")
+
+[node name="Book0_12" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.40450000000000014, 0.20500000000000002, 0, 0)
+material_override = SubResource("TetraMaterial4D_tqpu3")
+mesh = SubResource("BoxTetraMesh4D_xb2cr")
+
+[node name="Book0_13" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.45850000000000013, 0.22749999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_887ic")
+mesh = SubResource("BoxTetraMesh4D_m71wy")
+
+[node name="Shelf1" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0, 0.525, 0, 0)
+material_override = SubResource("TetraMaterial4D_7fw0d")
+mesh = SubResource("BoxTetraMesh4D_dohj8")
+
+[node name="Book1_3" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.4744999999999999, 0.7050000000000001, 0, 0)
+material_override = SubResource("TetraMaterial4D_1n86k")
+mesh = SubResource("BoxTetraMesh4D_dtlqu")
+
+[node name="Book1_4" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.3984999999999999, 0.7275, 0, 0)
+material_override = SubResource("TetraMaterial4D_2tynk")
+mesh = SubResource("BoxTetraMesh4D_f2fmm")
+
+[node name="Book1_5" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.3444999999999999, 0.75, 0, 0)
+material_override = SubResource("TetraMaterial4D_1qesy")
+mesh = SubResource("BoxTetraMesh4D_rjcgj")
+
+[node name="Book1_6" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.26849999999999996, 0.7050000000000001, 0, 0)
+material_override = SubResource("TetraMaterial4D_yceja")
+mesh = SubResource("BoxTetraMesh4D_tr2q7")
+
+[node name="Book1_7" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.17049999999999993, 0.7275, 0, 0)
+material_override = SubResource("TetraMaterial4D_0vd7m")
+mesh = SubResource("BoxTetraMesh4D_pxfeb")
+
+[node name="Book1_8" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.09449999999999993, 0.75, 0, 0)
+material_override = SubResource("TetraMaterial4D_iys5o")
+mesh = SubResource("BoxTetraMesh4D_8k4jt")
+
+[node name="Book1_9" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.040499999999999925, 0.7050000000000001, 0, 0)
+material_override = SubResource("TetraMaterial4D_788pk")
+mesh = SubResource("BoxTetraMesh4D_2w5qd")
+
+[node name="Book1_10" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.03550000000000008, 0.7275, 0, 0)
+material_override = SubResource("TetraMaterial4D_3wswx")
+mesh = SubResource("BoxTetraMesh4D_07f8v")
+
+[node name="Book1_11" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.13350000000000006, 0.75, 0, 0)
+material_override = SubResource("TetraMaterial4D_jt3tl")
+mesh = SubResource("BoxTetraMesh4D_x8kv1")
+
+[node name="Book1_12" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.20950000000000008, 0.7050000000000001, 0, 0)
+material_override = SubResource("TetraMaterial4D_oqxyc")
+mesh = SubResource("BoxTetraMesh4D_mfdtq")
+
+[node name="Book1_13" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.2635000000000001, 0.7275, 0, 0)
+material_override = SubResource("TetraMaterial4D_r0e7g")
+mesh = SubResource("BoxTetraMesh4D_c6acy")
+
+[node name="Book1_14" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.3395000000000001, 0.75, 0, 0)
+material_override = SubResource("TetraMaterial4D_ytcyl")
+mesh = SubResource("BoxTetraMesh4D_dbu32")
+
+[node name="Book1_15" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.4375000000000001, 0.7050000000000001, 0, 0)
+material_override = SubResource("TetraMaterial4D_fa21b")
+mesh = SubResource("BoxTetraMesh4D_ivkig")
+
+[node name="Shelf2" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0, 1.025, 0, 0)
+material_override = SubResource("TetraMaterial4D_8mpqn")
+mesh = SubResource("BoxTetraMesh4D_44ke7")
+
+[node name="Book2_6" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.48549999999999993, 1.2049999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_ra4iu")
+mesh = SubResource("BoxTetraMesh4D_7easv")
+
+[node name="Book2_7" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.38749999999999996, 1.2274999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_sja6e")
+mesh = SubResource("BoxTetraMesh4D_bns52")
+
+[node name="Book2_8" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.31149999999999994, 1.2499999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_mtrmi")
+mesh = SubResource("BoxTetraMesh4D_2hp5v")
+
+[node name="Book2_9" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.25749999999999995, 1.2049999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_mfyuq")
+mesh = SubResource("BoxTetraMesh4D_mcygc")
+
+[node name="Book2_10" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.18149999999999997, 1.2274999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_6nq82")
+mesh = SubResource("BoxTetraMesh4D_npsm0")
+
+[node name="Book2_11" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.08349999999999998, 1.2499999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_3oyce")
+mesh = SubResource("BoxTetraMesh4D_fguc5")
+
+[node name="Book2_12" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(-0.007499999999999965, 1.2049999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_moqpk")
+mesh = SubResource("BoxTetraMesh4D_qmjuk")
+
+[node name="Book2_13" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.04650000000000004, 1.2274999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_7j81c")
+mesh = SubResource("BoxTetraMesh4D_wtl7g")
+
+[node name="Book2_14" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.12250000000000005, 1.2499999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_n7pjg")
+mesh = SubResource("BoxTetraMesh4D_pqi4s")
+
+[node name="Book2_15" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.22050000000000003, 1.2049999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_7b734")
+mesh = SubResource("BoxTetraMesh4D_uwxow")
+
+[node name="Book2_16" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.29650000000000004, 1.2274999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_txc1q")
+mesh = SubResource("BoxTetraMesh4D_c02gm")
+
+[node name="Book2_17" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.35050000000000003, 1.2499999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_gbogl")
+mesh = SubResource("BoxTetraMesh4D_wwah0")
+
+[node name="Book2_18" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0.4265, 1.2049999999999998, 0, 0)
+material_override = SubResource("TetraMaterial4D_5j2rb")
+mesh = SubResource("BoxTetraMesh4D_teb8k")
+
+[node name="Shelf3" type="MeshInstance4D" parent="Trym/Bookshelf"]
+position = Vector4(0, 1.525, 0, 0)
+material_override = SubResource("TetraMaterial4D_veqq3")
+mesh = SubResource("BoxTetraMesh4D_qdwd7")
+
+[node name="LaptopBase" type="MeshInstance4D" parent="Trym"]
+position = Vector4(0, 0.67, 0.02, 0)
+material_override = SubResource("TetraMaterial4D_eoysl")
+mesh = SubResource("BoxTetraMesh4D_fr7hb")
+
+[node name="LaptopLid" type="MeshInstance4D" parent="Trym"]
+position = Vector4(0, 0.8, -0.13, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.955336489125606, -0.29552020666133955, 0, 0, 0.29552020666133955, 0.955336489125606, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_y61nn")
+mesh = SubResource("BoxTetraMesh4D_xgecg")
+
+[node name="Screen" type="MeshInstance4D" parent="Trym/LaptopLid"]
+position = Vector4(0, 0, 0.017, 0)
+material_override = SubResource("TetraMaterial4D_k6upr")
+mesh = SubResource("BoxTetraMesh4D_b24kc")
+
+[node name="Figure" type="Node4D" parent="Trym"]
+position = Vector4(0, -0.25, 0.62, 0)
+basis = Projection(-1, 0, -1.2246467991473532e-16, 0, 0, 1, 0, 0, 1.2246467991473532e-16, 0, -1, 0, 0, 0, 0, 1)
+script = ExtResource("avatar")
+hair = Color(0.13, 0.1, 0.08, 1)
+wear_cap = false
+eyes = true
+eye_colour = Color(0.11, 0.12, 0.16, 1)
+eye_spacing = 0.08
+eye_height = 0.035
+eye_width = 0.04
+eye_tall = 0.044
+build = 2
+skin = Color(0.1, 0.11, 0.13, 1)
+accent = Color(0.91, 0.76, 0.63, 1)
+
+[node name="Tunic" type="MeshInstance4D" parent="Trym/Figure"]
+position = Vector4(0, 0.84, 0, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.9872272833756269, -0.15931820661424598, 0, 0, 0.15931820661424598, 0.9872272833756269, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_2l3vy")
+mesh = SubResource("BoxTetraMesh4D_osab8")
+
+[node name="Belt" type="MeshInstance4D" parent="Trym/Figure/Tunic"]
+position = Vector4(0, -0.2, 0, 0)
+material_override = SubResource("TetraMaterial4D_efuxy")
+mesh = SubResource("BoxTetraMesh4D_s2a00")
+
+[node name="Head" type="MeshInstance4D" parent="Trym/Figure/Tunic"]
+position = Vector4(0, 0.42, 0, 0)
+material_override = SubResource("TetraMaterial4D_6yhn5")
+mesh = SubResource("BoxTetraMesh4D_1hr65")
+
+[node name="Crown" type="MeshInstance4D" parent="Trym/Figure/Tunic/Head"]
+position = Vector4(0, 0.15, 0, 0)
+material_override = SubResource("TetraMaterial4D_3pvke")
+mesh = SubResource("BoxTetraMesh4D_16r2m")
+
+[node name="Hair" type="MeshInstance4D" parent="Trym/Figure/Tunic/Head"]
+position = Vector4(0, 0.06, -0.15, 0)
+material_override = SubResource("TetraMaterial4D_mmqow")
+mesh = SubResource("BoxTetraMesh4D_gwgqd")
+
+[node name="EarL" type="MeshInstance4D" parent="Trym/Figure/Tunic/Head"]
+position = Vector4(0.18, 0.02, -0.02, 0)
+material_override = SubResource("TetraMaterial4D_6hm0w")
+mesh = SubResource("BoxTetraMesh4D_8gcts")
+
+[node name="EarR" type="MeshInstance4D" parent="Trym/Figure/Tunic/Head"]
+position = Vector4(-0.18, 0.02, -0.02, 0)
+material_override = SubResource("TetraMaterial4D_midhm")
+mesh = SubResource("BoxTetraMesh4D_72p25")
+
+[node name="EyeL" type="MeshInstance4D" parent="Trym/Figure/Tunic/Head"]
+position = Vector4(0.08, 0.035, 0.148, 0)
+material_override = SubResource("TetraMaterial4D_72p3t")
+mesh = SubResource("BoxTetraMesh4D_dd8qp")
+
+[node name="EyeR" type="MeshInstance4D" parent="Trym/Figure/Tunic/Head"]
+position = Vector4(-0.08, 0.035, 0.148, 0)
+material_override = SubResource("TetraMaterial4D_1vwbh")
+mesh = SubResource("BoxTetraMesh4D_amc6e")
+
+[node name="HipL" type="Node4D" parent="Trym/Figure"]
+position = Vector4(0.1, 0.7, 0, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.16996714290024104, -0.9854497299884601, 0, 0, 0.9854497299884601, 0.16996714290024104, 0, 0, 0, 0, 1)
+
+[node name="ThighL" type="MeshInstance4D" parent="Trym/Figure/HipL"]
+position = Vector4(0, -0.16, 0, 0)
+material_override = SubResource("TetraMaterial4D_qmu1e")
+mesh = SubResource("BoxTetraMesh4D_sw3wt")
+
+[node name="KneeL" type="Node4D" parent="Trym/Figure/HipL"]
+position = Vector4(0, -0.32, 0, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.16996714290024104, 0.9854497299884601, 0, 0, -0.9854497299884601, 0.16996714290024104, 0, 0, 0, 0, 1)
+
+[node name="ShinL" type="MeshInstance4D" parent="Trym/Figure/HipL/KneeL"]
+position = Vector4(0, -0.16, 0, 0)
+material_override = SubResource("TetraMaterial4D_0srv3")
+mesh = SubResource("BoxTetraMesh4D_rohli")
+
+[node name="AnkleL" type="Node4D" parent="Trym/Figure/HipL/KneeL"]
+position = Vector4(0, -0.32, 0, 0)
+
+[node name="BootL" type="MeshInstance4D" parent="Trym/Figure/HipL/KneeL/AnkleL"]
+position = Vector4(0, -0.03, 0.04, 0)
+material_override = SubResource("TetraMaterial4D_xaxlf")
+mesh = SubResource("BoxTetraMesh4D_f6kxy")
+
+[node name="TrouserLowerL" type="MeshInstance4D" parent="Trym/Figure/HipL/KneeL"]
+position = Vector4(0, -0.16, 0, 0)
+material_override = SubResource("TetraMaterial4D_jbo8c")
+mesh = SubResource("BoxTetraMesh4D_n7ftl")
+
+[node name="TrouserL" type="MeshInstance4D" parent="Trym/Figure/HipL"]
+position = Vector4(0, -0.16, 0, 0)
+material_override = SubResource("TetraMaterial4D_s1dnh")
+mesh = SubResource("BoxTetraMesh4D_2ophu")
+
+[node name="ShoulderL" type="Node4D" parent="Trym/Figure"]
+position = Vector4(0.22, 1.02, 0, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.49757104789172696, -0.867423225594017, 0, 0, 0.867423225594017, 0.49757104789172696, 0, 0, 0, 0, 1)
+
+[node name="UpperArmL" type="MeshInstance4D" parent="Trym/Figure/ShoulderL"]
+position = Vector4(0, -0.09, 0, 0)
+material_override = SubResource("TetraMaterial4D_5te2l")
+mesh = SubResource("BoxTetraMesh4D_8w5ld")
+
+[node name="ElbowL" type="Node4D" parent="Trym/Figure/ShoulderL"]
+position = Vector4(0, -0.18, 0, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.9004471023526769, 0.43496553411123023, 0, 0, -0.43496553411123023, 0.9004471023526769, 0, 0, 0, 0, 1)
+
+[node name="ForearmL" type="MeshInstance4D" parent="Trym/Figure/ShoulderL/ElbowL"]
+position = Vector4(0, -0.09, 0, 0)
+material_override = SubResource("TetraMaterial4D_3vifl")
+mesh = SubResource("BoxTetraMesh4D_632w0")
+
+[node name="HandL" type="MeshInstance4D" parent="Trym/Figure/ShoulderL/ElbowL"]
+position = Vector4(0, -0.2, 0, 0)
+material_override = SubResource("TetraMaterial4D_cu5h6")
+mesh = SubResource("BoxTetraMesh4D_gyobn")
+
+[node name="HipR" type="Node4D" parent="Trym/Figure"]
+position = Vector4(-0.1, 0.7, 0, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.16996714290024104, -0.9854497299884601, 0, 0, 0.9854497299884601, 0.16996714290024104, 0, 0, 0, 0, 1)
+
+[node name="ThighR" type="MeshInstance4D" parent="Trym/Figure/HipR"]
+position = Vector4(0, -0.16, 0, 0)
+material_override = SubResource("TetraMaterial4D_pgbs7")
+mesh = SubResource("BoxTetraMesh4D_k34p6")
+
+[node name="KneeR" type="Node4D" parent="Trym/Figure/HipR"]
+position = Vector4(0, -0.32, 0, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.16996714290024104, 0.9854497299884601, 0, 0, -0.9854497299884601, 0.16996714290024104, 0, 0, 0, 0, 1)
+
+[node name="ShinR" type="MeshInstance4D" parent="Trym/Figure/HipR/KneeR"]
+position = Vector4(0, -0.16, 0, 0)
+material_override = SubResource("TetraMaterial4D_pre3x")
+mesh = SubResource("BoxTetraMesh4D_mwuw5")
+
+[node name="AnkleR" type="Node4D" parent="Trym/Figure/HipR/KneeR"]
+position = Vector4(0, -0.32, 0, 0)
+
+[node name="BootR" type="MeshInstance4D" parent="Trym/Figure/HipR/KneeR/AnkleR"]
+position = Vector4(0, -0.03, 0.04, 0)
+material_override = SubResource("TetraMaterial4D_o7qjp")
+mesh = SubResource("BoxTetraMesh4D_s17an")
+
+[node name="TrouserLowerR" type="MeshInstance4D" parent="Trym/Figure/HipR/KneeR"]
+position = Vector4(0, -0.16, 0, 0)
+material_override = SubResource("TetraMaterial4D_fwd7c")
+mesh = SubResource("BoxTetraMesh4D_ksnub")
+
+[node name="TrouserR" type="MeshInstance4D" parent="Trym/Figure/HipR"]
+position = Vector4(0, -0.16, 0, 0)
+material_override = SubResource("TetraMaterial4D_32dpn")
+mesh = SubResource("BoxTetraMesh4D_xn4ho")
+
+[node name="ShoulderR" type="Node4D" parent="Trym/Figure"]
+position = Vector4(-0.22, 1.02, 0, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.49757104789172696, -0.867423225594017, 0, 0, 0.867423225594017, 0.49757104789172696, 0, 0, 0, 0, 1)
+
+[node name="UpperArmR" type="MeshInstance4D" parent="Trym/Figure/ShoulderR"]
+position = Vector4(0, -0.09, 0, 0)
+material_override = SubResource("TetraMaterial4D_dw3em")
+mesh = SubResource("BoxTetraMesh4D_myphv")
+
+[node name="ElbowR" type="Node4D" parent="Trym/Figure/ShoulderR"]
+position = Vector4(0, -0.18, 0, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.9004471023526769, 0.43496553411123023, 0, 0, -0.43496553411123023, 0.9004471023526769, 0, 0, 0, 0, 1)
+
+[node name="ForearmR" type="MeshInstance4D" parent="Trym/Figure/ShoulderR/ElbowR"]
+position = Vector4(0, -0.09, 0, 0)
+material_override = SubResource("TetraMaterial4D_62a4e")
+mesh = SubResource("BoxTetraMesh4D_7mtfy")
+
+[node name="HandR" type="MeshInstance4D" parent="Trym/Figure/ShoulderR/ElbowR"]
+position = Vector4(0, -0.2, 0, 0)
+material_override = SubResource("TetraMaterial4D_dk7al")
+mesh = SubResource("BoxTetraMesh4D_i0euj")
+
+[node name="TrymDoor" type="Node4D" parent="."]
+position = Vector4(1, 0, 8, 0)
+visible = false
+script = ExtResource("thr_arch")
+player_path = NodePath("../../../Player")
+armed = false
+
+[node name="Frame" type="Node4D" parent="TrymDoor"]
+
+[node name="Post-1" type="MeshInstance4D" parent="TrymDoor/Frame"]
+position = Vector4(-1.1, 1.55, 0, 0)
+material_override = SubResource("TetraMaterial4D_hh3ev")
+mesh = SubResource("BoxTetraMesh4D_x70ra")
+
+[node name="PostEdge-1" type="MeshInstance4D" parent="TrymDoor/Frame"]
+position = Vector4(-1.1, 1.55, 0.14300000000000002, 0)
+material_override = SubResource("TetraMaterial4D_815n8")
+mesh = SubResource("BoxTetraMesh4D_xag60")
+
+[node name="Post1" type="MeshInstance4D" parent="TrymDoor/Frame"]
+position = Vector4(1.1, 1.55, 0, 0)
+material_override = SubResource("TetraMaterial4D_kw78w")
+mesh = SubResource("BoxTetraMesh4D_s35ak")
+
+[node name="PostEdge1" type="MeshInstance4D" parent="TrymDoor/Frame"]
+position = Vector4(1.1, 1.55, 0.14300000000000002, 0)
+material_override = SubResource("TetraMaterial4D_lrpja")
+mesh = SubResource("BoxTetraMesh4D_ejeuf")
+
+[node name="Lintel" type="MeshInstance4D" parent="TrymDoor/Frame"]
+position = Vector4(0, 3.1, 0, 0)
+material_override = SubResource("TetraMaterial4D_rmxn5")
+mesh = SubResource("BoxTetraMesh4D_bdg7w")
+
+[node name="LintelEdge" type="MeshInstance4D" parent="TrymDoor/Frame"]
+position = Vector4(0, 3.1, 0.14300000000000002, 0)
+material_override = SubResource("TetraMaterial4D_kk1as")
+mesh = SubResource("BoxTetraMesh4D_cvdl2")
+
+[node name="Sill" type="MeshInstance4D" parent="TrymDoor/Frame"]
+position = Vector4(0, 0.06, 0, 0)
+material_override = SubResource("TetraMaterial4D_xjr21")
+mesh = SubResource("BoxTetraMesh4D_c8nu6")
+
+[node name="Field" type="MeshInstance4D" parent="TrymDoor"]
+position = Vector4(0, 1.55, 0, 0)
+material_override = SubResource("TetraMaterial4D_p7kud")
+mesh = SubResource("BoxTetraMesh4D_dd26t")
+
+[node name="Glow-1" type="OmniLight4D" parent="TrymDoor"]
+position = Vector4(0, 1.55, -0.95, 0)
+light_color = Color(0.36, 0.72, 1, 1)
+light_energy = 0.0
+omni_range_meters = 9.0
+
+[node name="Glow1" type="OmniLight4D" parent="TrymDoor"]
+position = Vector4(0, 1.55, 0.95, 0)
+light_color = Color(0.36, 0.72, 1, 1)
+light_energy = 0.0
+omni_range_meters = 9.0
+
+[node name="Chime" type="AudioStreamPlayer" parent="TrymDoor"]
+stream = SubResource("AudioStreamWAV_rs83v")
+volume_db = -9.0

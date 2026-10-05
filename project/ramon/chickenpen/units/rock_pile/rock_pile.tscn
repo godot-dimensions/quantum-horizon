@@ -1,0 +1,390 @@
+[gd_scene load_steps=50 format=4]
+
+[ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
+[ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
+[ext_resource type="Script" uid="uid://c5wyf0hlrekp0" path="res://ramon/chickenpen/scripts/strider_walker.gd" id="9_tusul"]
+[ext_resource type="Script" uid="uid://dnwudppcswd5u" path="res://ramon/chickenpen/scripts/pen_cat_4d.gd" id="pen_cat"]
+[ext_resource type="Script" uid="uid://sbul65a82342" path="res://ramon/chickenpen/scripts/pen_rock_pile_4d.gd" id="pen_rock_pile"]
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_nfw8y"]
+albedo_color = Color(0.07, 0.07, 0.09, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_x5uhf"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_kixqn"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_ck0v6"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_84dil"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_a4i4v"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_qs2w6"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_qufm4"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_i1lr7"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_qdubv"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_rqk2s"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_wolt8"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_53muv"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_bxt7s"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_5vlqx"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_4qpok"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_g8oe4"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_c2fr3"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_mpcfe"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_0wuof"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_kgbor"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_cw71l"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_rjasu"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_th8x4"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_835bq"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_2fk3x"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_xcyqt"]
+albedo_color = Color(0.07, 0.07, 0.09, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_qyv72"]
+size = Vector4(0.0665, 0.0665, 0.017099999999999997, 0.0665)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_we6wo"]
+albedo_color = Color(0.85, 0.52, 0.58, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_a7m4l"]
+size = Vector4(0.038, 0.038, 0.0057, 0.038)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_kqfl0"]
+albedo_color = Color(0.85, 0.92, 0.35, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_xxq1m"]
+size = Vector4(0.0304, 0.0228, 0.0114, 0.0304)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_in0mq"]
+albedo_color = Color(0.02, 0.02, 0.02, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_2fqy7"]
+size = Vector4(0.00665, 0.0209, 0.0038, 0.00665)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_bg6ss"]
+albedo_color = Color(0.07, 0.07, 0.09, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_jb6s7"]
+size = Vector4(0.0665, 0.0665, 0.017099999999999997, 0.0665)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_vkx28"]
+albedo_color = Color(0.85, 0.52, 0.58, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_xuhoe"]
+size = Vector4(0.038, 0.038, 0.0057, 0.038)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_wjq3v"]
+albedo_color = Color(0.85, 0.92, 0.35, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_cfudd"]
+size = Vector4(0.0304, 0.0228, 0.0114, 0.0304)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_xfl00"]
+albedo_color = Color(0.02, 0.02, 0.02, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_vjfji"]
+size = Vector4(0.00665, 0.0209, 0.0038, 0.00665)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_1kvfp"]
+albedo_color = Color(0.62, 0.34, 0.4, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_uingy"]
+size = Vector4(0.0209, 0.0133, 0.0095, 0.0209)
+
+[node name="RockPileSpot" type="Node4D"]
+
+[node name="RockPile" type="Node4D" parent="."]
+position = Vector4(0, 0, 0, 0)
+script = ExtResource("pen_rock_pile")
+
+[node name="Cat" type="Node4D" parent="."]
+position = Vector4(0, 0.64, 0, 0)
+script = ExtResource("pen_cat")
+crate_path = NodePath("../RockPile")
+player_path = NodePath("../../../Player")
+crate_top = 0.64
+crate_reach = 1.15
+perch_path = NodePath("../../../Pen/Coop")
+
+[node name="Hide" type="MeshInstance4D" parent="Cat"]
+material_override = SubResource("TetraMaterial4D_nfw8y")
+script = ExtResource("7_cgmor")
+live_rebuild = false
+profile_sides = 10
+profile_rings = 3
+
+[node name="Head" type="MeshInstance4D" parent="Cat/Hide"]
+position = Vector4(0, 0.38, 0.475, 0)
+material_override = SubResource("WireMaterial4D_x5uhf")
+script = ExtResource("8_tf8lj")
+radius = 0.09025
+
+[node name="SnoutBase" type="MeshInstance4D" parent="Cat/Hide/Head"]
+position = Vector4(0, -0.0228, 0.0627, 0)
+material_override = SubResource("WireMaterial4D_kixqn")
+script = ExtResource("8_tf8lj")
+radius = 0.0475
+starts_branch = true
+symmetry_type = 0
+mirror_branch = false
+
+[node name="SnoutTip" type="MeshInstance4D" parent="Cat/Hide/Head/SnoutBase"]
+position = Vector4(0, -0.0057, 0.028499999999999998, 0)
+material_override = SubResource("WireMaterial4D_ck0v6")
+script = ExtResource("8_tf8lj")
+radius = 0.0323
+
+[node name="Neck" type="MeshInstance4D" parent="Cat/Hide"]
+position = Vector4(0, 0.3515, 0.361, 0)
+material_override = SubResource("WireMaterial4D_84dil")
+script = ExtResource("8_tf8lj")
+radius = 0.08739999999999999
+
+[node name="Chest" type="MeshInstance4D" parent="Cat/Hide"]
+position = Vector4(0, 0.323, 0.209, 0)
+material_override = SubResource("WireMaterial4D_a4i4v")
+script = ExtResource("8_tf8lj")
+radius = 0.1311
+
+[node name="FrontHipL" type="MeshInstance4D" parent="Cat/Hide/Chest"]
+position = Vector4(0.07029999999999999, -0.019, 0.019, 0)
+material_override = SubResource("WireMaterial4D_qs2w6")
+script = ExtResource("8_tf8lj")
+radius = 0.0551
+starts_branch = true
+symmetry_type = 0
+mirror_branch = false
+
+[node name="FrontKneeL" type="MeshInstance4D" parent="Cat/Hide/Chest/FrontHipL"]
+position = Vector4(0.0038, -0.1805, -0.0095, 0)
+material_override = SubResource("WireMaterial4D_qufm4")
+script = ExtResource("8_tf8lj")
+radius = 0.03705
+
+[node name="FrontFootL" type="MeshInstance4D" parent="Cat/Hide/Chest/FrontHipL/FrontKneeL"]
+position = Vector4(0, -0.1805, 0.028499999999999998, 0)
+material_override = SubResource("WireMaterial4D_i1lr7")
+script = ExtResource("8_tf8lj")
+radius = 0.0456
+
+[node name="FrontHipR" type="MeshInstance4D" parent="Cat/Hide/Chest"]
+position = Vector4(-0.07029999999999999, -0.019, 0.019, 0)
+material_override = SubResource("WireMaterial4D_qdubv")
+script = ExtResource("8_tf8lj")
+radius = 0.0551
+starts_branch = true
+symmetry_type = 0
+mirror_branch = false
+
+[node name="FrontKneeR" type="MeshInstance4D" parent="Cat/Hide/Chest/FrontHipR"]
+position = Vector4(-0.0038, -0.1805, -0.0095, 0)
+material_override = SubResource("WireMaterial4D_rqk2s")
+script = ExtResource("8_tf8lj")
+radius = 0.03705
+
+[node name="FrontFootR" type="MeshInstance4D" parent="Cat/Hide/Chest/FrontHipR/FrontKneeR"]
+position = Vector4(0, -0.1805, 0.028499999999999998, 0)
+material_override = SubResource("WireMaterial4D_wolt8")
+script = ExtResource("8_tf8lj")
+radius = 0.0456
+
+[node name="Mid" type="MeshInstance4D" parent="Cat/Hide"]
+position = Vector4(0, 0.323, 0.028499999999999998, 0)
+material_override = SubResource("WireMaterial4D_53muv")
+script = ExtResource("8_tf8lj")
+radius = 0.11589999999999999
+
+[node name="Rump" type="MeshInstance4D" parent="Cat/Hide"]
+position = Vector4(0, 0.3135, -0.1615, 0)
+material_override = SubResource("WireMaterial4D_bxt7s")
+script = ExtResource("8_tf8lj")
+radius = 0.1197
+
+[node name="HindHipL" type="MeshInstance4D" parent="Cat/Hide/Rump"]
+position = Vector4(0.076, -0.0095, 0, 0)
+material_override = SubResource("WireMaterial4D_5vlqx")
+script = ExtResource("8_tf8lj")
+radius = 0.07029999999999999
+starts_branch = true
+symmetry_type = 0
+mirror_branch = false
+
+[node name="HindKneeL" type="MeshInstance4D" parent="Cat/Hide/Rump/HindHipL"]
+position = Vector4(0.0038, -0.1805, -0.019, 0)
+material_override = SubResource("WireMaterial4D_4qpok")
+script = ExtResource("8_tf8lj")
+radius = 0.03895
+
+[node name="HindFootL" type="MeshInstance4D" parent="Cat/Hide/Rump/HindHipL/HindKneeL"]
+position = Vector4(0, -0.1805, 0.038, 0)
+material_override = SubResource("WireMaterial4D_g8oe4")
+script = ExtResource("8_tf8lj")
+radius = 0.0456
+
+[node name="HindHipR" type="MeshInstance4D" parent="Cat/Hide/Rump"]
+position = Vector4(-0.076, -0.0095, 0, 0)
+material_override = SubResource("WireMaterial4D_c2fr3")
+script = ExtResource("8_tf8lj")
+radius = 0.07029999999999999
+starts_branch = true
+symmetry_type = 0
+mirror_branch = false
+
+[node name="HindKneeR" type="MeshInstance4D" parent="Cat/Hide/Rump/HindHipR"]
+position = Vector4(-0.0038, -0.1805, -0.019, 0)
+material_override = SubResource("WireMaterial4D_mpcfe")
+script = ExtResource("8_tf8lj")
+radius = 0.03895
+
+[node name="HindFootR" type="MeshInstance4D" parent="Cat/Hide/Rump/HindHipR/HindKneeR"]
+position = Vector4(0, -0.1805, 0.038, 0)
+material_override = SubResource("WireMaterial4D_0wuof")
+script = ExtResource("8_tf8lj")
+radius = 0.0456
+
+[node name="TailBase" type="MeshInstance4D" parent="Cat/Hide/Rump"]
+position = Vector4(0, 0.0475, -0.11399999999999999, 0)
+material_override = SubResource("WireMaterial4D_kgbor")
+script = ExtResource("8_tf8lj")
+radius = 0.03135
+starts_branch = true
+symmetry_type = 0
+mirror_branch = false
+
+[node name="TailB" type="MeshInstance4D" parent="Cat/Hide/Rump/TailBase"]
+position = Vector4(0, -0.0095, -0.11399999999999999, 0)
+material_override = SubResource("WireMaterial4D_cw71l")
+script = ExtResource("8_tf8lj")
+radius = 0.028499999999999998
+
+[node name="TailC" type="MeshInstance4D" parent="Cat/Hide/Rump/TailBase/TailB"]
+position = Vector4(0, 0, -0.11399999999999999, 0)
+material_override = SubResource("WireMaterial4D_rjasu")
+script = ExtResource("8_tf8lj")
+radius = 0.02755
+
+[node name="TailD" type="MeshInstance4D" parent="Cat/Hide/Rump/TailBase/TailB/TailC"]
+position = Vector4(0, 0.056999999999999995, -0.095, 0)
+material_override = SubResource("WireMaterial4D_th8x4")
+script = ExtResource("8_tf8lj")
+radius = 0.02565
+
+[node name="TailE" type="MeshInstance4D" parent="Cat/Hide/Rump/TailBase/TailB/TailC/TailD"]
+position = Vector4(0, 0.1045, -0.0475, 0)
+material_override = SubResource("WireMaterial4D_835bq")
+script = ExtResource("8_tf8lj")
+radius = 0.02375
+
+[node name="TailF" type="MeshInstance4D" parent="Cat/Hide/Rump/TailBase/TailB/TailC/TailD/TailE"]
+position = Vector4(0, 0.08549999999999999, 0, 0)
+material_override = SubResource("WireMaterial4D_2fk3x")
+script = ExtResource("8_tf8lj")
+radius = 0.0209
+
+[node name="EarL" type="MeshInstance4D" parent="Cat"]
+position = Vector4(0.0532, 0.45125, 0.46549999999999997, 0)
+basis = Projection(0.8571673007021123, 0.5150380749100542, 0, 0, -0.5150380749100542, 0.8571673007021123, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_xcyqt")
+mesh = SubResource("BoxTetraMesh4D_qyv72")
+
+[node name="EarLiningL" type="MeshInstance4D" parent="Cat"]
+position = Vector4(0.0532, 0.44649999999999995, 0.475, 0)
+basis = Projection(0.8571673007021123, 0.5150380749100542, 0, 0, -0.5150380749100542, 0.8571673007021123, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_we6wo")
+mesh = SubResource("BoxTetraMesh4D_a7m4l")
+
+[node name="EyeL" type="MeshInstance4D" parent="Cat"]
+position = Vector4(0.038, 0.39709999999999995, 0.5567, 0)
+material_override = SubResource("TetraMaterial4D_kqfl0")
+mesh = SubResource("BoxTetraMesh4D_xxq1m")
+
+[node name="PupilL" type="MeshInstance4D" parent="Cat"]
+position = Vector4(0.038, 0.39709999999999995, 0.5633499999999999, 0)
+material_override = SubResource("TetraMaterial4D_in0mq")
+mesh = SubResource("BoxTetraMesh4D_2fqy7")
+
+[node name="EarR" type="MeshInstance4D" parent="Cat"]
+position = Vector4(-0.0532, 0.45125, 0.46549999999999997, 0)
+basis = Projection(0.5150380749100542, 0.8571673007021123, 0, 0, -0.8571673007021123, 0.5150380749100542, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_bg6ss")
+mesh = SubResource("BoxTetraMesh4D_jb6s7")
+
+[node name="EarLiningR" type="MeshInstance4D" parent="Cat"]
+position = Vector4(-0.0532, 0.44649999999999995, 0.475, 0)
+basis = Projection(0.5150380749100542, 0.8571673007021123, 0, 0, -0.8571673007021123, 0.5150380749100542, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_vkx28")
+mesh = SubResource("BoxTetraMesh4D_xuhoe")
+
+[node name="EyeR" type="MeshInstance4D" parent="Cat"]
+position = Vector4(-0.038, 0.39709999999999995, 0.5567, 0)
+material_override = SubResource("TetraMaterial4D_wjq3v")
+mesh = SubResource("BoxTetraMesh4D_cfudd")
+
+[node name="PupilR" type="MeshInstance4D" parent="Cat"]
+position = Vector4(-0.038, 0.39709999999999995, 0.5633499999999999, 0)
+material_override = SubResource("TetraMaterial4D_xfl00")
+mesh = SubResource("BoxTetraMesh4D_vjfji")
+
+[node name="Nose" type="MeshInstance4D" parent="Cat"]
+position = Vector4(0, 0.36574999999999996, 0.5966, 0)
+material_override = SubResource("TetraMaterial4D_1kvfp")
+mesh = SubResource("BoxTetraMesh4D_uingy")
+
+[node name="Walker" type="Node4D" parent="Cat"]
+script = ExtResource("9_tusul")
+rig_path = NodePath("../Hide")
+leg_name_prefixes = PackedStringArray("FrontHip", "HindHip")
+blend_joints = true
+animation_sides = 10
+belt_speed = 6.0
+travel = true
+stride_length = 0.36
+step_height = 0.1
+body_bob = 0.02

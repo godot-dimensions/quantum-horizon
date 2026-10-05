@@ -20,7 +20,7 @@ func _process(_d) -> bool:
 		root.get_texture().get_image().save_png("res://smoke_test_output/cat_%s.png" % _pending)
 		_pending = ""
 		return false
-	var cat: Node4D = _root.get_node("World/Cat")
+	var cat: Node4D = _root.get_node("World/RockPileSpot/Cat")
 	var player: Node4D = _root.get_node("Player")
 	var rig: Node4D = _root.get_node("Player/CameraRig")
 	if _t0 == 0:

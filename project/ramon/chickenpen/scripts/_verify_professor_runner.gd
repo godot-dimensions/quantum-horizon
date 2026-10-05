@@ -30,7 +30,7 @@ func _process(_d) -> bool:
 	if _f < 80: return false
 
 	print("\n--- the man ---")
-	var prof: Node4D = _root.get_node_or_null("World/Professor") as Node4D
+	var prof: Node4D = _root.get_node_or_null("World/ProfessorPost/Professor") as Node4D
 	_check("he is in the scene", prof != null, "by the hill")
 	if prof == null:
 		quit(1); return true

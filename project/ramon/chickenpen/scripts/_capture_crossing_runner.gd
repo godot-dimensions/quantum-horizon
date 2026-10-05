@@ -56,8 +56,8 @@ func _process(_d) -> bool:
 
 	if _eye == null:
 		_inv = _root.get_node("Invitation")
-		_arch = _root.get_node("World/TrymDoor") as Node4D
-		_trym = _root.get_node("World/Trym") as Node4D
+		_arch = _root.get_node("World/TrymCabin/TrymDoor") as Node4D
+		_trym = _root.get_node("World/TrymCabin/Trym") as Node4D
 		_player = _root.get_node("Player") as Node4D
 		_eye = (_root.get_node("Player/CameraRig/Pitch/Camera4D") as Camera4D).duplicate()
 		_root.add_child(_eye)

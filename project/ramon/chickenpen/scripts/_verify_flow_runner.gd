@@ -48,7 +48,7 @@ func _process(_d) -> bool:
 		print("   player starts at %.1v, %.1f units from the pen centre" % [
 			player.global_position, player.global_position.distance_to(gate)])
 		print("   keeper placeholder: %s   sign: %s" % [
-			_root.get_node_or_null("World/Keeper") != null,
+			_root.get_node_or_null("World/KeeperPost/Keeper") != null,
 			_root.get_node_or_null("World/Sign") != null])
 		print("   objective: %s" % (_root.get_node("UI/Objective") as Label).text)
 		print("   progress:  %s" % (_root.get_node("UI/Progress") as Label).text)

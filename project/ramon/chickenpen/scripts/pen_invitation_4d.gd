@@ -248,8 +248,10 @@ func _process(delta: float) -> void:
 func _put_door_up() -> void:
 	if _arch == null or not (_arch is Node4D):
 		return
-	(_arch as Node4D).position = Vector4(door_at.x, 0.0, door_at.z, 0.0)
-	(_arch as Node4D).basis = Basis4D.from_zx(deg_to_rad(door_yaw_degrees))
+	# door_at is a spot in the field: placed in world terms, since the door is part of Trym's cabin
+	# unit (6 Oct) and its own position is relative to the cabin.
+	(_arch as Node4D).global_position = Vector4(door_at.x, 0.0, door_at.z, 0.0)
+	(_arch as Node4D).global_basis = Basis4D.from_zx(deg_to_rad(door_yaw_degrees))
 	_arch.set("armed", true)
 
 

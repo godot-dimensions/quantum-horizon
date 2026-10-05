@@ -23,7 +23,7 @@ func _process(_d) -> bool:
 		_pending = ""
 		return false
 	if _cat == null:
-		_cat = _root.get_node("World/Cat")
+		_cat = _root.get_node("World/RockPileSpot/Cat")
 		_cat.set("_mood_left", 0.4)
 
 	var player: Node4D = _root.get_node("Player")

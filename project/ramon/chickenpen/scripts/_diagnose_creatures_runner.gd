@@ -29,7 +29,7 @@ func _process(_d) -> bool:
 	if _f < 80: return false
 	if _rows.is_empty():
 		_rows = [
-			["cat", "World/Cat", "World/Cat/Hide/Chest/FrontHipL/FrontKneeL/FrontFootL"],
+			["cat", "World/RockPileSpot/Cat", "World/RockPileSpot/Cat/Hide/Chest/FrontHipL/FrontKneeL/FrontFootL"],
 			["lofted girl", "World/LoftedGirl", "World/LoftedGirl/Hide/Hips/LegHipL/LegKneeL/LegFootL"],
 		]
 		for row in _rows:

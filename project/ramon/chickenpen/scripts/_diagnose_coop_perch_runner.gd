@@ -40,7 +40,7 @@ func _process(_d) -> bool:
 	_f += 1
 	if _f < 70: return false
 	var coop: Node4D = _root.get_node("Pen/Coop")
-	var cat: Node4D = _root.get_node("World/Cat")
+	var cat: Node4D = _root.get_node("World/RockPileSpot/Cat")
 	var roof: float = _roof(coop)
 	print("\n   the coop's origin sits at y %.2f, its roof at y %.2f" % [coop.global_position.y, roof])
 	print("   perch_top is %.2f, so the cat is put at y %.2f"

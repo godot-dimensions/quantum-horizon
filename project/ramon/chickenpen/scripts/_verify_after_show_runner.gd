@@ -198,7 +198,7 @@ func _process(_d) -> bool:
 		var head: Node4D = box.get_node_or_null(box.head_anchor_path) as Node4D
 		_check("and the head it hangs off is not one of his children",
 			head != null and head.get_parent() != _root.get_node("Presenter"),
-			"a sibling that follows him, as World/TrymHead is on the farm")
+			"a sibling that follows him, as World/TrymCabin/TrymHead is on the farm")
 		# AND THE CLOSING CAPTION LETS GO. It used to stay up for the rest of the visit.
 		# What is asserted is that the end of the talk SCHEDULES the clear - the clearing
 		# itself is a countdown in _process, and driving the show far enough to watch it

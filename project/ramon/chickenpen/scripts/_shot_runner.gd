@@ -29,7 +29,7 @@ func _process(_d) -> bool:
 	_f += 1
 	var player: Node4D = _scene.get_node("Player")
 	var pen: Node4D = _scene.get_node("Pen")
-	var keeper: Node4D = _scene.get_node("World/KeeperHead")
+	var keeper: Node4D = _scene.get_node("World/KeeperPost/KeeperHead")
 	if _f == 20:
 		_report(_scene.get_node("Player/CameraRig/Pitch/Camera4D"), "SPAWN", pen.global_position)
 	if _f == 60:

@@ -60,8 +60,8 @@ func _process(d: float) -> bool:
 	if _step == -1:
 		if _t < 4.0:
 			return false
-		_cat = _room.get_node("World/Cat") as Node4D
-		_pile = _room.get_node("World/RockPile") as Node4D
+		_cat = _room.get_node("World/RockPileSpot/Cat") as Node4D
+		_pile = _room.get_node("World/RockPileSpot/RockPile") as Node4D
 	var seat: float = _pile.position.y + float(_pile.get("top"))
 	var mood: int = int(_cat.get("_mood"))
 	match _step:

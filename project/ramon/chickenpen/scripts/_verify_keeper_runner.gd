@@ -7,7 +7,7 @@ func _initialize() -> void:
 func _process(_d) -> bool:
 	_f += 1
 	if _f < 90: return false
-	var keeper: Node4D = _root.get_node("World/Keeper")
+	var keeper: Node4D = _root.get_node("World/KeeperPost/Keeper")
 	var player: Node4D = _root.get_node("Player")
 	var label: Label = _root.get_node("UI/Keeper")
 	var gap: Vector4 = player.global_position - keeper.global_position

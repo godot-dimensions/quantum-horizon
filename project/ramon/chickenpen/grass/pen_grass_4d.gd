@@ -1174,6 +1174,10 @@ func _find_pushers() -> void:
 	for path in ["Player", "Mithra", "World/Nike", "World/Cat", "World/RedCat", "World/Trym", "World/Professor", "World/Keeper",
 			"World/LookoutSite/Wren", "World/RangeMaster"]:
 		var n := _room.get_node_or_null(path) as Node4D
+		# The people and cats are in units of their own since 6 Oct (World/TrymCabin/Trym and so on):
+		# found by name under World when not at their old path.
+		if n == null and path.begins_with("World/") and _room.get_node_or_null("World") != null:
+			n = _room.get_node("World").find_child(path.get_file(), true, false) as Node4D
 		if n != null:
 			_pushers.append(n)
 	var chickens: Node = _room.get_node_or_null("Chickens")

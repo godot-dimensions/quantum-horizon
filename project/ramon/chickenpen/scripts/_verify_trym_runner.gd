@@ -60,7 +60,7 @@ func _process(_d) -> bool:
 	if _f < 60:
 		return false
 	if _trym == null:
-		_trym = _root.get_node_or_null("World/Trym") as Node4D
+		_trym = _root.get_node_or_null("World/TrymCabin/Trym") as Node4D
 		_player = _root.get_node("Player")
 		if _trym == null:
 			print("   FAIL Trym is not in the scene at all.")

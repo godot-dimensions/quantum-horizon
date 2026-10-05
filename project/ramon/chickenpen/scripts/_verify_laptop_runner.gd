@@ -299,7 +299,7 @@ func _process(d: float) -> bool:
 		4:
 			# Trym at his desk: the laptop is his.
 			_where = "pen"
-			_laptop = _room.get_node("World/TrymLaptopUse")
+			_laptop = _room.get_node("World/TrymCabin/TrymLaptopUse")
 			_stand_at(_laptop)
 			if _t > 1.2:
 				var trym: Node = _room.get_node("Systems/TrymDriver")

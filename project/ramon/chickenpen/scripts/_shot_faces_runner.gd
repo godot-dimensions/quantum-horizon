@@ -6,8 +6,8 @@ extends SceneTree
 var _s: Node
 var _f: int = 0
 var _cam: Camera4D
-var _who: Array[String] = ["World/Keeper", "World/Trym/Figure",
-	"World/Professor/Figure", "Player/Avatar"]
+var _who: Array[String] = ["World/KeeperPost/Keeper", "World/TrymCabin/Trym/Figure",
+	"World/ProfessorPost/Professor/Figure", "Player/Avatar"]
 
 
 func _initialize() -> void:

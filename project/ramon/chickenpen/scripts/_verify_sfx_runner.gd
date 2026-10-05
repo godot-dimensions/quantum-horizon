@@ -119,7 +119,7 @@ func _find() -> void:
 	_cinema_bed = _sfx.get_node_or_null("CinemaBed") as AudioStreamPlayer
 	_music = _sfx.get_node_or_null("Music") as AudioStreamPlayer
 	_crow = _sfx.get_node_or_null("Crow") as AudioStreamPlayer
-	_arch = _root.get_node_or_null("World/TrymDoor")
+	_arch = _root.get_node_or_null("World/TrymCabin/TrymDoor")
 	_crossing = _root.get_node_or_null("Crossing")
 
 

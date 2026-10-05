@@ -140,6 +140,36 @@ Done last (Ramon). It works in `PenLayout/Watchtower/` and does not touch the pe
     pen's own scripts changes for it.
 29. Proof: rule 10 at the pen's camera (PathCreator's proof runner, pointed at the pen).
 
+## What changed while doing it (6 Oct)
+
+- **Phase 0 is done.** The fence fix took the pen's tests from about 63,000 script errors to none.
+  Godot's own headless save rewrote 3,000 lines of the pen for a 10-line change (null shader
+  parameters, renumbered resources), so the pen is edited at the text level and checked by loading
+  it.
+- **The units are 7, not 9:**
+  - Trym's cabin (with RedCat)
+  - the keeper (without TalkCam: it is every conversation's camera and stays in World)
+  - the range
+  - the professor
+  - the Lookout as one unit (tower, Wren, owl, balloon, marsh, kata wood: the balloon's ride is
+    drawn relative to its mooring and passes over the marsh and the wood, Wren's lines expect the
+    pen below, and the story moors it by the tower)
+  - the rock pile (with the cat)
+  - the cave
+- **Shared resources:** the cave's tint texture is also the hills', so it is now its own file
+  (`terrain/terrain_tint_3d.tres`) that both use.
+- **Script links:** where a script's default link pointed at a node that moved, the new path is
+  set on the node in the scene, not in the script (`chickenpen_old.tscn` still uses those
+  defaults). Five scripts that looked units up by a fixed text path now find them by name under
+  World when the path misses.
+- **Step 10 (the 4D pass per unit) waits** (Ramon: "optimization of instanced units can wait till
+  later").
+- **Couplings to keep in mind when units move (Phase C):**
+  - the cave's HILL, MOUTH and BLOCK constants are world positions
+  - the invitation's door spot is a world position
+  - TalkCam frames every conversation from where it stands
+  - the balloon's ride crosses the pen
+
 ## Order and answers (Ramon, 6 Oct)
 
 - Order: Phase 0, then A (units), C (layout), D (paths), and B (the watchtower) last: "much less

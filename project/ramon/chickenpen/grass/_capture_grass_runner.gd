@@ -133,7 +133,7 @@ func _process(d: float) -> bool:
 			_next(0.6)
 		15:
 			_save("marsh")
-			var shed: Node4D = _room.get_node_or_null("World/Shed")
+			var shed: Node4D = _room.get_node_or_null("World/TrymCabin/Shed")
 			if shed != null:
 				var s: Vector4 = shed.global_position
 				_look(s + Vector4(4.0, 1.6, 5.0, 0.0), s + Vector4(0.0, 0.5, 0.0, 0.0))

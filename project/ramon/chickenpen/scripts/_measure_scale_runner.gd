@@ -22,7 +22,7 @@ func _process(_d) -> bool:
 	print("player capsule: %.2f tall" % 1.35)
 	print("chicken node scale: %s" % [mgr.get("chicken_scale")])
 	_extent("chicken", body)
-	_extent("keeper", _root.get_node("World/Keeper"))
+	_extent("keeper", _root.get_node("World/KeeperPost/Keeper"))
 	# The sign was removed from the scene; get_node would error on it.
 	var sign: Node = _root.get_node_or_null("World/Sign")
 	if sign != null:

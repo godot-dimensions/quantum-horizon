@@ -39,7 +39,7 @@ func _process(_d) -> bool:
 	if _f < 40:
 		return false
 	_ticket = _root.get_node_or_null("Systems/Rewatch")
-	_arch = _root.get_node_or_null("World/TrymDoor") as Node4D
+	_arch = _root.get_node_or_null("World/TrymCabin/TrymDoor") as Node4D
 	_player = _root.get_node_or_null("Player") as Node4D
 	_crossing = _root.get_node_or_null("Crossing")
 	if _ticket == null or _arch == null or _player == null or _crossing == null:

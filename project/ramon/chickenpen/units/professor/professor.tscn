@@ -1,0 +1,428 @@
+[gd_scene load_steps=68 format=4]
+
+[ext_resource type="Script" uid="uid://bjtv0p4kvlugq" path="res://ramon/chickenpen/scripts/block_avatar_4d.gd" id="avatar"]
+[ext_resource type="Script" uid="uid://cu6xoypl3i6xf" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="pen_face"]
+[ext_resource type="Script" uid="uid://darfuor83w67w" path="res://ramon/chickenpen/scripts/pen_professor_4d.gd" id="pen_prof"]
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_62evy"]
+albedo_color = Color(0.3, 0.34, 0.42, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gl64p"]
+size = Vector4(0.38, 0.46, 0.24, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_dxmql"]
+albedo_color = Color(0.22, 0.31, 0.52, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_okrdf"]
+size = Vector4(0.4, 0.07, 0.26, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_5paon"]
+albedo_color = Color(0.88, 0.72, 0.58, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ngrd3"]
+size = Vector4(0.3, 0.32, 0.29, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_3wari"]
+albedo_color = Color(0.82, 0.8, 0.76, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_530mb"]
+size = Vector4(0.32, 0.1, 0.31, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_m1dxn"]
+albedo_color = Color(0.82, 0.8, 0.76, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_p3udm"]
+size = Vector4(0.31, 0.22, 0.06, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_0pin1"]
+albedo_color = Color(0.88, 0.72, 0.58, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_jmbjh"]
+size = Vector4(0.09, 0.05, 0.05, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_6s5br"]
+albedo_color = Color(0.88, 0.72, 0.58, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gr0g3"]
+size = Vector4(0.09, 0.05, 0.05, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_6af4c"]
+albedo_color = Color(0.16, 0.13, 0.11, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_8uvp6"]
+size = Vector4(0.036, 0.044, 0.02, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ad62h"]
+albedo_color = Color(0.16, 0.13, 0.11, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_jr8o4"]
+size = Vector4(0.036, 0.044, 0.02, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_knbc8"]
+albedo_color = Color(0.92, 0.66, 0.16, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_htk1r"]
+size = Vector4(0.34, 0.15, 0.32, 0.42)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_tr1o8"]
+albedo_color = Color(0.92, 0.66, 0.16, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_yiegu"]
+size = Vector4(0.34, 0.05, 0.1, 0.42)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_cji21"]
+albedo_color = Color(1, 0.96, 0.7, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_j26s1"]
+size = Vector4(0.1, 0.07, 0.05, 0.42)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_m4vm1"]
+albedo_color = Color(0.22, 0.31, 0.52, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_yeway"]
+size = Vector4(0.13, 0.32, 0.14, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_mgkej"]
+albedo_color = Color(0.22, 0.31, 0.52, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_jq747"]
+size = Vector4(0.12, 0.32, 0.13, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_22rcy"]
+albedo_color = Color(0.4, 0.26, 0.16, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_wir13"]
+size = Vector4(0.15, 0.1, 0.24, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_n66l4"]
+albedo_color = Color(0.3, 0.34, 0.42, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_hrsre"]
+size = Vector4(0.1, 0.18, 0.11, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_xkm78"]
+albedo_color = Color(0.88, 0.72, 0.58, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_w5rfy"]
+size = Vector4(0.09, 0.18, 0.1, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_0o12v"]
+albedo_color = Color(0.88, 0.72, 0.58, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_jkpj8"]
+size = Vector4(0.09, 0.08, 0.1, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_1jkyh"]
+albedo_color = Color(0.22, 0.31, 0.52, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_8mom1"]
+size = Vector4(0.13, 0.32, 0.14, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_5321h"]
+albedo_color = Color(0.22, 0.31, 0.52, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_a04y7"]
+size = Vector4(0.12, 0.32, 0.13, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_agj0u"]
+albedo_color = Color(0.4, 0.26, 0.16, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_w2f5y"]
+size = Vector4(0.15, 0.1, 0.24, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_tqsvm"]
+albedo_color = Color(0.3, 0.34, 0.42, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_prjkv"]
+size = Vector4(0.1, 0.18, 0.11, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_x2kvb"]
+albedo_color = Color(0.88, 0.72, 0.58, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ajari"]
+size = Vector4(0.09, 0.18, 0.1, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_uipm0"]
+albedo_color = Color(0.88, 0.72, 0.58, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_7d0po"]
+size = Vector4(0.09, 0.08, 0.1, 0.45)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ni84e"]
+albedo_color = Color(0.55, 0.36, 0.2, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_8qvxj"]
+size = Vector4(0.035, 0.7, 0.035, 0.42)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_5u473"]
+albedo_color = Color(0.68, 0.71, 0.76, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ly3e7"]
+size = Vector4(0.062, 0.07, 0.062, 0.42)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_1ry8g"]
+albedo_color = Color(0.68, 0.71, 0.76, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_qjeg3"]
+size = Vector4(0.094, 0.04, 0.03, 0.42)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_srkjs"]
+albedo_color = Color(0.68, 0.71, 0.76, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_8vm6c"]
+size = Vector4(0.078, 0.033, 0.03, 0.42)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_cuo82"]
+albedo_color = Color(0.68, 0.71, 0.76, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_otp6c"]
+size = Vector4(0.058, 0.025, 0.03, 0.42)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_uly3k"]
+albedo_color = Color(0.68, 0.71, 0.76, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_r4tfv"]
+size = Vector4(0.094, 0.04, 0.03, 0.42)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_lqsx5"]
+albedo_color = Color(0.68, 0.71, 0.76, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_e56pw"]
+size = Vector4(0.078, 0.033, 0.03, 0.42)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_do8v3"]
+albedo_color = Color(0.68, 0.71, 0.76, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_aea07"]
+size = Vector4(0.058, 0.025, 0.03, 0.42)
+
+[node name="ProfessorPost" type="Node4D"]
+
+[node name="Professor" type="Node4D" parent="."]
+position = Vector4(0, 0, 0, 0)
+basis = Projection(0.7071, 0, -0.7071, 0, 0, 1, 0, 0, 0.7071, 0, 0.7071, 0, 0, 0, 0, 1)
+script = ExtResource("pen_prof")
+
+[node name="Figure" type="Node4D" parent="Professor"]
+script = ExtResource("avatar")
+hair = Color(0.82, 0.8, 0.76, 1)
+wear_cap = false
+eyes = true
+eye_colour = Color(0.16, 0.13, 0.11, 1)
+eye_spacing = 0.062
+eye_height = 0.025
+eye_width = 0.036
+eye_tall = 0.044
+build = 2
+skin = Color(0.3, 0.34, 0.42, 1)
+accent = Color(0.88, 0.72, 0.58, 1)
+
+[node name="Tunic" type="MeshInstance4D" parent="Professor/Figure"]
+position = Vector4(0, 0.84, 0, 0)
+material_override = SubResource("TetraMaterial4D_62evy")
+mesh = SubResource("BoxTetraMesh4D_gl64p")
+
+[node name="Belt" type="MeshInstance4D" parent="Professor/Figure/Tunic"]
+position = Vector4(0, -0.2, 0, 0)
+material_override = SubResource("TetraMaterial4D_dxmql")
+mesh = SubResource("BoxTetraMesh4D_okrdf")
+
+[node name="Head" type="MeshInstance4D" parent="Professor/Figure/Tunic"]
+position = Vector4(0, 0.42, 0, 0)
+material_override = SubResource("TetraMaterial4D_5paon")
+mesh = SubResource("BoxTetraMesh4D_ngrd3")
+
+[node name="Crown" type="MeshInstance4D" parent="Professor/Figure/Tunic/Head"]
+position = Vector4(0, 0.15, 0, 0)
+material_override = SubResource("TetraMaterial4D_3wari")
+mesh = SubResource("BoxTetraMesh4D_530mb")
+
+[node name="Hair" type="MeshInstance4D" parent="Professor/Figure/Tunic/Head"]
+position = Vector4(0, 0.06, -0.15, 0)
+material_override = SubResource("TetraMaterial4D_m1dxn")
+mesh = SubResource("BoxTetraMesh4D_p3udm")
+
+[node name="EarL" type="MeshInstance4D" parent="Professor/Figure/Tunic/Head"]
+position = Vector4(0.18, 0.02, -0.02, 0)
+material_override = SubResource("TetraMaterial4D_0pin1")
+mesh = SubResource("BoxTetraMesh4D_jmbjh")
+
+[node name="EarR" type="MeshInstance4D" parent="Professor/Figure/Tunic/Head"]
+position = Vector4(-0.18, 0.02, -0.02, 0)
+material_override = SubResource("TetraMaterial4D_6s5br")
+mesh = SubResource("BoxTetraMesh4D_gr0g3")
+
+[node name="EyeL" type="MeshInstance4D" parent="Professor/Figure/Tunic/Head"]
+position = Vector4(0.062, 0.025, 0.148, 0)
+material_override = SubResource("TetraMaterial4D_6af4c")
+mesh = SubResource("BoxTetraMesh4D_8uvp6")
+
+[node name="EyeR" type="MeshInstance4D" parent="Professor/Figure/Tunic/Head"]
+position = Vector4(-0.062, 0.025, 0.148, 0)
+material_override = SubResource("TetraMaterial4D_ad62h")
+mesh = SubResource("BoxTetraMesh4D_jr8o4")
+
+[node name="Helmet" type="MeshInstance4D" parent="Professor/Figure/Tunic/Head"]
+position = Vector4(0, 0.17, 0, 0)
+material_override = SubResource("TetraMaterial4D_knbc8")
+mesh = SubResource("BoxTetraMesh4D_htk1r")
+
+[node name="Brim" type="MeshInstance4D" parent="Professor/Figure/Tunic/Head"]
+position = Vector4(0, 0.11, 0.17, 0)
+material_override = SubResource("TetraMaterial4D_tr1o8")
+mesh = SubResource("BoxTetraMesh4D_yiegu")
+
+[node name="Lamp" type="MeshInstance4D" parent="Professor/Figure/Tunic/Head"]
+position = Vector4(0, 0.155, 0.185, 0)
+material_override = SubResource("TetraMaterial4D_cji21")
+mesh = SubResource("BoxTetraMesh4D_j26s1")
+
+[node name="HipL" type="Node4D" parent="Professor/Figure"]
+position = Vector4(0.1, 0.7, 0, 0)
+
+[node name="ThighL" type="MeshInstance4D" parent="Professor/Figure/HipL"]
+position = Vector4(0, -0.16, 0, 0)
+material_override = SubResource("TetraMaterial4D_m4vm1")
+mesh = SubResource("BoxTetraMesh4D_yeway")
+
+[node name="KneeL" type="Node4D" parent="Professor/Figure/HipL"]
+position = Vector4(0, -0.32, 0, 0)
+
+[node name="ShinL" type="MeshInstance4D" parent="Professor/Figure/HipL/KneeL"]
+position = Vector4(0, -0.16, 0, 0)
+material_override = SubResource("TetraMaterial4D_mgkej")
+mesh = SubResource("BoxTetraMesh4D_jq747")
+
+[node name="AnkleL" type="Node4D" parent="Professor/Figure/HipL/KneeL"]
+position = Vector4(0, -0.32, 0, 0)
+
+[node name="BootL" type="MeshInstance4D" parent="Professor/Figure/HipL/KneeL/AnkleL"]
+position = Vector4(0, -0.03, 0.04, 0)
+material_override = SubResource("TetraMaterial4D_22rcy")
+mesh = SubResource("BoxTetraMesh4D_wir13")
+
+[node name="ShoulderL" type="Node4D" parent="Professor/Figure"]
+position = Vector4(0.22, 1.02, 0, 0)
+
+[node name="UpperArmL" type="MeshInstance4D" parent="Professor/Figure/ShoulderL"]
+position = Vector4(0, -0.09, 0, 0)
+material_override = SubResource("TetraMaterial4D_n66l4")
+mesh = SubResource("BoxTetraMesh4D_hrsre")
+
+[node name="ElbowL" type="Node4D" parent="Professor/Figure/ShoulderL"]
+position = Vector4(0, -0.18, 0, 0)
+
+[node name="ForearmL" type="MeshInstance4D" parent="Professor/Figure/ShoulderL/ElbowL"]
+position = Vector4(0, -0.09, 0, 0)
+material_override = SubResource("TetraMaterial4D_xkm78")
+mesh = SubResource("BoxTetraMesh4D_w5rfy")
+
+[node name="HandL" type="MeshInstance4D" parent="Professor/Figure/ShoulderL/ElbowL"]
+position = Vector4(0, -0.2, 0, 0)
+material_override = SubResource("TetraMaterial4D_0o12v")
+mesh = SubResource("BoxTetraMesh4D_jkpj8")
+
+[node name="HipR" type="Node4D" parent="Professor/Figure"]
+position = Vector4(-0.1, 0.7, 0, 0)
+
+[node name="ThighR" type="MeshInstance4D" parent="Professor/Figure/HipR"]
+position = Vector4(0, -0.16, 0, 0)
+material_override = SubResource("TetraMaterial4D_1jkyh")
+mesh = SubResource("BoxTetraMesh4D_8mom1")
+
+[node name="KneeR" type="Node4D" parent="Professor/Figure/HipR"]
+position = Vector4(0, -0.32, 0, 0)
+
+[node name="ShinR" type="MeshInstance4D" parent="Professor/Figure/HipR/KneeR"]
+position = Vector4(0, -0.16, 0, 0)
+material_override = SubResource("TetraMaterial4D_5321h")
+mesh = SubResource("BoxTetraMesh4D_a04y7")
+
+[node name="AnkleR" type="Node4D" parent="Professor/Figure/HipR/KneeR"]
+position = Vector4(0, -0.32, 0, 0)
+
+[node name="BootR" type="MeshInstance4D" parent="Professor/Figure/HipR/KneeR/AnkleR"]
+position = Vector4(0, -0.03, 0.04, 0)
+material_override = SubResource("TetraMaterial4D_agj0u")
+mesh = SubResource("BoxTetraMesh4D_w2f5y")
+
+[node name="ShoulderR" type="Node4D" parent="Professor/Figure"]
+position = Vector4(-0.22, 1.02, 0, 0)
+
+[node name="UpperArmR" type="MeshInstance4D" parent="Professor/Figure/ShoulderR"]
+position = Vector4(0, -0.09, 0, 0)
+material_override = SubResource("TetraMaterial4D_tqsvm")
+mesh = SubResource("BoxTetraMesh4D_prjkv")
+
+[node name="ElbowR" type="Node4D" parent="Professor/Figure/ShoulderR"]
+position = Vector4(0, -0.18, 0, 0)
+
+[node name="ForearmR" type="MeshInstance4D" parent="Professor/Figure/ShoulderR/ElbowR"]
+position = Vector4(0, -0.09, 0, 0)
+material_override = SubResource("TetraMaterial4D_x2kvb")
+mesh = SubResource("BoxTetraMesh4D_ajari")
+
+[node name="HandR" type="MeshInstance4D" parent="Professor/Figure/ShoulderR/ElbowR"]
+position = Vector4(0, -0.2, 0, 0)
+material_override = SubResource("TetraMaterial4D_uipm0")
+mesh = SubResource("BoxTetraMesh4D_7d0po")
+
+[node name="Pick" type="Node4D" parent="Professor"]
+position = Vector4(-0.4, 0.42, 0.1, 0)
+basis = Projection(0.9800665778412416, 0.19866933079506122, 0, 0, -0.19866933079506122, 0.9800665778412416, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+
+[node name="Haft" type="MeshInstance4D" parent="Professor/Pick"]
+position = Vector4(0, 0.1, 0, 0)
+material_override = SubResource("TetraMaterial4D_ni84e")
+mesh = SubResource("BoxTetraMesh4D_8qvxj")
+
+[node name="Collar" type="MeshInstance4D" parent="Professor/Pick"]
+position = Vector4(0, 0.42, 0, 0)
+material_override = SubResource("TetraMaterial4D_5u473")
+mesh = SubResource("BoxTetraMesh4D_ly3e7")
+
+[node name="PickL0" type="MeshInstance4D" parent="Professor/Pick"]
+position = Vector4(-0.07, 0.436, 0, 0)
+basis = Projection(0.9950041652780258, 0.09983341664682815, 0, 0, -0.09983341664682815, 0.9950041652780258, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_1ry8g")
+mesh = SubResource("BoxTetraMesh4D_qjeg3")
+
+[node name="PickL1" type="MeshInstance4D" parent="Professor/Pick"]
+position = Vector4(-0.152, 0.424, 0, 0)
+basis = Projection(0.9663899781345132, 0.2570805518921551, 0, 0, -0.2570805518921551, 0.9663899781345132, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_srkjs")
+mesh = SubResource("BoxTetraMesh4D_8vm6c")
+
+[node name="PickL2" type="MeshInstance4D" parent="Professor/Pick"]
+position = Vector4(-0.218, 0.394, 0, 0)
+basis = Projection(0.9004471023526769, 0.43496553411123023, 0, 0, -0.43496553411123023, 0.9004471023526769, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_cuo82")
+mesh = SubResource("BoxTetraMesh4D_otp6c")
+
+[node name="PickR0" type="MeshInstance4D" parent="Professor/Pick"]
+position = Vector4(0.07, 0.436, 0, 0)
+basis = Projection(0.9950041652780258, -0.09983341664682815, 0, 0, 0.09983341664682815, 0.9950041652780258, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_uly3k")
+mesh = SubResource("BoxTetraMesh4D_r4tfv")
+
+[node name="PickR1" type="MeshInstance4D" parent="Professor/Pick"]
+position = Vector4(0.152, 0.424, 0, 0)
+basis = Projection(0.9663899781345132, -0.2570805518921551, 0, 0, 0.2570805518921551, 0.9663899781345132, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_lqsx5")
+mesh = SubResource("BoxTetraMesh4D_e56pw")
+
+[node name="PickR2" type="MeshInstance4D" parent="Professor/Pick"]
+position = Vector4(0.218, 0.394, 0, 0)
+basis = Projection(0.9004471023526769, -0.43496553411123023, 0, 0, 0.43496553411123023, 0.9004471023526769, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+material_override = SubResource("TetraMaterial4D_do8v3")
+mesh = SubResource("BoxTetraMesh4D_aea07")
+
+[node name="ProfessorHead" type="Node4D" parent="."]
+position = Vector4(0, 1.45, 0, 0)
+
+[node name="ProfessorFacing" type="Node4D" parent="."]
+position = Vector4(-12.6, 0, 23.2, 0)
+script = ExtResource("pen_face")
+figure_path = NodePath("../Professor")
+player_path = NodePath("../../../Player")
+notice_within = 4.0

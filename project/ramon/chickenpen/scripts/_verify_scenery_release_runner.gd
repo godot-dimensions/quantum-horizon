@@ -40,7 +40,7 @@ func _hold(local: Vector4) -> void:
 
 func _meshes_in() -> bool:
 	return (_room.get_node("World/Hills") as MeshInstance4D).mesh != null \
-		and (_room.get_node("World/CaveHill") as MeshInstance4D).mesh != null
+		and (_room.get_node("World/Cave/CaveHill") as MeshInstance4D).mesh != null
 
 
 func _process(d: float) -> bool:

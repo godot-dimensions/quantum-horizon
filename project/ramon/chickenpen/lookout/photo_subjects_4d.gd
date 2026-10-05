@@ -53,12 +53,17 @@ func refresh() -> void:
 		if crow != null:
 			_add_node(crow, "crow_%d" % crows, "crows", "A crow", 0.2, 0.3, 0.22, _behave_crow)
 			crows += 1
-	_add_node(world.get_node_or_null("Cat"), "cat", "cats", "The grey cat", 0.25, 0.32, 0.26, _behave_cat)
-	_add_node(world.get_node_or_null("RedCat"), "red_cat", "cats", "The red cat", 0.25, 0.32, 0.26, _behave_cat)
+	# The cats and the people are in units of their own since 6 Oct (World/RockPileSpot/Cat,
+	# World/TrymCabin/Trym and so on), so they are found by name anywhere under World.
+	_add_node(world.find_child("Cat", true, false), "cat", "cats", "The grey cat", 0.25, 0.32, 0.26, _behave_cat)
+	_add_node(world.find_child("RedCat", true, false), "red_cat", "cats", "The red cat", 0.25, 0.32, 0.26, _behave_cat)
 	for person in [["World/Keeper", "keeper", "The keeper"], ["World/Trym", "trym", "Trym"],
 			["World/Professor", "professor", "The professor"], ["World/RangeMaster", "range_master", "The range master"],
 			["Mithra", "mithra", "Mithra"]]:
-		_add_node(room.get_node_or_null(String(person[0])), String(person[1]), "folk", String(person[2]), 0.85, 0.85, 0.24, _behave_person)
+		var who: Node = room.get_node_or_null(String(person[0]))
+		if who == null and String(person[0]).begins_with("World/"):
+			who = world.find_child(String(person[0]).get_file(), true, false)
+		_add_node(who, String(person[1]), "folk", String(person[2]), 0.85, 0.85, 0.24, _behave_person)
 	var flock := world.get_node_or_null("Flock") as Node4D
 	if flock != null:
 		_list.append({"id": "hawk", "page": "hawk", "name": "The hawk", "node": flock, "lift": 0.0,

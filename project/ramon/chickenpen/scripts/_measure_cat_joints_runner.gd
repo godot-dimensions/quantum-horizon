@@ -38,7 +38,7 @@ func _process(d: float) -> bool:
 		var grass: Node = _room.get_node_or_null("World/Grass")
 		if (grass != null and not bool(grass.get("mask_ready"))) or _t < 8.0:
 			return false
-		_cat = _room.get_node("World/Cat") as Node4D
+		_cat = _room.get_node("World/RockPileSpot/Cat") as Node4D
 		_walker = _cat.get_node("Walker")
 		_player = _room.get_node("Player") as Node4D
 		_started = true

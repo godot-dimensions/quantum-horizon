@@ -121,7 +121,7 @@ func _process(d: float) -> bool:
 	_t += d
 	match _step:
 		0:
-			_cat = _root.get_node("World/Cat") as Node4D
+			_cat = _root.get_node("World/RockPileSpot/Cat") as Node4D
 			# UI is a Node4D, and 2D children do not inherit a Node4D's visibility.
 			for child in _root.get_node("UI").get_children():
 				if child is CanvasItem or child is CanvasLayer:

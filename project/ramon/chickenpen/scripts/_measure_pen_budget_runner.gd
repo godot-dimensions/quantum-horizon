@@ -60,7 +60,7 @@ func _kill_rock() -> void:
 
 
 func _kill_others() -> void:
-	for path in ["World/Cat", "World/RedCat", "Mithra", "World/Trym", "World/Keeper"]:
+	for path in ["World/RockPileSpot/Cat", "World/TrymCabin/RedCat", "Mithra", "World/TrymCabin/Trym", "World/KeeperPost/Keeper"]:
 		var node: Node = _scene.get_node_or_null(path)
 		if node != null:
 			node.set_process_mode(Node.PROCESS_MODE_DISABLED)

@@ -88,7 +88,7 @@ func _process(d: float) -> bool:
 	_f += 1
 	if _f == 15:
 		_shooter = _room.get_node("Systems/RangeShooting")
-		_booth = _room.get_node("World/RangeBooth") as Node4D
+		_booth = _room.get_node("World/Range/RangeBooth") as Node4D
 		if _windowed:
 			for c in _room.get_node("UI").get_children():
 				if c is CanvasItem:

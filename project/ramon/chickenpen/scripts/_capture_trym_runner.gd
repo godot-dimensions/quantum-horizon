@@ -39,7 +39,7 @@ func _process(_d) -> bool:
 		_pending = ""
 		return false
 
-	var trym: Node4D = _root.get_node("World/Trym")
+	var trym: Node4D = _root.get_node("World/TrymCabin/Trym")
 	var player: Node4D = _root.get_node("Player")
 	if _t0 == 0:
 		_t0 = Time.get_ticks_msec()

@@ -16,7 +16,7 @@ func _initialize() -> void:
 
 func _process(_d: float) -> bool:
 	_f += 1
-	var shed := _room.get_node_or_null("World/Shed") as Node4D
+	var shed := _room.get_node_or_null("World/TrymCabin/Shed") as Node4D
 	var player := _room.get_node_or_null("Player") as Node4D
 	var rig := _room.get_node_or_null("Player/CameraRig") as Node4D
 	if shed == null or player == null or rig == null:

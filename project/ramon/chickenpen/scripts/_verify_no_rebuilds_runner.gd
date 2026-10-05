@@ -113,7 +113,7 @@ func _report() -> void:
 
 ## Every animal whose mesh used to be rewritten each tick, and how many tetrahedra it had.
 const DRAWN := [
-	["World/Nike", 7008], ["World/Cat", 2928], ["World/RedCat", 2928],
+	["World/Nike", 7008], ["World/RockPileSpot/Cat", 2928], ["World/TrymCabin/RedCat", 2928],
 	["Chickens/Chicken01", 1440], ["Chickens/Chicken05", 1440], ["Chickens/Chicken09", 1440],
 ]
 

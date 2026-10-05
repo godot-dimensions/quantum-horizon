@@ -17,6 +17,18 @@ var _heights := PackedFloat32Array()
 var _w: float = 0.0
 
 
+## The node at [param path] under [param room], or, when it is not there, the node of that name
+## anywhere under the room's World: the pen's places are units of their own since 6 Oct
+## (World/Cave/CaveHill), and an older scene still has them straight under World.
+static func find_under(room: Node, path: String) -> Node:
+	var n: Node = room.get_node_or_null(path)
+	if n == null:
+		var world: Node = room.get_node_or_null("World")
+		if world != null:
+			n = world.find_child(path.get_file(), true, false)
+	return n
+
+
 ## The ground near w [param w], from the meshes at [param paths] under [param room].
 static func build(room: Node, w: float = 0.0, w_band: float = 2.5,
 		paths: PackedStringArray = PackedStringArray(["World/Hills", "World/CaveHill"])) -> RefCounted:
@@ -31,7 +43,7 @@ func _build(room: Node, w: float, w_band: float, paths: PackedStringArray) -> vo
 	_heights.resize(_cells * _cells)
 	_heights.fill(0.0)
 	for path in paths:
-		var hill := room.get_node_or_null(path) as MeshInstance4D
+		var hill := find_under(room, path) as MeshInstance4D
 		if hill == null or not (hill.mesh is ArrayTetraMesh4D):
 			continue
 		var basis: Projection = hill.global_basis

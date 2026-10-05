@@ -20,7 +20,7 @@ func _process(_d) -> bool:
 		root.get_texture().get_image().save_png("res://smoke_test_output/professor.png")
 		print("saved professor.png")
 		quit(0); return true
-	var prof: Node4D = _root.get_node("World/Professor")
+	var prof: Node4D = _root.get_node("World/ProfessorPost/Professor")
 	_root.get_node("Player").global_position = Vector4(40.0, 1.3, 40.0, 0.0)
 	_eye = (_root.get_node("Player/CameraRig/Pitch/Camera4D") as Camera4D).duplicate()
 	_root.add_child(_eye); _eye.position = Vector4.ZERO; _eye.current = true

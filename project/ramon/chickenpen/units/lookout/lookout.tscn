@@ -1,0 +1,33 @@
+[gd_scene load_steps=4 format=4]
+
+[ext_resource type="Script" uid="uid://d4c545be47j6q" path="res://ramon/chickenpen/lookout/lookout_tower_4d.gd" id="lk_tower"]
+[ext_resource type="Script" uid="uid://dboaa0fauf8dw" path="res://ramon/chickenpen/lookout/lookout_wren_4d.gd" id="lk_wren"]
+[ext_resource type="Script" uid="uid://cu6xoypl3i6xf" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="pen_face"]
+
+[node name="LookoutSite" type="Node4D"]
+metadata/move_me = "Move (or turn) this node to move the whole Lookout: the tower, Wren, and the markers for the balloon's mooring and for the marsh (w +8) and the kata wood (w -8). The tower stands at this node's height: put it on level ground."
+
+[node name="Lookout" type="Node4D" parent="."]
+script = ExtResource("lk_tower")
+
+[node name="Wren" type="Node4D" parent="."]
+position = Vector4(3.3, 0, 6.2, 0)
+script = ExtResource("lk_wren")
+
+[node name="WrenHead" type="Node4D" parent="."]
+position = Vector4(3.3, 1.45, 6.2, 0)
+
+[node name="WrenFacing" type="Node4D" parent="."]
+script = ExtResource("pen_face")
+figure_path = NodePath("../Wren")
+player_path = NodePath("../../../Player")
+notice_within = 4.0
+
+[node name="MooringSpot" type="Node4D" parent="."]
+position = Vector4(-7.5, 0, 6, 0)
+
+[node name="MarshSpot" type="Node4D" parent="."]
+position = Vector4(-14, 0, 12, 8)
+
+[node name="WoodSpot" type="Node4D" parent="."]
+position = Vector4(-10, 0, 12, -8)

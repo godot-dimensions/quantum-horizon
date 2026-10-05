@@ -36,7 +36,7 @@ func _process(_d) -> bool:
 		# Nobody walks off during the shoot.
 		_root.get_node("Player").set_physics_process(false)
 	var p: Node4D = _root.get_node("Player")
-	var keeper: Node4D = _root.get_node("World/Keeper")
+	var keeper: Node4D = _root.get_node("World/KeeperPost/Keeper")
 	var target: Node4D = p if _shot < 2 else keeper
 	var behind: bool = (_shot % 2) == 0
 	# The chibi head sits about 1.26 up. Close, and slightly above, so the crown shows.

@@ -18,7 +18,7 @@ func _process(_d) -> bool:
 	_f += 1
 	if _f < 70: return false
 	if _keeper == null:
-		_keeper = _root.get_node("World/Keeper")
+		_keeper = _root.get_node("World/KeeperPost/Keeper")
 		_player = _root.get_node("Player")
 		_before = atan2(_keeper.basis.z.x, _keeper.basis.z.z)
 		# Walk up from the OTHER side, so facing him means turning right round.

@@ -138,9 +138,11 @@ func _raise_the_door() -> void:
 	# Your own W, so it opens in the slice you are standing in rather than one you would
 	# have to rotate to reach.
 	var at: Vector4 = _player.global_position + ahead * door_ahead
-	_arch.position = Vector4(at.x, 0.0, at.z, _player.global_position.w)
+	# In world terms: the door is part of Trym's cabin unit since 6 Oct, so its own position is
+	# relative to the cabin, not the field.
+	_arch.global_position = Vector4(at.x, 0.0, at.z, _player.global_position.w)
 	# Square to you, so you walk into its face rather than its edge.
-	_arch.basis = Basis4D.from_zx(yaw)
+	_arch.global_basis = Basis4D.from_zx(yaw)
 	_arch.visible = true
 	_own_door = true
 	_went = false

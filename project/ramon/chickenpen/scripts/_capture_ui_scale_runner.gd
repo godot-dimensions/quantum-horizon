@@ -56,8 +56,8 @@ func _process(_d: float) -> bool:
 	_f += 1
 	if _f == 5:
 		_room.get_node("Systems/UiScale").set("percent", _percent)
-	var prof: Node4D = _room.get_node("World/Professor") as Node4D
-	var booth: Node4D = _room.get_node("World/RangeBooth") as Node4D
+	var prof: Node4D = _room.get_node("World/ProfessorPost/Professor") as Node4D
+	var booth: Node4D = _room.get_node("World/Range/RangeBooth") as Node4D
 	if _f < 60:
 		return false
 	if _f < 120:

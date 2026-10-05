@@ -26,7 +26,7 @@ func _process(_d) -> bool:
 	_f += 1
 	var player: Node4D = _s.get_node("Player")
 	var staged: Camera4D = _s.get_node("World/ProfessorTalkCam")
-	var head: Node4D = _s.get_node("World/ProfessorHead")
+	var head: Node4D = _s.get_node("World/ProfessorPost/ProfessorHead")
 	if _f == 40:
 		var rig: Node4D = _s.get_node("Player/CameraRig")
 		player.global_position = Vector4(10.87, 1.2, -15.28, 0.0)

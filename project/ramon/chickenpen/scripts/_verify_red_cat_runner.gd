@@ -36,7 +36,7 @@ func _process(_d) -> bool:
 	_f += 1
 	if _f < 70: return false
 	if _cat == null:
-		_cat = _root.get_node_or_null("World/RedCat") as Node4D
+		_cat = _root.get_node_or_null("World/TrymCabin/RedCat") as Node4D
 		_grab = _root.get_node("Systems/RedCatGrab")
 		_player = _root.get_node("Player")
 		if _cat == null:
@@ -49,9 +49,9 @@ func _process(_d) -> bool:
 		_cat.set("pause_min", 0.2); _cat.set("pause_max", 0.4)
 		print("\n   it starts %s, %s" % [_mood(), "hidden" if not _cat.visible else "out"])
 		_check("it is a different colour", not (_cat.get("fur") as Color)
-			.is_equal_approx(_root.get_node("World/Cat").get("fur")),
+			.is_equal_approx(_root.get_node("World/RockPileSpot/Cat").get("fur")),
 			"fur %s against the black one's %s" % [_cat.get("fur"),
-				_root.get_node("World/Cat").get("fur")])
+				_root.get_node("World/RockPileSpot/Cat").get("fur")])
 		return false
 
 	var now: String = _mood()

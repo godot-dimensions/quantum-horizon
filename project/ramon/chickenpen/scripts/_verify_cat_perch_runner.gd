@@ -40,8 +40,8 @@ func _process(_d) -> bool:
 	_f += 1
 	if _f < 80: return false
 	if _cat == null:
-		_cat = _root.get_node("World/Cat")
-		_crate = _root.get_node("World/RockPile")
+		_cat = _root.get_node("World/RockPileSpot/Cat")
+		_crate = _root.get_node("World/RockPileSpot/RockPile")
 		_grab = _root.get_node("Systems/CatGrab")
 		_player = _root.get_node("Player")
 		_player.position = Vector4(30.0, 1.3, 30.0, 0.0)

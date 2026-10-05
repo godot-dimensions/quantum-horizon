@@ -326,7 +326,10 @@ func _map_ground() -> void:
 	_heights.resize(cells * cells)
 	_heights.fill(0.0)
 	for path in ["World/Hills", "World/CaveHill"]:
+		# The cave hill is in the Cave unit since 6 Oct (World/Cave/CaveHill): found by name if not at its path.
 		var hill := _room.get_node_or_null(path) as MeshInstance4D
+		if hill == null and _room.get_node_or_null("World") != null:
+			hill = _room.get_node("World").find_child(path.get_file(), true, false) as MeshInstance4D
 		if hill == null or not (hill.mesh is ArrayTetraMesh4D):
 			continue
 		var basis: Projection = hill.global_basis

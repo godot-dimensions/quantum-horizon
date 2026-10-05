@@ -34,7 +34,7 @@ func _process(_d) -> bool:
 				# Stand just in front of wherever he actually is. Hard-coding the spot
 				# meant that moving him by a metre silently made this test unreachable
 				# rather than failing on anything real.
-				var head: Node4D = _root.get_node("World/KeeperHead")
+				var head: Node4D = _root.get_node("World/KeeperPost/KeeperHead")
 				var at: Vector4 = head.global_position
 				_player.global_position = Vector4(at.x, 1.2, at.z + 1.6, at.w)
 				_player.linear_velocity = Vector4.ZERO

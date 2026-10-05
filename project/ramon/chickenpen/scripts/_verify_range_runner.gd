@@ -49,7 +49,7 @@ func _process(_d: float) -> bool:
 	match _step:
 		0:
 			_room.get_node("UI/Inventory").call("add_item", "found_watch")
-			var head: Node4D = _room.get_node("World/RangeMasterHead")
+			var head: Node4D = _room.get_node("World/Range/RangeMasterHead")
 			var player := _room.get_node("Player") as CharacterBody4D
 			player.global_position = Vector4(head.global_position.x + 1.6, 0.05, head.global_position.z, 0.0)
 			player.linear_velocity = Vector4.ZERO

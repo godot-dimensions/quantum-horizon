@@ -63,13 +63,13 @@ func _process(delta: float) -> bool:
 		0:
 			_inv = _root.get_node_or_null("Invitation")
 			_crossing = _root.get_node_or_null("Crossing")
-			_trym = _root.get_node_or_null("World/Trym") as Node4D
-			_arch = _root.get_node_or_null("World/TrymDoor") as Node4D
+			_trym = _root.get_node_or_null("World/TrymCabin/Trym") as Node4D
+			_arch = _root.get_node_or_null("World/TrymCabin/TrymDoor") as Node4D
 			_player = _root.get_node_or_null("Player") as Node4D
 			print("\n--- the pieces are in the scene ---")
 			_check("an invitation", _inv != null, "Invitation")
 			_check("a crossing", _crossing != null, "Crossing")
-			_check("a door for Trym to raise", _arch != null, "World/TrymDoor")
+			_check("a door for Trym to raise", _arch != null, "World/TrymCabin/TrymDoor")
 			# The shortcut in and out, exercised as a keypress rather than as a method
 			# call - a debug key that is wired to nothing is a debug key that does nothing.
 			var jump := InputEventKey.new()
@@ -206,7 +206,7 @@ func _process(delta: float) -> bool:
 				"door at z %.1f, he is at z %.1f - on the way he was already walking"
 					% [_arch.global_position.z, fig.z])
 			_check("his tag came with him",
-				absf((_root.get_node("World/TrymHead") as Node4D).global_position.z - fig.z) < 1.5,
+				absf((_root.get_node("World/TrymCabin/TrymHead") as Node4D).global_position.z - fig.z) < 1.5,
 				"TrymHead follows the figure")
 			_stopped_at = fig.z
 			_check("and he is waiting rather than leaving", _figure().visible,
@@ -328,7 +328,7 @@ func _process(delta: float) -> bool:
 			_check("and the door is folding away", not bool(_arch.get("armed")),
 				"disarmed - it lifts into the air and goes")
 			_check("his conversation marker came with him",
-				absf((_root.get_node("World/TrymStand") as Node4D).global_position.z
+				absf((_root.get_node("World/TrymCabin/TrymStand") as Node4D).global_position.z
 					- _figure().global_position.z) < 3.0,
 				"talking to him no longer teleports you into the shed")
 			# THE SHORTCUT HAS TO LEAVE HIM IN THE STATE THE WALK WOULD HAVE. It stages
