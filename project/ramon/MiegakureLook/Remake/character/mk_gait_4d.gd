@@ -1,0 +1,463 @@
+extends Node4D
+
+## Slice Garden's walk cycle: COPIED from chickenpen/scripts/block_gait_4d.gd on 5 Oct 2026 (the pen is
+## never touched). Unchanged except for the avatar it looks for and this note. It works in 4D world
+## space throughout (foot targets on the ground, the leg solved in the hip's own frame), so it walks
+## the same in the turned view as long as the avatar's body is turned with the view (mk_walker_4d.gd).
+##
+## The original's notes follow.
+##
+## A walk cycle for a block avatar: planted feet, bending knees, swinging arms.
+##
+## WHY FOOT TARGETS AND NOT LIMB WAVING. Swinging a leg back and forth from the hip looks
+## like walking for about a second, and then you notice the feet are skating - because
+## nothing is holding them still. A real step has two halves: STANCE, where the foot is
+## fixed on the ground and the body travels over it, and SWING, where it arcs forward to
+## where it will land next. So the cycle produces a foot TARGET, and two-bone IK works
+## out what the hip and knee have to do to put the foot there. The knee angle falls out
+## of the geometry; it is never authored.
+##
+## In stance the target slides BACKWARD through the body's own frame at exactly the speed
+## the body is moving forward, which leaves the foot standing still in the world. That is
+## the whole trick, and it is why the legs stop skating.
+##
+## Extends Node4D rather than Node, which is not cosmetic: the gait clock resolves its
+## body as `Node4D`, so pointing it at a plain Node leaves that null and every read of
+## `halted` fails.
+##
+## Attach as a child of a CharacterBody4D with an avatar built by block_avatar_4d.gd.
+## The character needs no code for it: this reads its velocity and whether it is on the
+## floor, and drives the avatar's joints directly.
+
+@export var avatar_path: NodePath = NodePath("../Avatar")
+
+## Length of a stride, in units. A step longer than the leg cannot be taken, so this is
+## clamped against the leg's own reach when the avatar is measured.
+@export var stride_length: float = 0.95
+
+## How high the foot lifts at the top of its arc.
+@export var step_height: float = 0.12
+
+## Arms swing opposite the legs, and less.
+@export_range(0.0, 1.2, 0.01) var arm_swing: float = 0.60
+@export_range(0.0, 1.5, 0.01) var elbow_bend: float = 0.35
+
+## How far the body rises and falls. Twice gait frequency: a biped's trunk lifts once per
+## STEP, not once per cycle.
+@export_range(0.0, 0.3, 0.005) var body_bob: float = 0.095
+
+## How far it leans into a run.
+@export_range(0.0, 0.6, 0.01) var run_lean: float = 0.14
+
+@export_group("Carrying")
+## How far the character stoops to pick a chicken up, and for how long.
+##
+## A pickup that happens instantly reads as the chicken teleporting into your hands. The
+## bend does not have to be long - it has to exist, so the eye has something to attribute
+## the chicken's arrival to.
+@export_range(0.0, 1.5, 0.05) var pickup_bend: float = 0.75
+@export_range(0.1, 1.5, 0.05) var pickup_seconds: float = 0.45
+@export_range(0.0, 0.4, 0.01) var pickup_dip: float = 0.18
+## HOW HEAVY THE THING IN YOUR ARMS IS, 0 to 1. A chicken is 0 and changes nothing, so
+## every existing caller keeps the pose it always had. The pig is 1.
+##
+## Weight is read off the KNEES, not off the arms. Arms already go overhead for a chicken
+## and cannot say more than that, and a stagger or a grunt is audio this prototype has
+## none of - but a body carrying something heavy sinks, and the sink is visible from any
+## angle. So the load lowers the hips, and because the foot targets live in WORLD space
+## and stay on the floor, the legs absorb every bit of that as knee bend. Nothing had to
+## be authored: the IK was already solving for whatever the hip height happened to be.
+@export_range(0.0, 0.6, 0.01) var heavy_crouch: float = 0.24
+## And leans the trunk back a little, the way you do to get a heavy load over your feet.
+@export_range(0.0, 0.6, 0.01) var heavy_lean: float = 0.16
+
+## Where the arms go while holding a chicken: straight up, overhead.
+@export_range(0.0, 6.3, 0.05) var carry_arm_raise: float = 3.15
+@export_range(0.0, 1.0, 0.05) var carry_elbow: float = 0.18
+
+## How close to the hip the swing foot may come, as a fraction of leg length. The lower
+## this is, the more the knee folds.
+@export_range(0.5, 1.0, 0.01) var min_swing_extension: float = 0.80
+
+## How much of the leg's rotation the ankle undoes. 1.0 keeps the foot perfectly flat;
+## slightly less lets it tip a little with the leg, which looks less mechanical.
+@export_range(0.0, 1.0, 0.05) var foot_levelling: float = 0.85
+
+## How long standing still takes to become STANDING.
+##
+## WHY THIS IS NEEDED AT ALL. In stance a foot's target is _plant - a position in the
+## WORLD, fixed at touchdown, deliberately, because that is what stops the feet skating.
+## The consequence is that stopping mid-stride leaves one foot nailed to the ground where
+## it last landed and the other frozen part-way through its arc, which reads as a pose held
+## rather than a walk ended. Repositioning the body - a conversation moving you to a mark -
+## makes it obvious: the foot stays behind entirely.
+##
+## So when the body is no longer going anywhere, both feet ease off their plants and back
+## to directly under the hips, which is what standing is. Coming back to a walk clears the
+## stale plants first, so the first step starts from under the body instead of snapping
+## back to wherever the last one ended.
+@export_range(0.05, 1.5, 0.05) var settle_seconds: float = 0.3
+## Below this speed the legs are considered to have stopped rather than to be walking
+## slowly. A shade above the `halted` threshold, so settling begins before the clock stops.
+@export_range(0.02, 1.0, 0.01) var settle_below: float = 0.14
+
+## Speed at which the legs are considered to be running rather than walking, used only to
+## scale the lean and the stride.
+@export var run_speed: float = 5.0
+
+# The gait clock reads these two off whatever node it is pointed at, which is this one.
+var speed: float = 0.0
+var halted: bool = true
+
+const _GaitController = preload("res://scripts/gait_controller.gd")
+
+var _gait: Node
+var _avatar: Node4D
+var _body: CharacterBody4D
+var _thigh: float = 0.25
+var _shin: float = 0.25
+var _hip_height: float = 0.6
+var _torso_rest: Vector4
+var _airborne: float = 0.0
+# Per-leg foot target, carried between frames so stance can hold its ground.
+var _plant := [Vector4.ZERO, Vector4.ZERO]
+var _lift := [Vector4.ZERO, Vector4.ZERO]
+var _was_stance := [false, false]
+var _last_body := Vector4.ZERO
+var _travelled: float = 0.0
+var _measured: bool = false
+var _sole: float = 0.0
+var _avatar_rest := Vector4.ZERO
+var _carrying: bool = false
+var _carry_blend: float = 0.0
+## How heavy what is being carried is, and the eased version of it. Blended more slowly
+## than the carry itself: arms snap up to catch a bird, but sinking under a weight is a
+## thing that happens to you over about half a second.
+var _load: float = 0.0
+var _load_blend: float = 0.0
+var _pickup: float = 0.0
+var _pelvis_drop: float = 0.0
+## 0 while walking, 1 once stood. See settle_seconds.
+var _settle: float = 0.0
+
+
+func _ready() -> void:
+	_body = get_parent() as CharacterBody4D
+	_last_body = _body.global_position if _body != null else Vector4.ZERO
+	_avatar = get_node_or_null(avatar_path) as Node4D
+	_gait = Node.new()
+	_gait.set_script(_GaitController)
+	_gait.name = "GaitClock"
+	_gait.standalone_input = false
+	_gait.body_path = NodePath("..")
+	add_child(_gait)
+	if _gait.has_method("apply_preset"):
+		_gait.apply_preset("walk")
+	# NOT deferred-and-hope: see _measure.
+
+
+## Reads the avatar's own build rather than being told it, so the same gait fits the
+## chibi, the plush and the human without three sets of numbers.
+##
+## Called from _physics_process until it succeeds, rather than deferred from _ready. The
+## avatar builds its blocks in its OWN _ready, and nothing orders the two: measuring
+## first read a torso that did not exist yet, left its rest position at zero, and the
+## body-bob then wrote the torso to y=0 every frame - which dropped the head and chest to
+## the floor and left the hips and shoulders above them. The legs looked like they came
+## out of the head because, relative to the sunken torso, they did.
+func _measure() -> void:
+	if _avatar == null or _avatar.get("hip_left") == null:
+		return
+	var hip: Node4D = _avatar.hip_left
+	var knee: Node4D = _avatar.knee_left
+	_hip_height = hip.position.y
+	_thigh = maxf(absf(knee.position.y), 0.01)
+	# The shin runs from the knee to the foot; the foot block sits just past it.
+	var shin_block: Node4D = null
+	for child in knee.get_children():
+		if child is MeshInstance4D and String(child.name).begins_with("Shin"):
+			shin_block = child as Node4D
+	_shin = maxf(absf(shin_block.position.y) * 2.0, 0.01) if shin_block != null else _thigh
+	# The IK places the ANKLE. A boot hangs below it, so without this the sole sinks into
+	# the ground by its own half-height.
+	# Under the ANKLE, not the knee: the foot moved when it got its own joint, and
+	# looking in the old place silently measured a sole of zero - which sank the boots
+	# into the ground and, because the stride is clamped against standing height, quietly
+	# shortened every step.
+	var foot_parent: Node = _avatar.ankle_left if _avatar.get("ankle_left") != null else knee
+	for child in foot_parent.get_children():
+		if child is MeshInstance4D and String(child.name).begins_with(("Boot")):
+			var box := (child as MeshInstance4D).mesh as BoxTetraMesh4D
+			if box != null:
+				_sole = maxf(absf((child as Node4D).position.y) + box.size.y * 0.5, 0.0)
+	# A STRIDE IS LIMITED BY SWEEP, NOT BY LEG LENGTH. A leg of length R whose hip is H
+	# off the ground can only put its foot sqrt(R^2 - H^2) forward or back before it goes
+	# straight, and a straight leg cannot hold a plant - it gets clamped and dragged.
+	# Clamping against R instead let a 0.55 stride be asked of a leg that could sweep
+	# 0.25, which is most of why the feet skated.
+	var reach_len: float = _thigh + _shin
+	var stand: float = maxf(_hip_height - _sole, 0.01)
+	# Measured at the LOW point of the dip, because that is where the foot reaches
+	# furthest: computing it at the standing height would promise a stride the leg can
+	# only manage at mid-stance.
+	# AND against the leg _step will actually use, which is 97% of it - the last 3% is held
+	# back so the knee never locks dead straight. Computing the sweep from the full length
+	# promised a stride the IK then clamped, and a clamped target is a foot that cannot
+	# reach its plant: the player's feet went from planting perfectly to slipping 0.10.
+	var low: float = maxf(stand - body_bob, 0.01)
+	var usable: float = reach_len * 0.97
+	var sweep: float = sqrt(maxf(usable * usable - low * low, 0.0))
+	stride_length = minf(stride_length, sweep * 2.0 * 0.82)
+	if stride_length < 0.05:
+		# A hip higher than the leg is long gives a sweep of zero, so every step has no
+		# length and the legs cycle on the spot as fast as the clock will go - which is
+		# exactly what "frantic" looks like, and is a BUILD error rather than a tuning
+		# one. Worth shouting about: it is invisible in the numbers until you measure
+		# the stride itself.
+		push_warning("BlockGait: legs too short for hip height (reach %.2f, stands %.2f) - stride is %.3f, the walk will churn on the spot." % [reach_len, stand, stride_length])
+
+	# SCALE THE CLOCK TO THIS BODY. The "walk" preset is reference_speed 2.0 with
+	# reference_period_sec 4.0 - a four-second cycle, authored for Motion Lab's large
+	# quadruped. On a 1.35-unit chibi that is seventeen times too slow, and it is fatal
+	# rather than merely wrong: stance then lasts seconds, the body walks metres past a
+	# planted foot, and no leg can reach back that far, so the foot gives up and travels
+	# along. A stride is two steps, and a step takes stride/speed.
+	# The relation is exact, not approximate: a planted foot has to still be under the
+	# body when stance ends, so the body must travel exactly ONE STRIDE during stance.
+	# stance lasts duty * period, so period = stride / (speed * duty). Using 2*stride/
+	# speed instead over-travels by 1/duty - about 20% - and the foot is dragged through
+	# the last fifth of every step.
+	var pace: float = maxf(run_speed * 0.5, 0.1)
+	var duty: float = maxf(float(_gait.duty_factor), 0.1)
+	_gait.reference_speed = pace
+	_gait.reference_period_sec = maxf(stride_length / (pace * duty), 0.12)
+	if _avatar.torso != null:
+		_torso_rest = _avatar.torso.position
+	_avatar_rest = _avatar.position
+	_measured = true
+
+
+func _physics_process(delta: float) -> void:
+	if _avatar == null or _body == null or _avatar.get("hip_left") == null:
+		return
+	if not _measured:
+		_measure()
+		if not _measured:
+			return
+	# MEASURED displacement, not velocity. The character damps its velocity every frame,
+	# so linear_velocity is what it is TRYING to do, not what it DID - retreating the
+	# foot by that number over-retreats it and the foot skates the other way. The only
+	# number that cancels the body's motion is the body's motion.
+	var moved: Vector4 = _body.global_position - _last_body
+	_last_body = _body.global_position
+	_travelled = Vector2(moved.x, moved.z).length()
+	speed = Vector3(_body.linear_velocity.x, _body.linear_velocity.z, _body.linear_velocity.w).length()
+	halted = speed < 0.05 or not _body.is_on_floor()
+	var stopped: bool = speed < settle_below and _body.is_on_floor()
+	_settle = move_toward(_settle, 1.0 if stopped else 0.0,
+		delta / maxf(settle_seconds, 0.01))
+	_airborne = lerpf(_airborne, 0.0 if _body.is_on_floor() else 1.0, clampf(delta * 9.0, 0.0, 1.0))
+
+	var phase: float = float(_gait.phase_progress)
+	var duty: float = float(_gait.duty_factor)
+	var effort: float = clampf(speed / maxf(run_speed, 0.001), 0.0, 1.0)
+	# Below a walk the stride shortens rather than the cycle slowing to a crawl.
+	var stride: float = stride_length * clampf(speed / maxf(run_speed * 0.6, 0.001), 0.25, 1.0)
+	# ...but STANDING STILL means standing. The 0.25 floor above keeps a slow walk legible;
+	# held at zero speed it parked the legs a quarter-stride apart with the knees bent, which
+	# reads as perched on a bench rather than stopped. Faded out below a slow walk, the feet
+	# come together and the knees straighten. The arms already scale themselves to nothing
+	# this way - the legs were the half that did not.
+	stride *= clampf(speed / 0.35, 0.0, 1.0)
+
+	_step(0, _avatar.hip_left, _avatar.knee_left, _avatar.ankle_left, fposmod(phase, 1.0), duty, stride, delta)
+	_step(1, _avatar.hip_right, _avatar.knee_right, _avatar.ankle_right, fposmod(phase + 0.5, 1.0), duty, stride, delta)
+
+	# Arms take the opposite leg, which is what stops a walk looking like a march.
+	#
+	# Scaled against a WALK, not a run. Using speed/run_speed meant walking at 2.4 with a
+	# run speed of 6 gave 40% of the swing - about ten degrees of shoulder - which reads
+	# as arms that do not move at all. A walk should already swing most of the way, with
+	# a run adding the rest.
+	var arm_effort: float = clampf(speed / maxf(run_speed * 0.45, 0.001), 0.0, 1.15)
+	var swing: float = sin(phase * TAU) * arm_swing * arm_effort * (1.0 - _airborne)
+	if _carry_blend > 0.001:
+		# BOTH ARMS UP, and the swing folded out as they rise rather than switched off, so
+		# picking a chicken up mid-stride does not snap the arms.
+		# SWEPT, NOT REASONED ABOUT. Neither sign of 2.55 raised the arm at all - both landed
+		# it around 1.38 with the head top at 1.54 - so the angle was found by stepping the
+		# shoulder through a full turn and measuring where the arm's mesh actually reaches
+		# highest. That is pi: the arm hangs down at rest, so half a turn puts it straight
+		# up. The peak is 1.44, BELOW the head top, because these arms are short - which is
+		# why the carry anchor sits where it does rather than where arm length suggests.
+		var raised: float = carry_arm_raise
+		_hold(_avatar.shoulder_left, _avatar.elbow_left, lerpf(-swing, raised, _carry_blend))
+		_hold(_avatar.shoulder_right, _avatar.elbow_right, lerpf(swing, raised, _carry_blend))
+	else:
+		_arm(_avatar.shoulder_left, _avatar.elbow_left, -swing)
+		_arm(_avatar.shoulder_right, _avatar.elbow_right, swing)
+
+	# THE PELVIS RISES AT MID-STANCE. This is not decoration: with the hip pinned at one
+	# height the standing leg can never extend, and the character walks in a permanent
+	# 42-degree crouch. Lifting the whole avatar at twice gait frequency - once per step -
+	# straightens the supporting leg exactly when it should be straightest.
+	# MEASURED, NOT REASONED. Re-phasing this to peak at 0.25 and 0.75 - which is where
+	# mid-stance looks like it should be from the duty factor - made the knee WORSE, 19
+	# degrees to 32. The peak at 0.125 is where the stance leg is actually most extended,
+	# so it stays. The amount is up from 0.04 because 0.04 was not enough to straighten a
+	# leg standing at three quarters of its extension.
+	var bob: float = sin(phase * TAU * 2.0) * body_bob * effort * (1.0 - _airborne) * (1.0 - _settle)
+	# The stoop, layered over the walk rather than replacing it: one arc down and back up.
+	var stoop: float = 0.0
+	if _pickup > 0.0:
+		_pickup = maxf(_pickup - delta, 0.0)
+		stoop = sin((1.0 - _pickup / pickup_seconds) * PI)
+	_carry_blend = move_toward(_carry_blend, 1.0 if _carrying else 0.0, delta * 4.0)
+	_load_blend = move_toward(_load_blend, _load if _carrying else 0.0, delta * 2.2)
+	var sink: float = heavy_crouch * _load_blend
+	_avatar.position = _avatar_rest + Vector4(0.0,
+		maxf(bob, 0.0) - pickup_dip * stoop - sink, 0.0, 0.0)
+	if _avatar.torso != null:
+		_avatar.torso.position = _torso_rest
+		# Leaned BACK under a load - a positive angle here, against the forward lean of a
+		# run and of a stoop - so the weight ends up over the feet instead of ahead of them.
+		_avatar.torso.basis = Basis4D.from_yz(-run_lean * effort - pickup_bend * stoop
+			+ heavy_lean * _load_blend)
+
+
+## One leg, one point in its cycle.
+##
+## THE FOOT TARGET LIVES IN WORLD SPACE. This is the standard way procedural locomotion
+## is built, and two failed attempts here are why: holding the target in the body's frame
+## and hand-correcting it for the body's motion needs the correction to be exactly right
+## every frame, and it never is. Retreating by velocity over-retreats, because a character
+## damps its velocity and does not travel as far as it meant to. Retreating by measured
+## displacement is closer but still accumulates. Pinning the target to a POINT ON THE
+## GROUND and re-deriving the joint angles from wherever the body now is cannot drift:
+## the foot is planted by construction, not by arithmetic that has to come out even.
+##
+## STANCE: the target is the spot where the foot landed, and stays there while the body
+## walks over it. SWING: it travels from where it lifted to where it will next land,
+## rising to step_height on the way.
+func _step(index: int, hip: Node4D, knee: Node4D, ankle: Node4D, local_phase: float,
+		duty: float, stride: float, _delta: float) -> void:
+	var reach: float = (_thigh + _shin) * 0.97
+	var hip_world: Vector4 = hip.global_position
+	# THE ANKLE'S HEIGHT IS SET BY THE FLOOR, NOT BY THE LEG. It sits one sole above the
+	# ground, so the drop from hip to ankle is whatever that distance happens to be -
+	# clamped only if the leg genuinely cannot reach that far. Subtracting the sole from
+	# a drop that had already been clamped to the leg's reach did the opposite: raising
+	# the hip lifted the TARGET instead of straightening the leg, which is why standing
+	# taller changed nothing and then made the feet hover.
+	var forward: Vector4 = _avatar.global_basis * Vector4(0.0, 0.0, 1.0, 0.0)
+	var drop: float = clampf(hip_world.y - _body.global_position.y - _sole, 0.05, reach)
+	var ground: Vector4 = hip_world - Vector4(0.0, drop, 0.0, 0.0)
+	var in_stance: bool = local_phase < duty and _airborne < 0.5
+	var target: Vector4
+
+	if _airborne >= 0.5:
+		# Tucked, and moving with the body rather than pinned to anything.
+		target = ground + forward * 0.15 + Vector4(0.0, drop * 0.35, 0.0, 0.0)
+		_was_stance[index] = false
+	elif in_stance:
+		if not _was_stance[index]:
+			# Touchdown. From here the foot belongs to the ground, not to the body.
+			_plant[index] = ground + forward * (stride * 0.5)
+		target = _plant[index]
+		_was_stance[index] = true
+	else:
+		var t: float = (local_phase - duty) / maxf(1.0 - duty, 0.0001)
+		var eased: float = t * t * (3.0 - 2.0 * t)
+		if _was_stance[index]:
+			_lift[index] = _plant[index]
+			_was_stance[index] = false
+		# Where it will land: ahead of where the body is NOW, recomputed every frame so
+		# the step leads a body that is still moving.
+		var landing: Vector4 = ground + forward * (stride * 0.5)
+		target = _lift[index].lerp(landing, eased) + Vector4(0.0, sin(t * PI) * step_height, 0.0, 0.0)
+
+	# Standing: off the plant and back under the hip. Blended rather than switched, so a
+	# walk that ends does so by putting its feet down rather than by cutting.
+	if _settle > 0.001:
+		target = target.lerp(ground, _settle)
+		if _settle > 0.999:
+			# Fully stood. Forget the old plants, or resuming a walk snaps the foot back to
+			# wherever it last touched down - which after a reposition is another room.
+			_plant[index] = ground
+			_lift[index] = ground
+			_was_stance[index] = false
+
+	# Into the hip's own frame, which is what the solver works in.
+	var local: Vector4 = _avatar.global_basis.inverse() * (target - hip_world)
+	# KEEP THE SWING LEG FROM FOLDING UP. A two-bone leg takes up slack the only way it
+	# can - by folding - so a target that comes close to the hip gives a knee at 106
+	# degrees where a person walks at about 65. Refusing to bring the foot nearer than
+	# this fraction of the leg's length caps the fold directly, and the small amount of
+	# lift it costs is not visible.
+	var span: float = Vector2(local.z, local.y).length()
+	var floor_span: float = (_thigh + _shin) * min_swing_extension
+	if span < floor_span and span > 0.001:
+		var scale: float = floor_span / span
+		local = Vector4(local.x, local.y * scale, local.z * scale, local.w)
+	_solve_leg(hip, knee, ankle, local.z, local.y)
+
+
+## Closed-form two-bone IK in the sagittal plane.
+##
+## The leg is a triangle: thigh, shin, and the line from hip to foot. Knowing all three
+## lengths gives every angle by the cosine rule, so nothing here is iterative and nothing
+## can fail to converge. The knee is placed so it bends FORWARD, like a human's - the
+## other root of the same triangle bends it backwards, like a bird's.
+func _solve_leg(hip: Node4D, knee: Node4D, ankle: Node4D, target_z: float, target_y: float) -> void:
+	var d: float = clampf(sqrt(target_z * target_z + target_y * target_y),
+		absf(_thigh - _shin) + 0.01, _thigh + _shin - 0.01)
+	# Angle of the hip-to-foot line, measured from straight down.
+	var line: float = atan2(target_z, -target_y)
+	# Angle between that line and the thigh.
+	var at_hip: float = acos(clampf((_thigh * _thigh + d * d - _shin * _shin) / (2.0 * _thigh * d), -1.0, 1.0))
+	# Interior angle at the knee; PI minus it is how far the shin folds back.
+	var at_knee: float = acos(clampf((_thigh * _thigh + _shin * _shin - d * d) / (2.0 * _thigh * _shin), -1.0, 1.0))
+	# NEGATED, and measured rather than reasoned: asking this solver for a foot 0.25
+	# FORWARD put it 0.18 BACKWARD, because Basis4D.from_yz turns the opposite way to
+	# what the maths above assumes. With the sign wrong the swing added to the body's
+	# motion instead of cancelling it, which is exactly what a skating leg looks like.
+	var hip_angle: float = -(line + at_hip)
+	var knee_angle: float = PI - at_knee
+	hip.basis = Basis4D.from_yz(hip_angle)
+	knee.basis = Basis4D.from_yz(knee_angle)
+	# THE FOOT STAYS FLAT. Rotations compose down the chain, so undoing their sum at the
+	# ankle leaves the boot level with the ground however the leg is bent - instead of
+	# tipping with the shin, which was the most obviously wrong thing about the walk.
+	if ankle != null:
+		ankle.basis = Basis4D.from_yz(-(hip_angle + knee_angle) * foot_levelling)
+
+
+## Arms swing from the shoulder with the elbow trailing, which is enough to read as an
+## arm rather than a plank.
+## Carrying: the arm is held, not swung, so the elbow stays nearly straight instead of
+## folding by the amount the shoulder has turned - which at an overhead angle would tuck
+## the hands back down behind the head.
+func _hold(shoulder: Node4D, elbow: Node4D, angle: float) -> void:
+	if shoulder == null:
+		return
+	shoulder.basis = Basis4D.from_yz(angle)
+	if elbow != null:
+		elbow.basis = Basis4D.from_yz(-carry_elbow)
+
+
+## Called by the catcher when a chicken is picked up or let go, and by the pig's grab
+## with a load of 1. The second argument defaults to nothing, so the catcher's existing
+## one-argument call keeps the pose it always had.
+func set_carrying(carrying: bool, load: float = 0.0) -> void:
+	if carrying and not _carrying:
+		_pickup = pickup_seconds
+	_carrying = carrying
+	_load = clampf(load, 0.0, 1.0)
+
+
+func _arm(shoulder: Node4D, elbow: Node4D, swing: float) -> void:
+	if shoulder == null:
+		return
+	shoulder.basis = Basis4D.from_yz(swing)
+	if elbow != null:
+		elbow.basis = Basis4D.from_yz(-absf(swing) * elbow_bend - elbow_bend * 0.4)
