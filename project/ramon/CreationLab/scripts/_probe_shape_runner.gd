@@ -66,12 +66,16 @@ func _all_blue(wall: String) -> bool:
 	return true
 
 
-## The panel's middle on its wall's middle.
+## The panel as printed leaves the same wall either side of it, and is on `wall`.
 func _centred(panel: Node, wall: String) -> bool:
-	var c: Vector4 = (panel.call("panel_frame") as Array)[0]
-	var fr: Array = _gr.call("wall_frame", wall)
-	var m: Vector2 = (fr[0] as Vector2) + Vector2((_gr as Node4D).global_position.x, (_gr as Node4D).global_position.z)
-	return Vector2(c.x, c.z).distance_to(m) < 0.01
+	var m: Array = panel.call("plan_mark")
+	if m.is_empty() or int(m[1]) != int(_gr.call("wall_key", wall)):
+		return false
+	var ws: Vector2 = _gr.call("wall_span", wall)
+	var before: float = float(m[2]) - ws.x
+	var after: float = ws.y - float(m[3])
+	print("  %s on %s: %.3f m of wall before it, %.3f m after" % [panel.name, wall, before, after])
+	return absf(before - after) < 0.01 and before >= 0.0
 
 
 func _plan_view(what: String) -> void:

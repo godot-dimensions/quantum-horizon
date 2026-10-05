@@ -83,33 +83,39 @@ func _draw() -> void:
 	for p in ol:
 		ground.append(at.call(p))
 	draw_colored_polygon(ground, Color(0.16, 0.19, 0.25))
-	# The walls, each in its colour, broken by its doorways; its name and length just inside it.
+	# The walls, each in its colour, broken by its doorways; its name and length just inside it. The
+	# room's own walls first and the blue ones over them, so where two walls meet in a corner the
+	# grey one never covers a blue one's end (it made a centred panel look off centre).
 	var doors: Array = room.get("doorways")
-	for e in n:
-		var a: Vector2 = ol[e]
-		var c: Vector2 = ol[(e + 1) % n]
-		var len: float = a.distance_to(c)
-		if len < 0.05:
-			continue
-		var col: Color = BLUE if not String(room.call("wall_code", e)).is_empty() else GREY
-		var gaps: Array = []
-		for d in doors:
-			if int(room.call("wall_key", d[0])) == e:
-				gaps.append(Vector2(float(d[1]), float(d[2])))
-		gaps.sort_custom(func(x: Vector2, y: Vector2) -> bool: return x.x < y.x)
-		var t0: float = 0.0
-		var dir: Vector2 = (c - a) / len
-		for g in gaps:
-			if g.x > t0:
-				draw_line(at.call(a + dir * t0), at.call(a + dir * minf(g.x, len)), col, 5.0, true)
-			t0 = maxf(t0, g.y)
-		if t0 < len:
-			draw_line(at.call(a + dir * t0), at.call(c), col, 5.0, true)
-		var inward := Vector2(-dir.y, dir.x)
-		var mid: Vector2 = at.call((a + c) * 0.5 + inward * (1.6 / maxf(k / 14.0, 0.5)))
-		var label: String = "%s  %.1f m" % [names[e] if e < names.size() else "wall %d" % e, len]
-		var w: float = f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		draw_string(f, mid - Vector2(w * 0.5, -4.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, INK if col == BLUE else DIM)
+	for blue_pass in [false, true]:
+		for e in n:
+			var a: Vector2 = ol[e]
+			var c: Vector2 = ol[(e + 1) % n]
+			var len: float = a.distance_to(c)
+			if len < 0.05:
+				continue
+			var is_blue: bool = not String(room.call("wall_code", e)).is_empty()
+			if is_blue != blue_pass:
+				continue
+			var col: Color = BLUE if is_blue else GREY
+			var gaps: Array = []
+			for d in doors:
+				if int(room.call("wall_key", d[0])) == e:
+					gaps.append(Vector2(float(d[1]), float(d[2])))
+			gaps.sort_custom(func(x: Vector2, y: Vector2) -> bool: return x.x < y.x)
+			var t0: float = 0.0
+			var dir: Vector2 = (c - a) / len
+			for g in gaps:
+				if g.x > t0:
+					draw_line(at.call(a + dir * t0), at.call(a + dir * minf(g.x, len)), col, 5.0, true)
+				t0 = maxf(t0, g.y)
+			if t0 < len:
+				draw_line(at.call(a + dir * t0), at.call(c), col, 5.0, true)
+			var inward := Vector2(-dir.y, dir.x)
+			var mid: Vector2 = at.call((a + c) * 0.5 + inward * (1.6 / maxf(k / 14.0, 0.5)))
+			var label: String = "%s  %.1f m" % [names[e] if e < names.size() else "wall %d" % e, len]
+			var w: float = f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			draw_string(f, mid - Vector2(w * 0.5, -4.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, INK if is_blue else DIM)
 	# The panels on their walls.
 	for m in _marks():
 		var e2: int = int(m[1])
