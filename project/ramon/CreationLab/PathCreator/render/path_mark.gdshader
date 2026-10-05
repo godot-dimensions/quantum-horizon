@@ -47,6 +47,7 @@ uniform vec3 albedo_texture_map_scale = vec3(1.0);
 
 // The symbol libraries (path_symbols.gd).
 uniform sampler2D seg_tex : filter_nearest, repeat_disable;
+uniform sampler2D segcap_tex : filter_nearest, repeat_disable;
 uniform sampler2D shape_tex : filter_nearest, repeat_disable;
 uniform sampler2D sym_tex : filter_nearest, repeat_disable;
 const int SEG_W = 1024;
@@ -231,6 +232,9 @@ vec4 tfetch(sampler2D t, int i, int w) {
 }
 
 vec3 role_color(int role) {
+	if (role == 4) {
+		return under_color.rgb;
+	}
 	if (walk > 0.5) {
 		return sand.rgb;
 	}
@@ -297,8 +301,18 @@ vec4 draw_symbol(int sym, vec2 p, float px, float erode, float arc, float show_a
 			vec2 B = sg.zw;
 			vec2 pa = q - A;
 			vec2 ba = B - A;
-			float t = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-9), 0.0, 1.0);
-			d = min(d, length(pa - ba * t));
+			float t_raw = dot(pa, ba) / max(dot(ba, ba), 1e-9);
+			float t = clamp(t_raw, 0.0, 1.0);
+			bool cut = false;
+			if (a.z > 1.5) {
+				// Flat (butt) caps: nothing of the run beyond the plane at either open end.
+				vec4 c0 = tfetch(segcap_tex, (k0 + k) * 2, SEG_W);
+				vec4 c1 = tfetch(segcap_tex, (k0 + k) * 2 + 1, SEG_W);
+				cut = (dot(c0.zw, c0.zw) > 0.5 && dot(q - c0.xy, c0.zw) > 0.0) || (dot(c1.zw, c1.zw) > 0.5 && dot(q - c1.xy, c1.zw) > 0.0);
+			}
+			if (!cut) {
+				d = min(d, length(pa - ba * t));
+			}
 			if (a.z < 1.5 && ((A.y > q.y) != (B.y > q.y))) {
 				float x_at = A.x + (q.y - A.y) * (B.x - A.x) / (B.y - A.y);
 				if (x_at > q.x) {
@@ -416,8 +430,10 @@ void fragment() {
 		ALBEDO = mix(under_color.rgb, col.rgb, a);
 	} else {
 		// The mark's own colour, emitted; its antialiased edge blends into the lit floor beneath.
-		ALBEDO = under_color.rgb * (1.0 - a);
-		EMISSION = col.rgb * ink_gain * a;
+		// Floor-coloured fills (role 4) are lit as the floor is, not emitted.
+		float floorish = 1.0 - step(0.02, distance(col.rgb, under_color.rgb));
+		ALBEDO = under_color.rgb * (1.0 - a) + under_color.rgb * a * floorish;
+		EMISSION = col.rgb * ink_gain * a * (1.0 - floorish);
 	}
 }
 

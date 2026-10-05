@@ -155,6 +155,27 @@ func _run() -> void:
 	await _key(KEY_BRACKETRIGHT)
 	_check(absf(float(_b.get("slice_w")) - 1.0) < 0.01, "] moves the slice through W")
 	await _shot("builder_slice_w1")
+	# One slot's library (L on a hovered primary route): only the A chevrons change.
+	await _key(KEY_BRACKETLEFT)
+	await _key(KEY_BRACKETLEFT)
+	await _key(KEY_BRACKETLEFT)
+	await _key(KEY_BRACKETLEFT)
+	var e0: Dictionary = copy.edges[0]
+	var ea: Vector4 = copy.call("node", int(e0["from"]))["pos"]
+	var eb: Vector4 = copy.call("node", int(e0["to"]))["pos"]
+	_b.set("_pick", [])
+	await _mouse("move", _b.call("to_screen", (ea.x + eb.x) * 0.5, (ea.z + eb.z) * 0.5))
+	await _key(KEY_L)
+	var libs: Dictionary = net.get("libraries")
+	_check(String(libs.get("A", "")) == "06" and not libs.has("B"), "L changes one slot's library (A from %s, the rest from %s)" % [String(libs.get("A", "?")), String(net.get("default_library"))])
+	await _wait(0.3)
+	await _shot("builder_slot_A_from_06")
+	# Every slot to the next library (F5's job).
+	net.set("libraries", {})
+	net.call("next_library")
+	await _wait(0.3)
+	_check(String(net.get("default_library")) != "07", "F5 moves every slot to the next library (%s)" % String(net.get("default_library")))
+	await _shot("builder_all_06")
 	_g.call("set_build", false)
 	await _wait(0.4)
 	_check(not bool(_g.get("building")), "F4 again walks")

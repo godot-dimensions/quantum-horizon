@@ -61,6 +61,7 @@ static func material(mode: int) -> TetraMaterial4D:
 	m.albedo_color = Color.WHITE
 	var p: Dictionary = symbols()
 	cs.set_shader_parameter("seg_tex", p["segments"])
+	cs.set_shader_parameter("segcap_tex", p["segcaps"])
 	cs.set_shader_parameter("shape_tex", p["shapes"])
 	cs.set_shader_parameter("sym_tex", p["symbols"])
 	cs.set_shader_parameter("mode", mode)

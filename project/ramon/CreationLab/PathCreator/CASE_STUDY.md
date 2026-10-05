@@ -78,3 +78,23 @@ A scripted session through its own mouse and key handling passes every check:
 - F4 back to walking
 
 It edits the same `.tres` files the scene loads.
+
+## 5. The symbols against an independent renderer (step 35)
+
+Every master was rasterised by Godot's own SVG renderer at 4 px a sheet unit and laid against our
+shader's drawing of it, measured as overlap of the inked pixels (`scripts/_probe_overlay_runner.gd`,
+`img/10_overlay_check.png`). The first pass found four things wrong, all in how strokes were
+read; after the fixes every symbol of libraries 06 and 07 scores 0.92 or better, most 0.97-0.99:
+
+| Found | Fix |
+|---|---|
+| Strokes drawn with round ends (the junction's arcs too long, 0.67) | Flat (butt) caps: each open run carries the half-planes at its two ends, cutting every one of its segments, so flattened curves are cut square too. |
+| Sharp joins rounded (the secondary chevron's tip, 0.89) | Miter wedges added as fills of the stroke's colour. |
+| Dashes ignored (the round frame's four gaps, 0.82) | `stroke-dasharray` cuts the stroke into dashes. |
+| A floor-coloured fill painted over its own stroke (06's hollow junction, 0.30) | A path's fill before its stroke, as SVG does; a "floor" colour role that paints the floor's albedo. |
+
+## 6. Looks and sets (steps 38, 39)
+
+F5 moves every slot to the next library; in the builder, L moves only the slot under the hand (a
+picked node's symbol, or the hovered route's chevron), Ramon's "toggle sub-icons separately". F6
+flips DEV and WALK (`img/09_looks.png`: 07, 06, A from 06 with the rest from 07, WALK).

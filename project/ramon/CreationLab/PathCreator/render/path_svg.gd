@@ -7,7 +7,20 @@ extends RefCounted
 ##
 ##   {"kind": "fill" | "stroke", "width": stroke width (units), "rule": "nonzero" | "evenodd",
 ##    "color": the colour as written, "d": the path data as written (to tell layers apart),
-##    "segs": PackedVector4Array of (x0, y0, x1, y1), in the SVG's own units, y down}
+##    "segs": PackedVector4Array of (x0, y0, x1, y1), in the SVG's own units, y down,
+##    "caps": PackedVector4Array, two a segment: its run's start and end cap planes, each (point x,
+##            point y, outward x, outward y), outward (0, 0) for none}
+##
+## STROKES as the SVG paints them (checked against Godot's own SVG renderer, 5 Oct; the first
+## version drew every stroke with round ends and joins, and no dashes):
+##   caps     "butt" (the default) and "square" ends are cut flat: every segment of an open run
+##            carries the run's two end planes (its first point and the way out past it, its last
+##            and the way out past that), and the shader draws nothing beyond either, so a run of
+##            many short segments (a flattened curve) is cut square too; "round" ends stay round
+##   joins    "miter" (the default) corners sharper than 15 degrees get their pointed wedge added as
+##            a small fill of the same colour (up to the miter limit, 4); "round" and gentler turns
+##            are the distance's own round join
+##   dashes   stroke-dasharray splits the stroke into dashes, each an open stroke with its caps
 ##
 ## Path commands M L H V C S Q T Z, upper and lower case (A, the arc, is not in any Figma export
 ## seen so far and is reported if met). Curves are flattened finely enough that the distance the
@@ -40,14 +53,22 @@ static func parse(svg: String, origin: String = "") -> Array:
 		var polys: Array = _flatten(d, origin)
 		var stroke: String = _attr(attrs, "stroke")
 		var fill: String = _attr(attrs, "fill")
-		if not stroke.is_empty() and stroke != "none":
-			shapes.append({"kind": "stroke", "width": float(_attr(attrs, "stroke-width", "1")), "rule": "nonzero",
-				"color": stroke, "d": d, "segs": _segments(polys, false)})
-		if not fill.is_empty() and fill != "none":
-			if _area(polys) < 0.01:
-				continue
+		# SVG paints a path's fill first and its stroke over it (06's hollow junction is a floor-coloured
+		# fill under a blue ring).
+		if not fill.is_empty() and fill != "none" and _area(polys) >= 0.01:
 			shapes.append({"kind": "fill", "width": 0.0, "rule": _attr(attrs, "fill-rule", "nonzero"),
-				"color": fill, "d": d, "segs": _segments(polys, true)})
+				"color": fill, "d": d, "segs": _segments(polys, true), "caps": PackedVector4Array()})
+		if not stroke.is_empty() and stroke != "none":
+			var sw: float = float(_attr(attrs, "stroke-width", "1"))
+			var dashes := PackedFloat32Array()
+			for v in _attr(attrs, "stroke-dasharray", "").replace(",", " ").split(" ", false):
+				dashes.append(float(v))
+			var st: Dictionary = _stroke(polys, sw, _attr(attrs, "stroke-linecap", "butt"), _attr(attrs, "stroke-linejoin", "miter"),
+				float(_attr(attrs, "stroke-miterlimit", "4")), dashes)
+			shapes.append({"kind": "stroke", "width": sw, "rule": "nonzero", "color": stroke, "d": d, "segs": st["segs"], "caps": st["caps"]})
+			for wedge in st["wedges"]:
+				shapes.append({"kind": "fill", "width": 0.0, "rule": "nonzero", "color": stroke, "d": d, "segs": _segments([wedge], true),
+					"caps": PackedVector4Array()})
 	return shapes
 
 
@@ -181,6 +202,107 @@ static func _tokens(d: String) -> Array:
 			out.append(s)
 		else:
 			out.append(float(s))
+	return out
+
+
+## A stroke's segments with their cap flags, and the wedges of its mitred corners (each a closed
+## PackedVector2Array to fill).
+static func _stroke(polys: Array, width: float, cap: String, join: String, limit: float, dashes: PackedFloat32Array) -> Dictionary:
+	var hw: float = width * 0.5
+	var lines: Array = []
+	for poly in polys:
+		var pts: PackedVector2Array = poly
+		var closed: bool = pts.size() > 2 and pts[0].distance_to(pts[pts.size() - 1]) < 1e-4
+		if dashes.size() > 0 and _sum(dashes) > 0.0:
+			lines.append_array(_dash(pts, dashes))
+		else:
+			lines.append([pts, closed])
+	var segs := PackedVector4Array()
+	var caps := PackedVector4Array()
+	var wedges: Array = []
+	for line in lines:
+		var pts: PackedVector2Array = (line[0] as PackedVector2Array).duplicate()
+		var closed: bool = line[1]
+		var n: int = pts.size()
+		if n < 2:
+			continue
+		if not closed and cap == "square":
+			pts[0] = pts[0] + (pts[0] - pts[1]).normalized() * hw
+			pts[n - 1] = pts[n - 1] + (pts[n - 1] - pts[n - 2]).normalized() * hw
+		var flat: bool = not closed and cap != "round"
+		var start_plane := Vector4.ZERO
+		var end_plane := Vector4.ZERO
+		if flat:
+			var out0: Vector2 = (pts[0] - pts[1]).normalized()
+			var out1: Vector2 = (pts[n - 1] - pts[n - 2]).normalized()
+			start_plane = Vector4(pts[0].x, pts[0].y, out0.x, out0.y)
+			end_plane = Vector4(pts[n - 1].x, pts[n - 1].y, out1.x, out1.y)
+		for k in n - 1:
+			segs.append(Vector4(pts[k].x, pts[k].y, pts[k + 1].x, pts[k + 1].y))
+			caps.append(start_plane)
+			caps.append(end_plane)
+		if join != "miter":
+			continue
+		var first: int = 0 if closed else 1
+		for i in range(first, n - 1):
+			var prev: Vector2 = pts[i - 1] if i > 0 else pts[n - 2]
+			var p: Vector2 = pts[i]
+			var nxt: Vector2 = pts[i + 1]
+			var d1: Vector2 = (p - prev).normalized()
+			var d2: Vector2 = (nxt - p).normalized()
+			var turn: float = absf(d1.angle_to(d2))
+			if turn < deg_to_rad(15.0) or turn > PI - 0.01:
+				continue
+			var side: float = signf(d1.cross(d2))
+			var n1: Vector2 = d1.orthogonal() * side
+			var n2: Vector2 = d2.orthogonal() * side
+			var ratio: float = 1.0 / maxf(sin((PI - turn) * 0.5), 1e-4)
+			if ratio > limit:
+				continue
+			var tip: Vector2 = p + (n1 + n2).normalized() * hw * ratio
+			wedges.append(PackedVector2Array([p, p + n1 * hw, tip, p + n2 * hw, p]))
+	return {"segs": segs, "caps": caps, "wedges": wedges}
+
+
+static func _sum(v: PackedFloat32Array) -> float:
+	var t: float = 0.0
+	for x in v:
+		t += x
+	return t
+
+
+## A polyline cut into its dashes (the pattern from its start, as SVG does; an odd pattern repeats
+## twice), each [points, false].
+static func _dash(pts: PackedVector2Array, pattern: PackedFloat32Array) -> Array:
+	var pat := PackedFloat32Array(pattern)
+	if pat.size() % 2 == 1:
+		pat.append_array(pattern)
+	var out: Array = []
+	var pi_: int = 0
+	var left: float = pat[0]
+	var on: bool = true
+	var cur := PackedVector2Array([pts[0]])
+	for k in pts.size() - 1:
+		var a: Vector2 = pts[k]
+		var b: Vector2 = pts[k + 1]
+		var seg_len: float = a.distance_to(b)
+		var t: float = 0.0
+		while seg_len - t > 1e-6:
+			var step: float = minf(left, seg_len - t)
+			t += step
+			left -= step
+			var q: Vector2 = a.lerp(b, t / seg_len)
+			if on:
+				cur.append(q)
+			if left <= 1e-6:
+				if on and cur.size() > 1:
+					out.append([cur, false])
+				on = not on
+				pi_ = (pi_ + 1) % pat.size()
+				left = pat[pi_]
+				cur = PackedVector2Array([q])
+	if on and cur.size() > 1:
+		out.append([cur, false])
 	return out
 
 

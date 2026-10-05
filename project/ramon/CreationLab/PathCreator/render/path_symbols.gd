@@ -5,6 +5,7 @@ extends RefCounted
 ## library is a folder of the sheet's masters as SVG, one a slot (`sets/07/A.svg` ... `I.svg`),
 ## read by path_svg.gd; every symbol of every library goes into three small float textures:
 ##
+##   segcaps    two texels a segment: its run's start and end cap planes (a stroke's flat ends)
 ##   segments   one texel a straight segment: (x0, y0, x1, y1), in sheet units, the symbol's middle
 ##              at (0, 0), y down as the SVG has it (on the floor that is +z, so a symbol seen from
 ##              above reads as it does on the sheet)
@@ -17,7 +18,9 @@ extends RefCounted
 ## D (arrival) does not is the arc (a stroke) or the accent (a fill): the sheet's rule 07 in data.
 ##
 ## COLOUR ROLES: each shape's colour is matched to the sheet's nearest token, so a look can
-## recolour by role (DEV keeps them, WALK paints every role sand): 0 blue, 1 cyan, 2 edge, 3 muted.
+## recolour by role (DEV keeps them, WALK paints every role sand): 0 blue, 1 cyan, 2 edge, 3 muted,
+## 4 floor. The floor role is the sheet's floor colour used as a fill (06's hollow junction is a ring
+## filled with the floor, so the guide line under it is covered): it paints the floor's own albedo.
 ##
 ## A symbol is asked for by "library/slot", e.g. "07/A"; build() returns the ids.
 ##
@@ -26,7 +29,7 @@ extends RefCounted
 const SVG := preload("res://ramon/CreationLab/PathCreator/render/path_svg.gd")
 const Spec := preload("res://ramon/CreationLab/PathCreator/path_spec.gd")
 const SETS_DIR := "res://ramon/CreationLab/PathCreator/sets/"
-const ROLES := ["blue", "cyan", "edge", "muted"]
+const ROLES := ["blue", "cyan", "edge", "muted", "floor"]
 const SEG_W := 1024
 const SHAPE_W := 256
 const SYM_W := 64
@@ -59,6 +62,12 @@ static func read_library(lib: String) -> Dictionary:
 			for k in segs.size():
 				segs[k] = segs[k] - Vector4(c.x, c.y, c.x, c.y)
 			sh["segs"] = segs
+			# The cap planes' points move with the symbol's middle; their directions do not.
+			var caps: PackedVector4Array = sh.get("caps", PackedVector4Array())
+			for k in caps.size():
+				if caps[k].z != 0.0 or caps[k].w != 0.0:
+					caps[k] = caps[k] - Vector4(c.x, c.y, 0.0, 0.0)
+			sh["caps"] = caps
 			sh["layer"] = 0
 			sh["role"] = _role(String(sh["color"]))
 		out[slot] = {"shapes": shapes, "size": vb.size}
@@ -93,6 +102,7 @@ static func _role(hex: String) -> int:
 ## (ImageTextures), "ids": {"07/A": index}, "counts": [segments, shapes, symbols]}.
 static func build(libs: Dictionary) -> Dictionary:
 	var segs := PackedVector4Array()
+	var segcaps: Array = []
 	var shapes: Array = []
 	var syms: Array = []
 	var ids: Dictionary = {}
@@ -106,6 +116,11 @@ static func build(libs: Dictionary) -> Dictionary:
 				var s0: int = segs.size()
 				var ss: PackedVector4Array = sh["segs"]
 				segs.append_array(ss)
+				var cp: PackedVector4Array = sh.get("caps", PackedVector4Array())
+				for q in ss.size():
+					for j in 2:
+						var c: Vector4 = cp[q * 2 + j] if q * 2 + j < cp.size() else Vector4.ZERO
+						segcaps.append(Color(c.x, c.y, c.z, c.w))
 				for v in ss:
 					r = maxf(r, maxf(Vector2(v.x, v.y).length(), Vector2(v.z, v.w).length()) + float(sh["width"]) * 0.5)
 				var kind: int = 2 if String(sh["kind"]) == "stroke" else (1 if String(sh["rule"]) == "evenodd" else 0)
@@ -115,7 +130,7 @@ static func build(libs: Dictionary) -> Dictionary:
 			ids["%s/%s" % [lib, slot]] = syms.size() / 2
 			syms.append(Color(float(first_shape), float((sym["shapes"] as Array).size()), size.x * 0.5, size.y * 0.5))
 			syms.append(Color(r, 0.0, 0.0, 0.0))
-	return {"segments": _tex_v4(segs, SEG_W), "shapes": _tex(shapes, SHAPE_W), "symbols": _tex(syms, SYM_W),
+	return {"segments": _tex_v4(segs, SEG_W), "segcaps": _tex(segcaps, SEG_W), "shapes": _tex(shapes, SHAPE_W), "symbols": _tex(syms, SYM_W),
 		"ids": ids, "counts": [segs.size(), shapes.size() / 2, syms.size() / 2]}
 
 

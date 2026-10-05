@@ -14,6 +14,9 @@ extends Control
 ##         X  split the route under the mouse with a chord     C  join the picked node to the hovered
 ##         Del  remove the picked node   K  its kind   S  a destination's state   F  its frame
 ##         P / M  the hovered route's priority / its W mode (static, here, follow, reveal)
+##         L  the next library for just this symbol (the picked node's, or the hovered route's
+##            chevron): one slot at a time (Ramon: "toggle not entire sets at once, but subicons
+##            separately"); F5 still changes every slot
 ##         [ ]  the slice through W   G  snap to 0.25 m   Ctrl+Z / Ctrl+Y  undo, redo
 ##         Ctrl+S  save every graph   F4  back to walking
 ##
@@ -288,6 +291,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				_cycle_edge("priority", ["primary", "secondary"])
 			KEY_M:
 				_cycle_edge("w_mode", ["static", "here", "follow", "reveal"])
+			KEY_L:
+				_cycle_slot()
 			KEY_BRACKETLEFT:
 				set_slice(slice_w - 0.25)
 			KEY_BRACKETRIGHT:
@@ -397,6 +402,45 @@ func _cycle_edge(key: String, values: Array) -> void:
 	var i: int = values.find(String(e.get(key, values[0])))
 	e[key] = values[(i + 1) % values.size()]
 	_changed(g)
+
+
+## The symbol slot under the hand: the picked node's (by its kind and state), else the hovered
+## route's chevron (A primary, B secondary). [network, slot] or [].
+func _slot_here() -> Array:
+	if not _pick.is_empty():
+		var n: Dictionary = _picked_node()
+		match String(n.get("kind", "")):
+			"junction":
+				return [_pick[0], "C"]
+			"destination":
+				var slot: String = {"arrival": "D", "available": "E", "focused": "F", "completed": "G"}.get(String(n.get("state", "arrival")), "D")
+				return [_pick[0], slot]
+	var he: Array = _hover_edge if not _hover_edge.is_empty() else _edge_at(_mouse)
+	if not he.is_empty():
+		var e: Dictionary = _graph_of(he).edges[int(he[1])]
+		return [he[0], "A" if String(e.get("priority", "primary")) == "primary" else "B"]
+	return []
+
+
+func _cycle_slot() -> void:
+	var here: Array = _slot_here()
+	if here.is_empty():
+		return
+	var net: Node = here[0]
+	var slot: String = here[1]
+	var libs: Array = []
+	for k in ((load("res://ramon/CreationLab/PathCreator/render/path_draw.gd") as Script).call("symbols")["ids"] as Dictionary).keys():
+		if String(k).get_slice("/", 1) == slot and not (String(k).get_slice("/", 0) in libs):
+			libs.append(String(k).get_slice("/", 0))
+	libs.sort()
+	if libs.is_empty():
+		return
+	var cur: String = String(net.call("lib_for", slot))
+	var next: String = String(libs[(libs.find(cur) + 1) % libs.size()])
+	var m: Dictionary = (net.get("libraries") as Dictionary).duplicate()
+	m[slot] = next
+	net.set("libraries", m)
+	_saved_note = "slot %s now from library %s" % [slot, next]
 
 
 ## Every graph back to its file.
@@ -552,6 +596,7 @@ func _draw_panel(f: Font, fb: Font) -> void:
 		line.call("Pick a node (left click).", fb, 13, Style.UI_INK_DIM)
 	cur[0] = float(cur[0]) + 6.0
 	for t in ["N new node (1-5 its kind)   X split   C join", "Del remove   K kind   S state   F frame", "P / M  hovered route: priority / W mode",
+			"L  this symbol's library (one slot)",
 			"wheel on a node: W   shift: band", "[ ]  slice W   G snap   Ctrl+Z / Y   Ctrl+S save", "drag: move   middle or right drag: pan", "F4  back to walking"]:
 		line.call(t, fb, 12, Style.UI_INK_DIM)
 	cur[0] = float(cur[0]) + 6.0
