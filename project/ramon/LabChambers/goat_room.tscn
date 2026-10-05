@@ -269,6 +269,7 @@ edge = 1
 along = Vector2(2.7, 11.3)
 up = Vector2(1.3, 7.6)
 showcase = NodePath("../../Showcase")
+live_ppm = 260.0
 
 [node name="ResearchWallCopy" type="Node4D" parent="."]
 position = Vector4(40, 0, 0, 0)
