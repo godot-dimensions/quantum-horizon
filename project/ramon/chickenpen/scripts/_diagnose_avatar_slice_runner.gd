@@ -7,6 +7,8 @@ extends SceneTree
 ## the slice's w drifts across the avatar's own width. A part whose w range misses the
 ## slice entirely is simply not drawn.
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _root: Node
 var _f := 0
 
@@ -49,7 +51,7 @@ func _process(_d) -> bool:
 	player.position = Vector4(0.0, 1.3, 0.0, 0.0)
 	print("\n--- your own body, as you rotate the slice ---")
 	for deg in [0.0, 10.0, 20.0, 30.0, 45.0, 60.0]:
-		rig.set("_slice_xw", deg_to_rad(deg)); rig.set("_slice_zw", 0.0)
+		SliceAngles.tilt(rig, deg_to_rad(deg), 0.0)
 		rig.call("_apply")
 		_report(player, rig, "xw %.0f deg" % deg)
 	quit(0)

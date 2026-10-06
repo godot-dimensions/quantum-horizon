@@ -4,6 +4,8 @@ extends SceneTree
 ## straight out of the open end of the building - with the two W walls off and then on.
 ## Windowed. Writes res://smoke_test_output/enclosure_open.png and enclosure_closed.png
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _room: Node
 var _f := 0
 
@@ -28,8 +30,7 @@ func _process(_d: float) -> bool:
 		player.global_position = shed.global_position + Vector4(0.0, 0.0, 9.0, 0.0)
 		rig.set("yaw", 0.0)
 		rig.set("pitch", deg_to_rad(-6.0))
-		rig.set("_slice_zw", 0.0)
-		rig.set("_slice_xw", PI * 0.5)
+		SliceAngles.tilt(rig, PI * 0.5, 0.0)
 		rig.call("_apply")
 	if _f == 70:
 		shed.set("close_in_w", true)

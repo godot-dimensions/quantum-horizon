@@ -11,6 +11,8 @@ extends SceneTree
 ## sweeps through, and what that does to a real thing in the world - the w at which the
 ## slice crosses the pen's far corner.
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _root: Node
 var _f := 0
 
@@ -27,9 +29,7 @@ func _sweep(player: Node4D, rig: Node4D, plane: Node, xw: float, zw: float, labe
 	var hi: float = -1.0e9
 	for i in 9:
 		var yaw: float = float(i) * TAU / 8.0
-		rig.set("yaw", yaw)
-		rig.set("_slice_xw", xw); rig.set("_slice_zw", zw)
-		rig.call("_apply")
+		SliceAngles.tilt(rig, xw, zw, yaw)
 		var n: Vector4 = rig.global_basis.w
 		if i == 0:
 			first = n

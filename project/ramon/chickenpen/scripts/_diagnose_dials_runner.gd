@@ -7,6 +7,7 @@ extends SceneTree
 ## walks, rotates their slice, and steps through W. A dial that answers the same thing in
 ## every state is a decoration however well drawn it is.
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
 const Bearing = preload("res://scripts/bearing_utility_4d.gd")
 const NAT_LOG_2: float = 0.6931471805599453094
 const HALFWAY_METERS: float = 8.0
@@ -94,15 +95,15 @@ func _process(_d) -> bool:
 			player.position = Vector4(0.0, 1.3, -6.0, 0.0)
 			_snapshot("walked eight more")
 		3:
-			rig.set("_slice_xw", 0.6)
+			SliceAngles.tilt(rig, 0.6, 0.0)
 			rig.call("_apply")
 			_snapshot("slice-rotated 34 deg")
 		4:
-			rig.set("_slice_xw", 1.2)
+			SliceAngles.tilt(rig, 1.2, 0.0)
 			rig.call("_apply")
 			_snapshot("slice-rotated 69 deg")
 		5:
-			rig.set("_slice_xw", 0.0)
+			SliceAngles.tilt(rig, 0.0, 0.0)
 			rig.call("_apply")
 			player.position = Vector4(0.0, 1.3, -6.0, 1.0)
 			_snapshot("stepped one unit through W")

@@ -1,5 +1,6 @@
 extends SceneTree
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
 const CaveRock := preload("res://ramon/chickenpen/cave/cave_rock_4d.gd")
 
 ## The far room streams (cave_far_stream_4d.gd): not there when you arrive, loaded once you
@@ -69,8 +70,7 @@ func _process(d: float) -> bool:
 			_hold(Vector4(0, 0.05, -30, 0))
 			if _t > 1.0:
 				_check("not loaded on arrival", not _loaded(), _vram())
-				_rig().set("_slice_xw", deg_to_rad(40.0))
-				_rig().call("_apply")
+				SliceAngles.tilt(_rig(), deg_to_rad(40.0), 0.0)
 				_step = 1; _t = 0.0
 		1:
 			_hold(Vector4(0, 0.05, -30, 0))
@@ -83,8 +83,7 @@ func _process(d: float) -> bool:
 				_check("loaded by turning the slice", true, "after %.2f s, %s" % [_t, _vram()])
 				print("   longest frame while it came in: %.1f ms" % (_worst * 1000.0))
 				_check("its rock is there", _cave.find_child("RockFar", true, false) != null)
-				_rig().set("_slice_xw", 0.0)
-				_rig().call("_apply")
+				SliceAngles.tilt(_rig(), 0.0, 0.0)
 				_step = 2; _t = 0.0
 			elif _t > 5.0:
 				_check("loaded by turning the slice", false, "not after 5 s")

@@ -3,7 +3,7 @@ extends SceneTree
 ## Does the guidance actually work if you just do what it says?
 ##
 ## The test reads the word on screen - "left", "right", "up", "down" - and drags that way,
-## knowing nothing about xw, zw or which plane matters. If the advice is wrong the offset
+## knowing nothing about which way the slice tilts or which direction matters. If the advice is wrong the offset
 ## goes UP and this never converges, which is exactly what a player would experience.
 
 var _root: Node
@@ -61,19 +61,23 @@ func _process(_d) -> bool:
 		print("\n   FAILED to converge after %d drags - the advice does not lead anywhere." % _drags)
 		return true
 
-	# Do what it said. A drag of 0.08, in the named direction only.
+	# Do what it said. A drag of 0.08, in the named direction only, through the rig's own drag
+	# (what holding the slice and moving the mouse does): screen x rightwards, y downwards. It
+	# used to add to the rig's _slice_xw and _slice_zw, which the camera controls change removed
+	# (4 Oct, b27ffa1), so it dragged nothing and never converged.
 	var step := 0.08
+	var drag := Vector2.ZERO
 	if line.contains("drag left"):
-		_rig.set("_slice_xw", float(_rig.get("_slice_xw")) + step)
+		drag = Vector2(-step, 0.0)
 	elif line.contains("drag right"):
-		_rig.set("_slice_xw", float(_rig.get("_slice_xw")) - step)
+		drag = Vector2(step, 0.0)
 	elif line.contains("drag down"):
-		_rig.set("_slice_zw", float(_rig.get("_slice_zw")) + step)
+		drag = Vector2(0.0, step)
 	elif line.contains("drag up"):
-		_rig.set("_slice_zw", float(_rig.get("_slice_zw")) - step)
+		drag = Vector2(0.0, -step)
 	else:
 		return false
-	_rig.call("_apply")
+	_rig.call("drag_slice", drag)
 	_drags += 1
 	return false
 

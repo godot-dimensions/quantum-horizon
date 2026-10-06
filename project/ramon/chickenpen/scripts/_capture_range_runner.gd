@@ -6,6 +6,7 @@ extends SceneTree
 ##
 ## Args (after --): tag=<name>   writes res://smoke_test_output/range_<tag>_<n>.png
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
 const SHOTS := [
 	# [stand at (x, z, w), look at (x, y, z, w), pitch degrees, slice xw degrees, distance]
 	[Vector3(-2.0, -3.0, 0.0), Vector4(-19.0, 1.5, -9.0, 0.0), 0.0, 0.0, 5.0],
@@ -49,7 +50,7 @@ func _process(_d: float) -> bool:
 		var d: Vector4 = (shot[1] as Vector4) - player.global_position
 		rig.set("yaw", atan2(-d.x, -d.z))
 		rig.set("pitch", deg_to_rad(shot[2]))
-		rig.set("_slice_xw", deg_to_rad(shot[3]))
+		SliceAngles.tilt(rig, deg_to_rad(shot[3]), 0.0)
 		rig.set("distance", shot[4])
 		rig.call("_apply")
 	if phase == 40:

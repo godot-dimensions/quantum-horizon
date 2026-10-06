@@ -3,6 +3,8 @@ extends SceneTree
 ## The level in each of the states it is meant to tell apart, so the SHAPES can be
 ## compared by eye - which is the whole claim of the instrument.
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _root: Node
 var _f := 0
 var _pending := ""
@@ -33,8 +35,7 @@ func _process(_d) -> bool:
 	var state: Array = STATES[_shots]
 	player.global_position = Vector4(0.0, 1.3, 0.0, state[0])
 	player.set("linear_velocity", Vector4.ZERO)
-	rig.set("_slice_xw", state[1])
-	rig.set("_slice_zw", state[2])
+	SliceAngles.tilt(rig, state[1], state[2])
 	rig.call("_apply")
 	if _f % 20 != 0: return false
 	# Printed from the same frame the picture is taken on, so a caption that disagrees

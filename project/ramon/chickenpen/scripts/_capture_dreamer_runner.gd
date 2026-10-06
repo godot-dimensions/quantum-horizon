@@ -6,6 +6,8 @@ extends SceneTree
 ##
 ## Args (after --): tag=<name>   writes res://smoke_test_output/dreamer_<tag>_<n>.png
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _room: Node
 var _cave: Node4D
 var _f := 0
@@ -81,10 +83,10 @@ func _process(d: float) -> bool:
 			if _t > 1.5:
 				_save(1)
 				_dreamer().call("set_mood", "calm")
-				rig.set("_slice_xw", deg_to_rad(30.0))
+				SliceAngles.tilt(rig, deg_to_rad(30.0), 0.0)
 				_step = 2; _t = 0.0
 		2:
-			rig.set("_slice_xw", deg_to_rad(30.0))
+			SliceAngles.tilt(rig, deg_to_rad(30.0), 0.0)
 			if _t > 1.5:
 				_save(2)
 				quit()

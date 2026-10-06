@@ -8,6 +8,8 @@ extends SceneTree
 ## of W sends you is movement_basis * (0, 0, -1, 0), and the arrow has to match that
 ## exact expression. Drawn from +Z it pointed exactly backwards.
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _root: Node
 var _f := 0
 var _step := 0
@@ -43,9 +45,7 @@ func _process(d) -> bool:
 		0:
 			print("\n--- the arrow against the way W actually sends you ---")
 			for yaw in [0.0, 0.9, 2.4, -1.7]:
-				rig.set("yaw", yaw)
-				rig.set("_slice_xw", 0.3); rig.set("_slice_zw", -0.2)
-				rig.call("_apply")
+				SliceAngles.tilt(rig, 0.3, -0.2, yaw)
 				# What the walker computes for a press of forward.
 				var walks: Vector4 = (rig.call("movement_basis") * Vector4(0.0, 0.0, -1.0, 0.0)).normalized()
 				# What the dial draws the arrow along.
@@ -55,25 +55,21 @@ func _process(d) -> bool:
 					"%.2f degrees apart" % off)
 			print("\n--- R, from a badly lost slice ---")
 			player.position = Vector4(0.0, 1.3, 0.0, 2.7)
-			rig.set("_slice_xw", 0.85); rig.set("_slice_zw", -0.62)
-			rig.call("_apply")
+			SliceAngles.tilt(rig, 0.85, -0.62)
 			_from = absf(rig.global_basis.w.x) + absf(rig.global_basis.w.z)
-			print("   before: w %+.2f, xw %+.2f, zw %+.2f"
-				% [player.position.w, rig.get("_slice_xw"), rig.get("_slice_zw")])
+			var was: Vector3 = SliceAngles.angles(rig.basis)
+			print("   before: w %+.2f, xw %+.2f, zw %+.2f" % [player.position.w, was.x, was.y])
 			_press_r()
 		1:
 			# Part way through, it should be on its way rather than already there.
-			_check("it eases rather than snapping",
-				absf(float(rig.get("_slice_xw"))) > 0.001, "xw is %+.3f a frame in"
-					% rig.get("_slice_xw"))
+			var mid: Vector3 = SliceAngles.angles(rig.basis)
+			_check("it eases rather than snapping", absf(mid.x) > 0.001, "xw is %+.3f a frame in" % mid.x)
 		_:
 			if _f < 120: return false
-			print("   after:  w %+.3f, xw %+.3f, zw %+.3f"
-				% [player.position.w, rig.get("_slice_xw"), rig.get("_slice_zw")])
-			_check("both rotations are zero",
-				absf(float(rig.get("_slice_xw"))) < 0.001
-					and absf(float(rig.get("_slice_zw"))) < 0.001,
-				"xw %+.4f zw %+.4f" % [rig.get("_slice_xw"), rig.get("_slice_zw")])
+			var now: Vector3 = SliceAngles.angles(rig.basis)
+			print("   after:  w %+.3f, xw %+.3f, zw %+.3f" % [player.position.w, now.x, now.y])
+			_check("both rotations are zero", absf(now.x) < 0.001 and absf(now.y) < 0.001,
+				"xw %+.4f zw %+.4f" % [now.x, now.y])
 			_check("and you are back at w zero", absf(player.position.w) < 0.01,
 				"w %+.4f, from +2.70" % player.position.w)
 			var n: Vector4 = rig.global_basis.w

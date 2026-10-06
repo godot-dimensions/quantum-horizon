@@ -8,6 +8,8 @@ extends SceneTree
 ##   godot... --path project --windowed --resolution 1280x720 --position 40,40
 ##       --script res://ramon/chickenpen/lookout/_verify_marsh_align_runner.gd
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _room: Node
 var _grass: Node
 var _lookout: Node
@@ -51,7 +53,7 @@ func _process(d: float) -> bool:
 			# Beside the pond, 0.9 off its w, the slice turned a little through W.
 			_player.global_position = marsh.global_position + Vector4(9.0, 0.05, 6.0, -0.9)
 			_rig.set("yaw", atan2(9.0, 6.0))
-			_rig.set("_slice_xw", 0.35)
+			SliceAngles.tilt(_rig, 0.35, 0.0)
 			_step = 0
 			_t = 0.0
 		0:

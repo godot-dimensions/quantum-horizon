@@ -16,6 +16,8 @@ extends SceneTree
 ## which your slice crosses it. Nothing you do except a deliberate slice rotation or an
 ## ana/kata press should move that number.
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _root: Node
 var _f := 0
 var _fails: Array = []
@@ -43,7 +45,7 @@ func _process(_d) -> bool:
 	for tilt in [[0.17, 0.0, "xw 10 deg"], [0.35, 0.0, "xw 20 deg"],
 			[0.0, 0.35, "zw 20 deg"], [0.35, 0.35, "both 20 deg"]]:
 		player.position = Vector4(0.0, 1.3, 0.0, 0.0)
-		rig.set("_slice_xw", tilt[0]); rig.set("_slice_zw", tilt[1])
+		SliceAngles.tilt(rig, tilt[0], tilt[1])
 		var lo: float = 1.0e9
 		var hi: float = -1.0e9
 		for i in 17:
@@ -59,9 +61,7 @@ func _process(_d) -> bool:
 	# one speed in all four components.
 	for tilt in [[0.35, 0.0, "xw 20 deg"], [0.35, 0.35, "both 20 deg"]]:
 		player.position = Vector4(0.0, 1.3, 0.0, 0.0)
-		rig.set("yaw", 0.6)
-		rig.set("_slice_xw", tilt[0]); rig.set("_slice_zw", tilt[1])
-		rig.call("_apply")
+		SliceAngles.tilt(rig, tilt[0], tilt[1], 0.6)
 		var before: float = float(plane.call("_w_above", 5.0, -15.5))
 		var forward: Vector4 = (rig.global_basis * Vector4(0.0, 0.0, 1.0, 0.0)).normalized()
 		player.position += forward * 6.0

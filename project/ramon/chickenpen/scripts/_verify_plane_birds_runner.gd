@@ -10,6 +10,8 @@ extends SceneTree
 ## So: put a bird exactly on the player's slice, and check its drawn head lands on the
 ## drawn surface. Then tilt hard enough to force the shrink, and check it again.
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _root: Node
 var _f := 0
 var _fails: Array = []
@@ -71,7 +73,7 @@ func _process(_d) -> bool:
 	for state in [[0.0, 0.0, 0.0, "unrotated"], [0.8, 0.25, 0.0, "tilted, w 0.8"],
 			[0.0, 0.9, -0.7, "tilted hard both ways"]]:
 		player.position = Vector4(0.0, 1.3, 0.0, state[0])
-		rig.set("_slice_xw", state[1]); rig.set("_slice_zw", state[2]); rig.call("_apply")
+		SliceAngles.tilt(rig, state[1], state[2])
 		# Put the bird on the slice, wherever the slice happens to be above it.
 		var at: Vector4 = bird.global_position
 		var on: float = float(plane.call("_w_above", at.x, at.z))
@@ -83,7 +85,7 @@ func _process(_d) -> bool:
 
 	print("\n--- and one a known distance off it ---")
 	player.position = Vector4(0.0, 1.3, 0.0, 0.0)
-	rig.set("_slice_xw", 0.0); rig.set("_slice_zw", 0.0); rig.call("_apply")
+	SliceAngles.tilt(rig, 0.0, 0.0)
 	var at2: Vector4 = bird.global_position
 	bird.global_position = Vector4(at2.x, at2.y, at2.z,
 		float(plane.call("_w_above", at2.x, at2.z)) + 1.25)

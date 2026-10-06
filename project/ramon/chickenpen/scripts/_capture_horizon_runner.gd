@@ -12,6 +12,8 @@ extends SceneTree
 ##           hills=<path>  show this baked mesh on World/Hills instead of the scene's own,
 ##                      to look at a bake before the scene uses it.
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _room: Node
 var _f := 0
 var _shot := 0
@@ -66,7 +68,7 @@ func _process(_d: float) -> bool:
 		player.linear_velocity = Vector4.ZERO
 		rig.set("yaw", deg_to_rad(YAWS[n % YAWS.size()]))
 		rig.set("pitch", deg_to_rad(_pitch))
-		rig.set("_slice_xw", 0.0 if n < YAWS.size() else PI * 0.5)
+		SliceAngles.tilt(rig, 0.0 if n < YAWS.size() else PI * 0.5, 0.0)
 		rig.call("_apply")
 	if phase == 30:
 		var path: String = "res://smoke_test_output/horizon_%s_%d.png" % [_tag, n]

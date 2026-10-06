@@ -10,6 +10,7 @@ extends SceneTree
 ##                  unlit=A,B   set these lights' energy to 0 (paths from the scene root)
 ##                  ambient0=1  no ambient light and no sky in it
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
 const SHOTS := [
 	# [stand at (x, z, w), look at (x, y, z, w), pitch degrees, slice xw degrees, distance]
 	[Vector3(16.5, -21.0, 0.0), Vector4(16.5, 2.5, -30.0, 0.0), 4.0, 0.0, 4.0],
@@ -91,7 +92,7 @@ func _process(_d: float) -> bool:
 		var d: Vector4 = look - player.global_position
 		rig.set("yaw", atan2(-d.x, -d.z))
 		rig.set("pitch", deg_to_rad(shot[2]))
-		rig.set("_slice_xw", deg_to_rad(shot[3]))
+		SliceAngles.tilt(rig, deg_to_rad(shot[3]), 0.0)
 		rig.set("distance", shot[4])
 		rig.call("_apply")
 	if phase == 40:

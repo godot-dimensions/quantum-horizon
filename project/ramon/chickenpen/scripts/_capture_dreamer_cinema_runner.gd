@@ -13,6 +13,7 @@ extends SceneTree
 ## line it was on, a second Escape gets the shorter answer and the replies back - and the
 ## game is still running after all of it (the rig's second Escape quits).
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
 const ROOM := Vector4(0, 0, -36, 46)
 ## Replies to pick, in order, each time replies are offered.
 const PICKS := [0, 0, 2, 2, 2, 3, 3]
@@ -88,7 +89,7 @@ func _process(d: float) -> bool:
 			player.global_position = _cave.global_position + ROOM + Vector4(2.5, 0.05, 6.5, -1.5)
 			player.linear_velocity = Vector4.ZERO
 			var rig := player.get_node("CameraRig")
-			rig.set("_slice_zw", deg_to_rad(20.0))
+			SliceAngles.tilt(rig, 0.0, deg_to_rad(20.0))
 			if _far("Systems/DreamerTalk") != null and _t > 2.0:
 				var press := InputEventAction.new()
 				press.action = &"catch_target"
@@ -107,7 +108,8 @@ func _process(d: float) -> bool:
 				var at: Vector4 = player.global_position
 				_check("with you on the mark", Vector2(at.x - mark.x, at.z - mark.z).length() < 0.05 and absf(at.w - mark.w) < 0.05, "at %s" % (at - _cave.global_position))
 				var rig := player.get_node("CameraRig")
-				_check("on the flat slice", is_zero_approx(float(rig.get("_slice_xw"))) and is_zero_approx(float(rig.get("_slice_zw"))))
+				var flat: Vector3 = SliceAngles.angles((rig as Node4D).basis)
+				_check("on the flat slice", absf(flat.x) < 0.0001 and absf(flat.y) < 0.0001)
 				_check("and it cannot be turned", bool(rig.get("_look_locked")))
 				_check("the dial is away", not (_room.get_node("UI/SlicePlane") as CanvasItem).visible)
 				_check("and the frame counter", not (_room.get_node("UI/Fps") as CanvasItem).visible)

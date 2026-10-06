@@ -7,6 +7,8 @@ extends SceneTree
 ## slice" must move with it. It did not: the rig carried the rotation and both readouts
 ## read the body.
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _root: Node
 var _f := 0
 var _rig: Node4D
@@ -35,8 +37,7 @@ func _process(_d) -> bool:
 		return false
 
 	var xw: float = float(_step) * 0.15
-	_rig.set("_slice_xw", xw)
-	_rig.call("_apply")
+	SliceAngles.tilt(_rig, xw, 0.0)
 	var target: Node = _loc.get("target")
 	if target == null:
 		return false

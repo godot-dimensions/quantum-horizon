@@ -8,6 +8,8 @@ extends SceneTree
 ## given (x, z) falls straight out of that. This checks the answer behaves: flat at zero
 ## when unrotated, tilting one way for xw and the other for zw.
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _root: Node
 var _f := 0
 
@@ -42,16 +44,16 @@ func _process(_d) -> bool:
 
 	print("\n--- the slice, as w over the pen's four corners ---")
 	print("   (-5,-15.5) (5,-15.5) (5,-6.5) (-5,-6.5)")
-	rig.set("_slice_xw", 0.0); rig.set("_slice_zw", 0.0); rig.call("_apply")
+	SliceAngles.tilt(rig, 0.0, 0.0)
 	_corners(player, rig, "home")
 	player.position = Vector4(0.0, 1.3, 0.0, 1.5)
 	_corners(player, rig, "stepped ana 1.5")
 	player.position = Vector4(0.0, 1.3, 0.0, 0.0)
-	rig.set("_slice_xw", 0.35); rig.call("_apply")
+	SliceAngles.tilt(rig, 0.35, 0.0)
 	_corners(player, rig, "xw 20 deg")
-	rig.set("_slice_xw", 0.0); rig.set("_slice_zw", 0.35); rig.call("_apply")
+	SliceAngles.tilt(rig, 0.0, 0.35)
 	_corners(player, rig, "zw 20 deg")
-	rig.set("_slice_xw", 0.35); rig.set("_slice_zw", 0.35); rig.call("_apply")
+	SliceAngles.tilt(rig, 0.35, 0.35)
 	_corners(player, rig, "both 20 deg")
 	quit(0)
 	return true

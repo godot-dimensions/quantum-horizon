@@ -6,6 +6,8 @@ extends SceneTree
 ## be no: rotating made the bird visible while the catch went on measuring the world's W
 ## axis, so you could stand looking at a chicken you were forbidden to pick up.
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _root: Node
 var _f := 0
 var _rig: Node4D
@@ -45,8 +47,7 @@ func _process(_d) -> bool:
 	_player.position = Vector4(here.x, 1.3, here.z + 1.1, 0.0)
 	_player.set("_facing", atan2(0.0, -1.1))
 	var xw: float = float(_step) * 0.12
-	_rig.set("_slice_xw", xw)
-	_rig.call("_apply")
+	SliceAngles.tilt(_rig, xw, 0.0)
 	if _step > 0:
 		var slice: Projection = _rig.global_basis
 		var rel: Vector4 = _body.global_position - _player.global_position

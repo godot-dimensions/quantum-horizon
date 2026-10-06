@@ -1,4 +1,7 @@
 extends SceneTree
+
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _root: Node
 var _f := 0
 var _shot := 0
@@ -17,7 +20,7 @@ func _process(_d) -> bool:
 	var rig: Node4D = _root.get_node("Player/CameraRig")
 	var amounts := [0.0, 0.35, 0.7]
 	if _shot >= amounts.size(): return true
-	rig.set("_slice_xw", amounts[_shot])
+	SliceAngles.tilt(rig, amounts[_shot], 0.0)
 	rig.call("_apply")
 	_pending = "%02d" % int(amounts[_shot] * 100)
 	_shot += 1

@@ -6,6 +6,8 @@ extends SceneTree
 ## way, so the SHAPE says which control to move. That is only true if the four corner
 ## heights respond independently, and if the reading it prints names the right one.
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _root: Node
 var _f := 0
 var _fails: Array = []
@@ -24,7 +26,7 @@ func _check(label: String, ok: bool, detail: String) -> void:
 
 func _state(plane: Node, player: Node4D, rig: Node4D, w: float, xw: float, zw: float) -> Dictionary:
 	player.position = Vector4(0.0, 1.3, 0.0, w)
-	rig.set("_slice_xw", xw); rig.set("_slice_zw", zw); rig.call("_apply")
+	SliceAngles.tilt(rig, xw, zw)
 	var pen: Rect2 = plane.call("_footprint")
 	var h: Array = []
 	for c in [Vector2(pen.position.x, pen.position.y), Vector2(pen.end.x, pen.position.y),

@@ -7,6 +7,7 @@ extends SceneTree
 ## rotated the slice would show a chicken you still could not reach, which is the one
 ## misunderstanding this level exists to undo.
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
 const SCENE := "res://ramon/chickenpen/playable_world.tscn"
 
 var _room: Node
@@ -58,7 +59,8 @@ func _process(_d: float) -> bool:
 		if agent == null:
 			return _done()
 		_bird = agent.get_parent() as Node4D
-		_before = [_rig.get("_slice_xw"), _rig.get("_slice_zw"), _player.global_position.w]
+		var was: Vector3 = SliceAngles.angles(_rig.basis)
+		_before = [was.x, was.y, _player.global_position.w]
 		_start_gap = _off_ahead()
 		_press_t()
 		_check("T locks on", bool(_rig.call("is_locked_on")), "%.0f deg off dead ahead when pressed" % _start_gap)
@@ -67,9 +69,9 @@ func _process(_d: float) -> bool:
 	elif _f == 40 + 120:
 		var off: float = _off_ahead()
 		_check("the bird is brought dead ahead", off < 8.0, "%.1f deg off, from %.0f" % [off, _start_gap])
+		var now: Vector3 = SliceAngles.angles(_rig.basis)
 		_check("the slice is left where it was",
-			is_equal_approx(float(_rig.get("_slice_xw")), float(_before[0]))
-			and is_equal_approx(float(_rig.get("_slice_zw")), float(_before[1])),
+			absf(now.x - float(_before[0])) < 0.0001 and absf(now.y - float(_before[1])) < 0.0001,
 			"xw and zw unchanged - it turns the view, never the cut")
 		_check("and so is your w", is_equal_approx(_player.global_position.w, float(_before[2])),
 			"w %.3f - reaching the bird is still your job" % _player.global_position.w)

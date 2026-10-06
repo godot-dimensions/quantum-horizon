@@ -13,6 +13,8 @@ extends SceneTree
 ## bow-tie, which draw_colored_polygon cannot triangulate. Runs windowed, one slice per
 ## frame, so the real draw path is exercised rather than a copy of it.
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
+
 var _root: Node
 var _f := 0
 var _i := 0
@@ -49,7 +51,7 @@ func _process(_d) -> bool:
 	var xw: float = -1.2 + float(_i / STEPS) * 0.2
 	var zw: float = -1.2 + float(_i % STEPS) * 0.2
 	player.position = Vector4(0.0, 1.3, 0.0, -3.0 + float(_i % 7))
-	rig.set("_slice_xw", xw); rig.set("_slice_zw", zw); rig.call("_apply")
+	SliceAngles.tilt(rig, xw, zw)
 
 	var pen: Rect2 = plane.call("_footprint")
 	var h: Array = []

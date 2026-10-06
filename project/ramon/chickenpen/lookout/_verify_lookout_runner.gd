@@ -14,6 +14,7 @@ extends SceneTree
 ##   godot... --path project --windowed --resolution 1280x720 --position 40,40
 ##       --script res://ramon/chickenpen/lookout/_verify_lookout_runner.gd
 
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
 const TEST_BOOK := "user://lookout_journal_test.cfg"
 
 var _room: Node
@@ -90,9 +91,7 @@ func _aim(p: Vector4) -> void:
 
 
 func _slice(xw: float, zw: float) -> void:
-	_rig.set("_slice_xw", xw)
-	_rig.set("_slice_zw", zw)
-	_rig.call("_apply")
+	SliceAngles.tilt(_rig, xw, zw)
 
 
 func _put(at: Vector4) -> void:
