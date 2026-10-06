@@ -46,14 +46,25 @@ strips and patches overlap there are no dark seams.
 - The switches: `Systems/Paths` (`scripts/pen_paths_4d.gd`).
 - Place hints: any node in the group `tutor_spot` with `tutor_*` metadata (`scripts/pen_tutor_4d.gd`).
 
-## The fence frames (built, not live)
+## The fence frames
 
 Each hero building has a switch that swaps its frame for one built by Aaron's FenceGenerator4D:
 the tower `fence_frame` (base, deck railing, cabin walls), Trym's shed `fence_frame` (a timber
 frame round the walls; the walls stay for the cutaway in his scene), the range booth `fence_posts`.
-All off. Frames to compare: `smoke_test_output/pen_layout/tower/` and `.../hut/`. They multiply the
-buildings' tetrahedra (tower 6,480 to 34,664) with no measurable change in frame time; the paths
-cost about 1.1 ms a frame.
+Frames to compare: `smoke_test_output/pen_layout/tower/` and `.../hut/`. The paths cost about
+1.1 ms a frame; the frames made no measurable change.
+
+**The tower's is live** (6 Oct, the tower pass; `units/lookout/lookout.tscn`), with three changes
+from the first build:
+- the base splays in W as much as it leans in x and z, so its top holds the deck's whole W depth
+  (before, a slice near the deck's W end showed the deck floating with no legs under it);
+- the deck rail's posts are 2.4 apart, either side of the ladder (a 1.2 grid put a post in the
+  middle of the ladder's opening);
+- the hut's slats are 0.8 apart (0.6 before), and the ladder is 2.4 deep in W, the depth you can
+  climb it from, not the cab's 6.4 (which read as two plates in a turned slice).
+Tetrahedra: 6,480 on the old frame, 34,664 on the first fence build, 23,192 now
+(`PenLayout/scripts/_study_tower_cells_runner.gd` counts them part by part). The shed and booth
+frames are still off.
 
 The one thing to know about the generator: its ribs are full-height plates on its grid lines, so
 where the slice falls on a grid layer in W the frame reads as solid walls, and between layers as an
@@ -85,9 +96,24 @@ New player-facing text, all in `scripts/` unless said:
   "Path icons: off", "Sand paths: on", "Sand paths: off"; on the controls card: "paths found as you
   go, or all shown", "path icons, on or off", "sand paths, on or off".
 
+## The cave hill (6 Oct)
+
+- The turf shoulder over the arch used to run on at full height through the hill and out past the
+  dome, where the bake's box cut it off: flat tables with sheer sides at both ends of the hill. It
+  now slopes into the dome behind the arch (`shoulder_height`), the dome reaches further toward the
+  arch (`HALF` 11.5 along z), the dome and the rock face meet in a smooth maximum rather than a
+  crease (`block_density`), and the bake's box reaches 7 m in front of the mouth so the shoulder's
+  slopes come down to the field instead of ending in walls. Rebaked: `terrain/baked/cave_hill.res`.
+- The cave's fade to black (`scripts/pen_cave_fade_4d.gd`) was bounded across the tunnel but not
+  along it, so the field north of the mouth, as wide as the arch, counted as deep inside. With the
+  pen now behind the hill and the cave 4 m ana, that strip reached the farm's slice by 0.1 m: a black
+  screen from the hill's back to the field's north edge, x 3.4 to 11.6: across the pen's gate,
+  where both paths meet, and the east path into it. It now ends at the tunnel's blind end and the arch's top;
+  `_verify_cave_fade_runner.gd` checks behind the hill on both slices and on the hilltop.
+
 ## Open
 
 - The meadow film may need re-aiming with the hill beside the meadow.
-- The fence frames: which go live, and their spacing and rings.
+- The shed and booth fence frames: whether they go live, and their spacing and rings.
 - Mark size (`p_scale` 1.4) and sand width (1.3 m) are first guesses from frames.
 - Older failing tests are listed in `PenLayout/PLAN.md` under "Later".

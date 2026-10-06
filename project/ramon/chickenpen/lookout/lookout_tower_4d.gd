@@ -105,6 +105,19 @@ enum Design { CAB, BALCONY }
 ##   the hut    the cabin's walls are a fence box of slats, its dark panes left behind them
 ## The pads, deck, ladder, roof, colliders and everything the Lookout calls stay as they are, so the
 ## switch changes what you see and nothing else.
+##
+## THE TOWER PASS (6 Oct, Ramon: "an optimization pass on the tower using the new fence tech. use it
+## where you can"). Live in the Lookout unit since then, and three changes from the first build:
+##   the base splays in W   the generator leans a box in all three of its ground directions at once,
+##                          so a base as deep in W as the deck at its foot was barely half as deep
+##                          at the top: a slice near the deck's W end showed the deck floating with
+##                          nothing under it. Now its foot is as much deeper in W as it is wider in
+##                          x and z, and its top holds the deck's whole W depth: legs that splay
+##                          in four directions, like the tower's own shape but in 4D.
+##   the rail is 2.4 apart  a 1.2 grid put a post in the middle of the ladder's opening and cost 12,900
+##                          tetrahedra; at 2.4 the posts stand either side of the ladder.
+##   the hut's slats 0.75   14,400 tetrahedra at 0.6, most of them in W layers no slice shows at once.
+## `PenLayout/scripts/_study_tower_cells_runner.gd` counts the tetrahedra part by part.
 @export var fence_frame: bool = false:
 	set(v):
 		fence_frame = v
@@ -266,12 +279,25 @@ func _build_legs(h: float, half: float, wd: float) -> void:
 			_strut("Girt", Vector4(cc.x, y1, cc.y, 0.0), Vector4(cd.x, y1, cd.y, 0.0), 0.12, wd, steel)
 
 
-## The concrete blocks under the legs alone, for the fence frame (whose posts are the legs).
+## The concrete blocks under the legs alone, for the fence frame (whose posts are the legs): as long
+## in W as the base's splayed foot.
 func _build_pads(_h: float, half: float, wd: float) -> void:
 	var foot: float = half + splay
 	for sx in [-1.0, 1.0]:
 		for sz in [-1.0, 1.0]:
-			_box("Pad", Vector4(sx * foot, 0.1, sz * foot, 0.0), Vector4(1.1, 1.0, 1.1, wd), Color(0.44, 0.43, 0.40))
+			_box("Pad", Vector4(sx * foot, 0.1, sz * foot, 0.0), Vector4(1.1, 1.0, 1.1, _pad_w(half, wd)), Color(0.44, 0.43, 0.40))
+
+
+## How deep in W the pads (and their colliders) are: the cab's depth on the old frame, the fence
+## base's splayed foot and a margin on the new one.
+func _pad_w(half: float, wd: float) -> float:
+	return _base_foot_w(half, wd) + 1.1 if fence_frame else wd
+
+
+## The fence base's depth in W at its foot: the deck's depth, splayed as much as the legs are in x
+## and z, so that after the generator's lean its top is the deck's whole depth (see fence_frame).
+func _base_foot_w(half: float, wd: float) -> float:
+	return wd * (half + splay) / (half - 0.12)
 
 
 ## The base as one fence box (see fence_frame): from the pads' tops to the deck, leaning in from
@@ -279,7 +305,7 @@ func _build_pads(_h: float, half: float, wd: float) -> void:
 func _fence_base(h: float, half: float, wd: float) -> void:
 	var foot: float = half + splay
 	var top: float = half - 0.12
-	_fence("FenceBase", Vector3(foot * 2.0, foot * 2.0, wd), h - 0.5, fence_spacing, fence_rings, 0.05,
+	_fence("FenceBase", Vector3(foot * 2.0, foot * 2.0, _base_foot_w(half, wd)), h - 0.5, fence_spacing, fence_rings, 0.05,
 		fence_post, top / foot, Vector4(0.0, 0.5, 0.0, 0.0), steel)
 
 
@@ -320,11 +346,15 @@ func _build_ladder(h: float, half: float, wd: float) -> void:
 	# On the south face, the pen's side. Straight up from the ground to a hatch in the catwalk,
 	# well clear of the splayed legs.
 	var z: float = ladder_z()
+	# With the fence frame, a ladder as deep in W as you can climb it from (the Lookout's
+	# ladder_reach_w, 1.2 either side): as deep as the cab, its rails read as two 6.4 m plates the
+	# moment the slice turns into W, the flatness Ramon saw (6 Oct).
+	var lwd: float = 2.4 if fence_frame else wd
 	for side in [-0.32, 0.32]:
-		_box("LadderRail", Vector4(side, h * 0.5 - 0.3, z, 0.0), Vector4(0.06, h + 0.6, 0.06, wd), steel)
+		_box("LadderRail", Vector4(side, h * 0.5 - 0.3, z, 0.0), Vector4(0.06, h + 0.6, 0.06, lwd), steel)
 	var rungs: int = int(h / 0.35)
 	for i in rungs:
-		_box("Rung", Vector4(0.0, 0.3 + float(i) * 0.35, z, 0.0), Vector4(0.64, 0.04, 0.04, wd), steel)
+		_box("Rung", Vector4(0.0, 0.3 + float(i) * 0.35, z, 0.0), Vector4(0.64, 0.04, 0.04, lwd), steel)
 	# At the foot: a slab to stand on. (Wren's notice board stood beside it; removed, Ramon, 2 Oct.)
 	_box("LadderSlab", Vector4(0.0, 0.04, z + 0.7, 0.0), Vector4(1.8, 0.08, 1.6, wd), Color(0.42, 0.41, 0.38))
 	# A stand-off to the catwalk at the top. (Two "cage hoop" bars stood behind the ladder's top
@@ -433,7 +463,7 @@ func _build_colliders(_h: float, half: float, wd: float) -> void:
 		for sz in [-1.0, 1.0]:
 			var shape := CollisionShape4D.new()
 			var box := BoxShape4D.new()
-			box.size = Vector4(1.1, 2.4, 1.1, wd)
+			box.size = Vector4(1.1, 2.4, 1.1, _pad_w(half, wd))
 			shape.shape = box
 			# Round the block, which is the widest thing at the height you walk into.
 			shape.position = Vector4(sx * foot, 1.2, sz * foot, 0.0)
@@ -559,10 +589,12 @@ func _build_balcony(h: float, _frame_half: float, wd: float) -> void:
 		var x: float = lerpf(-half + 0.3, half - 0.3, float(k) / 4.0)
 		_box("Joist", Vector4(x, h - 0.36, 0.0, 0.0), Vector4(0.14, 0.2, deck_size - 0.2, wd), steel)
 	# Railings: posts, a top rail and a mid rail on the four edges, a gap at the ladder. (With the
-	# fence frame, one fence box round the deck instead, its W ends included; it has no gap.)
+	# fence frame, one fence box round the deck instead, its W ends included. It has no gap, but at
+	# 2.4 its posts stand either side of the ladder, three spans a side and three layers in W, none
+	# on the farm's slice; at 1.2 there was a post in the middle of the ladder's opening.)
 	var posts: int = 6 if not fence_frame else -1
 	if fence_frame:
-		_fence("FenceRail", Vector3(deck_size - 0.12, deck_size - 0.12, wd - 0.12), rail_height, 1.2, 2, 0.12,
+		_fence("FenceRail", Vector3(deck_size - 0.12, deck_size - 0.12, wd - 0.12), rail_height, 2.4, 2, 0.12,
 			0.08, 1.0, Vector4(0.0, h, 0.0, 0.0), rail)
 	for face in (4 if not fence_frame else 0):
 		var a: Vector2 = _corner(face, half - 0.06)
@@ -595,7 +627,9 @@ func _build_balcony(h: float, _frame_half: float, wd: float) -> void:
 	_box("CabinFloor", Vector4(0.0, h + 0.02, 0.0, 0.0), Vector4(cs, 0.04, cs, wd), floor_colour)
 	if fence_frame:
 		# Slatted walls, the same white, as deep in W as the cabin, the dark panes left behind them.
-		_fence("FenceHut", Vector3(cs, cs, wd), ch, 0.6, 5, 0.45, 0.07, 1.0, Vector4(0.0, h, 0.0, 0.0), wall)
+		# Slats 0.8 apart (spacing 0.75: three spans a side, nine in W, the nearest W layers 0.36 off
+		# the farm's slice), four girts.
+		_fence("FenceHut", Vector3(cs, cs, wd), ch, 0.75, 4, 0.45, 0.07, 1.0, Vector4(0.0, h, 0.0, 0.0), wall)
 		for face in 4:
 			var ax: Vector4 = [Vector4(0, 0, -1, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(-1, 0, 0, 0)][face]
 			var al: Vector4 = Vector4(-ax.z, 0.0, ax.x, 0.0)

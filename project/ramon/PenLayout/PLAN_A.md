@@ -89,6 +89,20 @@ Later the same night (Ramon's notes while it ran):
   to 34,664, shed 1,120 to 6,304, booth 7,240 to 12,104) with no measurable change in frame time.
 - Still open from the plan: the bags on the dial and a checklist line (31), a tilted-slice check (63).
 
+After the plan (6 Oct, Ramon: Trym, the dreamer, the cave, then the tower):
+- Trym getting up and the dreamer's prompt pass again. Both tests were stale, not the pen: Trym
+  rises on F by design since 50e8db7, and the rig's `_slice_xw`/`_slice_zw` went in b27ffa1 (the
+  slice tilt is the rig's basis now). One real bug on the way: Trym aimed his turn from the unit's
+  node, not from himself, so he faced past you.
+- The cave hill: the shoulder over the arch slopes into the dome instead of running out of the
+  hill's back as a flat table; dome and rock face join smoothly; the bake reaches the shoulder's
+  foot. Rebaked. The cave's fade to black ended at nothing along the tunnel: behind the hill, from
+  its back to the field's edge and across the pen's gate, the screen went black. Bounded now, and
+  checked.
+- The tower: the fence frame is live (`units/lookout/lookout.tscn`), its base splayed in W so the
+  deck never floats, the rail's posts either side of the ladder, the hut's slats wider, the ladder
+  2.4 deep in W. 23,192 tetrahedra (34,664 on the first build).
+
 Learned on the way:
 - **The fence generator's ribs are full-height plates along its grid lines.** Where the slice falls
   on a grid layer in W they read as solid walls (the tower's base was a solid pyramid from the

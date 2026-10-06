@@ -9,6 +9,7 @@ metadata/move_me = "Move (or turn) this node to move the whole Lookout: the towe
 
 [node name="Lookout" type="Node4D" parent="."]
 script = ExtResource("lk_tower")
+fence_frame = true
 
 [node name="Wren" type="Node4D" parent="."]
 position = Vector4(3.3, 0, 6.2, 0)
