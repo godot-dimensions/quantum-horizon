@@ -4,12 +4,12 @@ extends Node
 ## ShootingGalleryRamon/scripts/range_way_home_ramon.gd (that range is not changed, CLAUDE.md).
 ##
 ## It does nothing unless the pen left a way home on the tree root (chickenpen/scripts/
-## pen_range_trip_4d.gd; today the pen still sends you to the old range, and only Ramon decides when
-## this one goes live). Launched from the menu there is none, and the return prompt goes to the menu.
-## When there is one, the prompt is relabelled and its key taken here first (in _input, ahead of the
-## prompt's own _unhandled_input), so the same key in the same corner goes back to the pen. Escape does
-## the same: the shared player.gd sends Escape to the old team menu, which lost the parked pen
-## (follow_up/quantum_range.md, finding 4); this range never does.
+## pen_range_trip_4d.gd, which sends you here since 5 Oct). Launched from the menu there is none, and
+## the menu takes H and Escape itself. When there is one, the prompt is relabelled and its key taken
+## here first (in _input, ahead of the prompt's own _unhandled_input), so the same key in the same
+## corner goes back to the pen. Escape goes back to the pen too, as it goes back to the menu from the
+## menu (it only freed the mouse here until 5 Oct). The old range's shared player.gd sent Escape to the
+## old team menu, which lost the parked pen (follow_up/quantum_range.md, finding 4).
 
 const WAY_HOME := "chickenpen_way_home"
 const WAY_HOME_LABEL := "chickenpen_way_home_label"
@@ -41,7 +41,7 @@ func _input(event: InputEvent) -> void:
 	if not _home.is_valid():
 		return
 	var key := event as InputEventKey
-	if key == null or not key.pressed or key.echo or key.keycode != _key:
+	if key == null or not key.pressed or key.echo or (key.keycode != _key and key.keycode != KEY_ESCAPE):
 		return
 	get_viewport().set_input_as_handled()
 	_home.call()

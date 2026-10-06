@@ -7,8 +7,10 @@ It is a new scene. Neither old range is changed:
 - Trym's `sandbox/shooting_gallery/shooting_gallery.tscn` stays as it is.
 - Ramon's `ShootingGalleryRamon/shooting_gallery_ramon.tscn` stays as it is.
 - **The final menu opens this range** (Ramon, 5 Oct evening: "connect the new range to the
-  final menu"). Its Quantum Range entry points here and plays a new clip. The pen's range trip
-  still goes to the old range.
+  final menu"). Its Quantum Range entry points here and plays a new clip.
+- **So does the pen's range trip** (Ramon: "yes it should sent to the new range"). The one-line
+  change is in `chickenpen/scripts/pen_range_trip_4d.gd` (`gallery_path`), left uncommitted
+  because the pen is not this window's to commit.
 
 The study of the two old ranges is in `quantum_range.md`.
 
@@ -46,10 +48,10 @@ first card to the results, at 30 fps (`range_locate.avi` 18 s, `range_charge.avi
 
 Each was settled during the run with the most reversible option, and the run carried on.
 
-1. **The pen's range trip.** The final menu opens this range now (section "In the menu"). The
-   pen's range master still sends you to the old one
-   (`chickenpen/scripts/pen_range_trip_4d.gd`). Switch that too? The range already has the way
-   home for it (`range_way_home_4d.gd`).
+1. **The pen's own range runner.** The pen's range master sends you here now. But
+   `chickenpen/scripts/_verify_range_runner.gd` still names the old gallery in its `GALLERY`
+   constant, so its "yes opens the shooting gallery" check now fails. I did not touch it. The
+   same checks pass against this range in `scripts/_verify_pen_trip_runner.gd` (18 of 18).
 2. **Walking out to the walls.** From the firing line the walls' headings read, but their
    tables do not (about 13 m away, 60° to the side). So while no experiment runs you can walk
    downrange as far as the walls, and START puts you back on the line facing downrange. During
@@ -571,6 +573,19 @@ ffmpeg -framerate 30 -i smoke_test_output/quantum_range/clip_frames/%04d.png -c:
 (the first from `project/ramon/QuantumRange`, the second from `project/`). The runner prints
 each shot's outcome. The ring gates are placed at random, so if a ring shot prints a miss,
 run it again.
+
+**From the pen** (`scripts/_verify_pen_trip_runner.gd`, 18 checks, frames in
+`smoke_test_output/quantum_range/pen_trip/`):
+
+- the range master's yes parks the pen and opens this range, its prompt reading BACK TO THE
+  CHICKEN PEN;
+- a stage plays there;
+- H brings back the same pen, with the belt, the camera and the checklist tick;
+- a second trip, left by Escape, does the same.
+
+Escape going home is new. `range_way_home_4d.gd` took only H, and Escape just freed the mouse,
+although its header said otherwise. Escape now goes back to the pen, as it goes back to the
+menu from the menu.
 
 **Fixed on the way:**
 
