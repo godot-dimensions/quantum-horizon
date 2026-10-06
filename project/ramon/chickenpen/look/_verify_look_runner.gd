@@ -4,7 +4,8 @@ extends SceneTree
 ## opens it, in the dev look, then taken apart.
 ##   1. it opens in DEV, the art drawn under the curtain first
 ##   2. no node hidden by the look; every collider still there
-##   3. the blockouts are there, as children of their landmarks, never saved (no owner)
+##   3. the blockouts are there, as children of their landmarks, never saved (no owner); the cave's
+##      hill its own coarse bake
 ##   4. the ground shows the dev floor in DEV and its paint in ART
 ##   5. fifty switches: every mesh and material back as it was each time
 ##   6. the cinema held in ART while away, DEV again after
@@ -124,8 +125,13 @@ func _run() -> void:
 		blocks.append(node)
 	var parents: Array = blocks.map(func(b) -> String: return String((b as Node).get_parent().name))
 	print("   blockouts on: %s" % ", ".join(PackedStringArray(parents)))
-	for want in ["Lookout", "CaveHill", "Shed", "Oak", "RockPileSpot"]:
+	for want in ["Lookout", "Oak", "RockPileSpot"]:
 		_check(parents.has(want), "3 %s has its blockout" % want)
+	# The cave keeps its own shape, baked coarser (Ramon: "keep the original cave in the greybox
+	# version. just lower res").
+	var hill_mi := _room.get_node("World/Cave/CaveHill") as MeshInstance4D
+	var hill_mesh: String = hill_mi.mesh.resource_path if hill_mi.mesh != null else "none"
+	_check(hill_mesh.ends_with("cave_hill_low.res"), "3 the cave's hill shows its coarse bake (%s)" % hill_mesh.get_file())
 	_check(blocks.all(func(b) -> bool: return (b as Node).owner == null), "3 no blockout would be saved (no owner)")
 	# 4.
 	var grass: Node = _room.get_node("World/Grass")

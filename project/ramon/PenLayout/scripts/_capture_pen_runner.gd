@@ -220,6 +220,33 @@ const SETS := {
 		{"name": "east", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0},
 		{"name": "top", "top": Vector4(-2, 0, 8, 0), "size": 92.0},
 	],
+	# The map from above (Ramon, 6 Oct: "create a topview of the current map. one in dev look, one in
+	# final look"): the farm's slice, every path shown (not found-as-you-go), no panels. Run once with
+	# PEN_LOOK=dev and once with PEN_LOOK=art.
+	"topmap": [
+		{"name": "map", "top": Vector4(-2, 0, 8, 0), "size": 96.0, "paths": {"reveal": false},
+			"set": {"UI/GrassPanel": {"process_mode": Node.PROCESS_MODE_DISABLED}}, "hide": ["UI/GrassPanel", "Player/StateLabel"]},
+	],
+	# The big oak and the light one beside it (Ramon, 6 Oct: "put an oak next to it, heavily optimised").
+	"oakpen": [
+		{"name": "both", "at": Vector4(-22.0, 1.2, 31.0, 0), "yaw": 180.0, "pitch": 6.0, "distance": 7.0},
+		{"name": "both_far", "at": Vector4(-22.0, 1.2, 24.0, 0), "yaw": 180.0, "pitch": 4.0, "distance": 9.0},
+	],
+	# The cave in the dev look: its own hill baked coarser, not a wedge (Ramon, 6 Oct: "keep the original
+	# cave in the greybox version. just lower res"). Run with PEN_LOOK=dev (and =art to compare).
+	"lowcave": [
+		{"name": "cave", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0},
+		{"name": "cavedoor", "at": Vector4(7.5, 1.2, 37.0, 4.0), "yaw": 0.0, "pitch": -2.0, "distance": 5.0},
+		{"name": "cave_side", "at": Vector4(-4.0, 1.2, 22.0, 0), "yaw": 60.0, "pitch": -10.0, "distance": 8.0},
+	],
+	# The paths close and at a distance, every one shown (Ramon, 6 Oct: "the beige paths look like
+	# they're always clipping"): taken before and after the lift, tag=before / tag=after.
+	"pathclip": [
+		{"name": "fork", "at": Vector4(-4.5, 1.2, 4.5, 0), "yaw": 0.0, "pitch": -22.0, "distance": 7.0, "paths": {"reveal": false}},
+		{"name": "long", "at": Vector4(-8.0, 1.2, 12.0, 0), "yaw": 160.0, "pitch": -10.0, "distance": 5.0, "paths": {"reveal": false}},
+		{"name": "ring", "at": Vector4(9.0, 1.2, 4.0, 0), "yaw": -70.0, "pitch": -12.0, "distance": 6.0, "paths": {"reveal": false}},
+		{"name": "start", "at": Vector4(4.0, 1.2, 40.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 6.0, "paths": {"reveal": false}},
+	],
 	# The dev palette, three ways (PenLayout/PLAN_DEV_LOOK.md step 10): A the defaults, B lighter,
 	# C darker. Run in the dev look (PEN_LOOK=dev).
 	"lookpalette": [
@@ -495,7 +522,7 @@ func _run() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	var set_name: String = args[0] if args.size() > 0 else "before"
 	var scene: String = args[1] if args.size() > 1 and not args[1].contains("=") else "res://ramon/chickenpen/playable_world.tscn"
-	var shots: Array = SETS[set_name]
+	var shots: Array = SETS[set_name] if SETS.has(set_name) else _tiles(set_name)
 	# tag=<name>: frames into <set>_<name>/, so one set can be taken before and after a change.
 	var tag: String = ""
 	for a in args:
@@ -616,6 +643,38 @@ func _run() -> void:
 		print("FRAME %s" % path)
 	print("CAPTURE DONE %s: %d frames" % [set_name, shots.size()])
 	quit(0)
+
+
+## A map from above too big for one frame, in tiles (Ramon, 6 Oct: "i need higher res capture of both
+## topviews"): [member TILES]' rows and columns of top shots, each [code]tile_h[/code] metres tall
+## and as wide as the window's aspect makes it, named t_<row>_<col> from the north-west corner. The
+## camera is orthographic, so the tiles meet exactly; scratchpad stitch_tiles.py joins them.
+const TILES := {
+	"topmap_hi": {"centre": Vector2(-2.0, 8.0), "rows": 4, "cols": 3, "tile_h": 24.0, "like": "topmap"},
+}
+
+
+func _tiles(set_name: String) -> Array:
+	var spec: Dictionary = TILES[set_name]
+	var like: Dictionary = (SETS[spec["like"]] as Array)[0]
+	var size: Vector2 = Vector2(root.size)
+	var tile_h: float = spec["tile_h"]
+	var tile_w: float = tile_h * size.x / size.y
+	var rows: int = spec["rows"]
+	var cols: int = spec["cols"]
+	var centre: Vector2 = spec["centre"]
+	var out: Array = []
+	for r in rows:
+		for c in cols:
+			var shot: Dictionary = like.duplicate(true)
+			var x: float = centre.x + (float(c) + 0.5 - float(cols) * 0.5) * tile_w
+			var z: float = centre.y + (float(r) + 0.5 - float(rows) * 0.5) * tile_h
+			shot["name"] = "t_%d_%d" % [r, c]
+			shot["top"] = Vector4(x, 0.0, z, 0.0)
+			shot["size"] = tile_h
+			out.append(shot)
+	print("TILES %s: %d x %d, each %.2f x %.2f m, %.1f px a metre" % [set_name, rows, cols, tile_w, tile_h, size.y / tile_h])
+	return out
 
 
 ## The player run to [param p] at 3 m/s, a frame at a time (reveal finds by nearness each frame).

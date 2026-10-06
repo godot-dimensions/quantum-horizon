@@ -371,22 +371,33 @@ func _extent_at_height(y: float) -> float:
 
 ## Where to stand to be taken through: the back of the tunnel, the full width of its floor.
 ## [centre, half-size].
+##
+## AS WIDE AS THE DARK (6 Oct, Ramon: "when you enter the cave it gets dark and you dont get
+## teleported"). The box was 0.7 of the arch across in x and W, while the fade
+## (pen_cave_fade_4d.gd) goes black over the arch's whole width and half a metre more. With the cave
+## four metres ana, walking in along a wall, or only just far enough ana to find the opening,
+## went black and stayed black. Now the box is the fade's width: wherever the screen is black at the
+## back, you go. Nothing outside the tunnel is reachable at that depth (the hill is solid there).
 func way_in() -> Array:
 	var into: float = TUNNEL_DEPTH - 1.6
+	var half: float = ARCH_HALF_WIDTH + 0.5
 	return [Vector4(MOUTH.x, 1.2, MOUTH.z - into, MOUTH.w),
-		Vector4(ARCH_HALF_WIDTH * 0.7, 1.4, 1.0, ARCH_HALF_WIDTH * 0.7)]
+		Vector4(half, 1.4, 1.0, half)]
 
 
-func bake() -> TerrainBake.Builder:
+## [param dome_cell] the dome's grid (metres) and [param grid] the rock block's voxels a side: the pen's
+## own bake at the defaults; the dev look's greybox cave (look/pen_look_4d.gd, Ramon 6 Oct: "keep the
+## original cave in the greybox version. just lower res") at about half (look/_bake_low_cave_runner.gd).
+func bake(dome_cell: float = 1.35, grid: int = BLOCK_GRID) -> TerrainBake.Builder:
 	# The box reaches seven metres in front of the mouth (6 Oct): the shoulder's slopes either
 	# side of the arch come down to the field out there, and the box used to end 0.4 m behind
 	# the rock face, cutting them off in sheer walls wherever the block did not cover them.
 	var hill: TerrainBake.Builder = TerrainBake.bake_height_box(
 		Vector3(HILL.x - HALF.x * 1.1, HILL.z - HALF.y * 1.1, -HALF.z * 1.1),
 		Vector3(HILL.x + HALF.x * 1.1, maxf(HILL.z + HALF.y * 1.1, MOUTH.z + 7.0), HALF.z * 1.1),
-		1.35, height, colour, [[0.8, 0.5], [3.0, 0.45]], -0.05)
-	var field := VoxelField4D.new(BLOCK_GRID)
-	var cell4: Vector4 = (BLOCK_MAX - BLOCK_MIN) / float(BLOCK_GRID - 1)
+		dome_cell, height, colour, [[0.8, 0.5], [3.0, 0.45]], -0.05)
+	var field := VoxelField4D.new(grid)
+	var cell4: Vector4 = (BLOCK_MAX - BLOCK_MIN) / float(grid - 1)
 	var cell: float = (cell4.x + cell4.y + cell4.z + cell4.w) * 0.25
 	var to_world := func(g: Vector4) -> Vector4:
 		return BLOCK_MIN + g * cell4

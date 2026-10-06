@@ -1,6 +1,6 @@
 # The pen's dev look: handover
 
-6 Oct 2026. The playable world has two looks, DEV and ART, switched in a few milliseconds by **F8**
+6 Oct 2026. The playable world has two looks, DEV and ART, switched in a few milliseconds by **I**
 or the **Look** row at the top of the left-hand panel. The pen opens in DEV the first time in a
 session and then keeps the last choice. Plan: `PenLayout/PLAN_DEV_LOOK.md`; why it is built this
 way: `PenLayout/DEV_LOOK_STUDY.md`.
@@ -10,11 +10,10 @@ way: `PenLayout/DEV_LOOK_STUDY.md`.
 1. **Colours.** Landmarks are blue, what you use is red (the rune stone, laptops, pickups). You said
    "all blue or all red, like the pen": which part of the pen did you mean? Change them in the Look
    node's Palette group.
-2. **Block or clay, per landmark.** Blocks: the Watchstone, the cave, Trym's shed, the oak, the rock
-   pile. Clay (own shapes, one colour): everything else, the marsh with its water kept. Swap any in
+2. **Block or clay, per landmark.** Blocks: the Watchstone, the cave, the oak, the rock pile. Clay (own shapes, one colour): everything else, the marsh with its water kept. Swap any in
    the Look node's `rules`.
 3. **The Watchstone:** a cylinder. Tick `tower_three_blocks` for three stacked blocks.
-4. **The switch:** F8, and the Look row at the top of the left panel. Somewhere else too (the main
+4. **The switch:** I, and the Look row at the top of the left panel (F8 was the first choice, but it is the editor's Stop and ended the game). Somewhere else too (the main
    menu's PLAY THE WORLD)?
 5. **The sky and light in DEV:** a pale blue gradient and neutral light at the pen's own strength
    (the lab's light clipped the white floor). Tune it in the Palette group.
@@ -35,7 +34,7 @@ way: `PenLayout/DEV_LOOK_STUDY.md`.
   - the mountains and the two round hills: light grey;
   - the sky and light: the Creation Lab's bright mood, tuned for a white floor (the Palette
     group on the Look node);
-  - the paths: their dev look (white strips, blue arrows);
+  - the paths: their arrows and symbols alone on the floor, no sand strips under them;
   - every landmark by its rule (below);
   - animals and characters untouched;
   - what you use (the rune stone, laptops, pickups) red.
@@ -51,12 +50,14 @@ way: `PenLayout/DEV_LOOK_STUDY.md`.
 
 ## The rules, per landmark
 
-On the Look node, `rules`: the landmark's node name, and one of:
+On the Look node, `rules`: the landmark's node name (or a name's start with `*`: `Oak*` is every oak,
+Oak, Oak2, OakLite), and one of:
 
 | Rule | What it does | Used for |
 |---|---|---|
-| `"block"` | simple shapes instead | the Watchstone (cylinder; `tower_three_blocks` for three blocks), the cave (a wedge with its door), Trym's shed (a house), the oak, the rock pile |
-| `"clay"` | its own shapes in one flat colour (the default) | the camp, the range, the cabin's yard, the stone wall (its colliders stand full height where the ruin is broken, so a blockout from them misled), the kata wood, the owl tree, the scenery, the pen enclosure, the egg cairn, the posts |
+| `"block"` | simple shapes instead | the Watchstone (cylinder; `tower_three_blocks` for three blocks), every oak, the rock pile |
+| `{"low_mesh": path}` | its own shape baked coarser, in one colour | the cave's hill (Ramon: "keep the original cave in the greybox version. just lower res"): `terrain/baked/cave_hill_low.res`, 12,800 tetrahedra against the hill's 85,000. Rebake after changing the hill's shape (not its place): `lab_run.sh headless low_cave res://ramon/chickenpen/look/_bake_low_cave_runner.gd` |
+| `"clay"` | its own shapes in one flat colour (the default) | the camp, the range, Trym's shed and yard (its walls go so you can look inside while he talks; a blockout would stand in front of that), the stone wall (its colliders stand full height where the ruin is broken, so a blockout from them misled), the kata wood, the owl tree, the scenery, the pen enclosure, the egg cairn, the posts |
 | `"art"` | left as it is | nothing yet |
 | `{"keep": [...], "drop": [...]}` | parts kept as art, parts taken away, the rest clay; `Name*` matches a start | the marsh: its water kept, reeds, tussocks and lily pads gone |
 
@@ -66,6 +67,14 @@ keeper's gate.
 **To give a landmark a blockout:** set its rule to `"block"`. With no builder of its own it gets one
 box over its art; for a shape, add its script's file name to `BUILDERS` in `pen_blockouts_4d.gd`
 and write a builder (a few lines: boxes, cylinders, wedges, gables, in the landmark's frame).
+
+## Changing the world: what follows by itself
+
+One world, two looks: a landmark in DEV is the same node as in ART, so moving, turning, copying or
+deleting one in the editor changes both. Clay is the art's own shapes, so it follows any change to
+them. Blockouts are measured from the landmark when the pen loads. Anything new under World gets the
+dev look by its rule (clay unless named). Only the cave's coarse bake is separate: rebake it when the
+hill's shape changes.
 
 ## Moving things
 

@@ -301,9 +301,19 @@ void fragment() {
 		col = dev_sand.rgb;
 	}
 	ALBEDO = mix(ground, col, cov);
-	// The pixel with the most sand wins where boxes overlap: pushed back along the view by how much
-	// sand it lacks, so a soft edge never draws over another strip's middle.
-	vec3 back = VERTEX + normalize(VERTEX) * depth_push * (1.0 - cov);
+	// The pixel deepest in its own sand wins where boxes overlap: pushed back along the view by how
+	// much sand it lacks AND by how near its edge it is, so neither a soft edge nor a worn band ever
+	// draws over another strip's middle.
+	//
+	// THE WORN BAND COUNTS TOO (6 Oct, Ramon: "the beige paths look like they're always clipping ...
+	// a miniature offset differential that's unnoticeable to the eye"). The push used to follow the
+	// cover alone, and the worn band is all cover: darkened toward the ground but level with the next
+	// strip's middle, so at every joint the two fought and the worn one won in places, darker wedges
+	// cut straight by a strip's end. Now the push grows from the middle out through the worn band and
+	// the soft edge, twice depth_push at most: millimetres, never through the ground 13 mm below even
+	// at a grazing view, and nothing the eye can see but the order.
+	float inside = 1.0 - smoothstep(-soft * 2.5, 0.0, d);
+	vec3 back = VERTEX + normalize(VERTEX) * depth_push * ((1.0 - cov) + (1.0 - inside));
 	vec4 clip = PROJECTION_MATRIX * vec4(back, 1.0);
 	DEPTH = clip.z / clip.w;
 }

@@ -7,9 +7,9 @@ extends Node
 ## see the pen, it will be the white dev look. with the toggle just as an option button".
 ##
 ## DEV: the lab's white grid floor, light grey mountains and round hills, the Creation Lab's bright
-## sky and light, the paths' dev look (white strips, blue arrows), and every landmark by its rule
-## (below). ART: the pen exactly as it is. F8 (and the Look row on the left-hand panel) switches; it
-## takes a few milliseconds.
+## sky and light, the paths' arrows alone on the floor, and every landmark by its rule (below). ART:
+## the pen exactly as it is. I (and the Look row on the left-hand panel) switches; it takes a few
+## milliseconds.
 ##
 ## ONE WORLD, NOT TWO SCENES. A landmark and its dev look are the same node, so moving either in the
 ## editor moves both (the 4D editor selects an instanced unit's root when any of its meshes is
@@ -19,11 +19,12 @@ extends Node
 ## markers and the slice dial's outlines all stop when their node is hidden. A landmark's art has
 ## its mesh taken off (kept, and put back) or a flat material laid over it; only the picture changes.
 ##
-## THE RULES, per landmark ([member rules]: its node's name; the nearest one up from a mesh wins):
+## THE RULES, per landmark ([member rules]: its node's name, or a name's start ending in * for every
+## copy, "Oak*" for every oak; the nearest one up from a mesh wins):
 ##   "block"  simple shapes instead (look/pen_blockouts_4d.gd: the Watchstone a cylinder or three
-##            blocks, the cave a wedge with its door, Trym's shed a house, the oak, the rock pile;
-##            anything else a box over its art). The stone wall is clay: drawn from its colliders it
-##            stood full height where the ruin is broken down, which misled.
+##            blocks, the oak, the rock pile; anything else a box over its art). The stone wall is clay: drawn from its colliders it stood full height where
+##            the ruin is broken down, which misled. Trym's shed is clay too: its walls go so you can
+##            look inside while he talks, and a blockout would stand in front of that (Ramon).
 ##   "clay"   its own shapes in one flat colour (the default, for anything not named)
 ##   "art"    left as it is
 ##   {"keep": [names], "drop": [names]}  parts kept as art, parts taken away, the rest in clay; a name
@@ -32,6 +33,9 @@ extends Node
 ##            The marsh: its water and sand rim kept, its reeds, tussocks and lily pads gone, its
 ##            stones and dead tree in clay (Ramon: "the marsh water, you can keep it, just the water
 ##            circles, without the grass").
+##   {"low_mesh": path}  the landmark's own shape baked coarser, in clay. The cave's hill (Ramon: "keep
+##            the original cave in the greybox version. just lower res"; it was a wedge with a door):
+##            terrain/baked/cave_hill_low.res, from look/_bake_low_cave_runner.gd.
 ## Animals and characters are never touched (Ramon: "the animals and the npc's those can stay as they
 ## are in dev mode"); what you use (the rune stone, laptops, pickups) is red.
 ##
@@ -65,7 +69,9 @@ signal look_changed(dev: bool)
 
 ## Off: the pen exactly as it was, no switch.
 @export var enabled: bool = true
-@export var key: Key = KEY_F8
+## I, not F8: the editor's Stop is F8, and it stopped the game when the game window had focus
+## (Ramon, 6 Oct). I is free in the pen and in the editor.
+@export var key: Key = KEY_I
 ## How the pen opens the first time in a session (then it keeps what was last chosen).
 @export var opens_in_dev: bool = true
 ## What the editor shows when the pen is open in it.
@@ -84,7 +90,7 @@ signal look_changed(dev: bool)
 			_set_applied(true)
 ## Per landmark, by node name (see the header).
 @export var rules: Dictionary = {
-	"Lookout": "block", "CaveHill": "block", "Shed": "block", "Oak": "block", "RockPileSpot": "block", "StoneWall": "clay",
+	"Lookout": "block", "CaveHill": {"low_mesh": "res://ramon/chickenpen/terrain/baked/cave_hill_low.res"}, "Oak*": "block", "RockPileSpot": "block", "StoneWall": "clay", "Shed": "clay",
 	"AnaMarsh": {"keep_colour": [Color(0.24, 0.34, 0.36), Color(0.312, 0.394, 0.378), Color(0.16, 0.25, 0.28), Color(0.64, 0.47, 0.29)],
 		"drop": ["Reeds*"], "drop_green": true},
 	"EggCamp": "clay", "Range": "clay", "TrymCabin": "clay", "KataWood": "clay", "OwlTree": "clay", "Scenery": "clay",
@@ -135,6 +141,8 @@ var _blockouts: Dictionary = {}
 var _block_nodes: Array = []
 var _pen_frame: MeshInstance4D
 var _mats: Dictionary = {}
+## The coarse meshes "low_mesh" rules show, by path.
+var _lows: Dictionary = {}
 var _note: Label
 var _note_left: float = 0.0
 var _ready_done: bool = false
@@ -336,7 +344,7 @@ func _art_meshes() -> Array:
 
 ## A mesh into the dev look by its rule: taken off, laid over, or left.
 func _take(mi: MeshInstance4D) -> void:
-	if mi.has_meta(OWN) or _saved_mesh.has(mi) or _saved_mat.has(mi) or not mi.visible:
+	if mi.has_meta(OWN) or _saved_mesh.has(mi) or _saved_mat.has(mi):
 		return
 	var role: String = _role(mi)
 	if role == "" or role == "art":
@@ -347,6 +355,13 @@ func _take(mi: MeshInstance4D) -> void:
 	var r: Array = _rule_of(mi)
 	var rule: Variant = r[0]
 	if rule is Dictionary:
+		if rule.has("low_mesh") and mi == r[1]:
+			var low: Mesh4D = _low(String(rule["low_mesh"]))
+			if low != null and mi.visible:
+				_saved_mesh[mi] = mi.mesh
+				mi.mesh = low
+			_lay(mi, _mat("landmark", landmark_colour))
+			return
 		var part: String = String(mi.name)
 		var c: Color = _albedo(mi)
 		if _matches(part, rule.get("keep", [])) or _colour_in(c, rule.get("keep_colour", [])):
@@ -397,11 +412,24 @@ func _rule_of(mi: Node) -> Array:
 	var n: Node = mi
 	var unit: Node = mi
 	while n != null and n != _room and n != _world:
-		if rules.has(String(n.name)):
-			return [rules[String(n.name)], n]
+		var key: String = _rule_key(String(n.name))
+		if key != "":
+			return [rules[key], n]
 		unit = n
 		n = n.get_parent()
 	return ["clay", unit]
+
+
+## The [member rules] key for a node called [param name]: its own name, or a key ending in * that its
+## name starts with (copies: Oak, Oak2, OakLite), or "" for none.
+func _rule_key(name: String) -> String:
+	if rules.has(name):
+		return name
+	for k in rules:
+		var s: String = String(k)
+		if s.ends_with("*") and name.begins_with(s.trim_suffix("*")):
+			return s
+	return ""
 
 
 ## The colour a part is drawn in (its material's), or clear when it has none to read.
@@ -436,7 +464,12 @@ static func _matches(part: String, patterns: Array) -> bool:
 	return false
 
 
+## Its mesh taken off, kept to put back. Never a hidden one: hidden parts are what their owners keep
+## for later (the Watchstone's stones, merged at run time from their meshes); a hidden part is only
+## ever recoloured, so the shed's roof comes back in clay if it was open when the look switched.
 func _strip(mi: MeshInstance4D) -> void:
+	if not mi.visible:
+		return
 	_saved_mesh[mi] = mi.mesh
 	mi.mesh = null
 
@@ -446,6 +479,13 @@ func _lay(mi: MeshInstance4D, m: Material4D) -> void:
 		return
 	_saved_mat[mi] = mi.material_override
 	mi.material_override = m
+
+
+## A "low_mesh" rule's mesh, loaded once; null (the art stays, in clay) if it has not been baked.
+func _low(path: String) -> Mesh4D:
+	if not _lows.has(path):
+		_lows[path] = load(path) as Mesh4D if ResourceLoader.exists(path) else null
+	return _lows[path]
 
 
 func _mat(key: String, colour: Color) -> TetraMaterial4D:
@@ -482,7 +522,7 @@ func _blockout(root: Node) -> void:
 
 func _restore() -> void:
 	for mi in _saved_mesh:
-		if is_instance_valid(mi) and (mi as MeshInstance4D).mesh == null:
+		if is_instance_valid(mi) and ((mi as MeshInstance4D).mesh == null or (mi as MeshInstance4D).mesh in _lows.values()):
 			(mi as MeshInstance4D).mesh = _saved_mesh[mi]
 	_saved_mesh.clear()
 	for mi in _saved_mat:
@@ -543,6 +583,12 @@ func _paths(on: bool) -> void:
 	if on:
 		_saved_on["paths_dev"] = bool(paths.call("is_dev"))
 		paths.call("set_dev", true)
+		# Clean arrows on the floor (Ramon, 6 Oct: "the white under the arrows is not white but the dev
+		# look"): no sand strips or pads under them, and the marks' soft edges blend into the floor's grey.
+		var net: Node = _world.get_node_or_null("Paths")
+		if net != null:
+			net.set("show_sand", false)
+			net.set("under_color", floor_colour)
 	elif _saved_on.has("paths_dev"):
 		paths.call("set_dev", bool(_saved_on["paths_dev"]))
 		_saved_on.erase("paths_dev")
@@ -558,9 +604,9 @@ func _switches(on: bool) -> void:
 	var grass: Node = _world.get_node_or_null("Grass")
 	if grass != null:
 		targets.append(grass)
-	var oak: Node = _world.get_node_or_null("Oak")
-	if oak != null and oak.get("leaves") is Node:
-		targets.append(oak.get("leaves"))
+	for oak in get_tree().get_nodes_in_group(&"pen_oak"):
+		if oak.get("leaves") is Node:
+			targets.append(oak.get("leaves"))
 	for t in targets:
 		if not ("enabled" in t):
 			continue

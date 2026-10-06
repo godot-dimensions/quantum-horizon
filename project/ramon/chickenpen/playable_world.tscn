@@ -3301,6 +3301,12 @@ position = Vector4(-17, 0, 41, 0)
 script = ExtResource("pen_oak")
 metadata/what = "The Arboretum's big oak beside Trym's shed, its own baked wood and GPU leaves (Ramon, 6 Oct)."
 
+[node name="OakLite" type="Node4D" parent="World"]
+position = Vector4(-27, 0, 43, 0)
+script = ExtResource("pen_oak")
+bake = "oak_lite2"
+metadata/what = "The light oak for placing about the pen (Ramon, 6 Oct: \"heavily optimised so i can start placing them\"): the same oak baked lighter, about 0.15 ms of GPU a tree against the big oak's 1.1, drawn only when your slice cuts it. Duplicate it (OakLite2, ...) or instance units/oak/oak_lite.tscn; bake picks oak_lite1 (fuller) to oak_lite3 (sparest)."
+
 [node name="EggCamp" parent="World" instance=ExtResource("unit_camp")]
 position = Vector4(20, 0, -2, -2.5)
 ground_patch = false
