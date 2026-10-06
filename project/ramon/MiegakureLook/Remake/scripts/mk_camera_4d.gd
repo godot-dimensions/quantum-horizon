@@ -116,6 +116,9 @@ func in_intro() -> bool:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _intro_t >= 0.0:
+		var fk := event as InputEventKey
+		if fk != null and fk.keycode in [KEY_F1, KEY_F2]:
+			return # the dev panel's keys pass through the opening shot
 		if (event is InputEventKey and event.pressed) or (event is InputEventMouseButton and event.pressed):
 			_intro_t = maxf(_intro_t, intro_seconds * 0.8)
 			get_viewport().set_input_as_handled()

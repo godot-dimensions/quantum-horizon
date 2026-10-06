@@ -178,7 +178,7 @@ func _draw() -> void:
 		var wy: float = w_to_y.call(walker.global_position.w)
 		draw_rect(Rect2(Vector2(col_x - 4, wy - 2.5), Vector2(48, 5)), YOU)
 	# KEYS
-	var keys := "WASD walk    SPACE jump    RIGHT MOUSE turn into W (drag: by hand)    E lift / put down    CLICK strike    R restart    F hint"
+	var keys := "WASD walk    SPACE jump    RIGHT MOUSE turn into W (drag: by hand)    E lift / put down    CLICK strike    R restart    F hint    F2 light"
 	var kw: float = _body.get_string_size(keys, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x + 40
 	# Centred in the room right of the shared BACK TO MENU button (bottom left, about 270 px wide).
 	var left: float = 296.0

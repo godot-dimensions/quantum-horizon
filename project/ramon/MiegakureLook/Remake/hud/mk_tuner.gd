@@ -13,7 +13,8 @@ extends PanelContainer
 ##            when the view is turned into W
 ##   CAMERA   the diorama's pitch, yaw, distance and lens
 ##
-## Hidden until F1 (the lab's rule: nothing on screen advertises it). Esc frees the mouse to drag.
+## Hidden until F1 or F2. Unlike the lab's, it is named on the keys strip (Ramon could not find it,
+## 6 Oct). Esc frees the mouse to drag.
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -58,7 +59,7 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation", 3)
 	add_child(box)
 	var title := Label.new()
-	title.text = "ARTIST DEV PANEL  ·  internal use  ·  F1 to close  ·  [ ] previous / next island"
+	title.text = "ARTIST DEV PANEL  ·  F1 / F2 to close  ·  Esc frees the mouse  ·  [ ] previous / next island"
 	title.add_theme_font_override("font", load(FONT_BOLD))
 	title.add_theme_font_size_override("font_size", FONT)
 	box.add_child(title)
@@ -183,7 +184,9 @@ func _load_camera() -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	var k := event as InputEventKey
-	if k != null and k.pressed and not k.echo and k.keycode == KEY_F1:
+	# F1 or F2 (Ramon reached for F2 first, as in the Creation Lab; and on some keyboards one of the
+	# F-keys is a media key unless Fn is held), by the key's letter or its place on the keyboard.
+	if k != null and k.pressed and not k.echo and (k.keycode in [KEY_F1, KEY_F2] or k.physical_keycode in [KEY_F1, KEY_F2]):
 		visible = not visible
 		if visible:
 			for key in _sliders:

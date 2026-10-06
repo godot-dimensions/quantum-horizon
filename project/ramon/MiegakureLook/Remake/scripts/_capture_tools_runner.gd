@@ -57,12 +57,12 @@ func _process(delta: float) -> bool:
 	match _step:
 		0:
 			if _t > 1.2:
-				_key(KEY_F1)
+				_key(KEY_F2)
 				_next()
 		1:
 			if _t > 0.6:
 				var tuner: Control = _game.get("tuner")
-				_check(tuner.visible, "F1 opens the dev panel")
+				_check(tuner.visible, "F2 opens the dev panel")
 				_save("01_dev_panel")
 				var env: Node = _game.get("env")
 				env.call("set_value", "spot_strength", 20.0)
