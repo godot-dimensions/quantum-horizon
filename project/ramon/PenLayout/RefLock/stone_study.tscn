@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=4]
+
+[ext_resource type="Script" path="res://ramon/PenLayout/RefLock/stone_study_4d.gd" id="study"]
+
+[node name="StoneStudy" type="Node4D"]
+script = ExtResource("study")

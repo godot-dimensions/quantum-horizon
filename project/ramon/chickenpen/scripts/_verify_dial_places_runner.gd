@@ -10,7 +10,7 @@ extends SceneTree
 ##   godot... --path project --windowed --resolution 1920x1080 --position 0,0
 ##       --script res://ramon/chickenpen/scripts/_verify_dial_places_runner.gd
 
-const WANT := {"Lookout": 0.0, "marsh": 8.0, "owl": 1.5, "cave": 0.0}
+const WANT := {"Watchstone": 0.0, "marsh": 8.0, "owl": 1.5, "cave": 0.0}
 
 var _room: Node
 var _player: Node4D
@@ -74,10 +74,10 @@ func _process(dt: float) -> bool:
 					_check("  at w %+.1f" % float(WANT[label]), absf(w - float(WANT[label])) < 0.6, "w %+.2f" % w)
 			# Move the Lookout's site 10 m along x: the tower, marsh and owl were placed off it, the
 			# tower is under it, so the tower's outline moves at once.
-			var before: Vector4 = _middle(found["Lookout"])
+			var before: Vector4 = _middle(found["Watchstone"])
 			var site := _room.get_node("World/LookoutSite") as Node4D
 			site.position += Vector4(10.0, 0.0, 0.0, 0.0)
-			var after: Vector4 = _middle(_outlines()["Lookout"])
+			var after: Vector4 = _middle(_outlines()["Watchstone"])
 			_check("moving the site moves the Lookout's outline", absf(after.x - before.x - 10.0) < 0.01, "%+.2f m" % (after.x - before.x))
 			site.position -= Vector4(10.0, 0.0, 0.0, 0.0)
 			# Met Wren already, so walking up to the tower plays no cutscene (which hides the HUD).

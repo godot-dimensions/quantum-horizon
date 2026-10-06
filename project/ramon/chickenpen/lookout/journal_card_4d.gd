@@ -149,14 +149,18 @@ func _work_rows() -> Array:
 	elif not met:
 		climb = "meet Wren first"
 	var rows: Array = [
-		["Z", "Camera", ("up on the deck, Z" if bool(_lookout.get("station").call("can_raise")) else "on the deck, or in the balloon") if met else "Wren has it",
+		["Z", "Camera", ("up on top, Z" if bool(_lookout.get("station").call("can_raise")) else "on top, or in the balloon") if met else "Wren has it",
 			met and bool(_lookout.get("station").call("can_raise"))],
 		["J", "Field journal", "%d / %d pages, %d photos" % [int(journal.call("pages_found")), total, int(journal.call("star_count"))], true],
-		["B", "Balloon", "up by the tower, B to go" if balloon_up else "not yet", balloon_up],
+		["B", "Balloon", "up by the Watchstone, B to go" if balloon_up else "not yet", balloon_up],
 		["F", "Climb", climb, climb_now],
 		["V", "Align to the slice", "the marsh square on, here" if bool(_lookout.call("can_align")) else "at the marsh, along W", bool(_lookout.call("can_align"))],
 		["F4", "Developer overlay", "W depths, the slice, the numbers", true],
 	]
+	# The Watchstone you walk up: no ladder, so no climb row (PLAN_WATCHSTONE.md step 9).
+	var tower: Node = _lookout.get("tower")
+	if tower != null and tower.has_method("walks_up"):
+		rows.remove_at(3)
 	var next: String = String(_lookout.call("next_hint")) if _lookout.has_method("next_hint") else ""
 	return [rows, next]
 
@@ -165,7 +169,7 @@ func _place() -> void:
 	var font: Font = get_theme_default_font()
 	var data: Array = _rows()
 	var rows: Array = data[0]
-	var widest: float = font.get_string_size("Lookout", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x
+	var widest: float = font.get_string_size("Watchstone", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x
 	for row in rows:
 		var line: String = "%s    %s" % [row[1], row[2]]
 		widest = maxf(widest, 22.0 + 10.0 + font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x)
@@ -222,7 +226,7 @@ func _draw() -> void:
 		draw_rect(Rect2(Vector2(14.0, -6.0), Vector2(34.0, 3.0)), accent * Color(1, 1, 1, clampf(_glow, 0.0, 1.0)))
 	var data: Array = _rows()
 	var y: float = 12.0
-	draw_string(font, Vector2(14.0, y + ascent), "Lookout  ·  photography in W", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size, Color(1, 1, 1, 0.72))
+	draw_string(font, Vector2(14.0, y + ascent), "Watchstone  ·  photography in W", HORIZONTAL_ALIGNMENT_LEFT, -1, text_size, Color(1, 1, 1, 0.72))
 	y += _step()
 	var key_size: int = maxi(text_size - 1, 8)
 	for row in data[0]:

@@ -1,11 +1,13 @@
 extends SceneTree
 
-## The Lookout's story, played through by keys: walking near the tower plays the approach;
-## the ladder will not climb until you have met Wren; talking to her (the real dialogue,
-## Space and number keys) hands you the camera; the first climb gets Wren on the radio;
-## a few photos bring the owl hint; a good photo of the owl plays its reveal; enough photos
-## bring the balloon; climbing down and talking to Wren offers it; the ride goes, Escape
-## twice brings it down, and Wren asks about it after.
+## The Lookout's story on the Watchstone (since 6 Oct, PenLayout/PLAN_WATCHSTONE.md; the
+## watchtower's version is in chickenpen/.backup/2026-10-06_before_watchstone/lookout_tests/),
+## played through by keys: walking near it plays the approach; walking up before meeting Wren is
+## only a walk (no first-climb radio); talking to him on the top (the real dialogue, Space and
+## number keys) hands you the camera; Z puts it up and Wren comes on the radio; a few photos bring
+## the owl hint; a good photo of the owl plays its reveal; enough photos bring the balloon; talking
+## to Wren on the top offers it; the ride goes, Escape twice brings it down, and Wren asks about it
+## after.
 ##
 ## Windowed, small, unfocused; saves res://smoke_test_output/story_<n>_<what>.png. Its own
 ## journal, deleted at the end.
@@ -136,14 +138,17 @@ func _process(d: float) -> bool:
 			_next(3.2)
 		4:
 			_check("the approach is over and the player has control", not bool(_lookout.call("story_busy")) and _player.get("input_enabled") == true)
-			# The ladder is Wren's until you have met her.
-			_put_player((_lookout.get("tower") as Node4D).call("ladder_foot") + Vector4(0, 0.05, 0.3, 0))
-			_next(0.6)
+			# Partway up the boardwalk: the walk-up takes you to the top, Wren or no Wren.
+			var tower: Node4D = _lookout.get("tower")
+			_put_player(tower.call("walk_up_point"))
+			_next(1.4)
 		5:
-			_check("no climbing before meeting Wren", not bool(_lookout.call("can_climb")))
-			_save("ladder_before_wren")
+			var tower: Node4D = _lookout.get("tower")
+			_check("walked up to the top before meeting Wren", bool(tower.call("on_deck", _player.global_position)), str(_player.global_position))
+			_check("only a walk: no first climb yet, no radio", not bool(_journal.call("flag", "first_climb")) and not bool(_lookout.get("radio").call("busy")))
+			_save("top_before_wren")
 			var head: Node4D = _lookout.get("wren_head")
-			_put_player(Vector4(head.global_position.x - 0.4, 0.05, head.global_position.z + 1.6, 0.0))
+			_put_player(Vector4(head.global_position.x - 0.4, head.global_position.y - 1.4, head.global_position.z + 1.6, 0.0))
 			_next(0.8)
 		6:
 			_save("wren_prompt")
@@ -157,17 +162,16 @@ func _process(d: float) -> bool:
 		8:
 			if _talk_through(d):
 				_check("met Wren: the camera is yours", bool(_journal.call("flag", "met_wren")))
-				_check("she no longer carries it", _lookout.get("wren").get("has_camera") == false)
-				_check("the card says to climb", String(_lookout.call("next_hint")).contains("climb"), String(_lookout.call("next_hint")))
-				_put_player((_lookout.get("tower") as Node4D).call("ladder_foot") + Vector4(0, 0.05, 0.3, 0))
+				_check("he no longer carries it", _lookout.get("wren").get("has_camera") == false)
+				_check("met on the top: that was the first time up", bool(_journal.call("flag", "first_climb")))
+				_check("the card says to take a photo", String(_lookout.call("next_hint")).contains("photo"), String(_lookout.call("next_hint")))
 				_next(0.8)
 		9:
-			_check("now the ladder climbs", bool(_lookout.call("can_climb")))
-			_key(KEY_F)
-			_next(float(_station.get("climb_seconds")) + 0.8)
+			_key(KEY_Z)
+			_next(0.8)
 		10:
-			_check("up on the deck, the camera raised", bool(_station.call("up_tower")))
-			_check("Wren on the radio for the first climb", bool(_lookout.get("radio").call("busy")))
+			_check("up on the top, Z raised the camera", bool(_station.call("up_tower")))
+			_check("Wren on the radio for the camera", bool(_lookout.get("radio").call("busy")))
 			_save("first_climb_radio")
 			_photos = 0
 			_next()
@@ -231,12 +235,12 @@ func _process(d: float) -> bool:
 			_check("Wren calls you down for the balloon", bool(_journal.call("flag", "balloon_said")))
 			_check("the balloon is going up by the tower", (_lookout.get("balloon") as Node4D).visible)
 			_check("and the HUD card says B", bool(_lookout.call("can_board")))
-			_station.call("climb_down")
-			_next(float(_station.get("down_seconds")) + 1.0)
+			_key(KEY_Z)
+			_next(1.0)
 		18:
-			_check("back on the ground", int(_station.get("mode")) == 0)
+			_check("the camera down, on the top with Wren", int(_station.get("mode")) == 0)
 			var head: Node4D = _lookout.get("wren_head")
-			_put_player(Vector4(head.global_position.x - 0.4, 0.05, head.global_position.z + 1.6, 0.0))
+			_put_player(Vector4(head.global_position.x - 0.4, head.global_position.y - 1.4, head.global_position.z + 1.6, 0.0))
 			_next(0.8)
 		19:
 			_key(KEY_F)
@@ -265,7 +269,7 @@ func _process(d: float) -> bool:
 			_next(1.0)
 		25:
 			var head: Node4D = _lookout.get("wren_head")
-			_put_player(Vector4(head.global_position.x - 0.4, 0.05, head.global_position.z + 1.6, 0.0))
+			_put_player(Vector4(head.global_position.x - 0.4, head.global_position.y - 1.4, head.global_position.z + 1.6, 0.0))
 			_next(0.8)
 		26:
 			_key(KEY_F)
@@ -277,7 +281,7 @@ func _process(d: float) -> bool:
 			_next()
 		28:
 			if _talk_through(d):
-				_check("she has said her after-ride piece", bool(_journal.call("flag", "after_ride_said")))
+				_check("he has said his after-ride piece", bool(_journal.call("flag", "after_ride_said")))
 				_next(0.3)
 		29:
 			_clean()

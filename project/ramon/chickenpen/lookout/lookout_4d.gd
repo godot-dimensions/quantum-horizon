@@ -365,7 +365,7 @@ func _register_own_subjects() -> void:
 
 func _behave_wren(_s: Dictionary) -> Array:
 	if int(station.get("mode")) == 4:
-		return [4, "Wren at her tower"]
+		return [4, "Wren on the Watchstone"]
 	return [1, "Farm folk"]
 
 
@@ -508,7 +508,7 @@ func on_whistle() -> void:
 
 
 func _build_ladder_prompt() -> void:
-	if tower == null:
+	if tower == null or tower.has_method("walks_up"):
 		return
 	_ladder = Node4D.new()
 	_ladder.name = "LookoutLadder"
@@ -724,7 +724,7 @@ func _process(delta: float) -> void:
 	if can_climb():
 		text = "%s  climb the lookout" % _catch_key()
 	elif _near_ladder() and not bool(journal.call("flag", "met_wren")) and not bool(station.call("busy")):
-		text = "The camera is Wren's. Talk to her first"
+		text = "The camera is Wren's. Talk to him first"
 	if text != _shown:
 		_shown = text
 		if text == "":
@@ -788,7 +788,8 @@ func _at_lookout() -> bool:
 # --- What the station tells us -----------------------------------------------------------------
 
 func on_cab_entered() -> void:
-	sound(&"hatch")
+	if not tower.has_method("walks_up"):
+		sound(&"hatch")
 	story.call("on_cab_entered")
 
 

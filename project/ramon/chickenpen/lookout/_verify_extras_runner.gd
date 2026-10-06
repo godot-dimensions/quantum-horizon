@@ -100,11 +100,12 @@ func _white() -> bool:
 			var flock: Node4D = _room.get_node("World/Flock")
 			_check("the flock has its white bird", int(flock.get("white_bird")) == int(_lookout.get("white_starling")), str(flock.get("white_bird")))
 			var player := _room.get_node("Player") as Node4D
-			player.global_position = (_lookout.get("tower") as Node4D).call("ladder_foot") + Vector4(0, 0.05, 0.3, 0)
+			# On the Watchstone's top (6 Oct: walked up, no ladder), the camera up.
+			player.global_position = (_lookout.get("tower") as Node4D).call("ladder_top") + Vector4(0, 0.05, 0, 0)
 			_next(0.6)
 		1:
-			station.call("climb")
-			_next(float(station.get("climb_seconds")) + 0.8)
+			station.call("raise")
+			_next(0.8)
 		2:
 			_aim_white(station)
 			station.set("zoom_goal", 12.0)

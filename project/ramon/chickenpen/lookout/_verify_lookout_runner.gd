@@ -1,10 +1,12 @@
 extends SceneTree
 
-## The Lookout, played: the tower stands where it should, the HUD card lists every key, the
-## ladder's F climbs to the balcony and puts the camera up, the wheel zooms, the focus ring
+## The Lookout, played: the Watchstone stands where it should (since 6 Oct, PenLayout/
+## PLAN_WATCHSTONE.md; the watchtower's version of this runner is in chickenpen/.backup/
+## 2026-10-06_before_watchstone/lookout_tests/), the HUD card lists every key, walking partway up
+## the boardwalk takes you to the top with no ladder and no F, Z puts the camera up, the wheel zooms, the focus ring
 ## finds the owl at w +1.5, the journal opens over the camera, walking the deck works with the
-## camera up, a quarter turn of the slice still shows the deck, a photo lands in the journal, F
-## at the gap climbs down. And on the ground Z does NOT raise it (the camera is the lookout's,
+## camera up, a quarter turn of the slice still shows the top, a photo lands in the journal,
+## walking to the ladder's head takes you down, camera and all. And on the ground Z does NOT raise it (the camera is the lookout's,
 ## and Wren says so); back on the deck Z raises it, E turns the ring rather than stepping you
 ## through W, Z lowers it and E steps you again. And the tower's cost, on and off in blocks.
 ##
@@ -117,9 +119,10 @@ func _process(d: float) -> bool:
 			_tower = _room.get_node("World/LookoutSite/Lookout") as Node4D
 			_player = _room.get_node("Player") as Node4D
 			_rig = _room.get_node("Player/CameraRig")
-			var parts: Array = _tower.find_children("Parts_*", "MeshInstance4D", false, false)
-			_check("the tower is built, one mesh per colour", parts.size() >= 5 and _tower.get_node_or_null("Colliders") != null, "%d meshes" % parts.size())
-			_check("it is the balcony, with a walkable deck", bool(_tower.call("is_balcony")) and _tower.get_node_or_null("DeckColliders") != null)
+			var parts: Array = _tower.find_children("Timber_*", "MeshInstance4D", false, false)
+			_check("the Watchstone is built: crag, timber, colliders", parts.size() >= 2 and _tower.get_node_or_null("Crag") != null
+				and _tower.get_node_or_null("Solid") != null, "%d timber meshes" % parts.size())
+			_check("it walks up, with a top to walk", _tower.has_method("walks_up") and bool(_tower.call("is_balcony")))
 			_check("subjects collected", (_lookout.get("subjects").call("all") as Array).size() >= 10,
 				"%d" % (_lookout.get("subjects").call("all") as Array).size())
 			# In the pen, at the spawn, the Lookout card is folded away (3 Oct: nothing of the
@@ -166,23 +169,37 @@ func _process(d: float) -> bool:
 		4:
 			(_room.get_node("RunnerCam") as Camera4D).queue_free()
 			(_room.get_node("Player/CameraRig/Pitch/Camera4D") as Camera4D).make_current()
-			_put(_tower.call("ladder_foot") + Vector4(0, 0.05, 0.3, 0))
+			_put(_tower.call("ladder_foot") + Vector4(0, 0.05, 0, 0))
+			_rig.call("face_toward", _tower.call("walk_up_direction"))
 			_next(0.8)
 		5:
-			_check("climbable at the ladder's foot", bool(_lookout.call("can_climb")))
-			_save("ladder_prompt")
-			_key(KEY_F)
-			_next(0.5)
+			_check("no ladder: no F to climb at the foot", not bool(_lookout.call("can_climb")) and _lookout.get("_ladder") == null)
+			_save("boardwalk_foot")
+			# Up the boardwalk, as you would: walk on to it and keep walking.
+			_rig.call("face_toward", _tower.call("walk_up_direction"))
+			_hold(KEY_W, true)
+			_next()
 		6:
-			_check("climbing", int(_station.get("mode")) == 1)
-			_save("climbing")
-			_next(float(_station.get("climb_seconds")) + 0.6)
+			if not bool(_tower.call("on_deck", _player.global_position)) and _t < 8.0:
+				return false
+			_hold(KEY_W, false)
+			_check("partway up the boardwalk, on the top", bool(_tower.call("on_deck", _player.global_position)),
+				"%.1f s, at %s" % [_t, str(_player.global_position)])
+			_next(0.8)
 		7:
-			_check("on the deck, the camera up", int(_station.get("mode")) == 5 and bool(_tower.call("on_deck", _player.global_position)),
+			_save("arrived_on_top")
+			_key(KEY_Z)
+			_step = 44
+			_wait = 0.5
+			_t = 0.0
+		44:
+			_check("on the top, Z puts the camera up", int(_station.get("mode")) == 5 and bool(_tower.call("on_deck", _player.global_position)),
 				"mode %d at %s" % [int(_station.get("mode")), str(_player.global_position)])
 			_check("up the tower, as the story counts it", bool(_station.call("up_tower")))
 			_check("E and Q lifted off the walk while the camera is up", InputMap.action_get_events(&"move_ana").is_empty())
-			_next(0.6)
+			_step = 8
+			_wait = 0.6
+			_t = 0.0
 		8:
 			_save("deck_north")
 			for i in 6:
@@ -244,7 +261,8 @@ func _process(d: float) -> bool:
 			_save("slice_quarter_zw")
 			_slice(0.0, 0.0)
 			var nike := _room.get_node("World/Nike") as Node4D
-			_put(_tower.global_position + Vector4(1.4, float(_tower.get("deck_height")) + 0.05, 2.4, 0.0))
+			# The south-west of the top: clear of the way down at the ladder (south-east on the Watchstone).
+			_put(_tower.global_position + Vector4(-1.6, float(_tower.get("deck_height")) + 0.05, 2.2, 0.0))
 			_aim(nike.global_position + Vector4(0, 0.5, 0, 0))
 			_station.set("zoom_goal", 7.0)
 			_next(1.2)
@@ -262,16 +280,19 @@ func _process(d: float) -> bool:
 			_check("the film counted down", int(_station.get("film")) == 23)
 			_save("after_shot")
 			_station.set("zoom_goal", 1.0)
-			_put(_tower.call("ladder_top") + Vector4(0, 0.05, 0, 0))
-			_next(0.5)
+			# To the ladder's head with the camera still up: walking there takes you down.
+			var head: Vector4 = _tower.call("_ladder_head")
+			_put(_tower.global_position + _tower.global_basis * head + Vector4(0, 0.05, 0, 0))
+			_next(0.3)
 		19:
-			_check("F at the gap would climb down", bool(_lookout.call("can_climb_down")))
-			_key(KEY_F)
-			_next(0.4)
+			_check("no F at the top either", not bool(_lookout.call("can_climb_down")))
+			_next(0.3)
 		20:
-			_check("climbing down", int(_station.get("mode")) == 3)
-			_next(float(_station.get("down_seconds")) + 0.6)
+			_check("going down: the camera put away", int(_station.get("mode")) == 0)
+			_next(1.0)
 		21:
+			_check("at the boardwalk's foot", not bool(_tower.call("on_deck", _player.global_position)) and _player.global_position.y < 1.0,
+				str(_player.global_position))
 			_check("off the tower, the pen back", int(_station.get("mode")) == 0 and _player.visible and _player.get("input_enabled") == true)
 			_check("E and Q back on the walk", not InputMap.action_get_events(&"move_ana").is_empty())
 			_check("the HUD back", (_room.get_node("UI/Controls") as CanvasItem).visible)

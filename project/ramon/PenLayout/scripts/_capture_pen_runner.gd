@@ -26,7 +26,9 @@ const DEV_FLOOR := Color(0.96, 0.965, 0.97)
 ## (node path -> {property: value}, set before the shot: a tower's fence frame on, say);
 ## "devfloor" (from that shot on, the ground is PathCreator's white lab floor and the paths' floor
 ## colour matches it: the look of a dev version of the pen, Ramon 6 Oct); "tilt" (eye shots: the
-## slice turned, Vector2(xw, zw) in degrees, as slice_angles_4d.gd turns it; flat when left out).
+## slice turned, Vector2(xw, zw) in degrees, as slice_angles_4d.gd turns it; flat when left out);
+## "spawn" (scene path -> Vector4: instanced under World there, from that shot on: a new piece seen
+## in the pen before the pen holds it) and "hide" (node paths hidden from that shot on).
 const DEV_LOOK := {"look": "dev", "show_marks": true, "show_sand": true, "under_color": Color(0.93, 0.935, 0.94)}
 const SAND_LOOK := {"look": "walk", "show_marks": false, "show_sand": true}
 const SETS := {
@@ -95,6 +97,43 @@ const SETS := {
 		{"name": "zwp35", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, 35.0)},
 		{"name": "zwp50", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, 50.0)},
 		{"name": "zwp65", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, 65.0)},
+	],
+	# The Watchstone (PenLayout/PLAN_WATCHSTONE.md), in the Lookout's place since step 11: from the
+	# painting's angle, at its foot, on its top with Wren, through W, in volume view.
+	"watchstone": [
+		{"name": "ref", "at": Vector4(-6.0, 1.2, -22.0, 0), "yaw": 36.0, "pitch": 12.0, "distance": 11.0},
+		{"name": "front", "at": Vector4(-16.5, 1.2, -18.0, 0), "yaw": 0.0, "pitch": 16.0, "distance": 10.0},
+		{"name": "path_end", "at": Vector4(-18.5, 1.2, -27.4, 0), "yaw": 30.0, "pitch": 18.0, "distance": 6.0},
+		{"name": "side", "at": Vector4(-1.0, 1.2, -36.0, 0), "yaw": 90.0, "pitch": 14.0, "distance": 9.0},
+		{"name": "arrive", "at": Vector4(-17.4, 15.0, -34.7, 0), "yaw": 0.0, "pitch": -8.0, "distance": 3.0},
+		{"name": "wren_close", "at": Vector4(-15.4, 15.0, -36.3, 0), "yaw": 0.0, "pitch": -4.0, "distance": 2.6},
+		{"name": "way_down", "at": Vector4(-14.8, 15.0, -34.9, 0), "yaw": -40.0, "pitch": -16.0, "distance": 4.0},
+		{"name": "w15", "at": Vector4(-16.5, 1.2, -18.0, 1.5), "yaw": 0.0, "pitch": 16.0, "distance": 10.0},
+		{"name": "combined", "at": Vector4(-16.5, 1.2, -18.0, 0), "yaw": 0.0, "pitch": 16.0, "distance": 10.0, "engine": "Combined"},
+		{"name": "from_pen", "at": Vector4(0.0, 1.2, -4.0, 0), "yaw": 28.0, "pitch": 6.0, "distance": 7.0},
+	],
+	# The range, remade (PenLayout/PLAN_WATCHSTONE.md part C), where the old one stands, it hidden.
+	"rune_range": [
+		{"name": "ref", "at": Vector4(-12.5, 1.2, -1.0, 0), "yaw": 62.0, "pitch": 20.0, "distance": 10.0,
+			"spawn": {"res://ramon/chickenpen/units/rune_range/rune_range.tscn": Vector4(-19.0, 0.0, -9.0, 0.0)},
+			"hide": ["World/Range"]},
+		{"name": "near", "at": Vector4(-15.0, 1.2, -6.5, 0), "yaw": 80.0, "pitch": 8.0, "distance": 5.0},
+		{"name": "boards", "at": Vector4(-24.0, 1.2, -9.0, 0), "yaw": 90.0, "pitch": 4.0, "distance": 5.0},
+		{"name": "table", "at": Vector4(-15.6, 1.2, -5.0, 0), "yaw": 100.0, "pitch": -12.0, "distance": 3.5},
+		{"name": "stone", "at": Vector4(-17.3, 1.2, -7.4, 0), "yaw": 70.0, "pitch": -20.0, "distance": 3.0},
+		{"name": "w1", "at": Vector4(-12.5, 1.2, -1.0, 1.0), "yaw": 62.0, "pitch": 20.0, "distance": 10.0},
+		{"name": "combined", "at": Vector4(-12.5, 1.2, -1.0, 0), "yaw": 62.0, "pitch": 20.0, "distance": 10.0, "engine": "Combined"},
+	],
+	# The rock kit (PenLayout/PLAN_WATCHSTONE.md step 2): six boulders in a row and two big ones,
+	# out in the open east of the hill.
+	"rocks": [
+		{"name": "front", "at": Vector4(30.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -8.0, "distance": 9.0,
+			"spawn": {"res://ramon/PenLayout/Watchstone/rock_study.tscn": Vector4(30.0, 0.0, 22.0, 0.0)}},
+		{"name": "close", "at": Vector4(29.0, 1.2, 26.0, 0), "yaw": 0.0, "pitch": -12.0, "distance": 4.0},
+		{"name": "side", "at": Vector4(42.0, 1.2, 20.0, 0), "yaw": 90.0, "pitch": -6.0, "distance": 8.0},
+		{"name": "w05", "at": Vector4(30.0, 1.2, 30.0, 0.5), "yaw": 0.0, "pitch": -8.0, "distance": 9.0},
+		{"name": "w1", "at": Vector4(30.0, 1.2, 30.0, 1.0), "yaw": 0.0, "pitch": -8.0, "distance": 9.0},
+		{"name": "combined", "at": Vector4(30.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -8.0, "distance": 9.0, "engine": "Combined"},
 	],
 	# The cave's mouth with the slice turned lengthways (Ramon's screenshot, 6 Oct: "when opening the
 	# cave a little green bit is in the back"), from close, at several tilts each way.
@@ -268,6 +307,15 @@ func _run() -> void:
 				net.set(key, props[key])
 			if bool(shot.get("forget", false)) and net.has_method("reset_reveal"):
 				net.call("reset_reveal")
+		var spawn: Dictionary = shot.get("spawn", {})
+		for path in spawn:
+			var piece: Node = (load(path) as PackedScene).instantiate()
+			_room.get_node("World").add_child(piece)
+			(piece as Node4D).global_position = spawn[path]
+		for path in shot.get("hide", []):
+			var gone: Node = _room.get_node_or_null(NodePath(path))
+			if gone != null and gone.get("visible") != null:
+				gone.set("visible", false)
 		var sets: Dictionary = shot.get("set", {})
 		for path in sets:
 			var target: Node = _room.get_node_or_null(NodePath(path))

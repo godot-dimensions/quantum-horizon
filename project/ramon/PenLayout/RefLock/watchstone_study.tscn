@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=4]
+
+[ext_resource type="PackedScene" path="res://ramon/chickenpen/units/watchstone/watchstone.tscn" id="ws"]
+
+[node name="WatchstoneStudy" instance=ExtResource("ws")]
+ground_disc = true

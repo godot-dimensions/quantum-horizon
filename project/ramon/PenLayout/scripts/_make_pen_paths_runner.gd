@@ -118,10 +118,15 @@ func _initialize() -> void:
 	e.call(west, range_at)
 	var t1: int = n.call("bend", -9.0, -16.0)
 	var t2: int = n.call("bend", -12.0, -24.5)
-	var tower: int = dest.call(-12.7, -27.6, 0.0, "TowerArrival", Vector2(0, 1))
+	# The Watchstone (6 Oct, PenLayout/PLAN_WATCHSTONE.md step 11): round its south side to the foot
+	# of the boardwalk, at the crag's south-west, and up from the south.
+	var t3: int = n.call("bend", -19.6, -24.4)
+	# Where Ramon's sheet stands the player: at the first run's foot (PLAN_REF_LOCK.md step 34).
+	var tower: int = dest.call(-18.5, -27.6, 0.0, "TowerArrival", Vector2(0, 1))
 	e.call(west, t1)
 	e.call(t1, t2)
-	e.call(t2, tower)
+	e.call(t2, t3)
+	e.call(t3, tower)
 
 	# The eggs. Kata from the ring's south to the stones in the meadow's middle; ana from the hill's
 	# east side to the cairn.
@@ -137,7 +142,7 @@ func _initialize() -> void:
 	# tool): chords between small balls on an arc that meets both legs. A field path bends; the
 	# ball and ring are kept for the turn by the cave door, where the W dots stand. Junctions, the
 	# wall's steps and the ring stay as they are.
-	for corner in [[w1, 4.0], [w2, 4.0], [w3, 4.0], [e1, 4.0], [e2, 7.0], [e4, 4.0], [t1, 4.0], [t2, 4.0]]:
+	for corner in [[w1, 4.0], [w2, 4.0], [w3, 4.0], [e1, 4.0], [e2, 7.0], [e4, 4.0], [t1, 4.0], [t2, 4.0], [t3, 3.0]]:
 		g.call("round_corner", corner[0], corner[1])
 
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://ramon/PenLayout/paths/"))

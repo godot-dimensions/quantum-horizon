@@ -1,22 +1,20 @@
 [gd_scene load_steps=4 format=4]
 
-[ext_resource type="Script" uid="uid://d4c545be47j6q" path="res://ramon/chickenpen/lookout/lookout_tower_4d.gd" id="lk_tower"]
+[ext_resource type="PackedScene" path="res://ramon/chickenpen/units/watchstone/watchstone.tscn" id="watchstone"]
 [ext_resource type="Script" uid="uid://dboaa0fauf8dw" path="res://ramon/chickenpen/lookout/lookout_wren_4d.gd" id="lk_wren"]
 [ext_resource type="Script" uid="uid://cu6xoypl3i6xf" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="pen_face"]
 
 [node name="LookoutSite" type="Node4D"]
-metadata/move_me = "Move (or turn) this node to move the whole Lookout: the tower, Wren, and the markers for the balloon's mooring and for the marsh (w +8) and the kata wood (w -8). The tower stands at this node's height: put it on level ground."
+metadata/move_me = "Move (or turn) this node to move the whole Lookout: the Watchstone, Wren on its top, and the markers for the balloon's mooring and for the marsh (w +8) and the kata wood (w -8). The Watchstone stands at this node's height: put it on level ground. (Until 6 Oct the Lookout was a watchtower, lookout/lookout_tower_4d.gd; its copy is in chickenpen/.backup/2026-10-06_before_watchstone/.)"
 
-[node name="Lookout" type="Node4D" parent="."]
-script = ExtResource("lk_tower")
-fence_frame = true
+[node name="Lookout" parent="." instance=ExtResource("watchstone")]
 
 [node name="Wren" type="Node4D" parent="."]
-position = Vector4(3.3, 0, 6.2, 0)
+position = Vector4(-0.3, 13.65, -1.3, 0)
 script = ExtResource("lk_wren")
 
 [node name="WrenHead" type="Node4D" parent="."]
-position = Vector4(3.3, 1.45, 6.2, 0)
+position = Vector4(-0.3, 15.1, -1.3, 0)
 
 [node name="WrenFacing" type="Node4D" parent="."]
 script = ExtResource("pen_face")
@@ -25,7 +23,7 @@ player_path = NodePath("../../../Player")
 notice_within = 4.0
 
 [node name="MooringSpot" type="Node4D" parent="."]
-position = Vector4(-11.5, 0, 5, 0)
+position = Vector4(-14, 0, 4, 0)
 
 [node name="MarshSpot" type="Node4D" parent="."]
 position = Vector4(-14, 0, 12, 8)
@@ -34,5 +32,5 @@ position = Vector4(-14, 0, 12, 8)
 position = Vector4(-10, 0, 12, -8)
 
 [node name="TowerArrival" type="Node4D" parent="."]
-position = Vector4(3.3, 0, 8.4, 0)
+position = Vector4(-2.5, 0, 8.4, 0)
 metadata/what = "Where the pen's path arrives (PenLayout/paths/pen_a.tres): its destination is anchored here, so it goes where the unit goes."

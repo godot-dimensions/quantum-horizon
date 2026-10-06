@@ -78,13 +78,13 @@ func next_hint() -> String:
 	var pages: int = int(journal.call("pages_found"))
 	var total: int = JOURNAL.PAGES.size()
 	if not met():
-		return "Next: meet Wren at the lookout tower"
+		return "Next: meet Wren on top of the Watchstone"
 	if not _flag("first_climb"):
-		return "Next: climb the lookout (F at the ladder); the camera is for up there"
+		return "Next: walk up the Watchstone's boardwalk; the camera is for up there"
 	if int(journal.call("star_count")) == 0:
 		return "Next: take a photo, click"
 	if not bool(journal.call("found", "owl")):
-		return "Next: what sits in the dead tree, north of the tower?" if _flag("owl_hint") else "Next: fill Wren's journal"
+		return "Next: what sits in the dead tree, north of the Watchstone?" if _flag("owl_hint") else "Next: fill Wren's journal"
 	if balloon_open() and not _flag("balloon_ridden"):
 		return "Next: Wren has something to show you"
 	if _flag("balloon_ridden") and not bool(journal.call("found", "heron")) and not bool(journal.call("found", "chipmunks")):
@@ -104,7 +104,7 @@ func next_hint() -> String:
 func tip() -> String:
 	var journal: Node = _journal()
 	if not bool(journal.call("found", "owl")):
-		return "North of the tower there's a dead tree I can only hear. Try the ring at about one and a half, ana."
+		return "North of the Watchstone there's a dead tree I can only hear. Try the ring at about one and a half, ana."
 	for page in JOURNAL.PAGES:
 		if bool(page["secret"]) and not bool(journal.call("found", page["id"])):
 			match String(page["id"]):
@@ -141,6 +141,10 @@ func wren_opening() -> String:
 
 func on_camera_given() -> void:
 	_raise("met_wren")
+	# On the Watchstone you meet him on top: that is your first time up.
+	var tower: Node = lookout.get("tower")
+	if tower != null and tower.has_method("walks_up"):
+		_raise("first_climb")
 	var wren: Node = lookout.get("wren")
 	if wren != null:
 		wren.set("has_camera", false)
@@ -172,7 +176,7 @@ func on_camera_not_here() -> void:
 	if busy() or now - _not_here_at < 8000:
 		return
 	_not_here_at = now
-	_radio(["Not down here. The camera's for the lookout. Up on the deck, or in the balloon."])
+	_radio(["Not down here. The camera's for the Watchstone. Up on top, or in the balloon."])
 
 
 ## The owl's tick has come up on the scale for the first time, not found yet.
@@ -188,9 +192,11 @@ func on_owl_tick() -> void:
 
 func on_cab_entered() -> void:
 	_cab_time = 0.0
+	if not met():
+		return
 	if not _flag("first_climb"):
 		_raise("first_climb")
-		_radio(["Walk round, the deck goes all the way. The best of it is north, over the field."])
+		_radio(["Walk round the top, the railing goes all the way. The best of it is north, over the field."])
 	elif balloon_open() and not _flag("balloon_ridden") and not _flag("balloon_said"):
 		_balloon_call()
 
@@ -221,7 +227,7 @@ func on_photo(result: Dictionary) -> void:
 func _owl_hint() -> void:
 	_raise("owl_hint")
 	_radio([
-		"One more thing. North of the tower there's an old dead tree, a little way along W. I hear something in it at night.",
+		"One more thing. North of the Watchstone there's an old dead tree, a little way along W. I hear something in it at night.",
 		"I've never seen it. Try the ring at about one and a half, ana.",
 	])
 
@@ -231,7 +237,7 @@ func _balloon_call() -> void:
 	lookout.call("show_balloon", true)
 	_radio([
 		"You've an eye for this.",
-		"My balloon's up by the tower. B when you're ready, and up you go.",
+		"My balloon's up by the Watchstone. B when you're ready, and up you go.",
 	])
 
 
@@ -302,4 +308,4 @@ func _approach() -> void:
 		[0.62, base + Vector4(4.5, h + 2.2, 7.5, 0), base + Vector4(0, h + 1.2, 0, 0)],
 		[1.0, wren_at + Vector4(1.6, 0.25, 3.2, 0), wren_at],
 	]
-	lookout.get("cutscene").call("play", keys, 6.0, "The Lookout")
+	lookout.get("cutscene").call("play", keys, 6.0, String(tower.call("place_name")) if tower.has_method("place_name") else "The Lookout")

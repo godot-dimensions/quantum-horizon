@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=4]
+
+[ext_resource type="Script" path="res://ramon/chickenpen/lookout/watchstone_4d.gd" id="watchstone"]
+
+[node name="Watchstone" type="Node4D"]
+script = ExtResource("watchstone")
+metadata/what = "The Watchstone: the Lookout's crag and its timber walkways (PenLayout/PLAN_WATCHSTONE.md)."

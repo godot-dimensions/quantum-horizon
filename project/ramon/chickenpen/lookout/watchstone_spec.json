@@ -1,0 +1,164 @@
+{
+ "_what": "The Watchstone's crag, measured from Ramon's sheet (PenLayout/refs/watchstone_views.png) with the fitted cameras (PenLayout/RefLock/specs/watchstone_fit.json). Origin: the plateau's middle, on the ground. Radii at E, SE, S, SW, W, NW, N, NE (S is +z, toward the front view). Built by scripts/pen_crag_4d.gd. PLAN_REF_LOCK.md steps 14 and 21.",
+ "seed": 11,
+ "w_depth": 6.0,
+ "core_inset": 0.25,
+ "core_colour": "#5b564e",
+ "turf_colour": "#5b6612",
+ "tuft_on_top": 0.75,
+ "tuft_in_joint": 0.7,
+ "ledge_tufts": 1.4,
+ "ledge_stones": 0.4,
+ "courses": [
+  {
+   "y0": 0.0,
+   "y1": 2.6,
+   "r": [
+    7.1,
+    7.2,
+    7.3,
+    7.2,
+    7.0,
+    6.9,
+    6.9,
+    7.0
+   ],
+   "kinds": [
+    "round",
+    "round",
+    "block",
+    "wedge",
+    "round"
+   ],
+   "stack": 0.15,
+   "width_scale": 1.1
+  },
+  {
+   "y0": 2.6,
+   "y1": 5.8,
+   "r": [
+    5.6,
+    6.0,
+    6.3,
+    6.3,
+    6.1,
+    6.0,
+    6.0,
+    5.8
+   ],
+   "kinds": [
+    "round",
+    "block",
+    "round",
+    "wedge"
+   ],
+   "stack": 0.75
+  },
+  {
+   "y0": 5.8,
+   "y1": 9.0,
+   "r": [
+    5.3,
+    5.2,
+    5.0,
+    5.3,
+    5.6,
+    5.6,
+    5.6,
+    5.4
+   ],
+   "kinds": [
+    "round",
+    "block",
+    "round"
+   ],
+   "stack": 0.75
+  },
+  {
+   "y0": 9.0,
+   "y1": 12.4,
+   "r": [
+    5.3,
+    4.9,
+    4.6,
+    4.6,
+    4.7,
+    4.8,
+    5.0,
+    5.2
+   ],
+   "kinds": [
+    "round",
+    "block",
+    "round",
+    "slab"
+   ],
+   "stack": 0.75,
+   "width_scale": 0.95
+  },
+  {
+   "y0": 12.4,
+   "y1": 13.3,
+   "r": [
+    3.8,
+    3.8,
+    3.8,
+    3.8,
+    3.8,
+    3.8,
+    3.8,
+    3.8
+   ],
+   "kinds": [
+    "cap",
+    "round"
+   ],
+   "stack": 0.0,
+   "width_scale": 1.0
+  }
+ ],
+ "top": {
+  "y": 13.65,
+  "turf_r": 4.15,
+  "rim_stones": 16,
+  "tufts": 6,
+  "turf_colour": "#66701a",
+  "rim_size": [
+   0.7,
+   0.95
+  ]
+ },
+ "debris": {
+  "clusters": 12,
+  "reach": 2.0,
+  "size": 1.7,
+  "keep_clear": [
+   [
+    -2.4,
+    8.2,
+    1.4
+   ],
+   [
+    -1.0,
+    7.4,
+    1.6
+   ]
+  ],
+  "skirt": 22
+ },
+ "ground": {
+  "r": 9.3,
+  "tufts": 30,
+  "colour": "#5b6612",
+  "centre": [
+   -0.6,
+   1.0
+  ]
+ },
+ "tuft_scale": 1.0,
+ "turf_gaps": 0.35,
+ "joint": [
+  0.0,
+  0.12
+ ]
+}

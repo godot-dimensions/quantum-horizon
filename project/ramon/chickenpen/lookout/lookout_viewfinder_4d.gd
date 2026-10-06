@@ -225,7 +225,7 @@ func _draw_frame() -> void:
 	var fs: int = _px(14)
 	var title: String = ["", "", "LOOKOUT CAMERA  ·  in the cab", "", "LOOKOUT CAMERA  ·  in the balloon", "LOOKOUT CAMERA"][mode]
 	if mode == 5 and bool(station.call("up_tower")):
-		title = "LOOKOUT CAMERA  ·  on the deck"
+		title = "WATCHSTONE CAMERA  ·  on the top"
 	draw_circle(Vector2(inset.x + 6.0, top_h * 0.5 + 1.0), 4.5, Color(0.95, 0.3, 0.25, 0.9 * k))
 	draw_string(_font, Vector2(inset.x + 18.0, top_h * 0.5 + fs * 0.36), title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, white * Color(1, 1, 1, k))
 	var film_text: String
@@ -491,11 +491,11 @@ func _draw_guide(s: Vector2, accent: Color, bottom: float, top: float) -> void:
 			var c: Vector2 = p + half * corner
 			draw_line(c, c - Vector2(corner.x * arm, 0.0), col, 2.0)
 			draw_line(c, c - Vector2(0.0, corner.y * arm), col, 2.0)
-		var line: String = "Your first photo: Wren. Frame her and click."
+		var line: String = "Your first photo: Wren. Frame him and click."
 		var lw: float = _font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13)).x
 		draw_string(_font, Vector2(p.x - lw * 0.5, p.y + half.y + float(_px(20))), line, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13), col)
 		return
-	var hint: String = "Your first photo: Wren, down at the foot of the tower. Look over the south rail."
+	var hint: String = "Your first photo: Wren, up here with you. Find him and click."
 	var hw: float = _font.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13)).x
 	draw_string(_font, Vector2((s.x - hw) * 0.5, top + float(_px(64))), hint, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13), col)
 

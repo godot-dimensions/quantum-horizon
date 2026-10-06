@@ -1,21 +1,24 @@
 @tool
 extends Node4D
 
-## Wren, who keeps the Lookout: a forest ranger in dark green (Ramon, 2 Oct: "a little less
-## bubbly ... a dark green forest ranger suit, and backpack, and goggles in his hand") - a
-## field jacket of pockets over a green shirt, a badge, a flat-brimmed ranger's hat, a pack on
-## the back, binoculars in the right hand, and a camera strap across - until it is given away.
+## Wren, who keeps the Watchstone (6 Oct 2026, PenLayout/PLAN_WATCHSTONE.md step 8; Ramon: "no
+## longer a forest ranger but a guy already looking through goggles. dark brown cloth and beard").
+## A watcher in the medieval, ritual-tech look: a long coat of dark brown cloth over a darker shirt,
+## a hood folded on his back, a satchel, a full beard, and brass goggles over his eyes, his right
+## hand raised to them as he looks out. The camera hangs at his hip on its strap until he hands it
+## over. (Until 6 Oct a forest ranger in dark green with a pack and binoculars; that build is in
+## chickenpen/.backup/2026-10-06_before_watchstone/lookout/.)
 ##
 ## THE SAME AVATAR AS EVERYBODY ELSE, dressed (the professor's rule, as the range master's
 ## header puts it: a new character is a few boxes on the shared body, not a new body).
 
 const AVATAR := preload("res://ramon/chickenpen/scripts/block_avatar_4d.gd")
 
-@export var vest: Color = Color(0.12, 0.18, 0.11):
+@export var vest: Color = Color(0.27, 0.18, 0.11):
 	set(v):
 		vest = v
 		_set_colour(v)
-@export var shirt: Color = Color(0.17, 0.25, 0.16):
+@export var shirt: Color = Color(0.19, 0.13, 0.08):
 	set(v):
 		shirt = v
 		_set_colour(v)
@@ -23,19 +26,20 @@ const AVATAR := preload("res://ramon/chickenpen/scripts/block_avatar_4d.gd")
 	set(v):
 		skin = v
 		_set_colour(v)
-@export var trousers: Color = Color(0.14, 0.17, 0.12):
+@export var trousers: Color = Color(0.16, 0.11, 0.07):
 	set(v):
 		trousers = v
 		_set_colour(v)
-@export var hat: Color = Color(0.30, 0.29, 0.20):
+## The goggles' brass.
+@export var hat: Color = Color(0.70, 0.55, 0.26):
 	set(v):
 		hat = v
 		_set_colour(v)
-@export var hair: Color = Color(0.24, 0.16, 0.10):
+@export var hair: Color = Color(0.22, 0.14, 0.08):
 	set(v):
 		hair = v
 		_set_colour(v)
-## Whether the camera still hangs off her (it goes to the player when you meet).
+## Whether the camera still hangs off him (it goes to the player when you meet).
 @export var has_camera: bool = true:
 	set(v):
 		has_camera = v
@@ -86,41 +90,41 @@ func rebuild() -> void:
 	for tag in ["L", "R"]:
 		_paint(figure, "Shoulder%s/Elbow%s/Forearm%s" % [tag, tag, tag], vest)
 	var head: Node4D = figure.get_node_or_null("Tunic/Head") as Node4D
+	var beard := hair.lightened(0.06)
 	if head != null:
 		# A little smaller than the cast's: less of a big-headed figure, more of a grown-up.
 		head.basis = Basis4D.from_scale(Vector4(0.9, 0.9, 0.9, 1.0))
-		# A ranger's hat: a flat, stiff brim and a tall crown pinched at the top.
-		_box(head, "Brim", Vector4(0.0, 0.16, 0.0, 0.0), Vector3(0.50, 0.02, 0.48), hat)
-		_box(head, "Crown", Vector4(0.0, 0.24, 0.0, 0.0), Vector3(0.28, 0.14, 0.27), hat)
-		_box(head, "Pinch", Vector4(0.0, 0.33, 0.0, 0.0), Vector3(0.20, 0.05, 0.19), hat.darkened(0.08))
-		_box(head, "Band", Vector4(0.0, 0.18, 0.0, 0.0), Vector3(0.29, 0.03, 0.28), Color(0.10, 0.09, 0.07))
+		# The beard: full, from the cheeks to below the chin, and a moustache over it.
+		_box(head, "Beard", Vector4(0.0, -0.085, 0.135, 0.0), Vector3(0.25, 0.13, 0.05), beard)
+		_box(head, "Chin", Vector4(0.0, -0.15, 0.11, 0.0), Vector3(0.2, 0.08, 0.1), beard)
+		_box(head, "Moustache", Vector4(0.0, -0.035, 0.157, 0.0), Vector3(0.13, 0.03, 0.02), beard.darkened(0.15))
+		# The goggles over his eyes: a brass rim round each lens, the lens dark and a little teal,
+		# and a leather strap round the head.
+		for side in [-1.0, 1.0]:
+			_box(head, "Rim%d" % int(side), Vector4(side * 0.066, 0.026, 0.165, 0.0), Vector3(0.09, 0.09, 0.07), hat)
+			_box(head, "Lens%d" % int(side), Vector4(side * 0.066, 0.026, 0.202, 0.0), Vector3(0.065, 0.065, 0.012), Color(0.10, 0.20, 0.22))
+		_box(head, "Bridge", Vector4(0.0, 0.03, 0.17, 0.0), Vector3(0.05, 0.025, 0.03), hat.darkened(0.2))
+		_box(head, "GoggleStrap", Vector4(0.0, 0.026, 0.0, 0.0), Vector3(0.31, 0.035, 0.3), Color(0.14, 0.09, 0.06))
 	var torso: Node4D = figure.get_node_or_null("Tunic") as Node4D
 	if torso != null:
-		# The field jacket over the shirt, with its pockets, a badge and a shoulder patch.
+		# The coat over the shirt, its skirt to the knee, a hood folded on the back.
 		_box(torso, "Vest", Vector4(0.0, 0.02, 0.0, 0.0), Vector3(0.36, 0.34, 0.27), vest)
-		for side in [-1.0, 1.0]:
-			_box(torso, "Pocket%d" % int(side), Vector4(side * 0.08, -0.06, 0.14, 0.0), Vector3(0.10, 0.08, 0.02), vest.darkened(0.3))
-			_box(torso, "Flap%d" % int(side), Vector4(side * 0.08, 0.1, 0.14, 0.0), Vector3(0.10, 0.03, 0.02), vest.darkened(0.3))
-		_box(torso, "Badge", Vector4(-0.085, 0.13, 0.145, 0.0), Vector3(0.05, 0.06, 0.012), Color(0.78, 0.62, 0.26))
-		_box(torso, "Buckle", Vector4(0.0, -0.17, 0.135, 0.0), Vector3(0.05, 0.04, 0.012), Color(0.62, 0.52, 0.30))
-		# The pack: a body, a flap over its top, a rolled mat under it, straps over the shoulders.
-		_box(torso, "Pack", Vector4(0.0, 0.03, -0.21, 0.0), Vector3(0.30, 0.34, 0.15), Color(0.22, 0.24, 0.15))
-		_box(torso, "PackFlap", Vector4(0.0, 0.17, -0.205, 0.0), Vector3(0.31, 0.08, 0.16), Color(0.18, 0.20, 0.12))
-		_box(torso, "PackPocket", Vector4(0.0, -0.04, -0.295, 0.0), Vector3(0.18, 0.14, 0.04), Color(0.18, 0.20, 0.12))
-		_box(torso, "Bedroll", Vector4(0.0, -0.17, -0.21, 0.0), Vector3(0.36, 0.08, 0.09), Color(0.30, 0.22, 0.14))
-		for side in [-1.0, 1.0]:
-			_box(torso, "PackStrap%d" % int(side), Vector4(side * 0.1, 0.12, 0.138, 0.0), Vector3(0.035, 0.2, 0.012), leather)
+		_box(torso, "Skirt", Vector4(0.0, -0.27, 0.0, 0.0), Vector3(0.38, 0.24, 0.29), vest.darkened(0.08))
+		_box(torso, "Hood", Vector4(0.0, 0.17, -0.155, 0.0), Vector3(0.28, 0.1, 0.09), vest.darkened(0.2))
+		_box(torso, "Collar", Vector4(0.0, 0.17, 0.05, 0.0), Vector3(0.3, 0.05, 0.22), vest.darkened(0.15))
+		_box(torso, "Buckle", Vector4(0.0, -0.17, 0.135, 0.0), Vector3(0.05, 0.04, 0.012), hat)
+		# The satchel at his left hip on a strap over the right shoulder.
+		_box(torso, "Satchel", Vector4(0.2, -0.2, 0.02, 0.0), Vector3(0.08, 0.16, 0.2), leather)
+		_box(torso, "SatchelStrap", Vector4(0.03, 0.03, 0.14, 0.0), Vector3(0.035, 0.44, 0.012), leather).basis = Basis4D.from_xy(-0.6)
 		# The camera, until it is handed over: on a strap across, at the hip.
 		_box(torso, "Strap", Vector4(0.0, 0.02, 0.14, 0.0), Vector3(0.04, 0.42, 0.02), Color(0.16, 0.10, 0.08)).basis = Basis4D.from_xy(0.6)
 		_box(torso, "Camera", Vector4(0.15, -0.16, 0.12, 0.0), Vector3(0.14, 0.09, 0.08), Color(0.10, 0.10, 0.11))
-	# Binoculars in the right hand, the arm down at the side, held sideways by the bridge -
-	# carried, not lifted like a cup (Ramon, 2 Oct): the two barrels one over the other,
-	# pointing ahead.
-	var hand: Node4D = figure.get_node_or_null("ShoulderR/ElbowR/HandR") as Node4D
-	if hand != null:
-		for k in [-1.0, 1.0]:
-			_box(hand, "Barrel%d" % int(k), Vector4(0.0, -0.045 + k * 0.03, 0.03, 0.0), Vector3(0.05, 0.05, 0.12), Color(0.10, 0.10, 0.10))
-		_box(hand, "Bridge", Vector4(0.0, -0.045, 0.01, 0.0), Vector3(0.025, 0.04, 0.04), Color(0.16, 0.16, 0.15))
+	# His right hand raised to the goggles, as if to steady them while he looks.
+	var shoulder: Node4D = figure.get_node_or_null("ShoulderR") as Node4D
+	var elbow: Node4D = figure.get_node_or_null("ShoulderR/ElbowR") as Node4D
+	if shoulder != null and elbow != null:
+		shoulder.basis = Basis4D.from_xy(0.35) * Basis4D.from_yz(-2.25)
+		elbow.basis = Basis4D.from_yz(-1.75)
 	_set_camera(has_camera)
 
 

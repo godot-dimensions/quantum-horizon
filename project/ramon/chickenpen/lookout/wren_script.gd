@@ -2,12 +2,13 @@ extends RefCounted
 
 ## NO class_name - preloaded by path, like the professor's and the range master's.
 
-## Wren's dialogue. She keeps the Lookout: fire watch on paper, everything else in practice.
+## Wren's dialogue. He keeps the Watchstone: sky watch on paper, everything else in practice.
+## (Until 6 Oct she kept the Lookout's fire tower; PenLayout/PLAN_WATCHSTONE.md step 10.)
 ## Practical, warm, a little dry. Short lines, full stops and commas, no dashes (Ramon: dash
 ## clauses read as machine-written).
 ##
-## BUILT FRESH EACH TIME YOU SPEAK TO HER, from where the story is (lookout_story_4d.gd's
-## flags) and what the journal still lacks, so her tips are always about something you have
+## BUILT FRESH EACH TIME YOU SPEAK TO HIM, from where the story is (lookout_story_4d.gd's
+## flags) and what the journal still lacks, so his tips are always about something you have
 ## not got. The dialogue player itself only ever sees a plain dictionary, as for everyone.
 
 const START_MEET := "hello"
@@ -31,13 +32,13 @@ static func nodes(tip: String, can_ride: bool) -> Dictionary:
 "hello": {
 	"speaker": "Wren",
 	"lines": [
-		"Oh, hello. Mind the ladder, it's slippery.",
-		"I'm Wren. I keep the lookout. Fire watch, officially. Mostly I watch everything else.",
+		"Oh, hello. You found the way up.",
+		"I'm Wren. I keep the Watchstone. I watch the sky, officially. Mostly I watch everything else.",
 		"Everything on this farm is in my journal. And a few things that live next to it, out along W.",
 	],
 	"choices": [
 		{"text": "Out along W?", "goto": "along_w"},
-		{"text": "Can I go up?", "goto": "camera"},
+		{"text": "What do you watch with?", "goto": "camera"},
 	],
 },
 
@@ -45,7 +46,7 @@ static func nodes(tip: String, can_ride: bool) -> Dictionary:
 	"speaker": "Wren",
 	"lines": [
 		"You know how you can step ana and kata. Things live out there too, just off the slice. You walk right past them.",
-		"From up there, with this, you don't have to walk anywhere.",
+		"From up here, with this, you don't have to walk anywhere.",
 	],
 	"goto": "camera",
 },
@@ -53,13 +54,13 @@ static func nodes(tip: String, can_ride: bool) -> Dictionary:
 "camera": {
 	"speaker": "Wren",
 	"lines": [
-		"Here. Take my camera. Z puts it to your eye, up on the deck or in my balloon. The ring on the lens doesn't focus near and far. It focuses in W.",
+		"Here. Take my camera. Z puts it to your eye, up here or in my balloon. The ring on the lens doesn't focus near and far. It focuses in W.",
 		"Fill the journal for me. Every animal, doing every thing it does. J to read it.",
 	],
 	"do": "give_camera",
 	"do_on_line": 0,
 	"choices": [
-		{"text": "I'll go up.", "goto": "go_up", "leave": true},
+		{"text": "I'll try it.", "goto": "go_up", "leave": true},
 		{"text": "Anything I should look for?", "goto": "first_tips"},
 	],
 },
@@ -68,14 +69,14 @@ static func nodes(tip: String, can_ride: bool) -> Dictionary:
 	"speaker": "Wren",
 	"lines": [
 		"The starlings are up all evening. When the hawk dives, they open round it. Nobody's got that picture.",
-		"And something sits in an old dead tree north of the tower. I hear it at night. I've never seen it.",
+		"And something sits in an old dead tree north of the Watchstone. I hear it at night. I've never seen it.",
 	],
 	"goto": "go_up",
 },
 
 "go_up": {
 	"speaker": "Wren",
-	"lines": ["Go on. I'll be on the radio."],
+	"lines": ["Go on. Try it on me first. I'll be on the radio after."],
 	"goto": "",
 },
 
@@ -156,7 +157,7 @@ static func nodes(tip: String, can_ride: bool) -> Dictionary:
 
 "bye": {
 	"speaker": "Wren",
-	"lines": ["Mind the ladder."],
+	"lines": ["Mind the edge."],
 	"goto": "",
 },
 

@@ -167,7 +167,7 @@ func _draw() -> void:
 	var sw: float = _font.get_string_size(summary, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
 	draw_string(_font, Vector2(panel.end.x - 26.0 - sw, y), summary, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(1, 1, 1, 0.7))
 	y += 18.0
-	draw_string(_font, Vector2(x0, y + 8.0), "Wren's, from the Lookout", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 1, 1, 0.45))
+	draw_string(_font, Vector2(x0, y + 8.0), "Wren's, from the Watchstone", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 1, 1, 0.45))
 	# The pages, down the left.
 	var list_w: float = panel.size.x * 0.27
 	var row_h: float = minf(34.0, (panel.size.y - 140.0) / float(pages.size() + 1))
