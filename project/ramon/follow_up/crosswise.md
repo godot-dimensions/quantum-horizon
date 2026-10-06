@@ -1,8 +1,8 @@
 # Crosswise: the Miegakure remake (handover)
 
-`project/ramon/MiegakureLook/Remake/crosswise.tscn`. Ramon's brief item 6, built 5-6 Oct 2026.
-The plan, with its status and the pivots taken on the way, is `MiegakureLook/Remake/PLAN.md`; the
-research is `MiegakureLook/Remake/RESEARCH.md`. The old prototype (`MiegakureLook/levels/`, the menu's
+`project/ramon/Crosswise/crosswise.tscn`. Ramon's brief item 6, built 5-6 Oct 2026.
+The plan, with its status and the pivots taken on the way, is `Crosswise/PLAN.md`; the
+research is `Crosswise/RESEARCH.md`. The old prototype (`MiegakureLook/levels/`, the menu's
 "Slice Vision") is untouched.
 
 ## Questions for Ramon
@@ -34,7 +34,7 @@ Ideas outside the plan (not built):
 
 ## What to look at
 
-- **Play it:** open `MiegakureLook/Remake/crosswise.tscn` and press F6. Keys: WASD walk (in the
+- **Play it:** open `Crosswise/crosswise.tscn` and press F6. Keys: WASD walk (in the
   world you see; A/D are always X), Space jump, right mouse or Tab turn into W, E lift or put down, left
   mouse strike, R restart the island, F a hint, V 4D sight, F1 the artist dev panel, H back to the menu.
 - **The film:** `project/smoke_test_output/video/crosswise.mp4` (82 s, with sound): the opening shot
