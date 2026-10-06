@@ -86,6 +86,15 @@ const LabPrint := preload("res://ramon/QuantumRange/carried/LabKit/lab_print.gd"
 	set(v):
 		edge_codes = v
 		_later()
+## (Quantum Range, 6 Oct) Where a wall stops short at a corner instead of overlapping the next one,
+## {edge or wall name: Vector2(start, end)}, 1 overlapping as usual, 0 ending on the corner exactly, below
+## 0 stopping short of it (inside the other wall, so the two faces are never in one plane). At a
+## corner that points into the room the usual overlap shows: the range's blue walls ran half a metre past
+## the line behind the white wall that frames them; stopped at the corner, that white wall is their end.
+@export var edge_ends: Dictionary = {}:
+	set(v):
+		edge_ends = v
+		_later()
 ## The walls' names, one an edge of the outline (kit_room_plan.gd gives them): a doorway, an edge
 ## code or a wall panel can name its wall instead of numbering it.
 @export var wall_names: PackedStringArray = PackedStringArray():
@@ -218,6 +227,10 @@ func _rebuild_outline() -> void:
 		# Walls overlap a little at a corner so no seam opens; where the next wall goes on in line
 		# (one wall split into parts) they meet end to end instead.
 		var ends := Vector2(0.0 if _in_line(e - 1, e) else 1.0, 0.0 if _in_line(e, e + 1) else 1.0)
+		var named: String = wall_names[e] if e < wall_names.size() else ""
+		if edge_ends.has(e) or edge_ends.has(named):
+			var own: Vector2 = edge_ends.get(e, edge_ends.get(named, Vector2.ONE))
+			ends = Vector2(minf(ends.x, own.x), minf(ends.y, own.y))
 		var ops: Array = []
 		for d in doorways:
 			if int(wall_key(d[0])) == e:

@@ -62,23 +62,31 @@ func _run() -> void:
 	for c in scene.find_children("*", "MeshInstance4D", true, false):
 		n += 1
 	print("ROOM: %d mesh instances" % n)
-	_look(Vector4(0, 1.7, 16.8, 0), Vector4(0, 2.6, 0, 0))
+	_look(Vector4(0, 1.7, 19.8, 0), Vector4(0, 2.6, 0, 0))
 	await _shot("01_corridor")
 	_look(Vector4(0, 1.7, 1.5, 0), Vector4(0, 2.4, -30, 0))
 	await _shot("02_line_downrange")
-	_look(Vector4(0, 1.7, 1.5, 0), Vector4(-11.5, 4.25, -5.5, 0))
+	_look(Vector4(0, 1.7, 1.5, 0), Vector4(-9.0, 4.25, 6.5, 0))
 	await _shot("03_explainer")
-	_look(Vector4(0, 1.7, 1.5, 0), Vector4(11.5, 4.25, -5.5, 0))
+	_look(Vector4(0, 1.7, 1.5, 0), Vector4(9.0, 4.25, 6.5, 0))
 	await _shot("04_metrics")
 	_look(Vector4(0, 2.0, -30, 0), Vector4(0, 2.0, 4, 0))
 	await _shot("05_from_downrange")
-	_look(Vector4(0, 3.0, 8.5, 0), Vector4(0, 2.4, -20, 0))
+	_look(Vector4(0, 3.0, 11.5, 0), Vector4(0, 2.4, -20, 0))
 	await _shot("06_bay")
-	# Walked out to each wall, as far as you can when no experiment runs (Layout.WALK_OUT).
-	_look(Vector4(-4.5, 1.7, -5.5, 0), Vector4(-11.5, 4.0, -5.5, 0))
+	# Each wall from the middle of the bay, where you arrive.
+	_look(Vector4(-1.0, 1.7, 8.5, 0), Vector4(-9.0, 4.0, 6.5, 0))
 	await _shot("08_explainer_close")
-	_look(Vector4(4.5, 1.7, -5.5, 0), Vector4(11.5, 4.0, -5.5, 0))
+	_look(Vector4(1.0, 1.7, 8.5, 0), Vector4(9.0, 4.0, 6.5, 0))
 	await _shot("09_metrics_close")
+	# Where each blue wall ends at the line: framed by the white wall where the bay meets the hall, from
+	# the bay and from downrange.
+	_look(Vector4(-5.5, 1.7, 3.0, 0), Vector4(-9.0, 3.0, 0.0, 0))
+	await _shot("10_wall_end_from_bay")
+	_look(Vector4(-5.0, 1.7, -4.0, 0), Vector4(-9.5, 3.0, 0.0, 0))
+	await _shot("11_wall_end_from_downrange")
+	_look(Vector4(5.5, 1.7, 3.0, 0), Vector4(9.0, 3.0, 0.0, 0))
+	await _shot("12_wall_end_right")
 	_cam.global_position = Vector4(0, 70, -12, 0)
 	_cam.global_basis = Basis4D.from_yz(-PI * 0.5 + 0.0001)
 	await _shot("07_top")

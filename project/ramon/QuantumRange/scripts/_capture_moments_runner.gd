@@ -82,16 +82,56 @@ func _run() -> void:
 	# Nobody's mouse reaches this player (the range takes the mouse when it opens; see _capture_menu_clip_runner.gd).
 	_p.set("input_enabled", false)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# Nobody's keys reach the range either (typing in another window once started a run here).
+	_d.set_process_unhandled_key_input(false)
+	_r.set_process_unhandled_input(false)
 	(_r.get("sfx") as Node).set("muted", true)
 	_bot = Bot.new()
 	_bot.set("director", _d)
 	_bot.set("player", _p)
 	_bot.set("weapon", _r.get("weapon"))
-	await _home()
-	# The console, turned to.
-	_p.call("aim_at", Vector4(-2.3, 1.3, 1.5, 0))
-	await _wait(0.4)
+	# The console as you come in: floating in the middle of the bay, facing you.
+	_p.call("place", Vector4(0, 0.05, 11.0, 0), 0.0)
+	await _wait(1.2)
+	_p.call("aim_at", Vector4(0, 1.0, 6.5, 0))
 	await _shot("01_console")
+	# Close, as you stand at it; and each tile's hitbox where its picture is (aim at a tile's middle,
+	# and the weapon must say that button).
+	_p.call("place", Vector4(0, 0.05, 8.7, 0), 0.0)
+	await _wait(0.3)
+	var con: Node4D = _r.get("console")
+	_p.call("aim_at", con.local_to_global(con.call("_on_glass", Vector2(0.95, 0.21))))
+	await _wait(0.2)
+	await _shot("01a_console_close")
+	var hits: Array = []
+	for i in 6:
+		var tr: Rect2 = con.call("_tile_m", i)
+		_p.call("aim_at", con.local_to_global(con.call("_on_glass", tr.get_center())))
+		await physics_frame
+		await process_frame
+		hits.append(int(_r.get("weapon").get("hover_button")))
+	print("MOMENTS: console tiles aimed at 0 to 5 read buttons %s" % str(hits))
+	_p.call("aim_at", con.local_to_global(con.call("_on_glass", Vector2(0.95, 0.21))))
+	# Experiment 3, then 3 again twice: stage C chosen, lit on its tile.
+	_d.call("select", 2)
+	_d.call("select", 2)
+	_d.call("select", 2)
+	await _wait(0.3)
+	await _wait(0.2)
+	await _shot("01b_console_stage_c")
+	_d.call("select", 0)
+	# Started: it flies out of the view to beside you, facing you.
+	_d.call("start_pressed")
+	await _wait(0.5)
+	await _shot("01c_console_flying")
+	_p.call("place", Vector4(0, 0.05, 1.5, 0), 0.0)
+	await _wait(2.5)
+	await _shot("01d_console_beside_downrange")
+	_p.call("aim_at", (_r.get("console") as Node4D).local_to_global(_r.get("console").call("_on_glass", Vector2(0.95, 0.21))))
+	await _wait(0.2)
+	await _shot("01e_console_beside")
+	_d.call("_finish")
+	await _wait(0.4)
 	await _home()
 	# The free range, its tags, the hitboxes, the light panel.
 	_d.call("toggle_gallery")

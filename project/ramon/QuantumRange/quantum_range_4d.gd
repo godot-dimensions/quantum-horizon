@@ -41,6 +41,20 @@ var panel_source: Node
 var dev_panel: PanelContainer
 ## The tuning in force (F1; scripts/range_dev_panel.gd).
 var tuning: Dictionary = {}
+## The room holds still when you turn your slice; only the targets, their props and the shots change
+## (Ramon, 6 Oct: "I don't remember the walls of the range being slidable, just the inside happenings").
+## The old range's walls slid just the same, but 44 m off, black on black, they read as nothing; these are
+## 11.5 m off and gridded. So the room's visible pieces turn WITH your slice, round you, and look as if
+## the slice had not turned. Their collision does not: the bodies are moved out first and stay square to
+## the world (a box turned through W collides as its square, which for a wall 24 m deep in W would reach
+## metres into the room). Off by default: the room stays honest 4D, as the game will be, and its slide is
+## the plainest cue of how far you have turned; F1 "Room ignores the slice" switches it on to compare.
+var room_still: bool = false
+## What turns with you: the room's own nodes, each with where it stood.
+const ROOM_NODES := ["Hall", "Corridor", "Furniture", "ExplainerWing", "MetricsWing", "WallPanels"]
+var _room_rest: Dictionary = {}
+var _room_turn: Projection = Projection.IDENTITY
+var _room_pivot: Vector4 = Vector4.ZERO
 
 
 func _enter_tree() -> void:
@@ -65,7 +79,7 @@ func _ready() -> void:
 	player = PlayerScript.make()
 	add_child(player)
 	player.call("place", Layout.SPAWN, 0.0)
-	player.set("min_z", Layout.WALK_OUT)
+	player.set("min_z", Layout.line_hold())
 	player.set("w_limit", Layout.W_LIMIT)
 	gun = Node4D.new()
 	gun.name = "Gun"
@@ -87,6 +101,7 @@ func _ready() -> void:
 	console = Node4D.new()
 	console.name = "Console"
 	console.set_script(Console)
+	console.set("player", player)
 	add_child(console)
 	weapon = Node.new()
 	weapon.name = "Weapon"
@@ -96,6 +111,7 @@ func _ready() -> void:
 	weapon.set("gun", gun)
 	weapon.set("fx_parent", fx)
 	weapon.set("sfx", sfx)
+	weapon.set("console", console)
 	add_child(weapon)
 	var layer := CanvasLayer.new()
 	layer.name = "HUD"
@@ -145,16 +161,77 @@ func _ready() -> void:
 	home.set_script(WayHome)
 	add_child(home)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_settle_room.call_deferred()
+
+
+## Once the room has built itself (the kit pieces finish over a frame or two): its collision bodies moved
+## out to RoomBodies, where they stay, and where each room node stands remembered.
+func _settle_room() -> void:
+	for i in 3:
+		await get_tree().process_frame
+	var bodies := Node4D.new()
+	bodies.name = "RoomBodies"
+	add_child(bodies)
+	for nm in ROOM_NODES:
+		var n: Node4D = get_node_or_null(String(nm))
+		if n == null:
+			continue
+		for b in n.find_children("*", "StaticBody4D", true, false):
+			var body: Node4D = b
+			var gp: Vector4 = body.global_position
+			var gb: Projection = body.global_basis
+			body.get_parent().remove_child(body)
+			bodies.add_child(body)
+			body.global_position = gp
+			body.global_basis = gb
+		_room_rest[nm] = [n.position, n.basis]
+
+
+func _process(_delta: float) -> void:
+	if Engine.is_editor_hint() or player == null or _room_rest.is_empty():
+		return
+	room_view()
+
+
+## The room's turn round you: your basis times the inverse of the one you would have unturned, so the
+## room seen through your turned slice looks as it does through the level one. Identity when the slice is
+## level, or when room_still is off.
+func room_view() -> void:
+	var r: Projection = Projection.IDENTITY
+	# A level slice is no turn at all, rounding included, so a level room is never touched.
+	if room_still and float(player.call("slice_angle")) > 0.001:
+		var b: Projection = player.global_basis
+		r = b * (player.call("level_basis") as Projection).inverse()
+	var e: Vector4 = player.global_position
+	if r == _room_turn and (r == Projection.IDENTITY or e == _room_pivot):
+		return
+	_room_turn = r
+	_room_pivot = e
+	for nm in _room_rest:
+		var n: Node4D = get_node_or_null(String(nm))
+		if n == null:
+			continue
+		var rest: Array = _room_rest[nm]
+		n.basis = r * (rest[1] as Projection)
+		n.position = r * ((rest[0] as Vector4) - e) + e
+	if console != null:
+		console.set("view", [] if r == Projection.IDENTITY else [r, e])
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if Engine.is_editor_hint():
 		return
-	# Escape lets the mouse go (the menu, when it launched the range, takes Escape before this does);
-	# a click takes it back.
+	# Escape lets the mouse go, and a second Escape quits, as in the pen (pen_orbit_rig_4d.gd): opened on
+	# its own, nothing else got you out (Ramon, 6 Oct). From the menu the menu takes Escape first, and on a
+	# trip from the pen the way home does (range_way_home_4d.gd). A click takes the mouse back.
 	var k := event as InputEventKey
 	if k != null and k.pressed and not k.echo and k.keycode == KEY_ESCAPE:
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		if dev_panel != null and dev_panel.visible:
+			dev_panel.call("toggle")
+		elif Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		else:
+			get_tree().quit()
 		get_viewport().set_input_as_handled()
 		return
 	var mb := event as InputEventMouseButton
@@ -185,4 +262,5 @@ func apply_tuning(v: Dictionary) -> void:
 		player.set("w_limit", float(v.get("w_limit", Layout.W_LIMIT)))
 	if hud != null:
 		hud.set("w_limit", float(v.get("w_limit", Layout.W_LIMIT)))
+	room_still = float(v.get("room_still", 0.0)) > 0.5
 

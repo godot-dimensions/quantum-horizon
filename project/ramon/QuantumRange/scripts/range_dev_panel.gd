@@ -24,6 +24,7 @@ const ROWS := [
 	["spot_energy", "Spot", 0.0, 14.0, 0.1],
 	["spot_angle", "Spot cone", 8.0, 80.0, 0.5],
 	["w_limit", "W you can step", 0.5, 4.0, 0.05],
+	["room_still", "Room ignores the slice", 0.0, 1.0, 1.0],
 ]
 
 ## Who applies the values (the range's root: apply_tuning(values)).
@@ -36,7 +37,8 @@ var _readouts: Dictionary = {}
 static func defaults() -> Dictionary:
 	var l: Dictionary = Style.LIGHT
 	return {"key_energy": l["key_energy"], "key_elevation": l["key_elevation"], "key_azimuth": l["key_azimuth"],
-		"fill_energy": l["fill_energy"], "ambient_k": 1.0, "exposure": l["exposure"], "spot_energy": 12.0, "spot_angle": 28.0, "w_limit": 2.0}
+		"fill_energy": l["fill_energy"], "ambient_k": 1.0, "exposure": l["exposure"], "spot_energy": 12.0, "spot_angle": 28.0, "w_limit": 2.0,
+		"room_still": 0.0}
 
 
 ## The saved values over the defaults (or the defaults alone).
@@ -72,13 +74,21 @@ func _ready() -> void:
 		l.add_theme_font_override("font", Kit.ui_font("text"))
 		l.add_theme_font_size_override("font_size", 12)
 		row.add_child(l)
+		var key: String = String(r[0])
+		if float(r[4]) >= 1.0 and float(r[3]) == 1.0:
+			# A switch rather than a slider (0 off, 1 on).
+			var cb := CheckBox.new()
+			cb.button_pressed = float(values[key]) > 0.5
+			cb.toggled.connect(func(on: bool) -> void: _changed(key, 1.0 if on else 0.0))
+			row.add_child(cb)
+			box.add_child(row)
+			continue
 		var sl := HSlider.new()
 		sl.min_value = float(r[2])
 		sl.max_value = float(r[3])
 		sl.step = float(r[4])
 		sl.custom_minimum_size = Vector2(170, 18)
 		sl.value = float(values[r[0]])
-		var key: String = String(r[0])
 		sl.value_changed.connect(func(v: float) -> void: _changed(key, v))
 		row.add_child(sl)
 		var rd := Label.new()
@@ -102,6 +112,8 @@ func _ready() -> void:
 		for k in _sliders:
 			(_sliders[k] as HSlider).set_value_no_signal(float(values[k]))
 			(_readouts[k] as Label).text = "%.2f" % float(values[k])
+		for cb in box.find_children("*", "CheckBox", true, false):
+			(cb as CheckBox).set_pressed_no_signal(float(values.get("room_still", 0.0)) > 0.5)
 		_apply())
 	buttons.add_child(reset)
 	box.add_child(buttons)
@@ -109,7 +121,8 @@ func _ready() -> void:
 
 func _changed(key: String, v: float) -> void:
 	values[key] = v
-	(_readouts[key] as Label).text = "%.2f" % v
+	if _readouts.has(key):
+		(_readouts[key] as Label).text = "%.2f" % v
 	_apply()
 
 

@@ -45,6 +45,9 @@ var hover_locked: bool = false
 ## A console button under the crosshair (-1: none), and what pressing one does (the director's).
 var hover_button: int = -1
 var on_button: Callable
+## The console, which is picked by where your aim crosses its glass rather than by physics (it faces you
+## at any angle; range_console_4d.gd pick()).
+var console: Node
 
 var stats: Dictionary = {}
 var _held: float = 0.0
@@ -137,7 +140,17 @@ func _ray() -> Dictionary:
 	params.collide_with_areas = true
 	if player != null:
 		params.set_exclude_nodes([player])
-	return PhysicsServer4D.raycast_physics_objects(params)
+	var r: Dictionary = PhysicsServer4D.raycast_physics_objects(params)
+	# The console's glass, if it is nearer than whatever the physics found.
+	if console != null and is_instance_valid(console):
+		var c: Dictionary = console.call("pick", params.global_ray_origin, params.global_ray_direction)
+		if not c.is_empty():
+			var far: float = INF
+			if r.get("hit", false):
+				far = ((r.get("global_point", params.global_ray_origin) as Vector4) - params.global_ray_origin).length()
+			if float(c["distance"]) < far:
+				return {"hit": true, "body": c["node"], "global_point": c["point"]}
+	return r
 
 
 ## Fires one shot, quick or charged. Returns what happened.

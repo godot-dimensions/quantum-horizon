@@ -5,7 +5,7 @@ extends Node
 ##
 ## THE METRICS WALL (the research panel's "specimen" layout, re-read for a range):
 ##   specimen     the experiment chosen or in play: its number, name, how much it asks of W, its glyph
-##   the story    the five experiments in order, each with its best time or "not yet"; the one in play
+##   the story    the experiments in order, each with its best time once it has one; the one in play
 ##                lit, those done ticked
 ##   the page     the experiment's claim and what it shows, a bar per stage (seconds, the last run or the
 ##                one in play), and three live figures: the clock, accuracy and W travelled
@@ -49,7 +49,7 @@ func research(info: Resource) -> Dictionary:
 	var rows: Array = []
 	for x in exps:
 		var xid: String = String(x.get("id"))
-		rows.append([String(x.get("short")), ("best  " + _clock(float(bests[xid]))) if bests.has(xid) else "not yet"])
+		rows.append([String(x.get("short")), ("best  " + _clock(float(bests[xid]))) if bests.has(xid) else ""])
 	d["story"] = {"label": "THE SEQUENCE", "hint": ("STAGE %s  ·  IN PLAY" % char(65 + int(director.get("stage")))) if running else "CHOOSE AT THE CONSOLE",
 		"now": sel, "playing": running, "progress": 1.0, "rows": rows}
 	# The page: the bars are the stages' times, this run's while it plays, else the last run's.

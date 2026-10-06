@@ -37,6 +37,10 @@ Anything else changed is listed here.
 - `scripts/chamber_build.gd`: `W_DEPTH` is 24 m, not 8. The range's cores sit up to 7 m off in
   W and you reach them by turning the slice, so the room must still be there when you do.
 
+- `kit/kit_room_4d.gd`: an `edge_ends` export (6 Oct), so a wall can stop exactly on a corner instead
+  of overlapping the next wall by its thickness. The range's blue bay walls end on the line that way,
+  with the white wall where the bay meets the wider hall as their end frame.
+
 ## Shared on purpose, not copied
 
 - Fonts: `res://ramon/Demo/fonts/Montserrat/`.

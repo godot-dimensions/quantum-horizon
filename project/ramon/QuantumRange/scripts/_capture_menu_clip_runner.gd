@@ -6,6 +6,7 @@ extends SceneTree
 ##   1. Ring gate (01 C): the slice turns until the far core sits inside its ring, and one shot takes it.
 ##   2. Shell (03 A): a step through W past the grey shell, and the red core inside is shot.
 ##   3. Skeet (05 A): a chicken from each trap, met on its rise and shot in the air (through 45 degrees).
+##   4. Wolf Run (06 B): a wolf leaping a bar, followed and tagged in mid-air (through 50 degrees).
 ##
 ## Only the crosshair and the slice glow are on screen (the HUD's `clean`): the pane is about 3.5:1 and
 ## shows the middle half of the frame, so the cards and the radar at its edges would be cut in half.
@@ -146,6 +147,9 @@ func _run() -> void:
 	# window) then turned the camera mid-take. Nobody's input reaches this player.
 	_p.set("input_enabled", false)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# Nobody's keys reach the range either (typing in another window once started a run here).
+	_d.set_process_unhandled_key_input(false)
+	_r.set_process_unhandled_input(false)
 	(_r.get("sfx") as Node).set("muted", true)
 	# A longer lens than play's 80 degrees: the pane is small and shows only the middle band.
 	(_p.get("camera") as Camera4D).set("field_of_view_4d", deg_to_rad(60.0))
@@ -220,6 +224,41 @@ func _run() -> void:
 		var r: Dictionary = _w.call("release")
 		print("CLIP: bird %d at age %.2f, frame %d: %s" % [side + 1, float(t.get("age")), _n, str(r.get("outcome", "missed"))])
 		await _hold(16 if side == 0 else 24)
+	_rec = false
+
+	# 4. Wolf Run (06 B): a wolf running the range leaps a bar, followed, and is tagged in mid-air.
+	await _stage(5, 1)
+	(_p.get("camera") as Camera4D).set("field_of_view_4d", deg_to_rad(50.0))
+	var wolf: Node4D = null
+	while wolf == null:
+		for t in _d.call("alive"):
+			if String(t.get("family")) == "wolf":
+				wolf = t
+		await _frame()
+	var core: Node4D = (wolf.call("part", "Wolf") as Dictionary)["node"]
+	var aim4: Vector4 = core.global_position
+	_p.call("aim_at", aim4)
+	print("CLIP: beat wolf from frame %d" % _n)
+	_rec = true
+	var fired: bool = false
+	for f in 110:
+		if not is_instance_valid(wolf) or not bool(wolf.get("alive")):
+			break
+		aim4 = aim4.lerp(core.global_position, 0.3)
+		_p.call("aim_at", aim4)
+		var lp: Dictionary = wolf.get("_leap")
+		# Mid-flight over the bar: the shot.
+		if not fired and String(wolf.get("_act")) == "leap" and not lp.is_empty() and float(lp["t"]) > float(lp["gather"]) + float(lp["dur"]) * 0.4:
+			_p.call("aim_at", core.global_position)
+			_w.call("press")
+			await _frame()
+			_p.call("aim_at", core.global_position)
+			var r: Dictionary = _w.call("release")
+			print("CLIP: the wolf at frame %d: %s" % [_n, str(r.get("outcome", "missed"))])
+			fired = true
+			break
+		await _frame()
+	await _hold(26)
 	_rec = false
 	print("CLIP: %d frames, %.1f s" % [_n, _n / 30.0])
 	print("CLIP: done")

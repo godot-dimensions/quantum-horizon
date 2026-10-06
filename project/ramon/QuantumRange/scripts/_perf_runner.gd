@@ -119,6 +119,9 @@ func _run() -> void:
 	# Nobody's mouse reaches this player (the range takes the mouse when it opens; see _capture_menu_clip_runner.gd).
 	_p.set("input_enabled", false)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# Nobody's keys reach the range either (typing in another window once started a run here).
+	_d.set_process_unhandled_key_input(false)
+	_r.set_process_unhandled_input(false)
 	(_r.get("sfx") as Node).set("muted", true)
 	_p.call("place", Vector4(0, 0.05, 1.5, 0), 0.0)
 	await _wait(1.0)

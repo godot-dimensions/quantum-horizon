@@ -67,7 +67,7 @@ func _label_of(scene: Node) -> String:
 
 ## Stands you by the range master and says yes; returns the scene that opened.
 func _go_to_range() -> Node:
-	var head: Node4D = _pen.get_node("World/RangeMasterHead")
+	var head: Node4D = _pen.get_node("World/Range/RangeMasterHead")
 	var player := _pen.get_node("Player") as CharacterBody4D
 	player.global_position = Vector4(head.global_position.x + 1.6, 0.05, head.global_position.z, 0.0)
 	player.linear_velocity = Vector4.ZERO

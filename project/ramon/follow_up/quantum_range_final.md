@@ -44,6 +44,91 @@ Nothing came near the 8 ms budget, so step 65 had nothing to fix.
 first card to the results, at 30 fps (`range_locate.avi` 18 s, `range_charge.avi` 41 s,
 `range_reveal.avi` 24 s, `range_incoming.avi` 80 s, `range_skeet.avi` 29 s; MJPEG, 75 to 320 MB).
 
+## 6 Oct: after Ramon played it
+
+**The console** (`scripts/range_console_4d.gd`):
+
+- **Look.** A floating panel in the kit's desk style: a light rounded plate, black glass, a
+  glow line under it, tilted up at you. The tiles are the old size and shape, one per
+  experiment, plus START. A sixth experiment widened the glass from 1.9 to 2.19 m.
+- **Where it is.** It waits in the middle of the bay facing you as you come in. Once you start
+  something it flies to beside you (right, a little ahead) and keeps facing you. It moves again
+  only when you walk off, never as you look round. During a stage it tucks back and down out of
+  view.
+- **Picking.** By where your aim crosses the glass (`pick()`), not by physics: the physics is
+  box-only and cannot pick a turned panel. During a stage shots pass through it.
+
+**Choosing:**
+
+- 1 to 6 picks an experiment. The same number again, or the same tile shot again, steps its
+  stage A to D. START plays from that stage.
+- Nothing is locked or "not yet" anywhere. A finished experiment carries a small green
+  stopwatch and its best (whole runs from A only).
+
+**The walls:**
+
+- The explainer and metrics are the bay's own side walls, 13 m long and blue edge to edge,
+  ending at the counter.
+- The bay is 18 m wide, so they stand 9 m from its middle, as far as the Creation Lab's walls
+  from its exhibit. The type on the panels was already identical; only the distance differed
+  (measured: `scripts/_compare_walls_runner.gd`).
+- Where the bay meets the wider hall, a white bar half a metre past the line ends each blue
+  wall. The kit room copy gained `edge_ends` so the blue stops inside it.
+- The skirting at the foot of the walls is a grey a little darker than the walls (it was cyan).
+
+**Other changes:**
+
+- **Escape:** frees the mouse, and a second Escape quits (as in the pen); F1 first, if it is
+  open.
+- **The slice:** the room stays sliceable by default. F1 "Room ignores the slice" turns the
+  room's visible pieces with your slice so it looks still. Their collision stays where it was.
+- **The chickens** fly properly (`targets/target_chicken.gd`):
+  - Their wings spread (the model's wing is the folded one) and beat fast and unevenly.
+  - The body heaves and climbs nose-up, the head stays level, and the legs tuck.
+  - Shot, a bird tumbles out of the air instead of freezing.
+  - Filmed by `scripts/_chicken_lab_runner.gd`.
+
+### 06 Wolf Run
+
+Track and intercept, the way of playing the other five did not have
+(`experiments/exp_wolf.gd`):
+
+| Stage | What happens |
+|---|---|
+| A **On the run** | One wolf at a time curves across the range. Tag the red collar. |
+| B **Out of the slice** | Wolves leap two bars in your slice, then take a far leg out through W past your two metres. |
+| C **The pack** | Three run abreast and cross over. Only the red collar counts; a green one is a penalty. |
+| D **The chase** | A wolf after a running chicken. Tag it before it catches the bird; hitting the bird is a penalty. |
+
+A wolf you do not tag runs its route again, so a stage ends when every red collar is tagged.
+The results add "Chickens saved".
+
+**The wolf** (`scripts/range_wolf.gd`, `targets/target_wolf.gd`) is the pen's wolf, built from
+its ball numbers but cut finer than either the pen's or the Creation Lab's:
+
+- **Pieces.** Two body halves that flex at the barrel; the head on a neck joint with a lower jaw
+  that opens; ears, eyes, a two-piece tail; each leg upper and lower. 90 ms to loft once, shared
+  by every wolf; after that everything moves by transform only.
+- **Gait.** A rotary gallop: the hind pair, then the fore pair, then the gathered suspension,
+  about 2.3 strides a second at 6.5 m/s. Each foot is planted by a two-joint solve, so nothing
+  skates. Below 4.2 m/s it trots on diagonal pairs.
+- **Leap.** It gathers, flies a true arc (forelegs tucked then reaching, hind legs back), and
+  lands front first.
+- **Catch.** It closes faster than the bird, pounces from about two metres at where the bird
+  will be, and snaps the jaw shut. Then it lifts its head and shakes, stands a moment, and
+  lopes off with the bird struggling in its jaws.
+- **Size.** 1.6 times the pen's, so it reads across the range.
+- **Filmed** by `scripts/_wolf_lab_runner.gd` (gallop, trot, leap, catch, and a hitbox check:
+  9 of 10 single shots at running wolves tag them).
+- **Console and gallery.** Its tile on the console has the kit's wolf glyph; F2 shows one
+  standing.
+
+**The menu clip** was filmed again (9.97 s): ring gate, shell, two chickens, and a wolf tagged in
+mid-leap over a bar.
+
+**The pen's trip** (`chickenpen/scripts/pen_range_trip_4d.gd`, one line, left uncommitted for the
+pen's window): the range master now sends you here.
+
 ## Questions for Ramon
 
 Each was settled during the run with the most reversible option, and the run carried on.
@@ -52,11 +137,9 @@ Each was settled during the run with the most reversible option, and the run car
    `chickenpen/scripts/_verify_range_runner.gd` still names the old gallery in its `GALLERY`
    constant, so its "yes opens the shooting gallery" check now fails. I did not touch it. The
    same checks pass against this range in `scripts/_verify_pen_trip_runner.gd` (18 of 18).
-2. **Walking out to the walls.** From the firing line the walls' headings read, but their
-   tables do not (about 13 m away, 60° to the side). So while no experiment runs you can walk
-   downrange as far as the walls, and START puts you back on the line facing downrange. During
-   a stage the counter holds you as before. Keep it, or hold the line always?
-   (`Layout.WALK_OUT`, `range_director_4d.gd` `_process`.)
+2. **The slice and the room.** The room stays sliceable (my recommendation, 6 Oct). Its walls
+   sliding is the plainest cue of how far you have turned, and the game will be like that.
+   F1 "Room ignores the slice" freezes it so you can compare (section "6 Oct" below).
 3. **The spot.** At energy 12 it reads as a bright pool on the floor between you and the
    targets, in daylight. F1 has it (Spot, Spot cone); SAVE keeps your numbers.
 4. **Bests from my test runs.** The bot's times were being saved as your bests in
@@ -67,12 +150,17 @@ Each was settled during the run with the most reversible option, and the run car
 5. **The kit is a copy.** `QuantumRange/carried/` holds copies of the Creation Lab kit and
    the chicken, so nothing in `CreationLab/` or `chickenpen/` changed. Point the range at the
    shared kit once the kit settles?
-6. **Which idea next?** Experiments 6 to 14 in section 6 are ideas only.
+6. **Which idea next?** Experiment 06 is now Wolf Run. The other ideas in section 6 are still
+   ideas only.
 7. **The radar's size.** It is your radar's size, forked, and takes the bottom third of the
    view. It reads well, but a smaller one would show more of the floor lanes in Incoming.
 8. **The chicken's neck** prints a loft warning (22 of 2,300 tetrahedra fold inwards) the
    first time a chicken is baked. It comes with the carried rig and does not show at range
    distance; I left the rig as it is.
+9. **The menu card says five.** The catalogue's Quantum Range text still says "Five
+   experiments". The catalogue is shared, so I have not touched it again. "Six experiments of four
+   stages each, from finding a core in w to tagging a wolf that runs out of your slice" would
+   fit.
 
 ---
 

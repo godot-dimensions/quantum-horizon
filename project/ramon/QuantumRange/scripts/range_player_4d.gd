@@ -151,12 +151,16 @@ func aim_at(p: Vector4) -> void:
 ## Eases the slice back to the room's own, keeping the way you face.
 func snap_slice() -> void:
 	_snap_from = basis
-	# The way you face, flattened onto the room's x and z.
+	_snap_to = level_basis()
+	_snap_t = 0.0
+
+
+## The basis you would have with the slice turned back: the way you face, flattened onto the room's x and z.
+func level_basis() -> Projection:
 	var f: Vector4 = -basis.z
 	var flat := Vector2(f.x, f.z)
 	var y: float = atan2(-flat.x, -flat.y) if flat.length() > 0.001 else yaw()
-	_snap_to = Basis4D.from_zx(y)
-	_snap_t = 0.0
+	return Basis4D.from_zx(y)
 
 
 func _upright(b: Projection) -> Projection:
