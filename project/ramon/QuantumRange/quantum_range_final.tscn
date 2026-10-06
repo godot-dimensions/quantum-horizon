@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://ramon/QuantumRange/carried/kit/panels/kit_wall_panels_4d.gd" id="6_panels"]
 [ext_resource type="Resource" path="res://ramon/QuantumRange/range_info.tres" id="7_info"]
 [ext_resource type="Script" path="res://ramon/QuantumRange/scripts/range_furniture_4d.gd" id="8_furniture"]
+[ext_resource type="Script" path="res://ramon/QuantumRange/carried/kit/kit_light_4d.gd" id="9_light"]
 
 [node name="QuantumRange" type="Node4D"]
 script = ExtResource("1_root")
@@ -18,18 +19,18 @@ mood_key = 0
 
 [node name="Hall" type="Node4D" parent="."]
 script = ExtResource("3_room")
-outline = PackedVector2Array(-14, 10, -14, -36, 14, -36, 14, 10)
-size = Vector3(28, 8.5, 46)
-doorways = [["entrance", 12.4, 15.6, 3.6]]
+outline = PackedVector2Array(-11.5, 10, -11.5, 0, -11.5, -11, -11.5, -36, 11.5, -36, 11.5, -11, 11.5, 0, 11.5, 10)
+size = Vector3(23, 8.5, 46)
+doorways = [["entrance", 9.9, 13.1, 3.6]]
 ceiling = false
 cove = false
-wall_names = PackedStringArray("left", "far", "right", "entrance")
+wall_names = PackedStringArray("bay_left", "explainer", "left", "far", "right", "metrics", "bay_right", "entrance")
 
 [node name="Sign" type="Node" parent="Hall"]
 script = ExtResource("4_text")
 side = "s"
-edge = 3
-along = Vector2(11.2, 16.8)
+edge = 7
+along = Vector2(8.7, 14.3)
 up = Vector2(3.75, 4.75)
 outside = true
 kind = "sign"
@@ -49,18 +50,32 @@ cove = false
 script = ExtResource("8_furniture")
 
 [node name="ExplainerWing" type="Node4D" parent="."]
-position = Vector4(-9, 0, -5.2, 0)
 script = ExtResource("5_panel")
 info = ExtResource("7_info")
+room_path = NodePath("../Hall")
+wall_name = "explainer"
 
 [node name="MetricsWing" type="Node4D" parent="."]
-position = Vector4(9, 0, -5.2, 0)
 script = ExtResource("5_panel")
 kind = "research"
 info = ExtResource("7_info")
+room_path = NodePath("../Hall")
+wall_name = "metrics"
 
 [node name="WallPanels" type="Node4D" parent="."]
 script = ExtResource("6_panels")
 intro = NodePath("../ExplainerWing")
 research = NodePath("../MetricsWing")
 info = ExtResource("7_info")
+
+[node name="Spot" type="Node4D" parent="."]
+position = Vector4(0, 12, -3.5, 0)
+script = ExtResource("9_light")
+kind = "spot"
+aim = Vector3(0, 1.5, -8.5)
+angle = 28.0
+softness = 1.2
+reach = 30.0
+attenuation = 0.15
+energy = {"bright": 0.0, "dark": 0.0}
+fixture = false

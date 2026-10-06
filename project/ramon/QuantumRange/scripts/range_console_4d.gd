@@ -136,6 +136,16 @@ func _paint() -> void:
 		var t: Array = tiles[i]
 		var ink := Color(1, 1, 1)
 		c.draw_string(ft, Vector2(r.position.x + 0.03 * k, r.position.y + 0.09 * k), String(t[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(0.075 * k), Kit.UI_ACCENT if on else ink)
-		c.draw_string(fh, Vector2(r.position.x + 0.03 * k, r.position.y + 0.165 * k), String(t[1]), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 0.05 * k, int(0.03 * k), ink)
+		# The title on up to two lines, broken between words: one line cut "LOCATE & ALI" (frame room/03, 5 Oct).
+		var fit: float = r.size.x - 0.06 * k
+		var lines: Array = [""]
+		for word in String(t[1]).split(" "):
+			var tried: String = (String(lines[-1]) + " " + word).strip_edges()
+			if lines[-1] != "" and fh.get_string_size(tried, HORIZONTAL_ALIGNMENT_LEFT, -1, int(0.03 * k)).x > fit:
+				lines.append(word)
+			else:
+				lines[-1] = tried
+		for j in mini(lines.size(), 2):
+			c.draw_string(fh, Vector2(r.position.x + 0.03 * k, r.position.y + (0.155 + 0.037 * float(j)) * k), String(lines[j]), HORIZONTAL_ALIGNMENT_LEFT, fit, int(0.03 * k), ink)
 		var done: bool = bool(t[3])
 		c.draw_string(fb, Vector2(r.position.x + 0.03 * k, r.end.y - 0.03 * k), String(t[2]), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 0.05 * k, int(0.026 * k), Kit.UI_LIVE if done else Color(1, 1, 1, 0.6))

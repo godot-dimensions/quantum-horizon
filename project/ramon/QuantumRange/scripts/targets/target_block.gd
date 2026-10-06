@@ -6,7 +6,7 @@ extends "res://ramon/QuantumRange/scripts/range_target_4d.gd"
 
 const Shapes := preload("res://ramon/QuantumRange/scripts/range_shapes.gd")
 
-var radius: float = 0.5
+var radius: float = 0.6
 
 
 func build() -> void:

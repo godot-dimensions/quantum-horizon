@@ -79,12 +79,15 @@ func align(at: Vector4, prefer_w: float = INF) -> void:
 	var dw: float = at.w - eye.w
 	var lim: float = float(player.get("w_limit"))
 	var target_w: float = at.w if prefer_w == INF else prefer_w
+	# Counted the way a drag counts it (range_player_4d.gd turn_slice), so the results show the turning.
+	var before: float = float(player.call("slice_angle"))
 	if absf(target_w) <= lim - 0.05:
 		# Step there, and keep the room's slice.
 		var p: Vector4 = player.global_position
 		p.w = target_w
 		player.global_position = p
 		player.basis = Basis4D.from_zx(float(player.call("yaw")))
+		player.set("slice_turned", float(player.get("slice_turned")) + absf(float(player.call("slice_angle")) - before))
 		player.call("aim_at", at)
 		return
 	# Too far to step: turn the slice so the line to the part lies in it.
@@ -98,6 +101,7 @@ func align(at: Vector4, prefer_w: float = INF) -> void:
 	if b.determinant() < 0.0:
 		b.x = -b.x
 	player.basis = b
+	player.set("slice_turned", float(player.get("slice_turned")) + absf(float(player.call("slice_angle")) - before))
 	player.call("aim_at", at)
 	if log_lines:
 		print("BOT: turned the slice %.1f degrees for a part %.1f m off in W" % [float(player.call("slice_angle")), dw])

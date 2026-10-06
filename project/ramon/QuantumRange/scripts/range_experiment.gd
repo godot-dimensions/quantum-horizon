@@ -63,6 +63,13 @@ func keys() -> Array:
 	return []
 
 
-## A point downrange in front of the firing position: `x` across, `y` up, `dist` metres out, `w` through W.
+## How much nearer than written every experiment's distances are: the stages were written at 10 to 30 m,
+## where through an 80 degree view between the two wings the targets read too small to see how they are
+## built (frames moments/, 5 Oct); one number brings everything in together.
+const NEARER := 0.82
+
+
+## A point downrange in front of the firing position: `x` across, `y` up, `dist` metres out (times NEARER),
+## `w` through W.
 static func ahead(x: float, y: float, dist: float, w: float = 0.0) -> Vector4:
-	return Vector4(x, y, Layout.STAND.z - dist, w)
+	return Vector4(x, y, Layout.STAND.z - dist * NEARER, w)

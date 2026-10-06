@@ -15,9 +15,9 @@ const OPEN := 1.1
 const MOVE := 0.35
 const PETALS := 6
 
-var core_r: float = 0.26
-var bud_r: float = 0.42
-var bud_h: float = 0.95
+var core_r: float = 0.34
+var bud_r: float = 0.55
+var bud_h: float = 1.25
 var phase: float = 0.0
 ## 0 closed .. 1 open, now.
 var openness: float = 0.0

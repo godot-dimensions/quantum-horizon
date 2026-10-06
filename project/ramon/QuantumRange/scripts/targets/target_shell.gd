@@ -10,11 +10,11 @@ extends "res://ramon/QuantumRange/scripts/range_target_4d.gd"
 const Shapes := preload("res://ramon/QuantumRange/scripts/range_shapes.gd")
 
 ## The shell's radius; its thickness through W either side of its middle (the torisphere's minor radius).
-var shell_r: float = 0.8
+var shell_r: float = 1.0
 var shell_w: float = 0.2
-var core_r: float = 0.3
+var core_r: float = 0.38
 ## How far the core reaches through W either side.
-var core_w: float = 0.7
+var core_w: float = 0.75
 
 
 func build() -> void:

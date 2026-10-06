@@ -60,7 +60,7 @@ func rebuild() -> void:
 			var mid: Vector2 = (a + d2) * 0.5 + inward * 0.04
 			var span: float = len
 			# The door leaves its gap in the line.
-			if e == 3:
+			if e == Layout.ENTRANCE_EDGE:
 				var left: float = Layout.entrance_along(Layout.DOOR.y)
 				var right: float = Layout.entrance_along(Layout.DOOR.x)
 				for piece in [Vector2(0.0, left), Vector2(right, len)]:
