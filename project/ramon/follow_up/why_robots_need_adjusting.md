@@ -39,15 +39,16 @@ robots always meant, in the new camera's terms, and all 24 use it.
 ### 2. The game changed on purpose
 
 Since 22 Sept (50e8db7) Trym only gets up when you talk to him (F). His test still waited for him
-to get up by himself, so it failed for three weeks. The robot was out of date, not the game.
+to get up by himself, so it failed for two weeks. The robot was out of date, not the game.
 Fixed in d9178dd: the test presses F. On the way it found a real bug: he aimed his turn from his
 stool's spot rather than from where he stood.
 
 ### 3. Things moved
 
 Since the units became movable (6 Oct) and layout A rearranged the field, anything a robot
-wrote down as a world position may now point at empty grass. The capture shots of the tower were
-aimed wrongly at first and had to be re-aimed. The fix that lasts: robots ask the unit where its
+wrote down as a world position may now point at empty grass. The cave-fade test's points in the tunnel were
+written in field coordinates and had to be rewritten once the cave unit could move. The fix that
+lasts: robots ask the unit where its
 spots are (`CaveHill.to_world(...)`, the tower's `ladder_foot()`, the units' `...Arrival`
 markers) instead of writing coordinates down.
 
@@ -79,7 +80,7 @@ and more). Robots check numbers; some bugs are a wrong experience with every num
 ### 7. The robot's own surroundings
 
 - **Focus:** a robot window that loses focus misses its key presses. The balloon ride's burner
-  check failed once and passed on the rerun. Robot windows now refuse focus
+  check failed once and passed on the rerun. Newer robot windows refuse focus
   (`root.unfocusable`).
 - **Sharing Godot:** several Claude windows share one Godot, so a robot can wait, time out, or
   never run. A lock file (`.claude/godot_in_use.txt`) takes turns.
