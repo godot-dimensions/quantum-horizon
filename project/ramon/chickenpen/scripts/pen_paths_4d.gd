@@ -1,49 +1,60 @@
 extends Node
 
-## The pen's paths, the player's side of them (6 Oct 2026, PenLayout/PLAN_A.md phase 5): three
-## switches on the network (CreationLab/PathCreator/graph/path_network_4d.gd), each on its own key
-## and listed on the controls card (H).
-##   F5  reveal or static: paths found as you go (a stretch shows once you have been near it), or
+## The pen's paths, the player's side of them (6 Oct 2026, PenLayout/PLAN_A.md phase 5): two switches
+## on the network (CreationLab/PathCreator/graph/path_network_4d.gd), each on its own key and listed
+## on the controls card (H).
+##   F5  the look: SAND (the field's look: the paths are sand, no icons) or DEV (the dev look: a
+##       white path with the sheet's blue icons on it)
+##   F6  reveal or static: paths found as you go (a stretch shows once you have been near it), or
 ##       every path shown all the time
-##   F6  the icons (the sheet's chevrons, balls and W dots) on or off
-##   F7  the sand on or off
 ## Remembered between runs in user://pen_settings.cfg, next to the interface size. A full restart
 ## (Ctrl+R) forgets what reveal has found.
 ##
-## TWO LOOKS, NEVER MIXED (Ramon, 6 Oct: "the blue will never render on the sand versions. the toggle
-## will be at some point between just sand, or icons on white"). The field's look is sand alone, so
-## a first run is sand on, icons off, static. The sheet's blue icons are the dev look, for a white
-## floor: while there is sand the icons, if switched on, are drawn in the sand's own colours
-## (the network's "walk" look), and only with the sand off are they blue.
+## ONE KEY, TWO LOOKS, NEVER MIXED (Ramon, 6 Oct: "the toggle will be at some point between just
+## sand, or icons on white"; and later, "when toggling f5 i see a watermark of the icons moving, but
+## no clear switch from sand to dev look white with the blue icons on top"). Icons and sand were two
+## keys, and icons over sand were drawn in the sand's colours: a watermark. Now there are only the
+## two looks, and F5 swaps them.
+##
+## THE SAND'S EDGE FADES INTO THE GROUND as the pen paints it (its glow, from the Grass node), so
+## the ground's colours are handed to the network here, and again whenever the ground changes.
 
 @export var network_path: NodePath = NodePath("../../World/Paths")
-@export var key_reveal: Key = KEY_F5
-@export var key_icons: Key = KEY_F6
-@export var key_sand: Key = KEY_F7
+@export var grass_path: NodePath = NodePath("../../World/Grass")
+@export var key_look: Key = KEY_F5
+@export var key_reveal: Key = KEY_F6
 @export_range(0.5, 6.0, 0.1) var message_seconds: float = 2.2
 @export_range(10, 40, 1) var text_size: int = 18
+## The dev look's path, and the colour its icons' soft edges blend toward (the path under them).
+@export var dev_white: Color = Color(0.93, 0.935, 0.94)
 
 const SETTINGS := "user://pen_settings.cfg"
-## "path_looks", not "paths": the earlier section was written while icons-and-sand was the start,
-## and a new name lets the sand-only start take over.
-const SECTION := "path_looks"
+## A new section for the two-look switch: the earlier ones held icons and sand separately.
+const SECTION := "path_looks_2"
 
 var _network: Node
+var _grass: Node
 var _label: Label
 var _left: float = 0.0
+var _dev: bool = false
 
 
 func _ready() -> void:
 	_network = get_node_or_null(network_path)
 	if _network == null:
-		push_warning("PenPaths: no path network at %s, so F5, F6 and F7 do nothing." % network_path)
+		push_warning("PenPaths: no path network at %s, so F5 and F6 do nothing." % network_path)
 		return
 	var cfg := ConfigFile.new()
 	cfg.load(SETTINGS)
+	_dev = String(cfg.get_value(SECTION, "look", "sand")) == "dev"
 	_network.set("reveal", bool(cfg.get_value(SECTION, "reveal", false)))
-	_network.set("show_marks", bool(cfg.get_value(SECTION, "icons", false)))
-	_network.set("show_sand", bool(cfg.get_value(SECTION, "sand", true)))
-	_match_look()
+	_apply_look()
+	_grass = get_node_or_null(grass_path)
+	if _grass != null:
+		for sig in ["ground_changed", "glow_changed"]:
+			if _grass.has_signal(sig):
+				_grass.connect(sig, func(_on: bool) -> void: _ground_to_paths())
+	_ground_to_paths.call_deferred()
 	var layer := CanvasLayer.new()
 	layer.layer = 20
 	add_child(layer)
@@ -70,25 +81,63 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _network == null or not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	var key: Key = (event as InputEventKey).keycode
-	if key == key_reveal:
+	if key == key_look:
+		_dev = not _dev
+		_apply_look()
+		_say("Paths: dev look, icons on white" if _dev else "Paths: sand")
+	elif key == key_reveal:
 		_network.set("reveal", not bool(_network.get("reveal")))
 		_say("Paths: found as you go" if bool(_network.get("reveal")) else "Paths: all shown")
-	elif key == key_icons:
-		_network.set("show_marks", not bool(_network.get("show_marks")))
-		_say("Path icons: on" if bool(_network.get("show_marks")) else "Path icons: off")
-	elif key == key_sand:
-		_network.set("show_sand", not bool(_network.get("show_sand")))
-		_say("Sand paths: on" if bool(_network.get("show_sand")) else "Sand paths: off")
 	else:
 		return
-	_match_look()
 	get_viewport().set_input_as_handled()
 	_save()
 
 
-## The icons' look by the sand: in sand colours over sand, the sheet's blue only without it.
-func _match_look() -> void:
-	_network.set("look", "walk" if bool(_network.get("show_sand")) else "dev")
+## Whether the dev look is on (for runners and the controls card).
+func is_dev() -> bool:
+	return _dev
+
+
+## Sets the look: true the dev look (white path, blue icons), false the field's sand.
+func set_dev(on: bool) -> void:
+	_dev = on
+	if _network != null:
+		_apply_look()
+
+
+## The two looks. Sand: the strips in the yard's sand, no icons. Dev: the strips white and the
+## sheet's blue icons on them, their soft edges blending into the white.
+func _apply_look() -> void:
+	_network.set("show_sand", true)
+	_network.set("show_marks", _dev)
+	_network.set("look", "dev" if _dev else "walk")
+	if _dev:
+		_network.set("under_color", dev_white)
+
+
+## The ground's colours, as the Grass node paints them (pen_grass_4d.gd _glow_to does the same for
+## the grass's far edge), for the sand's edge to fade into.
+func _ground_to_paths() -> void:
+	if _network == null or not _network.has_method("set_ground"):
+		return
+	if _grass == null or not is_instance_valid(_grass) or _grass.get("ground_colour") == null:
+		_network.call("set_ground", {})
+		return
+	var paint: bool = bool(_grass.get("ground_paint"))
+	var glow_on: bool = paint and bool(_grass.get("ground_glow"))
+	# In linear light: the shader's ground colours are plain vec3s (path_sand.gdshader says why).
+	var glow: Color = (_grass.call("_paint_adjust", _grass.get("glow_colour")) as Color).srgb_to_linear()
+	var own: Color = _grass.get("ground_colour")
+	var edge: Color = ((_grass.call("_paint_adjust", own) as Color) if paint else own).srgb_to_linear()
+	var centre: Vector2 = _grass.get("glow_centre")
+	_network.call("set_ground", {
+		"glow_area": Vector4(centre.x, centre.y, float(_grass.get("glow_in")), float(_grass.get("glow_out"))),
+		"glow_colour": Vector3(glow.r, glow.g, glow.b),
+		"edge_colour": Vector3(edge.r, edge.g, edge.b),
+		"glow_on": 1.0 if glow_on else 0.0,
+		"glow_w": float(_grass.get("glow_w")),
+	})
 
 
 func _say(text: String) -> void:
@@ -104,9 +153,8 @@ func _say(text: String) -> void:
 func _save() -> void:
 	var cfg := ConfigFile.new()
 	cfg.load(SETTINGS)
+	cfg.set_value(SECTION, "look", "dev" if _dev else "sand")
 	cfg.set_value(SECTION, "reveal", bool(_network.get("reveal")))
-	cfg.set_value(SECTION, "icons", bool(_network.get("show_marks")))
-	cfg.set_value(SECTION, "sand", bool(_network.get("show_sand")))
 	cfg.save(SETTINGS)
 
 

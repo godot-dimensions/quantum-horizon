@@ -61,6 +61,10 @@ const BALL := preload("res://ramon/chickenpen/scripts/loft_ball_4d.gd")
 @export_range(1.0, 30.0, 0.5) var fly_min: float = 4.0
 @export_range(1.0, 40.0, 0.5) var fly_max: float = 9.0
 @export_range(0.4, 4.0, 0.05) var land_seconds: float = 1.1
+## How far from a perch (on the ground) a landing may start. Further than this, the crow flies
+## there first at its cruising speed. Wider than its turning circle (fly_speed over its 1.8 rad/s
+## turn, 2.5 m), or it could circle the perch for ever without reaching it.
+@export_range(1.0, 10.0, 0.5) var land_reach: float = 3.5
 
 @export_group("Flight")
 @export_range(0.5, 20.0, 0.5) var fly_speed: float = 4.5
@@ -117,6 +121,11 @@ var _heading: float = 0.0
 var _home := Vector4.ZERO
 var _from := Vector4.ZERO
 var _to := Vector4.ZERO
+## Flying to a perch picked too far off to land on from here (true), and that perch.
+var _going := false
+var _perch_goal := Vector4.ZERO
+## This landing's length (land_seconds, longer for a longer glide in).
+var _land_total: float = 1.1
 var _leg: float = 0.0
 var _look: float = 0.0
 var _look_at: float = 0.0
@@ -359,7 +368,10 @@ func _do_takeoff(delta: float) -> void:
 func _do_flying(delta: float) -> void:
 	var to: Vector4 = _to - position
 	var flat: float = Vector2(to.x, to.z).length()
-	if flat < 0.9:
+	if _going and flat < land_reach:
+		_land_on(_perch_goal)
+		return
+	if flat < 0.9 and not _going:
 		_pick_air()
 		to = _to - position
 		flat = Vector2(to.x, to.z).length()
@@ -378,18 +390,35 @@ func _do_flying(delta: float) -> void:
 	var phase: float = fposmod(_beat, 1.0)
 	_flap(0.55 if phase > glide_share else 0.0)
 	_stand(0.0)
-	if _mood_left > 0.0:
+	if _mood_left > 0.0 or _going:
 		return
+	var perch: Vector4 = _pick_perch()
+	# A FAR PERCH IS FLOWN TO, NOT LANDED ON (6 Oct). The landing is a fixed glide of
+	# land_seconds from wherever the crow is. That was fine while every perch was round the pen;
+	# layout A put Trym's shed, one of them, 48 m off, and the "landing" crossed it in a second,
+	# at 40 m/s. So beyond land_reach the crow cruises to a point over the perch first.
+	if Vector2(perch.x - position.x, perch.z - position.z).length() > land_reach:
+		_going = true
+		_perch_goal = perch
+		_to = perch + Vector4(0.0, 1.2, 0.0, 0.0)
+		return
+	_land_on(perch)
+
+
+## The flare onto [param perch], from here: a glide a little longer the further it has to come.
+func _land_on(perch: Vector4) -> void:
+	_going = false
 	_from = position
-	_to = _pick_perch()
+	_to = perch
 	_mood = Mood.LANDING
-	_mood_left = land_seconds
+	_land_total = land_seconds * clampf(Vector2(perch.x - position.x, perch.z - position.z).length() / 2.5, 1.0, 1.6)
+	_mood_left = _land_total
 
 
 ## The flare: wings wide, nose up, legs reaching. This is the part that sells a landing,
 ## and it is why the legs are posed rather than walked - they have to come DOWN on cue.
 func _do_landing(delta: float) -> void:
-	var t: float = 1.0 - clampf(_mood_left / maxf(land_seconds, 0.01), 0.0, 1.0)
+	var t: float = 1.0 - clampf(_mood_left / maxf(_land_total, 0.01), 0.0, 1.0)
 	var along: Vector4 = _from.lerp(_to, ease(t, 0.6))
 	# A shallow approach rather than a drop, with the last of it almost level.
 	position = Vector4(along.x, along.y + sin(t * PI) * 0.25 * (1.0 - t), along.z, along.w)

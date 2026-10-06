@@ -162,6 +162,11 @@ const FRAME_GAP := 1.6
 ## arrival markers live inside its units).
 @export var targets_deep: bool = false
 
+## THE GROUND UNDER THE SAND (6 Oct 2026): the sand's soft edge fades into the ground's own colour
+## (render/path_sand.gdshader). set_ground() hands it the colours the ground is painted with: the
+## pen's glow, from its Grass node (chickenpen/scripts/pen_paths_4d.gd). Empty: `under_color`.
+var _ground: Dictionary = {}
+
 var _items: Dictionary = {}
 var _queued: bool = false
 var _notes: PackedStringArray = PackedStringArray()
@@ -214,7 +219,9 @@ func ground_at(x: float, z: float, w: float, from_y: float = 0.0, skip: Array = 
 		if hit.is_empty() or not bool(hit.get("hit", false)) or not hit.has("global_point"):
 			return 0.0
 		var body: Object = hit.get("body")
-		if body is StaticBody4D:
+		# A body marked "drape_through" is in the way, not underfoot (the pen's fallen pillar lies
+		# across its path): the route lies on whatever is under it.
+		if body is StaticBody4D and not (body as Node).has_meta(&"drape_through"):
 			return (hit["global_point"] as Vector4).y - o.y
 		if not (body is Node4D):
 			return 0.0
@@ -1023,6 +1030,35 @@ func _apply_look() -> void:
 		Draw.set_param(mi, "under_color", under_color)
 		Draw.set_param(mi, "motion", 1.0 if motion else 0.0)
 		Draw.set_param(mi, "flow", flow)
+		var k: String = String(key)
+		if k.begins_with("Sand") or k.begins_with("Pad"):
+			_sand_in_field(mi)
+
+
+## A sand box's place in the field, for its mottle and its ground (path_sand.gdshader `field_*`):
+## where its own x and z axes lie in the field's x and z, and its W. And the ground's colours.
+func _sand_in_field(mi: MeshInstance4D) -> void:
+	var o: Vector4 = mi.position
+	var bx: Vector4 = mi.basis.x
+	var bz: Vector4 = mi.basis.z
+	if is_inside_tree():
+		o = global_position + global_basis * mi.position
+		bx = global_basis * mi.basis.x
+		bz = global_basis * mi.basis.z
+	Draw.set_param(mi, "field_origin", Vector2(o.x, o.z))
+	Draw.set_param(mi, "field_x", Vector2(bx.x, bx.z))
+	Draw.set_param(mi, "field_z", Vector2(bz.x, bz.z))
+	Draw.set_param(mi, "field_w", o.w)
+	Draw.set_param(mi, "ground_mode", 0.0 if _ground.is_empty() else 1.0)
+	for gk in _ground:
+		Draw.set_param(mi, String(gk), _ground[gk])
+
+
+## The ground's colours for the sand's edge: glow_area (centre x, z, full out to, gone by),
+## glow_colour, edge_colour (Vector3s, sRGB), glow_on, glow_w. An empty Dictionary: under_color.
+func set_ground(p: Dictionary) -> void:
+	_ground = p
+	_apply_look()
 
 
 ## Every slot to the next library on disk (F5).

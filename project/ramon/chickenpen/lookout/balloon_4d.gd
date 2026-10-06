@@ -85,8 +85,10 @@ const DRAWN_PEN := Vector4(23.5, 0.0, 19.0, 0.0)
 const PEN_BEND_IN := Vector2(10.0, 26.0)
 const PEN_BEND_OUT := Vector2(44.0, 64.0)
 
-@export var envelope_colours: Array[Color] = [Color(0.62, 0.14, 0.10), Color(0.90, 0.84, 0.70), Color(0.66, 0.16, 0.11),
-	Color(0.88, 0.62, 0.16), Color(0.16, 0.42, 0.44), Color(0.62, 0.14, 0.10)]
+## A range of reds and nothing else (Ramon, 6 Oct: "change wrens baloon to a range of red, no other
+## colors"): deep, bright, crimson and brick bands, close enough to read as one red balloon.
+@export var envelope_colours: Array[Color] = [Color(0.58, 0.09, 0.07), Color(0.78, 0.16, 0.10), Color(0.50, 0.06, 0.09),
+	Color(0.70, 0.21, 0.12), Color(0.64, 0.11, 0.08), Color(0.46, 0.07, 0.06)]
 @export var wicker: Color = Color(0.62, 0.47, 0.28)
 ## Whether it is up and ready by the tower, or not here at all yet.
 @export var ready_now: bool = false

@@ -25,7 +25,7 @@ player_path = NodePath("../../../Player")
 notice_within = 4.0
 
 [node name="MooringSpot" type="Node4D" parent="."]
-position = Vector4(-7.5, 0, 6, 0)
+position = Vector4(-11.5, 0, 5, 0)
 
 [node name="MarshSpot" type="Node4D" parent="."]
 position = Vector4(-14, 0, 12, 8)

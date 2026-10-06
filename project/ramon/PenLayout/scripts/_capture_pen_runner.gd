@@ -14,6 +14,7 @@ extends SceneTree
 ##   CreationLab/scripts/lab_run.sh windowed pl_cap res://ramon/PenLayout/scripts/_capture_pen_runner.gd <set> [scene]
 
 const OUT := "res://smoke_test_output/pen_layout/"
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
 const LabGrid := preload("res://ramon/CreationLab/LabKit/lab_grid.gd")
 ## PathCreator's lab floor (pathcreator_4d.gd FLOOR), and its grid's two line colours.
 const DEV_FLOOR := Color(0.96, 0.965, 0.97)
@@ -24,8 +25,89 @@ const DEV_FLOOR := Color(0.96, 0.965, 0.97)
 ## player is walked through at a run before the shot, so reveal finds what is near them); "set"
 ## (node path -> {property: value}, set before the shot: a tower's fence frame on, say);
 ## "devfloor" (from that shot on, the ground is PathCreator's white lab floor and the paths' floor
-## colour matches it: the look of a dev version of the pen, Ramon 6 Oct).
+## colour matches it: the look of a dev version of the pen, Ramon 6 Oct); "tilt" (eye shots: the
+## slice turned, Vector2(xw, zw) in degrees, as slice_angles_4d.gd turns it; flat when left out).
+const DEV_LOOK := {"look": "dev", "show_marks": true, "show_sand": true, "under_color": Color(0.93, 0.935, 0.94)}
+const SAND_LOOK := {"look": "walk", "show_marks": false, "show_sand": true}
 const SETS := {
+	# Ramon's notes of 6 Oct (the second round): the paths' edge and colour and the two looks, the
+	# road at the rock pile's fork, the ruined wall's arch and its fallen pillar, the funnel of hills,
+	# the tower, the balloon, the tower's hill, the oak, and the cave's mouth with the slice turned.
+	"feedback": [
+		{"name": "paths_fork_sand", "at": Vector4(-4.5, 1.2, 4.5, 0), "yaw": 0.0, "pitch": -22.0, "distance": 7.0, "paths": SAND_LOOK},
+		{"name": "paths_fork_dev", "at": Vector4(-4.5, 1.2, 4.5, 0), "yaw": 0.0, "pitch": -22.0, "distance": 7.0, "paths": DEV_LOOK},
+		{"name": "paths_close_sand", "at": Vector4(-8.0, 1.2, 12.0, 0), "yaw": 160.0, "pitch": -30.0, "distance": 4.0, "paths": SAND_LOOK},
+		{"name": "paths_close_dev", "at": Vector4(-8.0, 1.2, 12.0, 0), "yaw": 160.0, "pitch": -30.0, "distance": 4.0, "paths": DEV_LOOK},
+		{"name": "paths_pen", "at": Vector4(0.0, 1.2, 2.0, 0), "yaw": 0.0, "pitch": -14.0, "distance": 8.0, "paths": SAND_LOOK},
+		{"name": "funnel", "at": Vector4(4.0, 1.2, 38.0, 0), "yaw": 22.0, "pitch": -4.0, "distance": 6.0},
+		{"name": "arch_south", "at": Vector4(-11.2, 1.2, 23.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 6.0},
+		{"name": "arch_close", "at": Vector4(-11.2, 1.2, 20.0, 0), "yaw": 0.0, "pitch": -4.0, "distance": 4.0},
+		{"name": "arch_tilted", "at": Vector4(-11.2, 1.2, 20.0, 0), "yaw": 0.0, "pitch": -4.0, "distance": 4.0, "tilt": Vector2(0.0, 14.0)},
+		{"name": "arch_tilted_b", "at": Vector4(-11.2, 1.2, 20.0, 0), "yaw": 0.0, "pitch": -4.0, "distance": 4.0, "tilt": Vector2(0.0, -14.0)},
+		{"name": "ruins_long", "at": Vector4(-3.0, 1.2, 25.0, 0), "yaw": 55.0, "pitch": -6.0, "distance": 7.0},
+		{"name": "ruins_w15", "at": Vector4(-3.0, 1.2, 25.0, 1.5), "yaw": 55.0, "pitch": -6.0, "distance": 7.0},
+		{"name": "arch_north", "at": Vector4(-11.2, 1.2, 9.0, 0), "yaw": 180.0, "pitch": -6.0, "distance": 6.0},
+		{"name": "tower_w0", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "tower_w2", "at": Vector4(-7.0, 1.2, -23.0, 2.0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "tower_w3", "at": Vector4(-7.0, 1.2, -23.0, 3.1), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "tower_close", "at": Vector4(-12.0, 1.2, -26.0, 0), "yaw": 20.0, "pitch": 24.0, "distance": 6.0},
+		{"name": "tower_deck", "at": Vector4(-16.0, 11.2, -33.6, 0), "yaw": 0.0, "pitch": -4.0, "distance": 5.0},
+		{"name": "balloon", "at": Vector4(-14.0, 1.2, -18.0, 0), "yaw": 25.0, "pitch": 6.0, "distance": 8.0},
+		{"name": "tower_hill", "at": Vector4(0.0, 1.2, -4.0, 0), "yaw": 8.0, "pitch": 2.0, "distance": 6.0},
+		{"name": "oak", "at": Vector4(-6.0, 1.2, 42.0, 0), "yaw": 90.0, "pitch": 8.0, "distance": 7.0},
+		{"name": "oak_far", "at": Vector4(4.0, 1.2, 38.0, 0), "yaw": 80.0, "pitch": 0.0, "distance": 6.0},
+		{"name": "cave_tilt_a", "at": Vector4(7.5, 1.2, 35.0, 0), "yaw": 0.0, "pitch": -2.0, "distance": 6.0, "tilt": Vector2(0.0, 28.0)},
+		{"name": "cave_tilt_b", "at": Vector4(7.5, 1.2, 35.0, 0), "yaw": 0.0, "pitch": -2.0, "distance": 6.0, "tilt": Vector2(0.0, -28.0)},
+		{"name": "cave_w4", "at": Vector4(7.5, 1.2, 33.0, 4.0), "yaw": 0.0, "pitch": -2.0, "distance": 6.0},
+		{"name": "camp", "at": Vector4(20.0, 1.2, 4.5, -2.5), "yaw": 0.0, "pitch": -12.0, "distance": 6.0},
+		{"name": "camp_close", "at": Vector4(18.0, 1.2, 1.5, -2.5), "yaw": -25.0, "pitch": -18.0, "distance": 4.5},
+		{"name": "camp_side", "at": Vector4(25.0, 1.2, -2.0, -2.5), "yaw": 90.0, "pitch": -10.0, "distance": 5.0},
+		{"name": "camp_from_farm", "at": Vector4(20.0, 1.2, 4.5, 0.0), "yaw": 0.0, "pitch": -12.0, "distance": 6.0},
+		{"name": "camp_combined", "at": Vector4(20.0, 1.2, 4.5, 0.0), "yaw": 0.0, "pitch": -12.0, "distance": 6.0, "engine": "Combined"},
+	],
+	# The main character, front and back, in the cross-section and in volume view (Ramon, 6 Oct:
+	# "can you make a screenshot showing the main character in 2 views").
+	"hero": [
+		{"name": "front", "at": Vector4(12.0, 1.2, 37.0, 0), "yaw": 180.0, "pitch": -4.0, "distance": 3.2, "set": {"Player": {"_facing": PI}}},
+		{"name": "back", "at": Vector4(12.0, 1.2, 37.0, 0), "yaw": 0.0, "pitch": -4.0, "distance": 3.2, "set": {"Player": {"_facing": PI}}},
+		{"name": "front_volume", "at": Vector4(12.0, 1.2, 37.0, 0), "yaw": 180.0, "pitch": -4.0, "distance": 3.2, "engine": "Combined", "set": {"Player": {"_facing": PI}}},
+		{"name": "back_volume", "at": Vector4(12.0, 1.2, 37.0, 0), "yaw": 0.0, "pitch": -4.0, "distance": 3.2, "engine": "Combined", "set": {"Player": {"_facing": PI}}},
+	],
+	# The green bit, taken apart: the same view with one thing hidden at a time.
+	"cavediag": [
+		{"name": "all", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, -45.0)},
+		{"name": "no_ground", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, -45.0), "set": {"World/Ground/GroundMesh": {"visible": false}}},
+		{"name": "no_hill", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, -45.0), "set": {"World/Ground/GroundMesh": {"visible": true}, "World/Cave/CaveHill": {"visible": false}}},
+		{"name": "no_mountains", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, -45.0), "set": {"World/Cave/CaveHill": {"visible": true}, "World/Hills": {"visible": false}}},
+		{"name": "top_w8", "top": Vector4(7.5, 0, 18, 8.0), "size": 40.0, "set": {"World/Hills": {"visible": true}}},
+		{"name": "top_w10", "top": Vector4(7.5, 0, 18, 10.0), "size": 40.0},
+		{"name": "top_w12", "top": Vector4(7.5, 0, 18, 12.0), "size": 40.0},
+	],
+	# The same from where Ramon stood, at steeper tilts, to find the green bit.
+	"cavesweep": [
+		{"name": "zw35", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, -35.0)},
+		{"name": "zw45", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, -45.0)},
+		{"name": "zw55", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, -55.0)},
+		{"name": "zw65", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, -65.0)},
+		{"name": "zw75", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, -75.0)},
+		{"name": "zw45_xw-25", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(-25.0, -45.0)},
+		{"name": "zw45_xw25", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(25.0, -45.0)},
+		{"name": "zwp35", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, 35.0)},
+		{"name": "zwp50", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, 50.0)},
+		{"name": "zwp65", "at": Vector4(7.5, 1.2, 31.0, 0), "yaw": 0.0, "pitch": -10.0, "distance": 8.0, "tilt": Vector2(0.0, 65.0)},
+	],
+	# The cave's mouth with the slice turned lengthways (Ramon's screenshot, 6 Oct: "when opening the
+	# cave a little green bit is in the back"), from close, at several tilts each way.
+	"cavetilt": [
+		{"name": "z30_m15", "at": Vector4(7.5, 1.2, 30.5, 0), "yaw": 0.0, "pitch": -2.0, "distance": 6.0, "tilt": Vector2(0.0, -15.0)},
+		{"name": "z30_m22", "at": Vector4(7.5, 1.2, 30.5, 0), "yaw": 0.0, "pitch": -2.0, "distance": 6.0, "tilt": Vector2(0.0, -22.0)},
+		{"name": "z30_m30", "at": Vector4(7.5, 1.2, 30.5, 0), "yaw": 0.0, "pitch": -2.0, "distance": 6.0, "tilt": Vector2(0.0, -30.0)},
+		{"name": "z30_m40", "at": Vector4(7.5, 1.2, 30.5, 0), "yaw": 0.0, "pitch": -2.0, "distance": 6.0, "tilt": Vector2(0.0, -40.0)},
+		{"name": "z28_m30", "at": Vector4(7.5, 1.2, 28.5, 0), "yaw": 0.0, "pitch": 0.0, "distance": 4.0, "tilt": Vector2(0.0, -30.0)},
+		{"name": "z28_m45", "at": Vector4(7.5, 1.2, 28.5, 0), "yaw": 0.0, "pitch": 0.0, "distance": 4.0, "tilt": Vector2(0.0, -45.0)},
+		{"name": "z30_x25", "at": Vector4(7.5, 1.2, 30.5, 0), "yaw": 0.0, "pitch": -2.0, "distance": 6.0, "tilt": Vector2(25.0, -25.0)},
+		{"name": "z30_xm25", "at": Vector4(7.5, 1.2, 30.5, 0), "yaw": 0.0, "pitch": -2.0, "distance": 6.0, "tilt": Vector2(-25.0, -25.0)},
+	],
 	"before": [
 		{"name": "top", "top": Vector4(0, 0, -2, 0), "size": 108.0},
 		{"name": "top_combined", "top": Vector4(0, 0, -2, 0), "size": 108.0, "engine": "Combined"},
@@ -209,10 +291,13 @@ func _run() -> void:
 			player.global_position = at
 			if player is CharacterBody4D:
 				(player as CharacterBody4D).linear_velocity = Vector4.ZERO
-			rig.set("yaw", deg_to_rad(float(shot.get("yaw", 0.0))))
+			var tilt: Vector2 = shot.get("tilt", Vector2.ZERO)
+			SliceAngles.tilt(rig, deg_to_rad(tilt.x), deg_to_rad(tilt.y), deg_to_rad(float(shot.get("yaw", 0.0))))
 			rig.set("pitch", deg_to_rad(float(shot.get("pitch", -10.0))))
 			if shot.has("distance"):
+				# The rig eases its distance toward _zoom_target, so both, or the shot keeps the old one.
 				rig.set("distance", float(shot["distance"]))
+				rig.set("_zoom_target", float(shot["distance"]))
 			if rig.has_method("_apply"):
 				rig.call("_apply")
 			top_cam.make_current()

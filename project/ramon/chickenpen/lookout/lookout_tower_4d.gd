@@ -116,17 +116,32 @@ enum Design { CAB, BALCONY }
 ##                          in four directions, like the tower's own shape but in 4D.
 ##   the rail is 2.4 apart  a 1.2 grid put a post in the middle of the ladder's opening and cost 12,900
 ##                          tetrahedra; at 2.4 the posts stand either side of the ladder.
-##   the hut's slats 0.75   14,400 tetrahedra at 0.6, most of them in W layers no slice shows at once.
 ## `PenLayout/scripts/_study_tower_cells_runner.gd` counts the tetrahedra part by part.
+##
+## AND AGAIN (6 Oct, later; Ramon: "tower is in a bad shape. you have to adjust the fence generator
+## properly, compare with the old, and measure", "roof floats", "Why does it float?"). What you see
+## of the frame on the farm's slice is not its posts, which stand at grid layers in W off the slice,
+## but its RIBS along W, and the generator makes ribs 0.8 of the posts' height by default: the legs
+## stopped two metres under the deck, the hut's slats short of its roof. Now:
+##   the base   no filler in any direction (fence_spacing past its size): its legs are the ribs along
+##              W at the four corners, as tall and as thick as the posts (0.26, the old legs'), up to
+##              the deck, tied by the girts; the old frame's silhouette, without its X braces, which
+##              the generator cannot draw. Through W the legs lean in toward the deck as the old
+##              legs did in x and z.
+##   the rail   its ribs the posts' height, so the rail's posts reach its top rail
+##   the hut    not fence tech at all (Ramon: "reduce complexity of little house and fill all with
+##              white ... just make a window frame on top without the tech. only corner pillons"):
+##              white walls, the W walls too, window frames laid on them, a pillar at each corner.
 @export var fence_frame: bool = false:
 	set(v):
 		fence_frame = v
 		if is_node_ready():
 			rebuild()
-## The spacing decides where the grid's layers fall in W, and on a layer its ribs read as solid
-## walls; 2.2 keeps every layer off the farm's slice (at +-1.07 and +-3.2 for a 6.4 m cab), so from
-## there the base is an open lattice and the solid layers are what you pass through in W.
-@export_range(0.5, 10.0, 0.1, "suffix:m") var fence_spacing: float = 2.2:
+## The spacing of the base's filler posts. Past the base's size (the default) there is none: four
+## corner legs in x and z, and the W ends. A grid layer in W reads as solid walls wherever the slice
+## falls on it, and a layer's ribs lean through W with the legs, so the slice cuts them as tall bands;
+## no filler keeps all of that at the base's two W ends.
+@export_range(0.5, 30.0, 0.1, "suffix:m") var fence_spacing: float = 14.0:
 	set(v):
 		fence_spacing = v
 		if is_node_ready() and fence_frame:
@@ -136,7 +151,7 @@ enum Design { CAB, BALCONY }
 		fence_rings = v
 		if is_node_ready() and fence_frame:
 			rebuild()
-@export_range(0.05, 0.6, 0.01, "suffix:m") var fence_post: float = 0.24:
+@export_range(0.05, 0.6, 0.01, "suffix:m") var fence_post: float = 0.26:
 	set(v):
 		fence_post = v
 		if is_node_ready() and fence_frame:
@@ -306,13 +321,14 @@ func _fence_base(h: float, half: float, wd: float) -> void:
 	var foot: float = half + splay
 	var top: float = half - 0.12
 	_fence("FenceBase", Vector3(foot * 2.0, foot * 2.0, _base_foot_w(half, wd)), h - 0.5, fence_spacing, fence_rings, 0.05,
-		fence_post, top / foot, Vector4(0.0, 0.5, 0.0, 0.0), steel)
+		fence_post, top / foot, Vector4(0.0, 0.5, 0.0, 0.0), steel, 1.0)
 
 
-## A FenceGenerator4D box: [param box] is its size in x, z and W; [param height] its posts'; built
-## at once, in one colour.
+## A FenceGenerator4D box: [param box] is its size in x, z and W; [param height] its posts' (and its
+## ribs', which are what a slice between grid layers shows); [param rib_t] the ribs' thickness as a
+## share of the posts'. Built at once, in one colour.
 func _fence(part: String, box: Vector3, height: float, spacing: float, rings: int, coverage: float,
-		post: float, ratio: float, at: Vector4, colour: Color) -> FenceGenerator4D:
+		post: float, ratio: float, at: Vector4, colour: Color, rib_t: float = 1.0) -> FenceGenerator4D:
 	var f := FenceGenerator4D.new()
 	f.name = part
 	f.update_automatically = false
@@ -323,6 +339,9 @@ func _fence(part: String, box: Vector3, height: float, spacing: float, rings: in
 	f.post_height_meters = height
 	f.post_thickness_meters = post
 	f.top_footprint_ratio = ratio
+	# Ribs as tall as the posts: on the farm's slice the ribs are what you see (see fence_frame).
+	f.rib_height_ratio = 1.0
+	f.rib_thickness_ratio = rib_t
 	f.beam_count = rings
 	f.beam_coverage = coverage
 	f.beam_max_height_ratio = 0.98
@@ -573,6 +592,36 @@ static func _frame_along(y: Vector4) -> Projection:
 
 # --- The balcony -------------------------------------------------------------------------------
 
+## The hut on the fence frame (Ramon, 6 Oct: "reduce complexity of little house and fill all with
+## white. how you solve the window issue just make a window frame on top without the tech. only
+## corner pillons"): four white walls and the two W walls, each full height so the roof sits on
+## them; a window frame laid over each, in the band where the old panes were; a pillar at each corner.
+func _build_white_hut(h: float, cs: float, cw: float, ch: float, wd: float) -> void:
+	var white := Color(0.86, 0.85, 0.82)
+	var trim := Color(0.66, 0.65, 0.62)
+	var t: float = 0.1
+	for face in 4:
+		var axis: Vector4 = [Vector4(0, 0, -1, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(-1, 0, 0, 0)][face]
+		var along: Vector4 = Vector4(-axis.z, 0.0, axis.x, 0.0)
+		var at: Vector4 = axis * (cw - t * 0.5)
+		_box("HutWall", at + Vector4(0, h + ch * 0.5, 0, 0), _with_y(_orient(along, cs, t, wd), ch), white)
+		# The frame: a sill, a head and two jambs round the window band, and a mullion, proud of
+		# the wall by a few centimetres, as deep in W as the wall.
+		var out: Vector4 = axis * (cw + 0.02)
+		var span: float = cs - 0.5
+		var band := Vector2(1.0, 2.0)
+		for y in [band.x, band.y]:
+			_box("HutFrame", out + Vector4(0, h + y, 0, 0), _with_y(_orient(along, span + 0.12, 0.06, wd - 0.2), 0.08), trim)
+		for k in [-0.5, 0.0, 0.5]:
+			_box("HutFrame", out + along * (k * span) + Vector4(0, h + (band.x + band.y) * 0.5, 0, 0),
+				_with_y(_orient(along, 0.08, 0.06, wd - 0.2), band.y - band.x), trim)
+	for sw in [-1.0, 1.0]:
+		_box("HutW", Vector4(0.0, h + ch * 0.5, 0.0, sw * (wd * 0.5 - 0.05)), Vector4(cs, ch, cs, 0.1), white)
+	# The corner pillars, a little proud of both walls they meet.
+	for sx in [-1.0, 1.0]:
+		for sz in [-1.0, 1.0]:
+			_box("HutPillar", Vector4(sx * cw, h + ch * 0.5, sz * cw, 0.0), Vector4(0.2, ch, 0.2, wd), trim)
+
 ## The deck on the frame's top, its railings, the cabin and its hip roof.
 func _build_balcony(h: float, _frame_half: float, wd: float) -> void:
 	var half: float = deck_size * 0.5
@@ -595,7 +644,7 @@ func _build_balcony(h: float, _frame_half: float, wd: float) -> void:
 	var posts: int = 6 if not fence_frame else -1
 	if fence_frame:
 		_fence("FenceRail", Vector3(deck_size - 0.12, deck_size - 0.12, wd - 0.12), rail_height, 2.4, 2, 0.12,
-			0.08, 1.0, Vector4(0.0, h, 0.0, 0.0), rail)
+			0.08, 1.0, Vector4(0.0, h, 0.0, 0.0), rail, 0.8)
 	for face in (4 if not fence_frame else 0):
 		var a: Vector2 = _corner(face, half - 0.06)
 		var b: Vector2 = _corner(face + 1, half - 0.06)
@@ -626,14 +675,7 @@ func _build_balcony(h: float, _frame_half: float, wd: float) -> void:
 	var frame_c := Color(0.92, 0.91, 0.88)
 	_box("CabinFloor", Vector4(0.0, h + 0.02, 0.0, 0.0), Vector4(cs, 0.04, cs, wd), floor_colour)
 	if fence_frame:
-		# Slatted walls, the same white, as deep in W as the cabin, the dark panes left behind them.
-		# Slats 0.8 apart (spacing 0.75: three spans a side, nine in W, the nearest W layers 0.36 off
-		# the farm's slice), four girts.
-		_fence("FenceHut", Vector3(cs, cs, wd), ch, 0.75, 4, 0.45, 0.07, 1.0, Vector4(0.0, h, 0.0, 0.0), wall)
-		for face in 4:
-			var ax: Vector4 = [Vector4(0, 0, -1, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(-1, 0, 0, 0)][face]
-			var al: Vector4 = Vector4(-ax.z, 0.0, ax.x, 0.0)
-			_box("Pane", ax * (cw - 0.12) + Vector4(0, h + 1.45, 0, 0), _with_y(_orient(al, cs - 0.2, 0.03, wd - 0.3), 1.1), Color(0.10, 0.12, 0.14))
+		_build_white_hut(h, cs, cw, ch, wd)
 	for face in (4 if not fence_frame else 0):
 		var axis: Vector4 = [Vector4(0, 0, -1, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(-1, 0, 0, 0)][face]
 		var along: Vector4 = Vector4(-axis.z, 0.0, axis.x, 0.0)

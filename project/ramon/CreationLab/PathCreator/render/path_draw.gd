@@ -16,14 +16,18 @@ extends RefCounted
 const Spec := preload("res://ramon/CreationLab/PathCreator/path_spec.gd")
 const Symbols := preload("res://ramon/CreationLab/PathCreator/render/path_symbols.gd")
 const MarkShader := preload("res://ramon/CreationLab/PathCreator/render/path_mark.gdshader")
+## The sand has a shader of its own (6 Oct): it writes its depth, which the marks need not pay for.
+const SandShader := preload("res://ramon/CreationLab/PathCreator/render/path_sand.gdshader")
 const Mats := preload("res://ramon/CreationLab/LabKit/lab_materials.gd")
 
 const SEGMENT := 0
 const NODE := 1
 const PIVOT := 2
 const FRAME := 3
-## The pen's sand under the marks: a soft-edged strip, or a round patch at a node.
+## The pen's sand under the marks: a soft-edged strip, or a round patch at a node (path_sand.gdshader).
 const SAND := 4
+## The pen's yard sand (chickenpen/grass/pen_grass_4d.gd sand_colour), which the paths' sand matches.
+const YARD_SAND := Color(0.64, 0.47, 0.29)
 
 static var _packed: Dictionary = {}
 
@@ -58,6 +62,11 @@ static func sym_size(id: int) -> Vector2:
 static func material(mode: int) -> TetraMaterial4D:
 	var m := TetraMaterial4D.new()
 	var cs: ShaderMaterial = m.get_cross_section_material_3d()
+	if mode == SAND:
+		cs.shader = SandShader
+		m.albedo_color = YARD_SAND
+		cs.set_shader_parameter("w_soft", Spec.W_SOFT)
+		return m
 	# The shader before anything else: Material4D only fills an empty slot with its own.
 	cs.shader = MarkShader
 	# The colour the projected half of the volume view (Combined, Projected) draws these boxes in;

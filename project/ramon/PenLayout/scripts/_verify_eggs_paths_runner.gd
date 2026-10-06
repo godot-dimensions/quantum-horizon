@@ -1,12 +1,12 @@
 extends SceneTree
 
 ## Pen layout A (6 Oct 2026, PenLayout/PLAN_A.md steps 32 and 59): the two bags of azoth and the
-## paths' three switches.
+## paths' switches.
 ##   the bags   each stands inside the field (46 m in x, z and W), clear of the hill, and walking
 ##              up to it at its W puts two azoth on the belt
-##   the paths  the network built (routes, sand, marks); F6 hides and shows the marks, F7 the sand,
-##              F5 turns reveal on (only what you have been near shows) and off again; each is
-##              remembered in user://pen_settings.cfg
+##   the paths  the network built (routes, sand, marks); F5 swaps the two looks (sand alone, or a
+##              white path with blue icons: 6 Oct, the second round), F6 turns reveal on (only what
+##              you have been near shows) and off again; both remembered in user://pen_settings.cfg
 ##
 ##   CreationLab/scripts/lab_run.sh windowed pl_eggs res://ramon/PenLayout/scripts/_verify_eggs_paths_runner.gd
 
@@ -85,25 +85,19 @@ func _run() -> void:
 	_check(graph != null and (graph.get("edges") as Array).size() > 30, "the network has its routes", "%d edges" % ((graph.get("edges") as Array).size() if graph != null else 0))
 	for n in net.call("notes"):
 		print("    note: %s" % n)
-	net.set("show_marks", true)
-	net.set("show_sand", true)
+	paths.call("set_dev", false)
 	net.set("reveal", false)
 	await _frames(5)
-	var both: Array = _showing(net)
-	_check(both[0] > 40 and both[1] > 40, "icons and sand both showing", "marks %d, sand %d" % both)
-	await _key(paths.get("key_icons"))
+	var sand: Array = _showing(net)
+	_check(sand[0] == 0 and sand[1] > 40 and String(net.get("look")) == "walk", "the sand look: sand alone, no icons", "marks %d, sand %d, look %s" % [sand[0], sand[1], net.get("look")])
+	await _key(paths.get("key_look"))
 	await _frames(3)
-	var no_marks: Array = _showing(net)
-	_check(no_marks[0] == 0 and no_marks[1] == both[1], "F6: the icons go, the sand stays", "marks %d, sand %d" % no_marks)
-	await _key(paths.get("key_sand"))
-	await _frames(3)
-	var none: Array = _showing(net)
-	_check(none[0] == 0 and none[1] == 0, "F7: the sand goes too", "marks %d, sand %d" % none)
-	await _key(paths.get("key_icons"))
-	await _key(paths.get("key_sand"))
+	var dev: Array = _showing(net)
+	_check(dev[0] > 40 and dev[1] == sand[1] and String(net.get("look")) == "dev", "F5: the dev look, the icons on a white path", "marks %d, sand %d, look %s" % [dev[0], dev[1], net.get("look")])
+	await _key(paths.get("key_look"))
 	await _frames(3)
 	var back: Array = _showing(net)
-	_check(back == both, "F6 and F7 again: both back", "marks %d, sand %d" % back)
+	_check(back == sand and String(net.get("look")) == "walk", "F5 again: sand alone", "marks %d, sand %d" % back)
 	# Reveal: from a clean slate, nothing found far from everything (the player taken there first,
 	# or what was near the last bag is found); standing at the start finds what is near it.
 	for i in 10:
@@ -111,7 +105,7 @@ func _run() -> void:
 		await physics_frame
 	net.call("reset_reveal")
 	await _key(paths.get("key_reveal"))
-	_check(bool(net.get("reveal")), "F5: reveal on")
+	_check(bool(net.get("reveal")), "F6: reveal on")
 	for i in 20:
 		_player.global_position = Vector4(0.0, 1.2, -40.0, -8.0)
 		await physics_frame
@@ -131,16 +125,14 @@ func _run() -> void:
 			found += 1
 	_check(found >= 3 and found < (graph.get("edges") as Array).size(), "at the start, the routes near it are found and the rest are not", "%d of %d" % [found, (graph.get("edges") as Array).size()])
 	await _key(paths.get("key_reveal"))
-	_check(not bool(net.get("reveal")), "F5 again: every route shown")
+	_check(not bool(net.get("reveal")), "F6 again: every route shown")
 	var cfg := ConfigFile.new()
 	cfg.load("user://pen_settings.cfg")
-	_check(cfg.get_value("path_looks", "reveal", null) == false and cfg.get_value("path_looks", "icons", null) == true and cfg.get_value("path_looks", "sand", null) == true,
-		"the switches are remembered", "%s %s %s" % [cfg.get_value("path_looks", "reveal", "?"), cfg.get_value("path_looks", "icons", "?"), cfg.get_value("path_looks", "sand", "?")])
-	_check(String(net.get("look")) == "walk", "with sand showing, the icons are in the sand's colours, not blue", String(net.get("look")))
+	_check(cfg.get_value("path_looks_2", "reveal", null) == false and cfg.get_value("path_looks_2", "look", null) == "sand",
+		"the switches are remembered", "%s %s" % [cfg.get_value("path_looks_2", "reveal", "?"), cfg.get_value("path_looks_2", "look", "?")])
 	# Leave the player's switches as a first run has them (this test pressed them).
-	cfg.set_value("path_looks", "reveal", false)
-	cfg.set_value("path_looks", "icons", false)
-	cfg.set_value("path_looks", "sand", true)
+	cfg.set_value("path_looks_2", "reveal", false)
+	cfg.set_value("path_looks_2", "look", "sand")
 	cfg.save("user://pen_settings.cfg")
 	print("EGGS AND PATHS: %s (%d failed)" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	quit(0 if _fails == 0 else 1)

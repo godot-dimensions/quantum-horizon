@@ -92,8 +92,9 @@ const TRAIL_POINTS := 12
 ## Sand round these (node name: how far past what stands on the ground; for clearing_fill
 ## names, past their whole outline), at their own w, the edge broken by sand_ragged of noise.
 ## The pen's yard, and the marsh's banks (3 Oct: "just water, sand ... place the sand from the
-## pen also here surrounding it").
-@export var sand_round: Dictionary = {"Pen": 1.8, "AnaMarsh": 2.4}
+## pen also here surrounding it"). And the watchtower's foot (6 Oct, Ramon: "sand underneath") and
+## the researchers' camp's trodden ground, each across its whole outline (clearing_fill names).
+@export var sand_round: Dictionary = {"Pen": 1.8, "AnaMarsh": 2.4, "Lookout": 1.4, "EggCamp": 0.8}
 ## Warmer than it looks it should be, and NOT calmed with the paint layer (paint_brightness and
 ## paint_saturation are for the field's greens): under the teal sky fill a duller tan reads grey
 ## (Ramon, 3 Oct: "the sand in the pen is not slightly yellow, its grey now?"). Measured from
@@ -290,8 +291,8 @@ var shade_test: float = -1.0:
 ## broken up by noise (clearing_ragged) with a fringe of thinner, trodden grass outside it.
 ## Names in clearing_fill are cleared inside their whole outline too (the pen's run, the
 ## ground under the tower).
-@export var clearings: Dictionary = {"AnaMarsh": 1.2, "Lookout": 2.5, "Pen": 1.5}
-@export var clearing_fill: PackedStringArray = PackedStringArray(["Pen", "Lookout"])
+@export var clearings: Dictionary = {"AnaMarsh": 1.2, "Lookout": 2.5, "Pen": 1.5, "EggCamp": 1.0}
+@export var clearing_fill: PackedStringArray = PackedStringArray(["Pen", "Lookout", "EggCamp"])
 @export_range(0.0, 4.0, 0.05, "suffix:m") var clearing_ragged: float = 1.2
 @export_range(0.1, 5.0, 0.05, "suffix:m") var clearing_fringe: float = 1.5
 

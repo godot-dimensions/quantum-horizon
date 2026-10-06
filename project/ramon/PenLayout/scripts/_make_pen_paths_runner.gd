@@ -6,9 +6,10 @@ extends SceneTree
 ## are field coordinates: x east, z south, and W.
 ##
 ## THE ROUTES
-##   main     the start, round the hill's west shoulder (its turns curves, as the sheet draws them), over the dry stone wall a metre and a half
-##            ana (the W dots say so where the path leaves the farm's slice), back down, past the rock
-##            pile and Mithra, to the pen's gate where the keeper stands
+##   main     the start, round the hill's west shoulder (its turns curves, as the sheet draws them),
+##            through the ruined wall's arch on the farm's slice (a fallen pillar lies across it: turn
+##            the slice, or step, to get round), past the rock pile, into the cross-road where the
+##            tower and range roads branch, and on to the pen's gate where the keeper stands
 ##   east     the long way round: the hill's sunny side, the meadow and its ring, to the gate
 ##   ring     round the meadow (secondary, chords 30 degrees apart, junctions east, south and west)
 ##   spurs    the professor; the cave door four metres ana (its stretch lies at the door's W, so on
@@ -61,27 +62,24 @@ func _initialize() -> void:
 	e.call(choice, to_door)
 	e.call(to_door, door, "primary", "reveal", EGG_BAND)
 
-	# The main route: round the west shoulder, over the wall ana, down to the gate.
+	# The main route: round the west shoulder, through the ruined wall's arch, down to the gate.
 	var w1: int = n.call("bend", -5.0, 31.0)
 	var w2: int = n.call("bend", -10.0, 23.0)
-	var wall_in: int = n.call("chord", -10.8, 18.5)
-	var over_wall: int = n.call("chord", -11.2, 16.0, 1.5)
-	var wall_out: int = n.call("chord", -11.5, 13.5)
+	# Through the ruined wall's arch (World/StoneWall, pen_ruin_wall_4d.gd: the arch at x -11.2, the
+	# wall at z 16), straight, on the farm's slice. 6 Oct: the path used to step 1.5 ana over the old
+	# dry stone wall; the wall is a barrier now and the arch the way through.
+	var arch_s: int = n.call("chord", -11.2, 19.0)
+	var arch_n: int = n.call("chord", -11.2, 13.4)
 	var w3: int = n.call("bend", -10.0, 7.0)
 	# A junction: the rock pile branches off here.
 	var w4: int = n.call("junction", -4.0, 0.0)
 	var gate: int = n.call("junction", 4.0, -3.5)
 	e.call(choice, w1)
 	e.call(w1, w2)
-	e.call(w2, wall_in)
-	# Both stretches over the wall lie a metre and a half ana ("reveal" puts the first at the wall's
-	# W, "here" keeps the second there), so the path steps up before the wall and down only once it
-	# is clear of it: the W dots stand where it leaves the farm's slice and where it comes back.
-	e.call(wall_in, over_wall, "primary", "reveal", BAND)
-	e.call(over_wall, wall_out, "primary", "here", BAND)
-	e.call(wall_out, w3)
+	e.call(w2, arch_s)
+	e.call(arch_s, arch_n)
+	e.call(arch_n, w3)
 	e.call(w3, w4)
-	e.call(w4, gate)
 	var rock: int = dest.call(-5.8, 1.4, 0.0, "RockArrival", Vector2(1, 0))
 	e.call(w4, rock, "secondary")
 	var keeper: int = dest.call(3.2, -4.4, 0.0, "KeeperArrival", Vector2(0, 1))
@@ -110,8 +108,12 @@ func _initialize() -> void:
 	e.call(ring[6], gate)
 
 	# The spurs from the gate: the range, and the tower beyond the pen.
+	# The cross-road. Ramon, 6 Oct ("change road see ref"): the main road from the south runs
+	# straight on into it, and the diagonal that cut from the rock pile's fork to the gate is gone;
+	# the gate is along the cross-road to the east.
 	var west: int = n.call("junction", -6.0, -3.0)
-	e.call(gate, west)
+	e.call(w4, west)
+	e.call(west, gate)
 	var range_at: int = dest.call(-16.0, -7.5, 0.0, "RangeArrival", Vector2(1, 0))
 	e.call(west, range_at)
 	var t1: int = n.call("bend", -9.0, -16.0)

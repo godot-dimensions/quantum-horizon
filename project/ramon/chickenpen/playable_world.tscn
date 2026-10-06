@@ -1,4 +1,4 @@
-[gd_scene load_steps=386 format=4 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=391 format=4 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -83,7 +83,12 @@
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/rock_pile/rock_pile.tscn" id="unit_rockpile"]
 [ext_resource type="ImageTexture3D" path="res://ramon/chickenpen/terrain/terrain_tint_3d.tres" id="shared_ImageTexture3D_umeec"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/cave/cave.tscn" id="unit_cave"]
-[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_stone_wall_4d.gd" id="pen_wall"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_ruin_wall_4d.gd" id="pen_wall"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_round_hill_4d.gd" id="pen_round_hill"]
+[ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/hill_west.res" id="hill_west_mesh"]
+[ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/hill_tower.res" id="hill_tower_mesh"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_oak_4d.gd" id="pen_oak"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_camp_4d.gd" id="pen_camp"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_stones_4d.gd" id="pen_stones"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_paths_4d.gd" id="pen_paths"]
 [ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/graph/path_network_4d.gd" id="pc_network"]
@@ -3272,15 +3277,33 @@ head_path = NodePath("../World/TrymCabin/TrymHead")
 script = ExtResource("pen_cinematics")
 
 [node name="StoneWall" type="Node4D" parent="World"]
-position = Vector4(-23.75, 0, 16, 0)
+position = Vector4(-15, 0, 16, 0)
 script = ExtResource("pen_wall")
-length = 42.5
-metadata/what = "The dry stone wall across the field's west side, thin in W: the opening's first lesson in the fourth direction (PenLayout/PLAN_A.md step 19). Step 1.5 ana and it is gone; the long way round is east."
+metadata/what = "The ruined wall across the field's west side, from the cave hill to the west hill (the funnel), as deep in W as they are: the way through is its arch where the path crosses, and a fallen pillar thin in W lies across that. Turn the slice (or step) to get round it (Ramon, 6 Oct)."
 
-[node name="EggStones" type="Node4D" parent="World"]
+[node name="WestHill" type="MeshInstance4D" parent="World"]
+position = Vector4(-36, 0, 16, 0)
+mesh = ExtResource("hill_west_mesh")
+script = ExtResource("pen_round_hill")
+shape = "hill_west"
+metadata/what = "A hill like the cave hill without its door, at the ruined wall's west end, so the wall runs from hill to hill and funnels you to its arch (Ramon, 6 Oct). Rebake: _bake_terrain_runner.gd what=hill_west."
+
+[node name="TowerHill" type="MeshInstance4D" parent="World"]
+position = Vector4(1, 0, -41, 0)
+mesh = ExtResource("hill_tower_mesh")
+script = ExtResource("pen_round_hill")
+shape = "hill_tower"
+metadata/what = "A hill beside the watchtower, east of it so the balloon keeps the west (Ramon, 6 Oct). Rebake: _bake_terrain_runner.gd what=hill_tower."
+
+[node name="Oak" type="Node4D" parent="World"]
+position = Vector4(-17, 0, 41, 0)
+script = ExtResource("pen_oak")
+metadata/what = "The Arboretum's big oak beside Trym's shed, its own baked wood and GPU leaves (Ramon, 6 Oct)."
+
+[node name="EggCamp" type="Node4D" parent="World"]
 position = Vector4(20, 0, -2, -2.5)
-script = ExtResource("pen_stones")
-metadata/what = "Standing stones in the meadow's middle, 2.5 m kata: easter egg 1, with a bag of azoth inside (PLAN_A.md step 29)."
+script = ExtResource("pen_camp")
+metadata/what = "The researchers' camp in the meadow's middle, 2.5 m kata: easter egg 1, the bag of azoth by its crate. Tents, the bonfire in the middle, a kitchen scaffold (Ramon, 6 Oct; it replaced a ring of standing stones)."
 
 [node name="EggCairn" type="Node4D" parent="World"]
 position = Vector4(25, 0, 12, 7)
@@ -3292,7 +3315,7 @@ w_depth = 1.4
 metadata/what = "A cairn at the cave hill's east foot, 7 m ana: easter egg 2, a bag of azoth beside it (PLAN_A.md step 30)."
 
 [node name="AzothBag1" type="Node4D" parent="World/Pickups"]
-position = Vector4(20, 0.35, -2, -2.5)
+position = Vector4(18.2, 0.35, 0.1, -2.5)
 script = ExtResource("pen_pickup")
 kind = 2
 
