@@ -38,7 +38,7 @@ along = Vector2(6.2, 11.8)
 up = Vector2(3.75, 4.75)
 outside = true
 kind = "sign"
-title = "QUANTUM RANGE"
+title = "SHOOTING RANGE"
 subtitle = "QUANTUM HORIZON  ·  R&D"
 glow = 0.3
 
