@@ -143,9 +143,11 @@ func _process(d: float) -> bool:
 			# be on screen - and the room says so as you come into it.
 			_hold(ROOM + Vector4(0, 0.05, 0, -14.0))
 			var rig := _player().get_node("CameraRig") as Node4D
-			rig.set("yaw", 0.0)
+			# The slice is the rig's own basis since the camera controls changed (4 Oct, b27ffa1:
+			# GroundBasis4D); _slice_zw is gone, and setting it did nothing, so the slice never
+			# turned and the dreamer never came into view. A quarter into W, as the drag would.
+			rig.basis = GroundBasis4D.sliced(Basis4D.from_zx(0.0), Vector2(0.0, -PI * 0.5 if _t < 1.5 else PI * 0.5))
 			rig.set("pitch", deg_to_rad(8.0))
-			rig.set("_slice_zw", -PI * 0.5 if _t < 1.5 else PI * 0.5)
 			rig.call("_apply")
 			var driver: Node = _far("Systems/DreamerDriver")
 			var tag := _far("UI/DreamerTag") as CanvasItem
@@ -157,7 +159,7 @@ func _process(d: float) -> bool:
 				var thought: Node = _room.get_node("UI/ThoughtBox")
 				_check("coming into the room: wow, and I sense something", _cave.has_meta(&"cave_far_first_look_said")
 					and (String(thought.get("_full")) == "Wow... and I sense something." or _said_far), String(thought.get("_full")))
-				rig.set("_slice_zw", 0.0)
+				rig.basis = Basis4D.from_zx(0.0)
 				rig.call("_apply")
 				_step = 3; _t = 0.0
 			elif String(_room.get_node("UI/ThoughtBox").get("_full")) == "Wow... and I sense something.":
@@ -198,7 +200,7 @@ func _process(d: float) -> bool:
 			if _t > 1.5:
 				_check("and it calms when the talk is over", not bool(_far("Dreamer").call("is_warning")))
 				var rig := _player().get_node("CameraRig") as Node4D
-				rig.set("_slice_xw", deg_to_rad(35.0))
+				rig.basis = GroundBasis4D.sliced(rig.basis, Vector2(-deg_to_rad(35.0), 0.0))
 				rig.call("_apply")
 				_step = 7; _t = 0.0
 		7:
@@ -206,7 +208,7 @@ func _process(d: float) -> bool:
 			if _t > 0.8:
 				_save(2)
 				var rig := _player().get_node("CameraRig") as Node4D
-				rig.set("_slice_xw", 0.0)
+				rig.basis = GroundBasis4D.flattened(rig.basis)
 				rig.call("_apply")
 				_step = 8; _t = 0.0
 		8:

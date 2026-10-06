@@ -14,9 +14,12 @@ var _player: Node4D
 var _phase := 0
 var _t0 := 0
 var _fails: Array = []
+var _pressed: bool = false
 
 
 func _initialize() -> void:
+	# Never takes focus, so nothing typed or moved elsewhere gets in.
+	root.unfocusable = true
 	_root = load("res://ramon/chickenpen/playable_world.tscn").instantiate()
 	root.add_child(_root)
 	current_scene = _root
@@ -88,6 +91,17 @@ func _process(_d) -> bool:
 		_phase = 1
 		_t0 = Time.get_ticks_msec()
 		return false
+
+	# He gets up when you address him (F), not for standing there: rises_anyway_after is 0 on
+	# purpose, so getting up is the beat that opens his conversation (pen_trym_4d.gd). So, once
+	# beside him, F.
+	if _phase == 1 and elapsed > 0.5 and not _pressed:
+		_pressed = true
+		for down in [true, false]:
+			var e := InputEventAction.new()
+			e.action = &"catch_target"
+			e.pressed = down
+			Input.parse_input_event(e)
 
 	if _phase == 1 and elapsed > 3.5:
 		print("\n-- after you walk up to him --")

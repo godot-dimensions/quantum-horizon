@@ -352,7 +352,10 @@ func _process(delta: float) -> void:
 			# In the node's OWN frame, because _facing is applied to the figure as a local
 			# basis. Turning this node - which is how the shed aims him - rotates that
 			# frame, and a world-space angle would then be wrong by exactly that much.
-			var local: Vector4 = global_basis.inverse() * gap
+			# And from where the FIGURE stands, not the node: standing, he has stepped back
+			# from the stool, and from a couple of metres away aiming from the stool put him
+			# 20 degrees off you (6 Oct). face_towards() already aims from the figure.
+			var local: Vector4 = global_basis.inverse() * (_player.global_position - _figure.global_position)
 			want = atan2(local.x, local.z)
 
 	if not near:
