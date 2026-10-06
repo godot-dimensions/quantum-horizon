@@ -31,7 +31,6 @@ var _way_in_half := Vector4.ZERO
 
 func _ready() -> void:
 	super()
-	_tunnel_patch()
 	if Engine.is_editor_hint():
 		return
 	add_to_group(&"slice_dial_outline")
@@ -83,6 +82,11 @@ func dial_outline() -> Dictionary:
 		"label_at": global_position + global_basis * CaveHill.MOUTH}
 
 
+## RETIRED (6 Oct, Ramon: "there seems to be 2 more rocks in the cave that are unnecessary on the
+## sides"): the two boxes came into view as dark slabs when the slice was turned to open the cave. The
+## green bit is now dark in the bake itself (pen_cave_hill_4d.gd terrain, block_colour). Kept for the
+## record; nothing calls it.
+##
 ## THE GREEN BIT IN THE TUNNEL (6 Oct, Ramon: "when opening the cave a little green bit is in the
 ## back. should be black/dark"; "just fix it cheaply"). With the slice turned steeply lengthways
 ## you look down the tunnel and move through W as you look, so you see the tunnel's floor where it

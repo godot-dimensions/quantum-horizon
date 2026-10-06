@@ -22,6 +22,7 @@ extends Node4D
 const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd")
 const CutStone := preload("res://ramon/chickenpen/terrain/cut_stone_4d.gd")
 const BAKED := "res://ramon/chickenpen/terrain/baked/stones/%s_%d.res"
+const MainGreen := preload("res://ramon/chickenpen/terrain/main_green_4d.gd")
 const OWN := &"_stone_set_part"
 
 @export var stones: Array = []: set = _set_stones
@@ -54,11 +55,21 @@ func _later() -> void:
 
 ## The baked stone of [param kind] and [param variant], loaded once for every set.
 static func stone_mesh(kind: String, variant: int) -> ArrayTetraMesh4D:
-	var key: String = "%s_%d" % [kind, variant]
+	# A mossy stone in the main green when the pen shows it (terrain/main_green_4d.gd), its old moss
+	# otherwise, or when the main-green one is not baked yet.
+	var even: bool = MainGreen.on and kind.ends_with("_moss")
+	var key: String = "%s_%d%s" % [kind, variant, "_even" if even else ""]
 	if not _cache.has(key):
 		var path: String = BAKED % [kind, variant]
+		if even and ResourceLoader.exists(path.trim_suffix(".res") + "_even.res"):
+			path = path.trim_suffix(".res") + "_even.res"
 		_cache[key] = load(path) if ResourceLoader.exists(path) else null
 	return _cache[key]
+
+
+## Forgets every stone loaded, so the next ask loads them afresh (after a bake, or the switch).
+static func forget() -> void:
+	_cache.clear()
 
 
 ## The basis of a placement: lean, turn, then the stone's own size.

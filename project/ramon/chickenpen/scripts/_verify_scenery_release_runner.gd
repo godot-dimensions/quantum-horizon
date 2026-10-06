@@ -1,5 +1,7 @@
 extends SceneTree
 
+const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
+
 ## The pen's two biggest meshes let go deep in the cave and back before you are home
 ## (pen_scenery_release_4d.gd). Windowed, it prints the video memory at each step.
 
@@ -39,8 +41,10 @@ func _hold(local: Vector4) -> void:
 
 
 func _meshes_in() -> bool:
-	return (_room.get_node("World/Hills") as MeshInstance4D).mesh != null \
-		and (_room.get_node("World/Cave/CaveHill") as MeshInstance4D).mesh != null
+	# The meshes they really have: in the dev look the cave's hill is a blockout, its own mesh kept by
+	# the look (look/pen_look_4d.gd).
+	return Look.own_mesh(_room.get_node("World/Hills") as MeshInstance4D) != null \
+		and Look.own_mesh(_room.get_node("World/Cave/CaveHill") as MeshInstance4D) != null
 
 
 func _process(d: float) -> bool:

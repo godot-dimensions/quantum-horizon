@@ -31,14 +31,23 @@ extends "res://ramon/chickenpen/terrain/baked_ground_4d.gd"
 ##   sharpness - 1 a straight cone; higher a sharper summit on broader shoulders.
 
 const PenPeaks := preload("res://ramon/chickenpen/terrain/pen_peaks_4d.gd")
+const MainGreen := preload("res://ramon/chickenpen/terrain/main_green_4d.gd")
 const CLASSIC_MESH := "res://ramon/chickenpen/terrain/baked/hills.res"
 const PEAKS_MESH := "res://ramon/chickenpen/terrain/baked/mountains.res"
+## THE EVEN GREEN (6 Oct; the pen's field one green, grass/pen_grass_4d.gd even_green): the same
+## mountains baked a second time with their foot in that green, so the field runs on into them.
+## Measured across the join first: the field (61, 83, 45) on screen, then the mountains' first stretch,
+## baked in the old field green, a darker (44, 66, 39). Bake writes both; even_green picks which shows,
+## and the Grass node's switch (Ctrl+Shift+O) sets it with the field's.
+const EVEN_MESH := "res://ramon/chickenpen/terrain/baked/mountains_even.res"
 
 enum Style { CLASSIC, PEAKS }
 
 @export var style: Style = Style.PEAKS: set = _set_style
 @export_tool_button("Bake", "Reload") var _bake_action: Callable = bake
 @export var mountain_seed: int = 4
+## The foot in the pen's even green (EVEN_MESH), or in the old field green (PEAKS_MESH).
+@export var even_green: bool = true: set = _set_even
 
 @export_group("Ground")
 ## Cells along each edge of the cube-sphere's six faces. More is finer and costs video
@@ -90,32 +99,69 @@ enum Style { CLASSIC, PEAKS }
 @export_range(0.1, 4.0, 0.05) var large_sharpness: float = 1.4
 
 
+func _ready() -> void:
+	super()
+	_show()
+
+
 func _set_style(v: Style) -> void:
 	style = v
-	if not is_node_ready():
-		return
-	var path: String = PEAKS_MESH if style == Style.PEAKS else CLASSIC_MESH
-	if ResourceLoader.exists(path):
-		mesh = load(path) as Mesh4D
-	else:
+	if is_node_ready():
+		_show()
+
+
+func _set_even(v: bool) -> void:
+	even_green = v
+	if is_node_ready():
+		_show()
+
+
+## The bake the style and even_green ask for (the even one only once it has been baked).
+func _show(reload: bool = false) -> void:
+	var path: String = CLASSIC_MESH
+	if style == Style.PEAKS:
+		path = EVEN_MESH if even_green and ResourceLoader.exists(EVEN_MESH) else PEAKS_MESH
+	if not ResourceLoader.exists(path):
 		push_warning("Mountains: nothing baked at %s yet - press Bake." % path)
+		return
+	if reload or mesh == null or mesh.resource_path != path:
+		mesh = ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_REPLACE if reload else ResourceLoader.CACHE_MODE_REUSE) as Mesh4D
 
 
 ## Builds the peaks from the parameters above, saves them and shows them. Returns a line
 ## saying what was made.
+## Bakes both: the foot in the old field green (PEAKS_MESH) and in the main green (EVEN_MESH,
+## terrain/main_green_4d.gd's saved colour).
 func bake() -> String:
+	var lines: Array = [_bake_one(PEAKS_MESH, PenPeaks.FIELD), _bake_one(EVEN_MESH, MainGreen.colour())]
+	if String(lines[0]).ends_with("(OK)") and String(lines[1]).ends_with("(OK)"):
+		if style != Style.PEAKS:
+			style = Style.PEAKS
+		_show(true)
+	return "\n   ".join(lines)
+
+
+## Only the main-green one, its foot in [param c] (the grass panel's Rebake greens, through
+## terrain/main_green_4d.gd); the new mesh takes the file's path and shows if even_green is on.
+func bake_even(c: Color) -> String:
+	var line: String = _bake_one(EVEN_MESH, c, true)
+	if even_green and style == Style.PEAKS:
+		mesh = load(EVEN_MESH) as Mesh4D
+	return line
+
+
+func _bake_one(path: String, foot: Color, take_path: bool = false) -> String:
 	var started: int = Time.get_ticks_msec()
 	var recipe = PenPeaks.new(self)
+	recipe.field_colour = foot
 	var b: TerrainBake.Builder = recipe.bake_shell()
 	var made: ArrayTetraMesh4D = TerrainBake.mesh_of(b, false)
-	var err: int = ResourceSaver.save(made, PEAKS_MESH, ResourceSaver.FLAG_COMPRESS)
+	var e: int = ResourceSaver.save(made, path, ResourceSaver.FLAG_COMPRESS)
+	if e == OK and take_path:
+		made.take_over_path(path)
 	var line: String = "mountains: %d layers %s, %d vertices, %d tetrahedra (about %d MB of video memory), %.1f s -> %s (%s)" % [
 		recipe.radii().size(), str(Array(recipe.radii()).map(func(r) -> int: return roundi(r))),
 		b.positions.size(), b.tet_count(), roundi(b.tet_count() * 1.25 / 1024.0),
-		(Time.get_ticks_msec() - started) / 1000.0, PEAKS_MESH, error_string(err)]
+		(Time.get_ticks_msec() - started) / 1000.0, path, error_string(e)]
 	print(line)
-	if err == OK:
-		mesh = ResourceLoader.load(PEAKS_MESH, "", ResourceLoader.CACHE_MODE_REPLACE) as Mesh4D
-		if style != Style.PEAKS:
-			style = Style.PEAKS
 	return line

@@ -122,6 +122,238 @@ const SETS := {
 		{"name": "w1", "at": Vector4(-13.0, 1.2, -7.5, 1.0), "yaw": 90.0, "pitch": 24.0, "distance": 11.0},
 		{"name": "combined", "at": Vector4(-13.0, 1.2, -7.5, 0), "yaw": 90.0, "pitch": 24.0, "distance": 11.0, "engine": "Combined"},
 	],
+	# Ramon's round of 6 Oct afternoon: the range without its ground boxes and grass, the camp's sand
+	# painted (the ring at the farm's W, its floor at its own), the cave's sides, the wider paths, and
+	# the ground's greens against the mountains' foot.
+	"round4": [
+		{"name": "range_ref", "at": Vector4(-13.0, 1.2, -7.5, 0), "yaw": 90.0, "pitch": 24.0, "distance": 11.0},
+		{"name": "range_arrive", "at": Vector4(-13.5, 1.2, -7.5, 0), "yaw": 90.0, "pitch": 14.0, "distance": 6.0},
+		{"name": "range_back", "at": Vector4(-21.0, 1.2, -7.5, 0), "yaw": 70.0, "pitch": 10.0, "distance": 6.0},
+		{"name": "range_top", "top": Vector4(-19.0, 0, -7.5, 0.0), "size": 26.0},
+		{"name": "camp_ring_w0", "at": Vector4(20.0, 1.2, 6.0, 0.0), "yaw": 0.0, "pitch": -22.0, "distance": 8.0},
+		{"name": "camp_w25", "at": Vector4(20.0, 1.2, 6.0, -2.5), "yaw": 0.0, "pitch": -22.0, "distance": 8.0},
+		{"name": "camp_close", "at": Vector4(18.0, 1.2, 1.5, -2.5), "yaw": -25.0, "pitch": -18.0, "distance": 4.5},
+		{"name": "camp_top_w0", "top": Vector4(20.0, 0, -2.0, 0.0), "size": 22.0},
+		{"name": "camp_top_w25", "top": Vector4(20.0, 0, -2.0, -2.5), "size": 22.0},
+		{"name": "cave_front_w4", "at": Vector4(7.5, 1.2, 37.0, 4.0), "yaw": 0.0, "pitch": -2.0, "distance": 5.0},
+		{"name": "cave_near_w4", "at": Vector4(9.5, 1.2, 31.0, 4.0), "yaw": -15.0, "pitch": 6.0, "distance": 4.0},
+		{"name": "cave_tunnel_w4", "at": Vector4(7.5, 1.2, 25.0, 4.0), "yaw": 0.0, "pitch": 0.0, "distance": 2.0},
+		{"name": "paths_close", "at": Vector4(-8.0, 1.2, 12.0, 0), "yaw": 160.0, "pitch": -30.0, "distance": 4.0, "paths": {"look": "walk", "show_marks": false, "show_sand": true}},
+		{"name": "paths_fork", "at": Vector4(-4.5, 1.2, 4.5, 0), "yaw": 0.0, "pitch": -22.0, "distance": 7.0, "paths": {"look": "walk", "show_marks": false, "show_sand": true}},
+		{"name": "greens_hills", "at": Vector4(0.0, 1.2, 20.0, 0), "yaw": 180.0, "pitch": 4.0, "distance": 6.0},
+		{"name": "greens_pen", "at": Vector4(0.0, 1.2, -4.0, 0), "yaw": 8.0, "pitch": 2.0, "distance": 6.0},
+	],
+	# The ground's greens (Ramon, 6 Oct: the painted ground "a different color green than the source
+	# ground, and the green of the start of the mountains"): out to the hills three ways, painted and not.
+	"greens": [
+		{"name": "east_paint", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0},
+		{"name": "south_paint", "at": Vector4(0.0, 1.2, 22.0, 0), "yaw": 180.0, "pitch": 1.0, "distance": 4.0},
+		{"name": "west_paint", "at": Vector4(-26.0, 1.2, 12.0, 0), "yaw": 90.0, "pitch": 1.0, "distance": 4.0},
+		{"name": "pen_paint", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0},
+		{"name": "east_source", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0, "set": {"World/Grass": {"ground_paint": false}}},
+		{"name": "south_source", "at": Vector4(0.0, 1.2, 22.0, 0), "yaw": 180.0, "pitch": 1.0, "distance": 4.0},
+		{"name": "west_source", "at": Vector4(-26.0, 1.2, 12.0, 0), "yaw": 90.0, "pitch": 1.0, "distance": 4.0},
+		{"name": "pen_source", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0},
+	],
+	# The two ways to one green, to choose between. A: the glow's green over the whole field, so the
+	# field runs into the mountains' foot (measured the same green) with no dark band between. B: only
+	# the sand painted, the field the ground's own green, unadjusted.
+	"greens_ab": [
+		{"name": "A_east", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0,
+			"set": {"World/Grass": {"glow_in": 60.0, "glow_out": 150.0, "glow_w": 60.0, "ground_glow": true}}},
+		{"name": "A_south", "at": Vector4(0.0, 1.2, 22.0, 0), "yaw": 180.0, "pitch": 1.0, "distance": 4.0},
+		{"name": "A_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0},
+		{"name": "A_high", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0},
+		{"name": "B_east", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0,
+			"set": {"World/Grass": {"glow_in": 12.0, "glow_out": 40.0, "glow_w": 30.0, "paint_brightness": 1.0, "paint_saturation": 1.0, "ground_glow": false}}},
+		{"name": "B_south", "at": Vector4(0.0, 1.2, 22.0, 0), "yaw": 180.0, "pitch": 1.0, "distance": 4.0},
+		{"name": "B_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0},
+		{"name": "B_high", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0},
+		{"name": "now_high", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0,
+			"set": {"World/Grass": {"paint_brightness": 0.88, "paint_saturation": 0.85, "ground_glow": true}}},
+	],
+	# A as built (World/Grass even_green, on by default), then switched off: the falloff back.
+	"even": [
+		{"name": "on_east", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0},
+		{"name": "on_join", "at": Vector4(38.0, 1.2, 10.0, 0), "yaw": -90.0, "pitch": -2.0, "distance": 4.0},
+		{"name": "on_high", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0},
+		{"name": "on_hill", "at": Vector4(0.0, 1.2, -4.0, 0), "yaw": 8.0, "pitch": 2.0, "distance": 6.0},
+		{"name": "on_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0},
+		{"name": "off_east", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0, "set": {"World/Grass": {"even_green": false}}},
+		{"name": "off_join", "at": Vector4(38.0, 1.2, 10.0, 0), "yaw": -90.0, "pitch": -2.0, "distance": 4.0},
+		{"name": "off_high", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0},
+		{"name": "off_hill", "at": Vector4(0.0, 1.2, -4.0, 0), "yaw": 8.0, "pitch": 2.0, "distance": 6.0},
+	],
+
+	# The main green picker (grass panel, terrain/main_green_4d.gd), driven through the panel itself: a
+	# clearly different green picked, rebaked, switched off and on, then the first green back and baked.
+	"picker": [
+		{"name": "a_now_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0},
+		{"name": "a_now_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "a_now_cave", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0},
+		{"name": "b_picked_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0,
+			"call": {"GrassPanel": ["_on_swatch", Color(0.17, 0.36, 0.30)]}},
+		{"name": "c_baked_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"GrassPanel": ["_rebake"]}},
+		{"name": "c_baked_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "c_baked_cave", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0},
+		{"name": "c_baked_east", "at": Vector4(38.0, 1.2, 10.0, 0), "yaw": -90.0, "pitch": -2.0, "distance": 4.0},
+		{"name": "c_baked_range", "at": Vector4(-21.0, 1.2, -7.5, 0), "yaw": 70.0, "pitch": 10.0, "distance": 6.0},
+		{"name": "d_off_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0, "call": {"GrassPanel": ["_toggle_even"]}},
+		{"name": "e_on_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0, "call": {"GrassPanel": ["_toggle_even"]}},
+		{"name": "f_first_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"GrassPanel": ["_first_green"]}},
+		{"name": "g_first_baked_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0, "call": {"GrassPanel": ["_rebake"]}},
+		{"name": "g_first_baked_cave", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0},
+	],
+	# The dev look's fixed viewpoints (PenLayout/PLAN_DEV_LOOK.md steps 3, 30, 42, 56, 73): taken with
+	# tag=<when>, in whichever look the pen opens in (PEN_LOOK=dev|art in the environment).
+	"lookview": [
+		{"name": "pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0},
+		{"name": "tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "cave", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0},
+		{"name": "cavedoor", "at": Vector4(7.5, 1.2, 37.0, 4.0), "yaw": 0.0, "pitch": -2.0, "distance": 5.0},
+		{"name": "camp", "at": Vector4(20.0, 1.2, 6.0, -2.5), "yaw": 0.0, "pitch": -22.0, "distance": 8.0},
+		{"name": "ring", "at": Vector4(20.0, 1.2, 6.0, 0.0), "yaw": 0.0, "pitch": -22.0, "distance": 8.0},
+		{"name": "range", "at": Vector4(-13.0, 1.2, -7.5, 0), "yaw": 90.0, "pitch": 24.0, "distance": 11.0},
+		{"name": "start", "at": Vector4(4.0, 1.2, 38.0, 0), "yaw": 0.0, "pitch": -14.0, "distance": 7.0},
+		{"name": "shed", "at": Vector4(-4.0, 1.2, 33.0, 0), "yaw": 70.0, "pitch": -8.0, "distance": 8.0},
+		{"name": "wall", "at": Vector4(-11.2, 1.2, 23.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 6.0},
+		{"name": "east", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0},
+		{"name": "top", "top": Vector4(-2, 0, 8, 0), "size": 92.0},
+	],
+	# The dev palette, three ways (PenLayout/PLAN_DEV_LOOK.md step 10): A the defaults, B lighter,
+	# C darker. Run in the dev look (PEN_LOOK=dev).
+	"lookpalette": [
+		{"name": "A_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "set": {"Systems/Look": {"key_energy": 0.45, "fill_energy": 0.2, "ambient": Color(0.42, 0.44, 0.48), "ambient_sky": 0.3}}, "call": {"Systems/Look": ["reapply"]}},
+		{"name": "A_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "A_start", "at": Vector4(4.0, 1.2, 38.0, 0), "yaw": 0.0, "pitch": -14.0, "distance": 7.0},
+		{"name": "A_east", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0},
+		{"name": "B_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "set": {"Systems/Look": {"key_energy": 0.6, "fill_energy": 0.25, "ambient": Color(0.5, 0.52, 0.56), "ambient_sky": 0.3}}, "call": {"Systems/Look": ["reapply"]}},
+		{"name": "B_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "B_start", "at": Vector4(4.0, 1.2, 38.0, 0), "yaw": 0.0, "pitch": -14.0, "distance": 7.0},
+		{"name": "B_east", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0},
+		{"name": "C_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "set": {"Systems/Look": {"key_energy": 0.35, "fill_energy": 0.15, "ambient": Color(0.36, 0.38, 0.42), "ambient_sky": 0.25}}, "call": {"Systems/Look": ["reapply"]}},
+		{"name": "C_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "C_start", "at": Vector4(4.0, 1.2, 38.0, 0), "yaw": 0.0, "pitch": -14.0, "distance": 7.0},
+		{"name": "C_east", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0},
+	],
+
+	# A walk through the pen in whichever look it opens in (PLAN_DEV_LOOK.md step 58): the start, the
+	# fork, the cave door at W 4, the pen, the wall's arch, the Watchstone, the range, the camp's ring
+	# and the camp at W -2.5. Each place walked to, so the reveal finds the paths as a player would.
+	"lookwalk": [
+		{"name": "01_start", "at": Vector4(4.0, 1.2, 40.0, 0), "yaw": 0.0, "pitch": -8.0, "distance": 5.0},
+		{"name": "02_arch", "at": Vector4(-11.2, 1.2, 25.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "walk": [Vector4(-6.0, 1.2, 32.0, 0), Vector4(-11.2, 1.2, 25.0, 0)]},
+		{"name": "03_cave_door", "at": Vector4(7.5, 1.2, 36.0, 4.0), "yaw": 0.0, "pitch": -4.0, "distance": 5.0},
+		{"name": "04_fork", "at": Vector4(-4.5, 1.2, 6.0, 0), "yaw": 0.0, "pitch": -12.0, "distance": 6.0, "walk": [Vector4(-8.0, 1.2, 14.0, 0), Vector4(-4.5, 1.2, 6.0, 0)]},
+		{"name": "05_pen", "at": Vector4(2.0, 1.2, -2.0, 0), "yaw": 0.0, "pitch": -14.0, "distance": 7.0},
+		{"name": "06_tower", "at": Vector4(-10.0, 1.2, -20.0, 0), "yaw": 30.0, "pitch": 8.0, "distance": 7.0, "walk": [Vector4(-6.0, 1.2, -12.0, 0), Vector4(-10.0, 1.2, -20.0, 0)]},
+		{"name": "07_range", "at": Vector4(-12.5, 1.2, -7.5, 0), "yaw": 90.0, "pitch": 10.0, "distance": 6.0},
+		{"name": "08_ring", "at": Vector4(16.0, 1.2, 4.0, 0.0), "yaw": -20.0, "pitch": -16.0, "distance": 7.0, "walk": [Vector4(10.0, 1.2, 2.0, 0), Vector4(16.0, 1.2, 4.0, 0)]},
+		{"name": "09_camp", "at": Vector4(20.0, 1.2, 5.0, -2.5), "yaw": 0.0, "pitch": -16.0, "distance": 7.0},
+		{"name": "10_marsh", "at": Vector4(-30.0, 1.2, -16.0, 8.0), "yaw": 0.0, "pitch": -16.0, "distance": 7.0},
+	],
+	# The pen enclosure's frame in the dev look, close.
+	"lookpen": [
+		{"name": "pen_frame", "at": Vector4(2.0, 1.2, -2.0, 0), "yaw": 0.0, "pitch": -14.0, "distance": 7.0},
+		{"name": "pen_frame_high", "at": Vector4(0.0, 1.2, -2.0, 0), "yaw": 0.0, "pitch": -40.0, "distance": 12.0},
+	],
+	# The Watchstone's other blockout: three blocks (Systems/Look tower_three_blocks).
+	"looktower3": [
+		{"name": "tower3", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0, "set": {"Systems/Look": {"tower_three_blocks": true}}},
+	],
+	# The pen's own switch, timed (PLAN_DEV_LOOK.md step 57): opened in DEV, the first switch to the art,
+	# back, and again (helper=dev_look_probe_4d.gd).
+	"lookswitch": [
+		{"name": "s1_dev", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0},
+		{"name": "s2_first_art", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["pen_look", false]}},
+		{"name": "s3_dev_again", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["pen_look", true]}},
+		{"name": "s4_art_again", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["pen_look", false]}},
+	],
+	# Frame and GPU time at three of them (helper=dev_look_probe_4d.gd, which only measures here).
+	"lookperf": [
+		{"name": "perf_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["measure", "pen", 150]}},
+		{"name": "perf_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0, "call": {"DevProbe": ["measure", "tower", 150]}},
+		{"name": "perf_cave", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0, "call": {"DevProbe": ["measure", "cave", 150]}},
+	],
+	# The dev look case study (PenLayout/DEV_LOOK_STUDY.md), built live by dev_look_probe_4d.gd
+	# (helper=res://ramon/PenLayout/scripts/dev_look_probe_4d.gd): the pen as it is, then clay (its own
+	# meshes flat blue/red, ground and mountains white, the paths' arrows), then blocks (each
+	# landmark's colliders drawn instead of it), then back, each look measured.
+	"devlook": [
+		{"name": "art_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["measure", "art", 150]}},
+		{"name": "clay_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["switch_cost", "clay"]}},
+		{"name": "clay_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "clay_cave", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0},
+		{"name": "clay_cavedoor", "at": Vector4(7.5, 1.2, 37.0, 4.0), "yaw": 0.0, "pitch": -2.0, "distance": 5.0},
+		{"name": "clay_camp", "at": Vector4(20.0, 1.2, 6.0, -2.5), "yaw": 0.0, "pitch": -22.0, "distance": 8.0},
+		{"name": "clay_range", "at": Vector4(-13.0, 1.2, -7.5, 0), "yaw": 90.0, "pitch": 24.0, "distance": 11.0},
+		{"name": "clay_start", "at": Vector4(4.0, 1.2, 38.0, 0), "yaw": 0.0, "pitch": -14.0, "distance": 7.0},
+		{"name": "clay_top", "top": Vector4(-2, 0, 8, 0), "size": 92.0},
+		{"name": "clay_check", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["check"]}},
+		{"name": "clay_measure", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["measure", "clay", 150]}},
+		{"name": "blocks_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["switch_cost", "blocks"]}},
+		{"name": "blocks_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "blocks_cave", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0},
+		{"name": "blocks_cavedoor", "at": Vector4(7.5, 1.2, 37.0, 4.0), "yaw": 0.0, "pitch": -2.0, "distance": 5.0},
+		{"name": "blocks_camp", "at": Vector4(20.0, 1.2, 6.0, -2.5), "yaw": 0.0, "pitch": -22.0, "distance": 8.0},
+		{"name": "blocks_range", "at": Vector4(-13.0, 1.2, -7.5, 0), "yaw": 90.0, "pitch": 24.0, "distance": 11.0},
+		{"name": "blocks_start", "at": Vector4(4.0, 1.2, 38.0, 0), "yaw": 0.0, "pitch": -14.0, "distance": 7.0},
+		{"name": "blocks_top", "top": Vector4(-2, 0, 8, 0), "size": 92.0},
+		{"name": "blocks_check", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["check"]}},
+		{"name": "blocks_measure", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["measure", "blocks", 150]}},
+		{"name": "back_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["switch_cost", "art"]}},
+		{"name": "back_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "back_check", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["check"]}},
+		{"name": "back_measure", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["measure", "art again", 150]}},
+	],
+	# Ramon's round on the study (6 Oct): simpler blockouts (the Watchstone a cylinder, or three
+	# blocks; the cave a wedge with its door) and the sky swapped too (dev_look_probe_4d.gd simple).
+	"devsimple": [
+		{"name": "simple_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["switch_cost", "simple"]}},
+		{"name": "simple_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "simple_cave", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0},
+		{"name": "simple_cavedoor", "at": Vector4(7.5, 1.2, 37.0, 4.0), "yaw": 0.0, "pitch": -2.0, "distance": 5.0},
+		{"name": "simple_camp", "at": Vector4(20.0, 1.2, 6.0, -2.5), "yaw": 0.0, "pitch": -22.0, "distance": 8.0},
+		{"name": "simple_range", "at": Vector4(-13.0, 1.2, -7.5, 0), "yaw": 90.0, "pitch": 24.0, "distance": 11.0},
+		{"name": "simple_start", "at": Vector4(4.0, 1.2, 38.0, 0), "yaw": 0.0, "pitch": -14.0, "distance": 7.0},
+		{"name": "simple_shed", "at": Vector4(6.0, 1.2, 46.0, 0), "yaw": 30.0, "pitch": -10.0, "distance": 8.0},
+		{"name": "simple_top", "top": Vector4(-2, 0, 8, 0), "size": 92.0},
+		{"name": "simple_measure", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["measure", "simple", 150]}},
+		{"name": "simple3_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0, "call": {"DevProbe": ["switch_cost", "simple3"]}},
+		{"name": "simple3_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0},
+		{"name": "clay_sky_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["switch_cost", "clay"]}},
+		{"name": "clay_sky_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "clay_sky_cave", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0},
+		{"name": "back_art_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["switch_cost", "art"]}},
+		{"name": "back_art_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "back_art_check", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["check"]}},
+	],
+	# The art itself from the study's viewpoints that had no art frame yet.
+	"devart": [
+		{"name": "art_top", "top": Vector4(-2, 0, 8, 0), "size": 92.0},
+		{"name": "art_cavedoor", "at": Vector4(7.5, 1.2, 37.0, 4.0), "yaw": 0.0, "pitch": -2.0, "distance": 5.0},
+	],
+	# The third automatic blockout: each piece of art as its own turned box (dev_look_probe_4d.gd boxes).
+	"devboxes": [
+		{"name": "boxes_pen", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["switch_cost", "boxes"]}},
+		{"name": "boxes_tower", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0},
+		{"name": "boxes_cave", "at": Vector4(10.0, 1.2, 30.0, 0), "yaw": 0.0, "pitch": -20.0, "distance": 12.0},
+		{"name": "boxes_cavedoor", "at": Vector4(7.5, 1.2, 37.0, 4.0), "yaw": 0.0, "pitch": -2.0, "distance": 5.0},
+		{"name": "boxes_camp", "at": Vector4(20.0, 1.2, 6.0, -2.5), "yaw": 0.0, "pitch": -22.0, "distance": 8.0},
+		{"name": "boxes_range", "at": Vector4(-13.0, 1.2, -7.5, 0), "yaw": 90.0, "pitch": 24.0, "distance": 11.0},
+		{"name": "boxes_start", "at": Vector4(4.0, 1.2, 38.0, 0), "yaw": 0.0, "pitch": -14.0, "distance": 7.0},
+		{"name": "boxes_top", "top": Vector4(-2, 0, 8, 0), "size": 92.0},
+		{"name": "boxes_measure", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["measure", "boxes", 150]}},
+	],
+	# The pen opened straight into blocks (cold=blocks), the art never drawn: what the first switch
+	# to the art costs, then the warm switches.
+	"devcold": [
+		{"name": "cold_blocks", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["measure", "blocks, cold", 90]}},
+		{"name": "cold_first_art", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["switch_cost", "art"]}},
+		{"name": "cold_back_blocks", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["switch_cost", "blocks"]}},
+		{"name": "cold_art_again", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0, "call": {"DevProbe": ["switch_cost", "art"]}},
+		{"name": "cold_clay", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0, "call": {"DevProbe": ["switch_cost", "clay"]}},
+	],
 	# The rock kit (PenLayout/PLAN_WATCHSTONE.md step 2): six boulders in a row and two big ones,
 	# out in the open east of the hill.
 	"rocks": [
@@ -262,11 +494,23 @@ func _frames(n: int) -> void:
 func _run() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	var set_name: String = args[0] if args.size() > 0 else "before"
-	var scene: String = args[1] if args.size() > 1 else "res://ramon/chickenpen/playable_world.tscn"
+	var scene: String = args[1] if args.size() > 1 and not args[1].contains("=") else "res://ramon/chickenpen/playable_world.tscn"
 	var shots: Array = SETS[set_name]
-	var dir: String = OUT + set_name + "/"
+	# tag=<name>: frames into <set>_<name>/, so one set can be taken before and after a change.
+	var tag: String = ""
+	for a in args:
+		if a.begins_with("tag="):
+			tag = "_" + a.substr(4)
+	var dir: String = OUT + set_name + tag + "/"
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
 	_room = (load(scene) as PackedScene).instantiate()
+	# helper=<script>: a Node with that script added to the scene before it starts (a probe the
+	# "call" steps drive, e.g. dev_look_probe_4d.gd).
+	for a in args:
+		if a.begins_with("helper="):
+			var helper := Node.new()
+			helper.set_script(load(a.substr(7)))
+			_room.add_child(helper)
 	root.add_child(_room)
 	current_scene = _room
 	await _frames(60)
@@ -320,6 +564,21 @@ func _run() -> void:
 			if target != null:
 				for key in sets[path]:
 					target.set(key, sets[path][key])
+		# "call": node path -> [method, args...], called before the shot (awaited), and the frames after
+		# it left to settle (the panel's Rebake greens, say).
+		var calls: Dictionary = shot.get("call", {})
+		for path in calls:
+			var callee: Node = _room.get_node_or_null(NodePath(path))
+			if callee == null:
+				callee = _room.find_child(String(path), true, false)
+			if callee != null:
+				var said: Variant = await callee.callv(String(calls[path][0]), (calls[path] as Array).slice(1))
+				print("CALL %s.%s -> %s" % [path, calls[path][0], str(said).left(200)])
+			else:
+				print("CALL: no %s" % path)
+		if not calls.is_empty():
+			for k in 20:
+				await process_frame
 		for p: Vector4 in shot.get("walk", []):
 			await _walk_to(player, p)
 		if shot.has("top"):

@@ -1,5 +1,7 @@
 extends RefCounted
 
+const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
+
 ## How high the field's ground is at a point, for placing the lookout's pieces - the tower's
 ## feet, the marsh, a balloon that must not graze a hill.
 ##
@@ -44,11 +46,13 @@ func _build(room: Node, w: float, w_band: float, paths: PackedStringArray) -> vo
 	_heights.fill(0.0)
 	for path in paths:
 		var hill := find_under(room, path) as MeshInstance4D
-		if hill == null or not (hill.mesh is ArrayTetraMesh4D):
+		# The mesh it really has: the dev look may have taken it off (look/pen_look_4d.gd).
+		var hill_mesh: Mesh4D = Look.own_mesh(hill) if hill != null else null
+		if hill == null or not (hill_mesh is ArrayTetraMesh4D):
 			continue
 		var basis: Projection = hill.global_basis
 		var origin: Vector4 = hill.global_position
-		for v in (hill.mesh as ArrayTetraMesh4D).get_vertex_positions():
+		for v in (hill_mesh as ArrayTetraMesh4D).get_vertex_positions():
 			var p: Vector4 = basis * v + origin
 			if absf(p.w - w) > w_band:
 				continue

@@ -52,6 +52,7 @@ const OWNED: Array = [
 	["../../UI/SlicePlane", "toggle_key", "the dial, on or off"],
 	["../../Systems/Paths", "key_look", "paths: sand, or icons on white"],
 	["../../Systems/Paths", "key_reveal", "paths found as you go, or all shown"],
+	["../../Systems/Look", "key", "dev look, or the art"],
 ]
 
 var _rows: Array = []

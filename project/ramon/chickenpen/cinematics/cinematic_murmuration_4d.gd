@@ -1,5 +1,7 @@
 extends Node
 
+const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
+
 ## Cinematic 1, the murmuration: a title from black, six shots of the flock, a fade out.
 ## Ramon, 1 Oct: the team film, then "create letterbox. cut the first shot after 4 seconds
 ## ... a mix pass ... fade in from black starting with [a title] ... a fade out, also for the
@@ -356,11 +358,13 @@ func _map_ground() -> void:
 		var hill := _room.get_node_or_null(path) as MeshInstance4D
 		if hill == null and _room.get_node_or_null("World") != null:
 			hill = _room.get_node("World").find_child(path.get_file(), true, false) as MeshInstance4D
-		if hill == null or not (hill.mesh is ArrayTetraMesh4D):
+		# The mesh it really has: the dev look may have taken it off (look/pen_look_4d.gd).
+		var hill_mesh: Mesh4D = Look.own_mesh(hill) if hill != null else null
+		if hill == null or not (hill_mesh is ArrayTetraMesh4D):
 			continue
 		var basis: Projection = hill.global_basis
 		var origin: Vector4 = hill.global_position
-		for v in (hill.mesh as ArrayTetraMesh4D).get_vertex_positions():
+		for v in (hill_mesh as ArrayTetraMesh4D).get_vertex_positions():
 			var p: Vector4 = basis * v + origin
 			if absf(p.w - w) > 2.5:
 				continue

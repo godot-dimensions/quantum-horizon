@@ -76,7 +76,10 @@ static func corners(planes: Array) -> Array:
 ## Adds the stone to [param out] (a TerrainBake.Builder), each cell coloured by
 ## [param colour] (Callable(normal: Vector4, centre: Vector4) -> Color). [param tag] keeps its
 ## corners apart from other stones' in the same builder. Returns the number of cells.
-static func bake_into(out: TerrainBake.Builder, planes: Array, colour: Callable, tag: int = 0) -> int:
+## [param vertex_colour], if given: Callable(cell_colour: Color, normal: Vector4, at: Vector4) -> Color,
+## each corner's own colour, so a colour can run across a face (a mossy top: rock grey on the sides
+## turning green over the top, interpolated across each face by the stone material).
+static func bake_into(out: TerrainBake.Builder, planes: Array, colour: Callable, tag: int = 0, vertex_colour: Callable = Callable()) -> int:
 	var cs: Array = corners(planes)
 	var pos: Array[Vector4] = cs[0]
 	var on: Array = cs[1]
@@ -97,7 +100,9 @@ static func bake_into(out: TerrainBake.Builder, planes: Array, colour: Callable,
 		# Fanned from one of the cell's own corners rather than its middle: the faces through that
 		# corner need no tetrahedra at all, which halves the count (a cube cell: 6, not 12).
 		var apex_v: int = mine[0]
-		var apex: int = out.vertex([tag, i, apex_v], pos[apex_v], col)
+		var tint := func(v: int) -> Color:
+			return vertex_colour.call(col, normal, pos[v]) if vertex_colour.is_valid() else col
+		var apex: int = out.vertex([tag, i, apex_v], pos[apex_v], tint.call(apex_v))
 		var made: bool = false
 		for j in planes.size():
 			if j == i:
@@ -111,10 +116,10 @@ static func bake_into(out: TerrainBake.Builder, planes: Array, colour: Callable,
 			var ring: Array = _ordered(face, pos)
 			if ring.is_empty():
 				continue
-			var first: int = out.vertex([tag, i, ring[0]], pos[ring[0]], col)
+			var first: int = out.vertex([tag, i, ring[0]], pos[ring[0]], tint.call(ring[0]))
 			for t in range(1, ring.size() - 1):
-				var b: int = out.vertex([tag, i, ring[t]], pos[ring[t]], col)
-				var c: int = out.vertex([tag, i, ring[t + 1]], pos[ring[t + 1]], col)
+				var b: int = out.vertex([tag, i, ring[t]], pos[ring[t]], tint.call(ring[t]))
+				var c: int = out.vertex([tag, i, ring[t + 1]], pos[ring[t + 1]], tint.call(ring[t + 1]))
 				out.tet(apex, first, b, c, normal)
 			made = true
 		if made:
@@ -173,6 +178,10 @@ const KINDS := {
 	"round": [Vector4(0.55, 0.55, 0.5, 0.5), 0.22, 0.10],
 	"ledge": [Vector4(0.55, 0.28, 0.45, 0.45), 0.35, 0.10],
 	"chip": [Vector4(0.45, 0.32, 0.4, 0.4), 0.3, 0.14],
+	# A chunk standing a third to three quarters of a crag's height (Ramon, 6 Oct: "atleast one rock
+	# chunk that extends to 75 percent of the structure, and another one that 50%"): tall, its faces
+	# long, its top cut back.
+	"pillar": [Vector4(0.42, 1.5, 0.36, 0.42), 0.4, 0.07],
 }
 
 ## The directions of the cuts in a slice: the six faces, the eight corners, the four vertical edges.
@@ -206,6 +215,53 @@ static func face_colour(normal: Vector4, shade: float) -> Color:
 	c = c.lerp(MOSS, smoothstep(0.85, 0.98, normal.y) * 0.18)
 	c.a = 1.0
 	return c
+
+
+## The mossy top (Ramon, 6 Oct, of the Watchstone: "a texture shader that goes from rock to green on
+## top of a rock, in combinations with rocks that are just a grey rock"): each corner's colour runs
+## from the rock grey to the painting's grass green with its height in the stone and with how much
+## its face looks up. The sides stay grey to about half way, turn green over the shoulder, and the
+## top is green; flat shading keeps the facets, the colour runs across them.
+const MOSS_TOP := Color(0.43, 0.47, 0.08)
+const MOSS_TIP := Color(0.58, 0.62, 0.13)
+## The moss's colours for the bake in hand: MOSS_TOP and MOSS_TIP, or the main green's for the
+## <kind>_moss_<n>_even bakes (terrain/main_green_4d.gd).
+static var moss_top := MOSS_TOP
+static var moss_tip := MOSS_TIP
+
+
+static func moss_colour(cell: Color, normal: Vector4, at: Vector4, half: Vector4) -> Color:
+	var t: float = clampf((at.y + half.y) / (2.0 * half.y), 0.0, 1.0)
+	var up: float = clampf(normal.y, -1.0, 1.0)
+	var amount: float = smoothstep(0.42, 0.82, t + 0.25 * up) * smoothstep(-0.35, 0.35, up)
+	amount = maxf(amount, smoothstep(0.55, 0.85, up))
+	var green: Color = moss_top.lerp(moss_tip, smoothstep(0.75, 1.0, t))
+	var c: Color = cell.lerp(green, amount)
+	c.a = 1.0
+	return c
+
+
+## One stone of the library, baked: [param kind] variant [param n], with its mossy top (moss_colour)
+## when [param mossy]. Each face a shade lighter or darker, flat-shaded. The same faces and shades
+## either way, so a stone and its mossy twin differ only in the moss. (_bake_terrain_runner.gd
+## what=stones writes the library with it; terrain/main_green_4d.gd the main-green moss.)
+static func bake_stone(kind: String, n: int, mossy: bool) -> ArrayTetraMesh4D:
+	var seed: int = hash(kind) % 100000 + n * 7919
+	var shade := RandomNumberGenerator.new()
+	shade.seed = seed + 17
+	var colour := func(normal: Vector4, _centre: Vector4) -> Color:
+		return face_colour(normal, shade.randf_range(-1.0, 1.0))
+	var half: Vector4 = KINDS[kind][0]
+	var b := TerrainBake.Builder.new()
+	if mossy:
+		bake_into(b, recipe(kind, seed), colour, 0,
+			func(cell: Color, normal: Vector4, at: Vector4) -> Color: return moss_colour(cell, normal, at, half))
+	else:
+		bake_into(b, recipe(kind, seed), colour)
+	var mesh: ArrayTetraMesh4D = TerrainBake.mesh_of(b, false)
+	mesh.calculate_boundary_normals(false)
+	mesh.set_flat_shading_normals(true)
+	return mesh
 
 
 ## How far a rounded box of half size [param h] reaches along unit [param n]: between the

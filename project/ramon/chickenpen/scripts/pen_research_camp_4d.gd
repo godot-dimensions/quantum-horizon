@@ -89,15 +89,18 @@ const BARREL := Vector2(5.39, -1.57)
 const LOGS := Vector2(3.77, -0.16)
 const STUMP := Vector2(5.0, 1.31)
 const ROCKS := [[-5.29, -4.11, 0.75], [-5.24, -1.72, 0.7], [-4.87, 0.93, 0.8], [-3.66, 4.37, 0.7], [-0.87, 5.3, 0.45], [3.54, 2.28, 0.6],
-	[4.59, 2.98, 0.9], [5.52, -5.2, 0.7], [-1.1, -6.3, 0.65], [1.2, 4.7, 0.4]]
+	[4.59, 2.98, 0.9], [4.6, -4.4, 0.7], [-1.1, -5.9, 0.65], [1.2, 4.7, 0.4]]
 ## The ground: an ellipse, as the front view has it (the hero view: its ground runs to 8.3 m in front of
 ## the fire, where the top view's map draws it round; PenLayout/refs/progress, the camp's front view).
 const DISC_C := Vector2(0.05, 0.55)
 const DISC_R := 6.4
 const DISC_RZ := 7.75
-const SAND_C := Vector2(0.0, 1.4)
-const SAND_R := 4.5
-const SAND_RZ := 5.6
+const SAND_C := Vector2(0.0, 0.0)
+const SAND_R := 6.6
+const SAND_RZ := 6.6
+## The meadow's ring path round the camp (PenLayout/scripts/_make_pen_paths_runner.gd RING_R): the
+## camp is kept inside it (Ramon, 6 Oct: "the campsite should be confined to the circle").
+const RING_R := 7.6
 
 const OWN := &"_research_camp_part"
 
@@ -184,7 +187,7 @@ func rebuild() -> void:
 	for r in ROCKS:
 		var s: float = float(r[2])
 		_stone(["round", "chip", "block"][_rng.randi() % 3], Vector4(float(r[0]), -0.15 * s, float(r[1]), _rng.randf_range(-0.6, 0.6)), Vector3(s * 1.1, s * 0.75, s), s * 1.6, _rng.randf_range(0.0, TAU))
-	_grass()
+	_ring_floor()
 	_flush()
 
 
@@ -279,7 +282,7 @@ func _tent(poles: Array, door_side: bool) -> void:
 	for p in [a, b]:
 		var out: Vector4 = (p - mid).normalized()
 		for s in [-0.8, 0.0, 0.8]:
-			var stake: Vector4 = p + out * 1.7 + side * (s * 1.4)
+			var stake: Vector4 = p + out * 1.1 + side * (s * 1.2)
 			_strut(rope, p + up * (POLE_H - 0.3), stake + up * 0.3, 0.035)
 			_box(timber_dark, Vector4(0.09, 0.35, 0.09, prop_w), stake + up * 0.17)
 	# Solid: the tent's footprint, as boxes that do not turn (a short row along the ridge).
@@ -529,6 +532,32 @@ func _grass() -> void:
 		var a: float = _rng.randf_range(0.0, TAU)
 		var r: float = _rng.randf_range(SAND_R - 0.2, DISC_R - 1.0)
 		_tuft(Vector4(DISC_C.x + cos(a) * r, 0.0, DISC_C.y + sin(a) * r, _rng.randf_range(-0.9, 0.9)), _rng.randf_range(0.9, 1.3))
+
+
+# --- The ring at the farm's slice ------------------------------------------------------------------
+
+## What the ring holds at the farm's slice (Ramon: "inside the radius, i just want more sand. and a few
+## grey stones ... in the default slice"): the sand is painted (ground_sand, below); here, four plain
+## grey stones. The camp itself is 2.5 kata of it; these stand at the farm's W, so this node's own W is
+## undone for them.
+func _ring_floor() -> void:
+	var to_farm := Vector4(0, 0, 0, -position.w)
+	for r in [[2.6, 0.4, 0.75], [-3.1, -2.4, 0.6], [1.0, -4.3, 0.5], [-4.2, 3.0, 0.55]]:
+		var s: float = float(r[2])
+		_stone(["round", "block", "chip"][_rng.randi() % 3], to_farm + Vector4(float(r[0]), -0.15 * s, float(r[1]), 0), Vector3(s * 1.1, s * 0.8, s), s * 1.4, _rng.randf_range(0.0, TAU))
+
+
+## The sand, painted on the pen's ground (grass/pen_grass_4d.gd, the ground_sand group): a circle the
+## ring's size at the farm's slice, and the camp's floor at its own W, so the two read as one sandy
+## round whichever way you look (Ramon, 6 Oct: "inside the radius, i just want more sand").
+func ground_sand() -> Array:
+	var c: Vector4 = global_position
+	return [{"centre": Vector4(c.x, 0.0, c.z, c.w - position.w), "radius": RING_R - 0.7, "w_half": 1.0},
+		{"centre": c, "radius": SAND_R, "w_half": 1.0}]
+
+
+func _enter_tree() -> void:
+	add_to_group(&"ground_sand")
 
 
 # --- Align to slice ------------------------------------------------------------------------------

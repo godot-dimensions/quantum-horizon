@@ -14,8 +14,11 @@ extends Node4D
 ##   L3 ledge stones: small and flat, on each ledge where a course steps in, where grass gathers.
 ##   L4 debris: fallen from the face, big near the foot and smaller and fewer further out, in
 ##      clusters, half sunk.
-## Grass on every ledge and in the joints, tufts on the stones' tops (the painting is 28-31% grass
-## and moss), a turf top, and a grass disc round the foot.
+## The green is on the stones themselves (Ramon, 6 Oct: "remove the green clumps ... it should be a
+## combination of a texture shader that goes from rock to green on top of a rock, in combinations
+## with rocks that are just a grey rock"): the spec's "moss" share of the stones are the mossy-top
+## variants (terrain/cut_stone_4d.gd moss_colour, grey sides turning green over the top), the rest
+## plain grey. Grass clumps and ledge turf only where the spec asks for them ("tufts", "ledge_turf").
 ##
 ## THE SPEC (a JSON file, [member spec_path]) holds the measured shape: each course's heights and its
 ## radius at eight bearings (E, SE, S, SW, W, NW, N, NE; angles from +x toward +z, so S is +z), the
@@ -28,6 +31,7 @@ extends Node4D
 const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd")
 const CutStone := preload("res://ramon/chickenpen/terrain/cut_stone_4d.gd")
 const StoneSet := preload("res://ramon/chickenpen/scripts/pen_stone_set_4d.gd")
+const MainGreen := preload("res://ramon/chickenpen/terrain/main_green_4d.gd")
 const OWN := &"_crag_part"
 const TUFTS := 6
 
@@ -36,6 +40,10 @@ const TUFTS := 6
 @export var solid: bool = true
 ## Leave out the grass disc round the foot (in the pen, the pen's own ground is there).
 @export var ground_disc: bool = true: set = _set_disc
+## Off once the stones are nodes in the scene (the Watchstone's "Bake every stone into the scene",
+## Ramon, 6 Oct: "i want to be able to move all the stones"): the crag then builds its colliders,
+## turf and ground, and the stones are the scene's.
+@export var procedural_stones: bool = true: set = _set_procedural
 ## Walkways in front of the rock: [points (Vector4, deck height in y), half width] each. Wherever
 ## one runs in front of a course, from just below its deck to [member headroom] above, the course
 ## steps back behind it (a terrace cut for the timber), and the stones go with it.
@@ -45,6 +53,8 @@ const TUFTS := 6
 
 ## Per course, the face radius every half degree with the walkways' terraces cut in.
 var _faces_table: Array = []
+## Stones let stand proud of the plateau so far, this build.
+var _proud: int = 0
 const TABLE := 720
 
 var spec: Dictionary = {}
@@ -53,6 +63,9 @@ var _rng := RandomNumberGenerator.new()
 var _stones: Array = []
 var _tufts: Array = []
 var _boxes: Dictionary = {}
+## The box colours that are turf (the spec's turf_colour, the top's, the ground disc's): drawn in the
+## main green while the pen shows it (terrain/main_green_4d.gd).
+var _turf_keys: Dictionary = {}
 var _body: StaticBody4D
 
 
@@ -66,13 +79,37 @@ func _set_disc(v: bool) -> void:
 	_later()
 
 
+func _set_procedural(v: bool) -> void:
+	procedural_stones = v
+	_later()
+
+
+## The stones as laid out by the last build: [kind, variant, centre, scale, yaw, tilt, basis or null,
+## group], the group the part of the crag it belongs to (Course 0, Inner, Ledges, Rim, Debris...).
+func stone_layout() -> Array:
+	return _stones
+
+
+var _stone_group: String = "Stones"
+
+
 func _set_clear(v: Array) -> void:
 	clear_paths = v
 	_later()
 
 
 func _ready() -> void:
+	add_to_group(MainGreen.GROUP)
 	rebuild()
+
+
+## The main green changed, or was switched on or off: the turf takes it, or its own colours back.
+func main_green_changed(c: Color, _baked: bool) -> void:
+	for node in get_children():
+		if node.has_meta(&"turf") and node is MeshInstance4D:
+			var m := (node as MeshInstance4D).material_override as TetraMaterial4D
+			if m != null:
+				m.albedo_color = c if MainGreen.on else Color.html(String(node.get_meta(&"turf")))
 
 
 func _later() -> void:
@@ -105,13 +142,24 @@ func rebuild() -> void:
 		_body.name = "Solid"
 		_own(_body)
 	var courses: Array = spec["courses"]
+	_proud = 0
 	_cut_terraces(courses)
+	_monoliths(courses)
+	if bool(spec.get("only_monoliths", false)):
+		_flush()
+		return
 	for i in courses.size():
-		_core(courses[i], i)
+		_stone_group = "Inner"
+		if bool(courses[i].get("core", true)):
+			_core(courses[i], i)
+		_stone_group = "Course%d" % i
 		_faces(courses[i], i)
 		var above: Variant = courses[i + 1] if i + 1 < courses.size() else null
+		_stone_group = "Ledges"
 		_ledge(courses[i], above, i)
+	_stone_group = "Rim"
 	_top(courses[courses.size() - 1])
+	_stone_group = "Debris"
 	_debris(courses[0])
 	if ground_disc:
 		_disc(courses[0])
@@ -198,13 +246,85 @@ static func _face_yaw(a: float) -> float:
 	return atan2(cos(a), sin(a))
 
 
+# --- The big chunks ----------------------------------------------------------------------------
+
+## The spec's "monoliths": single stones standing a large share of the crag's height in its face,
+## [bearing (degrees from +x toward +z), height, width, depth, kind]. Each stands on the ground with
+## its outer face at the base course's, and leans in with the crag's taper so its top meets the face
+## where the courses have it at that height: one chunk, through the courses, the outline unchanged.
+var _monolith_spans: Array = []
+## Chunk nodes standing against the crag (pen_crag_chunk_4d.gd, placed by hand in the editor): the
+## crag clears its face stones where each stands, as for the spec's monoliths.
+var chunks: Array = []
+
+
+func _monoliths(courses: Array) -> void:
+	_monolith_spans = []
+	for c in chunks:
+		var node := c as Node4D
+		if node == null or not is_instance_valid(node) or not node.has_method("footprint"):
+			continue
+		var fp: Dictionary = node.call("footprint", self)
+		var a: float = atan2(float(fp["z"]), float(fp["x"]))
+		var r: float = maxf(Vector2(float(fp["x"]), float(fp["z"])).length(), 1.0)
+		_monolith_spans.append([a, float(fp["width"]) * 0.5 * 0.7 / r, float(fp["height"]) - 0.6])
+	for m in spec.get("monoliths", []):
+		var a: float = deg_to_rad(float(m["bearing"]))
+		var h: float = float(m["height"])
+		# Buried at the foot (Ramon: "the bottom can burry underground, so the shape becomes nice"): the
+		# stone runs [bury] metres below the ground, so its rounded underside is out of sight.
+		var bury: float = float(m.get("bury", spec.get("bury", 1.6)))
+		var wdt: float = float(m["width"])
+		var dep: float = float(m["depth"])
+		var kind: String = String(m.get("kind", "pillar"))
+		# The course at its top.
+		var top_index: int = 0
+		for i in courses.size():
+			if float(courses[i]["y0"]) <= h:
+				top_index = i
+		# Proud of the face ([proud] metres), so it reads as one mass standing out of the courses, not a
+		# stone among them (Ramon, 6 Oct: "i still dont see a rock chunck thats 70%").
+		var proud: float = float(m.get("proud", spec.get("monolith_proud", 0.6)))
+		var r_foot: float = face(0, a) + proud - dep * 0.5
+		var r_top: float = face(top_index, a) + proud * 0.6 - dep * 0.5
+		var lean: float = atan2(r_foot - r_top, h)
+		var out := Vector4(cos(a), 0, sin(a), 0)
+		var up := Vector4(0, 1, 0, 0)
+		var tangent := Vector4(-sin(a), 0, cos(a), 0)
+		var up_l: Vector4 = up * cos(lean) - out * sin(lean)
+		var out_l: Vector4 = out * cos(lean) + up * sin(lean)
+		var half: Vector4 = CutStone.KINDS[kind][0]
+		var scale := Vector4(wdt / (2.0 * half.x), (h + bury) / (2.0 * half.y), dep / (2.0 * half.z), float(spec.get("w_depth", 6.0)) * 0.6 / (2.0 * half.w))
+		var basis := Projection(tangent * scale.x, up_l * scale.y, out_l * scale.z, Vector4(0, 0, 0, scale.w))
+		var centre: Vector4 = out * ((r_foot + r_top) * 0.5) + up_l * ((h - bury) * 0.5) + Vector4(0, 0, 0, 0)
+		var mossy: bool = bool(m.get("moss", true))
+		_stones.append([kind + ("_moss" if mossy else ""), _rng.randi() % CutStone.VARIANTS, centre, scale, 0.0, Vector2.ZERO, basis, "Monoliths"])
+		_monolith_spans.append([a, (wdt * 0.5 * 0.7) / maxf(r_foot, 1.0), h - 0.6])
+		_solid(Vector4(wdt * 0.8, h, wdt * 0.8, float(spec.get("w_depth", 6.0)) * 0.6), centre)
+
+
+## Whether a face block at bearing [param a] starting at height [param y] is where a big chunk stands.
+func _behind_monolith(a: float, y: float) -> bool:
+	for span in _monolith_spans:
+		var d: float = absf(wrapf(a - float(span[0]), -PI, PI))
+		if d < float(span[1]) and y < float(span[2]):
+			return true
+	return false
+
+
 # --- L1 the core --------------------------------------------------------------------------------
 
-## The course's mass: a drum of turned boxes a little inside the face, dark, so the joints between
-## the stones read as the deep cracks they are in the painting; and two crossed colliders.
+## The course's mass. With the spec's "core": "stones" (the Watchstone, since Ramon's "eventually you
+## have to remove those blockout insides"), an inner ring of big plain stones behind the face blocks
+## and a few more in the middle, so a gap between face blocks shows rock behind rock; otherwise a
+## drum of turned boxes a little inside the face. Either way, two crossed colliders.
 func _core(course: Dictionary, index: int) -> void:
 	var y0: float = course["y0"]
 	var y1: float = course["y1"]
+	if String(spec.get("core", "boxes")) == "stones":
+		_core_stones(course, index)
+		_core_colliders(course, index)
+		return
 	var inset: float = float(spec.get("core_inset", 0.45))
 	var wd: float = float(spec.get("w_depth", 6.0))
 	var n: int = 12
@@ -217,6 +337,47 @@ func _core(course: Dictionary, index: int) -> void:
 		var face: float = 2.0 * half * tan(PI / float(n)) * 1.1
 		var at: Vector4 = _dir(a) * mid + Vector4(0, (y0 + y1) * 0.5, 0, 0)
 		_box(Color(spec.get("core_colour", "#3d3a36")), Vector4(half * 2.0, y1 - y0, face, wd), at, _turn_y(-a))
+	_core_colliders(course, index)
+
+
+## The inner ring: big plain stones (no moss: they sit in shadow) a stone's depth in from the face,
+## each the course's full height, and a ring of them again further in on the wider courses.
+func _core_stones(course: Dictionary, index: int) -> void:
+	var y0: float = course["y0"]
+	var y1: float = course["y1"]
+	# Up to the course's top and a little over, never through the plateau's turf.
+	var tall: float = minf(y1 - y0 + 0.4, float(spec["top"]["y"]) - 0.08 - (y0 - 0.2))
+	if tall < 0.3:
+		return
+	var wd: float = float(spec.get("w_depth", 6.0))
+	for ring in [1.6, 3.4]:
+		var a: float = _rng.randf_range(0.0, TAU)
+		var start: float = a
+		while a < start + TAU - 0.05:
+			var r: float = face(index, a) - ring
+			if r < 1.2:
+				break
+			var w: float = _rng.randf_range(2.4, 3.2)
+			var step: float = w * 0.85 / r
+			var mid: float = a + step * 0.5
+			var half: Vector4 = (CutStone.KINDS["block"][0] as Vector4)
+			var size := Vector3(w, tall, w * 0.9)
+			var scale := Vector4(size.x / (2.0 * half.x), size.y / (2.0 * half.y), size.z / (2.0 * half.z), wd * 0.8 / (2.0 * half.w))
+			var at: Vector4 = _dir(mid) * r + Vector4(0, y0 - 0.2 + tall * 0.5, 0, _rng.randf_range(-0.4, 0.4))
+			_stones.append([["block", "round"][_rng.randi() % 2], _rng.randi() % CutStone.VARIANTS, at, scale, _face_yaw(mid) + _rng.randf_range(-0.2, 0.2), Vector2.ZERO, null, _stone_group])
+			a += step
+	# The middle, on the courses wide enough to leave one.
+	if face(index, 0.0) > 5.2:
+		var half: Vector4 = (CutStone.KINDS["round"][0] as Vector4)
+		var size := Vector3(3.6, tall, 3.6)
+		var scale := Vector4(size.x / (2.0 * half.x), size.y / (2.0 * half.y), size.z / (2.0 * half.z), wd * 0.8 / (2.0 * half.w))
+		_stones.append(["round", _rng.randi() % CutStone.VARIANTS, Vector4(0, y0 - 0.2 + tall * 0.5, 0, 0), scale, _rng.randf_range(0.0, TAU), Vector2.ZERO, null, _stone_group])
+
+
+func _core_colliders(course: Dictionary, index: int) -> void:
+	var y0: float = course["y0"]
+	var y1: float = course["y1"]
+	var wd: float = float(spec.get("w_depth", 6.0))
 	if _body != null:
 		var rx: float = (face(index, 0.0) + face(index, PI)) * 0.5
 		var rz: float = (face(index, PI * 0.5) + face(index, PI * 1.5)) * 0.5
@@ -257,8 +418,24 @@ func _faces(course: Dictionary, index: int) -> void:
 		var step: float = (w + _rng.randf_range(joint.x, joint.y)) / maxf(r, 1.0)
 		var mid: float = a + step * 0.5
 		var rows: int = 2 if two else 1
+		var keep: float = float(course.get("keep", 1.0))
+		if keep < 1.0 and _rng.randf() > keep:
+			rows = 0
+		# Where a big chunk stands, the course gives way to it (below its top).
+		if _behind_monolith(mid, y0):
+			rows = 0
 		for row in rows:
 			var hh: float = h * _rng.randf_range(0.94, 1.04)
+			# Not through the plateau's turf, but for the spec's "proud" stones (Ramon: "one or two stones can
+			# potrude on the terrase, kinda looks good"): the first that would, near the rim, stand up to
+			# [proud_height] above it.
+			var roof: float = float(spec["top"]["y"]) + 0.05 - (y0 + float(row) * h)
+			var near_rim: bool = face(index, mid) - w * 0.4 > float(spec["top"]["turf_r"]) - 1.4
+			if hh > roof and near_rim and _proud < int(spec["top"].get("proud", 0)):
+				hh = minf(hh, roof + float(spec["top"].get("proud_height", 0.9)))
+				_proud += 1
+			else:
+				hh = minf(hh, maxf(roof, 0.3))
 			var ww: float = w * _rng.randf_range(0.9, 1.05)
 			var d: float = ww * _rng.randf_range(0.7, 0.95)
 			# Proud of the face more at mid-course than at its top and foot: the courses bulge.
@@ -301,8 +478,8 @@ func _ledge(course: Dictionary, above: Variant, index: int) -> void:
 		var mid: float = (outer + inner) * 0.5
 		var arc: float = TAU * mid / float(n) * _rng.randf_range(0.7, 1.25)
 		# Turf in patches along the ledge, not a ring: some stretches bare stone, some thick.
-		if _rng.randf() > float(spec.get("turf_gaps", 0.35)):
-			_box(Color(spec.get("turf_colour", "#6f8a22")), Vector4(arc, _rng.randf_range(0.18, 0.4), width * _rng.randf_range(0.6, 1.0), float(spec.get("w_depth", 6.0)) * 0.9),
+		if bool(spec.get("ledge_turf", true)) and _rng.randf() > float(spec.get("turf_gaps", 0.35)):
+			_box(_turf(spec.get("turf_colour", "#6f8a22")), Vector4(arc, _rng.randf_range(0.18, 0.4), width * _rng.randf_range(0.6, 1.0), float(spec.get("w_depth", 6.0)) * 0.9),
 				_dir(a) * (mid + _rng.randf_range(-0.2, 0.2)) + Vector4(0, y + _rng.randf_range(-0.05, 0.08), 0, 0), _turn_y(-a - PI * 0.5 + _rng.randf_range(-0.15, 0.15)))
 		var ledge: float = width - 0.6
 		if ledge > 0.5:
@@ -330,8 +507,12 @@ func _top(course: Dictionary) -> void:
 	var face: float = 2.0 * r * tan(PI / float(sides)) * 1.03
 	for k in sides / 2:
 		var t: float = PI * float(k) / float(sides / 2)
-		_box(Color(top.get("turf_colour", "#7d9a26")), Vector4(r * 2.0, 0.5, face, wd), Vector4(0, y - 0.25, 0, 0), _turn_y(t))
-		_box(Color(spec.get("turf_colour", "#6f8a22")), Vector4(r * 2.0 + 0.25, 0.35, face + 0.12, wd - 0.2), Vector4(0, y - 0.55, 0, 0), _turn_y(t))
+		# The turf: a thin layer ([member spec] top "thickness"), the stones of the top course coming up to
+		# meet its edge (a thick slab read as a lid laid on the rock).
+		var th: float = float(top.get("thickness", 0.5))
+		_box(_turf(top.get("turf_colour", "#7d9a26")), Vector4(r * 2.0, th, face, wd), Vector4(0, y - th * 0.5, 0, 0), _turn_y(t))
+		if bool(top.get("edge", true)):
+			_box(_turf(spec.get("turf_colour", "#6f8a22")), Vector4(r * 2.0 + 0.25, 0.35, face + 0.12, wd - 0.2), Vector4(0, y - 0.55, 0, 0), _turn_y(t))
 	if _body != null:
 		_solid(Vector4(r * 2.0, 0.6, r * 2.0, wd), Vector4(0, y - 0.3, 0, 0))
 	# The ring of stones under the rim.
@@ -440,7 +621,7 @@ func _disc(base: Dictionary) -> void:
 	var face: float = 2.0 * r * tan(PI / float(sides)) * 1.03
 	for k in sides / 2:
 		var t: float = PI * float(k) / float(sides / 2)
-		_box(Color(g.get("colour", "#6f8a22")), Vector4(r * 2.0, 0.08, face, float(spec.get("w_depth", 6.0)) + 2.0), centre + Vector4(0, -0.04, 0, 0), _turn_y(t))
+		_box(_turf(g.get("colour", "#6f8a22")), Vector4(r * 2.0, 0.08, face, float(spec.get("w_depth", 6.0)) + 2.0), centre + Vector4(0, -0.04, 0, 0), _turn_y(t))
 	for k in int(g.get("tufts", 40)):
 		var a: float = _rng.randf_range(0.0, TAU)
 		var edge: float = (centre + _dir(a) * r).length()
@@ -457,11 +638,22 @@ func _stone(kind: String, at: Vector4, size: Vector3, wsize: float, yaw: float, 
 	var scale := Vector4(size.x / (2.0 * half.x), size.y / (2.0 * half.y), size.z / (2.0 * half.z), wsize / (2.0 * half.w))
 	# The unit stone sits on its middle; lift it by its half height so [param at] is its base.
 	var lifted: Vector4 = at + Vector4(0, size.y * 0.5, 0, 0)
-	_stones.append([kind, _rng.randi() % CutStone.VARIANTS, lifted, scale, yaw, tilt])
+	# Mossy-topped or plain grey, the spec's share of each.
+	var mossy: bool = _rng.randf() < float(spec.get("moss", 0.0))
+	_stones.append([kind + ("_moss" if mossy else ""), _rng.randi() % CutStone.VARIANTS, lifted, scale, yaw, tilt, null, _stone_group])
 
 
 func _tuft(at: Vector4, size: float) -> void:
+	if not bool(spec.get("tufts", true)):
+		return
 	_tufts.append([_rng.randi() % TUFTS, at, size, _rng.randf_range(0.0, TAU)])
+
+
+## A turf colour from the spec, noted as turf so _flush can mark its node and the main green reach it.
+func _turf(html: String) -> Color:
+	var c := Color(html)
+	_turf_keys[c.to_html(false)] = true
+	return c
 
 
 func _box(colour: Color, size: Vector4, at: Vector4, basis: Projection = Projection.IDENTITY) -> void:
@@ -487,11 +679,12 @@ func _solid(size: Vector4, at: Vector4) -> void:
 func _flush() -> void:
 	var merged := ArrayTetraMesh4D.new()
 	var count: int = 0
-	for s in _stones:
+	for s in (_stones if procedural_stones else []):
 		var mesh: ArrayTetraMesh4D = StoneSet.stone_mesh(String(s[0]), int(s[1]))
 		if mesh == null:
 			continue
-		merged.merge_with(mesh, s[2], StoneSet.placement_basis(s[3], float(s[4]), s[5]))
+		var basis: Projection = s[6] if s.size() > 6 and s[6] != null else StoneSet.placement_basis(s[3], float(s[4]), s[5])
+		merged.merge_with(mesh, s[2], basis)
 		count += 1
 	for t in _tufts:
 		var mesh: ArrayTetraMesh4D = StoneSet.stone_mesh("tuft", int(t[0]))
@@ -512,9 +705,14 @@ func _flush() -> void:
 		node.mesh = _boxes[key]
 		var m := TetraMaterial4D.new()
 		m.albedo_color = Color.html(key)
+		if _turf_keys.has(key):
+			node.set_meta(&"turf", key)
+			if MainGreen.on:
+				m.albedo_color = MainGreen.shown()
 		node.material_override = m
 		_own(node)
 	_boxes.clear()
+	_turf_keys.clear()
 
 
 ## Stones and tufts placed, for runners counting them.

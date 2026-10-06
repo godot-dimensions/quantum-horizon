@@ -45,6 +45,8 @@ const ROCK := Color(0.38, 0.34, 0.30)
 const SNOW := Color(0.88, 0.87, 0.90)
 const HAZE := Color(0.60, 0.50, 0.58)
 
+## The colour where the mountains leave the field (FIELD, or the pen's even green: pen_mountains_4d.gd).
+var field_colour := FIELD
 var face_cells := 16
 var rise := 0.025
 var foothills := 5.0
@@ -175,7 +177,7 @@ func _peak(band: Dictionary, d: Vector3, r: float) -> float:
 func colour(p: Vector4, normal: Vector4, r: float) -> Color:
 	var slope: float = 1.0 - clampf(normal.y, 0.0, 1.0)
 	var patch: float = _patches.get_noise_3d(p.x, p.z, p.w) * 0.5 + 0.5
-	var c: Color = FIELD.lerp(MEADOW, smoothstep(R_IN, R_IN + 30.0, r) * (0.4 + 0.6 * patch))
+	var c: Color = field_colour.lerp(MEADOW, smoothstep(R_IN, R_IN + 30.0, r) * (0.4 + 0.6 * patch))
 	c = c.lerp(SCRUB, smoothstep(0.55, 0.8, patch) * 0.6)
 	c = c.lerp(ROCK, smoothstep(0.28, 0.5, slope))
 	# Bare rock above the tree line, snow on the tops flat enough to hold it.

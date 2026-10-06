@@ -1,0 +1,19 @@
+{
+ "_what": "Trym's cottage (refs/trym_cottage_views.png): points of the measured model (chickenpen/scripts/pen_cottage_4d.gd: 7.2 m long, 5.2 m deep, walls to 2.66 m on a 0.73 m stone plinth, ridge at 4.75 m, the door frame 2.0 m wide at +1.04 m) and where the sheet shows them, read on a pixel grid. The model's scale is the front view's: 109 px a metre (the player, 168 px for 1.54 m). Only the cameras are fitted (tools/ref_camera_from_model.py). PLAN_REF_LOCK.md step 51.",
+ "background": [45, 47, 58],
+ "player": [-1.2, 0.0, 4.2, 0.0],
+ "views": {
+  "front": {"yaw_deg": 0, "points": [
+   [[-3.6, 0.0, 2.6], [175, 745]], [[3.6, 0.0, 2.6], [962, 745]],
+   [[-3.6, 2.66, 2.6], [182, 458]], [[3.6, 2.66, 2.6], [962, 458]],
+   [[2.04, 2.6, 2.6], [790, 460]], [[0.04, 2.6, 2.6], [570, 460]],
+   [[-2.5, 2.2, 2.6], [295, 505]], [[-1.35, 0.96, 2.6], [420, 640]],
+   [[-3.85, 4.75, 0.0], [165, 230]], [[3.85, 4.75, 0.0], [940, 230]]
+  ]},
+  "right": {"yaw_deg": 90, "points": [
+   [[3.6, 0.0, 2.6], [1300, 720]], [[3.6, 0.0, -2.6], [1790, 720]],
+   [[3.6, 2.66, 2.6], [1310, 462]], [[3.6, 2.66, -2.6], [1765, 462]],
+   [[3.9, 4.75, 0.0], [1532, 245]]
+  ]}
+ }
+}

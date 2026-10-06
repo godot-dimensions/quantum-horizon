@@ -27,6 +27,9 @@ const SHADER := preload("res://ramon/chickenpen/grass/pen_grass.gdshader")
 const LOOKS := preload("res://ramon/chickenpen/grass/pen_grass_looks.gd")
 const PANEL := preload("res://ramon/chickenpen/grass/pen_grass_panel_4d.gd")
 const PAINT := preload("res://ramon/chickenpen/grass/pen_ground_paint_4d.gd")
+const MainGreen := preload("res://ramon/chickenpen/terrain/main_green_4d.gd")
+const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
+const StoneSet := preload("res://ramon/chickenpen/scripts/pen_stone_set_4d.gd")
 const BITS_SHADER := preload("res://ramon/chickenpen/grass/pen_wind_bits.gdshader")
 ## Leaves and bits on the wind, at most (pen_wind_bits.gdshader): how many are up follows the
 ## wind, from none in still air to all of them in a gale.
@@ -89,12 +92,32 @@ const TRAIL_POINTS := 12
 @export_range(0.0, 60.0, 0.5, "suffix:m") var glow_in: float = 12.0
 @export_range(5.0, 150.0, 0.5, "suffix:m") var glow_out: float = 40.0
 @export_range(3.0, 60.0, 0.5, "suffix:m") var glow_w: float = 30.0
+## ONE GREEN (6 Oct, Ramon picked A of two, ground_green_options.png): the main green over the
+## whole field (terrain/main_green_4d.gd, picked in the panel; at first the glow's green as painted). On screen the glow's green (about 53/77/40) is the mountains' foot (about 55/76/42);
+## the falloff above faded the field to a darker 39/57/37 between them, a dark band all round. On:
+## the glow reaches past the field's edge (EVEN_REACH), so pen, field and the mountains' foot are one
+## green. Off: the falloff as it was, glow_in to glow_out. Ctrl+Shift+O and the panel switch it.
+@export var even_green: bool = true:
+	set(v):
+		even_green = v
+		if is_inside_tree() and not _ground_painted.is_empty():
+			_paint_ground()
+		_glow_to_grass()
+		_even_to_terrain()
+		glow_changed.emit(ground_glow)
+## glow_in, glow_out, glow_w with even_green on.
+const EVEN_REACH := Vector3(60.0, 150.0, 60.0)
+const BAKED_TERRAIN := "res://ramon/chickenpen/terrain/baked/"
 ## Sand round these (node name: how far past what stands on the ground; for clearing_fill
 ## names, past their whole outline), at their own w, the edge broken by sand_ragged of noise.
 ## The pen's yard, and the marsh's banks (3 Oct: "just water, sand ... place the sand from the
 ## pen also here surrounding it"). And the watchtower's foot (6 Oct, Ramon: "sand underneath") and
 ## the researchers' camp's trodden ground, each across its whole outline (clearing_fill names).
-@export var sand_round: Dictionary = {"Pen": 1.8, "AnaMarsh": 2.4, "Lookout": 1.4, "EggCamp": 0.8}
+@export var sand_round: Dictionary = {"Pen": 1.8, "AnaMarsh": 2.4, "Lookout": 1.4}
+## AND SAND SHAPES FROM THE UNITS THEMSELVES (6 Oct, Ramon: "you can make the circle with the painted
+## layer we use no?"): every node in the group ground_sand with a ground_sand() method hands over
+## circles and rectangles, each at its own W - the camp's ring and floor (pen_research_camp_4d.gd),
+## the range's yard (pen_rune_range_4d.gd) - painted like the rest: soft, ragged, mottled.
 ## Warmer than it looks it should be, and NOT calmed with the paint layer (paint_brightness and
 ## paint_saturation are for the field's greens): under the teal sky fill a duller tan reads grey
 ## (Ramon, 3 Oct: "the sand in the pen is not slightly yellow, its grey now?"). Measured from
@@ -106,6 +129,14 @@ const TRAIL_POINTS := 12
 @export_range(0.3, 1.5, 0.01) var paint_brightness: float = 0.88
 @export_range(0.0, 1.5, 0.01) var paint_saturation: float = 0.85
 @export_range(0.0, 4.0, 0.05, "suffix:m") var sand_ragged: float = 1.0
+
+## THE DEV LOOK'S FLOOR (look/pen_look_4d.gd): while set, the ground shows the pen's own box in this
+## material instead of its paint or its own colour; null gives them back. Set by the Look, never saved.
+var dev_floor: Material4D = null:
+	set(v):
+		dev_floor = v
+		if is_inside_tree():
+			_apply_ground()
 
 signal ground_changed(painted: bool)
 ## The grass switched on or off (the panel's Grass button, Alt+O: 3 Oct, "i also need a toggle
@@ -379,6 +410,7 @@ const MASK_CELLS := 240
 
 func _ready() -> void:
 	_room = owner if owner != null else get_parent().get_parent()
+	_even_to_terrain.call_deferred()
 	var noise := FastNoiseLite.new()
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	noise.frequency = 0.012
@@ -440,12 +472,24 @@ func _apply_ground() -> void:
 		return
 	if _ground_own.is_empty():
 		_ground_own = [node.mesh, node.material_override]
+	if dev_floor != null:
+		node.mesh = _ground_own[0]
+		node.material_override = dev_floor
+		return
 	var use: Array = _ground_painted if ground_paint and not _ground_painted.is_empty() else _ground_own
-	if node.mesh != use[0]:
+	if node.mesh != use[0] or node.material_override != use[1]:
 		node.mesh = use[0]
 		node.material_override = use[1]
 	_glow_to_grass()
 	ground_changed.emit(ground_paint)
+
+
+## The ground's own mesh (its box), whatever it shows now.
+func own_ground_mesh() -> Mesh4D:
+	if not _ground_own.is_empty():
+		return _ground_own[0]
+	var node := _room.get_node_or_null(ground_path) as MeshInstance4D if _room != null else null
+	return node.mesh if node != null else null
 
 
 ## The look's wind times wind_scale onto a material. The bend follows the speed by itself; the
@@ -463,13 +507,117 @@ func _shade() -> float:
 	return shade_test if shade_test >= 0.0 else shade
 
 
+## The rest of the pen in the same green (terrain/main_green_4d.gd): the mountains by their own
+## even_green, every other baked piece with an _even twin (the cave's hill, the round hills) swapped
+## for it or back, and, when the switch moved, the stones built again with their moss.
+func _even_to_terrain() -> void:
+	var switched: bool = MainGreen.on != even_green
+	MainGreen.on = even_green
+	_apply_terrain(_terrain_targets())
+	if switched:
+		StoneSet.forget()
+	_tell_greens(switched)
+
+
+## The baked pieces to swap: [node, its file without .res and _even] ("" for the mountains, which
+## swap themselves). Taken before a bake: the new meshes take their files' paths from the old ones.
+func _terrain_targets() -> Array:
+	var out: Array = []
+	if _room == null:
+		return out
+	for node in _room.find_children("*", "MeshInstance4D", true, false):
+		var mi := node as MeshInstance4D
+		if "even_green" in mi:
+			out.append([mi, ""])
+		else:
+			# The mesh it really has: the dev look may have taken it off (look/pen_look_4d.gd).
+			var own: Mesh4D = Look.own_mesh(mi)
+			if own != null and own.resource_path.begins_with(BAKED_TERRAIN) and not own.resource_path.contains("/stones/"):
+				out.append([mi, own.resource_path.trim_suffix(".res").trim_suffix("_even")])
+	return out
+
+
+func _apply_terrain(targets: Array) -> void:
+	for t in targets:
+		var mi: MeshInstance4D = t[0]
+		if not is_instance_valid(mi):
+			continue
+		if String(t[1]) == "":
+			mi.set("even_green", even_green)
+			continue
+		var want: String = String(t[1]) + ("_even.res" if even_green else ".res")
+		var own: Mesh4D = Look.own_mesh(mi)
+		if ResourceLoader.exists(want) and (own == null or own.resource_path != want):
+			Look.assign_mesh(mi, load(want) as Mesh4D)
+
+
+## Everything else the main green reaches (the Watchstone's turf and stones, the range's moss): in the
+## colour shown; [param baked] when the stones are to be built again.
+func _tell_greens(baked: bool) -> void:
+	if is_inside_tree():
+		get_tree().call_group(MainGreen.GROUP, "main_green_changed", MainGreen.shown(), baked)
+
+
+## The panel's picker: the field and the Watchstone's turf in [param c] at once, nothing saved yet
+## (rebake_greens saves it and bakes the rest). Switches even_green on: the main green is what shows.
+func pick_main_green(c: Color) -> void:
+	MainGreen.preview = Color(c.r, c.g, c.b, 1.0)
+	if not even_green:
+		even_green = true
+		return
+	if is_inside_tree() and not _ground_painted.is_empty():
+		_paint_ground()
+	_glow_to_grass()
+	_tell_greens(false)
+	glow_changed.emit(ground_glow)
+
+
+## The panel's Rebake greens: the green being shown saved and every main-green piece baked in it
+## (terrain/main_green_4d.gd: the mountains' foot, the cave's hill, the round hills, the stones' moss;
+## about 15 s, the game stopped), then shown. Returns the bake's lines.
+func rebake_greens() -> Array:
+	var c: Color = MainGreen.shown()
+	var targets: Array = _terrain_targets()
+	var lines: Array = MainGreen.bake_all(c, _room.get_node_or_null("World/Hills") if _room != null else null)
+	MainGreen.save(c)
+	MainGreen.on = even_green
+	_apply_terrain(targets)
+	StoneSet.forget()
+	if is_inside_tree() and not _ground_painted.is_empty():
+		_paint_ground()
+	_glow_to_grass()
+	_tell_greens(true)
+	glow_changed.emit(ground_glow)
+	for line in lines:
+		print(line)
+	return lines
+
+
+## The field's two paint colours: the glow's, and the rest's (what the grass's far edge and the paths'
+## sand fade to). Both the main green with even_green on.
+func field_glow() -> Color:
+	return MainGreen.shown() if even_green else _paint_adjust(glow_colour)
+
+
+func field_edge() -> Color:
+	if not ground_paint:
+		return ground_colour
+	return MainGreen.shown() if even_green else _paint_adjust(ground_colour)
+
+
+## How far the glow reaches: glow_in, glow_out and glow_w as x, y, z (EVEN_REACH with even_green).
+func glow_reach() -> Vector3:
+	return EVEN_REACH if even_green else Vector3(glow_in, glow_out, glow_w)
+
+
 ## The glow, for the grass's far edge to fade to the ground actually under it.
 func _glow_to(m: ShaderMaterial) -> void:
 	var on: bool = ground_glow and ground_paint
-	var glow: Color = _paint_adjust(glow_colour)
+	var glow: Color = field_glow()
 	# The far edge fades to the ground as it is drawn: the paint layer's colour when it is on.
-	var edge: Color = _paint_adjust(ground_colour) if ground_paint else ground_colour
-	m.set_shader_parameter("glow_area", Vector4(glow_centre.x, glow_centre.y, glow_in, glow_out))
+	var edge: Color = field_edge()
+	var reach: Vector3 = glow_reach()
+	m.set_shader_parameter("glow_area", Vector4(glow_centre.x, glow_centre.y, reach.x, reach.y))
 	m.set_shader_parameter("glow_colour", Vector3(glow.r, glow.g, glow.b))
 	m.set_shader_parameter("glow_on", 1.0 if on else 0.0)
 	m.set_shader_parameter("edge_colour", Vector3(edge.r, edge.g, edge.b))
@@ -507,17 +655,60 @@ func _paint_ground() -> void:
 	if _ground_own[1] != null and _ground_own[1].get("albedo_color") != null:
 		own = _ground_own[1].get("albedo_color")
 	var started: int = Time.get_ticks_msec()
+	var reach: Vector3 = glow_reach()
 	var sands: Array = []
 	for key in sand_round:
 		if _sand_cells.has(key):
 			sands.append(_sand_field(key, float(sand_round[key])))
+	for giver in get_tree().get_nodes_in_group(&"ground_sand"):
+		if giver.has_method("ground_sand") and (giver as Node).is_inside_tree():
+			for shape in giver.call("ground_sand"):
+				sands.append(_shape_field(shape))
 	_ground_painted = PAINT.build(box.size, {
-		"centre": glow_centre, "glow_in": glow_in, "glow_out": glow_out, "glow_w": glow_w,
-		"own": _paint_adjust(own), "glow": _paint_adjust(glow_colour if ground_glow else own), "sand": sand_colour, "sand_ragged": sand_ragged,
+		"centre": glow_centre, "glow_in": reach.x, "glow_out": reach.y, "glow_w": reach.z,
+		"own": MainGreen.shown() if even_green else _paint_adjust(own),
+		"glow": MainGreen.shown() if even_green else _paint_adjust(glow_colour if ground_glow else own), "sand": sand_colour, "sand_ragged": sand_ragged,
 		"sands": sands, "grid_cell": MASK_CELL, "grid_cells": MASK_CELLS, "grid_half": MASK_CELL * MASK_CELLS * 0.5,
 	})
 	paint_msec = Time.get_ticks_msec() - started
 	_apply_ground()
+
+
+## A sand shape on the mask's grid (see sand_round): {"centre": Vector4 (global; its W the sand's),
+## "radius": m} for a circle, or {"centre", "half": Vector2, "ax": Vector2, "az": Vector2} for a
+## rectangle with half sizes along its own x and z (unit vectors in the world's x-z); "w_half" how deep
+## in W either side. The field is the signed distance into the shape, as _sand_field's is.
+func _shape_field(shape: Dictionary) -> Dictionary:
+	var n: int = MASK_CELLS
+	var half: float = MASK_CELL * n * 0.5
+	var c: Vector4 = shape["centre"]
+	var reach: float = float(shape.get("radius", 0.0))
+	if shape.has("half"):
+		reach = (shape["half"] as Vector2).length()
+	var margin: float = reach + sand_ragged * 1.5 + 2.0
+	var i0: int = clampi(int(floor((c.x - margin + half) / MASK_CELL)), 0, n - 1)
+	var i1: int = clampi(int(ceil((c.x + margin + half) / MASK_CELL)), 0, n - 1)
+	var j0: int = clampi(int(floor((c.z - margin + half) / MASK_CELL)), 0, n - 1)
+	var j1: int = clampi(int(ceil((c.z + margin + half) / MASK_CELL)), 0, n - 1)
+	var field := PackedFloat32Array()
+	field.resize(n * n)
+	field.fill(-10.0)
+	for j in range(j0, j1 + 1):
+		var z: float = -half + (float(j) + 0.5) * MASK_CELL
+		for i in range(i0, i1 + 1):
+			var x: float = -half + (float(i) + 0.5) * MASK_CELL
+			var d := Vector2(x - c.x, z - c.z)
+			var inside: float
+			if shape.has("half"):
+				var h: Vector2 = shape["half"]
+				var lx: float = d.dot(shape["ax"])
+				var lz: float = d.dot(shape["az"])
+				inside = minf(h.x - absf(lx), h.y - absf(lz))
+			else:
+				inside = float(shape["radius"]) - d.length()
+			field[j * n + i] = maxf(inside, -10.0)
+	var wh: float = float(shape.get("w_half", 1.0))
+	return {"field": field, "w0": c.w - wh, "w1": c.w + wh, "box": [i0, i1, j0, j1]}
 
 
 ## For sand round [param key]: on the mask's grid, how far inside the sand each cell is (m,
@@ -1253,7 +1444,9 @@ func _build_mask() -> void:
 func _collect(node: Node, out: Array) -> void:
 	if node != _room and (mask_skip.has(String(node.name)) or node is CharacterBody4D):
 		return
-	if node is MeshInstance4D and (node as MeshInstance4D).mesh is TetraMesh4D and (node as MeshInstance4D).is_visible_in_tree():
+	# The mesh a node really has: the dev look may have taken it off (look/pen_look_4d.gd); its own
+	# blockouts are not the ground's business.
+	if node is MeshInstance4D and Look.own_mesh(node as MeshInstance4D) is TetraMesh4D and (node as MeshInstance4D).is_visible_in_tree() 			and not node.has_meta(&"_look_own"):
 		out.append(node)
 	for child in node.get_children():
 		_collect(child, out)
@@ -1362,7 +1555,9 @@ func _group(w: float) -> int:
 ## name's outline in [param outlines]. Returns how many tetrahedra it looked at.
 func _mark_mesh(mi: MeshInstance4D, data: PackedFloat32Array, seeds: PackedFloat32Array, radius: float,
 		group_w: PackedFloat32Array, outlines: Dictionary, fill: String) -> int:
-	var mesh: TetraMesh4D = mi.mesh as TetraMesh4D
+	var mesh: TetraMesh4D = Look.own_mesh(mi) as TetraMesh4D
+	if mesh == null:
+		return 0
 	var rb: PackedVector4Array = mesh.get_rect_bounds()
 	var basis: Projection = mi.global_basis
 	var origin: Vector4 = mi.global_position

@@ -3,11 +3,15 @@ extends SceneTree
 ## Bakes the pen's terrain and saves it, so nothing is generated when the scene opens.
 ##
 ## Headless is fine - this only builds arrays and writes files.
-## Args (after --): what=hills | cave_hill | cave | cave_far | mountains | hill_west | hill_tower | boulder_<n>
+## Args (after --): what=hills | cave_hill | cave | cave_far | mountains | hill_west | hill_tower | boulder_<n> | greens
+## "greens" bakes every main-green piece in the saved main green (terrain/main_green_4d.gd), as the
+## grass panel's Rebake greens does.
 ## "mountains" bakes with the parameters on the pen's World/Hills node, as its Bake button
 ## does, and writes mountains.res; "hills" is the first version, kept as the "Classic" style.
 ## Writes res://ramon/chickenpen/terrain/baked/<what>.res and reads it back to check that
-## the colours survived the round trip.
+## the colours survived the round trip. even=1 (cave_hill, hill_west, hill_tower): the turf in the
+## main green (terrain/main_green_4d.gd), to <what>_even.res; the pen shows those with its
+## Grass node's even_green on. ("mountains" writes both itself.)
 
 const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd")
 const PenHills := preload("res://ramon/chickenpen/terrain/pen_hills_4d.gd")
@@ -15,17 +19,31 @@ const PenCaveHill := preload("res://ramon/chickenpen/terrain/pen_cave_hill_4d.gd
 const CaveRock := preload("res://ramon/chickenpen/cave/cave_rock_4d.gd")
 const CutStone := preload("res://ramon/chickenpen/terrain/cut_stone_4d.gd")
 const OUT := "res://ramon/chickenpen/terrain/baked/"
+const MainGreen := preload("res://ramon/chickenpen/terrain/main_green_4d.gd")
 
 
 func _initialize() -> void:
 	var what := "hills"
+	var even := false
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("what="):
 			what = a.substr(5)
+		elif a == "even=1":
+			even = true
 		elif a == "rewind=1":
 			TerrainBake.rewind = true
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
 	var started: int = Time.get_ticks_msec()
+	if even:
+		PenCaveHill.grass = MainGreen.colour()
+		PenCaveHill.grass_high = MainGreen.colour()
+	if what == "greens":
+		var room: Node = (load("res://ramon/chickenpen/playable_world.tscn") as PackedScene).instantiate()
+		for line in MainGreen.bake_all(MainGreen.colour(), room.get_node_or_null("World/Hills")):
+			print("   " + String(line))
+		room.free()
+		quit(0)
+		return
 	if what == "stones":
 		_bake_stones()
 		return
@@ -71,7 +89,7 @@ func _initialize() -> void:
 		mesh.calculate_boundary_normals(false)
 		mesh.set_flat_shading_normals(true)
 	var took: float = (Time.get_ticks_msec() - started) / 1000.0
-	var path: String = OUT + what + ".res"
+	var path: String = OUT + what + ("_even" if even else "") + ".res"
 	var err: int = ResourceSaver.save(mesh, path, ResourceSaver.FLAG_COMPRESS)
 	print("   %s: %d vertices, %d tetrahedra, %d degenerate dropped, %d re-wound, %.1f s  ->  %s (%s)"
 		% [what, b.positions.size(), b.tet_count(), b.skipped, b.flipped, took, path, error_string(err)])
@@ -107,21 +125,14 @@ func _bake_stones() -> void:
 			continue
 		for n in CutStone.VARIANTS:
 			var started: int = Time.get_ticks_msec()
-			var seed: int = hash(kind) % 100000 + n * 7919
-			var shade := RandomNumberGenerator.new()
-			shade.seed = seed + 17
-			var colour := func(normal: Vector4, _centre: Vector4) -> Color:
-				return CutStone.face_colour(normal, shade.randf_range(-1.0, 1.0))
-			var b := TerrainBake.Builder.new()
-			var cells: int = CutStone.bake_into(b, CutStone.recipe(kind, seed), colour)
-			var mesh: ArrayTetraMesh4D = TerrainBake.mesh_of(b, false)
-			mesh.calculate_boundary_normals(false)
-			mesh.set_flat_shading_normals(true)
+			var mesh: ArrayTetraMesh4D = CutStone.bake_stone(kind, n, false)
 			var path: String = "%s%s_%d.res" % [dir, kind, n]
 			var err: int = ResourceSaver.save(mesh, path, ResourceSaver.FLAG_COMPRESS)
-			total += b.tet_count()
-			print("   stone %s_%d: %d cells, %d tetrahedra, %d dropped, %.1f s -> %s" % [kind, n, cells, b.tet_count(), b.skipped,
-				(Time.get_ticks_msec() - started) / 1000.0, error_string(err)])
+			var tets: int = mesh.get_simplex_cell_vertex_indices().size() / 4
+			total += tets
+			# The same stone with a mossy top (CutStone.moss_colour): <kind>_moss_<n>.res.
+			ResourceSaver.save(CutStone.bake_stone(kind, n, true), "%s%s_moss_%d.res" % [dir, kind, n], ResourceSaver.FLAG_COMPRESS)
+			print("   stone %s_%d: %d tetrahedra, %.1f s -> %s" % [kind, n, tets, (Time.get_ticks_msec() - started) / 1000.0, error_string(err)])
 	if only == "" or only == "tuft":
 		for n in 6:
 			var tb := TerrainBake.Builder.new()

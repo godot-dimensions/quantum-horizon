@@ -3,12 +3,12 @@
  "seed": 11,
  "w_depth": 6.0,
  "core_inset": 0.25,
- "core_colour": "#5b564e",
+ "core_colour": "#7a756c",
  "turf_colour": "#5b6612",
  "tuft_on_top": 0.75,
  "tuft_in_joint": 0.7,
  "ledge_tufts": 1.4,
- "ledge_stones": 0.4,
+ "ledge_stones": 0.08,
  "courses": [
   {
    "y0": 0.0,
@@ -50,9 +50,11 @@
     "round",
     "block",
     "round",
-    "wedge"
+    "wedge",
+    "block"
    ],
-   "stack": 0.75
+   "stack": 0.15,
+   "width_scale": 1.15
   },
   {
    "y0": 5.8,
@@ -70,35 +72,39 @@
    "kinds": [
     "round",
     "block",
-    "round"
+    "round",
+    "wedge",
+    "block"
    ],
-   "stack": 0.75
+   "stack": 0.15,
+   "width_scale": 1.15
   },
   {
    "y0": 9.0,
-   "y1": 12.4,
+   "y1": 13.5,
    "r": [
-    5.3,
-    4.9,
-    4.6,
-    4.6,
+    5.0,
     4.7,
-    5.3,
-    5.9,
-    5.6
+    4.5,
+    4.5,
+    4.6,
+    5.0,
+    5.5,
+    5.3
    ],
    "kinds": [
     "round",
     "block",
     "round",
-    "slab"
+    "wedge",
+    "block"
    ],
-   "stack": 0.75,
-   "width_scale": 0.95
+   "stack": 0.15,
+   "width_scale": 1.15
   },
   {
-   "y0": 12.4,
-   "y1": 13.3,
+   "y0": 13.35,
+   "y1": 13.75,
    "r": [
     3.9,
     3.8,
@@ -114,19 +120,25 @@
     "round"
    ],
    "stack": 0.0,
-   "width_scale": 1.0
+   "width_scale": 1.0,
+   "keep": 0.2,
+   "core": false
   }
  ],
  "top": {
   "y": 13.65,
-  "turf_r": 4.15,
-  "rim_stones": 16,
-  "tufts": 6,
+  "turf_r": 3.7,
+  "rim_stones": 3,
+  "tufts": 0,
   "turf_colour": "#66701a",
   "rim_size": [
    0.7,
    0.95
-  ]
+  ],
+  "thickness": 0.22,
+  "edge": false,
+  "proud": 2,
+  "proud_height": 0.9
  },
  "debris": {
   "clusters": 6,
@@ -171,7 +183,7 @@
  },
  "ground": {
   "r": 9.8,
-  "tufts": 30,
+  "tufts": 0,
   "colour": "#5b6612",
   "centre": [
    -0.3,
@@ -183,5 +195,13 @@
  "joint": [
   0.0,
   0.12
- ]
+ ],
+ "tufts": false,
+ "ledge_turf": false,
+ "moss": 0.5,
+ "_moss_note": "moss: the share of stones with a mossy top (terrain/cut_stone_4d.gd moss_colour); the rest plain grey. tufts and ledge_turf off for the Watchstone (Ramon, 6 Oct: remove the green clumps).",
+ "core": "stones",
+ "bury": 1.6,
+ "monolith_proud": 0.6,
+ "_chunks_note": "The big chunks are nodes in units/watchstone/watchstone.tscn (Chunks/*, pen_crag_chunk_4d.gd), placed by hand."
 }

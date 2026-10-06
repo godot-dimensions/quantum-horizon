@@ -122,6 +122,10 @@ const CARVE_INSET_FRONT := 1.5
 
 const GRASS := Color(0.20, 0.27, 0.12)
 const GRASS_HIGH := Color(0.29, 0.33, 0.15)
+## The turf's colours for the bake in hand: GRASS and GRASS_HIGH, or both the main green for the
+## even bake (_bake_terrain_runner.gd even=1, terrain_bake_4d.gd MAIN_GREEN). The round hills share them.
+static var grass := GRASS
+static var grass_high := GRASS_HIGH
 const BANK := Color(0.30, 0.27, 0.20)
 const STONE_DARK := Color(0.19, 0.195, 0.205)
 ## Dark grey, a little cool, because the evening sun warms everything it lands on and a
@@ -201,7 +205,7 @@ func height(x: float, z: float, w: float) -> float:
 func colour(p: Vector4, normal: Vector4, _r: float) -> Color:
 	var slope: float = 1.0 - clampf(normal.y, 0.0, 1.0)
 	var grain: float = _grain.get_noise_3d(p.x, p.z, p.w) * 0.5 + 0.5
-	var c: Color = GRASS.lerp(GRASS_HIGH, smoothstep(1.0, TOP, p.y) * (0.4 + 0.6 * grain))
+	var c: Color = grass.lerp(grass_high, smoothstep(1.0, TOP, p.y) * (0.4 + 0.6 * grain))
 	# Earth and stone where it is too steep for turf.
 	return c.lerp(BANK.lerp(STONE_DARK, grain), smoothstep(0.45, 0.75, slope))
 
@@ -257,14 +261,19 @@ func tunnel_into(p: Vector4) -> float:
 func block_colour(p: Vector4, normal: Vector4, r: float) -> Color:
 	var grain: float = _grain.get_noise_3d(p.x * 2.0, p.y * 2.0, p.z * 2.0 + p.w) * 0.5 + 0.5
 	var t: float = tunnel_density(p)
-	if t > -0.6:
+	# Under the arch and behind the mouth, a surface can only be the tunnel's own wall or floor: dark,
+	# however far the dual contouring put its vertex from the surface (6 Oct: the green bit at the
+	# back, where the floor tapers to the tunnel's W edge, was turf-coloured vertices from just there).
+	var under_arch: bool = tunnel_into(p) > 0.8 and p.y < ARCH_HEIGHT * 0.95 \
+		and absf(p.x - MOUTH.x) < ARCH_HALF_WIDTH + 0.4 and absf(p.w - MOUTH.w) < ARCH_HALF_WIDTH + 0.4
+	if t > -0.6 or under_arch:
 		# The tunnel's own walls and floor: a plain ramp to black, no grain, so it reads
 		# as darkness rather than as dark rock.
 		return tunnel_colour(p)
 	if face_density(p) >= hill_density(p) - 0.15:
 		var c: Color = FACE_ROCK.lerp(FACE_ROCK_DARK, grain * 0.7)
 		# Moss and turf on whatever faces up.
-		return c.lerp(GRASS, smoothstep(0.55, 0.85, normal.y) * 0.8)
+		return c.lerp(grass, smoothstep(0.55, 0.85, normal.y) * 0.8)
 	return colour(p, normal, r)
 
 

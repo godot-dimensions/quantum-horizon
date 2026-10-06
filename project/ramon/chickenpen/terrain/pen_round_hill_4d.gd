@@ -63,7 +63,7 @@ func height(x: float, z: float, w: float) -> float:
 func colour(p: Vector4, normal: Vector4, _r: float) -> Color:
 	var slope: float = 1.0 - clampf(normal.y, 0.0, 1.0)
 	var grain: float = _grain.get_noise_3d(p.x, p.z, p.w) * 0.5 + 0.5
-	var c: Color = CaveHill.GRASS.lerp(CaveHill.GRASS_HIGH, smoothstep(1.0, top, p.y) * (0.4 + 0.6 * grain))
+	var c: Color = CaveHill.grass.lerp(CaveHill.grass_high, smoothstep(1.0, top, p.y) * (0.4 + 0.6 * grain))
 	return c.lerp(CaveHill.BANK.lerp(CaveHill.STONE_DARK, grain), smoothstep(0.45, 0.75, slope))
 
 

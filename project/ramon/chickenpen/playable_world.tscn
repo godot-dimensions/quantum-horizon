@@ -1,5 +1,6 @@
 [gd_scene load_steps=390 format=4 uid="uid://bcgq82wcbp0g0"]
 
+[ext_resource type="Script" path="res://ramon/chickenpen/look/pen_look_4d.gd" id="pen_look"]
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
 [ext_resource type="Script" uid="uid://bjtv0p4kvlugq" path="res://ramon/chickenpen/scripts/block_avatar_4d.gd" id="avatar"]
@@ -84,8 +85,8 @@
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/cave/cave.tscn" id="unit_cave"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_ruin_wall_4d.gd" id="pen_wall"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_round_hill_4d.gd" id="pen_round_hill"]
-[ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/hill_west.res" id="hill_west_mesh"]
-[ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/hill_tower.res" id="hill_tower_mesh"]
+[ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/hill_west_even.res" id="hill_west_mesh"]
+[ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/hill_tower_even.res" id="hill_tower_mesh"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_oak_4d.gd" id="pen_oak"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/camp/camp.tscn" id="unit_camp"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_stones_4d.gd" id="pen_stones"]
@@ -1097,9 +1098,7 @@ position = Vector4(-15.8, 0, -7.5, 0)
 basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
 
 [node name="RangeYard" parent="World/Range" index="0"]
-ground_patch = true
-turf_mat = false
-ground_lift = 0.03
+ground_patch = false
 
 [node name="KeeperPost" parent="World" instance=ExtResource("unit_keeper")]
 position = Vector4(2.3, 0, -5.9, 0)
@@ -3304,9 +3303,7 @@ metadata/what = "The Arboretum's big oak beside Trym's shed, its own baked wood 
 
 [node name="EggCamp" parent="World" instance=ExtResource("unit_camp")]
 position = Vector4(20, 0, -2, -2.5)
-ground_patch = true
-turf_mat = false
-ground_lift = 0.03
+ground_patch = false
 metadata/what = "The researchers' camp in the meadow's middle, 2.5 m kata: easter egg 1, the bag of azoth by the left bench. Built to Ramon's sheet (units/camp, PenLayout/PLAN_REF_LOCK.md part E); V brings your slice to it when it is half in view."
 
 [node name="EggCairn" type="Node4D" parent="World"]
@@ -3335,6 +3332,7 @@ targets = NodePath("..")
 under_color = Color(0.16, 0.22, 0.11, 1)
 drape = true
 p_scale = 1.4
+sand_width = 1.8
 show_sand = true
 reveal_from = NodePath("../../Player")
 targets_deep = true
@@ -3342,3 +3340,7 @@ metadata/what = "The pen's paths (PathCreator's network, PenLayout/paths/pen_a.t
 
 [node name="Paths" type="Node" parent="Systems"]
 script = ExtResource("pen_paths")
+
+[node name="Look" type="Node" parent="Systems"]
+script = ExtResource("pen_look")
+metadata/what = "The pen's two looks: DEV (white floor, the lab's sky, path arrows, blockouts) and ART, F8 or the Look row on the left panel (look/pen_look_4d.gd, PenLayout/PLAN_DEV_LOOK.md)."

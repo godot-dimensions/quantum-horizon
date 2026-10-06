@@ -16,6 +16,8 @@ extends Control
 
 const LOOKS := preload("res://ramon/chickenpen/grass/pen_grass_looks.gd")
 const SPOT := preload("res://ramon/chickenpen/scripts/pen_hud_spot_4d.gd")
+const MainGreen := preload("res://ramon/chickenpen/terrain/main_green_4d.gd")
+const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
 
 ## The Grass node it works.
 var grass: Node
@@ -32,6 +34,19 @@ var at_height: float = 0.5
 var _buttons: Array[Button] = []
 var _ground_buttons: Array[Button] = []
 var _glow_button: Button
+var _even_button: Button
+var _green_box: VBoxContainer
+var _look_box: VBoxContainer
+var _look_label: Label
+var _look_buttons: Array[Button] = []
+var _look_node: Node
+var _swatch: ColorPickerButton
+var _rebake_button: Button
+var _green_note: Label
+var _picked: Color = Color(0, 0, 0, 0)
+var _pick_due: bool = false
+var _last_pick: int = 0
+var _baking: bool = false
 var _grass_button: Button
 var _leaves_button: Button
 var _flowers_button: Button
@@ -96,6 +111,8 @@ func _ready() -> void:
 	_glow_button.pressed.connect(_toggle_glow)
 	# Darkness, a test for every look (3 Oct: "a darkness toggle slider so i can test and tell
 	# you later which number to pick"): the number is what to tell Claude.
+	_main_green_rows()
+	_look_rows()
 	_dark_label = _label("", Color(1.0, 1.0, 1.0, 0.58))
 	# (No focus on the sliders, as the buttons: the arrow keys are the player's.)
 	# Darkness against the looks' own (0): right is darker, left lighter. (3 Oct: Ramon picked
@@ -132,7 +149,141 @@ func _ready() -> void:
 	_on_ground(bool(grass.get("ground_paint")) if grass != null else false)
 
 
-func _button(text: String) -> Button:
+## THE LOOK (6 Oct, the dev look: look/pen_look_4d.gd): Dev or Art, at the top of the panel, shown
+## with the grass off too. The key is the Look node's own (F8).
+func _look_rows() -> void:
+	_look_box = VBoxContainer.new()
+	_look_box.add_theme_constant_override("separation", 5)
+	_look_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_look_box.set_meta(&"always", true)
+	_box.add_child(_look_box)
+	_box.move_child(_look_box, 0)
+	_look_label = _label("Look", Color(1.0, 1.0, 1.0, 0.58), _look_box)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 5)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_look_box.add_child(row)
+	for dev in [true, false]:
+		var b := _button("Dev" if dev else "Art", row)
+		b.custom_minimum_size = Vector2(72.0, 0.0)
+		b.set_meta("dev", dev)
+		b.pressed.connect(_pick_look.bind(dev))
+		_look_buttons.append(b)
+
+
+func _pick_look(dev: bool) -> void:
+	if _look_node != null and is_instance_valid(_look_node):
+		_look_node.call("set_dev", dev)
+
+
+## The Look comes up after this panel; found, and followed, when it is there.
+func _find_look() -> void:
+	if _look_node != null and is_instance_valid(_look_node):
+		return
+	var look: Node = Look.current
+	if look == null or not is_instance_valid(look):
+		_look_box.visible = false
+		return
+	_look_node = look
+	_look_box.visible = true
+	_look_label.text = "Look   " + OS.get_keycode_string(look.get("key"))
+	look.connect("look_changed", _on_look)
+	_on_look(bool(look.get("dev")))
+
+
+func _on_look(dev: bool) -> void:
+	for b in _look_buttons:
+		_paint(b, bool(b.get_meta("dev")) == dev)
+
+
+## MAIN GREEN (6 Oct, Ramon: "make a color picker in the UI, so i can change all green together, and
+## with a rebake button under it"): the swatch opens a picker, and the field and the Watchstone's turf
+## follow as you drag; Rebake greens bakes the rest in it and saves it (terrain/main_green_4d.gd).
+## Under them the switch back to the greens from before (Ctrl+Shift+O) and the first main green.
+## Shown with the grass off too, unlike the rows above.
+func _main_green_rows() -> void:
+	_green_box = VBoxContainer.new()
+	_green_box.add_theme_constant_override("separation", 5)
+	_green_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_green_box.set_meta(&"always", true)
+	_box.add_child(_green_box)
+	_label("Main green", Color(1.0, 1.0, 1.0, 0.58), _green_box)
+	_swatch = ColorPickerButton.new()
+	_swatch.edit_alpha = false
+	_swatch.color = MainGreen.shown()
+	_swatch.custom_minimum_size = Vector2(150.0, 24.0)
+	_swatch.focus_mode = Control.FOCUS_NONE
+	_swatch.mouse_filter = Control.MOUSE_FILTER_STOP
+	_swatch.add_theme_stylebox_override("normal", _chip)
+	_swatch.add_theme_stylebox_override("hover", _chip_hover)
+	_swatch.add_theme_stylebox_override("pressed", _chip_on)
+	_swatch.color_changed.connect(_on_swatch)
+	_swatch.popup_closed.connect(_on_swatch_closed)
+	_green_box.add_child(_swatch)
+	_rebake_button = _button("Rebake greens", _green_box)
+	_rebake_button.pressed.connect(_rebake)
+	# One green over the whole field, or the falloff to a darker edge (6 Oct; Ctrl+Shift+O).
+	_even_button = _button("Even green   Ctrl+Shift+O", _green_box)
+	_even_button.pressed.connect(_toggle_even)
+	var first := _button("First main green", _green_box)
+	first.pressed.connect(_first_green)
+	_green_note = _label("", Color(1.0, 1.0, 1.0, 0.45), _green_box)
+	_note_green()
+
+
+func _on_swatch(c: Color) -> void:
+	_picked = c
+	_pick_due = true
+
+
+## Closed: the last colour onto the field now, not after the wait.
+func _on_swatch_closed() -> void:
+	_last_pick = 0
+
+
+func _first_green() -> void:
+	_swatch.color = MainGreen.default_colour()
+	_on_swatch(_swatch.color)
+	_last_pick = 0
+
+
+## The picker's colour onto the field, at most every 0.12 s while it is dragged (a repaint is ~30 ms).
+func _pick_now() -> void:
+	if not _pick_due or Time.get_ticks_msec() - _last_pick < 120 or grass == null:
+		return
+	_pick_due = false
+	_last_pick = Time.get_ticks_msec()
+	grass.call("pick_main_green", _picked)
+	_note_green()
+
+
+func _rebake() -> void:
+	if grass == null or _baking:
+		return
+	_baking = true
+	if _pick_due:
+		_last_pick = 0
+		_pick_now()
+	_green_note.text = "Baking, about 15 s ..."
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var started: int = Time.get_ticks_msec()
+	grass.call("rebake_greens")
+	_baking = false
+	_note_green()
+	_green_note.text = "Baked and saved, %.0f s" % ((Time.get_ticks_msec() - started) / 1000.0)
+
+
+func _note_green() -> void:
+	if _green_note == null:
+		return
+	var picked: bool = MainGreen.preview.a > 0.0
+	_green_note.text = "Picked: Rebake greens to keep it" if picked else "Saved  #%s" % MainGreen.colour().to_html(false)
+	if _rebake_button != null:
+		_paint(_rebake_button, picked)
+
+
+func _button(text: String, parent: Control = null) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -141,17 +292,17 @@ func _button(text: String) -> Button:
 	b.focus_mode = Control.FOCUS_NONE
 	b.mouse_filter = Control.MOUSE_FILTER_STOP
 	b.add_theme_font_size_override("font_size", text_size)
-	_box.add_child(b)
+	(parent if parent != null else _box).add_child(b)
 	return b
 
 
-func _label(text: String, colour: Color) -> Label:
+func _label(text: String, colour: Color, parent: Control = null) -> Label:
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_size_override("font_size", text_size - 2)
 	l.add_theme_color_override("font_color", colour)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_box.add_child(l)
+	(parent if parent != null else _box).add_child(l)
 	return l
 
 
@@ -177,6 +328,9 @@ func _process(_delta: float) -> void:
 		visible = on_farm
 	if not on_farm:
 		return
+	_pick_now()
+	if _look_box != null:
+		_find_look()
 	var view: Vector2 = get_viewport_rect().size
 	var back: Control = get_child(0) as Control
 	size = back.get_combined_minimum_size()
@@ -267,7 +421,7 @@ func _on_enabled(on: bool) -> void:
 	# the one switch, and opens again with the grass.
 	if _box != null:
 		for row in _box.get_children():
-			if row != _title and row != _grass_button and row is CanvasItem:
+			if row != _title and row != _grass_button and not row.has_meta(&"always") and row is CanvasItem:
 				(row as CanvasItem).visible = on
 
 
@@ -279,6 +433,13 @@ func _toggle_glow() -> void:
 func _on_glow(on: bool) -> void:
 	if _glow_button != null:
 		_paint(_glow_button, on)
+	if _even_button != null and grass != null:
+		_paint(_even_button, bool(grass.get("even_green")))
+
+
+func _toggle_even() -> void:
+	if grass != null:
+		grass.set("even_green", not bool(grass.get("even_green")))
 
 
 func _on_changed(on: int) -> void:
@@ -307,6 +468,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if (event as InputEventKey).alt_pressed:
 		_toggle_grass()
+		get_viewport().set_input_as_handled()
+	elif (event as InputEventKey).ctrl_pressed and (event as InputEventKey).shift_pressed:
+		_toggle_even()
 		get_viewport().set_input_as_handled()
 	elif (event as InputEventKey).ctrl_pressed:
 		_toggle_glow()

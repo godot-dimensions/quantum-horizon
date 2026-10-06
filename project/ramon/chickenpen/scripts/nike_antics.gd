@@ -94,6 +94,10 @@ enum State { WALK, ROOT, GOING_DOWN, LYING, GETTING_UP, HOP }
 ## cuts his current walk short, because a walk leg can run eleven seconds and the roam
 ## check only fires when he next stops.
 @export_range(0.5, 10.0, 0.1) var leash_radius: float = 1.8
+## Places he keeps out of, each [Vector2 (x, z) in the world, radius]: he will not set off toward one,
+## and if a walk brings him to its edge he stops and turns away (6 Oct, Ramon: "nike is walking over the
+## bonfire area, no good"; the camp's ring at (20, -2)).
+@export var keep_out: Array = [[Vector2(20.0, -2.0), 8.4]]
 
 @export_group("Dinner")
 ## The troughs. When one goes up he walks over and eats at it.
@@ -244,6 +248,10 @@ func _physics_process(delta: float) -> void:
 				# and eat somewhere out in the grass.
 				_going_to_eat = false
 				_enter(State.ROOT, randf_range(feed_seconds.x, feed_seconds.y))
+			elif _at_keep_out():
+				# The edge of somewhere he is not to go: stopped and turned away from its middle.
+				_heading = _away_from_keep_out()
+				_enter(State.ROOT, randf_range(0.6, 1.2))
 			elif _leashed and _strayed():
 				# Stopped short and turned back, rather than waiting for the walk leg to
 				# run out. Stopping is also what makes the turn free - see the header.
@@ -419,6 +427,43 @@ func _choose_heading() -> void:
 		_heading = atan2(-flat.x, -flat.y)
 		return
 	_heading = _yaw + (1.0 if randf() < 0.5 else -1.0) * randf_range(0.9, 2.3)
+	# Not toward a keep-out: if the new heading points into one within a few metres, away from it.
+	var dir := Vector2(sin(_heading), cos(_heading))
+	var here := Vector2(_mover.global_position.x, _mover.global_position.z)
+	for k in keep_out:
+		var c: Vector2 = k[0]
+		var r: float = float(k[1])
+		var to_c: Vector2 = c - here
+		if to_c.length() < r + 6.0 and dir.dot(to_c.normalized()) > 0.2:
+			_heading = _away_from_keep_out()
+			return
+
+
+## Whether he is at (or in) a keep-out's edge, heading in.
+func _at_keep_out() -> bool:
+	if _mover == null:
+		return false
+	var here := Vector2(_mover.global_position.x, _mover.global_position.z)
+	var dir := Vector2(sin(_yaw), cos(_yaw))
+	for k in keep_out:
+		var c: Vector2 = k[0]
+		if here.distance_to(c) < float(k[1]) and dir.dot(c - here) > 0.0:
+			return true
+	return false
+
+
+## A heading away from the nearest keep-out's middle, a little to one side.
+func _away_from_keep_out() -> float:
+	var here := Vector2(_mover.global_position.x, _mover.global_position.z)
+	var best: Vector2 = Vector2.ZERO
+	var best_d: float = INF
+	for k in keep_out:
+		var c: Vector2 = k[0]
+		if here.distance_to(c) - float(k[1]) < best_d:
+			best_d = here.distance_to(c) - float(k[1])
+			best = c
+	var away: Vector2 = here - best
+	return atan2(away.x, away.y) + randf_range(-0.6, 0.6)
 
 
 ## Only while stopped, for the reason in the header.

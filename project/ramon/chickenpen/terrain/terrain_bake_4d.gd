@@ -58,6 +58,13 @@ const PERMUTATIONS := [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2
 ## Texels along each axis of the colour cube.
 const CUBE_SIZE := 32
 
+## THE MAIN GREEN (6 Oct, Ramon: the field one green, then "change the cave green and the hill green
+## to the main green"): the Grass node's glow_colour as its paint layer draws it (pen_grass_4d.gd
+## _paint_adjust, 0.88 as bright and 0.85 as saturated), the field's green with even_green on. The
+## mountains' foot, the cave's hill and the round hills are baked a second time in it (*_even.res).
+## Bake those again if the glow colour changes.
+const MAIN_GREEN := Color(0.24, 0.288, 0.133)
+
 static var _cube: ImageTexture3D
 ## Whether bake_density re-winds the contour's tetrahedra against the density. OFF: see
 ## there for why it was added and why it cut the hole it was meant to prevent.

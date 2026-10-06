@@ -29,6 +29,7 @@ const Mats := preload("res://ramon/CreationLab/LabKit/lab_materials.gd")
 const StoneSet := preload("res://ramon/chickenpen/scripts/pen_stone_set_4d.gd")
 const CutStone := preload("res://ramon/chickenpen/terrain/cut_stone_4d.gd")
 const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd")
+const MainGreen := preload("res://ramon/chickenpen/terrain/main_green_4d.gd")
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
 @export var range_seed: int = 9: set = _set_seed
@@ -102,6 +103,28 @@ func _ready() -> void:
 	rebuild()
 
 
+func _enter_tree() -> void:
+	add_to_group(&"ground_sand")
+	add_to_group(MainGreen.GROUP)
+
+
+## New moss baked, or the main green switched on or off: the outcrop's mossy stones built again.
+func main_green_changed(_c: Color, baked: bool) -> void:
+	if baked:
+		rebuild()
+
+
+## The yard's sand, painted on the pen's ground (grass/pen_grass_4d.gd, the ground_sand group): the
+## sheet's sand down the middle of the yard, between the fences, in place of the boxes that stood for it.
+func ground_sand() -> Array:
+	var b: Projection = global_basis
+	var ax := Vector2(b.x.x, b.x.z).normalized()
+	var az := Vector2(b.z.x, b.z.z).normalized()
+	var mid := Vector4((SAND_X.x + SAND_X.y) * 0.5, 0.0, (SAND_Z.x + SAND_Z.y) * 0.5, 0.0)
+	var c: Vector4 = global_position + b * mid
+	return [{"centre": c, "half": Vector2((SAND_X.y - SAND_X.x) * 0.5, (SAND_Z.y - SAND_Z.x) * 0.5), "ax": ax, "az": az, "w_half": prop_w * 0.6}]
+
+
 func _later() -> void:
 	if not is_node_ready() or _pending:
 		return
@@ -125,9 +148,10 @@ func rebuild() -> void:
 	_body = StaticBody4D.new()
 	_body.name = "Solid"
 	_own(_body)
-	if ground_patch:
+	# The sheet's grass ground and the board bank are boxes, and read as boxes (Ramon, 6 Oct: "remove
+	# boxy squares that are supposed to resemble the ground"): left out; the pen's ground is the floor.
+	if ground_patch and turf_mat:
 		_ground()
-	_bank()
 	_outcrop()
 	for b in BOARDS:
 		_board(b[0], float(b[1]), float(b[2]), String(b[3]))
@@ -138,7 +162,6 @@ func rebuild() -> void:
 	_barrel()
 	_rune_stone()
 	_field_stones()
-	_grass()
 	_flush()
 
 
@@ -218,17 +241,13 @@ func _outcrop() -> void:
 		# Lower course: one big stone.
 		var h1: float = tall * _rng.randf_range(0.55, 0.65)
 		var w1: float = _rng.randf_range(1.2, 1.5)
-		_stone(["block", "round", "block"][k % 3], Vector4(p.x, base, p.y, _rng.randf_range(-0.6, 0.6)), Vector3(w1, h1, w1 * 0.85), rock_w * 0.55, yaw + _rng.randf_range(-0.15, 0.15))
+		_stone(["block", "round", "block"][k % 3], Vector4(p.x, base, p.y, _rng.randf_range(-0.6, 0.6)), Vector3(w1, h1, w1 * 0.85), rock_w * 0.55, yaw + _rng.randf_range(-0.15, 0.15), tall <= 1.9)
 		# Upper course: a smaller one set back, where the outcrop is tall enough.
 		if tall > 1.9:
 			var back: Vector2 = p - outward * 0.45
 			var h2: float = tall - h1 + 0.15
 			var w2: float = _rng.randf_range(1.0, 1.3)
-			_stone(["round", "block", "slab"][k % 3], Vector4(back.x, h1 - 0.15, back.y, _rng.randf_range(-0.6, 0.6)), Vector3(w2, h2, w2 * 0.85), rock_w * 0.5, yaw + _rng.randf_range(-0.2, 0.2))
-			for j in 2:
-				_tuft(Vector4(back.x + _rng.randf_range(-0.4, 0.4), tall - 0.05, back.y + _rng.randf_range(-0.3, 0.3), _rng.randf_range(-0.5, 0.5)), _rng.randf_range(1.1, 1.6))
-		else:
-			_tuft(Vector4(p.x, h1 - 0.05, p.y, 0), _rng.randf_range(1.0, 1.4))
+			_stone(["round", "block", "slab"][k % 3], Vector4(back.x, h1 - 0.15, back.y, _rng.randf_range(-0.6, 0.6)), Vector3(w2, h2, w2 * 0.85), rock_w * 0.5, yaw + _rng.randf_range(-0.2, 0.2), true)
 		# A filler behind, so no daylight shows between the stones from the front.
 		var behind: Vector2 = p - outward * 1.1
 		_stone("round", Vector4(behind.x, 0.0, behind.y, 0), Vector3(1.5, tall * 0.8, 1.2), rock_w * 0.6, yaw)
@@ -269,7 +288,7 @@ func _board(at2: Vector2, rune_y: float, r: float, rune: String) -> void:
 				var d: Vector4 = p1 - p0
 				_box(rune_glow, Vector4(d.length() + 0.04, 0.045, 0.03, prop_w * 0.5), face + (p0 + p1) * 0.5, _turn_z(atan2(d.y, d.x)), true)
 	# The frame: two posts from the bank, a beam over and a beam under the ring.
-	var ground: float = BANK.y
+	var ground: float = 0.0
 	var half: float = r + 0.12
 	for s in [-1.0, 1.0]:
 		var post := Vector4(c.x + s * half, 0, c.z - 0.05, 0)
@@ -471,10 +490,11 @@ func _grass() -> void:
 
 # --- Helpers ------------------------------------------------------------------------------------
 
-func _stone(kind: String, base: Vector4, size: Vector3, wsize: float, yaw: float) -> void:
+## [param moss]: the mossy-top variant (grey sides turning green over the top, cut_stone_4d.gd).
+func _stone(kind: String, base: Vector4, size: Vector3, wsize: float, yaw: float, moss: bool = false) -> void:
 	var half: Vector4 = (CutStone.KINDS[kind][0] as Vector4)
 	var scale := Vector4(size.x / (2.0 * half.x), size.y / (2.0 * half.y), size.z / (2.0 * half.z), wsize / (2.0 * half.w))
-	_stones.append([kind, _rng.randi() % CutStone.VARIANTS, base + Vector4(0, size.y * 0.5, 0, 0), scale, yaw, Vector2.ZERO])
+	_stones.append([kind + ("_moss" if moss else ""), _rng.randi() % CutStone.VARIANTS, base + Vector4(0, size.y * 0.5, 0, 0), scale, yaw, Vector2.ZERO])
 
 
 func _tuft(at: Vector4, size: float) -> void:

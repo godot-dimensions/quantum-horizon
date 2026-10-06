@@ -32,7 +32,9 @@ const EGG_BAND := 2.0
 ## secondary marks' 1.3 m spacing (28 of them), so they flow round without a jump.
 ## (20, -2): north-east of the hill's foot (at (16, 2) its south side ran onto the hill, 6 Oct).
 const RING_AT := Vector2(20.0, -2.0)
-const RING_R := 5.86
+## 7.6 since 6 Oct (was 5.86): the camp inside it fits within it (Ramon: "the campsite should be confined
+## to the circle").
+const RING_R := 7.6
 
 
 func _initialize() -> void:

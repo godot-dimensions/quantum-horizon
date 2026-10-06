@@ -132,7 +132,7 @@ nodes = [{
 "frame": "none",
 "id": 20,
 "kind": "junction",
-"pos": Vector4(25.86, 0, -2, 0),
+"pos": Vector4(27.6, 0, -2, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -141,7 +141,7 @@ nodes = [{
 "frame": "none",
 "id": 21,
 "kind": "chord",
-"pos": Vector4(25.074908866176813, 0, 0.9299999999999997, 0),
+"pos": Vector4(26.581793068761733, 0, 1.7999999999999994, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -150,7 +150,7 @@ nodes = [{
 "frame": "none",
 "id": 22,
 "kind": "chord",
-"pos": Vector4(22.93, 0, 3.07490886617681, 0),
+"pos": Vector4(23.8, 0, 4.581793068761733, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -159,7 +159,7 @@ nodes = [{
 "frame": "none",
 "id": 23,
 "kind": "junction",
-"pos": Vector4(20, 0, 3.8600000000000003, 0),
+"pos": Vector4(20, 0, 5.6, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -168,7 +168,7 @@ nodes = [{
 "frame": "none",
 "id": 24,
 "kind": "chord",
-"pos": Vector4(17.07, 0, 3.074908866176811, 0),
+"pos": Vector4(16.200000000000003, 0, 4.581793068761734, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -177,7 +177,7 @@ nodes = [{
 "frame": "none",
 "id": 25,
 "kind": "chord",
-"pos": Vector4(14.925091133823189, 0, 0.9299999999999997, 0),
+"pos": Vector4(13.418206931238267, 0, 1.7999999999999994, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -186,7 +186,7 @@ nodes = [{
 "frame": "none",
 "id": 26,
 "kind": "junction",
-"pos": Vector4(14.14, 0, -1.9999999999999993, 0),
+"pos": Vector4(12.4, 0, -1.9999999999999991, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -195,7 +195,7 @@ nodes = [{
 "frame": "none",
 "id": 27,
 "kind": "chord",
-"pos": Vector4(14.92509113382319, 0, -4.930000000000001, 0),
+"pos": Vector4(13.418206931238267, 0, -5.800000000000001, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -204,7 +204,7 @@ nodes = [{
 "frame": "none",
 "id": 28,
 "kind": "chord",
-"pos": Vector4(17.069999999999997, 0, -7.07490886617681, 0),
+"pos": Vector4(16.199999999999996, 0, -8.581793068761733, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -213,7 +213,7 @@ nodes = [{
 "frame": "none",
 "id": 29,
 "kind": "chord",
-"pos": Vector4(20, 0, -7.86, 0),
+"pos": Vector4(20, 0, -9.6, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -222,7 +222,7 @@ nodes = [{
 "frame": "none",
 "id": 30,
 "kind": "chord",
-"pos": Vector4(22.93, 0, -7.07490886617681, 0),
+"pos": Vector4(23.8, 0, -8.581793068761733, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -231,7 +231,7 @@ nodes = [{
 "frame": "none",
 "id": 31,
 "kind": "chord",
-"pos": Vector4(25.07490886617681, 0, -4.930000000000003, 0),
+"pos": Vector4(26.581793068761733, 0, -5.800000000000003, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -529,7 +529,7 @@ nodes = [{
 "frame": "none",
 "id": 54,
 "kind": "chord",
-"pos": Vector4(25.612846909778092, 0, 7.507811094001424, 0),
+"pos": Vector4(25.697641951265737, 0, 7.889388780695825, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -545,7 +545,7 @@ nodes = [{
 "frame": "none",
 "id": 55,
 "kind": "chord",
-"pos": Vector4(25.52079131562675, 0, 6.480217109331315, 0),
+"pos": Vector4(25.70702535303438, 0, 6.112748486995525, 0),
 "state": "arrival",
 "target": ""
 }, {

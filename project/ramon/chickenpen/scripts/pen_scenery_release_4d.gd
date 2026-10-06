@@ -1,5 +1,7 @@
 extends Node
 
+const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
+
 ## While you are deep in the cave, the pen's two biggest meshes are let go, and they are
 ## brought back in the background as you walk out.
 ##
@@ -51,9 +53,12 @@ func _ready() -> void:
 	_player = get_node_or_null(player_path) as Node4D
 	for path in release_paths:
 		var node := get_node_or_null(path) as MeshInstance4D
-		if node != null and node.mesh != null and node.mesh.resource_path != "":
+		# The mesh each really has: the dev look may have taken one off (look/pen_look_4d.gd), and
+		# letting go and taking back go through it too, so neither undoes the other.
+		var own: Mesh4D = Look.own_mesh(node) if node != null else null
+		if own != null and own.resource_path != "":
 			_nodes.append(node)
-			_paths.append(node.mesh.resource_path)
+			_paths.append(own.resource_path)
 
 
 ## Whether the meshes are let go right now - for the tests.
@@ -76,7 +81,7 @@ func _process(_delta: float) -> void:
 	var z: float = local.z
 	if not _released and _task < 0 and z < release_below_z:
 		for node in _nodes:
-			node.mesh = null
+			Look.assign_mesh(node, null)
 		_released = true
 	# Only on the way out: the far room, out along W, reaches back to z -7, which is no
 	# nearer the daylight than its middle is.
@@ -106,6 +111,6 @@ func _take_back(now: bool) -> void:
 		_load_in_background()
 	for i in _nodes.size():
 		if i < _loaded.size() and _loaded[i] != null:
-			_nodes[i].mesh = _loaded[i]
+			Look.assign_mesh(_nodes[i], _loaded[i])
 	_loaded = []
 	_released = false

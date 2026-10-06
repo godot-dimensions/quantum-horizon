@@ -1,5 +1,7 @@
 extends SceneTree
 
+const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
+
 ## V at the marsh aligns you to its slice: the player stood by the marsh a little off its w with
 ## the slice turned (the marsh cut to a sliver), the prompt offered, V pressed, then the slice
 ## flat and the player at the marsh's w, the prompt gone. Frames before and after; also the
@@ -96,7 +98,10 @@ func _process(d: float) -> bool:
 			if _t < 1.5:
 				return false
 			var ground := _room.get_node("World/Ground/GroundMesh") as MeshInstance4D
-			_check("ground painted (%d ms)" % int(_grass.get("paint_msec")), ground.mesh is ArrayTetraMesh4D)
+			# In the dev look (look/pen_look_4d.gd) the ground shows the dev floor whatever it is painted
+			# with: the paint switch is what to read there.
+			var dev_look: bool = Look.current != null and bool(Look.current.get("_applied"))
+			_check("ground painted (%d ms)" % int(_grass.get("paint_msec")), bool(_grass.get("ground_paint")) if dev_look else ground.mesh is ArrayTetraMesh4D)
 			root.get_texture().get_image().save_png("res://smoke_test_output/marsh_align_2_ground_painted.png")
 			_grass.set("ground_paint", false)
 			_step = 3
@@ -105,7 +110,8 @@ func _process(d: float) -> bool:
 			if _t < 0.8:
 				return false
 			var ground := _room.get_node("World/Ground/GroundMesh") as MeshInstance4D
-			_check("ground back to the pen's own", ground.mesh is BoxTetraMesh4D and (ground.material_override.get("albedo_color") as Color).is_equal_approx(Color(0.16, 0.22, 0.11, 1.0)))
+			var dev_now: bool = Look.current != null and bool(Look.current.get("_applied"))
+			_check("ground back to the pen's own", not bool(_grass.get("ground_paint")) if dev_now else ground.mesh is BoxTetraMesh4D and (ground.material_override.get("albedo_color") as Color).is_equal_approx(Color(0.16, 0.22, 0.11, 1.0)))
 			root.get_texture().get_image().save_png("res://smoke_test_output/marsh_align_3_ground_own.png")
 			print("MARSH ALIGN %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 			if FileAccess.file_exists("user://lookout_journal_marsh_align_test.cfg"):

@@ -19,6 +19,7 @@ extends Node
 ## THE SAND'S EDGE FADES INTO THE GROUND as the pen paints it (its glow, from the Grass node), so
 ## the ground's colours are handed to the network here, and again whenever the ground changes.
 
+const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
 @export var network_path: NodePath = NodePath("../../World/Paths")
 @export var grass_path: NodePath = NodePath("../../World/Grass")
 @export var key_look: Key = KEY_F5
@@ -121,22 +122,28 @@ func _apply_look() -> void:
 func _ground_to_paths() -> void:
 	if _network == null or not _network.has_method("set_ground"):
 		return
+	# The pen's dev look (look/pen_look_4d.gd): no field green under the strips, their soft edges fade
+	# into their own white.
+	var look: Variant = Look.current
+	if look != null and is_instance_valid(look) and bool(look.get("_applied")):
+		_network.call("set_ground", {})
+		return
 	if _grass == null or not is_instance_valid(_grass) or _grass.get("ground_colour") == null:
 		_network.call("set_ground", {})
 		return
 	var paint: bool = bool(_grass.get("ground_paint"))
 	var glow_on: bool = paint and bool(_grass.get("ground_glow"))
 	# In linear light: the shader's ground colours are plain vec3s (path_sand.gdshader says why).
-	var glow: Color = (_grass.call("_paint_adjust", _grass.get("glow_colour")) as Color).srgb_to_linear()
-	var own: Color = _grass.get("ground_colour")
-	var edge: Color = ((_grass.call("_paint_adjust", own) as Color) if paint else own).srgb_to_linear()
+	var glow: Color = (_grass.call("field_glow") as Color).srgb_to_linear()
+	var edge: Color = (_grass.call("field_edge") as Color).srgb_to_linear()
 	var centre: Vector2 = _grass.get("glow_centre")
+	var reach: Vector3 = _grass.call("glow_reach") if _grass.has_method("glow_reach") else Vector3(_grass.get("glow_in"), _grass.get("glow_out"), _grass.get("glow_w"))
 	_network.call("set_ground", {
-		"glow_area": Vector4(centre.x, centre.y, float(_grass.get("glow_in")), float(_grass.get("glow_out"))),
+		"glow_area": Vector4(centre.x, centre.y, reach.x, reach.y),
 		"glow_colour": Vector3(glow.r, glow.g, glow.b),
 		"edge_colour": Vector3(edge.r, edge.g, edge.b),
 		"glow_on": 1.0 if glow_on else 0.0,
-		"glow_w": float(_grass.get("glow_w")),
+		"glow_w": reach.z,
 	})
 
 

@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=4]
 
-[ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/cave_hill.res" id="cave_hill_mesh"]
+[ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/cave_hill_even.res" id="cave_hill_mesh"]
 [ext_resource type="Script" uid="uid://wj5fbldct7mk" path="res://ramon/chickenpen/scripts/pen_cave_hill_4d.gd" id="pen_cave_hill"]
 [ext_resource type="ImageTexture3D" path="res://ramon/chickenpen/terrain/terrain_tint_3d.tres" id="shared_ImageTexture3D_umeec"]
 

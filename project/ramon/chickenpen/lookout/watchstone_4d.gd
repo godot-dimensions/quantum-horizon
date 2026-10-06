@@ -50,15 +50,18 @@ extends Node4D
 ## NO class_name (engine_gotchas.md).
 
 const Crag := preload("res://ramon/chickenpen/scripts/pen_crag_4d.gd")
+const MainGreen := preload("res://ramon/chickenpen/terrain/main_green_4d.gd")
 const SPEC := "res://ramon/chickenpen/lookout/watchstone_spec.json"
 
 const OWN := &"_watchstone_part"
 const PLACE := "The Watchstone"
 
-## The plateau: its turf's height and the railing's radius (posts at 3.76 m, fitted).
+## The plateau: its turf's height, the railing's radius (fitted to the sheet, 3.76 m) and the green turf
+## disc's, a little smaller so it sits inside the rock rim (Ramon, 6 Oct: "make terras slightly smaller ...
+## i just meant the green cylinder floor you use on top").
 const TOP := 13.65
 const RAIL_R := 3.76
-const TURF_R := 4.15
+const TURF_R := 3.7
 ## T1, the first run: its foot (deck middle at the low end) and its head on T2.
 const T1_FOOT := Vector4(-1.55, 0.25, 7.6, 0)
 const T1_HEAD := Vector4(4.55, 4.2, 5.75, 0)
@@ -93,6 +96,13 @@ const T8_FOOT := Vector4(3.1, 11.8, 3.05, 0)
 const T8_HEAD := Vector4(2.34, 13.65, 2.53, 0)
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
+## Turns the crag's generated stones into nodes under Stones, one a stone, grouped by where they sit,
+## so each can be moved, turned and resized by hand (Ramon, 6 Oct: "i want to be able to move all the
+## stones"). Once only: after it, the stones are the scene's, and [member stones_baked] keeps the crag
+## from laying out its own. Open units/watchstone/watchstone.tscn itself to use it.
+@export_tool_button("Bake every stone into the scene") var _bake_action: Callable = bake_stones
+## Set by the bake: the stones are nodes under Stones, and the crag builds no stones of its own.
+@export var stones_baked: bool = false: set = _set_baked
 ## The grass disc the sheet stands the crag on (off in the pen, where the pen's ground is).
 @export var ground_disc: bool = false: set = _set_disc
 ## How deep in W the plateau and the crag are, and the timber.
@@ -144,6 +154,11 @@ func _set_disc(v: bool) -> void:
 	_later()
 
 
+func _set_baked(v: bool) -> void:
+	stones_baked = v
+	_later()
+
+
 func _set_timber_w(v: float) -> void:
 	timber_w = v
 	_later()
@@ -154,6 +169,7 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 	add_to_group(&"slice_dial_outline")
+	add_to_group(MainGreen.GROUP)
 	_player = get_node_or_null(player_path) as Node4D
 	_lookout = get_node_or_null(lookout_path)
 	var layer := CanvasLayer.new()
@@ -186,6 +202,21 @@ func _later() -> void:
 	rebuild.call_deferred()
 
 
+## New moss baked, or the main green switched on or off (terrain/main_green_4d.gd): every stone built
+## again from the stone library, and merged again. The turf is the crag's own (pen_crag_4d.gd).
+func main_green_changed(_c: Color, baked: bool) -> void:
+	if not baked:
+		return
+	for holder_name in ["Stones", "Chunks"]:
+		var holder: Node = get_node_or_null(holder_name)
+		if holder == null:
+			continue
+		for mi in holder.find_children("*", "MeshInstance4D", true, false):
+			if mi.has_method("rebuild"):
+				mi.call("rebuild")
+	_merge_stones()
+
+
 func rebuild() -> void:
 	_pending = false
 	for c in get_children():
@@ -206,6 +237,8 @@ func rebuild() -> void:
 	_crag.set("clear_paths", [[[T1_FOOT, T1_HEAD], T1_WIDTH * 0.5], [[Vector4(T2_X.x, T2_Y, (T2_Z.x + T2_Z.y) * 0.5, 0), Vector4(T2_X.y, T2_Y, (T2_Z.x + T2_Z.y) * 0.5, 0)], (T2_Z.y - T2_Z.x) * 0.5],
 		[[T3_FOOT, T3_HEAD], 0.5], [T4, 0.5], [[T5_AT, T5_AT + Vector4(0.01, 0, 0, 0)], T5_HALF * 1.3],
 		[[Vector4(T6_X.x, T6_FOOT, (T6_Z.x + T6_Z.y) * 0.5, 0), Vector4(T6_X.x, T7_Y, (T6_Z.x + T6_Z.y) * 0.5, 0)], (T6_Z.y - T6_Z.x) * 0.5]])
+	_crag.set("chunks", _chunk_nodes())
+	_crag.set("procedural_stones", not stones_baked)
 	_crag.set("spec_path", SPEC)
 	_own(_crag)
 	_t1()
@@ -218,6 +251,145 @@ func rebuild() -> void:
 	_t8()
 	_t9()
 	_flush()
+	if not Engine.is_editor_hint():
+		_merge_stones.call_deferred()
+
+
+# --- The chunks --------------------------------------------------------------------------------
+
+## The big rock chunks, placed by hand (the scene's Chunks node, pen_crag_chunk_4d.gd each).
+func _chunk_nodes() -> Array:
+	var out: Array = []
+	var holder: Node = get_node_or_null("Chunks")
+	if holder != null:
+		for c in holder.get_children():
+			if c.has_method("footprint"):
+				out.append(c)
+	return out
+
+
+var _chunk_sig: float = 0.0
+var _chunk_moved_at: float = -1.0
+var _clock: float = 0.0
+
+
+## In the editor: when a chunk has been moved and then left alone for half a second, the crag is
+## rebuilt round it (only the crag: the timber does not change). Not once the stones are baked: then
+## nothing of the crag's depends on where a chunk stands.
+func _process(delta: float) -> void:
+	if not Engine.is_editor_hint() or stones_baked or _crag == null or not is_instance_valid(_crag):
+		return
+	_clock += delta
+	var sig: float = 0.0
+	for c in _chunk_nodes():
+		sig += float(c.call("signature"))
+	if absf(sig - _chunk_sig) > 1e-4:
+		_chunk_sig = sig
+		_chunk_moved_at = _clock
+	elif _chunk_moved_at >= 0.0 and _clock - _chunk_moved_at > 0.5:
+		_chunk_moved_at = -1.0
+		_crag.set("chunks", _chunk_nodes())
+		_crag.call("rebuild")
+
+
+## Every stone node's mesh (Stones and Chunks) merged into one at runtime, the single ones hidden: a
+## crag of two hundred and fifty stones is one draw in the pen, not two hundred and fifty (Trym's
+## Experiment B). In the editor each stays its own, so each can be picked and moved.
+func _merge_stones() -> void:
+	var old: Node = get_node_or_null("AllStones")
+	if old != null:
+		remove_child(old)
+		old.queue_free()
+	var merged := ArrayTetraMesh4D.new()
+	var count: int = 0
+	var inv: Projection = global_basis.inverse()
+	for holder_name in ["Stones", "Chunks"]:
+		var holder: Node = get_node_or_null(holder_name)
+		if holder == null:
+			continue
+		for mi in holder.find_children("*", "MeshInstance4D", true, false):
+			var m := mi as MeshInstance4D
+			if not m.has_method("footprint") or not (m.mesh is ArrayTetraMesh4D):
+				continue
+			merged.merge_with(m.mesh, inv * (m.global_position - global_position), inv * m.global_basis)
+			m.visible = false
+			count += 1
+	if count == 0:
+		return
+	var node := MeshInstance4D.new()
+	node.name = "AllStones"
+	node.mesh = merged
+	node.material_override = preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd").material()
+	_own(node)
+
+
+## The bake (see [member _bake_action]).
+func bake_stones() -> void:
+	if not Engine.is_editor_hint():
+		return
+	var root: Node = get_tree().edited_scene_root
+	if root != self:
+		push_warning("Watchstone: open units/watchstone/watchstone.tscn itself to bake its stones; here it is inside another scene.")
+		return
+	if stones_baked:
+		push_warning("Watchstone: the stones are baked already. To lay them out afresh: delete the Stones node, untick stones_baked, then bake.")
+		return
+	bake_into(root)
+
+
+## The bake's work, owned by [param root] (the scene being saved): also run by
+## PenLayout/RefLock/_bake_watchstone_stones_runner.gd without the editor. Returns how many it made.
+func bake_into(root: Node) -> int:
+	if _crag == null or not is_instance_valid(_crag):
+		rebuild()
+	var Chunk: Script = load("res://ramon/chickenpen/scripts/pen_crag_chunk_4d.gd")
+	var CutStone: Script = load("res://ramon/chickenpen/terrain/cut_stone_4d.gd")
+	var layout: Array = _crag.call("stone_layout")
+	var holder := get_node_or_null("Stones") as Node4D
+	if holder == null:
+		holder = Node4D.new()
+		holder.name = "Stones"
+		add_child(holder)
+		holder.owner = root
+	var groups: Dictionary = {}
+	var made: int = 0
+	for s in layout:
+		if s.size() > 6 and s[6] != null:
+			continue
+		var group: String = String(s[7]) if s.size() > 7 else "Stones"
+		if not groups.has(group):
+			var g := Node4D.new()
+			g.name = group
+			holder.add_child(g)
+			g.owner = root
+			groups[group] = g
+		var full: String = String(s[0])
+		var mossy: bool = full.ends_with("_moss")
+		var kind: String = full.trim_suffix("_moss")
+		var half: Vector4 = CutStone.KINDS[kind][0]
+		var sc: Vector4 = s[3]
+		var size := Vector3(sc.x * 2.0 * half.x, sc.y * 2.0 * half.y, sc.z * 2.0 * half.z)
+		var tilt: Vector2 = s[5]
+		var rot: Projection = Basis4D.from_xy(tilt.x) * Basis4D.from_yz(tilt.y) * Basis4D.from_zx(float(s[4]))
+		var n := MeshInstance4D.new()
+		n.set_script(Chunk)
+		n.name = "Stone%03d" % made
+		n.set("kind", kind)
+		n.set("variant", int(s[1]))
+		n.set("moss", mossy)
+		n.set("size", size)
+		n.set("w_size", sc.w * 2.0 * half.w)
+		n.set("bury", 0.0)
+		n.set("solid", false)
+		n.position = (s[2] as Vector4) - rot * Vector4(0, size.y * 0.5, 0, 0)
+		n.basis = rot
+		(groups[group] as Node).add_child(n)
+		n.owner = root
+		made += 1
+	stones_baked = true
+	rebuild()
+	print("Watchstone: %d stones baked into the scene under Stones (%s). Save the scene to keep them." % [made, ", ".join(PackedStringArray(groups.keys()))])
+	return made
 
 
 # --- The rock under the timber ------------------------------------------------------------------
@@ -423,16 +595,65 @@ func _t8() -> void:
 
 ## Sixteen posts round the plateau, one rail through them at sixty percent of their height, a gap
 ## where the ladder arrives (one bay left out).
+##
+## A WHOLE 4D RAILING (Ramon, 6 Oct: "is the top of the rock a proper 4d generator fence tech?"). The
+## plateau is a 4D disc: round in x and z and 6 m deep in W. Its railing is one FenceGenerator4D whose
+## seed is the plateau's whole boundary in the ground hyperplane: the ring of sixteen posts at both W
+## ends of the plateau, the band of faces between them all round (rails in every slice through the
+## plateau), and the two sixteen-sided faces closing it at the W ends (the railing you meet when you
+## step to the plateau's edge in W). Before this it was a strip 1.4 m deep in W, so stepping ana or
+## kata off it left the plateau standing without its railing. The bay where the ladder arrives is
+## left open.
 func _t9() -> void:
 	var gap: float = atan2(T8_HEAD.z, T8_HEAD.x)
 	var n: int = 16
 	var start: int = int(round(gap / (TAU / float(n)))) + 1
-	var pts: Array = []
+	var hw: float = w_depth * 0.5 - 0.3
+	var seed := ArrayPolyMesh4D.new()
+	var lo: Array = []
+	var hi: Array = []
 	for k in n:
 		var a: float = TAU * float(start + k) / float(n) - TAU / float(n) * 0.5
-		pts.append(Vector4(cos(a) * RAIL_R, TOP, sin(a) * RAIL_R, 0))
-	var f := _railing(pts, 0.0, 0.85, 0.55)
-	f.name = "PlateauRailing"
+		lo.append(seed.append_vertex(Vector4(cos(a) * RAIL_R, TOP, sin(a) * RAIL_R, -hw)))
+		hi.append(seed.append_vertex(Vector4(cos(a) * RAIL_R, TOP, sin(a) * RAIL_R, hw)))
+	var ring_lo := PackedInt32Array()
+	var ring_hi := PackedInt32Array()
+	for k in n:
+		var k2: int = (k + 1) % n
+		var e_lo: int = seed.append_edge_indices(lo[k], lo[k2])
+		var e_hi: int = seed.append_edge_indices(hi[k], hi[k2])
+		ring_lo.append(e_lo)
+		ring_hi.append(e_hi)
+		# The band all round but the last bay, which is the ladder's (the points start just past it).
+		if k < n - 1:
+			var e_a: int = seed.append_edge_indices(lo[k2], hi[k2])
+			var e_b: int = seed.append_edge_indices(hi[k], lo[k])
+			seed.append_poly_cell(2, PackedInt32Array([e_lo, e_a, e_hi, e_b]))
+	seed.append_poly_cell(2, ring_lo)
+	seed.append_poly_cell(2, ring_hi)
+	var f := _fence_node("PlateauRailing")
+	f.input_shape_type = FenceGenerator4D.INPUT_SHAPE_SEED_MESH_4D
+	f.seed_mesh_4d = seed
+	f.post_height_meters = 0.85
+	f.post_thickness_meters = POST / 0.95
+	f.rib_thickness_ratio = 0.95
+	f.beam_count = 1
+	f.beam_max_height_ratio = 0.55 / 0.85
+	f.beam_coverage = clampf(RAIL / 0.55, 0.02, 1.0)
+	f.beam_thickness_ratio = RAIL / POST
+	f.desired_spacing_meters = 0.0
+	f.update_fence_mesh_now()
+	# Solid: a ring of small boxes along the railing (physics is boxes that do not turn), the floor out
+	# to it, so nobody walks off the top; the ladder's bay closed too, the way down is a zone inside it.
+	var r: float = RAIL_R - 0.05
+	for k in n:
+		var a0: float = TAU * float(k) / float(n)
+		var a1: float = TAU * float(k + 1) / float(n)
+		var p0 := Vector4(cos(a0) * r, TOP + 0.6, sin(a0) * r, 0)
+		var p1 := Vector4(cos(a1) * r, TOP + 0.6, sin(a1) * r, 0)
+		for j in 3:
+			_solid(Vector4(0.55, 1.2, 0.55, w_depth), p0.lerp(p1, (float(j) + 0.5) / 3.0))
+	_solid(Vector4(RAIL_R * 2.0, 0.6, RAIL_R * 2.0, w_depth), Vector4(0, TOP - 0.3, 0, 0))
 
 
 # --- Builders -----------------------------------------------------------------------------------
@@ -695,7 +916,7 @@ func top_half() -> float:
 ## Whether [param p] (global) is up on the plateau.
 func on_deck(p: Vector4) -> bool:
 	var local: Vector4 = global_basis.inverse() * (p - global_position)
-	return Vector2(local.x, local.z).length() < TURF_R + 0.2 and local.y > TOP - 0.8 and local.y < TOP + 3.0 \
+	return Vector2(local.x, local.z).length() < RAIL_R + 0.2 and local.y > TOP - 0.8 and local.y < TOP + 3.0 \
 		and absf(local.w) < w_depth * 0.5
 
 
