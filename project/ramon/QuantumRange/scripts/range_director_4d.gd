@@ -505,11 +505,11 @@ func _feed_hud() -> void:
 	var base_keys: Array = [["Click", "Shoot"], ["Hold", "Charge"], ["Q  E", "Step through W"], ["RMB", "Turn the slice"], ["X", "Snap it back"]]
 	match state:
 		"gallery":
-			hud.set("card", {"kicker": "QUANTUM RANGE  ·  TARGET GALLERY", "title": "Every family, nothing scored", "clock": "",
+			hud.set("card", {"kicker": "SHOOTING RANGE  ·  TARGET GALLERY", "title": "Every family, nothing scored", "clock": "",
 				"line": "Shoot anything; it comes back. The radar\nand the crosshair read every one.", "progress": Vector2.ZERO})
 			hud.set("keys", [["F2", "Leave the gallery"], ["F3", "Hitboxes"]] + base_keys)
 		"lobby":
-			hud.set("card", {"kicker": "QUANTUM RANGE", "title": "Choose an experiment", "clock": "",
+			hud.set("card", {"kicker": "SHOOTING RANGE", "title": "Choose an experiment", "clock": "",
 				"line": "Press 1 to 6, or shoot a tile on the console.\nAgain for a stage. Then START, or F.", "progress": Vector2.ZERO,
 				"note": "%02d  %s   ·   STAGE %s: %s   ·   W: %s" % [int(e.get("number")), String(e.get("title")).to_upper(), char(65 + sel_stage),
 					String((e.get("stages")[sel_stage] as Dictionary).get("title", "")).to_upper(), String(e.get("w_load"))]})

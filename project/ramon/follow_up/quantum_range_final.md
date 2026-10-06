@@ -1,5 +1,8 @@
 # Quantum Range, final: plan and handover (5 Oct 2026)
 
+Called **Shooting Range** in the game since 6 Oct; the folder, files and this document keep the
+QuantumRange name.
+
 The consolidated shooting range: `res://ramon/QuantumRange/quantum_range_final.tscn`.
 
 It is a new scene. Neither old range is changed:
@@ -157,10 +160,12 @@ Each was settled during the run with the most reversible option, and the run car
 8. **The chicken's neck** prints a loft warning (22 of 2,300 tetrahedra fold inwards) the
    first time a chicken is baked. It comes with the carried rig and does not show at range
    distance; I left the rig as it is.
-9. **The menu card says five.** The catalogue's Quantum Range text still says "Five
-   experiments". The catalogue is shared, so I have not touched it again. "Six experiments of four
-   stages each, from finding a core in w to tagging a wolf that runs out of your slice" would
-   fit.
+9. **The menu card.** The range is called **Shooting Range** now (Ramon, 6 Oct): the sign over
+   the door, the explainer wall's title (and so the metrics wall's header) and the HUD. The folder
+   and the files keep their QuantumRange names, so nothing that points at them breaks. The
+   catalogue is shared, so its card still says "Quantum Range" and "Five experiments". It would
+   read: title "Shooting Range"; detail "... Six experiments of four stages each, from finding a
+   core in w to tagging a wolf that runs out of your slice."
 
 ---
 

@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_info")
 number = 4
-title = "Quantum Range"
+title = "Shooting Range"
 status = "LOCATE  /  CHARGE  /  REVEAL  /  INCOMING"
 lead = "Aim in four dimensions."
 description = "A target can sit in a slice you cannot see. The radar shows where.
