@@ -138,10 +138,10 @@ New player-facing text, all in `scripts/` unless said:
 
 ## Open
 
-- The cave's green spot (Ramon's screenshot, the slice turned steeply lengthways): reproduced at
-  35 to 55 degrees (capture sets cavesweep, cavediag); it is part of the cave hill's own mesh (hiding
-  the hill removes it, hiding the ground or the mountains does not) and lies inside the tunnel's own
-  W range. Not fixed yet: a dark backstop just past the tunnel's W ends changed nothing.
+- The cave's green spot (the slice turned steeply lengthways, 35 to 55 degrees; capture sets
+  cavesweep, cavediag) is fixed the cheap way, as Ramon asked: two low dark boxes over the tunnel's
+  floor where it tapers to its W edge (`scripts/pen_cave_hill_4d.gd` `_tunnel_patch`). It was the
+  hill's own mesh: a few dual-contoured vertices there coloured as mossy rock.
 - The meadow film may need re-aiming with the hill beside the meadow.
 - The shed and booth fence frames: whether they go live, and their spacing and rings.
 - Mark size (`p_scale` 1.4) and sand width (1.3 m) are first guesses from frames.

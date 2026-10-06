@@ -31,6 +31,7 @@ var _way_in_half := Vector4.ZERO
 
 func _ready() -> void:
 	super()
+	_tunnel_patch()
 	if Engine.is_editor_hint():
 		return
 	add_to_group(&"slice_dial_outline")
@@ -80,6 +81,33 @@ func dial_outline() -> Dictionary:
 		points.append(global_position + global_basis * (CaveHill.HILL + edge))
 	return {"points": points, "label": "cave", "colour": Color(0.50, 0.88, 0.78, 0.9), "depth": CaveHill.HALF.z,
 		"label_at": global_position + global_basis * CaveHill.MOUTH}
+
+
+## THE GREEN BIT IN THE TUNNEL (6 Oct, Ramon: "when opening the cave a little green bit is in the
+## back. should be black/dark"; "just fix it cheaply"). With the slice turned steeply lengthways
+## you look down the tunnel and move through W as you look, so you see the tunnel's floor where it
+## tapers to the tunnel's W edge. The dual contouring places a few vertices there far enough off
+## the tunnel's surface to be coloured as mossy rock: a green mound on the floor at the back. Two
+## low dark boxes over that stretch of floor, either side in W, the tunnel's whole length. Visual
+## only (nothing to bump into), and out of sight except down a steeply turned tunnel.
+func _tunnel_patch() -> void:
+	if get_node_or_null("TunnelPatch") != null:
+		return
+	var mesh := ArrayTetraMesh4D.new()
+	var length: float = CaveHill.TUNNEL_DEPTH
+	var size := Vector4(CaveHill.ARCH_HALF_WIDTH * 2.0, 1.4, length, 1.5)
+	for side in [-1.0, 1.0]:
+		var box := BoxTetraMesh4D.new()
+		box.size = size
+		mesh.merge_with(box.to_array_tetra_mesh(), Vector4(CaveHill.MOUTH.x, 0.7, CaveHill.MOUTH.z - 0.6 - length * 0.5,
+			CaveHill.MOUTH.w + side * (CaveHill.ARCH_HALF_WIDTH - 0.6)), Projection.IDENTITY)
+	var node := MeshInstance4D.new()
+	node.name = "TunnelPatch"
+	node.mesh = mesh
+	var m := TetraMaterial4D.new()
+	m.albedo_color = Color(0.03, 0.028, 0.03)
+	node.material_override = m
+	add_child(node)
 
 
 ## Walkable again after coming back out - the crossing calls this on everything.
