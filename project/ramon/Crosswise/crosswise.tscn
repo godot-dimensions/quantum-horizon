@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/Crosswise/crosswise_4d.gd" id="1_crosswise"]
+
+[node name="Crosswise" type="Node4D"]
+script = ExtResource("1_crosswise")
