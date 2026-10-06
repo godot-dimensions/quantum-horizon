@@ -18,13 +18,14 @@ extends Node
 ## THE WAY HOME IS LEFT ON THE ROOT, NOT WIRED INTO THE GALLERY. The gallery's own return
 ## key goes to the menu, and it is launched from the menu too, so it must keep doing that.
 ## While the pen is parked, a Callable and a label are left as metadata on the tree root;
-## the gallery's range_way_home_ramon.gd looks for them and, if they are there, relabels
+## the range's way-home node (QuantumRange/scripts/range_way_home_4d.gd since 5 Oct; the old
+## gallery's range_way_home_ramon.gd before it) looks for them and, if they are there, relabels
 ## its return prompt and uses them instead. Launched from the menu there is nothing there
 ## and it behaves as it always has. Neither side preloads the other.
 
 const QUESTS := preload("res://ramon/chickenpen/scripts/pen_quests_4d.gd")
 
-@export_file("*.tscn") var gallery_path: String = "res://ramon/ShootingGalleryRamon/shooting_gallery_ramon.tscn"
+@export_file("*.tscn") var gallery_path: String = "res://ramon/QuantumRange/quantum_range_final.tscn"
 @export var camera_path: NodePath = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 @export var label: String = "BACK TO THE CHICKEN PEN   %s"
 
