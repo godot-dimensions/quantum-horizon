@@ -1,0 +1,221 @@
+extends Control
+
+## The Voxel Lab bench's screen layer, while you sit at a specimen (room/vl_bench_4d.gd sets it up):
+##
+##   THE OUTLINE   where the tool will cut, drawn over the specimen through the live camera: a ring for
+##                 the ball, a square for the block, a ring and its depth for the drill, the blade's
+##                 path for the saw; with what is under the cursor (crust, core, vein, lining) and at
+##                 which W of the specimen.
+##   THE TOOL CARD bottom middle, one size always: the tool's picture, its name and size, what it does,
+##                 and the keys (the lab's rule: show the action and the key in a centred card).
+##   THE COSTS     a black glass screen on the right: the last cut taken apart (voxels removed, chunks
+##                 meshed again, how long until it showed, the worst frame, the worker's time), a pair
+##                 of bars per cut, and the totals. T switches where the draw buffers are built, so the
+##                 difference can be felt and read.
+##
+## Sizes follow the window's height, never the distance to anything (Ramon's lab rule).
+##
+## NO class_name (engine_gotchas.md).
+
+const Style := preload("res://ramon/VoxelLab/carried/kit/kit_style.gd")
+const Recipe := preload("res://ramon/VoxelLab/specimen/vl_recipe.gd")
+const Cutter := preload("res://ramon/VoxelLab/specimen/vl_cutter.gd")
+
+const MATERIAL_NAMES := {0: "CRUST", 1: "CORE", 2: "VEIN", 3: "LINING", 4: "CROWN", 5: "GRASS", 6: "DIRT", 7: "STONE", 8: "WATER"}
+
+var camera: Camera4D
+## Polylines in the world to draw (PackedVector4Array each), and whether each is closed.
+var outline: Array = []
+var hit_world: Vector4 = Vector4.INF
+var hit_text: String = ""
+var tool: String = "ball"
+var size_index: int = 1
+var records: Array = []
+var swap: bool = true
+var totals: Dictionary = {}
+var show_costs: bool = true
+## The tool card's own line under the name (the station can put its own words there).
+var station_name: String = ""
+
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+
+
+func _process(_delta: float) -> void:
+	queue_redraw()
+
+
+func _to_canvas(p: Vector4) -> Vector2:
+	var px: Vector2 = camera.world_to_viewport(p)
+	var vs := Vector2(get_viewport().get_size())
+	return px * (get_viewport_rect().size / vs) if vs.x > 0.0 else px
+
+
+func _draw() -> void:
+	if camera == null or not visible:
+		return
+	# Laid out from the viewport (this control's own size can still be zero in its first frames).
+	var vs: Vector2 = get_viewport_rect().size
+	var u: float = maxf(vs.y, 360.0) / 720.0
+	_draw_outline(u)
+	_draw_card(u)
+	if show_costs:
+		_draw_costs(u)
+
+
+func _draw_outline(u: float) -> void:
+	var ink := Color(1, 1, 1, 0.95)
+	var halo := Color(0.02, 0.04, 0.08, 0.55)
+	for line in outline:
+		var pts := PackedVector2Array()
+		for p in (line[0] as PackedVector4Array):
+			if bool(camera.is_position_behind(p)):
+				continue
+			pts.append(_to_canvas(p))
+		if pts.size() < 2:
+			continue
+		if bool(line[1]):
+			pts.append(pts[0])
+		draw_polyline(pts, halo, 4.0 * u, true)
+		draw_polyline(pts, ink if not bool(line[2]) else Style.UI_ACCENT, 1.6 * u, true)
+	if hit_world != Vector4.INF and not bool(camera.is_position_behind(hit_world)):
+		var c: Vector2 = _to_canvas(hit_world)
+		var r: float = 5.0 * u
+		draw_line(c - Vector2(r, 0), c + Vector2(r, 0), ink, 1.4 * u)
+		draw_line(c - Vector2(0, r), c + Vector2(0, r), ink, 1.4 * u)
+		if not hit_text.is_empty():
+			var f: Font = Style.ui_font("key")
+			var fs: int = int(11.0 * u)
+			var tw: float = f.get_string_size(hit_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			var at := c + Vector2(14.0 * u, -12.0 * u)
+			draw_rect(Rect2(at - Vector2(6 * u, fs + 3 * u), Vector2(tw + 12 * u, fs + 9 * u)), Color(Style.UI_GLASS, 0.8))
+			draw_string(f, at, hit_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Style.UI_INK_SOFT)
+
+
+## The tool card: bottom middle, above the control strip.
+func _draw_card(u: float) -> void:
+	var w: float = 470.0 * u
+	var h: float = 92.0 * u
+	var vs: Vector2 = get_viewport_rect().size
+	var r := Rect2(Vector2((vs.x - w) * 0.5, vs.y - h - 74.0 * u), Vector2(w, h))
+	draw_style_box(Style.glass_box(14.0 * u), r)
+	# The tool's picture.
+	var pic := Rect2(r.position + Vector2(14, 14) * u, Vector2(h - 28 * u, h - 28 * u))
+	_draw_tool_icon(tool, pic, Style.UI_ACCENT, u)
+	var x: float = pic.end.x + 16.0 * u
+	var fb: Font = Style.ui_font("title")
+	var fk: Font = Style.ui_font("key")
+	var ft: Font = Style.ui_font("text")
+	var tname: String = "%s  ·  %s" % [String(Cutter.NAMES[tool]).to_upper(), Cutter.SIZE_NAMES[size_index]]
+	draw_string(fb, Vector2(x, r.position.y + 30.0 * u), tname, HORIZONTAL_ALIGNMENT_LEFT, -1, int(19 * u), Style.UI_INK)
+	draw_string(ft, Vector2(x, r.position.y + 52.0 * u), String(Cutter.LINES[tool]), HORIZONTAL_ALIGNMENT_LEFT, w - (x - r.position.x) - 12 * u, int(12 * u), Style.UI_INK_SOFT)
+	# The keys: 1 2 3 4 for the tools (numbered boxes are buttons: they answer the number keys), Q/E size.
+	var kx: float = x
+	var ky: float = r.position.y + 64.0 * u
+	for i in Cutter.TOOLS.size():
+		var on: bool = Cutter.TOOLS[i] == tool
+		var cap := Rect2(Vector2(kx, ky), Vector2(18, 18) * u)
+		draw_rect(cap, Color(1, 1, 1, 0.22 if on else 0.06))
+		draw_rect(cap, Color(1, 1, 1, 0.9 if on else 0.4), false, 1.0 * u)
+		draw_string(fk, Vector2(cap.position.x, cap.position.y + 13.5 * u), str(i + 1), HORIZONTAL_ALIGNMENT_CENTER, cap.size.x, int(11 * u), Style.UI_INK)
+		kx += 22.0 * u
+	draw_string(fk, Vector2(kx + 6 * u, ky + 13.5 * u), "TOOL      Q / E  SIZE      R  WHOLE AGAIN", HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u), Style.UI_INK_DIM)
+
+
+static func _draw_tool_icon_static(c: CanvasItem, t: String, r: Rect2, col: Color, u: float) -> void:
+	var m: Vector2 = r.get_center()
+	var s: float = r.size.y * 0.5
+	var lw: float = 2.2 * u
+	# The block it cuts into, then the cut.
+	c.draw_rect(Rect2(r.position + Vector2(0, s * 0.35), Vector2(r.size.x, r.size.y - s * 0.35)), Color(1, 1, 1, 0.10))
+	var top: float = r.position.y + s * 0.35
+	match t:
+		"ball":
+			c.draw_arc(Vector2(m.x, top), s * 0.62, 0.0, PI, 24, col, lw, true)
+		"block":
+			c.draw_rect(Rect2(Vector2(m.x - s * 0.5, top), Vector2(s, s * 0.8)), col, false, lw)
+		"drill":
+			c.draw_line(Vector2(m.x - s * 0.22, top), Vector2(m.x - s * 0.22, r.end.y - s * 0.1), col, lw)
+			c.draw_line(Vector2(m.x + s * 0.22, top), Vector2(m.x + s * 0.22, r.end.y - s * 0.1), col, lw)
+			c.draw_arc(Vector2(m.x, r.end.y - s * 0.1), s * 0.22, 0.0, PI, 12, col, lw, true)
+		"saw":
+			c.draw_line(Vector2(r.position.x + s * 0.2, top), Vector2(r.end.x - s * 0.2, top), col, lw)
+			c.draw_rect(Rect2(Vector2(r.position.x + s * 0.2, top), Vector2(r.size.x - s * 0.4, s * 0.55)), col, false, lw)
+
+
+func _draw_tool_icon(t: String, r: Rect2, col: Color, u: float) -> void:
+	_draw_tool_icon_static(self, t, r, col, u)
+
+
+## The cost screen: black glass on the right.
+func _draw_costs(u: float) -> void:
+	var w: float = 300.0 * u
+	var h: float = 392.0 * u
+	var vs: Vector2 = get_viewport_rect().size
+	var r := Rect2(Vector2(vs.x - w - 22.0 * u, 96.0 * u), Vector2(w, h))
+	draw_style_box(Style.glass_box(14.0 * u), r)
+	var fb: Font = Style.ui_font("title")
+	var fk: Font = Style.ui_font("key")
+	var ft: Font = Style.ui_font("text")
+	var x: float = r.position.x + 16.0 * u
+	var y: float = r.position.y + 28.0 * u
+	var right: float = r.end.x - 16.0 * u
+	draw_string(fb, Vector2(x, y), "CUTS  ·  %d" % records.size(), HORIZONTAL_ALIGNMENT_LEFT, -1, int(16 * u), Style.UI_INK)
+	draw_string(fk, Vector2(x, y + 18.0 * u), ("DRAW BUFFERS ON A WORKER THREAD" if swap else "THE ENGINE'S WAY: ALL IN ONE FRAME"),
+		HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Style.UI_LIVE if swap else Style.UI_WARM)
+	y += 42.0 * u
+	var last: Dictionary = records[-1] if not records.is_empty() else {}
+	var rows: Array = [
+		["Last cut", String(last.get("label", "none yet"))],
+		["Voxels removed", ("not counted (noise)" if int(last.get("voxels", 0)) < 0 else _thousands(int(last.get("voxels", 0)))) if not last.is_empty() else "-"],
+		["Chunks meshed again", str(int(last.get("chunks", 0))) if not last.is_empty() else "-"],
+		["On screen after", "%.0f ms" % float(last.get("latency_ms", 0.0)) if not last.is_empty() else "-"],
+		["Worst frame", "%.1f ms" % float(last.get("worst_ms", 0.0)) if not last.is_empty() else "-"],
+		["Worker thread", ("%.0f ms" % float(last.get("worker_ms", 0.0))) if bool(last.get("swap", true)) and not last.is_empty() else "-"],
+	]
+	for row in rows:
+		draw_string(ft, Vector2(x, y), String(row[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), Style.UI_INK_DIM)
+		draw_string(fk, Vector2(x, y), String(row[1]), HORIZONTAL_ALIGNMENT_RIGHT, right - x, int(11 * u), Style.UI_INK)
+		y += 19.0 * u
+	# The bars: the last 14 cuts, how long until each showed (pale) and its worst frame (accent), on one
+	# scale to 200 ms, with a line at one 60 Hz frame.
+	y += 8.0 * u
+	var chart := Rect2(Vector2(x, y), Vector2(right - x, 92.0 * u))
+	draw_rect(chart, Color(1, 1, 1, 0.04))
+	var full: float = 200.0
+	var fps_y: float = chart.end.y - chart.size.y * (16.7 / full)
+	draw_dashed_line(Vector2(chart.position.x, fps_y), Vector2(chart.end.x, fps_y), Color(1, 1, 1, 0.35), 1.0 * u, 4.0 * u)
+	draw_string(ft, Vector2(chart.end.x - 64 * u, fps_y - 3 * u), "one frame", HORIZONTAL_ALIGNMENT_RIGHT, 60 * u, int(8 * u), Style.UI_INK_DIM)
+	var shown: Array = records.slice(maxi(0, records.size() - 14))
+	var bw: float = chart.size.x / 14.0
+	for i in shown.size():
+		var rec: Dictionary = shown[i]
+		var bx: float = chart.position.x + bw * float(i) + bw * 0.12
+		var lat: float = clampf(float(rec.get("latency_ms", 0.0)) / full, 0.0, 1.0) * chart.size.y
+		var worst: float = clampf(float(rec.get("worst_ms", 0.0)) / full, 0.0, 1.0) * chart.size.y
+		draw_rect(Rect2(Vector2(bx, chart.end.y - lat), Vector2(bw * 0.36, lat)), Color(1, 1, 1, 0.38))
+		var wc: Color = Style.UI_ACCENT if bool(rec.get("swap", true)) else Style.UI_WARM
+		draw_rect(Rect2(Vector2(bx + bw * 0.4, chart.end.y - worst), Vector2(bw * 0.36, worst)), wc)
+	y = chart.end.y + 16.0 * u
+	draw_rect(Rect2(Vector2(x, y - 8 * u), Vector2(8, 8) * u), Color(1, 1, 1, 0.38))
+	draw_string(ft, Vector2(x + 12 * u, y), "until it showed", HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Style.UI_INK_DIM)
+	draw_rect(Rect2(Vector2(x + 110 * u, y - 8 * u), Vector2(8, 8) * u), Style.UI_ACCENT if swap else Style.UI_WARM)
+	draw_string(ft, Vector2(x + 122 * u, y), "worst frame", HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Style.UI_INK_DIM)
+	y += 22.0 * u
+	for row in [["Tetrahedra now", String(totals.get("tets", "-"))], ["Video memory", String(totals.get("mb", "-"))], ["Voxel", String(totals.get("voxel", "-"))]]:
+		draw_string(ft, Vector2(x, y), String(row[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), Style.UI_INK_DIM)
+		draw_string(fk, Vector2(x, y), String(row[1]), HORIZONTAL_ALIGNMENT_RIGHT, right - x, int(11 * u), Style.UI_INK)
+		y += 18.0 * u
+	draw_string(fk, Vector2(x, r.end.y - 12.0 * u), "T  " + ("BUILD THEM IN THE FRAME INSTEAD" if swap else "BUILD THEM ON A WORKER AGAIN"),
+		HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Style.UI_INK_DIM)
+
+
+static func _thousands(n: int) -> String:
+	var s: String = str(absi(n))
+	var out: String = ""
+	while s.length() > 3:
+		out = "," + s.substr(s.length() - 3) + out
+		s = s.substr(0, s.length() - 3)
+	return ("-" if n < 0 else "") + s + out

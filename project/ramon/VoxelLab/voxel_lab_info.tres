@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/VoxelLab/carried/kit/panels/kit_room_info.gd" id="1_info"]
+
+[resource]
+script = ExtResource("1_info")
+number = 3
+title = "Voxel Lab"
+status = "CUTTING 4D MATTER  /  THE ENGINE'S OWN VOXELS"
+lead = "A block of 4D rock. Watch it cut, then cut it."
+description = "The block is {voxels} voxels of {voxel}, built by the engine's voxel world and meshed by dual contouring in C++. Every cut goes through W as well: a ball's hole closes as you slide through W, a box's holds, a tunnel is a tube, a cavity can hide beside your slice. Every cut is timed, and no frame waits for it."
+interactions = [["wheel", "Slide through W"], ["rdrag", "Turn in 4D"], ["key:E", "Sit at the bench"], ["key:V", "Volume view"]]
+controls_heading = "CONTROLS"
+research_title = "THE BLOCK"
+research_status = "●  MEASURED LIVE ON THIS MACHINE"
+research_layout = "specimen"
