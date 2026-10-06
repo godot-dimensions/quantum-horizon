@@ -113,6 +113,17 @@ class Problem:
 					d[1] *= squash
 					res.extend(d)
 					self.labels += [(c + "%d" % j, v, "u"), (c + "%d" % j, v, "v")]
+		# Known heights (a point on the ground, a lid of known height) and groups that stand equally
+		# tall (a tent's poles), each worth a pixel per centimetre.
+		for k, y in self.picks.get("known_y", {}).items():
+			res.append((self.point(p, k)[1] - float(y)) * 100.0)
+			self.labels.append((k, "y", "prior"))
+		for group in self.picks.get("equal_y", []):
+			ys = [self.point(p, k)[1] for k in group]
+			m = sum(ys) / len(ys)
+			for k, y in zip(group, ys):
+				res.append((y - m) * 100.0)
+				self.labels.append((k, "eq", "prior"))
 		# Priors: no roll to speak of.
 		for v in self.views:
 			res.append(p[self.idx["cam_" + v]][5] * 573.0)
@@ -254,8 +265,20 @@ def report(pb, p):
 
 def main(key):
 	pb = Problem(key)
-	p = initial(pb)
-	p, cost = pb.solve(p)
+	p0 = initial(pb)
+	# Several starts for the cameras (a steep top view and a far side view fall into the wrong
+	# valley from one start): keep the cheapest.
+	best = None
+	for pitch_top, f_top, d_top in [(62.0, 6.0, 70.0), (72.0, 8.0, 80.0), (52.0, 5.0, 60.0), (80.0, 10.0, 90.0)]:
+		p = p0.copy()
+		if "top" in pb.views:
+			centre = np.mean([p[pb.idx["pt_" + k]] for k in pb.free], axis=0) if pb.free else np.zeros(3)
+			pos = rc.look_from(centre, 0.0, math.radians(pitch_top), d_top)
+			p[pb.idx["cam_top"]] = [pos[0], pos[1], pos[2], 0.0, math.radians(pitch_top), 0.0, math.log(f_top)]
+		p, cost = pb.solve(p)
+		if best is None or cost < best[1]:
+			best = (p, cost)
+	p, cost = best
 	rep = report(pb, p)
 	# Re-centre on the plateau's middle at the ground (the unit's origin); the player keeps its place
 	# relative to everything.

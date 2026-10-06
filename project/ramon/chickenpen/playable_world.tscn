@@ -87,7 +87,7 @@
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/hill_west.res" id="hill_west_mesh"]
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/hill_tower.res" id="hill_tower_mesh"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_oak_4d.gd" id="pen_oak"]
-[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_camp_4d.gd" id="pen_camp"]
+[ext_resource type="PackedScene" path="res://ramon/chickenpen/units/camp/camp.tscn" id="unit_camp"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_stones_4d.gd" id="pen_stones"]
 [ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_paths_4d.gd" id="pen_paths"]
 [ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/graph/path_network_4d.gd" id="pc_network"]
@@ -3302,10 +3302,12 @@ position = Vector4(-17, 0, 41, 0)
 script = ExtResource("pen_oak")
 metadata/what = "The Arboretum's big oak beside Trym's shed, its own baked wood and GPU leaves (Ramon, 6 Oct)."
 
-[node name="EggCamp" type="Node4D" parent="World"]
+[node name="EggCamp" parent="World" instance=ExtResource("unit_camp")]
 position = Vector4(20, 0, -2, -2.5)
-script = ExtResource("pen_camp")
-metadata/what = "The researchers' camp in the meadow's middle, 2.5 m kata: easter egg 1, the bag of azoth by its crate. Tents, the bonfire in the middle, a kitchen scaffold (Ramon, 6 Oct; it replaced a ring of standing stones)."
+ground_patch = true
+turf_mat = false
+ground_lift = 0.03
+metadata/what = "The researchers' camp in the meadow's middle, 2.5 m kata: easter egg 1, the bag of azoth by the left bench. Built to Ramon's sheet (units/camp, PenLayout/PLAN_REF_LOCK.md part E); V brings your slice to it when it is half in view."
 
 [node name="EggCairn" type="Node4D" parent="World"]
 position = Vector4(25, 0, 12, 7)
