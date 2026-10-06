@@ -88,7 +88,14 @@ func _process(delta: float) -> void:
 	visible = want > 0.001
 
 
-## 0 in the open, 1 at the point the dark is complete; only inside the tunnel's own width.
+## 0 in the open, 1 at the point the dark is complete; only inside the tunnel itself.
+##
+## INSIDE THE TUNNEL, NOT BEHIND IT (6 Oct). This was bounded across the tunnel and not along it,
+## so the whole field north of the mouth, in a strip as wide as the arch, counted as deep inside.
+## While the hill stood at the field's edge nothing was out there; layout A put the pen behind it,
+## and with the cave four metres ana the strip still reaches the farm's slice by 0.1 m: the
+## screen went black from the hill's back to the field's north edge, the pen's gate included. Now it also ends at the tunnel's blind end and at
+## the arch's top, so standing on the hill over the tunnel is not inside it either.
 func _into_the_hill() -> float:
 	# In the hill's own frame, where MOUTH and the tunnel are: the Cave unit can stand anywhere.
 	var p: Vector4 = CaveHill.to_local(CaveHill.node_in(self), _player.global_position)
@@ -96,7 +103,10 @@ func _into_the_hill() -> float:
 	var half: float = CaveHill.ARCH_HALF_WIDTH + 0.5
 	if absf(p.x - mouth.x) > half or absf(p.w - mouth.w) > half:
 		return 0.0
-	return smoothstep(dark_from, dark_at, float(_hill.tunnel_into(p)))
+	var into: float = float(_hill.tunnel_into(p))
+	if into > CaveHill.TUNNEL_DEPTH + 1.0 or p.y - mouth.y > CaveHill.ARCH_HEIGHT + 1.0:
+		return 0.0
+	return smoothstep(dark_from, dark_at, into)
 
 
 func _toward_the_daylight() -> float:

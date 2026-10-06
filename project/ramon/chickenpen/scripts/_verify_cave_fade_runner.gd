@@ -63,6 +63,17 @@ func _in_tunnel(into: float) -> Vector4:
 	return CaveHill.to_world(CaveHill.node_in(_room), Vector4(CaveHill.MOUTH.x, 1.05, CaveHill.MOUTH.z + 0.5 - into, CaveHill.MOUTH.w))
 
 
+## In line with the tunnel but not in it: [param which] 0 behind the hill at the cave's W, 1 the same
+## on the farm's slice (w 0 in the field), 2 on the hill's top over the tunnel's middle.
+func _behind(which: int) -> Vector4:
+	var into: float = 6.0 if which == 2 else 30.0
+	var up: float = 7.5 if which == 2 else 1.05
+	var p: Vector4 = CaveHill.to_world(CaveHill.node_in(_room), Vector4(CaveHill.MOUTH.x, up, CaveHill.MOUTH.z + 0.5 - into, CaveHill.MOUTH.w))
+	if which == 1:
+		p.w = 0.0
+	return p
+
+
 func _cave() -> Node4D:
 	return _crossing.get("_theatre") as Node4D
 
@@ -97,6 +108,21 @@ func _process(d: float) -> bool:
 					_check("darkening between", _alphas[3] > 0.2 and _alphas[3] < 0.9, "%.2f" % _alphas[3])
 					_check("never lighter going in", _alphas[1] <= _alphas[2] and _alphas[2] <= _alphas[3] and _alphas[3] <= _alphas[4] and _alphas[4] <= _alphas[5])
 					_check("black before the crossing", _alphas[5] > 0.99, "%.3f" % _alphas[5])
+					_step = 6
+					_i = 0
+		6:
+			# Out of the tunnel but in line with it (6 Oct): behind the hill, where layout A has the
+			# pen, at the cave's W and on the farm's slice, and on the hill's top over the tunnel.
+			# All three used to count as deep inside it, a black screen in the pen.
+			if _wait == 0:
+				_hold(_behind(_i))
+			_wait += 1
+			if _wait == 8:
+				_check(["clear behind the hill, at the cave's W", "clear behind the hill, on the farm's slice",
+					"clear on the hill over the tunnel"][_i], _alpha() < 0.01, "%.3f" % _alpha())
+				_wait = 0
+				_i += 1
+				if _i == 3:
 					_step = 1
 		1:
 			# On into the trigger, holding there until it fires.

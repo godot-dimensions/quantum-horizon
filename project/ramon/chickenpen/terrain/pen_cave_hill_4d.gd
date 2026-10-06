@@ -60,7 +60,9 @@ const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd"
 
 ## The hill: centre, half-size in x, z, w, and its height.
 const HILL := Vector4(17.0, 0.0, -40.0, 0.0)
-const HALF := Vector3(14.0, 10.0, 9.0)
+## (11.5 along z since 6 Oct, was 10: the dome reaches further toward the arch, so the hill rises
+## behind it instead of the shoulder standing alone as a ridge.)
+const HALF := Vector3(14.0, 11.5, 9.0)
 const TOP := 11.0
 ## Where the slope starts, as a fraction of the half-size. Small, so it is a dome and not a
 ## table.
@@ -177,6 +179,12 @@ func shoulder_height(x: float, z: float, w: float) -> float:
 	var face: float = MOUTH.z + 0.9
 	var reach: float = 0.3 + 5.0 * smoothstep(ARCH_HALF_WIDTH + 0.4, ARCH_HALF_WIDTH + 3.4, lateral)
 	var rise: float = smoothstep(face + reach, face - 1.2, z)
+	# AND IT SLOPES AWAY BEHIND THE ARCH (6 Oct). It used to run on at full height all the way
+	# back through the hill and out past the dome's far side, where the bake's box cut it off:
+	# flat 8 m tables with sheer sides at both ends of the hill, seen from the side. Now it is
+	# highest over the arch's crown and comes down over the next seven metres, into the dome:
+	# a hood over the entrance and a saddle behind it, one landform rather than a ridge on a hill.
+	rise *= 1.0 - smoothstep(face - 2.0, face - 9.0, z)
 	return SHOULDER_HEIGHT * fade * rise + 0.3 * _bumps.get_noise_3d(x, z, w)
 
 
@@ -230,7 +238,15 @@ func hill_density(p: Vector4) -> float:
 ## The block round the mouth, in world space: hill or rock face, whichever is there, with
 ## the tunnel taken out.
 func block_density(p: Vector4) -> float:
-	return minf(maxf(hill_density(p), face_density(p)), -tunnel_density(p))
+	# The hill and the rock face joined smoothly, not at a crease: dual contouring left pinholes
+	# where the two met at an angle (the sky showed through above the arch, 6 Oct).
+	return minf(_smooth_max(hill_density(p), face_density(p), 0.9), -tunnel_density(p))
+
+
+## max(a, b) with the corner rounded over [param k]: the same away from where they meet.
+static func _smooth_max(a: float, b: float, k: float) -> float:
+	var h: float = maxf(k - absf(a - b), 0.0) / k
+	return maxf(a, b) + h * h * k * 0.25
 
 
 ## How far into the tunnel a point is, in metres from the mouth.
@@ -353,9 +369,12 @@ func way_in() -> Array:
 
 
 func bake() -> TerrainBake.Builder:
+	# The box reaches seven metres in front of the mouth (6 Oct): the shoulder's slopes either
+	# side of the arch come down to the field out there, and the box used to end 0.4 m behind
+	# the rock face, cutting them off in sheer walls wherever the block did not cover them.
 	var hill: TerrainBake.Builder = TerrainBake.bake_height_box(
 		Vector3(HILL.x - HALF.x * 1.1, HILL.z - HALF.y * 1.1, -HALF.z * 1.1),
-		Vector3(HILL.x + HALF.x * 1.1, HILL.z + HALF.y * 1.1, HALF.z * 1.1),
+		Vector3(HILL.x + HALF.x * 1.1, maxf(HILL.z + HALF.y * 1.1, MOUTH.z + 7.0), HALF.z * 1.1),
 		1.35, height, colour, [[0.8, 0.5], [3.0, 0.45]], -0.05)
 	var field := VoxelField4D.new(BLOCK_GRID)
 	var cell4: Vector4 = (BLOCK_MAX - BLOCK_MIN) / float(BLOCK_GRID - 1)

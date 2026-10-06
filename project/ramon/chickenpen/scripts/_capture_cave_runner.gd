@@ -97,9 +97,10 @@ func _process(_d: float) -> bool:
 		var at: Vector3 = shot[0]
 		player.global_position = _cave.global_position + _cave.global_basis * Vector4(at.x, 0.05, at.y, at.z)
 		player.linear_velocity = Vector4.ZERO
-		rig.set("yaw", deg_to_rad(shot[1]))
+		# The slice is the rig's basis since the camera controls changed (4 Oct, b27ffa1):
+		# heading, then the turn into W, as a sideways slice drag would make it.
+		rig.basis = GroundBasis4D.sliced(Basis4D.from_zx(deg_to_rad(shot[1])), Vector2(-deg_to_rad(shot[3]), 0.0))
 		rig.set("pitch", deg_to_rad(shot[2]))
-		rig.set("_slice_xw", deg_to_rad(shot[3]))
 		rig.set("distance", shot[4])
 		rig.call("_apply")
 	if phase == 20 and _strike:
