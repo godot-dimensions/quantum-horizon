@@ -26,6 +26,8 @@ const SWATCHES := {
 	"kit_code_blue": [Color(0.06, 0.24, 0.66), Color(0.11, 0.31, 0.74), Color(0.08, 0.27, 0.70), 0.5],
 	"range_counter": [Color(0.95, 0.95, 0.96), Color(0.80, 0.81, 0.83), Color(0.90, 0.91, 0.92), 0.35],
 	"range_dark": [Color(0.20, 0.21, 0.24), Color(0.30, 0.31, 0.35), Color(0.24, 0.25, 0.28), 0.4],
+	# The console's plate, the kit's light bezel (kit_style.gd "kit_bezel").
+	"range_bezel": [Color(0.90, 0.91, 0.92), Color(0.90, 0.91, 0.92), Color(0.90, 0.91, 0.92), 0.0],
 	"range_screen": [Color(0.035, 0.042, 0.055), Color(0.035, 0.042, 0.055), Color(0.035, 0.042, 0.055), 0.0],
 	"range_top": [Color(0.66, 0.68, 0.72), Color(0.56, 0.58, 0.62), Color(0.62, 0.64, 0.68), 0.4],
 	"range_lane": [Color(0.78, 0.80, 0.83), Color(0.58, 0.61, 0.66), Color(0.72, 0.74, 0.78), 0.6],

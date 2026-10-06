@@ -1,8 +1,8 @@
 @tool
 extends Node4D
 
-## The range's built-in furniture: the counter on the firing line, and the holodeck's thin cyan light
-## lines (one along the counter's front edge, one along the foot of every wall), merged into one mesh
+## The range's built-in furniture: the counter on the firing line, its thin cyan light line along the
+## front edge, and a grey skirting along the foot of every wall, framing the room; merged into one mesh
 ## per colour (carried/LabKit/lab_batch.gd: every 4D instance costs shader instance variables, and a
 ## line of light is one draw instead of dozens).
 ##
@@ -17,7 +17,7 @@ const Layout := preload("res://ramon/QuantumRange/scripts/range_layout.gd")
 const Style := preload("res://ramon/QuantumRange/scripts/range_style.gd")
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
-## The light lines at the foot of the walls.
+## The grey skirting at the foot of the walls.
 @export var skirting: bool = true:
 	set(v):
 		skirting = v
@@ -37,6 +37,11 @@ func _later() -> void:
 	(func() -> void:
 		_queued = false
 		rebuild()).call_deferred()
+
+
+const RangeMats := preload("res://ramon/QuantumRange/scripts/range_mats.gd")
+## The skirting's grey (the walls are kit_wall, near white).
+const SKIRT := Color(0.66, 0.68, 0.71)
 
 
 func rebuild() -> void:
@@ -65,10 +70,17 @@ func rebuild() -> void:
 				var right: float = Layout.entrance_along(Layout.DOOR.x)
 				for piece in [Vector2(0.0, left), Vector2(right, len)]:
 					var pm: Vector2 = a + dir * ((piece.x + piece.y) * 0.5) + inward * 0.04
-					b.box("line", Vector4(piece.y - piece.x, 0.05, 0.03, w), Vector4(pm.x, 0.025, pm.y, 0.0), Basis4D.from_zx(atan2(dir.x, dir.y) - PI * 0.5))
+					b.box("skirt", Vector4(piece.y - piece.x, 0.05, 0.03, w), Vector4(pm.x, 0.025, pm.y, 0.0), Basis4D.from_zx(atan2(dir.x, dir.y) - PI * 0.5))
 				continue
-			b.box("line", Vector4(span, 0.05, 0.03, w), Vector4(mid.x, 0.025, mid.y, 0.0), Basis4D.from_zx(atan2(dir.x, dir.y) - PI * 0.5))
+			b.box("skirt", Vector4(span, 0.05, 0.03, w), Vector4(mid.x, 0.025, mid.y, 0.0), Basis4D.from_zx(atan2(dir.x, dir.y) - PI * 0.5))
 	var lines: MeshInstance4D = b.instance("line")
 	lines.material_override = Mats.glow(Style.glow("w"), 1.0)
 	lines.set_meta(Build.GENERATED, true)
 	add_child(lines)
+	# The foot of the walls: a grey a little darker than the white, framing the room, not lit (Ramon,
+	# 6 Oct: "not sure about the little cyan line in the corners, make it rather a bit darker grey").
+	if skirting:
+		var skirt: MeshInstance4D = b.instance("skirt")
+		skirt.material_override = RangeMats.lit(SKIRT)
+		skirt.set_meta(Build.GENERATED, true)
+		add_child(skirt)

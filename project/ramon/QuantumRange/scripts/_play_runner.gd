@@ -6,7 +6,7 @@ extends SceneTree
 ##
 ##   range_run.sh windowed play res://ramon/QuantumRange/scripts/_play_runner.gd exps=1,2 scale=2
 ##
-## exps: which experiments (1 to 5); scale: time scale (2 plays twice as fast; the frames are the same).
+## exps: which experiments (1 to 6); scale: time scale (2 plays twice as fast; the frames are the same).
 
 const SCENE := "res://ramon/QuantumRange/quantum_range_final.tscn"
 const OUT := "res://smoke_test_output/quantum_range/play/"
@@ -46,7 +46,7 @@ func _shot(name: String) -> void:
 
 func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
-	var exps: Array = [1, 2, 3, 4, 5]
+	var exps: Array = [1, 2, 3, 4, 5, 6]
 	var scale: float = 1.0
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("exps="):
@@ -66,6 +66,9 @@ func _run() -> void:
 	# Nobody's mouse reaches this player (the range takes the mouse when it opens; see _capture_menu_clip_runner.gd).
 	player.set("input_enabled", false)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# Nobody's keys reach the range either (typing in another window once started a run here).
+	_d.set_process_unhandled_key_input(false)
+	_r.set_process_unhandled_input(false)
 	player.call("place", Vector4(0, 0.05, 1.5, 0), 0.0)
 	(_r.get("sfx") as Node).set("muted", true)
 	await create_timer(0.5).timeout
@@ -119,7 +122,7 @@ func _play(i: int) -> void:
 				await _shot("%s_%d_play" % [nm, stage])
 			if t_stage > STAGE_LIMIT:
 				_check(false, "%s stage %s finishes within %d s" % [nm, char(65 + stage), int(STAGE_LIMIT)])
-				_d.call("start", (i + 1) % 5)
+				_d.call("start", (i + 1) % 6)
 				return
 		elif state == "failed":
 			_check(false, "%s stage %s did not fail (%s)" % [nm, char(65 + stage), _d.get("_fail_reason")])

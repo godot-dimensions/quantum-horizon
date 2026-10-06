@@ -3,7 +3,7 @@ extends Node
 ## Runs the range: which experiment is chosen, its four stages one after another, the clock, the score,
 ## the restarts, and what the HUD, the console and the metrics wall say about it.
 ##
-##   lobby      nothing running; choose at the console (shoot a number, or 1 to 5) and START (shoot it,
+##   lobby      nothing running; choose at the console (shoot a number, or 1 to 6) and START (shoot it,
 ##              or F)
 ##   intro      a stage's card ("STAGE B · STEP THROUGH W"); the first stage gets a 3 2 1 countdown
 ##   stage      its targets are out; the experiment's tick() says when it is done (or failed)
@@ -27,6 +27,7 @@ const EXPERIMENTS := [
 	"res://ramon/QuantumRange/scripts/experiments/exp_reveal.gd",
 	"res://ramon/QuantumRange/scripts/experiments/exp_incoming.gd",
 	"res://ramon/QuantumRange/scripts/experiments/exp_skeet.gd",
+	"res://ramon/QuantumRange/scripts/experiments/exp_wolf.gd",
 ]
 
 signal changed
@@ -58,11 +59,20 @@ const GALLERY := [
 	["Heavy drone", "res://ramon/QuantumRange/scripts/targets/target_drone.gd", {"kind": "heavy"}, Vector3(-1.6, 3.2, 21.0)],
 	["Friendly", "res://ramon/QuantumRange/scripts/targets/target_drone.gd", {"kind": "friendly"}, Vector3(1.8, 3.2, 21.0)],
 	["Chicken", "res://ramon/QuantumRange/scripts/targets/target_chicken.gd", {}, Vector3(5.2, 2.8, 21.0)],
+	["Wolf", "res://ramon/QuantumRange/scripts/targets/target_wolf.gd", {"route": [{"wait": 9999.0}]}, Vector3(0.0, 0.0, 25.0)],
 ]
 var _gallery_back: Array = []
 
 var experiments: Array = []
 var sel: int = 0
+## The stage the chosen experiment starts from (0 is A): every stage of every experiment can be played from
+## the start, this being an R&D range rather than a game to unlock (Ramon, 6 Oct). Press the experiment's
+## number again, or shoot its tile again, for the next.
+var sel_stage: int = 0
+## The stage the run under way began at: a run from A is a whole run, and only whole runs keep a best.
+var run_from: int = 0
+## Whether anything has been started yet: the console waits in the middle of the bay until then.
+var started_once: bool = false
 var state: String = "lobby"
 var stage: int = 0
 var strict: bool = false
@@ -166,39 +176,45 @@ func select(i: int) -> void:
 		clear_targets()
 		clear_props()
 		state = "lobby"
-	sel = i
+	if state in ["intro", "stage", "cleared"] and i == sel:
+		return
 	if state == "results":
 		hud.call("hide_results")
 		state = "lobby"
+	if state == "lobby" and i == sel:
+		sel_stage = (sel_stage + 1) % int(experiments[i].call("stage_count"))
+	else:
+		sel = i
+		sel_stage = 0
 	if sfx != null:
-		sfx.call("play", "click", 1.2, -6.0)
+		sfx.call("play", "click", 1.2 + 0.08 * float(sel_stage), -6.0)
 	_refresh()
 
 
-## START: from the lobby the chosen experiment; from the results the next one.
+## START: the chosen experiment from the chosen stage, from the lobby or again from the results.
 func start_pressed() -> void:
 	match state:
-		"lobby", "gallery":
-			start(sel)
-		"results":
-			start((sel + 1) % experiments.size())
+		"lobby", "gallery", "results":
+			start(sel, sel_stage)
 		"failed":
 			restart_stage()
 
 
 func press_button(i: int) -> void:
-	if i == 5:
+	if i == experiments.size():
 		start_pressed()
 	else:
 		select(i)
 
 
-func start(i: int) -> void:
+func start(i: int, from_stage: int = 0) -> void:
 	clear_targets()
 	clear_props()
 	sel = i
+	run_from = clampi(from_stage, 0, int(experiments[i].call("stage_count")) - 1)
+	started_once = true
 	hud.call("hide_results")
-	stage = 0
+	stage = run_from
 	t_run = 0.0
 	stage_times = []
 	_said = {}
@@ -206,14 +222,14 @@ func start(i: int) -> void:
 	player.call("reset_counters")
 	if sfx != null:
 		sfx.call("play", "click", 0.9, -4.0)
-	_begin_stage(0)
+	_begin_stage(run_from)
 
 
 func _begin_stage(i: int) -> void:
 	clear_targets()
-	# Out by the walls, or still in the entrance corridor (1 to 5 and F work anywhere), when it starts:
-	# back to the line, facing downrange.
-	if player != null and (player.global_position.z < Layout.line_hold() or player.global_position.z > Layout.BAY_BACK):
+	# Still in the entrance corridor when it starts (1 to 6 and F work anywhere): to the line, facing
+	# downrange.
+	if player != null and player.global_position.z > Layout.BAY_BACK:
 		player.call("place", Layout.STAND, 0.0)
 	stage = i
 	state = "intro"
@@ -222,7 +238,7 @@ func _begin_stage(i: int) -> void:
 	_count_step = -1
 	var e: RefCounted = current()
 	var st: Dictionary = e.get("stages")[i]
-	hud.call("stage_card", String(st.get("title", "")).to_upper(), "%02d  %s   ·   STAGE %s OF %d" % [int(e.get("number")), String(e.get("title")).to_upper(), char(65 + i), int(e.call("stage_count"))], 1.8 if i == 0 else 1.3)
+	hud.call("stage_card", String(st.get("title", "")).to_upper(), "%02d  %s   ·   STAGE %s OF %d" % [int(e.get("number")), String(e.get("title")).to_upper(), char(65 + i), int(e.call("stage_count"))], 1.8 if i == run_from else 1.3)
 	_refresh()
 
 
@@ -233,7 +249,7 @@ func restart_stage() -> void:
 
 func restart_run() -> void:
 	if state != "lobby" or current() != null:
-		start(sel)
+		start(sel, run_from)
 
 
 func _go() -> void:
@@ -255,10 +271,12 @@ func _finish() -> void:
 	var acc: float = 100.0 * float(useful) / float(shots) if shots > 0 else 0.0
 	var wasted: int = int(st["scuffs"]) + int(st["pings"]) + int(st["vents"])
 	var par: float = 0.0
-	for s in e.get("stages"):
-		par += float((s as Dictionary).get("par", 0.0))
+	var all_stages: Array = e.get("stages")
+	for j in range(run_from, all_stages.size()):
+		par += float((all_stages[j] as Dictionary).get("par", 0.0))
 	var best_before: float = float(bests.get(id, INF))
-	var is_best: bool = t_run < best_before
+	# Only a whole run, from A, can set a best.
+	var is_best: bool = run_from == 0 and t_run < best_before
 	if is_best:
 		bests[id] = t_run
 	if is_best and keep_bests:
@@ -282,10 +300,10 @@ func _finish() -> void:
 		rows.append(["Friendlies hit", str(int(st["penalties"]))])
 	if e.has_method("extra_rows"):
 		rows.append_array(e.call("extra_rows"))
-	var nxt: RefCounted = experiments[(sel + 1) % experiments.size()]
-	hud.call("show_results", {"kicker": "%02d  %s   ·   COMPLETE" % [int(e.get("number")), String(e.get("title")).to_upper()],
+	var from_text: String = "" if run_from == 0 else "   ·   FROM STAGE %s" % char(65 + run_from)
+	hud.call("show_results", {"kicker": "%02d  %s   ·   COMPLETE%s" % [int(e.get("number")), String(e.get("title")).to_upper(), from_text],
 		"title": "New best" if is_best and best_before < INF else String(e.get("tagline")), "rows": rows,
-		"hint": "F  NEXT: %s      R  AGAIN      1 TO 5  CHOOSE" % String(nxt.get("title")).to_upper()})
+		"hint": "F OR R  AGAIN      1 TO 6  CHOOSE, AGAIN FOR A STAGE"})
 	_refresh()
 
 
@@ -296,16 +314,13 @@ func _to_lobby() -> void:
 
 
 func _process(delta: float) -> void:
-	# The counter holds you while an experiment runs; otherwise you can walk out to the walls.
-	if player != null:
-		player.set("min_z", Layout.line_hold() if state in ["intro", "stage", "cleared"] else Layout.WALK_OUT)
 	if current() == null or hud == null:
 		return
 	t_state += delta
 	match state:
 		"intro":
 			# The first stage counts you in; later ones go once their card has had its moment.
-			if stage == 0:
+			if stage == run_from:
 				var step: int = int((t_state - 1.0) / 0.6)
 				if t_state >= 1.0 and step != _count_step and step <= 3:
 					_count_step = step
@@ -359,7 +374,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	var used: bool = true
 	match k.keycode:
-		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5:
+		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6:
 			select(int(k.keycode - KEY_1))
 		KEY_F, KEY_ENTER, KEY_KP_ENTER:
 			# F while looking at a console button presses that button.
@@ -374,7 +389,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			if k.shift_pressed:
 				restart_run()
 			elif state == "results":
-				start(sel)
+				start(sel, run_from)
 			else:
 				restart_stage()
 		KEY_F1:
@@ -495,12 +510,13 @@ func _feed_hud() -> void:
 			hud.set("keys", [["F2", "Leave the gallery"], ["F3", "Hitboxes"]] + base_keys)
 		"lobby":
 			hud.set("card", {"kicker": "QUANTUM RANGE", "title": "Choose an experiment", "clock": "",
-				"line": "The console is on your left. Shoot a number,\nor press 1 to 5. Then START, or F.", "progress": Vector2.ZERO,
-				"note": "%02d  %s   ·   W: %s" % [int(e.get("number")), String(e.get("title")).to_upper(), String(e.get("w_load"))]})
-			hud.set("keys", [["1 to 5", "Choose"], ["F", "Start"], ["F2", "Target gallery"]] + base_keys)
+				"line": "Press 1 to 6, or shoot a tile on the console.\nAgain for a stage. Then START, or F.", "progress": Vector2.ZERO,
+				"note": "%02d  %s   ·   STAGE %s: %s   ·   W: %s" % [int(e.get("number")), String(e.get("title")).to_upper(), char(65 + sel_stage),
+					String((e.get("stages")[sel_stage] as Dictionary).get("title", "")).to_upper(), String(e.get("w_load"))]})
+			hud.set("keys", [["1 to 6", "Choose, again for a stage"], ["F", "Start"], ["F2", "Target gallery"]] + base_keys)
 		"results":
 			hud.set("card", {})
-			hud.set("keys", [["F", "Next experiment"], ["R", "Again"], ["1 to 5", "Choose"]])
+			hud.set("keys", [["F  R", "Again"], ["1 to 6", "Choose"]])
 		"failed":
 			hud.set("card", {"kicker": "%02d  %s   ·   ROUND PAUSED" % [int(e.get("number")), String(e.get("title")).to_upper()],
 				"title": _fail_reason if not _fail_reason.is_empty() else "Round paused", "clock": _clock(t_run),
@@ -524,17 +540,19 @@ func _feed_console() -> void:
 	var tiles: Array = []
 	for e in experiments:
 		var id: String = String(e.get("id"))
-		var status: String = "BEST  %s" % _clock(float(bests[id])) if bests.has(id) else "NOT YET"
-		tiles.append(["%02d" % int(e.get("number")), String(e.get("title")).to_upper(), status, results.has(id)])
+		# Nothing is locked: a finished one only gains a small green stopwatch and its best.
+		var best: String = _clock(float(bests[id])) if bests.has(id) else ""
+		tiles.append([str(int(e.get("number"))), String(e.get("short")), best, bests.has(id), String(e.get("glyph"))])
 	var label: String = "START"
 	if state == "results":
-		label = "NEXT"
+		label = "AGAIN"
 	elif state == "failed":
 		label = "RETRY"
 	elif state in ["intro", "stage", "cleared"]:
 		label = "RUNNING"
-	console.call("show", {"sel": sel, "tiles": tiles, "start": label, "hover": int(weapon.get("hover_button")) if weapon != null else -1,
-		"hint": "SHOOT A NUMBER, OR PRESS 1 TO 5"})
+	console.call("show", {"sel": sel, "stage": sel_stage if state in ["lobby", "gallery", "results"] else stage, "tiles": tiles, "start": label,
+		"hover": int(weapon.get("hover_button")) if weapon != null else -1, "hint": "PRESS 1 TO 6, AGAIN FOR A STAGE",
+		"anchor": "near" if started_once else "lobby", "live": state not in ["intro", "stage", "cleared"]})
 
 
 func _refresh() -> void:
