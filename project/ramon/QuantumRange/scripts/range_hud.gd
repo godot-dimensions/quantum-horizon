@@ -33,6 +33,13 @@ var keys: Array = []
 ## F3: every target part's hitbox drawn over the world through the live camera (a developer's view:
 ## the engine collides boxes, so this is what a shot really meets), dashed when off your slice.
 var show_hitboxes: bool = false
+## Only the crosshair and the slice glow: for filming the menu clip (_capture_menu_clip_runner.gd), where
+## the menu shows the middle band of the frame and cards at the edges would be cut in half.
+var clean: bool = false:
+	set(v):
+		clean = v
+		if radar != null:
+			radar.visible = not v and _results.is_empty()
 ## The objective card: empty title hides it.
 var card: Dictionary = {}
 
@@ -101,7 +108,7 @@ func show_results(r: Dictionary) -> void:
 
 func hide_results() -> void:
 	_results = {}
-	radar.visible = true
+	radar.visible = not clean
 	crosshair.visible = true
 
 
@@ -204,6 +211,8 @@ func _glass(r: Rect2, radius: float, a: float = 1.0) -> void:
 func _draw() -> void:
 	var u: float = size.y / 720.0
 	if u <= 0.0:
+		return
+	if clean:
 		return
 	if show_hitboxes:
 		_draw_hitboxes(u)

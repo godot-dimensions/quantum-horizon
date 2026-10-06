@@ -211,8 +211,9 @@ func start(i: int) -> void:
 
 func _begin_stage(i: int) -> void:
 	clear_targets()
-	# Out by the walls when it starts: back to the line, facing downrange.
-	if player != null and player.global_position.z < Layout.line_hold():
+	# Out by the walls, or still in the entrance corridor (1 to 5 and F work anywhere), when it starts:
+	# back to the line, facing downrange.
+	if player != null and (player.global_position.z < Layout.line_hold() or player.global_position.z > Layout.BAY_BACK):
 		player.call("place", Layout.STAND, 0.0)
 	stage = i
 	state = "intro"

@@ -75,7 +75,8 @@ func _houses() -> void:
 	if props == null:
 		return
 	for side in [-1.0, 1.0]:
-		var z: float = Layout.STAND.z - HOUSE_DIST
+		# As near as the birds that leave it (ahead() brings every distance in by NEARER).
+		var z: float = Layout.STAND.z - HOUSE_DIST * NEARER
 		Build.box(props, "Trap", Vector3(side * HOUSE_X, 0.6, z), Vector3(1.6, 1.2, 1.6), "range_counter", true)
 		Build.box(props, "TrapMouth", Vector3(side * (HOUSE_X - 0.81), 0.75, z), Vector3(0.04, 0.5, 0.9), "range_screen", false)
 
