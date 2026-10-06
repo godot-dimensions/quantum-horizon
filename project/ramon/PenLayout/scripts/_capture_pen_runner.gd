@@ -114,15 +114,13 @@ const SETS := {
 	],
 	# The range, remade (PenLayout/PLAN_WATCHSTONE.md part C), where the old one stands, it hidden.
 	"rune_range": [
-		{"name": "ref", "at": Vector4(-12.5, 1.2, -1.0, 0), "yaw": 62.0, "pitch": 20.0, "distance": 10.0,
-			"spawn": {"res://ramon/chickenpen/units/rune_range/rune_range.tscn": Vector4(-19.0, 0.0, -9.0, 0.0)},
-			"hide": ["World/Range"]},
-		{"name": "near", "at": Vector4(-15.0, 1.2, -6.5, 0), "yaw": 80.0, "pitch": 8.0, "distance": 5.0},
-		{"name": "boards", "at": Vector4(-24.0, 1.2, -9.0, 0), "yaw": 90.0, "pitch": 4.0, "distance": 5.0},
-		{"name": "table", "at": Vector4(-15.6, 1.2, -5.0, 0), "yaw": 100.0, "pitch": -12.0, "distance": 3.5},
-		{"name": "stone", "at": Vector4(-17.3, 1.2, -7.4, 0), "yaw": 70.0, "pitch": -20.0, "distance": 3.0},
-		{"name": "w1", "at": Vector4(-12.5, 1.2, -1.0, 1.0), "yaw": 62.0, "pitch": 20.0, "distance": 10.0},
-		{"name": "combined", "at": Vector4(-12.5, 1.2, -1.0, 0), "yaw": 62.0, "pitch": 20.0, "distance": 10.0, "engine": "Combined"},
+		{"name": "arrive", "at": Vector4(-13.5, 1.2, -7.5, 0), "yaw": 90.0, "pitch": 14.0, "distance": 6.0},
+		{"name": "ref", "at": Vector4(-13.0, 1.2, -7.5, 0), "yaw": 90.0, "pitch": 24.0, "distance": 11.0},
+		{"name": "table", "at": Vector4(-15.3, 1.2, -7.0, 0), "yaw": 130.0, "pitch": 6.0, "distance": 3.5},
+		{"name": "boards", "at": Vector4(-23.0, 1.2, -7.6, 0), "yaw": 90.0, "pitch": 4.0, "distance": 4.5},
+		{"name": "stone", "at": Vector4(-15.4, 1.2, -9.0, 0), "yaw": 70.0, "pitch": -14.0, "distance": 3.0},
+		{"name": "w1", "at": Vector4(-13.0, 1.2, -7.5, 1.0), "yaw": 90.0, "pitch": 24.0, "distance": 11.0},
+		{"name": "combined", "at": Vector4(-13.0, 1.2, -7.5, 0), "yaw": 90.0, "pitch": 24.0, "distance": 11.0, "engine": "Combined"},
 	],
 	# The rock kit (PenLayout/PLAN_WATCHSTONE.md step 2): six boulders in a row and two big ones,
 	# out in the open east of the hill.

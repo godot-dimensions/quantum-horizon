@@ -158,6 +158,15 @@ def initial(pb):
 	p = np.zeros(pb.n)
 	pts = pb.picks["points"]
 	s_front, s_top, el = 42.0, 37.0, math.radians(15)
+	# Pixels a metre, from the player (1.54 m) in the front view, and the top view's from the spread
+	# of the points both views share.
+	if "PH" in pts and "PF" in pts:
+		s_front = (pts["PF"]["front"][1] - pts["PH"]["front"][1]) / 1.54 * math.cos(el)
+		shared = [k for k in pts if "front" in pts[k] and "top" in pts[k]]
+		if len(shared) >= 3:
+			fu = [pts[k]["front"][0] for k in shared]
+			tu = [pts[k]["top"][0] for k in shared]
+			s_top = s_front * (max(tu) - min(tu)) / max(max(fu) - min(fu), 1.0)
 	f_feet = pb.obs("front", pts["PF"]["front"])
 	t_feet = pb.obs("top", pts["PF"]["top"]) if "top" in pts["PF"] else None
 	guess = {}
@@ -349,3 +358,19 @@ def triangulate(key, picks):
 		r = res(P)
 		out[name] = ([round(float(c), 2) for c in P], round(float(np.sqrt(np.mean(r * r))), 1))
 	return out
+
+
+def plane_point(key, view, sheet_xy, axis, value):
+	"""The point where the ray through [param sheet_xy] (sheet pixels) of [param view] meets the plane
+	coordinate [param axis] (0 x, 1 y, 2 z) = [param value], in metres from the unit origin."""
+	with open(os.path.join(SPECS, key + "_cameras.json"), encoding="utf-8") as f:
+		cams = json.load(f)
+	sh = sheets()[key]
+	c = cams["views"][view]
+	F = c["focal"] * c["height"] / 2
+	x, y, z = rc.axes(c["yaw"], c["pitch"], c["roll"])
+	pos = np.array(c["position"])
+	u = sheet_xy[0] - sh["views"][view][0]
+	d = (u - c["width"] / 2) / F * x + (c["height"] / 2 - sheet_xy[1]) / F * y - z
+	t = (value - pos[axis]) / d[axis]
+	return [round(float(v), 2) for v in pos + t * d]

@@ -1,4 +1,4 @@
-[gd_scene load_steps=391 format=4 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=390 format=4 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -65,7 +65,6 @@
 [ext_resource type="Script" uid="uid://clt1565tx46h8" path="res://ramon/chickenpen/scripts/pen_tutor_4d.gd" id="pen_tutor"]
 [ext_resource type="Script" uid="uid://b6hu46y6r7pns" path="res://ramon/chickenpen/scripts/pen_upgrades_4d.gd" id="pen_upgrades"]
 [ext_resource type="Script" uid="uid://bvklfrydaxyio" path="res://ramon/dialogue/world_tag_4d.gd" id="pen_world_tag"]
-[ext_resource type="Script" uid="uid://cileaougk2prf" path="res://ramon/chickenpen/scripts/pen_range_shooting_4d.gd" id="range_shooting"]
 [ext_resource type="Script" uid="uid://cbb1bfi8dc1uk" path="res://ramon/chickenpen/scripts/pen_range_talk_4d.gd" id="range_talk"]
 [ext_resource type="Script" uid="uid://djajxhdd2420f" path="res://ramon/chickenpen/scripts/pen_range_trip_4d.gd" id="range_trip"]
 [ext_resource type="Script" uid="uid://cyiwmk46dutm2" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
@@ -77,7 +76,7 @@
 [ext_resource type="Script" uid="uid://c5imntis12oof" path="res://ramon/chickenpen/scripts/pen_fence_compat_4d.gd" id="fence_compat"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/trym_cabin/trym_cabin.tscn" id="unit_cabin"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/keeper/keeper.tscn" id="unit_keeper"]
-[ext_resource type="PackedScene" path="res://ramon/chickenpen/units/range/range.tscn" id="unit_range"]
+[ext_resource type="PackedScene" path="res://ramon/chickenpen/units/rune_range/rune_range.tscn" id="unit_range"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/professor/professor.tscn" id="unit_professor"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/lookout/lookout.tscn" id="unit_lookout"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/rock_pile/rock_pile.tscn" id="unit_rockpile"]
@@ -1094,7 +1093,13 @@ script = ExtResource("pen_mountains")
 position = Vector4(8, 0, 15, 4)
 
 [node name="Range" parent="World" instance=ExtResource("unit_range")]
-position = Vector4(-19, 0, -9, 0)
+position = Vector4(-15.8, 0, -7.5, 0)
+basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
+
+[node name="RangeYard" parent="World/Range" index="0"]
+ground_patch = true
+turf_mat = false
+ground_lift = 0.03
 
 [node name="KeeperPost" parent="World" instance=ExtResource("unit_keeper")]
 position = Vector4(2.3, 0, -5.9, 0)
@@ -2781,6 +2786,7 @@ camera_rig_path = NodePath("../../Player/CameraRig")
 camera_marker_path = NodePath("../../World/TalkCam")
 camera_target_path = NodePath("../../World/Range/RangeMasterHead")
 two_shot = true
+talk_range = 2.0
 main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 dialogue_box_path = NodePath("../../UI/RangeMasterBox")
 hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint"), NodePath("../../UI/Objective"), NodePath("../../UI/Progress"), NodePath("../../UI/Debug"), NodePath("../../UI/CameraPicker"), NodePath("../../UI/Quests")])
@@ -2795,10 +2801,6 @@ script = ExtResource("range_trip")
 
 [node name="CaveFade" type="CanvasLayer" parent="Systems"]
 script = ExtResource("cave_fade")
-
-[node name="RangeShooting" type="Node" parent="Systems"]
-script = ExtResource("range_shooting")
-booth_path = NodePath("../../World/Range/RangeBooth")
 
 [node name="UiScale" type="Node" parent="Systems"]
 script = ExtResource("ui_scale")

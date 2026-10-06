@@ -114,7 +114,9 @@ func _initialize() -> void:
 	var west: int = n.call("junction", -6.0, -3.0)
 	e.call(w4, west)
 	e.call(west, gate)
-	var range_at: int = dest.call(-16.0, -7.5, 0.0, "RangeArrival", Vector2(1, 0))
+	# The range rebuilt to Ramon's sheet (PLAN_REF_LOCK.md part D): its arrival is where the sheet stands
+	# the player, at the front of the yard.
+	var range_at: int = dest.call(-15.0, -7.5, 0.0, "RangeArrival", Vector2(1, 0))
 	e.call(west, range_at)
 	var t1: int = n.call("bend", -9.0, -16.0)
 	var t2: int = n.call("bend", -12.0, -24.5)

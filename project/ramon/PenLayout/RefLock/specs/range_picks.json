@@ -1,0 +1,17 @@
+{
+ "_what": "Landmarks read off Ramon's range sheet (refs/range_views.png) at 2-5x zoom (tools/ref_grid.py), in sheet pixels. Rune centres of the boards and of the stone; post tops at the fences' ends; the player's cap top and feet. 6 Oct 2026, PLAN_REF_LOCK.md step 35.",
+ "sheet": "range",
+ "fixed": {"PF": [0.0, 0.0, 0.0], "PH": [0.0, 1.54, 0.0]},
+ "weights": {"front": 1.0, "right": 0.6, "top": 0.8},
+ "points": {
+  "PH": {"front": [310, 564], "right": [728, 470], "top": [1530, 680]},
+  "PF": {"front": [310, 668], "right": [728, 541], "top": [1530, 724]},
+  "stone_rune": {"front": [401, 581], "right": [795, 491], "top": [1585, 660]},
+  "board_L": {"front": [216, 351], "top": [1458, 232]},
+  "board_M": {"front": [317.5, 332.5], "top": [1549, 228]},
+  "board_R": {"front": [421.5, 355], "top": [1641, 236]},
+  "fenceR_front": {"front": [518, 515], "right": [911, 480], "top": [1685, 568]},
+  "fenceR_back": {"front": [494, 381], "right": [1210, 482], "top": [1687, 272]},
+  "fenceL_back": {"front": [152, 371], "right": [1110, 460], "top": [1405, 272]}
+ }
+}

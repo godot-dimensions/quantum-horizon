@@ -359,7 +359,12 @@ func _debris(base: Dictionary) -> void:
 	var keep: Array = d.get("keep_clear", [])
 	# The skirt: a ring of low boulders round the base course, where the top view shows the rock
 	# running almost to the grass's edge (refs/progress, the crag's top view, 6 Oct).
-	var skirt: int = int(d.get("skirt", 0))
+	# Then rings further out, each the stones smaller and fewer: the natural fall-off of a scree
+	# (Ramon: "smaller rocks that follow natural regression and debree").
+	var rings: Array = d.get("rings", [[int(d.get("skirt", 0)), 0.2, 0.9, 1.1, 1.8]])
+	for ring in rings:
+		_skirt_ring(base, int(ring[0]), float(ring[1]), float(ring[2]), Vector2(float(ring[3]), float(ring[4])))
+	var skirt: int = 0
 	for k in skirt:
 		var a: float = TAU * (float(k) + _rng.randf_range(-0.3, 0.3)) / float(skirt)
 		var s: float = _rng.randf_range(1.1, 1.8)
@@ -401,6 +406,28 @@ func _debris(base: Dictionary) -> void:
 				s * 1.6, _rng.randf_range(0.0, TAU), Vector2(_rng.randf_range(-0.15, 0.15), _rng.randf_range(-0.15, 0.15)))
 			if _rng.randf() < 0.5:
 				_tuft(at + Vector4(s * 0.45, 0.15, 0, 0), _rng.randf_range(0.8, 1.2))
+
+
+## One ring of the skirt: [param count] stones of [param size] across, from [param r0] to
+## [param r1] beyond the base course's face.
+func _skirt_ring(base: Dictionary, count: int, r0: float, r1: float, size: Vector2) -> void:
+	var keep: Array = spec.get("debris", {}).get("keep_clear", [])
+	for k in count:
+		var a: float = TAU * (float(k) + _rng.randf_range(-0.35, 0.35)) / float(maxi(count, 1))
+		var s: float = _rng.randf_range(size.x, size.y)
+		var at: Vector4 = _dir(a) * (face(0, a) + _rng.randf_range(r0, r1))
+		var blocked: bool = _in_clear(at.x, at.z, s * 0.6)
+		for kc in keep:
+			if Vector2(at.x - float(kc[0]), at.z - float(kc[1])).length() < float(kc[2]):
+				blocked = true
+		if blocked:
+			continue
+		at.y = -0.2 * s
+		at.w = _rng.randf_range(-1.2, 1.2)
+		_stone(["round", "cap", "block", "chip"][_rng.randi() % 4], at, Vector3(s * 1.15, s * _rng.randf_range(0.6, 0.88), s), s * 2.0,
+			_face_yaw(a) + _rng.randf_range(-0.5, 0.5), Vector2(_rng.randf_range(-0.12, 0.12), _rng.randf_range(-0.12, 0.12)))
+		if _rng.randf() < 0.35:
+			_tuft(at + _dir(a) * s * 0.5 + Vector4(0, 0.08, 0, 0), _rng.randf_range(0.8, 1.2))
 
 
 ## The grass disc the painting stands the crag on, with tufts scattered round its edge.
