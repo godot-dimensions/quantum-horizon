@@ -1,5 +1,5 @@
 extends Node4D
-## Slice Garden: a bridge that slides out, one plank at a time, when something tells it to (a plate
+## Crosswise: a bridge that slides out, one plank at a time, when something tells it to (a plate
 ## with a crate on it; PLAN.md step 43), and slides back when told the opposite.
 ##
 ## It spans `length` along -Z from this node (the near lip), `width` in X and `depth_w` in W. The

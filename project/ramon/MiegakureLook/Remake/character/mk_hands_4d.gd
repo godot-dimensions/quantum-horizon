@@ -1,5 +1,5 @@
 extends Node4D
-## Slice Garden: what the little walker does with his hands. E lifts a crate and puts it down; the
+## Crosswise: what the little walker does with his hands. E lifts a crate and puts it down; the
 ## left mouse button swings a small hammer at a rock (PLAN.md steps 26-27, 38-41, 45-46).
 ##
 ## ONLY IN THE SLICE YOU SEE. A crate or a rock counts as in reach only if it shares your slice
@@ -43,7 +43,7 @@ const CARRY_HEIGHT := 1.30
 const GHOST_OK := Color(0.35, 0.95, 0.55)
 const GHOST_NO := Color(1.0, 0.35, 0.30)
 
-## The game node (slice_garden_4d.gd), asked for the solids; optional.
+## The game node (crosswise_4d.gd), asked for the solids; optional.
 var game: Node
 var carried: Node4D = null
 var input_enabled: bool = true

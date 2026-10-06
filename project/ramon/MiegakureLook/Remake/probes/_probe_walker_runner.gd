@@ -1,8 +1,8 @@
 extends SceneTree
-## Probes 6, 7 and 9 (PLAN.md): the copied walker on a lane-banded slab under the garden's light,
+## Probes 6, 7 and 9 (PLAN.md): the copied walker on a lane-banded slab under the islands' light,
 ## driven through the real walker code (scripted keys) in the normal view, through a turn, and in the
 ## turned view. Measures what each key does to his 4D position (axis purity), checks the slice stays
-## on him, and saves frames to smoke_test_output/miegakure_remake/probe_walker/.
+## on him, and saves frames to smoke_test_output/crosswise/probe_walker/.
 ##
 ## Run: Remake/run.sh windowed probe_walker res://ramon/MiegakureLook/Remake/probes/_probe_walker_runner.gd
 
@@ -11,7 +11,7 @@ const Env := preload("res://ramon/MiegakureLook/Remake/world/mk_env_4d.gd")
 const Cam := preload("res://ramon/MiegakureLook/Remake/scripts/mk_camera_4d.gd")
 const WalkerBuild := preload("res://ramon/MiegakureLook/Remake/character/mk_walker_build.gd")
 
-const OUT := "res://smoke_test_output/miegakure_remake/probe_walker/"
+const OUT := "res://smoke_test_output/crosswise/probe_walker/"
 const LANES := {
 	"width": 1.6, "zero_w": 0.0,
 	"tints": [Color(0.80, 0.88, 1.0), Color(0.90, 0.94, 1.0), Color(1, 1, 1), Color(1.0, 0.96, 0.88), Color(1.0, 0.90, 0.76)],

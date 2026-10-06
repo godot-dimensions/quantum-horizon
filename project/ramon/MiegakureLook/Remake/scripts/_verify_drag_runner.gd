@@ -1,13 +1,13 @@
 extends SceneTree
-## Slice Garden: the drag and the island cheat, through real input events. The right mouse button
+## Crosswise: the drag and the island cheat, through real input events. The right mouse button
 ## held and dragged 130 px turns the view about halfway and leaves it there; a click then goes to the
 ## nearer view; ] jumps to the next island and [ back. Frames of the halfway view to
-## smoke_test_output/miegakure_remake/drag/.
+## smoke_test_output/crosswise/drag/.
 ##
 ## Run: Remake/run.sh windowed drag res://ramon/MiegakureLook/Remake/scripts/_verify_drag_runner.gd
 
-const SCENE := "res://ramon/MiegakureLook/Remake/slice_garden.tscn"
-const OUT := "res://smoke_test_output/miegakure_remake/drag/"
+const SCENE := "res://ramon/MiegakureLook/Remake/crosswise.tscn"
+const OUT := "res://smoke_test_output/crosswise/drag/"
 
 var _game: Node
 var _cam: Node

@@ -1,5 +1,5 @@
 extends Node4D
-## Slice Garden: a pressure plate that wants a crate (PLAN.md step 42).
+## Crosswise: a pressure plate that wants a crate (PLAN.md step 42).
 ##
 ## A low yellow pad (yellow is "use this", the lab kit's code) with a crate's outline glowing on it,
 ## so it says what it is for before you know the word. It POLLS for a crate resting on it rather

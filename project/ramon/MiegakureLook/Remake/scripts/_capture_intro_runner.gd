@@ -1,13 +1,13 @@
 extends SceneTree
-## Slice Garden: the opening shot and a turn, as frames. The scene starts as a player starts it (the
+## Crosswise: the opening shot and a turn, as frames. The scene starts as a player starts it (the
 ## opening shot plays); frames at 0.2, 1.2, 2.4, 3.6 and 5 s, then a turn into W shot at 0.15,
 ## 0.3, 0.45 and 0.8 s into it (the world deforming round him), to
-## smoke_test_output/miegakure_remake/intro/.
+## smoke_test_output/crosswise/intro/.
 ##
 ## Run: Remake/run.sh windowed intro res://ramon/MiegakureLook/Remake/scripts/_capture_intro_runner.gd
 
-const SCENE := "res://ramon/MiegakureLook/Remake/slice_garden.tscn"
-const OUT := "res://smoke_test_output/miegakure_remake/intro/"
+const SCENE := "res://ramon/MiegakureLook/Remake/crosswise.tscn"
+const OUT := "res://smoke_test_output/crosswise/intro/"
 const SHOTS := [0.2, 1.2, 2.4, 3.6, 5.0]
 const TURN_SHOTS := [0.15, 0.3, 0.45, 0.8]
 

@@ -1,5 +1,5 @@
 extends CharacterBody4D
-## Slice Garden's little walker: moves only in the world you can see, and through W by turning.
+## Crosswise's little walker: moves only in the world you can see, and through W by turning.
 ##
 ## Movement is the pen walker's (chickenpen/scripts/block_walker_character_4d.gd: run by default,
 ## Alt to walk, a jump, the probe-ahead step-up), copied and changed in one deep way: THE KEYS ARE
@@ -16,7 +16,7 @@ extends CharacterBody4D
 ## HE IS TURNED WITH THE VIEW. His body (the avatar) is built in the normal view's axes; its basis is
 ## the view's own quarter turn times his facing inside the slice, so in the turned view his front,
 ## his feet and his arms lie in X, Y and W exactly as they lay in X, Y and Z, and he looks the same
-## while the garden deforms round him. His collider is as deep in Z as in W, so the turn never
+## while the islands deforms round him. His collider is as deep in Z as in W, so the turn never
 ## changes what he bumps into.
 ##
 ## Movement is held while the view turns (the cross-section is changing under him).

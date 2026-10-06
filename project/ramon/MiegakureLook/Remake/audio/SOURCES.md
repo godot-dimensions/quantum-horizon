@@ -1,4 +1,4 @@
-# Slice Garden: where its sounds come from
+# Crosswise: where its sounds come from
 
 Copied 6 Oct 2026 from the project's own licensed library (the same files the pen and the lab
 already use); nothing here is new to the repo, and Git LFS stores identical files once.

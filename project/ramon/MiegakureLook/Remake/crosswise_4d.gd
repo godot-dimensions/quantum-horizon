@@ -1,8 +1,8 @@
 extends Node4D
-## SLICE GARDEN: the Miegakure remake (PLAN.md, RESEARCH.md). A little walker on four floating
+## CROSSWISE: the Miegakure remake (PLAN.md, RESEARCH.md). A little walker on four floating
 ## islands, each one 4D idea: the Wall, the Cage, the Seam, the Shrine.
 ##
-## THIS NODE builds the scene in code (the garden, the walker, the camera, the light, the HUD, the dev
+## THIS NODE builds the scene in code (the level, the walker, the camera, the light, the HUD, the dev
 ## panel) and runs the sequence: which island you are on (by your Z), its arrival ring as the
 ## checkpoint, its title card, the camera leaning to frame it, falls and restarts, hints, and the
 ## finale at the shrine door. It also answers the hands' questions: which crates and rocks there
@@ -27,7 +27,7 @@ extends Node4D
 ## NO class_name (engine_gotchas.md).
 
 const Env := preload("res://ramon/MiegakureLook/Remake/world/mk_env_4d.gd")
-const Garden := preload("res://ramon/MiegakureLook/Remake/world/mk_garden_4d.gd")
+const Islands := preload("res://ramon/MiegakureLook/Remake/world/mk_islands_4d.gd")
 const Cam := preload("res://ramon/MiegakureLook/Remake/scripts/mk_camera_4d.gd")
 const WalkerBuild := preload("res://ramon/MiegakureLook/Remake/character/mk_walker_build.gd")
 const Hands := preload("res://ramon/MiegakureLook/Remake/character/mk_hands_4d.gd")
@@ -45,11 +45,11 @@ signal finished
 
 ## Start on this island (1-4): for testing, and for a runner that wants to begin later.
 @export_range(1, 4) var start_island: int = 1
-## The opening shot down the garden to the tower (island 1 only). Runners switch it off.
+## The opening shot down the level to the tower (island 1 only). Runners switch it off.
 @export var play_intro: bool = true
 
 var env: Node4D
-var garden: Node4D
+var level: Node4D
 var walker: CharacterBody4D
 var camera: Camera4D
 var hands: Node4D
@@ -78,11 +78,11 @@ func _ready() -> void:
 	env.name = "Env"
 	env.set_script(Env)
 	add_child(env)
-	garden = Node4D.new()
-	garden.name = "Garden"
-	garden.set_script(Garden)
-	add_child(garden)
-	garden.call("build")
+	level = Node4D.new()
+	level.name = "Level"
+	level.set_script(Islands)
+	add_child(level)
+	level.call("build")
 	walker = WalkerBuild.make()
 	add_child(walker)
 	camera = Camera4D.new()
@@ -195,10 +195,10 @@ func _start_on(number: int) -> void:
 
 
 func islands() -> Array:
-	return garden.get("islands")
+	return level.get("islands")
 
 
-## The island you are on, as registered by the garden ({} before the first).
+## The island you are on, as registered by the level ({} before the first).
 func current_island() -> Dictionary:
 	if island <= 0:
 		return {}
@@ -206,11 +206,11 @@ func current_island() -> Dictionary:
 
 
 func crates() -> Array:
-	return garden.get("crates")
+	return level.get("crates")
 
 
 func plugs() -> Array:
-	return garden.get("plugs")
+	return level.get("plugs")
 
 
 ## Would a box ([centre, size]) overlap a wall, a floor, a rock, or a crate (other than `ignore`)?
@@ -220,7 +220,7 @@ func blocked(centre: Vector4, size: Vector4, ignore: Node = null) -> bool:
 
 ## What a box would overlap, in words ("" for nothing): for the runners' reports.
 func blocker(centre: Vector4, size: Vector4, ignore: Node = null) -> String:
-	for s in garden.get("solids"):
+	for s in level.get("solids"):
 		if Build.overlaps(centre, size, s[0], s[1], 0.02):
 			return "solid at %s size %s" % [s[0], s[1]]
 	for p in plugs():
@@ -282,7 +282,7 @@ func _process(delta: float) -> void:
 		hud.call("set_bubble", onlooker.call("bubble", camera.call("slice_normal"), walker.global_position))
 	# The finale: at the shrine door.
 	if not done and island == 4:
-		var door: Vector4 = garden.get("shrine_door")
+		var door: Vector4 = level.get("shrine_door")
 		var d: Vector4 = walker.global_position - door
 		if Vector3(d.x, d.z, d.w).length() < 1.3 and absf(d.y) < 0.8:
 			_finale()
@@ -313,15 +313,15 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## Only the puzzle's things project in 4D sight: every other mesh in the garden opts out.
+## Only the puzzle's things project in 4D sight: every other mesh in the level opts out.
 func _setup_sight() -> void:
 	var keep: Dictionary = {}
 	for g in get_tree().get_nodes_in_group(&"mk_ghost"):
 		keep[g] = true
-	for m in garden.find_children("*", "MeshInstance4D", true, false):
+	for m in level.find_children("*", "MeshInstance4D", true, false):
 		var n: Node = m
 		var ghost: bool = false
-		while n != null and n != garden:
+		while n != null and n != level:
 			if keep.has(n):
 				ghost = true
 				break
@@ -399,7 +399,7 @@ func _finale() -> void:
 	walker.set("input_enabled", false)
 	walker.set("scripted", true)
 	walker.set("scripted_move", Vector2.ZERO)
-	for lamp in garden.get("tower_lamps"):
+	for lamp in level.get("tower_lamps"):
 		var m := (lamp as MeshInstance4D).material_override as TetraMaterial4D
 		m.get_cross_section_material_3d().set_shader_parameter("glow_color", Color(1.0, 0.82, 0.40))
 		m.get_cross_section_material_3d().set_shader_parameter("pulse", 0.4)
@@ -407,7 +407,7 @@ func _finale() -> void:
 	hud.call("show_finale", {"time": "%d:%02d" % [secs / 60, secs % 60], "turns": int(camera.get("swaps")), "falls": falls})
 	sound.call("play", "finale")
 	# A slow pull-out round the tower (PLAN.md step 35): wider, lower, and centred on the shrine.
-	camera.set("frame_center", garden.get("shrine_door"))
+	camera.set("frame_center", level.get("shrine_door"))
 	camera.set("frame_lean", 0.85)
 	var tw := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	var d0: float = float(camera.get("distance"))

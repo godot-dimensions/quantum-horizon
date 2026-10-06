@@ -1,5 +1,5 @@
 extends Node4D
-## Slice Garden: the four islands (PLAN.md part G), built in code from the vocabulary in
+## Crosswise: the four islands (PLAN.md part G), built in code from the vocabulary in
 ## mk_build.gd. Each island is one idea; see PLAN.md's table for what each teaches.
 ##
 ## THE WORLD'S AXES. Y is up. The islands run along -Z, one after another, so the way on is "up the
@@ -281,7 +281,7 @@ func _island_1() -> void:
 	var tw: Vector2 = Vector2(lane(-1).x, lane(1).y)
 	_floor("I1Terrace", Vector2(-2.5, 2.5), I1_TERRACE_Z, tw, Y_TERRACE, 99, {"tint": Color(0.86, 0.86, 0.88)})
 	# The gate wall: lanes -2..+1, the whole width, 2 m high. Its look is a fence sheet in X-W with
-	# solid beams (a garden wall with posts); its collision one box.
+	# solid beams (a islands wall with posts); its collision one box.
 	var wall_w := Vector2(W_MIN, lane(1).y)
 	var stone := Build.fence_material("grey", Color(0.96, 0.96, 1.0))
 	var cap := Build.fence_material("dark_grey", Color(1, 1, 1))
@@ -309,7 +309,7 @@ func _island_1() -> void:
 	# The explainer, painted on the blue like the lab's teaching walls: a header line, the title, two
 	# lines, and the controls row, in white.
 	_sign(Vector4(-0.6, Y1, 2.75, 0), Vector2(9.6, 2.7), [
-		[["small", "01  /  SLICE GARDEN"]],
+		[["small", "01  /  CROSSWISE"]],
 		[["title", "The Wall"]],
 		[["body", "You see one slice of a 4D world. The wall is not in every slice."]],
 		[["key", "W"], ["key", "A"], ["key", "S"], ["key", "D"], ["small", "walk"], ["key", "SPACE"], ["small", "jump"], ["mouse", "right"], ["small", "turn into W"]]],
@@ -519,7 +519,7 @@ func _island_4() -> void:
 
 
 ## The shrine and its tower, on the terrace in lane 0, spanning every lane so the tower is in view
-## from the whole garden in the normal view. Fence-built: the shrine's walls (solid, with posts), a
+## from the whole islands in the normal view. Fence-built: the shrine's walls (solid, with posts), a
 ## pyramid roof (a box footprint leaning to a point), the tower (a box footprint leaning in, rings of
 ## rails), its lamps (glowing).
 func _build_shrine() -> void:

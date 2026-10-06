@@ -1,5 +1,5 @@
 extends RefCounted
-## Slice Garden: every material, built in one place.
+## Crosswise: every material, built in one place.
 ##
 ## SURFACES wear Ramon's dev textures (res://textures/dev_finals/ramdev_*.png) tiled at true metres
 ## through shaders/mk_surface.gdshader, which also draws the W lanes, the W-face tint, the W-edge

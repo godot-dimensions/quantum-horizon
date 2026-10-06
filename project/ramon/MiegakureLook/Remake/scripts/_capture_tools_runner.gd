@@ -1,13 +1,13 @@
 extends SceneTree
-## Slice Garden: the tools, as frames. The artist dev panel (F1, pressed as a real key), a slider
+## Crosswise: the tools, as frames. The artist dev panel (F1, pressed as a real key), a slider
 ## moved through it (the spot's strength: the pool must change), then 4D sight (V) on island 2 in the
 ## normal view and turned (the crate and cage should show faintly from the next lane), and the
-## carried crate's ghost outline. Frames to smoke_test_output/miegakure_remake/tools/.
+## carried crate's ghost outline. Frames to smoke_test_output/crosswise/tools/.
 ##
 ## Run: Remake/run.sh windowed tools res://ramon/MiegakureLook/Remake/scripts/_capture_tools_runner.gd
 
-const SCENE := "res://ramon/MiegakureLook/Remake/slice_garden.tscn"
-const OUT := "res://smoke_test_output/miegakure_remake/tools/"
+const SCENE := "res://ramon/MiegakureLook/Remake/crosswise.tscn"
+const OUT := "res://smoke_test_output/crosswise/tools/"
 
 var _game: Node
 var _walker: CharacterBody4D

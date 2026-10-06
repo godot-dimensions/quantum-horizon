@@ -3,7 +3,7 @@ extends SceneTree
 ## core (a layered generator: the core box is "undefined" outside itself, so the crust shows through
 ## there), bounded, loaded by a static trigger. Then one strike: a sphere of air carved into its
 ## front, timed, and the frames before and after in the normal view and turned into W.
-## Frames to smoke_test_output/miegakure_remake/probe_voxel/.
+## Frames to smoke_test_output/crosswise/probe_voxel/.
 ##
 ## The world is scaled to the voxel size, so voxel numbers are metres / VOXEL. Its type name is
 ## avoided in code (the sandbox's terrain4d script still claims the class name VoxelWorld4D in the
@@ -15,7 +15,7 @@ const Mats := preload("res://ramon/MiegakureLook/Remake/world/mk_materials.gd")
 const Env := preload("res://ramon/MiegakureLook/Remake/world/mk_env_4d.gd")
 const Cam := preload("res://ramon/MiegakureLook/Remake/scripts/mk_camera_4d.gd")
 
-const OUT := "res://smoke_test_output/miegakure_remake/probe_voxel/"
+const OUT := "res://smoke_test_output/crosswise/probe_voxel/"
 const VOXEL := 0.2
 const AIR := 254
 const UNDEFINED := 255

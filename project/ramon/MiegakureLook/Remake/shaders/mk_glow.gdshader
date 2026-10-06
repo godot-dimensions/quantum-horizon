@@ -1,4 +1,4 @@
-// Slice Garden's glow: the lab kit's glow (CreationLab/LabKit/shaders/lab_glow.gdshader, copied
+// Crosswise's glow: the lab kit's glow (CreationLab/LabKit/shaders/lab_glow.gdshader, copied
 // 5 Oct, so the kit can change without changing this). Unshaded, so it shows its colour at full
 // strength whatever the lights do: the only way anything reads as giving off light in the
 // cross-section renderer. Added: `pulse`, a slow breathing of the strength (an arrival ring, the

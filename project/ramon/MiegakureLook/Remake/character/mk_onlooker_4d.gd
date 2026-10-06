@@ -1,5 +1,5 @@
 extends Node4D
-## Slice Garden: the onlooker on the first island, who lives in lane 0 and sees only lane 0.
+## Crosswise: the onlooker on the first island, who lives in lane 0 and sees only lane 0.
 ##
 ## Miegakure's "miracles" are things a 3D onlooker would notice: you vanish through a wall and appear
 ## on the other side, and its characters react (RESEARCH.md, lesson 6). This is that, small: a second

@@ -1,4 +1,4 @@
-// Slice Garden's surface: the Creation Lab's look (Ramon, 6 Oct: "take the general look and lighting
+// Crosswise's surface: the Creation Lab's look (Ramon, 6 Oct: "take the general look and lighting
 // from creatorlabs"): its procedural grid (CreationLab/LabKit/shaders/lab_grid.gdshader: Unreal's
 // grid, 1 m cells of five 20 cm subdivisions, in the kit's mid greys), or one of Ramon's dev textures
 // at true metres; plus the four things that make a 4D diorama readable from inside one slice

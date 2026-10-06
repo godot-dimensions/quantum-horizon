@@ -1,5 +1,5 @@
 extends Node4D
-## Slice Garden: what lies on the floor at the walker's feet (PLAN.md steps 25 and 29).
+## Crosswise: what lies on the floor at the walker's feet (PLAN.md steps 25 and 29).
 ##
 ##   THE SHADOW  a soft dark disc under him on whatever floor is below (the 4D renderer casts no
 ##               shadows, and without one a figure on a white floor floats; with a jump it says how

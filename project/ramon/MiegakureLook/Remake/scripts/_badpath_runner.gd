@@ -1,5 +1,5 @@
 extends SceneTree
-## Slice Garden: the bad-path bot (PLAN.md steps 64 and 68). Every mistake a player can make, made
+## Crosswise: the bad-path bot (PLAN.md steps 64 and 68). Every mistake a player can make, made
 ## on purpose, and the game must recover each time, cheaply:
 ##   1. walk off the chasm's lip on island 2 (before the bridge): a fall, a fade, back on the arrival
 ##      ring, `falls` counted, in under 1.5 s
@@ -8,12 +8,12 @@ extends SceneTree
 ##   4. strike at nothing: a swing, no crash, nothing broken
 ##   5. on island 3, break the first rock, then R: the rock is whole again and you are on the ring
 ##   6. turn twice quickly (a queued turn): the view ends where it started
-## Frames of each recovery to smoke_test_output/miegakure_remake/badpath/.
+## Frames of each recovery to smoke_test_output/crosswise/badpath/.
 ##
 ## Run: Remake/run.sh windowed badpath res://ramon/MiegakureLook/Remake/scripts/_badpath_runner.gd
 
-const SCENE := "res://ramon/MiegakureLook/Remake/slice_garden.tscn"
-const OUT := "res://smoke_test_output/miegakure_remake/badpath/"
+const SCENE := "res://ramon/MiegakureLook/Remake/crosswise.tscn"
+const OUT := "res://smoke_test_output/crosswise/badpath/"
 
 var _game: Node
 var _walker: CharacterBody4D

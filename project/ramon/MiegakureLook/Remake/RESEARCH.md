@@ -1,4 +1,4 @@
-# Slice Garden: research (5 Oct 2026)
+# Crosswise: research (5 Oct 2026)
 
 What Miegakure does, what its maker says about it, what players said, and what that changed in
 this remake. Sources are linked inline. Quotes are kept to a minimum; everything else is a
@@ -31,7 +31,7 @@ from this session's fetcher.
 - **Levels are small,** for example 4 x 4 x 7 x 4 tiles, so the player can hold the whole level in
   their head (Nature as Designer). About 140 levels, each with one idea
   ([May 2015](https://marctenbosch.com/news/2015/05/counting-levels-of-each-type/)).
-- **The name:** miegakure is the Japanese garden technique of showing a thing only in part, so the
+- **The name:** miegakure is the Japanese islands technique of showing a thing only in part, so the
   rest is imagined: seeing three of the four dimensions at once
   ([Game Developer 2010](https://www.gamedeveloper.com/pc/road-to-the-igf-i-miegakure-i-s-marc-ten-bosch)).
 

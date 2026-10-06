@@ -1,6 +1,6 @@
-# Slice Garden: the Miegakure remake (handover)
+# Crosswise: the Miegakure remake (handover)
 
-`project/ramon/MiegakureLook/Remake/slice_garden.tscn`. Ramon's brief item 6, built 5-6 Oct 2026.
+`project/ramon/MiegakureLook/Remake/crosswise.tscn`. Ramon's brief item 6, built 5-6 Oct 2026.
 The plan, with its status and the pivots taken on the way, is `MiegakureLook/Remake/PLAN.md`; the
 research is `MiegakureLook/Remake/RESEARCH.md`. The old prototype (`MiegakureLook/levels/`, the menu's
 "Slice Vision") is untouched.
@@ -10,9 +10,9 @@ research is `MiegakureLook/Remake/RESEARCH.md`. The old prototype (`MiegakureLoo
 None of these blocked the plan.
 
 1. **The menu.** The catalogue (`Menu/entries/catalogue.tres`) is a shared file another window is
-   editing, so Slice Garden is not in the menu yet. Should it replace the "Slice Vision" launch, or sit
+   editing, so Crosswise is not in the menu yet. Should it replace the "Slice Vision" launch, or sit
    beside it?
-2. **The sky.** The garden uses the Creation Lab's light, as you asked, and with it the lab's dark
+2. **The sky.** The islands uses the Creation Lab's light, as you asked, and with it the lab's dark
    navy sky, which outdoors reads close to black. F1, SKY, "Sky lift" lifts it toward Miegakure's pale
    mint. Which do you want? (Save in the panel and it becomes the default.)
 3. **Camera.** 10.5 m back, 54 degrees down, 32 round, a 32 degree lens: the little guy is about 45 px
@@ -34,12 +34,12 @@ Ideas outside the plan (not built):
 
 ## What to look at
 
-- **Play it:** open `MiegakureLook/Remake/slice_garden.tscn` and press F6. Keys: WASD walk (in the
+- **Play it:** open `MiegakureLook/Remake/crosswise.tscn` and press F6. Keys: WASD walk (in the
   world you see; A/D are always X), Space jump, right mouse or Tab turn into W, E lift or put down, left
   mouse strike, R restart the island, F a hint, V 4D sight, F1 the artist dev panel, H back to the menu.
-- **The film:** `project/smoke_test_output/video/slice_garden.mp4` (82 s, with sound): the opening shot
-  down the garden, then the solver bot playing all four islands to the finale.
-- **Frames:** `project/smoke_test_output/miegakure_remake/` has `look_sheet_1.png` and `look_sheet_2.png`
+- **The film:** `project/smoke_test_output/video/crosswise.mp4` (82 s, with sound): the opening shot
+  down the islands, then the solver bot playing all four islands to the finale.
+- **Frames:** `project/smoke_test_output/crosswise/` has `look_sheet_1.png` and `look_sheet_2.png`
   (the islands), `solve/` (every beat of the solve), `tools_sheet.png` (the dev panel and 4D sight),
   `before_sheet.png` (the old prototype, for comparison).
 
@@ -54,13 +54,13 @@ Ideas outside the plan (not built):
 
 ## How it is built
 
-Everything is built in code from one node (`slice_garden_4d.gd`); nothing generated is saved into
+Everything is built in code from one node (`crosswise_4d.gd`); nothing generated is saved into
 the scene.
 
 | File | What it is |
 |---|---|
-| `slice_garden_4d.gd` | The game: builds it all, tracks the island, checkpoints, falls and R, hints, 4D sight, the finale, the sound wiring, `blocked()` / `blocker()` for putting crates down |
-| `world/mk_garden_4d.gd` | The four islands, their railings (walls between pylons, a plain fence every fourth), signs, outlines, crystals, the shrine and tower |
+| `crosswise_4d.gd` | The game: builds it all, tracks the island, checkpoints, falls and R, hints, 4D sight, the finale, the sound wiring, `blocked()` / `blocker()` for putting crates down |
+| `world/mk_islands_4d.gd` | The four islands, their railings (walls between pylons, a plain fence every fourth), signs, outlines, crystals, the shrine and tower |
 | `world/mk_build.gd` | The vocabulary: boxes with colliders, slabs, FenceGenerator4D bent into walls (X-W, Z-W, across W), cages, crates, towers, roofs |
 | `world/mk_env_4d.gd` | The Creation Lab's light, its one spot over the walker, the turned sky, all in `values` for the dev panel |
 | `world/mk_crate_4d.gd`, `mk_plate_4d.gd`, `mk_bridge_4d.gd`, `mk_plug_4d.gd` | The crate (fence-built), the plate (polled), the sliding bridge, the two-strike voxel rock |

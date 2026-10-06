@@ -1,5 +1,5 @@
 extends Node
-## Slice Garden: its sounds (PLAN.md steps 69-71). The files are in ../audio/ (SOURCES.md says where
+## Crosswise: its sounds (PLAN.md steps 69-71). The files are in ../audio/ (SOURCES.md says where
 ## each came from).
 ##
 ## SOUND FADES WITH W. Miegakure changes every sound with what should be audible across W

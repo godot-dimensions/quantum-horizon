@@ -1,5 +1,5 @@
 extends Node4D
-## Slice Garden: a sign painted on the floor: key caps and a few words, in the lab's code blue on its
+## Crosswise: a sign painted on the floor: key caps and a few words, in the lab's code blue on its
 ## grid (white ink vanished in the spotlight's pool on the pale floor, 6 Oct)
 ## (PLAN.md step 50; Ramon: "or just use some icons on the playing field"). Unreal's intro level
 ## stands its keys beside the thing they work (RESEARCH.md, and follow_up/lab_case_study); here they

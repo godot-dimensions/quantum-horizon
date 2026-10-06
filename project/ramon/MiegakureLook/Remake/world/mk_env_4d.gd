@@ -1,5 +1,5 @@
 extends Node4D
-## Slice Garden: the sky, the sun, a fill light, the one spotlight, and the turn's change of mood.
+## Crosswise: the sky, the sun, a fill light, the one spotlight, and the turn's change of mood.
 ##
 ## THE CREATION LAB'S LIGHT (Ramon, 6 Oct: "take the general look and lighting from creatorlabs. maybe
 ## also add the 1 spotlight with adjustment dev panel"). The numbers are the lab's as it plays: the
@@ -11,20 +11,20 @@ extends Node4D
 ## pool of light the lab's exhibit stands in.
 ##
 ## Every number lives in `values`, which the artist dev panel (hud/mk_tuner.gd, F1) reads and writes
-## live and saves to slice_garden_tuning.cfg; what is saved there is where the garden starts.
+## live and saves to crosswise_tuning.cfg; what is saved there is where the islands starts.
 ##
 ## THE TURN. Turned into W, the sky shifts toward violet (`turned_shift`), the way Miegakure's sky
 ## changes in its turned screenshot: the mode reads from the sky alone. `set_turn(t, rotation)` is
 ## called by the camera every frame of a turn, t from 0 (normal) to 1 (turned).
 ##
 ## THE LIGHTS TURN WITH THE VIEW. A 4D sun with no W in its direction lights the faces you see in the
-## normal view; a quarter turn into W would point its Z part out of the slice and the garden would go
+## normal view; a quarter turn into W would point its Z part out of the slice and the islands would go
 ## flat. Turning the sun and fill by the view's own rotation keeps the light on what you see the same
 ## in both views. (The spot points straight down, which the turn never touches.)
 ##
 ## NO class_name (engine_gotchas.md).
 
-const SAVE_PATH := "res://ramon/MiegakureLook/Remake/slice_garden_tuning.cfg"
+const SAVE_PATH := "res://ramon/MiegakureLook/Remake/crosswise_tuning.cfg"
 
 ## The lab's room light ("bright"), before Ramon's multipliers.
 const LAB := {

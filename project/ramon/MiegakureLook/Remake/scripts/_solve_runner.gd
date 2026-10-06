@@ -1,11 +1,11 @@
 extends SceneTree
-## Slice Garden: the solver bot (PLAN.md steps 65-66). Plays the whole sequence, all four islands,
+## Crosswise: the solver bot (PLAN.md steps 65-66). Plays the whole sequence, all four islands,
 ## through the game's own code: the walker's movement (its scripted keys go through the same
 ## _physics_process as the keyboard), the camera's turn (request_turn, what the right mouse calls),
 ## and the hands' use() and strike() (what E and the left mouse call). Asserts that each island's
 ## beat happens (the gate passed, the crate out of the cage, the plate down and the bridge laid, both
 ## rocks broken, the finale) and saves a frame at every beat to
-## smoke_test_output/miegakure_remake/solve/.
+## smoke_test_output/crosswise/solve/.
 ##
 ## Steps: ["walk", x, c]       walk in the current view to world x and world c along the axis W/S
 ##                              walk (z in the normal view, w once turned)
@@ -19,11 +19,11 @@ extends SceneTree
 ##        ["wait", seconds]
 ##
 ## Run: Remake/run.sh windowed solve res://ramon/MiegakureLook/Remake/scripts/_solve_runner.gd
-## Film (PLAN.md step 67): Remake/run.sh movie slice_garden res://.../_solve_runner.gd film
+## Film (PLAN.md step 67): Remake/run.sh movie crosswise res://.../_solve_runner.gd film
 ## (the opening shot plays first, no frames are saved, the sound is recorded).
 
-const SCENE := "res://ramon/MiegakureLook/Remake/slice_garden.tscn"
-const OUT := "res://smoke_test_output/miegakure_remake/solve/"
+const SCENE := "res://ramon/MiegakureLook/Remake/crosswise.tscn"
+const OUT := "res://smoke_test_output/crosswise/solve/"
 const ARRIVE := 0.09
 
 var STEPS := [
@@ -295,7 +295,7 @@ func _condition(name: String) -> bool:
 		"island_2":
 			return int(_game.get("island")) == 2
 		"plate_down":
-			return bool(_game.get_node("Garden/I2Plate").get("pressed"))
+			return bool(_game.get_node("Level/I2Plate").get("pressed"))
 		"crossed_chasm":
 			return p.z < -25.5 and p.y > 1.0
 		"island_3":

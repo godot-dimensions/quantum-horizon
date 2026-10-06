@@ -1,5 +1,5 @@
 extends Node4D
-## Slice Garden: a small rock that breaks in exactly two strikes (PLAN.md steps 44-45).
+## Crosswise: a small rock that breaks in exactly two strikes (PLAN.md steps 44-45).
 ##
 ## IT IS THE ENGINE'S OWN VOXELS: small VoxelWorld4Ds (dual contouring in C++, cut by the slice like
 ## any mesh), a lilac-grey crust over a gold core.
@@ -7,11 +7,11 @@ extends Node4D
 ## THE DENT IS BUILT AT LOAD, NOT CARVED AT THE STRIKE. A sphere edit at strike time costs nothing to
 ## call (0.5 ms) but the remesh it queues took 80 to 140 ms the next frame (measured 6 Oct,
 ## scripts/_perf_runner.gd: a visible freeze on every first strike). So each rock is built twice when
-## the garden loads, whole and already dented (a notch of air in its generator's layers, on the face you
+## the islands loads, whole and already dented (a notch of air in its generator's layers, on the face you
 ## come at it from, `dent_face`, deep enough to show the gold), and the first strike swaps one for the
 ## other. The dented one is NOT hidden while it waits: a hidden mesh has no draw buffers until it is
 ## first shown, and building them cost the same 110 ms at the strike. It waits drawn, PARKED far below
-## the island, so its buffers are built while the garden loads, and the strike only moves it.
+## the island, so its buffers are built while the islands loads, and the strike only moves it.
 ##
 ## TWO STRIKES, CLEARLY. Two small amber pips stand on its top. The first strike shows the dent and the
 ## gold inside, throws chips, and puts one pip out: it is visibly half broken. The second shatters it (a big burst of chips) and it is gone, collider and

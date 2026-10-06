@@ -1,12 +1,12 @@
 extends SceneTree
 ## Step 3: a before-picture of the current Miegakure prototype (MiegakureLook/levels/): each of its
 ## three levels in the normal view and turned into W, saved to
-## smoke_test_output/miegakure_remake/before/. Nothing in the levels is changed; the turn is the
+## smoke_test_output/crosswise/before/. Nothing in the levels is changed; the turn is the
 ## real right-mouse press.
 ##
 ## Run: Remake/run.sh windowed before res://ramon/MiegakureLook/Remake/probes/_capture_before_runner.gd
 
-const OUT := "res://smoke_test_output/miegakure_remake/before/"
+const OUT := "res://smoke_test_output/crosswise/before/"
 const LEVELS := [
 	"res://ramon/MiegakureLook/levels/level_1_wall.tscn",
 	"res://ramon/MiegakureLook/levels/level_2_bridge.tscn",

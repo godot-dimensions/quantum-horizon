@@ -1,10 +1,10 @@
 @tool
 extends Node4D
 
-## Slice Garden's little walker: the pen's block avatar, COPIED from
+## Crosswise's little walker: the pen's block avatar, COPIED from
 ## chickenpen/scripts/block_avatar_4d.gd on 5 Oct 2026 (the pen is never touched; Ramon, 4 Oct). The
 ## copy differs in three ways: it starts as the CHIBI build (the pen player's), its default colours
-## are the garden's (a coral tunic and cap over the pen player's skin tone and shorts: the one warm,
+## are the islands' (a coral tunic and cap over the pen player's skin tone and shorts: the one warm,
 ## saturated thing on a pale island, as Miegakure's red-and-blue hero is), and its blocks are never given an owner in the editor,
 ## so previewing the scene shows him without saving his blocks into it.
 ##

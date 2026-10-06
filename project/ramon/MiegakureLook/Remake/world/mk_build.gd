@@ -1,5 +1,5 @@
 extends RefCounted
-## Slice Garden: the building vocabulary every island uses, so the islands say WHAT they are and
+## Crosswise: the building vocabulary every island uses, so the islands say WHAT they are and
 ## this says HOW (a box with collision, a floating slab, a fence bent into a wall or a cage).
 ##
 ## SOLIDS ARE BOXES. Physics is axis-aligned boxes only (engine_capabilities.md), so anything you

@@ -1,5 +1,5 @@
 extends Control
-## Slice Garden's HUD: small, black glass, white type (the lab kit's rule: screens and overlays are
+## Crosswise's HUD: small, black glass, white type (the lab kit's rule: screens and overlays are
 ## black; CreationLab/kit/kit_style.gd). Miegakure has no HUD at all; this one is for people new to
 ## 4D, so it answers "which way am I looking, and where am I in W" in one glance, and gets out of
 ## the way otherwise (PLAN.md step 49).
@@ -242,7 +242,7 @@ func _draw() -> void:
 		var fr := Rect2(Vector2((vp.x - fw) * 0.5, vp.y - 290), Vector2(fw, 210))
 		_glass(fr, 14)
 		_text(fr.position + Vector2(0, 58), "THE SHRINE", _black, 34, INK, HORIZONTAL_ALIGNMENT_CENTER, fw)
-		_text(fr.position + Vector2(0, 92), "Four gardens, through the fourth dimension.", _body, 15, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, fw)
+		_text(fr.position + Vector2(0, 92), "Four islands, through the fourth dimension.", _body, 15, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, fw)
 		var stats: String = "%s     %d turns into W     %d falls" % [_finale.get("time", ""), int(_finale.get("turns", 0)), int(_finale.get("falls", 0))]
 		_text(fr.position + Vector2(0, 134), stats, _bold, 16, ACCENT, HORIZONTAL_ALIGNMENT_CENTER, fw)
 		_text(fr.position + Vector2(0, 178), "R  play again          H  back to menu", _bold, 14, INK, HORIZONTAL_ALIGNMENT_CENTER, fw)

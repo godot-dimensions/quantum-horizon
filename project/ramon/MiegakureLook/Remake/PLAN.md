@@ -1,4 +1,4 @@
-# Slice Garden: the Miegakure remake (plan, 5 Oct 2026)
+# Crosswise: the Miegakure remake (plan, 5 Oct 2026)
 
 Ramon's brief, item 6 of his list: remake the Miegakure-inspired prototype. The current one
 (`MiegakureLook/levels/`, menu entry "Slice Vision") has the right mechanic and feels dry: an
@@ -7,7 +7,7 @@ orange ball on a grey slab in a purple void, moving forward, back and through W.
 **What this becomes:** a little walking character on bright floating islands, in a compact
 sequence of four 4D puzzles. You see where you are going from the start, and every action
 (walking, turning the slice, carrying, striking) exists because a puzzle needs it. One new scene,
-`MiegakureLook/Remake/slice_garden.tscn`. The old levels stay as they are.
+`MiegakureLook/Remake/crosswise.tscn`. The old levels stay as they are.
 
 How it was researched: `RESEARCH.md` (Miegakure's own words, screenshots, player accounts, and
 what each one changed here). What was learned while building: the "Status" and "Pivots"
@@ -15,7 +15,7 @@ sections at the bottom of this page, kept current as the work goes.
 
 ## The idea in one paragraph
 
-You play a small figure (the pen's little walker, copied over) on a chain of floating garden
+You play a small figure (the pen's little walker, copied over) on a chain of floating islands
 islands, bright like the Creation Lab and mint-skied like Miegakure. WASD walks in the world you
 can see. The right mouse button turns your view a quarter turn into W: the world deforms round
 you, the sky cools, and now forward and back walk through W while left and right stay what they
@@ -59,7 +59,7 @@ plate), **the Seam** (a fence that stands across W, with a two-strike rock in it
 9. **Native voxels for the rock.** One small `VoxelWorld4D` per plug (the engine's own,
    dual-contoured, cut by the slice like any mesh), a grey crust over a gold core: the first strike
    carves a dent that shows the gold, the second shatters it.
-10. **No presentation rooms** (Ramon). You start in the garden. Guidance is painted on the ground:
+10. **No presentation rooms** (Ramon). You start in the islands. Guidance is painted on the ground:
     key icons at the start, W-cue dots, footprint frames, hazard bands, a hint layer on request.
 11. **Forgiving.** A fall puts you back at the island's arrival ring with a short fade, the crate
     returns to its stand if it fell, R restarts the island, and no mistake costs more than a few
@@ -89,7 +89,7 @@ Each new action is met once on its own, in plain 3D, before it is asked of you t
 ### A. Ground truth and probes (1-10)
 1. Folder `MiegakureLook/Remake/` with this plan, `RESEARCH.md`, and `run.sh` (one Godot at a
    time: the lock and the process check gate the launch in the same command; logs to
-   `smoke_test_output/miegakure_remake/logs/`, errors grepped).
+   `smoke_test_output/crosswise/logs/`, errors grepped).
 2. `RESEARCH.md`: Miegakure's mechanic and readability devices in its maker's words, the
    screenshots, player accounts (where they get confused, what delights them), and the ten
    lessons, each tied to a step here.
@@ -206,7 +206,7 @@ Each new action is met once on its own, in plain 3D, before it is asked of you t
 76. Fixes from 72-75.
 
 ### J. Handover (77-80)
-77. `follow_up/miegakure_remake.md`, with Questions for Ramon at the top.
+77. `follow_up/crosswise.md`, with Questions for Ramon at the top.
 78. engine_capabilities.md and engine_gotchas.md: what FenceGenerator4D and the native voxels
     can and can't do, dated.
 79. Memory.
@@ -224,7 +224,7 @@ Each new action is met once on its own, in plain 3D, before it is asked of you t
 - `run.sh`: the lock and the process check gate every launch; `batch` runs a list under one hold
   of the lock (three windows were queuing for Godot all night); `wait` queues. Never edit it while
   a run uses it: runs go through a copy.
-- Before-picture: `smoke_test_output/miegakure_remake/before_sheet.png` (the orange ball on a grey
+- Before-picture: `smoke_test_output/crosswise/before_sheet.png` (the orange ball on a grey
   slab in a purple void, both views, all three levels).
 - Probe 4, FenceGenerator4D: all eight non-fence designs build, in 3 to 13 ms (the cage with bars
   every 0.4 m, 51 ms). A sheet whose face spans X and Z at one W is a fence that stands across W:
@@ -236,8 +236,8 @@ Each new action is met once on its own, in plain 3D, before it is asked of you t
   once turned), the slice exactly on him (offset 0.0000). Frames: `probe_walker/`.
 - Probe 7, the shader: lanes, seams, the W-face tint, all seen in the turned frames.
 
-**Steps 8-62, built (6 Oct, early hours).** The scene `slice_garden.tscn` (one node; everything is
-built by `slice_garden_4d.gd` and `world/mk_garden_4d.gd`), the four islands, the walker with hands
+**Steps 8-62, built (6 Oct, early hours).** The scene `crosswise.tscn` (one node; everything is
+built by `crosswise_4d.gd` and `world/mk_islands_4d.gd`), the four islands, the walker with hands
 (lift, carry, place with a ghost outline, the hammer) and feet (shadow, key rose), the camera (turn,
 follow, island framing, the opening shot, the finale pull-out), the plate, the bridge, the voxel
 rocks, the floor signs, the onlooker, the HUD, the dev panel, the sound, 4D sight (V), the auto-hint.
@@ -250,26 +250,26 @@ rocks, the floor signs, the onlooker, the HUD, the dev panel, the sound, 4D sigh
 
 **Steps 63-80, done (6 Oct).**
 - Proof: the solver 18 of 18, the bad paths 11 of 11, the tools 4 of 4; about 1 ms a frame on every
-  island; the film `smoke_test_output/video/slice_garden.mp4` (82 s, sound peaking at -8.8 dB).
+  island; the film `smoke_test_output/video/crosswise.mp4` (82 s, sound peaking at -8.8 dB).
 - The fixes the proof found: the strike hitch (rocks pre-dented and parked, 111 ms to 12 ms), the
   finale's framing and card, the cage's black bars, a railing at the terrace's foot, the silent film,
   the HUD's size at 1080p.
 - Not built, on purpose: the hint layer as PathCreator routes (step 54's second half). The painted
   signs, W-cue dots and text hints (F, and by themselves after 45 s) carried it, and Ramon called the
   path system "just an idea". Noted for him in the handover.
-- Handover: `follow_up/miegakure_remake.md`; engine facts in `engine_capabilities.md`; memory.
+- Handover: `follow_up/crosswise.md`; engine facts in `engine_capabilities.md`; memory.
 
 ## Pivots
 (when a step hits a wall, or Ramon steers: what happened, and what replaced it)
 
 1. **The look is the Creation Lab's** (Ramon, 6 Oct, mid-build: "take the general look and lighting
-   from creatorlabs. maybe also add the 1 spotlight with adjustment dev panel"). The garden's light
+   from creatorlabs. maybe also add the 1 spotlight with adjustment dev panel"). The islands' light
    is now the lab's as it plays (the kit's bright room light under his saved creation_lab_tuning.cfg:
    sky fill x1.52, sun x0.66 at 64/25, exposure 1.05) with the lab's centre spot hung over the walker
    (2.69 x 3.26, 35.7 degree cone, 0.42 edge, 10.4 m reach, 0.3 falloff, 8.4 m up), and the floors
    are the lab's procedural grid (mid-grey 1 m tiles of five) instead of the dev textures. An artist
    dev panel on F1 (hud/mk_tuner.gd, after the lab's) tunes light, sun, spot, sky and camera live and
-   saves to `slice_garden_tuning.cfg`. Decision 6 (the sky says which view) is kept: the lab's sky,
+   saves to `crosswise_tuning.cfg`. Decision 6 (the sky says which view) is kept: the lab's sky,
    shifted toward violet when turned, with a slider for how far, and one to lift the sky toward
    Miegakure's pale mint if he wants it.
 2. **Node4D has no `top_level`.** Nodes that should not follow the walker (the floor marks, the
@@ -291,6 +291,6 @@ rocks, the floor signs, the onlooker, the HUD, the dev panel, the sound, 4D sigh
    become more like walls between pilons. every once in a while a basic fence is fine"). The start
    platform's floor is the lab's code-blue grid (the teaching wall's swatch, laid flat) with its lanes
    in gentler tints and white seams, and the explainer painted on it in white like the lab's walls:
-   "01 / SLICE GARDEN", the title, one line, and the controls row with key caps and the mouse. The
+   "01 / CROSSWISE", the title, one line, and the controls row with key caps and the mouse. The
    railings are FenceGenerator4D with chunky 1.1 m pylons every 2.4 m and one solid beam between them;
    every fourth railing is the plain rail fence.

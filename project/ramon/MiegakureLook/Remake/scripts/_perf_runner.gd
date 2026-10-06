@@ -1,5 +1,5 @@
 extends SceneTree
-## Slice Garden: what it costs (PLAN.md step 72). Vsync off and no frame cap (lofting_gotchas.md:
+## Crosswise: what it costs (PLAN.md step 72). Vsync off and no frame cap (lofting_gotchas.md:
 ## vsync makes every timing meaningless), frames timed between process frames with
 ## Time.get_ticks_usec (follow_up/engine_capabilities.md: Performance.TIME_PROCESS is the worst
 ## frame of the last second, not this frame), the GPU's own render time beside it.
@@ -10,7 +10,7 @@ extends SceneTree
 ##
 ## Run: Remake/run.sh windowed perf res://ramon/MiegakureLook/Remake/scripts/_perf_runner.gd
 
-const SCENE := "res://ramon/MiegakureLook/Remake/slice_garden.tscn"
+const SCENE := "res://ramon/MiegakureLook/Remake/crosswise.tscn"
 
 var _game: Node
 var _walker: CharacterBody4D

@@ -1,12 +1,12 @@
 extends SceneTree
-## Slice Garden: a look at every island. Loads the scene, puts the walker on each island's arrival
+## Crosswise: a look at every island. Loads the scene, puts the walker on each island's arrival
 ## ring (and at a few chosen spots), and saves a frame in the normal view and one turned into W.
-## Frames to smoke_test_output/miegakure_remake/islands/. Prints any island registry problems.
+## Frames to smoke_test_output/crosswise/islands/. Prints any island registry problems.
 ##
 ## Run: Remake/run.sh windowed islands res://ramon/MiegakureLook/Remake/scripts/_capture_islands_runner.gd
 
-const SCENE := "res://ramon/MiegakureLook/Remake/slice_garden.tscn"
-const OUT := "res://smoke_test_output/miegakure_remake/islands/"
+const SCENE := "res://ramon/MiegakureLook/Remake/crosswise.tscn"
+const OUT := "res://smoke_test_output/crosswise/islands/"
 
 ## [name, where (x, y, z, w), facing]
 var SPOTS := [

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Slice Garden's Godot launcher. One Godot at a time (follow_up/startup.md, section 6): the lock and
+# Crosswise's Godot launcher. One Godot at a time (follow_up/startup.md, section 6): the lock and
 # the running-Godot check gate the launch in this same process, the lock is ours for the whole run
 # and is released on exit even when a run fails. Output goes to a log first, then the log is searched.
 #
@@ -17,7 +17,7 @@
 ROOT=/d/depot/quantum-horizon
 EXE="$ROOT/engine/godot/bin/godot.windows.editor.double.x86_64.console.exe"
 LOCK="$ROOT/.claude/godot_in_use.txt"
-LOGDIR="$ROOT/project/smoke_test_output/miegakure_remake/logs"
+LOGDIR="$ROOT/project/smoke_test_output/crosswise/logs"
 mkdir -p "$LOGDIR"
 
 busy() { [ -f "$LOCK" ] || tasklist 2>/dev/null | grep -qi godot; }
@@ -27,7 +27,7 @@ if [ "$1" = "wait" ]; then
 	WAITING=1
 	shift
 fi
-ME="miegakure remake | $1 $2 | $(date '+%Y-%m-%d %H:%M')"
+ME="crosswise | $1 $2 | $(date '+%Y-%m-%d %H:%M')"
 
 # Take the lock: wait while anyone holds it (in wait mode), then write ours and read it back a
 # moment later, because another window can take it in the same second; if it is not ours, wait on.
@@ -56,7 +56,7 @@ while true; do
 	if [ "$WAITING" = "0" ]; then exit 3; fi
 	sleep 10; waited=$((waited + 12))
 done
-trap 'if [ "$(cat "$LOCK" 2>/dev/null | cut -c1-16)" = "miegakure remake" ]; then rm -f "$LOCK"; fi' EXIT
+trap 'if [ "$(cat "$LOCK" 2>/dev/null | cut -c1-9)" = "crosswise" ]; then rm -f "$LOCK"; fi' EXIT
 cd "$ROOT"
 
 status=0
@@ -65,7 +65,7 @@ run_one() {
 	local mode="$1" name="$2"; shift 2
 	local log="$LOGDIR/$name.log"
 	: > "$log"
-	echo "miegakure remake | $mode $name | $(date '+%Y-%m-%d %H:%M')" > "$LOCK"
+	echo "crosswise | $mode $name | $(date '+%Y-%m-%d %H:%M')" > "$LOCK"
 	if [ "$mode" = "import" ]; then
 		timeout 600 "$EXE" --headless --path project --import >> "$log" 2>&1
 		echo "exit code: $?" >> "$log"

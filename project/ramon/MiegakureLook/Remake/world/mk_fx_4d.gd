@@ -1,5 +1,5 @@
 extends Node4D
-## Slice Garden: short-lived effects, each freeing itself.
+## Crosswise: short-lived effects, each freeing itself.
 ##
 ##   chips   small cubes of stone flung out and falling, shrinking away: a strike's chips, a rock's
 ##           shatter, a crate's dust when it lands somewhere it should not have gone

@@ -1,6 +1,6 @@
 extends Node4D
 
-## Slice Garden's walk cycle: COPIED from chickenpen/scripts/block_gait_4d.gd on 5 Oct 2026 (the pen is
+## Crosswise's walk cycle: COPIED from chickenpen/scripts/block_gait_4d.gd on 5 Oct 2026 (the pen is
 ## never touched). Unchanged except for the avatar it looks for and this note. It works in 4D world
 ## space throughout (foot targets on the ground, the leg solved in the hip's own frame), so it walks
 ## the same in the turned view as long as the avatar's body is turned with the view (mk_walker_4d.gd).

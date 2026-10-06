@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://ramon/MiegakureLook/Remake/slice_garden_4d.gd" id="1_garden"]
+[ext_resource type="Script" path="res://ramon/MiegakureLook/Remake/crosswise_4d.gd" id="1_crosswise"]
 
-[node name="SliceGarden" type="Node4D"]
-script = ExtResource("1_garden")
+[node name="Crosswise" type="Node4D"]
+script = ExtResource("1_crosswise")

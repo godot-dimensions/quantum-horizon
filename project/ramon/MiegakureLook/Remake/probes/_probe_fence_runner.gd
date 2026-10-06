@@ -1,8 +1,8 @@
 extends SceneTree
 ## Probe 4 (PLAN.md): Aaron's FenceGenerator4D bent into things that are not fences. Builds eight
 ## variants in a row on a slab, times each build (update_fence_mesh_now, TETRA output, this folder's
-## surface shader on its materials), then shoots them from the garden camera in the normal view, at
-## two other W, and turned into W. Frames to smoke_test_output/miegakure_remake/probe_fence/.
+## surface shader on its materials), then shoots them from the islands camera in the normal view, at
+## two other W, and turned into W. Frames to smoke_test_output/crosswise/probe_fence/.
 ##
 ## A seed_mesh_3d's own X, Y, Z become the fence's X, Z and W (FenceGenerator4D.xml), so:
 ##   a quad at constant mesh Y   is a wall across X that spans W (a sheet standing in X-W)
@@ -15,7 +15,7 @@ const Mats := preload("res://ramon/MiegakureLook/Remake/world/mk_materials.gd")
 const Env := preload("res://ramon/MiegakureLook/Remake/world/mk_env_4d.gd")
 const Cam := preload("res://ramon/MiegakureLook/Remake/scripts/mk_camera_4d.gd")
 
-const OUT := "res://smoke_test_output/miegakure_remake/probe_fence/"
+const OUT := "res://smoke_test_output/crosswise/probe_fence/"
 const WFACE := Color(0.36, 0.33, 0.78, 0.75)
 
 var _stage: Node4D

@@ -1,7 +1,7 @@
 extends PanelContainer
-## Slice Garden: the artist dev panel (F1), after the Creation Lab's (CreationLab/kit/kit_tuner.gd):
-## every number in the garden's light and framing on a live slider, and a SAVE button that writes
-## them to slice_garden_tuning.cfg, so what Ramon saves is where the garden starts next time
+## Crosswise: the artist dev panel (F1), after the Creation Lab's (CreationLab/kit/kit_tuner.gd):
+## every number in the islands' light and framing on a live slider, and a SAVE button that writes
+## them to crosswise_tuning.cfg, so what Ramon saves is where the islands starts next time
 ## (Ramon, 4 Oct, for the lab: "sliders I can use in realtime, then I can give you the numbers";
 ## 6 Oct, here: "add the 1 spotlight with adjustment dev panel").
 ##

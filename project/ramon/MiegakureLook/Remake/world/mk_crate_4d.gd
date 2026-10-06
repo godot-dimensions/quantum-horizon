@@ -1,10 +1,10 @@
 extends CharacterBody4D
-## Slice Garden: a crate you can lift, carry through W and put down (PLAN.md steps 37-41).
+## Crosswise: a crate you can lift, carry through W and put down (PLAN.md steps 37-41).
 ##
 ## A 4D CUBE, THE SAME IN BOTH VIEWS. It is SIZE on all four axes, so turning the view into W shows
 ## the same crate (Miegakure's lesson: things that look the same in every slice come before true 4D
 ## shapes). Its body is a slatted crate built by Aaron's FenceGenerator4D (a box footprint, beams on
-## every face) round a solid core in yellow, the garden's "use this" colour. Near its W ends the
+## every face) round a solid core in yellow, the islands' "use this" colour. Near its W ends the
 ## slats of its W faces fill the whole floor of the crate (a fence's W faces, seen face-on): what a
 ## crate looks like at the edge of its own W.
 ##

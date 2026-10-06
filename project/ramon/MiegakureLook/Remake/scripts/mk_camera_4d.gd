@@ -1,5 +1,5 @@
 extends Camera4D
-## Slice Garden's camera: a diorama view of the little walker, and the quarter turn into W.
+## Crosswise's camera: a diorama view of the little walker, and the quarter turn into W.
 ##
 ## A fork of ../../scripts/miegakure_camera_3.gd, keeping its two load-bearing fixes (follow_up/
 ## miegakure_look.md): the camera's position is derived from the SAME basis as its orientation, so

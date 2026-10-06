@@ -1,4 +1,4 @@
-// Slice Garden's floor signs: a picture painted onto the floor (key caps and a few words, rendered
+// Crosswise's floor signs: a picture painted onto the floor (key caps and a few words, rendered
 // once by world/mk_sign_4d.gd), unshaded so it reads the same in the spot's pool and out of it.
 // Where the picture is transparent the pixel is discarded, so only the ink shows on the floor.
 //

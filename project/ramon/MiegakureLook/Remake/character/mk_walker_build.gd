@@ -1,5 +1,5 @@
 extends RefCounted
-## Slice Garden: assembles the little walker (body, collider, avatar, gait) in code, the way the
+## Crosswise: assembles the little walker (body, collider, avatar, gait) in code, the way the
 ## lab kit's lab_player.gd does, so the scene, the probes and the runners all get the same one.
 ##
 ## The collider is a box as deep in Z as in W (0.5 m), 1.3 m tall, its foot at the body's origin:
