@@ -1,0 +1,108 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/Arboretum/carried/PathCreator/graph/path_graph.gd" id="1_ggyhp"]
+
+[resource]
+script = ExtResource("1_ggyhp")
+nodes = [{
+"approach": Vector2(0, 1),
+"band": 7.0,
+"frame": "none",
+"id": 1,
+"kind": "start",
+"pos": Vector4(0, 0, -24, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 7.0,
+"frame": "none",
+"id": 2,
+"kind": "bend",
+"pos": Vector4(0, 0, -33, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 7.0,
+"frame": "none",
+"id": 3,
+"kind": "junction",
+"pos": Vector4(0, 0, -37.6, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 7.0,
+"frame": "none",
+"id": 4,
+"kind": "destination",
+"pos": Vector4(0, 0, -54, 0),
+"state": "available",
+"target": "GroveBack"
+}, {
+"approach": Vector2(0, 1),
+"band": 1.2,
+"frame": "none",
+"id": 5,
+"kind": "bend",
+"pos": Vector4(-3, 0, -41, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 1.2,
+"frame": "none",
+"id": 6,
+"kind": "bend",
+"pos": Vector4(-6, 0, -45, 1.2),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(1, 1),
+"band": 1.4,
+"frame": "round",
+"id": 7,
+"kind": "destination",
+"pos": Vector4(-9, 0, -47.5, 2.2),
+"state": "available",
+"target": "AnaGrove"
+}]
+edges = [{
+"band": 7.0,
+"from": 1,
+"priority": "primary",
+"to": 2,
+"w_mode": "static"
+}, {
+"band": 7.0,
+"from": 2,
+"priority": "primary",
+"to": 3,
+"w_mode": "static"
+}, {
+"band": 7.0,
+"from": 3,
+"priority": "secondary",
+"to": 4,
+"w_mode": "static"
+}, {
+"band": 7.0,
+"from": 3,
+"priority": "primary",
+"to": 5,
+"w_mode": "static"
+}, {
+"band": 1.2,
+"from": 5,
+"priority": "primary",
+"to": 6,
+"w_mode": "follow"
+}, {
+"band": 1.2,
+"from": 6,
+"priority": "primary",
+"to": 7,
+"w_mode": "follow"
+}]
+next_id = 8

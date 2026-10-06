@@ -1,0 +1,243 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/Arboretum/carried/PathCreator/graph/path_graph.gd" id="1_h74vn"]
+
+[resource]
+script = ExtResource("1_h74vn")
+nodes = [{
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 1,
+"kind": "start",
+"pos": Vector4(0, 0, 19.5, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 2,
+"kind": "junction",
+"pos": Vector4(0, 0, 13, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 3,
+"kind": "bend",
+"pos": Vector4(3, 0, 13, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(-1, 0),
+"band": 8.0,
+"frame": "none",
+"id": 4,
+"kind": "destination",
+"pos": Vector4(5.2, 0, 12.6, 0),
+"state": "available",
+"target": "Tour"
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 5,
+"kind": "bend",
+"pos": Vector4(-1.6, 0, 10.6, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(1, 0),
+"band": 8.0,
+"frame": "rect",
+"id": 6,
+"kind": "destination",
+"pos": Vector4(-3.6, 0, 8, 0),
+"state": "available",
+"target": "P1"
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 7,
+"kind": "bend",
+"pos": Vector4(0, 0, 4.4, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(-1, 0),
+"band": 8.0,
+"frame": "round",
+"id": 8,
+"kind": "destination",
+"pos": Vector4(3.6, 0, 1, 0),
+"state": "arrival",
+"target": "P2"
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 9,
+"kind": "bend",
+"pos": Vector4(0, 0, -2.6, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(1, 0),
+"band": 8.0,
+"frame": "round",
+"id": 10,
+"kind": "destination",
+"pos": Vector4(-3.6, 0, -6, 0),
+"state": "arrival",
+"target": "P3"
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 11,
+"kind": "bend",
+"pos": Vector4(0, 0, -7.6, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "round",
+"id": 12,
+"kind": "destination",
+"pos": Vector4(1.6, 0, -8.6, 0),
+"state": "arrival",
+"target": "P4"
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 13,
+"kind": "bend",
+"pos": Vector4(6.2, 0, -10, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 14,
+"kind": "bend",
+"pos": Vector4(6.2, 0, -16.4, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 15,
+"kind": "bend",
+"pos": Vector4(2.4, 0, -19.6, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "rect",
+"id": 16,
+"kind": "destination",
+"pos": Vector4(0, 0, -20.4, 0),
+"state": "arrival",
+"target": "Door"
+}]
+edges = [{
+"band": 8.0,
+"from": 1,
+"priority": "primary",
+"to": 2,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 2,
+"priority": "secondary",
+"to": 3,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 3,
+"priority": "secondary",
+"to": 4,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 2,
+"priority": "primary",
+"to": 5,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 5,
+"priority": "primary",
+"to": 6,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 6,
+"priority": "primary",
+"to": 7,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 7,
+"priority": "primary",
+"to": 8,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 8,
+"priority": "primary",
+"to": 9,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 9,
+"priority": "primary",
+"to": 10,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 10,
+"priority": "primary",
+"to": 11,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 11,
+"priority": "primary",
+"to": 12,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 12,
+"priority": "primary",
+"to": 13,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 13,
+"priority": "primary",
+"to": 14,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 14,
+"priority": "primary",
+"to": 15,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 15,
+"priority": "primary",
+"to": 16,
+"w_mode": "static"
+}]
+next_id = 17
