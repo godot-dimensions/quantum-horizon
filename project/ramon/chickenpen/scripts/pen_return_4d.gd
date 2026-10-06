@@ -41,7 +41,7 @@ extends Node
 ## crossing a fence does not need checking sixty times a second.
 @export_range(1, 20, 1) var check_every: int = 3
 
-var _fence: Node
+var _fence: FenceGenerator4D
 var _manager: Node
 var _rng := RandomNumberGenerator.new()
 var _tick: int = 0
@@ -50,7 +50,7 @@ var _coop: Node
 
 
 func _ready() -> void:
-	_fence = get_node_or_null(fence_path)
+	_fence = get_node_or_null(fence_path) as FenceGenerator4D
 	_manager = get_node_or_null(manager_path)
 	_coop = get_node_or_null(coop_path)
 	_rng.seed = 20260921
@@ -126,23 +126,17 @@ func _physics_process(_delta: float) -> void:
 ## lands in open pen is not touched at all.
 func _settle_clear_of_the_rail(agent: Node, body: Node4D) -> void:
 	var leash: float = float(agent.get("wander_radius")) * 0.6 + 0.3
-	var middle: Vector4 = (_fence as Node4D).global_position
-	var east: float = maxf(float(_fence.get("extend_x_positive")) - leash, 0.2)
-	var west: float = maxf(float(_fence.get("extend_x_negative")) - leash, 0.2)
-	var north: float = maxf(float(_fence.get("extend_z_positive")) - leash, 0.2)
-	var south: float = maxf(float(_fence.get("extend_z_negative")) - leash, 0.2)
 	var home: Vector4 = agent.get("home_position")
 	var host: Vector4 = _pen_origin()
 	var world: Vector4 = home + host
-	var pulled := Vector4(
-		clampf(world.x, middle.x - west, middle.x + east), world.y,
-		clampf(world.z, middle.z - south, middle.z + north), world.w)
+	var pulled: Vector4 = _fence.call("clamp_inside", world, leash)
 	if pulled.is_equal_approx(world):
 		return
 	agent.set("home_position", pulled - host)
 	# And the bird comes with its home, or containment spends the next minute towing it.
+	# Its own W only moves if its home's did: the pen is walled in W too.
 	body.position = Vector4(pulled.x - host.x, body.position.y, pulled.z - host.z,
-		body.position.w)
+		body.position.w + pulled.w - world.w)
 
 
 ## Item 44: a returned chicken that somehow leaves is put back, WITHOUT changing the
@@ -160,16 +154,7 @@ func _keep_in(agent: Node, body: Node4D, inside: bool) -> void:
 	#
 	# Its home comes with it, or containment tows it straight back out and it bounces on
 	# the boundary for ever.
-	var at: Vector4 = body.global_position
-	var middle: Vector4 = (_fence as Node4D).global_position
-	var margin: float = 0.45
-	var east: float = float(_fence.get("extend_x_positive")) - margin
-	var west: float = float(_fence.get("extend_x_negative")) - margin
-	var north: float = float(_fence.get("extend_z_positive")) - margin
-	var south: float = float(_fence.get("extend_z_negative")) - margin
-	var back := Vector4(
-		clampf(at.x, middle.x - west, middle.x + east), at.y,
-		clampf(at.z, middle.z - south, middle.z + north), at.w)
+	var back: Vector4 = _fence.call("clamp_inside", body.global_position, 0.45)
 	body.position = back - _pen_origin()
 	agent.set("home_position", body.position)
 
@@ -177,29 +162,32 @@ func _keep_in(agent: Node, body: Node4D, inside: bool) -> void:
 ## Walks a never-carried chicken back out of the pen, the short way.
 ##
 ## It leaves through whichever wall it is nearest, so a bird that strayed one step over the
-## line steps one back rather than being flung across the field. Its home moves with it,
+## line steps one back rather than being flung across the field. That includes the two walls
+## in W: a bird that wandered in through W leaves the way it came. Its home moves with it,
 ## otherwise containment would tow it straight back in and it would bounce on the boundary
 ## forever.
 func _eject(agent: Node, body: Node4D) -> void:
+	# In the fence's own space, where its bounds are.
 	var b: Array = _fence.call("interior_bounds")
-	var fence_origin: Vector4 = (_fence as Node4D).global_position
-	var lo: Vector4 = fence_origin + b[0]
-	var hi: Vector4 = fence_origin + b[1]
-	var at: Vector4 = body.global_position
+	var lo: Vector4 = b[0]
+	var hi: Vector4 = b[1]
+	var at: Vector4 = _fence.global_to_local(body.global_position)
 	var clearance: float = 1.2
 
-	# Distance to each of the four walls, and where leaving by it would put the bird.
+	# Distance to each of the six walls, and where leaving by it would put the bird.
 	var exits := [
 		[at.x - lo.x, Vector4(lo.x - clearance, at.y, at.z, at.w)],
 		[hi.x - at.x, Vector4(hi.x + clearance, at.y, at.z, at.w)],
 		[at.z - lo.z, Vector4(at.x, at.y, lo.z - clearance, at.w)],
 		[hi.z - at.z, Vector4(at.x, at.y, hi.z + clearance, at.w)],
+		[at.w - lo.w, Vector4(at.x, at.y, at.z, lo.w - clearance)],
+		[hi.w - at.w, Vector4(at.x, at.y, at.z, hi.w + clearance)],
 	]
 	var best: Array = exits[0]
 	for e in exits:
 		if e[0] < best[0]:
 			best = e
-	var out: Vector4 = best[1]
+	var out: Vector4 = _fence.local_to_global(best[1])
 	if not _warned.has(agent):
 		_warned[agent] = true
 		push_warning("PenReturn: chicken %s was inside the pen without ever being carried, so it was walked out rather than counted (item 43). If this fires on the first frame, its authored placement overlaps the fence." % str(agent.get("chicken_id")))

@@ -106,7 +106,7 @@ var _head: Node4D
 var _head_rest := Vector4.ZERO
 var _legs: Array[Node4D] = []
 var _leg_rest: Array[Vector4] = []
-var _fence: Node
+var _fence: FenceGenerator4D
 var _perches: Array[Node4D] = []
 
 var _mood: Mood = Mood.PERCHED
@@ -135,7 +135,7 @@ func _ready() -> void:
 	_rng.seed = flock_seed if flock_seed != 0 else int(hash(name))
 	_home = position
 	_heading = _rng.randf_range(0.0, TAU)
-	_fence = get_node_or_null(fence_path)
+	_fence = get_node_or_null(fence_path) as FenceGenerator4D
 	for path in perch_paths:
 		var thing: Node4D = get_node_or_null(path) as Node4D
 		if thing != null:
@@ -499,24 +499,27 @@ func _extent(thing: Node) -> Array:
 
 ## A spot on the fence's top rail. Along a SIDE rather than anywhere within the pen,
 ## because a bird that lands in the middle of a fence is sitting on nothing.
+##
+## The X and Z sides only. The W sides are walls too, but standing on one means being at
+## its W, and the crow keeps its own.
 func _rail_spot() -> Vector4:
-	var height: float = float(_fence.get("height"))
-	var east: float = float(_fence.get("extend_x_positive"))
-	var west: float = float(_fence.get("extend_x_negative"))
-	var north: float = float(_fence.get("extend_z_positive"))
-	var south: float = float(_fence.get("extend_z_negative"))
-	var origin: Vector4 = (_fence as Node4D).global_position
-	var host: Node4D = get_parent() as Node4D
-	var local: Vector4 = origin - (host.global_position if host != null else Vector4.ZERO)
+	var bounds: Array = _fence.call("footprint_bounds")
+	var lo: Vector4 = bounds[0]
+	var hi: Vector4 = bounds[1]
+	var middle: Vector4 = (lo + hi) * 0.5
+	var half: Vector4 = (hi - lo) * 0.5
 	var side: int = _rng.randi_range(0, 3)
 	var along: float = _rng.randf_range(-0.85, 0.85)
 	var spot := Vector4.ZERO
 	match side:
-		0: spot = Vector4(along * east, 0.0, north, 0.0)
-		1: spot = Vector4(along * east, 0.0, -south, 0.0)
-		2: spot = Vector4(east, 0.0, along * north, 0.0)
-		_: spot = Vector4(-west, 0.0, along * north, 0.0)
-	return Vector4(local.x + spot.x, height, local.z + spot.z, position.w)
+		0: spot = Vector4(middle.x + along * half.x, 0.0, hi.z, 0.0)
+		1: spot = Vector4(middle.x + along * half.x, 0.0, lo.z, 0.0)
+		2: spot = Vector4(hi.x, 0.0, middle.z + along * half.z, 0.0)
+		_: spot = Vector4(lo.x, 0.0, middle.z + along * half.z, 0.0)
+	spot.y = float(_fence.call("rail_height"))
+	var host: Node4D = get_parent() as Node4D
+	var local: Vector4 = _fence.local_to_global(spot) - (host.global_position if host != null else Vector4.ZERO)
+	return Vector4(local.x, local.y, local.z, position.w)
 
 
 ## Wings. 0 is held out flat and still - a glide - and 1 is a full beat. Opens folded

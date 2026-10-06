@@ -63,7 +63,7 @@ var phase: Phase = Phase.IDLE
 var _wolf: Node4D
 var _walker: Node
 var _manager: Node
-var _fence: Node4D
+var _fence: FenceGenerator4D
 var _player: Node4D
 var _rng := RandomNumberGenerator.new()
 var _next_chance: float = 0.0
@@ -87,7 +87,7 @@ func _ready() -> void:
 	_next_chance = first_after
 	_wolf = get_node_or_null(wolf_path) as Node4D
 	_manager = get_node_or_null(manager_path)
-	_fence = get_node_or_null(fence_path) as Node4D
+	_fence = get_node_or_null(fence_path) as FenceGenerator4D
 	_player = get_node_or_null(player_path) as Node4D
 	if _wolf != null:
 		_wolf.visible = false
@@ -224,7 +224,9 @@ func _plan_route() -> void:
 	var middle: Vector4 = _fence.global_position
 	middle.y = 0.0
 	middle.w = 0.0
-	var half := Vector2(float(_fence.get("extend_x_positive")), float(_fence.get("extend_z_positive")))
+	var bounds: Array = _fence.call("footprint_bounds")
+	var size: Vector4 = (bounds[1] as Vector4) - (bounds[0] as Vector4)
+	var half := Vector2(size.x, size.z) * 0.5
 	var bird: Vector4 = (_chicken.get_parent() as Node4D).global_position
 	var to_you := Vector2(_player.global_position.x - middle.x, _player.global_position.z - middle.z)
 	var in_x: bool = absf(to_you.x) > absf(to_you.y)
@@ -359,7 +361,7 @@ func _run_to(to: Vector4, delta: float) -> bool:
 ## Over the fence, in an arc: nose up as it goes, down as it lands. True once down.
 func _leap(from: Vector4, to: Vector4) -> bool:
 	var k: float = clampf(_phase_t / leap_seconds, 0.0, 1.0)
-	var height: float = float(_fence.get("height")) + leap_clearance
+	var height: float = _fence.post_height_meters + leap_clearance
 	var flat: Vector4 = from.lerp(to, k)
 	_heading = atan2(to.x - from.x, to.z - from.z)
 	_wolf.global_position = Vector4(flat.x, sin(k * PI) * height, flat.z, _wolf.global_position.w)

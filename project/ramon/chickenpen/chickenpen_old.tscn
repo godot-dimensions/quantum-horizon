@@ -1,4 +1,4 @@
-[gd_scene load_steps=845 format=4 uid="uid://den0f2l07to6t"]
+[gd_scene load_steps=846 format=4 uid="uid://den0f2l07to6t"]
 
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
 [ext_resource type="Script" uid="uid://ctcshyq2p2snx" path="res://ramon/chickenpen/scripts/loft_ball_4d.gd" id="8_tf8lj"]
@@ -38,6 +38,7 @@
 [ext_resource type="Script" uid="uid://b60tavmo6445v" path="res://ramon/chickenpen/scripts/chicken_cues_4d.gd" id="pen_cues"]
 [ext_resource type="Script" uid="uid://br4vrny128o6" path="res://ramon/chickenpen/scripts/pen_debug_4d.gd" id="pen_debug"]
 [ext_resource type="Script" uid="uid://cu6xoypl3i6xf" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="pen_face"]
+[ext_resource type="Script" uid="uid://c1bvpy7t11nc7" path="res://ramon/chickenpen/scripts/pen_fence_4d.gd" id="pen_fence"]
 [ext_resource type="Script" uid="uid://cat87aj7enp24" path="res://ramon/chickenpen/flock/pen_flock_4d.gd" id="pen_flock"]
 [ext_resource type="Script" uid="uid://6k61rcnwsmn2" path="res://ramon/chickenpen/scripts/pen_fps_4d.gd" id="pen_fps"]
 [ext_resource type="Script" uid="uid://d20b4g32hsvhr" path="res://ramon/chickenpen/scripts/pen_fullscreen_4d.gd" id="pen_fullscreen"]
@@ -4700,6 +4701,7 @@ notice_within = 4.0
 position = Vector4(0, 0, -11, 0)
 script = ExtResource("pen_crow")
 flock_seed = 20873
+fence_path = NodePath("../../Pen/Fence")
 ground_radius = 7.5
 perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate")])
 
@@ -4844,6 +4846,7 @@ mesh = SubResource("BoxTetraMesh4D_4fieh")
 position = Vector4(-7.5, 0, -6.5, 0)
 script = ExtResource("pen_crow")
 flock_seed = 51199
+fence_path = NodePath("../../Pen/Fence")
 ground_radius = 8.5
 perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate")])
 
@@ -4988,6 +4991,7 @@ mesh = SubResource("BoxTetraMesh4D_7nvqh")
 position = Vector4(6.5, 0, -1.5, 0)
 script = ExtResource("pen_crow")
 flock_seed = 77341
+fence_path = NodePath("../../Pen/Fence")
 ground_radius = 8.0
 perch_paths = Array[NodePath]([NodePath("../../Pen/Coop"), NodePath("../Shed"), NodePath("../Crate")])
 
@@ -5172,6 +5176,7 @@ post_height_meters = 1.1
 post_thickness_meters = 0.15
 rib_height_ratio = 0.9
 rib_thickness_ratio = 0.75
+script = ExtResource("pen_fence")
 
 [node name="Collision" type="StaticBody4D" parent="Pen/Fence"]
 
@@ -5299,6 +5304,7 @@ mesh = SubResource("BoxTetraMesh4D_xm6od")
 
 [node name="Return" type="Node" parent="Pen"]
 script = ExtResource("pen_return")
+fence_path = NodePath("../Fence")
 manager_path = NodePath("../../Chickens")
 coop_path = NodePath("../Coop")
 
@@ -5482,6 +5488,7 @@ offset_bottom = -10.0
 script = ExtResource("pen_plane")
 player_path = NodePath("../../Player")
 pen_path = NodePath("../../Pen")
+fence_path = NodePath("../../Pen/Fence")
 coop_path = NodePath("../../Pen/Coop")
 slice_frame_path = NodePath("../../Player/CameraRig")
 manager_path = NodePath("../../Chickens")
@@ -5747,6 +5754,7 @@ script = ExtResource("pen_debug")
 manager_path = NodePath("../../Chickens")
 player_path = NodePath("../../Player")
 catcher_path = NodePath("../../Player/Catcher")
+fence_path = NodePath("../../Pen/Fence")
 cues_path = NodePath("../Cues")
 game_path = NodePath("../Game")
 readout_path = NodePath("../../UI/Debug")
@@ -5763,7 +5771,6 @@ talker_paths = Array[NodePath]([NodePath("../Talk"), NodePath("../TrymTalk"), No
 
 [node name="Celebration" type="Node" parent="Systems"]
 script = ExtResource("pen_party")
-fence_path = NodePath("")
 
 [node name="TalkMotion" type="Node" parent="Systems"]
 script = ExtResource("pen_talkmotion")

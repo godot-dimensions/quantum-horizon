@@ -248,12 +248,10 @@ func _footprint() -> Rect2:
 	if _fence == null:
 		return Rect2(_pen.global_position.x + FALLBACK.position.x,
 			_pen.global_position.z + FALLBACK.position.y, FALLBACK.size.x, FALLBACK.size.y)
-	var west: float = float(_fence.get("extend_x_negative"))
-	var east: float = float(_fence.get("extend_x_positive"))
-	var south: float = float(_fence.get("extend_z_negative"))
-	var north: float = float(_fence.get("extend_z_positive"))
-	return Rect2(_pen.global_position.x - west, _pen.global_position.z - south,
-		west + east, south + north)
+	var bounds: Array = _fence.call("footprint_bounds")
+	var lo: Vector4 = (_fence as Node4D).global_position + bounds[0]
+	var hi: Vector4 = (_fence as Node4D).global_position + bounds[1]
+	return Rect2(lo.x, lo.z, hi.x - lo.x, hi.z - lo.z)
 
 
 ## The world w at which your slice crosses the vertical line through (x, z). See the note

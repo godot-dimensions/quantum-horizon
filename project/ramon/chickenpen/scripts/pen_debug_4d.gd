@@ -12,7 +12,7 @@ extends Node
 ## play even while it is switched on.
 ##
 ## IT CHANGES THE GAME THROUGH THE GAME'S OWN FUNCTIONS - recover(), on_caught(), the
-## fence's exported extents - rather than reaching past them. A debug tool that writes
+## fence's own box size and update - rather than reaching past them. A debug tool that writes
 ## state directly can put the scene into a position the real code cannot reach, and then
 ## the bug you chase is the tool's.
 
@@ -29,7 +29,7 @@ extends Node
 var _manager: Node
 var _player: Node4D
 var _catcher: Node
-var _fence: Node
+var _fence: FenceGenerator4D
 var _cues: Node
 var _game: Node
 var _readout: Label
@@ -42,7 +42,7 @@ func _ready() -> void:
 	_manager = get_node_or_null(manager_path)
 	_player = get_node_or_null(player_path) as Node4D
 	_catcher = get_node_or_null(catcher_path)
-	_fence = get_node_or_null(fence_path)
+	_fence = get_node_or_null(fence_path) as FenceGenerator4D
 	_cues = get_node_or_null(cues_path)
 	_game = get_node_or_null(game_path)
 	_readout = get_node_or_null(readout_path) as Label
@@ -149,14 +149,16 @@ func _toggle_reveal() -> void:
 
 
 ## 4 and 5: resize the pen, to check the fence really is modular (items 36 and 49).
+##
+## Every side moves out by a step, in W as well as X and Z, so the box grows by two steps
+## along each. A fence that only updates by hand is updated here, and its walls follow.
 func _resize(step: float) -> void:
 	if _fence == null:
 		return
-	for field in ["extend_x_positive", "extend_x_negative", "extend_z_positive", "extend_z_negative"]:
-		_fence.set(field, clampf(float(_fence.get(field)) + step, 2.0, 20.0))
-	_say("Pen is now %.0f x %.0f." % [
-		float(_fence.get("extend_x_positive")) + float(_fence.get("extend_x_negative")),
-		float(_fence.get("extend_z_positive")) + float(_fence.get("extend_z_negative"))])
+	_fence.box_size = (_fence.box_size + Vector3.ONE * step * 2.0).clampf(4.0, 40.0)
+	if not _fence.update_automatically:
+		_fence.queue_update_fence_mesh()
+	_say("Pen is now %.0f x %.0f x %.0f." % [_fence.box_size.x, _fence.box_size.y, _fence.box_size.z])
 
 
 ## 6: force every chicken back to a loose, wandering state at its authored spot.

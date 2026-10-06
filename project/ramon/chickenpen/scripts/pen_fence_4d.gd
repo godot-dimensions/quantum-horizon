@@ -1,243 +1,184 @@
 @tool
-extends Node4D
+extends FenceGenerator4D
 
-## A procedural pen fence, rebuilt from Inspector numbers.
+## The pen's fence: a FenceGenerator4D that also knows where the pen is.
 ##
-## MODULAR SEGMENTS, NOT A STRETCHED MESH (items 36 and 38). Posts are placed at a fixed
-## spacing and rails are cut to length between them, so a wider pen gets MORE posts rather
-## than fatter ones. Post proportions and rail thickness never change with pen size, which
-## is the difference between a fence that resizes and a fence that is scaled.
+## THE GENERATOR BUILDS THE FENCE NOW. This script used to place every post and rail itself,
+## as a ring of 3D boxes stretched through W. FenceGenerator4D builds a real 4D fence around
+## a footprint on the XZW ground, so the posts, ribs, beams, their spacing and their sizes
+## are all the generator's properties. What is left here is what the rest of the pen asks a
+## fence: where its inside is, somewhere in it to put a chicken, and walls to stop whoever
+## walks into it.
 ##
-## ONE SET OF NUMBERS DRIVES EVERYTHING (item 40). The visual fence, its collision and the
-## return volume are all derived from the same extents in the same pass. The brief warns
-## against a second manually sized box that can drift out of sync, so there is no second
-## box: interior_bounds() computes from the same fields the posts were placed from.
+## ONE SET OF NUMBERS DRIVES EVERYTHING (item 40). The mesh, the collision and the pen's
+## bounds all come from the fence as it was last built - its corners and its post size - so
+## there is no second box to drift out of step. To resize the pen, change the generator's
+## own shape (box_size for a box) and update the fence; the walls follow on
+## fence_mesh_updated.
 ##
-## FOUR SIDES, FOUR NUMBERS (item 37). Per-side extents rather than width and depth,
-## because directional editing is clearer when the pen has to be nudged away from
-## something - and because the coop sits against one side, so that side often wants a
-## different reach from its opposite.
+## THE INSIDE IS 4D. The footprint is a volume in X, Z and W, walled on every side, so a
+## chicken can leave through W as well as over a rail, and every helper here bounds W the
+## same as X and Z.
 
-enum GateSide { NONE, X_POSITIVE, X_NEGATIVE, Z_POSITIVE, Z_NEGATIVE }
-
-@export_group("Extents")
-@export_range(1.0, 40.0, 0.1) var extend_x_positive: float = 7.0: set = _set_x_pos
-@export_range(1.0, 40.0, 0.1) var extend_x_negative: float = 7.0: set = _set_x_neg
-@export_range(1.0, 40.0, 0.1) var extend_z_positive: float = 6.0: set = _set_z_pos
-@export_range(1.0, 40.0, 0.1) var extend_z_negative: float = 6.0: set = _set_z_neg
-
-@export_group("Fence")
-## Low on purpose (item 41): the player must see the collected chickens over it and be
-## able to throw one in.
-@export_range(0.3, 3.0, 0.05) var height: float = 0.95: set = _set_height
-@export_range(0.5, 6.0, 0.1) var post_spacing: float = 1.6: set = _set_spacing
-@export_range(1, 5, 1) var rail_count: int = 2: set = _set_rails
-@export_range(0.03, 0.4, 0.01) var post_thickness: float = 0.13: set = _set_post_thickness
-@export_range(0.02, 0.3, 0.01) var rail_thickness: float = 0.07: set = _set_rail_thickness
-
-## How far the fence reaches through W, for the meshes AND the collision. Generous,
-## because a pen that exists in only one slice would let a chicken walk out of it sideways
-## through the fourth axis.
-##
-## THE MESHES USE IT TOO. They used to be as thin through W as they are thick - a post was
-## 0.13 through W because 0.13 was its width - so stepping one slice off zero made the
-## whole fence disappear while its collision, which did use w_depth, went on stopping you.
-## An invisible wall you cannot see the pen behind is the worst of both, and a player in
-## another slice could not even find the pen they were carrying a chicken to.
-@export_range(0.5, 12.0, 0.1) var w_depth: float = 6.0: set = _set_w_depth
-
-@export_group("Gate")
-@export var gate_side: GateSide = GateSide.Z_POSITIVE: set = _set_gate_side
-## Where along that side the gap sits, from -1 at one end to +1 at the other.
-@export_range(-1.0, 1.0, 0.05) var gate_position: float = 0.0: set = _set_gate_position
-@export_range(0.0, 8.0, 0.1) var gate_width: float = 2.4: set = _set_gate_width
-
-@export_group("Look")
-## Weathered timber, greyer than it looks it should be: the low sun is orange, and the first
-## colours (0.55/0.40/0.26, 0.62/0.47/0.31) went orange under it (Ramon, 3 Oct: "make the pen
-## wood less orangy and more believable wood color").
-@export var post_color: Color = Color(0.40, 0.34, 0.28): set = _set_post_color
-@export var rail_color: Color = Color(0.48, 0.42, 0.35): set = _set_rail_color
-
-
-func _set_x_pos(v: float) -> void: extend_x_positive = v; _rebuild_later()
-func _set_x_neg(v: float) -> void: extend_x_negative = v; _rebuild_later()
-func _set_z_pos(v: float) -> void: extend_z_positive = v; _rebuild_later()
-func _set_z_neg(v: float) -> void: extend_z_negative = v; _rebuild_later()
-func _set_height(v: float) -> void: height = v; _rebuild_later()
-func _set_spacing(v: float) -> void: post_spacing = v; _rebuild_later()
-func _set_rails(v: int) -> void: rail_count = v; _rebuild_later()
-func _set_post_thickness(v: float) -> void: post_thickness = v; _rebuild_later()
-func _set_rail_thickness(v: float) -> void: rail_thickness = v; _rebuild_later()
-func _set_w_depth(v: float) -> void: w_depth = v; _rebuild_later()
-func _set_gate_side(v: GateSide) -> void: gate_side = v; _rebuild_later()
-func _set_gate_position(v: float) -> void: gate_position = v; _rebuild_later()
-func _set_gate_width(v: float) -> void: gate_width = v; _rebuild_later()
-func _set_post_color(v: Color) -> void: post_color = v; _rebuild_later()
-func _set_rail_color(v: Color) -> void: rail_color = v; _rebuild_later()
+## The walls, by name under Collision, and the side of the footprint each one closes.
+const WALL_SIDES: Dictionary = {
+	"WallPosX": Vector4(1, 0, 0, 0),
+	"WallNegX": Vector4(-1, 0, 0, 0),
+	"WallPosZ": Vector4(0, 0, 1, 0),
+	"WallNegZ": Vector4(0, 0, -1, 0),
+	"WallPosW": Vector4(0, 0, 0, 1),
+	"WallNegW": Vector4(0, 0, 0, -1),
+}
 
 
 func _ready() -> void:
-	rebuild()
+	if not Engine.is_editor_hint():
+		_ensure_footprint()
+	if not fence_mesh_updated.is_connected(_update_collision):
+		fence_mesh_updated.connect(_update_collision)
+	_update_collision()
 
 
-func _rebuild_later() -> void:
-	# Setters fire while the scene is still loading, before children can be added.
-	if is_node_ready():
-		rebuild()
+## The box around the footprint, in this node's own space, as [low corner, high corner]: around
+## the corners the fence was last built from in X, Z and W, and from the ground to the tops of
+## the posts in Y. For a box fence this is the box itself.
+func footprint_bounds() -> Array:
+	var corners: PackedVector4Array = fence_corners
+	if corners.is_empty():
+		# A box fence that updates automatically does not save its corners, since the box
+		# makes them, so before its first build there are none yet - but there is the box.
+		var half: Vector3 = box_size * 0.5
+		return [Vector4(-half.x, 0.0, -half.y, -half.z), Vector4(half.x, post_height_meters, half.y, half.z)]
+	var lo: Vector4 = corners[0]
+	var hi: Vector4 = corners[0]
+	for corner in corners:
+		lo = lo.min(corner)
+		hi = hi.max(corner)
+	hi.y += post_height_meters
+	return [lo, hi]
 
 
-## The pen interior, as a pair of corners. The return volume and the penned chickens both
-## read this, so none of them can disagree about where the pen is (item 40).
+## The pen interior, as a pair of corners in this node's own space. The return volume and
+## the penned chickens both read this, so none of them can disagree about where the pen is
+## (item 40).
 ##
-## Inset by a post's width so a chicken standing against the rail counts as inside rather
-## than hovering on the boundary.
+## Inset by a post's thickness so it stays clear of the rails, and twice the fence's height,
+## so a chicken thrown in is in the pen a little before it lands.
 func interior_bounds() -> Array:
-	var inset: float = post_thickness
-	return [
-		Vector4(-extend_x_negative + inset, 0.0, -extend_z_negative + inset, -w_depth * 0.5),
-		Vector4(extend_x_positive - inset, height * 2.0, extend_z_positive - inset, w_depth * 0.5),
-	]
+	var bounds: Array = footprint_bounds()
+	var inset := Vector4(post_thickness_meters, 0.0, post_thickness_meters, post_thickness_meters)
+	var lo: Vector4 = (bounds[0] as Vector4) + inset
+	var hi: Vector4 = (bounds[1] as Vector4) - inset
+	hi.y = (bounds[1] as Vector4).y + post_height_meters
+	return [lo, hi]
 
 
+## Whether a global point is in the pen: inside the footprint, whatever its shape, and no
+## higher than interior_bounds() reaches.
 func contains_point(point: Vector4) -> bool:
-	var b: Array = interior_bounds()
-	var lo: Vector4 = global_position + b[0]
-	var hi: Vector4 = global_position + b[1]
-	return point.x >= lo.x and point.x <= hi.x \
-		and point.z >= lo.z and point.z <= hi.z \
-		and point.w >= lo.w and point.w <= hi.w \
-		and point.y >= lo.y - 1.0 and point.y <= hi.y
+	var local: Vector4 = global_to_local(point)
+	if not is_local_point_inside(local):
+		return false
+	var bounds: Array = interior_bounds()
+	return local.y >= (bounds[0] as Vector4).y - 1.0 and local.y <= (bounds[1] as Vector4).y
 
 
-## A point inside the pen a penned chicken can be sent to (items 44 and 78).
+## A point inside the pen a penned chicken can be sent to (items 44 and 78). On the ground,
+## and at the fence's own W, so the birds are in the slice the pen is seen in.
 func random_interior_point(rng: RandomNumberGenerator) -> Vector4:
-	var b: Array = interior_bounds()
+	var bounds: Array = interior_bounds()
+	var lo: Vector4 = bounds[0]
+	var hi: Vector4 = bounds[1]
 	# Kept off the rails so twelve birds do not pile into a corner.
 	var margin: float = 0.6
-	return global_position + Vector4(
-		rng.randf_range(b[0].x + margin, b[1].x - margin),
-		0.0,
-		rng.randf_range(b[0].z + margin, b[1].z - margin),
-		0.0)
+	for _attempt in 16:
+		var local := Vector4(rng.randf_range(lo.x + margin, hi.x - margin), 0.0,
+			rng.randf_range(lo.z + margin, hi.z - margin), 0.0)
+		# The bounds of a footprint that is not a box have corners outside the fence.
+		if seed_mesh_4d == null or is_local_point_inside(local):
+			return local_to_global(local)
+	return global_position
 
 
-func rebuild() -> void:
-	for child in get_children():
-		child.free()
-	if extend_x_positive + extend_x_negative < 0.5 or extend_z_positive + extend_z_negative < 0.5:
-		push_warning("PenFence: the pen is smaller than a chicken - check the extents (item 82).")
+## A global point moved into the pen's bounds, at least [param margin] in from every wall, at
+## its own height. The bounds rather than the footprint, which for a box fence are the same.
+func clamp_inside(point: Vector4, margin: float) -> Vector4:
+	var bounds: Array = footprint_bounds()
+	var lo: Vector4 = bounds[0]
+	var hi: Vector4 = bounds[1]
+	var middle: Vector4 = (lo + hi) * 0.5
+	var reach: Vector4 = ((hi - lo) * 0.5 - Vector4.ONE * margin).maxf(0.0)
+	var local: Vector4 = global_to_local(point)
+	var clamped: Vector4 = local.clamp(middle - reach, middle + reach)
+	clamped.y = local.y
+	return local_to_global(clamped)
+
+
+## How high the top of the rails is, for anything that perches on them: the top of the topmost
+## beam, or of the ribs on a fence with no beams. The posts stand taller than either.
+func rail_height() -> float:
+	var rib_height: float = post_height_meters * rib_height_ratio
+	if beam_count > 0 and beam_coverage > 0.0:
+		return rib_height * beam_max_height_ratio
+	return rib_height
+
+
+## WITH MANUAL UPDATES THE FENCE LOADS WITHOUT A FOOTPRINT. FenceGenerator4D saves the mesh
+## and the corners it was built from, but only builds the footprint in an update, so until
+## one runs is_global_point_inside() is false everywhere - no chicken is ever in the pen, and
+## Nike never meets the rails. The footprint is rebuilt here from the saved corners, which
+## is cheap, rather than rebuilding the whole fence, which is what the saved mesh is there to
+## avoid.
+func _ensure_footprint() -> void:
+	if update_automatically or seed_mesh_4d != null:
 		return
-
-	var post_mesh := BoxTetraMesh4D.new()
-	post_mesh.size = Vector4(post_thickness, height, post_thickness, w_depth)
-	var post_mat := TetraMaterial4D.new()
-	post_mat.albedo_color = post_color
-	var rail_mat := TetraMaterial4D.new()
-	rail_mat.albedo_color = rail_color
-
-	var body := StaticBody4D.new()
-	body.name = "Collision"
-	add_child(body)
-	_own(body)
-
-	# side = [along axis is X?, fixed coordinate, from, to]
-	var sides := [
-		[true, extend_z_positive, -extend_x_negative, extend_x_positive, GateSide.Z_POSITIVE],
-		[true, -extend_z_negative, -extend_x_negative, extend_x_positive, GateSide.Z_NEGATIVE],
-		[false, extend_x_positive, -extend_z_negative, extend_z_positive, GateSide.X_POSITIVE],
-		[false, -extend_x_negative, -extend_z_negative, extend_z_positive, GateSide.X_NEGATIVE],
-	]
-	for i in sides.size():
-		var side: Array = sides[i]
-		# The side's index goes into every child name. Without it the two X-running sides
-		# produce identical names, Godot silently renames the clashes, and anything that
-		# looks children up by name quietly finds the wrong one.
-		_build_side(i, side[0], side[1], side[2], side[3], side[4], post_mesh, post_mat, rail_mat, body)
+	if input_shape_type == INPUT_SHAPE_SEED_MESH_3D:
+		# Its footprint is the mesh's own faces, not the hull of its corners, so only an
+		# update gives it.
+		update_fence_mesh_now()
+	elif fence_corners.size() >= 4:
+		seed_mesh_4d = build_seed_mesh_from_corners()
 
 
-func _build_side(index: int, along_x: bool, fixed: float, from: float, to: float,
-		which: GateSide, post_mesh: BoxTetraMesh4D, post_mat: TetraMaterial4D,
-		rail_mat: TetraMaterial4D, body: StaticBody4D) -> void:
-	var span: float = to - from
-	# MORE posts when the pen grows, never longer ones - that is what stops it looking
-	# stretched (item 38).
-	var count: int = maxi(int(ceil(span / post_spacing)), 1)
-	var step: float = span / float(count)
-	var gap_centre: float = from + span * 0.5 + gate_position * span * 0.5
-	var gap_half: float = gate_width * 0.5 if which == gate_side else 0.0
-
-	# Where the posts stand, with a hole where the gateway is. Computed once and used for
-	# both the posts and the rails, so a rail can never span a gap a post is missing from.
-	var stations: Array = []
-	for i in count + 1:
-		var at: float = from + step * float(i)
-		var blocked: bool = gap_half > 0.0 and absf(at - gap_centre) < gap_half
-		stations.append(null if blocked else at)
-		if blocked:
-			continue
-		var post := MeshInstance4D.new()
-		post.name = "Post_%d_%d" % [index, i]
-		post.mesh = post_mesh
-		post.material_override = post_mat
-		post.position = Vector4(at if along_x else fixed, height * 0.5, fixed if along_x else at, 0.0)
-		add_child(post)
-		_own(post)
-
-	# ONE RAIL PER BAY, not one per side (item 38).
-	#
-	# The rails used to be a single box stretched across a whole run, so a pen twice the
-	# size got the same ten rails at twice the length - posts that multiplied and rails
-	# that stretched, which is precisely the mix the brief calls out. A bay is the gap
-	# between two adjacent posts, so widening the pen now adds rails instead of lengthening
-	# them, and every rail in the pen is the same size whatever the pen is.
-	for i in stations.size() - 1:
-		var left = stations[i]
-		var right = stations[i + 1]
-		if left == null or right == null:
-			continue
-		var length: float = float(right) - float(left)
-		if length <= 0.05:
-			continue
-		var centre: float = (float(left) + float(right)) * 0.5
-		for r in rail_count:
-			var y: float = height * (float(r + 1) / float(rail_count + 1))
-			var rail := MeshInstance4D.new()
-			rail.name = "Rail_%d_%d_%d" % [index, i, r]
-			var mesh := BoxTetraMesh4D.new()
-			mesh.size = Vector4(length if along_x else rail_thickness, rail_thickness,
-				rail_thickness if along_x else length, w_depth)
-			rail.mesh = mesh
-			rail.material_override = rail_mat
-			rail.position = Vector4(centre if along_x else fixed, y, fixed if along_x else centre, 0.0)
-			add_child(rail)
-			_own(rail)
-
-	# Item 39: collision per RUN rather than per bay, generated in the same pass from the
-	# same numbers. The rails are what you see and the wall is what you cannot walk
-	# through; one box per continuous stretch is cheaper and describes the same barrier.
-	var runs: Array = []
-	if gap_half > 0.0:
-		runs.append([from, gap_centre - gap_half])
-		runs.append([gap_centre + gap_half, to])
-	else:
-		runs.append([from, to])
-	for run_index in runs.size():
-		var run: Array = runs[run_index]
-		var run_length: float = run[1] - run[0]
-		if run_length <= 0.05:
-			continue
-		var run_centre: float = (run[0] + run[1]) * 0.5
-		var shape := CollisionShape4D.new()
-		shape.name = "Wall_%d_%d" % [index, run_index]
-		var box := BoxShape4D.new()
-		box.size = Vector4(run_length if along_x else post_thickness, height,
-			post_thickness if along_x else run_length, w_depth)
-		shape.shape = box
-		shape.position = Vector4(run_centre if along_x else fixed, height * 0.5,
-			fixed if along_x else run_centre, 0.0)
-		body.add_child(shape)
-		_own(shape)
+## The walls: one box per side of the footprint's bounds, as long as that side, a post thick
+## across it and a post high (item 39).
+##
+## BOXES, because physics here is axis-aligned boxes only (hub_demo_lessons.md). They close a
+## box fence exactly; a footprint of another shape gets the box around it, which is as near
+## as this physics can come.
+##
+## UPDATED IN PLACE. The walls are found under Collision by name, so the ones saved with the
+## scene are moved and resized rather than replaced, and only a missing one is made.
+func _update_collision() -> void:
+	var body := get_node_or_null(^"Collision") as StaticBody4D
+	if body == null:
+		body = StaticBody4D.new()
+		body.name = "Collision"
+		add_child(body)
+		_own(body)
+	var bounds: Array = footprint_bounds()
+	var lo: Vector4 = bounds[0]
+	var hi: Vector4 = bounds[1]
+	var middle: Vector4 = (lo + hi) * 0.5
+	var half: Vector4 = (hi - lo) * 0.5
+	for wall_name: String in WALL_SIDES:
+		var side: Vector4 = WALL_SIDES[wall_name]
+		var wall := body.get_node_or_null(NodePath(wall_name)) as CollisionShape4D
+		if wall == null:
+			wall = CollisionShape4D.new()
+			wall.name = wall_name
+			body.add_child(wall)
+			_own(wall)
+		var box := wall.shape as BoxShape4D
+		if box == null:
+			box = BoxShape4D.new()
+			wall.shape = box
+		box.size = Vector4(
+			post_thickness_meters if side.x != 0.0 else half.x * 2.0,
+			half.y * 2.0,
+			post_thickness_meters if side.z != 0.0 else half.z * 2.0,
+			post_thickness_meters if side.w != 0.0 else half.w * 2.0)
+		wall.position = middle + side * half
 
 
 func _own(node: Node) -> void:
