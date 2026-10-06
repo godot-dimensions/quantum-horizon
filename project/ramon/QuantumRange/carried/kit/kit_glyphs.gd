@@ -161,6 +161,40 @@ static func animal(c: CanvasItem, kind: String, rect: Rect2, col: Color, cut: Co
 			poly.call([Vector2(75, 24.5), Vector2(84.5, 28.5), Vector2(75, 31.5)])
 			dot.call(Vector2(74.5, 37), 3.2, col)
 			dot.call(Vector2(70.5, 26.5), 1.7, cut)
+		# (Quantum Range, 5 Oct) The range's four experiments, in the same hand.
+		"locate":
+			# The radar: your slice as an ellipse, you in its middle, a target's dot on a stem through W.
+			var e := PackedVector2Array()
+			for i in 49:
+				var a: float = TAU * float(i) / 48.0
+				e.append(o + (Vector2(50, 66) + Vector2(cos(a) * 38.0, sin(a) * 17.0)) * s)
+			c.draw_polyline(e, col, maxf(1.0, 3.0 * s), true)
+			dot.call(Vector2(50, 66), 3.5, col)
+			dot.call(Vector2(66, 60), 2.6, col)
+			line.call([Vector2(66, 60), Vector2(66, 26)], 2.6, col)
+			dot.call(Vector2(66, 22), 7.0, col)
+		"charge":
+			# The crosshair and its charge ring, three quarters full.
+			var cc: Vector2 = o + Vector2(50, 52) * s
+			c.draw_arc(cc, 30.0 * s, 0.0, TAU, 48, Color(col, 0.35), maxf(1.0, 4.0 * s), true)
+			c.draw_arc(cc, 30.0 * s, -PI * 0.5, PI, 48, col, maxf(1.5, 6.0 * s), true)
+			for d in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
+				line.call([Vector2(50, 52) + d * 8.0, Vector2(50, 52) + d * 18.0], 3.4, col)
+		"reveal":
+			# A closed shell round a core, and the same core beside it, open, a step through W away.
+			var cs: Vector2 = o + Vector2(34, 54) * s
+			c.draw_arc(cs, 20.0 * s, 0.0, TAU, 40, col, maxf(1.5, 5.0 * s), true)
+			dot.call(Vector2(34, 54), 8.0, col)
+			line.call([Vector2(58, 54), Vector2(70, 54)], 3.0, col)
+			poly.call([Vector2(70, 48), Vector2(78, 54), Vector2(70, 60)])
+			dot.call(Vector2(88, 54), 8.0, col)
+		"incoming":
+			# Three lanes running in to the line, a drone on the middle one.
+			line.call([Vector2(50, 14), Vector2(50, 86)], 3.0, col)
+			line.call([Vector2(38, 14), Vector2(18, 86)], 3.0, col)
+			line.call([Vector2(62, 14), Vector2(82, 86)], 3.0, col)
+			line.call([Vector2(10, 90), Vector2(90, 90)], 4.0, col)
+			dot.call(Vector2(50, 44), 8.0, col)
 		_:
 			c.draw_arc(rect.get_center(), minf(rect.size.x, rect.size.y) * 0.3, 0.0, TAU, 40, col, maxf(1.5, s * 3.0), true)
 

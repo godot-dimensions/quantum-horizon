@@ -12,9 +12,9 @@ extends RefCounted
 const Loft := preload("res://ramon/QuantumRange/carried/chicken/loft_builder_4d.gd")
 const Batch := preload("res://ramon/QuantumRange/carried/LabKit/lab_batch.gd")
 const CHICKEN := "res://ramon/QuantumRange/carried/chicken/chicken.tscn"
-## The chicken's size here against the pen's (the pen's is a quarter of its rig; this one is half,
-## a bird you can hit at twenty metres).
-const CHICKEN_SCALE := 0.5
+## The chicken's size here against the pen's (the pen's is a quarter of its rig; this one is two thirds,
+## a big comic bird that reads at fifteen metres: at half it was a white speck, play/skeet_1_play, 5 Oct).
+const CHICKEN_SCALE := 0.66
 
 const TORISPHERE := "res://models/primitives/torisphere/mesh/torisphere1_smooth_ma2_mi0pt5_step10.g4b"
 const SPHERITORUS := "res://models/primitives/spheritorus/mesh/spheritorus_smooth_ma2_mi0pt25_step32.g4b"

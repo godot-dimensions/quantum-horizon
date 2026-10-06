@@ -31,6 +31,9 @@ Anything else changed is listed here.
 - `LabKit/lab_room_4d.gd`: the sky's sun halo is 0.4°, not 30°. The range has no roof, and the
   dim fill light's halo showed as a dark blob in its sky. The fill's own sun disc is shrunk to
   nothing too.
+- `kit/kit_glyphs.gd`: four glyphs for the range's experiments (`locate`, `charge`, `reveal` and
+  `incoming`), drawn in the same hand as the animals. The metrics wall shows the one for the
+  experiment in play.
 - `scripts/chamber_build.gd`: `W_DEPTH` is 24 m, not 8. The range's cores sit up to 7 m off in
   W and you reach them by turning the slice, so the room must still be there when you do.
 

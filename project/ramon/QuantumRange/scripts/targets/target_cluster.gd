@@ -10,9 +10,9 @@ extends "res://ramon/QuantumRange/scripts/range_target_4d.gd"
 
 const Shapes := preload("res://ramon/QuantumRange/scripts/range_shapes.gd")
 
-var reach: float = 1.05
-var sat_r: float = 0.2
-var core_r: float = 0.3
+var reach: float = 1.35
+var sat_r: float = 0.27
+var core_r: float = 0.38
 
 var _left: int = 8
 

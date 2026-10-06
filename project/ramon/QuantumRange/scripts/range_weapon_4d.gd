@@ -31,6 +31,8 @@ var player: CharacterBody4D
 var camera: Camera4D
 var gun: Node4D
 var fx_parent: Node
+## The range's sounds (range_sfx.gd), for the charge's rising tone.
+var sfx: Node
 var enabled: bool = true
 
 ## 0 to 1 while a shot charges; `vented` once it has gone too long.
@@ -40,6 +42,9 @@ var charging: bool = false
 ## What the crosshair is over right now: the part's role ("core", "armour", ...), or "".
 var hover: String = ""
 var hover_locked: bool = false
+## A console button under the crosshair (-1: none), and what pressing one does (the director's).
+var hover_button: int = -1
+var on_button: Callable
 
 var stats: Dictionary = {}
 var _held: float = 0.0
@@ -99,6 +104,8 @@ func _process(delta: float) -> void:
 	if gun != null:
 		gun.set("charge", charge if charging else 0.0)
 		gun.set("vented", vented)
+	if sfx != null:
+		sfx.call("charge", charge if charging and not vented and _held > TAP else -1.0)
 	_aim()
 
 
@@ -106,12 +113,15 @@ func _process(delta: float) -> void:
 func _aim() -> void:
 	hover = ""
 	hover_locked = false
+	hover_button = -1
 	if camera == null or not camera.is_inside_tree():
 		return
 	var r: Dictionary = _ray()
 	if r.get("hit", false):
 		var body: Object = r["body"]
-		if body != null and body.has_meta("range_target"):
+		if body != null and body.has_meta("range_button"):
+			hover_button = int(body.get_meta("range_button"))
+		elif body != null and body.has_meta("range_target"):
 			var t: Node = body.get_meta("range_target")
 			if is_instance_valid(t):
 				var p: Dictionary = t.call("part", String(body.get_meta("range_part")))
@@ -135,6 +145,18 @@ func fire(charged: bool) -> Dictionary:
 	var t0: int = Time.get_ticks_usec()
 	var r: Dictionary = _ray()
 	var us: float = float(Time.get_ticks_usec() - t0)
+	# A console button: shooting it presses it (a range's start plate). Not counted as a shot.
+	if r.get("hit", false) and r["body"] != null and (r["body"] as Object).has_meta("range_button"):
+		var i: int = int((r["body"] as Object).get_meta("range_button"))
+		if gun != null:
+			gun.call("pulse")
+		if fx_parent != null:
+			Fx.burst(fx_parent, r.get("global_point", camera.global_position), Color(0.55, 0.85, 1.0), 6, 0.025, 1.2)
+		if on_button.is_valid():
+			on_button.call(i)
+		var rb := {"fired": true, "button": i}
+		shot.emit(rb)
+		return rb
 	stats["ray_us"] = float(stats["ray_us"]) + us
 	stats["rays"] = int(stats["rays"]) + 1
 	stats["shots"] = int(stats["shots"]) + 1

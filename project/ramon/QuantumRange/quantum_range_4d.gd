@@ -20,6 +20,10 @@ const ReturnButton := preload("res://ramon/Demo/return_button.tscn")
 const WayHome := preload("res://ramon/QuantumRange/scripts/range_way_home_4d.gd")
 const Weapon := preload("res://ramon/QuantumRange/scripts/range_weapon_4d.gd")
 const Hud := preload("res://ramon/QuantumRange/scripts/range_hud.gd")
+const Director := preload("res://ramon/QuantumRange/scripts/range_director_4d.gd")
+const Console := preload("res://ramon/QuantumRange/scripts/range_console_4d.gd")
+const Sfx := preload("res://ramon/QuantumRange/scripts/range_sfx.gd")
+const PanelSource := preload("res://ramon/QuantumRange/scripts/range_panel_source.gd")
 
 var player: CharacterBody4D
 var gun: Node4D
@@ -28,6 +32,11 @@ var hud: Control
 ## Where targets and effects live (everything spawned during play).
 var targets: Node4D
 var fx: Node4D
+var props: Node4D
+var director: Node
+var console: Node4D
+var sfx: Node
+var panel_source: Node
 
 
 func _enter_tree() -> void:
@@ -65,6 +74,17 @@ func _ready() -> void:
 	fx = Node4D.new()
 	fx.name = "Fx"
 	add_child(fx)
+	props = Node4D.new()
+	props.name = "Props"
+	add_child(props)
+	sfx = Node.new()
+	sfx.name = "Sfx"
+	sfx.set_script(Sfx)
+	add_child(sfx)
+	console = Node4D.new()
+	console.name = "Console"
+	console.set_script(Console)
+	add_child(console)
 	weapon = Node.new()
 	weapon.name = "Weapon"
 	weapon.set_script(Weapon)
@@ -72,6 +92,7 @@ func _ready() -> void:
 	weapon.set("camera", player.get("camera"))
 	weapon.set("gun", gun)
 	weapon.set("fx_parent", fx)
+	weapon.set("sfx", sfx)
 	add_child(weapon)
 	var layer := CanvasLayer.new()
 	layer.name = "HUD"
@@ -83,6 +104,27 @@ func _ready() -> void:
 	hud.set("weapon", weapon)
 	hud.set("w_limit", Layout.W_LIMIT)
 	layer.add_child(hud)
+	director = Node.new()
+	director.name = "Director"
+	director.set_script(Director)
+	director.set("range_root", self)
+	director.set("player", player)
+	director.set("weapon", weapon)
+	director.set("hud", hud)
+	director.set("console", console)
+	director.set("sfx", sfx)
+	director.set("targets_parent", targets)
+	director.set("props", props)
+	add_child(director)
+	# The metrics wall reads the director live (the kit's panel source contract).
+	panel_source = Node.new()
+	panel_source.name = "PanelSource"
+	panel_source.set_script(PanelSource)
+	panel_source.set("director", director)
+	add_child(panel_source)
+	var pair: Node = get_node_or_null("WallPanels")
+	if pair != null:
+		pair.set("source", pair.get_path_to(panel_source))
 	# The shared back-to-menu prompt (H), and the pen's way home when the pen sent you here.
 	var rb: Node = ReturnButton.instantiate()
 	rb.name = "ReturnButton"
