@@ -16,6 +16,9 @@ extends Node4D
 ##   F5  the next symbol set (library) for every slot
 ##   F6  the look: DEV (the sheet's colours, emitted) or WALK (one sand, lit like paint)
 ##   F7  volume view: the Combined renderer, which also shows faintly what is ana and kata of you
+##   9   the paths' type, round as the pen's (chickenpen/scripts/pen_paths_4d.gd): as drawn, then every
+##       stretch static, here, follow, reveal (the networks' w_mode_override)
+##   Shift+9  found as you go, or every path shown (the networks' reveal)
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -61,6 +64,10 @@ var building: bool = false
 var _build_cam: Camera4D
 var _mouse_mode: int = Input.MOUSE_MODE_VISIBLE
 var _floor: MeshInstance4D
+## The paths' type (9) and found as you go (Shift+9), carried over from the pen on 7 Oct: "" is as drawn.
+const TYPES := ["", "static", "here", "follow", "reveal"]
+var path_type: String = ""
+var found_as_you_go: bool = false
 
 
 func _ready() -> void:
@@ -94,6 +101,9 @@ func _ready() -> void:
 	builder.set("space", self)
 	builder.visible = false
 	blayer.add_child(builder)
+	var nets: Array = networks()
+	if not nets.is_empty():
+		found_as_you_go = bool(nets[0].get("reveal"))
 
 
 func _build_floor() -> void:
@@ -151,13 +161,14 @@ func hud_text() -> String:
 	lines.append("W %+.2f m      slice tilted %.0f°" % [w, slice_tilt()])
 	var lib: String = String(networks()[0].get("default_library")) if not networks().is_empty() else "-"
 	lines.append("LOOK %s    SET %s    VIEW %s" % [look.to_upper(), lib, "volume (Combined)" if volume_view else "slice"])
+	lines.append("PATHS %s    %s" % ["AS DRAWN" if path_type == "" else "ALL " + path_type.to_upper(), "FOUND AS YOU GO" if found_as_you_go else "ALL SHOWN"])
 	var notes: int = 0
 	for n in networks():
 		notes += (n.call("notes") as PackedStringArray).size()
 	if notes > 0:
 		lines.append("%d route note%s (F4 shows them)" % [notes, "" if notes == 1 else "s"])
 	lines.append("Q / E  walk through W    right mouse  tilt the slice")
-	lines.append("F4 build    F5 set    F6 DEV / WALK    F7 volume view")
+	lines.append("F4 build    F5 set    F6 DEV / WALK    F7 volume view    9 type    Shift+9 found")
 	lines.append("1 start   2 yard   3 W field   4 pen patch   5 W targets")
 	return "\n".join(lines)
 
@@ -175,12 +186,35 @@ func _unhandled_input(event: InputEvent) -> void:
 			set_look("walk" if look == "dev" else "dev")
 		KEY_F7:
 			set_volume_view(not volume_view)
+		KEY_9:
+			if (event as InputEventKey).shift_pressed:
+				set_found(not found_as_you_go)
+			else:
+				set_path_type(TYPES[(TYPES.find(path_type) + 1) % TYPES.size()])
+			get_viewport().set_input_as_handled()
 		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5:
 			# The builder has its own use for the number keys (a new node's kind).
 			if not building:
 				var place: Array = PLACES[int((event as InputEventKey).keycode) - KEY_1]
 				go_to(place[1], float(place[2]))
 				get_viewport().set_input_as_handled()
+
+
+## Every network laid one way through W ("" as each stretch is drawn): to compare the modes over a
+## whole layout without changing the graphs (the pen's 9).
+func set_path_type(t: String) -> void:
+	if not (t in TYPES):
+		return
+	path_type = t
+	for n in networks():
+		n.set("w_mode_override", t if t != "" else "drawn")
+
+
+## Found as you go (a stretch shows once you have been near it) or every path shown (the pen's Shift+9).
+func set_found(on: bool) -> void:
+	found_as_you_go = on
+	for n in networks():
+		n.set("reveal", on)
 
 
 ## Puts the player at `at` (x, y, z, W), standing still, the slice flat, facing `yaw` (the rig's;

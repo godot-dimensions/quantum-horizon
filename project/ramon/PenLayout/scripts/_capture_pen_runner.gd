@@ -224,7 +224,7 @@ const SETS := {
 	# final look"): the farm's slice, every path shown (not found-as-you-go), no panels. Run once with
 	# PEN_LOOK=dev and once with PEN_LOOK=art.
 	"topmap": [
-		{"name": "map", "top": Vector4(-2, 0, 8, 0), "size": 96.0, "paths": {"reveal": false},
+		{"name": "map", "top": Vector4(-2, 0, 8, 0), "size": 96.0, "height": 40.0, "paths": {"reveal": false},
 			"set": {"UI/GrassPanel": {"process_mode": Node.PROCESS_MODE_DISABLED}}, "hide": ["UI/GrassPanel", "Player/StateLabel"]},
 	],
 	# The range down its yard, flat, turned 45 degrees and a quarter into W, and from above (Ramon, 6 Oct:
@@ -757,7 +757,9 @@ func _run() -> void:
 		if shot.has("top"):
 			var c: Vector4 = shot["top"]
 			top_cam.orthographic_size = float(shot.get("size", 100.0))
-			top_cam.position = Vector4(c.x, 120.0, c.z, float(shot.get("w", c.w)))
+			# "height": how high the camera hangs (orthographic, so it frames the same at any height). The trees'
+			# leaves fade with distance and were gone from 120 m up (7 Oct): the map hangs at 40.
+			top_cam.position = Vector4(c.x, float(shot.get("height", 120.0)), c.z, float(shot.get("w", c.w)))
 			top_cam.look_at(Vector4(c.x, 0.0, c.z, float(shot.get("w", c.w))), Vector4(0, 0, -1, 0))
 			# A camera's renderer only changes while it is not current.
 			player_cam.make_current()

@@ -31,7 +31,7 @@ re-lays only what touches it.
 | `sets/06`, `sets/07` | Symbol libraries (the sheet's sets), SVG masters per slot |
 | `builder/pc_builder.gd` | The in-game builder (F4 in the lab): edit graphs from above while playing |
 | `pathcreator.tscn`, `pathcreator_4d.gd` | The lab: a white walkplane, targets at different W, the networks |
-| `graphs/*.tres` | The lab's graphs. The pen's is `PenLayout/paths/pen_a.tres` |
+| `graphs/*.tres` | The lab's graphs. The pen's is `PenLayout/paths/pen_b.tres` (written by `PenLayout/scripts/_make_pen_paths_b_runner.gd`) |
 | `scripts/_*_runner.gd` | Tests and captures (below) |
 
 ## The graph
@@ -74,8 +74,23 @@ Each **edge** has its own `w_mode`, so one route can mix them:
 | `follow` | slanting from its from-node's W to its to-node's: the box is sheared through W along its length, so the slice cuts a stretch that slides along as you walk | leading the player through W |
 | `reveal` | only at its **to**-node's W | a way you find by stepping into the destination's slice |
 
-In the pen today (`pen_a.tres`): 54 edges `here` at W 0, and three `reveal`: the last stretch to the
-cave door (W 4), to the camp (W -2.5) and to the spot at W 7.
+In the pen today (`pen_b.tres`, 17 nodes): the roads `here` at W 0; the camp's last stretch `follow`,
+down to the camp's W (-2.5); the cave's road `follow` up to the door's W (3) and then a short `here`
+stretch lying flat at it; a `secondary` branch to the balloon.
+
+### Laying a route through W (what the pen taught, 7 Oct)
+
+- **Land flat.** A `follow` stretch that runs all the way into its destination arrives on a slant: you
+  meet the circle short of its W, and the slanted road leads the eye past what you came for. End the
+  climb a few metres short (a `chord`) and lie the last stretch `here` at the destination's W.
+- **Narrow the destination's band** (1.2 instead of 2.4) when its W matters: the circle then shows only
+  when you are within 0.6 m of the right slice, so seeing it means you are there.
+- **Pick the W by looking.** The right W for a place is where it reads best, not always its middle:
+  the cave's arch stands tallest a metre kata of its centre (`chickenpen/look/_cave_w_sweep_runner.gd`
+  renders a place at a row of W for a contact sheet).
+- **Side ways are `secondary`**: a narrower chevron and sand, so the main road still reads first.
+- **Anchor to a spot, never to a thing that moves away**: the balloon's circle is anchored to its
+  mooring; anchored to the balloon, it would chase the balloon into the sky.
 
 Node symbols have their own `band`, at their own W. A node whose incoming and outgoing stretches
 lie at different W shows a small W cue (dots: warm for ana, cool for kata) so you can see that the
@@ -143,7 +158,8 @@ and the paths on the floor follow as you drag.
 - T walk from here · Ctrl+S save every graph · F4 back to walking
 
 The lab's own keys: F4 builder, F5 the next library for every slot, F6 the look (DEV / WALK), F7
-volume view; number keys take you to its places.
+volume view; 9 the paths' type and Shift+9 found as you go, as in the pen (below); number keys take you
+to its places.
 
 ## In the editor's volume view
 
@@ -160,7 +176,7 @@ Nothing extra is drawn for it.
 
 ## In the pen
 
-- `World/Paths`: the network, graph `PenLayout/paths/pen_a.tres`, draped, `p_scale` 1.4, sand 1.8 m.
+- `World/Paths`: the network, graph `PenLayout/paths/pen_b.tres`, draped, `p_scale` 1.4, sand 1.8 m.
 - `Systems/Paths` (`chickenpen/scripts/pen_paths_4d.gd`), the player's switches, on the controls card
   (H) and in the **Paths** row of the left-hand panel:
   - **9** goes round the type like Tab goes round the cameras: as drawn, then every stretch static,
@@ -169,8 +185,12 @@ Nothing extra is drawn for it.
   - Both remembered in `user://pen_settings.cfg`.
 - The look follows the world's (`chickenpen/look/pen_look_4d.gd`, key I): sand strips in the art; in
   the dev look the arrows alone on the dev floor, no strips.
-- `PenLayout/scripts/_make_pen_paths_runner.gd` builds the pen's graph; `_verify_eggs_paths_runner.gd`
-  and `_check_layout_runner.gd` check it (routes through objects, reachability).
+- The paths window (`chickenpen/scripts/pen_paths_panel_4d.gd`): the same two switches as buttons, with
+  a line saying what the lit type does, stacked on the look panel.
+- With the projection on (P), the paths are left out of it (`lookout/lookout_4d.gd projection_leaves_out`):
+  their static stretches are 30 m deep in W and ghosted as a sheet of sand colour.
+- `PenLayout/scripts/_make_pen_paths_b_runner.gd` builds the pen's graph (layout A's was
+  `_make_pen_paths_runner.gd`, `pen_a.tres`); `_verify_journey_b_runner.gd` walks it.
 
 ## Tests and captures
 
