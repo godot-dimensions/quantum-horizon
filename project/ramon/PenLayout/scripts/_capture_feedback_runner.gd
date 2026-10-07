@@ -532,6 +532,19 @@ func _run() -> void:
 					if r.size.x >= 2.0 and r.size.y >= 2.0 and r.size.x < 2000.0:
 						print("HUD4K %s: %-16s at %s size %s" % ["dev" if dev else "art", cc.name, str(r.position.round()), str(r.size.round())])
 				await _shot("1_" + ("dev" if dev else "art"), true)
+			# The grass on and its panel open (the blade width slider), the walking card under it (7 Oct: "make a grab on
+			# 4k for the hud to see if all looks efficient").
+			_room.get_node("World/Grass").set("enabled", true)
+			var grass_panel: Node = _room.get_node_or_null("UI/GrassPanel")
+			if grass_panel != null and bool(grass_panel.get("_folded")):
+				grass_panel.call("_toggle_fold")
+			await _wait(1.5)
+			for c in _room.get_node("UI").get_children():
+				var cc := c as Control
+				if cc != null and cc.is_visible_in_tree() and String(cc.name) in ["GrassPanel", "PathsPanel", "SteppingCard", "FlockStats", "Inventory"]:
+					var r: Rect2 = cc.get_global_transform() * Rect2(Vector2.ZERO, cc.size)
+					print("HUD4K open: %-16s at %s size %s" % [cc.name, str(r.position.round()), str(r.size.round())])
+			await _shot("2_open_art", true)
 		"portal":
 			# Trym's door raised in the dev look: the house stays in the landmark orange.
 			_look(true)
