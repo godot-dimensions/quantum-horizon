@@ -8,7 +8,7 @@ extends Resource
 ##
 ## No class_name (engine_gotchas.md).
 
-const FIELDS := ["min_w_half", "deepen_colliders", "respect_w_layout", "wrap", "wrap_arc", "wrap_length", "near_margin", "copies_projected"]
+const FIELDS := ["min_w_half", "deepen_colliders", "respect_w_layout", "wrap", "wrap_style", "wrap_arc", "wrap_length", "near_margin", "copies_projected"]
 
 ## What it is for, in a line.
 @export_multiline var note: String = ""
@@ -16,6 +16,8 @@ const FIELDS := ["min_w_half", "deepen_colliders", "respect_w_layout", "wrap", "
 @export var deepen_colliders: bool = true
 @export var respect_w_layout: bool = true
 @export var wrap: bool = false
+## 0 Stay put, 1 Ring (not recommended for landmarks yet).
+@export_enum("Stay put", "Ring") var wrap_style: int = 0
 @export_range(0.0, 89.0, 1.0, "suffix:deg") var wrap_arc: float = 60.0
 @export_range(0.0, 200.0, 0.5, "suffix:m") var wrap_length: float = 40.0
 @export_range(0.0, 40.0, 0.5, "suffix:m") var near_margin: float = 8.0

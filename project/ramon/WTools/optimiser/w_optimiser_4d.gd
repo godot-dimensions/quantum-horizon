@@ -43,6 +43,12 @@ extends Node4D
 ##   side across the view (the range slid toward the middle; in the pen the Watchstone slid out of frame when
 ##   the slice turned across the line to it).
 ##
+## WRAP STYLE (Ramon, 7 Oct: "the dropdown would be good to have ... a small exclamation mark you can click
+## ... ring not recommended because"). `wrap_style` Stay put (the above) or Ring: copies of the landmark round
+## the area's middle (`ring_centre`) through W, the mountains' way; in the slice only the copy the slice
+## passes nearest is drawn, in the volume view every one. Ring is not recommended for landmarks yet (RING_NOTE);
+## chosen, the node shows the editor's warning mark and the About Ring button shows why.
+##
 ## THE PEN'S DEV / ART LOOK (look/pen_look_4d.gd) swaps meshes and adds blockouts on the same landmark: when it
 ## changes, the Optimiser works the landmark again from what it then draws, so the copy shows the same look.
 ## The copy's meshes carry the look's own mark (it leaves them alone), and a landmark mesh hidden while its
@@ -54,6 +60,15 @@ const PROFILE := preload("res://ramon/WTools/optimiser/w_profile.gd")
 const Blockouts := preload("res://ramon/chickenpen/look/pen_blockouts_4d.gd")
 const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
 const VIEWS := [10.0, 20.0, 40.0]
+const STAY_PUT := 0
+const RING := 1
+const RING_NOTE := "Ring is not recommended for landmarks yet.
+
+It puts copies of the landmark round the area's middle through W, the way the mountains are made. Straight ahead it looks the same as Stay put. But stand off to one side and turn the slice across the line to the landmark, and its copy slides toward the middle of the view and comes out skewed (in the pen, the Watchstone slid out of frame).
+
+Stay put keeps the landmark exactly where you saw it, at any turn.
+
+Ring is here to compare the look, mostly in the volume view, where it draws every copy, and to be improved. The slide comes from keeping the copies on one ring (one plane through W) while the slice can turn in any plane. A full shell (copies in every direction through W at the landmark's distance, as the mountains are) should not slide, seen from near the middle, for many more copies. See the W tools page: Ring or stay put."
 
 @export_tool_button("Analyse") var _analyse_action: Callable = analyse
 @export_tool_button("Preview (on / off)") var _preview_action: Callable = toggle_preview
@@ -80,7 +95,23 @@ const VIEWS := [10.0, 20.0, 40.0]
 @export_range(0.0, 2.0, 0.05, "suffix:m") var layout_tolerance: float = 0.3
 
 @export_group("Wrap")
-@export var wrap: bool = false
+@export var wrap: bool = false:
+	set(v):
+		wrap = v
+		if Engine.is_editor_hint():
+			update_configuration_warnings()
+## Stay put: one copy where the landmark is on the flat slice through the camera (recommended). Ring: copies
+## round the area's middle through W, the mountains' way (not recommended for landmarks yet: About Ring).
+@export_enum("Stay put", "Ring") var wrap_style: int = STAY_PUT:
+	set(v):
+		wrap_style = v
+		if Engine.is_editor_hint():
+			update_configuration_warnings()
+			notify_property_list_changed()
+@export_tool_button("About Ring (not recommended yet)", "NodeWarning") var _ring_note_action: Callable = show_ring_note
+## Ring only: the middle the copies stand round (x, z), the area's (the pen's is (0, 6)). A node, if set.
+@export var ring_centre: Vector2 = Vector2.ZERO
+@export var ring_centre_node: NodePath
 ## Up to this much turn of the slice the landmark follows it (past it, only the landmark itself).
 @export_range(0.0, 89.0, 1.0, "suffix:deg") var wrap_arc: float = 60.0
 ## The W wrap length: how far through W either side of the landmark it follows you.
@@ -119,6 +150,8 @@ var _land_half := Vector4.ZERO
 var _shown: int = -2
 var _holder: Node4D
 var _resave: bool = false
+var _ring: Array[Node4D] = []
+var _ring_mid := PackedVector4Array()
 
 
 func _ready() -> void:
@@ -145,6 +178,36 @@ func _notification(what: int) -> void:
 	elif what == NOTIFICATION_EDITOR_POST_SAVE and _resave:
 		_resave = false
 		apply()
+
+
+func _validate_property(property: Dictionary) -> void:
+	if wrap_style == RING:
+		return
+	if String(property.name) == "_ring_note_action":
+		property.usage = PROPERTY_USAGE_NONE
+	elif String(property.name) in ["ring_centre", "ring_centre_node"]:
+		property.usage = PROPERTY_USAGE_NO_EDITOR
+
+
+## The editor's warning mark on the node (click it in the Scene dock) while Ring is chosen.
+func _get_configuration_warnings() -> PackedStringArray:
+	if wrap and wrap_style == RING:
+		return PackedStringArray([RING_NOTE])
+	return PackedStringArray()
+
+
+## The About Ring button: the note, in a box in the editor.
+func show_ring_note() -> void:
+	if not Engine.is_editor_hint():
+		print(RING_NOTE)
+		return
+	var box := AcceptDialog.new()
+	box.title = "Ring: not recommended yet"
+	box.dialog_text = RING_NOTE
+	box.dialog_autowrap = true
+	box.confirmed.connect(box.queue_free)
+	box.canceled.connect(box.queue_free)
+	EditorInterface.popup_dialog_centered(box, Vector2i(560, 0))
 
 
 func _landmark() -> Node4D:
@@ -228,6 +291,8 @@ func clear() -> void:
 			(mi as Node4D).visible = true
 			(mi as Node).remove_meta(&"w_hidden")
 	_land_meshes.clear()
+	_ring.clear()
+	_ring_mid.clear()
 	if _holder != null and is_instance_valid(_holder):
 		remove_child(_holder)
 		_holder.queue_free()
@@ -393,7 +458,13 @@ func _report(before: float, hu: float, worked: bool) -> String:
 		var after: float = maxf(before, min_w_half) if min_w_half > 0.0 and not (respect_w_layout and built_in_w()) else before
 		row.append("%d m: %.0f -> %.0f deg" % [int(d), holds_to(before, hu, d), holds_to(after, hu, d)])
 	lines.append("holds a turn of  " + ",  ".join(row))
-	if wrap:
+	if wrap and wrap_style == RING:
+		var c: Vector2 = _ring_centre()
+		var r: float = Vector2(_land_mid.x - c.x, _land_mid.z - c.y).length()
+		var step: float = _ring_step(r)
+		lines.append("wrap: RING, not recommended yet (About Ring): a copy every %.1f deg round (%.0f, %.0f), %.0f m off, to %.0f deg either side (%d copies)" % [
+			step, c.x, c.y, r, wrap_arc, 2 * int(floor(wrap_arc / step))])
+	elif wrap:
 		lines.append("wrap: where it is on the flat slice, at any turn up to %.0f deg, from %.0f m of W either side; from more than %.0f m off (nearer, the landmark itself)" % [
 			wrap_arc, wrap_length, maxf(_land_half.x, _land_half.z) + near_margin])
 	if worked:
@@ -456,6 +527,9 @@ func _deepen_shape(cs: CollisionShape4D, land: Node4D) -> void:
 ## holder's transform carries the whole landmark at once.
 func _wrap(meshes: Array) -> void:
 	parts_w_half = _typical_w_half()
+	if wrap_style == RING:
+		_make_ring(meshes)
+		return
 	_holder = Node4D.new()
 	_holder.name = "WrapCopy"
 	add_child(_holder)
@@ -510,18 +584,127 @@ static func to_slice(b: Projection) -> Projection:
 	return Projection(cols[0], cols[1], cols[2], cols[3])
 
 
-## The landmark, or its copy where the landmark is on the flat slice through the camera.
+# --- Ring (not recommended: RING_NOTE) --------------------------------------------------------------------
+
+func _ring_centre() -> Vector2:
+	var node := get_node_or_null(ring_centre_node) as Node4D if not ring_centre_node.is_empty() else null
+	return Vector2(node.global_position.x, node.global_position.z) if node != null else ring_centre
+
+
+## The ring's step (degrees) for a landmark [param r] metres from its centre: from the parts' depth (hw / R),
+## closer for thinner or further landmarks (copies 8 degrees apart let the range dip by half between them).
+func _ring_step(r: float) -> float:
+	return clampf(rad_to_deg(maxf(_typical_w_half(), 0.1) / maxf(r, 1.0)) * 0.8, 1.0, 15.0)
+
+
+## Copies of the landmark's drawn meshes (sharing them) round the ring's centre, in the plane of (the way
+## from the centre to the landmark, W), every step out to wrap_arc either side.
+func _make_ring(meshes: Array) -> void:
+	var c: Vector2 = _ring_centre()
+	var pivot := Vector4(c.x, 0.0, c.y, 0.0)
+	var u := Vector4(_land_mid.x - c.x, 0.0, _land_mid.z - c.y, 0.0)
+	var r: float = u.length()
+	if r < 1.0:
+		push_warning("W Optimiser %s: the landmark stands at the ring's centre; no ring." % name)
+		return
+	u = u / r
+	var step: float = _ring_step(r)
+	_holder = Node4D.new()
+	_holder.name = "WrapRing"
+	add_child(_holder)
+	_holder.global_position = Vector4.ZERO
+	_holder.global_basis = Projection.IDENTITY
+	var a: float = step
+	while a <= wrap_arc + 0.001:
+		for sgn in [-1.0, 1.0]:
+			var turn: Projection = _plane_turn(u, deg_to_rad(a * sgn))
+			var copy := Node4D.new()
+			copy.name = "Ring%+d" % int(round(a * sgn))
+			copy.visible = false
+			_holder.add_child(copy)
+			for mi: MeshInstance4D in meshes:
+				var m := MeshInstance4D.new()
+				m.mesh = mi.mesh
+				m.material_override = mi.material_override
+				m.set_meta(Look.OWN, true)
+				copy.add_child(m)
+				m.global_position = pivot + turn * (mi.global_position - pivot)
+				m.global_basis = turn * mi.global_basis
+			_ring.append(copy)
+			_ring_mid.append(pivot + turn * (_land_mid - pivot))
+		a += step
+	wrap_copies = _ring.size()
+	if not RenderingServer4D.pre_render.is_connected(_on_pre_render):
+		RenderingServer4D.pre_render.connect(_on_pre_render)
+
+
+## The ring's pick: in the slice the copy (or the landmark) whose middle the slice passes nearest; in the
+## volume view (Projected, Combined) every copy and the landmark (-2).
+func _pick_ring(camera: Camera4D, engine: RenderingEngine4D) -> void:
+	var slice: bool = engine == null or engine.get_friendly_name() == "Cross-section"
+	var e: Vector4 = camera.global_position
+	var pick: int = -1
+	if not slice:
+		pick = -2
+	elif not _near(e):
+		var n: Vector4 = camera.global_basis.w.normalized()
+		var best: float = absf((_land_mid - e).dot(n))
+		for i in _ring_mid.size():
+			var d: float = absf((_ring_mid[i] - e).dot(n))
+			if d < best:
+				best = d
+				pick = i
+	if pick != _shown:
+		_shown = pick
+		_show_land(pick < 0)
+		for i in _ring.size():
+			_ring[i].visible = pick == -2 or i == pick
+
+
+static func _plane_turn(u: Vector4, angle: float) -> Projection:
+	var c: float = cos(angle)
+	var s: float = sin(angle)
+	var cols: Array[Vector4] = []
+	for e in [Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1)]:
+		var a: float = e.dot(u)
+		var b: float = e.w
+		var rest: Vector4 = e - u * a - Vector4(0, 0, 0, b)
+		cols.append(rest + u * (a * c - b * s) + Vector4(0, 0, 0, a * s + b * c))
+	return Projection(cols[0], cols[1], cols[2], cols[3])
+
+
+# --- Each frame ---------------------------------------------------------------------------------------------
+
+## At the landmark (on it, in it, beside it) it is always the landmark itself: what you see is what you touch,
+## since the copies have no collision.
+func _near(e: Vector4) -> bool:
+	return Vector2(e.x - _land_mid.x, e.z - _land_mid.z).length() < maxf(_land_half.x, _land_half.z) + near_margin \
+		and absf(e.w - _land_mid.w) < _land_half.w + near_margin
+
+
+## The landmark's own meshes shown, or hidden behind a copy (w_hidden: the pen's look still treats them as drawn).
+func _show_land(on: bool) -> void:
+	for mi in _land_meshes:
+		(mi as Node4D).visible = on
+		if on:
+			(mi as Node).remove_meta(&"w_hidden")
+		else:
+			(mi as Node).set_meta(&"w_hidden", true)
+
+
+## The landmark, or its copy where the landmark is on the flat slice through the camera (Ring: its ring).
 func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngine4D) -> void:
 	# Playing, only the game's own view; in the editor, whichever view is drawing (the editor's cameras).
 	if camera == null or _holder == null or not is_instance_valid(_holder) or (not Engine.is_editor_hint() and viewport != get_viewport()):
 		return
 	var started: int = Time.get_ticks_usec()
+	if wrap_style == RING:
+		_pick_ring(camera, engine)
+		cull_usec = Time.get_ticks_usec() - started
+		return
 	var slice: bool = engine == null or engine.get_friendly_name() == "Cross-section"
 	var e: Vector4 = camera.global_position
-	# At the landmark (on it, in it, beside it) it is always the landmark itself: what you see is what you
-	# touch, since the copy has no collision.
-	var near: bool = Vector2(e.x - _land_mid.x, e.z - _land_mid.z).length() < maxf(_land_half.x, _land_half.z) + near_margin \
-		and absf(e.w - _land_mid.w) < _land_half.w + near_margin
+	var near: bool = _near(e)
 	var pick: int = -1
 	if slice and not near:
 		var n: Vector4 = camera.global_basis.w.normalized()
@@ -535,12 +718,7 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 			wrap_angle = turn
 	if pick != _shown:
 		_shown = pick
-		for mi in _land_meshes:
-			(mi as Node4D).visible = pick == -1
-			if pick == -1:
-				(mi as Node).remove_meta(&"w_hidden")
-			else:
-				(mi as Node).set_meta(&"w_hidden", true)
+		_show_land(pick == -1)
 		_holder.visible = pick == 0
 	cull_usec = Time.get_ticks_usec() - started
 
@@ -563,6 +741,6 @@ func _rework() -> void:
 		apply()
 
 
-## Which is drawn: -1 the landmark, 0 its copy (for runners).
+## Which is drawn: -1 the landmark, 0 its copy; with Ring, the ring copy's index, or -2 every one (for runners).
 func shown() -> int:
 	return _shown

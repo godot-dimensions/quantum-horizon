@@ -87,6 +87,13 @@ it, seen from 10, 20 and 40 m, before and after, and what the wrap does. A landm
   is what you touch. It took three tries (experiments.md): a fan of copies at fixed angles dipped between
   them; one copy turned round the area's middle slid anything off to one side across the view (in the pen
   the Watchstone slid out of frame).
+- **Wrap Style** (dropdown): **Stay put** (the above, recommended) or **Ring**: copies of the landmark round
+  the area's middle (`ring_centre`; the pen's is (0, 6)) through W, a copy every few degrees out to the arc,
+  the mountains' way. In the slice only the nearest copy is drawn, in the volume view every one. Ring is
+  not recommended for landmarks yet: off to one side, turning the slice across the line to the landmark
+  slides and skews its copy. Chosen, the node shows the editor's warning mark (click it in the Scene dock)
+  and **About Ring** explains. A full shell (copies in every direction through W, as the mountains are)
+  should fix the slide from near the middle, for many more copies: left for the team to try.
 - **Built in W: left alone.** A landmark laid out through W by hand (the range: boards from W -4 to +4, walls
   across W that keep you in its yard; Trym's shed: walls across W at +-1.7) is kept exactly as it is. It is
   told by its solid colliders off its middle W, and by walls across W among its colliders or its parts (thin
@@ -138,6 +145,7 @@ and 40 m (from 20 m: 1,064 of 1,092 pixels at each turn; untouched it had 34 at 
 | `_reach_landmarks_runner.gd` | a landmark's pixels on screen as the slice turns, per treatment or profile (`p_skyline` ...) |
 | `_optimiser_lab_runner.gd` | reports, frames off and on (and the volume view), collisions (deepened colliders hit, the wrap's copy does not, the range left exactly as built), the wrap following the slice, cost, and an edit to the Watchstone's own scene reaching the copy |
 | `_parts_runner.gd` | the Optimiser's parts and colliders, one by one, for checking by eye |
+| `_verify_ring_style_runner.gd` | Wrap Style Ring: its copies and warning, one copy in the slice, all in the volume view, and back to Stay put |
 | `_verify_preview_toggle_runner.gd` | the Preview buttons turn off with a second press, putting the landmark back exactly |
 | `_film_side_runner.gd` | side by side films (exploder, optimiser, ring vs stay put) in the labs, frame by frame, the pen's character |
 | `_compare_ring_runner.gd` | ring vs stay put as stills, in the pen and the lab |

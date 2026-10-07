@@ -65,6 +65,10 @@ did before the W tools too.
   tried by hand in the editor: turn the 4D view into W in Cross-section and the Watchstone should stay put.
 - **Test the Preview toggles**: DONE (`_verify_preview_toggle_runner.gd` passes: off at a second press, the
   Watchstone put back exactly, on again).
+- **Wrap Style dropdown**: DONE (Stay put / Ring). Ring carries the editor's warning mark and an About Ring
+  note ("not recommended yet"; Ramon: "maybe they can optimize it"). Ramon's idea for the team: a proper
+  shell (copies in every direction through W, like the mountains) instead of a ring should not slide.
+  Tested by `_verify_ring_style_runner.gd`; seen in the editor (`_editor_shots.tscn -- wt_shots ring`).
 - **Ring or stay put, as pictures**: DONE as a side by side film (`smoke_test_output/wtools/films/ring_side.mp4`,
   on the explainer page). They differ only off to the side with the slice turned across the view (the ring
   slides and skews). Ramon to decide whether a "Ring" checkbox is worth building.

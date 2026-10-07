@@ -50,6 +50,29 @@ func _run() -> void:
 	var trees: Node = pen.get_node("World/Trees")
 	var stone: Node = pen.get_node("World/WatchstoneW")
 	var range_w: Node = pen.get_node("World/RangeW")
+	if OS.get_cmdline_user_args().has("ring"):
+		# The Wrap Style dropdown on Ring: the inspector, the Scene dock's warning mark, the About Ring box.
+		await _select_and_frame(range_w, pen.get_node("World/Range"), 2, cam, -0.3)
+		pen.get_node("World/Trees").set_display_folded(true)
+		range_w.set("wrap_style", 1)
+		range_w.update_configuration_warnings()
+		EditorInterface.edit_node(range_w)
+		await _wait(20)
+		_unfold_script_groups(3)
+		await _wait(10)
+		_scroll_inspector(0.0)
+		await _shot("8_ring_inspector", cam, engine_was)
+		range_w.call("show_ring_note")
+		await _wait(20)
+		await _shot("9_ring_note", cam, engine_was)
+		for d in EditorInterface.get_base_control().find_children("*", "AcceptDialog", true, false):
+			if (d as AcceptDialog).title.begins_with("Ring"):
+				(d as AcceptDialog).queue_free()
+		range_w.set("wrap_style", 0)
+		pen.get_node("World/Trees").set_display_folded(false)
+		print("SHOTS DONE")
+		_quit(me)
+		return
 	# 1-4: the trees.
 	await _select_and_frame(trees, pen.get_node("World/Trees/OakL03"), 3, cam, -0.2)
 	await _shot("1_trees_combined", cam, engine_was)
