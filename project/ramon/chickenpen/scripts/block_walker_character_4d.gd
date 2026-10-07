@@ -66,6 +66,18 @@ var _facing_point: bool = false
 var _down: float = 0.0
 
 
+## The avatar starts facing the way the camera looks (Ramon, 7 Oct: "when the player starts, turn him 180
+## degrees. right now hes facing me and the wall"): the pen's camera starts looking down the path, along +Z,
+## and the fixed PI above faced the avatar back at it. The rig is a child, so its own _ready has set its yaw
+## (yaw 0 looks along -Z).
+func _ready() -> void:
+	if _rig != null and "yaw" in _rig:
+		var y: float = float(_rig.get("yaw"))
+		_facing = atan2(-sin(y), -cos(y))
+		if _avatar != null:
+			_avatar.basis = Basis4D.from_zx(_facing)
+
+
 ## Put on the ground for a moment. Movement stops, the avatar tips over, and it gets back
 ## up on its own - there is no state to clear and nothing to forget to undo.
 func knock_down(seconds: float) -> void:

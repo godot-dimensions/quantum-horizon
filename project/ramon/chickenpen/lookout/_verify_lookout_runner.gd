@@ -119,7 +119,7 @@ func _process(d: float) -> bool:
 			_tower = _room.get_node("World/LookoutSite/Lookout") as Node4D
 			_player = _room.get_node("Player") as Node4D
 			_rig = _room.get_node("Player/CameraRig")
-			var parts: Array = _tower.find_children("Timber_*", "MeshInstance4D", false, false)
+			var parts: Array = _tower.find_children("Timber_*", "MeshInstance4D", false, false) + _tower.find_children("Walk_*", "MeshInstance4D", false, false)
 			_check("the Watchstone is built: crag, timber, colliders", parts.size() >= 2 and _tower.get_node_or_null("Crag") != null
 				and _tower.get_node_or_null("Solid") != null, "%d timber meshes" % parts.size())
 			_check("it walks up, with a top to walk", _tower.has_method("walks_up") and bool(_tower.call("is_balcony")))
@@ -180,7 +180,9 @@ func _process(d: float) -> bool:
 			_hold(KEY_W, true)
 			_next()
 		6:
-			if not bool(_tower.call("on_deck", _player.global_position)) and _t < 8.0:
+			# On the top once the climb up the little ladder is done (7 Oct: the cut lands you at its foot, and you
+			# climb it in the play view).
+			if (not bool(_tower.call("on_deck", _player.global_position)) or bool(_tower.call("busy"))) and _t < 10.0:
 				return false
 			_hold(KEY_W, false)
 			_check("partway up the boardwalk, on the top", bool(_tower.call("on_deck", _player.global_position)),
@@ -280,13 +282,38 @@ func _process(d: float) -> bool:
 			_check("the film counted down", int(_station.get("film")) == 23)
 			_save("after_shot")
 			_station.set("zoom_goal", 1.0)
-			# To the ladder's head with the camera still up: walking there takes you down.
+			# To the ladder's head with the camera still up: it asks "Go down?" (7 Oct, Ramon: "it should just say,
+			# go down? prompt. yes/no").
 			var head: Vector4 = _tower.call("_ladder_head")
 			_put(_tower.global_position + _tower.global_basis * head + Vector4(0, 0.05, 0, 0))
 			_next(0.3)
 		19:
 			_check("no F at the top either", not bool(_lookout.call("can_climb_down")))
-			_next(0.3)
+			_check("at the ladder it asks: Go down?", bool(_tower.get("_asking")) and String(_tower.get("_way_shown")).begins_with("Go down?"),
+				"\"%s\"" % String(_tower.get("_way_shown")))
+			_key(KEY_N)
+			_step = 45
+			_wait = 0.4
+			_t = 0.0
+		45:
+			_check("N: you stay up, and it stops asking", bool(_tower.call("on_deck", _player.global_position)) and not bool(_tower.get("_asking")))
+			# Away from the ladder and back: it asks again.
+			_put(_tower.global_position + _tower.global_basis * Vector4(-1.0, float(_tower.get("deck_height")), -1.0, 0) + Vector4(0, 0.05, 0, 0))
+			_step = 46
+			_wait = 0.4
+			_t = 0.0
+		46:
+			var head2: Vector4 = _tower.call("_ladder_head")
+			_put(_tower.global_position + _tower.global_basis * head2 + Vector4(0, 0.05, 0, 0))
+			_step = 47
+			_wait = 0.4
+			_t = 0.0
+		47:
+			_check("back at the ladder, it asks again", bool(_tower.get("_asking")))
+			_key(KEY_Y)
+			_step = 20
+			_wait = 0.3
+			_t = 0.0
 		20:
 			_check("going down: the camera put away", int(_station.get("mode")) == 0)
 			_next(1.0)

@@ -334,7 +334,7 @@ var shade_test: float = -1.0:
 ## Never the trees: their W layers would drag a lane's W off its own (clearing_lanes).
 @export var clearings: Dictionary = {"AnaMarsh": 1.2, "Lookout": 2.5, "Pen": 1.5, "EggCamp": 1.0, "TownWall": 0.7,
 	"TownWallWestN": 0.7, "TownWallWestS": 0.7, "RockParts": 0.9, "TrymCabin": 1.2, "Range": 0.9, "KeeperPost": 0.8,
-	"ProfessorPost": 0.6}
+	"ProfessorPost": 0.6, "RangeMaster": 1.0, "CampGuide": 1.0}
 @export var clearing_fill: PackedStringArray = PackedStringArray(["Pen", "Lookout", "EggCamp"])
 @export_range(0.0, 4.0, 0.05, "suffix:m") var clearing_ragged: float = 1.2
 @export_range(0.1, 5.0, 0.05, "suffix:m") var clearing_fringe: float = 1.5

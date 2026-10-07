@@ -35,7 +35,7 @@ const BUILDERS := {
 ## up the chain with one of these in its script's or scene's file name, or a body that moves.
 const CHARACTER := ["block_avatar", "block_walker", "loft_rig", "loft_ball", "strider", "chicken", "pen_cat", "pen_crow", "wolf",
 	"nike", "flock", "heron", "chipmunk", "owl_4d", "balloon", "lookout_wren", "pen_trym_4d", "pen_professor_4d", "range_master",
-	"lofted_girl", "researcher", "hawk", "mithra"]
+	"lofted_girl", "researcher", "hawk", "mithra", "camp_guide"]
 
 ## The Watchstone: its height and plateau (watchstone_4d.gd TOP), the crag's W depth (its spec).
 const TOWER_TOP := 13.65
@@ -43,6 +43,21 @@ const TOWER_R := 4.8
 const TOWER_W := 6.0
 ## Three blocks instead: [width, from y, to y, depth], stepping in like its courses.
 const TOWER_BLOCKS := [[11.0, 0.0, 5.0, 10.0], [9.0, 5.0, 10.0, 8.4], [7.6, 10.0, TOWER_TOP, 7.6]]
+## THE WATCHSTONE AS BOXES (Ramon, 7 Oct: "no longer a cylinder, but a collection of one big box, one medium box,
+## and one or two smaller boxes ... the cylinder platform at the top can be carried over"): [min corner, max
+## corner] in the tower's frame (x, y, z). They step in as the rock's courses do and keep clear of its timber,
+## which the dev look now keeps (its walk surfaces orange; lookout/watchstone_4d.gd T1 to T8): the big box under
+## the first ramp's head and the lower landing, the medium one under the long stair and the terrace, the two small
+## ones under the plateau, parted where the little ladder climbs to it.
+const TOWER_BOXES := [
+	[Vector3(-4.5, 0.0, -5.0), Vector3(4.5, 4.1, 5.0)],
+	[Vector3(-4.0, 4.1, -4.5), Vector3(4.0, 7.85, 3.6)],
+	[Vector3(-3.3, 7.85, -3.3), Vector3(2.2, 13.43, 2.6)],
+	[Vector3(2.2, 7.85, -3.3), Vector3(3.2, 13.43, 2.15)],
+]
+## The plateau's turf disc on top of them (watchstone_4d.gd TURF_R, its turf 0.22 thick), orange: you walk on it.
+const TOWER_DISC_R := 3.7
+const TOWER_DISC_H := 0.22
 ## The cave: the wedge's height at its front (the arch and a lintel over it), how far it runs back
 ## and how far either side of the door, in W either side of the mouth.
 const CAVE_FRONT := 6.5
@@ -131,7 +146,14 @@ static func _tower(three_blocks: bool) -> Dictionary:
 		for k in TOWER_BLOCKS:
 			blocks.append({"box": Vector4(k[0], k[2] - k[1], k[3], TOWER_W), "at": Vector4(0, (k[1] + k[2]) * 0.5, 0, 0)})
 		return {"blue": blocks}
-	return {"blue": [{"planes": cylinder(TOWER_R, TOWER_TOP, TOWER_W * 0.5)}]}
+	var boxes: Array = []
+	for k in TOWER_BOXES:
+		var lo: Vector3 = k[0]
+		var hi: Vector3 = k[1]
+		var mid: Vector3 = (lo + hi) * 0.5
+		boxes.append({"box": Vector4(hi.x - lo.x, hi.y - lo.y, hi.z - lo.z, TOWER_W), "at": Vector4(mid.x, mid.y, mid.z, 0)})
+	var disc: Dictionary = {"planes": cylinder(TOWER_DISC_R, TOWER_DISC_H, TOWER_W * 0.5), "at": Vector4(0, TOWER_TOP - TOWER_DISC_H, 0, 0)}
+	return {"blue": boxes, "orange": [disc]}
 
 
 ## A wedge with its door: full height at the front, where the arch opens (the hill's MOUTH, facing +z

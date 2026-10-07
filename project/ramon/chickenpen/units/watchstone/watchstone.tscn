@@ -607,17 +607,6 @@ w_size = 5.333333333333334
 bury = 0.0
 solid = false
 
-[node name="Stone080" type="MeshInstance4D" parent="Stones/Inner"]
-position = Vector4(2.6737586253276517, 8.8, 1.96739610605616, -0.3853704620708005)
-basis = Projection(0.5263896309821787, 0, -0.8502434688925553, 0, 0, 1, 0, 0, 0.8502434688925553, 0, 0.5263896309821787, 0, 0, 0, 0, 1)
-script = ExtResource("chunk")
-variant = 1
-moss = false
-size = Vector3(2.8296060522319935, 4.77, 2.5466454470087942)
-w_size = 4.800000000000001
-bury = 0.0
-solid = false
-
 [node name="Stone081" type="MeshInstance4D" parent="Stones/Inner"]
 position = Vector4(0.5350566592230205, 9.069274193548388, 3.01932941227128, -0.2501252680844316)
 basis = Projection(0.9997184480270652, 0, -0.02372814097977475, 0, 0, 1, 0, 0, 0.02372814097977475, 0, 0.9997184480270652, 0, 0, 0, 0, 1)

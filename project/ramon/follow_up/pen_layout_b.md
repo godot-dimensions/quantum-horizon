@@ -116,6 +116,33 @@ when you almost got it all in slice but not quite ... v at 80 is also fine".
   (`_make_moved_pen_runner.gd`); found by `WTools/tests/_probe_stray_boxes_runner.gd`. Deleted at his word ("yes delete the boxes"),
   with their mesh and material; `World/Scenery` is left empty. `_measure_scale_runner.gd` still looks for Post5.
 
+## Ramon's 7 Oct feedback round (after the W tools)
+
+Two batches, each checked in frames (`PenLayout/scripts/_capture_feedback_runner.gd <mode>`, frames in
+smoke_test_output/feedback/) and by the tests named.
+- The professor: rustic, no wizard: red hood (ears off under it) and cape, brown tunic and trousers, amber amulet; no
+  robe, no staff (`scripts/pen_professor_4d.gd`; `_verify_professor_runner.gd`).
+- The wolf raid: no endless circling (straight at its target when close, a time cap per run), left click or Esc
+  skips to the end (`wolf/wolf_raid_4d.gd`; `wolf/_verify_wolf_loop_runner.gd` passes, the old code fails it 9 ways).
+  The range's rigid wolf for the raid: parked at his word ("not important now").
+- The start: the avatar faces where the camera looks (`block_walker_character_4d.gd _ready`).
+- NPC rings (`scripts/pen_npc_markers_4d.gd`, Systems/NpcMarkers): the professor's turning ring for everyone you can
+  talk to and the ground animals, following them, in the dev look only, in its landmark colour. Not on chickens.
+- The camp: its ring on the ground (the camp's colliders are drape_through), V at 85% of it in the slice, and the
+  Camp Scout (World/CampGuide; `pen_camp_guide_4d.gd`, `camp_guide_script.gd`, `pen_camp_guide_talk_4d.gd`) on the
+  road where it fades from the farm's slice: look down the path and turn your slice.
+- The Watchstone: dev look as four boxes and an orange top disc (`look/pen_blockouts_4d.gd TOWER_BOXES`), its timber
+  kept and in the landmark colour; the walk-up cuts to the little ladder, and you climb its last rungs in the play
+  view (1 s); at its head "Go down? Y / N"; Stone080 (it buried the ladder) removed from units/watchstone/watchstone.tscn.
+  `lookout/_verify_lookout_runner.gd` 36/36.
+- The dev look's two colours: FOUNDATION (the blue) and LANDMARK (the orange), little swatches under Dev / Art (dev
+  look only), saved with the panel's Save settings to `look/look_saved.cfg`; the range, the pen, the camp and
+  Trym's house drawn in the landmark colour as a test (`pen_look_4d.gd orange_units`).
+- The paths window stacked on top of the grass panel, the pair clear of the inventory belt (`pen_inventory_4d.gd
+  belt_rect`, which pen_hud_spot_4d.gd could not see: the inventory is full-screen).
+- The kata wood's leafy trees without their leaf balls (`lookout/lookout_tree_4d.gd leaf_balls`, off).
+- Not done: the team write-up of how the pen works (next).
+
 ## Open
 
 - The range in W, and Ramon's W tools (a W exploder for trees, a W optimiser for landmarks): next, from

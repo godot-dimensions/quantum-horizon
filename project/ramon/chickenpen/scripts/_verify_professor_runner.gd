@@ -53,12 +53,17 @@ func _process(_d) -> bool:
 			clear = false
 	_check("he stands in front of the cave mouth", gap > 3.0 and gap < 9.0 and clear,
 		"%.2f from the mouth, %s" % [gap, "clear of the hill" if clear else "INSIDE the hill"])
-	# A mystical ritual tech wizard since 7 Oct (Ramon: "no pickaxe anymore"): the hat and its rune, the
-	# lens, the staff with its crystal, the ring on the ground; no helmet, no pick.
-	_check("a wizard's hat with a rune", prof.get_node_or_null("Figure/Tunic/Head/Hat0") != null
-		and prof.get_node_or_null("Figure/Tunic/Head/HatRune") != null, "and a lens: %s" % [prof.get_node_or_null("Figure/Tunic/Head/Lens") != null])
-	_check("a staff holding a crystal", prof.get_node_or_null("Staff/Crystal/Gem") != null, "")
-	_check("the ritual ring round his feet", prof.get_node_or_null("Ring/Arc0") != null, "")
+	# Rustic and mystical since 7 Oct (Ramon: "don't make the proffesor look like a typical wizard, more like brown
+	# and red tones and mystical in a rustic way, maybe a hoody"): the hood up, the cape, the amber amulet, the staff
+	# holding its stone; no wizard's hat, no lens. The ring at his feet is the pen's NPC marker now.
+	_check("a hood up, and a cape", prof.get_node_or_null("Figure/Tunic/Head/HoodTop") != null
+		and prof.get_node_or_null("Figure/Tunic/Cape") != null, "")
+	_check("an amber amulet", prof.get_node_or_null("Figure/Tunic/Amulet") != null, "")
+	_check("legs, no robe, no staff (7 Oct: \"give the proffesor legs, not this weird dress. remove the stick\")",
+		prof.get_node_or_null("Figure/RobeLower") == null and prof.get_node_or_null("Staff") == null, "")
+	_check("his ears under the hood", prof.get_node_or_null("Figure/Tunic/Head/EarL") == null, "")
+	_check("no wizard's hat or lens", prof.get_node_or_null("Figure/Tunic/Head/Hat0") == null
+		and prof.get_node_or_null("Figure/Tunic/Head/Lens") == null, "")
 	_check("and no pick or helmet any more", prof.get_node_or_null("Pick") == null and prof.get_node_or_null("Figure/Tunic/Head/Helmet") == null, "")
 
 	print("\n--- his script ---")

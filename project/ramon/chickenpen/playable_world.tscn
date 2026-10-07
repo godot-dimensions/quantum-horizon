@@ -1,4 +1,4 @@
-[gd_scene load_steps=465 format=4 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=469 format=4 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/mountains_even.res" id="2_j4g5o"]
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
@@ -65,6 +65,10 @@
 [ext_resource type="Resource" path="res://ramon/WTools/exploder/presets/turnable_forest.tres" id="w_forest"]
 [ext_resource type="Script" path="res://ramon/WTools/optimiser/w_optimiser_4d.gd" id="w_optimiser"]
 [ext_resource type="Resource" path="res://ramon/WTools/optimiser/profiles/skyline.tres" id="w_skyline"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_npc_markers_4d.gd" id="npc_markers"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_camp_guide_4d.gd" id="camp_guide"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_camp_guide_talk_4d.gd" id="camp_guide_talk"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="pen_face"]
 [ext_resource type="Script" uid="uid://ql6a1pkb1jio" path="res://ramon/chickenpen/scripts/pen_celebration_4d.gd" id="pen_party"]
 [ext_resource type="Script" uid="uid://br2av5jujkr0t" path="res://ramon/chickenpen/scripts/pen_paths_4d.gd" id="pen_paths"]
 [ext_resource type="Resource" path="res://ramon/PenLayout/paths/pen_b.tres" id="pen_paths_graph"]
@@ -2555,6 +2559,23 @@ script = ExtResource("frame_marker")
 size = Vector2(13.6, 13.6)
 metadata/what = "The camp's ring for the paths, at the camp's own W (2.5 m kata; its path follows down to it, Ramon 7 Oct): its circle anchored here, a circle round it in the dev look."
 
+[node name="CampGuide" type="Node4D" parent="World"]
+position = Vector4(-5, 0, -3.94, 0)
+metadata/what = "The camp's guide, in the middle of the camp's road where it fades from the farm's slice (it follows down through W to the camp), before the camp (2.5 m kata, right ahead of him): he tells you to look straight down the path and turn your slice (Ramon, 7 Oct)."
+
+[node name="Guide" type="Node4D" parent="World/CampGuide"]
+basis = Projection(0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 1)
+script = ExtResource("camp_guide")
+
+[node name="GuideHead" type="Node4D" parent="World/CampGuide"]
+position = Vector4(0, 1.45, 0, 0)
+
+[node name="GuideFacing" type="Node4D" parent="World/CampGuide"]
+script = ExtResource("pen_face")
+figure_path = NodePath("../Guide")
+player_path = NodePath("../../../Player")
+notice_within = 4.0
+
 [node name="TownWall" type="Node4D" parent="World"]
 script = ExtResource("town_wall")
 from = Vector2(-57.7, 12)
@@ -4085,6 +4106,32 @@ name_size = 17
 text_size = 20
 choice_size = 19
 
+[node name="CampGuideTag" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("pen_world_tag")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../World/CampGuide/GuideHead")
+lift = 12.0
+
+[node name="CampGuideBox" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("dlg_box")
+choice_side = 1
+choice_width = 470.0
+choice_gap = 10.0
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../World/CampGuide/GuideHead")
+over_head_width = 470.0
+name_size = 17
+text_size = 20
+choice_size = 19
+
 [node name="MithraTag" type="Control" parent="UI"]
 layout_mode = 3
 anchors_preset = 0
@@ -4441,6 +4488,31 @@ two_shot_rise = 0.35
 two_shot_bias = 0.8
 two_shot_seconds = 2.5
 
+[node name="CampGuideTalk" type="Node" parent="Systems"]
+script = ExtResource("dlg_talk")
+box_path = NodePath("../../UI/CampGuideBox")
+
+[node name="CampGuideDriver" type="Node" parent="Systems"]
+script = ExtResource("camp_guide_talk")
+facing_path = NodePath("../../World/CampGuide/GuideFacing")
+player_path = NodePath("../../Player")
+character_path = NodePath("../../Player")
+catcher_path = NodePath("../../Player/Catcher")
+dialogue_path = NodePath("../CampGuideTalk")
+tag_path = NodePath("../../UI/CampGuideTag")
+camera_rig_path = NodePath("../../Player/CameraRig")
+camera_marker_path = NodePath("../../World/TalkCam")
+camera_target_path = NodePath("../../World/CampGuide/GuideHead")
+two_shot = true
+main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/CampGuideBox")
+hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint"), NodePath("../../UI/Objective"), NodePath("../../UI/Progress"), NodePath("../../UI/Debug"), NodePath("../../UI/CameraPicker"), NodePath("../../UI/Quests")])
+talk_range = 2.0
+two_shot_side = 1.9
+two_shot_back = 1.7
+two_shot_rise = 0.35
+two_shot_seconds = 2.5
+
 [node name="RangeTrip" type="Node" parent="Systems"]
 script = ExtResource("range_trip")
 
@@ -4504,6 +4576,10 @@ script = ExtResource("pen_paths")
 [node name="Look" type="Node" parent="Systems"]
 script = ExtResource("pen_look")
 metadata/what = "The pen's two looks: DEV (white floor, the lab's sky, path arrows, blockouts) and ART, F8 or the Look row on the left panel (look/pen_look_4d.gd, PenLayout/PLAN_DEV_LOOK.md)."
+
+[node name="NpcMarkers" type="Node" parent="Systems"]
+script = ExtResource("npc_markers")
+metadata/what = "The orange rings that turn round the feet of everyone you can talk to and the ground animals, following them (Ramon, 7 Oct: \"can we make it orange and put it around all npcs? even animals?\"). Not on the chickens."
 
 [node name="Mithra" type="CharacterBody4D" parent="."]
 position = Vector4(-7.5, 1.2, 7, 0)

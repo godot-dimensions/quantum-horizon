@@ -175,7 +175,7 @@ func _on_look(dev: bool) -> void:
 		return
 	_dev_look = dev
 	var look: Node = Look.current
-	var blue: Color = look.get("landmark_colour") if look != null and is_instance_valid(look) else Color(0.13, 0.40, 0.86)
+	var blue: Color = look.get("foundation_colour") if look != null and is_instance_valid(look) else Color(0.13, 0.40, 0.86)
 	var skin: Node = _envelope.get_node_or_null("Skin") if _envelope != null else null
 	for node in find_children("*", "MeshInstance4D", true, false):
 		var mi := node as MeshInstance4D

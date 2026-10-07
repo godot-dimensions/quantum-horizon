@@ -215,6 +215,14 @@ func selected_effect() -> String:
 	return items[selected]
 
 
+## Where the belt is on the screen (its slots and the name under the chosen one), for panels that keep clear of
+## it (pen_hud_spot_4d.gd counts no full-screen control, and this one is full-screen).
+func belt_rect() -> Rect2:
+	var r: Rect2 = _slot_rect(0).merge(_slot_rect(maxi(slot_count - 1, 0)))
+	r.size.y += bottom_margin
+	return get_global_transform() * r
+
+
 ## Where a slot sits on screen. ONE source for this, because the click test and the
 ## drawing have to agree exactly - computed twice they drift the moment either moves.
 func _slot_rect(index: int) -> Rect2:

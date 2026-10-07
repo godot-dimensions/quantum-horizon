@@ -54,6 +54,10 @@ const MainGreen := preload("res://ramon/chickenpen/terrain/main_green_4d.gd")
 const SPEC := "res://ramon/chickenpen/lookout/watchstone_spec.json"
 
 const OWN := &"_watchstone_part"
+## The dev look's tags (look/pen_look_4d.gd): a surface you walk on, and the frame round it.
+const DEV_WALK := &"dev_walk"
+const DEV_FRAME := &"dev_frame"
+const WALK_KEY := "|walk"
 const PLACE := "The Watchstone"
 
 ## The plateau: its turf's height, the railing's radius (fitted to the sheet, 3.76 m) and the green turf
@@ -122,6 +126,13 @@ const T8_HEAD := Vector4(2.34, 13.65, 2.53, 0)
 @export_range(0.5, 6.0, 0.1, "suffix:m") var walk_up_at: float = 2.4
 @export_range(0.05, 1.0, 0.01, "suffix:s") var fade_out: float = 0.25
 @export_range(0.05, 1.5, 0.01, "suffix:s") var fade_in: float = 0.5
+## THE LAST LADDER, CLIMBED (Ramon, 7 Oct: "when you walk up the walkplane, you cut to above, i rather have the last
+## bit be a very short part where you climb up the last latter in normal play view and from that moment you can
+## walk again"): the cut lands you on the upper platform at the little ladder's foot, and you go up it rung by
+## rung in the play view, over the rim onto the plateau, and walk on from there. Only its very end since (Ramon,
+## 7 Oct: "for the climb animation, only do the very end, make it shorter"): the cut puts you on the ladder, its
+## last rungs and the step over left. How long that takes.
+@export_range(0.3, 5.0, 0.05, "suffix:s") var climb_seconds: float = 1.0
 
 ## Rail heights and sizes: posts 0.16 thick and a metre above the deck, the rail on top; the
 ## plateau's posts 0.85 tall with the rail at 0.55 (the sheet, zoomed: one round rail through the
@@ -139,6 +150,13 @@ var _going_up: bool = true
 var _t: float = 0.0
 var _rest: float = 0.0
 var _input_was: bool = true
+## The climb (phase 3): seconds into it, and whether it comes once the screen is light again.
+var _climb_t: float = 0.0
+var _climb_next: bool = false
+## THE WAY DOWN, ASKED (Ramon, 7 Oct: "when going to the ladder it should just say, go down? prompt. yes/no"): at the
+## ladder's head "Go down?  Y / N"; Y takes you down, N leaves you be until you walk away from it and back.
+var _asking: bool = false
+var _declined: bool = false
 var _way_down: WorldTag4D
 var _way_shown: String = ""
 
@@ -584,11 +602,11 @@ func _t8() -> void:
 	var b: Vector4 = T8_HEAD + Vector4(0, 0.3, 0, 0)
 	var side: Vector4 = _side(a, b) * 0.25
 	for s in [-1.0, 1.0]:
-		_strut(timber_dark, a + side * s, b + side * s, 0.08)
+		_strut(timber_dark, a + side * s, b + side * s, 0.08, true)
 	var rungs: int = 7
 	for k in rungs:
 		var q: Vector4 = a.lerp(b, (float(k) + 0.6) / float(rungs + 0.4))
-		_strut(timber, q - side, q + side, 0.06)
+		_strut(timber, q - side, q + side, 0.06, true)
 
 
 # --- T9 the plateau's railing --------------------------------------------------------------------
@@ -699,6 +717,7 @@ func _fence_node(name: String) -> FenceGenerator4D:
 	f.post_material = _wood
 	f.rib_material = _wood
 	f.beam_material = _wood
+	f.set_meta(DEV_FRAME, true)
 	_own(f)
 	return f
 
@@ -710,14 +729,14 @@ func _ramp(a: Vector4, b: Vector4, width: float, cleat: float, legs_to_ground: b
 	var d: Vector4 = b - a
 	var length: float = d.length()
 	var frame: Projection = _frame_x(d / length)
-	_box(timber, Vector4(length, 0.08, width, timber_w), (a + b) * 0.5 - Vector4(0, 0.04, 0, 0), frame)
+	_box(timber, Vector4(length, 0.08, width, timber_w), (a + b) * 0.5 - Vector4(0, 0.04, 0, 0), frame, true)
 	var cleats: int = int(length / cleat)
 	for k in cleats:
 		var q: Vector4 = a.lerp(b, (float(k) + 0.5) / float(cleats))
-		_box(timber_light, Vector4(0.07, 0.05, width * 0.98, timber_w * 0.98), q + Vector4(0, 0.02, 0, 0), frame)
+		_box(timber_light, Vector4(0.07, 0.05, width * 0.98, timber_w * 0.98), q + Vector4(0, 0.02, 0, 0), frame, true)
 	var side: Vector4 = _side(a, b) * (width * 0.5 - 0.04)
 	for s in [-1.0, 1.0]:
-		_box(timber_dark, Vector4(length + 0.1, 0.24, 0.09, timber_w), (a + b) * 0.5 + side * s - Vector4(0, 0.16, 0, 0), frame)
+		_box(timber_dark, Vector4(length + 0.1, 0.24, 0.09, timber_w), (a + b) * 0.5 + side * s - Vector4(0, 0.16, 0, 0), frame, true)
 	var legs: int = int(length / 1.6)
 	for k in legs + 1:
 		var q: Vector4 = a.lerp(b, minf((float(k) + (0.5 if not first else 0.3)) * 1.6 / length, 1.0))
@@ -735,31 +754,31 @@ func _ramp(a: Vector4, b: Vector4, width: float, cleat: float, legs_to_ground: b
 func _deck(xs: Vector2, zs: Vector2, y: float, along: Vector2) -> void:
 	var c := Vector4((xs.x + xs.y) * 0.5, y - 0.05, (zs.x + zs.y) * 0.5, 0)
 	var size := Vector4(xs.y - xs.x, 0.1, zs.y - zs.x, timber_w)
-	_box(timber, size, c)
+	_box(timber, size, c, Projection.IDENTITY, true)
 	var horiz: bool = absf(along.x) > absf(along.y)
 	var n: int = int((size.z if not horiz else size.x) / 0.32)
 	for k in n + 1:
 		var f: float = float(k) / float(maxi(n, 1))
 		if horiz:
-			_box(timber_dark, Vector4(0.03, 0.105, size.z, timber_w), c + Vector4(-size.x * 0.5 + size.x * f, 0, 0, 0))
+			_box(timber_dark, Vector4(0.03, 0.105, size.z, timber_w), c + Vector4(-size.x * 0.5 + size.x * f, 0, 0, 0), Projection.IDENTITY, true)
 		else:
-			_box(timber_dark, Vector4(size.x, 0.105, 0.03, timber_w), c + Vector4(0, 0, -size.z * 0.5 + size.z * f, 0))
+			_box(timber_dark, Vector4(size.x, 0.105, 0.03, timber_w), c + Vector4(0, 0, -size.z * 0.5 + size.z * f, 0), Projection.IDENTITY, true)
 	# The rim beam round its edge.
 	for s in [-1.0, 1.0]:
-		_box(timber_dark, Vector4(size.x + 0.06, 0.2, 0.08, timber_w), c + Vector4(0, -0.1, s * size.z * 0.5, 0))
-		_box(timber_dark, Vector4(0.08, 0.2, size.z + 0.06, timber_w), c + Vector4(s * size.x * 0.5, -0.1, 0, 0))
+		_box(timber_dark, Vector4(size.x + 0.06, 0.2, 0.08, timber_w), c + Vector4(0, -0.1, s * size.z * 0.5, 0), Projection.IDENTITY, true)
+		_box(timber_dark, Vector4(0.08, 0.2, size.z + 0.06, timber_w), c + Vector4(s * size.x * 0.5, -0.1, 0, 0), Projection.IDENTITY, true)
 
 
 ## A turned square deck (T5): middle [param c], its axes, half size [param h].
 func _deck_turned(c: Vector4, ax: Vector4, az: Vector4, h: float) -> void:
 	var basis := Projection(ax, Vector4(0, 1, 0, 0), az, Vector4(0, 0, 0, 1))
-	_box(timber, Vector4(h * 2.0, 0.1, h * 2.0, timber_w), c - Vector4(0, 0.05, 0, 0), basis)
+	_box(timber, Vector4(h * 2.0, 0.1, h * 2.0, timber_w), c - Vector4(0, 0.05, 0, 0), basis, true)
 	var n: int = int(h * 2.0 / 0.32)
 	for k in n + 1:
-		_box(timber_dark, Vector4(0.03, 0.105, h * 2.0, timber_w), c - Vector4(0, 0.05, 0, 0) + ax * (-h + 2.0 * h * float(k) / float(n)), basis)
+		_box(timber_dark, Vector4(0.03, 0.105, h * 2.0, timber_w), c - Vector4(0, 0.05, 0, 0) + ax * (-h + 2.0 * h * float(k) / float(n)), basis, true)
 	for s in [-1.0, 1.0]:
-		_box(timber_dark, Vector4(h * 2.0 + 0.06, 0.2, 0.08, timber_w), c - Vector4(0, 0.15, 0, 0) + az * s * h, basis)
-		_box(timber_dark, Vector4(0.08, 0.2, h * 2.0 + 0.06, timber_w), c - Vector4(0, 0.15, 0, 0) + ax * s * h, basis)
+		_box(timber_dark, Vector4(h * 2.0 + 0.06, 0.2, 0.08, timber_w), c - Vector4(0, 0.15, 0, 0) + az * s * h, basis, true)
+		_box(timber_dark, Vector4(0.08, 0.2, h * 2.0 + 0.06, timber_w), c - Vector4(0, 0.15, 0, 0) + ax * s * h, basis, true)
 
 
 ## Legs at [param feet] (x, z) from the rock up to a deck at [param top]; with [param braced], a
@@ -794,8 +813,11 @@ static func _side(a: Vector4, b: Vector4) -> Vector4:
 
 # --- Helpers ------------------------------------------------------------------------------------
 
-func _box(colour: Color, size: Vector4, at: Vector4, basis: Projection = Projection.IDENTITY) -> void:
-	var key: String = colour.to_html(false)
+## [param walk]: what you walk or climb on (decks and ramps, their cleats, the stringers and rim beams that make
+## their edges, the ladder), batched apart from what holds them up and in (posts, legs, braces, railings), so the
+## dev look can show the whole walkway in its own colour, from the side as well as from above.
+func _box(colour: Color, size: Vector4, at: Vector4, basis: Projection = Projection.IDENTITY, walk: bool = false) -> void:
+	var key: String = colour.to_html(false) + (WALK_KEY if walk else "")
 	if not _batches.has(key):
 		_batches[key] = ArrayTetraMesh4D.new()
 	var box := BoxTetraMesh4D.new()
@@ -803,22 +825,28 @@ func _box(colour: Color, size: Vector4, at: Vector4, basis: Projection = Project
 	(_batches[key] as ArrayTetraMesh4D).merge_with(box.to_array_tetra_mesh(), at, basis)
 
 
-func _strut(colour: Color, a: Vector4, b: Vector4, thick: float) -> void:
+func _strut(colour: Color, a: Vector4, b: Vector4, thick: float, walk: bool = false) -> void:
 	var d: Vector4 = b - a
 	var length: float = d.length()
 	if length < 0.001:
 		return
-	_box(colour, Vector4(thick, length, thick, timber_w), (a + b) * 0.5, _frame_along(d / length))
+	_box(colour, Vector4(thick, length, thick, timber_w), (a + b) * 0.5, _frame_along(d / length), walk)
 
 
 func _flush() -> void:
 	for key in _batches:
 		var node := MeshInstance4D.new()
-		node.name = "Timber_" + String(key)
+		var walk: bool = String(key).ends_with(WALK_KEY)
+		var colour: String = String(key).trim_suffix(WALK_KEY)
+		node.name = ("Walk_" if walk else "Timber_") + colour
 		node.mesh = _batches[key]
 		var m := TetraMaterial4D.new()
-		m.albedo_color = Color.html(key)
+		m.albedo_color = Color.html(colour)
 		node.material_override = m
+		# The dev look keeps the timber (look/pen_look_4d.gd): what you walk on orange, the frame in the
+		# landmark's colour (Ramon, 7 Oct: "carry over the walkways from the art scene ... the walkplanes for
+		# the tower in dev mode should be orange").
+		node.set_meta(DEV_WALK if walk else DEV_FRAME, true)
 		_own(node)
 	_batches.clear()
 
@@ -884,6 +912,11 @@ var cab_height: float:
 
 func walks_up() -> bool:
 	return true
+
+
+## Whether the walk-up or the walk down is under way (the fade, the climb): you are not yet free to walk.
+func busy() -> bool:
+	return _phase != 0
 
 
 ## The way up T1 (global, level): for runners that walk it.
@@ -967,6 +1000,78 @@ func _global(local: Vector4) -> Vector4:
 
 # --- The walk-up -------------------------------------------------------------------------------
 
+## The climb's way, level and global: from the ladder's foot toward its head.
+func _climb_dir() -> Vector4:
+	var d: Vector4 = T8_HEAD - T8_FOOT
+	d.y = 0.0
+	return (global_basis * d).normalized()
+
+
+## Where the cut puts you (this node's frame): on the little ladder, a little over halfway up.
+func _climb_stand() -> Vector4:
+	return T8_FOOT.lerp(T8_HEAD, 0.55)
+
+
+## Where the climb ends (this node's frame): over the rim, a step in from the ladder's head, well clear of the
+## way down (the ladder's head itself, _ladder_head()).
+func _climb_off() -> Vector4:
+	return Vector4(1.1, TOP, 1.15, 0.0)
+
+
+## The avatar turned to [param dir] (global, level), as the walker turns it.
+func _face_avatar(dir: Vector4) -> void:
+	if dir.length() < 0.01:
+		return
+	var f: float = atan2(dir.x, dir.z)
+	_player.set("_facing", f)
+	var avatar := _player.get_node_or_null("Avatar") as Node4D
+	if avatar != null:
+		avatar.basis = Basis4D.from_zx(f)
+
+
+## Up the little ladder in the play view: a step to its foot, up it a rung at a time (each rung eased, as the old
+## tower's climb was: lookout_station_4d.gd), over the rim, and a step in onto the plateau.
+func _climb(delta: float) -> void:
+	_climb_t += delta
+	var r: float = clampf(_climb_t / climb_seconds, 0.0, 1.0)
+	var stand: Vector4 = _climb_stand()
+	var head: Vector4 = T8_HEAD
+	var off: Vector4 = _climb_off()
+	var at: Vector4
+	if r < 0.6:
+		# The last three rungs, each eased.
+		var rungs: float = 3.0
+		var k: float = r / 0.6 * rungs
+		var step: float = floorf(k) + smoothstep(0.15, 0.85, k - floorf(k))
+		at = stand.lerp(head, clampf(step / rungs, 0.0, 1.0))
+	else:
+		at = head.lerp(off, smoothstep(0.0, 1.0, (r - 0.6) / 0.4))
+		if r > 0.65:
+			_face_avatar(_global(off) - _global(head))
+	_player.global_position = _global(at) + Vector4(0.0, 0.05, 0.0, 0.0)
+	if r >= 1.0:
+		_climbed()
+
+
+## Over the top: walking again, facing north over the field (Wren in front of you), the plateau's own business on.
+func _climbed() -> void:
+	_phase = 0
+	_player.set_physics_process(true)
+	_player.set("linear_velocity", Vector4.ZERO)
+	_player.set("input_enabled", _input_was)
+	var look: Vector4 = north()
+	look.y = 0.0
+	var rig: Node = _player.get_node_or_null("CameraRig")
+	if rig != null:
+		rig.call("face_toward", look)
+		rig.set("pitch", -0.15)
+		if rig.has_method("_apply"):
+			rig.call("_apply")
+	_rest = 1.0
+	if _lookout != null:
+		_lookout.call("on_cab_entered")
+
+
 ## Where the walk down starts, in this node's frame: inside the railing where the ladder comes up.
 func _ladder_head() -> Vector4:
 	var d := Vector2(T8_HEAD.x, T8_HEAD.z).normalized() * (RAIL_R - 0.75)
@@ -989,10 +1094,18 @@ func _physics_process(delta: float) -> void:
 		if _t >= fade_in:
 			_phase = 0
 			_fade.color.a = 0.0
+			if _climb_next:
+				_climb_next = false
+				_phase = 3
+				_climb_t = 0.0
+		return
+	if _phase == 3:
+		_climb(delta)
 		return
 	var local: Vector4 = global_basis.inverse() * (_player.global_position - global_position)
-	_show_way_down(local)
 	if _rest > 0.0 or not _free():
+		_asking = false
+		_show_way_down(local)
 		return
 	# Up: partway along T1, on it.
 	var d: Vector4 = T1_HEAD - T1_FOOT
@@ -1001,22 +1114,42 @@ func _physics_process(delta: float) -> void:
 	var off: float = absf(Vector2(local.x - T1_FOOT.x, local.z - T1_FOOT.z).dot(Vector2(-flat.y, flat.x).normalized()))
 	if absf(local.w) < timber_w * 0.5 + 0.3 and along > walk_up_at and along < flat.length() and off < T1_WIDTH * 0.5 + 0.4 \
 			and local.y > 0.3 and local.y < T2_Y + 1.0:
-		_go(ladder_top(), true)
+		_go(_global(_climb_stand()), true)
 		return
-	# Down: at the railing where the ladder comes up.
+	# Down: at the railing where the ladder comes up, asked (Y / N, in _input).
 	var head: Vector4 = _ladder_head()
-	if absf(local.y - TOP) < 1.6 and absf(local.w) < w_depth * 0.5 and Vector2(local.x - head.x, local.z - head.z).length() < 0.8:
+	var near_head: float = Vector2(local.x - head.x, local.z - head.z).length()
+	var at_ladder: bool = absf(local.y - TOP) < 1.6 and absf(local.w) < w_depth * 0.5 and near_head < 0.9
+	if not at_ladder:
+		_declined = false
+	_asking = at_ladder and not _declined
+	_show_way_down(local)
+
+
+## The way down's answer: Y down, N not now. In _input, ahead of the slice dial's N (pen_again_4d.gd says why).
+func _input(event: InputEvent) -> void:
+	if not _asking or Engine.is_editor_hint():
+		return
+	var key := event as InputEventKey
+	if key == null or not key.pressed or key.echo:
+		return
+	if key.keycode == KEY_Y:
+		get_viewport().set_input_as_handled()
+		_asking = false
+		_show_way_down(Vector4.ZERO)
 		_go(ladder_foot(), false)
+	elif key.keycode == KEY_N:
+		get_viewport().set_input_as_handled()
+		_asking = false
+		_declined = true
+		_show_way_down(Vector4.ZERO)
 
 
-## "Walk to the ladder to go down", on the top within a few metres of it.
-func _show_way_down(local: Vector4) -> void:
+## "Go down?  Y / N" at the ladder's head, while it is asking.
+func _show_way_down(_local: Vector4) -> void:
 	if _way_down == null:
 		return
-	var head: Vector4 = _ladder_head()
-	var near: bool = _phase == 0 and absf(local.y - TOP) < 1.6 and absf(local.w) < w_depth * 0.5 \
-		and Vector2(local.x - head.x, local.z - head.z).length() < 2.4
-	var text: String = "Walk to the ladder to go down" if near else ""
+	var text: String = "Go down?   Y yes   N no" if (_asking and _phase == 0) else ""
 	if _lookout != null:
 		_way_down.set("_camera", _lookout.call("current_camera"))
 	if text != _way_shown:
@@ -1060,6 +1193,20 @@ func _go(to: Vector4, up: bool) -> void:
 func _arrive() -> void:
 	_player.global_position = _to + Vector4(0.0, 0.05, 0.0, 0.0)
 	_player.set("linear_velocity", Vector4.ZERO)
+	if _going_up:
+		# At the little ladder's foot, facing it, held still (no fall, no walking) until the climb is done.
+		_player.set_physics_process(false)
+		_face_avatar(_climb_dir())
+		var rig_up: Node = _player.get_node_or_null("CameraRig")
+		if rig_up != null:
+			rig_up.call("face_toward", _climb_dir())
+			rig_up.set("pitch", 0.05)
+			if rig_up.has_method("_apply"):
+				rig_up.call("_apply")
+		_climb_next = true
+		_phase = 2
+		_t = 0.0
+		return
 	_player.set("input_enabled", _input_was)
 	# Up: facing north over the field, Wren in front of you. Down: facing away from the crag,
 	# toward the pen, as the old ladder left you.

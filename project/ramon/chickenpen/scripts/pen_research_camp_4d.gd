@@ -24,7 +24,7 @@ extends Node4D
 ## ALIGN TO SLICE (Ramon's button). The camp stands off the farm's slice (2.5 kata in the pen): from the
 ## farm's own slice none of it shows, and its path follows down through W to it. When your slice shows
 ## most of the camp but not all of it (Ramon, 7 Oct: "v should only happen when you almost got it all in
-## slice but not quite", then "a bit sooner"; align_share, 60%), "V  Align to slice" comes up over it; V brings your slice square
+## slice but not quite", then "a bit sooner", then 85%; align_share), "V  Align to slice" comes up over it; V brings your slice square
 ## to the camp's W (the orbit rig's align_to, the same move the marsh's V makes), so the whole camp is
 ## there. (It came up before as soon as the slice crossed the camp's middle, half of it or a strip.)
 ##
@@ -71,8 +71,10 @@ const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd"
 @export_range(4.0, 40.0, 0.5, "suffix:m") var align_reach: float = 24.0
 ## How much of the camp must already be in your slice for V to come up: this share of its ground or more, but
 ## not all of it (shown_share(); Ramon, 7 Oct: "you get v at 80 is also fine", then after playing it: "it was so
-## hard to get the campsite to show up right. we should introduce V a bit sooner").
-@export_range(0.3, 0.95, 0.05) var align_share: float = 0.6
+## hard to get the campsite to show up right. we should introduce V a bit sooner", and then, once he had the way
+## of it: "make V align to slice at the campsite only at 85% because i now understand how to bring it in the slice,
+## by rotating and looking straight at it"). The guide by the path's last marker tells you how (pen_camp_guide_4d.gd).
+@export_range(0.3, 0.95, 0.05) var align_share: float = 0.85
 ## How far round the fire the share is measured (the camp's ground and tents).
 @export_range(2.0, 10.0, 0.5, "suffix:m") var share_radius: float = 6.0
 
@@ -175,6 +177,9 @@ func rebuild() -> void:
 	_wood.albedo_color = timber
 	_body = StaticBody4D.new()
 	_body.name = "Solid"
+	# The paths lay their marks on the ground under the camp, not on its tents and stones (Ramon, 7 Oct: "the
+	# marker line around the campsite, is floating above ground", once its ring moved to the camp's own W).
+	_body.set_meta(&"drape_through", true)
 	_own(_body)
 	if ground_patch:
 		_ground()

@@ -70,6 +70,17 @@ signal look_changed(dev: bool)
 ## The dev look laid or lifted, whatever the reason (the player's choice, the art held in the cinema or the
 ## cave's tunnel, before a save): for what paints itself (lookout/balloon_4d.gd), sent as it happens.
 signal applied_changed(on: bool)
+## The foundation or the landmark colour changed (set_colours): the NPC rings follow the landmark colour
+## (scripts/pen_npc_markers_4d.gd).
+signal colours_changed(foundation: Color, landmark: Color)
+
+## THE TWO COLOURS, FROM THE PANEL (Ramon, 7 Oct: "can you add two options in the dev panel that makes me controll
+## the orange and the blue in the scene? colorwise", "also add save function so that color gets stored"): the
+## FOUNDATION colour (the blue: what the world is built of, rocks, walls, trees, the blockouts) and the LANDMARK colour
+## (the orange: the places you go and what you walk on), named so on 7 Oct ("instead of blue and orange, lets do
+## 'foundation color' 'landmark color'"); set live (set_colours, the grass panel's swatches, shown in the dev look)
+## and kept in look_saved.cfg by the panel's Save settings, beside the grass's; the pen opens with what is saved.
+const SAVED := "res://ramon/chickenpen/look/look_saved.cfg"
 
 ## Off: the pen exactly as it was, no switch.
 @export var enabled: bool = true
@@ -106,9 +117,16 @@ signal applied_changed(on: bool)
 ## and the grid to one white. So the light stays at the pen's strength, neutral, and the floor and
 ## mountains sit a little under white so the grid and the horizon read.
 @export_group("Palette")
-@export var landmark_colour: Color = Color(0.13, 0.40, 0.86)
+@export var foundation_colour: Color = Color(0.13, 0.40, 0.86)
 @export var used_colour: Color = Color(0.86, 0.24, 0.20)
 @export var door_colour: Color = Color(0.05, 0.08, 0.16)
+## The LANDMARK COLOUR: what you walk or climb on where a landmark's art is kept in the dev look (the Watchstone's decks, ramps and
+## ladder; Ramon, 7 Oct: "the walkplanes for the tower in dev mode should be orange. so its clear").
+@export var landmark_colour: Color = Color(0.95, 0.36, 0.10)
+## Landmarks drawn in the landmark colour instead of the foundation colour, as a test (Ramon, 7 Oct: "make the pen hut
+## orange ... can you make the whole shooting range orange as test, and the chicken pen too. and the campsite that
+## gets revealed, and trym's house"), by the name their rule is found on.
+@export var orange_units: PackedStringArray = PackedStringArray(["Range", "Pen", "EggCamp", "TrymCabin", "Shed"])
 @export var terrain_colour: Color = Color(0.62, 0.64, 0.67)
 @export var floor_colour: Color = Color(0.74, 0.75, 0.77)
 @export var floor_line: Color = Color(0.62, 0.63, 0.66)
@@ -162,6 +180,7 @@ func _ready() -> void:
 			_set_applied.call_deferred(true)
 		return
 	current = self
+	_load_colours()
 	# Awake while the crossings put the pen to sleep (they switch Systems off), so the art is put back
 	# for the rooms behind them and the dev look laid again on the way home.
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -172,6 +191,44 @@ func _ready() -> void:
 		_warm_then_dev()
 	else:
 		_ready_done = true
+
+
+## The foundation and the landmark colour, now: everything already laid in them recoloured in place (they share
+## materials).
+func set_colours(foundation: Color, landmark: Color) -> void:
+	foundation_colour = foundation
+	landmark_colour = landmark
+	for key in _mats:
+		var m := _mats[key] as TetraMaterial4D
+		if String(key) in ["foundation", "blue"]:
+			m.albedo_color = foundation
+		elif String(key) in ["landmark", "orange"]:
+			m.albedo_color = landmark
+	colours_changed.emit(foundation, landmark)
+
+
+## The two colours into look_saved.cfg. OK or the error.
+func save_colours() -> int:
+	var cfg := ConfigFile.new()
+	cfg.set_value("look", "foundation", foundation_colour)
+	cfg.set_value("look", "landmark", landmark_colour)
+	return cfg.save(SAVED)
+
+
+## Whether what is saved is what shows (nothing saved: false).
+func colours_match_saved() -> bool:
+	var cfg := ConfigFile.new()
+	if cfg.load(SAVED) != OK:
+		return false
+	return cfg.get_value("look", "foundation", foundation_colour) == foundation_colour and cfg.get_value("look", "landmark", landmark_colour) == landmark_colour
+
+
+func _load_colours() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(SAVED) != OK:
+		return
+	foundation_colour = cfg.get_value("look", "foundation", foundation_colour)
+	landmark_colour = cfg.get_value("look", "landmark", landmark_colour)
 
 
 ## The look to open in: PEN_LOOK in the environment or look= on the command line (tests), art for a
@@ -365,7 +422,7 @@ func _take(mi: MeshInstance4D) -> void:
 			if low != null and (mi.visible or mi.has_meta(&"w_hidden")):
 				_saved_mesh[mi] = mi.mesh
 				mi.mesh = low
-			_lay(mi, _mat("landmark", landmark_colour))
+			_lay(mi, _mat("foundation", foundation_colour))
 			return
 		var part: String = String(mi.name)
 		var c: Color = _albedo(mi)
@@ -375,18 +432,26 @@ func _take(mi: MeshInstance4D) -> void:
 				or (bool(rule.get("drop_green", false)) and _plant_green(c)):
 			_strip(mi)
 			return
-		_lay(mi, _mat("landmark", landmark_colour))
+		_lay(mi, _mat("foundation", foundation_colour))
 		return
 	match String(rule):
 		"art":
 			return
 		"block":
-			if _blockouts.has(r[1]):
+			# Art the landmark keeps under its blockout, tagged by its builder (the Watchstone's timber,
+			# lookout/watchstone_4d.gd): the walkways, the ladder and the scaffold.
+			# All of it orange since 7 Oct (Ramon: "make all scaffold orange on the tower").
+			if mi.has_meta(&"dev_walk") or mi.has_meta(&"dev_frame"):
+				_lay(mi, _mat("landmark", landmark_colour))
+			elif _blockouts.has(r[1]):
 				_strip(mi)
 			else:
-				_lay(mi, _mat("landmark", landmark_colour))
+				_lay(mi, _mat("foundation", foundation_colour))
 		_:
-			_lay(mi, _mat("landmark", landmark_colour))
+			if r[1] is Node and String((r[1] as Node).name) in orange_units:
+				_lay(mi, _mat("landmark", landmark_colour))
+			else:
+				_lay(mi, _mat("foundation", foundation_colour))
 
 
 ## "character" (never touched), "used" (red), "landmark", or "" for what is not art at all.
@@ -521,7 +586,7 @@ func _blockout(root: Node) -> void:
 		mi.name = "DevBlockout_" + String(colour)
 		mi.set_meta(OWN, true)
 		mi.mesh = baked[colour]
-		mi.material_override = _mat(colour, {"blue": landmark_colour, "red": used_colour, "door": door_colour}[colour])
+		mi.material_override = _mat(colour, {"blue": foundation_colour, "red": used_colour, "door": door_colour, "orange": landmark_colour}[colour])
 		(root as Node).add_child(mi)
 		_block_nodes.append(mi)
 
@@ -716,8 +781,8 @@ func _frame_pen(on: bool) -> void:
 	PathDraw.set_param(_pen_frame, "flow", net.get("flow"))
 	# The frame symbol is drawn in the sheet's white edge and grey muted inks, which vanish on the light
 	# dev floor: here they are the landmarks' blue.
-	PathDraw.set_param(_pen_frame, "col_edge", landmark_colour)
-	PathDraw.set_param(_pen_frame, "col_muted", landmark_colour)
+	PathDraw.set_param(_pen_frame, "col_edge", foundation_colour)
+	PathDraw.set_param(_pen_frame, "col_muted", foundation_colour)
 
 
 # --- The note, and the editor ---------------------------------------------------------------------

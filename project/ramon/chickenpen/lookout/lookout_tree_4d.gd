@@ -67,6 +67,12 @@ const BALL := preload("res://ramon/chickenpen/scripts/loft_ball_4d.gd")
 	set(v):
 		bark = v
 		_changed()
+## The leafy style's clumps of leaves, two squashed balls at each high limb's tip: off since Ramon, 7 Oct ("dont
+## change the trees. just remove the leave balls"), so a leafy tree stands bare-limbed, its seats where they were.
+@export var leaf_balls: bool = false:
+	set(v):
+		leaf_balls = v
+		_changed()
 @export var leaves: Color = Color(0.30, 0.42, 0.20):
 	set(v):
 		leaves = v
@@ -134,8 +140,10 @@ func rebuild() -> void:
 		var twig_end: Vector4 = goal + Vector4(out.normalized().x * 0.45, 0.06, out.normalized().y * 0.45, 0.0)
 		limbs.append({"points": [from, bow, goal, twig_end], "radii": [r * 0.42, r * 0.28, 0.07, 0.035], "sides": 6})
 		seats.append(perch)
-	if style == Style.LEAFY:
+	if style == Style.LEAFY and leaf_balls:
 		_canopy(rng)
+	else:
+		set_meta("clumps", [])
 	_build()
 
 
@@ -214,7 +222,7 @@ func _build() -> void:
 			wood.merge_with(built, Vector4.ZERO, Projection.IDENTITY)
 		rig.free()
 	_show("Wood", wood, bark)
-	if style == Style.LEAFY and has_meta("clumps"):
+	if style == Style.LEAFY and has_meta("clumps") and not (get_meta("clumps") as Array).is_empty():
 		var green := ArrayTetraMesh4D.new()
 		var green2 := ArrayTetraMesh4D.new()
 		var i: int = 0

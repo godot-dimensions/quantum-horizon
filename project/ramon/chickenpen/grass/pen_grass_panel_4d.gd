@@ -44,6 +44,12 @@ var _look_box: VBoxContainer
 var _look_label: Label
 var _look_buttons: Array[Button] = []
 var _look_node: Node
+## The dev look's two colours (Ramon, 7 Oct: "two options in the dev panel that makes me controll the orange and
+## the blue in the scene"): swatches under Dev / Art, set live, kept by Save settings, shown in the dev look only
+## ("is it possible we show the color squares menu only in the dev look?").
+var _colours_box: VBoxContainer
+var _blue_swatch: ColorPickerButton
+var _orange_swatch: ColorPickerButton
 var _save_button: Button
 var _save_note: Label
 var _save_check: float = 0.0
@@ -174,6 +180,47 @@ func _look_rows() -> void:
 		b.set_meta("dev", dev)
 		b.pressed.connect(_pick_look.bind(dev))
 		_look_buttons.append(b)
+	# Small, one under the other, a little cube and its name beside it (Ramon, 7 Oct: "make the swatches to click
+	# smaller so its less invasive in the hud. like little cubes, with descripts next to it. and under each other").
+	var colours := VBoxContainer.new()
+	colours.add_theme_constant_override("separation", 3)
+	colours.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_look_box.add_child(colours)
+	_colours_box = colours
+	_blue_swatch = _colour_swatch("Foundation colour", colours)
+	_orange_swatch = _colour_swatch("Landmark colour", colours)
+
+
+## A little cube for one of the dev look's colours, its name beside it: its picker sets both colours on the look
+## as it is dragged.
+func _colour_swatch(text: String, parent: Control) -> ColorPickerButton:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(row)
+	var swatch := ColorPickerButton.new()
+	swatch.edit_alpha = false
+	swatch.custom_minimum_size = Vector2(14.0, 14.0)
+	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	swatch.focus_mode = Control.FOCUS_NONE
+	swatch.mouse_filter = Control.MOUSE_FILTER_STOP
+	var edge := StyleBoxFlat.new()
+	edge.bg_color = Color(1.0, 1.0, 1.0, 0.0)
+	edge.border_color = Color(1.0, 1.0, 1.0, 0.35)
+	edge.set_border_width_all(1)
+	edge.set_content_margin_all(0)
+	for state in ["normal", "hover", "pressed"]:
+		swatch.add_theme_stylebox_override(state, edge)
+	swatch.color_changed.connect(func(_c: Color) -> void: _on_colours())
+	row.add_child(swatch)
+	_label(text, Color(1.0, 1.0, 1.0, 0.45), row)
+	return swatch
+
+
+func _on_colours() -> void:
+	if _look_node != null and is_instance_valid(_look_node) and _look_node.has_method("set_colours"):
+		_look_node.call("set_colours", _blue_swatch.color, _orange_swatch.color)
+		_note_saved()
 
 
 func _pick_look(dev: bool) -> void:
@@ -194,11 +241,16 @@ func _find_look() -> void:
 	_look_label.text = "Look   " + OS.get_keycode_string(look.get("key"))
 	look.connect("look_changed", _on_look)
 	_on_look(bool(look.get("dev")))
+	if _blue_swatch != null:
+		_blue_swatch.color = look.get("foundation_colour")
+		_orange_swatch.color = look.get("landmark_colour")
 
 
 func _on_look(dev: bool) -> void:
 	for b in _look_buttons:
 		_paint(b, bool(b.get_meta("dev")) == dev)
+	if _colours_box != null:
+		_colours_box.visible = dev
 
 
 ## SAVE (Ramon, 7 Oct: "the greenery controls, and the rebaking options. does that get saved? or not. if
@@ -225,6 +277,9 @@ func _save() -> void:
 	if grass == null or not grass.has_method("save_settings"):
 		return
 	var err: int = int(grass.call("save_settings"))
+	# The dev look's blue and orange with it (look/look_saved.cfg).
+	if err == OK and _look_node != null and is_instance_valid(_look_node) and _look_node.has_method("save_colours"):
+		err = int(_look_node.call("save_colours"))
 	_note_saved()
 	if err != OK:
 		_save_note.text = "Not saved: %s" % error_string(err)
@@ -234,6 +289,8 @@ func _note_saved() -> void:
 	if _save_button == null or grass == null or not grass.has_method("matches_saved"):
 		return
 	var same: bool = bool(grass.call("matches_saved"))
+	if _look_node != null and is_instance_valid(_look_node) and _look_node.has_method("colours_match_saved"):
+		same = same and bool(_look_node.call("colours_match_saved"))
 	_paint(_save_button, not same)
 	if not bool(grass.call("has_saved")):
 		_save_note.text = "Nothing saved yet"
@@ -388,11 +445,17 @@ func _process(delta: float) -> void:
 	# was; grown tall, that ran up into the murmuration card - then beside the list, bottoms
 	# level, or beside the murmuration card, tops level. The camera picker and the Lookout card
 	# keep to the right and are not counted.
+	# THE PATHS WINDOW STACKED ON TOP (Ramon, 7 Oct: "the paths window can stack neatly above the other. not sure why
+	# its next to one other"): this panel finds room for the two together, the paths window's height and a gap above
+	# its own, and sits at the bottom of it; the paths window takes the top (scripts/pen_paths_panel_4d.gd).
+	var stack := get_parent().get_node_or_null(^"PathsPanel") as Control
+	var top_h: float = stack.size.y + gap if stack != null and stack.is_visible_in_tree() else 0.0
+	var block := Vector2(maxf(size.x, stack.size.x if top_h > 0.0 else 0.0), size.y + top_h)
 	var places: Array = []
 	if above != null and above.is_visible_in_tree():
 		var r: Rect2 = SPOT.rect_of(above)
-		places.append(Vector2(r.position.x, r.position.y - size.y - gap))
-		places.append(Vector2(r.end.x + gap, r.end.y - size.y))
+		places.append(Vector2(r.position.x, r.position.y - block.y - gap))
+		places.append(Vector2(r.end.x + gap, r.end.y - block.y))
 	var stats := get_parent().get_node_or_null(^"FlockStats") as Control
 	var column_right: float = margin
 	if above != null and above.is_visible_in_tree():
@@ -406,13 +469,23 @@ func _process(delta: float) -> void:
 	var info := get_parent().get_node_or_null(^"InfoCard") as Control
 	var under_info: float = SPOT.rect_of(info).end.y + gap if info != null and info.is_visible_in_tree() else margin
 	places.append(Vector2(column_right + gap, under_info))
-	places.append(Vector2(margin, view.y * at_height - size.y))
+	# Right of the belt too: with the paths window on top the pair is taller than the room between the info card
+	# and the belt, and at 125% it lay over the belt's last slot.
+	var belt := get_parent().get_node_or_null(^"Inventory") as Control
+	var belt_r := Rect2()
+	if belt != null and belt.is_visible_in_tree() and belt.has_method("belt_rect"):
+		belt_r = belt.call("belt_rect")
+		places.append(Vector2(maxf(column_right, belt_r.end.x) + gap, under_info))
+	places.append(Vector2(margin, view.y * at_height - block.y))
 	var ignore: Array = []
-	for other in [^"CameraPicker", ^"Journal"]:
+	for other in [^"CameraPicker", ^"Journal", ^"PathsPanel"]:
 		var n: Node = get_parent().get_node_or_null(other)
 		if n != null:
 			ignore.append(n)
-	position = SPOT.first(places, size, SPOT.taken(get_parent(), self, ignore), view)
+	var taken: Array = SPOT.taken(get_parent(), self, ignore)
+	if belt_r.size != Vector2.ZERO:
+		taken.append(belt_r)
+	position = SPOT.first(places, block, taken, view) + Vector2(0.0, top_h)
 
 
 func _pick(n: int) -> void:

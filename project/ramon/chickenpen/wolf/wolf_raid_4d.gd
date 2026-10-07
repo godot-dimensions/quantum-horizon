@@ -59,6 +59,9 @@ enum Phase { IDLE, APPROACH, LEAP_IN, TO_CHICKEN, GRAB, TO_FENCE, LEAP_OUT, RUN_
 @export_range(1.0, 6.0, 0.1, "suffix:s") var face_seconds: float = 3.4
 @export_range(1.5, 3.0, 0.01) var letterbox_aspect: float = 2.39
 
+## How fast the wolf turns while running, radians a second.
+const TURN_RATE := 9.0
+
 var phase: Phase = Phase.IDLE
 var _wolf: Node4D
 var _walker: Node
@@ -77,6 +80,10 @@ var _saved: Dictionary = {}
 var _layer: CanvasLayer
 var _bars: Array[ColorRect] = []
 var _subtitle: Label
+## "click to skip", in the top bar (Ramon, 7 Oct: "its not skippable with left mouse click").
+var _skip_hint: Label
+## The longest a running phase may take before the wolf is put where it was going (see _run_to).
+var _phase_cap: float = INF
 var _bars_in: float = 0.0
 var _shot_from := Vector4.ZERO
 var _look := Vector4.ZERO
@@ -179,6 +186,36 @@ func _process(delta: float) -> void:
 				return
 	_carry_chicken()
 	_frame()
+
+
+## Left click or Esc skips the raid to how it ends: the hen carried off and set down a little ana, the line
+## left out. In _input, ahead of the camera's own keys (pen_cinematics_4d.gd says why: Esc there frees the mouse,
+## and a second Esc quits).
+func _input(event: InputEvent) -> void:
+	if phase == Phase.IDLE:
+		return
+	var mouse := event as InputEventMouseButton
+	var key := event as InputEventKey
+	var click: bool = mouse != null and mouse.pressed and mouse.button_index == MOUSE_BUTTON_LEFT
+	var esc: bool = key != null and key.pressed and not key.echo and key.keycode == KEY_ESCAPE
+	if click or esc:
+		get_viewport().set_input_as_handled()
+		skip()
+
+
+## Straight to the end: the hen taken (if it was not yet), the wolf where its run ends, the hen set down there,
+## and the farm back.
+func skip() -> void:
+	if phase == Phase.IDLE:
+		return
+	if _chicken != null and int(_chicken.get("state")) != 4 and phase in [Phase.APPROACH, Phase.LEAP_IN, Phase.TO_CHICKEN, Phase.GRAB]:
+		_chicken.set("returned", false)
+		_chicken.call("on_caught")
+	if phase != Phase.FACE:
+		var end: Vector4 = _route["end"]
+		_wolf.global_position = Vector4(end.x, 0.0, end.z, exit_w)
+		_set_chicken_down()
+	_finish()
 
 
 func _can_come() -> bool:
@@ -345,6 +382,19 @@ func _flat(middle: Vector4, n: Vector2, half: Vector2, along: Vector2, out: floa
 func _enter(next: Phase) -> void:
 	phase = next
 	_phase_t = 0.0
+	_phase_cap = INF
+	# A running phase never takes more than twice the straight way, plus a second.
+	var ahead: Vector4 = Vector4.ZERO
+	match next:
+		Phase.TO_CHICKEN:
+			ahead = _route["grab_at"]
+		Phase.TO_FENCE:
+			ahead = _route["fence_in_out"]
+		Phase.APPROACH:
+			ahead = _route["fence_out_in"]
+	if next in [Phase.TO_CHICKEN, Phase.TO_FENCE, Phase.APPROACH]:
+		var here: Vector4 = _wolf.global_position
+		_phase_cap = Vector2(ahead.x - here.x, ahead.z - here.z).length() / run_speed * 2.0 + 1.0
 	match next:
 		Phase.LEAP_IN, Phase.LEAP_OUT, Phase.GRAB:
 			_running(false)
@@ -369,14 +419,24 @@ func _running(on: bool) -> void:
 
 
 ## Runs straight at [param to], turning towards it; true once there.
+##
+## NO CIRCLING (Ramon, 7 Oct: "serious glitch happening when the wolf animation kicks in ... he keeps going in
+## circles with the chicken, stuck in a loop"). It turns at most TURN_RATE, so at run_speed its tightest circle is
+## run_speed / TURN_RATE across (0.72 m at 6.5 m/s), and it only counted as there within one frame's step
+## (0.1 m): a target inside that circle (the fence's crossing beside it after the grab, a hen sat by the fence)
+## was circled for ever, and the cutscene never ended. Near the target it now heads straight at it, and a phase
+## that runs past _phase_cap puts it where it was going.
 func _run_to(to: Vector4, delta: float) -> bool:
 	var here: Vector4 = _wolf.global_position
 	var gap := Vector2(to.x - here.x, to.z - here.z)
 	var step: float = run_speed * delta
-	if gap.length() <= step:
+	if gap.length() <= maxf(step, 0.12) or _phase_t > _phase_cap:
 		_wolf.global_position = Vector4(to.x, 0.0, to.z, here.w)
 		return true
-	_heading = rotate_toward(_heading, atan2(gap.x, gap.y), delta * 9.0)
+	if gap.length() < run_speed / TURN_RATE * 2.2:
+		_heading = atan2(gap.x, gap.y)
+	else:
+		_heading = rotate_toward(_heading, atan2(gap.x, gap.y), delta * TURN_RATE)
 	var forward := Vector2(sin(_heading), cos(_heading))
 	_wolf.global_position = Vector4(here.x + forward.x * step, 0.0, here.z + forward.y * step, here.w)
 	_set_pose(0.0)
@@ -488,6 +548,7 @@ func _finish() -> void:
 	if is_instance_valid(_layer):
 		_layer.queue_free()
 	_bars.clear()
+	_skip_hint = null
 	_chicken = null
 	phase = Phase.IDLE
 	_t = 0.0
@@ -518,6 +579,14 @@ func _build_bars() -> void:
 	_subtitle.add_theme_font_size_override("font_size", 26)
 	_subtitle.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.95))
 	_layer.add_child(_subtitle)
+	_skip_hint = Label.new()
+	_skip_hint.text = "click to skip"
+	_skip_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_skip_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_skip_hint.add_theme_font_size_override("font_size", 16)
+	_skip_hint.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.55))
+	_skip_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_layer.add_child(_skip_hint)
 	_bars_in = 0.0
 	_lay_out()
 
@@ -535,6 +604,10 @@ func _lay_out() -> void:
 	_bars[1].size = Vector2(screen.x, bar)
 	_subtitle.position = Vector2(0.0, screen.y - bar)
 	_subtitle.size = Vector2(screen.x, bar)
+	if _skip_hint != null:
+		_skip_hint.position = Vector2(0.0, 0.0)
+		_skip_hint.size = Vector2(screen.x - 28.0, bar)
+		_skip_hint.modulate.a = smoothstep(0.0, 1.0, _bars_in) if phase != Phase.FACE else 0.0
 	var fade: float = clampf(minf((_phase_t - 0.3) / 0.4, (face_seconds - _phase_t) / 0.4), 0.0, 1.0)
 	_subtitle.text = line
 	_subtitle.modulate.a = fade if phase == Phase.FACE else 0.0

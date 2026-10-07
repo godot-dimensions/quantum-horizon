@@ -7,7 +7,7 @@ extends Control
 ## (scripts/pen_paths_4d.gd); clicks need the mouse (Esc first), the keys work always.
 ##
 ## IN THE GRASS PANEL'S HAND: the same dark glass and chips, so the two read as one set of test tools.
-## Beside the grass panel, tops level, or wherever the HUD has room (pen_hud_spot_4d.gd).
+## On top of the grass panel (it keeps the room), else beside it, or wherever the HUD has room (pen_hud_spot_4d.gd).
 
 const SPOT := preload("res://ramon/chickenpen/scripts/pen_hud_spot_4d.gd")
 
@@ -109,8 +109,10 @@ func _process(_delta: float) -> void:
 	var places: Array = []
 	if beside != null and is_instance_valid(beside) and beside.is_visible_in_tree():
 		var r: Rect2 = SPOT.rect_of(beside)
-		places.append(Vector2(r.end.x + gap, r.position.y))
+		# On top of the grass panel, left edges level: it keeps the room (grass/pen_grass_panel_4d.gd; Ramon,
+		# 7 Oct: "the paths window can stack neatly above the other").
 		places.append(Vector2(r.position.x, r.position.y - size.y - gap))
+		places.append(Vector2(r.end.x + gap, r.position.y))
 		places.append(Vector2(r.end.x + gap, r.end.y - size.y))
 	places.append(Vector2(margin, view.y * 0.22))
 	places.append(Vector2(margin, view.y * 0.5 - size.y))
@@ -119,7 +121,11 @@ func _process(_delta: float) -> void:
 		var n: Node = get_parent().get_node_or_null(other)
 		if n != null:
 			ignore.append(n)
-	position = SPOT.first(places, size, SPOT.taken(get_parent(), self, ignore), view)
+	var taken: Array = SPOT.taken(get_parent(), self, ignore)
+	var belt := get_parent().get_node_or_null(^"Inventory") as Control
+	if belt != null and belt.is_visible_in_tree() and belt.has_method("belt_rect"):
+		taken.append(belt.call("belt_rect"))
+	position = SPOT.first(places, size, taken, view)
 
 
 func _row(parent: Control) -> HBoxContainer:
