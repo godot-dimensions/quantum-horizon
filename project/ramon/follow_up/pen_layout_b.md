@@ -113,7 +113,8 @@ when you almost got it all in slice but not quite ... v at 80 is also fine".
   60%: no V; a small turn showing 73%: V), and so does the journey (23 checks).
 - Stray boxes on a turned slice (Ramon's screenshots): `World/Scenery/Post5`-`Post7`, plain 0.7 x 2.2 x 0.7 m
   posts from the pen's first version at W +1.6, -1.6 and +2.4, moved by layout A's runner
-  (`_make_moved_pen_runner.gd`); found by `WTools/tests/_probe_stray_boxes_runner.gd`. Removal awaits his word.
+  (`_make_moved_pen_runner.gd`); found by `WTools/tests/_probe_stray_boxes_runner.gd`. Deleted at his word ("yes delete the boxes"),
+  with their mesh and material; `World/Scenery` is left empty. `_measure_scale_runner.gd` still looks for Post5.
 
 ## Open
 
