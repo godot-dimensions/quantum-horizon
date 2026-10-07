@@ -1,4 +1,4 @@
-[gd_scene load_steps=464 format=4 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=467 format=4 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/mountains_even.res" id="2_j4g5o"]
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
@@ -61,7 +61,10 @@
 [ext_resource type="Script" uid="uid://dbh5bwplcfxb2" path="res://ramon/chickenpen/scripts/pen_nike_grab_4d.gd" id="pen_nike_grab"]
 [ext_resource type="Script" uid="uid://b0qfnli2g703l" path="res://ramon/chickenpen/scripts/pen_nike_talk_4d.gd" id="pen_nike_talk"]
 [ext_resource type="Script" uid="uid://ue0t3mdfdxy0" path="res://ramon/chickenpen/scripts/pen_oak_4d.gd" id="pen_oak"]
-[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_trees_4d.gd" id="pen_trees"]
+[ext_resource type="Script" path="res://ramon/WTools/exploder/w_exploder_4d.gd" id="w_exploder"]
+[ext_resource type="Resource" path="res://ramon/WTools/exploder/presets/turnable_forest.tres" id="w_forest"]
+[ext_resource type="Script" path="res://ramon/WTools/optimiser/w_optimiser_4d.gd" id="w_optimiser"]
+[ext_resource type="Resource" path="res://ramon/WTools/optimiser/profiles/skyline.tres" id="w_skyline"]
 [ext_resource type="Script" uid="uid://ql6a1pkb1jio" path="res://ramon/chickenpen/scripts/pen_celebration_4d.gd" id="pen_party"]
 [ext_resource type="Script" uid="uid://br2av5jujkr0t" path="res://ramon/chickenpen/scripts/pen_paths_4d.gd" id="pen_paths"]
 [ext_resource type="Resource" path="res://ramon/PenLayout/paths/pen_b.tres" id="pen_paths_graph"]
@@ -2695,8 +2698,10 @@ size = Vector3(2, 2.4, 1.8)
 w_size = 2.2
 
 [node name="Trees" type="Node4D" parent="World"]
-script = ExtResource("pen_trees")
-metadata/what = "Layout B's planting (PenLayout/PLAN_B.md steps 32-35): the large and medium oaks where Ramon painted them, bushes by rule. Each one its own node: drag, copy or delete. Every plant a little different in size and turn; light bakes, drawn only when the slice cuts them and they are in view (scripts/pen_oak_4d.gd). Since 7 Oct the planting also stands again at 4 and 8 ana and kata, shifted and turned, made as the pen starts and never saved (scripts/pen_trees_4d.gd)."
+script = ExtResource("w_exploder")
+preset = ExtResource("w_forest")
+solid_near_path = NodePath("../../Player")
+metadata/what = "Layout B's planting (PenLayout/PLAN_B.md steps 32-35): the large and medium oaks where Ramon painted them, bushes by rule. Each one its own node: drag, copy or delete. Every plant a little different in size and turn; light bakes, drawn only when the slice cuts them and they are in view (scripts/pen_oak_4d.gd). Stood again through W by the W Exploder (WTools/README.md), preset Turnable forest: layers 4.5 m apart out to 18 m ana and kata, made as the pen starts and never saved. Preview copies shows them here."
 
 [node name="OakL01" type="Node4D" parent="World/Trees"]
 position = Vector4(18.48, 0, 25.1, 0)
@@ -3609,6 +3614,18 @@ count = 5
 stone_size = 0.75
 w_depth = 1.4
 metadata/what = "A cairn at the cave hill's east foot, 7 m ana: easter egg 2, a bag of azoth beside it (PLAN_A.md step 30)."
+
+[node name="WatchstoneW" type="Node4D" parent="World"]
+script = ExtResource("w_optimiser")
+target = NodePath("../LookoutSite/Lookout")
+profile = ExtResource("w_skyline")
+metadata/what = "The W Optimiser on the Watchstone (WTools/README.md), profile Skyline: its parts 4 m deep in W, and wrapped: it stays where it is when the slice turns, up to 60 degrees, from 40 m of W either side. Made as the pen starts from the Watchstone as it is in units/watchstone; never saved. Analyse writes its report here."
+
+[node name="RangeW" type="Node4D" parent="World"]
+script = ExtResource("w_optimiser")
+target = NodePath("../Range")
+profile = ExtResource("w_skyline")
+metadata/what = "The W Optimiser on the range (WTools/README.md), profile Skyline. The range is built in W (its boards through W, walls across W), so it is left exactly as it is; only the wrap applies: seen from more than 15 m it stays in view when the slice turns. Made as the pen starts from the range as it is in units/rune_range, so the wrap follows every edit there; never saved."
 
 [node name="Paths" type="Node4D" parent="World"]
 script = ExtResource("pc_network")

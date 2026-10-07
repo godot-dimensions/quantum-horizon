@@ -1,0 +1,11 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/WTools/exploder/w_exploder_preset.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+note = "The pen's first planting, with the trunk slab: layers to 9 m either side. A turned slice keeps the wood to about 30 degrees."
+w_reach = 9.0
+share = 0.75
+auto_share = false
+target_angle = 25.0

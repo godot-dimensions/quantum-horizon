@@ -218,8 +218,11 @@ static func _oak(root: Node4D) -> Dictionary:
 		var tall := Vector4((hi.x - lo.x) * 0.42, (top - bottom) * 0.5, (hi.z - lo.z) * 0.42, (hi.w - lo.w) * 0.42)
 		var tw_leafy: float = maxf(0.18, height * 0.05)
 		var trunk_to: float = bottom + tall.y * 0.4
+		# As deep in W as the art's trunk (WTools' W Exploder makes trunks one depth to the branches, the
+		# "trunk slab", so a turned slice keeps them under their crowns; the block does the same).
+		var trunk_w: float = maxf(tw_leafy, float(root.get_meta(&"trunk_w_half", 0.0)) * 2.0)
 		return {"blue": [
-			{"box": Vector4(tw_leafy, trunk_to - lo.y, tw_leafy, tw_leafy), "at": Vector4(c.x, (lo.y + trunk_to) * 0.5, c.z, c.w)},
+			{"box": Vector4(tw_leafy, trunk_to - lo.y, tw_leafy, trunk_w), "at": Vector4(c.x, (lo.y + trunk_to) * 0.5, c.z, c.w)},
 			{"unit": "cell24_up", "basis": stretch.call(tall), "at": Vector4(c.x, (bottom + top) * 0.5, c.z, c.w)},
 		]}
 	if String(root.get("bake")).begins_with("bush"):
@@ -267,7 +270,8 @@ static func art_bounds(root: Node4D) -> Array:
 	var found: bool = false
 	for node in nodes:
 		var mi := node as MeshInstance4D
-		if mi.mesh == null or not mi.visible or mi.has_meta(&"_look_own") or is_character(mi, root):
+		# Hidden by a W Optimiser while its copy shows (w_hidden): drawn art all the same.
+		if mi.mesh == null or (not mi.visible and not mi.has_meta(&"w_hidden")) or mi.has_meta(&"_look_own") or is_character(mi, root):
 			continue
 		var r: PackedVector4Array = mi.get_rect_bounds_local()
 		if r[1].length() < 0.01:

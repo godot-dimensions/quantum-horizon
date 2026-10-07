@@ -1,0 +1,11 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/WTools/exploder/w_exploder_preset.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+note = "Layers to 18 m at a share of 0.4: a lighter wood through W, for open country."
+w_reach = 18.0
+share = 0.4
+auto_share = false
+target_angle = 30.0

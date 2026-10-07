@@ -1,0 +1,50 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://ramon/WTools/tests/w_lab_4d.gd" id="1_xnefb"]
+[ext_resource type="PackedScene" path="res://ramon/chickenpen/units/watchstone/watchstone.tscn" id="2_1cnkb"]
+[ext_resource type="Script" path="res://ramon/chickenpen/lookout/watchstone_4d.gd" id="3_h5o0m"]
+[ext_resource type="Script" path="res://ramon/WTools/optimiser/w_optimiser_4d.gd" id="4_ha8tp"]
+[ext_resource type="Resource" path="res://ramon/WTools/optimiser/profiles/skyline.tres" id="5_k3o5o"]
+[ext_resource type="PackedScene" path="res://ramon/chickenpen/units/camp/camp.tscn" id="6_q0hfr"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_research_camp_4d.gd" id="7_1tvgu"]
+[ext_resource type="Resource" path="res://ramon/WTools/optimiser/profiles/landmark.tres" id="8_bykoi"]
+[ext_resource type="PackedScene" path="res://ramon/chickenpen/units/rune_range/rune_range.tscn" id="9_l4bv7"]
+
+[node name="OptimiserLab" type="Node4D"]
+script = ExtResource("1_xnefb")
+ground = Vector4(400, 1, 400, 400)
+player_at = Vector4(0, 1, 0, 0)
+
+[node name="Watchstone" type="Node4D" parent="." instance=ExtResource("2_1cnkb")]
+position = Vector4(0, 0, -45, 0)
+script = ExtResource("3_h5o0m")
+stones_baked = true
+metadata/what = "The Watchstone: the Lookout's crag and its timber walkways, built to Ramon's sheet (PenLayout/PLAN_REF_LOCK.md). The big rock chunks are under Chunks: move, turn or resize them."
+
+[node name="WatchstoneW" type="Node4D" parent="."]
+script = ExtResource("4_ha8tp")
+target = NodePath("../Watchstone")
+profile = ExtResource("5_k3o5o")
+min_w_half = 4.0
+wrap = true
+
+[node name="Camp" type="Node4D" parent="." instance=ExtResource("6_q0hfr")]
+position = Vector4(-30, 0, -18, 0)
+basis = Projection(0.8660254037844387, 0, -0.49999999999999994, 0, 0, 1, 0, 0, 0.49999999999999994, 0, 0.8660254037844387, 0, 0, 0, 0, 1)
+script = ExtResource("7_1tvgu")
+metadata/what = "The researchers' camp, built to Ramon's sheet (PenLayout/refs/camp_views.png, PenLayout/PLAN_REF_LOCK.md part E). The origin is the fire's middle; V at the camp brings your slice to it when it is half in view."
+
+[node name="CampW" type="Node4D" parent="."]
+script = ExtResource("4_ha8tp")
+target = NodePath("../Camp")
+profile = ExtResource("8_bykoi")
+
+[node name="Range" type="Node4D" parent="." instance=ExtResource("9_l4bv7")]
+position = Vector4(34, 0, -22, 0)
+basis = Projection(0.9396926207859084, 0, 0.3420201433256687, 0, 0, 1, 0, 0, -0.3420201433256687, 0, 0.9396926207859084, 0, 0, 0, 0, 1)
+metadata/move_me = "Move (or turn) this node to move the whole range: the yard, its fences, boards, outcrop, table, banner and rune stone, the range master, and the path's end. Built to Ramon's sheet (PenLayout/refs/range_views.png): the origin is where the sheet stands the player, the boards 10.5 m away along -z."
+
+[node name="RangeW" type="Node4D" parent="."]
+script = ExtResource("4_ha8tp")
+target = NodePath("../Range")
+profile = ExtResource("8_bykoi")

@@ -1,0 +1,336 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://ramon/WTools/tests/w_lab_4d.gd" id="1_ymdyp"]
+[ext_resource type="Script" path="res://ramon/WTools/exploder/w_exploder_4d.gd" id="2_3hmhv"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_oak_4d.gd" id="3_8g8cr"]
+
+[node name="ExploderLab" type="Node4D"]
+script = ExtResource("1_ymdyp")
+player_at = Vector4(0, 1, 14, 0)
+
+[node name="Trees" type="Node4D" parent="."]
+script = ExtResource("2_3hmhv")
+valley_centre = Vector2(0, -15)
+valley_radius = 120.0
+paths_path = NodePath("")
+use_hill_heights = false
+
+[node name="Bush00" type="Node4D" parent="Trees"]
+position = Vector4(0.7337360765811489, 0, -5.238209682453686, 0)
+basis = Projection(-0.7190485260372389, 0, 0.6949598673331245, 0, 0, 1, 0, 0, -0.6949598673331245, 0, -0.7190485260372389, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "bush_2"
+height = 1.4185760509949956
+trunk = Vector2(0.3, 0.6)
+
+[node name="Oak01" type="Node4D" parent="Trees"]
+position = Vector4(-19.1454981957323, 0, 1.8523886430674708, 0)
+basis = Projection(0.2758248941848917, 0, 0.961207900377381, 0, 0, 1, 0, 0, -0.961207900377381, 0, 0.2758248941848917, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 5.378178756378153
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak02" type="Node4D" parent="Trees"]
+position = Vector4(14.42888804151903, 0, -5.416129169266526, 0)
+basis = Projection(0.19012179798043177, 0, 0.9817605114958983, 0, 0, 1, 0, 0, -0.9817605114958983, 0, 0.19012179798043177, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 5.008944791945771
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak03" type="Node4D" parent="Trees"]
+position = Vector4(4.709665146719541, 0, -0.539475894804589, 0)
+basis = Projection(-0.9057322493328926, 0, -0.4238503185304675, 0, 0, 1, 0, 0, 0.4238503185304675, 0, -0.9057322493328926, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 4.346009835783941
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak04" type="Node4D" parent="Trees"]
+position = Vector4(-19.56791145460603, 0, -3.7004514096248755, 0)
+basis = Projection(-0.18924407901280854, 0, -0.9819300782431476, 0, 0, 1, 0, 0, 0.9819300782431476, 0, -0.18924407901280854, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 4.456800749327995
+trunk = Vector2(0.8, 2.6)
+
+[node name="Bush05" type="Node4D" parent="Trees"]
+position = Vector4(16.18902716571079, 0, -2.482957898080528, 0)
+basis = Projection(0.9888306321924589, 0, 0.14904355349313805, 0, 0, 1, 0, 0, -0.14904355349313805, 0, 0.9888306321924589, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "bush_1"
+height = 1.1657153647534133
+trunk = Vector2(0.3, 0.6)
+
+[node name="Oak06" type="Node4D" parent="Trees"]
+position = Vector4(13.551963275737009, 0, 0.3508574192941136, 0)
+basis = Projection(0.9512608358927833, 0, -0.30838745450579386, 0, 0, 1, 0, 0, 0.30838745450579386, 0, 0.9512608358927833, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite3"
+height = 5.961053622054399
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak07" type="Node4D" parent="Trees"]
+position = Vector4(20.904214395754288, 0, -4.910260760699892, 0)
+basis = Projection(-0.9999298986803687, 0, 0.011840512027255926, 0, 0, 1, 0, 0, -0.011840512027255926, 0, -0.9999298986803687, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite3"
+height = 6.397208409011851
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak08" type="Node4D" parent="Trees"]
+position = Vector4(-5.719007461114202, 0, 1.0862986434655504, 0)
+basis = Projection(0.9340494553596723, 0, -0.3571436894896778, 0, 0, 1, 0, 0, 0.3571436894896778, 0, 0.9340494553596723, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite3"
+height = 6.143666812346505
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak09" type="Node4D" parent="Trees"]
+position = Vector4(6.253058489365074, 0, -4.8809350270612555, 0)
+basis = Projection(-0.7500035330702787, 0, 0.6614338216194416, 0, 0, 1, 0, 0, -0.6614338216194416, 0, -0.7500035330702787, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite3"
+height = 6.4980721336570575
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak10" type="Node4D" parent="Trees"]
+position = Vector4(15.567177252146344, 0, -11.574526888346057, 0)
+basis = Projection(-0.4708949565799549, 0, 0.8821892880031826, 0, 0, 1, 0, 0, -0.8821892880031826, 0, -0.4708949565799549, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite3"
+height = 5.648378387854552
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak11" type="Node4D" parent="Trees"]
+position = Vector4(10.907851970300804, 0, -10.189619860035364, 0)
+basis = Projection(0.8772573427312536, 0, -0.4800203689679219, 0, 0, 1, 0, 0, 0.4800203689679219, 0, 0.8772573427312536, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite3"
+height = 5.718356743451919
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak12" type="Node4D" parent="Trees"]
+position = Vector4(-17.15701765490934, 0, -15.2301385430559, 0)
+basis = Projection(-0.9059528474242312, 0, -0.42337859918036436, 0, 0, 1, 0, 0, 0.42337859918036436, 0, -0.9059528474242312, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 5.195537200455545
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak13" type="Node4D" parent="Trees"]
+position = Vector4(-5.972489694878071, 0, -13.465975245552858, 0)
+basis = Projection(0.23045757785426735, 0, 0.9730823730854158, 0, 0, 1, 0, 0, -0.9730823730854158, 0, 0.23045757785426735, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 5.09305712112934
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak14" type="Node4D" parent="Trees"]
+position = Vector4(15.446024541392774, 0, -6.661380075197503, 0)
+basis = Projection(0.9684982649891298, 0, -0.24902030180899978, 0, 0, 1, 0, 0, 0.24902030180899978, 0, 0.9684982649891298, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite3"
+height = 6.394674664836012
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak15" type="Node4D" parent="Trees"]
+position = Vector4(-6.070285315422025, 0, -7.467492120098953, 0)
+basis = Projection(0.9913152929228881, 0, 0.13150661586858886, 0, 0, 1, 0, 0, -0.13150661586858886, 0, 0.9913152929228881, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 4.8815386211051575
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak16" type="Node4D" parent="Trees"]
+position = Vector4(2.868538865740078, 0, -12.315337885485576, 0)
+basis = Projection(0.9842663222725443, 0, 0.1766912755064038, 0, 0, 1, 0, 0, -0.1766912755064038, 0, 0.9842663222725443, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite3"
+height = 6.747971946376076
+trunk = Vector2(0.8, 2.6)
+
+[node name="Bush17" type="Node4D" parent="Trees"]
+position = Vector4(0.24635560155606484, 0, -9.032579516261492, 0)
+basis = Projection(0.33565188448907785, 0, -0.9419860999181096, 0, 0, 1, 0, 0, 0.9419860999181096, 0, 0.33565188448907785, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "bush_3"
+height = 1.1136198126892134
+trunk = Vector2(0.3, 0.6)
+
+[node name="Oak18" type="Node4D" parent="Trees"]
+position = Vector4(19.180198153478038, 0, -14.83657679280283, 0)
+basis = Projection(0.992645619296187, 0, 0.12105649297782131, 0, 0, 1, 0, 0, -0.12105649297782131, 0, 0.992645619296187, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite3"
+height = 6.199665459922787
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak19" type="Node4D" parent="Trees"]
+position = Vector4(6.740503965745898, 0, -14.15612650171581, 0)
+basis = Projection(0.791326087190185, 0, -0.6113943275270646, 0, 0, 1, 0, 0, 0.6113943275270646, 0, 0.791326087190185, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 4.21031490806575
+trunk = Vector2(0.8, 2.6)
+
+[node name="Bush20" type="Node4D" parent="Trees"]
+position = Vector4(18.79755531949386, 0, -8.029581991460876, 0)
+basis = Projection(-0.41670823142971225, 0, -0.9090402905585216, 0, 0, 1, 0, 0, 0.9090402905585216, 0, -0.41670823142971225, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "bush_3"
+height = 1.5641679886316777
+trunk = Vector2(0.3, 0.6)
+
+[node name="Bush21" type="Node4D" parent="Trees"]
+position = Vector4(-14.865877586057797, 0, -9.258727707194343, 0)
+basis = Projection(-0.17246755057278712, 0, 0.9850151998824298, 0, 0, 1, 0, 0, -0.9850151998824298, 0, -0.17246755057278712, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "bush_1"
+height = 1.0089001189597275
+trunk = Vector2(0.3, 0.6)
+
+[node name="Bush22" type="Node4D" parent="Trees"]
+position = Vector4(-9.746138460507577, 0, -15.345333920614621, 0)
+basis = Projection(0.9092301213505144, 0, -0.4162938702754687, 0, 0, 1, 0, 0, 0.4162938702754687, 0, 0.9092301213505144, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "bush_1"
+height = 1.0572094177995934
+trunk = Vector2(0.3, 0.6)
+
+[node name="Bush23" type="Node4D" parent="Trees"]
+position = Vector4(-0.3300183938999055, 0, -13.736547095161693, 0)
+basis = Projection(0.48218902158098714, 0, 0.8760672048802935, 0, 0, 1, 0, 0, -0.8760672048802935, 0, 0.48218902158098714, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "bush_1"
+height = 1.2806195040093602
+trunk = Vector2(0.3, 0.6)
+
+[node name="Bush24" type="Node4D" parent="Trees"]
+position = Vector4(6.279723943305747, 0, -25.381056765756888, 0)
+basis = Projection(0.11459551554963437, 0, 0.9934122345813512, 0, 0, 1, 0, 0, -0.9934122345813512, 0, 0.11459551554963437, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "bush_1"
+height = 1.3834070337282423
+trunk = Vector2(0.3, 0.6)
+
+[node name="Oak25" type="Node4D" parent="Trees"]
+position = Vector4(17.436604237517862, 0, -21.63025058197892, 0)
+basis = Projection(0.2524145176682545, 0, -0.9676191974482019, 0, 0, 1, 0, 0, 0.9676191974482019, 0, 0.2524145176682545, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 5.144141554265028
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak26" type="Node4D" parent="Trees"]
+position = Vector4(-14.840557222895868, 0, -28.7761954573699, 0)
+basis = Projection(0.26003189564133344, 0, 0.9656000275731017, 0, 0, 1, 0, 0, -0.9656000275731017, 0, 0.26003189564133344, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite3"
+height = 5.672016612224984
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak27" type="Node4D" parent="Trees"]
+position = Vector4(21.21681070292327, 0, -16.055626400848322, 0)
+basis = Projection(-0.9667941075382607, 0, 0.25555655661574805, 0, 0, 1, 0, 0, -0.25555655661574805, 0, -0.9667941075382607, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite3"
+height = 5.8674301253764085
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak28" type="Node4D" parent="Trees"]
+position = Vector4(-1.1214362626421348, 0, -28.212846446792128, 0)
+basis = Projection(-0.42601356114460587, 0, -0.9047167765222944, 0, 0, 1, 0, 0, 0.9047167765222944, 0, -0.42601356114460587, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 4.415373550459166
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak29" type="Node4D" parent="Trees"]
+position = Vector4(-20.60128191058255, 0, -22.525662047529124, 0)
+basis = Projection(0.9470365573407825, 0, -0.3211257682904298, 0, 0, 1, 0, 0, 0.3211257682904298, 0, 0.9470365573407825, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 5.07643028941902
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak30" type="Node4D" parent="Trees"]
+position = Vector4(-1.859811030392109, 0, -16.981809399197704, 0)
+basis = Projection(-0.9700771897273902, 0, 0.24279671738021721, 0, 0, 1, 0, 0, -0.24279671738021721, 0, -0.9700771897273902, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite3"
+height = 6.0991048289273575
+trunk = Vector2(0.8, 2.6)
+
+[node name="Bush31" type="Node4D" parent="Trees"]
+position = Vector4(-9.582989181932493, 0, -26.571884786720574, 0)
+basis = Projection(-0.7444148391497787, 0, -0.6677174157183629, 0, 0, 1, 0, 0, 0.6677174157183629, 0, -0.7444148391497787, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "bush_2"
+height = 1.0662899853674805
+trunk = Vector2(0.3, 0.6)
+
+[node name="Oak32" type="Node4D" parent="Trees"]
+position = Vector4(14.808930251621995, 0, -29.43161426999739, 0)
+basis = Projection(0.7626959730572058, 0, 0.6467571821652405, 0, 0, 1, 0, 0, -0.6467571821652405, 0, 0.7626959730572058, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 4.2058816752770785
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak33" type="Node4D" parent="Trees"]
+position = Vector4(-8.13859870413865, 0, -16.765976721835273, 0)
+basis = Projection(0.9277034368028515, 0, -0.3733180056522557, 0, 0, 1, 0, 0, 0.3733180056522557, 0, 0.9277034368028515, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 5.207116548845068
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak34" type="Node4D" parent="Trees"]
+position = Vector4(-13.649524478300279, 0, -24.529295554995258, 0)
+basis = Projection(-0.9718582216950936, 0, 0.2355665445763687, 0, 0, 1, 0, 0, -0.2355665445763687, 0, -0.9718582216950936, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite3"
+height = 5.891503067163849
+trunk = Vector2(0.8, 2.6)
+
+[node name="Bush35" type="Node4D" parent="Trees"]
+position = Vector4(14.124904309143389, 0, -25.77969214186281, 0)
+basis = Projection(0.3999298887160626, 0, -0.916545734871729, 0, 0, 1, 0, 0, 0.916545734871729, 0, 0.3999298887160626, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "bush_1"
+height = 1.4638936893102619
+trunk = Vector2(0.3, 0.6)
+
+[node name="Oak36" type="Node4D" parent="Trees"]
+position = Vector4(1.9317985833117213, 0, -26.433087297428486, 0)
+basis = Projection(-0.4322385808884218, 0, -0.9017592856142725, 0, 0, 1, 0, 0, 0.9017592856142725, 0, -0.4322385808884218, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 4.631200688825677
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak37" type="Node4D" parent="Trees"]
+position = Vector4(-19.548270839189687, 0, -17.496082171400495, 0)
+basis = Projection(-0.7060347876614772, 0, 0.7081771519978689, 0, 0, 1, 0, 0, -0.7081771519978689, 0, -0.7060347876614772, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite3"
+height = 5.700370187970832
+trunk = Vector2(0.8, 2.6)
+
+[node name="Oak38" type="Node4D" parent="Trees"]
+position = Vector4(13.554250454512072, 0, -16.21470244921066, 0)
+basis = Projection(-0.9995625916735409, 0, -0.029574065105664574, 0, 0, 1, 0, 0, 0.029574065105664574, 0, -0.9995625916735409, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "oak_lite4"
+height = 4.888574775442617
+trunk = Vector2(0.8, 2.6)
+
+[node name="Bush39" type="Node4D" parent="Trees"]
+position = Vector4(9.496553678210233, 0, -21.132116549204483, 0)
+basis = Projection(0.030615752440726684, 0, -0.9995312279776396, 0, 0, 1, 0, 0, 0.9995312279776396, 0, 0.030615752440726684, 0, 0, 0, 0, 1)
+script = ExtResource("3_8g8cr")
+bake = "bush_2"
+height = 1.2970393912760696
+trunk = Vector2(0.3, 0.6)

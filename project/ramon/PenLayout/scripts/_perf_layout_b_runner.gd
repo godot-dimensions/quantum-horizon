@@ -52,7 +52,7 @@ func _run() -> void:
 	player.set("input_enabled", false)
 	var rig := player.get_node("CameraRig") as Node4D
 	var trees := _room.get_node("World/Trees") as Node4D
-	print("PERF: %d plants under World/Trees (%s stood again in W, %s spots refused)" % [trees.get_child_count(), str(trees.get("echo_count")), str(trees.get("echo_refused"))])
+	print("PERF: %d plants under World/Trees (%s stood again in W, %s spots refused)" % [trees.get_child_count(), str(trees.get("echo_count")), str(trees.get("echo_refused") if "echo_refused" in trees else trees.get("refused"))])
 	# Flat, and the slice turned 20 degrees into W (7 Oct: the planting through W, pen_trees_4d.gd).
 	for turn in [0.0, 20.0]:
 		for v in VIEWS:

@@ -5,11 +5,11 @@ extends SceneTree
 ## video. just make a few scenes that show it well"). Six scenes on the player's own camera (the orbit
 ## rig), each with a line of caption, cut through black:
 ##   1  the farm as it plays: down the path to Trym's house, art, then dev, then art
-##   2  turning the slice into W among the trees: 35 degrees and back, in the art and then in the dev look
+##   2  turning the slice into W in the west wood: 45 degrees and back, in the art and then in the dev look
 ##   3  the camp, 2.5 m kata: out of the slice, the slice turned until it shows, V brings you to it
 ##   4  through W to the cave: the path climbs 4 m ana to its door (E), and in, and out again
 ##   5  the town gate, the only way north: walked through in dev, then art
-##   6  the Watchstone, its red oak and Wren's balloon, the slice rocking a little
+##   6  the Watchstone, the slice turned along the view to 40 degrees and back: it holds (the W Optimiser)
 ## The movie writer at a fixed 30 fps (lab_run.sh movie_hd: 1920 x 1080), then ffmpeg to mp4. With
 ## "stills" after "--": a frame at every scene's middle instead (res://smoke_test_output/tour/), for
 ## checking it before the long render.
@@ -65,11 +65,11 @@ func _initialize() -> void:
 	layer.add_child(_caption)
 	_scenes = [
 		{"len": 12.0, "say": "The farm as it plays: art look, dev look (I), art again.", "set": _farm_set, "run": _farm_run},
-		{"len": 15.0, "say": "Turning the slice into W. The trees stand through W, so the wood stays.", "set": _trees_set, "run": _trees_run},
+		{"len": 15.0, "say": "Turning the slice into W in the west wood. The trees stand through W, so the wood stays.", "set": _trees_set, "run": _trees_run},
 		{"len": 11.0, "say": "The camp is 2.5 m kata. Turn the slice until it shows, then V.", "set": _camp_set, "run": _camp_run},
 		{"len": 17.0, "say": "The cave's door is 4 m ana. The path climbs through W to it.", "set": _cave_set, "run": _cave_run},
 		{"len": 9.0, "say": "The town wall runs through all of W. The gate is the only way north.", "set": _gate_set, "run": _gate_run},
-		{"len": 9.0, "say": "The Watchstone and its red oak.", "set": _tower_set, "run": _tower_run},
+		{"len": 9.0, "say": "Turning the slice toward the Watchstone: it stays where it is.", "set": _tower_set, "run": _tower_run},
 	]
 
 
@@ -191,16 +191,17 @@ func _farm_run(_d: float, t: float) -> void:
 
 func _trees_set() -> void:
 	_look(false)
-	_place(Vector4(14.0, 1.2, 2.0, 0.0), -90.0, -0.05, 6.0)
+	# The west wood (the W Exploder's planting, WTools/README.md), looking across it.
+	_place(Vector4(-22.0, 1.2, -12.0, 0.0), 100.0, -0.03, 6.0)
 
 
 func _trees_run(_d: float, t: float) -> void:
-	# Art: out to 35 degrees and back over 7 s; then the dev look, out and back again.
+	# Art: out to 45 degrees and back over 7 s; then the dev look, out and back again.
 	var k: float = t if t < 7.5 else t - 7.5
 	if t > 7.5 and _once("dev"):
 		_look(true)
-	var turn: float = deg_to_rad(35.0) * sin(clampf(k / 7.0, 0.0, 1.0) * PI)
-	SliceAngles.tilt(_rig, turn, 0.0, deg_to_rad(-90.0))
+	var turn: float = deg_to_rad(45.0) * sin(clampf(k / 7.0, 0.0, 1.0) * PI)
+	SliceAngles.tilt(_rig, turn, 0.0, deg_to_rad(100.0))
 
 
 # --- 3: the camp ---------------------------------------------------------------------------------------
@@ -269,4 +270,6 @@ func _tower_set() -> void:
 
 
 func _tower_run(_d: float, t: float) -> void:
-	SliceAngles.tilt(_rig, deg_to_rad(8.0) * sin(t * 0.7), 0.0, deg_to_rad(3.0))
+	# Along the view, out to 40 degrees and back: the trees and the ground change, the Watchstone holds
+	# (the W Optimiser's wrap, WTools/README.md).
+	SliceAngles.tilt(_rig, 0.0, deg_to_rad(40.0) * sin(clampf(t / 8.0, 0.0, 1.0) * PI), deg_to_rad(3.0))

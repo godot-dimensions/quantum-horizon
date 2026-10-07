@@ -1,0 +1,12 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/WTools/optimiser/w_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+note = "Must block every W (a wall, a cliff): every part 60 m deep in W either side, as deep as the world. No wrap."
+min_w_half = 60.0
+deepen_colliders = true
+wrap = false
+wrap_arc = 60.0
+copies_projected = false

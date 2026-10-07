@@ -1,0 +1,11 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/WTools/exploder/w_exploder_preset.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+note = "Layers to 36 m: more copies, for slices turned past 45 degrees."
+w_reach = 36.0
+share = 0.62
+auto_share = true
+target_angle = 50.0

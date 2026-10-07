@@ -314,6 +314,26 @@ const SETS := {
 		{"name": "eastB_16", "at": Vector4(16.0, 1.2, 24.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0, "tilt": Vector2(16.0, 0.0)},
 		{"name": "eastB_30", "at": Vector4(16.0, 1.2, 24.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0, "tilt": Vector2(30.0, 0.0)},
 	],
+	# The W tools in the pen (WTools/README.md): the woods turned across the view (xw) to 45, the Watchstone
+	# from the start and the range from the meadow east of it, turned straight ahead (zw) to 50, and the
+	# volume view.
+	"wtools": [
+		{"name": "eastA_00", "at": Vector4(14.0, 1.2, 2.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0},
+		{"name": "eastA_30", "at": Vector4(14.0, 1.2, 2.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0, "tilt": Vector2(30.0, 0.0)},
+		{"name": "eastA_45", "at": Vector4(14.0, 1.2, 2.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0, "tilt": Vector2(45.0, 0.0)},
+		{"name": "west_00", "at": Vector4(-22.0, 1.2, -12.0, 0), "yaw": 100.0, "pitch": 2.0, "distance": 6.0},
+		{"name": "west_30", "at": Vector4(-22.0, 1.2, -12.0, 0), "yaw": 100.0, "pitch": 2.0, "distance": 6.0, "tilt": Vector2(30.0, 0.0)},
+		{"name": "west_45", "at": Vector4(-22.0, 1.2, -12.0, 0), "yaw": 100.0, "pitch": 2.0, "distance": 6.0, "tilt": Vector2(45.0, 0.0)},
+		{"name": "eastB_zw30", "at": Vector4(16.0, 1.2, 24.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0, "tilt": Vector2(0.0, 30.0)},
+		{"name": "stone_00", "at": Vector4(24.9, 1.2, 19.1, 0), "yaw": 36.6, "pitch": 8.0, "distance": 6.0},
+		{"name": "stone_zw30", "at": Vector4(24.9, 1.2, 19.1, 0), "yaw": 36.6, "pitch": 8.0, "distance": 6.0, "tilt": Vector2(0.0, 30.0)},
+		{"name": "stone_zw50", "at": Vector4(24.9, 1.2, 19.1, 0), "yaw": 36.6, "pitch": 8.0, "distance": 6.0, "tilt": Vector2(0.0, 50.0)},
+		{"name": "range_00", "at": Vector4(5.0, 1.2, 10.0, 0), "yaw": 74.0, "pitch": 4.0, "distance": 6.0},
+		{"name": "range_zw30", "at": Vector4(5.0, 1.2, 10.0, 0), "yaw": 74.0, "pitch": 4.0, "distance": 6.0, "tilt": Vector2(0.0, 30.0)},
+		{"name": "range_zw50", "at": Vector4(5.0, 1.2, 10.0, 0), "yaw": 74.0, "pitch": 4.0, "distance": 6.0, "tilt": Vector2(0.0, 50.0)},
+		{"name": "volume_projected", "at": Vector4(0.0, 1.2, 20.0, 0), "yaw": 16.0, "pitch": 6.0, "distance": 6.0, "engine": "Projected"},
+		{"name": "volume_combined", "at": Vector4(0.0, 1.2, 20.0, 0), "yaw": 16.0, "pitch": 6.0, "distance": 6.0, "engine": "Combined"},
+	],
 	# One oak alone, the same shot in both looks (7 Oct: "SCALE BLUE TREEBLOCKS a bit larger upward so they
 	# match the artlook more"): OakL03 (lite3, 5.7 m) and OakL20 (lite3, 5.8 m), from 12 m.
 	"treecmp": [
