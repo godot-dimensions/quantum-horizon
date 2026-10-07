@@ -170,6 +170,30 @@ smoke_test_output/feedback/) and by the tests named.
   spawn at 720p, projection on went from about 20 to about 15 ms (`lookout/_projection_ab_runner.gd`).
 - Frames: `PenLayout/scripts/_capture_feedback_runner.gd` modes panels, lookcam, cave, balloon.
 
+## Ramon's 7 Oct round 4: the cinema and the cave again (commit b5fffa9)
+
+- What broke (git, from 8c6b193, the last good cinema): layouts A and B put the cave hill's collider on the
+  theatre's spawn and the town wall between its door and its seats. The crossing (`scripts/pen_crossing_4d.gd`)
+  only hid and stopped the farm; a 4D body leaves the physics only when it leaves the tree, so the hidden farm
+  stayed solid round the theatre, which is built at the origin. Now every collision shape under a sleeping branch
+  has its layer and mask zeroed while away and given back on return (`_solid`, `_solid_again`).
+- The cave lit by the farm from the second visit: a kept place, taken out of the tree, loses its environment's
+  "current". `go()` makes the place's WorldEnvironment4D current every visit, `come_back()` the farm's.
+- The NPC rings (`Systems/NpcMarkers`) run always, so they hide with their owners; under a sleeping Systems they
+  stayed drawn on the theatre's floor.
+- Trym's portal (`theatre/theatre_arch_4d.gd`) marks its meshes `_look_own`: it animates its own material, and laid
+  in the dev look's shared orange it turned every orange thing cyan.
+- The slice is laid flat on arriving in the cave; a debug-key trip comes home where it was pressed.
+- Probes: `scripts/_probe_cinema_dev_runner.gd` (C from the dev or the art look: lands, walks, sits, the show),
+  `scripts/_probe_cave_visits_runner.gd` (Shift+C twice: the cave's sky current, the slice flat).
+- The HUD at Ramon's 3840 x 2160 and 145% (`_capture_feedback_runner.gd hud4k`): the look panel at the cards' size
+  with the grass folded (Show grass), beside the paths window under the murmuration card; the camera picker beside
+  the to-do list.
+- The slice dial (`scripts/pen_slice_plane_4d.gd more_people`, `more_places`): every NPC, the camp, the range,
+  Trym's house and the kata wood; the heron and the chipmunks as marks (`lookout/lookout_4d.gd`).
+- The cave road: static lead, follow climb, flat at W 3 (`_make_pen_paths_b_runner.gd`); the range a photo subject;
+  the professor nearer the cave's junction.
+
 ## Open
 
 - The range in W, and Ramon's W tools (a W exploder for trees, a W optimiser for landmarks): next, from

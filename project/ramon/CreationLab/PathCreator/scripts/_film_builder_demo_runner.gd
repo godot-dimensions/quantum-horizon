@@ -432,6 +432,7 @@ func _run_drag() -> void:
 	_g.call("set_build", false)
 	_cur = Vector2(-100, -100)
 	var look_cam := Camera4D.new()
+	look_cam.set("rendering_engine_name", "Cross-section")
 	_g.add_child(look_cam)
 	look_cam.global_position = Vector4(AREA.x + 14.0, 7.0, AREA.y + 9.0, 0.0)
 	look_cam.look_at(Vector4(AREA.x + 2.0, 0.0, AREA.y + 1.0, 0.0), Vector4(0, 1, 0, 0))

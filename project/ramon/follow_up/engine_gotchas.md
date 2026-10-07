@@ -426,3 +426,14 @@ Don't give a game key F8 (or F5, F6, F7) when the game is run from the editor: t
 Run, Run Current, Pause and Stop, and they act even while the game window has focus. The pen's dev look
 was on F8 for an hour and stopped the game when Ramon pressed it (6 Oct); it is on I now. The pen's
 paths (F5 look, F6 reveal) predate this and may do the same.
+
+A hidden, process-disabled 4D physics body still collides. A Node4D's visibility and process_mode do not take
+its bodies out of PhysicsServer4D; only leaving the tree does. The pen's crossing hid the farm while you were in
+the theatre (built at the origin), and the hidden cave hill and town wall held the theatre's player in the air and
+walled off the seats (7 Oct). Zero each CollisionShape4D's collision_layer and collision_mask while away (keep
+them to give back): scripts/pen_crossing_4d.gd _solid. And the box physics never pushes a body out of a box it
+starts inside: it just stops it ("TODO: proper depenetration", axis_aligned_box_physics_engine_4d.cpp).
+
+A WorldEnvironment4D taken out of the tree loses "current", and adding it back does not take the sky again. A
+place kept between visits (the cave) was lit by the farm's environment from the second visit; call
+make_current() on the place's environment every time it goes back in, and on the farm's on the way home.

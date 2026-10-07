@@ -290,7 +290,7 @@ func _run() -> void:
 			_hud([])
 			await _place(Vector4(-14.0, 0.05, -15.0, 0.0), 0.35)
 			_rig.set("pitch", -0.05)
-			_caption("I: the dev look")
+			_caption("The art look")
 			for i in 5:
 				var t: float = 0.0
 				while t < 1.5:
@@ -298,7 +298,8 @@ func _run() -> void:
 					t += _dt()
 					await process_frame
 				await _key(KEY_I)
-				_caption("I: the art look" if i % 2 == 0 else "I: the dev look")
+				# What shows now (the caption names the look on screen).
+				_caption("I: the dev look" if i % 2 == 0 else "I: the art look")
 			await _wait(1.0)
 		"lookout":
 			_hud([])
@@ -315,15 +316,17 @@ func _run() -> void:
 			var dir := Vector2(head.x, head.z).normalized().rotated(1.1)
 			var deck: Vector4 = t.global_position + t.global_basis * Vector4(dir.x * 1.6, 13.70, dir.y * 1.6, 0.0)
 			var to_marsh: Vector4 = marsh.global_position - deck
-			await _place(deck, _heading(Vector2(to_marsh.x, to_marsh.z)) + 0.8)
-			_caption("On top of the Watchstone")
+			# At the rail, already looking out (the oak's crown is behind you and pulls the camera in).
 			var rail: Vector4 = t.global_position + t.global_basis * Vector4(dir.x * 3.0, 13.70, dir.y * 3.0, 0.0)
-			await _walk([Vector2(rail.x, rail.z)], NAN, 0.4)
-			await _turn(_heading(Vector2(to_marsh.x, to_marsh.z)), 0.7)
-			await _wait(0.8)
+			await _place(rail, _heading(Vector2(to_marsh.x, to_marsh.z)))
+			_caption("On top of the Watchstone, by the rail")
+			await _wait(1.4)
 			_caption("Z: Wren's camera")
 			await _key(KEY_Z)
-			await _wait(1.2)
+			await _wait(1.0)
+			# The camera's two info cards away (F3), for the view.
+			await _key(KEY_F3)
+			await _wait(0.3)
 			var station: Node = lookout.get("station")
 			var eye: Vector4 = _player.global_position + Vector4(0.0, 1.5, 0.0, 0.0)
 			_rig.set("pitch", -atan2(eye.y - marsh.global_position.y, Vector2(to_marsh.x, to_marsh.z).length()))
@@ -347,18 +350,20 @@ func _run() -> void:
 			await _wait(2.4)
 		"projection":
 			_hud([])
-			await _place(Vector4(18.0, 0.05, 22.0, 0.0), -0.6)
+			# Looking down the camp's road: the camp is 2.5 m kata, not in your slice.
+			await _place(Vector4(-7.0, 0.05, -3.9, 0.0), -PI * 0.5)
+			_rig.set("pitch", -0.08)
+			_caption("The camp is down this road, 2.5 m kata: not in your slice")
+			await _wait(1.6)
 			_caption("P: a ghost of everything ana and kata")
-			await _wait(0.6)
 			await _key(KEY_P)
-			await _wait(1.0)
-			await _tilt(Vector2(0.35, 0.0), 2.0)
-			await _wait(1.2)
-			await _key(KEY_R)
-			await _wait(1.2)
+			await _wait(1.8)
+			await _tilt(Vector2(0.0, 0.12), 1.6)
+			_caption("Turn the slice toward it, and it comes in")
+			await _wait(1.4)
 			await _key(KEY_P)
-			_caption("And off")
-			await _wait(1.0)
+			_caption("P again: just your slice")
+			await _wait(1.2)
 	_caption("")
 	await _wait(0.3)
 	print("BEATS %s: done" % _mode)
