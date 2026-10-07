@@ -100,6 +100,18 @@ var reach_needed: float:
 @export var solid_near_path: NodePath
 @export_range(0.5, 20.0, 0.5, "suffix:m") var solid_w_margin: float = 3.0
 
+## In the editor, the copies are shown when the scene opens (Ramon, 7 Oct: "preview copies of the trees should be on
+## remember, it was off again"). The Preview button switches this, and saving the scene keeps it. Never saved: the
+## copies themselves.
+@export var show_preview: bool = true:
+	set(v):
+		show_preview = v
+		if Engine.is_editor_hint() and is_inside_tree():
+			if v:
+				preview()
+			else:
+				clear()
+
 @export_group("Volume view")
 ## Playing, the copies stay out of the volume view (in it, they smeared the wood white).
 @export var copies_projected: bool = false
@@ -151,6 +163,8 @@ var solid_in: int = 0
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
+		if show_preview:
+			preview.call_deferred()
 		return
 	_plant_all()
 	for child in get_children():
@@ -191,12 +205,18 @@ func replant() -> void:
 
 
 ## The Preview button (Ramon, 7 Oct: "when i press it again it would be nice if it turns off"): the copies
-## made when none are showing, taken away when they are.
+## made when none are showing, taken away when they are. In the editor it sets show_preview, so the scene
+## remembers it once saved.
 func toggle_preview() -> void:
-	if get_children().any(func(c: Node) -> bool: return c.has_meta(&"w_copy")):
-		clear()
-	else:
-		preview()
+	var showing: bool = get_children().any(func(c: Node) -> bool: return c.has_meta(&"w_copy"))
+	if not Engine.is_editor_hint():
+		if showing:
+			clear()
+		else:
+			preview()
+		return
+	show_preview = not showing
+	EditorInterface.mark_scene_as_unsaved()
 
 
 ## The copies, made now (in the editor: shown, not saved).

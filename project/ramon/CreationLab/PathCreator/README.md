@@ -145,6 +145,19 @@ and the paths on the floor follow as you drag.
 The lab's own keys: F4 builder, F5 the next library for every slot, F6 the look (DEV / WALK), F7
 volume view; number keys take you to its places.
 
+## In the editor's volume view
+
+The marks only draw in the slice. In the editor's volume view (Projected, or Combined) each stretch is a
+plain box as deep in W as its type makes it, coloured by that type so you can see its W shape: **static**
+cyan, **here** yellow, **follow** magenta, **reveal** red; nodes, their sand patches, W cues and frames
+white. Editor only: playing, the volume view keeps the sand colour. To see W as a direction on screen,
+turn the camera into W (Ctrl while orbiting) or use Layout → Preset: Ground View, whose two lower views
+put W up the screen. A scene open before this change shows the colours once it is reopened.
+**Volume view solidity** (`editor_volume_solidity`, on the network, default 200) makes the paths read
+solid there instead of drowned by the deep ground: in the editor their volume view draws with the engine's
+own shader plus one opacity setting (render/path_draw.gd `volume_shader()`). 1 is the engine's own look.
+Nothing extra is drawn for it.
+
 ## In the pen
 
 - `World/Paths`: the network, graph `PenLayout/paths/pen_a.tres`, draped, `p_scale` 1.4, sand 1.8 m.

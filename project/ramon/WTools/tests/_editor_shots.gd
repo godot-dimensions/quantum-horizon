@@ -50,6 +50,33 @@ func _run() -> void:
 	var trees: Node = pen.get_node("World/Trees")
 	var stone: Node = pen.get_node("World/WatchstoneW")
 	var range_w: Node = pen.get_node("World/RangeW")
+	if OS.get_cmdline_user_args().has("paths"):
+		# The paths in the volume view, coloured by W type, at three solidities (Ramon, 7 Oct: "can you make them
+		# less transparent in volume view?"), seen three ways: flat (W collapsed), W across, W up. And the
+		# trees' copies, there by themselves when the pen opens (show_preview).
+		var copies: int = trees.get_children().filter(func(c: Node) -> bool: return c.has_meta(&"w_copy")).size()
+		print("SHOTS: tree copies on opening: %d (show_preview %s)" % [copies, str(trees.get("show_preview"))])
+		var paths: Node = pen.get_node("World/Paths")
+		await _select_and_frame(paths, pen.get_node("World/Trees/OakL03"), 6, cam, -0.6)
+		var rig := cam.get_parent() as Node4D if cam != null else null
+		var views := {
+			"flat": Basis4D.from_zx(0.5) * Basis4D.from_yz(-0.6),
+			"w_across": Basis4D.from_zx(0.5) * Basis4D.from_xw(1.2) * Basis4D.from_yz(-0.6),
+			"w_up": Basis4D.from_zx(0.5) * Basis4D.from_yz(-0.6) * Basis4D.from_wy(1.2),
+		}
+		for view in views:
+			if rig != null:
+				rig.basis = views[view]
+			for solidity in [1, 30, 200, 1000]:
+				paths.set("editor_volume_solidity", float(solidity))
+				await _wait(10)
+				await _shot("p_%s_s%04d" % [view, solidity], cam, engine_was)
+		paths.set("editor_volume_solidity", 200.0)
+		if rig != null:
+			rig.basis = views["flat"]
+		print("SHOTS DONE")
+		_quit(me)
+		return
 	if OS.get_cmdline_user_args().has("ring"):
 		# The Wrap Style dropdown on Ring: the inspector, the Scene dock's warning mark, the About Ring box.
 		await _select_and_frame(range_w, pen.get_node("World/Range"), 2, cam, -0.3)

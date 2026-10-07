@@ -869,6 +869,8 @@ func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictiona
 		Draw.set_param(sb, "sand_round", 0.0)
 		sb.set_meta("edge", i)
 		sb.set_meta("t0", t0)
+		_editor_tint(mi, mode)
+		_editor_tint(sb, mode)
 
 
 func _lay_node(n: Dictionary, used: Dictionary) -> void:
@@ -914,6 +916,8 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 	Draw.set_param(pad, "sand_round", 1.0)
 	Draw.set_param(pad, "s0", float(id) * 7.31)
 	pad.set_meta("node", id)
+	_editor_tint(mi, "")
+	_editor_tint(pad, "")
 	Draw.set_param(mi, "w_step", 0.0)
 	# The W cue: where the route goes on at another W, a row of dots beside the node, shown at the W
 	# you arrive from (the end of the stretch you can see), not at the node's own.
@@ -921,6 +925,7 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 	if not wsi.is_empty() and absf(float(wsi[0])) > 0.25:
 		var cue: MeshInstance4D = _item("Cue%d" % id, Draw.PIVOT, used)
 		cue.set_meta("node", id)
+		_editor_tint(cue, "")
 		var reach: float = (art_radius(n) / _u() + 4.0 + Spec.W_CUE_GAP * float(Spec.W_CUE_MAX)) * _u() * 2.0 + 0.1
 		_size(cue, Vector4(reach, Spec.BOX_H_M, 0.3, float(wsi[2])))
 		cue.position = Vector4(P.x, ground_at(P.x, P.z, float(wsi[1]), P.y) + Spec.PROUD_M + 0.003, P.z, float(wsi[1]))
@@ -949,6 +954,7 @@ func _lay_frame(n: Dictionary, used: Dictionary) -> void:
 	var outer: Vector2 = foot + Vector2.ONE * FRAME_MARGIN * 2.0
 	var mi: MeshInstance4D = _item("Frame%d" % int(n["id"]), Draw.FRAME, used)
 	mi.set_meta("node", int(n["id"]))
+	_editor_tint(mi, "")
 	var band: float = float(n.get("band", 1.2))
 	_size(mi, Vector4(outer.x + 0.3, Spec.BOX_H_M, outer.y + 0.3, band))
 	var tp: Vector4 = t.global_position - global_position
@@ -966,6 +972,46 @@ func _lay_frame(n: Dictionary, used: Dictionary) -> void:
 	Draw.set_param(mi, "frame_round", 1.0 if round_frame else 0.0)
 	var ap: Vector2 = n.get("approach", Vector2(0, 1))
 	Draw.set_param(mi, "approach", Vector3(ap.x, ap.y, FRAME_GAP / _u()))
+
+
+## IN THE EDITOR'S VOLUME VIEW, EACH STRETCH IN ITS W TYPE'S COLOUR (Ramon, 7 Oct: to see the paths as shapes there,
+## "editor only"). Playing they stay sand. Only the volume view reads this colour; the slice draws with the
+## marks' and the sand's own shaders, which never read it. Nodes, their sand patches, W cues and frames are white.
+const EDITOR_TYPE_COLOURS := {
+	"static": Color(0.2, 0.8, 1.0),
+	"here": Color(1.0, 0.85, 0.1),
+	"follow": Color(1.0, 0.25, 0.8),
+	"reveal": Color(1.0, 0.3, 0.2),
+}
+const EDITOR_NODE_COLOUR := Color(0.95, 0.95, 0.95)
+## SOLID (Ramon, 7 Oct: "can you make them less transparent in volume view?", then "i dont have a problem with the
+## paths just looking like a solid"): the volume view weighs a shape by how much of it lies along its collapsed axis,
+## and a path is a thin floor box among deep ground, which drowned it. In the editor the boxes draw the volume view
+## with the engine's own shader plus one setting (path_draw.gd volume_shader()): their weight times this. 1 is the
+## engine's own; high reads solid. Nothing more is drawn for it.
+@export_range(1.0, 1000.0, 1.0, "exp") var editor_volume_solidity: float = 200.0:
+	set(v):
+		editor_volume_solidity = v
+		if Engine.is_editor_hint() and is_inside_tree():
+			for mi in _items.values():
+				if is_instance_valid(mi):
+					_editor_solidity(mi)
+
+
+func _editor_tint(mi: MeshInstance4D, type: String) -> void:
+	if not Engine.is_editor_hint():
+		return
+	var m := mi.material_override as TetraMaterial4D
+	var c: Color = EDITOR_TYPE_COLOURS.get(type, EDITOR_NODE_COLOUR)
+	if m != null and m.albedo_color != c:
+		m.albedo_color = c
+	_editor_solidity(mi)
+
+
+func _editor_solidity(mi: MeshInstance4D) -> void:
+	var m := mi.material_override as TetraMaterial4D
+	if m != null:
+		m.get_projected_material_3d().set_shader_parameter("opacity_scale", editor_volume_solidity)
 
 
 func _clear_unused(used: Dictionary) -> void:

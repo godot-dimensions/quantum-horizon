@@ -20,7 +20,8 @@ Why each works the way it does, with the numbers: `research/experiments.md`. The
 bushes) and pick a preset. **Preview copies (on / off)** shows them in the editor and takes them away again
 (the wood only; the leaves grow at play). They sit at other W's, so the editor's slice (Cross-section) at W 0
 looks the same either way; the volume view (Projected, or Combined) shows them: in the editor's Preview they
-are left in the volume view on purpose (`preview_in_volume_view`), while in play they stay out of it. **Save as preset** writes the current numbers as a new
+are left in the volume view on purpose (`preview_in_volume_view`), while in play they stay out of it. The Preview is on when a scene opens (`show_preview`, on by default);
+the button switches it and saving the scene keeps the choice, never the copies. **Save as preset** writes the current numbers as a new
 .tres in `exploder/presets/`.
 
 **What it does.**

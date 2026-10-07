@@ -77,3 +77,10 @@ did before the W tools too.
   films and editor shots are reproducible from `_film_side_runner.gd` and `_editor_shots.tscn`.
 - Also done on request: Exploder Preview copies show in the editor's volume view by default
   (`preview_in_volume_view`); the films use the pen's smaller character (`w_lab_4d.gd pen_player`).
+- 7 Oct, "preview copies of the trees should be on remember, it was off again": the Exploder's Preview is on
+  when a scene opens (`show_preview`, default on; the button switches it, a scene save keeps it). Checked in
+  the editor: 458 copies on opening. Same day, editor only: the paths' boxes take their W type's colour in the
+  volume view and read solid there (`editor_volume_solidity`, default 200; a patched copy of the engine's own
+  volume-view shader, since 4D materials have no opacity; no extra drawing). Checked with
+  `_editor_shots.tscn -- wt_shots paths` (shots p_*.png, compare cmp_*.jpg in smoke_test_output/wtools/editor/).
+  Ramon first asked for copies of each box; he did not want doubled meshes, so that was dropped.

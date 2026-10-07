@@ -30,6 +30,33 @@ const SAND := 4
 const YARD_SAND := Color(0.64, 0.47, 0.29)
 
 static var _packed: Dictionary = {}
+static var _volume: Shader
+static var _volume_tried: bool = false
+
+
+## THE EDITOR'S VOLUME VIEW, SOLID (Ramon, 7 Oct: "i dont have a problem with the paths just looking like a solid in
+## volume view"): the engine's own volume-view shader with one setting more, `opacity_scale`, which multiplies how much
+## a box weighs where shapes overlap (the engine weighs a shape by how much of it lies along the view's collapsed
+## axis, and a path is a thin floor box among deep ground). Read from the engine at first use, so it stays the
+## engine's; null if its code ever changes so the patch no longer fits (the boxes then keep the engine's own).
+static func volume_shader() -> Shader:
+	if _volume_tried:
+		return _volume
+	_volume_tried = true
+	var base: Shader = TetraMaterial4D.new().get_projected_material_3d().shader
+	if base == null:
+		return null
+	var code: String = base.code
+	var uni := "uniform vec4 albedo : source_color;"
+	var alpha := "ALPHA = sqrt(max(thickness, 0.0) / 2.0);"
+	if code.count(uni) != 1 or code.count(alpha) != 1:
+		push_warning("PathCreator: the engine's volume-view shader changed; the paths keep its own look there.")
+		return null
+	code = code.replace(uni, uni + "\nuniform float opacity_scale = 1.0;")
+	code = code.replace(alpha, "ALPHA = sqrt(max(thickness * opacity_scale, 0.0) / 2.0);")
+	_volume = Shader.new()
+	_volume.code = code
+	return _volume
 
 
 static func symbols() -> Dictionary:
@@ -61,6 +88,8 @@ static func sym_size(id: int) -> Vector2:
 
 static func material(mode: int) -> TetraMaterial4D:
 	var m := TetraMaterial4D.new()
+	if Engine.is_editor_hint() and volume_shader() != null:
+		m.get_projected_material_3d().shader = volume_shader()
 	var cs: ShaderMaterial = m.get_cross_section_material_3d()
 	if mode == SAND:
 		cs.shader = SandShader
