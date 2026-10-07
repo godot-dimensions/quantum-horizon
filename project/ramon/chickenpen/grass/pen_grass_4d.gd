@@ -24,8 +24,11 @@ extends Node4D
 ## does the tiles in view x cells^2 x layers x the band's vertices (see _measure_grass_runner.gd).
 
 const SHADER := preload("res://ramon/chickenpen/grass/pen_grass.gdshader")
+## Andrew's field (andrew_4d).
+const LATTICE_SHADER := preload("res://ramon/chickenpen/grass/pen_grass_lattice.gdshader")
 const LOOKS := preload("res://ramon/chickenpen/grass/pen_grass_looks.gd")
 const PANEL := preload("res://ramon/chickenpen/grass/pen_grass_panel_4d.gd")
+const STEPPING_CARD := preload("res://ramon/chickenpen/scripts/pen_stepping_card_4d.gd")
 const PAINT := preload("res://ramon/chickenpen/grass/pen_ground_paint_4d.gd")
 const Heights := preload("res://ramon/chickenpen/grass/grass_heights_4d.gd")
 const MainGreen := preload("res://ramon/chickenpen/terrain/main_green_4d.gd")
@@ -198,6 +201,49 @@ signal preset_changed(index: int)
 @export_range(0.05, 1.0, 0.01, "suffix:m") var layer_spacing: float = 0.22
 ## How thick in W a blade is: within this of the slice, some of it shows.
 @export_range(0.05, 1.0, 0.01, "suffix:m") var w_radius: float = 0.3
+
+signal andrew_4d_changed(on: bool)
+
+## THE 4D FIELD, THE PEN'S GRASS SINCE 7 OCT (4Denthusiast's, 5 Oct, commit 5e03383 "Make the grass more 4D
+## isotropic"; brought in beside the stacked grass as a switch, then made the grass on Ramon's verdict: "his is a
+## genuine improvement ... keep his work. and remove the andrew mention ... set his to default"). Every blade is a
+## point of one lattice over the floor's (x, z, w), the same pitch along all three, so the meadow is the same field
+## whichever way the slice is turned - the stacked grass thinned to a strip past about 75 degrees of tilt, this
+## stays a meadow; the blades spread and lean in the slice's own floor, and the regions, clumps, gusts and cloud
+## shadows change along W as they do along x and z (pen_grass_lattice.gdshader, _draw_andrew).
+##
+## False brings back the stacked grass (layers along W where the slice crosses each spot, the three settings above),
+## by the same code as before; no HUD offers it now, the A/B runner does (_andrew_ab_runner.gd). Never saved, not an
+## export: only code changes it.
+var andrew_4d: bool = true:
+	set(value):
+		if value == andrew_4d:
+			return
+		andrew_4d = value
+		# Before _ready (the scene, the saved settings) there are no bands yet: _ready builds them in this mode.
+		if not _bands.is_empty():
+			_rebuild_bands()
+		andrew_4d_changed.emit(value)
+## Andrew's field: how thick in W a blade is, in lattice pitches (the band's own gap). The lattice has the same
+## pitch along x, z and w, so this is also the field's density along W, about pi/2 x this many blades per lattice
+## column showing at once, and its cost: the cells per column it looks through (_lattice_layers) grow with it.
+@export_range(0.25, 3.0, 0.05) var w_radius_cells: float = 1.0
+## THE BLADES' WIDTH AT THE BASE, as a share of the look's own blade_width: the grass panel's slider (Ramon, 7 Oct:
+## "just add a slider for the bottom thickness of the grass ... set his to default. we can move larger and smaller").
+## 1.35 is the field's own: its commit widened every look's blades by about a third (0.011 to 0.015, 0.0075 to 0.010,
+## 0.007 to 0.0095), applied here so the looks themselves (pen_grass_looks.gd) stay as they were. Set live, no rebuild;
+## Save settings keeps it. The field's only: the stacked grass keeps the looks' own width.
+@export_range(0.3, 3.0, 0.05) var blade_width_scale: float = 1.35:
+	set(value):
+		blade_width_scale = value
+		for band in _bands:
+			if band.material != null:
+				band.material.set_shader_parameter("blade_width", blade_width_now())
+
+
+## A blade's width at its base, in metres, as drawn now (the look's, times blade_width_scale in the field).
+func blade_width_now() -> float:
+	return blade_width * (blade_width_scale if andrew_4d else 1.0)
 
 @export_group("Blades")
 @export_range(0.05, 2.0, 0.01, "suffix:m") var blade_height: float = 0.38
@@ -425,6 +471,14 @@ var _multimeshes: Array = []
 var _instances: Array = []
 var _scenario := RID()
 var _tiles_centre := Vector2(INF, INF)
+## Andrew's field: the lattice cells a tile column holds along the axis the slice is steepest in, enough for every
+## cell that can reach the slice at any tilt. A blade reaches it when |k + h - p/a| < r/|m_d| + 1 (its own jitter and
+## its column's each move it up to a cell), and |m_d| is at least 1/sqrt(3): so 2 sqrt(3) r + 4 (his numbers).
+var _lattice_layers: int = 8
+## Andrew's field: which axis of (x, z, w) the tiles were last listed across (0 x, 1 z, 2 w), and the plane's stretch
+## they were listed for (_list_tiles); a change relists.
+var _tiles_axis: int = -1
+var _tiles_stretch: float = 1.0
 var _drawn: int = 0
 var _region_cuts := Vector4(0.36, 0.46, 0.55, 0.65)
 var _mask_image: Image
@@ -470,7 +524,10 @@ const MASK_CELLS := 240
 ## sliders at their middles. The panel's Save writes these to grass_saved.cfg in the project, beside the
 ## main green's, so what he settles on is what the pen opens with for everybody, not on one machine.
 const SAVED := "res://ramon/chickenpen/grass/grass_saved.cfg"
-const SAVED_KEYS: Array[String] = ["preset", "shade_test", "wind_scale", "bits_enabled", "flowers_enabled", "ground_paint", "even_green"]
+## (Never andrew_4d, nor the player's walking switches: those are for the run only; Ramon, 7 Oct: "under no
+## conditions, should the andrew switches be able to break my work". The base width's slider is kept.)
+const SAVED_KEYS: Array[String] = ["preset", "shade_test", "wind_scale", "bits_enabled", "flowers_enabled", "ground_paint", "even_green",
+	"blade_width_scale"]
 
 
 ## What the panel shows now, into grass_saved.cfg. OK or the error.
@@ -560,12 +617,19 @@ func apply_preset(n: int) -> void:
 	if not LOOKS.PRESETS.has(n):
 		return
 	_take(n)
+	_rebuild_bands()
+	preset_changed.emit(n)
+
+
+## The bands again from scratch (a look, or Andrew's field on or off): their tiles relisted and their instances
+## put into the scenario at the next render.
+func _rebuild_bands() -> void:
 	_free_bands()
 	_build_bands()
 	_tiles_centre = Vector2(INF, INF)
+	_tiles_axis = -1
 	_scenario = RID()
 	_set_visible()
-	preset_changed.emit(n)
 
 
 ## Sets look [param n]'s values on this node: BASE's for anything it does not name.
@@ -1016,6 +1080,14 @@ func _add_panel() -> void:
 		add_child(layer)
 		ui = layer
 	ui.add_child(panel)
+	# THE WALKING CARD (scripts/pen_stepping_card_4d.gd): stepping and facing through W, a card of its own (Ramon, 7 Oct:
+	# "it should be integrated seperately"); made here, as this panel is, so the pen's scene does not have to carry it.
+	var player: Node = _room.get_node_or_null("Player")
+	if player != null and "andrew_stepping" in player:
+		var card: Control = STEPPING_CARD.new()
+		card.set("player", player)
+		card.set("grass", self)
+		ui.add_child(card)
 
 
 func _free_bands() -> void:
@@ -1032,6 +1104,7 @@ func _free_bands() -> void:
 
 func _build_bands() -> void:
 	_region_cuts = _cuts(_noise_image)
+	_lattice_layers = ceili(2.0 * sqrt(3.0) * w_radius_cells + 4.0)
 	var wind: Texture2D = _wind_texture
 	var bounds: Array[float] = [0.0]
 	for r in band_radii:
@@ -1060,12 +1133,35 @@ func _build_bands() -> void:
 ## Where the regions' noise turns deep and bright: its quantiles, so each offset covers
 ## region_share of the field (half-way into its soft edge), sap green the rest.
 func _cuts(image: Image) -> Vector4:
+	if andrew_4d:
+		return _cuts_andrew(image)
 	var grey: Image = image.duplicate()
 	grey.convert(Image.FORMAT_L8)
 	var values: PackedByteArray = grey.get_data()
 	values.sort()
 	var n: int = values.size()
 	var at := func(f: float) -> float: return float(values[clampi(int(f * float(n)), 0, n - 1)]) / 255.0
+	var soft: float = 0.06
+	return Vector4(at.call(region_share - soft), at.call(region_share + soft), at.call(1.0 - region_share - soft), at.call(1.0 - region_share + soft))
+
+
+## Andrew's field (his _cuts): its shader reads the noise as noise3, the texture over each pair of the floor's three
+## axes, averaged, with the spread put back (x sqrt(3) about 1/2). So these are the quantiles of THAT distribution -
+## the mean of three texels drawn at random, spread back out, over many draws - not of the texels themselves.
+func _cuts_andrew(image: Image) -> Vector4:
+	var grey: Image = image.duplicate()
+	grey.convert(Image.FORMAT_L8)
+	var texels: PackedByteArray = grey.get_data()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var values := PackedFloat32Array()
+	values.resize(1 << 16)
+	for i in values.size():
+		var sum: int = texels[rng.randi() % texels.size()] + texels[rng.randi() % texels.size()] + texels[rng.randi() % texels.size()]
+		values[i] = 0.5 + (float(sum) / (3.0 * 255.0) - 0.5) * sqrt(3.0)
+	values.sort()
+	var n: int = values.size()
+	var at := func(f: float) -> float: return values[clampi(int(f * float(n)), 0, n - 1)]
 	var soft: float = 0.06
 	return Vector4(at.call(region_share - soft), at.call(region_share + soft), at.call(1.0 - region_share - soft), at.call(1.0 - region_share + soft))
 
@@ -1087,13 +1183,16 @@ func _wanted(d: float) -> float:
 
 func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
-	m.shader = SHADER
+	m.shader = LATTICE_SHADER if andrew_4d else SHADER
 	m.set_shader_parameter("spacing", band.spacing)
 	m.set_shader_parameter("tile_cells", band.cells)
 	m.set_shader_parameter("seed", hash_seed)
-	m.set_shader_parameter("layers", layers)
-	m.set_shader_parameter("layer_spacing", layer_spacing)
-	m.set_shader_parameter("w_radius", w_radius)
+	m.set_shader_parameter("layers", _layers_now())
+	if andrew_4d:
+		m.set_shader_parameter("w_radius_cells", w_radius_cells)
+	else:
+		m.set_shader_parameter("layer_spacing", layer_spacing)
+		m.set_shader_parameter("w_radius", w_radius)
 	m.set_shader_parameter("band_in", band.inner)
 	m.set_shader_parameter("band_in_fade", band.inner_fade)
 	m.set_shader_parameter("band_out", band.outer)
@@ -1106,7 +1205,7 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("spacing_from", spacing_from)
 	m.set_shader_parameter("spacing_power", _power())
 	m.set_shader_parameter("blade_height", blade_height)
-	m.set_shader_parameter("blade_width", blade_width)
+	m.set_shader_parameter("blade_width", blade_width_now())
 	m.set_shader_parameter("min_pixels", min_pixels)
 	m.set_shader_parameter("ground_extent", ground_extent)
 	m.set_shader_parameter("clump_size", clump_size)
@@ -1194,7 +1293,8 @@ func _tile_mesh(vertices: int, cells: int) -> ArrayMesh:
 		blade_index.append_array([a, a + 1, a + 2, a + 1, a + 3, a + 2])
 	var last: int = (levels - 1) * 2
 	blade_index.append_array([last, last + 1, per - 1])
-	var count: int = cells * cells * layers
+	var stack: int = _layers_now()
+	var count: int = cells * cells * stack
 	var uv := PackedVector2Array()
 	var uv2 := PackedVector2Array()
 	var pos := PackedVector3Array()
@@ -1204,7 +1304,7 @@ func _tile_mesh(vertices: int, cells: int) -> ArrayMesh:
 	pos.resize(count * per)
 	index.resize(count * blade_index.size())
 	var b: int = 0
-	for k in layers:
+	for k in stack:
 		for j in cells:
 			for i in cells:
 				var cell := Vector2(float(i + k * cells), float(j))
@@ -1251,6 +1351,11 @@ func _add_band(band: Band) -> void:
 ## The blades handed to the GPU last frame (the tiles in view, whole), for runners.
 func blade_count() -> int:
 	return _drawn
+
+
+## The blades a tile holds per cell: the layers stacked along W, or Andrew's lattice cells per column.
+func _layers_now() -> int:
+	return _lattice_layers if andrew_4d else layers
 
 
 ## Per band: [inner, outer, gap, cells per tile side, tile size, vertices, tiles in view].
@@ -1360,11 +1465,18 @@ func _notification(what: int) -> void:
 ## The tiles each band covers round [param centre], nearest first: every world-snapped tile
 ## that reaches the band (with its cross-fades, and half a metre to spare, so this need only run
 ## again when you have moved that far).
-func _list_tiles(centre: Vector2) -> void:
+##
+## ANDREW'S FIELD lists them in the plane's (u, v), the two axes of (x, z, w) the slice is not steepest along
+## (_draw_andrew); level, those are x and z, as here. The band is a ball round you in the slice, whose shadow on
+## (u, v) is no bigger, so the outer bound lists a superset; but a tile's shadow may be up to [param stretch] times
+## nearer than the tile is in the plane, so a tile is only certainly inside the band's inner edge when its shadow is
+## within lo / stretch. This grass passes 1.
+func _list_tiles(centre: Vector2, stretch: float = 1.0) -> void:
 	_tiles_centre = centre
+	_tiles_stretch = stretch
 	for band in _bands:
 		var t: float = band.tile_size()
-		var lo: float = maxf(band.inner - band.inner_fade - 0.6, 0.0)
+		var lo: float = maxf((band.inner - band.inner_fade - 0.6) / stretch, 0.0)
 		var hi: float = band.outer + (0.0 if band.last else band.outer_fade) + 0.6
 		var found: Array = []
 		for tz in range(floori((centre.y - hi) / t), floori((centre.y + hi) / t) + 1):
@@ -1422,6 +1534,11 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 	var origin: Vector4 = inverse * (global_position - camera.global_position)
 	var here: Vector4 = global_basis.inverse() * (camera.global_position - global_position)
 	var normal: Vector4 = (global_basis.inverse() * camera.global_basis.w).normalized()
+	# Andrew's field lays out its tiles its own way from here (_draw_andrew); this grass's own way is below.
+	if andrew_4d:
+		_draw_andrew(camera, viewport, basis, origin, here, normal)
+		prerender_usec = Time.get_ticks_usec() - started
+		return
 	# The rings' middle is you: the player, when this is their own camera (the orbit rig, a few
 	# metres behind them), so the field spreads out round them and not ahead of the view; else
 	# (the hawk, the Lookout's camera, a cutscene) the camera.
@@ -1489,6 +1606,95 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 		mat.set_shader_parameter("pusher_count", pushers.size())
 		RenderingServer.multimesh_set_visible_instances(band.multimesh, n)
 	prerender_usec = Time.get_ticks_usec() - started
+
+
+## ANDREW'S FIELD, a render's layout (his _on_pre_render from the slice normal on, 5e03383; andrew_4d): the camera's
+## frame for pen_grass_lattice.gdshader, and the tiles in its view.
+func _draw_andrew(camera: Camera4D, viewport: Viewport, basis: Projection, origin: Vector4, here: Vector4, normal: Vector4) -> void:
+	# THE SLICE MEETS THE FLOOR IN A PLANE, m . p = c over the floor's (x, z, w) (p on the floor has
+	# y = 0, so n . p = n . camera). The lattice of blades is enumerated as columns along the axis d
+	# the plane is steepest in - the dominant component of m, never under 1/sqrt(3) of its length -
+	# tiled over the other two, u and v. A slice nearly parallel to the floor has no such plane,
+	# and no grass to show.
+	var m := Vector3(normal.x, normal.z, normal.w)
+	if m.length() < 0.5:
+		for band in _bands:
+			RenderingServer.multimesh_set_visible_instances(band.multimesh, 0)
+		return
+	var d: int = m.abs().max_axis_index()
+	var uv: Array = [[1, 2], [0, 2], [0, 1]][d]
+	var c: float = normal.dot(here)
+	# The plane's slope along d over u and over v. In the plane a point lies up to `stretch_max`
+	# times further from the centre than its (u, v) shadow does.
+	var gu: float = -m[uv[0]] / m[d]
+	var gv: float = -m[uv[1]] / m[d]
+	var stretch_max: float = sqrt(1.0 + gu * gu + gv * gv)
+	# The rings' middle is you: the player, when this is their own camera (the orbit rig, a few
+	# metres behind them), so the field spreads out round them and not ahead of the view; else
+	# (the hawk, the Lookout's camera, a cutscene) the camera.
+	var centre3 := Vector3(here.x, here.z, here.w)
+	var player := _room.get_node_or_null("Player") as Node4D
+	if player != null and player.is_ancestor_of(camera):
+		var at_player: Vector4 = global_basis.inverse() * (player.global_position - global_position)
+		centre3 = Vector3(at_player.x, at_player.z, at_player.w)
+	var centre := Vector2(centre3[uv[0]], centre3[uv[1]])
+	if d != _tiles_axis or centre.distance_to(_tiles_centre) > 0.5 or absf(stretch_max - _tiles_stretch) > 0.1:
+		_tiles_axis = d
+		_list_tiles(centre, stretch_max)
+	var pushers := PackedVector4Array()
+	var motions := PackedVector4Array()
+	_push(pushers, motions, Vector2(centre3.x, centre3.y))
+	# The view's half-width and half-height, as tangents, with a margin; a pixel's angle.
+	var view: Vector2 = viewport.get_visible_rect().size
+	var fov: float = float(camera.get("field_of_view_4d")) if int(camera.get("projection_type")) == 1 else float(camera.get("field_of_view_3d"))
+	var fy: float = tan(fov * 0.5) * 1.15
+	var fx: float = fy * view.x / maxf(view.y, 1.0)
+	var kx: float = sqrt(1.0 + fx * fx)
+	var ky: float = sqrt(1.0 + fy * fy)
+	var pixel_angle: float = 2.0 * tan(fov * 0.5) / maxf(view.y, 1.0)
+	# Only the tiles in view, tested as balls round their middles where the plane crosses them.
+	# The plane's d over (u, v) is linear, so a middle's place in the camera's frame is too:
+	# au * u + av * v + c0.
+	var columns: Array = [basis.x, basis.z, basis.w]
+	var cu: Vector4 = columns[uv[0]] + columns[d] * gu
+	var cv: Vector4 = columns[uv[1]] + columns[d] * gv
+	var c4: Vector4 = basis.y * 0.3 + columns[d] * (c / m[d]) + origin
+	var au := Vector3(cu.x, cu.y, cu.z)
+	var av := Vector3(cv.x, cv.y, cv.z)
+	var c0 := Vector3(c4.x, c4.y, c4.z)
+	# In the plane a tile is a parallelogram, each side longer than the tile by the plane's slope
+	# along that axis; half the sum of the sides bounds its half-diagonal.
+	var stretch: float = 0.5 * (sqrt(1.0 + gu * gu) + sqrt(1.0 + gv * gv))
+	var frame := PackedVector4Array([basis.x, basis.y, basis.z, basis.w, origin, here, normal,
+		Vector4(centre3.x, centre3.y, fx, pixel_angle), Vector4(centre3.z, float(d), c, 0.0)])
+	# (The leaves and bits take the first eight, as from this grass.)
+	_bits_frame(frame.slice(0, 8))
+	_drawn = 0
+	for band in _bands:
+		var r: float = band.tile_size() * stretch + 0.7
+		var rx: float = r * kx
+		var ry: float = r * ky
+		band.shown.clear()
+		var middles: PackedVector2Array = band.middles
+		for i in middles.size():
+			var mid: Vector2 = middles[i]
+			var rel: Vector3 = au * mid.x + av * mid.y + c0
+			var ahead: float = -rel.z
+			if ahead > -r and absf(rel.x) - ahead * fx < rx and absf(rel.y) - ahead * fy < ry:
+				band.shown.append(band.tiles[i])
+		if band.shown.size() > MAX_TILES:
+			band.shown.resize(MAX_TILES)
+		var n: int = band.shown.size()
+		_drawn += n * band.cells * band.cells * _lattice_layers
+		var upload: PackedVector2Array = band.shown.duplicate()
+		upload.resize(MAX_TILES)
+		var mat: ShaderMaterial = band.material
+		mat.set_shader_parameter("tiles", upload)
+		mat.set_shader_parameter("frame", frame)
+		mat.set_shader_parameter("pushers", pushers)
+		mat.set_shader_parameter("pusher_motion", motions)
+		mat.set_shader_parameter("pusher_count", pushers.size())
+		RenderingServer.multimesh_set_visible_instances(band.multimesh, n)
 
 
 ## Whoever walks through the grass near [param centre], as the shader takes them: where

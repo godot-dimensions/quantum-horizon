@@ -75,6 +75,8 @@ var _dark_label: Label
 var _dark_slider: HSlider
 var _wind_label: Label
 var _wind_slider: HSlider
+var _width_label: Label
+var _width_slider: HSlider
 var _title: Label
 var _hint: Label
 var _box: VBoxContainer
@@ -151,6 +153,14 @@ func _ready() -> void:
 	_wind_slider.value = float(grass.get("wind_scale")) if grass != null else 1.0
 	_wind_slider.value_changed.connect(_on_wind)
 	_on_wind(_wind_slider.value)
+	# The blades' width at the base (Ramon, 7 Oct: "a slider for the bottom thickness of the grass ... set his to default.
+	# we can move larger and smaller"): pen_grass_4d.gd blade_width_scale, 1.35 the field's own, set live; read out in
+	# centimetres for the look in use.
+	_width_label = _label("", Color(1.0, 1.0, 1.0, 0.58))
+	_width_slider = _slider(0.3, 3.0, 0.05)
+	_width_slider.value = float(grass.get("blade_width_scale")) if grass != null else 1.35
+	_width_slider.value_changed.connect(_on_width)
+	_on_width(_width_slider.value)
 	_save_rows()
 	# The fold: one switch where the "Grass" heading was, right under the look.
 	_folded = start_folded
@@ -269,6 +279,9 @@ func _on_look(dev: bool) -> void:
 		_paint(b, bool(b.get_meta("dev")) == dev)
 	if _colours_box != null:
 		_colours_box.visible = dev
+	# The grass switch's words follow the look (art look only).
+	if grass != null:
+		_grass_words(bool(grass.get("enabled")), dev)
 
 
 ## SAVE (Ramon, 7 Oct: "the greenery controls, and the rebaking options. does that get saved? or not. if
@@ -573,6 +586,20 @@ func _on_wind(scale: float) -> void:
 		grass.set("wind_scale", scale)
 
 
+func _on_width(scale: float) -> void:
+	if grass != null and absf(scale - float(grass.get("blade_width_scale"))) > 0.001:
+		grass.set("blade_width_scale", scale)
+	_note_width()
+
+
+## The base width in centimetres as drawn now (the look's width times the slider), for the label.
+func _note_width() -> void:
+	if _width_label == null:
+		return
+	var cm: float = float(grass.call("blade_width_now")) * 100.0 if grass != null else 0.0
+	_width_label.text = "Blade width at the base   %.2f cm" % cm
+
+
 func _on_dark(darkness: float) -> void:
 	_dark_label.text = "Darkness   %+.2f" % darkness
 	if grass == null:
@@ -588,14 +615,35 @@ func _on_switch(on: bool, button: Button, what: String) -> void:
 
 
 func _toggle_grass() -> void:
-	if grass != null:
-		grass.set("enabled", not bool(grass.get("enabled")))
+	if grass == null:
+		return
+	# ONLY IN THE ART LOOK (Ramon, 7 Oct: "it should be there, only in art look"). The dev look turns the grass off and
+	# art puts it back (look/pen_look_4d.gd _switches); this switch no longer turns it on in dev either. (A film that is
+	# the grass, cinematics/cinematic_meadow_4d.gd, still turns it on for itself.)
+	if not bool(grass.get("enabled")) and _look_is_dev():
+		return
+	grass.set("enabled", not bool(grass.get("enabled")))
+
+
+## The grass switch's words and light: off in the dev look, it says the grass is the art look's.
+func _grass_words(on: bool, dev: bool) -> void:
+	if _grass_button == null:
+		return
+	if not on and dev:
+		_grass_button.text = "Grass: art look only"
+	else:
+		_grass_button.text = "Grass on   Alt+O" if on else "Grass off   Alt+O"
+	_paint(_grass_button, on)
+
+
+## Whether the pen is in its dev look now.
+func _look_is_dev() -> bool:
+	var look: Node = Look.current
+	return look != null and is_instance_valid(look) and bool(look.get("dev"))
 
 
 func _on_enabled(on: bool) -> void:
-	if _grass_button != null:
-		_grass_button.text = "Grass on   Alt+O" if on else "Grass off   Alt+O"
-		_paint(_grass_button, on)
+	_grass_words(on, _look_is_dev())
 	# Off (the pen's default since 6 Oct, "so we can design clearly"): the panel folds down to
 	# the one switch, and opens again with the grass.
 	if _box != null:
@@ -644,6 +692,7 @@ func _toggle_even() -> void:
 
 
 func _on_changed(on: int) -> void:
+	_note_width()
 	for b in _buttons:
 		_paint(b, int(b.get_meta("look")) == on)
 
