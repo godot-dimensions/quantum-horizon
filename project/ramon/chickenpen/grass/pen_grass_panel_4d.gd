@@ -44,6 +44,9 @@ var _look_box: VBoxContainer
 var _look_label: Label
 var _look_buttons: Array[Button] = []
 var _look_node: Node
+## How big the panel is drawn, of its own size (Ramon, 7 Oct: "make the look panel 60% of the size"); the paths
+## window on top of it takes the same (scripts/pen_paths_panel_4d.gd).
+@export_range(0.3, 1.5, 0.05) var panel_scale: float = 0.6
 ## The dev look's two colours (Ramon, 7 Oct: "two options in the dev panel that makes me controll the orange and
 ## the blue in the scene"): swatches under Dev / Art, set live, kept by Save settings, shown in the dev look only
 ## ("is it possible we show the color squares menu only in the dev look?").
@@ -270,7 +273,10 @@ func _save_rows() -> void:
 	# are missing or the hills have moved since.
 	var hills: String = String(grass.get("heights_note")) if grass != null and grass.get("heights_note") != null else ""
 	if hills != "":
-		_label(hills + "  (grass/_bake_grass_heights_runner.gd)", Color(1.0, 0.82, 0.55, 0.7), box)
+		var note := _label(hills + "  (grass/_bake_grass_heights_runner.gd)", Color(1.0, 0.82, 0.55, 0.7), box)
+		# Wrapped to the panel's width: on one line it made the panel twice as wide (7 Oct).
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		note.custom_minimum_size = Vector2(190.0, 0.0)
 
 
 func _save() -> void:
@@ -421,14 +427,25 @@ func _style(fill: Color, border: Color, corner: int) -> StyleBoxFlat:
 	return s
 
 
+var _off_farm: bool = false
+
+
 func _process(delta: float) -> void:
 	# Only on the farm (3 Oct: "the grass and its menu should only correspond to the pen scene"):
 	# away in the cave the farm is asleep and the grass hidden, and so is this. (The theatre's
 	# crossing hides the HUD itself, and puts it back.)
 	var on_farm: bool = grass != null and is_instance_valid(grass) and grass.is_visible_in_tree()
-	if visible != on_farm:
-		visible = on_farm
+	# Only its own hiding undone: what another hid it for stays hidden (7 Oct: with the Lookout's camera up, which
+	# borrows the whole HUD, lookout_station_4d.gd _borrow, this put itself back over the viewfinder every frame).
 	if not on_farm:
+		if visible:
+			visible = false
+			_off_farm = true
+		return
+	if _off_farm:
+		_off_farm = false
+		visible = true
+	if not visible:
 		return
 	_pick_now()
 	if _look_box != null:
@@ -441,6 +458,9 @@ func _process(delta: float) -> void:
 	var back: Control = get_child(0) as Control
 	size = back.get_combined_minimum_size()
 	back.size = size
+	# 60% of its size (Ramon, 7 Oct: "make the look panel 60% of the size, so smaller"): drawn and placed so.
+	scale = Vector2.ONE * panel_scale
+	var own: Vector2 = size * panel_scale
 	# FIRST FREE SPOT (pen_hud_spot_4d.gd, 3 Oct): above the to-do list, left edges level, as it
 	# was; grown tall, that ran up into the murmuration card - then beside the list, bottoms
 	# level, or beside the murmuration card, tops level. The camera picker and the Lookout card
@@ -449,16 +469,19 @@ func _process(delta: float) -> void:
 	# its next to one other"): this panel finds room for the two together, the paths window's height and a gap above
 	# its own, and sits at the bottom of it; the paths window takes the top (scripts/pen_paths_panel_4d.gd).
 	var stack := get_parent().get_node_or_null(^"PathsPanel") as Control
-	var top_h: float = stack.size.y + gap if stack != null and stack.is_visible_in_tree() else 0.0
-	var block := Vector2(maxf(size.x, stack.size.x if top_h > 0.0 else 0.0), size.y + top_h)
+	var top_h: float = stack.size.y * stack.scale.y + gap if stack != null and stack.is_visible_in_tree() else 0.0
+	var block := Vector2(maxf(own.x, stack.size.x * stack.scale.x if top_h > 0.0 else 0.0), own.y + top_h)
 	var places: Array = []
-	if above != null and above.is_visible_in_tree():
+	# The to-do list is only this column's when it sits bottom left (since 7 Oct it sits at the top, beside the
+	# info card: pen_quests_4d.gd beside_info).
+	var in_column: bool = above != null and above.is_visible_in_tree() and not bool(above.get("beside_info"))
+	if in_column:
 		var r: Rect2 = SPOT.rect_of(above)
 		places.append(Vector2(r.position.x, r.position.y - block.y - gap))
 		places.append(Vector2(r.end.x + gap, r.end.y - block.y))
 	var stats := get_parent().get_node_or_null(^"FlockStats") as Control
 	var column_right: float = margin
-	if above != null and above.is_visible_in_tree():
+	if in_column:
 		column_right = maxf(column_right, SPOT.rect_of(above).end.x)
 	if stats != null and stats.is_visible_in_tree():
 		var s: Rect2 = SPOT.rect_of(stats)
@@ -467,8 +490,8 @@ func _process(delta: float) -> void:
 	# Right of the whole left column, just under the info card at the top (1920 x 1080: the
 	# column is full from the top of the screen to the belt).
 	var info := get_parent().get_node_or_null(^"InfoCard") as Control
-	var under_info: float = SPOT.rect_of(info).end.y + gap if info != null and info.is_visible_in_tree() else margin
-	places.append(Vector2(column_right + gap, under_info))
+	var under_info: float = SPOT.drawn_of(info).end.y + gap if info != null and info.is_visible_in_tree() else margin
+	places.append(Vector2(column_right + gap if column_right > margin else margin, under_info))
 	# Right of the belt too: with the paths window on top the pair is taller than the room between the info card
 	# and the belt, and at 125% it lay over the belt's last slot.
 	var belt := get_parent().get_node_or_null(^"Inventory") as Control

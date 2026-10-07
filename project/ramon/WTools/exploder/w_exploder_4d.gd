@@ -153,6 +153,8 @@ var _cull_az := PackedVector4Array()
 var _cull_aw := PackedVector4Array()
 var _cull_r := PackedFloat32Array()
 var _cull_on := PackedByteArray()
+## 1 where the plant is drawn in the projection too (an original), 0 where it is not (a copy, copies_projected off).
+var _cull_ghost := PackedByteArray()
 var _cull_ready: bool = false
 # The copies' trunks kept in the physics only near the player's W: [body, its oak, W low, W high, in].
 var _solid: Array = []
@@ -441,6 +443,7 @@ func _build_cull() -> void:
 	_cull_az.clear()
 	_cull_aw.clear()
 	_cull_r.clear()
+	_cull_ghost.clear()
 	for oak in _oaks:
 		var tree: Node4D = oak.get("_tree")
 		if tree == null:
@@ -459,6 +462,7 @@ func _build_cull() -> void:
 		_cull_az.append(b.z * half.z)
 		_cull_aw.append(b.w * half.w)
 		_cull_r.append((b * half).length())
+		_cull_ghost.append(1 if _projects(tree) else 0)
 	_cull_on.resize(_cull_trees.size())
 	_cull_on.fill(2)
 	_cull_ready = true
@@ -552,7 +556,10 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 	for i in _cull_trees.size():
 		var d: Vector4 = _cull_mid[i] - e
 		var on: bool = true
-		if slice:
+		# Under the projection (Combined) a plant may be wanted off the slice, as a ghost; one that is not in the
+		# projection (the copies) is only ever in the cut, so the slice still decides (7 Oct: all 458 copies were
+		# drawn whole with the projection on, for nothing).
+		if slice or _cull_ghost[i] == 0:
 			# The plant's reach along the slice's normal, as an ellipsoid in its box (a crown is round; a box's
 			# corners, turned in X and W as the copies are, reached half as far again and had copies drawn
 			# in the flat slice that showed nothing).
@@ -576,6 +583,15 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 			_cull_on[i] = bit
 			_cull_trees[i].visible = on
 	cull_usec = Time.get_ticks_usec() - started
+
+
+## Whether [param tree]'s meshes are drawn by the projection (allow_projection on its first mesh).
+static func _projects(tree: Node) -> bool:
+	if tree is MeshInstance4D:
+		return (tree as MeshInstance4D).allow_projection
+	for mi in tree.find_children("*", "MeshInstance4D", true, false):
+		return (mi as MeshInstance4D).allow_projection
+	return false
 
 
 # --- Where not --------------------------------------------------------------------------------------------

@@ -143,6 +143,33 @@ smoke_test_output/feedback/) and by the tests named.
 - The kata wood's leafy trees without their leaf balls (`lookout/lookout_tree_4d.gd leaf_balls`, off).
 - Not done: the team write-up of how the pen works (next).
 
+## Ramon's 7 Oct batch 3 (after his PC crashed)
+
+- HUD: the to-do list at the top beside the info card (`pen_quests_4d.gd beside_info`); the look panel at 60%
+  (`pen_grass_panel_4d.gd panel_scale`), the paths window on it at the same scale, the pair beside the murmuration
+  card under the info card. `pen_hud_spot_4d.gd` now counts what a panel draws (`drawn_of`: the info card's fixed
+  card, not its screen-wide Control) and skips empty readouts. The two panels only undo their own hiding, so the
+  Lookout's raised camera (which borrows the whole HUD) keeps them hidden.
+- The cave road: the climb ends 2.5 m short of the door and the last stretch lies flat at the door's W, the circle
+  showing only within 0.6 m of it (`_make_pen_paths_b_runner.gd CAVE_DOOR_W`, 3.0: a metre kata of the arch's middle,
+  where it stands tallest; frames from `look/_cave_w_sweep_runner.gd`). The dev look shows the cave's own art mesh
+  (the coarse bake's arch was lumpy at every W).
+- The balloon: its basket in the landmark orange in the dev look (`balloon_4d.gd _paint_parts`), and a secondary
+  branch off the tower road that turns north at a ball and ends on the basket's south side, anchored to MooringSpot.
+- Wren's arm down. On top of the Watchstone near the rail, "Z  use the camera" (`lookout_4d.gd _update_rail_prompt`),
+  not by the ladder's head ("Go down?" is there, camera up or not, as before). "Scroll to zoom" under the focus point
+  until the first scroll (journal flag "zoomed").
+- T lines the slice up (`lookout_station_4d.gd autofocus`): with what is nearest the middle of the frame (the marsh
+  too) or the ground under the crosshair, the slice laid flat and the focus following it to its W, up to 12 m; the
+  W-meter widens to match. The marsh is a photo subject ("The marsh"), a place: creatures outrank it, no journal page.
+- The marsh in the dev look: an orange ring and a blue fill, nothing else (`pen_look_4d.gd` rule keys
+  landmark/foundation/rest). The heron was never gone: it is 0.5 m thick in W, and only a flat slice at w 8 (T) cuts it.
+- The projection leaves out the ground, the hills, the cave hill and the paths (`lookout_4d.gd
+  projection_leaves_out`): their ghosts were the screen-wide sheets in the art look and the paths' yellow film in the
+  dev look. The W Exploder's copies and unprojected oaks keep their slice culling under the projection; from the
+  spawn at 720p, projection on went from about 20 to about 15 ms (`lookout/_projection_ab_runner.gd`).
+- Frames: `PenLayout/scripts/_capture_feedback_runner.gd` modes panels, lookcam, cave, balloon.
+
 ## Open
 
 - The range in W, and Ramon's W tools (a W exploder for trees, a W optimiser for landmarks): next, from

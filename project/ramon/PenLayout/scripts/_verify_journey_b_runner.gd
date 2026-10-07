@@ -192,7 +192,8 @@ func _cave(dev: bool) -> void:
 		SliceAngles.tilt(_rig, 0.0, 0.0, atan2(-gap.x, -gap.y))
 		_rig.set("pitch", -0.15)
 		Input.action_press(&"move_forward")
-		var want_w: float = clampf((37.1 - p.z) / (37.1 - 31.5), 0.0, 1.0) * 4.0
+		# Up the road's climb to the door's W (_make_pen_paths_b_runner.gd CAVE_DOOR_W: 3, from z 37.1 to 33.3).
+		var want_w: float = clampf((37.1 - p.z) / (37.1 - 33.3), 0.0, 1.0) * 3.0
 		if p.w < want_w - 0.15:
 			Input.action_press(&"move_ana")
 		else:

@@ -127,11 +127,11 @@ func _run() -> void:
 	print("   blockouts on: %s" % ", ".join(PackedStringArray(parents)))
 	for want in ["Lookout", "Oak", "RockPileSpot"]:
 		_check(parents.has(want), "3 %s has its blockout" % want)
-	# The cave keeps its own shape, baked coarser (Ramon: "keep the original cave in the greybox
-	# version. just lower res").
+	# The cave keeps its own shape, at the art's own resolution since 7 Oct (Ramon: "just make it same
+	# resolution as art look"; the coarse bake's arch was lumpy).
 	var hill_mi := _room.get_node("World/Cave/CaveHill") as MeshInstance4D
 	var hill_mesh: String = hill_mi.mesh.resource_path if hill_mi.mesh != null else "none"
-	_check(hill_mesh.ends_with("cave_hill_low.res"), "3 the cave's hill shows its coarse bake (%s)" % hill_mesh.get_file())
+	_check(hill_mesh.ends_with("cave_hill_even.res"), "3 the cave's hill keeps its art mesh (%s)" % hill_mesh.get_file())
 	_check(blocks.all(func(b) -> bool: return (b as Node).owner == null), "3 no blockout would be saved (no owner)")
 	# 4.
 	var grass: Node = _room.get_node("World/Grass")

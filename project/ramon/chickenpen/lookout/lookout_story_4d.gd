@@ -165,7 +165,7 @@ func on_camera_raised() -> void:
 		"Can you hear me? Good, that's the radio. The ring on the lens is the clever part: E and Q.",
 		"It doesn't focus near and far. It focuses in W.",
 		"See the scale at the bottom? Every mark on it is something out there. Put the needle on one, and there it is.",
-		"Click to take a picture. T finds the focus for you. Z puts the camera down.",
+		"Click to take a picture. T lines your slice up with whatever is in the middle. Z puts the camera down.",
 		"Try me first. I'm the easy one.",
 	])
 
@@ -204,7 +204,8 @@ func on_cab_entered() -> void:
 func on_photo(result: Dictionary) -> void:
 	_photos += 1
 	var look: Dictionary = result.get("look", {})
-	var good: bool = String(result.get("verdict", "")) == "good"
+	# A place (the marsh) is named in the toast but is nothing the book or the story keeps.
+	var good: bool = String(result.get("verdict", "")) == "good" and not bool((look.get("subject", {}) as Dictionary).get("place", false))
 	# The owl first: if it is the first good photo of all, its reveal is the bigger moment.
 	if good and String(look.get("page", "")) == "owl" and not _flag("owl_found"):
 		_raise("owl_found")

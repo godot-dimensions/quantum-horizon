@@ -33,6 +33,12 @@ const START_X := 24.9
 ## campsite at the landing spot of the path"): the route lands at the camp's sand at the camp's own W, its ring
 ## (CampFrame) there too. V's align to slice still comes up once the camp is half in view.
 const CAMP_W := -2.5
+## The W the cave road lands at: a metre kata of the arch's middle (World/Cave at w 4; the arch is round in x and W,
+## terrain/pen_cave_hill_4d.gd), where the opening stands tallest against the rock round it (Ramon, 7 Oct: "if you
+## can get the even version to show up at a -W ... and have the placement marker align at that point"; the
+## frames: smoke_test_output/cave_w/, look/_cave_w_sweep_runner.gd). Inside the walls' gap (W 0.9 to 7.1) and the
+## door tutor's reach (1.5 either side of 4).
+const CAVE_DOOR_W := 3.0
 
 
 func _initialize() -> void:
@@ -52,9 +58,17 @@ func _initialize() -> void:
 	e.call(j_trym, trym)
 	# 3: west along the main line to the cave's road; its last stretch slants to the door, 4 m ana.
 	var j_cave: int = n.call("junction", 7.3, MAIN_Z)
-	var cave: int = dest.call(7.4, 30.8, 4.0, "CaveFrame", "round", Vector2(0, 1))
+	var cave: int = dest.call(7.4, 30.8, CAVE_DOOR_W, "CaveFrame", "round", Vector2(0, 1))
 	e.call(j_trym, j_cave)
-	e.call(j_cave, cave, "follow")
+	# THE DOOR'S OWN SLICE AT THE END (Ramon, 7 Oct: "the end point of the reveal marker, does not align with the ideal
+	# slice for the open cave"). The road climbed to the door's W over all of its 6.3 m and the circle showed 1.2 m
+	# either side of it, so you met the circle at W 2.8, short of the door's slice, and the slanted road led your
+	# eye past the arch. Now the climb ends 2.5 m short, and the last stretch lies flat at the door's best W
+	# (CAVE_DOOR_W), and the circle shows only within 0.6 m of it.
+	var cave_flat: int = n.call("chord", 7.38, 33.3, CAVE_DOOR_W)
+	e.call(j_cave, cave_flat, "follow")
+	e.call(cave_flat, cave, "here")
+	g.call("node", cave)["band"] = 1.2
 	# 4: on west to the pen's corner, and the pen's gate at the line's end.
 	var j_pen: int = n.call("junction", -4.0, MAIN_Z)
 	# The dev look draws its own frame round the pen (pen_look_4d.gd _frame_pen): none here.
@@ -75,7 +89,20 @@ func _initialize() -> void:
 	var camp: int = dest.call(6.4, -4.0, CAMP_W, "CampFrame", "round", Vector2(-1, 0))
 	e.call(j_camp, camp, "follow")
 	var tower: int = dest.call(-18.75, -27.8, 0.0, "TowerFrame", "round", Vector2(0, 1))
-	e.call(j_camp, tower)
+	# A smaller branch to Wren's balloon (Ramon, 7 Oct: "draw a smaller subpath to the balloon"): off the tower road
+	# a few metres short of the tower, a secondary route (narrower, its own mark) that turns north for the last
+	# 2.5 m and ends on the basket's front, its south side, the side you walk up from (Ramon: "i rather have the
+	# sub-path ending on the front side of the basket, from where you're walking"). The small circle is 2 m south of
+	# the basket, inside the reach where F boards it (lookout_4d.gd _near_basket), on the mooring (MooringSpot in
+	# units/lookout/lookout.tscn), never the balloon itself, which flies off with its circle chasing it.
+	var j_balloon: int = n.call("junction", -17.42, -22.5)
+	e.call(j_camp, j_balloon)
+	e.call(j_balloon, tower)
+	# The turn's ball a little nearer the basket (Ramon: "move the pivot ball of the subpath slightly more toward the basket").
+	var balloon_turn: int = n.call("bend", -30.0, -27.5)
+	var balloon: int = dest.call(-30.0, -30.0, 0.0, "MooringSpot", "none", Vector2(0, 1), 0.75)
+	g.call("add_edge", j_balloon, balloon_turn, "secondary", "here", BAND)
+	g.call("add_edge", balloon_turn, balloon, "secondary", "here", BAND)
 	var notes: PackedStringArray = g.call("validate")
 	for line in notes:
 		print("NOTE " + line)

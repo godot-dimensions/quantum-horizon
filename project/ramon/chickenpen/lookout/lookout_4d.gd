@@ -91,6 +91,20 @@ const HERON := preload("res://ramon/chickenpen/lookout/heron_4d.gd")
 ## whole field (lofting_gotchas.md, "the fog over the floor is the projection pass").
 @export_range(0.0, 1.0, 0.01) var projection_opacity: float = 0.55
 @export_range(0.0, 1.0, 0.005) var projection_opacity_base: float = 0.05
+## THE GROUND AND THE HILLS ARE NOT IN THE GHOST (Ramon, 7 Oct: "turning projection on gives some really weird
+## artifacts that obscure my whole screen ... oddly it doesnt happen in dev mode"). The projection draws every 4D mesh
+## along all of W, additive and through everything. The art look's ground is the field painted in W, a stack of
+## slabs 160 m across with faces at fixed W (pen_ground_paint_4d.gd), and the mountains a shell round the valley
+## hundreds of metres deep in W: projected, each face became a flat sheet of green, sand or sky-grey across the
+## screen, and the near ones near opaque. The dev look swaps the field for one white box and the hills for flat
+## grey, so the same thing was a pale veil there and went unseen. They are the floor everything else stands on, not
+## something ana or kata of you, so the projection leaves them out (as the Arboretum and Crosswise do theirs):
+## [member projection_leaves_out], by name under World, every mesh in them. Off, they are as they were.
+## The paths too (Ramon, 7 Oct: "in dev mode turning projections on means the paths get a yellow transparent
+## overlay"): their static stretches are 30 m deep in W, so their marks ghosted as a sheet of sand yellow.
+@export var terrain_in_projection: bool = false
+@export var projection_leaves_out: PackedStringArray = PackedStringArray(["Ground", "Hills", "WestHill", "TowerHill",
+	"MoundA", "MoundB", "MoundC", "MoundD", "MoundE", "CaveHill", "Paths"])
 var projection: bool = false
 
 var room: Node
@@ -141,6 +155,10 @@ var _tag: WorldTag4D
 var _marsh_tag: WorldTag4D
 var _marsh_anchor: Node4D
 var _marsh_shown: String = ""
+## "Z  use the camera" at the rail on top of the Watchstone (_update_rail_prompt).
+var _rail_tag: WorldTag4D
+var _rail_anchor: Node4D
+var _rail_shown: String = ""
 var _shown: String = ""
 
 
@@ -200,6 +218,7 @@ func _ready() -> void:
 	_build_wood()
 	_build_ladder_prompt()
 	_build_marsh_prompt()
+	_build_rail_prompt()
 	# The chickens are made in their manager's _ready and the hills' meshes are loaded by
 	# then: collect the subjects and map the ground once everything is up.
 	_late_setup.call_deferred()
@@ -361,6 +380,14 @@ func _register_own_subjects() -> void:
 	if wren != null:
 		subjects.call("add", {"id": "wren", "page": "folk", "name": "Wren", "node": wren, "lift": 0.85, "radius": 0.85,
 			"w_radius": 0.24, "behave": _behave_wren})
+	# The marsh itself (Ramon, 7 Oct: "when you photograph the marsh it says nothing in it. maybe it
+	# should say marsh"). A place, not a creature: anything living in the frame comes first
+	# (photo_judge_4d.gd _rank), it fills no journal page, and the story does not count it
+	# (lookout_story_4d.gd on_photo). T lines the slice up with it like anything else.
+	if marsh != null:
+		subjects.call("add", {"id": "marsh", "page": "marsh", "name": "The marsh", "node": marsh, "lift": 0.5, "place": true,
+			"radius": float(marsh.get("pond_size_x")) * 0.5 + 1.0, "w_radius": float(marsh.get("w_depth")) * 0.5,
+			"behave": func(_s: Dictionary) -> Array: return [1, "Still water, out along W"]})
 
 
 func _behave_wren(_s: Dictionary) -> Array:
@@ -396,12 +423,33 @@ func current_camera() -> Camera4D:
 
 func set_projection(on: bool) -> void:
 	projection = on
+	if on:
+		_projection_scope()
 	_apply_projection(current_camera())
 	# The starlings are not 4D meshes, so the projection pass leaves them out; the flock draws
 	# its own ghost of the birds off your slice instead.
 	var flock: Node = room.get_node_or_null("World/Flock")
 	if flock != null and "ghost" in flock:
 		flock.set("ghost", on)
+
+
+## The terrain in or out of the projection (terrain_in_projection), each time it goes on: the dev look and the
+## grass swap meshes on these nodes but keep the nodes, so it holds, and a mesh made since is caught too.
+func _projection_scope() -> void:
+	var world: Node = room.get_node_or_null("World")
+	if world == null:
+		return
+	for nm in projection_leaves_out:
+		var n: Node = world.get_node_or_null(NodePath(nm))
+		if n == null:
+			n = world.find_child(nm, true, false)
+		if n == null:
+			continue
+		var meshes: Array = n.find_children("*", "MeshInstance4D", true, false)
+		if n is MeshInstance4D:
+			meshes.append(n)
+		for mi in meshes:
+			(mi as MeshInstance4D).allow_projection = terrain_in_projection
 
 
 ## Puts the camera on the renderer the toggle asks for, if it is not on it already. Run every
@@ -547,6 +595,8 @@ func _near_ladder() -> bool:
 ## turned, and the cut takes a sliver of it. V there turns the slice flat and puts you at the
 ## marsh's own w, as R does for the pen's.
 @export var align_key: Key = KEY_V
+## How near the rail, on top of the Watchstone, "Z  use the camera" shows (_update_rail_prompt).
+@export_range(0.3, 3.0, 0.1, "suffix:m") var rail_near: float = 1.3
 ## How near the marsh, in x and z and in w, the prompt is offered.
 @export_range(2.0, 40.0, 0.5, "suffix:m") var align_reach: float = 14.0
 @export_range(0.5, 8.0, 0.1, "suffix:m") var align_reach_w: float = 3.5
@@ -594,6 +644,52 @@ func align_to_marsh() -> void:
 func _rig() -> Node:
 	var rig: Node = room.get_node_or_null("Player/CameraRig")
 	return rig if rig != null and rig.has_method("align_to") else null
+
+
+func _build_rail_prompt() -> void:
+	if tower == null:
+		return
+	_rail_anchor = Node4D.new()
+	_rail_anchor.name = "RailCamera"
+	room.get_node("World").add_child(_rail_anchor)
+	_rail_tag = WorldTag4D.new()
+	_rail_tag.name = "Prompt"
+	if farm_camera != null:
+		_rail_tag.camera_path = farm_camera.get_path()
+	_rail_tag.anchor_path = _rail_anchor.get_path()
+	_rail_anchor.add_child(_rail_tag)
+
+
+## AT THE RAIL, THE CAMERA (Ramon, 7 Oct: "when you get close to the rail above on the tower, let a
+## prompt show in screen, press z to use camera, or something"). On top of the Watchstone, with the
+## camera Wren gave you, near its rail, where the view is: the key, on the rail where you stand, at
+## your own w. Not by the ladder's head (the tower asks "Go down?" there), not while the camera is up.
+func _update_rail_prompt() -> void:
+	if _rail_tag == null:
+		return
+	var text: String = ""
+	if player != null and int(station.get("mode")) == 0 and bool(station.call("can_raise")) \
+			and not (tower.has_method("busy") and bool(tower.call("busy"))) and tower.get("_asking") != true \
+			and tower.has_method("on_deck") and bool(tower.call("on_deck", player.global_position)):
+		var p: Vector4 = player.global_position
+		var local: Vector4 = tower.global_basis.inverse() * (p - tower.global_position)
+		var flat := Vector2(local.x, local.z)
+		var half: float = float(tower.call("top_half")) if tower.has_method("top_half") else 3.7
+		var head: Vector4 = tower.call("_ladder_head") if tower.has_method("_ladder_head") else Vector4(INF, 0.0, 0.0, 0.0)
+		var by_ladder: bool = Vector2(p.x - head.x, p.z - head.z).length() < 1.6
+		if flat.length() > half - rail_near and not by_ladder:
+			var edge: Vector2 = flat.normalized() * half
+			var at: Vector4 = tower.global_position + tower.global_basis * Vector4(edge.x, 0.0, edge.y, 0.0)
+			at.y = p.y + 1.5
+			at.w = p.w
+			_rail_anchor.global_position = at
+			text = "%s  use the camera" % OS.get_keycode_string(int(station.get("raise_key")))
+	if text != _rail_shown:
+		_rail_shown = text
+		if text == "":
+			_rail_tag.clear()
+		else:
+			_rail_tag.show_text(text)
 
 
 func _update_marsh_prompt() -> void:
@@ -675,7 +771,17 @@ func _near_basket() -> bool:
 	return Vector2(gap.x, gap.z).length() <= 2.2 and absf(gap.w) <= 1.2
 
 
+var _scope_again: float = 0.0
+
+
 func _process(delta: float) -> void:
+	# While the projection is on, what it leaves out is looked over twice a second: the paths redraw their
+	# stretches when their type or the look changes, and new meshes come in projected.
+	if projection:
+		_scope_again -= delta
+		if _scope_again <= 0.0:
+			_scope_again = 0.5
+			_projection_scope()
 	# Leaving the Lookout leaves its developer overlay behind (it stayed on, out in the pen). Not
 	# the projection: that is the pen's own now (Ramon, 3 Oct: "can you also make p for
 	# projection in the main scene?"), on its controls card, as the hawk is.
@@ -705,7 +811,7 @@ func _process(delta: float) -> void:
 	_apply_projection(cam)
 	if projection:
 		_hud_over_projection()
-	for t in [_tag, _board_tag, _down_tag]:
+	for t in [_tag, _board_tag, _down_tag, _rail_tag]:
 		if t != null:
 			t.set("_camera", cam)
 	if _down_tag != null:
@@ -718,6 +824,7 @@ func _process(delta: float) -> void:
 			else:
 				_down_tag.show_text(down_text)
 	_update_marsh_prompt()
+	_update_rail_prompt()
 	if _tag == null:
 		return
 	var text: String = ""

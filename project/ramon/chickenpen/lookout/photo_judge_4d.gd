@@ -159,6 +159,9 @@ func verdict(look: Dictionary) -> String:
 ## photo of the white starling.
 func _rank(look: Dictionary) -> float:
 	var r: float = float(look.get("points", 0))
+	# A place (the marsh) is what a photo is of only when nothing living is.
+	if bool((look.get("subject", {}) as Dictionary).get("place", false)):
+		r *= 0.05
 	if verdict(look) != "good":
 		r *= 0.25
 	elif String(look.get("page", "")) in ["owl", "white_starling", "heron"]:

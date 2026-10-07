@@ -104,6 +104,8 @@ static var _leaf_sources: Dictionary = {}
 
 var leaves: Node4D
 var _tree: Node4D
+## Whether the projection draws the tree (_projects): -1 not looked yet.
+var _projected: int = -1
 var _body: StaticBody4D
 ## The tree's box in its own frame (wood plus a margin for the leaves): centre and half size.
 var _centre := Vector4.ZERO
@@ -154,6 +156,7 @@ func _build() -> void:
 	var runtime: bool = not Engine.is_editor_hint()
 	_tree = Node4D.new()
 	_tree.name = "Tree"
+	_projected = -1
 	add_child(_tree)
 	var summ: Dictionary = sk.call("summary")
 	var h: float = maxf(float(summ["height"]), 0.5)
@@ -297,12 +300,26 @@ func cull(camera: Camera4D, viewport: Viewport, engine: RenderingEngine4D) -> vo
 	if _tree == null or viewport != get_viewport():
 		return
 	var on: bool = true
-	if slice_cull and camera != null and (engine == null or engine.get_friendly_name() == "Cross-section"):
+	# Under the projection a tree off the slice is still wanted, as a ghost, but only if the projection draws it
+	# (the W Exploder's copies are left out of it, and were drawn whole for nothing; 7 Oct).
+	var ghost: bool = engine != null and engine.get_friendly_name() != "Cross-section" and _projects()
+	if slice_cull and camera != null and not ghost:
 		on = is_cut_by(camera)
 	if on and view_cull and camera != null:
 		on = is_in_view(camera, viewport)
 	if _tree.visible != on:
 		_tree.visible = on
+
+
+## Whether the projection draws this tree (its first mesh's allow_projection), looked up once a tree: cull()
+## asks every frame, for hundreds of trees.
+func _projects() -> bool:
+	if _projected < 0:
+		_projected = 0
+		for mi in _tree.find_children("*", "MeshInstance4D", true, false):
+			_projected = 1 if (mi as MeshInstance4D).allow_projection else 0
+			break
+	return _projected == 1
 
 
 ## Whether the tree's box is in front of [param camera] and within its view, with its whole size as

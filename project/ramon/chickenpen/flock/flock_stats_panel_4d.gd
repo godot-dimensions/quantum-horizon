@@ -159,7 +159,9 @@ func _place() -> void:
 		_compact = compact
 		# Compact is narrower too: beside the to-do list at 720p it would reach the camera picker.
 		size = Vector2(minf(panel_width, 290.0) if compact else panel_width, _layout_height())
-		if todo_rect.size == Vector2.ZERO or under.y + size.y + gap_below <= todo_rect.position.y:
+		# Under the info card, unless the to-do list is in the way (bottom left, as it was: above it then; at the
+		# top beside the info card since 7 Oct, pen_quests_4d.gd beside_info, it never is).
+		if todo_rect.size == Vector2.ZERO or not Rect2(under, size + Vector2(0.0, gap_below)).intersects(todo_rect):
 			position = under
 			return
 	# Still in the way: out beside the to-do list, under the info card all the same.

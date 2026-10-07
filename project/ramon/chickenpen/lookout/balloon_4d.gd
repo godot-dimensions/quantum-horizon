@@ -159,6 +159,9 @@ func _ready() -> void:
 ## survive it. So the balloon follows the switch itself: every part in the Look's landmark blue, lighter
 ## or darker as the part was in the art, the envelope's bands rebuilt in blues; and back. Repainted in
 ## place, never rebuilt, so it can switch mid-ride. The flame keeps its fire.
+## THE BASKET ORANGE (Ramon, 7 Oct: "Make the baloon basket orange too"): its floor, walls, rims and weave in the
+## Look's landmark orange, as the Watchstone's walkways are, so what you step into reads apart from what lifts it.
+## Both follow the panel's colour swatches (colours_changed).
 func _follow_look() -> void:
 	var look: Node = Look.current
 	if look == null or not is_instance_valid(look):
@@ -167,7 +170,22 @@ func _follow_look() -> void:
 	# look test's check 8 found the balloon still blue there).
 	if not look.is_connected("applied_changed", _on_look):
 		look.connect("applied_changed", _on_look)
+	if look.has_signal("colours_changed") and not look.is_connected("colours_changed", _on_colours):
+		look.connect("colours_changed", _on_colours)
 	_on_look(bool(look.get("_applied")))
+
+
+func _on_colours(_foundation: Color, _landmark: Color) -> void:
+	if _dev_look:
+		_paint_parts(true)
+
+
+## The basket's parts, by name (_build_basket).
+static func _is_basket(part: String) -> bool:
+	for p in ["Floor", "Wall", "Rim", "Weave"]:
+		if part.begins_with(p):
+			return true
+	return false
 
 
 func _on_look(dev: bool) -> void:
@@ -177,17 +195,7 @@ func _on_look(dev: bool) -> void:
 	var look: Node = Look.current
 	var blue: Color = look.get("foundation_colour") if look != null and is_instance_valid(look) else Color(0.13, 0.40, 0.86)
 	var skin: Node = _envelope.get_node_or_null("Skin") if _envelope != null else null
-	for node in find_children("*", "MeshInstance4D", true, false):
-		var mi := node as MeshInstance4D
-		if mi == skin or mi.get_parent() == skin or String(mi.name).begins_with("Flame"):
-			continue
-		var m := mi.material_override as TetraMaterial4D
-		if m == null:
-			continue
-		if not mi.has_meta(&"art_colour"):
-			mi.set_meta(&"art_colour", m.albedo_color)
-		var art: Color = mi.get_meta(&"art_colour")
-		m.albedo_color = _in_blue(blue, art) if dev else art
+	_paint_parts(dev)
 	if skin != null and skin.has_method("build"):
 		# The envelope's art mesh is kept and put back as it was, the same object: the dev look's own test
 		# checks that switching back leaves every mesh exactly as it was (look/_verify_look_runner.gd). The
@@ -219,6 +227,26 @@ func _on_look(dev: bool) -> void:
 			for ball in skin.get_children():
 				if ball.has_meta(&"art_colour"):
 					ball.set("color", ball.get_meta(&"art_colour"))
+
+
+## Every part but the envelope's skin and the flame: in the dev look the Look's blue, the basket its orange, each
+## as light or dark as it was in the art; else the art's own colours.
+func _paint_parts(dev: bool) -> void:
+	var look: Node = Look.current
+	var blue: Color = look.get("foundation_colour") if look != null and is_instance_valid(look) else Color(0.13, 0.40, 0.86)
+	var orange: Color = look.get("landmark_colour") if look != null and is_instance_valid(look) else Color(0.95, 0.36, 0.10)
+	var skin: Node = _envelope.get_node_or_null("Skin") if _envelope != null else null
+	for node in find_children("*", "MeshInstance4D", true, false):
+		var mi := node as MeshInstance4D
+		if mi == skin or mi.get_parent() == skin or String(mi.name).begins_with("Flame"):
+			continue
+		var m := mi.material_override as TetraMaterial4D
+		if m == null:
+			continue
+		if not mi.has_meta(&"art_colour"):
+			mi.set_meta(&"art_colour", m.albedo_color)
+		var art: Color = mi.get_meta(&"art_colour")
+		m.albedo_color = _in_blue(orange if _is_basket(String(mi.name)) else blue, art) if dev else art
 
 
 ## [param blue], as light or dark as [param art] is: a pale part a pale blue, a dark one deep.

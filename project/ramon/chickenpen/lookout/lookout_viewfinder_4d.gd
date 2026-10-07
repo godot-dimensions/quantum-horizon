@@ -34,13 +34,13 @@ extends Control
 
 const STYLE := preload("res://ramon/Menu/style/menu_final_style.tres")
 ## [key, what it does] per mode, for the keys card.
-const KEYS_HELD := [["Click", "shoot"], ["Wheel", "zoom"], ["L", "next lens (Shift: back)"], ["E  Q", "focus ring, through W"], ["T", "autofocus"],
+const KEYS_HELD := [["Click", "shoot"], ["Wheel", "zoom"], ["L", "next lens (Shift: back)"], ["E  Q", "focus ring, through W"], ["T", "line the slice up with it"],
 	["RMB", "hold and drag: turn the slice"], ["R", "straighten the slice"], ["P", "projection on / off"], ["WASD", "walk"], ["J", "field journal"],
 	["B", "balloon, when it is up"], ["Z", "lower the camera"], ["F3", "metrics card"], ["F4", "developer overlay"]]
-const KEYS_CAB := [["Click", "shoot"], ["Wheel", "zoom"], ["L", "next lens (Shift: back)"], ["E  Q", "focus ring, through W"], ["T", "autofocus"],
+const KEYS_CAB := [["Click", "shoot"], ["Wheel", "zoom"], ["L", "next lens (Shift: back)"], ["E  Q", "focus ring, through W"], ["T", "line the slice up with it"],
 	["RMB", "hold and drag: turn the slice"], ["R", "straighten the slice"], ["P", "projection on / off"], ["J", "field journal"], ["Esc", "climb down"],
 	["F3", "metrics card"], ["F4", "developer overlay"]]
-const KEYS_RIDE := [["Click", "shoot"], ["Wheel", "zoom"], ["L", "next lens (Shift: back)"], ["E  Q", "focus ring, through W"], ["T", "autofocus"],
+const KEYS_RIDE := [["Click", "shoot"], ["Wheel", "zoom"], ["L", "next lens (Shift: back)"], ["E  Q", "focus ring, through W"], ["T", "line the slice up with it"],
 	["Space", "burner: up (let go to sink)"], ["X", "whistle"], ["P", "projection on / off"], ["J", "field journal"], ["Esc", "ask Wren to land"], ["F3", "metrics card"], ["F4", "developer overlay"]]
 
 ## The journal's secret pages, for keeping their names off the meter until they are found.
@@ -246,6 +246,7 @@ func _draw_frame() -> void:
 	_draw_guide(s, accent, bottom, inset.y)
 	_draw_zoom(s, white, dim, accent, inset, bottom)
 	_draw_meter(s, bot_h, white, dim, accent)
+	_draw_first_zoom(centre)
 	# The two cards are drawn by their own canvas item, four times a second (_draw_cards).
 	if _note_t > 0.0:
 		var nw: float = _font.get_string_size(_note, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(18)).x
@@ -277,7 +278,7 @@ func _in_view() -> Array:
 		return _in_view_cache
 	_in_view_frame = frame
 	var subjects: Node = station.get("lookout").get("subjects")
-	_in_view_cache = subjects.call("in_view", station.get("camera"), station.call("home_eye"), station.call("slice_normal"), float(station.get("focus_range")))
+	_in_view_cache = subjects.call("in_view", station.get("camera"), station.call("home_eye"), station.call("slice_normal"), _reach())
 	return _in_view_cache
 
 
@@ -364,7 +365,8 @@ func _draw_zoom(s: Vector2, white: Color, dim: Color, accent: Color, inset: Vect
 ## The W-meter in the bottom strip: kata to ana, the needle and its depth of field, a tick for
 ## every creature in front of you, the near ones named.
 func _draw_meter(s: Vector2, bot_h: float, white: Color, dim: Color, accent: Color) -> void:
-	var reach: float = float(station.get("focus_range"))
+	var reach: float = _reach()
+	var every: float = _label_every(reach)
 	var width: float = minf(s.x * 0.6, 980.0)
 	var left: float = (s.x - width) * 0.5
 	var y: float = s.y - bot_h + bot_h * 0.48
@@ -379,14 +381,14 @@ func _draw_meter(s: Vector2, bot_h: float, white: Color, dim: Color, accent: Col
 	var w: float = -reach
 	var fs: int = _px(11)
 	while w <= reach + 0.001:
-		var major: bool = is_equal_approx(fmod(absf(w), 1.0), 0.0)
+		var major: bool = is_equal_approx(fmod(absf(w) + 0.0001, every), 0.0001)
 		var x: float = at.call(w)
 		draw_line(Vector2(x, y), Vector2(x, y + (_px(8) if major else _px(4))), white if is_zero_approx(w) else dim, 1.0)
 		if major:
 			var label: String = "0" if is_zero_approx(w) else "%+d" % int(round(w))
 			var lw: float = _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			draw_string(_font, Vector2(x - lw * 0.5, y + _px(21)), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, dim)
-		w += 0.5
+		w += 0.5 if every <= 1.0 else 1.0
 	var ends: int = _px(13)
 	draw_string(_font, Vector2(left - _font.get_string_size("kata", HORIZONTAL_ALIGNMENT_LEFT, -1, ends).x - 14.0, y + ends * 0.36), "kata", HORIZONTAL_ALIGNMENT_LEFT, -1, ends, white)
 	draw_string(_font, Vector2(left + width + 14.0, y + ends * 0.36), "ana", HORIZONTAL_ALIGNMENT_LEFT, -1, ends, white)
@@ -433,6 +435,35 @@ func _draw_meter(s: Vector2, bot_h: float, white: Color, dim: Color, accent: Col
 	var readout: String = "W %+.2f m" % focus
 	var rw: float = _font.get_string_size(readout, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13)).x
 	draw_string(_font, Vector2(left + width - rw, y - _px(22)), readout, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(13), white)
+
+
+## How far the W-meter reaches: the ring's reach (lookout_station_4d.gd ring_reach), 3 m unless T
+## took it further, rounded up to the meter's labels.
+func _reach() -> float:
+	var raw: float = float(station.call("ring_reach")) if station.has_method("ring_reach") else float(station.get("focus_range"))
+	var every: float = _label_every(raw)
+	return ceilf(raw / every - 0.001) * every
+
+
+func _label_every(reach: float) -> float:
+	return 1.0 if reach <= 4.0 else (2.0 if reach <= 8.0 else 4.0)
+
+
+## Under the focus point, until the first scroll (Ramon, 7 Oct: "when you just open the camera for
+## the first time, let a prompt say, scroll to zoom"): the station sets the journal's "zoomed" flag
+## on the first turn of the wheel.
+func _draw_first_zoom(centre: Vector2) -> void:
+	var journal: Node = station.get("lookout").get("journal")
+	if journal == null or bool(journal.call("flag", "zoomed")) or _note_t > 0.0:
+		return
+	var text: String = "Scroll to zoom"
+	var fs: int = _px(17)
+	var tw: float = _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var pulse: float = 0.5 + 0.5 * sin(_clock * 3.0)
+	var a: float = clampf(_up * 2.0, 0.0, 1.0) * (0.7 + 0.3 * pulse)
+	var at := Vector2(centre.x - tw * 0.5, centre.y + _px(58))
+	draw_rect(Rect2(at + Vector2(-_px(12), -fs - _px(4)), Vector2(tw + _px(24), fs + _px(14))), Color(0.02, 0.025, 0.03, 0.55 * a))
+	draw_string(_font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, 0.95 * a))
 
 
 ## The second locator: a dashed ring in the frame where each creature off your slice is, and
@@ -526,6 +557,8 @@ func _draw_readout(_s: Vector2, inset: Vector2, accent: Color) -> void:
 	var in_view: int = 0
 	var in_slice: int = 0
 	for v in _in_view():
+		if bool(v["subject"].get("place", false)):
+			continue
 		in_view += 1
 		var wr: float = float(v["subject"]["w_radius"])
 		var off: float = float(v["w"]) - focus

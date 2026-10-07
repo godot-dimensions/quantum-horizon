@@ -28,6 +28,7 @@ var _says: Label
 var _chip: StyleBoxFlat
 var _chip_hover: StyleBoxFlat
 var _chip_on: StyleBoxFlat
+var _off_farm: bool = false
 
 
 func _ready() -> void:
@@ -96,9 +97,16 @@ func _process(_delta: float) -> void:
 	# Only on the farm, as the grass panel: away in the cave or the cinema the paths are asleep.
 	var network: Node = paths.get("_network") if paths != null and is_instance_valid(paths) else null
 	var on_farm: bool = network != null and network is Node4D and (network as Node4D).is_visible_in_tree()
-	if visible != on_farm:
-		visible = on_farm
+	# Only its own hiding undone, as the grass panel's (the Lookout's raised camera hides the whole HUD).
 	if not on_farm:
+		if visible:
+			visible = false
+			_off_farm = true
+		return
+	if _off_farm:
+		_off_farm = false
+		visible = true
+	if not visible:
 		return
 	var view: Vector2 = get_viewport_rect().size
 	var back: Control = get_child(0) as Control
@@ -106,16 +114,19 @@ func _process(_delta: float) -> void:
 	back.size = size
 	if beside == null or not is_instance_valid(beside):
 		beside = get_parent().get_node_or_null(^"GrassPanel") as Control
+	# The grass panel's size (its panel_scale, 60% since 7 Oct), so the two stack as one set.
+	scale = beside.scale if beside != null and is_instance_valid(beside) else Vector2.ONE
+	var vis: Vector2 = size * scale
 	var places: Array = []
 	if beside != null and is_instance_valid(beside) and beside.is_visible_in_tree():
 		var r: Rect2 = SPOT.rect_of(beside)
 		# On top of the grass panel, left edges level: it keeps the room (grass/pen_grass_panel_4d.gd; Ramon,
 		# 7 Oct: "the paths window can stack neatly above the other").
-		places.append(Vector2(r.position.x, r.position.y - size.y - gap))
+		places.append(Vector2(r.position.x, r.position.y - vis.y - gap))
 		places.append(Vector2(r.end.x + gap, r.position.y))
-		places.append(Vector2(r.end.x + gap, r.end.y - size.y))
+		places.append(Vector2(r.end.x + gap, r.end.y - vis.y))
 	places.append(Vector2(margin, view.y * 0.22))
-	places.append(Vector2(margin, view.y * 0.5 - size.y))
+	places.append(Vector2(margin, view.y * 0.5 - vis.y))
 	var ignore: Array = []
 	for other in [^"CameraPicker", ^"Journal"]:
 		var n: Node = get_parent().get_node_or_null(other)
@@ -125,7 +136,7 @@ func _process(_delta: float) -> void:
 	var belt := get_parent().get_node_or_null(^"Inventory") as Control
 	if belt != null and belt.is_visible_in_tree() and belt.has_method("belt_rect"):
 		taken.append(belt.call("belt_rect"))
-	position = SPOT.first(places, size, taken, view)
+	position = SPOT.first(places, vis, taken, view)
 
 
 func _row(parent: Control) -> HBoxContainer:

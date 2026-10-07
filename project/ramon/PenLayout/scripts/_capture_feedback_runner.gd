@@ -12,6 +12,11 @@ extends SceneTree
 ##              master's feet
 ##   start      the first frame you see: your avatar facing the way the camera looks
 ##   camp       the camp's ring on the ground (dev look, at the camp's W) and the guide by its marker (art look)
+##   cave       the cave road's end: the climb, then the flat stretch at the door's W, the circle, the arch (art, dev)
+##   balloon    the balloon's branch off the tower road and the basket in the dev look's orange
+##   lookcam    on top of the Watchstone: "Z  use the camera" at the rail, the camera up with "Scroll to zoom", T on
+##              the marsh (the slice laid flat, the focus out to w +8, the heron), its photo named, the dev look's
+##              orange ring and blue water (a test journal, never yours)
 ##
 ##   lab_run.sh windowed fb_<mode> res://ramon/PenLayout/scripts/_capture_feedback_runner.gd <mode>
 
@@ -105,6 +110,42 @@ func _shot(name: String, hud: bool = false) -> void:
 	print("SHOT %s_%s" % [_mode, name])
 
 
+## The raised camera turned and pitched until [param id] (a photo subject) is in the middle of the frame: the
+## rig's heading and pitch nudged by where it shows, a few times.
+func _centre_on(lookout: Node, station: Node, rig: Node, id: String) -> void:
+	var subjects: Node = lookout.get("subjects")
+	var cam := station.get("camera") as Camera4D
+	for i in 6:
+		await _frames(3)
+		var at: Variant = null
+		for v in subjects.call("in_view", cam, station.call("home_eye"), station.call("slice_normal"), 12.0):
+			if String(v["subject"]["id"]) == id:
+				at = v["screen"]
+		if at == null:
+			# Not in frame yet: face it, level, and look again.
+			var target: Vector4 = subjects.call("point", _subject(subjects, id))
+			var eye: Vector4 = cam.global_position
+			rig.call("face_toward", Vector4(target.x - eye.x, 0.0, target.z - eye.z, 0.0))
+			rig.set("pitch", -atan2(eye.y - target.y, Vector2(target.x - eye.x, target.z - eye.z).length()))
+			rig.call("drag_slice", Vector2.ZERO)
+			continue
+		var sc: Vector2 = at
+		print("LOOKCAM: %s at %s on the screen" % [id, str(sc.snapped(Vector2(0.01, 0.01)))])
+		if sc.length() < 0.05:
+			return
+		var half: float = float(cam.get("field_of_view_4d")) * 0.5
+		rig.set("pitch", float(rig.get("pitch")) + sc.y * half)
+		rig.set("yaw", float(rig.get("yaw")) - sc.x * half * 1.6)
+		rig.call("drag_slice", Vector2.ZERO)
+
+
+func _subject(subjects: Node, id: String) -> Dictionary:
+	for s in subjects.call("all"):
+		if String(s["id"]) == id:
+			return s
+	return {}
+
+
 func _tower() -> Node4D:
 	return _room.get_node("World/LookoutSite/Lookout") as Node4D
 
@@ -117,6 +158,13 @@ func _tg(local: Vector4) -> Vector4:
 func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
 	_room = (load(PEN) as PackedScene).instantiate()
+	# A journal of the run's own: never Ramon's book (lookout_4d.gd journal_path).
+	var book: String = "user://feedback_test_journal.cfg"
+	if FileAccess.file_exists(book):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(book))
+	var lookout_node: Node = _room.get_node_or_null("Systems/Lookout")
+	if lookout_node != null:
+		lookout_node.set("journal_path", book)
 	root.add_child(_room)
 	current_scene = _room
 	# Keys and the mouse kept out of the window (follow_up: test windows steal focus; a stray key opened the
@@ -286,6 +334,87 @@ func _run() -> void:
 			await _wait(1.5)
 			print("DOWN: asking %s, it says \"%s\"" % [str(t.get("_asking")), String(t.get("_way_shown"))])
 			await _shot("1_asks", true)
+		"lookcam":
+			_look(false)
+			var t: Node4D = _tower()
+			var lookout: Node = _room.get_node("Systems/Lookout")
+			var station: Node = lookout.get("station")
+			var journal: Node = lookout.get("journal")
+			for f in ["approached", "met_wren", "first_raise", "first_photo"]:
+				journal.call("set_flag", f, true)
+			var wren: Node = lookout.get("wren")
+			if wren != null:
+				wren.set("has_camera", false)
+			var marsh := lookout.get("marsh") as Node4D
+			var heron := lookout.get("heron") as Node4D
+			var to_marsh: Vector4 = marsh.global_position - t.global_position
+			var local: Vector4 = t.global_basis.inverse() * to_marsh
+			# By the rail, a quarter turn round from the ladder's head (which is on the marsh's side).
+			var head: Vector4 = t.call("_ladder_head")
+			var dir := Vector2(head.x, head.z).normalized().rotated(1.1)
+			player.set("input_enabled", true)
+			player.global_position = t.global_position + t.global_basis * Vector4(dir.x * 3.0, 13.70, dir.y * 3.0, 0.0)
+			player.set("linear_velocity", Vector4.ZERO)
+			var rig: Node = player.get_node("CameraRig")
+			rig.call("face_toward", Vector4(to_marsh.x, 0.0, to_marsh.z, 0.0))
+			await _wait(1.5)
+			print("LOOKCAM: on deck %s, can raise %s, rail prompt \"%s\"" % [str(t.call("on_deck", player.global_position)),
+				str(station.call("can_raise")), String(lookout.get("_rail_shown"))])
+			await _shot("1_rail", true)
+			station.call("raise")
+			await _wait(1.0)
+			await _centre_on(lookout, station, rig, "marsh")
+			print("LOOKCAM: mode %d, zoomed flag %s" % [int(station.get("mode")), str(journal.call("flag", "zoomed"))])
+			await _shot("2_raised", true)
+			var wheel := InputEventMouseButton.new()
+			wheel.button_index = MOUSE_BUTTON_WHEEL_UP
+			wheel.pressed = true
+			for i in 4:
+				station.call("_input", wheel)
+			await _wait(0.8)
+			print("LOOKCAM: after 4 wheel notches zoom %.2f, zoomed flag %s" % [float(station.get("zoom")), str(journal.call("flag", "zoomed"))])
+			station.call("autofocus")
+			await _wait(1.2)
+			var cam := station.get("camera") as Camera4D
+			print("LOOKCAM: T: focus %.2f, ring reach %.1f, slice tilt %.3f, camera w %.2f, marsh w %.2f, heron w %.2f shown %s" % [
+				float(station.get("focus")), float(station.call("ring_reach")), float(station.call("slice_tilt")), cam.global_position.w,
+				marsh.global_position.w, heron.global_position.w, str(heron.is_visible_in_tree())])
+			await _shot("3_aligned", true)
+			station.call("take_photo")
+			await _wait(0.7)
+			var recent: Array = journal.get("recent")
+			var last: Dictionary = recent[-1] if recent.size() > 0 else {}
+			print("LOOKCAM: photo of \"%s\" (%s), page %s" % [String(last.get("name", "")), String(last.get("verdict", "")), String(last.get("page", ""))])
+			await _shot("4_photo", true)
+			# The marsh on its own (the heron away): its photo is named for it.
+			heron.visible = false
+			await _wait(1.2)
+			station.call("take_photo")
+			await _wait(0.7)
+			recent = journal.get("recent")
+			last = recent[-1] if recent.size() > 0 else {}
+			print("LOOKCAM: without the heron, a photo of \"%s\" (%s)" % [String(last.get("name", "")), String(last.get("verdict", ""))])
+			await _shot("4b_marsh_photo", true)
+			heron.visible = true
+			_look(true)
+			await _wait(1.2)
+			await _shot("5_dev_aligned", true)
+			# The turned slice: back flat at home, then turned by a drag till the marsh is half in, and T from there.
+			rig.call("align_to", 0.0)
+			station.set("focus_goal", 0.0)
+			await _wait(1.0)
+			# Tipped forward through W, 15 degrees, as a drag with the right button would: the marsh ahead comes partly in.
+			rig.call("drag_slice", Vector2(0.0, float(OS.get_environment("FB_DRAG")) if OS.get_environment("FB_DRAG") != "" else -0.26))
+			await _wait(0.6)
+			print("LOOKCAM: turned %.3f, focus %.2f" % [float(station.call("slice_tilt")), float(station.get("focus"))])
+			await _shot("6_turned", true)
+			station.call("autofocus")
+			await _wait(1.2)
+			print("LOOKCAM: T from turned: focus %.2f, tilt %.3f, camera w %.2f" % [float(station.get("focus")), float(station.call("slice_tilt")),
+				cam.global_position.w])
+			await _shot("7_turned_aligned", true)
+			station.call("lower")
+			await _wait(0.5)
 		"panels":
 			# The left panels in the dev look: the paths window stacked on top of the grass panel, the blue and orange
 			# swatches under Dev / Art.
@@ -295,7 +424,7 @@ func _run() -> void:
 			var pp := _room.get_node_or_null("UI/PathsPanel") as Control
 			if gp != null and pp != null:
 				print("PANELS: paths at %s size %s, grass at %s size %s: %s" % [str(pp.position), str(pp.size), str(gp.position), str(gp.size),
-					"stacked" if absf(pp.position.x - gp.position.x) < 1.0 and pp.position.y + pp.size.y <= gp.position.y + 0.5 else "NOT stacked"])
+					"stacked" if absf(pp.position.x - gp.position.x) < 1.0 and pp.position.y + pp.size.y * pp.scale.y <= gp.position.y + 0.5 else "NOT stacked"])
 			await _shot("1_hud", true)
 			var ui: Node = _room.get_node("UI")
 			for c in ui.get_children():
@@ -329,6 +458,37 @@ func _run() -> void:
 			await _wait(0.8)
 			print("PANELS: swatches in the art look %s" % str(box != null and box.is_visible_in_tree()))
 			await _shot("3_art", true)
+		"cave":
+			# Every path shown, without touching the saved settings (pen_paths_4d.gd set_found saves).
+			var net: Variant = _room.get_node("Systems/Paths").get("_network")
+			if net != null:
+				(net as Node).set("reveal", false)
+			var rig: Node = player.get_node("CameraRig")
+			player.set("input_enabled", true)
+			for dev in [false, true]:
+				_look(dev)
+				for spot in [[Vector4(7.3, 0.2, 38.5, 0.0), "1_junction"], [Vector4(7.38, 0.2, 34.6, 3.0), "2_flat"], [Vector4(7.4, 0.2, 32.4, 3.0), "3_circle"]]:
+					player.global_position = spot[0]
+					player.set("linear_velocity", Vector4.ZERO)
+					rig.call("face_toward", Vector4(0.0, 0.0, -1.0, 0.0))
+					await _wait(1.2)
+					print("CAVE: %s at w %.2f" % [spot[1], player.global_position.w])
+					await _shot(String(spot[1]) + ("_dev" if dev else "_art"))
+		"balloon":
+			var lookout: Node = _room.get_node("Systems/Lookout")
+			var balloon: Node = lookout.get("balloon")
+			if balloon != null:
+				balloon.call("set_ready", true, true)
+			var net: Variant = _room.get_node("Systems/Paths").get("_network")
+			if net != null:
+				(net as Node).set("reveal", false)
+			for dev in [true, false]:
+				_look(dev)
+				await _wait(1.2)
+				_aim(Vector4(-12.0, 16.0, -14.0, 0.0), Vector4(-24.0, 0.0, -29.0, 0.0))
+				await _shot("1_branch" + ("_dev" if dev else "_art"))
+				_aim(Vector4(-24.5, 3.2, -28.5, 0.0), Vector4(-30.0, 1.0, -32.0, 0.0))
+				await _shot("2_basket" + ("_dev" if dev else "_art"))
 		"road":
 			# Down the camp's road from its junction, on the farm's slice: how far it shows, and the scout on it.
 			for dev in [false, true]:

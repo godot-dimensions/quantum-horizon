@@ -20,6 +20,15 @@ static func rect_of(c: Control) -> Rect2:
 	return c.get_global_transform() * Rect2(Vector2.ZERO, c.size)
 
 
+## What [param c] draws, on the canvas: its drawn_rect() when it has one (the info card, a fixed card inside a much
+## larger Control), else its rect.
+static func drawn_of(c: Control) -> Rect2:
+	if c.has_method("drawn_rect"):
+		var d: Rect2 = c.call("drawn_rect")
+		return c.get_global_transform() * Rect2(d.position - c.position, d.size)
+	return rect_of(c)
+
+
 ## What is already on screen under [param ui], other than [param me] and [param ignore]: a Rect2
 ## per panel, and the dial as Vector3(centre x, centre y, radius).
 static func taken(ui: Node, me: Control, ignore: Array = []) -> Array:
@@ -34,7 +43,11 @@ static func taken(ui: Node, me: Control, ignore: Array = []) -> Array:
 		if c.has_method("dial_circle"):
 			out.append(c.call("dial_circle"))
 			continue
-		var r: Rect2 = rect_of(c)
+		# A readout with nothing to say draws nothing (7 Oct: the info card's empty rows, a screen wide, kept the
+		# panels out of the room under it).
+		if c is Label and (c as Label).text.strip_edges() == "":
+			continue
+		var r: Rect2 = drawn_of(c)
 		if r.size.x < 2.0 or r.size.y < 2.0:
 			continue
 		if r.size.x > screen.x * 0.9 and r.size.y > screen.y * 0.9:

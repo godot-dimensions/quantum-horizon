@@ -30,12 +30,18 @@ extends Node
 ##   {"keep": [names], "drop": [names]}  parts kept as art, parts taken away, the rest in clay; a name
 ##            ending in * matches its start. Also "keep_colour"/"drop_colour" (parts by their colour:
 ##            pieces merged by colour are named after it) and "drop_green" (anything plant-green).
-##            The marsh: its water and sand rim kept, its reeds, tussocks and lily pads gone, its
-##            stones and dead tree in clay (Ramon: "the marsh water, you can keep it, just the water
-##            circles, without the grass").
-##   {"low_mesh": path}  the landmark's own shape baked coarser, in clay. The cave's hill (Ramon: "keep
-##            the original cave in the greybox version. just lower res"; it was a wedge with a door):
-##            terrain/baked/cave_hill_low.res, from look/_bake_low_cave_runner.gd.
+##            "landmark"/"landmark_colour" and "foundation"/"foundation_colour" lay parts orange or
+##            blue, and "rest": "drop" takes away whatever no key names.
+##            The marsh: an orange ring and a blue fill, nothing else (Ramon, 7 Oct: "its not orange
+##            with the dev blue inside as water. so just a ring and a fill"): its sand rim orange,
+##            its water blue, the ripples and glints blue on it (by name: they are often hidden when
+##            the look goes on, and a hidden part cannot be taken off), the rest gone. Until 7 Oct
+##            its water and rim stayed as art (Ramon, 6 Oct: "the marsh water, you can keep it").
+##   {"low_mesh": path}  the landmark's own shape baked coarser, in clay. The cave's hill had one until
+##            7 Oct (Ramon, 6 Oct: "keep the original cave in the greybox version. just lower res"):
+##            terrain/baked/cave_hill_low.res, from look/_bake_low_cave_runner.gd. Its arch came out lumpy
+##            at every W, so the cave is clay on its own art mesh now (Ramon, 7 Oct: "the dev look mesh
+##            seems to struggle because its lower in res maybe. just make it same resolution as art look").
 ## Animals and characters are never touched (Ramon: "the animals and the npc's those can stay as they
 ## are in dev mode"); what you use (the rune stone, laptops, pickups) is red.
 ##
@@ -105,9 +111,10 @@ const SAVED := "res://ramon/chickenpen/look/look_saved.cfg"
 			_set_applied(true)
 ## Per landmark, by node name (see the header).
 @export var rules: Dictionary = {
-	"Lookout": "block", "CaveHill": {"low_mesh": "res://ramon/chickenpen/terrain/baked/cave_hill_low.res"}, "Oak*": "block", "RockPileSpot": "block", "Bush*": "block", "Shed": "clay",
-	"AnaMarsh": {"keep_colour": [Color(0.24, 0.34, 0.36), Color(0.312, 0.394, 0.378), Color(0.16, 0.25, 0.28), Color(0.64, 0.47, 0.29)],
-		"drop": ["Reeds*"], "drop_green": true},
+	"Lookout": "block", "CaveHill": "clay", "Oak*": "block", "RockPileSpot": "block", "Bush*": "block", "Shed": "clay",
+	"AnaMarsh": {"landmark_colour": [Color(0.64, 0.47, 0.29)],
+		"foundation_colour": [Color(0.24, 0.34, 0.36), Color(0.312, 0.394, 0.378), Color(0.16, 0.25, 0.28)],
+		"foundation": ["Ring*", "Inner*", "Glint*"], "rest": "drop"},
 	"EggCamp": "clay", "Range": "clay", "TrymCabin": "clay", "KataWood": "clay", "OwlTree": "clay", "Scenery": "clay",
 	"Pen": "clay", "EggCairn": "clay", "KeeperPost": "clay", "ProfessorPost": "clay",
 }
@@ -427,6 +434,15 @@ func _take(mi: MeshInstance4D) -> void:
 		var part: String = String(mi.name)
 		var c: Color = _albedo(mi)
 		if _matches(part, rule.get("keep", [])) or _colour_in(c, rule.get("keep_colour", [])):
+			return
+		if _matches(part, rule.get("landmark", [])) or _colour_in(c, rule.get("landmark_colour", [])):
+			_lay(mi, _mat("landmark", landmark_colour))
+			return
+		if _matches(part, rule.get("foundation", [])) or _colour_in(c, rule.get("foundation_colour", [])):
+			_lay(mi, _mat("foundation", foundation_colour))
+			return
+		if String(rule.get("rest", "")) == "drop":
+			_strip(mi)
 			return
 		if _matches(part, rule.get("drop", [])) or _colour_in(c, rule.get("drop_colour", [])) \
 				or (bool(rule.get("drop_green", false)) and _plant_green(c)):
@@ -762,6 +778,8 @@ func _frame_pen(on: bool) -> void:
 	_pen_frame = PathDraw.box(self, "PenFrame", PathDraw.FRAME, Vector4(outer.x + 0.3, PathSpec.BOX_H_M, outer.y + 0.3, 2.4),
 		Vector4(centre.x, PathSpec.PROUD_M, centre.z, centre.w))
 	_pen_frame.set_meta(OWN, true)
+	# On the floor, like the paths: not in the projection's ghost (lookout_4d.gd projection_leaves_out).
+	_pen_frame.allow_projection = false
 	var ss: Vector2 = PathDraw.sym_size(s)
 	PathDraw.set_param(_pen_frame, "frame_sym", s)
 	PathDraw.set_param(_pen_frame, "frame_grow", (outer / u - ss) * 0.5)

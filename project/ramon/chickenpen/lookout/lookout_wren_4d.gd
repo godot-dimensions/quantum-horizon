@@ -4,8 +4,8 @@ extends Node4D
 ## Wren, who keeps the Watchstone (6 Oct 2026, PenLayout/PLAN_WATCHSTONE.md step 8; Ramon: "no
 ## longer a forest ranger but a guy already looking through goggles. dark brown cloth and beard").
 ## A watcher in the medieval, ritual-tech look: a long coat of dark brown cloth over a darker shirt,
-## a hood folded on his back, a satchel, a full beard, and brass goggles over his eyes, his right
-## hand raised to them as he looks out. The camera hangs at his hip on its strap until he hands it
+## a hood folded on his back, a satchel, a full beard, and brass goggles over his eyes, his arms
+## down (until 7 Oct his right hand was raised to the goggles; Ramon: "wrens arm is always up, just put it down"). The camera hangs at his hip on its strap until he hands it
 ## over. (Until 6 Oct a forest ranger in dark green with a pack and binoculars; that build is in
 ## chickenpen/.backup/2026-10-06_before_watchstone/lookout/.)
 ##
@@ -119,12 +119,6 @@ func rebuild() -> void:
 		# The camera, until it is handed over: on a strap across, at the hip.
 		_box(torso, "Strap", Vector4(0.0, 0.02, 0.14, 0.0), Vector3(0.04, 0.42, 0.02), Color(0.16, 0.10, 0.08)).basis = Basis4D.from_xy(0.6)
 		_box(torso, "Camera", Vector4(0.15, -0.16, 0.12, 0.0), Vector3(0.14, 0.09, 0.08), Color(0.10, 0.10, 0.11))
-	# His right hand raised to the goggles, as if to steady them while he looks.
-	var shoulder: Node4D = figure.get_node_or_null("ShoulderR") as Node4D
-	var elbow: Node4D = figure.get_node_or_null("ShoulderR/ElbowR") as Node4D
-	if shoulder != null and elbow != null:
-		shoulder.basis = Basis4D.from_xy(0.35) * Basis4D.from_yz(-2.25)
-		elbow.basis = Basis4D.from_yz(-1.75)
 	_set_camera(has_camera)
 
 

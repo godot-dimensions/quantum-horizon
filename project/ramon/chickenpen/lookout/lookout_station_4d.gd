@@ -11,8 +11,8 @@ extends Node
 ## you ana and kata on foot - slide the camera's slice along its own W, up to
 ## [member focus_range] either way, without moving you. A 4D body off your slice shows a
 ## smaller cross-section, and none at all past its own W radius, so pulling focus is finding
-## a thing in W: the owl outside the north window is there only at w +1.5. T is autofocus:
-## it pulls to whatever is nearest the middle of the frame.
+## a thing in W: the owl outside the north window is there only at w +1.5. T lines the slice
+## up with whatever is nearest the middle of the frame (autofocus).
 ##
 ## THE SLICE TURN IS THE PEN'S OWN: hold the right button and move the mouse to tilt the
 ## slice through W. Heading and slice turns are one level rotation, [member ground]
@@ -91,6 +91,12 @@ const VIEWFINDER := preload("res://ramon/chickenpen/lookout/lookout_viewfinder_4
 @export_range(0.1, 6.0, 0.05, "suffix:m/s") var focus_speed: float = 1.2
 ## Shift held: the fine ring.
 @export_range(0.05, 1.0, 0.05) var focus_fine: float = 0.25
+## How far in W the T key reaches (autofocus): the marsh at w +8 and the kata wood at w -8 are both
+## in it. E and Q keep to [member focus_range], unless T took the ring further.
+@export_range(3.0, 20.0, 0.5, "suffix:m") var align_reach: float = 12.0
+## How long the slice takes to lie flat when T lines it up, away from the deck (on the deck the
+## pen's rig does it, at its own pace).
+@export_range(0.1, 2.0, 0.05, "suffix:s") var align_seconds: float = 0.6
 
 @export_group("Film")
 @export_range(1, 72) var roll: int = 24
@@ -135,6 +141,11 @@ var _layer: CanvasLayer
 var _saved: Dictionary = {}
 var _t: float = 0.0
 var _straightening: float = 0.0
+## What T lined the slice up with, the focus following it while the slice lies flat (autofocus).
+var _align_at: Vector4 = Vector4.ZERO
+var _align_t: float = 0.0
+## How far E and Q may turn the ring: [member focus_range], or as far as T took it.
+var _reach: float = 3.0
 var _shutter_cool: float = 0.0
 var _on_ladder: bool = false
 var _climb_player: AudioStreamPlayer
@@ -572,6 +583,8 @@ func _make_camera() -> void:
 	zoom_goal = 1.0
 	focus = 0.0
 	focus_goal = 0.0
+	_reach = focus_range
+	_align_t = 0.0
 	ground = GroundBasis4D.flattened(ground)
 
 
@@ -789,8 +802,9 @@ func _run_camera(delta: float) -> void:
 	var turn: float = _held_axis() if mode == Mode.HELD else Input.get_axis(&"move_kata", &"move_ana")
 	if absf(turn) > 0.01:
 		_straightening = 0.0
+		_align_t = 0.0
 		var rate: float = focus_speed * (focus_fine if Input.is_key_pressed(KEY_SHIFT) else 1.0)
-		focus_goal = clampf(focus_goal + turn * rate * delta, -focus_range, focus_range)
+		focus_goal = clampf(focus_goal + turn * rate * delta, -_reach, _reach)
 	if _straightening > 0.0:
 		_straightening = maxf(_straightening - delta, 0.0)
 		var step: float = clampf(delta / maxf(_straightening + delta, 0.0001), 0.0, 1.0)
@@ -798,6 +812,10 @@ func _run_camera(delta: float) -> void:
 		focus_goal = lerpf(focus_goal, 0.0, step)
 		if _straightening <= 0.0:
 			ground = GroundBasis4D.flattened(ground)
+	# T: while the slice lies flat, the focus keeps what it lined up with in the slice (autofocus).
+	if _align_t > 0.0:
+		_align_t = maxf(_align_t - delta, 0.0)
+		focus_goal = clampf((_align_at - home_eye()).dot(slice_normal()), -_reach, _reach)
 	var before: float = focus
 	focus = lerpf(focus, focus_goal, clampf(delta * 10.0, 0.0, 1.0))
 	if absf(focus - before) > 0.0005:
@@ -932,10 +950,12 @@ func _input(event: InputEvent) -> void:
 		var button: int = (event as InputEventMouseButton).button_index
 		if not taking:
 			handled = false
-		elif button == MOUSE_BUTTON_WHEEL_UP:
-			zoom_goal = clampf(zoom_goal * zoom_step, 1.0, zoom_max)
-		elif button == MOUSE_BUTTON_WHEEL_DOWN:
-			zoom_goal = clampf(zoom_goal / zoom_step, 1.0, zoom_max)
+		elif button == MOUSE_BUTTON_WHEEL_UP or button == MOUSE_BUTTON_WHEEL_DOWN:
+			zoom_goal = clampf(zoom_goal * (zoom_step if button == MOUSE_BUTTON_WHEEL_UP else 1.0 / zoom_step), 1.0, zoom_max)
+			# The first scroll: the viewfinder's "Scroll to zoom" has done its job (lookout_viewfinder_4d.gd _draw_first_zoom).
+			var journal: Node = lookout.get("journal")
+			if journal != null and not bool(journal.call("flag", "zoomed")):
+				journal.call("set_flag", "zoomed", true)
 		elif event.is_action_pressed(&"fire"):
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 			take_photo()
@@ -953,6 +973,8 @@ func _input(event: InputEvent) -> void:
 		elif mode == Mode.HELD and code == KEY_R:
 			# The rig straightens the slice and brings you home in W; the ring comes home too.
 			focus_goal = 0.0
+			_align_t = 0.0
+			_reach = focus_range
 			handled = false
 		elif mode == Mode.HELD and event.is_action_pressed(&"catch_target") and _someone_to_talk_to():
 			# F to somebody: the camera comes down first, and the conversation has the view.
@@ -970,6 +992,8 @@ func _input(event: InputEvent) -> void:
 			lookout.call("on_whistle")
 		elif code == KEY_R:
 			_straightening = 0.45
+			_align_t = 0.0
+			_reach = focus_range
 		elif code == KEY_T:
 			autofocus()
 		else:
@@ -980,15 +1004,64 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## Pulls the focus to whatever is nearest the middle of the frame and in front of you.
+## T, THE SLICE ALIGNER (Ramon, 7 Oct: "shouldn't t autofocus be a slice aligner on where you're
+## zoomed in?"). Until then T slid the focus to whatever was nearest the middle of the frame, along
+## the slice as it was, tilted or not, and only as far as the ring goes (3 m). Now it lines the slice
+## up with it: the slice lies flat (on the deck the pen's rig does it, your feet staying where they
+## are) and the focus follows the thing to its W, so it is cut square through its middle and seen
+## whole, as V does for the camp on foot.
+##
+## What it lines up with: the subject nearest the middle of the frame (a creature, the marsh), up
+## to [member align_reach] off in W, or else the ground under the crosshair, where the turned slice
+## meets it. Zoomed in, the middle of the frame is a smaller patch, so it is what you are zoomed in on.
 func autofocus() -> void:
-	var best: Dictionary = lookout.get("subjects").call("nearest_to_centre", camera, home_eye(), slice_normal(), focus_range)
-	if best.is_empty():
+	var at: Variant = null
+	var subjects: Node = lookout.get("subjects")
+	var best: Dictionary = subjects.call("nearest_to_centre", camera, home_eye(), slice_normal(), align_reach)
+	if not best.is_empty():
+		at = subjects.call("point", best["subject"])
+	if at == null:
+		at = _ground_under_crosshair()
+	if at == null:
 		lookout.call("sound", &"af_miss")
 		return
-	_straightening = 0.0
-	focus_goal = clampf(float(best["w"]), -focus_range, focus_range)
+	_align_at = at
+	# The ring may go as far as this took it, and back; past it, E and Q stop as before.
+	_reach = clampf(ceilf(absf(_align_at.w - home_eye().w) + 0.5), focus_range, align_reach + 1.0)
+	if mode == Mode.HELD and _rig != null and _rig.has_method("align_to"):
+		# Flat where you stand: the rig's trip home, to the W you are already at.
+		_rig.call("align_to", _player.position.w)
+		_align_t = float(_rig.get("home_seconds")) + 0.15
+	else:
+		_straightening = align_seconds
+		_align_t = align_seconds + 0.15
 	lookout.call("sound", &"af")
+
+
+## Where the line through the middle of the frame meets the ground (the Lookout's height field,
+## lookout_ground_4d.gd), in the slice as it is: with the slice turned, the ground ahead lies at
+## another W. Null when it meets none within 250 m.
+func _ground_under_crosshair() -> Variant:
+	if camera == null:
+		return null
+	var field: RefCounted = lookout.get("ground")
+	var from: Vector4 = camera.global_position
+	var dir: Vector4 = (-camera.global_basis.z).normalized()
+	var t: float = 0.0
+	var step: float = 0.4
+	while t < 250.0:
+		t += step
+		var p: Vector4 = from + dir * t
+		var floor_y: float = float(field.call("floor_at", p.x, p.z)) if field != null else 0.0
+		if p.y <= floor_y:
+			return p
+		step = minf(step * 1.04, 2.0)
+	return null
+
+
+## How far E and Q may turn the ring now, for the viewfinder's W-meter.
+func ring_reach() -> float:
+	return _reach
 
 
 # --- The shutter -----------------------------------------------------------------------------
