@@ -176,16 +176,18 @@ func rebuild() -> void:
 	_figure = figure
 
 	# Sleeved over each leg segment, a shade wider so it reads as cloth over the limb
-	# rather than fighting with it. Parented to the joints, so it bends with the pose.
+	# rather than fighting with it - the same shade wider through W (the thigh is 0.2575
+	# through W, the shin 0.2325: block_avatar_4d.gd W_SIZES). Parented to the joints, so it
+	# bends with the pose.
 	for tag in ["L", "R"]:
 		var hip: Node4D = figure.get_node_or_null("Hip%s" % tag) as Node4D
 		var knee: Node4D = figure.get_node_or_null("Hip%s/Knee%s" % [tag, tag]) as Node4D
 		if hip != null:
 			_box(hip, "Trouser%s" % tag, Vector4(0.0, -0.16, 0.0, 0.0),
-				Vector3(0.145, 0.33, 0.155), trousers, 0.47)
+				Vector3(0.145, 0.33, 0.155), trousers, 0.2725)
 		if knee != null:
 			_box(knee, "TrouserLower%s" % tag, Vector4(0.0, -0.16, 0.0, 0.0),
-				Vector3(0.135, 0.33, 0.145), trousers, 0.47)
+				Vector3(0.135, 0.33, 0.145), trousers, 0.2475)
 
 	_facing = _rest_facing
 	_dwell = 0.0

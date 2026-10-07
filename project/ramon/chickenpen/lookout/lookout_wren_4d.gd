@@ -92,33 +92,38 @@ func rebuild() -> void:
 	var head: Node4D = figure.get_node_or_null("Tunic/Head") as Node4D
 	var beard := hair.lightened(0.06)
 	if head != null:
-		# A little smaller than the cast's: less of a big-headed figure, more of a grown-up.
-		head.basis = Basis4D.from_scale(Vector4(0.9, 0.9, 0.9, 1.0))
-		# The beard: full, from the cheeks to below the chin, and a moustache over it.
-		_box(head, "Beard", Vector4(0.0, -0.085, 0.135, 0.0), Vector3(0.25, 0.13, 0.05), beard)
-		_box(head, "Chin", Vector4(0.0, -0.15, 0.11, 0.0), Vector3(0.2, 0.08, 0.1), beard)
-		_box(head, "Moustache", Vector4(0.0, -0.035, 0.157, 0.0), Vector3(0.13, 0.03, 0.02), beard.darkened(0.15))
+		# A little smaller than the cast's: less of a big-headed figure, more of a grown-up. Through
+		# W as well, or the head is a different shape from everybody's, not a smaller one.
+		head.basis = Basis4D.from_scale(Vector4(0.9, 0.9, 0.9, 0.9))
+		# The beard: full, from the cheeks to below the chin, and a moustache over it. Through W in
+		# the head's proportion (0.285 to 0.30 across), the moustache square.
+		_box(head, "Beard", Vector4(0.0, -0.085, 0.135, 0.0), Vector3(0.25, 0.13, 0.05), beard, 0.24)
+		_box(head, "Chin", Vector4(0.0, -0.15, 0.11, 0.0), Vector3(0.2, 0.08, 0.1), beard, 0.19)
+		_box(head, "Moustache", Vector4(0.0, -0.035, 0.157, 0.0), Vector3(0.13, 0.03, 0.02), beard.darkened(0.15), 0.12)
 		# The goggles over his eyes: a brass rim round each lens, the lens dark and a little teal,
-		# and a leather strap round the head.
+		# and a leather strap round the head. Rims, lenses and bridge square (as thick through W as
+		# wide), the strap round the head through the head's W.
 		for side in [-1.0, 1.0]:
-			_box(head, "Rim%d" % int(side), Vector4(side * 0.066, 0.026, 0.165, 0.0), Vector3(0.09, 0.09, 0.07), hat)
-			_box(head, "Lens%d" % int(side), Vector4(side * 0.066, 0.026, 0.202, 0.0), Vector3(0.065, 0.065, 0.012), Color(0.10, 0.20, 0.22))
-		_box(head, "Bridge", Vector4(0.0, 0.03, 0.17, 0.0), Vector3(0.05, 0.025, 0.03), hat.darkened(0.2))
-		_box(head, "GoggleStrap", Vector4(0.0, 0.026, 0.0, 0.0), Vector3(0.31, 0.035, 0.3), Color(0.14, 0.09, 0.06))
+			_box(head, "Rim%d" % int(side), Vector4(side * 0.066, 0.026, 0.165, 0.0), Vector3(0.09, 0.09, 0.07), hat, 0.09)
+			_box(head, "Lens%d" % int(side), Vector4(side * 0.066, 0.026, 0.202, 0.0), Vector3(0.065, 0.065, 0.012), Color(0.10, 0.20, 0.22), 0.065)
+		_box(head, "Bridge", Vector4(0.0, 0.03, 0.17, 0.0), Vector3(0.05, 0.025, 0.03), hat.darkened(0.2), 0.05)
+		_box(head, "GoggleStrap", Vector4(0.0, 0.026, 0.0, 0.0), Vector3(0.31, 0.035, 0.3), Color(0.14, 0.09, 0.06), 0.29)
 	var torso: Node4D = figure.get_node_or_null("Tunic") as Node4D
 	if torso != null:
-		# The coat over the shirt, its skirt to the knee, a hood folded on the back.
-		_box(torso, "Vest", Vector4(0.0, 0.02, 0.0, 0.0), Vector3(0.36, 0.34, 0.27), vest)
-		_box(torso, "Skirt", Vector4(0.0, -0.27, 0.0, 0.0), Vector3(0.38, 0.24, 0.29), vest.darkened(0.08))
-		_box(torso, "Hood", Vector4(0.0, 0.17, -0.155, 0.0), Vector3(0.28, 0.1, 0.09), vest.darkened(0.2))
-		_box(torso, "Collar", Vector4(0.0, 0.17, 0.05, 0.0), Vector3(0.3, 0.05, 0.22), vest.darkened(0.15))
-		_box(torso, "Buckle", Vector4(0.0, -0.17, 0.135, 0.0), Vector3(0.05, 0.04, 0.012), hat)
-		# The satchel at his left hip on a strap over the right shoulder.
-		_box(torso, "Satchel", Vector4(0.2, -0.2, 0.02, 0.0), Vector3(0.08, 0.16, 0.2), leather)
-		_box(torso, "SatchelStrap", Vector4(0.03, 0.03, 0.14, 0.0), Vector3(0.035, 0.44, 0.012), leather).basis = Basis4D.from_xy(-0.6)
-		# The camera, until it is handed over: on a strap across, at the hip.
-		_box(torso, "Strap", Vector4(0.0, 0.02, 0.14, 0.0), Vector3(0.04, 0.42, 0.02), Color(0.16, 0.10, 0.08)).basis = Basis4D.from_xy(0.6)
-		_box(torso, "Camera", Vector4(0.15, -0.16, 0.12, 0.0), Vector3(0.14, 0.09, 0.08), Color(0.10, 0.10, 0.11))
+		# The coat over the shirt, its skirt to the knee, a hood folded on the back: through W in the
+		# tunic's proportion (0.35 to 0.38 across), the buckle square.
+		_box(torso, "Vest", Vector4(0.0, 0.02, 0.0, 0.0), Vector3(0.36, 0.34, 0.27), vest, 0.33)
+		_box(torso, "Skirt", Vector4(0.0, -0.27, 0.0, 0.0), Vector3(0.38, 0.24, 0.29), vest.darkened(0.08), 0.35)
+		_box(torso, "Hood", Vector4(0.0, 0.17, -0.155, 0.0), Vector3(0.28, 0.1, 0.09), vest.darkened(0.2), 0.26)
+		_box(torso, "Collar", Vector4(0.0, 0.17, 0.05, 0.0), Vector3(0.3, 0.05, 0.22), vest.darkened(0.15), 0.28)
+		_box(torso, "Buckle", Vector4(0.0, -0.17, 0.135, 0.0), Vector3(0.05, 0.04, 0.012), hat, 0.05)
+		# The satchel at his left hip on a strap over the right shoulder: the satchel as thick through
+		# W as it is deep, the straps bands thin in all cross directions.
+		_box(torso, "Satchel", Vector4(0.2, -0.2, 0.02, 0.0), Vector3(0.08, 0.16, 0.2), leather, 0.19)
+		_box(torso, "SatchelStrap", Vector4(0.03, 0.03, 0.14, 0.0), Vector3(0.035, 0.44, 0.012), leather, 0.08).basis = Basis4D.from_xy(-0.6)
+		# The camera, until it is handed over: on a strap across, at the hip; a small thing, square.
+		_box(torso, "Strap", Vector4(0.0, 0.02, 0.14, 0.0), Vector3(0.04, 0.42, 0.02), Color(0.16, 0.10, 0.08), 0.1).basis = Basis4D.from_xy(0.6)
+		_box(torso, "Camera", Vector4(0.15, -0.16, 0.12, 0.0), Vector3(0.14, 0.09, 0.08), Color(0.10, 0.10, 0.11), 0.14)
 	_set_camera(has_camera)
 
 
@@ -131,11 +136,12 @@ func _paint(figure: Node, path: String, colour: Color) -> void:
 	limb.material_override = material
 
 
-func _box(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color) -> MeshInstance4D:
+## [param w] is the thickness through W; left out, the old slab: the larger of width and depth, at least 0.42.
+func _box(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color, w: float = 0.0) -> MeshInstance4D:
 	var node := MeshInstance4D.new()
 	node.name = part
 	var mesh := BoxTetraMesh4D.new()
-	mesh.size = Vector4(size.x, size.y, size.z, maxf(maxf(size.x, size.z), 0.42))
+	mesh.size = Vector4(size.x, size.y, size.z, w if w > 0.0 else maxf(maxf(size.x, size.z), 0.42))
 	node.mesh = mesh
 	var material := TetraMaterial4D.new()
 	material.albedo_color = colour

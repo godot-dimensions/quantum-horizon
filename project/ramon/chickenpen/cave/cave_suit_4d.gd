@@ -87,29 +87,33 @@ func rebuild() -> void:
 	var torso: Node4D = figure.get_node_or_null("Tunic") as Node4D
 	if head != null:
 		# A helmet round the head rather than a hat on it: bigger than the head in every
-		# direction, so none of the head shows.
-		_box(head, "Helmet", Vector4(0.0, 0.03, -0.01, 0.0), Vector3(0.40, 0.40, 0.39), suit)
-		_box(head, "Visor", Vector4(0.0, 0.02, 0.19, 0.0), Vector3(0.30, 0.19, 0.03), visor)
-		_box(head, "Collar", Vector4(0.0, -0.19, 0.0, 0.0), Vector3(0.34, 0.06, 0.32), trim)
+		# direction, so none of the head shows - through W too, in the head's proportion (0.285
+		# to 0.30 across), the visor across the whole front, which is a face in x and W.
+		_box(head, "Helmet", Vector4(0.0, 0.03, -0.01, 0.0), Vector3(0.40, 0.40, 0.39), suit, 0.38)
+		_box(head, "Visor", Vector4(0.0, 0.02, 0.19, 0.0), Vector3(0.30, 0.19, 0.03), visor, 0.285)
+		_box(head, "Collar", Vector4(0.0, -0.19, 0.0, 0.0), Vector3(0.34, 0.06, 0.32), trim, 0.32)
 	if torso != null:
-		_box(torso, "Pack", Vector4(0.0, 0.05, -0.20, 0.0), Vector3(0.32, 0.38, 0.14), trim)
-		_box(torso, "Chest", Vector4(0.0, 0.08, 0.125, 0.0), Vector3(0.16, 0.10, 0.02), trim)
+		# On the body, in the tunic's proportion (0.35 to 0.38 across).
+		_box(torso, "Pack", Vector4(0.0, 0.05, -0.20, 0.0), Vector3(0.32, 0.38, 0.14), trim, 0.29)
+		_box(torso, "Chest", Vector4(0.0, 0.08, 0.125, 0.0), Vector3(0.16, 0.10, 0.02), trim, 0.15)
+	# What they hold: a small thing square, a slab as thick through W as it is deep, a rod as thick
+	# through W as it is across.
 	match task:
 		Task.MINER:
 			if head != null:
-				_box(head, "Lamp", Vector4(0.0, 0.20, 0.17, 0.0), Vector3(0.10, 0.07, 0.06), Color(1.0, 0.96, 0.72))
+				_box(head, "Lamp", Vector4(0.0, 0.20, 0.17, 0.0), Vector3(0.10, 0.07, 0.06), Color(1.0, 0.96, 0.72), 0.10)
 			if torso != null:
-				_box(torso, "Stripe", Vector4(0.0, -0.06, 0.125, 0.0), Vector3(0.39, 0.05, 0.02), Color(0.95, 0.52, 0.12))
+				_box(torso, "Stripe", Vector4(0.0, -0.06, 0.125, 0.0), Vector3(0.39, 0.05, 0.02), Color(0.95, 0.52, 0.12), 0.36)
 			_pick()
 		Task.TABLET:
 			var hand: Node4D = figure.get_node_or_null("ShoulderR/ElbowR") as Node4D
 			if hand != null:
-				_box(hand, "Tablet", Vector4(0.08, -0.22, 0.10, 0.0), Vector3(0.26, 0.02, 0.18), Color(0.12, 0.13, 0.15))
-				_box(hand, "Screen", Vector4(0.08, -0.205, 0.10, 0.0), Vector3(0.22, 0.01, 0.14), Color(0.45, 0.80, 1.0))
+				_box(hand, "Tablet", Vector4(0.08, -0.22, 0.10, 0.0), Vector3(0.26, 0.02, 0.18), Color(0.12, 0.13, 0.15), 0.18)
+				_box(hand, "Screen", Vector4(0.08, -0.205, 0.10, 0.0), Vector3(0.22, 0.01, 0.14), Color(0.45, 0.80, 1.0), 0.14)
 		Task.SAMPLE:
 			var hand: Node4D = figure.get_node_or_null("ShoulderR/ElbowR") as Node4D
 			if hand != null:
-				_box(hand, "Probe", Vector4(0.0, -0.30, 0.0, 0.0), Vector3(0.03, 0.22, 0.03), Color(0.75, 0.77, 0.80))
+				_box(hand, "Probe", Vector4(0.0, -0.30, 0.0, 0.0), Vector3(0.03, 0.22, 0.03), Color(0.75, 0.77, 0.80), 0.03)
 	for part in ["ShoulderL", "ShoulderR", "ShoulderL/ElbowL", "ShoulderR/ElbowR", "Tunic/Head",
 			"HipL", "HipR", "HipL/KneeL", "HipR/KneeR", "HipL/KneeL/AnkleL", "HipR/KneeR/AnkleR"]:
 		_parts[part] = figure.get_node_or_null(part)
@@ -123,8 +127,8 @@ func _pick() -> void:
 	add_child(prop)
 	prop.position = Vector4(0.36, 0.0, 0.18, 0.0)
 	prop.basis = Basis4D.from_xy(-0.12)
-	_box(prop, "Haft", Vector4(0.0, 0.42, 0.0, 0.0), Vector3(0.04, 0.84, 0.04), Color(0.45, 0.30, 0.18))
-	_box(prop, "Head", Vector4(0.0, 0.86, 0.0, 0.0), Vector3(0.46, 0.06, 0.05), Color(0.62, 0.65, 0.70))
+	_box(prop, "Haft", Vector4(0.0, 0.42, 0.0, 0.0), Vector3(0.04, 0.84, 0.04), Color(0.45, 0.30, 0.18), 0.04)
+	_box(prop, "Head", Vector4(0.0, 0.86, 0.0, 0.0), Vector3(0.46, 0.06, 0.05), Color(0.62, 0.65, 0.70), 0.05)
 
 
 func _process(delta: float) -> void:
@@ -203,12 +207,13 @@ func _repaint(figure: Node, path: String, colour: Color) -> void:
 	limb.material_override = material
 
 
-func _box(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color) -> MeshInstance4D:
+## [param w] is the thickness through W; left out, the old slab: the larger of width and depth, at least 0.42.
+func _box(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color, w: float = 0.0) -> MeshInstance4D:
 	var node := MeshInstance4D.new()
 	node.name = part
 	var mesh := BoxTetraMesh4D.new()
 	# A real extent through W, or they vanish the moment the slice moves.
-	mesh.size = Vector4(size.x, size.y, size.z, maxf(maxf(size.x, size.z), 0.42))
+	mesh.size = Vector4(size.x, size.y, size.z, w if w > 0.0 else maxf(maxf(size.x, size.z), 0.42))
 	node.mesh = mesh
 	var material := TetraMaterial4D.new()
 	material.albedo_color = colour

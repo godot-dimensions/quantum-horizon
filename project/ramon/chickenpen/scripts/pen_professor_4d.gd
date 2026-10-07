@@ -77,25 +77,34 @@ func rebuild() -> void:
 
 	# THE CAPE AND THE AMULET, on the tunic so they go where it goes: a short cape over the shoulders and down
 	# the back in the hood's red, and an amber stone on a cord on the chest.
+	#
+	# THICKNESS THROUGH W, as the player's figure has it: what hangs on the body is as thick through W as
+	# it is wide, in the body's own proportion (the tunic is 0.35 through W to 0.38 across: 0.92), and a
+	# small thing is square (as thick through W as it is wide). The hood goes with the head: 0.285 through
+	# W to 0.30 across, 0.95.
 	var tunic: Node4D = figure.get_node_or_null("Tunic") as Node4D
 	var body: Node = tunic if tunic != null else figure
-	_box(body, "Cape", Vector4(0.0, 0.17, -0.01, 0.0), Vector3(0.47, 0.13, 0.30), mantle)
-	_box(body, "CapeBack", Vector4(0.0, -0.05, -0.135, 0.0), Vector3(0.43, 0.40, 0.03), mantle)
-	_box(body, "Cord", Vector4(0.0, 0.10, 0.126, 0.0), Vector3(0.10, 0.012, 0.012), leather)
-	_box(body, "Amulet", Vector4(0.0, 0.05, 0.13, 0.0), Vector3(0.06, 0.07, 0.02), rune, true)
+	_box(body, "Cape", Vector4(0.0, 0.17, -0.01, 0.0), Vector3(0.47, 0.13, 0.30), mantle, false, 0.43)
+	_box(body, "CapeBack", Vector4(0.0, -0.05, -0.135, 0.0), Vector3(0.43, 0.40, 0.03), mantle, false, 0.40)
+	_box(body, "Cord", Vector4(0.0, 0.10, 0.126, 0.0), Vector3(0.10, 0.012, 0.012), leather, false, 0.10)
+	_box(body, "Amulet", Vector4(0.0, 0.05, 0.13, 0.0), Vector3(0.06, 0.07, 0.02), rune, true, 0.06)
 
 	# THE HEAD: the hood, raised over it, and a short beard, on the head ball so they come along when he turns
 	# to face somebody. The hood is a top, a back, two sides deep enough to hide the ears, and a lip over the
-	# brow that shades the face, with a small peak at the back.
+	# brow that shades the face, with a small peak at the back. The top, back and lip reach through W as
+	# the head does, and the sides come as two pairs: left and right along x, and the same slab turned a
+	# quarter through W, ana and kata, so the hood closes round the head in W as it does in x.
 	var head: Node4D = figure.get_node_or_null("Tunic/Head") as Node4D
 	var on: Node = head if head != null else figure
-	_box(on, "HoodTop", Vector4(0.0, 0.185, -0.01, 0.0), Vector3(0.37, 0.05, 0.35), mantle)
-	_box(on, "HoodBack", Vector4(0.0, 0.02, -0.17, 0.0), Vector3(0.37, 0.36, 0.05), mantle)
-	_box(on, "HoodL", Vector4(0.19, 0.03, -0.005, 0.0), Vector3(0.07, 0.34, 0.33), mantle)
-	_box(on, "HoodR", Vector4(-0.19, 0.03, -0.005, 0.0), Vector3(0.07, 0.34, 0.33), mantle)
-	_box(on, "HoodLip", Vector4(0.0, 0.155, 0.15, 0.0), Vector3(0.37, 0.06, 0.05), mantle.darkened(0.15))
-	_box(on, "HoodPeak", Vector4(0.0, 0.2, -0.2, 0.0), Vector3(0.12, 0.08, 0.08), mantle)
-	_box(on, "Beard", Vector4(0.0, -0.12, 0.13, 0.0), Vector3(0.22, 0.13, 0.07), hair)
+	_box(on, "HoodTop", Vector4(0.0, 0.185, -0.01, 0.0), Vector3(0.37, 0.05, 0.35), mantle, false, 0.35)
+	_box(on, "HoodBack", Vector4(0.0, 0.02, -0.17, 0.0), Vector3(0.37, 0.36, 0.05), mantle, false, 0.35)
+	_box(on, "HoodL", Vector4(0.19, 0.03, -0.005, 0.0), Vector3(0.07, 0.34, 0.33), mantle, false, 0.35)
+	_box(on, "HoodR", Vector4(-0.19, 0.03, -0.005, 0.0), Vector3(0.07, 0.34, 0.33), mantle, false, 0.35)
+	_box(on, "HoodA", Vector4(0.0, 0.03, -0.005, 0.18), Vector3(0.37, 0.34, 0.33), mantle, false, 0.07)
+	_box(on, "HoodK", Vector4(0.0, 0.03, -0.005, -0.18), Vector3(0.37, 0.34, 0.33), mantle, false, 0.07)
+	_box(on, "HoodLip", Vector4(0.0, 0.155, 0.15, 0.0), Vector3(0.37, 0.06, 0.05), mantle.darkened(0.15), false, 0.35)
+	_box(on, "HoodPeak", Vector4(0.0, 0.2, -0.2, 0.0), Vector3(0.12, 0.08, 0.08), mantle, false, 0.12)
+	_box(on, "Beard", Vector4(0.0, -0.12, 0.13, 0.0), Vector3(0.22, 0.13, 0.07), hair, false, 0.21)
 	# The ears are under the hood: the avatar's own, poking through its sides, are taken off.
 	if head != null:
 		for ear in ["EarL", "EarR"]:
@@ -121,12 +130,13 @@ func _robe_legs(figure: Node4D) -> void:
 		limb.material_override = material
 
 
-func _box(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color, glow: bool = false) -> MeshInstance4D:
+## [param w] is the thickness through W; left out, the old slab: the larger of width and depth, at least 0.42.
+func _box(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color, glow: bool = false, w: float = 0.0) -> MeshInstance4D:
 	var node := MeshInstance4D.new()
 	node.name = part
 	var mesh := BoxTetraMesh4D.new()
 	# A real extent through W, or he vanishes the moment the slice moves.
-	mesh.size = Vector4(size.x, size.y, size.z, maxf(maxf(size.x, size.z), 0.42))
+	mesh.size = Vector4(size.x, size.y, size.z, w if w > 0.0 else maxf(maxf(size.x, size.z), 0.42))
 	node.mesh = mesh
 	if glow:
 		node.material_override = Mats.glow(colour, 1.0)

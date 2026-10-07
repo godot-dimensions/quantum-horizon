@@ -66,16 +66,19 @@ func rebuild() -> void:
 	_paint(figure, "Tunic/Belt", leather)
 	var head: Node4D = figure.get_node_or_null("Tunic/Head") as Node4D
 	if head != null:
-		# A flat cap, its peak forward.
-		_box(head, "Cap", Vector4(0.0, 0.185, -0.01, 0.0), Vector3(0.34, 0.08, 0.32), trousers)
-		_box(head, "Peak", Vector4(0.0, 0.15, 0.18, 0.0), Vector3(0.30, 0.03, 0.10), trousers)
+		# A flat cap, its peak forward. Through W as the head is (0.285 to 0.30 across), the peak
+		# across the whole of the cap's front, which is a face in x and W.
+		_box(head, "Cap", Vector4(0.0, 0.185, -0.01, 0.0), Vector3(0.34, 0.08, 0.32), trousers, 0.32)
+		_box(head, "Peak", Vector4(0.0, 0.15, 0.18, 0.0), Vector3(0.30, 0.03, 0.10), trousers, 0.28)
 	var torso: Node4D = figure.get_node_or_null("Tunic") as Node4D
 	if torso != null:
-		# The tents' maroon at the collar, a satchel at his hip on a strap across him.
-		_box(torso, "Collar", Vector4(0.0, 0.20, 0.0, 0.0), Vector3(0.40, 0.06, 0.26), trim)
-		var strap: MeshInstance4D = _box(torso, "Strap", Vector4(0.0, 0.0, 0.126, 0.0), Vector3(0.05, 0.50, 0.012), leather)
-		strap.basis = Basis4D.from_xy(0.62)
-		_box(torso, "Satchel", Vector4(-0.21, -0.18, 0.04, 0.0), Vector3(0.08, 0.16, 0.20), leather)
+		# The tents' maroon at the collar, a satchel at his hip on a strap across him. Through W in
+		# the tunic's proportion (0.35 to 0.38 across); the strap a band the whole of the tunic's W,
+		# as a strap over a shoulder is in 4D; the satchel as thick through W as it is deep.
+		_box(torso, "Collar", Vector4(0.0, 0.20, 0.0, 0.0), Vector3(0.40, 0.06, 0.26), trim, 0.37)
+		var strap: MeshInstance4D = _box(torso, "Strap", Vector4(0.0, 0.0, 0.126, 0.0), Vector3(0.05, 0.50, 0.012), leather, 0.1)
+		strap.basis = Basis4D.from_xy(-0.62)
+		_box(torso, "Satchel", Vector4(-0.21, -0.18, 0.04, 0.0), Vector3(0.08, 0.16, 0.20), leather, 0.19)
 
 
 func _paint(figure: Node, path: String, colour: Color) -> void:
@@ -87,11 +90,12 @@ func _paint(figure: Node, path: String, colour: Color) -> void:
 	limb.material_override = material
 
 
-func _box(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color) -> MeshInstance4D:
+## [param w] is the thickness through W; left out, the old slab: the larger of width and depth, at least 0.42.
+func _box(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color, w: float = 0.0) -> MeshInstance4D:
 	var node := MeshInstance4D.new()
 	node.name = part
 	var mesh := BoxTetraMesh4D.new()
-	mesh.size = Vector4(size.x, size.y, size.z, maxf(maxf(size.x, size.z), 0.42))
+	mesh.size = Vector4(size.x, size.y, size.z, w if w > 0.0 else maxf(maxf(size.x, size.z), 0.42))
 	node.mesh = mesh
 	var material := TetraMaterial4D.new()
 	material.albedo_color = colour

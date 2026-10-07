@@ -64,16 +64,20 @@ func rebuild() -> void:
 	_paint(figure, "Tunic/Belt", trousers)
 	var head: Node4D = figure.get_node_or_null("Tunic/Head") as Node4D
 	if head != null:
-		_box(head, "Cap", Vector4(0.0, 0.19, 0.0, 0.0), Vector3(0.33, 0.10, 0.31), cap)
-		_box(head, "Peak", Vector4(0.0, 0.15, 0.19, 0.0), Vector3(0.30, 0.03, 0.12), cap)
-		# Round the neck, cups either side.
-		_box(head, "Band", Vector4(0.0, -0.20, -0.03, 0.0), Vector3(0.36, 0.04, 0.05), Color(0.12, 0.12, 0.12))
+		# Through W as the head is (0.285 to 0.30 across), the peak across the whole of the cap's front.
+		_box(head, "Cap", Vector4(0.0, 0.19, 0.0, 0.0), Vector3(0.33, 0.10, 0.31), cap, 0.31)
+		_box(head, "Peak", Vector4(0.0, 0.15, 0.19, 0.0), Vector3(0.30, 0.03, 0.12), cap, 0.31)
+		# Round the neck, cups either side - and, the ears coming in two pairs in 4D, cups along W too:
+		# the same cup turned a quarter, ana and kata, where the W ears are (block_avatar_4d.gd EarA, EarK).
+		_box(head, "Band", Vector4(0.0, -0.20, -0.03, 0.0), Vector3(0.36, 0.04, 0.05), Color(0.12, 0.12, 0.12), 0.34)
 		for side in [-1.0, 1.0]:
-			_box(head, "Cup%d" % int(side), Vector4(side * 0.18, -0.20, 0.02, 0.0), Vector3(0.08, 0.12, 0.12), defenders)
+			_box(head, "Cup%d" % int(side), Vector4(side * 0.18, -0.20, 0.02, 0.0), Vector3(0.08, 0.12, 0.12), defenders, 0.12)
+			_box(head, "CupW%d" % int(side), Vector4(0.0, -0.20, 0.02, side * 0.1725), Vector3(0.12, 0.12, 0.12), defenders, 0.08)
 	var torso: Node4D = figure.get_node_or_null("Tunic") as Node4D
 	if torso != null:
-		# A vest of pockets, the one thing that says "range" before he speaks.
-		_box(torso, "Vest", Vector4(0.0, 0.02, 0.125, 0.0), Vector3(0.30, 0.30, 0.03), Color(0.30, 0.26, 0.16))
+		# A vest of pockets, the one thing that says "range" before he speaks: a panel on the chest, which
+		# is a face in x and W, so through W in the tunic's proportion (0.35 to 0.38 across).
+		_box(torso, "Vest", Vector4(0.0, 0.02, 0.125, 0.0), Vector3(0.30, 0.30, 0.03), Color(0.30, 0.26, 0.16), 0.28)
 
 
 func _paint(figure: Node, path: String, colour: Color) -> void:
@@ -85,11 +89,12 @@ func _paint(figure: Node, path: String, colour: Color) -> void:
 	limb.material_override = material
 
 
-func _box(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color) -> MeshInstance4D:
+## [param w] is the thickness through W; left out, the old slab: the larger of width and depth, at least 0.42.
+func _box(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color, w: float = 0.0) -> MeshInstance4D:
 	var node := MeshInstance4D.new()
 	node.name = part
 	var mesh := BoxTetraMesh4D.new()
-	mesh.size = Vector4(size.x, size.y, size.z, maxf(maxf(size.x, size.z), 0.42))
+	mesh.size = Vector4(size.x, size.y, size.z, w if w > 0.0 else maxf(maxf(size.x, size.z), 0.42))
 	node.mesh = mesh
 	var material := TetraMaterial4D.new()
 	material.albedo_color = colour

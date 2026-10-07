@@ -1346,127 +1346,127 @@ size = Vector4(0.09, 0.08, 0.1, 0.45)
 albedo_color = Color(0.42, 0.62, 0.36, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_1omem"]
-size = Vector4(0.38, 0.46, 0.24, 0.45)
+size = Vector4(0.38, 0.46, 0.24, 0.35)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_mb3g3"]
 albedo_color = Color(0.35, 0.22, 0.14, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_uhkom"]
-size = Vector4(0.4, 0.16, 0.26, 0.45)
+size = Vector4(0.4, 0.16, 0.26, 0.375)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_4k1qc"]
 albedo_color = Color(0.93, 0.8, 0.62, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_57v36"]
-size = Vector4(0.3, 0.32, 0.29, 0.45)
+size = Vector4(0.3, 0.32, 0.29, 0.28500000000000003)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_2qtde"]
 albedo_color = Color(0.42, 0.62, 0.36, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_xjoe1"]
-size = Vector4(0.33, 0.14, 0.31, 0.45)
+size = Vector4(0.33, 0.14, 0.31, 0.31000000000000005)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_12okt"]
 albedo_color = Color(0.86, 0.72, 0.32, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_a6rh3"]
-size = Vector4(0.31, 0.22, 0.06, 0.45)
+size = Vector4(0.31, 0.22, 0.06, 0.30000000000000004)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_u2e6l"]
 albedo_color = Color(0.93, 0.8, 0.62, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_qhcj4"]
-size = Vector4(0.09, 0.05, 0.05, 0.45)
+size = Vector4(0.09, 0.05, 0.05, 0.09)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_wx685"]
 albedo_color = Color(0.93, 0.8, 0.62, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_pc5my"]
-size = Vector4(0.09, 0.05, 0.05, 0.45)
+size = Vector4(0.09, 0.05, 0.05, 0.09)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_f8aml"]
 albedo_color = Color(0.13, 0.12, 0.15, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_c3j1k"]
-size = Vector4(0.044, 0.054, 0.02, 0.45)
+size = Vector4(0.054, 0.054, 0.02, 0.09)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_nbddg"]
 albedo_color = Color(0.13, 0.12, 0.15, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_4cw38"]
-size = Vector4(0.044, 0.054, 0.02, 0.45)
+size = Vector4(0.054, 0.054, 0.02, 0.09)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_4os0v"]
 albedo_color = Color(0.93, 0.8, 0.62, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_h6gwp"]
-size = Vector4(0.13, 0.32, 0.14, 0.45)
+size = Vector4(0.13, 0.32, 0.14, 0.2575)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_tqpu3"]
 albedo_color = Color(0.93, 0.8, 0.62, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_xb2cr"]
-size = Vector4(0.12, 0.32, 0.13, 0.45)
+size = Vector4(0.12, 0.32, 0.13, 0.2325)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_887ic"]
 albedo_color = Color(0.4, 0.26, 0.16, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_m71wy"]
-size = Vector4(0.15, 0.1, 0.24, 0.45)
+size = Vector4(0.15, 0.1, 0.24, 0.285)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_7fw0d"]
 albedo_color = Color(0.42, 0.62, 0.36, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_dohj8"]
-size = Vector4(0.1, 0.18, 0.11, 0.45)
+size = Vector4(0.1, 0.18, 0.11, 0.1875)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_1n86k"]
 albedo_color = Color(0.93, 0.8, 0.62, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_dtlqu"]
-size = Vector4(0.09, 0.18, 0.1, 0.45)
+size = Vector4(0.09, 0.18, 0.1, 0.1625)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_2tynk"]
 albedo_color = Color(0.93, 0.8, 0.62, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_f2fmm"]
-size = Vector4(0.09, 0.08, 0.1, 0.45)
+size = Vector4(0.09, 0.08, 0.1, 0.1625)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_1qesy"]
 albedo_color = Color(0.93, 0.8, 0.62, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_rjcgj"]
-size = Vector4(0.13, 0.32, 0.14, 0.45)
+size = Vector4(0.13, 0.32, 0.14, 0.2575)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_yceja"]
 albedo_color = Color(0.93, 0.8, 0.62, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_tr2q7"]
-size = Vector4(0.12, 0.32, 0.13, 0.45)
+size = Vector4(0.12, 0.32, 0.13, 0.2325)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_0vd7m"]
 albedo_color = Color(0.4, 0.26, 0.16, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_pxfeb"]
-size = Vector4(0.15, 0.1, 0.24, 0.45)
+size = Vector4(0.15, 0.1, 0.24, 0.285)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_iys5o"]
 albedo_color = Color(0.42, 0.62, 0.36, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_8k4jt"]
-size = Vector4(0.1, 0.18, 0.11, 0.45)
+size = Vector4(0.1, 0.18, 0.11, 0.1875)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_788pk"]
 albedo_color = Color(0.93, 0.8, 0.62, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_2w5qd"]
-size = Vector4(0.09, 0.18, 0.1, 0.45)
+size = Vector4(0.09, 0.18, 0.1, 0.1625)
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_3wswx"]
 albedo_color = Color(0.93, 0.8, 0.62, 1)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_07f8v"]
-size = Vector4(0.09, 0.08, 0.1, 0.45)
+size = Vector4(0.09, 0.08, 0.1, 0.1625)
 
 [node name="ChickenPen" type="Node4D"]
 position = Vector4(-0.02209911779206045, 0, 0, 0)
@@ -4787,7 +4787,7 @@ position = Vector4(24.9, 1.2, 19.1, 0)
 script = ExtResource("character")
 
 [node name="CollisionShape4D" type="CollisionShape4D" parent="Player"]
-position = Vector4(0, 0.68, 0, 0)
+position = Vector4(0, 0.6799999999999999, 0, 0)
 shape = SubResource("body_shape")
 
 [node name="Avatar" type="Node4D" parent="Player"]
@@ -4803,7 +4803,7 @@ skin = Color(0.42, 0.62, 0.36, 1)
 accent = Color(0.93, 0.8, 0.62, 1)
 
 [node name="Tunic" type="MeshInstance4D" parent="Player/Avatar"]
-position = Vector4(0, 0.84, 0, 0)
+position = Vector4(0, 0.8400000000000001, 0, 0)
 material_override = SubResource("TetraMaterial4D_4quh3")
 mesh = SubResource("BoxTetraMesh4D_1omem")
 
@@ -4846,6 +4846,16 @@ mesh = SubResource("BoxTetraMesh4D_c3j1k")
 position = Vector4(-0.07, 0.038, 0.148, 0)
 material_override = SubResource("TetraMaterial4D_nbddg")
 mesh = SubResource("BoxTetraMesh4D_4cw38")
+
+[node name="EarA" type="MeshInstance4D" parent="Player/Avatar/Tunic/Head"]
+position = Vector4(0, 0.02, -0.02, 0.1725)
+material_override = SubResource("TetraMaterial4D_u2e6l")
+mesh = SubResource("BoxTetraMesh4D_qhcj4")
+
+[node name="EarK" type="MeshInstance4D" parent="Player/Avatar/Tunic/Head"]
+position = Vector4(0, 0.02, -0.02, -0.1725)
+material_override = SubResource("TetraMaterial4D_wx685")
+mesh = SubResource("BoxTetraMesh4D_pc5my")
 
 [node name="HipL" type="Node4D" parent="Player/Avatar"]
 position = Vector4(0.1, 0.7, 0, 0)

@@ -88,6 +88,17 @@ enum Build { PLUSH, HUMAN, CHIBI }
 		w_thickness = value
 		if is_node_ready():
 			rebuild()
+## THE CHIBI BUILD'S THICKNESS THROUGH W, part by part (the player's figure as measured out in the
+## editor, 7 Oct): the body nearly as thick as it is wide, the limbs about twice their width. By
+## the part's name with its L / R side stripped (_w_for), so a pair can only have the one number.
+## The plush and the human builds, whose proportions these were not measured on, keep
+## w_thickness for every part.
+const W_SIZES := {
+	"Tunic": 0.35, "Belt": 0.375, "Head": 0.285, "Cap": 0.31, "Crown": 0.31, "Hair": 0.30,
+	"Tie": 0.11, "Tail1": 0.14, "Tail2": 0.11, "Tail3": 0.08,
+	"Ear": 0.09, "Eye": 0.09,
+	"Thigh": 0.2575, "Shin": 0.2325, "Boot": 0.285, "UpperArm": 0.1875, "Forearm": 0.1625, "Hand": 0.1625,
+}
 
 ## Parts that a walk cycle drives, filled in by rebuild(). Each is a Node4D pivot with
 ## the block parented underneath, so rotating the pivot swings the limb from its top
@@ -206,6 +217,13 @@ func _build_chibi() -> void:
 		_limb(head, "Tail3", Vector4(0.0, -0.32, -0.31, 0.0), Vector3(0.08, 0.12, 0.08), hair)
 	_limb(head, "EarL", Vector4(0.18, 0.02, -0.02, 0.0), Vector3(0.09, 0.05, 0.05), accent)
 	_limb(head, "EarR", Vector4(-0.18, 0.02, -0.02, 0.0), Vector3(0.09, 0.05, 0.05), accent)
+	# And a second pair along W, ana and kata, so the head reads as a head from a slice turned onto
+	# W: the same ear turned a quarter through W - its x and W sizes swapped - and as far past the
+	# head's W face as the first pair is past its x face (0.18 against a head 0.15 wide).
+	var ear_out: float = _w_for("Head") * 0.5 + 0.03
+	for side in [1.0, -1.0]:
+		_limb(head, "EarA" if side > 0.0 else "EarK", Vector4(0.0, 0.02, -0.02, ear_out * side),
+			Vector3(_w_for("EarL"), 0.05, 0.05), accent, 0.09)
 	if eyes:
 		# +Z is the front: the hair sits at -0.15 and the feet point at +Z, so that is the
 		# way the figure faces. The head is 0.29 deep, so its face is at +0.145 and the
@@ -280,7 +298,7 @@ func _blob(parent: Node, part_name: String, at: Vector4, size: Vector3, colour: 
 	var node := MeshInstance4D.new()
 	node.name = part_name
 	var ball := OrthoplexTetraMesh4D.new()
-	ball.size = Vector4(size.x, size.y, size.z, w_thickness * 1.6)
+	ball.size = Vector4(size.x, size.y, size.z, _w_for(part_name) * 1.6)
 	node.mesh = ball
 	var material := TetraMaterial4D.new()
 	material.albedo_color = colour
@@ -292,11 +310,12 @@ func _blob(parent: Node, part_name: String, at: Vector4, size: Vector3, colour: 
 	return node
 
 
-func _limb(parent: Node, part_name: String, at: Vector4, size: Vector3, colour: Color) -> Node4D:
+## [param w] names the thickness through W outright; left out, it is the part's own (_w_for).
+func _limb(parent: Node, part_name: String, at: Vector4, size: Vector3, colour: Color, w: float = -1.0) -> Node4D:
 	var node := MeshInstance4D.new()
 	node.name = part_name
 	var box := BoxTetraMesh4D.new()
-	box.size = Vector4(size.x, size.y, size.z, w_thickness)
+	box.size = Vector4(size.x, size.y, size.z, w if w > 0.0 else _w_for(part_name))
 	node.mesh = box
 	var material := TetraMaterial4D.new()
 	material.albedo_color = colour
@@ -306,3 +325,14 @@ func _limb(parent: Node, part_name: String, at: Vector4, size: Vector3, colour: 
 	if Engine.is_editor_hint():
 		node.owner = get_tree().edited_scene_root
 	return node
+
+
+## The thickness through W for [param part_name]: in the chibi build its own from W_SIZES - looked
+## up without its L / R side, so the two sides cannot differ - else w_thickness.
+func _w_for(part_name: String) -> float:
+	if build != Build.CHIBI:
+		return w_thickness
+	var side_free: String = part_name.left(part_name.length() - 1) if part_name.ends_with("L") or part_name.ends_with("R") else part_name
+	if W_SIZES.has(side_free):
+		return W_SIZES[side_free]
+	return W_SIZES.get(part_name, w_thickness)
