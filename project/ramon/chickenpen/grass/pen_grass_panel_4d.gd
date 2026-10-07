@@ -489,19 +489,19 @@ func _process(delta: float) -> void:
 	var top_h: float = stack.size.y * stack.scale.y + gap if stack != null and stack.is_visible_in_tree() else 0.0
 	var block := Vector2(maxf(own.x, stack.size.x * stack.scale.x if top_h > 0.0 else 0.0), own.y + top_h)
 	var places: Array = []
-	# UNDER THE MURMURATION CARD, BESIDE THE PATHS WINDOW (Ramon, 7 Oct: "place them under the murmuration box"):
-	# the paths window at the card's left edge (scripts/pen_paths_panel_4d.gd), this to its right, tops level; with
-	# the card away (F3), the same under the info card. Taken first; the old places below are the fallbacks.
+	# UNDER THE MURMURATION CARD, UNDER THE PATHS WINDOW (Ramon, 7 Oct: "place them under the murmuration box", then
+	# "look needs to go under paths ui"): the paths window at the card's left edge (scripts/pen_paths_panel_4d.gd),
+	# this under it, left edges level; with the card away (F3), the same under the info card. Taken first; the old
+	# places below are the fallbacks.
 	var stats_now := get_parent().get_node_or_null(^"FlockStats") as Control
 	var info_now := get_parent().get_node_or_null(^"InfoCard") as Control
-	var paths_w: float = stack.size.x * stack.scale.x + gap if top_h > 0.0 else 0.0
 	var beside := Vector2.ZERO
 	if stats_now != null and stats_now.is_visible_in_tree():
 		var sr: Rect2 = SPOT.rect_of(stats_now)
-		beside = Vector2(sr.position.x + paths_w, sr.end.y + gap)
+		beside = Vector2(sr.position.x, sr.end.y + gap + top_h)
 	elif info_now != null and info_now.is_visible_in_tree():
 		var ir: Rect2 = SPOT.drawn_of(info_now)
-		beside = Vector2(maxf(ir.position.x, 4.0) + paths_w, ir.end.y + gap)
+		beside = Vector2(maxf(ir.position.x, 4.0), ir.end.y + gap + top_h)
 	var places_beside: Array = [beside] if beside != Vector2.ZERO else []
 	# The to-do list is only this column's when it sits bottom left (since 7 Oct it sits at the top, beside the
 	# info card: pen_quests_4d.gd beside_info).
