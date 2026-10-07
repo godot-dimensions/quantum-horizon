@@ -399,3 +399,30 @@ that ends up in charge is decided by that order, not by which was in charge befo
 came back lit by the field's warm evening. Note the environment really in use before parking
 (current, and not under a hidden branch) and call `make_current()` on it after. And any menu
 that sets the window's `content_scale_*` or mode leaves them set: save the window, restore it.
+
+## The 4D editor picks child meshes, owned or not (6 Oct 2026)
+
+Clicking in the 4D viewport selects whichever MeshInstance4D the ray hits, children included
+(engine/modules/4d/editor/viewport/editor_main_viewport_4d.cpp, `_gather_non_empty_visible_mesh_4d_nodes`:
+under the edited scene's root every node targets itself). So a @tool script that draws through a
+generated child mesh hands the editor that child: a click selects it, the gizmo moves only it, the move
+is never saved (the child has no owner) and it cannot be deleted. Ramon lost a session of hand placing on
+the Watchstone's stones to this. Anything meant to be picked and moved by hand must BE the mesh node
+(extend MeshInstance4D, set its own `mesh`), with `mesh`/`material_override` kept out of the saved scene
+by `_validate_property` (usage NONE). See chickenpen/scripts/pen_crag_chunk_4d.gd.
+
+Projection on and off in the editor: the 4D viewport's View menu > Rendering Engine (Combined: on;
+Cross-section: off). Saved in project/.godot/editor/4d_editor.cfg ([camera] rendering_engine_name).
+
+A @tool script that changes a property of a node inside an instanced scene (its `mesh`, its
+`material_override`) makes the editor save that change into the scene that instances it, as an
+override, the next time it is saved. The pen's dev look shows in the editor too
+(chickenpen/look/pen_look_4d.gd, `editor_dev`), so it puts every mesh and material back on
+NOTIFICATION_EDITOR_PRE_SAVE and lays the look again on NOTIFICATION_EDITOR_POST_SAVE. Children it adds
+(the blockouts) have no owner, so they are never saved; in a scene that instances the unit, clicking one
+selects the unit's root, as clicking its art does.
+
+Don't give a game key F8 (or F5, F6, F7) when the game is run from the editor: they are the editor's
+Run, Run Current, Pause and Stop, and they act even while the game window has focus. The pen's dev look
+was on F8 for an hour and stopped the game when Ramon pressed it (6 Oct); it is on I now. The pen's
+paths (F5 look, F6 reveal) predate this and may do the same.

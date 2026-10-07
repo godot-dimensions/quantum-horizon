@@ -70,7 +70,11 @@ extends Node
 ## where he was, which is the honest thing for a debug key to do: it should show you the
 ## room, not fake the scene that leads to it.
 @export var debug_key_enabled: bool = true
-@export var debug_key: Key = KEY_C
+## The key with its modifiers (an int, so Shift can be part of it): the theatre's is C and the cave's
+## Shift+C. The cave's sat on V from the start, and on 6 Oct V became the camp's Align to slice, so
+## one press took you to the cave (Ramon, 7 Oct: "at the campsite when i say v to align slice, i get
+## dropped in the cave interior"). Every letter is the pen's already, and F5 to F8 reach the editor.
+@export var debug_key: int = KEY_C
 ## Whether the debug key first stages whatever normally leads up to the trip (Trym's
 ## invitation, for the theatre). A place with no lead-up leaves it off.
 @export var stage_before_testing: bool = true
@@ -94,7 +98,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if not debug_key_enabled:
 		return
 	var key := event as InputEventKey
-	if key == null or not key.pressed or key.echo or key.keycode != debug_key:
+	if key == null or not key.pressed or key.echo or key.get_keycode_with_modifiers() != debug_key:
 		return
 	get_viewport().set_input_as_handled()
 	if is_away():

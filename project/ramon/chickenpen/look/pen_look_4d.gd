@@ -62,10 +62,14 @@ const FLOOR_SWATCH := "pen_dev_floor"
 const USED := ["pen_rune_stone", "pen_laptop", "pen_pickup", "pen_pickaxe", "journal_book"]
 ## Under World and left alone here: the ground, the paths, the grass (each has its own switch), the
 ## terrain (laid grey), the lights.
-const NOT_ART := ["Ground", "Paths", "Grass", "Flock", "Hills", "WestHill", "TowerHill"]
-const TERRAIN := ["Hills", "WestHill", "TowerHill"]
+const NOT_ART := ["Ground", "Paths", "Grass", "Flock", "Hills", "WestHill", "TowerHill", "MoundA", "MoundB", "MoundC", "MoundD", "MoundE"]
+## Laid grey: the mountains, the round hills and layout B's mounds (PenLayout/PLAN_B.md step 39).
+const TERRAIN := ["Hills", "WestHill", "TowerHill", "MoundA", "MoundB", "MoundC", "MoundD", "MoundE"]
 
 signal look_changed(dev: bool)
+## The dev look laid or lifted, whatever the reason (the player's choice, the art held in the cinema or the
+## cave's tunnel, before a save): for what paints itself (lookout/balloon_4d.gd), sent as it happens.
+signal applied_changed(on: bool)
 
 ## Off: the pen exactly as it was, no switch.
 @export var enabled: bool = true
@@ -90,7 +94,7 @@ signal look_changed(dev: bool)
 			_set_applied(true)
 ## Per landmark, by node name (see the header).
 @export var rules: Dictionary = {
-	"Lookout": "block", "CaveHill": {"low_mesh": "res://ramon/chickenpen/terrain/baked/cave_hill_low.res"}, "Oak*": "block", "RockPileSpot": "block", "StoneWall": "clay", "Shed": "clay",
+	"Lookout": "block", "CaveHill": {"low_mesh": "res://ramon/chickenpen/terrain/baked/cave_hill_low.res"}, "Oak*": "block", "RockPileSpot": "block", "Bush*": "block", "Shed": "clay",
 	"AnaMarsh": {"keep_colour": [Color(0.24, 0.34, 0.36), Color(0.312, 0.394, 0.378), Color(0.16, 0.25, 0.28), Color(0.64, 0.47, 0.29)],
 		"drop": ["Reeds*"], "drop_green": true},
 	"EggCamp": "clay", "Range": "clay", "TrymCabin": "clay", "KataWood": "clay", "OwlTree": "clay", "Scenery": "clay",
@@ -300,6 +304,7 @@ func _set_applied(on: bool) -> void:
 	else:
 		_restore()
 	_applied = on
+	applied_changed.emit(on)
 	if not Engine.is_editor_hint():
 		print("LOOK %s: %.1f ms%s" % ["dev" if on else "art", (Time.get_ticks_usec() - started) / 1000.0, (" (held: %s)" % _hold) if _hold != "" else ""])
 
@@ -757,6 +762,7 @@ func before_save() -> void:
 	if _applied:
 		_restore()
 		_applied = false
+		applied_changed.emit(false)
 		set_meta(&"_look_resave", true)
 
 

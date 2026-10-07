@@ -94,7 +94,10 @@ static func bake(shapes: Dictionary) -> Dictionary:
 	for colour in shapes:
 		var mesh := ArrayTetraMesh4D.new()
 		for s in shapes[colour]:
-			if (s as Dictionary).has("planes"):
+			if (s as Dictionary).has("unit"):
+				# A shape built once and stretched where it stands (a hundred oaks: Ramon's layout B).
+				mesh.merge_with(_unit_mesh(String(s["unit"])), s.get("at", Vector4.ZERO), s.get("basis", Projection.IDENTITY))
+			elif (s as Dictionary).has("planes"):
 				var b := TerrainBake.Builder.new()
 				CutStone.bake_into(b, s["planes"], func(_n: Vector4, _c: Vector4) -> Color: return Color(0.5, 0.5, 0.5))
 				mesh.merge_with(TerrainBake.mesh_of(b, false), s.get("at", Vector4.ZERO), s.get("basis", Projection.IDENTITY))
@@ -105,6 +108,19 @@ static func bake(shapes: Dictionary) -> Dictionary:
 		if not mesh.get_simplex_cell_vertex_indices().is_empty():
 			out[colour] = mesh
 	return out
+
+
+## The unit shapes "unit" names, built the first time they are asked for.
+static var _units: Dictionary = {}
+
+
+static func _unit_mesh(key: String) -> ArrayTetraMesh4D:
+	if not _units.has(key):
+		var planes: Array = cell24_up() if key == "cell24_up" else cell24(Vector4.ONE)
+		var b := TerrainBake.Builder.new()
+		CutStone.bake_into(b, planes, func(_n: Vector4, _c: Vector4) -> Color: return Color(0.5, 0.5, 0.5))
+		_units[key] = TerrainBake.mesh_of(b, false)
+	return _units[key]
 
 
 # --- The landmarks -------------------------------------------------------------------------------
@@ -178,10 +194,43 @@ static func _oak(root: Node4D) -> Dictionary:
 	var lo: Vector4 = b[0]
 	var hi: Vector4 = b[1]
 	var c := (lo + hi) * 0.5
-	var trunk_top: float = lo.y + (hi.y - lo.y) * 0.45
+	var height: float = hi.y - lo.y
+	var stretch := func(r: Vector4) -> Projection:
+		return Projection(Vector4(r.x, 0, 0, 0), Vector4(0, r.y, 0, 0), Vector4(0, 0, r.z, 0), Vector4(0, 0, 0, r.w))
+	# Round, not boxes (Ramon, 6 Oct: "in the dev look they should be round. 24 cells or something"): a
+	# crown as wide as the tree's own, a 24-cell stretched to it, a corner up ("arguably a 24 cell looks
+	# better rotated ... upward"); the trunk a thin square box ("why ... are the tree trunks so thick. just
+	# make then thinner square boxes"). A bush is its crown on the ground.
+	#
+	# TALLER, AS TALL AS THE LEAVES (Ramon, 7 Oct: "SCALE BLUE TREEBLOCKS a bit larger upward so they match
+	# the artlook more"): sized from the wood alone (the leaves are off by the time the dev look measures),
+	# the crowns stopped at the wood's top, under the art's. The oak hands over its leaves' box (pen_oak_4d.gd
+	# crown_box); its top is the crown's top. Its width is not used: the light oaks are sparse, and a crown
+	# filling the leaves' whole reach was twice the art's mass (frames treecmp, 7 Oct), so as wide as before,
+	# from the wood, and from 40% of the way up, the trunk showing under it.
+	var leafy: Array = root.call("crown_box") if root.has_method("crown_box") else []
+	if leafy.size() == 2:
+		var top: float = (leafy[1] as Vector4).y
+		if String(root.get("bake")).begins_with("bush"):
+			var low := Vector4((hi.x - lo.x) * 0.45, (top - lo.y) * 0.5, (hi.z - lo.z) * 0.45, (hi.w - lo.w) * 0.45)
+			return {"blue": [{"unit": "cell24_up", "basis": stretch.call(low), "at": Vector4(c.x, lo.y + low.y, c.z, c.w)}]}
+		var bottom: float = lo.y + height * 0.4
+		var tall := Vector4((hi.x - lo.x) * 0.42, (top - bottom) * 0.5, (hi.z - lo.z) * 0.42, (hi.w - lo.w) * 0.42)
+		var tw_leafy: float = maxf(0.18, height * 0.05)
+		var trunk_to: float = bottom + tall.y * 0.4
+		return {"blue": [
+			{"box": Vector4(tw_leafy, trunk_to - lo.y, tw_leafy, tw_leafy), "at": Vector4(c.x, (lo.y + trunk_to) * 0.5, c.z, c.w)},
+			{"unit": "cell24_up", "basis": stretch.call(tall), "at": Vector4(c.x, (bottom + top) * 0.5, c.z, c.w)},
+		]}
+	if String(root.get("bake")).begins_with("bush"):
+		var bush := Vector4((hi.x - lo.x) * 0.45, height * 0.5, (hi.z - lo.z) * 0.45, (hi.w - lo.w) * 0.45)
+		return {"blue": [{"unit": "cell24_up", "basis": stretch.call(bush), "at": Vector4(c.x, lo.y + height * 0.5, c.z, c.w)}]}
+	var trunk_top: float = lo.y + height * 0.45
+	var crown := Vector4((hi.x - lo.x) * 0.42, (hi.y - trunk_top) * 0.5, (hi.z - lo.z) * 0.42, (hi.w - lo.w) * 0.42)
+	var tw: float = maxf(0.18, height * 0.05)
 	return {"blue": [
-		{"planes": cylinder(0.45, trunk_top, 0.45), "at": Vector4(c.x, 0, c.z, c.w)},
-		{"box": Vector4((hi.x - lo.x) * 0.8, hi.y - trunk_top, (hi.z - lo.z) * 0.8, (hi.w - lo.w) * 0.8), "at": Vector4(c.x, (trunk_top + hi.y) * 0.5, c.z, c.w)},
+		{"box": Vector4(tw, trunk_top + 0.4, tw, tw), "at": Vector4(c.x, (trunk_top + 0.4) * 0.5, c.z, c.w)},
+		{"unit": "cell24_up", "basis": stretch.call(crown), "at": Vector4(c.x, (trunk_top + hi.y) * 0.5, c.z, c.w)},
 	]}
 
 
@@ -257,6 +306,75 @@ static func cylinder(r: float, h: float, hw: float) -> Array:
 	for k in 20:
 		var a: float = TAU * float(k) / 20.0
 		planes.append([Vector4(cos(a), 0, sin(a), 0), r])
+	return planes
+
+
+## THE 24-CELL: the regular 4D polytope with 24 octahedral cells, the roundest of the simple ones; its
+## cells face the four axes both ways (8) and the sixteen diagonals (+-1, +-1, +-1, +-1). Stretched to
+## [param radii] (half its size along x, y, z and W), its middle at the origin.
+static func cell24(radii: Vector4) -> Array:
+	var normals: Array = []
+	for axis in 4:
+		for s in [-1.0, 1.0]:
+			var n := Vector4.ZERO
+			n[axis] = s
+			normals.append(n)
+	for k in 16:
+		normals.append(Vector4(1.0 if (k & 1) != 0 else -1.0, 1.0 if (k & 2) != 0 else -1.0, 1.0 if (k & 4) != 0 else -1.0,
+			1.0 if (k & 8) != 0 else -1.0) * 0.5)
+	return _stretched(normals, radii)
+
+
+## The 24-cell a corner up: turned an eighth of a turn from x into y, then pressed back into the unit box
+## (its corners reached the square root of two), so a stretch by a crown's half sizes fits that crown.
+static func cell24_up() -> Array:
+	var normals: Array = []
+	for n: Vector4 in _cell24_normals():
+		var c: float = cos(PI * 0.25)
+		var s: float = sin(PI * 0.25)
+		normals.append(Vector4(n.x * c - n.y * s, n.x * s + n.y * c, n.z, n.w))
+	return _stretched(normals, Vector4(1.0 / sqrt(2.0), 1.0 / sqrt(2.0), 1.0, 1.0))
+
+
+static func _cell24_normals() -> Array:
+	var normals: Array = []
+	for axis in 4:
+		for s in [-1.0, 1.0]:
+			var n := Vector4.ZERO
+			n[axis] = s
+			normals.append(n)
+	for k in 16:
+		normals.append(Vector4(1.0 if (k & 1) != 0 else -1.0, 1.0 if (k & 2) != 0 else -1.0, 1.0 if (k & 4) != 0 else -1.0,
+			1.0 if (k & 8) != 0 else -1.0) * 0.5)
+	return normals
+
+
+## A post round in x, z AND W ([param r] across, [param h] tall from the ground): eighteen sides, the
+## three axes of the ground and the twelve diagonals between them, so it reads round from a turned slice.
+static func round_post(r: float, h: float) -> Array:
+	var ground: Array = [Vector4(1, 0, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1)]
+	var normals: Array = []
+	for i in 3:
+		normals.append(ground[i])
+		normals.append(-ground[i])
+		for j in range(i + 1, 3):
+			for s in [Vector2(1, 1), Vector2(1, -1), Vector2(-1, 1), Vector2(-1, -1)]:
+				normals.append((ground[i] * s.x + ground[j] * s.y).normalized())
+	var planes: Array = _stretched(normals, Vector4(r, 1.0, r, r))
+	planes.append([Vector4(0, 1, 0, 0), h])
+	planes.append([Vector4(0, -1, 0, 0), 0.0])
+	return planes
+
+
+## [param normals] as planes, each at the distance of its own length from the middle (unit normals: 1),
+## the shape then stretched by [param radii] along x, y, z and W, exactly (each normal re-normalised).
+static func _stretched(normals: Array, radii: Vector4) -> Array:
+	var planes: Array = []
+	for n: Vector4 in normals:
+		var u: Vector4 = n / n.length_squared()
+		var m := Vector4(u.x / radii.x, u.y / radii.y, u.z / radii.z, u.w / radii.w)
+		var l: float = m.length()
+		planes.append([m / l, 1.0 / l])
 	return planes
 
 

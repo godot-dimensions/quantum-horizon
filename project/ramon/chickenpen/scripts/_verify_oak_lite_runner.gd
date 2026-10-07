@@ -62,7 +62,9 @@ func _run() -> void:
 	root.add_child(_room)
 	current_scene = _room
 	var world: Node4D = _room.get_node("World")
-	world.get_node("Oak").visible = false
+	# The pen's own oaks out of the way (the big one is up the Lookout rock now): only the test's count.
+	for o in get_nodes_in_group(&"pen_oak"):
+		(o as Node4D).visible = false
 	for bake in SPOTS:
 		var o := Node4D.new()
 		o.set_script(Oak)

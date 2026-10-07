@@ -48,10 +48,11 @@ extends Control
 ## exported property on it.
 const OWNED: Array = [
 	["../../Crossing", "debug_key", "into the cinema, and back"],
+	["../../CaveCrossing", "debug_key", "into the cave, and back"],
 	["../../Systems/Celebration", "test_key", "finish the round - again restarts"],
 	["../../UI/SlicePlane", "toggle_key", "the dial, on or off"],
-	["../../Systems/Paths", "key_look", "paths: sand, or icons on white"],
-	["../../Systems/Paths", "key_reveal", "paths found as you go, or all shown"],
+	["../../Systems/Paths", "key_type", "paths: as drawn, static, here, follow, reveal"],
+	["../../Systems/Paths", "key_found", "paths found as you go, or all shown"],
 	["../../Systems/Look", "key", "dev look, or the art"],
 ]
 

@@ -9,7 +9,8 @@ extends SceneTree
 ## the way the menu opens it, must still say it goes back to the menu. Headless.
 
 const QUESTS := preload("res://ramon/chickenpen/scripts/pen_quests_4d.gd")
-const GALLERY := "res://ramon/ShootingGalleryRamon/shooting_gallery_ramon.tscn"
+## The Quantum Range since 6 Oct (pen_range_trip_4d.gd gallery_path); the Shooting Gallery before.
+const GALLERY := "res://ramon/QuantumRange/quantum_range_final.tscn"
 
 var _room: Node
 var _room_id := 0

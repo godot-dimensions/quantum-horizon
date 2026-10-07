@@ -22,6 +22,13 @@ const CaveHill := preload("res://ramon/chickenpen/terrain/pen_cave_hill_4d.gd")
 const SHAPES := {
 	"hill_west": {"half": Vector3(12.0, 10.0, 9.0), "top": 9.5, "seed": 53},
 	"hill_tower": {"half": Vector3(10.0, 9.0, 8.0), "top": 8.0, "seed": 71},
+	# Layout B's mounds (PenLayout/PLAN_B.md step 36; Ramon: "add subtle hills slumps here and there to
+	# make it a little less flat"): low and broad, under trees and behind landmarks, off the paths.
+	"mound_a": {"half": Vector3(8.0, 7.0, 6.0), "top": 2.0, "seed": 101},
+	"mound_b": {"half": Vector3(7.0, 6.0, 6.0), "top": 1.6, "seed": 113},
+	"mound_c": {"half": Vector3(7.0, 6.5, 6.0), "top": 1.8, "seed": 127},
+	"mound_d": {"half": Vector3(6.0, 6.5, 5.0), "top": 1.5, "seed": 139},
+	"mound_e": {"half": Vector3(6.0, 5.0, 5.0), "top": 1.3, "seed": 151},
 }
 const SHOULDER := 0.15
 const ROUNDNESS := 3.0

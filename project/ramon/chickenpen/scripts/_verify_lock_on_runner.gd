@@ -32,11 +32,16 @@ func _check(what: String, ok: bool, detail: String) -> void:
 	print("   %s %-50s %s" % ["PASS" if ok else "FAIL", what, detail])
 
 
+## T as a player presses it, through the whole pen (7 Oct: the slice assist owns T and drives the rig's
+## lock, set_locked; the rig's own key is off in the pen, so calling the rig's handler tested nothing).
 func _press_t() -> void:
-	var ev := InputEventKey.new()
-	ev.keycode = KEY_T
-	ev.pressed = true
-	_rig.call("_unhandled_input", ev)
+	for down in [true, false]:
+		var ev := InputEventKey.new()
+		ev.keycode = KEY_T
+		ev.physical_keycode = KEY_T
+		ev.pressed = down
+		Input.parse_input_event(ev)
+	Input.flush_buffered_events()
 
 
 ## How far off dead-ahead the bird is, in degrees, measured in the horizontal plane.
@@ -76,7 +81,7 @@ func _process(_d: float) -> bool:
 		_check("and so is your w", is_equal_approx(_player.global_position.w, float(_before[2])),
 			"w %.3f - reaching the bird is still your job" % _player.global_position.w)
 		var readout: Label = _room.get_node("UI/Locator") as Label
-		_check("the readout shows the lock", readout.text.begins_with("[T] tracking"), readout.text.left(40))
+		_check("the readout shows the lock", readout.text.contains("LOCKED") or readout.text.begins_with("[T] tracking"), readout.text.left(40))
 		_press_t()
 		_check("a second T lets go", not bool(_rig.call("is_locked_on")), "")
 		return _done()

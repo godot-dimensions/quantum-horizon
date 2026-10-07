@@ -27,6 +27,7 @@ const SHADER := preload("res://ramon/chickenpen/grass/pen_grass.gdshader")
 const LOOKS := preload("res://ramon/chickenpen/grass/pen_grass_looks.gd")
 const PANEL := preload("res://ramon/chickenpen/grass/pen_grass_panel_4d.gd")
 const PAINT := preload("res://ramon/chickenpen/grass/pen_ground_paint_4d.gd")
+const Heights := preload("res://ramon/chickenpen/grass/grass_heights_4d.gd")
 const MainGreen := preload("res://ramon/chickenpen/terrain/main_green_4d.gd")
 const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
 const StoneSet := preload("res://ramon/chickenpen/scripts/pen_stone_set_4d.gd")
@@ -80,7 +81,11 @@ const TRAIL_POINTS := 12
 ## glow_out 40 m, the pen's own green from there to the hills. And the grass's far edge faded
 ## to the pen's own dark green whatever the ground under it was, so over the glow it ended in a
 ## dark ring: the grass shader now works the glow out too and fades to the ground actually there.
-@export var ground_glow: bool = true:
+##
+## RETIRED (Ramon, 7 Oct: "remove the center glow mesh or layers and the button. we dont need it
+## anymore"): off for good, its button and Ctrl+O gone from the panel. The switch stays only so the
+## even green, which paints through the same reach, and the old runners still find it.
+@export var ground_glow: bool = false:
 	set(v):
 		ground_glow = v
 		if is_inside_tree() and not _ground_painted.is_empty():
@@ -113,7 +118,9 @@ const BAKED_TERRAIN := "res://ramon/chickenpen/terrain/baked/"
 ## The pen's yard, and the marsh's banks (3 Oct: "just water, sand ... place the sand from the
 ## pen also here surrounding it"). And the watchtower's foot (6 Oct, Ramon: "sand underneath") and
 ## the researchers' camp's trodden ground, each across its whole outline (clearing_fill names).
-@export var sand_round: Dictionary = {"Pen": 1.8, "AnaMarsh": 2.4, "Lookout": 1.4}
+## The pen's reaches further past its fence since layout B (Ramon, 6 Oct: "the pens sand can extend a bit
+## beyond the pen ofcourse").
+@export var sand_round: Dictionary = {"Pen": 2.6, "AnaMarsh": 2.4, "Lookout": 1.4}
 ## AND SAND SHAPES FROM THE UNITS THEMSELVES (6 Oct, Ramon: "you can make the circle with the painted
 ## layer we use no?"): every node in the group ground_sand with a ground_sand() method hands over
 ## circles and rectangles, each at its own W - the camp's ring and floor (pen_research_camp_4d.gd),
@@ -322,16 +329,56 @@ var shade_test: float = -1.0:
 ## broken up by noise (clearing_ragged) with a fringe of thinner, trodden grass outside it.
 ## Names in clearing_fill are cleared inside their whole outline too (the pen's run, the
 ## ground under the tower).
-@export var clearings: Dictionary = {"AnaMarsh": 1.2, "Lookout": 2.5, "Pen": 1.5, "EggCamp": 1.0}
+## Since 7 Oct every landmark (Ramon: "I noticed some grass has a nice random falloff with smaller grass
+## bits.. do this with all landmarks"): the town walls, the crags, Trym's house, the range, the posts.
+## Never the trees: their W layers would drag a lane's W off its own (clearing_lanes).
+@export var clearings: Dictionary = {"AnaMarsh": 1.2, "Lookout": 2.5, "Pen": 1.5, "EggCamp": 1.0, "TownWall": 0.7,
+	"TownWallWestN": 0.7, "TownWallWestS": 0.7, "RockParts": 0.9, "TrymCabin": 1.2, "Range": 0.9, "KeeperPost": 0.8,
+	"ProfessorPost": 0.6}
 @export var clearing_fill: PackedStringArray = PackedStringArray(["Pen", "Lookout", "EggCamp"])
 @export_range(0.0, 4.0, 0.05, "suffix:m") var clearing_ragged: float = 1.2
 @export_range(0.1, 5.0, 0.05, "suffix:m") var clearing_fringe: float = 1.5
+## THE W LANES the clearings are kept in, one a channel of the clearing texture: everything that clears
+## the grass belongs to the nearest, and its clearing holds within clearing_w_reach of that lane's W (the
+## mean W of what is in it). Three until 7 Oct (the farm, ana, kata, split at 4 m); four since, so the
+## camp (2.5 kata), the cave's mouth (4 ana) and the marsh (8 ana) each clear at their own W.
+@export var clearing_lanes: PackedFloat32Array = PackedFloat32Array([0.0, 8.0, -2.5, 4.0])
+## The sand shapes (ground_sand) clear the grass this far inside their painted edge, so the grass's
+## ragged edge and fringe sit on the sand's own ragged edge.
+@export_range(0.0, 2.0, 0.05, "suffix:m") var sand_inset: float = 0.3
+
+@export_group("Paths")
+## THE PATHS, BLADE BY BLADE (Ramon, 7 Oct: "can the grass extend a little inward over the path so i
+## dont see the green strip?"; "path follow mode is cool, is there no way we can let the grass behave
+## that way too in aligning to the path if i hit that button?"). The paths' sand boxes were counted in
+## the mask like anything else standing on the ground: every half-metre cell a box touched went bare,
+## and a box reaches past its sand (the edge wavers in, and fades over its last third of a metre), so a
+## strip of bare green ran along every path. Now the paths are left out of the mask, and a field of
+## their own says, for each spot, how far inside the nearest stretch's sand it is and at what W that
+## stretch is there and how deep in W (path_field). Blades stop path_inset inside the sand's edge, so
+## they lean over it, and thin to trodden ones over path_fringe outside it; and only near the W the
+## sand is at, so as the path type changes (9; follow slants each stretch through W) the field is made
+## again from the boxes as they now are, and the grass parts where the sand is.
+@export_range(-0.5, 1.0, 0.01, "suffix:m") var path_inset: float = 0.2
+@export_range(0.0, 2.0, 0.05, "suffix:m") var path_fringe: float = 0.6
+@export_range(0.0, 0.5, 0.01, "suffix:m") var path_ragged: float = 0.1
+## Where the paths are (their network, from the pen's root) and what says they changed.
+@export var path_network: NodePath = ^"World/Paths"
+
+@export_group("Hills")
+## Grass on the hills (grass_heights_4d.gd; 7 Oct: "grass on hill is a different green"): blades stand
+## on the baked ground heights, none above height_max or on ground steeper than slope_max (rise over
+## run). Off, or with no bake or a stale one: the hills bare, as before.
+@export var on_hills: bool = true
+@export_range(0.5, 30.0, 0.5, "suffix:m") var height_max: float = 9.0
+@export_range(0.1, 3.0, 0.05) var slope_max: float = 0.9
+@export var path_switch: NodePath = ^"Systems/Paths"
 
 @export_group("Ground")
 ## The pen's ground slab reaches this far in x, z and w (chickenpen.tscn: 120 m a side).
 @export var ground_extent: float = 59.0
 ## Things whose subtree is never part of the mask: they move, or they are the ground itself.
-@export var mask_skip: PackedStringArray = PackedStringArray(["Ground", "Hills", "CaveHill", "Flock", "Chickens", "Player", "Mithra",
+@export var mask_skip: PackedStringArray = PackedStringArray(["Ground", "Hills", "CaveHill", "Flock", "Chickens", "Player", "Mithra", "Paths",
 	"Nike", "Cat", "RedCat", "Crow", "Crow2", "Crow3", "Trym", "Professor", "Keeper", "RangeMaster", "Wren", "AnaOwl", "AnaHeron",
 	"Chipmunk0", "Chipmunk1", "Chipmunk2", "Balloon", "Grass", "UI"])
 
@@ -402,14 +449,70 @@ var _pushers: Array[Node4D] = []
 var _room: Node
 var _noise_image: Image
 var _wind_texture: ImageTexture
-var _clearing_w := Vector3(0.0, 8.0, -8.0)
+var _clearing_w := Vector4(0.0, 8.0, -2.5, 4.0)
+var _path_texture: ImageTexture
+## The baked ground heights (grass_heights_4d.gd), or null; and why not, for the panel.
+var _height_texture: ImageTexture3D
+var heights_note: String = ""
+## Boxes in the last path field, and how long it took, for runners.
+var path_boxes: int = 0
+var path_msec: int = 0
 
 const MASK_CELL := 0.5
+## The clearing texture's channels (clearing_lanes).
+const LANES := 4
 const MASK_CELLS := 240
+
+
+## THE PANEL'S SAVE (Ramon, 7 Oct: "I just noticed the greenery controls, and the rebaking options. does
+## that get saved? or not. if not make a save button"). Rebake greens always saved the main green
+## (terrain/main_green.cfg); nothing else on the panel was kept, every run began at start_preset with the
+## sliders at their middles. The panel's Save writes these to grass_saved.cfg in the project, beside the
+## main green's, so what he settles on is what the pen opens with for everybody, not on one machine.
+const SAVED := "res://ramon/chickenpen/grass/grass_saved.cfg"
+const SAVED_KEYS: Array[String] = ["preset", "shade_test", "wind_scale", "bits_enabled", "flowers_enabled", "ground_paint", "even_green"]
+
+
+## What the panel shows now, into grass_saved.cfg. OK or the error.
+func save_settings() -> int:
+	var cfg := ConfigFile.new()
+	for key in SAVED_KEYS:
+		cfg.set_value("grass", key, get(key))
+	return cfg.save(SAVED)
+
+
+func has_saved() -> bool:
+	return FileAccess.file_exists(SAVED)
+
+
+## Whether the panel shows what is saved (nothing saved: whether it shows the node's own start).
+func matches_saved() -> bool:
+	var cfg := ConfigFile.new()
+	if cfg.load(SAVED) != OK:
+		return false
+	for key in SAVED_KEYS:
+		if cfg.has_section_key("grass", key) and cfg.get_value("grass", key) != get(key):
+			return false
+	return true
+
+
+## The saved settings, before the bands are built: the look as start_preset, the rest set.
+func _load_saved() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(SAVED) != OK:
+		return
+	var n: int = int(cfg.get_value("grass", "preset", start_preset))
+	if LOOKS.PRESETS.has(n):
+		start_preset = n
+	for key in SAVED_KEYS:
+		if key != "preset" and cfg.has_section_key("grass", key):
+			set(key, cfg.get_value("grass", key))
 
 
 func _ready() -> void:
 	_room = owner if owner != null else get_parent().get_parent()
+	if not Engine.is_editor_hint():
+		_load_saved()
 	_even_to_terrain.call_deferred()
 	var noise := FastNoiseLite.new()
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
@@ -422,9 +525,22 @@ func _ready() -> void:
 	_mask_image = Image.create_empty(MASK_CELLS, MASK_CELLS, false, Image.FORMAT_RGBAF)
 	_mask_image.fill(Color(1e4, -1e4, 1e4, -1e4))
 	_mask_texture = ImageTexture.create_from_image(_mask_image)
-	var clear_image := Image.create_empty(MASK_CELLS, MASK_CELLS, false, Image.FORMAT_RGBF)
-	clear_image.fill(Color(-10.0, -10.0, -10.0))
+	var clear_image := Image.create_empty(MASK_CELLS, MASK_CELLS, false, Image.FORMAT_RGBAF)
+	clear_image.fill(Color(-10.0, -10.0, -10.0, -10.0))
 	_clearing_texture = ImageTexture.create_from_image(clear_image)
+	var path_image := Image.create_empty(MASK_CELLS, MASK_CELLS, false, Image.FORMAT_RGBAF)
+	path_image.fill(Color(-10.0, 0.0, -1.0, 0.0))
+	_path_texture = ImageTexture.create_from_image(path_image)
+	if on_hills and not Engine.is_editor_hint():
+		var got: Dictionary = Heights.load_for(_room)
+		if got.has("tex"):
+			_height_texture = got["tex"]
+		else:
+			# Made here instead, about half a second (grass_heights_4d.gd); the bake saves that.
+			var started: int = Time.get_ticks_msec()
+			_height_texture = Heights.texture_from(Heights.bake(_room))
+			heights_note = "Hill heights made at start (%d ms): bake them" % (Time.get_ticks_msec() - started)
+			push_warning("PenGrass: %s, so the grass made its hill heights itself; bake them (grass/_bake_grass_heights_runner.gd)." % String(got.get("why", "no grass heights are baked")))
 	if start_preset > 0:
 		_take(start_preset)
 	_build_bands()
@@ -773,6 +889,112 @@ func _sand_field(key: String, beyond: float) -> Dictionary:
 	return {"field": field, "w0": rec["w0"], "w1": rec["w1"], "box": [i0, i1, j0, j1]}
 
 
+## The ground's paint for anything that wants its colour at a point (the paths' soft edges): the 3D
+## texture, its layers' W's and the slab's x-z size, or {} while the ground is not painted.
+func ground_paint_info() -> Dictionary:
+	if not ground_paint or _ground_painted.is_empty() or dev_floor != null:
+		return {}
+	var m := _ground_painted[1] as TetraMaterial4D
+	if m == null or m.albedo_texture_3d == null or not m.has_meta(&"breaks"):
+		return {}
+	return {"tex": m.albedo_texture_3d, "breaks": m.get_meta(&"breaks"), "size": m.get_meta(&"size")}
+
+
+## A frame, whether or not the grass is in the tree: the pen is parked (taken out of the tree) on a trip,
+## and the mask is built over many frames from the start, so a trip in the first second found no tree here
+## (7 Oct, the range runner: "Invalid access to property or key 'process_frame' on a null instance").
+func _a_frame() -> void:
+	await (Engine.get_main_loop() as SceneTree).process_frame
+
+
+## The path type changed (9): the network makes its boxes again a frame later; the field after that.
+func _paths_changed() -> void:
+	await _a_frame()
+	await _a_frame()
+	build_path_field()
+
+
+## THE PATH FIELD (see path_inset): per mask cell, how far inside the nearest sand it is (m, > 0 inside),
+## the W of the sand there and its reach in W, from the network's sand boxes as they stand. A stretch is
+## a strip with round ends (its neighbours overlap it at the joints), a node's patch a circle; a stretch
+## climbing through W (follow) has its W read at the point along it.
+func build_path_field() -> void:
+	var started: int = Time.get_ticks_msec()
+	var net: Node = _room.get_node_or_null(path_network) if _room != null else null
+	var n: int = MASK_CELLS
+	var field := PackedFloat32Array()
+	field.resize(n * n * 4)
+	for c in n * n:
+		field[c * 4] = -10.0
+		field[c * 4 + 1] = 0.0
+		field[c * 4 + 2] = -1.0
+		field[c * 4 + 3] = 0.0
+	path_boxes = 0
+	if net != null:
+		for node in net.find_children("*", "MeshInstance4D", true, false):
+			var mi := node as MeshInstance4D
+			var nm: String = String(mi.name)
+			if not (nm.begins_with("Sand") or nm.begins_with("Pad")):
+				continue
+			var tm := mi.material_override as TetraMaterial4D
+			var sm: ShaderMaterial = tm.get_cross_section_material_3d() as ShaderMaterial if tm != null else null
+			if sm == null or sm.get_shader_parameter("box_size") == null:
+				continue
+			path_boxes += 1
+			_path_box(field, mi, sm)
+	var image := Image.create_from_data(n, n, false, Image.FORMAT_RGBAF, field.to_byte_array())
+	_path_texture.update(image)
+	path_msec = Time.get_ticks_msec() - started
+
+
+func _path_box(field: PackedFloat32Array, mi: MeshInstance4D, sm: ShaderMaterial) -> void:
+	var n: int = MASK_CELLS
+	var half: float = MASK_CELL * n * 0.5
+	var size: Vector4 = sm.get_shader_parameter("box_size")
+	var is_round: bool = float(sm.get_shader_parameter("sand_round")) > 0.5
+	var w_half: float = float(sm.get_shader_parameter("w_half"))
+	var o: Vector4 = mi.global_position
+	var b: Projection = mi.global_basis
+	var ax := Vector2(b.x.x, b.x.z)
+	var az := Vector2(b.z.x, b.z.z)
+	var ax_len: float = maxf(ax.length(), 1e-4)
+	var az_len: float = maxf(az.length(), 1e-4)
+	var ax_n: Vector2 = ax / ax_len
+	var az_n: Vector2 = az / az_len
+	var half_len: float = size.x * 0.5 * ax_len
+	var hw: float = size.z * 0.5 * az_len
+	var reach_w: float = w_half * absf(b.w.w)
+	var margin: float = hw + path_fringe + path_ragged + 1.0
+	var span: float = margin if is_round else half_len + margin
+	var i0: int = clampi(int(floor((o.x - span + half) / MASK_CELL)), 0, n - 1)
+	var i1: int = clampi(int(ceil((o.x + span + half) / MASK_CELL)), 0, n - 1)
+	var j0: int = clampi(int(floor((o.z - span + half) / MASK_CELL)), 0, n - 1)
+	var j1: int = clampi(int(ceil((o.z + span + half) / MASK_CELL)), 0, n - 1)
+	for j in range(j0, j1 + 1):
+		var z: float = -half + (float(j) + 0.5) * MASK_CELL
+		for i in range(i0, i1 + 1):
+			var x: float = -half + (float(i) + 0.5) * MASK_CELL
+			var d := Vector2(x - o.x, z - o.z)
+			var along: float = d.dot(ax_n)
+			var across: float = d.dot(az_n)
+			var inside: float
+			if is_round:
+				inside = hw - d.length()
+				along = 0.0
+			else:
+				var past: float = maxf(absf(along) - half_len, 0.0)
+				inside = hw - Vector2(past, across).length()
+				along = clampf(along, -half_len, half_len)
+			var k: int = (j * n + i) * 4
+			if inside <= field[k]:
+				continue
+			# The sand's W here: the box's middle, moved along its length (a W shear climbs with it).
+			var w_here: float = (o + b * Vector4(along / ax_len, 0.0, across / az_len, 0.0)).w
+			field[k] = inside
+			field[k + 1] = w_here
+			field[k + 2] = reach_w
+
+
 ## The name in [param names] that [param node] is part of (itself or a parent), or "".
 func _owner_in(node: Node, names: Dictionary) -> String:
 	var n: Node = node
@@ -890,6 +1112,16 @@ func _material(wind: Texture2D, band: Band, hash_seed: float) -> ShaderMaterial:
 	m.set_shader_parameter("clump_size", clump_size)
 	m.set_shader_parameter("mask", _mask_texture)
 	m.set_shader_parameter("clearing", _clearing_texture)
+	m.set_shader_parameter("path_field", _path_texture)
+	m.set_shader_parameter("height_on", 1.0 if _height_texture != null else 0.0)
+	if _height_texture != null:
+		m.set_shader_parameter("height_tex", _height_texture)
+		m.set_shader_parameter("height_w", Vector3(Heights.W0, Heights.DW, float(Heights.LAYERS)))
+		m.set_shader_parameter("height_max", height_max)
+		m.set_shader_parameter("slope_max", slope_max)
+	m.set_shader_parameter("path_inset", path_inset)
+	m.set_shader_parameter("path_fringe", path_fringe)
+	m.set_shader_parameter("path_ragged", path_ragged)
 	m.set_shader_parameter("clearing_w", _clearing_w)
 	m.set_shader_parameter("clearing_ragged", clearing_ragged)
 	m.set_shader_parameter("clearing_fringe", clearing_fringe)
@@ -1388,8 +1620,8 @@ func _find_pushers() -> void:
 ## Built once, a slice at a time, after everything is in the scene (the Lookout builds its
 ## marsh, wood and trees in its _ready). Then the grass grows in.
 func _build_mask() -> void:
-	await get_tree().process_frame
-	await get_tree().process_frame
+	await _a_frame()
+	await _a_frame()
 	var started: int = Time.get_ticks_msec()
 	var data := PackedFloat32Array()
 	data.resize(MASK_CELLS * MASK_CELLS * 4)
@@ -1404,9 +1636,11 @@ func _build_mask() -> void:
 	# The clearings' seeds: per cell and per group (the farm's w, ana, kata), how far out the
 	# clearing goes from there; and per filled name, its outline in x and z.
 	var seeds := PackedFloat32Array()
-	seeds.resize(MASK_CELLS * MASK_CELLS * 3)
+	seeds.resize(MASK_CELLS * MASK_CELLS * LANES)
 	seeds.fill(-10.0)
-	var group_w := PackedFloat32Array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+	var group_w := PackedFloat32Array()
+	group_w.resize(LANES * 2)
+	group_w.fill(0.0)
 	var outlines: Dictionary = {}
 	for mi in meshes:
 		var owner_name: String = _clearing_owner(mi)
@@ -1415,20 +1649,27 @@ func _build_mask() -> void:
 		budget += _mark_mesh(mi, data, seeds, radius, group_w, outlines, owner_name if clearing_fill.has(owner_name) else "")
 		if budget > 6000:
 			budget = 0
-			await get_tree().process_frame
+			await _a_frame()
+	# Parked meanwhile (the pen is taken out of the tree on a trip: the range, the cave), the rest waits for
+	# it to come back; the sand and the paint below ask the tree for their groups.
+	if not is_inside_tree():
+		await tree_entered
 	var clear_msec: int = Time.get_ticks_msec()
+	_clear_sand(data, seeds, group_w)
 	_build_clearings(seeds, group_w, outlines)
 	clearing_msec = Time.get_ticks_msec() - clear_msec
 	_outlines = outlines
-	# The hills and the cave hill, from the Lookout's height map at the farm's w.
-	var ground: RefCounted = GROUND.build(_room, 0.0, 3.0)
-	var half: float = MASK_CELL * MASK_CELLS * 0.5
-	for j in MASK_CELLS:
-		for i in MASK_CELLS:
-			var x: float = -half + (float(i) + 0.5) * MASK_CELL
-			var z: float = -half + (float(j) + 0.5) * MASK_CELL
-			if float(ground.call("height", x, z)) > 0.3:
-				_mark(data, i, j, -3.5, 3.5)
+	# The hills and the cave hill, from the Lookout's height map at the farm's w: bare, unless the
+	# grass stands on them (the baked heights; the shader leaves the steep and the high bare itself).
+	if _height_texture == null:
+		var ground: RefCounted = GROUND.build(_room, 0.0, 3.0)
+		var half: float = MASK_CELL * MASK_CELLS * 0.5
+		for j in MASK_CELLS:
+			for i in MASK_CELLS:
+				var x: float = -half + (float(i) + 0.5) * MASK_CELL
+				var z: float = -half + (float(j) + 0.5) * MASK_CELL
+				if float(ground.call("height", x, z)) > 0.3:
+					_mark(data, i, j, -3.5, 3.5)
 	_mask_image = Image.create_from_data(MASK_CELLS, MASK_CELLS, false, Image.FORMAT_RGBAF, data.to_byte_array())
 	_mask_texture.update(_mask_image)
 	mask_cells = 0
@@ -1439,10 +1680,55 @@ func _build_mask() -> void:
 	mask_ready = true
 	_set_visible()
 	_paint_ground()
+	build_path_field()
+	var switch: Node = _room.get_node_or_null(path_switch)
+	if switch != null and switch.has_signal("changed") and not switch.is_connected("changed", _paths_changed):
+		switch.connect("changed", _paths_changed)
+
+
+## SAND IS BARE GROUND (Ramon, 7 Oct: "the range inside should not be grass but sand"; "pen sand should
+## extend beyond the fence, and grass should start beyond that"). The units' sand shapes (the ground_sand
+## group: the range's yard, the camp's floor, the sand at Trym's house, the pen's run) were only painted,
+## and the grass grew on over them. Each now clears the grass too, as a clearing does: its edge
+## sand_inset inside the painted one, broken by the same noise, with the fringe of short trodden blades
+## outside it (the soft falloff Ramon liked at the pen and the tower), in the W lane of its middle. The
+## clearing holds only near that lane's W, so from a metre inside its edge the shape's cells are also
+## marked bare through its whole W reach (the range is as deep in W as it is wide). A shape with
+## "grass": true is painted only.
+func _clear_sand(data: PackedFloat32Array, seeds: PackedFloat32Array, group_w: PackedFloat32Array) -> void:
+	var n: int = MASK_CELLS
+	for giver in get_tree().get_nodes_in_group(&"ground_sand"):
+		if not giver.has_method("ground_sand") or not (giver as Node).is_inside_tree():
+			continue
+		for shape: Dictionary in giver.call("ground_sand"):
+			if bool(shape.get("grass", false)):
+				continue
+			var f: Dictionary = _shape_field(shape)
+			var field: PackedFloat32Array = f["field"]
+			var box: Array = f["box"]
+			var w: float = (shape["centre"] as Vector4).w
+			var g: int = _group(w)
+			var inside_cells: int = 0
+			for j in range(int(box[2]), int(box[3]) + 1):
+				for i in range(int(box[0]), int(box[1]) + 1):
+					var value: float = field[j * n + i]
+					if value <= -9.99:
+						continue
+					var s: int = (j * n + i) * LANES + g
+					seeds[s] = maxf(seeds[s], value - sand_inset)
+					if value - sand_inset > 1.0:
+						_mark(data, i, j, float(f["w0"]), float(f["w1"]))
+					if value > 0.0:
+						inside_cells += 1
+			group_w[g * 2] += w * float(inside_cells)
+			group_w[g * 2 + 1] += float(inside_cells)
 
 
 func _collect(node: Node, out: Array) -> void:
 	if node != _room and (mask_skip.has(String(node.name)) or node is CharacterBody4D):
+		return
+	# With the grass on the hills, their feet are not things standing on the ground.
+	if _height_texture != null and node is Node4D and Heights.PIECES.has(String(_room.get_path_to(node))):
 		return
 	# The mesh a node really has: the dev look may have taken it off (look/pen_look_4d.gd); its own
 	# blockouts are not the ground's business.
@@ -1474,21 +1760,21 @@ func _build_clearings(seeds: PackedFloat32Array, group_w: PackedFloat32Array, ou
 		var g: int = o[4]
 		for j in range(clampi(int(floor((o[2] + half) / MASK_CELL)), 0, n - 1), clampi(int(floor((o[3] + half) / MASK_CELL)), 0, n - 1) + 1):
 			for i in range(clampi(int(floor((o[0] + half) / MASK_CELL)), 0, n - 1), clampi(int(floor((o[1] + half) / MASK_CELL)), 0, n - 1) + 1):
-				var s: int = (j * n + i) * 3 + g
+				var s: int = (j * n + i) * LANES + g
 				seeds[s] = maxf(seeds[s], radius)
 	var reach: float = 0.0
 	for r in clearings.values():
 		reach = maxf(reach, float(r))
 	var margin: int = int(ceil((reach + 1.0) / MASK_CELL))
 	var diag: float = MASK_CELL * 1.41421
-	for g in 3:
+	for g in LANES:
 		var i0: int = n
 		var i1: int = -1
 		var j0: int = n
 		var j1: int = -1
 		for j in n:
 			for i in n:
-				if seeds[(j * n + i) * 3 + g] > -10.0:
+				if seeds[(j * n + i) * LANES + g] > -10.0:
 					i0 = mini(i0, i)
 					i1 = maxi(i1, i)
 					j0 = mini(j0, j)
@@ -1501,36 +1787,36 @@ func _build_clearings(seeds: PackedFloat32Array, group_w: PackedFloat32Array, ou
 		j1 = mini(j1 + margin, n - 1)
 		for j in range(j0, j1 + 1):
 			for i in range(i0, i1 + 1):
-				var s: int = (j * n + i) * 3 + g
+				var s: int = (j * n + i) * LANES + g
 				var v: float = seeds[s]
 				if i > i0:
-					v = maxf(v, seeds[s - 3] - MASK_CELL)
+					v = maxf(v, seeds[s - LANES] - MASK_CELL)
 				if j > j0:
-					v = maxf(v, seeds[s - n * 3] - MASK_CELL)
+					v = maxf(v, seeds[s - n * LANES] - MASK_CELL)
 					if i > i0:
-						v = maxf(v, seeds[s - n * 3 - 3] - diag)
+						v = maxf(v, seeds[s - n * LANES - LANES] - diag)
 					if i < i1:
-						v = maxf(v, seeds[s - n * 3 + 3] - diag)
+						v = maxf(v, seeds[s - n * LANES + LANES] - diag)
 				seeds[s] = v
 		for j in range(j1, j0 - 1, -1):
 			for i in range(i1, i0 - 1, -1):
-				var s: int = (j * n + i) * 3 + g
+				var s: int = (j * n + i) * LANES + g
 				var v: float = seeds[s]
 				if i < i1:
-					v = maxf(v, seeds[s + 3] - MASK_CELL)
+					v = maxf(v, seeds[s + LANES] - MASK_CELL)
 				if j < j1:
-					v = maxf(v, seeds[s + n * 3] - MASK_CELL)
+					v = maxf(v, seeds[s + n * LANES] - MASK_CELL)
 					if i < i1:
-						v = maxf(v, seeds[s + n * 3 + 3] - diag)
+						v = maxf(v, seeds[s + n * LANES + LANES] - diag)
 					if i > i0:
-						v = maxf(v, seeds[s + n * 3 - 3] - diag)
+						v = maxf(v, seeds[s + n * LANES - LANES] - diag)
 				seeds[s] = v
 	for i in seeds.size():
 		seeds[i] = maxf(seeds[i], -10.0)
-	var image := Image.create_from_data(n, n, false, Image.FORMAT_RGBF, seeds.to_byte_array())
+	var image := Image.create_from_data(n, n, false, Image.FORMAT_RGBAF, seeds.to_byte_array())
 	_clearing_texture.update(image)
-	var ws := Vector3(0.0, 8.0, -8.0)
-	for g in 3:
+	var ws := Vector4(clearing_lanes[0], clearing_lanes[1], clearing_lanes[2], clearing_lanes[3])
+	for g in LANES:
 		if group_w[g * 2 + 1] > 0.0:
 			ws[g] = group_w[g * 2] / group_w[g * 2 + 1]
 	_clearing_w = ws
@@ -1539,13 +1825,18 @@ func _build_clearings(seeds: PackedFloat32Array, group_w: PackedFloat32Array, ou
 	clearing_cells = 0
 	for j in n:
 		for i in n:
-			if seeds[(j * n + i) * 3] > 0.0 or seeds[(j * n + i) * 3 + 1] > 0.0 or seeds[(j * n + i) * 3 + 2] > 0.0:
+			var at: int = (j * n + i) * LANES
+			if seeds[at] > 0.0 or seeds[at + 1] > 0.0 or seeds[at + 2] > 0.0 or seeds[at + 3] > 0.0:
 				clearing_cells += 1
 
 
-## The group of things a w belongs to: the farm's (0), ana (1) or kata (2).
+## The lane a w belongs to (clearing_lanes): the nearest.
 func _group(w: float) -> int:
-	return 0 if absf(w) < 4.0 else (1 if w > 0.0 else 2)
+	var best: int = 0
+	for g in LANES:
+		if absf(w - clearing_lanes[g]) < absf(w - clearing_lanes[best]):
+			best = g
+	return best
 
 
 ## Every tetrahedron of [param mi] that touches the ground and stays low (a floor, a pond, the
@@ -1615,7 +1906,7 @@ func _mark_mesh(mi: MeshInstance4D, data: PackedFloat32Array, seeds: PackedFloat
 			group_w[g * 2] += mid_w
 			group_w[g * 2 + 1] += 1.0
 			for cell in covered:
-				var s: int = cell * 3 + g
+				var s: int = cell * LANES + g
 				seeds[s] = maxf(seeds[s], radius)
 			if fill != "":
 				var o: Array = outlines.get(fill, [INF, -INF, INF, -INF, g, INF, -INF])

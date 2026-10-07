@@ -1,0 +1,210 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/graph/path_graph.gd" id="1_ewhyn"]
+
+[resource]
+script = ExtResource("1_ewhyn")
+nodes = [{
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 1,
+"kind": "start",
+"pos": Vector4(24.9, 0, 19.1, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 2,
+"kind": "junction",
+"pos": Vector4(24.9, 0, 37.1, 0),
+"state": "arrival",
+"target": ""
+}, {
+"anchor": true,
+"approach": Vector2(0, -1),
+"band": 2.4,
+"frame": "rect",
+"id": 3,
+"kind": "destination",
+"pos": Vector4(24.9, 0, 40.9, 0),
+"size": 1.35,
+"state": "available",
+"target": "TrymFrame"
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 4,
+"kind": "junction",
+"pos": Vector4(7.3, 0, 37.1, 0),
+"state": "arrival",
+"target": ""
+}, {
+"anchor": true,
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "round",
+"id": 5,
+"kind": "destination",
+"pos": Vector4(7.4, 0, 30.8, 4),
+"size": 1.0,
+"state": "available",
+"target": "CaveFrame"
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 6,
+"kind": "junction",
+"pos": Vector4(-4, 0, 37.1, 0),
+"state": "arrival",
+"target": ""
+}, {
+"anchor": true,
+"approach": Vector2(1, 0),
+"band": 2.4,
+"frame": "none",
+"id": 7,
+"kind": "destination",
+"pos": Vector4(-14.2, 0, 37.1, 0),
+"size": 1.0,
+"state": "available",
+"target": "PenFrame"
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 8,
+"kind": "bend",
+"pos": Vector4(-11.1, 0, 23.1, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 9,
+"kind": "junction",
+"pos": Vector4(-12.3, 0, 2.1, 0),
+"state": "arrival",
+"target": ""
+}, {
+"anchor": true,
+"approach": Vector2(1, 0),
+"band": 2.4,
+"frame": "rect",
+"id": 10,
+"kind": "destination",
+"pos": Vector4(-19.3, 0, 2.1, 0),
+"size": 1.0,
+"state": "available",
+"target": "RangeFrame"
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 11,
+"kind": "junction",
+"pos": Vector4(-12.7, 0, -3.9, 0),
+"state": "arrival",
+"target": ""
+}, {
+"anchor": true,
+"approach": Vector2(-1, 0),
+"band": 2.4,
+"frame": "round",
+"id": 12,
+"kind": "destination",
+"pos": Vector4(6.4, 0, -4, 0),
+"size": 1.0,
+"state": "available",
+"target": "CampFrame"
+}, {
+"anchor": true,
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "round",
+"id": 13,
+"kind": "destination",
+"pos": Vector4(-18.75, 0, -27.8, 0),
+"size": 1.0,
+"state": "available",
+"target": "TowerFrame"
+}]
+edges = [{
+"band": 2.4,
+"from": 1,
+"priority": "primary",
+"to": 2,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 2,
+"priority": "primary",
+"to": 3,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 2,
+"priority": "primary",
+"to": 4,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 4,
+"priority": "primary",
+"to": 5,
+"w_mode": "follow"
+}, {
+"band": 2.4,
+"from": 4,
+"priority": "primary",
+"to": 6,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 6,
+"priority": "primary",
+"to": 7,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 6,
+"priority": "primary",
+"to": 8,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 8,
+"priority": "primary",
+"to": 9,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 9,
+"priority": "primary",
+"to": 10,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 9,
+"priority": "primary",
+"to": 11,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 11,
+"priority": "primary",
+"to": 12,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 11,
+"priority": "primary",
+"to": 13,
+"w_mode": "here"
+}]
+next_id = 14

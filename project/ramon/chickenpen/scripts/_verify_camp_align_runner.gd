@@ -51,7 +51,8 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
 	_pen = (load(PEN) as PackedScene).instantiate()
 	for node in _pen.find_children("*", "", true, false):
-		if "debug_key_enabled" in node:
+		# The cave's trip stays live: its key sat on V with the align's (7 Oct), which is what to catch.
+		if "debug_key_enabled" in node and node.name != "CaveCrossing":
 			node.set("debug_key_enabled", false)
 	root.add_child(_pen)
 	current_scene = _pen
@@ -103,6 +104,10 @@ func _run() -> void:
 	_check("V brought you to the camp's W", absf(player.global_position.w - camp.global_position.w) < 0.1, "w %.2f" % player.global_position.w)
 	_check("the slice square again", bool(rig.call("is_aligned_to", camp.global_position.w)))
 	_check("and the button gone", not bool(camp.call("can_align")) and String(camp.get("_shown")) == "")
+	# Ramon, 7 Oct: "at the campsite when i say v to align slice, i get dropped in the cave interior"
+	# (the cave's debug trip was on V too; it is F6 now).
+	var cave: Node = _pen.get_node_or_null("CaveCrossing")
+	_check("and you are still in the pen, not taken to the cave", cave == null or not bool(cave.call("is_away")))
 	rig.call("face_toward", Vector4(-1.0, 0.0, -0.1, 0.0))
 	await _wait(0.5)
 	await _shot("3_aligned")

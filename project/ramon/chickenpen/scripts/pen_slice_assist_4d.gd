@@ -84,6 +84,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		tracking = false
 	_first_offset = 0.0
 	_say("" if not tracking else "Chicken %s selected - see below." % _held.get("chicken_id"))
+	# The rig's half of locking on (the bird kept ahead of you) comes with it: both listened for
+	# T and only one ever heard it (7 Oct key audit).
+	if _rig != null and _rig.has_method("set_locked"):
+		_rig.call("set_locked", tracking)
 	get_viewport().set_input_as_handled()
 
 
@@ -95,6 +99,8 @@ func _physics_process(delta: float) -> void:
 		tracking = false
 		_held = null
 		_say("")
+		if _rig.has_method("set_locked"):
+			_rig.call("set_locked", false)
 		return
 
 	var body: Node4D = _held.get_parent() as Node4D

@@ -23,6 +23,9 @@ What changed from the plan as written:
   they are in one colour, the marsh keeps its water without the grass, animals and NPCs untouched,
   the cave interior and the cinema left alone. So each landmark has a rule (block, clay, art, or
   keep/drop parts), editable on the Look node.
+- **The switch is I, not F8:** F8 is the editor's Stop, and it ended the game when Ramon pressed it.
+- **Trym's shed is clay, not a blockout:** its walls go so you can look inside while he talks.
+- **The paths show their arrows alone** on the dev floor, no sand strips (Ramon: "clean arrows on the floor").
 - **The stone wall is clay, not a blockout:** drawn from its colliders it stood full height where
   the ruin is broken down.
 - **The lab's light was too strong** for a white floor (everything clipped to one white): the dev

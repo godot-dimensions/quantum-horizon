@@ -149,8 +149,14 @@ func _run() -> void:
 		await process_frame
 	await _frames(2)
 	_check(not bool(_look.get("dev")), "5 fifty switches end in ART")
-	worst = _same(art_state, _snapshot())
-	_check(worst == 0, "5 after fifty switches every mesh and material is back (%d off)" % worst)
+	# The ground repaints itself when anything hands it new sand (a bigger field takes some frames since
+	# layout B): its material may be a new painting, which is not the look's. Only the dev floor left
+	# on it would be.
+	_check(ground.material_override != grass.get("dev_floor") or grass.get("dev_floor") == null, "5 after fifty switches the ground is not left on the dev floor")
+	var now: Dictionary = _snapshot()
+	now.erase(ground)
+	worst = _same(art_state, now)
+	_check(worst == 0, "5 after fifty switches every mesh and material is back (%d off: %s)" % [worst, ", ".join(PackedStringArray(_differing(art_state, _snapshot()).slice(0, 6)))])
 	var blocks_left: int = _room.find_children("DevBlockout_*", "MeshInstance4D", true, false).size()
 	await _frames(2)
 	_check(_room.find_children("DevBlockout_*", "MeshInstance4D", true, false).size() == 0, "5 no blockout left in ART (%d were)" % blocks_left)

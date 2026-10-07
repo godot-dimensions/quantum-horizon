@@ -123,6 +123,14 @@ const FRAME_GAP := 1.6
 	set(v):
 		p_scale = v
 		_later()
+## EVERY STRETCH ONE WAY (6 Oct, Ramon: "remember how we can toggle cameras by pressing tab more then
+## once. we could do the same for the path types"): "drawn" (or "") lays each stretch by its own
+## w_mode; "static", "here", "follow" or "reveal" lays every stretch that way, to compare them over a
+## whole layout. The graph is not changed.
+@export_enum("drawn", "static", "here", "follow", "reveal") var w_mode_override: String = "drawn":
+	set(v):
+		w_mode_override = v
+		_later()
 
 ## THE PEN'S LOOKS (6 Oct 2026, PenLayout/PLAN_A.md phase 5): the marks (the sheet's chevrons, balls,
 ## symbols, frames and W cues) and a sand strip under them are shown separately, so a route can be
@@ -135,6 +143,14 @@ const FRAME_GAP := 1.6
 	set(v):
 		show_sand = v
 		_apply_visible()
+## THE ACTION CIRCLES ALWAYS (6 Oct, Ramon: "i want a circle indicator that rotates in front of each
+## landmark you can go to"): the destinations drawn even with the marks off (the pen's art look, sand
+## strips and no chevrons), in the sheet's colours, so a place you can go reads in either look.
+@export var show_destinations: bool = false:
+	set(v):
+		show_destinations = v
+		_apply_visible()
+		_apply_look()
 ## The sand strip's width, metres (a secondary route's is narrower); every node gets a round patch a
 ## quarter wider, so bends and joints are smooth, and a destination one `sand_patch` times wider.
 @export_range(0.3, 4.0, 0.05) var sand_width: float = 1.3:
@@ -279,6 +295,11 @@ func lib_for(slot: String) -> String:
 func sym(slot: String) -> int:
 	var id: int = Draw.sym(lib_for(slot), slot)
 	return id if id >= 0 else Draw.sym(default_library, slot)
+
+
+## How [param e] lies in W now: its own w_mode, or every stretch's ([member w_mode_override]).
+func mode_of(e: Dictionary) -> String:
+	return w_mode_override if w_mode_override in ["static", "here", "follow", "reveal"] else String(e.get("w_mode", "static"))
 
 
 ## What the validator and the builder say about the graph now.
@@ -494,7 +515,7 @@ func acceptance() -> PackedStringArray:
 		# at its start's, a "reveal" route at its end's), half a player either side.
 		var w_lo: float = minf(A.w, B.w) - half_p
 		var w_hi: float = maxf(A.w, B.w) + half_p
-		match String(e.get("w_mode", "static")):
+		match mode_of(e):
 			"here":
 				w_lo = A.w - half_p
 				w_hi = A.w + half_p
@@ -570,6 +591,8 @@ func _apply_visible() -> void:
 			continue
 		var k: String = String(key)
 		var on: bool = show_sand if (k.begins_with("Sand") or k.begins_with("Pad")) else show_marks
+		if show_destinations and _is_destination_item(k, mi):
+			on = true
 		if mi.has_meta("edge") and hidden.has(int(mi.get_meta("edge", -1))):
 			on = false
 		mi.visible = on
@@ -728,7 +751,7 @@ func art_radius(n: Dictionary) -> float:
 		"junction":
 			return Draw.sym_size(sym("C")).x * 0.5 * _u() * Spec.JUNCTION_SCALE
 		"destination":
-			return Draw.sym_size(sym("D")).x * 0.5 * _u()
+			return Draw.sym_size(sym("D")).x * 0.5 * _u() * float(n.get("size", 1.0))
 	return 0.12
 
 
@@ -765,7 +788,7 @@ func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictiona
 	if L < 0.05:
 		return
 	var dir: Vector2 = d / L
-	var mode: String = String(e.get("w_mode", "static"))
+	var mode: String = mode_of(e)
 	var band: float = float(e.get("band", 1.2))
 	var wc: float = 0.0
 	var depth: float = Spec.W_REACH * 2.0
@@ -868,7 +891,8 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 				slot = {"arrival": "D", "available": "E", "focused": "F", "completed": "G"}.get(String(n.get("state", "arrival")), "D")
 			mi = _item("Node%d" % id, Draw.NODE, used)
 			var s: int = sym(slot)
-			var scale: float = Spec.JUNCTION_SCALE if kind == "junction" else 1.0
+			# A destination may be drawn larger ("size", 6 Oct: Trym's house, "on top a larger destination circle").
+			var scale: float = (Spec.JUNCTION_SCALE if kind == "junction" else 1.0) * float(n.get("size", 1.0))
 			var sz: Vector2 = Draw.sym_size(s) * _u() * scale
 			_size(mi, Vector4(sz.x + 0.1, Spec.BOX_H_M, sz.y + 0.1, band))
 			Draw.set_param(mi, "node_sym", s)
@@ -970,7 +994,7 @@ func w_step_info(id: int) -> Array:
 	var out_w: Variant = null
 	var in_band: float = 1.2
 	for e in graph.edges:
-		var mode: String = String(e.get("w_mode", "static"))
+		var mode: String = mode_of(e)
 		if mode in ["static", "follow"]:
 			continue
 		var a: Dictionary = graph.call("node", int(e["from"]))
@@ -1019,12 +1043,21 @@ func _crossings() -> Dictionary:
 
 # -- looks ------------------------------------------------------------------------------------------
 
+## Whether item [param key] is a destination's own symbol (not its sand pad, frame or cue).
+func _is_destination_item(key: String, mi: MeshInstance4D) -> bool:
+	if not key.begins_with("Node") or graph == null or not mi.has_meta("node"):
+		return false
+	var n: Dictionary = graph.call("node", int(mi.get_meta("node")))
+	return String(n.get("kind", "")) == "destination"
+
+
 func _apply_look() -> void:
 	for key in _items:
 		var mi: MeshInstance4D = _items[key]
 		if not is_instance_valid(mi):
 			continue
-		Draw.set_param(mi, "walk", 1.0 if look == "walk" else 0.0)
+		var as_walk: bool = look == "walk" and not (show_destinations and _is_destination_item(String(key), mi))
+		Draw.set_param(mi, "walk", 1.0 if as_walk else 0.0)
 		Draw.set_param(mi, "unit_m", _u())
 		Draw.set_param(mi, "guide_w", Spec.GUIDE_W_M * p_scale)
 		Draw.set_param(mi, "under_color", under_color)
@@ -1049,13 +1082,16 @@ func _sand_in_field(mi: MeshInstance4D) -> void:
 	Draw.set_param(mi, "field_x", Vector2(bx.x, bx.z))
 	Draw.set_param(mi, "field_z", Vector2(bz.x, bz.z))
 	Draw.set_param(mi, "field_w", o.w)
+	Draw.set_param(mi, "field_wx", bx.w)
 	Draw.set_param(mi, "ground_mode", 0.0 if _ground.is_empty() else 1.0)
 	for gk in _ground:
 		Draw.set_param(mi, String(gk), _ground[gk])
 
 
 ## The ground's colours for the sand's edge: glow_area (centre x, z, full out to, gone by),
-## glow_colour, edge_colour (Vector3s, sRGB), glow_on, glow_w. An empty Dictionary: under_color.
+## glow_colour, edge_colour (Vector3s, sRGB), glow_on, glow_w. An empty Dictionary: under_color. With
+## ground_mode 2.0 and ground_tex, ground_breaks, ground_breaks_n, ground_size: the ground's own paint
+## (path_sand.gdshader says why).
 func set_ground(p: Dictionary) -> void:
 	_ground = p
 	_apply_look()

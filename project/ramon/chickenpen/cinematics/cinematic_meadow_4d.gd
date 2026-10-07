@@ -60,7 +60,8 @@ const WALK_SHOT := 6
 ## The middle of the open meadow the shots are set in: east of the pen, towards the low sun. It was
 ## (16, 2) until 6 Oct, when the pen's new layout put the cave hill just south-west of there and
 ## "The wind" was looking straight at it: now the open ground east of the pen, clear of the hill.
-@export var meadow: Vector4 = Vector4(28.0, 0.0, -8.0, 0.0)
+## Layout B (PenLayout/PLAN_B.md): the open meadow right of the tower, the one place without trees.
+@export var meadow: Vector4 = Vector4(20.0, 0.0, -21.0, 0.0)
 ## The grass's wind for the wind shot and the leaves shot, times its own.
 @export_range(1.0, 3.0, 0.05) var wind_shot_scale: float = 1.8
 @export_range(1.0, 3.0, 0.05) var leaves_shot_scale: float = 2.4

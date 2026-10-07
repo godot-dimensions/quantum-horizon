@@ -72,7 +72,9 @@ func _process(_d) -> bool:
 			_agent.call("on_caught")
 			_agent.call("on_released")
 			var host: Node4D = (_body.get_parent() as Node4D)
-			_body.position = Vector4(2.6, 0.0, -12.4, 1.4) - host.global_position
+			# Inside the pen wherever it stands (it was at (0, -11) until layout B; 7 Oct).
+			var pen: Vector4 = (_root.get_node("Pen") as Node4D).global_position
+			_body.position = pen + Vector4(2.6, 0.0, -1.4, 1.4) - host.global_position
 			_agent.call("on_landed", true)
 			_landed = _body.global_position
 			_last = _landed

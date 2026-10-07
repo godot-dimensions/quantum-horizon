@@ -72,6 +72,10 @@ static func build(size: Vector4, p: Dictionary) -> Array:
 	var material := TetraMaterial4D.new()
 	material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY
 	material.albedo_texture_3d = texture
+	# For whatever else wants the ground's colour at a point (the paths' soft edges, 7 Oct): where the
+	# layers lie along W (_w_to_uvw) and how big the slab is.
+	material.set_meta(&"breaks", PackedFloat32Array(breaks))
+	material.set_meta(&"size", Vector2(size.x, size.z))
 	return [mesh, material]
 
 

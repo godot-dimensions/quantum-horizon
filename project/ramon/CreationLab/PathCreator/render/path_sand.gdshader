@@ -71,6 +71,20 @@ uniform vec2 field_origin = vec2(0.0);
 uniform vec2 field_x = vec2(1.0, 0.0);
 uniform vec2 field_z = vec2(0.0, 1.0);
 uniform float field_w = 0.0;
+// How much the box's W climbs per metre of its own x (a stretch slanting through W, as follow makes).
+uniform float field_wx = 0.0;
+
+// THE GROUND ITSELF (ground_mode 2; 7 Oct, Ramon at the tower: "sometimes the sand doesnt flow over,
+// i recon this si tough to fix without opacity options. you're stuck with the green edge"). The soft
+// edge fades to a colour, the cross-section being opaque, and that colour was the field's green, so
+// wherever a path crossed painted sand (the tower's foot, the camp, the pen's yard) it drew a green
+// rim. Given the ground's own paint (chickenpen/grass/pen_ground_paint_4d.gd: a 3D texture over x, z
+// and W, its layers at the W's in ground_breaks), the edge fades to whatever is painted under it, sand
+// or green, and the strip runs into the sand with no edge at all.
+uniform sampler3D ground_tex : filter_linear, repeat_disable;
+uniform float ground_breaks[48];
+uniform int ground_breaks_n = 0;
+uniform vec2 ground_size = vec2(160.0, 160.0);
 
 // How far back (m, along the view) a pixel with no sand is pushed against one that is all sand.
 uniform float depth_push = 0.003;
@@ -214,6 +228,22 @@ float vnoise(float x) {
 	return mix(hash1(i), hash1(i + 1.0), u) * 2.0 - 1.0;
 }
 
+// Where W lands in the ground texture's depth (pen_ground_paint_4d.gd _w_to_uvw): break k at the
+// middle of layer k, linear between.
+float ground_w_uvw(float w) {
+	int n = ground_breaks_n;
+	for (int k = 0; k < 47; k++) {
+		if (k >= n - 1) {
+			break;
+		}
+		if (w <= ground_breaks[k + 1] + 0.0001 || k == n - 2) {
+			float f = clamp((w - ground_breaks[k]) / max(ground_breaks[k + 1] - ground_breaks[k], 0.0001), 0.0, 1.0);
+			return (float(k) + 0.5 + f) / float(n);
+		}
+	}
+	return 0.5 / float(max(n, 1));
+}
+
 float hash2(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 }
@@ -285,7 +315,11 @@ void fragment() {
 		discard;
 	}
 	vec3 ground = under_color.rgb;
-	if (ground_mode > 0.5) {
+	if (ground_mode > 1.5 && ground_breaks_n > 1) {
+		float gw = field_w + local_pos.w + field_wx * m.x;
+		vec3 guvw = vec3((fxz.x + ground_size.x * 0.5) / ground_size.x, (fxz.y + ground_size.y * 0.5) / ground_size.y, ground_w_uvw(gw));
+		ground = texture(ground_tex, guvw).rgb;
+	} else if (ground_mode > 0.5) {
 		float fade = 1.0 - smoothstep(2.0, glow_w, abs(field_w + local_pos.w));
 		float g = glow_on * fade * (1.0 - smoothstep(glow_area.z, glow_area.w, length(fxz - glow_area.xy)));
 		ground = mix(edge_colour, glow_colour, g);

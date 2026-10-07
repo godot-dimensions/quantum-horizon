@@ -7,6 +7,8 @@
 #   lab_run.sh headless <name> res://path/runner.gd [args after --]
 #   lab_run.sh windowed <name> res://path/runner.gd [args after --]
 #   lab_run.sh movie    <name> res://path/runner.gd [args]    (to smoke_test_output/video/<name>.avi)
+#   lab_run.sh movie_hd <name> res://path/runner.gd [args]    (the same at 1920 x 1080)
+#   lab_run.sh fast     <name> res://path/runner.gd [args]    (headless, fixed 60 fps: faster than real time)
 #   lab_run.sh check    <name> res://a.gd res://b.gd ...      (parse check, --check-only)
 #
 # Exit codes: 0 ran clean, 1 errors in the log, 3 Godot busy (someone else's turn).
@@ -41,10 +43,18 @@ else
 	runner="$1"; shift
 	extra=()
 	if [ "$#" -gt 0 ]; then extra=(-- "$@"); fi
-	if [ "$mode" = "movie" ]; then
+	if [ "$mode" = "movie_hd" ]; then
+		# The same at 1920 x 1080, for a film to share.
+		mkdir -p "$ROOT/project/smoke_test_output/video"
+		timeout 1800 "$EXE" --path project --windowed --resolution 1920x1080 --position 0,0 			--write-movie "$ROOT/project/smoke_test_output/video/$name.avi" --fixed-fps 30 --script "$runner" "${extra[@]}" >> "$log" 2>&1
+	elif [ "$mode" = "movie" ]; then
 		# Godot's movie writer at a fixed 30 fps (the film runners' convention), to video/<name>.avi.
 		mkdir -p "$ROOT/project/smoke_test_output/video"
 		timeout 1200 "$EXE" --path project --windowed --resolution 1280x720 --position 40,40 			--write-movie "$ROOT/project/smoke_test_output/video/$name.avi" --fixed-fps 30 			--script "$runner" "${extra[@]}" >> "$log" 2>&1
+	elif [ "$mode" = "fast" ]; then
+		# Headless at a fixed 60 fps: game time runs as fast as the machine can step it, so a
+		# runner that watches three minutes of play takes seconds. Never for timings.
+		timeout 900 "$EXE" --headless --path project --fixed-fps 60 --script "$runner" "${extra[@]}" >> "$log" 2>&1
 	elif [ "$mode" = "windowed" ]; then
 		timeout 900 "$EXE" --path project --windowed --resolution 1280x720 --position 40,40 --script "$runner" "${extra[@]}" >> "$log" 2>&1
 	else

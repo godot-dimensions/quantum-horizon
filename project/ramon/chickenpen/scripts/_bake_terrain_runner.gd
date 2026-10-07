@@ -3,7 +3,7 @@ extends SceneTree
 ## Bakes the pen's terrain and saves it, so nothing is generated when the scene opens.
 ##
 ## Headless is fine - this only builds arrays and writes files.
-## Args (after --): what=hills | cave_hill | cave | cave_far | mountains | hill_west | hill_tower | boulder_<n> | greens
+## Args (after --): what=hills | cave_hill | cave | cave_far | mountains | hill_west | hill_tower | mound_a to mound_e | boulder_<n> | greens
 ## "greens" bakes every main-green piece in the saved main green (terrain/main_green_4d.gd), as the
 ## grass panel's Rebake greens does.
 ## "mountains" bakes with the parameters on the pen's World/Hills node, as its Bake button
@@ -60,7 +60,7 @@ func _initialize() -> void:
 			b = PenHills.new().bake_shell()
 		"cave_hill":
 			b = PenCaveHill.new().bake()
-		"hill_west", "hill_tower":
+		"hill_west", "hill_tower", "mound_a", "mound_b", "mound_c", "mound_d", "mound_e":
 			b = preload("res://ramon/chickenpen/terrain/pen_round_hill_4d.gd").new(what).bake()
 		"cave":
 			b = CaveRock.new().bake()

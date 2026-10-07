@@ -128,6 +128,7 @@ signal preset_changed(index: int)
 ## you see, only moving through W changes where you are - and the locator's own rule is that
 ## a guide which does the searching for you deletes the thing it exists to teach. Locked on,
 ## the bird stays in front of you while you step through W to get to it yourself.
+## None: something else drives the lock (set_locked; the pen's slice assist owns T).
 @export var lock_key: Key = KEY_T
 ## Where to ask which chicken is nearest. The locator already answers that question, with
 ## hysteresis, from the birds that are loose - carried, penned and returned birds are not
@@ -319,7 +320,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			use_preset(preset + 1)
 			get_viewport().set_input_as_handled()
 			return
-	if event is InputEventKey and event.pressed and not event.echo 			and (event as InputEventKey).keycode == lock_key:
+	if event is InputEventKey and event.pressed and not event.echo 			and lock_key != KEY_NONE and (event as InputEventKey).keycode == lock_key:
 		_toggle_lock()
 		get_viewport().set_input_as_handled()
 		return
@@ -492,6 +493,14 @@ func _toggle_lock() -> void:
 	_lock_body = body
 	# Taking the heading cancels any trip home: the two want the same angle.
 	_homing = 0.0
+
+
+## The lock set from outside. The pen's slice assist owns T (7 Oct key audit: it and this rig both
+## listened for T, and whichever heard it first kept it, so one press never did both halves of
+## locking on), and turns this on and off with its own guidance.
+func set_locked(on: bool) -> void:
+	if on != (_lock_body != null):
+		_toggle_lock()
 
 
 func _release_lock() -> void:

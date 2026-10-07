@@ -34,33 +34,31 @@ const CHICKEN_SCENE := preload("res://ramon/chickenpen/chicken.tscn")
 ## circle rather than clustered, so learning to slice-rotate does not also mean learning
 ## to walk in one direction.
 ##
+## LAYOUT B (6 Oct 2026, PenLayout/PLAN_B.md step 17): the field south of the town wall, where the start,
+## Trym's house, the cave and the pen are.
+##
 ## The first bird is near the spawn ON PURPOSE: standing beside a chicken you cannot see
-## is a sharper first lesson than a distant one. It sits 4.4 from the start, not on top
-## of it.
+## is a sharper first lesson than a distant one. It sits 4.3 from the start, not on top of it.
 ##
-## NONE OF THEM SPAWN IN THE PEN, and none can wander in: the fence runs x -4.2 to 4.2
-## and z -14.8 to -7.2, and the nearest bird plus its whole wander radius still stops
-## short. An earlier bird was authored at z = -5.4, spawned inside the fence, and counted
-## itself on frame one.
+## NONE OF THEM SPAWN IN THE PEN, and none can wander in: the fence runs x -23.4 to -15.0 and z 33.3 to
+## 40.9, and the nearest bird plus its whole wander radius still stops short.
 ##
-## THE LAST ONE IS BEHIND TRYM'S SHED - the deepest W and the only bird a building hides,
-## so it is found by going round something rather than crossing open ground. Its wander
-## radius is the smallest here for that reason: the shed occupies x -11.7 to -8.3, and at
-## 1.4 it cannot drift inside the walls.
+## THE LAST ONE IS BEHIND TRYM'S HOUSE - the deepest W and the only bird a building hides, so it is
+## found by going round something rather than crossing open ground; its wander radius is the smallest.
 const PLACEMENTS := [
-	# w = 0: walk to them. Three quadrants, not three paces apart.
-	[4.44, -1.48, 0.0, 2.2],
-	[-9.01, -4.69, 0.0, 2.4],
-	[6.6, -20.42, 0.0, 2.4],
+	# w = 0: walk to them. Across the south field, not three paces apart.
+	[21.0, 21.0, 0.0, 2.2],
+	[12.0, 33.0, 0.0, 2.4],
+	[-9.2, 41.8, 0.0, 2.4],
 	# One slice off: the first birds that need E and Q.
-	[-3.24, 1.07, 0.9, 2.2],
-	[9.97, -6.35, -1.2, 2.4],
-	[-0.83, -20.46, 1.4, 2.4],
+	[2.0, 42.5, 0.9, 2.2],
+	[17.5, 30.5, -1.2, 2.4],
+	[-20.0, 27.6, 1.4, 2.4],
 	# Deepest W, and the long way round the back.
-	[10.14, -13.72, -1.8, 2.4],
-	[-8.49, -19.49, 2.2, 2.6],
-	# Behind the shed.
-	[-13.15, -12.15, -2.6, 1.4],
+	[-12.6, 27.7, -1.8, 2.4],
+	[-26.5, 47.8, 2.2, 2.6],
+	# Behind Trym's house.
+	[24.0, 49.6, -2.6, 1.4],
 ]
 
 @export var chicken_count: int = 9

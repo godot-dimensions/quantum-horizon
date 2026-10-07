@@ -87,6 +87,12 @@ static func bake_all(c: Color, hills: Node) -> Array:
 		"cave_hill": func() -> TerrainBake.Builder: return CaveHill.new().bake(),
 		"hill_west": func() -> TerrainBake.Builder: return RoundHill.new("hill_west").bake(),
 		"hill_tower": func() -> TerrainBake.Builder: return RoundHill.new("hill_tower").bake(),
+		# Layout B's mounds (PenLayout/PLAN_B.md step 36).
+		"mound_a": func() -> TerrainBake.Builder: return RoundHill.new("mound_a").bake(),
+		"mound_b": func() -> TerrainBake.Builder: return RoundHill.new("mound_b").bake(),
+		"mound_c": func() -> TerrainBake.Builder: return RoundHill.new("mound_c").bake(),
+		"mound_d": func() -> TerrainBake.Builder: return RoundHill.new("mound_d").bake(),
+		"mound_e": func() -> TerrainBake.Builder: return RoundHill.new("mound_e").bake(),
 	}
 	for name in pieces:
 		var t0: int = Time.get_ticks_msec()

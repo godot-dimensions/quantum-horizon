@@ -36,8 +36,10 @@ func _process(_d) -> bool:
 
 	if _dropped.is_empty():
 		_root.get_node("Player").position = Vector4(40.0, 1.3, 40.0, 0.0)
-		var spots := [Vector4(2.4, 0.0, -12.6, 0.0), Vector4(-2.2, 0.0, -9.8, 0.0),
-			Vector4(1.1, 0.0, -13.4, 0.0), Vector4(-1.6, 0.0, -11.2, 0.0)]
+		# Inside the pen wherever it stands (it was at (0, -11) until layout B; 7 Oct).
+		var pen: Vector4 = (_root.get_node("Pen") as Node4D).global_position
+		var spots := [pen + Vector4(2.4, 0.0, -1.6, 0.0), pen + Vector4(-0.2, 0.0, 1.2, 0.0),
+			pen + Vector4(1.1, 0.0, -2.4, 0.0), pen + Vector4(0.4, 0.0, -0.2, 0.0)]
 		for i in 4:
 			var agent: Node = agents[i]
 			var body: Node4D = agent.get_parent() as Node4D

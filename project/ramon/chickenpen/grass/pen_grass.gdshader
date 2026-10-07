@@ -129,10 +129,25 @@ uniform vec4 mask_rect = vec4(-60.0, -60.0, 0.5, 240.0);
 // clearing's edge broken up by two scales of noise, and a fringe outside it where the grass
 // thins and is trodden short.
 uniform sampler2D clearing : filter_linear, repeat_disable;
-uniform vec3 clearing_w = vec3(0.0, 8.0, -8.0);
+uniform vec4 clearing_w = vec4(0.0, 8.0, -2.5, 4.0);
 uniform float clearing_w_reach = 1.5;
 uniform float clearing_ragged = 1.2;
 uniform float clearing_fringe = 1.5;
+// The paths (pen_grass_4d.gd path_inset): per mask cell, how far inside the nearest stretch's sand
+// (r, m), the sand's W there (g) and its reach in W (b); blades stop path_inset inside the sand's edge
+// and thin to trodden ones over path_fringe outside it, only near the sand's W.
+uniform sampler2D path_field : filter_linear, repeat_disable;
+// THE GROUND'S HEIGHT (pen_grass_4d.gd, grass_heights_4d.gd; 7 Oct, "grass on hill is a different
+// green"): over the mask's x-z, in layers along W (height_w: the first layer's W, the step, how many),
+// so blades stand on the hills too; none higher than height_max or on ground steeper than slope_max.
+uniform sampler3D height_tex : filter_linear, repeat_disable;
+uniform float height_on = 0.0;
+uniform vec3 height_w = vec3(-8.0, 1.0, 19.0);
+uniform float height_max = 9.0;
+uniform float slope_max = 0.9;
+uniform float path_inset = 0.2;
+uniform float path_fringe = 0.6;
+uniform float path_ragged = 0.1;
 
 uniform sampler2D wind_noise : filter_linear, repeat_enable;
 uniform vec2 wind_dir = vec2(0.82, 0.57);
@@ -285,6 +300,15 @@ vec3 clump(vec2 p, float band) {
 	return out_value;
 }
 
+float ground_h(vec2 xz, float w) {
+	if (height_on < 0.5) {
+		return 0.0;
+	}
+	vec2 uv = (xz - mask_rect.xy) / (mask_rect.z * mask_rect.w);
+	float lw = clamp((w - height_w.x) / height_w.y, 0.0, height_w.z - 1.0);
+	return max(texture(height_tex, vec3(uv, (lw + 0.5) / height_w.z)).r, 0.0);
+}
+
 void vertex() {
 	mat4 vb = mat4(frame[0], frame[1], frame[2], frame[3]);
 	vec4 view_origin = frame[4];
@@ -306,14 +330,23 @@ void vertex() {
 	vec2 cell = tiles[INSTANCE_ID] * float(n) + vec2(float(ix), float(iz));
 	vec2 root_xz = (cell + hash22(cell + seed)) * spacing;
 	// The w where the camera's slice crosses this spot of ground, and the layers round it.
-	vec3 dp = vec3(root_xz.x - camera_world.x, -camera_world.y, root_xz.y - camera_world.z);
+	// (At the ground's height there: on a hill the slice crosses the ground at another W.)
+	vec3 dp = vec3(root_xz.x - camera_world.x, ground_h(root_xz, camera_world.w) - camera_world.y, root_xz.y - camera_world.z);
 	float nw = slice_normal.w;
 	float w_slice = abs(nw) > 0.25 ? camera_world.w - dot(slice_normal.xyz, dp) / nw : camera_world.w;
 	float layer = floor(w_slice / layer_spacing) + float(k) - float(layers / 2);
 	float root_w = (layer + hash13(vec3(cell, layer))) * layer_spacing;
-	vec4 root = vec4(root_xz.x, 0.0, root_xz.y, root_w);
+	float root_y = ground_h(root_xz, root_w);
+	vec4 root = vec4(root_xz.x, root_y, root_xz.y, root_w);
 
 	float alive = 1.0;
+	if (height_on > 0.5) {
+		float hx = ground_h(root_xz + vec2(0.5, 0.0), root_w);
+		float hz = ground_h(root_xz + vec2(0.0, 0.5), root_w);
+		if (root_y > height_max || length(vec2(hx - root_y, hz - root_y)) * 2.0 > slope_max) {
+			alive = 0.0;
+		}
+	}
 	if (abs(root.x) > ground_extent || abs(root.z) > ground_extent || abs(root.w) > ground_extent) {
 		alive = 0.0;
 	}
@@ -328,8 +361,9 @@ void vertex() {
 	float trodden = 1.0;
 	vec2 cuv = (root_xz - mask_rect.xy) / (mask_rect.z * mask_rect.w);
 	if (cuv.x > 0.0 && cuv.y > 0.0 && cuv.x < 1.0 && cuv.y < 1.0) {
-		vec3 inside = texture(clearing, cuv).rgb - smoothstep(vec3(clearing_w_reach), vec3(clearing_w_reach + 1.0), abs(vec3(root_w) - clearing_w)) * 8.0;
-		float inward = max(max(inside.r, inside.g), inside.b);
+		// Four W lanes, one a channel (pen_grass_4d.gd clearing_lanes).
+		vec4 inside = texture(clearing, cuv) - smoothstep(vec4(clearing_w_reach), vec4(clearing_w_reach + 1.0), abs(vec4(root_w) - clearing_w)) * 8.0;
+		float inward = max(max(inside.r, inside.g), max(inside.b, inside.a));
 		if (inward > -clearing_fringe - clearing_ragged * 1.3) {
 			inward += (texture(wind_noise, root_xz / 6.0 + vec2(0.21, 0.83)).r - 0.5) * 2.0 * clearing_ragged
 					+ (texture(wind_noise, root_xz / 1.7 + vec2(0.57, 0.19)).r - 0.5) * 0.7 * clearing_ragged;
@@ -338,6 +372,19 @@ void vertex() {
 				alive = 0.0;
 			}
 			trodden = mix(0.4, 1.0, smoothstep(0.0, 1.0, out_by));
+		}
+	}
+	// The paths.
+	if (cuv.x > 0.0 && cuv.y > 0.0 && cuv.x < 1.0 && cuv.y < 1.0) {
+		vec4 pf = texture(path_field, cuv);
+		float pin = pf.r - path_inset - smoothstep(pf.b, pf.b + 0.6, abs(root_w - pf.g)) * 8.0;
+		if (pin > -path_fringe - path_ragged) {
+			pin += (texture(wind_noise, root_xz / 2.3 + vec2(0.41, 0.13)).r - 0.5) * 2.0 * path_ragged;
+			float out_p = clamp(-pin / path_fringe, 0.0, 1.0);
+			if (pin > 0.0 || hash12(cell + vec2(5.1, 2.7) + seed) > mix(0.45, 1.0, out_p)) {
+				alive = 0.0;
+			}
+			trodden = min(trodden, mix(0.5, 1.0, smoothstep(0.0, 1.0, out_p)));
 		}
 	}
 	// THE GAP GROWS WITH DISTANCE, blade by blade: this band's grid is as fine as the gap at its

@@ -49,6 +49,9 @@ enum Style { CLASSIC, PEAKS }
 ## The foot in the pen's even green (EVEN_MESH), or in the old field green (PEAKS_MESH).
 @export var even_green: bool = true: set = _set_even
 
+## The valley's size: where the hills start, metres from this node (50 in layout A, 62 in layout B,
+## PenLayout/PLAN_B.md step 8). The node stands at the valley's centre. Rebake after changing it.
+@export_range(30.0, 120.0, 0.5, "suffix:m") var valley_radius: float = 50.0
 @export_group("Ground")
 ## Cells along each edge of the cube-sphere's six faces. More is finer and costs video
 ## memory: every tetrahedron is about 1.25 KB whether it is on screen or not.
@@ -153,6 +156,7 @@ func bake_even(c: Color) -> String:
 func _bake_one(path: String, foot: Color, take_path: bool = false) -> String:
 	var started: int = Time.get_ticks_msec()
 	var recipe = PenPeaks.new(self)
+	recipe.R_IN = valley_radius
 	recipe.field_colour = foot
 	var b: TerrainBake.Builder = recipe.bake_shell()
 	var made: ArrayTetraMesh4D = TerrainBake.mesh_of(b, false)

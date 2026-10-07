@@ -309,12 +309,11 @@ func _process(delta: float) -> bool:
 			_check("the chickens are the same ones",
 				_root.get_node("Chickens").get_child_count() > 0,
 				"%d still in the scene" % _root.get_node("Chickens").get_child_count())
-			_check("the player is put down in front of the door, not in it",
-				(_root.get_node("Player") as Node4D).global_position.z
-					> _arch.global_position.z + 1.0,
-				"back at z %.1f, door at z %.1f"
-					% [(_root.get_node("Player") as Node4D).global_position.z,
-						_arch.global_position.z])
+			# In front along the house's own facing (layout B turned it round, 6 Oct: in front is -z now).
+			var facing: Vector4 = (_root.get_node("World/TrymCabin") as Node4D).global_basis.z.normalized()
+			var out_by: float = ((_root.get_node("Player") as Node4D).global_position - _arch.global_position).dot(facing)
+			_check("the player is put down in front of the door, not in it", out_by > 1.0,
+				"%.1f m out of the door along the house's facing" % out_by)
 			_check("and the door can be walked again",
 				not bool(_arch.get("_used")), "rearm() ran over the tree")
 			# THE SAME WAIT AS THE FIRST HOMECOMING. He is put down over several frames,

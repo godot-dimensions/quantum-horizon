@@ -146,12 +146,12 @@ const SETS := {
 	# The ground's greens (Ramon, 6 Oct: the painted ground "a different color green than the source
 	# ground, and the green of the start of the mountains"): out to the hills three ways, painted and not.
 	"greens": [
-		{"name": "east_paint", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0},
-		{"name": "south_paint", "at": Vector4(0.0, 1.2, 22.0, 0), "yaw": 180.0, "pitch": 1.0, "distance": 4.0},
+		{"name": "eastB_paint", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0},
+		{"name": "eastA_paint", "at": Vector4(0.0, 1.2, 22.0, 0), "yaw": 180.0, "pitch": 1.0, "distance": 4.0},
 		{"name": "west_paint", "at": Vector4(-26.0, 1.2, 12.0, 0), "yaw": 90.0, "pitch": 1.0, "distance": 4.0},
 		{"name": "pen_paint", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0},
-		{"name": "east_source", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0, "set": {"World/Grass": {"ground_paint": false}}},
-		{"name": "south_source", "at": Vector4(0.0, 1.2, 22.0, 0), "yaw": 180.0, "pitch": 1.0, "distance": 4.0},
+		{"name": "eastB_source", "at": Vector4(25.0, 1.2, 15.0, 0), "yaw": -90.0, "pitch": 1.0, "distance": 4.0, "set": {"World/Grass": {"ground_paint": false}}},
+		{"name": "eastA_source", "at": Vector4(0.0, 1.2, 22.0, 0), "yaw": 180.0, "pitch": 1.0, "distance": 4.0},
 		{"name": "west_source", "at": Vector4(-26.0, 1.2, 12.0, 0), "yaw": 90.0, "pitch": 1.0, "distance": 4.0},
 		{"name": "pen_source", "at": Vector4(-4.0, 1.2, 4.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 5.0},
 	],
@@ -226,6 +226,117 @@ const SETS := {
 	"topmap": [
 		{"name": "map", "top": Vector4(-2, 0, 8, 0), "size": 96.0, "paths": {"reveal": false},
 			"set": {"UI/GrassPanel": {"process_mode": Node.PROCESS_MODE_DISABLED}}, "hide": ["UI/GrassPanel", "Player/StateLabel"]},
+	],
+	# The range down its yard, flat, turned 45 degrees and a quarter into W, and from above (Ramon, 6 Oct:
+	# "shooting range doesnt slice well. you used the fence tech?"): tag=before / tag=after.
+	"range4d": [
+		{"name": "flat", "at": Vector4(-17.0, 1.2, 2.4, 0), "yaw": 90.0, "pitch": 10.0, "distance": 6.0},
+		{"name": "turned45", "at": Vector4(-17.0, 1.2, 2.4, 0), "yaw": 90.0, "pitch": 10.0, "distance": 6.0, "tilt": Vector2(45.0, 0.0)},
+		{"name": "turned90", "at": Vector4(-17.0, 1.2, 2.4, 0), "yaw": 90.0, "pitch": 10.0, "distance": 6.0, "tilt": Vector2(90.0, 0.0)},
+		{"name": "w15", "at": Vector4(-17.0, 1.2, 2.4, 1.5), "yaw": 90.0, "pitch": 10.0, "distance": 6.0},
+		{"name": "close_boards", "at": Vector4(-26.0, 1.2, 2.4, 0), "yaw": 90.0, "pitch": 4.0, "distance": 4.0},
+		{"name": "close_boards_turned", "at": Vector4(-26.0, 1.2, 2.4, 0), "yaw": 90.0, "pitch": 4.0, "distance": 4.0, "tilt": Vector2(90.0, 0.0)},
+		{"name": "top", "top": Vector4(-27.0, 0, 2.4, 0.0), "size": 18.0},
+	],
+	# The detailed oak up on the Lookout rock, and the light ones below (Ramon, 6 Oct: "move the detailed
+	# oak tree to the top of the lookout rock"). The rock's plateau is at y 13.65 over (-16, -36).
+	"oaktop": [
+		{"name": "rock", "at": Vector4(-6.0, 1.2, -20.0, 0), "yaw": 34.0, "pitch": 14.0, "distance": 10.0},
+		{"name": "rock_far", "at": Vector4(0.0, 1.2, -4.0, 0), "yaw": 30.0, "pitch": 8.0, "distance": 8.0},
+		{"name": "plateau", "at": Vector4(-14.0, 14.9, -32.0, 0), "yaw": 210.0, "pitch": -6.0, "distance": 5.0},
+		{"name": "shed_oaks", "at": Vector4(-22.0, 1.2, 31.0, 0), "yaw": 180.0, "pitch": 6.0, "distance": 7.0},
+	],
+	# Layout B, round 2 (PenLayout/PLAN_B_ROUND2.md; Ramon's notes of 7 Oct): one frame per note, taken
+	# tag=before and tag=after, in both looks (PEN_LOOK=art / dev).
+	"round2": [
+		{"name": "01_pen_sand", "at": Vector4(-10.5, 1.2, 37.1, 0), "yaw": 90.0, "pitch": -20.0, "distance": 7.0},
+		{"name": "02_pen_top", "top": Vector4(-19.2, 0, 37.1, 0), "size": 22.0},
+		{"name": "03_range_rings", "at": Vector4(-26.0, 1.2, 2.4, 0), "yaw": 90.0, "pitch": 4.0, "distance": 3.0},
+		{"name": "04_range_yard", "at": Vector4(-16.0, 1.2, 2.4, 0), "yaw": 90.0, "pitch": -18.0, "distance": 6.0},
+		{"name": "05_range_top", "top": Vector4(-24.0, 0, 2.6, 0), "size": 22.0},
+		{"name": "06_camp_path", "at": Vector4(6.0, 1.2, -4.0, -2.5), "yaw": -90.0, "pitch": -20.0, "distance": 6.0},
+		{"name": "07_camp_top", "top": Vector4(13.0, 0, -4.0, -2.5), "size": 22.0},
+		{"name": "08_tower_sand", "at": Vector4(-11.0, 1.2, -27.0, 0), "yaw": 30.0, "pitch": -25.0, "distance": 6.0},
+		{"name": "09_tower_top", "top": Vector4(-15.0, 0, -32.0, 0), "size": 22.0},
+		{"name": "10_cave_mouth", "at": Vector4(7.4, 1.2, 34.0, 4.0), "yaw": 0.0, "pitch": -12.0, "distance": 6.0},
+		{"name": "11_cave_top", "top": Vector4(7.5, 0, 28.0, 4.0), "size": 22.0},
+		{"name": "12_hills_west", "at": Vector4(-22.0, 1.2, 20.0, 0), "yaw": 90.0, "pitch": 2.0, "distance": 7.0},
+		{"name": "13_mounds", "at": Vector4(26.0, 1.2, -2.0, 0), "yaw": 0.0, "pitch": 0.0, "distance": 7.0},
+		{"name": "14_mithra", "at": Vector4(-7.5, 1.2, -2.0, 0), "yaw": 180.0, "pitch": -6.0, "distance": 6.0},
+		{"name": "15_professor", "at": Vector4(3.6, 1.2, 38.0, 0), "yaw": 0.0, "pitch": -4.0, "distance": 4.0},
+		{"name": "16_gate", "at": Vector4(-11.6, 1.2, 20.0, 0), "yaw": 0.0, "pitch": -2.0, "distance": 6.0},
+		{"name": "17_trees", "at": Vector4(0.0, 1.2, 40.0, 0), "yaw": 180.0, "pitch": 0.0, "distance": 6.0},
+		{"name": "18_tower_oak", "at": Vector4(-6.0, 1.2, -20.0, 0), "yaw": 34.0, "pitch": 14.0, "distance": 10.0},
+		{"name": "19_balloon", "at": Vector4(-14.0, 1.2, -18.0, 0), "yaw": 25.0, "pitch": 6.0, "distance": 8.0},
+		{"name": "20_grass_edge", "at": Vector4(20.0, 1.2, 40.0, 0), "yaw": 0.0, "pitch": -16.0, "distance": 5.0},
+	],
+	# The pen house by the fence tech (7 Oct: "ramake penhouse with the fence set where possible. but make it look
+	# like the original house"; pen_coop_4d.gd fence_walls): the coop at (-22.3, 37.1), its door east. Old:
+	# pre=Pen/Coop:fence_walls=false.
+	"coop": [
+		{"name": "door", "at": Vector4(-18.0, 1.2, 37.1, 0), "yaw": 90.0, "pitch": -10.0, "distance": 4.0, "hide": ["Player/Avatar"]},
+		{"name": "side", "at": Vector4(-21.0, 1.2, 33.0, 0), "yaw": 30.0, "pitch": -8.0, "distance": 4.0, "hide": ["Player/Avatar"]},
+		{"name": "turn20", "at": Vector4(-18.0, 1.2, 37.1, 0), "yaw": 90.0, "pitch": -10.0, "distance": 4.0, "tilt": Vector2(20.0, 0.0), "hide": ["Player/Avatar"]},
+		{"name": "turn45", "at": Vector4(-18.0, 1.2, 37.1, 0), "yaw": 90.0, "pitch": -10.0, "distance": 4.0, "tilt": Vector2(45.0, 0.0), "hide": ["Player/Avatar"]},
+		{"name": "turn90", "at": Vector4(-18.0, 1.2, 37.1, 0), "yaw": 90.0, "pitch": -10.0, "distance": 4.0, "tilt": Vector2(90.0, 0.0), "hide": ["Player/Avatar"]},
+		{"name": "w1", "at": Vector4(-18.0, 1.2, 37.1, 1.0), "yaw": 90.0, "pitch": -10.0, "distance": 4.0, "hide": ["Player/Avatar"]},
+		{"name": "top", "top": Vector4(-21.0, 0, 37.1, 0), "size": 9.0},
+		{"name": "close", "at": Vector4(-19.4, 1.2, 37.1, 0), "yaw": 90.0, "pitch": -6.0, "distance": 1.6, "hide": ["Player/Avatar"]},
+		{"name": "close_corner", "at": Vector4(-19.6, 1.2, 35.6, 0), "yaw": 60.0, "pitch": -6.0, "distance": 1.6, "hide": ["Player/Avatar"]},
+	],
+	# Volume view (Ramon, 7 Oct: "dont forget to use volume view and take screenshots, dont just rely on code"):
+	# the coop, the planting with its W layers, the range and the tower, projected (the whole 4D shape seen
+	# at once) and combined (the slice inside its volume).
+	"volume": [
+		{"name": "coop_projected", "at": Vector4(-18.0, 1.2, 37.1, 0), "yaw": 90.0, "pitch": -10.0, "distance": 4.0, "engine": "Projected", "hide": ["Player/Avatar"]},
+		{"name": "coop_combined", "at": Vector4(-18.0, 1.2, 37.1, 0), "yaw": 90.0, "pitch": -10.0, "distance": 4.0, "engine": "Combined", "hide": ["Player/Avatar"]},
+		{"name": "trees_projected", "at": Vector4(14.0, 1.2, 2.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0, "engine": "Projected"},
+		{"name": "trees_combined", "at": Vector4(14.0, 1.2, 2.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0, "engine": "Combined"},
+		{"name": "trees_top_projected", "top": Vector4(28.0, 0, 6.0, 0), "size": 40.0, "engine": "Projected"},
+		{"name": "range_projected", "at": Vector4(-16.0, 1.2, 2.4, 0), "yaw": 90.0, "pitch": -12.0, "distance": 6.0, "engine": "Projected"},
+		{"name": "range_combined", "at": Vector4(-16.0, 1.2, 2.4, 0), "yaw": 90.0, "pitch": -12.0, "distance": 6.0, "engine": "Combined"},
+		{"name": "tower_projected", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0, "engine": "Projected"},
+		{"name": "tower_combined", "at": Vector4(-7.0, 1.2, -23.0, 0), "yaw": 34.0, "pitch": 9.0, "distance": 7.0, "engine": "Combined"},
+	],
+	# The planting through W (7 Oct: "more trees have to be placed in the W ... now they just dissapear instant
+	# when you rotate the slice"; scripts/pen_trees_4d.gd): three wooded spots, flat and the slice turned.
+	"wturn": [
+		{"name": "eastA_00", "at": Vector4(14.0, 1.2, 2.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0},
+		{"name": "eastA_08", "at": Vector4(14.0, 1.2, 2.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0, "tilt": Vector2(8.0, 0.0)},
+		{"name": "eastA_16", "at": Vector4(14.0, 1.2, 2.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0, "tilt": Vector2(16.0, 0.0)},
+		{"name": "eastA_30", "at": Vector4(14.0, 1.2, 2.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0, "tilt": Vector2(30.0, 0.0)},
+		{"name": "west_00", "at": Vector4(-22.0, 1.2, -12.0, 0), "yaw": 100.0, "pitch": 2.0, "distance": 6.0},
+		{"name": "west_08", "at": Vector4(-22.0, 1.2, -12.0, 0), "yaw": 100.0, "pitch": 2.0, "distance": 6.0, "tilt": Vector2(8.0, 0.0)},
+		{"name": "west_16", "at": Vector4(-22.0, 1.2, -12.0, 0), "yaw": 100.0, "pitch": 2.0, "distance": 6.0, "tilt": Vector2(16.0, 0.0)},
+		{"name": "west_30", "at": Vector4(-22.0, 1.2, -12.0, 0), "yaw": 100.0, "pitch": 2.0, "distance": 6.0, "tilt": Vector2(30.0, 0.0)},
+		{"name": "eastB_00", "at": Vector4(16.0, 1.2, 24.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0},
+		{"name": "eastB_08", "at": Vector4(16.0, 1.2, 24.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0, "tilt": Vector2(8.0, 0.0)},
+		{"name": "eastB_16", "at": Vector4(16.0, 1.2, 24.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0, "tilt": Vector2(16.0, 0.0)},
+		{"name": "eastB_30", "at": Vector4(16.0, 1.2, 24.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0, "tilt": Vector2(30.0, 0.0)},
+	],
+	# One oak alone, the same shot in both looks (7 Oct: "SCALE BLUE TREEBLOCKS a bit larger upward so they
+	# match the artlook more"): OakL03 (lite3, 5.7 m) and OakL20 (lite3, 5.8 m), from 12 m.
+	"treecmp": [
+		{"name": "oakl03", "at": Vector4(-19.0, 1.2, -6.84, 0), "yaw": 90.0, "pitch": 4.0, "distance": 3.5, "hide": ["Player/Avatar"]},
+		{"name": "oakl20", "at": Vector4(-25.34, 1.2, 43.0, 0), "yaw": 180.0, "pitch": 4.0, "distance": 3.5, "hide": ["Player/Avatar"]},
+	],
+	# Layout B along Ramon's route (PenLayout/PLAN_B.md step 40): start, Trym, the cave, the pen, the gate
+	# both ways, the range, the camp, the tower road, the meadow and a tree belt.
+	"layoutb": [
+		{"name": "01_start", "at": Vector4(24.9, 1.2, 19.5, 0), "yaw": 180.0, "pitch": -10.0, "distance": 7.0},
+		{"name": "02_trym", "at": Vector4(24.9, 1.2, 35.5, 0), "yaw": 180.0, "pitch": -8.0, "distance": 7.0},
+		{"name": "03_cave", "at": Vector4(7.3, 1.2, 39.0, 0), "yaw": 0.0, "pitch": -6.0, "distance": 8.0},
+		{"name": "03b_cave_door", "at": Vector4(7.4, 1.2, 33.0, 4.0), "yaw": 0.0, "pitch": -4.0, "distance": 6.0},
+		{"name": "04_pen", "at": Vector4(-8.0, 1.2, 37.1, 0), "yaw": 90.0, "pitch": -12.0, "distance": 8.0},
+		{"name": "05_gate_south", "at": Vector4(-11.0, 1.2, 22.0, 0), "yaw": 0.0, "pitch": -2.0, "distance": 7.0},
+		{"name": "06_gate_north", "at": Vector4(-12.0, 1.2, 4.0, 0), "yaw": 180.0, "pitch": -2.0, "distance": 7.0},
+		{"name": "07_range", "at": Vector4(-15.0, 1.2, 2.1, 0), "yaw": 90.0, "pitch": -6.0, "distance": 7.0},
+		{"name": "08_camp", "at": Vector4(0.0, 1.2, -4.0, 0), "yaw": -90.0, "pitch": -8.0, "distance": 7.0},
+		{"name": "09_tower_road", "at": Vector4(-14.0, 1.2, -10.0, 0), "yaw": 15.0, "pitch": 6.0, "distance": 8.0},
+		{"name": "10_meadow", "at": Vector4(-10.0, 1.2, -26.0, 0), "yaw": -70.0, "pitch": 6.0, "distance": 6.0},
+		{"name": "11_west_belt", "at": Vector4(-22.0, 1.2, -12.0, 0), "yaw": 100.0, "pitch": 2.0, "distance": 7.0},
+		{"name": "12_south_belt", "at": Vector4(0.0, 1.2, 40.0, 0), "yaw": 180.0, "pitch": 0.0, "distance": 6.0},
+		{"name": "13_east_trees", "at": Vector4(16.0, 1.2, 24.0, 0), "yaw": -90.0, "pitch": 4.0, "distance": 5.0},
 	],
 	# The big oak and the light one beside it (Ramon, 6 Oct: "put an oak next to it, heavily optimised").
 	"oakpen": [
@@ -452,10 +563,10 @@ const SETS := {
 		{"name": "front_w8", "at": Vector4(7.5, 1.2, 37.0, 8.0), "yaw": 0.0, "pitch": -2.0, "distance": 5.0},
 		{"name": "near_w4", "at": Vector4(9.5, 1.2, 31.0, 4.0), "yaw": -15.0, "pitch": 6.0, "distance": 4.0},
 		{"name": "tunnel_w4", "at": Vector4(7.5, 1.2, 25.0, 4.0), "yaw": 0.0, "pitch": 0.0, "distance": 2.0},
-		{"name": "east_w4", "at": Vector4(28.0, 1.2, 15.0, 4.0), "yaw": 90.0, "pitch": -2.0, "distance": 5.0},
+		{"name": "eastB_w4", "at": Vector4(28.0, 1.2, 15.0, 4.0), "yaw": 90.0, "pitch": -2.0, "distance": 5.0},
 		{"name": "west_w4", "at": Vector4(-12.0, 1.2, 15.0, 4.0), "yaw": -90.0, "pitch": -2.0, "distance": 5.0},
 		{"name": "back_w4", "at": Vector4(8.0, 1.2, -4.0, 4.0), "yaw": 180.0, "pitch": -2.0, "distance": 5.0},
-		{"name": "east_w0", "at": Vector4(28.0, 1.2, 15.0, 0.0), "yaw": 90.0, "pitch": -2.0, "distance": 5.0},
+		{"name": "eastB_w0", "at": Vector4(28.0, 1.2, 15.0, 0.0), "yaw": 90.0, "pitch": -2.0, "distance": 5.0},
 		{"name": "top_w4", "top": Vector4(8, 0, 15, 4.0), "size": 40.0},
 		{"name": "top_w0", "top": Vector4(8, 0, 15, 0.0), "size": 40.0},
 		{"name": "front_combined", "at": Vector4(7.5, 1.2, 37.0, 4.0), "yaw": 0.0, "pitch": -2.0, "distance": 5.0, "engine": "Combined"},
@@ -538,8 +649,23 @@ func _run() -> void:
 			var helper := Node.new()
 			helper.set_script(load(a.substr(7)))
 			_room.add_child(helper)
+	# pre=<node path>:<property>=<value>: set before the scene starts (a value as GDScript reads it), e.g.
+	# pre=World/Trees:echoes=false for the planting without its W layers.
+	for a in args:
+		if a.begins_with("pre="):
+			var spec: String = a.substr(4)
+			var target: Node = _room.get_node_or_null(NodePath(spec.get_slice(":", 0)))
+			var assign: String = spec.get_slice(":", 1)
+			if target != null:
+				target.set(assign.get_slice("=", 0), str_to_var(assign.get_slice("=", 1)))
+				print("PRE %s" % spec)
 	root.add_child(_room)
 	current_scene = _room
+	# Nobody's typing reaches the frames (input_guard.gd).
+	var guard := Node.new()
+	guard.name = "InputGuard"
+	guard.set_script(load("res://ramon/PenLayout/scripts/input_guard.gd"))
+	root.add_child(guard)
 	await _frames(60)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var player := _room.get_node("Player") as Node4D
@@ -691,6 +817,9 @@ func _hud(on: bool) -> void:
 	if ui == null:
 		return
 	for c in ui.get_children():
+		# The grass and paths panels show themselves again every frame while on the farm: paused too.
+		if String(c.name) in ["GrassPanel", "PathsPanel"]:
+			c.process_mode = Node.PROCESS_MODE_INHERIT if on else Node.PROCESS_MODE_DISABLED
 		if c is CanvasItem:
 			(c as CanvasItem).visible = on
 		elif c is CanvasLayer:

@@ -2,8 +2,13 @@ extends Control
 
 ## The grass panel: a see-through block of buttons on the HUD, one per look in
 ## pen_grass_looks.gd; click one (Esc first, to have the mouse) or press O for the next. Under
-## them, the ground: the pen's own or painted (the glow and the sandy yard; Shift+O). Made by the Grass
-## node (pen_grass_4d.gd, show_panel), so no scene has to carry it.
+## them, the ground: the pen's own or painted (the sandy yard; Shift+O). Made by the Grass node
+## (pen_grass_4d.gd, show_panel), so no scene has to carry it.
+##
+## 7 OCT (Ramon's notes after layout B): the Centre falloff button and Ctrl+O are gone with the glow
+## ("we dont need it anymore"); the Paths rows have their own window (scripts/pen_paths_panel_4d.gd);
+## and Save at the foot keeps the look, darkness, wind, leaves, flowers, ground and even green
+## (pen_grass_4d.gd save_settings), which until then were lost at every restart.
 ##
 ## O, NOT G: G is the project's carry_pig action (Nike); it was G for a night by mistake.
 ##
@@ -33,13 +38,15 @@ var at_height: float = 0.5
 
 var _buttons: Array[Button] = []
 var _ground_buttons: Array[Button] = []
-var _glow_button: Button
 var _even_button: Button
 var _green_box: VBoxContainer
 var _look_box: VBoxContainer
 var _look_label: Label
 var _look_buttons: Array[Button] = []
 var _look_node: Node
+var _save_button: Button
+var _save_note: Label
+var _save_check: float = 0.0
 var _swatch: ColorPickerButton
 var _rebake_button: Button
 var _green_note: Label
@@ -106,9 +113,6 @@ func _ready() -> void:
 		b.set_meta("painted", painted)
 		b.pressed.connect(_set_ground.bind(painted))
 		_ground_buttons.append(b)
-	# The centre glow alone, on or off, the sand staying (Ctrl+O).
-	_glow_button = _button("Centre falloff   Ctrl+O")
-	_glow_button.pressed.connect(_toggle_glow)
 	# Darkness, a test for every look (3 Oct: "a darkness toggle slider so i can test and tell
 	# you later which number to pick"): the number is what to tell Claude.
 	_main_green_rows()
@@ -129,6 +133,7 @@ func _ready() -> void:
 	_wind_slider.value = float(grass.get("wind_scale")) if grass != null else 1.0
 	_wind_slider.value_changed.connect(_on_wind)
 	_on_wind(_wind_slider.value)
+	_save_rows()
 	if grass != null and grass.has_signal("preset_changed"):
 		grass.connect("preset_changed", _on_changed)
 	if grass != null and grass.has_signal("ground_changed"):
@@ -194,6 +199,46 @@ func _find_look() -> void:
 func _on_look(dev: bool) -> void:
 	for b in _look_buttons:
 		_paint(b, bool(b.get_meta("dev")) == dev)
+
+
+## SAVE (Ramon, 7 Oct: "the greenery controls, and the rebaking options. does that get saved? or not. if
+## not make a save button"): Rebake greens always saved the main green; this keeps the rest. Lit while
+## the panel shows something other than what is saved. Shown with the grass off too.
+func _save_rows() -> void:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 5)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.set_meta(&"always", true)
+	_box.add_child(box)
+	_save_button = _button("Save settings", box)
+	_save_button.pressed.connect(_save)
+	_save_note = _label("", Color(1.0, 1.0, 1.0, 0.45), box)
+	_note_saved()
+	# The grass on the hills stands on baked heights (grass/grass_heights_4d.gd): said here when they
+	# are missing or the hills have moved since.
+	var hills: String = String(grass.get("heights_note")) if grass != null and grass.get("heights_note") != null else ""
+	if hills != "":
+		_label(hills + "  (grass/_bake_grass_heights_runner.gd)", Color(1.0, 0.82, 0.55, 0.7), box)
+
+
+func _save() -> void:
+	if grass == null or not grass.has_method("save_settings"):
+		return
+	var err: int = int(grass.call("save_settings"))
+	_note_saved()
+	if err != OK:
+		_save_note.text = "Not saved: %s" % error_string(err)
+
+
+func _note_saved() -> void:
+	if _save_button == null or grass == null or not grass.has_method("matches_saved"):
+		return
+	var same: bool = bool(grass.call("matches_saved"))
+	_paint(_save_button, not same)
+	if not bool(grass.call("has_saved")):
+		_save_note.text = "Nothing saved yet"
+	else:
+		_save_note.text = "Saved, the pen opens so" if same else "Changed: Save keeps it"
 
 
 ## MAIN GREEN (6 Oct, Ramon: "make a color picker in the UI, so i can change all green together, and
@@ -319,7 +364,7 @@ func _style(fill: Color, border: Color, corner: int) -> StyleBoxFlat:
 	return s
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	# Only on the farm (3 Oct: "the grass and its menu should only correspond to the pen scene"):
 	# away in the cave the farm is asleep and the grass hidden, and so is this. (The theatre's
 	# crossing hides the HUD itself, and puts it back.)
@@ -331,6 +376,10 @@ func _process(_delta: float) -> void:
 	_pick_now()
 	if _look_box != null:
 		_find_look()
+	_save_check -= delta
+	if _save_check <= 0.0:
+		_save_check = 0.5
+		_note_saved()
 	var view: Vector2 = get_viewport_rect().size
 	var back: Control = get_child(0) as Control
 	size = back.get_combined_minimum_size()
@@ -425,14 +474,8 @@ func _on_enabled(on: bool) -> void:
 				(row as CanvasItem).visible = on
 
 
-func _toggle_glow() -> void:
-	if grass != null:
-		grass.set("ground_glow", not bool(grass.get("ground_glow")))
-
-
-func _on_glow(on: bool) -> void:
-	if _glow_button != null:
-		_paint(_glow_button, on)
+## The even green's button, lit as it stands (the grass sends glow_changed when it changes).
+func _on_glow(_on: bool) -> void:
 	if _even_button != null and grass != null:
 		_paint(_even_button, bool(grass.get("even_green")))
 
@@ -473,8 +516,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_toggle_even()
 		get_viewport().set_input_as_handled()
 	elif (event as InputEventKey).ctrl_pressed:
-		_toggle_glow()
-		get_viewport().set_input_as_handled()
+		# Was the centre glow's (retired 7 Oct); left doing nothing rather than turning the look.
+		return
 	elif (event as InputEventKey).shift_pressed:
 		_set_ground(not bool(grass.get("ground_paint")))
 		get_viewport().set_input_as_handled()

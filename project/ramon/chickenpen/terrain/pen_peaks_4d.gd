@@ -29,11 +29,12 @@ extends RefCounted
 
 const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd")
 
-## Where the ground leaves the field, in metres from the pen's centre - as in the first
-## version, so the join is the same.
-const R_IN := 50.0
-## Layers every bake has: the join with the field and the far edge.
-const NEAR_LAYERS := [50.0, 58.0, 70.0, 90.0]
+## Where the ground leaves the field, in metres from the valley's centre: 50 in layout A, 62 in
+## layout B (PenLayout/PLAN_B.md step 8: "the collision ring to get a bit bigger to make more space"),
+## set by the mountains node (pen_mountains_4d.gd valley_radius).
+var R_IN: float = 50.0
+## Layers every bake has, from the join with the field out (the first ones counted from R_IN).
+const NEAR_STEPS := [0.0, 8.0, 20.0, 40.0]
 const FAR_EDGE := 600.0
 ## Layers closer than this are merged.
 const MIN_LAYER_GAP := 7.0
@@ -121,7 +122,7 @@ static func _cells(seed_: int, reading: int) -> FastNoiseLite:
 ## The shell's radial layers: the near ones, each band's crest and either side of it, and
 ## the far edge, sorted, with any two closer than MIN_LAYER_GAP merged.
 func radii() -> PackedFloat32Array:
-	var all: Array = NEAR_LAYERS.duplicate()
+	var all: Array = NEAR_STEPS.map(func(s: float) -> float: return R_IN + s)
 	for band in bands:
 		for r in [band["distance"] - band["depth"], band["distance"], band["distance"] + band["depth"]]:
 			if r > R_IN and r < FAR_EDGE:

@@ -87,13 +87,16 @@ static func on_screen(p: Vector2, size: Vector2, screen: Vector2) -> Vector2:
 ## as its square, near enough to choose by).
 static func covered(r: Rect2, taken: Array) -> float:
 	var total: float = 0.0
+	# abs(): with no window (a headless runner) panels measure negative, and Rect2 complains on
+	# every call, which filled a three-minute test's log with 600,000 lines.
+	r = r.abs()
 	for t in taken:
 		var other: Rect2
 		if t is Rect2:
-			other = t
+			other = (t as Rect2).abs()
 		else:
 			var c: Vector3 = t
-			other = Rect2(c.x - c.z, c.y - c.z, c.z * 2.0, c.z * 2.0)
+			other = Rect2(c.x - c.z, c.y - c.z, c.z * 2.0, c.z * 2.0).abs()
 		var cut: Rect2 = r.intersection(other)
 		total += maxf(cut.size.x, 0.0) * maxf(cut.size.y, 0.0)
 	return total

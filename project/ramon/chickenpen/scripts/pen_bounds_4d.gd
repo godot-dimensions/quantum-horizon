@@ -1,7 +1,7 @@
 extends Node
 
-## Keeps people on the field: nobody walks further than [member radius] from the pen's
-## centre in (x, z, w), in any direction, including along W.
+## Keeps people on the field: nobody walks further than [member radius] from the valley's
+## centre ([member centre], x and z, at W 0) in (x, z, w), in any direction, including along W.
 ##
 ## WHY NOT A WALL. The hills around the pen are for looking at. Physics here is bounding
 ## boxes only (hub_demo_lessons.md), so a slope cannot be stood on, and a ring of box walls
@@ -15,7 +15,9 @@ extends Node
 @export var bodies: Array[NodePath] = [NodePath("../../Player"), NodePath("../../Mithra")]
 ## The hills' foot is at 50 m and they clear the field by 58; this leaves the orbit camera
 ## room behind the player before it would reach a slope.
-@export_range(10.0, 60.0, 0.5) var radius: float = 46.0
+@export_range(10.0, 80.0, 0.5) var radius: float = 46.0
+## The valley's centre, x and z (layout B moved it 6 m south with the hills: PenLayout/PLAN_B.md step 7).
+@export var centre: Vector2 = Vector2.ZERO
 
 var _bodies: Array[Node4D] = []
 
@@ -30,13 +32,13 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	for b in _bodies:
 		var p: Vector4 = b.global_position
-		var flat := Vector3(p.x, p.z, p.w)
+		var flat := Vector3(p.x - centre.x, p.z - centre.y, p.w)
 		var r: float = flat.length()
 		if r <= radius:
 			continue
 		var out: Vector3 = flat / r
 		flat = out * radius
-		b.global_position = Vector4(flat.x, p.y, flat.y, flat.z)
+		b.global_position = Vector4(flat.x + centre.x, p.y, flat.y + centre.y, flat.z)
 		if b is CharacterBody4D:
 			var body := b as CharacterBody4D
 			var v: Vector4 = body.linear_velocity

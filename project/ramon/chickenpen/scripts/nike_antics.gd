@@ -97,7 +97,7 @@ enum State { WALK, ROOT, GOING_DOWN, LYING, GETTING_UP, HOP }
 ## Places he keeps out of, each [Vector2 (x, z) in the world, radius]: he will not set off toward one,
 ## and if a walk brings him to its edge he stops and turns away (6 Oct, Ramon: "nike is walking over the
 ## bonfire area, no good"; the camp's ring at (20, -2)).
-@export var keep_out: Array = [[Vector2(20.0, -2.0), 8.4]]
+@export var keep_out: Array = [[Vector2(15.8, -3.8), 8.4]]
 
 @export_group("Dinner")
 ## The troughs. When one goes up he walks over and eats at it.

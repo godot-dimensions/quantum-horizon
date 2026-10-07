@@ -41,6 +41,7 @@ signal ride_finished
 
 const RIG := preload("res://ramon/chickenpen/scripts/loft_rig_4d.gd")
 const BALL := preload("res://ramon/chickenpen/scripts/loft_ball_4d.gd")
+const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
 
 ## The ride: [seconds, position of the basket floor (x, y, z, w)]. Wren's line for the
 ## moment, if any, is in RADIO. The marsh is at w +8, west of the tower (ana_marsh_4d.gd).
@@ -84,11 +85,19 @@ const DRAWN_PEN := Vector4(23.5, 0.0, 19.0, 0.0)
 ## the farm (the pen at 30 s, the starlings at 50 s), none again by the fork.
 const PEN_BEND_IN := Vector2(10.0, 26.0)
 const PEN_BEND_OUT := Vector2(44.0, 64.0)
+## WHERE THE MARSH WAS WHEN THE RIDE WAS DRAWN, from the mooring (the site's MarshSpot at (-14, 12) and
+## MooringSpot at (-14, 4)). Layout B moved the marsh 36 m east within the site (6 Oct), and the ride went
+## on flying to the old spot, 41 m off it (7 Oct, lookout/_verify_site_runner.gd). So the ana leg bends
+## toward wherever the marsh is, as the farm's stretch bends toward the pen: none until the fork is
+## behind, all of it over the marsh, none again by the way home. Kata's wood has not moved.
+const DRAWN_MARSH := Vector4(0.0, 0.0, 8.0, 0.0)
+const MARSH_BEND_IN := Vector2(76.0, 100.0)
+const MARSH_BEND_OUT := Vector2(134.0, 154.0)
 
-## A range of reds and nothing else (Ramon, 6 Oct: "change wrens baloon to a range of red, no other
-## colors"): deep, bright, crimson and brick bands, close enough to read as one red balloon.
-@export var envelope_colours: Array[Color] = [Color(0.58, 0.09, 0.07), Color(0.78, 0.16, 0.10), Color(0.50, 0.06, 0.09),
-	Color(0.70, 0.21, 0.12), Color(0.64, 0.11, 0.08), Color(0.46, 0.07, 0.06)]
+## Desaturated light browns, close enough to read as one balloon (Ramon, 6 Oct, layout B: "make the
+## balloon desaturated light brown, so it doesnt standout too much"; before it, "a range of red").
+@export var envelope_colours: Array[Color] = [Color(0.66, 0.58, 0.47), Color(0.73, 0.65, 0.53), Color(0.60, 0.53, 0.43),
+	Color(0.69, 0.61, 0.50), Color(0.64, 0.56, 0.46), Color(0.57, 0.50, 0.41)]
 @export var wicker: Color = Color(0.62, 0.47, 0.28)
 ## Whether it is up and ready by the tower, or not here at all yet.
 @export var ready_now: bool = false
@@ -130,6 +139,7 @@ var _burner_sound: AudioStreamPlayer
 var _said: int = 0
 var _hurry: float = 0.0
 var _t: float = 0.0
+var _dev_look: bool = false
 
 
 func _ready() -> void:
@@ -140,6 +150,81 @@ func _ready() -> void:
 	_inflate = 1.0 if ready_now else 0.0
 	visible = ready_now
 	_apply_inflation()
+	_follow_look.call_deferred()
+
+
+## BLUE IN THE DEV LOOK (Ramon, 7 Oct: "wrens baloon should be blue in dev mode"). The Look leaves the
+## balloon alone, as it leaves every character and vehicle (look/pen_blockouts_4d.gd CHARACTER): the
+## envelope is a lofted skin coloured by its rings, and the Look's one shared material would not
+## survive it. So the balloon follows the switch itself: every part in the Look's landmark blue, lighter
+## or darker as the part was in the art, the envelope's bands rebuilt in blues; and back. Repainted in
+## place, never rebuilt, so it can switch mid-ride. The flame keeps its fire.
+func _follow_look() -> void:
+	var look: Node = Look.current
+	if look == null or not is_instance_valid(look):
+		return
+	# Laid or lifted, not chosen: the art is held in the cinema, the cave and before a save (7 Oct, the
+	# look test's check 8 found the balloon still blue there).
+	if not look.is_connected("applied_changed", _on_look):
+		look.connect("applied_changed", _on_look)
+	_on_look(bool(look.get("_applied")))
+
+
+func _on_look(dev: bool) -> void:
+	if dev == _dev_look:
+		return
+	_dev_look = dev
+	var look: Node = Look.current
+	var blue: Color = look.get("landmark_colour") if look != null and is_instance_valid(look) else Color(0.13, 0.40, 0.86)
+	var skin: Node = _envelope.get_node_or_null("Skin") if _envelope != null else null
+	for node in find_children("*", "MeshInstance4D", true, false):
+		var mi := node as MeshInstance4D
+		if mi == skin or mi.get_parent() == skin or String(mi.name).begins_with("Flame"):
+			continue
+		var m := mi.material_override as TetraMaterial4D
+		if m == null:
+			continue
+		if not mi.has_meta(&"art_colour"):
+			mi.set_meta(&"art_colour", m.albedo_color)
+		var art: Color = mi.get_meta(&"art_colour")
+		m.albedo_color = _in_blue(blue, art) if dev else art
+	if skin != null and skin.has_method("build"):
+		# The envelope's art mesh is kept and put back as it was, the same object: the dev look's own test
+		# checks that switching back leaves every mesh exactly as it was (look/_verify_look_runner.gd). The
+		# blue one is built once and kept too.
+		# (Its colours are a ramp texture on its material, loft_rig_4d.gd: kept and put back with the mesh.)
+		var mi := skin as MeshInstance4D
+		var mat: Material4D = mi.material_override
+		if not skin.has_meta(&"art_mesh"):
+			skin.set_meta(&"art_mesh", mi.mesh)
+			skin.set_meta(&"art_ramp", mat.get("albedo_texture_3d") if mat != null else null)
+		if not dev:
+			mi.mesh = skin.get_meta(&"art_mesh")
+			if mat != null:
+				mat.set("albedo_texture_3d", skin.get_meta(&"art_ramp"))
+		elif skin.has_meta(&"dev_mesh"):
+			mi.mesh = skin.get_meta(&"dev_mesh")
+			if mat != null:
+				mat.set("albedo_texture_3d", skin.get_meta(&"dev_ramp"))
+		else:
+			for ball in skin.get_children():
+				if not ("color" in ball):
+					continue
+				if not ball.has_meta(&"art_colour"):
+					ball.set_meta(&"art_colour", ball.get("color"))
+				ball.set("color", _in_blue(blue, ball.get_meta(&"art_colour")))
+			skin.call("build", false)
+			skin.set_meta(&"dev_mesh", mi.mesh)
+			skin.set_meta(&"dev_ramp", mat.get("albedo_texture_3d") if mat != null else null)
+			for ball in skin.get_children():
+				if ball.has_meta(&"art_colour"):
+					ball.set("color", ball.get_meta(&"art_colour"))
+
+
+## [param blue], as light or dark as [param art] is: a pale part a pale blue, a dark one deep.
+static func _in_blue(blue: Color, art: Color) -> Color:
+	var l: float = art.get_luminance()
+	return blue.darkened(clampf(0.42 - l, 0.0, 0.45)).lightened(clampf(l - 0.5, 0.0, 0.35))
 
 
 ## Up by the tower or gone. [param instant] skips the inflating, for a journal that was
@@ -425,7 +510,10 @@ func _ride(delta: float) -> void:
 		lift = move_toward(lift, lift_min if allowed > 0.0 else 0.0, sink_rate * delta * ride_speed * (1.0 if allowed > 0.0 else 3.0))
 	var t_now: float = minf(ride_time, end)
 	var bend: float = smoothstep(PEN_BEND_IN.x, PEN_BEND_IN.y, t_now) * (1.0 - smoothstep(PEN_BEND_OUT.x, PEN_BEND_OUT.y, t_now))
-	var on_rail: Vector4 = _moor + ride_basis * (_path(t_now) + _pen_shift() * bend)
+	var marsh_bend: float = smoothstep(MARSH_BEND_IN.x, MARSH_BEND_IN.y, t_now) * (1.0 - smoothstep(MARSH_BEND_OUT.x, MARSH_BEND_OUT.y, t_now))
+	if not forked or branch < 0.0:
+		marsh_bend = 0.0
+	var on_rail: Vector4 = _moor + ride_basis * (_path(t_now) + _pen_shift() * bend + _marsh_shift() * marsh_bend)
 	var floor_y: float = on_rail.y
 	var ground: RefCounted = lookout.get("ground")
 	if ground != null:
@@ -456,6 +544,17 @@ func _pen_shift() -> Vector4:
 	var moor: Vector4 = host.global_position + host.global_basis * _moor
 	var rel: Vector4 = (host.global_basis * ride_basis).inverse() * (pen.global_position - moor)
 	return Vector4(rel.x - DRAWN_PEN.x, 0.0, rel.z - DRAWN_PEN.z, 0.0)
+
+
+## How far the marsh is from where the ride was drawn to find it, in the ride's frame, on the ground.
+func _marsh_shift() -> Vector4:
+	var marsh: Node4D = lookout.get("marsh") as Node4D if lookout != null else null
+	var host: Node4D = get_parent() as Node4D
+	if marsh == null or host == null:
+		return Vector4.ZERO
+	var moor: Vector4 = host.global_position + host.global_basis * _moor
+	var rel: Vector4 = (host.global_basis * ride_basis).inverse() * (marsh.global_position - moor)
+	return Vector4(rel.x - DRAWN_MARSH.x, 0.0, rel.z - DRAWN_MARSH.z, 0.0)
 
 
 ## Catmull-Rom through the ride's points, so it drifts rather than turning corners.

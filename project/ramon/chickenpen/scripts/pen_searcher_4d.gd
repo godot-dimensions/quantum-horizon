@@ -32,6 +32,10 @@ extends CharacterBody4D
 @export_range(0.5, 12.0, 0.1) var pause_max: float = 3.0
 ## How close counts as arrived. Loose, or she creeps the last few centimetres.
 @export_range(0.1, 2.0, 0.05) var arrive_within: float = 0.6
+## Room she keeps from anything solid when she picks a spot (her body plus a hand).
+@export_range(0.2, 2.0, 0.05, "suffix:m") var clearance: float = 0.7
+## How long she may walk without getting closer before she gives that spot up.
+@export_range(0.3, 4.0, 0.1, "suffix:s") var give_up_after: float = 0.9
 
 @export_group("Talking")
 @export_range(1.0, 12.0, 0.5) var speak_within: float = 4.0
@@ -47,6 +51,11 @@ var _facing: float = PI
 var _pause: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _said: String = ""
+## The closest she has been to the spot she is walking to, and how long since she got closer.
+var _best: float = INF
+var _no_progress: float = 0.0
+## The way back from the last spot she could not reach; she looks that way next.
+var _away := Vector2.ZERO
 
 
 ## Set while she is being talked to. Gravity and the floor keep working; only her
@@ -100,13 +109,28 @@ func _think(delta: float) -> void:
 		linear_velocity.x = move_toward(linear_velocity.x, 0.0, walk_speed * 6.0 * delta)
 		linear_velocity.z = move_toward(linear_velocity.z, 0.0, walk_speed * 6.0 * delta)
 		if _pause <= 0.0:
-			_choose()
+			_choose(_away)
+			_away = Vector2.ZERO
 		return
 
 	var to: Vector4 = _target - position
-	if Vector2(to.x, to.z).length() <= arrive_within:
+	var left: float = Vector2(to.x, to.z).length()
+	if left <= arrive_within:
 		_pause = _rng.randf_range(pause_min, pause_max)
 		return
+	# STUCK AGAINST SOMETHING (Ramon, 7 Oct: "mirtha is crying against the wall ... and not walking").
+	# A spot behind the town wall, a bush or the cat's rocks can never be reached, and with nothing
+	# to notice it she pressed into it for good. Not getting closer for a moment is how she notices:
+	# she stops, looks about, and then tries somewhere the other way.
+	if left < _best - 0.05:
+		_best = left
+		_no_progress = 0.0
+	else:
+		_no_progress += delta
+		if _no_progress >= give_up_after:
+			_away = -Vector2(to.x, to.z).normalized()
+			_pause = _rng.randf_range(pause_min, pause_max) * 0.5
+			return
 
 	var wish: Vector4 = Vector4(to.x, 0.0, to.z, 0.0).normalized()
 	linear_velocity.x = move_toward(linear_velocity.x, wish.x * walk_speed, walk_speed * 4.0 * delta)
@@ -117,10 +141,48 @@ func _think(delta: float) -> void:
 
 ## Somewhere else within her patch. Never her own W - she is looking on this slice, which
 ## is the joke: the watch is not on it.
-func _choose() -> void:
-	var angle: float = _rng.randf_range(0.0, TAU)
-	var span: float = _rng.randf_range(roam_radius * 0.3, roam_radius)
-	_target = _home + Vector4(cos(angle) * span, 0.0, sin(angle) * span, 0.0)
+##
+## ONLY WHERE SHE CAN WALK STRAIGHT TO (7 Oct). Her patch takes in the town wall, two bushes, two
+## oaks and the cat's rock pile, so a spot is tried with a ray at knee height from her to it, and
+## kept only if nothing solid lies before it and [member clearance] past it. Given [param away]
+## (the way back from a spot she could not reach), she looks only in that half. If twelve tries
+## all fail she stays put and looks about again.
+func _choose(away: Vector2 = Vector2.ZERO) -> void:
+	_best = INF
+	_no_progress = 0.0
+	for i in 12:
+		var angle: float = _rng.randf_range(0.0, TAU)
+		var span: float = _rng.randf_range(roam_radius * 0.3, roam_radius)
+		var spot: Vector4 = _home + Vector4(cos(angle) * span, 0.0, sin(angle) * span, 0.0)
+		var step := Vector2(spot.x - position.x, spot.z - position.z)
+		if step.length() < arrive_within * 2.0:
+			continue
+		if away != Vector2.ZERO and step.normalized().dot(away) < 0.2:
+			continue
+		if _blocked(step):
+			continue
+		_target = Vector4(spot.x, position.y, spot.z, position.w)
+		return
+	_target = position
+	_pause = _rng.randf_range(pause_min, pause_max)
+
+
+## Whether something solid stands between her and [param step] away (x, z), or within
+## [member clearance] past it.
+func _blocked(step: Vector2) -> bool:
+	if not is_inside_tree():
+		return false
+	var dir := Vector4(step.x, 0.0, step.y, 0.0).normalized()
+	var params := RaycastParameters4D.new()
+	params.global_ray_origin = global_position + Vector4(0.0, 0.5, 0.0, 0.0)
+	params.global_ray_direction = dir
+	params.max_distance = step.length() + clearance
+	var skip: Array[Node4D] = [self]
+	if _player != null:
+		skip.append(_player)
+	params.set_exclude_nodes(skip)
+	var hit: Dictionary = PhysicsServer4D.raycast_physics_objects(params)
+	return bool(hit.get("hit", false))
 
 
 func _apply_facing() -> void:
