@@ -97,6 +97,20 @@ the HUD sizes, and the flock's CPU checks (headless only). Brought up to date: t
 birds where the pen is, not at layout A's spot), the crossing (in front of Trym's door along the house's
 facing), the professor (the wizard), the range (the Quantum Range), T (pressed for real).
 
+## The camp's path and V (7 Oct, after the W tools)
+
+Ramon, seeing the paths coloured in the editor's volume view: "why is the path to the campsite not follow? its
+lower no?", "that also means placing the campsite at the landing spot of the path", and "v should only happen
+when you almost got it all in slice but not quite ... v at 80 is also fine".
+- The camp's last stretch is a follow path from the junction (W 0) down to the camp's W (2.5 kata), landing
+  at its sand; its destination and ring (CampFrame) moved from the farm's W to the camp's (`CAMP_W` in
+  `_make_pen_paths_b_runner.gd`, pen_b.tres regenerated). From the farm's slice nothing of the camp shows now,
+  not even its ring; only its sand painted on the shared ground does.
+- V comes up only when 80% or more of the camp is in your slice but not all of it
+  (`pen_research_camp_4d.gd` `shown_share()`, `align_share`); before, any slice through its middle brought it,
+  a strip of it. `_verify_camp_align_runner.gd` passes (a steep turn showing 61%: no V; a small one showing
+  88%: V), and so does the journey (23 checks).
+
 ## Open
 
 - The range in W, and Ramon's W tools (a W exploder for trees, a W optimiser for landmarks): next, from

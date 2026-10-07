@@ -21,10 +21,12 @@ extends Node4D
 ## facing the fire; the lantern on its post; crates and a barrel by the right tent, the log pile, the
 ## chopping block with the axe in it; field stones round the edge; grass.
 ##
-## ALIGN TO SLICE (Ramon's button). The camp stands off the farm's slice (2.5 kata in the pen). When
-## your slice is turned so that it passes through the camp (roughly half of it showing), "V  Align to
-## slice" comes up over it; V brings your slice square to the camp's W (the orbit rig's align_to, the
-## same move the marsh's V makes), so the whole camp is there.
+## ALIGN TO SLICE (Ramon's button). The camp stands off the farm's slice (2.5 kata in the pen): from the
+## farm's own slice none of it shows, and its path follows down through W to it. When your slice shows
+## most of the camp but not all of it (Ramon, 7 Oct: "v should only happen when you almost got it all in
+## slice but not quite"; align_share), "V  Align to slice" comes up over it; V brings your slice square
+## to the camp's W (the orbit rig's align_to, the same move the marsh's V makes), so the whole camp is
+## there. (It came up before as soon as the slice crossed the camp's middle, half of it or a strip.)
 ##
 ## The fire's flames flicker and light the camp (as the camp before this one did). Built when it
 ## loads (and in the editor). NO class_name (engine_gotchas.md).
@@ -65,10 +67,13 @@ const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd"
 @export_group("Align to slice")
 @export var player_path: NodePath = NodePath("../../Player")
 @export var align_key: Key = KEY_V
-## How near (x, z) the prompt is offered, and how much of the camp's W depth the slice must cut for
-## it to count as showing.
+## How near (x, z) the prompt is offered.
 @export_range(4.0, 40.0, 0.5, "suffix:m") var align_reach: float = 24.0
-@export_range(0.1, 3.0, 0.05, "suffix:m") var visible_half_w: float = 1.0
+## How much of the camp must already be in your slice for V to come up: this share of its ground or more, but
+## not all of it (shown_share(); Ramon, 7 Oct: "you get v at 80 is also fine").
+@export_range(0.3, 0.95, 0.05) var align_share: float = 0.8
+## How far round the fire the share is measured (the camp's ground and tents).
+@export_range(2.0, 10.0, 0.5, "suffix:m") var share_radius: float = 6.0
 
 ## Measured (metres from the fire ring's middle on the ground).
 const FIRE_R := 0.9
@@ -565,6 +570,10 @@ func _enter_tree() -> void:
 ## Where the player's slice crosses the camp's (x, z): the W it is at there. The slice is the
 ## camera's: every point p with (p - eye) . n = 0, n the camera's fourth axis.
 func slice_w_here() -> float:
+	return _slice_w_at(global_position.x, global_position.z)
+
+
+func _slice_w_at(x: float, z: float) -> float:
 	var cam := _camera()
 	if cam == null:
 		return INF
@@ -573,10 +582,30 @@ func slice_w_here() -> float:
 		return INF
 	var e: Vector4 = cam.global_position
 	var c: Vector4 = global_position
-	return e.w - (n.x * (c.x - e.x) + n.y * (c.y + 1.0 - e.y) + n.z * (c.z - e.z)) / n.w
+	return e.w - (n.x * (x - e.x) + n.y * (c.y + 1.0 - e.y) + n.z * (z - e.z)) / n.w
 
 
-## Whether the camp is partly in your slice now and not already square to it: what brings the button.
+## How much of the camp your slice shows now, 0 to 1: its ground within share_radius of the fire, sampled every
+## 1.5 m, where the slice passes within the props' half depth (prop_w) of the camp's W.
+func shown_share() -> float:
+	var c: Vector4 = global_position
+	var half: float = prop_w * 0.5
+	var hit: int = 0
+	var total: int = 0
+	var steps: int = int(share_radius / 1.5)
+	for i in range(-steps, steps + 1):
+		for j in range(-steps, steps + 1):
+			var dx: float = float(i) * 1.5
+			var dz: float = float(j) * 1.5
+			if dx * dx + dz * dz > share_radius * share_radius:
+				continue
+			total += 1
+			if absf(_slice_w_at(c.x + dx, c.z + dz) - c.w) <= half:
+				hit += 1
+	return float(hit) / float(maxi(total, 1))
+
+
+## Whether the camp is almost all in your slice now but not quite: what brings the button.
 func can_align() -> bool:
 	if _player == null or not _player.is_inside_tree() or not _player.is_visible_in_tree() or _player.get("input_enabled") == false:
 		return false
@@ -586,8 +615,8 @@ func can_align() -> bool:
 	var rig: Node = _player.get_node_or_null("CameraRig")
 	if rig == null or not rig.has_method("align_to") or bool(rig.call("is_aligned_to", global_position.w)):
 		return false
-	var off: float = absf(slice_w_here() - global_position.w)
-	return off < visible_half_w and absf(_player.global_position.w - global_position.w) > 0.3
+	var share: float = shown_share()
+	return share >= align_share and share < 1.0
 
 
 func align() -> void:

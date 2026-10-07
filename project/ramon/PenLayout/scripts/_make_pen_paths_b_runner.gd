@@ -28,6 +28,11 @@ const BAND := 2.4
 ## The main line's z, and the start's line's x (his strokes were ruled).
 const MAIN_Z := 37.1
 const START_X := 24.9
+## The camp's W (World/EggCamp in chickenpen/playable_world.tscn, 2.5 m kata). Its last stretch follows down to it
+## (Ramon, 7 Oct: "why is the path to the campsite not follow? its lower no?" and "that also means placing the
+## campsite at the landing spot of the path"): the route lands at the camp's sand at the camp's own W, its ring
+## (CampFrame) there too. V's align to slice still comes up once the camp is half in view.
+const CAMP_W := -2.5
 
 
 func _initialize() -> void:
@@ -63,11 +68,12 @@ func _initialize() -> void:
 	e.call(bend, j_range)
 	var range_d: int = dest.call(-19.3, 2.1, 0.0, "RangeFrame", "rect", Vector2(1, 0))
 	e.call(j_range, range_d)
-	# The camp, east, its circle at the sand's edge; the tower straight on.
+	# The camp, east, its circle at the sand's edge, the stretch following down to the camp's W; the tower
+	# straight on.
 	var j_camp: int = n.call("junction", -12.7, -3.9)
 	e.call(j_range, j_camp)
-	var camp: int = dest.call(6.4, -4.0, 0.0, "CampFrame", "round", Vector2(-1, 0))
-	e.call(j_camp, camp)
+	var camp: int = dest.call(6.4, -4.0, CAMP_W, "CampFrame", "round", Vector2(-1, 0))
+	e.call(j_camp, camp, "follow")
 	var tower: int = dest.call(-18.75, -27.8, 0.0, "TowerFrame", "round", Vector2(0, 1))
 	e.call(j_camp, tower)
 	var notes: PackedStringArray = g.call("validate")

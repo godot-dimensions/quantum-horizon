@@ -118,7 +118,7 @@ nodes = [{
 "frame": "round",
 "id": 12,
 "kind": "destination",
-"pos": Vector4(6.4, 0, -4, 0),
+"pos": Vector4(6.4, 0, -4, -2.5),
 "size": 1.0,
 "state": "available",
 "target": "CampFrame"
@@ -199,7 +199,7 @@ edges = [{
 "from": 11,
 "priority": "primary",
 "to": 12,
-"w_mode": "here"
+"w_mode": "follow"
 }, {
 "band": 2.4,
 "from": 11,

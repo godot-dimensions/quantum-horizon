@@ -2569,13 +2569,12 @@ metadata/what = "A hill beside the watchtower, east of it so the balloon keeps t
 [node name="EggCamp" parent="World" instance=ExtResource("unit_camp")]
 position = Vector4(15.8, 0, -3.8, -2.5)
 ground_patch = false
-metadata/what = "The researchers' camp in the meadow's middle, 2.5 m kata: easter egg 1, the bag of azoth by the left bench. Built to Ramon's sheet (units/camp, PenLayout/PLAN_REF_LOCK.md part E); V brings your slice to it when it is half in view."
+metadata/what = "The researchers' camp in the meadow's middle, 2.5 m kata: easter egg 1, the bag of azoth by the left bench. Built to Ramon's sheet (units/camp, PenLayout/PLAN_REF_LOCK.md part E); its path follows down to it, and V brings your slice to it when 80% of it is in view but not all (Ramon, 7 Oct)."
 
 [node name="CampFrame" type="Node4D" parent="World/EggCamp"]
-position = Vector4(0, 0, 0, 2.5)
 script = ExtResource("frame_marker")
 size = Vector2(13.6, 13.6)
-metadata/what = "The camp's ring for the paths, at the farm's W: its circle anchored here, a circle round it in the dev look."
+metadata/what = "The camp's ring for the paths, at the camp's own W (2.5 m kata; its path follows down to it, Ramon 7 Oct): its circle anchored here, a circle round it in the dev look."
 
 [node name="TownWall" type="Node4D" parent="World"]
 script = ExtResource("town_wall")
