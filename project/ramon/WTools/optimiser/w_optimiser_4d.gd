@@ -25,10 +25,10 @@ extends Node4D
 ## - BUILT IN W. A landmark laid out through W by hand (the range: its boards at W -4 to +4, walls across W
 ##   that keep you in its yard) is left exactly as it is (`respect_w_layout`): its meshes are merged, so a
 ##   scale in W would stretch the whole layout (the yard's W walls pushed out among the boards, and as solid
-##   blocks 12 m deep across the yard: the optimiser lab found both). It is told by its parts and solid
-##   colliders: any whose W middle is off the landmark's (Trym's shed: its walls across W at +-1.7), or any
-##   collider that is a wall across W (thin in W, wide in x and z). The wrap still applies (its copy is the
-##   landmark whole, turned).
+##   blocks 12 m deep across the yard: the optimiser lab found both). It is told by its solid colliders off
+##   its middle W, and by walls across W (thin in W, wide in x and z) among its colliders or its parts (Trym's
+##   shed: its walls across W at +-1.7). Loose parts at other W's do not count (the Watchstone's rocks lie
+##   through W, merged into one centred mesh as it plays). The wrap still applies.
 ## - THE WRAP, for what is seen from afar (`wrap`). The mountains are a ring round the pen, so one of them is
 ##   always in a slice; a landmark can do better than a ring. ONE copy of it is drawn where it would be on the
 ##   flat slice through the camera: lifted to the camera's W, then turned about the camera by the least turn
@@ -56,7 +56,7 @@ const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
 const VIEWS := [10.0, 20.0, 40.0]
 
 @export_tool_button("Analyse") var _analyse_action: Callable = analyse
-@export_tool_button("Preview") var _preview_action: Callable = preview
+@export_tool_button("Preview (on / off)") var _preview_action: Callable = toggle_preview
 @export_tool_button("Clear") var _clear_action: Callable = clear
 @export_tool_button("Save as profile") var _save_action: Callable = save_profile
 
@@ -109,7 +109,7 @@ var applied: bool = false
 ## Solid colliders off the landmark's middle W, and walls across W, as last read (built in W if either).
 var off_middle_colliders: int = 0
 var w_walls: int = 0
-## Drawn parts off the landmark's middle W (a shed's walls across W): built in W too.
+## Drawn parts that are walls across W off the landmark's middle W (a shed's): built in W too.
 var off_middle_parts: int = 0
 
 var _saved: Array = []
@@ -149,6 +149,14 @@ func _notification(what: int) -> void:
 
 func _landmark() -> Node4D:
 	return get_node_or_null(target) as Node4D if not target.is_empty() else null
+
+
+## The Preview button: on, or off again when it is on (as the Exploder's).
+func toggle_preview() -> void:
+	if applied:
+		clear()
+	else:
+		preview()
 
 
 ## The landmark worked anew in the editor (shown, never saved).
@@ -303,8 +311,12 @@ func _read_layout(land: Node4D, meshes: Array) -> void:
 	w_walls = 0
 	off_middle_parts = 0
 	for mi: MeshInstance4D in meshes:
+		# Only a wall across W counts (thin in W, wide in x and z: Trym's shed's at +-1.7). Loose pieces at
+		# other W's do not: the Watchstone's rocks lie through W in the editor, merged into one centred mesh
+		# as it plays, and counting them made the editor call it built in W.
 		var box: Array = _world_box([mi])
-		if absf((box[0].w + box[1].w) * 0.5 - _land_mid.w) > layout_tolerance:
+		var size: Vector4 = box[1] - box[0]
+		if absf((box[0].w + box[1].w) * 0.5 - _land_mid.w) > layout_tolerance and size.w < 0.7 and size.x > 1.0 and size.z > 1.0:
 			off_middle_parts += 1
 	for cs in land.find_children("*", "CollisionShape4D", true, false):
 		var c := cs as CollisionShape4D
@@ -371,7 +383,7 @@ func _report(before: float, hu: float, worked: bool) -> String:
 		if by.has(k):
 			lines.append("  %-6s %3d parts, %7d tetrahedra, %d to deepen" % [k, by[k][0], by[k][1], by[k][2]])
 	if built_in_w():
-		lines.append("  built in W (%d colliders and %d parts off its middle W, %d walls across W)%s" % [off_middle_colliders, off_middle_parts, w_walls,
+		lines.append("  built in W (%d colliders off its middle W, %d walls across W: %d colliders, %d parts)%s" % [off_middle_colliders, w_walls + off_middle_parts, w_walls, off_middle_parts,
 			": kept as it is, only the wrap applies" if respect_w_layout else ": deepened anyway (respect_w_layout is off)"])
 	var keep: int = parts.filter(func(p: Dictionary) -> bool: return p["node"].get_meta(&"w_keep", false)).size()
 	if keep > 0:
@@ -386,6 +398,10 @@ func _report(before: float, hu: float, worked: bool) -> String:
 			wrap_arc, wrap_length, maxf(_land_half.x, _land_half.z) + near_margin])
 	if worked:
 		lines.append("made: %d parts and %d colliders deepened, %d wrap copies, in %d ms" % [parts_deepened, colliders_deepened, wrap_copies, build_msec])
+	if wrap:
+		lines.append("the wrap follows the camera: in the editor, with Preview on, turn the view into W (Cross-section) to see it")
+	if worked and Engine.is_editor_hint() and parts_deepened == 0:
+		lines.append("Preview: nothing changes in the editor (nothing to deepen%s)" % ("; the wrap is for play" if wrap else ""))
 	return "\n".join(lines)
 
 
@@ -455,9 +471,10 @@ func _wrap(meshes: Array) -> void:
 		m.position = mi.global_position
 		m.basis = mi.global_basis
 	wrap_copies = 1
-	# In the editor there is no slice to follow: the copy waits, hidden.
+	# Hidden until a camera's slice needs it. In the editor, with Preview on, it follows the editor's own camera
+	# (Ramon, 7 Oct: the wrap seen in the editor), so turning the view into W shows it at work.
 	_holder.visible = false
-	if not Engine.is_editor_hint() and not RenderingServer4D.pre_render.is_connected(_on_pre_render):
+	if not RenderingServer4D.pre_render.is_connected(_on_pre_render):
 		RenderingServer4D.pre_render.connect(_on_pre_render)
 
 
@@ -495,7 +512,8 @@ static func to_slice(b: Projection) -> Projection:
 
 ## The landmark, or its copy where the landmark is on the flat slice through the camera.
 func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngine4D) -> void:
-	if viewport != get_viewport() or camera == null or _holder == null:
+	# Playing, only the game's own view; in the editor, whichever view is drawing (the editor's cameras).
+	if camera == null or _holder == null or not is_instance_valid(_holder) or (not Engine.is_editor_hint() and viewport != get_viewport()):
 		return
 	var started: int = Time.get_ticks_usec()
 	var slice: bool = engine == null or engine.get_friendly_name() == "Cross-section"

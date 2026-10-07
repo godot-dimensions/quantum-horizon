@@ -58,3 +58,18 @@ Pen, art look, five route views (`_perf_layout_b_runner.gd`): planting GPU flat 
 `_verify_exploder_stable_runner.gd`, `look/_verify_look_runner.gd` (nine groups), `PenLayout/scripts/
 _verify_journey_b_runner.gd` (22 of 22). The journey's log ends with "27 resources still in use at exit"; it
 did before the W tools too.
+
+## Asked by Ramon, to do once his editor is closed (7 Oct, after the build)
+
+- **The wrap in the editor**: DONE in code (with Preview on, the wrap follows the editor's own camera), NOT yet
+  tried by hand in the editor: turn the 4D view into W in Cross-section and the Watchstone should stay put.
+- **Test the Preview toggles**: DONE (`_verify_preview_toggle_runner.gd` passes: off at a second press, the
+  Watchstone put back exactly, on again).
+- **Ring or stay put, as pictures**: DONE as a side by side film (`smoke_test_output/wtools/films/ring_side.mp4`,
+  on the explainer page). They differ only off to the side with the slice turned across the view (the ring
+  slides and skews). Ramon to decide whether a "Ring" checkbox is worth building.
+- **Explainer page for the team**: https://claude.ai/artifact/6FLE6gqUG6umchcdUYx49v (diagrams, four videos,
+  editor screenshots). Shared with the organisation. Its build files are in the session scratchpad; the
+  films and editor shots are reproducible from `_film_side_runner.gd` and `_editor_shots.tscn`.
+- Also done on request: Exploder Preview copies show in the editor's volume view by default
+  (`preview_in_volume_view`); the films use the pen's smaller character (`w_lab_4d.gd pen_player`).

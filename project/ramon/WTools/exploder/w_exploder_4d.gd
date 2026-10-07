@@ -43,7 +43,7 @@ const OAK := preload("res://ramon/chickenpen/scripts/pen_oak_4d.gd")
 const Heights := preload("res://ramon/chickenpen/grass/grass_heights_4d.gd")
 const PRESET := preload("res://ramon/WTools/exploder/w_exploder_preset.gd")
 
-@export_tool_button("Preview copies") var _preview_action: Callable = preview
+@export_tool_button("Preview copies (on / off)") var _preview_action: Callable = toggle_preview
 @export_tool_button("Clear copies") var _clear_action: Callable = clear
 @export_tool_button("Save as preset") var _save_action: Callable = save_preset
 
@@ -101,7 +101,11 @@ var reach_needed: float:
 @export_range(0.5, 20.0, 0.5, "suffix:m") var solid_w_margin: float = 3.0
 
 @export_group("Volume view")
+## Playing, the copies stay out of the volume view (in it, they smeared the wood white).
 @export var copies_projected: bool = false
+## In the editor, the Preview's copies show in the volume view all the same, to see where they stand (Ramon,
+## 7 Oct: "i want the copies preview to be on in default in volume view").
+@export var preview_in_volume_view: bool = true
 
 @export_group("Exclusions")
 @export_range(0.0, 8.0, 0.1, "suffix:m") var clear_of_paths: float = 2.4
@@ -184,6 +188,15 @@ func replant() -> void:
 			child.call("set_managed", true)
 			_oaks.append(child)
 	_build_cull.call_deferred()
+
+
+## The Preview button (Ramon, 7 Oct: "when i press it again it would be nice if it turns off"): the copies
+## made when none are showing, taken away when they are.
+func toggle_preview() -> void:
+	if get_children().any(func(c: Node) -> bool: return c.has_meta(&"w_copy")):
+		clear()
+	else:
+		preview()
 
 
 ## The copies, made now (in the editor: shown, not saved).
@@ -329,7 +342,7 @@ func _spawn(src: Node4D, p: Vector2, w: float, rng: RandomNumberGenerator, copy_
 			oak.remove_child(body)
 			body.free()
 			oak.set("_body", null)
-	if not copies_projected:
+	if not copies_projected and not (Engine.is_editor_hint() and preview_in_volume_view):
 		for mi in oak.find_children("*", "MeshInstance4D", true, false):
 			(mi as MeshInstance4D).allow_projection = false
 	echo_count += 1

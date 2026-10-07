@@ -9,6 +9,7 @@ extends Node4D
 
 const Room := preload("res://ramon/CreationLab/LabKit/lab_room_4d.gd")
 const KitPlayer := preload("res://ramon/CreationLab/kit/kit_player.gd")
+const LabPlayer := preload("res://ramon/CreationLab/LabKit/lab_player.gd")
 const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
 const PRESETS := "res://ramon/WTools/exploder/presets/"
 
@@ -16,6 +17,9 @@ const PRESETS := "res://ramon/WTools/exploder/presets/"
 @export var player_at: Vector4 = Vector4(0.0, 1.0, 12.0, 0.0)
 @export var player_yaw_degrees: float = 0.0
 @export var readout: bool = true
+## The pen's own smaller player (its block avatar, green with a cream trim) instead of the lab kit's
+## grown-up one (Ramon, 7 Oct: "best to use the smaller character from the playable world").
+@export var pen_player: bool = false
 
 var player: CharacterBody4D
 var rig: Node4D
@@ -32,7 +36,17 @@ func _ready() -> void:
 	room.set_script(Room)
 	room.set("ground_size", ground)
 	add_child(room)
-	player = KitPlayer.make()
+	if pen_player:
+		player = LabPlayer.make(Color(0.42, 0.62, 0.36), Color(0.93, 0.8, 0.62))
+		var avatar: Node = player.get_node("Avatar")
+		avatar.set("shorts_length", 0.16)
+		avatar.set("eyes", true)
+		avatar.set("eye_spacing", 0.07)
+		avatar.set("eye_height", 0.038)
+		avatar.set("eye_width", 0.044)
+		avatar.set("eye_tall", 0.054)
+	else:
+		player = KitPlayer.make()
 	player.name = "Player"
 	add_child(player)
 	player.global_position = player_at

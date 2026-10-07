@@ -17,8 +17,10 @@ Why each works the way it does, with the numbers: `research/experiments.md`. The
 ## 1. The W Exploder
 
 **Use.** Put the node over a container of hand-placed plants (its children with `pen_oak_4d.gd`: oaks and
-bushes) and pick a preset. Press **Preview copies** to see them in the editor (the wood only; the leaves
-grow at play), **Clear copies** to take them away. **Save as preset** writes the current numbers as a new
+bushes) and pick a preset. **Preview copies (on / off)** shows them in the editor and takes them away again
+(the wood only; the leaves grow at play). They sit at other W's, so the editor's slice (Cross-section) at W 0
+looks the same either way; the volume view (Projected, or Combined) shows them: in the editor's Preview they
+are left in the volume view on purpose (`preview_in_volume_view`), while in play they stay out of it. **Save as preset** writes the current numbers as a new
 .tres in `exploder/presets/`.
 
 **What it does.**
@@ -61,7 +63,10 @@ turn the slice; R gives the flat slice again; **P** steps through the presets.
 ## 2. The W Optimiser
 
 **Use.** Put the node beside a landmark (a unit instance), set `target` to it, and pick a profile. **Analyse**
-writes the report into the inspector, **Preview** shows the result in the editor, **Clear** takes it away.
+writes the report into the inspector, **Preview (on / off)** shows the deepening in the editor and takes it
+away again. With Preview on, the wrap follows the editor's own camera: in the Cross-section view, turn the
+view into W (or move it along W) and the landmark stays put. The editor's default Wireframe view draws every
+W at once, so there the landmark itself shows.
 A save takes the preview off first and puts it back after, so nothing of it is saved. **Save as profile**
 writes the current numbers to `optimiser/profiles/`.
 
@@ -84,7 +89,9 @@ it, seen from 10, 20 and 40 m, before and after, and what the wrap does. A landm
   the Watchstone slid out of frame).
 - **Built in W: left alone.** A landmark laid out through W by hand (the range: boards from W -4 to +4, walls
   across W that keep you in its yard; Trym's shed: walls across W at +-1.7) is kept exactly as it is. It is
-  told by its parts and colliders: any off its middle W, or any wall across W. Its meshes are merged, so scaling them would stretch the whole layout: the
+  told by its solid colliders off its middle W, and by walls across W among its colliders or its parts (thin
+  in W, wide in x and z). Loose parts at other W's do not count: the Watchstone's rocks lie through W in the
+  editor (merged into one centred mesh in play), and counting them made the editor call it built in W. Its meshes are merged, so scaling them would stretch the whole layout: the
   range's W walls were pushed out among the boards, and became solid blocks 12 m deep across the yard (the
   lab caught it). Only the wrap applies to it. `respect_w_layout` turns this off; a part with metadata
   `w_keep` is always left alone.
@@ -131,6 +138,10 @@ and 40 m (from 20 m: 1,064 of 1,092 pixels at each turn; untouched it had 34 at 
 | `_reach_landmarks_runner.gd` | a landmark's pixels on screen as the slice turns, per treatment or profile (`p_skyline` ...) |
 | `_optimiser_lab_runner.gd` | reports, frames off and on (and the volume view), collisions (deepened colliders hit, the wrap's copy does not, the range left exactly as built), the wrap following the slice, cost, and an edit to the Watchstone's own scene reaching the copy |
 | `_parts_runner.gd` | the Optimiser's parts and colliders, one by one, for checking by eye |
+| `_verify_preview_toggle_runner.gd` | the Preview buttons turn off with a second press, putting the landmark back exactly |
+| `_film_side_runner.gd` | side by side films (exploder, optimiser, ring vs stay put) in the labs, frame by frame, the pen's character |
+| `_compare_ring_runner.gd` | ring vs stay put as stills, in the pen and the lab |
+| `_editor_shots.tscn` | opened with `-- wt_shots`, drives the editor and takes the screenshots for the explainer page |
 | `_verify_pen_wtools_runner.gd` | in the pen: the planting, copies' trunks solid near the player's W, the Optimisers, the look switched with the copy showing, frames |
 | `_cost_pen_wtools_runner.gd` | in the pen: process and physics time with the W tools, without each, and with hollow copies |
 | `_probe_pen_wrap_runner.gd` | in the pen: the Watchstone's wrap number by number from a spot, for a frame that lost it |
@@ -140,8 +151,7 @@ and 40 m (from 20 m: 1,064 of 1,092 pixels at each turn; untouched it had 34 at 
 ## Traps
 
 - **Untested in the editor itself.** The Preview, Clear and Save buttons call the same methods the runners
-  test, but the editor's own handling (the save hook, the inspector report) has not been tried by hand. The
-  wrap's copy does not show in the editor (it needs a camera to follow).
+  test, but the editor's own handling (the save hook, the inspector report) has not been tried by hand.
 - **Turned in two planes at once** (xw and zw together), the wrap's copy is off by the small turn between the
   two orders (exact for one plane, as the rigs turn).
 - **Grass** right at the camera fills the view when the slice is turned along it: the grass's own, not the
