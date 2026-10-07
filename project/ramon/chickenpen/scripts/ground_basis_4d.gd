@@ -96,7 +96,7 @@ static func eased_flat(ground: Projection, step: float) -> Projection:
 ## [param ground] turned toward [param target], another level frame, by at most [param max_angle]
 ## radians along the one rotation that takes it there. Two level frames differ by a rotation of
 ## the floor's (x, z, w), so, as in eased_flat, this is a quaternion slerp on that block.
-## (Andrew's, 4Denthusiast, b20b6c6: the player's turning through W, block_walker_character_4d.gd andrew_turning.)
+## (The player's turning through W: block_walker_character_4d.gd _turn_avatar.)
 static func rotated_toward(ground: Projection, target: Projection, max_angle: float) -> Projection:
 	var rel: Quaternion = _to_3d(Basis4D.transposed(ground) * target).get_rotation_quaternion()
 	if rel.w < 0.0:

@@ -46,21 +46,20 @@ extends CharacterBody4D
 ## body hovering or half through the ground.
 var input_enabled: bool = true
 
-## The facing as a world x-z angle, atan2(forward.x, forward.z): what this walk turns, and the convention the
-## scripts that pose the player use (pen_dream_wake_4d.gd, watchstone_4d.gd, lab_sequence_4d.gd). With Andrew's
-## turning on (andrew_turning) it reads off his frame, and setting it faces his frame that way along the floor.
+## The avatar's frame, upright, +Z the way it faces. Changed only when the character moves or is
+## told to face something (as a 3D character's facing is), so a standing model stays put in the
+## world while the view turns round it; _target_stance says which frame. Starts at PI, facing
+## away from the camera.
+var _stance: Projection = Basis4D.from_zx(PI)
+## The facing as a world x-z angle, atan2(forward.x, forward.z): the convention the scripts that
+## pose the player use (pen_dream_wake_4d.gd, watchstone_4d.gd, lab_sequence_4d.gd). Set, the model
+## faces that way along the world's floor at once, its W as near the view's as that allows.
 var _facing: float:
 	get:
-		if andrew_turning and Vector2(_stance.z.x, _stance.z.z).length() > 0.2:
-			return atan2(_stance.z.x, _stance.z.z)
-		return _facing_angle
+		return atan2(_stance.z.x, _stance.z.z)
 	set(value):
-		_facing_angle = value
-		if andrew_turning:
-			_stance = _stance_facing(value)
-var _facing_angle: float = PI
-## Andrew's turning: the avatar's whole frame, upright, +Z the way it faces (andrew_turning).
-var _stance: Projection = Basis4D.from_zx(PI)
+		var forward := Vector4(sin(value), 0.0, cos(value), 0.0)
+		_stance = _target_stance(forward) if _rig != null else Basis4D.from_zx(value)
 ## While a conversation is open, the avatar turns to whoever is speaking instead of
 ## keeping whatever heading it was walking on. The NPCs already do this; without the
 ## player doing it too, they turn politely to face somebody staring at a fence.
@@ -69,36 +68,6 @@ var _facing_point: bool = false
 
 ## How much slower the ana/kata axis is than ordinary movement.
 @export_range(0.05, 1.0, 0.05) var w_speed_scale: float = 0.3
-
-## ANDREW'S 4D WALKING (4Denthusiast, 5 Oct, commit b20b6c6 "Make player movement more 4D"), as two switches beside
-## this walk rather than in its place (Ramon, 7 Oct: "this walking fix, does it influence how you actually walk? can
-## i make a switch for that too?"). The grass panel has them (grass/pen_grass_panel_4d.gd). Both off: the walk as it
-## was, by the same code as before the switches existed. Both on: his commit as he wrote it. For the run only: not
-## exports, never saved, so every run starts with this walk ("under no conditions, should the andrew switches be
-## able to break my work").
-##
-## TURNING: the avatar turns to face the way it moves through W as well as across the floor you see, eased along the
-## one rotation that takes it there (_turn_stance), so a step ana turns the model the way a step forward does. The
-## catch and the throw aim the way the avatar faces (chicken_catcher_4d.gd), so after a step ana they aim into W too.
-var andrew_turning: bool = false:
-	set(value):
-		if value == andrew_turning:
-			return
-		# Each picks up the facing where the other left it; facing straight along W (no way across the floor to
-		# read off), this walk keeps the heading it had.
-		if value:
-			andrew_turning = true
-			_stance = _stance_facing(_facing_angle)
-		else:
-			if Vector2(_stance.z.x, _stance.z.z).length() > 0.2:
-				_facing_angle = atan2(_stance.z.x, _stance.z.z)
-			andrew_turning = false
-		if _avatar != null:
-			_avatar.basis = _pose()
-## STEPPING: the ana / kata keys step along the VIEW's own W, the slice's normal (the rig's w axis), not the world's:
-## stepping out of the world you can see means leaving your slice square on, and only with the slice level are the
-## two the same. And x, z and w are eased toward the wanted speed as one vector, not each on its own.
-var andrew_stepping: bool = false
 
 @onready var _rig: Node4D = $CameraRig
 @onready var _avatar: Node4D = $Avatar
@@ -119,7 +88,7 @@ func _ready() -> void:
 		var y: float = float(_rig.get("yaw"))
 		_facing = atan2(-sin(y), -cos(y))
 		if _avatar != null:
-			_avatar.basis = _pose()
+			_avatar.basis = _stance
 
 
 ## Put on the ground for a moment. Movement stops, the avatar tips over, and it gets back
@@ -140,7 +109,7 @@ func _physics_process(delta: float) -> void:
 		# Tipped over, and levelling out again over the last half second rather than
 		# snapping upright.
 		var tip: float = clampf(_down / 0.5, 0.0, 1.0) * PI * 0.42
-		_avatar.basis = _pose() * Basis4D.from_yz(tip)
+		_avatar.basis = _stance * Basis4D.from_yz(tip)
 		return
 	if input_enabled and Input.is_action_just_pressed(&"move_jump") and is_on_floor():
 		linear_velocity.y = jump_velocity
@@ -153,36 +122,10 @@ func _physics_process(delta: float) -> void:
 	elif input_enabled and Input.is_key_pressed(KEY_ALT):
 		top = walk_speed
 	var rate: float = acceleration * top * delta
-	var target: Vector4 = wish * top
-	# The step through W: along the world's W, or with Andrew's stepping along the view's (andrew_stepping).
-	var w_step: Vector4 = (_view_w() if andrew_stepping else Vector4(0.0, 0.0, 0.0, 1.0)) * (ana * top * w_speed_scale)
-	if andrew_stepping:
-		# Andrew's: eased as one horizontal vector. The step through W has x and z in it once the slice is
-		# tilted, and the walk has w, so the axes are not separately anybody's.
-		var to: Vector4 = target + w_step
-		var horizontal := Vector3(linear_velocity.x, linear_velocity.z, linear_velocity.w).move_toward(Vector3(to.x, to.z, to.w), rate)
-		linear_velocity.x = horizontal.x
-		linear_velocity.z = horizontal.y
-		linear_velocity.w = horizontal.z
-	else:
-		_ease_own(target, ana, top, rate, delta)
-	move_and_slide()
-	_step_up(wish)
-	if andrew_turning:
-		_turn_stance(target + w_step, delta)
-	else:
-		_turn_avatar(wish, delta)
-	if _label != null:
-		_label.text = "%s   %.1f units/s   w %.2f" % [
-			_gait_name(),
-			_horizontal_speed(), position.w]
-
-
-## This walk's own easing (andrew_stepping off): x and z to the walk, w to the walk's w and the key.
-func _ease_own(target: Vector4, ana: float, top: float, rate: float, delta: float) -> void:
-	linear_velocity.x = move_toward(linear_velocity.x, target.x, rate)
-	linear_velocity.z = move_toward(linear_velocity.z, target.z, rate)
-	# The fourth axis moves DELIBERATELY, at a fraction of walking pace.
+	# The fourth axis moves DELIBERATELY, at a fraction of walking pace, AND ALONG THE VIEW'S
+	# OWN W - the slice normal, the rig's w axis - not the world's: stepping out of the world
+	# you can see means leaving your slice square on, and only with the slice level are the
+	# two the same.
 	#
 	# At full speed a short press of the ana key crossed w 0 to 5.9, and the twelve
 	# chickens live between w -2.5 and 2.5 - so every one of them was behind a control
@@ -197,8 +140,20 @@ func _ease_own(target: Vector4, ana: float, top: float, rate: float, delta: floa
 	# it is gone again by the time you arrive. That is the whole "everything goes
 	# lopsided when I walk".
 	var w_top: float = top * w_speed_scale
-	linear_velocity.w = move_toward(linear_velocity.w,
-		target.w + ana * w_top, acceleration * maxf(top, w_top) * delta)
+	var target: Vector4 = wish * top + _rig.basis.w * (ana * w_top)
+	# Eased as one horizontal vector: the step through W has x and z in it once the slice is
+	# tilted, and the walk has w, so the axes are not separately anybody's.
+	var horizontal := Vector3(linear_velocity.x, linear_velocity.z, linear_velocity.w).move_toward(Vector3(target.x, target.z, target.w), rate)
+	linear_velocity.x = horizontal.x
+	linear_velocity.z = horizontal.y
+	linear_velocity.w = horizontal.z
+	move_and_slide()
+	_step_up(wish)
+	_turn_avatar(target, delta)
+	if _label != null:
+		_label.text = "%s   %.1f units/s   w %.2f" % [
+			_gait_name(),
+			_horizontal_speed(), position.w]
 
 
 ## CLIMBING A STEP, because nothing else here can.
@@ -273,34 +228,12 @@ func _wish_direction() -> Vector4:
 	return _wish_parts()[0]
 
 
-func _turn_avatar(wish: Vector4, delta: float) -> void:
+func _turn_avatar(move: Vector4, delta: float) -> void:
 	# Eased at the same rate a walking turn uses, rather than snapped: a head that jumps
 	# round the instant a key is pressed reads as a glitch, and this is the one moment the
-	# player is looking straight at their own avatar.
-	if _facing_point:
-		var gap: Vector4 = _face_point - global_position
-		if absf(gap.x) > 0.001 or absf(gap.z) > 0.001:
-			_facing = rotate_toward(_facing, atan2(gap.x, gap.z), turn_speed * delta)
-	elif absf(wish.x) > 0.001 or absf(wish.z) > 0.001:
-		_facing = rotate_toward(_facing, atan2(wish.x, wish.z), turn_speed * delta)
-	_avatar.basis = Basis4D.from_zx(_facing)
-
-
-## The avatar's frame now: Andrew's whole frame (andrew_turning), or this walk's turn on the floor.
-func _pose() -> Projection:
-	return _stance if andrew_turning else Basis4D.from_zx(_facing_angle)
-
-
-## The view's own W, the slice's normal: the rig's w axis (the rig's basis is the slice's frame, movement_basis).
-func _view_w() -> Vector4:
-	return _rig.basis.w if _rig != null else Vector4(0.0, 0.0, 0.0, 1.0)
-
-
-## ANDREW'S TURNING (andrew_turning; his _turn_avatar, b20b6c6). Eased at the same rate a walking turn uses, along
-## the one rotation that takes the stance to where it is going, whichever way that is - across the floor you see or
-## through W - so a step ana turns the model the way a step forward does. [param move] is the speed wanted, the
-## step through W in it.
-func _turn_stance(move: Vector4, delta: float) -> void:
+	# player is looking straight at their own avatar. Eased along the one rotation that takes
+	# the stance to where it is going, whichever way that is - across the floor you see or
+	# through W - so a step ana turns the model the way a step forward does.
 	var want: Vector4 = _face_point - global_position if _facing_point else move
 	want.y = 0.0
 	if want.length_squared() > 1e-6:
@@ -308,16 +241,8 @@ func _turn_stance(move: Vector4, delta: float) -> void:
 	_avatar.basis = _stance
 
 
-## Andrew's frame facing the world x-z angle [param angle] along the floor, its W as near the view's as that allows
-## (as his _facing setter); before the rig is ready, the plain turn.
-func _stance_facing(angle: float) -> Projection:
-	if _rig == null:
-		return Basis4D.from_zx(angle)
-	return _target_stance(Vector4(sin(angle), 0.0, cos(angle), 0.0))
-
-
 ## The frame the avatar turns to in order to face [param forward]: a horizontal unit, any way on
-## the 4D floor (Andrew's).
+## the 4D floor.
 ##
 ## WHICH WAY A PERSON FACES IS AMBIGUOUS IN 4D: a whole circle of frames share one forward, turned
 ## about it through W. Walking across the floor you see, this is the one whose W is the slice's
@@ -328,7 +253,7 @@ func _stance_facing(angle: float) -> Projection:
 ## wherever the least turn from its stance puts its W. +Z is the forward, Y up, X completes a
 ## right-handed frame.
 func _target_stance(forward: Vector4) -> Projection:
-	var n: Vector4 = _view_w()
+	var n: Vector4 = _rig.basis.w
 	var w: Vector4 = n - forward * forward.dot(n)
 	if w.length_squared() < 1e-6:
 		w = _least_turned(_stance.w, _stance.z, forward)
@@ -338,7 +263,7 @@ func _target_stance(forward: Vector4) -> Projection:
 
 ## [param v] carried by the least rotation of the floor's (x, z, w) that takes [param from] to
 ## [param to]: in the plane of the two, by the angle between them. Opposite directions have no
-## such plane; then it is an about-face on the floor, about the stance's own W (Andrew's).
+## such plane; then it is an about-face on the floor, about the stance's own W.
 func _least_turned(v: Vector4, from: Vector4, to: Vector4) -> Vector4:
 	var a := Vector3(from.x, from.z, from.w)
 	var b := Vector3(to.x, to.z, to.w)
@@ -356,7 +281,7 @@ func _least_turned(v: Vector4, from: Vector4, to: Vector4) -> Vector4:
 
 ## The right-hand side of [param forward] on the floor of a slice with normal [param n]: the
 ## horizontal unit perpendicular to both that makes (right, up, forward, n) right-handed. Level,
-## it is from_zx's own x column (Andrew's).
+## it is from_zx's own x column.
 func _right_of(forward: Vector4, n: Vector4) -> Vector4:
 	var c: Vector3 = Vector3(forward.x, forward.z, forward.w).cross(Vector3(n.x, n.z, n.w))
 	return Vector4(c.x, 0.0, c.y, c.z).normalized()

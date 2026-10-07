@@ -29,7 +29,7 @@
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/mound_d_even.res" id="mound_d_mesh"]
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/mound_e_even.res" id="mound_e_mesh"]
 [ext_resource type="PackedScene" uid="uid://cwssrsgrpb5rh" path="res://ramon/chickenpen/nike.tscn" id="nike_scene"]
-[ext_resource type="Script" uid="uid://b7wkce5c7jxbk" path="res://ramon/chickenpen/scripts/pen_npc_markers_4d.gd" id="npc_markers"]
+[ext_resource type="Script" uid="uid://dv1exns48td1h" path="res://ramon/chickenpen/scripts/pen_npc_markers_4d.gd" id="npc_markers"]
 [ext_resource type="Script" uid="uid://dtcs7ko8p38nr" path="res://ramon/CreationLab/PathCreator/graph/path_network_4d.gd" id="pc_network"]
 [ext_resource type="Script" uid="uid://dt0tw3b47yxef" path="res://ramon/chickenpen/scripts/pen_again_4d.gd" id="pen_again"]
 [ext_resource type="Script" uid="uid://sau5oyp5vxbe" path="res://ramon/chickenpen/scripts/pen_slice_assist_4d.gd" id="pen_assist"]
@@ -59,7 +59,7 @@
 [ext_resource type="Script" uid="uid://tojoxxbra426" path="res://ramon/chickenpen/scripts/pen_inventory_4d.gd" id="pen_inventory"]
 [ext_resource type="Script" uid="uid://dwl0i3lj62160" path="res://ramon/chickenpen/scripts/pen_invitation_4d.gd" id="pen_invite"]
 [ext_resource type="Script" uid="uid://ds8fowx0k7uht" path="res://ramon/chickenpen/scripts/chicken_locator_4d.gd" id="pen_locator"]
-[ext_resource type="Script" uid="uid://dy8y74arae6e1" path="res://ramon/chickenpen/look/pen_look_4d.gd" id="pen_look"]
+[ext_resource type="Script" uid="uid://bjk35r7kdoamw" path="res://ramon/chickenpen/look/pen_look_4d.gd" id="pen_look"]
 [ext_resource type="Script" uid="uid://bxbcoqn6ci5pu" path="res://ramon/chickenpen/scripts/pen_mithra_talk_4d.gd" id="pen_mithra_talk"]
 [ext_resource type="Script" uid="uid://dc0ihq2mcqh5o" path="res://ramon/chickenpen/terrain/pen_mountains_4d.gd" id="pen_mountains"]
 [ext_resource type="Script" uid="uid://dbh5bwplcfxb2" path="res://ramon/chickenpen/scripts/pen_nike_grab_4d.gd" id="pen_nike_grab"]
@@ -1782,14 +1782,14 @@ material_override = SubResource("TetraMaterial4D_hy7en")
 mesh = SubResource("BoxTetraMesh4D_8xi7o")
 
 [node name="Tick8F" type="MeshInstance4D" parent="World/Pickups/PocketWatch"]
-position = Vector4(-0.21200301884643055, -0.1224000000000001, 0.043384, 0)
-basis = Projection(-0.5000000000000004, 0.8660254037844385, 0, 0, -0.8660254037844385, -0.5000000000000004, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+position = Vector4(-0.21200301884643052, -0.1224000000000001, 0.043384, 0)
+basis = Projection(-0.5000000000000004, 0.8660254037844384, 0, 0, -0.8660254037844384, -0.5000000000000004, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 material_override = SubResource("TetraMaterial4D_hy7en")
 mesh = SubResource("BoxTetraMesh4D_k4cdf")
 
 [node name="Tick8B" type="MeshInstance4D" parent="World/Pickups/PocketWatch"]
-position = Vector4(-0.21200301884643055, -0.1224000000000001, -0.043384, 0)
-basis = Projection(-0.5000000000000004, 0.8660254037844385, 0, 0, -0.8660254037844385, -0.5000000000000004, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+position = Vector4(-0.21200301884643052, -0.1224000000000001, -0.043384, 0)
+basis = Projection(-0.5000000000000004, 0.8660254037844384, 0, 0, -0.8660254037844384, -0.5000000000000004, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 material_override = SubResource("TetraMaterial4D_hy7en")
 mesh = SubResource("BoxTetraMesh4D_hksrb")
 

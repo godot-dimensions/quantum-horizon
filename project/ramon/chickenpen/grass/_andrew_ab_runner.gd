@@ -6,9 +6,8 @@ extends SceneTree
 ##     tilted TILT through W;
 ##   - the GPU time of each, in blocks of FRAMES alternating on, off, off, on (as _measure_grass_runner.gd), level
 ##     and tilted, the first SKIP frames of a block dropped (the switch rebuilds the bands);
-##   - Andrew's two walking switches (block_walker_character_4d.gd andrew_turning, andrew_stepping), each way: a
-##     second on the ana key with the slice tilted, where it took you (along the view's W or the world's) and which
-##     way the avatar then faced.
+##   - the walking (block_walker_character_4d.gd): a second on the ana key with the slice tilted, where it took you
+##     (along the view's W) and which way the avatar then faced.
 ##
 ##   lab_run.sh windowed andrew_ab res://ramon/chickenpen/grass/_andrew_ab_runner.gd
 
@@ -213,31 +212,26 @@ func _run() -> void:
 			_mean(on[1]) - _mean(off[1]), roundi(_mean(off[2])), roundi(_mean(on[2]))])
 	_grass.set("andrew_4d", false)
 
-	# The walking.
+	# The walking: a second on the ana key with the slice tilted.
 	_player.set("input_enabled", true)
 	var avatar := _player.get_node("Avatar") as Node4D
-	for mode in [[false, false], [true, false], [false, true], [true, true]]:
-		_player.set("andrew_turning", mode[0])
-		_player.set("andrew_stepping", mode[1])
-		_set_tilt(true)
-		await _wait(0.6)
-		var from: Vector4 = _player.global_position
-		var view_w: Vector4 = (_player.global_basis * (_rig.get("basis") as Projection).w).normalized()
-		Input.action_press(&"move_ana")
-		await _wait(1.0)
-		Input.action_release(&"move_ana")
-		await _wait(0.8)
-		var moved: Vector4 = _player.global_position - from
-		var flat := Vector4(moved.x, 0.0, moved.z, moved.w)
-		var along_view: float = flat.normalized().dot(view_w) if flat.length() > 0.01 else 0.0
-		var along_world: float = flat.normalized().w if flat.length() > 0.01 else 0.0
-		var faces: Vector4 = avatar.global_basis.z
-		print("ANDREW AB walk turning %-5s stepping %-5s moved %.2f m  along view W %.2f  along world W %.2f  avatar faces (x %.2f z %.2f w %.2f)" % [
-			str(mode[0]), str(mode[1]), flat.length(), along_view, along_world, faces.x, faces.z, faces.w])
-		_player.global_position = from
-		_player.set("linear_velocity", Vector4.ZERO)
-	_player.set("andrew_turning", false)
-	_player.set("andrew_stepping", false)
+	_set_tilt(true)
+	await _wait(0.6)
+	var from: Vector4 = _player.global_position
+	var view_w: Vector4 = (_player.global_basis * (_rig.get("basis") as Projection).w).normalized()
+	Input.action_press(&"move_ana")
+	await _wait(1.0)
+	Input.action_release(&"move_ana")
+	await _wait(0.8)
+	var moved: Vector4 = _player.global_position - from
+	var flat := Vector4(moved.x, 0.0, moved.z, moved.w)
+	var along_view: float = flat.normalized().dot(view_w) if flat.length() > 0.01 else 0.0
+	var along_world: float = flat.normalized().w if flat.length() > 0.01 else 0.0
+	var faces: Vector4 = avatar.global_basis.z
+	print("ANDREW AB walk moved %.2f m  along view W %.2f  along world W %.2f  avatar faces (x %.2f z %.2f w %.2f)" % [
+		flat.length(), along_view, along_world, faces.x, faces.z, faces.w])
+	_player.global_position = from
+	_player.set("linear_velocity", Vector4.ZERO)
 
 	# THE HUD: the walking card under the grass panel, the panel open with its width slider, the grass on.
 	var panel: Node = _room.get_node_or_null("UI/GrassPanel")
@@ -250,20 +244,15 @@ func _run() -> void:
 	if panel != null:
 		panel.call("_toggle_fold")
 
-	# THE DEFAULTS AGAIN, after everything has been switched (7 Oct evening: the 4D field is the grass now; the walking
-	# card's two choices start on the defaults): the stacked grass still comes back whole when asked for, the field is
-	# the grass again after, the walk is the default walk with its heading kept, the width slider reaches the blades,
-	# the card switches the player, and nothing of the switches is saved.
+	# THE DEFAULTS AGAIN, after everything has been switched (7 Oct evening: the 4D field is the grass now): the stacked
+	# grass still comes back whole when asked for, the field is the grass again after, the walk keeps its heading, the
+	# width slider reaches the blades, and nothing of the switch is saved.
 	_set_tilt(false)
-	_player.set("andrew_turning", true)
-	_player.set("andrew_stepping", true)
 	_player.set("_facing", 1.0)
 	_grass.set("andrew_4d", false)
 	await _wait(1.0)
 	var stacked: bool = _shader_is("res://ramon/chickenpen/grass/pen_grass.gdshader") and int(_grass.call("_layers_now")) == int(_grass.get("layers"))
 	_grass.set("andrew_4d", true)
-	_player.set("andrew_turning", false)
-	_player.set("andrew_stepping", false)
 	await _wait(1.0)
 	var field: bool = _shader_is("res://ramon/chickenpen/grass/pen_grass_lattice.gdshader") and int(_grass.call("_layers_now")) == int(_grass.get("_lattice_layers"))
 	var walk: bool = absf(float(_player.get("_facing")) - 1.0) < 0.01 and (avatar.basis.z - Basis4D.from_zx(1.0).z).length() < 0.01
@@ -272,20 +261,11 @@ func _run() -> void:
 	var band0: Object = (_grass.get("_bands") as Array)[0]
 	var width: bool = absf(float((band0.get("material") as ShaderMaterial).get_shader_parameter("blade_width")) - float(_grass.get("blade_width")) * 2.0) < 1e-6
 	_grass.set("blade_width_scale", keep)
-	var card: Node = _room.get_node_or_null("UI/SteppingCard")
-	var switched: bool = false
-	if card != null:
-		card.call("_pick", 0, true)
-		card.call("_pick", 1, true)
-		switched = bool(_player.get("andrew_stepping")) and bool(_player.get("andrew_turning"))
-		card.call("_pick", 0, false)
-		card.call("_pick", 1, false)
-		switched = switched and not bool(_player.get("andrew_stepping")) and not bool(_player.get("andrew_turning"))
 	var saved: Array = (_grass.get_script() as GDScript).get_script_constant_map()["SAVED_KEYS"]
-	var unsaved: bool = not ("andrew_4d" in saved) and not ("andrew_turning" in saved) and not ("andrew_stepping" in saved)
-	var back: bool = stacked and field and walk and width and switched and unsaved
-	print("ANDREW AB defaults: %s (stacked grass whole %s, field the grass again %s, walk and heading back %s, width slider reaches the blades %s, card switches the player %s, switches never saved %s)" % [
-		"YES" if back else "NO", str(stacked), str(field), str(walk), str(width), str(switched), str(unsaved)])
+	var unsaved: bool = not ("andrew_4d" in saved)
+	var back: bool = stacked and field and walk and width and unsaved
+	print("ANDREW AB defaults: %s (stacked grass whole %s, field the grass again %s, walk and heading back %s, width slider reaches the blades %s, switch never saved %s)" % [
+		"YES" if back else "NO", str(stacked), str(field), str(walk), str(width), str(unsaved)])
 	print("ANDREW AB DONE")
 	quit(0 if back else 1)
 

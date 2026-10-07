@@ -28,7 +28,6 @@ const SHADER := preload("res://ramon/chickenpen/grass/pen_grass.gdshader")
 const LATTICE_SHADER := preload("res://ramon/chickenpen/grass/pen_grass_lattice.gdshader")
 const LOOKS := preload("res://ramon/chickenpen/grass/pen_grass_looks.gd")
 const PANEL := preload("res://ramon/chickenpen/grass/pen_grass_panel_4d.gd")
-const STEPPING_CARD := preload("res://ramon/chickenpen/scripts/pen_stepping_card_4d.gd")
 const PAINT := preload("res://ramon/chickenpen/grass/pen_ground_paint_4d.gd")
 const Heights := preload("res://ramon/chickenpen/grass/grass_heights_4d.gd")
 const MainGreen := preload("res://ramon/chickenpen/terrain/main_green_4d.gd")
@@ -1080,14 +1079,6 @@ func _add_panel() -> void:
 		add_child(layer)
 		ui = layer
 	ui.add_child(panel)
-	# THE WALKING CARD (scripts/pen_stepping_card_4d.gd): stepping and facing through W, a card of its own (Ramon, 7 Oct:
-	# "it should be integrated seperately"); made here, as this panel is, so the pen's scene does not have to carry it.
-	var player: Node = _room.get_node_or_null("Player")
-	if player != null and "andrew_stepping" in player:
-		var card: Control = STEPPING_CARD.new()
-		card.set("player", player)
-		card.set("grass", self)
-		ui.add_child(card)
 
 
 func _free_bands() -> void:
