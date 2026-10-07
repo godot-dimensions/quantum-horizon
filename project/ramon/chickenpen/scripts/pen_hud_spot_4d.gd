@@ -40,6 +40,10 @@ static func taken(ui: Node, me: Control, ignore: Array = []) -> Array:
 		var c := child as Control
 		if c == null or c == me or ignore.has(c) or not c.is_visible_in_tree() or c.modulate.a < 0.05:
 			continue
+		# A FOLLOWER finds its spot after the rest and keeps out of their way, so none of them moves for it (7 Oct: the
+		# stepping card under the grass panel would otherwise push the panel off its place when it unfolds).
+		if c.has_meta(&"spot_follower"):
+			continue
 		if c.has_method("dial_circle"):
 			out.append(c.call("dial_circle"))
 			continue
