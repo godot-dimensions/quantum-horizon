@@ -106,10 +106,14 @@ when you almost got it all in slice but not quite ... v at 80 is also fine".
   at its sand; its destination and ring (CampFrame) moved from the farm's W to the camp's (`CAMP_W` in
   `_make_pen_paths_b_runner.gd`, pen_b.tres regenerated). From the farm's slice nothing of the camp shows now,
   not even its ring; only its sand painted on the shared ground does.
-- V comes up only when 80% or more of the camp is in your slice but not all of it
-  (`pen_research_camp_4d.gd` `shown_share()`, `align_share`); before, any slice through its middle brought it,
-  a strip of it. `_verify_camp_align_runner.gd` passes (a steep turn showing 61%: no V; a small one showing
-  88%: V), and so does the journey (23 checks).
+- V comes up only when 60% or more of the camp is in your slice but not all of it
+  (`pen_research_camp_4d.gd` `shown_share()`, `align_share`; first 80%, then Ramon after playing it: "it was so
+  hard to get the campsite to show up right. we should introduce V a bit sooner"); before, any slice through
+  its middle brought it, a strip of it. `_verify_camp_align_runner.gd` passes (64 turns showing part of it under
+  60%: no V; a small turn showing 73%: V), and so does the journey (23 checks).
+- Stray boxes on a turned slice (Ramon's screenshots): `World/Scenery/Post5`-`Post7`, plain 0.7 x 2.2 x 0.7 m
+  posts from the pen's first version at W +1.6, -1.6 and +2.4, moved by layout A's runner
+  (`_make_moved_pen_runner.gd`); found by `WTools/tests/_probe_stray_boxes_runner.gd`. Removal awaits his word.
 
 ## Open
 

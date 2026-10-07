@@ -24,7 +24,7 @@ extends Node4D
 ## ALIGN TO SLICE (Ramon's button). The camp stands off the farm's slice (2.5 kata in the pen): from the
 ## farm's own slice none of it shows, and its path follows down through W to it. When your slice shows
 ## most of the camp but not all of it (Ramon, 7 Oct: "v should only happen when you almost got it all in
-## slice but not quite"; align_share), "V  Align to slice" comes up over it; V brings your slice square
+## slice but not quite", then "a bit sooner"; align_share, 60%), "V  Align to slice" comes up over it; V brings your slice square
 ## to the camp's W (the orbit rig's align_to, the same move the marsh's V makes), so the whole camp is
 ## there. (It came up before as soon as the slice crossed the camp's middle, half of it or a strip.)
 ##
@@ -70,8 +70,9 @@ const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd"
 ## How near (x, z) the prompt is offered.
 @export_range(4.0, 40.0, 0.5, "suffix:m") var align_reach: float = 24.0
 ## How much of the camp must already be in your slice for V to come up: this share of its ground or more, but
-## not all of it (shown_share(); Ramon, 7 Oct: "you get v at 80 is also fine").
-@export_range(0.3, 0.95, 0.05) var align_share: float = 0.8
+## not all of it (shown_share(); Ramon, 7 Oct: "you get v at 80 is also fine", then after playing it: "it was so
+## hard to get the campsite to show up right. we should introduce V a bit sooner").
+@export_range(0.3, 0.95, 0.05) var align_share: float = 0.6
 ## How far round the fire the share is measured (the camp's ground and tents).
 @export_range(2.0, 10.0, 0.5, "suffix:m") var share_radius: float = 6.0
 

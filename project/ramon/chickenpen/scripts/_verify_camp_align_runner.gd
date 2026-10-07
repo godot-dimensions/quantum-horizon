@@ -3,8 +3,8 @@ extends SceneTree
 ## The camp's "Align to slice" (PenLayout/PLAN_REF_LOCK.md step 48; Ramon, 6 Oct: "when you rotate it
 ## so that its 50% visible you can make a button appear that says, align to slice"; 7 Oct: "v should only
 ## happen when you almost got it all in slice but not quite"). In the pen, 9 m from the camp at the farm's
-## W: none of it and no button with the slice square (the camp is 2.5 kata); a steep turn through its middle
-## shows a strip: no button. 16 m off and 1 m from its W, a small turn brings most of it in: the button;
+## W: none of it and no button with the slice square (the camp is 2.5 kata); turning toward it, while less than
+## align_share of it shows: no button. 16 m off and 1 m from its W, a small turn brings most of it in: the button;
 ## V: you are brought to the camp's W, the slice square, the button gone. Frames in
 ## smoke_test_output/pen_layout/camp/.
 ##
@@ -102,23 +102,23 @@ func _run() -> void:
 	_check("and none of the camp in the farm's slice", float(camp.call("shown_share")) == 0.0, "share %.2f" % float(camp.call("shown_share")))
 	await _shot("1_square")
 	var yaw: float = SliceAngles.angles(rig.basis).z
-	# Ramon, 7 Oct: "v should only happen when you almost got it all in slice but not quite". A steep turn
-	# that only crosses the camp's middle shows a strip of it: no button (the old rule offered it here).
-	var strip: float = -1.0
+	# Ramon, 7 Oct: "v should only happen when you almost got it all in slice but not quite", then "a bit sooner"
+	# (align_share). Turning toward the camp a step at a time: while less than that share of it shows, no button.
+	var share_v: float = float(camp.get("align_share"))
+	var early: int = 0
+	var partial: int = 0
 	for k in 80:
 		var a: float = deg_to_rad(0.5 * float(k + 1))
 		for sgn in [-1.0, 1.0]:
 			SliceAngles.tilt(rig, sgn * a, 0.0, yaw)
 			await process_frame
 			await process_frame
-			if absf(float(camp.call("slice_w_here")) - camp.global_position.w) < 0.25:
-				strip = float(camp.call("shown_share"))
-				print("      turned %.1f degrees, through the camp's middle: share %.2f" % [rad_to_deg(sgn * a), strip])
-				_check("a steep turn through its middle, a strip of it: no button", strip < float(camp.get("align_share")) and not bool(camp.call("can_align")), "share %.2f" % strip)
-				break
-		if strip >= 0.0:
-			break
-	_check("the steep turn found the camp", strip >= 0.0)
+			var sh: float = float(camp.call("shown_share"))
+			if sh > 0.0 and sh < share_v:
+				partial += 1
+				if bool(camp.call("can_align")):
+					early += 1
+	_check("turning toward it, less than %d%% of it in the slice: no button" % int(share_v * 100.0), partial > 0 and early == 0, "%d turns with part of it, %d offered" % [partial, early])
 	# Further off and nearer its W, a small turn brings most of it in: the button.
 	player.global_position = Vector4(camp.global_position.x + 16.0, 1.0, camp.global_position.z + 1.0, camp.global_position.w + 1.0)
 	player.linear_velocity = Vector4.ZERO
