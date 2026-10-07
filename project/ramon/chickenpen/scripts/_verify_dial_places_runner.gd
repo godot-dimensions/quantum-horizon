@@ -10,7 +10,7 @@ extends SceneTree
 ##   godot... --path project --windowed --resolution 1920x1080 --position 0,0
 ##       --script res://ramon/chickenpen/scripts/_verify_dial_places_runner.gd
 
-const WANT := {"Watchstone": 0.0, "marsh": 8.0, "owl": 1.5, "cave": 0.0}
+const WANT := {"Watchstone": 0.0, "marsh": 8.0, "owl": 1.5, "cave": 4.0}  # The cave unit stands 4 m ana since layout A (6 Oct).
 
 var _room: Node
 var _player: Node4D

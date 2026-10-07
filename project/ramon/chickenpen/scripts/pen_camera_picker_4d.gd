@@ -193,6 +193,12 @@ func _lay_out() -> void:
 			right = minf(right, _avoid.position.x - gap)
 		var places: Array = [Vector2(right - w, hr.end.y + gap), Vector2(hr.position.x - gap - w, hr.end.y - h),
 			Vector2(hr.position.x - gap - w, hr.position.y), Vector2(right - w, hr.position.y - gap - h)]
+		# First, beside the to-do list at the top, tops level (Ramon, 7 Oct: "place camera next to todo on the right
+		# above"), when the list is up there (pen_quests_4d.gd beside_info).
+		var todo := get_node_or_null(^"../Quests") as Control
+		if todo != null and todo.is_visible_in_tree() and bool(todo.get("beside_info")):
+			var tr: Rect2 = SPOT.rect_of(todo)
+			places.insert(0, Vector2(tr.end.x + gap, tr.position.y))
 		var controls := get_node_or_null(^"../Controls") as Control
 		if controls != null and controls.visible:
 			var cr: Rect2 = SPOT.rect_of(controls)

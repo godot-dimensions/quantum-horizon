@@ -292,6 +292,10 @@ func _build_marsh() -> void:
 	heron.basis = site_basis * Basis4D.from_zx(-PI * 0.5)
 	room.get_node("World").add_child(heron)
 	marsh.set("heron_path", heron.get_path())
+	# The heron on the slice dial too, where it stands (it follows it as it flies off).
+	heron.set_meta(&"dial_label", "heron")
+	heron.set_meta(&"dial_icon", "cube")
+	heron.add_to_group(&"slice_dial_landmark")
 
 
 func _build_wood() -> void:
@@ -313,6 +317,12 @@ func _build_wood() -> void:
 		c.position = wood_at + site_basis * Vector4(cos(a) * 1.6, 0.0, sin(a) * 1.6, 0.0)
 		room.get_node("World").add_child(c)
 		chipmunks.append(c)
+	# On the slice dial (scripts/pen_slice_plane_4d.gd landmarks; Ramon, 7 Oct: "i still couldnt find the heron
+	# anywhere. or the chipmunks"): one mark for the chipmunks, where the first of them is.
+	if not chipmunks.is_empty():
+		chipmunks[0].set_meta(&"dial_label", "chipmunks")
+		chipmunks[0].set_meta(&"dial_icon", "cube")
+		chipmunks[0].add_to_group(&"slice_dial_landmark")
 
 
 func _overlay(script: Script, part: String, layer: int) -> Node:
@@ -388,6 +398,12 @@ func _register_own_subjects() -> void:
 		subjects.call("add", {"id": "marsh", "page": "marsh", "name": "The marsh", "node": marsh, "lift": 0.5, "place": true,
 			"radius": float(marsh.get("pond_size_x")) * 0.5 + 1.0, "w_radius": float(marsh.get("w_depth")) * 0.5,
 			"behave": func(_s: Dictionary) -> Array: return [1, "Still water, out along W"]})
+	# The shooting range the same way (Ramon, 7 Oct: "when i snap a picture of the range it says nothing in it").
+	var range_unit := room.get_node_or_null("World/Range") as Node4D
+	if range_unit != null:
+		subjects.call("add", {"id": "range", "page": "range", "name": "The shooting range", "node": range_unit, "lift": 1.5,
+			"place": true, "radius": 6.0, "w_radius": 1.5,
+			"behave": func(_s: Dictionary) -> Array: return [1, "Where the range master keeps his targets"]})
 
 
 func _behave_wren(_s: Dictionary) -> Array:

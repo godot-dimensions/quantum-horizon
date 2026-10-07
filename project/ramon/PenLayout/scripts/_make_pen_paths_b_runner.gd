@@ -65,10 +65,18 @@ func _initialize() -> void:
 	# either side of it, so you met the circle at W 2.8, short of the door's slice, and the slanted road led your
 	# eye past the arch. Now the climb ends 2.5 m short, and the last stretch lies flat at the door's best W
 	# (CAVE_DOOR_W), and the circle shows only within 0.6 m of it.
-	var cave_flat: int = n.call("chord", 7.38, 33.3, CAVE_DOOR_W)
-	e.call(j_cave, cave_flat, "follow")
+	# AND A WAY IN YOU CAN SEE FROM THE ROAD (Ramon, 7 Oct: "at the cave outside, at a somewhat ideal opening, still no
+	# arrow that shows up to walk to it"): the climb started at the junction, so on the farm's slice only its first
+	# metre showed, inside the junction's clearance, and no arrow pointed at the cave; the flat end was shorter than
+	# one chevron. Now: 2.5 m static off the junction (seen from any W, pointing at the door), a 2 m climb, and 3 m
+	# flat at the door's W into a circle nearer the door.
+	var cave_lead: int = n.call("chord", 7.33, 34.6, 0.0)
+	var cave_flat: int = n.call("chord", 7.36, 32.6, CAVE_DOOR_W)
+	e.call(j_cave, cave_lead, "static")
+	e.call(cave_lead, cave_flat, "follow")
 	e.call(cave_flat, cave, "here")
 	g.call("node", cave)["band"] = 1.2
+	g.call("node", cave)["pos"] = Vector4(7.4, 0.0, 29.6, CAVE_DOOR_W)
 	# 4: on west to the pen's corner, and the pen's gate at the line's end.
 	var j_pen: int = n.call("junction", -4.0, MAIN_Z)
 	# The dev look draws its own frame round the pen (pen_look_4d.gd _frame_pen): none here.

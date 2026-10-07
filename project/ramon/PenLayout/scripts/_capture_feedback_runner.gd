@@ -37,6 +37,10 @@ func _initialize() -> void:
 	# The HUD at Ramon's size (the runner's window is 1280 x 720).
 	if _mode == "panels":
 		DisplayServer.window_set_size(Vector2i(1920, 1080))
+	# Ramon's screen (7 Oct: "i play in 4k"), with his saved UI size (user://pen_settings.cfg).
+	if _mode == "hud4k":
+		DisplayServer.window_set_position(Vector2i(0, 0))
+		DisplayServer.window_set_size(Vector2i(3840, 2160))
 	_run.call_deferred()
 
 
@@ -467,7 +471,13 @@ func _run() -> void:
 			player.set("input_enabled", true)
 			for dev in [false, true]:
 				_look(dev)
-				for spot in [[Vector4(7.3, 0.2, 38.5, 0.0), "1_junction"], [Vector4(7.38, 0.2, 34.6, 3.0), "2_flat"], [Vector4(7.4, 0.2, 32.4, 3.0), "3_circle"]]:
+				# From above and behind the junction, at the farm's W and at the door's.
+				for w in [0.0, 3.0]:
+					await _wait(1.0)
+					_aim(Vector4(7.3, 9.0, 43.0, w), Vector4(7.35, 0.0, 32.0, w))
+					await _shot("0_above_w%d" % int(w) + ("_dev" if dev else "_art"))
+				(player.get_node("CameraRig/Pitch/Camera4D") as Camera4D).make_current()
+				for spot in [[Vector4(7.3, 0.2, 39.5, 0.0), "1_junction"], [Vector4(7.38, 0.2, 32.3, 3.0), "2_flat"], [Vector4(7.4, 0.2, 30.4, 3.0), "3_circle"]]:
 					player.global_position = spot[0]
 					player.set("linear_velocity", Vector4.ZERO)
 					rig.call("face_toward", Vector4(0.0, 0.0, -1.0, 0.0))
@@ -489,6 +499,62 @@ func _run() -> void:
 				await _shot("1_branch" + ("_dev" if dev else "_art"))
 				_aim(Vector4(-24.5, 3.2, -28.5, 0.0), Vector4(-30.0, 1.0, -32.0, 0.0))
 				await _shot("2_basket" + ("_dev" if dev else "_art"))
+		"pairs":
+			# The same view in the dev look and the art, for the playable world's comparison (Ramon, 7 Oct: "for the
+			# playable world its the toggle mode"): the player's own camera, no HUD.
+			var rig: Node = player.get_node("CameraRig")
+			for spot in [[Vector4(24.9, 0.05, 25.0, 0.0), PI, -0.12, "start"], [Vector4(-14.0, 0.05, -15.0, 0.0), 0.35, -0.04, "watchstone"],
+					[Vector4(7.4, 0.05, 31.6, 3.0), 0.0, -0.10, "cave"], [Vector4(-7.5, 0.05, 33.5, 0.0), PI * 0.5 - 0.2, -0.15, "pen"],
+					[Vector4(9.0, 0.05, -7.0, -2.5), PI * 0.5 + 0.9, -0.12, "camp"]]:
+				player.global_position = spot[0]
+				player.set("linear_velocity", Vector4.ZERO)
+				rig.call("align_to", float((spot[0] as Vector4).w))
+				rig.set("yaw", float(spot[1]))
+				rig.set("pitch", float(spot[2]))
+				rig.call("drag_slice", Vector2.ZERO)
+				for dev in [true, false]:
+					_look(dev)
+					await _wait(1.6)
+					await _shot("%s_%s" % [spot[3], "dev" if dev else "art"])
+		"hud4k":
+			# The HUD at 3840 x 2160 and his UI size: the look and paths panels under the murmuration card, the camera
+			# picker beside the to-do list, the dial with everyone and every place; dev look, then art.
+			for dev in [true, false]:
+				_look(dev)
+				await _wait(1.5)
+				print("HUD4K: window %s, UI %s%%" % [str(root.size), str(_room.get_node("Systems/UiScale").get("percent"))])
+				var ui: Node = _room.get_node("UI")
+				for c in ui.get_children():
+					var cc := c as Control
+					if cc == null or not cc.is_visible_in_tree():
+						continue
+					var r: Rect2 = cc.get_global_transform() * Rect2(Vector2.ZERO, cc.size)
+					if r.size.x >= 2.0 and r.size.y >= 2.0 and r.size.x < 2000.0:
+						print("HUD4K %s: %-16s at %s size %s" % ["dev" if dev else "art", cc.name, str(r.position.round()), str(r.size.round())])
+				await _shot("1_" + ("dev" if dev else "art"), true)
+		"portal":
+			# Trym's door raised in the dev look: the house stays in the landmark orange.
+			_look(true)
+			await _wait(1.0)
+			var arch := _room.get_node("World/TrymCabin/TrymDoor") as Node4D
+			var look_node: Node = _room.get_node("Systems/Look")
+			var orange: Color = look_node.get("landmark_colour")
+			arch.visible = true
+			arch.set("armed", true)
+			await _wait(2.5)
+			var house: Array = []
+			for mi in _room.get_node("World/TrymCabin").find_children("*", "MeshInstance4D", true, false):
+				var m := (mi as MeshInstance4D).material_override as TetraMaterial4D
+				if m != null and (mi as MeshInstance4D).is_visible_in_tree() and not (mi as Node).has_meta(&"_look_own"):
+					house.append(m.albedo_color)
+			var still: int = 0
+			for c in house:
+				if (c as Color).is_equal_approx(orange):
+					still += 1
+			print("PORTAL: %d of the house's laid parts still in the landmark orange %s" % [still, str(orange)])
+			var at: Vector4 = arch.global_position
+			_aim(at + Vector4(7.0, 3.0, 7.0, 0.0), at + Vector4(0.0, 1.5, 0.0, 0.0))
+			await _shot("1_armed_dev")
 		"road":
 			# Down the camp's road from its junction, on the farm's slice: how far it shows, and the scout on it.
 			for dev in [false, true]:

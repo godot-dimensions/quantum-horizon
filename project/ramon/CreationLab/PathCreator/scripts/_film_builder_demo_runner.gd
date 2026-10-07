@@ -13,6 +13,14 @@ extends SceneTree
 ## smoke_test_output/video/<name>.avi; scratchpad ffmpeg makes the mp4.
 ##
 ##   lab_run.sh movie_hd pc_builder_demo res://ramon/CreationLab/PathCreator/scripts/_film_builder_demo_runner.gd
+##
+## With "drag" after the script: THE ROUTES LIVE (Ramon, 7 Oct: "being able to move the directional lines in realtime
+## in the editor, curved or straight, all dynamic. show a video how it moves while building it"): a small graph laid
+## by hand, then in the builder a point dragged about with the route and its arrows following, its corner rounded
+## wider and wider and sharp again, the branch circle dragged with both branches after it; then from beside the
+## route on the floor, a point moving and the arrows re-laying as it goes.
+##
+##   lab_run.sh movie_hd pc_builder_drag res://ramon/CreationLab/PathCreator/scripts/_film_builder_demo_runner.gd drag
 
 const SCENE := "res://ramon/CreationLab/PathCreator/pathcreator.tscn"
 const Graph := preload("res://ramon/CreationLab/PathCreator/graph/path_graph.gd")
@@ -200,6 +208,9 @@ func _run() -> void:
 	_over.draw.connect(_draw_over)
 	layer.add_child(_over)
 	await _wait(2.0)
+	if "drag" in OS.get_cmdline_user_args():
+		await _run_drag()
+		return
 	_g.call("go_to", Vector4(AREA.x, 0.05, AREA.y + 18.0, 0.0), 0.0)
 	await _wait(0.8)
 	_title = "PathCreator: building paths"
@@ -352,6 +363,101 @@ func _run() -> void:
 func _turn(rig: Node) -> void:
 	rig.set("yaw", _yaw)
 	rig.call("_apply")
+
+
+## The live film (see the header): a graph laid by hand, the builder, drags and curves, then the floor in 3D.
+func _run_drag() -> void:
+	var s: int = _graph.call("add_node", "start", Vector4(AREA.x, 0.0, AREA.y + 14.0, 0.0), {"band": 1.2})
+	var b: int = _graph.call("add_node", "bend", Vector4(AREA.x, 0.0, AREA.y + 5.0, 0.0), {"band": 1.2})
+	var j: int = _graph.call("add_node", "junction", Vector4(AREA.x + 7.0, 0.0, AREA.y - 2.0, 0.0), {"band": 1.2})
+	var d1: int = _graph.call("add_node", "destination", Vector4(AREA.x + 7.0, 0.0, AREA.y - 11.0, 0.0),
+		{"band": 1.2, "state": "available", "target": "DemoHut", "frame": "rect", "approach": Vector2(0, 1)})
+	var d2: int = _graph.call("add_node", "destination", Vector4(AREA.x - 3.0, 0.0, AREA.y - 6.0, 0.0),
+		{"band": 1.2, "state": "arrival", "approach": Vector2(1, 0), "size": 0.75})
+	_graph.call("add_edge", s, b, "primary", "static", 1.2)
+	_graph.call("add_edge", b, j, "primary", "static", 1.2)
+	_graph.call("add_edge", j, d1, "primary", "static", 1.2)
+	_graph.call("add_edge", j, d2, "secondary", "static", 1.2)
+	_graph.emit_changed()
+	(_g.get_node("Targets/DemoHut") as Node4D).position = Vector4(AREA.x + 7.0, 0.0, AREA.y - 15.0, 0.0)
+	_g.call("go_to", Vector4(AREA.x + 2.0, 0.05, AREA.y + 3.0, 0.0), 0.0)
+	await _wait(0.6)
+	_g.call("set_build", true)
+	var cam: Camera4D = _b.get("cam")
+	cam.global_position = Vector4(AREA.x + 6.0, 40.0, AREA.y + 3.0, 0.0)
+	cam.set("orthographic_size", 34.0)
+	_b.queue_redraw()
+	# Drag the bend round in a loop.
+	_caption("drag", "a point: the route and its arrows follow as you move it")
+	var bp: Vector2 = Vector2(AREA.x, AREA.y + 5.0)
+	await _move(bp.x, bp.y, 0.6)
+	await _press(true)
+	for i in 120:
+		var a: float = TAU * float(i) / 120.0
+		var q := bp + Vector2(sin(a) * 5.0, (1.0 - cos(a)) * -2.5)
+		var mm := InputEventMouseMotion.new()
+		_cur = _screen(q.x, q.y)
+		mm.position = _cur
+		_b.call("_gui_input", mm)
+		_over.queue_redraw()
+		await process_frame
+	await _press(false)
+	await _wait(0.4)
+	# Round the corner: wider, wider, sharp.
+	for say in ["round the corner: 2 m", "again: 4 m", "again: 7 m", "and sharp again"]:
+		_caption("R", say)
+		await _move(bp.x, bp.y, 0.35)
+		var near: int = _node_id_at(bp.x, bp.y)
+		var np: Vector4 = _graph.call("node", near)["pos"]
+		await _move(np.x, np.z, 0.2)
+		await _key_press(KEY_R)
+		await _wait(1.0)
+	# Drag the branch circle: both branches after it.
+	_caption("drag", "the branch circle: both branches follow")
+	var jp := Vector2(AREA.x + 7.0, AREA.y - 2.0)
+	await _move(jp.x, jp.y, 0.6)
+	await _press(true)
+	for i in 100:
+		var a: float = TAU * float(i) / 100.0
+		var q := jp + Vector2(sin(a) * 4.0, sin(a * 2.0) * 2.0)
+		var mm := InputEventMouseMotion.new()
+		_cur = _screen(q.x, q.y)
+		mm.position = _cur
+		_b.call("_gui_input", mm)
+		_over.queue_redraw()
+		await process_frame
+	await _press(false)
+	await _wait(0.5)
+	# On the floor, in 3D: the bend moved while the camera watches.
+	_g.call("set_build", false)
+	_cur = Vector2(-100, -100)
+	var look_cam := Camera4D.new()
+	_g.add_child(look_cam)
+	look_cam.global_position = Vector4(AREA.x + 14.0, 7.0, AREA.y + 9.0, 0.0)
+	look_cam.look_at(Vector4(AREA.x + 2.0, 0.0, AREA.y + 1.0, 0.0), Vector4(0, 1, 0, 0))
+	look_cam.make_current()
+	(_g.get("player") as Node4D).visible = false
+	_caption("", "and on the floor, live: the arrows re-lay as the point moves")
+	var node_b: Dictionary = _graph.call("node", _node_id_at(bp.x, bp.y))
+	var base: Vector4 = node_b["pos"]
+	for i in 150:
+		var a: float = TAU * float(i) / 150.0
+		node_b["pos"] = base + Vector4(sin(a) * 4.5, 0.0, (1.0 - cos(a)) * -2.0, 0.0)
+		_graph.emit_changed()
+		await process_frame
+	await _wait(0.6)
+	_caption("", "")
+	print("FILM DRAG: done")
+	quit(0)
+
+
+func _press(down: bool) -> void:
+	var mb := InputEventMouseButton.new()
+	mb.position = _cur
+	mb.button_index = MOUSE_BUTTON_LEFT
+	mb.pressed = down
+	_b.call("_gui_input", mb)
+	await process_frame
 
 
 func _print_graph(when: String) -> void:

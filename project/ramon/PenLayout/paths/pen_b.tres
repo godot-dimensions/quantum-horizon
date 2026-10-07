@@ -49,7 +49,7 @@ nodes = [{
 "frame": "round",
 "id": 5,
 "kind": "destination",
-"pos": Vector4(7.4, 0, 30.8, 3),
+"pos": Vector4(7.4, 0, 29.6, 3),
 "size": 1.0,
 "state": "available",
 "target": "CaveFrame"
@@ -59,7 +59,7 @@ nodes = [{
 "frame": "none",
 "id": 6,
 "kind": "chord",
-"pos": Vector4(7.38, 0, 33.3, 3),
+"pos": Vector4(7.33, 0, 34.6, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -67,6 +67,15 @@ nodes = [{
 "band": 2.4,
 "frame": "none",
 "id": 7,
+"kind": "chord",
+"pos": Vector4(7.36, 0, 32.6, 3),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 8,
 "kind": "junction",
 "pos": Vector4(-4, 0, 37.1, 0),
 "state": "arrival",
@@ -76,7 +85,7 @@ nodes = [{
 "approach": Vector2(1, 0),
 "band": 2.4,
 "frame": "none",
-"id": 8,
+"id": 9,
 "kind": "destination",
 "pos": Vector4(-14.2, 0, 37.1, 0),
 "size": 1.0,
@@ -86,7 +95,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 2.4,
 "frame": "none",
-"id": 9,
+"id": 10,
 "kind": "bend",
 "pos": Vector4(-11.1, 0, 23.1, 0),
 "state": "arrival",
@@ -95,7 +104,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 2.4,
 "frame": "none",
-"id": 10,
+"id": 11,
 "kind": "junction",
 "pos": Vector4(-12.3, 0, 2.1, 0),
 "state": "arrival",
@@ -105,7 +114,7 @@ nodes = [{
 "approach": Vector2(1, 0),
 "band": 2.4,
 "frame": "rect",
-"id": 11,
+"id": 12,
 "kind": "destination",
 "pos": Vector4(-19.3, 0, 2.1, 0),
 "size": 1.0,
@@ -115,7 +124,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 2.4,
 "frame": "none",
-"id": 12,
+"id": 13,
 "kind": "junction",
 "pos": Vector4(-12.7, 0, -3.9, 0),
 "state": "arrival",
@@ -125,7 +134,7 @@ nodes = [{
 "approach": Vector2(-1, 0),
 "band": 2.4,
 "frame": "round",
-"id": 13,
+"id": 14,
 "kind": "destination",
 "pos": Vector4(6.4, 0, -4, -2.5),
 "size": 1.0,
@@ -136,7 +145,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 2.4,
 "frame": "round",
-"id": 14,
+"id": 15,
 "kind": "destination",
 "pos": Vector4(-18.75, 0, -27.8, 0),
 "size": 1.0,
@@ -146,7 +155,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 2.4,
 "frame": "none",
-"id": 15,
+"id": 16,
 "kind": "junction",
 "pos": Vector4(-17.42, 0, -22.5, 0),
 "state": "arrival",
@@ -155,7 +164,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 2.4,
 "frame": "none",
-"id": 16,
+"id": 17,
 "kind": "bend",
 "pos": Vector4(-30, 0, -27.5, 0),
 "state": "arrival",
@@ -165,7 +174,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 2.4,
 "frame": "none",
-"id": 17,
+"id": 18,
 "kind": "destination",
 "pos": Vector4(-30, 0, -30, 0),
 "size": 0.75,
@@ -195,10 +204,16 @@ edges = [{
 "from": 4,
 "priority": "primary",
 "to": 6,
-"w_mode": "follow"
+"w_mode": "static"
 }, {
 "band": 2.4,
 "from": 6,
+"priority": "primary",
+"to": 7,
+"w_mode": "follow"
+}, {
+"band": 2.4,
+"from": 7,
 "priority": "primary",
 "to": 5,
 "w_mode": "here"
@@ -206,23 +221,17 @@ edges = [{
 "band": 2.4,
 "from": 4,
 "priority": "primary",
-"to": 7,
-"w_mode": "here"
-}, {
-"band": 2.4,
-"from": 7,
-"priority": "primary",
 "to": 8,
 "w_mode": "here"
 }, {
 "band": 2.4,
-"from": 7,
+"from": 8,
 "priority": "primary",
 "to": 9,
 "w_mode": "here"
 }, {
 "band": 2.4,
-"from": 9,
+"from": 8,
 "priority": "primary",
 "to": 10,
 "w_mode": "here"
@@ -234,33 +243,33 @@ edges = [{
 "w_mode": "here"
 }, {
 "band": 2.4,
-"from": 10,
+"from": 11,
 "priority": "primary",
 "to": 12,
 "w_mode": "here"
 }, {
 "band": 2.4,
-"from": 12,
+"from": 11,
 "priority": "primary",
 "to": 13,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 13,
+"priority": "primary",
+"to": 14,
 "w_mode": "follow"
 }, {
 "band": 2.4,
-"from": 12,
+"from": 13,
+"priority": "primary",
+"to": 16,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 16,
 "priority": "primary",
 "to": 15,
-"w_mode": "here"
-}, {
-"band": 2.4,
-"from": 15,
-"priority": "primary",
-"to": 14,
-"w_mode": "here"
-}, {
-"band": 2.4,
-"from": 15,
-"priority": "secondary",
-"to": 16,
 "w_mode": "here"
 }, {
 "band": 2.4,
@@ -268,5 +277,11 @@ edges = [{
 "priority": "secondary",
 "to": 17,
 "w_mode": "here"
+}, {
+"band": 2.4,
+"from": 17,
+"priority": "secondary",
+"to": 18,
+"w_mode": "here"
 }]
-next_id = 18
+next_id = 19

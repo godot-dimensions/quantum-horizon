@@ -85,6 +85,16 @@ extends Control
 ## its node's name beside it - so "which slice is Mithra on" is a glance rather than a
 ## walk. Named from the node, so adding somebody to this list is the whole job.
 @export var people_paths: Array[NodePath] = []
+## EVERYONE, AND EVERY PLACE (Ramon, 7 Oct: "does everythng show up on radar? also the owl and the landmarks?"). Until
+## then the dial had Mithra, the keeper, Trym and the grey cat, and as places the marsh, the owl, the Watchstone and
+## the cave. These add the rest of the people (by path; the name drawn is the node's "dial_name" meta, else its
+## name) and the places that have no outline of their own: [path, name, radius in metres, half its depth in W],
+## drawn as a ring round where the place stands, at its W. The camp is the one that matters most: 2.5 m kata.
+@export var more_people: Array[NodePath] = [NodePath("../../World/ProfessorPost/Professor"), NodePath("../../World/Range/RangeMaster"),
+	NodePath("../../World/LookoutSite/Wren"), NodePath("../../World/CampGuide/Guide"), NodePath("../../World/TrymCabin/RedCat")]
+const DIAL_NAMES := {"Guide": "Camp Scout", "RangeMaster": "Range master", "RedCat": "Red cat", "Cat": "Grey cat"}
+@export var more_places: Array = [["../../World/EggCamp", "camp", 6.0, 1.5], ["../../World/Range", "range", 7.0, 1.2],
+	["../../World/TrymCabin", "Trym's house", 5.0, 1.2], ["../../World/KataWood", "kata wood", 9.0, 2.0]]
 
 @export_group("Reading")
 ## How close counts as home. The same figure the catch uses, so "the diagram says home"
@@ -218,9 +228,13 @@ func _ready() -> void:
 	_manager = get_node_or_null(manager_path)
 	_locator = get_node_or_null(locator_path)
 	_rig = get_node_or_null(rig_path)
-	for path in people_paths:
+	var all_people: Array[NodePath] = people_paths.duplicate()
+	for path in more_people:
+		if not all_people.has(path):
+			all_people.append(path)
+	for path in all_people:
 		var who: Node4D = get_node_or_null(path) as Node4D
-		if who != null:
+		if who != null and not _people.has(who):
 			_people.append(who)
 			_people_colors.append(_colour_of(who, _people.size() - 1))
 			_people_are_cats.append(who.get("fur") is Color)
@@ -716,7 +730,7 @@ func _folk() -> Array:
 			continue
 		var at: Vector4 = who.global_position
 		var slot: int = _people.find(who)
-		out.append([at.x, at.z, at.w, who.name, _people_colors[slot],
+		out.append([at.x, at.z, at.w, String(who.get_meta(&"dial_name", DIAL_NAMES.get(String(who.name), String(who.name)))), _people_colors[slot],
 			_people_are_cats[slot]])
 	return out
 
@@ -766,6 +780,21 @@ func _places(origin: Vector2, mid: Vector2, radius: float) -> Array:
 		centre /= float(points.size())
 		out.append([points, String(d.get("label", n.name)), d.get("colour", Color(0.85, 0.85, 0.85, 0.9)),
 			float(d.get("depth", home_tolerance)), d.get("label_at", centre), seen, centre])
+	# The places without an outline of their own (more_places): a ring round each, at its W.
+	for entry in more_places:
+		var place := get_node_or_null(NodePath(String(entry[0]))) as Node4D
+		if place == null or not place.is_visible_in_tree():
+			continue
+		var c: Vector4 = place.global_position
+		var r: float = float(entry[2])
+		var ring := PackedVector4Array()
+		var seen_ring: bool = false
+		for i in 20:
+			var a: float = TAU * float(i) / 20.0
+			var p := Vector4(c.x + cos(a) * r, c.y, c.z + sin(a) * r, c.w)
+			ring.append(p)
+			seen_ring = seen_ring or _fade(Vector2(p.x, p.z), origin, mid, radius) > 0.01
+		out.append([ring, String(entry[1]), Color(0.85, 0.85, 0.85, 0.9), float(entry[3]), c, seen_ring, c])
 	return out
 
 

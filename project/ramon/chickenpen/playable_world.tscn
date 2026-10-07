@@ -2065,7 +2065,7 @@ radius = 3.4
 metadata/what = "Sand in front of Trym's house (Ramon, 6 Oct: \"sand in front of the house, and on top a larger destination circle\")."
 
 [node name="ProfessorPost" parent="World" instance=ExtResource("unit_professor")]
-position = Vector4(3.6, 0, 34, 0)
+position = Vector4(5.2, 0, 35.4, 0)
 
 [node name="Crow" type="Node4D" parent="World"]
 position = Vector4(-19.2, 0, 37.1, 0)

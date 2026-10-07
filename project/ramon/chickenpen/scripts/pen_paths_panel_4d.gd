@@ -118,6 +118,16 @@ func _process(_delta: float) -> void:
 	scale = beside.scale if beside != null and is_instance_valid(beside) else Vector2.ONE
 	var vis: Vector2 = size * scale
 	var places: Array = []
+	# Under the murmuration card, at its left edge, the look panel beside it (Ramon, 7 Oct: "place them under the
+	# murmuration box"); with the card away, under the info card.
+	var stats := get_parent().get_node_or_null(^"FlockStats") as Control
+	var info := get_parent().get_node_or_null(^"InfoCard") as Control
+	if stats != null and stats.is_visible_in_tree():
+		var sr: Rect2 = SPOT.rect_of(stats)
+		places.append(Vector2(sr.position.x, sr.end.y + gap))
+	elif info != null and info.is_visible_in_tree():
+		var ir: Rect2 = SPOT.drawn_of(info)
+		places.append(Vector2(maxf(ir.position.x, 4.0), ir.end.y + gap))
 	if beside != null and is_instance_valid(beside) and beside.is_visible_in_tree():
 		var r: Rect2 = SPOT.rect_of(beside)
 		# On top of the grass panel, left edges level: it keeps the room (grass/pen_grass_panel_4d.gd; Ramon,

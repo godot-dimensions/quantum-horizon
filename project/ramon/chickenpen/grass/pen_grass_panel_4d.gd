@@ -46,7 +46,12 @@ var _look_buttons: Array[Button] = []
 var _look_node: Node
 ## How big the panel is drawn, of its own size (Ramon, 7 Oct: "make the look panel 60% of the size"); the paths
 ## window on top of it takes the same (scripts/pen_paths_panel_4d.gd).
-@export_range(0.3, 1.5, 0.05) var panel_scale: float = 0.6
+@export_range(0.3, 1.5, 0.05) var panel_scale: float = 1.0
+## THE GRASS FOLDED AWAY (Ramon, 7 Oct: "path and look brackets are of a different formatting than other
+## windows"). At 60% (panel_scale, his earlier ask) its text and corners were smaller than every other card's;
+## at the cards' own size it is kept small instead by folding the grass's rows behind one switch, the look and
+## Save settings always showing.
+@export var start_folded: bool = true
 ## The dev look's two colours (Ramon, 7 Oct: "two options in the dev panel that makes me controll the orange and
 ## the blue in the scene"): swatches under Dev / Art, set live, kept by Save settings, shown in the dev look only
 ## ("is it possible we show the color squares menu only in the dev look?").
@@ -77,6 +82,10 @@ var _chip: StyleBoxFlat
 var _chip_hover: StyleBoxFlat
 var _chip_on: StyleBoxFlat
 var _panel: StyleBoxFlat
+var _fold_button: Button
+var _folded: bool = true
+var _save_box: VBoxContainer
+var _hills_note: Label
 
 
 func _ready() -> void:
@@ -143,6 +152,12 @@ func _ready() -> void:
 	_wind_slider.value_changed.connect(_on_wind)
 	_on_wind(_wind_slider.value)
 	_save_rows()
+	# The fold: one switch where the "Grass" heading was, right under the look.
+	_folded = start_folded
+	_title.visible = false
+	_fold_button = _button("Show grass")
+	_box.move_child(_fold_button, _box.get_children().find(_look_box) + 1)
+	_fold_button.pressed.connect(_toggle_fold)
 	if grass != null and grass.has_signal("preset_changed"):
 		grass.connect("preset_changed", _on_changed)
 	if grass != null and grass.has_signal("ground_changed"):
@@ -265,6 +280,7 @@ func _save_rows() -> void:
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.set_meta(&"always", true)
 	_box.add_child(box)
+	_save_box = box
 	_save_button = _button("Save settings", box)
 	_save_button.pressed.connect(_save)
 	_save_note = _label("", Color(1.0, 1.0, 1.0, 0.45), box)
@@ -277,6 +293,7 @@ func _save_rows() -> void:
 		# Wrapped to the panel's width: on one line it made the panel twice as wide (7 Oct).
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		note.custom_minimum_size = Vector2(190.0, 0.0)
+		_hills_note = note
 
 
 func _save() -> void:
@@ -458,7 +475,7 @@ func _process(delta: float) -> void:
 	var back: Control = get_child(0) as Control
 	size = back.get_combined_minimum_size()
 	back.size = size
-	# 60% of its size (Ramon, 7 Oct: "make the look panel 60% of the size, so smaller"): drawn and placed so.
+	# Its size (panel_scale): the cards' own since 7 Oct, kept small by the fold (start_folded).
 	scale = Vector2.ONE * panel_scale
 	var own: Vector2 = size * panel_scale
 	# FIRST FREE SPOT (pen_hud_spot_4d.gd, 3 Oct): above the to-do list, left edges level, as it
@@ -472,6 +489,20 @@ func _process(delta: float) -> void:
 	var top_h: float = stack.size.y * stack.scale.y + gap if stack != null and stack.is_visible_in_tree() else 0.0
 	var block := Vector2(maxf(own.x, stack.size.x * stack.scale.x if top_h > 0.0 else 0.0), own.y + top_h)
 	var places: Array = []
+	# UNDER THE MURMURATION CARD, BESIDE THE PATHS WINDOW (Ramon, 7 Oct: "place them under the murmuration box"):
+	# the paths window at the card's left edge (scripts/pen_paths_panel_4d.gd), this to its right, tops level; with
+	# the card away (F3), the same under the info card. Taken first; the old places below are the fallbacks.
+	var stats_now := get_parent().get_node_or_null(^"FlockStats") as Control
+	var info_now := get_parent().get_node_or_null(^"InfoCard") as Control
+	var paths_w: float = stack.size.x * stack.scale.x + gap if top_h > 0.0 else 0.0
+	var beside := Vector2.ZERO
+	if stats_now != null and stats_now.is_visible_in_tree():
+		var sr: Rect2 = SPOT.rect_of(stats_now)
+		beside = Vector2(sr.position.x + paths_w, sr.end.y + gap)
+	elif info_now != null and info_now.is_visible_in_tree():
+		var ir: Rect2 = SPOT.drawn_of(info_now)
+		beside = Vector2(maxf(ir.position.x, 4.0) + paths_w, ir.end.y + gap)
+	var places_beside: Array = [beside] if beside != Vector2.ZERO else []
 	# The to-do list is only this column's when it sits bottom left (since 7 Oct it sits at the top, beside the
 	# info card: pen_quests_4d.gd beside_info).
 	var in_column: bool = above != null and above.is_visible_in_tree() and not bool(above.get("beside_info"))
@@ -508,6 +539,9 @@ func _process(delta: float) -> void:
 	var taken: Array = SPOT.taken(get_parent(), self, ignore)
 	if belt_r.size != Vector2.ZERO:
 		taken.append(belt_r)
+	if not places_beside.is_empty() and SPOT.is_free(Rect2(places_beside[0], own), taken, view):
+		position = places_beside[0]
+		return
 	position = SPOT.first(places, block, taken, view) + Vector2(0.0, top_h)
 
 
@@ -566,8 +600,36 @@ func _on_enabled(on: bool) -> void:
 	# the one switch, and opens again with the grass.
 	if _box != null:
 		for row in _box.get_children():
-			if row != _title and row != _grass_button and not row.has_meta(&"always") and row is CanvasItem:
+			if row != _title and row != _grass_button and row != _fold_button and not row.has_meta(&"always") and row is CanvasItem:
 				(row as CanvasItem).visible = on
+	_apply_fold()
+
+
+## Folded: only the look, the fold's switch and Save settings show; open: the grass's rows as the grass is (on
+## or off, _on_enabled).
+func _toggle_fold() -> void:
+	_folded = not _folded
+	if not _folded and _box != null:
+		for row in _box.get_children():
+			if (row == _grass_button or row.has_meta(&"always")) and row is CanvasItem:
+				(row as CanvasItem).visible = true
+		_on_enabled(bool(grass.get("enabled")) if grass != null else false)
+	else:
+		_apply_fold()
+
+
+func _apply_fold() -> void:
+	if _fold_button != null:
+		_fold_button.visible = true
+		_fold_button.text = "Show grass" if _folded else "Hide grass"
+		_paint(_fold_button, not _folded)
+	if _hills_note != null:
+		_hills_note.visible = not _folded
+	if not _folded or _box == null:
+		return
+	for row in _box.get_children():
+		if row != _look_box and row != _fold_button and row != _save_box and row is CanvasItem:
+			(row as CanvasItem).visible = false
 
 
 ## The even green's button, lit as it stands (the grass sends glow_changed when it changes).

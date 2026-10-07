@@ -52,6 +52,10 @@ var _dev: bool = true
 
 
 func _ready() -> void:
+	# Always running, so the rings hide when their owners do: going through Trym's door puts all of Systems to sleep,
+	# and the rings (4D children of a plain Node, so hiding the farm never reached them) stayed on the theatre's
+	# floor where their owners had stood (Ramon, 7 Oct: "orange pads anywhere").
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	var look: Node = get_node_or_null("../Look")
 	if look != null and look.has_signal("applied_changed"):
 		_dev = bool(look.get("_applied"))

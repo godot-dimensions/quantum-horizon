@@ -178,7 +178,9 @@ func _physics_process(_d: float) -> bool:
 			var p := _player()
 			var mouth_z: float = CaveHill.MOUTH.z
 			var lp: Vector4 = CaveHill.to_local(hill_node, p.global_position)
-			_check("set down in the mouth of the cave", absf(lp.x - CaveHill.MOUTH.x) < 3.0 and lp.z > mouth_z - 6.5 and lp.z < mouth_z + 1.0, "at %s (%s in the hill's frame)" % [p.global_position, lp])
+			# At the mouth, in it or a few paces out (since layout B, 7 Oct, the way home sets you down 13 m back from where
+			# the tunnel took you, which is just outside the arch: CaveCrossing return_offset in playable_world.tscn).
+			_check("set down at the mouth of the cave", absf(lp.x - CaveHill.MOUTH.x) < 3.0 and lp.z > mouth_z - 6.5 and lp.z < mouth_z + 5.0, "at %s (%s in the hill's frame)" % [p.global_position, lp])
 			var yaw: float = float(_room.get_node("Player/CameraRig").get("yaw"))
 			var hz: Vector4 = hill_node.global_basis.z if hill_node != null else Vector4(0, 0, 1, 0)
 			var out_yaw: float = PI + atan2(hz.x, hz.z)

@@ -281,6 +281,10 @@ func _bar(parent: Node, part: String, at: Vector4, size: Vector3,
 	var material := TetraMaterial4D.new()
 	material.albedo_color = colour
 	node.material_override = material
+	# The dev look leaves it as it is (look/pen_look_4d.gd OWN): the arch lights its field by changing its material,
+	# and laid in the look's one shared orange it lit every orange thing in the pen cyan with it (Ramon, 7 Oct: "when
+	# trym opens his portal in dev mode. the house becomes cyan color").
+	node.set_meta(&"_look_own", true)
 	parent.add_child(node)
 	node.position = at
 	_own(node)

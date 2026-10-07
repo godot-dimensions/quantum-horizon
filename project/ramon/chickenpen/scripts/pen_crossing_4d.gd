@@ -60,6 +60,9 @@ extends Node
 ## Other crossings that, while away, make this one stay shut - so the cave's key does not
 ## open a cave on top of the theatre.
 @export var blocked_by: Array[NodePath] = []
+## The farm's own environment, made current again on the way home (the cave's and the theatre's take over on the
+## way in; see go()).
+@export var farm_environment_path: NodePath = NodePath("../World/Environment")
 
 @export_group("Testing")
 ## A way straight in and straight out again, for looking at the theatre without walking
@@ -83,6 +86,10 @@ var _theatre: Node
 ## The place, parked between visits, when keep_scene is on.
 var _kept: Node
 var _asleep: Array[Node] = []
+## The sleeping farm's collision shapes, switched off while away: shape -> [layer, mask].
+var _shapes: Dictionary = {}
+## This trip was the debug key's (go_for_testing): home is exactly where you pressed it.
+var _testing_trip: bool = false
 var _hidden: Array[CanvasItem] = []
 var _was_at := Vector4.ZERO
 
@@ -120,6 +127,7 @@ func go_for_testing() -> void:
 	if stage_before_testing:
 		for node in get_tree().current_scene.get_children():
 			_stage_trip(node)
+	_testing_trip = true
 	go()
 
 
@@ -185,6 +193,7 @@ func go() -> void:
 		if branch is Node4D:
 			(branch as Node4D).visible = false
 		_put_away(branch)
+		_solid(branch, false)
 	if _kept != null and is_instance_valid(_kept):
 		_theatre = _kept
 		_kept = null
@@ -199,8 +208,16 @@ func go() -> void:
 	var exit: Node = _theatre.get_node_or_null("ExitArch")
 	if exit != null and exit.has_signal("entered") and not exit.is_connected("entered", come_back):
 		exit.connect("entered", come_back)
+	# ITS OWN SKY AND LIGHT, EVERY VISIT. A kept place (the cave) is taken out of the tree on the way home, and that
+	# clears its environment's "current"; put back, it did not take the sky again, so the second visit to the cave
+	# was lit by the farm's (Ramon, 7 Oct: "insdie the cave its very bright, it was dark. like the environment
+	# settings from the pen scene carried over"; the laptop trip already did this, pen_laptop_trip_4d.gd).
+	for env in _theatre.find_children("*", "WorldEnvironment4D", true, false):
+		if env.has_method("make_current"):
+			env.call("make_current")
 	if bring_player and player != null and _theatre.has_method("arrival"):
 		player.global_position = _theatre.call("arrival")
+		_flat_slice(player)
 		_face(player, arrival_yaw_degrees)
 
 
@@ -220,6 +237,10 @@ func come_back() -> void:
 		branch.process_mode = Node.PROCESS_MODE_INHERIT
 		if branch is Node4D:
 			(branch as Node4D).visible = true
+	_solid_again()
+	var farm_env: Node = get_node_or_null(farm_environment_path)
+	if farm_env != null and farm_env.has_method("make_current"):
+		farm_env.call("make_current")
 	for item in _hidden:
 		if is_instance_valid(item):
 			item.visible = true
@@ -236,9 +257,15 @@ func come_back() -> void:
 		if frame != null:
 			var z: Vector4 = frame.global_basis.z
 			turn = rad_to_deg(atan2(z.x, z.z))
-		player.global_position = _was_at + offset
-		if face_on_return:
-			_face(player, return_yaw_degrees + turn)
+		# The debug key's trip comes home to where it was pressed (7 Oct: the cave's 13 m "out of the tunnel" put
+		# you 13 m further south on every Shift+C, and past the field's edge by the third).
+		if _testing_trip:
+			player.global_position = _was_at
+		else:
+			player.global_position = _was_at + offset
+			if face_on_return:
+				_face(player, return_yaw_degrees + turn)
+	_testing_trip = false
 	# The door has to be walkable again, or the second visit never happens.
 	for node in get_tree().current_scene.get_children():
 		_rearm(node)
@@ -251,6 +278,44 @@ func _face(player: Node4D, yaw_degrees: float) -> void:
 	var rig: Node = player.get_node_or_null("CameraRig")
 	if rig != null and rig.has_method("_apply"):
 		rig.set("yaw", deg_to_rad(yaw_degrees))
+		rig.call("_apply")
+
+
+## THE SLEEPING FARM IS NOT SOLID (Ramon, 7 Oct: "the cinema is super broken. can't walk, stuck in the air ... cant
+## sit in the chair. presentation starts without me"). Hidden and stopped, the farm's bodies stayed in the physics:
+## a 4D body only leaves it when it leaves the tree. The theatre is built at the world's origin, inside the farm,
+## and since the layouts of 6 and 7 Oct the cave hill's collider stood where the theatre's player starts (the
+## physics stops a body that starts inside a box rather than pushing it out) and the town wall ran between the
+## door and the seats. So every collision shape under a sleeping branch takes no part while away, its layer and
+## mask kept and given back on the way home. (The cave inside the hill is a kilometre off and was never touched.)
+func _solid(branch: Node, on: bool) -> void:
+	if on:
+		return
+	for cs in branch.find_children("*", "CollisionShape4D", true, false):
+		if _shapes.has(cs):
+			continue
+		_shapes[cs] = [int(cs.get("collision_layer")), int(cs.get("collision_mask"))]
+		cs.set("collision_layer", 0)
+		cs.set("collision_mask", 0)
+
+
+func _solid_again() -> void:
+	for cs in _shapes:
+		if is_instance_valid(cs):
+			cs.set("collision_layer", int(_shapes[cs][0]))
+			cs.set("collision_mask", int(_shapes[cs][1]))
+	_shapes.clear()
+
+
+## THE SLICE FLAT WHERE YOU ARRIVE (Ramon, 7 Oct: "when spawning to the cave i think its better the slice is reset
+## again, this is confusing"): a slice you had turned outside came in with you; the place is laid out for a flat one.
+func _flat_slice(player: Node4D) -> void:
+	var rig := player.get_node_or_null("CameraRig") as Node4D
+	if rig == null:
+		return
+	rig.set("_homing", 0.0)
+	rig.basis = GroundBasis4D.flattened(rig.basis)
+	if rig.has_method("_apply"):
 		rig.call("_apply")
 
 
