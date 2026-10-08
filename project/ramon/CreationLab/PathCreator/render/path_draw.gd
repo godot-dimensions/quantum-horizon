@@ -115,7 +115,6 @@ static func material(mode: int) -> TetraMaterial4D:
 	cs.set_shader_parameter("col_muted", Spec.TOKENS["muted"])
 	cs.set_shader_parameter("col_guide", Spec.GUIDE_COLOR)
 	cs.set_shader_parameter("sand", Spec.SAND)
-	cs.set_shader_parameter("w_soft", Spec.W_SOFT)
 	return m
 
 
