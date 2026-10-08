@@ -133,6 +133,8 @@ func _new_page(p: Dictionary, chart_kind: String) -> Control:
 			_chart = Charts.Profile.new("W profile", k)
 		"cost":
 			_chart = Charts.Cost.new("Cost chart", k)
+		"tesseract":
+			_chart = Charts.Tesseract.new("Tesseract", k)
 	if _chart != null:
 		g.add_child(_chart)
 		_chart.place(Vector2(x, y + Spec.PAGE_CHART_DY), Spec.CHART)
@@ -425,6 +427,9 @@ func refresh(d: Dictionary) -> void:
 	footnote.set_text(String(d.get("footnote", "")))
 
 
+var _tick_acc: float = 0.0
+
+
 func tick(dt: float) -> bool:
 	if layout != "specimen":
 		return false
@@ -450,6 +455,14 @@ func tick(dt: float) -> bool:
 		_age = 99.0
 		animate(_page_g, 99.0)
 		_show_metrics()
+	# VOXEL LAB (carried copy): a chart that moves on its own (the tesseract) keeps the page drawing, at
+	# most 30 times a second (the whole page re-renders each time).
+	if _chart != null and _chart.has_method("tick"):
+		_tick_acc += dt
+		if _tick_acc >= 1.0 / 30.0:
+			_chart.call("tick", _tick_acc)
+			_tick_acc = 0.0
+			busy = true
 	return busy
 
 

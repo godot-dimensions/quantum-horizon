@@ -372,6 +372,16 @@ func _print() -> void:
 	if is_instance_valid(_slab):
 		targets = [[_slab, Vector4(0, 0, 1, 0), Rect2(Vector2(slab_margin.x, foot), pm)]]
 	elif room != null and bool(room.call("has_wall", wall())):
+		# VOXEL LAB (carried copy), 9 Oct: claim the wall in blue as soon as it exists. The room's walls
+		# are built by its root's _ready, after this panel's own (children first), so the claim in
+		# rebuild() found no wall, nothing ever claimed it again, and the page printed white text on the
+		# grey wall (Ramon: "the wall is not blue, the typical lab kit blue").
+		if _claimed == null or _claimed_room != room or not _same(_claimed, wall()):
+			_release()
+			var claim_span: Vector2 = _span(room)
+			room.call("claim_wall", wall(), "blue", self, claim_span.x, claim_span.y)
+			_claimed = wall()
+			_claimed_room = room
 		var span: Vector2 = room.call("wall_span", wall())
 		var at: Vector2 = _span(room)
 		var a0: float = at.x

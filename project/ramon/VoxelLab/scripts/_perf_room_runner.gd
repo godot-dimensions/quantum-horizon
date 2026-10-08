@@ -8,9 +8,10 @@ extends SceneTree
 const Cutter := preload("res://ramon/VoxelLab/specimen/vl_cutter.gd")
 const Specimen := preload("res://ramon/VoxelLab/specimen/vl_specimen_4d.gd")
 
-const SPOTS := [["entrance", Vector4(0, 0.05, 21, 0), 0.0], ["shelf", Vector4(4.2, 0.05, 4.4, 0), deg_to_rad(-90.0)],
-	["block", Vector4(0, 0.05, 6.5, 0), 0.0], ["column", Vector4(-6.0, 0.05, -1.0, 0), deg_to_rad(30.0)],
-	["gallery", Vector4(0, 0.05, -17.0, 0), 0.0], ["ladder", Vector4(4.6, 0.05, -25.0, 0), deg_to_rad(-40.0)]]
+const SPOTS := [["entrance", Vector4(0, 0.05, 21, 0), 0.0], ["shelf", Vector4(6.2, 0.05, 5.4, 0), deg_to_rad(-90.0)],
+	["block", Vector4(0, 0.05, 3.0, 0), 0.0], ["column", Vector4(-5.1, 0.05, -5.0, 0), deg_to_rad(90.0)],
+	["gallery", Vector4(0, 0.05, -17.0, 0), 0.0], ["terrain", Vector4(0, 0.05, -23.5, 0), deg_to_rad(90.0)],
+	["ladder", Vector4(4.4, 0.05, -23.5, 0), deg_to_rad(-90.0)]]
 
 var _scene: Node
 var _t: float = 0.0
@@ -62,7 +63,7 @@ func _process(delta: float) -> bool:
 	_t += delta
 	match _phase:
 		"wait":
-			if _ready_all() and _t > 3.0:
+			if _ready_all() and _t > 3.0 and not bool(current_scene.get("loading")):
 				print("PERF room ready after %.1f s" % _total)
 				_report_memory()
 				_phase = "spots"
@@ -121,7 +122,7 @@ func _next_spot() -> void:
 	_t = 0.0
 	if _i >= SPOTS.size():
 		_phase = "bench"
-		_scene.call("go_to", Vector4(0, 0.05, 4.0, 0), 0.0)
+		_scene.call("go_to", Vector4(0, 0.05, 3.0, 0), 0.0)
 		return
 	_scene.call("go_to", SPOTS[_i][1], float(SPOTS[_i][2]))
 

@@ -1,16 +1,16 @@
 [gd_resource type="Resource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://ramon/VoxelLab/carried/PathCreator/graph/path_graph.gd" id="1_6h8cv"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/carried/PathCreator/graph/path_graph.gd" id="1_graph"]
 
 [resource]
-script = ExtResource("1_6h8cv")
+script = ExtResource("1_graph")
 nodes = [{
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
 "id": 1,
 "kind": "start",
-"pos": Vector4(0, 0, -16.2, 0),
+"pos": Vector4(0, 0, -16.4, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -19,7 +19,7 @@ nodes = [{
 "frame": "none",
 "id": 2,
 "kind": "junction",
-"pos": Vector4(0, 0, -17.6, 0),
+"pos": Vector4(0, 0, -20, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -28,61 +28,61 @@ nodes = [{
 "frame": "rect",
 "id": 3,
 "kind": "destination",
-"pos": Vector4(-4.6, 0, -17.6, 0),
+"pos": Vector4(0, 0, -23.5, 0),
 "state": "available",
-"target": "TerrainBench"
+"target": "Terrain"
 }, {
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
 "id": 4,
 "kind": "bend",
-"pos": Vector4(0, 0, -19.6, 0),
+"pos": Vector4(7.2, 0, -20, 0),
 "state": "arrival",
 "target": ""
 }, {
-"approach": Vector2(-1, 0),
+"approach": Vector2(0, 1),
 "band": 8.0,
-"frame": "rect",
+"frame": "none",
 "id": 5,
-"kind": "destination",
-"pos": Vector4(4.6, 0, -17.6, 0),
+"kind": "chord",
+"pos": Vector4(7.2, 0, -23.5, 0),
 "state": "arrival",
-"target": "CavesBench"
+"target": ""
 }, {
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
 "id": 6,
-"kind": "bend",
-"pos": Vector4(1.6, 0, -24.4, 0),
+"kind": "chord",
+"pos": Vector4(7.2, 0, -27, 0),
 "state": "arrival",
 "target": ""
 }, {
-"approach": Vector2(1, 0),
+"approach": Vector2(0, 1),
 "band": 8.0,
-"frame": "round",
+"frame": "none",
 "id": 7,
-"kind": "destination",
-"pos": Vector4(-4.2, 0, -27.4, 0),
+"kind": "bend",
+"pos": Vector4(7.2, 0, -28.8, 0),
 "state": "arrival",
-"target": "Cell24"
+"target": ""
 }, {
-"approach": Vector2(-1, 0),
+"approach": Vector2(0, 1),
 "band": 8.0,
-"frame": "rect",
+"frame": "none",
 "id": 8,
-"kind": "destination",
-"pos": Vector4(4.2, 0, -27.4, 0),
+"kind": "junction",
+"pos": Vector4(0, 0, -28.8, 0),
 "state": "arrival",
-"target": "Ladder"
+"target": ""
 }, {
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "rect",
 "id": 9,
 "kind": "destination",
-"pos": Vector4(0, 0, -30.4, 0),
+"pos": Vector4(0, 0, -30.3, 0),
 "state": "arrival",
 "target": "FieldDoorTarget"
 }]
@@ -101,6 +101,18 @@ edges = [{
 }, {
 "band": 8.0,
 "from": 3,
+"priority": "primary",
+"to": 8,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 8,
+"priority": "primary",
+"to": 9,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 2,
 "priority": "primary",
 "to": 4,
 "w_mode": "static"
@@ -127,12 +139,6 @@ edges = [{
 "from": 7,
 "priority": "primary",
 "to": 8,
-"w_mode": "static"
-}, {
-"band": 8.0,
-"from": 8,
-"priority": "primary",
-"to": 9,
 "w_mode": "static"
 }]
 next_id = 10

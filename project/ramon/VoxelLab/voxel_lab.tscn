@@ -7,7 +7,6 @@
 [ext_resource type="Script" path="res://ramon/VoxelLab/carried/kit/kit_showcase_4d.gd" id="5_showcase"]
 [ext_resource type="Script" path="res://ramon/VoxelLab/stations/vl_block_exhibit_4d.gd" id="6_block"]
 [ext_resource type="Script" path="res://ramon/VoxelLab/room/vl_bench_4d.gd" id="7_bench"]
-[ext_resource type="Script" path="res://ramon/VoxelLab/room/vl_console_4d.gd" id="8_console"]
 [ext_resource type="Script" path="res://ramon/VoxelLab/stations/vl_shelf_exhibit_4d.gd" id="9_shelf"]
 [ext_resource type="Script" path="res://ramon/VoxelLab/carried/kit/kit_light_4d.gd" id="10_light"]
 [ext_resource type="Script" path="res://ramon/VoxelLab/carried/kit/kit_sun_4d.gd" id="11_sun"]
@@ -21,13 +20,14 @@
 [ext_resource type="Resource" path="res://ramon/VoxelLab/paths/hall.tres" id="19_hall"]
 [ext_resource type="Resource" path="res://ramon/VoxelLab/paths/gallery.tres" id="20_gallery"]
 [ext_resource type="Script" path="res://ramon/VoxelLab/room/vl_target_4d.gd" id="21_target"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/room/vl_float_panel_4d.gd" id="22_float"]
 
 [node name="VoxelLab" type="Node4D"]
 script = ExtResource("1_root")
 room_half_width = 12.0
 room_back = 15.0
 corner_length = 10.8
-start_at = Vector2(0, 22)
+start_at = Vector2(0, 21)
 
 [node name="Room" type="Node4D" parent="."]
 script = ExtResource("2_room")
@@ -58,31 +58,21 @@ subtitle = "QUANTUM HORIZON  ·  CUTTING 4D MATTER"
 glow = 0.3
 
 [node name="GalleryRoom" type="Node4D" parent="."]
-position = Vector4(0, 0, -24, 0)
+position = Vector4(0, 0, -23.5, 0)
 script = ExtResource("3_kitroom")
 size = Vector3(26, 8, 16)
 cove = false
-
-[node name="GallerySign" type="Node" parent="GalleryRoom"]
-script = ExtResource("4_text")
-side = "s"
-along = Vector2(7.5, 18.5)
-up = Vector2(4.8, 6.4)
-kind = "sign"
-title = "THE ENGINE'S TEST CASES"
-subtitle = "ANDREW'S (4DENTHUSIAST'S) TEST SCENES, CUT LIVE"
-glow = 0.3
 
 [node name="AboutWall" type="Node" parent="GalleryRoom"]
 script = ExtResource("4_text")
 side = "w"
 along = Vector2(-6.6, 6.6)
-up = Vector2(1.3, 6.6)
+up = Vector2(1.6, 6.6)
 kind = "lesson"
-number = 1
-title = "The engine's test cases"
-subtitle = "Andrew's own test scenes, as specimens"
-body = "Andrew (4Denthusiast) wrote the engine's voxel world: its generators, its edits, its dual contouring. These are his test scenes, cut out as specimens: his landscape with its ocean and caves, his caves on their own, his 24-cell. Sit at their benches and cut them."
+number = 2
+title = "The whole world"
+subtitle = "All three layers, and a sea, at full size"
+body = "Our generator stacks the land, the caves carved through it, and a sea filling everything below a plane, cut out of a world with no edges. The noise is four-dimensional, so every slice through W is a new coastline. Change its look, or cut it: the engine remeshes it as you go."
 code = "blue"
 glow = 0.2
 
@@ -92,25 +82,25 @@ side = "n"
 along = Vector2(-4.4, 4.4)
 up = Vector2(4.6, 6.4)
 kind = "sign"
-title = "THE FIELD"
-subtitle = "ANDREW'S LANDSCAPE, GENERATED ROUND YOU"
+title = "THE OPEN WORLD"
+subtitle = "OUR LANDSCAPE, WITHOUT EDGES, GENERATED AS YOU GO"
 glow = 0.3
 
-[node name="LimitsWall" type="Node" parent="GalleryRoom"]
+[node name="LayersWall" type="Node" parent="GalleryRoom"]
 script = ExtResource("4_text")
 side = "e"
 along = Vector2(-6.6, 6.6)
-up = Vector2(1.3, 6.6)
+up = Vector2(2.4, 6.6)
 kind = "lesson"
-number = 2
-title = "What still fails"
-subtitle = "Where the voxels need work, measured in this room"
-body = "A cut thinner than a voxel vanishes, so the saw's blade is a voxel and a third. A surface through grid points frays: the warm 24-cell. A cut's new chunks are built in the frame they first show; this lab builds them on a worker thread (T at any bench shows both). Detail costs the fourth power: the ladder. And GDScript cannot read a voxel back, so the lab keeps its own copy."
+number = 1
+title = "How a world is made"
+subtitle = "One generator at a time"
+body = "The engine builds land from generators, each a rule for what fills a voxel. First the land: fractal noise in bands of grass, dirt and stone. Then the caves: tunnels wherever three noise fields meet zero. Clip one by the other and the land is hollowed. Stack a sea under it and you have the world behind you."
 code = "blue"
 glow = 0.2
 
 [node name="Shelf1" type="Node4D" parent="."]
-position = Vector4(8.6, 0, 8.0, 0)
+position = Vector4(8.6, 0, 9.0, 0)
 script = ExtResource("5_showcase")
 exhibit_script = ExtResource("9_shelf")
 radius = 0.95
@@ -123,7 +113,7 @@ metadata/shelf_kind = "section"
 metadata/face_yaw = -90.0
 
 [node name="Shelf2" type="Node4D" parent="."]
-position = Vector4(8.6, 0, 4.4, 0)
+position = Vector4(8.6, 0, 5.4, 0)
 script = ExtResource("5_showcase")
 exhibit_script = ExtResource("9_shelf")
 radius = 0.95
@@ -136,7 +126,7 @@ metadata/shelf_kind = "tunnels"
 metadata/face_yaw = -90.0
 
 [node name="Shelf3" type="Node4D" parent="."]
-position = Vector4(8.6, 0, 0.8, 0)
+position = Vector4(8.6, 0, 1.8, 0)
 script = ExtResource("5_showcase")
 exhibit_script = ExtResource("9_shelf")
 radius = 0.95
@@ -148,22 +138,8 @@ hologram = false
 metadata/shelf_kind = "cavity"
 metadata/face_yaw = -90.0
 
-[node name="ShelfLight" type="Node4D" parent="."]
-position = Vector4(7.6, 8.6, 4.4, 0)
-script = ExtResource("10_light")
-aim = Vector3(7.6, 0, 4.4)
-angle = 44.0
-softness = 0.5
-reach = 11.0
-attenuation = 0.3
-energy = {
-"bright": 1.7,
-"dark": 2.3
-}
-fixture_at = 8.94
-
 [node name="Hero" type="Node4D" parent="."]
-position = Vector4(0, 0, -1.4, 0)
+position = Vector4(0.0, 0, -1.4, 0)
 script = ExtResource("5_showcase")
 exhibit_script = ExtResource("6_block")
 radius = 2.8
@@ -173,36 +149,23 @@ bounds = Rect2(-13, -31.5, 26, 44)
 band_angle = 90.0
 
 [node name="HeroBench" type="Node4D" parent="."]
-position = Vector4(0, 0, 4.0, 0)
+position = Vector4(0.0, 0, 3.0, 0)
 script = ExtResource("7_bench")
 station = NodePath("../Hero")
-title = "THE BENCH"
-subtitle = "CUT IT YOURSELF"
+pad = false
 camera_distance = 5.2
+camera_pitch = -16.0
 
-[node name="HeroConsole" type="Node4D" parent="."]
-position = Vector4(-4.6, 0, 3.2, 0)
-script = ExtResource("8_console")
+[node name="HeroPanel" type="Node4D" parent="."]
+position = Vector4(-3.7, 0, 1.2, 0)
+script = ExtResource("22_float")
 station = NodePath("../Hero")
 number = 1
 title = "The block"
-code = "VX-01"
 kicker = "THE ENGINE'S VOXELS, CUT LIVE"
-facing = 30.0
-
-[node name="HeroLight" type="Node4D" parent="."]
-position = Vector4(0, 8.6, -1.4, 0)
-script = ExtResource("10_light")
-aim = Vector3(0, 0, -1.4)
-angle = 50.0
-softness = 0.5
-reach = 11.0
-attenuation = 0.3
-energy = {
-"bright": 2.6,
-"dark": 3.4
-}
-fixture_at = 8.94
+face_point = Vector2(0.0, 3.0)
+width = 1.3
+depth = 0.49
 
 [node name="Column" type="Node4D" parent="."]
 position = Vector4(-8.2, 0, -5.0, 0)
@@ -214,207 +177,242 @@ pedestal_shape = "round"
 bounds = Rect2(-13, -31.5, 26, 44)
 band_angle = 90.0
 
-[node name="ColumnBench" type="Node4D" parent="."]
-position = Vector4(-8.2, 0, -1.2, 0)
-script = ExtResource("7_bench")
-station = NodePath("../Column")
-title = "THE COLUMN"
-subtitle = "CUT ITS BASE"
-camera_distance = 4.4
-
-[node name="ColumnConsole" type="Node4D" parent="."]
-position = Vector4(-4.4, 0, -7.4, 0)
-script = ExtResource("8_console")
+[node name="ColumnPanel" type="Node4D" parent="."]
+position = Vector4(-9.9, 0, -2.3, 0)
+script = ExtResource("22_float")
 station = NodePath("../Column")
 number = 2
 title = "The column"
-code = "CL-02"
 kicker = "SUPPORT IN 4D"
-facing = -30.0
-
-[node name="ColumnLight" type="Node4D" parent="."]
-position = Vector4(-7.8, 8.6, -5.0, 0)
-script = ExtResource("10_light")
-aim = Vector3(-7.8, 0, -5.0)
-angle = 32.0
-softness = 0.5
-reach = 11.0
-attenuation = 0.3
-energy = {
-"bright": 2.4,
-"dark": 3.2
-}
-fixture_at = 8.94
+face_point = Vector2(-5.1, -5.0)
+width = 1.0
+depth = 0.38
 
 [node name="Terrain" type="Node4D" parent="."]
-position = Vector4(-7.5, 0, -22.5, 0)
+position = Vector4(-6.2, 0, -23.5, 0)
 script = ExtResource("5_showcase")
 exhibit_script = ExtResource("17_case")
-radius = 2.2
-height = 0.9
-pedestal_shape = "round"
+radius = 3.3
+height = 0.45
+pedestal_shape = "box"
 bounds = Rect2(-13, -31.5, 26, 44)
 band_angle = 90.0
+hologram = false
 metadata/case = "terrain"
+metadata/own_height = true
 
 [node name="TerrainBench" type="Node4D" parent="."]
-position = Vector4(-7.5, 0, -18.8, 0)
+position = Vector4(0.0, 0, -23.5, 0)
 script = ExtResource("7_bench")
 station = NodePath("../Terrain")
-title = "THE TERRAIN SAMPLE"
-subtitle = "CUT ANDREW'S WORLD"
-camera_distance = 3.8
+pad = false
+camera_distance = 8.2
+camera_pitch = -24.0
 
-[node name="Caves" type="Node4D" parent="."]
-position = Vector4(7.5, 0, -22.5, 0)
+[node name="TerrainPanel" type="Node4D" parent="."]
+position = Vector4(-2.0, 0, -19.6, 0)
+script = ExtResource("22_float")
+station = NodePath("../Terrain")
+number = 3
+title = "The world"
+kicker = "ADAPTED FROM ANDREW (4DENTHUSIAST)"
+face_point = Vector2(0.0, -23.5)
+width = 1.3
+depth = 0.49
+
+[node name="Layer1" type="Node4D" parent="."]
+position = Vector4(9.6, 0, -20.0, 0)
 script = ExtResource("5_showcase")
 exhibit_script = ExtResource("17_case")
-radius = 2.0
-height = 0.9
-pedestal_shape = "round"
-bounds = Rect2(-13, -31.5, 26, 44)
-band_angle = -90.0
-metadata/case = "caves"
-
-[node name="CavesBench" type="Node4D" parent="."]
-position = Vector4(7.5, 0, -18.8, 0)
-script = ExtResource("7_bench")
-station = NodePath("../Caves")
-title = "THE CAVES"
-subtitle = "CUT INTO THEM"
-camera_distance = 3.8
-
-[node name="Cell24" type="Node4D" parent="."]
-position = Vector4(-7.5, 0, -28.6, 0)
-script = ExtResource("5_showcase")
-exhibit_script = ExtResource("17_case")
-radius = 2.1
-height = 0.9
-pedestal_shape = "round"
-bounds = Rect2(-13, -31.5, 26, 44)
-band_angle = 90.0
-metadata/case = "24cell"
-
-[node name="Ladder" type="Node4D" parent="."]
-position = Vector4(7.5, 0, -28.6, 0)
-script = ExtResource("5_showcase")
-exhibit_script = ExtResource("17_case")
-radius = 2.0
-height = 0.9
+radius = 0.95
+height = 1.0
 pedestal_shape = "box"
 bounds = Rect2(-13, -31.5, 26, 44)
 band_angle = -90.0
 hologram = false
-metadata/case = "ladder"
+metadata/case = "layer"
+metadata/layer = "land"
+metadata/face_yaw = -90.0
 
-[node name="TerrainConsole" type="Node4D" parent="."]
-position = Vector4(-11.0, 0, -18.6, 0)
-script = ExtResource("8_console")
-station = NodePath("../Terrain")
-number = 3
-title = "Terrain sample"
-code = "AN-01"
-kicker = "FROM THE ENGINE'S TEST SCENES"
-facing = 40.0
+[node name="Layer2" type="Node4D" parent="."]
+position = Vector4(9.6, 0, -23.5, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("17_case")
+radius = 0.95
+height = 1.0
+pedestal_shape = "box"
+bounds = Rect2(-13, -31.5, 26, 44)
+band_angle = -90.0
+hologram = false
+metadata/case = "layer"
+metadata/layer = "caves"
+metadata/face_yaw = -90.0
 
-[node name="CavesConsole" type="Node4D" parent="."]
-position = Vector4(11.0, 0, -18.6, 0)
-script = ExtResource("8_console")
-station = NodePath("../Caves")
-number = 4
-title = "Caves"
-code = "AN-02"
-kicker = "FROM THE ENGINE'S TEST SCENES"
-facing = -40.0
+[node name="Layer3" type="Node4D" parent="."]
+position = Vector4(9.6, 0, -27.0, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("17_case")
+radius = 0.95
+height = 1.0
+pedestal_shape = "box"
+bounds = Rect2(-13, -31.5, 26, 44)
+band_angle = -90.0
+hologram = false
+metadata/case = "layer"
+metadata/layer = "clipped"
+metadata/face_yaw = -90.0
 
-[node name="Cell24Console" type="Node4D" parent="."]
-position = Vector4(-3.4, 0, -28.0, 0)
-script = ExtResource("8_console")
-station = NodePath("../Cell24")
-number = 5
-title = "24-cell"
-code = "AN-03"
-kicker = "A KNOWN LIMIT"
-facing = -20.0
+[node name="Lights" type="Node4D" parent="."]
 
-[node name="LadderConsole" type="Node4D" parent="."]
-position = Vector4(3.4, 0, -28.0, 0)
-script = ExtResource("8_console")
-station = NodePath("../Ladder")
-number = 6
-title = "Resolution ladder"
-code = "LD-04"
-kicker = "THE COST OF DETAIL"
-facing = 20.0
-
-[node name="TerrainLight" type="Node4D" parent="."]
-position = Vector4(-7.5, 7.6, -22.5, 0)
+[node name="Block" type="Node4D" parent="Lights"]
+position = Vector4(0.0, 8.0, -1.4, 0)
 script = ExtResource("10_light")
-aim = Vector3(-7.5, 0, -22.5)
-angle = 42.0
-softness = 0.5
-reach = 10.0
+aim = Vector3(0.0, 2.1, -1.4)
+angle = 34.0
+softness = 2.6
+reach = 14.0
 attenuation = 0.3
 energy = {
 "bright": 2.4,
-"dark": 3.2
+"dark": 3.1
 }
-fixture_at = 7.94
+metadata/room = "hall"
+metadata/item = "the block"
+metadata/cone = 40.0
 
-[node name="CavesLight" type="Node4D" parent="."]
-position = Vector4(7.5, 7.6, -22.5, 0)
+[node name="ShelfA" type="Node4D" parent="Lights"]
+position = Vector4(8.6, 8.0, 9.0, 0)
 script = ExtResource("10_light")
-aim = Vector3(7.5, 0, -22.5)
-angle = 42.0
-softness = 0.5
-reach = 10.0
+aim = Vector3(8.6, 1.4, 9.0)
+angle = 34.0
+softness = 2.6
+reach = 14.0
 attenuation = 0.3
 energy = {
 "bright": 2.4,
-"dark": 3.2
+"dark": 3.1
 }
-fixture_at = 7.94
+metadata/room = "hall"
+metadata/item = "specimen A"
+metadata/group = "A"
+metadata/cone = 21.0
 
-[node name="Cell24Light" type="Node4D" parent="."]
-position = Vector4(-7.5, 7.6, -28.6, 0)
+[node name="ShelfB" type="Node4D" parent="Lights"]
+position = Vector4(8.6, 8.0, 5.4, 0)
 script = ExtResource("10_light")
-aim = Vector3(-7.5, 0, -28.6)
-angle = 42.0
-softness = 0.5
-reach = 10.0
+aim = Vector3(8.6, 1.4, 5.4)
+angle = 34.0
+softness = 2.6
+reach = 14.0
 attenuation = 0.3
 energy = {
 "bright": 2.4,
-"dark": 3.2
+"dark": 3.1
 }
-fixture_at = 7.94
+metadata/room = "hall"
+metadata/item = "specimen B"
+metadata/group = "B"
+metadata/cone = 21.0
 
-[node name="LadderLight" type="Node4D" parent="."]
-position = Vector4(7.5, 7.6, -28.6, 0)
+[node name="ShelfC" type="Node4D" parent="Lights"]
+position = Vector4(8.6, 8.0, 1.8, 0)
 script = ExtResource("10_light")
-aim = Vector3(7.5, 0, -28.6)
-angle = 42.0
-softness = 0.5
-reach = 10.0
+aim = Vector3(8.6, 1.4, 1.8)
+angle = 34.0
+softness = 2.6
+reach = 14.0
 attenuation = 0.3
 energy = {
 "bright": 2.4,
-"dark": 3.2
+"dark": 3.1
 }
-fixture_at = 7.94
+metadata/room = "hall"
+metadata/item = "specimen C"
+metadata/group = "C"
+metadata/cone = 21.0
 
-[node name="EntranceLight" type="Node4D" parent="."]
-position = Vector4(0, 5.4, 15.5, 0)
+[node name="Column" type="Node4D" parent="Lights"]
+position = Vector4(-8.2, 8.0, -5.0, 0)
 script = ExtResource("10_light")
-aim = Vector3(0, 0, 15.5)
-angle = 48.0
-softness = 0.5
-reach = 9.0
+aim = Vector3(-8.2, 1.8, -5.0)
+angle = 34.0
+softness = 2.6
+reach = 14.0
 attenuation = 0.3
 energy = {
-"bright": 1.2,
-"dark": 1.6
+"bright": 2.4,
+"dark": 3.1
 }
+metadata/room = "hall"
+metadata/item = "the column"
+
+[node name="Terrain" type="Node4D" parent="Lights"]
+position = Vector4(-6.2, 8.0, -23.5, 0)
+script = ExtResource("10_light")
+aim = Vector3(-6.2, 0.6, -23.5)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "gallery"
+metadata/item = "the world"
+metadata/cone = 64.0
+metadata/strength_k = 0.55
+
+[node name="Layer1" type="Node4D" parent="Lights"]
+position = Vector4(9.6, 8.0, -20.0, 0)
+script = ExtResource("10_light")
+aim = Vector3(9.6, 1.4, -20.0)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "gallery"
+metadata/item = "the land"
+metadata/cone = 21.0
+metadata/strength_k = 0.6
+
+[node name="Layer2" type="Node4D" parent="Lights"]
+position = Vector4(9.6, 8.0, -23.5, 0)
+script = ExtResource("10_light")
+aim = Vector3(9.6, 1.4, -23.5)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "gallery"
+metadata/item = "the caves"
+metadata/cone = 21.0
+metadata/strength_k = 0.6
+
+[node name="Layer3" type="Node4D" parent="Lights"]
+position = Vector4(9.6, 8.0, -27.0, 0)
+script = ExtResource("10_light")
+aim = Vector3(9.6, 1.4, -27.0)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "gallery"
+metadata/item = "the land and caves"
+metadata/cone = 21.0
+metadata/strength_k = 0.6
 
 [node name="Sun" type="Node4D" parent="."]
 position = Vector4(2, 9, 4, 0)
@@ -449,29 +447,111 @@ info = ExtResource("16_info")
 source = NodePath("../PanelSource")
 
 [node name="FieldDoor" type="Node4D" parent="."]
-position = Vector4(0, 2.4, -32.2, 0)
+position = Vector4(0, 2.4, -31.7, 0)
+
+[node name="Spots" type="Node4D" parent="."]
+
+[node name="Block" type="Node4D" parent="Spots"]
+position = Vector4(0.0, 0, 3.0, 0)
+metadata/kind = "choice"
+metadata/radius = 1.5
+metadata/station = NodePath("../../Hero")
+metadata/bench = NodePath("../../HeroBench")
+metadata/options = ["watch", "cut"]
+metadata/target = "Hero"
+
+[node name="Column" type="Node4D" parent="Spots"]
+position = Vector4(-5.1, 0, -5.0, 0)
+metadata/kind = "choice"
+metadata/radius = 1.4
+metadata/station = NodePath("../../Column")
+metadata/options = ["fall"]
+metadata/target = "Column"
+
+[node name="ShelfA" type="Node4D" parent="Spots"]
+position = Vector4(6.2, 0, 9.0, 0)
+metadata/kind = "popup"
+metadata/radius = 1.1
+metadata/station = NodePath("../../Shelf1")
+
+[node name="ShelfB" type="Node4D" parent="Spots"]
+position = Vector4(6.2, 0, 5.4, 0)
+metadata/kind = "popup"
+metadata/radius = 1.1
+metadata/station = NodePath("../../Shelf2")
+
+[node name="ShelfC" type="Node4D" parent="Spots"]
+position = Vector4(6.2, 0, 1.8, 0)
+metadata/kind = "popup"
+metadata/radius = 1.1
+metadata/station = NodePath("../../Shelf3")
+
+[node name="RightWall" type="Node4D" parent="Spots"]
+position = Vector4(5.1, 0, -8.0, 0)
+metadata/kind = "view"
+metadata/radius = 1.6
+metadata/target = "RightWallTarget"
+
+[node name="LeftWall" type="Node4D" parent="Spots"]
+position = Vector4(-5.1, 0, -8.0, 0)
+metadata/kind = "view"
+metadata/radius = 1.6
+metadata/target = "LeftWallTarget"
+
+[node name="Terrain" type="Node4D" parent="Spots"]
+position = Vector4(0.0, 0, -23.5, 0)
+metadata/kind = "choice"
+metadata/radius = 1.5
+metadata/station = NodePath("../../Terrain")
+metadata/bench = NodePath("../../TerrainBench")
+metadata/options = ["cut", "biome"]
+metadata/target = "Terrain"
+
+[node name="Layer1" type="Node4D" parent="Spots"]
+position = Vector4(7.2, 0, -20.0, 0)
+metadata/kind = "popup"
+metadata/radius = 1.1
+metadata/station = NodePath("../../Layer1")
+
+[node name="Layer2" type="Node4D" parent="Spots"]
+position = Vector4(7.2, 0, -23.5, 0)
+metadata/kind = "popup"
+metadata/radius = 1.1
+metadata/station = NodePath("../../Layer2")
+
+[node name="Layer3" type="Node4D" parent="Spots"]
+position = Vector4(7.2, 0, -27.0, 0)
+metadata/kind = "popup"
+metadata/radius = 1.1
+metadata/station = NodePath("../../Layer3")
 
 [node name="Paths" type="Node4D" parent="."]
 
 [node name="Targets" type="Node4D" parent="Paths"]
 
-[node name="Shelf" type="Node4D" parent="Paths/Targets"]
-position = Vector4(8.6, 0, 4.4, 0)
+[node name="Hero" type="Node4D" parent="Paths/Targets"]
+position = Vector4(0.0, 0, -1.4, 0)
 script = ExtResource("21_target")
-label = "Shelf"
-size = Vector3(2.2, 1, 9.2)
+label = "The block"
+size = Vector3(5.6, 1, 5.6)
 
-[node name="HeroBench" type="Node4D" parent="Paths/Targets"]
-position = Vector4(0, 0, 4.0, 0)
+[node name="Column" type="Node4D" parent="Paths/Targets"]
+position = Vector4(-8.2, 0, -5.0, 0)
 script = ExtResource("21_target")
-label = "The block's bench"
-size = Vector3(3, 0.05, 1.3)
+label = "The column"
+size = Vector3(3, 1, 3)
 
-[node name="ColumnBench" type="Node4D" parent="Paths/Targets"]
-position = Vector4(-8.2, 0, -1.2, 0)
+[node name="RightWallTarget" type="Node4D" parent="Paths/Targets"]
+position = Vector4(8.4, 0, -11.0, 0)
 script = ExtResource("21_target")
-label = "The column's bench"
-size = Vector3(3, 0.05, 1.3)
+label = "The block's wall"
+size = Vector3(1, 1, 1)
+
+[node name="LeftWallTarget" type="Node4D" parent="Paths/Targets"]
+position = Vector4(-8.4, 0, -11.0, 0)
+script = ExtResource("21_target")
+label = "Voxel Lab wall"
+size = Vector3(1, 1, 1)
 
 [node name="GalleryDoor" type="Node4D" parent="Paths/Targets"]
 position = Vector4(0, 0, -15.0, 0)
@@ -479,32 +559,14 @@ script = ExtResource("21_target")
 label = "Gallery door"
 size = Vector3(3, 4.2, 0.6)
 
-[node name="TerrainBench" type="Node4D" parent="Paths/Targets"]
-position = Vector4(-7.5, 0, -18.8, 0)
+[node name="Terrain" type="Node4D" parent="Paths/Targets"]
+position = Vector4(-6.2, 0, -23.5, 0)
 script = ExtResource("21_target")
-label = "Terrain bench"
-size = Vector3(3, 0.05, 1.3)
-
-[node name="CavesBench" type="Node4D" parent="Paths/Targets"]
-position = Vector4(7.5, 0, -18.8, 0)
-script = ExtResource("21_target")
-label = "Caves bench"
-size = Vector3(3, 0.05, 1.3)
-
-[node name="Cell24" type="Node4D" parent="Paths/Targets"]
-position = Vector4(-7.5, 0, -28.6, 0)
-script = ExtResource("21_target")
-label = "24-cell"
-size = Vector3(3.6, 1, 3.6)
-
-[node name="Ladder" type="Node4D" parent="Paths/Targets"]
-position = Vector4(7.5, 0, -28.6, 0)
-script = ExtResource("21_target")
-label = "Ladder"
-size = Vector3(4, 1, 4)
+label = "The world"
+size = Vector3(6.6, 1, 6.6)
 
 [node name="FieldDoorTarget" type="Node4D" parent="Paths/Targets"]
-position = Vector4(0, 0, -32.2, 0)
+position = Vector4(0, 0, -31.7, 0)
 script = ExtResource("21_target")
 label = "Field door"
 size = Vector3(3.2, 4.2, 0.6)

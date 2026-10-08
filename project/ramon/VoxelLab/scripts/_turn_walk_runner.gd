@@ -1,6 +1,6 @@
 extends SceneTree
 ## Voxel Lab, 8 Oct: the turn and the walk, after the pen's walker, camera and floor-only turns were
-## carried over. Diagonal drags on the column, the tree and the block (as a hand drags: across with
+## carried over. Diagonal drags on the column and the block (as a hand drags: across with
 ## some up and down in it, many times) must leave UP exactly up, so nothing leans; then the player walks
 ## on real key presses and must face the way it goes, upright. Frames to
 ## smoke_test_output/voxel_lab/turn/ to look at.
@@ -69,8 +69,8 @@ func _process(delta: float) -> bool:
 		0:
 			_scene.get("player").set("input_enabled", false)
 			var ex: Node = column.get("exhibit")
-			if ex != null and bool(ex.call("is_ready")) and bool(hero.get("exhibit").call("is_ready")) and _t > 2.0:
-				_scene.call("go_to", Vector4(-7.0, 0.05, -0.4, 0.0), deg_to_rad(12.0))
+			if ex != null and bool(ex.call("is_ready")) and bool(hero.get("exhibit").call("is_ready")) and _t > 2.0 and not bool(current_scene.get("loading")):
+				_scene.call("go_to", Vector4(-5.1, 0.05, -5.0, 0.0), deg_to_rad(90.0))
 				_next()
 		1:
 			if _t > 1.0:
@@ -93,22 +93,10 @@ func _process(delta: float) -> bool:
 				_save("03_column_turned_ahead")
 				column.set("turn", Vector2.ZERO)
 				column.set("turn_basis", Projection.IDENTITY)
-				column.get("exhibit").call("action")
-				_next()
-		4:
-			if _t > 4.0 and bool(column.get("exhibit").call("is_ready")):
-				column.call("_finish")
-				_drag(column, 45, 6.0, 2.0)
-				_next()
-		5:
-			if _t > 0.8:
-				var ex: Node = column.get("exhibit")
-				var sp: Node4D = ex.get("specimen")
-				var crown: Node4D = ex.get("crown_spec")
-				_check(_lean(sp) < 0.01 and (crown == null or _lean(crown) < 0.01), "the tree after diagonal drags: its trunk stays vertical (%.3f degrees)" % _lean(sp))
-				_save("04_tree_turned_diagonal")
+				# (The tree went on 9 Oct: Ramon, "I don't think we should reintroduce that idea".)
 				_scene.call("go_to", Vector4(0.0, 0.05, 4.8, 0.0), 0.0)
-				_next()
+				_step = 6
+				_t = 0.0
 		6:
 			if _t > 1.2:
 				hero.call("_finish")

@@ -46,6 +46,12 @@ for remakes: "carry it over, and not reuse it"; the Quantum Range and the Arbore
   mapping: sideways tilts its width into W, up and down its depth). It was a swing plus a tilt of UP into
   W, and a column or a tree leaned after a few drags.
 
+- **9 Oct, round 2:** `kit/panels/kit_wall_panel_4d.gd` claims its wall in blue once the room has
+  built its walls (they come after the panel's own `_ready`, so the claim was never made and the walls
+  stayed grey); `kit/panels/kit_panel_charts.gd` `Tesseract` (the block's 4D frame, turning) and
+  `kit_panel_research.gd`'s "tesseract" chart, ticked at 30 a second; `kit/kit_room_4d.gd`'s deferred
+  rebuild skips a room that has left the tree.
+
 ## Going back to the shared kit
 
 To point the Voxel Lab at the shared kit once it settles, rewrite these paths back to

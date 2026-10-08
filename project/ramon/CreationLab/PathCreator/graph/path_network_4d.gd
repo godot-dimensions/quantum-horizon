@@ -52,6 +52,7 @@ extends Node4D
 
 const Spec := preload("res://ramon/CreationLab/PathCreator/path_spec.gd")
 const Draw := preload("res://ramon/CreationLab/PathCreator/render/path_draw.gd")
+const LabGrid := preload("res://ramon/CreationLab/LabKit/lab_grid.gd")
 const GENERATED := "pc_generated"
 ## Across the route, metres: room for the widest mark.
 const EDGE_W := 0.8
@@ -89,6 +90,13 @@ const FRAME_GAP := 1.6
 	set(v):
 		under_color = v
 		_apply_look()
+## On a lab floor: that floor's swatch (LabKit's grid, usually "kit_floor"), and `under_color` follows
+## its surface colour whenever the room changes it, as its black palette does. With the colour fixed
+## to the grey floor, every blue mark had a thin light rim on the black one (the Voxel Lab, 9 Oct;
+## Ramon: "so its just blue to black for that toggle"). Empty, the default: `under_color` as set (the
+## pen sets its own).
+@export var floor_swatch: String = ""
+var _floor_check: float = 0.0
 @export var motion: bool = true:
 	set(v):
 		motion = v
@@ -374,6 +382,13 @@ func _target_of(n: Dictionary) -> Node4D:
 func _process(dt: float) -> void:
 	if Engine.is_editor_hint() or graph == null:
 		return
+	if not floor_swatch.is_empty():
+		_floor_check -= dt
+		if _floor_check <= 0.0:
+			_floor_check = 0.25
+			var sw: Array = LabGrid._values.get(floor_swatch, [])
+			if not sw.is_empty() and (sw[0] as Color) != under_color:
+				under_color = sw[0]
 	var moved: Array = []
 	for n in graph.nodes:
 		if not bool(n.get("anchor", false)):

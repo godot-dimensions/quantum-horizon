@@ -12,16 +12,15 @@ const Style := preload("res://ramon/VoxelLab/carried/kit/kit_style.gd")
 ## [name, where (x, z), facing (degrees), seconds to settle]
 const VIEWS := [
 	["entrance", Vector2(0, 21.0), 0.0, 1.6],
-	["hall", Vector2(0, 11.5), 0.0, 1.4],
-	["shelf", Vector2(5.4, 5.4), -78.0, 1.6],
-	["block", Vector2(0, 4.8), 0.0, 1.6],
-	["column", Vector2(-7.2, -0.4), 8.0, 1.6],
-	["panels", Vector2(0, 3.0), 0.0, 1.4],
-	["gallery", Vector2(0, -16.4), 0.0, 1.6],
-	["terrain", Vector2(-5.2, -18.2), 30.0, 1.6],
-	["caves", Vector2(5.2, -18.2), -30.0, 1.6],
-	["cell24", Vector2(-4.8, -25.6), 42.0, 1.6],
-	["ladder", Vector2(4.8, -25.6), -42.0, 1.6],
+	["junction", Vector2(0, 9.0), 0.0, 1.4],
+	["shelf", Vector2(6.2, 5.4), -90.0, 1.6],
+	["block", Vector2(0, 3.0), 0.0, 1.6],
+	["walls", Vector2(0, -4.0), 0.0, 1.6],
+	["column", Vector2(-5.1, -5.0), 90.0, 1.6],
+	["gallery", Vector2(0, -17.0), 0.0, 1.6],
+	["terrain", Vector2(0, -23.5), 90.0, 1.6],
+	["ladder", Vector2(4.4, -23.5), -90.0, 1.6],
+	["field_door", Vector2(0, -26.5), 0.0, 1.6],
 ]
 
 var _scene: Node
@@ -69,7 +68,7 @@ func _process(delta: float) -> bool:
 	_t += delta
 	match _phase:
 		"wait":
-			if _ready_all() and _t > 2.0:
+			if _ready_all() and _t > 2.0 and not bool(current_scene.get("loading")):
 				_phase = "views"
 				_go()
 			elif _t > 120.0:
@@ -84,10 +83,8 @@ func _process(delta: float) -> bool:
 					# The block's story, from the bench pad, part by part.
 					_phase = "story"
 					_part = 0
-					_scene.call("go_to", Vector4(0, 0.05, 4.4, 0), 0.0)
-					var hero: Node = _scene.get_node("Hero")
-					hero.call("_finish")
-					hero.call("replay")
+					_scene.call("go_to", Vector4(0, 0.05, 3.0, 0), 0.0)
+					_scene.call("watch", _scene.get_node("Hero"))
 				else:
 					_go()
 				_t = 0.0

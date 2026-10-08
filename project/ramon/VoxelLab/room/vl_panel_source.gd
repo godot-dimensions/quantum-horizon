@@ -73,19 +73,17 @@ func research(info: Resource) -> Dictionary:
 		for co in c.get("callouts", []):
 			lines.append(fill(String(co[1])))
 		out["page"] = {"id": "part:" + String(c["key"]), "chapter": "%02d / %02d  ·  %s" % [now + 1, chs.size(), String(c["title"])],
-			"headline": fill(String(c["line"])), "text": " ".join(lines), "chart": "bars",
-			"caption": "Time until each cut showed, ms (this run).",
+			"headline": fill(String(c["line"])), "text": " ".join(lines), "chart": "tesseract",
+			"caption": "The block's frame in 4D, turning through W. Bars: time until each cut showed, ms.",
 			"metrics": _metrics(n, recs)}
 	else:
 		out["page"] = {"id": "bench", "chapter": "THE BENCH  ·  CUT IT YOURSELF",
 			"headline": "Every cut is timed.\nNo frame waits for it.",
 			"text": "A cut is an edit of air. The engine meshes the chunks it touched in C++; the lab builds their draw buffers on a worker thread and shows them together.",
-			"chart": "bars", "caption": "Time until each cut showed, ms (this run).", "metrics": _metrics(n, recs)}
+			"chart": "tesseract", "caption": "The block's frame in 4D, turning through W. Bars: time until each cut showed, ms.", "metrics": _metrics(n, recs)}
 	var bars: Array = []
 	for r in recs.slice(maxi(0, recs.size() - 12)):
 		bars.append(float(r.get("latency_ms", 0.0)))
-	if bars.is_empty():
-		bars = [0.0]
 	out["chart"] = {"values": bars, "lit": bars.size() - 1}
 	out["table"] = _table()
 	out["footnote"] = "Measured in this room on %s, %s, this run. Voxels counted on every second point and scaled; memory is about 1.25 KB a tetrahedron, the engine's own figure. One machine, one scene." % [

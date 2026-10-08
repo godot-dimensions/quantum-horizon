@@ -122,7 +122,9 @@ func _later() -> void:
 	_queued = true
 	(func() -> void:
 		_queued = false
-		rebuild()).call_deferred()
+		# VOXEL LAB (carried copy): the room may have left the tree meanwhile (through the field's door).
+		if is_inside_tree():
+			rebuild()).call_deferred()
 
 
 func rebuild() -> void:

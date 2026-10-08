@@ -414,6 +414,10 @@ static func voxel_count(r: Dictionary, stride: int = 2) -> int:
 ## ours, then everything outside the box made air. Built from noise in C++, which our copy cannot follow:
 ## "mirror" false (aimed through the meshes, vl_tet_ray.gd).
 ## Materials are his: 0 grass, 1 dirt, 2 stone, 3 water.
+##
+## `parts` (opts) picks his layers: "sea", "land", "caves" (all three by default). The gallery's small
+## pedestals show them apart (Ramon, 9 Oct: "rethink what you show and how"): the land alone, the caves
+## alone (caves() below), and the land with the caves carved out of it.
 static func terrain(size_m: Vector4, voxel: float, opts: Dictionary = {}) -> Dictionary:
 	var half: Vector4 = size_m * 0.5 / voxel
 	var center: Vector4 = chunk_middle() + JITTER + (opts.get("shift", Vector4.ZERO) as Vector4)
@@ -421,25 +425,32 @@ static func terrain(size_m: Vector4, voxel: float, opts: Dictionary = {}) -> Dic
 	# land's shape and shrink it into the box.
 	var k: float = float(opts.get("k", 0.55))
 	var sea: float = center.y + float(opts.get("sea_m", -0.15)) / voxel
-	var ocean = _plane(Vector4(0, 1, 0, 0), sea, AIR, 3)
+	var parts: Array = opts.get("parts", ["sea", "land", "caves"])
+	var ocean = _plane(Vector4(0, 1, 0, 0), sea, AIR, 3 if "sea" in parts else AIR)
 	var land = ClassDB.instantiate("LandscapeVoxelGenerator4D")
 	land.set("seed", int(opts.get("seed", 2)))
 	land.set("intensity", 12.32 * k)
 	land.set("materials", PackedInt32Array([2, 1, 0, UNDEFINED]))
 	var ground: float = center.y + float(opts.get("ground_m", 0.0)) / voxel
-	land.set("material_cutoffs", PackedFloat32Array([ground - 6.0 * k, ground - 1.5 * k, ground]))
+	# The grass at least `grass_voxels` deep: his 1.5 voxels scaled by k came to under one of ours, and
+	# the dirt poked through the green wherever a slope crossed a voxel (Ramon, 8 Oct).
+	var grass: float = maxf(1.5 * k, float(opts.get("grass_voxels", 0.0)))
+	land.set("material_cutoffs", PackedFloat32Array([ground - maxf(6.0 * k, grass + 2.0), ground - grass, ground]))
 	if opts.has("horizontal_scale"):
 		land.set("horizontal_scale", float(opts["horizontal_scale"]))
 	var caves = ClassDB.instantiate("CaveVoxelGenerator4D")
 	caves.set("seed", int(opts.get("cave_seed", 1)))
 	caves.set("persistence", 0.4)
-	caves.set("diameter", 6.18 * float(opts.get("cave_k", 0.7)))
+	caves.set("diameter", float(opts.get("cave_diameter", 6.18 * float(opts.get("cave_k", 0.7)))))
+	for key in ["octaves", "horizontal_scale", "vertical_scale"]:
+		if opts.has("cave_" + key):
+			caves.set(key, opts["cave_" + key])
 	var clipped = ClassDB.instantiate("ClippedVoxelGenerator4D")
 	clipped.set("base", land)
 	clipped.set("modifier", caves)
 	var r: Dictionary = {"kind": "terrain", "voxel": voxel, "center": center, "half": half, "crust": 0.0, "planes": [], "vein": {},
 		"cavity": {}, "column": {}, "mirror": false,
-		"layers": [ocean, clipped, _box(center, half * 2.0, UNDEFINED, AIR)],
+		"layers": [ocean, clipped if "caves" in parts else land, _box(center, half * 2.0, UNDEFINED, AIR)],
 		"colors": {0: Color(0.40, 0.74, 0.22), 1: Color(0.56, 0.32, 0.12), 2: Color(0.34, 0.34, 0.34), 3: Color(0.25, 0.47, 1.0)}}
 	return r
 

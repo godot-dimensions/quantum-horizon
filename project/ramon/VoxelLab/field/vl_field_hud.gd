@@ -50,8 +50,8 @@ func _draw() -> void:
 	var x: float = r.position.x + 16 * u
 	var right: float = r.end.x - 16 * u
 	var y: float = r.position.y + 28 * u
-	draw_string(fb, Vector2(x, y), "THE FIELD", HORIZONTAL_ALIGNMENT_LEFT, -1, int(17 * u), Style.UI_INK)
-	draw_string(fk, Vector2(x, y + 18 * u), "ANDREW'S LANDSCAPE, GENERATED ROUND YOU", HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Style.UI_ACCENT)
+	draw_string(fb, Vector2(x, y), "THE OPEN WORLD", HORIZONTAL_ALIGNMENT_LEFT, -1, int(17 * u), Style.UI_INK)
+	draw_string(fk, Vector2(x, y + 18 * u), "OUR LANDSCAPE, WITHOUT EDGES, GENERATED AS YOU GO", HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Style.UI_ACCENT)
 	y += 44 * u
 	var swap: bool = bool(stream.get("swap"))
 	var rows: Array = [
@@ -73,13 +73,18 @@ func _draw() -> void:
 			col = Style.UI_LIVE if swap else Style.UI_WARM
 		draw_string(fk, Vector2(x, y), String(row[1]), HORIZONTAL_ALIGNMENT_RIGHT, right - x, int(11 * u), col)
 		y += 20 * u
-	# The cross where a crater lands.
+	var flying: bool = String(field.get("mode")) == "fly"
+	# The cross where a crater lands (flying only).
 	var c: Vector2 = size * 0.5
-	draw_line(c - Vector2(9, 0) * u, c + Vector2(9, 0) * u, Color(1, 1, 1, 0.8), 1.5 * u)
-	draw_line(c - Vector2(0, 9) * u, c + Vector2(0, 9) * u, Color(1, 1, 1, 0.8), 1.5 * u)
+	if flying:
+		draw_line(c - Vector2(9, 0) * u, c + Vector2(9, 0) * u, Color(1, 1, 1, 0.8), 1.5 * u)
+		draw_line(c - Vector2(0, 9) * u, c + Vector2(0, 9) * u, Color(1, 1, 1, 0.8), 1.5 * u)
 	# The keys.
 	var keys: Array = [["WASD", "Fly"], ["Space / C", "Up, down"], ["Q / E", "Through W"], ["Wheel", "Turn the slice"], ["Click", "Crater"],
-		["[ / ]", "Radius"], ["T", "Worker / engine"], ["V", "Volume view"], ["H", "Back to the lab"]]
+		["[ / ]", "Radius"], ["T", "Worker / engine"], ["V", "Volume view"], ["H", "Land on the deck"]]
+	if not flying:
+		keys = [["WASD", "Walk"], ["1", "Fly over it"], ["2", "Change the land"], ["[ / ]", "Radius"], ["T", "Worker / engine"],
+			["The blue door behind you", "Back to the lab"]]
 	var kx: float = 22 * u
 	var ky: float = size.y - 22 * u
 	var strip := Rect2(Vector2(kx - 10 * u, ky - 22 * u), Vector2(size.x - 2.0 * (kx - 10 * u), 32 * u))

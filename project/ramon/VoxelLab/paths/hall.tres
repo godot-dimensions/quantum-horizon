@@ -1,9 +1,9 @@
 [gd_resource type="Resource" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://ramon/VoxelLab/carried/PathCreator/graph/path_graph.gd" id="1_yeiyn"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/carried/PathCreator/graph/path_graph.gd" id="1_graph"]
 
 [resource]
-script = ExtResource("1_yeiyn")
+script = ExtResource("1_graph")
 nodes = [{
 "approach": Vector2(0, 1),
 "band": 8.0,
@@ -19,90 +19,108 @@ nodes = [{
 "frame": "none",
 "id": 2,
 "kind": "junction",
-"pos": Vector4(0, 0, 13.5, 0),
+"pos": Vector4(0, 0, 9, 0),
 "state": "arrival",
 "target": ""
 }, {
 "approach": Vector2(0, 1),
 "band": 8.0,
-"frame": "none",
+"frame": "round",
 "id": 3,
+"kind": "destination",
+"pos": Vector4(0, 0, 3, 0),
+"state": "available",
+"target": "Hero"
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 4,
 "kind": "bend",
-"pos": Vector4(3.2, 0, 10.4, 0),
+"pos": Vector4(6.2, 0, 9, 0),
 "state": "arrival",
 "target": ""
-}, {
-"approach": Vector2(-1, 0),
-"band": 8.0,
-"frame": "rect",
-"id": 4,
-"kind": "destination",
-"pos": Vector4(6, 0, 4.4, 0),
-"state": "available",
-"target": "Shelf"
 }, {
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
 "id": 5,
-"kind": "bend",
-"pos": Vector4(3, 0, 6.6, 0),
+"kind": "chord",
+"pos": Vector4(6.2, 0, 5.4, 0),
 "state": "arrival",
 "target": ""
 }, {
 "approach": Vector2(0, 1),
 "band": 8.0,
-"frame": "rect",
+"frame": "none",
 "id": 6,
-"kind": "destination",
-"pos": Vector4(0, 0, 6, 0),
+"kind": "chord",
+"pos": Vector4(6.2, 0, 1.8, 0),
 "state": "arrival",
-"target": "HeroBench"
+"target": ""
 }, {
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
 "id": 7,
 "kind": "bend",
-"pos": Vector4(-3.6, 0, 3.2, 0),
+"pos": Vector4(6.2, 0, -6.9, 0),
 "state": "arrival",
 "target": ""
 }, {
-"approach": Vector2(0, 1),
+"approach": Vector2(-0.7399, 0.6727),
 "band": 8.0,
-"frame": "rect",
+"frame": "none",
 "id": 8,
 "kind": "destination",
-"pos": Vector4(-8.2, 0, 0.2, 0),
+"pos": Vector4(5.1, 0, -8, 0),
 "state": "arrival",
-"target": "ColumnBench"
+"target": "RightWallTarget"
 }, {
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
 "id": 9,
-"kind": "bend",
-"pos": Vector4(-4.8, 0, -7.4, 0),
-"state": "arrival",
-"target": ""
-}, {
-"approach": Vector2(0, 1),
-"band": 8.0,
-"frame": "none",
-"id": 10,
-"kind": "bend",
-"pos": Vector4(-1.4, 0, -11.8, 0),
+"kind": "junction",
+"pos": Vector4(0, 0, -8, 0),
 "state": "arrival",
 "target": ""
 }, {
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "rect",
-"id": 11,
+"id": 10,
 "kind": "destination",
-"pos": Vector4(0, 0, -13.4, 0),
+"pos": Vector4(0, 0, -13.6, 0),
 "state": "arrival",
 "target": "GalleryDoor"
+}, {
+"approach": Vector2(0.7399, 0.6727),
+"band": 8.0,
+"frame": "none",
+"id": 11,
+"kind": "destination",
+"pos": Vector4(-5.1, 0, -8, 0),
+"state": "arrival",
+"target": "LeftWallTarget"
+}, {
+"approach": Vector2(1, 0),
+"band": 8.0,
+"frame": "round",
+"id": 12,
+"kind": "destination",
+"pos": Vector4(-5.1, 0, -5, 0),
+"state": "arrival",
+"target": "Column"
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 13,
+"kind": "bend",
+"pos": Vector4(-5.1, 0, 9, 0),
+"state": "arrival",
+"target": ""
 }]
 edges = [{
 "band": 8.0,
@@ -118,7 +136,7 @@ edges = [{
 "w_mode": "static"
 }, {
 "band": 8.0,
-"from": 3,
+"from": 2,
 "priority": "primary",
 "to": 4,
 "w_mode": "static"
@@ -160,9 +178,27 @@ edges = [{
 "w_mode": "static"
 }, {
 "band": 8.0,
-"from": 10,
+"from": 9,
 "priority": "primary",
 "to": 11,
 "w_mode": "static"
+}, {
+"band": 8.0,
+"from": 11,
+"priority": "primary",
+"to": 12,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 12,
+"priority": "primary",
+"to": 13,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 13,
+"priority": "primary",
+"to": 2,
+"w_mode": "static"
 }]
-next_id = 12
+next_id = 14

@@ -6,17 +6,21 @@ extends Node4D
 ## plan and status: VoxelLab/PLAN.md; handover: follow_up/voxel_lab.md). Cutting 4D matter: the
 ## engine's own voxels (4Denthusiast's VoxelWorld4D), cut live, with every cost measured.
 ##
-## You come in under VOXEL LAB, past a shelf of three pre-cut specimens on your right, to the block on
-## its pedestal in the middle. Its story plays once as you come near: it cuts itself (two cuts, a
-## tunnel, a hidden room ana of your slice) and is made whole again. On the bench pad in front of it
-## you sit down and cut it yourself. Further on, on the left, a column you can cut until it falls; at
-## the back, the door to the engine's own test cases.
+## You come in under VOXEL LAB to a quiet junction level with the shelf. On the right, three pre-cut
+## specimens (A, B, C: a click at each says what it shows); ahead, the block on its pedestal. At its ring
+## you choose (Ramon, 8 Oct): watch its presentation, a story that cuts it live (two cuts, a tunnel, a
+## hidden room ana of your slice) with a camera that frames each part, or cut it yourself at the bench.
+## Nothing plays by walking up to it. Past the shelf, the right wall (the block's live numbers); along
+## the back, the gallery door and the left wall (the lab's introduction); on the left, the column, which
+## you watch fall. Floating panels beside the block and the column; one soft light on each item.
+## Behind the gallery's far door a blue shimmer takes you to the field.
 ##
 ## THIS NODE: the hall's shape (the carried room plan), the player (the kit's grown-up figure, the
-## camera behind and above), the HUD (the control strip, the story's title card and callouts, the key
-## prompt), which pedestal you are at (its story plays once as you arrive; the wheel slides it through
-## W, a right drag turns it), the benches (E or a click on a pad sits you down; the bench has the keys
-## until you stand up), the volume view (V) and the grid view (G).
+## camera behind and above), the HUD (the control strip, the choice, the pop-up, the presentation's
+## title card and callouts), the spots (Spots/*: where you can act, from the scene's metadata), which
+## pedestal you are at (the wheel slides it through W, a right drag turns it), the benches (the choice
+## sits you down; the bench has the keys until you stand up), the lights (vl_lights.gd), the volume
+## view (V) and the grid view (G).
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -27,7 +31,11 @@ const Hud := preload("res://ramon/VoxelLab/carried/scripts/rd_hud.gd")
 const Prompt := preload("res://ramon/VoxelLab/carried/kit/kit_prompt.gd")
 const Presenter := preload("res://ramon/VoxelLab/carried/kit/kit_presenter.gd")
 const Plan := preload("res://ramon/VoxelLab/carried/kit/kit_room_plan.gd")
-const Card := preload("res://ramon/VoxelLab/room/vl_card.gd")
+const Choice := preload("res://ramon/VoxelLab/room/vl_choice.gd")
+const PopupCard := preload("res://ramon/VoxelLab/room/vl_popup.gd")
+const LightRig := preload("res://ramon/VoxelLab/room/vl_lights.gd")
+const Shimmer := preload("res://ramon/VoxelLab/room/vl_shimmer_4d.gd")
+const LoadBoard := preload("res://ramon/VoxelLab/room/vl_load_board.gd")
 const GridView := preload("res://ramon/VoxelLab/room/vl_grid_view.gd")
 const DevPanel := preload("res://ramon/VoxelLab/room/vl_dev_panel.gd")
 const FIELD := "res://ramon/VoxelLab/field/voxel_field.tscn"
@@ -107,8 +115,11 @@ var player: CharacterBody4D
 var hud: Control
 var prompt: Control
 var presenter: Control
-var card: Control
+var choice: Control
+var popup: Control
 var dev_panel: Control
+## The light rig (vl_lights.gd): every soft spot, the room values, the light file.
+var lights: Node
 var stations: Array = []
 var benches: Array = []
 ## The pedestal you are at (a carried showcase), or null; the bench you sit at, or null.
@@ -118,15 +129,23 @@ var plan: Dictionary = {}
 var volume_view: bool = false
 var grid_view: bool = false
 var _near: Dictionary = {}
-var _visited: Dictionary = {}
-var _at_pad: Node = null
-var _at_door: bool = false
-## What you have done, by route destination (the Paths/Targets names): sat at a bench, looked at the
-## shelf, gone through a door.
+## Where you can act (Spots/*): [{"node", "kind", "radius", "station", "bench", "options", "target"}].
+var spots: Array = []
+## The spot you are standing at, or {}; how long you have stood there.
+var spot: Dictionary = {}
+var _spot_t: float = 0.0
+## The station whose presentation is playing (chosen at its ring), and one waiting to be made whole first.
+var watching: Node = null
+var _watch_next: Node = null
+var _popup_open: bool = false
+var _leaving: bool = false
+## The loading board while the specimens are built (vl_load_board.gd); true until it is gone.
+var loading: bool = false
+var _board: Control
+var _board_t: float = 0.0
+## What you have done, by route destination (the Paths/Targets names): taken a choice, stood at a wall,
+## gone through a door.
 var _done: Dictionary = {}
-var _at_console: Node = null
-var _card_open: bool = false
-var _card_t: float = 0.0
 var _shape_queued: bool = false
 var _grid: RefCounted
 ## The story camera (see _run_film), its state, and the station whose story you took the camera back
@@ -157,13 +176,27 @@ func _ready() -> void:
 		if is_ancestor_of(b):
 			benches.append(b)
 			b.connect("docked_changed", _on_docked.bind(b))
+	var holder: Node = get_node_or_null("Spots")
+	if holder != null:
+		for n in holder.get_children():
+			var st: Node = n.get_node_or_null(n.get_meta("station")) if n.has_meta("station") else null
+			var bn: Node = n.get_node_or_null(n.get_meta("bench")) if n.has_meta("bench") else null
+			spots.append({"node": n, "kind": String(n.get_meta("kind", "view")), "radius": float(n.get_meta("radius", 1.3)),
+				"station": st, "bench": bn, "options": n.get_meta("options", []), "target": String(n.get_meta("target", ""))})
+	lights = Node.new()
+	lights.name = "LightRig"
+	lights.set_script(LightRig)
+	add_child(lights)
+	lights.call("setup", get_node_or_null("Lights"))
 	player = KitPlayer.make()
 	add_child(player)
 	go_to(Vector4(start_at.x, 0.05, start_at.y, 0.0), 0.0)
-	if arrive_from == "field" and get_node_or_null("FieldDoor") != null:
+	var from_field: bool = arrive_from == "field"
+	if from_field and get_node_or_null("FieldDoor") != null:
 		var d: Vector4 = (get_node("FieldDoor") as Node4D).position
-		# Just inside the far door, facing back into the gallery.
-		go_to(Vector4(0.0, 0.05, d.z + 2.2, 0.0), PI)
+		# Inside the far door, facing back into the gallery, the shimmer behind you; far enough in that
+		# the camera behind you is in the gallery too (at 2.4 m it sat beyond the shimmer and saw only it).
+		go_to(Vector4(0.0, 0.05, d.z + 5.6, 0.0), PI)
 	arrive_from = ""
 	var rig: Node = player.get_node_or_null("CameraRig")
 	if rig != null:
@@ -184,6 +217,7 @@ func _ready() -> void:
 	layer.add_child(hud)
 	hud.connect("mood_pressed", toggle_palette)
 	_label_switch()
+	_route_floor()
 	presenter = Control.new()
 	presenter.name = "Presenter"
 	presenter.set_script(Presenter)
@@ -193,10 +227,28 @@ func _ready() -> void:
 	prompt.set_script(Prompt)
 	prompt.set("camera", camera())
 	layer.add_child(prompt)
-	card = Control.new()
-	card.name = "Card"
-	card.set_script(Card)
-	layer.add_child(card)
+	choice = Control.new()
+	choice.name = "Choice"
+	choice.set_script(Choice)
+	layer.add_child(choice)
+	choice.connect("chosen", _on_choice)
+	popup = Control.new()
+	popup.name = "Popup"
+	popup.set_script(PopupCard)
+	layer.add_child(popup)
+	# The floating panels wobble when you walk into them.
+	for c in get_children():
+		if c.get_script() != null and "face_point" in c:
+			c.set("player", player)
+	_open_board(from_field)
+	# The blue shimmer in the gallery's far door: walk through it to the field.
+	var door: Node4D = get_node_or_null("FieldDoor") as Node4D
+	if door != null:
+		var sh := Node4D.new()
+		sh.name = "Shimmer"
+		sh.set_script(Shimmer)
+		sh.position = Vector4(0.0, 0.0, door.position.z + 0.1, 0.0)
+		add_child(sh)
 	var dlayer := CanvasLayer.new()
 	dlayer.name = "Dev"
 	dlayer.layer = 5
@@ -210,6 +262,64 @@ func _ready() -> void:
 		var ex: Node = s.get("exhibit")
 		if ex != null and "grid_view_hook" in ex:
 			ex.set("grid_view_hook", func(on: bool) -> void: _grid_for(s, on))
+
+
+# -- the loading board -----------------------------------------------------------------------------
+
+static func _thousands(v: int) -> String:
+	var t: String = str(v)
+	var out: String = ""
+	while t.length() > 3:
+		out = "," + t.substr(t.length() - 3) + out
+		t = t.substr(0, t.length() - 3)
+	return t + out
+
+
+## The board while every specimen is built (Ramon, 9 Oct: the open world's board, and "if other things
+## need building in the other two rooms, think of smart ways to optimize for performance"): the engine
+## meshes them all at once, 16 chunks a frame per world on the main thread, and those first seconds of
+## spikes and specimens popping in are now behind it.
+func _open_board(from_field: bool) -> void:
+	loading = true
+	_board = LoadBoard.open(self)
+	_board.set("kicker", "QUANTUM HORIZON  ·  " + ("BACK FROM THE OPEN WORLD" if from_field else "THE ENGINE'S OWN VOXELS"))
+	_board.set("title", "VOXEL LAB")
+	_board.set("subtitle", "Cutting 4D matter")
+	_board.set("coming", ["A block of 4D rock: watch it cut, or cut it yourself",
+		"Sections, a column that falls through W, the numbers of every cut",
+		"Behind it: how our world is made, and the door into it"])
+	_board.set("diagram_title", "SPECIMENS, BUILT BY THE ENGINE AS YOU WAIT")
+	_board.connect("finished", func() -> void:
+		loading = false
+		_board = null
+		if player != null and bench == null:
+			player.set("input_enabled", true))
+
+
+func _feed_board(delta: float) -> void:
+	_board_t += delta
+	var bars: Array = []
+	var ready: int = 0
+	var tets: int = 0
+	for s in stations:
+		var ex: Node = s.get("exhibit")
+		var sp: Node = ex.get("specimen") if ex != null else null
+		var f: float = 0.0
+		if ex != null and bool(ex.call("is_ready")):
+			f = 1.0
+			ready += 1
+		elif sp != null:
+			f = {"loading": 0.25, "meshing": 0.6, "proxies": 0.85}.get(String(sp.get("phase")), 0.1)
+		var t: int = int(sp.call("tets")) if sp != null else 0
+		tets += t
+		bars.append([String(ex.get("title")) if ex != null else String(s.name), f, "%dk" % int(round(float(t) / 1000.0))])
+	_board.set("bars", bars)
+	_board.set("numbers", [["Specimens built", "%d of %d" % [ready, stations.size()]], ["Tetrahedra", _thousands(tets)], ["Video memory", "%.0f MB" % (float(tets) * 1.25 / 1024.0)]])
+	_board.set("progress", float(ready) / maxf(1.0, float(stations.size())))
+	if (ready == stations.size() and _board_t > 2.0) or _board_t > 40.0:
+		_board.call("finish")
+	if player != null:
+		player.set("input_enabled", false)
 
 
 # -- the shape ---------------------------------------------------------------------------------------
@@ -284,6 +394,18 @@ func toggle_palette() -> void:
 		if n != self and is_ancestor_of(n) and n.has_method("apply_mood"):
 			n.call("apply_mood", Style.mood, true)
 	_label_switch()
+	_route_floor()
+
+
+## The routes' marks blend their edges into the floor's own colour; on the black palette's floor that
+## was still the grey one, and every blue mark had a thin light rim (Ramon, 9 Oct: "so its just blue to
+## black for that toggle").
+func _route_floor() -> void:
+	var floor_c: Color = (Style.BLACK["kit_floor"][0] as Color) if Style.palette == "black" else (Style.SWATCHES["bright"]["kit_floor"][0] as Color)
+	for nm in ["Hall", "Gallery"]:
+		var net: Node = get_node_or_null("Paths/" + nm)
+		if net != null:
+			net.set("under_color", floor_c)
 
 
 func _label_switch() -> void:
@@ -303,122 +425,192 @@ func apply_mood(m: String, _instant: bool = false) -> void:
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint() or player == null:
 		return
+	if _board != null:
+		_feed_board(delta)
 	if bench != null:
 		hud.set("strip", bench.call("strip"))
 		presenter.set("active", false)
 		prompt.set("shown", false)
+		choice.set("shown", false)
+		popup.set("shown", false)
 		return
 	var p: Vector4 = player.global_position
 	_find_active(p)
-	_read_pads(p)
-	_read_console(delta)
+	_follow_watch()
+	_read_spot(p, delta)
 	_run_film(delta)
 	if presenter != null:
-		presenter.set("showcase", active)
-		presenter.set("active", active != null and not _card_open)
+		presenter.set("showcase", watching)
+		presenter.set("active", watching != null)
+	prompt.set("shown", false)
 	hud.set("strip", _strip())
 	_route_states(p)
+	_field_door(p)
 
 
-## The pedestal you are at: the nearest whose edge is within `story_margin`. Arriving at one plays its
-## story once; a click or the arrows step through it.
+## The pedestal you are at, for the wheel and a right drag: the nearest whose edge is within
+## `story_margin`. Nothing plays by walking up to it (Ramon, 8 Oct: the presentation is a choice);
+## a presentation stops when you walk well away from it.
 func _find_active(p: Vector4) -> void:
 	var best: Node = null
 	var best_d: float = INF
-	var dist: Dictionary = {}
 	for s in stations:
 		var sp: Vector4 = (s as Node4D).global_position
 		var d: float = Vector2(p.x - sp.x, p.z - sp.z).length() - float(s.get("radius"))
-		dist[s] = d
 		if d < story_margin and d < best_d:
 			best_d = d
 			best = s
-	# Only the pedestal you are at plays its story: two near ones at once (the block and the column
-	# overlap) played both, the block cutting itself while you watched the column (6 Oct).
-	for s in stations:
-		var d: float = float(dist[s])
-		var ex: Node = s.get("exhibit")
-		var has_story: bool = ex != null and not (ex.call("chapters") as Array).is_empty()
-		var near: bool = s == best
-		if has_story and near and not bool(_near.get(s, false)) and not bool(s.get("armed")) and int(s.get("seq_index")) < 0:
-			s.call("replay")
-			_visited[s] = true
-		if (not near) and (bool(s.get("armed")) or int(s.get("seq_index")) >= 0) and d > story_margin * 0.5:
-			s.call("_finish")
-		_near[s] = near
+		if s == watching and d > story_margin:
+			stop_watching()
 	active = best
 
 
-## Standing on a bench's pad pops its prompt.
-func _read_pads(p: Vector4) -> void:
-	var at: Node = null
-	for b in benches:
-		if bool(b.call("near", p)):
-			at = b
-	_at_pad = at
-	var door: Node4D = get_node_or_null("FieldDoor") as Node4D
-	_at_door = door != null and at == null and Vector2(p.x - door.global_position.x, p.z - door.global_position.z).length() < 2.2
-	# A pad's key is on the control strip and painted on the pad itself: a floating prompt over a pad
-	# stood right over the block from where you stand (6 Oct), and nothing may cover an exhibit.
-	if prompt != null and _at_console == null:
-		prompt.set("shown", _at_door)
-		if _at_door:
-			prompt.set("target", door)
-			prompt.set("text", "Out to the field")
+## The presentation chosen at a ring: started once its exhibit is whole (the column is made whole
+## first), and over when its story has played or been stopped.
+func _follow_watch() -> void:
+	if _watch_next != null:
+		var ex: Node = _watch_next.get("exhibit")
+		if ex == null or not ex.has_method("ready_to_watch") or bool(ex.call("ready_to_watch")):
+			watching = _watch_next
+			_watch_next = null
+			_film_declined = null
+			watching.call("replay")
+		return
+	if watching != null and not bool(watching.get("armed")) and int(watching.get("seq_index")) < 0:
+		watching = null
 
 
-func _read_console(delta: float) -> void:
-	var at: Node = null
-	for c in get_tree().get_nodes_in_group("vl_console"):
-		if is_ancestor_of(c) and bool(c.call("near", player.global_position)):
-			at = c
-	if at != _at_console:
-		_card_open = false
-	_at_console = at
-	if at != null and prompt != null:
-		prompt.set("shown", true)
-		prompt.set("target", at)
-		prompt.set("text", "Close" if _card_open else "About this specimen")
-	_card_t -= delta
-	if _card_open and at != null:
-		if _card_t <= 0.0:
-			_card_t = 0.25
-			var st: Node = at.get_node_or_null(at.get("station")) if at.get("station") != null else null
+func watch(s: Node) -> void:
+	if s == null:
+		return
+	if watching != null and watching != s:
+		stop_watching()
+	var ex: Node = s.get("exhibit")
+	if ex != null and ex.has_method("ready_to_watch") and not bool(ex.call("ready_to_watch")):
+		if bool(ex.call("is_ready")):
+			ex.call("reset")
+		hud.call("toast", "Making it whole first")
+	_watch_next = s
+
+
+func stop_watching() -> void:
+	_watch_next = null
+	if watching != null:
+		watching.call("_finish")
+	watching = null
+
+
+## The spot you stand at: its choice, its pop-up, or a wall you have come to read.
+func _read_spot(p: Vector4, delta: float) -> void:
+	var best: Dictionary = {}
+	var best_d: float = INF
+	for sp in spots:
+		var at: Vector4 = (sp["node"] as Node4D).global_position
+		var d: float = Vector2(p.x - at.x, p.z - at.z).length()
+		if d < float(sp["radius"]) and d < best_d:
+			best_d = d
+			best = sp
+	if best.get("node") != spot.get("node"):
+		_spot_t = 0.0
+		_popup_open = false
+	spot = best
+	_spot_t += delta
+	if not spot.is_empty() and _spot_t > 1.2 and not String(spot["target"]).is_empty() and String(spot["kind"]) == "view":
+		_done[String(spot["target"])] = true
+	var kind: String = String(spot.get("kind", ""))
+	choice.set("shown", kind == "choice" and watching == null and _watch_next == null)
+	if kind == "choice":
+		choice.set("heading", _heading(spot))
+		choice.set("options", _options(spot))
+	popup.set("shown", kind == "popup" and _popup_open)
+	if kind == "popup" and _popup_open:
+		popup.set("data", _popup_data(spot["station"]))
+
+
+func _heading(sp: Dictionary) -> String:
+	var st: Node = sp.get("station")
+	var ex: Node = st.get("exhibit") if st != null else null
+	return ("%s  ·  %s" % [String(ex.get("code")), String(ex.get("title")).to_upper()]) if ex != null else ""
+
+
+## A spot's options as the choice shows them (keys 1 and 2).
+func _options(sp: Dictionary) -> Array:
+	var out: Array = []
+	var ex: Node = sp["station"].get("exhibit") if sp.get("station") != null else null
+	for o in sp["options"]:
+		var item: Dictionary = {"key": str(out.size() + 1), "id": String(o)}
+		match String(o):
+			"watch":
+				item.merge({"icon": "eye", "label": "Watch the presentation"})
+			"cut":
+				item.merge({"icon": "pick", "label": "Cut it yourself"})
+			"fall":
+				item.merge({"icon": "fall", "label": "Watch it fall"})
+			"biome":
+				var now: String = String(ex.call("biome_name")) if ex != null and ex.has_method("biome_name") else ""
+				item.merge({"icon": "globe", "label": "Change the land (now %s)" % now})
+		out.append(item)
+	return out
+
+
+func _on_choice(i: int) -> void:
+	if spot.is_empty() or i < 0 or i >= (spot["options"] as Array).size():
+		return
+	var st: Node = spot.get("station")
+	if not String(spot["target"]).is_empty():
+		_done[String(spot["target"])] = true
+	match String(spot["options"][i]):
+		"watch", "fall":
+			watch(st)
+		"cut":
+			sit(spot.get("bench"))
+		"biome":
 			var ex: Node = st.get("exhibit") if st != null else null
-			card.set("data", ex.call("card") if ex != null and ex.has_method("card") else {})
-		card.set("shown", true)
-	else:
-		card.set("shown", false)
+			if ex != null and ex.has_method("next_biome"):
+				hud.call("toast", "The land: " + String(ex.call("next_biome")))
 
 
-func toggle_card() -> void:
-	if _at_console != null:
-		_card_open = not _card_open
-		_card_t = 0.0
+## The pop-up's words, from the exhibit's card.
+func _popup_data(st: Node) -> Dictionary:
+	var ex: Node = st.get("exhibit") if st != null else null
+	if ex == null or not ex.has_method("card"):
+		return {}
+	var c: Dictionary = ex.call("card")
+	var text: String = String(c.get("text", c.get("short", "")))
+	return {"code": String(c.get("code", "")), "title": String(c.get("title", "")), "kicker": String(c.get("kicker", "")),
+		"text": text, "rows": (c.get("rows", []) as Array).slice(0, 3)}
 
 
 func _strip() -> Array:
-	if _at_console != null:
-		return [["E / Click", "Close the card" if _card_open else "About this specimen"], ["WASD", "Move"]]
-	if _at_pad != null:
-		return [["E / Click", "Sit at the bench"], ["WASD", "Move"]]
-	if _at_door:
-		return [["E / Click", "Out to the field"], ["WASD", "Move"]]
-	if active == null:
-		return [["WASD", "Move"], ["Mouse", "Look"], ["B", "Black / grey"]]
+	if watching != null or _watch_next != null:
+		return [["Click / ← →", "Next part"], ["Esc", "Stop"], ["Wheel", "Slide through W"], ["B", "Black / grey"]]
+	var kind: String = String(spot.get("kind", ""))
 	var out: Array = []
-	if int(active.get("seq_index")) >= 0:
-		out.append(["Click / ← →", "Next part"])
-	elif bool(active.call("can_skip")) and not (active.get("exhibit").call("chapters") as Array).is_empty():
-		out.append(["Click", "Play its story"])
-	out.append(["Wheel", "Slide through W"])
-	out.append(["Right drag", "Turn in 4D"])
-	var label: String = String(active.call("action_label"))
-	if not label.is_empty():
-		out.append(["E", label])
-	out.append(["V", "Volume view" if not volume_view else "Slice view"])
+	if kind == "popup":
+		out.append(["Click", "Close" if _popup_open else "About this specimen"])
+	if active != null:
+		out.append(["Wheel", "Slide through W"])
+		out.append(["Right drag", "Turn in 4D"])
+		out.append(["V", "Volume view" if not volume_view else "Slice view"])
+	else:
+		out.append(["WASD", "Move"])
+		out.append(["Mouse", "Look"])
 	out.append(["B", "Black / grey"])
 	return out
+
+
+## Walking through the far door's shimmer takes you to the field.
+func _field_door(p: Vector4) -> void:
+	var door: Node4D = get_node_or_null("FieldDoor") as Node4D
+	if door == null or _leaving:
+		return
+	if p.z < door.position.z + 0.35 and absf(p.x) < 1.6:
+		_leaving = true
+		var sh: Node = get_node_or_null("Shimmer")
+		if sh != null and sh.has_method("flash_out"):
+			sh.call("flash_out", self, to_field)
+		else:
+			to_field()
 
 
 # -- the benches ---------------------------------------------------------------------------------------
@@ -426,6 +618,7 @@ func _strip() -> Array:
 func sit(b: Node) -> void:
 	if b == null or bench != null:
 		return
+	stop_watching()
 	b.call("dock", self)
 
 
@@ -435,7 +628,6 @@ func _on_docked(on: bool, b: Node) -> void:
 		# player's camera here sat you at the bench looking from behind yourself, 6 Oct).
 		_film_stop(false)
 		bench = b
-		_done[String(b.name)] = true
 		player.set("input_enabled", false)
 		player.set("linear_velocity", Vector4.ZERO)
 		hud.call("toast", "At the bench. F stands you up.")
@@ -453,10 +645,6 @@ func _on_docked(on: bool, b: Node) -> void:
 ## The floor route's destinations follow the visit (the Path_Indicator sheet's rule 07): what you have
 ## done completed, the next one available (focused while you stand at it), the rest waiting.
 func _route_states(p: Vector4) -> void:
-	if active != null and String(active.name).begins_with("Shelf"):
-		_done["Shelf"] = true
-	if active != null and String(active.name) in ["Cell24", "Ladder"]:
-		_done[String(active.name)] = true
 	if p.z < -15.6:
 		_done["GalleryDoor"] = true
 	for nm in ["Hall", "Gallery"]:
@@ -476,8 +664,8 @@ func _route_states(p: Vector4) -> void:
 				want = "completed"
 			elif not next_found:
 				next_found = true
-				var tn: Node4D = get_node_or_null("Paths/Targets/" + target) as Node4D
-				var near: bool = tn != null and Vector2(p.x - tn.global_position.x, p.z - tn.global_position.z).length() < 3.0
+				var at: Vector4 = d.get("pos", Vector4.ZERO)
+				var near: bool = Vector2(p.x - at.x, p.z - at.z).length() < 2.0
 				want = "focused" if near else "available"
 			else:
 				want = "arrival"
@@ -496,20 +684,12 @@ func _input(event: InputEvent) -> void:
 	var mb := event as InputEventMouseButton
 	if mb != null and mb.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if mb.button_index == MOUSE_BUTTON_LEFT:
-			if _at_console != null:
-				toggle_card()
+			if watching != null:
+				watching.call("skip")
 				get_viewport().set_input_as_handled()
 				return
-			if _at_pad != null:
-				sit(_at_pad)
-				get_viewport().set_input_as_handled()
-				return
-			if _at_door:
-				to_field()
-				get_viewport().set_input_as_handled()
-				return
-			if active != null and bool(active.call("can_skip")) and not (active.get("exhibit").call("chapters") as Array).is_empty():
-				active.call("skip")
+			if String(spot.get("kind", "")) == "popup":
+				_popup_open = not _popup_open
 				get_viewport().set_input_as_handled()
 				return
 		if active != null and (mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN):
@@ -518,7 +698,8 @@ func _input(event: InputEvent) -> void:
 			return
 	var mm := event as InputEventMouseMotion
 	# Looking round takes the camera back from the story.
-	if mm != null and _film_cam != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and (mm.button_mask & MOUSE_BUTTON_MASK_RIGHT) == 0 			and mm.relative.length() > 3.0:
+	if mm != null and _film_cam != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and (mm.button_mask & MOUSE_BUTTON_MASK_RIGHT) == 0 \
+			and mm.relative.length() > 3.0:
 		_film_declined = _film.get("station")
 	if mm != null and active != null and (mm.button_mask & MOUSE_BUTTON_MASK_RIGHT) != 0:
 		active.call("turn_by", mm.relative.x * 0.006, mm.relative.y * 0.006)
@@ -532,21 +713,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if k == null or not k.pressed or k.echo:
 		return
 	match k.keycode:
-		KEY_E:
-			if _at_console != null:
-				toggle_card()
-			elif _at_pad != null:
-				sit(_at_pad)
-			elif _at_door:
-				to_field()
-			elif active != null and not String(active.call("action_label")).is_empty():
-				# The station's own key: the column's tree, the ladder's timed cuts.
-				var said: String = String(active.call("action"))
-				if not said.is_empty():
-					hud.call("toast", said)
-			else:
-				return
-			get_viewport().set_input_as_handled()
+		KEY_ESCAPE:
+			if watching != null or _watch_next != null:
+				stop_watching()
+				get_viewport().set_input_as_handled()
+			return
 		KEY_B:
 			if not k.shift_pressed and not k.ctrl_pressed:
 				toggle_palette()
@@ -558,8 +729,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			toggle_grid_view()
 			get_viewport().set_input_as_handled()
 		KEY_RIGHT, KEY_LEFT:
-			if active != null and bool(active.call("can_skip")):
-				active.call("skip" if k.keycode == KEY_RIGHT else "skip_back")
+			if watching != null:
+				watching.call("skip" if k.keycode == KEY_RIGHT else "skip_back")
 				get_viewport().set_input_as_handled()
 
 
@@ -572,14 +743,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 ## the next story. Only exhibits whose chapters carry shots are filmed (the block, the column). The
 ## Arboretum's tour moves its camera the same way.
 func _run_film(delta: float) -> void:
-	var s: Node = active
+	var s: Node = watching
 	if _film_declined != null and (s != _film_declined or int(_film_declined.get("seq_index")) < 0):
 		_film_declined = null
 	if _film_cam != null and String(_film.get("phase", "")) == "shot":
 		for key in [KEY_W, KEY_A, KEY_S, KEY_D, KEY_SPACE]:
 			if Input.is_key_pressed(key) and bool(player.get("input_enabled")):
 				_film_declined = _film.get("station")
-	var want: bool = story_camera and s != null and s != _film_declined and int(s.get("seq_index")) >= 0 and not _card_open and _has_shots(s)
+	var want: bool = story_camera and s != null and s != _film_declined and int(s.get("seq_index")) >= 0 and _has_shots(s)
 	if want and _film_cam == null:
 		_film_begin(s)
 	if _film_cam == null:
@@ -610,6 +781,8 @@ func _film_begin(s: Node) -> void:
 	_film_cam.global_basis = pc.global_basis
 	_film_cam.make_current()
 	_film = {"station": s, "part": -1, "player_lens": float(pc.get("field_of_view_4d"))}
+	# You step out of the shots, as in a cutscene (your figure stood in the column's, 9 Oct).
+	_avatar_shown(false)
 	_film_ease_from("shot")
 
 
@@ -661,6 +834,13 @@ func _film_stop(to_player: bool = true) -> void:
 	_film_cam.queue_free()
 	_film_cam = null
 	_film = {}
+	_avatar_shown(true)
+
+
+func _avatar_shown(on: bool) -> void:
+	var av: Node4D = player.get_node_or_null("Avatar") as Node4D if player != null else null
+	if av != null:
+		av.visible = on
 
 
 func _film_place(eye: Vector4, ang: Vector2, lens: float) -> void:

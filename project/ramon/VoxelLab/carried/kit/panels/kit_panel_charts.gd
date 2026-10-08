@@ -169,3 +169,73 @@ class Cost extends E.El:
 			var ay: float = y_of.call(anim)
 			draw_line(Vector2(chart.position.x, ay), Vector2(chart.end.x, ay), Spec.ink("accent"), maxf(1.0, 1.0 * k), true)
 			draw_string(f, Vector2(chart.position.x + 4 * k, ay - 4 * k), "the walk, live: " + Presentation.ms(anim), HORIZONTAL_ALIGNMENT_LEFT, -1, px, Spec.ink("accent"))
+
+
+## VOXEL LAB (carried copy), 9 Oct: the block's frame in 4D, a tesseract turning through W, drawn
+## every frame the page is ticked (Ramon: "some kind of diagram that moves, or at least showing a
+## rotating block"); its near cube in white, its far one (ana) in the accent, the edges between them
+## faint. Once cuts have been made, their times stand as small bars along its foot.
+##   set_data({"values": [ms, ...]})
+class Tesseract extends E.El:
+	var values: Array = []
+	var t: float = 0.0
+
+	func set_data(v: Dictionary) -> void:
+		values = v.get("values", [])
+		queue_redraw()
+
+	func tick(dt: float) -> void:
+		t += dt
+		queue_redraw()
+
+	func _draw() -> void:
+		var verts: Array = []
+		for i in 16:
+			verts.append(Vector4(1.0 if i & 1 else -1.0, 1.0 if i & 2 else -1.0, 1.0 if i & 4 else -1.0, 1.0 if i & 8 else -1.0))
+		var a: float = t * 0.45
+		var b: float = t * 0.27
+		var c: float = 0.42 + 0.12 * sin(t * 0.21)
+		var pts: Array = []
+		var ws: Array = []
+		for v in verts:
+			# Turned through W (x into w, z into w), then tipped toward you a little (y into z).
+			var x: float = v.x * cos(a) - v.w * sin(a)
+			var w: float = v.x * sin(a) + v.w * cos(a)
+			var z: float = v.z * cos(b) - w * sin(b)
+			w = v.z * sin(b) + w * cos(b)
+			var y: float = v.y * cos(c) - z * sin(c)
+			z = v.y * sin(c) + z * cos(c)
+			# 4D to 3D (the far side of W smaller), then 3D to 2D.
+			var k4: float = 2.6 / (3.4 - w)
+			var p3 := Vector3(x, y, z) * k4
+			var k3: float = 3.2 / (5.0 - p3.z)
+			pts.append(Vector2(p3.x, -p3.y) * k3)
+			ws.append(w)
+		var box := Rect2(Vector2(10, 8) * k, size - Vector2(20, 16) * k)
+		var foot: float = 36.0 * k if not values.is_empty() else 0.0
+		var mid := Vector2(box.get_center().x, box.position.y + (box.size.y - foot) * 0.5)
+		var scale: float = minf(box.size.x, box.size.y - foot) * 0.36
+		var white: Color = Spec.ink("white")
+		var accent := Color(0.55, 0.85, 1.0)
+		for i in 16:
+			for bit in 4:
+				var j: int = i ^ (1 << bit)
+				if j < i:
+					continue
+				var far: bool = float(ws[i]) < 0.0 and float(ws[j]) < 0.0
+				var near: bool = float(ws[i]) >= 0.0 and float(ws[j]) >= 0.0
+				var col: Color = white if near else (accent if far else Color(white, 0.35))
+				draw_line(mid + (pts[i] as Vector2) * scale, mid + (pts[j] as Vector2) * scale, col, maxf(1.0, (2.4 if near else 1.6) * k), true)
+		for i in 16:
+			draw_circle(mid + (pts[i] as Vector2) * scale, maxf(1.5, 3.2 * k), white if float(ws[i]) >= 0.0 else accent)
+		if values.is_empty():
+			return
+		var top: float = 1.0
+		for v in values:
+			top = maxf(top, float(v))
+		var n: int = values.size()
+		var bw: float = minf(18.0 * k, box.size.x / float(maxi(n, 1)) * 0.6)
+		for i in n:
+			var h: float = float(values[i]) / top * (foot - 6.0 * k)
+			var x0: float = box.get_center().x + (float(i) - float(n - 1) * 0.5) * bw * 1.6
+			draw_rect(Rect2(Vector2(x0 - bw * 0.5, box.end.y - h), Vector2(bw, h)), white if i == n - 1 else Color(white, 0.5))

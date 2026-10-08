@@ -16,8 +16,12 @@ extends "res://ramon/VoxelLab/stations/vl_exhibit_4d.gd"
 ## lean into W. It tips about that edge, slides off, falls, bounces once and lies. If it fell kata or
 ## ana it leaves your slice: lying along W, a round column shows as a ball.
 ##
-## THE TREE (E at the station): a thinner trunk with bark and pale wood, and a crown of leaf balls on
-## the top piece, on the same mechanism.
+## WATCHED, NOT CUT (Ramon, 9 Oct: "I don't want to be able to cut this block ... we're already doing it
+## with the bigger block"; "if you do the cutting thing in some kind of animation and make the pillar fall
+## down, that's fine"). "Watch it fall" plays its story: cut through your slice (it stands), cut kata (it
+## falls), where it lies; then it is whole again. Every watch starts from a whole, standing column
+## (ready_to_watch(); a fall left over from before made the next story's cuts count for nothing, 8 Oct).
+## The tree is gone ("I don't think we should reintroduce that idea").
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -29,7 +33,6 @@ const VOXEL := 0.07
 ## pedestal's height in _ready).
 const G := 9.8
 
-## "column" or "tree".
 var form: String = "column"
 ## How much of the base must be left (0 to 1) for the top to stay up, and how far off the axis what is
 ## left may be (as a fraction of the radius) before it tips anyway.
@@ -39,7 +42,6 @@ var hold_offset: float = 0.38
 
 var top: Node4D
 var top_spec: Node4D
-var crown_spec: Node4D
 ## "standing", "falling", "lying"
 var state: String = "standing"
 ## The last support measure: {fraction, offset (x, z, w voxels), level}.
@@ -67,9 +69,6 @@ func _ready() -> void:
 
 
 func _dims() -> Dictionary:
-	if form == "tree":
-		return {"r": 0.24, "base_h": 0.9, "top_h": 1.6, "crust": 0.07,
-			"colors": {Recipe.CRUST: Color(0.36, 0.25, 0.17), Recipe.CORE: Color(0.86, 0.72, 0.50)}}
 	return {"r": 0.42, "base_h": 1.05, "top_h": 1.4, "crust": 0.1, "colors": Recipe.COLORS}
 
 
@@ -91,23 +90,6 @@ func _top_recipe() -> Dictionary:
 	return _recipes[key]
 
 
-func _crown_recipe() -> Dictionary:
-	if not _recipes.has("crown"):
-		var balls: Array = []
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 11
-		for i in 9:
-			var a: float = TAU * float(i) / 9.0
-			var up: float = rng.randf_range(-0.15, 0.35)
-			balls.append([Vector4(cos(a) * 0.45, up, sin(a) * 0.45, rng.randf_range(-0.35, 0.35)), rng.randf_range(0.32, 0.46)])
-		balls.append([Vector4(0, 0.45, 0, 0), 0.5])
-		balls.append([Vector4(0, 0.05, 0, 0), 0.42])
-		var r: Dictionary = Recipe.crown(Vector4(2.0, 1.6, 2.0, 1.6), VOXEL, balls)
-		r["colors"] = {Recipe.CROWN: Color(0.30, 0.55, 0.26)}
-		_recipes["crown"] = r
-	return _recipes["crown"]
-
-
 ## The top piece, standing on the base: its middle half its height above the seam.
 func _build_top() -> void:
 	if top != null:
@@ -124,14 +106,6 @@ func _build_top() -> void:
 	top_spec.set_script(Specimen)
 	top.add_child(top_spec)
 	top_spec.call("build", _top_recipe())
-	crown_spec = null
-	if form == "tree":
-		crown_spec = Node4D.new()
-		crown_spec.name = "Crown"
-		crown_spec.set_script(Specimen)
-		crown_spec.position = Vector4(0, float(d["top_h"]) * 0.5 + 0.35, 0, 0)
-		top.add_child(crown_spec)
-		crown_spec.call("build", _crown_recipe())
 	state = "standing"
 	support = {}
 	_fall = {}
@@ -151,25 +125,9 @@ func reset() -> void:
 	_build_top()
 
 
-## E at the station: the column or the tree.
-func action_label() -> String:
-	return "A tree instead" if form == "column" else "A column instead"
-
-
-func action() -> String:
-	form = "tree" if form == "column" else "column"
-	title = "The tree" if form == "tree" else "The column"
-	code = "TR-02" if form == "tree" else "CL-02"
-	if spare != null:
-		spare.queue_free()
-		spare = null
-	specimen.call("build", recipe())
-	specimen.position = _rest_position(recipe())
-	(func() -> void:
-		if is_inside_tree():
-			spare = _make("Spare", true)).call_deferred()
-	_build_top()
-	return "A tree: cut its trunk" if form == "tree" else "A column: cut its base"
+## Whole, standing, uncut and built: a watch may start. Otherwise reset() it first and wait.
+func ready_to_watch() -> bool:
+	return is_ready() and state == "standing" and _rebuilding == null and specimen != null and (specimen.get("cuts") as Array).is_empty()
 
 
 # -- support -------------------------------------------------------------------------------------------
@@ -434,11 +392,17 @@ func live() -> Array:
 func card() -> Dictionary:
 	var n: Dictionary = numbers()
 	return {
-		"short": "A column you can cut until it falls. In 4D it stands as long as any W of its base is left.",
+		"short": "A column that stands as long as any W of its base is left. Watch it fall.",
 		"code": code, "title": title, "kicker": "SUPPORT IN 4D",
 		"method": "Two voxel worlds stacked, base and top, with no crust where they meet. After every cut the lab samples its own copy of the base across its height, each level a ball of points across X, Z and W, and finds the weakest level: how much is left, and where.",
 		"shows": "Cut through your slice and it still stands: its base goes on ana and kata of you. Cut through W too and it tips the way it lost its support, which can be out of your slice.",
-		"limits": "The fall is scripted, not simulated: it tips over the edge that is left, slides off and lies. The engine's physics treats every shape as a box.",
+		"limits": "The fall is scripted, not simulated: it tips over the edge that is left, slides off and lies.",
 		"rows": [["Base left", support_text()], ["Voxels", "%s of %s" % [String(n["voxels"]), String(n["voxel"])]], ["Tetrahedra (base)", String(n["tets"])]],
-		"tier": "MEASURED LIVE", "key": action_label(),
+		"tier": "MEASURED LIVE", "key": "",
 	}
+
+
+## Three numbers for its floating panel.
+func face() -> Array:
+	var n: Dictionary = numbers()
+	return [["Base left", support_text()], ["State", state.capitalize()], ["Voxels", String(n["voxels"])]]

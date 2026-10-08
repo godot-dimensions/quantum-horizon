@@ -57,6 +57,9 @@ func _next() -> void:
 	_scene.set("_age", 99.0)
 	stream.set("radius", float(run["radius"]))
 	stream.set("swap", bool(run["swap"]))
+	# In the air from the start, as before the deck (9 Oct): the survey camera is what flies.
+	_scene.call("close_board")
+	_scene.call("fly")
 	_scene.set("input_enabled", false)
 	_t = 0.0
 	_frames = []

@@ -1,6 +1,6 @@
 extends SceneTree
 ## Voxel Lab, plan step 53: the bench played with real input events (Input.parse_input_event), so the
-## keys and clicks go through the same paths a player's do: E on the pad sits you down, 1 to 4 pick the
+## keys and clicks go through the same paths a player's do: 2 at the block's ring sits you down, 1 to 4 pick the
 ## tool, Q and E the size, a click cuts, the saw is pressed, dragged and let go, the wheel slides through
 ## W, R makes it whole, T switches where the draw buffers are built, C the chunk outlines, F stands you
 ## up. The aim is set on the bench (aim_override), never by moving the cursor: it is the user's.
@@ -74,16 +74,16 @@ func _process(delta: float) -> bool:
 	match _step:
 		0:
 			var ex: Node = _scene.get_node("Hero").get("exhibit")
-			if ex != null and bool(ex.call("is_ready")) and _t > 2.0:
-				_scene.call("go_to", Vector4(0, 0.05, 4.0, 0), 0.0)
+			if ex != null and bool(ex.call("is_ready")) and _t > 2.0 and not bool(current_scene.get("loading")):
+				_scene.call("go_to", Vector4(0, 0.05, 3.0, 0), 0.0)
 				_next()
 		1:
 			if _t > 0.8:
-				_key(KEY_E)
+				_key(KEY_2)
 				_next()
 		2:
 			if _t > 1.0:
-				_check(_scene.get("bench") == _bench, "E on the pad sits you at the bench")
+				_check(_scene.get("bench") == _bench, "2 at the block's ring sits you at the bench")
 				var bc: Camera4D = _bench.call("camera")
 				_check(bc != null and bool(bc.get("current")), "the bench's camera is the one in use")
 				_key(KEY_2)

@@ -49,6 +49,12 @@ const TetRay := preload("res://ramon/VoxelLab/specimen/vl_tet_ray.gd")
 		subtitle = v
 		_later()
 ## The pad on the floor (m): across, and toward you.
+## Paint a pad on the floor. Off in the lab since 9 Oct (Ramon: "this whole bracket of the bench, cut
+## yourself, I don't really like it"): you sit from the choice at the exhibit's ring instead.
+@export var pad: bool = true:
+	set(v):
+		pad = v
+		_later()
 @export var pad_size: Vector2 = Vector2(3.0, 1.3):
 	set(v):
 		pad_size = v
@@ -78,6 +84,7 @@ var _layer: CanvasLayer
 var _overlay: Control
 var _yaw: float = 0.0
 var _pitch: float = 0.0
+var _mdrag: bool = false
 var _dist: float = 4.6
 var _drag_from: Dictionary = {}
 var _rdrag: bool = false
@@ -112,6 +119,9 @@ func _later() -> void:
 
 func rebuild() -> void:
 	Build.clear(self)
+	_rec = {}
+	if not pad:
+		return
 	_plate = Build.box(self, "Pad", Vector3(0, 0.006, 0), Vector3(pad_size.x, 0.012, pad_size.y), "kit_floor", false)
 	var tree: SceneTree = get_tree()
 	if tree == null:
@@ -271,7 +281,11 @@ func _process(delta: float) -> void:
 	var ex: Node = exhibit()
 	if ex != null and ex.has_method("face_front"):
 		ex.call("face_front", 1.0 - exp(-4.0 * delta))
-	# WASD circles the specimen.
+	# Whatever else happens (a story's camera, a room's view switch), the bench's camera is the one in use
+	# while you sit: once another took over and the view froze while the cuts went on (Ramon, 8 Oct).
+	if is_instance_valid(_cam) and not _cam.current:
+		_cam.make_current()
+	# WASD circles the specimen; so does a middle drag (_input).
 	var turn: float = (1.0 if Input.is_key_pressed(KEY_D) else 0.0) - (1.0 if Input.is_key_pressed(KEY_A) else 0.0)
 	var lift: float = (1.0 if Input.is_key_pressed(KEY_W) else 0.0) - (1.0 if Input.is_key_pressed(KEY_S) else 0.0)
 	_yaw += turn * delta * 1.1
@@ -437,6 +451,8 @@ func _input(event: InputEvent) -> void:
 				_drag_from = {}
 		elif mb.button_index == MOUSE_BUTTON_RIGHT:
 			_rdrag = mb.pressed
+		elif mb.button_index == MOUSE_BUTTON_MIDDLE:
+			_mdrag = mb.pressed
 		elif mb.pressed and (mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN):
 			var up: bool = mb.button_index == MOUSE_BUTTON_WHEEL_UP
 			if mb.shift_pressed:
@@ -448,6 +464,10 @@ func _input(event: InputEvent) -> void:
 	if mm != null:
 		if _rdrag and sc != null:
 			sc.call("turn_by", mm.relative.x * 0.006, mm.relative.y * 0.006)
+		elif _mdrag:
+			# Orbit, as a middle drag does in Blender.
+			_yaw -= mm.relative.x * 0.006
+			_pitch = clampf(_pitch + mm.relative.y * 0.005, deg_to_rad(-70.0), deg_to_rad(15.0))
 		return
 	if k == null or not k.pressed or k.echo:
 		return
@@ -534,4 +554,4 @@ func _on_cut(rec: Dictionary) -> void:
 ## The control strip while seated.
 func strip() -> Array:
 	return [["Click", "Saw: press, drag, let go" if tool == "saw" else "Cut"], ["1 to 4", "Tool"], ["Q / E", "Size"],
-		["Wheel", "Slide through W"], ["Right drag", "Turn in 4D"], ["WASD", "Look round"], ["R", "Whole again"], ["F", "Stand up"]]
+		["Wheel", "Slide through W"], ["Right drag", "Turn in 4D"], ["Middle drag / WASD", "Orbit"], ["R", "Whole again"], ["F / Esc", "Stand up"]]

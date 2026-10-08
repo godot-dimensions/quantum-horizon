@@ -17,12 +17,18 @@ extends PanelContainer
 ##   HALL       the hall's plan: half width, entrance and back walls, the panel walls' length and
 ##              angle, its height, the gallery door
 ##
+##   LIGHTS     (its own page, 9 Oct) a top view of the corridor, hall and gallery with every light on
+##              it: click one to pick it, drag it to move it; the hall's and the gallery's sliders,
+##              specimens A, B and C's own strength, and the picked light's own (vl_lights.gd)
+##
 ## Esc frees the mouse to drag; F1 hides it. Rows that rebuild something wait for the slider to settle.
+## SAVE writes both pages (the lights to their own file).
 ##
 ## NO class_name (engine_gotchas.md).
 
 const Style := preload("res://ramon/VoxelLab/carried/kit/kit_style.gd")
 const LabPrint := preload("res://ramon/VoxelLab/carried/LabKit/lab_print.gd")
+const LightMap := preload("res://ramon/VoxelLab/room/vl_light_map.gd")
 
 const SAVE_PATH := "res://ramon/VoxelLab/voxel_lab_tuning.cfg"
 const FONT := 14
@@ -34,6 +40,12 @@ var _values: Dictionary = {}
 var _pending: Dictionary = {}
 var _lengths: Label
 var _box: VBoxContainer
+var _settings_box: VBoxContainer
+var _lights_box: VBoxContainer
+var _map: Control
+var _sel_label: Label
+## The room's light rig (vl_lights.gd), if it has one.
+var _rig: Node
 
 
 func _ready() -> void:
@@ -45,12 +57,36 @@ func _ready() -> void:
 	scroll.custom_minimum_size = Vector2(430, 640)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)
-	_box = VBoxContainer.new()
-	_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(_box)
+	var pages := VBoxContainer.new()
+	pages.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(pages)
+	_box = pages
 	_title("VOXEL LAB  ·  ARTIST DEV PANEL")
+	var tabs := HBoxContainer.new()
+	pages.add_child(tabs)
+	_settings_box = VBoxContainer.new()
+	_settings_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pages.add_child(_settings_box)
+	_lights_box = VBoxContainer.new()
+	_lights_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_lights_box.visible = false
+	pages.add_child(_lights_box)
+	for t in [["SETTINGS", _settings_box], ["LIGHTS", _lights_box]]:
+		var b := Button.new()
+		b.text = String(t[0])
+		b.toggle_mode = true
+		b.button_pressed = t[1] == _settings_box
+		b.add_theme_font_size_override("font_size", FONT)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tabs.add_child(b)
+		b.pressed.connect(func() -> void:
+			_settings_box.visible = t[1] == _settings_box
+			_lights_box.visible = t[1] == _lights_box
+			for o in tabs.get_children():
+				(o as Button).set_pressed_no_signal(o == b))
+	_box = _settings_box
 	_section("LIGHT")
-	_row("spots", "Spots", 0.0, 6.0, 0.01, 3.26)
+	_row("spots", "Spots, all of them (x)", 0.0, 6.0, 0.01, 3.26)
 	_row("fill", "Sky fill (shadows)", 0.0, 3.0, 0.01, 1.52)
 	_row("sun", "Sun strength", 0.0, 3.0, 0.01, 0.66)
 	_row("sun_up", "Sun height, degrees", 5.0, 90.0, 0.5, 64.0)
@@ -74,8 +110,10 @@ func _ready() -> void:
 	_lengths.add_theme_color_override("font_color", Style.UI_INK_DIM)
 	_lengths.autowrap_mode = TextServer.AUTOWRAP_WORD
 	_box.add_child(_lengths)
+	_build_lights_page()
+	_box = pages
 	var save := Button.new()
-	save.text = "SAVE"
+	save.text = "SAVE  (both pages)"
 	save.add_theme_font_size_override("font_size", FONT)
 	save.pressed.connect(save_now)
 	_box.add_child(save)
@@ -83,6 +121,82 @@ func _ready() -> void:
 	# The light starts as the rows say (the lab's saved numbers, or this room's own once saved).
 	for k in ["spots", "fill", "sun", "exposure", "sun_up", "turn"]:
 		apply(k)
+
+
+## The LIGHTS page: the top view, the rooms' sliders, A, B and C, and the picked light's own.
+func _build_lights_page() -> void:
+	_rig = room.get("lights") if room != null else null
+	_box = _lights_box
+	if _rig == null:
+		_section("No light rig in this room")
+		return
+	_map = Control.new()
+	_map.set_script(LightMap)
+	_map.set("rig", _rig)
+	_map.set("room", room)
+	_box.add_child(_map)
+	_map.connect("picked", _on_picked)
+	var rooms: Dictionary = _rig.get("rooms")
+	for r in [["hall", "HALL (every light in it)"], ["gallery", "GALLERY (every light in it)"]]:
+		_section(String(r[1]))
+		var vals: Dictionary = rooms[r[0]]
+		_row("lt/%s/strength" % r[0], "Strength", 0.0, 8.0, 0.01, float(vals["strength"]))
+		_row("lt/%s/cone" % r[0], "Cone, degrees", 8.0, 90.0, 0.5, float(vals["cone"]))
+		_row("lt/%s/softness" % r[0], "Softness", 0.1, 8.0, 0.05, float(vals["softness"]))
+		_row("lt/%s/height" % r[0], "Height, m", 3.0, 8.9, 0.05, float(vals["height"]))
+		if r[0] == "hall":
+			var groups: Dictionary = _rig.get("groups")
+			for g in ["A", "B", "C"]:
+				_row("lt/group/%s" % g, "Specimen %s strength" % g, 0.0, 8.0, 0.01, float(groups[g]))
+	_section("THE PICKED LIGHT (click one on the map)")
+	_sel_label = Label.new()
+	_sel_label.text = "none picked"
+	_sel_label.add_theme_font_size_override("font_size", FONT - 1)
+	_sel_label.add_theme_color_override("font_color", Style.UI_INK_DIM)
+	_box.add_child(_sel_label)
+	_row("lt/own/strength_k", "Its strength (x the room's)", 0.0, 4.0, 0.01, 1.0)
+	_row("lt/own/cone", "Its cone, degrees", 8.0, 90.0, 0.5, 34.0)
+	_row("lt/own/softness", "Its softness", 0.1, 8.0, 0.05, 2.6)
+	_row("lt/own/height", "Its height, m", 3.0, 8.9, 0.05, 8.2)
+	var reset := Button.new()
+	reset.text = "Back to the room's values"
+	reset.add_theme_font_size_override("font_size", FONT - 1)
+	reset.pressed.connect(func() -> void:
+		var n: String = String(_map.get("selected"))
+		if not n.is_empty():
+			_rig.call("reset_own", n)
+			_on_picked(n))
+	_box.add_child(reset)
+
+
+func _on_picked(n: String) -> void:
+	var l: Node = _rig.call("light", n)
+	if l == null:
+		return
+	var e: Dictionary = _rig.call("effective", l)
+	var mine: Dictionary = (_rig.get("own") as Dictionary).get(n, {})
+	_sel_label.text = "%s  ·  lights %s  ·  at x %.1f, z %.1f" % [n, String(l.get_meta("item", "")), float(e["x"]), float(e["z"])]
+	for k in [["strength_k", float(mine.get("strength_k", 1.0))], ["cone", float(e["cone"])], ["softness", float(e["softness"])], ["height", float(e["height"])]]:
+		var key: String = "lt/own/" + String(k[0])
+		(_rows[key][0] as HSlider).set_value_no_signal(float(k[1]))
+		(_rows[key][1] as Label).text = _fmt(float(k[1]), float(_rows[key][2]))
+		_values[key] = float(k[1])
+
+
+## A light row, applied at once (the map and the room follow the slider as it moves).
+func _apply_light(key: String, x: float) -> void:
+	if _rig == null:
+		return
+	var parts: PackedStringArray = key.split("/")
+	match parts[1]:
+		"group":
+			_rig.call("set_group", parts[2], x)
+		"own":
+			var n: String = String(_map.get("selected")) if _map != null else ""
+			if not n.is_empty():
+				_rig.call("set_own", n, parts[2], x)
+		_:
+			_rig.call("set_room", parts[1], parts[2], x)
 
 
 func _title(text: String) -> void:
@@ -128,7 +242,10 @@ func _row(key: String, label: String, lo: float, hi: float, step: float, value: 
 	s.value_changed.connect(func(x: float) -> void:
 		v.text = _fmt(x, step)
 		_values[key] = x
-		_pending[key] = 0.25)
+		if key.begins_with("lt/"):
+			_apply_light(key, x)
+		else:
+			_pending[key] = 0.25)
 
 
 static func _fmt(x: float, step: float) -> String:
@@ -212,8 +329,10 @@ func apply(key: String) -> void:
 			if sun != null and sun.has_method("set_angles"):
 				sun.call("set_angles", float(_values["sun_up"]), float(_values["sun_turn"]))
 		"ped_h":
+			# Not the pedestals that keep their own height (the gallery's low terrain pedestal).
 			for s in room.get("stations"):
-				s.set("height", x)
+				if not s.has_meta("own_height"):
+					s.set("height", x)
 		"turn":
 			for s in room.get("stations"):
 				var ex: Node = s.get("exhibit")
@@ -236,10 +355,14 @@ func apply(key: String) -> void:
 func save_now() -> void:
 	var cf := ConfigFile.new()
 	for k in _values:
-		cf.set_value("tuning", String(k), _values[k])
+		if not String(k).begins_with("lt/"):
+			cf.set_value("tuning", String(k), _values[k])
 	cf.save(SAVE_PATH)
+	var said: String = SAVE_PATH.get_file()
+	if _rig != null and int(_rig.call("save")) == OK:
+		said += " and voxel_lab_lights.cfg"
 	if room != null and room.get("hud") != null:
-		room.get("hud").call("toast", "Saved to " + SAVE_PATH.get_file())
+		room.get("hud").call("toast", "Saved to " + said)
 
 
 func _load() -> void:

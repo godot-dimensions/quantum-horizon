@@ -124,6 +124,10 @@ sheet gives in P (the pen uses 1.4).
   the strip's width, and how much wider the round patches at nodes and destinations are.
 - `libraries`, `default_library`: which symbol set each slot (A to J) comes from, slot by slot.
 - `under_color`: the floor colour the symbols' antialiased edges blend into.
+- `floor_swatch` (9 Oct): on a lab floor, its LabKit swatch (`"kit_floor"`); `under_color` then follows
+  that swatch's surface colour, so the marks stay blue into black when a room switches to its black
+  palette (with the grey floor's colour fixed, every mark had a thin light rim). Empty by default: the
+  pen sets its own colour.
 - `motion`, `flow`: arrows flowing along the route, and how fast (m/s).
 - `clear_style`: `hide` or `keep` (above). `p_scale`: size.
 
