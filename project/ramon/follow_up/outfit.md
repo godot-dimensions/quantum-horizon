@@ -1,4 +1,4 @@
-# The outfit changer: the fitting circle beside Trym's house (8 Oct 2026)
+# The outfit changer: the fitting circle beside Trym's house, and Trym's fitting room (8 Oct 2026)
 
 Ramon's brief (8 Oct):
 - A simple clothing swapper that is remembered in other scenes, so the character stays the same.
@@ -9,17 +9,34 @@ Ramon's brief (8 Oct):
 
 The plan (80 steps, with its status) is `chickenpen/outfit/PLAN_OUTFIT.md`.
 
+**Two versions, side by side** (Ramon, 8 Oct evening: "Finish what you did ... but make my option
+separately as a function i can check"):
+- **The fitting circle:** you dress in the world, from strips of colour beside you.
+- **Trym's fitting room:** Ramon's version, a room of its own with you on a pedestal, the piece
+  turning beside you, and a proper panel. The plan is `chickenpen/outfit/PLAN_FITTING_ROOM.md`,
+  51 steps.
+
+Both change the same outfit, saved the same way, and worn the same way everywhere.
+
 ## Questions for Ramon
 
+0. **Which version, or both?** Today the circle is the way in, and Enter in it opens the fitting room.
+   - To make the room the only way, tick `opens_room` on `World/OutfitCircle`; the scan then ends
+     straight in the room.
+   - To drop the room, nothing needs deleting: just don't press Enter. Or say, and I take Enter out of
+     the hint.
 1. **Should the labs' players wear the outfit too?** Today it reaches every scene of the playable world:
    the pen, the cave, the far room and the cinema. The Creation Lab, Arboretum and Voxel Lab carry their
    own copies of the avatar (`LabKit/carried/`), and Crosswise has its own (`mk_avatar_4d.gd`). They are
    left as their scenes make them; that was the scope rule. Extending it there is small (the keeper would
    accept those script paths), but it touches those prototypes, so it is your call.
-2. **A carried chicken overlaps a tall hat.** The pen holds a caught chicken at 1.58 m, just over a bare
-   head. On the top hat it sits on the crown, and inside the chicken costume's head it is mostly hidden
-   (frames `moves/*_2_carry.png`). Nothing breaks. The fix would be lifting the pen's carry
-   (`Player/CarryAnchor`) by the hat's height, which changes the pen's catching, so I left it.
+2. **A carried chicken and a tall hat: done as you said** ("keep the hats minimal if they overlay with
+   chicken").
+   - While you hold a chicken over your head, the hat keeps low: the top hat a flat crown, the beanie
+     without its pompom, the hypercube small on your hair, the costume just a comb, a beak and a wattle.
+   - It comes back when you put the chicken down. The pen's carry itself is unchanged.
+   - **The cat is held at the same spot** (`scripts/pen_cat_grab_4d.gd`), and Nike a little lower. Only
+     the chicken does this now (your word). Should the cat too?
 3. **The cinema's player is not quite the pen's player.** In `theatre.tscn` it has no eyes and shorter
    shorts. The outfit makes their colours and hats match, but not those two things. Matching them means
    touching the theatre, so it waits for your say.
@@ -42,9 +59,13 @@ The plan (80 steps, with its status) is `chickenpen/outfit/PLAN_OUTFIT.md`.
 
 ## What to look at
 
-- **The film:** `smoke_test_output/video/outfit_film.avi`, 1920 x 1080, about 50 s. You walk up, the
-  frame rises, you step in, the scan runs, you go through the changes, you leave as a chicken, and the
-  frame lifts off.
+- **The films**, 1920 x 1080, in `smoke_test_output/video/`:
+  - `outfit_film.mp4`, the circle, 47 s. You walk up, the frame rises, you step in, the scan runs, you
+    go through the changes, and you leave as a chicken.
+  - `outfit_room_film.mp4`, your version, about 45 s. Into the circle, Enter, the flash into the
+    fitting room, the changes, the piece turned through W, Done, and the farm again, dressed.
+- **The fitting room's frames:** `smoke_test_output/outfit/room/`, with `4k_*.png` at your screen size
+  and `12b_dark.png` in the lab's dark look.
 - **The frames:**
   - `smoke_test_output/outfit/play/` (art look), with `4k_*.png` at your 3840 x 2160 and 145%.
   - `smoke_test_output/outfit/play_dev/` (the dev look).
@@ -66,6 +87,49 @@ The plan (80 steps, with its status) is `chickenpen/outfit/PLAN_OUTFIT.md`.
 | F | done: saved, and you can walk again |
 
 The mouse still orbits, so you can look at yourself from any side or turn the slice.
+
+## Your version: Trym's fitting room
+
+`chickenpen/outfit/fitting_room.tscn` and `outfit_room_4d.gd`, reached by `outfit_room_trip_4d.gd`.
+
+- **To try it:** stand in the circle and press Enter. Or open `fitting_room.tscn` and press F6; on its
+  own, Done just saves.
+- **What you see:**
+  - On the left, you on the lab's pedestal. Q and E turn you, and so does a drag.
+  - On the right, the one piece you are changing, turning on its own pedestal: the hat, the hair, a head
+    for the skin, the shirt, the trousers or the boots.
+  - The piece is scaled until its largest side is a metre, never past 2.2 times, so the chicken costume
+    does not tower over you.
+  - Its name is under it, and your size in four directions is under you.
+- **The panel** is black glass down the right, filling the height at any screen size.
+  - Six numbered part buttons (keys 1 to 6).
+  - The styles by name (Up and Down).
+  - The colours as big swatches (Left and Right, or click).
+  - "Turn the piece through W" (T), Surprise me (X), Undo (Z), and Done (Enter). Esc goes home with
+    nothing changed.
+- **The room is the lab kit's**, read only: `lab_room_4d.gd` light (B for its dark look),
+  `kit_room_4d.gd` walls with the blue lesson wall (`edge_codes`, its words painted on),
+  `kit_pedestal.gd`, and `kit_style.gd`'s black glass.
+- **The trip** works as the laptop's does: the farm is parked, not freed, then put back. The
+  environment that lit the farm is made current again, and the pen's camera, the mouse and the HUD
+  are as they were. The circle says "Saved. It goes with you." or "Nothing changed."
+- **Measured:**
+
+  | What | Time |
+  |---|---|
+  | Enter to the room, flash included | 0.56 s |
+  | Done to the farm | 0.65 s |
+  | A frame in the room | 0.47 ms (vsync off) |
+- **Checks:** `outfit/_verify_room_runner.gd`, 38 checks.
+  - The room on its own: every key, a click, the piece's parts per row, through W, surprise, undo,
+    and save.
+  - From the farm: through the circle, home dressed, the environment, camera, input and HUD put back,
+    Esc, and `opens_room`.
+  - `hud4k` runs it at your screen size.
+- **Traps found:**
+  - The kit's swatches (the code blue among them) exist only once `kit_style.apply()` has run. The
+    Creation Lab does it at start; a scene of your own must too, or its blue wall comes out white.
+  - A wall turns blue from the room's `edge_codes`, not from the text's own `code`.
 
 ## How it works, and where
 

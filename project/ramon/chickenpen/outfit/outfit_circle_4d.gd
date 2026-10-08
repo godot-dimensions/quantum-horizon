@@ -34,10 +34,17 @@ const Outfit := preload("res://ramon/chickenpen/outfit/outfit_4d.gd")
 const Keeper := preload("res://ramon/chickenpen/outfit/outfit_keeper_4d.gd")
 const Strips := preload("res://ramon/chickenpen/outfit/outfit_strips_4d.gd")
 const Wearer := preload("res://ramon/chickenpen/outfit/outfit_wearer_4d.gd")
+const Trip := preload("res://ramon/chickenpen/outfit/outfit_room_trip_4d.gd")
+## Ramon's version (outfit/PLAN_FITTING_ROOM.md): the same outfit, changed in a room of its own.
+const ROOM := "res://ramon/chickenpen/outfit/fitting_room.tscn"
 
 enum State { ASLEEP, READY, SCANNING, DRESSING, CLOSING }
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
+
+## RAMON'S VERSION AS THE ONLY WAY. Off: you dress here, in the strips, and Enter takes you to the
+## fitting room if you want it. On: the scan ends straight in the fitting room (fitting_room.tscn).
+@export var opens_room: bool = false
 
 @export var player_path: NodePath = NodePath("../../Player")
 
@@ -127,6 +134,7 @@ func _ready() -> void:
 	else:
 		push_warning("OutfitCircle: player_path resolves to nothing - the circle will never wake.")
 	_font = load("res://ramon/Demo/fonts/Montserrat/static/Montserrat-SemiBold.ttf") as Font
+	add_to_group(&"outfit_circle")
 	_build_ui()
 	_lay_frame()
 
@@ -499,6 +507,8 @@ func _run_scan(delta: float) -> void:
 		state = State.DRESSING
 		_hoop.visible = false
 		_show_readout()
+		if opens_room:
+			open_room()
 
 
 func _all_printed() -> bool:
@@ -568,6 +578,8 @@ func _input(event: InputEvent) -> void:
 		undo()
 	elif event.is_action_pressed(&"catch_target") and not key.echo:
 		done()
+	elif (code == KEY_ENTER or code == KEY_KP_ENTER) and not key.echo:
+		open_room()
 	else:
 		handled = false
 	if handled:
@@ -620,6 +632,25 @@ func _changed(row: int) -> void:
 	else:
 		for i in Outfit.ROWS.size():
 			wearer.call("flash", i, 0.6)
+
+
+## Enter: off to Trym's fitting room, Ramon's version (outfit_room_trip_4d.gd parks the farm, this
+## circle with it; its _exit_tree ends the dressing cleanly, and came_back() greets you on return).
+func open_room() -> void:
+	if state != State.DRESSING or not is_inside_tree():
+		return
+	var root: Window = get_tree().root
+	if root.get_node_or_null(NodePath(String(Trip.NAME))) != null or not ResourceLoader.exists(ROOM):
+		return
+	var trip: Node = Trip.new()
+	trip.name = Trip.NAME
+	root.add_child(trip)
+	trip.call("go", ROOM, _camera)
+
+
+## Back from the fitting room, standing in the circle again.
+func came_back(saved: bool) -> void:
+	_say("Saved. It goes with you." if saved else "Nothing changed.", 2.6)
 
 
 ## F: save, fold the strips back into the ring, and give the player back their feet. Public for tests.
@@ -697,7 +728,7 @@ func _update_words(delta: float, gap: float) -> void:
 
 
 func _hint_text() -> String:
-	return "%s %s  part      %s %s  colour      %s %s  style      X  surprise me      Backspace  undo      %s  done" % [
+	return "%s %s  part      %s %s  colour      %s %s  style      X  surprise me      Backspace  undo      Enter  fitting room      %s  done" % [
 		_key_of(&"move_forward"), _key_of(&"move_back"), _key_of(&"move_left"), _key_of(&"move_right"),
 		_key_of(&"move_kata"), _key_of(&"move_ana"), _key_of(&"catch_target")]
 
