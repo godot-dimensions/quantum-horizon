@@ -108,7 +108,31 @@ var _detail_time: float = 0.0
 
 # --- lifecycle ----------------------------------------------------------------------------
 
+## THE PROFILER IS OPTIONAL, and has to be looked up rather than named.
+##
+## QHProfiler is an autoload, and it is declared only on branches that carry the perf tooling
+## - res://perf/qh_profiler.gd is not on origin/RamonPrototypes at all. Naming it directly
+## made this whole script fail to PARSE there, which takes the water surface with it: the sea
+## simply never appears, with the real reason seven lines up the log under a pile of
+## "Identifier not declared".
+##
+## A sandbox module has no business depending on another branch's tooling, so the profiler is
+## resolved at runtime and the scopes are no-ops when it is absent.
+var _profiler: Node = null
+
+
+func _begin_scope(tag: StringName) -> void:
+	if _profiler != null:
+		_profiler.call(&"begin", tag)
+
+
+func _end_scope(tag: StringName) -> void:
+	if _profiler != null:
+		_profiler.call(&"end", tag)
+
+
 func _ready() -> void:
+	_profiler = get_node_or_null(^"/root/QHProfiler")
 	_live = Presets._preset(0)
 	_target = Presets._preset(0)
 	_phase.resize(MAX_WAVES)
@@ -138,7 +162,7 @@ func _exit_tree() -> void:
 
 
 func _process(delta: float) -> void:
-	QHProfiler.begin(&"qh_custom/water4d/blend")
+	_begin_scope(&"qh_custom/water4d/blend")
 	if _blend_left > 0.0:
 		var step: float = clampf(delta / maxf(_blend_left, 0.0001), 0.0, 1.0)
 		for i in range(MAX_WAVES):
@@ -150,16 +174,16 @@ func _process(delta: float) -> void:
 			var d: Vector3 = a.dir.lerp(b.dir, step)
 			a.dir = d.normalized() if d.length() > 0.0001 else b.dir
 		_blend_left = maxf(_blend_left - delta, 0.0)
-	QHProfiler.end(&"qh_custom/water4d/blend")
+	_end_scope(&"qh_custom/water4d/blend")
 
-	QHProfiler.begin(&"qh_custom/water4d/phase")
+	_begin_scope(&"qh_custom/water4d/phase")
 	for i in range(MAX_WAVES):
 		var k: float = TAU / maxf(_live[i].wavelength * maxf(wave_scale, 0.01), 0.1)
 		# Deep water. The dispersion relation only involves |k|, so it is the same statement
 		# in four dimensions as in three.
 		_phase[i] = fposmod(_phase[i] + sqrt(GRAVITY * k) * delta, TAU)
 	_detail_time = fposmod(_detail_time + delta * 0.06, 1024.0)
-	QHProfiler.end(&"qh_custom/water4d/phase")
+	_end_scope(&"qh_custom/water4d/phase")
 
 
 ## Forwarded so the HUD and the probes can ask the node, without each of them having to
@@ -231,7 +255,7 @@ func _build_grid() -> ArrayMesh:
 func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngine4D) -> void:
 	if viewport != get_viewport() or not _instance.is_valid():
 		return
-	QHProfiler.begin(&"qh_custom/water4d/uniforms")
+	_begin_scope(&"qh_custom/water4d/uniforms")
 	var world: World3D = viewport.find_world_3d()
 	var scenario: RID = world.scenario if world != null else RID()
 	if scenario != _scenario:
@@ -240,7 +264,7 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngi
 	var shown: bool = is_visible_in_tree() and scenario.is_valid()
 	RenderingServer.instance_set_visible(_instance, shown)
 	if not shown:
-		QHProfiler.end(&"qh_custom/water4d/uniforms")
+		_end_scope(&"qh_custom/water4d/uniforms")
 		return
 
 	var b: Projection = camera.global_basis
@@ -281,7 +305,7 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngi
 	_material.set_shader_parameter(&"roughness_value", roughness)
 	_material.set_shader_parameter(&"light_response", light_response)
 	_push_waves()
-	QHProfiler.end(&"qh_custom/water4d/uniforms")
+	_end_scope(&"qh_custom/water4d/uniforms")
 
 
 ## The live wave set as flat arrays, with the Gerstner steepness constraint applied.
