@@ -128,8 +128,12 @@ height change would not.
 
 ### Foam
 
-**Jacobian foam.** The 3x3 Jacobian of the horizontal displacement over `(x, z, w)`; foam
-where its determinant drops below a threshold. Stateless, recomputed every frame.
+**Jacobian foam.** The 3x3 Jacobian of the horizontal displacement over `(x, z, w)` decides
+*where* foam belongs - wherever its determinant drops below a threshold. *What* it looks like
+comes from `shaders/foam_4d.gdshaderinc`, the shared module: a Voronoi network over the same
+three horizontal axes, so the pattern is welded to the water and survives the slice turning.
+This scene adds the milky film between the filaments, because how milky foam is belongs to
+the water rather than to the module. Stateless, recomputed every frame.
 
 **Intersection foam.** A depth difference in screen space where the water meets the floating
 bodies. Also stateless.

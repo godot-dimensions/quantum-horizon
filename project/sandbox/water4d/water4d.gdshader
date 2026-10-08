@@ -86,7 +86,7 @@ uniform float foam_softness = 0.18;
 // an artefact rather than as water.
 uniform float foam_break = 1.4;
 // The procedural foam, from shaders/foam_4d.gdshaderinc.
-uniform float foam_cell_size = 0.40;   // metres across one clump
+uniform float foam_cell_size = 0.85;   // metres across one cell of the foam network
 uniform float foam_relief = 0.055;     // how much the crust tilts the normal
 uniform bool foam_textured = true;     // off falls back to the flat white it used to be
 // Where the bubble detail gives up and fades back to the plain mask. Past this the cells are
@@ -328,6 +328,13 @@ void fragment() {
 			// aliases into sparkle - which reads as fireflies on the horizon.
 			float detail_fade = 1.0 - smoothstep(foam_detail_near, foam_detail_far,
 					length(VERTEX));
+			// A MILKY FLOOR UNDER THE NETWORK. foam_4d returns the filaments alone, and on
+			// their own they leave the holes as bare dark water, which reads as a net
+			// thrown over the sea. Real foam leaves a film between its strands, so where
+			// the density is high the holes keep a fraction of the foam colour and the
+			// bright network sits on top of that. Scene-level, deliberately not in the
+			// module: how milky foam is belongs to the water it is on.
+			cover = foam * mix(0.32, 1.0, cover);
 			cover = mix(foam, cover, detail_fade);
 			crust = vec3(cover * 0.12 * detail_fade);
 		}

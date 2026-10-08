@@ -24,7 +24,9 @@ const DEMO_SHADER := preload("res://shaders/foam_4d_demo.gdshader")
 const ANGLES: Array[float] = [0.0, 30.0, 60.0, 90.0]
 const SETTLE := 0.45
 const EXTENT := 14.0
-const GRID := 2
+# Enough triangles that the world position carried across them stays precise; at 2x2 the
+# spans are ~28 m and faint seams show along the triangle edges.
+const GRID := 24
 ## Round cells never give exactly 1 - the screen is not square in world terms once the plane
 ## is seen at an angle - but anything inside this band is isotropic to the eye.
 const RATIO_LIMIT := 1.9

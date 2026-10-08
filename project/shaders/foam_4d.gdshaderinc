@@ -94,13 +94,25 @@ vec2 foam4d_worley(vec3 p, float jitter) {
 ///   p         the point, in (x, z, w) metres
 ///   density   0 nothing, 1 a solid sheet. This is the dial to drive from whatever decides
 ///             where foam belongs - a Jacobian determinant, a shoreline distance, a splash.
-///   scale     metres across one clump cell. ~0.6 for sea foam, larger for a lazier raft.
+///   scale     metres across one cell. ~0.4 for sea foam, larger for a lazier raft.
 ///   time      seconds. Drifts and slowly reorganises, so foam does not look painted on.
 ///
-/// Three layers, which is what stops it reading as a flat white smear:
-///   clumps   where foam is at all, from the nearest-feature distance
-///   bubbles  the cell walls of a much finer lattice, brightening the clump interior
-///   lacing   value noise punching holes, so the sheet is torn rather than solid
+/// FOAM IS THE EDGES BETWEEN CELLS, NOT THE CELLS. This is the whole shape of the thing and
+/// it is easy to get backwards. Look at a photograph of a breaking sea: the white is a
+/// NETWORK of filaments with open water inside the holes, because foam collects where
+/// surface flow converges, and convergence lines are the boundaries between patches that are
+/// being pushed apart - not the middles of them.
+///
+/// So the field is `second nearest - nearest`, which goes to zero exactly where you are
+/// equidistant from two feature points, i.e. ON a cell wall. Using the nearest distance
+/// alone instead paints a disc around every feature point and gives white blobs with water
+/// between them - the photographic negative of foam. (It is what the first version of this
+/// did.)
+///
+/// Three layers:
+///   network  the ropes themselves, thickening with density until the holes close over
+///   wisps    a finer boundary field, texturing the ropes and leaving strands on open water
+///   mottle   value noise, so a rope is not a uniformly bright line
 float foam_4d(vec3 p, float density, float scale, float time) {
 	if (density <= 0.002) {
 		return 0.0;
@@ -109,24 +121,38 @@ float foam_4d(vec3 p, float density, float scale, float time) {
 	// axis is a pattern the eye picks out immediately.
 	vec3 q = p / max(scale, 0.001) + vec3(0.11, -0.07, 0.05) * time;
 
-	vec2 clump_cell = foam4d_worley(q, 0.9);
-	// The clump radius grows with density; past about 0.8 the cells touch and the foam
-	// becomes a sheet, which is what a breaking crest should look like.
-	float radius = mix(0.16, 1.05, density);
-	float clumps = 1.0 - smoothstep(radius * 0.55, radius, clump_cell.x);
+	// DOMAIN WARP, and it is what separates foam from a crackle texture. A Worley lattice
+	// has straight walls and sharp three-way vertices; real foam filaments wander, because
+	// the surface carrying them is being stirred. Bending the lookup before it reaches the
+	// lattice costs three value-noise samples and buys every bit of that irregularity.
+	vec3 warp = vec3(
+			foam4d_value(q * 0.85 + vec3(13.1, 2.7, 41.3)),
+			foam4d_value(q * 0.85 + vec3(5.9, 27.4, 8.2)),
+			foam4d_value(q * 0.85 + vec3(33.7, 17.6, 23.9))) - 0.5;
+	q += warp * 0.55;
 
-	// Bubble walls: the gap between nearest and second nearest is near zero exactly on a cell
-	// boundary, which draws the film between bubbles.
-	vec2 bubble_cell = foam4d_worley(q * 4.7 + vec3(19.3, 7.1, 31.7), 0.95);
-	float walls = smoothstep(0.0, 0.33, bubble_cell.y - bubble_cell.x);
+	// The network. `boundary` is 0 on a cell wall and grows toward a cell interior, so a
+	// small threshold draws thin ropes and a large one floods the cells.
+	vec2 cell = foam4d_worley(q, 0.9);
+	float boundary = cell.y - cell.x;
+	// Thickness wanders along a rope rather than being constant, for the same reason as the
+	// warp: a filament of even width reads as drawn rather than collected.
+	float vary = foam4d_value(q * 1.3 + vec3(2.2, 9.8, 15.4));
+	float width = mix(0.012, 1.00, density * density) * mix(0.55, 1.45, vary);
+	// Feathered rather than hard: foam has no edge, it thins out.
+	float network = 1.0 - smoothstep(width * 0.15, width, boundary);
 
-	// Lacing. Biased by density so that heavy foam tears less.
-	float lace = foam4d_value(q * 1.9 + vec3(5.2, 11.9, 2.7) + time * 0.08);
-	float torn = smoothstep(0.18, 0.62, lace + density * 0.55);
+	// A finer network, three times over. Inside a rope it breaks the white up; outside, at
+	// higher densities, it leaves the stray strands that keep open water from looking empty.
+	vec2 fine = foam4d_worley(q * 3.1 + vec3(19.3, 7.1, 31.7), 0.95);
+	float fine_width = mix(0.02, 0.22, density);
+	float wisps = 1.0 - smoothstep(fine_width * 0.4, fine_width, fine.y - fine.x);
 
-	// Bubbles brighten the inside rather than cutting it away, so the clump keeps its shape.
-	float mask = clumps * torn * mix(0.45, 1.0, walls);
-	return clamp(mask, 0.0, 1.0);
+	// Mottling, so the ropes have grain rather than being painted on.
+	float mottle = foam4d_value(q * 2.4 + vec3(5.2, 11.9, 2.7) + time * 0.08);
+
+	float mask = max(network, wisps * network * mix(0.0, 0.85, density));
+	return clamp(mask * mix(0.68, 1.0, mottle), 0.0, 1.0);
 }
 
 

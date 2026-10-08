@@ -19,8 +19,8 @@ uniform vec4 cam_basis_z;
 uniform vec3 slice_axis_a;
 uniform vec3 slice_axis_b;
 
-uniform float foam_density = 0.55;
-uniform float foam_cell_size = 0.40;
+uniform float foam_density = 0.45;
+uniform float foam_cell_size = 0.90;
 uniform float foam_time = 0.0;
 uniform float plane_height = 0.0;
 

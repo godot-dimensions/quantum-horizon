@@ -35,7 +35,7 @@ vec2 cell = foam4d_worley(p, jitter);   // cellular; .x nearest, .y second neare
 |---|---|
 | `p` | the point, in **(x, z, w)** metres — **not** (x, y, z) |
 | `density` | 0 nothing, 1 a solid sheet. Drive it from whatever decides *where* foam belongs |
-| `scale` | metres across one clump. ~0.4 for sea foam, larger for a lazier raft |
+| `scale` | metres across one cell. ~0.85 for sea foam, smaller for a finer lace |
 | `time` | seconds; drifts and slowly reorganises so it is not painted on |
 
 **`density` is the hook.** The module answers *what foam looks like*; it never decides where
@@ -76,10 +76,10 @@ Round cells give about 1. **At 90 degrees one of the two visible axes IS W**, so
 no W variation would be constant along it and the ratio would blow up.
 
 ```
-    0 deg   coverage  49.9%   transitions  8861 across /  8753 down   ratio 1.01
-   30 deg   coverage  55.2%   transitions 10041 across / 10047 down   ratio 1.00
-   60 deg   coverage  54.9%   transitions  9376 across /  9364 down   ratio 1.00
-   90 deg   coverage  51.8%   transitions  8916 across /  9141 down   ratio 1.03
+    0 deg   coverage  33.8%   transitions  6673 across /  6664 down   ratio 1.00
+   30 deg   coverage  26.0%   transitions  5982 across /  6201 down   ratio 1.04
+   60 deg   coverage  27.3%   transitions  6008 across /  6444 down   ratio 1.07
+   90 deg   coverage  31.8%   transitions  6514 across /  6505 down   ratio 1.00
 ```
 
 It measures the real shader through the real renderer rather than a GDScript port of the
@@ -89,23 +89,52 @@ something other than foam and no other row means anything — the probe says so 
 
 ## What it is made of
 
-Three layers, which is what stops it reading as a flat white smear:
+**Foam is the EDGES between cells, not the cells**, and this is the easy thing to get
+backwards. Look at a photograph of a breaking sea: the white is a *network* of filaments
+with open water inside the holes. Foam collects where surface flow converges, and the
+convergence lines are the boundaries between patches being pushed apart - not the middles of
+them.
 
-- **clumps** — where there is foam at all, from the nearest-feature distance of a Worley
-  lattice. The clump radius grows with `density`; past about 0.8 the cells touch and it
-  becomes a sheet, which is what a breaking crest should look like.
-- **bubbles** — the *cell walls* of a much finer lattice (the gap between nearest and second
-  nearest goes to zero on a boundary), brightening the clump interior.
-- **lacing** — value noise punching holes, so the sheet is torn rather than solid.
+So the field is `second nearest - nearest`, which goes to zero exactly where you are
+equidistant from two feature points, i.e. on a cell wall. Using the nearest distance alone
+paints a disc around every feature point and gives white blobs with water between them: the
+photographic negative of foam. **That is what the first version of this did**, and it took
+being shown a reference photo to see it.
+
+Layers, over a warped lookup:
+
+- **domain warp** - three value-noise samples bending the coordinate before it reaches the
+  lattice. A raw Worley has straight walls and sharp three-way vertices; real filaments
+  wander, because the surface carrying them is being stirred. This is the single biggest
+  difference between foam and a crackle texture.
+- **network** - the ropes, from the boundary field. Thickness wanders along a rope rather
+  than being constant, and the edge is feathered: foam has no border, it thins out. Width
+  grows with `density` until the holes close over into a sheet, which is what the middle of
+  a breaking crest should be.
+- **wisps** - a finer boundary field, multiplied *into* the network so it grains the ropes.
+  Added to open water instead, it tiles the whole surface and reads as cracked glaze.
+- **mottle** - value noise, so a rope has grain rather than being painted on.
 
 The Worley sweeps 27 neighbours, not the 9 a 2D implementation uses: in three dimensions the
 3x3 misses the diagonals in W and leaves seams that only appear once the slice turns, which
 is a miserable thing to debug.
 
+### What the module does not do
+
+It returns the filaments alone. On their own they leave the holes as bare water, which reads
+as a net thrown over the sea rather than as foam. Whether there is a milky film between the
+strands - and how milky - belongs to the surface the foam is on, so the caller does it:
+
+```glsl
+float network = foam_4d(world_xzw, density, scale, time);
+float cover = density * mix(0.32, 1.0, network);   // what sandbox/water4d does
+```
+
 ## Cost, and the one thing to watch
 
-Two Worley evaluations per call, 27 cells each. `foam_4d_shaded` adds three more calls for
-its finite-difference gradient, so budget it where foam actually is:
+Two Worley evaluations per call at 27 cells each, plus five value-noise samples (three for
+the warp, one for the thickness, one for the mottle). `foam_4d_shaded` adds three more whole
+calls for its finite-difference gradient, so budget it where foam actually is:
 
 ```glsl
 if (density > 0.002) { ... }   // the module early-outs too, but skip the call as well
