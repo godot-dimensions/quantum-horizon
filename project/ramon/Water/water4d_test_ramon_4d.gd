@@ -37,6 +37,7 @@ const LabGrid := preload("res://ramon/Water/carried/LabKit/lab_grid.gd")
 const Mats := preload("res://ramon/Water/carried/LabKit/lab_materials.gd")
 const Style := preload("res://ramon/Water/carried/kit/kit_style.gd")
 const Hud := preload("res://ramon/Water/water4d_hud_ramon.gd")
+const GB := preload("res://ramon/Water/carried/LabKit/carried/chickenpen/scripts/ground_basis_4d.gd")
 
 @export_group("Sea")
 @export var start_preset: int = 1
@@ -82,7 +83,9 @@ const Hud := preload("res://ramon/Water/water4d_hud_ramon.gd")
 @export var panel_swap_degrees: float = 28.0
 
 @export_group("Camera")
-@export var camera_distance: float = 6.0
+## How far back the camera sits. Locked: the wheel does not zoom here (Ramon, 8 Oct: "more zoomed
+## out and locked"); the HUD's CAMERA slider sets it, and SAVE keeps it.
+@export var camera_distance: float = 10.0
 @export var camera_height: float = 2.4
 @export var camera_pitch_degrees: float = -12.0
 
@@ -98,6 +101,10 @@ var _last_site: String = ""
 var _at_pier2: bool = false
 var _reached: Dictionary = {}
 var _rebuild_in: float = -1.0
+## The set platform while the slice is turned on it (_hold_set_frame).
+var _turned_here: bool = false
+var _pivot := Vector4.ZERO
+var _visual := Vector4.ZERO
 
 
 # -- where things are ---------------------------------------------------------------------------------------
@@ -122,6 +129,7 @@ func _ready() -> void:
 	if _water != null and _water.has_method(&"set_preset"):
 		_water.set(&"wave_scale", wave_scale)
 		_water.call(&"set_preset", start_preset)
+	_saved_pier_sizes()
 	_build_piers()
 	_build_pole()
 	_build_floor()
@@ -155,6 +163,38 @@ func _place_targets() -> void:
 				"start":
 					n["pos"] = e[2]
 		graph.emit_changed()
+
+
+## The pier sizes and the camera saved from the HUD (water_ramon_tuning.cfg, PIERS and CAMERA),
+## read before anything is built, so the scene opens at them rather than building once and
+## rebuilding at once.
+func _saved_pier_sizes() -> void:
+	var cf := ConfigFile.new()
+	if cf.load(Hud.SAVE_PATH) != OK:
+		return
+	for sec in ["PIERS", "CAMERA"]:
+		if not cf.has_section(sec):
+			continue
+		for key in cf.get_section_keys(sec):
+			if get(key) != null:
+				set(key, cf.get_value(sec, key))
+
+
+## The camera at `camera_distance` and `camera_height`, its zoom locked there: the wheel's step is 0.
+## NOT BY NARROWING ITS RANGE: the rig never pulls the camera in closer than half its minimum
+## distance when something is in the way, so a minimum of 10 m left it behind the sci-fi door at the
+## start, looking at the door's back.
+func apply_camera() -> void:
+	if _rig == null:
+		return
+	_rig.set("zoom_speed", 0.0)
+	_rig.set("max_distance", maxf(float(_rig.get("max_distance")), camera_distance))
+	_rig.set("distance", camera_distance)
+	_rig.set("_zoom_target", camera_distance)
+	_rig.set("_rest_distance", camera_distance)
+	_rig.set("pivot_height", camera_height)
+	_rig.set("_home_pivot", camera_height)
+	_rig.call("_apply")
 
 
 ## Both piers, their doors and the platform. Called again by rebuild_piers() when the HUD's PIERS
@@ -240,7 +280,9 @@ func _build_door(nm: String, z: float, width: float, w_depth: float) -> void:
 	seam.position = Vector4(-0.03, h * 0.5, 0.0, 0.0)
 	seam.material_override = glow
 	d.add_child(seam)
-	_solid(d, "Back", Vector4(-0.2, h * 0.5, 0.0, 0.0), Vector4(0.4, h, width + 1.2, wd))
+	# As big as the plate, not just the opening: the camera, 10 m back and pulled in front of what is
+	# solid behind you, cleared a blocker the opening's height and ended up behind the plate.
+	_solid(d, "Back", Vector4(-0.35, (h + 0.9) * 0.5, 0.0, 0.0), Vector4(0.6, h + 0.9, width + 2.0, wd))
 
 
 ## A deck on the kit's floor grid, with its collision.
@@ -315,7 +357,8 @@ func _build_pier1() -> void:
 ## walking in from +z, which is the way in here).
 func _build_platform() -> void:
 	var c: Vector4 = platform_centre()
-	_solid(self, "PlatformBody", Vector4(c.x, c.y - 0.15, c.z, 0.0), Vector4(platform_radius * 2.0, 0.3, platform_radius * 2.0, platform_radius * 2.0))
+	# Deep in W: walking while the slice is turned carries you through W (_hold_set_frame).
+	_solid(self, "PlatformBody", Vector4(c.x, c.y - 0.15, c.z, 0.0), Vector4(platform_radius * 2.0, 0.3, platform_radius * 2.0, 80.0))
 	_set_frame = Node4D.new()
 	_set_frame.name = "PlatformSet"
 	_set_frame.position = c
@@ -396,9 +439,15 @@ func _plate(parent: Node4D, nm: String, at: Vector4, pm: Vector2, w_depth: float
 
 ## The page's live texture onto the plate's top face, once the page has drawn; the page's own slab
 ## hidden.
+##
+## BOTH MAY BE GONE BY THEN. A rebuild of the piers (the PIERS sliders, or saved sizes being read)
+## frees the pages and plates of the build before; this wait would then touch a freed page, and the
+## error stopped the scene in the editor (8 Oct, the first time saved pier sizes were read back).
 func _print_later(plate: MeshInstance4D, page: Node4D, pm: Vector2) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
+	if not is_instance_valid(page) or not is_instance_valid(plate):
+		return
 	var vp: SubViewport = page.get("_vp")
 	var slab: Node4D = page.get("_slab")
 	if slab != null:
@@ -496,11 +545,7 @@ func _build_player() -> void:
 	if _rig != null:
 		_rig.set("slice_turning", false)
 		_rig.set("pitch", deg_to_rad(camera_pitch_degrees))
-		_rig.set("distance", camera_distance)
-		_rig.set("_zoom_target", camera_distance)
-		_rig.set("_rest_distance", camera_distance)
-		_rig.set("pivot_height", camera_height)
-		_rig.set("_home_pivot", camera_height)
+		apply_camera()
 	go_to(door(1), -PI * 0.5)
 
 
@@ -689,20 +734,46 @@ func _process(delta: float) -> void:
 	_route_states(p)
 
 
-## The platform's frame turned by the slice the rig is turned by, about the platform's centre, so the
-## platform is drawn as if the slice were level: it stays set while the sea is cut a new way.
+## The tilt the rig's slice has, as a rotation of the world (the rig's ground basis G against the
+## level frame nearest it, L = flattened(G), which has the same heading; turned into world axes).
+func _world_tilt() -> Projection:
+	var g: Projection = (_rig as Node4D).basis
+	var s: Projection = g * GB.flattened(g).inverse()
+	var bp: Projection = (_rig.get_parent() as Node4D).global_basis
+	return bp * s * bp.inverse()
+
+
+## The platform drawn as if the slice were level, while the sea is cut a new way: it stays SET.
+##
+## ABOUT WHERE YOU STOOD WHEN THE TURN BEGAN. The camera turns about you, not about the platform, so
+## the platform is turned by the slice's tilt about the point the turn began at (`_pivot`): seen
+## from there it is exactly the level platform. Walking while turned moves you through the tilted
+## slice, S v in the world for a step v on screen; measured back into the platform's own level frame
+## (`_visual`) that is the step v, so you cross the platform as you see it. The first version turned
+## it about its own centre: from its edge, turned 60 degrees, the platform slid out of the slice and
+## all but vanished (the frames of 8 Oct, standing where pier 1 meets it). When the slice is level
+## again you are put where the level platform showed you.
 func _hold_set_frame() -> void:
 	if _set_frame == null:
 		return
-	var turn := Projection.IDENTITY
-	if _last_site == "platform":
-		var a: float = float(_rig.get("_slice_xw"))
-		var b: float = float(_rig.get("_slice_zw"))
-		var s: Projection = Basis4D.from_xw(a) * Basis4D.from_zw(b)
-		var parent_basis: Projection = (_rig.get_parent() as Node4D).global_basis
-		turn = parent_basis * s * parent_basis.inverse()
-	_set_frame.global_basis = turn
-	_set_frame.global_position = platform_centre()
+	var c: Vector4 = platform_centre()
+	var o: Vector4 = (_rig as Node4D).global_position
+	var tilted: bool = slice_degrees().x > 0.2
+	if tilted and (_turned_here or _site == "platform"):
+		var s: Projection = _world_tilt()
+		if not _turned_here:
+			_turned_here = true
+			_pivot = o
+		_visual = _pivot + s.inverse() * (o - _pivot) - c
+		_set_frame.global_basis = s
+		_set_frame.global_position = _pivot + s * (c - _pivot)
+		return
+	if _turned_here:
+		_turned_here = false
+		var off: Vector4 = o - player.global_position
+		player.global_position = Vector4(c.x + _visual.x - off.x, player.global_position.y, c.z + _visual.z - off.z, 0.0)
+	_set_frame.global_basis = Projection.IDENTITY
+	_set_frame.global_position = c
 
 
 ## Pier 2's page or its deep copy, by how far the slice is turned.
@@ -721,6 +792,20 @@ func _physics_process(_delta: float) -> void:
 	if player == null or _rig == null:
 		return
 	var c: Vector4 = platform_centre()
+	var limit_turned: float = platform_radius - 0.45
+	if _turned_here:
+		# Turned: the rail is kept where you see it, in the platform's level frame.
+		var flat2 := Vector2(_visual.x, _visual.z)
+		var rv: float = flat2.length()
+		if rv > limit_turned - 1.4:
+			_rig.call("go_home")
+		if rv > limit_turned:
+			var nv: Vector2 = flat2 * (limit_turned / rv)
+			var o: Vector4 = (_rig as Node4D).global_position
+			var q := Vector4(c.x + nv.x, o.y, c.z + nv.y, 0.0)
+			var world: Vector4 = _pivot + _world_tilt() * (q - _pivot)
+			player.global_position = world - (o - player.global_position)
+		return
 	var p: Vector4 = player.global_position
 	var rel: Vector4 = p - c
 	if absf(rel.y) > 2.5:
@@ -743,6 +828,8 @@ func _physics_process(_delta: float) -> void:
 
 
 func _on_platform(p: Vector4) -> bool:
+	if _turned_here:
+		return Vector2(_visual.x, _visual.z).length() < platform_radius - 0.3
 	var rel: Vector4 = p - platform_centre()
 	return absf(rel.y) < 2.5 and Vector3(rel.x, rel.z, rel.w).length() < platform_radius - 0.3
 
@@ -773,11 +860,12 @@ func _route_states(p: Vector4) -> void:
 
 # -- what the HUD and the panels read -------------------------------------------------------------------------
 
-## The slice's turn in degrees: (xw, zw).
+## How far the slice is tilted from level, in degrees (x; y is 0). The pen's rig holds one tilt of
+## the slice's normal rather than two plane angles (GroundBasis4D.tilt).
 func slice_degrees() -> Vector2:
 	if _rig == null:
 		return Vector2.ZERO
-	return Vector2(rad_to_deg(float(_rig.get("_slice_xw"))), rad_to_deg(float(_rig.get("_slice_zw"))))
+	return Vector2(rad_to_deg(GB.tilt((_rig as Node4D).basis)), 0.0)
 
 
 func where_text() -> String:

@@ -31,6 +31,9 @@ const SKIP := ["position", "rotation_degrees", "scale", "rotation_edit_mode", "s
 ## The piers' size (Ramon, 8 Oct: "an option to scale the width and length of the first and second
 ## pier"): the scene root's settings, the piers rebuilt as they change.
 const PIERS := [["pier1_length", 6.0, 40.0], ["pier1_width", 2.0, 8.0], ["pier2_length", 12.0, 50.0], ["pier2_width", 3.0, 10.0]]
+## The camera (Ramon, 8 Oct: "more zoomed out and locked ... a zoom out camera slider in the hud, and
+## i can save it there"): how far back and how high, the zoom locked at the distance.
+const CAMERA := [["camera_distance", 3.0, 30.0], ["camera_height", 0.5, 6.0]]
 ## The water's look: plain script variables on the surface (not editor properties), pushed to its
 ## shader every frame, so they are listed here with their ranges.
 const WATER := [["wave_scale", 0.0, 2.0], ["detail_strength", 0.0, 0.3], ["specular_strength", 0.0, 2.0],
@@ -41,6 +44,12 @@ const WATER := [["wave_scale", 0.0, 2.0], ["detail_strength", 0.0, 0.3], ["specu
 var room: Node
 var mode: int = 0
 var hud_size: float = 1.0
+## AUTO SAVE for the pier sizes (Ramon, 8 Oct: "an auto save button for the pier scale
+## adjustments"): on, every change to the PIERS sliders is written to the tuning file a moment after
+## the drag stops, the pier sizes only (the rest of the light mode still waits for SAVE). Kept in the
+## file itself, so it stays as he left it.
+var auto_save_piers: bool = true
+var _pier_save_in: float = -1.0
 
 var _readout_box: PanelContainer
 var _readout: Label
@@ -111,6 +120,10 @@ func _px(f: float = 1.0) -> int:
 
 
 func _process(delta: float) -> void:
+	if _pier_save_in >= 0.0:
+		_pier_save_in -= delta
+		if _pier_save_in < 0.0:
+			_save_piers()
 	_toast_left = maxf(_toast_left - delta, 0.0)
 	_toast.modulate.a = clampf(_toast_left / 0.4, 0.0, 1.0)
 	var vw: float = get_viewport_rect().size.x
@@ -162,9 +175,9 @@ func _readout_text() -> String:
 			+ "On a circle: right drag turns the slice, R levels it\n"
 			+ "1-8 seas   F foam map   G Gerstner on/off   N detail noise   Esc free the cursor\n"
 			+ "%d. %s    amplitude %.2f m   wavelength %.1f m   steepness %.2f   off W %.2f\n"
-			+ "solve %s    slice turned %.0f / %.0f°    %d fps%s")
+			+ "solve %s    slice tilted %.0f°    %d fps%s")
 	return layout % [index + 1, Presets.preset_name(index), float(d["amplitude"]), float(d["wavelength"]),
-			float(d["steepness"]), float(d["off_slice"]), solve, turn.x, turn.y, Engine.get_frames_per_second(),
+			float(d["steepness"]), float(d["off_slice"]), solve, turn.x, Engine.get_frames_per_second(),
 			("\n" + where) if not where.is_empty() else ""]
 
 
@@ -190,12 +203,18 @@ func _targets() -> Array:
 	if water != null:
 		out.append(["WATER", water, "water"])
 	out.append(["PIERS", room, "piers"])
+	out.append(["CAMERA", room, "camera"])
 	return out
 
 
 ## The editable properties of `obj`: [{name, type, hint, hint_string}].
 func _props(obj: Object, kind: String) -> Array:
 	var out: Array = []
+	if kind == "camera":
+		for row in CAMERA:
+			out.append({"name": String(row[0]), "type": TYPE_FLOAT, "hint": PROPERTY_HINT_RANGE,
+				"hint_string": "%s,%s,0.1" % [str(row[1]), str(row[2])]})
+		return out
 	if kind == "piers":
 		for row in PIERS:
 			out.append({"name": String(row[0]), "type": TYPE_FLOAT, "hint": PROPERTY_HINT_RANGE,
@@ -253,6 +272,18 @@ func _build_editor() -> void:
 	_slider_row("HUD size", 0.6, 2.0, 0.01, hud_size, on_size, false, "")
 	for t in _targets():
 		_section(String(t[0]))
+		if String(t[0]) == "PIERS":
+			var line: HBoxContainer = _line("auto save")
+			var c := CheckButton.new()
+			c.text = "on" if auto_save_piers else "off"
+			c.button_pressed = auto_save_piers
+			c.focus_mode = Control.FOCUS_NONE
+			var flip := func(on: bool) -> void:
+				auto_save_piers = on
+				c.text = "on" if on else "off"
+				_save_piers()
+			c.toggled.connect(flip)
+			line.add_child(c)
 		var obj: Object = t[1]
 		if String(t[0]) == "SUN":
 			_sun_rows(obj as Node4D)
@@ -388,11 +419,18 @@ func _prop_row(obj: Object, p: Dictionary) -> void:
 			var hs: String = String(p["hint_string"])
 			if hs.contains("radians_as_degrees"):
 				_slider_row(label, r[0], r[1], r[2], rad_to_deg(float(v)), func(x: float) -> void: obj.set(nm, deg_to_rad(x)), false, "°")
+			elif obj == room and nm.begins_with("camera_"):
+				var set_camera := func(x: float) -> void:
+					obj.set(nm, x)
+					obj.call("apply_camera")
+				_slider_row(label, r[0], r[1], r[2], float(v), set_camera, false, " m")
 			elif obj == room:
 				# The piers: set, then rebuilt (coalesced while you drag).
 				var set_pier := func(x: float) -> void:
 					obj.set(nm, x)
 					obj.call("rebuild_piers_later")
+					if auto_save_piers:
+						_pier_save_in = 0.6
 				_slider_row(label, r[0], r[1], r[2], float(v), set_pier, false, " m")
 			else:
 				var typed: bool = nm == "light_energy" and room != null and obj == room.get_node_or_null("Sun")
@@ -469,28 +507,51 @@ func save_tuning() -> void:
 		if sec == "SUN":
 			cf.set_value(sec, "angles", sun_angles(t[1] as Node4D))
 	cf.set_value("HUD", "size", hud_size)
+	cf.set_value("HUD", "auto_save_piers", auto_save_piers)
 	var err: int = cf.save(SAVE_PATH)
 	_flash("Saved to %s" % SAVE_PATH.get_file() if err == OK else "Could not save (%d)" % err)
 
 
 ## The saved values, if there are any, over what the scene opened with.
+## The pier sizes (and the auto save switch) into the tuning file, everything else in it left as
+## it was saved.
+func _save_piers() -> void:
+	if room == null:
+		return
+	var cf := ConfigFile.new()
+	cf.load(SAVE_PATH)
+	for row in PIERS:
+		cf.set_value("PIERS", String(row[0]), room.get(String(row[0])))
+	cf.set_value("HUD", "auto_save_piers", auto_save_piers)
+	var err: int = cf.save(SAVE_PATH)
+	if auto_save_piers or err != OK:
+		_flash("Pier sizes saved" if err == OK else "Could not save (%d)" % err)
+
+
 func load_tuning() -> void:
 	var cf := ConfigFile.new()
 	if cf.load(SAVE_PATH) != OK:
 		return
 	hud_size = float(cf.get_value("HUD", "size", hud_size))
+	auto_save_piers = bool(cf.get_value("HUD", "auto_save_piers", auto_save_piers))
 	_last_h = -1.0
 	for t in _targets():
 		var sec: String = String(t[0])
 		if not cf.has_section(sec):
 			continue
+		var changed: bool = false
 		for key in cf.get_section_keys(sec):
 			if key == "angles":
 				set_sun_angles(t[1] as Node4D, cf.get_value(sec, key))
 			elif t[1].get(key) != null:
+				changed = changed or t[1].get(key) != cf.get_value(sec, key)
 				t[1].set(key, cf.get_value(sec, key))
-		if sec == "PIERS" and room.has_method("rebuild_piers"):
-			room.call("rebuild_piers")
+		# The scene has read its saved pier sizes before building (_saved_pier_sizes): rebuilt only
+		# if these differ.
+		if sec == "PIERS" and changed and room.has_method("rebuild_piers_later"):
+			room.call("rebuild_piers_later")
+		if sec == "CAMERA" and room.has_method("apply_camera"):
+			room.call("apply_camera")
 
 
 func reset_tuning() -> void:
@@ -503,6 +564,8 @@ func reset_tuning() -> void:
 				t[1].set(key, vals[key])
 		if String(t[0]) == "PIERS" and room.has_method("rebuild_piers"):
 			room.call("rebuild_piers")
+		if String(t[0]) == "CAMERA" and room.has_method("apply_camera"):
+			room.call("apply_camera")
 	_build_editor()
 	_flash("Back to the scene's own values")
 

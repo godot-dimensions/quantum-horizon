@@ -104,11 +104,13 @@ func _go(x: float, z: float, yaw_deg: float) -> Callable:
 
 func _turn(xw_deg: float, zw_deg: float = 0.0) -> Callable:
 	return func() -> void:
-		var r: Node = _rig()
+		var r: Node4D = _rig() as Node4D
 		if r != null:
+			# The pen's rig holds the slice in its ground basis: the same tilt of the world the old
+			# rig's two angles meant (the pen's slice_angles_4d.gd builds it the same way).
+			var yaw: float = float(r.get("yaw"))
 			r.set("_homing", 0.0)
-			r.set("_slice_xw", deg_to_rad(xw_deg))
-			r.set("_slice_zw", deg_to_rad(zw_deg))
+			r.basis = Basis4D.from_xw(deg_to_rad(xw_deg)) * Basis4D.from_zw(deg_to_rad(zw_deg)) * Basis4D.from_zx(yaw)
 			r.call("_apply")
 
 
