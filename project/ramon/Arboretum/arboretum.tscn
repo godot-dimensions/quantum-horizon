@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=27 format=3]
 
 [ext_resource type="Script" path="res://ramon/Arboretum/arboretum_4d.gd" id="1_root"]
 [ext_resource type="Script" path="res://ramon/Arboretum/carried/LabKit/lab_room_4d.gd" id="2_room"]
@@ -23,6 +23,9 @@
 [ext_resource type="Script" path="res://ramon/Arboretum/room/arb_target_4d.gd" id="21_target"]
 [ext_resource type="Script" path="res://ramon/Arboretum/grove/grove_4d.gd" id="22_grove"]
 [ext_resource type="Script" path="res://ramon/Arboretum/room/floor_mark_4d.gd" id="23_mark"]
+[ext_resource type="Script" path="res://sandbox/water4d/pool_room_4d.gd" id="30_pool"]
+[ext_resource type="Script" path="res://sandbox/water4d/water4d_surface.gd" id="31_water"]
+[ext_resource type="Script" path="res://sandbox/water4d/annex_rotation_point.gd" id="32_spin"]
 
 [node name="Arboretum" type="Node4D"]
 script = ExtResource("1_root")
@@ -342,3 +345,25 @@ script = ExtResource("18_net")
 graph = ExtResource("20_grove")
 targets = NodePath("../Targets")
 under_color = Color(0.64, 0.65, 0.66, 1)
+
+[node name="WaterAnnex" type="Node4D" parent="."]
+position = Vector4(36, -3, 10.5, 0)
+script = ExtResource("30_pool")
+spawn_player = false
+pool_depth = 35.0
+walkway_height = 3.0
+start_preset = 1
+creature_length = 15.0
+
+[node name="Water" type="Node4D" parent="WaterAnnex"]
+script = ExtResource("31_water")
+water_level = -3.0
+
+[node name="AnnexSun" type="DirectionalLight4D" parent="WaterAnnex"]
+basis = Projection(0.9063, 0, -0.4226, 0, -0.2962, 0.7071, -0.6428, 0, 0.2988, 0.7071, 0.6409, 0, 0, 0, 0, 1)
+light_color = Color(0.86, 0.9, 1, 1)
+light_energy = 0.9
+
+[node name="RotationPoint" type="Node" parent="WaterAnnex"]
+script = ExtResource("32_spin")
+room_path = NodePath("..")

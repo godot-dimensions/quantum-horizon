@@ -39,6 +39,10 @@ const DevPanel := preload("res://ramon/Arboretum/room/arb_dev_panel.gd")
 const Presentation := preload("res://ramon/Arboretum/carried/kit/kit_presentation.gd")
 
 ## The part of each method's story the guided tour shows.
+## How far back from the entrance end of the hall's right-hand wall the water door sits.
+## WaterAnnex in arboretum.tscn is placed to meet it, so the two have to agree.
+const WATER_DOOR_INSET := 5.5
+
 const TOUR_PART := {"voxel": "cells", "dc": "contour", "loft": "skin", "oak": "leaves"}
 
 @export_group("Hall")
@@ -247,6 +251,18 @@ func apply_shape() -> void:
 	var doors: Array = [["entrance", w - 2.4, w + 2.4, 4.2]]
 	if dw > 0.1:
 		doors.append(["back", bl - dw * 0.5, bl + dw * 0.5, minf(door_height, hall_height - 0.5)])
+		# OUT ONTO THE WATER. The hall's right-hand wall, a few metres in from the entrance,
+		# so it is in view as the player walks in rather than something to be hunted for.
+		#
+		# Measured from that edge's FIRST corner, which is its BACK end - hence the subtraction
+		# from the wall's own length. It has to be set here and not in arboretum.tscn: this
+		# function rewrites `doorways` wholesale on every layout pass, so a doorway set on the
+		# node is discarded before the room is ever built.
+		var right_len: float = float((plan["lengths"] as Dictionary).get("right", 0.0))
+		if right_len > WATER_DOOR_INSET + dw:
+			var centre: float = right_len - WATER_DOOR_INSET
+			doors.append(["right", centre - dw * 0.5, centre + dw * 0.5,
+					minf(door_height, hall_height - 0.5)])
 	_set_if(hall, "doorways", doors)
 	var ent: Node4D = get_node_or_null("Entrance") as Node4D
 	if ent != null:
@@ -361,6 +377,18 @@ func _strip() -> Array:
 		return [["E / Click", "Close the card" if _card_open else "About this tree"], ["WASD", "Move"]]
 	if _on_pad:
 		return [["E / Click", "Play the showcase"], ["WASD", "Move"]]
+	# Standing on the water annex's rotation ring. The strip is where this gallery says what
+	# works where you stand, so the ring belongs here rather than in a label of its own - and
+	# the reset is named, because it is the half of the behaviour no key reveals.
+	#
+	# Guarded both ways: the gallery runs perfectly well without the annex, and the question
+	# is asked in the ANNEX's frame, since `is_on_rotation_point` measures from that node and
+	# the annex does not sit at the origin.
+	var annex: Node4D = get_node_or_null("WaterAnnex") as Node4D
+	if annex != null and annex.has_method("is_on_rotation_point") and bool(
+			annex.call("is_on_rotation_point", annex.global_to_local(player.global_position))):
+		return [["Right drag", "Turn the slice in 4D"], ["R", "Reset the slice"],
+				["G", "Gust of wind"], ["WASD", "Move"]]
 	var g: Node = get_node_or_null("Grove")
 	if g != null and g.has_method("is_inside") and bool(g.call("is_inside", player.global_position)):
 		return [["Q / E", "Walk through W"], ["WASD", "Move"], ["G", "Gust of wind"], ["V", "Volume view" if not volume_view else "Slice view"]]
@@ -525,7 +553,18 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			var w: Node = wind()
 			if w != null:
 				w.call("gust")
-				hud.call("toast", "A gust of wind")
+			# The same gust out on the water: the sea gets whipped up and settles again on its
+			# own, taking the next sea in its list each time so repeated taps keep changing the
+			# weather. Guarded, so the gallery still runs without the annex.
+			#
+			# `sea_name`, not `name`: a local called `name` shadows Node's own property.
+			var sea: Node = get_node_or_null("WaterAnnex")
+			var sea_name: String = ""
+			if sea != null and sea.has_method("gust"):
+				sea_name = String(sea.call("gust"))
+			if w != null or not sea_name.is_empty():
+				hud.call("toast", ("A gust of wind - %s" % sea_name) if not sea_name.is_empty()
+						else "A gust of wind")
 			get_viewport().set_input_as_handled()
 		KEY_V:
 			set_volume_view(not volume_view)

@@ -1,0 +1,64 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://sandbox/water4d/pool_room_4d.gd" id="1_room"]
+[ext_resource type="Script" path="res://sandbox/water4d/water4d_surface.gd" id="2_water"]
+[ext_resource type="Script" path="res://sandbox/water4d/pool_room_hud.gd" id="3_hud"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
+horizon_color = Color(0.68, 0.73, 0.78, 1)
+top_color = Color(0.22, 0.42, 0.68, 1)
+top_curve = 0.2
+bottom_color = Color(0.1, 0.13, 0.17, 1)
+bottom_curve = 0.06
+sun_curve = 0.14
+
+[sub_resource type="VolumetricCloudMaterial4D" id="VolumetricCloudMaterial4D_clouds"]
+bottom_height = 900.0
+vertical_thickness = 900.0
+coverage = 0.5
+density = 0.9
+shape_scale = 2400.0
+shape_fractal_strength = 0.7
+detail_scale = 300.0
+detail_strength = 0.45
+extinction_coefficient = 0.0019
+albedo_color = Color(0.95, 0.95, 0.94, 1)
+ambient_color = Color(0.46, 0.53, 0.62, 1)
+ambient_intensity = 0.5
+sun_intensity = 1.0
+phase_anisotropy = 0.5
+shadow_strength = 0.5
+evolution_speed = 0.004
+
+[node name="PoolRoom" type="Node4D"]
+script = ExtResource("1_room")
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_sky")
+cloud_material = SubResource("VolumetricCloudMaterial4D_clouds")
+ambient_light_sky_contribution = 0.3
+ambient_light_color = Color(0.46, 0.5, 0.56, 1)
+ambient_light_energy = 0.6
+tonemap_mode = 2
+
+[node name="Sun" type="DirectionalLight4D" parent="."]
+basis = Projection(0.9063, 0, -0.4226, 0, -0.2962, 0.7071, -0.6428, 0, 0.2988, 0.7071, 0.6409, 0, 0, 0, 0, 1)
+light_color = Color(1, 0.97, 0.91, 1)
+light_energy = 1.15
+
+[node name="Water" type="Node4D" parent="."]
+script = ExtResource("2_water")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Readout" type="Label" parent="UI"]
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 1150.0
+offset_bottom = 92.0
+text = "WASD walk   mouse look   right-drag turn the slice"
+script = ExtResource("3_hud")
+room_path = NodePath("../..")
+water_path = NodePath("../../Water")
+player_path = NodePath("../../Player")

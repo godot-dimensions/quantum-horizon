@@ -70,6 +70,29 @@ uniform float detail_strength = 0.085;  // metres, coarse octave
 uniform float detail_scale = 4.5;       // metres per noise cell, coarse octave
 uniform float detail_time = 0.0;        // advanced on the CPU, same reason as wave_phase
 
+// DEPTH FADING AND LIGHT ATTENUATION. Water does not have a colour so much as it eats one:
+// light travelling through it is absorbed per metre, and unevenly - red goes first, blue
+// last, which is why a deep pool reads blue-green and a shallow one reads like whatever is
+// under it. Beer-Lambert, `exp(-absorption * metres)`, per channel.
+//
+// This is what makes a pool look deep, and it only shows when there is something to see
+// THROUGH the water. In open ocean the path length is the far plane, the transmitted term
+// goes to zero and all that is left is `scatter_color` - which is why that doubles as the
+// deep-sea colour and there is no separate one.
+uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+// Per metre, per channel. Red about four times blue, roughly clear-water ocean.
+uniform vec3 absorption = vec3(0.42, 0.11, 0.07);
+// What the water scatters back toward you, and how fast that saturates with depth.
+uniform vec3 scatter_color : source_color = vec3(0.035, 0.175, 0.205);
+uniform float scatter_strength = 0.21;
+// Beyond this the exponentials have long since flattened; the clamp is to keep a sky-depth
+// path length (effectively infinite) out of the arithmetic.
+uniform float max_path_metres = 40.0;
+// DEBUG ONLY. Paints `behind` - how far the view ray travels through water before it meets
+// anything - instead of lighting the sea, so the value can be read off a screenshot rather
+// than inferred from what the lit picture happens to look like. Black is zero, green ramps
+// to max_path_metres, magenta is beyond it or negative.
+uniform bool debug_path = false;
 uniform vec3 deep_color : source_color = vec3(0.016, 0.055, 0.094);
 uniform vec3 shallow_color : source_color = vec3(0.07, 0.22, 0.26);
 uniform vec3 foam_color : source_color = vec3(0.92, 0.95, 0.96);
@@ -111,6 +134,9 @@ uniform float foam_opacity = 1.0;
 uniform float intersection_foam_depth = 0.55;
 uniform float specular_strength = 0.35;
 uniform float roughness_value = 0.08;
+// Artistic trim on the sea's answer to direct light. 1.0 is physically matched to the rest
+// of the scene after the fix below; lower it only if a particular sea is still too hot.
+uniform float light_response = 1.0;
 // 1 renders the Jacobian determinant as a colour ramp instead of water.
 uniform bool debug_jacobian = false;
 
@@ -304,6 +330,23 @@ void fragment() {
 	vec4 depth_view = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, raw_depth, 1.0);
 	depth_view.xyz /= depth_view.w;
 	float behind = -depth_view.z - (-VERTEX.z);
+	// A NEGATIVE READING MEANS THE DEPTH SAMPLE IS THE WATER'S OWN SURFACE, not that the sea
+	// is infinitely shallow here. The shader declares `depth_draw_always`, so the water is in
+	// the depth prepass it then reads back; wherever a nearer crest wrote that pixel, a
+	// farther fragment subtracts a smaller distance from a larger one and gets less than
+	// zero. `debug_path` showed this as magenta across nearly the whole open sea.
+	//
+	// It was not a harmless sign error. `path` clamped to 0, so `transmitted` kept the full
+	// background, and `edge` - the intersection foam that is meant to ring the pillar and the
+	// walkway - went to 1 and painted foam_color over the entire surface. That is the white
+	// that made the water blinding and hid everything swimming under it.
+	//
+	// No geometry behind means the ray leaves through open water, so the honest path is the
+	// longest one, not the shortest.
+	bool found_bottom = behind > 0.0;
+	if (!found_bottom) {
+		behind = max_path_metres;
+	}
 
 	// Default for both branches; the foam branch below tilts it.
 	lit_normal_4d = normal_4d_camera;
@@ -352,10 +395,19 @@ void fragment() {
 		float pinch = smoothstep(ragged + foam_softness, ragged - foam_softness, jacobian_det);
 		// Whatever is breaking now, or whatever was breaking recently and has not faded yet.
 		pinch = max(pinch, foam_history);
-		float edge = 1.0 - smoothstep(0.0, intersection_foam_depth, behind);
+		// Only where something really is just behind the surface. Guarded as well as the
+		// clamp above, so that a future change to `behind` cannot quietly turn the whole sea
+		// into foam again.
+		float edge = found_bottom
+				? 1.0 - smoothstep(0.0, intersection_foam_depth, behind)
+				: 0.0;
 		float foam = clamp(max(pinch * foam_opacity, edge * 0.9), 0.0, 1.0);
-		float depth_blend = clamp(behind / 6.0, 0.0, 1.0);
-		vec3 water = mix(shallow_color, deep_color, depth_blend);
+		// How far this view ray travels through water before it hits anything: the pool
+		// floor, a pillar, the sea bed, or nothing at all.
+		float path = clamp(behind, 0.0, max_path_metres);
+		vec3 transmitted = texture(screen_texture, SCREEN_UV).rgb * exp(-absorption * path);
+		vec3 scattered = scatter_color * (1.0 - exp(-scatter_strength * path));
+		vec3 water = transmitted + scattered;
 
 		// TEXTURE THE FOAM RATHER THAN PAINTING IT WHITE. `foam` above says how much foam
 		// belongs here; foam_4d says what it looks like. Evaluated at the WORLD point, so
@@ -391,7 +443,23 @@ void fragment() {
 			crust = vec3(cover * 0.12 * detail_fade);
 		}
 
-		ALBEDO = mix(water, foam_color, cover) + crust;
+		if (debug_path) {
+			if (!found_bottom) {
+				// Blue: nothing opaque behind the surface, so the ray leaves through open
+				// water and the path is the longest one, not the shortest.
+				ALBEDO = vec3(0.1, 0.3, 1.0);
+			} else if (behind < 0.0) {
+				ALBEDO = vec3(1.0, 0.0, 1.0);
+			} else if (behind > max_path_metres) {
+				ALBEDO = vec3(0.4, 0.0, 0.4);
+			} else {
+				ALBEDO = vec3(0.0, clamp(behind / max_path_metres, 0.0, 1.0), 0.0);
+			}
+			cover = 0.0;
+			crust = vec3(0.0);
+		}
+		ALBEDO = debug_path ? ALBEDO : mix(water, foam_color, cover) + crust;
+		ALPHA = 1.0;
 		ROUGHNESS = mix(roughness_value, 0.88, cover);
 		SPECULAR = mix(specular_strength, 0.04, cover);
 		METALLIC = 0.0;
@@ -414,7 +482,30 @@ void light() {
 	float light_xyz_component = sqrt(max(1.0 - slice_component * slice_component, 0.0));
 	vec4 light_direction_4d = vec4(LIGHT * light_xyz_component, slice_component);
 	float normal_dot_light = max(dot(normalize(lit_normal_4d), light_direction_4d), 0.0);
-	DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * normal_dot_light * ALBEDO;
+	// NO ALBEDO, AND A 1/PI. Both are what Godot's own diffuse does, checked in this fork
+	// rather than assumed: scene_forward_lights_inc.glsl:203 computes
+	// `diffuse_brdf_NL = cNdotL * (1.0 / M_PI)` and line 206 adds `light_color *
+	// diffuse_brdf_NL * attenuation` with no albedo, because
+	// scene_forward_clustered.glsl:2806 applies `diffuse_light *= albedo;` at the end - its
+	// comment says so outright.
+	//
+	// This shader used to do neither. Multiplying by ALBEDO applied it TWICE, and omitting
+	// the 1/PI made every direct-lit pixel about 3.14x too bright. Together that is albedo x
+	// pi: foam at 0.95 albedo came out roughly three times too bright while open water at
+	// 0.1 came out at a third - blinding white highlights sitting on near-black water, which
+	// is exactly how the sea looked and why it could not be fixed by turning any one feature
+	// off. The sky's ambient, the Blinn highlight, the foam and the scatter were each
+	// measured and each moved the glare by under half a percent; this is the whole of it.
+	//
+	// `ramon/chickenpen` models are unaffected - they use the module's own tetra light
+	// shader, which gets the albedo right. It does omit the same 1/PI, so 4D meshes are
+	// uniformly brighter than Godot's standard shading, but that is consistent across the
+	// 4D world and is not this shader's call to change.
+	// TODO(flag-for-andrew): engine/modules/4d/render/3d/shaders/tetra_light_shader.glsl:7
+	// adds `LIGHT_COLOR * ATTENUATION * normal_dot_light` with no `1.0 / PI`, where Godot's
+	// built-in Lambert has one. Deliberate or not, it makes every tetra mesh pi times
+	// brighter under direct light than an equivalent 3D mesh.
+	DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * normal_dot_light * (1.0 / PI) * light_response;
 
 	// A cheap Blinn term so crests catch the sun; the half vector only makes sense in the
 	// slice, so this uses the in-slice part of the normal. SPECULAR_AMOUNT, not SPECULAR -
@@ -423,5 +514,5 @@ void light() {
 	vec3 half_vector = normalize(LIGHT * light_xyz_component + VIEW);
 	float spec = pow(max(dot(normalize(lit_normal_4d.xyz), half_vector), 0.0),
 			1.0 + 64.0 * (1.0 - ROUGHNESS));
-	SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * spec * SPECULAR_AMOUNT;
+	SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * spec * SPECULAR_AMOUNT * light_response;
 }

@@ -30,6 +30,13 @@ const MAX_WAVES := 8
 const GRAVITY := 9.81
 ## Half-width of the grid, in metres, centred on the camera. The shader anchors it to the
 ## world, so this is "how far you can see water", not a position.
+## Half-width of the water patch, in metres. 60 (a 120 m sea) is what the open-water test
+## scene wants and stays the default, but a patch dropped into another scene has to STOP
+## somewhere: in the Arboretum a 120 m sea centred on the annex reached back under the hall
+## and the spawn point, so the floor had a sea running through it everywhere you stood.
+##
+## Set it before the node enters the tree; the mesh is built once in _ready.
+var extent: float = EXTENT
 const EXTENT := 60.0
 ## Vertices per side. 193 across 120 m is a 0.63 m step, which carries the 2 m chop of
 ## preset 5 at about three samples a wave - coarse but legible. Raise for stills.
@@ -42,6 +49,45 @@ var debug_jacobian: bool = false
 var detail_strength: float = 0.085
 var solve_iterations: int = 2
 var water_level: float = 0.0
+## Shrinks or grows the whole wave field. The presets are written for open sea - a 70 m swell
+## in a 40 m room is one wave and reads as the floor tilting - so a pool wants about a fifth
+## of that.
+##
+## AMPLITUDE AND WAVELENGTH SCALE TOGETHER, which keeps the steepness budget exactly where it
+## was: the constraint is sum(Q k A), k goes as 1/scale while A goes as scale, so their
+## product does not move. A scaled-down sea is the same sea seen smaller, not a flatter one.
+var wave_scale: float = 1.0
+
+## HOW CLEAR THE WATER IS, per metre and per channel. Beer-Lambert: what reaches you through
+## `d` metres is `exp(-absorption * d)`. Red goes first, which is why anything deep reads
+## blue-green and a pale floor turns the colour of the water rather than its own.
+##
+## The defaults are open-sea: murky enough that a few metres down is already gone, which is
+## right for an ocean with nothing under it to see. A POOL WANTS CLEARER WATER AND LESS
+## SCATTER, or the floor never shows and the depth cannot be read at all - see
+## pool_room_4d.gd, which sets its own.
+var absorption := Vector3(0.42, 0.11, 0.07)
+## What the water sends back toward you, and how quickly that saturates with depth. Also the
+## deep-sea colour, since at an infinite path length it is all that is left.
+var scatter_color := Color(0.035, 0.175, 0.205)
+var scatter_strength: float = 0.21
+## HOW HARD THE SUN GLINTS OFF THE SURFACE, and how tight that glint is.
+##
+## Neither was reachable from outside before, which mattered: the shader's own 0.35 and 0.08
+## put a white blow-out across the middle of any view that looks toward the sun at a shallow
+## angle, and anything under the surface there - the pool's plesiosaur, in the case that
+## found this - is simply lost in it. The specular is also summed over thousands of wavelets,
+## so it piles up far beyond what the number suggests.
+##
+## Roughness is raised as the strength comes down. Dropping the strength alone leaves the
+## same needle-sharp glints, only dimmer, which reads as the sun going behind a cloud; a
+## broader, weaker highlight still says "water" while letting you see into it.
+var specular_strength: float = 0.35
+var roughness: float = 0.08
+## Artistic trim on how hard the sea answers direct light. 1.0 is physically matched to the
+## rest of the scene; see the note in water4d.gdshader, which had been double-applying albedo
+## and skipping the 1/PI that Godot's own diffuse applies.
+var light_response: float = 1.0
 
 var _instance := RID()
 var _mesh: ArrayMesh = null
@@ -108,7 +154,7 @@ func _process(delta: float) -> void:
 
 	QHProfiler.begin(&"qh_custom/water4d/phase")
 	for i in range(MAX_WAVES):
-		var k: float = TAU / maxf(_live[i].wavelength, 0.1)
+		var k: float = TAU / maxf(_live[i].wavelength * maxf(wave_scale, 0.01), 0.1)
 		# Deep water. The dispersion relation only involves |k|, so it is the same statement
 		# in four dimensions as in three.
 		_phase[i] = fposmod(_phase[i] + sqrt(GRAVITY * k) * delta, TAU)
@@ -150,11 +196,11 @@ func _build_grid() -> ArrayMesh:
 	var side: int = GRID_RESOLUTION + 1
 	var verts := PackedVector3Array()
 	verts.resize(side * side)
-	var step: float = (EXTENT * 2.0) / float(GRID_RESOLUTION)
+	var step: float = (extent * 2.0) / float(GRID_RESOLUTION)
 	for z in range(side):
 		for x in range(side):
-			verts[z * side + x] = Vector3(-EXTENT + float(x) * step, 0.0,
-					-EXTENT + float(z) * step)
+			verts[z * side + x] = Vector3(-extent + float(x) * step, 0.0,
+					-extent + float(z) * step)
 	var indices := PackedInt32Array()
 	indices.resize(GRID_RESOLUTION * GRID_RESOLUTION * 6)
 	var at: int = 0
@@ -228,6 +274,12 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngi
 	_material.set_shader_parameter(&"debug_jacobian", debug_jacobian)
 	_material.set_shader_parameter(&"detail_strength", detail_strength)
 	_material.set_shader_parameter(&"detail_time", _detail_time)
+	_material.set_shader_parameter(&"absorption", absorption)
+	_material.set_shader_parameter(&"scatter_color", scatter_color)
+	_material.set_shader_parameter(&"scatter_strength", scatter_strength)
+	_material.set_shader_parameter(&"specular_strength", specular_strength)
+	_material.set_shader_parameter(&"roughness_value", roughness)
+	_material.set_shader_parameter(&"light_response", light_response)
 	_push_waves()
 	QHProfiler.end(&"qh_custom/water4d/uniforms")
 
@@ -248,14 +300,15 @@ func _push_waves() -> void:
 	numbers.resize(MAX_WAVES)
 	steeps.resize(MAX_WAVES)
 	var total: float = 0.0
+	var size: float = maxf(wave_scale, 0.01)
 	for i in range(MAX_WAVES):
 		var w: Wave = _live[i]
-		var k: float = TAU / maxf(w.wavelength, 0.1)
+		var k: float = TAU / maxf(w.wavelength * size, 0.1)
 		dirs[i] = w.dir
-		amps[i] = w.amplitude
+		amps[i] = w.amplitude * size
 		numbers[i] = k
 		steeps[i] = w.steepness
-		total += w.steepness * k * w.amplitude
+		total += w.steepness * k * w.amplitude * size
 	if total > 1.0:
 		var scale: float = 1.0 / total
 		for i in range(MAX_WAVES):
