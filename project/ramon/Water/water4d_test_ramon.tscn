@@ -1,0 +1,85 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://ramon/Water/water4d_test_ramon_4d.gd" id="1_root"]
+[ext_resource type="Script" path="res://ramon/Water/carried/water4d/water4d_surface.gd" id="2_water"]
+[ext_resource type="Script" path="res://ramon/Water/carried/PathCreator/graph/path_network_4d.gd" id="3_net"]
+[ext_resource type="Script" path="res://ramon/Water/water_target_4d.gd" id="4_target"]
+[ext_resource type="Resource" path="res://ramon/Water/paths/pier1.tres" id="5_pier1"]
+[ext_resource type="Resource" path="res://ramon/Water/paths/pier2.tres" id="6_pier2"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
+horizon_color = Color(0.62, 0.69, 0.76, 1)
+top_color = Color(0.17, 0.35, 0.62, 1)
+top_curve = 0.18
+bottom_color = Color(0.08, 0.12, 0.18, 1)
+bottom_curve = 0.05
+sun_curve = 0.12
+
+[sub_resource type="VolumetricCloudMaterial4D" id="VolumetricCloudMaterial4D_clouds"]
+bottom_height = 850.0
+vertical_thickness = 950.0
+coverage = 0.56
+density = 0.95
+shape_scale = 2400.0
+shape_fractal_strength = 0.7
+detail_scale = 300.0
+detail_strength = 0.48
+extinction_coefficient = 0.0019
+albedo_color = Color(0.95, 0.95, 0.94, 1)
+ambient_color = Color(0.44, 0.51, 0.62, 1)
+ambient_intensity = 0.48
+sun_intensity = 1.0
+phase_anisotropy = 0.5
+shadow_strength = 0.55
+evolution_speed = 0.004
+
+[node name="Water4DTestRamon" type="Node4D"]
+script = ExtResource("1_root")
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_sky")
+cloud_material = SubResource("VolumetricCloudMaterial4D_clouds")
+ambient_light_sky_contribution = 0.25
+ambient_light_color = Color(0.42, 0.48, 0.56, 1)
+tonemap_mode = 2
+
+[node name="Sun" type="DirectionalLight4D" parent="."]
+basis = Projection(0.8192, 0, -0.5736, 0, -0.3214, 0.8192, -0.4589, 0, 0.4698, 0.5736, 0.671, 0, 0, 0, 0, 1)
+light_color = Color(1, 0.96, 0.89, 1)
+light_energy = 1.1
+
+[node name="Water" type="Node4D" parent="."]
+script = ExtResource("2_water")
+
+[node name="Paths" type="Node4D" parent="."]
+
+[node name="Targets" type="Node4D" parent="Paths"]
+
+[node name="Platform" type="Node4D" parent="Paths/Targets"]
+position = Vector4(24.3, 2.2, -16.1, 0)
+script = ExtResource("4_target")
+label = "Platform"
+size = Vector3(14, 1, 14)
+w_depth = 4.2
+
+[node name="Circle" type="Node4D" parent="Paths/Targets"]
+position = Vector4(25.5, 2.2, 24, 0)
+script = ExtResource("4_target")
+label = "Circle"
+size = Vector3(4.4, 1, 4.4)
+w_depth = 5.0
+
+[node name="Pier1" type="Node4D" parent="Paths"]
+position = Vector4(0, 2.2, 0, 0)
+script = ExtResource("3_net")
+graph = ExtResource("5_pier1")
+targets = NodePath("../Targets")
+under_color = Color(0.64, 0.65, 0.66, 1)
+
+[node name="Pier2" type="Node4D" parent="Paths"]
+position = Vector4(0, 2.2, 0, 0)
+script = ExtResource("3_net")
+graph = ExtResource("6_pier2")
+targets = NodePath("../Targets")
+under_color = Color(0.64, 0.65, 0.66, 1)

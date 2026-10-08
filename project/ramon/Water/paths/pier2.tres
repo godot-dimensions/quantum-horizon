@@ -1,0 +1,33 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/Water/carried/PathCreator/graph/path_graph.gd" id="1_mv37t"]
+
+[resource]
+script = ExtResource("1_mv37t")
+nodes = [{
+"approach": Vector2(0, 1),
+"band": 4.0,
+"frame": "none",
+"id": 1,
+"kind": "start",
+"pos": Vector4(1.4, 0, 24, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(-1, 0),
+"band": 4.0,
+"frame": "round",
+"id": 2,
+"kind": "destination",
+"pos": Vector4(22.6, 0, 24, 0),
+"state": "arrival",
+"target": "Circle"
+}]
+edges = [{
+"band": 4.0,
+"from": 1,
+"priority": "primary",
+"to": 2,
+"w_mode": "static"
+}]
+next_id = 3

@@ -1,0 +1,143 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/Water/carried/PathCreator/graph/path_graph.gd" id="1_41mc4"]
+
+[resource]
+script = ExtResource("1_41mc4")
+nodes = [{
+"approach": Vector2(0, 1),
+"band": 4.0,
+"frame": "none",
+"id": 1,
+"kind": "start",
+"pos": Vector4(1.4, 0, 0, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 4.0,
+"frame": "round",
+"id": 3,
+"kind": "destination",
+"pos": Vector4(24.3, 0, -8.4, 0),
+"state": "arrival",
+"target": "Platform"
+}, {
+"approach": Vector2(0, 1),
+"band": 4.0,
+"corner": {
+"band": 4.0,
+"kind": "bend",
+"pos": Vector4(24.3, 0, 0, 0)
+},
+"curve": 1,
+"curve_r": 1.2,
+"frame": "none",
+"id": 4,
+"kind": "chord",
+"pos": Vector4(23.1, 0, 2.220446049250313e-16, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 4.0,
+"corner": {
+"band": 4.0,
+"kind": "bend",
+"pos": Vector4(24.3, 0, 0, 0)
+},
+"curve": 1,
+"curve_r": 1.2,
+"frame": "none",
+"id": 5,
+"kind": "chord",
+"pos": Vector4(23.55922011883811, 0, -0.0913445609864556, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 4.0,
+"corner": {
+"band": 4.0,
+"kind": "bend",
+"pos": Vector4(24.3, 0, 0, 0)
+},
+"curve": 1,
+"curve_r": 1.2,
+"frame": "none",
+"id": 6,
+"kind": "chord",
+"pos": Vector4(23.94852813742386, 0, -0.35147186257614293, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 4.0,
+"corner": {
+"band": 4.0,
+"kind": "bend",
+"pos": Vector4(24.3, 0, 0, 0)
+},
+"curve": 1,
+"curve_r": 1.2,
+"frame": "none",
+"id": 7,
+"kind": "chord",
+"pos": Vector4(24.208655439013548, 0, -0.7407798811618925, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 4.0,
+"corner": {
+"band": 4.0,
+"kind": "bend",
+"pos": Vector4(24.3, 0, 0, 0)
+},
+"curve": 1,
+"curve_r": 1.2,
+"frame": "none",
+"id": 8,
+"kind": "chord",
+"pos": Vector4(24.3, 0, -1.2000000000000002, 0),
+"state": "arrival",
+"target": ""
+}]
+edges = [{
+"band": 4.0,
+"from": 1,
+"priority": "primary",
+"to": 4,
+"w_mode": "static"
+}, {
+"band": 4.0,
+"from": 8,
+"priority": "primary",
+"to": 3,
+"w_mode": "static"
+}, {
+"band": 4.0,
+"from": 4,
+"priority": "primary",
+"to": 5,
+"w_mode": "static"
+}, {
+"band": 4.0,
+"from": 5,
+"priority": "primary",
+"to": 6,
+"w_mode": "static"
+}, {
+"band": 4.0,
+"from": 6,
+"priority": "primary",
+"to": 7,
+"w_mode": "static"
+}, {
+"band": 4.0,
+"from": 7,
+"priority": "primary",
+"to": 8,
+"w_mode": "static"
+}]
+next_id = 9
