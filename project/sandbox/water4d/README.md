@@ -138,8 +138,38 @@ the water rather than to the module. Stateless, recomputed every frame.
 **Intersection foam.** A depth difference in screen space where the water meets the floating
 bodies. Also stateless.
 
-Persistent foam is out of scope: it would need a texture over three-dimensional horizontal
-space, not the 2D texture a 3D ocean gets away with.
+**Foam persists, without a buffer.** The reference implementation has "persisting Jacobian
+foam" - foam that stays after the crest has stopped breaking and fades out - and the usual
+way to get it is a foam buffer you write to and decay each frame. That is exactly what does
+not work here: the buffer would have to be a 3D texture over `(x, z, w)`, which is why the
+brief scoped persistence out in the first place.
+
+It turns out not to need one. The wave field is analytic, so the Jacobian at an earlier
+moment is the same sum with every phase wound back by its own `omega = sqrt(g|k|)`. The
+vertex stage samples four moments back, decays each by its age and keeps the strongest. No
+state, no buffer, and it is nearly free because it runs per vertex - 37k of them against a
+million pixels.
+
+How much it adds, measured in the maths by `_probe_jacobian_runner.gd`:
+
+| preset | foam now | + trailing |
+|---|---|---|
+| 1 Calm | 0.00% | +0.00% |
+| 3 Storm | 7.52% | +4.16% |
+| 5 Short chop | 6.90% | +10.20% |
+| 7 Sharp crests | 18.78% | +11.78% |
+
+Calm at exactly +0.00% is the control: nothing breaks, so nothing trails. Short chop more
+than doubles, which is right - short waves break constantly and the sea behind them never
+fully clears.
+
+**One approximation worth knowing:** the lookback winds the phases back but evaluates at the
+*current* rest point, so foam trails in the wave's own frame rather than being carried by the
+surface flow. Over a fraction of a second that is close; it is the practical ceiling on
+`foam_decay`.
+
+That last table is a GDScript copy of the shader's arithmetic, so it shows that the *method*
+leaves trailing foam, not that the shader implements it. The shader was checked by eye.
 
 ## Where the foam threshold came from
 
@@ -192,15 +222,12 @@ times per vertex, two octaves of detail noise, and volumetric clouds.
 Through the project harness (`perf_real_scene`, 600 frames after a 180-frame warm-up):
 
 ```
-frame    : 2.141 ms mean, 2.498 p95, 2.775 p99
-gpu      : 1.504 ms   render cpu 0.201 ms   231 render objects
-by layer : godot_core 1.855   godot4d 0.219   qh_custom 0.037
-  godot_core/draw_submit        1.790 ms/frame  native
-  godot4d/render_frame          0.219 ms/frame  native
-  qh_custom/water4d/uniforms    0.030 ms/frame  gdscript
-  qh_custom/water4d/phase       0.005 ms/frame  gdscript
-  qh_custom/water4d/blend       0.001 ms/frame  gdscript
+frame    : 2.159 ms mean, 2.445 p95, 3.361 p99
+gpu      : 1.515 ms   render cpu 0.199 ms   231 render objects
 ```
+
+Persisting foam costs almost nothing - 2.159 ms against 2.141 ms before it was added - for
+the reason above: four extra Jacobian evaluations per vertex, not per pixel.
 
 The scene's own per-frame script work is **0.036 ms**, which is the point of putting the
 wave maths in the shader: what GDScript does here is eight wavelengths, eight phases, a

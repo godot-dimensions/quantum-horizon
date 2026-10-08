@@ -76,10 +76,10 @@ Round cells give about 1. **At 90 degrees one of the two visible axes IS W**, so
 no W variation would be constant along it and the ratio would blow up.
 
 ```
-    0 deg   coverage  33.8%   transitions  6673 across /  6664 down   ratio 1.00
-   30 deg   coverage  26.0%   transitions  5982 across /  6201 down   ratio 1.04
-   60 deg   coverage  27.3%   transitions  6008 across /  6444 down   ratio 1.07
-   90 deg   coverage  31.8%   transitions  6514 across /  6505 down   ratio 1.00
+    0 deg   coverage  50.9%   transitions  5474 across /  5291 down   ratio 1.03
+   30 deg   coverage  39.0%   transitions  5576 across /  5740 down   ratio 1.03
+   60 deg   coverage  42.4%   transitions  5562 across /  5763 down   ratio 1.04
+   90 deg   coverage  46.4%   transitions  5552 across /  5779 down   ratio 1.04
 ```
 
 It measures the real shader through the real renderer rather than a GDScript port of the
@@ -103,14 +103,18 @@ being shown a reference photo to see it.
 
 Layers, over a warped lookup:
 
-- **domain warp** - three value-noise samples bending the coordinate before it reaches the
+- **domain warp, two octaves** - value noise bending the coordinate before it reaches the
   lattice. A raw Worley has straight walls and sharp three-way vertices; real filaments
-  wander, because the surface carrying them is being stirred. This is the single biggest
-  difference between foam and a crackle texture.
+  wander, because the surface carrying them is being stirred. The two octaves do different
+  jobs: the coarse one drags whole cells off the lattice, the fine one **bows the walls**,
+  which is what actually rounds a cell. One octave alone still leaves straight segments
+  between vertices - recognisably a polygon - however far it drags them about.
 - **network** - the ropes, from the boundary field. Thickness wanders along a rope rather
-  than being constant, and the edge is feathered: foam has no border, it thins out. Width
-  grows with `density` until the holes close over into a sheet, which is what the middle of
-  a breaking crest should be.
+  than being constant, and the edge is feathered: foam has no border, it thins out. The
+  cross-section is then smoothstepped a second time, which swells the middle and tapers the
+  shoulders - the difference between a filament and a stripe. Width grows with `density`
+  until the holes close over into a sheet, which is what the middle of a breaking crest
+  should be.
 - **wisps** - a finer boundary field, multiplied *into* the network so it grains the ropes.
   Added to open water instead, it tiles the whole surface and reads as cracked glaze.
 - **mottle** - value noise, so a rope has grain rather than being painted on.
@@ -121,7 +125,12 @@ is a miserable thing to debug.
 
 ### What the module does not do
 
-It returns the filaments alone. On their own they leave the holes as bare water, which reads
+**It has no memory.** `foam_4d` is a pure function of where and when, so foam appears and
+vanishes the instant `density` does. If you want foam that lingers after whatever made it
+has stopped - the "persisting foam" of most water shaders - that is the caller's job, and
+`sandbox/water4d` shows one way to do it without a buffer.
+
+It also returns the filaments alone. On their own they leave the holes as bare water, which reads
 as a net thrown over the sea rather than as foam. Whether there is a milky film between the
 strands - and how milky - belongs to the surface the foam is on, so the caller does it:
 
@@ -132,8 +141,8 @@ float cover = density * mix(0.32, 1.0, network);   // what sandbox/water4d does
 
 ## Cost, and the one thing to watch
 
-Two Worley evaluations per call at 27 cells each, plus five value-noise samples (three for
-the warp, one for the thickness, one for the mottle). `foam_4d_shaded` adds three more whole
+Two Worley evaluations per call at 27 cells each, plus eight value-noise samples (six for
+the two warp octaves, one for the thickness, one for the mottle). `foam_4d_shaded` adds three more whole
 calls for its finite-difference gradient, so budget it where foam actually is:
 
 ```glsl

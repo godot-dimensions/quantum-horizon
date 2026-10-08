@@ -86,6 +86,19 @@ uniform float foam_softness = 0.18;
 // an artefact rather than as water.
 uniform float foam_break = 1.4;
 // The procedural foam, from shaders/foam_4d.gdshaderinc.
+// PERSISTENCE. The reference implementation this scene was modelled on has "persisting
+// Jacobian foam" - foam that stays after the crest has stopped breaking and fades out over
+// a second or two - and the usual way to get it is a foam buffer you write to and decay.
+// That is exactly what does not work here: the buffer would have to be a 3D texture over
+// (x, z, w), which is why the brief scoped persistence out.
+//
+// It does not need one. The wave field is analytic, so the Jacobian at an earlier moment is
+// just the same sum with each phase wound back by its own omega. Sample a few moments back,
+// decay each by its age, keep the strongest. No state, no buffer, and it costs a handful of
+// extra wave loops in the VERTEX stage where they are cheap.
+uniform int foam_history_samples = 4;
+uniform float foam_history_step = 0.28;   // seconds between lookbacks
+uniform float foam_decay = 1.15;          // e-folding time of the fade
 uniform float foam_cell_size = 0.85;   // metres across one cell of the foam network
 uniform float foam_relief = 0.055;     // how much the crust tilts the normal
 uniform bool foam_textured = true;     // off falls back to the flat white it used to be
@@ -111,6 +124,8 @@ varying float surface_detail;
 // The solved horizontal rest point, in WORLD (x, z, w). Foam is a function of this and
 // nothing slice-relative, which is what welds the pattern to the water as the slice turns.
 varying vec3 rest_world;
+// Foam left over from crests that have already broken - see foam_history_samples.
+varying float foam_history;
 // The normal light() actually uses. A SEPARATE varying from normal_4d_camera because Godot
 // forbids reassigning in fragment() anything the vertex stage assigned - and the foam crust
 // has to tilt the normal, which only the fragment stage knows about. Written in fragment,
@@ -170,6 +185,29 @@ vec4 perpendicular_4d(vec4 a, vec4 b, vec4 c) {
 }
 
 
+// The Jacobian determinant of the horizontal displacement, `seconds_ago` in the past.
+//
+// APPROXIMATE IN ONE WAY WORTH KNOWING: it winds the phases back but evaluates at the
+// CURRENT rest point, so the foam it leaves trails in the wave's own frame rather than being
+// carried along by the surface flow. Over a fraction of a second that is close; over many
+// seconds it would drift away from the truth, which is the practical ceiling on foam_decay.
+float jacobian_determinant_at(vec3 rest, float seconds_ago, float steep_scale) {
+	mat3 jac = mat3(1.0);
+	for (int i = 0; i < wave_count; i++) {
+		// Deep water, so each wave's own angular frequency follows from its wavenumber.
+		float omega = sqrt(GRAVITY * wave_number[i]);
+		float phase = dot(wave_dir[i] * wave_number[i], rest)
+				- (wave_phase[i] - omega * seconds_ago);
+		float s = -wave_steep[i] * steep_scale * wave_amp[i] * wave_number[i] * sin(phase);
+		vec3 d = wave_dir[i];
+		jac[0] += s * d * d.x;
+		jac[1] += s * d * d.y;
+		jac[2] += s * d * d.z;
+	}
+	return determinant(jac);
+}
+
+
 void vertex() {
 	float steep_scale = solve_iterations > 0 ? 1.0 : 0.0;
 
@@ -211,6 +249,18 @@ void vertex() {
 		dheight += wave_amp[i] * wave_number[i] * cos(phase) * d;
 	}
 	jacobian_det = determinant(jac);
+
+	// What this spot was doing a moment ago, decayed by how long ago that was. Taken as a
+	// max rather than a sum: foam does not get whiter for having broken twice.
+	float history = 0.0;
+	for (int h = 1; h <= foam_history_samples; h++) {
+		float back = float(h) * foam_history_step;
+		float was = jacobian_determinant_at(rest, back, steep_scale);
+		float pinched = smoothstep(foam_threshold + foam_softness,
+				foam_threshold - foam_softness, was);
+		history = max(history, pinched * exp(-back / max(foam_decay, 0.01)));
+	}
+	foam_history = history;
 
 	// Detail last, so it rides on top of the solved surface without disturbing the solve.
 	vec3 detail_gradient;
@@ -300,6 +350,8 @@ void fragment() {
 		// smoothstep leaves where the determinant crosses over at grid resolution.
 		float ragged = foam_threshold + surface_detail * foam_break;
 		float pinch = smoothstep(ragged + foam_softness, ragged - foam_softness, jacobian_det);
+		// Whatever is breaking now, or whatever was breaking recently and has not faded yet.
+		pinch = max(pinch, foam_history);
 		float edge = 1.0 - smoothstep(0.0, intersection_foam_depth, behind);
 		float foam = clamp(max(pinch * foam_opacity, edge * 0.9), 0.0, 1.0);
 		float depth_blend = clamp(behind / 6.0, 0.0, 1.0);

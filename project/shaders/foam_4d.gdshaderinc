@@ -125,11 +125,19 @@ float foam_4d(vec3 p, float density, float scale, float time) {
 	// has straight walls and sharp three-way vertices; real foam filaments wander, because
 	// the surface carrying them is being stirred. Bending the lookup before it reaches the
 	// lattice costs three value-noise samples and buys every bit of that irregularity.
-	vec3 warp = vec3(
+	// Two octaves, and they do different jobs. The coarse one makes whole cells wander off
+	// the lattice; the fine one bows the WALLS, which is what rounds a Voronoi cell. One
+	// octave alone still leaves straight segments between vertices - recognisably a
+	// polygon - however far it drags them about.
+	vec3 warp_coarse = vec3(
 			foam4d_value(q * 0.85 + vec3(13.1, 2.7, 41.3)),
 			foam4d_value(q * 0.85 + vec3(5.9, 27.4, 8.2)),
 			foam4d_value(q * 0.85 + vec3(33.7, 17.6, 23.9))) - 0.5;
-	q += warp * 0.55;
+	vec3 warp_fine = vec3(
+			foam4d_value(q * 2.6 + vec3(7.7, 35.2, 12.8)),
+			foam4d_value(q * 2.6 + vec3(21.4, 3.3, 29.1)),
+			foam4d_value(q * 2.6 + vec3(2.9, 44.6, 18.5))) - 0.5;
+	q += warp_coarse * 0.55 + warp_fine * 0.22;
 
 	// The network. `boundary` is 0 on a cell wall and grows toward a cell interior, so a
 	// small threshold draws thin ropes and a large one floods the cells.
@@ -140,7 +148,11 @@ float foam_4d(vec3 p, float density, float scale, float time) {
 	float vary = foam4d_value(q * 1.3 + vec3(2.2, 9.8, 15.4));
 	float width = mix(0.012, 1.00, density * density) * mix(0.55, 1.45, vary);
 	// Feathered rather than hard: foam has no edge, it thins out.
-	float network = 1.0 - smoothstep(width * 0.15, width, boundary);
+	float profile = 1.0 - smoothstep(width * 0.15, width, boundary);
+	// Round the rope's own cross-section. smoothstep alone gives a band with two parallel
+	// sides; squaring the complement swells the middle and tapers the shoulders, which is
+	// the difference between a filament and a stripe.
+	float network = profile * profile * (3.0 - 2.0 * profile);
 
 	// A finer network, three times over. Inside a rope it breaks the white up; outside, at
 	// higher densities, it leaves the stray strands that keep open water from looking empty.
