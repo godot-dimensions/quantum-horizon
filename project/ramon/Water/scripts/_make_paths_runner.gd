@@ -23,25 +23,21 @@ func _p(x: float, z: float, w: float = 0.0) -> Vector4:
 	return Vector4(x, 0.0, z, w)
 
 
-## Door 1 at (0, 0); the run to x 26, its corner centred at x 24.3; the turn down to the platform
-## centred at (24.3, -16.1), radius 7.
+## Door 1 at (0, 0); the run straight to x 14 and the platform centred at (20.4, 0), radius 7.
 func _pier1() -> Resource:
 	var g: Resource = Graph.new()
 	var s: int = g.call("add_node", "start", _p(1.4, 0.0), {"band": 4.0})
-	var b1: int = g.call("add_node", "bend", _p(24.3, 0.0), {"band": 4.0})
-	# Where you step onto the platform (its footprint runs to z -9.1): a destination outside the
+	# Where you step onto the platform (its footprint starts at x 13.4): a destination outside the
 	# target it is for, as the checker wants.
-	var d: int = g.call("add_node", "destination", _p(24.3, -8.4), {"band": 4.0, "state": "arrival", "target": "Platform", "frame": "round", "approach": Vector2(0, 1)})
-	g.call("add_edge", s, b1, "primary", "static", 4.0)
-	g.call("add_edge", b1, d, "primary", "static", 4.0)
-	g.call("round_corner", b1, 1.2)
+	var d: int = g.call("add_node", "destination", _p(12.8, 0.0), {"band": 4.0, "state": "arrival", "target": "Platform", "frame": "round", "approach": Vector2(-1, 0)})
+	g.call("add_edge", s, d, "primary", "static", 4.0)
 	return g
 
 
-## Door 2 at (0, 24); the circle at (25.5, 24), radius 2.2 (its target's footprint 4.4 m).
+## Door 2 at (0, 24); the circle at (12.5, 24), radius 2.2 (its target's footprint 4.4 m).
 func _pier2() -> Resource:
 	var g: Resource = Graph.new()
 	var s: int = g.call("add_node", "start", _p(1.4, 24.0), {"band": 4.0})
-	var d: int = g.call("add_node", "destination", _p(22.6, 24.0), {"band": 4.0, "state": "arrival", "target": "Circle", "frame": "round", "approach": Vector2(-1, 0)})
+	var d: int = g.call("add_node", "destination", _p(9.6, 24.0), {"band": 4.0, "state": "arrival", "target": "Circle", "frame": "round", "approach": Vector2(-1, 0)})
 	g.call("add_edge", s, d, "primary", "static", 4.0)
 	return g

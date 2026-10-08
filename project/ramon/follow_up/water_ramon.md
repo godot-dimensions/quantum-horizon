@@ -10,10 +10,10 @@ environment mode.
 
 (Each settled the most reversible way; the run went on.)
 
-1. **The way in from the Arboretum.** The scene stands on its own: you arrive at the sea wall's
-   door as if you had just come out of the Arboretum, but no door in the Arboretum leads here yet.
-   Which Arboretum (yours, or Trym's water copy), and which wall? Should walking back in through the
-   sea wall take you to the Arboretum?
+1. **The way in from the Arboretum.** The scene stands on its own: you arrive in front of a closed
+   sci-fi door at the back of the pier, as if you had just come out of the Arboretum, but no door in
+   the Arboretum leads here yet. Which Arboretum (yours, or Trym's water copy), and which wall? Should
+   the sci-fi doors open and take you back?
 2. **A menu entry?** None added (the catalogue is shared).
 3. **Trym's plesiosaur: its seams are frozen here.** His swimmer re-bends the seam patches between
    its 13 pieces every physics tick, about 6 ms each time (it made 1 frame in 20 take 8 ms; Trym's
@@ -115,9 +115,8 @@ environment mode.
 
 **Done, 8 Oct 2026, and seen working in frames.** All 40 steps ran. What to look at:
 
-1. **Play it:** open `res://ramon/Water/water4d_test_ramon.tscn` and press F6. You stand in the sea
-   wall's door 1. Walk out along pier 1, round its left turn, onto the blue platform: the two pages
-   lie on its floor. Right-drag on the platform: the sea is cut a new way, the platform stays set.
+1. **Play it:** open `res://ramon/Water/water4d_test_ramon.tscn` and press F6. You stand in front of
+   pier 1's sci-fi door. Walk straight out onto the blue platform: the two pages lie on its floor. Right-drag on the platform: the sea is cut a new way, the platform stays set.
    R levels the slice. P takes you to door 2 and pier 2: walk to its circle, right-drag, and the
    pier turns with the slice. Tab: the light and environment mode, Tab again hides the HUD.
 2. **Frames:** `project/smoke_test_output/water_ramon/` (`05` and `07`: the platform level and
@@ -132,7 +131,14 @@ of GPU. The scene opens in 1.7 s.
 angles, as the drag does); the sliders of the light mode one by one (built from the engine's own
 lists, opened and shown, SAVE and RESET not pressed).
 
-**Changed on the way:**
+**Changed on the way (Ramon's notes while playing it, 8 Oct):**
+- Pier 1 goes straight out onto the platform (it turned left halfway), and both piers are shorter:
+  14 m and 20 m (they were 26 and 33). Their length and width are sliders in the HUD's light mode
+  (PIERS), and the piers, the platform and the routes' ends are rebuilt as they move; SAVE keeps them.
+- No sea-wall building: a closed sci-fi door stands at the back of each pier (gunmetal frame on a
+  pale bulkhead plate, two leaves with a lit seam, light strips, a status light), a wall behind it.
+- The sun's light energy can be typed (a box beside its slider; Enter sets it, past the slider's
+  ends too). Only that row, as asked.
 - The platform's panels first stood upright at its back, like walls; Ramon: on the floor, and the
   platform blue. The kit's panels still draw the pages (out of sight under the water); the pages
   are printed onto blue plates on the deck. Pier 2's end is the same: a blue floor with the circle

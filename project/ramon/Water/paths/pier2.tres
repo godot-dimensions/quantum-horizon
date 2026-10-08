@@ -19,7 +19,7 @@ nodes = [{
 "frame": "round",
 "id": 2,
 "kind": "destination",
-"pos": Vector4(22.6, 0, 24, 0),
+"pos": Vector4(9.6, 0, 24, 0),
 "state": "arrival",
 "target": "Circle"
 }]

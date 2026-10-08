@@ -57,14 +57,14 @@ script = ExtResource("2_water")
 [node name="Targets" type="Node4D" parent="Paths"]
 
 [node name="Platform" type="Node4D" parent="Paths/Targets"]
-position = Vector4(24.3, 2.2, -16.1, 0)
+position = Vector4(20.4, 2.2, 0, 0)
 script = ExtResource("4_target")
 label = "Platform"
 size = Vector3(14, 1, 14)
 w_depth = 4.2
 
 [node name="Circle" type="Node4D" parent="Paths/Targets"]
-position = Vector4(25.5, 2.2, 24, 0)
+position = Vector4(12.5, 2.2, 24, 0)
 script = ExtResource("4_target")
 label = "Circle"
 size = Vector3(4.4, 1, 4.4)

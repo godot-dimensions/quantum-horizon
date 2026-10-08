@@ -188,7 +188,7 @@ func _press_p() -> void:
 
 
 func _check() -> void:
-	for nm in ["SeaWall", "Pier1", "PlatformSet", "Pier2", "Pole", "SeaFloor", "Player", "SeaLife", "PanelSource", "Water", "Paths/Pier1", "Paths/Pier2"]:
+	for nm in ["Door1", "Door2", "Pier1", "PlatformSet", "Pier2", "Pole", "SeaFloor", "Player", "SeaLife", "PanelSource", "Water", "Paths/Pier1", "Paths/Pier2"]:
 		print("WATER %s %s" % ["has" if _room.get_node_or_null(nm) != null else "MISSING", nm])
 	var deep: Node = _room.get("_pier2_deep")
 	print("WATER pier 2 deep picture: ", "made" if deep != null else "MISSING")
@@ -201,35 +201,48 @@ func _check() -> void:
 func _plan() -> void:
 	_step(1, _check)
 	_step(10, _go(0.8, 0.0, -90), "01_door")
-	_step(30, _go(12.0, 0.0, -90), "02_along_pier1")
-	_step(30, _go(24.3, 0.5, 0), "03_at_turn")
-	_step(30, _go(24.3, -8.0, 0), "04_platform_way_in")
-	_step(40, _go(24.3, -13.5, 0), "05_on_platform")
+	_step(30, _go(7.0, 0.0, -90), "02_along_pier1")
+	_step(30, _go(12.5, 0.0, -90), "03_platform_way_in")
+	_step(40, _go(18.5, 0.0, -90), "05_on_platform")
 	_step(20, _pitch(-38.0), "05b_platform_pages_from_above")
 	_step(5, _pitch(-12.0), "")
 	_step(20, _turn(30.0), "06_platform_turned_30")
 	_step(20, _turn(60.0), "07_platform_turned_60")
 	_step(20, _turn(0.0), "")
-	_step(20, _go(24.3, -12.0, 180), "08_platform_looking_back")
+	_step(20, _go(23.0, 0.0, 90), "08_platform_looking_back")
 	_step(20, _turn(35.0), "09_platform_back_turned_35")
 	_step(20, _turn(0.0, 0.0), "")
-	_step(30, _go(14.0, 0.5, 20), "10_pole_from_pier1")
+	_step(30, _go(8.0, 1.0, 0), "10_pole_from_pier1")
+	_step(30, _go(4.0, 0.0, 90), "10b_door1_from_pier")
 	_step(30, _go(0.8, 24.0, -90), "11_pier2_door")
-	_step(30, _go(21.0, 24.0, -90), "12_pier2_circle_ahead")
-	_step(30, _go(25.5, 24.0, -90), "13_pier2_on_circle")
+	_step(30, _go(8.0, 24.0, -90), "12_pier2_circle_ahead")
+	_step(30, _go(12.5, 24.0, -90), "13_pier2_on_circle")
 	_step(20, _turn(20.0), "14_pier2_turned_20")
 	_step(20, _turn(40.0), "15_pier2_turned_40")
 	_step(20, _turn(70.0), "16_pier2_turned_70")
 	_step(20, _turn(0.0), "")
 	_step(20, _pitch(-38.0), "16b_pier2_page_from_above")
 	_step(5, _pitch(-12.0), "")
-	_step(20, _go(20.0, 24.0, 90), "17_pier2_looking_back")
+	_step(20, _go(5.0, 24.0, 90), "17_door2_from_pier")
+	# The PIERS sliders' rebuild: pier 1 longer and wider, then back.
+	_step(10, _go(0.8, 0.0, -90), "")
+	_step(5, _resize.bind(22.0, 5.0), "")
+	_step(40, _nop, "17b_pier1_rebuilt_22m_5m")
+	_step(5, _resize.bind(14.0, 3.4), "")
+	_step(40, _nop, "")
 	_step(10, _go(0.8, 0.0, -90), "")
 	_step(30, _tab, "18_hud_light_mode")
 	_step(20, _tab, "19_hud_hidden")
 	_step(5, _tab, "")
 	_step(20, _press_p, "20_after_p")
 	_step(20, _press_p, "21_after_p_again")
+
+
+func _resize(length: float, width: float) -> void:
+	_room.set("pier1_length", length)
+	_room.set("pier1_width", width)
+	_room.call("rebuild_piers")
+	print("WATER rebuilt pier 1 at %.0f x %.1f m: %s" % [length, width, "platform at x %.1f" % _room.call("platform_centre").x])
 
 
 func _process(_d: float) -> bool:

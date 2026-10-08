@@ -28,6 +28,9 @@ const HEAD := Color(0.42, 0.72, 1.0)
 ## uniform copies), left out of the LIGHT mode.
 const SKIP := ["position", "rotation_degrees", "scale", "rotation_edit_mode", "should_notify_local_transform",
 	"current", "sky_material", "cloud_material", "resource_local_to_scene", "resource_path", "resource_name"]
+## The piers' size (Ramon, 8 Oct: "an option to scale the width and length of the first and second
+## pier"): the scene root's settings, the piers rebuilt as they change.
+const PIERS := [["pier1_length", 6.0, 40.0], ["pier1_width", 2.0, 8.0], ["pier2_length", 12.0, 50.0], ["pier2_width", 3.0, 10.0]]
 ## The water's look: plain script variables on the surface (not editor properties), pushed to its
 ## shader every frame, so they are listed here with their ranges.
 const WATER := [["wave_scale", 0.0, 2.0], ["detail_strength", 0.0, 0.3], ["specular_strength", 0.0, 2.0],
@@ -186,12 +189,18 @@ func _targets() -> Array:
 			out.append(["CLOUDS", env.get("cloud_material"), "props"])
 	if water != null:
 		out.append(["WATER", water, "water"])
+	out.append(["PIERS", room, "piers"])
 	return out
 
 
 ## The editable properties of `obj`: [{name, type, hint, hint_string}].
 func _props(obj: Object, kind: String) -> Array:
 	var out: Array = []
+	if kind == "piers":
+		for row in PIERS:
+			out.append({"name": String(row[0]), "type": TYPE_FLOAT, "hint": PROPERTY_HINT_RANGE,
+				"hint_string": "%s,%s,0.1" % [str(row[1]), str(row[2])]})
+		return out
 	if kind == "water":
 		for row in WATER:
 			var v: Variant = obj.get(String(row[0]))
@@ -286,7 +295,7 @@ func _line(label: String) -> HBoxContainer:
 	return line
 
 
-func _slider_row(label: String, lo: float, hi: float, step: float, value: float, on_change: Callable, exp_edit: bool, unit: String) -> HSlider:
+func _slider_row(label: String, lo: float, hi: float, step: float, value: float, on_change: Callable, exp_edit: bool, unit: String, typed: bool = false) -> HSlider:
 	var line: HBoxContainer = _line(label)
 	var s := HSlider.new()
 	s.min_value = lo
@@ -300,6 +309,26 @@ func _slider_row(label: String, lo: float, hi: float, step: float, value: float,
 	s.custom_minimum_size = Vector2(230.0 * _u(), 0.0)
 	s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	line.add_child(s)
+	if typed:
+		# A box to type the number into: Enter (or clicking away) sets it, past the slider's ends too.
+		var box := LineEdit.new()
+		box.text = _fmt(value, step)
+		box.custom_minimum_size = Vector2(110.0 * _u(), 0.0)
+		box.select_all_on_focus = true
+		line.add_child(box)
+		var typed_in := func(text: String) -> void:
+			if text.strip_edges().is_valid_float():
+				s.value = float(text.strip_edges())
+			box.text = _fmt(s.value, step)
+			box.release_focus()
+		box.text_submitted.connect(typed_in)
+		box.focus_exited.connect(func() -> void: typed_in.call(box.text))
+		var moved := func(x: float) -> void:
+			if not box.has_focus():
+				box.text = _fmt(x, step)
+			on_change.call(x)
+		s.value_changed.connect(moved)
+		return s
 	var v := Label.new()
 	v.text = _fmt(value, step) + unit
 	line.add_child(v)
@@ -359,8 +388,15 @@ func _prop_row(obj: Object, p: Dictionary) -> void:
 			var hs: String = String(p["hint_string"])
 			if hs.contains("radians_as_degrees"):
 				_slider_row(label, r[0], r[1], r[2], rad_to_deg(float(v)), func(x: float) -> void: obj.set(nm, deg_to_rad(x)), false, "°")
+			elif obj == room:
+				# The piers: set, then rebuilt (coalesced while you drag).
+				var set_pier := func(x: float) -> void:
+					obj.set(nm, x)
+					obj.call("rebuild_piers_later")
+				_slider_row(label, r[0], r[1], r[2], float(v), set_pier, false, " m")
 			else:
-				_slider_row(label, r[0], r[1], r[2], float(v), func(x: float) -> void: obj.set(nm, x), bool(r[3]), "")
+				var typed: bool = nm == "light_energy" and room != null and obj == room.get_node_or_null("Sun")
+				_slider_row(label, r[0], r[1], r[2], float(v), func(x: float) -> void: obj.set(nm, x), bool(r[3]), "", typed)
 		TYPE_VECTOR4, TYPE_VECTOR3:
 			var n: int = 4 if int(p["type"]) == TYPE_VECTOR4 else 3
 			var axes: Array = ["x", "z", "w"] if (n == 3 and nm == "absorption") else ["x", "y", "z", "w"]
@@ -453,6 +489,8 @@ func load_tuning() -> void:
 				set_sun_angles(t[1] as Node4D, cf.get_value(sec, key))
 			elif t[1].get(key) != null:
 				t[1].set(key, cf.get_value(sec, key))
+		if sec == "PIERS" and room.has_method("rebuild_piers"):
+			room.call("rebuild_piers")
 
 
 func reset_tuning() -> void:
@@ -463,6 +501,8 @@ func reset_tuning() -> void:
 				(t[1] as Node4D).basis = vals[key]
 			else:
 				t[1].set(key, vals[key])
+		if String(t[0]) == "PIERS" and room.has_method("rebuild_piers"):
+			room.call("rebuild_piers")
 	_build_editor()
 	_flash("Back to the scene's own values")
 

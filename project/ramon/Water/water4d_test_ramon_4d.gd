@@ -8,8 +8,8 @@ extends Node4D
 ## Trym's sea: a 4D height field whose waves run in x, z and W, drawn on a 3D grid in the renderer's
 ## own world and solved for your slice (Water/carried/water4d/README.md).
 ##
-##   PIER 1  from door 1 straight out, a left turn, then a big round platform in code blue with the
-##           lab's two pages printed on its floor. On the platform a right drag turns your slice: the sea is cut a new way, but the
+##   PIER 1  from door 1 straight out onto a big round platform in code blue with the lab's two
+##           pages printed on its floor. On the platform a right drag turns your slice: the sea is cut a new way, but the
 ##           platform stays SET. Its deck, rail and panels hang in a frame that turns WITH the slice
 ##           (the camera rig's own xw and zw angles, about the platform's centre), so they are drawn
 ##           as if nothing had turned. Its collision stays square to the world and deep in W, and its
@@ -31,7 +31,6 @@ extends Node4D
 
 const Presets := preload("res://ramon/Water/carried/water4d/water4d_presets.gd")
 const KitPlayer := preload("res://ramon/Water/carried/kit/kit_player.gd")
-const KitRoom := preload("res://ramon/Water/carried/kit/kit_room_4d.gd")
 const WallPanel := preload("res://ramon/Water/carried/kit/panels/kit_wall_panel_4d.gd")
 const Spec := preload("res://ramon/Water/carried/kit/panels/kit_panel_spec.gd")
 const LabGrid := preload("res://ramon/Water/carried/LabKit/lab_grid.gd")
@@ -51,25 +50,27 @@ const Hud := preload("res://ramon/Water/water4d_hud_ramon.gd")
 @export_group("Piers")
 ## The decks' top, above the still water line (y 0). "Floating right above the ocean."
 @export var deck_height: float = 2.2
-@export var pier1_length: float = 26.0
+## Door to platform (Ramon, 8 Oct: shorter; it was 26 m and turned left halfway).
+@export var pier1_length: float = 14.0
 @export var pier1_width: float = 3.4
-## How far the left turn runs before the platform.
-@export var pier1_turn: float = 8.0
 @export var platform_radius: float = 7.0
 ## How far through W the decks reach (Trym's walkway: 4.2).
 @export var pier1_w_depth: float = 4.2
 @export var pier2_z: float = 24.0
-@export var pier2_length: float = 33.0
+## Door to its end, the blue end included (Ramon, 8 Oct: shorter; it was 33 m).
+@export var pier2_length: float = 20.0
 @export var pier2_width: float = 5.0
 @export var pier2_w_depth: float = 5.0
 @export var ring_radius: float = 2.2
 ## Pier 2's blue end: the circle and its page, in its last this many metres.
 @export var pier2_info_length: float = 10.0
 @export var railing_height: float = 1.0
+## The sci-fi doors at the piers' backs: the opening's height.
+@export var door_height: float = 3.2
 
 @export_group("Pole")
 ## x, z, W.
-@export var pole_at: Vector3 = Vector3(14.0, -9.0, 0.0)
+@export var pole_at: Vector3 = Vector3(8.0, -7.0, 0.0)
 @export var pole_size: float = 2.3
 @export var pole_above_water: float = 3.6
 
@@ -96,13 +97,13 @@ var _site: String = ""
 var _last_site: String = ""
 var _at_pier2: bool = false
 var _reached: Dictionary = {}
+var _rebuild_in: float = -1.0
 
 
 # -- where things are ---------------------------------------------------------------------------------------
 
 func platform_centre() -> Vector4:
-	var x: float = pier1_length - pier1_width * 0.5
-	return Vector4(x, deck_height, -(pier1_width * 0.5 + pier1_turn + platform_radius - 0.6), 0.0)
+	return Vector4(pier1_length + platform_radius - 0.6, deck_height, 0.0, 0.0)
 
 
 func ring_centre() -> Vector4:
@@ -121,31 +122,125 @@ func _ready() -> void:
 	if _water != null and _water.has_method(&"set_preset"):
 		_water.set(&"wave_scale", wave_scale)
 		_water.call(&"set_preset", start_preset)
-	_build_sea_wall()
-	_build_pier1()
-	_build_platform()
-	_build_pier2()
+	_build_piers()
 	_build_pole()
 	_build_floor()
 	_build_player()
 	_build_creature()
 	_build_hud()
+	_place_targets()
 	process_physics_priority = 100
 
 
-## The kit room on the shore: you come out of it onto the piers, through one doorway each.
-func _build_sea_wall() -> void:
-	var z0: float = -14.0
-	var z1: float = pier2_z + 10.0
-	var zc: float = (z0 + z1) * 0.5
-	var room := Node4D.new()
-	room.name = "SeaWall"
-	room.set_script(KitRoom)
-	room.set("size", Vector3(10.0, 6.0, z1 - z0))
-	room.set("doorways", [["e", -zc - pier1_width * 0.5 - 0.2, -zc + pier1_width * 0.5 + 0.2, 4.2],
-		["e", pier2_z - zc - pier2_width * 0.5 - 0.2, pier2_z - zc + pier2_width * 0.5 + 0.2, 4.2]])
-	room.position = Vector4(-5.0, deck_height, zc, 0.0)
-	add_child(room)
+## The routes' targets where the platform and the circle are now (they follow the settings above).
+func _place_targets() -> void:
+	var platform: Node4D = get_node_or_null("Paths/Targets/Platform") as Node4D
+	if platform != null:
+		platform.position = platform_centre()
+	var circle: Node4D = get_node_or_null("Paths/Targets/Circle") as Node4D
+	if circle != null:
+		circle.position = ring_centre()
+	# Each route's destination just short of what it leads to, its start at its door.
+	var ends: Array = [["Paths/Pier1", Vector4(pier1_length - 1.2, 0.0, 0.0, 0.0), Vector4(1.4, 0.0, 0.0, 0.0)],
+		["Paths/Pier2", Vector4(ring_centre().x - ring_radius - 0.7, 0.0, pier2_z, 0.0), Vector4(1.4, 0.0, pier2_z, 0.0)]]
+	for e in ends:
+		var net: Node = get_node_or_null(String(e[0]))
+		var graph: Resource = net.get("graph") if net != null else null
+		if graph == null:
+			continue
+		for n in graph.get("nodes"):
+			match String((n as Dictionary).get("kind", "")):
+				"destination":
+					n["pos"] = e[1]
+				"start":
+					n["pos"] = e[2]
+		graph.emit_changed()
+
+
+## Both piers, their doors and the platform. Called again by rebuild_piers() when the HUD's PIERS
+## sliders change their length or width.
+func _build_piers() -> void:
+	_build_door("Door1", 0.0, pier1_width, pier1_w_depth)
+	_build_door("Door2", pier2_z, pier2_width, pier2_w_depth)
+	_build_pier1()
+	_build_platform()
+	_build_pier2()
+
+
+## The piers again at their new size: the old ones freed in the same frame, so nothing you stand on
+## is missing for a physics step; the routes' ends follow. Coalesced, as a slider sends a value
+## every step of a drag.
+func rebuild_piers_later() -> void:
+	_rebuild_in = 0.25
+
+
+func rebuild_piers() -> void:
+	for nm in ["Door1", "Door2", "Pier1", "Pier2", "PlatformSet", "PlatformBody", "Pages"]:
+		var n: Node = get_node_or_null(nm)
+		if n != null:
+			remove_child(n)
+			n.queue_free()
+	_set_frame = null
+	_pier2_plate = null
+	_pier2_deep = null
+	_build_piers()
+	_place_targets()
+
+
+## A sci-fi door standing at the back of each pier, the way you came in (Ramon, 8 Oct: "a scifi door
+## on the backside. no whole housing or door/room system connecting the 2"; the first version was a
+## kit room on the shore with a doorway for each pier). Closed, facing out along the pier (+x):
+## a gunmetal frame on a pale bulkhead plate, two leaves meeting in a lit seam, light strips round
+## the opening, a status light over it. A wall behind the leaves stops you stepping off the back.
+func _build_door(nm: String, z: float, width: float, w_depth: float) -> void:
+	var d := Node4D.new()
+	d.name = nm
+	d.position = Vector4(0.0, deck_height, z, 0.0)
+	add_child(d)
+	var frame := Color(0.20, 0.22, 0.26)
+	var plate := Color(0.78, 0.79, 0.81)
+	var leaf := Color(0.13, 0.15, 0.19)
+	var glow: TetraMaterial4D = Mats.glow(Color(0.40, 0.86, 1.0), 1.4)
+	var h: float = door_height
+	var wd: float = w_depth + 0.4
+	var hw: float = width * 0.5
+	# The bulkhead plate behind, a little bigger than the frame.
+	_box(d, "Plate", Vector4(-0.55, (h + 0.9) * 0.5, 0.0, 0.0), Vector4(0.2, h + 0.9, width + 2.0, wd), plate)
+	# The frame: two pillars and a lintel, the opening's top corners chamfered.
+	for s in [-1.0, 1.0]:
+		_box(d, "Pillar%d" % int(s), Vector4(-0.2, (h + 0.5) * 0.5, s * (hw + 0.28), 0.0), Vector4(0.5, h + 0.5, 0.56, wd), frame)
+		var c: MeshInstance4D = _box(d, "Chamfer%d" % int(s), Vector4(-0.2, h, s * hw, 0.0), Vector4(0.5, 0.5, 0.5, wd), frame)
+		c.basis = Basis4D.from_yz(PI * 0.25)
+		var strip := MeshInstance4D.new()
+		strip.name = "Strip%d" % int(s)
+		strip.mesh = Mats.box_mesh(Vector4(0.06, h - 0.3, 0.06, wd))
+		strip.position = Vector4(0.08, (h - 0.3) * 0.5, s * (hw - 0.02), 0.0)
+		strip.material_override = glow
+		d.add_child(strip)
+	_box(d, "Lintel", Vector4(-0.2, h + 0.3, 0.0, 0.0), Vector4(0.5, 0.6, width + 1.12, wd), frame)
+	var top := MeshInstance4D.new()
+	top.name = "StripTop"
+	top.mesh = Mats.box_mesh(Vector4(0.06, 0.06, width - 0.6, wd))
+	top.position = Vector4(0.08, h - 0.05, 0.0, 0.0)
+	top.material_override = glow
+	d.add_child(top)
+	var lamp := MeshInstance4D.new()
+	lamp.name = "StatusLight"
+	lamp.mesh = Mats.box_mesh(Vector4(0.06, 0.14, minf(1.2, width * 0.3), wd))
+	lamp.position = Vector4(0.08, h + 0.32, 0.0, 0.0)
+	lamp.material_override = glow
+	d.add_child(lamp)
+	# The two leaves, closed, and the lit seam where they meet.
+	for s in [-1.0, 1.0]:
+		_box(d, "Leaf%d" % int(s), Vector4(-0.12, h * 0.5, s * (hw * 0.5 + 0.02), 0.0), Vector4(0.14, h, hw - 0.04, wd), leaf)
+		_box(d, "LeafBand%d" % int(s), Vector4(-0.04, h * 0.62, s * (hw * 0.5 + 0.02), 0.0), Vector4(0.04, 0.08, hw - 0.5, wd), frame)
+	var seam := MeshInstance4D.new()
+	seam.name = "Seam"
+	seam.mesh = Mats.box_mesh(Vector4(0.05, h - 0.2, 0.05, wd))
+	seam.position = Vector4(-0.03, h * 0.5, 0.0, 0.0)
+	seam.material_override = glow
+	d.add_child(seam)
+	_solid(d, "Back", Vector4(-0.2, h * 0.5, 0.0, 0.0), Vector4(0.4, h, width + 1.2, wd))
 
 
 ## A deck on the kit's floor grid, with its collision.
@@ -187,36 +282,25 @@ func _box(parent: Node, nm: String, centre: Vector4, size: Vector4, colour: Colo
 	return m
 
 
-## Pier 1: the straight run (to just short of its end), the corner, and the left turn.
+## Pier 1: straight out from door 1 onto the platform (Ramon, 8 Oct: "remove the corner on the
+## first pier and just make me go forward"; it first turned left halfway).
 func _build_pier1() -> void:
 	var holder := Node4D.new()
 	holder.name = "Pier1"
 	add_child(holder)
 	var y: float = deck_height - 0.15
 	var hw: float = pier1_width * 0.5
-	var corner_x: float = pier1_length - pier1_width
-	var turn_z: float = hw + pier1_turn
-	_deck(holder, "Run", Vector4(corner_x * 0.5, y, 0.0, 0.0), Vector4(corner_x, 0.3, pier1_width, pier1_w_depth))
-	_deck(holder, "Corner", Vector4(corner_x + hw, y, 0.0, 0.0), Vector4(pier1_width, 0.3, pier1_width, pier1_w_depth))
-	_deck(holder, "Turn", Vector4(corner_x + hw, y, -hw - pier1_turn * 0.5, 0.0), Vector4(pier1_width, 0.3, pier1_turn, pier1_w_depth))
-	var rail_y: float = deck_height
 	var wd: float = pier1_w_depth
-	# The railings: Trym's fence round each piece, the faces where the pieces meet left open.
-	_fence(holder, "RunRail", Vector3(corner_x, pier1_width, wd), Vector4(corner_x * 0.5, rail_y, 0.0, 0.0), ["-x", "+x"])
-	_fence(holder, "CornerRail", Vector3(pier1_width, pier1_width, wd), Vector4(corner_x + hw, rail_y, 0.0, 0.0), ["-x", "-z"])
-	_fence(holder, "TurnRail", Vector3(pier1_width, pier1_turn, wd), Vector4(corner_x + hw, rail_y, -hw - pier1_turn * 0.5, 0.0), ["+z", "-z"])
+	_deck(holder, "Run", Vector4(pier1_length * 0.5, y, 0.0, 0.0), Vector4(pier1_length, 0.3, pier1_width, wd))
+	# Trym's fence along it, open at the door and where it meets the platform.
+	_fence(holder, "RunRail", Vector3(pier1_length, pier1_width, wd), Vector4(pier1_length * 0.5, deck_height, 0.0, 0.0), ["-x", "+x"])
 	# What stops you, on each side that is closed (the fence is mesh only).
 	var h: float = railing_height
 	var ry: float = deck_height + h * 0.5
-	_solid(holder, "RunSideA", Vector4(corner_x * 0.5, ry, hw, 0.0), Vector4(corner_x, h, 0.16, wd))
-	_solid(holder, "RunSideB", Vector4(corner_x * 0.5, ry, -hw, 0.0), Vector4(corner_x, h, 0.16, wd))
-	_solid(holder, "CornerSide", Vector4(corner_x + hw, ry, hw, 0.0), Vector4(pier1_width, h, 0.16, wd))
-	_solid(holder, "CornerEnd", Vector4(pier1_length, ry, 0.0, 0.0), Vector4(0.16, h, pier1_width, wd))
-	_solid(holder, "TurnSideA", Vector4(corner_x, ry, -hw - pier1_turn * 0.5, 0.0), Vector4(0.16, h, pier1_turn, wd))
-	_solid(holder, "TurnSideB", Vector4(pier1_length, ry, -hw - pier1_turn * 0.5, 0.0), Vector4(0.16, h, pier1_turn, wd))
+	_solid(holder, "RunSideA", Vector4(pier1_length * 0.5, ry, hw, 0.0), Vector4(pier1_length, h, 0.16, wd))
+	_solid(holder, "RunSideB", Vector4(pier1_length * 0.5, ry, -hw, 0.0), Vector4(pier1_length, h, 0.16, wd))
 	for s in [-1.0, 1.0]:
-		_solid(holder, "RunCapW%d" % int(s), Vector4(corner_x * 0.5 + hw * 0.5, ry, 0.0, s * wd * 0.5), Vector4(pier1_length, h, pier1_width, 0.16))
-		_solid(holder, "TurnCapW%d" % int(s), Vector4(corner_x + hw, ry, -hw - pier1_turn * 0.5, s * wd * 0.5), Vector4(pier1_width, h, pier1_turn, 0.16))
+		_solid(holder, "RunCapW%d" % int(s), Vector4(pier1_length * 0.5, ry, 0.0, s * wd * 0.5), Vector4(pier1_length, h, pier1_width, 0.16))
 
 
 ## Pier 1's round platform, in code blue, its two pages printed on its floor. Its collision is a
@@ -248,29 +332,32 @@ func _build_platform() -> void:
 	var size := Vector4(platform_radius * 2.0, 0.3, platform_radius * 2.0, pier1_w_depth)
 	disc.material_override = LabGrid.material(Style.code_swatch("blue"), size, c)
 	_set_frame.add_child(disc)
-	# The rail: Trym's fence round a 32-sided ring, open where the turn comes in (+z).
+	# The rail: Trym's fence round a 32-sided ring, open where the pier comes in (-x).
 	var r: float = platform_radius - 0.15
 	var gap: float = asin(clampf((pier1_width * 0.5 + 0.3) / r, 0.0, 1.0))
-	_fence_from(_set_frame, "Rail", _ring_seed(r, 32, pier1_w_depth, gap), Vector4.ZERO, pier1_w_depth)
+	_fence_from(_set_frame, "Rail", _ring_seed(r, 32, pier1_w_depth, gap, PI), Vector4.ZERO, pier1_w_depth)
 	# Trym's cyan ring, near the rail, round the pages.
 	var cyan := Color(0.25, 0.72, 0.85)
 	for i in 24:
 		var a: float = TAU * float(i) / 24.0
-		if absf(wrapf(a - PI * 0.5, -PI, PI)) < gap:
+		if absf(wrapf(a - PI, -PI, PI)) < gap:
 			continue
 		_box(_set_frame, "Tile%d" % i, Vector4(cos(a) * (platform_radius - 0.65), 0.02, sin(a) * (platform_radius - 0.65), 0.0), Vector4(0.42, 0.05, 0.42, 0.6), cyan)
-	# The pages, side by side on the floor: the introduction on the left as you walk in, the
-	# research on the right.
-	var source := Node.new()
-	source.name = "PanelSource"
-	source.set_script(load("res://ramon/Water/water_panel_source.gd"))
-	add_child(source)
+	# The pages, side by side on the floor: the introduction on the left as you walk in (-z, walking
+	# +x), the research on the right. Each plate is turned so its page's top points away from you,
+	# toward +x (the floor print's own top is -z).
+	if get_node_or_null("PanelSource") == null:
+		var source := Node.new()
+		source.name = "PanelSource"
+		source.set_script(load("res://ramon/Water/water_panel_source.gd"))
+		add_child(source)
 	var info: Resource = load("res://ramon/Water/water_info.tres")
 	var pm: Vector2 = Spec.PANEL * Spec.UNIT_M * platform_panel_scale
 	for i in 2:
 		var page: Node4D = _page("intro" if i == 0 else "research", info, platform_panel_scale, Vector4(c.x + float(i) * 12.0, -30.0, c.z, 0.0))
-		var x: float = (float(i) - 0.5) * (pm.x + 0.5)
-		var plate: MeshInstance4D = _plate(_set_frame, "Page%d" % i, Vector4(x, 0.01, 0.3, 0.0), pm, pier1_w_depth)
+		var z: float = (float(i) - 0.5) * (pm.x + 0.5)
+		var plate: MeshInstance4D = _plate(_set_frame, "Page%d" % i, Vector4(-0.3, 0.01, z, 0.0), pm, pier1_w_depth)
+		plate.basis = _facing(Vector2(-1.0, 0.0))
 		_print_later(plate, page, pm)
 
 
@@ -539,9 +626,9 @@ func _fence_from(parent: Node, nm: String, seed: ArrayPolyMesh4D, at: Vector4, w
 
 
 ## The platform's round rail as a seed: `n` sides at radius `r`, each a face `w_depth` deep in W,
-## the sides within `gap` radians of +z (the way in) left out. No faces across W: the platform is
+## the sides within `gap` radians of the angle `gap_at` (the way in; 0 is +x, PI/2 +z) left out. No faces across W: the platform is
 ## drawn in the set frame, always level, so nothing ana or kata of it is ever in view.
-func _ring_seed(r: float, n: int, w_depth: float, gap: float) -> ArrayPolyMesh4D:
+func _ring_seed(r: float, n: int, w_depth: float, gap: float, gap_at: float) -> ArrayPolyMesh4D:
 	var mesh := ArrayPolyMesh4D.new()
 	var lo: Array = []
 	var hi: Array = []
@@ -552,7 +639,7 @@ func _ring_seed(r: float, n: int, w_depth: float, gap: float) -> ArrayPolyMesh4D
 	for i in n:
 		var j: int = (i + 1) % n
 		var mid: float = TAU * (float(i) + 0.5) / float(n)
-		if absf(wrapf(mid - PI * 0.5, -PI, PI)) < gap:
+		if absf(wrapf(mid - gap_at, -PI, PI)) < gap:
 			continue
 		var corners: Array = [lo[i], lo[j], hi[j], hi[i]]
 		var edges := PackedInt32Array()
@@ -576,7 +663,11 @@ static func _facing(dir: Vector2) -> Projection:
 
 # -- every frame --------------------------------------------------------------------------------------------
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if _rebuild_in >= 0.0:
+		_rebuild_in -= delta
+		if _rebuild_in < 0.0:
+			rebuild_piers()
 	if player == null or _rig == null:
 		return
 	var p: Vector4 = player.global_position
@@ -644,7 +735,7 @@ func _physics_process(_delta: float) -> void:
 		_rig.call("go_home")
 	if r <= limit:
 		return
-	var in_gap: bool = rel.z > 0.0 and absf(rel.x) < pier1_width * 0.5 - 0.2 and absf(rel.w) < pier1_w_depth * 0.5
+	var in_gap: bool = rel.x < 0.0 and absf(rel.z) < pier1_width * 0.5 - 0.2 and absf(rel.w) < pier1_w_depth * 0.5
 	if in_gap and level:
 		return
 	var back: Vector3 = flat * (limit / r)
