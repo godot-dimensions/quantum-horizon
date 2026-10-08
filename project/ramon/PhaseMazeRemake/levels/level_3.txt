@@ -1,0 +1,28 @@
+name = Both turns
+lesson = The way you face decides which flat maze a turn shows.
+teach = both
+route = z1 w2 x1 z1 w2
+---
+#######
+#^ .#E#
+# #####
+#.#^ .#
+# # ###
+#. S .#
+#######
+---
+#######
+#v .#x#
+# #####
+#. x .#
+#######
+#. . .#
+#######
+---
+#######
+#. .#v#
+### # #
+#. v .#
+# #####
+#. . .#
+#######

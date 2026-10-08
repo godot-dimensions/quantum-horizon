@@ -1,0 +1,27 @@
+name = Sealed room
+lesson = The exit's room is closed on every side. Its door is in the world next door.
+teach = sight
+---
+#######
+#^ . .#
+# ### #
+#.#.#.#
+# ### #
+#. S .#
+#######
+---
+#######
+#v . .#
+# ### #
+#.#E#.#
+# ### #
+#. . ^#
+#######
+---
+#######
+#. . .#
+# ### #
+#.#v .#
+# ### #
+#. . v#
+#######

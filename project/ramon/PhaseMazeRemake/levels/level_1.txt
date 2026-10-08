@@ -1,0 +1,20 @@
+name = Step
+lesson = A dead end whose way on is through W.
+teach = step
+route = z2 w1 z1 x2 z1 w1 z2
+---
+#######
+#^ .#E#
+# ### #
+#. .#.#
+# ### #
+#S .#.#
+#######
+---
+#######
+#v . .#
+# #####
+#. . .#
+##### #
+#. . v#
+#######

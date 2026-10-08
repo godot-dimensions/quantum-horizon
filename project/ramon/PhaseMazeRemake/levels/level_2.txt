@@ -1,0 +1,28 @@
+name = Turn
+lesson = A shaft three cells long through W. Step it, or turn and run it.
+teach = turn
+route = x1 w3 x1
+---
+#######
+#. . .#
+# ### #
+#S ^#.#
+#######
+---
+#######
+#.#.#.#
+# ### #
+#.#x#.#
+#######
+---
+#######
+#.#.#.#
+# ### #
+#.#x#.#
+#######
+---
+#######
+#. .#.#
+##### #
+#.#v E#
+#######

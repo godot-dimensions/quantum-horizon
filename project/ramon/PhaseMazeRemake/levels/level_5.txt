@@ -1,0 +1,28 @@
+name = The cube
+lesson = Everything together, three cells every way.
+teach = all
+route = x1 w2 x1 z2 x2 w2
+---
+#######
+#^ .#E#
+# # ###
+#. .#.#
+# ### #
+#S ^ .#
+#######
+---
+#######
+#v .#x#
+### ###
+#. .#.#
+# # # #
+#.#x .#
+#######
+---
+#######
+#. . v#
+# #####
+#. .#.#
+# ### #
+#. v .#
+#######
