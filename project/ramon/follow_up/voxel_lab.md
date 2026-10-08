@@ -58,6 +58,10 @@ B switches grey and black everywhere; F1 is the dev panel (the lights, the swap,
   the dev panel (F1), consoles, cards, floor marks and route targets.
 - **`field/`**: Andrew's landscape streamed round a flying camera.
 - **`carried/`**: the lab kit, carried from the Arboretum's carried copy (its README lists changes).
+  The walk and the camera are the pen's as of 8 Oct (Andrew's stepping and facing, the floor-frame
+  camera), carried again; the room never turns (slice turning off), and a right drag turns only the
+  exhibit, floor-only like the pen's slice drag: across tilts its width into W, up and down its depth,
+  so nothing leans.
 - **`voxel_lab_4d.gd`**: the room: which pedestal you are at, the pads, consoles, route, views, and the
   story camera (`_run_film`).
 - **`tools/make_scene.py`** writes `voxel_lab.tscn`: move a station or a light there and run it, rather

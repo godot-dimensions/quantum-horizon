@@ -109,6 +109,9 @@ func _process(delta: float) -> bool:
 		5:
 			if _t > 3.6:
 				_save("05_story_two_cuts_slid")
+				# The story must really cut: a story whose clock stood still passed every other check here
+				# (8 Oct), and only the column's runner noticed.
+				_check(int(_hero.get("exhibit").call("cut_count")) >= 2, "the story cut the ball and the box (%d cuts)" % int(_hero.get("exhibit").call("cut_count")))
 				_hero.call("skip")
 				_next()
 		6:

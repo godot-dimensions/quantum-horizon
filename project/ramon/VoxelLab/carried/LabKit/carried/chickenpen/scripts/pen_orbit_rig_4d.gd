@@ -1,5 +1,9 @@
-# CARRIED OVER from res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd on 4 Oct 2026, so the lab owns this copy: the original can change without breaking the lab, and the other way round (LabKit/carried/README.md).
+# CARRIED OVER from res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd on 8 Oct 2026 (the pen's walk and camera as they are
+# since Andrew's 4 and 7 Oct changes), so the lab owns this copy: the original can change without breaking the
+# lab, and the other way round (LabKit/carried/README.md). GroundBasis4D is the carried copy, preloaded as Ground.
 extends Node4D
+
+const Ground := preload("res://ramon/VoxelLab/carried/LabKit/carried/chickenpen/scripts/ground_basis_4d.gd")
 
 ## A third-person orbit camera for 4D, shared by every controller in this folder.
 ##
@@ -9,11 +13,13 @@ extends Node4D
 ## of it either, so the arm is rebuilt here - the orbit, the clamp, the zoom and the
 ## pull-in are all done by hand against PhysicsServer4D.
 ##
-## WHAT IS DIFFERENT IN 4D. A 3D orbit needs two angles, yaw and pitch. This needs four:
-## the same two, plus the two W-planes that decide which 3D CROSS-SECTION of the 4D world
-## you are looking at. Holding `rotate_4d` and moving the mouse turns those instead of
-## yaw and pitch, exactly as the project's first-person player does - so the same muscle
-## memory works, and the character can walk "sideways" out of the slice it is standing in.
+## WHAT IS DIFFERENT IN 4D. A 3D orbit is yaw and pitch. Here the pitch is still one angle,
+## but the yaw grows into a whole rotation of the horizontal (x, z, w) space, held as the
+## rig's own basis (GroundBasis4D explains): turning left and right, and tilting the slice
+## through W - which decides which 3D CROSS-SECTION of the 4D world you are looking at - are
+## the same kind of thing and compose freely. Holding `rotate_4d` and moving the mouse tilts
+## the slice instead of turning, the editor camera's scheme, so the character can walk
+## "sideways" out of the slice it is standing in.
 ##
 ## The rig is a CHILD of the character body and carries all the orientation; the body
 ## itself stays upright and unrotated. That is how both source controllers are built, and
@@ -83,6 +89,11 @@ signal preset_changed(index: int)
 ## set on it in the scene applies on load and is dropped the next time the editor saves.
 @export_range(-89.0, 89.0, 0.5) var start_pitch_degrees: float = -8.6
 
+## LAB COPY: whether holding rotate_4d turns the slice. The labs switch it off (Lab Chambers, 4 Oct:
+## Ramon found the whole world rotating confusing, so only the exhibits turn; Voxel Lab, 8 Oct: "dont
+## turn the entire room").
+@export var slice_turning: bool = true
+
 ## Pitch limits, in degrees. Asymmetric on purpose: a third-person camera wants to look
 ## down at the character far more than it wants to look up at its feet.
 @export_range(-89.0, 0.0, 0.5) var pitch_min_degrees: float = -75.0
@@ -94,10 +105,6 @@ signal preset_changed(index: int)
 
 ## How much of the pulled-in distance to keep clear of the obstruction.
 @export var collision_margin: float = 0.3
-
-## Whether holding rotate_4d turns the slice. The Lab Chambers test switches it off (lab copy
-## only, 4 Oct): Ramon found the whole world rotating confusing, so there only the exhibits turn.
-@export var slice_turning: bool = true
 
 @export_group("Conversation")
 ## While somebody is talking, the camera comes in and the point it orbits drops, so the
@@ -131,6 +138,7 @@ signal preset_changed(index: int)
 ## you see, only moving through W changes where you are - and the locator's own rule is that
 ## a guide which does the searching for you deletes the thing it exists to teach. Locked on,
 ## the bird stays in front of you while you step through W to get to it yourself.
+## None: something else drives the lock (set_locked; the pen's slice assist owns T).
 @export var lock_key: Key = KEY_T
 ## Where to ask which chicken is nearest. The locator already answers that question, with
 ## hysteresis, from the birds that are loose - carried, penned and returned birds are not
@@ -159,7 +167,13 @@ signal preset_changed(index: int)
 ## flat and you can see what the key did.
 @export_range(0.05, 3.0, 0.05) var home_seconds: float = 0.45
 
-var yaw: float = 0.0
+## The heading, read off the rig's basis: the yaw of the nearest level frame
+## (Ground.heading). Setting it turns the frame in place and leaves the slice alone.
+var yaw: float:
+	get:
+		return Ground.heading(basis)
+	set(value):
+		basis = Ground.turned_to(basis, value)
 var pitch: float = -0.15
 
 ## Somewhere with walls the physics cannot see can say how far back the camera may go:
@@ -167,8 +181,6 @@ var pitch: float = -0.15
 ## here while you are in it - its walls are baked rock with no colliders, and the ray above
 ## would sail through them. Null everywhere else.
 var clearance_provider: Object = null
-var _slice_xw: float = 0.0
-var _slice_zw: float = 0.0
 var _zoom_target: float = 0.0
 ## Seconds left on the way back to the default slice. Zero means nothing is happening.
 var _homing: float = 0.0
@@ -287,10 +299,29 @@ func align_to(w: float) -> void:
 	_homing = home_seconds
 
 
+## Tilt the slice by a mouse drag (Ground.sliced): what holding `rotate_4d` does, and
+## what the slice assist does for you when asked to.
+func drag_slice(drag: Vector2) -> void:
+	# Taking hold of the slice cancels the trip home. Fighting the player for control of
+	# the same rotation is worse than either behaviour alone.
+	_homing = 0.0
+	basis = Ground.sliced(basis, drag)
+	_apply()
+
+
+## Face along [param direction] (global) within the slice you are in - Ground.faced,
+## in the body's frame. [param fraction] of the way, for easing.
+func face_toward(direction: Vector4, fraction: float = 1.0) -> void:
+	var parent := get_parent() as Node4D
+	var local: Vector4 = parent.global_basis.inverse() * direction if parent != null else direction
+	basis = Ground.faced(basis, local, clampf(fraction, 0.0, 1.0))
+	_apply()
+
+
 ## Whether the slice is flat and you are at [param w], near enough to see no difference.
 func is_aligned_to(w: float) -> bool:
 	var body: Node4D = get_parent() as Node4D
-	return absf(_slice_xw) < 0.01 and absf(_slice_zw) < 0.01 and body != null and absf(body.position.w - w) < 0.05
+	return Ground.tilt(basis) < 0.01 and body != null and absf(body.position.w - w) < 0.05
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -299,7 +330,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			use_preset(preset + 1)
 			get_viewport().set_input_as_handled()
 			return
-	if event is InputEventKey and event.pressed and not event.echo 			and (event as InputEventKey).keycode == lock_key:
+	if event is InputEventKey and event.pressed and not event.echo 			and lock_key != KEY_NONE and (event as InputEventKey).keycode == lock_key:
 		_toggle_lock()
 		get_viewport().set_input_as_handled()
 		return
@@ -341,28 +372,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			# somebody who grabs the mouse immediately is not ignored.
 			return
 		var motion: Vector2 = event.relative * mouse_sensitivity
-		if slice_turning and Input.is_action_pressed(&"rotate_4d"):
-			# Taking hold of the slice cancels the trip home. Fighting the player for
-			# control of the same two angles is worse than either behaviour alone.
-			_homing = 0.0
-			# Turning the view through W: this changes which slice of the 4D world is
-			# visible, not which way the character faces within it.
-			_slice_xw -= motion.x
-			_slice_zw += motion.y
+		if Input.is_action_pressed(&"rotate_4d"):
+			# LAB COPY: with slice_turning off the drag belongs to the exhibit you are turning, and the
+			# view holds still (it used to look round as well, so an up and down drag pitched the view
+			# while it turned the block, 8 Oct).
+			if slice_turning:
+				drag_slice(motion)
 		else:
-			# MINUS, and this was tried both ways with a controller in hand. Plus is what
-			# the geometry suggests - the camera sits at +Z of a from_zx(yaw) frame and
-			# looks BACK at the player, so plus swings the arm towards +X and the view
-			# turns right - and it played worse. Minus is what is here because it is the
-			# one that felt right, not because of an argument about signs. Do not "fix"
-			# it by reading the maths; flip it, play it, and see.
 			# Locked on, the heading belongs to the lock and the mouse keeps only pitch -
 			# otherwise every nudge is a tug of war the player cannot win or see.
 			if _lock_body == null:
-				yaw -= motion.x
+				basis = Ground.looked(basis, motion)
 			pitch = clampf(pitch - motion.y,
 				deg_to_rad(pitch_min_degrees), deg_to_rad(pitch_max_degrees))
-		_apply()
+			_apply()
 
 
 func _physics_process(delta: float) -> void:
@@ -384,43 +407,28 @@ func _physics_process(delta: float) -> void:
 	_place_camera()
 
 
-## Yaw and the two W-planes live on the rig; pitch lives on a child.
+## The rig's basis is the ground frame - heading and slice turns as one level rotation;
+## pitch lives on a child.
 ##
-## Splitting them is not tidiness. Pitch has to be applied AFTER yaw and must not feed
+## Splitting them is not tidiness. Pitch has to be applied AFTER the rest and must not feed
 ## back into it, and keeping it on its own node means the rig's own basis stays a clean
 ## horizontal frame that movement can be measured against - the same reason the project's
 ## first-person player keeps pitch on its head node.
 ##
-## THE SLICE ROTATIONS GO OUTSIDE THE YAW, and the order is the whole point.
-##
-## Built the other way round - from_zx(yaw) first, then the W-planes - yaw is the
-## outermost rotation, so it turns the slice normal along with everything else and simply
-## LOOKING AROUND re-cuts the world. Measured before the swap: with xw at 20 degrees, a
-## full look-around swung the slice normal 40 degrees and moved the slice's height over
-## the pen's far corner from -5.66 to +5.66. You could line up on a chicken, turn to walk
-## at it, and lose the alignment by turning.
-##
-## With the slice rotations outermost, yaw's own w column is (0, 0, 0, 1) - from_zx only
-## touches x and z - so the product's w column is the slice rotations' alone and cannot
-## depend on yaw at all. Measured after: 0.0 degrees of swing at every slice rotation
-## tried, and the view still yaws by exactly the angle asked for.
+## Looking around never re-cuts the world: every turn is a local rotation of the frame, so
+## the slice normal (the w column) is changed only by the slice drags (GroundBasis4D).
 func _apply() -> void:
-	var frame: Projection = Projection.IDENTITY
-	if not is_zero_approx(_slice_xw):
-		frame *= Basis4D.from_xw(_slice_xw)
-	if not is_zero_approx(_slice_zw):
-		frame *= Basis4D.from_zw(_slice_zw)
-	frame *= Basis4D.from_zx(yaw)
-	basis = Basis4D.orthonormalized(frame)
+	basis = Ground.cleaned(basis)
 	if _pitch_node != null:
 		_pitch_node.basis = Basis4D.from_yz(pitch)
 
 
-## The trip back to the default slice: both rotations eased to zero and your w to the home w
-## (0, or the place align_to was given), together.
+## The trip back to the default slice: the frame eased flat along the shortest rotation,
+## keeping its heading, and your w to the home w (0, or the place align_to was given),
+## together.
 ##
-## The step is delta over the time REMAINING, not a fixed fraction, so the three of them
-## arrive at zero at the same moment and exactly on time - a plain lerp toward zero is
+## The step is delta over the time REMAINING, not a fixed fraction, so the two of them
+## arrive at the same moment and exactly on time - a plain lerp toward the target is
 ## asymptotic and would leave a slice that is nearly default for ever, which is the one
 ## outcome this is meant to rule out.
 ##
@@ -429,8 +437,7 @@ func _apply() -> void:
 func _go_home(delta: float) -> void:
 	_homing = maxf(_homing - delta, 0.0)
 	var step: float = clampf(delta / maxf(_homing + delta, 0.0001), 0.0, 1.0)
-	_slice_xw = lerpf(_slice_xw, 0.0, step)
-	_slice_zw = lerpf(_slice_zw, 0.0, step)
+	basis = Ground.eased_flat(basis, step)
 	var body: Node4D = get_parent() as Node4D
 	if body != null:
 		body.position.w = lerpf(body.position.w, _home_w, step)
@@ -440,8 +447,7 @@ func _go_home(delta: float) -> void:
 			body.set("linear_velocity", speed)
 	if _homing <= 0.0:
 		# Landed exactly, rather than within a rounding error of it.
-		_slice_xw = 0.0
-		_slice_zw = 0.0
+		basis = Ground.flattened(basis)
 		if body != null:
 			body.position.w = _home_w
 	_apply()
@@ -503,19 +509,21 @@ func _toggle_lock() -> void:
 	_homing = 0.0
 
 
+## The lock set from outside. The pen's slice assist owns T (7 Oct key audit: it and this rig both
+## listened for T, and whichever heard it first kept it, so one press never did both halves of
+## locking on), and turns this on and off with its own guidance.
+func set_locked(on: bool) -> void:
+	if on != (_lock_body != null):
+		_toggle_lock()
+
+
 func _release_lock() -> void:
 	_lock_agent = null
 	_lock_body = null
 
 
-## Swings the heading onto the locked bird, within the slice you have chosen.
-##
-## The bird's offset is taken into the rig's parent frame and then out of the slice
-## rotation, so what is left is where it stands in the 3D world you are looking at; its W
-## is dropped, because W is the part you have to walk. The yaw that points the view along
-## that is one of two closed forms depending on from_zx's handedness, so both are tried and
-## the one whose forward actually lands on the bird is kept - measured, not argued, the
-## same way the slice assist settles its signs.
+## Swings the view onto the locked bird, within the slice you have chosen (face_toward), unless
+## it is all but underfoot, where the direction means nothing.
 func _steer_to_lock(delta: float) -> void:
 	if not is_instance_valid(_lock_body) or not is_instance_valid(_lock_agent):
 		_release_lock()
@@ -525,27 +533,8 @@ func _steer_to_lock(delta: float) -> void:
 	if manager != null and manager.has_method("locator_candidates") 			and not (manager.call("locator_candidates") as Array).has(_lock_agent):
 		_release_lock()
 		return
-	var parent := get_parent() as Node4D
-	var rel: Vector4 = _lock_body.global_position - global_position
-	if parent != null:
-		rel = parent.global_basis.inverse() * rel
-	var slice: Projection = Projection.IDENTITY
-	if not is_zero_approx(_slice_xw):
-		slice *= Basis4D.from_xw(_slice_xw)
-	if not is_zero_approx(_slice_zw):
-		slice *= Basis4D.from_zw(_slice_zw)
-	var t: Vector4 = slice.inverse() * rel
-	var flat := Vector2(t.x, t.z)
-	if flat.length() < 0.2:
+	var offset: Vector4 = _lock_body.global_position - global_position
+	var rel: Vector4 = global_basis.inverse() * offset
+	if Vector2(rel.x, rel.z).length() < 0.2:
 		return
-	flat = flat.normalized()
-	var want: float = yaw
-	var best: float = -2.0
-	for candidate in [atan2(-flat.x, -flat.y), atan2(flat.x, -flat.y)]:
-		var f: Vector4 = Basis4D.from_zx(candidate) * Vector4(0.0, 0.0, -1.0, 0.0)
-		var score: float = Vector2(f.x, f.z).dot(flat)
-		if score > best:
-			best = score
-			want = candidate
-	yaw = lerp_angle(yaw, want, clampf(delta * lock_turn_rate, 0.0, 1.0))
-	_apply()
+	face_toward(offset, delta * lock_turn_rate)

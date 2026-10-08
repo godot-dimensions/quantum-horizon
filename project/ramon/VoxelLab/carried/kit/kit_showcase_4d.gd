@@ -27,6 +27,7 @@ const Style := preload("res://ramon/VoxelLab/carried/kit/kit_style.gd")
 const Pedestal := preload("res://ramon/VoxelLab/carried/kit/kit_pedestal.gd")
 const Glyphs := preload("res://ramon/VoxelLab/carried/kit/kit_glyphs.gd")
 const Presentation := preload("res://ramon/VoxelLab/carried/kit/kit_presentation.gd")
+const Ground := preload("res://ramon/VoxelLab/carried/LabKit/carried/chickenpen/scripts/ground_basis_4d.gd")
 
 const SLICES := 9
 
@@ -136,7 +137,13 @@ var armed: bool = false
 
 var exhibit: Node4D
 var slice_index: int = 4
+## The drags so far (radians, for the readouts), and the turn they add up to.
 var turn: Vector2 = Vector2.ZERO
+## VOXEL LAB (carried copy), 8 Oct: the turn through W is held as a frame that only ever turns the
+## floor (x, z, w), the pen's GroundBasis4D: a sideways drag tilts the exhibit's width into W, an up
+## and down drag its depth, and up is never touched. It was two angles, the second turning UP into W,
+## and after a few drags a column or a tree leaned 20 degrees (the pen's trunks never do).
+var turn_basis: Projection = Projection.IDENTITY
 var cinematic: bool = false
 var watched: bool = false
 var _slice_node: Node4D
@@ -316,6 +323,7 @@ func set_exhibit(script: Script) -> void:
 	cinematic = false
 	_cine_slice = -3.0
 	turn = Vector2.ZERO
+	turn_basis = Projection.IDENTITY
 	slice_index = SLICES / 2
 	_extent = -1.0
 	_wait_grow = true
@@ -347,6 +355,7 @@ func step_slice(d: int) -> void:
 func turn_by(dx: float, dy: float) -> void:
 	_touch()
 	turn += Vector2(dx, dy)
+	turn_basis = Ground.cleaned(Ground.sliced(turn_basis, Vector2(dx, dy)))
 
 
 func action() -> String:
@@ -379,6 +388,7 @@ func _run_loop(delta: float) -> void:
 		_start_at = 0.0
 		cinematic = true
 		turn = Vector2.ZERO
+		turn_basis = Projection.IDENTITY
 	_loop_t += delta
 	var total: float = 0.0
 	for s in seqs:
@@ -494,7 +504,7 @@ func live() -> Array:
 	var rows: Array = [
 		["W-slice", "%d / %d" % [slice_index + 1, SLICES]],
 		["Offset through W", "%+.2f m" % _slice_w],
-		["Turned through W", "swung %.0f°, tilted %.0f°" % [rad_to_deg(turn.x), rad_to_deg(turn.y)]],
+		["Turned through W", "%.0f° across, %.0f° ahead" % [rad_to_deg(turn.x), rad_to_deg(turn.y)]],
 		["Playing", "its sequence" if _looping else "in your hands"],
 	]
 	if exhibit != null and exhibit.has_method("live"):
@@ -526,11 +536,12 @@ func _process(delta: float) -> void:
 		want_w = _cine_slice * ext
 	_slice_w = lerpf(_slice_w, want_w, 1.0 - exp(-8.0 * delta))
 	_slice_node.position.w = _slice_w
-	# Turned in the goat's own frame (its stand's turn undone, the turn, the stand's turn done
-	# again): across swings the slice along its length (z into W), up and down tilts it through
-	# its height (y into W) (Ramon, 4 Oct: "why doesn't the slicing work up and down also?").
+	# Turned in the exhibit's own frame (its stand's turn undone, the turn, the stand's turn done
+	# again), so the cut turns with it on the turntable. Both drags turn the floor only (turn_basis),
+	# so up and down still slices it (Ramon, 4 Oct: "why doesn't the slicing work up and down also?")
+	# without tipping up into W.
 	var yaw_b: Projection = exhibit.call("stand_basis") if exhibit.has_method("stand_basis") else Projection.IDENTITY
-	_slice_node.basis = yaw_b * (Basis4D.from_zw(turn.x) * Basis4D.from_wy(turn.y)) * yaw_b.inverse()
+	_slice_node.basis = yaw_b * turn_basis * yaw_b.inverse()
 	if is_instance_valid(_button):
 		_button.visible = not cinematic
 		_button_frame.visible = not cinematic
@@ -630,6 +641,7 @@ func shot(i: int) -> Array:
 func begin_cinematic() -> void:
 	cinematic = true
 	turn = Vector2.ZERO
+	turn_basis = Projection.IDENTITY
 	slice_index = SLICES / 2
 	_show_slice()
 

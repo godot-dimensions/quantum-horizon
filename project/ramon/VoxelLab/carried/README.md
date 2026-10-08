@@ -35,6 +35,17 @@ for remakes: "carry it over, and not reuse it"; the Quantum Range and the Arbore
   dark mood's light ink while the B switch has the walls black (the signs read black on black): a
   static print shows the "dark" picture it already holds, a live one paints with that ink.
 
+- **8 Oct, the pen's current walk and camera.** `LabKit/carried/chickenpen/scripts/`
+  `block_walker_character_4d.gd` and `pen_orbit_rig_4d.gd` carried again from the pen as they are since
+  Andrew's 4 and 7 Oct changes (stepping along the view's W, the body turning through W, the camera's
+  heading and slice held as one floor frame), with `ground_basis_4d.gd` (the pen's `GroundBasis4D`, no
+  class_name here, preloaded as `Ground`). The walker is the pen's unchanged. The rig keeps the labs'
+  `slice_turning` switch, and with it off a right drag now leaves the view alone (it used to look round
+  while it turned the exhibit). The lab's body and run gait still replace the pen's chibi and gait.
+- `kit/kit_showcase_4d.gd`: the exhibit's turn through W is a floor-only frame (`turn_basis`, the pen's
+  mapping: sideways tilts its width into W, up and down its depth). It was a swing plus a tilt of UP into
+  W, and a column or a tree leaned after a few drags.
+
 ## Going back to the shared kit
 
 To point the Voxel Lab at the shared kit once it settles, rewrite these paths back to
