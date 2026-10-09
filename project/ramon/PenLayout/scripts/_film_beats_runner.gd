@@ -29,6 +29,9 @@ var _mode: String = "path"
 var _over: Control
 var _say: String = ""
 var _t0: int = 0
+## "frames=<folder>": every frame saved there as a JPG at the root's size (with res=4k, 3840 x 2160).
+var _frames_dir: String = ""
+var _frame: int = 0
 
 
 func _initialize() -> void:
@@ -36,6 +39,18 @@ func _initialize() -> void:
 	_t0 = Time.get_ticks_msec()
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	_mode = args[0] if args.size() > 0 else "path"
+	if args.has("res=4k"):
+		# 4K FRAMES IN ANY WINDOW (Ramon, 7 Oct: "update that video in highest res possible"): the root renders at
+		# 3840 x 2160 and the window shows it scaled down, so a screen that cannot fit a 4K window still films 4K.
+		root.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
+		root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+		root.content_scale_size = Vector2i(3840, 2160)
+	# Godot's movie writer records at the WINDOW's size, so for 4K the frames are saved here instead, one per frame
+	# at the root's own 3840 x 2160, numbered; run with --fixed-fps 30 (lab_run.sh movie_hd) so each is 1/30 s.
+	for a in args:
+		if a.begins_with("frames="):
+			_frames_dir = a.substr(7)
+			DirAccess.make_dir_recursive_absolute(_frames_dir)
 	_room = (load(PEN) as PackedScene).instantiate()
 	_room.get_node("Systems/Lookout").set("journal_path", "user://film_beats_journal.cfg")
 	if FileAccess.file_exists("user://film_beats_journal.cfg"):
@@ -49,6 +64,20 @@ func _process(_d: float) -> bool:
 	if Time.get_ticks_msec() - _t0 > 1500000:
 		print("BEATS: gave up")
 		return true
+	if root.content_scale_mode == Window.CONTENT_SCALE_MODE_VIEWPORT:
+		# THE UI SIZE DIVIDES THE PICTURE: in viewport mode the root renders at content_scale_size / content_scale_factor,
+		# and the pen sets the factor to the saved UI size (pen_ui_scale_4d.gd, Ramon's 145%), which left 2648 x 1489.
+		# The size is grown by the factor, so the render is 3840 x 2160 and the HUD keeps its share of the screen.
+		var f: float = root.content_scale_factor
+		var want := Vector2i(roundi(3840.0 * f), roundi(2160.0 * f))
+		if root.content_scale_size != want:
+			root.content_scale_size = want
+	if _frames_dir != "":
+		var shot: Image = root.get_texture().get_image()
+		if _frame % 60 == 0:
+			print("BEATS frame %d at %s" % [_frame, str(shot.get_size())])
+		shot.save_jpg("%s/f_%05d.jpg" % [_frames_dir, _frame], 0.95)
+		_frame += 1
 	return false
 
 

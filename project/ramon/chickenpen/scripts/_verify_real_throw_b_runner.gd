@@ -80,7 +80,11 @@ func _process(_d) -> bool:
 		print("   it came down at %v" % _landed_at)
 	if _tracking:
 		var at: Vector4 = _body.global_position
-		_worst_jump = maxf(_worst_jump, Vector2(at.x - _last.x, at.z - _last.z).length())
+		var step: float = Vector2(at.x - _last.x, at.z - _last.z).length()
+		if step > 0.05:
+			# Which kind of move it was (8 Oct: 0.14, 0.07 and 0.01 on three runs): the frame, the state, from where to where.
+			print("   JUMP %.3f at frame %d, %s, from %v to %v" % [step, _f, _agent.call("describe"), _last, at])
+		_worst_jump = maxf(_worst_jump, step)
 		_worst_w = maxf(_worst_w, absf(at.w - _last.w))
 		_last = at
 		if not bool(_fence.call("contains_point", at)):
