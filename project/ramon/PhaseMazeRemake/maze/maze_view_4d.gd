@@ -153,11 +153,14 @@ func quarter_turn() -> void:
 	_ease_to(t, PI * 0.5 / turn_seconds, true, "into_w")
 
 
-## R: the slice level again, your heading and your W kept.
+## R: the slice level again, your heading and your W kept, over the pen's own time for its R
+## (the rig's home_seconds, 0.45 s), however far the slice was tilted.
 func level() -> void:
 	if _target != null and _swing_left > 0.0:
 		return
-	_ease_to(GB.flattened(rig.basis), settle_rate, false, "level")
+	var t: Projection = GB.flattened(rig.basis)
+	var seconds: float = maxf(0.05, float(rig.get("home_seconds")))
+	_ease_to(t, maxf(_angle(rig.basis, t) / seconds, 0.5), false, "level")
 
 
 ## The drag let go: the slice normal onto the nearest world axis by the shortest turn, the heading kept.

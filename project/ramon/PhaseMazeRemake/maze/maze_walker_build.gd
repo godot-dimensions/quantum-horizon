@@ -11,6 +11,18 @@ extends RefCounted
 ## The node layout is the pen's Player (playable_world.tscn), which the scripts expect by name:
 ##   Player (CharacterBody4D) > CollisionShape4D, Avatar, Gait, CameraRig > Pitch > Camera4D.
 ##
+## THE PLAYABLE WORLD'S SETTINGS (Ramon, 9 Oct: "make sure we're using andrews walker and w rotation
+## settings from the playable world"). The scripts are the pen's own (carried/walker/, byte for byte
+## the pen's at 11971e1 and still at 1131bb2, apart from the changes carried/README.md lists), and the
+## pen's Player sets nothing on the walker or its slice turning, so both run on the scripts' defaults
+## here too: W steps at 0.3 of the run, the right-drag tilts the slice at the rig's 0.005 a pixel through
+## GroundBasis4D.sliced, the body faces through W. The avatar, the gait, the capsule, the camera's
+## renderer, W fade and 77.3 degree lens, and the pitch and zoom limits are set as playable_world.tscn
+## sets them. scripts/_check_walker_settings_runner.gd compares it all and lists the differences kept
+## on purpose: the framing (a chase camera made for 6 m corridors, not the pen's open-field preset), the
+## arm coming all the way in (corridors), R keeping your W (the pen's R walks you to W 0, through maze
+## walls), and the walker's colours.
+##
 ## THE RIG'S OWN KEYS ARE SWITCHED OFF, through its exports, so the copy stays as the pen has it: its T
 ## locks on to chickens, its R walks you home to W 0 (through walls, in a maze), and its Tab cycles
 ## cameras. The maze's view (maze_view_4d.gd) handles R, T and Tab its own way.
@@ -89,11 +101,9 @@ static func make(parent: Node, at: Vector4) -> Dictionary:
 	rig.set("cycle_key", KEY_NONE)
 	rig.set("pivot_height", 2.1)
 	rig.set("distance", 3.6)
+	# All the way in: in a corridor the arm must be able to come right up to the walker.
 	rig.set("min_distance", 0.0)
-	rig.set("max_distance", 9.0)
 	rig.set("start_pitch_degrees", -24.0)
-	rig.set("pitch_min_degrees", -70.0)
-	rig.set("pitch_max_degrees", 30.0)
 	var pitch := Node4D.new()
 	pitch.name = "Pitch"
 	rig.add_child(pitch)
@@ -102,6 +112,8 @@ static func make(parent: Node, at: Vector4) -> Dictionary:
 	cam.position = Vector4(0.0, 0.0, 3.6, 0.0)
 	cam.set("rendering_engine_name", "Cross-section")
 	cam.set("w_fade_distance", 6.0)
+	# The pen's lens: its presets all set 77.3 degrees on field_of_view_4d (pen_orbit_rig_4d.gd PRESETS).
+	cam.set("field_of_view_4d", deg_to_rad(77.3))
 	cam.current = true
 	pitch.add_child(cam)
 	body.add_child(rig)

@@ -129,6 +129,8 @@ the scene. The scene holds the lab light, the lobby (a kit room), its two live w
 | `_solve_runner.gd` | The bot plays every level through the real keys (walk, F, Q/E, the lift, the stairs) at par. With `film`, in movie mode, it is the film |
 | `_features_runner.gd` | Every key and option: the console, hints, map, door prompt, restart, Tab, renderers, F, V, C, G, L |
 | `_perf_runner.gd` | Frame, script, physics and GPU time per level, view, 4D sight, first person and hall |
+| `_check_walker_settings_runner.gd` | Every walker, rig, camera, gait, avatar and capsule setting against the playable world's (headless) |
+| `_capture_colours_runner.gd` | The Colours page: live, saved, reopened, reset (your settings file set aside and restored) |
 | `_capture_journey_runner.gd`, `_capture_moods_runner.gd`, `_capture_lobby_runner.gd`, `_hud4k_runner.gd`, `_smoke_runner.gd` | Frames: the journey, bright against dark, the lobby, the HUD at 4K, a smoke pass |
 | `_capture_teaching_runner.gd` | Films the back wall's three pictures (`art/`) |
 | `_probe_*`, `_study_*` | The research probes |
@@ -161,6 +163,34 @@ Last results (9 Oct):
   - Walls touch nothing now. The posts are all one material and overlap only each other, so nothing
     shows.
   - Their colour is "Corner posts" on the Colours page.
+
+## Andrew's walker and W rotation, checked against the playable world (9 Oct)
+
+Ramon: "make sure we're using andrews walker and w rotation settings from the playable world".
+
+- **The scripts are the pen's.** The walker, its camera rig, `GroundBasis4D`, the avatar and the gait
+  are byte for byte the pen's at the copy point (11971e1), and still the pen's at HEAD (1131bb2
+  changed only the pen's scenery). The copies differ only in what `carried/README.md` lists:
+  - the preload name;
+  - the colour exports;
+  - the step-up also looking along W (for stairs through W);
+  - a debug print removed.
+- **The settings.** The pen's Player sets nothing on the walker or its slice turning, so both run on
+  the scripts' defaults, in the pen and here alike:
+  - W steps at 0.3 of the run;
+  - the right-drag tilts the slice at 0.005 a pixel through `GroundBasis4D.sliced`;
+  - the body faces through W.
+- **What matches the playable world's scene:** the avatar, the gait, the capsule, the camera's
+  renderer, W fade and lens (77.3°), and the pitch and zoom limits. R now levels the slice over the
+  pen's 0.45 s.
+- **`scripts/_check_walker_settings_runner.gd`** prints the comparison: 30 settings SAME, and these
+  KEPT on purpose:
+  - the chase framing (made for 6 m corridors, not the pen's open-field preset);
+  - the arm coming all the way in;
+  - the dark blue;
+  - R keeping your W: the pen's R walks you to W 0, which in a maze goes through walls.
+
+  The stride is the gait's own measurement at runtime, the same in both.
 
 ## Traps met
 
