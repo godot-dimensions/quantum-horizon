@@ -579,8 +579,9 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 ## texture map values, the cells' texture map indices]], copied from the chunk meshes on the main thread) that
 ## lies in one of `boxes` (x, z, w lows and highs), its y over the (x, z, W) points under it, the highest kept:
 ## the top skin. NONE where that top is not grass (material 0) or there is none (the pen's grass_heights_4d.gd
-## bake, grass only; the material read as vl_tet_ray.gd reads it).
-static func bake_heights(jobs: Array, rect: Vector4, wl: Vector3, boxes: Array, sea_y: float) -> PackedFloat32Array:
+## bake, grass only; the material read as vl_tet_ray.gd reads it). `any_ground`: every top is ground, whatever it
+## is made of (the whole island green, Tab).
+static func bake_heights(jobs: Array, rect: Vector4, wl: Vector3, boxes: Array, sea_y: float, any_ground: bool = false) -> PackedFloat32Array:
 	var cells_n: int = int(rect.w)
 	var layers: int = int(wl.z)
 	var top := PackedFloat32Array()
@@ -619,7 +620,7 @@ static func bake_heights(jobs: Array, rect: Vector4, wl: Vector3, boxes: Array, 
 				continue
 			var inv: Basis = m.inverse()
 			var is_grass: int = 1
-			if ti.size() > cell * 4 and ti[cell * 4] < tv.size():
+			if not any_ground and ti.size() > cell * 4 and ti[cell * 4] < tv.size():
 				is_grass = 1 if int(round(tv[ti[cell * 4]].x * 255.0)) == 0 else 0
 			var i0: int = maxi(int(ceil((lo.x - rect.x) / CELL - 0.5)), 0)
 			var i1: int = mini(int(floor((hi.x - rect.x) / CELL - 0.5)), cells_n - 1)

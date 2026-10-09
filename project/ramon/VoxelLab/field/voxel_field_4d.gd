@@ -200,6 +200,9 @@ var _grass_height: float = 0.7
 var _grass_colour: Color = Color(0, 0, 0, 0)
 ## How much of the grass ground is grass (percent), how big a patch is (m), the gap between blades (cm) (Tab).
 var _grass_cover: float = 35.0
+## The whole island under grass (Ramon, 9 Oct: "an option to fill the entire island with grass"): every ground,
+## not only the grass band (the dirt and the rock too; only slopes too steep for a blade stay bare), all of it.
+var _grass_whole: bool = false
 var _grass_patch_m: float = 6.0
 var _grass_spacing_cm: float = 7.0
 ## The tree clumps (_plant_trees), and whether Tab has them on.
@@ -237,6 +240,7 @@ func _ready() -> void:
 		Color(float(sv.get("grass_r", 0.31)), float(sv.get("grass_g", 0.49)), float(sv.get("grass_b", 0.16))))
 	set_grass_amount(float(sv.get("grass_cover", 35.0)), float(sv.get("grass_patch_m", 6.0)), float(sv.get("grass_spacing_cm", 7.0)))
 	set_trees(float(sv.get("trees", 1.0)) > 0.5)
+	_grass_whole = float(sv.get("grass_whole", 0.0)) > 0.5
 	_birds()
 	_deck()
 	# On the deck, walking: the kit's player, its camera behind you.
@@ -604,11 +608,25 @@ func set_grass_amount(cover_pct: float, patch_m: float, spacing_cm: float) -> vo
 	_grass_spacing_cm = clampf(spacing_cm, 2.0, 40.0)
 	if grass == null:
 		return
-	grass.set("coverage", _grass_cover / 100.0)
+	grass.set("coverage", 1.0 if _grass_whole else _grass_cover / 100.0)
 	grass.set("patch_m", _grass_patch_m)
 	if regap:
 		grass.set("spacing_m", _grass_spacing_cm / 100.0)
 		grass.call("rebuild")
+
+
+## The whole island green, or the grass band at its coverage (Tab). A change bakes the ground again (under a
+## second, on a worker): the whole island counts every ground, the band only its own.
+func set_grass_whole(on: bool) -> void:
+	if on == _grass_whole:
+		return
+	_grass_whole = on
+	if _grass_task >= 0:
+		_grass_plan["stale"] = true
+		return
+	if grass != null or _grass_state in ["ready", "failed"]:
+		_drop_grass()
+		_start_grass()
 
 
 ## The grass's ground: the island's whole square, W 0 and GRASS_W_REACH either side of it. The chunk meshes in it
@@ -646,7 +664,8 @@ func _start_grass() -> void:
 	_grass_plan = {"rect": rect, "wl": wl, "t0": Time.get_ticks_usec(), "ground_y": sea + 4.0}
 	_grass_state = "baking"
 	var jobs: Array = _grass_jobs
-	_grass_task = WorkerThreadPool.add_task(func() -> void: _grass_out = Grass.bake_heights(jobs, rect, wl, boxes, sea), false, "field grass")
+	var whole: bool = _grass_whole
+	_grass_task = WorkerThreadPool.add_task(func() -> void: _grass_out = Grass.bake_heights(jobs, rect, wl, boxes, sea, whole), false, "field grass")
 
 
 ## The bake done: the grass made and started.
@@ -659,12 +678,17 @@ func _poll_grass() -> void:
 	if biome != 0 or _heights.is_empty():
 		_grass_state = "none"
 		return
+	# The whole island switched while this bake ran: bake again.
+	if bool(_grass_plan.get("stale", false)):
+		_grass_state = "none"
+		_start_grass()
+		return
 	grass_ms = float(Time.get_ticks_usec() - int(_grass_plan["t0"])) / 1000.0
 	grass = Node4D.new()
 	grass.name = "Grass"
 	grass.set_script(Grass)
 	grass.set("spacing_m", _grass_spacing_cm / 100.0)
-	grass.set("coverage", _grass_cover / 100.0)
+	grass.set("coverage", 1.0 if _grass_whole else _grass_cover / 100.0)
 	grass.set("patch_m", _grass_patch_m)
 	grass.set("w_reach", GRASS_W_REACH)
 	add_child(grass)

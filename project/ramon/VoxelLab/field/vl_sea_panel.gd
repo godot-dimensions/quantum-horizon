@@ -70,7 +70,7 @@ const DEFAULTS := {
 	"land_h": 0.27, "land_s": 0.5, "land_v": 0.36,
 	"sun": 0.064, "sun_up": 10.5, "sun_turn": 137.5, "ambient": 1.0, "exposure": 0.99,
 	"grass": 1.0, "grass_width": 2.2, "grass_height": 0.7, "grass_r": 0.31, "grass_g": 0.49, "grass_b": 0.16,
-	"grass_cover": 35.0, "grass_patch_m": 6.0, "grass_spacing_cm": 7.0, "trees": 1.0,
+	"grass_cover": 35.0, "grass_patch_m": 6.0, "grass_spacing_cm": 7.0, "trees": 1.0, "grass_whole": 0.0,
 }
 ## The rows that rebuild something (the grass's patches and blades): applied a moment after the drag stops.
 const DEFERRED := ["grass_spacing_cm"]
@@ -89,6 +89,7 @@ var _compare_label: Label
 var _colour: ColorPickerButton
 var _grass_box: CheckBox
 var _trees_box: CheckBox
+var _whole_box: CheckBox
 var _grass_colour: ColorPickerButton
 
 
@@ -246,6 +247,15 @@ func _ready() -> void:
 		_values["grass"] = 1.0 if on else 0.0
 		_apply(false))
 	_box.add_child(_grass_box)
+	_whole_box = CheckBox.new()
+	_whole_box.text = "Fill the whole island (every ground, all of it)"
+	_whole_box.focus_mode = Control.FOCUS_NONE
+	_whole_box.button_pressed = float(_values.get("grass_whole", 0.0)) > 0.5
+	_whole_box.add_theme_font_size_override("font_size", FONT - 1)
+	_whole_box.toggled.connect(func(on: bool) -> void:
+		_values["grass_whole"] = 1.0 if on else 0.0
+		_apply(false))
+	_box.add_child(_whole_box)
 	_row("grass_cover", "Ground covered, %", 0.0, 100.0, 1.0)
 	_row("grass_patch_m", "Patch size, m", 1.0, 40.0, 0.5)
 	_row("grass_spacing_cm", "Blade to blade, cm", 3.0, 30.0, 0.5)
@@ -364,6 +374,9 @@ func _load(v: Dictionary, what: String) -> void:
 	if v.has("grass_r") and _grass_colour != null:
 		_grass_colour.color = Color(float(v["grass_r"]), float(v["grass_g"]), float(v["grass_b"]))
 		_values.merge({"grass_r": float(v["grass_r"]), "grass_g": float(v["grass_g"]), "grass_b": float(v["grass_b"])}, true)
+	if v.has("grass_whole") and _whole_box != null:
+		_whole_box.set_pressed_no_signal(float(v["grass_whole"]) > 0.5)
+		_values["grass_whole"] = float(v["grass_whole"])
 	if v.has("trees") and _trees_box != null:
 		_trees_box.set_pressed_no_signal(float(v["trees"]) > 0.5)
 		_values["trees"] = float(v["trees"])
@@ -470,6 +483,8 @@ func _apply(_remake: bool) -> void:
 	if field.has_method("set_grass"):
 		field.call("set_grass", float(_values.get("grass", 1.0)) > 0.5, float(_values.get("grass_width", 2.2)), float(_values.get("grass_height", 0.7)),
 			Color(float(_values.get("grass_r", 0.31)), float(_values.get("grass_g", 0.49)), float(_values.get("grass_b", 0.16))))
+	if field.has_method("set_grass_whole"):
+		field.call("set_grass_whole", float(_values.get("grass_whole", 0.0)) > 0.5)
 	if field.has_method("set_trees"):
 		field.call("set_trees", float(_values.get("trees", 1.0)) > 0.5)
 	if field.has_method("set_grass_amount"):

@@ -323,6 +323,22 @@ func _process(delta: float) -> bool:
 				_check(int(_f.get("grass").call("blade_count")) == 0 or not bool(_f.get("grass").get("enabled")), "Tab's switch takes the grass away")
 				_save("13_grass_off")
 				_f.call("set_grass", true, 2.2)
+				# The whole island green (Tab), seen from above.
+				_f.call("set_grass_whole", true)
+				_top.global_position = Vector4(_f.get("_centre").global_position.x, 95.0, _f.get("_centre").global_position.z, 0.0)
+				_top.global_basis = Basis4D.from_yz(-PI * 0.5)
+				_top.make_current()
+				_next()
+		14:
+			var g: Node = _f.get("grass")
+			if g != null and String(_f.get("_grass_state")) == "ready" and _t > 1.5:
+				_check(is_equal_approx(float(g.get("coverage")), 1.0), "the whole island under grass (in %.0f ms)" % float(_f.get("grass_ms")))
+				_save("14_grass_whole_island")
+				_f.call("set_grass_whole", false)
+				print("FIELD done, %d failed" % _fails)
+				return true
+			elif _t > 30.0:
+				_check(false, "the whole island's grass never came")
 				print("FIELD done, %d failed" % _fails)
 				return true
 	return false
