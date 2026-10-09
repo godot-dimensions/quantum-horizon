@@ -105,6 +105,15 @@ var _rebuild_in: float = -1.0
 var _turned_here: bool = false
 var _pivot := Vector4.ZERO
 var _visual := Vector4.ZERO
+## The doors back to the tank room: armed once you have walked away from them; walking into one
+## fades and loads the Water Lab's tank room (water_lab.tscn), which puts you at its far door.
+const LAB_SCENE := "res://ramon/WaterLab/water_lab.tscn"
+const ARRIVE_META := "water_lab_arrive"
+var _doors_armed: bool = false
+## Off for runners that walk you about (they would trip the doors).
+var doors_enabled: bool = true
+var _leaving: float = -1.0
+var _fade: ColorRect
 
 
 # -- where things are ---------------------------------------------------------------------------------------
@@ -126,6 +135,9 @@ func door(i: int) -> Vector4:
 func _ready() -> void:
 	Style.apply("bright")
 	_water = get_node_or_null("Water")
+	if _water != null:
+		# The sea out to the horizon (the far ring, carried water4d_surface.gd).
+		_water.set(&"far_extent", 900.0)
 	if _water != null and _water.has_method(&"set_preset"):
 		_water.set(&"wave_scale", wave_scale)
 		_water.call(&"set_preset", start_preset)
@@ -573,8 +585,10 @@ func _build_creature() -> void:
 	pilot.set(&"body_path", NodePath(".."))
 	pilot.set(&"swimmer_path", NodePath("../Swimmer"))
 	pilot.set(&"player_path", NodePath("../../../Player"))
-	pilot.set(&"bounds", Vector3(30.0, 30.0, 8.0))
-	pilot.set(&"depth_range", Vector2(6.0, floor_depth - maxf(4.0, creature_length * 0.3)))
+	pilot.set(&"bounds", Vector3(36.0, 36.0, 6.0))
+	# Nearer the surface (Ramon, 9 Oct: "a bit higher toward the surface so you can see it"), and it comes
+	# past you every minute or so (the pilot's visits).
+	pilot.set(&"depth_range", Vector2(2.5, 9.0))
 	pilot.set(&"speed", creature_speed)
 	creature.add_child(pilot)
 	# THE SEAMS STAY AS BUILT. Trym's swimmer re-bends the patches between its 13 pieces every
@@ -583,9 +597,25 @@ func _build_creature() -> void:
 	# show; the pieces still swim.
 	if swimmer != null:
 		swimmer.set(&"blend_joints", false)
+	# The sardines' school, off pier 1, under the water; the plesiosaur its hunter.
+	var school := Node4D.new()
+	school.name = "School"
+	school.set_script(load("res://ramon/WaterLab/seascape/fish_school_4d.gd"))
+	school.position = Vector4(12.0, 0.0, -6.5, 0.0)
+	school.set("hunter", creature)
+	add_child(school)
 
 
 func _build_hud() -> void:
+	var fl := CanvasLayer.new()
+	fl.name = "Fade"
+	fl.layer = 20
+	add_child(fl)
+	_fade = ColorRect.new()
+	_fade.color = Color(0, 0, 0, 1)
+	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fl.add_child(_fade)
 	var layer := CanvasLayer.new()
 	layer.name = "UI"
 	add_child(layer)
@@ -709,6 +739,7 @@ static func _facing(dir: Vector2) -> Projection:
 # -- every frame --------------------------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	_doors(delta)
 	if _rebuild_in >= 0.0:
 		_rebuild_in -= delta
 		if _rebuild_in < 0.0:
@@ -732,6 +763,36 @@ func _process(delta: float) -> void:
 	_hold_set_frame()
 	_pier2_picture()
 	_route_states(p)
+
+
+## The doors at the piers' backs lead back to the tank room. The scene opens out of black (it came in
+## through one); walk 4 m from the doors and they arm; walk back into either and it fades to black and
+## the tank room loads.
+func _doors(delta: float) -> void:
+	if _fade != null and _leaving < 0.0:
+		_fade.color.a = maxf(_fade.color.a - delta * 1.6, 0.0)
+	if player == null or not doors_enabled:
+		return
+	if _leaving >= 0.0:
+		_leaving += delta
+		if _fade != null:
+			_fade.color.a = clampf(_leaving / 0.6, 0.0, 1.0)
+		if _leaving >= 0.65:
+			_leaving = -100.0
+			get_tree().root.set_meta(ARRIVE_META, "sea")
+			get_tree().change_scene_to_file(LAB_SCENE)
+		return
+	var p: Vector4 = player.global_position
+	var near: bool = false
+	for i in [1, 2]:
+		var d: Vector4 = door(i)
+		if absf(p.z - d.z) < 1.6 and absf(p.w) < 1.5 and absf(p.y - d.y) < 1.5 and p.x < d.x + 3.0:
+			near = true
+			if _doors_armed and p.x < d.x + 0.45:
+				_leaving = 0.0
+				player.set("input_enabled", false)
+	if not near:
+		_doors_armed = true
 
 
 ## The tilt the rig's slice has, as a rotation of the world (the rig's ground basis G against the
@@ -913,6 +974,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				_water.set(&"detail_strength", 0.0 if d > 0.0 else 0.085)
 		KEY_P:
 			_at_pier2 = not _at_pier2
+			_doors_armed = false
 			if _rig != null:
 				_rig.call("go_home")
 			go_to(door(2 if _at_pier2 else 1), -PI * 0.5)

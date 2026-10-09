@@ -90,6 +90,10 @@ var roughness: float = 0.08
 var light_response: float = 1.0
 
 var _instance := RID()
+## WATER LAB: the far ring, out to `far_extent` metres (0: none), drawn with the same material.
+var far_extent: float = 0.0
+var _far_instance := RID()
+var _far_mesh: ArrayMesh = null
 var _mesh: ArrayMesh = null
 var _material: ShaderMaterial = null
 var _scenario := RID()
@@ -149,8 +153,23 @@ func _ready() -> void:
 	RenderingServer.instance_set_custom_aabb(
 			_instance, AABB(Vector3(-5000, -5000, -5000), Vector3(10000, 10000, 10000)))
 	RenderingServer.instance_set_visible(_instance, false)
+	# Built a moment later: the scene's root sets far_extent in its own _ready, after this one's.
+	_make_far.call_deferred()
 	if not RenderingServer4D.pre_render.is_connected(_on_pre_render):
 		RenderingServer4D.pre_render.connect(_on_pre_render)
+
+
+func _make_far() -> void:
+	if far_extent > extent and not _far_instance.is_valid():
+		_far_mesh = _build_far_ring()
+		_far_instance = RenderingServer.instance_create()
+		RenderingServer.instance_set_base(_far_instance, _far_mesh.get_rid())
+		RenderingServer.instance_geometry_set_material_override(_far_instance, _material.get_rid())
+		RenderingServer.instance_geometry_set_cast_shadows_setting(_far_instance, RenderingServer.SHADOW_CASTING_SETTING_OFF)
+		RenderingServer.instance_set_ignore_culling(_far_instance, true)
+		RenderingServer.instance_set_custom_aabb(_far_instance, AABB(Vector3(-5000, -5000, -5000), Vector3(10000, 10000, 10000)))
+		RenderingServer.instance_set_visible(_far_instance, false)
+		_scenario = RID()
 
 
 func _exit_tree() -> void:
@@ -159,6 +178,9 @@ func _exit_tree() -> void:
 	if _instance.is_valid():
 		RenderingServer.free_rid(_instance)
 		_instance = RID()
+	if _far_instance.is_valid():
+		RenderingServer.free_rid(_far_instance)
+		_far_instance = RID()
 
 
 func _process(delta: float) -> void:
@@ -250,6 +272,47 @@ func _build_grid() -> ArrayMesh:
 	return mesh
 
 
+## WATER LAB: the far ring: a square annulus from just inside the near grid's edge out to `far_extent`,
+## its lines spaced wider the further out (each about 13% beyond the last), a few centimetres lower so
+## that where the two overlap the near grid's finer surface wins. The squares inside the near grid are
+## left out. The shader places it the same way (round the camera) and fades its waves (near_extent).
+func _build_far_ring() -> ArrayMesh:
+	var inner: float = extent - 0.5
+	var steps: int = 26
+	var outer: Array = []
+	for k in steps + 1:
+		outer.append(inner * pow(far_extent / inner, float(k) / float(steps)))
+	var coords: Array = []
+	for k in range(steps, -1, -1):
+		coords.append(-float(outer[k]))
+	for k in range(1, 8):
+		coords.append(lerpf(-inner, inner, float(k) / 8.0))
+	for k in steps + 1:
+		coords.append(float(outer[k]))
+	var n: int = coords.size()
+	var verts := PackedVector3Array()
+	for j in n:
+		for i in n:
+			verts.append(Vector3(coords[i], -0.04, coords[j]))
+	var indices := PackedInt32Array()
+	for j in n - 1:
+		for i in n - 1:
+			var cx: float = (float(coords[i]) + float(coords[i + 1])) * 0.5
+			var cz: float = (float(coords[j]) + float(coords[j + 1])) * 0.5
+			if absf(cx) < inner and absf(cz) < inner:
+				continue
+			var a: int = j * n + i
+			indices.append_array([a, a + n, a + 1, a + 1, a + n, a + n + 1])
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	mesh.custom_aabb = AABB(Vector3(-5000, -5000, -5000), Vector3(10000, 10000, 10000))
+	return mesh
+
+
 # --- per frame, just before the 4D engine draws ---------------------------------------------
 
 func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngine4D) -> void:
@@ -261,8 +324,13 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngi
 	if scenario != _scenario:
 		_scenario = scenario
 		RenderingServer.instance_set_scenario(_instance, scenario)
+		if _far_instance.is_valid():
+			RenderingServer.instance_set_scenario(_far_instance, scenario)
 	var shown: bool = is_visible_in_tree() and scenario.is_valid()
 	RenderingServer.instance_set_visible(_instance, shown)
+	if _far_instance.is_valid():
+		RenderingServer.instance_set_visible(_far_instance, shown)
+	_material.set_shader_parameter(&"near_extent", extent)
 	if not shown:
 		_end_scope(&"qh_custom/water4d/uniforms")
 		return

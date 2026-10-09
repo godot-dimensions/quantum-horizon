@@ -53,6 +53,15 @@ const _Plane = preload("res://ramon/WaterLab/carried/chickenpen/scripts/plane_ro
 ## Largest share of the heading that may lie along W, for the reason in the note above.
 @export_range(0.05, 1.0, 0.01) var w_heading_limit: float = 0.5
 
+@export_group("Visits")
+## WATER LAB (Ramon, 9 Oct: "make it appear more frequently"): every so often, seconds drawn between
+## these two, its next goal is a few metres in front of the player, shallow, so it comes past you;
+## then it wanders on. 0 and 0 for never.
+@export var visit_every := Vector2(40.0, 70.0)
+## How far from the player the visit's goal is, and how deep.
+@export var visit_distance := Vector2(5.0, 11.0)
+@export var visit_depth := Vector2(2.5, 4.0)
+
 @export_group("Attention")
 ## Mean seconds between glances at the player.
 @export_range(2.0, 60.0, 0.5, "suffix:s") var attention_gap: float = 11.0
@@ -68,6 +77,7 @@ var _heading := Vector4(0.0, 0.0, 1.0, 0.0)
 var _goal := Vector4()
 var _until_glance: float = 6.0
 var _glancing: float = 0.0
+var _until_visit: float = 15.0
 
 
 func _ready() -> void:
@@ -88,6 +98,7 @@ func _physics_process(delta: float) -> void:
 	var here: Vector4 = _body.position
 	if here.distance_to(_goal) < waypoint_radius:
 		_goal = _pick_goal()
+	_visit(delta)
 
 	var wanted: Vector4 = _steer(here)
 	_turn_toward(wanted, deg_to_rad(turn_rate_degrees) * delta)
@@ -99,6 +110,22 @@ func _physics_process(delta: float) -> void:
 			Vector4(0.0, 1.0, 0.0, 0.0), true)
 
 	_attend(delta)
+
+
+## WATER LAB: now and then, a goal just in front of the player, shallow (in the pilot's parent's frame,
+## the body's).
+func _visit(delta: float) -> void:
+	if visit_every.y <= 0.0 or _player == null or _body.get_parent() == null:
+		return
+	_until_visit -= delta
+	if _until_visit > 0.0:
+		return
+	_until_visit = randf_range(visit_every.x, visit_every.y)
+	var parent: Node4D = _body.get_parent() as Node4D
+	var me: Vector4 = parent.global_basis.inverse() * (_player.global_position - parent.global_position)
+	var a: float = randf() * TAU
+	var r: float = randf_range(visit_distance.x, visit_distance.y)
+	_goal = _inside(Vector4(me.x + cos(a) * r, -randf_range(visit_depth.x, visit_depth.y), me.z + sin(a) * r, me.w))
 
 
 ## Direction to the goal, flattened to a swimmable climb and kept off the W axis.

@@ -33,6 +33,8 @@ func _initialize() -> void:
 	if "hud4k" in args:
 		_mode = "hud4k"
 		DisplayServer.window_set_size(Vector2i(3840, 2160))
+	elif "school" in args:
+		_mode = "school"
 	elif "perf" in args:
 		_mode = "perf"
 		_slow_panels = "slow_panels" in args
@@ -48,6 +50,7 @@ func _open() -> void:
 	var t0: int = Time.get_ticks_usec()
 	_room = (load(SCENE) as PackedScene).instantiate()
 	root.add_child(_room)
+	_room.set("doors_enabled", false)
 	print("WATER opened in %.0f ms" % ((Time.get_ticks_usec() - t0) / 1000.0))
 	_wait = 60
 	match _mode:
@@ -80,6 +83,17 @@ func _open() -> void:
 				_step(30, _measure_start.bind("capped_200"), "")
 				_step(150, _nop, "")
 				_step(1, _measure_end, "")
+		"school":
+			# The sardines off pier 1: from its edge looking down at them, then the plesiosaur sent
+			# through them.
+			_step(60, _go(12.0, -1.6, 180.0), "")
+			_step(5, _pitch(-55.0), "s01_school_from_pier")
+			_step(60, _nop, "s02_school_later")
+			_step(1, _send_creature, "")
+			_step(45, _nop, "s03_plesiosaur_through")
+			_step(45, _nop, "s04_after")
+			_step(1, _pitch(-10.0), "")
+			_step(5, _go(18.5, 0.0, -90), "s05_horizon")
 		_:
 			_plan()
 
@@ -112,6 +126,17 @@ func _turn(xw_deg: float, zw_deg: float = 0.0) -> Callable:
 			r.set("_homing", 0.0)
 			r.basis = Basis4D.from_xw(deg_to_rad(xw_deg)) * Basis4D.from_zw(deg_to_rad(zw_deg)) * Basis4D.from_zx(yaw)
 			r.call("_apply")
+
+
+## The plesiosaur put just short of the school, heading into it.
+func _send_creature() -> void:
+	var c: Node4D = _room.get_node_or_null("SeaLife/Plesiosaur") as Node4D
+	var school: Node4D = _room.get_node_or_null("School") as Node4D
+	if c == null or school == null:
+		return
+	var parent: Node4D = c.get_parent() as Node4D
+	var target: Vector4 = parent.global_basis.inverse() * (school.global_position + Vector4(0.0, -4.0, 0.0, 0.0) - parent.global_position)
+	c.position = target + Vector4(-12.0, 0.0, 0.0, 0.0)
 
 
 func _pitch(deg: float) -> Callable:

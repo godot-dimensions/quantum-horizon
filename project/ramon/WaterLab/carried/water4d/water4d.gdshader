@@ -48,6 +48,10 @@ uniform vec3 slice_axis_b;
 // The off-slice horizontal direction, in (x, z, w). Only used by the debug view.
 uniform vec3 slice_axis_off;
 uniform float water_level = 0.0;
+// WATER LAB: past the near grid (its half width), the far ring's waves fade toward a flat sea by five
+// times that, so its coarse grid does not shimmer: the sea reaches the horizon (Ramon, 9 Oct: "make the
+// sea larger, so you can look out into the distance").
+uniform float near_extent = 60.0;
 
 uniform int wave_count = 4;
 uniform vec3 wave_dir[MAX_WAVES];   // unit, in (x, z, w)
@@ -307,7 +311,13 @@ void vertex() {
 		n4 = -n4;
 	}
 
-	vec4 world = vec4(surface_h.x, water_level + height, surface_h.y, surface_h.z);
+	// WATER LAB: far out, the waves fade (see near_extent).
+	float lod = 1.0 - 0.75 * smoothstep(near_extent, near_extent * 5.0, length(VERTEX.xz));
+	surface_h = target + (surface_h - target) * lod;
+	height *= lod;
+	n4 = normalize(mix(vec4(0.0, 1.0, 0.0, 0.0), n4, lod));
+	foam_history *= lod;
+	vec4 world = vec4(surface_h.x, water_level + height + VERTEX.y, surface_h.y, surface_h.z);
 	vec4 rel = world - cam_position;
 	// Orthonormal basis, so the inverse is four dot products. The w component comes out at
 	// ~0 by construction: that is what the solve above was for.
