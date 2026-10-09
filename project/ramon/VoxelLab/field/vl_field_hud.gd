@@ -45,46 +45,49 @@ func _draw() -> void:
 	var stream: Node = field.get("stream")
 	var v: float = float(stream.get("voxel"))
 	var fr: Dictionary = field.call("frame_numbers")
-	var r := Rect2(Vector2(22, 22) * u, Vector2(330, 286) * u)
-	draw_style_box(Style.glass_box(14.0 * u), r)
+	var r := Rect2(Vector2(22, 22) * u, Vector2(330, 232) * u)
+	# The sea panel (Tab) stands where the numbers do: they wait while it is open.
+	var sea: Control = field.get("sea_panel")
+	var numbers: bool = sea == null or not sea.visible
+	if numbers:
+		draw_style_box(Style.glass_box(14.0 * u), r)
 	var x: float = r.position.x + 16 * u
 	var right: float = r.end.x - 16 * u
 	var y: float = r.position.y + 28 * u
-	draw_string(fb, Vector2(x, y), "THE OPEN WORLD", HORIZONTAL_ALIGNMENT_LEFT, -1, int(17 * u), Style.UI_INK)
-	draw_string(fk, Vector2(x, y + 18 * u), "OUR LANDSCAPE, WITHOUT EDGES, GENERATED AS YOU GO", HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Style.UI_ACCENT)
+	if numbers:
+		draw_string(fb, Vector2(x, y), "THE OPEN WORLD", HORIZONTAL_ALIGNMENT_LEFT, -1, int(17 * u), Style.UI_INK)
+		draw_string(fk, Vector2(x, y + 18 * u), "OUR LANDSCAPE, AN ISLAND OF IT, BUILT ONCE", HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Style.UI_ACCENT)
 	y += 44 * u
-	var swap: bool = bool(stream.get("swap"))
+	var flying: bool = String(field.get("mode")) == "fly"
+	var bird: Node = field.get("bird")
+	var you: String = "on the deck"
+	if flying and bird != null:
+		var at: Vector4 = bird.get("at")
+		you = "%.0f m up,  W %+.1f m,  slice %.0f°" % [at.y, at.w, float(bird.call("slice_degrees"))]
 	var rows: Array = [
-		["Load radius", "%.0f m  ([ and ])" % (float(stream.get("radius")) * v)],
-		["W band", "%.0f m either side" % (float(stream.get("w_chunks")) * 8.0 * v)],
-		["Chunks loaded", "%d  (%d drawn)" % [int(_stats.get("chunks", 0)), int(_stats.get("shown", 0))]],
-		["Waiting to be drawable", str(int(_stats.get("waiting", 0)))],
+		["Built round the deck", "%.0f m,  W %.0f m either side" % [float(stream.get("radius")) * v, float(stream.get("w_chunks")) * 8.0 * v]],
+		["Chunks", "%d  (%d drawn)" % [int(_stats.get("chunks", 0)), int(_stats.get("shown", 0))]],
 		["Tetrahedra", _thousands(int(_stats.get("tets", 0)))],
 		["Video memory", "%.0f MB" % float(_stats.get("mb", 0.0))],
+		["Built in", "%.1f s,  ground mapped in %.0f ms" % [float(field.get("build_seconds")), float(field.get("height_map_ms"))]],
 		["Frame, median", "%.1f ms" % float(fr.get("median", 0.0))],
 		["Frame, worst of 4 s", "%.1f ms" % float(fr.get("worst", 0.0))],
-		["New chunks", "worker thread" if swap else "in the frame (engine)"],
-		["You", "W %+.1f m,  slice turned %.0f°" % [float((field.get("cam") as Node4D).global_position.w), rad_to_deg(float(field.get("slice_turn")))]],
+		["You", you],
 	]
-	for row in rows:
+	for row in rows if numbers else []:
 		draw_string(ft, Vector2(x, y), String(row[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(11 * u), Style.UI_INK_DIM)
-		var col: Color = Style.UI_INK
-		if String(row[0]) == "New chunks":
-			col = Style.UI_LIVE if swap else Style.UI_WARM
-		draw_string(fk, Vector2(x, y), String(row[1]), HORIZONTAL_ALIGNMENT_RIGHT, right - x, int(11 * u), col)
+		draw_string(fk, Vector2(x, y), String(row[1]), HORIZONTAL_ALIGNMENT_RIGHT, right - x, int(11 * u), Style.UI_INK)
 		y += 20 * u
-	var flying: bool = String(field.get("mode")) == "fly"
 	# The cross where a crater lands (flying only).
 	var c: Vector2 = size * 0.5
 	if flying:
 		draw_line(c - Vector2(9, 0) * u, c + Vector2(9, 0) * u, Color(1, 1, 1, 0.8), 1.5 * u)
 		draw_line(c - Vector2(0, 9) * u, c + Vector2(0, 9) * u, Color(1, 1, 1, 0.8), 1.5 * u)
 	# The keys.
-	var keys: Array = [["WASD", "Fly"], ["Space / C", "Up, down"], ["Q / E", "Through W"], ["Wheel", "Turn the slice"], ["Click", "Crater"],
-		["[ / ]", "Radius"], ["T", "Worker / engine"], ["V", "Volume view"], ["H", "Land on the deck"]]
+	var keys: Array = [["Mouse", "Steer"], ["W / S", "Flap, brake"], ["Space", "Climb"], ["Shift", "Dive"], ["Right drag", "Turn the slice"],
+		["R", "Slice back"], ["Q / E", "Through W"], ["Click", "Crater"], ["V", "Volume view"], ["Tab", "The sea"], ["1", "Back to the deck"]]
 	if not flying:
-		keys = [["WASD", "Walk"], ["1", "Fly over it"], ["2", "Change the land"], ["[ / ]", "Radius"], ["T", "Worker / engine"],
-			["The blue door behind you", "Back to the lab"]]
+		keys = [["WASD", "Walk"], ["The ring at the front", "Fly"], ["Tab", "The sea"], ["The blue door behind you", "Back to the lab"]]
 	var kx: float = 22 * u
 	var ky: float = size.y - 22 * u
 	var strip := Rect2(Vector2(kx - 10 * u, ky - 22 * u), Vector2(size.x - 2.0 * (kx - 10 * u), 32 * u))

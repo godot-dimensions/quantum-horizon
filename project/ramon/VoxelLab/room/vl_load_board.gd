@@ -91,6 +91,9 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
+	# Its first frame comes before it knows the window: nothing to draw at no size (fonts at 0 px err).
+	if size.y < 8.0:
+		return
 	var u: float = size.y / 720.0
 	if _phase != "out":
 		_board(u)

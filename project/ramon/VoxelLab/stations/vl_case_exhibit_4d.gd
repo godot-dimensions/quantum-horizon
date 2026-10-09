@@ -21,11 +21,16 @@ extends "res://ramon/VoxelLab/stations/vl_exhibit_4d.gd"
 ##
 ## NO class_name (engine_gotchas.md).
 
+const SeaPanel := preload("res://ramon/VoxelLab/field/vl_sea_panel.gd")
+
 const LAYERS := ["land", "caves", "clipped"]
 const LAYER_NAMES := ["The land", "The caves", "Land and caves"]
 ## The three looks, by material: grass (0), dirt (1), stone (2), the sea (3).
 const BIOMES := [
-	{"name": "Green", "colors": {0: Color(0.40, 0.74, 0.22), 1: Color(0.56, 0.32, 0.12), 2: Color(0.34, 0.34, 0.34), 3: Color(0.25, 0.47, 1.0)}},
+	# The green land's water: this teal until the sea panel has a colour saved; _apply_biome and the
+	# recipe paint it in SeaPanel.voxel_tint(), the open world's sea colour (Ramon, 9 Oct: "the blue of
+	# the water of the voxel surface will have to match ... the big ocean").
+	{"name": "Green", "colors": {0: Color(0.40, 0.74, 0.22), 1: Color(0.56, 0.32, 0.12), 2: Color(0.34, 0.34, 0.34), 3: Color(0.07, 0.27, 0.34)}},
 	{"name": "Desert", "colors": {0: Color(0.88, 0.74, 0.52), 1: Color(0.76, 0.42, 0.24), 2: Color(0.52, 0.36, 0.28), 3: Color(0.93, 0.91, 0.85)}},
 	{"name": "Lava", "colors": {0: Color(0.17, 0.16, 0.16), 1: Color(0.30, 0.14, 0.09), 2: Color(0.10, 0.09, 0.09), 3: Color(1.0, 0.40, 0.06)}},
 ]
@@ -126,6 +131,10 @@ func biome_name() -> String:
 
 func _apply_biome() -> void:
 	var colors: Dictionary = BIOMES[biome]["colors"]
+	if biome == 0:
+		# The green land's water in the open world's sea colour, as the sea panel has it saved.
+		colors = colors.duplicate()
+		colors[3] = SeaPanel.voxel_tint()
 	for s in [specimen, spare, _rebuilding]:
 		if s != null and is_instance_valid(s) and s.get("world") != null:
 			s.get("world").set("material_palette", Recipe.palette(s.get("recipe"), colors))

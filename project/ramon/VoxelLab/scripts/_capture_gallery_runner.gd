@@ -1,8 +1,9 @@
 extends SceneTree
 ## Voxel Lab, round 2 (9 Oct): the gallery and the field, played and photographed. The terrain's ring
 ## (the choice: cut it, change the land), its three looks, a cut at its bench; a rung of the ladder and
-## its pop-up; the two blue walls; the far door's shimmer; through it to the field's deck (its choice,
-## change the land, fly, land); back through the deck's shimmer to the gallery's far door. Frames to
+## its pop-up; the two blue walls; the far door's shimmer; through it to the field's deck (nothing on
+## screen as you arrive; the helm's choice in its ring; change the land, built again behind the board;
+## flying as the bird, and back on the deck); back through the deck's shimmer to the gallery's far door. Frames to
 ## smoke_test_output/voxel_lab/gallery/, checks printed as PASS or FAIL.
 ##
 ## Keys go in as events; the mouse is never moved or held (the cursor is the user's).
@@ -17,6 +18,8 @@ var _fails: int = 0
 var _biomes: Array = []
 var _board_saved: bool = false
 var _since: float = 0.0
+var _board_saved2: bool = false
+var _deck0: Vector4
 
 
 func _initialize() -> void:
@@ -171,38 +174,66 @@ func _process(delta: float) -> bool:
 				_since = 0.0
 			else:
 				_since += delta
-			# A moment after the board has gone, for the deck's choice to fade in.
+			# A moment after the board has gone: you look first, nothing on screen.
 			if f != null and f.get("player") != null and not bool(f.get("loading")) and _since > 1.5:
 				_check(String(f.get("mode")) == "deck", "through the shimmer: on the field's deck")
-				_check(bool(f.get("choice").get("shown")), "with its choice")
+				_check(not bool(f.get("choice").get("shown")), "you look first: no choice until the helm")
 				_save("11_field_deck")
-				_key(KEY_2)
+				f.get("player").global_position = f.call("helm_spot")
 				_next()
 			elif _t > 40.0:
 				_check(false, "the field never opened")
 				return true
 		16:
-			if _t > 1.0:
-				_check(int(_field().get("biome")) == 1, "2 on the deck changes the land")
+			if _t > 1.2:
+				var f: Node = _field()
+				_check(bool(f.get("at_helm")) and bool(f.get("choice").get("shown")), "in the helm's ring, its choice")
+				_save("11b_field_helm")
+				_key(KEY_2)
+				_since = 0.0
+				_next()
+		17:
+			# Green to desert builds the land again (the generator's own sea), behind the board.
+			var f: Node = _field()
+			if bool(f.get("loading")):
+				_since = 0.0
+				if not _board_saved2 and _t > 1.5:
+					_board_saved2 = true
+					_save("12a_field_rebuild_board")
+			else:
+				_since += delta
+			if _t > 1.0 and not bool(f.get("loading")) and _since > 1.5:
+				_check(int(f.get("biome")) == 1 and _board_saved2, "2 at the helm changes the land, built again behind the board")
+				_check(not (f.get("water") as Node4D).visible, "the moving sea only with the green land")
 				_save("12_field_desert")
 				_key(KEY_1)
 				_next()
-		17:
-			if _t > 3.0:
-				var f: Node = _field()
-				_check(String(f.get("mode")) == "fly", "1 flies")
-				_save("13_field_flying")
-				_key(KEY_H)
-				_next()
+			elif _t > 40.0:
+				_check(false, "the land was never built again")
+				return true
 		18:
-			if _t > 1.0:
-				var f: Node = _field()
-				_check(String(f.get("mode")) == "deck", "H lands you on the deck")
-				var deck: Vector4 = f.get("_deck_at")
-				# Walk back into the shimmer behind you.
-				f.get("player").global_position = deck + Vector4(0, 0.3, 3.9, 0)
+			var f: Node = _field()
+			if _t < 0.2:
+				f.get("bird").set("drive", {"flap": true, "pitch": 0.05})
+				_deck0 = f.get("bird").get("at")
+			if _t > 4.0:
+				var b: Node = f.get("bird")
+				var moved: Vector4 = (b.get("at") as Vector4) - _deck0
+				_check(String(f.get("mode")) == "fly" and bool(b.get("flying")), "1 at the helm: you fly as a bird")
+				_check(Vector2(moved.x, moved.z).length() > 12.0, "off the deck and away (%.1f m)" % Vector2(moved.x, moved.z).length())
+				_save("13_field_flying")
+				b.set("drive", {})
+				_key(KEY_1)
 				_next()
 		19:
+			if _t > 2.0:
+				var f: Node = _field()
+				_check(String(f.get("mode")) == "deck", "1 brings you back to the deck")
+				_save("13b_field_back_on_deck")
+				# Walk back into the shimmer behind you.
+				f.get("player").global_position = f.call("door_spot")
+				_next()
+		20:
 			var l: Node = _lab()
 			if l != null and l.get("player") != null and not bool(l.get("loading")) and _t > 1.5:
 				var p: Vector4 = l.get("player").global_position

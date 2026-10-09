@@ -15,7 +15,11 @@ extends Node4D
 ## tilts as it goes, settling in a second or two.
 ##
 ## ITS FACE: the exhibit's number, its title and a line, and up to three live numbers, read from the
-## station every half second (`face()` of the exhibit, else its numbers()).
+## station every half second (`face()` of the exhibit, else its numbers()); or all of it from `source`
+## (its panel_face(): {"title", "kicker", "rows"}), as the open world's helm does. Number 0: none.
+##
+## It works in its parent's frame, so it can stand on something that moves (the open world's deck,
+## which flies); the parent must not turn.
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -44,6 +48,8 @@ const CORNER := 0.07
 @export var station: NodePath
 ## The point it turns its face to (x, z), usually the exhibit's ring.
 @export var face_point: Vector2 = Vector2.ZERO
+## Anything with panel_face() -> {"title", "kicker", "rows"}: the whole face from it instead.
+var source: Object
 
 @export_group("Spring")
 ## How close you can come (metres from its middle) before it is pushed, and how far it gives.
@@ -161,6 +167,9 @@ func _process(delta: float) -> void:
 	var target := Vector2.ZERO
 	if player != null and is_instance_valid(player):
 		var p: Vector4 = player.global_position
+		var parent := get_parent() as Node4D
+		if parent != null:
+			p -= parent.global_position
 		var away := Vector2(_home.x + _off.x - p.x, _home.z + _off.y - p.z)
 		var d: float = away.length()
 		if d < reach and d > 0.001:
@@ -193,6 +202,9 @@ func _read() -> void:
 			if n.has(k[0]):
 				rows.append([k[1], String(n[k[0]])])
 	_data = {"number": number, "title": title, "kicker": kicker, "rows": rows.slice(0, 3)}
+	if source != null and is_instance_valid(source) and source.has_method("panel_face"):
+		var f: Dictionary = source.call("panel_face")
+		_data = {"number": number, "title": f.get("title", title), "kicker": f.get("kicker", kicker), "rows": (f.get("rows", []) as Array).slice(0, 3)}
 	var s: String = str(_data)
 	if s != _sig:
 		_sig = s
@@ -209,12 +221,14 @@ func _paint() -> void:
 	var fs: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")
 	var pad: float = 26.0 * u
-	var num: String = "%02d" % int(_data.get("number", 1))
 	var npx: int = int(64 * u)
-	_page.draw_string(fb, Vector2(pad, pad + npx * 0.8), num, HORIZONTAL_ALIGNMENT_LEFT, -1, npx, Style.UI_ACCENT)
-	var nx: float = pad + fb.get_string_size(num, HORIZONTAL_ALIGNMENT_LEFT, -1, npx).x + 18.0 * u
-	_page.draw_line(Vector2(nx, pad + 6.0 * u), Vector2(nx, pad + npx * 0.9), Color(1, 1, 1, 0.35), maxf(1.0, 2.0 * u))
-	var tx: float = nx + 18.0 * u
+	var tx: float = pad
+	if int(_data.get("number", 1)) > 0:
+		var num: String = "%02d" % int(_data.get("number", 1))
+		_page.draw_string(fb, Vector2(pad, pad + npx * 0.8), num, HORIZONTAL_ALIGNMENT_LEFT, -1, npx, Style.UI_ACCENT)
+		var nx: float = pad + fb.get_string_size(num, HORIZONTAL_ALIGNMENT_LEFT, -1, npx).x + 18.0 * u
+		_page.draw_line(Vector2(nx, pad + 6.0 * u), Vector2(nx, pad + npx * 0.9), Color(1, 1, 1, 0.35), maxf(1.0, 2.0 * u))
+		tx = nx + 18.0 * u
 	_page.draw_string(fb, Vector2(tx, pad + 34.0 * u), String(_data.get("title", "")).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, sz.x - tx - pad, int(36 * u), Color.WHITE)
 	_page.draw_string(fs, Vector2(tx, pad + 62.0 * u), String(_data.get("kicker", "")), HORIZONTAL_ALIGNMENT_LEFT, sz.x - tx - pad, int(17 * u), Style.UI_INK_DIM)
 	var rows: Array = _data.get("rows", [])

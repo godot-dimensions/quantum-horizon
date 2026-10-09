@@ -41,6 +41,8 @@ const UNDEFINED := 255
 const JITTER := Vector4(0.31, 0.27, 0.23, 0.19)
 ## The engine's mesh chunks, voxels a side (voxel_constants_4d.h).
 const CHUNK := 8
+## The open world's sea settings: the voxel water's colour follows its saved deep colour (9 Oct).
+const SeaPanel := preload("res://ramon/VoxelLab/field/vl_sea_panel.gd")
 
 ## The colours, after the old block (VoxelMining/scripts/voxel_mining_final_block.gd): grey crust, hot
 ## orange core; then a teal vein (a pale one read as a hole in the first frames, 6 Oct) and an amethyst
@@ -451,7 +453,9 @@ static func terrain(size_m: Vector4, voxel: float, opts: Dictionary = {}) -> Dic
 	var r: Dictionary = {"kind": "terrain", "voxel": voxel, "center": center, "half": half, "crust": 0.0, "planes": [], "vein": {},
 		"cavity": {}, "column": {}, "mirror": false,
 		"layers": [ocean, clipped if "caves" in parts else land, _box(center, half * 2.0, UNDEFINED, AIR)],
-		"colors": {0: Color(0.40, 0.74, 0.22), 1: Color(0.56, 0.32, 0.12), 2: Color(0.34, 0.34, 0.34), 3: Color(0.25, 0.47, 1.0)}}
+		# The water in the open world's sea colour (Ramon, 9 Oct: "the blue of the water of the voxel
+		# surface will have to match somehow to the big ocean").
+		"colors": {0: Color(0.40, 0.74, 0.22), 1: Color(0.56, 0.32, 0.12), 2: Color(0.34, 0.34, 0.34), 3: SeaPanel.voxel_tint()}}
 	return r
 
 

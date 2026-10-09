@@ -31,6 +31,14 @@ const Recipe := preload("res://ramon/VoxelLab/specimen/vl_recipe.gd")
 			_trigger.set("load_distance", radius)
 ## How many chunks deep through W the world goes either side of W 0, and its height band (voxels).
 @export var w_chunks: int = 1
+## How far ahead of `follow` (along its view, a fraction of the radius) the world is loaded. 0: round it,
+## which is what the open world wants now that it builds once round a fixed middle (9 Oct).
+@export var ahead: float = 0.35
+## What fills the land's hollows below sea level: 3, the generator's own sea (the desert's salt flats,
+## the lava field's lava); 254, air, so a real moving sea (Trym's, the field's) lies over open seabed
+## with no voxel water under it (Ramon, 9 Oct: "ideally the ocean voxels wouldnt be there"). Set before
+## the node enters the tree.
+@export var sea_material: int = 3
 @export var y_range: Vector2i = Vector2i(-16, 16)
 ## Build new chunks' draw buffers on a worker thread before showing them.
 @export var swap: bool = true
@@ -79,7 +87,7 @@ func _ready() -> void:
 func _generator():
 	var ocean = ClassDB.instantiate("PlaneVoxelGenerator4D")
 	ocean.set("material_over", 254)
-	ocean.set("material_under", 3)
+	ocean.set("material_under", sea_material)
 	var land = ClassDB.instantiate("LandscapeVoxelGenerator4D")
 	land.set("seed", seed)
 	land.set("intensity", 12.32)
@@ -115,7 +123,7 @@ func _process(_delta: float) -> void:
 		var ahead: Vector4 = -(follow.global_basis * Vector4(0, 0, 1, 0))
 		ahead.y = 0.0
 		if ahead.length() > 0.01:
-			at += ahead.normalized() * radius * voxel * 0.35
+			at += ahead.normalized() * radius * voxel * self.ahead
 		at.y = 0.0
 		_trigger.set("position", at / voxel)
 	_check_held()

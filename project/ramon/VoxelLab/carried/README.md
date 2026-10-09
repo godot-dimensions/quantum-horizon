@@ -52,6 +52,14 @@ for remakes: "carry it over, and not reuse it"; the Quantum Range and the Arbore
   `kit_panel_research.gd`'s "tesseract" chart, ticked at 30 a second; `kit/kit_room_4d.gd`'s deferred
   rebuild skips a room that has left the tree.
 
+- **9 Oct, Trym's sea for the open world.** `water4d/` (`water4d_surface.gd`, `water4d_presets.gd`,
+  `water4d.gdshader`) and `shaders/foam_4d.gdshaderinc` from `res://ramon/Water/carried/` (the Water
+  prototype's copy of Trym's 4D sea), paths rewritten to here. Changes: a GRADED grid
+  (`grid_resolution`, `fine_extent`: even squares near the camera, growing to `extent`), so the sea can
+  reach a kilometre at the cost of the old 280 m; and in the shader, `calm_from` and `calm_to`: the
+  waves, foam and ripple die away toward the far edge, so the large far squares never sample a wave
+  they are too coarse for. With the defaults both are as Trym made them.
+
 ## Going back to the shared kit
 
 To point the Voxel Lab at the shared kit once it settles, rewrite these paths back to

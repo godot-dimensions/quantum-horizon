@@ -17,6 +17,11 @@ its research and its status: `VoxelLab/PLAN.md`. The old `VoxelMining/` scenes a
    in its place (you offered "something completely new")?
 4. **The choice uses keys 1 and 2** (clickable too when the cursor is free, Esc). Would you rather
    click with the cursor held, or another key?
+5. **The open world's edge.** The island ends where the build does, 40 m round the deck, cut straight
+   (you see it from high up). Round the green land the sea hides it; round the desert and the lava
+   there is no sea, so past the island is the grey of the sky. Options: the moving sea round those two
+   as well (calm and pale as a salt flat, dark orange for the lava), or a coast that slopes into the
+   sea before the edge (a change to the generator). Nothing done yet.
 
 ## What to look at
 
@@ -46,9 +51,17 @@ Round 2 (9 Oct), from Ramon's walkthrough of 8 Oct: the plan and what he asked f
    on the world's floating panel and the open world's loading board.
 7. **The open world.** The far door is a hologram, the pedestals' own shift effect. Through it, a
    full-screen loading board in the lab's blue (what is coming, and the chunks being built on a map with
-   their numbers) while the landscape builds behind it; then white, then the survey deck over our
-   landscape, the same generators without edges. The lab has the same board while its specimens build. **1 Fly over it** (H lands you), **2 Change the land**; the shimmer behind you takes you
-   back.
+   their numbers) while an island of our landscape is built round a survey deck; then white, then the
+   deck (the lab's blue, railings from the engine's fence generator) in Trym's moving sea. The lab has
+   the same board while its specimens build. You look first: nothing on screen. At the deck's front
+   left floats the helm, a ring in front of it; stand in the ring: **1 Fly over it as a bird**, **2
+   Change the land** (green, desert, lava; green to and from the others builds again behind the board).
+   The bird flies from its eyes, the Lookout hawk's feel: mouse to steer, W flap, S brake, Space climb,
+   Shift dive, **right drag turns the slice** (up to 30 degrees), R brings it home, Q/E through W, click
+   a crater, 1 back on the deck. It stays in a circle (a hologram wall shows the edge and you are turned
+   back), above the land and the sea. **Tab: the sea's settings**, SAVE keeps them
+   (`field/voxel_field_sea.cfg`); the gallery's pedestals paint their water in the same colour. The
+   shimmer behind you on the deck takes you back.
 
 **The lights:** one soft light on each item, nothing else. F1 opens the dev panel; its **LIGHTS** page
 is a top view of the corridor, hall and gallery with every light and its pool: click one to pick it,
@@ -70,7 +83,11 @@ own strength, and the picked light's own. **SAVE** writes `voxel_lab_lights.cfg`
   the shelf's pre-cut sections, the column and the tree, Andrew's test cases.
 - **`room/`**: the bench and its screen, chips and sounds, the grid view, the wall panels' live data,
   the dev panel (F1), consoles, cards, floor marks and route targets.
-- **`field/`**: Andrew's landscape streamed round a flying camera.
+- **`field/`**: the open world: the island built once round the deck (`vl_stream_4d.gd`, its trigger
+  fixed at the middle), the deck and the helm, the bird (`vl_bird_4d.gd`), the height map it flies over
+  (read off the built meshes on a worker while the board is up), the sea and its panel
+  (`vl_sea_panel.gd`). Trym's sea is carried in `carried/water4d/`, with a graded grid (fine near you,
+  a kilometre out) and the waves calmed toward the far edge.
 - **`carried/`**: the lab kit, carried from the Arboretum's carried copy (its README lists changes).
   The walk and the camera are the pen's as of 8 Oct (Andrew's stepping and facing, the floor-frame
   camera), carried again; the room never turns (slice turning off), and a right drag turns only the
@@ -102,7 +119,8 @@ Spares and rebuilds are built hidden too, and they share the main thread with th
 their load radius grows in over three seconds, and they stand still while any cut in the room is on
 its way to the screen (a spare meshing in a cut's frames made it cost 126 ms).
 
-The same idea streams the field: every new chunk is hidden until a worker has made it drawable.
+The open world used the same idea to stream (every new chunk hidden until a worker had made it
+drawable) until 9 Oct; now it builds once, behind the board, and nothing builds while you fly.
 
 ## For Andrew and Aaron (draft message)
 
@@ -129,17 +147,23 @@ The same idea streams the field: every new chunk is hidden until a worker has ma
 >    about 8 ms each). A time budget per frame in
 >    `VoxelMeshHandler4D::update_dirty_meshes`, or meshing on the worker threads that already generate,
 >    would fix it. Also handy: `set_process(false)` on a VoxelWorld4D pauses its loading and meshing,
->    which the lab uses to keep a spare's meshing out of a cut's frames.
+>    which the lab uses to keep a spare's meshing out of a cut's frames. (Since 9 Oct the lab's open
+>    world builds an island once instead of streaming, so it no longer shows this; the numbers are from
+>    the streaming version.)
 
 ## Open
 
-1. **Flying over the field still stutters, and the rest of the fix is in the engine.** The swap takes
-   the draw buffers off the main thread: at a 48 m radius, flying, the median frame is 1.9 ms with it
-   and 149 ms without (T in the field switches). What is left is the meshing, on the main thread, 16
-   chunks a frame at up to about 8 ms each: one frame in four to six still runs 60 to 250 ms while new ground
-   comes in. The field flies slowly and grows its radius in over 8 s. Measured: radius 16 m, 66 chunks,
-   172,000 tetrahedra, about 210 MB; 24 m, 170 chunks, 400,000, about 490 MB; 32 m, 252 chunks,
-   708,000, about 860 MB; 48 m, 600 chunks, 1.6 million, about 2 GB. (Item 5 of the note below.)
+1. **The open world no longer streams; it is an island, built once** (Ramon, 9 Oct: "how it builds as
+   you're moving, is that correct? rather just fly as a bird ... limited in a circle"). Streaming
+   stuttered whatever we did: the engine meshes new chunks on the main thread (item 5 of the note).
+   Built once instead, 40 m round the deck and 16 m either side of W 0 (so a turned slice still has
+   land in it): 656 chunks, 2.0 million tetrahedra, about 2.4 GB of video memory, 8 s behind the board,
+   the ground mapped in 0.2 s. Flying over it, turning the slice: median frame 2.2 ms, worst 5.6 ms, no
+   frame over 16.7 ms in 5,100 (the streaming field: one frame in three over 33 ms). The price is the
+   memory and that the island ends: past 40 m there is no land, only the sea (and for the desert and
+   the lava, the grey of the sky; question 5). `BUILT_RADIUS` and `W_CHUNKS` in `voxel_field_4d.gd`
+   trade one for the other. Earlier streaming numbers: radius 16 m, 66 chunks, about 210 MB; 24 m,
+   170, 490 MB; 32 m, 252, 860 MB; 48 m, 600, about 2 GB (one band of W).
 2. **Runners: never save a frame in the frame of a cut.** Reading the screen back stalls that frame
    (about 110 ms here), and the cut's record is charged for it: a "126 ms first cut" chased for an hour
    was the room runner's own screenshot. Both bench runners now wait a moment after a save.
@@ -152,4 +176,10 @@ The same idea streams the field: every new chunk is hidden until a worker has ma
 6. **Gone from the gallery** (round 2): the 24-cell and the resolution ladder. The gallery now shows how
    his world is made, layer by layer, and then the world.
 7. **The field is a deck, not ground to walk on**: the engine's voxels have no collision yet, so you
-   walk on the floating deck and fly over the land.
+   walk on the floating deck and fly over the land; the bird keeps off the ground by a height map read
+   off the built meshes, not by physics.
+8. **The sea.** Trym's, carried (`carried/water4d/`, README there): the land's own sea is air under it,
+   so there is no voxel water, only seabed. Its numbers are on Tab and in `field/voxel_field_sea.cfg`
+   once saved; my first values: 1.1 m over the land's sea level, the Calm preset at 0.4, a kilometre
+   out, the waves calm from 120 m to flat by 320 m. Its cost did not show in the frame time (2.2 ms
+   median flying with it).
