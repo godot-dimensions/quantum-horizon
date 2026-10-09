@@ -101,8 +101,9 @@ func play_part(key: String, t: float, length: float) -> Dictionary:
 			if stage_count("orders") > 0 and u < 0.8:
 				show_only(["stations"] if u < 0.15 else [])
 				show_stage("orders", int(floor(clampf((u - 0.1) / 0.65, 0.0, 1.0) * float(stage_count("orders") - 1) + 0.0001)))
-			else:
-				show_only(["wood"])
+				return {"done": false}
+			show_only(["wood"])
+			return {"done": true}
 		"joints":
 			show_only(["wood"])
 		"slice":

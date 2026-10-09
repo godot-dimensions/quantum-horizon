@@ -41,7 +41,7 @@ extends Resource
 ## The research panel's layout family (rule 3): an animal and its evidence, two equal comparison
 ## columns, or three steps in sequence. All keep the same header, bounds, type and lower band.
 ## ARBORETUM (carried copy): "methods", four equal columns, one a method (kit_panel_research.gd).
-@export_enum("specimen", "compare", "steps", "methods") var research_layout: String = "specimen"
+@export_enum("specimen", "compare", "steps", "methods", "algorithm") var research_layout: String = "specimen"
 
 
 ## The introduction's running header, left: "01  /  CREATION LAB".

@@ -10,9 +10,11 @@ extends SceneTree
 ##   tilt     a tree turned by a run of drags (both axes), its trunk's lean measured
 ##   stories  every part of each pedestal's story, a frame in the middle of each
 ##   door     the back door's sign and its holographic doorway
+##   perf     the hall's frame times at its views; perf2 the stories and the tour (section 8)
 
 const SCENE := "res://ramon/Arboretum/botany_lab.tscn"
 const OUT := "res://smoke_test_output/botany_lab/"
+const Ground := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/carried/chickenpen/scripts/ground_basis_4d.gd")
 
 var _room: Node4D
 var _sets: Array = []
@@ -27,6 +29,8 @@ func _initialize() -> void:
 		_sets.append(a)
 	if _sets.is_empty():
 		_sets = ["route"]
+	if "perf2" in _sets or "showcase" in _sets or "turns" in _sets:
+		_deadline = Time.get_ticks_msec() + 900000
 	(func() -> void: _run()).call_deferred()
 
 
@@ -99,6 +103,25 @@ func _run() -> void:
 				await _door()
 			"perf":
 				await _perf()
+			"perf2":
+				await _perf2()
+			"showcase":
+				await _showcase()
+			"turns":
+				await _turns()
+			"wall":
+				_go(5.0, -11.0, -42.0, 4.0)
+				await _frames(60)
+				var board: Node = _room.get_node_or_null("ResearchBoard")
+				var vp: SubViewport = board.get("_vp") if board != null else null
+				for i in 8:
+					if i < 2:
+						_shoot("wall", "w%02d_research_wall" % (i + 1))
+					if vp != null:
+						# The page itself, as printed on the wall, at the diagram's parts.
+						vp.get_texture().get_image().save_png(OUT + "wall/p%02d_page.png" % (i + 1))
+						print("CAPTURE shot wall/p%02d_page" % (i + 1))
+					await _frames(170)
 	print("CAPTURE done")
 	quit(0)
 
@@ -217,6 +240,131 @@ func _perf() -> void:
 		times.sort()
 		print("CAPTURE perf %-10s frame median %.2f ms, 95%% %.2f ms" % [v[0], times[75], times[142]])
 	Engine.max_fps = 60
+
+
+## Round 2 (section 8, step 13): the Play Showcase, each shot at its arrival, mid-growth, the moment the
+## exhibit says its geometry is done, and the end of the hold; when each came, printed.
+func _showcase() -> void:
+	_go(3.0, 12.2, 0.0, -10.0)
+	await _frames(30)
+	_room.call("watch")
+	var last_i: int = -2
+	var shot_t0: int = 0
+	var marks: Dictionary = {}
+	var frames: int = 0
+	var t_end: int = Time.get_ticks_msec() + 180000
+	while bool(_room.call("touring")) and Time.get_ticks_msec() < t_end:
+		await process_frame
+		frames += 1
+		var cine: Dictionary = _room.get("_cine")
+		if cine.is_empty() or String(cine.get("phase", "")) != "shot":
+			continue
+		var i: int = int(cine["i"])
+		var t: float = float(cine["t"])
+		var s: Dictionary = (cine["shots"] as Array)[i]
+		if i != last_i:
+			if last_i >= 0:
+				print("CAPTURE showcase shot %d left after %.1f s" % [last_i + 1, (Time.get_ticks_msec() - shot_t0) / 1000.0])
+			last_i = i
+			shot_t0 = Time.get_ticks_msec()
+			marks = {}
+		var done_at: float = float(s.get("done_at", -1.0))
+		for m in [["a_arrived", t >= 1.9], ["b_growing", t >= 1.8 + float(s["length"]) * 0.4], ["c_done", done_at >= 0.0 and t >= done_at + 0.1],
+				["d_held", done_at >= 0.0 and t >= done_at + 3.3]]:
+			if bool(m[1]) and not marks.has(m[0]):
+				marks[m[0]] = true
+				_shoot("showcase", "s%d_%s_%s" % [i + 1, String(s.get("method", "")), m[0]])
+				if String(m[0]) == "c_done":
+					print("CAPTURE showcase shot %d (%s) done at %.1f s (part length %.1f s)" % [i + 1, String(s.get("method", "")), done_at, float(s["length"])])
+	print("CAPTURE showcase over after %d frames" % frames)
+	_free_mouse()
+
+
+## Round 2 (section 8, step 15): each tree turned through W with no limit, both planes, to 45, 90, 135
+## and 180 degrees, from its ring.
+func _turns() -> void:
+	var stations: Array = _room.get("stations")
+	for v in [["01", -3.7, 8.0, 90.0, 0], ["02", 3.5, 1.0, -90.0, 1], ["03", -3.5, -6.0, 90.0, 2], ["oak", 0.0, -6.6, 0.0, 3]]:
+		_go(float(v[1]), float(v[2]), float(v[3]), -10.0 if String(v[0]) != "oak" else -2.0)
+		await _frames(30)
+		var st: Node = stations[int(v[4])]
+		for plane in [["side", 1.0, 0.0], ["depth", 0.0, 1.0]]:
+			for deg in [45, 90, 135, 180]:
+				st.call("reset_view")
+				var a: float = deg_to_rad(float(deg))
+				st.call("turn_by", a * float(plane[1]), a * float(plane[2]))
+				await _frames(10)
+				_shoot("turns", "t%s_%s_%03d" % [v[0], plane[0], deg])
+				print("CAPTURE turns %s %s %d: tilt %.1f deg" % [v[0], plane[0], deg, rad_to_deg(Ground.tilt(st.get("turn_basis")))])
+		st.call("reset_view")
+
+
+## Round 2 (section 8, step 1): what a story costs as it plays, not only the median: at each ring on
+## arrival (the story plays), then once it has ended (the finished tree), then the whole Play Showcase.
+## Each reports the median, the 95th, the worst frame and how many frames took over 25 ms (a hitch).
+func _perf2() -> void:
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	Engine.max_fps = 0
+	var stations: Array = _room.get("stations")
+	for v in [["at_01", -3.7, 8.0, 90.0, 0], ["at_02", 3.5, 1.0, -90.0, 1], ["at_03", -3.5, -6.0, 90.0, 2], ["at_oak", 0.0, -7.6, 0.0, 3]]:
+		_go(0.0, 14.0, 0.0, -10.0)
+		await _frames(30)
+		_go(float(v[1]), float(v[2]), float(v[3]), -10.0)
+		_report("%s_arriving" % v[0], await _measure(360))
+		var st: Node = stations[int(v[4])]
+		var waited: int = 0
+		while int(st.get("seq_index")) >= 0 and waited < 3600:
+			await process_frame
+			waited += 1
+		_report("%s_finished" % v[0], await _measure(150))
+	# The research wall's moving diagram: the same view with the wall's page frozen, to see what its
+	# re-rendering costs.
+	_go(3.5, 1.0, -90.0, -10.0)
+	await _frames(40)
+	_report("at_02_wall_moving", await _measure(240))
+	var board: Node = _room.get_node_or_null("ResearchBoard")
+	if board != null:
+		board.set_process(false)
+		await _frames(10)
+		_report("at_02_wall_still", await _measure(240))
+		board.set_process(true)
+	_go(0.0, 9.0, 0.0, -10.0)
+	await _frames(30)
+	_room.call("watch")
+	var times: Array = []
+	var last: int = Time.get_ticks_usec()
+	var t_stop: int = Time.get_ticks_msec() + 180000
+	while bool(_room.call("touring")) and Time.get_ticks_msec() < t_stop:
+		await process_frame
+		var now: int = Time.get_ticks_usec()
+		times.append((now - last) / 1000.0)
+		last = now
+	_report("tour", times)
+	Engine.max_fps = 60
+
+
+func _measure(n: int) -> Array:
+	var times: Array = []
+	var last: int = Time.get_ticks_usec()
+	for i in n:
+		await process_frame
+		var now: int = Time.get_ticks_usec()
+		times.append((now - last) / 1000.0)
+		last = now
+	return times
+
+
+func _report(name: String, times: Array) -> void:
+	if times.is_empty():
+		return
+	var s: Array = times.duplicate()
+	s.sort()
+	var hitches: int = 0
+	for x in s:
+		if float(x) > 25.0:
+			hitches += 1
+	print("CAPTURE perf2 %-16s %4d frames, median %.2f ms, 95%% %.2f ms, worst %.1f ms, over 25 ms: %d" % [name, s.size(), s[s.size() / 2],
+		s[mini(int(s.size() * 0.95), s.size() - 1)], s[s.size() - 1], hitches])
 
 
 ## The back door's sign and its doorway.

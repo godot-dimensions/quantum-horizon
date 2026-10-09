@@ -29,6 +29,14 @@ extends Node4D
 ## A loading board while the land and the trees are built; the holographic doorway in the near wall
 ## leads back to the hall (botany_lab.tscn), which puts you at its back door.
 ##
+## TURNING THROUGH W (round 2, Ramon: "the player currently cannot manipulate W using the mouse ... Reuse
+## the established slice-control approach ... works for both environmental showcases"): each side's land
+## and its trees stand on a turntable about the display's middle, and a right drag turns both together
+## (the hall's pedestals' turn: only the floor's x, z and W, so trees never lean), so the two methods are
+## always cut the same way. R levels them; Q and E still step you through W. The land is 2.5 m deep in W
+## (`w_half`), so a turned slice crosses it in a band that narrows as the turn grows: no stop, the band
+## is shown and said (the strip, a toast, the walls).
+##
 ## NO class_name (engine_gotchas.md).
 
 const KitPlayer := preload("res://ramon/Arboretum/botany_lab/carried/kit/kit_player.gd")
@@ -49,6 +57,7 @@ const Pivots := preload("res://ramon/Arboretum/botany/tree_pivots.gd")
 const Leaves := preload("res://ramon/Arboretum/botany/leaf_field_4d.gd")
 const Wind := preload("res://ramon/Arboretum/botany/wind_4d.gd")
 const Species := preload("res://ramon/Arboretum/botany/tree_species.gd")
+const Ground := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/carried/chickenpen/scripts/ground_basis_4d.gd")
 
 const HALL := "res://ramon/Arboretum/botany_lab.tscn"
 const ARRIVE_META := "botany_arrive"
@@ -98,6 +107,12 @@ var _smooth_t0: int = 0
 var _trees_done: bool = false
 var _leaving: bool = false
 var _door_z: float = 0.0
+## Both lands' turn through W (a ground basis: the floor only), and their turntables.
+var turn_basis: Projection = Projection.IDENTITY
+var _turn_blocky: Node4D
+var _turn_smooth: Node4D
+var _band_said: bool = false
+var _strip_tilt: int = -1
 
 
 func _ready() -> void:
@@ -117,6 +132,8 @@ func _ready() -> void:
 	LabGrid.set_swatch("botany_grass", Color(0.36, 0.55, 0.22), Color(0.29, 0.46, 0.17), Color(0.33, 0.51, 0.20), 0.6)
 	LabGrid.set_swatch("botany_soil", Color(0.45, 0.36, 0.27), Color(0.37, 0.29, 0.21), Color(0.42, 0.33, 0.25), 0.6)
 	_build_slabs()
+	_turn_blocky = _turntable("TurnBlocky", left_at)
+	_turn_smooth = _turntable("TurnSmooth", right_at)
 	_build_blocky()
 	_start_smooth()
 	_build_route()
@@ -151,6 +168,15 @@ func _ready() -> void:
 func height_at(x: float, z: float, w: float) -> float:
 	var n: float = noise.get_noise_3d(x, z, w * 1.6) * 0.5 + 0.5
 	return lerpf(height_range.x, height_range.y, pow(clampf(n, 0.0, 1.0), 1.35))
+
+
+## A side's turntable: the display's middle at the slab's top. Its land and its trees are built under it.
+func _turntable(nm: String, at: Vector2) -> Node4D:
+	var n := Node4D.new()
+	n.name = nm
+	n.position = Vector4(at.x, slab_height, at.y, 0.0)
+	add_child(n)
+	return n
 
 
 ## The two slabs the land stands on: dark, low, square (the Voxel Lab's square ground display).
@@ -194,8 +220,9 @@ func _build_blocky() -> void:
 	holder.name = "LandBlocky"
 	# Cells centred on the slice in W (an odd count: the middle one straddles w 0, so the slice never
 	# runs along a cell's face), and in x and z on the display.
-	holder.position = Vector4(left_at.x - float(nx % 2) * c * 0.5, slab_height, left_at.y - float(nz % 2) * c * 0.5, -float(nw % 2) * c * 0.5 + c * 0.5 * float(1 - nw % 2))
-	add_child(holder)
+	var at: Vector4 = Vector4(left_at.x - float(nx % 2) * c * 0.5, slab_height, left_at.y - float(nz % 2) * c * 0.5, -float(nw % 2) * c * 0.5 + c * 0.5 * float(1 - nw % 2))
+	holder.position = at - _turn_blocky.position
+	_turn_blocky.add_child(holder)
 	var tets: int = 0
 	for part in [["Grass", grass, "botany_grass"], ["Soil", soil, "botany_soil"]]:
 		var mesh: ArrayTetraMesh4D = Voxel.mesh(all, c, part[1])
@@ -203,7 +230,7 @@ func _build_blocky() -> void:
 		mi.name = String(part[0])
 		mi.mesh = mesh
 		var bounds := Vector4(display_size.x, height_range.y, display_size.y, w_half * 2.0)
-		mi.material_override = LabGrid.material(String(part[2]), bounds, holder.position)
+		mi.material_override = LabGrid.material(String(part[2]), bounds, at)
 		holder.add_child(mi)
 		tets += mesh.get_simplex_cell_vertex_indices().size() / 4
 	stats["blocky"] = {"cells": all.size(), "tets": tets, "ms": (Time.get_ticks_usec() - t0) / 1000.0}
@@ -225,15 +252,15 @@ func _start_smooth() -> void:
 	pal.set("colors", PackedColorArray([Color(0.5, 0.5, 0.5), Color(0.42, 0.33, 0.24), Color(0.36, 0.55, 0.22)]))
 	_world.set("material_palette", pal)
 	_world.set("scale", Vector4(v, v, v, v))
-	_world.position = Vector4(right_at.x, slab_height, right_at.y, 0.0)
-	add_child(_world)
+	_turn_smooth.add_child(_world)
 	# The trigger beside the world, at its middle in metres (as the smooth tree's builder places it);
 	# its reach in voxels.
 	_trigger = ClassDB.instantiate("VoxelLoadTrigger4D")
 	_trigger.name = "LandSmoothTrigger"
 	add_child(_trigger)
 	_trigger.set("voxel_world_path", _trigger.get_path_to(_world))
-	_trigger.set("position", _world.position + Vector4(0.0, height_range.y * 0.5, 0.0, 0.0))
+	# (On the turntable's axis, so a turn never moves it relative to the world.)
+	_trigger.set("position", _turn_smooth.position + Vector4(0.0, height_range.y * 0.5, 0.0, 0.0))
 	var reach: float = Vector4(display_size.x * 0.5, height_range.y, display_size.y * 0.5, w_half).length()
 	_trigger.set("load_distance", reach / v + 12.0)
 	# The edits, in voxels from the world's origin (the display's middle at the slab's top).
@@ -337,14 +364,14 @@ func _place_trees() -> void:
 		var si: int = i % 3
 		if vx[si] != null and vsk[si] != null:
 			var top: float = maxf(1.0, round(height_at(spot.x, spot.y, 0.0) / block_cell)) * block_cell
-			var t: Node4D = _tree(vx[si], vsk[si], Vector4(left_at.x + spot.x, slab_height + top - 0.1, left_at.y + spot.y, 0.0), yaw, 3.9 * scale_k, false, mats_v, si)
+			var t: Node4D = _tree(_turn_blocky, vx[si], vsk[si], Vector4(spot.x, top - 0.1, spot.y, 0.0), yaw, 3.9 * scale_k, false, mats_v, si)
 			t.name = "BlockyTree%d" % i
 			drawn["blocky"] = int(drawn["blocky"]) + (vx[si] as TetraMesh4D).get_simplex_cell_vertex_indices().size() / 4
 		# Right: an oak, on the rounded land (its height there, a little sunk).
 		var oi: int = i % 2
 		if ok[oi] != null and osk[oi] != null:
 			var h: float = height_at(spot.x, spot.y, 0.0)
-			var o: Node4D = _tree(ok[oi], osk[oi], Vector4(right_at.x + spot.x, slab_height + h - 0.15, right_at.y + spot.y, 0.0), yaw, 5.2 * scale_k, true, mats_o, oi)
+			var o: Node4D = _tree(_turn_smooth, ok[oi], osk[oi], Vector4(spot.x, h - 0.15, spot.y, 0.0), yaw, 5.2 * scale_k, true, mats_o, oi)
 			o.name = "SmoothTree%d" % i
 			drawn["smooth"] = int(drawn["smooth"]) + (ok[oi] as TetraMesh4D).get_simplex_cell_vertex_indices().size() / 4
 			var lf := Node4D.new()
@@ -363,9 +390,10 @@ func _place_trees() -> void:
 	_trees_done = true
 
 
-func _tree(mesh: Resource, sk: Resource, at: Vector4, yaw: float, height: float, oak: bool, mats: Dictionary, si: int) -> Node4D:
+## A tree on `table` (its turntable), at `at` there.
+func _tree(table: Node4D, mesh: Resource, sk: Resource, at: Vector4, yaw: float, height: float, oak: bool, mats: Dictionary, si: int) -> Node4D:
 	var tree := Node4D.new()
-	add_child(tree)
+	table.add_child(tree)
 	var summ: Dictionary = sk.call("summary")
 	var s: float = height / maxf(float(summ["height"]), 0.5)
 	tree.position = at
@@ -455,10 +483,12 @@ func _page(c: Control, blocky: bool) -> void:
 	c.draw_string(fb, Vector2(x, 270.0 * u), "THE BLOCKY WAY" if blocky else "THE SMOOTH WAY", HORIZONTAL_ALIGNMENT_LEFT, -1, int(150 * u), white)
 	var lines: Array = ["Space is cut into 4D cells. A cell is full or empty.",
 		"Every full cell is drawn as a box: only the faces with an empty neighbour.",
-		"Square at every size you can afford: halve the cell, eight times the cost."] if blocky else [
+		"Square at every size you can afford: halve the cell, eight times the cost.",
+		"Right drag turns both lands through W: here the cut steps, cell by cell."] if blocky else [
 		"The same land, written as balls and columns into the engine's voxel world.",
 		"Dual contouring: each cell gets one point where the surface really crosses it.",
-		"The balls melt into one surface: rounded hills, about the same cost as boxes."]
+		"The balls melt into one surface: rounded hills, about the same cost as boxes.",
+		"Right drag turns both lands through W: here the cut stays smooth."]
 	for i in lines.size():
 		c.draw_string(fl, Vector2(x, (420.0 + 90.0 * float(i)) * u), String(lines[i]), HORIZONTAL_ALIGNMENT_LEFT, sz.x * 0.52, int(46 * u), soft)
 	# The diagram, on the right: a row of cells and what each method makes of them.
@@ -502,7 +532,7 @@ func _build_hud() -> void:
 	hud.set("glass", true)
 	hud.set_anchors_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(hud)
-	hud.set("strip", [["WASD", "Move"], ["Mouse", "Look"], ["Q / E", "Step through W"], ["G", "Gust of wind"]])
+	_strip()
 	var dlayer := CanvasLayer.new()
 	dlayer.name = "Dev"
 	dlayer.layer = 5
@@ -552,6 +582,46 @@ func _process(delta: float) -> void:
 		if pn != null:
 			var pp: Vector4 = (pn as Node4D).global_position
 			pn.call("set_near", Vector2(p.x - pp.x, p.z - pp.z).length() < 1.7)
+	_turn_blocky.basis = turn_basis
+	_turn_smooth.basis = turn_basis
+	var tilt: int = int(round(rad_to_deg(Ground.tilt(turn_basis))))
+	if tilt != _strip_tilt:
+		_strip_tilt = tilt
+		_strip()
+
+
+## The keys, and how far the lands are turned once they are.
+func _strip() -> void:
+	if hud == null:
+		return
+	var out: Array = [["WASD", "Move"], ["Mouse", "Look"], ["Right drag", "Turn both lands through W"], ["Q / E", "Step through W"], ["G", "Gust of wind"]]
+	if _strip_tilt > 0:
+		out.insert(3, ["%d°" % _strip_tilt, "turned through W"])
+		out.insert(4, ["R", "Level"])
+	hud.set("strip", out)
+
+
+## A right drag: both lands turned through W together, about their own middles (the hall's turn: a
+## sideways drag tips the width into W, an up and down drag the depth). The first real turn says why
+## the land then shows as a band.
+func turn_by(dx: float, dy: float) -> void:
+	turn_basis = Ground.cleaned(Ground.sliced(turn_basis, Vector2(dx, dy)))
+	if not _band_said and rad_to_deg(Ground.tilt(turn_basis)) > 12.0:
+		_band_said = true
+		hud.call("toast", "Both lands are %.1f m deep in W: turned, your slice crosses them in a band" % (w_half * 2.0))
+
+
+func level() -> void:
+	turn_basis = Projection.IDENTITY
+
+
+func _input(event: InputEvent) -> void:
+	if player == null or loading or _leaving:
+		return
+	var mm := event as InputEventMouseMotion
+	if mm != null and (mm.button_mask & MOUSE_BUTTON_MASK_RIGHT) != 0 and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		turn_by(mm.relative.x * 0.006, mm.relative.y * 0.006)
+		get_viewport().set_input_as_handled()
 
 
 func back_to_hall() -> void:
@@ -567,9 +637,18 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_G:
 			var w: Node = Wind.of(get_tree())
 			if w != null:
-				w.call("gust")
-				hud.call("toast", "A gust of wind")
+				# Round 2 (Ramon: the Gust of wind "appears to do nothing"): it did run, but it began 8 m out
+				# and reached the first tree seconds later, at the room's mild strength. Now it starts at
+				# the trees, wide and hard, and crosses the room fast enough to follow.
+				w.set("gust_speed", 10.0)
+				w.call("gust", 0.6, 7.0, 1.0)
+				hud.call("toast", "A gust of wind: blocky or smooth, every tree bends by its own skeleton")
 			get_viewport().set_input_as_handled()
+		KEY_R:
+			if turn_basis != Projection.IDENTITY:
+				level()
+				hud.call("toast", "Both lands level again")
+				get_viewport().set_input_as_handled()
 		KEY_E:
 			for pn in [get_node_or_null("PanelBlocky"), get_node_or_null("PanelSmooth")]:
 				if pn != null and bool(pn.get("near")):

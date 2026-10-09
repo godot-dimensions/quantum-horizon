@@ -89,9 +89,11 @@ func play_part(key: String, t: float, length: float) -> Dictionary:
 		"contour":
 			show_only([])
 			if stage_count("orders") > 0:
-				show_stage("orders", int(floor(clampf(u / 0.8, 0.0, 1.0) * float(stage_count("orders") - 1) + 0.0001)))
-			else:
-				show_only(["wood"])
+				var k: int = int(floor(clampf(u / 0.8, 0.0, 1.0) * float(stage_count("orders") - 1) + 0.0001))
+				show_stage("orders", k)
+				return {"done": k >= stage_count("orders") - 1}
+			show_only(["wood"])
+			return {"done": true}
 		"leaves":
 			show_only(["wood"])
 		"slice":

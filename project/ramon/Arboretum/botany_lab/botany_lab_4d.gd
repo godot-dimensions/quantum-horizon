@@ -33,6 +33,7 @@ extends Node4D
 
 const KitPlayer := preload("res://ramon/Arboretum/botany_lab/carried/kit/kit_player.gd")
 const LabMath := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/lab_math.gd")
+const Ground := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/carried/chickenpen/scripts/ground_basis_4d.gd")
 const Style := preload("res://ramon/Arboretum/botany_lab/carried/kit/kit_style.gd")
 const Hud := preload("res://ramon/Arboretum/botany_lab/carried/scripts/rd_hud.gd")
 const Prompt := preload("res://ramon/Arboretum/botany_lab/carried/kit/kit_prompt.gd")
@@ -52,6 +53,29 @@ const Presentation := preload("res://ramon/Arboretum/botany_lab/carried/kit/kit_
 
 ## The part of each method's story the guided tour shows.
 const TOUR_PART := {"voxel": "cells", "dc": "contour", "loft": "skin", "oak": "leaves"}
+## The tour's timing (round 2, Ramon: "Synchronize the camera movement with the actual generation ...
+## Make sure the camera stays on the completed model long enough"): the flight onto a shot comes first
+## and the tree grows only once the camera is there; the shot ends `TOUR_HOLD` seconds after the
+## exhibit says its geometry has all arrived ("done"), never on a timer while it is still growing
+## (`TOUR_GIVE_UP` past the part's own length is only a safety net).
+const TOUR_ARRIVE := 1.8
+const TOUR_HOLD := 3.5
+const TOUR_GIVE_UP := 12.0
+## How far the camera circles the tree while it grows and holds (radians), so the branching reads in
+## depth instead of drifting toward it.
+const TOUR_ORBIT := 0.45
+## The tour's own angle per method: [eye, look] from the pedestal's deck middle, and the lens. The parts'
+## own angles were made for standing at the pedestal, and in the tour (frames of 9 Oct,
+## smoke_test_output/botany_lab/showcase/) they sat low behind the next pedestal, the subject half out of
+## the picture. Now each of 01 to 03 is seen side on from the hall's middle aisle, against its own side
+## wall, far enough back for the whole tree (4.3 m on its deck); the oak from the front, the back wall
+## behind it.
+const TOUR_SHOT := {
+	"voxel": [Vector4(6.3, 1.7, 0.8, 0.0), Vector4(0.0, 2.1, 0.0, 0.0), 0.9],
+	"dc": [Vector4(-6.3, 1.7, 0.8, 0.0), Vector4(0.0, 2.1, 0.0, 0.0), 0.9],
+	"loft": [Vector4(6.3, 1.7, 0.8, 0.0), Vector4(0.0, 2.1, 0.0, 0.0), 0.9],
+	"oak": [Vector4(0.6, 2.6, 9.2, 0.0), Vector4(0.0, 3.6, 0.0, 0.0), 0.95],
+}
 
 @export_group("Hall")
 ## The hall's plan (kit_room_plan.gd): a box (half its width, how far its entrance wall and its back
@@ -364,8 +388,10 @@ func _process(delta: float) -> void:
 	_route_states(p)
 
 
-## The pedestal you are at: the nearest whose edge is within `story_margin`. Arriving at one plays
-## its story once (as the Creation Lab's pedestal does); a click or the arrows step through it.
+## The pedestal you are at: the nearest whose edge is within `story_margin`. Its finished tree stands
+## on its turntable; a click plays its story, and the arrows step through it. (Round 2, Ramon: "Load
+## the finished, static tree models by default ... Avoid running expensive generation sequences for
+## every tree during normal exploration": arriving no longer plays the story, as it did since round 1.)
 func _find_active(p: Vector4) -> void:
 	var best: Node = null
 	var best_d: float = INF
@@ -373,8 +399,7 @@ func _find_active(p: Vector4) -> void:
 		var sp: Vector4 = (s as Node4D).global_position
 		var d: float = Vector2(p.x - sp.x, p.z - sp.z).length() - float(s.get("radius"))
 		var near: bool = d < story_margin
-		if near and not bool(_near.get(s, false)) and not bool(s.get("armed")) and int(s.get("seq_index")) < 0:
-			s.call("replay")
+		if near and not bool(_near.get(s, false)):
 			_visited[stations.find(s)] = true
 		# Walked well away mid-story: the tree is handed back whole, so from across the room every
 		# pedestal shows its finished tree rather than a skeleton left halfway.
@@ -408,6 +433,10 @@ func _strip() -> Array:
 	out.append(["Wheel", "Slide through W"])
 	out.append(["Right drag", "Turn in 4D"])
 	if active.get("turn_basis") != Projection.IDENTITY or int(active.get("slice_index")) != 4:
+		# How far it is turned, as it turns (round 2: the turn has no limit now, so it says where it is).
+		var tilt: float = rad_to_deg(Ground.tilt(active.get("turn_basis")))
+		if tilt > 0.5:
+			out.append(["%d°" % int(round(tilt)), "turned through W"])
 		out.append(["R", "Whole again"])
 	var label: String = String(active.call("action_label"))
 	if not label.is_empty():
@@ -635,10 +664,13 @@ func watch() -> void:
 				part = k
 		var info: Dictionary = ex.call("info")
 		var line: String = Presentation.fill(String(seqs[part]["line"]), s.call("numbers"))
-		shots.append({"station": s, "part": part, "length": float(seqs[part]["length"]),
-			"title": "%02d  ·  %s" % [i + 1, String(info.get("name", "")).to_upper()], "line": line})
+		shots.append({"station": s, "part": part, "length": float(seqs[part]["length"]), "method": String(ex.get("method")),
+			"title": "%02d  ·  %s" % [i + 1, String(info.get("name", "")).to_upper()], "line": line, "done_at": -1.0})
 	player.set("input_enabled", false)
 	player.linear_velocity = Vector4.ZERO
+	# The pad's key prompt off for the tour (it hung in the middle of every shot).
+	if prompt != null:
+		prompt.set("shown", false)
 	_film = pc.duplicate(0) as Camera4D
 	_film.name = "TourCamera"
 	add_child(_film)
@@ -670,8 +702,28 @@ func _tour_next() -> void:
 	hud.call("show_caption", "BOTANY LAB   ·   " + String(s["title"]), "%d / %d" % [i + 2, shots.size()], String(s["line"]))
 
 
-func _shot_of(s: Dictionary) -> Array:
-	return s["station"].call("shot", int(s["part"]))
+## A shot's eye, look and lens: the tour's own angle for the method where it has one (TOUR_SHOT), else the
+## part's; the eye turned `orbit` radians round the look point (about up), kept inside the room.
+func _shot_of(s: Dictionary, orbit: float = 0.0) -> Array:
+	var st: Node4D = s["station"]
+	var base: Array = st.call("shot", int(s["part"]))
+	var eye: Vector4 = base[0]
+	var look: Vector4 = base[1]
+	var lens: float = base[2]
+	var own: Array = TOUR_SHOT.get(String(s.get("method", "")), [])
+	if not own.is_empty():
+		var c: Vector4 = st.global_position + Vector4(0.0, float(st.get("height")), 0.0, 0.0)
+		eye = c + (own[0] as Vector4)
+		look = c + (own[1] as Vector4)
+		lens = float(own[2])
+	var off: Vector4 = eye - look
+	var co: float = cos(orbit)
+	var sn: float = sin(orbit)
+	eye = look + Vector4(off.x * co + off.z * sn, off.y, -off.x * sn + off.z * co, off.w)
+	var b: Rect2 = st.get("bounds")
+	eye.x = clampf(eye.x, b.position.x + 0.7, b.end.x - 0.7)
+	eye.z = clampf(eye.z, b.position.y + 0.7, b.end.y - 0.7)
+	return [eye, look, lens]
 
 
 func _angles_of(b: Projection) -> Vector2:
@@ -710,16 +762,22 @@ func _run_tour(delta: float) -> void:
 	var t: float = float(_cine["t"])
 	if String(_cine["phase"]) == "shot":
 		var s: Dictionary = (_cine["shots"] as Array)[int(_cine["i"])]
-		var shot: Array = _shot_of(s)
-		var k: float = LabMath.ease01(t / 1.6)
+		# Arriving: the flight onto the shot, the tree held at its first stage. Then it grows, the camera
+		# circling slowly, until it says it is done; then the hold on the finished tree.
+		var gen_t: float = maxf(t - TOUR_ARRIVE, 0.0)
+		var span: float = float(s["length"]) + TOUR_HOLD
+		var orbit: float = TOUR_ORBIT * LabMath.ease01(clampf(gen_t / span, 0.0, 1.0)) - TOUR_ORBIT * 0.5
+		var shot: Array = _shot_of(s, orbit)
+		var k: float = LabMath.ease01(t / TOUR_ARRIVE)
 		var a0: Vector2 = _cine["from_ang"]
 		var a1: Vector2 = _look(shot[0], shot[1])
-		var drift: Vector4 = ((shot[1] as Vector4) - (shot[0] as Vector4)).normalized() * (t * 0.1)
-		_place((_cine["from_eye"] as Vector4).lerp((shot[0] as Vector4) + drift, k),
+		_place((_cine["from_eye"] as Vector4).lerp(shot[0] as Vector4, k),
 			Vector2(lerp_angle(a0.x, a1.x, k), lerpf(a0.y, a1.y, k)), lerpf(float(_cine["from_lens"]), float(shot[2]), k))
-		if s.has("station"):
-			s["station"].call("play", int(s["part"]), t)
-		if t >= float(s["length"]):
+		var r: Dictionary = s["station"].call("play", int(s["part"]), gen_t)
+		if float(s["done_at"]) < 0.0 and t > TOUR_ARRIVE and bool(r.get("done", gen_t >= float(s["length"]))):
+			s["done_at"] = t
+		var held: bool = float(s["done_at"]) >= 0.0 and t - float(s["done_at"]) >= TOUR_HOLD
+		if held or t > TOUR_ARRIVE + float(s["length"]) + TOUR_GIVE_UP:
 			_tour_next()
 		return
 	var pc: Camera4D = player.get_node_or_null("CameraRig/Pitch/Camera4D") as Camera4D

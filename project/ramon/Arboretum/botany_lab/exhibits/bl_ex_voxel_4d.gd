@@ -85,14 +85,17 @@ func play_part(key: String, t: float, length: float) -> Dictionary:
 			# The first half of the stages: the trunk and the first branches, cell by cell.
 			show_only([])
 			var half: int = maxi(stage_count("cells") / 2 - 1, 0)
-			show_stage("cells", int(floor(clampf(u / 0.75, 0.0, 1.0) * float(half) + 0.0001)))
+			var k: int = int(floor(clampf(u / 0.75, 0.0, 1.0) * float(half) + 0.0001))
+			show_stage("cells", k)
+			return {"done": k >= half}
 		"cells":
 			show_only([])
 			var from: int = stage_count("cells") / 2
 			if u > 0.85:
 				show_only(["wood"])
-			else:
-				show_stage("cells", from + int(floor(clampf(u / 0.7, 0.0, 1.0) * float(stage_count("cells") - 1 - from) + 0.0001)))
+				return {"done": true}
+			show_stage("cells", from + int(floor(clampf(u / 0.7, 0.0, 1.0) * float(stage_count("cells") - 1 - from) + 0.0001)))
+			return {"done": false}
 		"cost":
 			show_only(["wood"])
 		"slice":

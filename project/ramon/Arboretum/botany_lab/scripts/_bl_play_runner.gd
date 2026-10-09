@@ -115,13 +115,18 @@ func _play() -> void:
 	_free_mouse()
 	_shoot("03_after_tour")
 
-	# 3. Pedestal 01, from its ring (the route's destination): its story plays on arrival, the right arrow moves it on, E rebuilds the cells.
+	# 3. Pedestal 01, from its ring (the route's destination): its finished tree stands still on arrival
+	# (round 2: no story plays by itself), a click or the right arrow plays it, the arrow moves it on, E
+	# rebuilds the cells.
 	_go(-3.7, 8.0, 90.0)
 	await _frames(90)
 	var s1: Node = _station(1)
 	_check(_room.get("active") == s1, "pedestal 01 is active when you stand at it")
+	_check(int(s1.get("seq_index")) < 0 and not bool(s1.get("cinematic")), "arriving shows the finished tree, no story plays by itself")
+	_key(KEY_RIGHT)
+	await _frames(30)
 	var part: int = int(s1.get("seq_index"))
-	_check(part >= 0, "its story plays on arrival (part %d)" % (part + 1))
+	_check(part >= 0, "the right arrow (or a click) plays its story (part %d)" % (part + 1))
 	_key(KEY_RIGHT)
 	await _frames(5)
 	_check(int(s1.get("seq_index")) == part + 1, "the right arrow moves it to the next part (%d to %d)" % [part + 1, int(s1.get("seq_index")) + 1])

@@ -107,12 +107,14 @@ func play_part(key: String, t: float, length: float) -> Dictionary:
 			var k: int = int(floor(clampf((u - 0.1) / 0.7, 0.0, 1.0) * float(stage_count("orders"))))
 			if k >= stage_count("orders"):
 				show_only(["wood"])
-			else:
-				show_stage("orders", k)
+				return {"done": true}
+			show_stage("orders", k)
+			return {"done": false}
 		"leaves":
 			show_only(["wood"])
 			leaves.set("enabled", true)
 			leaves.call("set_grow", clampf(u / 0.75, 0.0, 1.0))
+			return {"done": u >= 0.75}
 		"slice":
 			show_only(["wood"])
 			leaves.set("enabled", true)

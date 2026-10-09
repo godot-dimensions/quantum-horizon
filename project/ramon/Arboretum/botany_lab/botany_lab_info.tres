@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/kit/panels/kit_room_info.gd" id="1_info"]
+
+[resource]
+script = ExtResource("1_info")
+number = 2
+title = "Botany Lab"
+status = "BOTANICAL SYSTEMS  /  FOUR WAYS TO GROW A TREE"
+lead = "One 4D skeleton, three ways. Then an oak."
+description = "The first three trees grow from one 4D skeleton: branches reaching for empty space. Each pedestal builds it another way: voxel blocks, the engine's smooth voxels, our loft tool. The oak grows its own, lofted, with leaves the graphics card draws. One wind moves them all. Behind the oak, a second room: the same land built blocky and smooth."
+interactions = [["wheel", "Slide through W"], ["rdrag", "Turn in 4D"], ["key:E", "The tree's own key"], ["key:G", "A gust of wind"]]
+controls_heading = "CONTROLS"
+research_title = "HOW THE TREES GROW"
+research_status = "●  MEASURED ON THIS MACHINE"
+research_layout = "algorithm"

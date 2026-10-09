@@ -36,6 +36,9 @@ var _next_gust: float = 4.0
 ## [ShaderMaterial, Node4D] pairs, held weakly.
 var _users: Array = []
 var _rng := RandomNumberGenerator.new()
+## The running gust's own strength and width when a key sent a stronger one (-1: the room's).
+var _strength_now: float = -1.0
+var _width_now: float = -1.0
 
 
 func _enter_tree() -> void:
@@ -55,10 +58,23 @@ func register(cs: ShaderMaterial, owner: Node4D) -> void:
 	_apply(cs, owner)
 
 
-## Sends a gust down the wind from behind every tree.
-func gust() -> void:
-	gust_front = _start_of_gust()
+## Sends a gust down the wind from behind every tree. With no arguments, the room's own gust; a key may
+## send a stronger, wider one that starts `lead` metres before the first tree (BOTANY LAB round 2: the
+## second room's G started 8 m out and took seconds to arrive, so it looked as if nothing happened).
+func gust(strength: float = -1.0, width: float = -1.0, lead: float = 8.0) -> void:
+	_strength_now = strength
+	_width_now = width
+	gust_front = _start_of_gust(lead)
 	_gust_on = true
+
+
+## This gust's width and strength (its own, or the room's).
+func _width() -> float:
+	return _width_now if _width_now > 0.0 else gust_width
+
+
+func _strength() -> float:
+	return _strength_now if _strength_now >= 0.0 else gust_strength
 
 
 func world_direction() -> Vector4:
@@ -66,14 +82,14 @@ func world_direction() -> Vector4:
 	return d.normalized() if d.length() > 0.0001 else Vector4(1, 0, 0, 0)
 
 
-func _start_of_gust() -> float:
+func _start_of_gust(lead: float = 8.0) -> float:
 	var d: Vector4 = world_direction()
 	var lo: float = INF
 	for u in _users:
 		var o: Node4D = (u[1] as WeakRef).get_ref()
 		if o != null and o.is_inside_tree():
 			lo = minf(lo, o.global_position.dot(d))
-	return (lo if lo < INF else 0.0) - 8.0 - gust_width
+	return (lo if lo < INF else 0.0) - lead - _width()
 
 
 func _process(delta: float) -> void:
@@ -90,6 +106,8 @@ func _process(delta: float) -> void:
 			if gust_front > _end_of_room():
 				_gust_on = false
 				gust_front = -1000.0
+				_strength_now = -1.0
+				_width_now = -1.0
 	var alive: Array = []
 	for u in _users:
 		var cs: ShaderMaterial = (u[0] as WeakRef).get_ref()
@@ -109,7 +127,7 @@ func _end_of_room() -> float:
 		var o: Node4D = (u[1] as WeakRef).get_ref()
 		if o != null and o.is_inside_tree():
 			hi = maxf(hi, o.global_position.dot(d))
-	return (hi if hi > -INF else 0.0) + 12.0 + gust_width
+	return (hi if hi > -INF else 0.0) + 12.0 + _width()
 
 
 func _apply(cs: ShaderMaterial, o: Node4D) -> void:
@@ -127,5 +145,5 @@ func _apply(cs: ShaderMaterial, o: Node4D) -> void:
 	cs.set_shader_parameter("bend", bend)
 	cs.set_shader_parameter("sway", sway)
 	cs.set_shader_parameter("gust_front", (gust_front - origin.dot(d)) / s if _gust_on else -1000.0)
-	cs.set_shader_parameter("gust_width", gust_width / s)
-	cs.set_shader_parameter("gust_strength", gust_strength if _gust_on else 0.0)
+	cs.set_shader_parameter("gust_width", _width() / s)
+	cs.set_shader_parameter("gust_strength", _strength() if _gust_on else 0.0)

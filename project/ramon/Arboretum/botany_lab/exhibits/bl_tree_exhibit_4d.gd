@@ -30,9 +30,13 @@ const Bake := preload("res://ramon/Arboretum/botany/bake_store.gd")
 const BL_DIR := "res://ramon/Arboretum/botany_lab/baked/"
 const BL_RECORD := "res://ramon/Arboretum/botany_lab/baked/bl_bake.cfg"
 
-## How far a turn through W may tip the tree's floor (degrees; plan step 37): past it the crown starts
-## to leave the slice.
-var max_tilt: float = 35.0
+## How far a turn through W may tip the tree's floor (degrees; 0: no limit). Round 2 (Ramon: "restrictive
+## 4D rotation limits that don't correspond naturally to the geometry ... The ability to inspect these
+## objects through 4D is central"): it was 35 for every tree since round 1 (plan step 37, "past it the
+## crown starts to leave the slice"), which is no technical limit. The turn only ever tips the floor
+## (the trunk stays upright), and past 35 degrees the cut is the tree's own profile through W: the
+## thing worth seeing. Now there is none; the turn runs all the way round.
+var max_tilt: float = 0.0
 
 ## Set by the showcase; trees ignore them.
 var grow_in: bool = false
@@ -136,6 +140,12 @@ func show_stage(key: String, i: int) -> void:
 
 func set_stages(key: String, meshes: Array) -> void:
 	_stages[key] = meshes
+	# Round 2 (section 8, step 3): the engine builds a mesh's 3D proxy the first time it is drawn
+	# (Mesh4D.get_proxy_mesh_3d, cached on the mesh), which made each story stage's first showing a
+	# hitch (the tour's worst frame 542 ms). Built here, while the room loads.
+	for m in meshes:
+		if m is Mesh4D:
+			(m as Mesh4D).get_proxy_mesh_3d()
 	if not meshes.is_empty():
 		layer(key, meshes[meshes.size() - 1]).visible = false
 

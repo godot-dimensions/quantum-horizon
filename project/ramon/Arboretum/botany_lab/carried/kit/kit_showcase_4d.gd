@@ -676,7 +676,9 @@ func begin_cinematic() -> void:
 	_show_slice()
 
 
-func play(i: int, t: float) -> void:
+## Shows part `i` at `t`; returns what the exhibit said of it (BOTANY LAB round 2: "done" once the part's
+## geometry has all arrived, which the guided tour waits for).
+func play(i: int, t: float) -> Dictionary:
 	var s: Dictionary = sequences()[i]
 	var r: Dictionary = exhibit.call("play_part", String(s["key"]), t, float(s["length"])) if exhibit.has_method("play_part") else {}
 	_cine_slice = float(r.get("slice", -3.0))
@@ -688,6 +690,7 @@ func play(i: int, t: float) -> void:
 		if idx != slice_index:
 			slice_index = idx
 			_show_slice()
+	return r
 
 
 func end_cinematic() -> void:

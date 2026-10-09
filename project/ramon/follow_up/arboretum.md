@@ -874,3 +874,324 @@ Built in the fork (`botany_lab.tscn`, `botany_lab/`); `arboretum.tscn` and the m
    the frame time needs it.
 4. The wall pages and the panels' words are first drafts. Tell me what to say instead.
 
+
+## 8. Botany Lab: Ramon's playtest feedback, part 2 (9 Oct)
+
+His six points, in his order of priority: (1) the default room should show finished trees and stay
+responsive, the generation sequences optional; (2) the Play Showcase's camera should wait for the
+generation it is showing and hold on the result; (3) the 4D turn limits on the trees feel arbitrary;
+(4) the second room needs mouse turning through W, and its Gust of wind seemed to do nothing; (5) the
+research wall (right corner) is all numbers: a diagram of the real growth algorithm, and a verified
+credit.
+
+### What the code does now (inspected before the plan)
+
+- **No tree grows live in normal walking.** Every story stage is a pre-baked mesh (`vx_stage_*`,
+  `bl_dc_order_*`, `bl_lf_order_*`, `oak_order_*`); live growth happens only on a pedestal's E key.
+  But **walking up to a pedestal plays its whole story** (`_find_active` calls `replay`), and every
+  stage mesh is first drawn at that moment. Measured first (step 1), not assumed.
+- **The tour** (`watch`, `_run_tour`) holds each shot for exactly its part's `length`, whatever the tree
+  is doing, and drifts the camera 0.1 m/s along the view; the part's stages are timed against the same
+  length, so the last stage can land as the camera leaves.
+- **The turn limit** is `max_tilt` = 35° on every exhibit (`bl_tree_exhibit_4d.gd`), enforced by the
+  carried showcase's `turn_by`. Its stated reason ("past it the crown starts to leave the slice") is not
+  a technical limit: the floor-only turn never tips the trunk, and the cut past 35° is simply the tree's
+  W-profile. The only real limit in the lab is the second room's land, 2.5 m deep in W.
+- **The second room's G key** reaches the scene's Wind node; whether the trees visibly move is
+  checked with frames (step 26).
+- **The growth algorithms, from the repository:** pedestals 01-03 grow by **TanTanDev's shrubbery**
+  (github.com/TanTanDev/shrubbery), ported to 4D by Trym (commit `3671323`, 23 Aug 2026: "Ports
+  TanTanDev/shrubbery's space-colonization branch-growth algorithm to 4D"; the generator's own header
+  says the same). The oak grows by **Runions, Lane and Prusinkiewicz, "Modeling Trees with a Space
+  Colonization Algorithm" (2007)**, our own 4D version (`botany/colonize_4d.gd`, case study 4).
+  Shrubbery's step, as `shrub_generator.gd` does it: attraction points scattered through the crown's
+  shape; every tip looks at all the points within reach and turns toward their average (plus a
+  little gravity); when its points split into two groups far enough apart it forks; points a branch
+  reaches are used up; growth stops at a branch cap. Then the branches get their thickness (the pipe
+  model) and each pedestal makes its surface (cells, a smooth contour, a loft) and its leaves.
+
+### The plan
+
+**A. Responsive by default (priority 1)**
+1. Measure the hall: each ring with the story playing on arrival, the same with it not playing, the
+   whole tour; the median, the 95th and the worst frame (a first-draw hitch shows as the worst).
+2. Arriving at a pedestal no longer plays its story: the finished tree stands on its turntable. The
+   story plays on a click there (as now, "Play its story"), and in the Play Showcase.
+3. Every stage mesh drawn once behind the loading board (warmed), so a story's first showing never
+   hitches, if step 1 shows first-draw hitches.
+4. Walking away mid-story still hands the tree back whole (kept).
+5. The E keys' live growth stays as it is: an optional demonstration, one tree at a time.
+6. Measure again (step 1's views) and record before/after.
+
+**B. The Play Showcase (priority 2)**
+7. Each exhibit's `play_part` reports when its generation is done (`done`: the last stage shown, the
+   leaves fully grown).
+8. The tour holds a shot until its part is done and then a further 3.5 s on the finished model; never
+   advances (a click aside) while geometry is still arriving.
+9. The stages within a part are paced so each order of branches stays up long enough to read.
+10. Camera: arrive on the shot first (1.6 s), then the generation starts, so nothing grows during
+    the move; then a slow orbit round the tree while it grows, instead of a drift toward it.
+11. Angles chosen per method from frames: low three-quarter views that show the trunk and the
+    branching for the smooth voxels and the loft (the branches against the back wall's plain blue),
+    the whole crown for the voxels, the oak from far enough for its spread.
+12. The story parts' own lengths unchanged for clicks at the pedestal (the tour is what was cut short).
+13. Frames of each shot at its start, its middle and its end.
+
+**C. Turning through W (priority 3)**
+14. `max_tilt` removed on all four trees (0: no limit); the turn runs all the way round.
+15. Frames at 0, 45, 90, 135 and 180 degrees on both axes for each tree, checked: trunk upright, the
+    cut the tree's W-profile, the oak's GPU leaves following the turn.
+16. Anything that breaks at a large turn is fixed, not blocked.
+17. The strip shows the turn as it happens ("Turned 47° through W"), so a turn reads as a turn.
+
+**D. The second room (priority 4)**
+18. Both lands and their trees on a turntable each, about their own middle (the hall's floor-only
+    turn: trees never lean).
+19. Right drag turns both together, so the two methods are always cut the same way; the wheel slides
+    both through W; R levels them. Those keys in the strip.
+20. The limit that is real: the land is 2.5 m deep in W, so a turned slice crosses it in a band. No
+    stop: the band is the lesson, and the strip and the walls say so ("the land is 2.5 m deep in W:
+    turned, your slice crosses it in a band").
+21. Check the native voxel world under a turned parent (its chunks and its load trigger).
+22. Frames: level, 30°, 60°, 90° on both axes, both sides.
+23. G: find why nothing showed (the trees' registration, the gust's path across the room, its
+    strength), with frames before and at the gust.
+24. Make the gust plainly visible on both sides (the blocky trees and the lofted oaks with their
+    leaves), crossing the room as a wave you can follow.
+25. The wind's meaning on the walls: the blocky trees and the lofted oaks bend the same way because
+    the wind reads the skeleton, not the surface.
+26. Frames of the gust crossing.
+
+**E. The research wall (priority 5)**
+27. A diagram of the real algorithm, in the wall's own style, from `shrub_generator.gd`: attraction
+    points in the crown, the trunk, tips turning toward the points in reach, a fork where the points
+    split, points used up, the pipe model's thickness, then the three surfaces and the leaves.
+28. Driven by the real algorithm: a 2D run of the same step (the same rules, a few hundred points),
+    played out on the wall so the diagram grows as the trees do.
+29. The oak's difference in one line (nearest node only, any node sprouts: Runions et al. 2007).
+30. A discreet credit, small text: "Pedestals 01-03 grow by TanTanDev's shrubbery
+    (github.com/TanTanDev/shrubbery), ported to 4D by Trym. The oak: space colonization after Runions,
+    Lane and Prusinkiewicz (2007)."
+31. The numbers stay, smaller, under the diagram.
+32. Frames of the wall.
+
+**F. Proof and handover**
+33. The proof and play-through runners still pass; frames of everything above in
+    `smoke_test_output/botany_lab/round2/`.
+34. Commit by explicit paths. No push unless told.
+
+### Status (10 Oct, end of round 2)
+
+All six points built in the fork; frames in `smoke_test_output/botany_lab/` (showcase/, turns/, wall/,
+compare/); play-through 32 of 32, proof all pass.
+
+- **Responsive by default:** walking up to a pedestal no longer plays its story (a click or the arrows
+  do). Every story stage's 3D proxy is built while the room loads (`set_stages`), since the engine builds
+  it on first draw and that was each stage's first-showing hitch. Measured (perf2, vsync off):
+  - before: arriving at a pedestal hitched 56, 450, 30, 180 and 78 ms; the tour's worst frame 553 ms,
+    four over 25 ms;
+  - after: no frame over 25 ms walking the hall (worst 19.8 ms, the teleport); the tour's median
+    2.08 ms (was 2.75), worst 119 ms, one over 25 ms.
+  - The hall's medians at pedestals 02 and 03 read about a millisecond higher than the worktree's
+    "before" (3.6 against 2.4 ms). The research wall's moving diagram is not it (frozen against
+    moving: 3.60 and 3.60 ms); not tracked down further, as round 3 rebuilds the hall.
+- **The Play Showcase:** each exhibit reports when its growth is done (the last stage shown); the tour
+  arrives first, then the tree grows while the camera circles it slowly, and moves on 3.5 s after
+  done (8.2-9.0 s into each part, each shot about 12 s). Its own angles: 01-03 side on from the middle
+  aisle against their side walls, the oak from the front. The pad's prompt is hidden during it.
+- **Turning through W:** no limit (`max_tilt` 0); every tree turned to 45, 90, 135 and 180 degrees
+  both ways stays upright and cuts as its W profile; the oak's GPU leaves follow. The strip shows the
+  angle ("47° turned through W").
+- **The second room:** both lands and their trees on turntables; a right drag turns both together, R
+  levels them; the strip shows the angle, a toast and both walls say why a turned land is a band
+  (2.5 m deep in W). G now sends a stronger, wider gust from the trees' edge at 10 m/s (it ran before,
+  but began 8 m out at the room's mild strength); `wind_4d.gd gust()` takes optional strength, width
+  and lead, the old calls unchanged.
+- **The research wall:** its own layout ("algorithm", `kit_panel_research.gd`) and source
+  (`botany_lab/room/bl_panel_source.gd`, fork's own info `botany_lab/botany_lab_info.tres`): "HOW THE
+  TREES GROW", a moving diagram that runs shrubbery's real rules in 2D with the specimen's settings
+  (`room/bl_growth_diagram.gd`: points, trunk, grow with forks, thicken, cells, smooth, loft, leaves),
+  the four methods compact, the benchmark, and the verified credit in small text.
+- **The PC crashes (9 Oct, two):** the diagram's first version grew its trunk along `Vector2.UP`, which
+  is (0, -1) in Godot, inside a `while` waiting for 1.2 m: an endless loop that ate memory until Windows
+  died (bugcheck 0xEF, then a hard hang). Fixed; every loop in it bounded; probed headless
+  (`scripts/_bl_diagram_probe_runner.gd`: 25 ms, 420 branches).
+
+## 9. Botany Lab, round 3: the redesign (10 Oct)
+
+Ramon, mid-round 2: "rethink what you're showing. show the tech yes, but also make it aesthetically
+pleasing. dreamy and impressive. maybe the wind creates some leaves in the wind. also change the layout
+and the pedestals, and rethink the approach. and in the other room, the split halfs are cool, but look
+carefully how to improve it. you're an architect, and a concept artist. think how to guide the eye and
+the players tour. rethink the presentations. and make some smaller pedestals with different flower
+types. you're also a botanist. thats why i want also another room with botanical flowers, butterflies.
+many different types. the center is clean when you walk in the square room, but all the walls are
+filled with flowers and these pants that climb walls. try to make most 4d. some tricks with grassy 3d
+plants that behave well in 4d is fine too. just look at pen tech ... only the folowers oscilate when
+rotating, not the presentation pockets."
+
+### The idea, as an architect and a concept artist
+
+**One walk, simple to complex, toward light.** The visitor should always know where to look next.
+- **The hall becomes a garden walk.** The corridor opens on a framed view down the middle to the oak,
+  the brightest, warmest thing in the room, on a low mound: the goal is seen from the first step.
+- **The route is a loop.** It runs along a border of small flower pedestals, the simplest 4D lofts, then
+  past the three method trees in order (blocks, smooth, loft), and climbs to the oak. The way out lies
+  behind the oak, into the second room. A side door near the entrance leads to the flower room.
+- **Light leads.** The walls drop to a deep, cool blue; each exhibit stands in its own pool of warm
+  light; the oak gets the most. Under the sky (the roof opened), leaves drift from the oak toward you on
+  the wind, more in a gust: "the wind creates leaves in the wind".
+- **Pedestals as planters.** Lower and wider, a soil top in a pale stone rim with a thin glowing line,
+  instead of the tall lab drums. The flower pedestals are small versions of the same, at knee height.
+- **Presentations.** Fewer numbers in the air: the floating panels stay (round 1) but sit low at each
+  ring, beside the exhibit and never in front of it. The Play Showcase becomes a short film: arrive,
+  grow, circle, hold, as round 2 made it, now also through the flower border and ending on the oak
+  with its leaves in the wind.
+
+**The flower room: a square room you step into, its centre clean, its walls alive.**
+- **A 20 m square glasshouse, its roof open to the sky.** The floor is a clean pale field with one inlaid
+  medallion and nothing standing on it.
+- **All four walls are a grid of presentation pockets**, rounded niches each holding one species, with
+  climbing plants running between and over them: ivy (true 4D stems, GPU leaves), clematis and
+  passionflower on twining stems, wisteria hanging from the top, and grass along the foot.
+- **Butterflies of eight species**, true 4D lofts, fly the room and land on the flowers (the gull's
+  perches), wings opening and closing.
+- **"Only the flowers oscillate when rotating, not the presentation pockets":** a right drag turns every
+  flower through W about its own stem (the hall's floor-only turn); the pockets, the walls and the room
+  never move. The pockets are built deep in W, so a turn never thins them.
+
+**The second room: one land, split by your path.** One continuous landscape cut down the middle by a
+sunken walkway, the same hills running from blocky on the left bank to smooth on the right, at eye
+level, a low warm sun at the far end and leaves blowing down the cut. The halves become one picture.
+
+### What the botanist builds (`botany_lab/flora/`)
+
+Every flower is lofted in 4D: its stem a tube round in all three directions across it, its leaves and
+petals thin sheets (flattened across their own normal and through W, as the koi's fins are). **A 4D
+flower radiates through W too:** besides its familiar ring of petals, a whorl tilted into W, unseen
+until the flower is turned. Real counts and forms:
+
+| Species | What it is in 4D |
+|---|---|
+| Tulip (*Tulipa*) | 3 + 3 tepals in a cup, a black-and-yellow blotch, 6 stamens, two broad basal leaves; a W whorl of 2 |
+| Corn poppy (*Papaver rhoeas*) | 4 crumpled petals in a shallow bowl, a black blotch, the capsule's star disc, a ring of dark stamens; a W whorl of 4 |
+| Ox-eye daisy (*Leucanthemum*) | white ray florets spread over a band of directions round the stem (x, z and W), a domed yellow disc |
+| Sunflower (*Helianthus*) | the same, golden, a big brown disc whose florets spiral by the golden angle |
+| Bearded iris (*Iris germanica*) | 3 falls and 3 standards with a yellow beard, a fan of sword leaves |
+| Lily (*Lilium*) | 6 recurved spotted tepals, 6 long stamens |
+| Ornamental onion (*Allium giganteum*) | a ball of star florets; in 4D a ball of florets in all four directions, whole in every cut |
+| Dandelion clock (*Taraxacum*) | the seed head as the same 4D ball of seeds; a gust lifts seeds off into the wind |
+| Foxglove (*Digitalis purpurea*) | a spike of spotted bells, all on one side |
+| Bluebell (*Hyacinthoides non-scripta*) | an arching stem of nodding bells on one side |
+| Rose (*Rosa*) | petals on the golden-angle spiral, cupped, over the band of directions |
+| Passionflower (*Passiflora caerulea*) | 5 + 5 tepals, a banded corona of filaments, 5 stamens, 3 stigmas |
+
+Butterflies, eight species, true 4D lofts (body, four wings hinged at the thorax, painted wing
+patterns): monarch, blue morpho, swallowtail, peacock, small white, painted lady, red admiral,
+brimstone.
+
+**Reused, not rewritten** (an inventory of the repository, 10 Oct): the pen's wind bits
+(`chickenpen/grass/pen_wind_bits.gdshader`, up to 6000 drifting pieces for about 0.02 ms) for the
+leaves in the wind; the oak's GPU leaf field (`botany/leaf_field_4d.gd`) for ivy; the Aquatic Lab's weed
+ribbons (`WaterLab/life/weed_4d.gd`) for wisteria; the gull's perches for butterfly landings; the room
+wind (`botany/wind_4d.gd`) for all of it. Limits that shape it: the cut is opaque (no glass, no fog, no
+bloom), lights cast no shadows, a few thousand 4D meshes at most (merge what stands still), a mesh's
+first draw hitches (build proxies while loading).
+
+### The plan (75 steps)
+
+**A. The flora library**
+1. `flora_kit.gd` (the carried loft kit, done). `flora_species.gd`: the twelve species as data (stem,
+   leaves, bloom parts, whorls, palette), every count bounded.
+2. `flower_4d.gd`: one flower built from its species, baked under `flora/baked/`, its colours one 3D
+   texture (rows: stem, leaf, petal base to tip, blotch, centre).
+3. Petals as thin lofts along their midrib, width by a profile, cupped and recurved by the species.
+4. Arrangements: a ring, two offset rings, a band of directions over x, z and W (Fibonacci), a full 4D
+   ball (allium, dandelion), one-sided spikes and racemes (foxglove, bluebell).
+5. Centres: domed discs, capsules with star discs, stamens and stigmas.
+6. Leaves: basal straps, swords, alternate hearts, pinnate lobes.
+7. The pose: a gentle sway with the room's wind; `turn_basis` turns the whole flower through W about
+   its base (the hall's ground basis).
+8. A headless probe (`scripts/_bl_flora_probe_runner.gd`) builds every species once, times and counts
+   it; every loop bounded (section 8's crash).
+9. A gallery runner: every species side on, from above, turned 45 and 90 degrees.
+10. Fix what the frames show; tune each silhouette against the plant itself.
+11. `butterfly_4d.gd`: body, head, antennae, four wings on hinges, each species' outline and pattern
+    painted into its texture.
+12. Flight: flutter on a wandering path, glide, land on a perch, open and close, take off; wingbeat by
+    species (the morpho slow, the white quick).
+13. Butterfly frames: each species open, closed, mid-beat, turned.
+14. `drift_4d.gd`: the pen's wind bits carried as a free-standing drift of leaves, petals and seeds,
+    driven by the room's wind and its gusts.
+15. A frame of the drift in a gust.
+
+**B. The flower room (`botany_lab/flowers/flower_room.tscn`)**
+16. The room: a 20 m square kit room, 9 m high, the roof open to a gradient sky, the floor pale with one
+    medallion at the middle.
+17. The pockets: rounded niches in a grid on all four walls, at three heights, built deep in W.
+18. One species a pocket, two to five plants each, in soil; a small engraved label under each.
+19. The climbers: ivy, true 4D stems along the wall between pockets, leaf-field leaves.
+20. Clematis and passionflower vines: twining stems with their flowers.
+21. Wisteria: racemes hanging from the top of the walls (the weed's ribbons, lilac florets).
+22. Grass and small flowers along the foot of every wall.
+23. Butterflies: about 32, eight species, perched on and flying between the pocket flowers.
+24. The drift: petals and pollen in the air, slow.
+25. Right drag turns every flower through W about its stem; R levels; the pockets never move.
+26. The strip, a toast on the first turn, one wall page on why the flowers change and the room does not.
+27. The light: a warm sun high on one side, a cool fill, the pockets' inner glow.
+28. The way in: from the hall's side door, a holographic doorway each way, a loading board.
+29. The route: a ring round the medallion, nothing more.
+30. Frames: entering, each wall, a pocket close, butterflies landing, turned 30 and 60 degrees.
+31. Perf: the frame time standing in the middle, every system's share measured.
+32. Cut what costs too much; fix what the frames show.
+
+**C. The hall (`botany_lab.tscn`)**
+33. The plan: the loop route, the flower border, the three trees in order, the oak's mound.
+34. The pedestals as planters (stone rim, soil top, glow line), the tree pedestals lower.
+35. The flower border: eight small pedestals, a species each.
+36. The oak on a low mound in its own warm light, the brightest point in the hall.
+37. The walls darker and cooler; the light pools; the oak's light the warmest.
+38. The roof opened to a gradient sky, or a long skylight, chosen from frames.
+39. The leaves: the drift from the oak downwind toward the door, thicker in a gust (G).
+40. The side door to the flower room near the entrance, its sign.
+41. The route re-laid with PathCreator (its rule-10 checks), the rings at each exhibit.
+42. The floating panels low and beside each exhibit.
+43. The intro and research walls kept, reframed to the new layout.
+44. The Play Showcase: the border, the three trees, the oak with its leaves; arrive, grow, circle, hold.
+45. Frames: from the door, along the border, each tree, the oak, the tour.
+46. Perf: the round 2 views and the tour.
+47. Fix what the frames and numbers show.
+
+**D. The second room**
+48. One continuous land: its left half blocky, its right half smooth, joined across the middle.
+49. The walkway sunk between them, the banks at eye level, the cut faces showing their strata.
+50. The far wall: a low warm sun and a horizon.
+51. The trees on both banks as now; leaves drifting down the cut.
+52. The turn (round 2's turntables) on the one land, both halves together.
+53. The walls' pages reframed; the floating panels beside the banks.
+54. Frames and perf; fix.
+
+**E. The whole walk**
+55. The corridor's end: the framed view of the oak.
+56. The hall to the flower room and back; the oak to the second room and back.
+57. The play-through runner extended: the flower room's door, the turn, a butterfly landing.
+58. The proof runner: every species and butterfly builds, bakes, has tetrahedra.
+59. The Combined (volume) view in all three rooms.
+60. Dark mode in all three rooms.
+61. Each room's 4D mesh count under the engine's budget.
+62. Memory: the bakes on disk and in video memory.
+63. The loading boards measured.
+64. A short film of the walk (the movie runner), played beats.
+65. Each room's frame time, before and after, in a table.
+
+**F. Words and handover**
+66. Every species' label: its common and Latin names, one line on what is 4D about it.
+67. The flower room's wall page: how a 4D flower is built, the turn, the butterflies.
+68. The hall's intro rewritten for the new walk.
+69. No em dashes; our voice.
+70. The handover: what is where, keys, numbers, questions.
+71. Memory updated.
+72. Commit by explicit paths, the bakes included; no push.
+73. Questions for Ramon.
+74. The round 2 hall kept in git to compare.
+75. A sheet of frames for Ramon.

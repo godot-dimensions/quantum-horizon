@@ -13,6 +13,10 @@ extends "res://ramon/Arboretum/botany_lab/carried/kit/panels/kit_panel_page.gd"
 ##   "compare"   two equal columns, each a label, a headline, a line, two figures and a bar on a
 ##               shared scale, so the two read against each other.
 ##   "steps"     three columns in order, each a number, a title, what happens, and its figure.
+##   "algorithm" BOTANY LAB, round 2 (Ramon: "a simple diagram illustrating how the shrubbery or
+##               branching system works"): left, how the trees grow, a headline and the real growth
+##               algorithm played out as a moving diagram (botany_lab/room/bl_growth_diagram.gd); right,
+##               the four methods in a compact column, each its title, its tetrahedra and its bar.
 ##
 ## Under all three: the lower rule, the supporting band (a table such as the benchmark, or a few
 ## lines of text) and the footnote. The band starts where the introduction's controls start.
@@ -23,6 +27,7 @@ extends "res://ramon/Arboretum/botany_lab/carried/kit/panels/kit_panel_page.gd"
 ## NO class_name (engine_gotchas.md).
 
 const Charts := preload("res://ramon/Arboretum/botany_lab/carried/kit/panels/kit_panel_charts.gd")
+const Growth := preload("res://ramon/Arboretum/botany_lab/room/bl_growth_diagram.gd")
 
 var layout: String = "specimen"
 
@@ -57,7 +62,7 @@ var footnote: E.Text
 
 
 func set_layout(l: String) -> void:
-	layout = l if l in ["specimen", "compare", "steps", "methods"] else "specimen"
+	layout = l if l in ["specimen", "compare", "steps", "methods", "algorithm"] else "specimen"
 
 
 func _build() -> void:
@@ -69,6 +74,8 @@ func _build() -> void:
 			_build_steps(main)
 		"methods":
 			_build_methods(main)
+		"algorithm":
+			_build_algorithm(main)
 		_:
 			_build_specimen(main)
 	var band := group("Supporting band")
@@ -402,6 +409,64 @@ func _refresh_methods(d: Dictionary) -> void:
 		b.place(b.u_pos, Vector2(maxf(1.0, cw * frac), 12))
 
 
+# -- algorithm (BOTANY LAB, round 2) ----------------------------------------------------------------------
+
+const ALGO_W := 470.0
+const ALGO_RIGHT := 492.0
+
+var _algo_label: E.Text
+var _algo_head: E.Text
+var _algo_chart: Control
+
+
+func _build_algorithm(main: Control) -> void:
+	var left := group("How the trees grow", main)
+	_algo_label = text(left, "Label", "label", "accent", Vector2(0, Spec.MAIN_Y), ALGO_W)
+	_algo_head = text(left, "Headline", "section", "white", Vector2(0, Spec.MAIN_Y + Spec.PAGE_HEAD_DY), ALGO_W, 2)
+	surface(left, "Chart surface", Vector2(0, Spec.MAIN_Y + 72.0), Vector2(ALGO_W, Spec.MAIN_H - 72.0))
+	_algo_chart = Growth.new("Growth diagram", k)
+	left.add_child(_algo_chart)
+	(_algo_chart as Object).call("place", Vector2(0, Spec.MAIN_Y + 72.0), Vector2(ALGO_W, Spec.MAIN_H - 72.0))
+	rule(main, "Column divider", Vector2(ALGO_RIGHT - Spec.STEP * 1.5, Spec.MAIN_Y), Vector2(1, Spec.MAIN_H))
+	_cols = []
+	var cw: float = Spec.PANEL.x - ALGO_RIGHT
+	var rh: float = Spec.MAIN_H / 4.0
+	for c in METHODS_N:
+		var g := group("Method %d" % (c + 1), main)
+		var y: float = Spec.MAIN_Y + float(c) * rh
+		var col: Dictionary = {}
+		col["label"] = text(g, "Label", "label", "accent", Vector2(ALGO_RIGHT, y), cw)
+		col["title"] = text(g, "Title", "control", "white", Vector2(ALGO_RIGHT, y + 12.0), cw)
+		col["text"] = text(g, "Line", "small", "muted", Vector2(ALGO_RIGHT, y + 30.0), cw, 2)
+		col["bar_label"] = text(g, "Bar label", "micro", "muted", Vector2(ALGO_RIGHT, y + 59.0), cw)
+		col["surface"] = surface(g, "Bar surface", Vector2(ALGO_RIGHT, y + 70.0), Vector2(cw, 5), "surface", Spec.BAR_RADIUS)
+		col["bar"] = surface(g, "Bar", Vector2(ALGO_RIGHT, y + 70.0), Vector2(1, 5), "accent", Spec.BAR_RADIUS)
+		_cols.append(col)
+
+
+func _refresh_algorithm(d: Dictionary) -> void:
+	var a: Dictionary = d.get("algorithm", {})
+	_algo_label.set_text(String(a.get("label", "")))
+	_algo_head.set_text(String(a.get("headline", "")))
+	var data: Array = d.get("methods", [])
+	var top: float = 0.0
+	for md in data:
+		top = maxf(top, float((md as Dictionary).get("bar", 0.0)))
+	var cw: float = Spec.PANEL.x - ALGO_RIGHT
+	for c in _cols.size():
+		var col: Dictionary = _cols[c]
+		var md: Dictionary = data[c] if c < data.size() else {}
+		var here: bool = bool(md.get("here", false))
+		(col["label"] as E.Text).set_text(String(md.get("label", "")) + ("   ·   YOU ARE HERE" if here else ""))
+		(col["title"] as E.Text).set_text(String(md.get("title", "")))
+		(col["text"] as E.Text).set_text(String(md.get("grown", "")))
+		var mm: Array = md.get("metrics", [])
+		(col["bar_label"] as E.Text).set_text(("%s %s" % [String(mm[0][0]), String(mm[0][1])]) if not mm.is_empty() else String(md.get("bar_label", "")))
+		var b: E.Surface = col["bar"]
+		var frac: float = float(md.get("bar", 0.0)) / top if top > 0.0 else 0.0
+		b.place(b.u_pos, Vector2(maxf(1.0, cw * frac), 5))
+
+
 # -- every family ------------------------------------------------------------------------------------
 
 func refresh(d: Dictionary) -> void:
@@ -414,6 +479,8 @@ func refresh(d: Dictionary) -> void:
 			_refresh_steps(d)
 		"methods":
 			_refresh_methods(d)
+		"algorithm":
+			_refresh_algorithm(d)
 		_:
 			_refresh_specimen(d)
 	var tb: Dictionary = d.get("table", {})
@@ -432,6 +499,15 @@ var _anim_t: float = 0.0
 
 
 func tick(dt: float) -> bool:
+	if layout == "algorithm":
+		# The growth diagram plays round and round: redrawn about 12 times a second (its steps are
+		# whole steps; the wall is re-rendered each time).
+		_anim_t += dt
+		if _anim_t >= 0.08 and _algo_chart != null:
+			_anim_t = 0.0
+			_algo_chart.queue_redraw()
+			return true
+		return false
 	if layout != "specimen":
 		return false
 	var busy: bool = false
