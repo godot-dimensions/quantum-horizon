@@ -292,8 +292,7 @@ static func art_bounds(root: Node4D) -> Array:
 	var found: bool = false
 	for node in nodes:
 		var mi := node as MeshInstance4D
-		# Hidden by a W Optimiser while its copy shows (w_hidden): drawn art all the same.
-		if mi.mesh == null or (not mi.visible and not mi.has_meta(&"w_hidden")) or mi.has_meta(&"_look_own") or is_character(mi, root):
+		if mi.mesh == null or not mi.visible or mi.has_meta(&"_look_own") or is_character(mi, root):
 			continue
 		var r: PackedVector4Array = mi.get_rect_bounds_local()
 		if r[1].length() < 0.01:

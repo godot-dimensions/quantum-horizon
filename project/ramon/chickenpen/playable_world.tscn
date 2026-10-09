@@ -106,8 +106,6 @@
 [ext_resource type="PackedScene" path="res://ramon/Model/wolf.tscn" id="wolf_scene"]
 [ext_resource type="Script" uid="uid://dvw4uenv6wx3h" path="res://ramon/WTools/exploder/w_exploder_4d.gd" id="w_exploder"]
 [ext_resource type="Resource" path="res://ramon/WTools/exploder/presets/turnable_forest.tres" id="w_forest"]
-[ext_resource type="Script" uid="uid://ciig135a0wu13" path="res://ramon/WTools/optimiser/w_optimiser_4d.gd" id="w_optimiser"]
-[ext_resource type="Resource" path="res://ramon/WTools/optimiser/profiles/skyline.tres" id="w_skyline"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 shader_parameter/horizon_color = Color(0.98, 0.71, 0.35, 1)
@@ -3647,22 +3645,6 @@ count = 5
 stone_size = 0.75
 w_depth = 1.4
 metadata/what = "A cairn at the cave hill's east foot, 7 m ana: easter egg 2, a bag of azoth beside it (PLAN_A.md step 30)."
-
-[node name="WatchstoneW" type="Node4D" parent="World"]
-script = ExtResource("w_optimiser")
-target = NodePath("../LookoutSite/Lookout")
-profile = ExtResource("w_skyline")
-min_w_half = 4.0
-wrap = true
-metadata/what = "The W Optimiser on the Watchstone (WTools/README.md), profile Skyline: its parts 4 m deep in W, and wrapped: it stays where it is when the slice turns, up to 60 degrees, from 40 m of W either side. Made as the pen starts from the Watchstone as it is in units/watchstone; never saved. Analyse writes its report here."
-
-[node name="RangeW" type="Node4D" parent="World"]
-script = ExtResource("w_optimiser")
-target = NodePath("../Range")
-profile = ExtResource("w_skyline")
-min_w_half = 4.0
-wrap = true
-metadata/what = "The W Optimiser on the range (WTools/README.md), profile Skyline. The range is built in W (its boards through W, walls across W), so it is left exactly as it is; only the wrap applies: seen from more than 15 m it stays in view when the slice turns. Made as the pen starts from the range as it is in units/rune_range, so the wrap follows every edit there; never saved."
 
 [node name="Paths" type="Node4D" parent="World"]
 script = ExtResource("pc_network")

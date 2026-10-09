@@ -426,7 +426,7 @@ func _take(mi: MeshInstance4D) -> void:
 	if rule is Dictionary:
 		if rule.has("low_mesh") and mi == r[1]:
 			var low: Mesh4D = _low(String(rule["low_mesh"]))
-			if low != null and (mi.visible or mi.has_meta(&"w_hidden")):
+			if low != null and mi.visible:
 				_saved_mesh[mi] = mi.mesh
 				mi.mesh = low
 			_lay(mi, _mat("foundation", foundation_colour))
@@ -552,10 +552,9 @@ static func _matches(part: String, patterns: Array) -> bool:
 
 ## Its mesh taken off, kept to put back. Never a hidden one: hidden parts are what their owners keep
 ## for later (the Watchstone's stones, merged at run time from their meshes); a hidden part is only
-## ever recoloured, so the shed's roof comes back in clay if it was open when the look switched. One
-## hidden by a W Optimiser while its copy shows (w_hidden, WTools/optimiser) is drawn art all the same.
+## ever recoloured, so the shed's roof comes back in clay if it was open when the look switched.
 func _strip(mi: MeshInstance4D) -> void:
-	if not mi.visible and not mi.has_meta(&"w_hidden"):
+	if not mi.visible:
 		return
 	_saved_mesh[mi] = mi.mesh
 	mi.mesh = null

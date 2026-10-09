@@ -1,17 +1,16 @@
 # W tools
 
-Two nodes that keep things in view when the slice turns, made procedurally from what you placed by hand:
+A node that keeps trees in view when the slice turns, made procedurally from what you placed by hand:
 
 - **The W Exploder** (`exploder/w_exploder_4d.gd`) for trees and bushes: it stands each plant again in W
   slices above and below, each copy its own offset, turn and size.
-- **The W Optimiser** (`optimiser/w_optimiser_4d.gd`) for landmarks and hero objects: it reads an asset,
-  deepens its thin parts in W, and can wrap it round the area's middle so it stays where it is at any turn
-  (the mountains' way).
 
-Neither saves anything it makes. You keep editing the trees, or the landmark in its own scene
-(`chickenpen/units/...`), and every load makes the W versions afresh from that.
+(There was also a W Optimiser for landmarks, which made a copy of a landmark follow your slice; it was
+removed on 9 Oct 2026. `PLAN.md` and `research/` still describe it, as history.)
 
-Why each works the way it does, with the numbers: `research/experiments.md`. The plan: `PLAN.md`. Frames:
+It saves nothing it makes. You keep editing the trees, and every load makes the W versions afresh from them.
+
+Why it works the way it does, with the numbers: `research/experiments.md`. The plan: `PLAN.md`. Frames:
 `smoke_test_output/wtools/`.
 
 ## 1. The W Exploder
@@ -61,79 +60,13 @@ at 0/20/40/60 degrees; GPU flat):
 **The lab.** `tests/exploder_lab.tscn`. Walk with the kit player; hold the right mouse button and drag to
 turn the slice; R gives the flat slice again; **P** steps through the presets.
 
-## 2. The W Optimiser
-
-**Use.** Put the node beside a landmark (a unit instance), set `target` to it, and pick a profile. **Analyse**
-writes the report into the inspector, **Preview (on / off)** shows the deepening in the editor and takes it
-away again. With Preview on, the wrap follows the editor's own camera: in the Cross-section view, turn the
-view into W (or move it along W) and the landmark stays put. The editor's default Wireframe view draws every
-W at once, so there the landmark itself shows.
-A save takes the preview off first and puts it back after, so nothing of it is saved. **Save as profile**
-writes the current numbers to `optimiser/profiles/`.
-
-**The report** lists the parts (every drawn mesh, not an animal's or a character's) by class: body, thin,
-ground, detail, or elsewhere (at another W). It says how far the slice can turn before the landmark leaves
-it, seen from 10, 20 and 40 m, before and after, and what the wrap does. A landmark built in W says so.
-
-**What it does.**
-- **Thin parts deeper.** Each part shallower in W than `min_w_half` either side is scaled in W about its own
-  middle. W scale is an exact extrude, and its solid colliders are made as deep (never an Area4D's). This
-  holds a landmark when you are near it; far off, no depth is enough.
-- **The wrap** (Skyline). The mountains are a ring round the pen, so one of them is always in a slice. A
-  landmark gets one copy, drawn where the landmark is on the flat slice through the camera: lifted to the
-  camera's W, then turned about the camera as the slice is turned. It stays where you saw it, the same size
-  and bearing, at any turn up to `wrap_arc` and from `wrap_length` metres of W either side (the W wrap
-  length: how far through W it follows you). Walk and it comes nearer as anything would. The copy has no
-  collision, and within `near_margin` of the landmark you always see the landmark itself: what you see there
-  is what you touch. It took three tries (experiments.md): a fan of copies at fixed angles dipped between
-  them; one copy turned round the area's middle slid anything off to one side across the view (in the pen
-  the Watchstone slid out of frame).
-- **Wrap Style** (dropdown): **Stay put** (the above, recommended) or **Ring**: copies of the landmark round
-  the area's middle (`ring_centre`; the pen's is (0, 6)) through W, a copy every few degrees out to the arc,
-  the mountains' way. In the slice only the nearest copy is drawn, in the volume view every one. Ring is
-  not recommended for landmarks yet: off to one side, turning the slice across the line to the landmark
-  slides and skews its copy. Chosen, the node shows the editor's warning mark (click it in the Scene dock)
-  and **About Ring** explains. A full shell (copies in every direction through W, as the mountains are)
-  should fix the slide from near the middle, for many more copies: left for the team to try.
-- **Built in W: left alone.** A landmark laid out through W by hand (the range: boards from W -4 to +4, walls
-  across W that keep you in its yard; Trym's shed: walls across W at +-1.7) is kept exactly as it is. It is
-  told by its solid colliders off its middle W, and by walls across W among its colliders or its parts (thin
-  in W, wide in x and z). Loose parts at other W's do not count: the Watchstone's rocks lie through W in the
-  editor (merged into one centred mesh in play), and counting them made the editor call it built in W. Its meshes are merged, so scaling them would stretch the whole layout: the
-  range's W walls were pushed out among the boards, and became solid blocks 12 m deep across the yard (the
-  lab caught it). Only the wrap applies to it. `respect_w_layout` turns this off; a part with metadata
-  `w_keep` is always left alone.
-
-**Profiles** (the landmark alone, the slice turned straight ahead 0-60 degrees; full table in
-`research/experiments.md`):
-
-| Profile | Does | Holds |
-|---|---|---|
-| Prop | parts 2 m deep | small things, a little turn |
-| Landmark | parts 6 m deep | near: from 10 m the Watchstone keeps 70% of itself at 40 degrees (5% untouched); from 20 m, half at 20 degrees |
-| **Skyline** | parts 4 m deep, wrapped to 60 degrees and 40 m of W | **all of it at every turn to 60 degrees, from 20 m and 40 m (the Watchstone: 13.2k pixels at every turn)** |
-| World-deep | parts 60 m deep | walls that must block every W. Seen through a turned slice, a deep thing looks further off (d / cos t: twice as far at 60 degrees) |
-
-The range (built in W) with Skyline keeps 96-98% of its flat look at every turn to 60 degrees, from 10, 20
-and 40 m (from 20 m: 1,064 of 1,092 pixels at each turn; untouched it had 34 at 10 degrees and none after).
-
-**The lab.** `tests/optimiser_lab.tscn`: the Watchstone (Skyline), the camp and the range (Landmark).
-
-## 3. In the pen (playable_world.tscn)
+## 2. In the pen (playable_world.tscn)
 
 - **World/Trees**: the W Exploder, Turnable forest: 458 copies of the 104 plants, to 18 m of W either side.
   The planting costs the GPU less than it did with 259 copies (1.0-2.4 ms flat at five places, against
   1.2-3.6), and its cull 0.1 ms a frame (0.65 before). `solid_near_path` is the player: a copy's trunk is
   in the physics only while you are within 3 m of its W (all of them solid cost 0.7 ms of physics; this way
   0.2-0.3).
-- **World/WatchstoneW**: Skyline on the Watchstone (LookoutSite/Lookout).
-- **World/RangeW**: Skyline on the range; it is built in W, so only the wrap: seen from more than 15 m it
-  stays in view when the slice turns, and it follows every edit in `units/rune_range`.
-- **Not optimised:** the camp (it stands at W -2.5 on purpose, one of the egg hunt's lanes: deepened, it
-  would show in the farm's own slice), Trym's shed (built in W), the town walls (already 60 m deep).
-- **The look.** When DEV/ART switches, the Optimiser makes its copy again from what the landmark then draws.
-  The look treats a landmark mesh hidden behind its copy (`w_hidden`) as drawn
-  (`look/pen_look_4d.gd` `_strip`, `look/pen_blockouts_4d.gd` `art_bounds`).
 - **Frames**: `smoke_test_output/pen_layout/wtools/` (capture set `wtools`) and `smoke_test_output/wtools/pen/`.
 
 ## Tests (in `tests/`, run with `CreationLab/scripts/lab_run.sh`)
@@ -143,26 +76,18 @@ and 40 m (from 20 m: 1,064 of 1,092 pixels at each turn; untouched it had 34 at 
 | `_presets_exploder_runner.gd` | each Exploder preset: crowns, trunks and floating crowns from 0 to 60 degrees (xw, zw), frames, GPU |
 | `_verify_exploder_stable_runner.gd` | moving one plant changes only its copies |
 | `_verify_lab_preset_key_runner.gd` | P in the lab steps through the presets |
-| `_reach_landmarks_runner.gd` | a landmark's pixels on screen as the slice turns, per treatment or profile (`p_skyline` ...) |
-| `_optimiser_lab_runner.gd` | reports, frames off and on (and the volume view), collisions (deepened colliders hit, the wrap's copy does not, the range left exactly as built), the wrap following the slice, cost, and an edit to the Watchstone's own scene reaching the copy |
-| `_parts_runner.gd` | the Optimiser's parts and colliders, one by one, for checking by eye |
-| `_verify_ring_style_runner.gd` | Wrap Style Ring: its copies and warning, one copy in the slice, all in the volume view, and back to Stay put |
-| `_verify_preview_toggle_runner.gd` | the Preview buttons turn off with a second press, putting the landmark back exactly |
-| `_film_side_runner.gd` | side by side films (exploder, optimiser, ring vs stay put) in the labs, frame by frame, the pen's character |
-| `_compare_ring_runner.gd` | ring vs stay put as stills, in the pen and the lab |
+| `_verify_preview_toggle_runner.gd` | the Preview button turns off with a second press |
+| `_film_side_runner.gd` | side by side films (without copies / with the exploder) in the lab, frame by frame, the pen's character |
 | `_editor_shots.tscn` | opened with `-- wt_shots`, drives the editor and takes the screenshots for the explainer page |
-| `_verify_pen_wtools_runner.gd` | in the pen: the planting, copies' trunks solid near the player's W, the Optimisers, the look switched with the copy showing, frames |
-| `_cost_pen_wtools_runner.gd` | in the pen: process and physics time with the W tools, without each, and with hollow copies |
-| `_probe_pen_wrap_runner.gd` | in the pen: the Watchstone's wrap number by number from a spot, for a frame that lost it |
+| `_verify_pen_wtools_runner.gd` | in the pen: the planting, copies' trunks solid near the player's W, frames |
+| `_cost_pen_wtools_runner.gd` | in the pen: process and physics time with the W tools, without the exploder, and with hollow copies |
 | `PenLayout/scripts/_capture_pen_runner.gd wtools` | the pen's frames: woods turned across the view, the landmarks turned along it, the volume view |
 | `_coverage_trees_runner.gd`, `_probe_engine_runner.gd`, `_probe_units_runner.gd` | the experiments (steps 7-35) |
 
 ## Traps
 
-- **Untested in the editor itself.** The Preview, Clear and Save buttons call the same methods the runners
-  test, but the editor's own handling (the save hook, the inspector report) has not been tried by hand.
-- **Turned in two planes at once** (xw and zw together), the wrap's copy is off by the small turn between the
-  two orders (exact for one plane, as the rigs turn).
+- **Untested in the editor itself.** The Preview and Save buttons call the same methods the runners test, but
+  the editor's own handling (the save hook) has not been tried by hand.
 - **Grass** right at the camera fills the view when the slice is turned along it: the grass's own, not the
-  W tools'. It hides whatever is behind it, a wrapped landmark too.
+  W tools'. It hides whatever is behind it.
 - **No class_name** on any of these scripts (engine_gotchas.md): preload them.

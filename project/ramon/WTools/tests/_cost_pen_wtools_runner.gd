@@ -3,7 +3,7 @@ extends SceneTree
 ## WHAT THE W TOOLS COST THE PEN'S CPU (WTools/PLAN.md step 95). Frame time is too noisy to tell a few
 ## tenths of a millisecond (follow_up: headless frame pacing), so this reads the engine's own process and
 ## physics time (medians of 240 frames) from the start, flat and with the slice turned 30 degrees, with the
-## W tools as they are, the Exploder off, and the Optimisers off. The art look.
+## W tools as they are and the Exploder off. The art look.
 ##
 ##   PEN_LOOK=art lab_run.sh windowed wt_pen_cost res://ramon/WTools/tests/_cost_pen_wtools_runner.gd
 
@@ -12,7 +12,6 @@ const START := Vector4(24.9, 1.2, 19.1, 0.0)
 const SETUPS := {
 	"as is": [],
 	"no exploder": ["World/Trees"],
-	"no optimisers": ["World/WatchstoneW", "World/RangeW"],
 	"copies hollow": ["World/Trees:copies_solid=false"],
 }
 
