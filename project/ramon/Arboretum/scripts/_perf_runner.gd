@@ -14,6 +14,10 @@ extends SceneTree
 const SCENE := "res://ramon/Arboretum/arboretum.tscn"
 const FRAMES := 150
 
+## "scene=res://..." after -- measures another version (Trym's arboretum_water.tscn adds the
+## walkway and the ring to the views).
+var _scene: String = SCENE
+
 var _room: Node4D
 var _jobs: Array = []
 var _job: Dictionary = {}
@@ -27,6 +31,10 @@ var _rid: RID
 
 func _initialize() -> void:
 	root.unfocusable = true
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("scene="):
+			_scene = a.substr(6)
+	print("PERF scene ", _scene)
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	Engine.max_fps = 0
 	_deadline = Time.get_ticks_msec() + 300000
@@ -35,7 +43,7 @@ func _initialize() -> void:
 
 func _open() -> void:
 	var t0: int = Time.get_ticks_usec()
-	_room = (load(SCENE) as PackedScene).instantiate()
+	_room = (load(_scene) as PackedScene).instantiate()
 	root.add_child(_room)
 	print("PERF open %.0f ms" % ((Time.get_ticks_usec() - t0) / 1000.0))
 	# (Video memory before the room's first frame: the engine and the empty window.)
@@ -61,6 +69,9 @@ func _open() -> void:
 	_jobs.append({"name": "door wind on again", "at": views["door"]})
 	_jobs.append({"name": "door, oak leaves off", "at": views["door"], "leaves": false})
 	_jobs.append({"name": "door, all on again", "at": views["door"]})
+	if _room.get_node_or_null("WaterAnnex") != null:
+		_jobs.append({"name": "walkway over the sea", "at": [20.0, 10.5, -90.0]})
+		_jobs.append({"name": "on the ring", "at": [36.0, 10.5, -90.0]})
 	_jobs.append({"name": "near the grove door", "at": [0.0, -16.0, 0.0], "grove": true})
 	_jobs.append({"name": "grove crossing", "at": [-3.0, -38.0, 140.0], "grove": true})
 	_jobs.append({"name": "crossing, hall drawn", "at": [-3.0, -38.0, 140.0], "grove": true, "hall": true})

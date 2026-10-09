@@ -13,6 +13,11 @@ extends SceneTree
 ##   cards    each console's card open
 ##   volume   the volume view (V) at pedestal 02, at the oak and in the grove, each with the slice
 ##            view beside it
+##   compare  the same hall views (the door, 02, the oak) for setting two versions side by side
+##   annex    Trym's water version only: the door onto the sea from the hall, the walkway, the
+##            rotation ring, and a gust out on the water
+## "scene=res://..." picks another scene (default the Arboretum); its frames go into a folder of
+## the scene's own name under each set, so two versions' shots sit side by side.
 ##   film     for movie mode (arb_run.sh movie): the guided tour start to finish, then a gust down
 ##            the hall from the door; no frames saved
 ## Prints the scene's open time and the frame time while it runs (vsync on: only a sanity check;
@@ -20,6 +25,8 @@ extends SceneTree
 
 const OUT := "res://smoke_test_output/arboretum/room/"
 const SCENE := "res://ramon/Arboretum/arboretum.tscn"
+var _scene: String = SCENE
+var _tag: String = ""
 
 var _room: Node4D
 var _sets: PackedStringArray
@@ -33,6 +40,11 @@ var _set: String = ""
 func _initialize() -> void:
 	root.unfocusable = true
 	_sets = OS.get_cmdline_user_args()
+	for a in _sets.duplicate():
+		if a.begins_with("scene="):
+			_scene = a.substr(6)
+			_tag = _scene.get_file().get_basename() + "/"
+			_sets.remove_at(_sets.find(a))
 	if _sets.is_empty():
 		_sets = PackedStringArray(["room"])
 	if "all" in _sets:
@@ -43,13 +55,13 @@ func _initialize() -> void:
 
 func _open() -> void:
 	_t_open = Time.get_ticks_usec()
-	var ps: PackedScene = load(SCENE)
+	var ps: PackedScene = load(_scene)
 	_room = ps.instantiate()
 	root.add_child(_room)
 	print("ROOM opened in %.0f ms" % ((Time.get_ticks_usec() - _t_open) / 1000.0))
 	_wait = 40
 	for s in _sets:
-		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT + s))
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT + s + "/" + _tag))
 		match s:
 			"room":
 				_plan_room()
@@ -65,6 +77,10 @@ func _open() -> void:
 				_plan_film()
 			"volume":
 				_plan_volume()
+			"compare":
+				_plan_compare()
+			"annex":
+				_plan_annex()
 
 
 ## A step: [frames to wait first, callable, shot name or ""].
@@ -161,6 +177,39 @@ func _plan_tour() -> void:
 	_step(20, func() -> void: _room.call("watch"), "")
 	for k in 40:
 		_step(60, _nop(), "tour/%02d" % k)
+
+
+func _plan_compare() -> void:
+	var s := "compare/" + _tag
+	_step(10, _go(0, 14.0, 0), s + "01_inside_door")
+	_step(40, _go(2.4, 3.6, -50), s + "02_at_02")
+	_step(40, _go(0.0, -5.2, 0), s + "03_at_oak")
+	_step(40, _go(8.0, 10.5, -90), s + "04_toward_right_wall")
+
+
+## Trym's annex: the door is in the hall's right wall at z 10.5, the walkway runs out along +x, the
+## ring is at x 36 (arboretum_water.tscn WaterAnnex).
+func _plan_annex() -> void:
+	var s := "annex/" + _tag
+	_step(10, _go(10.0, 10.5, -90), "")
+	_step(40, _nop(), s + "01_door_from_hall")
+	_step(40, _go(20.0, 10.5, -90), s + "02_walkway")
+	_step(40, _go(30.0, 10.5, -90), s + "03_near_ring")
+	_step(40, _go(36.0, 10.5, -90), s + "04_on_ring")
+	_step(20, _go(36.0, 10.5, 90), s + "05_ring_looking_back")
+	_step(1, _press_g, "")
+	_step(60, _go(30.0, 10.5, -90), s + "06_after_gust")
+	_step(90, _nop(), s + "07_after_gust_later")
+
+
+## G as a real key, so the room's own key handling (trees and, in the water version, the sea) runs.
+func _press_g() -> void:
+	for down in [true, false]:
+		var e := InputEventKey.new()
+		e.keycode = KEY_G
+		e.physical_keycode = KEY_G
+		e.pressed = down
+		Input.parse_input_event(e)
 
 
 func _plan_volume() -> void:
