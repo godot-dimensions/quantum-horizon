@@ -36,6 +36,12 @@ const SliceMesh := preload("res://ramon/WaterLab/shared/slice_mesh.gd")
 @export var spacing: float = 7.6
 @export var foot: float = 0.9
 @export var seconds: float = 10.0
+## The blue wall behind both panels, floor to ceiling (Ramon, 9 Oct: "the blue wall that is behind
+## the blue panels with the fish diagrams [should] extend all the way up and all the way down ... if
+## there is a blue wall, this blue wall should always reach the edge of the ceiling and the bottom of
+## the floor. That's the rule"): its height (the room's) and how far it reaches past the panels.
+@export var backing_height: float = 11.0
+@export var backing_margin: float = 0.4
 const PPM := 200.0
 
 const CARDS := [
@@ -69,8 +75,22 @@ var _t: float = 0.0
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
+	_build_backing()
 	for i in 2:
 		_panels.append(_build_panel(i))
+
+
+## The blue backing: one code-blue sheet on the wall behind both panels, floor to ceiling.
+func _build_backing() -> void:
+	var wide: float = spacing + panel_size.x + 0.4 + backing_margin * 2.0
+	var size := Vector4(wide, backing_height, 0.02, Build.W_DEPTH)
+	var b := MeshInstance4D.new()
+	b.name = "Backing"
+	b.mesh = Mats.box_mesh(size)
+	# Just in front of the wall (the slabs' backs reach into it), behind the slabs' faces.
+	b.position = Vector4(0.0, backing_height * 0.5, -0.16, 0.0)
+	b.material_override = LabGrid.material(Style.code_swatch("blue"), size, global_position + b.position)
+	add_child(b)
 
 
 func _build_panel(i: int) -> Dictionary:
@@ -101,13 +121,13 @@ func _build_panel(i: int) -> Dictionary:
 	var studio := SubViewport.new()
 	studio.size = Vector2i(int(vp.size.x * 0.46), int(vp.size.y * 0.78))
 	studio.own_world_3d = true
-	studio.transparent_bg = false
+	# Clear: the page draws the dark blue and its blueprint lines under the picture (round 2).
+	studio.transparent_bg = true
 	studio.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	holder.add_child(studio)
 	var env := WorldEnvironment.new()
 	var e := Environment.new()
-	e.background_mode = Environment.BG_COLOR
-	e.background_color = Color(0.03, 0.10, 0.20)
+	e.background_mode = Environment.BG_CLEAR_COLOR
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	e.ambient_light_color = Color(0.45, 0.55, 0.65)
 	e.ambient_light_energy = 0.6
@@ -277,6 +297,31 @@ func _turn(panel: Dictionary, delta: float) -> void:
 	RenderingServer.multimesh_set_buffer(mmi.multimesh.get_rid(), buf)
 
 
+## The picture's ground: dark blue, a fine grid of faint white lines and a bolder one every fourth,
+## a cross through the middle, and ticks along the edges, the way a blueprint is ruled.
+func _blueprint(page: Control, r: Rect2, u: float) -> void:
+	page.draw_rect(r, Color(0.03, 0.10, 0.20))
+	var step: float = 26.0 * u
+	var nx: int = int(r.size.x / step) + 1
+	var ny: int = int(r.size.y / step) + 1
+	for i in nx:
+		var x: float = r.position.x + float(i) * step
+		var strong: bool = i % 4 == 0
+		page.draw_line(Vector2(x, r.position.y), Vector2(x, r.end.y), Color(1, 1, 1, 0.13 if strong else 0.055), maxf(1.0, (1.4 if strong else 1.0) * u))
+	for j in ny:
+		var y: float = r.position.y + float(j) * step
+		var strong2: bool = j % 4 == 0
+		page.draw_line(Vector2(r.position.x, y), Vector2(r.end.x, y), Color(1, 1, 1, 0.13 if strong2 else 0.055), maxf(1.0, (1.4 if strong2 else 1.0) * u))
+	var c: Vector2 = r.get_center()
+	page.draw_line(Vector2(r.position.x + 12.0 * u, c.y), Vector2(r.end.x - 12.0 * u, c.y), Color(1, 1, 1, 0.18), maxf(1.0, 1.4 * u))
+	page.draw_line(Vector2(c.x, r.position.y + 12.0 * u), Vector2(c.x, r.end.y - 12.0 * u), Color(1, 1, 1, 0.18), maxf(1.0, 1.4 * u))
+	page.draw_arc(c, 18.0 * u, 0.0, TAU, 24, Color(1, 1, 1, 0.18), maxf(1.0, 1.4 * u), true)
+	for i in nx:
+		var x2: float = r.position.x + float(i) * step
+		var tick: float = (10.0 if i % 4 == 0 else 5.0) * u
+		page.draw_line(Vector2(x2, r.end.y), Vector2(x2, r.end.y - tick), Color(1, 1, 1, 0.3), maxf(1.0, u))
+
+
 func _paint(panel: Dictionary) -> void:
 	var page: Control = panel["page"]
 	var card: Dictionary = CARDS[maxi(int(panel["card"]), 0)]
@@ -293,8 +338,10 @@ func _paint(panel: Dictionary) -> void:
 	var count: String = "%02d / %02d" % [int(panel["card"]) + 1, CARDS.size()]
 	page.draw_string(fs, Vector2(pad, pad + 20.0 * u), count, HORIZONTAL_ALIGNMENT_RIGHT, sz.x - pad * 2.0, int(22 * u), dim)
 	page.draw_line(Vector2(pad, pad + 40.0 * u), Vector2(sz.x - pad, pad + 40.0 * u), Color(1, 1, 1, 0.3), maxf(1.0, 2.0 * u))
-	# The picture's frame.
+	# The picture's frame, on the dark blue of a blueprint (Ramon, 9 Oct: "behind the fishes ... on
+	# this dark blue subtle, subtle white lines, also like this diagram style, blueprint style").
 	var pic: Rect2 = Rect2(Vector2(sz.x * 0.03, sz.y * 0.15), Vector2((panel["studio"] as SubViewport).size))
+	_blueprint(page, pic, u)
 	page.draw_rect(pic.grow(4.0 * u), Color(1, 1, 1, 0.5), false, maxf(1.0, 3.0 * u))
 	var x0: float = sz.x * 0.53
 	var w: float = sz.x - x0 - pad

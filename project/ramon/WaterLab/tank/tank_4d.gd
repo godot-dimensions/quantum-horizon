@@ -91,6 +91,9 @@ var shark: Node4D
 ## rest"). The glass, the frame, the stand and the water stay as they are.
 var contents_turn: float = 0.0
 var contents_slide: float = 0.0
+## The other turn (Ramon, 9 Oct: "the slice rotating the other way"): through the z-W plane, front to
+## back against W, after the x-W turn.
+var contents_turn2: float = 0.0
 var _queued: bool = false
 
 
@@ -297,6 +300,8 @@ func _build_life() -> void:
 	koi.set("count", koi_count)
 	koi.set("half_extents", he)
 	koi.set("floor_height", sand_depth + 0.12)
+	# Where the room looks: the lower 4.6 m of the water (the tank reaches the ceiling).
+	koi.set("view_band", 4.6 if water_size.y > 6.0 else 0.0)
 	koi.set("obstacles", obstacles)
 	koi.set("ground", dunes)
 	koi.set("arches", reef.get("arches"))
@@ -313,12 +318,37 @@ func _build_life() -> void:
 	set_contents(contents_turn, contents_slide)
 
 
-## The contents turned through W by `turn` (radians, x-W plane) and slid `slide` metres along W.
+## The contents turned through W by `turn` (radians, x-W plane) and slid `slide` metres along W; the
+## other turn (z-W) kept.
 func set_contents(turn: float, slide: float) -> void:
 	contents_turn = clampf(turn, deg_to_rad(-75.0), deg_to_rad(75.0))
 	contents_slide = clampf(slide, -water_size.w * 0.45, water_size.w * 0.45)
+	_apply_contents()
+
+
+func set_turn2(turn2: float) -> void:
+	contents_turn2 = clampf(turn2, deg_to_rad(-75.0), deg_to_rad(75.0))
+	_apply_contents()
+
+
+func turn2_contents(d: float) -> void:
+	set_turn2(contents_turn2 + d)
+
+
+## All three back to level.
+func reset_contents() -> void:
+	contents_turn2 = 0.0
+	set_contents(0.0, 0.0)
+
+
+## The contents' turn as one basis (x-W, then z-W).
+func contents_basis() -> Projection:
+	return Basis4D.from_xw(contents_turn) * Basis4D.from_zw(contents_turn2)
+
+
+func _apply_contents() -> void:
 	if life != null:
-		life.basis = Basis4D.from_xw(contents_turn)
+		life.basis = contents_basis()
 		life.position = water_centre() + Vector4(0.0, 0.0, 0.0, contents_slide)
 
 

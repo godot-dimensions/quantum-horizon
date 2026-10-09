@@ -34,6 +34,53 @@ func setup() -> void:
 			step(180, nop)
 			step(1, perf_end)
 		return
+	if "square" in args:
+		step(90, _go(-11.0, -4.0, -45.0), "q01_square_from_the_bend")
+		step(20, _go(-5.23, -3.2, 0.0), "q02_square_from_behind")
+		step(20, _go(-5.23, -7.7, 0.0), "q03_on_the_square")
+		step(1, _go(-0.5, -7.7, 90.0))
+		step(20, nop, "q04_square_from_the_east")
+		return
+	if "feed" in args:
+		# The feeding booth, then walking away from it (Ramon, 9 Oct: feeding froze his walking).
+		step(90, _go(-8.7, -7.5, 0.0), "f01_at_booth")
+		step(1, _press.bind(KEY_E))
+		step(60, nop, "f02_fed")
+		step(1, _walk_start)
+		step(60, nop)
+		step(1, _walk_stop, "f03_walked_away")
+		step(120, nop, "f04_pellets_down")
+		return
+	if "round2" in args:
+		# Ramon's walkthrough (9 Oct): the shorter, wider hall, the tank to the ceiling, the square.
+		step(90, _go(-11.0, 12.2, 0.0), "r01_opening")
+		step(20, _go(-11.0, 2.0, 0.0), "r02_walking_in")
+		step(20, _go(-11.0, -4.0, -45.0), "r03_tank_from_the_bend")
+		step(1, _go(-5.2, 2.5, 0.0))
+		step(20, _pitch(8.0), "r04_tank_whole")
+		step(1, _pitch(-11.0))
+		step(40, _go(-5.23, -7.7, 0.0), "r05_on_the_square")
+		step(1, _turn_both.bind(20.0, 30.0, 0.8))
+		step(30, nop, "r05b_square_turned_both_ways")
+		step(1, _press.bind(KEY_V))
+		step(120, nop, "r05c_square_following_shark")
+		step(1, _press.bind(KEY_R))
+		step(1, _go(-9.0, -5.0, 90.0))
+		step(20, _pitch(-6.0), "r06_west_wall")
+		step(1, _go(4.0, -5.0, -90.0))
+		step(20, nop, "r07_east_wall_showcase")
+		step(1, _go(-1.5, -3.0, 180.0))
+		step(20, nop, "r08_fish_wall")
+		step(1, _go(10.0, -7.0, 0.0))
+		step(20, nop, "r09_exit")
+		step(1, _go(10.0, -10.5, 0.0))
+		step(60, nop, "r09b_exit_open")
+		step(1, _go(-8.7, -7.5, 0.0))
+		step(30, nop, "r10_feeder")
+		step(1, _press.bind(KEY_E))
+		step(90, nop, "r10b_fed_3s")
+		step(120, nop, "r10c_fed_7s")
+		return
 	if "eel" in args:
 		# The eel along its patrol, followed.
 		step(60, _go(-8.2, -8.2, 0.0))
@@ -200,6 +247,40 @@ func _process(d: float) -> bool:
 		var front: float = tank.global_position.z + float((tank.get("water_size") as Vector4).z) * 0.5 + 1.1
 		aim(_close, Vector4(at.x - 0.5, at.y + 0.15, front, 0.0), at)
 	return super(d)
+
+
+var _walk_from := Vector4.ZERO
+
+
+## Walking forward with the real input (the move action), after the room has been used.
+func _walk_start() -> void:
+	var p: Node4D = _room.get("player")
+	p.set("input_enabled", true)
+	_walk_from = p.global_position
+	Input.action_press(&"move_back")
+
+
+func _walk_stop() -> void:
+	Input.action_release(&"move_back")
+	var p: Node4D = _room.get("player")
+	print("ROOM walked from %s to %s (%.2f m)" % [str(_walk_from), str(p.global_position), (p.global_position - _walk_from).length()])
+	p.set("input_enabled", false)
+
+
+func _turn_both(turn_deg: float, turn2_deg: float, slide: float) -> void:
+	var tank: Node = _room.get("tank")
+	tank.call("set_contents", deg_to_rad(turn_deg), slide)
+	tank.call("set_turn2", deg_to_rad(turn2_deg))
+
+
+func _press(key: Key) -> void:
+	for down in [true, false]:
+		var e := InputEventKey.new()
+		e.keycode = key
+		e.physical_keycode = key
+		e.pressed = down
+		Input.parse_input_event(e)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
 func _rig() -> Node:

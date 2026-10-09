@@ -60,6 +60,10 @@ uniform vec4 print_normal = vec4(0.0, 0.0, 1.0, 0.0);
 uniform vec4 print_rect = vec4(0.0, 0.0, 1.0, 1.0);
 uniform vec4 print_tint : source_color = vec4(1.0);
 uniform float print_glow : hint_range(0.0, 1.0) = 0.35;
+// WATER LAB: 1 draws the print as light, not paint (the PathCreator's marks' way: what is under it
+// goes dark, the print's colour is emitted). A code-blue print on a floor under spotlights was lit
+// past its colour and clipped to cyan (Ramon, 9 Oct: "its not blue but cyan").
+uniform float print_emit : hint_range(0.0, 1.0) = 0.0;
 // A print wrapped round a cylinder's side instead (the pedestal's label): x and y of
 // print_cylinder are the angles it runs between (radians from +Z towards +X, so it reads left to
 // right from outside), z and w the heights (in the mesh's own space) it runs between.
@@ -412,8 +416,8 @@ void fragment() {
 			}
 			float k = t.a * print_on;
 			vec3 ink = t.rgb * print_tint.rgb * print_on;
-			c = c * (1.0 - k) + ink;
-			glow += ink * print_glow;
+			c = c * (1.0 - k) + ink * (1.0 - print_emit);
+			glow += ink * mix(print_glow, 1.0, print_emit);
 		}
 	}
 

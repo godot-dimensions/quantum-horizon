@@ -39,8 +39,10 @@ func _init() -> void:
 func _ready() -> void:
 	var t0: int = Time.get_ticks_usec()
 	# Baked under life/baked/ after the first build (as the reef is): the height field is the same
-	# every time, and building it took a third of a second.
-	var path: String = "res://ramon/WaterLab/life/baked/dunes_v1.res"
+	# every time, and building it took a third of a second. Named by the tank's size, so a bigger
+	# tank bakes its own (the 9 Oct round 2 tank kept the old shelf half way up the water).
+	var he: Vector4 = half_extents
+	var path: String = "res://ramon/WaterLab/life/baked/dunes_v1_%d_%d_%d_%d.res" % [roundi(he.x * 100.0), roundi(floor_y * 100.0), roundi(he.z * 100.0), roundi(he.w * 100.0)]
 	var mesh: ArrayTetraMesh4D = null
 	if ResourceLoader.exists(path):
 		mesh = load(path) as ArrayTetraMesh4D

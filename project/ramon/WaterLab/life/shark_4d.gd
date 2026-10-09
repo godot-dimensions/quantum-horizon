@@ -120,7 +120,8 @@ func _process(delta: float) -> void:
 			_dir = -_dir
 	else:
 		# Along the tank, mid-water, back toward the slice in W, clear of the sand and the stones.
-		var mid_y: float = clampf(0.4 + 0.5 * sin(_t * 0.07), -0.4, he.y - 1.0)
+		# About 2.5 m over the sand, where the room looks (the tank reaches the ceiling since 9 Oct).
+		var mid_y: float = clampf(floor_y + 2.5 + 0.5 * sin(_t * 0.07), floor_y + 1.2, he.y - 1.0)
 		want = Vector4(_dir, (mid_y - p.y) * 0.25, (-0.1 - p.z) * 0.2, -p.w * 0.35)
 		var floor_at: float = float(ground.call("height_at", p.x, p.z, p.w)) if ground != null else floor_y
 		if p.y < floor_at + 0.9:

@@ -11,6 +11,15 @@ extends Node4D
 ##   doorway, the room's);
 ##   `light_behind`: a bright panel behind the leaves, so an opened door shows light, not the void.
 ##
+## THE PLAIN STYLE (`style` "plain"; Ramon, 9 Oct: "just put a gray door mechanism in there. So keep it
+## minimalist ... just the doors that slide. Make them slide within the white opening, and maybe
+## remove the cyan line in the middle, and just make it a little lighter gray line in the middle ...
+## when the door opens ... this kind of holographic blue doorway being visible", the Voxel Lab's):
+##   no frame, no strips, no status light: two light grey leaves filling the opening, a lighter grey
+##   line where they meet, sliding apart into the wall; behind them the Voxel Lab's hologram doorway
+##   (VoxelLab/room/vl_shimmer_4d.gd: two dithered sheets of the grid shader's hologram mode, bands
+##   drifting up them, a lit line down each side and across the top), showing as the door opens.
+##
 ## IN PLAY: `open` (0 shut, 1 open) slides the leaves apart. With `auto_open` the door opens as
 ## someone comes within `open_distance` of its front and shuts behind them. With `exit_to` set, a
 ## step into the opening (`inside(p)`) is what the room asks about to send you through it.
@@ -19,9 +28,15 @@ extends Node4D
 ## NO class_name (engine_gotchas.md).
 
 const Mats := preload("res://ramon/WaterLab/carried/LabKit/lab_materials.gd")
+const LabGrid := preload("res://ramon/WaterLab/carried/LabKit/lab_grid.gd")
 const GENERATED := "door_generated"
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
+## "scifi" (the frame, strips and dark leaves) or "plain" (grey leaves and the hologram doorway).
+@export_enum("scifi", "plain") var style: String = "scifi":
+	set(v):
+		style = v
+		_later()
 @export var width: float = 3.2:
 	set(v):
 		width = v
@@ -58,6 +73,8 @@ const GENERATED := "door_generated"
 var _leaves: Array = []
 var _queued: bool = false
 var _want: float = 0.0
+## The hologram sheets' cross-section materials and their full strengths (the plain style).
+var _holo: Array = []
 
 
 func _ready() -> void:
@@ -80,6 +97,11 @@ func rebuild() -> void:
 			remove_child(c)
 			c.queue_free()
 	_leaves = []
+	_holo = []
+	if style == "plain":
+		_build_plain()
+		_place_leaves()
+		return
 	var frame := Color(0.20, 0.22, 0.26)
 	var plate_c := Color(0.78, 0.79, 0.81)
 	var leaf := Color(0.13, 0.15, 0.19)
@@ -123,6 +145,61 @@ func rebuild() -> void:
 	_place_leaves()
 
 
+## The plain door: grey leaves in the opening, the hologram behind them, a block behind that.
+func _build_plain() -> void:
+	var h: float = height
+	var wd: float = w_depth
+	var hw: float = width * 0.5
+	var grey := Color(0.70, 0.72, 0.75)
+	var seam := Color(0.86, 0.87, 0.89)
+	for s in [-1.0, 1.0]:
+		var l := Node4D.new()
+		l.name = "Leaf%d" % int(s)
+		l.set_meta(GENERATED, true)
+		add_child(l)
+		_box_in(l, "Panel", Vector4(0.0, h * 0.5, 0.0, 0.0), Vector4(hw, h, 0.1, wd), _mat(grey))
+		# The meeting line, a lighter grey, on the edge toward the middle.
+		_box_in(l, "Seam", Vector4(-s * (hw * 0.5 - 0.02), h * 0.5, 0.055, 0.0), Vector4(0.04, h - 0.02, 0.012, wd), _mat(seam))
+		l.set_meta("side", s)
+		_leaves.append(l)
+	# The hologram doorway behind the leaves.
+	var col := Color(0.32, 0.66, 1.0)
+	for i in 2:
+		var size := Vector4(width - 0.08, h - 0.04, 0.03, wd)
+		var sheet: MeshInstance4D = _box("Holo%d" % i, Vector4(0.0, h * 0.5, -0.22 - 0.12 * float(i), 0.0), size, null)
+		var m: TetraMaterial4D = LabGrid.material("kit_code_blue", size, Vector4.ZERO)
+		var cs: ShaderMaterial = m.get_cross_section_material_3d()
+		cs.set_shader_parameter("holo_on", 1.0)
+		cs.set_shader_parameter("holo_base", 0.0)
+		cs.set_shader_parameter("holo_falloff", 0.7 if i == 0 else 1.1)
+		cs.set_shader_parameter("holo_color", col if i == 0 else col.lightened(0.25))
+		cs.set_shader_parameter("holo_glow", 0.9)
+		cs.set_shader_parameter("holo_scan", 0.7)
+		cs.set_shader_parameter("holo_scan_density", 1.4 + 0.5 * float(i))
+		cs.set_shader_parameter("holo_scan_speed", 0.42 + 0.15 * float(i))
+		cs.set_shader_parameter("holo_fine", 1.0)
+		sheet.material_override = m
+		sheet.visible = false
+		_holo.append([sheet, cs, 0.92 if i == 0 else 0.7])
+	var edge_col := Color(0.70, 0.88, 1.0)
+	for side in [-1.0, 1.0]:
+		var edge: MeshInstance4D = _box("HoloEdge", Vector4(side * (hw - 0.02), h * 0.5, -0.28, 0.0), Vector4(0.035, h, 0.06, wd), Mats.glow(edge_col, 1.4))
+		_holo.append([edge, null, 0.0])
+	var top: MeshInstance4D = _box("HoloTop", Vector4(0.0, h - 0.02, -0.28, 0.0), Vector4(width, 0.035, 0.06, wd), Mats.glow(edge_col, 1.4))
+	_holo.append([top, null, 0.0])
+	if blocks:
+		var body := StaticBody4D.new()
+		body.name = "Block"
+		body.position = Vector4(0.0, h * 0.5, -0.65, 0.0)
+		var shape := CollisionShape4D.new()
+		var b := BoxShape4D.new()
+		b.size = Vector4(width + 0.6, h, 0.4, wd)
+		shape.shape = b
+		body.add_child(shape)
+		body.set_meta(GENERATED, true)
+		add_child(body)
+
+
 func _mat(c: Color) -> TetraMaterial4D:
 	var m := TetraMaterial4D.new()
 	m.albedo_color = c
@@ -148,12 +225,24 @@ func _box_in(parent: Node, nm: String, at: Vector4, size: Vector4, mat: Material
 ## The leaves at `open`: shut they meet in the middle, open they slide into the pillars.
 func _place_leaves() -> void:
 	var hw: float = width * 0.5
+	var k: float = smoothstep(0.0, 1.0, open)
 	for l in _leaves:
 		if not is_instance_valid(l):
 			continue
 		var s: float = float((l as Node4D).get_meta("side", 1.0))
-		var k: float = smoothstep(0.0, 1.0, open)
-		(l as Node4D).position = Vector4(s * (hw * 0.5 + 0.02 + k * (hw * 0.5 + 0.1)), 0.0, -0.12, 0.0)
+		if style == "plain":
+			# Into the wall on each side, all the way.
+			(l as Node4D).position = Vector4(s * (hw * 0.5 + k * (hw + 0.05)), 0.0, -0.1, 0.0)
+		else:
+			(l as Node4D).position = Vector4(s * (hw * 0.5 + 0.02 + k * (hw * 0.5 + 0.1)), 0.0, -0.12, 0.0)
+	# The hologram shows as the door opens.
+	for hs in _holo:
+		var node: MeshInstance4D = hs[0]
+		if not is_instance_valid(node):
+			continue
+		node.visible = k > 0.02
+		if hs[1] != null:
+			(hs[1] as ShaderMaterial).set_shader_parameter("holo_base", float(hs[2]) * k)
 
 
 func _process(delta: float) -> void:

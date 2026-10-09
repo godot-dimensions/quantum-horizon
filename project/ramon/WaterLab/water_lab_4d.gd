@@ -41,21 +41,24 @@ const Build := preload("res://ramon/WaterLab/carried/scripts/chamber_build.gd")
 const GB := preload("res://ramon/WaterLab/carried/LabKit/carried/chickenpen/scripts/ground_basis_4d.gd")
 const Builder := preload("res://ramon/WaterLab/carried/PathCreator/builder/pc_builder.gd")
 const Dial := preload("res://ramon/WaterLab/room/tank_dial.gd")
+const FloatPanel := preload("res://ramon/WaterLab/carried/voxel_lab/float_panel_4d.gd")
+const LabPrint := preload("res://ramon/WaterLab/carried/LabKit/lab_print.gd")
+const MouseTutorial := preload("res://ramon/WaterLab/shared/mouse_tutorial.gd")
 
 const SEA_SCENE := "res://ramon/WaterLab/seascape/seascape.tscn"
 ## The tree's meta that says where you are arriving from (the sea sets it on its way back).
 const ARRIVE_META := "water_lab_arrive"
 
 @export_group("Visit")
-## Where you start (x, z), in the entrance corridor, facing the tank.
-@export var start_at: Vector2 = Vector2(-11.0, 18.0)
-## The turning circle (a destination on the route half way along the glass, its big round frame
-## round Paths/Targets/TurnSpot): its middle (x, z) and radius.
-@export var turn_spot: Vector2 = Vector2(-4.23, -8.2)
+## Where you start (x, z), at the back of the entrance corridor, facing the tank.
+@export var start_at: Vector2 = Vector2(-11.0, 12.2)
+## The turning square in front of the tank's middle (Ramon, 9 Oct: "a blue square there that you can
+## stand on"; a circle cut into the tank's stand): its middle (x, z) and half its side.
+@export var turn_spot: Vector2 = Vector2(-5.23, -7.7)
 @export var turn_radius: float = 1.5
 ## The feeding console, on the room's side of the row facing the tank: where it stands (x, z), and
 ## how near counts as at it.
-@export var feed_at: Vector2 = Vector2(-9.2, -6.9)
+@export var feed_at: Vector2 = Vector2(-8.7, -8.85)
 @export var feed_reach: float = 1.8
 ## How far beyond its pedestal's edge the showcase counts as the one you are at.
 @export var showcase_margin: float = 2.6
@@ -71,6 +74,9 @@ var hud: Control
 var prompt: Control
 var builder: Control
 var dial: Control
+var tutorial: Control
+## Seconds left of following the shark (V): the contents slid so it stays in your slice.
+var _follow_shark: float = 0.0
 var tank: Node4D
 var showcase: Node4D
 ## The showcase while you are at it (the wheel and a right drag are its), else null.
@@ -83,6 +89,7 @@ var _leaving: float = -1.0
 var _on_turn: bool = false
 var _at_feed: bool = false
 var _feed_cooldown: float = 0.0
+var _fed: int = 0
 var _visited: Dictionary = {}
 var _near_panel: bool = false
 var _build_cam: Camera4D
@@ -107,11 +114,14 @@ func _ready() -> void:
 	_build_feeder()
 	if Engine.is_editor_hint():
 		return
+	_paint_square.call_deferred()
 	tank = get_node_or_null("Tank") as Node4D
 	showcase = get_node_or_null("Showcase") as Node4D
 	_door = get_node_or_null("ExitDoor") as Node4D
 	player = KitPlayer.make()
 	player.name = "Player"
+	# No walking through W here: E feeds the koi and pages the showcase, and E is also move_ana.
+	player.set("w_walk_enabled", false)
 	add_child(player)
 	_rig = player.get_node_or_null("CameraRig")
 	if _rig != null:
@@ -141,6 +151,9 @@ func _ready() -> void:
 	_build_hum()
 	if showcase != null:
 		showcase.call("set_player", player)
+	var feeder: Node = get_node_or_null("Feeder")
+	if feeder != null:
+		feeder.set("player", player)
 
 
 func _build_hud() -> void:
@@ -159,6 +172,11 @@ func _build_hud() -> void:
 	dial.set_script(Dial)
 	layer.add_child(dial)
 	dial.set("tank", get_node_or_null("Tank"))
+	tutorial = Control.new()
+	tutorial.name = "MouseTutorial"
+	tutorial.set_script(MouseTutorial)
+	tutorial.set("gestures", [["drag_v", "SLIDE THROUGH W"], ["drag_h", "TURN THROUGH W"], ["wheel", "TURN THE OTHER WAY"]])
+	layer.add_child(tutorial)
 	prompt = Control.new()
 	prompt.set_script(Prompt)
 	prompt.set("camera", player.get_node_or_null("CameraRig/Pitch/Camera4D"))
@@ -186,46 +204,96 @@ func _build_hud() -> void:
 
 # -- the turning spot and the feeder ------------------------------------------------------------------
 
-## The feeding console at the glass: a small dark lectern with a lit amber button on its top.
+## The feeding booth: the Voxel Lab's small white floating panel (Ramon, 9 Oct: "for the feed the koi
+## booth, please use the floating panels ... and you can press E to feed the koi there"), facing the
+## route, leaning and turning a little toward you as you come. It used to be a dark lectern.
 func _build_feeder() -> void:
 	var old: Node = get_node_or_null("Feeder")
 	if old != null:
 		remove_child(old)
 		old.queue_free()
-	var holder := Node4D.new()
-	holder.name = "Feeder"
-	holder.position = Vector4(feed_at.x, 0.0, feed_at.y, 0.0)
-	add_child(holder)
-	var dark := Color(0.13, 0.14, 0.16)
-	var post := MeshInstance4D.new()
-	post.name = "Post"
-	post.mesh = Mats.box_mesh(Vector4(0.5, 1.0, 0.4, Build.W_DEPTH))
-	post.position = Vector4(0.0, 0.5, 0.0, 0.0)
-	post.material_override = Mats.flat(dark)
-	holder.add_child(post)
-	var top := MeshInstance4D.new()
-	top.name = "Top"
-	top.mesh = Mats.box_mesh(Vector4(0.8, 0.08, 0.55, Build.W_DEPTH))
-	top.position = Vector4(0.0, 1.04, 0.0, 0.0)
-	top.basis = Basis4D.from_yz(0.25)
-	top.material_override = Mats.flat(Style.lip())
-	holder.add_child(top)
-	var button := MeshInstance4D.new()
-	button.name = "Button"
-	button.mesh = Build._cubinder(0.13, 0.05, 32)
-	button.position = Vector4(0.0, 1.1, 0.02, 0.0)
-	button.basis = Basis4D.from_yz(0.25)
-	button.material_override = Mats.glow(Color(1.0, 0.62, 0.22), 1.6)
-	holder.add_child(button)
-	var body := StaticBody4D.new()
-	body.name = "Solid"
-	body.position = Vector4(0.0, 0.55, 0.0, 0.0)
-	var shape := CollisionShape4D.new()
-	var bs := BoxShape4D.new()
-	bs.size = Vector4(0.8, 1.1, 0.55, Build.W_DEPTH)
-	shape.shape = bs
-	body.add_child(shape)
-	holder.add_child(body)
+	var panel := Node4D.new()
+	panel.name = "Feeder"
+	panel.set_script(FloatPanel)
+	panel.position = Vector4(feed_at.x, 0.0, feed_at.y, 0.0)
+	panel.set("face_point", Vector2(feed_at.x, feed_at.y + 4.0))
+	panel.set("width", 1.15)
+	panel.set("number", 0)
+	panel.set("title", "Feed the koi")
+	panel.set("kicker", "A PINCH OF PELLETS, SINKING TO THEM")
+	panel.set("hint", "E   FEED THE KOI")
+	panel.set("rows", _feeder_rows())
+	add_child(panel)
+
+
+## THE TURNING SQUARE IS FLOOR PAINT (Ramon, 9 Oct, round 2: a blue square to stand on, "TURN THE TANK
+## THROUGH W" on it; then: "its not blue but cyan ... the blue panel is visible a block above ground.
+## should be floor paint so to speak ... check out how the creation lab walls were built"). Painted
+## into the hall floor's own surface the way the lab's walls carry their words (LabPrint: drawn once,
+## read back, mipmapped, printed into the surface; emitted rather than lit, as the path's own marks
+## are, so the spots over the tank do not wash it to cyan): a code-blue square with the path frames' 45-degree corners, the words in
+## white. The route ends at its west edge and starts again at its east edge (its node draws no art of
+## its own and keeps the route `turn_radius` + a hand clear), and the path's corner brackets frame it.
+var _painted_floor: MeshInstance4D = null
+var _square_tex: Texture2D = null
+
+
+func _paint_square() -> void:
+	var hall: Node4D = get_node_or_null("Hall") as Node4D
+	if hall == null:
+		return
+	var fl: MeshInstance4D = hall.call("floor_box")
+	if fl == null or fl == _painted_floor:
+		return
+	_painted_floor = fl
+	if _square_tex == null:
+		var side: float = turn_radius * 2.0
+		_square_tex = await LabPrint.render(get_tree(), Vector2i(int(side * 400.0), int(side * 400.0)), _square_picture)
+	if _square_tex == null or not is_instance_valid(fl):
+		return
+	var hs: Vector3 = hall.get("size")
+	var hp: Vector4 = hall.global_position
+	var x0: float = hp.x - hs.x * 0.5
+	var z1: float = hp.z + hs.z * 0.5
+	var rect := Rect2(Vector2(turn_spot.x - turn_radius - x0, z1 - (turn_spot.y + turn_radius)), Vector2(turn_radius, turn_radius) * 2.0)
+	var m: TetraMaterial4D = fl.material_override as TetraMaterial4D
+	LabGrid.set_print(m, _square_tex, Vector4(0, 1, 0, 0), rect, Color.WHITE, 0.0)
+	LabGrid.set_print_strength(m, 1.0)
+	m.get_cross_section_material_3d().set_shader_parameter("print_aa", 1.0)
+	# As light, not paint: lit by the tank's spots the code blue clipped to cyan (the path's marks are
+	# emitted the same way, and read as the same blue).
+	m.get_cross_section_material_3d().set_shader_parameter("print_emit", 1.0)
+
+
+## The square's picture (premultiplied: opaque blue, white over it).
+func _square_picture(c: Control) -> void:
+	var sz: Vector2 = c.size
+	var u: float = sz.x / (turn_radius * 2.0)
+	var blue: Color = Style.pick(Style.CODE_BLUE)
+	# The path frames' corners: cut at 45 degrees, 0.21 m.
+	var k: float = 0.21 * u
+	c.draw_colored_polygon(PackedVector2Array([Vector2(k, 0), Vector2(sz.x - k, 0), Vector2(sz.x, k), Vector2(sz.x, sz.y - k),
+		Vector2(sz.x - k, sz.y), Vector2(k, sz.y), Vector2(0, sz.y - k), Vector2(0, k)]), blue)
+	var fb: Font = LabPrint.font("black")
+	var fs: Font = LabPrint.font("bold")
+	var white := Color(1, 1, 1, 1)
+	var soft := Color(1, 1, 1, 0.78)
+	var margin: float = 0.34 * u
+	var w: float = sz.x - margin * 2.0
+	var px: int = int(0.30 * u)
+	for line in ["TURN THE TANK", "THROUGH W"]:
+		while px > 8 and fb.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > w:
+			px -= 2
+	var y: float = sz.y * 0.40
+	c.draw_string(fb, Vector2(margin, y), "TURN THE TANK", HORIZONTAL_ALIGNMENT_CENTER, w, px, white)
+	c.draw_string(fb, Vector2(margin, y + px * 1.02), "THROUGH W", HORIZONTAL_ALIGNMENT_CENTER, w, px, white)
+	var rule_y: float = y + px * 1.02 + 0.17 * u
+	c.draw_line(Vector2(sz.x * 0.5 - 0.45 * u, rule_y), Vector2(sz.x * 0.5 + 0.45 * u, rule_y), soft, maxf(2.0, 0.018 * u), true)
+	c.draw_string(fs, Vector2(margin, rule_y + 0.17 * u), "RIGHT MOUSE   ·   WHEEL   ·   V THE SHARK", HORIZONTAL_ALIGNMENT_CENTER, w, int(0.085 * u), soft)
+
+
+func _feeder_rows() -> Array:
+	return [["Koi", str(tank.get("koi_count")) if tank != null else "16"], ["A pinch", "16 pellets"], ["Fed", "%d times" % _fed]]
 
 
 # -- looks ------------------------------------------------------------------------------------------------
@@ -264,7 +332,10 @@ func _process(delta: float) -> void:
 	var p: Vector4 = player.global_position
 	if tank != null and tank.has_method("set_viewer"):
 		tank.call("set_viewer", p + Vector4(0.0, 1.5, 0.0, 0.0))
+	if Engine.get_process_frames() % 30 == 0:
+		_paint_square()
 	_turning(p)
+	_following(delta)
 	_hum_level(p, delta)
 	_feeding(p, delta)
 	_find_active(p)
@@ -308,30 +379,46 @@ func _hum_level(p: Vector4, delta: float) -> void:
 	_hum.volume_db = lerpf(_hum.volume_db, want, minf(delta * 3.0, 1.0))
 
 
-## In the circle the tank's gizmo shows, and a right drag turns what is IN the tank through W (not your
-## slice: the room stays as it is; Ramon, 9 Oct).
+## On the square the tank's gizmo and the mouse's tutorial show, and the mouse moves what is IN the tank
+## through W (not your slice: the room stays as it is; Ramon, 9 Oct). A right drag forward and back
+## slides it, sideways turns it (x-W), the wheel turns it the other way (z-W); V follows the shark.
 func _turning(p: Vector4) -> void:
-	var on: bool = Vector2(p.x - turn_spot.x, p.z - turn_spot.y).length() < turn_radius + 0.1
-	if on != _on_turn:
-		_on_turn = on
-		if on:
-			hud.call("toast", "Right drag: turn the tank's contents through W")
+	var on: bool = absf(p.x - turn_spot.x) < turn_radius + 0.1 and absf(p.z - turn_spot.y) < turn_radius + 0.1
+	_on_turn = on
 	if dial != null:
 		dial.set("shown", on)
+		dial.set("following", _follow_shark > 0.0)
+	if tutorial != null:
+		tutorial.set("shown", on)
+	if not on:
+		_follow_shark = 0.0
+
+
+## V: the contents slid until the shark is in your slice, and kept there a while as it swims.
+func _following(delta: float) -> void:
+	if _follow_shark <= 0.0 or tank == null:
+		return
+	_follow_shark -= delta
+	var shark: Node = tank.get("shark")
+	if shark == null:
+		_follow_shark = 0.0
+		return
+	var basis: Projection = tank.call("contents_basis")
+	var q: Vector4 = basis * (shark.get("p") as Vector4)
+	var want: float = -q.w
+	var slide: float = float(tank.get("contents_slide"))
+	tank.call("set_contents", float(tank.get("contents_turn")), lerpf(slide, want, 1.0 - exp(-delta * 3.0)))
 
 
 func _feeding(p: Vector4, delta: float) -> void:
 	_feed_cooldown = maxf(_feed_cooldown - delta, 0.0)
 	var at: bool = Vector2(p.x - feed_at.x, p.z - feed_at.y).length() < feed_reach
 	_at_feed = at
-	if prompt == null:
-		return
-	var feeder: Node4D = get_node_or_null("Feeder") as Node4D
-	prompt.set("shown", at)
-	if at and feeder != null:
-		prompt.set("target", feeder)
-		prompt.set("offset", Vector4(0.0, 1.5, 0.0, 0.0))
-		prompt.set("text", "Feed the koi" if _feed_cooldown <= 0.0 else "They are eating")
+	# The panel says E while you are at it (it was a prompt bubble over the old lectern).
+	var feeder: Node = get_node_or_null("Feeder")
+	if feeder != null:
+		feeder.call("set_near", at)
+		feeder.set("hint", "E   FEED THE KOI" if _feed_cooldown <= 0.0 else "THEY ARE EATING")
 
 
 func feed() -> void:
@@ -341,6 +428,10 @@ func feed() -> void:
 	if koi == null or not koi.has_method("drop_food"):
 		return
 	_feed_cooldown = 6.0
+	_fed += 1
+	var feeder: Node = get_node_or_null("Feeder")
+	if feeder != null:
+		feeder.set("rows", _feeder_rows())
 	# Over the water in front of the console, near the glass.
 	var life: Node4D = tank.get("life")
 	var at: Vector4 = life.global_basis.inverse() * (Vector4(feed_at.x, 0.0, feed_at.y, 0.0) - life.global_position)
@@ -366,7 +457,7 @@ func _strip() -> Array:
 	if _at_feed:
 		return [["E", "Feed the koi"], ["WASD", "Move"]]
 	if _on_turn:
-		return [["Right drag", "Turn the tank through W"], ["Wheel", "Slide it through W"], ["R", "Back"], ["WASD", "Move"]]
+		return [["Right drag", "Slide and turn through W"], ["Wheel", "Turn the other way"], ["V", "Find the shark"], ["R", "Back"]]
 	if active != null:
 		var out: Array = [["Wheel", "Slide it through W"], ["Right drag", "Turn it"], ["R", "Whole again"]]
 		if _near_panel:
@@ -430,12 +521,16 @@ func _input(event: InputEvent) -> void:
 	if _on_turn and tank != null:
 		var tb := event as InputEventMouseButton
 		if tb != null and tb.pressed and (tb.button_index == MOUSE_BUTTON_WHEEL_UP or tb.button_index == MOUSE_BUTTON_WHEEL_DOWN):
-			tank.call("slide_contents", 0.25 if tb.button_index == MOUSE_BUTTON_WHEEL_UP else -0.25)
+			tank.call("turn2_contents", deg_to_rad(3.0) * (1.0 if tb.button_index == MOUSE_BUTTON_WHEEL_UP else -1.0))
+			_follow_shark = 0.0
 			get_viewport().set_input_as_handled()
 			return
 		var tm := event as InputEventMouseMotion
 		if tm != null and (tm.button_mask & MOUSE_BUTTON_MASK_RIGHT) != 0:
+			# Sideways turns (x-W); forward (the mouse pushed away, up the screen) slides into W.
 			tank.call("turn_contents", tm.relative.x * 0.004)
+			tank.call("slide_contents", -tm.relative.y * 0.008)
+			_follow_shark = 0.0
 			get_viewport().set_input_as_handled()
 			return
 	if active == null:
@@ -478,7 +573,13 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			if active != null:
 				active.call("reset")
 			if _on_turn and tank != null:
-				tank.call("set_contents", 0.0, 0.0)
+				tank.call("reset_contents")
+				_follow_shark = 0.0
+		KEY_V:
+			if _on_turn:
+				_follow_shark = 8.0
+				hud.call("toast", "Following the shark through W")
+				get_viewport().set_input_as_handled()
 		KEY_B:
 			if not k.shift_pressed and not k.ctrl_pressed:
 				toggle_palette()

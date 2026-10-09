@@ -161,7 +161,14 @@ func rebuild() -> void:
 		cuts.append_array(_claim_cuts(side))
 		_walls[side] = RD.wall(self, "Wall" + side.to_upper(), side, x0, z0, x1, z1, h, t, ops, cuts, swatch)
 	if ceiling:
-		RD.ceiling(self, "Ceiling", x0 - t, z0 - t, x1 + t, z1 + t, h, "kit_ceiling")
+		# WATER LAB: over an open side the ceiling stops at the room's edge. It used to run on past it
+		# by the walls' thickness, and stuck half a metre into the hall over the doorway it opens on
+		# (Ramon, 9 Oct: "above the door, you should remove that block").
+		var cx0: float = x0 - (0.0 if "w" in open_sides else t)
+		var cz0: float = z0 - (0.0 if "n" in open_sides else t)
+		var cx1: float = x1 + (0.0 if "e" in open_sides else t)
+		var cz1: float = z1 + (0.0 if "s" in open_sides else t)
+		RD.ceiling(self, "Ceiling", cx0, cz0, cx1, cz1, h, "kit_ceiling")
 	if cove:
 		var b := Batch.new()
 		RD.strip_rect(b, "cove", x0 + 0.3, z0 + 0.3, x1 - 0.3, z1 - 0.3, h - 0.22, 0.09, 0.05)

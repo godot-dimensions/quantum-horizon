@@ -443,3 +443,202 @@ The target was a median under 3 ms.
    (10 m back) they read small. Scale them up for legibility, or keep them true?
 5. **Sound levels**, once heard. All three are quick to change: `harbour_sound_db` on the sea's
    root, `volume_db` on the Harbour, and the hum's curve in `water_lab_4d.gd`.
+
+## Round 2: Ramon's walkthrough (9 Oct)
+
+### What he said (scale: one white floor square is 1 m)
+
+**Tank room**
+1. The entrance corridor is just the white opening. Remove the sci-fi door you enter through.
+2. The path starts a little further back.
+3. The left (blue, intro) wall moves 2 m to the left.
+4. Cut at least 10 m out of the empty middle (the room's depth), so the aquarium comes sooner.
+   Re-centre the intro panel on its wall, and the tank diagram (research board) on the opposite one.
+5. Remove the "WATER LAB" title above the aquarium.
+6. The aquarium goes up to the ceiling, with a grey roof block 1 m high at the top.
+7. The spotlights over the aquarium move away from it.
+8. The white ceiling panel above: keep it (the depth looks good).
+9. Tab opens a dev HUD for the room's lights. It needs a layout, and every light separately, with its
+   strength and softness. He will tune them himself.
+10. The feed-the-koi booth becomes the Voxel Lab's small white floating panel that turns to you. E
+    feeds.
+11. BUG: using the feeding booth froze walking, and he could not get out.
+12. The turning spot becomes a blue square (a circle intersects the tank).
+    - The path moves back a little.
+    - "TURN THE TANK THROUGH W" is printed on the square, in the lab's type and outline.
+    - The gizmo stays.
+13. Discoverability: he tried right drag forward and back to find the shark, and nothing happened.
+    - Right drag forward and back slides through W; side to side turns.
+    - A minimal live tutorial: a mouse icon with the right button lit, an arrow sliding forward and
+      back ("slide through W"), and arrows to both sides (turn).
+    - About the size of the character on screen, a little smaller. Simple, not crude.
+14. A second gizmo under the first, showing the slice turning the other way (the tank's rectangle
+    narrowing from one side).
+15. V near the shark aligns the tank so the shark is in your slice.
+16. Fish wall: subtle white blueprint lines on the dark blue behind each fish.
+17. RULE: a blue wall always runs from the floor to the ceiling. This includes the fish wall's backing.
+18. The showcase's panel:
+    - You can walk through it; you shouldn't.
+    - It should follow and tilt toward you like the Voxel Lab's.
+    - It should face away from the pedestal, into the room.
+19. The showcase is twice the size: pedestal and koi.
+20. The showcase becomes a swap display.
+    - Icons for the koi, the hammerhead, the crab and the eel, as on the new shooting range's panel.
+    - The chosen one grows from small to large, with a details card.
+    - Each swims in place in detail. The eel joins.
+21. The ring diagram round the pedestal is blue, not light blue.
+22. The exit door:
+    - Only plain grey sliding doors inside the white opening.
+    - A lighter grey seam instead of the cyan line.
+    - No block above. A sign: "4D OCEAN SIMULATOR".
+    - When it opens, the Voxel Lab's holographic blue doorway shows.
+
+**Sea**
+23. Real gull recordings in place of the synthesized calls.
+24. No clanking in the harbour bed: it is not a real harbour, so waves only.
+25. The sardines look huge. They should be smaller fish, more scattered; look at the pen's
+    murmuration.
+26. The door you arrive by is a white dev-texture enclosure with the same simple sliding door.
+27. The height pole:
+    - closer to the round platform;
+    - the walkway's grey;
+    - a darker grey cap.
+28. Keep pier 1 and the round platform. Remove pier 2.
+29. The platform:
+    - It is a bit smaller.
+    - Pier 2's "TURN THE SLICE" diagram goes in its middle, scaled up, as the only thing on it.
+    - The green squares round the edge go.
+    - A slowly moving animated line circle runs near the edge, a lighter blue.
+30. Turning the slice on the circle: the circle does not turn, only the ocean.
+31. The blue circle sits higher, or at least stops clipping. The line around it goes.
+32. The white dashes on the path between the arrows are the same blue.
+33. The gulls look really good, but they float a little above the rails when they land. They should
+    stand on them.
+34. A chunky fishing boat:
+    - white tones, a little rusty;
+    - metal poles and booms for handling fish;
+    - bobbing on the waves with each wave setting;
+    - cut by the 4D slice when you turn it.
+35. Near the edge, a prompt once: "Oh wow, I should really look down and see what creatures I can
+    spot."
+36. No HUD at the start. Tab opens the dev HUD, the same as now, moved to the right.
+37. The overlay everyone sees:
+    - the navigation keys (no sprint);
+    - sea presets 1 to 4, the current sea as one of them;
+    - a key for the Gerstner;
+    - detail noise always on, no key;
+    - a metrics panel (swell, amplitude, wavelength, steepness, off W, slice tilt, FPS, iterations);
+    - the mouse icon for turning.
+38. The Gerstner looks wrong: dark patches on top clip with the sea under them, with no smooth
+    transition. Make a Gerstner 2 and 3 to choose from (opacity ramping, or something better).
+39. The two info pages ("waves through W / your slice / turn it" and "4D Water") stand on two walls,
+    left and right, just past the door.
+    - Big, as usual.
+    - Then 1 m of white wall, with a ceiling: a short tunnel onto the pier.
+40. The plesiosaur stays as it is (he loves it).
+
+### The plan (60 steps)
+
+**A. Research (1-5)**
+1. The Voxel Lab's floating panel (how it follows and tilts) and its hologram doorway.
+2. The Quantum Range console's icon selector.
+3. The sea shader's Gerstner path (why it patches), and the pen murmuration's spacing.
+4. Fishing boat references: an inshore trawler's hull, wheelhouse, gantry, outriggers, rust.
+5. CC0 herring gull recordings: candidates with source and size. Downloading waits for Ramon's yes.
+
+**B. Tank room shell (6-14)**
+6. The west wall moves 2 m out. 10 m is cut from the middle (28 to 18 m deep), and everything south
+   of the cut moves north.
+7. The entrance's sci-fi door goes, leaving the white opening. The path starts further back.
+8. The intro wall and research board are re-centred on their shorter walls.
+9. Every blue wall runs floor to ceiling, the fish wall's backing included. The rule goes into the
+   lab-look notes.
+10. The title wall goes.
+11. The tank goes to the ceiling: water from the stand up to a 1 m grey roof. It still meets the west
+    wall.
+12. The life is refitted to the taller water: koi, shark, eel heights, bubbles, snow, light shafts.
+13. The spotlights move out over the room, aimed at the glass.
+14. The paths are re-routed: the shorter room, the square, the showcase branch, the exit.
+
+**C. Room dev HUD (15-17)**
+15. Tab opens a light editor on the right.
+    - A top-down layout of the room with every light numbered.
+    - A row per light: energy, range, spot angle, softness.
+16. SAVE and RESET use `water_lab_lights.cfg`, read back when the room opens.
+17. Frames at 4K.
+
+**D. Feeding (18-20)**
+18. Find and fix the freeze at the feeding booth.
+19. The console becomes the floating panel ("Feed the koi", E).
+20. Frames: feed, then walk away.
+
+**E. The turning square (21-27)**
+21. A blue square replaces the circle, the path moves back, and the square carries the print "TURN THE
+    TANK THROUGH W".
+22. Right drag forward and back slides through W; side to side turns. The wheel turns the other way
+    (zw).
+23. A second gizmo under the first: the zw turn, the tank's rectangle narrowing from one side.
+24. The live mouse tutorial: the right button lit, an arrow sliding forward and back, side arrows.
+    Character sized; shown while on the square.
+25. V aligns to the shark: the contents ease until it is in your slice. Shown when it is near.
+26. R puts everything back.
+27. Frames of each control.
+
+**F. Fish wall (28-29)**
+28. Blueprint lines on the dark blue behind each specimen.
+29. Its blue backing runs floor to ceiling.
+
+**G. Showcase (30-37)**
+30. Twice the size (pedestal radius 3.7 m), in the new south-east corner.
+31. The ring diagram in the lab blue.
+32. The panel is solid, follows and tilts toward you, and faces into the room.
+33. The selector: icons for the koi, the hammerhead, the crab and the eel, in the range console's style.
+34. Each specimen swims or walks in place, big, in the holo.
+35. Swapping: the old one shrinks away, the new one grows in.
+36. A details card for each.
+37. Frames.
+
+**H. Exit door (38-41)**
+38. Two plain grey leaves sliding inside the white opening, with a light grey seam. No frame block.
+39. A "4D OCEAN SIMULATOR" sign above.
+40. The Voxel Lab hologram doorway as it opens.
+41. Frames.
+
+**I. Sea layout (42-49)**
+42. Pier 2 is removed: deck, rails, circle, page, door, perches, the P key and its sliders.
+43. The arrival door becomes a white enclosure with the same sliding door.
+44. The info tunnel: two thin walls past the door carrying the two pages, 1 m of white after, and a
+    ceiling.
+45. The platform:
+    - smaller;
+    - "TURN THE SLICE" printed big in its middle as the only thing on it;
+    - the tiles and the line around it removed;
+    - an animated line ring near the edge.
+46. The platform is raised so it stops clipping. It stays set while only the ocean turns.
+47. The pole moves nearer the platform, in walkway grey with a darker cap.
+48. The path's dashes turn blue.
+49. The edge prompt, once.
+
+**J. Sea life (50-53)**
+50. The gulls stand on the rails: the real rail tops are measured and the foot height is checked by
+    frames.
+51. The sardines are smaller and more scattered, with the pen murmuration's spacing.
+52. The harbour bed is rebaked as waves only.
+53. The fishing boat: a lofted 4D hull, wheelhouse, gantry and outriggers, white with rust. It bobs
+    on the sea's own waves and is cut by the slice.
+
+**K. Sea HUD and waves (54-58)**
+54. No HUD at the start. Tab cycles the dev HUD, now on the right.
+55. The overlay for everyone:
+    - keys: walk, look, turn the slice, presets 1 to 4, G for the Gerstner;
+    - detail noise always on;
+    - a metrics panel;
+    - the mouse icon.
+56. Gerstner 2: the crest layer fades in by opacity instead of clipping.
+57. Gerstner 3: another variant, chosen once the cause is known.
+58. G cycles through off, 1, 2 and 3.
+
+**L. Close (59-60)**
+59. Test by playing both scenes: frames of every change, perf of both, the HUDs at 4K.
+60. The handover, the memory, and commits by explicit paths. Then the real gull recordings, after
+    Ramon's yes.

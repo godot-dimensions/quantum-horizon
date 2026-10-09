@@ -26,22 +26,23 @@ script = ExtResource("2_room")
 start_mood = "bright"
 
 [node name="Entrance" type="Node4D" parent="."]
-position = Vector4(-11, 0, 18.75, 0)
+position = Vector4(-11, 0, 8.75, 0)
 script = ExtResource("3_kitroom")
 size = Vector3(6, 6, 9.5)
 open_sides = ["n"]
 cove = false
 
 [node name="Hall" type="Node4D" parent="."]
+position = Vector4(-1, 0, -5, 0)
 script = ExtResource("3_kitroom")
-size = Vector3(28, 11, 28)
-doorways = [["s", -12.6, -9.4, 4.2], ["n", 8.4, 11.6, 4.2]]
+size = Vector3(30, 11, 18)
+doorways = [["s", -11.6, -8.4, 4.2], ["n", 9.4, 12.6, 4.2]]
 cove = false
 
 [node name="Sign" type="Node" parent="Hall"]
 script = ExtResource("4_text")
 side = "s"
-along = Vector2(-13.7, -8.3)
+along = Vector2(-12.7, -7.3)
 up = Vector2(4.4, 5.7)
 outside = true
 kind = "sign"
@@ -49,14 +50,14 @@ title = "WATER LAB"
 subtitle = "QUANTUM HORIZON  ·  WATER SYSTEMS"
 glow = 0.3
 
-[node name="Title" type="Node" parent="Hall"]
+[node name="ExitSign" type="Node" parent="Hall"]
 script = ExtResource("4_text")
 side = "n"
-along = Vector2(-12.6, 4.2)
-up = Vector2(7.4, 10.4)
+along = Vector2(7.6, 14.4)
+up = Vector2(4.75, 6.05)
 kind = "sign"
-title = "WATER LAB"
-subtitle = "QUANTUM HORIZON  ·  WATER SYSTEMS  ·  THE TANK"
+title = "4D OCEAN SIMULATOR"
+subtitle = "THE SEA  ·  THROUGH THE DOOR"
 glow = 0.3
 
 [node name="Airlock" type="Node4D" parent="."]
@@ -66,40 +67,35 @@ size = Vector3(4.4, 5, 4.8)
 open_sides = ["s"]
 cove = false
 
-[node name="EntranceDoor" type="Node4D" parent="."]
-position = Vector4(-11, 0, 14, 0)
-script = ExtResource("7_door")
-height = 3.4
-light_behind = false
-open = 1.0
-blocks = false
-
 [node name="ExitDoor" type="Node4D" parent="."]
 position = Vector4(10, 0, -14, 0)
 script = ExtResource("7_door")
-height = 3.4
+style = "plain"
+height = 4.2
+light_behind = false
 auto_open = true
 
 [node name="Tank" type="Node4D" parent="."]
-position = Vector4(-4.23, 0, -11.53, 0)
+position = Vector4(-5.23, 0, -11.53, 0)
 script = ExtResource("5_tank")
-water_size = Vector4(18.4, 4.8, 3.2, 7)
+water_size = Vector4(20.4, 8.41, 3.2, 7)
+hood_height = 1.0
 
 [node name="Showcase" type="Node4D" parent="."]
-position = Vector4(10, 0, 10.4, 0)
+position = Vector4(9.5, 0, -1.8, 0)
 script = ExtResource("6_showcase")
 panel_at = Vector2(-2.3, -1.3)
 panel_face = Vector2(0, -2.9)
 
 [node name="FishWall" type="Node4D" parent="."]
-position = Vector4(-0.4, 0, 13.82, 0)
+position = Vector4(-1, 0, 3.82, 0)
 basis = Projection(-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)
 script = ExtResource("17_fishwall")
 
 [node name="FishWallWash" type="Node4D" parent="."]
-position = Vector4(-0.4, 10.6, 9, 0)
+position = Vector4(-1, 10.6, -1, 0)
 script = ExtResource("8_light")
-aim = Vector3(-0.4, 3.2, 14)
+aim = Vector3(-1, 3.2, 4)
 angle = 85.0
 softness = 2.0
 reach = 15.0
@@ -111,9 +107,9 @@ energy = {
 fixture_at = 10.94
 
 [node name="TankLight1" type="Node4D" parent="."]
-position = Vector4(-12, 10.6, -9.2, 0)
+position = Vector4(-13.4, 10.6, -5.6, 0)
 script = ExtResource("8_light")
-aim = Vector3(-12, 3.6, -11.5)
+aim = Vector3(-13.4, 4.2, -9.9)
 angle = 55.0
 softness = 1.2
 reach = 17.0
@@ -125,9 +121,9 @@ energy = {
 fixture_at = 10.94
 
 [node name="TankLight2" type="Node4D" parent="."]
-position = Vector4(-8.1, 10.6, -9.2, 0)
+position = Vector4(-9.3, 10.6, -5.6, 0)
 script = ExtResource("8_light")
-aim = Vector3(-8.1, 3.6, -11.5)
+aim = Vector3(-9.3, 4.2, -9.9)
 angle = 55.0
 softness = 1.2
 reach = 17.0
@@ -139,9 +135,9 @@ energy = {
 fixture_at = 10.94
 
 [node name="TankLight3" type="Node4D" parent="."]
-position = Vector4(-4.2, 10.6, -9.2, 0)
+position = Vector4(-5.2, 10.6, -5.6, 0)
 script = ExtResource("8_light")
-aim = Vector3(-4.2, 3.6, -11.5)
+aim = Vector3(-5.2, 4.2, -9.9)
 angle = 55.0
 softness = 1.2
 reach = 17.0
@@ -153,9 +149,9 @@ energy = {
 fixture_at = 10.94
 
 [node name="TankLight4" type="Node4D" parent="."]
-position = Vector4(-0.3, 10.6, -9.2, 0)
+position = Vector4(-1.1, 10.6, -5.6, 0)
 script = ExtResource("8_light")
-aim = Vector3(-0.3, 3.6, -11.5)
+aim = Vector3(-1.1, 4.2, -9.9)
 angle = 55.0
 softness = 1.2
 reach = 17.0
@@ -167,9 +163,9 @@ energy = {
 fixture_at = 10.94
 
 [node name="TankLight5" type="Node4D" parent="."]
-position = Vector4(3.6, 10.6, -9.2, 0)
+position = Vector4(3.0, 10.6, -5.6, 0)
 script = ExtResource("8_light")
-aim = Vector3(3.6, 3.6, -11.5)
+aim = Vector3(3.0, 4.2, -9.9)
 angle = 55.0
 softness = 1.2
 reach = 17.0
@@ -181,9 +177,9 @@ energy = {
 fixture_at = 10.94
 
 [node name="ShowcaseLight" type="Node4D" parent="."]
-position = Vector4(10, 10.6, 10.4, 0)
+position = Vector4(9.5, 10.6, -1.8, 0)
 script = ExtResource("8_light")
-aim = Vector3(10, 0, 10.4)
+aim = Vector3(9.5, 0, -1.8)
 angle = 45.0
 softness = 0.6
 reach = 14.0
@@ -195,9 +191,9 @@ energy = {
 fixture_at = 10.94
 
 [node name="IntroWash" type="Node4D" parent="."]
-position = Vector4(-10, 10.6, 0, 0)
+position = Vector4(-12, 10.6, -5, 0)
 script = ExtResource("8_light")
-aim = Vector3(-14, 3.4, 0)
+aim = Vector3(-16, 3.4, -5)
 angle = 80.0
 softness = 2.0
 reach = 15.0
@@ -209,9 +205,9 @@ energy = {
 fixture_at = 10.94
 
 [node name="ResearchWash" type="Node4D" parent="."]
-position = Vector4(10, 10.6, 0, 0)
+position = Vector4(10, 10.6, -5, 0)
 script = ExtResource("8_light")
-aim = Vector3(14, 3.4, 0)
+aim = Vector3(14, 3.4, -5)
 angle = 80.0
 softness = 2.0
 reach = 15.0
@@ -223,9 +219,9 @@ energy = {
 fixture_at = 10.94
 
 [node name="EntranceLight" type="Node4D" parent="."]
-position = Vector4(-11, 5.4, 19, 0)
+position = Vector4(-11, 5.4, 9, 0)
 script = ExtResource("8_light")
-aim = Vector3(-11, 0, 19)
+aim = Vector3(-11, 0, 9)
 angle = 70.0
 softness = 4.0
 reach = 9.0
@@ -251,9 +247,9 @@ energy = {
 fixture_at = 10.94
 
 [node name="Sun" type="Node4D" parent="."]
-position = Vector4(2, 11, 4, 0)
+position = Vector4(-1, 11, -5, 0)
 script = ExtResource("9_sun")
-target = Vector3(0, 0, -4)
+target = Vector3(-1, 0, -8)
 
 [node name="PanelSource" type="Node" parent="."]
 script = ExtResource("10_source")
@@ -286,17 +282,17 @@ source = NodePath("../PanelSource")
 [node name="Targets" type="Node4D" parent="Paths"]
 
 [node name="TurnSpot" type="Node4D" parent="Paths/Targets"]
-position = Vector4(-4.23, 0, -8.2, 0)
+position = Vector4(-5.23, 0, -7.7, 0)
 script = ExtResource("16_target")
 label = "Turn the tank through W"
 size = Vector3(3, 0.1, 3)
 w_depth = 40.0
 
 [node name="Showcase" type="Node4D" parent="Paths/Targets"]
-position = Vector4(10, 0, 10.4, 0)
+position = Vector4(9.5, 0, -1.8, 0)
 script = ExtResource("16_target")
-label = "Koi showcase"
-size = Vector3(4.0, 1, 4.0)
+label = "The showcase"
+size = Vector3(7.4, 1, 7.4)
 w_depth = 40.0
 
 [node name="ExitDoor" type="Node4D" parent="Paths/Targets"]

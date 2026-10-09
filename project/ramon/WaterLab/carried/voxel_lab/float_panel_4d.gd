@@ -24,6 +24,15 @@ extends Node4D
 ## ITS FACE: the exhibit's number, its title and a line, and up to three live numbers, read from the
 ## station every half second (`face()` of the exhibit, else its numbers()).
 ##
+## ROUND 2 (Ramon, 9 Oct: "I can walk straight through the little panel ... and also the panel doesn't
+## move with me. Like it's dynamic ... it tilts a little bit and moves a little bit when you walk close
+## to it, and it follows you a little bit"):
+##   the spring now reads you in its parent's frame (the Voxel Lab's later fix: in a parent away from
+##   the origin it never felt you); within `notice` metres it leans a little toward you (`follow`
+##   metres at most) and turns part way to face you (`turn_to_you`); a solid box under it, left where
+##   it was put, stops you walking through it. `number` 0 hides the number; with no station and no
+##   source it shows `rows`; `hint` is what the bottom line says while you are near.
+##
 ## NO class_name (engine_gotchas.md).
 
 const Build := preload("res://ramon/WaterLab/carried/scripts/chamber_build.gd")
@@ -61,6 +70,19 @@ const CORNER := 0.07
 @export var give: float = 0.45
 @export var stiffness: float = 26.0
 @export var damping: float = 4.2
+## Within this many metres it leans toward you, at most `follow` metres, and turns this share of the
+## way round to face you.
+@export var notice: float = 3.2
+@export var follow: float = 0.22
+@export_range(0.0, 1.0) var turn_to_you: float = 0.45
+## A solid box under it (you cannot walk through it).
+@export var solid: bool = true
+
+@export_group("Words")
+## Shown when there is no station and no source: [[label, value], ...].
+@export var rows: Array = []
+## The bottom line while you are near ("" the pages' own).
+@export var hint: String = ""
 
 ## Who bumps into it.
 var player: Node4D
@@ -82,14 +104,35 @@ var _sig: String = ""
 var page_index: int = -1
 var near: bool = false
 var _glows: Array = []
+var _home_yaw: float = 0.0
 
 
 func _ready() -> void:
 	_home = position
 	var d := Vector2(face_point.x - position.x, face_point.y - position.z)
 	_yaw = atan2(d.x, d.y) if d.length() > 0.01 else 0.0
+	_home_yaw = _yaw
 	_build()
 	_read()
+	if solid and not Engine.is_editor_hint():
+		_make_solid.call_deferred()
+
+
+## The solid box: in the parent, where the panel was put, turned as it was (it does not swing).
+func _make_solid() -> void:
+	var parent: Node = get_parent()
+	if parent == null:
+		return
+	var body := StaticBody4D.new()
+	body.name = name + "Solid"
+	body.position = _home + Vector4(0.0, 0.6, 0.0, 0.0)
+	body.basis = Basis4D.from_zx(_home_yaw)
+	var shape := CollisionShape4D.new()
+	var bs := BoxShape4D.new()
+	bs.size = Vector4(minf(width, 1.0), 1.2, 0.5, Build.W_DEPTH)
+	shape.shape = bs
+	body.add_child(shape)
+	parent.add_child(body)
 
 
 func _build() -> void:
@@ -174,12 +217,24 @@ func _process(delta: float) -> void:
 	_t += delta
 	# The spring: pushed away from you while you are within reach, always pulled home.
 	var target := Vector2.ZERO
+	var want_yaw: float = _home_yaw
 	if player != null and is_instance_valid(player):
 		var p: Vector4 = player.global_position
+		# In the parent's frame, where _home is.
+		var parent := get_parent() as Node4D
+		if parent != null:
+			p = parent.global_basis.inverse() * (p - parent.global_position)
 		var away := Vector2(_home.x + _off.x - p.x, _home.z + _off.y - p.z)
 		var d: float = away.length()
 		if d < reach and d > 0.001:
 			target = away / d * minf(give, (reach - d) * 1.6) + _off
+		elif d < notice and d > 0.001:
+			# Leaning a little toward you, and turning part way round to you.
+			var k: float = 1.0 - smoothstep(reach, notice, d)
+			target = -away / d * follow * k
+			var to_you: float = atan2(-away.x, -away.y)
+			want_yaw = lerp_angle(_home_yaw, to_you, turn_to_you * clampf(k * 1.6, 0.0, 1.0))
+	_yaw = lerp_angle(_yaw, want_yaw, 1.0 - exp(-delta * 2.5))
 	var acc: Vector2 = (target - _off) * stiffness - _vel * damping
 	_vel += acc * delta
 	_off += _vel * delta
@@ -225,6 +280,7 @@ func _read() -> void:
 		else:
 			_data = {"number": number, "title": title, "kicker": kicker, "rows": (src.call("face") as Array).slice(0, 3) if src.has_method("face") else [], "page": ""}
 		_data["hint"] = near
+		_data["hint_text"] = hint
 		var s0: String = str(_data)
 		if s0 != _sig:
 			_sig = s0
@@ -234,15 +290,17 @@ func _read() -> void:
 		return
 	var st: Node = get_node_or_null(station) if not station.is_empty() else null
 	var ex: Node = st.get("exhibit") if st != null else null
-	var rows: Array = []
+	var found: Array = []
 	if ex != null and ex.has_method("face"):
-		rows = ex.call("face")
+		found = ex.call("face")
 	elif ex != null and ex.has_method("numbers"):
 		var n: Dictionary = ex.call("numbers")
 		for k in [["voxels", "Voxels"], ["chunks", "Chunk meshes"], ["tets", "Tetrahedra"]]:
 			if n.has(k[0]):
-				rows.append([k[1], String(n[k[0]])])
-	_data = {"number": number, "title": title, "kicker": kicker, "rows": rows.slice(0, 3)}
+				found.append([k[1], String(n[k[0]])])
+	elif st == null:
+		found = rows
+	_data = {"number": number, "title": title, "kicker": kicker, "rows": found.slice(0, 3), "hint": near, "hint_text": hint}
 	var s: String = str(_data)
 	if s != _sig:
 		_sig = s
@@ -259,12 +317,14 @@ func _paint() -> void:
 	var fs: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")
 	var pad: float = 26.0 * u
-	var num: String = "%02d" % int(_data.get("number", 1))
 	var npx: int = int(64 * u)
-	_page.draw_string(fb, Vector2(pad, pad + npx * 0.8), num, HORIZONTAL_ALIGNMENT_LEFT, -1, npx, Style.UI_ACCENT)
-	var nx: float = pad + fb.get_string_size(num, HORIZONTAL_ALIGNMENT_LEFT, -1, npx).x + 18.0 * u
-	_page.draw_line(Vector2(nx, pad + 6.0 * u), Vector2(nx, pad + npx * 0.9), Color(1, 1, 1, 0.35), maxf(1.0, 2.0 * u))
-	var tx: float = nx + 18.0 * u
+	var tx: float = pad
+	if int(_data.get("number", 1)) > 0:
+		var num: String = "%02d" % int(_data.get("number", 1))
+		_page.draw_string(fb, Vector2(pad, pad + npx * 0.8), num, HORIZONTAL_ALIGNMENT_LEFT, -1, npx, Style.UI_ACCENT)
+		var nx: float = pad + fb.get_string_size(num, HORIZONTAL_ALIGNMENT_LEFT, -1, npx).x + 18.0 * u
+		_page.draw_line(Vector2(nx, pad + 6.0 * u), Vector2(nx, pad + npx * 0.9), Color(1, 1, 1, 0.35), maxf(1.0, 2.0 * u))
+		tx = nx + 18.0 * u
 	_page.draw_string(fb, Vector2(tx, pad + 34.0 * u), String(_data.get("title", "")).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, sz.x - tx - pad, int(36 * u), Color.WHITE)
 	_page.draw_string(fs, Vector2(tx, pad + 62.0 * u), String(_data.get("kicker", "")), HORIZONTAL_ALIGNMENT_LEFT, sz.x - tx - pad, int(17 * u), Style.UI_INK_DIM)
 	# WATER LAB: the page's count and the hint, along the bottom.
@@ -272,21 +332,21 @@ func _paint() -> void:
 	if not String(_data.get("page", "")).is_empty():
 		_page.draw_string(fs, Vector2(pad, foot_y), String(_data["page"]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(15 * u), Style.UI_ACCENT)
 	if bool(_data.get("hint", false)):
-		var hint: String = "E   NEXT PAGE" if int(page_index) >= 0 else "E   MORE ABOUT IT"
-		_page.draw_string(fs, Vector2(pad, foot_y), hint, HORIZONTAL_ALIGNMENT_RIGHT, sz.x - pad * 2.0, int(15 * u), Style.UI_ACCENT)
+		var line: String = hint if not hint.is_empty() else ("E   NEXT PAGE" if int(page_index) >= 0 else "E   MORE ABOUT IT")
+		_page.draw_string(fs, Vector2(pad, foot_y), line, HORIZONTAL_ALIGNMENT_RIGHT, sz.x - pad * 2.0, int(15 * u), Style.UI_ACCENT)
 	var body: String = String(_data.get("text", ""))
 	if not body.is_empty():
 		var top0: float = pad + npx + 22.0 * u
 		_page.draw_line(Vector2(pad, top0 - 10.0 * u), Vector2(sz.x - pad, top0 - 10.0 * u), Color(1, 1, 1, 0.15), maxf(1.0, u))
 		_page.draw_multiline_string(fl, Vector2(pad, top0 + 18.0 * u), body, HORIZONTAL_ALIGNMENT_LEFT, sz.x - pad * 2.0, int(17 * u), 6, Color(1, 1, 1, 0.88))
 		return
-	var rows: Array = _data.get("rows", [])
-	if rows.is_empty():
+	var cols: Array = _data.get("rows", [])
+	if cols.is_empty():
 		return
 	var top: float = pad + npx + 24.0 * u
 	_page.draw_line(Vector2(pad, top - 10.0 * u), Vector2(sz.x - pad, top - 10.0 * u), Color(1, 1, 1, 0.15), maxf(1.0, u))
-	var cw: float = (sz.x - pad * 2.0) / float(rows.size())
-	for i in rows.size():
+	var cw: float = (sz.x - pad * 2.0) / float(cols.size())
+	for i in cols.size():
 		var x: float = pad + cw * float(i)
-		_page.draw_string(fb, Vector2(x, top + 40.0 * u), String(rows[i][1]), HORIZONTAL_ALIGNMENT_LEFT, cw - 12.0 * u, int(34 * u), Color.WHITE)
-		_page.draw_string(fl, Vector2(x, top + 68.0 * u), String(rows[i][0]).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, cw - 12.0 * u, int(15 * u), Style.UI_INK_DIM)
+		_page.draw_string(fb, Vector2(x, top + 40.0 * u), String(cols[i][1]), HORIZONTAL_ALIGNMENT_LEFT, cw - 12.0 * u, int(34 * u), Color.WHITE)
+		_page.draw_string(fl, Vector2(x, top + 68.0 * u), String(cols[i][0]).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, cw - 12.0 * u, int(15 * u), Style.UI_INK_DIM)

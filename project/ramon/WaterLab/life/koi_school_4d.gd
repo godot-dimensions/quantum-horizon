@@ -42,6 +42,10 @@ const VARIETIES := ["Kohaku", "Taisho Sanke", "Showa", "Tancho", "Ogon", "Platin
 @export var margin: float = 0.3
 ## The bottom's height above the water's floor (the sand and the stones), metres.
 @export var floor_height: float = 0.35
+## How high above the water's floor they wander, metres (0: the whole water). The tank reaches the
+## ceiling (9 Oct), and from the floor you see its lower few metres: they keep there, and food dropped
+## on the surface sinks into it.
+@export var view_band: float = 0.0
 @export var length_range: Vector2 = Vector2(0.62, 0.98)
 ## Cruising speed in body lengths a second.
 @export var cruise_bl: float = 0.5
@@ -145,9 +149,16 @@ func _random_point(w_spread: float) -> Vector4:
 	var p := Vector4(_rng.randf_range(-half_extents.x + margin + 0.6, half_extents.x - margin - 0.6), 0.0,
 		_rng.randf_range(-half_extents.z + margin + 0.35, half_extents.z - margin - 0.35), _rng.randf_range(-w_spread, w_spread))
 	var lo_y: float = _floor_at(p) + margin + 0.35
-	var hi_y: float = half_extents.y - margin - 0.35
+	var hi_y: float = minf(half_extents.y - margin - 0.35, _band_top())
 	p.y = _rng.randf_range(lo_y, maxf(hi_y, lo_y + 0.1))
 	return p
+
+
+## The top of where they wander (the surface when there is no band).
+func _band_top() -> float:
+	if view_band <= 0.0:
+		return half_extents.y
+	return minf(half_extents.y, -half_extents.y + floor_height + view_band)
 
 
 ## The sand under a point (the dunes, or the flat floor).
@@ -209,7 +220,7 @@ func _think(i: int, dt: float) -> void:
 			mode = "rise"
 			f["mode_t"] = _rng.randf_range(9.0, 14.0)
 			f["target"] = Vector4(clampf(p.x + _rng.randf_range(-2.0, 2.0), -half_extents.x + 1.0, half_extents.x - 1.0),
-				half_extents.y - 0.16, clampf(p.z, -half_extents.z + 0.5, half_extents.z - 0.5), 0.0)
+				minf(half_extents.y - 0.16, _band_top()), clampf(p.z, -half_extents.z + 0.5, half_extents.z - 0.5), 0.0)
 		elif r < 0.30:
 			mode = "hover"
 			f["mode_t"] = _rng.randf_range(3.0, 7.0)
@@ -454,7 +465,12 @@ func _float_food(dt: float) -> void:
 		fd["age"] = float(fd["age"]) + dt
 		var p: Vector4 = fd["p"]
 		var v: Vector4 = fd["v"]
-		if float(fd["age"]) > 9.0:
+		if p.y > _band_top() - 0.3:
+			# Above where they swim: sinking quickly to them.
+			v.y = move_toward(v.y, -0.6, dt * 1.5)
+		elif v.y < -0.07:
+			v.y = move_toward(v.y, -0.06, dt * 1.0)
+		elif float(fd["age"]) > 9.0:
 			v.y = maxf(v.y - dt * 0.02, -0.06)
 		p += v * dt
 		p.x = clampf(p.x, -half_extents.x + 0.1, half_extents.x - 0.1)

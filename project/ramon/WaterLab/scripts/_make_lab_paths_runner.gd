@@ -29,21 +29,24 @@ func _p(x: float, z: float) -> Vector4:
 
 
 func _hall() -> Resource:
+	# Round 2 (Ramon's walkthrough, 9 Oct): the hall 30 x 18 m (its west wall at x -16, its south wall at
+	# z 4), the path starting at the back of the corridor and running along the tank at z -7.7, through
+	# the turning square painted on the floor in front of the tank's middle: the route ends at the
+	# square's edge and starts again past it ("you could end the path, made the square, and then
+	# continue"); the square's node draws no art (the paint is the destination) and keeps the route
+	# clear of it. The branch south to the showcase (twice the size: radius 3.7 at (9.5, -1.8)).
 	var g: Resource = Graph.new()
 	var band: float = 8.0
-	var s: int = g.call("add_node", "start", _p(-11.0, 16.6), {"band": band, "approach": Vector2(0, 1)})
-	# Close along the glass (Ramon: "make the path move closely along the fishtank, and in the mid of
-	# the fishtank add a node for a bigger circle"): the row a metre from the tank's stand, and half way
-	# along it, on the route, the turning circle's node, its big round frame round it.
-	var turn1: int = g.call("add_node", "bend", _p(-11.0, -8.2), {"band": band})
-	var spin: int = g.call("add_node", "destination", _p(-4.23, -8.2), {"band": band, "state": "available", "target": "TurnSpot", "frame": "round", "approach": Vector2(-1, 0)})
-	var turn2: int = g.call("add_node", "junction", _p(10.0, -8.2), {"band": band})
-	# The showcase: its pedestal (radius 1.85) at (10, 10.4); the destination just outside it.
-	var koi: int = g.call("add_node", "destination", _p(10.0, 7.9), {"band": band, "state": "available", "target": "Showcase", "frame": "round", "approach": Vector2(0, -1)})
+	var s: int = g.call("add_node", "start", _p(-11.0, 12.9), {"band": band, "approach": Vector2(0, 1)})
+	var turn1: int = g.call("add_node", "bend", _p(-11.0, -7.7), {"band": band})
+	var square: int = g.call("add_node", "destination", _p(-5.23, -7.7), {"band": band, "state": "available", "target": "TurnSpot", "frame": "rect",
+		"approach": Vector2(-1, 0), "symbol": false, "clear": 1.62})
+	var turn2: int = g.call("add_node", "junction", _p(10.0, -7.7), {"band": band})
+	var koi: int = g.call("add_node", "destination", _p(10.0, -6.3), {"band": band, "state": "available", "target": "Showcase", "frame": "round", "approach": Vector2(0, -1)})
 	var door: int = g.call("add_node", "destination", _p(10.0, -12.4), {"band": band, "state": "arrival", "target": "ExitDoor", "frame": "rect", "approach": Vector2(0, 1)})
 	g.call("add_edge", s, turn1, "primary", "static", band)
-	g.call("add_edge", turn1, spin, "primary", "static", band)
-	g.call("add_edge", spin, turn2, "primary", "static", band)
+	g.call("add_edge", turn1, square, "primary", "static", band)
+	g.call("add_edge", square, turn2, "primary", "static", band)
 	g.call("add_edge", turn2, door, "primary", "static", band)
 	g.call("add_edge", turn2, koi, "secondary", "static", band)
 	return g

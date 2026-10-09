@@ -73,6 +73,10 @@ var _facing_point: bool = false
 
 ## How much slower the ana/kata axis is than ordinary movement.
 @export_range(0.05, 1.0, 0.05) var w_speed_scale: float = 0.3
+## WATER LAB: off, the ana/kata keys (Q and E) do not walk you through W. The tank room's E feeds the
+## koi and pages panels, and E is also move_ana: pressing it at the feeding booth walked Ramon off
+## through W and he could not get back (9 Oct).
+@export var w_walk_enabled: bool = true
 
 @onready var _rig: Node4D = $CameraRig
 @onready var _avatar: Node4D = $Avatar
@@ -220,7 +224,7 @@ func _wish_parts() -> Array:
 		return [Vector4.ZERO, 0.0]
 	var side: float = Input.get_axis(&"move_left", &"move_right")
 	var fore: float = Input.get_axis(&"move_forward", &"move_back")
-	var ana: float = Input.get_axis(&"move_kata", &"move_ana")
+	var ana: float = Input.get_axis(&"move_kata", &"move_ana") if w_walk_enabled else 0.0
 	var walk: Vector4 = Vector4.ZERO
 	if side * side + fore * fore > 0.0001:
 		walk = (_rig.movement_basis() * Vector4(side, 0.0, fore, 0.0)).normalized()

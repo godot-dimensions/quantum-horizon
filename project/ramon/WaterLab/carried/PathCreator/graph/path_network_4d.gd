@@ -742,7 +742,12 @@ func _edge_shut(i: int) -> bool:
 
 
 ## The radius of a node's art on the floor, metres, which marks keep clear of (plus 0.25P).
+## WATER LAB: a node's own "clear" (metres) wins: the route stops that far from it, as at the tank
+## room's turning square, a pad painted into the floor (Ramon, 9 Oct: "you could end the path, made
+## the square, and then continue").
 func art_radius(n: Dictionary) -> float:
+	if n.has("clear"):
+		return float(n["clear"])
 	match String(n.get("kind", "")):
 		"chord":
 			return Spec.CHORD_BALL_R * _u()
@@ -891,6 +896,9 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 			var slot: String = "C"
 			if kind == "destination":
 				slot = {"arrival": "D", "available": "E", "focused": "F", "completed": "G"}.get(String(n.get("state", "arrival")), "D")
+			# WATER LAB: "symbol": false draws no art of its own (the floor's pad is the destination).
+			if not bool(n.get("symbol", true)):
+				return
 			mi = _item("Node%d" % id, Draw.NODE, used)
 			var s: int = sym(slot)
 			# A destination may be drawn larger ("size", 6 Oct: Trym's house, "on top a larger destination circle").
