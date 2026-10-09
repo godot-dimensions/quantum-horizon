@@ -4,7 +4,7 @@ extends Node4D
 ## (kit/kit_player.gd: walk, hold the right mouse button and drag to turn the slice through W, R back to
 ## the flat slice), and a readout of what the slice cuts: the slice's turn, the plants it cuts within 40 m
 ## (with their trunks, crowns alone), and the W tools' own numbers. Built as the scene starts, so the scene
-## file holds only what is being tested (exploder_lab.tscn: a hand-placed wood; optimiser_lab.tscn: units).
+## file holds only what is being tested (exploder_lab.tscn: a hand-placed wood).
 ## P steps every W Exploder in the room through its presets (exploder/presets, and "off"), planted again.
 
 const Room := preload("res://ramon/CreationLab/LabKit/lab_room_4d.gd")

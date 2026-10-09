@@ -1,16 +1,9 @@
 extends SceneTree
 
-## THE W TOOLS IN THE PEN (WTools/PLAN.md steps 87-94): playable_world.tscn with the W Exploder on World/Trees
-## and the W Optimiser on the Watchstone and the range.
-##   1. The planting: plants, copies, spots refused, the time to make them, the cull ready.
-##   2. The Optimisers: the Watchstone deepened and wrapped, the range left as it is (built in W), reports.
-##   3. The look: in DEV, each Optimiser's copy draws what its landmark draws (the blockouts); the look
-##      switched to ART and back while the slice is turned (the copy showing, the landmark hidden) must end
-##      exactly as switching it with the slice flat does: the same meshes drawn, the copy the same.
-##   4. The wrap from the start: the slice turned toward the Watchstone, its copy shows; flat again, the
-##      Watchstone itself, nothing left hidden.
-## Frames (smoke_test_output/wtools/pen/): from the start toward the Watchstone, DEV and ART, flat and turned
-## 30 and 50, and the volume view.
+## THE W TOOLS IN THE PEN (WTools/PLAN.md steps 87-94): playable_world.tscn with the W Exploder on World/Trees.
+##   The planting: plants, copies, spots refused, the time to make them, the cull ready, and the copies'
+##   trunks solid only near the player's W.
+## Frames (smoke_test_output/wtools/pen/): from the start toward the Watchstone, DEV and ART, and the volume view.
 ##
 ##   lab_run.sh windowed wt_pen res://ramon/WTools/tests/_verify_pen_wtools_runner.gd
 
@@ -72,9 +65,7 @@ func _run() -> void:
 	var cam := player.get_node("CameraRig/Pitch/Camera4D") as Camera4D
 	var look: Node = Look.current
 	var trees: Node = _room.get_node("World/Trees")
-	var stone: Node = _room.get_node("World/WatchstoneW")
-	var range_w: Node = _room.get_node("World/RangeW")
-	# 1. The planting.
+	# The planting.
 	print("PEN TREES: %d placed, %d copies, %d refused, made in %d ms, cull %d us" % [int(trees.get("placed")), int(trees.get("echo_count")),
 		int(trees.get("refused")), int(trees.get("build_msec")), int(trees.get("cull_usec"))])
 	_check(int(trees.get("placed")) > 90 and int(trees.get("echo_count")) > int(trees.get("placed")) and bool(trees.get("_cull_ready")),
@@ -111,47 +102,14 @@ func _run() -> void:
 		await physics_frame
 		await physics_frame
 		_check(not body.is_inside_tree() and int(trees.get("solid_in")) == in_at_0, "and back at W 0 it is out again")
-	# 2. The Optimisers.
-	for o in [stone, range_w]:
-		print("PEN %s\n%s" % [o.name, String(o.get("report"))])
-	_check(bool(stone.get("applied")) and int(stone.get("parts_deepened")) > 0 and int(stone.get("wrap_copies")) == 1, "the Watchstone deepened and wrapped")
-	_check(bool(range_w.get("applied")) and bool(range_w.call("built_in_w")) and int(range_w.get("parts_deepened")) == 0 and int(range_w.get("colliders_deepened")) == 0
-		and int(range_w.get("wrap_copies")) == 1, "the range left as built, and wrapped")
-	# 3. The look.
+	# Toward the Watchstone, DEV and ART.
 	_check(look != null and bool(look.get("_applied")), "the pen opened in DEV")
 	_face(player, rig, 0.0)
 	await _frames(30)
-	var dev_flat: Array = [_drawn(stone), _drawn(range_w)]
-	_check(_copy_matches(stone) and _copy_matches(range_w), "in DEV each copy draws what its landmark draws", _note(stone))
 	await _shot("pen_dev_flat")
 	look.call("set_dev", false)
 	await _frames(8)
-	var art_flat: Array = [_drawn(stone), _drawn(range_w)]
-	_check(_copy_matches(stone) and _copy_matches(range_w) and art_flat[0] != dev_flat[0], "switched to ART (flat): the copies follow", _note(stone))
 	await _shot("pen_art_flat")
-	# Turned toward the Watchstone: its copy shows. Then the look switched both ways while turned.
-	for turn in [30.0, 50.0]:
-		_face(player, rig, turn)
-		await _frames(6)
-		_check(int(stone.call("shown")) == 0, "ART, turned %d: the Watchstone's copy shows" % int(turn), "at %.1f deg" % float(stone.get("wrap_angle")))
-		await _shot("pen_art_zw%d" % int(turn))
-	look.call("set_dev", true)
-	await _frames(8)
-	_check(_drawn(stone) == dev_flat[0] and _drawn(range_w) == dev_flat[1] and _copy_matches(stone) and _copy_matches(range_w),
-		"switched to DEV while turned: drawn and copied as when switched flat", _note(stone))
-	await _shot("pen_dev_zw50")
-	look.call("set_dev", false)
-	await _frames(8)
-	_check(_drawn(stone) == art_flat[0] and _drawn(range_w) == art_flat[1] and _copy_matches(stone) and _copy_matches(range_w),
-		"and back to ART while turned: the same as flat", _note(stone))
-	# 4. Flat again: the Watchstone itself, nothing hidden.
-	_face(player, rig, 0.0)
-	await _frames(6)
-	var hidden: int = 0
-	for mi in stone.get("_land_meshes"):
-		if not (mi as Node4D).visible or (mi as Node).has_meta(&"w_hidden"):
-			hidden += 1
-	_check(int(stone.call("shown")) == -1 and hidden == 0, "flat again: the Watchstone itself, nothing left hidden", "%d hidden" % hidden)
 	# The volume view, ART.
 	var other := Camera4D.new()
 	_room.add_child(other)
@@ -206,27 +164,3 @@ func _tilt(rig: Node4D, zw: float, yaw: float) -> void:
 		rig.call("_apply")
 	else:
 		SliceAngles.tilt(rig, 0.0, zw, yaw)
-
-
-## The landmark's drawn meshes (mesh resources), as the Optimiser read them.
-func _drawn(o: Node) -> Array:
-	return (o.get("_land_meshes") as Array).map(func(mi: Node) -> Variant: return (mi as MeshInstance4D).mesh)
-
-
-## The copy's meshes, one for one, are the landmark's, each with the look's own mark.
-func _copy_matches(o: Node) -> bool:
-	var holder: Node = o.get_node_or_null("WrapCopy")
-	var land: Array = o.get("_land_meshes")
-	if holder == null or holder.get_child_count() != land.size() or land.is_empty():
-		return false
-	for i in land.size():
-		var c := holder.get_child(i) as MeshInstance4D
-		if c.mesh != (land[i] as MeshInstance4D).mesh or not c.has_meta(Look.OWN):
-			return false
-	return true
-
-
-func _note(o: Node) -> String:
-	var land: Array = o.get("_land_meshes")
-	var blocks: int = land.filter(func(mi: Node) -> bool: return String(mi.name).begins_with("DevBlockout")).size()
-	return "%d drawn, %d of them blockouts" % [land.size(), blocks]

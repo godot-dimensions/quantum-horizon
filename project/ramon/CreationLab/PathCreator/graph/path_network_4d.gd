@@ -855,6 +855,7 @@ func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictiona
 		_size(mi, Vector4(seg + ext0 + ext1, Spec.BOX_H_M, EDGE_W * p_scale, depth))
 		mi.position = Vector4(A.x + dir.x * mid, float(runs[k][2]) + Spec.PROUD_M, A.z + dir.y * mid, float(w_at.call(mid)))
 		mi.basis = Projection(Vector4(dir.x, 0, dir.y, shear), Vector4(0, 1, 0, 0), Vector4(-dir.y, 0, dir.x, 0), Vector4(0, 0, 0, 1))
+		Draw.set_param(mi, "shear", shear)
 		Draw.set_param(mi, "mark_sym", mark if marks_on else -1)
 		Draw.set_param(mi, "join0", 1.0 if (join0 and first) else 0.0)
 		Draw.set_param(mi, "join1", 1.0 if (join1 and last) else 0.0)

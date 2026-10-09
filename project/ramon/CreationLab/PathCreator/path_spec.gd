@@ -63,7 +63,7 @@ const ANCHOR_MOVE_M := 0.03
 
 ## The guide line under the marks (Ramon, 5 Oct: "one subtle blue line under the icons to clearly
 ## see the path yet subtle"), metres wide.
-const GUIDE_W_M := 0.035
+const GUIDE_W_M := 0.105
 ## Its colour: a light blue of its own, lighter than the marks' blue and clearly bluer than the
 ## floor (Ramon, 5 Oct: "the thin line ... should in fact be light blue and go under the
 ## arrows/icons"). Emitted like the marks, so it shows on screen as this.

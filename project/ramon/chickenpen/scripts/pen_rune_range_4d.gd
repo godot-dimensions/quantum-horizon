@@ -30,7 +30,9 @@ extends Node4D
 ## rails) and two more fences at the W ends that mirror them, open at the front as before; the boards
 ## and the barrel are spun round in X and W (PolyMeshBuilder4D.extrude_spin_from_faces_xw) and the
 ## board frames, the table and the banner made the same both ways, so a quarter turn into W shows
-## the same yard; the outcrop and field stones are stood round into W as well. From the farm's slice
+## the same yard; the field stones are stood round into W a quarter turn, as the fences are, and the
+## outcrop is a bowl, its stones scattered round in X and W (always, whatever this is set to: _outcrop).
+## From the farm's slice
 ## it looks as it did. Off: the yard as built that morning.
 ##
 ## Illustration only: nothing here can be shot. Built when it loads (and in the editor).
@@ -98,6 +100,10 @@ const OWN := &"_rune_range_part"
 const W_HALF := (3.08 + 2.6) * 0.5
 ## The yard's middle in x, between the fences: the axis the field stones are stood round into W about.
 const YARD_X := (3.08 - 2.6) * 0.5
+## How many places the outcrop's stones stand at (two or three stones each), scattered over its bowl.
+const OUTCROP_STONES := 25
+## The turn from one outcrop place to the next: the golden angle, so the places never line up.
+const GOLDEN_ANGLE := PI * (3.0 - sqrt(5.0))
 ## Steps round a spun shape (a multiple of 4, so one lies on the farm's slice).
 const SPIN_STEPS := 12
 
@@ -238,30 +244,39 @@ func _bank() -> void:
 
 # --- The outcrop --------------------------------------------------------------------------------
 
-## The curved outcrop behind the boards (a U in the top view, 3 m high in the middle falling to a
-## metre and a half at its ends by the fences' back posts): two courses of designed-cut stones on
-## an arc, the upper course stepped back, grass on every top.
+## The curved outcrop behind the boards: in the top view a U, 3 m high in the middle falling to a
+## metre and a half at its ends by the fences' back posts, and in four dimensions that U swept round in
+## X and W about the vertical line through its middle, a bowl the same from any turn of the slice.
+##
+## The stones are scattered over the bowl, not set in rows: OUTCROP_STONES places, each its own
+## distance from the axis, its own turn round it and its own height, and at each place two courses of
+## designed-cut stones (the upper stepped back, where it is tall enough) and a filler behind, grass on
+## every top. The distance grows as the square root of the place's number, so the places are as dense
+## near the axis as far out (equal areas of the disc they cover in X and W), and the turn steps on by
+## the golden angle, so no two line up into spokes. Each place is built as the U's own section at its
+## distance, on the +x side, then turned to its angle.
 func _outcrop() -> void:
-	# The arc's middle and radii (x half-width, z depth), from the top view: back at z -13.2, the
-	# ends at x -3.85 and 4.1 by z -10.
+	# The U's middle and radii (x half-width, z depth), from the top view: back at z -13.2, the ends at
+	# x -3.85 and 4.1 by z -10; the stones reach to `reach` from the middle, short of the very ends.
 	var mid := Vector2(0.12, -10.0)
-	var first: int = _stones.size()
 	var rx: float = 4.0
 	var rz: float = 3.0
-	var n: int = 9
-	for k in n:
-		var t: float = lerpf(PI * 0.06, PI * 0.94, float(k) / float(n - 1))
-		var a: float = PI + t
-		var p := Vector2(mid.x + cos(a) * rx, mid.y + sin(a) * rz)
-		# Height falls off toward the ends, as the front view has it (3.0 middle, 1.5 ends).
-		var tall: float = lerpf(1.5, 3.0, sin(t))
-		var outward := Vector2(cos(a) * rz, sin(a) * rx).normalized()
+	var reach: float = rx * cos(PI * 0.06)
+	for k in OUTCROP_STONES:
+		var at_k: int = _stones.size()
+		var r: float = reach * sqrt((float(k) + 0.5) / float(OUTCROP_STONES))
+		var turn: float = float(k) * GOLDEN_ANGLE # + _rng.randf_range(-0.25, 0.25)
+		# The U's section at distance r from its middle: how far back it is, and how tall (3.0 middle,
+		# 1.5 ends, as the front view has it), each place a little taller or shorter than that.
+		var q: float = sqrt(maxf(1.0 - (r / rx) * (r / rx), 0.0))
+		var p := Vector2(mid.x + r, mid.y - rz * q)
+		var tall: float = lerpf(1.5, 3.0, q) * _rng.randf_range(0.85, 1.15)
+		var outward := Vector2(r / rx * rz, -q * rx).normalized()
 		var yaw: float = atan2(-outward.x, -outward.y)
-		var base: float = 0.0
 		# Lower course: one big stone.
 		var h1: float = tall * _rng.randf_range(0.55, 0.65)
 		var w1: float = _rng.randf_range(1.2, 1.5)
-		_stone(["block", "round", "block"][k % 3], Vector4(p.x, base, p.y, _rng.randf_range(-0.6, 0.6)), Vector3(w1, h1, w1 * 0.85), rock_w * 0.55, yaw + _rng.randf_range(-0.15, 0.15), tall <= 1.9)
+		_stone(["block", "round", "block"][k % 3], Vector4(p.x, 0.0, p.y, _rng.randf_range(-0.6, 0.6)), Vector3(w1, h1, w1 * 0.85), rock_w * 0.55, yaw + _rng.randf_range(-0.15, 0.15), tall <= 1.9)
 		# Upper course: a smaller one set back, where the outcrop is tall enough.
 		if tall > 1.9:
 			var back: Vector2 = p - outward * 0.45
@@ -271,12 +286,13 @@ func _outcrop() -> void:
 		# A filler behind, so no daylight shows between the stones from the front.
 		var behind: Vector2 = p - outward * 1.1
 		_stone("round", Vector4(behind.x, 0.0, behind.y, 0), Vector3(1.5, tall * 0.8, 1.2), rock_w * 0.6, yaw)
-		_solid(Vector4(1.4, tall, 1.4, rock_w), Vector4(p.x, tall * 0.5, p.y, 0))
-		if enclosed_in_w and absf(p.x - mid.x) > 1.0:
-			# The same course turned a quarter into W about the arc's middle: the U is a bowl.
-			_solid(Vector4(rock_w, tall, 1.4, 1.4), Vector4(mid.x, tall * 0.5, p.y, p.x - mid.x))
-	if enclosed_in_w:
-		_turn_stones(first, mid.x, 1.0)
+		_turn_stones_by(at_k, mid.x, turn)
+		# The physics has only axis-aligned boxes, so the collider is the box round the turned course.
+		var c: float = cos(turn)
+		var s: float = sin(turn)
+		var deep: float = rock_w * 0.6
+		_solid(Vector4(1.4 * absf(c) + deep * absf(s), tall, 1.4, 1.4 * absf(s) + deep * absf(c)),
+			Vector4(mid.x + r * c, tall * 0.5, p.y, r * s))
 
 
 # --- The boards ---------------------------------------------------------------------------------
@@ -637,6 +653,18 @@ func _turn_stones(from: int, axis_x: float, near: float) -> void:
 		copy[2] = Vector4(axis_x + turned.x, at.y, at.z, turned.w)
 		copy[6] = r * (s[6] as Projection)
 		_stones.append(copy)
+
+
+## The stones from [param from] on, turned in place by [param angle] in the x-w plane about the vertical
+## line at [param axis_x] (and W 0).
+func _turn_stones_by(from: int, axis_x: float, angle: float) -> void:
+	var r: Projection = Basis4D.from_xw(angle)
+	for i in range(maxi(from, 0), _stones.size()):
+		var s: Array = _stones[i]
+		var at: Vector4 = s[2]
+		var turned: Vector4 = r * Vector4(at.x - axis_x, 0.0, 0.0, at.w)
+		s[2] = Vector4(axis_x + turned.x, at.y, at.z, turned.w)
+		s[6] = r * (s[6] as Projection)
 
 
 func _tuft(at: Vector4, size: float) -> void:

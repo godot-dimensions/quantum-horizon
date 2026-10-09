@@ -23,8 +23,9 @@
 // REVEAL (6 Oct 2026): with `reveal_on`, a stretch shows only its found part, `found0` to `found1`
 // metres along it, fading over `reveal_fade` at each end; a node's box shows as `found` (0 to 1).
 //
-// W: the box is as deep in W as the route is visible (its band). Over `w_soft` at the band's edges the
-// marks shrink to nothing, so a route recedes as you slice out of it rather than being cut off.
+// W: across the route is two directions on a 4D floor, the box's z and its w, so the marks are drawn
+// against the distance from the route's middle in both, hypot(z, w): a mark is round its centre line,
+// and a slice off the route's middle cuts it narrower until it is gone.
 //
 // LOOKS: `walk` paints every role in the one sand (the WALK look for the pen); otherwise each role
 // keeps the sheet's token. Edges are blended toward `under_color` (the floor's own albedo, the
@@ -79,14 +80,17 @@ uniform float ext0 = 0.0;
 uniform float ext1 = 0.0;
 uniform float mark_half = 0.2;
 // DRAPED RUNS: an end where the ground steps (a riser). A mark never crosses it: nearing the edge
-// it shrinks about its own middle (as at a W band's edge) and the next run's grows back beyond it,
+// it shrinks about its own middle and the next run's grows back beyond it,
 // so the marks keep moving and nothing hangs over a step or is cut by one.
 uniform float drop0 = 0.0;
 uniform float drop1 = 0.0;
 uniform float flow = 0.55;
 uniform vec4 gap0 = vec4(-1.0, -1.0, -1.0, -1.0);
 uniform float guide_on = 1.0;
-uniform float guide_w = 0.035;
+// A stretch's climb through W per metre along the floor: its box's x axis is (dir, shear) and its w
+// axis the world's W, which are not perpendicular, so local coordinates are skewed (see fragment()).
+uniform float shear = 0.0;
+uniform float guide_w = 0.105;
 // 0: a solid guide line; otherwise dots this far apart (the secondary route's, as the field map).
 uniform float guide_dot = 0.0;
 // The guide's own light blue (path_spec.gd GUIDE_COLOR); sand in the WALK look.
@@ -150,9 +154,6 @@ uniform float found1 = 1.0e9;
 uniform float found = 1.0;
 uniform float reveal_fade = 1.5;
 
-// W (metres, in the box's own W)
-uniform float w_half = 100.0;
-uniform float w_soft = 0.35;
 varying vec3 uvw;
 varying vec4 normal_4d;
 varying flat vec4 local_normal_4d;
@@ -306,7 +307,7 @@ vec4 over(vec4 below, vec3 col, float c) {
 }
 
 // Symbol `sym` at `p` (sheet units, its middle at 0, y down): its colour and coverage. `px` is a
-// pixel in sheet units, `erode` thins every shape by that much (the W band's edge), `arc` turns the
+// pixel in sheet units, `erode` thins every shape by that much, `arc` turns the
 // moving arc (radians), `show_arc` / `show_accent` hide those layers, `to_cyan` blends the moving
 // layers toward cyan (focus).
 vec4 draw_symbol(int sym, vec2 p, float px, float erode, float arc, float show_arc, float show_accent, float to_cyan) {
@@ -414,17 +415,17 @@ void fragment() {
 	if (local_normal_4d.y < 0.5) {
 		discard;
 	}
-	// The W band: full inside, thinning to nothing over its soft edge.
-	float wd = abs(local_pos.w);
-	float band = 1.0 - smoothstep(w_half - w_soft, w_half, wd);
-	if (band <= 0.0) {
-		discard;
-	}
-	vec2 m = vec2(local_pos.x, local_pos.z);
+	// Along the box, and out from its middle across it: z and w together (see the header).
+	// On a stretch climbing through W the box's x and w axes are skewed (x is (dir, shear), w the
+	// world's W), so the true distance from the centre line is hypot(z, w / k), and a point's true
+	// distance along the line from a point on it at local x0 is (x - x0) k + w shear / k, with
+	// k = sqrt(1 + shear^2). WHERE things fall along the stretch (marks' spacing, clears, gaps, the
+	// ends) stays in local x so stretches still meet; only the shapes drawn use the true distances.
+	float k = sqrt(1.0 + shear * shear);
+	float w_along = local_pos.w * shear / k;
+	vec2 m = vec2(local_pos.x, length(vec2(local_pos.z, local_pos.w / k)));
 	vec4 col = vec4(0.0);
 	float px_m = max(length(fwidth(m)) * 0.7, 1e-5);
-	// Toward the band's edge a mark shrinks about its own middle (to a quarter, then gone).
-	float shrink = mix(0.25, 1.0, band);
 	float erode_m = 0.0;
 	if (mode == 0) {
 		// `along` from the segment's start; the box may reach past either end at a joint.
@@ -453,35 +454,36 @@ void fragment() {
 		// also keeps it off a neighbour's mark reaching over a joint (the two boxes lie at one height
 		// and would fight for the pixel). It stops short of the nodes' art by their clear floor.
 		bool mark_drawn = mark_sym >= 0 && !in_clear && !in_gap && (mine || by_neighbour);
-		float cut = mark_half * shrink * (mine ? riser : 1.0);
-		bool under_mark = mark_drawn && abs(s - c_s) < cut;
+		float cut = mark_half * (mine ? riser : 1.0);
+		float to_mark = (s - c_s) * k + w_along;
+		bool under_mark = mark_drawn && abs(to_mark) < cut;
 		if (guide_on > 0.5 && !in_clear && !in_gap && !past && !under_mark) {
 			float g;
 			if (guide_dot > 0.0) {
 				float sd = s0 + along;
-				vec2 q = vec2(sd - (floor(sd / guide_dot) + 0.5) * guide_dot, m.y);
-				g = clamp(0.5 - (length(q) - guide_w * 0.6 * band) / px_m, 0.0, 1.0);
+				vec2 q = vec2((sd - (floor(sd / guide_dot) + 0.5) * guide_dot) * k + w_along, m.y);
+				g = clamp(0.5 - (length(q) - guide_w * 0.6) / px_m, 0.0, 1.0);
 			} else {
-				g = clamp(0.5 - (abs(m.y) - guide_w * 0.5 * band) / px_m, 0.0, 1.0);
+				g = clamp(0.5 - (abs(m.y) - guide_w * 0.5) / px_m, 0.0, 1.0);
 			}
 			col = over(col, walk > 0.5 ? sand.rgb : col_guide.rgb, g);
 		}
 		if (mark_sym >= 0 && !in_clear && !in_gap && mine) {
-			vec2 p = vec2(s - c_s, m.y) / (unit_m * mark_scale * shrink * riser);
-			float px = px_m / (unit_m * mark_scale * shrink * riser);
+			vec2 p = vec2(to_mark, m.y) / (unit_m * mark_scale * riser);
+			float px = px_m / (unit_m * mark_scale * riser);
 			vec4 mk = draw_symbol(mark_sym, p, px, erode_m / (unit_m * mark_scale), 0.0, 0.0, 0.0, 0.0);
 			col = over(col, mk.rgb, mk.a);
 		}
 	} else if (mode == 1) {
-		vec2 p = m / (unit_m * node_scale * shrink);
-		float px = px_m / (unit_m * node_scale * shrink);
+		vec2 p = m / (unit_m * node_scale);
+		float px = px_m / (unit_m * node_scale);
 		float a = -TAU * TIME * motion / max(arc_turn_s, 0.01);
 		col = draw_symbol(node_sym, p, px, erode_m / (unit_m * node_scale), a, arc_on, accent_on, focus);
 	} else if (mode == 2) {
 		vec3 b = role_color(0);
-		col = over(col, b, disc(m, ball_r * shrink, px_m));
+		col = over(col, b, disc(m, ball_r, px_m));
 		if (ring_on > 0.5) {
-			col = over(col, b, ring(m, ring_r * shrink, ring_w * shrink, px_m));
+			col = over(col, b, ring(m, ring_r, ring_w, px_m));
 		}
 	} else if (mode == 3) {
 		vec2 p = m / unit_m;
@@ -513,7 +515,7 @@ void fragment() {
 				break;
 			}
 			vec2 c = vec2(cue_from + cue_gap * (i + 0.5), 0.0);
-			col = over(col, cc, disc(pc - c, cue_dot_r * shrink, pxu));
+			col = over(col, cc, disc(pc - c, cue_dot_r, pxu));
 		}
 	}
 	if (reveal_on > 0.5) {

@@ -1,6 +1,6 @@
-[gd_resource type="Resource" load_steps=2 format=3]
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://dr048nyr1kiuq"]
 
-[ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/graph/path_graph.gd" id="1_ewhyn"]
+[ext_resource type="Script" uid="uid://8s4108vlif7b" path="res://ramon/CreationLab/PathCreator/graph/path_graph.gd" id="1_ewhyn"]
 
 [resource]
 script = ExtResource("1_ewhyn")
@@ -97,7 +97,7 @@ nodes = [{
 "frame": "none",
 "id": 10,
 "kind": "bend",
-"pos": Vector4(-11.1, 0, 23.1, 0),
+"pos": Vector4(-11.1, 0, 23.1, -1.92),
 "state": "arrival",
 "target": ""
 }, {
@@ -180,6 +180,24 @@ nodes = [{
 "size": 0.75,
 "state": "available",
 "target": "MooringSpot"
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 19,
+"kind": "bend",
+"pos": Vector4(-11.556, 0, 14.26, -13.13),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 20,
+"kind": "bend",
+"pos": Vector4(-11.556, 0, 10.46, -13.13),
+"state": "arrival",
+"target": ""
 }]
 edges = [{
 "band": 2.4,
@@ -234,13 +252,25 @@ edges = [{
 "from": 8,
 "priority": "primary",
 "to": 10,
-"w_mode": "here"
+"w_mode": "follow"
 }, {
 "band": 2.4,
 "from": 10,
 "priority": "primary",
-"to": 11,
+"to": 19,
+"w_mode": "follow"
+}, {
+"band": 2.4,
+"from": 19,
+"priority": "primary",
+"to": 20,
 "w_mode": "here"
+}, {
+"band": 2.4,
+"from": 20,
+"priority": "primary",
+"to": 11,
+"w_mode": "follow"
 }, {
 "band": 2.4,
 "from": 11,
@@ -284,4 +314,4 @@ edges = [{
 "to": 18,
 "w_mode": "here"
 }]
-next_id = 19
+next_id = 21

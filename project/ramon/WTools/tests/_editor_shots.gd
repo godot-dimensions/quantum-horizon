@@ -4,7 +4,7 @@ extends Node
 ## THE W TOOLS IN THE EDITOR, AS SCREENSHOTS (Ramon, 7 Oct: "take screenshots of the editor itself and
 ## explain the basics of the interface tooling ... also in regards to what you can see in volume view"). Open
 ## this scene in the editor and it drives the editor: the pen opened, the W tool nodes selected and framed,
-## Preview and Analyse pressed, the 4D view switched between Combined (the editor's setting here), the slice
+## Preview pressed, the 4D view switched between Combined (the editor's setting here), the slice
 ## (Cross-section) and the volume view (Projected), a screenshot of the whole editor at each step; then all
 ## put back (Preview off, the view as it was, this scene closed) and the editor quits.
 ##
@@ -48,8 +48,6 @@ func _run() -> void:
 	var engine_was: String = cam.rendering_engine_name if cam != null else ""
 	print("SHOTS: editor camera %s, engine %s" % [str(cam != null), engine_was])
 	var trees: Node = pen.get_node("World/Trees")
-	var stone: Node = pen.get_node("World/WatchstoneW")
-	var range_w: Node = pen.get_node("World/RangeW")
 	if OS.get_cmdline_user_args().has("paths"):
 		# The paths in the volume view, coloured by W type, at three solidities (Ramon, 7 Oct: "can you make them
 		# less transparent in volume view?"), seen three ways: flat (W collapsed), W across, W up. And the
@@ -77,29 +75,6 @@ func _run() -> void:
 		print("SHOTS DONE")
 		_quit(me)
 		return
-	if OS.get_cmdline_user_args().has("ring"):
-		# The Wrap Style dropdown on Ring: the inspector, the Scene dock's warning mark, the About Ring box.
-		await _select_and_frame(range_w, pen.get_node("World/Range"), 2, cam, -0.3)
-		pen.get_node("World/Trees").set_display_folded(true)
-		range_w.set("wrap_style", 1)
-		range_w.update_configuration_warnings()
-		EditorInterface.edit_node(range_w)
-		await _wait(20)
-		_unfold_script_groups(3)
-		await _wait(10)
-		_scroll_inspector(0.0)
-		await _shot("8_ring_inspector", cam, engine_was)
-		range_w.call("show_ring_note")
-		await _wait(20)
-		await _shot("9_ring_note", cam, engine_was)
-		for d in EditorInterface.get_base_control().find_children("*", "AcceptDialog", true, false):
-			if (d as AcceptDialog).title.begins_with("Ring"):
-				(d as AcceptDialog).queue_free()
-		range_w.set("wrap_style", 0)
-		pen.get_node("World/Trees").set_display_folded(false)
-		print("SHOTS DONE")
-		_quit(me)
-		return
 	# 1-4: the trees.
 	await _select_and_frame(trees, pen.get_node("World/Trees/OakL03"), 3, cam, -0.2)
 	await _shot("1_trees_combined", cam, engine_was)
@@ -111,33 +86,9 @@ func _run() -> void:
 	await _shot("4_trees_preview_volume", cam, "Projected")
 	trees.call("toggle_preview")
 	await _wait(10)
-	# 5: the Watchstone's Optimiser, its report.
-	await _select_and_frame(stone, pen.get_node("World/LookoutSite/Lookout"), 2, cam, -0.15)
-	stone.call("analyse")
-	await _wait(5)
-	EditorInterface.edit_node(stone)
-	await _wait(10)
-	_unfold_script_groups(3)
-	await _wait(10)
-	_scroll_inspector(0.18)
-	await _shot("5_watchstone_report", cam, engine_was)
-	_scroll_inspector(0.0)
-	await _shot("6_watchstone_top", cam, engine_was)
-	# 7: the range's.
-	await _select_and_frame(range_w, pen.get_node("World/Range"), 2, cam, -0.3)
-	range_w.call("analyse")
-	await _wait(5)
-	EditorInterface.edit_node(range_w)
-	await _wait(10)
-	_unfold_script_groups(3)
-	await _wait(10)
-	_scroll_inspector(0.18)
-	await _shot("7_range_report", cam, engine_was)
 	# Put back.
 	if cam != null and engine_was != "":
 		cam.rendering_engine_name = engine_was
-	stone.call("clear")
-	range_w.call("clear")
 	print("SHOTS DONE")
 	_quit(me)
 
@@ -191,19 +142,6 @@ func _select_and_frame(node: Node, frame: Node, out: int = 0, cam: Camera4D = nu
 	sel.add_node(node)
 	EditorInterface.edit_node(node)
 	await _wait(10)
-
-
-## The script's own groups (the first [param count] sections) unfolded, so the report shows.
-func _unfold_script_groups(count: int) -> void:
-	var sections: Array = EditorInterface.get_inspector().find_children("*", "EditorInspectorSection", true, false)
-	for i in mini(count, sections.size()):
-		sections[i].call("unfold")
-
-
-func _scroll_inspector(where: float) -> void:
-	var insp: EditorInspector = EditorInterface.get_inspector()
-	var bar: VScrollBar = insp.get_v_scroll_bar()
-	insp.scroll_vertical = int(where * bar.max_value)
 
 
 func _shot(name: String, cam: Camera4D, engine: String) -> void:

@@ -1,9 +1,9 @@
-[gd_scene load_steps=5 format=4]
+[gd_scene load_steps=5 format=3 uid="uid://dopefnlt47x0a"]
 
-[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_rune_range_4d.gd" id="rune_range"]
 [ext_resource type="Script" uid="uid://cu6xoypl3i6xf" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="pen_face"]
 [ext_resource type="Script" uid="uid://bf71jwp6t887l" path="res://ramon/chickenpen/scripts/pen_range_master_4d.gd" id="range_master"]
-[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_rune_stone_4d.gd" id="rune_stone"]
+[ext_resource type="Script" uid="uid://cqbaq53e1445l" path="res://ramon/chickenpen/scripts/pen_rune_range_4d.gd" id="rune_range"]
+[ext_resource type="Script" uid="uid://lb3dd37cagjw" path="res://ramon/chickenpen/scripts/pen_rune_stone_4d.gd" id="rune_stone"]
 
 [node name="Range" type="Node4D"]
 metadata/move_me = "Move (or turn) this node to move the whole range: the yard, its fences, boards, outcrop, table, banner and rune stone, the range master, and the path's end. Built to Ramon's sheet (PenLayout/refs/range_views.png): the origin is where the sheet stands the player, the boards 10.5 m away along -z."

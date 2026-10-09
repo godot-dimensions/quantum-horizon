@@ -186,6 +186,14 @@ func rebuild() -> void:
 					_box(group, "Jamb%s" % _tag(sz),
 						Vector4(0.0, wall_height * 0.5, sz * (door_width * 0.5 + side * 0.5), 0.0),
 						Vector3(wall_thick, wall_height, side), wall_color)
+			# And the same either side of the opening in W, between those two, up to the header: the
+			# doorway is as wide in W as it is in z, not a slot through the whole depth of the shed.
+			var side_w: float = (w_depth - door_width) * 0.5
+			if side_w > 0.02:
+				for sw in [1.0, -1.0]:
+					_box(group, "JambW%s" % _tag(sw),
+						Vector4(0.0, door_height * 0.5, 0.0, sw * (door_width * 0.5 + side_w * 0.5)),
+						Vector3(wall_thick, door_height, door_width), wall_color, side_w)
 			_box(group, "Header",
 				Vector4(0.0, (wall_height + door_height) * 0.5, 0.0, 0.0),
 				Vector3(wall_thick, wall_height - door_height, door_width), wall_color)
@@ -365,11 +373,12 @@ func _tag(sign: float) -> String:
 	return "P" if sign > 0.0 else "N"
 
 
-func _box(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color) -> Node4D:
+## [param w] is the box's depth in W; left out, the shed's whole depth (w_depth).
+func _box(parent: Node, part: String, at: Vector4, size: Vector3, colour: Color, w: float = -1.0) -> Node4D:
 	var node := MeshInstance4D.new()
 	node.name = part
 	var mesh := BoxTetraMesh4D.new()
-	mesh.size = Vector4(maxf(size.x, 0.01), maxf(size.y, 0.01), maxf(size.z, 0.01), w_depth)
+	mesh.size = Vector4(maxf(size.x, 0.01), maxf(size.y, 0.01), maxf(size.z, 0.01), w if w > 0.0 else w_depth)
 	node.mesh = mesh
 	var material := TetraMaterial4D.new()
 	material.albedo_color = colour
