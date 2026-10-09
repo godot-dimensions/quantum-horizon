@@ -92,6 +92,9 @@ the words `Menu/entries/catalogue_final.tres`. `Menu/README.md` is the one-page 
   the playable world; Ramon, 9 Oct: "we might not have the water from the aquatic labs in the
   playable world but they dont need to know"). Don't reword it. (The world does have water: the
   Lookout's marsh along W, built in code by lookout/ana_marsh_4d.gd.)
+- **Kept, uncommitted on purpose:** `Menu/scripts/menu_designs_b.gd` and `menu_designs_c.gd`, the
+  originals of the frozen copies the variations scene reads (`menu_variations_b/c.gd`). Nothing uses
+  them; Ramon, 9 Oct: "leave them out but i want to keep them". Don't delete them, don't commit them.
 - Everything below is history: how A was found (8 Oct). Where it names `design`, `DESIGN_A`,
   `menu_designs_c.gd` or the Tab panel, read `menu_a.gd` / menu_variations instead.
 

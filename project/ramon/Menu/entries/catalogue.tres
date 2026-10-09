@@ -11,8 +11,45 @@
 [ext_resource type="Texture2D" uid="uid://clj4ud3r14jgy" path="res://ramon/Menu/icons/icon_shrubbery.png" id="9_ajynb"]
 [ext_resource type="Script" uid="uid://b2a43mgb5dqv" path="res://ramon/Menu/scripts/menu_catalogue.gd" id="10_ajynb"]
 [ext_resource type="Texture2D" uid="uid://bjmr20bfnryq" path="res://ramon/Menu/icons/icon_sky_box_clouds.png" id="10_uy7oo"]
-[ext_resource type="Texture2D" path="res://ramon/Menu/icons/icon_cinematic_starlings.png" id="icon_film1"]
-[ext_resource type="Texture2D" path="res://ramon/Menu/icons/icon_cinematic_mountains.png" id="icon_film2"]
+[ext_resource type="Texture2D" uid="uid://irnpi5lyimq5" path="res://ramon/Menu/icons/icon_cinematic_starlings.png" id="icon_film1"]
+[ext_resource type="Texture2D" uid="uid://muwo6x5ggm7j" path="res://ramon/Menu/icons/icon_cinematic_mountains.png" id="icon_film2"]
+
+[sub_resource type="Resource" id="Resource_film1"]
+script = ExtResource("1_i2ljj")
+title = "Flight of the 4D Starlings"
+blurb = "A murmuration of 5,000 starlings at dusk, filmed live in the pen"
+maturity = "Polished"
+section = "Cinematic"
+duration = "55 sec"
+detail = "Six shots of the flock over the chicken pen: from the farm, underneath, alongside, inside it, a hawk diving through at half speed, and a step along W. It plays live in the pen rather than from a recording, so the numbers in the first shot are the flock's own."
+icon = ExtResource("icon_film1")
+scene_path = "res://ramon/chickenpen/playable_world.tscn"
+launch_label = "WATCH"
+opens_as_scene = true
+cinematic = "murmuration"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("ESC")
+control_actions = PackedStringArray("skip to the end")
+question = "Can thousands of 4D bodies move as one, live, inside a playable scene?"
+approach = "Reynolds boids on a GPU compute shader: seven nearest neighbours each, turning inertia, a roost and a hawk, drawn as one multimesh in the 4D renderer's own pass."
+finding = "Turning inertia is what carries a turn across the flock: plain boids reached 5% of 300 birds and faded, 0.05 s of inertia carried it across 61% without fading."
+finding_tier = "Measured"
+benchmark = "5,000 birds 0.38 ms a frame, 0.79 ms after a hawk · RTX 5080, 1280x720, 1 Oct"
+
+[sub_resource type="Resource" id="Resource_film2"]
+script = ExtResource("1_i2ljj")
+title = "Mountain Range"
+blurb = "Placeholder: the next cinematic, over the ring of mountains"
+maturity = "Greybox"
+section = "Cinematic"
+duration = "soon"
+detail = "Not made yet. A slot for the second cinematic."
+icon = ExtResource("icon_film2")
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray()
+control_actions = PackedStringArray()
 
 [sub_resource type="Resource" id="Resource_uy7oo"]
 script = ExtResource("1_i2ljj")
@@ -80,7 +117,6 @@ benchmark = "Gap 7 m against a 4.59 m jump, so it cannot be crossed until w chan
 script = ExtResource("1_i2ljj")
 title = "Portal"
 blurb = "Blast a hole in a wall, and step through to somewhere else"
-maturity = "Prototype"
 duration = "2 min"
 detail = "Two tests. A chamber of linked openings that carry your momentum across, and a wall you can shoot openings through anywhere."
 clip = "portal"
@@ -121,7 +157,6 @@ benchmark = "True 4D raycasts against 4D colliders, independent of the camera"
 script = ExtResource("1_i2ljj")
 title = "Voxel Mining"
 blurb = "Destructible geometry by dual contouring in four dimensions"
-maturity = "Prototype"
 duration = "2 min"
 detail = "A rock made of 4D voxels that you can carve into, re-meshed on every hit. Carve a crater, then step through w and watch it change."
 clip = "voxel_mining"
@@ -141,7 +176,6 @@ benchmark = "Not yet timed on this rock · the same carve on the Portal chamber'
 script = ExtResource("1_i2ljj")
 title = "Shrubbery Lab"
 blurb = "A single tree grown in four dimensions, previewed across the slice"
-maturity = "Prototype"
 section = "Lab"
 duration = "90 sec"
 detail = "One tree grown by space colonisation, light enough to render with the projected preview turned on."
@@ -162,7 +196,6 @@ benchmark = "1 tree · combined renderer · plane sharpness 0.2, skewness 0.35"
 script = ExtResource("1_i2ljj")
 title = "Sky Box Clouds"
 blurb = "Clouds built from 4D solids, so the weather changes from slice to slice"
-maturity = "Prototype"
 section = "Lab"
 duration = "60 sec"
 detail = "A cloud deck made of sliced 4D shapes. It exists at every w, not only the one you are looking at, so turning the slice moves you into different weather."
@@ -183,7 +216,6 @@ benchmark = "24-cell (96 tets) as the workhorse, 600-cell for hero puffs · thre
 script = ExtResource("1_i2ljj")
 title = "Creation Lab"
 blurb = "A 4D animal built from balls and brought to life, on one pedestal"
-maturity = "Prototype"
 section = "Lab"
 duration = "5 min"
 detail = "One room, an animal on a turning pedestal, and its story in five parts: the balls, the skin, the slice, the rig and the walk. Pick the goat, the chicken or the wolf, step through the parts, and read what each one measured on the research wall."
@@ -227,7 +259,6 @@ benchmark = "4 gaits · limbs and segments per limb changed live · per-foot gro
 script = ExtResource("1_i2ljj")
 title = "Lofted Creatures"
 blurb = "Animals modelled by lofting through 4D, walking on procedural solvers"
-maturity = "Prototype"
 duration = "60 sec"
 detail = "Five chickens, a brachiosaurus and Trym's rigged creature, every one modelled with the loft tool, all walking at once with no baked animation."
 clip = "lofted_creatures"
@@ -251,6 +282,7 @@ maturity = "Playable"
 duration = "about 10 min"
 detail = "A farm with a keeper, a cave with a secret along w, a shooting range and Trym's talk in the cinema. About ten minutes to learn, an hour to see everything."
 clip = "chicken_pen"
+preview_focus = 0.5
 scene_path = "res://ramon/chickenpen/playable_world.tscn"
 launch_label = "PLAY THE WORLD"
 opens_as_scene = true
@@ -263,43 +295,8 @@ approach = "An open farm with a fetch quest, dialogue, mining and a range, all o
 finding = "A room in 4D needs eight walls, not six, or it opens when the slice turns."
 benchmark = "2.46 ms a frame with 862 meshes and nine animated chickens · RTX 5080, editor build, 28 Sep"
 
-[sub_resource type="Resource" id="Resource_film1"]
-script = ExtResource("1_i2ljj")
-title = "Flight of the 4D Starlings"
-blurb = "A murmuration of 5,000 starlings at dusk, filmed live in the pen"
-maturity = "Polished"
-section = "Cinematic"
-duration = "55 sec"
-detail = "Six shots of the flock over the chicken pen: from the farm, underneath, alongside, inside it, a hawk diving through at half speed, and a step along W. It plays live in the pen rather than from a recording, so the numbers in the first shot are the flock's own."
-icon = ExtResource("icon_film1")
-scene_path = "res://ramon/chickenpen/playable_world.tscn"
-launch_label = "WATCH"
-opens_as_scene = true
-cinematic = "murmuration"
-extra_launch_labels = PackedStringArray()
-extra_launch_scenes = PackedStringArray()
-control_keys = PackedStringArray("ESC")
-control_actions = PackedStringArray("skip to the end")
-question = "Can thousands of 4D bodies move as one, live, inside a playable scene?"
-approach = "Reynolds boids on a GPU compute shader: seven nearest neighbours each, turning inertia, a roost and a hawk, drawn as one multimesh in the 4D renderer's own pass."
-finding = "Turning inertia is what carries a turn across the flock: plain boids reached 5% of 300 birds and faded, 0.05 s of inertia carried it across 61% without fading."
-finding_tier = "Measured"
-benchmark = "5,000 birds 0.38 ms a frame, 0.79 ms after a hawk · RTX 5080, 1280x720, 1 Oct"
-
-[sub_resource type="Resource" id="Resource_film2"]
-script = ExtResource("1_i2ljj")
-title = "Mountain Range"
-blurb = "Placeholder: the next cinematic, over the ring of mountains"
-maturity = "Greybox"
-section = "Cinematic"
-duration = "soon"
-detail = "Not made yet. A slot for the second cinematic."
-icon = ExtResource("icon_film2")
-extra_launch_labels = PackedStringArray()
-extra_launch_scenes = PackedStringArray()
-
 [resource]
 script = ExtResource("10_ajynb")
-hero = SubResource("Resource_penhr")
 entries = Array[ExtResource("1_i2ljj")]([SubResource("Resource_uy7oo"), SubResource("Resource_3f7jf"), SubResource("Resource_snm5f"), SubResource("Resource_d6obk"), SubResource("Resource_fmw2o"), SubResource("Resource_3ffix"), SubResource("Resource_ph57d"), SubResource("Resource_b8wcl"), SubResource("Resource_clab"), SubResource("Resource_0k6x8"), SubResource("Resource_lofty")])
+hero = SubResource("Resource_penhr")
 cinematics = Array[ExtResource("1_i2ljj")]([SubResource("Resource_film1"), SubResource("Resource_film2")])
