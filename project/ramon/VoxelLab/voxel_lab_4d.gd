@@ -13,7 +13,8 @@ extends Node4D
 ## Nothing plays by walking up to it. Past the shelf, the right wall (the block's live numbers); along
 ## the back, the gallery door and the left wall (the lab's introduction); on the left, the column, which
 ## you watch fall. Floating panels beside the block and the column; one soft light on each item.
-## Behind the gallery's far door a blue shimmer takes you to the field.
+## Behind the gallery's far door a blue shimmer takes you to the field; O goes straight there from
+## anywhere in the lab (Ramon, 9 Oct: "a shortcut o in the scene for going directly to the open world").
 ##
 ## THIS NODE: the hall's shape (the carried room plan), the player (the kit's grown-up figure, the
 ## camera behind and above), the HUD (the control strip, the choice, the pop-up, the presentation's
@@ -596,6 +597,8 @@ func _strip() -> Array:
 		out.append(["WASD", "Move"])
 		out.append(["Mouse", "Look"])
 	out.append(["B", "Black / grey"])
+	if active == null:
+		out.append(["O", "The open world"])
 	return out
 
 
@@ -727,6 +730,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		KEY_G:
 			toggle_grid_view()
+			get_viewport().set_input_as_handled()
+		KEY_O:
+			straight_to_field()
 			get_viewport().set_input_as_handled()
 		KEY_RIGHT, KEY_LEFT:
 			if watching != null:
@@ -916,6 +922,18 @@ func _grid_for(s: Node, on: bool) -> void:
 	var sp: Node = ex.get("specimen") if ex != null else null
 	if sp != null:
 		GridView.apply(sp, on)
+
+
+## O: to the open world from wherever you are, with the far door's blue wash.
+func straight_to_field() -> void:
+	if _leaving:
+		return
+	_leaving = true
+	var sh: Node = get_node_or_null("Shimmer")
+	if sh != null and sh.has_method("flash_out"):
+		sh.call("flash_out", self, to_field)
+	else:
+		to_field()
 
 
 ## Out through the gallery's far door to the field (field/voxel_field.tscn): this room is let go, so its
