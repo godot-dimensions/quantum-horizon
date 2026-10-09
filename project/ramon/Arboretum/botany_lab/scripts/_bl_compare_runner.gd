@@ -111,7 +111,7 @@ func _run() -> void:
 	await _frames(30)
 	_shoot("c09_right_wall_page")
 	# The way back: into the near doorway.
-	_go(0.0, 23.2, 180.0)
+	_go(0.0, 23.7, 180.0)
 	var p: Node4D = _room.get("player")
 	p.set("input_enabled", true)
 	await _frames(4)

@@ -813,3 +813,64 @@ until he says to switch.
     - update this handover's status, and memory;
     - add his questions at the end: when to switch the menu to the fork, and whether to retire the
       grove.
+
+### Status (9 Oct, end of the day)
+
+Built in the fork (`botany_lab.tscn`, `botany_lab/`); `arboretum.tscn` and the menu card are untouched.
+
+**How to see it:** open `res://ramon/Arboretum/botany_lab.tscn` and play.
+
+**What it does:**
+- **Corridor:** ceiling 7.5 m (was 6 m), entrance doorway 5 m (was 4.2 m).
+- **Tab:** the dev HUD. The lights' editor lists all five lights, with a map of the hall and SAVE to
+  `botany_lab/botany_lab_lights.cfg`. The artist panel sits beside it and saves to
+  `botany_lab_tuning.cfg`. F1 opens the same.
+- **Walking:** the playable world's walk. Q/E step through W, except where E is taken.
+- **The route:**
+  - a spine down the middle, with exact 45-degree branches to rings 1.2 m off each pedestal;
+  - the oak's ring sits on the spine;
+  - a 45-degree run round the oak to the back door;
+  - everything is blue, the ring you stand at shows cyan, and the route passes PathCreator's own
+    checks.
+- **Floating panels** replace the five booth consoles. Each face shows three numbers; E pages
+  through Method, What it shows, Limits and Measured. The pad's panel plays the showcase.
+- **Slice:** trees never lean. 30 drags on both axes left the trunk at 0.00 degrees. R puts a tree
+  back, and walking away resets it. `max_tilt` is 35 degrees.
+- **01 Voxels:** cells only (THE GRID, THE CROWN, THE COST, THE SLICE, THE WIND). There is no gold
+  skeleton.
+- **02 Smooth voxels:** the skeleton, then the wood smooth order by order (`bl_dc_order_0..3`), then
+  the leaf masses (`bl_dc_wood`, 212k tetrahedra; the leaf masses are about 175k of that). There
+  are no boxes.
+- **03 Lofted:**
+  - the story runs THE SECTIONS, THE SKIN (order by order, `bl_lf_order_0..3`), THE JOINTS, THE
+    SLICE, THE WIND;
+  - there are no leaf balls, and the panel says the station is about the branches.
+- **The oak:** GROWING (the trunk, then each order of branches out of the wood), then the leaves,
+  the slice and the wind. The oak itself is unchanged.
+- **The back door:** a holographic doorway under a black sign, TWO VOXEL WORLDS / BLOCKY AND SMOOTH,
+  SIDE BY SIDE. It leads to `compare/botany_compare.tscn`, and coming back puts you inside the back
+  door.
+- **The second room:**
+  - It builds behind its board in about 7 s.
+  - The left half is blocky: 22k cells of 0.5 m, 240k tetrahedra, built in 133 ms in GDScript, with
+    voxel trees.
+  - The right half is the same hills smooth, from 14,560 edits in the native voxel world (dual
+    contoured, 833k tetrahedra in about 5.4 s), with lofted oaks carrying 74k GPU leaves on the
+    same five spots.
+  - A centre path runs between them, with a blue page on each side wall and a floating panel each.
+  - Frame times on the path: 6.1 to 6.8 ms.
+
+**Checks:**
+- proof: all pass;
+- play-through: 31 of 31, including the panels, Tab, W stepping and the back door's trigger;
+- second room runner: frames and perf;
+- frames: route, panels, tilt and stories, in `smoke_test_output/botany_lab/`.
+
+**Open questions:**
+1. When to switch the menu's Botany Lab card from `arboretum.tscn` to `botany_lab.tscn`. It is your
+   call (the fork rule).
+2. Whether to retire the grove. It still lives in `arboretum.tscn`; the fork has none.
+3. The smooth land is heavy at 833k tetrahedra. Coarser voxels (0.4 m) would roughly halve it, if
+   the frame time needs it.
+4. The wall pages and the panels' words are first drafts. Tell me what to say instead.
+

@@ -55,12 +55,14 @@ const ARRIVE_META := "botany_arrive"
 
 @export_group("Land")
 ## The two displays' middles (x, z) and their size (x, z), metres.
-@export var left_at: Vector2 = Vector2(-9.0, -2.0)
-@export var right_at: Vector2 = Vector2(9.0, -2.0)
-@export var display_size: Vector2 = Vector2(14.0, 26.0)
+@export var left_at: Vector2 = Vector2(-9.5, -2.0)
+@export var right_at: Vector2 = Vector2(9.5, -2.0)
+## (First run, 9 Oct: 14 m wide with a 4 m gap, and facing one side from the path put the camera over
+## the other side's land; now a 6 m gap, the hills a little lower, the camera a metre closer.)
+@export var display_size: Vector2 = Vector2(13.0, 26.0)
 ## The display's slab (its top, where the land starts), and the land's heights over it.
 @export var slab_height: float = 0.35
-@export var height_range: Vector2 = Vector2(0.6, 2.8)
+@export var height_range: Vector2 = Vector2(0.5, 2.4)
 ## How deep in W the land is (metres either side of the slice).
 @export var w_half: float = 1.25
 ## The blocky side's cells and the smooth side's voxels (m).
@@ -72,7 +74,7 @@ const ARRIVE_META := "botany_arrive"
 
 @export_group("Visit")
 @export var start_at: Vector2 = Vector2(0.0, 21.0)
-@export var camera_distance: float = 5.5
+@export var camera_distance: float = 4.5
 @export var camera_height: float = 2.6
 @export var camera_pitch_degrees: float = -10.0
 
@@ -582,8 +584,8 @@ func _open_board() -> void:
 	player.set("input_enabled", false)
 	_board = LoadBoard.open(self)
 	_board.set("kicker", "QUANTUM HORIZON  ·  BOTANY LAB")
-	_board.set("title", "TWO VOXEL WORLDS")
-	_board.set("subtitle", "Blocky and smooth, side by side")
+	_board.set("title", "TWO WORLDS")
+	_board.set("subtitle", "Blocky and smooth voxels, side by side")
 	_board.set("coming", ["The same land built two ways: boxes on the left, one smooth surface on the right",
 		"Voxel trees on the blocks, lofted oaks on the hills, on the same spots",
 		"Step through W with Q and E: the hills change on both sides"])

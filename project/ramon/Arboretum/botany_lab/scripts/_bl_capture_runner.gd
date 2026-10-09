@@ -97,6 +97,8 @@ func _run() -> void:
 				await _stories()
 			"door":
 				await _door()
+			"perf":
+				await _perf()
 	print("CAPTURE done")
 	quit(0)
 
@@ -181,6 +183,10 @@ func _stories() -> void:
 		# The room's own story playing (it starts as you arrive) would fight these frames: the room is
 		# paused while each part is held at 60% of its length, as the guided tour holds it.
 		_room.set_process(false)
+		# Its own story started as the runner walked up (the room plays it on arrival): end it, or it
+		# drives the tree on its own timeline over these frames.
+		if int(st.get("seq_index")) >= 0 or bool(st.get("armed")):
+			st.call("_finish")
 		st.call("begin_cinematic")
 		for k in seqs.size():
 			var length: float = float(seqs[k]["length"])
@@ -190,6 +196,27 @@ func _stories() -> void:
 			_shoot("stories", "s%02d_%d_%s" % [i + 1, k + 1, String(seqs[k]["key"])])
 		st.call("end_cinematic")
 		_room.set_process(true)
+
+
+## What the hall costs (vsync off; frame times between process_frame signals, as the Arboretum's
+## perf runner measures): the views of the Arboretum's baseline (follow_up/arboretum.md section 7) that
+## still exist here.
+func _perf() -> void:
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	Engine.max_fps = 0
+	for v in [["door", 0.0, 14.0, 0.0], ["at_01", -3.7, 8.0, 90.0], ["at_02", 3.5, 1.0, -90.0], ["at_03", -3.5, -6.0, 90.0], ["at_oak", 0.0, -7.6, 0.0], ["back_door", 0.0, -19.0, 0.0]]:
+		_go(float(v[1]), float(v[2]), float(v[3]), -10.0)
+		await _frames(40)
+		var times: Array = []
+		var last: int = Time.get_ticks_usec()
+		for i in 150:
+			await process_frame
+			var now: int = Time.get_ticks_usec()
+			times.append((now - last) / 1000.0)
+			last = now
+		times.sort()
+		print("CAPTURE perf %-10s frame median %.2f ms, 95%% %.2f ms" % [v[0], times[75], times[142]])
+	Engine.max_fps = 60
 
 
 ## The back door's sign and its doorway.

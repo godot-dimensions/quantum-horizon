@@ -118,16 +118,16 @@ fixture_at = 11.94
 [node name="Targets" type="Node4D" parent="Paths"]
 
 [node name="Blocky" type="Node4D" parent="Paths/Targets"]
-position = Vector4(-9, 0, -2, 0)
+position = Vector4(-9.5, 0, -2, 0)
 script = ExtResource("8_target")
 label = "The blocky land"
-size = Vector3(14.4, 3, 26.4)
+size = Vector3(13.4, 3, 26.4)
 
 [node name="Smooth" type="Node4D" parent="Paths/Targets"]
-position = Vector4(9, 0, -2, 0)
+position = Vector4(9.5, 0, -2, 0)
 script = ExtResource("8_target")
 label = "The smooth land"
-size = Vector3(14.4, 3, 26.4)
+size = Vector3(13.4, 3, 26.4)
 
 [node name="Center" type="Node4D" parent="Paths"]
 script = ExtResource("9_net")
