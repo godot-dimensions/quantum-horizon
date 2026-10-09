@@ -6,7 +6,7 @@ extends Node4D
 ## landing on the post tops, the rails and the pole, looking round, calling, flying off; and on a
 ## plinth, one gull held in a pose to look at the wings.
 ##
-## KEYS  1 glide  2 flap  3 flare  4 folded  (the plinth gull)
+## KEYS  1 glide  2 flap  3 flare  4 folded  5 stretch  (the plinth gull)
 ##       F follow a gull (again: the next one; Esc: back)   T slow motion   - / + fewer / more gulls
 ##       right drag: turn round   wheel: nearer / further   H this help
 ##
@@ -24,7 +24,7 @@ const RAIL_H := 1.0
 const POLE_AT := Vector4(4.0, 0.0, -5.0, 0.0)
 const POLE_H := 4.0
 const PLINTH_AT := Vector4(-4.5, 0.0, -4.0, 0.0)
-const POSES := ["glide", "flap", "flare", "folded"]
+const POSES := ["glide", "flap", "flare", "folded", "stretch"]
 
 var harbour: Node4D
 var model: Node4D
@@ -148,7 +148,7 @@ func _build_hud() -> void:
 	var box := VBoxContainer.new()
 	panel.add_child(box)
 	_help = Label.new()
-	_help.text = "GULL TEST BED\n1 glide   2 flap   3 flare   4 folded   (the plinth gull)\nF follow a gull, again for the next, Esc back\nT slow motion   - / + fewer or more gulls\nright drag turns round, wheel nearer or further   H hide"
+	_help.text = "GULL TEST BED\n1 glide   2 flap   3 flare   4 folded   5 stretch   (the plinth gull)\nF follow a gull, again for the next, Esc back\nT slow motion   - / + fewer or more gulls\nright drag turns round, wheel nearer or further   H hide"
 	box.add_child(_help)
 	_status = Label.new()
 	_status.modulate = Color(0.55, 0.85, 1.0)
@@ -158,7 +158,7 @@ func _build_hud() -> void:
 func _unhandled_input(e: InputEvent) -> void:
 	if e is InputEventKey and e.pressed and not e.echo:
 		match e.keycode:
-			KEY_1, KEY_2, KEY_3, KEY_4:
+			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5:
 				model.set("forced", POSES[e.keycode - KEY_1])
 			KEY_F:
 				var gulls: Array = harbour.get("gulls")

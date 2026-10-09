@@ -121,6 +121,30 @@ var doors_enabled: bool = true
 var _leaving: float = -1.0
 var _fade: ColorRect
 
+## The HUD's HARBOUR section (seascape_hud.gd): how many gulls, how many sardines, how often the
+## plesiosaur comes by (seconds between its visits, on average). Each passes straight to its node.
+var harbour_gulls: int = 12:
+	set(v):
+		harbour_gulls = clampi(v, 0, 30)
+		var h: Node = get_node_or_null("Harbour")
+		if h != null:
+			h.set("count", harbour_gulls)
+var harbour_fish: int = 3000:
+	set(v):
+		harbour_fish = clampi(v, 0, 8000)
+		# A new size respawns the school: once the slider has stopped (coalesced, as a drag sends a
+		# value every step).
+		_fish_in = 0.3
+var _fish_in: float = -1.0
+var plesiosaur_visit_every: int = 55:
+	set(v):
+		plesiosaur_visit_every = clampi(v, 10, 300)
+		var pilot: Node = get_node_or_null("SeaLife/Plesiosaur/Pilot")
+		if pilot != null:
+			pilot.set(&"visit_every", Vector2(plesiosaur_visit_every * 0.75, plesiosaur_visit_every * 1.25))
+## The harbour's sound bed (audio/harbour_lap.wav), looped.
+@export_range(-60.0, 6.0, 0.5, "suffix:dB") var harbour_sound_db: float = -16.0
+
 
 # -- where things are ---------------------------------------------------------------------------------------
 
@@ -627,12 +651,32 @@ func _build_gulls() -> void:
 	harbour.set("wind", Vector4(1.0, 0.0, 0.25, 0.0))
 	add_child(harbour)
 	harbour.set("walker", player)
+	harbour.set("school", get_node_or_null("School"))
 	_gull_perches()
-	harbour.set("count", 12)
+	harbour.set("count", harbour_gulls)
+	_build_sound()
 	if player != null:
 		var cams: Array = player.find_children("*", "Camera4D", true, false)
 		if not cams.is_empty():
 			harbour.set("listener_4d", cams[0])
+
+
+## The harbour's bed: small waves on the piles and the open sea's wash, looped (the import's loop
+## settings do nothing in this build: pen_sfx_4d.gd), under the gulls' calls.
+func _build_sound() -> void:
+	var path := "res://ramon/WaterLab/audio/harbour_lap.wav"
+	if not ResourceLoader.exists(path):
+		return
+	var s: AudioStreamWAV = (load(path) as AudioStreamWAV).duplicate()
+	s.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	s.loop_begin = 0
+	s.loop_end = int(s.get_length() * float(s.mix_rate))
+	var p := AudioStreamPlayer.new()
+	p.name = "HarbourSound"
+	p.stream = s
+	p.volume_db = harbour_sound_db
+	add_child(p)
+	p.play(randf() * s.get_length())
 
 
 ## Where the gulls may sit, from the piers as built now: both piers' rail tops, pier 2's end, the
@@ -799,6 +843,12 @@ static func _facing(dir: Vector2) -> Projection:
 
 func _process(delta: float) -> void:
 	_doors(delta)
+	if _fish_in >= 0.0:
+		_fish_in -= delta
+		if _fish_in < 0.0:
+			var school: Node = get_node_or_null("School")
+			if school != null and int(school.get("count")) != harbour_fish:
+				school.set("count", harbour_fish)
 	if _rebuild_in >= 0.0:
 		_rebuild_in -= delta
 		if _rebuild_in < 0.0:

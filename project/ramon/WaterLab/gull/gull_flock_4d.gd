@@ -13,6 +13,10 @@ extends Node4D
 ## HOW MANY: a harbour by day has a handful in the air and a row on the rails; 12 by default, the
 ## seascape HUD's HARBOUR slider sets it (0 to 30). Most start sitting.
 ##
+## THE SCHOOL: when the sardines come near the surface (`school`, the seascape's fish_school_4d.gd,
+## its middle above `lure_depth`), the gulls in the air gather low over them, as gulls do over a bait
+## ball.
+##
 ## PEOPLE: a sitting gull lets you come only so close (its flight distance, about 3 m here, a little
 ## more or less for each bird), then gives the alarm and flies; and a gull coming in to land picks a
 ## perch away from you. So walking a pier lifts the gulls off its rails ahead of you, and they settle
@@ -50,6 +54,13 @@ var walker: Node4D = null
 @export var flush_distance: float = 3.2
 ## A gull coming in picks a perch at least this far from the walker.
 @export var shy_distance: float = 6.0
+## The sea's school (fish_school_4d.gd); `lure_on` while its middle is above `lure_depth`.
+var school: Node4D = null
+## The school rides about 2 m down; it comes over this when it rises (the plesiosaur under it).
+@export var lure_depth: float = -1.6
+var lure := Vector4.ZERO
+var lure_on: bool = false
+var _lure_check: float = 0.0
 @export_group("Sound")
 @export var sound_on: bool = true
 ## A call's level at a few metres.
@@ -148,7 +159,16 @@ static func _flat(v: Vector4) -> float:
 
 
 ## Sitting gulls the walker comes too close to take off (each its own distance).
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_lure_check -= delta
+	if _lure_check <= 0.0:
+		_lure_check = 0.5
+		if school != null and is_instance_valid(school):
+			var m: Vector4 = global_basis.inverse() * ((school.call("middle") as Vector4) - global_position)
+			lure_on = m.y > lure_depth
+			lure = m
+		else:
+			lure_on = false
 	if walker == null:
 		return
 	var at: Vector4 = _walker_at()

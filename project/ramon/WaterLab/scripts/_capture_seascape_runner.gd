@@ -128,6 +128,16 @@ func _open() -> void:
 			_step(20, _nop, "g09_flushed_0_5s")
 			_step(40, _nop, "g10_flushed_1_2s")
 			_step(1, _camera_distance.bind(10.0), "")
+			_step(1, _lure_report, "")
+			# The HARBOUR fish slider: a smaller school, respawned once the value settles.
+			_step(1, _set_room.bind("harbour_fish", 800), "")
+			_step(60, _nop, "")
+			_step(1, _go(13.0, -1.6, 180.0), "")
+			_step(5, _pitch(-55.0), "")
+			_step(60, _fish_report, "g11_school_800")
+			_step(1, _set_room.bind("harbour_fish", 3000), "")
+			_step(60, _nop, "g12_school_3000")
+			_step(1, _fish_report, "")
 		"school":
 			# The sardines off pier 1: from its edge looking down at them, then the plesiosaur sent
 			# through them.
@@ -211,6 +221,23 @@ func _gulls(n: int) -> void:
 	if h != null:
 		h.set("count", n)
 	print("WATER gulls set to %d (%d perches)" % [n, (h.get("perches") as Array).size() if h != null else -1])
+
+
+func _set_room(nm: String, v: Variant) -> void:
+	_room.set(nm, v)
+
+
+func _fish_report() -> void:
+	var s: Node = _room.get_node_or_null("School")
+	var f: Node = s.get("flock") if s != null else null
+	print("WATER school: count %d, flock count %d, on gpu %s" % [int(s.get("count")), int(f.get("count")), str(f.call("on_gpu"))])
+
+
+func _lure_report() -> void:
+	var h: Node = _room.get_node_or_null("Harbour")
+	var s: Node = _room.get_node_or_null("School")
+	print("WATER school middle %s, gulls lured %s; HARBOUR gulls %d fish %d visits %d" % [str(s.call("middle")) if s != null else "-", str(h.get("lure_on")) if h != null else "-",
+		int(_room.get("harbour_gulls")), int(_room.get("harbour_fish")), int(_room.get("plesiosaur_visit_every"))])
 
 
 func _camera_distance(d: float) -> void:

@@ -138,6 +138,7 @@ func _ready() -> void:
 	else:
 		go_to(Vector4(start_at.x, 0.05, start_at.y, 0.0), 0.0)
 	_build_hud()
+	_build_hum()
 	if showcase != null:
 		showcase.call("set_player", player)
 
@@ -264,6 +265,7 @@ func _process(delta: float) -> void:
 	if tank != null and tank.has_method("set_viewer"):
 		tank.call("set_viewer", p + Vector4(0.0, 1.5, 0.0, 0.0))
 	_turning(p)
+	_hum_level(p, delta)
 	_feeding(p, delta)
 	_find_active(p)
 	if _door != null:
@@ -273,6 +275,37 @@ func _process(delta: float) -> void:
 			player.set("input_enabled", false)
 	hud.set("strip", _strip())
 	_route_states(p)
+
+
+var _hum: AudioStreamPlayer
+
+
+## The tank's sound: the filter pump's hum, the air stone's bubbles, a trickle (audio/tank_hum.wav,
+## looped in code: the import's loop settings do nothing in this build). Louder near the glass.
+func _build_hum() -> void:
+	var path := "res://ramon/WaterLab/audio/tank_hum.wav"
+	if not ResourceLoader.exists(path):
+		return
+	var s: AudioStreamWAV = (load(path) as AudioStreamWAV).duplicate()
+	s.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	s.loop_begin = 0
+	s.loop_end = int(s.get_length() * float(s.mix_rate))
+	_hum = AudioStreamPlayer.new()
+	_hum.name = "TankHum"
+	_hum.stream = s
+	_hum.volume_db = -40.0
+	add_child(_hum)
+	_hum.play()
+
+
+## -14 dB at the glass, falling off with distance to -36 dB across the hall.
+func _hum_level(p: Vector4, delta: float) -> void:
+	if _hum == null or tank == null:
+		return
+	var front := Vector2(clampf(p.x, tank.global_position.x - 9.0, tank.global_position.x + 9.0), tank.global_position.z + 2.0)
+	var d: float = Vector2(p.x, p.z).distance_to(front)
+	var want: float = lerpf(-14.0, -36.0, clampf((d - 1.0) / 20.0, 0.0, 1.0))
+	_hum.volume_db = lerpf(_hum.volume_db, want, minf(delta * 3.0, 1.0))
 
 
 ## In the circle the tank's gizmo shows, and a right drag turns what is IN the tank through W (not your

@@ -204,9 +204,8 @@ func _targets() -> Array:
 		out.append(["WATER", water, "water"])
 	out.append(["PIERS", room, "piers"])
 	out.append(["CAMERA", room, "camera"])
-	var harbour: Node = room.get_node_or_null("Harbour")
-	if harbour != null:
-		out.append(["HARBOUR", harbour, "harbour"])
+	if room.get("harbour_gulls") != null:
+		out.append(["HARBOUR", room, "harbour"])
 	return out
 
 
@@ -219,8 +218,12 @@ func _props(obj: Object, kind: String) -> Array:
 				"hint_string": "%s,%s,0.1" % [str(row[1]), str(row[2])]})
 		return out
 	if kind == "harbour":
-		# The gulls (Ramon, 9 Oct: "seagulls at harbour frequency ... a slider for how many").
-		return [{"name": "count", "type": TYPE_INT, "hint": PROPERTY_HINT_RANGE, "hint_string": "0,30,1"}]
+		# The gulls (Ramon, 9 Oct: "seagulls at harbour frequency ... a slider for how many"), the
+		# sardines, the plesiosaur's visits: the scene root's settings, whole numbers (the INT rows set
+		# them as they are; a float row on the root would be taken for a pier size).
+		return [{"name": "harbour_gulls", "type": TYPE_INT, "hint": PROPERTY_HINT_RANGE, "hint_string": "0,30,1"},
+			{"name": "harbour_fish", "type": TYPE_INT, "hint": PROPERTY_HINT_RANGE, "hint_string": "0,6000,100"},
+			{"name": "plesiosaur_visit_every", "type": TYPE_INT, "hint": PROPERTY_HINT_RANGE, "hint_string": "10,300,5"}]
 	if kind == "piers":
 		for row in PIERS:
 			out.append({"name": String(row[0]), "type": TYPE_FLOAT, "hint": PROPERTY_HINT_RANGE,

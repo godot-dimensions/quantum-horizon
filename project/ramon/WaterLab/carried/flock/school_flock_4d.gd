@@ -1522,8 +1522,11 @@ func _gpu_read_vec4(key: String) -> PackedVector4Array:
 func _gpu_free() -> void:
 	if _rd == null:
 		return
+	# WATER LAB: a respawn reallocates the multimesh first, and the device frees the uniform sets
+	# that read its old buffer along with it, so a set may be gone already (the HUD's fish slider
+	# respawns the school; the pen's flock never respawns on the GPU).
 	for s in _gpu_sets:
-		if s.is_valid():
+		if s.is_valid() and _rd.uniform_set_is_valid(s):
 			_rd.free_rid(s)
 	_gpu_sets.clear()
 	for key in _gpu_buffers:

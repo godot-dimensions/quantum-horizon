@@ -25,7 +25,20 @@ const Flock := preload("res://ramon/WaterLab/carried/flock/school_flock_4d.gd")
 const SHADER := preload("res://ramon/WaterLab/seascape/school_fish.gdshader")
 const SCALE := 0.2
 
-@export var count: int = 3000
+## Setting it respawns the school at that size (the HUD's HARBOUR section).
+@export var count: int = 3000:
+	set(v):
+		count = clampi(v, 0, 8000)
+		if flock != null:
+			flock.set("count", count)
+			flock.call("respawn")
+## The school's middle in the world (the gulls gather over it when it is near the surface).
+func middle() -> Vector4:
+	if flock == null:
+		return global_position
+	return flock.global_position + flock.global_basis * (flock.get("_middle") as Vector4)
+
+
 ## The plesiosaur (its body node), whose head is the school's hunter.
 var hunter: Node4D = null
 var flock: Node4D

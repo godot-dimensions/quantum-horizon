@@ -68,6 +68,12 @@ var _target := Vector4.ZERO
 var _final: bool = false
 ## How long it sits this time (picked on landing).
 var _stay: float = 15.0
+## On the perch: a wing stretch now and then (both wings up over the back, 1.4 s), and a shuffle (a
+## new way to face, a little off the wind).
+var _stretch: float = 0.0
+var _stretch_t: float = 8.0
+var _face_off: float = 0.0
+var _shuffle_t: float = 6.0
 var _look: float = 0.0
 var _look_want: float = 0.0
 var _look_t: float = 2.0
@@ -197,6 +203,10 @@ static func pose(nm: String, k: float = 0.0) -> Dictionary:
 		"flare":
 			return {"sweep": 0.38, "elev": 0.78, "twist": 0.55, "fold": 0.12, "droop": 0.22, "arm": 1.0, "hand": 1.0, "chord": 1.0,
 				"drop": 0.0, "pitch": 0.62, "tail": 0.4, "fan": 1.6, "legs": 1.0}
+		"stretch":
+			# Perched, both wings raised high over the back for a moment.
+			return {"sweep": 0.05, "elev": 1.2, "twist": 0.25, "fold": -0.18, "droop": 0.18, "arm": 1.0, "hand": 0.95, "chord": 1.0,
+				"drop": 0.0, "pitch": 0.12, "tail": 0.05, "fan": 1.25, "legs": 1.0}
 		"flap":
 			# k: where in the beat, 0 to 1; the downstroke is the first 45%.
 			var down: bool = k < 0.45
@@ -281,6 +291,12 @@ func _live(delta: float) -> void:
 
 
 func _roam_point() -> Vector4:
+	# Over the school, low, when it is near the surface (the harbour says).
+	if harbour != null and bool(harbour.get("lure_on")) and _rng.randf() < 0.55:
+		var l: Vector4 = harbour.get("lure")
+		var a: float = _rng.randf() * TAU
+		var rr: float = _rng.randf_range(1.5, 6.0)
+		return Vector4(l.x + cos(a) * rr, _rng.randf_range(2.5, 6.0), l.z + sin(a) * rr, 0.0)
 	_orbit += _rng.randf_range(0.6, 1.4)
 	var r: float = roam_radius * _rng.randf_range(0.4, 1.0)
 	return home + Vector4(cos(_orbit) * r, _rng.randf_range(altitude.x, altitude.y) - home.y, sin(_orbit) * r, 0.0)
@@ -361,11 +377,13 @@ func _do_flare(dt: float) -> void:
 		called.emit("land")
 
 
-## Which way it faces on its perch: the perch's own way if it has one, else into the wind.
+## Which way it faces on its perch: the perch's own way if it has one, else into the wind; a little
+## off it after a shuffle.
 func _perch_face() -> Vector4:
 	var f: Vector4 = perch.get("face", _into_wind())
 	f = Vector4(f.x, 0.0, f.z, 0.0)
-	return f.normalized() if f.length() > 0.05 else _into_wind()
+	f = f.normalized() if f.length() > 0.05 else _into_wind()
+	return Vector4(f.x * cos(_face_off) + f.z * sin(_face_off), 0.0, f.z * cos(_face_off) - f.x * sin(_face_off), 0.0)
 
 
 ## Turns the heading toward `dir` (level) at `rate` rad/s.
@@ -386,13 +404,21 @@ func _perched(dt: float) -> void:
 	_legs = 1.0
 	speed = 0.0
 	_flap = 0.0
+	_shuffle_t -= dt
+	if _shuffle_t <= 0.0:
+		_shuffle_t = _rng.randf_range(6.0, 14.0)
+		_face_off = _rng.randf_range(-0.6, 0.6)
+	_stretch_t -= dt
+	if _stretch_t <= 0.0 and _stretch <= 0.0 and _call_pose <= 0.0 and _state_t > 3.0:
+		_stretch_t = _rng.randf_range(15.0, 40.0)
+		_stretch = 0.001
 	_call_t -= dt
 	if _call_t <= 0.0:
 		_call_t = _rng.randf_range(6.0, 16.0)
 		if _rng.randf() < 0.55 and _call_pose <= 0.0:
 			_call_pose = 0.001
 			called.emit("long" if _rng.randf() < 0.6 else "laugh")
-	if _state_t > _stay and _call_pose <= 0.0:
+	if _state_t > _stay and _call_pose <= 0.0 and _stretch <= 0.0:
 		state = "takeoff"
 		_state_t = 0.0
 		if harbour != null:
@@ -480,6 +506,12 @@ func _pose_now(dt: float) -> void:
 		var back: Dictionary = blend(fl, pose("flap", _flap_phase), 0.25)
 		flying = blend(flying, back, _flare)
 	var q: Dictionary = blend(flying, pose("folded"), _fold)
+	if _stretch > 0.0:
+		_stretch += dt
+		if _stretch > 1.4 or state != "perched":
+			_stretch = 0.0
+		else:
+			q = blend(q, pose("stretch"), sin(PI * _stretch / 1.4))
 	q["legs"] = maxf(float(q["legs"]), _legs)
 	apply_pose(q)
 

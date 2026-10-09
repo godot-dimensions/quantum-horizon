@@ -33,6 +33,7 @@ func setup() -> void:
 		["flap", 0.0, ["front", "tq"]], ["flap", 0.22, ["front", "tq"]], ["flap", 0.45, ["front", "tq"]], ["flap", 0.72, ["front", "tq", "side"]],
 		["flare", 0.0, ["side", "tq", "front"]],
 		["folded", 0.0, ["side", "above", "tq", "back"]],
+		["stretch", 0.0, ["side", "tq"]],
 	]
 	var n: int = 0
 	for row in plan:

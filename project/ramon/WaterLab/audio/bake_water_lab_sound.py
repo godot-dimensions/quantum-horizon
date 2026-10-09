@@ -16,6 +16,15 @@ harmonics up to 5 or 6 kHz and most of the energy round 2 to 3 kHz (the nasal ri
   gull_kek.wav     the alarm, "ga-ga-ga" at take-off: three short sharp notes
   gull_land.wav    no voice: the rustle of a landing's back-flaps and the feet meeting the rail
 
+And two loops, periodic by construction (the pen's bake_flock_sound.py way: noise shaped in the
+frequency domain is circular, and every event is placed round the loop, wrapping at its end), so they
+repeat without a seam:
+
+  harbour_lap.wav  the seascape's bed: small waves slapping the piles at uneven intervals, the
+                   wash of the open sea under it, 16 s
+  tank_hum.wav     the tank room's: the filter pump's hum, the air stone's bubbles popping at the
+                   surface, a trickle of water, 12 s
+
 Each note: a sum of harmonics along the pitch contour, shaped by a nasal formant, roughened by a
 fast amplitude flutter (the rasp) and a little breath noise through the same formant. Mono, 44.1
 kHz, each file peak-normalised to -3 dBFS; the harbour sets the level by distance.
@@ -131,6 +140,71 @@ def land():
     return out + knock * 0.8 + scrape
 
 
+def circular_noise(seconds, shape):
+    """Periodic noise of [seconds] whose magnitude spectrum is shape(frequencies), unit RMS."""
+    n = int(RATE * seconds)
+    f = np.maximum(np.fft.rfftfreq(n, 1.0 / RATE), 1.0)
+    mag = shape(f)
+    mag[0] = 0.0
+    out = np.fft.irfft(mag * np.exp(1j * RNG.uniform(0.0, 2.0 * np.pi, f.size)), n)
+    return out / np.sqrt(np.mean(out ** 2))
+
+
+def place(loop, event, at):
+    """Adds [event] into [loop] starting at sample [at], wrapping round the loop's end."""
+    n = loop.size
+    idx = (np.arange(event.size) + at) % n
+    np.add.at(loop, idx, event)
+
+
+def harbour_lap():
+    seconds = 16.0
+    n = int(RATE * seconds)
+    t = np.arange(n) / RATE
+    # The open sea's wash: low noise breathing with the swell (whole cycles over the loop).
+    wash = circular_noise(seconds, lambda f: (f / 60.0) ** 1 / (1.0 + (f / 60.0) ** 1) / (1.0 + (f / 700.0) ** 2.5))
+    swell = 0.6 + 0.4 * np.sin(2.0 * np.pi * 2.0 * t / seconds) * np.sin(2.0 * np.pi * 3.0 * t / seconds + 1.0)
+    out = wash * swell * 0.5
+    # The slaps on the piles: a short burst of mid noise and a hollow knock, every 0.5 to 1.6 s.
+    at = 0.0
+    while at < seconds:
+        m = int(RATE * RNG.uniform(0.25, 0.5))
+        tt = np.arange(m) / RATE
+        burst = RNG.standard_normal(m)
+        spec = np.fft.rfft(burst)
+        fr = np.maximum(np.fft.rfftfreq(m, 1.0 / RATE), 1.0)
+        centre = RNG.uniform(350.0, 900.0)
+        burst = np.fft.irfft(spec * np.exp(-((np.log(fr / centre)) ** 2) / 0.6), m)
+        burst /= max(np.sqrt(np.mean(burst ** 2)), 1e-9)
+        env = (1.0 - np.exp(-tt / 0.012)) * np.exp(-tt / RNG.uniform(0.06, 0.14))
+        knock = np.sin(2.0 * np.pi * RNG.uniform(90.0, 150.0) * tt) * np.exp(-tt / 0.05)
+        place(out, (burst * env + 0.6 * knock * env) * RNG.uniform(0.5, 1.2), int(at * RATE))
+        at += RNG.uniform(0.5, 1.6)
+    return out
+
+
+def tank_hum():
+    seconds = 12.0
+    n = int(RATE * seconds)
+    t = np.arange(n) / RATE
+    # The pump: 100 Hz (mains-driven) and its harmonics, steady, soft.
+    hum = sum(a * np.sin(2.0 * np.pi * f * t) for f, a in [(100.0, 1.0), (200.0, 0.45), (300.0, 0.18), (50.0, 0.3)])
+    hum = hum / np.sqrt(np.mean(hum ** 2)) * 0.35
+    # A trickle: bright noise, quiet.
+    trickle = circular_noise(seconds, lambda f: np.exp(-((np.log(f / 2600.0)) ** 2) / 0.5)) * 0.12
+    out = hum + trickle
+    # The bubbles: each a little rising ping as it pops at the surface, about eight a second.
+    at = 0.0
+    while at < seconds:
+        m = int(RATE * 0.05)
+        tt = np.arange(m) / RATE
+        f0 = RNG.uniform(500.0, 1600.0)
+        ping = np.sin(2.0 * np.pi * np.cumsum(f0 * (1.0 + 2.5 * tt / 0.05)) / RATE) * np.exp(-tt / 0.012)
+        place(out, ping * RNG.uniform(0.15, 0.45), int(at * RATE))
+        at += RNG.exponential(0.12)
+    return out
+
+
 def write(name, data):
     data = data / np.max(np.abs(data)) * (10.0 ** (-3.0 / 20.0))
     pcm = (np.clip(data, -1.0, 1.0) * 32767.0).astype(np.int16)
@@ -149,3 +223,5 @@ if __name__ == "__main__":
     write("gull_laugh", laugh())
     write("gull_kek", kek())
     write("gull_land", land())
+    write("harbour_lap", harbour_lap())
+    write("tank_hum", tank_hum())
