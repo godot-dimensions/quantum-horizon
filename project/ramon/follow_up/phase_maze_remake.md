@@ -68,7 +68,7 @@ Ideas not built (round 2 went to the journey):
 | V | First or third person. |
 | C | Chase or over-the-shoulder camera. |
 | B | Dark or bright, as in the Creation Lab. Remembered. |
-| Tab (or F1) | The tuning panel: cameras, turns, step speed, ghosts, renderer, light, spot. SAVE. |
+| Tab (or F1) | The tuning panel. **Numbers:** cameras, turns, step speed, ghosts, renderer, light, spot. **Colours:** every colour in the scene (the maze's surfaces and posts, the colour code, the lobby and halls, the console, the sky and light in each mood, the walker), live. SAVE keeps both; RESET THIS PAGE goes back. |
 | Backspace | Restart the level. |
 | 1 to 6, Enter | Levels, at any time. |
 | L | Back to the lobby. |
@@ -139,6 +139,28 @@ Last results (9 Oct):
 - bot PASS, all six at par;
 - features PASS;
 - worst median frame 4.35 ms (the Dreamer's hall), the mazes 1.0 to 2.3 ms.
+
+## 9 Oct afternoon: the colours page and the corners
+
+- **Tab, Colours** (Ramon: "allow me to change all the colors used in the scene? and save"). One picker
+  per colour, applied as you drag, saved with the numbers in `user://phase_maze_remake_tuning.cfg`.
+  - **Surfaces** are edited by their main colour; their grid lines and their dark-mood twin follow in
+    proportion (`maze_style.gd` `swatch_values`).
+  - **Glows** are made through `Style.glow_material()` and registered, so a new colour reaches what
+    is already built.
+  - **The walker** is painted in place, part by part, because rebuilding him would leave the gait
+    holding his old limbs.
+  - Checked by `scripts/_capture_colours_runner.gd`, which sets your settings file aside and puts it
+    back.
+- **The corners** (Ramon: "the corners of the wall still clip in to each other"). A wall used to reach
+  half its thickness past each edge, so where two met their faces lay in one plane and flickered,
+  worst where a blue wall met a white one.
+  - Every wall now stops short of its edges.
+  - A slim post fills each edge where walls meet: along x, z or w, as tall as the tallest wall it
+    holds, capped and colliding.
+  - Walls touch nothing now. The posts are all one material and overlap only each other, so nothing
+    shows.
+  - Their colour is "Corner posts" on the Colours page.
 
 ## Traps met
 

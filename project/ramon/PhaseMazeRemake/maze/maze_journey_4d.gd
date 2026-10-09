@@ -66,7 +66,7 @@ static func overlook(parent: Node4D, lv) -> Dictionary:
 	ring.ring("lift", Vector4(0.0, 0.02, 0.0, 0.0), 1.25, 0.16, 0.04, all_w, 48)
 	var rm: MeshInstance4D = ring.instance("lift")
 	rm.name = "LiftRing"
-	rm.material_override = LabMaterials.glow(Style.glow("start"), 1.2)
+	rm.material_override = Style.glow_material("start", 1.2)
 	rm.set("allow_projection", false)
 	lift.add_child(rm)
 	# The rails stay up: a frame in the sky over the start once the lift has gone down.
@@ -118,7 +118,7 @@ static func hall(parent: Node4D) -> Dictionary:
 	glow.ring("ring", Vector4(0, 0.03, 0, 0), 12.0, 0.25, 0.04, HALL_W - 2.0, 96, 0.6)
 	glow.ring("ring", Vector4(0, 0.03, 0, 0), 16.0, 0.12, 0.04, HALL_W - 2.0, 96, 0.5)
 	var gm: MeshInstance4D = glow.instance("ring")
-	gm.material_override = LabMaterials.glow(Style.glow("w"), 1.1)
+	gm.material_override = Style.glow_material("w", 1.1)
 	gm.set("allow_projection", false)
 	body.add_child(gm)
 	return {"centre": HALL_AT, "spawn": HALL_AT + Vector4(0.0, 0.1, 8.0, 0.0),

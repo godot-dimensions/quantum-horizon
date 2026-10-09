@@ -12,6 +12,7 @@ extends RefCounted
 ## NO class_name (engine_gotchas.md): preload it.
 
 const LabGrid := preload("res://ramon/PhaseMazeRemake/carried/LabKit/lab_grid.gd")
+const GlowShader := preload("res://ramon/PhaseMazeRemake/carried/LabKit/shaders/lab_glow.gdshader")
 
 ## [surface, line, subline, grid strength] per swatch, sRGB.
 ##
@@ -35,6 +36,10 @@ const SWATCHES := {
 	"maze_floor": [Color(0.62, 0.63, 0.64), Color(0.50, 0.51, 0.53), Color(0.58, 0.59, 0.60), 0.55],
 	# Roofs over the indoor stretches: the kit's ceiling.
 	"maze_roof": [Color(0.80, 0.81, 0.83), Color(0.70, 0.71, 0.73), Color(0.76, 0.77, 0.79), 0.3],
+	# The corner posts where walls meet (Ramon, 9 Oct: "the corners of the wall still clip in to each
+	# other"): walls stop short of every corner and a post fills it, one material, a frame like the kit's
+	# edge lines.
+	"maze_post": [Color(0.52, 0.53, 0.56), Color(0.44, 0.45, 0.48), Color(0.49, 0.50, 0.53), 0.4],
 	# Wall caps: the kit's dark edge line along every wall top.
 	"maze_cap": [Color(0.30, 0.32, 0.36), Color(0.30, 0.32, 0.36), Color(0.30, 0.32, 0.36), 0.0],
 	# The console's plate and glass (the kit's bezel and screen).
@@ -72,6 +77,19 @@ const GLOW := {
 
 static var _saved: Dictionary = {}
 
+## THE LIVE PALETTE (Ramon, 9 Oct: "when pressing tab, can you make a hud and allow me to change all the
+## colors used in the scene? and save"). The constants above are the defaults; these hold what is in
+## force, set from the Tab panel's Colours page (hud/maze_dev_panel.gd) and saved with it.
+##   roles      the colour code (start, exit, w, ghost, trail, done, x, z)
+##   surfaces   a swatch's main colour; its grid lines follow in proportion, and its dark-mood twin too
+static var roles: Dictionary = ROLE.duplicate()
+static var surfaces: Dictionary = {}
+static var mood: String = "bright"
+## The W walls in the plain wall colours (Tab: "Walls across W in blue" off).
+static var w_plain: bool = false
+## Every glow made through glow_material(), by role, so a new colour reaches what is already built.
+static var _glow_users: Dictionary = {}
+
 
 static func remember() -> void:
 	_saved = {}
@@ -80,9 +98,7 @@ static func remember() -> void:
 
 
 static func apply() -> void:
-	for k in SWATCHES:
-		var v: Array = SWATCHES[k]
-		LabGrid.set_swatch(String(k), v[0], v[1], v[2], float(v[3]))
+	apply_mood(mood)
 
 
 static func restore() -> void:
@@ -93,7 +109,7 @@ static func restore() -> void:
 
 
 ## Dark (B, as in the Creation Lab): the kit's own dark swatches for the room, the maze's walls and floor
-## a step darker, the cyan and the glows left as they are, so they carry the dark.
+## a step darker, the glows left as they are, so they carry the dark.
 const DARK := {
 	"kit_wall": [Color(0.62, 0.63, 0.64), Color(0.50, 0.51, 0.53), Color(0.58, 0.59, 0.60), 0.6],
 	"kit_floor": [Color(0.58, 0.59, 0.60), Color(0.46, 0.47, 0.49), Color(0.54, 0.55, 0.56), 0.5],
@@ -101,18 +117,90 @@ const DARK := {
 	"maze_wall": [Color(0.60, 0.61, 0.63), Color(0.47, 0.48, 0.51), Color(0.55, 0.56, 0.58), 0.6],
 	"maze_floor": [Color(0.50, 0.51, 0.53), Color(0.39, 0.40, 0.43), Color(0.46, 0.47, 0.49), 0.55],
 	"maze_climb": [Color(0.80, 0.48, 0.35), Color(0.66, 0.36, 0.24), Color(0.74, 0.43, 0.30), 0.55],
+	"maze_post": [Color(0.42, 0.43, 0.46), Color(0.35, 0.36, 0.39), Color(0.39, 0.40, 0.43), 0.4],
 }
 
 
 static func apply_mood(m: String) -> void:
+	mood = m
 	for k in SWATCHES:
-		var v: Array = DARK[k] if m == "dark" and DARK.has(k) else SWATCHES[k]
-		LabGrid.set_swatch(String(k), v[0], v[1], v[2], float(v[3]))
+		_apply_swatch(String(k))
+
+
+## A swatch's four values in the mood in force: the default, or the edited main colour with the lines
+## and the dark twin scaled from it channel by channel.
+static func swatch_values(k: String) -> Array:
+	if k == "maze_wall_w" and w_plain:
+		return swatch_values("maze_wall")
+	var base: Array = SWATCHES[k]
+	var v: Array = DARK[k] if mood == "dark" and DARK.has(k) else base
+	if not surfaces.has(k):
+		return v
+	var to: Color = surfaces[k]
+	var from: Color = base[0]
+	return [_scaled(v[0], from, to), _scaled(v[1], from, to), _scaled(v[2], from, to), v[3]]
+
+
+static func _scaled(c: Color, from: Color, to: Color) -> Color:
+	var r: float = c.r / maxf(from.r, 0.01) * to.r
+	var g: float = c.g / maxf(from.g, 0.01) * to.g
+	var b: float = c.b / maxf(from.b, 0.01) * to.b
+	return Color(clampf(r, 0.0, 1.0), clampf(g, 0.0, 1.0), clampf(b, 0.0, 1.0))
+
+
+static func _apply_swatch(k: String) -> void:
+	var v: Array = swatch_values(k)
+	LabGrid.set_swatch(k, v[0], v[1], v[2], float(v[3]))
+
+
+static func surface(k: String) -> Color:
+	return surfaces.get(k, SWATCHES[k][0])
+
+
+static func set_surface(k: String, c: Color) -> void:
+	if not SWATCHES.has(k):
+		return
+	surfaces[k] = c
+	_apply_swatch(k)
+	if k == "maze_wall":
+		_apply_swatch("maze_wall_w")
+
+
+static func set_w_plain(on: bool) -> void:
+	w_plain = on
+	_apply_swatch("maze_wall_w")
 
 
 static func role(r: String) -> Color:
-	return ROLE.get(r, Color.WHITE)
+	return roles.get(r, ROLE.get(r, Color.WHITE))
 
 
+## A glow's colour: the role's, a touch lighter, so it reads as giving light.
 static func glow(r: String) -> Color:
-	return GLOW.get(r, ROLE.get(r, Color.WHITE))
+	return role(r).lightened(0.08)
+
+
+static func set_role(r: String, c: Color) -> void:
+	roles[r] = c
+	var alive: Array = []
+	for u in _glow_users.get(r, []):
+		var cs: ShaderMaterial = (u[0] as WeakRef).get_ref()
+		if cs != null:
+			cs.set_shader_parameter("glow_color", glow(r).darkened(float(u[1])))
+			alive.append(u)
+	_glow_users[r] = alive
+
+
+## An unshaded glow in a role's colour (the kit's lab_glow), its own material and registered, so the
+## Colours page can recolour it live. `darken` dims it (the W doors' inner square).
+static func glow_material(r: String, energy: float = 1.0, darken: float = 0.0) -> TetraMaterial4D:
+	var m := TetraMaterial4D.new()
+	var cs: ShaderMaterial = m.get_cross_section_material_3d()
+	cs.shader = GlowShader
+	m.albedo_color = Color.WHITE
+	cs.set_shader_parameter("glow_color", glow(r).darkened(darken))
+	cs.set_shader_parameter("glow_energy", energy)
+	if not _glow_users.has(r):
+		_glow_users[r] = []
+	(_glow_users[r] as Array).append([weakref(cs), darken])
+	return m

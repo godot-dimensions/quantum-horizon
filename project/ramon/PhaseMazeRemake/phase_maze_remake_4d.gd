@@ -31,6 +31,7 @@ const DevPanel := preload("res://ramon/PhaseMazeRemake/hud/maze_dev_panel.gd")
 const PanelSource := preload("res://ramon/PhaseMazeRemake/maze/maze_panel_source.gd")
 const Journey := preload("res://ramon/PhaseMazeRemake/maze/maze_journey_4d.gd")
 const GB := preload("res://ramon/PhaseMazeRemake/carried/walker/ground_basis_4d.gd")
+const LabRoom := preload("res://ramon/PhaseMazeRemake/carried/LabKit/lab_room_4d.gd")
 const ReturnButton := preload("res://ramon/Demo/return_button.tscn")
 const LabPrint := preload("res://ramon/PhaseMazeRemake/carried/LabKit/lab_print.gd")
 const LabGrid := preload("res://ramon/PhaseMazeRemake/carried/LabKit/lab_grid.gd")
@@ -73,6 +74,8 @@ var hud: Control
 var map: Control
 var dev_panel: PanelContainer
 var tuning: Dictionary = {}
+## Every colour in force (Tab, Colours; hud/maze_dev_panel.gd COLOURS), saved with the numbers.
+var colours: Dictionary = {}
 ## Runners switch this off so a bot's times never become your bests.
 var keep_bests: bool = true
 
@@ -127,6 +130,8 @@ var _prompted: Dictionary = {}
 
 func _enter_tree() -> void:
 	Style.remember()
+	# The saved colours before anything is built (the walker's are painted once he exists).
+	apply_colours(DevPanel.load_saved_colours())
 	Style.apply()
 	var light: Node = get_node_or_null("Light")
 	if light != null:
@@ -212,6 +217,7 @@ func _ready() -> void:
 	rb.name = "ReturnButton"
 	add_child(rb)
 	_load_bests()
+	WalkerBuild.recolour(avatar, _walker_colours())
 	hall = Journey.hall(self)
 	apply_tuning(DevPanel.load_saved())
 	go_lobby(true)
@@ -720,7 +726,7 @@ func _mark_cells(cells: Array) -> void:
 		batch.ring("hint", at + Vector4(0.0, 0.05, 0.0, 0.0), 1.0, 0.16, 0.05, lattice.size_of(c).z - 1.2, 32)
 	_hint_node = batch.instance("hint")
 	_hint_node.name = "HintMarks"
-	(_hint_node as MeshInstance4D).material_override = LabMaterials.glow(Style.glow("w"), 1.4)
+	(_hint_node as MeshInstance4D).material_override = Style.glow_material("w", 1.4)
 	_hint_node.set("allow_projection", false)
 	level_node.add_child(_hint_node)
 	map.set("lit", lit)
@@ -827,21 +833,65 @@ func apply_tuning(v: Dictionary) -> void:
 	if state != "lobby":
 		player.set("w_speed_scale", _w_step)
 	sight.set("strength", float(v.get("ghost", 0.3)))
-	var wv: Array = Style.SWATCHES["maze_wall_w" if float(v.get("w_cyan", 1.0)) > 0.5 else "maze_wall"]
-	LabGrid.set_swatch("maze_wall_w", wv[0], wv[1], wv[2], float(wv[3]))
+	Style.set_w_plain(float(v.get("w_cyan", 1.0)) < 0.5)
 	sight.call("set_renderer", RENDERERS[clampi(int(v.get("renderer", 0.0)), 0, 3)])
-	var light: Node = get_node_or_null("Light")
-	if light != null:
-		var l: Dictionary = Style.LIGHT.duplicate(true)
-		for key in ["key_energy", "exposure"]:
-			if v.has(key):
-				l[key] = float(v[key])
-		var amb: Color = Style.LIGHT["ambient"]
-		var ka: float = float(v.get("ambient_k", 1.0))
-		l["ambient"] = Color(amb.r * ka, amb.g * ka, amb.b * ka)
-		light.set("mood_overrides", {"bright": l})
-		light.call("set_mood", String(light.get("mood")), true, false)
+	_apply_light()
 	_apply_spot()
+
+
+## The light in both moods: the numbers from Numbers, the colours from Colours.
+func _apply_light() -> void:
+	var light: Node = get_node_or_null("Light")
+	if light == null:
+		return
+	var l: Dictionary = Style.LIGHT.duplicate(true)
+	var d: Dictionary = {}
+	for key in ["key_energy", "exposure"]:
+		if tuning.has(key):
+			l[key] = float(tuning[key])
+	for key in colours:
+		var p: PackedStringArray = String(key).split(":")
+		if p[0] != "light":
+			continue
+		if p[1] == "bright":
+			l[p[2]] = colours[key]
+		else:
+			d[p[2]] = colours[key]
+	var amb: Color = l["ambient"]
+	var ka: float = float(tuning.get("ambient_k", 1.0))
+	l["ambient"] = Color(amb.r * ka, amb.g * ka, amb.b * ka)
+	light.set("mood_overrides", {"bright": l, "dark": d})
+	light.call("set_mood", String(light.get("mood")), true, false)
+
+
+## Colours from the Tab panel (or the save): each to where it lives. Light colours are taken up by
+## _apply_light(); the walker is painted in place.
+func apply_colours(c: Dictionary) -> void:
+	var walker: Dictionary = {}
+	for key in c:
+		colours[key] = c[key]
+		var p: PackedStringArray = String(key).split(":")
+		match p[0]:
+			"sw":
+				Style.set_surface(p[1], c[key])
+			"role":
+				Style.set_role(p[1], c[key])
+			"walker":
+				walker[p[1]] = c[key]
+	if not walker.is_empty() and avatar != null:
+		WalkerBuild.recolour(avatar, walker)
+	if sight != null:
+		sight.call("_colour_walls")
+	if is_inside_tree() and tuning.size() > 0:
+		_apply_light()
+
+
+func _walker_colours() -> Dictionary:
+	var out: Dictionary = {}
+	for key in colours:
+		if String(key).begins_with("walker:"):
+			out[String(key).substr(7)] = colours[key]
+	return out
 
 
 ## The one spot over the walker, every number on the Tab panel (Ramon, 9 Oct: "im not sure about this

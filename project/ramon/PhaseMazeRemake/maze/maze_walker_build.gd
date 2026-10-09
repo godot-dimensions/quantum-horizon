@@ -22,6 +22,28 @@ const Avatar := preload("res://ramon/PhaseMazeRemake/carried/walker/block_avatar
 const Gait := preload("res://ramon/PhaseMazeRemake/carried/walker/block_gait_4d.gd")
 const Rig := preload("res://ramon/PhaseMazeRemake/carried/walker/pen_orbit_rig_4d.gd")
 
+## The walker's colours: dark blue with subtle shifts and a brighter face (Ramon, 9 Oct). Each is an
+## avatar export; the Tab panel's Colours page changes them live (recolour()).
+const COLOURS := {
+	"skin": Color(0.10, 0.17, 0.40),
+	"accent": Color(0.15, 0.25, 0.52),
+	"face": Color(0.38, 0.58, 0.93),
+	"hair": Color(0.06, 0.09, 0.21),
+	"belt_colour": Color(0.07, 0.11, 0.27),
+	"boot_colour": Color(0.09, 0.12, 0.24),
+	"eye_colour": Color(0.03, 0.05, 0.12),
+}
+## Which body parts each colour paints (block_avatar_4d.gd _build_chibi), by name without the side.
+const PARTS := {
+	"skin": ["Tunic", "Cap", "UpperArm"],
+	"accent": ["Thigh", "Shin", "Forearm", "Hand"],
+	"face": ["Head", "Ear"],
+	"hair": ["Hair", "Crown", "Tie", "Tail"],
+	"belt_colour": ["Belt"],
+	"boot_colour": ["Boot"],
+	"eye_colour": ["Eye"],
+}
+
 
 ## {"body", "rig", "camera", "avatar", "gait"}. The body is added to `parent`.
 static func make(parent: Node, at: Vector4) -> Dictionary:
@@ -50,13 +72,8 @@ static func make(parent: Node, at: Vector4) -> Dictionary:
 	avatar.set("build", 2)
 	# Dark blue, with subtle shifts and a brighter blue face (Ramon, 9 Oct). The pen's walker is green;
 	# this one is the maze's own (the carried avatar's face, belt and boot colours are Phase Maze additions).
-	avatar.set("skin", Color(0.10, 0.17, 0.40))
-	avatar.set("accent", Color(0.15, 0.25, 0.52))
-	avatar.set("face", Color(0.38, 0.58, 0.93))
-	avatar.set("hair", Color(0.06, 0.09, 0.21))
-	avatar.set("belt_colour", Color(0.07, 0.11, 0.27))
-	avatar.set("boot_colour", Color(0.09, 0.12, 0.24))
-	avatar.set("eye_colour", Color(0.03, 0.05, 0.12))
+	for k in COLOURS:
+		avatar.set(String(k), COLOURS[k])
 	body.add_child(avatar)
 	var gait := Node4D.new()
 	gait.name = "Gait"
@@ -90,3 +107,18 @@ static func make(parent: Node, at: Vector4) -> Dictionary:
 	body.add_child(rig)
 	parent.add_child(body)
 	return {"body": body, "rig": rig, "camera": cam, "avatar": avatar, "gait": gait}
+
+
+## Paints the built walker in place: each part's own material, by its name. (Setting the avatar's
+## exports would rebuild it, and the gait holds its old limbs.)
+static func recolour(avatar: Node4D, colours: Dictionary) -> void:
+	for mi in avatar.find_children("*", "MeshInstance4D", true, false):
+		var nm: String = (mi as Node).name
+		for k in colours:
+			if not PARTS.has(k):
+				continue
+			for prefix in PARTS[k]:
+				if nm.begins_with(String(prefix)):
+					var m := (mi as MeshInstance4D).material_override as TetraMaterial4D
+					if m != null:
+						m.albedo_color = colours[k]

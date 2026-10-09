@@ -15,6 +15,13 @@ extends RefCounted
 ## its own swatch and never reads albedo; the projected pass (tetra_projected_shader.glsl:270) colours a
 ## ghost with albedo alone (RESEARCH.md section 5).
 ##
+## CORNERS (Ramon, 9 Oct: "the corners of the wall still clip in to each other"): a wall used to reach
+## half its thickness past the cell edge, so where two met their faces lay in one plane and flickered,
+## worst where a blue W wall met a white one. Now every wall stops half a thickness short of its edges
+## and a post fills each edge where walls meet: walls never overlap anything, and the posts, all of one
+## material, overlap only each other, where they cannot flicker. In 4D an edge runs along x, z or w, so
+## there are posts along all three; each is as tall as the tallest wall it holds, capped, and colliding.
+##
 ## STAIRS are 0.3 m steps (the walker climbs 0.32), boxes stacked from the ground, so the box-only physics
 ## is exact. A stair along W is a staircase only when you have turned into W; level, you see the one step
 ## at your W (round 2, R7).
@@ -50,6 +57,7 @@ static func build(parent: Node4D, lv) -> Dictionary:
 	parent.add_child(walls_node)
 	var batch := LabBatch.new()
 	var ghost: Color = Style.role("ghost")
+	var posts: Dictionary = {}
 	for k in lv.nw:
 		for j in lv.nz:
 			for i in lv.nx:
@@ -61,7 +69,7 @@ static func build(parent: Node4D, lv) -> Dictionary:
 							continue
 						if lv.is_open(cell, a, s):
 							continue
-						var mi: MeshInstance4D = _wall(walls_node, body, batch, lv, cell, a, s, ghost)
+						var mi: MeshInstance4D = _wall(walls_node, body, batch, lv, cell, a, s, ghost, posts)
 						var cells: Array = [cell]
 						if lv.inside(n):
 							cells.append(n)
@@ -70,6 +78,7 @@ static func build(parent: Node4D, lv) -> Dictionary:
 							if not out["cell_walls"].has(owner):
 								out["cell_walls"][owner] = []
 							out["cell_walls"][owner].append([a, mi])
+	_posts(parent, body, batch, posts)
 	var caps: MeshInstance4D = batch.instance("caps")
 	caps.name = "Caps"
 	caps.material_override = LabGrid.material("maze_cap", Vector4.ONE, Vector4.ZERO)
@@ -85,7 +94,7 @@ static func build(parent: Node4D, lv) -> Dictionary:
 
 ## The wall on `cell`'s face (`a`, `s`): on the cell boundary, the cell's size across, from the ground to
 ## 5 m over the higher floor of the two cells it stands between.
-static func _wall(walls_node: Node4D, body: StaticBody4D, batch, lv, cell: Vector3i, a: int, s: int, ghost: Color) -> MeshInstance4D:
+static func _wall(walls_node: Node4D, body: StaticBody4D, batch, lv, cell: Vector3i, a: int, s: int, ghost: Color, posts: Dictionary) -> MeshInstance4D:
 	var sz: Vector3 = lv.size_of(cell)
 	var lo: Vector4 = lv.cell_min(cell)
 	var n: Vector3i = cell + Lattice.STEPS[a] * s
@@ -93,7 +102,8 @@ static func _wall(walls_node: Node4D, body: StaticBody4D, batch, lv, cell: Vecto
 	if lv.inside(n):
 		top = maxf(top, lv.top_height(n))
 	var h: float = top + HEIGHT
-	var size := Vector4(sz.x + THICK, h, sz.y + THICK, sz.z + THICK)
+	# Half a thickness short of every edge: the posts fill the corners.
+	var size := Vector4(sz.x - THICK, h, sz.y - THICK, sz.z - THICK)
 	var at := Vector4(lo.x + sz.x * 0.5, h * 0.5, lo.z + sz.y * 0.5, lo.w + sz.z * 0.5)
 	match a:
 		0:
@@ -119,7 +129,49 @@ static func _wall(walls_node: Node4D, body: StaticBody4D, batch, lv, cell: Vecto
 	_collide(body, size, at)
 	var cap := Vector4(size.x + 0.02, 0.06, size.z + 0.02, size.w + 0.02)
 	batch.box("caps", cap, at + Vector4(0.0, h * 0.5 + 0.03, 0.0, 0.0))
+	# The wall's four edges, each a post along one of its two span axes.
+	var lo3 := [lo.x, lo.z, lo.w]
+	var sz3 := [sz.x, sz.y, sz.z]
+	var b: float = [at.x, at.z, at.w][a]
+	var spans: Array = [0, 1, 2]
+	spans.erase(a)
+	for i in 2:
+		var p: int = spans[i]
+		var q: int = spans[1 - i]
+		for end in [float(lo3[p]), float(lo3[p]) + float(sz3[p])]:
+			var fixed := {a: b, p: end}
+			var lo_q: float = float(lo3[q])
+			var key: String = "%d|%.3f|%.3f|%.3f" % [q, float(fixed.get(mini(a, p))), float(fixed.get(maxi(a, p))), lo_q]
+			var post: Dictionary = posts.get(key, {"q": q, "fixed": fixed, "lo": lo_q, "len": float(sz3[q]), "h": 0.0})
+			post["h"] = maxf(float(post["h"]), h)
+			posts[key] = post
 	return mi
+
+
+## The corner posts, batched into one mesh (they are never ghosted on their own) and colliding.
+static func _posts(parent: Node4D, body: StaticBody4D, batch, posts: Dictionary) -> void:
+	var comp := [0, 2, 3]
+	for key in posts:
+		var post: Dictionary = posts[key]
+		var q: int = int(post["q"])
+		var h: float = float(post["h"])
+		var size := Vector4(THICK, h, THICK, THICK)
+		var at := Vector4(0.0, h * 0.5, 0.0, 0.0)
+		size[comp[q]] = float(post["len"]) + THICK
+		at[comp[q]] = float(post["lo"]) + float(post["len"]) * 0.5
+		var fixed: Dictionary = post["fixed"]
+		for ax in fixed:
+			at[comp[int(ax)]] = float(fixed[ax])
+		batch.box("posts", size, at)
+		batch.box("caps", Vector4(size.x + 0.02, 0.06, size.z + 0.02, size.w + 0.02), at + Vector4(0.0, h * 0.5 + 0.03, 0.0, 0.0))
+		_collide(body, size, at)
+	if posts.is_empty():
+		return
+	var pm: MeshInstance4D = batch.instance("posts")
+	pm.name = "Posts"
+	pm.material_override = LabGrid.material("maze_post", Vector4.ONE, Vector4.ZERO)
+	pm.set("allow_projection", false)
+	parent.add_child(pm)
 
 
 static func _collide(body: StaticBody4D, size: Vector4, at: Vector4) -> void:
@@ -222,7 +274,7 @@ static func _roofs(parent: Node4D, body: StaticBody4D, lv) -> void:
 		strips.box("strip", Vector4(sz.x * 0.7 if along_x else 0.22, 0.04, 0.22 if along_x else sz.y * 0.7, sz.z - 1.0), Vector4(at.x, y - 0.03, at.z, at.w))
 	var sm: MeshInstance4D = strips.instance("strip")
 	sm.name = "RoofLights"
-	sm.material_override = LabMaterials.glow(Style.glow("start"), 1.3)
+	sm.material_override = Style.glow_material("start", 1.3)
 	sm.set("allow_projection", false)
 	holder.add_child(sm)
 
@@ -301,16 +353,17 @@ static func _marks(parent: Node4D, lv, out: Dictionary) -> void:
 		tallest = maxf(tallest, float(lv.heights[c]))
 	batch.box("beacon", Vector4(0.6, 14.0, 0.6, all_w), Vector4(e_at.x, tallest + HEIGHT + 0.8 + 7.0, e_at.z, mid_w))
 	var looks := {
-		"doors": LabMaterials.glow(Style.glow("w"), 1.0),
-		"doors_in": LabMaterials.glow(Style.role("w").darkened(0.35), 1.0),
-		"start": LabMaterials.glow(Style.glow("start"), 1.1),
-		"exit": LabMaterials.glow(Style.role("exit"), 1.0),
-		"exit_ring": LabMaterials.glow(Style.glow("exit"), 1.2),
-		"beacon": LabMaterials.glow(Style.glow("exit"), 1.3),
+		"doors": ["w", 1.0, 0.0],
+		"doors_in": ["w", 1.0, 0.35],
+		"start": ["start", 1.1, 0.0],
+		"exit": ["exit", 1.0, 0.08],
+		"exit_ring": ["exit", 1.2, 0.0],
+		"beacon": ["exit", 1.3, 0.0],
 	}
 	for kind in batch.kinds():
 		var mi: MeshInstance4D = batch.instance(kind)
-		mi.material_override = looks.get(kind, LabMaterials.glow(Color.WHITE, 1.0))
+		var look: Array = looks.get(kind, ["start", 1.0, 0.0])
+		mi.material_override = Style.glow_material(String(look[0]), float(look[1]), float(look[2]))
 		mi.set("allow_projection", kind == "beacon")
 		parent.add_child(mi)
 		if kind == "beacon":
