@@ -859,3 +859,29 @@ Done and checked by frames (`smoke_test_output/water_lab/room/u*`, `s*`; `seasca
   - The second plesiosaur stays deep and subtle.
 - **Perf, on the platform:** frame median 3.29 ms (95% 4.01 ms), GPU 1.82 ms. The far boats had
   pushed it to 4.85 ms; the simple build and the twice-a-second riding off the slice brought it back.
+
+### Round 4 sound: Ramon's gull recordings (9 Oct)
+
+He saved four of Beison's seagull recordings into `ramon/audio/sfx/` (AAC, which Godot cannot import;
+the originals stay there). His notes: "dont make it too crazy, make a good mix", and the ambient one
+should "loop and fade in and out at places".
+
+Converted with ffmpeg into `WaterLab/audio/`: 44.1 kHz, 16-bit WAV, each peak matched to the
+synthesized calls' (-3 dBFS).
+- `gull_call_real.wav`: "Gull Tweeting", mono, 0.55 s.
+- `gull_takeoff.wav`: "Bird Taking Off", mono, 2.2 s.
+- `gull_flock_off.wav`: "Birds Flying Away Wings Flapping", mono, 1.7 s.
+- `harbour_gulls.wav`: "Harbor Ambience Rain Distant Gulls Squawking", stereo, made to loop.
+  - The AAC's header says 20.9 s, but it decodes to 23.8 s.
+  - Its last 2 s are crossfaded (equal power) into its first 2 s, leaving a 21.8 s loop with no seam.
+
+The mix:
+- **Calls:** each call is the recorded call or the synthesized long call, chosen at random. Calls
+  keep 0.45 s apart; a call that comes sooner is dropped. The laugh and the landing rustle stay
+  synthesized.
+- **Take-offs:** the recorded take-off replaces the old synthesized alarm "kek". Three or more gulls
+  lifting within 0.6 s play one recorded flock take-off, and the next 1.5 s of take-offs stay quiet.
+- **The ambience:** plays under the sea bed (`harbour_gulls_db` -10, about 8 dB under the lap bed).
+  - Every 12-30 s it picks a new level: full (45%), half (35%) or nearly gone (20%).
+  - It eases there over about six seconds and is never cut.
+  - The recording has rain in it, which sits in with the wash at this level.

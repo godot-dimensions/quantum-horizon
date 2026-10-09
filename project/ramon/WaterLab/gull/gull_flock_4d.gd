@@ -25,14 +25,19 @@ extends Node4D
 ## SOUND: there is no positional audio in 4D (pen_sfx_4d.gd), so each call is a one-shot on one of a
 ## few buses of the harbour's own, each with a panner (toward the caller's side of the listener) and a
 ## low-pass (closing with distance: air takes the top off far sound); its volume falls with distance.
-## The calls are synthesized (audio/bake_water_lab_sound.py): the long call, the laugh, the alarm
-## "kek" on take-off, a soft wing-rustle on landing.
+## The calls: the long call, the laugh and the landing's wing-rustle synthesized
+## (audio/bake_water_lab_sound.py); Ramon's recordings (9 Oct, audio/sfx, Beison's seagulls: "dont
+## make it too crazy, make a good mix") for the rest. A call is the recorded call or the synthesized
+## long call, either; a take-off is the recorded take-off (wing claps) in place of the old alarm
+## "kek"; three or more lifting within 0.6 s are one recorded flock take-off, the next take-offs
+## quiet for 1.5 s. Calls (not take-offs or landings) keep `min_call_gap` apart; a call that comes
+## sooner is dropped, never queued.
 ##
 ## NO class_name (engine_gotchas.md).
 
 const Gull := preload("res://ramon/WaterLab/gull/gull_4d.gd")
 const SOUND_DIR := "res://ramon/WaterLab/audio/"
-const SOUNDS := ["gull_long", "gull_laugh", "gull_kek", "gull_land"]
+const SOUNDS := ["gull_long", "gull_laugh", "gull_kek", "gull_land", "gull_call_real", "gull_takeoff", "gull_flock_off"]
 const BUS_PREFIX := "WLGulls"
 const VOICES := 4
 
@@ -68,6 +73,12 @@ var _lure_check: float = 0.0
 ## Past this distance a call is not heard.
 @export var hearing: float = 60.0
 @export var send_bus: StringName = &"Master"
+@export var min_call_gap: float = 0.45
+var _last_call: float = -10.0
+var _takeoffs: Array = []
+var _takeoffs_quiet_until: float = -10.0
+## How many of each sound have played (the test runner reads it).
+var played: Dictionary = {}
 
 ## Who hears (the camera, a Node4D); without one, the world origin.
 var listener_4d: Node4D = null
@@ -251,7 +262,8 @@ func _make_sound() -> void:
 
 ## Plays a gull's call where it is: louder near, panned to its side, duller far off.
 func _on_called(kind: String, g: Node4D) -> void:
-	if _voices.is_empty() or not _streams.has(_sound_for(kind)) or not is_instance_valid(g):
+	var nm: String = _sound_for(kind)
+	if _voices.is_empty() or not _streams.has(nm) or not is_instance_valid(g):
 		return
 	var ear: Vector4 = Vector4.ZERO
 	var right := Vector4(1, 0, 0, 0)
@@ -262,6 +274,21 @@ func _on_called(kind: String, g: Node4D) -> void:
 	var d: float = to.length()
 	if d > hearing:
 		return
+	# (After the hearing check: an unheard call must not use up the gap.)
+	var now: float = float(Time.get_ticks_msec()) / 1000.0
+	if kind == "kek":
+		if now < _takeoffs_quiet_until:
+			return
+		_takeoffs = _takeoffs.filter(func(x: float) -> bool: return now - x < 0.6)
+		_takeoffs.append(now)
+		if _takeoffs.size() >= 3 and _streams.has("gull_flock_off"):
+			nm = "gull_flock_off"
+			_takeoffs_quiet_until = now + 1.5
+			_takeoffs.clear()
+	elif kind != "land":
+		if now - _last_call < min_call_gap:
+			return
+		_last_call = now
 	var voice: Dictionary = _voices[_next_voice]
 	_next_voice = (_next_voice + 1) % _voices.size()
 	var p: AudioStreamPlayer = voice["player"]
@@ -278,18 +305,22 @@ func _on_called(kind: String, g: Node4D) -> void:
 	var lp: AudioEffectLowPassFilter = AudioServer.get_bus_effect(bus, 0) as AudioEffectLowPassFilter
 	if lp != null:
 		lp.cutoff_hz = lerpf(12000.0, 2200.0, clampf(d / hearing, 0.0, 1.0))
-	p.stream = _streams[_sound_for(kind)]
+	p.stream = _streams[nm]
 	p.play()
+	played[nm] = int(played.get(nm, 0)) + 1
 
 
+## The sound for a call: the recorded ones where there are, the synthesized ones otherwise.
 func _sound_for(kind: String) -> String:
 	match kind:
 		"long":
+			if _streams.has("gull_call_real") and _rng.randf() < 0.5:
+				return "gull_call_real"
 			return "gull_long"
 		"laugh":
 			return "gull_laugh"
 		"kek":
-			return "gull_kek"
+			return "gull_takeoff" if _streams.has("gull_takeoff") else "gull_kek"
 		"land":
 			return "gull_land"
 	return ""

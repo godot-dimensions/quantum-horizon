@@ -44,6 +44,9 @@ func _initialize() -> void:
 		_mode = "round2"
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 		Engine.max_fps = 60
+	elif "soundmix" in args:
+		# For a --write-movie run (fixed 30 fps, its audio recorded): the mix, measured afterwards.
+		_mode = "soundmix"
 	elif "gulls" in args:
 		_mode = "gulls"
 		# Vsync off for the timing, the views at 60 (the gulls need real seconds to land); uncapped
@@ -102,6 +105,24 @@ func _open() -> void:
 				_step(30, _measure_start.bind("capped_200"), "")
 				_step(150, _nop, "")
 				_step(1, _measure_end, "")
+		"soundmix":
+			# The harbour's sound as you hear it on the platform (Ramon, 9 Oct: "make a good mix"):
+			# standing, then gulls flushed off the rail, more gulls, flushed again, standing. Every
+			# sound's start and the gulls' bed level are logged with the time, for the recording.
+			var pc: Vector4 = _room.call("platform_centre")
+			_step(30, _go(pc.x - 3.0, 0.0, -90.0), "")
+			_step(1, _sound_log_start, "")
+			_step(600, _nop, "")
+			_step(1, _near_gull.bind(4.5), "")
+			_step(1, _near_gull_walk.bind(1.2), "")
+			_step(150, _nop, "")
+			_step(1, _gulls.bind(20), "")
+			_step(450, _go(pc.x - 3.0, 0.0, -90.0), "")
+			_step(1, _near_gull.bind(4.5), "")
+			_step(1, _near_gull_walk.bind(1.2), "")
+			_step(150, _nop, "")
+			_step(600, _go(pc.x - 3.0, 0.0, -90.0), "")
+			_step(1, _sound_log_end, "")
 		"gulls":
 			# The harbour's gulls: sitting on pier 1's rails, the pole, the platform's ring and the
 			# lintel; twenty of them; the HUD's slider; what they cost (vsync off).
@@ -150,6 +171,7 @@ func _open() -> void:
 			_step(1, _set_room.bind("harbour_fish", 3000), "")
 			_step(60, _nop, "g12_school_3000")
 			_step(1, _fish_report, "")
+			_step(1, _sound_report, "")
 		"school":
 			# The sardines off pier 1: from its edge looking down at them, then the plesiosaur sent
 			# through them.
@@ -491,6 +513,52 @@ func _gulls(n: int) -> void:
 	if h != null:
 		h.set("count", n)
 	print("WATER gulls set to %d (%d perches)" % [n, (h.get("perches") as Array).size() if h != null else -1])
+
+
+var _sound_frame: int = -1
+var _sound_seen: Dictionary = {}
+
+
+func _sound_log_start() -> void:
+	_sound_frame = 0
+	var h: Node = _room.get_node_or_null("Harbour")
+	_sound_seen = (h.get("played") as Dictionary).duplicate() if h != null else {}
+	process_frame.connect(_sound_poll)
+	print("SOUND start")
+
+
+## Each frame (30 a second in a movie run): any sound started since, and each second the bed's level.
+func _sound_poll() -> void:
+	if _sound_frame < 0:
+		return
+	_sound_frame += 1
+	var t: float = float(_sound_frame) / 30.0
+	var h: Node = _room.get_node_or_null("Harbour")
+	if h != null:
+		var now: Dictionary = h.get("played")
+		for k in now:
+			var n: int = int(now[k]) - int(_sound_seen.get(k, 0))
+			for i in n:
+				print("SOUND t=%.2f %s" % [t, k])
+		_sound_seen = now.duplicate()
+	if _sound_frame % 30 == 0:
+		var bed: AudioStreamPlayer = _room.get_node_or_null("HarbourGulls") as AudioStreamPlayer
+		print("SOUND t=%.2f bed %.1f dB" % [t, bed.volume_db if bed != null else -999.0])
+
+
+func _sound_log_end() -> void:
+	_sound_frame = -1
+	print("SOUND end")
+	_sound_report()
+
+
+## Which gull sounds played, and where the distant gulls' bed is (Ramon's recordings, round 4).
+func _sound_report() -> void:
+	var h: Node = _room.get_node_or_null("Harbour")
+	var bed: AudioStreamPlayer = _room.get_node_or_null("HarbourGulls") as AudioStreamPlayer
+	print("WATER gull sounds played: %s; the gulls' bed %s at %.1f dB, playing %s" % [str(h.get("played")) if h != null else "-",
+		"loops" if bed != null and (bed.stream as AudioStreamWAV).loop_mode == AudioStreamWAV.LOOP_FORWARD else "does not loop",
+		bed.volume_db if bed != null else -999.0, str(bed.playing) if bed != null else "-"])
 
 
 func _set_room(nm: String, v: Variant) -> void:

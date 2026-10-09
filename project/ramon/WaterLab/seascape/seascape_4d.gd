@@ -143,6 +143,14 @@ var plesiosaur_visit_every: int = 55:
 			pilot.set(&"visit_every", Vector2(plesiosaur_visit_every * 0.75, plesiosaur_visit_every * 1.25))
 ## The harbour's sound bed (audio/harbour_lap.wav), looped.
 @export_range(-60.0, 6.0, 0.5, "suffix:dB") var harbour_sound_db: float = -16.0
+## The distant gulls' bed (audio/harbour_gulls.wav, Ramon's recording, 9 Oct: "an ambient seagull
+## track, make good to loop and fade in and out at places"), at its fullest; it drifts between this,
+## a little under, and nearly gone.
+@export_range(-60.0, 6.0, 0.5, "suffix:dB") var harbour_gulls_db: float = -10.0
+var _gulls_bed: AudioStreamPlayer = null
+var _gulls_level: float = 0.0
+var _gulls_want: float = 0.0
+var _gulls_hold: float = 6.0
 
 
 # -- where things are ---------------------------------------------------------------------------------------
@@ -730,6 +738,37 @@ func _build_sound() -> void:
 	p.volume_db = harbour_sound_db
 	add_child(p)
 	p.play(randf() * s.get_length())
+	# The distant gulls over it: Ramon's recording made to loop (its last two seconds crossfaded into
+	# its first; how, in follow_up/water_lab.md, round 4's sound), faded in from nothing.
+	var gpath := "res://ramon/WaterLab/audio/harbour_gulls.wav"
+	if not ResourceLoader.exists(gpath):
+		return
+	var gs: AudioStreamWAV = (load(gpath) as AudioStreamWAV).duplicate()
+	gs.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	gs.loop_begin = 0
+	gs.loop_end = int(gs.get_length() * float(gs.mix_rate))
+	_gulls_bed = AudioStreamPlayer.new()
+	_gulls_bed.name = "HarbourGulls"
+	_gulls_bed.stream = gs
+	_gulls_bed.volume_db = -60.0
+	add_child(_gulls_bed)
+	_gulls_bed.play(randf() * gs.get_length())
+	_gulls_level = 0.0
+	_gulls_want = 0.8
+
+
+## The gulls' bed drifting: every 12 to 30 s a new level (full, a little under, or nearly gone, the
+## full most often), eased toward over several seconds, never cut. Levels as amplitude (0-1).
+func _drift_gulls_bed(delta: float) -> void:
+	if _gulls_bed == null:
+		return
+	_gulls_hold -= delta
+	if _gulls_hold <= 0.0:
+		_gulls_hold = randf_range(12.0, 30.0)
+		var r: float = randf()
+		_gulls_want = 1.0 if r < 0.45 else (0.5 if r < 0.8 else 0.06)
+	_gulls_level = move_toward(_gulls_level, _gulls_want, delta / 6.0)
+	_gulls_bed.volume_db = harbour_gulls_db + linear_to_db(maxf(_gulls_level, 0.001))
 
 
 ## Where the gulls may sit, from the pier as built now: the rails' top beam (Trym's fence: its top beam
@@ -911,6 +950,7 @@ func _process(delta: float) -> void:
 		_rebuild_in -= delta
 		if _rebuild_in < 0.0:
 			rebuild_piers()
+	_drift_gulls_bed(delta)
 	if player == null or _rig == null:
 		return
 	var p: Vector4 = player.global_position
