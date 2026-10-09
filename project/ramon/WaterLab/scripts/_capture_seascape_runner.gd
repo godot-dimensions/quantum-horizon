@@ -36,6 +36,10 @@ func _initialize() -> void:
 		DisplayServer.window_set_size(Vector2i(3840, 2160))
 	elif "school" in args:
 		_mode = "school"
+	elif "round4" in args:
+		_mode = "round4"
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+		Engine.max_fps = 60
 	elif "round2" in args:
 		_mode = "round2"
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
@@ -67,6 +71,8 @@ func _open() -> void:
 	match _mode:
 		"round2":
 			_round2()
+		"round4":
+			_round4()
 		"hud4k":
 			_step(10, _go(0.8, 0.0, -90), "")
 			_step(30, _press_p, "")
@@ -215,6 +221,148 @@ func _round2() -> void:
 	_step(30, _measure_start.bind("platform"), "")
 	_step(150, _nop, "")
 	_step(1, _measure_end, "")
+
+
+## Ramon's walkthrough parts 3-4: the tunnel's mouth, the platform's square page, the pole, the
+## platform held still while the slice turns (measured), the boats white and orange, the Gerstner's
+## looks close, the storm and its spray, the life below; perf.
+func _round4() -> void:
+	var L: float = float(_room.call("tunnel_length"))
+	var pc: Vector4 = _room.call("platform_centre")
+	_step(150, _go(L + 3.0, 0.0, 90.0), "")
+	_step(10, _pitch(-6.0), "v01_tunnel_mouth")
+	_step(1, _go(L + 1.0, 1.6, 140.0), "")
+	_step(10, _pitch(-10.0), "v02_tunnel_mouth_side")
+	_step(10, _go(pc.x - 2.0, 0.0, -90.0), "")
+	_step(10, _pitch(-55.0), "v03_platform_square")
+	_step(10, _pitch(-10.0), "v04_pole")
+	_step(1, _stability_start, "")
+	for k in 40:
+		_step(0, _drag.bind(Vector2(0.012, 0.006)), "")
+	_step(1, _stability_end, "v05_platform_turned_held")
+	_step(30, _turn(0.0), "")
+	_step(1, _go(pc.x + 2.0, 0.0, -100.0), "")
+	_step(20, _pitch(-2.0), "v06_boats_level")
+	_step(1, _turn(30.0), "")
+	_step(30, _nop, "v07_boats_turned_30")
+	_step(1, _turn(0.0), "")
+	# The far orange boats, out to sea, the slice turned either way (Ramon: the others "further away").
+	_step(1, _far_boats_report, "")
+	_step(1, _go(pc.x + 3.0, 0.0, -90.0), "")
+	_step(1, _turn(20.0), "")
+	_step(40, _pitch(-1.0), "v16_far_boats_xw_plus20")
+	_step(1, _turn(-20.0), "")
+	_step(40, _nop, "v17_far_boats_xw_minus20")
+	_step(1, _turn(0.0, 20.0), "")
+	_step(40, _nop, "v18_far_boats_zw_plus20")
+	_step(1, _turn(0.0), "")
+	for g in [1, 2, 3]:
+		_step(1, _gerstner.bind(g), "")
+		_step(30, _go(pc.x + 2.0, 0.0, -60.0), "")
+		_step(10, _pitch(-30.0), "v08_gerstner_%d_close" % g)
+	_step(1, _gerstner.bind(2), "")
+	_step(1, _spray_report.bind("moderate swell"), "")
+	_step(1, _sea.bind(KEY_4), "")
+	_step(240, _go(pc.x - 3.0, 0.0, -90.0), "")
+	_step(10, _pitch(-14.0), "v09_storm")
+	_step(120, _nop, "v10_storm_spray")
+	_step(120, _nop, "v11_storm_later")
+	_step(1, _spray_report.bind("storm"), "")
+	_step(1, _sea.bind(KEY_1), "")
+	_step(30, _go(L + 6.0, -1.0, 0.0), "")
+	_step(10, _pitch(-62.0), "v12_life_below")
+	_step(200, _nop, "v13_life_below_later")
+	_step(1, _shark_view, "")
+	_step(20, _pitch(-58.0), "v14_shark_near_surface")
+	_step(1, _eel_view, "")
+	_step(20, _pitch(-40.0), "v15_eels_at_pole")
+	_step(1, _pitch(-10.0), "")
+	_step(10, _go(pc.x, 0.0, -90.0), "")
+	_step(30, _measure_start.bind("platform"), "")
+	_step(150, _nop, "")
+	_step(1, _measure_end, "")
+
+
+var _held_at := Vector3.ZERO
+
+
+func _far_boats_report() -> void:
+	var fleet: Node = _room.get_node_or_null("Boat")
+	var pc: Vector4 = _room.call("platform_centre")
+	var whites: int = 0
+	for b in fleet.get_children():
+		if String(b.get("tone")) == "boat_white":
+			whites += 1
+			continue
+		var p: Vector4 = (b as Node4D).position - pc
+		print("WATER far boat %s at %.0f m, bearing %.0f deg, w %+.1f (comes in at a %.0f deg turn)" % [b.name, Vector2(p.x, p.z).length(),
+			rad_to_deg(atan2(p.z, p.x)), p.w, rad_to_deg(atan(absf(p.w) / Vector2(p.x, p.z).length()))])
+	print("WATER white boats (principals and their W copies): %d" % whites)
+
+
+func _spray_report(sea: String) -> void:
+	var spray: Node = _room.find_child("Spray", true, false)
+	if spray == null:
+		print("WATER spray missing")
+		return
+	print("WATER spray over %s: %d bursts, the rim's water at most %.2f m" % [sea, int(spray.get("bursts")), float(spray.get("peak"))])
+	spray.set("bursts", 0)
+	spray.set("peak", -100.0)
+
+
+## The platform's edge toward the hammerheads' leader at a time it passes near and shallow; the life's
+## clock set a second before.
+func _shark_view() -> void:
+	var life: Node = _room.get_node_or_null("MoreLife")
+	var pc: Vector4 = _room.call("platform_centre")
+	var best: float = -1.0
+	var t: float = 0.0
+	while t < 6000.0:
+		var p: Vector4 = life.call("_leader", t)
+		var d: float = Vector2(p.x - pc.x, p.z - pc.z).length()
+		if -p.y < 1.4 and d < 10.5:
+			best = t
+			break
+		t += 0.25
+	print("WATER shark view at t %.1f" % best)
+	if best < 0.0:
+		return
+	life.set("_t", best - 1.0)
+	var lp: Vector4 = life.call("_leader", best)
+	var dir := Vector2(lp.x - pc.x, lp.z - pc.z).normalized()
+	var at: Vector2 = Vector2(pc.x, pc.z) + dir * 3.6
+	_go(at.x, at.y, rad_to_deg(atan2(-dir.x, -dir.y))).call()
+
+
+func _eel_view() -> void:
+	var pc: Vector4 = _room.call("platform_centre")
+	var pa: Vector3 = _room.call("pole_at")
+	var dir := Vector2(pa.x - pc.x, pa.y - pc.z).normalized()
+	var at: Vector2 = Vector2(pc.x, pc.z) + dir * 3.6
+	_go(at.x, at.y, rad_to_deg(atan2(-dir.x, -dir.y))).call()
+
+
+func _deck_in_view() -> Vector3:
+	var deck: Node4D = _room.get_node_or_null("PlatformSet") as Node4D
+	var cams: Array = _room.get("player").find_children("*", "Camera4D", true, false)
+	var cam: Node4D = cams[0]
+	var rel: Vector4 = cam.global_basis.inverse() * ((deck.global_position + deck.global_basis * Vector4(3.0, 0.0, 2.0, 0.0)) - cam.global_position)
+	return Vector3(rel.x, rel.y, rel.z)
+
+
+func _stability_start() -> void:
+	_held_at = _deck_in_view()
+
+
+func _drag(d: Vector2) -> void:
+	var r: Node = _rig()
+	r.call("drag_slice", d)
+	r.call("_apply")
+
+
+func _stability_end() -> void:
+	var now: Vector3 = _deck_in_view()
+	print("WATER platform in view moved %.3f m while the slice turned %.0f deg" % [(now - _held_at).length(), float((_room.call("slice_degrees") as Vector2).x)])
 
 
 func _gerstner(g: int) -> void:
@@ -408,7 +556,7 @@ func _measure_start(nm: String) -> void:
 	_measuring = nm
 	_gull_us0 = GullScript.cpu_us
 	_frames0 = Engine.get_process_frames()
-	if _mode in ["gulls", "round2"]:
+	if _mode in ["gulls", "round2", "round4"]:
 		Engine.max_fps = 0
 	_perf.clear()
 	_last_us = Time.get_ticks_usec()

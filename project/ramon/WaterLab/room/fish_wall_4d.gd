@@ -57,7 +57,7 @@ const CARDS := [
 	{"kind": "koi", "variety": 0, "name": "Kohaku", "latin": "Cyprinus rubrofuscus  ·  koi", "kicker": "WHITE WITH RED, THE FIRST OF THE KOI",
 		"line": "Swims with a wave down its body, glides between beats, bends into a C to turn.",
 		"rows": [["Length here", "0.6 to 1.0 m"], ["Tail beats", "about 1.4 a second at cruise"], ["The wave", "0.02 of its length at the head, 0.10 at the tail"], ["Drawn as", "a 3D shape stretched through W, cut by your slice"], ["In the tank", "16 koi, 4 of them off your slice"]]},
-	{"kind": "koi", "variety": 2, "name": "Showa", "latin": "Cyprinus rubrofuscus  ·  koi", "kicker": "BLACK OVER WHITE AND RED",
+	{"kind": "koi", "variety": 2, "lift": 0.16, "name": "Showa", "latin": "Cyprinus rubrofuscus  ·  koi", "kicker": "BLACK OVER WHITE AND RED",
 		"line": "Black reaching the head, black at the root of each pectoral fin: the pattern grown by noise on its back.",
 		"rows": [["Pattern", "warped noise, laid out as a koi is judged, from above"], ["Fins", "black at the root, white rays"], ["Shader", "one draw call for every koi"], ["Bent on", "the graphics card, every frame"]]},
 	{"kind": "eel", "name": "European eel", "latin": "Anguilla anguilla", "kicker": "HIDES BY DAY, HUNTS ALONG THE BOTTOM",
@@ -66,7 +66,7 @@ const CARDS := [
 	{"kind": "koi", "variety": 4, "name": "Ogon", "latin": "Cyprinus rubrofuscus  ·  koi", "kicker": "ONE METALLIC COLOUR, GOLD",
 		"line": "A metallic skin and a clear coat over it: the wet sheen of a koi under the lights.",
 		"rows": [["Metallic", "0.5, roughness 0.3"], ["Clear coat", "0.65 on the body"], ["Scales", "rows of arcs, faded where smaller than a pixel"]]},
-	{"kind": "crab", "name": "Edible crab", "latin": "Cancer pagurus", "kicker": "WALKS SIDEWAYS, AND THROUGH W",
+	{"kind": "crab", "lift": 0.14, "name": "Edible crab", "latin": "Cancer pagurus", "kicker": "WALKS SIDEWAYS, AND THROUGH W",
 		"line": "It wanders the tank's whole floor, x, z and W: it comes onto your slice somewhere, picks at the sand, and walks off through W.",
 		"rows": [["Width", "0.34 m"], ["Legs", "eight, two sets of four in turn"], ["Claws", "pick at the sand, the pincers open and close"], ["Drawn as", "a 4D body, its legs stepping on the GPU"]]},
 	{"kind": "koi", "variety": 6, "name": "Asagi", "latin": "Cyprinus rubrofuscus  ·  koi", "kicker": "A BLUE NET, RED BELOW",
@@ -249,7 +249,8 @@ func _show(panel: Dictionary, card: Dictionary) -> void:
 			panel["colour"] = Color(0.0, 0.0, 0.5, 0.0)
 		"crab":
 			node = _herd_specimen(Crab.build_mesh(), CRAB, {&"w_radius": 0.6})
-			panel["distance"] = 1.0
+			# A little further back than at first, so its legs stay in the picture once lifted.
+			panel["distance"] = 1.2
 			panel["custom"] = Vector4(0.0, 0.8, 0.34, 0.0)
 			panel["colour"] = Color(0.0, 0.0, 0.0, 1.0)
 		_:
@@ -262,6 +263,7 @@ func _show(panel: Dictionary, card: Dictionary) -> void:
 	panel["angle"] = 0.6
 	panel["phase"] = 0.0
 	panel["kind"] = String(card["kind"])
+	panel["lift"] = float(card.get("lift", 0.0))
 
 
 ## A slice-drawn animal for the studio: one instance of its mesh and shader, the view uniforms set so
@@ -341,7 +343,10 @@ func _turn(panel: Dictionary, delta: float) -> void:
 		return
 	var mmi := node as MultiMeshInstance3D
 	var mat: ShaderMaterial = mmi.material_override
-	mat.set_shader_parameter(&"view_origin", Vector4(0.0, -0.02, -d, 0.0))
+	# A card's lift: its animal raised that share of the picture's height (round 4: "raise the Showa and
+	# the Edible crab displays"; the picture is 2 d tan(16 deg) high at the animal, the studio's fov 32).
+	var up: float = float(panel.get("lift", 0.0)) * 2.0 * d * tan(deg_to_rad(16.0))
+	mat.set_shader_parameter(&"view_origin", Vector4(0.0, -0.02 + up, -d, 0.0))
 	var h := Vector3(sin(a), -0.15, cos(a)).normalized()
 	var r := Vector3(cos(a), 0.0, -sin(a))
 	var custom: Vector4 = panel["custom"]

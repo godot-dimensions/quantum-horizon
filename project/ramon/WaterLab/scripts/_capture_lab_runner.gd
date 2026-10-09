@@ -34,6 +34,53 @@ func setup() -> void:
 			step(180, nop)
 			step(1, perf_end)
 		return
+	if "round4" in args:
+		# Ramon's walkthrough parts 2-4: the gizmos, the tank's arches, corals and weed, the swarm, the
+		# shark's prompt and V, the fish wall at Showa and crab, dark mode and its arrows, the exit sign.
+		step(90, _go(-5.23, -7.7, 0.0))
+		step(30, nop, "u01_gizmos")
+		step(1, _go(-5.23, -4.0, 0.0))
+		step(30, _pitch(4.0), "u02_tank_whole")
+		step(1, _go(-9.5, -5.2, 0.0))
+		step(20, nop, "u03_tank_left_arch_red")
+		step(1, _go(3.0, -5.2, 0.0))
+		step(20, nop, "u04_tank_right")
+		step(1, _go(-5.23, -6.4, 0.0))
+		step(1, _shark_part)
+		step(20, nop, "u05_shark_prompt")
+		step(1, _press.bind(KEY_V))
+		step(60, nop, "u06_shark_aligned")
+		step(1, _wall_at.bind(10.5))
+		step(1, _go(2.3, -2.0, 180.0))
+		step(40, _pitch(-4.0), "u07_fish_wall_showa_crab")
+		step(1, _wall_at.bind(0.5))
+		step(40, nop, "u08_fish_wall_kohaku_ogon")
+		step(1, _go(-11.0, -3.0, 0.0))
+		step(1, _press.bind(KEY_B))
+		step(30, _pitch(-30.0), "u09_dark_mode_arrows")
+		step(1, _press.bind(KEY_B))
+		step(1, _pitch(-6.0))
+		step(1, _go(10.0, -8.0, 0.0))
+		step(40, nop, "u10_exit_sign")
+		return
+	if "showcase" in args:
+		# Round 4: the hammerhead's swap frame by frame, the wheel's slide, the crab.
+		step(90, _go(10.0, -4.4, 180.0))
+		step(10, _pitch(-4.0), "s01_koi")
+		step(1, _choose.bind(1))
+		for k in 12:
+			step(4, nop, "s%02d_swap_%02d" % [2 + k, k])
+		step(60, nop, "s14_hammerhead_settled")
+		for k in 3:
+			step(1, _wheel.bind(true))
+		step(10, nop, "s15_slid_3")
+		for k in 3:
+			step(1, _wheel.bind(true))
+		step(10, nop, "s16_slid_6")
+		step(1, _press.bind(KEY_R))
+		step(1, _choose.bind(2))
+		step(150, nop, "s17_crab")
+		return
 	if "round3" in args:
 		# Ramon's second walkthrough (9 Oct): the spawn's facing, the walls, the showcase's four and a
 		# swap, its panel, the airlock behind the hologram, the tank's arches, weed and swarm, the square,
@@ -298,6 +345,37 @@ func _walk_stop() -> void:
 	var p: Node4D = _room.get("player")
 	print("ROOM walked from %s to %s (%.2f m)" % [str(_walk_from), str(p.global_position), (p.global_position - _walk_from).length()])
 	p.set("input_enabled", false)
+
+
+## The shark three-quarters in the slice: the contents slid so its middle sits 0.6 of its W
+## half-thickness off.
+func _shark_part() -> void:
+	var tank: Node = _room.get("tank")
+	var shark: Node = tank.get("shark")
+	shark.set_process(false)
+	var q: Vector4 = (tank.call("contents_basis") as Projection) * (shark.get("p") as Vector4)
+	var r: float = 0.05 * float(shark.get("length"))
+	tank.call("set_contents", float(tank.get("contents_turn")), -q.w + 0.6 * r)
+	print("ROOM shark visible %.2f" % float(_room.call("shark_visible")))
+
+
+func _wall_at(t: float) -> void:
+	var wall: Node = _room.get_node_or_null("FishWall")
+	if wall != null:
+		wall.set("_t", t)
+
+
+func _wheel(up: bool) -> void:
+	var e := InputEventMouseButton.new()
+	e.button_index = MOUSE_BUTTON_WHEEL_UP if up else MOUSE_BUTTON_WHEEL_DOWN
+	e.pressed = true
+	Input.parse_input_event(e)
+	var e2 := InputEventMouseButton.new()
+	e2.button_index = e.button_index
+	e2.pressed = false
+	Input.parse_input_event(e2)
+	var s: Node = _room.get("showcase")
+	print("ROOM wheel: showcase slide %.2f" % float(s.get("slide_w")))
 
 
 func _choose(k: int) -> void:

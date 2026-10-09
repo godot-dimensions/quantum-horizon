@@ -82,8 +82,7 @@ func _draw_keys(u: float) -> void:
 	if on_platform:
 		strip.append(["Right drag", "Turn the slice"])
 		strip.append(["R", "Level it"])
-	strip.append(["G", "Gerstner"])
-	strip.append(["Tab", "Dev"])
+	strip.append(["G", "Toggle Gerstner"])
 	var fk: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")
 	var kpx: int = Style.type_px("caption", u)
@@ -135,7 +134,7 @@ func _draw_seas(u: float) -> void:
 	var fl: Font = LabPrint.font("body")
 	var pad: float = 18.0 * u
 	draw_string(fb, r.position + Vector2(pad, pad + 14.0 * u), "THE SEA", HORIZONTAL_ALIGNMENT_LEFT, -1, int(16 * u), Color.WHITE)
-	draw_string(fs, r.position + Vector2(pad, pad + 14.0 * u), "1 - 4", HORIZONTAL_ALIGNMENT_RIGHT, w - pad * 2.0, int(12 * u), Color(Style.UI_INK_DIM))
+	draw_string(fs, r.position + Vector2(pad, pad + 14.0 * u), "PRESS 1 - 4 TO CHANGE THE SEA", HORIZONTAL_ALIGNMENT_RIGHT, w - pad * 2.0, int(11 * u), Color(Style.UI_INK_DIM))
 	# The tiles: two rows of two.
 	var tw: float = (w - pad * 2.0 - 10.0 * u) * 0.5
 	var th: float = 46.0 * u
@@ -151,7 +150,7 @@ func _draw_seas(u: float) -> void:
 	# The Gerstner: off and its three looks.
 	var gy: float = r.position.y + pad + 28.0 * u + 2.0 * (th + 8.0 * u) + 10.0 * u
 	draw_string(fb, Vector2(r.position.x + pad, gy + 14.0 * u), "GERSTNER", HORIZONTAL_ALIGNMENT_LEFT, -1, int(13 * u), Color.WHITE)
-	draw_string(fs, Vector2(r.position.x + pad, gy + 14.0 * u), "G", HORIZONTAL_ALIGNMENT_RIGHT, w - pad * 2.0, int(12 * u), Color(Style.UI_INK_DIM))
+	draw_string(fs, Vector2(r.position.x + pad, gy + 14.0 * u), "PRESS G TO TOGGLE GERSTNER", HORIZONTAL_ALIGNMENT_RIGHT, w - pad * 2.0, int(11 * u), Color(Style.UI_INK_DIM))
 	var labels: Array = ["OFF", "1", "2", "3"]
 	var gw: float = (w - pad * 2.0 - 3.0 * 8.0 * u) / 4.0
 	for i in 4:

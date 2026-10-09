@@ -42,8 +42,9 @@ func _hall() -> Resource:
 	var square: int = g.call("add_node", "destination", _p(-5.23, -7.7), {"band": band, "state": "available", "target": "TurnSpot", "frame": "rect",
 		"approach": Vector2(-1, 0), "symbol": false, "clear": 1.62})
 	var turn2: int = g.call("add_node", "junction", _p(10.0, -7.7), {"band": band})
-	# Round 3: the showcase halfway between the tank's front and the south wall (10, -2.74), radius 3.
-	var koi: int = g.call("add_node", "destination", _p(10.0, -6.45), {"band": band, "state": "available", "target": "Showcase", "frame": "round", "approach": Vector2(0, -1)})
+	# Round 4: the showcase 1 m off the south wall and 1 m off the east wall, (10, 0), radius 3; the
+	# branch from the junction runs on to just short of it.
+	var koi: int = g.call("add_node", "destination", _p(10.0, -3.7), {"band": band, "state": "available", "target": "Showcase", "frame": "round", "approach": Vector2(0, -1)})
 	var door: int = g.call("add_node", "destination", _p(10.0, -12.4), {"band": band, "state": "arrival", "target": "ExitDoor", "frame": "rect", "approach": Vector2(0, 1)})
 	g.call("add_edge", s, turn1, "primary", "static", band)
 	g.call("add_edge", turn1, square, "primary", "static", band)

@@ -48,7 +48,7 @@ nodes = [{
 "frame": "round",
 "id": 5,
 "kind": "destination",
-"pos": Vector4(10, 0, -6.45, 0),
+"pos": Vector4(10, 0, -3.7, 0),
 "state": "available",
 "target": "Showcase"
 }, {

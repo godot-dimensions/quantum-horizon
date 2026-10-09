@@ -42,7 +42,7 @@ const MOODS := ["bright", "dark"]
 ## the wall (x for n/s, z for w/e). `cuts`: more places to split it (where prints begin and end).
 ## Returns [[box, a0, a1, y0, y1], ...] for printing on.
 static func wall(parent: Node4D, nm: String, side: String, x0: float, z0: float, x1: float, z1: float, h: float, t: float,
-		openings: Array, cuts: Array, swatch: String) -> Array:
+		openings: Array, cuts: Array, swatch: String, open0: bool = false, open1: bool = false) -> Array:
 	var along_x: bool = side == "n" or side == "s"
 	# WATER LAB: the side walls stop 5 mm short of the end walls' inner faces. Ending exactly on them,
 	# a side wall's end face lay in the end wall's plane, and at the corners a blue (claimed) wall and a
@@ -50,6 +50,11 @@ static func wall(parent: Node4D, nm: String, side: String, x0: float, z0: float,
 	# overlap with white walls"). The end walls run on past the corner and cover the gap.
 	var a0: float = (x0 - t) if along_x else z0 + 0.005
 	var a1: float = (x1 + t) if along_x else z1 - 0.005
+	# WATER LAB: an end on an open side stops on its line (kit_room_4d.gd flush_open).
+	if open0:
+		a0 = x0 if along_x else z0
+	if open1:
+		a1 = x1 if along_x else z1
 	var fixed: float
 	match side:
 		"n": fixed = z0 - t * 0.5

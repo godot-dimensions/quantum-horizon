@@ -52,6 +52,7 @@ extends Node4D
 
 const Spec := preload("res://ramon/WaterLab/carried/PathCreator/path_spec.gd")
 const Draw := preload("res://ramon/WaterLab/carried/PathCreator/render/path_draw.gd")
+const LabGrid := preload("res://ramon/WaterLab/carried/LabKit/lab_grid.gd")
 const GENERATED := "pc_generated"
 ## Across the route, metres: room for the widest mark.
 const EDGE_W := 0.8
@@ -108,6 +109,12 @@ const FRAME_GAP := 1.6
 	set(v):
 		under_color = v
 		_apply_look()
+## The PathCreator kit's fix (CreationLab copy, 9 Oct), carried round 4 (Ramon: "In dark mode, the
+## directional path arrows still have a thin white outline ... reuse the existing fix"): the floor's
+## swatch, whose colour `under_color` follows, read from LabGrid four times a second; a mark's
+## antialiased edge then blends into the floor as it is now, not into the light grey it was built on.
+@export var floor_swatch: String = ""
+var _floor_check: float = 0.0
 @export var motion: bool = true:
 	set(v):
 		motion = v
@@ -393,6 +400,13 @@ func _target_of(n: Dictionary) -> Node4D:
 func _process(dt: float) -> void:
 	if Engine.is_editor_hint() or graph == null:
 		return
+	if not floor_swatch.is_empty():
+		_floor_check -= dt
+		if _floor_check <= 0.0:
+			_floor_check = 0.25
+			var sw: Array = LabGrid._values.get(floor_swatch, [])
+			if not sw.is_empty() and (sw[0] as Color) != under_color:
+				under_color = sw[0]
 	var moved: Array = []
 	for n in graph.nodes:
 		if not bool(n.get("anchor", false)):

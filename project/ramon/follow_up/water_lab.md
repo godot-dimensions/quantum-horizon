@@ -718,3 +718,130 @@ Trym's note via Ramon: the sea's water tech was pulled from https://github.com/e
 **F. Close (39-40)**
 39. Every frame checked against both rounds' lists. The handover and memory brought up to date.
 40. Commit by explicit paths. List the CC0 gull recordings (download only with Ramon's yes).
+
+## Round 4: Ramon's walkthrough parts 2 to 4 (9 Oct)
+
+Also: "make sure we're using Andrew's walker and W rotation settings from the playable world". The
+walker, rig and ground-basis scripts were already the pen's own (e4ff9cb). The lab player overrode
+the pen's settings, though: Q/E stepping through W was off, and the walk was slower with a soft
+acceleration. Both scenes now use the pen's values.
+
+### The plan
+
+**A. The player (1)**
+1. The pen's walk in both scenes:
+   - walk 1.4, run 3.0, sprint 4.2, acceleration 12, turn 11;
+   - Q/E steps through W at 0.3 speed.
+   - In the tank room, stepping pauses only where E is taken (the feeding panel, the showcase panel).
+
+**B. The tank and its gizmos (2-9)**
+2. The gizmo panels: the z-W one goes on top, renamed "FRONT TO BACK"; the x-W one stays
+   "SIDE TO SIDE" below it. Both boxes are drawn the same size, as matching views of one tank.
+3. The left arch is 1.25x and turned about 35 degrees (the right arch keeps its round-3 turn).
+4. The schooling fish are a little bigger and faster.
+5. The shark prompt:
+   - "V: Align with the shark" shows while the shark is about 70% in your slice and not yet aligned;
+   - V slides the contents until it is whole;
+   - it works anywhere in front of the tank.
+6. More coral: red corals (sea fans, branching) spread through the tank. The purple ones stay.
+7. More weed: denser clumps of the short and the long weed, unevenly spread. The current weed stays.
+8. The fish wall: the Showa and the crab sit 0.5 m higher in their pictures. Kohaku and Ogon stay.
+9. Frames of the tank: the gizmos, the arches, the fish, the corals, the prompt, then V.
+
+**C. The showcase (10-14)**
+10. The wheel on the pedestal slides through W again (it waited for a captured mouse).
+11. The hammerhead's broken look when it first appears:
+    - capture the swap frame by frame;
+    - find the cause;
+    - fix it, or label the modes if they turn out to be deliberate.
+12. The crab higher on the pedestal.
+13. Placed 1 m off the south wall (the crab/Showa wall) and 1 m off the east wall ("The tank"
+    board). The path from the junction is extended to it.
+14. Frames of the four creatures, the swap, the slide.
+
+**D. The tank room's UI (15-17)**
+15. The top-right toggle says "DARK MODE ON" / "DARK MODE OFF".
+16. No white outline round the path arrows in dark mode: port the PathCreator kit's floor-swatch fix.
+17. A small EXIT sign over the door out of the room.
+
+**E. The sea (18-29)**
+18. The tunnel: floor, ceiling and walls end on one line at the mouth, flush with the blue walls. No
+    protruding floor.
+19. The platform:
+    - TURN THE SLICE redrawn square and centred;
+    - no "it stays set" status in the top right.
+20. The pole 5 m on and 3 m to the left (as you walk out).
+21. Platform stability: the platform drawn with only the slice's own turn (the rig's tilt from its
+    heading), so it does not swing left and right as you drag.
+22. The boats, using the W Tools Exploder's real W distribution (not its static illusion):
+    - two main boats, with more spread through W;
+    - the one in your slice white with the lab grid, the others orange (the pen's orange).
+23. The Gerstner's double lines: find the cause (the near/far seam? the foam band's two edges?) and
+    remove them.
+24. The storm:
+    - longer, fewer crests with the same power;
+    - less water over the platform.
+25. Spray where a wave hits the platform, on the side it comes from, and wet patches that dry.
+26. Labels:
+    - "G: Toggle Gerstner";
+    - "Press 1-4 ..." on the sea controls;
+    - no developer controls shown (Tab).
+27. More life below:
+    - a group of three hammerheads cruising, now and then near the surface;
+    - eels by the pole.
+28. A second, deeper Loch Ness creature, subtle.
+29. Frames of every change, and perf.
+
+**F. Close (30-31)**
+30. The handover and memory.
+31. Commit by explicit paths.
+
+### Status (9 Oct, end of round 4)
+
+Done and checked by frames (`smoke_test_output/water_lab/room/u*`, `s*`; `seascape/v*`):
+- **Player:** the pen's walk and W stepping in both scenes (`shared/pen_walk.gd`).
+- **Gizmos:** FRONT TO BACK on top, SIDE TO SIDE below, equal boxes (u01).
+- **Tank:** the left arch bigger and turned 35 degrees; six red corals; denser weed clumps; the
+  swarm bigger and faster (u02-u04). The reef is now 325k tets (212k before).
+- **Shark prompt:** shows at 70-98% visibility in front of the tank; V aligns (u05, u06; the
+  log reads "shark visible 0.80").
+- **Fish wall:** the Showa and the crab are lifted 0.16 and 0.14 of the picture's height (about
+  0.5 m on the wall); the crab's studio camera is a little further back so its legs stay in
+  frame. Kohaku and Ogon are unchanged (u07, u08).
+- **Showcase:**
+  - The wheel works without a captured mouse.
+  - Each creature has its own W depth (koi 0.21, hammerhead 0.05, crab 0.6, eel 0.06 of its
+    size), and a wheel step is a sixth of it. Before, one step was a fifth of the koi's depth for
+    all four, which threw the thin hammerhead out of the slice in a single tick (s15, s16).
+- **The hammerhead's first appearance:** frame by frame (s02-s14), the koi shrank away, then the
+  shark jumped in at two-thirds size, because its life size is two-thirds of its display size.
+  - It now grows in from nothing over a quarter second.
+  - All four creatures' shaders warm up for four frames after the build, so none compiles on its
+    first pick.
+  - There were no hidden modes, so nothing was labelled.
+- **Dark mode:** the label reads DARK MODE ON/OFF; the path arrows lose their white edge in dark
+  mode (u09).
+- **EXIT:** a separate EXIT text had split the "4D OCEAN SIMULATOR" lettering. EXIT is now the
+  sign's small subtitle, "EXIT · TO THE SEA" (u10).
+- **Tunnel:** the mouth is flush, with no protruding floor (v01, v02).
+- **Platform square:** the page's type is fitted to the square; the title had run off its edge
+  (v03).
+- **Pole:** moved 5 m on and 3 m left (v04).
+- **Platform stability:** the platform moved 0.005 m in view while the slice turned 31 degrees
+  (v05).
+- **Boats:**
+  - White in your slice and orange off it (v05-v07). Two principals, plus more boats through W by
+    the Exploder's layers.
+  - The grid lines had read thick from a distance, because the boat swatch had about four times
+    the kit's line contrast and a line is never drawn thinner than a pixel. The swatch now uses
+    the kit's own contrast.
+- **Gerstner:** style 2 (the default) uses the true normal everywhere, which removes the double
+  lines; style 1 (the original) is kept on G for comparison (v08).
+- **Storm:** 52 m wavelength with fewer crests (v09-v11).
+- **Spray:** the first trigger asked for water within 1 m of the 2.8 m deck, which no sea here
+  reaches, so the storm frames showed no spray. It now fires when a crest rises past 0.75 m at the
+  rim, and the drops are thrown up the side; the hardest clear the deck and wet it.
+- **Life below:**
+  - The hammerheads now swim between 0.8 and 4.5 m deep, and the eels between 1.3 and 2.1 m. The
+    sea goes dark below about 3 m, and the first frames never caught a shark.
+  - The second plesiosaur stays deep and subtle.

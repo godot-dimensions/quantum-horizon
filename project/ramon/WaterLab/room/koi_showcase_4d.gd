@@ -48,14 +48,14 @@ const FloatPanel := preload("res://ramon/WaterLab/carried/voxel_lab/float_panel_
 const GENERATED := "showcase_generated"
 
 ## The four: the key, the tile's name and glyph, the card, how big it is in life and here (metres,
-## nose to tail or across), and where it holds (over the deck: a share of the column's height; 0 on
-## the deck).
+## nose to tail or across), where it holds (over the deck: a share of the column's height; 0 on
+## the deck), and its half depth through W (body lengths: its shader's w_radius; the shark's 0.05).
 const SPECIES := [
-	{"key": "koi", "name": "Koi", "glyph": "koi", "title": "Kohaku", "kicker": "A KOI, FIVE TIMES LIFE SIZE", "life": 0.7, "size": 3.4, "hold": 0.5},
+	{"key": "koi", "name": "Koi", "glyph": "koi", "title": "Kohaku", "kicker": "A KOI, FIVE TIMES LIFE SIZE", "life": 0.7, "size": 3.4, "hold": 0.5, "w": 0.21},
 	{"key": "hammerhead", "name": "Hammerhead", "glyph": "hammerhead", "title": "Scalloped hammerhead", "kicker": "LOFTED IN 4D, HALF AGAIN LIFE SIZE",
-		"life": 2.4, "size": 3.6, "hold": 0.5},
-	{"key": "crab", "name": "Crab", "glyph": "crab", "title": "Edible crab", "kicker": "WALKS SIDEWAYS, AND THROUGH W", "life": 0.34, "size": 1.8, "hold": 0.0},
-	{"key": "eel", "name": "Eel", "glyph": "eel", "title": "European eel", "kicker": "A WAVE DOWN ITS WHOLE LENGTH", "life": 1.4, "size": 3.4, "hold": 0.45},
+		"life": 2.4, "size": 3.6, "hold": 0.5, "w": 0.05},
+	{"key": "crab", "name": "Crab", "glyph": "crab", "title": "Edible crab", "kicker": "WALKS SIDEWAYS, AND THROUGH W", "life": 0.34, "size": 1.8, "hold": 0.0, "w": 0.6},
+	{"key": "eel", "name": "Eel", "glyph": "eel", "title": "European eel", "kicker": "A WAVE DOWN ITS WHOLE LENGTH", "life": 1.4, "size": 3.4, "hold": 0.45, "w": 0.06},
 ]
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
@@ -72,8 +72,9 @@ const SPECIES := [
 		holo_height = v
 		_later()
 @export var pattern_seed: float = 0.37
-## The floating panel: where it floats (x, z from the pedestal's middle). It turns to face you.
-@export var panel_at: Vector2 = Vector2(-1.9, -3.6)
+## The floating panel: where it floats (x, z from the pedestal's middle), toward the route's end. It
+## turns to face you.
+@export var panel_at: Vector2 = Vector2(-2.1, -3.5)
 
 ## The pedestal's deck height (the room's prompt sits over it).
 var deck_h: float = 0.9
@@ -108,6 +109,9 @@ var _side: float = 1.0
 @export var side_on: float = 2.2
 var _pinch: float = 0.0
 var _swim_us: float = 0.0
+## Frames left of the warm-up: all four drawn tiny for a few frames after building, so none of
+## their shaders compiles the first time it is chosen (round 4: the hammerhead's first appearance).
+var _warm: int = 0
 
 
 func _ready() -> void:
@@ -147,6 +151,7 @@ func rebuild() -> void:
 	add_child(_shark)
 	_shark.set_process(false)
 	_shark.visible = false
+	_warm = 4
 	panel = Node4D.new()
 	panel.name = "Panel"
 	panel.set_meta(GENERATED, true)
@@ -237,6 +242,8 @@ func _process(delta: float) -> void:
 		_in = move_toward(_in, 1.0, dt / 1.8)
 	_swim(dt)
 	_draw_now()
+	if _warm > 0:
+		_warm_up()
 	if panel != null and player != null and is_instance_valid(player):
 		panel.call("set_near", near_panel(player.global_position))
 	_swim_us = lerpf(_swim_us, float(Time.get_ticks_usec() - t0), 0.05)
@@ -257,11 +264,37 @@ func _show(i: int) -> void:
 		_shark.visible = true
 
 
-## How big it is now: from its life size growing in (eased), times the shrink when it goes.
+## How big it is now: from nothing to its life size in the first quarter second, then growing to the
+## display's size (eased), times the shrink when it goes. (Round 4: the hammerhead, life size two
+## thirds of its display size, had jumped straight in at two thirds after the koi shrank away.)
 func _grow() -> float:
 	var sp: Dictionary = SPECIES[maxi(_shown, 0)]
 	var small: float = float(sp["life"]) / float(sp["size"])
-	return lerpf(small, 1.0, ease(_in, -2.2)) * (_out if _shown != chosen else 1.0)
+	var appear: float = smoothstep(0.0, 0.14, _in)
+	return lerpf(small, 1.0, ease(_in, -2.2)) * appear * (_out if _shown != chosen else 1.0)
+
+
+## The warm-up: the ones not on the pedestal drawn a millimetre long inside the deck, then put away.
+func _warm_up() -> void:
+	_warm -= 1
+	var at := Vector4(0.0, deck_h * 0.5, 0.0, 0.0)
+	var shown_key: String = SPECIES[maxi(_shown, 0)]["key"]
+	for k in _herds:
+		if k == shown_key:
+			continue
+		var herd: Node4D = _herds[k]
+		herd.call("set_count", 0 if _warm == 0 else 1)
+		if _warm > 0:
+			herd.call("write", 0, at, Vector4(0, 0, 1, 0), Vector4(1, 0, 0, 0), Color(0, 0, 0.5, 0), Vector4(0.0, 0.0, 0.001, 0.0))
+			herd.call("upload")
+	if _shark != null and shown_key != "hammerhead":
+		_shark.visible = _warm > 0
+		if _warm > 0:
+			var s: float = 0.001
+			_shark.basis = Projection(Vector4(s, 0, 0, 0), Vector4(0, s, 0, 0), Vector4(0, 0, s, 0), Vector4(0, 0, 0, s))
+			_shark.set("p", at / s)
+			_shark.set("frame", Projection.IDENTITY)
+			_shark.call("_pose")
 
 
 ## Strokes and glides, slow turns, a gulp now and then; the crab's claws.
@@ -320,7 +353,8 @@ func _draw_now() -> void:
 		"crab":
 			var hc := Vector4(sin(yaw), 0.0, cos(yaw), 0.0)
 			var rc := Vector4(cos(yaw), 0.0, -sin(yaw), 0.0)
-			_write("crab", Vector4(0.0, deck_h + 0.35, 0.0, slide_w), hc, rc, Color(_pinch, 0.0, 0.0, 1.0), Vector4(_phase, 1.0, size, 0.5 + 0.5 * sin(_t * 0.9)))
+			# Up off the deck (round 4: "the crab sits too low ... raise it slightly").
+			_write("crab", Vector4(0.0, deck_h + 0.9, 0.0, slide_w), hc, rc, Color(_pinch, 0.0, 0.0, 1.0), Vector4(_phase, 1.0, size, 0.5 + 0.5 * sin(_t * 0.9)))
 		"hammerhead":
 			if _shark == null:
 				return
@@ -341,11 +375,17 @@ func _write(key: String, at: Vector4, h: Vector4, right: Vector4, colour: Color,
 
 # -- in your hands ------------------------------------------------------------------------------------------------
 
-## The wheel: through W, a fifth of its depth a step, as far as its edge.
+## How far through W it goes either side of its middle (metres, as shown).
+func reach() -> float:
+	return float(SPECIES[chosen]["w"]) * float(SPECIES[chosen]["size"])
+
+
+## The wheel: through W, a sixth of its depth a step, as far as its edge. (Round 4: one step had been
+## a fifth of the koi's depth for all four, which took the thin hammerhead out of the slice at once.)
 func step_slice(d: int) -> void:
 	_touched = _t
-	var reach: float = 0.21 * float(SPECIES[chosen]["size"])
-	slide_w = clampf(slide_w + float(d) * reach * 0.2, -reach, reach)
+	var r: float = reach()
+	slide_w = clampf(slide_w + float(d) * r / 6.0, -r, r)
 
 
 ## A right drag turns it round (x) and tips it (y).
@@ -394,8 +434,8 @@ func card() -> Dictionary:
 
 func face() -> Array:
 	var sp: Dictionary = SPECIES[chosen]
-	var reach: float = 0.21 * float(sp["size"])
-	var cut: float = sqrt(maxf(1.0 - (slide_w * slide_w) / (reach * reach), 0.0))
+	var r: float = reach()
+	var cut: float = sqrt(maxf(1.0 - (slide_w * slide_w) / (r * r), 0.0))
 	var size_row: Array = ["Here", "%.1f m" % float(sp["size"])]
 	var life_row: Array = ["In life", "%.2f m" % float(sp["life"]) if float(sp["life"]) < 1.0 else "%.1f m" % float(sp["life"])]
 	return [size_row, life_row, ["Cut by your slice", "%d%%" % int(round(cut * 100.0))]]

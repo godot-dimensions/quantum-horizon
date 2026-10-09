@@ -52,6 +52,22 @@ func _ready() -> void:
 	for corner in [-1.0, 1.0]:
 		for i in 22:
 			_add(rows, corner * (he.x - _rng.randf_range(0.3, 1.6)), _rng.randf_range(0.6, 1.35), _rng.randf_range(-1.0, 1.0), _rng.randf_range(0.3, 0.8), _rng.randf_range(0.03, 0.05), light, 0.25)
+	# Round 4 (Ramon: "a few additional, denser clumps of seaweed. Vary the density"): tight clumps of
+	# the long weed, each a different size and thickness, scattered unevenly, some off the slice. Their
+	# own random numbers, after the rest, so the weed that was there stays where it was.
+	var crng := RandomNumberGenerator.new()
+	crng.seed = 4402
+	# (_add draws a colour jitter from _rng: its state is put back after, so the turf is as it was.)
+	var kept: int = _rng.state
+	for clump in [[Vector4(-8.9, 0.0, -0.9, 0.3), 26, 0.45], [Vector4(-3.3, 0.0, -1.1, -0.8), 18, 0.3], [Vector4(1.8, 0.0, 0.9, 0.2), 12, 0.25],
+			[Vector4(5.4, 0.0, -1.2, 1.1), 22, 0.4], [Vector4(8.1, 0.0, 0.7, -0.4), 9, 0.2]]:
+		var at: Vector4 = clump[0]
+		for i in int(clump[1]):
+			var rr: float = float(clump[2]) * sqrt(crng.randf())
+			var ang: float = crng.randf() * TAU
+			_add(rows, at.x + cos(ang) * rr, at.z + sin(ang) * rr * 0.7, at.w + crng.randf_range(-0.25, 0.25), crng.randf_range(1.6, 3.4),
+				crng.randf_range(0.10, 0.22), grass.lerp(kelp, crng.randf() * 0.6), 0.6)
+	_rng.state = kept
 	blades = rows.size()
 	herd = Node4D.new()
 	herd.name = "WeedHerd"

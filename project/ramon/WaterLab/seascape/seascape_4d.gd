@@ -38,6 +38,8 @@ const Mats := preload("res://ramon/WaterLab/carried/LabKit/lab_materials.gd")
 const Style := preload("res://ramon/WaterLab/carried/kit/kit_style.gd")
 const Hud := preload("res://ramon/WaterLab/seascape/seascape_hud.gd")
 const GB := preload("res://ramon/WaterLab/carried/LabKit/carried/chickenpen/scripts/ground_basis_4d.gd")
+const PenWalk := preload("res://ramon/WaterLab/shared/pen_walk.gd")
+const LabPrint := preload("res://ramon/WaterLab/carried/LabKit/lab_print.gd")
 
 @export_group("Sea")
 @export var start_preset: int = 1
@@ -75,7 +77,7 @@ const GB := preload("res://ramon/WaterLab/carried/LabKit/carried/chickenpen/scri
 @export_group("Pole")
 ## Beside the platform (round 2: "closer to the blue round circle"): x and z from the platform's
 ## middle, and W.
-@export var pole_offset: Vector3 = Vector3(0.8, -8.2, 0.0)
+@export var pole_offset: Vector3 = Vector3(5.8, -11.2, 0.0)
 @export var pole_size: float = 2.3
 @export var pole_above_water: float = 3.6
 
@@ -203,6 +205,7 @@ func _place_targets() -> void:
 		return
 	net.position.y = deck_height
 	net.set("guide_color", Color("#1761d7"))
+	net.set("floor_swatch", "kit_floor")
 	for n in graph.get("nodes"):
 		match String((n as Dictionary).get("kind", "")):
 			"destination":
@@ -288,6 +291,7 @@ func _build_tunnel() -> void:
 	room.set_script(load("res://ramon/WaterLab/carried/kit/kit_room_4d.gd"))
 	room.set("size", Vector3(L, tunnel_height, tunnel_width))
 	room.set("open_sides", ["e"])
+	room.set("flush_open", true)
 	room.set("doorways", [["w", -door_width * 0.5, door_width * 0.5, door_height]])
 	room.set("cove", false)
 	room.position = Vector4(L * 0.5, deck_height, 0.0, 0.0)
@@ -424,15 +428,78 @@ func _build_platform() -> void:
 	var r: float = platform_radius - 0.15
 	var gap: float = asin(clampf((pier1_width * 0.5 + 0.3) / r, 0.0, 1.0))
 	_fence_from(_set_frame, "Rail", _ring_seed(r, 32, pier1_w_depth, gap, PI), Vector4(0.0, 0.04, 0.0, 0.0), pier1_w_depth)
-	# TURN THE SLICE, drawn by a kit panel out of sight and printed into the deck.
-	if get_node_or_null("PanelSource") == null:
-		var source := Node.new()
-		source.name = "PanelSource"
-		source.set_script(load("res://ramon/WaterLab/seascape/seascape_panel_source.gd"))
-		add_child(source)
-	var pm: Vector2 = Spec.PANEL * Spec.UNIT_M * platform_panel_scale
-	var page: Node4D = _page("intro", load("res://ramon/WaterLab/seascape/pier2_info.tres"), platform_panel_scale, Vector4(c.x, -30.0, c.z + 20.0, 0.0))
-	_print_deck_later(disc, page, pm)
+	# Waves breaking on it: spray and wet patches where a crest reaches the deck (round 4).
+	var spray := Node4D.new()
+	spray.name = "Spray"
+	spray.set_script(load("res://ramon/WaterLab/seascape/wave_spray_4d.gd"))
+	spray.set("water", _water)
+	spray.set("deck", m)
+	spray.set("centre", Vector4(c.x, 0.0, c.z, 0.0))
+	spray.set("radius", platform_radius)
+	spray.set("deck_y", deck_height)
+	add_child(spray)
+	# TURN THE SLICE: a square page, centred, printed into the deck (round 4, Ramon: "Center the Turn the
+	# Slice presentation. Remove the top-right information ... Change the presentation area ... to a
+	# square ... Center this square within the overall station").
+	_print_square_later(disc)
+
+
+## The square page: drawn once (LabPrint, as the lab's walls carry their words), printed into the
+## deck's top in its middle, inside the line ring.
+func _print_square_later(disc: MeshInstance4D) -> void:
+	var side: float = (platform_radius - 1.4) * sqrt(2.0)
+	var tex: Texture2D = await LabPrint.render(get_tree(), Vector2i(1400, 1400), _square_page)
+	if tex == null or not is_instance_valid(disc):
+		return
+	var m: TetraMaterial4D = disc.material_override as TetraMaterial4D
+	var r: float = platform_radius
+	LabGrid.set_print(m, tex, Vector4(0, 1, 0, 0), Rect2(Vector2(r - side * 0.5, r - side * 0.5), Vector2(side, side)), Color.WHITE, 0.15)
+	LabGrid.set_print_strength(m, 1.0)
+	m.get_cross_section_material_3d().set_shader_parameter("print_aa", 1.0)
+
+
+## The page: the title, a line, three controls, in white on clear (the deck's blue shows).
+func _square_page(c: Control) -> void:
+	var sz: Vector2 = c.size
+	var u: float = sz.x / 1000.0
+	var white := Color(1, 1, 1, 1)
+	var soft := Color(1, 1, 1, 0.82)
+	var fb: Font = LabPrint.font("black")
+	var fs: Font = LabPrint.font("bold")
+	var fl: Font = LabPrint.font("body")
+	# A thin frame, inset, with the path frames' cut corners.
+	var k: float = 34.0 * u
+	var m: float = 20.0 * u
+	var pts := PackedVector2Array([Vector2(m + k, m), Vector2(sz.x - m - k, m), Vector2(sz.x - m, m + k), Vector2(sz.x - m, sz.y - m - k),
+		Vector2(sz.x - m - k, sz.y - m), Vector2(m + k, sz.y - m), Vector2(m, sz.y - m - k), Vector2(m, m + k), Vector2(m + k, m)])
+	c.draw_polyline(pts, Color(1, 1, 1, 0.55), maxf(2.0, 4.0 * u), true)
+	# Every line fitted inside the frame (frames of 9 Oct: the title had run off the square's edge).
+	var inner: float = sz.x - 2.0 * (m + 70.0 * u)
+	c.draw_string(fs, Vector2(0, 250.0 * u), "THE PLATFORM", HORIZONTAL_ALIGNMENT_CENTER, sz.x, _fit(fs, "THE PLATFORM", 34.0 * u, inner), soft)
+	c.draw_string(fb, Vector2(0, 390.0 * u), "TURN THE SLICE", HORIZONTAL_ALIGNMENT_CENTER, sz.x, _fit(fb, "TURN THE SLICE", 118.0 * u, inner), white)
+	c.draw_string(fl, Vector2(0, 470.0 * u), "Stand here and right-drag.", HORIZONTAL_ALIGNMENT_CENTER, sz.x, _fit(fl, "Stand here and right-drag.", 40.0 * u, inner), soft)
+	c.draw_string(fl, Vector2(0, 520.0 * u), "The sea is cut a new way.", HORIZONTAL_ALIGNMENT_CENTER, sz.x, _fit(fl, "Stand here and right-drag.", 40.0 * u, inner), soft)
+	c.draw_line(Vector2(sz.x * 0.5 - 140.0 * u, 580.0 * u), Vector2(sz.x * 0.5 + 140.0 * u, 580.0 * u), Color(1, 1, 1, 0.5), maxf(2.0, 3.0 * u), true)
+	# The three controls, each a cap and its words.
+	var items: Array = [["RIGHT DRAG", "Turn the slice"], ["R", "Level it again"], ["1 - 4", "Change the sea"]]
+	for i in items.size():
+		var cx: float = sz.x * (0.23 + 0.27 * float(i))
+		var cap := Rect2(Vector2(cx - 110.0 * u, 640.0 * u), Vector2(220.0 * u, 96.0 * u))
+		var sb := StyleBoxFlat.new()
+		sb.draw_center = false
+		sb.border_color = white
+		sb.set_border_width_all(int(maxf(2.0, 5.0 * u)))
+		sb.set_corner_radius_all(int(18.0 * u))
+		c.draw_style_box(sb, cap)
+		var key_size: int = _fit(fs, String(items[i][0]), 36.0 * u, cap.size.x - 36.0 * u)
+		c.draw_string(fs, Vector2(cap.position.x, cap.get_center().y + key_size * 0.36), String(items[i][0]), HORIZONTAL_ALIGNMENT_CENTER, cap.size.x, key_size, white)
+		c.draw_string(fl, Vector2(cx - 130.0 * u, 800.0 * u), String(items[i][1]), HORIZONTAL_ALIGNMENT_CENTER, 260.0 * u, _fit(fl, "Change the sea", 32.0 * u, 250.0 * u), soft)
+
+
+## The font size, at most `size`, at which `text` is no wider than `width`.
+func _fit(font: Font, text: String, size: float, width: float) -> int:
+	var w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, int(size)).x
+	return int(size if w <= width else floorf(size * width / w))
 
 
 ## The page's live picture printed into the deck's top, in its middle; the page's own slab hidden.
@@ -516,6 +583,8 @@ func _build_floor() -> void:
 func _build_player() -> void:
 	player = KitPlayer.make()
 	player.name = "Player"
+	# The playable world's walk, Q/E stepping through W included (round 4).
+	PenWalk.apply(player)
 	add_child(player)
 	_rig = player.get_node_or_null("CameraRig")
 	if _rig != null:
@@ -561,6 +630,42 @@ func _build_creature() -> void:
 	# show; the pieces still swim.
 	if swimmer != null:
 		swimmer.set(&"blend_joints", false)
+	# Round 4 (Ramon: "another Loch Ness-type creature lower in the water ... subtle ... rewards
+	# observation"): a second, smaller one, deep (14 to 26 m, a blue-green shadow through the water),
+	# slow, never coming to visit. Its own copy of the hide's material.
+	var deep: Node4D = scene.instantiate() as Node4D
+	deep.name = "DeepPlesiosaur"
+	var deep_rig: Node4D = deep.get_node_or_null(^"Hide") as Node4D
+	if deep_rig != null and deep_rig.get("material_override") != null:
+		deep_rig.set("material_override", (deep_rig.get("material_override") as Resource).duplicate())
+	sea.add_child(deep)
+	var deep_swim: Node = deep.get_node_or_null(^"Swimmer")
+	if deep_rig != null and deep_swim != null and deep_swim.has_method(&"rest_length"):
+		var built2: float = deep_swim.call(&"rest_length")
+		if built2 > 0.1:
+			deep_rig.set_uniform_scale(creature_length * 0.75 / built2)
+	if deep_swim != null:
+		deep_swim.set(&"blend_joints", false)
+	var deep_pilot := Node4D.new()
+	deep_pilot.name = "Pilot"
+	deep_pilot.set_script(load("res://ramon/WaterLab/carried/water4d/plesiosaur_pilot.gd"))
+	deep_pilot.set(&"body_path", NodePath(".."))
+	deep_pilot.set(&"swimmer_path", NodePath("../Swimmer"))
+	deep_pilot.set(&"player_path", NodePath(""))
+	deep_pilot.set(&"bounds", Vector3(40.0, 40.0, 6.0))
+	deep_pilot.set(&"depth_range", Vector2(14.0, 26.0))
+	deep_pilot.set(&"speed", creature_speed * 0.6)
+	deep_pilot.set(&"visit_every", Vector2(0.0, 0.0))
+	deep.add_child(deep_pilot)
+	# Three hammerheads cruising together, and eels round the pole (round 4).
+	var life := Node4D.new()
+	life.name = "MoreLife"
+	life.set_script(load("res://ramon/WaterLab/seascape/sea_life_4d.gd"))
+	var pa: Vector3 = pole_at()
+	life.set("pole", Vector2(pa.x, pa.y))
+	var pc: Vector4 = platform_centre()
+	life.set("loop_centre", Vector2(pc.x, pc.z))
+	add_child(life)
 	# The sardines' school, off pier 1, under the water; the plesiosaur its hunter.
 	var school := Node4D.new()
 	school.name = "School"
@@ -571,14 +676,20 @@ func _build_creature() -> void:
 
 
 ## The harbour's gulls, round both piers, the wind off the sea (+x); they hear through the camera.
-## The fishing boat (seascape/fishing_boat_4d.gd), at anchor offshore, broadside to the platform.
+## The boats (seascape/boat_fleet_4d.gd): two white ones at anchor offshore, with their copies spread
+## through W; orange ones far out in other slices.
 func _build_boat() -> void:
-	var boat := Node4D.new()
-	boat.name = "Boat"
-	boat.set_script(load("res://ramon/WaterLab/seascape/fishing_boat_4d.gd"))
-	boat.position = Vector4(platform_centre().x + 24.0, 0.0, 9.0, 0.0)
-	boat.set("water", _water)
-	add_child(boat)
+	var fleet := Node4D.new()
+	fleet.name = "Boat"
+	fleet.set_script(load("res://ramon/WaterLab/seascape/boat_fleet_4d.gd"))
+	var c: Vector4 = platform_centre()
+	fleet.set("principals", [[c.x + 24.0, 9.0, PI * 0.5], [c.x + 15.0, -26.0, 0.35]])
+	fleet.set("clear_x", c.x + platform_radius + 4.0)
+	fleet.set("centre", Vector4(c.x, 0.0, c.z, 0.0))
+	fleet.set("water", _water)
+	var cams: Array = player.find_children("*", "Camera4D", true, false) if player != null else []
+	fleet.set("viewer", cams[0] if not cams.is_empty() else null)
+	add_child(fleet)
 
 
 func _build_gulls() -> void:
@@ -815,6 +926,7 @@ func _process(delta: float) -> void:
 		else:
 			_rig.set("slice_turning", false)
 			_rig.call("go_home")
+	_track_look(delta)
 	_hold_set_frame()
 	_route_states(p)
 
@@ -866,11 +978,46 @@ func _doors(delta: float) -> void:
 		_doors_armed = true
 
 
-## The tilt the rig's slice has, as a rotation of the world (the rig's ground basis G against the
-## level frame nearest it, L = flattened(G), which has the same heading; turned into world axes).
+## The tilt the rig's slice has, as a rotation of the world: the rig's ground basis G against the level
+## frame you are looking along (`_look`), turned into world axes.
+##
+## ROUND 4 (Ramon: "When rotating through W, the platform itself appears to rotate or shift left and
+## right ... the platform should remain visually stable"). This was G against the level frame NEAREST
+## G (flattened(G)), whose heading drifts as the slice tilts: a drag that only tilts the slice turned
+## that heading a little, and the platform swung by it. Now the heading is kept by hand
+## (_track_look): it follows only a look round (a turn of G in its own floor, which leaves its W
+## where it was), never a slice drag. Drawn with G times that frame's inverse, the platform is
+## exactly as it was in your view while you drag, whatever the drag does; it turns only when you
+## look round. Coming level again, the kept heading eases onto the actual one, so nothing snaps.
+var _look := Projection.IDENTITY
+var _g_prev := Projection.IDENTITY
+var _look_set: bool = false
+
+
+func _track_look(delta: float) -> void:
+	if _rig == null:
+		return
+	var g: Projection = (_rig as Node4D).basis
+	if not _look_set:
+		_look = GB.flattened(g)
+		_g_prev = g
+		_look_set = true
+	var d: Projection = Basis4D.transposed(_g_prev) * g
+	# A look round turns the frame in its own floor: its W stays. A slice drag moves W.
+	if absf(d.w.w - 1.0) < 1e-5:
+		_look = _look * d
+		_look = GB.cleaned(_look)
+	_g_prev = g
+	var tilt: float = GB.tilt(g)
+	if tilt < 0.0005:
+		_look = GB.flattened(g)
+	else:
+		_look = GB.rotated_toward(_look, GB.flattened(g), delta * 2.0 * (1.0 - smoothstep(0.0, 0.35, tilt)))
+
+
 func _world_tilt() -> Projection:
 	var g: Projection = (_rig as Node4D).basis
-	var s: Projection = g * GB.flattened(g).inverse()
+	var s: Projection = g * Basis4D.transposed(_look)
 	var bp: Projection = (_rig.get_parent() as Node4D).global_basis
 	return bp * s * bp.inverse()
 

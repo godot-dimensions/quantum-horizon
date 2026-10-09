@@ -70,8 +70,11 @@ uniform int solve_iterations = 2;
 // normal of every ordinary pixel, but the foam branch wrote its own normal unflipped, so wherever the
 // crest foam began (foam > 0.002, a hard edge) the sky's reflection switched to a weaker one.
 //   1  as it was (Trym's).
-//   2  the foam branch's normal flipped as the engine flips the rest, and the foam's relief and its
-//      matt finish faded in over the foam's first quarter: the same sea, no patches.
+//   2  the surface's own normal everywhere, for the engine's sky reflection as well as for the sun
+//      (light() always used it): round 4 found the "double lines" (Ramon: "a bright line accompanied
+//      by another bright line ... a duplicated dark line") were the two disagreeing, the sun's
+//      highlight from the true normal and the reflection's from the flipped one. The foam's relief
+//      fades in over the foam's first quarter, so its edge has no line either.
 //   3  the way of the shader Trym's came from (github.com/emilje/godot-water-shader, g_wave.gdshader):
 //      the surface's own normal everywhere, nothing flipped, and the foam only a colour mixed in, never
 //      tilting the normal; the crests' breaking also faded out with distance, so the coarse far ring
@@ -378,8 +381,8 @@ void fragment() {
 
 	// Default for both branches; the foam branch below tilts it.
 	lit_normal_4d = normal_4d_camera;
-	// Style 3: the surface's own normal, never flipped (see gerstner_style).
-	if (gerstner_style >= 3) {
+	// Styles 2 and 3: the surface's own normal, never flipped (see gerstner_style).
+	if (gerstner_style >= 2) {
 		NORMAL = normalize(normal_4d_camera.xyz);
 	}
 
@@ -465,13 +468,7 @@ void fragment() {
 			vec4 relief = vec4(dot(relief_world, cam_basis_x), dot(relief_world, cam_basis_y),
 					dot(relief_world, cam_basis_z), dot(relief_world, cam_basis_w));
 			lit_normal_4d = normalize(normal_4d_camera + relief);
-			if (gerstner_style == 2) {
-				// Flipped as the engine flips every other pixel of this sea.
-				vec3 nl = normalize(lit_normal_4d.xyz);
-				NORMAL = FRONT_FACING ? nl : -nl;
-			} else if (gerstner_style <= 1) {
-				NORMAL = normalize(lit_normal_4d.xyz);
-			}
+			NORMAL = normalize(lit_normal_4d.xyz);
 			// Fade the bubbles out with distance, back to the smooth mask. Procedural
 			// detail has no mip chain, so beyond the point where a cell is sub-pixel it
 			// aliases into sparkle - which reads as fireflies on the horizon.

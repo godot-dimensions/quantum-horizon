@@ -27,6 +27,27 @@ extends Node4D
 ## NO class_name (engine_gotchas.md).
 
 const Mats := preload("res://ramon/WaterLab/carried/LabKit/lab_materials.gd")
+const LabGrid := preload("res://ramon/WaterLab/carried/LabKit/lab_grid.gd")
+
+## ROUND 3 AND 4 (Ramon: "simplify the boats' visual treatment while preserving their existing
+## geometric detail ... the Water Lab's existing gridline texture style ... The boat visible in the
+## current active slice should be white with the grid texture. Boats visible in other slices should
+## be orange"): every part in the lab grid, one swatch for the whole boat, white while the boat is
+## in your slice and the pen's landmark orange (its dev look's saved colour, #F2754C) while it is
+## not; only the windows, the tyres and the masthead light keep their own. `viewer` is the camera
+## whose slice decides.
+## Then (Ramon, 9 Oct: "about the white boat, his copies in W should not be orange. just other boats,
+## and those need to be further away in the distance"): `tone` fixes a boat's swatch. The fleet
+## gives the white boats and their W copies WHITE, the far boats in other slices ORANGE; empty
+## leaves the slice deciding, as before.
+const WHITE := "boat_white"
+const ORANGE := "boat_orange"
+@export var tone: String = ""
+static var _swatches_set: bool = false
+var viewer: Node4D = null
+var _grid: Array = []
+var _tone: String = ""
+var _tone_check: float = 0.0
 
 ## The sea (water4d_surface.gd).
 var water: Node = null
@@ -72,7 +93,45 @@ func _add(nm: String, mesh: Mesh4D, mat: TetraMaterial4D, at: Vector4 = Vector4.
 
 
 func _box(nm: String, at: Vector4, size: Vector4, c: Color, b: Projection = Projection.IDENTITY) -> MeshInstance4D:
-	return _add(nm, Mats.box_mesh(size), _mat(c), at, b)
+	# The windows and the near-black bits keep their own colour; everything else wears the grid.
+	if c.v < 0.15:
+		return _add(nm, Mats.box_mesh(size), _mat(c), at, b)
+	return _add(nm, Mats.box_mesh(size), _grid_mat(size, at), at, b)
+
+
+## The lab grid in the boat's swatch (white to start), kept for re-tinting.
+func _grid_mat(size: Vector4, at: Vector4) -> TetraMaterial4D:
+	if not _swatches_set:
+		_swatches_set = true
+		# The kit's own contrast (kit_style.gd's walls: lines a sixth darker, at 0.6): Ramon, 9 Oct, "why
+		# are the lines on the boat so thick, on the pier it looks like small lines". A line is never
+		# drawn thinner than a pixel, so at the boats' distance a strong one reads as a thick one.
+		LabGrid.set_swatch(WHITE, Color(0.92, 0.92, 0.90), Color(0.79, 0.80, 0.80), Color(0.88, 0.88, 0.87), 0.6)
+		LabGrid.set_swatch(ORANGE, Color(0.949, 0.458, 0.298), Color(0.82, 0.39, 0.25), Color(0.91, 0.44, 0.285), 0.6)
+	var m: TetraMaterial4D = LabGrid.material(WHITE, size, at)
+	_grid.append(m)
+	return m
+
+
+## Its fixed tone, or white in your slice and orange off it (checked four times a second, swapped
+## only on a change).
+func _retone(delta: float) -> void:
+	_tone_check -= delta
+	if _tone_check > 0.0:
+		return
+	_tone_check = 0.25
+	var want: String = WHITE
+	if not tone.is_empty():
+		want = tone
+	elif viewer != null and is_instance_valid(viewer):
+		var wn: Vector4 = (viewer.global_basis * Vector4(0, 0, 0, 1)).normalized()
+		var d: float = absf((global_position - viewer.global_position).dot(wn))
+		want = WHITE if d < beam * 0.5 else ORANGE
+	if want == _tone:
+		return
+	_tone = want
+	for m in _grid:
+		LabGrid.reswatch(m as TetraMaterial4D, want)
 
 
 ## One layer of the bow, from y0 to y1, `bw` wide: two boxes turned 45 degrees about the vertical,
@@ -90,7 +149,8 @@ func _drum(nm: String, at: Vector4, r: float, t: float, wd: float, c: Color) -> 
 	shape.thickness = wd
 	# The cubinder is round in x-z with its height along y: turned a quarter in y-z, its height runs
 	# along z.
-	return _add(nm, shape.to_tetra_mesh({"segments": 20}), _mat(c), at, Basis4D.from_yz(PI * 0.5))
+	var mat: TetraMaterial4D = _mat(c) if c.v < 0.15 else _grid_mat(Vector4(r * 2.0, r * 2.0, t, wd), at)
+	return _add(nm, shape.to_tetra_mesh({"segments": 20}), mat, at, Basis4D.from_yz(PI * 0.5))
 
 
 func _build() -> void:
@@ -153,7 +213,7 @@ func _build() -> void:
 	add_child(_radar)
 	var bar := MeshInstance4D.new()
 	bar.mesh = Mats.box_mesh(Vector4(1.3, 0.1, 0.22, 0.22))
-	bar.material_override = _mat(white)
+	bar.material_override = _grid_mat(Vector4(1.3, 0.1, 0.22, 0.22), Vector4.ZERO)
 	_radar.add_child(bar)
 	_add("Masthead", Mats.box_mesh(Vector4(0.18, 0.22, 0.18, 0.18)), Mats.glow(Color(1.0, 0.96, 0.85), 1.6), mast + Vector4(0.0, 4.1, 0.0, 0.0))
 	# The outrigger booms: out from the mast's foot, up and out to each side, and their stays.
@@ -203,6 +263,7 @@ func _rod(nm: String, a: Vector4, b: Vector4, t: float, c: Color) -> void:
 func _process(delta: float) -> void:
 	if not _ready_done:
 		return
+	_retone(delta)
 	_t += delta
 	if _radar != null:
 		_radar.basis = Basis4D.from_zx(_t * 1.6)

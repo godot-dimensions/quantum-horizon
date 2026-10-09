@@ -5,13 +5,16 @@ extends Control
 ## far"). After the pen's spirit level for the fourth axis (chickenpen/scripts/pen_slice_plane_4d.gd):
 ## pictures of the thing you are turning, against the slice you see it by.
 ##
-## TWO PICTURES, one under the other (round 2, Ramon: "underneath you could create another [one], but
+## TWO PICTURES, one over the other (round 2, Ramon: "underneath you could create another [one], but
 ## then it shows the slice rotating the other way ... the rectangle that becomes less in width from
-## one side"):
+## one side"; round 4: that one on top, a better name, and the two boxes the same size, "matching
+## views of the same object"):
+##   FRONT TO BACK  the tank from its end in z (glass to back, across) and W: the wheel's turn, the
+##                  z-W plane;
 ##   SIDE TO SIDE   the tank from above in x (across) and W (up the panel): the right drag's sideways
-##                  turn, the x-W plane;
-##   THE OTHER WAY  the tank from its end in z (glass to back, across) and W: the wheel's turn, the
-##                  z-W plane.
+##                  turn, the x-W plane.
+## Each picture draws the tank's box the same size, its across axis scaled to fill it (the tank is
+## 20 m along x and 3 m front to back), so they read as two views of one tank.
 ## In each: the water's box (fixed), the contents' box turned and slid, your slice as a gold line,
 ## and where that line runs through the contents drawn thick (what the glass shows you: turn the
 ## other way and it shortens from one side); the animals as dots, lit and ringed in your slice. The
@@ -61,8 +64,8 @@ func _draw() -> void:
 	var turn2: float = float(tank.get("contents_turn2"))
 	var slide: float = float(tank.get("contents_slide"))
 	var basis: Projection = tank.call("contents_basis")
-	_panel(upper, u, "SIDE TO SIDE", "x and W   ·   turned %+.0f°   slid %+.2f m" % [rad_to_deg(turn), slide], 0, basis, slide, "RIGHT DRAG  sideways: turn     forward and back: slide")
-	_panel(lower, u, "THE OTHER WAY", "z and W   ·   turned %+.0f°" % rad_to_deg(turn2), 2, basis, slide, "WHEEL  turn the other way      V  the shark      R  back")
+	_panel(upper, u, "FRONT TO BACK", "z and W   ·   turned %+.0f°" % rad_to_deg(turn2), 2, basis, slide, "WHEEL  turn front to back      V  the shark      R  back")
+	_panel(lower, u, "SIDE TO SIDE", "x and W   ·   turned %+.0f°   slid %+.2f m" % [rad_to_deg(turn), slide], 0, basis, slide, "RIGHT DRAG  sideways: turn     forward and back: slide")
 
 
 ## One picture: across is x (axis 0) or z (axis 2), up is W.
@@ -82,15 +85,17 @@ func _panel(box: Rect2, u: float, title: String, sub: String, axis: int, basis: 
 	var he: Vector4 = tank.call("half_extents")
 	var ha: float = he.x if axis == 0 else he.z
 	var area := Rect2(box.position + Vector2(pad, pad + 52.0 * u), Vector2(box.size.x - pad * 2.0, box.size.y - pad * 2.0 - 70.0 * u))
-	var s: float = minf(area.size.x / (ha * 2.0 + 1.0), area.size.y / (he.w * 2.0 + 1.0))
+	# The box the same size in both pictures: W to the height, the across axis to 1.9 times that.
+	var sw: float = area.size.y * 0.5 / (he.w + 0.5)
+	var sa: float = sw * he.w * 1.9 / ha
 	var c: Vector2 = area.get_center()
-	var at := func(a: float, ww: float) -> Vector2: return c + Vector2(a, -ww) * s
+	var at := func(a: float, ww: float) -> Vector2: return c + Vector2(a * sa, -ww * sw)
 	# Where a point of the contents lands: across (x or z) and W.
 	var place := func(p: Vector4) -> Vector2:
 		var q: Vector4 = basis * p + Vector4(0.0, 0.0, 0.0, slide)
 		return Vector2(q.x if axis == 0 else q.z, q.w)
 	# The water's box.
-	draw_rect(Rect2(at.call(-ha, he.w), Vector2(ha * 2.0, he.w * 2.0) * s), dim, false, maxf(1.0, 1.2 * u))
+	draw_rect(Rect2(at.call(-ha, he.w), Vector2(ha * 2.0 * sa, he.w * 2.0 * sw)), dim, false, maxf(1.0, 1.2 * u))
 	# The contents' box (its middle section in the other axis), turned and slid.
 	var corners: Array = []
 	for k in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:

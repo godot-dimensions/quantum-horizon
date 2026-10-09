@@ -71,7 +71,12 @@ static func _preset(index: int) -> Array[Wave]:
 		1: # Moderate swell: a wind direction with real spread over the sphere.
 			_train(waves, Vector3(0.85, 0.45, 0.28), 0.55, 5, 0.62, 31.0, 0.80, 0.75)
 		2: # Storm: short next to their height, steep, crests that pinch and foam.
-			_train(waves, Vector3(0.7, 0.6, 0.38), 0.42, 7, 1.30, 26.0, 0.86, 1.0)
+			# WATER LAB, round 4 (Ramon: "Increase the wavelength or spacing between wave crests ... Reduce
+			# how much the waves extend over the platform ... powerful, large-scale waves rather than a
+			# dense sequence of smaller peaks"): fewer, longer waves (4, 52 m, closer in direction), each
+			# a little lower, so the sum stays powerful but does not stack over the deck. Trym's was
+			# 7 waves at 1.30 m and 26 m.
+			_train(waves, Vector3(0.7, 0.6, 0.38), 0.28, 4, 1.05, 52.0, 0.74, 0.9)
 		3: # Off-slice swell: the dominant train runs almost entirely along W.
 			# THE 4D SHOWCASE. Its wave vectors are nearly perpendicular to the slice, so
 			# from the default view the surface mostly heaves in place - crests arriving from

@@ -57,6 +57,14 @@ const LabPrint := preload("res://ramon/WaterLab/carried/LabKit/lab_print.gd")
 	set(v):
 		open_sides = v
 		_later()
+## WATER LAB: a clean mouth on the open sides (Ramon, round 4, the sea's tunnel: "Align the floor and
+## ceiling edges precisely with the blue wall. Remove any protruding sections ... all three elements
+## sharing the same boundary"): the walls, the floor and the ceiling all stop on the open side's line,
+## and the floor runs out under the walls as the ceiling runs over them.
+@export var flush_open: bool = false:
+	set(v):
+		flush_open = v
+		_later()
 @export var ceiling: bool = true:
 	set(v):
 		ceiling = v
@@ -138,7 +146,14 @@ func rebuild() -> void:
 	var z1: float = size.z * 0.5
 	var h: float = size.y
 	var t: float = 0.5
-	_floor = Build.box(self, "Floor", Vector3(0, -0.25, 0), Vector3(size.x, 0.5, size.z), "kit_floor")
+	if flush_open:
+		var fx0: float = x0 if "w" in open_sides else x0 - t
+		var fx1: float = x1 if "e" in open_sides else x1 + t
+		var fz0: float = z0 if "n" in open_sides else z0 - t
+		var fz1: float = z1 if "s" in open_sides else z1 + t
+		_floor = Build.box(self, "Floor", Vector3((fx0 + fx1) * 0.5, -0.25, (fz0 + fz1) * 0.5), Vector3(fx1 - fx0, 0.5, fz1 - fz0), "kit_floor")
+	else:
+		_floor = Build.box(self, "Floor", Vector3(0, -0.25, 0), Vector3(size.x, 0.5, size.z), "kit_floor")
 	var texts: Array = _texts()
 	for side in ["n", "s", "w", "e"]:
 		if side in open_sides:
@@ -159,16 +174,21 @@ func rebuild() -> void:
 			swatch = Style.code_swatch(String(edge_codes[side]), swatch)
 		swatch = _claimed_swatch(side, swatch)
 		cuts.append_array(_claim_cuts(side))
-		_walls[side] = RD.wall(self, "Wall" + side.to_upper(), side, x0, z0, x1, z1, h, t, ops, cuts, swatch)
+		# Flush: a wall along an open side's neighbour stops on the open side's line.
+		var open0: bool = flush_open and ((side in ["n", "s"] and "w" in open_sides) or (side in ["w", "e"] and "n" in open_sides))
+		var open1: bool = flush_open and ((side in ["n", "s"] and "e" in open_sides) or (side in ["w", "e"] and "s" in open_sides))
+		_walls[side] = RD.wall(self, "Wall" + side.to_upper(), side, x0, z0, x1, z1, h, t, ops, cuts, swatch, open0, open1)
 	if ceiling:
 		# WATER LAB: over an open side the ceiling stops at the room's edge. It used to run on past it
 		# by the walls' thickness, and stuck half a metre into the hall over the doorway it opens on
 		# (Ramon, 9 Oct: "above the door, you should remove that block").
 		# 2 cm short of the open edge: flush, its end face fought the next room's wall over the doorway.
-		var cx0: float = x0 + 0.02 if "w" in open_sides else x0 - t
-		var cz0: float = z0 + 0.02 if "n" in open_sides else z0 - t
-		var cx1: float = x1 - 0.02 if "e" in open_sides else x1 + t
-		var cz1: float = z1 - 0.02 if "s" in open_sides else z1 + t
+		# A flush mouth (the sea's tunnel, nothing beyond it) ends exactly on the line, with the walls.
+		var ins: float = 0.0 if flush_open else 0.02
+		var cx0: float = x0 + ins if "w" in open_sides else x0 - t
+		var cz0: float = z0 + ins if "n" in open_sides else z0 - t
+		var cx1: float = x1 - ins if "e" in open_sides else x1 + t
+		var cz1: float = z1 - ins if "s" in open_sides else z1 + t
 		RD.ceiling(self, "Ceiling", cx0, cz0, cx1, cz1, h, "kit_ceiling")
 	if cove:
 		var b := Batch.new()

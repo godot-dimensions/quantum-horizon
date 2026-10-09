@@ -112,7 +112,8 @@ func _stones() -> void:
 	# The arches: two across the tank's depth, their openings along it; one turned 40 degrees into W.
 	# Round 3 (Ramon: "turn one of them 35 degrees so that they offset a little bit ... make the left one
 	# go more to the left side, just for creating a better composition").
-	_arch("ArchLeft", Vector4(-4.4, 0.0, -0.45, 0.0), 2.3, 2.3, 0.42, Projection.IDENTITY, granite)
+	# Round 4 (Ramon: "make the left rock arch slightly larger. Rotate it approximately 35 degrees").
+	_arch("ArchLeft", Vector4(-4.4, 0.0, -0.45, 0.0), 2.9, 2.85, 0.5, Basis4D.from_zx(deg_to_rad(-35.0)), granite, true, "_big_turned35")
 	_arch("ArchRight", Vector4(2.6, 0.0, -0.5, 0.15), 2.0, 1.9, 0.38, Basis4D.from_zx(deg_to_rad(35.0)), warm, true, "_turned35")
 	# The W arch faces the glass (its span along x) and leans 35 degrees into W: the level slice cuts
 	# its top and thin pieces of its legs; turned back through W it stands whole, an arch to look through.
@@ -247,6 +248,17 @@ func _corals() -> void:
 	_sponges("SpongesLeft", _on(-8.4, 0.0, 0.2, 0.2), Color(0.90, 0.80, 0.20), Color(0.30, 0.20, 0.04), 1.5)
 	_anemone("Anemone", _on(-4.2, 0.0, 0.55, 0.0), Color(0.86, 0.36, 0.52), Color(0.98, 0.78, 0.86), 2.2)
 	_anemone("AnemoneGreen", _on(5.0, 0.0, 0.85, 0.1), Color(0.30, 0.62, 0.40), Color(0.80, 1.0, 0.70), 1.8)
+	# Round 4 (Ramon: "a few additional coral formations, especially red coral. Distribute them naturally
+	# around the tank"): red fans and red branching coral, spread from end to end and through W, the
+	# purple fan left as it is.
+	var red := Color(0.56, 0.06, 0.08)
+	var red_tip := Color(0.98, 0.30, 0.26)
+	_fan("RedFan", _on(-7.6, 0.0, -1.3, 0.2), red, red_tip, 1.9)
+	_fan("RedFanRight", _on(9.3, 0.0, -1.0, -0.3), red, red_tip, 1.5)
+	_fan("RedFanDeep", _on(-1.2, 0.0, -1.25, -1.6), red.darkened(0.15), red_tip, 1.7)
+	_staghorn("RedStaghorn", _on(-1.6, 0.0, 0.1, 0.6), red, red_tip, 1.3, 61)
+	_staghorn("RedStaghornRight", _on(6.9, 0.0, 0.35, -0.35), red.lightened(0.1), red_tip, 1.1, 73)
+	_boulder("RedBoulder", _on(-9.0, 0.0, 0.5, -0.1), Color(0.62, 0.16, 0.14), Color(0.90, 0.44, 0.36), 0.6)
 
 
 ## Staghorn: branches that fork two ways at each tip, three generations, spreading through W too.

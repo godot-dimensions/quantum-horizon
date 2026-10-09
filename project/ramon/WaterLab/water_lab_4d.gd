@@ -43,6 +43,7 @@ const Builder := preload("res://ramon/WaterLab/carried/PathCreator/builder/pc_bu
 const Dial := preload("res://ramon/WaterLab/room/tank_dial.gd")
 const FloatPanel := preload("res://ramon/WaterLab/carried/voxel_lab/float_panel_4d.gd")
 const LabPrint := preload("res://ramon/WaterLab/carried/LabKit/lab_print.gd")
+const PenWalk := preload("res://ramon/WaterLab/shared/pen_walk.gd")
 const MouseTutorial := preload("res://ramon/WaterLab/shared/mouse_tutorial.gd")
 
 const SEA_SCENE := "res://ramon/WaterLab/seascape/seascape.tscn"
@@ -121,6 +122,8 @@ func _ready() -> void:
 	if net != null:
 		net.set("edge_color", Color("#1761d7"))
 		net.set("frame_margin", 0.12)
+		# Its arrows' edges follow the floor in dark mode too (round 4).
+		net.set("floor_swatch", "kit_floor")
 	# The introduction a metre to the left as you face it (round 3).
 	var intro: Node = get_node_or_null("IntroPanel")
 	if intro != null:
@@ -130,8 +133,9 @@ func _ready() -> void:
 	_door = get_node_or_null("ExitDoor") as Node4D
 	player = KitPlayer.make()
 	player.name = "Player"
-	# No walking through W here: E feeds the koi and pages the showcase, and E is also move_ana.
-	player.set("w_walk_enabled", false)
+	# The playable world's walk, stepping through W on Q/E included (round 4). E also feeds the koi and
+	# pages the showcase's panel, so stepping pauses at those two (_process).
+	PenWalk.apply(player)
 	add_child(player)
 	_rig = player.get_node_or_null("CameraRig")
 	if _rig != null:
@@ -191,7 +195,7 @@ func _build_hud() -> void:
 	tutorial = Control.new()
 	tutorial.name = "MouseTutorial"
 	tutorial.set_script(MouseTutorial)
-	tutorial.set("gestures", [["drag_v", "SLIDE THROUGH W"], ["drag_h", "TURN THROUGH W"], ["wheel", "TURN THE OTHER WAY"]])
+	tutorial.set("gestures", [["drag_v", "SLIDE THROUGH W"], ["drag_h", "TURN THROUGH W"], ["wheel", "TURN FRONT TO BACK"]])
 	layer.add_child(tutorial)
 	prompt = Control.new()
 	prompt.set_script(Prompt)
@@ -359,7 +363,8 @@ func toggle_palette() -> void:
 
 func _label_switch() -> void:
 	if hud != null:
-		hud.set("switch_text", "GREY  ·  B" if Style.palette == "black" else "BLACK  ·  B")
+		# Round 4 (Ramon: "clearly say Dark Mode On or Dark Mode Off, depending on its current state").
+		hud.set("switch_text", "DARK MODE %s  ·  B" % ("ON" if Style.palette == "black" else "OFF"))
 		hud.call("refresh_switch")
 
 
@@ -385,8 +390,10 @@ func _process(delta: float) -> void:
 	if Engine.get_process_frames() % 30 == 0:
 		_paint_square()
 		_darken_airlock()
+	player.set("w_walk_enabled", not (_at_feed or _near_panel))
 	_turning(p)
 	_following(delta)
+	_shark_prompt(p)
 	_hum_level(p, delta)
 	_feeding(p, delta)
 	_find_active(p)
@@ -444,6 +451,45 @@ func _turning(p: Vector4) -> void:
 		tutorial.set("shown", on)
 	if not on:
 		_follow_shark = 0.0
+
+
+## How much of the shark your slice shows now, 0 to 1 (its W thickness against how far off the slice
+## its middle is, after the contents' turn and slide).
+func shark_visible() -> float:
+	if tank == null:
+		return 0.0
+	var shark: Node = tank.get("shark")
+	if shark == null:
+		return 0.0
+	var q: Vector4 = (tank.call("contents_basis") as Projection) * (shark.get("p") as Vector4)
+	var w: float = q.w + float(tank.get("contents_slide"))
+	var r: float = 0.05 * float(shark.get("length"))
+	return sqrt(maxf(1.0 - (w * w) / (r * r), 0.0))
+
+
+## Round 4 (Ramon: "When the shark reaches approximately 70% visibility within the current slice, show
+## an on-screen prompt: V, Align with Shark ... only when the shark is sufficiently visible and
+## alignment is relevant"): over the shark itself, while you are in front of the tank, it is at least
+## 70% in your slice and not yet whole; V slides the contents until it is.
+var _shark_prompt_on: bool = false
+
+
+func _shark_prompt(p: Vector4) -> void:
+	if prompt == null or tank == null or _at_feed:
+		_shark_prompt_on = false
+		return
+	var front: bool = p.z < tank.global_position.z + 9.0 and absf(p.x - tank.global_position.x) < 12.0
+	var v: float = shark_visible()
+	var on: bool = front and v >= 0.7 and v < 0.985 and _follow_shark <= 0.0
+	_shark_prompt_on = on
+	prompt.set("shown", on)
+	if on:
+		var shark: Node4D = tank.get("shark")
+		var body: Node4D = shark.get_node_or_null("Body") as Node4D
+		prompt.set("target", body if body != null else shark)
+		prompt.set("offset", Vector4(0.0, 0.7, 0.0, 0.0))
+		prompt.set("key", "V")
+		prompt.set("text", "Align with the shark")
 
 
 ## V: the contents slid until the shark is in your slice, and kept there a while as it swims.
@@ -509,13 +555,13 @@ func _strip() -> Array:
 	if _at_feed:
 		return [["E", "Feed the koi"]]
 	if _on_turn:
-		return [["Right drag", "Slide and turn through W"], ["Wheel", "Turn the other way"], ["V", "Find the shark"], ["R", "Back"]]
+		return [["Right drag", "Slide and turn through W"], ["Wheel", "Turn front to back"], ["V", "Align with the shark"], ["R", "Back"]]
 	if active != null:
 		var out: Array = [["Left / Right", "Choose"], ["Wheel", "Slide it through W"], ["Right drag", "Turn it"], ["R", "Whole again"]]
 		if _near_panel:
 			out.push_front(["E", "Its panel: more"])
 		return out
-	return [["WASD", "Move"], ["Mouse", "Look"], ["B", "Black / grey"]]
+	return [["WASD", "Move"], ["Mouse", "Look"], ["B", "Dark mode"]]
 
 
 # -- the route ----------------------------------------------------------------------------------------------
@@ -588,7 +634,7 @@ func _input(event: InputEvent) -> void:
 	if active == null:
 		return
 	var mb := event as InputEventMouseButton
-	if mb != null and mb.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if mb != null and mb.pressed:
 		if mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			active.call("step_slice", 1 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else -1)
 			get_viewport().set_input_as_handled()
@@ -636,9 +682,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				active.call("select", k.keycode - KEY_1)
 				get_viewport().set_input_as_handled()
 		KEY_V:
-			if _on_turn:
+			if _on_turn or _shark_prompt_on:
 				_follow_shark = 8.0
-				hud.call("toast", "Following the shark through W")
+				hud.call("toast", "Aligned with the shark")
 				get_viewport().set_input_as_handled()
 		KEY_B:
 			if not k.shift_pressed and not k.ctrl_pressed:

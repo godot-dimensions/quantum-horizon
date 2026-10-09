@@ -42,12 +42,13 @@ func _ready() -> void:
 	# Drawn sizes are metres (the flock's scale moves the fish, not their bodies: fish_school_4d.gd):
 	# 1.2 units of mesh x 0.06, a fish 7 cm long. Its W radius (bird_w_radius x that) 0.36 m, past the
 	# school's +-0.24 m in W, so the whole cloud is in your slice (at 0.06 m most of it was not).
-	flock.set("bird_scale", 0.06)
+	# Round 4 (Ramon: "slightly larger ... swimming speed slightly" up): 0.075, 9 cm.
+	flock.set("bird_scale", 0.075)
 	flock.set("bird_w_radius", 6.0)
 	# Slow (Ramon: "make it move slow"): a third of the pen's speeds, which at 0.08 is about 0.3 m/s.
-	flock.set("cruise_speed", 3.6)
-	flock.set("min_speed", 2.0)
-	flock.set("max_speed", 9.0)
+	flock.set("cruise_speed", 5.0)
+	flock.set("min_speed", 2.8)
+	flock.set("max_speed", 11.0)
 	flock.set("roost", Vector4(0.0, 0.0, 0.0, 0.0))
 	flock.set("roost_radius", 14.0)
 	flock.set("height_low", -9.0)

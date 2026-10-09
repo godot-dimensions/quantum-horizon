@@ -150,6 +150,13 @@ uniform float path_margin = 1.4;
 uniform sampler2D path_curve_tex : filter_nearest, repeat_disable;
 uniform int path_curve_n = 0;
 uniform vec4 ring_at = vec4(0.0, 0.0, 3.0, 0.08);
+// WATER LAB: wet patches on a floor (the sea's platform, where a wave hit: seascape/wave_spray_4d.gd):
+// world x, z, radius, and how wet (0 dry). Four, as separate uniforms (uniform arrays are shared
+// between materials in this engine).
+uniform vec4 wet0 = vec4(0.0);
+uniform vec4 wet1 = vec4(0.0);
+uniform vec4 wet2 = vec4(0.0);
+uniform vec4 wet3 = vec4(0.0);
 uniform vec4 ring_color : source_color = vec4(0.12, 0.45, 1.0, 1.0);
 
 group_uniforms route;
@@ -447,6 +454,17 @@ void fragment() {
 		float k = band * edge * ends * chevron_on;
 		c = mix(c, chevron_color.rgb, k);
 		glow += chevron_color.rgb * k * chevron_glow;
+	}
+	if (local_normal_4d.y > 0.9 && (wet0.w + wet1.w + wet2.w + wet3.w) > 0.0) {
+		float wet = 0.0;
+		vec4 ws[4] = vec4[4](wet0, wet1, wet2, wet3);
+		for (int i = 0; i < 4; i++) {
+			if (ws[i].w > 0.0) {
+				float dw = length(world.xz - ws[i].xy);
+				wet = max(wet, ws[i].w * (1.0 - smoothstep(ws[i].z * 0.4, ws[i].z, dw)));
+			}
+		}
+		c *= 1.0 - 0.38 * wet;
 	}
 	if (ring_on > 0.0 && local_normal_4d.y > 0.9) {
 		vec2 rel = world.xz - ring_at.xy;

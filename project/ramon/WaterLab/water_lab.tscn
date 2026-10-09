@@ -55,10 +55,10 @@ glow = 0.3
 script = ExtResource("4_text")
 side = "n"
 along = Vector2(7.6, 14.4)
-up = Vector2(4.75, 6.05)
+up = Vector2(5.2, 6.5)
 kind = "sign"
 title = "4D OCEAN SIMULATOR"
-subtitle = "THE SEA  ·  THROUGH THE DOOR"
+subtitle = "EXIT  ·  TO THE SEA"
 glow = 0.3
 
 [node name="Airlock" type="Node4D" parent="."]
@@ -83,7 +83,7 @@ water_size = Vector4(20.4, 8.41, 3.2, 7)
 hood_height = 1.0
 
 [node name="Showcase" type="Node4D" parent="."]
-position = Vector4(10, 0, -2.74, 0)
+position = Vector4(10, 0, 0, 0)
 script = ExtResource("6_showcase")
 
 [node name="FishWall" type="Node4D" parent="."]
@@ -176,9 +176,9 @@ energy = {
 fixture_at = 10.94
 
 [node name="ShowcaseLight" type="Node4D" parent="."]
-position = Vector4(10, 10.6, -2.74, 0)
+position = Vector4(10, 10.6, 0, 0)
 script = ExtResource("8_light")
-aim = Vector3(10, 0, -2.74)
+aim = Vector3(10, 0, 0)
 angle = 45.0
 softness = 0.6
 reach = 14.0
@@ -289,7 +289,7 @@ size = Vector3(3, 0.1, 3)
 w_depth = 40.0
 
 [node name="Showcase" type="Node4D" parent="Paths/Targets"]
-position = Vector4(10, 0, -2.74, 0)
+position = Vector4(10, 0, 0, 0)
 script = ExtResource("16_target")
 label = "The showcase"
 size = Vector3(6, 1, 6)
