@@ -24,6 +24,12 @@ extends Node4D
 ## Trym's pole (the banded pillar, the sea floor to above the water, so the depth fade has a ruler)
 ## stands in the corner of pier 1's turn; his plesiosaur swims under pier 1.
 ##
+## THE GULLS (Ramon, 9 Oct: "seagulls at harbour frequency ... land on one of the poles of the walkway
+## and on the rims"): a harbour of herring gulls (gull/gull_flock_4d.gd) wheeling over both piers,
+## landing on the rails, the platform's ring, the pole's top and the doors' lintels, into the wind off
+## the sea; the HUD's HARBOUR section sets how many (12 to start). Sitting gulls fly off when you walk
+## up to them, and settle away from you.
+##
 ## KEYS: 1-8 seas, F foam map, G Gerstner on/off, N detail noise (Trym's), P the other pier, R levels
 ## the slice (the rig's), Tab the HUD's modes (seascape_hud.gd).
 ##
@@ -147,6 +153,7 @@ func _ready() -> void:
 	_build_floor()
 	_build_player()
 	_build_creature()
+	_build_gulls()
 	_build_hud()
 	_place_targets()
 	process_physics_priority = 100
@@ -237,6 +244,7 @@ func rebuild_piers() -> void:
 	_pier2_deep = null
 	_build_piers()
 	_place_targets()
+	_gull_perches()
 
 
 ## A sci-fi door standing at the back of each pier, the way you came in (Ramon, 8 Oct: "a scifi door
@@ -604,6 +612,57 @@ func _build_creature() -> void:
 	school.position = Vector4(12.0, 0.0, -6.5, 0.0)
 	school.set("hunter", creature)
 	add_child(school)
+
+
+## The harbour's gulls, round both piers, the wind off the sea (+x); they hear through the camera.
+func _build_gulls() -> void:
+	var harbour := Node4D.new()
+	harbour.name = "Harbour"
+	harbour.set_script(load("res://ramon/WaterLab/gull/gull_flock_4d.gd"))
+	# None until the perches are in, so the ones that start sitting find a place.
+	harbour.set("count", 0)
+	harbour.set("home", Vector4(12.0, 9.0, 10.0, 0.0))
+	harbour.set("roam_radius", 28.0)
+	harbour.set("altitude", Vector2(5.0, 15.0))
+	harbour.set("wind", Vector4(1.0, 0.0, 0.25, 0.0))
+	add_child(harbour)
+	harbour.set("walker", player)
+	_gull_perches()
+	harbour.set("count", 12)
+	if player != null:
+		var cams: Array = player.find_children("*", "Camera4D", true, false)
+		if not cams.is_empty():
+			harbour.set("listener_4d", cams[0])
+
+
+## Where the gulls may sit, from the piers as built now: both piers' rail tops, pier 2's end, the
+## platform's ring (away from its gap), the pole's top, the doors' lintels.
+func _gull_perches() -> void:
+	var harbour: Node = get_node_or_null("Harbour")
+	if harbour == null:
+		return
+	harbour.call("clear_perches")
+	var top: float = deck_height + railing_height
+	for s in [-1.0, 1.0]:
+		harbour.call("add_rail", Vector4(0.8, top, s * pier1_width * 0.5, 0.0), Vector4(pier1_length - 0.8, top, s * pier1_width * 0.5, 0.0), 1.6)
+		harbour.call("add_rail", Vector4(0.8, top, pier2_z + s * pier2_width * 0.5, 0.0), Vector4(pier2_length - 0.6, top, pier2_z + s * pier2_width * 0.5, 0.0), 1.6)
+	harbour.call("add_rail", Vector4(pier2_length, top, pier2_z - pier2_width * 0.5 + 0.5, 0.0), Vector4(pier2_length, top, pier2_z + pier2_width * 0.5 - 0.5, 0.0), 1.4)
+	var c: Vector4 = platform_centre()
+	var r: float = platform_radius - 0.15
+	var gap: float = asin(clampf((pier1_width * 0.5 + 0.3) / r, 0.0, 1.0)) + 0.12
+	var n: int = int(TAU * r / 1.6)
+	for i in n:
+		var a: float = TAU * (float(i) + 0.5) / float(n)
+		if absf(wrapf(a - PI, -PI, PI)) < gap:
+			continue
+		harbour.call("add_perch", Vector4(c.x + cos(a) * r, top, c.z + sin(a) * r, 0.0))
+	var pole_top: float = pole_above_water
+	for o in [Vector2(-0.55, 0.1), Vector2(0.45, 0.45), Vector2(0.3, -0.55)]:
+		harbour.call("add_perch", Vector4(pole_at.x + o.x, pole_top, pole_at.y + o.y, pole_at.z))
+	var lintel: float = deck_height + door_height + 0.6
+	for d in [[0.0, pier1_width], [pier2_z, pier2_width]]:
+		var hw: float = float(d[1]) * 0.5 + 0.3
+		harbour.call("add_rail", Vector4(-0.2, lintel, float(d[0]) - hw, 0.0), Vector4(-0.2, lintel, float(d[0]) + hw, 0.0), 1.3)
 
 
 func _build_hud() -> void:

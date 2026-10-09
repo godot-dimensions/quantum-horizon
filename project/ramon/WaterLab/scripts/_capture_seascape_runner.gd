@@ -8,6 +8,7 @@ extends SceneTree
 ## smoke_test_output/water_lab/seascape/. Prints the scene's open time and any missing piece.
 
 const OUT := "res://smoke_test_output/water_lab/seascape/"
+const GullScript := preload("res://ramon/WaterLab/gull/gull_4d.gd")
 const SCENE := "res://ramon/WaterLab/seascape/seascape.tscn"
 
 var _room: Node4D
@@ -35,6 +36,12 @@ func _initialize() -> void:
 		DisplayServer.window_set_size(Vector2i(3840, 2160))
 	elif "school" in args:
 		_mode = "school"
+	elif "gulls" in args:
+		_mode = "gulls"
+		# Vsync off for the timing, the views at 60 (the gulls need real seconds to land); uncapped
+		# only while measuring.
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+		Engine.max_fps = 60
 	elif "perf" in args:
 		_mode = "perf"
 		_slow_panels = "slow_panels" in args
@@ -83,6 +90,44 @@ func _open() -> void:
 				_step(30, _measure_start.bind("capped_200"), "")
 				_step(150, _nop, "")
 				_step(1, _measure_end, "")
+		"gulls":
+			# The harbour's gulls: sitting on pier 1's rails, the pole, the platform's ring and the
+			# lintel; twenty of them; the HUD's slider; what they cost (vsync off).
+			_step(240, _go(6.0, 0.0, 180.0), "")
+			_step(5, _pitch(-4.0), "g01_pier1_rails")
+			_step(30, _go(6.0, -0.5, 0.0), "g02_toward_pole")
+			_step(30, _go(14.5, 0.0, -90.0), "")
+			_step(5, _pitch(2.0), "g03_platform_ring")
+			_step(30, _go(5.0, 0.0, 90.0), "")
+			_step(5, _pitch(14.0), "g04_door_lintel")
+			_step(5, _pitch(-8.0), "")
+			_step(1, _measure_start.bind("8 gulls"), "")
+			_step(240, _nop, "")
+			_step(1, _measure_end, "")
+			_step(1, _gulls.bind(20), "")
+			_step(600, _go(6.0, 0.0, 180.0), "")
+			_step(5, _pitch(6.0), "g05_twenty")
+			_step(1, _measure_start.bind("20 gulls"), "")
+			_step(240, _nop, "")
+			_step(1, _measure_end, "")
+			_step(1, _gulls.bind(0), "")
+			_step(30, _measure_start.bind("0 gulls"), "")
+			_step(240, _nop, "")
+			_step(1, _measure_end, "")
+			_step(1, _gulls.bind(12), "")
+			_step(10, _tab, "")
+			_step(20, _scroll_hud_bottom, "g06_hud_harbour")
+			_step(5, _tab, "")
+			_step(5, _tab, "")
+			# Close: the camera in to 3.5 m, a sitting gull on a rail 4 m ahead; then walked up to.
+			_step(1, _camera_distance.bind(3.5), "")
+			_step(1, _near_gull.bind(4.5), "")
+			_step(20, _nop, "g07_sitting_close")
+			_step(1, _near_gull_walk.bind(1.2), "")
+			_step(10, _nop, "g08_flushed_0_2s")
+			_step(20, _nop, "g09_flushed_0_5s")
+			_step(40, _nop, "g10_flushed_1_2s")
+			_step(1, _camera_distance.bind(10.0), "")
 		"school":
 			# The sardines off pier 1: from its edge looking down at them, then the plesiosaur sent
 			# through them.
@@ -161,6 +206,69 @@ func _nop() -> void:
 	pass
 
 
+func _gulls(n: int) -> void:
+	var h: Node = _room.get_node_or_null("Harbour")
+	if h != null:
+		h.set("count", n)
+	print("WATER gulls set to %d (%d perches)" % [n, (h.get("perches") as Array).size() if h != null else -1])
+
+
+func _camera_distance(d: float) -> void:
+	_room.set("camera_distance", d)
+	_room.call("apply_camera")
+
+
+var _close_gull: Node4D = null
+
+
+## The player put `ahead` metres along the deck from a gull sitting on pier 1's rail, facing it.
+func _near_gull(ahead: float) -> void:
+	var h: Node = _room.get_node_or_null("Harbour")
+	var w1: float = float(_room.get("pier1_width"))
+	var best: Node4D = null
+	for g in h.get("gulls"):
+		var p: Vector4 = g.get("p")
+		if String(g.get("state")) == "perched" and absf(absf(p.z) - w1 * 0.5) < 0.2 and p.x > 6.0 and p.x < float(_room.get("pier1_length")) - 1.0:
+			best = g
+			break
+	if best == null:
+		# None there: one seated there.
+		best = h.get("gulls")[0]
+		var top: float = float(_room.get("deck_height")) + float(_room.get("railing_height"))
+		var pr: Dictionary = h.call("add_perch", Vector4(8.0, top, w1 * 0.5, 0.0))
+		h.call("release", best)
+		pr["taken"] = best
+		best.set("perch", pr)
+		best.set("state", "perched")
+		best.set("p", pr["pos"] + Vector4(0.0, GullScript.FOOT, 0.0, 0.0))
+		best.set("_fold", 1.0)
+		best.set("_legs", 1.0)
+		best.set("_stay", 60.0)
+		best.set("_state_t", 0.0)
+		best.set("forward", Vector4(1.0, 0.0, 0.25, 0.0).normalized())
+	_close_gull = best
+	var at: Vector4 = best.get("p")
+	print("WATER close gull at ", at, " state ", best.get("state"))
+	var walker: Node = h.get("walker")
+	h.set("walker", null)
+	_go(at.x + ahead, at.z * 0.3, 90.0).call()
+	h.set("walker", walker)
+
+
+func _near_gull_walk(ahead: float) -> void:
+	var at: Vector4 = _close_gull.get("p")
+	_go(at.x + ahead, at.z * 0.45, 90.0).call()
+	print("WATER walked up: gull state ", _close_gull.get("state"))
+
+
+## The LIGHT mode's list scrolled to its end, where HARBOUR is.
+func _scroll_hud_bottom() -> void:
+	for s in _room.find_children("*", "ScrollContainer", true, false):
+		var sc: ScrollContainer = s
+		sc.scroll_vertical = 100000
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
 func _rigid_seams() -> void:
 	var s: Node = _room.get_node_or_null("SeaLife/Plesiosaur/Swimmer")
 	if s != null:
@@ -186,8 +294,16 @@ func _slow() -> void:
 var _measuring: String = ""
 
 
+var _gull_us0: int = 0
+var _frames0: int = 0
+
+
 func _measure_start(nm: String) -> void:
 	_measuring = nm
+	_gull_us0 = GullScript.cpu_us
+	_frames0 = Engine.get_process_frames()
+	if _mode == "gulls":
+		Engine.max_fps = 0
 	_perf.clear()
 	_last_us = Time.get_ticks_usec()
 	RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(), true)
@@ -196,8 +312,11 @@ func _measure_start(nm: String) -> void:
 func _measure_end() -> void:
 	_perf.sort()
 	if not _perf.is_empty():
-		print("WATER PERF %-14s frame median %.2f ms, 95%% %.2f ms, GPU %.2f ms" % [_measuring, _perf[_perf.size() / 2], _perf[int(_perf.size() * 0.95)],
-				RenderingServer.viewport_get_measured_render_time_gpu(root.get_viewport_rid())])
+		print("WATER PERF %-14s frame median %.2f ms, 95%% %.2f ms, GPU %.2f ms, gull scripts %.3f ms a frame" % [_measuring, _perf[_perf.size() / 2], _perf[int(_perf.size() * 0.95)],
+				RenderingServer.viewport_get_measured_render_time_gpu(root.get_viewport_rid()),
+				float(GullScript.cpu_us - _gull_us0) / 1000.0 / float(maxi(Engine.get_process_frames() - _frames0, 1))])
+	if _mode == "gulls":
+		Engine.max_fps = 60
 	_measuring = ""
 
 

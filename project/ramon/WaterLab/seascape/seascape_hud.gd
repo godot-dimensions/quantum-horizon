@@ -204,6 +204,9 @@ func _targets() -> Array:
 		out.append(["WATER", water, "water"])
 	out.append(["PIERS", room, "piers"])
 	out.append(["CAMERA", room, "camera"])
+	var harbour: Node = room.get_node_or_null("Harbour")
+	if harbour != null:
+		out.append(["HARBOUR", harbour, "harbour"])
 	return out
 
 
@@ -215,6 +218,9 @@ func _props(obj: Object, kind: String) -> Array:
 			out.append({"name": String(row[0]), "type": TYPE_FLOAT, "hint": PROPERTY_HINT_RANGE,
 				"hint_string": "%s,%s,0.1" % [str(row[1]), str(row[2])]})
 		return out
+	if kind == "harbour":
+		# The gulls (Ramon, 9 Oct: "seagulls at harbour frequency ... a slider for how many").
+		return [{"name": "count", "type": TYPE_INT, "hint": PROPERTY_HINT_RANGE, "hint_string": "0,30,1"}]
 	if kind == "piers":
 		for row in PIERS:
 			out.append({"name": String(row[0]), "type": TYPE_FLOAT, "hint": PROPERTY_HINT_RANGE,
