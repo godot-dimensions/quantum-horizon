@@ -9,20 +9,23 @@ extends Node4D
 ## up out of the plate, first the posts, then the ring; walk away and it lifts off into the air. And
 ## it is thick through W, so a turned slice still finds it.
 ##
-## THE PLATE IS ALWAYS THERE. Unlike the arch, which is put up for one trip, the circle is a place
-## you are meant to find, so its plate stays in the grass, a dark disc with a cyan ring you can see
-## from the path. Only the frame comes and goes.
+## THE PLATE IS ALWAYS THERE, a capped dark disc with a cyan ring. Only the frame comes and goes: it
+## folds out when you come within 3 m and folds in when you leave (Ramon, 8 Oct), and its name shows
+## only when you are closer still.
 ##
-## STEP IN, AND IT LOOKS AT YOU. Standing in the middle switches your walking off, turns you to face
-## the camera and brings the camera in (the conversation framing): a mirror. A ring of light sweeps up
+## F, AND IT LOOKS AT YOU. Close enough to read its name, F starts it (Ramon, 8 Oct: "to use outfit
+## scanner you press F"; walking onto it no longer does, so crossing it on the way somewhere is free).
+## It eases you to the middle, switches your walking off, turns you to face the camera and brings the
+## camera in (the conversation framing): a mirror. A ring of light sweeps up
 ## you from the boots to the hat, each part lighting cyan as it passes, and leaves a strip of choices
 ## at the height of each thing it changes (outfit_strips_4d.gd). At the top it reads out your size in
 ## all four directions, how thick you are in W included: the one number no 3D fitting room has.
 ##
-## EVERY CHANGE IS ON YOU AT ONCE, with no confirm (the research: live preview on the real character,
-## a way back to what you came in wearing, and then a "surprise me" is safe to press). F saves it to
-## disk (outfit_4d.gd) and gives you back your feet; the outfit then goes with you into the cave, the
-## far room and the cinema (outfit_keeper_4d.gd), and is there next time you play.
+## TWO MODES (Ramon, 8 Oct). Here, the basic one: colours, on the arrow keys, every change on you at
+## once with no confirm. Under the last strip, ADVANCED takes you to Trym's fitting room
+## (fitting_room.tscn), where the styles, the hats and the jokes are. F saves it to disk (outfit_4d.gd)
+## and gives you back your feet; the outfit then goes with you into the cave, the far room and the
+## cinema (outfit_keeper_4d.gd), and is there next time you play.
 ##
 ## A SUBGAME THAT STAYS LOCAL (Ramon, 2 Oct, the Lookout). Its keys work only while you stand in it,
 ## with your walking off, so nothing it takes is taken anywhere else; its words fade with distance.
@@ -35,6 +38,7 @@ const Keeper := preload("res://ramon/chickenpen/outfit/outfit_keeper_4d.gd")
 const Strips := preload("res://ramon/chickenpen/outfit/outfit_strips_4d.gd")
 const Wearer := preload("res://ramon/chickenpen/outfit/outfit_wearer_4d.gd")
 const Trip := preload("res://ramon/chickenpen/outfit/outfit_room_trip_4d.gd")
+const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
 ## Ramon's version (outfit/PLAN_FITTING_ROOM.md): the same outfit, changed in a room of its own.
 const ROOM := "res://ramon/chickenpen/outfit/fitting_room.tscn"
 
@@ -58,11 +62,13 @@ enum State { ASLEEP, READY, SCANNING, DRESSING, CLOSING }
 @export var field_color: Color = Color(0.20, 0.62, 0.95)
 
 @export_group("Behaviour")
-## Walk this close and the frame comes up: from Trym's sand, as you arrive at his house (at 5 m it
-## stayed down until you were nearly on it, hidden by the grass and Bush06).
-@export_range(1.0, 15.0, 0.5) var wakes_within: float = 8.0
-## Stand this close to the middle, in your slice, and the scan starts.
-@export_range(0.15, 0.7, 0.01) var step_in_within: float = 0.42
+## Walk this close and the frame folds out; leave and past it the frame folds in again, leaving only
+## the capped plate (Ramon, 8 Oct: "only when you're in a 3 meter radius it folds out, before that its
+## just a cap, and when you leave it will fold in after 3 meter").
+@export_range(1.0, 15.0, 0.5) var wakes_within: float = 3.0
+## And closer still, its name over it (Ramon: "only when you're even closer it says outfit scanner"),
+## with the key: F starts it from anywhere inside this.
+@export_range(0.5, 3.0, 0.1) var names_within: float = 1.6
 @export_range(0.2, 4.0, 0.05) var open_seconds: float = 1.2
 ## The first scan of a visit takes its time; later ones in the same run are quicker (the research:
 ## about a second and a half is the most a wait can take before it breaks your train of thought).
@@ -106,27 +112,27 @@ var _readout: Label
 var _readout_left: float = 0.0
 var _said: String = ""
 var _said_left: float = 0.0
-var _came_in: Dictionary = {}
 var _we_stopped_walking: bool = false
 var _slide_from: Vector4
 var _slide: float = 1.0
+var _slide_seconds: float = 0.35
 ## The way the circle looks out (its +Z, flat), and how long the camera has left to come round to it.
 var _front: Vector4 = Vector4(0.0, 0.0, 1.0, 0.0)
 var _camera_turn: float = 0.0
-var _needs_step_out: bool = false
-var _refused: bool = false
-var _rng := RandomNumberGenerator.new()
 var _font: Font
+## The pen's dev look is laid, and its blue (look/pen_look_4d.gd foundation_colour).
+var _dev_look: bool = false
+var _blue: Color = Color(0.13, 0.40, 0.86)
 
 
 func _ready() -> void:
 	rebuild()
+	_follow_look.call_deferred()
 	if Engine.is_editor_hint():
 		# In the editor it stands open, so it can be placed by eye.
 		_open = 1.0
 		_lay_frame()
 		return
-	_rng.randomize()
 	_player = get_node_or_null(player_path) as Node4D
 	if _player != null:
 		_rig = _player.get_node_or_null("CameraRig") as Node4D
@@ -202,6 +208,8 @@ func rebuild() -> void:
 	_chime = _sound("Chime", _make_chime(660.0, 990.0, 0.7))
 	_sweep = _sound("Sweep", _make_sweep(scan_seconds))
 	_tick = _sound("Tick", _make_chime(1760.0, 2640.0, 0.09))
+	if _dev_look:
+		_paint_look()
 
 
 func _built(node: Node, part: String) -> Node:
@@ -264,6 +272,60 @@ func _material(colour: Color) -> TetraMaterial4D:
 	var material := TetraMaterial4D.new()
 	material.albedo_color = colour
 	return material
+
+
+## BLUE IN THE DEV LOOK, THE RIM STILL CYAN (Ramon, 8 Oct: "in dev mode, the closed panel should have the
+## cyan outline, but everything else blue"). The Look leaves the circle alone (its meshes are marked
+## _look_own), so the circle follows the switch itself, as Wren's balloon does (lookout/balloon_4d.gd):
+## laid or lifted, not chosen, since the art is held in the cinema and the cave. The plate, the frame
+## and its edges take the Look's blue, the pad a lighter blue while it is lit; the rim round the plate
+## keeps its cyan, so the closed circle reads as a cyan ring on the blue floor. Repainted in place.
+func _follow_look() -> void:
+	var look: Node = _find_look()
+	if look == null:
+		return
+	if look.has_signal("applied_changed") and not look.is_connected("applied_changed", _on_look):
+		look.connect("applied_changed", _on_look)
+	if look.has_signal("colours_changed") and not look.is_connected("colours_changed", _on_colours):
+		look.connect("colours_changed", _on_colours)
+	_blue = look.get("foundation_colour")
+	_on_look(bool(look.get("_applied")))
+
+
+## The pen's Look: the one running, or in the editor the one in the scene being edited.
+func _find_look() -> Node:
+	var look: Node = Look.current
+	if look != null and is_instance_valid(look):
+		return look
+	var scene: Node = owner
+	if scene == null and Engine.is_editor_hint() and is_inside_tree():
+		scene = get_tree().edited_scene_root
+	return scene.get_node_or_null("Systems/Look") if scene != null else null
+
+
+func _on_look(dev: bool) -> void:
+	_dev_look = dev
+	_paint_look()
+
+
+func _on_colours(foundation: Color, _landmark: Color) -> void:
+	_blue = foundation
+	if _dev_look:
+		_paint_look()
+
+
+func _paint_look() -> void:
+	var parts: Array = [get_node_or_null("Plate"), _pad]
+	if _frame != null:
+		parts.append_array(_frame.get_children())
+	for node in parts:
+		var mi := node as MeshInstance4D
+		if mi == null or not (mi.material_override is TetraMaterial4D):
+			continue
+		var m := mi.material_override as TetraMaterial4D
+		if not mi.has_meta(&"art_colour"):
+			mi.set_meta(&"art_colour", m.albedo_color)
+		m.albedo_color = _blue if _dev_look else (mi.get_meta(&"art_colour") as Color)
 
 
 func _sound(part: String, stream: AudioStream) -> AudioStreamPlayer:
@@ -350,13 +412,6 @@ func _process(delta: float) -> void:
 	_lay_frame()
 
 	match state:
-		State.READY:
-			if _needs_step_out:
-				_needs_step_out = gap < step_in_within + 0.5
-			elif gap <= step_in_within and _in_my_slice(0.45):
-				_try_begin()
-			else:
-				_refused = false
 		State.SCANNING:
 			_run_scan(delta)
 		State.CLOSING:
@@ -379,8 +434,9 @@ func _process(delta: float) -> void:
 	for lamp in _lamps:
 		lamp.light_energy = glow_energy * _lit * 0.5
 	var shimmer: float = 0.5 + 0.5 * sin(_t * (2.5 + 3.0 * _lit))
-	(_pad.material_override as TetraMaterial4D).albedo_color = field_color.darkened(0.45).lerp(
-		field_color.lerp(Color(0.85, 0.97, 1.0), shimmer * 0.4), clampf(_lit * 1.2, 0.0, 1.0))
+	var field: Color = _blue if _dev_look else field_color
+	(_pad.material_override as TetraMaterial4D).albedo_color = (_blue if _dev_look else field.darkened(0.45)).lerp(
+		field.lerp(Color(0.85, 0.97, 1.0), shimmer * 0.4), clampf(_lit * 1.2, 0.0, 1.0))
 	_update_words(delta, gap)
 
 
@@ -396,16 +452,39 @@ func _lay_frame() -> void:
 
 # --- Stepping in -----------------------------------------------------------------------------------
 
-func _try_begin() -> void:
+## Whether F would start the scan right now: for the tag, the key and the tests. The laptop's rules
+## (pen_laptop_4d.gd usable): never while a chicken is in your arms or in reach (F is the catch key),
+## and never where F would talk to someone, so the circle takes F from nothing else in the pen.
+func usable() -> bool:
+	if state != State.READY or _open < 0.99 or _player == null or not _player.is_inside_tree() or not is_visible_in_tree():
+		return false
 	if not bool(_player.get("input_enabled")):
-		return
+		return false
+	if _flat_gap() > names_within or not _in_my_slice(0.6):
+		return false
 	var catcher: Node = _catcher()
-	if catcher != null and catcher.get("carried") != null:
-		if not _refused:
-			_say("Put the chicken down first.", 2.5)
-			_refused = true
-		return
-	begin()
+	if catcher != null and (catcher.get("carried") != null or catcher.get("_candidate") != null):
+		return false
+	for talker in get_tree().get_nodes_in_group(&"npc_talk"):
+		if not talker.is_inside_tree() or not talker.can_process():
+			continue
+		var talk: Node = talker.get("_talk")
+		if talk != null and bool(talk.call("is_running")):
+			return false
+		if talker.has_method("_can_talk") and bool(talker.call("_can_talk")):
+			return false
+	# The cats take F too (Systems/CatGrab, RedCatGrab), to pick one up or put it down.
+	var systems: Node = _player.get_parent().get_node_or_null("Systems") if _player.get_parent() != null else null
+	if systems != null:
+		for grab in systems.get_children():
+			if grab.has_method("_can_grab") and (bool(grab.get("holding")) or bool(grab.call("_can_grab"))):
+				return false
+	return true
+
+
+func _carrying() -> bool:
+	var catcher: Node = _catcher()
+	return catcher != null and catcher.get("carried") != null
 
 
 ## Starts the scan with the player where they stand. Public for tests.
@@ -413,13 +492,14 @@ func begin() -> void:
 	if state == State.SCANNING or state == State.DRESSING or _player == null:
 		return
 	var wearer: Node = _wearer()
-	_came_in = Outfit.snapshot()
 	_we_stopped_walking = bool(_player.get("input_enabled"))
 	_player.set("input_enabled", false)
 	if _player is CharacterBody4D:
 		(_player as CharacterBody4D).linear_velocity = Vector4.ZERO
 	_slide_from = _player.global_position
 	_slide = 0.0
+	# A step onto the plate rather than a jump: longer the further out you pressed F.
+	_slide_seconds = 0.35 + 0.3 * _flat_gap()
 	# THE MIRROR HAS A PLACE TO STAND. The camera comes round to the circle's open front, whichever way
 	# you walked in, as a fitting-room mirror is where it is: so the view is one chosen to be clear (the
 	# first try came in from the path, through a bush), with the house behind you, and you turn to face it.
@@ -474,7 +554,7 @@ func _make_strips() -> void:
 
 ## The player eased to the middle, and held there: the walk is off, but a body still slides on.
 func _keep_in_place(delta: float) -> void:
-	_slide = minf(_slide + delta / 0.35, 1.0)
+	_slide = minf(_slide + delta / maxf(_slide_seconds, 0.05), 1.0)
 	var mid := Vector4(global_position.x, _slide_from.y, global_position.z, global_position.w)
 	var at: Vector4 = _slide_from.lerp(mid, smoothstep(0.0, 1.0, _slide))
 	_player.global_position = Vector4(at.x, _player.global_position.y, at.z, at.w)
@@ -552,7 +632,14 @@ func measure_figure() -> Vector4:
 # --- Dressing --------------------------------------------------------------------------------------
 
 func _input(event: InputEvent) -> void:
-	if Engine.is_editor_hint() or state != State.DRESSING:
+	if Engine.is_editor_hint():
+		return
+	if state == State.READY:
+		if event.is_action_pressed(&"catch_target") and not event.is_echo() and usable():
+			get_viewport().set_input_as_handled()
+			begin()
+		return
+	if state != State.DRESSING:
 		return
 	var key := event as InputEventKey
 	if key == null or not key.pressed:
@@ -560,26 +647,22 @@ func _input(event: InputEvent) -> void:
 	var row: int = int(_strips.get("active_row")) if _strips != null else 3
 	var handled: bool = true
 	var code: Key = key.physical_keycode if key.physical_keycode != KEY_NONE else key.keycode
-	if event.is_action_pressed(&"move_forward", true) or code == KEY_UP:
+	# THE ARROW KEYS ONLY (Ramon, 8 Oct: "arrows probably enough"): up and down the strips and on to
+	# ADVANCED under the last one, left and right the colour; on ADVANCED, right or Enter goes to the
+	# fitting room, where the styles, hats and jokes are. F is done, as it always was.
+	var on_advanced: bool = row == Strips.ADVANCED
+	if code == KEY_UP:
 		_choose_row(row - 1)
-	elif event.is_action_pressed(&"move_back", true) or code == KEY_DOWN:
+	elif code == KEY_DOWN:
 		_choose_row(row + 1)
-	elif event.is_action_pressed(&"move_left", true) or code == KEY_LEFT:
+	elif code == KEY_LEFT and not on_advanced:
 		change_colour(-1)
-	elif event.is_action_pressed(&"move_right", true) or code == KEY_RIGHT:
+	elif code == KEY_RIGHT and not on_advanced:
 		change_colour(1)
-	elif event.is_action_pressed(&"move_kata", true):
-		change_style(-1)
-	elif event.is_action_pressed(&"move_ana", true):
-		change_style(1)
-	elif code == KEY_X and not key.echo:
-		surprise()
-	elif code == KEY_BACKSPACE and not key.echo:
-		undo()
+	elif (code == KEY_RIGHT or code == KEY_ENTER or code == KEY_KP_ENTER) and on_advanced and not key.echo:
+		open_room()
 	elif event.is_action_pressed(&"catch_target") and not key.echo:
 		done()
-	elif (code == KEY_ENTER or code == KEY_KP_ENTER) and not key.echo:
-		open_room()
 	else:
 		handled = false
 	if handled:
@@ -589,37 +672,17 @@ func _input(event: InputEvent) -> void:
 func _choose_row(row: int) -> void:
 	if _strips == null:
 		return
-	_strips.set("active_row", clampi(row, 0, Outfit.ROWS.size() - 1))
+	_strips.set("active_row", clampi(row, 0, Strips.ADVANCED))
 	_tick.play()
 
 
 ## The active row's colour, one tile left or right. Public for tests.
 func change_colour(step: int) -> void:
 	var row: int = int(_strips.get("active_row")) if _strips != null else 3
+	if row < 0 or row >= Outfit.ROWS.size():
+		return
 	Outfit.step(Outfit.ROWS[row][1], step)
 	_changed(row)
-
-
-## The active row's style (the hat, or the trousers' length), one along. Rows without styles say so.
-func change_style(step: int) -> void:
-	var row: int = int(_strips.get("active_row")) if _strips != null else 3
-	var key: String = Outfit.ROWS[row][2]
-	if key == "":
-		_say("%s has one style. Q and E change the hat and the trousers." % Outfit.ROWS[row][0].capitalize(), 2.5)
-		return
-	Outfit.step(key, step)
-	_changed(row)
-
-
-func surprise() -> void:
-	Outfit.randomise(_rng)
-	_changed(-1)
-
-
-## Back to what you came in wearing.
-func undo() -> void:
-	Outfit.restore(_came_in)
-	_changed(-1)
 
 
 func _changed(row: int) -> void:
@@ -670,7 +733,6 @@ func _finish(animate: bool) -> void:
 		_player.call("stop_facing")
 	if _rig != null and is_instance_valid(_rig) and _rig.has_method("set_talking"):
 		_rig.call("set_talking", false)
-	_needs_step_out = true
 	if not animate or not is_inside_tree():
 		if _strips != null and is_instance_valid(_strips):
 			_strips.queue_free()
@@ -716,8 +778,15 @@ func _update_words(delta: float, gap: float) -> void:
 	var tag_text: String = ""
 	if _said_left > 0.0:
 		tag_text = _said
-	elif state == State.READY and _open > 0.99 and not _needs_step_out:
-		tag_text = "Step in to change your outfit" if gap < 2.6 else "Outfit scanner"
+	elif state == State.READY and _open > 0.99 and gap < names_within:
+		# With its key when F would start it; a reason when it would not, the chicken being the one
+		# you can do something about.
+		if usable():
+			tag_text = "%s  Outfit scanner" % _key_of(&"catch_target")
+		elif _carrying():
+			tag_text = "Put the chicken down first"
+		else:
+			tag_text = "Outfit scanner"
 	_place(_tag, tag_text, global_position + Vector4(0.0, frame_height + 0.35, 0.0, 0.0), awake and gap < wakes_within + 2.0)
 	_hint.text = _hint_text()
 	_place_bottom(_hint, awake and state == State.DRESSING)
@@ -728,9 +797,7 @@ func _update_words(delta: float, gap: float) -> void:
 
 
 func _hint_text() -> String:
-	return "%s %s  part      %s %s  colour      %s %s  style      X  surprise me      Backspace  undo      Enter  fitting room      %s  done" % [
-		_key_of(&"move_forward"), _key_of(&"move_back"), _key_of(&"move_left"), _key_of(&"move_right"),
-		_key_of(&"move_kata"), _key_of(&"move_ana"), _key_of(&"catch_target")]
+	return "Arrow keys  choose      %s  done" % _key_of(&"catch_target")
 
 
 ## The first key bound to [param action], read from the InputMap as every prompt in the pen is, so a

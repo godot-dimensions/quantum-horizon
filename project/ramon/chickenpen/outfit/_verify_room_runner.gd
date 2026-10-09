@@ -15,6 +15,9 @@ const Trip := preload("res://ramon/chickenpen/outfit/outfit_room_trip_4d.gd")
 const ROOM := "res://ramon/chickenpen/outfit/fitting_room.tscn"
 const OUT := "res://smoke_test_output/outfit/room/"
 const TEST_SAVE := "user://outfit_test_room.cfg"
+## The Tab panel's saves go here in a test, never to the room's own file.
+const TEST_TUNING := "user://outfit_test_room_tuning.cfg"
+const TUNING_FILE := "res://ramon/chickenpen/outfit/fitting_room_tuning.cfg"
 const OURS := 77
 
 var _fails: Array[String] = []
@@ -24,6 +27,7 @@ var _hud4k: bool = false
 var _t0: int = 0
 var _his_before: String = ""
 var _farm_done: bool = false
+var _his_tuning_before: String = ""
 
 
 class Guard extends Node:
@@ -105,6 +109,8 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
 	_his_before = _file_stamp("user://pen_outfit.cfg")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_SAVE))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_TUNING))
+	_his_tuning_before = _file_stamp(TUNING_FILE)
 	Outfit.use_save_path(TEST_SAVE)
 	root.add_child(Guard.new())
 	await _alone()
@@ -118,7 +124,9 @@ func _run() -> void:
 
 func _finish() -> void:
 	_check("Ramon's own saved outfit was not touched", _file_stamp("user://pen_outfit.cfg") == _his_before)
+	_check("nor the room's own light file", _file_stamp(TUNING_FILE) == _his_tuning_before)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_SAVE))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_TUNING))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://outfit_test_journal.cfg"))
 	print("\nROOM: %s (%d checks, %d failed)%s" % ["PASS" if _fails.is_empty() else "FAIL", _checks, _fails.size(),
 		"" if _fails.is_empty() else "  " + ", ".join(_fails)])
@@ -131,9 +139,12 @@ func _alone() -> void:
 	print("\n--- the room on its own ---")
 	Outfit.reset()
 	var room: Node = (load(ROOM) as PackedScene).instantiate()
+	room.set("tuning_path", TEST_TUNING)
 	root.add_child(room)
 	current_scene = room
 	await _wait(1.5)
+	_check("the lab's pedestals: both, with their holograms", room.get_node_or_null("FigurePedestal/Hologram") != null and
+		room.get_node_or_null("GarmentPedestal/Hologram") != null and room.get_node_or_null("FigurePedestal/PedestalDeck") != null)
 	var camera: Camera4D = room.get("_camera")
 	_check("its camera is the one in use", camera != null and camera.current)
 	var figure: Node4D = room.get("_figure")
@@ -231,6 +242,62 @@ func _alone() -> void:
 	await _shot("12b_dark")
 	await _press(KEY_B)
 	await _wait(1.0)
+
+	# THE LIGHT'S PANEL (Tab), saving to the test's own file.
+	var tuner: Control = room.get("_tuner")
+	var panel: Control = room.get("_panel")
+	await _press(KEY_TAB)
+	await _wait(0.3)
+	_check("Tab: the light's panel in the outfit panel's place", tuner.visible and not panel.visible and
+		tuner.position.is_equal_approx(panel.position), "%s vs %s" % [tuner.get_rect(), panel.get_rect()])
+	var light: Node = room.get_node("FigureLight")
+	var sliders: Dictionary = tuner.get("_sliders")
+	var cone_before: float = float(light.get("angle"))
+	(sliders["cone"] as HSlider).value = cone_before + 12.0
+	(sliders["height"] as HSlider).value = 4.2
+	(sliders["exposure"] as HSlider).value = 1.3
+	await _wait(0.4)
+	_check("a slider moves the spot: cone, both lights", absf(float(light.get("angle")) - (cone_before + 12.0)) < 0.2 and
+		absf(float(room.get_node("GarmentLight").get("angle")) - (cone_before + 12.0)) < 0.2, "%.2f" % float(light.get("angle")))
+	_check("and its height", absf((light as Node4D).position.y - 4.2) < 0.01)
+	_check("and the room's exposure", absf(float((room.call("light_for", room.call("current_mood")) as Dictionary)["exposure"]) - 1.3) < 0.01)
+	await _shot("12c_light_panel")
+	tuner.call("save_default")
+	var tuned := ConfigFile.new()
+	_check("Save as default: written (the test's file)", tuned.load(TEST_TUNING) == OK and absf(float(tuned.get_value("spot_you", "height", 0.0)) - 4.2) < 0.01 and
+		tuned.has_section("light_bright"))
+	await _press(KEY_TAB)
+	await _wait(0.2)
+	_check("Tab again: the outfit panel back", panel.visible and not tuner.visible)
+
+	# THE WHEEL, on the shirt: a colour of your own, on you and the piece, saved with the rest.
+	await _press(KEY_4)
+	var wheel: ColorPicker = room.get("_wheel")
+	var own := Color(0.25, 0.85, 0.55)
+	_check("the wheel is beside the swatches", wheel != null and wheel.is_visible_in_tree() and
+		wheel.get_global_rect().position.x > (room.get("_swatch_grid") as Control).get_global_rect().end.x - 1.0,
+		"%s / %s" % [wheel.get_global_rect(), (room.get("_swatch_grid") as Control).get_global_rect()])
+	_check("and takes no keyboard focus", wheel.find_children("*", "Control", true, false).all(func(c: Node) -> bool: return (c as Control).focus_mode == Control.FOCUS_NONE))
+	wheel.color_changed.emit(own)
+	await _wait(0.6)
+	_check("the wheel: the shirt is your own colour", Outfit.is_custom("shirt") and Outfit.colour("shirt").is_equal_approx(own))
+	_check("and you wear it, and the piece", _albedo(figure, "Tunic").is_equal_approx(own) and _albedo(piece, "Tunic").is_equal_approx(own))
+	await _press(KEY_RIGHT)
+	_check("right steps off it onto the first swatch", Outfit.get_value("shirt") == 0)
+	wheel.color_changed.emit(own)
+	await _press(KEY_LEFT)
+	_check("left steps off it onto the last", Outfit.get_value("shirt") == Outfit.options("shirt").size() - 1)
+	wheel.color_changed.emit(own)
+	await _wait(0.4)
+	await _shot("12d_wheel")
+	await _press(KEY_ENTER)
+	await _wait(0.2)
+	var with_own := ConfigFile.new()
+	_check("your own colour is saved", with_own.load(TEST_SAVE) == OK and int(with_own.get_value("outfit", "shirt", 0)) == Outfit.CUSTOM and
+		(with_own.get_value("outfit", "shirt_custom", Color.BLACK) as Color).is_equal_approx(own))
+	Outfit.read_again()
+	_check("and read back", Outfit.is_custom("shirt") and Outfit.colour("shirt").is_equal_approx(own))
+	Outfit.set_value("shirt", 0)
 	# How long a frame takes in here (vsync off for this, so the number means something).
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	Engine.max_fps = 0
@@ -284,8 +351,17 @@ func _from_the_farm() -> void:
 	player.global_position = Vector4(circle.global_position.x + 2.5, player.global_position.y, circle.global_position.z, 0.0)
 	await _wait(1.6)
 	player.global_position = Vector4(circle.global_position.x, player.global_position.y, circle.global_position.z, 0.0)
+	await _wait(0.3)
+	await _press(KEY_F)
 	var dressing: bool = await _until(func() -> bool: return int(circle.get("state")) == 3, 5.0)
 	_check("in the circle, dressing", dressing)
+	await _press(KEY_ENTER)
+	_check("Enter on a colour strip does not leave", current_scene == pen)
+	await _press(KEY_DOWN)
+	await _press(KEY_DOWN)
+	await _press(KEY_DOWN)
+	_check("down to ADVANCED", int((circle.get_node("Strips")).get("active_row")) == 6)
+	await _shot("19_advanced_stop")
 	var t_go: int = Time.get_ticks_msec()
 	await _press(KEY_ENTER)
 	var in_room: bool = await _until(func() -> bool: return current_scene != null and current_scene.name == &"FittingRoom", 5.0)
@@ -303,6 +379,9 @@ func _from_the_farm() -> void:
 	await _press(KEY_4)
 	await _press(KEY_RIGHT)
 	await _press(KEY_RIGHT)
+	# A colour of your own from the wheel, to see the farm wear one.
+	(room.get("_wheel") as ColorPicker).color_changed.emit(Color(0.9, 0.3, 0.75))
+	await _wait(0.2)
 	var chosen: Color = Outfit.colour("shirt")
 	var t_home: int = Time.get_ticks_msec()
 	await _press(KEY_ENTER)
@@ -326,24 +405,38 @@ func _from_the_farm() -> void:
 	player.global_position = Vector4(circle.global_position.x + 2.5, player.global_position.y, circle.global_position.z, 0.0)
 	await _wait(0.8)
 	player.global_position = Vector4(circle.global_position.x, player.global_position.y, circle.global_position.z, 0.0)
+	await _wait(0.3)
+	await _press(KEY_F)
 	await _until(func() -> bool: return int(circle.get("state")) == 3, 5.0)
-	await _press(KEY_ENTER)
-	await _until(func() -> bool: return current_scene != null and current_scene.name == &"FittingRoom", 5.0)
+	await _wait(0.8)
+	await _shot("21b_own_colour_strip")
+	await _press(KEY_DOWN)
+	await _press(KEY_DOWN)
+	await _press(KEY_DOWN)
+	await _press(KEY_RIGHT)
+	var by_right: bool = await _until(func() -> bool: return current_scene != null and current_scene.name == &"FittingRoom", 5.0)
+	_check("right on ADVANCED goes too", by_right)
 	await _wait(0.6)
 	var kept: Dictionary = Outfit.snapshot()
 	await _press(KEY_2)
 	await _press(KEY_RIGHT)
+	var changed: Dictionary = Outfit.snapshot()
 	await _press(KEY_ESCAPE)
 	await _until(func() -> bool: return current_scene == pen and pen.is_inside_tree(), 5.0)
 	await _wait(1.0)
-	_check("Esc: home with nothing changed", Outfit.snapshot() == kept)
-	_check("and the circle says so", String(circle.get("_said")).begins_with("Nothing"))
+	# Esc keeps it (Ramon, 8 Oct: "when i pressed esc in advanced, nothing was saved. that was a bummer").
+	_check("Esc: home, with what you changed kept", Outfit.snapshot() == changed and changed != kept)
+	var after_esc := ConfigFile.new()
+	_check("and saved", after_esc.load(TEST_SAVE) == OK and int(after_esc.get_value("outfit", "hair", -9)) == int(changed["hair"]))
+	_check("and the circle says so", String(circle.get("_said")).begins_with("Saved"))
 
 	print("\n--- the circle's switch: the room as the only way ---")
 	circle.set("opens_room", true)
 	player.global_position = Vector4(circle.global_position.x + 2.5, player.global_position.y, circle.global_position.z, 0.0)
 	await _wait(0.8)
 	player.global_position = Vector4(circle.global_position.x, player.global_position.y, circle.global_position.z, 0.0)
+	await _wait(0.3)
+	await _press(KEY_F)
 	var straight: bool = await _until(func() -> bool: return current_scene != null and current_scene.name == &"FittingRoom", 8.0)
 	_check("with opens_room on, the scan ends in the room", straight)
 	await _wait(0.6)

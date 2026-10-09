@@ -7,7 +7,7 @@
 
 [node name="FittingRoom" type="Node4D"]
 script = ExtResource("1_room")
-metadata/what = "Trym's fitting room: Ramon's version of the outfit changer, reached from the fitting circle with Enter, or run on its own (chickenpen/outfit/PLAN_FITTING_ROOM.md)."
+metadata/what = "Trym's fitting room: the advanced mode of the outfit changer, reached from the fitting circle's ADVANCED stop, or run on its own (chickenpen/outfit/PLAN_FITTING_ROOM.md)."
 
 [node name="Light" type="Node4D" parent="."]
 script = ExtResource("2_light")
@@ -17,8 +17,12 @@ start_mood = "bright"
 script = ExtResource("3_walls")
 size = Vector3(10, 5, 10)
 edge_codes = {
-"n": "blue"
+"e": "blue",
+"n": "blue",
+"s": "blue",
+"w": "blue"
 }
+cove = false
 
 [node name="Lesson" type="Node" parent="Walls"]
 script = ExtResource("4_text")

@@ -10,6 +10,11 @@ extends RefCounted
 ## flat-shaded blocks, and the save file stays a few small integers that survive any later change to
 ## the palette's exact shades.
 ##
+## AND ONE COLOUR OF YOUR OWN per part (Ramon, 8 Oct: "in the advanced section also make a colorpicker
+## wheel next to the colors"): the fitting room's wheel sets a colour key to CUSTOM, its colour kept
+## beside it and saved as "<key>_custom". The arrows step off it onto the palette again: right to the
+## first swatch, left to the last.
+##
 ## STATIC, AND NO class_name (engine_gotchas.md: a class_name written outside the editor is invisible
 ## until it rescans). Everything that uses it preloads it. A script holding static variables stays
 ## loaded for the whole run, so a scene change keeps the values; the file is what keeps them between
@@ -26,6 +31,8 @@ static var _revision: int = 0
 
 static var _loaded: bool = false
 static var _choice: Dictionary = {}
+## The wheel's colour per colour key, for when that key is CUSTOM.
+static var _custom: Dictionary = {}
 
 ## The rows the circle offers, top of the body to the bottom, and which choices each row holds:
 ## [name, colour key, style key or ""].
@@ -88,6 +95,10 @@ const DEFAULTS := {
 	"hat": HAT_CAP, "hat_colour": 0, "hair": 0, "skin": 1, "shirt": 0, "legs": 0, "trousers": 0, "shoes": 0,
 }
 const VERSION := 1
+## A colour key's value when its colour is the wheel's, not a swatch.
+const CUSTOM := -1
+## The keys that hold a colour (each row's second), the ones that can be CUSTOM.
+const COLOUR_KEYS := ["hat_colour", "hair", "skin", "shirt", "trousers", "shoes"]
 
 
 ## The palette behind [param key]: a list of colours for a colour key, of names for a style key.
@@ -127,21 +138,45 @@ static func set_value(key: String, value: int) -> void:
 	if count == 0:
 		return
 	var wrapped: int = posmod(value, count)
-	if int(_choice.get(key, -1)) == wrapped:
+	if int(_choice.get(key, -2)) == wrapped:
 		return
 	_choice[key] = wrapped
 	_revision += 1
 
 
+## A colour of your own for [param key] (a colour key), from the fitting room's wheel.
+static func set_custom(key: String, c: Color) -> void:
+	_ensure_loaded()
+	if not key in COLOUR_KEYS:
+		return
+	c.a = 1.0
+	if int(_choice.get(key, -2)) == CUSTOM and (_custom.get(key, Color(-1, -1, -1)) as Color).is_equal_approx(c):
+		return
+	_choice[key] = CUSTOM
+	_custom[key] = c
+	_revision += 1
+
+
+static func is_custom(key: String) -> bool:
+	return get_value(key) == CUSTOM
+
+
 static func step(key: String, delta: int) -> void:
-	set_value(key, get_value(key) + delta)
+	var at: int = get_value(key)
+	if at == CUSTOM:
+		# Off your own colour onto the palette: right to its first swatch, left to its last.
+		set_value(key, 0 if delta > 0 else -1)
+		return
+	set_value(key, at + delta)
 
 
 ## The colour chosen for [param key] (a colour key).
 static func colour(key: String) -> Color:
 	var list: Array = options(key)
 	var at: int = get_value(key)
-	return list[at] if at < list.size() and list[at] is Color else Color.WHITE
+	if at == CUSTOM:
+		return _custom.get(key, list[0] if not list.is_empty() else Color.WHITE)
+	return list[at] if at >= 0 and at < list.size() and list[at] is Color else Color.WHITE
 
 
 static func hat() -> int:
@@ -161,6 +196,8 @@ static func hat_takes_colour() -> bool:
 ## What the circle's label says for an option.
 static func name_of(key: String, index: int) -> String:
 	var list: Array = options(key)
+	if index == CUSTOM and key in COLOUR_KEYS:
+		return "Your own"
 	if index < 0 or index >= list.size():
 		return ""
 	if list[index] is String:
@@ -173,18 +210,24 @@ static func name_of(key: String, index: int) -> String:
 	return "Original" if index == 0 else CLOTH_NAMES[index - 1]
 
 
-## Everything chosen, for putting back later (the circle's undo).
+## Everything chosen, for putting back later (the room's undo): a colour of your own as its colour too.
 static func snapshot() -> Dictionary:
 	_ensure_loaded()
 	var out: Dictionary = {}
 	for key in DEFAULTS:
 		out[key] = get_value(key)
+		if out[key] == CUSTOM:
+			out[key + "_custom"] = colour(key)
 	return out
 
 
 static func restore(choice: Dictionary) -> void:
 	for key in DEFAULTS:
-		set_value(key, int(choice.get(key, DEFAULTS[key])))
+		var v: int = int(choice.get(key, DEFAULTS[key]))
+		if v == CUSTOM and choice.get(key + "_custom") is Color:
+			set_custom(key, choice[key + "_custom"])
+		else:
+			set_value(key, v if v != CUSTOM else int(DEFAULTS[key]))
 
 
 static func is_default() -> bool:
@@ -213,6 +256,8 @@ static func save() -> Error:
 	file.set_value("outfit", "version", VERSION)
 	for key in DEFAULTS:
 		file.set_value("outfit", key, get_value(key))
+		if get_value(key) == CUSTOM:
+			file.set_value("outfit", key + "_custom", colour(key))
 	var err: Error = file.save(save_path)
 	if err != OK:
 		push_warning("Outfit: could not save to %s (%s)." % [save_path, error_string(err)])
@@ -244,6 +289,7 @@ static func _ensure_loaded() -> void:
 		return
 	_loaded = true
 	_choice = DEFAULTS.duplicate()
+	_custom.clear()
 	var file := ConfigFile.new()
 	if file.load(save_path) != OK:
 		return
@@ -254,4 +300,7 @@ static func _ensure_loaded() -> void:
 		var count: int = options(key).size()
 		if (v is int or v is float) and int(v) >= 0 and int(v) < count:
 			_choice[key] = int(v)
+		elif (v is int or v is float) and int(v) == CUSTOM and key in COLOUR_KEYS and file.get_value("outfit", key + "_custom") is Color:
+			_choice[key] = CUSTOM
+			_custom[key] = file.get_value("outfit", key + "_custom")
 	_revision += 1

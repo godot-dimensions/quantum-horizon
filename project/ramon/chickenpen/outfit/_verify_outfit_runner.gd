@@ -19,9 +19,9 @@ const Keeper := preload("res://ramon/chickenpen/outfit/outfit_keeper_4d.gd")
 const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
 const GroundBasis := preload("res://ramon/chickenpen/scripts/ground_basis_4d.gd")
 const CIRCLE := "res://ramon/chickenpen/units/outfit/outfit_circle.tscn"
-const SITE := Vector4(20.2, 0.0, 43.4, 0.0)
-## The circle's front looks west, so the mirror's camera has the house behind you.
-const FRONT_YAW := -PI / 2.0
+const SITE := Vector4(30.4, 0.0, 43.6, 0.0)
+## The circle's front looks east, so the mirror's camera has the house behind you.
+const FRONT_YAW := PI / 2.0
 const OUT := "res://smoke_test_output/outfit/play/"
 const TEST_SAVE := "user://outfit_test.cfg"
 const OURS := 77
@@ -163,7 +163,7 @@ func _run() -> void:
 		_circle.global_basis = Basis4D.from_zx(FRONT_YAW)
 		print("  (circle spawned at %s for the test)" % str(SITE))
 	var looks: Vector4 = _circle.global_basis * Vector4(0.0, 0.0, 1.0, 0.0)
-	_check("the circle's front looks west", looks.is_equal_approx(Vector4(-1.0, 0.0, 0.0, 0.0)), str(looks))
+	_check("the circle's front looks east, away from the house", looks.is_equal_approx(Vector4(1.0, 0.0, 0.0, 0.0)), str(looks))
 	_hud_off()
 	var avatar := _player.get_node("Avatar") as Node4D
 	await _until(func() -> bool: return root.get_node_or_null(NodePath(String(Keeper.NAME))) != null, 3.0)
@@ -191,30 +191,48 @@ func _run() -> void:
 	_check("nobody else is dressed", npcs_dressed == 0, "%d other wearers" % npcs_dressed)
 
 	print("\n--- walking up ---")
+	# Along the circle's own front, wherever the circle stands.
+	var site: Vector4 = _circle.global_position
+	var front: Vector4 = _circle.global_basis * Vector4(0.0, 0.0, 1.0, 0.0)
+	front = Vector4(front.x, 0.0, front.z, 0.0).normalized()
 	_player.set("input_enabled", false)
-	_place_player(SITE + Vector4(0.0, 0.0, -9.0, 0.0))
-	SliceAngles.tilt(_rig, 0.0, 0.0, PI)
+	_place_player(site + front * 6.0)
+	var look: Vector4 = site - _player.global_position
+	SliceAngles.tilt(_rig, 0.0, 0.0, atan2(look.x, look.z) + PI)
 	_rig.set("pitch", deg_to_rad(-12.0))
 	_rig.call("_apply")
 	await _wait(1.5)
-	_check("far away, the frame is down", int(_circle.get("state")) == 0 and not (_circle.get_node("Frame") as Node4D).visible)
+	_check("past 3 m, only the capped plate", int(_circle.get("state")) == 0 and not (_circle.get_node("Frame") as Node4D).visible)
 	await _shot("01_far")
 	# Walk in, a step at a time, as the walk would carry you.
 	for i in 30:
-		_place_player(SITE + Vector4(0.0, 0.0, -9.0 + 6.5 * float(i) / 29.0, 0.0))
+		_place_player(site + front * lerpf(6.0, 2.4, float(i) / 29.0))
 		await process_frame
 		await process_frame
 	await _wait(0.45)
 	await _shot("02_rising")
 	await _wait(1.2)
-	_check("near it, the frame is up and it is ready", int(_circle.get("state")) == 1)
+	_check("within 3 m, the frame folds out", int(_circle.get("state")) == 1)
+	_check("and says nothing yet", not (_circle.get("_tag") as Label).visible)
 	await _shot("03_ready")
 	_player.set("input_enabled", true)
+	_place_player(site + front * 1.2)
+	await _wait(0.4)
+	var tag_text: String = (_circle.get("_tag") as Label).text
+	_check("closer still: F  Outfit scanner", (_circle.get("_tag") as Label).visible and tag_text == "F  Outfit scanner", "'%s'" % tag_text)
+	_check("and F would start it", bool(_circle.call("usable")))
+	await _shot("03b_named")
+	# Walking onto it is free now (Ramon, 8 Oct: "to use outfit scanner you press F").
 	for i in 20:
-		_place_player(SITE + Vector4(0.0, 0.0, -2.5 + 2.5 * float(i) / 19.0, 0.0))
+		_place_player(site + front * lerpf(1.2, 0.0, float(i) / 19.0))
 		await process_frame
+	await _wait(0.6)
+	_check("walking onto it starts nothing", int(_circle.get("state")) == 1)
+	_place_player(site + front * 1.0)
+	await _wait(0.2)
+	await _press(KEY_F)
 	var began: bool = await _until(func() -> bool: return int(_circle.get("state")) == 2, 2.0)
-	_check("stepping in starts the scan", began)
+	_check("F starts the scan", began)
 	_check("your walking is off", _player.get("input_enabled") == false)
 	_check("the camera comes in", bool(_rig.get("_talking")))
 	await _wait(0.5)
@@ -233,13 +251,21 @@ func _run() -> void:
 	_check("the readout gives four sizes", readout != null and readout.text.contains("thick in W"), readout.text if readout != null else "")
 	var size: Vector4 = _circle.call("measure_figure")
 	_check("and they are the figure's", size.y > 1.3 and size.y < 1.8 and size.w > 0.25 and size.w < 0.6, str(size))
+	# The strips stand on your left as you look at yourself: left of you on screen.
+	var cam: Camera4D = _player.get_node("CameraRig/Pitch/Camera4D")
+	var you_x: float = cam.world_to_viewport(_player.global_position + Vector4(0, 1.0, 0, 0)).x
+	var strip_x: float = cam.world_to_viewport((strips as Node4D).global_position + (strips as Node4D).global_basis * Vector4(-1.3, 0.9, 0, 0)).x
+	_check("the strips are on the left of you", strip_x < you_x, "%.0f < %.0f" % [strip_x, you_x])
 	await _wait(0.6)
 	await _shot("06_dressing")
 	if _hud4k:
-		Outfit.restore({"hat": Outfit.HAT_CHICKEN, "hat_colour": 0, "hair": 3, "skin": 4, "shirt": 7, "legs": 1, "trousers": 1, "shoes": 12})
+		Outfit.restore({"hat": Outfit.HAT_TOP, "hat_colour": 2, "hair": 3, "skin": 4, "shirt": 7, "legs": 1, "trousers": 1, "shoes": 12})
 		strips.set("active_row", 4)
 		await _wait(0.8)
 		await _shot("07_dressed")
+		strips.set("active_row", 6)
+		await _wait(0.4)
+		await _shot("07b_advanced")
 		for label in (_circle.get("_ui") as Control).find_children("*", "Label", true, false):
 			if (label as Label).visible:
 				print("LABEL %-14s at %s size %s  '%s'" % [label.name, str((label as Label).position.round()), str((label as Label).size.round()), (label as Label).text])
@@ -247,92 +273,90 @@ func _run() -> void:
 		await _press(KEY_F)
 		await _wait(0.6)
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_SAVE))
-		print("
-OUTFIT 4K: %s (%d checks, %d failed)" % ["PASS" if _fails.is_empty() else "FAIL", _checks, _fails.size()])
+		print("\nOUTFIT 4K: %s (%d checks, %d failed)" % ["PASS" if _fails.is_empty() else "FAIL", _checks, _fails.size()])
 		quit(0)
 		return
 
-	print("\n--- the keys ---")
+	print("\n--- the arrow keys ---")
 	var stood: Vector4 = _player.global_position
 	var tilt_before: float = GroundBasis.tilt(_rig.basis)
 	_check("starts on the shirt", int(strips.get("active_row")) == 3)
-	await _press(KEY_D)
-	await _press(KEY_D)
-	_check("D twice: the shirt is the second cloth colour", Outfit.get_value("shirt") == 2)
+	await _press(KEY_RIGHT)
+	await _press(KEY_RIGHT)
+	_check("right twice: the shirt is the second cloth colour", Outfit.get_value("shirt") == 2)
 	await _wait(0.6)
 	_check("and the tunic wears it", _albedo(avatar, "Tunic").is_equal_approx(Outfit.colour("shirt")))
 	_check("and the sleeves", _albedo(avatar, "UpperArmL").is_equal_approx(Outfit.colour("shirt")))
 	await _shot("07_shirt")
-	await _press(KEY_S)
-	_check("S: down to the trousers", int(strips.get("active_row")) == 4)
-	await _press(KEY_E)
-	_check("E: long trousers", Outfit.long_legs())
-	await _press(KEY_D)
-	await _press(KEY_D)
-	await _press(KEY_D)
+	await _press(KEY_DOWN)
+	_check("down: the trousers", int(strips.get("active_row")) == 4)
+	await _press(KEY_RIGHT)
+	await _press(KEY_RIGHT)
+	await _press(KEY_RIGHT)
+	Outfit.set_value("legs", Outfit.LEGS_LONG)
 	await _wait(0.6)
-	_check("and the legs wear them", _albedo(avatar, "ThighL").is_equal_approx(Outfit.colour("trousers")) and
+	_check("long trousers (the fitting room's style) wear the colour on the legs", _albedo(avatar, "ThighL").is_equal_approx(Outfit.colour("trousers")) and
 		_albedo(avatar, "ShinR").is_equal_approx(Outfit.colour("trousers")))
 	await _shot("08_trousers")
-	await _press(KEY_S)
-	await _press(KEY_A)
+	await _press(KEY_DOWN)
+	await _press(KEY_LEFT)
 	_check("the shoes, one to the left", Outfit.get_value("shoes") == Outfit.options("shoes").size() - 1)
-	await _press(KEY_W)
-	await _press(KEY_W)
-	await _press(KEY_W)
-	await _press(KEY_D)
-	await _press(KEY_D)
-	await _press(KEY_D)
+	await _press(KEY_UP)
+	await _press(KEY_UP)
+	await _press(KEY_UP)
+	await _press(KEY_RIGHT)
+	await _press(KEY_RIGHT)
+	await _press(KEY_RIGHT)
 	_check("skin: tone five", Outfit.get_value("skin") == 4)
 	await _wait(0.6)
 	_check("and the face, ears and hands wear it", _albedo(avatar, "Head").is_equal_approx(Outfit.colour("skin")) and
 		_albedo(avatar, "EarA").is_equal_approx(Outfit.colour("skin")) and _albedo(avatar, "HandL").is_equal_approx(Outfit.colour("skin")))
-	await _press(KEY_W)
-	await _press(KEY_D)
+	await _press(KEY_UP)
+	await _press(KEY_RIGHT)
 	_check("hair: black", Outfit.get_value("hair") == 1)
 	await _shot("09_skin_hair")
-	await _press(KEY_W)
-	await _press(KEY_W)
-	_check("W at the top stays at the hat", int(strips.get("active_row")) == 0)
-	await _press(KEY_D)
-	await _press(KEY_D)
-	await _press(KEY_D)
-	await _press(KEY_D)
-	await _press(KEY_E)
-	await _wait(0.15)
-	_check("E: no hat, the cap off and the hair on top", Outfit.hat() == Outfit.HAT_NONE and avatar.get("wear_cap") == false and
-		_find(avatar, "Crown") != null and _head_has(avatar, "Cap") == false, "hat %d wear_cap %s" % [Outfit.hat(), str(avatar.get("wear_cap"))])
-	await _wait(0.4)
-	await _shot("10_no_hat")
-	await _press(KEY_E)
-	await _wait(0.15)
-	_check("E: a beanie", Outfit.hat() == Outfit.HAT_BEANIE and avatar.get("wear_cap") == false)
-	_check("the beanie is on the head", _find(avatar, "Beanie") != null and _find(avatar, "Crown") != null)
-	await _wait(0.4)
+	await _press(KEY_UP)
+	await _press(KEY_UP)
+	_check("up at the top stays at the hat", int(strips.get("active_row")) == 0)
+	await _press(KEY_RIGHT)
+	await _press(KEY_RIGHT)
+	_check("the cap's colour", Outfit.get_value("hat_colour") == 2)
+	for i in 6:
+		await _press(KEY_DOWN)
+	_check("down past the shoes: ADVANCED", int(strips.get("active_row")) == 6)
+	await _press(KEY_DOWN)
+	_check("and no further", int(strips.get("active_row")) == 6)
+	var shirt_now: int = Outfit.get_value("shirt")
+	await _press(KEY_LEFT)
+	_check("left on ADVANCED changes nothing", Outfit.get_value("shirt") == shirt_now and int(_circle.get("state")) == 3)
+	await _wait(0.3)
+	await _shot("09b_advanced")
+	await _press(KEY_UP)
+	_check("up again: the shoes", int(strips.get("active_row")) == 5)
+	# The hats are the fitting room's (its own runner presses those keys); here, that each is worn.
+	Outfit.set_value("hat", Outfit.HAT_NONE)
+	await _wait(0.3)
+	_check("no hat: the cap off and the hair on top", avatar.get("wear_cap") == false and _find(avatar, "Crown") != null and _head_has(avatar, "Cap") == false)
+	Outfit.set_value("hat", Outfit.HAT_BEANIE)
+	await _wait(0.3)
+	_check("a beanie on the head", _find(avatar, "Beanie") != null and _find(avatar, "Crown") != null)
 	await _shot("10_beanie")
-	await _press(KEY_E)
-	await _wait(0.15)
-	_check("E: a top hat", _find(avatar, "HatCrown") != null and _find(avatar, "Beanie") == null)
-	await _wait(0.4)
+	Outfit.set_value("hat", Outfit.HAT_TOP)
+	await _wait(0.3)
+	_check("a top hat", _find(avatar, "HatCrown") != null and _find(avatar, "Beanie") == null)
 	await _shot("11_top_hat")
-	await _press(KEY_E)
-	await _wait(0.15)
-	_check("E: the chicken", _find(avatar, "ChickenHead") != null and _find(avatar, "HatCrown") == null)
-	await _wait(0.5)
+	Outfit.set_value("hat", Outfit.HAT_CHICKEN)
+	await _wait(0.4)
+	_check("the chicken", _find(avatar, "ChickenHead") != null and _find(avatar, "HatCrown") == null)
 	await _shot("12_chicken")
-	await _press(KEY_E)
-	await _wait(0.15)
+	Outfit.set_value("hat", Outfit.HAT_HYPERCUBE)
+	await _wait(0.3)
 	var cube: Node4D = _find(avatar, "Hypercube") as Node4D
-	_check("E: the hypercube", cube != null)
+	_check("the hypercube", cube != null)
 	var basis_a: Projection = cube.basis if cube != null else Projection()
 	await _wait(0.6)
 	await _shot("13_hypercube_a")
-	await _wait(0.9)
-	await _shot("13_hypercube_b")
 	_check("and it turns", cube != null and not (cube.basis.x.is_equal_approx(basis_a.x) and cube.basis.w.is_equal_approx(basis_a.w)))
-	await _press(KEY_Q)
-	await _press(KEY_Q)
-	_check("Q twice: back to the top hat", Outfit.hat() == Outfit.HAT_TOP)
 	_check("the pickaxe keeps its own colours", _pickaxe_cap(avatar).is_equal_approx(pick_cap), str(_pickaxe_cap(avatar)))
 
 	print("\n--- nothing else heard the keys ---")
@@ -346,15 +370,7 @@ OUTFIT 4K: %s (%d checks, %d failed)" % ["PASS" if _fails.is_empty() else "FAIL"
 			talking = true
 	_check("no conversation started", not talking)
 
-	print("\n--- surprise, undo, a rebuild ---")
-	var before_x: Dictionary = Outfit.snapshot()
-	await _press(KEY_X)
-	_check("X: a different outfit", Outfit.snapshot() != before_x)
-	await _wait(0.5)
-	await _shot("14_surprise")
-	await _press(KEY_BACKSPACE)
-	var came_in: Dictionary = _circle.get("_came_in")
-	_check("Backspace: what you came in wearing", Outfit.snapshot() == came_in)
+	print("\n--- a rebuild ---")
 	# Put a known outfit on for the rest: a top hat, cobalt shirt, long red trousers.
 	Outfit.restore({"hat": Outfit.HAT_TOP, "hat_colour": 12, "hair": 3, "skin": 2, "shirt": 7, "legs": 1, "trousers": 1, "shoes": 12})
 	await _wait(0.2)
@@ -383,15 +399,41 @@ OUTFIT 4K: %s (%d checks, %d failed)" % ["PASS" if _fails.is_empty() else "FAIL"
 	await _wait(1.0)
 	await _shot("17_done")
 	_check("standing in it after, it does not start again", int(_circle.get("state")) == 1)
-	_place_player(SITE + Vector4(1.5, 0.0, 0.0, 0.0))
-	await _wait(0.4)
-	_place_player(SITE)
+	await _wait(2.0)
+	await _press(KEY_F)
 	var again: bool = await _until(func() -> bool: return int(_circle.get("state")) == 3, 3.0)
-	_check("step out and in: a quicker scan", again)
+	_check("F again: a quicker scan", again)
 	await _press(KEY_F)
 	await _until(func() -> bool: return int(_circle.get("state")) == 1, 3.0)
-	_place_player(SITE + Vector4(2.5, 0.0, 0.0, 0.0))
-	await _wait(0.5)
+	_place_player(site + front * 4.0)
+	await _wait(1.6)
+	_check("past 3 m again, the frame folds in", int(_circle.get("state")) == 0)
+
+	print("
+--- the dev look ---")
+	# Blue, the rim still cyan (Ramon, 8 Oct: "in dev mode, the closed panel should have the cyan
+	# outline, but everything else blue").
+	var look: Node = _room.get_node_or_null("Systems/Look")
+	if look != null:
+		var was_dev: bool = bool(look.get("dev"))
+		look.call("set_dev", true)
+		await _wait(0.8)
+		var blue: Color = look.get("foundation_colour")
+		var plate: Color = _flat_albedo(_circle.get_node("Plate"))
+		var rim: Color = _flat_albedo(_circle.get_node("Rim"))
+		var post: Color = _flat_albedo(_circle.get_node("Frame/Post0"))
+		var crown_edge: Color = _flat_albedo(_circle.get_node("Frame/CrownEdge"))
+		_check("dev: the plate and the frame in the Look's blue", plate.is_equal_approx(blue) and post.is_equal_approx(blue) and crown_edge.is_equal_approx(blue),
+			"%s %s %s" % [plate, post, crown_edge])
+		_check("dev: the rim stays cyan", rim.is_equal_approx(_circle.get("edge_color")), str(rim))
+		_place_player(site + front * 6.0)
+		await _wait(0.6)
+		await _shot("17b_dev_closed")
+		look.call("set_dev", false)
+		await _wait(0.8)
+		_check("art: the plate back to its own colour", _flat_albedo(_circle.get_node("Plate")).is_equal_approx(_circle.get("frame_color")))
+		look.call("set_dev", was_dev)
+		await _wait(0.4)
 
 	print("\n--- the cinema ---")
 	var crossing: Node = _room.get_node_or_null("Crossing")
@@ -519,6 +561,13 @@ func _head_has(figure: Node, part: String) -> bool:
 
 func _find(figure: Node, part: String) -> Node:
 	return figure.find_child(part, true, false)
+
+
+func _flat_albedo(node: Node) -> Color:
+	var mi := node as MeshInstance4D
+	if mi == null or not (mi.material_override is TetraMaterial4D):
+		return Color(-1, -1, -1)
+	return (mi.material_override as TetraMaterial4D).albedo_color
 
 
 func _albedo(figure: Node, part: String) -> Color:

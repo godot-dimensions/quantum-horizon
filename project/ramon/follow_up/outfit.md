@@ -18,13 +18,49 @@ separately as a function i can check"):
 
 Both change the same outfit, saved the same way, and worn the same way everywhere.
 
+## Ramon's notes, 8 Oct evening, and what changed
+
+- **The circle stands on the left of the house** (west), at (30.4, 43.6), its open front facing east.
+- **It folds out within 3 m and folds in past 3 m;** before that it is a capped plate with a cyan rim.
+  Its name shows only closer still (1.6 m).
+- **F starts it** ("to use outfit scanner you press F"). Walking onto it does nothing. Up close it reads
+  "F  Outfit scanner".
+  - F is the catch key too, so the circle takes it only when nothing else would: no chicken in your
+    arms or in reach, no cat in reach, nobody to talk to. That is the laptop's rule.
+  - With a chicken in your arms the tag says "Put the chicken down first".
+- **The basic mode is colours only, on the arrow keys,** with the strips on your left (clear of the HUD)
+  and a floating arrow-key cluster over them. Under SHOES is **ADVANCED**: Right or Enter there opens
+  Trym's fitting room. F is done, as before.
+- **The dev look:** the plate, the pad and the frame turn the Look's blue; the rim round the plate stays
+  cyan ("the closed panel should have the cyan outline, but everything else blue"). It follows the
+  Look's colour swatches as well.
+- **The fitting room:**
+  - **Esc saves now,** the same as Enter ("when i pressed esc in advanced, nothing was saved. that was a
+    bummer"). Z is the way back to what you came in wearing.
+  - **A colour wheel beside the swatches.** A colour from it is that part's own, saved with the outfit
+    (`<part>_custom` in the file). The arrows step off it onto the palette: right to the first swatch,
+    left to the last. The basic strips show it in the middle, called "Your own".
+  - **Tab shows the light's panel** in the outfit panel's place, with the lab tuner's rows:
+    - LIGHT: spots, sky fill, sun, sun height, sun turn and exposure, per mood (B switches the mood).
+    - SPOT: strength, cone, softness, reach, falloff, height and warmth, for the light over you, the
+      light over the piece, or both.
+    - "Save as default" writes `chickenpen/outfit/fitting_room_tuning.cfg`, which the room reads when
+      it starts. Without that file the room starts from the Creation Lab's saved light. The lab's file
+      is only ever read.
+  - **The Creation Lab's pedestals:** its showcase pedestal in miniature, at its proportions, so the
+    white ring is a thin rim round a big blue deck as it is in the lab. Each has the lab's hologram on
+    its deck and its printed band on the side facing the camera. Under the piece, the hologram is drawn
+    up towards it. To build them, `kit_pedestal.gd` `build()` takes an optional fourth argument that
+    sizes its trims; the lab's own call does not pass it, so the lab is unchanged.
+  - The panel is sized from the screen's height, never scaled, so it no longer jitters. The light and
+    blue walls are the lab's, and there is no white bar at the ceiling.
+
 ## Questions for Ramon
 
-0. **Which version, or both?** Today the circle is the way in, and Enter in it opens the fitting room.
+0. **Which version, or both?** Both, as you asked: the circle is the basic mode, and ADVANCED under its
+   last strip opens the fitting room.
    - To make the room the only way, tick `opens_room` on `World/OutfitCircle`; the scan then ends
      straight in the room.
-   - To drop the room, nothing needs deleting: just don't press Enter. Or say, and I take Enter out of
-     the hint.
 1. **Should the labs' players wear the outfit too?** Today it reaches every scene of the playable world:
    the pen, the cave, the far room and the cinema. The Creation Lab, Arboretum and Voxel Lab carry their
    own copies of the avatar (`LabKit/carried/`), and Crosswise has its own (`mk_avatar_4d.gd`). They are
@@ -40,16 +76,15 @@ Both change the same outfit, saved the same way, and worn the same way everywher
 3. **The cinema's player is not quite the pen's player.** In `theatre.tscn` it has no eyes and shorter
    shorts. The outfit makes their colours and hats match, but not those two things. Matching them means
    touching the theatre, so it waits for your say.
-4. **Where it stands.** It is west of the house front, at (20.2, 43.4), as the unit `World/OutfitCircle`,
-   so you can move it in the editor.
-   - Its open front (its +Z) looks west, and the mirror's camera stands on that side, with the house
-     behind you.
-   - I put it west because on the east side Trym's talk reach (3 m from where he stands after the cinema)
-     would have shared the F key with it, and his walk to the arch uses the path north of the sand.
+4. **Where it stands.** On the left of the house, at (30.4, 43.6), as the unit `World/OutfitCircle`, so
+   you can move it in the editor.
+   - Its open front (its +Z) faces east, and the mirror's camera stands on that side.
    - Turn it and the camera's side turns with it.
-5. **The words.** Over it: "Outfit scanner", and "Step in to change your outfit" up close. On F: "Saved.
-   It goes with you." The jokes are called "Chicken" and "Hypercube". Change any of them freely
-   (`outfit_circle_4d.gd`, `outfit_4d.gd`).
+   - If Trym, a cat or a chicken is in F's reach where you stand, the tag reads "Outfit scanner" without
+     the key, and F goes to them. That is on purpose.
+5. **The words.** Over it: "F  Outfit scanner" up close. On F when done: "Saved. It goes with you." A
+   wheel colour is called "Your own". The jokes are called "Chicken" and "Hypercube". Change any of them
+   freely (`outfit_circle_4d.gd`, `outfit_4d.gd`).
 6. **Trym's lost outfit changer** (the board's card): if he commits his, this one's store
    (`outfit_4d.gd`) is the place for whatever his had that this does not.
 7. **Ideas outside the plan**, not built:
@@ -72,19 +107,17 @@ Both change the same outfit, saved the same way, and worn the same way everywher
   - `smoke_test_output/outfit/moves/` (each hat walking, carrying and knocked over).
 - **To try it:**
   1. Open the playable world and follow the path to Trym's house.
-  2. The frame rises on the grass west of his sand as you arrive.
-  3. Walk into the middle of it.
+  2. The frame rises on the left of the house when you come within 3 m.
+  3. Walk up to it, and press F when it reads "F  Outfit scanner".
 
-## Keys (only while you stand in the circle; your walking is off then)
+## Keys in the circle (your walking is off while you dress)
 
 | Key | Does |
 |---|---|
-| W / S, or Up / Down | which part: HAT, HAIR, SKIN, SHIRT, TROUSERS, SHOES |
-| A / D, or Left / Right | its colour |
-| Q / E | its style: the hat (Cap, No hat, Beanie, Top hat, Chicken, Hypercube) or the trousers (Shorts, Long) |
-| X | surprise me (a random outfit, never the one you have on) |
-| Backspace | back to what you came in wearing |
-| F | done: saved, and you can walk again |
+| F | start the scan (up close), and later done: saved, and you can walk again |
+| Up / Down | which part: HAT, HAIR, SKIN, SHIRT, TROUSERS, SHOES, then ADVANCED |
+| Left / Right | its colour |
+| Right or Enter on ADVANCED | Trym's fitting room |
 
 The mouse still orbits, so you can look at yourself from any side or turn the slice.
 
@@ -92,10 +125,10 @@ The mouse still orbits, so you can look at yourself from any side or turn the sl
 
 `chickenpen/outfit/fitting_room.tscn` and `outfit_room_4d.gd`, reached by `outfit_room_trip_4d.gd`.
 
-- **To try it:** stand in the circle and press Enter. Or open `fitting_room.tscn` and press F6; on its
-  own, Done just saves.
+- **To try it:** in the circle, go down to ADVANCED and press Enter. Or open `fitting_room.tscn` and
+  press F6; on its own, Done just saves.
 - **What you see:**
-  - On the left, you on the lab's pedestal. Q and E turn you, and so does a drag.
+  - On the left, you on the lab's pedestal (in miniature). Q and E turn you, and so does a drag.
   - On the right, the one piece you are changing, turning on its own pedestal: the hat, the hair, a head
     for the skin, the shirt, the trousers or the boots.
   - The piece is scaled until its largest side is a metre, never past 2.2 times, so the chicken costume
@@ -104,12 +137,12 @@ The mouse still orbits, so you can look at yourself from any side or turn the sl
 - **The panel** is black glass down the right, filling the height at any screen size.
   - Six numbered part buttons (keys 1 to 6).
   - The styles by name (Up and Down).
-  - The colours as big swatches (Left and Right, or click).
-  - "Turn the piece through W" (T), Surprise me (X), Undo (Z), and Done (Enter). Esc goes home with
-    nothing changed.
+  - The colours as big swatches (Left and Right, or click), with the colour wheel beside them.
+  - "Turn the piece through W" (T), Surprise me (X), Undo (Z), and Done (Enter, or Esc: both save).
+  - Tab swaps in the light's panel (`fitting_room_tuner.gd`).
 - **The room is the lab kit's**, read only: `lab_room_4d.gd` light (B for its dark look),
   `kit_room_4d.gd` walls with the blue lesson wall (`edge_codes`, its words painted on),
-  `kit_pedestal.gd`, and `kit_style.gd`'s black glass.
+  `kit_pedestal.gd` with the showcase's hologram and band, and `kit_style.gd`'s black glass.
 - **The trip** works as the laptop's does: the farm is parked, not freed, then put back. The
   environment that lit the farm is made current again, and the pen's camera, the mouse and the HUD
   are as they were. The circle says "Saved. It goes with you." or "Nothing changed."
@@ -140,6 +173,7 @@ The only shared file changed is `playable_world.tscn`, with one resource line an
   - Each choice is an index into a short palette: eight skin tones after the Monk scale, twelve
     clothing colours, eight hair colours, six hats and two trouser lengths.
   - Each clothing row starts with the figure's own colour, so the defaults are exactly today's figure.
+  - Plus one colour of your own per part, from the room's wheel (`CUSTOM`, kept as `<key>_custom`).
   - It is static, so the outfit lasts the run, and saved to `user://pen_outfit.cfg` on F, so it is there
     next time. A garbled file falls back to the defaults.
   - No `class_name`; it is preloaded.
@@ -161,7 +195,8 @@ The only shared file changed is `playable_world.tscn`, with one resource line an
   - The circle adds it each time the pen enters the tree, so nothing shared (`project.godot`) changed.
 - **`outfit_circle_4d.gd` and `outfit_strips_4d.gd`, the circle.**
   - Trym's arch's language: navy, cyan, a rising frame and a generated chime. Every mesh is
-    `_look_own`, so the dev look leaves it alone.
+    `_look_own`, so the dev look leaves it alone; the circle paints itself in the dev look instead
+    (`_follow_look`, as Wren's balloon does).
   - The lamps are white, not cyan: cyan light turned an orange shirt mustard.
   - The strips are a body diagram, printed by the scan as it passes each part. Each is a carousel of
     five tiles with the choice raised, rimmed and matted, and its words drawn flat over the screen, as

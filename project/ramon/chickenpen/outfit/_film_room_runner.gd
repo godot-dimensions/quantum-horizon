@@ -93,14 +93,19 @@ func _run() -> void:
 	await _hold(1.2)
 	Input.action_press(&"move_forward")
 	var steps: int = 0
-	while int(_circle.get("state")) < 2 and steps < FPS * 10:
+	while Vector2(_circle.global_position.x - _player.global_position.x, _circle.global_position.z - _player.global_position.z).length() > 0.9 and steps < FPS * 10:
 		var to: Vector4 = _circle.global_position - _player.global_position
 		_rig.call("face_toward", Vector4(to.x, 0.0, to.z, 0.0).normalized(), 0.08)
 		await process_frame
 		steps += 1
 	Input.action_release(&"move_forward")
+	await _hold(0.8)
+	await _press(KEY_F, 0.1)
 	print("FILM in the circle")
 	await _hold(3.0)
+	await _press(KEY_DOWN, 0.4)
+	await _press(KEY_DOWN, 0.4)
+	await _press(KEY_DOWN, 1.0)
 	await _press(KEY_ENTER, 1.6)
 	print("FILM in the room: %s" % (current_scene.name if current_scene != null else "none"))
 	await _press(KEY_RIGHT)

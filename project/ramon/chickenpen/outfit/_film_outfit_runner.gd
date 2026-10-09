@@ -110,7 +110,8 @@ func _go() -> void:
 	# Walk west, then steer into the middle of the circle.
 	Input.action_press(&"move_forward")
 	var guard_frames: int = 0
-	while _flat(_player.global_position - _circle.global_position) > 0.3 and guard_frames < FPS * 12:
+	# Up to the plate, close enough to read its name, then F (Ramon, 8 Oct: "to use outfit scanner you press F").
+	while _flat(_player.global_position - _circle.global_position) > 0.9 and guard_frames < FPS * 12:
 		var to: Vector4 = _circle.global_position - _player.global_position
 		_rig.call("face_toward", Vector4(to.x, 0.0, to.z, 0.0).normalized(), 0.08)
 		await process_frame
@@ -118,42 +119,36 @@ func _go() -> void:
 		if int(_circle.get("state")) >= 2:
 			break
 	Input.action_release(&"move_forward")
+	await _hold(1.0)
+	await _press(KEY_F, 0.1)
 	print("FILM in, state %d" % int(_circle.get("state")))
 	await _hold(3.2)
-	# Dressing, at a person's pace.
-	await _press(KEY_D)
-	await _press(KEY_D)
-	await _press(KEY_D, 0.9)
-	await _press(KEY_S)
-	await _press(KEY_E)
-	await _press(KEY_D)
-	await _press(KEY_D, 0.9)
-	await _press(KEY_S)
-	await _press(KEY_D, 0.9)
-	await _press(KEY_W)
-	await _press(KEY_W)
-	await _press(KEY_W)
-	await _press(KEY_D)
-	await _press(KEY_D)
-	await _press(KEY_D, 0.9)
-	await _press(KEY_W)
-	await _press(KEY_D)
-	await _press(KEY_D, 0.9)
-	await _press(KEY_W)
-	await _press(KEY_E)
-	await _press(KEY_E, 0.9)
-	await _press(KEY_E)
-	await _press(KEY_D)
-	await _press(KEY_D, 1.2)
-	await _press(KEY_E, 2.4)
-	await _press(KEY_E, 3.2)
-	await _press(KEY_X, 1.4)
-	await _press(KEY_X, 1.4)
-	# Back to what you came in wearing, then the chicken again (from the cap, Q goes round to the
-	# hypercube and then the chicken): leaving as a chicken is the better ending.
-	await _press(KEY_BACKSPACE, 1.2)
-	await _press(KEY_Q)
-	await _press(KEY_Q, 2.2)
+	# Dressing on the arrow keys, at a person's pace: the shirt, the trousers, the shoes, the skin, the
+	# hair, the cap; then down to ADVANCED and back, to show it is there.
+	await _press(KEY_RIGHT)
+	await _press(KEY_RIGHT)
+	await _press(KEY_RIGHT, 0.9)
+	await _press(KEY_DOWN)
+	await _press(KEY_RIGHT)
+	await _press(KEY_RIGHT, 0.9)
+	await _press(KEY_DOWN)
+	await _press(KEY_RIGHT, 0.9)
+	await _press(KEY_UP)
+	await _press(KEY_UP)
+	await _press(KEY_UP)
+	await _press(KEY_RIGHT)
+	await _press(KEY_RIGHT)
+	await _press(KEY_RIGHT, 0.9)
+	await _press(KEY_UP)
+	await _press(KEY_RIGHT)
+	await _press(KEY_RIGHT, 0.9)
+	await _press(KEY_UP)
+	await _press(KEY_RIGHT)
+	await _press(KEY_RIGHT, 1.2)
+	for i in 6:
+		await _press(KEY_DOWN, 0.3)
+	await _hold(1.8)
+	await _press(KEY_UP, 1.0)
 	print("FILM done")
 	await _press(KEY_F, 2.2)
 	# And away, east along the house, as the frame lifts off behind you.

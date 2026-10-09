@@ -103,7 +103,9 @@ func _run() -> void:
 	await _blocks("ready", circle)
 	player.set("input_enabled", true)
 	player.global_position = circle.global_position
-	await _frames(240)
+	await _frames(30)
+	circle.call("begin")
+	await _frames(210)
 	print("PERF state now %d (3 = dressing)" % int(circle.get("state")))
 	await _blocks("dressing", circle)
 	circle.call("done")
