@@ -4,7 +4,10 @@ extends "res://ramon/WaterLab/scripts/_wl_shots.gd"
 ## the left to the first turn (the showcase ahead in the corner), the showcase close with its panel
 ## paged, the turning spot level and turned, feeding at the console, the two walls, the far door, and
 ## through it to the sea. Frames in smoke_test_output/water_lab/room/. Args: "perf" times the room
-## at three places; "hud4k" a 4K frame of the HUD and the walls; "quick" only the first frames.
+## at three places; "hud4k" a 4K frame of the HUD and the walls; "quick" only the first frames;
+## "detail" the eel and the crab close through the glass (a camera of the runner's own), every card
+## of the fish wall, and the round trip: through the far door to the sea, back in through pier 1's
+## door, arriving at the tank room's far door.
 
 const SCENE := "res://ramon/WaterLab/water_lab.tscn"
 
@@ -30,6 +33,17 @@ func setup() -> void:
 			step(1, perf_start.bind(String(spot[0])))
 			step(180, nop)
 			step(1, perf_end)
+		return
+	if "eel" in args:
+		# The eel along its patrol, followed.
+		step(60, _go(-8.2, -8.2, 0.0))
+		step(1, _close_on.bind("eel", Vector4(0.0, 0.2, 0.0, 0.0)))
+		step(1, _eel_out)
+		for k in 5:
+			step(240, nop, "e%02d_eel_patrol_%ds" % [k + 1, (k + 1) * 4])
+		return
+	if "detail" in args:
+		_detail()
 		return
 	if "hud4k" in args:
 		DisplayServer.window_set_size(Vector2i(3840, 2160))
@@ -86,6 +100,106 @@ func setup() -> void:
 	step(40, _pitch(-11.0), "14_exit_door_opening")
 	step(1, _go(10.0, -13.6, 0.0))
 	step(120, nop, "15_through_to_the_sea")
+
+
+var _close: Camera4D
+var _track: Node4D = null
+var _track_off := Vector4.ZERO
+
+
+func _detail() -> void:
+	step(60, _go(-8.2, -8.2, 0.0))
+	step(1, _close_on.bind("eel", Vector4(0.0, 0.25, 0.0, 0.0)))
+	step(20, nop, "d01_eel_at_its_cave")
+	step(1, _eel_out)
+	step(150, nop, "d02_eel_out")
+	step(90, nop, "d03_eel_out_later")
+	step(1, _close_on.bind("crab", Vector4(0.0, 0.35, 0.0, 0.0)))
+	step(20, nop, "d04_crab")
+	step(60, nop, "d05_crab_walking")
+	step(1, _close_off)
+	step(1, _go(-0.4, 6.0, 180.0))
+	for k in 4:
+		step(1, _wall_card.bind(k))
+		step(40, _pitch(-6.0), "d%02d_fish_wall_cards_%d" % [6 + k, k])
+	# The round trip.
+	step(1, _go(10.0, -8.5, 0.0))
+	step(30, _go(10.0, -13.6, 0.0))
+	step(150, nop, "d10_arrived_at_sea")
+	step(1, _sea_walk.bind(6.0))
+	step(20, nop)
+	step(1, _sea_walk.bind(0.3))
+	step(200, nop, "d11_back_in_the_lab")
+	step(1, _where)
+
+
+## A camera of the runner's own in front of the glass, following `nm` (the tank's eel or crab).
+func _close_on(nm: String, off: Vector4) -> void:
+	var tank: Node = _room.get("tank")
+	_track = tank.get(nm)
+	_track_off = off
+	if nm == "crab":
+		# On the slice now (it walks through W, on and off it).
+		var p: Vector4 = _track.get("_p")
+		_track.set("_p", Vector4(p.x, p.y, p.z, 0.0))
+	if _close == null:
+		_close = Camera4D.new()
+		_close.set("rendering_engine_name", "Cross-section")
+		root.add_child(_close)
+	_close.make_current()
+
+
+func _close_off() -> void:
+	_track = null
+	var p: Node = _room.get("player")
+	if p != null:
+		for c in p.find_children("*", "Camera4D", true, false):
+			(c as Camera4D).make_current()
+			break
+
+
+func _eel_out() -> void:
+	# Its rest over now: it plans its patrol and swims out on its own.
+	var eel: Node = _room.get("tank").get("eel")
+	eel.set("_state_t", 0.0)
+
+
+func _track_point() -> Vector4:
+	var p: Vector4 = _track.get("_p")
+	return _track.global_position + _track.global_basis * p
+
+
+func _wall_card(k: int) -> void:
+	var wall: Node = _room.get_node_or_null("FishWall")
+	if wall != null:
+		wall.set("_t", float(k) * float(wall.get("seconds")) + 0.5)
+
+
+## In the sea (the current scene now): walked to `x` along pier 1.
+func _sea_walk(x: float) -> void:
+	var sea: Node = current_scene
+	print("ROOM in the sea scene: ", sea.name if sea != null else "none")
+	if sea != null and sea.has_method("go_to"):
+		sea.call("go_to", Vector4(x, float(sea.get("deck_height")) + 0.05, 0.0, 0.0), deg_to_rad(90.0))
+		var p: Node = sea.get("player")
+		if p != null:
+			p.set("input_enabled", false)
+
+
+func _where() -> void:
+	var s: Node = current_scene
+	var p: Node4D = s.get("player") if s != null else null
+	print("ROOM back in: %s, player at %s" % [s.name if s != null else "none", str(p.global_position) if p != null else "-"])
+
+
+func _process(d: float) -> bool:
+	if _track != null and is_instance_valid(_track) and _close != null:
+		var at: Vector4 = _track_point() + _track_off
+		# From in front of the glass (the tank's front at +z), a little to the side.
+		var tank: Node4D = _room.get("tank")
+		var front: float = tank.global_position.z + float((tank.get("water_size") as Vector4).z) * 0.5 + 1.1
+		aim(_close, Vector4(at.x - 0.5, at.y + 0.15, front, 0.0), at)
+	return super(d)
 
 
 func _rig() -> Node:

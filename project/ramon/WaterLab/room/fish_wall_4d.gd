@@ -299,7 +299,11 @@ func _paint(panel: Dictionary) -> void:
 	var x0: float = sz.x * 0.53
 	var w: float = sz.x - x0 - pad
 	page.draw_string(fs, Vector2(x0, sz.y * 0.19), String(card["kicker"]), HORIZONTAL_ALIGNMENT_LEFT, w, int(20 * u), Color(0.75, 0.9, 1.0, 0.9))
-	page.draw_string(fb, Vector2(x0, sz.y * 0.19 + 74.0 * u), String(card["name"]), HORIZONTAL_ALIGNMENT_LEFT, w, int(66 * u), white)
+	# The name as large as fits ("Scalloped hammerhead" ran off the card at the full size).
+	var title_px: int = int(66 * u)
+	while title_px > int(34 * u) and fb.get_string_size(String(card["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, title_px).x > w:
+		title_px -= 2
+	page.draw_string(fb, Vector2(x0, sz.y * 0.19 + 74.0 * u), String(card["name"]), HORIZONTAL_ALIGNMENT_LEFT, w, title_px, white)
 	page.draw_string(fl, Vector2(x0, sz.y * 0.19 + 112.0 * u), String(card["latin"]), HORIZONTAL_ALIGNMENT_LEFT, w, int(24 * u), dim)
 	page.draw_multiline_string(fl, Vector2(x0, sz.y * 0.19 + 162.0 * u), String(card["line"]), HORIZONTAL_ALIGNMENT_LEFT, w, int(25 * u), 3, white)
 	var y: float = sz.y * 0.19 + 270.0 * u
