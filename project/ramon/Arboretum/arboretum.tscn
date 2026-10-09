@@ -57,7 +57,7 @@ along = Vector2(9.6, 18.4)
 up = Vector2(4.4, 5.9)
 outside = true
 kind = "sign"
-title = "ARBORETUM"
+title = "BOTANY LAB"
 subtitle = "QUANTUM HORIZON  ·  BOTANICAL SYSTEMS"
 glow = 0.3
 

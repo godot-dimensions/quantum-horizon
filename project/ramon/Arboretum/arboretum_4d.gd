@@ -602,7 +602,7 @@ func _tour_next() -> void:
 		var g: Node4D = get_node_or_null("Grove")
 		if g != null:
 			g.visible = true
-	hud.call("show_caption", "ARBORETUM   ·   " + String(s["title"]), "%d / %d" % [i + 2, shots.size()], String(s["line"]))
+	hud.call("show_caption", "BOTANY LAB   ·   " + String(s["title"]), "%d / %d" % [i + 2, shots.size()], String(s["line"]))
 
 
 func _shot_of(s: Dictionary) -> Array:

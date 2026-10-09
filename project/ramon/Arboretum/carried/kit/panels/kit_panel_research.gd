@@ -485,7 +485,7 @@ static func sample(layout_family: String = "specimen") -> Dictionary:
 			{"label": "RE-LOFTING", "title": "Rebuilt from its balls,\nevery frame.", "text": "Every leg is lofted again each frame, as the first creatures were.",
 				"metrics": [["18 ms", "a frame, measured"], ["4", "legs re-lofted"]], "bar": 18.0, "bar_label": "COST A FRAME", "caption": "The chicken's legs, re-lofted."}]
 	elif layout_family == "methods":
-		d["header_left"] = "ARBORETUM  /  THE FOUR METHODS"
+		d["header_left"] = "BOTANY LAB  /  THE FOUR METHODS"
 		d["header_right"] = "●  MEASURED ON THIS MACHINE"
 		d["methods"] = [
 			{"label": "01  ·  VX-01", "title": "Voxels", "text": "The skeleton written into 4D cells, one box a cell.", "metrics": [["149K", "tetrahedra"], ["0.4 s", "built in GDScript"]], "bar": 149450.0, "bar_label": "PRE-BAKED"},

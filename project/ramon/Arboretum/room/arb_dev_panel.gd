@@ -48,7 +48,7 @@ func _ready() -> void:
 	_box = VBoxContainer.new()
 	_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_box)
-	_title("ARBORETUM  ·  ARTIST DEV PANEL")
+	_title("BOTANY LAB  ·  ARTIST DEV PANEL")
 	_section("LIGHT")
 	_row("spots", "Spots", 0.0, 4.0, 0.01, 1.0)
 	_row("fill", "Sky fill (shadows)", 0.0, 3.0, 0.01, 1.0)
