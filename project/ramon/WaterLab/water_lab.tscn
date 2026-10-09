@@ -47,8 +47,8 @@ up = Vector2(4.4, 5.7)
 outside = true
 kind = "sign"
 code = "blue"
-title = "WATER LAB"
-subtitle = "QUANTUM HORIZON  ·  WATER SYSTEMS"
+title = "AQUATIC LAB"
+subtitle = "QUANTUM HORIZON  ·  AQUATIC ENVIRONMENTS"
 glow = 0.3
 
 [node name="ExitSign" type="Node" parent="Hall"]

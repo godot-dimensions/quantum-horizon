@@ -114,7 +114,7 @@ func research(info: Resource) -> Dictionary:
 				{"value": float(st.get("hidden", 4)), "kind": "int", "text": "that live off it: turn the slice to see them"}, {"value": 1.0, "kind": "int", "text": "draw call for the whole school"}]
 	var bench: Array = _bench(st)
 	return {
-		"header_left": String(info.call("research_header")) if info != null else "WATER LAB",
+		"header_left": String(info.call("research_header")) if info != null else "AQUATIC LAB",
 		"header_right": String(info.get("research_status")) if info != null else "",
 		"specimen": {"label": "SPECIMEN  WL-01", "name": "The tank", "meta": "%d KOI  ·  %.0f M DEEP IN W  ·  LIVE" % [int(st.get("count", 12)), size.w], "glyph": "koi"},
 		"story": {"label": "THE PAGES", "hint": "TURNING BY THEMSELVES", "rows": rows, "now": index, "playing": true, "progress": u},
@@ -123,7 +123,7 @@ func research(info: Resource) -> Dictionary:
 		"chart": chart,
 		"table": {"heading": "BENCHMARK  every system in this room, measured live",
 			"heads": ["SYSTEM", "HOW MANY", "CPU A FRAME", "DRAW CALLS", "HOW IT IS DRAWN"], "rows": bench, "current": -1},
-		"footnote": "Measured live on %s. The sea is Trym's 4D water (his water-annex branch); the tank, its life and their drawing are the Water Lab's." % RenderingServer.get_video_adapter_name(),
+		"footnote": "Measured live on %s. The sea is Trym's 4D water (his water-annex branch); the tank, its life and their drawing are the Aquatic Lab's." % RenderingServer.get_video_adapter_name(),
 	}
 
 
