@@ -82,6 +82,30 @@ presentation refinements. Plus, mid-round, the lab-naming pass across the four l
 - **The builder**: its deck black under subtle grey lines, not the pedestal's cyan; a metre off both
   walls ("crammed a bit too much in the corner").
 
+## 5c. Later on 9 Oct
+
+- **The grass, by coverage** ("with density i mean grass blade to grass blade distance ... the amount being
+  covered by grass in percentage"): no list of patches any more. The ground is baked over the island's whole
+  square (W within 6 m of 0, grass ground only, on a worker, the loading board waiting for it); the patches
+  are where the pen's own 4D noise is over a cut, the cut the noise's quantile for the share asked for. Tab:
+  Ground covered (%), Patch size (m), Blade to blade (cm), with width, height, colour and the switch. Coverage
+  and size apply at once (two shader numbers); the gap rebuilds the blades after the drag.
+- **Tab in four windows** ("create multiple windows in a logical fashion"): THE SEA (compare, presets, the
+  Aquatic Lab's eight, ours) and SHORE FOAM down the left; LIGHT and LAND AND GRASS down the right; SAVE AS
+  DEFAULTS in each (it saves everything).
+- **Smaller foam** ("the foam effect can you make it smaller in size?"): its bubbles 0.45 m (the shader's
+  foam_cell_size, 0.85 in the Aquatic Lab) and the shore band 0.25 m (0.4 before; in the saved settings too);
+  both on SHORE FOAM.
+
+- **Trees from 24-cells** ("create clustered clumbs of 24 cells to fake the illusion of trees, make then very
+  small. patches of 20-40 at certain places"): six clumps on the island's ground (clear of the deck and the
+  platform, 16 m apart), 20 to 40 of the project's own 24-cell each (`models/primitives/platonic/24_cell/`),
+  0.35 to 0.9 m across, bigger in the middle, turned at random through 4D and set a little off W 0, three dark
+  greens, seeded; on the grass's measured ground. A switch on Tab (LAND AND GRASS, saved).
+- **What the grass costs over the whole island** (35 %, 6 m patches, 7 cm apart; 1280 x 720): +1.6 to 1.8 ms
+  GPU, 0.1 ms CPU a frame; its ground baked in 0.67 s. Coverage barely changes the GPU cost (the shader still
+  looks at every blade of every tile in view); the gap does.
+
 ## 6. Checks
 
 13. Runners: room (the builder: click places, left drag orbits and places nothing, through W, take away and

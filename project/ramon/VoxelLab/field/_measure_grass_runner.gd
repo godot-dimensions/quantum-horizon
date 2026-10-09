@@ -59,23 +59,18 @@ func _process(delta: float) -> bool:
 			if not bool(_f.get("loading")) and _f.get("grass") != null and _t > 3.0:
 				RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(), true)
 				var g: Node = _f.get("grass")
-				var ps: Array = g.get("patches")
-				var p: Vector4 = ps[0]
-				var y: float = float(_f.call("ground_at", p.x, p.y, 0.0))
-				var mid := Vector2.ZERO
-				for q in ps:
-					mid += Vector2((q as Vector4).x, (q as Vector4).y)
-				mid /= float(ps.size())
+				var p: Vector3 = land_near(_f)
 				var deck: Vector4 = (_f.get("raft") as Node4D).global_position
-				var to_mid := Vector2(mid.x - deck.x, mid.y - deck.z)
+				var to_mid := Vector2(p.x - deck.x, p.z - deck.z)
 				_views = [
-					["close to a patch", Vector4(p.x + 9.0, y + 4.5, p.y, 0.0), Basis4D.from_zx(atan2(9.0, 0.0)) * Basis4D.from_yz(deg_to_rad(-22.0))],
+					["close to the grass", Vector4(p.x + 9.0, p.y + 4.5, p.z, 0.0), Basis4D.from_zx(atan2(9.0, 0.0)) * Basis4D.from_yz(deg_to_rad(-22.0))],
 					["from the deck", Vector4(deck.x, deck.y + 3.5, deck.z, 0.0), Basis4D.from_zx(atan2(-to_mid.x, -to_mid.y)) * Basis4D.from_yz(deg_to_rad(-12.0))],
 				]
 				_cam = Camera4D.new()
 				_cam.rendering_engine_name = "Cross-section"
 				_f.add_child(_cam)
-				print("GRASS %d patches, window %s" % [ps.size(), str(root.get_visible_rect().size)])
+				print("GRASS %.0f %% covered, patches %.1f m, blades %.0f cm apart, window %s" % [float(g.get("coverage")) * 100.0, float(g.get("patch_m")),
+					float(g.get("spacing_m")) * 100.0, str(root.get_visible_rect().size)])
 				_start_view()
 				_step = 1
 		1:
@@ -102,6 +97,22 @@ func _process(delta: float) -> bool:
 						return true
 				_start_view()
 	return false
+
+
+## A point of grass ground near the deck: round it in 24 directions, 16 to 40 m out, the first on land over
+## the sea. Vector3(x, ground y, z).
+static func land_near(f: Node) -> Vector3:
+	var c: Vector4 = (f.get("raft") as Node4D).global_position
+	var sea: float = float(f.get("water").get("water_level"))
+	for r in [16.0, 22.0, 28.0, 34.0, 40.0]:
+		for k in 24:
+			var a: float = TAU * float(k) / 24.0
+			var x: float = c.x + cos(a) * r
+			var z: float = c.z + sin(a) * r
+			var y: float = float(f.call("ground_at", x, z, 0.0))
+			if y > sea + 1.5 and y < sea + 20.0:
+				return Vector3(x, y, z)
+	return Vector3(c.x + 20.0, sea + 3.0, c.z)
 
 
 func _start_view() -> void:

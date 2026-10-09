@@ -13,8 +13,9 @@ extends Node4D
 ## camera's frame handed over (pre_render), the instances drawn by RenderingServer into the Cross-section
 ## engine's own World3D (the flock's way). The look is the pen's Hay meadow II over its 2 Oct meadow (LOOK).
 ##
-## WHAT IS NEW. Only the patches are tiled (_list_tiles keeps the tiles that touch one), so the rest of the
-## island costs nothing. The ground under them comes from the island's own chunk meshes (bake_heights, the pen's
+## WHAT IS NEW. Patches: the share `coverage` of the grass ground where the field's own 4D noise is highest
+## (round 5, Ramon: "the amount being covered by grass in percentage"), `patch_m` how big; the gap between blades
+## `spacing_m` ("with density i mean grass blade to grass blade distance"). Only the island's square is tiled. The ground under them comes from the island's own chunk meshes (bake_heights, the pen's
 ## grass_heights_4d.gd way: every upward tetrahedron of grass, its y laid over a grid of (x, z, W) points),
 ## grass ground only, on a worker thread once the island is built. The blades are `width_scale` times the pen's
 ## width, and the frustum test allows for the island's height.
@@ -93,8 +94,22 @@ var colour: Color = Color(0, 0, 0, 0):
 		colour = v
 		for band in _bands:
 			_colours_to((band as Band).material)
-## The patches: Vector4(x, z, w, radius in x-z), world metres; and how far each reaches along W either side.
-var patches: Array = []
+## The gap between neighbouring blades near you, m (LOOK's 7 cm; the far gap scales with it). Set with
+## rebuild() after: the bands' tile meshes are made for their gap.
+var spacing_m: float = 0.07
+## The share of the grass ground that is grass, 0 to 1: the shader cuts its 4D noise at this share's quantile.
+var coverage: float = 0.35:
+	set(v):
+		coverage = clampf(v, 0.0, 1.0)
+		for band in _bands:
+			_cover_to((band as Band).material)
+## How big a patch is, m (the noise's period is three times it).
+var patch_m: float = 6.0:
+	set(v):
+		patch_m = maxf(v, 0.5)
+		for band in _bands:
+			_cover_to((band as Band).material)
+## How far through W either side of W 0 there is grass (the ground is baked that far and a metre more).
 var w_reach: float = 6.0
 ## The rings round you: how far the grass is drawn, and where the bands change.
 var radius: float = 80.0
@@ -109,12 +124,14 @@ var _multimeshes: Array = []
 var _meshes: Array = []
 var _scenario := RID()
 var _noise_image: Image
+## noise3's values over many random points, sorted: the coverage's cut is read off them.
+var _noise_values := PackedFloat32Array()
 var _wind_texture: Texture2D
 var _height_texture: ImageTexture3D
 ## x0, z0 of the height grid's corner, its cell, its cells a side; its first W layer, the step, how many.
 var _height_rect := Vector4.ZERO
 var _height_w := Vector3.ZERO
-## The patches' mean ground height, for the frustum test.
+## About the island's ground height, for the frustum test.
 var _ground_y: float = 0.0
 var _lattice_layers: int = 8
 var _tiles_axis: int = -1
@@ -126,9 +143,8 @@ var prerender_usec: int = 0
 var _ready_to_draw: bool = false
 
 
-## Starts the grass on `heights` (bake_heights' result, as `rect` and `wl` say) over `patch_list`.
-func start(patch_list: Array, heights: PackedFloat32Array, rect: Vector4, wl: Vector3, ground_y: float) -> void:
-	patches = patch_list
+## Starts the grass on `heights` (bake_heights' result, as `rect` and `wl` say).
+func start(heights: PackedFloat32Array, rect: Vector4, wl: Vector3, ground_y: float) -> void:
 	_height_rect = rect
 	_height_w = wl
 	_ground_y = ground_y
@@ -146,6 +162,7 @@ func start(patch_list: Array, heights: PackedFloat32Array, rect: Vector4, wl: Ve
 	noise.fractal_octaves = 3
 	_noise_image = noise.get_seamless_image(256, 256)
 	_wind_texture = ImageTexture.create_from_image(_noise_image)
+	_noise_values = _noise3_values(_noise_image)
 	_build_bands()
 	_ready_to_draw = true
 	if not RenderingServer4D.pre_render.is_connected(_on_pre_render):
@@ -155,6 +172,49 @@ func start(patch_list: Array, heights: PackedFloat32Array, rect: Vector4, wl: Ve
 ## Blades handed to the GPU last render (the tiles in view, whole), for runners.
 func blade_count() -> int:
 	return _drawn
+
+
+## The bands made again (after `spacing_m` changes): the same ground, new tiles.
+func rebuild() -> void:
+	if not _ready_to_draw:
+		return
+	_free_bands()
+	_build_bands()
+	_tiles_axis = -1
+	_tiles_centre = Vector2(1e9, 1e9)
+	_scenario = RID()
+
+
+func _free_bands() -> void:
+	for inst in _instances:
+		RenderingServer.free_rid(inst)
+	for mm in _multimeshes:
+		RenderingServer.free_rid(mm)
+	_instances.clear()
+	_multimeshes.clear()
+	_meshes.clear()
+	_bands.clear()
+
+
+## The near gap and the far one.
+func _sp() -> float:
+	return maxf(spacing_m, 0.02)
+
+
+func _sp_far() -> float:
+	return float(LOOK["spacing_far"]) * _sp() / float(LOOK["spacing"])
+
+
+## The coverage's cut and the patches' size onto `m`.
+func _cover_to(m: ShaderMaterial) -> void:
+	var cut: float = 2.0
+	if coverage >= 0.999:
+		cut = -1.0
+	elif coverage > 0.001 and not _noise_values.is_empty():
+		cut = _noise_values[clampi(int((1.0 - coverage) * float(_noise_values.size())), 0, _noise_values.size() - 1)]
+	m.set_shader_parameter("coverage_cut", cut)
+	m.set_shader_parameter("patch_scale", patch_m * 3.0)
+	m.set_shader_parameter("patch_w_reach", w_reach)
 
 
 func _exit_tree() -> void:
@@ -172,7 +232,7 @@ func _exit_tree() -> void:
 # -- the bands (the pen's, as they are) ----------------------------------------------------------------
 
 func _build_bands() -> void:
-	var cuts: Vector4 = _cuts_andrew(_noise_image)
+	var cuts: Vector4 = _cuts_andrew()
 	_lattice_layers = ceili(2.0 * sqrt(3.0) * 1.0 + 4.0)
 	var bounds: Array[float] = [0.0]
 	for r in band_radii:
@@ -195,8 +255,8 @@ func _build_bands() -> void:
 		_bands.append(band)
 
 
-## The pen's _cuts_andrew: the regions' quantiles of noise3's distribution (the mean of three texels, spread back).
-static func _cuts_andrew(image: Image) -> Vector4:
+## noise3's distribution (the shader's: the mean of three texels, spread back), sorted (the pen's _cuts_andrew).
+static func _noise3_values(image: Image) -> PackedFloat32Array:
 	var grey: Image = image.duplicate()
 	grey.convert(Image.FORMAT_L8)
 	var texels: PackedByteArray = grey.get_data()
@@ -208,6 +268,12 @@ static func _cuts_andrew(image: Image) -> Vector4:
 		var sum: int = texels[rng.randi() % texels.size()] + texels[rng.randi() % texels.size()] + texels[rng.randi() % texels.size()]
 		values[i] = 0.5 + (float(sum) / (3.0 * 255.0) - 0.5) * sqrt(3.0)
 	values.sort()
+	return values
+
+
+## The pen's regions' quantiles of the same distribution.
+func _cuts_andrew() -> Vector4:
+	var values: PackedFloat32Array = _noise_values
 	var n: int = values.size()
 	var share: float = float(LOOK["region_share"])
 	var at := func(f: float) -> float: return values[clampi(int(f * float(n)), 0, n - 1)]
@@ -220,12 +286,12 @@ func _fade(r: float) -> float:
 
 
 func _power() -> float:
-	var sp: float = float(LOOK["spacing"])
-	return maxf(log(maxf(float(LOOK["spacing_far"]), sp) / sp) / log(radius / float(LOOK["spacing_from"])), 0.0)
+	var sp: float = _sp()
+	return maxf(log(maxf(_sp_far(), sp) / sp) / log(radius / float(LOOK["spacing_from"])), 0.0)
 
 
 func _wanted(d: float) -> float:
-	var sp: float = float(LOOK["spacing"])
+	var sp: float = _sp()
 	return sp if d <= float(LOOK["spacing_from"]) else sp * pow(d / float(LOOK["spacing_from"]), _power())
 
 
@@ -245,7 +311,7 @@ func _material(band: Band, hash_seed: float, cuts: Vector4) -> ShaderMaterial:
 	m.set_shader_parameter("far_from", radius * 0.6)
 	m.set_shader_parameter("far_to", radius)
 	m.set_shader_parameter("far_amount", 0.0)
-	m.set_shader_parameter("spacing_near", float(LOOK["spacing"]))
+	m.set_shader_parameter("spacing_near", _sp())
 	m.set_shader_parameter("spacing_from", float(LOOK["spacing_from"]))
 	m.set_shader_parameter("spacing_power", _power())
 	m.set_shader_parameter("blade_width", float(LOOK["blade_width"]) * width_scale)
@@ -256,13 +322,7 @@ func _material(band: Band, hash_seed: float, cuts: Vector4) -> ShaderMaterial:
 	m.set_shader_parameter("mask_rect", _height_rect)
 	m.set_shader_parameter("height_max", NONE * 0.5)
 	m.set_shader_parameter("slope_max", 1.4)
-	var ps := PackedVector4Array()
-	for p in patches:
-		ps.append(p)
-	ps.resize(8)
-	m.set_shader_parameter("patches", ps)
-	m.set_shader_parameter("patch_count", mini(patches.size(), 8))
-	m.set_shader_parameter("patch_w_reach", w_reach)
+	_cover_to(m)
 	m.set_shader_parameter("wind_noise", _wind_texture)
 	m.set_shader_parameter("wind_dir", Vector2(0.82, 0.57).normalized())
 	m.set_shader_parameter("region_cuts", cuts)
@@ -372,7 +432,7 @@ func _set_visible() -> void:
 		RenderingServer.instance_set_visible(inst, enabled and _ready_to_draw and _scenario.is_valid() and is_visible_in_tree())
 
 
-# -- the tiles: only over the patches -------------------------------------------------------------------
+# -- the tiles: only over the island's square ------------------------------------------------------------
 
 ## The tiles each band covers round `centre` in the plane's (u, v) that touch a patch there: the pen's list,
 ## then kept only where a patch's shadow on (u, v) is (its radius in x and z, its reach along W).
@@ -381,17 +441,20 @@ func _list_tiles(centre: Vector2, stretch: float, d: int) -> void:
 	_tiles_stretch = stretch
 	var uv: Array = [[1, 2], [0, 2], [0, 1]][d]
 	var boxes: Array = []
-	for p in patches:
-		var lo := Vector3((p as Vector4).x - p.w, (p as Vector4).y - p.w, (p as Vector4).z - w_reach)
-		var hi := Vector3((p as Vector4).x + p.w, (p as Vector4).y + p.w, (p as Vector4).z + w_reach)
-		boxes.append(Rect2(Vector2(lo[uv[0]], lo[uv[1]]), Vector2(hi[uv[0]] - lo[uv[0]], hi[uv[1]] - lo[uv[1]])).grow(1.5))
+	var side: float = _height_rect.z * _height_rect.w
+	var blo := Vector3(_height_rect.x, _height_rect.y, -w_reach)
+	var bhi := Vector3(_height_rect.x + side, _height_rect.y + side, w_reach)
+	boxes.append(Rect2(Vector2(blo[uv[0]], blo[uv[1]]), Vector2(bhi[uv[0]] - blo[uv[0]], bhi[uv[1]] - blo[uv[1]])).grow(1.0))
 	for band in _bands:
 		var t: float = band.tile_size()
 		var lo: float = maxf((band.inner - band.inner_fade - 0.6) / stretch, 0.0)
 		var hi: float = band.outer + (0.0 if band.last else band.outer_fade) + 0.6
 		var found: Array = []
 		for box in boxes:
-			var r: Rect2 = box
+			# Only where the box meets the band's square round you.
+			var r: Rect2 = (box as Rect2).intersection(Rect2(centre - Vector2(hi, hi), Vector2(hi, hi) * 2.0))
+			if r.size.x <= 0.0 or r.size.y <= 0.0:
+				continue
 			for tz in range(floori(r.position.y / t), floori(r.end.y / t) + 1):
 				for tx in range(floori(r.position.x / t), floori(r.end.x / t) + 1):
 					var x0: float = float(tx) * t
@@ -469,7 +532,7 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 	var columns: Array = [basis.x, basis.z, basis.w]
 	var cu: Vector4 = columns[uv[0]] + columns[d] * gu
 	var cv: Vector4 = columns[uv[1]] + columns[d] * gv
-	# The tiles' middles at the patches' ground height (the pen's stood at 0.3 m; the island's are metres up).
+	# The tiles' middles at about the island's ground height (the pen's stood at 0.3 m; the island's are metres up).
 	var c4: Vector4 = basis.y * (_ground_y + 0.3) + columns[d] * (c / m[d]) + origin
 	var au := Vector3(cu.x, cu.y, cu.z)
 	var av := Vector3(cv.x, cv.y, cv.z)
@@ -509,24 +572,7 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 	prerender_usec = Time.get_ticks_usec() - started
 
 
-# -- the ground under the patches -------------------------------------------------------------------------
-
-## The height grid round `patch_list` (world metres): [rect (x0, z0, CELL, cells), W layers (W0, DW, count)].
-static func grid_for(patch_list: Array, reach_w: float) -> Array:
-	var lo := Vector2(1e9, 1e9)
-	var hi := Vector2(-1e9, -1e9)
-	var wlo: float = 1e9
-	var whi: float = -1e9
-	for p in patch_list:
-		var q: Vector4 = p
-		lo = Vector2(minf(lo.x, q.x - q.w - 2.0), minf(lo.y, q.y - q.w - 2.0))
-		hi = Vector2(maxf(hi.x, q.x + q.w + 2.0), maxf(hi.y, q.y + q.w + 2.0))
-		wlo = minf(wlo, q.z - reach_w - 1.0)
-		whi = maxf(whi, q.z + reach_w + 1.0)
-	var cells: int = int(ceil(maxf(hi.x - lo.x, hi.y - lo.y) / CELL))
-	var layers: int = int(ceil((whi - wlo) / DW)) + 1
-	return [Vector4(lo.x, lo.y, CELL, float(cells)), Vector3(wlo, DW, float(layers))]
-
+# -- the ground under the grass ----------------------------------------------------------------------------
 
 ## The ground's height over the grid, every W layer (layer l's rows from l * cells), on a worker thread: for
 ## every tetrahedron in `jobs` ([[global position, global basis, vertex positions, the cells' vertex indices,

@@ -69,8 +69,12 @@ const WaterSurface := preload("res://ramon/WaterLab/carried/water4d/water4d_surf
 const Sea := preload("res://ramon/VoxelLab/field/vl_sea_4d.gd")
 ## The pen's grass on a few patches of the island (round 5, #49), carried.
 const Grass := preload("res://ramon/VoxelLab/carried/grass/vl_grass_4d.gd")
-const GRASS_PATCHES := 6
 const GRASS_W_REACH := 6.0
+## The trees: clumps of tiny 24-cells (round 5, Ramon, 9 Oct: "create clustered clumbs of 24 cells to fake the
+## illusion of trees, make then very small. patches of 20-40 at certain places"). The project's own 24-cell.
+const CELL24 := "res://models/primitives/platonic/24_cell/24_cell.g4b"
+const TREE_CLUMPS := 6
+const TREE_GREENS := [Color(0.10, 0.22, 0.09), Color(0.14, 0.27, 0.11), Color(0.08, 0.18, 0.10)]
 const LabGrid := preload("res://ramon/VoxelLab/carried/LabKit/lab_grid.gd")
 const Mats := preload("res://ramon/VoxelLab/carried/LabKit/lab_materials.gd")
 const Build := preload("res://ramon/VoxelLab/carried/scripts/chamber_build.gd")
@@ -194,6 +198,15 @@ var _grass_on: bool = true
 var _grass_width: float = 2.2
 var _grass_height: float = 0.7
 var _grass_colour: Color = Color(0, 0, 0, 0)
+## How much of the grass ground is grass (percent), how big a patch is (m), the gap between blades (cm) (Tab).
+var _grass_cover: float = 35.0
+var _grass_patch_m: float = 6.0
+var _grass_spacing_cm: float = 7.0
+## The tree clumps (_plant_trees), and whether Tab has them on.
+var trees: Node4D
+var _trees_on: bool = true
+## "none", "baking", "ready" or "failed": the loading board waits while it bakes.
+var _grass_state: String = "none"
 var _frames: Array = []
 var _last_us: int = 0
 var _audio: AudioStreamPlayer
@@ -222,6 +235,8 @@ func _ready() -> void:
 	var sv: Dictionary = SeaPanel.saved()
 	set_grass(float(sv.get("grass", 1.0)) > 0.5, float(sv.get("grass_width", 2.2)), float(sv.get("grass_height", 0.7)),
 		Color(float(sv.get("grass_r", 0.31)), float(sv.get("grass_g", 0.49)), float(sv.get("grass_b", 0.16))))
+	set_grass_amount(float(sv.get("grass_cover", 35.0)), float(sv.get("grass_patch_m", 6.0)), float(sv.get("grass_spacing_cm", 7.0)))
+	set_trees(float(sv.get("trees", 1.0)) > 0.5)
 	_birds()
 	_deck()
 	# On the deck, walking: the kit's player, its camera behind you.
@@ -277,7 +292,7 @@ func _ready() -> void:
 	layer.add_child(choice)
 	choice.set("heading", "THE OPEN WORLD  ·  OUR LANDSCAPE, AN ISLAND OF IT")
 	choice.connect("chosen", _on_choice)
-	sea_panel = PanelContainer.new()
+	sea_panel = Control.new()
 	sea_panel.set_script(SeaPanel)
 	sea_panel.set("field", self)
 	layer.add_child(sea_panel)
@@ -540,7 +555,8 @@ func _feed_board(delta: float) -> void:
 	var built: bool = (_board_t > 3.0 and n > 0 and int(st.get("waiting", 0)) == 0 and _board_still >= 1.2) or _board_t > 60.0
 	_board.set("progress", clampf(_board_t / 16.0, 0.0, 0.9) if not built else 0.95)
 	_map_ground(built)
-	if not _heights.is_empty():
+	# The grass's ground too (round 5: it is baked over the whole island now), or a minute at most.
+	if not _heights.is_empty() and (_grass_settled() or _board_t > 60.0):
 		_board.set("progress", 1.0)
 		_board.call("finish")
 
@@ -577,69 +593,38 @@ func set_grass(on: bool, width: float, height: float = -1.0, colour: Color = Col
 			grass.set("colour", _grass_colour)
 
 
-## Where the patches go: a 3 m grid over the island read off the height map, kept where the ground is
-## grass height (over the sea, not a peak), level enough, and clear of the deck and the platform; then the
-## nearest to the platform, at least 14 m apart, so they are in sight from it. Vector4(x, z, w, radius).
-func _choose_patches() -> Array:
-	var c: Vector4 = _centre.global_position
-	var sea: float = float(water.get("water_level")) if water != null else 1.1
-	var deck: Vector4 = raft.global_position if raft != null else c
-	var plat: Vector4 = deck + (raft.global_basis * PLAT_AT if raft != null else Vector4.ZERO)
-	var cands: Array = []
-	for iz in range(-18, 19):
-		for ix in range(-18, 19):
-			var x: float = c.x + float(ix) * 3.0
-			var z: float = c.z + float(iz) * 3.0
-			var g: float = ground_at(x, z, 0.0)
-			if g < sea + 1.2 or g > sea + 24.0:
-				continue
-			var level: bool = true
-			for o in [Vector2(3, 0), Vector2(-3, 0), Vector2(0, 3), Vector2(0, -3)]:
-				if absf(ground_at(x + o.x, z + o.y, 0.0) - g) > 2.2:
-					level = false
-					break
-			if not level:
-				continue
-			if Vector2(x - deck.x, z - deck.z).length() < 12.0 or Vector2(x - plat.x, z - plat.z).length() < PLAT_R + 6.0:
-				continue
-			cands.append([Vector2(x - plat.x, z - plat.z).length(), Vector2(x, z), g])
-	cands.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
-	var out: Array = []
-	var ys: float = 0.0
-	for cd in cands:
-		var at: Vector2 = cd[1]
-		var apart: bool = true
-		for q in out:
-			if Vector2((q as Vector4).x, (q as Vector4).y).distance_to(at) < 14.0:
-				apart = false
-				break
-		if not apart:
-			continue
-		out.append(Vector4(at.x, at.y, 0.0, 4.5 + 1.5 * float(out.size() % 3)))
-		ys += float(cd[2])
-		if out.size() >= GRASS_PATCHES:
-			break
-	_grass_plan["ground_y"] = ys / float(maxi(out.size(), 1))
-	return out
+## How much grass (the Tab panel; Ramon, 9 Oct: "with density i mean grass blade to grass blade distance ...
+## adjust the parameters of the patches in terms of amount being covered by grass in percentage"): the share of
+## the island's grass ground under grass (percent), how big a patch is (m), and the gap between blades (cm). The
+## first two only move the shader's cut through its noise, at once; a new gap makes the grass's bands again.
+func set_grass_amount(cover_pct: float, patch_m: float, spacing_cm: float) -> void:
+	var regap: bool = not is_equal_approx(spacing_cm, _grass_spacing_cm)
+	_grass_cover = clampf(cover_pct, 0.0, 100.0)
+	_grass_patch_m = maxf(patch_m, 0.5)
+	_grass_spacing_cm = clampf(spacing_cm, 2.0, 40.0)
+	if grass == null:
+		return
+	grass.set("coverage", _grass_cover / 100.0)
+	grass.set("patch_m", _grass_patch_m)
+	if regap:
+		grass.set("spacing_m", _grass_spacing_cm / 100.0)
+		grass.call("rebuild")
 
 
-## The patches chosen, the chunk meshes under them copied, the heights baked on a worker.
+## The grass's ground: the island's whole square, W 0 and GRASS_W_REACH either side of it. The chunk meshes in it
+## are copied here and the heights baked on a worker thread (grass ground only, carried/grass/vl_grass_4d.gd);
+## a few seconds behind the loading board, which waits for it.
 func _start_grass() -> void:
 	if grass != null or _grass_task >= 0 or biome != 0:
 		return
-	_grass_plan = {}
-	var patch_list: Array = _choose_patches()
-	if patch_list.is_empty():
-		push_warning("voxel_field_4d: no ground for the grass patches")
-		return
-	var g: Array = Grass.grid_for(patch_list, GRASS_W_REACH)
-	var rect: Vector4 = g[0]
-	var wl: Vector3 = g[1]
-	var boxes: Array = []
-	for p in patch_list:
-		var q: Vector4 = p
-		boxes.append([Vector3(q.x - q.w - 1.0, q.y - q.w - 1.0, q.z - GRASS_W_REACH - 1.0), Vector3(q.x + q.w + 1.0, q.y + q.w + 1.0, q.z + GRASS_W_REACH + 1.0)])
+	var c: Vector4 = _centre.global_position
+	var half: float = BUILT_RADIUS + 1.0
+	var rect := Vector4(c.x - half, c.z - half, Grass.CELL, ceilf(half * 2.0 / Grass.CELL))
+	var wl := Vector3(-GRASS_W_REACH - 1.0, Grass.DW, (GRASS_W_REACH + 1.0) * 2.0 / Grass.DW + 1.0)
+	var boxes: Array = [[Vector3(rect.x, rect.y, -GRASS_W_REACH - 1.0), Vector3(rect.x + half * 2.0, rect.y + half * 2.0, GRASS_W_REACH + 1.0)]]
 	var size: float = 8.0 * float(stream.get("voxel"))
+	var bl: Vector3 = boxes[0][0]
+	var bh: Vector3 = boxes[0][1]
 	_grass_jobs = []
 	for ch in stream.call("chunk_nodes"):
 		var m := ch as MeshInstance4D
@@ -647,20 +632,19 @@ func _start_grass() -> void:
 		if tm == null:
 			continue
 		var o: Vector4 = m.global_position
-		var near: bool = false
-		for box in boxes:
-			var bl: Vector3 = box[0]
-			var bh: Vector3 = box[1]
-			if o.x <= bh.x and o.x + size >= bl.x and o.z <= bh.y and o.z + size >= bl.y and o.w <= bh.z and o.w + size >= bl.z:
-				near = true
-				break
-		if not near:
+		if o.x > bh.x or o.x + size < bl.x or o.z > bh.y or o.z + size < bl.y or o.w > bh.z or o.w + size < bl.z:
 			continue
 		var am = tm if tm is ArrayTetraMesh4D else tm.to_array_tetra_mesh()
 		_grass_jobs.append([o, m.global_basis, tm.get_vertex_positions(), tm.get_simplex_cell_vertex_indices(),
 			am.call("get_texture_map_values"), am.call("get_simplex_cell_texture_map_indices")])
+	if _grass_jobs.is_empty():
+		_grass_state = "failed"
+		push_warning("voxel_field_4d: no land for the grass")
+		_plant_trees()
+		return
 	var sea: float = float(water.get("water_level")) if water != null else 1.1
-	_grass_plan.merge({"patches": patch_list, "rect": rect, "wl": wl, "t0": Time.get_ticks_usec()}, true)
+	_grass_plan = {"rect": rect, "wl": wl, "t0": Time.get_ticks_usec(), "ground_y": sea + 4.0}
+	_grass_state = "baking"
 	var jobs: Array = _grass_jobs
 	_grass_task = WorkerThreadPool.add_task(func() -> void: _grass_out = Grass.bake_heights(jobs, rect, wl, boxes, sea), false, "field grass")
 
@@ -673,21 +657,133 @@ func _poll_grass() -> void:
 	_grass_task = -1
 	_grass_jobs = []
 	if biome != 0 or _heights.is_empty():
+		_grass_state = "none"
 		return
 	grass_ms = float(Time.get_ticks_usec() - int(_grass_plan["t0"])) / 1000.0
 	grass = Node4D.new()
 	grass.name = "Grass"
 	grass.set_script(Grass)
+	grass.set("spacing_m", _grass_spacing_cm / 100.0)
+	grass.set("coverage", _grass_cover / 100.0)
+	grass.set("patch_m", _grass_patch_m)
+	grass.set("w_reach", GRASS_W_REACH)
 	add_child(grass)
 	grass.set("player", player)
-	grass.call("start", _grass_plan["patches"], _grass_out, _grass_plan["rect"], _grass_plan["wl"], float(_grass_plan.get("ground_y", 0.0)))
+	grass.call("start", _grass_out, _grass_plan["rect"], _grass_plan["wl"], float(_grass_plan.get("ground_y", 0.0)))
 	set_grass(_grass_on, _grass_width)
+	_grass_state = "ready"
+	_plant_trees()
+
+
+## Whether the loading board may go: the grass's ground baked (or no grass to wait for).
+func _grass_settled() -> bool:
+	return biome != 0 or _grass_state in ["ready", "failed"]
 
 
 func _drop_grass() -> void:
 	if grass != null:
 		grass.queue_free()
 		grass = null
+	_grass_state = "none"
+	_drop_trees()
+
+
+## The tree clumps on or off (Tab).
+func set_trees(on: bool) -> void:
+	_trees_on = on
+	if trees != null:
+		trees.visible = on and biome == 0
+
+
+## Clumps of tiny 24-cells, read from afar as trees: TREE_CLUMPS places on the island over the sea, clear of the
+## deck and the platform and 16 m apart, each 20 to 40 of them in a few metres, 0.35 to 0.9 m across and bigger
+## towards the middle; each on the ground the grass measured (the coarse height map where it measured none), sunk
+## a little, turned at random through all of 4D and set a little off W 0, so the slice cuts each at its own size;
+## in three dark greens. Seeded, so the same each time. About 180 of them, 96 tetrahedra each.
+func _plant_trees() -> void:
+	_drop_trees()
+	if biome != 0 or _heights.is_empty():
+		return
+	var mesh := load(CELL24) as TetraMesh4D
+	if mesh == null:
+		push_warning("voxel_field_4d: no 24-cell at %s" % CELL24)
+		return
+	var reach: float = 0.0
+	for v in mesh.get_vertex_positions():
+		reach = maxf(reach, v.length())
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2410
+	var c: Vector4 = _centre.global_position
+	var deck: Vector4 = raft.global_position if raft != null else c
+	var plat: Vector4 = deck + (raft.global_basis * PLAT_AT if raft != null else Vector4.ZERO)
+	var sea: float = float(water.get("water_level")) if water != null else 1.1
+	var centres: Array = []
+	for attempt in 600:
+		if centres.size() >= TREE_CLUMPS:
+			break
+		var a: float = rng.randf() * TAU
+		var d: float = rng.randf_range(14.0, BUILT_RADIUS - 8.0)
+		var at := Vector2(c.x + cos(a) * d, c.z + sin(a) * d)
+		if _tree_ground(at.x, at.y, 0.0) < sea + 1.5:
+			continue
+		if Vector2(at.x - deck.x, at.y - deck.z).length() < 12.0 or Vector2(at.x - plat.x, at.y - plat.z).length() < PLAT_R + 5.0:
+			continue
+		var apart: bool = true
+		for q in centres:
+			if (q as Vector2).distance_to(at) < 16.0:
+				apart = false
+				break
+		if apart:
+			centres.append(at)
+	trees = Node4D.new()
+	trees.name = "Trees"
+	add_child(trees)
+	var mats: Array = []
+	for g in TREE_GREENS:
+		mats.append(Mats.flat(g))
+	for at in centres:
+		var spread: float = rng.randf_range(2.5, 4.5)
+		for k in rng.randi_range(20, 40):
+			var r: float = rng.randf() * spread
+			var a2: float = rng.randf() * TAU
+			var x: float = (at as Vector2).x + cos(a2) * r
+			var z: float = (at as Vector2).y + sin(a2) * r
+			var w: float = rng.randf_range(-0.5, 0.5)
+			var size: float = rng.randf_range(0.35, 0.9) * (1.0 - 0.35 * r / spread)
+			var y: float = _tree_ground(x, z, w)
+			if y < sea + 0.8:
+				continue
+			var mi := MeshInstance4D.new()
+			mi.mesh = mesh
+			mi.basis = Basis4D.from_zx(rng.randf() * TAU) * Basis4D.from_xw(rng.randf() * TAU) * Basis4D.from_yz(rng.randf() * TAU) \
+				* Basis4D.from_scale_uniform(size * 0.5 / reach)
+			mi.position = Vector4(x, y + size * 0.3, z, w)
+			mi.material_override = mats[rng.randi() % mats.size()]
+			trees.add_child(mi)
+	trees.visible = _trees_on
+
+
+## The ground under (x, z) at W `w` for a tree: the grass's measured ground where it has it, else the coarse height
+## map (which reads high on a slope: a little lower).
+func _tree_ground(x: float, z: float, w: float) -> float:
+	if not _grass_out.is_empty() and _grass_plan.has("rect"):
+		var rect: Vector4 = _grass_plan["rect"]
+		var wl: Vector3 = _grass_plan["wl"]
+		var n: int = int(rect.w)
+		var i: int = int(floor((x - rect.x) / rect.z))
+		var j: int = int(floor((z - rect.y) / rect.z))
+		var l: int = clampi(int(round((w - wl.x) / wl.y)), 0, int(wl.z) - 1)
+		if i >= 0 and j >= 0 and i < n and j < n:
+			var h: float = _grass_out[(l * n + j) * n + i]
+			if h < Grass.NONE * 0.5:
+				return h
+	return ground_at(x, z, w) - 0.4
+
+
+func _drop_trees() -> void:
+	if trees != null:
+		trees.queue_free()
+		trees = null
 
 
 static func _thousands(v: int) -> String:
@@ -1305,6 +1401,8 @@ func _on_choice(_i: int) -> void:
 		_bed.visible = biome == 0
 	if grass != null:
 		grass.visible = biome == 0
+	if trees != null:
+		trees.visible = _trees_on and biome == 0
 	if was_green != (biome == 0):
 		_rebuild_land()
 	else:

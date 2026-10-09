@@ -296,12 +296,13 @@ func _process(delta: float) -> bool:
 				if g == null:
 					print("FIELD done, %d failed" % _fails)
 					return true
-				var ps: Array = g.get("patches")
-				print("FIELD grass: %d patches %s" % [ps.size(), str(ps)])
-				# Close to the first patch, looking down at it.
-				var p: Vector4 = ps[0]
-				var y: float = float(_f.call("ground_at", p.x, p.y, 0.0))
-				_top.global_position = Vector4(p.x + 9.0, y + 4.5, p.y, 0.0)
+				print("FIELD grass: %.0f %% of the ground, patches %.1f m, blades %.0f cm apart" % [float(g.get("coverage")) * 100.0,
+					float(g.get("patch_m")), float(g.get("spacing_m")) * 100.0])
+				var t: Node = _f.get("trees")
+				_check(t != null and t.get_child_count() >= 6 * 15, "the tree clumps are planted (%d small 24-cells)" % (t.get_child_count() if t != null else 0))
+				# Close to the land, looking down at it.
+				var p: Vector3 = land_near(_f)
+				_top.global_position = Vector4(p.x + 9.0, p.y + 4.5, p.z, 0.0)
 				_top.global_basis = Basis4D.from_zx(atan2(9.0, 0.0)) * Basis4D.from_yz(deg_to_rad(-22.0))
 				_next()
 		11:
@@ -325,6 +326,22 @@ func _process(delta: float) -> bool:
 				print("FIELD done, %d failed" % _fails)
 				return true
 	return false
+
+
+## A point of grass ground near the deck: round it in 24 directions, 16 to 40 m out, the first on land over
+## the sea. Vector3(x, ground y, z).
+static func land_near(f: Node) -> Vector3:
+	var c: Vector4 = (f.get("raft") as Node4D).global_position
+	var sea: float = float(f.get("water").get("water_level"))
+	for r in [16.0, 22.0, 28.0, 34.0, 40.0]:
+		for k in 24:
+			var a: float = TAU * float(k) / 24.0
+			var x: float = c.x + cos(a) * r
+			var z: float = c.z + sin(a) * r
+			var y: float = float(f.call("ground_at", x, z, 0.0))
+			if y > sea + 1.5 and y < sea + 20.0:
+				return Vector3(x, y, z)
+	return Vector3(c.x + 20.0, sea + 3.0, c.z)
 
 
 func _to(step: int) -> void:

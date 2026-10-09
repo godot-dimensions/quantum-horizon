@@ -37,13 +37,16 @@ const GROWTH := 1.045
 
 var shore_foam: float = 0.4
 var shore_breakup: float = 0.65
-var shore_width: float = 0.4
+var shore_width: float = 0.25
 var shore_far: float = 160.0
 ## How far down you see into it, m (the shader's max_path_metres, 40 in the Aquatic Lab). The island's
 ## seabed lies 18 m under the surface where the land is built and nowhere past it, so through 40 m of clear
 ## water the built square showed lighter than the open sea round it, seen from the air. At 10 the deep
 ## colour is reached over the seabed too; the shallows by the coast still show.
 var see_depth: float = 10.0
+## How big the foam's bubbles are, m across a cell of its network (the shader's foam_cell_size, 0.85 in the
+## Aquatic Lab; Ramon, 9 Oct: "the foam effect can you make it smaller in size?").
+var foam_cell: float = 0.45
 
 static var _patched: Shader = null
 static var _patch_failed: bool = false
@@ -65,6 +68,7 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 	_material.set_shader_parameter(&"shore_far", shore_far)
 	_material.set_shader_parameter(&"intersection_foam_depth", shore_width)
 	_material.set_shader_parameter(&"max_path_metres", see_depth)
+	_material.set_shader_parameter(&"foam_cell_size", foam_cell)
 
 
 ## The grid: lines every extent / (GRID_RESOLUTION / 2) metres out to `extent`, then each gap GROWTH

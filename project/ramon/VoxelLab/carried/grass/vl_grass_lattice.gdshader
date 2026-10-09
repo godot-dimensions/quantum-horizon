@@ -4,9 +4,11 @@ render_mode skip_vertex_transform, cull_disabled, diffuse_lambert_wrap, specular
 // VOXEL LAB (carried copy of ramon/chickenpen/grass/pen_grass_lattice.gdshader, 9 Oct, round 5 #49: "reuse
 // the grass system from the Chicken Pen prototype ... a few small grass patches across the island terrain ...
 // blades somewhat thicker"). The pen's blades, wind, clumps, colours, bands and slice cut, as they are. Out:
-// the pen's mask, clearings and paths (it has none of them). In: PATCHES, a few 4D cylinders over the island
-// (x, z, W and a radius in x-z; patch_w_reach along W), the blades only inside them, their edges ragged and
-// thinning as the clearings' did, inverted. The heights (height_tex over mask_rect, in W layers) are baked from
+// the pen's mask, clearings and paths (it has none of them). In: PATCHES, where the field's own 4D noise (noise3,
+// over x, z and W) is over `coverage_cut`, so `coverage` of the grass ground is grass (Ramon, 9 Oct: "the amount
+// being covered by grass in percentage"; the cut is the noise's quantile, worked out on the CPU); patch_scale sets
+// how big they are; within patch_w_reach of W 0 (as far as the ground is baked); their edges ragged and thinning
+// as the clearings' did, inverted. The heights (height_tex over mask_rect, in W layers) are baked from
 // the island's own chunk meshes by carried/grass/vl_grass_4d.gd, grass ground only: elsewhere a height far
 // over height_max, so no blade stands on rock or under the sea.
 
@@ -159,10 +161,11 @@ uniform float height_on = 0.0;
 uniform vec3 height_w = vec3(-8.0, 1.0, 19.0);
 uniform float height_max = 9.0;
 uniform float slope_max = 0.9;
-// VOXEL LAB: the patches, (x, z, w, radius in x-z) each, in this node's own space; how far each reaches along
-// W either side; how ragged their edges are and over how much they thin.
-uniform vec4 patches[8];
-uniform int patch_count = 0;
+// VOXEL LAB: the patches: the noise level over which the ground is grass, the noise's period in metres (a
+// patch is about a third of it), how far through W either side of W 0 there is grass; how ragged their edges
+// are and over how much they thin.
+uniform float coverage_cut = 0.5;
+uniform float patch_scale = 18.0;
 uniform float patch_w_reach = 6.0;
 uniform float patch_ragged = 1.2;
 uniform float patch_fringe = 1.6;
@@ -405,11 +408,8 @@ void vertex() {
 	// VOXEL LAB: only inside a patch; at its ragged edge, fewer, and trodden short (the pen's clearings,
 	// turned inside out).
 	float trodden = 1.0;
-	float inward = -1e9;
-	for (int pi = 0; pi < patch_count; pi++) {
-		vec4 pa = patches[pi];
-		inward = max(inward, min(pa.w - length(root_xz - pa.xy), patch_w_reach - abs(root_w - pa.z)));
-	}
+	float inward = (noise3(root3 / patch_scale, vec2(0.43, 0.17)) - coverage_cut) * patch_scale * 0.5;
+	inward = min(inward, patch_w_reach - abs(root_w));
 	inward += (texture(wind_noise, root_xz / 6.0 + vec2(0.21, 0.83)).r - 0.5) * 2.0 * patch_ragged
 			+ (texture(wind_noise, root_xz / 1.7 + vec2(0.57, 0.19)).r - 0.5) * 0.7 * patch_ragged;
 	float in_by = clamp(inward / patch_fringe, 0.0, 1.0);
