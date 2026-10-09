@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/WaterLab/carried/kit/panels/kit_room_info.gd" id="1_info"]
+
+[resource]
+script = ExtResource("1_info")
+number = 4
+title = "Turn the slice"
+status = "PIER 2  /  THE PIER TURNS TOO"
+lead = "Stand on the circle and right-drag."
+description = "On the circle a right drag turns your slice through W. The sea is cut a new way and its waves change, because they run through W as well as across. This pier is part of the world, so it turns with the slice: it thins and ends where your slice leaves it. On pier 1 the platform stays set."
+interactions = [["rdrag", "Turn the slice"], ["key:R", "Level it again"], ["key:P", "Back to pier 1"]]
+controls_heading = "CONTROLS"
+research_title = "THE SLICE"
+research_status = ""
+research_layout = "steps"

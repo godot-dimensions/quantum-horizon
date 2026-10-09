@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/WaterLab/carried/kit/panels/kit_room_info.gd" id="1_info"]
+
+[resource]
+script = ExtResource("1_info")
+number = 5
+title = "Water Lab"
+status = "THE TANK  /  THE FISH  /  THE SEA"
+lead = "Water, and the life in it, in four dimensions."
+description = "A koi tank 7 m deep in W. Its water is drawn per pixel against the tank as a 4D box, and its {koi} koi swim through W: a few live off your slice. Stand on the blue circle and right-drag to find them, or feed them at the console. The door at the far end opens onto the sea."
+interactions = [["key:E", "Feed the koi"], ["rdrag", "Turn the slice (blue circle)"], ["wheel", "The showcase koi through W"], ["key:R", "Level the slice"]]
+controls_heading = "CONTROLS"
+research_title = "HOW THE WATER AND THE FISH WORK"
+research_status = "●  MEASURED LIVE ON THIS MACHINE"
+research_layout = "specimen"

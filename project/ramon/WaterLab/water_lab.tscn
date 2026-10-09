@@ -1,0 +1,283 @@
+[gd_scene load_steps=17 format=3]
+
+[ext_resource type="Script" path="res://ramon/WaterLab/water_lab_4d.gd" id="1_root"]
+[ext_resource type="Script" path="res://ramon/WaterLab/carried/LabKit/lab_room_4d.gd" id="2_room"]
+[ext_resource type="Script" path="res://ramon/WaterLab/carried/kit/kit_room_4d.gd" id="3_kitroom"]
+[ext_resource type="Script" path="res://ramon/WaterLab/carried/kit/kit_wall_text_4d.gd" id="4_text"]
+[ext_resource type="Script" path="res://ramon/WaterLab/tank/tank_4d.gd" id="5_tank"]
+[ext_resource type="Script" path="res://ramon/WaterLab/room/koi_showcase_4d.gd" id="6_showcase"]
+[ext_resource type="Script" path="res://ramon/WaterLab/shared/scifi_door_4d.gd" id="7_door"]
+[ext_resource type="Script" path="res://ramon/WaterLab/carried/kit/kit_light_4d.gd" id="8_light"]
+[ext_resource type="Script" path="res://ramon/WaterLab/carried/kit/kit_sun_4d.gd" id="9_sun"]
+[ext_resource type="Script" path="res://ramon/WaterLab/room/wl_panel_source.gd" id="10_source"]
+[ext_resource type="Script" path="res://ramon/WaterLab/carried/kit/panels/kit_wall_panel_4d.gd" id="11_panel"]
+[ext_resource type="Script" path="res://ramon/WaterLab/carried/kit/panels/kit_wall_panels_4d.gd" id="12_pair"]
+[ext_resource type="Resource" path="res://ramon/WaterLab/water_lab_info.tres" id="13_info"]
+[ext_resource type="Script" path="res://ramon/WaterLab/carried/PathCreator/graph/path_network_4d.gd" id="14_net"]
+[ext_resource type="Resource" path="res://ramon/WaterLab/paths/hall.tres" id="15_hall"]
+[ext_resource type="Script" path="res://ramon/WaterLab/shared/water_target_4d.gd" id="16_target"]
+
+[node name="WaterLab" type="Node4D"]
+script = ExtResource("1_root")
+
+[node name="Room" type="Node4D" parent="."]
+script = ExtResource("2_room")
+start_mood = "bright"
+
+[node name="Entrance" type="Node4D" parent="."]
+position = Vector4(-11, 0, 18.75, 0)
+script = ExtResource("3_kitroom")
+size = Vector3(6, 6, 9.5)
+open_sides = ["n"]
+cove = false
+
+[node name="Hall" type="Node4D" parent="."]
+script = ExtResource("3_kitroom")
+size = Vector3(28, 11, 28)
+doorways = [["s", -12.6, -9.4, 4.2], ["n", 8.4, 11.6, 4.2]]
+cove = false
+
+[node name="Sign" type="Node" parent="Hall"]
+script = ExtResource("4_text")
+side = "s"
+along = Vector2(-13.7, -8.3)
+up = Vector2(4.4, 5.7)
+outside = true
+kind = "sign"
+title = "WATER LAB"
+subtitle = "QUANTUM HORIZON  ·  WATER SYSTEMS"
+glow = 0.3
+
+[node name="Airlock" type="Node4D" parent="."]
+position = Vector4(10, 0, -16.4, 0)
+script = ExtResource("3_kitroom")
+size = Vector3(4.4, 5, 4.8)
+open_sides = ["s"]
+cove = false
+
+[node name="EntranceDoor" type="Node4D" parent="."]
+position = Vector4(-11, 0, 14, 0)
+script = ExtResource("7_door")
+height = 3.4
+light_behind = false
+open = 1.0
+blocks = false
+
+[node name="ExitDoor" type="Node4D" parent="."]
+position = Vector4(10, 0, -14, 0)
+script = ExtResource("7_door")
+height = 3.4
+auto_open = true
+
+[node name="Tank" type="Node4D" parent="."]
+position = Vector4(-4.23, 0, -11.53, 0)
+script = ExtResource("5_tank")
+water_size = Vector4(18.4, 4.8, 3.2, 7)
+
+[node name="Showcase" type="Node4D" parent="."]
+position = Vector4(10, 0, 10.4, 0)
+script = ExtResource("6_showcase")
+panel_at = Vector2(-2.3, -1.3)
+panel_face = Vector2(0, -2.9)
+
+[node name="TankLight1" type="Node4D" parent="."]
+position = Vector4(-12, 10.6, -9.2, 0)
+script = ExtResource("8_light")
+aim = Vector3(-12, 3.6, -11.5)
+angle = 55.0
+softness = 1.2
+reach = 17.0
+attenuation = 0.25
+energy = {
+"bright": 2.4,
+"dark": 3.2
+}
+fixture_at = 10.94
+
+[node name="TankLight2" type="Node4D" parent="."]
+position = Vector4(-8.1, 10.6, -9.2, 0)
+script = ExtResource("8_light")
+aim = Vector3(-8.1, 3.6, -11.5)
+angle = 55.0
+softness = 1.2
+reach = 17.0
+attenuation = 0.25
+energy = {
+"bright": 2.4,
+"dark": 3.2
+}
+fixture_at = 10.94
+
+[node name="TankLight3" type="Node4D" parent="."]
+position = Vector4(-4.2, 10.6, -9.2, 0)
+script = ExtResource("8_light")
+aim = Vector3(-4.2, 3.6, -11.5)
+angle = 55.0
+softness = 1.2
+reach = 17.0
+attenuation = 0.25
+energy = {
+"bright": 2.4,
+"dark": 3.2
+}
+fixture_at = 10.94
+
+[node name="TankLight4" type="Node4D" parent="."]
+position = Vector4(-0.3, 10.6, -9.2, 0)
+script = ExtResource("8_light")
+aim = Vector3(-0.3, 3.6, -11.5)
+angle = 55.0
+softness = 1.2
+reach = 17.0
+attenuation = 0.25
+energy = {
+"bright": 2.4,
+"dark": 3.2
+}
+fixture_at = 10.94
+
+[node name="TankLight5" type="Node4D" parent="."]
+position = Vector4(3.6, 10.6, -9.2, 0)
+script = ExtResource("8_light")
+aim = Vector3(3.6, 3.6, -11.5)
+angle = 55.0
+softness = 1.2
+reach = 17.0
+attenuation = 0.25
+energy = {
+"bright": 2.4,
+"dark": 3.2
+}
+fixture_at = 10.94
+
+[node name="ShowcaseLight" type="Node4D" parent="."]
+position = Vector4(10, 10.6, 10.4, 0)
+script = ExtResource("8_light")
+aim = Vector3(10, 0, 10.4)
+angle = 45.0
+softness = 0.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.2
+}
+fixture_at = 10.94
+
+[node name="IntroWash" type="Node4D" parent="."]
+position = Vector4(-10, 10.6, 0, 0)
+script = ExtResource("8_light")
+aim = Vector3(-14, 3.4, 0)
+angle = 80.0
+softness = 2.0
+reach = 15.0
+attenuation = 0.25
+energy = {
+"bright": 1.5,
+"dark": 2.0
+}
+fixture_at = 10.94
+
+[node name="ResearchWash" type="Node4D" parent="."]
+position = Vector4(10, 10.6, 0, 0)
+script = ExtResource("8_light")
+aim = Vector3(14, 3.4, 0)
+angle = 80.0
+softness = 2.0
+reach = 15.0
+attenuation = 0.25
+energy = {
+"bright": 1.5,
+"dark": 2.0
+}
+fixture_at = 10.94
+
+[node name="EntranceLight" type="Node4D" parent="."]
+position = Vector4(-11, 5.4, 19, 0)
+script = ExtResource("8_light")
+aim = Vector3(-11, 0, 19)
+angle = 70.0
+softness = 4.0
+reach = 9.0
+attenuation = 0.3
+energy = {
+"bright": 1.4,
+"dark": 1.8
+}
+fixture_at = 5.94
+
+[node name="ExitLight" type="Node4D" parent="."]
+position = Vector4(10, 10.6, -10.5, 0)
+script = ExtResource("8_light")
+aim = Vector3(10, 0, -12)
+angle = 60.0
+softness = 1.5
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 1.8,
+"dark": 2.4
+}
+fixture_at = 10.94
+
+[node name="Sun" type="Node4D" parent="."]
+position = Vector4(2, 11, 4, 0)
+script = ExtResource("9_sun")
+target = Vector3(0, 0, -4)
+
+[node name="PanelSource" type="Node" parent="."]
+script = ExtResource("10_source")
+room_path = NodePath("..")
+
+[node name="IntroPanel" type="Node4D" parent="."]
+script = ExtResource("11_panel")
+info = ExtResource("13_info")
+source = NodePath("../PanelSource")
+room_path = NodePath("../Hall")
+wall_side = "w"
+
+[node name="ResearchBoard" type="Node4D" parent="."]
+script = ExtResource("11_panel")
+kind = "research"
+info = ExtResource("13_info")
+source = NodePath("../PanelSource")
+room_path = NodePath("../Hall")
+wall_side = "e"
+
+[node name="WallPanels" type="Node4D" parent="."]
+script = ExtResource("12_pair")
+intro = NodePath("../IntroPanel")
+research = NodePath("../ResearchBoard")
+info = ExtResource("13_info")
+source = NodePath("../PanelSource")
+
+[node name="Paths" type="Node4D" parent="."]
+
+[node name="Targets" type="Node4D" parent="Paths"]
+
+[node name="TurnSpot" type="Node4D" parent="Paths/Targets"]
+position = Vector4(-4.23, 0, -8.2, 0)
+script = ExtResource("16_target")
+label = "Turn the tank through W"
+size = Vector3(3, 0.1, 3)
+w_depth = 40.0
+
+[node name="Showcase" type="Node4D" parent="Paths/Targets"]
+position = Vector4(10, 0, 10.4, 0)
+script = ExtResource("16_target")
+label = "Koi showcase"
+size = Vector3(4.0, 1, 4.0)
+w_depth = 40.0
+
+[node name="ExitDoor" type="Node4D" parent="Paths/Targets"]
+position = Vector4(10, 0, -14.1, 0)
+script = ExtResource("16_target")
+label = "The sea"
+size = Vector3(3.2, 4.2, 0.6)
+w_depth = 40.0
+
+[node name="Hall" type="Node4D" parent="Paths"]
+script = ExtResource("14_net")
+graph = ExtResource("15_hall")
+targets = NodePath("../Targets")
+under_color = Color(0.64, 0.65, 0.66, 1)

@@ -1,0 +1,93 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/WaterLab/carried/PathCreator/graph/path_graph.gd" id="1_0d8w8"]
+
+[resource]
+script = ExtResource("1_0d8w8")
+nodes = [{
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 1,
+"kind": "start",
+"pos": Vector4(-11, 0, 16.6, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 2,
+"kind": "bend",
+"pos": Vector4(-11, 0, -8.2, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(-1, 0),
+"band": 8.0,
+"frame": "round",
+"id": 3,
+"kind": "destination",
+"pos": Vector4(-4.23, 0, -8.2, 0),
+"state": "available",
+"target": "TurnSpot"
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 4,
+"kind": "junction",
+"pos": Vector4(10, 0, -8.2, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, -1),
+"band": 8.0,
+"frame": "round",
+"id": 5,
+"kind": "destination",
+"pos": Vector4(10, 0, 7.9, 0),
+"state": "available",
+"target": "Showcase"
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "rect",
+"id": 6,
+"kind": "destination",
+"pos": Vector4(10, 0, -12.4, 0),
+"state": "arrival",
+"target": "ExitDoor"
+}]
+edges = [{
+"band": 8.0,
+"from": 1,
+"priority": "primary",
+"to": 2,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 2,
+"priority": "primary",
+"to": 3,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 3,
+"priority": "primary",
+"to": 4,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 4,
+"priority": "primary",
+"to": 6,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 4,
+"priority": "secondary",
+"to": 5,
+"w_mode": "static"
+}]
+next_id = 7
