@@ -89,6 +89,14 @@ var _in: float = 1.0
 ## Your hands on it: how far it is slid through W, and how far turned (yaw, pitch).
 var slide_w: float = 0.0
 var turn := Vector2.ZERO
+## And how far turned THROUGH W - a rotation in the x-W and z-W planes, which swings the
+## specimen out of the slice you are standing in rather than around inside it.
+##
+## `turn` above is an ordinary 3D turn: it feeds yaw and pitch, which is what a left drag
+## should do. This is the 4D one, and it is what the tank next door does to its contents.
+## They were the same control before, so a right drag on the case turned the fish in 3D while
+## the same drag on the aquarium turned it through W.
+var turn_w := Vector2.ZERO
 var _ped: Dictionary = {}
 var _holo: MeshInstance4D
 var _herds: Dictionary = {}
@@ -216,6 +224,7 @@ func select(i: int) -> void:
 	chosen = i
 	slide_w = 0.0
 	turn = Vector2.ZERO
+	turn_w = Vector2.ZERO
 	if panel != null:
 		panel.set("page_index", -1)
 		panel.call("_read")
@@ -342,6 +351,13 @@ func _draw_now() -> void:
 	var pitch: float = clampf(turn.y, -1.2, 1.2) + (sin(_t * 0.37) * 0.04 if key != "crab" else 0.0)
 	var h := Vector4(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch), 0.0)
 	var right := Vector4(cos(yaw), 0.0, -sin(yaw), 0.0)
+	# THE 4D TURN, applied to the specimen's own frame. Both vectors lie in the slice until
+	# this point; rotating them in the x-W and z-W planes tips them out of it, so the fish
+	# thins and goes as it turns away - which is the thing the case is here to show.
+	if not is_zero_approx(turn_w.x) or not is_zero_approx(turn_w.y):
+		var through_w: Projection = Basis4D.from_xw(turn_w.x) * Basis4D.from_zw(turn_w.y)
+		h = through_w * h
+		right = through_w * right
 	var hold: float = float(sp["hold"])
 	var centre := Vector4(0.0, deck_h + holo_height * hold + (sin(_t * 0.6) * 0.05 if hold > 0.0 else 0.0), 0.0, slide_w)
 	match key:
@@ -389,6 +405,12 @@ func step_slice(d: int) -> void:
 
 
 ## A right drag turns it round (x) and tips it (y).
+## Turns the specimen THROUGH W: the right drag, matching the aquarium's own right drag.
+func turn_w_by(dx: float, dy: float) -> void:
+	turn_w += Vector2(dx, dy)
+
+
+## Turns the specimen within the slice - yaw and pitch: the left drag.
 func turn_by(dx: float, dy: float) -> void:
 	_touched = _t
 	turn += Vector2(dx, dy)
@@ -399,6 +421,7 @@ func turn_by(dx: float, dy: float) -> void:
 func reset() -> void:
 	slide_w = 0.0
 	turn = Vector2.ZERO
+	turn_w = Vector2.ZERO
 
 
 func set_player(p: Node4D) -> void:

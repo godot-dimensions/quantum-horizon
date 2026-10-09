@@ -347,6 +347,8 @@ var _launch_targets: Array[Dictionary] = []
 
 var _loop_time: float = 0.0
 var _running: Node = null
+## The menu, set aside while a prototype is the current scene (see _launch).
+var _menu_scene: Node = null
 
 ## The loading screen (menu_load_board.gd), on its own CanvasLayer; hidden until a launch.
 var _overlay: Control = null
@@ -355,6 +357,15 @@ var _notice: Control = null
 
 
 func _ready() -> void:
+	# THIS NODE MUST NOT EAT THE MOUSE. It is a full-screen Control and the default filter is
+	# STOP, so while a prototype runs - this menu stays alive underneath it, by design - every
+	# mouse motion was consumed here and never reached the prototype's _unhandled_input. The
+	# symptom was that looking around did nothing in the Aquatic Lab when it was started from
+	# the menu, while working perfectly when the scene was opened on its own.
+	#
+	# IGNORE on this node only: its children keep their own filters and are tested before it,
+	# so the menu's own buttons and panels are unaffected. It handles no GUI events itself.
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if not Engine.is_editor_hint():
 		# Gameplay scenes capture the mouse and nothing else gives it back, so a
 		# menu that does not do this is unusable after returning from a prototype.
@@ -758,6 +769,16 @@ func rebuild() -> void:
 	# FREELY); Ramon: "the explore freely header is something we no longer need".
 	_banner_host = _a().build_frame()
 	_shell.add_child(_banner_host)
+
+	# A WAY OUT THAT IS NOT ALT+F4. The menu had no quit at all, so coming back from a
+	# prototype left the window manager as the only exit.
+	#
+	# Put INTO the frame's own switch row rather than positioned in the corner. Two attempts
+	# at absolute offsets landed it on the LIST / ROUTE switches and then across the PLAY THE
+	# WORLD button; the row already solves that, and it moves with the footer if the frame
+	# ever changes. It lives under `_shell`, so it hides with the menu while a prototype runs
+	# - a quit button floating over the Aquatic Lab would be worse than none.
+	_add_quit_button(_banner_host)
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -1314,6 +1335,58 @@ func _build_launch_buttons(entry: MenuEntry) -> void:
 ## Styled rather than left on Godot's default theme, which on this ground sat at
 ## almost exactly the panel colour - the most important control on screen was the
 ## hardest to see.
+## Finds the frame's switch row - the HBox holding the light / dark square and LIST / ROUTE -
+## and puts QUIT at the front of it. Falls back to doing nothing rather than guessing at a
+## position, since a corner-placed button is what went wrong twice.
+func _add_quit_button(frame: Control) -> void:
+	var row: HBoxContainer = _first_hbox(frame)
+	if row == null:
+		push_warning("menu: no switch row found, so no quit button.")
+		return
+	var quit_button: Button = _make_launch_button("QUIT")
+	quit_button.name = "QuitButton"
+	quit_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	quit_button.custom_minimum_size = Vector2(style.space(10), style.space(4))
+	quit_button.add_theme_font_size_override("font_size", style.size_for(MenuStyle.CAPTION))
+	quit_button.pressed.connect(_on_quit_pressed)
+	row.add_child(quit_button)
+	row.move_child(quit_button, 0)
+
+
+func _first_hbox(node: Node) -> HBoxContainer:
+	for child in node.get_children():
+		if child is HBoxContainer:
+			return child as HBoxContainer
+		var deeper: HBoxContainer = _first_hbox(child)
+		if deeper != null:
+			return deeper
+	return null
+
+
+## Whether a prototype - or a room it opened for itself - is on screen.
+##
+## NOT `_running != null`. A prototype that opens a second room through change_scene_to_file
+## (the Aquatic Lab's sea, the Voxel Lab's open world) frees itself in the process, and this
+## reference stops being a reliable test the moment it does. Esc then fell past this menu to
+## the sea's own camera rig, whose Esc frees the cursor once and QUITS THE APPLICATION on the
+## second press - so leaving the sea closed the game instead of coming back here.
+##
+## The current scene is the honest question: anything that is not this menu is a prototype.
+func _prototype_up() -> bool:
+	if _running != null and is_instance_valid(_running):
+		return true
+	if _menu_scene == null:
+		return false
+	var current: Node = get_tree().current_scene
+	return current != null and current != _menu_scene
+
+
+## Leaves for good. Deferred, for the same reason the prototype teardown is: quitting from
+## inside input dispatch pulls the ground out from under the event still being delivered.
+func _on_quit_pressed() -> void:
+	get_tree().quit.call_deferred()
+
+
 func _make_launch_button(text: String) -> Button:
 	var button := Button.new()
 	button.text = text
@@ -1706,7 +1779,7 @@ func _input(event: InputEvent) -> void:
 	if _launching:
 		return
 
-	if _running != null:
+	if _prototype_up():
 		if key.keycode == RETURN_KEY or key.keycode == PROTOTYPE_RETURN_KEY:
 			get_viewport().set_input_as_handled()
 			_close_running()
@@ -1757,7 +1830,7 @@ func _step_selection(delta: int) -> void:
 ## alive underneath means Esc/H can free the prototype and restore it, played
 ## dots and all.
 ##
-## Known cost: get_tree().current_scene stays the MENU, so a prototype that
+## Known cost, now fixed by setting current_scene below: a prototype that
 ## identifies itself by current_scene.scene_file_path - MiegakureLook's level
 ## base does - will not know which level it is and will not auto-advance.
 func _launch(index: int, target: int = 0) -> void:
@@ -1866,6 +1939,21 @@ func _launch(index: int, target: int = 0) -> void:
 	# project and everyone else's scenes.
 	get_tree().root.move_child(_running, 0)
 
+	# THE PROTOTYPE BECOMES THE CURRENT SCENE, while staying a root child.
+	#
+	# Leaving `current_scene` on the menu had a second consequence beyond the one noted above,
+	# and it took a soft-lock to find: a prototype with a door of its own calls
+	# `change_scene_to_file`, which frees the CURRENT scene - the menu, not the prototype. The
+	# new room then arrived while the old one was still running underneath, its door trigger
+	# fired again, and the Aquatic Lab bounced between the pier and a black loading screen for
+	# ever. The Voxel Lab's open world and the Creature Lab's hall open the same way.
+	#
+	# This costs nothing: the node is already parented to the root, and the Esc fix above
+	# works by tree ORDER, not by which scene is current.
+	if _menu_scene == null:
+		_menu_scene = get_tree().current_scene
+	get_tree().current_scene = _running
+
 	_shell.visible = false
 	# One white fade, at the very end of the loading (Ramon, 9 Oct: "the white fade in happens after
 	# the tscn loader"). A scene with its own loading board (the Voxel Lab's, opened in its _ready on a
@@ -1948,13 +2036,25 @@ func _claim_return_button(node: Node) -> void:
 
 
 func _close_running() -> void:
-	if _running == null:
+	# WHAT IS RUNNING MAY NOT BE WHAT WAS LAUNCHED. A prototype that opened a room of its own
+	# through change_scene_to_file left `_running` holding a freed node and the second room as
+	# the current scene; freeing only `_running` would leave that room on screen under the
+	# menu.
+	var live: Node = _running if (_running != null and is_instance_valid(_running)) else null
+	var current: Node = get_tree().current_scene
+	if live == null and current != null and current != _menu_scene:
+		live = current
+	if live == null and _running == null:
 		return
+	_running = null
 	# Freed deferred for the same reason gate triggers and level hand-offs are:
 	# tearing a scene down from inside input dispatch pulls the ground out from
 	# under the event still being delivered.
-	_running.queue_free()
-	_running = null
+	if live != null:
+		live.queue_free()
+	if _menu_scene != null and is_instance_valid(_menu_scene):
+		get_tree().current_scene = _menu_scene
+	_menu_scene = null
 	_hide_overlay()
 	_shell.visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

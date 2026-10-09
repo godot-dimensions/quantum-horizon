@@ -28,9 +28,20 @@ class_name PrototypeLauncher
 ##    it stays on screen; only its input handling is switched off, and the menu
 ##    answers H itself with the same lossless unwind Esc uses.
 ##
-## KNOWN COST, carried over unchanged: `get_tree().current_scene` stays the MENU,
-## so a prototype that identifies itself by `current_scene.scene_file_path` -
-## MiegakureLook's level base does - will not know which level it is.
+## 4. **The prototype IS made the current scene, while staying a root child.**
+##    This used to be left alone, with a known cost: a prototype identifying
+##    itself by `current_scene.scene_file_path` - MiegakureLook's level base
+##    does - could not tell which level it was. The second consequence was worse
+##    and took a soft-lock to find. A prototype with a door of its own calls
+##    `change_scene_to_file`, which frees the CURRENT scene: the menu, not the
+##    prototype. The new scene arrived while the old one was still running
+##    underneath, its door trigger fired again, and the Aquatic Lab bounced
+##    between the pier and a black loading screen for ever.
+##
+##    Setting `current_scene` costs nothing here - the node is already parented
+##    to the root, and Esc still works because that is decided by tree ORDER
+##    (see 2), not by which scene is current. It also fixes the known cost.
+##    `close()` is what needs the care: see its note.
 
 ## Real, measured progress for the resource load only.
 signal progress_changed(value: float)
@@ -46,6 +57,8 @@ const STAGE_BUILDING: String = "BUILDING THE SCENE"
 var _host: Node = null
 var _running: Node = null
 var _busy: bool = false
+## The menu, set aside while a prototype is the current scene.
+var _menu_scene: Node = null
 
 
 func _init(host: Node) -> void:
@@ -53,7 +66,9 @@ func _init(host: Node) -> void:
 
 
 func is_running() -> bool:
-	return _running != null
+	# `is_instance_valid`, not a null test: a prototype that swapped itself out through
+	# change_scene_to_file leaves this holding a freed node.
+	return _running != null and is_instance_valid(_running)
 
 
 func is_busy() -> bool:
@@ -130,6 +145,11 @@ func launch(path: String) -> bool:
 	_claim_return_button(_running)
 	tree.root.add_child(_running)
 	tree.root.move_child(_running, 0)
+	# The menu is remembered rather than assumed, so close() can put it back as the current
+	# scene without caring what else has happened in between.
+	if _menu_scene == null:
+		_menu_scene = tree.current_scene
+	tree.current_scene = _running
 
 	_busy = false
 	launched.emit(_running)
@@ -142,10 +162,21 @@ func launch(path: String) -> bool:
 ## tearing a scene down from inside input dispatch pulls the ground out from
 ## under the event still being delivered.
 func close() -> void:
-	if _running == null:
-		return
-	_running.queue_free()
+	var tree: SceneTree = _host.get_tree() if _host != null else null
+	# WHAT IS ACTUALLY RUNNING MAY NOT BE WHAT WAS LAUNCHED. A prototype with a door of its
+	# own - the Aquatic Lab's sea, the Voxel Lab's open world, the Creature Lab's hall -
+	# replaces itself through change_scene_to_file, which leaves `_running` pointing at a
+	# freed node and the second scene as the current one. Freeing only `_running` would then
+	# leave that second scene on screen under the menu.
+	var live: Node = _running if (_running != null and is_instance_valid(_running)) else null
+	if live == null and tree != null and tree.current_scene != null 			and tree.current_scene != _menu_scene:
+		live = tree.current_scene
 	_running = null
+	if live != null:
+		live.queue_free()
+	if tree != null and _menu_scene != null and is_instance_valid(_menu_scene):
+		tree.current_scene = _menu_scene
+	_menu_scene = null
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	closed.emit()
 

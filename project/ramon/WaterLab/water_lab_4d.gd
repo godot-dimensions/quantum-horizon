@@ -557,7 +557,7 @@ func _strip() -> Array:
 	if _on_turn:
 		return [["Right drag", "Slide and turn through W"], ["Wheel", "Turn front to back"], ["V", "Align with the shark"], ["R", "Back"]]
 	if active != null:
-		var out: Array = [["Left / Right", "Choose"], ["Wheel", "Slide it through W"], ["Right drag", "Turn it"], ["R", "Whole again"]]
+		var out: Array = [["Left / Right", "Choose"], ["Wheel", "Slide it through W"], ["Right drag", "Turn it through W"], ["Left drag", "Turn it"], ["R", "Whole again"]]
 		if _near_panel:
 			out.push_front(["E", "Its panel: more"])
 		return out
@@ -639,8 +639,16 @@ func _input(event: InputEvent) -> void:
 			active.call("step_slice", 1 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else -1)
 			get_viewport().set_input_as_handled()
 			return
+	# RIGHT DRAG TURNS IT THROUGH W, LEFT DRAG TURNS IT IN THE SLICE. Right used to be the
+	# only one, and it called `turn_by`, which is yaw and pitch - so the case answered a right
+	# drag with a 3D turn while the aquarium beside it answered the same drag by turning its
+	# contents through W. Left did nothing at all.
 	var mm := event as InputEventMouseMotion
 	if mm != null and (mm.button_mask & MOUSE_BUTTON_MASK_RIGHT) != 0:
+		if active.has_method("turn_w_by"):
+			active.call("turn_w_by", mm.relative.x * 0.006, mm.relative.y * 0.006)
+		get_viewport().set_input_as_handled()
+	elif mm != null and (mm.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0:
 		active.call("turn_by", mm.relative.x * 0.006, mm.relative.y * 0.006)
 		get_viewport().set_input_as_handled()
 
