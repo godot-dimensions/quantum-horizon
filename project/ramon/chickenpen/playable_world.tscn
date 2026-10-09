@@ -1,4 +1,4 @@
-[gd_scene load_steps=469 format=4 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=470 format=4 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/mountains_even.res" id="2_j4g5o"]
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
@@ -95,6 +95,7 @@
 [ext_resource type="Script" uid="uid://bq731x06rvbig" path="res://ramon/chickenpen/scripts/pen_town_wall_4d.gd" id="town_wall"]
 [ext_resource type="Script" uid="uid://5sy4ydq5gqcj" path="res://ramon/chickenpen/scripts/pen_ui_scale_4d.gd" id="ui_scale"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/trym_cabin/trym_cabin.tscn" id="unit_cabin"]
+[ext_resource type="PackedScene" path="res://ramon/chickenpen/units/outfit/outfit_circle.tscn" id="unit_outfit"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/camp/camp.tscn" id="unit_camp"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/cave/cave.tscn" id="unit_cave"]
 [ext_resource type="PackedScene" path="res://ramon/chickenpen/units/keeper/keeper.tscn" id="unit_keeper"]
@@ -2084,6 +2085,11 @@ position = Vector4(0, 0, 4.2, 0)
 script = ExtResource("sand_patch")
 radius = 3.4
 metadata/what = "Sand in front of Trym's house (Ramon, 6 Oct: \"sand in front of the house, and on top a larger destination circle\")."
+
+[node name="OutfitCircle" parent="World" instance=ExtResource("unit_outfit")]
+position = Vector4(30.4, 0, 43.6, 0)
+basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
+metadata/what = "The fitting circle on the left of Trym's house as you arrive (Ramon, 8 Oct): its open front looks east, so the mirror's camera has the house behind you (chickenpen/outfit/, follow_up/outfit.md)."
 
 [node name="ProfessorPost" parent="World" instance=ExtResource("unit_professor")]
 position = Vector4(5.2, 0, 35.4, 0)
