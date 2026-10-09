@@ -30,6 +30,7 @@ extends Node4D
 ## visibility, so hiding them would have lofted the whole animal every time.
 
 const SOURCE := "res://ramon/Model/model.tscn"
+const Bake := preload("res://ramon/chickenpen/theatre/theatre_bake_4d.gd")
 const GOAT_PATH := "Models/Goat"
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
@@ -99,7 +100,20 @@ func rebuild() -> void:
 	_baked.clear()
 	_balls_at_stage.clear()
 	_shown = -1
-	if not _adopt():
+	# READ, NOT LOFTED, when the bake is on disk. This is the whole optimisation: the
+	# twelve lofts are a pure function of the authored animal, so they are done once by
+	# _bake_goat_runner and loaded here in a few milliseconds.
+	#
+	# The fallback is deliberate rather than defensive. If somebody edits the goat in the
+	# Model scene and forgets to re-run the bake, the theatre should still show the goat
+	# they just authored - slowly - rather than the one from last week, or nothing at all.
+	#
+	# READ BEFORE ADOPTING, so that with a bake in hand the adopted rig never lofts at all:
+	# see _adopt. Until 10 Oct the bake was never found (see _read_bake), and every visit
+	# lofted the goat thirteen times, two to five hundred milliseconds each, in the middle of
+	# slide I.
+	var bake: Dictionary = {}
+	if not _adopt(bake):
 		return
 	_collect(_rig)
 	_fit()
@@ -108,14 +122,8 @@ func rebuild() -> void:
 	_plain = TetraMaterial4D.new()
 	_plain.albedo_color = plain_color
 	_markers_wanted = false
-	# READ, NOT LOFTED, when the bake is on disk. This is the whole optimisation: the
-	# twelve lofts are a pure function of the authored animal, so they are done once by
-	# _bake_goat_runner and loaded here in a few milliseconds.
-	#
-	# The fallback is deliberate rather than defensive. If somebody edits the goat in the
-	# Model scene and forgets to re-run the bake, the theatre should still show the goat
-	# they just authored - slowly - rather than the one from last week, or nothing at all.
-	if bake_to_disk and _load_baked():
+	if not bake.is_empty():
+		_use_bake(bake)
 		return
 	_bake_begin()
 
@@ -124,7 +132,19 @@ func rebuild() -> void:
 ## whole scene to keep one branch of it is not elegant, but the alternative is a second
 ## copy of the goat that has to be kept in step with the first by hand - and the first one
 ## is the one an artist edits.
-func _adopt() -> bool:
+##
+## The bake is read here, between taking the goat out of its scene and putting it in the
+## tree, because that is the one moment both are possible: the goat is whole and untouched,
+## so its fingerprint can be checked against the bake's (theatre_bake_4d), and it has not
+## yet run a `_ready`. [param bake] is filled in when the bake is good.
+##
+## With the bake in hand the rig's own script comes off before it enters the tree. A loft
+## rig lofts in its `_ready`, always, and again on its first frame when it rebuilds live -
+## two full lofts of a goat nobody will see, because the bake replaces the mesh straight
+## away. Without its script the rig is a plain MeshInstance4D that shows the baked meshes,
+## and its handles, which only ever ask a rig that has the method, still give the build its
+## markers and its size.
+func _adopt(bake: Dictionary = {}) -> bool:
 	if not ResourceLoader.exists(SOURCE):
 		push_warning("TheatreGoat: %s is missing, so there is no goat." % SOURCE)
 		return false
@@ -134,6 +154,18 @@ func _adopt() -> bool:
 		push_warning("TheatreGoat: no %s inside %s." % [GOAT_PATH, SOURCE])
 		scene.free()
 		return false
+	for child in found.get_children():
+		if child is MeshInstance4D and child.has_method("build"):
+			_rig = child as MeshInstance4D
+			break
+	if _rig == null:
+		push_warning("TheatreGoat: the adopted goat has no loft rig on it.")
+		scene.free()
+		return false
+	if bake_to_disk:
+		bake.merge(_read_bake(fingerprint(found)))
+	if not bake.is_empty():
+		_rig.set_script(null)
 	# Owner cleared first: it still belongs to the scene being thrown away, and adding it
 	# here with that owner still set makes Godot complain about an inconsistent tree.
 	_disown(found)
@@ -143,13 +175,6 @@ func _adopt() -> bool:
 	scene.free()
 	_goat = found as Node4D
 	_goat.position = Vector4.ZERO
-	for child in _goat.get_children():
-		if child is MeshInstance4D and child.has_method("build"):
-			_rig = child as MeshInstance4D
-			break
-	if _rig == null:
-		push_warning("TheatreGoat: the adopted goat has no loft rig on it.")
-		return false
 	return true
 
 
@@ -223,37 +248,62 @@ func _mark() -> void:
 const BAKED := "res://ramon/chickenpen/theatre/baked/"
 
 
-## True if every stage was found and read. All or nothing: a half-loaded set would show
-## the animal jumping between a baked stage and a lofted one.
-func _load_baked() -> bool:
-	if not ResourceLoader.exists(BAKED + "goat.cfg"):
-		return false
-	var counts := ConfigFile.new()
-	if counts.load(BAKED + "goat.cfg") != OK:
-		return false
+## The scripts a goat's lofts depend on, besides the goat itself: if either changes, so
+## would the meshes.
+const LOFT_SCRIPTS: PackedStringArray = ["res://ramon/Model/scripts/loft_rig_4d.gd",
+	"res://ramon/Model/scripts/loft_builder_4d.gd"]
+
+
+## The adopted goat's fingerprint, as the bake records it (theatre_bake_4d).
+static func fingerprint(goat: Node) -> String:
+	return Bake.fingerprint(goat, LOFT_SCRIPTS)
+
+
+## Every stage, read: {"stages", "finished", "balls_at_stage", "tetra_whole"}, or empty if
+## anything is missing or the bake was made from a different goat than [param print_now].
+## All or nothing: a half-loaded set would show the animal jumping between a baked stage
+## and a lofted one.
+##
+## THE LIST IS FOUND WITH FileAccess, NOT ResourceLoader. `ResourceLoader.exists` answers
+## only for files some resource loader recognises, and a .cfg is not one of them: it said
+## false for a file that was there, so from the day the bake was made (24 Sept) until
+## 10 Oct the theatre never read it and lofted the goat live on every visit.
+func _read_bake(print_now: String) -> Dictionary:
+	var counts: ConfigFile = Bake.read_config("goat")
+	if counts == null or String(counts.get_value("goat", "fingerprint", "")) != print_now:
+		return {}
 	var stages: int = int(counts.get_value("goat", "stages", 0))
 	if stages <= 0:
-		return false
+		return {}
 	var loaded: Array[ArrayTetraMesh4D] = []
 	for i in stages:
 		var path: String = "%sgoat_stage_%02d.res" % [BAKED, i]
 		if not ResourceLoader.exists(path):
-			return false
+			return {}
 		var mesh := load(path) as ArrayTetraMesh4D
 		if mesh == null:
-			return false
+			return {}
 		loaded.append(mesh)
-	var dressed := load(BAKED + "goat_finished.res") as ArrayTetraMesh4D if 		ResourceLoader.exists(BAKED + "goat_finished.res") else null
-	if dressed == null:
-		return false
-	_baked = loaded
-	_finished = dressed
-	_balls_at_stage = counts.get_value("goat", "balls_at_stage", []) as Array
-	_tetra_whole = int(counts.get_value("goat", "tetra_whole", 0))
+	var dressed := load(BAKED + "goat_finished.res") as ArrayTetraMesh4D if \
+		ResourceLoader.exists(BAKED + "goat_finished.res") else null
+	if dressed == null or not dressed.has_meta("loft_ramp"):
+		return {}
+	return {"stages": loaded, "finished": dressed,
+		"balls_at_stage": counts.get_value("goat", "balls_at_stage", []),
+		"tetra_whole": int(counts.get_value("goat", "tetra_whole", 0))}
+
+
+## The goat's coat comes from the colours baked with it: the rig used to paint them into its
+## material when it lofted, and with no loft there is no painting (theatre_bake_4d.coat).
+func _use_bake(bake: Dictionary) -> void:
+	_baked = bake["stages"]
+	_finished = bake["finished"]
+	_balls_at_stage.assign(bake["balls_at_stage"])
+	_tetra_whole = int(bake["tetra_whole"])
+	_coat = Bake.coat(_finished, _rig.material_override)
 	_bake_at = -1
 	show_finished()
 	set_markers_visible(false)
-	return true
 
 
 func _bake_begin() -> void:

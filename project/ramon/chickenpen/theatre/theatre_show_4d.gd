@@ -13,7 +13,7 @@ extends Node4D
 ##   III  A SLICE IS NOT A CAMERA ANGLE the mined rock, turned through W here
 ##   IV   SHAPES WITH NO 3D TWIN        the tiger, the Klein bottle...   theatre_primer_4d
 ##   V    NOW YOU TURN IT               you hold the shapes yourself     theatre_primer_4d
-##   VI   A LEFT GLOVE, TURNED, IS A RIGHT GLOVE                        theatre_primer_4d
+##   VI   A LEFT HAND, TURNED, IS A RIGHT HAND   two lofted hands       theatre_primer_4d
 ##
 ## Trym, 30 Sept: show some interesting 4D shapes, borrow the "2D slice of a 3D world"
 ## intro for now, and let people hold a weird shape and turn it themselves. That is I, IV,
@@ -185,7 +185,7 @@ const ACTS := [
 	{
 		"id": "toy",
 		"title": "V. NOW YOU TURN IT",
-		"body": "Hold the right mouse button and drag to turn it through W, the same way you turn your slice in the field. Scroll for the next shape. Every shape you see here is a slice of the same object, and you are the one choosing which.",
+		"body": "Drag with the left mouse button to turn it in 3D, like anything you pick up. Drag with the right button to turn it through W, the same way you turn your slice in the field. Scroll for the next shape. Every shape you see here is a slice of the same object, and you are the one choosing which.",
 		"figure": "Left alone, it turns itself. Take hold of it and it is yours.",
 		"tint": Color(0.12, 0.34, 0.34),
 		"shot": "house",
@@ -194,8 +194,8 @@ const ACTS := [
 	},
 	{
 		"id": "glove",
-		"title": "VI. A LEFT GLOVE, TURNED, IS A RIGHT GLOVE",
-		"body": "In three dimensions no turn will ever make a left glove into a right one. Only a mirror can. Drag sideways and turn the left one half way round through W: it thins to nothing as it leaves your slice, and comes back the other way round.",
+		"title": "VI. A LEFT HAND, TURNED, IS A RIGHT HAND",
+		"body": "In three dimensions no turn will ever make a left hand into a right one. Only a mirror can. Try it: drag with the left button and turn it any way you like, and it stays a left hand. Now drag sideways with the right button and turn it half way round through W: it thins to nothing as it leaves your slice, and comes back the other way round.",
 		"figure": "No mirror and no cut. Just a turn, in a direction you cannot point to.",
 		"tint": Color(0.30, 0.24, 0.10),
 		"shot": "gloves",
@@ -298,7 +298,7 @@ func _ready() -> void:
 	_primer.name = "Primer"
 	add_child(_primer)
 	_primer.call("setup", _table, get_node_or_null(metrics_path), get_node_or_null(screen_path), _seat,
-		get_node_or_null(pane_path))
+		get_node_or_null(pane_path), _camera)
 	if _exit != null:
 		_exit_rest = float(_exit.get("highlight"))
 	if _seat != null and _seat.has_signal("sat"):
@@ -361,6 +361,26 @@ func finish_building() -> void:
 		_build_one()
 
 
+## Whether part one's exhibits are all made: part two builds its own straight after, on the
+## same still beat (theatre_part_two_4d's BUILDERS).
+func exhibits_built() -> bool:
+	return _built >= ACT_BUILDERS.size()
+
+
+## The worker building the baked rock's draw buffers, or -1; waited for before slide III.
+var _rock_warm: int = -1
+
+
+func _rock_warmed() -> void:
+	if _rock_warm >= 0:
+		WorkerThreadPool.wait_for_task_completion(_rock_warm)
+		_rock_warm = -1
+
+
+func _exit_tree() -> void:
+	_rock_warmed()
+
+
 func _the_chicken() -> Node4D:
 	return _primer.call("build", "chicken") as Node4D
 
@@ -382,25 +402,80 @@ func _the_gloves() -> Node4D:
 
 
 ## A real mined block, turned through W so its cross-section changes.
+##
+## CARVED ONCE, LOADED AFTER. The block contours its whole field when it arrives and again
+## for each of the three blows: 620 ms of frozen frames on the beat in the chair (measured
+## 10 Oct), for a rock that comes out the same every time. So _bake_cinema_runner carves it
+## here, exactly as below, and saves the mesh; the block is then handed that mesh before it
+## enters the tree, and a block that already has its mesh does not generate one. It is the
+## same mesh the same block made, so the slide still turns a real mined rock - it just has
+## no field or colliders left to mine, and nobody mines it on stage. If its recipe or the
+## voxel scripts change, the fingerprint misses and it is carved live, as before.
+@export var use_baked_rock: bool = true
+## The rock's recipe. NOT scaled by a basis - it is a real physics object and its colliders
+## are built in its own frame. It gets bigger the way the professor says a rock gets bigger:
+## fatter CELLS, same 8^4 lattice, so it costs exactly what it cost before. And a theatre
+## blow is a bigger blow: at the size a pickaxe takes out of the rock in the field the
+## cavity is a dent you cannot see from the third row.
+const ROCK_GRID := 8
+const ROCK_CELL := 0.42
+const ROCK_BLOW := 1.05
+const ROCK_AT := Vector4(0.0, 1.9, 0.0, 0.0)
+## Three blows walking inwards from the near face (see _carve_once).
+const ROCK_AIMS: Array[Vector4] = [Vector4(0.0, 0.15, 1.45, 0.0), Vector4(0.0, 0.15, 0.83, 0.0),
+	Vector4(0.0, 0.15, 0.21, 0.0)]
+## What the carved rock is made by, for its bake's fingerprint.
+const ROCK_SOURCES: PackedStringArray = ["res://ramon/VoxelMining/voxel_mining_block.tscn",
+	"res://ramon/VoxelMining/scripts/voxel_mining_block.gd", "res://ramon/voxel_port/scripts/voxel_field_4d.gd",
+	"res://ramon/voxel_port/scripts/multi_vertex_dual_contour_4d.gd"]
+const ROCK_SCRIPT := preload("res://ramon/VoxelMining/scripts/voxel_mining_block.gd")
+const Bake := preload("res://ramon/chickenpen/theatre/theatre_bake_4d.gd")
+
+
 func _the_rock() -> Node4D:
 	var piece := Node4D.new()
 	piece.name = "SliceRock"
 	_table.add_child(piece)
 	var rock: Node4D = ROCK.instantiate()
 	rock.name = "Rock"
+	var carved: ArrayTetraMesh4D = _baked_rock() if use_baked_rock else null
+	if carved != null:
+		(rock.get_node("Ground") as MeshInstance4D).mesh = carved
+		_carved = true
+		# Its draw buffers on a worker, not on the frame slide III begins (theatre_bake_4d).
+		_rock_warm = WorkerThreadPool.add_task(Bake.warm.bind([carved]), false, "theatre rock draw buffers")
 	piece.add_child(rock)
-	rock.position = Vector4(0.0, 1.9, 0.0, 0.0)
-	# NOT scaled by a basis - it is a real physics object and its colliders are built in
-	# its own frame. It gets bigger the way the professor says a rock gets bigger: fatter
-	# CELLS, same 8^4 lattice, so it costs exactly what it cost before.
-	rock.set("grid_size", 8)
-	rock.set("cell_size", 0.42)
-	# A theatre blow is a bigger blow. At the size a pickaxe takes out of the rock in the
-	# field the cavity is a dent you cannot see from the third row, and a finding nobody
-	# at the back can see is not a finding.
-	rock.set("mining_radius_meters", 1.05)
+	rock.position = ROCK_AT
+	rock.set("grid_size", ROCK_GRID)
+	rock.set("cell_size", ROCK_CELL)
+	rock.set("mining_radius_meters", ROCK_BLOW)
 	_rock = rock
 	return piece
+
+
+## The rock's recipe and everything that turns it into a mesh, as one string.
+static func rock_fingerprint() -> String:
+	var parts := PackedStringArray([var_to_str([ROCK_GRID, ROCK_CELL, ROCK_BLOW, ROCK_AT, ROCK_AIMS])])
+	for path in ROCK_SOURCES:
+		parts.append("%s %s" % [path, FileAccess.get_md5(path)])
+	return "\n".join(parts).md5_text()
+
+
+## The carved rock from its bake, coloured as the block colours its own (its shared
+## palette), or null if there is no bake or it was carved from a different recipe.
+func _baked_rock() -> ArrayTetraMesh4D:
+	var config: ConfigFile = Bake.read_config("rock")
+	if config == null or String(config.get_value("rock", "fingerprint", "")) != rock_fingerprint():
+		return null
+	var path: String = Bake.BAKED + "rock.res"
+	var mesh := load(path) as ArrayTetraMesh4D if ResourceLoader.exists(path) else null
+	if mesh == null:
+		return null
+	var material := TetraMaterial4D.new()
+	material.albedo_texture_3d = ROCK_SCRIPT._shared_palette_texture()
+	material.albedo_source = TetraMaterial4D.TETRA_COLOR_SOURCE_TEXTURE3D_CELL_UVW_ONLY
+	mesh.material = material
+	return mesh
 
 
 # ---------------------------------------------------------------- the run
@@ -734,8 +809,7 @@ func _carve_once() -> void:
 	# of the act is that turning through W shows you cross-sections nobody carved, and a
 	# shallow scrape gives W nothing interesting to find. Three and not ten because each
 	# one re-contours the entire field.
-	for blow in 3:
-		var aim := Vector4(0.0, 0.15, 1.45 - 0.62 * float(blow), 0.0)
+	for aim in ROCK_AIMS:
 		var best: CollisionShape4D = null
 		var nearest: float = INF
 		for child in body.get_children():
@@ -759,6 +833,7 @@ func current_act() -> int:
 
 func _enter(act: int) -> void:
 	finish_building()
+	_rock_warmed()
 	if act >= ACTS.size() and _part_two != null and _part_two.has_method("begin"):
 		_hand_over()
 		return

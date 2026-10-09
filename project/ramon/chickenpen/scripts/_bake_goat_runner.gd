@@ -62,6 +62,12 @@ func _process(_d) -> bool:
 	counts.set_value("goat", "balls_at_stage", goat.get("_balls_at_stage"))
 	counts.set_value("goat", "tetra_whole", goat.get("_tetra_whole"))
 	counts.set_value("goat", "stages", stages.size())
+	# What it was baked from: the cinema lofts the goat live instead of reading this bake
+	# when the goat in the Model scene, or its loft scripts, no longer match (theatre_bake_4d).
+	var source: Node = (load("res://ramon/Model/model.tscn") as PackedScene).instantiate()
+	counts.set_value("goat", "fingerprint",
+		load("res://ramon/chickenpen/theatre/theatre_goat_4d.gd").call("fingerprint", source.get_node("Models/Goat")))
+	source.free()
 	counts.save(OUT + "goat.cfg")
 
 	print("\nbaked %d stages plus the dressed one in %.0f ms" % [stages.size(), ms])

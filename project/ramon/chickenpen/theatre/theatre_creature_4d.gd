@@ -74,6 +74,18 @@ var _bones: Array[MeshInstance4D] = []
 var _bare: bool = false
 var _tetra: int = 0
 var _build_ms: float = 0.0
+## Whether this one came from the bake, for the tests.
+var _from_bake: bool = false
+
+## READ, NOT LOFTED: every segment is a loft rig that lofts itself the moment it enters the
+## tree, 42 lofts and about 460 ms in one frame, and the result is the same every time. So
+## _bake_cinema_runner saves the 42 meshes once and the creature reads them back, with the
+## rigs' lofting switched off (theatre_bake_4d; the bake is checked against the creature it
+## was made from). Off for the bake itself, which needs the lofts to have something to save.
+@export var use_bake: bool = true
+const Bake := preload("res://ramon/chickenpen/theatre/theatre_bake_4d.gd")
+const LOFT_SCRIPTS: PackedStringArray = ["res://ramon/Model/scripts/loft_rig_4d.gd",
+	"res://ramon/Model/scripts/loft_builder_4d.gd"]
 
 
 func _ready() -> void:
@@ -108,6 +120,11 @@ func _adopt() -> bool:
 		scene.free()
 		return false
 
+	# The bake, if there is a good one, between taking the creature out of its scene and
+	# putting it in the tree: the one moment it is both untouched (so its fingerprint means
+	# something) and has not yet run a `_ready` (so no segment has lofted).
+	if use_bake:
+		_from_bake = _use_bake(found)
 	# CREATURE FIRST, SOLVERS AFTER. A solver's _ready fires the moment it is added, and
 	# the first thing it does is resolve ../Creature; add one before the creature is in
 	# place and it finds null, warns, and turns its own _physics_process off for good.
@@ -159,9 +176,61 @@ func _gather(node: Node) -> void:
 	for child in node.get_children():
 		if child.has_method("get_loft_section"):
 			_balls.append(child as MeshInstance4D)
-		elif child is MeshInstance4D and child.has_method("build"):
+		elif child is MeshInstance4D and (child.has_method("build") or child.has_meta(SEGMENT)):
 			_segments.append(child as MeshInstance4D)
 		_gather(child)
+
+
+## Marks a segment whose loft rig has been switched off for its bake, so it is still found
+## as a segment.
+const SEGMENT := &"theatre_baked_segment"
+
+
+## The creature's segments, its loft rigs, in the order they are met walking its branch:
+## the order the bake saves them in and reads them back in.
+static func segments_of(creature: Node) -> Array[MeshInstance4D]:
+	var out: Array[MeshInstance4D] = []
+	var stack: Array[Node] = [creature]
+	while not stack.is_empty():
+		var here: Node = stack.pop_front()
+		if here is MeshInstance4D and here.has_method("build"):
+			out.append(here as MeshInstance4D)
+		stack.append_array(here.get_children())
+	return out
+
+
+## The adopted creature's fingerprint, as the bake records it (theatre_bake_4d).
+static func fingerprint(creature: Node) -> String:
+	return Bake.fingerprint(creature, LOFT_SCRIPTS)
+
+
+## Gives every segment its baked mesh and switches its rig off, so that nothing lofts when the
+## creature enters the tree. Coloured as the rig would have coloured it, from the colours
+## the bake carries. False, and nothing touched, unless the whole bake is there and was made
+## from this creature.
+func _use_bake(found: Node) -> bool:
+	var config: ConfigFile = Bake.read_config("creature")
+	if config == null or String(config.get_value("creature", "fingerprint", "")) != fingerprint(found):
+		return false
+	var segments: Array[MeshInstance4D] = segments_of(found)
+	if int(config.get_value("creature", "segments", 0)) != segments.size():
+		return false
+	var meshes: Array[ArrayTetraMesh4D] = []
+	for i in segments.size():
+		var path: String = "%screature_seg_%02d.res" % [Bake.BAKED, i]
+		var mesh := load(path) as ArrayTetraMesh4D if ResourceLoader.exists(path) else null
+		if mesh == null:
+			return false
+		meshes.append(mesh)
+	for i in segments.size():
+		var segment: MeshInstance4D = segments[i]
+		var coloured: bool = bool(segment.get("use_ball_colors"))
+		segment.set_script(null)
+		segment.set_meta(SEGMENT, true)
+		segment.mesh = meshes[i]
+		if coloured:
+			segment.material_override = Bake.coat(meshes[i], segment.material_override)
+	return true
 
 
 ## Dropped onto the deck rather than scaled onto it - see the header. The height is taken

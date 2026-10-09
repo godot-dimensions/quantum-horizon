@@ -28,6 +28,7 @@ extends Node
 
 const GOAT := preload("res://ramon/chickenpen/theatre/theatre_goat_4d.gd")
 const CREATURE := preload("res://ramon/chickenpen/theatre/theatre_creature_4d.gd")
+const Bake := preload("res://ramon/chickenpen/theatre/theatre_bake_4d.gd")
 ## Part one, for the one string both parts print. A const on a script is reachable through
 ## the script itself, so this shares the line rather than keeping a second copy of it.
 const SHOW := preload("res://ramon/chickenpen/theatre/theatre_show_4d.gd")
@@ -175,6 +176,15 @@ func _ready() -> void:
 			_panels.append(panel)
 	# NOT BUILT HERE ANY MORE. See the header on _pump_build: this was 3.5 of the 3.9
 	# seconds it cost to walk through the door.
+	#
+	# BUT THEIR SCENES START LOADING NOW, on a thread. The goat and the creature are adopted
+	# out of two Model scenes, and loading those off disk - every script they name, the
+	# heron's and the owl's included - was 112 and 116 ms of the two exhibits' frames
+	# (measured 10 Oct, _probe_adopt_cost_runner). Asked for here, they are long loaded by
+	# the time the exhibits are built.
+	for path in [GOAT.SOURCE, CREATURE.SOURCE]:
+		if ResourceLoader.load_threaded_request(path) == OK:
+			_requested.append(path)
 
 
 ## Called by the show the moment slide I ends, by the clock or by a click.
@@ -483,17 +493,30 @@ func _tint(to: Color) -> void:
 ## on the spot. That is the safety net: the timing above has seconds of slack, but a slow
 ## machine, a paused tree or somebody hammering the arrow keys should not be able to get a
 ## half-built set on stage.
+##
+## AND THEY ARE BUILT ON THE STILL BEAT, right after part one's (theatre_show_4d's
+## ACT_BUILDERS): the moment you land in the chair and the camera holds on you. They used to
+## start 14 s after the room opened, which is the middle of slide I - the ball passing
+## through the chicken's sheet, the one moment of the talk that is all motion. Since the
+## goat and the creature are read from their bakes (theatre_bake_4d) and their scenes come
+## in on a thread, they cost about 16 and 50 ms now, and on the still beat nobody sees it.
 const BUILDERS: Array[StringName] = [&"_the_goat", &"_the_creature"]
-## How long after the room opens the first one starts. Not zero: the arrival has its own
-## camera move, and a frame of it lost to a lofted goat is the first frame you see.
+## The latest the first one starts, after the room opens, for somebody who neither sits nor
+## waits for the opening to run out. Normally they start as soon as part one's are made.
 @export_range(0.0, 60.0, 0.5) var build_delay: float = 14.0
-## Between one exhibit and the next. Two heavy frames next to each other are a stutter;
-## two a couple of seconds apart are two blips, and a blip while you are sitting still
-## looking at a slide is close to invisible.
-@export_range(0.0, 20.0, 0.5) var build_gap: float = 5.0
+## Between one exhibit and the next.
+@export_range(0.0, 20.0, 0.5) var build_gap: float = 0.3
 
 var _built: int = 0
 var _build_wait: float = -1.0
+## The two scenes the exhibits are adopted from, held once their thread has loaded them so
+## the adoption's own load() finds them already in memory.
+var _sources: Array[Resource] = []
+## Thread loads asked for and not yet collected: collected on the way out if nobody stayed
+## long enough for the exhibits, so the loader is not left holding them.
+var _requested: Array[String] = []
+## The worker building the exhibits' draw buffers (see _warm), or -1.
+var _warm_task: int = -1
 
 
 ## Is everything this half needs actually made? The exhibits AND the goat's lofts - the
@@ -510,21 +533,65 @@ func _pump_build(delta: float) -> void:
 	if _build_wait < 0.0:
 		_build_wait = build_delay
 	_build_wait -= delta
+	# Straight after part one's exhibits, on the same still beat, or at the latest when the
+	# delay runs out.
+	if _show != null and _show.has_method("exhibits_built") and bool(_show.call("exhibits_built")):
+		_build_wait = minf(_build_wait, 0.0)
 	if _build_wait <= 0.0:
 		_build_one()
 		_build_wait = build_gap
 
 
 func _build_one() -> void:
+	# The scene it is adopted from: waits for its thread if that has not finished, which by
+	# the still beat it always has.
+	var source: String = GOAT.SOURCE if BUILDERS[_built] == &"_the_goat" else CREATURE.SOURCE
+	if _requested.has(source):
+		_requested.erase(source)
+		var loaded: Resource = ResourceLoader.load_threaded_get(source)
+		if loaded != null:
+			_sources.append(loaded)
 	var piece: Node4D = call(BUILDERS[_built]) as Node4D
 	_built += 1
-	if piece == null:
-		return
-	_pieces.append(piece)
-	# Parked as it is made, rather than built visible and hidden afterwards - otherwise
-	# each one is on stage for the frame between being finished and the next one starting.
-	piece.visible = false
-	piece.position = Vector4(0.0, -40.0, 0.0, 0.0)
+	if piece != null:
+		_pieces.append(piece)
+		# Parked as it is made, rather than built visible and hidden afterwards - otherwise
+		# each one is on stage for the frame between being finished and the next one
+		# starting.
+		piece.visible = false
+		piece.position = Vector4(0.0, -40.0, 0.0, 0.0)
+	if _built == BUILDERS.size():
+		_start_warming()
+
+
+## THE FIRST DRAW IS THE EXPENSIVE ONE. A mesh's draw buffers are built the first time it is
+## drawn, so the finished goat cost 54 ms on the frame VII began, the creature 62 on IX's,
+## and each of the goat's twelve stages 16 to 58 ms as VIII played them, one every second
+## and a half (measured 10 Oct). Built here instead, on a worker, while nobody is looking at
+## any of them - the shapes of part one are done the same way (theatre_primer_4d).
+func _start_warming() -> void:
+	var meshes: Array = []
+	if _goat != null:
+		meshes.append_array(_goat.get("_baked"))
+		meshes.append(_goat.get("_finished"))
+	if _creature != null:
+		for segment in _creature.get("_segments"):
+			meshes.append((segment as MeshInstance4D).mesh)
+	_warm_task = WorkerThreadPool.add_task(Bake.warm.bind(meshes), false, "theatre part two draw buffers")
+
+
+## Waits for the draw buffers, before anything of part two is drawn. Free by then.
+func _warmed() -> void:
+	if _warm_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_warm_task)
+		_warm_task = -1
+
+
+func _exit_tree() -> void:
+	_warmed()
+	for path in _requested:
+		ResourceLoader.load_threaded_get(path)
+	_requested.clear()
 
 
 ## Everything that is left, now. Cheap when the pump has already done it, which is the
@@ -546,6 +613,7 @@ func _build() -> void:
 ## the SAME exhibit - the goat is placed in one and reshaped in the next - so the moment
 ## names its piece rather than the index being assumed to be it.
 func _show_piece(which: int) -> void:
+	_warmed()
 	var wanted: int = -1
 	if which >= 0 and which < MOMENTS.size():
 		wanted = int(MOMENTS[which].get("piece", which))

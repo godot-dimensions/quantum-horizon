@@ -9,8 +9,8 @@ extends Node
 ##   IV   SHAPES WITH NO 3D TWIN        the tiger, spheritorus, ditorus, duocylinder and a
 ##                                      Klein bottle, each rising and turning through W
 ##   V    NOW YOU TURN IT               you hold the shapes yourself and turn them
-##   VI   A LEFT GLOVE, TURNED, IS A    you turn a left glove into a right one, which no
-##        RIGHT GLOVE                   rotation in 3D can do
+##   VI   A LEFT HAND, TURNED, IS A     you turn a left hand into a right one, which no
+##        RIGHT HAND                    rotation in 3D can do
 ##
 ## (III is the mined rock, which theatre_show_4d keeps; VII to IX are part two's.)
 ##
@@ -41,11 +41,18 @@ extends Node
 ## slide, and the arrows still step back and forth. Somebody who does not touch anything
 ## sees the shapes turn by themselves, and the glove turned for them.
 ##
-## A LEFT DRAG TURNS THINGS TOO, on those two slides, and only a clean left click moves the
-## talk on (see is_hands_on and was_clean_click). A click is "forward" everywhere else, and
-## on the one slide that asks you to use the mouse it was an easy way to lose the slide.
+## YOU HOLD THE OBJECT, NOT THE SLICE, on those two slides, so the mouse works the way it
+## does on any object in a viewer: a LEFT drag turns it in 3D, a RIGHT drag turns it through W
+## (Trym, 9 Oct: "since you're grabbing an object rather than rotating your entire slice I'd
+## expect left-click+drag to rotate it around in 3D, and right-click+drag to rotate it in
+## 4D"). Both turn it about the axes of the picture, whichever way the drum stands, so a drag
+## to the right always carries the front of it to the right. Only a clean left click moves
+## the talk on there (see is_hands_on and was_clean_click): a click is "forward" everywhere
+## else, and on the slides that ask you to use the mouse it was an easy way to lose one.
 
 const Shapes := preload("res://ramon/chickenpen/theatre/theatre_shapes_4d.gd")
+const Hand := preload("res://ramon/chickenpen/theatre/theatre_hand_4d.gd")
+const Loft := preload("res://ramon/chickenpen/scripts/loft_builder_4d.gd")
 const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd")
 
 ## How fast a drag turns the thing you are holding: the field camera's own rate, so the
@@ -88,8 +95,13 @@ var _chicken: Node4D
 var _chicken_head: Node4D
 var _ghost_ball: Node4D
 var _ghost_cone: Node4D
-var _ball_cut: Array[MeshInstance4D] = []
+## The ball's cut: one round disc, resized every frame by its basis (see _unit_disc).
+var _ball_disc: MeshInstance4D
 var _cone_cut: Array[MeshInstance4D] = []
+## How many sides the ball's cut and its flat picture have: twice the loft's rings (see
+## _unit_disc).
+const DISC_RINGS := 24
+const DISC_SIDES := DISC_RINGS * 2
 var _hop: float = 0.0
 var _saw_something: bool = false
 var _flat_beat: String = ""
@@ -116,30 +128,45 @@ const ZOO_SCALE := 1.2
 # Slide V.
 var _toy: Array[Node4D] = []
 var _toy_index: int = 0
-var _toy_xw: float = 0.0
-var _toy_zw: float = 0.0
+## How the shape you hold stands, everything you and the idle turn have done to it. Turns
+## are laid on top of it, in the drum's frame, so they compose like a hand on an object.
+var _toy_turn: Projection = Projection.IDENTITY
+## The idle turn's own clock, for the slow nod through z-w it gives the shape.
+var _toy_clock: float = 0.0
 var _toy_idle: float = 99.0
 var _toy_cycle: float = 0.0
-var _left_glove: Node4D
-var _right_glove: Node4D
-var _glove_turn: float = 0.0
-var _glove_done: bool = false
 var _toy_stage: String = ""
 var _touched: bool = false
-var _glove_started: bool = false
+
+# Slide VI.
+## The hand that turns, and the one it is to match.
+var _left_hand: Node4D
+var _right_hand: Node4D
+## How the left hand stands. A right hand exactly when its own W axis points the other way
+## (see _check_glove).
+var _hand_turn: Projection = Projection.IDENTITY
+var _hand_done: bool = false
+var _hand_started: bool = false
+## Where the hands stand above the turntable: their middle, where the shot looks.
+const HAND_Y := 1.65
+const HAND_X := 1.45
 # The left button on the hands-on slides: held, how far it has moved, and when anything
 # last turned an exhibit - so a drag is never mistaken for a click.
 var _left_down: bool = false
 var _left_moved: float = 0.0
 var _last_turn_msec: int = -100000
+## The shot camera's rig, so a drag turns things about the picture's own axes.
+var _shot: Node
 
 
-func setup(table: Node4D, metrics: Node, screen: Node, seat: Node, pane: Node = null) -> void:
+func setup(table: Node4D, metrics: Node, screen: Node, seat: Node, pane: Node = null,
+		shot: Node = null) -> void:
 	_table = table
 	_metrics = metrics
 	_screen = screen
 	_seat = seat
 	_pane = pane
+	_shot = shot
 	# On the main thread: the colour cube is a texture, and textures are the renderer's.
 	_material = TerrainBake.material()
 	_unit = BoxTetraMesh4D.new()
@@ -151,6 +178,13 @@ func _make_shapes() -> void:
 	var made := {"hyperball": Shapes.hyperball(), "tesseract": Shapes.tesseract()}
 	for entry in Shapes.ZOO:
 		made[entry["id"]] = Shapes.zoo_mesh(String(entry["id"]))
+	# Slide VI's two hands, lofted here too: a loft is pure GDScript and some tens of
+	# milliseconds a hand, which is nothing on this thread and a dropped frame on the main one.
+	for side in ["left", "right"]:
+		var hand: Dictionary = Hand.build(side == "right")
+		made["hand_%s" % side] = hand["skin"]
+		made["hand_%s_thumb" % side] = hand["thumb"]
+		made["hand_%s_cuff" % side] = hand["cuff"]
 	# The proxy is built the first time a mesh is drawn, and that first draw is the hitch;
 	# the cave's far room moved it here for the same reason (141 ms down to 17).
 	for id in made:
@@ -175,7 +209,10 @@ func meshes() -> Dictionary:
 	if not _dressed:
 		_dressed = true
 		for id in _made:
-			(_made[id] as ArrayTetraMesh4D).material = _material
+			# The hands are one flat colour each, given by their nodes; the rest are coloured
+			# by the shared colour cube.
+			if _made[id] != null and not String(id).begins_with("hand_"):
+				(_made[id] as ArrayTetraMesh4D).material = _material
 	return _made
 
 
@@ -335,17 +372,37 @@ func _build_sheet() -> Node4D:
 			Vector3(0.0, CONE_H, 0.0), 0.024, ghost)
 	_ghost_cone.visible = false
 
-	# The cuts: a stack of thin strips in the sheet, re-sized every frame to the chord the
-	# sheet makes through the ghost at each height. Strips rather than a mesh because they
-	# can be re-sized by their basis alone, with no mesh rebuilt.
+	# The cone's cut: a stack of thin strips in the sheet, re-sized every frame to the chord
+	# the sheet makes through the ghost at each height. Strips rather than a mesh because
+	# they can be re-sized by their basis alone, with no mesh rebuilt.
 	for i in STRIPS:
-		_ball_cut.append(_box(piece, "BallCut%d" % i, Vector4.ZERO, Vector4(0.01, 0.01, SLICE, 0.5),
-			Color(1.0, 0.62, 0.20)))
 		_cone_cut.append(_box(piece, "ConeCut%d" % i, Vector4.ZERO, Vector4(0.01, 0.01, SLICE, 0.5),
 			Color(0.45, 1.0, 0.55)))
-	for strip in _ball_cut + _cone_cut:
+	for strip in _cone_cut:
 		strip.visible = false
+	# THE BALL'S CUT IS ALWAYS A CIRCLE, so it is one: a disc, sized by its basis. As strips
+	# it was a stack of 26 slabs whose square ends stepped round its edge, and next to the
+	# smooth circle in the flat picture it read as low resolution (Trym, 9 Oct: "low
+	# resolution on the sphere pass through (not on the other objects)"). The cone's cut is
+	# a different curve at every distance, so it keeps its strips.
+	_ball_disc = _mesh_node(piece, "BallCut", _unit_disc())
+	_ball_disc.material_override = _paint(Color(1.0, 0.62, 0.20))
+	_ball_disc.visible = false
 	return piece
+
+
+## A disc of radius one in the sheet's plane: round in x and y with DISC_SIDES sides, a
+## quarter of a metre deep through W either side of the slice, as the strips were, and
+## lofted between two faces along z, which its basis squeezes to the slice's thickness.
+## The loft's frame for a spine along z is (x, w, y), and its rings run pole to pole along
+## the third of those, so the outline in the slice is a polygon of twice its ring count.
+func _unit_disc() -> ArrayTetraMesh4D:
+	var face := {"radius": 1.0, "v_scale": 0.25, "w_scale": 1.0}
+	var near: Dictionary = face.duplicate()
+	near["center"] = Vector4(0.0, 0.0, -0.5, 0.0)
+	var far: Dictionary = face.duplicate()
+	far["center"] = Vector4(0.0, 0.0, 0.5, 0.0)
+	return Loft.build([near, far], DISC_RINGS, 4, true, false, true, 1, false)
 
 
 ## The chicken, flat: a paper cut-out of boxes standing in the sheet, side on, facing the
@@ -431,39 +488,31 @@ func _build_toy() -> Node4D:
 	return piece
 
 
-## Two gloves on the drum, a left and a right.
+## Two lofted hands on the drum, palms to the house: a left one on the left, which you turn,
+## and a right one on the right, to match it against.
 func _build_gloves() -> Node4D:
-	var piece := _piece("Gloves")
-	_left_glove = _glove(piece, "LeftGlove", 1.0)
-	_left_glove.position = Vector4(-1.15, 1.0, 0.0, 0.0)
-	_right_glove = _glove(piece, "RightGlove", -1.0)
-	_right_glove.position = Vector4(1.15, 1.0, 0.0, 0.0)
+	var piece := _piece("Hands")
+	var all: Dictionary = meshes()
+	_left_hand = _hand(piece, "LeftHand", all, "left")
+	_left_hand.position = Vector4(-HAND_X, HAND_Y, 0.0, 0.0)
+	_right_hand = _hand(piece, "RightHand", all, "right")
+	_right_hand.position = Vector4(HAND_X, HAND_Y, 0.0, 0.0)
 	return piece
 
 
-## A glove, palm towards the house. [param thumb] is which side its thumb is on: that is
-## the whole of its handedness, so the thumb is gold and nothing else is.
-func _glove(parent: Node, part: String, thumb: float) -> Node4D:
-	var glove := Node4D.new()
-	glove.name = part
-	parent.add_child(glove)
+## A hand, palm towards the house (theatre_hand_4d). Its thumb is gold and nothing else is:
+## seen palm first, which side the thumb is on is the whole of its handedness.
+func _hand(parent: Node, part: String, all: Dictionary, side: String) -> Node4D:
 	var hand := Node4D.new()
-	hand.name = "Hand"
-	glove.add_child(hand)
-	hand.basis = Basis4D.from_scale_uniform(2.4)
-	var cloth := Color(0.82, 0.88, 1.0)
-	var cuff := Color(0.30, 0.55, 0.95)
-	var gold := Color(1.0, 0.78, 0.25)
-	var w: float = 0.3
-	_box(hand, "Cuff", Vector4(0.0, -0.06, 0.0, 0.0), Vector4(0.36, 0.14, 0.12, w), cuff)
-	_box(hand, "Palm", Vector4(0.0, 0.18, 0.0, 0.0), Vector4(0.34, 0.36, 0.11, w), cloth)
-	for i in 4:
-		var x: float = -0.12 + 0.08 * float(i)
-		var tall: float = [0.20, 0.26, 0.28, 0.24][i] if thumb > 0.0 else [0.24, 0.28, 0.26, 0.20][i]
-		_box(hand, "Finger%d" % i, Vector4(x, 0.36 + tall * 0.5, 0.0, 0.0), Vector4(0.065, tall, 0.09, w), cloth)
-	_box(hand, "Thumb", Vector4(thumb * 0.215, 0.19, 0.0, 0.0), Vector4(0.08, 0.20, 0.09, w), gold,
-		Basis4D.from_xy(thumb * -0.55))
-	return glove
+	hand.name = part
+	parent.add_child(hand)
+	var skin := _mesh_node(hand, "Hand", all["hand_%s" % side])
+	skin.material_override = _paint(Color(0.92, 0.74, 0.62))
+	var thumb := _mesh_node(hand, "Thumb", all["hand_%s_thumb" % side])
+	thumb.material_override = _paint(Color(1.0, 0.78, 0.25))
+	var cuff := _mesh_node(hand, "Cuff", all["hand_%s_cuff" % side])
+	cuff.material_override = _paint(Color(0.30, 0.55, 0.95))
+	return hand
 
 
 # ---------------------------------------------------------------- running the slides
@@ -479,7 +528,7 @@ func enter(id: String) -> void:
 	_visitor_beat = ""
 	_zoo_slot = -1
 	_toy_stage = ""
-	_glove_started = false
+	_hand_started = false
 	_left_down = false
 	_left_moved = 0.0
 	if _pane != null and id != "chicken":
@@ -497,19 +546,19 @@ func enter(id: String) -> void:
 				_screen.call("hide_screen")
 		"toy":
 			_toy_index = 0
-			_toy_xw = 0.0
-			_toy_zw = 0.0
+			_toy_turn = Projection.IDENTITY
+			_toy_clock = 0.0
 			_toy_idle = 99.0
 			_toy_cycle = 0.0
 			_touched = false
 			if _screen != null:
 				_screen.call("hide_screen")
 		"glove":
-			_glove_turn = 0.0
-			_glove_done = false
+			_hand_turn = Projection.IDENTITY
+			_hand_done = false
 			_touched = false
-			if _left_glove != null:
-				_left_glove.basis = Projection.IDENTITY
+			if _left_hand != null:
+				_left_hand.basis = Projection.IDENTITY
 			if _screen != null:
 				_screen.call("hide_screen")
 
@@ -610,13 +659,22 @@ func _run_sheet(tau: float, delta: float) -> void:
 	_flat_beat = beat
 
 
-## Sizes the ball's strips to the sheet's cut through it, [param z] from the sheet, and
+## Sizes the ball's disc to the sheet's cut through it, [param z] from the sheet, and
 ## returns the cut's outline in sheet coordinates. Nothing when the ball is clear of it.
 func _cut_ball(z: float) -> PackedVector2Array:
 	var r: float = sqrt(maxf(0.0, BALL_R * BALL_R - z * z))
-	var centre_y: float = FLOOR_Y + BALL_R
-	return _size_strips(_ball_cut, BALL_X, centre_y - r, centre_y + r,
-		func(y: float) -> float: return sqrt(maxf(0.0, r * r - (y - centre_y) * (y - centre_y))), r > 0.02)
+	var centre := Vector2(BALL_X, FLOOR_Y + BALL_R)
+	_ball_disc.visible = r > 0.02
+	if not _ball_disc.visible:
+		return PackedVector2Array()
+	_ball_disc.position = Vector4(centre.x, centre.y, 0.0, 0.0)
+	# The disc's two faces and their caps span 2.1 along z; squeezed to the slice.
+	_ball_disc.basis = Basis4D.from_scale(Vector4(r, r, SLICE / 2.1, 1.0))
+	var outline := PackedVector2Array()
+	for i in DISC_SIDES:
+		var a: float = TAU * float(i) / float(DISC_SIDES)
+		outline.append(centre + Vector2(sin(a), cos(a)) * r)
+	return outline
 
 
 ## The same for the cone, standing on the floor with its point up: a triangle when the sheet
@@ -787,16 +845,20 @@ func _run_toy(_tau: float, delta: float) -> void:
 	if _toy_stage == "":
 		_toy_stage = "shapes"
 		_say_figures([{"at": _world(Vector4(-1.7, 3.1, 0.0, 0.0)), "value": "YOUR TURN",
-			"side": -1.0, "label": "hold the right mouse button and drag. Scroll for the next shape",
+			"side": -1.0, "label": "left drag turns it in 3D, right drag through W. Scroll for the next shape",
 			"colour": Color(0.80, 0.90, 1.0)}])
 		if _screen != null:
 			_screen.call("show_shadow", "ITS SHADOW", Shapes.shadow_lines(String(Shapes.ZOO[_toy_index]["id"])))
 	_toy_idle += delta
-	# Nobody at the controls: it turns itself and moves on every few seconds, so the slide
-	# is never a still picture of a shape waiting to be touched.
+	# Nobody at the controls: it turns itself through W, nodding a little through z-w as it
+	# goes, and moves on every few seconds, so the slide is never a still picture of a shape
+	# waiting to be touched.
 	if _toy_idle > 2.5:
-		_toy_xw += delta * 0.55
-		_toy_zw = 0.35 * sin(_toy_xw * 0.7)
+		var axes: Array = _view_axes()
+		_toy_clock += delta
+		var nod: float = 0.35 * 0.7 * 0.55 * cos(_toy_clock * 0.55 * 0.7) * delta
+		_toy_turn = _turned(_toy_turn, axes[0], W_AXIS, -delta * 0.55)
+		_toy_turn = _turned(_toy_turn, axes[1], W_AXIS, nod)
 		_toy_cycle += delta
 		if _toy_cycle > 6.0:
 			_toy_cycle = 0.0
@@ -804,51 +866,121 @@ func _run_toy(_tau: float, delta: float) -> void:
 	for i in _toy.size():
 		_toy[i].visible = i == _toy_index
 	var pivot: Node4D = _toy[_toy_index]
-	pivot.basis = Basis4D.from_xw(_toy_xw) * Basis4D.from_zw(_toy_zw)
+	pivot.basis = _toy_turn
 	if _screen != null:
 		_screen.call("set_shadow", _table.basis * pivot.basis)
 
 
 # ---- VI
 
-## Two gloves; turn the left one half way round through W. Turned for you if you have not
+## Two hands; turn the left one half way round through W. Turned for you if you have not
 ## done it by just past half way, so a player who only watches still sees it happen - and
-## then it holds, matched, for the rest of the slide.
+## then it holds, matched, for the rest of the slide. Turning it in 3D stays yours throughout.
 func _run_gloves(tau: float, delta: float) -> void:
-	if not _glove_started:
-		_glove_started = true
+	if not _hand_started:
+		_hand_started = true
 		_glove_figures()
-	if not _glove_done and tau > 0.58:
-		_glove_turn = move_toward(_glove_turn, PI, delta * 1.1)
+	if not _hand_done and tau > 0.58:
+		_turn_hand_home(delta * 1.1)
 	_check_glove()
-	_left_glove.basis = Basis4D.from_xw(_glove_turn)
+	_left_hand.basis = _hand_turn
 
 
-## Half a turn round, either way, and it is a right glove: snapped the rest of the way, and
-## said so. Checked as you drag, not only once a frame, so the answer comes on the movement
-## that earned it.
-func _check_glove() -> void:
-	if _glove_done:
+## Carries the left hand's own W axis towards pointing the other way, by up to [param step]
+## radians, along the shortest way there; straight through x-w (the picture's sideways) if it
+## has not been turned through W at all, where every way is as short as any other.
+func _turn_hand_home(step: float) -> void:
+	var w_axis: Vector4 = _hand_turn.w
+	var across: float = clampf(w_axis.dot(-W_AXIS), -1.0, 1.0)
+	var remaining: float = acos(across)
+	if remaining < 0.0005:
 		return
-	if absf(fposmod(_glove_turn, TAU) - PI) < 0.12:
-		_glove_done = true
-		_glove_turn = PI
+	var towards: Vector4 = -W_AXIS - w_axis * across
+	if towards.length() < 0.001:
+		towards = _view_axes()[0]
+	_hand_turn = _turned(_hand_turn, w_axis, towards.normalized(), minf(step, remaining))
+
+
+## A right hand now? Exactly when its own W axis points the other way: x and w have both
+## changed sign, and the hand, the same at -w as at +w, is its own mirror image. Snapped the
+## rest of the way once it is within seven degrees, and said so. Checked as you drag, not
+## only once a frame, so the answer comes on the movement that earned it.
+func _check_glove() -> void:
+	if _hand_done:
+		return
+	if _hand_turn.w.dot(-W_AXIS) > cos(0.12):
+		_turn_hand_home(PI)
+		_hand_done = true
 		_glove_figures()
 
 
 func _glove_figures() -> void:
-	var left: Vector4 = _world(_left_glove.position + Vector4(0.0, 1.95, 0.0, 0.0))
-	var right: Vector4 = _world(_right_glove.position + Vector4(0.0, 1.95, 0.0, 0.0))
-	if _glove_done:
+	var left: Vector4 = _world(_left_hand.position + Vector4(0.0, 1.55, 0.0, 0.0))
+	var right: Vector4 = _world(_right_hand.position + Vector4(0.0, 1.55, 0.0, 0.0))
+	if _hand_done:
 		_say_figures([{"at": left, "value": "RIGHT", "side": -1.0,
 			"label": "turned, not mirrored", "colour": Color(1.0, 0.82, 0.30)},
 			{"at": right, "value": "RIGHT", "side": 1.0, "label": "the real one",
 			"colour": Color(0.80, 0.90, 1.0)}])
 	else:
 		_say_figures([{"at": left, "value": "LEFT", "side": -1.0,
-			"label": "drag sideways to turn it through W", "colour": Color(1.0, 0.82, 0.30)},
+			"label": "left drag turns it in 3D, right drag through W", "colour": Color(1.0, 0.82, 0.30)},
 			{"at": right, "value": "RIGHT", "side": 1.0, "label": "make the left one match",
 			"colour": Color(0.80, 0.90, 1.0)}])
+
+
+# ---- turning what you hold
+
+const W_AXIS := Vector4(0.0, 0.0, 0.0, 1.0)
+
+
+## The picture's axes in the frame the exhibits stand in (the turntable's): sideways, towards
+## you and up, each level, so a drag means the same thing however far the drum has turned.
+## The drum's own axes when there is no shot camera to read.
+func _view_axes() -> Array:
+	var right := Vector4(1.0, 0.0, 0.0, 0.0)
+	var toward := Vector4(0.0, 0.0, 1.0, 0.0)
+	var eye: Camera4D = _shot.call("live_camera") as Camera4D \
+		if _shot != null and _shot.has_method("live_camera") else null
+	if eye != null and _table != null:
+		var into: Projection = _table.global_basis.inverse()
+		var r: Vector4 = into * eye.global_basis.x
+		var t: Vector4 = into * eye.global_basis.z
+		r = Vector4(r.x, 0.0, r.z, 0.0)
+		t = Vector4(t.x, 0.0, t.z, 0.0)
+		if r.length() > 0.01 and t.length() > 0.01:
+			right = r.normalized()
+			t = t - right * t.dot(right)
+			if t.length() > 0.01:
+				toward = t.normalized()
+	return [right, toward, Vector4(0.0, 1.0, 0.0, 0.0)]
+
+
+## [param basis] with a turn laid on top of it, in the drum's frame: [param a] carried towards
+## [param b] by [param angle], and nothing outside their plane moved. Squared up again every
+## time, so a minute of dragging cannot drift it out of being a rotation.
+static func _turned(basis: Projection, a: Vector4, b: Vector4, angle: float) -> Projection:
+	var c: float = cos(angle) - 1.0
+	var s: float = sin(angle)
+	var cols: Array[Vector4] = []
+	for i in 4:
+		var e := Vector4.ZERO
+		e[i] = 1.0
+		cols.append(e + (a * a[i] + b * b[i]) * c + (b * a[i] - a * b[i]) * s)
+	return Basis4D.orthonormalized(Projection(cols[0], cols[1], cols[2], cols[3]) * basis)
+
+
+## One drag's worth of turning: in 3D with the left button (sideways about the vertical,
+## up and down about the picture's sideways axis), through W with the right (sideways in the
+## plane of the picture's sideways and W, up and down in the plane of depth and W).
+func _drag(basis: Projection, relative: Vector2, in_4d: bool) -> Projection:
+	var axes: Array = _view_axes()
+	var k: float = turn_per_pixel
+	if in_4d:
+		basis = _turned(basis, axes[0], W_AXIS, -relative.x * k)
+		return _turned(basis, axes[1], W_AXIS, relative.y * k)
+	basis = _turned(basis, axes[1], axes[0], relative.x * k)
+	return _turned(basis, axes[1], -axes[2], relative.y * k)
 
 
 func _next_toy(step: int) -> void:
@@ -869,11 +1001,11 @@ func was_clean_click() -> bool:
 	return _left_moved < 8.0 and Time.get_ticks_msec() - _last_turn_msec > 600
 
 
-## Right mouse held and dragged turns whatever you are holding - and so does the left,
-## here, because it is the drag people reach for first; the wheel changes shape. Turning
-## only while you are seated: on your feet the same drag already turns your own slice
-## (pen_orbit_rig_4d), and doing both at once would be two hands on one wheel. The left
-## button is followed either way, so the show can tell a click from a drag.
+## A left drag turns whatever you are holding in 3D, a right drag turns it through W (see
+## the header), and the wheel changes shape. Turning only while you are seated: on your feet
+## the same drag already turns your own slice (pen_orbit_rig_4d), and doing both at once
+## would be two hands on one wheel. The left button is followed either way, so the show can
+## tell a click from a drag.
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_hands_on():
 		return
@@ -890,15 +1022,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		_left_moved += motion.relative.length()
 	if _seat != null and _seat.has_method("is_seated") and not bool(_seat.call("is_seated")):
 		return
-	if motion != null and (Input.is_action_pressed(&"rotate_4d") or _left_down):
+	var in_4d: bool = Input.is_action_pressed(&"rotate_4d")
+	if motion != null and (in_4d or _left_down):
 		_toy_idle = 0.0
 		_touched = true
 		_last_turn_msec = Time.get_ticks_msec()
 		if _current == "toy":
-			_toy_xw -= motion.relative.x * turn_per_pixel
-			_toy_zw += motion.relative.y * turn_per_pixel
-		elif not _glove_done:
-			_glove_turn -= motion.relative.x * turn_per_pixel
+			_toy_turn = _drag(_toy_turn, motion.relative, in_4d)
+		elif not in_4d or not _hand_done:
+			# Once it is a right hand it stays one: through W is done with, in 3D is not,
+			# so it can still be turned to sit against the one it now matches.
+			_hand_turn = _drag(_hand_turn, motion.relative, in_4d)
 			_check_glove()
 		get_viewport().set_input_as_handled()
 		return
@@ -918,4 +1052,4 @@ func was_touched() -> bool:
 
 
 func glove_done() -> bool:
-	return _glove_done
+	return _hand_done

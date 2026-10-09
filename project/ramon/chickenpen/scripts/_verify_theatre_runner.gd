@@ -108,7 +108,7 @@ func _process(_d) -> bool:
 		# so it is the opening-has-run path that builds it, not the chair.
 		var table: Node4D = _root.get_node("Stage/Turntable")
 		if act == 0:
-			for piece in ["FlatWorld", "Visitors", "SliceRock", "Zoo", "Toy", "Gloves"]:
+			for piece in ["FlatWorld", "Visitors", "SliceRock", "Zoo", "Toy", "Hands"]:
 				if table.get_node_or_null(piece) != null:
 					_pieces_at_start.append(piece)
 		if act == ROCK_ACT:
@@ -135,7 +135,7 @@ func _process(_d) -> bool:
 	_check("all six exhibits stand before slide I starts", _pieces_at_start.size() == 6,
 		"%s" % [_pieces_at_start])
 	_check("the rock is a real mined block", _rock_at_slide,
-		"a VoxelMiningBlock with its own colliders, on the drum as the slide opens")
+		"a VoxelMiningBlock, on the drum as the slide opens")
 	_check("and already cut", _carved_at_slide,
 		"the carve was taken before the slide, not on its first frame")
 	_check("it ran all six in order and handed on", _seen.slice(-7) == [0, 1, 2, 3, 4, 5, 6] and _handed_on,
@@ -151,11 +151,15 @@ func _process(_d) -> bool:
 		float(_root.get_node("ExitArch").get("highlight")) > 0.9,
 		"highlight %.2f - usable all along, announced at the end"
 			% float(_root.get_node("ExitArch").get("highlight")))
-	var voxels: Node = _root.get_node_or_null("Stage/Turntable/SliceRock/Rock/Voxels")
-	_check("and somebody had been at the rock with a pick", bool(_show.get("_carved"))
-		and voxels != null and voxels.get_child_count() > 0,
-		"%d surface colliders round the tunnel" % (voxels.get_child_count()
-			if voxels != null else -1))
+	# The tunnel is in the mesh: an uncut block of this recipe is 6,000 tetrahedra, and the
+	# blows add the tunnel's walls. Read from the bake now (theatre_show_4d's _the_rock), so
+	# there are no mining colliders left to count - nobody mines it on stage.
+	var ground := _root.get_node_or_null("Stage/Turntable/SliceRock/Rock/Ground") as MeshInstance4D
+	var cells: int = 0
+	if ground != null and ground.mesh is ArrayTetraMesh4D:
+		cells = (ground.mesh as ArrayTetraMesh4D).get_simplex_cell_vertex_indices().size() / 4
+	_check("and somebody had been at the rock with a pick", bool(_show.get("_carved")) and cells > 6000,
+		"%d tetrahedra, an uncut block has 6000" % cells)
 	print("\n%d FAIL(s)" % _fails.size())
 	quit(1 if _fails.size() > 0 else 0)
 	return true

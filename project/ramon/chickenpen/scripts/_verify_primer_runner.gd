@@ -10,7 +10,8 @@ extends SceneTree
 ##   IV   all five shapes come up, in order, and each is turned through W while it is up
 ##   V    a right-button drag turns the shape, the wheel changes it, a left drag turns it
 ##        too without moving the talk on, and a clean left click still does
-##   VI   turning the left glove half way round through W makes it a right glove
+##   VI   turning the left hand in 3D leaves it a left hand; half way round through W makes
+##        it a right hand
 ##
 ## SEATED, because slide V only takes the controls from somebody in the chair - on your
 ## feet the same drag turns your own slice. The input is handed to the primer directly:
@@ -29,7 +30,8 @@ var _primer: Node
 var _seat: Node
 var _player: CharacterBody4D
 var _sat := false
-var _max_strips := 0
+## The ball's cut at its widest: the disc's radius (theatre_primer_4d's BALL_R is 0.72).
+var _max_disc := 0.0
 var _max_cone := 0
 var _flat_seen := false
 var _hopped := false
@@ -43,6 +45,7 @@ var _toy_turned := false
 var _toy_swapped := false
 var _glove_tried := false
 var _glove_matched := false
+var _hand_left_after_3d := false
 var _left_drag_turned := false
 var _left_drag_stayed := false
 var _clean_click_moved_on := false
@@ -100,11 +103,9 @@ func _process(_d) -> bool:
 	var screen: Node = _root.get_node("UI/Screen")
 	match act:
 		0:
-			var lit := 0
-			for strip in (_primer.get("_ball_cut") as Array):
-				if (strip as Node4D).visible:
-					lit += 1
-			_max_strips = maxi(_max_strips, lit)
+			var disc: Node4D = _primer.get("_ball_disc") as Node4D
+			if disc != null and disc.visible:
+				_max_disc = maxf(_max_disc, disc.basis.x.length())
 			var cone := 0
 			for strip in (_primer.get("_cone_cut") as Array):
 				if (strip as Node4D).visible:
@@ -137,12 +138,15 @@ func _process(_d) -> bool:
 		4:
 			var stage: String = String(_primer.get("_toy_stage"))
 			if stage == "shapes" and _toy_tried and not _left_drag_turned and tau > 0.3:
-				# A drag with the LEFT button: it turns the shape, and the talk stays put.
-				var before: float = float(_primer.get("_toy_xw"))
+				# A drag with the LEFT button: it turns the shape in 3D - how far each of its
+				# axes reaches into W (the basis's W row) does not change; its own W axis can,
+				# if the right drag before this tipped it into x or z - and the talk stays put.
+				var before: Projection = _primer.get("_toy_turn")
 				_left_click(true)
 				_left_motion(Vector2(-90.0, 0.0))
 				_left_click(false)
-				_left_drag_turned = absf(float(_primer.get("_toy_xw")) - before) > 0.3
+				var after: Projection = _primer.get("_toy_turn")
+				_left_drag_turned = _moved(before, after) > 0.3 and _w_row(before).distance_to(_w_row(after)) < 0.001
 				_left_drag_stayed = int(_show.call("current_act")) == 4
 				# A moment later, a clean click - press and release, no movement - moves on.
 				_primer.set("_last_turn_msec", -100000)
@@ -151,10 +155,12 @@ func _process(_d) -> bool:
 				_clean_click_moved_on = int(_show.call("current_act")) == 5
 			if stage == "shapes" and not _toy_tried and tau > 0.1:
 				_toy_tried = true
-				var before: float = float(_primer.get("_toy_xw"))
+				var before: Projection = _primer.get("_toy_turn")
 				var index: int = int(_primer.get("_toy_index"))
 				_drag(Vector2(-120.0, 40.0))
-				_toy_turned = absf(float(_primer.get("_toy_xw")) - before) > 0.3
+				var after: Projection = _primer.get("_toy_turn")
+				# Through W: its own W axis has moved.
+				_toy_turned = before.w.distance_to(after.w) > 0.3
 				var wheel := InputEventMouseButton.new()
 				wheel.button_index = MOUSE_BUTTON_WHEEL_DOWN
 				wheel.pressed = true
@@ -163,8 +169,14 @@ func _process(_d) -> bool:
 		5:
 			if not _glove_tried and tau > 0.05:
 				_glove_tried = true
-				# Half a turn through W, in the direction a drag to the left turns it.
+				# First a whole turn in 3D with the LEFT button, every way it goes: still a
+				# left hand. Then half a turn through W with the right: a right one.
 				var pixels: float = PI / float(_primer.get("turn_per_pixel"))
+				_left_click(true)
+				for i in 20:
+					_left_motion(Vector2(-pixels / 10.0, pixels / 20.0))
+				_left_click(false)
+				_hand_left_after_3d = not bool(_primer.call("glove_done"))
 				for i in 20:
 					_drag(Vector2(-pixels / 20.0, 0.0))
 				_glove_matched = bool(_primer.call("glove_done"))
@@ -205,8 +217,8 @@ func _drag(by: Vector2) -> void:
 
 func _report() -> bool:
 	print("\n--- I. what you see is a slice ---")
-	_check("the sheet cuts the ball into a disc", _max_strips > 12,
-		"%d strips lit at the widest" % _max_strips)
+	_check("the sheet cuts the ball into a disc", _max_disc > 0.6,
+		"%.2f m across at the widest (the ball is 0.72)" % _max_disc)
 	_check("and the cone into a triangle", _max_cone > 12, "%d strips lit" % _max_cone)
 	_check("the flat view shows the chicken's world", _flat_seen, "the screen in flat mode")
 	_check("and the chicken jumps when it appears", _hopped, "off its floor line")
@@ -221,14 +233,26 @@ func _report() -> bool:
 	_check("and each is turned through W while it is up", _zoo_turned.size() == 5,
 		"%d of 5" % _zoo_turned.size())
 	print("\n--- V. now you turn it ---")
-	_check("a right-button drag turns it", _toy_tried and _toy_turned, "the x-w angle moved")
+	_check("a right-button drag turns it through W", _toy_tried and _toy_turned, "its own W axis moved")
 	_check("and the wheel changes the shape", _toy_swapped, "next one along")
-	_check("a left drag turns it too", _left_drag_turned, "the x-w angle moved")
+	_check("a left drag turns it in 3D", _left_drag_turned, "turned, nothing moved into or out of W")
 	_check("and does not move the talk on", _left_drag_stayed, "still on slide V")
 	_check("while a clean left click still does", _clean_click_moved_on, "on to slide VI")
-	print("\n--- VI. a left glove, turned, is a right glove ---")
-	_check("half a turn through W makes a left glove a right one", _glove_tried and _glove_matched,
+	print("\n--- VI. a left hand, turned, is a right hand ---")
+	_check("turned every way in 3D it stays a left hand", _glove_tried and _hand_left_after_3d,
+		"not matched")
+	_check("half a turn through W makes a left hand a right one", _glove_tried and _glove_matched,
 		"matched and snapped")
 	print("\n%d FAIL(s)" % _fails.size())
 	quit(1 if _fails.size() > 0 else 0)
 	return true
+
+
+## How far one basis is from another, column by column.
+static func _moved(a: Projection, b: Projection) -> float:
+	return a.x.distance_to(b.x) + a.y.distance_to(b.y) + a.z.distance_to(b.z) + a.w.distance_to(b.w)
+
+
+## How far each axis of [param b] reaches into W.
+static func _w_row(b: Projection) -> Vector4:
+	return Vector4(b.x.w, b.y.w, b.z.w, b.w.w)

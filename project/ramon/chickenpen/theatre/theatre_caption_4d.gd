@@ -44,6 +44,13 @@ var _figure: String = ""
 var _nav: String = ""
 var _tier: String = ""
 var _fade: float = 0.0
+## What the band was last drawn for. The canvas keeps a drawing until it is redrawn, so the
+## band is redrawn only while it fades in, or when the words or the window change - not
+## every frame, which cost a millisecond a frame on every slide of the talk (measured 10
+## Oct, _measure_slide1_parts_runner): the greedy wrap below measures the text word by word.
+var _drawn_for: Vector2 = Vector2.ZERO
+## The last wraps, keyed by what they were wrapped for.
+var _wraps: Dictionary = {}
 
 
 func _ready() -> void:
@@ -61,18 +68,23 @@ func show_act(title: String, body: String, figure: String, tier: String = "",
 	_nav = nav
 	_tier = tier
 	_fade = 0.0
+	_wraps.clear()
+	queue_redraw()
 
 
 func _process(delta: float) -> void:
 	if _fade < 1.0:
 		_fade = minf(_fade + delta / maxf(fade_seconds, 0.01), 1.0)
-	queue_redraw()
+		queue_redraw()
+	elif get_viewport_rect().size != _drawn_for:
+		queue_redraw()
 
 
 func _draw() -> void:
+	var screen: Vector2 = get_viewport_rect().size
+	_drawn_for = screen
 	if _body == "" and _title == "":
 		return
-	var screen: Vector2 = get_viewport_rect().size
 	var alpha: float = _fade
 	var font: Font = ThemeDB.fallback_font
 	var pad: float = screen.x * 0.07
@@ -151,8 +163,12 @@ func _draw() -> void:
 			y += lead
 
 
-## Greedy wrap. Enough for three lines of a caption, and it never needs to be more.
+## Greedy wrap. Enough for three lines of a caption, and it never needs to be more. Kept
+## until the words or the window change.
 func _wrap(font: Font, text: String, size: int, width: float) -> PackedStringArray:
+	var key: String = "%d|%d|%s" % [size, int(width), text]
+	if _wraps.has(key):
+		return _wraps[key]
 	var out := PackedStringArray()
 	if text == "":
 		return out
@@ -167,4 +183,5 @@ func _wrap(font: Font, text: String, size: int, width: float) -> PackedStringArr
 			line = tryout
 	if line != "":
 		out.append(line)
+	_wraps[key] = out
 	return out
