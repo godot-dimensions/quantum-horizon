@@ -58,6 +58,10 @@ const AVATAR := preload("res://ramon/chickenpen/scripts/block_avatar_4d.gd")
 ## Turned to stand along the back wall instead of across it.
 @export_range(-180.0, 180.0, 5.0) var shelf_yaw_degrees: float = -90.0: set = _set_shelf_yaw
 @export var shelf_size: Vector3 = Vector3(1.15, 1.55, 0.32): set = _set_shelf_size
+## Where the case reaches in W, in his frame (the shed's: both stand at W 0, turned only in x and z):
+## from the kata end wall's inside face (the shed's w_depth / 2 - wall_thick) to a little past the
+## room's middle.
+@export var shelf_w_span: Vector2 = Vector2(-1.56, 0.3): set = _set_shelf_w
 @export_range(2, 6, 1) var shelf_rows: int = 3: set = _set_shelf_rows
 ## Books are drawn as spines of varying width and height, in a fixed palette rather than
 ## random colours - random reads as noise, a palette reads as a shelf somebody filled.
@@ -108,6 +112,7 @@ func _set_timber(v: Color) -> void: timber = v; _later()
 func _set_shelf_at(v: Vector4) -> void: shelf_offset = v; _later()
 func _set_shelf_yaw(v: float) -> void: shelf_yaw_degrees = v; _later()
 func _set_shelf_size(v: Vector3) -> void: shelf_size = v; _later()
+func _set_shelf_w(v: Vector2) -> void: shelf_w_span = v; _later()
 func _set_shelf_rows(v: int) -> void: shelf_rows = v; _later()
 func _set_books(v: PackedColorArray) -> void: book_colors = v; _later()
 func _set_trousers(v: Color) -> void: trousers = v; _later()
@@ -129,11 +134,16 @@ func rebuild() -> void:
 
 	var desk_top: float = 0.62
 	_box(self, "DeskTop", Vector4(0.0, desk_top, 0.0, 0.0), Vector3(1.05, 0.07, 0.56), timber)
+	# A leg at each of the top's eight corners in x, z and W, square across all three (the same
+	# timber as the four legs it had, 0.07 by 0.07 and 0.45 deep in W, shared out: a side of
+	# cbrt(4 x 0.07^2 x 0.45 / 8)), inset from the W edges as from the x ones.
+	var leg: float = pow(4.0 * 0.07 * 0.07 * 0.45 / 8.0, 1.0 / 3.0)
 	for sx in [-1.0, 1.0]:
 		for sz in [-1.0, 1.0]:
-			_box(self, "DeskLeg%s%s" % ["P" if sx > 0.0 else "N", "P" if sz > 0.0 else "N"],
-				Vector4(sx * 0.46, desk_top * 0.5, sz * 0.22, 0.0),
-				Vector3(0.07, desk_top, 0.07), timber)
+			for sw in [1.0, -1.0]:
+				_box(self, "DeskLeg%s%s%s" % ["P" if sx > 0.0 else "N", "P" if sz > 0.0 else "N", "P" if sw > 0.0 else "N"],
+					Vector4(sx * 0.46, desk_top * 0.5, sz * 0.22, sw * 0.46),
+					Vector3(leg, desk_top, leg), timber, leg)
 	_box(self, "Stool", Vector4(0.0, seat_height * 0.5, seat_offset, 0.0),
 		Vector3(0.40, seat_height, 0.40), timber)
 
@@ -151,8 +161,9 @@ func rebuild() -> void:
 	# sitting there. The hinge is at the far edge; leaning the other way folds it shut.
 	lid.basis = Basis4D.from_yz(-0.30)
 	lid.position += Vector4(0.0, 0.12, 0.0, 0.0)
+	# Inside the lid's edges in W as in x: a 2.5 cm border each side (the lid is 0.45 deep in W).
 	_box(lid, "Screen", Vector4(0.0, 0.0, 0.017, 0.0), Vector3(0.35, 0.22, 0.004),
-		Color(0.40, 0.66, 0.58))
+		Color(0.40, 0.66, 0.58), 0.40)
 
 	# Him. Properties BEFORE add_child: the avatar builds itself in _ready, which fires the
 	# moment it is parented, and anything set afterwards arrives too late to affect it.
@@ -397,15 +408,22 @@ func _bookshelf() -> void:
 	var tall: float = shelf_size.y
 	var deep: float = shelf_size.z
 	var panel: float = 0.05
+	# Every panel runs the case's whole span in W, and two more close it at the ends of that span.
+	var span_w: float = absf(shelf_w_span.y - shelf_w_span.x)
+	var mid_w: float = (shelf_w_span.x + shelf_w_span.y) * 0.5
 
-	_box(case, "ShelfBack", Vector4(0.0, tall * 0.5, -deep * 0.5 + panel * 0.5, 0.0),
-		Vector3(wide, tall, panel), timber)
+	_box(case, "ShelfBack", Vector4(0.0, tall * 0.5, -deep * 0.5 + panel * 0.5, mid_w),
+		Vector3(wide, tall, panel), timber, span_w)
 	for sx in [-1.0, 1.0]:
 		_box(case, "ShelfSide%s" % ("P" if sx > 0.0 else "N"),
-			Vector4(sx * (wide * 0.5 - panel * 0.5), tall * 0.5, 0.0, 0.0),
-			Vector3(panel, tall, deep), timber)
-	_box(case, "ShelfTop", Vector4(0.0, tall - panel * 0.5, 0.0, 0.0),
-		Vector3(wide, panel, deep), timber)
+			Vector4(sx * (wide * 0.5 - panel * 0.5), tall * 0.5, 0.0, mid_w),
+			Vector3(panel, tall, deep), timber, span_w)
+	for sw in [1.0, -1.0]:
+		_box(case, "ShelfSideW%s" % ("P" if sw > 0.0 else "N"),
+			Vector4(0.0, tall * 0.5, 0.0, mid_w + sw * (span_w * 0.5 - panel * 0.5)),
+			Vector3(wide, tall, deep), timber, panel)
+	_box(case, "ShelfTop", Vector4(0.0, tall - panel * 0.5, 0.0, mid_w),
+		Vector3(wide, panel, deep), timber, span_w)
 
 	# Rows, and the books standing on each of them.
 	var inner: float = wide - panel * 2.0
@@ -413,25 +431,83 @@ func _bookshelf() -> void:
 	var gap: float = (tall - panel) / float(shelf_rows)
 	for row in shelf_rows + 1:
 		var y: float = panel * 0.5 + gap * float(row)
-		_box(case, "Shelf%d" % row, Vector4(0.0, y, 0.0, 0.0),
-			Vector3(wide, panel, deep), timber)
+		_box(case, "Shelf%d" % row, Vector4(0.0, y, 0.0, mid_w),
+			Vector3(wide, panel, deep), timber, span_w)
 		if row >= shelf_rows or book_colors.is_empty():
 			continue
-		var x: float = -inner * 0.5
-		var index: int = row * 3
-		while x < inner * 0.5 - 0.03:
-			# Widths and heights vary by a repeating pattern rather than at random: a shelf
-			# of identical books reads as a texture, and a shelf of noise reads as rubble.
-			var thick: float = 0.035 + 0.022 * float(index % 4)
-			if x + thick > inner * 0.5:
-				break
-			var height: float = gap * (0.62 + 0.09 * float(index % 3))
-			_box(case, "Book%d_%d" % [row, index],
-				Vector4(x + thick * 0.5, y + panel * 0.5 + height * 0.5, 0.0, 0.0),
-				Vector3(thick, height, deep * 0.78),
-				book_colors[index % book_colors.size()])
-			x += thick + 0.008
-			index += 1
+		_shelf_books(case, row, y + panel * 0.5, gap - panel,
+			Rect2(-inner * 0.5, shelf_w_span.x + panel, inner, span_w - panel * 2.0), deep)
+
+
+## THE BOOKS ON ONE SHELF, PUT THERE BY A FOUR-DIMENSIONAL READER. A book stands up (tall in y) and
+## reaches into the case (deep in z), and a reader keeps it that way: stacked or set behind another it
+## could not be taken out. But across the shelf there are two directions, x and W, and nothing to say
+## which way a book's narrow side faces, so the shelf's floor in x and W is a rectangle to put narrow
+## rectangles in, any way round.
+##
+## Not in rows (a librarian's shelf), and not at random (rubble): the floor is cut into blocks by a few
+## uneven cuts, and each block is a cluster of books stood one way, its narrow side along x or along W,
+## in lanes that each fill on their own - so lanes do not line up, a book sits anywhere in its lane's
+## width, each is twisted a little in x and W, and now and then one is missing. [param floor] is the
+## shelf's free floor in x and W (its x, its W), [param room] the height above it.
+func _shelf_books(case: Node4D, row: int, base_y: float, room: float, floor: Rect2, deep: float) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7919 * (row + 1)
+	var blocks: Array[Rect2] = []
+	_split_floor(floor, rng, blocks)
+	var index: int = 0
+	for block in blocks:
+		# u along the books' narrow sides (one after another), v across them (their width).
+		var along_x: bool = rng.randf() < 0.5
+		var u_len: float = block.size.x if along_x else block.size.y
+		var v_len: float = block.size.y if along_x else block.size.x
+		var lanes: int = maxi(1, roundi(v_len / 0.23))
+		var lane: float = v_len / float(lanes)
+		for k in lanes:
+			var u: float = rng.randf_range(0.0, 0.02)
+			while true:
+				var thick: float = rng.randf_range(0.03, 0.075)
+				if u + thick > u_len:
+					break
+				if rng.randf() < 0.07:
+					# One taken out.
+					u += rng.randf_range(0.03, 0.08)
+					continue
+				var wide: float = minf(lane * rng.randf_range(0.78, 0.96), 0.3)
+				if wide < 0.08:
+					break
+				var v: float = lane * float(k) + rng.randf_range(0.0, lane - wide)
+				var at_u: float = u + thick * 0.5
+				var at_v: float = v + wide * 0.5
+				var at := Vector2(block.position.x + at_u, block.position.y + at_v) if along_x \
+					else Vector2(block.position.x + at_v, block.position.y + at_u)
+				var tall: float = room * rng.randf_range(0.62, 0.9)
+				var book: MeshInstance4D = _box(case, "Book%d_%d" % [row, index],
+					Vector4(at.x, base_y + tall * 0.5, 0.0, at.y),
+					Vector3(thick if along_x else wide, tall, deep * 0.78),
+					book_colors[rng.randi() % book_colors.size()], wide if along_x else thick)
+				book.basis = Basis4D.from_xw(rng.randf_range(-0.035, 0.035))
+				u += thick + rng.randf_range(0.003, 0.012)
+				index += 1
+
+
+## [param r] cut into blocks for [method _shelf_books]: along its longer side at an uneven place, again
+## and again, until a block is small enough to be one cluster of books (and sometimes stops sooner).
+func _split_floor(r: Rect2, rng: RandomNumberGenerator, out: Array[Rect2]) -> void:
+	var longest: float = maxf(r.size.x, r.size.y)
+	if longest <= 0.55 or (longest <= 0.8 and rng.randf() < 0.3):
+		out.append(r)
+		return
+	var f: float = rng.randf_range(0.35, 0.65)
+	var space: float = 0.012
+	if r.size.x >= r.size.y:
+		var cut: float = r.size.x * f
+		_split_floor(Rect2(r.position, Vector2(cut - space * 0.5, r.size.y)), rng, out)
+		_split_floor(Rect2(r.position + Vector2(cut + space * 0.5, 0.0), Vector2(r.size.x - cut - space * 0.5, r.size.y)), rng, out)
+	else:
+		var cut: float = r.size.y * f
+		_split_floor(Rect2(r.position, Vector2(r.size.x, cut - space * 0.5)), rng, out)
+		_split_floor(Rect2(r.position + Vector2(0.0, cut + space * 0.5), Vector2(r.size.x, r.size.y - cut - space * 0.5)), rng, out)
 
 
 ## 0 is seated at the laptop, 1 is standing clear of the stool, and every value between is
