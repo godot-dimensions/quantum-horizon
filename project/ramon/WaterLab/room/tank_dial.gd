@@ -35,8 +35,10 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	# Under a CanvasLayer the anchors have no parent rect to fill: the window's size, each frame.
 	size = get_viewport_rect().size
+	var before: float = _a
 	_a = move_toward(_a, 1.0 if shown else 0.0, delta * 4.0)
-	if _a > 0.0 or shown:
+	# Redrawn while it fades too, down to the frame it reaches nothing (it left a ghost otherwise).
+	if _a > 0.0 or shown or before != _a:
 		queue_redraw()
 
 
@@ -103,11 +105,11 @@ func _draw() -> void:
 			draw_circle(pp, (4.0 if on else 3.0) * u, ink if on else dim)
 			if on:
 				draw_arc(pp, 7.0 * u, 0.0, TAU, 16, accent, maxf(1.0, 1.2 * u), true)
-	for pair in [["eel", Color(0.75, 0.68, 0.35)], ["crab", Color(1.0, 0.45, 0.32)]]:
+	for pair in [["eel", Color(0.75, 0.68, 0.35)], ["crab", Color(1.0, 0.45, 0.32)], ["shark", Color(0.80, 0.84, 0.90)]]:
 		var n: Node = tank.get(String(pair[0]))
 		if n == null:
 			continue
-		var np: Vector4 = n.get("_p")
+		var np: Vector4 = n.get("p") if String(pair[0]) == "shark" else n.get("_p")
 		var q3: Vector2 = rot.call(np.x, np.w)
 		draw_circle(at.call(q3.x, q3.y), 5.0 * u, Color(pair[1], _a))
 	draw_string(fs, Vector2(box.position.x + pad, box.end.y - 12.0 * u), "RIGHT DRAG  turn     WHEEL  slide     R  back", HORIZONTAL_ALIGNMENT_LEFT, -1, int(12 * u), dim)

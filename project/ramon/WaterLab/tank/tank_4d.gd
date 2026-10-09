@@ -36,6 +36,7 @@ const Weed := preload("res://ramon/WaterLab/life/weed_4d.gd")
 const Bubbles := preload("res://ramon/WaterLab/life/bubbles_4d.gd")
 const Dunes := preload("res://ramon/WaterLab/life/dunes_4d.gd")
 const Snow := preload("res://ramon/WaterLab/life/snow_4d.gd")
+const Shark := preload("res://ramon/WaterLab/life/shark_4d.gd")
 
 const GENERATED := "tank_generated"
 
@@ -84,6 +85,7 @@ var reef: Node4D
 var eel: Node4D
 var crab: Node4D
 var dunes: Node4D
+var shark: Node4D
 ## The contents turned through W (in the x-W plane, along the tank, so nothing turns out through the
 ## glass) and slid through W, by the room's gizmo (Ramon: "W rotate whats in the fish tank but not the
 ## rest"). The glass, the frame, the stand and the water stay as they are.
@@ -299,6 +301,15 @@ func _build_life() -> void:
 	koi.set("ground", dunes)
 	koi.set("arches", reef.get("arches"))
 	life.add_child(koi)
+	shark = Node4D.new()
+	shark.name = "Hammerhead"
+	shark.set_script(Shark)
+	shark.set("half_extents", he)
+	shark.set("floor_y", floor_y)
+	shark.set("ground", dunes)
+	shark.set("obstacles", obstacles)
+	life.add_child(shark)
+	koi.set("predator", shark)
 	set_contents(contents_turn, contents_slide)
 
 

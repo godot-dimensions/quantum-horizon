@@ -61,6 +61,8 @@ var obstacles: Array = []
 var ground: Node = null
 ## The arches' openings (reef_4d.gd): now and then a koi swims through one.
 var arches: Array = []
+## Something big the koi keep clear of (the hammerhead, shark_4d.gd: its `p`), or null.
+var predator: Node = null
 ## Where you are, in the tank's frame (set by the room each frame; far away when unset).
 var viewer := Vector4(0.0, 0.0, 1000.0, 0.0)
 
@@ -317,6 +319,13 @@ func _swim(i: int, dt: float) -> void:
 		var dl: float = d.length()
 		if dl < reach and dl > 0.0001:
 			push += d / dl * (reach - dl) / reach
+	if predator != null:
+		# Give the shark room: a wide berth, pushed hard, and quicker for it.
+		var dp: Vector4 = p - (predator.get("p") as Vector4)
+		var dl3: float = dp.length()
+		if dl3 < 2.2 and dl3 > 0.001:
+			push += dp / dl3 * (2.2 - dl3) * 1.8
+			want_speed = maxf(want_speed, cruise_bl * L * 1.6)
 	for ob in obstacles:
 		var c: Vector4 = ob[0]
 		var r: float = float(ob[1]) + L * 0.6

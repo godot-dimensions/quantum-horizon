@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://ramon/WaterLab/water_lab_4d.gd" id="1_root"]
 [ext_resource type="Script" path="res://ramon/WaterLab/carried/LabKit/lab_room_4d.gd" id="2_room"]
@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://ramon/WaterLab/carried/PathCreator/graph/path_network_4d.gd" id="14_net"]
 [ext_resource type="Resource" path="res://ramon/WaterLab/paths/hall.tres" id="15_hall"]
 [ext_resource type="Script" path="res://ramon/WaterLab/shared/water_target_4d.gd" id="16_target"]
+[ext_resource type="Script" path="res://ramon/WaterLab/room/fish_wall_4d.gd" id="17_fishwall"]
 
 [node name="WaterLab" type="Node4D"]
 script = ExtResource("1_root")
@@ -46,6 +47,16 @@ outside = true
 kind = "sign"
 title = "WATER LAB"
 subtitle = "QUANTUM HORIZON  ·  WATER SYSTEMS"
+glow = 0.3
+
+[node name="Title" type="Node" parent="Hall"]
+script = ExtResource("4_text")
+side = "n"
+along = Vector2(-12.6, 4.2)
+up = Vector2(7.4, 10.4)
+kind = "sign"
+title = "WATER LAB"
+subtitle = "QUANTUM HORIZON  ·  WATER SYSTEMS  ·  THE TANK"
 glow = 0.3
 
 [node name="Airlock" type="Node4D" parent="."]
@@ -79,6 +90,25 @@ position = Vector4(10, 0, 10.4, 0)
 script = ExtResource("6_showcase")
 panel_at = Vector2(-2.3, -1.3)
 panel_face = Vector2(0, -2.9)
+
+[node name="FishWall" type="Node4D" parent="."]
+position = Vector4(-0.4, 0, 13.82, 0)
+basis = Projection(-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)
+script = ExtResource("17_fishwall")
+
+[node name="FishWallWash" type="Node4D" parent="."]
+position = Vector4(-0.4, 10.6, 9, 0)
+script = ExtResource("8_light")
+aim = Vector3(-0.4, 3.2, 14)
+angle = 85.0
+softness = 2.0
+reach = 15.0
+attenuation = 0.25
+energy = {
+"bright": 1.4,
+"dark": 1.9
+}
+fixture_at = 10.94
 
 [node name="TankLight1" type="Node4D" parent="."]
 position = Vector4(-12, 10.6, -9.2, 0)
