@@ -7,11 +7,11 @@ extends Node4D
 ## TWO PANELS SIDE BY SIDE, blue slabs in the kit's code blue, each a page drawn in its own viewport and
 ## printed on the slab (the kit's way). Each page shows one of the tank's animals at a time and turns to
 ## the next every `seconds`, the two panels half a turn apart:
-##   on the left, the animal on a TURNTABLE, live: a small 3D studio of its own (its own World3D, a
-##   camera, a key light, deep blue), the animal drawn by its own shader (the koi swimming on the spot,
-##   the eel waving, the crab stepping), the hammerhead as the true cut of its 4D loft at w = 0
-##   (shared/slice_mesh.gd): a Camera4D can only be the one current camera of the whole game, so a 4D
-##   body is shown here by its slice;
+##   on the left, the animal on a TURNTABLE: a small 3D studio of its own (its own World3D, a camera, a
+##   key light, deep blue). Every animal is lofted in 4D (round 5) and shown as the true cut of its 4D
+##   body at w = 0 (shared/slice_mesh.gd), painted as in the tank (the koi by
+##   life/koi_picture.gdshader, the eel and the crab by life/loft_picture.gdshader): a Camera4D can only
+##   be the one current camera of the whole game, so a 4D body is shown here by its slice;
 ##   on the right, its name and its Latin, a line, and its specs: size, how it swims, how it is drawn,
 ##   what it costs.
 ##
@@ -22,12 +22,11 @@ const LabGrid := preload("res://ramon/WaterLab/carried/LabKit/lab_grid.gd")
 const LabPrint := preload("res://ramon/WaterLab/carried/LabKit/lab_print.gd")
 const Style := preload("res://ramon/WaterLab/carried/kit/kit_style.gd")
 const Build := preload("res://ramon/WaterLab/carried/scripts/chamber_build.gd")
-const KoiMesh := preload("res://ramon/WaterLab/life/koi_mesh.gd")
-const KOI := preload("res://ramon/WaterLab/life/koi.gdshader")
-const EEL := preload("res://ramon/WaterLab/life/eel.gdshader")
-const CRAB := preload("res://ramon/WaterLab/life/crab.gdshader")
-const Eel := preload("res://ramon/WaterLab/life/eel_4d.gd")
-const Crab := preload("res://ramon/WaterLab/life/crab_4d.gd")
+const KoiLoft := preload("res://ramon/WaterLab/life/koi_loft_4d.gd")
+const KOI_PICTURE := preload("res://ramon/WaterLab/life/koi_picture.gdshader")
+const EelLoft := preload("res://ramon/WaterLab/life/eel_loft_4d.gd")
+const LOFT_PICTURE := preload("res://ramon/WaterLab/life/loft_picture.gdshader")
+const CrabLoft := preload("res://ramon/WaterLab/life/crab_loft_4d.gd")
 const Shark := preload("res://ramon/WaterLab/life/shark_4d.gd")
 const SliceMesh := preload("res://ramon/WaterLab/shared/slice_mesh.gd")
 
@@ -56,19 +55,19 @@ const PPM := 200.0
 const CARDS := [
 	{"kind": "koi", "variety": 0, "name": "Kohaku", "latin": "Cyprinus rubrofuscus  ·  koi", "kicker": "WHITE WITH RED, THE FIRST OF THE KOI",
 		"line": "Swims with a wave down its body, glides between beats, bends into a C to turn.",
-		"rows": [["Length here", "0.6 to 1.0 m"], ["Tail beats", "about 1.4 a second at cruise"], ["The wave", "0.02 of its length at the head, 0.10 at the tail"], ["Drawn as", "a 3D shape stretched through W, cut by your slice"], ["In the tank", "16 koi, 4 of them off your slice"]]},
+		"rows": [["Length here", "0.6 to 1.0 m"], ["Tail beats", "about 1.4 a second at cruise"], ["The wave", "0.02 of its length at the head, 0.10 at the tail"], ["Drawn as", "lofted in 4D, seven rigid pieces"], ["In the tank", "16 koi, 4 of them off your slice"]]},
 	{"kind": "koi", "variety": 2, "lift": 0.16, "name": "Showa", "latin": "Cyprinus rubrofuscus  ·  koi", "kicker": "BLACK OVER WHITE AND RED",
 		"line": "Black reaching the head, black at the root of each pectoral fin: the pattern grown by noise on its back.",
-		"rows": [["Pattern", "warped noise, laid out as a koi is judged, from above"], ["Fins", "black at the root, white rays"], ["Shader", "one draw call for every koi"], ["Bent on", "the graphics card, every frame"]]},
+		"rows": [["Pattern", "warped noise over its 4D back, as a koi is judged, from above"], ["Fins", "black at the root, white rays"], ["Painted", "per pixel, from its place on the 4D body"], ["Bends", "its pieces follow the swim wave"]]},
 	{"kind": "eel", "name": "European eel", "latin": "Anguilla anguilla", "kicker": "HIDES BY DAY, HUNTS ALONG THE BOTTOM",
 		"line": "The whole body waves, more than one wave on it at once; it backs into its cave tail first.",
-		"rows": [["Length", "1.4 m"], ["The wave", "0.72 of its length, growing toward the tail"], ["Backing up", "the wave runs the other way"], ["Lives", "in the cave under the rock pile"]]},
+		"rows": [["Length", "1.4 m"], ["The wave", "0.72 of its length, growing toward the tail"], ["Backing up", "the wave runs the other way"], ["Drawn as", "lofted in 4D, twelve rigid pieces"], ["Lives", "in the cave under the rock pile"]]},
 	{"kind": "koi", "variety": 4, "name": "Ogon", "latin": "Cyprinus rubrofuscus  ·  koi", "kicker": "ONE METALLIC COLOUR, GOLD",
-		"line": "A metallic skin and a clear coat over it: the wet sheen of a koi under the lights.",
-		"rows": [["Metallic", "0.5, roughness 0.3"], ["Clear coat", "0.65 on the body"], ["Scales", "rows of arcs, faded where smaller than a pixel"]]},
+		"line": "One metallic colour and a wet highlight: the sheen of a koi under the lights.",
+		"rows": [["Highlight", "three times a plain koi's"], ["Scales", "rows of arcs, faded where smaller than a pixel"]]},
 	{"kind": "crab", "lift": 0.14, "name": "Edible crab", "latin": "Cancer pagurus", "kicker": "WALKS SIDEWAYS, AND THROUGH W",
 		"line": "It wanders the tank's whole floor, x, z and W: it comes onto your slice somewhere, picks at the sand, and walks off through W.",
-		"rows": [["Width", "0.34 m"], ["Legs", "eight, two sets of four in turn"], ["Claws", "pick at the sand, the pincers open and close"], ["Drawn as", "a 4D body, its legs stepping on the GPU"]]},
+		"rows": [["Width", "0.34 m"], ["Legs", "eight, two sets of four in turn"], ["Claws", "pick at the sand, the pincers open and close"], ["Drawn as", "lofted in 4D, jointed legs and claws"]]},
 	{"kind": "koi", "variety": 6, "name": "Asagi", "latin": "Cyprinus rubrofuscus  ·  koi", "kicker": "A BLUE NET, RED BELOW",
 		"line": "The oldest of the varieties: each scale outlined pale on a blue-grey back, orange-red on the flanks.",
 		"rows": [["Net", "every scale's edge drawn from its place on the body"], ["Below", "orange-red, cheeks and fin roots"]]},
@@ -78,6 +77,8 @@ const CARDS := [
 ]
 
 var _panels: Array = []
+## The lofted animals' cuts at w = 0 (koi, eel, crab), each made the first time its card shows.
+var _cuts: Dictionary = {}
 var _t: float = 0.0
 
 
@@ -243,51 +244,20 @@ func _show(panel: Dictionary, card: Dictionary) -> void:
 			node = _shark_cut()
 			panel["distance"] = 4.2
 		"eel":
-			node = _herd_specimen(Eel.build_mesh(), EEL, {&"w_radius": 0.06})
+			node = _eel_cut()
 			panel["distance"] = 2.6
-			panel["custom"] = Vector4(0.0, 0.07, 1.4, 0.0)
-			panel["colour"] = Color(0.0, 0.0, 0.5, 0.0)
 		"crab":
-			node = _herd_specimen(Crab.build_mesh(), CRAB, {&"w_radius": 0.6})
+			node = _crab_cut()
 			# A little further back than at first, so its legs stay in the picture once lifted.
 			panel["distance"] = 1.2
-			panel["custom"] = Vector4(0.0, 0.8, 0.34, 0.0)
-			panel["colour"] = Color(0.0, 0.0, 0.0, 1.0)
 		_:
-			node = _herd_specimen(KoiMesh.build(2), KOI, {&"w_radius": 0.21, &"detail": 1.0})
+			node = _koi_cut(int(card.get("variety", 0)))
 			panel["distance"] = 1.9
-			panel["custom"] = Vector4(0.0, 0.07, 0.95, 0.0)
-			panel["colour"] = Color(float(card.get("variety", 0)) / 16.0, 0.37, 0.25, 0.0)
 	studio.add_child(node)
 	panel["specimen"] = node
 	panel["angle"] = 0.6
-	panel["phase"] = 0.0
 	panel["kind"] = String(card["kind"])
 	panel["lift"] = float(card.get("lift", 0.0))
-
-
-## A slice-drawn animal for the studio: one instance of its mesh and shader, the view uniforms set so
-## it stands `distance` in front of the studio's camera (whose frame is the view's own).
-func _herd_specimen(mesh: Mesh, shader: Shader, params: Dictionary) -> Node3D:
-	var mmi := MultiMeshInstance3D.new()
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = true
-	mm.use_custom_data = true
-	mm.mesh = mesh
-	mm.instance_count = 1
-	mmi.multimesh = mm
-	var mat := ShaderMaterial.new()
-	mat.shader = shader
-	for k in params:
-		mat.set_shader_parameter(k, params[k])
-	mat.set_shader_parameter(&"view_basis_x", Vector4(1, 0, 0, 0))
-	mat.set_shader_parameter(&"view_basis_y", Vector4(0, 1, 0, 0))
-	mat.set_shader_parameter(&"view_basis_z", Vector4(0, 0, 1, 0))
-	mat.set_shader_parameter(&"view_basis_w", Vector4(0, 0, 0, 1))
-	mmi.material_override = mat
-	mmi.extra_cull_margin = 16384.0
-	return mmi
 
 
 ## The hammerhead's cut at w = 0: its baked pieces placed at rest, sliced (shared/slice_mesh.gd).
@@ -328,33 +298,119 @@ void fragment() {
 	return mi
 
 
-## The turntable: round and round, the animal swimming (or stepping) on the spot.
+## A lofted koi's cut at w = 0, at rest and straight, one body length scaled to 0.95 m: the fine koi
+## the showcase uses, built (or loaded from life/baked/) without entering the tree, its pieces placed
+## as its pose puts them, cut, and painted as the tank's.
+func _koi_cut(v: int) -> Node3D:
+	if not _cuts.has("koi"):
+		_cuts["koi"] = _cut_koi()
+	var mi := MeshInstance3D.new()
+	mi.mesh = _cuts["koi"]
+	mi.scale = Vector3.ONE * 0.95
+	var mat := ShaderMaterial.new()
+	mat.shader = KOI_PICTURE
+	mat.set_shader_parameter(&"variety", float(v))
+	mat.set_shader_parameter(&"pattern_seed", 0.37)
+	mat.set_shader_parameter(&"detail", 1.0)
+	mat.set_shader_parameter(&"koi_profile", KoiLoft.profile())
+	mi.material_override = mat
+	return mi
+
+
+## The cut itself, made once (every koi card shares it; only the paint differs).
+func _cut_koi() -> ArrayMesh:
+	var k := Node4D.new()
+	k.set_script(KoiLoft)
+	k.set("detail", 2)
+	k.call("build")
+	k.call("pose", Vector4.ZERO, Projection.IDENTITY, 1.0, 0.0, 0.0, 0.0, 0.3, 0.0, 0.0)
+	return _cut_loft(k, "koi")
+
+
+## The lofted eel's cut at w = 0, gently waved (a straight eel reads as a stick), 1.4 m, its skin's own
+## 3D texture read at the cut's coordinates (life/loft_picture.gdshader).
+func _eel_cut() -> Node3D:
+	if not _cuts.has("eel"):
+		var k := Node4D.new()
+		k.set_script(EelLoft)
+		k.set("detail", 2)
+		k.call("build")
+		k.call("pose", Vector4.ZERO, Projection.IDENTITY, 1.0, 1.3, 0.07, 0.0, 0.0, 0.0)
+		_cuts["eel_skin"] = (k.get("material") as TetraMaterial4D).albedo_texture_3d
+		_cuts["eel"] = _cut_loft(k, "eel")
+	var skin: Texture3D = _cuts["eel_skin"]
+	var mi := MeshInstance3D.new()
+	mi.mesh = _cuts["eel"]
+	mi.scale = Vector3.ONE * 1.4
+	var mat := ShaderMaterial.new()
+	mat.shader = LOFT_PICTURE
+	mat.set_shader_parameter(&"skin", skin)
+	mi.material_override = mat
+	return mi
+
+
+## The lofted crab's cut at w = 0, standing (a step half taken), 0.34 m across.
+func _crab_cut() -> Node3D:
+	if not _cuts.has("crab"):
+		var k := Node4D.new()
+		k.set_script(CrabLoft)
+		k.set("detail", 2)
+		k.call("build")
+		k.call("pose", Vector4.ZERO, Projection.IDENTITY, 1.0, 1.0, 0.6, 0.0, 0.3, 0.0)
+		_cuts["crab_skin"] = (k.get("material") as TetraMaterial4D).albedo_texture_3d
+		_cuts["crab"] = _cut_loft(k, "crab")
+	var skin: Texture3D = _cuts["crab_skin"]
+	var mi := MeshInstance3D.new()
+	mi.mesh = _cuts["crab"]
+	mi.scale = Vector3.ONE * 0.34
+	var mat := ShaderMaterial.new()
+	mat.shader = LOFT_PICTURE
+	mat.set_shader_parameter(&"skin", skin)
+	mat.set_shader_parameter(&"clearcoat", 0.4)
+	mi.material_override = mat
+	return mi
+
+
+## A built loft's cut at w = 0: each mesh placed by its holders' turns and offsets up to the body, cut
+## (shared/slice_mesh.gd), the loft node freed.
+func _cut_loft(k: Node4D, what: String) -> ArrayMesh:
+	var t0: int = Time.get_ticks_usec()
+	var body: Node4D = k.get("body")
+	var parts: Array = []
+	var stack: Array = [body]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		for c in n.get_children():
+			stack.append(c)
+		if n is MeshInstance4D:
+			var b := Projection.IDENTITY
+			var o := Vector4.ZERO
+			var up: Node = n.get_parent()
+			while up != null and up != body:
+				var h := up as Node4D
+				o = h.basis * o + h.position
+				b = h.basis * b
+				up = up.get_parent()
+			parts.append([(n as MeshInstance4D).mesh, b, o, Color.WHITE])
+	k.free()
+	var m: ArrayMesh = SliceMesh.cut(parts, 0.0)
+	print("FISH WALL %s cut: %.0f ms" % [what, (Time.get_ticks_usec() - t0) / 1000.0])
+	return m
+
+
+## The turntable: round and round, the animal's cut turning on the spot.
 func _turn(panel: Dictionary, delta: float) -> void:
 	var node: Node3D = panel["specimen"]
 	if node == null or not is_instance_valid(node):
 		return
 	panel["angle"] = float(panel["angle"]) + delta * 0.35
-	panel["phase"] = float(panel["phase"]) + delta * TAU * 0.9
 	var a: float = panel["angle"]
 	var d: float = panel["distance"]
-	if String(panel["kind"]) == "shark":
-		node.position = Vector3(0.0, -0.05, -d)
-		node.rotation = Vector3(0.25, a, 0.0)
-		return
-	var mmi := node as MultiMeshInstance3D
-	var mat: ShaderMaterial = mmi.material_override
 	# A card's lift: its animal raised that share of the picture's height (round 4: "raise the Showa and
 	# the Edible crab displays"; the picture is 2 d tan(16 deg) high at the animal, the studio's fov 32).
 	var up: float = float(panel.get("lift", 0.0)) * 2.0 * d * tan(deg_to_rad(16.0))
-	mat.set_shader_parameter(&"view_origin", Vector4(0.0, -0.02 + up, -d, 0.0))
-	var h := Vector3(sin(a), -0.15, cos(a)).normalized()
-	var r := Vector3(cos(a), 0.0, -sin(a))
-	var custom: Vector4 = panel["custom"]
-	custom.x = panel["phase"]
-	var buf := PackedFloat32Array([0.0, 0.0, 0.0, 0.0, h.x, h.y, h.z, 0.0, r.x, r.y, r.z, 0.0])
-	var c: Color = panel["colour"]
-	buf.append_array([c.r, c.g, c.b, c.a, custom.x, custom.y, custom.z, custom.w])
-	RenderingServer.multimesh_set_buffer(mmi.multimesh.get_rid(), buf)
+	node.position = Vector3(0.0, -0.05 + up, -d)
+	node.rotation = Vector3(0.25, a, 0.0)
 
 
 ## The picture's ground: dark blue and a clean grid of faint white lines, a little stronger every

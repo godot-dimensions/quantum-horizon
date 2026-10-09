@@ -25,13 +25,15 @@ extends Node4D
 ## SOUND: there is no positional audio in 4D (pen_sfx_4d.gd), so each call is a one-shot on one of a
 ## few buses of the harbour's own, each with a panner (toward the caller's side of the listener) and a
 ## low-pass (closing with distance: air takes the top off far sound); its volume falls with distance.
-## The calls: the long call, the laugh and the landing's wing-rustle synthesized
-## (audio/bake_water_lab_sound.py); Ramon's recordings (9 Oct, audio/sfx, Beison's seagulls: "dont
-## make it too crazy, make a good mix") for the rest. A call is the recorded call or the synthesized
-## long call, either; a take-off is the recorded take-off (wing claps) in place of the old alarm
-## "kek"; three or more lifting within 0.6 s are one recorded flock take-off, the next take-offs
-## quiet for 1.5 s. Calls (not take-offs or landings) keep `min_call_gap` apart; a call that comes
-## sooner is dropped, never queued.
+## THE SOUNDS ARE RAMON'S RECORDINGS (9 Oct, audio/sfx, Beison's seagulls; round 5, Ramon: "i still
+## hear the synth birds and not the real bird files i provided": the first mix had kept the
+## synthesized long call for half the calls, and the laugh and the landing's rustle synthesized
+## always). Every call, the long call and the laugh, is the recorded call, its pitch varied a little
+## each time; a take-off is the recorded take-off (wing claps); a landing is the same wing claps,
+## quieter; three or more lifting within 0.6 s are one recorded flock take-off, the next take-offs
+## quiet for 1.5 s. The synthesized ones (audio/bake_water_lab_sound.py) are only a fallback should a
+## recording be missing. Calls (not take-offs or landings) keep `min_call_gap` apart; a call that
+## comes sooner is dropped, never queued.
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -296,7 +298,7 @@ func _on_called(kind: String, g: Node4D) -> void:
 	# Inverse distance from 3 m in, and a fade to nothing at `hearing`.
 	var level: float = volume_db - 20.0 * log(maxf(d, 3.0) / 3.0) / log(10.0) + 20.0 * log(maxf(1.0 - d / hearing, 0.01)) / log(10.0)
 	if kind == "land":
-		level -= 6.0
+		level -= 9.0
 	p.volume_db = level
 	p.pitch_scale = _rng.randf_range(0.92, 1.08)
 	var pan: AudioEffectPanner = AudioServer.get_bus_effect(bus, 1) as AudioEffectPanner
@@ -310,17 +312,15 @@ func _on_called(kind: String, g: Node4D) -> void:
 	played[nm] = int(played.get(nm, 0)) + 1
 
 
-## The sound for a call: the recorded ones where there are, the synthesized ones otherwise.
+## The sound for a call: Ramon's recordings; the synthesized ones only if a recording is missing.
 func _sound_for(kind: String) -> String:
 	match kind:
 		"long":
-			if _streams.has("gull_call_real") and _rng.randf() < 0.5:
-				return "gull_call_real"
-			return "gull_long"
+			return "gull_call_real" if _streams.has("gull_call_real") else "gull_long"
 		"laugh":
-			return "gull_laugh"
+			return "gull_call_real" if _streams.has("gull_call_real") else "gull_laugh"
 		"kek":
 			return "gull_takeoff" if _streams.has("gull_takeoff") else "gull_kek"
 		"land":
-			return "gull_land"
+			return "gull_takeoff" if _streams.has("gull_takeoff") else "gull_land"
 	return ""

@@ -10,7 +10,7 @@ extends Node
 ##   02 THE SLICE      the solve for your slice (the guesses closing on the water that lands there)
 ##   03 THE TANK       a ray through a 4D box (red, green and blue fading with depth)
 ##   04 THE KOI        a wave down the body (the spine inside its envelope)
-##   05 IN 4D          an ellipsoid cut by your slice (the cut shrinking as W moves)
+##   05 IN 4D          a lofted body cut by your slice (fins first, then the ends, as W moves)
 ## and under them the benchmark: each system in the room, measured live.
 ##
 ## NO class_name (engine_gotchas.md).
@@ -41,7 +41,7 @@ const PAGES := [
 		"chart": "wave", "mode": "weed", "caption": "Blades in a band of current; one blade cut at three W."},
 	{"key": "cut", "row": ["In 4D", "cut by your slice"], "chapter": "IN 4D",
 		"headline": "Each fish is a 4D body,\ncut by your slice.",
-		"text": "Its shape is stretched through W as an ellipsoid: on your slice you see all of it, off the slice a smaller cut, then nothing. Drawn the way the pen's starlings are: one draw call a school.",
+		"text": "Every animal here is lofted in 4D, the way our loft tool builds them, and cut into rigid pieces that follow the swim. Your slice cuts the real body. Turn the slice and a koi swimming along it shortens to a stub.",
 		"chart": "wave", "mode": "cut", "caption": "How much of a fish your slice shows, as W moves through it."},
 ]
 
@@ -111,7 +111,7 @@ func research(info: Resource) -> Dictionary:
 				{"value": "%.1f" % float(st.get("beats", 1.4)), "kind": "text", "text": "tail beats a second, on average now"}]
 		"cut":
 			metrics = [{"value": "%d / %d" % [int(st.get("in_slice", 0)), int(st.get("count", 12))], "kind": "text", "text": "koi on your slice now", "accent": true},
-				{"value": float(st.get("hidden", 4)), "kind": "int", "text": "that live off it: turn the slice to see them"}, {"value": 1.0, "kind": "int", "text": "draw call for the whole school"}]
+				{"value": float(st.get("hidden", 4)), "kind": "int", "text": "that live off it: turn the slice to see them"}, {"value": float(st.get("tets", 0)), "kind": "int", "text": "tetrahedra in each koi's 4D skin"}]
 	var bench: Array = _bench(st)
 	return {
 		"header_left": String(info.call("research_header")) if info != null else "AQUATIC LAB",
@@ -130,11 +130,11 @@ func research(info: Resource) -> Dictionary:
 ## One row a system: its count, its CPU cost a frame (measured by the system itself), its draws.
 func _bench(koi_stats: Dictionary) -> Array:
 	var out: Array = []
-	out.append(["Koi", str(int(koi_stats.get("count", 12))), "%.3f ms" % (float(koi_stats.get("cpu_us", 0.0)) / 1000.0), "1", "bent on the GPU"])
+	out.append(["Koi", str(int(koi_stats.get("count", 12))), "%.3f ms" % (float(koi_stats.get("cpu_us", 0.0)) / 1000.0), str(int(koi_stats.get("meshes", 0))), "4D loft"])
 	var r: Node = _room()
 	var show: Node = r.get_node_or_null("Showcase") if r != null else null
 	if show != null:
-		out.append(["Showcase koi", "1", "%.3f ms" % (float(show.get("_swim_us")) / 1000.0), "1", "the same, finer"])
+		out.append(["Showcase", "1", "%.3f ms" % (float(show.get("_swim_us")) / 1000.0), "1 at a time", "the same, finer"])
 	var tank: Node = _tank()
 	var life: Node = tank.get("life") if tank != null else null
 	if life != null:

@@ -1,10 +1,12 @@
 extends Node4D
 
 ## WATER LAB COPY (9 Oct 2026) of the pen's chickenpen/flock/pen_flock_4d.gd at f699821, for the
-## seascape's school of fish (seascape/fish_school_4d.gd sets it up). Two changes, both hooks:
+## seascape's school of fish (seascape/fish_school_4d.gd sets it up). Three changes, all hooks:
 ## `body_mesh` and `body_shader`, set before the node enters the tree, replace the starling's
-## shape and its shader; and `hawk_drawn` false keeps the hawk undrawn while something else
-## (the plesiosaur) flies it through pilot_hawk / fly_hawk. Everything else is the pen's.
+## shape and its shader; `hawk_drawn` false keeps the hawk undrawn while something else
+## (the plesiosaur) flies it through pilot_hawk / fly_hawk; and (round 5, every animal a true 4D
+## loft) `drawn` false never shows the multimesh at all, so something else draws each member from
+## rows() (life/school_loft_4d.gd, lofted fish), stepping on the CPU. Everything else is the pen's.
 ##
 ## A murmuration: starlings gathering over the field at dusk, in four dimensions.
 ##
@@ -292,6 +294,9 @@ var body_mesh: ArrayMesh = null
 var body_shader: Shader = null
 ## WATER LAB: false and the hawk is never drawn (the plesiosaur is the hunter, drawn by itself).
 var hawk_drawn: bool = true
+## WATER LAB, round 5: false and the members are never drawn here either: rows() hands them to
+## whatever draws them instead (stepped on the CPU, `backend` 1, so the rows are here to read).
+var drawn: bool = true
 
 var _mesh: ArrayMesh
 var _material: ShaderMaterial
@@ -466,6 +471,13 @@ func _process(delta: float) -> void:
 ## True when the flock is being stepped by flock_step.glsl.
 func on_gpu() -> bool:
 	return _gpu
+
+
+## WATER LAB, round 5: each member's row of the CPU step, FLOATS floats a member: its position
+## (0-3), heading (4-7), the side it is rolled to (8-11), its tint (12-15), its phase (16), how hard
+## it beats (17), its size (18). In the flock's own space. Empty on the GPU.
+func rows() -> PackedFloat32Array:
+	return _buffer if not _gpu else PackedFloat32Array()
 
 
 ## One tick of the flock and the upload of what it looks like.
@@ -825,7 +837,7 @@ func _integrate(dt: float) -> void:
 ## the buffer and points drawing at its second half (mesh_storage.cpp, _multimesh_set_buffer),
 ## where the compute shader never writes.
 func _upload() -> void:
-	if _gpu:
+	if _gpu or not drawn:
 		return
 	if _multimesh.is_valid() and _buffer.size() == count * FLOATS and count > 0:
 		RenderingServer.multimesh_set_buffer(_multimesh, _buffer)
@@ -851,7 +863,7 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngi
 		RenderingServer.instance_set_scenario(_instance, scenario)
 		RenderingServer.instance_set_scenario(_hawk_instance, scenario)
 		RenderingServer.instance_set_scenario(_ghost_instance, scenario)
-	var shown: bool = is_visible_in_tree() and count > 0 and scenario.is_valid()
+	var shown: bool = is_visible_in_tree() and count > 0 and scenario.is_valid() and drawn
 	RenderingServer.instance_set_visible(_instance, shown)
 	RenderingServer.instance_set_visible(_hawk_instance, shown and hawk_drawn and _hawk_state != HawkState.AWAY and not hawk_hidden)
 	RenderingServer.instance_set_visible(_ghost_instance, shown and ghost)

@@ -163,13 +163,13 @@ func _open() -> void:
 			_step(1, _camera_distance.bind(10.0), "")
 			_step(1, _lure_report, "")
 			# The HARBOUR fish slider: a smaller school, respawned once the value settles.
-			_step(1, _set_room.bind("harbour_fish", 800), "")
+			_step(1, _set_room.bind("harbour_fish", 60), "")
 			_step(60, _nop, "")
 			_step(1, _go(13.0, -1.6, 180.0), "")
 			_step(5, _pitch(-55.0), "")
-			_step(60, _fish_report, "g11_school_800")
-			_step(1, _set_room.bind("harbour_fish", 3000), "")
-			_step(60, _nop, "g12_school_3000")
+			_step(60, _fish_report, "g11_school_60")
+			_step(1, _set_room.bind("harbour_fish", 150), "")
+			_step(60, _nop, "g12_school_150")
 			_step(1, _fish_report, "")
 			_step(1, _sound_report, "")
 		"school":

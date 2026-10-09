@@ -322,18 +322,31 @@ class Wave extends E.El:
 		draw_line(Vector2(mx, r.position.y), Vector2(mx, base), GOLD, maxf(1.0, 1.0 * k), true)
 		_label(Vector2(cx - half, base + 14 * k), "−W", Spec.ink("muted"))
 		_label(Vector2(cx + half - 14 * k, base + 14 * k), "+W", Spec.ink("muted"))
-		# The fish the slice shows, to the right, at that size.
+		# The fish the slice shows, to the right (round 5: the animals are lofted in 4D). Each section of
+		# the body is as deep through W as it is wide, so off the middle the slender parts go first: the
+		# tail fin at once, then the ends, the body last.
 		var fc := Vector2(r.position.x + r.size.x * 0.74, r.get_center().y)
-		var fl: float = r.size.x * 0.20 * sec
-		if fl > 1.0:
-			var body := PackedVector2Array()
-			for i in 33:
-				var a: float = TAU * float(i) / 32.0
-				body.append(fc + Vector2(cos(a) * fl, sin(a) * fl * 0.32))
-			draw_colored_polygon(body, Spec.ink("white", 0.9))
-			draw_colored_polygon(PackedVector2Array([fc + Vector2(-fl * 0.9, 0), fc + Vector2(-fl * 1.45, -fl * 0.35), fc + Vector2(-fl * 1.45, fl * 0.35)]), Spec.ink("white", 0.9))
+		var fl: float = r.size.x * 0.20
+		var wn: float = absf(w_now)
+		var top := PackedVector2Array()
+		var bottom := PackedVector2Array()
+		for i in 41:
+			var s: float = float(i) / 40.0
+			var prof: float = pow(sin(PI * pow(s, 0.8)), 0.8)
+			var cut: float = sqrt(maxf(1.0 - (wn / maxf(prof, 0.001)) * (wn / maxf(prof, 0.001)), 0.0)) if prof > wn else 0.0
+			var x: float = fc.x + fl * (1.0 - 2.0 * s)
+			top.append(Vector2(x, fc.y - fl * 0.32 * prof * cut))
+			bottom.append(Vector2(x, fc.y + fl * 0.28 * prof * cut))
+		bottom.reverse()
+		top.append_array(bottom)
+		if sec > 0.02:
+			draw_colored_polygon(top, Spec.ink("white", 0.9))
+		var fin: float = sqrt(maxf(1.0 - (wn / 0.08) * (wn / 0.08), 0.0))
+		if fin > 0.02:
+			var tx: float = fc.x - fl
+			draw_colored_polygon(PackedVector2Array([Vector2(tx + fl * 0.1, fc.y), Vector2(tx - fl * 0.45 * fin, fc.y - fl * 0.35 * fin), Vector2(tx - fl * 0.45 * fin, fc.y + fl * 0.35 * fin)]), Spec.ink("white", 0.9))
 		_label(Vector2(fc.x - 60 * k, r.end.y - 4 * k), "the cut: %d%%" % int(round(sec * 100.0)), GOLD)
-		_label(Vector2(r.position.x, r.end.y + 16 * k), "A fish is a 4D body: whole on your slice, smaller off it, then gone.", Spec.ink("muted"))
+		_label(Vector2(r.position.x, r.end.y + 16 * k), "A fish is a 4D body: whole on your slice. Off it the fins go first, then the ends, then all of it.", Spec.ink("muted"))
 
 
 ## The walk's cost: {"samples": PackedFloat32Array (ms a frame), "anim": ms, "reloft": ms}.

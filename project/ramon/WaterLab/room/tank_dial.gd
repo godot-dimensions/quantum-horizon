@@ -126,9 +126,10 @@ func _panel(box: Rect2, u: float, title: String, sub: String, axis: int, basis: 
 	# The animals.
 	var koi: Node = tank.get("koi")
 	if koi != null:
+		var w_half: float = float(koi.get("w_half")) if koi.get("w_half") != null else 0.083
 		for f in koi.get("fish"):
 			var q2: Vector2 = place.call(f["p"])
-			var on: bool = absf(q2.y) < 0.21 * float(f["len"])
+			var on: bool = absf(q2.y) < w_half * float(f["len"])
 			var pp: Vector2 = at.call(q2.x, q2.y)
 			draw_circle(pp, (3.6 if on else 2.6) * u, ink if on else dim)
 			if on:

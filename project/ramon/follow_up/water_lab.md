@@ -885,3 +885,104 @@ The mix:
   - Every 12-30 s it picks a new level: full (45%), half (35%) or nearly gone (20%).
   - It eases there over about six seconds and is never cut.
   - The recording has rain in it, which sits in with the wash at this level.
+
+## Round 5: every animal a true 4D loft (9 Oct)
+
+Ramon found the koi "behave strangely" when the tank turns through W. Only the hammerhead and the gulls
+were true 4D. The koi, eel, crab, the tank's swarm and the sea's sardines were 3D meshes, and their
+shader only shrank each animal whole as it left the slice (`shared/slice_draw.gdshaderinc`, the
+pen starlings' trick). His verdict: "that is a big problem. For the animals also the aquatic, they
+need to be true 4D lofts." I chose the shader route for frame time when I built the lab, and never
+told him in plain words. It is the opposite of what the lab is for.
+
+His answers: **fewer, all true 4D** (the swarm and the sardines become schools of 60-150 lofted fish,
+measured), and **koi first, start now**.
+
+### The plan
+
+**Koi** (`life/koi_loft_4d.gd`, its skin `life/koi_skin_4d.gdshader`, its colours
+`life/koi_pattern.gdshaderinc`):
+1. Lofted the hammerhead's way, from the old koi's profile. Seven rigid pieces: mouth, head, four of
+   body, tail fin. The fins are thin in x and W, as the hammerhead's are. Baked under `life/baked/`
+   at one body length; the body node is scaled by each koi's length.
+2. Round across x and W (a 4D koi has two sideways directions); a turned slice cuts it shorter and
+   thinner, the fins first.
+3. The swim from the old shader, put on the pieces: the travelling wave, the C bend of a turn, the
+   tail fin trailing; the pectorals on their own holders (tucked, out to brake, sculling); the mouth
+   piece opening on a gulp.
+4. The eight varieties painted per pixel by a fork of the engine's cross-section shader (the engine's
+   own reads one 3D texture and ignores per-vertex colour). The patterns lie over a 4D back, so a
+   turned slice crosses different patches of the same koi.
+5. The tank's school (`koi_school_4d.gd`) poses one lofted koi per fish instead of writing herd rows.
+   The fish in the slice settle exactly onto it in W (a lofted koi is visible only within its own
+   half width of the slice; the old one showed across 0.21 of its length).
+6. The showcase's koi and the fish wall's koi pictures (the wall: the CPU cut of the loft at w = 0,
+   as its hammerhead).
+7. Checked against the hammerhead, the slice turned 0/20/40/60/75 degrees in x-W and z-W
+   (`scripts/_koi_loft_test_runner.gd`), then in the room. Frame cost measured.
+
+**Eel and crab** next: the eel a lofted chain (many short pieces, its anguilliform wave); the crab a
+lofted carapace with jointed legs and claws, each segment a rigid piece.
+
+**Schools** last: the tank swarm and the sea's sardines as 60-150 lofted fish each, one or two
+pieces a fish, the frame cost measured against the old 1,600 and 3,000.
+
+Also on the old trick and not animals: the weed, the bubbles, the food pellets. A pellet or a bubble
+is a 4D ball, whose cut really is a shrinking sphere, so the trick is exact for those. The weed is not;
+it is a question for Ramon whether plants go the same way.
+
+### Status (9 Oct, end of round 5)
+
+Every animal in the Aquatic Lab is now a true 4D loft: rigid pieces lofted once by our loft builder,
+baked under `life/baked/`, posed every frame. Shared helpers in `life/loft_kit.gd`.
+
+| Animal | Script | Pieces | Tetrahedra |
+|---|---|---|---|
+| Koi (16 in the tank, 1 on the showcase) | `life/koi_loft_4d.gd` | 9 meshes: 6 of body with their fixed fins, eyes and barbels merged in, 2 pectorals, the tail | 16,192 |
+| Eel (tank, showcase, 2 at sea) | `life/eel_loft_4d.gd` | 12 of body (with the long fin), eyes, pectorals | 27,828 |
+| Crab | `life/crab_loft_4d.gd` | shell, eyes, 8 legs of 2, 2 claws of 2 | 16,320 |
+| School fish (tank swarm 120, sea sardines 150) | `life/school_loft_4d.gd` | 2 a fish, posed straight from the flock's rows | about 600 |
+
+- **The koi's colours:** a fork of the engine's cross-section shader (`life/koi_skin_4d.gdshader`) paints
+  the eight varieties per pixel from the point's place on the 4D body (`life/koi_pattern.gdshaderinc`).
+  The engine's own shader reads one 3D texture and ignores per-vertex colour. The eel, crab and
+  school fish use 3D textures (`Kit.tex_material`).
+- **Checked against the hammerhead, slice turned** (`smoke_test_output/water_lab/koi_loft/`, sheet
+  `sheet_turns_close.png`): both cut the same way. Turned through x-W, a fish swimming along x
+  shortens to a stub. Turned through z-W, the fins go first and the body stays.
+- **In the room** (`room/r5_*`): the koi in the tank level and turned (x-W 20/40/60, z-W 35), a koi
+  close, the showcase's koi and eel level and turned through W, the fish wall's koi, eel and crab
+  cards (the true w = 0 cut of each loft: `life/koi_picture.gdshader`, `life/loft_picture.gdshader`).
+- **The schools:** the flock (carried) steps on the CPU and draws nothing (`drawn` false, `rows()`); a
+  lofted fish is only a few millimetres deep through W, so each school's spread through W is squashed
+  in the flock node's basis. The HARBOUR slider now runs 0-300 (150 by default).
+- **The research board's "IN 4D" page** said the fish were ellipsoids drawn like the starlings; it now
+  describes the lofts, and its chart cuts the fins first.
+- **Removed:** the stand-in shaders (`life/koi.gdshader`, `eel.gdshader`, `crab.gdshader`,
+  `seascape/school_fish.gdshader`), the 3D mesh builders, and `scripts/_studio_test_runner.gd` (its
+  experiment was concluded on 9 Oct). All in git history.
+
+**Frame time, same machine, same pass** (`_capture_lab_runner.gd perf`; old = commit 2e63c9b in a
+throwaway worktree):
+
+| Where | Stand-ins | Lofted |
+|---|---|---|
+| Opening | 2.14 ms | 3.24 ms |
+| At the tank | 2.63 ms | 4.19 ms |
+| Showcase | 1.69 ms | 3.07 ms |
+
+At the tank, the split (round5 r5perf): the koi about 1.3 ms (0.5 ms of it their swimming script), the
+swarm about 1.2 ms (0.5 ms its CPU flock, 0.2 ms posing). Most of it is the per-frame work of moving
+the pieces, not drawing them. Fewer swarm fish is the easiest lever.
+
+**Gull sounds** (Ramon, mid-round: "i still hear the synth birds and not the real bird files i
+provided"): the round 4 mix had kept the synthesized long call for half the calls and the laugh and
+landing rustle synthesized. Now every call is his recorded call (pitch varied), landings his wing
+claps quieter, take-offs and the flock take-off as before; the synthesized ones only if a file is
+missing.
+
+**Still on the slice-draw trick, not animals:** the bubbles, the food pellets and the marine snow
+(4D balls, for which the trick is exact), and the weed (a question for Ramon: loft the plants too?).
+
+**Known, not mine:** the koi glyph on the research board logs "Invalid polygon data, triangulation
+failed" (since round 4); the `detail` capture's fish-wall position is stale (round 5 uses round 4's).

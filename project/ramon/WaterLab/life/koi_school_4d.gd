@@ -1,9 +1,11 @@
 extends Node4D
 
-## WATER LAB: the tank's koi. Each is swum here, on the CPU (a dozen fish cost nothing), and drawn by
-## life/koi.gdshader through a slice herd (shared/slice_herd_4d.gd), which bends it with a travelling
-## wave on the GPU. This node sits at the middle of the tank's water, and everything here is in that
-## frame: x along the tank, y up, z toward the glass (+z is the front), W through it.
+## WATER LAB: the tank's koi. Each is swum here, on the CPU, and drawn as a koi LOFTED IN 4D
+## (life/koi_loft_4d.gd): its rigid pieces posed along the bent spine every frame, so a turned slice
+## cuts the real 4D body. (Until 9 Oct they were a 3D mesh that a shader only shrank off the slice:
+## Ramon, "they need to be true 4D lofts".) This node sits at the middle of the tank's water, and
+## everything here is in that frame: x along the tank, y up, z toward the glass (+z is the front), W
+## through it.
 ##
 ## HOW A KOI SWIMS HERE (Wu et al. 2007; the research in follow_up/water_lab.md):
 ##   BURST AND COAST  a few tail beats (amplitude 0.10 body lengths, about 1.4 beats a second at half
@@ -17,8 +19,10 @@ extends Node4D
 ##   AT THE SURFACE   now and then one rises, tips up, and gulps at the surface a few times.
 ##   AT THE GLASS     stand near the tank and the nearest koi come to the glass in front of you and
 ##                    gulp, as pond koi do at anyone who might feed them.
-##   THROUGH W        most keep near the slice (a spring in W), but now and then one wanders off
-##                    through W and fades out of the tank, to come back later. A few live off it.
+##   THROUGH W        most keep to the slice (a spring in W, and once near it they settle exactly onto
+##                    it: a lofted koi shows only within its own half width of the slice), but now
+##                    and then one wanders off through W, thinning away fin first, to come back
+##                    later. A few live off it.
 ##   FEEDING          drop_food(x) scatters pellets on the surface (the room's console, E). They float
 ##                    and drift, then sink; every koi near enough comes up for them, faster than it
 ##                    ever swims otherwise, and gulps them down one by one (Ramon, 9 Oct: "maybe you can
@@ -27,8 +31,8 @@ extends Node4D
 ## NO class_name (engine_gotchas.md).
 
 const Herd := preload("res://ramon/WaterLab/shared/slice_herd_4d.gd")
-const KoiMesh := preload("res://ramon/WaterLab/life/koi_mesh.gd")
-const SHADER := preload("res://ramon/WaterLab/life/koi.gdshader")
+const KoiLoft := preload("res://ramon/WaterLab/life/koi_loft_4d.gd")
+const Kit := preload("res://ramon/WaterLab/life/loft_kit.gd")
 const BLOB := preload("res://ramon/WaterLab/life/blob.gdshader")
 const MAX_FOOD := 48
 
@@ -56,8 +60,9 @@ const VARIETIES := ["Kohaku", "Taisho Sanke", "Showa", "Tancho", "Ogon", "Platin
 @export var hidden_count: int = 4
 ## How near the glass you stand (metres from the tank's front, in the tank's x range) before koi come.
 @export var beg_distance: float = 4.5
-## Each koi's half depth through W, per metre of its length.
-@export var w_radius: float = 0.21
+## Each koi's half depth through W at its deepest, per metre of its length (the lofted koi is round
+## across x and W: its half width there, life/koi_mesh.gd PROFILE).
+var w_half: float = 0.083
 
 ## Spheres the koi swim round (rocks, coral heads): [centre (tank space), radius].
 var obstacles: Array = []
@@ -70,9 +75,10 @@ var predator: Node = null
 ## Where you are, in the tank's frame (set by the room each frame; far away when unset).
 var viewer := Vector4(0.0, 0.0, 1000.0, 0.0)
 
-var herd: Node4D
 var food_herd: Node4D
 var fish: Array = []
+## The lofted koi, one a fish.
+var koi_nodes: Array = []
 ## Pellets: {"p": Vector4, "v": Vector4, "age": float, "taken": int (the koi going for it, or -1)}.
 var food: Array = []
 ## Microseconds a frame the swim takes (a running mean), for the research board's benchmark.
@@ -83,13 +89,8 @@ var _time: float = 0.0
 
 func _ready() -> void:
 	_rng.seed = school_seed
-	herd = Node4D.new()
-	herd.name = "KoiHerd"
-	herd.set_script(Herd)
-	herd.set("mesh", KoiMesh.build())
-	herd.set("shader", SHADER)
-	herd.set("w_radius", w_radius)
-	add_child(herd)
+	# The food pellets stay slice-drawn: a pellet is a 4D ball, and a ball's cut really is a sphere
+	# that shrinks as the slice leaves it, which is all that trick draws.
 	food_herd = Node4D.new()
 	food_herd.name = "FoodHerd"
 	food_herd.set_script(Herd)
@@ -108,6 +109,9 @@ func _ready() -> void:
 
 func respawn() -> void:
 	fish.clear()
+	for k in koi_nodes:
+		(k as Node).queue_free()
+	koi_nodes.clear()
 	var order: Array = [0, 1, 2, 4, 0, 3, 6, 5, 1, 7, 0, 2, 4, 1, 6, 0, 3, 5, 2, 7]
 	for i in count:
 		var f: Dictionary = {}
@@ -141,8 +145,17 @@ func respawn() -> void:
 			var p0: Vector4 = f["p"]
 			p0.w = f["home_w"]
 			f["p"] = p0
+		var h0: Vector4 = f["h"]
+		f["frame"] = Kit.frame_for(h0, Projection(Vector4(h0.z, 0.0, -h0.x, 0.0).normalized(), Vector4(0, 1, 0, 0), h0, Vector4(0, 0, 0, 1)))
 		fish.append(f)
-	herd.call("set_count", count)
+		var k := Node4D.new()
+		k.name = "Koi%02d" % i
+		k.set_script(KoiLoft)
+		k.set("variety", int(f["variety"]))
+		k.set("long_fins", int(f["long"]) == 1)
+		k.set("pattern_seed", float(f["seed"]))
+		add_child(k)
+		koi_nodes.append(k)
 
 
 func _random_point(w_spread: float) -> Vector4:
@@ -419,6 +432,12 @@ func _swim(i: int, dt: float) -> void:
 	# Gulps: at the surface, and begging at the glass.
 	var gulping: bool = hovering and (mode == "rise" or mode == "beg" or mode == "feed")
 	f["gulp"] = (0.5 + 0.5 * sin(_time * 7.5 + float(f["seed"]) * 9.0)) if gulping else lerpf(float(f["gulp"]), 0.0, 1.0 - exp(-6.0 * dt))
+	# On its home W: once near it, it settles exactly onto it and swims level in it (unless it is off
+	# on a wander through W, when its target lies away from home).
+	if absf(target.w - home_w) < 0.3 and absf(p.w - home_w) < 0.3:
+		h.w *= exp(-4.0 * dt)
+		p.w = move_toward(p.w, home_w, dt * (0.05 + 0.6 * absf(p.w - home_w)))
+		h = h.normalized()
 	# Never steeper than about 35 degrees (a koi does not stand on its tail).
 	if absf(h.y) > 0.57:
 		var flat := Vector4(h.x, 0.0, h.z, h.w)
@@ -499,21 +518,17 @@ func _beat_rate(speed: float, L: float) -> float:
 	return 0.6 + 1.6 * speed / maxf(L, 0.1)
 
 
+## Each lofted koi posed: its frame carried on from the last (so it never flips), leaning into turns.
 func _draw() -> void:
-	if herd == null:
-		return
-	for i in fish.size():
+	for i in mini(fish.size(), koi_nodes.size()):
 		var f: Dictionary = fish[i]
 		var h: Vector4 = f["h"]
-		var right := Vector4(h.z, 0.0, -h.x, 0.0)
-		right = right.normalized() if right.length() > 0.05 else Vector4(1.0, 0.0, 0.0, 0.0)
-		var up := Vector4(-h.x * h.y, 1.0 - h.y * h.y, -h.z * h.y, -h.w * h.y)
-		up = up.normalized() if up.length() > 0.05 else Vector4(0.0, 1.0, 0.0, 0.0)
+		var frame: Projection = Kit.frame_for(h, f["frame"])
+		f["frame"] = frame
 		var roll: float = f["roll"]
-		var side: Vector4 = right * cos(roll) + up * sin(roll)
-		var kind := Color((float(f["variety"]) + 8.0 * float(f["long"])) / 16.0, float(f["seed"]), float(f["spread"]), float(f["gulp"]))
-		herd.call("write", i, f["p"], h, side, kind, Vector4(float(f["phase"]), float(f["amp"]), float(f["len"]), float(f["bend"])))
-	herd.call("upload")
+		var leaned := Projection(frame.x * cos(roll) + frame.y * sin(roll), frame.y * cos(roll) - frame.x * sin(roll), frame.z, frame.w)
+		(koi_nodes[i] as Node4D).call("pose", f["p"], leaned, float(f["len"]), float(f["phase"]), float(f["amp"]), float(f["bend"]),
+			float(f["spread"]), float(f["gulp"]), _time + float(f["seed"]) * 37.0)
 	if food_herd != null:
 		for k in MAX_FOOD:
 			if k < food.size():
@@ -530,9 +545,13 @@ func stats() -> Dictionary:
 	var beats: float = 0.0
 	for f in fish:
 		modes[f["mode"]] = int(modes.get(f["mode"], 0)) + 1
-		if absf((f["p"] as Vector4).w) < w_radius * float(f["len"]):
+		if absf((f["p"] as Vector4).w) < w_half * float(f["len"]):
 			in_slice += 1
 		if float(f["stroke"]) > 0.0:
 			beats += _beat_rate(float(f["v"]), float(f["len"]))
+	var meshes: int = 0
+	for k in koi_nodes:
+		meshes += int((k as Node).get("meshes"))
 	return {"count": fish.size(), "modes": modes, "in_slice": in_slice, "hidden": hidden_count, "cpu_us": cpu_us,
+		"meshes": meshes, "tets": int(koi_nodes[0].get("tets")) if not koi_nodes.is_empty() else 0,
 		"beats": beats / maxf(float(fish.size()), 1.0) * 2.0}

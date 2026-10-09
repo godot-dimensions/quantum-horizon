@@ -14,16 +14,17 @@ extends Node4D
 ##   THE PEDESTAL  the kit's round one (kit_pedestal.gd), and over its deck the kit's blue holographic
 ##                 column, wide enough for the biggest of them to turn in.
 ##   THE CREATURES four, one at a time, each in detail and in place:
-##                   the koi         a Kohaku five times life size, the fine mesh with the shader's
-##                                   detail on (gill cover, lateral line, nostrils, a wet eye),
-##                                   holding station: slow beats, sculling pectorals, slow turns;
+##                   the koi         a Kohaku five times life size, LOFTED IN 4D (life/koi_loft_4d.gd,
+##                                   round 5), finer than the tank's and with the fine marks on
+##                                   (gill cover, lateral line, nostrils), holding station: slow
+##                                   beats, sculling pectorals, slow turns;
 ##                   the hammerhead  the tank's lofted shark (life/shark_4d.gd), its pieces posed in
 ##                                   place, its tail sweeping, half again life size;
 ##                   the crab        four times life size on the deck, walking on the spot, its claws
 ##                                   picking;
 ##                   the eel         its anguilliform wave running down it, holding station.
-##                 The koi, the crab and the eel are drawn as the tank draws them (a slice herd each,
-##                 bent on the graphics card); the hammerhead is 4D meshes.
+##                 All four are lofted in 4D (round 5; the koi, the crab and the eel were slice herds
+##                 until 9 Oct, 3D shapes a shader shrank off the slice): rigid pieces, posed here.
 ##   THE SWAP      choosing another (the arrow keys or 1 to 4, at the panel): the one there shrinks
 ##                 away, the new one grows in from its own life size to the showcase's.
 ##   IN YOUR HANDS the wheel slides it through W, a right drag turns it; let go and it carries on.
@@ -36,26 +37,23 @@ extends Node4D
 const Build := preload("res://ramon/WaterLab/carried/scripts/chamber_build.gd")
 const LabGrid := preload("res://ramon/WaterLab/carried/LabKit/lab_grid.gd")
 const Pedestal := preload("res://ramon/WaterLab/carried/kit/kit_pedestal.gd")
-const Herd := preload("res://ramon/WaterLab/shared/slice_herd_4d.gd")
-const KoiMesh := preload("res://ramon/WaterLab/life/koi_mesh.gd")
-const KOI_SHADER := preload("res://ramon/WaterLab/life/koi.gdshader")
-const Eel := preload("res://ramon/WaterLab/life/eel_4d.gd")
-const EEL_SHADER := preload("res://ramon/WaterLab/life/eel.gdshader")
-const Crab := preload("res://ramon/WaterLab/life/crab_4d.gd")
-const CRAB_SHADER := preload("res://ramon/WaterLab/life/crab.gdshader")
+const KoiLoft := preload("res://ramon/WaterLab/life/koi_loft_4d.gd")
+const Kit := preload("res://ramon/WaterLab/life/loft_kit.gd")
+const EelLoft := preload("res://ramon/WaterLab/life/eel_loft_4d.gd")
+const CrabLoft := preload("res://ramon/WaterLab/life/crab_loft_4d.gd")
 const Shark := preload("res://ramon/WaterLab/life/shark_4d.gd")
 const FloatPanel := preload("res://ramon/WaterLab/carried/voxel_lab/float_panel_4d.gd")
 const GENERATED := "showcase_generated"
 
 ## The four: the key, the tile's name and glyph, the card, how big it is in life and here (metres,
 ## nose to tail or across), where it holds (over the deck: a share of the column's height; 0 on
-## the deck), and its half depth through W (body lengths: its shader's w_radius; the shark's 0.05).
+## the deck), and its half depth through W (its size's share: the lofts' own, a little past it).
 const SPECIES := [
-	{"key": "koi", "name": "Koi", "glyph": "koi", "title": "Kohaku", "kicker": "A KOI, FIVE TIMES LIFE SIZE", "life": 0.7, "size": 3.4, "hold": 0.5, "w": 0.21},
+	{"key": "koi", "name": "Koi", "glyph": "koi", "title": "Kohaku", "kicker": "A KOI, FIVE TIMES LIFE SIZE", "life": 0.7, "size": 3.4, "hold": 0.5, "w": 0.09},
 	{"key": "hammerhead", "name": "Hammerhead", "glyph": "hammerhead", "title": "Scalloped hammerhead", "kicker": "LOFTED IN 4D, HALF AGAIN LIFE SIZE",
 		"life": 2.4, "size": 3.6, "hold": 0.5, "w": 0.05},
-	{"key": "crab", "name": "Crab", "glyph": "crab", "title": "Edible crab", "kicker": "WALKS SIDEWAYS, AND THROUGH W", "life": 0.34, "size": 1.8, "hold": 0.0, "w": 0.6},
-	{"key": "eel", "name": "Eel", "glyph": "eel", "title": "European eel", "kicker": "A WAVE DOWN ITS WHOLE LENGTH", "life": 1.4, "size": 3.4, "hold": 0.45, "w": 0.06},
+	{"key": "crab", "name": "Crab", "glyph": "crab", "title": "Edible crab", "kicker": "WALKS SIDEWAYS, AND THROUGH W", "life": 0.34, "size": 1.8, "hold": 0.0, "w": 0.4},
+	{"key": "eel", "name": "Eel", "glyph": "eel", "title": "European eel", "kicker": "A WAVE DOWN ITS WHOLE LENGTH", "life": 1.4, "size": 3.4, "hold": 0.45, "w": 0.037},
 ]
 
 @export_tool_button("Rebuild") var _rebuild_action: Callable = rebuild
@@ -99,8 +97,10 @@ var turn := Vector2.ZERO
 var turn_w := Vector2.ZERO
 var _ped: Dictionary = {}
 var _holo: MeshInstance4D
-var _herds: Dictionary = {}
 var _shark: Node4D = null
+var _koi: Node4D = null
+var _eel: Node4D = null
+var _crab: Node4D = null
 var _queued: bool = false
 var _t: float = 0.0
 var _phase: float = 0.0
@@ -140,17 +140,39 @@ func rebuild() -> void:
 		if c.has_meta(GENERATED) or c.has_meta(Build.GENERATED):
 			remove_child(c)
 			c.queue_free()
-	_herds = {}
 	_shark = null
+	_koi = null
+	_eel = null
+	_crab = null
 	_shown = -1
 	_ped = Pedestal.build(self, radius, height, "round")
 	deck_h = float(_ped["deck_h"])
 	_build_holo()
 	if Engine.is_editor_hint():
 		return
-	_herds["koi"] = _herd("KoiHerd", KoiMesh.build(2), KOI_SHADER, 0.21, {&"detail": 1.0, &"fin_flutter": 1.3})
-	_herds["eel"] = _herd("EelHerd", Eel.build_mesh(), EEL_SHADER, 0.06, {})
-	_herds["crab"] = _herd("CrabHerd", Crab.build_mesh(), CRAB_SHADER, 0.6, {})
+	_koi = Node4D.new()
+	_koi.name = "Koi"
+	_koi.set_meta(GENERATED, true)
+	_koi.set_script(KoiLoft)
+	_koi.set("variety", 0)
+	_koi.set("pattern_seed", pattern_seed)
+	_koi.set("detail", 2)
+	add_child(_koi)
+	_koi.visible = false
+	_eel = Node4D.new()
+	_eel.name = "Eel"
+	_eel.set_meta(GENERATED, true)
+	_eel.set_script(EelLoft)
+	_eel.set("detail", 2)
+	add_child(_eel)
+	_eel.visible = false
+	_crab = Node4D.new()
+	_crab.name = "Crab"
+	_crab.set_meta(GENERATED, true)
+	_crab.set_script(CrabLoft)
+	_crab.set("detail", 2)
+	add_child(_crab)
+	_crab.visible = false
 	_shark = Node4D.new()
 	_shark.name = "Hammerhead"
 	_shark.set_meta(GENERATED, true)
@@ -174,20 +196,6 @@ func rebuild() -> void:
 	add_child(panel)
 	panel.set("source", panel.get_path_to(self))
 	panel.set("player", player)
-
-
-func _herd(nm: String, mesh: Mesh, shader: Shader, w_radius: float, params: Dictionary) -> Node4D:
-	var h := Node4D.new()
-	h.name = nm
-	h.set_meta(GENERATED, true)
-	h.set_script(Herd)
-	h.set("mesh", mesh)
-	h.set("shader", shader)
-	h.set("w_radius", w_radius)
-	h.set("params", params)
-	h.set("count", 0)
-	add_child(h)
-	return h
 
 
 ## The kit's holographic column (kit_showcase_4d.gd _build_holo), wide enough for them to turn in.
@@ -237,7 +245,7 @@ func select_step(d: int) -> void:
 # -- in place -----------------------------------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
-	if Engine.is_editor_hint() or _herds.is_empty():
+	if Engine.is_editor_hint() or _koi == null:
 		return
 	var t0: int = Time.get_ticks_usec()
 	var dt: float = minf(delta, 0.05)
@@ -259,18 +267,13 @@ func _process(delta: float) -> void:
 
 
 func _show(i: int) -> void:
-	for k in _herds:
-		(_herds[k] as Node4D).call("set_count", 0)
-	if _shark != null:
-		_shark.visible = false
 	_shown = i
 	_in = 0.0
 	_out = 1.0
 	var key: String = SPECIES[i]["key"]
-	if _herds.has(key):
-		(_herds[key] as Node4D).call("set_count", 1)
-	elif key == "hammerhead" and _shark != null:
-		_shark.visible = true
+	for pair in [["hammerhead", _shark], ["koi", _koi], ["eel", _eel], ["crab", _crab]]:
+		if pair[1] != null:
+			(pair[1] as Node4D).visible = String(pair[0]) == key
 
 
 ## How big it is now: from nothing to its life size in the first quarter second, then growing to the
@@ -288,14 +291,18 @@ func _warm_up() -> void:
 	_warm -= 1
 	var at := Vector4(0.0, deck_h * 0.5, 0.0, 0.0)
 	var shown_key: String = SPECIES[maxi(_shown, 0)]["key"]
-	for k in _herds:
-		if k == shown_key:
-			continue
-		var herd: Node4D = _herds[k]
-		herd.call("set_count", 0 if _warm == 0 else 1)
+	if _crab != null and shown_key != "crab":
+		_crab.visible = _warm > 0
 		if _warm > 0:
-			herd.call("write", 0, at, Vector4(0, 0, 1, 0), Vector4(1, 0, 0, 0), Color(0, 0, 0.5, 0), Vector4(0.0, 0.0, 0.001, 0.0))
-			herd.call("upload")
+			_crab.call("pose", at, Projection.IDENTITY, 0.001, 0.0, 0.0, 0.0, 0.0, 0.0)
+	if _koi != null and shown_key != "koi":
+		_koi.visible = _warm > 0
+		if _warm > 0:
+			_koi.call("pose", at, Projection.IDENTITY, 0.001, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+	if _eel != null and shown_key != "eel":
+		_eel.visible = _warm > 0
+		if _warm > 0:
+			_eel.call("pose", at, Projection.IDENTITY, 0.001, 0.0, 0.0, 0.0, 0.0, 0.0)
 	if _shark != null and shown_key != "hammerhead":
 		_shark.visible = _warm > 0
 		if _warm > 0:
@@ -360,17 +367,33 @@ func _draw_now() -> void:
 		right = through_w * right
 	var hold: float = float(sp["hold"])
 	var centre := Vector4(0.0, deck_h + holo_height * hold + (sin(_t * 0.6) * 0.05 if hold > 0.0 else 0.0), 0.0, slide_w)
+	# A loft's frame: ahead and right as turned (through W too), up as near world up as they allow, ana
+	# what is left.
+	var ana: Vector4 = Vector4(0, 0, 0, 1)
+	if not is_zero_approx(turn_w.x) or not is_zero_approx(turn_w.y):
+		ana = (Basis4D.from_xw(turn_w.x) * Basis4D.from_zw(turn_w.y)) * ana
+	var frame: Projection = Kit.frame_for(h, Projection(right, Vector4(0, 1, 0, 0), h, ana))
 	match key:
 		"koi":
+			if _koi == null:
+				return
 			var gulp_open: float = (0.5 + 0.5 * sin(_t * 6.0)) if _gulp > 0.0 else 0.0
-			_write("koi", centre, h, right, Color(0.0, pattern_seed, 0.75, gulp_open), Vector4(_phase, _amp, size, _bend))
+			_koi.call("pose", centre, frame, size, _phase, _amp, _bend, 0.75, gulp_open, _t)
 		"eel":
-			_write("eel", centre, h, right, Color(0.0, 0.0, 0.5 + 0.5 * sin(_t * 2.2), 0.0), Vector4(_phase, 0.07, size, _bend))
+			if _eel == null:
+				return
+			_eel.call("pose", centre, frame, size, _phase, 0.07, _bend, 0.0, 0.0)
 		"crab":
+			if _crab == null:
+				return
+			# Level whatever the tip (a crab stands on its legs), turned through W with the rest.
 			var hc := Vector4(sin(yaw), 0.0, cos(yaw), 0.0)
 			var rc := Vector4(cos(yaw), 0.0, -sin(yaw), 0.0)
+			var level: Projection = Projection(rc, Vector4(0, 1, 0, 0), hc, Vector4(0, 0, 0, 1))
+			if not is_zero_approx(turn_w.x) or not is_zero_approx(turn_w.y):
+				level = (Basis4D.from_xw(turn_w.x) * Basis4D.from_zw(turn_w.y)) * level
 			# Up off the deck (round 4: "the crab sits too low ... raise it slightly").
-			_write("crab", Vector4(0.0, deck_h + 0.9, 0.0, slide_w), hc, rc, Color(_pinch, 0.0, 0.0, 1.0), Vector4(_phase, 1.0, size, 0.5 + 0.5 * sin(_t * 0.9)))
+			_crab.call("pose", Vector4(0.0, deck_h + 0.9, 0.0, slide_w), level, size, _phase, 1.0, 0.5 + 0.5 * sin(_t * 0.9), _pinch, _t)
 		"hammerhead":
 			if _shark == null:
 				return
@@ -381,12 +404,6 @@ func _draw_now() -> void:
 			_shark.set("_phase", _phase)
 			_shark.set("_amp", 0.55 + 0.45 * _amp / 0.085)
 			_shark.call("_pose")
-
-
-func _write(key: String, at: Vector4, h: Vector4, right: Vector4, colour: Color, custom: Vector4) -> void:
-	var herd: Node4D = _herds[key]
-	herd.call("write", 0, at, h, right, colour, custom)
-	herd.call("upload")
 
 
 # -- in your hands ------------------------------------------------------------------------------------------------
@@ -471,9 +488,12 @@ func panel_pages() -> Array:
 				{"title": "The koi", "kicker": "HOLDING STATION",
 					"text": "It swims on the spot, as a koi holds station in a current: slow tail beats that carry it nowhere, the pectoral fins sculling to keep it still, now and then a slow turn round. Scroll to slide it through W; right drag to turn it."},
 				{"title": "How it swims", "kicker": "A WAVE DOWN THE BODY",
-					"text": "The spine bends as a wave that runs from head to tail: a fiftieth of the body at the head, least just behind it, a tenth at the tail, as measured on swimming koi. Each point turns with the bent spine, so it bends like a fish, not a flag."},
+					"text": "The spine bends as a wave that runs from head to tail: a fiftieth of the body at the head, least just behind it, a tenth at the tail, as measured on swimming koi. The body is lofted in 4D and cut into seven rigid pieces, and each frame they follow the wave, so it bends like a fish, not a flag."},
+				{"title": "Through W", "kicker": "ROUND IN BOTH SIDEWAYS DIRECTIONS",
+					"text": "A 4D koi has two sideways directions, x and W, and it is round across both. Slide it through W and your slice cuts it thinner and shorter: the fins go first, then the body, down to a small oval and gone. Its pattern lies over its whole 4D back, so a turned slice crosses other patches of the same koi."},
 				{"title": "What it costs", "kicker": "MEASURED ON THIS MACHINE, NOW",
-					"rows": [["Its swim, a frame", "%.3f ms" % (_swim_us / 1000.0)], ["Draw calls", "1"]]},
+					"rows": [["Its swim, a frame", "%.3f ms" % (_swim_us / 1000.0)], ["4D meshes", str(int(_koi.get("meshes")) if _koi != null else 0)],
+						["Tetrahedra", str(int(_koi.get("tets")) if _koi != null else 0)]]},
 			]
 		"hammerhead":
 			return [
@@ -484,12 +504,16 @@ func panel_pages() -> Array:
 			]
 		"crab":
 			return [
-				{"title": "The crab", "kicker": "EIGHT LEGS, STEPPING ON THE GPU",
+				{"title": "The crab", "kicker": "EIGHT JOINTED LEGS",
 					"text": "Walking on the spot: two sets of four legs stepping in turn, the claws picking. In the tank it wanders through W, so it comes onto your slice in one place and leaves in another."},
+				{"title": "Lofted in 4D", "kicker": "A SHELL AND TWENTY RIGID PIECES",
+					"text": "Its shell is lofted in 4D, as deep through W as it is from front to back. Each leg is two pieces jointed at the knee, each claw an arm and a finger. Slide it through W and the legs are cut away long before the shell."},
 			]
 		"eel":
 			return [
 				{"title": "The eel", "kicker": "ANGUILLIFORM",
 					"text": "The whole body swims: a wave runs down its length, growing toward the tail, so it pushes the water back along all of it. In the tank it rests in its cave by day and patrols low over the sand."},
+				{"title": "Lofted in 4D", "kicker": "TWELVE PIECES, ONE WAVE",
+					"text": "Its body is lofted in 4D and cut into twelve short pieces, about nine to a wave, so the S reads round. It is as deep through W as it is wide: slide it through W and the long fin goes first, then the body thins to nothing."},
 			]
 	return []

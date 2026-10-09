@@ -7,7 +7,8 @@ extends "res://ramon/WaterLab/scripts/_wl_shots.gd"
 ## at three places; "hud4k" a 4K frame of the HUD and the walls; "quick" only the first frames;
 ## "detail" the eel and the crab close through the glass (a camera of the runner's own), every card
 ## of the fish wall, and the round trip: through the far door to the sea, back in through pier 1's
-## door, arriving at the tank room's far door.
+## door, arriving at the tank room's far door. "round5" the lofted animals (the tank turned, a koi and
+## the eel close, the showcase, the fish wall); with "r5perf" it then times the frames at the tank.
 
 const SCENE := "res://ramon/WaterLab/water_lab.tscn"
 
@@ -33,6 +34,74 @@ func setup() -> void:
 			step(1, perf_start.bind(String(spot[0])))
 			step(180, nop)
 			step(1, perf_end)
+		return
+	if "round5" in args:
+		# Round 5: every animal a true 4D loft. The tank level and turned through W both ways (the koi
+		# should cut as the hammerhead does), a koi and the eel followed close, the showcase's koi and
+		# eel level and turned, the fish wall's koi and eel cards; then the frame time at the tank.
+		step(90, _go(-4.23, -8.2, 0.0))
+		step(30, nop, "r5_01_tank_level")
+		for deg in [20, 40, 60]:
+			step(1, _turn_both.bind(float(deg), 0.0, 0.0))
+			step(20, nop, "r5_02_tank_xw_%02d" % deg)
+		step(1, _turn_both.bind(0.0, 35.0, 0.0))
+		step(20, nop, "r5_03_tank_zw_35")
+		step(1, _turn_both.bind(0.0, 0.0, 0.0))
+		step(1, _close_on_koi)
+		step(30, nop, "r5_04_koi_close")
+		step(60, nop, "r5_05_koi_close_later")
+		step(1, _turn_both.bind(25.0, 0.0, 0.0))
+		step(10, nop, "r5_06_koi_close_tank_xw_25")
+		step(1, _turn_both.bind(0.0, 0.0, 0.0))
+		step(1, _close_on.bind("eel", Vector4(0.0, 0.25, 0.0, 0.0)))
+		step(20, nop, "r5_07_eel_at_its_cave")
+		step(1, _eel_out)
+		step(150, nop, "r5_08_eel_out")
+		step(1, _close_off)
+		step(1, _go(10.0, -4.4, 180.0))
+		step(60, _pitch(-4.0), "r5_09_showcase_koi")
+		step(1, _showcase_turn_w.bind(0.6))
+		step(20, nop, "r5_10_showcase_koi_turned_w")
+		step(1, _showcase_turn_w.bind(0.0))
+		step(1, _choose.bind(3))
+		step(150, nop, "r5_11_showcase_eel")
+		step(1, _showcase_turn_w.bind(0.6))
+		step(20, nop, "r5_12_showcase_eel_turned_w")
+		step(1, _showcase_turn_w.bind(0.0))
+		step(1, _choose.bind(0))
+		# The fish wall from where round 4 looked at it (its pages printed into the south wall).
+		for k in 3:
+			step(1, _wall_card.bind(k))
+			step(1, _go(2.3, -2.0, 180.0))
+			step(40, _pitch(-4.0), "r5_%02d_fish_wall_cards_%d" % [13 + k, k])
+		if "r5perf" in args:
+			DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+			Engine.max_fps = 0
+			step(1, _go(-4.23, -8.2, 0.0))
+			step(40, nop)
+			step(1, perf_start.bind("at_tank_lofted"))
+			step(180, nop)
+			step(1, perf_end)
+			step(1, _r5_costs)
+			# What each lofted system costs: the frame with it switched off.
+			for off in [["swarm"], ["koi"], ["swarm", "koi"], ["swarm", "koi", "eel", "crab"]]:
+				step(1, _r5_switch.bind(off, false))
+				step(40, nop)
+				step(1, perf_start.bind("at_tank_without_" + "_".join(off)))
+				step(180, nop)
+				step(1, perf_end)
+				step(1, _r5_switch.bind(off, true))
+			# Shown but not moving: what drawing them costs, apart from posing them.
+			for still in [["swarm"], ["koi"]]:
+				step(1, _r5_switch.bind(still, false))
+				step(1, func() -> void:
+					for nm in still:
+						(_room.get("tank").get(nm) as Node4D).visible = true)
+				step(40, nop)
+				step(1, perf_start.bind("at_tank_still_" + "_".join(still)))
+				step(180, nop)
+				step(1, perf_end)
+				step(1, _r5_switch.bind(still, true))
 		return
 	if "round4" in args:
 		# Ramon's walkthrough parts 2-4: the gizmos, the tank's arches, corals and weed, the swarm, the
@@ -232,6 +301,8 @@ func setup() -> void:
 var _close: Camera4D
 var _track: Node4D = null
 var _track_off := Vector4.ZERO
+## Which koi of the school the close camera follows (-1: it follows the eel or the crab).
+var _track_koi: int = -1
 
 
 func _detail() -> void:
@@ -263,6 +334,7 @@ func _detail() -> void:
 ## A camera of the runner's own in front of the glass, following `nm` (the tank's eel or crab).
 func _close_on(nm: String, off: Vector4) -> void:
 	var tank: Node = _room.get("tank")
+	_track_koi = -1
 	_track = tank.get(nm)
 	_track_off = off
 	if nm == "crab":
@@ -274,6 +346,68 @@ func _close_on(nm: String, off: Vector4) -> void:
 		_close.set("rendering_engine_name", "Cross-section")
 		root.add_child(_close)
 	_close.make_current()
+
+
+## The close camera on a koi of the tank: the first that lives on the slice.
+func _close_on_koi() -> void:
+	var school: Node = _room.get("tank").get("koi")
+	var fish: Array = school.get("fish")
+	_track_koi = 0
+	for i in fish.size():
+		if is_zero_approx(float(fish[i]["home_w"])):
+			_track_koi = i
+			break
+	_track = school
+	_track_off = Vector4.ZERO
+	if _close == null:
+		_close = Camera4D.new()
+		_close.set("rendering_engine_name", "Cross-section")
+		root.add_child(_close)
+	_close.make_current()
+
+
+## Round 5's perf: the lofted systems' own script time, and how many 4D meshes each draws.
+func _r5_costs() -> void:
+	var tank: Node = _room.get("tank")
+	var koi: Node = tank.get("koi")
+	var st: Dictionary = koi.call("stats")
+	var swarm: Node = tank.get("swarm")
+	var school: Node = swarm.get("school")
+	var flock: Node = swarm.get("flock")
+	print("ROOM R5 koi: %d fish, %d meshes, %d tets each, swim %.3f ms" % [int(st["count"]), int(st["meshes"]), int(st["tets"]), float(st["cpu_us"]) / 1000.0])
+	print("ROOM R5 swarm: %d fish, %d tets each, flock step %.3f ms, posing %.3f ms" % [int(flock.get("count")), int(school.get("tets_each")),
+		float(flock.get("mean_step_usec")) / 1000.0, float(school.get("cpu_us")) / 1000.0])
+	for nm in ["eel", "crab", "shark"]:
+		var n: Node = tank.get(nm)
+		if n != null:
+			print("ROOM R5 %s: %s" % [nm, str(n.call("bench_row"))])
+	var total: int = 0
+	for mi in _room.find_children("*", "MeshInstance4D", true, false):
+		if (mi as Node4D).is_visible_in_tree():
+			total += 1
+	print("ROOM R5 MeshInstance4D shown in the room: %d" % total)
+
+
+## Switches the tank's lofted systems off and on (hidden and not stepped).
+func _r5_switch(which: Array, on: bool) -> void:
+	var tank: Node = _room.get("tank")
+	for nm in which:
+		var n: Node = tank.get(nm)
+		if n == null:
+			continue
+		(n as Node4D).visible = on
+		n.set_process(on)
+		for c in n.get_children():
+			c.set_process(on)
+			for c2 in c.get_children():
+				c2.set_process(on)
+
+
+## The showcase's specimen turned through W (its right drag), to `a` radians in x-W.
+func _showcase_turn_w(a: float) -> void:
+	var s: Node = _room.get("showcase")
+	if s != null:
+		s.set("turn_w", Vector2(a, 0.0))
 
 
 func _close_off() -> void:
@@ -292,7 +426,7 @@ func _eel_out() -> void:
 
 
 func _track_point() -> Vector4:
-	var p: Vector4 = _track.get("_p")
+	var p: Vector4 = _track.get("fish")[_track_koi]["p"] if _track_koi >= 0 and _track.get("fish") != null else _track.get("_p")
 	return _track.global_position + _track.global_basis * p
 
 

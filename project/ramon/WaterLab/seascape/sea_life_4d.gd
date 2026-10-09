@@ -13,17 +13,17 @@ extends Node4D
 ##                    between `depth_range` (4.5 m and 0.8 m) under the surface, so now and then they
 ##                    come up near it. (The sea is dark below three metres or so: 6 m and 1.5 m at
 ##                    first, and the frames of 9 Oct never caught one.)
-##   THE EELS         two of the tank's eels (life/eel_4d.gd's mesh and shader), two metres long,
+##   THE EELS         two of the tank's eels, lofted in 4D (life/eel_loft_4d.gd, round 5), two metres long,
 ##                    winding slowly round the pole just under the surface (under a metre and a half:
 ##                    deeper, the dark water hid them in the frames of 9 Oct), on and off its far side.
 ##
 ## The sharks are posed as the showcase poses one (their own _process off, `p` and `frame` set, _pose
-## called); the eels drawn as slice herds. In the seascape's own frame (its root). NO class_name.
+## called); the eels likewise (their pieces posed by EelLoft.pose). In the seascape's own frame (its
+## root). NO class_name.
 
 const Shark := preload("res://ramon/WaterLab/life/shark_4d.gd")
-const Herd := preload("res://ramon/WaterLab/shared/slice_herd_4d.gd")
-const Eel := preload("res://ramon/WaterLab/life/eel_4d.gd")
-const EEL_SHADER := preload("res://ramon/WaterLab/life/eel.gdshader")
+const EelLoft := preload("res://ramon/WaterLab/life/eel_loft_4d.gd")
+const Kit := preload("res://ramon/WaterLab/life/loft_kit.gd")
 
 ## The loop's middle (x, z) and size; the pole (x, z) the eels wind round.
 var loop_centre := Vector2(26.0, 0.0)
@@ -34,7 +34,8 @@ var pole := Vector2(32.0, -11.0)
 @export var depth_range := Vector2(0.8, 4.5)
 
 var _sharks: Array = []
-var _eels: Node4D
+var _eels: Array = []
+var _eel_frames: Array = []
 var _t: float = 0.0
 var _rng := RandomNumberGenerator.new()
 const OFFSETS := [Vector3(0.0, 0.0, 0.0), Vector3(-3.0, -0.8, 2.6), Vector3(-4.2, 0.6, -2.4)]
@@ -53,14 +54,13 @@ func _ready() -> void:
 		var k: float = shark_scale * (1.0 - 0.08 * float(i))
 		s.basis = Projection(Vector4(k, 0, 0, 0), Vector4(0, k, 0, 0), Vector4(0, 0, k, 0), Vector4(0, 0, 0, k))
 		_sharks.append({"node": s, "k": k, "phase": _rng.randf() * TAU})
-	_eels = Node4D.new()
-	_eels.name = "Eels"
-	_eels.set_script(Herd)
-	_eels.set("mesh", Eel.build_mesh())
-	_eels.set("shader", EEL_SHADER)
-	_eels.set("w_radius", 0.06)
-	_eels.set("count", 2)
-	add_child(_eels)
+	for e in 2:
+		var eel := Node4D.new()
+		eel.name = "Eel%d" % e
+		eel.set_script(EelLoft)
+		add_child(eel)
+		_eels.append(eel)
+		_eel_frames.append(Projection.IDENTITY)
 
 
 ## Where the leader is at time t (the seascape's frame): a slow wandering loop, its depth a long swell.
@@ -99,6 +99,6 @@ func _process(delta: float) -> void:
 		var r: float = 3.2 + 0.6 * sin(_t * 0.3 + float(e))
 		var at2 := Vector4(pole.x + cos(a) * r, -0.7 - 0.4 * float(e) + 0.25 * sin(_t * 0.5 + float(e)), pole.y + sin(a) * r, 0.0)
 		var h := Vector4(-sin(a) * dir, 0.0, cos(a) * dir, 0.0)
-		var rt := Vector4(h.z, 0.0, -h.x, 0.0)
-		_eels.call("write", e, at2, h, rt, Color(0.0, 0.0, 0.5 + 0.5 * sin(_t * 2.2), 0.0), Vector4(_t * TAU * 0.7, 0.07, 2.0, dir * 0.25))
-	_eels.call("upload")
+		var f: Projection = Kit.level_frame(h) if _eel_frames[e] == Projection.IDENTITY else Kit.frame_for(h, _eel_frames[e])
+		_eel_frames[e] = f
+		(_eels[e] as Node4D).call("pose", at2, f, 2.0, _t * TAU * 0.7, 0.07, dir * 0.25, 0.0, 0.0)

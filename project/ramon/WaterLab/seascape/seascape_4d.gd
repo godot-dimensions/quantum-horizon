@@ -128,9 +128,9 @@ var harbour_gulls: int = 12:
 		var h: Node = get_node_or_null("Harbour")
 		if h != null:
 			h.set("count", harbour_gulls)
-var harbour_fish: int = 3000:
+var harbour_fish: int = 150:
 	set(v):
-		harbour_fish = clampi(v, 0, 8000)
+		harbour_fish = clampi(v, 0, 300)
 		# A new size respawns the school: once the slider has stopped (coalesced, as a drag sends a
 		# value every step).
 		_fish_in = 0.3

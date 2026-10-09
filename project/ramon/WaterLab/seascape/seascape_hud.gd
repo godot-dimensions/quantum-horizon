@@ -224,7 +224,7 @@ func _props(obj: Object, kind: String) -> Array:
 		# sardines, the plesiosaur's visits: the scene root's settings, whole numbers (the INT rows set
 		# them as they are; a float row on the root would be taken for a pier size).
 		return [{"name": "harbour_gulls", "type": TYPE_INT, "hint": PROPERTY_HINT_RANGE, "hint_string": "0,30,1"},
-			{"name": "harbour_fish", "type": TYPE_INT, "hint": PROPERTY_HINT_RANGE, "hint_string": "0,6000,100"},
+			{"name": "harbour_fish", "type": TYPE_INT, "hint": PROPERTY_HINT_RANGE, "hint_string": "0,300,10"},
 			{"name": "plesiosaur_visit_every", "type": TYPE_INT, "hint": PROPERTY_HINT_RANGE, "hint_string": "10,300,5"}]
 	if kind == "piers":
 		for row in PIERS:

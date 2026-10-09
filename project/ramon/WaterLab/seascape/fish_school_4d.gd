@@ -1,8 +1,14 @@
 extends Node4D
 
 ## WATER LAB: the sea's school of sardines, a fish murmuration (Ramon, 9 Oct: "create schools of fish like
-## the pen's starling murmuration"). The pen's flock itself, carried (carried/flock/school_flock_4d.gd),
-## a sardine mesh and shader (school_fish.gdshader) in place of the starling's.
+## the pen's starling murmuration"). The pen's flock itself, carried (carried/flock/school_flock_4d.gd).
+##
+## ROUND 5, EVERY SARDINE LOFTED IN 4D (life/school_loft_4d.gd, two rigid pieces each). Until 9 Oct the
+## school was 3,000 sardine shapes a shader shrank off the slice; Ramon chose fewer, all true 4D: 150
+## (the HARBOUR slider, up to 300). The flock steps on the CPU and draws nothing itself. A 20 cm
+## sardine is under 3 cm deep through W, so the school's spread through W is squashed in the flock's
+## basis (W_SCALE) to keep the fish within their half width of the slice; turn the slice and you
+## leave the school behind.
 ##
 ## WHY SARDINES (the research in follow_up/water_lab.md): the classic bait-ball fish, 15 to 20 cm, a
 ## clear look from a pier (blue-green back, silver flanks, a row of spots), schooling a body length
@@ -15,11 +21,10 @@ extends Node4D
 ## water off the pier; its height band 1 to 4 m down (deeper, the water swallowed them: 9 Oct).
 ##
 ## THE SCALE DOES NOT REACH THE FISH THEMSELVES (round 2, Ramon: "the sardines do look huge ... I would
-## imagine this to be way smaller fish and more scattered"). The shader places each fish along its
-## heading and side, normalised, so the node's 0.2 shrank the spacing and not the bodies: they were
-## drawn 1.2 m long, a sixth of a body length apart. Now `bird_scale` draws them 20 cm long, and the
-## spacing rules are three times the pen's, which at a fifth of the size leaves them about two body
-## lengths apart, as the pen's starlings are (follow_up/flocking.md: 2 to 2.5 lengths).
+## imagine this to be way smaller fish and more scattered"). The node's 0.2 shrinks the spacing, not
+## the bodies: the lofted fish are drawn 20 cm long, and the spacing rules are three times the pen's,
+## which at a fifth of the size leaves them about two body lengths apart, as the pen's starlings are
+## (follow_up/flocking.md: 2 to 2.5 lengths).
 ##
 ## THE PLESIOSAUR IS ITS HAWK: the flock's piloted hawk (pilot_hawk, fly_hawk), undrawn, flown each
 ## frame at the plesiosaur's head. Fish near it flee and roll, the roll runs through the school as a
@@ -28,13 +33,15 @@ extends Node4D
 ## NO class_name (engine_gotchas.md).
 
 const Flock := preload("res://ramon/WaterLab/carried/flock/school_flock_4d.gd")
-const SHADER := preload("res://ramon/WaterLab/seascape/school_fish.gdshader")
+const SchoolLoft := preload("res://ramon/WaterLab/life/school_loft_4d.gd")
 const SCALE := 0.2
+## The flock's W band (1.2 units) to under a centimetre either side of the slice.
+const W_SCALE := 0.006
 
 ## Setting it respawns the school at that size (the HUD's HARBOUR section).
-@export var count: int = 3000:
+@export var count: int = 150:
 	set(v):
-		count = clampi(v, 0, 8000)
+		count = clampi(v, 0, 300)
 		if flock != null:
 			flock.set("count", count)
 			flock.call("respawn")
@@ -48,22 +55,21 @@ func middle() -> Vector4:
 ## The plesiosaur (its body node), whose head is the school's hunter.
 var hunter: Node4D = null
 var flock: Node4D
+## The lofted fish (life/school_loft_4d.gd), posed at the flock's rows.
+var school: Node4D
 
 
 func _ready() -> void:
 	flock = Node4D.new()
 	flock.name = "Flock"
 	flock.set_script(Flock)
-	flock.set("body_mesh", _fish_mesh())
-	flock.set("body_shader", SHADER)
+	flock.set("drawn", false)
+	flock.set("backend", 1)
 	flock.set("hawk_drawn", false)
 	flock.set("hawk_enabled", false)
 	flock.set("count", count)
-	# In the flock's own (starling) units: a fifth of each in the world.
-	# 1.2 units of mesh x 0.17: 20 cm fish. The W radius in the shader is bird_w_radius x size, in
-	# world metres: 1.6 x 0.17, about 27 cm, against the school's +-24 cm W band.
+	# In the flock's own (starling) units: a fifth of each in the world (W squashed, W_SCALE).
 	flock.set("bird_scale", 0.17)
-	flock.set("bird_w_radius", 1.6)
 	# Looser than the pen's flock (1.1 and 2.2): the school spreads out.
 	flock.set("separation_radius", 3.3)
 	flock.set("radius_max", 6.0)
@@ -77,9 +83,15 @@ func _ready() -> void:
 	flock.set("altitude_pull", 0.12)
 	flock.set("w_half_depth", 1.2)
 	flock.set("scare_radius", 30.0)
-	flock.basis = Projection(Vector4(SCALE, 0, 0, 0), Vector4(0, SCALE, 0, 0), Vector4(0, 0, SCALE, 0), Vector4(0, 0, 0, SCALE))
+	flock.basis = Projection(Vector4(SCALE, 0, 0, 0), Vector4(0, SCALE, 0, 0), Vector4(0, 0, SCALE, 0), Vector4(0, 0, 0, W_SCALE))
 	add_child(flock)
 	flock.call("pilot_hawk", true)
+	school = Node4D.new()
+	school.name = "Fish"
+	school.set_script(SchoolLoft)
+	school.set("flock", flock)
+	school.set("fish_length", 0.2)
+	add_child(school)
 
 
 func _process(_delta: float) -> void:
@@ -88,75 +100,3 @@ func _process(_delta: float) -> void:
 	var ahead: Vector4 = (hunter.global_basis * Vector4(0, 0, 1, 0)).normalized()
 	var head: Vector4 = hunter.global_position + ahead * 6.0
 	flock.call("fly_hawk", head, ahead, 1.5, 0.0, 0.0)
-
-
-## A sardine, 1.2 units long (drawn at bird_scale: 20 cm), +Z ahead: a slim body of rings, a forked
-## tail, a little dorsal fin. UV.x how far back (the tail's swing), UV.y how high round the body.
-static func _fish_mesh() -> ArrayMesh:
-	var verts := PackedVector3Array()
-	var normals := PackedVector3Array()
-	var uvs := PackedVector2Array()
-	var idx := PackedInt32Array()
-	var L: float = 1.0
-	var rings: int = 12
-	var sides: int = 8
-	var ring_start: Array = []
-	for k in rings:
-		var s: float = float(k) / float(rings - 1)
-		var z: float = (0.5 - s) * L
-		var r: float = 0.11 * L * pow(sin(PI * clampf(s * 0.92 + 0.04, 0.0, 1.0)), 0.7)
-		ring_start.append(verts.size())
-		for j in sides:
-			var a: float = TAU * float(j) / float(sides)
-			var dir := Vector3(cos(a) * 0.62, sin(a), 0.0)
-			verts.append(Vector3(dir.x * r, dir.y * r, z))
-			normals.append(Vector3(cos(a) * 0.62, sin(a), 0.0).normalized())
-			uvs.append(Vector2(s * 0.85, sin(a)))
-	for k in rings - 1:
-		var r0: int = ring_start[k]
-		var r1: int = ring_start[k + 1]
-		for j in sides:
-			var j1: int = (j + 1) % sides
-			idx.append_array([r0 + j, r0 + j1, r1 + j1, r0 + j, r1 + j1, r1 + j])
-	# Caps.
-	for end in [0, rings - 1]:
-		var c: int = verts.size()
-		var z2: float = (0.5 - float(end) / float(rings - 1)) * L
-		verts.append(Vector3(0.0, 0.0, z2 + (0.02 if end == 0 else -0.01)))
-		normals.append(Vector3(0, 0, 1 if end == 0 else -1))
-		uvs.append(Vector2(0.0 if end == 0 else 0.85, 0.0))
-		var r2: int = ring_start[end]
-		for j in sides:
-			var j1: int = (j + 1) % sides
-			if end == 0:
-				idx.append_array([c, r2 + j1, r2 + j])
-			else:
-				idx.append_array([c, r2 + j, r2 + j1])
-	# The forked tail and the dorsal fin, flat.
-	var tail_root: float = -0.5 * L + 0.02
-	var fins: Array = [
-		[Vector3(0.0, 0.0, tail_root), Vector3(0.0, 0.16, tail_root - 0.22), Vector3(0.0, 0.02, tail_root - 0.12), 1.0],
-		[Vector3(0.0, 0.0, tail_root), Vector3(0.0, 0.02, tail_root - 0.12), Vector3(0.0, -0.15, tail_root - 0.21), 1.0],
-		[Vector3(0.0, 0.08, 0.05), Vector3(0.0, 0.16, -0.02), Vector3(0.0, 0.08, -0.12), 0.45],
-	]
-	for f in fins:
-		for p in [f[0], f[1], f[2]]:
-			verts.append(p)
-			normals.append(Vector3(1, 0, 0))
-			var back: float = clampf(0.5 - (p as Vector3).z / L, 0.0, 1.0)
-			uvs.append(Vector2(back if float(f[3]) > 0.9 else 0.45, 0.6))
-		idx.append_array([verts.size() - 3, verts.size() - 2, verts.size() - 1])
-	var arrays: Array = []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = verts
-	arrays[Mesh.ARRAY_NORMAL] = normals
-	arrays[Mesh.ARRAY_TEX_UV] = uvs
-	var col := PackedColorArray()
-	col.resize(verts.size())
-	col.fill(Color.WHITE)
-	arrays[Mesh.ARRAY_COLOR] = col
-	arrays[Mesh.ARRAY_INDEX] = idx
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	mesh.custom_aabb = AABB(Vector3(-5000, -5000, -5000), Vector3(10000, 10000, 10000))
-	return mesh

@@ -465,4 +465,4 @@ static func _flat(c: Color) -> TetraMaterial4D:
 
 
 func bench_row() -> Array:
-	return ["Hammerhead", "1", "%.3f ms" % (cpu_us / 1000.0), str(_pieces.size() + 6), "lofted in 4D, rigid pieces"]
+	return ["Hammerhead", "1", "%.3f ms" % (cpu_us / 1000.0), str(_pieces.size() + 6), "4D loft, 6 pieces"]
