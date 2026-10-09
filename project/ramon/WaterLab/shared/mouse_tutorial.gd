@@ -8,7 +8,7 @@ extends Control
 ## simple").
 ##
 ## ONE MOUSE, ACTING EACH GESTURE IN TURN: a mouse drawn as a mouse (a rounded body, two buttons, a
-## wheel, a short cable, a soft gloss), its right button lit. It moves through `gestures` one after
+## wheel, a soft gloss; no cable), its right button lit. It moves through `gestures` one after
 ## another, about two seconds each: pushed forward and back (the arrows above and below lit, a chevron
 ## sliding along them), slid side to side (the arrows at both sides lit), the wheel rolled (the wheel
 ## lit, ticks rolling over it). The gesture being shown is named under it in large type, the others
@@ -74,13 +74,8 @@ func _draw() -> void:
 	elif kind == "drag_h":
 		move = Vector2(swing * 30.0 * u, 0.0)
 	var m := Rect2(centre - Vector2(mw, mh) * 0.5 + move, Vector2(mw, mh))
-	# Its shadow, the cable, the body.
+	# Its shadow and the body (no cable: round 3).
 	_round(Rect2(m.position + Vector2(5.0, 8.0) * u, m.size), 56.0 * u, Color(0, 0, 0, 0.35 * _a))
-	var cable := PackedVector2Array()
-	for i in 9:
-		var s: float = float(i) / 8.0
-		cable.append(Vector2(m.get_center().x + sin(s * 3.0 + _t * 0.8) * 6.0 * u, m.position.y - s * 46.0 * u))
-	draw_polyline(cable, Color(1, 1, 1, 0.45 * _a), maxf(1.5, 3.0 * u), true)
 	_round(m, 56.0 * u, Color(0.93, 0.95, 0.98, _a))
 	# The buttons: the split, the right one lit (brighter while a drag is being acted).
 	var split_y: float = m.position.y + mh * 0.42

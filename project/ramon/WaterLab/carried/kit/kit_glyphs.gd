@@ -161,6 +161,55 @@ static func animal(c: CanvasItem, kind: String, rect: Rect2, col: Color, cut: Co
 			poly.call(top + bottom)
 			poly.call([Vector2(70, 61), Vector2(61, 71), Vector2(57, 69), Vector2(66, 60)])
 			dot.call(Vector2(82.5, 52.5), 1.5, cut)
+		"hammerhead":
+			# WATER LAB: a hammerhead from above, nose to the right: the hammer across the front with an eye
+			# at each end, the body tapering to the tail fork, the two pectorals swept back, the dorsal a
+			# darker line down the back.
+			poly.call([Vector2(84, 33), Vector2(90, 34), Vector2(92, 38), Vector2(91, 72), Vector2(89, 76), Vector2(83, 77), Vector2(81, 60),
+				Vector2(79, 50), Vector2(81, 40)])
+			poly.call([Vector2(81, 49), Vector2(72, 47), Vector2(56, 47.5), Vector2(38, 50), Vector2(24, 53), Vector2(14, 55), Vector2(14, 57),
+				Vector2(24, 59), Vector2(38, 62), Vector2(56, 64.5), Vector2(72, 65), Vector2(81, 63)])
+			poly.call([Vector2(14, 55.5), Vector2(4, 44), Vector2(8, 43), Vector2(17, 54)])
+			poly.call([Vector2(14, 56.5), Vector2(6, 66), Vector2(9, 67), Vector2(17, 58)])
+			poly.call([Vector2(62, 48), Vector2(50, 34), Vector2(54, 33), Vector2(68, 48)])
+			poly.call([Vector2(62, 64), Vector2(50, 78), Vector2(54, 79), Vector2(68, 64)])
+			dot.call(Vector2(87.5, 36.5), 1.6, cut)
+			dot.call(Vector2(87.5, 73.5), 1.6, cut)
+		"crab":
+			# WATER LAB: a crab from above: the broad shell, the two claws reaching forward (up the page),
+			# four walking legs a side, bent.
+			poly.call([Vector2(30, 48), Vector2(36, 39), Vector2(50, 36), Vector2(64, 39), Vector2(70, 48), Vector2(68, 58), Vector2(60, 64),
+				Vector2(50, 66), Vector2(40, 64), Vector2(32, 58)])
+			for sd in [-1.0, 1.0]:
+				var x0: float = 50.0 + sd * 12.0
+				line.call([Vector2(x0, 40), Vector2(50.0 + sd * 20.0, 30), Vector2(50.0 + sd * 22.0, 22)], 3.4, col)
+				poly.call([Vector2(50.0 + sd * 17.0, 24), Vector2(50.0 + sd * 21.0, 13), Vector2(50.0 + sd * 28.0, 14), Vector2(50.0 + sd * 28.0, 24),
+					Vector2(50.0 + sd * 24.0, 27)])
+				for k in 4:
+					var yy: float = 46.0 + float(k) * 5.0
+					line.call([Vector2(50.0 + sd * 19.0, yy), Vector2(50.0 + sd * (30.0 + float(k)), yy - 6.0 + float(k) * 2.5), Vector2(50.0 + sd * (36.0 + float(k) * 0.5), yy + 4.0 + float(k) * 3.0)], 2.6, col)
+			dot.call(Vector2(46, 41), 1.4, cut)
+			dot.call(Vector2(54, 41), 1.4, cut)
+		"eel":
+			# WATER LAB: an eel side on, nose to the right, its long body in a slow S, the fin running
+			# along back and belly to the tail.
+			var spine: Array = []
+			var n: int = 24
+			for i in n + 1:
+				var u: float = float(i) / float(n)
+				spine.append(Vector2(90.0 - u * 84.0, 55.0 + sin(u * PI * 2.2) * 9.0 * u))
+			var upper: Array = []
+			var lower: Array = []
+			for i in spine.size():
+				var u2: float = float(i) / float(n)
+				var r: float = lerpf(5.2, 0.8, pow(u2, 0.8)) * (0.6 + 0.4 * smoothstep(0.0, 0.12, u2))
+				var p: Vector2 = spine[i]
+				var q: Vector2 = spine[mini(i + 1, n)] - spine[maxi(i - 1, 0)]
+				var nrm := Vector2(-q.y, q.x).normalized()
+				upper.append(p + nrm * r)
+				lower.push_front(p - nrm * r)
+			poly.call(upper + lower)
+			dot.call(Vector2(86, 53.5), 1.3, cut)
 		"chicken":
 			# The legs and feet, the tail fan, the body, the neck and head, comb, beak and wattle.
 			line.call([Vector2(44, 72), Vector2(42, 88)], 3.0, col)

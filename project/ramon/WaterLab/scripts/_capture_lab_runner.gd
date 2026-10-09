@@ -34,6 +34,39 @@ func setup() -> void:
 			step(180, nop)
 			step(1, perf_end)
 		return
+	if "round3" in args:
+		# Ramon's second walkthrough (9 Oct): the spawn's facing, the walls, the showcase's four and a
+		# swap, its panel, the airlock behind the hologram, the tank's arches, weed and swarm, the square,
+		# the feeding prompt, the lights' editor.
+		step(90, nop, "t01_spawn_facing")
+		step(1, _go(-12.0, -4.0, 90.0))
+		step(20, _pitch(-4.0), "t02_intro_wall")
+		step(1, _go(2.3, -2.0, 180.0))
+		step(30, _pitch(-4.0), "t03_south_wall_fish")
+		step(1, _go(6.3, -7.2, -140.0))
+		step(40, _pitch(-2.0), "t04_showcase_koi")
+		for k in [1, 2, 3]:
+			step(1, _choose.bind(k))
+			step(150, nop, "t%02d_showcase_%s" % [4 + k, ["koi", "hammerhead", "crab", "eel"][k]])
+		step(1, _choose.bind(0))
+		step(25, nop, "t08_showcase_swap_growing")
+		step(1, _go(7.1, -7.3, -120.0))
+		step(30, _pitch(-24.0), "t09_showcase_panel")
+		step(1, _go(10.0, -10.4, 0.0))
+		step(60, _pitch(-6.0), "t10_exit_hologram_dark_airlock")
+		step(1, _go(-5.0, -5.0, 0.0))
+		step(30, _pitch(8.0), "t11_tank_arches_weed")
+		step(1, _go(4.0, -5.0, 0.0))
+		step(30, nop, "t12_tank_right_swarm")
+		step(1, _go(-5.23, -4.4, 0.0))
+		step(20, _pitch(-38.0), "t13_square_close")
+		step(1, _pitch(-11.0))
+		step(1, _go(-8.7, -7.5, 0.0))
+		step(30, nop, "t14_feeding_prompt")
+		step(1, _press.bind(KEY_TAB))
+		step(20, nop, "t15_lights_editor")
+		step(1, _press.bind(KEY_TAB))
+		return
 	if "square" in args:
 		step(90, _go(-11.0, -4.0, -45.0), "q01_square_from_the_bend")
 		step(20, _go(-5.23, -3.2, 0.0), "q02_square_from_behind")
@@ -265,6 +298,12 @@ func _walk_stop() -> void:
 	var p: Node4D = _room.get("player")
 	print("ROOM walked from %s to %s (%.2f m)" % [str(_walk_from), str(p.global_position), (p.global_position - _walk_from).length()])
 	p.set("input_enabled", false)
+
+
+func _choose(k: int) -> void:
+	var s: Node = _room.get("showcase")
+	if s != null:
+		s.call("select", k)
 
 
 func _turn_both(turn_deg: float, turn2_deg: float, slide: float) -> void:

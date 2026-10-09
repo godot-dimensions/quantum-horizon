@@ -77,6 +77,12 @@ const Style := preload("res://ramon/WaterLab/carried/kit/kit_style.gd")
 		wall_edge = v
 		_later()
 ## Its lower edge above the floor, metres.
+## WATER LAB: metres along its wall from the middle (+ toward the wall's higher end: +z on the "w" and
+## "e" walls, +x on "n" and "s"). Ramon, round 3: the intro "a little bit to the left, like one meter".
+@export var along_shift: float = 0.0:
+	set(v):
+		along_shift = v
+		_later()
 @export var foot: float = Spec.FOOT_M:
 	set(v):
 		foot = v
@@ -261,7 +267,7 @@ func plan_mark() -> Array:
 ## Where along its wall the panel runs, centred on it: Vector2(from, to), metres.
 func _span(room: Node) -> Vector2:
 	var ws: Vector2 = room.call("wall_span", wall())
-	var mid: float = (ws.x + ws.y) * 0.5
+	var mid: float = (ws.x + ws.y) * 0.5 + along_shift
 	var w: float = panel_m().x
 	return Vector2(mid - w * 0.5, mid + w * 0.5)
 

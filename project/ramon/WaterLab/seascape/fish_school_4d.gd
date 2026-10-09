@@ -10,10 +10,16 @@ extends Node4D
 ## (the fountain effect) and flashes as the fish roll.
 ##
 ## THE FLOCK AT A FIFTH OF ITS SIZE. The flock's rules are tuned in starling metres (seven neighbours,
-## a couple of metres apart, ten metres a second). This node scales the flock node by 0.2: the same
-## rules, unchanged, then make a school of fish 20 cm long, a body length or so apart, at two metres a
-## second, in a ball a few metres across. Its roost is under the water off pier 1; its height band
-## 1 to 4 m down (deeper, the water swallowed them: 9 Oct).
+## a couple of metres apart, ten metres a second). This node scales the flock node by 0.2, so the same
+## rules move a school at two metres a second in a ball a few metres across. Its roost is under the
+## water off the pier; its height band 1 to 4 m down (deeper, the water swallowed them: 9 Oct).
+##
+## THE SCALE DOES NOT REACH THE FISH THEMSELVES (round 2, Ramon: "the sardines do look huge ... I would
+## imagine this to be way smaller fish and more scattered"). The shader places each fish along its
+## heading and side, normalised, so the node's 0.2 shrank the spacing and not the bodies: they were
+## drawn 1.2 m long, a sixth of a body length apart. Now `bird_scale` draws them 20 cm long, and the
+## spacing rules are three times the pen's, which at a fifth of the size leaves them about two body
+## lengths apart, as the pen's starlings are (follow_up/flocking.md: 2 to 2.5 lengths).
 ##
 ## THE PLESIOSAUR IS ITS HAWK: the flock's piloted hawk (pilot_hawk, fly_hawk), undrawn, flown each
 ## frame at the plesiosaur's head. Fish near it flee and roll, the roll runs through the school as a
@@ -54,8 +60,13 @@ func _ready() -> void:
 	flock.set("hawk_enabled", false)
 	flock.set("count", count)
 	# In the flock's own (starling) units: a fifth of each in the world.
-	flock.set("bird_scale", 1.0)
-	flock.set("bird_w_radius", 1.0)
+	# 1.2 units of mesh x 0.17: 20 cm fish. The W radius in the shader is bird_w_radius x size, in
+	# world metres: 1.6 x 0.17, about 27 cm, against the school's +-24 cm W band.
+	flock.set("bird_scale", 0.17)
+	flock.set("bird_w_radius", 1.6)
+	# Looser than the pen's flock (1.1 and 2.2): the school spreads out.
+	flock.set("separation_radius", 3.3)
+	flock.set("radius_max", 6.0)
 	flock.set("cruise_speed", 8.0)
 	flock.set("min_speed", 5.0)
 	flock.set("max_speed", 16.0)
@@ -79,7 +90,7 @@ func _process(_delta: float) -> void:
 	flock.call("fly_hawk", head, ahead, 1.5, 0.0, 0.0)
 
 
-## A sardine, about 1.2 flock units long (24 cm in the world), +Z ahead: a slim body of rings, a forked
+## A sardine, 1.2 units long (drawn at bird_scale: 20 cm), +Z ahead: a slim body of rings, a forked
 ## tail, a little dorsal fin. UV.x how far back (the tail's swing), UV.y how high round the body.
 static func _fish_mesh() -> ArrayMesh:
 	var verts := PackedVector3Array()

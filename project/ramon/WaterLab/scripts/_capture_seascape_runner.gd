@@ -36,6 +36,10 @@ func _initialize() -> void:
 		DisplayServer.window_set_size(Vector2i(3840, 2160))
 	elif "school" in args:
 		_mode = "school"
+	elif "round2" in args:
+		_mode = "round2"
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+		Engine.max_fps = 60
 	elif "gulls" in args:
 		_mode = "gulls"
 		# Vsync off for the timing, the views at 60 (the gulls need real seconds to land); uncapped
@@ -61,6 +65,8 @@ func _open() -> void:
 	print("WATER opened in %.0f ms" % ((Time.get_ticks_usec() - t0) / 1000.0))
 	_wait = 60
 	match _mode:
+		"round2":
+			_round2()
 		"hud4k":
 			_step(10, _go(0.8, 0.0, -90), "")
 			_step(30, _press_p, "")
@@ -69,7 +75,7 @@ func _open() -> void:
 			_step(5, _tab, "")
 			_step(5, _tab, "")
 		"perf":
-			for spot in [["door", 0.8, 0.0, -90.0], ["platform", 24.3, -13.5, 0.0], ["pier2_circle", 27.5, 24.0, -90.0]]:
+			for spot in [["door", 0.8, 0.0, -90.0], ["platform", float((_room.call("platform_centre") as Vector4).x), 0.0, -90.0]]:
 				_step(30, _go(float(spot[1]), float(spot[2]), float(spot[3])), "")
 				if _slow_panels:
 					_step(1, _slow, "")
@@ -151,6 +157,78 @@ func _open() -> void:
 			_step(5, _go(18.5, 0.0, -90), "s05_horizon")
 		_:
 			_plan()
+
+
+## Ramon's walkthrough, round 2 (9 Oct): the tunnel and its pages, the door from inside, the pier, the
+## platform (TURN THE SLICE, the ring) level and turned, the pole, the boat, the Gerstner's four looks,
+## a storm, the dev HUD on the right, the sardines, the edge's thought, the gulls on a rail; the frame
+## times at the door and on the platform.
+func _round2() -> void:
+	var L: float = float(_room.call("tunnel_length"))
+	var pc: Vector4 = _room.call("platform_centre")
+	var pa: Vector3 = _room.call("pole_at")
+	# Where the scene itself starts you (no go_to: the start is the scene's).
+	_step(120, _nop, "r00_start")
+	_step(1, _go(0.8, 0.0, -90.0), "")
+	_step(10, _nop, "r01_tunnel")
+	_step(10, _go(L * 0.5, 0.0, 0.0), "")
+	_step(10, _pitch(4.0), "r02_tunnel_page_n")
+	_step(10, _go(L * 0.5, 0.0, 180.0), "r03_tunnel_page_s")
+	_step(10, _go(L - 1.0, 0.0, 90.0), "")
+	_step(10, _pitch(-8.0), "r04_door_from_inside")
+	_step(10, _go(L + 2.0, 0.0, -90.0), "r05_pier_to_platform")
+	_step(20, _go(pc.x - 3.0, 0.0, -90.0), "")
+	_step(10, _pitch(-45.0), "r06_platform_from_above")
+	_step(10, _pitch(-12.0), "")
+	_step(10, _turn(40.0), "r07_platform_turned_40")
+	_step(20, _turn(0.0), "")
+	_step(10, _go(pa.x - 1.0, pa.y + 4.0, 0.0), "r08_pole")
+	_step(10, _go(pc.x + 2.5, 0.0, -113.0), "")
+	_step(30, _pitch(-4.0), "r09_boat")
+	for g in [1, 2, 3, 0]:
+		_step(1, _gerstner.bind(g), "")
+		_step(30, _go(pc.x + 2.0, 0.0, -60.0), "")
+		_step(10, _pitch(-24.0), "r10_gerstner_%d" % g)
+	_step(1, _gerstner.bind(2), "")
+	_step(1, _sea.bind(KEY_4), "")
+	_step(90, _pitch(-10.0), "r11_storm")
+	_step(1, _sea.bind(KEY_1), "")
+	_step(30, _tab, "")
+	_step(20, _nop, "r12_dev_hud_right")
+	_step(1, _tab, "")
+	var school: Node4D = _room.get_node_or_null("School") as Node4D
+	var sx: float = school.global_position.x if school != null else 12.0
+	_step(10, _go(sx, -float(_room.get("pier1_width")) * 0.5 + 0.9, 0.0), "")
+	_step(30, _pitch(-55.0), "r13_sardines")
+	_step(10, _pitch(-12.0), "")
+	_step(1, _go(L + 4.0, float(_room.get("pier1_width")) * 0.5 - 0.5, -90.0), "")
+	_step(20, _nop, "r14_edge_thought")
+	_step(1, _camera_distance.bind(3.5), "")
+	_step(1, _near_gull.bind(4.5), "")
+	_step(20, _nop, "r15_gull_on_rail")
+	_step(1, _camera_distance.bind(10.0), "")
+	_step(10, _go(0.8, 0.0, -90.0), "")
+	_step(30, _measure_start.bind("door"), "")
+	_step(150, _nop, "")
+	_step(1, _measure_end, "")
+	_step(10, _go(pc.x, 0.0, -90.0), "")
+	_step(30, _measure_start.bind("platform"), "")
+	_step(150, _nop, "")
+	_step(1, _measure_end, "")
+
+
+func _gerstner(g: int) -> void:
+	_room.call("set_gerstner", g)
+
+
+func _sea(k: Key) -> void:
+	for down in [true, false]:
+		var e := InputEventKey.new()
+		e.keycode = k
+		e.physical_keycode = k
+		e.pressed = down
+		Input.parse_input_event(e)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
 func _step(wait: int, f: Callable, shot: String = "") -> void:
@@ -262,7 +340,8 @@ func _near_gull(ahead: float) -> void:
 		# None there: one seated there.
 		best = h.get("gulls")[0]
 		var top: float = float(_room.get("deck_height")) + float(_room.get("railing_height"))
-		var pr: Dictionary = h.call("add_perch", Vector4(8.0, top, w1 * 0.5, 0.0))
+		var x0: float = float(_room.call("tunnel_length")) + 3.0 if _room.has_method("tunnel_length") else 8.0
+		var pr: Dictionary = h.call("add_perch", Vector4(x0, top, w1 * 0.5, 0.0))
 		h.call("release", best)
 		pr["taken"] = best
 		best.set("perch", pr)
@@ -329,7 +408,7 @@ func _measure_start(nm: String) -> void:
 	_measuring = nm
 	_gull_us0 = GullScript.cpu_us
 	_frames0 = Engine.get_process_frames()
-	if _mode == "gulls":
+	if _mode in ["gulls", "round2"]:
 		Engine.max_fps = 0
 	_perf.clear()
 	_last_us = Time.get_ticks_usec()
@@ -342,7 +421,7 @@ func _measure_end() -> void:
 		print("WATER PERF %-14s frame median %.2f ms, 95%% %.2f ms, GPU %.2f ms, gull scripts %.3f ms a frame" % [_measuring, _perf[_perf.size() / 2], _perf[int(_perf.size() * 0.95)],
 				RenderingServer.viewport_get_measured_render_time_gpu(root.get_viewport_rid()),
 				float(GullScript.cpu_us - _gull_us0) / 1000.0 / float(maxi(Engine.get_process_frames() - _frames0, 1))])
-	if _mode == "gulls":
+	if _mode in ["gulls", "round2"]:
 		Engine.max_fps = 60
 	_measuring = ""
 
@@ -361,54 +440,18 @@ func _press_p() -> void:
 
 
 func _check() -> void:
-	for nm in ["Door1", "Door2", "Pier1", "PlatformSet", "Pier2", "Pole", "SeaFloor", "Player", "SeaLife", "PanelSource", "Water", "Paths/Pier1", "Paths/Pier2"]:
+	for nm in ["Tunnel", "Door1", "Pier1", "PlatformSet", "Pole", "SeaFloor", "Player", "SeaLife", "PanelSource", "Water", "Paths/Pier1", "Boat", "School", "Harbour"]:
 		print("WATER %s %s" % ["has" if _room.get_node_or_null(nm) != null else "MISSING", nm])
-	var deep: Node = _room.get("_pier2_deep")
-	print("WATER pier 2 deep picture: ", "made" if deep != null else "MISSING")
-	for net in ["Paths/Pier1", "Paths/Pier2"]:
+	for net in ["Paths/Pier1"]:
 		var n: Node = _room.get_node_or_null(net)
 		if n != null and n.has_method("acceptance"):
 			print("WATER %s acceptance: %s" % [net, str(n.call("acceptance"))])
 
 
 func _plan() -> void:
+	# The layout as it is since round 2 (pier 2 gone): the check, then the round-2 tour.
 	_step(1, _check)
-	_step(10, _go(0.8, 0.0, -90), "01_door")
-	_step(30, _go(7.0, 0.0, -90), "02_along_pier1")
-	_step(30, _go(12.5, 0.0, -90), "03_platform_way_in")
-	_step(40, _go(18.5, 0.0, -90), "05_on_platform")
-	_step(20, _pitch(-38.0), "05b_platform_pages_from_above")
-	_step(5, _pitch(-12.0), "")
-	_step(20, _turn(30.0), "06_platform_turned_30")
-	_step(20, _turn(60.0), "07_platform_turned_60")
-	_step(20, _turn(0.0), "")
-	_step(20, _go(23.0, 0.0, 90), "08_platform_looking_back")
-	_step(20, _turn(35.0), "09_platform_back_turned_35")
-	_step(20, _turn(0.0, 0.0), "")
-	_step(30, _go(8.0, 1.0, 0), "10_pole_from_pier1")
-	_step(30, _go(4.0, 0.0, 90), "10b_door1_from_pier")
-	_step(30, _go(0.8, 24.0, -90), "11_pier2_door")
-	_step(30, _go(8.0, 24.0, -90), "12_pier2_circle_ahead")
-	_step(30, _go(12.5, 24.0, -90), "13_pier2_on_circle")
-	_step(20, _turn(20.0), "14_pier2_turned_20")
-	_step(20, _turn(40.0), "15_pier2_turned_40")
-	_step(20, _turn(70.0), "16_pier2_turned_70")
-	_step(20, _turn(0.0), "")
-	_step(20, _pitch(-38.0), "16b_pier2_page_from_above")
-	_step(5, _pitch(-12.0), "")
-	_step(20, _go(5.0, 24.0, 90), "17_door2_from_pier")
-	# The PIERS sliders' rebuild: pier 1 longer and wider, then back.
-	_step(10, _go(0.8, 0.0, -90), "")
-	_step(5, _resize.bind(22.0, 5.0), "")
-	_step(40, _nop, "17b_pier1_rebuilt_22m_5m")
-	_step(5, _resize.bind(14.0, 3.4), "")
-	_step(40, _nop, "")
-	_step(10, _go(0.8, 0.0, -90), "")
-	_step(30, _tab, "18_hud_light_mode")
-	_step(20, _tab, "19_hud_hidden")
-	_step(5, _tab, "")
-	_step(20, _press_p, "20_after_p")
-	_step(20, _press_p, "21_after_p_again")
+	_round2()
 
 
 func _resize(length: float, width: float) -> void:

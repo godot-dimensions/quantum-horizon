@@ -37,6 +37,7 @@ const Bubbles := preload("res://ramon/WaterLab/life/bubbles_4d.gd")
 const Dunes := preload("res://ramon/WaterLab/life/dunes_4d.gd")
 const Snow := preload("res://ramon/WaterLab/life/snow_4d.gd")
 const Shark := preload("res://ramon/WaterLab/life/shark_4d.gd")
+const Swarm := preload("res://ramon/WaterLab/life/tank_swarm_4d.gd")
 
 const GENERATED := "tank_generated"
 
@@ -86,6 +87,7 @@ var eel: Node4D
 var crab: Node4D
 var dunes: Node4D
 var shark: Node4D
+var swarm: Node4D
 ## The contents turned through W (in the x-W plane, along the tank, so nothing turns out through the
 ## glass) and slid through W, by the room's gizmo (Ramon: "W rotate whats in the fish tank but not the
 ## rest"). The glass, the frame, the stand and the water stay as they are.
@@ -180,8 +182,8 @@ func _build_stand() -> void:
 	_box(holder, "Body", body_at, body_size, LabGrid.material("kit_metal", body_size, global_position + body_at if is_inside_tree() else body_at))
 	_box(holder, "Band", Vector4(0, body_top + Pedestal.BAND * 0.5, 0, 0), Vector4((hx - 0.11) * 2.0, Pedestal.BAND, (hz - 0.11) * 2.0, wd), Mats.flat(dark))
 	_box(holder, "Lip", Vector4(0, h - Pedestal.LIP * 0.5, 0, 0), Vector4(hx * 2.0, Pedestal.LIP, hz * 2.0, wd), Mats.flat(Style.lip()))
-	# A thin light line along the stand's front under the lip, the kit's cyan.
-	_box(holder, "Glow", Vector4(0, body_top - 0.06, hz - 0.035, 0), Vector4((hx - 0.3) * 2.0, 0.035, 0.02, wd), Mats.glow(Color(0.40, 0.86, 1.0), 1.2))
+	# (The thin cyan light line along the stand's front went in round 3: Ramon, "You can remove the cyan
+	# line on the water tank".)
 	# One solid for the stand and the tank on it: nothing walks into the water.
 	var body := StaticBody4D.new()
 	body.name = "Solid"
@@ -236,7 +238,8 @@ func _build_inside() -> void:
 	var he: Vector4 = half_extents()
 	_box(holder, "Backdrop", Vector4(0, c.y, -he.z + 0.03, 0), Vector4(he.x * 2.0, he.y * 2.0, 0.06, water_size.w), Mats.flat(Color(0.05, 0.11, 0.17)))
 	var sand := Color(0.50, 0.44, 0.35)
-	_box(holder, "Sand", Vector4(0, c.y - he.y + sand_depth * 0.5, 0, 0), Vector4(he.x * 2.0, sand_depth, he.z * 2.0, water_size.w), Mats.flat(sand))
+	# A hair inside the dunes on every side and under their foot, so the two never share a face (round 3).
+	_box(holder, "Sand", Vector4(0, c.y - he.y + (sand_depth - 0.015) * 0.5, 0, 0), Vector4(he.x * 2.0 - 0.03, sand_depth - 0.015, he.z * 2.0 - 0.03, water_size.w - 0.03), Mats.flat(sand))
 	# A low bank of sand rising toward the back, so the bed is not a flat shelf.
 	# The hills on it are the dunes (life/dunes_4d.gd), part of what is in the tank.
 
@@ -315,6 +318,12 @@ func _build_life() -> void:
 	shark.set("obstacles", obstacles)
 	life.add_child(shark)
 	koi.set("predator", shark)
+	# The swarm of tiny fish (round 3), the shark its hawk.
+	swarm = Node4D.new()
+	swarm.name = "Swarm"
+	swarm.set_script(Swarm)
+	swarm.set("hunter", shark)
+	life.add_child(swarm)
 	set_contents(contents_turn, contents_slide)
 
 

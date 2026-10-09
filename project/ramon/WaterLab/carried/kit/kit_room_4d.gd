@@ -164,10 +164,11 @@ func rebuild() -> void:
 		# WATER LAB: over an open side the ceiling stops at the room's edge. It used to run on past it
 		# by the walls' thickness, and stuck half a metre into the hall over the doorway it opens on
 		# (Ramon, 9 Oct: "above the door, you should remove that block").
-		var cx0: float = x0 - (0.0 if "w" in open_sides else t)
-		var cz0: float = z0 - (0.0 if "n" in open_sides else t)
-		var cx1: float = x1 + (0.0 if "e" in open_sides else t)
-		var cz1: float = z1 + (0.0 if "s" in open_sides else t)
+		# 2 cm short of the open edge: flush, its end face fought the next room's wall over the doorway.
+		var cx0: float = x0 + 0.02 if "w" in open_sides else x0 - t
+		var cz0: float = z0 + 0.02 if "n" in open_sides else z0 - t
+		var cx1: float = x1 - 0.02 if "e" in open_sides else x1 + t
+		var cz1: float = z1 - 0.02 if "s" in open_sides else z1 + t
 		RD.ceiling(self, "Ceiling", cx0, cz0, cx1, cz1, h, "kit_ceiling")
 	if cove:
 		var b := Batch.new()

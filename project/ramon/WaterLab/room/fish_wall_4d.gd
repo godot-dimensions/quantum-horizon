@@ -42,6 +42,15 @@ const SliceMesh := preload("res://ramon/WaterLab/shared/slice_mesh.gd")
 ## the floor. That's the rule"): its height (the room's) and how far it reaches past the panels.
 @export var backing_height: float = 11.0
 @export var backing_margin: float = 0.4
+## ROUND 3 (Ramon, 9 Oct: "I would like that entire wall to be blue ... have the background of these
+## panels also be just the plain blue background of the wall and not have these brighter blue bits";
+## and the pages sat a little off the blue behind them): the pages are printed straight into the
+## wall of the kit room named here (its south wall, the one you came in by), the way the kit's wall
+## panels are. Each page claims its stretch of the wall, which makes the whole wall the code blue and
+## splits it where the page begins and ends. No slabs, no backing: nothing to line up. Without the
+## room, the old slabs.
+@export var room_name: String = "Hall"
+@export var wall: String = "s"
 const PPM := 200.0
 
 const CARDS := [
@@ -75,9 +84,44 @@ var _t: float = 0.0
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
-	_build_backing()
+	_room = get_parent().get_node_or_null(room_name)
+	if _room == null:
+		_build_backing()
 	for i in 2:
 		_panels.append(_build_panel(i))
+
+
+var _room: Node = null
+
+
+## Where a page runs along the room's wall (the room's own x), and up it.
+func _span(i: int) -> Vector2:
+	var local_x: float = (float(i) - 0.5) * spacing
+	var world_x: float = (global_position + global_basis * Vector4(local_x, 0, 0, 0)).x
+	var mid: float = world_x - (_room as Node4D).global_position.x
+	return Vector2(mid - panel_size.x * 0.5, mid + panel_size.x * 0.5)
+
+
+## The page's picture onto the wall pieces it runs over (they change when the room rebuilds the wall).
+func _print_on_wall(panel: Dictionary) -> void:
+	if _room == null:
+		return
+	var sp: Vector2 = _span(int(panel["index"]))
+	var targets: Array = _room.call("print_targets", wall, sp.x, sp.y, foot, foot + panel_size.y)
+	var key: String = ""
+	for tg in targets:
+		key += ":%d" % (tg[0] as Object).get_instance_id()
+	if key == String(panel.get("key", "")):
+		return
+	panel["key"] = key
+	var vp: SubViewport = panel["vp"]
+	for tg in targets:
+		var m: TetraMaterial4D = (tg[0] as MeshInstance4D).material_override as TetraMaterial4D
+		if m == null:
+			continue
+		LabGrid.set_print(m, vp.get_texture(), tg[1], tg[2], Color.WHITE, 0.15)
+		LabGrid.set_print_strength(m, 1.0)
+		m.get_cross_section_material_3d().set_shader_parameter("print_aa", 1.0)
 
 
 ## The blue backing: one code-blue sheet on the wall behind both panels, floor to ceiling.
@@ -100,17 +144,25 @@ func _build_panel(i: int) -> Dictionary:
 	holder.position = Vector4(x, foot, 0.0, 0.0)
 	add_child(holder)
 	var size := Vector4(panel_size.x + 0.4, panel_size.y + 0.4, 0.3, Build.W_DEPTH)
-	var slab := MeshInstance4D.new()
-	slab.name = "Slab"
-	slab.mesh = Mats.box_mesh(size)
-	slab.position = Vector4(0.0, size.y * 0.5, -0.15, 0.0)
-	var m: TetraMaterial4D = LabGrid.material(Style.code_swatch("blue"), size, global_position + holder.position + slab.position)
-	slab.material_override = m
-	holder.add_child(slab)
-	# The page.
+	var slab: MeshInstance4D = null
+	var m: TetraMaterial4D = null
+	if _room == null:
+		slab = MeshInstance4D.new()
+		slab.name = "Slab"
+		slab.mesh = Mats.box_mesh(size)
+		slab.position = Vector4(0.0, size.y * 0.5, -0.15, 0.0)
+		m = LabGrid.material(Style.code_swatch("blue"), size, global_position + holder.position + slab.position)
+		slab.material_override = m
+		holder.add_child(slab)
+	else:
+		# Its stretch of the wall, claimed: the whole wall goes blue, split where the page runs.
+		var sp: Vector2 = _span(i)
+		_room.call("claim_wall", wall, "blue", holder, sp.x, sp.y)
+	# The page: clear behind its words, so the wall's own blue shows (premultiplied, as the kit's prints).
 	var vp := SubViewport.new()
 	vp.size = Vector2i(int(panel_size.x * PPM), int(panel_size.y * PPM))
-	vp.transparent_bg = false
+	vp.transparent_bg = _room != null
+	vp.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
 	vp.disable_3d = true
 	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	holder.add_child(vp)
@@ -152,10 +204,12 @@ func _build_panel(i: int) -> Dictionary:
 	pic.position = Vector2(vp.size.x * 0.03, vp.size.y * 0.15)
 	pic.size = Vector2(studio.size)
 	page.add_child(pic)
-	var panel: Dictionary = {"holder": holder, "slab": slab, "vp": vp, "page": page, "studio": studio, "specimen": null, "card": -1, "offset": i * CARDS.size() / 2}
+	var panel: Dictionary = {"holder": holder, "slab": slab, "vp": vp, "page": page, "studio": studio, "specimen": null, "card": -1,
+		"offset": i * CARDS.size() / 2, "index": i}
 	page.draw.connect(_paint.bind(panel))
 	# The page on the slab's face toward the room (+Z of the holder, turned to face the tank).
-	_print_later(m, vp, size)
+	if m != null:
+		_print_later(m, vp, size)
 	return panel
 
 
@@ -175,6 +229,7 @@ func _process(delta: float) -> void:
 			_show(panel, CARDS[idx])
 		_turn(panel, delta)
 		(panel["page"] as Control).queue_redraw()
+		_print_on_wall(panel)
 
 
 ## A new animal on the turntable.
@@ -297,29 +352,23 @@ func _turn(panel: Dictionary, delta: float) -> void:
 	RenderingServer.multimesh_set_buffer(mmi.multimesh.get_rid(), buf)
 
 
-## The picture's ground: dark blue, a fine grid of faint white lines and a bolder one every fourth,
-## a cross through the middle, and ticks along the edges, the way a blueprint is ruled.
+## The picture's ground: dark blue and a clean grid of faint white lines, a little stronger every
+## fourth, laid from the rectangle's middle so it is the same on both sides (round 3: the cross, the
+## circle and the ticks went, the lines fainter).
 func _blueprint(page: Control, r: Rect2, u: float) -> void:
 	page.draw_rect(r, Color(0.03, 0.10, 0.20))
 	var step: float = 26.0 * u
-	var nx: int = int(r.size.x / step) + 1
-	var ny: int = int(r.size.y / step) + 1
-	for i in nx:
-		var x: float = r.position.x + float(i) * step
-		var strong: bool = i % 4 == 0
-		page.draw_line(Vector2(x, r.position.y), Vector2(x, r.end.y), Color(1, 1, 1, 0.13 if strong else 0.055), maxf(1.0, (1.4 if strong else 1.0) * u))
-	for j in ny:
-		var y: float = r.position.y + float(j) * step
-		var strong2: bool = j % 4 == 0
-		page.draw_line(Vector2(r.position.x, y), Vector2(r.end.x, y), Color(1, 1, 1, 0.13 if strong2 else 0.055), maxf(1.0, (1.4 if strong2 else 1.0) * u))
 	var c: Vector2 = r.get_center()
-	page.draw_line(Vector2(r.position.x + 12.0 * u, c.y), Vector2(r.end.x - 12.0 * u, c.y), Color(1, 1, 1, 0.18), maxf(1.0, 1.4 * u))
-	page.draw_line(Vector2(c.x, r.position.y + 12.0 * u), Vector2(c.x, r.end.y - 12.0 * u), Color(1, 1, 1, 0.18), maxf(1.0, 1.4 * u))
-	page.draw_arc(c, 18.0 * u, 0.0, TAU, 24, Color(1, 1, 1, 0.18), maxf(1.0, 1.4 * u), true)
-	for i in nx:
-		var x2: float = r.position.x + float(i) * step
-		var tick: float = (10.0 if i % 4 == 0 else 5.0) * u
-		page.draw_line(Vector2(x2, r.end.y), Vector2(x2, r.end.y - tick), Color(1, 1, 1, 0.3), maxf(1.0, u))
+	var nx: int = int(r.size.x * 0.5 / step)
+	var ny: int = int(r.size.y * 0.5 / step)
+	for i in range(-nx, nx + 1):
+		var x: float = c.x + float(i) * step
+		var strong: bool = i % 4 == 0
+		page.draw_line(Vector2(x, r.position.y), Vector2(x, r.end.y), Color(1, 1, 1, 0.07 if strong else 0.03), maxf(1.0, u))
+	for j in range(-ny, ny + 1):
+		var y: float = c.y + float(j) * step
+		var strong2: bool = j % 4 == 0
+		page.draw_line(Vector2(r.position.x, y), Vector2(r.end.x, y), Color(1, 1, 1, 0.07 if strong2 else 0.03), maxf(1.0, u))
 
 
 func _paint(panel: Dictionary) -> void:
@@ -327,7 +376,8 @@ func _paint(panel: Dictionary) -> void:
 	var card: Dictionary = CARDS[maxi(int(panel["card"]), 0)]
 	var sz: Vector2 = page.size
 	var u: float = sz.y / 880.0
-	page.draw_rect(Rect2(Vector2.ZERO, sz), Style.pick(Style.CODE_BLUE))
+	if _room == null:
+		page.draw_rect(Rect2(Vector2.ZERO, sz), Style.pick(Style.CODE_BLUE))
 	var fb: Font = LabPrint.font("black")
 	var fs: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")

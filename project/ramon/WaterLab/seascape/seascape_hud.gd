@@ -3,9 +3,10 @@ extends Control
 ## Ramon's version of Trym's water readout (sandbox/water4d/water4d_hud.gd), on a dark see-through
 ## backing with larger type, and with a second mode for every light and environment property.
 ##
-## Tab steps through three modes:
-##   READOUT      the controls, the sea that is running (its dominant wave), how far the slice is
-##                turned, where you stand
+## ROUND 2 (Ramon, 9 Oct: "as the scene starts, you don't see any HUD ... I can press the tab if I want
+## ... move the HUD to the right, please, the dev HUD"): closed at the start; Tab opens and closes the
+## LIGHT mode, now along the right edge. The readout's lines moved to the overlay everyone sees
+## (seascape_overlay.gd). The modes:
 ##   LIGHT        every property of the sun, the environment, the sky, the clouds and the water's look,
 ##                built from the engine's own property lists (the sun's direction as three angles);
 ##                SAVE writes them to seascape_tuning.cfg and the scene reads that back when it
@@ -30,7 +31,7 @@ const SKIP := ["position", "rotation_degrees", "scale", "rotation_edit_mode", "s
 	"current", "sky_material", "cloud_material", "resource_local_to_scene", "resource_path", "resource_name"]
 ## The piers' size (Ramon, 8 Oct: "an option to scale the width and length of the first and second
 ## pier"): the scene root's settings, the piers rebuilt as they change.
-const PIERS := [["pier1_length", 6.0, 40.0], ["pier1_width", 2.0, 8.0], ["pier2_length", 12.0, 50.0], ["pier2_width", 3.0, 10.0]]
+const PIERS := [["pier1_length", 12.0, 40.0], ["pier1_width", 2.0, 8.0], ["platform_radius", 3.0, 8.0]]
 ## The camera (Ramon, 8 Oct: "more zoomed out and locked ... a zoom out camera slider in the hud, and
 ## i can save it there"): how far back and how high, the zoom locked at the distance.
 const CAMERA := [["camera_distance", 3.0, 30.0], ["camera_height", 0.5, 6.0]]
@@ -42,7 +43,8 @@ const WATER := [["wave_scale", 0.0, 2.0], ["detail_strength", 0.0, 0.3], ["specu
 
 ## The scene's root (seascape_4d.gd); it sets this.
 var room: Node
-var mode: int = 0
+## 1 the LIGHT mode, 2 closed (0, the old readout, is not used).
+var mode: int = 2
 var hud_size: float = 1.0
 ## AUTO SAVE for the pier sizes (Ramon, 8 Oct: "an auto save button for the pier scale
 ## adjustments"): on, every change to the PIERS sliders is written to the tuning file a moment after
@@ -139,17 +141,17 @@ func _process(delta: float) -> void:
 		_scroll.custom_minimum_size = Vector2(620.0 * _u(), get_viewport_rect().size.y - 64.0 * _u())
 		_toast.add_theme_font_size_override("font_size", _px(1.1))
 		_toast.add_theme_constant_override("outline_size", int(6 * _u()))
-	_readout_box.visible = mode == 0
+	_readout_box.visible = false
 	_editor_box.visible = mode == 1
-	if mode == 0:
-		_readout.text = _readout_text()
+	# Along the right edge.
+	_editor_box.position = Vector2(get_viewport_rect().size.x - _editor_box.size.x - 16.0 * _u(), 16.0 * _u())
 
 
 func _input(event: InputEvent) -> void:
 	var k := event as InputEventKey
 	if k == null or not k.pressed or k.echo or k.keycode != KEY_TAB:
 		return
-	mode = (mode + 1) % 3
+	mode = 1 if mode != 1 else 2
 	if mode == 1:
 		_build_editor()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

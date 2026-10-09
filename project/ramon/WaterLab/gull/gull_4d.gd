@@ -30,8 +30,10 @@ extends Node4D
 signal called(kind: String)
 
 const Body := preload("res://ramon/WaterLab/gull/gull_body.gd")
-## The body's origin stands this high over the perch (hip, leg, foot).
-const FOOT := 0.136
+## The body's origin stands this high over the perch: the hip 4 cm under it, the leg 9.2 cm, the foot's
+## half thickness. A hair less than the sum, so the feet press on the rail rather than float (round 2,
+## Ramon: "they are floating a little bit above it when they land").
+const FOOT := 0.128
 
 ## Where it flies round (its parent's frame), how high, how far out.
 var home := Vector4(10.0, 9.0, 8.0, 0.0)

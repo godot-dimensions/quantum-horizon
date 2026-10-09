@@ -48,7 +48,9 @@ func research(info: Resource) -> Dictionary:
 			live += 1
 			biggest = maxf(biggest, float(wave.amplitude))
 	var rows: Array = []
-	for i in Presets.count():
+	var seas: Array = r.call("seas") if r != null and r.has_method("seas") else range(Presets.count())
+	for k in seas.size():
+		var i: int = int(seas[k])
 		var ws: Array = Presets._preset(i)
 		var n: int = 0
 		var amp: float = 0.0
@@ -62,7 +64,7 @@ func research(info: Resource) -> Dictionary:
 				amp = float(wave.amplitude)
 				length = float(wave.wavelength)
 				off = absf((wave.dir as Vector3).z)
-		rows.append(["%d  %s" % [i + 1, Presets.preset_name(i)], str(n), "%.1f m" % (amp * scale), "%.0f m" % (length * scale), "%.0f%%" % (off * 100.0)])
+		rows.append(["%d  %s" % [k + 1, Presets.preset_name(i)], str(n), "%.1f m" % (amp * scale), "%.0f m" % (length * scale), "%.0f%%" % (off * 100.0)])
 	var turned: float = Vector2(turn.x, turn.y).length()
 	return {
 		"header_left": String(info.call("research_header")) if info != null else "RESEARCH",
@@ -75,8 +77,8 @@ func research(info: Resource) -> Dictionary:
 			{"title": "Turn it.", "text": "On the platform a right drag turns your slice. The same sea is cut a new way, and its waves change while the platform stays set.",
 				"value": "%.0f°" % turned, "value_text": "your slice is turned now"},
 		],
-		"table": {"heading": "THE EIGHT SEAS  keys 1 to 8, the one running lit",
+		"table": {"heading": "THE SEAS  keys 1 to 4, the one running lit",
 			"heads": ["SEA", "WAVES", "BIGGEST", "WAVELENGTH", "THROUGH W"],
-			"rows": rows, "current": index},
+			"rows": rows, "current": seas.find(index)},
 		"footnote": "Trym's 4D water, from his water-annex branch. Wave heights at this scene's wave scale (%.1f)." % scale,
 	}

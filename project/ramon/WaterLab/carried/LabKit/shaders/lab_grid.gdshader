@@ -64,6 +64,10 @@ uniform float print_glow : hint_range(0.0, 1.0) = 0.35;
 // goes dark, the print's colour is emitted). A code-blue print on a floor under spotlights was lit
 // past its colour and clipped to cyan (Ramon, 9 Oct: "its not blue but cyan").
 uniform float print_emit : hint_range(0.0, 1.0) = 0.0;
+// WATER LAB: drawn as light, white comes out of the tone map a light grey; this lifts the white of the
+// print only (not its blue), so its words read white (Ramon, round 3: "the text is white, not light
+// gray").
+uniform float print_white_boost = 0.0;
 // A print wrapped round a cylinder's side instead (the pedestal's label): x and y of
 // print_cylinder are the angles it runs between (radians from +Z towards +X, so it reads left to
 // right from outside), z and w the heights (in the mesh's own space) it runs between.
@@ -417,7 +421,8 @@ void fragment() {
 			float k = t.a * print_on;
 			vec3 ink = t.rgb * print_tint.rgb * print_on;
 			c = c * (1.0 - k) + ink * (1.0 - print_emit);
-			glow += ink * mix(print_glow, 1.0, print_emit);
+			float whiteness = smoothstep(0.55, 0.9, min(min(ink.r, ink.g), ink.b));
+			glow += ink * mix(print_glow, 1.0 + print_white_boost * whiteness, print_emit);
 		}
 	}
 

@@ -48,6 +48,9 @@ var debug_jacobian: bool = false
 ## Metres of value-noise detail riding on the wave sum. Zero is the old smooth surface.
 var detail_strength: float = 0.085
 var solve_iterations: int = 2
+## WATER LAB: the Gerstner look, 1 to 3 (water4d.gdshader gerstner_style); with solve_iterations 0 the
+## Gerstner motion is off whichever it is.
+var gerstner_style: int = 2
 var water_level: float = 0.0
 ## Shrinks or grows the whole wave field. The presets are written for open sea - a 70 m swell
 ## in a 40 m room is one wave and reads as the floor tilting - so a pool wants about a fifth
@@ -363,6 +366,7 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngi
 	_material.set_shader_parameter(&"slice_axis_off", off)
 	_material.set_shader_parameter(&"water_level", water_level)
 	_material.set_shader_parameter(&"solve_iterations", solve_iterations)
+	_material.set_shader_parameter(&"gerstner_style", gerstner_style)
 	_material.set_shader_parameter(&"debug_jacobian", debug_jacobian)
 	_material.set_shader_parameter(&"detail_strength", detail_strength)
 	_material.set_shader_parameter(&"detail_time", _detail_time)
@@ -382,6 +386,38 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, _engine: RenderingEngi
 ## through itself - the horizontal map stops being injective and the mesh ties knots. The
 ## presets are written to sit under it, but a blend passes through intermediate states that
 ## no preset describes, so it is enforced here every frame rather than trusted to the data.
+## WATER LAB: the sea's height at a world point (x, z, w), as the shader draws it there (no detail
+## noise, no far fade), for things that float: the fishing boat. Mirrors water4d.gdshader's
+## wave_displacement and the fixed-point solve: which rest point lands on (x, z, w), then the summed
+## heights at that rest point. Reads the live (blended) waves, so a preset change rocks it too.
+func height_at(p: Vector3) -> float:
+	if _live.is_empty():
+		return water_level
+	var size: float = maxf(wave_scale, 0.01)
+	var steep_scale: float = 1.0 if solve_iterations > 0 else 0.0
+	# The steepness clamp, as _push_waves applies it.
+	var total: float = 0.0
+	for i in range(MAX_WAVES):
+		var w: Wave = _live[i]
+		total += w.steepness * TAU / maxf(w.wavelength * size, 0.1) * w.amplitude * size
+	var clamp_k: float = 1.0 / total if total > 1.0 else 1.0
+	var rest: Vector3 = p
+	var h: float = 0.0
+	for it in maxi(solve_iterations, 0) + 1:
+		var disp := Vector3.ZERO
+		h = 0.0
+		for i in range(MAX_WAVES):
+			var w: Wave = _live[i]
+			var k: float = TAU / maxf(w.wavelength * size, 0.1)
+			var amp: float = w.amplitude * size
+			var phase: float = k * w.dir.dot(rest) - _phase[i]
+			disp += w.dir * (w.steepness * clamp_k * steep_scale * amp * cos(phase))
+			h += amp * sin(phase)
+		if it < maxi(solve_iterations, 0):
+			rest = p - disp
+	return water_level + h
+
+
 func _push_waves() -> void:
 	var dirs := PackedVector3Array()
 	var amps := PackedFloat32Array()

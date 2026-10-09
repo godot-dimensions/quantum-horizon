@@ -51,7 +51,7 @@ const ARRIVE_META := "water_lab_arrive"
 
 @export_group("Visit")
 ## Where you start (x, z), at the back of the entrance corridor, facing the tank.
-@export var start_at: Vector2 = Vector2(-11.0, 12.2)
+@export var start_at: Vector2 = Vector2(-11.0, 13.2)
 ## The turning square in front of the tank's middle (Ramon, 9 Oct: "a blue square there that you can
 ## stand on"; a circle cut into the tank's stand): its middle (x, z) and half its side.
 @export var turn_spot: Vector2 = Vector2(-5.23, -7.7)
@@ -61,7 +61,7 @@ const ARRIVE_META := "water_lab_arrive"
 @export var feed_at: Vector2 = Vector2(-8.7, -8.85)
 @export var feed_reach: float = 1.8
 ## How far beyond its pedestal's edge the showcase counts as the one you are at.
-@export var showcase_margin: float = 2.6
+@export var showcase_margin: float = 1.8
 
 @export_group("Camera")
 ## The Creation Lab's (creation_lab_4d.gd: 5.0, 2.45, -11), as Ramon asked for this room.
@@ -115,6 +115,16 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 	_paint_square.call_deferred()
+	_darken_airlock.call_deferred()
+	# The route's frames and done ticks in the arrows' blue, its frames closer (round 3).
+	var net: Node = get_node_or_null("Paths/Hall")
+	if net != null:
+		net.set("edge_color", Color("#1761d7"))
+		net.set("frame_margin", 0.12)
+	# The introduction a metre to the left as you face it (round 3).
+	var intro: Node = get_node_or_null("IntroPanel")
+	if intro != null:
+		intro.set("along_shift", 1.0)
 	tank = get_node_or_null("Tank") as Node4D
 	showcase = get_node_or_null("Showcase") as Node4D
 	_door = get_node_or_null("ExitDoor") as Node4D
@@ -172,6 +182,12 @@ func _build_hud() -> void:
 	dial.set_script(Dial)
 	layer.add_child(dial)
 	dial.set("tank", get_node_or_null("Tank"))
+	# Tab: the lights' dev HUD (round 2).
+	var lights_hud := PanelContainer.new()
+	lights_hud.name = "LightEditor"
+	lights_hud.set_script(load("res://ramon/WaterLab/room/light_editor.gd"))
+	lights_hud.set("room", self)
+	layer.add_child(lights_hud)
 	tutorial = Control.new()
 	tutorial.name = "MouseTutorial"
 	tutorial.set_script(MouseTutorial)
@@ -263,6 +279,28 @@ func _paint_square() -> void:
 	# As light, not paint: lit by the tank's spots the code blue clipped to cyan (the path's marks are
 	# emitted the same way, and read as the same blue).
 	m.get_cross_section_material_3d().set_shader_parameter("print_emit", 1.0)
+	m.get_cross_section_material_3d().set_shader_parameter("print_white_boost", 0.7)
+
+
+## The airlock behind the far door, dark (Ramon, round 3: "through the jitter holographic door behind
+## it, I see a room. This is not great ... Make the room behind it dark, like the black grid lines"):
+## every surface of it in the kit's dark swatch, so the hologram shows against a dark grid. Again when
+## the room rebuilds (its floor box changes).
+var _dark_floor: MeshInstance4D = null
+
+
+func _darken_airlock() -> void:
+	var airlock: Node = get_node_or_null("Airlock")
+	if airlock == null or not airlock.has_method("floor_box"):
+		return
+	var fl: MeshInstance4D = airlock.call("floor_box")
+	if fl == null or fl == _dark_floor:
+		return
+	_dark_floor = fl
+	for n in airlock.find_children("*", "MeshInstance4D", true, false):
+		var m: TetraMaterial4D = (n as MeshInstance4D).material_override as TetraMaterial4D
+		if m != null and m.has_meta("lab_swatch"):
+			LabGrid.reswatch(m, "drum")
 
 
 ## The square's picture (premultiplied: opaque blue, white over it).
@@ -274,10 +312,22 @@ func _square_picture(c: Control) -> void:
 	var k: float = 0.21 * u
 	c.draw_colored_polygon(PackedVector2Array([Vector2(k, 0), Vector2(sz.x - k, 0), Vector2(sz.x, k), Vector2(sz.x, sz.y - k),
 		Vector2(sz.x - k, sz.y), Vector2(k, sz.y), Vector2(0, sz.y - k), Vector2(0, k)]), blue)
+	# An inset outline (round 3: "a little square outline ... inside the blue panel, a little bit
+	# inset, just a little bit of outline at the corners, and then with a break"): a bracket at each
+	# corner, cut at 45 degrees as the square's own corners are, and open along the middle of each side.
+	var white := Color(1, 1, 1, 1)
+	var inset: float = 0.15 * u
+	var arm: float = 0.5 * u
+	var cut: float = 0.12 * u
+	var lw: float = maxf(2.0, 0.022 * u)
+	for corner in [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)]:
+		var sx: float = 1.0 if corner.x < 0.5 else -1.0
+		var sy: float = 1.0 if corner.y < 0.5 else -1.0
+		var o := Vector2(inset if corner.x < 0.5 else sz.x - inset, inset if corner.y < 0.5 else sz.y - inset)
+		c.draw_polyline(PackedVector2Array([o + Vector2(0, sy * arm), o + Vector2(0, sy * cut), o + Vector2(sx * cut, 0), o + Vector2(sx * arm, 0)]), white, lw, true)
 	var fb: Font = LabPrint.font("black")
 	var fs: Font = LabPrint.font("bold")
-	var white := Color(1, 1, 1, 1)
-	var soft := Color(1, 1, 1, 0.78)
+	var soft := Color(1, 1, 1, 0.94)
 	var margin: float = 0.34 * u
 	var w: float = sz.x - margin * 2.0
 	var px: int = int(0.30 * u)
@@ -334,6 +384,7 @@ func _process(delta: float) -> void:
 		tank.call("set_viewer", p + Vector4(0.0, 1.5, 0.0, 0.0))
 	if Engine.get_process_frames() % 30 == 0:
 		_paint_square()
+		_darken_airlock()
 	_turning(p)
 	_following(delta)
 	_hum_level(p, delta)
@@ -345,6 +396,7 @@ func _process(delta: float) -> void:
 			_leaving = 0.0
 			player.set("input_enabled", false)
 	hud.set("strip", _strip())
+	hud.set("strip_at", 0.40 if _at_feed else -1.0)
 	_route_states(p)
 
 
@@ -455,11 +507,11 @@ func _find_active(p: Vector4) -> void:
 
 func _strip() -> Array:
 	if _at_feed:
-		return [["E", "Feed the koi"], ["WASD", "Move"]]
+		return [["E", "Feed the koi"]]
 	if _on_turn:
 		return [["Right drag", "Slide and turn through W"], ["Wheel", "Turn the other way"], ["V", "Find the shark"], ["R", "Back"]]
 	if active != null:
-		var out: Array = [["Wheel", "Slide it through W"], ["Right drag", "Turn it"], ["R", "Whole again"]]
+		var out: Array = [["Left / Right", "Choose"], ["Wheel", "Slide it through W"], ["Right drag", "Turn it"], ["R", "Whole again"]]
 		if _near_panel:
 			out.push_front(["E", "Its panel: more"])
 		return out
@@ -575,6 +627,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			if _on_turn and tank != null:
 				tank.call("reset_contents")
 				_follow_shark = 0.0
+		KEY_LEFT, KEY_RIGHT:
+			if active != null and active.has_method("select_step"):
+				active.call("select_step", -1 if k.keycode == KEY_LEFT else 1)
+				get_viewport().set_input_as_handled()
+		KEY_1, KEY_2, KEY_3, KEY_4:
+			if active != null and active.has_method("select"):
+				active.call("select", k.keycode - KEY_1)
+				get_viewport().set_input_as_handled()
 		KEY_V:
 			if _on_turn:
 				_follow_shark = 8.0
@@ -611,7 +671,13 @@ func go_to(at: Vector4, yaw: float) -> void:
 		return
 	player.global_position = at
 	player.set("linear_velocity", Vector4.ZERO)
-	player.set("_facing", yaw)
+	# The walker's facing is atan2(forward.x, forward.z); the rig's yaw 0 looks along -z. Handing it
+	# the yaw itself faced you back at the wall you came in by (round 3: "the character is still
+	# rotated to face the wall"). The walker's own _ready makes the same conversion.
+	player.set("_facing", atan2(-sin(yaw), -cos(yaw)))
+	var avatar: Node4D = player.get_node_or_null("Avatar") as Node4D
+	if avatar != null:
+		avatar.basis = player.get("_stance")
 	if _rig != null:
 		_rig.set("yaw", yaw)
 		_rig.call("_apply")

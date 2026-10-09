@@ -20,8 +20,9 @@ And two loops, periodic by construction (the pen's bake_flock_sound.py way: nois
 frequency domain is circular, and every event is placed round the loop, wrapping at its end), so they
 repeat without a seam:
 
-  harbour_lap.wav  the seascape's bed: small waves slapping the piles at uneven intervals, the
-                   wash of the open sea under it, 16 s
+  harbour_lap.wav  the seascape's bed: the open sea's wash breathing with the swell, and small
+                   waves lapping (soft, low, no knock: round 2, Ramon heard the knocks as
+                   clanking), 16 s
   tank_hum.wav     the tank room's: the filter pump's hum, the air stone's bubbles popping at the
                    surface, a trickle of water, 12 s
 
@@ -164,7 +165,7 @@ def harbour_lap():
     # The open sea's wash: low noise breathing with the swell (whole cycles over the loop).
     wash = circular_noise(seconds, lambda f: (f / 60.0) ** 1 / (1.0 + (f / 60.0) ** 1) / (1.0 + (f / 700.0) ** 2.5))
     swell = 0.6 + 0.4 * np.sin(2.0 * np.pi * 2.0 * t / seconds) * np.sin(2.0 * np.pi * 3.0 * t / seconds + 1.0)
-    out = wash * swell * 0.5
+    out = wash * swell * 0.8
     # The slaps on the piles: a short burst of mid noise and a hollow knock, every 0.5 to 1.6 s.
     at = 0.0
     while at < seconds:
@@ -173,12 +174,11 @@ def harbour_lap():
         burst = RNG.standard_normal(m)
         spec = np.fft.rfft(burst)
         fr = np.maximum(np.fft.rfftfreq(m, 1.0 / RATE), 1.0)
-        centre = RNG.uniform(350.0, 900.0)
+        centre = RNG.uniform(220.0, 520.0)
         burst = np.fft.irfft(spec * np.exp(-((np.log(fr / centre)) ** 2) / 0.6), m)
         burst /= max(np.sqrt(np.mean(burst ** 2)), 1e-9)
-        env = (1.0 - np.exp(-tt / 0.012)) * np.exp(-tt / RNG.uniform(0.06, 0.14))
-        knock = np.sin(2.0 * np.pi * RNG.uniform(90.0, 150.0) * tt) * np.exp(-tt / 0.05)
-        place(out, (burst * env + 0.6 * knock * env) * RNG.uniform(0.5, 1.2), int(at * RATE))
+        env = (1.0 - np.exp(-tt / 0.05)) * np.exp(-tt / RNG.uniform(0.12, 0.25))
+        place(out, burst * env * RNG.uniform(0.25, 0.55), int(at * RATE))
         at += RNG.uniform(0.5, 1.6)
     return out
 

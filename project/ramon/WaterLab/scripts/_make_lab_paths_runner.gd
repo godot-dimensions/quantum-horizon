@@ -37,12 +37,13 @@ func _hall() -> Resource:
 	# clear of it. The branch south to the showcase (twice the size: radius 3.7 at (9.5, -1.8)).
 	var g: Resource = Graph.new()
 	var band: float = 8.0
-	var s: int = g.call("add_node", "start", _p(-11.0, 12.9), {"band": band, "approach": Vector2(0, 1)})
+	var s: int = g.call("add_node", "start", _p(-11.0, 13.6), {"band": band, "approach": Vector2(0, 1)})
 	var turn1: int = g.call("add_node", "bend", _p(-11.0, -7.7), {"band": band})
 	var square: int = g.call("add_node", "destination", _p(-5.23, -7.7), {"band": band, "state": "available", "target": "TurnSpot", "frame": "rect",
 		"approach": Vector2(-1, 0), "symbol": false, "clear": 1.62})
 	var turn2: int = g.call("add_node", "junction", _p(10.0, -7.7), {"band": band})
-	var koi: int = g.call("add_node", "destination", _p(10.0, -6.3), {"band": band, "state": "available", "target": "Showcase", "frame": "round", "approach": Vector2(0, -1)})
+	# Round 3: the showcase halfway between the tank's front and the south wall (10, -2.74), radius 3.
+	var koi: int = g.call("add_node", "destination", _p(10.0, -6.45), {"band": band, "state": "available", "target": "Showcase", "frame": "round", "approach": Vector2(0, -1)})
 	var door: int = g.call("add_node", "destination", _p(10.0, -12.4), {"band": band, "state": "arrival", "target": "ExitDoor", "frame": "rect", "approach": Vector2(0, 1)})
 	g.call("add_edge", s, turn1, "primary", "static", band)
 	g.call("add_edge", turn1, square, "primary", "static", band)

@@ -20,6 +20,10 @@ signal mood_pressed
 
 var mood: String = "bright"
 var strip: Array = []                 # [[key, label], ...]
+## WATER LAB: where the strip's middle sits, as a share of the screen's height (-1: at the bottom).
+## The feeding booth lifts its one key to the middle, over you (round 3: "place it in the middle of the
+## screen ... make that button higher").
+var strip_at: float = -1.0
 ## Dark glass in both moods, with white type, as the lab's other overlays (kit_style.gd); the goat
 ## room turns it on, the other rooms keep the mood-following strip.
 var glass: bool = false
@@ -164,6 +168,8 @@ func _draw_strip(u: float, bg: Color, ink: Color, accent: Color) -> void:
 	total += gap * float(strip.size() - 1) + 40.0 * u
 	var h: float = 40.0 * u
 	var r := Rect2(Vector2((size.x - total) * 0.5, size.y - h - 22.0 * u), Vector2(total, h))
+	if strip_at >= 0.0:
+		r.position.y = size.y * strip_at - h * 0.5
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
 	sb.set_corner_radius_all(int(h * 0.5))

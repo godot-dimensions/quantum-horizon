@@ -642,3 +642,79 @@ The target was a median under 3 ms.
 59. Test by playing both scenes: frames of every change, perf of both, the HUDs at 4K.
 60. The handover, the memory, and commits by explicit paths. Then the real gull recordings, after
     Ramon's yes.
+
+## Round 3: Ramon's second walkthrough (9 Oct)
+
+Trym's note via Ramon: the sea's water tech was pulled from https://github.com/emilje/godot-water-shader
+(read before finishing Gerstner 3).
+
+### The plan (40 steps)
+
+**A. Tank room fixes (1-14)**
+1. Spawn facing into the room, not the wall: check the avatar's own facing against the rig's yaw.
+2. Remove the cyan line on the tank (the stand's glow line).
+3. The square's words pure white (the floor print boosts white, not the blue).
+4. The square gets an inset outline: corner brackets with breaks between them.
+5. Feeding:
+   - no bottom strip at the booth;
+   - the E prompt sits higher, in the middle of the screen;
+   - "A pinch of food" stays.
+6. The west wall's intro panel 1 m to the left (as you face it: south).
+7. The fish wall's pages line up with the blue wall behind them (the offset).
+8. The blueprint behind the fish:
+   - a clean grid, no centre cross, circle or bottom ticks;
+   - fainter lines.
+9. The whole south wall blue (the one with the entrance).
+10. The two fish pages centred on that wall between the doorway and the east end.
+11. The fish pages printed on the wall itself: plain wall blue behind them, no brighter slabs.
+12. The exit's hologram: the airlock behind it dark (black grid), so no room shows through.
+13. The mouse tutorial loses its cord.
+14. The route's frames and completed ticks in the arrow blue; the showcase's frame tighter round its
+    pedestal.
+
+**B. The showcase as a swap display (15-24)**
+15. The pedestal bigger (round 2: twice: radius 3.7), the holo and the creature scaled with it.
+16. Placed halfway between the tank's front and the south wall, closer to the east wall.
+17. Its ring diagram in the lab blue.
+18. The floating panel:
+    - always turned to face you, wherever you are in the room;
+    - solid;
+    - its cyan lines removed.
+19. The panel becomes a selector:
+    - tiles for the koi, the hammerhead, the crab and the eel (glyphs drawn for each);
+    - the arrow keys move between them, the chosen one lit;
+    - the Quantum Range console's look.
+20. Choosing one: the creature on the pedestal shrinks away, the new one grows in from life size.
+21. Each creature swims or walks in place in the holo field: the big koi, the hammerhead (lofted, as
+    in the tank), the crab, the eel.
+22. A details card for the chosen one on the panel (its specs), E for more pages.
+23. The wheel and right drag still turn and slide the creature through W.
+24. Frames of each creature and the swap.
+
+**C. In the tank (25-31)**
+25. The two stone arches: one turned 35 degrees, the left one moved further left.
+26. The big seaweed on the right (waving through the glass) moved to the left side.
+27. A swarm of very small fish (the murmuration technique), slow, parting for the shark.
+28. The light shafts and caustics: no cut sliding down the back wall (larger, or tiled).
+29. The sand box under the dunes a hair smaller, so the two never clip.
+30. Frames of the tank: the arches, the weed, the swarm with the shark through it, the back wall.
+31. Perf of the tank with the swarm.
+
+**D. The room's lights (32-33)**
+32. Tab opens a light editor:
+    - a top-down layout with each light numbered;
+    - each light's energy, spread and softness;
+    - SAVE and RESET.
+33. Frames of it at 4K.
+
+**E. The sea, round 2 continued (34-38)**
+34. Finish the layout already written: pier 2 gone, the tunnel with its pages, the smaller platform
+    with TURN THE SLICE, the pole, blue dashes, gulls on the rails, the edge thought.
+35. The overlay (keys, the four seas, the Gerstner, the numbers, the mouse) and the dev HUD on Tab.
+36. Gerstner 2 and 3 (3 after reading Trym's source); the sardines; the waves-only sound.
+37. The fishing boat, riding the waves, cut by the slice.
+38. Frames of every change in the sea, and its perf.
+
+**F. Close (39-40)**
+39. Every frame checked against both rounds' lists. The handover and memory brought up to date.
+40. Commit by explicit paths. List the CC0 gull recordings (download only with Ramon's yes).

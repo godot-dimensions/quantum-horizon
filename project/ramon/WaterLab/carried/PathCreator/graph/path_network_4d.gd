@@ -84,6 +84,25 @@ const FRAME_GAP := 1.6
 	set(v):
 		default_library = v
 		_later()
+## WATER LAB: the guide line's colour (transparent: the sheet's light blue, GUIDE_COLOR). The sea's
+## route draws it in the marks' own blue (Ramon, 9 Oct: "the white lines on the path between the
+## arrows. It can all be the same blue").
+@export var guide_color: Color = Color(0, 0, 0, 0):
+	set(v):
+		guide_color = v
+		_later()
+## WATER LAB: the frames' and the destinations' grey ("edge", the done tick) drawn in this instead
+## (transparent: the sheet's), and how far a frame stands off its object (-1: the sheet's 0.35 m).
+## The tank room draws both in the arrows' blue, its frames closer (Ramon, round 3: "the UI outline a
+## little bit smaller ... the UI outline and this checker mark the same blue as the arrow blue").
+@export var edge_color: Color = Color(0, 0, 0, 0):
+	set(v):
+		edge_color = v
+		_later()
+@export var frame_margin: float = -1.0:
+	set(v):
+		frame_margin = v
+		_later()
 ## The floor's own albedo, which a mark's antialiased edge blends into.
 @export var under_color: Color = Color(0.96, 0.965, 0.97):
 	set(v):
@@ -850,6 +869,7 @@ func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictiona
 		Draw.set_param(mi, "mark_half", half)
 		Draw.set_param(mi, "repeat_m", (Spec.PRIMARY_REPEAT_M if primary else Spec.SECONDARY_REPEAT_M) * p_scale)
 		Draw.set_param(mi, "guide_dot", 0.0 if primary else Spec.GUIDE_DOT_M * p_scale)
+		Draw.set_param(mi, "col_guide", guide_color if guide_color.a > 0.0 else Spec.GUIDE_COLOR)
 		Draw.set_param(mi, "s0", s0 + t0)
 		Draw.set_param(mi, "clear0", c0 if first else 0.0)
 		Draw.set_param(mi, "clear1", c1 if last else 0.0)
@@ -906,6 +926,8 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 			var sz: Vector2 = Draw.sym_size(s) * _u() * scale
 			_size(mi, Vector4(sz.x + 0.1, Spec.BOX_H_M, sz.y + 0.1, band))
 			Draw.set_param(mi, "node_sym", s)
+			if edge_color.a > 0.0:
+				Draw.set_param(mi, "col_edge", edge_color)
 			Draw.set_param(mi, "node_scale", scale)
 			Draw.set_param(mi, "arc_on", 1.0 if slot in ["E", "F"] else 0.0)
 			Draw.set_param(mi, "accent_on", 1.0 if slot in ["E", "F"] else 0.0)
@@ -959,7 +981,7 @@ func _lay_frame(n: Dictionary, used: Dictionary) -> void:
 	if s < 0:
 		return
 	var foot: Vector2 = t.call("footprint")
-	var outer: Vector2 = foot + Vector2.ONE * FRAME_MARGIN * 2.0
+	var outer: Vector2 = foot + Vector2.ONE * (FRAME_MARGIN if frame_margin < 0.0 else frame_margin) * 2.0
 	var mi: MeshInstance4D = _item("Frame%d" % int(n["id"]), Draw.FRAME, used)
 	mi.set_meta("node", int(n["id"]))
 	_editor_tint(mi, "")
@@ -976,6 +998,8 @@ func _lay_frame(n: Dictionary, used: Dictionary) -> void:
 	if round_frame:
 		grow = Vector2.ONE * (maxf(outer.x, outer.y) / _u() - ss.x) * 0.5
 	Draw.set_param(mi, "frame_sym", s)
+	if edge_color.a > 0.0:
+		Draw.set_param(mi, "col_edge", edge_color)
 	Draw.set_param(mi, "frame_grow", grow)
 	Draw.set_param(mi, "frame_round", 1.0 if round_frame else 0.0)
 	var ap: Vector2 = n.get("approach", Vector2(0, 1))

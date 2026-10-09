@@ -110,8 +110,10 @@ func _stones() -> void:
 	_stone("GiantBack", _on(5.6, 0.9, -1.05, -0.4), Vector4(2.0, 1.25, 0.6, 1.6), warm, 8)
 	_stone("GiantDeep", _on(3.2, 1.0, -0.6, -2.0), Vector4(1.8, 1.3, 0.8, 1.2), granite, 8)
 	# The arches: two across the tank's depth, their openings along it; one turned 40 degrees into W.
-	_arch("ArchLeft", Vector4(-1.8, 0.0, -0.45, 0.0), 2.3, 2.3, 0.42, Projection.IDENTITY, granite)
-	_arch("ArchRight", Vector4(2.6, 0.0, -0.5, 0.15), 2.0, 1.9, 0.38, Projection.IDENTITY, warm)
+	# Round 3 (Ramon: "turn one of them 35 degrees so that they offset a little bit ... make the left one
+	# go more to the left side, just for creating a better composition").
+	_arch("ArchLeft", Vector4(-4.4, 0.0, -0.45, 0.0), 2.3, 2.3, 0.42, Projection.IDENTITY, granite)
+	_arch("ArchRight", Vector4(2.6, 0.0, -0.5, 0.15), 2.0, 1.9, 0.38, Basis4D.from_zx(deg_to_rad(35.0)), warm, true, "_turned35")
 	# The W arch faces the glass (its span along x) and leans 35 degrees into W: the level slice cuts
 	# its top and thin pieces of its legs; turned back through W it stands whole, an arch to look through.
 	_arch("ArchW", Vector4(0.9, 0.0, -0.9, 0.0), 2.4, 2.0, 0.40, Basis4D.from_xw(deg_to_rad(35.0)) * Basis4D.from_zx(PI * 0.5), granite, false)
@@ -178,7 +180,7 @@ func _stone_mesh(ext: Vector4, cuts: int) -> ArrayTetraMesh4D:
 ## An arch: a rock lofted along an arc in its own y-z plane (the opening along x), `span` between its
 ## feet, `height` to the top of its opening, `thick` its rock's half width; turned by `turn` (a turn
 ## into W stands it partly off the slice). Its feet are sunk in the sand. Lumped like the stones.
-func _arch(nm: String, base: Vector4, span: float, height: float, thick: float, turn: Projection, mat: TetraMaterial4D, runnable: bool = true) -> void:
+func _arch(nm: String, base: Vector4, span: float, height: float, thick: float, turn: Projection, mat: TetraMaterial4D, runnable: bool = true, bake_tag: String = "") -> void:
 	var gy: float = _gy(base.x, base.z, base.w)
 	var sections: Array = []
 	var n: int = 13
@@ -211,7 +213,8 @@ func _arch(nm: String, base: Vector4, span: float, height: float, thick: float, 
 		_by_position(m, Vector4(span * 0.6, height, span * 0.6, span * 0.6))
 		m.calculate_boundary_normals(false)
 		return m
-	var mesh: ArrayTetraMesh4D = _cached(nm, make)
+	# The turn is baked into the mesh: a turned arch is baked under its own name.
+	var mesh: ArrayTetraMesh4D = _cached(nm + bake_tag, make)
 	if mesh == null:
 		return
 	var at := Vector4(base.x, gy, base.z, base.w)

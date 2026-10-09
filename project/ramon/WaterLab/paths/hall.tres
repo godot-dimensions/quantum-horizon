@@ -10,7 +10,7 @@ nodes = [{
 "frame": "none",
 "id": 1,
 "kind": "start",
-"pos": Vector4(-11, 0, 12.9, 0),
+"pos": Vector4(-11, 0, 13.6, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -48,7 +48,7 @@ nodes = [{
 "frame": "round",
 "id": 5,
 "kind": "destination",
-"pos": Vector4(10, 0, -6.3, 0),
+"pos": Vector4(10, 0, -6.45, 0),
 "state": "available",
 "target": "Showcase"
 }, {

@@ -40,6 +40,7 @@ const LabGrid := preload("res://ramon/WaterLab/carried/LabKit/lab_grid.gd")
 const LabPrint := preload("res://ramon/WaterLab/carried/LabKit/lab_print.gd")
 const Mats := preload("res://ramon/WaterLab/carried/LabKit/lab_materials.gd")
 const Style := preload("res://ramon/WaterLab/carried/kit/kit_style.gd")
+const Glyphs := preload("res://ramon/WaterLab/carried/kit/kit_glyphs.gd")
 
 ## The glass, metres (width, depth up the slope), and how finely its picture is drawn.
 @export var width: float = 1.3
@@ -77,6 +78,11 @@ const CORNER := 0.07
 @export_range(0.0, 1.0) var turn_to_you: float = 0.45
 ## A solid box under it (you cannot walk through it).
 @export var solid: bool = true
+## Turned to face you wherever you are in the room, not only near (round 3, Ramon: "I would always
+## make the panel face the direction of the player ... no matter where you are in the room").
+@export var face_always: bool = false
+## The glow lines under its plate (round 3: off on the showcase's: "remove all the cyan lines").
+@export var underglow: bool = true
 
 @export_group("Words")
 ## Shown when there is no station and no source: [[label, value], ...].
@@ -161,6 +167,8 @@ func _build() -> void:
 			[Vector3(w * 0.5 - 0.05, under, 0), Vector3(0.03, 0.016, dd - inset * 2.0)], [Vector3(0, under, -dd * 0.5 + 0.05), Vector3(w - inset * 2.0, 0.016, 0.03)]]:
 		var at: Vector3 = g[0]
 		var sz: Vector3 = g[1]
+		if not underglow:
+			continue
 		var line := MeshInstance4D.new()
 		line.name = "Underglow"
 		line.mesh = Mats.box_mesh(Vector4(sz.x, sz.y, sz.z, Build.W_DEPTH))
@@ -234,6 +242,8 @@ func _process(delta: float) -> void:
 			target = -away / d * follow * k
 			var to_you: float = atan2(-away.x, -away.y)
 			want_yaw = lerp_angle(_home_yaw, to_you, turn_to_you * clampf(k * 1.6, 0.0, 1.0))
+		if face_always and d > 0.001:
+			want_yaw = atan2(-away.x, -away.y)
 	_yaw = lerp_angle(_yaw, want_yaw, 1.0 - exp(-delta * 2.5))
 	var acc: Vector2 = (target - _off) * stiffness - _vel * damping
 	_vel += acc * delta
@@ -279,6 +289,13 @@ func _read() -> void:
 				"rows": pg.get("rows", []), "text": String(pg.get("text", "")), "page": "%d / %d" % [page_index + 1, pages.size()]}
 		else:
 			_data = {"number": number, "title": title, "kicker": kicker, "rows": (src.call("face") as Array).slice(0, 3) if src.has_method("face") else [], "page": ""}
+			# A selector (the showcase's creatures): tiles across the top, the chosen one's card under them.
+			if src.has_method("tiles"):
+				_data["tiles"] = src.call("tiles")
+				if src.has_method("card"):
+					var cd: Dictionary = src.call("card")
+					_data["title"] = String(cd.get("title", title))
+					_data["kicker"] = String(cd.get("kicker", kicker))
 		_data["hint"] = near
 		_data["hint_text"] = hint
 		var s0: String = str(_data)
@@ -310,6 +327,9 @@ func _read() -> void:
 
 
 func _paint() -> void:
+	if _data.has("tiles") and String(_data.get("page", "")).is_empty():
+		_paint_tiles()
+		return
 	var sz: Vector2 = _page.size
 	var u: float = sz.y / 260.0
 	_page.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.035, 0.042, 0.055))
@@ -350,3 +370,54 @@ func _paint() -> void:
 		var x: float = pad + cw * float(i)
 		_page.draw_string(fb, Vector2(x, top + 40.0 * u), String(cols[i][1]), HORIZONTAL_ALIGNMENT_LEFT, cw - 12.0 * u, int(34 * u), Color.WHITE)
 		_page.draw_string(fl, Vector2(x, top + 68.0 * u), String(cols[i][0]).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, cw - 12.0 * u, int(15 * u), Style.UI_INK_DIM)
+
+
+## WATER LAB: the selector (round 3, Ramon: "similar to the floating panel at the shooter range ... the
+## icons that you can select of the different animals ... showcased in the middle when you click an
+## icon with the arrow keys"): the Quantum Range console's tiles across the top (its look: the lit one
+## blue-filled with a blue border, a key number in its corner, the glyph, the name under it), the
+## chosen creature's card under them, the keys along the bottom.
+func _paint_tiles() -> void:
+	var sz: Vector2 = _page.size
+	var u: float = sz.x / 1144.0
+	_page.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.035, 0.042, 0.055))
+	var fb: Font = LabPrint.font("black")
+	var fs: Font = LabPrint.font("bold")
+	var fl: Font = LabPrint.font("body")
+	var pad: float = 30.0 * u
+	var tiles: Array = _data["tiles"]
+	var n: int = maxi(tiles.size(), 1)
+	var gap: float = 16.0 * u
+	var tw: float = (sz.x - pad * 2.0 - gap * float(n - 1)) / float(n)
+	var th: float = sz.y * 0.46
+	for i in tiles.size():
+		var lit: bool = bool(tiles[i][2])
+		var r := Rect2(Vector2(pad + float(i) * (tw + gap), pad), Vector2(tw, th))
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(Style.UI_ACCENT, 0.18) if lit else Color(1, 1, 1, 0.04)
+		sb.border_color = Color(Style.UI_ACCENT, 0.95) if lit else Color(1, 1, 1, 0.28)
+		sb.set_border_width_all(int(maxf(2.0, (4.0 if lit else 2.0) * u)))
+		sb.set_corner_radius_all(int(18.0 * u))
+		_page.draw_style_box(sb, r)
+		var ink: Color = Style.UI_ACCENT if lit else Color(1, 1, 1, 0.82)
+		_page.draw_string(fs, r.position + Vector2(16.0 * u, 34.0 * u), str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, int(24 * u), ink)
+		var gr := Rect2(r.position + Vector2(r.size.x * 0.14, 30.0 * u), Vector2(r.size.x * 0.72, r.size.y - 82.0 * u))
+		Glyphs.animal(_page, String(tiles[i][1]), gr, ink, sb.bg_color.lerp(Color(0.035, 0.042, 0.055), 0.5))
+		_page.draw_string(fs, Vector2(r.position.x, r.end.y - 18.0 * u), String(tiles[i][0]).to_upper(), HORIZONTAL_ALIGNMENT_CENTER, r.size.x, int(20 * u), ink)
+	# The chosen one's card.
+	var y0: float = pad + th + 34.0 * u
+	_page.draw_string(fb, Vector2(pad, y0 + 34.0 * u), String(_data.get("title", "")).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, sz.x - pad * 2.0, int(40 * u), Color.WHITE)
+	_page.draw_string(fs, Vector2(pad, y0 + 66.0 * u), String(_data.get("kicker", "")), HORIZONTAL_ALIGNMENT_LEFT, sz.x - pad * 2.0, int(18 * u), Style.UI_INK_DIM)
+	var rows: Array = _data.get("rows", [])
+	if not rows.is_empty():
+		var top: float = y0 + 92.0 * u
+		_page.draw_line(Vector2(pad, top), Vector2(sz.x - pad, top), Color(1, 1, 1, 0.15), maxf(1.0, u))
+		var cw: float = (sz.x - pad * 2.0) / float(rows.size())
+		for i in rows.size():
+			var x: float = pad + cw * float(i)
+			_page.draw_string(fb, Vector2(x, top + 46.0 * u), String(rows[i][1]), HORIZONTAL_ALIGNMENT_LEFT, cw - 14.0 * u, int(34 * u), Color.WHITE)
+			_page.draw_string(fl, Vector2(x, top + 74.0 * u), String(rows[i][0]).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, cw - 14.0 * u, int(16 * u), Style.UI_INK_DIM)
+	var keys: String = "1 - %d  OR  LEFT / RIGHT   CHOOSE" % tiles.size()
+	if bool(_data.get("hint", false)):
+		keys += "        E   MORE ABOUT IT"
+	_page.draw_string(fs, Vector2(pad, sz.y - pad * 0.8), keys, HORIZONTAL_ALIGNMENT_LEFT, sz.x - pad * 2.0, int(17 * u), Style.UI_ACCENT)

@@ -38,7 +38,8 @@ func _ready() -> void:
 	# Kelp forests in the two back corners, reaching the surface.
 	for corner in [-1.0, 1.0]:
 		for i in 46:
-			var x: float = corner * (he.x - _rng.randf_range(0.25, 2.6))
+			# Clear of the end glass: the right one (it swayed through the glass, round 3) well in from it.
+			var x: float = corner * (he.x - _rng.randf_range(0.9, 3.0)) if corner < 0.0 else he.x - _rng.randf_range(2.6, 4.8)
 			_add(rows, x, _rng.randf_range(-1.5, -0.4), _rng.randf_range(-1.6, 1.6), _rng.randf_range(2.4, top), _rng.randf_range(0.18, 0.32), kelp.lerp(grass, _rng.randf() * 0.3), 1.0)
 	# Seagrass meadows along the back.
 	for i in 300:

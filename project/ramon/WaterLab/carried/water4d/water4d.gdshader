@@ -64,6 +64,19 @@ uniform float wave_phase[MAX_WAVES];  // omega * t, advanced on the CPU so time 
 // 0 means plain sine heights with no horizontal displacement at all, for comparison. 2 is
 // plenty for the steepnesses the presets use.
 uniform int solve_iterations = 2;
+// WATER LAB: which Gerstner look (Ramon, 9 Oct: "there's this sort of texture clipping with the sea
+// underneath ... patches on top that are darker ... make the Gerstner 2 and 3"). The patches were
+// lighting, not geometry: with the faces of this grid away from the camera, the engine flips the
+// normal of every ordinary pixel, but the foam branch wrote its own normal unflipped, so wherever the
+// crest foam began (foam > 0.002, a hard edge) the sky's reflection switched to a weaker one.
+//   1  as it was (Trym's).
+//   2  the foam branch's normal flipped as the engine flips the rest, and the foam's relief and its
+//      matt finish faded in over the foam's first quarter: the same sea, no patches.
+//   3  the way of the shader Trym's came from (github.com/emilje/godot-water-shader, g_wave.gdshader):
+//      the surface's own normal everywhere, nothing flipped, and the foam only a colour mixed in, never
+//      tilting the normal; the crests' breaking also faded out with distance, so the coarse far ring
+//      does not foam in big straight-edged sheets.
+uniform int gerstner_style = 2;
 
 // SURFACE DETAIL. The wave sum alone is smooth at every scale the grid can carry, which
 // reads as oil rather than water. This is a band of value noise over (x, z, w) added to the
@@ -317,6 +330,11 @@ void vertex() {
 	height *= lod;
 	n4 = normalize(mix(vec4(0.0, 1.0, 0.0, 0.0), n4, lod));
 	foam_history *= lod;
+	if (gerstner_style >= 3) {
+		float near_k = 1.0 - smoothstep(near_extent, near_extent * 5.0, length(VERTEX.xz));
+		jacobian_det = mix(1.0, jacobian_det, near_k);
+		foam_history *= near_k;
+	}
 	vec4 world = vec4(surface_h.x, water_level + height + VERTEX.y, surface_h.y, surface_h.z);
 	vec4 rel = world - cam_position;
 	// Orthonormal basis, so the inverse is four dot products. The w component comes out at
@@ -360,6 +378,10 @@ void fragment() {
 
 	// Default for both branches; the foam branch below tilts it.
 	lit_normal_4d = normal_4d_camera;
+	// Style 3: the surface's own normal, never flipped (see gerstner_style).
+	if (gerstner_style >= 3) {
+		NORMAL = normalize(normal_4d_camera.xyz);
+	}
 
 	if (debug_jacobian) {
 		// Blue where the surface is stretched, white at rest, red where it is pinching.
@@ -433,10 +455,23 @@ void fragment() {
 			// horizontal derivatives exist, so the relief is that, taken into the camera's
 			// frame to meet the normal the vertex stage left behind.
 			vec4 relief_world = vec4(-gradient.x, 0.0, -gradient.y, -gradient.z) * foam_relief;
+			// Style 2: the relief comes in over the foam's first quarter, not at once. Style 3: none, the
+			// foam is a colour only (the original's way).
+			if (gerstner_style == 2) {
+				relief_world *= smoothstep(0.002, 0.25, foam);
+			} else if (gerstner_style >= 3) {
+				relief_world = vec4(0.0);
+			}
 			vec4 relief = vec4(dot(relief_world, cam_basis_x), dot(relief_world, cam_basis_y),
 					dot(relief_world, cam_basis_z), dot(relief_world, cam_basis_w));
 			lit_normal_4d = normalize(normal_4d_camera + relief);
-			NORMAL = normalize(lit_normal_4d.xyz);
+			if (gerstner_style == 2) {
+				// Flipped as the engine flips every other pixel of this sea.
+				vec3 nl = normalize(lit_normal_4d.xyz);
+				NORMAL = FRONT_FACING ? nl : -nl;
+			} else if (gerstner_style <= 1) {
+				NORMAL = normalize(lit_normal_4d.xyz);
+			}
 			// Fade the bubbles out with distance, back to the smooth mask. Procedural
 			// detail has no mip chain, so beyond the point where a cell is sub-pixel it
 			// aliases into sparkle - which reads as fireflies on the horizon.

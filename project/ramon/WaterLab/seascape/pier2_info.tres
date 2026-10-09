@@ -6,10 +6,10 @@
 script = ExtResource("1_info")
 number = 4
 title = "Turn the slice"
-status = "PIER 2  /  THE PIER TURNS TOO"
+status = "THE PLATFORM  /  IT STAYS SET"
 lead = "Stand on the circle and right-drag."
-description = "On the circle a right drag turns your slice through W. The sea is cut a new way and its waves change, because they run through W as well as across. This pier is part of the world, so it turns with the slice: it thins and ends where your slice leaves it. On pier 1 the platform stays set."
-interactions = [["rdrag", "Turn the slice"], ["key:R", "Level it again"], ["key:P", "Back to pier 1"]]
+description = "On the platform a right drag turns your slice through W. The sea is cut a new way and its waves change, because they run through W as well as across. The platform stays set, drawn as if nothing had turned, so you keep your footing while the sea changes round you."
+interactions = [["rdrag", "Turn the slice"], ["key:R", "Level it again"], ["key:1", "Seas 1 to 4"]]
 controls_heading = "CONTROLS"
 research_title = "THE SLICE"
 research_status = ""

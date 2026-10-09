@@ -211,8 +211,11 @@ void fragment() {
 		vec4 p = ro + rd * tt;
 		float d = half_ext.y - p.y;
 		vec2 lean = light_dir.xz / max(light_dir.y, 0.3);
-		vec2 q = vec2(p.x + d * lean.x, p.z + d * lean.y) * vec2(0.9, 0.55) + vec2(p.w * 0.6, 0.0);
-		float s = vnoise(q * 1.3 + vec2(water_time * 0.04, -water_time * 0.03));
+		// Long in depth and drifting only sideways (round 3, Ramon: "a cut ... being animated and it's
+		// going down the back wall ... make it larger, scale it in height"): the pattern's second axis
+		// was the depth with a drift along it, and on the vertical back wall a cell's edge slid down.
+		vec2 q = vec2(p.x + d * lean.x + p.w * 0.6, (p.z + d * lean.y) * 0.18);
+		float s = vnoise(q * 1.3 + vec2(water_time * 0.04, 0.0));
 		s = smoothstep(0.58, 0.92, s) * exp(-d * 0.20);
 		shafts += s;
 	}
