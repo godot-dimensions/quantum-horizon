@@ -273,3 +273,8 @@ greps it for errors. Modes: `headless`, `windowed` (1280x720, unfocusable), `mov
   leaves Godot idling until the launcher's timeout, so runners give up on their own after a minute
   or two.
 - The Combined projection fades with distance in W: something twelve bays away barely shows.
+- (8 Oct, the pen's fitting room) A scene of your own built from the kit must call
+  `kit_style.gd`'s `apply(mood)` before its `KitRoom` builds (in the root's `_enter_tree`): the
+  swatches, the code blue among them, are registered only then, and without it a blue lesson wall
+  comes out white. A wall turns blue from the room's `edge_codes` (`{"n": "blue"}`), not from the
+  text's own `code`. See `chickenpen/outfit/outfit_room_4d.gd`.

@@ -18,6 +18,7 @@ Ramon likes to work.
 - **Items**: `scripts/pen_inventory_4d.gd`. Azoth is `found_azoth` (it was gold; files and nodes still say gold on purpose). Only azoth stacks.
 - **UI size**: `scripts/pen_ui_scale_4d.gd` sets the window's `content_scale_factor`; the dial is held at its authored pixel size plus its own `dial_percent`. Both saved in `user://pen_settings.cfg`. Keys `+ / -` and `Shift + / -` in `scripts/pen_controls_4d.gd`.
 - **Baked meshes**: `terrain/baked/*.res`, rebuilt with `scripts/_bake_terrain_runner.gd -- what=hills|cave_hill|cave|cave_far|mountains`.
+- **The outfit** (8 Oct): the fitting circle `World/OutfitCircle` (`units/outfit/outfit_circle.tscn`) west of Trym's house; everything in `outfit/`. The player's outfit is saved in `user://pen_outfit.cfg` and put on every player figure (pen, cave, cinema) by a keeper node on the window's root. The avatar rebuilds itself and frees its children, so the outfit is painted from beside it, never inside. Handover `follow_up/outfit.md`.
 
 ## What bites (4D and Godot)
 
@@ -42,7 +43,7 @@ Ramon likes to work.
 
 - **Shared worktree, several Claude windows**: commit by explicit paths, never `git add -A`. `project.godot`, `theatre_numeral_4d.gd`, `deck_assets/` and `follow_up/presentation temp/` are not ours.
 - **Commit locally; push only when he says.**
-- **Never run Godot while his editor is open**, and take turns with the other windows: check `.claude/godot_in_use.txt` and `Get-Process` in the same command that launches, write your lock line, remove it after. His editor's line reads "Ramon's editor (opened for him by ...)". Open his editor on monitor 1 (x 2560 to 5120; it ignores `--position`, move it with Win32 `SetWindowPos`). Don't run the project-wide resave script; hand-check `.tscn` edits.
+- **Never run Godot while his editor is open**, and take turns with the other windows: check `.claude/godot_in_use.txt` and `Get-Process` in the same command that launches, write your lock line, remove it after. His editor's line reads "Ramon's editor (opened for him by ...)". When he asks to see something, open the EDITOR only, on his LEFT monitor (x 0 to 2560), and let him press play himself (Ramon, 8 Oct: "please only open on left monitor next time, and just engine so i can open it"); it ignores `--position`, move it with Win32 `SetWindowPos`. Don't run the project-wide resave script; hand-check `.tscn` edits.
 - **Test by playing, not only by asserting.** Runners save frames to `res://smoke_test_output/`; look at them. Headless passes have missed visual bugs more than once (the browner cave, the hidden prompt).
 - **Your test windows**: small (`--windowed --resolution 1280x720 --position 40,40`) with `root.unfocusable = true`; his typing once opened the cinema through a focused test window. Fullscreen only when launching for him.
 - **Tests must leave his saved UI sizes alone** (`user://pen_settings.cfg`): restore what they change.
