@@ -134,6 +134,12 @@ const SAVED := "res://ramon/chickenpen/look/look_saved.cfg"
 ## orange ... can you make the whole shooting range orange as test, and the chicken pen too. and the campsite that
 ## gets revealed, and trym's house"), by the name their rule is found on.
 @export var orange_units: PackedStringArray = PackedStringArray(["Range", "Pen", "EggCamp", "TrymCabin", "Shed"])
+## Parts of a character drawn as one blockout box in the dev look, by path under World, though characters are
+## otherwise never touched (Ramon, 9 Oct: "lets make the dev version one box instead of the detailed shelve").
+## Trym's bookcase is the 4D shelf, 345 meshes (336 books), and with projection (P) on, the dev look drew more
+## meshes than the engine holds ("Too many instances using shader instance variables"). Its art is left as it
+## is: the dev look only takes its meshes off and puts them back.
+@export var boxed_in_dev: PackedStringArray = PackedStringArray(["TrymCabin/Trym/Bookshelf"])
 @export var terrain_colour: Color = Color(0.62, 0.64, 0.67)
 @export var floor_colour: Color = Color(0.74, 0.75, 0.77)
 @export var floor_line: Color = Color(0.62, 0.63, 0.66)
@@ -391,6 +397,8 @@ func _apply_dev() -> void:
 		var r: Array = _rule_of(mi)
 		if r[0] is String and String(r[0]) == "block" and _role(mi) == "landmark":
 			_blockout(r[1])
+	for part in _boxed_parts():
+		_blockout(part)
 	for mi in meshes:
 		_take(mi)
 
@@ -415,6 +423,11 @@ func _art_meshes() -> Array:
 func _take(mi: MeshInstance4D) -> void:
 	if mi.has_meta(OWN) or _saved_mesh.has(mi) or _saved_mat.has(mi):
 		return
+	# Under a part boxed in the dev look (boxed_in_dev): its box shows instead, whatever its owner.
+	for part in _boxed_parts():
+		if part == mi or part.is_ancestor_of(mi):
+			_strip(mi)
+			return
 	var role: String = _role(mi)
 	if role == "" or role == "art":
 		return
@@ -468,6 +481,16 @@ func _take(mi: MeshInstance4D) -> void:
 				_lay(mi, _mat("landmark", landmark_colour))
 			else:
 				_lay(mi, _mat("foundation", foundation_colour))
+
+
+## The parts [member boxed_in_dev] names that are in the pen.
+func _boxed_parts() -> Array:
+	var out: Array = []
+	for path in boxed_in_dev:
+		var part := _world.get_node_or_null(NodePath(path)) as Node4D
+		if part != null:
+			out.append(part)
+	return out
 
 
 ## "character" (never touched), "used" (red), "landmark", or "" for what is not art at all.
