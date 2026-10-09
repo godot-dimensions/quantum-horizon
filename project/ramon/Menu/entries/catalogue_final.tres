@@ -1,0 +1,406 @@
+[gd_resource type="Resource" script_class="MenuCatalogue" load_steps=31 format=3 uid="uid://y84yrm3y7yy6"]
+
+[ext_resource type="Script" uid="uid://c12nskqorjkfu" path="res://ramon/Menu/scripts/menu_entry.gd" id="1_i2ljj"]
+[ext_resource type="Texture2D" uid="uid://bqd3858vvcqby" path="res://ramon/Menu/icons/icon_slice_vision.png" id="2_wp3od"]
+[ext_resource type="Texture2D" uid="uid://cfakndtgu0jxc" path="res://ramon/Menu/icons/icon_phase_maze.png" id="3_boe22"]
+[ext_resource type="Texture2D" uid="uid://fmj6tgr77cif" path="res://ramon/Menu/icons/icon_ascent.png" id="4_lnafe"]
+[ext_resource type="Texture2D" uid="uid://bufndwv083es7" path="res://ramon/Menu/icons/icon_portal_chamber.png" id="5_rlsh1"]
+[ext_resource type="Texture2D" uid="uid://bvrt1emppuy5r" path="res://ramon/Menu/icons/icon_quantum_range.png" id="6_13old"]
+[ext_resource type="Texture2D" uid="uid://crx2n5xbjmjod" path="res://ramon/Menu/icons/icon_voxel_mining.png" id="7_h1wdl"]
+[ext_resource type="Texture2D" uid="uid://b0jdikyke41ss" path="res://ramon/Menu/icons/icon_creature.png" id="8_jn372"]
+[ext_resource type="Texture2D" uid="uid://clj4ud3r14jgy" path="res://ramon/Menu/icons/icon_shrubbery.png" id="9_ajynb"]
+[ext_resource type="Script" uid="uid://b2a43mgb5dqv" path="res://ramon/Menu/scripts/menu_catalogue.gd" id="10_ajynb"]
+[ext_resource type="Texture2D" uid="uid://bjmr20bfnryq" path="res://ramon/Menu/icons/icon_sky_box_clouds.png" id="10_uy7oo"]
+[ext_resource type="Texture2D" uid="uid://bjak7x0lv1gx3" path="res://ramon/Menu/icons/icon_aquatic.png" id="icon_aquatic"]
+[ext_resource type="Texture2D" uid="uid://irnpi5lyimq5" path="res://ramon/Menu/icons/icon_cinematic_starlings.png" id="icon_film1"]
+[ext_resource type="Texture2D" uid="uid://muwo6x5ggm7j" path="res://ramon/Menu/icons/icon_cinematic_mountains.png" id="icon_film2"]
+
+[sub_resource type="Resource" id="Resource_film1"]
+script = ExtResource("1_i2ljj")
+title = "Flight of the 4D Starlings"
+blurb = "A murmuration of 5,000 starlings at dusk, filmed live in the pen"
+maturity = "Polished"
+section = "Cinematic"
+world_link = "the flock over the meadow, filmed live"
+also_answers = PackedStringArray()
+show_in_menu = false
+duration = "55 sec"
+detail = "Six shots of the flock over the chicken pen: from the farm, underneath, alongside, inside it, a hawk diving through at half speed, and a step along W. It plays live in the pen rather than from a recording, so the numbers in the first shot are the flock's own."
+icon = ExtResource("icon_film1")
+scene_path = "res://ramon/chickenpen/playable_world.tscn"
+launch_label = "WATCH"
+opens_as_scene = true
+cinematic = "murmuration"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("ESC")
+control_actions = PackedStringArray("skip to the end")
+question = "Can thousands of 4D bodies move as one, live, inside a playable scene?"
+approach = "Reynolds boids on a GPU compute shader: seven nearest neighbours each, turning inertia, a roost and a hawk, drawn as one multimesh in the 4D renderer's own pass."
+finding = "Turning inertia is what carries a turn across the flock: plain boids reached 5% of 300 birds and faded, 0.05 s of inertia carried it across 61% without fading."
+finding_tier = "Measured"
+benchmark = "5,000 birds 0.38 ms a frame, 0.79 ms after a hawk · RTX 5080, 1280x720, 1 Oct"
+
+[sub_resource type="Resource" id="Resource_film2"]
+script = ExtResource("1_i2ljj")
+title = "Mountain Range"
+blurb = "Placeholder: the next cinematic, over the ring of mountains"
+maturity = "Greybox"
+section = "Cinematic"
+also_answers = PackedStringArray()
+show_in_menu = false
+duration = "soon"
+detail = "Not made yet. A slot for the second cinematic."
+icon = ExtResource("icon_film2")
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray()
+control_actions = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_3ffix"]
+script = ExtResource("1_i2ljj")
+title = "Voxel Lab"
+blurb = "4D rock you cut, bricks you build, a world you fly over"
+category = "World systems"
+family = "The labs"
+thrust = "Build it"
+world_link = "the cave's Artifact block, on the older voxel code"
+also_answers = PackedStringArray()
+detail = "An exhibition of our engine's own 4D voxels: a shelf of specimens, a block you cut by hand with every cut running through W, a builder where bricks laid in one W layer are gone from the next, and a gallery of how our world's land and caves are made. Through the far door, an open island to walk and fly over."
+clip = "voxel_lab"
+icon = ExtResource("7_h1wdl")
+preview_focus = 0.73
+scene_path = "res://ramon/VoxelLab/voxel_lab.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "LMB", "Wheel", "RMB", "O")
+control_actions = PackedStringArray("walk", "about this specimen", "step through W", "turn the slice", "the open world")
+question = "Can 4D voxels be cut and built on live, at the speed of play?"
+approach = "The engine's voxels, meshed in C++. Our change builds each cut's draw buffers on a worker thread."
+finding = "The worst frame after a cut fell from 96 ms to 14 ms; a cut still lands 100 to 250 ms after the click."
+finding_tier = "Measured"
+benchmark = "Worst frame after a cut, median of 10: 96 ms before, 14 ms after · the open world: 1.6 million tetrahedra, built in 6.4 s"
+
+[sub_resource type="Resource" id="Resource_clab"]
+script = ExtResource("1_i2ljj")
+title = "Creature Lab"
+blurb = "One animal built on a pedestal, then a hall of 4D animals"
+category = "Living systems"
+family = "The labs"
+thrust = "Fill it"
+world_link = "the chickens, the wolf raid, the cinema's goat"
+also_answers = PackedStringArray("Build it")
+detail = "The first room builds one 4D animal in five steps: balls, skin, slice, rig and walk. Pick the goat, the chicken or the wolf and step through each. Through the far door, the creature hall: a brachiosaurus, a horse, a wolf, a heron, an owl, crows, chickens and more on their own decks, with other animals standing on the same decks further through W."
+clip = "creature_lab"
+icon = ExtResource("8_jn372")
+preview_focus = 0.5
+scene_path = "res://ramon/CreationLab/creature_lab.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "1 to 3", "LMB", "Wheel", "RMB")
+control_actions = PackedStringArray("walk", "pick an animal", "next part", "step through W", "turn the slice")
+question = "Can one room show how our 4D creatures are built and animated, the same way for any animal?"
+approach = "Each animal is lofted from a handful of 4D balls into one skin, cut into rigid pieces and walked by one shared gait."
+finding = "Lofting a whole animal takes 160 to 180 ms; walking its rigid pieces costs under 0.05 ms a frame."
+finding_tier = "Measured"
+benchmark = "Whole loft: goat 175.6 ms, chicken 168.6 ms · walking their rigid pieces: 0.016 and 0.040 ms a frame"
+
+[sub_resource type="Resource" id="Resource_ph57d"]
+script = ExtResource("1_i2ljj")
+title = "Botany Lab"
+blurb = "One 4D tree built four ways, then two worlds side by side"
+section = "Lab"
+category = "World systems"
+family = "The labs"
+thrust = "Fill it"
+world_link = "the oaks, and the red oak on the Watchstone"
+also_answers = PackedStringArray("Build it")
+detail = "One 4D tree skeleton built four ways on four pedestals: blocky cells, smooth voxels, lofted branches, and an oak that grows branch by branch into 77,000 leaves. Each pedestal tells its story and shows what its method costs. Through the back door, two voxel worlds side by side: the same hills built blocky and smooth."
+clip = "botany_lab"
+icon = ExtResource("9_ajynb")
+preview_focus = 0.4
+scene_path = "res://ramon/Arboretum/botany_lab.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "Wheel", "RMB", "E", "G")
+control_actions = PackedStringArray("walk", "step through W", "turn the slice", "use", "gust of wind")
+question = "Which way of building a 4D tree reads as a tree, and what does each one cost?"
+approach = "One skeleton, four methods, and one wind read from the skeleton that moves them all."
+finding = "In 4D a tree's skin is a volume, so voxel trees grow costly fast. The lofted one needs half the tetrahedra."
+finding_tier = "Measured"
+benchmark = "Blocky 147,290 tetrahedra · smooth 212,340 · lofted 70,504 · the oak 131,972, with 76,762 leaves in 0.8 ms"
+
+[sub_resource type="Resource" id="Resource_aquatic"]
+script = ExtResource("1_i2ljj")
+title = "Aquatic Lab"
+blurb = "A 4D aquarium you turn through W, and the sea beyond its door"
+category = "World systems"
+family = "The labs"
+thrust = "Fill it"
+also_answers = PackedStringArray()
+detail = "A tank room 7 m deep in W: koi, an eel, a crab, a hammerhead and a reef. Step onto the blue square to turn the tank's contents through W and bring in fish that live beside your slice, and feed the koi by the glass. Through the exit door, the sea: a pier and platform, 3,000 sardines, gulls, boats and a visiting plesiosaur."
+clip = "aquatic_lab"
+icon = ExtResource("icon_aquatic")
+preview_focus = 0.5
+scene_path = "res://ramon/WaterLab/water_lab.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "RMB", "Wheel", "E", "R")
+control_actions = PackedStringArray("walk", "turn the tank through W", "turn it front to back", "feed the koi", "whole again")
+question = "Can 4D water and the life in it be shown, when the renderer draws only solid surfaces?"
+approach = "The tank's water is drawn per pixel as a 4D box; each fish is a 4D body cut by your slice; the sea's waves run through W too."
+finding = "The open sea costs a 3.29 ms median frame on its platform, just over our 3 ms target."
+finding_tier = "Measured"
+benchmark = "The sea, on the platform: 3.29 ms median, 4.01 ms at the 95th percentile, 1.82 ms on the graphics card · the reef: 325,000 tetrahedra"
+
+[sub_resource type="Resource" id="Resource_fmw2o"]
+script = ExtResource("1_i2ljj")
+title = "Shooting Range"
+blurb = "Hunt targets that hide in slices you cannot see"
+maturity = "Playable"
+category = "Spatial interaction"
+family = "The experiments"
+thrust = "Live it"
+world_link = "the range, north of the gate"
+also_answers = PackedStringArray("Build it")
+duration = "9 min"
+detail = "Targets that sit in slices you cannot see. Find them on the radar, step or turn your slice to reach them, then choose the shot: quick for red, charged for amber. Six rounds of four stages each, from finding a core in W to chickens that fly through it and a wolf that runs out of your slice."
+clip = "shooting_range"
+icon = ExtResource("6_13old")
+preview_focus = 0.5
+scene_path = "res://ramon/QuantumRange/quantum_range_final.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "LMB", "Q / E", "RMB", "F")
+control_actions = PackedStringArray("walk", "shoot / hold to charge", "step through W", "turn the slice", "start")
+question = "What does aiming mean when a target can leave your slice?"
+approach = "A shot only hits what your slice cuts; the radar shows how far through W each target sits."
+finding = "You can miss in a direction you cannot see, and it still reads as fair."
+benchmark = "Our bot clears all six rounds under par · one 4D raycast: 12 to 16 µs · 1.3 to 1.5 ms a frame"
+
+[sub_resource type="Resource" id="Resource_maze"]
+script = ExtResource("1_i2ljj")
+title = "The Maze"
+blurb = "A maze in x, z and W, solved by turning what is ahead into W"
+maturity = "Playable"
+category = "Orientation"
+family = "The experiments"
+thrust = "Live it"
+also_answers = PackedStringArray()
+detail = "A maze whose corridors run along x, z and W, so every view of it is a flat maze. Press F and what lay ahead becomes W, with the hidden corridors in front of you; Q and E step through W, slowly and blind. Six levels, each adding one idea, from a single step to a generated cube, and an overlook to read each maze from above."
+clip = "the_maze"
+icon = ExtResource("3_boe22")
+preview_focus = 0.5
+scene_path = "res://ramon/PhaseMazeRemake/phase_maze_remake.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "F", "Q / E", "V")
+control_actions = PackedStringArray("walk", "turn the slice a quarter", "step through W", "first or third person")
+question = "Can players find their way in a space with a fourth direction, and does their map of it survive a turn?"
+approach = "A real 4D maze: a turn shows you W, a step through it is slow and blind. Each level has a par of W moves."
+finding = "Not yet played by people. Our bot solves all six levels at par, in 11 to 101 s a level."
+finding_tier = "Not yet tested"
+benchmark = "Bot at par on all six levels: 32, 11, 16, 41, 33 and 101 s · each level builds in 10 to 42 ms · 1.0 to 2.3 ms a frame"
+
+[sub_resource type="Resource" id="Resource_uy7oo"]
+script = ExtResource("1_i2ljj")
+title = "Crosswise"
+blurb = "Four puzzle islands you solve by turning a quarter into W"
+maturity = "Playable"
+category = "Orientation"
+family = "The experiments"
+thrust = "Live it"
+world_idea = "the cave's opening through W"
+also_answers = PackedStringArray()
+detail = "Four floating islands, each a puzzle solved by turning a quarter into W. After the turn, forward runs through W: a wall you could not pass is open, a closed cage has an open side, a fence across W hides its door. Carry crates, strike rocks and climb, one new idea per island, each met first in plain 3D."
+clip = "crosswise"
+icon = ExtResource("2_wp3od")
+preview_focus = 0.64
+scene_path = "res://ramon/Crosswise/crosswise.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "RMB / TAB", "E", "LMB", "SPACE")
+control_actions = PackedStringArray("walk", "turn the slice a quarter", "lift / put down", "strike", "jump")
+question = "Can someone new to 4D read one 3D slice, and use a turn into W as a puzzle verb?"
+approach = "Movement stays inside the slice; a quarter turn swaps forward for W. Floors are banded through W, warm ana, cool kata."
+finding = "Not yet played by people. Our bot solves all four islands in 1:09, with 14 turns into W and no falls."
+finding_tier = "Not yet tested"
+benchmark = "Bot checks: solver 18 of 18, wrong paths 11 of 11 · about 1 ms a frame · ready in 1.2 s"
+
+[sub_resource type="Resource" id="Resource_3f7jf"]
+script = ExtResource("1_i2ljj")
+title = "Phase Maze"
+blurb = "Walls you pass by stepping through W, not by walking round them"
+maturity = "Playable"
+section = "Lab"
+category = "Orientation"
+thrust = "Live it"
+world_idea = "the camp 2.5 m kata, the cave door 4 m ana"
+also_answers = PackedStringArray()
+show_in_menu = false
+duration = "2 min"
+detail = "A maze whose gates are open only in a narrow band of W, so the route exists only at the right depth."
+clip = "phase_maze"
+icon = ExtResource("3_boe22")
+preview_focus = 0.5
+scene_path = "res://ramon/PhaseMaze/phase_maze.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "Q / E")
+control_actions = PackedStringArray("move", "through W")
+question = "Can moving through W work as a navigation verb?"
+approach = "A single-path maze whose three gates each open in a 3 m band of W."
+finding = "It reads immediately, but only where the route is signposted."
+benchmark = "3 gates, at W −6, 2 and 7 · each open for 3 m of W · walls 0.4 m thick in z"
+
+[sub_resource type="Resource" id="Resource_snm5f"]
+script = ExtResource("1_i2ljj")
+title = "4D Ascent"
+blurb = "An obstacle course you cross by stepping through W as much as by jumping"
+maturity = "Greybox"
+category = "Spatial interaction"
+thrust = "Live it"
+world_idea = "the cave road climbing through W"
+also_answers = PackedStringArray("Build it")
+show_in_menu = false
+duration = "2 min"
+detail = "A runway with a gap too wide to jump. The bridge across it exists only in one band of W, and the course goes on over a ramp, a lift and a braid of two paths."
+clip = "ascent"
+icon = ExtResource("4_lnafe")
+preview_focus = 0.7000000000000001
+scene_path = "res://ramon/ObstacleCourse/w_gap.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "SPACE", "Q / E")
+control_actions = PackedStringArray("move", "jump", "through W")
+question = "Can moving through W carry a platforming course?"
+approach = "Ground banded in colour along W, so leaving a band shows under your feet."
+finding = "Collision is boxes only, so a ramp is a slope drawn over hidden steps."
+benchmark = "Gap 7 m against a 4.59 m jump, so it cannot be crossed until W changes · bridge at W 5"
+
+[sub_resource type="Resource" id="Resource_d6obk"]
+script = ExtResource("1_i2ljj")
+title = "Portal"
+blurb = "Blast a hole in a wall, and step through to somewhere else"
+category = "Spatial interaction"
+thrust = "Live it"
+also_answers = PackedStringArray()
+show_in_menu = false
+duration = "2 min"
+detail = "Two tests. A chamber of linked openings that carry your momentum across, and a wall you can shoot openings through anywhere."
+clip = "portal"
+icon = ExtResource("5_rlsh1")
+preview_focus = 0.5
+scene_path = "res://ramon/Portal/portal_test_2.tscn"
+launch_label = "TEST 2 · PORTALS"
+extra_launch_labels = PackedStringArray("TEST 1 · WALL")
+extra_launch_scenes = PackedStringArray("res://ramon/Portal/portal_test_1.tscn")
+control_keys = PackedStringArray("LMB", "F", "RMB")
+control_actions = PackedStringArray("shoot / blue portal", "yellow portal", "rotate slice")
+question = "Does Portal's momentum-preserving link survive four dimensions?"
+approach = "Chunked voxel walls cut anywhere; two apertures carrying position, orientation and velocity."
+finding = "Within one slice, yes. Both ends still share a W, and openings are opaque."
+benchmark = "40.5 ms per chunk rebuild · 10,752 tetrahedra · 7.7 → 22.2 m/s over five crossings"
+
+[sub_resource type="Resource" id="Resource_b8wcl"]
+script = ExtResource("1_i2ljj")
+title = "Sky Box Clouds"
+blurb = "Clouds built from 4D solids, so the weather changes from slice to slice"
+section = "Lab"
+category = "World systems"
+thrust = "Build it"
+also_answers = PackedStringArray()
+show_in_menu = false
+duration = "60 sec"
+detail = "A cloud deck made of sliced 4D shapes. It exists at every W, not only the one you are looking at, so turning the slice moves you into different weather."
+clip = "skybox_clouds"
+icon = ExtResource("10_uy7oo")
+preview_focus = 0.0
+scene_path = "res://ramon/SkyBoxClouds/skybox_clouds.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "RMB")
+control_actions = PackedStringArray("move", "rotate slice")
+question = "Can weather be a real 4D solid rather than a painted backdrop?"
+approach = "Noise over x, z and W seeds clumps of stretched polytopes, detailed on their own surfaces."
+finding = "Coverage varies along W, so rotating the slice moves you into different weather."
+benchmark = "24-cell (96 tets) as the workhorse, 600-cell for hero puffs · three-level clump hierarchy"
+
+[sub_resource type="Resource" id="Resource_0k6x8"]
+script = ExtResource("1_i2ljj")
+title = "Motion Lab"
+blurb = "A creature that walks without a single baked animation"
+maturity = "Greybox"
+section = "Lab"
+category = "Living systems"
+thrust = "Fill it"
+also_answers = PackedStringArray()
+show_in_menu = false
+duration = "2 min"
+detail = "A quadruped whose gait is solved every frame from IK, with limb count and segments changeable live. It starts standing still: press 0."
+clip = "creature"
+icon = ExtResource("8_jn372")
+preview_focus = 0.22
+scene_path = "res://sandbox/limb_prototype/limb_prototype_treadmill.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("1 2 4 5", "0", "K / L", "N / M")
+control_actions = PackedStringArray("gait", "start / stop", "limbs", "segments")
+question = "Can a creature animate convincingly with no baked clips at all?"
+approach = "FABRIK limbs, a gait state machine and hip suspension, solved every tick."
+finding = "Limb count and proportions fall out of parameters, so a new creature needs no rig."
+benchmark = "4 gaits · limbs and segments per limb changed live · per-foot ground raycast"
+
+[sub_resource type="Resource" id="Resource_lofty"]
+script = ExtResource("1_i2ljj")
+title = "Lofted Creatures"
+blurb = "Animals modelled by lofting through 4D, walking on procedural solvers"
+category = "Living systems"
+thrust = "Fill it"
+also_answers = PackedStringArray()
+show_in_menu = false
+duration = "60 sec"
+detail = "Five chickens, a brachiosaurus and Trym's rigged creature, every one modelled with the loft tool, all walking at once with no baked animation."
+clip = "lofted_creatures"
+icon = ExtResource("8_jn372")
+scene_path = "res://ramon/Model/rigged_creature_ramon.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "RMB", "Q / E")
+control_actions = PackedStringArray("move", "rotate slice", "through W")
+question = "Can one modelling tool make creatures that walk in 4D?"
+approach = "Bodies lofted from balls along a spine; legs and neck moved by IK and gait solvers."
+finding = "Geometry is nearly free; deformation is the whole cost."
+finding_tier = "Measured"
+benchmark = "~25 ms a frame, seven creatures walking · 73,020 tetrahedra drawn in 1.2 ms · one machine, 19 Sep"
+
+[sub_resource type="Resource" id="Resource_penhr"]
+script = ExtResource("1_i2ljj")
+title = "The World"
+blurb = "Every system on this menu, together in one open 4D world"
+maturity = "Playable"
+also_answers = PackedStringArray()
+duration = "10 min"
+detail = "Here the experiments stop being experiments. One valley holds them all at once: slices you read and turn, steps through W, aiming across slices, 4D trees and animals, a flock of 5,000 starlings. Around them, a world to explore: researchers at work, a cave whose far room lies out along W, a camera for 4D photographs, and Trym's talk in the cinema."
+clip = "the_world"
+preview_focus = 0.5
+scene_path = "res://ramon/chickenpen/playable_world.tscn"
+launch_label = "PLAY THE WORLD"
+opens_as_scene = true
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD", "Q / E", "RMB", "F")
+control_actions = PackedStringArray("walk", "step through W", "turn the slice", "pick up, talk")
+question = "Can 4D carry a whole game loop, not only a test chamber?"
+approach = "An open farm with a fetch quest, dialogue, mining and a range, all on the one 4D module."
+finding = "A room in 4D needs eight walls, not six, or it opens when the slice turns."
+benchmark = "2.46 ms a frame with 862 meshes and nine animated chickens · RTX 5080, editor build, 28 Sep"
+
+[resource]
+script = ExtResource("10_ajynb")
+entries = Array[ExtResource("1_i2ljj")]([SubResource("Resource_3ffix"), SubResource("Resource_clab"), SubResource("Resource_ph57d"), SubResource("Resource_aquatic"), SubResource("Resource_fmw2o"), SubResource("Resource_maze"), SubResource("Resource_uy7oo"), SubResource("Resource_3f7jf"), SubResource("Resource_snm5f"), SubResource("Resource_d6obk"), SubResource("Resource_b8wcl"), SubResource("Resource_0k6x8"), SubResource("Resource_lofty")])
+hero = SubResource("Resource_penhr")
+cinematics = Array[ExtResource("1_i2ljj")]([SubResource("Resource_film1"), SubResource("Resource_film2")])
+system_lines = PackedStringArray("reading a 4D slice", "moving and acting through W", "4D matter and environments", "creatures built and animated")
+family_names = PackedStringArray("The labs", "The experiments")
+family_lines = PackedStringArray("How our 4D world is built", "Learn to read 4D by playing")

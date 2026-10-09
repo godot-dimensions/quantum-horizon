@@ -48,6 +48,68 @@ class_name MenuEntry
 		section = value
 		emit_changed()
 
+## Which system this prototype shows, as menu_final groups them: the Frontier Map's four
+## kinds of proof (Ramon, 8 Oct). It replaces the tour / lab split in menu_final, which
+## lists the groups in this order, the order a first-time visitor learns them in. None
+## lists the entry after the four groups. Menu2 and the Frontier Map ignore it.
+@export_enum("None", "Orientation", "Spatial interaction", "World systems", "Living systems") var category: String = "None":
+	set(value):
+		category = value
+		emit_changed()
+
+## Which of menu_final's two families this prototype belongs to (Ramon's 9 Oct brief): the labs
+## (interactive R&D exhibitions, walked around and experimented with) or the experiments (playable).
+## menu_final groups by this; `category` and `thrust` stay as metadata. The names match
+## MenuCatalogue.family_names (first called "Explore the systems" and "Experience 4D"; one noun per
+## family since the 9 Oct review). Menu2 and the map ignore it.
+@export_enum("None", "The labs", "The experiments") var family: String = "None":
+	set(value):
+		family = value
+		emit_changed()
+
+## Which of the programme's three questions this prototype answers: the RFP's thrusts (Build
+## it: can a 4D world run in real time at game density; Fill it: can small teams make enough 4D
+## content; Live it: can ordinary players understand and control 4D). menu_final can group by
+## these instead of `category` (G in its design HUD, 8 Oct). Menu2 and the map ignore it.
+@export_enum("None", "Live it", "Fill it", "Build it") var thrust: String = "None":
+	set(value):
+		thrust = value
+		emit_changed()
+
+## Where this prototype's system turns up in the playable world, in a few plain words ("the
+## range, north of the gate"); empty when it does not (yet). The second round of menu_final's
+## design review draws the relation from it (8 Oct). Menu2 and the map ignore it.
+@export var world_link: String = "":
+	set(value):
+		world_link = value
+		emit_changed()
+
+## Where only the prototype's IDEA turns up in the world, built separately for it (no shared
+## code), e.g. Phase Maze's stepping through W at the camp. Kept apart from `world_link` so the
+## menu never claims the prototype itself runs there; drawn fainter, or dashed.
+@export var world_idea: String = "":
+	set(value):
+		world_idea = value
+		emit_changed()
+
+## The other RFP questions this prototype also gives evidence for, besides its own `thrust`
+## (for instance a measured frame cost is evidence for Build it). Drawn as rings in the
+## evidence matrix design.
+@export var also_answers: PackedStringArray = PackedStringArray():
+	set(value):
+		also_answers = value
+		emit_changed()
+
+## Untick to take the entry off the menu without deleting it: its words, scene and clip stay
+## in the catalogue, ready to come back with one click (Ramon, 8 Oct: "when i say 'remove',
+## i do not mean delete, i just mean, remove the visability or linkage from the menu").
+##
+## Only menu_final.gd reads this. Menu2 and the Frontier Map ignore it.
+@export var show_in_menu: bool = true:
+	set(value):
+		show_in_menu = value
+		emit_changed()
+
 ## Roughly how long this takes to see, e.g. "90 sec". Shown next to the maturity
 ## badge and in the row.
 ##

@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bmqvcwps6ye0v" path="res://ramon/Menu/scripts/menu_final.gd" id="1_script"]
 [ext_resource type="Resource" path="res://ramon/Menu/style/menu_final_style.tres" id="2_style"]
-[ext_resource type="Resource" uid="uid://b6ehjm0dis877" path="res://ramon/Menu/entries/catalogue.tres" id="3_catalogue"]
+[ext_resource type="Resource" uid="uid://y84yrm3y7yy6" path="res://ramon/Menu/entries/catalogue_final.tres" id="3_catalogue"]
 
 [node name="MenuFinal" type="Control"]
 layout_mode = 3
@@ -14,4 +14,3 @@ grow_vertical = 2
 script = ExtResource("1_script")
 style = ExtResource("2_style")
 catalogue = ExtResource("3_catalogue")
-preview_focus_live = 0.22

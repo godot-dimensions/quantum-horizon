@@ -6,14 +6,17 @@ extends SceneTree
 ## goes to the menu and back. This starts where a stakeholder starts, at the menu, and
 ## checks the other direction as well:
 ##
-##   1. The menu: the banner selected and reading PLAY THE WORLD, the pen in the pane, the
-##      tour above the lab in screen order, the arrow keys walking that order, a finding's
-##      evidence tier printed, Slice Vision's three levels as three buttons.
-##   2. A prototype on top of the menu (Slice Vision level 2), and Escape unwinding it.
-##   3. The toggle to the Frontier Map and EXPLORE FREELY back to a fresh menu.
+##   1. The menu: the banner selected and reading PLAY THE WORLD, the pen in the pane with
+##      VIDEO N/A in its frame, the four system groups then the cinematics in screen order
+##      (8 Oct), the entries taken off the menu absent, the arrow keys walking that order,
+##      Crosswise's system label and its finding's evidence tier.
+##   2. A prototype on top of the menu (Crosswise), and Escape unwinding it.
+##   3. No Frontier Map tab any more (8 Oct: the map opens on its own, not from the menu).
 ##   4. The banner: the pen REPLACES the menu, the window's scaling back to the project's.
 ##   5. From Trym's laptop to the menu again, its banner now BACK TO THE PEN, and that
 ##      banner taking you home with the window as it was.
+##
+## Steps 4 and 5 load the whole playable world, so they run only with `-- pen=1` (8 Oct).
 ##
 ## Windowed (it saves res://smoke_test_output/menu_final_<n>_<what>.png), small, and never
 ## focused, so nobody's typing lands in it:
@@ -23,10 +26,12 @@ extends SceneTree
 
 const MENU := "res://ramon/menu_final.tscn"
 const PEN := "res://ramon/chickenpen/playable_world.tscn"
-const MAP := "res://ramon/FrontierMap.tscn"
-const TOUR := ["Slice Vision", "4D Ascent", "Portal", "Quantum Range", "Voxel Mining", "Lofted Creatures"]
+## Screen order since 8 Oct: Orientation, Spatial interaction, World systems, Living systems,
+## then the cinematics.
+const SYSTEMS := ["Crosswise", "Phase Maze", "4D Ascent", "Shooting Range", "Voxel Lab", "Botany Lab", "Creation Lab"]
 const FILMS := ["Flight of the 4D Starlings", "Mountain Range"]
-const LAB := ["Phase Maze", "Shrubbery Lab", "Sky Box Clouds", "Creation Lab", "Motion Lab"]
+## In the catalogue, taken off the menu (show_in_menu unticked), never deleted.
+const HIDDEN := ["Portal", "Sky Box Clouds", "Motion Lab", "Lofted Creatures"]
 
 var _menu: Node
 var _pen: Node
@@ -35,6 +40,8 @@ var _t := 0.0
 var _step := 0
 var _failed := 0
 var _windowed := false
+## The pen's leg (steps 5 to 8) only with `-- pen=1`.
+var _with_pen := false
 var _n := 0
 var _before: Array = []
 
@@ -42,6 +49,7 @@ var _before: Array = []
 func _initialize() -> void:
 	root.unfocusable = true
 	_windowed = DisplayServer.get_name() != "headless"
+	_with_pen = OS.get_cmdline_user_args().has("pen=1")
 	_menu = load(MENU).instantiate()
 	root.add_child(_menu)
 	current_scene = _menu
@@ -111,6 +119,13 @@ func _has_label_containing(node: Node, text: String) -> bool:
 	return false
 
 
+func _has_button(node: Node, text: String) -> bool:
+	for button in node.find_children("*", "Button", true, false):
+		if (button as Button).text == text and (button as Button).is_visible_in_tree():
+			return true
+	return false
+
+
 func _scaling() -> Array:
 	return [root.content_scale_mode, root.content_scale_aspect, root.content_scale_size]
 
@@ -153,59 +168,76 @@ func _process(d: float) -> bool:
 				for i in (_menu.get("_order") as Array):
 					titles.append(String((_menu.call("_entry", i) as Resource).get("title")))
 				var expected: Array[String] = []
-				expected.assign(TOUR + FILMS + LAB)
-				_check("the tour, the cinematics, then the lab, in screen order", titles == expected, "%s" % [titles])
-				_check("the lab has its heading", _has_label(_menu, String(catalogue.get("lab_heading"))))
+				expected.assign(SYSTEMS + FILMS)
+				_check("the four system groups, then the cinematics, in screen order", titles == expected, "%s" % [titles])
+				var hidden_shown: Array[String] = []
+				for title in HIDDEN:
+					if titles.has(title):
+						hidden_shown.append(title)
+				_check("the entries taken off the menu are not listed", hidden_shown.is_empty(), "%s" % [hidden_shown])
+				_check("each group has its heading", _has_label(_menu, "ORIENTATION") and _has_label(_menu, "SPATIAL INTERACTION")
+					and _has_label(_menu, "WORLD SYSTEMS") and _has_label(_menu, "LIVING SYSTEMS"))
+				_check("no Frontier Map tab", not _has_button(_menu, "FRONTIER MAP"))
+				_check("the pen has no video, and its frame says so", (_menu.get("_preview_na") as Label).is_visible_in_tree())
+				_check("the world's pane names every system",
+					(_menu.get("_detail_system_label") as Label).text == String(catalogue.get("hero_systems_line")))
 				_save("start")
 				_menu.call("_step_selection", 1)
-				_check("down from the banner is the first of the tour", _selected_title(_menu) == "Slice Vision", _selected_title(_menu))
-				_check("Slice Vision offers its three levels", (_menu.get("_launch_row") as Node).get_child_count() == 3)
+				_check("down from the banner is the first of the Orientation group", _selected_title(_menu) == "Crosswise", _selected_title(_menu))
+				_check("Crosswise launches one scene", (_menu.get("_launch_row") as Node).get_child_count() == 1)
+				_check("its pane's kicker names the system and its place in the run",
+					(_menu.get("_detail_system_label") as Label).text == "ORIENTATION  ·  01 / 07",
+					(_menu.get("_detail_system_label") as Label).text)
 				_check("its finding carries its tier", _has_label(_menu, "OBSERVED WHILE BUILDING · n = 1"))
-				for i in 5:
+				_check("and it plays a clip (its old one, for now)", (_menu.get("_preview_video") as Control).visible)
+				for i in 6:
 					_menu.call("_step_selection", 1)
-				_check("five more down is the last of the tour", _selected_title(_menu) == "Lofted Creatures", _selected_title(_menu))
+				_check("six more down is the Living systems group", _selected_title(_menu) == "Creation Lab", _selected_title(_menu))
+				_check("its kicker says LIVING SYSTEMS, the last of the run",
+					(_menu.get("_detail_system_label") as Label).text == "LIVING SYSTEMS  ·  07 / 07",
+					(_menu.get("_detail_system_label") as Label).text)
 				_menu.call("_step_selection", 1)
 				_check("one more is the first cinematic", _selected_title(_menu) == "Flight of the 4D Starlings", _selected_title(_menu))
-				_menu.call("_step_selection", 2)
-				_check("and past the cinematics, the first of the lab", _selected_title(_menu) == "Phase Maze", _selected_title(_menu))
-				_check("the lab's finding tier too, where it has a finding", _has_label_containing(_menu, "n = 1"))
-				for i in 9:
+				_check("a cinematic's kicker says CINEMATICS",
+					(_menu.get("_detail_system_label") as Label).text == "CINEMATICS",
+					(_menu.get("_detail_system_label") as Label).text)
+				for i in 12:
 					_menu.call("_step_selection", -1)
 				_check("and all the way up is the banner again", int(_menu.get("_selected")) == -1)
-				# Slice Vision's second level, on top of the menu as prototypes are.
-				_menu.call("_select", 0)
-				_menu.call("_on_launch_pressed", 1)
+				# Crosswise, on top of the menu as prototypes are.
+				_menu.call("_step_selection", 1)
+				_menu.call("_on_launch_pressed", 0)
 				_step = 1; _t = 0.0
 		1:
 			var running: Node = _menu.get("_running")
-			if running != null and _t > 1.5:
-				_check("level 2 runs on top of the menu", running.scene_file_path == "res://ramon/MiegakureLook/levels/level_2_bridge.tscn"
+			if running != null and _t > 2.5:
+				_check("Crosswise runs on top of the menu", running.scene_file_path == "res://ramon/Crosswise/crosswise.tscn"
 					and current_scene == _menu, running.scene_file_path)
-				_save("level_2")
+				_save("crosswise")
 				_key(KEY_ESCAPE)
 				_step = 2; _t = 0.0
-			elif _t > 20.0:
-				_check("level 2 runs on top of the menu", false, "never started")
+			elif _t > 30.0:
+				_check("Crosswise runs on top of the menu", false, "never started")
 				_step = 2; _t = 0.0
 		2:
 			if _t > 0.6:
 				_check("Escape brings the menu back", _menu.get("_running") == null and (_menu.get("_shell") as Control).visible)
-				_check("moved on to the next of the tour", _selected_title(_menu) == "4D Ascent", _selected_title(_menu))
-				_menu.call("_on_frontier_map")
-				_step = 3; _t = 0.0
-		3:
-			if _t > 1.5:
-				_check("the toggle opens the Frontier Map", current_scene != null and current_scene.scene_file_path == MAP)
-				current_scene.call("_on_explore_freely")
+				_check("moved on to the next prototype", _selected_title(_menu) == "Phase Maze", _selected_title(_menu))
+				_menu.call("_select", -1)
 				_step = 4; _t = 0.0
 		4:
-			if _t > 1.5:
-				_menu = current_scene
-				_check("EXPLORE FREELY comes back to menu_final", _menu != null and _menu.scene_file_path == MENU,
-					_menu.scene_file_path if _menu != null else "none")
-				_check("still on the banner", int(_menu.get("_selected")) == -1 and _banner_text(_menu) == "PLAY THE WORLD")
-				_click_banner()
-				_step = 5; _t = 0.0
+			if _t > 0.5:
+				_check("back on the banner", int(_menu.get("_selected")) == -1 and _banner_text(_menu) == "PLAY THE WORLD")
+				# Steps 5 to 8 load the whole playable world (the banner, then Trym's laptop).
+				# Only with `-- pen=1` (Ramon, 8 Oct: "still dont get why you open the pen
+				# scene so much"): the menu's own checks never need it.
+				if _with_pen:
+					_click_banner()
+					_step = 5
+				else:
+					print("  (the pen's leg skipped: run with -- pen=1 to include it)")
+					_step = 9
+				_t = 0.0
 		5:
 			# The first click on a selected banner goes.
 			if current_scene != null and current_scene.scene_file_path == PEN and _t > 4.0:
@@ -235,7 +267,7 @@ func _process(d: float) -> bool:
 				_check("F opens menu_final with the pen parked", here != null and here.scene_file_path == MENU
 					and is_instance_valid(_pen) and not _pen.is_inside_tree())
 				_check("its banner reads BACK TO THE PEN", _banner_text(here) == "BACK TO THE PEN", _banner_text(here))
-				_check("and the pane starts on the tour, not on the pen", _selected_title(here) == "Slice Vision", _selected_title(here))
+				_check("and the pane starts on the first prototype, not on the pen", _selected_title(here) == "Crosswise", _selected_title(here))
 				_save("menu_from_laptop")
 				_click_banner()
 				_step = 8; _t = 0.0

@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://ramon/Menu/scripts/menu_variations.gd" id="1_script"]
+[ext_resource type="Resource" path="res://ramon/Menu/style/menu_final_style.tres" id="2_style"]
+[ext_resource type="Resource" path="res://ramon/Menu/entries/catalogue_final.tres" id="3_catalogue"]
+
+[node name="MenuVariations" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+style = ExtResource("2_style")
+catalogue = ExtResource("3_catalogue")
+preview_focus_live = 0.22

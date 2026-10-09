@@ -175,6 +175,54 @@ func notice_text() -> String:
 		lab_heading = value
 		emit_changed()
 
+## What each system group shows, one short line after its heading in menu_final: in the
+## order Orientation, Spatial interaction, World systems, Living systems (the Frontier
+## Map's four kinds of proof, whose names and colours the menu takes from the map's own
+## layout). Ramon, 8 Oct: group the menu by system, the way the map does.
+@export var system_lines: PackedStringArray = PackedStringArray([
+	"reading a 4D slice",
+	"moving and acting through W",
+	"4D matter and environments",
+	"creatures built and animated",
+]):
+	set(value):
+		system_lines = value
+		emit_changed()
+
+## menu_final's two families, in the order listed (Ramon's 9 Oct brief): what the engine can
+## create, then what 4D feels like to play. MenuEntry.family names one of them. The research
+## framework (Build it / Fill it / Live it) stays underneath as `thrust`.
+@export var family_names: PackedStringArray = PackedStringArray(["The labs", "The experiments"]):
+	set(value):
+		family_names = value
+		emit_changed()
+
+## One line under each family's name, saying what kind of thing it holds.
+@export var family_lines: PackedStringArray = PackedStringArray(["How our 4D world is built", "Learn to read 4D by playing"]):
+	set(value):
+		family_lines = value
+		emit_changed()
+
+## What the menu presents, after the project's name in menu_final's header ("QUANTUM HORIZON
+## / 4D PROTOTYPES"). Ramon, 8 Oct: a header "that shows something about what we present".
+@export var header_subject: String = "4D PROTOTYPES":
+	set(value):
+		header_subject = value
+		emit_changed()
+
+## Heading over any entry in menu_final with no system (`MenuEntry.category` None).
+@export var other_heading: String = "MORE":
+	set(value):
+		other_heading = value
+		emit_changed()
+
+## Shown with all four system marks for the world itself (the banner's entry) in
+## menu_final: the one place every system runs together.
+@export var hero_systems_line: String = "EVERY SYSTEM, IN ONE WORLD":
+	set(value):
+		hero_systems_line = value
+		emit_changed()
+
 
 func subtitle_text() -> String:
 	return tour_subtitle.replace("{count}", str(entries.size()))

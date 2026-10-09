@@ -1,12 +1,33 @@
 @tool
 extends Control
-## Scrolling banner menu, final. Scene: `res://ramon/menu_final.tscn`.
+## Scrolling banner menu, final. Scene: `res://ramon/menu_final.tscn`. THE PROJECT'S MENU.
+##
+## THE MASTER SINCE 9 OCT 2026: one design, "A", drawn by `menu_a.gd`. Ramon: "install final A
+## as the main menu lander ... keep the menu final as the new main master and remove the tab
+## variations". The 8 Oct design review it came from (41 designs behind Tab, two palettes, two
+## groupings) is frozen as `res://ramon/menu_variations.tscn` for reference; nothing here
+## depends on it. Change the menu here and in menu_a.gd, never there. Handover:
+## `ramon/follow_up/menu.md`.
+##
+## The split: menu_a.gd is the look (header and footer, the list, the route, the world's card,
+## how a row lights up); this file is the working parts (the catalogue, selection, keys, the
+## details pane, previews, launching and the way home, the window).
 ##
 ## A COPY OF MENU2, taken 30 Sept 2026 when Ramon called Menu2 final ("menu 2 is
 ## final ... copied and renamed to menu_final"). `Menu2.tscn` and `menu2.gd` are
-## left exactly as they were; changes from here on go in this file. The two share
-## `entries/catalogue.tres`, so content stays in one place, but this has its own
+## left exactly as they were; changes from here on go in this file. It has its own
 ## `style/menu_final_style.tres`, so retuning the look here cannot alter Menu2.
+##
+## OWN CATALOGUE SINCE 8 OCT. Until then this read the shared `entries/catalogue.tres`.
+## Ramon's 8 Oct lineup renames entries (Slice Vision is now Crosswise, Voxel Mining the
+## Voxel Lab, ...), and the Frontier Map places its nodes by entry TITLE, so renaming
+## them in the shared file would have broken the map. This menu now reads
+## `entries/catalogue_final.tres`; Menu, Menu2 and the Frontier Map keep the old one.
+## An entry taken off the menu is unticked (`MenuEntry.show_in_menu`), never deleted.
+##
+## The Frontier Map is no longer linked from here (Ramon, 8 Oct: "i want the frontier
+## map to be opened as a tscn whenever i want ... just not in the menu"). It still opens
+## on its own: `res://ramon/FrontierMap.tscn`.
 ##
 ## WHAT MENU2 ADDED OVER THE FIRST MENU
 ##
@@ -34,14 +55,17 @@ extends Control
 ##
 ## The scene lives at `res://ramon/menu_final.tscn` - beside Menu2.tscn at the
 ## ramon root, with its scripts, style, catalogue, shader and clips in
-## `ramon/Menu/`. It is not the project's `run/main_scene` (the chicken pen is).
+## `ramon/Menu/`. It is the project's `run/main_scene` again since 8 Oct (the pen was,
+## 7 to 8 Oct).
 ##
-## NOTHING VISUAL IS HARDCODED IN THIS FILE ANY MORE.
+## NOTHING VISUAL IS HARDCODED IN THIS FILE ANY MORE. (Since 9 Oct A's own measures, taken from
+## the Octobergate deck, live in menu_a.gd and its two palettes here; the style resource still
+## sets the type scale, the spacing and the details pane.)
 ##
-##   - every size, colour, gap and radius comes from `style/default_style.tres`
+##   - every size, colour, gap and radius comes from `style/menu_final_style.tres`
 ##     ([MenuStyle]) - and type is a MODULAR SCALE, so one base size moves the
 ##     whole hierarchy together instead of eight numbers drifting apart
-##   - every string and every prototype comes from `entries/catalogue.tres`
+##   - every string and every prototype comes from `entries/catalogue_final.tres`
 ##     ([MenuCatalogue] / [MenuEntry]) - editable in the inspector, reorderable
 ##     by dragging, and array order IS the tour order
 ##
@@ -84,11 +108,71 @@ const DESIGN_RESOLUTION: Vector2i = Vector2i(1920, 1080)
 # --------------------------------------------------------------------------
 
 const DEFAULT_STYLE: String = "res://ramon/Menu/style/menu_final_style.tres"
-const DEFAULT_CATALOGUE: String = "res://ramon/Menu/entries/catalogue.tres"
+const DEFAULT_CATALOGUE: String = "res://ramon/Menu/entries/catalogue_final.tres"
 
-## The other half of the binary switch. Both screens read the same catalogue, so
-## this is a change of VIEW rather than of content.
-const FRONTIER_MAP_SCENE: String = "res://ramon/FrontierMap.tscn"
+## The groups the menu is listed in: since 9 Oct its two FAMILIES (Ramon's brief, "make the
+## prototype collection feel like two coherent families"), named in the catalogue
+## (`family_names`, `family_lines`) and chosen per entry by MenuEntry.family: the labs
+## (EXPLORE THE SYSTEMS, interactive R&D exhibitions) and the playable experiments (EXPERIENCE
+## 4D). Until then: the Frontier Map's four systems (MenuEntry.category, still in the catalogue
+## as metadata). Group indices: 0 and 1 the families, then these.
+const GROUP_OTHER: int = 4
+const GROUP_FILMS: int = 5
+
+# --------------------------------------------------------------------------
+# The look
+# --------------------------------------------------------------------------
+
+## Everything the menu draws is built in menu_a.gd ("A", Ramon's pick from the 8 Oct design
+## review, the menu since 9 Oct). The 41 designs it was picked from, the Tab panel that switched
+## them, and their palettes are frozen in `res://ramon/menu_variations.tscn`.
+const MenuA := preload("res://ramon/Menu/scripts/menu_a.gd")
+## The loading screen, in the Voxel Lab board's style (menu_load_board.gd).
+const MenuLoadBoard := preload("res://ramon/Menu/scripts/menu_load_board.gd")
+
+## The two palettes (the light / dark square at the foot): the Octobergate deck's own system
+## recoloured white and blue as Ramon asked, and its dark divider slides as near black and light
+## blue. Never mixed.
+const DECK_WHITE: Dictionary = {
+	"background": Color(0.980, 0.984, 0.992),
+	"surface": Color(1.0, 1.0, 1.0),
+	"surface_raised": Color(0.925, 0.945, 0.975),
+	"accent": Color(0.125, 0.384, 0.863),
+	"text": Color(0.067, 0.098, 0.165),
+	"text_dim": Color(0.37, 0.41, 0.47),
+	"text_faint": Color(0.54, 0.58, 0.64),
+	"positive": Color(0.12, 0.56, 0.32),
+	"benchmark_accent": Color(0.125, 0.384, 0.863),
+	"launch_fill": Color(0.125, 0.384, 0.863),
+	"launch_fill_hover": Color(0.20, 0.46, 0.93),
+	"thumbnail_tint": Color(0.24, 0.33, 0.48),
+}
+const DECK_DARK: Dictionary = {
+	"background": Color(0.063, 0.075, 0.094),
+	"surface": Color(0.086, 0.102, 0.125),
+	"surface_raised": Color(0.13, 0.16, 0.20),
+	"accent": Color(0.55, 0.77, 1.0),
+	"text": Color(0.94, 0.95, 0.97),
+	"text_dim": Color(0.66, 0.71, 0.78),
+	"text_faint": Color(0.45, 0.50, 0.57),
+	"positive": Color(0.45, 1.0, 0.62),
+	"benchmark_accent": Color(0.55, 0.77, 1.0),
+	"launch_fill": Color(0.125, 0.384, 0.863),
+	"launch_fill_hover": Color(0.20, 0.46, 0.93),
+	"thumbnail_tint": Color(0.72, 0.80, 0.92),
+}
+const DECK_FONT: String = "res://ramon/Demo/fonts/Montserrat/static/Montserrat-Regular.ttf"
+## Type on the code blue, in either palette.
+const ON_ACCENT: Color = Color(0.97, 0.98, 1.0)
+
+## The palette: white (true) or near black, kept for the session.
+var _light: bool = true
+## The view: the list (false) or the route, kept for the session.
+var _route_view: bool = false
+var _look: RefCounted = null
+## The route's ring for each prototype, by entry index, redrawn as rows are played.
+var _tracks: Dictionary = {}
+var _list_scroll: ScrollContainer = null
 
 ## Assign a different style or catalogue here to A/B a look or a running order
 ## without touching this script. Left empty, the defaults above load.
@@ -217,10 +301,12 @@ const HERO: int = -1
 ## entry instead, since the banner there only takes you back.
 var _selected: int = HERO
 var _played: Array[bool] = []
-## Indexed by ENTRY index, not by screen position - the tour and the lab are drawn in two
-## groups, so the two orders differ. `_order` is the screen order, top to bottom.
+## Indexed by ENTRY index, not by screen position - the entries are drawn by system group,
+## so the two orders differ. `_order` is the screen order, top to bottom.
 var _rows: Array[PanelContainer] = []
 var _order: Array[int] = []
+## Per family, in the catalogue's order: {"label": String, "color": Color}. See _load_systems().
+var _systems: Array[Dictionary] = []
 var _hero_panel: PanelContainer = null
 var _shell: Control = null
 ## The banner's reference-space host, and the content margin beneath it. Both
@@ -234,8 +320,17 @@ var _preview_material: ShaderMaterial = null
 var _video_material: ShaderMaterial = null
 var _preview_icon: TextureRect = null
 var _preview_video: VideoStreamPlayer = null
+## "VIDEO N/A", centred in the frame, for an entry with no recording.
+var _preview_na: Label = null
+## "VIDEO COMING TODAY" over a screenshot, while an entry has a still and no video yet.
+var _preview_soon: Control = null
 var _preview_caption: Label = null
 var _detail_title: Label = null
+## The system row under the title: one mark per group (only the entry's own is shown, or
+## all four for the world) and the group's name.
+var _detail_system: HBoxContainer = null
+var _detail_marks: Array[Control] = []
+var _detail_system_label: Label = null
 var _detail_badge: PanelContainer = null
 var _detail_badge_label: Label = null
 var _detail_blurb: Label = null
@@ -253,43 +348,10 @@ var _launch_targets: Array[Dictionary] = []
 var _loop_time: float = 0.0
 var _running: Node = null
 
+## The loading screen (menu_load_board.gd), on its own CanvasLayer; hidden until a launch.
 var _overlay: Control = null
-var _overlay_title: Label = null
-var _overlay_stage: Label = null
-var _overlay_hint: Label = null
-var _overlay_bar: ProgressBar = null
-var _spinner: Spinner = null
 var _launching: bool = false
 var _notice: Control = null
-
-
-## A ring that sweeps rather than an image, so it needs no asset and takes its
-## colour from the style like everything else.
-##
-## Honest about what it can promise: the resource LOAD is genuinely threaded and
-## reports real progress, but a prototype's geometry is built in its `_ready`,
-## on the main thread, and that cannot be measured or interrupted. So the bar
-## fills for the part that is measurable, and the spinner sits still during the
-## build. A frozen spinner is not ideal - a bar that invented progress it did not
-## have would be worse.
-class Spinner extends Control:
-	var colour: Color = Color.WHITE
-	var track: Color = Color(1, 1, 1, 0.15)
-	var thickness: float = 4.0
-	var _angle: float = 0.0
-
-	func _process(delta: float) -> void:
-		_angle = fmod(_angle + delta * 3.4, TAU)
-		queue_redraw()
-
-	func _draw() -> void:
-		var centre: Vector2 = size * 0.5
-		var radius: float = minf(size.x, size.y) * 0.5 - thickness
-		if radius <= 0.0:
-			return
-		draw_arc(centre, radius, 0.0, TAU, 48, track, thickness, true)
-		# A 100-degree sweep reads as motion at a glance; a full ring does not.
-		draw_arc(centre, radius, _angle, _angle + deg_to_rad(100.0), 24, colour, thickness, true)
 
 
 func _ready() -> void:
@@ -298,9 +360,57 @@ func _ready() -> void:
 		# menu that does not do this is unusable after returning from a prototype.
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		_apply_window_mode()
+		# Light or dark, and list or route, stay as chosen for the session, through a trip to a
+		# prototype or the pen and back. The style is copied so the palette never writes into
+		# the resource on disk.
+		var root: Window = get_tree().root
+		_light = bool(root.get_meta(&"menu_light", true))
+		_route_view = bool(root.get_meta(&"menu_route_view", false))
+		if style != null:
+			style = style.duplicate()
+		_apply_palette()
 	_connect_resource(style)
 	_connect_resource(catalogue)
 	rebuild()
+
+
+## Puts the white or the dark palette, and the deck's Regular, into the (run-time copy of the)
+## style, quietly, so the caller's one rebuild is the only one. In the editor the style
+## resource's own palette shows, so nothing here can write into it.
+func _apply_palette() -> void:
+	if style == null or Engine.is_editor_hint():
+		return
+	_disconnect_resource(style)
+	var palette: Dictionary = DECK_WHITE if _light else DECK_DARK
+	for key in palette:
+		style.set(key, palette[key])
+	# The deck sets its body in Regular, where the style resource uses SemiBold.
+	style.font = load(DECK_FONT) as Font
+	_connect_resource(style)
+
+
+## LIST / ROUTE, at the foot.
+func _show_route(route: bool) -> void:
+	if _route_view == route:
+		return
+	_route_view = route
+	get_tree().root.set_meta(&"menu_route_view", _route_view)
+	rebuild()
+
+
+## The light / dark square, at the foot.
+func _toggle_shade() -> void:
+	_light = not _light
+	get_tree().root.set_meta(&"menu_light", _light)
+	_apply_palette()
+	rebuild()
+
+
+## The menu's look (menu_a.gd), made on first use.
+func _a() -> RefCounted:
+	if _look == null:
+		_look = MenuA.new(self)
+	return _look
 
 
 ## Deferred so a burst of inspector edits - dragging a slider, say - collapses
@@ -349,12 +459,16 @@ func _connect_entries() -> void:
 ## Every row this menu lists: the catalogue's entries and, after them, its cinematics. Row
 ## indices, `_selected` and the played dots all count through this one list. Menu2 and the
 ## Frontier Map read `entries` alone, so the cinematics live apart in the resource.
+##
+## Entries with `show_in_menu` unticked are left out here, and so everywhere: they keep
+## their place in the catalogue but get no row, no index and no launch.
 func _entries() -> Array[MenuEntry]:
 	var all: Array[MenuEntry] = []
 	if catalogue == null:
 		return all
-	all.append_array(catalogue.entries)
-	all.append_array(catalogue.cinematics)
+	for entry in catalogue.entries + catalogue.cinematics:
+		if entry != null and entry.show_in_menu:
+			all.append(entry)
 	return all
 
 
@@ -375,24 +489,54 @@ func _selected_entry() -> MenuEntry:
 	return _entry(_selected)
 
 
-## Entry indices in the order they are drawn: the tour first, then the lab, each keeping
-## the catalogue's own order - so "order is the curriculum" still holds inside each half.
+## Entry indices in the order they are drawn: the families in the catalogue's order (the labs,
+## then the playable experiments), then any entry with no family, then the cinematics. Each
+## group keeps the catalogue's own order, so "order is the curriculum" still holds inside it.
+## (Until 8 Oct: the tour, the cinematics, then the lab; until 9 Oct: the four systems.)
 func _display_order() -> Array[int]:
-	var tour: Array[int] = []
-	var films: Array[int] = []
-	var lab: Array[int] = []
+	var groups: Array = []
+	for g in GROUP_FILMS + 1:
+		groups.append([])
 	var all: Array[MenuEntry] = _entries()
 	for i in all.size():
-		var entry: MenuEntry = all[i]
-		if entry != null and entry.section == "Lab":
-			lab.append(i)
-		elif entry != null and entry.section == "Cinematic":
-			films.append(i)
-		else:
-			tour.append(i)
-	tour.append_array(films)
-	tour.append_array(lab)
-	return tour
+		(groups[_group_of(all[i])] as Array).append(i)
+	var order: Array[int] = []
+	for group in groups:
+		order.append_array(group)
+	return order
+
+
+## Which group an entry is listed under: its family's index (the catalogue's `family_names`),
+## GROUP_OTHER for an entry with no family (the banner's own entry too), GROUP_FILMS for a
+## cinematic.
+func _group_of(entry: MenuEntry) -> int:
+	if entry == null:
+		return GROUP_OTHER
+	if entry.section == "Cinematic":
+		return GROUP_FILMS
+	var family: int = catalogue.family_names.find(entry.family) if catalogue != null else -1
+	return family if family >= 0 else GROUP_OTHER
+
+
+## One blue for every group (Ramon, 8 Oct: no hue shifts). The map's own colours are still
+## read into `_systems`, just not shown.
+func _group_color(_group: int) -> Color:
+	return style.accent
+
+
+## The families' names, from the catalogue, in its order; one blue for all. (Until 9 Oct the four
+## systems' names and colours, from the Frontier Map's layout.)
+func _load_systems() -> void:
+	_systems.clear()
+	for family in catalogue.family_names:
+		_systems.append({"label": String(family).to_upper(), "color": style.accent})
+
+
+## The line under a family's name ("Interactive R&D exhibitions").
+func _group_line(group: int) -> String:
+	if group >= 0 and group < catalogue.family_lines.size():
+		return catalogue.family_lines[group]
+	return ""
 
 
 ## The cinematics, in the order listed: index 0 is the one the 1 key plays.
@@ -440,17 +584,20 @@ func _move_selected(delta: int) -> void:
 	# The banner is not in the running order, so there is nothing to move.
 	if catalogue == null or _selected == HERO:
 		return
-	var to: int = _selected + delta
-	# The reorder tool works on `entries` only; the cinematics keep their own order.
-	if _selected >= catalogue.entries.size() or to < 0 or to >= catalogue.entries.size():
+	# `_selected` counts shown rows only, so find the entry's own place in the catalogue,
+	# where entries taken off the menu still sit. The reorder tool works on `entries` only;
+	# the cinematics keep their own order.
+	var moved: MenuEntry = _selected_entry()
+	var from: int = catalogue.entries.find(moved)
+	var to: int = from + delta
+	if from < 0 or to < 0 or to >= catalogue.entries.size():
 		return
 
 	var entries: Array[MenuEntry] = catalogue.entries
-	var moved: MenuEntry = entries[_selected]
-	entries.remove_at(_selected)
+	entries.remove_at(from)
 	entries.insert(to, moved)
 	catalogue.entries = entries
-	_selected = to
+	_selected = maxi(0, _entries().find(moved))
 
 	_save_catalogue()
 	rebuild()
@@ -568,12 +715,16 @@ func rebuild() -> void:
 		return
 
 	_connect_entries()
+	_load_systems()
 	# The dropdown's options ARE the entry titles, so it has to be rebuilt
 	# whenever they might have changed - a renamed entry, a new one, a reorder.
 	notify_property_list_changed()
 
 	if _shell != null and is_instance_valid(_shell):
 		_shell.queue_free()
+	_list_scroll = null
+	# What the last build drew per row goes with it: no references to freed controls behind.
+	_tracks.clear()
 	_rows.clear()
 	_rows.resize(_entries().size())
 	_order = _display_order()
@@ -594,22 +745,19 @@ func rebuild() -> void:
 	_shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_shell)
 
-	var background := ColorRect.new()
-	background.color = style.background
+	# The ground. Drawn, so it costs no asset and follows the palette.
+	var background := Control.new()
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	background.draw.connect(_draw_background.bind(background))
+	background.resized.connect(background.queue_redraw)
 	_shell.add_child(background)
 
-	# The banner goes in a 1920x1080 reference space fitted to the window exactly
-	# the way the Frontier Map fits its whole layout, so the bar lands on the
-	# SAME screen pixels on both screens. Putting it in this screen's own
-	# container instead made it a different height and put the tabs somewhere
-	# else, which is precisely the discrepancy it exists to avoid.
-	_banner_host = Control.new()
-	_banner_host.size = MenuBanner.REFERENCE
-	_banner_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# The deck's running header and footer, with the light / dark and LIST / ROUTE switches.
+	# Until 8 Oct this was the Frontier Map's banner (QUANTUM HORIZON over a big EXPLORE
+	# FREELY); Ramon: "the explore freely header is something we no longer need".
+	_banner_host = _a().build_frame()
 	_shell.add_child(_banner_host)
-	_banner_host.add_child(_build_banner())
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -618,15 +766,16 @@ func rebuild() -> void:
 	_shell.add_child(margin)
 	_margin = margin
 
-	var columns := HBoxContainer.new()
-	columns.add_theme_constant_override("separation", style.space(4))
-	margin.add_child(columns)
-
-	columns.add_child(_build_list_column())
-	columns.add_child(_build_detail_column())
+	# The list or the route, with the details (menu_a.gd).
+	_a().build(margin)
 
 	# Siblings of _shell rather than children of it: the shell is hidden while a
-	# prototype runs, and these have to outlive that.
+	# prototype runs, and these have to outlive that. Rebuilt with everything else, so the
+	# old ones go first (a rebuild used to leave its predecessors behind, hidden).
+	if _overlay != null and is_instance_valid(_overlay):
+		_overlay.get_parent().queue_free()
+	if _notice != null and is_instance_valid(_notice):
+		_notice.queue_free()
 	_build_launch_overlay()
 	_build_notice()
 
@@ -637,66 +786,14 @@ func rebuild() -> void:
 	_select(_selected)
 
 
-## The launch overlay. Hidden until a launch begins.
+## The loading screen, in the Voxel Lab board's style: the lab's blue, white type, the line along
+## the foot (Ramon, 9 Oct, "consistent across all scenes"). Hidden until a launch begins.
 ##
-## It also repeats the control key caps, which is not padding - the seconds
-## before a prototype starts are exactly when someone wants to know the keys,
-## and it is the last moment they can read them before the mouse is captured.
+## It shows the prototype's keys, which is not padding - the seconds before a prototype starts are
+## exactly when someone wants to know them, and it is the last moment they can read them before the
+## mouse is captured.
 func _build_launch_overlay() -> void:
-	_overlay = Control.new()
-	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	_overlay.visible = false
-	add_child(_overlay)
-
-	var dim := ColorRect.new()
-	dim.color = Color(style.background.r, style.background.g, style.background.b, 0.92)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_overlay.add_child(dim)
-
-	var centre := CenterContainer.new()
-	centre.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_overlay.add_child(centre)
-
-	var column := VBoxContainer.new()
-	column.alignment = BoxContainer.ALIGNMENT_CENTER
-	column.add_theme_constant_override("separation", style.space(2))
-	centre.add_child(column)
-
-	var spinner_row := CenterContainer.new()
-	column.add_child(spinner_row)
-	_spinner = Spinner.new()
-	_spinner.custom_minimum_size = Vector2(style.scaled(64), style.scaled(64))
-	_spinner.colour = style.accent.lightened(0.35)
-	_spinner.track = Color(style.text.r, style.text.g, style.text.b, 0.12)
-	_spinner.thickness = style.scaled(5)
-	spinner_row.add_child(_spinner)
-
-	# DISPLAY rather than TITLE: with the menu dimmed out behind it, this is the
-	# only thing anchoring the composition, and at TITLE it read as a caption
-	# under the spinner rather than as the subject.
-	_overlay_title = _label("", MenuStyle.DISPLAY, style.text, false)
-	_overlay_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(_overlay_title)
-
-	_overlay_bar = ProgressBar.new()
-	_overlay_bar.custom_minimum_size = Vector2(style.scaled(320), style.scaled(4))
-	_overlay_bar.show_percentage = false
-	_overlay_bar.max_value = 1.0
-	_overlay_bar.value = 0.0
-	var track_box := _stylebox(Color(style.text.r, style.text.g, style.text.b, 0.12))
-	var fill_box := _stylebox(style.accent.lightened(0.25))
-	_overlay_bar.add_theme_stylebox_override("background", track_box)
-	_overlay_bar.add_theme_stylebox_override("fill", fill_box)
-	column.add_child(_overlay_bar)
-
-	_overlay_stage = _label("", MenuStyle.MICRO, style.text_dim, true)
-	_overlay_stage.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(_overlay_stage)
-
-	_overlay_hint = _label("", MenuStyle.CAPTION, Color(0.72, 0.80, 0.92), false)
-	_overlay_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(_overlay_hint)
+	_overlay = MenuLoadBoard.open(self)
 
 
 ## The hero banner's placeholder. The guided tour is not built, and the button
@@ -859,240 +956,113 @@ func _process(delta: float) -> void:
 # Layout
 # --------------------------------------------------------------------------
 
-func _build_list_column() -> Control:
-	var column := VBoxContainer.new()
-	column.custom_minimum_size.x = style.scaled(style.list_width)
-	column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_theme_constant_override("separation", style.space(1.75))
-
-	# The project name moved into the banner, so repeating it here would say it
-	# twice on one screen.
-	column.add_child(_build_hero())
-	column.add_child(_label(catalogue.list_heading, MenuStyle.MICRO, style.text_dim, true))
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	column.add_child(scroll)
-
-	var rows := VBoxContainer.new()
-	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	rows.add_theme_constant_override("separation", style.space(1))
-	scroll.add_child(rows)
-
-	# Tour first, then the cinematics and the lab under their own headings. Rows are stored
-	# by entry index, so selection, played dots and auto-advance do not care which group a
-	# row sits in.
-	var lab_started: bool = false
-	var films_started: bool = false
+## The entries in screen order, cut into their groups: [[group, [entry indices]], ...].
+func _groups_in_order() -> Array:
+	var out: Array = []
 	for i in _order:
-		var entry: MenuEntry = _entry(i)
-		if not films_started and entry != null and entry.section == "Cinematic":
-			films_started = true
-			_add_group_heading(rows, _cinematics_heading())
-		if not lab_started and entry != null and entry.section == "Lab":
-			lab_started = true
-			_add_group_heading(rows, catalogue.lab_heading)
-		var row := _build_row(i)
-		_rows[i] = row
-		rows.add_child(row)
-
-	# States the interaction rather than leaving it to be guessed at.
-	column.add_child(_label(catalogue.hint, MenuStyle.MICRO, style.text_dim, false))
-	return column
+		var group: int = _group_of(_entry(i))
+		if out.is_empty() or int(out[-1][0]) != group:
+			out.append([group, []])
+		(out[-1][1] as Array).append(i)
+	return out
 
 
-func _add_group_heading(rows: VBoxContainer, text: String) -> void:
-	var gap := Control.new()
-	gap.custom_minimum_size.y = style.space(1.5)
-	rows.add_child(gap)
-	rows.add_child(_label(text, MenuStyle.MICRO, style.text_dim, true))
+## A group's name: the system's own (from the map), CINEMATICS or MORE.
+func _group_label(group: int) -> String:
+	if group < _systems.size():
+		return _systems[group]["label"]
+	if group == GROUP_FILMS:
+		return _cinematics_heading()
+	return catalogue.other_heading
 
 
-## The shared banner, identical to the Frontier Map's. See [MenuBanner].
-##
-## Two views of ONE catalogue: this screen answers "what can I play", the map
-## answers "what is this programme and what has it proved". The banner is the
-## part that must not change between them, so it is the same class, the same
-## labels from the same resource, and the same order - tab 0 is the map, tab 1
-## is this screen. Only the active index differs.
-##
-## No action button here: this screen already has the hero as its start-the-tour
-## affordance, and two START THE TOUR controls on one screen is one too many.
-func _build_banner() -> Control:
-	var banner := MenuBanner.new()
-	banner.setup(
-		catalogue.header, catalogue.explore_tab,
-		PackedStringArray([catalogue.guided_tab, catalogue.explore_tab]), 1, "",
-		{"caps": style.label_font(), "caps_tight": style.label_font()},
-		{
-			"fill": style.background.darkened(0.35), "rule": style.surface_raised,
-			"text_bright": style.text, "text_faint": style.text_dim,
-			"tab_active_fill": style.surface_raised, "tab_active_stroke": style.accent,
-			"tab_idle_fill": style.surface, "tab_idle_stroke": style.surface_raised,
-			"action_fill": style.accent, "action_stroke": style.accent,
-			"action_hover": style.launch_fill_hover, "action_text": style.text,
-		})
-	banner.tab_pressed.connect(func(_index: int) -> void: _on_frontier_map())
-	return banner
+## Position in the run (the prototypes in screen order, films left out), 1-based, and how
+## many there are: "01 / 07".
+func _run_number(index: int) -> int:
+	var n: int = 0
+	for i in _order:
+		if _group_of(_entry(i)) == GROUP_FILMS:
+			continue
+		n += 1
+		if i == index:
+			return n
+	return 0
 
 
-## Fits the banner's reference space to the window and pushes this screen's
-## content clear of it. Both numbers come from [MenuBanner], so the bar and the
-## gap under it match the Frontier Map exactly.
+func _run_total() -> int:
+	var n: int = 0
+	for i in _order:
+		if _group_of(_entry(i)) != GROUP_FILMS:
+			n += 1
+	return n
+
+
+## A family's mark, as a small square Control.
+func _system_mark(group: int, ink: Color, side: float) -> Control:
+	var mark := Control.new()
+	mark.custom_minimum_size = Vector2(side, side)
+	mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mark.draw.connect(_draw_system_mark.bind(mark, group, ink))
+	return mark
+
+
+## The families' marks, line drawings in the Frontier Map's manner at any size: a flask for the
+## labs, a play button in a ring for the playable experiments. Their numbers are for a 30 px box,
+## scaled. (Until 9 Oct the four systems' marks: reticle, cube, cells, strands.)
+func _draw_system_mark(mark: Control, group: int, ink: Color) -> void:
+	var k: float = minf(mark.size.x, mark.size.y) / 30.0
+	if k <= 0.0:
+		return
+	_paint_system_mark(mark, mark.size * 0.5, k, group, ink)
+
+
+## One family's mark drawn into any canvas item, centred on `mid`, `k` times its 30 px size (the
+## loading screen paints both for the world).
+func _paint_system_mark(mark: CanvasItem, mid: Vector2, k: float, group: int, ink: Color) -> void:
+	var w: float = maxf(1.2, 1.6 * k)
+	match group:
+		0:
+			# The labs: a flask, its liquid line a third of the way up.
+			var body := PackedVector2Array([
+				mid + Vector2(-3.2, -11) * k, mid + Vector2(-3.2, -4) * k, mid + Vector2(-10, 10) * k,
+				mid + Vector2(10, 10) * k, mid + Vector2(3.2, -4) * k, mid + Vector2(3.2, -11) * k])
+			mark.draw_polyline(body, ink, w, true)
+			mark.draw_line(mid + Vector2(-5.5, -11) * k, mid + Vector2(5.5, -11) * k, ink, w, true)
+			mark.draw_line(mid + Vector2(-6.9, 3.6) * k, mid + Vector2(6.9, 3.6) * k, ink, w, true)
+		1:
+			# The playable experiments: a play button in a ring.
+			mark.draw_arc(mid, 11.0 * k, 0.0, TAU, 40, ink, w, true)
+			var play := PackedVector2Array([
+				mid + Vector2(-3.4, -5.6) * k, mid + Vector2(6.0, 0) * k, mid + Vector2(-3.4, 5.6) * k,
+				mid + Vector2(-3.4, -5.6) * k])
+			mark.draw_polyline(play, ink, w, true)
+
+
+## The ground: the palette's background.
+func _draw_background(node: Control) -> void:
+	node.draw_rect(Rect2(Vector2.ZERO, node.size), style.background)
+
+
+## Pushes the content clear of the running header.
 func _layout_banner() -> void:
-	if _banner_host == null or _margin == null:
+	if _margin == null:
 		return
-	var factor: float = MenuBanner.reference_scale(size)
-	_banner_host.scale = Vector2(factor, factor)
-	_banner_host.position = MenuBanner.reference_origin(size)
-	var below: float = _banner_host.position.y + MenuBanner.HEIGHT * factor
-	_margin.add_theme_constant_override("margin_top", int(below) + style.space(3))
+	_margin.add_theme_constant_override("margin_top", int(_a().header_height()))
+	if _banner_host != null:
+		_banner_host.queue_redraw()
 
 
-func _on_frontier_map() -> void:
-	if Engine.is_editor_hint():
-		return
-	# A plain scene change, unlike a prototype launch. The map is a peer of this
-	# screen rather than something running on top of it, so there is nothing to
-	# keep alive underneath and nothing to unwind on the way back.
-	get_tree().change_scene_to_file(FRONTIER_MAP_SCENE)
-
-
-## Deliberately much larger than a row: it is the difference between "a menu of
-## tech demos" and "a thing somebody sequenced for you", and if it reads as just
-## another list item the whole argument collapses.
-##
-## It opens the WORLD - `catalogue.hero`, the chicken pen - where the prototypes' ideas
-## come together, and the list beneath stays the way to jump to one of them. That answers
-## the select-or-sequence question without a tour system, which was never built: the
-## banner used to promise one and then show a COMING SOON notice, and still does when no
-## hero is configured. Opened from a laptop inside the pen it reads BACK TO THE PEN and
-## takes you home instead of starting a second copy.
-func _build_hero() -> Control:
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _stylebox(style.accent))
-	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	panel.gui_input.connect(_on_hero_input)
-	_hero_panel = panel
-
-	var margin := MarginContainer.new()
-	_set_margins(margin, style.space(2.5), style.space(2))
-	panel.add_child(margin)
-
-	var heading: String = catalogue.tour_title
-	var subtitle: String = catalogue.subtitle_text()
-	var hero: MenuEntry = catalogue.hero
-	if hero != null:
-		if _laptop_trip() != null:
-			heading = catalogue.hero_return_heading
-			subtitle = catalogue.hero_return_subtitle
-		else:
-			heading = catalogue.hero_heading
-			subtitle = hero.blurb
-			if hero.duration != "":
-				subtitle = "%s  ·  %s" % [hero.blurb, hero.duration]
-
-	var text := VBoxContainer.new()
-	text.add_theme_constant_override("separation", style.space(0.25))
-	margin.add_child(text)
-	text.add_child(_label(heading, MenuStyle.TITLE, style.text, false))
-	var line := _label(subtitle, MenuStyle.BODY, Color(0.78, 0.85, 0.95), false)
-	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	text.add_child(line)
-	return panel
-
-
-## Marks the banner selected the way a row is marked: a lighter fill and the selection bar.
+## Marks the world selected: its blue a step lighter.
 func _style_hero(chosen: bool) -> void:
 	if _hero_panel == null:
 		return
-	var box := _stylebox(style.accent.lightened(0.12) if chosen else style.accent)
-	if chosen and style.selection_bar > 0:
-		box.border_color = style.text
-		box.border_width_left = style.selection_bar
-	_hero_panel.add_theme_stylebox_override("panel", box)
+	_hero_panel.add_theme_stylebox_override("panel", _a().hero_box(chosen))
 
 
-func _build_row(index: int) -> PanelContainer:
-	var entry: MenuEntry = _entry(index)
-
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _stylebox(style.surface))
-	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	panel.gui_input.connect(_on_row_input.bind(index))
-	panel.mouse_entered.connect(_on_row_hover.bind(index, true))
-	panel.mouse_exited.connect(_on_row_hover.bind(index, false))
-
-	var margin := MarginContainer.new()
-	_set_margins(margin, style.space(1.25))
-	panel.add_child(margin)
-
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", style.space(1.75))
-	margin.add_child(row)
-
-	# Rows stay STILL even when clips exist. Eight simultaneously playing
-	# previews is a slot machine; only the selected one moves.
-	var thumb := TextureRect.new()
-	thumb.texture = entry.icon
-	var thumb_width: float = style.scaled(style.thumbnail_width)
-	thumb.custom_minimum_size = Vector2(thumb_width, thumb_width / style.preview_aspect)
-	thumb.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	thumb.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	# Knocked back from pure white so the glyph sits below the title in the
-	# hierarchy rather than competing with it.
-	thumb.modulate = style.thumbnail_tint
-	row.add_child(thumb)
-
-	var text := VBoxContainer.new()
-	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	text.add_theme_constant_override("separation", style.space(0.4))
-	row.add_child(text)
-	# Title, then maturity and duration on the same line.
-	#
-	# Both repeated from the detail pane on purpose: a presenter scanning the
-	# list cannot otherwise see which entries are rough or how long each takes
-	# without clicking every one of them.
-	var title_row := HBoxContainer.new()
-	title_row.add_theme_constant_override("separation", style.space(1))
-	text.add_child(title_row)
-	# A cinematic's row says which number key plays it.
-	var films: Array[int] = _cinematic_order()
-	if films.has(index):
-		var key := _label(str(films.find(index) + 1), MenuStyle.SUBTITLE, style.accent.lightened(0.35), false)
-		title_row.add_child(key)
-	title_row.add_child(_label(entry.title.to_upper(), MenuStyle.SUBTITLE, style.text, false))
-
-	if entry.maturity != "":
-		var tag := _label(entry.maturity.to_upper(), MenuStyle.MICRO, style.text_faint, true)
-		tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		title_row.add_child(tag)
-
-	if entry.duration != "":
-		var length := _label(entry.duration, MenuStyle.MICRO, style.text_faint, true)
-		length.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		title_row.add_child(length)
-
-	var blurb := _label(entry.blurb, MenuStyle.CAPTION, style.text_dim, false)
-	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	blurb.custom_minimum_size.x = style.scaled(250)
-	text.add_child(blurb)
-
-	# Played / not played. Set ONLY by actually launching something and coming
-	# back - never by selecting, which is what made these fill in unexplained.
-	var dot := ColorRect.new()
-	dot.name = "PlayedDot"
-	var dot_size: float = style.scaled(9)
-	dot.custom_minimum_size = Vector2(dot_size, dot_size)
-	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	dot.color = style.surface_raised
-	row.add_child(dot)
-
-	return panel
+## How a row lights up (menu_a.gd).
+func _row_box(index: int, chosen: bool, hovered: bool) -> StyleBoxFlat:
+	return _a().row_box(index, chosen, hovered)
 
 
 ## Right column, top to bottom: the hook, then what it is, then how to play it,
@@ -1102,10 +1072,10 @@ func _build_row(index: int) -> PanelContainer:
 ## key caps and launches; an academic reader carries on into the cells. Same
 ## pane, no mode switch, and the cells cost the skimmer nothing because they are
 ## visually subordinate rather than merely shorter.
-func _build_detail_column() -> Control:
+func _build_detail_column(halves: bool = false) -> Control:
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", _stylebox(style.surface))
+	panel.add_theme_stylebox_override("panel", _a().pane_box())
 
 	var margin := MarginContainer.new()
 	_set_margins(margin, style.space(3.25))
@@ -1115,26 +1085,46 @@ func _build_detail_column() -> Control:
 	# Draggable in the style resource - this is the one number that sets how
 	# much air sits between the blocks down this pane.
 	column.add_theme_constant_override("separation", style.space(style.detail_paragraph_gap))
-	margin.add_child(column)
+	# In halves (the route view): the video and its caption on the left, the words on the
+	# right, cut in the middle, the video as tall as the words beside it. Otherwise one column,
+	# top to bottom.
+	var media: VBoxContainer = column
+	if halves:
+		var split := HBoxContainer.new()
+		split.add_theme_constant_override("separation", style.space(4))
+		margin.add_child(split)
+		media = VBoxContainer.new()
+		media.add_theme_constant_override("separation", style.space(1))
+		split.add_child(media)
+		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		split.add_child(column)
+		media.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		media.size_flags_stretch_ratio = 1.0
+		column.size_flags_stretch_ratio = 1.0
+		column.custom_minimum_size.x = 0.0
+	else:
+		margin.add_child(column)
 
 	var preview_width: float = style.scaled(576)
 	var frame := Control.new()
 	frame.custom_minimum_size = Vector2(preview_width, preview_width / style.preview_aspect)
+	if halves:
+		frame.custom_minimum_size = Vector2(0.0, 240.0)
+		frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	frame.clip_contents = true
 	# The shader needs the pane's real pixel size, which is only known after the
 	# container has laid out - and changes again whenever the window does.
 	frame.resized.connect(_on_preview_resized.bind(frame))
-	column.add_child(frame)
+	media.add_child(frame)
 
 	_preview_frame = frame
 	_preview_material = ShaderMaterial.new()
 	_preview_material.shader = load(ROUNDED_SHADER) as Shader
-	_preview_material.set_shader_parameter("corner_radius", Vector4(
-		style.preview_corner_top_left,
-		style.preview_corner_top_right,
-		style.preview_corner_bottom_right,
-		style.preview_corner_bottom_left
-	))
+	# The video frame takes the launch button's corners (Ramon, 8 Oct), not the style's own
+	# preview corners.
+	var r: float = float(style.corner_radius)
+	_preview_material.set_shader_parameter("corner_radius", Vector4(r, r, r, r))
 	_preview_material.set_shader_parameter("edge_softness", style.preview_edge_softness)
 
 	var frame_bg := ColorRect.new()
@@ -1170,14 +1160,64 @@ func _build_detail_column() -> Control:
 	_preview_video.material = _video_material
 	frame.add_child(_preview_video)
 
+	# Ramon, 8 Oct: no new videos for now; where an entry has none, say so in the frame.
+	_preview_na = _label("VIDEO N/A", MenuStyle.SUBTITLE, style.text_faint, true)
+	_preview_na.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_preview_na.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_preview_na.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_preview_na.visible = false
+	frame.add_child(_preview_na)
+
+	# Over a screenshot, until the video exists (Ramon, 9 Oct: "write video coming today on that
+	# image"): a small code-blue label in the frame's bottom left corner.
+	var soon := PanelContainer.new()
+	soon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var soon_box := StyleBoxFlat.new()
+	soon_box.bg_color = style.launch_fill
+	soon_box.content_margin_left = 12
+	soon_box.content_margin_right = 12
+	soon_box.content_margin_top = 6
+	soon_box.content_margin_bottom = 6
+	soon.add_theme_stylebox_override("panel", soon_box)
+	soon.add_child(_label("VIDEO COMING TODAY", MenuStyle.CAPTION, ON_ACCENT, true))
+	soon.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	soon.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	soon.offset_left = 16
+	soon.offset_bottom = -16
+	soon.visible = false
+	frame.add_child(soon)
+	_preview_soon = soon
+
 	_preview_caption = _label("", MenuStyle.MICRO, style.text_dim, true)
-	column.add_child(_preview_caption)
+	media.add_child(_preview_caption)
+
+	# The system it shows and where it sits in the run ("ORIENTATION · 01 / 07"), as a
+	# kicker over the title: the Creation Lab's title card leads the same way ("PART 2 OF 5
+	# · GOAT"). Their own tight stack, so the pane's paragraph gap does not split them.
+	var head := VBoxContainer.new()
+	head.add_theme_constant_override("separation", style.space(0.6))
+	column.add_child(head)
 
 	var title_row := HBoxContainer.new()
 	title_row.add_theme_constant_override("separation", style.space(1.5))
-	column.add_child(title_row)
+
+	_detail_system = HBoxContainer.new()
+	_detail_system.add_theme_constant_override("separation", style.space(0.75))
+	head.add_child(_detail_system)
+	_detail_marks.clear()
+	for g in _systems.size():
+		var mark := _system_mark(g, _group_color(g), style.scaled(18))
+		_detail_system.add_child(mark)
+		_detail_marks.append(mark)
+	_detail_system_label = _label("", MenuStyle.CAPTION, style.text_dim, true)
+	_detail_system_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_detail_system.add_child(_detail_system_label)
+	head.add_child(title_row)
 
 	_detail_title = _label("", MenuStyle.DISPLAY, style.text, false)
+	_a().deck_title(_detail_title)
+	if halves:
+		_detail_title.add_theme_font_size_override("font_size", 36)
 	title_row.add_child(_detail_title)
 
 	# Maturity badge. People read badges even when they read nothing else, and
@@ -1199,6 +1239,11 @@ func _build_detail_column() -> Control:
 	_detail_blurb = _label("", MenuStyle.SUBTITLE, style.text_dim, false)
 	_detail_blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_detail_blurb)
+	if halves:
+		# Half the height it has elsewhere: the words a step smaller and closer together, so a
+		# typical entry ends where the screen does (the long ones push the route up, never off).
+		_detail_blurb.add_theme_font_size_override("font_size", style.scaled(18))
+		column.add_theme_constant_override("separation", style.space(1.4))
 
 	_controls_host = HBoxContainer.new()
 	_controls_host.add_theme_constant_override("separation", style.space(1.5))
@@ -1207,7 +1252,7 @@ func _build_detail_column() -> Control:
 	_info_host = GridContainer.new()
 	_info_host.columns = style.info_columns
 	_info_host.add_theme_constant_override("h_separation", style.space(style.info_cell_h_gap))
-	_info_host.add_theme_constant_override("v_separation", style.space(style.detail_paragraph_gap))
+	_info_host.add_theme_constant_override("v_separation", style.space(1.4 if halves else style.detail_paragraph_gap))
 	column.add_child(_info_host)
 
 	# Measurements sit BELOW the cells and outside the grid, full width.
@@ -1233,6 +1278,7 @@ func _build_detail_column() -> Control:
 
 	_detail_path = _label("", MenuStyle.MICRO, style.text_faint, false)
 	column.add_child(_detail_path)
+	_detail_path.visible = not halves
 
 	# Styled rather than left on Godot's default theme, which on this ground sat
 	# at almost exactly the panel colour - the most important control on screen
@@ -1275,9 +1321,10 @@ func _make_launch_button(text: String) -> Button:
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_override("font", style.label_font())
 	button.add_theme_font_size_override("font_size", style.size_for(MenuStyle.BODY))
-	button.add_theme_color_override("font_color", style.text)
-	button.add_theme_color_override("font_hover_color", style.text)
-	button.add_theme_color_override("font_pressed_color", style.text)
+	# White on the code blue, in both palettes.
+	button.add_theme_color_override("font_color", ON_ACCENT)
+	button.add_theme_color_override("font_hover_color", ON_ACCENT)
+	button.add_theme_color_override("font_pressed_color", ON_ACCENT)
 	button.add_theme_stylebox_override("normal", _stylebox(style.launch_fill))
 	button.add_theme_stylebox_override("hover", _stylebox(style.launch_fill_hover))
 	button.add_theme_stylebox_override("pressed", _stylebox(style.accent))
@@ -1342,7 +1389,8 @@ func _add_info_cell(label_text: String, body_text: String, tier: String = "") ->
 	cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cell.add_theme_constant_override("separation", style.space(style.info_cell_label_gap))
 
-	cell.add_child(_label(label_text, style.info_label_step, style.accent.lightened(0.35), true, style.info_label_nudge))
+	var label_ink: Color = style.accent if _light else style.accent.lightened(0.35)
+	cell.add_child(_label(label_text, style.info_label_step, label_ink, true, style.info_label_nudge))
 
 	var body := _label(body_text, style.info_body_step, style.text_dim, false, style.info_body_nudge)
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1380,12 +1428,14 @@ func _select(index: int) -> void:
 	for i in _rows.size():
 		if _rows[i] == null:
 			continue
-		var chosen: bool = i == _selected
-		var box := _stylebox(style.surface_raised if chosen else style.surface)
-		if chosen and style.selection_bar > 0:
-			box.border_color = style.accent
-			box.border_width_left = style.selection_bar
-		_rows[i].add_theme_stylebox_override("panel", box)
+		# The bar takes the row's system colour, so the selection says which group it is in.
+		_rows[i].add_theme_stylebox_override("panel", _row_box(i, i == _selected, false))
+	for track in _tracks.values():
+		(track as Control).queue_redraw()
+	# Keep the selected row in sight when the arrow keys walk past the list's edge.
+	if _selected != HERO and _selected < _rows.size() and _rows[_selected] != null \
+			and is_instance_valid(_list_scroll) and _list_scroll.is_ancestor_of(_rows[_selected]):
+		_list_scroll.ensure_control_visible.call_deferred(_rows[_selected])
 
 	_load_preview(entry)
 	_apply_entry_text(entry)
@@ -1404,10 +1454,38 @@ func _apply_entry_text(entry: MenuEntry) -> void:
 	# the row already carries the blurb, and repeating it verbatim wastes the
 	# most valuable line in the pane.
 	_detail_blurb.text = entry.detail if entry.detail != "" else entry.blurb
+	_apply_entry_system(entry)
 	_build_controls(entry)
 	_build_info(entry)
 	_build_benchmark(entry)
 	_build_launch_buttons(entry)
+
+
+## The system row under the title: the entry's own group, in its colour; for the world, all
+## four marks and `hero_systems_line`; nothing for an entry with no system or a cinematic.
+func _apply_entry_system(entry: MenuEntry) -> void:
+	if _detail_system == null:
+		return
+	var group: int = _group_of(entry)
+	var world: bool = entry == catalogue.hero
+	for g in _detail_marks.size():
+		_detail_marks[g].visible = world or g == group
+	if world:
+		_detail_system_label.text = catalogue.hero_systems_line
+		_detail_system_label.add_theme_color_override("font_color", style.text_dim)
+	elif group < _systems.size():
+		# "THE LABS  ·  2 OF 4": the family, and where this sits in it (the route's stages count the
+		# same way; menu_review_9oct.md §3).
+		var members: Array[int] = []
+		for i in _order:
+			if _group_of(_entry(i)) == group:
+				members.append(i)
+		var index: int = _entries().find(entry)
+		_detail_system_label.text = "%s  ·  %d OF %d" % [_systems[group]["label"], members.find(index) + 1, members.size()]
+		_detail_system_label.add_theme_color_override("font_color", _group_color(group))
+	else:
+		_detail_system_label.text = _group_label(group) if group != GROUP_FILMS else catalogue.cinematics_heading
+		_detail_system_label.add_theme_color_override("font_color", style.text_dim)
 
 
 func _build_benchmark(entry: MenuEntry) -> void:
@@ -1426,6 +1504,8 @@ func _load_preview(entry: MenuEntry) -> void:
 	_preview_video.stop()
 	_preview_video.visible = false
 	_preview_icon.visible = true
+	_preview_na.visible = false
+	_preview_soon.visible = false
 
 	var video_path: String = "%s%s.ogv" % [CLIP_DIR, entry.clip]
 	var stream: VideoStream = _load_video(video_path)
@@ -1439,6 +1519,17 @@ func _load_preview(entry: MenuEntry) -> void:
 		_preview_caption.text = "RECORDED PLAYTHROUGH  ·  LOOPING"
 		return
 
+	# No video yet: a screenshot, marked as such (Ramon, 9 Oct: "for now in the video sections, just
+	# paste a screenshot. videos will be made later"). Put <clip>.ogv beside <clip>_still.png and the
+	# video takes over by itself.
+	var still: Texture2D = _load_loose_texture("%s%s_still.png" % [CLIP_DIR, entry.clip])
+	if still != null:
+		_preview_icon.texture = still
+		_preview_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		_preview_soon.visible = true
+		_preview_caption.text = "SCREENSHOT"
+		return
+
 	var sheet: Texture2D = _load_loose_texture("%s%s_loop.png" % [CLIP_DIR, entry.clip])
 	if sheet != null:
 		_preview_atlas = AtlasTexture.new()
@@ -1449,10 +1540,11 @@ func _load_preview(entry: MenuEntry) -> void:
 		_preview_caption.text = "%d-FRAME SLICE LOOP" % LOOP_FRAMES
 		return
 
-	_preview_icon.texture = entry.icon
-	_preview_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	# Seen by stakeholders, so it says what is missing rather than which tool makes it.
-	_preview_caption.text = "NO RECORDING YET"
+	# No recording: the frame says so, in place of the icon (Ramon, 8 Oct: "if there is
+	# none, say, video N/A in that space"). The row keeps the icon.
+	_preview_icon.visible = false
+	_preview_na.visible = true
+	_preview_caption.text = ""
 
 
 ## Pushes the pane's actual pixel size to the shader. Without this the SDF would
@@ -1545,7 +1637,7 @@ func _load_loose_texture(path: String) -> Texture2D:
 func _on_row_hover(index: int, entered: bool) -> void:
 	if index == _selected or _running != null or _rows[index] == null:
 		return
-	_rows[index].add_theme_stylebox_override("panel", _stylebox(style.surface_raised if entered else style.surface))
+	_rows[index].add_theme_stylebox_override("panel", _row_box(index, false, entered))
 
 
 func _on_row_input(event: InputEvent, index: int) -> void:
@@ -1639,8 +1731,8 @@ func _input(event: InputEvent) -> void:
 			_on_launch_pressed()
 
 
-## Up and down walk the rows in SCREEN order - the banner, then the tour, then the lab -
-## not in catalogue order, which the two groups no longer match.
+## Up and down walk the rows in SCREEN order - the banner, then the system groups, then the
+## cinematics - not in catalogue order, which the groups no longer match.
 func _step_selection(delta: int) -> void:
 	var position_now: int = -1 if _selected == HERO else _order.find(_selected)
 	var next: int = position_now + delta
@@ -1728,15 +1820,15 @@ func _launch(index: int, target: int = 0) -> void:
 			_launching = false
 			return
 		if progress.size() > 0:
-			_overlay_bar.value = float(progress[0])
+			_overlay.set("progress", float(progress[0]))
 		await get_tree().process_frame
 
-	_overlay_bar.value = 1.0
+	_overlay.set("progress", 1.0)
 	# The honest part. instantiate() runs the prototype's _ready on the main
 	# thread - Portal builds 21 chunks in ~1,093 ms there, Voxel Mining ~512 ms -
 	# and that cannot be measured or interrupted, so the bar stops and the label
 	# says what is happening instead of inventing a percentage.
-	_overlay_stage.text = "BUILDING THE SCENE"
+	_overlay.set("stage", "BUILDING THE SCENE")
 	await get_tree().process_frame
 
 	var packed: PackedScene = ResourceLoader.load_threaded_get(path) as PackedScene
@@ -1775,27 +1867,71 @@ func _launch(index: int, target: int = 0) -> void:
 	get_tree().root.move_child(_running, 0)
 
 	_shell.visible = false
-	_hide_overlay()
+	# One white fade, at the very end of the loading (Ramon, 9 Oct: "the white fade in happens after
+	# the tscn loader"). A scene with its own loading board (the Voxel Lab's, opened in its _ready on a
+	# layer above this one) takes over blue to blue and does the white itself once it is built; any
+	# other scene gets this board's white now.
+	if _running.find_child("LoadBoard", true, false) != null:
+		_hand_over_overlay()
+	else:
+		_finish_overlay()
 	_launching = false
 	_mark_played(index)
 
 
+## Puts the loading screen up for `entry`: the system it shows and where it sits in the run (what
+## the details pane's kicker says), its name, its line, its keys, its logo and its question, and
+## its state and length along the bottom.
 func _show_overlay(entry: MenuEntry, heading: String = "") -> void:
 	if _overlay == null:
 		return
-	_overlay_title.text = (heading if heading != "" else entry.title).to_upper()
-	_overlay_stage.text = "LOADING"
-	_overlay_bar.value = 0.0
-	var keys: Array[String] = []
+	var where: String = _detail_system_label.text if _detail_system_label != null else ""
+	_overlay.set("kicker", "QUANTUM HORIZON" + ("  ·  " + where.to_upper() if where != "" else ""))
+	_overlay.set("title", (heading if heading != "" else entry.title).to_upper())
+	_overlay.set("subtitle", entry.blurb)
+	var keys: Array = []
 	for pair in entry.control_pairs():
-		keys.append("%s  %s" % [str(pair["key"]), str(pair["action"])])
-	_overlay_hint.text = "   ·   ".join(keys)
-	_overlay.visible = true
+		keys.append([str(pair["key"]), str(pair["action"])])
+	_overlay.set("keys", keys)
+	_overlay.set("logo", entry.icon)
+	# The world has no logo of its own: its square shows the families it holds, side by side.
+	var painter: Callable = Callable()
+	if entry.icon == null and entry == catalogue.hero:
+		painter = func(canvas: CanvasItem, area: Rect2) -> void:
+			var cell: float = area.size.x * 0.26
+			var n: int = _systems.size()
+			for g in n:
+				var at: Vector2 = area.get_center() + Vector2((float(g) - float(n - 1) * 0.5) * cell * 1.5, 0.0)
+				_paint_system_mark(canvas, at, cell / 30.0, g, Color(1, 1, 1, 0.92))
+	_overlay.set("painter", painter)
+	_overlay.set("question", entry.question)
+	var numbers: Array = []
+	if entry.maturity != "":
+		numbers.append(["Status", entry.maturity])
+	if entry.duration != "":
+		numbers.append(["Length", entry.duration])
+	_overlay.set("numbers", numbers)
+	_overlay.call("begin")
 
 
+## Gone at once: a launch that failed.
 func _hide_overlay() -> void:
-	if _overlay != null:
-		_overlay.visible = false
+	if _overlay != null and is_instance_valid(_overlay):
+		_overlay.call("close_now")
+
+
+## The prototype is there: the board goes white and the white fades to it, as the Voxel Lab's does.
+func _finish_overlay() -> void:
+	if _overlay != null and is_instance_valid(_overlay):
+		_overlay.call("finish")
+
+
+## The scene's own board is up over this one: this one goes, without a white of its own, once the
+## other has drawn (its first frame draws nothing, before it knows the window's size).
+func _hand_over_overlay() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_hide_overlay()
 
 
 ## Takes over the prototype's H key without hiding its prompt.
@@ -1819,6 +1955,7 @@ func _close_running() -> void:
 	# under the event still being delivered.
 	_running.queue_free()
 	_running = null
+	_hide_overlay()
 	_shell.visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
@@ -1836,17 +1973,18 @@ func _close_running() -> void:
 		_load_preview(_selected_entry())
 
 
-## The next unplayed TOUR entry after `from`, in screen order, wrapping. -1 when the whole
-## tour is played. The lab is left out on purpose: it is there to be chosen, not steered
-## into, and finishing the tour should leave you where you were.
+## The next unplayed prototype after `from`, in screen order, wrapping. -1 when every one is
+## played. Since 8 Oct that runs through all four system groups in order (read, move, the
+## world, life); the cinematics are left out, being films rather than prototypes. Until
+## then the lab was left out instead.
 func _next_unplayed(from: int) -> int:
 	var tour: Array[int] = []
 	for i in _order:
-		if _entry(i) != null and _entry(i).section != "Lab":
+		if _group_of(_entry(i)) != GROUP_FILMS:
 			tour.append(i)
 	if tour.is_empty():
 		return -1
-	# From the banner or a lab entry, find() gives -1, which starts the search at the top.
+	# From the banner or a cinematic, find() gives -1, which starts the search at the top.
 	var start: int = tour.find(from)
 	for step in range(1, tour.size() + 1):
 		var candidate: int = tour[(start + step) % tour.size()]
@@ -1864,6 +2002,8 @@ func _mark_played(index: int) -> void:
 	var dot := _rows[index].find_child("PlayedDot", true, false) as ColorRect
 	if dot != null:
 		dot.color = style.positive
+	if _tracks.has(index):
+		(_tracks[index] as Control).queue_redraw()
 
 
 func _on_launch_pressed(target: int = 0) -> void:
