@@ -576,3 +576,240 @@ Each found by looking at captured frames, fixed, and shot again:
   hidden limbs show as a pale ghost (`room/volume/`).
 - F4's path builder failed drawing the route targets: it reads each target's `color`, which the
   Arboretum's targets lacked. Found by the play-through runner.
+
+## 7. Botany Lab: Ramon's walkthrough, part 1 (9 Oct)
+
+He renamed the Arboretum the Botany Lab (c280514, text only) and walked it. The brief, in short:
+- bring it in line with the newer Voxel Lab and Aquatic Lab (paths, floating panels, slice
+  controls, signage, presentation);
+- simplify the hall's route;
+- fix the trees leaning when turned;
+- give each of the first three pedestals its own technique;
+- keep the oak, and grow its branches out of the trunk;
+- replace the grove with a second room comparing blocky and smooth voxel landscapes side by side,
+  as a separate scene behind a holographic door and a loading screen.
+
+**Fork, per his rule** ("make it as botany labs tscn"): `botany_lab.tscn` beside `arboretum.tscn`;
+its scripts in `botany_lab/`. `arboretum.tscn`, its scripts and the menu card stay as they are
+until he says to switch.
+
+**Baseline, before anything changed** (16:18, `smoke_test_output/arboretum/baseline_9oct/`):
+- proof: every check passes;
+- play-through: 29 of 29;
+- frames of the room;
+- perf: the door 4.71 ms, at 01 3.86, at the oak 1.99, near the grove door 7.80;
+- video memory: 1.3 GB, 2.0 GB with the grove.
+
+**What the research found** (three surveys, 9 Oct):
+- The Arboretum carries the 4 Oct kit. Its walker and rig predate the pen's GroundBasis4D, and its
+  path network has no colour exports.
+- **Why the trees lean.**
+  - The showcase turns a tree with `from_zw * from_wy`, which tips the trunk (y) into W.
+  - Composed with the other drag, that becomes a real lean, and the lean then precesses with the
+    turntable.
+  - The Voxel Lab's showcase already fixed this (`Ground.cleaned(Ground.sliced(...))`, 8 Oct: "a
+    tree leaned 20 degrees").
+- **The two kits.** The Aquatic Lab's carried kit is a superset of the Arboretum's, except for the
+  research board's "methods" layout and charts, which are the Arboretum's own.
+- **Why some of the path reads grey.**
+  - A destination turns "completed" the moment you arrive, and the completed symbol is drawn in
+    grey-blue #668BAE.
+  - The frames carry one grey stroke.
+  - `under_color` never follows the B palette.
+- **Voxels.**
+  - The native VoxelWorld4D always dual-contours. A blocky look needs box content (the Voxel Lab's
+    bricks) or the project's own box-per-cell mesher (`botany/voxel_tree_builder.gd`).
+  - The sandbox's GDScript voxel world (Trym's, tidied by Aaron) fails to parse. The native one is
+    Andrew's.
+  - No code anywhere makes cohesive foliage masses. The dual-contoured leaf balls fuse wherever they
+    overlap, so fewer, bigger, jittered balls should merge into masses.
+  - A blocky and a smooth version of the same tree already exist: the voxel bake and the
+    dual-contoured bake.
+
+### The plan (78 steps)
+
+**A. The fork (1-8)**
+1. `botany_lab/carried/`: a copy of the Aquatic Lab's carried kit, with its paths rewritten. Leave
+   out water4d and flock.
+2. Merge into that copy:
+   - from the Voxel Lab: `kit_showcase_4d.gd` (the GroundBasis turn, `reset_view`, `max_tilt`,
+     `band_print`), `vl_shimmer_4d.gd` and `vl_load_board.gd`;
+   - from the Arboretum: the "methods" research layout and its charts.
+3. `botany_lab.tscn`: a copy of `arboretum.tscn`, repointed to the new root and the carried kit.
+   The GroveRoom, the Grove and its route go.
+4. `botany_lab/botany_lab_4d.gd`: a fork of `arboretum_4d.gd` on the new kit:
+   - the pen's walker values (`pen_walk`);
+   - Q/E stepping through W, paused at E spots;
+   - the rig's slice turning off in the hall (the exhibits turn, as in the other labs).
+5. Fork the exhibits into `botany_lab/exhibits/` (base, VX, DC, LF, OK), pointed at the new kit's
+   style, print and build scripts. The builders (`botany/*`) and the bakes stay shared.
+6. `botany_lab/README.md`: what is forked, what is shared, and what not to delete.
+7. Fork the runners into `botany_lab/scripts/` (proof, play, capture, perf, paths), each taking
+   `scene=`.
+8. Check: the fork opens clean, and the proof passes on the untouched content.
+
+**B. The entrance and the dev HUD (9-16)**
+9. The corridor:
+   - the arrival corridor's ceiling goes from 6 m to 7.5 m, and the entrance doorway from 4.2 m to
+     5 m;
+   - the intro is kept as it is.
+10. Tab opens the dev HUD: the Aquatic Lab's light editor. It lists every kit light in the scene,
+    with strength, spread, softness, reach and fall-off, a top view, and SAVE to
+    `botany_lab_lights.cfg`.
+11. The artist panel (trees, wind, leaves, hall) opens with it on Tab, on the left. F1 stays as an
+    alias.
+12. The lights get clear names in the editor's list: Pedestal 01 to 04, Entrance, Door.
+13. The mouse is freed while the HUD is open and captured again when it closes, as in the Aquatic
+    Lab.
+14. B palette: the path's `under_color` follows the floor swatch (`floor_swatch "kit_floor"`).
+15. Check: Tab opens and closes the HUD, and a slider moves a light (frames before and after).
+16. Check the HUD at 4K and 145% UI.
+
+**C. The route (17-26)**
+17. A new `botany_lab/scripts/_make_paths_runner.gd` writes `botany_lab/paths/hall.tres`.
+18. The layout:
+    - a straight spine down the hall's middle (x 0), from the corridor to the oak's front ring;
+    - one 45-degree branch to each pedestal's approach ring, on the side facing the spine;
+    - the oak's ring on the spine itself;
+    - a straight run round the oak to the back door.
+19. The pedestals keep their places: 01 left, 02 right, 03 left, the oak at the end. Each branch
+    leaves the spine 3.6 m before its pedestal and meets the ring at 45 degrees.
+20. Each ring sits 1.2 m off its pedestal's deck edge, which leaves room to walk round the
+    showcase.
+21. The paths are drawn the newer labs' way: `edge_color #1761d7`, `frame_margin 0.12`,
+    `floor_swatch "kit_floor"`. The grey of the frames and the done ticks goes to blue.
+22. Route states the Voxel Lab's way:
+    - visited within the footprint plus 2.6 m;
+    - focused (cyan) within 2 m;
+    - completed (blue) once you leave.
+23. The tour pad joins the route as a short branch off the spine by the entrance.
+24. The targets become the newer `water_target_4d` (label, size, w_depth), so the F4 builder works.
+25. Check: the graph validates (rule 10), and the proof passes.
+26. Check: frames of the whole route, from above and while walking it.
+
+**D. Floating panels (27-35)**
+27. The four booth consoles (metal stand and black screen) and the TourSign console are retired.
+28. Each pedestal gets a floating panel (the Aquatic Lab's `float_panel_4d`):
+    - 1.6 m wide;
+    - 1.2 m beside its approach ring, between the ring and the spine;
+    - facing the way you come.
+29. The panel's face: the number, title and kicker, and three live rows (tetrahedra, build time,
+    tier) from `exhibit.face()`.
+30. E gives more, a page at a time: METHOD, WHAT IT SHOWS, LIMITS, MEASURED.
+    - These are the card's words, so the card overlay goes.
+    - The prompt reads "E: More about it".
+31. The tour pad gets a floating panel, "THE WHOLE SHOWCASE", with E to play it.
+32. The panels light when you are near (`set_near`) and turn to face you.
+33. When you are not at its panel, E at a pedestal still does the tree's own thing. The strip says
+    which E does what.
+34. The floor numbers (01 VOXELS and so on) stay, moved to sit beside each ring.
+35. Check: each panel's face and pages (frames), and E paging through them (play runner).
+
+**E. The slice (36-41)**
+36. The showcase turns with the floor-only frame (`Ground.cleaned(Ground.sliced(...))`). Up is
+    never touched, so trunks stay upright.
+37. `max_tilt` is 35 degrees for the trees, so no crown is ever lost.
+38. R puts the tree back (`reset_view`), and the strip shows it.
+39. The turn resets when a story starts and when you leave a pedestal.
+40. The wind keeps its W share: it is a sway, not a lean. Checked in frames.
+41. Check: frames of a tree after a run of drags, and the measured lean of its trunk (its y
+    component) stays 0.
+
+**F. 01 Voxels: one language (42-47)**
+42. The gold twig skeleton goes. The exhibit shows the voxel method itself.
+43. The story:
+    - THE GRID: a cage of the 12.5 cm cells round the tree;
+    - GROWING: the cells fill in by birth order (`vx_stage_0..5`), trunk first;
+    - THE COST: cells and tetrahedra;
+    - THE SLICE;
+    - THE WIND.
+44. The cage is drawn as the lab grid's lines on a box, so there is no new mesh language.
+45. The leaves stay voxel cells, blocky like the rest.
+46. E: the cell size, 12.5 to 18.75 to 25 cm, as now.
+47. Check: a frame of each part of the story.
+
+**G. 02 Smooth voxels: smooth throughout (48-54)**
+48. The boxy "spheres" stage goes; it was showing the voxel stages. The story shows the actual
+    sphere edits: smooth balls along the branches, then contoured into one surface.
+49. The foliage becomes fewer, bigger leaf balls that overlap and fuse into masses:
+    - leaf radius from 0.22 m to about 0.5 m;
+    - three balls to a clump, offset and sized at random (seeded);
+    - clumps only at the outer twigs.
+50. A new bake, `baked/bl_dc_wood.res`, with that foliage. The Arboretum's bake is untouched.
+51. The story:
+    - THE BRANCHES: sphere chains, smooth;
+    - THE CONTOUR: the engine's dual contouring;
+    - THE LEAVES: the masses;
+    - THE SLICE;
+    - THE WIND.
+52. E grows a new seed live, as now, with the new foliage.
+53. Check: frames, the foliage reading as masses, and the tetrahedra and build time recorded.
+54. If the masses still read as balls, try the Clipped generator with noise over a box. Note which
+    way won.
+
+**H. 03 Lofted: a branch and loft showcase (55-60)**
+55. The spherical foliage clumps go.
+56. The story:
+    - THE SECTIONS: the gold station rings along every branch, where the loft samples;
+    - THE SKIN: lofted through them, branch order by branch order, trunk first;
+    - THE JOINTS: close on a fork, where the twigs grow out of the lofted wood;
+    - THE SLICE;
+    - THE WIND.
+57. E: the resolution (as baked, coarse, fine, in sides and rings), shown on the wood itself.
+58. The panel's words say how it differs from 02: a surface built along each branch, not a volume
+    filled and then contoured.
+59. If anything changes in the wood, bake `bl_lf_*`; otherwise share the existing bake.
+60. Check: a frame of each part.
+
+**I. The oak: grown from its trunk (61-65)**
+61. The gold bones go, and the "form" part becomes GROWING:
+    - the trunk alone (`oak_order_0`);
+    - each branch order growing out of the wood in turn (`oak_order_1..3`), each revealed with a
+      short scale-in from its base.
+62. Then the leaves grow (as now), then the slice and the wind. The final state is the oak as it
+    is now.
+63. The oak's dense trunk, its silhouette and its foliage are unchanged.
+64. Check: the growth in frames, one a second.
+65. Check: the oak's frame time against the baseline.
+
+**J. The door and the second room (66-76)**
+66. A black-text destination sign over the back door, Voxel Lab style (`kind "sign"`, plain wall):
+    "TWO VOXEL WORLDS / BLOCKY AND SMOOTH, SIDE BY SIDE".
+67. The back door becomes a holographic doorway (`vl_shimmer_4d`, 3.2 x 4.1). Walking in flashes
+    out and loads `botany_lab/compare/botany_compare.tscn`.
+68. `botany_compare.tscn`: a kit room of about 36 x 12 x 48 m, with the same walker, rig, HUD and
+    dev HUD (Tab, with its own lights file).
+69. The loading board (`vl_load_board`):
+    - "TWO VOXEL WORLDS";
+    - the parts coming in, with a dot per chunk;
+    - it finishes when both worlds are steady and every tree is placed.
+70. LEFT, blocky:
+    - a square ground display (box pedestal style, about 14 x 22 m) of 4D voxel terrain;
+    - 0.5 m cells, heights from noise over x, z and w, meshed box per cell like the voxel tree;
+    - trees from the blocky bakes (`grove_vx_*`), with voxel leaves;
+    - square silhouettes throughout.
+71. RIGHT, smooth:
+    - the same display size and the same height noise, as Andrew's native VoxelWorld4D
+      (dual-contoured, the Landscape generator clipped to the square);
+    - lofted trees (`grove_lf_*`, `oak_lite2/3`) with the GPU leaves.
+72. Both halves use the same layout seeds, so the same hills and the same tree spots are built two
+    ways.
+73. The centre path runs straight down the middle between the halves, with a ring at each half's
+    viewpoint and one at the far end.
+74. The explanations:
+    - left blue wall, THE BLOCKY WAY: a heading, three short lines, and a diagram (cells to boxes);
+    - right blue wall, THE SMOOTH WAY: cells to a contoured surface;
+    - one floating panel per side by its ring, with live numbers (voxels, tetrahedra, build ms).
+75. The way back: a holographic doorway at the near end. The hall spawns you at its back door,
+    facing in.
+76. Check: the load time, the frame times on the path, frames of both halves and of the boards,
+    and the trip there and back.
+
+**K. Close (77-78)**
+77. Full checks on the fork:
+    - proof, play-through and frames, against the baseline;
+    - perf against the baseline, plus the new room's numbers.
+78. Commit by explicit paths. Then:
+    - update this handover's status, and memory;
+    - add his questions at the end: when to switch the menu to the fork, and whether to retire the
+      grove.

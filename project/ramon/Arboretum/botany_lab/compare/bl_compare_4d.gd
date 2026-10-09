@@ -1,0 +1,635 @@
+extends Node4D
+
+## BOTANY LAB, THE SECOND ROOM: TWO VOXEL WORLDS (section 7's plan steps 66-76; Ramon, 9 Oct: "A
+## side-by-side comparison of two voxel vegetation systems ... Divide the room into two major showcase
+## areas ... one on the left and one on the right. Keep a central path ... The left half of the room
+## should present a deliberately square, blocky voxel aesthetic ... The right half should contrast ...
+## smooth or dual-contouring-style voxel terrain ... lofted tree structures ... more realistic foliage
+## ... different rendering or generation approaches applied to comparable environmental content").
+##
+## THE SAME LAND, TWICE. One height over the floor, h(x, z, w): FastNoiseLite's noise over the
+## display's own x, z and W (so the hills change as you step through W), 0.6 to 2.8 m. Two square
+## ground displays, one each side of the path, 14 x 26 m, the same hills on both:
+##   LEFT, THE BLOCKY WAY   the land written into 4D cells of 0.5 m (a column of cells under every
+##                          height, five cells deep in W, the top one grass) and drawn one box per
+##                          cell with only the faces no neighbour hides: the same box mesher as the
+##                          Botany Lab's pedestal 01 (botany/voxel_tree_builder.gd mesh()). Its
+##                          trees are the voxel trees (25 cm cells, the bake's grove_vx_*). Square
+##                          everywhere: ground, trunks, crowns.
+##   RIGHT, THE SMOOTH WAY  the same heights in Andrew's native voxel world (VoxelWorld4D): a column
+##                          of soil under every height and a ball of grass at its top, voxels of
+##                          0.3 m; the engine runs one dual-contoured surface through them all, so
+##                          the columns and balls melt into rounded hills. Its trees are lofted oaks
+##                          (the bake's grove_ok_*) with leaves the graphics card draws.
+## The trees stand on the same spots on both sides, so the difference is only the method.
+##
+## AROUND THEM: a path down the middle (the carried PathCreator, its graph made here), a ring at each
+## side's middle and one at the far end; each side's blue wall explains its method (a page printed into
+## the wall: a heading, three lines, a diagram); a floating panel by each ring with the live numbers.
+## A loading board while the land and the trees are built; the holographic doorway in the near wall
+## leads back to the hall (botany_lab.tscn), which puts you at its back door.
+##
+## NO class_name (engine_gotchas.md).
+
+const KitPlayer := preload("res://ramon/Arboretum/botany_lab/carried/kit/kit_player.gd")
+const Style := preload("res://ramon/Arboretum/botany_lab/carried/kit/kit_style.gd")
+const Hud := preload("res://ramon/Arboretum/botany_lab/carried/scripts/rd_hud.gd")
+const LabGrid := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/lab_grid.gd")
+const LabPrint := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/lab_print.gd")
+const Mats := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/lab_materials.gd")
+const Shimmer := preload("res://ramon/Arboretum/botany_lab/carried/voxel_lab/vl_shimmer_4d.gd")
+const LoadBoard := preload("res://ramon/Arboretum/botany_lab/carried/voxel_lab/vl_load_board.gd")
+const Graph := preload("res://ramon/Arboretum/botany_lab/carried/PathCreator/graph/path_graph.gd")
+const PenWalk := preload("res://ramon/Arboretum/botany_lab/pen_walk.gd")
+const LightEditor := preload("res://ramon/Arboretum/botany_lab/room/bl_light_editor.gd")
+const Voxel := preload("res://ramon/Arboretum/botany/voxel_tree_builder.gd")
+const Bake := preload("res://ramon/Arboretum/botany/bake_store.gd")
+const BStyle := preload("res://ramon/Arboretum/botany/botany_style.gd")
+const Pivots := preload("res://ramon/Arboretum/botany/tree_pivots.gd")
+const Leaves := preload("res://ramon/Arboretum/botany/leaf_field_4d.gd")
+const Wind := preload("res://ramon/Arboretum/botany/wind_4d.gd")
+const Species := preload("res://ramon/Arboretum/botany/tree_species.gd")
+
+const HALL := "res://ramon/Arboretum/botany_lab.tscn"
+const ARRIVE_META := "botany_arrive"
+
+@export_group("Land")
+## The two displays' middles (x, z) and their size (x, z), metres.
+@export var left_at: Vector2 = Vector2(-9.0, -2.0)
+@export var right_at: Vector2 = Vector2(9.0, -2.0)
+@export var display_size: Vector2 = Vector2(14.0, 26.0)
+## The display's slab (its top, where the land starts), and the land's heights over it.
+@export var slab_height: float = 0.35
+@export var height_range: Vector2 = Vector2(0.6, 2.8)
+## How deep in W the land is (metres either side of the slice).
+@export var w_half: float = 1.25
+## The blocky side's cells and the smooth side's voxels (m).
+@export var block_cell: float = 0.5
+@export var smooth_voxel: float = 0.3
+@export var seed: int = 4242
+## The trees' spots, the same on both sides (x, z from the display's middle).
+@export var tree_spots: Array = [Vector2(-3.4, 8.0), Vector2(3.0, 3.6), Vector2(-2.2, -2.4), Vector2(3.4, -7.4), Vector2(-3.0, -10.6)]
+
+@export_group("Visit")
+@export var start_at: Vector2 = Vector2(0.0, 21.0)
+@export var camera_distance: float = 5.5
+@export var camera_height: float = 2.6
+@export var camera_pitch_degrees: float = -10.0
+
+var player: CharacterBody4D
+var hud: Control
+var light_editor: Control
+var noise := FastNoiseLite.new()
+## What was built, for the board, the panels and the runners.
+var stats: Dictionary = {"blocky": {}, "smooth": {}, "trees": {}}
+var loading: bool = true
+var _board: Control
+var _board_t: float = 0.0
+var _world: Node4D
+var _trigger: Node4D
+var _edits: Array = []
+var _sent: int = 0
+var _phase: String = "idle"
+var _stable: int = 0
+var _last_tets: int = -1
+var _smooth_t0: int = 0
+var _trees_done: bool = false
+var _leaving: bool = false
+var _door_z: float = 0.0
+
+
+func _ready() -> void:
+	noise.seed = seed
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise.frequency = 0.085
+	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	noise.fractal_octaves = 3
+	var room: Node = get_node_or_null("Room")
+	if room != null:
+		room.set("mood_overrides", Style.ROOM_LIGHT.duplicate(true))
+		room.call("set_mood", "bright", true, false)
+		room.set("mood_key", KEY_NONE)
+	Style.apply("bright")
+	# The land's two lab-grid colours: grass on the top cells, soil under them (lines a little darker,
+	# the kit's contrast).
+	LabGrid.set_swatch("botany_grass", Color(0.36, 0.55, 0.22), Color(0.29, 0.46, 0.17), Color(0.33, 0.51, 0.20), 0.6)
+	LabGrid.set_swatch("botany_soil", Color(0.45, 0.36, 0.27), Color(0.37, 0.29, 0.21), Color(0.42, 0.33, 0.25), 0.6)
+	_build_slabs()
+	_build_blocky()
+	_start_smooth()
+	_build_route()
+	_build_walls()
+	player = KitPlayer.make()
+	player.name = "Player"
+	PenWalk.apply(player)
+	add_child(player)
+	var rig: Node = player.get_node_or_null("CameraRig")
+	if rig != null:
+		rig.set("slice_turning", false)
+		rig.set("pitch", deg_to_rad(camera_pitch_degrees))
+		rig.set("distance", camera_distance)
+		rig.set("_zoom_target", camera_distance)
+		rig.set("_rest_distance", camera_distance)
+		rig.set("pivot_height", camera_height)
+		rig.set("_home_pivot", camera_height)
+		rig.call("_apply")
+	go_to(Vector4(start_at.x, 0.05, start_at.y, 0.0), 0.0)
+	get_tree().root.remove_meta(ARRIVE_META)
+	for pn in [get_node_or_null("PanelBlocky"), get_node_or_null("PanelSmooth")]:
+		if pn != null:
+			pn.set("player", player)
+	_build_hud()
+	_build_door()
+	_open_board()
+
+
+# -- the land ------------------------------------------------------------------------------------------------
+
+## The height of the land over the slab at (x, z, w), display-local metres.
+func height_at(x: float, z: float, w: float) -> float:
+	var n: float = noise.get_noise_3d(x, z, w * 1.6) * 0.5 + 0.5
+	return lerpf(height_range.x, height_range.y, pow(clampf(n, 0.0, 1.0), 1.35))
+
+
+## The two slabs the land stands on: dark, low, square (the Voxel Lab's square ground display).
+func _build_slabs() -> void:
+	for side in [["SlabBlocky", left_at], ["SlabSmooth", right_at]]:
+		var at: Vector2 = side[1]
+		var size := Vector4(display_size.x + 0.4, slab_height, display_size.y + 0.4, w_half * 2.0 + 0.6)
+		var m := MeshInstance4D.new()
+		m.name = String(side[0])
+		m.mesh = Mats.box_mesh(size)
+		m.position = Vector4(at.x, slab_height * 0.5, at.y, 0.0)
+		m.material_override = LabGrid.material("kit_metal", size, Vector4(at.x, slab_height * 0.5, at.y, 0.0))
+		add_child(m)
+
+
+## LEFT: the land in 0.5 m cells, a box each (the pedestal 01 mesher), the top cell grass.
+func _build_blocky() -> void:
+	var t0: int = Time.get_ticks_usec()
+	var c: float = block_cell
+	var nx: int = int(round(display_size.x / c))
+	var nz: int = int(round(display_size.y / c))
+	var nw: int = int(round(w_half * 2.0 / c))
+	var soil: Dictionary = {}
+	var grass: Dictionary = {}
+	for ix in nx:
+		for iz in nz:
+			for iw in nw:
+				var x: float = (float(ix) + 0.5) * c - display_size.x * 0.5
+				var z: float = (float(iz) + 0.5) * c - display_size.y * 0.5
+				var w: float = (float(iw) + 0.5) * c - w_half
+				var top: int = maxi(1, int(round(height_at(x, z, w) / c)))
+				for iy in top:
+					var k := Vector4i(ix - nx / 2, iy, iz - nz / 2, iw - nw / 2)
+					if iy == top - 1:
+						grass[k] = Vector3(0.0, 0.0, 0.0)
+					else:
+						soil[k] = Vector3(0.0, 0.0, 0.0)
+	var all: Dictionary = soil.duplicate()
+	all.merge(grass)
+	var holder := Node4D.new()
+	holder.name = "LandBlocky"
+	# Cells centred on the slice in W (an odd count: the middle one straddles w 0, so the slice never
+	# runs along a cell's face), and in x and z on the display.
+	holder.position = Vector4(left_at.x - float(nx % 2) * c * 0.5, slab_height, left_at.y - float(nz % 2) * c * 0.5, -float(nw % 2) * c * 0.5 + c * 0.5 * float(1 - nw % 2))
+	add_child(holder)
+	var tets: int = 0
+	for part in [["Grass", grass, "botany_grass"], ["Soil", soil, "botany_soil"]]:
+		var mesh: ArrayTetraMesh4D = Voxel.mesh(all, c, part[1])
+		var mi := MeshInstance4D.new()
+		mi.name = String(part[0])
+		mi.mesh = mesh
+		var bounds := Vector4(display_size.x, height_range.y, display_size.y, w_half * 2.0)
+		mi.material_override = LabGrid.material(String(part[2]), bounds, holder.position)
+		holder.add_child(mi)
+		tets += mesh.get_simplex_cell_vertex_indices().size() / 4
+	stats["blocky"] = {"cells": all.size(), "tets": tets, "ms": (Time.get_ticks_usec() - t0) / 1000.0}
+
+
+## RIGHT: the same heights in the engine's voxel world: a column of soil under every height and a ball
+## of grass at its top, written once the world's chunks there are defined (an edit into an undefined
+## chunk is lost: engine_capabilities.md), then meshed by the engine.
+func _start_smooth() -> void:
+	_smooth_t0 = Time.get_ticks_usec()
+	var v: float = smooth_voxel
+	_world = ClassDB.instantiate("VoxelWorld4D")
+	_world.name = "LandSmooth"
+	var gen = ClassDB.instantiate("BoxVoxelGenerator4D")
+	gen.set("material_inner", 254)
+	gen.set("material_outer", 254)
+	_world.set("generator", gen)
+	var pal = ClassDB.instantiate("VoxelMaterialPalette4D")
+	pal.set("colors", PackedColorArray([Color(0.5, 0.5, 0.5), Color(0.42, 0.33, 0.24), Color(0.36, 0.55, 0.22)]))
+	_world.set("material_palette", pal)
+	_world.set("scale", Vector4(v, v, v, v))
+	_world.position = Vector4(right_at.x, slab_height, right_at.y, 0.0)
+	add_child(_world)
+	# The trigger beside the world, at its middle in metres (as the smooth tree's builder places it);
+	# its reach in voxels.
+	_trigger = ClassDB.instantiate("VoxelLoadTrigger4D")
+	_trigger.name = "LandSmoothTrigger"
+	add_child(_trigger)
+	_trigger.set("voxel_world_path", _trigger.get_path_to(_world))
+	_trigger.set("position", _world.position + Vector4(0.0, height_range.y * 0.5, 0.0, 0.0))
+	var reach: float = Vector4(display_size.x * 0.5, height_range.y, display_size.y * 0.5, w_half).length()
+	_trigger.set("load_distance", reach / v + 12.0)
+	# The edits, in voxels from the world's origin (the display's middle at the slab's top).
+	var c: float = block_cell
+	var nx: int = int(round(display_size.x / c))
+	var nz: int = int(round(display_size.y / c))
+	var nw: int = int(round(w_half * 2.0 / c))
+	# A small offset off the sample rows, as the Voxel Lab's bricks have (vl_recipe.gd JITTER): faces on
+	# a sample row fray.
+	var jit := Vector4(0.031, 0.027, 0.023, 0.019)
+	for ix in nx:
+		for iz in nz:
+			for iw in nw:
+				var x: float = (float(ix) + 0.5) * c - display_size.x * 0.5
+				var z: float = (float(iz) + 0.5) * c - display_size.y * 0.5
+				var w: float = (float(iw) + 0.5) * c - w_half
+				var h: float = height_at(x, z, w)
+				var col_top: float = maxf(h - 0.45, 0.05)
+				var box = ClassDB.instantiate("BoxVoxelEdit4D")
+				box.set("position", (Vector4(x - c * 0.5, 0.0, z - c * 0.5, w - c * 0.5) + jit) / v)
+				box.set("size", Vector4(c, col_top, c, c) / v)
+				box.set("fill_material", 1)
+				_edits.append(box)
+				var ball = ClassDB.instantiate("SphereVoxelEdit4D")
+				ball.set("center", (Vector4(x, h - 0.38, z, w) + jit) / v)
+				ball.set("radius", 0.52 / v)
+				ball.set("fill_material", 2)
+				_edits.append(ball)
+	_phase = "loading"
+
+
+func _feed_smooth() -> void:
+	match _phase:
+		"loading":
+			var probe: Array = [Vector4(-display_size.x * 0.5, 0.0, -display_size.y * 0.5, -w_half), Vector4(display_size.x * 0.5, height_range.y, display_size.y * 0.5, w_half),
+				Vector4.ZERO, Vector4(-display_size.x * 0.5, height_range.y, display_size.y * 0.5, w_half), Vector4(display_size.x * 0.5, 0.0, -display_size.y * 0.5, -w_half)]
+			var data = _world.call("get_voxel_data")
+			var ready: bool = data != null
+			if ready:
+				for p in probe:
+					var k := Vector4i(int(floor(p.x / smooth_voxel)), int(floor(p.y / smooth_voxel)), int(floor(p.z / smooth_voxel)), int(floor(p.w / smooth_voxel)))
+					if not bool(data.call("is_voxel_defined", k)):
+						ready = false
+						break
+			if ready:
+				_phase = "editing"
+		"editing":
+			var n: int = mini(1500, _edits.size() - _sent)
+			for i in n:
+				_world.call("apply_edit", _edits[_sent + i])
+			_sent += n
+			if _sent >= _edits.size():
+				_phase = "meshing"
+		"meshing":
+			var t: int = smooth_tets()
+			if t == _last_tets and t > 0:
+				_stable += 1
+			else:
+				_stable = 0
+			_last_tets = t
+			if _stable >= 30:
+				_phase = "ready"
+				stats["smooth"] = {"edits": _edits.size(), "tets": t, "voxel": smooth_voxel, "ms": (Time.get_ticks_usec() - _smooth_t0) / 1000.0}
+
+
+## The smooth land's tetrahedra as meshed so far (every chunk mesh under the world).
+func smooth_tets() -> int:
+	var n: int = 0
+	if _world == null:
+		return 0
+	for m in _world.find_children("*", "MeshInstance4D", true, false):
+		var mesh: Mesh4D = (m as MeshInstance4D).mesh
+		if mesh is TetraMesh4D:
+			n += (mesh as TetraMesh4D).get_simplex_cell_vertex_indices().size() / 4
+	return n
+
+
+# -- the trees ---------------------------------------------------------------------------------------------------
+
+## The trees on both sides, on the same spots: voxel trees left, lofted oaks with GPU leaves right.
+func _place_trees() -> void:
+	var t0: int = Time.get_ticks_usec()
+	var vx: Array = []
+	var vsk: Array = []
+	for i in 3:
+		vx.append(Bake.load_res("grove_vx_%d" % i))
+		vsk.append(Bake.load_res("grove_sk_%d_skeleton" % i))
+	var ok: Array = [Bake.load_res("grove_ok_0"), Bake.load_res("grove_ok_1")]
+	var osk: Array = [Bake.load_res("grove_oak_0_skeleton"), Bake.load_res("grove_oak_1_skeleton")]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed + 7
+	var drawn := {"blocky": 0, "smooth": 0, "leaves": 0}
+	var leaf_src: Dictionary = {}
+	var mats_v: Dictionary = {}
+	var mats_o: Dictionary = {}
+	for i in tree_spots.size():
+		var spot: Vector2 = tree_spots[i]
+		var yaw: float = rng.randf() * TAU
+		var scale_k: float = rng.randf_range(0.9, 1.1)
+		# Left: a voxel tree, standing on the top of its column of cells.
+		var si: int = i % 3
+		if vx[si] != null and vsk[si] != null:
+			var top: float = maxf(1.0, round(height_at(spot.x, spot.y, 0.0) / block_cell)) * block_cell
+			var t: Node4D = _tree(vx[si], vsk[si], Vector4(left_at.x + spot.x, slab_height + top - 0.1, left_at.y + spot.y, 0.0), yaw, 3.9 * scale_k, false, mats_v, si)
+			t.name = "BlockyTree%d" % i
+			drawn["blocky"] = int(drawn["blocky"]) + (vx[si] as TetraMesh4D).get_simplex_cell_vertex_indices().size() / 4
+		# Right: an oak, on the rounded land (its height there, a little sunk).
+		var oi: int = i % 2
+		if ok[oi] != null and osk[oi] != null:
+			var h: float = height_at(spot.x, spot.y, 0.0)
+			var o: Node4D = _tree(ok[oi], osk[oi], Vector4(right_at.x + spot.x, slab_height + h - 0.15, right_at.y + spot.y, 0.0), yaw, 5.2 * scale_k, true, mats_o, oi)
+			o.name = "SmoothTree%d" % i
+			drawn["smooth"] = int(drawn["smooth"]) + (ok[oi] as TetraMesh4D).get_simplex_cell_vertex_indices().size() / 4
+			var lf := Node4D.new()
+			lf.name = "Leaves"
+			lf.set_script(Leaves)
+			Species.oak_leaves(lf, true)
+			o.add_child(lf)
+			if leaf_src.has(oi):
+				lf.call("share_from", leaf_src[oi])
+			else:
+				lf.call("grow_leaves", osk[oi], 60 + oi)
+				leaf_src[oi] = lf
+			drawn["leaves"] = int(drawn["leaves"]) + int(lf.get("count"))
+	stats["trees"] = {"count": tree_spots.size(), "blocky_tets": drawn["blocky"], "smooth_tets": drawn["smooth"], "leaves": drawn["leaves"],
+		"ms": (Time.get_ticks_usec() - t0) / 1000.0}
+	_trees_done = true
+
+
+func _tree(mesh: Resource, sk: Resource, at: Vector4, yaw: float, height: float, oak: bool, mats: Dictionary, si: int) -> Node4D:
+	var tree := Node4D.new()
+	add_child(tree)
+	var summ: Dictionary = sk.call("summary")
+	var s: float = height / maxf(float(summ["height"]), 0.5)
+	tree.position = at
+	tree.basis = Basis4D.from_zx(yaw)
+	tree.scale = Vector4(s, s, s, s)
+	if not mats.has(si):
+		mats[si] = Pivots.texture(sk)
+	var mi := MeshInstance4D.new()
+	mi.mesh = mesh
+	var mat: TetraMaterial4D = BStyle.tree_material(sk, float(summ["height"]), oak, mats[si])
+	mi.material_override = mat
+	tree.add_child(mi)
+	var wind: Node = Wind.of(get_tree())
+	if wind != null:
+		wind.call("register", BStyle.shader_of(mat), tree)
+	return tree
+
+
+# -- the route, the walls, the HUD, the door ------------------------------------------------------------------
+
+## Down the middle: from the door to the far end, a ring at each side's middle (facing it) and one at
+## the end.
+func _build_route() -> void:
+	var net: Node = get_node_or_null("Paths/Center")
+	if net == null:
+		return
+	var g: Resource = Graph.new()
+	var b := {"band": 8.0}
+	var s: int = g.call("add_node", "start", Vector4(0.0, 0.0, 20.0, 0.0), b)
+	var j1: int = g.call("add_node", "junction", Vector4(0.0, 0.0, 4.2, 0.0), b)
+	var dl: int = g.call("add_node", "destination", Vector4(-1.2, 0.0, 3.0, 0.0), {"band": 8.0, "state": "available", "target": "Blocky", "frame": "none", "approach": Vector2(1, 0)})
+	var j2: int = g.call("add_node", "junction", Vector4(0.0, 0.0, -1.0, 0.0), b)
+	var dr: int = g.call("add_node", "destination", Vector4(1.2, 0.0, -2.2, 0.0), {"band": 8.0, "state": "arrival", "target": "Smooth", "frame": "none", "approach": Vector2(-1, 0)})
+	var e: int = g.call("add_node", "destination", Vector4(0.0, 0.0, -18.0, 0.0), {"band": 8.0, "state": "arrival", "target": "End", "frame": "none", "approach": Vector2(0, 1)})
+	g.call("add_edge", s, j1, "primary", "static", 8.0)
+	g.call("add_edge", j1, dl, "primary", "static", 8.0)
+	g.call("add_edge", j1, j2, "primary", "static", 8.0)
+	g.call("add_edge", j2, dr, "primary", "static", 8.0)
+	g.call("add_edge", j2, e, "primary", "static", 8.0)
+	net.set("graph", g)
+
+
+## The two blue walls' pages: the room claims each side wall's stretch beside its display, code blue,
+## and prints a page of its own into it (a heading, three lines, a diagram), as the Aquatic Lab's fish
+## wall prints its cards.
+func _build_walls() -> void:
+	var hall: Node = get_node_or_null("Hall")
+	if hall == null:
+		return
+	for side in ["w", "e"]:
+		var holder := Node4D.new()
+		holder.name = "Wall_" + side
+		add_child(holder)
+		hall.call("claim_wall", side, "blue", holder, -16.0, 12.0)
+	(func() -> void: _print_walls()).call_deferred()
+
+
+func _print_walls() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var hall: Node = get_node_or_null("Hall")
+	for side in ["w", "e"]:
+		var blocky: bool = side == "w"
+		var tex: Texture2D = await LabPrint.render(get_tree(), Vector2i(2800, 1000), func(c: Control) -> void: _page(c, blocky))
+		if tex == null:
+			continue
+		# 14 x 5 m, the page's own shape (2800 x 1000), centred on the display.
+		for tg in hall.call("print_targets", side, -9.0, 5.0, 5.2, 10.2):
+			var m: TetraMaterial4D = (tg[0] as MeshInstance4D).material_override as TetraMaterial4D
+			if m != null:
+				LabGrid.set_print(m, tex, tg[1], tg[2], Color.WHITE, 0.2)
+				LabGrid.set_print_strength(m, 1.0)
+				m.get_cross_section_material_3d().set_shader_parameter("print_aa", 1.0)
+
+
+## A wall's page: white on clear (the wall's blue shows).
+func _page(c: Control, blocky: bool) -> void:
+	var sz: Vector2 = c.size
+	var u: float = sz.y / 1000.0
+	var white := Color(1, 1, 1, 1)
+	var soft := Color(1, 1, 1, 0.85)
+	var fb: Font = LabPrint.font("black")
+	var fs: Font = LabPrint.font("bold")
+	var fl: Font = LabPrint.font("body")
+	var x: float = 80.0 * u
+	c.draw_string(fs, Vector2(x, 120.0 * u), "THE LEFT HALF" if blocky else "THE RIGHT HALF", HORIZONTAL_ALIGNMENT_LEFT, -1, int(44 * u), soft)
+	c.draw_string(fb, Vector2(x, 270.0 * u), "THE BLOCKY WAY" if blocky else "THE SMOOTH WAY", HORIZONTAL_ALIGNMENT_LEFT, -1, int(150 * u), white)
+	var lines: Array = ["Space is cut into 4D cells. A cell is full or empty.",
+		"Every full cell is drawn as a box: only the faces with an empty neighbour.",
+		"Square at every size you can afford: halve the cell, eight times the cost."] if blocky else [
+		"The same land, written as balls and columns into the engine's voxel world.",
+		"Dual contouring: each cell gets one point where the surface really crosses it.",
+		"The balls melt into one surface: rounded hills, about the same cost as boxes."]
+	for i in lines.size():
+		c.draw_string(fl, Vector2(x, (420.0 + 90.0 * float(i)) * u), String(lines[i]), HORIZONTAL_ALIGNMENT_LEFT, sz.x * 0.52, int(46 * u), soft)
+	# The diagram, on the right: a row of cells and what each method makes of them.
+	var d0 := Vector2(sz.x * 0.6, 160.0 * u)
+	var cell: float = 70.0 * u
+	var heights := [3, 4, 4, 5, 6, 5, 4, 3, 3, 4]
+	for i in heights.size():
+		for k in int(heights[i]):
+			var r := Rect2(d0 + Vector2(float(i) * cell, (7.0 - float(k)) * cell), Vector2(cell, cell))
+			if blocky:
+				c.draw_rect(r.grow(-3.0 * u), Color(1, 1, 1, 0.9 if k == int(heights[i]) - 1 else 0.45))
+			else:
+				c.draw_rect(r, Color(1, 1, 1, 0.12), false, 2.0 * u)
+	if not blocky:
+		var pts := PackedVector2Array()
+		for i in heights.size():
+			var cx: float = d0.x + (float(i) + 0.5) * cell
+			pts.append(Vector2(cx, d0.y + (7.0 - float(heights[i]) + 0.55) * cell))
+		var smooth := PackedVector2Array()
+		for i in pts.size() - 1:
+			for s in 8:
+				var f: float = float(s) / 8.0
+				var a: Vector2 = pts[maxi(i - 1, 0)]
+				var b: Vector2 = pts[i]
+				var cc: Vector2 = pts[i + 1]
+				var dd: Vector2 = pts[mini(i + 2, pts.size() - 1)]
+				smooth.append(0.5 * ((2.0 * b) + (-a + cc) * f + (2.0 * a - 5.0 * b + 4.0 * cc - dd) * f * f + (-a + 3.0 * b - 3.0 * cc + dd) * f * f * f))
+		smooth.append(pts[pts.size() - 1])
+		c.draw_polyline(smooth, white, 8.0 * u, true)
+		for p in pts:
+			c.draw_circle(p, 9.0 * u, white)
+	c.draw_string(fs, Vector2(d0.x, d0.y + 8.6 * cell), "CELLS TO BOXES" if blocky else "CELLS TO ONE SURFACE", HORIZONTAL_ALIGNMENT_LEFT, -1, int(40 * u), soft)
+
+
+func _build_hud() -> void:
+	var layer := CanvasLayer.new()
+	layer.name = "HUD"
+	add_child(layer)
+	hud = Control.new()
+	hud.set_script(Hud)
+	hud.set("glass", true)
+	hud.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(hud)
+	hud.set("strip", [["WASD", "Move"], ["Mouse", "Look"], ["Q / E", "Step through W"], ["G", "Gust of wind"]])
+	var dlayer := CanvasLayer.new()
+	dlayer.name = "Dev"
+	dlayer.layer = 5
+	add_child(dlayer)
+	light_editor = PanelContainer.new()
+	light_editor.name = "LightEditor"
+	light_editor.set_script(LightEditor)
+	light_editor.set("room", self)
+	dlayer.add_child(light_editor)
+
+
+## The way back: the holographic doorway in the near (+z) wall.
+func _build_door() -> void:
+	var hall: Node4D = get_node_or_null("Hall") as Node4D
+	var hs: Vector3 = hall.get("size") if hall != null else Vector3(36, 12, 48)
+	_door_z = hs.z * 0.5
+	var sh := Node4D.new()
+	sh.name = "Shimmer"
+	sh.set_script(Shimmer)
+	sh.set("width", 3.2)
+	sh.set("height", 4.1)
+	sh.position = Vector4(0.0, 0.0, _door_z - 0.17, 0.0)
+	add_child(sh)
+
+
+# -- each frame -------------------------------------------------------------------------------------------------
+
+func _process(delta: float) -> void:
+	if _phase != "ready" and _phase != "idle":
+		_feed_smooth()
+	if _phase == "ready" and not _trees_done:
+		_place_trees()
+	if _board != null:
+		_feed_board(delta)
+	if player == null or loading or _leaving:
+		return
+	var p: Vector4 = player.global_position
+	if p.z > _door_z - 0.45 and absf(p.x) < 1.6:
+		_leaving = true
+		player.set("input_enabled", false)
+		var sh: Node = get_node_or_null("Shimmer")
+		if sh != null:
+			sh.call("flash_out", self, back_to_hall)
+		else:
+			back_to_hall()
+	for pn in [get_node_or_null("PanelBlocky"), get_node_or_null("PanelSmooth")]:
+		if pn != null:
+			var pp: Vector4 = (pn as Node4D).global_position
+			pn.call("set_near", Vector2(p.x - pp.x, p.z - pp.z).length() < 1.7)
+
+
+func back_to_hall() -> void:
+	get_tree().root.set_meta(ARRIVE_META, "compare")
+	get_tree().change_scene_to_file(HALL)
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	var k := event as InputEventKey
+	if k == null or not k.pressed or k.echo or player == null:
+		return
+	match k.keycode:
+		KEY_G:
+			var w: Node = Wind.of(get_tree())
+			if w != null:
+				w.call("gust")
+				hud.call("toast", "A gust of wind")
+			get_viewport().set_input_as_handled()
+		KEY_E:
+			for pn in [get_node_or_null("PanelBlocky"), get_node_or_null("PanelSmooth")]:
+				if pn != null and bool(pn.get("near")):
+					pn.call("activate")
+					get_viewport().set_input_as_handled()
+
+
+# -- the board -------------------------------------------------------------------------------------------------
+
+func _open_board() -> void:
+	loading = true
+	player.set("input_enabled", false)
+	_board = LoadBoard.open(self)
+	_board.set("kicker", "QUANTUM HORIZON  ·  BOTANY LAB")
+	_board.set("title", "TWO VOXEL WORLDS")
+	_board.set("subtitle", "Blocky and smooth, side by side")
+	_board.set("coming", ["The same land built two ways: boxes on the left, one smooth surface on the right",
+		"Voxel trees on the blocks, lofted oaks on the hills, on the same spots",
+		"Step through W with Q and E: the hills change on both sides"])
+	_board.set("diagram_title", "THE LAND, BUILT AS YOU WAIT")
+	_board.connect("finished", func() -> void:
+		loading = false
+		_board = null
+		if player != null:
+			player.set("input_enabled", true))
+
+
+func _feed_board(delta: float) -> void:
+	_board_t += delta
+	var smooth_f: float = {"loading": 0.15, "editing": 0.15 + 0.35 * float(_sent) / maxf(1.0, float(_edits.size())), "meshing": 0.7, "ready": 1.0}.get(_phase, 0.0)
+	var bars: Array = [["Blocky land", 1.0, "%dk" % int(round(float(int(stats["blocky"].get("tets", 0))) / 1000.0))],
+		["Smooth land", smooth_f, "%dk" % int(round(float(smooth_tets()) / 1000.0))],
+		["Trees", 1.0 if _trees_done else 0.0, "%d" % (tree_spots.size() * 2)]]
+	_board.set("bars", bars)
+	_board.set("numbers", [["Cells, blocky", Bake.thousands(int(stats["blocky"].get("cells", 0)))], ["Edits, smooth", Bake.thousands(_edits.size())],
+		["Tetrahedra", Bake.thousands(int(stats["blocky"].get("tets", 0)) + smooth_tets())]])
+	_board.set("progress", (1.0 + smooth_f + (1.0 if _trees_done else 0.0)) / 3.0)
+	if (_trees_done and _board_t > 2.0) or _board_t > 45.0:
+		_board.call("finish")
+	if player != null:
+		player.set("input_enabled", false)
+
+
+# -- for the runners and the panels ------------------------------------------------------------------------------
+
+func go_to(at: Vector4, yaw: float = NAN) -> void:
+	if player == null:
+		return
+	player.global_position = at
+	player.set("linear_velocity", Vector4.ZERO)
+	var rig: Node = player.get_node_or_null("CameraRig")
+	if is_nan(yaw):
+		yaw = float(rig.get("yaw")) if rig != null else PI
+	player.set("_facing", yaw)
+	if rig != null:
+		rig.set("yaw", yaw)
+		rig.call("_apply")
+
+
+func camera() -> Camera4D:
+	return player.get_node_or_null("CameraRig/Pitch/Camera4D") as Camera4D if player != null else null
+
+
+func ready_to_visit() -> bool:
+	return _phase == "ready" and _trees_done
