@@ -116,7 +116,7 @@ func _draw() -> void:
 				for axis_side in [[ra, 1], [ra, -1], [fa, 1], [fa, -1]]:
 					var ax: int = axis_side[0]
 					var sd: int = axis_side[1]
-					if lattice.is_open(cell, ax, sd):
+					if lattice.passable(cell, ax, sd):
 						continue
 					var screen_sd: int = sd * (int(_signs[0]) if ax == ra else int(_signs[1]))
 					var x0: float = cr.position.x
@@ -131,7 +131,7 @@ func _draw() -> void:
 						draw_line(Vector2(x0, yy), Vector2(x1, yy), wall_col, 2.0 * u, true)
 				# Doors along the hidden axis: arrows toward the panel they lead to.
 				for sd2 in [1, -1]:
-					if lattice.is_open(cell, ha, sd2):
+					if lattice.passable(cell, ha, sd2):
 						var to_right: bool = (sd2 * int(_signs[2])) > 0
 						var c0: Vector2 = cr.get_center() + Vector2((0.3 if to_right else -0.3) * cell_px, 0.0)
 						var dx: float = (1.0 if to_right else -1.0) * cell_px * 0.12

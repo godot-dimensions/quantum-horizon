@@ -105,6 +105,18 @@ func _run() -> void:
 		view.call("set_mode", "first")
 		await _measure("level %d first person" % (i + 1))
 		view.call("set_mode", "chase")
+		if i in [0, 2, 4]:
+			# Its reward hall, after the stage-complete beat (the reward built behind the fade).
+			var lv = _m.get("lattice")
+			_m.set("on_overlook", false)
+			t = Time.get_ticks_usec()
+			_m.call("_place_player", lv.cell_centre(lv.exit) + Vector4(0, 0.1, 0, 0), Vector4(0, 0, -1, 0))
+			for k in 400:
+				await process_frame
+				if float(_m.get("_cinema")) < 0.0 and k > 60:
+					break
+			player.set("input_enabled", false)
+			await _measure("level %d hall (%s)" % [i + 1, String(_m.get("LEVELS")[i]["reward"]) if false else ["chickens", "", "wolves", "", "dreamer"][i]])
 	print("PERF: worst median frame %.2f ms" % _worst)
 	print("PERF: done")
 	quit()

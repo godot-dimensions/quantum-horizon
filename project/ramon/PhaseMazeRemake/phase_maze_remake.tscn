@@ -13,7 +13,6 @@ script = ExtResource("1_root")
 
 [node name="Light" type="Node4D" parent="."]
 script = ExtResource("2_light")
-mood_key = 0
 
 [node name="Lobby" type="Node4D" parent="."]
 position = Vector4(0, 0, 40, 0)

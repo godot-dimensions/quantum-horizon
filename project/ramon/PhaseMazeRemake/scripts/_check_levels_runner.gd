@@ -36,8 +36,7 @@ func _run() -> void:
 	for pair in levels:
 		var name: String = pair[0]
 		var lv = pair[1]
-		lv.cell = 6.0
-		lv.origin = Vector4(-float(lv.nx - 1) * 3.0, 0.0, -float(lv.nz - 1) * 6.0 - 3.0, 0.0)
+		lv.fit_origin()
 		var v: Array = lv.validate()
 		var reach: int = lv.bfs(lv.start).size()
 		print("LEVELS: %s '%s' %dx%dx%d, reachable %d/%d, route [%s], par W %d, shortest routes %d, dead ends %d%s" % [

@@ -489,3 +489,92 @@ layer 2
 
 Level 6 is generated each run (4 × 4 × 3). Three seeds gave routes of 30 to 39 moves, 9 to 16 of
 them through W, about 70 to 90 s if you turn and 100 to 150 s if you only step.
+
+## Round 2: the journey (9 Oct, Ramon's notes while the bot played)
+
+His notes, in order:
+
+1. "a lot of 90 degree turns in single lanes, it looks a bit boring ... would be cool if its more
+   impressive somehow ... the irregular skewing of the original maze was also cool";
+2. "sometimes you end up in a big room, where for example the dreamer is from the pen ... the level
+   ends with that reward ... you much smaller in the big room, and like stage completed ... making
+   you curious about the next reward";
+3. "something with verticality. making you way up";
+4. "look down from a highpoint at a giant maze ... as a journey ingredient";
+5. "look again at creationlabs ... to be sure the vibes are accurate".
+
+What the study showed (`study2/` frames):
+
+- **The Creation Lab is moodier than round 1.** It has blue-grey tile walls, a darker sky, and a
+  bright pool of light round the walker. Round 1 took the range's pale open look.
+- **The old maze's "skewing" is the drag itself.** The walls lean and slide while the slice tilts, and
+  round 1's settle snapped that away the moment you let go.
+- **The walker climbs 0.32 m steps** (`step_height`), but only along x and z.
+- **The Dreamer** (`chickenpen/cave/cave_dreamer_4d.gd`) is about 680 pieces, fills a room of about
+  50 x 50 m, and needs only the pen's loft builder.
+
+The steps:
+
+| # | Step |
+|---|---|
+| R1 | **The lab's own light:** the Creation Lab's bright mood instead of the range's pale sky; the walls on the kit's blue-grey tile; a stronger pool of light on the walker. |
+| R2 | **The skew stays:** a drag leaves the slice where you let go, as the old maze and the pen do. F and R give the clean views back; F1 can switch the settle back on. |
+| R3 | **Irregular cells:** each level can give its own sizes along x, z and w (for example 4, 9, 5 m), so narrow corridors open into wide halls and the grid stops reading as a grid. |
+| R4 | **Halls:** big rooms made of open cells, a 2 x 2 hall of 9 m cells being 18 m across, with something to see in them. |
+| R5 | **Floors at heights:** each cell has a floor height, written as a second grid per layer. Walls rise 5 m above the higher floor beside them. |
+| R6 | **Stairs:** a stair cell rises from its low neighbour to its high one in 0.3 m steps, along x, z or w. |
+| R7 | **Stairs through W:** the walker's step-up (in our copy) also looks along W. A stair rising through W is a single ledge in the level view and a staircase once you turn: verticality that only 4D shows you. |
+| R8 | **The overlook:** a stage starts high, on a platform over the maze, looking down at all of it. F there shows the maze below rearranging into another flat maze. A stair takes you down into it. |
+| R9 | **A giant maze:** the last hand-made level grows into a big one with halls and stairs, made to be seen from the overlook. |
+| R10 | **The reward hall:** the exit leads into a big hall. In it stands the stage's reward, huge, with you small. "STAGE COMPLETE": the camera pulls up and back, then the card. |
+| R11 | **The rewards:** stage by stage, a giant chicken, the wolf, and last the Dreamer (copied from the pen, never touched). The hall shows the next stage's reward as a dark silhouette, to make you curious. |
+| R12 | **Levels re-made** with R3 to R9, checked on paper and by the level runner, played by the bot. |
+| R13 | **Proof again:** the level check, the bot, the features run, perf (the Dreamer measured), frames, a new film. |
+| R14 | **Handover and commit** (`PhaseMazeRemake/` only). |
+
+### Round 2, as built (9 Oct)
+
+All fourteen steps are done. Five more of Ramon's notes came in while it was being built, and are in
+too:
+
+- **The pen's dev colours instead of cyan, green and yellow.**
+  - Blue for anything about W.
+  - The pen's landmark orange for where you are going and what you climb: the exit, the beacon,
+    the stairs and the overlook.
+  - A warm cream where the kit had yellow: the start, the lift ring and the breadcrumbs.
+- **B toggles dark and bright,** as in the Creation Lab. The spot carries the dark.
+- **The stage-complete orbit:** after the beat, the camera keeps circling slowly while the stats sit
+  on a see-through card, until you move.
+- **Tab is the tuning panel,** with SAVE, as in Ramon's other scenes. The spot is tunable there: on
+  or off, its strength in each mood, its cone and its height. The camera framing moved to C.
+- **Indoor stretches:** roofs over chosen cells, each with a warm light strip and colliding.
+  - Level 1: the start's half.
+  - Level 3: the ground floor, so the stairs take you out onto an open mezzanine.
+  - Level 4: the rings round the sealed room, an indoor maze round an open sky.
+  - Level 5: a wing.
+- **The view badge** became a small cube of x, z and w with your slice as a plane in it, tilting with
+  any drag, and the tilt in degrees when you are between quarter turns. (Ramon: "less tick tack toe".)
+- **The path tool stays out.** Ramon, 9 Oct: "probably not as it would defeat the purpose of a maze
+  completely". The hints and the map's route are the asked-for help.
+
+Changes that the build itself led to:
+
+- **Stairs chain:** every stair rises one RISE from the floor at its low side, so a flight of them
+  climbs on.
+- **The overlook camera** stands high and back while you are up there.
+- **The halls' beat** pulls back from nearer the middle, so the camera stays inside the hall.
+- **The bot** confirms every F turned the view, and stops walking once it is out of the maze.
+
+Proof:
+
+- **Levels:** the level check passes, with every route as drawn on paper.
+- **The bot** plays all six levels at par through the real controls, the lift and the stairs included.
+- **Features:** the features run passes.
+- **Perf:**
+  - The mazes run at 1.0 to 2.3 ms a frame.
+  - The chicken and wolf halls run at about 1.3 ms.
+  - The Dreamer's hall runs at 4.35 ms: it re-poses about 680 pieces a frame.
+- **Films:**
+  - `smoke_test_output/video/phase_maze_journey.mp4` (110 s, levels 2, 3 and 5 with their halls);
+  - the menu clip `art/phase_maze_remake.ogv` (10 s).
+- **Dark against bright:** `smoke_test_output/phase_maze_remake/moods_sheet.png`.

@@ -1,6 +1,8 @@
 name = Sealed room
 lesson = The exit's room is closed on every side. Its door is in the world next door.
 teach = sight
+x_sizes = 6, 10, 6
+z_sizes = 6, 10, 6
 ---
 #######
 #^ . .#
@@ -9,6 +11,9 @@ teach = sight
 # ### #
 #. S .#
 #######
+r 111
+r 101
+r 101
 ---
 #######
 #v . .#
@@ -17,6 +22,9 @@ teach = sight
 # ### #
 #. . ^#
 #######
+r 111
+r 101
+r 111
 ---
 #######
 #. . .#
@@ -25,3 +33,6 @@ teach = sight
 # ### #
 #. . v#
 #######
+r 111
+r 101
+r 111

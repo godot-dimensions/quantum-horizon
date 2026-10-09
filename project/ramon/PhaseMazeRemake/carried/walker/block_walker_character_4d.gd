@@ -183,7 +183,9 @@ func _physics_process(delta: float) -> void:
 func _step_up(wish: Vector4) -> void:
 	if step_height <= 0.0 or not is_on_wall() or not is_on_floor():
 		return
-	var flat := Vector4(wish.x, 0.0, wish.z, 0.0)
+	# Phase Maze copy: the step is looked for along W as well, so a stair that rises through W climbs
+	# like any other once you have turned to walk along it (round 2, R7).
+	var flat := Vector4(wish.x, 0.0, wish.z, wish.w)
 	if flat.length() < 0.2:
 		return
 	flat = flat.normalized()
@@ -194,9 +196,6 @@ func _step_up(wish: Vector4) -> void:
 	params.global_ray_direction = Vector4(0.0, -1.0, 0.0, 0.0)
 	params.max_distance = step_height + 0.30
 	var hit: Dictionary = PhysicsServer4D.raycast_physics_objects(params)
-	if Engine.get_physics_frames() % 40 == 0:
-		print("[step] from %v dir %v hit %s" % [params.global_ray_origin, flat,
-			str(hit.get("position", "nothing"))])
 	if hit.is_empty() or not hit.has("global_point"):
 		return
 	var top: float = (hit["global_point"] as Vector4).y

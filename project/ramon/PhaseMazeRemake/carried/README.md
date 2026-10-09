@@ -23,6 +23,15 @@ for the Creation Lab and the pen: carry it over, and do not change the original.
     - `project/scripts/gait_controller.gd` (shared, copied too).
   - To compare with the pen later: `git diff 11971e1 -- project/ramon/chickenpen/scripts/`.
 
+- **`rewards/`** (round 2, 9 Oct): what stands in the reward halls.
+  - From the Shooting Range at `11971e1`: `range_target_4d.gd`, `range_style.gd`, `range_mats.gd`,
+    `range_fx_4d.gd`, `range_shapes.gd`, `range_wolf.gd`, `targets/target_wolf.gd`,
+    `targets/target_chicken.gd`, and `carried/chicken/` (`chicken.tscn` and its loft scripts).
+  - From the pen: `chickenpen/cave/cave_dreamer_4d.gd` and `chickenpen/scripts/loft_builder_4d.gd`, as
+    `rewards/dreamer/`. The pen's own files are never touched.
+  - All their `res://` paths point at these copies. The chicken scene's `uid=` attributes are stripped,
+    so its IDs cannot clash with the range's.
+
 ## Copying conventions
 
 - No `class_name` in any copy, so nothing clashes with the originals. `GroundBasis4D` is a class name
@@ -43,6 +52,8 @@ for the Creation Lab and the pen: carry it over, and do not change the original.
 - `walker/pen_orbit_rig_4d.gd` and `walker/block_walker_character_4d.gd`: `GroundBasis4D.` calls are
   `GB.` calls.
 - `walker/block_gait_4d.gd`: preloads the copied `gait_controller.gd`.
+- `walker/block_walker_character_4d.gd`: the step-up also looks along W (round 2: stairs that rise
+  through W climb once you turn to walk along them), and its debug print of every 40th probe is gone.
 
 ## Shared on purpose, not copied
 

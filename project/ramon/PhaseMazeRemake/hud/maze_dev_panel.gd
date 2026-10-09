@@ -22,15 +22,18 @@ const ROWS := [
 	["chase_pitch", "Chase tilt", -60.0, 0.0, 0.5],
 	["turn_seconds", "Turn (F) seconds", 0.1, 1.2, 0.01],
 	["settle", "Settle to quarter turns", 0.0, 1.0, 1.0],
-	["w_cyan", "Walls across W in cyan", 0.0, 1.0, 1.0],
+	["w_cyan", "Walls across W in blue", 0.0, 1.0, 1.0],
 	["w_step", "Q/E step speed", 0.1, 1.0, 0.05],
 	["ghost", "4D sight (lower: stronger)", 0.02, 1.0, 0.01],
 	["renderer", "Renderer 0 slice 1 comb 2 proj 3 wire", 0.0, 3.0, 1.0],
 	["key_energy", "Sun", 0.0, 3.0, 0.01],
 	["ambient_k", "Ambient", 0.0, 1.6, 0.01],
 	["exposure", "Exposure", 0.4, 2.0, 0.01],
-	["spot_energy", "Spot", 0.0, 14.0, 0.1],
+	["spot_follows", "Spot follows the walker", 0.0, 1.0, 1.0],
+	["spot_bright", "Spot, bright", 0.0, 14.0, 0.1],
+	["spot_dark", "Spot, dark", 0.0, 20.0, 0.1],
 	["spot_angle", "Spot cone", 8.0, 80.0, 0.5],
+	["spot_height", "Spot height", 4.0, 24.0, 0.25],
 ]
 
 var maze_root: Node
@@ -42,9 +45,10 @@ var _checks: Dictionary = {}
 
 static func defaults() -> Dictionary:
 	var l: Dictionary = Style.LIGHT
-	return {"chase_distance": 3.6, "chase_height": 2.1, "chase_pitch": -24.0, "turn_seconds": 0.35, "settle": 1.0, "w_cyan": 1.0,
+	return {"chase_distance": 3.6, "chase_height": 2.1, "chase_pitch": -24.0, "turn_seconds": 0.35, "settle": 0.0, "w_cyan": 1.0,
 		"w_step": 0.3, "ghost": 0.3, "renderer": 0.0, "key_energy": l["key_energy"], "ambient_k": 1.0,
-		"exposure": l["exposure"], "spot_energy": 3.0, "spot_angle": 34.0}
+		"exposure": l["exposure"], "spot_follows": 1.0, "spot_bright": 3.0, "spot_dark": 9.0, "spot_angle": 30.0,
+		"spot_height": 10.0}
 
 
 static func load_saved() -> Dictionary:
@@ -65,7 +69,7 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation", 4)
 	add_child(box)
 	var title := Label.new()
-	title.text = "PHASE MAZE  ·  F1"
+	title.text = "PHASE MAZE  ·  TAB TO CLOSE  ·  SAVE KEEPS IT"
 	title.add_theme_font_override("font", Kit.ui_font("heading"))
 	title.add_theme_font_size_override("font_size", 13)
 	title.add_theme_color_override("font_color", Kit.UI_ACCENT)

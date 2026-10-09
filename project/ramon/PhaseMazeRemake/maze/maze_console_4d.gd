@@ -280,7 +280,8 @@ func _paint() -> void:
 	var u: float = sz.y / 276.0
 	var blue: Color = Kit.UI_ACCENT
 	var grey: Color = Kit.UI_GREY
-	var green: Color = Kit.UI_LIVE
+	# Finished and best: the pen's landmark orange (round 2: the pen's dev colours, not the kit's green).
+	var green: Color = Color(0.95, 0.46, 0.30)
 	var bg := Color(Kit.UI_GLASS, 1.0)
 	var fb: Font = LabPrint.font("black")
 	var fs: Font = LabPrint.font("bold")

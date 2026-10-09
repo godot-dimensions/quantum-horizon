@@ -106,6 +106,9 @@ func _run() -> void:
 	_check(int(_m.get("_hint_tier")) == 3, "T three times reaches the third hint")
 	_check(bool((_m.get("map") as Control).visible), "M opens the map")
 	await _key(KEY_M)
+	# Down off the overlook first (the clock and the cells start counting there).
+	_m.set("on_overlook", false)
+	(_m.get("overlook")["lift"] as Node4D).position.y = float(_m.get("overlook")["bottom"])
 	# The door prompt: walk onto level 2's door cell (1, 1, 0) by placing.
 	var lv = _m.get("lattice")
 	player.set("input_enabled", true)
@@ -131,10 +134,11 @@ func _run() -> void:
 	player.set("input_enabled", false)
 	_check(int(_m.get("level_index")) == 3, "4 while playing switches to level 4")
 	# The dev panel.
-	await _key(KEY_F1)
+	await _key(KEY_TAB)
 	await _shot("05_dev_panel")
-	_check(bool((_m.get("dev_panel") as Control).visible), "F1 opens the dev panel")
-	await _key(KEY_F1)
+	_check(bool((_m.get("dev_panel") as Control).visible), "TAB opens the tuning panel")
+	await _key(KEY_TAB)
+	_check(not bool((_m.get("dev_panel") as Control).visible), "TAB closes it again")
 	_free_mouse()
 	# The renderers.
 	var tuning: Dictionary = (_m.get("tuning") as Dictionary).duplicate()
@@ -165,9 +169,9 @@ func _run() -> void:
 	_check(String(view.get("mode")) == "first", "V switches to first person")
 	await _shot("11_first_person")
 	await _key(KEY_V)
-	await _key(KEY_TAB)
-	_check(String(view.get("mode")) == "shoulder", "TAB switches to the shoulder camera")
-	await _key(KEY_TAB)
+	await _key(KEY_C)
+	_check(String(view.get("mode")) == "shoulder", "C switches to the shoulder camera")
+	await _key(KEY_C)
 	await _key(KEY_G)
 	await _wait(0.4)
 	_check(bool((_m.get("sight") as Node).get("on")), "G switches 4D sight on")

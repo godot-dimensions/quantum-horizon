@@ -34,6 +34,12 @@ var lattice: RefCounted
 var info: Dictionary = {}
 ## The results card, or {} for none: {"title", "time", "best", "new_best", "w_moves", "par", "next"}.
 var result: Dictionary = {}
+## The stage-complete title: {"kicker", "text", "sub", "left": seconds}, or {} for none.
+var title: Dictionary = {}
+## The light's mood, for the chip (B).
+var mood: String = "bright"
+## How opaque the results card's glass is: see-through while the camera circles after a stage.
+var result_glass: float = 0.86
 ## A crosshair, when there is something to click.
 var crosshair: bool = false
 ## How dark the fade is (0 clear, 1 black): level changes happen behind it.
@@ -57,6 +63,11 @@ func toast(text: String, col: Color = Color.WHITE, seconds: float = 3.0) -> void
 	_toast_left = seconds
 
 
+func clear_messages() -> void:
+	_toast_left = 0.0
+	_hint_left = 0.0
+
+
 func show_hint(text: String, seconds: float = 7.0) -> void:
 	_hint = text
 	_hint_left = seconds
@@ -64,6 +75,10 @@ func show_hint(text: String, seconds: float = 7.0) -> void:
 
 func _process(delta: float) -> void:
 	_toast_left = maxf(0.0, _toast_left - delta)
+	if not title.is_empty():
+		title["left"] = float(title["left"]) - delta
+		if float(title["left"]) <= 0.0:
+			title = {}
 	_hint_left = maxf(0.0, _hint_left - delta)
 	queue_redraw()
 
@@ -80,8 +95,11 @@ func _draw() -> void:
 	var state: String = String(info.get("state", "lobby"))
 	if state != "lobby":
 		_card(u)
-	if view != null and body != null and state != "lobby":
+	if view != null and body != null and state == "playing":
 		_badge(u, vs)
+	_mood_chip(u, vs)
+	if not title.is_empty():
+		_title(u, vs)
 	_keys(u, vs, state)
 	_messages(u, vs)
 	if not result.is_empty():
@@ -116,7 +134,7 @@ func _card(u: float) -> void:
 	draw_string(fs, Vector2(x, r.position.y + 96.0 * u), line, HORIZONTAL_ALIGNMENT_LEFT, -1, int(11.0 * u), Style.role("w"))
 	var best: float = float(info.get("best", 0.0))
 	if best > 0.0:
-		draw_string(fs, Vector2(r.end.x - 14.0 * u - 90.0 * u, r.position.y + 78.0 * u), "BEST " + clock(best), HORIZONTAL_ALIGNMENT_RIGHT, 90.0 * u, int(11.0 * u), Kit.UI_LIVE)
+		draw_string(fs, Vector2(r.end.x - 14.0 * u - 90.0 * u, r.position.y + 78.0 * u), "BEST " + clock(best), HORIZONTAL_ALIGNMENT_RIGHT, 90.0 * u, int(11.0 * u), Style.role("exit"))
 
 
 # -- the view badge and the ruler ----------------------------------------------------------------------
@@ -134,36 +152,58 @@ func _badge(u: float, vs: Vector2) -> void:
 	var fs: Font = LabPrint.font("bold")
 	var fb: Font = LabPrint.font("black")
 	draw_string(fs, r.position + Vector2(14, 22) * u, "YOUR VIEW", HORIZONTAL_ALIGNMENT_LEFT, -1, int(11.0 * u), Kit.UI_GREY)
-	var centre: Vector2 = r.position + Vector2(r.size.x * 0.5, 96.0 * u)
-	var rad: float = 52.0 * u
-	# Faint floor of the view: a circle, forward marked.
-	draw_arc(centre, rad, 0.0, TAU, 48, Color(1, 1, 1, 0.10), 1.0 * u, true)
-	draw_line(centre + Vector2(0, -rad - 6.0 * u), centre + Vector2(0, -rad + 4.0 * u), Color(1, 1, 1, 0.35), 2.0 * u, true)
-	var hidden: int = int(view.get("hidden_axis"))
-	# Lines first (far ones under), then the dot on top.
-	var order: Array = [0, 1, 2]
-	order.sort_custom(func(a: int, c: int) -> bool: return absf(UNIT[a].dot(hid)) > absf(UNIT[c].dot(hid)))
-	for a in order:
+	var centre: Vector2 = r.position + Vector2(r.size.x * 0.5, 100.0 * u)
+	var rad: float = 50.0 * u
+	# THE SLICE AS A PLANE IN A CUBE (round 2; Ramon: "is there nothing we can do to make the whole thing
+	# look and feel a little less tick tack toe?"): x, z and w drawn as an isometric cube, w up, and the
+	# slice you see as a plane through its middle, spanned by your right and your forward. It tilts with
+	# any drag, not only by quarters; the hidden direction is the arrow out of it.
+	var iso: Array = [Vector2(0.866, 0.5), Vector2(-0.866, 0.5), Vector2(0.0, -1.0)]
+	var proj := func(v: Vector4) -> Vector2:
+		return (iso[0] * v.x + iso[1] * v.z + iso[2] * v.w) * rad
+	# The cube's edges, faint.
+	var corners: Array = []
+	for cx in [-1.0, 1.0]:
+		for cz in [-1.0, 1.0]:
+			for cw in [-1.0, 1.0]:
+				corners.append(Vector4(cx, 0.0, cz, cw) * 0.62)
+	for i in 8:
+		for j in range(i + 1, 8):
+			var d: Vector4 = (corners[i] as Vector4) - (corners[j] as Vector4)
+			if absf(absf(d.x) + absf(d.z) + absf(d.w) - 1.24) < 0.01:
+				draw_line(centre + proj.call(corners[i]), centre + proj.call(corners[j]), Color(1, 1, 1, 0.13), 1.0 * u, true)
+	# The three axes with their letters.
+	for a in 3:
 		var e: Vector4 = UNIT[a]
 		var col: Color = _axis_col(a)
-		var v := Vector2(e.dot(right), -e.dot(fwd))
-		var flat: float = v.length()
-		if flat > 0.12:
-			draw_line(centre - v * rad, centre, Color(col, 0.35), 2.0 * u, true)
-			draw_line(centre, centre + v * rad, col, 4.0 * u, true)
-			var tip: Vector2 = centre + v * (rad + 14.0 * u)
-			draw_string(fb, tip + Vector2(-6.0, 6.0) * u, AXIS_NAMES[a], HORIZONTAL_ALIGNMENT_LEFT, -1, int(15.0 * u), col)
-		if absf(e.dot(hid)) > 0.7:
-			# Into the screen: a ringed dot, the letter beside it.
-			draw_circle(centre, 9.0 * u, Color(Kit.UI_GLASS, 1.0))
-			draw_arc(centre, 9.0 * u, 0.0, TAU, 24, col, 2.5 * u, true)
-			draw_circle(centre, 3.5 * u, col)
+		var tip: Vector2 = centre + proj.call(e * 0.9)
+		draw_line(centre, tip, Color(col, 0.5), 1.5 * u, true)
+		draw_string(fb, tip + (tip - centre).normalized() * 9.0 * u + Vector2(-5.0, 5.0) * u, AXIS_NAMES[a], HORIZONTAL_ALIGNMENT_LEFT, -1, int(13.0 * u), col)
+	# Your slice: the square spanned by right and forward, a plane in the cube.
+	var plane := PackedVector2Array()
+	for q in [Vector2(1, 1), Vector2(-1, 1), Vector2(-1, -1), Vector2(1, -1)]:
+		plane.append(centre + proj.call(right * q.x * 0.72 + fwd * q.y * 0.72))
+	draw_colored_polygon(plane, Color(Style.role("start"), 0.22))
+	plane.append(plane[0])
+	draw_polyline(plane, Color(Style.role("start"), 0.85), 1.5 * u, true)
+	# Forward on it, and the hidden direction out of it.
+	var f_tip: Vector2 = centre + proj.call(fwd * 0.72)
+	draw_line(centre, f_tip, Color.WHITE, 2.5 * u, true)
+	draw_circle(f_tip, 3.0 * u, Color.WHITE)
+	var hidden: int = int(view.get("hidden_axis"))
+	var h_tip: Vector2 = centre + proj.call(hid * 0.95)
+	draw_line(centre, h_tip, Style.role("w"), 3.0 * u, true)
+	var hd: Vector2 = (h_tip - centre).normalized()
+	draw_colored_polygon(PackedVector2Array([h_tip + hd * 7.0 * u, h_tip + Vector2(-hd.y, hd.x) * 4.0 * u, h_tip - Vector2(-hd.y, hd.x) * 4.0 * u]), Style.role("w"))
+	# How far off a square view: the angle between the hidden direction and the axis nearest it.
+	var tilt: float = rad_to_deg(acos(clampf(absf(hid.dot(UNIT[hidden])), 0.0, 1.0)))
 	var seen: PackedStringArray = []
 	for a in 3:
 		if a != hidden:
 			seen.append(AXIS_NAMES[a])
-	draw_string(fs, r.position + Vector2(14.0 * u, 180.0 * u), "YOU SEE %s  ·  HIDDEN " % " ".join(seen), HORIZONTAL_ALIGNMENT_LEFT, -1, int(11.0 * u), Kit.UI_INK_SOFT)
-	var hw: float = fs.get_string_size("YOU SEE %s  ·  HIDDEN " % " ".join(seen), HORIZONTAL_ALIGNMENT_LEFT, -1, int(11.0 * u)).x
+	var line: String = ("YOU SEE %s  ·  HIDDEN " % " ".join(seen)) if tilt < 3.0 else ("TILTED %d°  ·  MOSTLY HIDDEN " % int(round(tilt)))
+	draw_string(fs, r.position + Vector2(14.0 * u, 180.0 * u), line, HORIZONTAL_ALIGNMENT_LEFT, -1, int(11.0 * u), Kit.UI_INK_SOFT)
+	var hw: float = fs.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, int(11.0 * u)).x
 	draw_string(fb, r.position + Vector2(14.0 * u + hw, 180.0 * u), AXIS_NAMES[hidden], HORIZONTAL_ALIGNMENT_LEFT, -1, int(12.0 * u), _axis_col(hidden))
 	_ruler(Rect2(r.position + Vector2(10.0, 190.0) * u, Vector2(r.size.x - 20.0 * u, 28.0 * u)), u, hidden, hid)
 
@@ -179,8 +219,8 @@ func _ruler(r: Rect2, u: float, h: int, hid: Vector4) -> void:
 	var col: Color = _axis_col(h)
 	var fs: Font = LabPrint.font("bold")
 	# Q on the left (steps against the view's W), E on the right (along it).
-	var q_open: bool = lattice.inside(c) and lattice.is_open(c, h, -s)
-	var e_open: bool = lattice.inside(c) and lattice.is_open(c, h, s)
+	var q_open: bool = lattice.inside(c) and lattice.passable(c, h, -s)
+	var e_open: bool = lattice.inside(c) and lattice.passable(c, h, s)
 	var cap: float = 22.0 * u
 	_cap(Rect2(r.position + Vector2(0, 3.0 * u), Vector2(cap, cap)), "Q", q_open, col, u)
 	_cap(Rect2(Vector2(r.end.x - cap, r.position.y + 3.0 * u), Vector2(cap, cap)), "E", e_open, col, u)
@@ -221,16 +261,39 @@ func _axis_col(a: int) -> Color:
 	return Style.role(["x", "z", "w"][a])
 
 
+# -- the title and the mood chip ---------------------------------------------------------------------------
+
+func _title(u: float, vs: Vector2) -> void:
+	var a: float = clampf(float(title["left"]) / 0.6, 0.0, 1.0) * clampf((4.5 - float(title["left"])) / 0.5, 0.0, 1.0)
+	var fb: Font = LabPrint.font("black")
+	var fs: Font = LabPrint.font("bold")
+	var y: float = vs.y * 0.3
+	draw_string(fs, Vector2(0, y - 46.0 * u), String(title.get("kicker", "")), HORIZONTAL_ALIGNMENT_CENTER, vs.x, int(14.0 * u), Color(1, 1, 1, 0.8 * a))
+	draw_string(fb, Vector2(0, y + 8.0 * u), String(title.get("text", "")), HORIZONTAL_ALIGNMENT_CENTER, vs.x, int(52.0 * u), Color(1, 1, 1, a))
+	draw_string(fs, Vector2(0, y + 44.0 * u), String(title.get("sub", "")), HORIZONTAL_ALIGNMENT_CENTER, vs.x, int(16.0 * u), Color(Style.role("w"), a))
+
+
+## Top right, as in the Creation Lab: which mood, and that B switches it.
+func _mood_chip(u: float, vs: Vector2) -> void:
+	var fs: Font = LabPrint.font("bold")
+	var text: String = "%s  ·  B" % mood.to_upper()
+	var px: int = int(10.0 * u)
+	var tw: float = fs.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	var r := Rect2(Vector2(vs.x - tw - 40.0 * u, 16.0 * u), Vector2(tw + 22.0 * u, 22.0 * u))
+	draw_style_box(Kit.glass_box(11.0 * u, 1.0, Kit.UI_GLASS_ALPHA), r)
+	draw_string(fs, Vector2(r.position.x, r.position.y + 15.0 * u), text, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, px, Kit.UI_INK)
+
+
 # -- the keys ------------------------------------------------------------------------------------------
 
 func _keys(u: float, vs: Vector2, state: String) -> void:
 	var rows: Array
 	if state == "lobby":
-		rows = [["1-6", "choose a level"], ["ENTER", "start"], ["WASD", "walk"], ["H", "back to the menu"], ["F1", "dev panel"]]
+		rows = [["1-6", "choose a level"], ["ENTER", "start"], ["WASD", "walk"], ["B", "dark / bright"], ["TAB", "tune the light"], ["H", "back to the menu"]]
 	else:
 		rows = [["WASD", "walk"], ["F", "turn into W"], ["R", "level the slice"], ["Q E", "step through the hidden axis"],
 			["RMB", "hold and drag: tilt"], ["G", "4D sight" + ("  ON" if bool(info.get("sight", false)) else "")], ["M", "map"], ["T", "hint"],
-			["V", "first person" if not bool(info.get("first_person", false)) else "third person"], ["TAB", "camera"], ["BACKSPACE", "again"], ["1-6", "levels"]]
+			["V", "first person" if not bool(info.get("first_person", false)) else "third person"], ["C", "camera"], ["B", "dark / bright"], ["TAB", "tune the light"], ["BACKSPACE", "again"], ["1-6", "levels"]]
 	var fs: Font = LabPrint.font("bold")
 	var px: int = int(11.0 * u)
 	var lh: float = 18.0 * u
@@ -273,8 +336,8 @@ func _messages(u: float, vs: Vector2) -> void:
 # -- the results card ----------------------------------------------------------------------------------
 
 func _results(u: float, vs: Vector2) -> void:
-	var r := Rect2(Vector2(vs.x * 0.5 - 190.0 * u, vs.y * 0.5 - 150.0 * u), Vector2(380, 196) * u)
-	_glass(r, u)
+	var r := Rect2(Vector2(vs.x * 0.5 - 190.0 * u, vs.y * 0.62 - 98.0 * u), Vector2(380, 196) * u)
+	draw_style_box(Kit.glass_box(10.0 * u, 1.0, result_glass), r)
 	var fb: Font = LabPrint.font("black")
 	var fs: Font = LabPrint.font("bold")
 	var x: float = r.position.x
@@ -282,7 +345,7 @@ func _results(u: float, vs: Vector2) -> void:
 	draw_string(fs, Vector2(x, r.position.y + 28.0 * u), String(result.get("title", "")).to_upper(), HORIZONTAL_ALIGNMENT_CENTER, w, int(12.0 * u), Kit.UI_GREY)
 	draw_string(fb, Vector2(x, r.position.y + 76.0 * u), clock(float(result.get("time", 0.0))), HORIZONTAL_ALIGNMENT_CENTER, w, int(40.0 * u), Kit.UI_INK)
 	var best_line: String = "NEW BEST" if bool(result.get("new_best", false)) else "BEST " + clock(float(result.get("best", 0.0)))
-	draw_string(fs, Vector2(x, r.position.y + 100.0 * u), best_line, HORIZONTAL_ALIGNMENT_CENTER, w, int(12.0 * u), Kit.UI_LIVE)
+	draw_string(fs, Vector2(x, r.position.y + 100.0 * u), best_line, HORIZONTAL_ALIGNMENT_CENTER, w, int(12.0 * u), Style.role("exit"))
 	var wl: String = "W MOVES %d  ·  PAR %d" % [int(result.get("w_moves", 0)), int(result.get("par", 0))]
 	draw_string(fs, Vector2(x, r.position.y + 126.0 * u), wl, HORIZONTAL_ALIGNMENT_CENTER, w, int(13.0 * u), Style.role("w"))
 	draw_line(Vector2(x + 30.0 * u, r.position.y + 142.0 * u), Vector2(r.end.x - 30.0 * u, r.position.y + 142.0 * u), Color(1, 1, 1, 0.12), 1.0 * u)

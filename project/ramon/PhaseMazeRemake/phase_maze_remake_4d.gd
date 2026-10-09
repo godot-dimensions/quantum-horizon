@@ -29,6 +29,8 @@ const Hud := preload("res://ramon/PhaseMazeRemake/hud/maze_hud.gd")
 const MapPanel := preload("res://ramon/PhaseMazeRemake/hud/maze_map.gd")
 const DevPanel := preload("res://ramon/PhaseMazeRemake/hud/maze_dev_panel.gd")
 const PanelSource := preload("res://ramon/PhaseMazeRemake/maze/maze_panel_source.gd")
+const Journey := preload("res://ramon/PhaseMazeRemake/maze/maze_journey_4d.gd")
+const GB := preload("res://ramon/PhaseMazeRemake/carried/walker/ground_basis_4d.gd")
 const ReturnButton := preload("res://ramon/Demo/return_button.tscn")
 const LabPrint := preload("res://ramon/PhaseMazeRemake/carried/LabKit/lab_print.gd")
 const LabGrid := preload("res://ramon/PhaseMazeRemake/carried/LabKit/lab_grid.gd")
@@ -39,17 +41,17 @@ const Kit := preload("res://ramon/PhaseMazeRemake/carried/kit/kit_style.gd")
 const CELL := 6.0
 const BESTS := "user://phase_maze_remake_bests.cfg"
 const LEVELS := [
-	{"file": "res://ramon/PhaseMazeRemake/levels/level_1.txt", "glyph": "step",
-		"intro": "Find the dead end with the cyan mark. Hold E there to step through W."},
-	{"file": "res://ramon/PhaseMazeRemake/levels/level_2.txt", "glyph": "turn",
+	{"file": "res://ramon/PhaseMazeRemake/levels/level_1.txt", "glyph": "step", "reward": "chickens",
+		"intro": "Find the dead end with the blue mark. Hold E there to step through W."},
+	{"file": "res://ramon/PhaseMazeRemake/levels/level_2.txt", "glyph": "turn", "reward": "chickens",
 		"intro": "A shaft runs three cells through W. Press F to turn it ahead of you."},
-	{"file": "res://ramon/PhaseMazeRemake/levels/level_3.txt", "glyph": "both",
+	{"file": "res://ramon/PhaseMazeRemake/levels/level_3.txt", "glyph": "both", "reward": "wolves",
 		"intro": "F turns what is ahead into W. Face another way first and a turn shows another maze."},
-	{"file": "res://ramon/PhaseMazeRemake/levels/level_4.txt", "glyph": "sealed",
+	{"file": "res://ramon/PhaseMazeRemake/levels/level_4.txt", "glyph": "sealed", "reward": "wolves",
 		"intro": "The exit's room is closed on every side. G shows the cells next door in W as ghosts."},
-	{"file": "res://ramon/PhaseMazeRemake/levels/level_5.txt", "glyph": "cube",
+	{"file": "res://ramon/PhaseMazeRemake/levels/level_5.txt", "glyph": "cube", "reward": "dreamer",
 		"intro": "Everything together. M opens the map."},
-	{"generated": [4, 4, 3], "glyph": "generated", "name": "Generated",
+	{"generated": [4, 4, 3], "glyph": "generated", "name": "Generated", "reward": "",
 		"intro": "A new maze every run."},
 ]
 ## The lobby: its middle, where you stand on arrival, where the console waits. Well away from the maze.
@@ -94,6 +96,21 @@ var results: Dictionary = {}
 var hints_used: int = 0
 var panel_source: Node
 var _art: Array = []
+## The journey (round 2): the overlook and its lift, the reward hall, the stage-complete beat.
+var overlook: Dictionary = {}
+var on_overlook: bool = false
+var _lift_wait: float = 0.0
+var _lifting: bool = false
+var hall: Dictionary = {}
+var _reward: Node4D
+var _reward_t: float = 0.0
+## Seconds into the stage-complete beat (negative: none).
+var _cinema: float = -1.0
+## After the beat, the camera keeps circling slowly until you move (Ramon, 9 Oct: "the camera in a new
+## shot also rotates like this little game moment. docile, but still cool for reading the stats as
+## transparent overlay").
+var _orbit: bool = false
+var _orbit_out: float = 0.0
 
 var _visit_count: int = 0
 var _last_cell := Vector3i.ZERO
@@ -113,7 +130,7 @@ func _enter_tree() -> void:
 	Style.apply()
 	var light: Node = get_node_or_null("Light")
 	if light != null:
-		light.set("mood_overrides", {"bright": Style.LIGHT.duplicate(true), "dark": Style.LIGHT.duplicate(true)})
+		light.set("mood_overrides", {"bright": Style.LIGHT.duplicate(true)})
 
 
 func _exit_tree() -> void:
@@ -123,7 +140,12 @@ func _exit_tree() -> void:
 func _ready() -> void:
 	var light: Node = get_node_or_null("Light")
 	if light != null:
-		light.call("set_mood", "bright", true, false)
+		# B switches bright and dark, as in the Creation Lab; the choice is the viewer's, remembered.
+		light.call("set_mood", String(light.get("mood")), true, false)
+		light.connect("mood_changed", func(m: String) -> void:
+			Style.apply_mood(m)
+			_apply_spot())
+		Style.apply_mood(String(light.get("mood")))
 	if Engine.is_editor_hint():
 		return
 	var w: Dictionary = WalkerBuild.make(self, LOBBY_SPAWN)
@@ -142,7 +164,7 @@ func _ready() -> void:
 	view.connect("turn_started", func(kind: String) -> void:
 		if kind == "into_w" and state == "playing":
 			turns += 1
-			_prompt("turn", "Turned into W. What was ahead is W now, and the cyan walls stand across it. F turns back."))
+			_prompt("turn", "Turned into W. What was ahead is W now, and the blue walls stand across it. F turns back."))
 	sight = Node.new()
 	sight.name = "Sight"
 	sight.set_script(Sight)
@@ -190,6 +212,7 @@ func _ready() -> void:
 	rb.name = "ReturnButton"
 	add_child(rb)
 	_load_bests()
+	hall = Journey.hall(self)
 	apply_tuning(DevPanel.load_saved())
 	go_lobby(true)
 	_paint_lobby_wall()
@@ -244,8 +267,7 @@ func _load_level(i: int, new_seed: bool = true) -> void:
 		lattice = Lattice.generate(int(g[0]), int(g[1]), int(g[2]), generated_seed)
 	else:
 		lattice = Lattice.load_file(String(spec["file"]))
-	lattice.cell = CELL
-	lattice.origin = Vector4(-float(lattice.nx - 1) * CELL * 0.5, 0.0, -float(lattice.nz - 1) * CELL - CELL * 0.5, 0.0)
+	lattice.fit_origin()
 	level_node = Node4D.new()
 	level_node.name = "Level"
 	add_child(level_node)
@@ -261,7 +283,13 @@ func _load_level(i: int, new_seed: bool = true) -> void:
 		var d: Vector3i = r[1] - r[0]
 		if d.z == 0:
 			face = Vector4(float(d.x), 0.0, float(d.y), 0.0)
-	_place_player(lattice.cell_centre(lattice.start) + Vector4(0.0, 0.1, 0.0, 0.0), face)
+	# The journey's start: high on the overlook over the start cell, looking down over the maze.
+	overlook = Journey.overlook(level_node, lattice)
+	on_overlook = true
+	_lifting = false
+	_lift_wait = 0.0
+	_place_player(overlook["spawn"], Vector4(0, 0, -1, 0))
+	_overlook_framing(true)
 	player.set("w_speed_scale", _w_step)
 	state = "playing"
 	time = 0.0
@@ -282,10 +310,22 @@ func _load_level(i: int, new_seed: bool = true) -> void:
 	if spec.has("generated"):
 		intro += " Seed %d." % generated_seed
 	hud.call("toast", "%02d  %s.  %s" % [i + 1, _level_name(i), intro], Color.WHITE, 6.0)
+	hud.call("show_hint", "The whole maze below. F turns it into another one. Stand in the ring to go down.", 8.0)
 
 
 func _clear_level() -> void:
 	_clear_hint()
+	_orbit = false
+	_orbit_out = 0.0
+	rig.set("collide_with_world", true)
+	hud.set("result_glass", 0.86)
+	if _reward != null and is_instance_valid(_reward):
+		_reward.free()
+	_reward = null
+	_cinema = -1.0
+	on_overlook = false
+	_lifting = false
+	hud.set("title", {})
 	if level_node != null:
 		level_node.free()
 		level_node = null
@@ -372,6 +412,12 @@ func _process(delta: float) -> void:
 		return
 	if state == "playing" and lattice != null:
 		_play(delta)
+	if _cinema >= 0.0:
+		_cinema_step(delta)
+	_orbit_step(delta)
+	if _reward != null and is_instance_valid(_reward):
+		_reward_t += delta
+		Journey.circle(_reward, _reward_t)
 	if _hint_left > 0.0:
 		_hint_left -= delta
 		if _hint_left <= 0.0 and _hint_tier >= 3:
@@ -379,18 +425,25 @@ func _process(delta: float) -> void:
 	if console.visible:
 		console.call("show_data", _console_data("near" if state == "finished" else "lobby"))
 	hud.set("crosshair", console.visible and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED)
+	var light: Node = get_node_or_null("Light")
+	if light != null:
+		hud.set("mood", String(light.get("mood")))
 	hud.set("info", {"state": state, "number": level_index + 1, "name": _level_name(level_index) if lattice != null else "",
 		"time": time, "running": running, "w_moves": w_moves, "par": _par,
 		"best": float(bests.get(level_index, 0.0)), "sight": bool(sight.get("on")), "first_person": String(view.get("mode")) == "first"})
 	var spot: Node = get_node_or_null("Spot")
-	if spot != null:
+	if spot != null and float(tuning.get("spot_follows", 1.0)) > 0.5:
 		var p: Vector4 = player.global_position
-		spot.set("position", p + Vector4(0.0, 10.0, 1.5, 0.0))
-		spot.set("aim", Vector3(p.x, 0.0, p.z))
+		# Straight above: an offset along z lit the walker from the hidden side in a turned view.
+		spot.set("position", p + Vector4(0.0, float(tuning.get("spot_height", 10.0)), 0.0, 0.0))
+		spot.set("aim", Vector3(p.x, p.y, p.z))
 
 
 func _play(delta: float) -> void:
 	var p: Vector4 = player.global_position
+	if on_overlook:
+		_ride(delta)
+		return
 	var cell: Vector3i = lattice.cell_at(p)
 	var v: Vector4 = player.get("linear_velocity")
 	if not running and (Vector3(v.x, v.z, v.w).length() > 0.3 or cell != lattice.start):
@@ -424,6 +477,40 @@ func _play(delta: float) -> void:
 		_finish()
 
 
+## The overlook: standing in the lift's ring a moment lowers it (and you) into the start cell; the
+## clock starts once you are down.
+func _ride(delta: float) -> void:
+	var lift: Node4D = overlook["lift"]
+	var c: Vector4 = lift.global_position
+	var p: Vector4 = player.global_position
+	if not _lifting:
+		var near: bool = Vector2(p.x - c.x, p.z - c.z).length() < 1.3 and player.is_on_floor()
+		_lift_wait = _lift_wait + delta if near else 0.0
+		if _lift_wait > 0.6:
+			_lifting = true
+			hud.call("clear_messages")
+			_overlook_framing(false)
+		return
+	var bottom: float = float(overlook["bottom"])
+	lift.position.y = move_toward(lift.position.y, bottom, delta * 3.2)
+	if lift.position.y <= bottom + 0.001:
+		on_overlook = false
+		_lifting = false
+		_overlook_framing(false)
+
+
+## Up on the overlook the camera stands high and well back, looking down over the rails at the whole
+## maze (the chase framing showed the platform and little else); on the way down it comes back.
+func _overlook_framing(on: bool) -> void:
+	if String(view.get("mode")) != "chase":
+		return
+	rig.set("collide_with_world", not on)
+	rig.set("_zoom_target", 9.0 if on else float(tuning.get("chase_distance", 3.6)))
+	rig.set("_home_pivot", 3.5 if on else float(tuning.get("chase_height", 2.1)))
+	rig.set("pitch", deg_to_rad(-31.0 if on else float(tuning.get("chase_pitch", -24.0))))
+	rig.call("_apply")
+
+
 ## A visited cell's tile comes up out of the floor, and every tile is recoloured by how recently you
 ## were there (Ruddle 2005: a trail helps on the first search, then its clutter costs; so old visits fade
 ## and finished dead ends go grey).
@@ -441,7 +528,7 @@ func _visit(cell: Vector3i) -> void:
 		var f: float = clampf(1.0 - float(age) / 10.0, 0.25, 1.0)
 		trail[c] = f
 		var at: Vector4 = lattice.cell_centre(c)
-		mi.position = Vector4(at.x, Builder.TILE_Y, at.z, at.w)
+		mi.position = Vector4(at.x, at.y + Builder.TILE_Y, at.z, at.w)
 		var col: Color = Style.role("done") if done.has(c) else floor_col.lerp(Style.role("trail"), f)
 		(mi.material_override as TetraMaterial4D).albedo_color = col
 	map.set("trail", trail)
@@ -486,13 +573,92 @@ func _finish() -> void:
 	hud.set("result", {"title": "%02d  %s" % [level_index + 1, _level_name(level_index)], "time": time,
 		"best": float(bests.get(level_index, time)), "new_best": new_best, "w_moves": w_moves, "par": _par,
 		"next": "NEXT: %02d  %s" % [next + 1, _level_name(next).to_upper()]})
-	var e: Vector4 = lattice.cell_centre(lattice.exit)
-	var inset: float = CELL * 0.5 - 1.1
-	console.set("room", [e - Vector4(inset, 0, inset, 0), e + Vector4(inset, 0, inset, 0)])
-	console.visible = true
-	console.call("show_data", _console_data("near"))
-	console.call("snap")
-	hud.call("toast", "Out of the maze in %s." % Hud.clock(time), Style.role("exit"), 3.0)
+	_to_hall()
+
+
+## Out of the maze, into the hall: behind a fade, the stage's reward, then the stage-complete beat (the
+## camera pulls up and back so you are small, the title over it), then the card and the console.
+func _to_hall() -> void:
+	_busy = true
+	result_hold = hud.get("result")
+	hud.set("result", {})
+	await _fade_to(1.0, 0.25)
+	hud.call("clear_messages")
+	view.call("set_mode", "chase", true)
+	_place_player(hall["spawn"], Vector4(0, 0, -1, 0))
+	player.set("input_enabled", false)
+	var name: String = String(LEVELS[level_index].get("reward", ""))
+	if name == "":
+		name = ["chickens", "wolves", "dreamer"][generated_seed % 3]
+	if _reward != null and is_instance_valid(_reward):
+		_reward.free()
+	_reward = Journey.reward(self, name, player, rig, camera)
+	_reward_t = 0.0
+	var next: int = (level_index + 1) % LEVELS.size()
+	var next_reward: String = String(LEVELS[next].get("reward", ""))
+	Journey.teaser(get_node("Hall"), "%02d  %s" % [next + 1, _level_name(next).to_upper()], next_reward if next_reward != "" else "dreamer")
+	console.set("room", hall["room"])
+	console.visible = false
+	for k in 3:
+		await get_tree().process_frame
+	await _fade_to(0.0, 0.4)
+	_cinema = 0.0
+	hud.set("title", {"kicker": "%02d  %s" % [level_index + 1, _level_name(level_index).to_upper()], "text": "STAGE COMPLETE",
+		"sub": String(Journey.REWARDS[name]["title"]), "left": 4.5})
+	_busy = false
+
+
+var result_hold: Dictionary = {}
+
+
+## The beat: 4 s of the camera rising and pulling back, then control, the card and the console.
+func _cinema_step(delta: float) -> void:
+	_cinema += delta
+	var k: float = smoothstep(0.0, 1.0, clampf(_cinema / 3.6, 0.0, 1.0))
+	rig.set("_zoom_target", lerpf(3.6, 12.0, k))
+	rig.set("distance", lerpf(3.6, 12.0, k))
+	rig.set("_home_pivot", lerpf(2.1, 5.0, k))
+	rig.set("pitch", lerpf(deg_to_rad(-24.0), deg_to_rad(-11.0), k))
+	rig.set("collide_with_world", false)
+	rig.call("_apply")
+	if _cinema >= 4.2:
+		_cinema = -1.0
+		player.set("input_enabled", true)
+		hud.set("result", result_hold)
+		hud.set("result_glass", 0.55)
+		console.visible = true
+		console.call("show_data", _console_data("near"))
+		console.call("snap")
+		_orbit = true
+
+
+## The slow circle after the beat, and handing the camera back once you move.
+func _orbit_step(delta: float) -> void:
+	if _orbit:
+		rig.basis = GB.turned(rig.basis, delta * 0.16)
+		rig.call("_apply")
+		var moving: bool = false
+		for a in [&"move_forward", &"move_back", &"move_left", &"move_right", &"move_ana", &"move_kata"]:
+			if Input.is_action_pressed(a):
+				moving = true
+		if moving:
+			_end_orbit()
+	elif _orbit_out > 0.0:
+		_orbit_out -= delta
+		if _orbit_out <= 0.0:
+			rig.set("collide_with_world", true)
+
+
+func _end_orbit() -> void:
+	if not _orbit:
+		return
+	_orbit = false
+	_orbit_out = 1.0
+	rig.set("_zoom_target", float(tuning.get("chase_distance", 3.6)))
+	rig.set("_home_pivot", float(tuning.get("chase_height", 2.1)))
+	rig.set("pitch", deg_to_rad(float(tuning.get("chase_pitch", -24.0))))
+	rig.call("_apply")
+	hud.set("result_glass", 0.86)
 
 
 func _console_data(anchor: String) -> Dictionary:
@@ -551,7 +717,7 @@ func _mark_cells(cells: Array) -> void:
 	for c in cells:
 		lit[c] = true
 		var at: Vector4 = lattice.cell_centre(c)
-		batch.ring("hint", at + Vector4(0.0, 0.05, 0.0, 0.0), 1.0, 0.16, 0.05, CELL - 1.2, 32)
+		batch.ring("hint", at + Vector4(0.0, 0.05, 0.0, 0.0), 1.0, 0.16, 0.05, lattice.size_of(c).z - 1.2, 32)
 	_hint_node = batch.instance("hint")
 	_hint_node.name = "HintMarks"
 	(_hint_node as MeshInstance4D).material_override = LabMaterials.glow(Style.glow("w"), 1.4)
@@ -579,11 +745,20 @@ func _input(event: InputEvent) -> void:
 	if k != null and k.pressed and not k.echo and k.keycode == KEY_ESCAPE and dev_panel != null and dev_panel.visible:
 		dev_panel.call("toggle")
 		get_viewport().set_input_as_handled()
+		return
+	# Tab, as in Ramon's other scenes (9 Oct: "sliders and a save mode when i press tab, so i can tweak
+	# it"), and F1. Here, before the panel's own controls can take Tab for moving focus.
+	if k != null and k.pressed and not k.echo and (k.keycode == KEY_TAB or k.keycode == KEY_F1) and dev_panel != null:
+		dev_panel.call("toggle")
+		get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if Engine.is_editor_hint():
 		return
+	var mm := event as InputEventMouseMotion
+	if mm != null and _orbit and mm.relative.length() > 3.0 and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		_end_orbit()
 	var mb := event as InputEventMouseButton
 	if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and console.visible and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var origin: Vector4 = camera.global_position
@@ -620,8 +795,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif k.keycode == KEY_L:
 		if state != "lobby":
 			go_lobby()
-	elif k.keycode == KEY_F1:
-		dev_panel.call("toggle")
 	else:
 		return
 	get_viewport().set_input_as_handled()
@@ -649,7 +822,7 @@ func apply_tuning(v: Dictionary) -> void:
 	if String(view.get("mode")) == "chase" and (old.is_empty() or old.get("chase_distance") != v.get("chase_distance") or old.get("chase_height") != v.get("chase_height") or old.get("chase_pitch") != v.get("chase_pitch")):
 		view.call("set_mode", "chase", old.is_empty())
 	view.set("turn_seconds", float(v.get("turn_seconds", 0.35)))
-	view.set("settle_on", float(v.get("settle", 1.0)) > 0.5)
+	view.set("settle_on", float(v.get("settle", 0.0)) > 0.5)
 	_w_step = float(v.get("w_step", 0.3))
 	if state != "lobby":
 		player.set("w_speed_scale", _w_step)
@@ -666,13 +839,19 @@ func apply_tuning(v: Dictionary) -> void:
 		var amb: Color = Style.LIGHT["ambient"]
 		var ka: float = float(v.get("ambient_k", 1.0))
 		l["ambient"] = Color(amb.r * ka, amb.g * ka, amb.b * ka)
-		light.set("mood_overrides", {"bright": l, "dark": l})
-		light.call("set_mood", "bright", true, false)
+		light.set("mood_overrides", {"bright": l})
+		light.call("set_mood", String(light.get("mood")), true, false)
+	_apply_spot()
+
+
+## The one spot over the walker, every number on the Tab panel (Ramon, 9 Oct: "im not sure about this
+## omni light that always follows him around. but its still not a bad idea especially for the dark mode"):
+## its strength in each mood apart, its cone, how high it hangs, and whether it follows you at all.
+func _apply_spot() -> void:
 	var spot: Node = get_node_or_null("Spot")
 	if spot != null:
-		var e: float = float(v.get("spot_energy", 3.0))
-		spot.set("energy", {"bright": e, "dark": e})
-		spot.set("angle", float(v.get("spot_angle", 34.0)))
+		spot.set("energy", {"bright": float(tuning.get("spot_bright", 3.0)), "dark": float(tuning.get("spot_dark", 9.0))})
+		spot.set("angle", float(tuning.get("spot_angle", 30.0)))
 
 
 func _load_bests() -> void:

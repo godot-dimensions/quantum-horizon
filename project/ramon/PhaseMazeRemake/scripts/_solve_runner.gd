@@ -74,6 +74,18 @@ func _key(code: Key) -> void:
 
 
 ## Game time, not wall time: filming runs at a fixed 30 fps however slowly the frames are saved.
+## F, as a player presses it, made sure of: if the view has not changed which axis it hides once the
+## turn is over, the key is sent again (a key event can be missed by a fixed-rate film's frame).
+func _press_f() -> void:
+	for attempt in 3:
+		var before: int = int(_view.get("hidden_axis"))
+		await _key(KEY_F)
+		await _while_turning()
+		if int(_view.get("hidden_axis")) != before:
+			return
+	print("SOLVE:   F did not turn the view after three presses")
+
+
 func _wait(seconds: float) -> void:
 	if _film:
 		for i in int(seconds * 30.0):
@@ -104,6 +116,10 @@ func _walk_to(lv, cell: Vector3i) -> bool:
 	Input.action_press(&"move_forward")
 	while ticks < 600:
 		ticks += 1
+		# Reaching the exit takes you to the reward hall: the walk is over.
+		if String(_m.get("state")) == "finished":
+			Input.action_release(&"move_forward")
+			return true
 		var p: Vector4 = _player.global_position
 		var d: Vector4 = target - p
 		d.y = 0.0
@@ -111,12 +127,50 @@ func _walk_to(lv, cell: Vector3i) -> bool:
 		var flat: Vector4 = d - b.w * d.dot(b.w)
 		if flat.length() < 0.35:
 			Input.action_release(&"move_forward")
+			# Arrived, unless the target lies along the hidden axis (the wrong view): that is no arrival.
+			return absf(d.dot(b.w)) < 0.5
+		_rig.basis = GB.faced(b, flat, 0.35)
+		_rig.call("_apply")
+		await physics_frame
+	Input.action_release(&"move_forward")
+	return false
+
+
+## Walk to a point in the view you have (the lift's ring on the overlook).
+func _walk_to_point(target: Vector4) -> bool:
+	var ticks: int = 0
+	Input.action_press(&"move_forward")
+	while ticks < 600:
+		ticks += 1
+		var d: Vector4 = target - _player.global_position
+		d.y = 0.0
+		var b: Projection = _rig.basis
+		var flat: Vector4 = d - b.w * d.dot(b.w)
+		if flat.length() < 0.4:
+			Input.action_release(&"move_forward")
 			return true
 		_rig.basis = GB.faced(b, flat, 0.35)
 		_rig.call("_apply")
 		await physics_frame
 	Input.action_release(&"move_forward")
 	return false
+
+
+## The overlook: into the yellow ring, and down with the lift.
+func _ride_down() -> bool:
+	var ov: Dictionary = _m.get("overlook")
+	if ov.is_empty() or not bool(_m.get("on_overlook")):
+		return true
+	await _wait(1.2)
+	await _shot("0b_overlook")
+	if not await _walk_to_point(ov["centre"]):
+		return false
+	var ticks: int = 0
+	while bool(_m.get("on_overlook")) and ticks < 900:
+		ticks += 1
+		await physics_frame
+	await _wait(0.3)
+	return not bool(_m.get("on_overlook"))
 
 
 ## Step along the view's W (E ana, Q kata) until the hidden coordinate is the cell's middle.
@@ -135,6 +189,8 @@ func _step_to(lv, cell: Vector3i) -> bool:
 			return true
 		await physics_frame
 	Input.action_release(action)
+	print("SOLVE:   stuck stepping: at %s, velocity %s, slice normal %s, input %s, w speed %s" % [str(_player.global_position),
+		str(_player.get("linear_velocity")), str(_rig.basis.w), str(_player.get("input_enabled")), str(_player.get("w_speed_scale"))])
 	return false
 
 
@@ -156,6 +212,8 @@ func _play(i: int) -> Dictionary:
 	var lv = _m.get("lattice")
 	var route: Array = lv.route()
 	await _shot("0_start")
+	if not await _ride_down():
+		return {"ok": false, "why": "the lift did not take the bot down"}
 	var k: int = 0
 	var turned_once: bool = false
 	while k < route.size() - 1:
@@ -166,13 +224,16 @@ func _play(i: int) -> Dictionary:
 		while k + run < route.size() - 1 and Lattice.axis_of(route[k + run], route[k + run + 1]) == axis:
 			run += 1
 		var hidden: int = int(_view.get("hidden_axis"))
-		if axis == 2 and run >= 2:
+		# A stair through W cannot be stepped up with Q or E: it is walked, turned, like a long run.
+		var stair: bool = false
+		for q in run:
+			if lv.stairs.has(route[k + q]) or lv.stairs.has(route[k + q + 1]):
+				stair = true
+		if axis == 2 and (run >= 2 or stair):
 			# Turn so W is ahead: level first (heading along any corridor), F, and turn round for kata.
 			if hidden != 2:
-				await _key(KEY_F)
-				await _while_turning()
-			await _key(KEY_F)
-			await _while_turning()
+				await _press_f()
+			await _press_f()
 			if not turned_once:
 				turned_once = true
 				await _shot("1_turned")
@@ -188,8 +249,7 @@ func _play(i: int) -> Dictionary:
 		if axis == hidden and axis != 2:
 			# The view hides this axis: back to level.
 			var before: Vector4 = _rig.basis.w
-			await _key(KEY_F)
-			await _while_turning()
+			await _press_f()
 			hidden = int(_view.get("hidden_axis"))
 			print("SOLVE:   back to level for a move along %s: slice normal %s -> %s, hidden now %d" % [Lattice.AXES[axis], str(before), str(_rig.basis.w), hidden])
 		if axis == hidden:
@@ -246,6 +306,6 @@ func _run() -> void:
 			float(r.get("time", 0.0)), int(r.get("w_moves", 0)), int(r.get("par", 0)), int(r.get("turns", 0)), String(r.get("why", ""))])
 		if not r["ok"]:
 			failed.append(int(i) + 1)
-		await _wait(2.0 if _film else 1.0)
+		await _wait(6.5 if _film else 1.0)
 	print("SOLVE: %s" % ("PASS" if failed.is_empty() else "FAIL levels " + str(failed)))
 	quit()

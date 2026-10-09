@@ -13,7 +13,7 @@ extends Node
 ##   shoulder  the orbit rig's own over-the-shoulder framing (its aiming mode).
 ##   first     the arm wound in to eye height and the walker hidden (the pen's human test scene does it
 ##             the same way, chickenpen/scripts/real_character_4d.gd).
-## V switches first and third person, Tab chase and shoulder.
+## V switches first and third person, C chase and shoulder (Tab is the tuning panel since round 2).
 ##
 ## THE QUARTER TURN (F). The heading first snaps to the nearest corridor, then what is ahead swings into
 ## ana over 0.35 s (Miegakure's one button, animated; RESEARCH.md section 3). From a turned view F swings
@@ -43,7 +43,10 @@ var avatar: Node4D
 var mode: String = "chase"
 ## The third-person framing V returns to.
 var third: String = "chase"
-var settle_on: bool = true
+## Off by default since round 2 (Ramon, 9 Oct: "the irregular skewing of the original maze was also
+## cool"): a drag leaves the slice where you let go, leaning and sliding the walls as the old maze did.
+## F and R give the square views back; F1 switches the settle on.
+var settle_on: bool = false
 var turn_seconds: float = 0.35
 ## Radians a second the settle and R turn at.
 var settle_rate: float = 5.0
@@ -80,7 +83,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	match k.keycode:
 		KEY_V:
 			set_mode(third if mode == "first" else "first")
-		KEY_TAB:
+		KEY_C:
 			if mode != "first":
 				set_mode("shoulder" if mode == "chase" else "chase")
 		KEY_F:
