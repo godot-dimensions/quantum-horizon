@@ -296,10 +296,150 @@ The seagull is also its own scene, `gull/gull.tscn`, with a test bed, `gull/gull
 - **A crab:** walking sideways over the sand on eight legs, wandering through W, so it comes and goes
   out of your slice in different places. Drawn the koi's way, its legs stepping in the shader.
 
-## Status
+## Status (9 Oct, end of the build)
 
-(Filled in as the steps land.)
+All 100 steps and everything added mid-build are built, checked by frames, and committed in
+`bb7f374` .. `8f0e5ba` on `RamonPrototypes` (not pushed).
+
+### How to see it
+
+- **Tank room:** open `ramon/WaterLab/water_lab.tscn` and play.
+  - You start in the corridor, bottom left. The path runs up the left and along the tank, past the
+    turning circle at the tank's middle.
+  - A short branch leads to the koi showcase in the south-east corner.
+  - The far door, top right, leads to the sea.
+- **Sea:** `ramon/WaterLab/seascape/seascape.tscn` (or walk through that far door). Its doors at the
+  piers' backs lead back to the tank room.
+- **Gull test bed:** `ramon/WaterLab/gull/gull_test.tscn`.
+
+### Keys
+
+| Where | Key | What it does |
+|---|---|---|
+| Tank room | E | At the console: feeds the koi. At the showcase: opens or pages its floating panel. |
+| Tank room | Right drag (in the circle) | Turns what is IN the tank through W. The room stays put. |
+| Tank room | Wheel (in the circle) | Slides the contents through W. |
+| Tank room | R | In the circle: puts the contents back. At the showcase: makes the koi whole. |
+| Tank room | B | Black or grey palette. |
+| Tank room | F4 | The kit builder. |
+| Sea | Tab | The HUD's modes. LIGHT has the HARBOUR section: gulls 0 to 30, sardines 0 to 6000, the plesiosaur's visit interval. SAVE keeps them. |
+| Sea | P | The other pier. It also disarms the doors until you walk away from them. |
+| Gull bed | 1 to 5 | The plinth gull's pose: glide, flap, flare, folded, stretch. |
+| Gull bed | F / Esc | Follow a gull (again for the next one) / stop following. |
+| Gull bed | T | Slow motion. |
+| Gull bed | - / + | Fewer or more gulls. |
+| Gull bed | Right drag, wheel | Orbit, zoom. |
+
+### What is where
+
+| Piece | File | Notes |
+|---|---|---|
+| The tank | `tank/tank_4d.gd` | Water 18.4 x 4.8 x 3.2 m and 7 m deep in W. One full-screen water pass. Contents turn through W. |
+| Koi (16) | `life/koi_*` | Slice-drawn. Four live off the slice in W. |
+| Eel | `life/eel_4d.gd` | Rests in its cave, patrols low over the sand, backs in tail first. |
+| Crab | `life/crab_4d.gd` | Walks through W, so it comes and goes in different places. |
+| Hammerhead | `life/shark_4d.gd` | Lofted pieces, baked. |
+| Reef, arches, giant stones, dunes | `life/reef_4d.gd`, `life/dunes_4d.gd` | Lofted and baked under `life/baked/`. Load 0.7 s. |
+| Weed | `life/weed_4d.gd` | About 600 long blades plus 3500 short turf blades: the pen's grass tech. |
+| Bubbles, snow | `life/bubbles_4d.gd`, `life/snow_4d.gd` | Snow is 1500 drifting specks. |
+| Gizmo | `room/tank_dial.gd` | The tank's W dial, shown in the circle. |
+| Koi showcase | `room/koi_showcase_4d.gd` | 2.8 m koi in a holo field, Voxel Lab floating panel. |
+| Fish wall | `room/fish_wall_4d.gd` | Seven turning cards over two panels. Names shrink to fit. |
+| Research board | `room/wl_panel_source.gd` | Moving diagrams: waves, the tank, the koi, the weed, the cut. Live benchmarks. |
+| Title wall | `water_lab.tscn` (Hall/Title) | "WATER LAB". |
+| Sea | `seascape/` | Carried from `ramon/Water` with your tuning. Far sea to 900 m. The plesiosaur visits every 40 to 70 s at 2.5 to 4 m down. |
+| Sardine school (3000) | `seascape/fish_school_4d.gd` | The pen's flock at a fifth scale. The plesiosaur is its hawk. |
+| Gulls | `gull/` | See below. |
+| Sound | `audio/bake_water_lab_sound.py` | Synthesized: four gull calls, the harbour bed, the tank hum. Nothing downloaded. |
+
+### THE GULL (Ramon's emphasis: "the wings needs to work")
+
+**The pieces.** Six lofted pieces: body, head with bill, tail, arm, hand, leg.
+- They are baked once to `gull/baked/`. Only the joints move each frame, so nothing re-lofts.
+- The right side is the left turned by `from_xw(PI)`.
+
+**The poses.** Each pose is a set of joint angles, and a gull is always a blend of two.
+- Glide: an M.
+- Flap: 2.5 beats a second. The hand sweeps back on the upstroke.
+- Flare: wings high and cupped, tail fanned down, legs reaching forward.
+- Folded: the black tips crossed over the tail.
+- Stretch: both wings straight up.
+- Rigid pieces cannot Z-fold, so folding also shortens the arm, the hand and the chord.
+
+**The behaviour.**
+- Soars round the harbour with bursts of beats, banking into its turns.
+- Comes in to land into the wind (from +x, off the sea), from a staging point downwind.
+- On a perch:
+  - looks round;
+  - gives the long call (head down, then thrown back) or the laugh;
+  - stretches and shuffles;
+  - leaves with the alarm "kek".
+- Lifts off when you walk within about 3 m, and settles at least 6 m from you.
+- Gathers low over the sardines when the school rises.
+
+**Perches (93 of them).**
+- Both piers' rail tops and pier 2's end.
+- The platform's ring.
+- The pole's top.
+- Both doors' lintels.
+- They are rebuilt when the PIERS sliders change.
+
+**Cost.** About 25 µs a gull a frame in script.
+
+### Numbers
+
+**Tank room.** Measured by the room runner's perf mode.
+
+| Measure | Value |
+|---|---|
+| Frame median | 1.4 to 1.7 ms |
+| Frame 95th percentile | 2.2 to 2.7 ms |
+| Opens in | 0.75 s |
+
+**Sea.** Vsync off, at the pier 1 door.
+
+| Gulls | Frame median | Gull scripts |
+|---|---|---|
+| 12 | 2.1 ms | 0.28 ms |
+| 20 | 2.3 ms | 0.5 ms |
+
+The target was a median under 3 ms.
+
+### Checked by frames (`smoke_test_output/water_lab/`)
+
+**Tank room:**
+- the room, the tank and all its life (koi close, eel on patrol, crab);
+- turning the contents, feeding, the showcase and its panel;
+- every fish wall card, the title wall, the research board's moving diagrams;
+- both HUDs at 4K;
+- the round trip from the lab to the sea and back, arriving at the far door.
+
+**Sea:**
+- the far sea, the plesiosaur near the surface;
+- the school, at 800 and at 3000;
+- gulls on the rails, the ring, the pole and the lintel;
+- a gull flushed when walked up to, and the HARBOUR panel.
+
+**Gull test bed:** every pose from five sides, and a full landing cycle.
+
+### Not checked
+
+- **The sound.** Nothing here can listen. The calls were checked by spectrogram: the pitch contours
+  and harmonics are as designed. The levels are a guess: gulls -8 dB at 3 m, the harbour bed
+  -16 dB, the hum -14 dB at the glass.
+- **The editor view.** Nothing was opened in your editor. The new .tscn files (`gull/gull.tscn`,
+  `gull/gull_test.tscn`) were written by hand. Godot adds their scene uid on first save.
 
 ## Questions for Ramon
 
-(Collected here, not asked mid-build.)
+1. **The sound.** Listen to the gulls and the two beds, and say if you want real recordings.
+   Freesound has CC0 herring gull recordings. I can list some for you to pick (downloading needs
+   your go-ahead).
+2. **Retire `ramon/Water`?** The sea now lives in `WaterLab/seascape/`. The old folder is untouched;
+   retiring it is your call.
+3. **A menu entry?** `menu_final`'s catalogue has no water scene at all. Should the Water Lab (the
+   tank room) get a card?
+4. **Gull size.** The gulls are real size: 0.6 m long, 1.4 m across. From the sea's locked camera
+   (10 m back) they read small. Scale them up for legibility, or keep them true?
+5. **Sound levels**, once heard. All three are quick to change: `harbour_sound_db` on the sea's
+   root, `volume_db` on the Harbour, and the hum's curve in `water_lab_4d.gd`.

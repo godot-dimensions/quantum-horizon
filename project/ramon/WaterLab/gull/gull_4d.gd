@@ -8,12 +8,12 @@ extends Node4D
 ## THE WINGS (the research in follow_up/water_lab.md): each is an arm (shoulder to wrist) and a hand
 ## (wrist to tip). The shoulder raises the wing (elevation), swings it fore and aft (sweep) and turns it
 ## about its own length (twist); the wrist folds the hand back and droops it. With those:
-##   FLAP    2.5 beats a second (the herring gull's measured mean), the downstroke 45% of the beat with
+##   FLAP    2.5 beats a second (large gulls beat at roughly 2.5 to 3), the downstroke 45% of the beat with
 ##           the wing spread, the upstroke with the wrist folded and the hand swept back (big birds do);
 ##           the body heaves a little against it.
 ##   GLIDE   the gull's M: the arms raised a little, the wrists forward, the hands swept back and drooped.
 ##   FLARE   landing: the body pitched up, the wings high, forward and cupped, the tail fanned down, the
-##           feet down; quick shallow back-flaps (about 4 a second, as measured before touchdown).
+##           feet down; quicker, shallower back-flaps to brake (4 a second here).
 ##   FOLDED  perched: the wings laid back along the body, the black tips crossed just past the tail.
 ##           Rigid pieces cannot fold in half the way a real wing's Z-fold does, so the arm and hand
 ##           also shorten along their length as they fold, which reads as folding.
