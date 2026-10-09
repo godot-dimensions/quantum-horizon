@@ -43,11 +43,20 @@ const LabGrid := preload("res://ramon/WaterLab/carried/LabKit/lab_grid.gd")
 const WHITE := "boat_white"
 const ORANGE := "boat_orange"
 @export var tone: String = ""
+## Built simple, for a boat only ever seen far off: the hull, the wheelhouse, the mast, the booms,
+## the gantry and the drum; no capping, rust, tyres, stays, crates or flanges (about 36 pieces fewer,
+## each one a mesh the slicer handles every frame).
+@export var simple: bool = false
 static var _swatches_set: bool = false
 var viewer: Node4D = null
 var _grid: Array = []
 var _tone: String = ""
 var _tone_check: float = 0.0
+## Whether it is near enough your slice to be seen (checked with the tone); a boat that is not rides
+## the sea only twice a second (the far ones and the W copies: about 1.5 ms of a frame otherwise,
+## seven height samples each), and snaps into place when it comes back.
+var _near_slice: bool = true
+var _idle: float = 0.0
 
 ## The sea (water4d_surface.gd).
 var water: Node = null
@@ -120,12 +129,13 @@ func _retone(delta: float) -> void:
 	if _tone_check > 0.0:
 		return
 	_tone_check = 0.25
-	var want: String = WHITE
-	if not tone.is_empty():
-		want = tone
-	elif viewer != null and is_instance_valid(viewer):
+	var d: float = 0.0
+	if viewer != null and is_instance_valid(viewer):
 		var wn: Vector4 = (viewer.global_basis * Vector4(0, 0, 0, 1)).normalized()
-		var d: float = absf((global_position - viewer.global_position).dot(wn))
+		d = absf((global_position - viewer.global_position).dot(wn))
+	_near_slice = d < beam
+	var want: String = tone
+	if want.is_empty():
 		want = WHITE if d < beam * 0.5 else ORANGE
 	if want == _tone:
 		return
@@ -184,7 +194,7 @@ func _build() -> void:
 	for side in [-1.0, 1.0]:
 		_box("Bulwark", Vector4(body_x, freeboard + 0.3, side * (beam * 0.5 - 0.06), 0.0), Vector4(body_len, 0.6, 0.12, beam), white)
 	_box("Transom", Vector4(-length * 0.5 + 0.06, freeboard + 0.3, 0.0, 0.0), Vector4(0.12, 0.6, beam, beam), white)
-	for side in [-1.0, 1.0]:
+	for side in ([] if simple else [-1.0, 1.0]):
 		_box("Capping", Vector4(-0.9, freeboard + 0.02, side * (beam * 0.5 + 0.02), 0.0), Vector4(length * 0.62, 0.07, 0.09, 0.4), rust)
 		# Rust running down from the scuppers.
 		for k in 5:
@@ -202,7 +212,8 @@ func _build() -> void:
 	_box("Windows", wh + Vector4(0.0, freeboard + 1.55, 0.0, 0.0), Vector4(2.64, 0.55, ww + 0.04, ww + 0.04), dark)
 	_box("Roof", wh + Vector4(0.0, freeboard + 2.17, 0.0, 0.0), Vector4(2.9, 0.14, ww + 0.3, ww + 0.3), grey)
 	_box("Stack", wh + Vector4(-1.6, freeboard + 1.6, 0.6, 0.0), Vector4(0.45, 1.6, 0.45, 0.45), white)
-	_box("StackTop", wh + Vector4(-1.6, freeboard + 2.45, 0.6, 0.0), Vector4(0.48, 0.12, 0.48, 0.48), dark)
+	if not simple:
+		_box("StackTop", wh + Vector4(-1.6, freeboard + 2.45, 0.6, 0.0), Vector4(0.48, 0.12, 0.48, 0.48), dark)
 	# The mast on the roof: a cross-tree, the radar, the masthead light.
 	var mast := wh + Vector4(-0.4, freeboard + 2.24, 0.0, 0.0)
 	_box("Mast", mast + Vector4(0.0, 2.0, 0.0, 0.0), Vector4(0.16, 4.0, 0.16, 0.16), grey)
@@ -221,19 +232,23 @@ func _build() -> void:
 		var foot := wh + Vector4(-0.9, freeboard + 0.1, side * 0.5, 0.0)
 		var tip := foot + Vector4(0.0, 4.6, side * 3.6, 0.0)
 		_rod("Boom", foot, tip, 0.13, grey)
-		_rod("Stay", tip, mast + Vector4(0.0, 3.9, 0.0, 0.0), 0.03, dark)
-		_box("BoomRust", foot + (tip - foot) * 0.15, Vector4(0.15, 0.3, 0.15, 0.15), rust)
+		if not simple:
+			_rod("Stay", tip, mast + Vector4(0.0, 3.9, 0.0, 0.0), 0.03, dark)
+			_box("BoomRust", foot + (tip - foot) * 0.15, Vector4(0.15, 0.3, 0.15, 0.15), rust)
 	# The A-frame over the stern.
 	var stern_x: float = -length * 0.5 + 0.35
 	for side in [-1.0, 1.0]:
 		var base := Vector4(stern_x + 0.4, freeboard, side * (beam * 0.5 - 0.35), 0.0)
 		var top := Vector4(stern_x - 0.5, freeboard + 3.2, side * (beam * 0.5 - 0.5), 0.0)
 		_rod("Gantry", base, top, 0.2, Color(0.30, 0.42, 0.56))
-		_box("GantryRust", base + Vector4(0.0, 0.3, 0.0, 0.0), Vector4(0.24, 0.5, 0.24, 0.24), rust)
+		if not simple:
+			_box("GantryRust", base + Vector4(0.0, 0.3, 0.0, 0.0), Vector4(0.24, 0.5, 0.24, 0.24), rust)
 	_box("GantryTop", Vector4(stern_x - 0.5, freeboard + 3.2, 0.0, 0.0), Vector4(0.24, 0.24, beam - 0.7, 0.3), Color(0.30, 0.42, 0.56))
-	_box("Block", Vector4(stern_x - 0.5, freeboard + 2.85, 0.0, 0.0), Vector4(0.3, 0.4, 0.3, 0.3), dark)
 	# The net drum and the crates on the after deck.
 	_drum("NetDrum", Vector4(-length * 0.26, freeboard + 0.7, 0.0, 0.0), 0.62, beam * 0.6, 0.9, Color(0.16, 0.30, 0.22))
+	if simple:
+		return
+	_box("Block", Vector4(stern_x - 0.5, freeboard + 2.85, 0.0, 0.0), Vector4(0.3, 0.4, 0.3, 0.3), dark)
 	for side in [-1.0, 1.0]:
 		_drum("DrumFlange", Vector4(-length * 0.26, freeboard + 0.7, side * beam * 0.31, 0.0), 0.72, 0.06, 0.9, grey)
 	for k in 6:
@@ -269,6 +284,16 @@ func _process(delta: float) -> void:
 		_radar.basis = Basis4D.from_zx(_t * 1.6)
 	if water == null or not water.has_method("height_at"):
 		return
+	var snap: bool = _t <= 0.2
+	if not _near_slice:
+		_idle += delta
+		if _idle < 0.5:
+			return
+		_idle = 0.0
+		snap = true
+	elif _idle > 0.0:
+		_idle = 0.0
+		snap = true
 	var yaw: float = heading + sin(_t * 0.07) * swing
 	var f := Vector4(cos(yaw), 0.0, sin(yaw), 0.0)
 	var side := Vector4(-sin(yaw), 0.0, cos(yaw), 0.0)
@@ -294,8 +319,8 @@ func _process(delta: float) -> void:
 	up = (up - fx * up.dot(fx) - sx * up.dot(sx) - wx * up.dot(wx)).normalized()
 	var want := Projection(fx, up, sx, wx)
 	var k: float = 1.0 - exp(-delta * 2.5)
-	_y = lerpf(_y, y, k) if _t > 0.2 else y
-	_basis = _lerp_basis(_basis, want, k) if _t > 0.2 else want
+	_y = y if snap else lerpf(_y, y, k)
+	_basis = want if snap else _lerp_basis(_basis, want, k)
 	position = Vector4(a.x, _y, a.z, a.w)
 	basis = _basis
 

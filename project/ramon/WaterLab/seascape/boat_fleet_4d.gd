@@ -16,9 +16,13 @@ extends Node4D
 ##
 ## THE WHITE BOATS AND THE OTHERS (Ramon, 9 Oct: "about the white boat, his copies in W should not be
 ## orange. just other boats, and those need to be further away in the distance"): the principals and
-## their copies through W are all white. Orange is only for `others`: different boats, far out (80
-## to 140 m), each set off the slice in W by as much as a slice turned 12 to 30 degrees reaches at
-## its distance, so they are not in the level slice and come into view, far off, as you turn it.
+## their copies through W are all white. Orange is only for `others`: different boats, scattered at
+## random 35 to 85 m out, each 3.5 to 9 m off the slice in W, so none is in the default slice ("those
+## orange boats should not be visible in the default slice, but scattered a bit") and a slice turned
+## a few degrees brings them in. Not further: out there a degree of turn moves the slice the better
+## part of a metre through W per 50 m, and a boat 3.8 m deep in W shows only for a degree or two
+## (a first try at 80-140 m and 12-30 degree turns was never caught by the frames). Seen only far
+## off, they are built simple (fishing_boat_4d.gd `simple`: no tyres, rust, crates or stays).
 ##
 ## NO class_name.
 
@@ -35,12 +39,13 @@ const Boat := preload("res://ramon/WaterLab/seascape/fishing_boat_4d.gd")
 ## Kept clear of: the pier and platform (a box x 0..clear_x, |z| < clear_z).
 @export var clear_x: float = 34.0
 @export var clear_z: float = 10.0
-## The far boats: how many, how far from `centre` (m), the slice turn that brings each in (degrees),
-## and the bearings they keep to (radians either side of +x, out to sea).
-@export var others: int = 5
-@export var others_range := Vector2(80.0, 140.0)
-@export var others_turn := Vector2(12.0, 30.0)
-@export var others_spread: float = 1.3
+## The other boats: how many, how far from `centre` (m), how far off the slice in W (m, either side),
+## the bearings they keep to (radians either side of +x, out to sea), and how far apart they keep (m).
+@export var others: int = 6
+@export var others_range := Vector2(35.0, 85.0)
+@export var others_w := Vector2(3.5, 9.0)
+@export var others_spread: float = 1.4
+@export var others_apart: float = 16.0
 var centre := Vector4.ZERO
 
 var water: Node = null
@@ -66,15 +71,29 @@ func _ready() -> void:
 				_spawn("Boat%d_w%+.1f" % [i, w], Vector4(p.x, 0.0, p.y, w + rng.randf_range(-0.6, 0.6)), rng.randf() * TAU,
 					1.0 + rng.randf_range(-size_jitter, size_jitter), Boat.WHITE)
 				break
-	# The others, far out, spread evenly across the bearings, each a little jittered.
+	# The others, scattered: a random bearing and distance each, kept clear of the pier, the platform,
+	# the white boats and each other.
 	rng.seed = hash([seed_salt, "others"])
+	var taken: Array = []
+	for pr in principals:
+		taken.append(Vector2(float(pr[0]), float(pr[1])))
 	for k in others:
-		var f: float = (float(k) + 0.5) / float(maxi(others, 1))
-		var a: float = lerpf(-others_spread, others_spread, f) + rng.randf_range(-0.12, 0.12)
-		var r: float = rng.randf_range(others_range.x, others_range.y)
-		var turn: float = deg_to_rad(rng.randf_range(others_turn.x, others_turn.y))
-		var w: float = r * tan(turn) * (1.0 if k % 2 == 0 else -1.0)
-		_spawn("Other%d" % k, centre + Vector4(cos(a) * r, 0.0, sin(a) * r, w), rng.randf() * TAU, 1.0 + rng.randf_range(-size_jitter, size_jitter), Boat.ORANGE)
+		for tries in 16:
+			var a: float = rng.randf_range(-others_spread, others_spread)
+			var r: float = rng.randf_range(others_range.x, others_range.y)
+			var p := Vector2(centre.x + cos(a) * r, centre.z + sin(a) * r)
+			if p.x < clear_x and absf(p.y) < clear_z:
+				continue
+			var crowded: bool = false
+			for q in taken:
+				if p.distance_to(q) < others_apart:
+					crowded = true
+			if crowded:
+				continue
+			taken.append(p)
+			var w: float = rng.randf_range(others_w.x, others_w.y) * (1.0 if rng.randf() < 0.5 else -1.0)
+			_spawn("Other%d" % k, Vector4(p.x, 0.0, p.y, w), rng.randf() * TAU, 1.0 + rng.randf_range(-size_jitter, size_jitter), Boat.ORANGE, true)
+			break
 
 
 ## The layers either side of the slice, the slice's own (w 0, the principals) left out.
@@ -88,7 +107,7 @@ func layer_ws() -> Array:
 	return out
 
 
-func _spawn(nm: String, at: Vector4, heading: float, size: float, tone: String) -> void:
+func _spawn(nm: String, at: Vector4, heading: float, size: float, tone: String, simple: bool = false) -> void:
 	var b := Node4D.new()
 	b.name = nm
 	b.set_script(Boat)
@@ -99,5 +118,6 @@ func _spawn(nm: String, at: Vector4, heading: float, size: float, tone: String) 
 	b.set("water", water)
 	b.set("viewer", viewer)
 	b.set("tone", tone)
+	b.set("simple", simple)
 	add_child(b)
 	boats.append(b)

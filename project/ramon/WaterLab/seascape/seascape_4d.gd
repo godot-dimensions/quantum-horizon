@@ -1201,6 +1201,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				var preset: int = SEAS[key.keycode - KEY_1]
 				_water.call(&"set_preset", preset)
 				_toast(Presets.preset_name(preset))
+				# The spray judges the new sea by its own crests, not the last one's.
+				var spray: Node = get_node_or_null("Spray")
+				if spray != null:
+					spray.call("new_sea")
 		KEY_F:
 			if _water != null:
 				_water.set(&"debug_jacobian", not bool(_water.get(&"debug_jacobian")))

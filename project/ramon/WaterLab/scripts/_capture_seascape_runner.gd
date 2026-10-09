@@ -246,15 +246,16 @@ func _round4() -> void:
 	_step(1, _turn(30.0), "")
 	_step(30, _nop, "v07_boats_turned_30")
 	_step(1, _turn(0.0), "")
-	# The far orange boats, out to sea, the slice turned either way (Ramon: the others "further away").
+	# The other boats, orange, scattered off the default slice (Ramon: "should not be visible in the
+	# default slice, but scattered a bit"): none level; then the turn that brings the most in view.
 	_step(1, _far_boats_report, "")
 	_step(1, _go(pc.x + 3.0, 0.0, -90.0), "")
-	_step(1, _turn(20.0), "")
-	_step(40, _pitch(-1.0), "v16_far_boats_xw_plus20")
-	_step(1, _turn(-20.0), "")
-	_step(40, _nop, "v17_far_boats_xw_minus20")
-	_step(1, _turn(0.0, 20.0), "")
-	_step(40, _nop, "v18_far_boats_zw_plus20")
+	_step(40, _pitch(-1.0), "v16_others_level_none")
+	_step(1, _best_turn, "")
+	_step(40, _nop, "v17_others_turned_in")
+	_step(1, _go(pc.x + 3.0, 0.0, -30.0), "")
+	_step(1, _best_turn, "")
+	_step(40, _nop, "v18_others_turned_in_left")
 	_step(1, _turn(0.0), "")
 	for g in [1, 2, 3]:
 		_step(1, _gerstner.bind(g), "")
@@ -268,6 +269,11 @@ func _round4() -> void:
 	_step(120, _nop, "v10_storm_spray")
 	_step(120, _nop, "v11_storm_later")
 	_step(1, _spray_report.bind("storm"), "")
+	# The spray's look, whatever this run's crests did: a hard hit forced on the side in view.
+	_step(1, _force_spray, "")
+	_step(14, _nop, "v19_spray_forced_rising")
+	_step(26, _nop, "v20_spray_forced_falling")
+	_step(240, _nop, "v21_spray_wet_drying")
 	_step(1, _sea.bind(KEY_1), "")
 	_step(30, _go(L + 6.0, -1.0, 0.0), "")
 	_step(10, _pitch(-62.0), "v12_life_below")
@@ -286,6 +292,36 @@ func _round4() -> void:
 var _held_at := Vector3.ZERO
 
 
+## The others in view from the camera: in front, inside 45 degrees of its axis, and cut by its slice.
+func _others_in_view() -> int:
+	var fleet: Node = _room.get_node_or_null("Boat")
+	var cam: Node4D = _room.get("player").find_children("*", "Camera4D", true, false)[0]
+	var n: int = 0
+	for b in fleet.get_children():
+		if String(b.get("tone")) != "boat_orange":
+			continue
+		var q: Vector4 = cam.global_basis.inverse() * ((b as Node4D).global_position - cam.global_position)
+		if q.z < -5.0 and absf(q.x) < -q.z and absf(q.w) < float(b.get("beam")) * 0.45:
+			n += 1
+	return n
+
+
+## Sweeps the slice's two turns, -25 to 25 degrees, and leaves it where the most others are in view.
+func _best_turn() -> void:
+	var best := Vector2.ZERO
+	var most: int = 0
+	var level: int = _others_in_view()
+	for i in 51:
+		for j in 51:
+			_turn(float(i - 25), float(j - 25)).call()
+			var n: int = _others_in_view()
+			if n > most or (n == most and Vector2(i - 25, j - 25).length() < best.length()):
+				most = n
+				best = Vector2(i - 25, j - 25)
+	_turn(best.x, best.y).call()
+	print("WATER others in view: %d level, %d with the slice turned %+.0f xw %+.0f zw" % [level, most, best.x, best.y])
+
+
 func _far_boats_report() -> void:
 	var fleet: Node = _room.get_node_or_null("Boat")
 	var pc: Vector4 = _room.call("platform_centre")
@@ -295,9 +331,17 @@ func _far_boats_report() -> void:
 			whites += 1
 			continue
 		var p: Vector4 = (b as Node4D).position - pc
-		print("WATER far boat %s at %.0f m, bearing %.0f deg, w %+.1f (comes in at a %.0f deg turn)" % [b.name, Vector2(p.x, p.z).length(),
-			rad_to_deg(atan2(p.z, p.x)), p.w, rad_to_deg(atan(absf(p.w) / Vector2(p.x, p.z).length()))])
+		print("WATER far boat %s at %.0f m, bearing %.0f deg, w %+.1f" % [b.name, Vector2(p.x, p.z).length(), rad_to_deg(atan2(p.z, p.x)), p.w])
 	print("WATER white boats (principals and their W copies): %d" % whites)
+
+
+func _force_spray() -> void:
+	var spray: Node = _room.find_child("Spray", true, false)
+	var n: int = int(spray.get("points"))
+	for i in [n / 8, n / 8 + 1, n - n / 8]:
+		var p: Vector4 = spray.call("_rim", i)
+		spray.call("_burst", p + Vector4(0.0, 1.4, 0.0, 0.0), 1.0)
+		spray.call("_wet_at", p, 1.0)
 
 
 func _spray_report(sea: String) -> void:

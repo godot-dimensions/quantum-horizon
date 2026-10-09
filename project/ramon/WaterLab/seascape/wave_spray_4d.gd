@@ -7,11 +7,12 @@ extends Node4D
 ##
 ## WATCHING THE WATER: `rim` points round the platform's edge, the sea's height at each (the surface's
 ## own height_at, the shader's waves solved on the CPU) read four times a second. A point is HIT when
-## the water there rises past `crest` metres over the mean: a crest arriving against the platform's
-## side. (First version: within a metre of the deck, 2.8 m up, which no sea here ever reached; frames
-## of 9 Oct showed the storm without a drop. Measured then: the rim's water tops out near 1.5 m in
-## the moderate swell, 1.8 m in the storm; at 0.75 m the swell threw 28 bursts in ten seconds.)
-## Only then, there:
+## the water there rises into the top of what this sea has lately thrown at the rim (`share` of its
+## recent highest, which sinks slowly so a calmer sea is judged by its own crests), and at least
+## `floor_h` over the mean: a big crest arriving against the platform's side. (First a metre under
+## the deck, which no sea here reached; then a fixed 0.75 m, then 1.3 m. Measured at the rim, the
+## crests of the swell and the storm overlap, 1.2 to 1.8 m either way, so no one height worked:
+## 28 bursts in ten seconds of swell, or none in a storm.) Only then, there:
 ##   SPRAY  a burst of white drops thrown up the platform's side from the water at that point of the
 ##          rim (up, out, a little sideways), the strongest topping the deck's edge, falling back under
 ##          gravity, gone in a second or so; drawn as the tank's bubbles are (life/blob.gdshader), each
@@ -31,10 +32,15 @@ var deck: TetraMaterial4D = null
 var centre := Vector4.ZERO
 var radius: float = 5.2
 var deck_y: float = 2.8
-## How high over the mean (metres) the water at the rim must rise to count as a hit.
-@export var crest: float = 1.3
+## A hit: the water at the rim within the top (1 - share) of this sea's recent highest, rising, and
+## at least floor_h over the mean; the recent highest sinks `settle` metres a second.
+## (At 0.85, 0.6 and 0.04 the swell threw 32 bursts in about forty seconds, nearly every crest.)
+@export var share: float = 0.9
+@export var floor_h: float = 0.8
+@export var settle: float = 0.02
+var _recent: float = 1.0
 @export var points: int = 24
-@export var max_drops: int = 420
+@export var max_drops: int = 700
 
 var herd: Node4D
 var _drops: Array = []
@@ -79,6 +85,8 @@ func _process(delta: float) -> void:
 	_check -= dt
 	if _check <= 0.0 and water != null and water.has_method("height_at"):
 		_check = 0.25
+		_recent = maxf(_recent - settle * 0.25, 0.0)
+		var hit_at: float = maxf(floor_h, share * _recent)
 		for i in points:
 			_cool[i] = maxf(_cool[i] - 0.25, 0.0)
 			var p: Vector4 = _rim(i)
@@ -86,8 +94,9 @@ func _process(delta: float) -> void:
 			var rising: bool = h > _last_h[i] + 0.02
 			_last_h[i] = h
 			peak = maxf(peak, h)
-			if h > crest and rising and _cool[i] <= 0.0:
-				var strength: float = clampf((h - crest) / 0.4, 0.25, 1.0)
+			_recent = maxf(_recent, h)
+			if h > hit_at and rising and _cool[i] <= 0.0:
+				var strength: float = clampf((h - floor_h) / 1.1, 0.25, 1.0)
 				_cool[i] = 1.2
 				bursts += 1
 				_burst(p + Vector4(0.0, h, 0.0, 0.0), strength)
@@ -98,22 +107,32 @@ func _process(delta: float) -> void:
 	_dry(dt)
 
 
+## A new sea (keys 1-4): its crests are judged afresh (frames of 9 Oct: the storm, coming after the
+## swell's higher crests at the rim, threw nothing in its first ten seconds).
+func new_sea() -> void:
+	_recent = floor_h
+
+
 ## A burst of drops from the water at rim point `p`, thrown up the side: the strongest clear the deck.
 func _burst(p: Vector4, strength: float) -> void:
 	var out: Vector4 = (p - centre)
 	out.y = 0.0
 	out = out.normalized()
-	# (Frames of 9 Oct: 18-46 drops of 3-9 cm were specks from the deck; now more, and bigger.)
-	var n: int = int(lerpf(30.0, 70.0, strength))
+	# (Frames of 9 Oct: 18-46 drops of 3-9 cm were specks from the deck; then 30-70 of 7-17 cm, thrown
+	# from one point, read as a clump of bubbles at the rail. Now a sheet: spread two metres along the
+	# rim, fanned in and out, the hardest thrown well over the deck.)
+	var n: int = int(lerpf(50.0, 120.0, strength))
 	for k in n:
 		if _drops.size() >= max_drops:
 			break
-		var side := Vector4(-out.z, 0.0, out.x, 0.0) * _rng.randf_range(-0.6, 0.6)
-		# Up: enough to climb from the water to the deck's edge and a metre over on the hardest hits.
-		var climb: float = maxf(deck_y - p.y, 0.5) + 1.0 * strength
-		var up: float = sqrt(2.0 * 9.8 * climb) * _rng.randf_range(0.55, 1.0) * (0.7 + 0.3 * strength)
-		var v: Vector4 = out * _rng.randf_range(0.3, 1.6) + side + Vector4(0.0, up, 0.0, _rng.randf_range(-0.3, 0.3))
-		_drops.append({"p": p + out * 0.15 + side * 0.4, "v": v, "life": _rng.randf_range(0.9, 1.6), "r": _rng.randf_range(0.07, 0.17)})
+		var along := Vector4(-out.z, 0.0, out.x, 0.0)
+		var spread: float = _rng.randf_range(-1.0, 1.0)
+		# Up: enough to climb from the water to the deck's edge and up to a metre and a half over.
+		var climb: float = maxf(deck_y - p.y, 0.5) + 1.5 * strength
+		var up: float = sqrt(2.0 * 9.8 * climb) * _rng.randf_range(0.5, 1.05) * (0.7 + 0.3 * strength)
+		# Fanned: most thrown in over the deck (the wave's push), some back out to sea, a little along.
+		var v: Vector4 = out * _rng.randf_range(-2.4, 0.9) + along * (spread * 0.9) + Vector4(0.0, up, 0.0, _rng.randf_range(-0.3, 0.3))
+		_drops.append({"p": p + out * 0.2 + along * (spread * 1.1), "v": v, "life": _rng.randf_range(0.9, 1.7), "r": _rng.randf_range(0.04, 0.12)})
 
 
 func _step(dt: float) -> void:

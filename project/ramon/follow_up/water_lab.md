@@ -830,8 +830,15 @@ Done and checked by frames (`smoke_test_output/water_lab/room/u*`, `s*`; `seasca
 - **Platform stability:** the platform moved 0.005 m in view while the slice turned 31 degrees
   (v05).
 - **Boats:**
-  - White in your slice and orange off it (v05-v07). Two principals, plus more boats through W by
-    the Exploder's layers.
+  - Two white principals, plus their copies through W by the Exploder's layers, all white (Ramon,
+    mid-round: "his copies in W should not be orange, just other boats, and those need to be further
+    away"; then "those orange boats should not be visible in the default slice, but scattered a bit").
+    Six other boats, orange, are scattered at random 35-85 m out and 3.5-9 m off the slice in W, so
+    none shows level and a few degrees of turn bring them in (v16-v18).
+  - They are not further out. At 100 m, a degree of turn moves the slice nearly 2 m through W, so a
+    boat 3.8 m deep in W shows for only a degree or two. A first try at 80-140 m was never caught by
+    the frames.
+  - They are built simple (no tyres, rust, crates or stays), about 36 fewer pieces each.
   - The grid lines had read thick from a distance, because the boat swatch had about four times
     the kit's line contrast and a line is never drawn thinner than a pixel. The swatch now uses
     the kit's own contrast.
@@ -839,9 +846,16 @@ Done and checked by frames (`smoke_test_output/water_lab/room/u*`, `s*`; `seasca
   lines; style 1 (the original) is kept on G for comparison (v08).
 - **Storm:** 52 m wavelength with fewer crests (v09-v11).
 - **Spray:** the first trigger asked for water within 1 m of the 2.8 m deck, which no sea here
-  reaches, so the storm frames showed no spray. It now fires when a crest rises past 0.75 m at the
-  rim, and the drops are thrown up the side; the hardest clear the deck and wet it.
+  reaches, so the storm frames showed no spray.
+  - Measured at the rim: the water tops out near 1.5 m in the moderate swell and 1.8 m in the storm.
+  - It now fires on the top tenth of each sea's own recent crests at the rim (at least 0.8 m),
+    judged afresh when you change the sea. A hit throws 50-120 drops, spread along two metres of
+    the rim and fanned in over the deck; the hardest wet the deck (v19-v21). The last run measured
+    18 bursts in about forty seconds of swell and 19 in ten seconds of storm.
 - **Life below:**
-  - The hammerheads now swim between 0.8 and 4.5 m deep, and the eels between 1.3 and 2.1 m. The
-    sea goes dark below about 3 m, and the first frames never caught a shark.
+  - The hammerheads now swim between 0.8 and 4.5 m deep, on a loop 9-19 m from the platform's middle,
+    so they pass close without going under it. Before, their 22 x 15 m loop never came within 11 m.
+  - The eels sit just under the surface, 0.5-1.4 m deep; deeper, the dark water hid them.
   - The second plesiosaur stays deep and subtle.
+- **Perf, on the platform:** frame median 3.29 ms (95% 4.01 ms), GPU 1.82 ms. The far boats had
+  pushed it to 4.85 ms; the simple build and the twice-a-second riding off the slice brought it back.
