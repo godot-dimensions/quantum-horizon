@@ -20,6 +20,16 @@ extends Node4D
 ##   V            the volume view (the room's): the whole 4D specimen, faintly
 ## Each cut throws chips in the colours it went through and makes a short crunch (room/vl_sound.gd).
 ##
+## AT A BUILDER (round 4, Build it: an exhibit with build_cut()) the bench hands it the aiming, the
+## outline and the edit, since it knows its grid: 1 to 3 brick, through W, take away; Q/E the colour;
+## Z takes the last one back; Space levels the slice again; R starts again from the doorway.
+## Round 5 (Ramon, 9 Oct, #40: "use left mouse drag to orbit the camera around the voxel construction
+## ... make the orbit direction intuitive rather than inverted ... rotate freely without feeling
+## locked"): at a builder a LEFT drag orbits and a left click with no drag places, both directions turn
+## as if you held the build and turned it (the middle drag's up and down was the other way round from
+## its left and right), the camera goes from nearly straight down to a little under the top of the
+## grid, and it is kept inside `camera_bounds` (the room's walls, in the corner) by coming closer.
+##
 ## Faces its own +Z: the pad lies in front of the station, and you sit looking from it to the specimen.
 ##
 ## NO class_name (engine_gotchas.md).
@@ -68,6 +78,8 @@ const TetRay := preload("res://ramon/VoxelLab/specimen/vl_tet_ray.gd")
 @export_range(0.0, 6.0, 0.05) var look_height: float = 1.8
 ## Which tools this bench offers (vl_cutter.gd TOOLS).
 @export var tools: PackedStringArray = PackedStringArray(["ball", "block", "drill", "saw"])
+## Where the camera may be, on the floor (x, z, world): it comes closer rather than leave it. Empty: anywhere.
+@export var camera_bounds: Rect2 = Rect2()
 
 var docked: bool = false
 var room: Node
@@ -85,6 +97,10 @@ var _overlay: Control
 var _yaw: float = 0.0
 var _pitch: float = 0.0
 var _mdrag: bool = false
+## A builder's left button: down, and how far it has moved since (pixels); past DRAG_PX it orbits.
+var _ldown: bool = false
+var _lmoved: float = 0.0
+const DRAG_PX := 5.0
 var _dist: float = 4.6
 var _drag_from: Dictionary = {}
 var _rdrag: bool = false
@@ -181,6 +197,12 @@ func specimen() -> Node:
 	return e.get("specimen") if e != null else null
 
 
+## The exhibit when it builds rather than being cut (Build it), else null.
+func builder() -> Node:
+	var e: Node = exhibit()
+	return e if e != null and e.has_method("build_cut") else null
+
+
 ## The point the camera circles: the specimen's middle as it stands, in your slice (W 0).
 func _centre() -> Vector4:
 	var sp: Node4D = specimen() as Node4D
@@ -238,6 +260,8 @@ func dock(r: Node) -> void:
 			_sounds.append(Sound.crunch(float(i) / 3.0, 0.2 + 0.03 * float(i)))
 	if not tool in tools:
 		tool = tools[0]
+	if builder() != null:
+		size_index = clampi(size_index, 0, _sizes() - 1)
 	_sync_overlay()
 	docked_changed.emit(true)
 
@@ -247,6 +271,7 @@ func undock() -> void:
 		return
 	docked = false
 	_drag_from = {}
+	_ldown = false
 	var sc: Node = showcase()
 	if sc != null:
 		sc.set("autoplay", _autoplay_was)
@@ -289,10 +314,18 @@ func _process(delta: float) -> void:
 	var turn: float = (1.0 if Input.is_key_pressed(KEY_D) else 0.0) - (1.0 if Input.is_key_pressed(KEY_A) else 0.0)
 	var lift: float = (1.0 if Input.is_key_pressed(KEY_W) else 0.0) - (1.0 if Input.is_key_pressed(KEY_S) else 0.0)
 	_yaw += turn * delta * 1.1
-	_pitch = clampf(_pitch - lift * delta * 0.8, deg_to_rad(-70.0), deg_to_rad(15.0))
+	_pitch = _clamp_pitch(_pitch - lift * delta * 0.8)
 	_place_camera(1.0 - exp(-10.0 * delta))
 	_update_hover()
 	_sync_overlay()
+
+
+## Up and down: a builder's orbit reaches from nearly straight down to a little under level; a cutting
+## bench keeps its old reach.
+func _clamp_pitch(p: float) -> float:
+	if builder() != null:
+		return clampf(p, deg_to_rad(-85.0), deg_to_rad(8.0))
+	return clampf(p, deg_to_rad(-70.0), deg_to_rad(15.0))
 
 
 func _place_camera(_k: float) -> void:
@@ -300,7 +333,20 @@ func _place_camera(_k: float) -> void:
 		return
 	var c: Vector4 = _centre()
 	var dir := Vector4(sin(_yaw) * cos(_pitch), -sin(_pitch), cos(_yaw) * cos(_pitch), 0.0)
-	_cam.global_position = c + dir * _dist
+	var dist: float = _dist
+	# Inside the walls (and over the floor): closer, never through them.
+	if camera_bounds.size != Vector2.ZERO:
+		for axis in [0, 2]:
+			var lo: float = camera_bounds.position.x if axis == 0 else camera_bounds.position.y
+			var hi: float = camera_bounds.end.x if axis == 0 else camera_bounds.end.y
+			if dir[axis] > 1e-4:
+				dist = minf(dist, (hi - c[axis]) / dir[axis])
+			elif dir[axis] < -1e-4:
+				dist = minf(dist, (lo - c[axis]) / dir[axis])
+		if dir.y < -1e-4:
+			dist = minf(dist, (0.35 - c.y) / dir.y)
+		dist = maxf(dist, 1.2)
+	_cam.global_position = c + dir * dist
 	_cam.global_basis = Basis4D.from_zx(_yaw) * Basis4D.from_yz(_pitch)
 
 
@@ -335,9 +381,17 @@ func _update_hover() -> void:
 	var ov: Vector4 = sp.call("to_voxel", o)
 	var dv: Vector4 = (sp.call("dir_to_voxel", d) as Vector4).normalized()
 	var r: Dictionary = sp.get("recipe")
-	# A recipe our copy can follow is aimed at through it (and the cuts it knows); one built from noise
-	# (Andrew's landscape and caves) is aimed at through the engine's own chunk meshes.
-	var hit: Dictionary = Recipe.raycast(r, sp.get("cuts"), ov, dv, 400.0) if bool(r.get("mirror", true)) else TetRay.raycast(sp, ov, dv, 400.0)
+	# A builder aims through its own grid. A recipe our copy can follow is aimed at through it (and the
+	# cuts it knows); one built from noise (Andrew's landscape and caves) through the engine's own chunk
+	# meshes.
+	var b: Node = builder()
+	var hit: Dictionary
+	if b != null:
+		hit = b.call("raycast", ov, dv)
+	elif bool(r.get("mirror", true)):
+		hit = Recipe.raycast(r, sp.get("cuts"), ov, dv, 400.0)
+	else:
+		hit = TetRay.raycast(sp, ov, dv, 400.0)
 	if hit.is_empty():
 		return
 	hover = hit
@@ -350,9 +404,12 @@ func _sync_overlay() -> void:
 		return
 	var sp: Node = specimen()
 	_overlay.set("tool", tool)
+	_overlay.set("tools", tools)
 	_overlay.set("size_index", size_index)
 	_overlay.set("records", records)
 	_overlay.set("swap", bool(sp.get("swap")) if sp != null else true)
+	var b: Node = builder()
+	_overlay.set("build", b.call("overlay_info", tool, size_index) if b != null else {})
 	if sp != null:
 		var st: Dictionary = sp.get("stats")
 		var n: int = int(sp.call("tets"))
@@ -364,6 +421,10 @@ func _sync_overlay() -> void:
 		_overlay.set("hit_world", Vector4.INF)
 		return
 	_overlay.set("hit_world", hover["world"])
+	if b != null:
+		_overlay.set("hit_text", b.call("hit_text", hover))
+		_overlay.set("outline", b.call("outline", sp, hover, tool))
+		return
 	var r: Dictionary = sp.get("recipe")
 	var v: float = float(r.get("voxel", 0.1))
 	var w_m: float = ((hover["point"] as Vector4).w - (r["center"] as Vector4).w) * v
@@ -439,7 +500,16 @@ func _input(event: InputEvent) -> void:
 	var k := event as InputEventKey
 	var sc: Node = showcase()
 	if mb != null:
-		if mb.button_index == MOUSE_BUTTON_LEFT:
+		if mb.button_index == MOUSE_BUTTON_LEFT and builder() != null:
+			# A builder: a click places on release, a drag orbits.
+			if mb.pressed:
+				_ldown = true
+				_lmoved = 0.0
+			elif _ldown:
+				_ldown = false
+				if _lmoved < DRAG_PX:
+					cut_here()
+		elif mb.button_index == MOUSE_BUTTON_LEFT:
 			if mb.pressed:
 				if tool == "saw":
 					if not hover.is_empty():
@@ -464,10 +534,17 @@ func _input(event: InputEvent) -> void:
 	if mm != null:
 		if _rdrag and sc != null:
 			sc.call("turn_by", mm.relative.x * 0.006, mm.relative.y * 0.006)
+		elif _ldown and builder() != null:
+			_lmoved += mm.relative.length()
+			if _lmoved >= DRAG_PX:
+				orbit(mm.relative)
 		elif _mdrag:
-			# Orbit, as a middle drag does in Blender.
-			_yaw -= mm.relative.x * 0.006
-			_pitch = clampf(_pitch + mm.relative.y * 0.005, deg_to_rad(-70.0), deg_to_rad(15.0))
+			if builder() != null:
+				orbit(mm.relative)
+			else:
+				# Orbit, as a middle drag does in Blender.
+				_yaw -= mm.relative.x * 0.006
+				_pitch = clampf(_pitch + mm.relative.y * 0.005, deg_to_rad(-70.0), deg_to_rad(15.0))
 		return
 	if k == null or not k.pressed or k.echo:
 		return
@@ -482,12 +559,21 @@ func _input(event: InputEvent) -> void:
 		KEY_Q:
 			size_index = maxi(size_index - 1, 0)
 		KEY_E:
-			size_index = mini(size_index + 1, 2)
+			size_index = mini(size_index + 1, _sizes() - 1)
 		KEY_R:
 			var ex: Node = exhibit()
 			if ex != null:
 				ex.call("reset")
-				_say("Whole again")
+				_say("Start again: the doorway" if builder() != null else "Whole again")
+		KEY_Z:
+			if builder() != null:
+				if undo().is_empty():
+					_say("Nothing to take back")
+		KEY_SPACE:
+			if builder() != null and sc != null:
+				sc.set("turn", Vector2.ZERO)
+				sc.set("turn_basis", Projection.IDENTITY)
+				_say("The slice level again")
 		KEY_T:
 			var sp: Node = specimen()
 			if sp != null:
@@ -509,9 +595,22 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
+## A builder's orbit by a mouse move (pixels; the runner calls it too): as if you held the build and
+## turned it. Right: its front goes right. Down: you look down on it more.
+func orbit(rel: Vector2) -> void:
+	_yaw -= rel.x * 0.006
+	_pitch = _clamp_pitch(_pitch - rel.y * 0.005)
+
+
 func _say(text: String) -> void:
 	if room != null and room.get("hud") != null:
 		room.get("hud").call("toast", text)
+
+
+## Sizes Q/E steps through: a builder's colours, or small, medium, large.
+func _sizes() -> int:
+	var b: Node = builder()
+	return int(b.call("colour_count")) if b != null else 3
 
 
 ## Cuts with the current tool where the mouse is (the runner calls this too). Returns the record so far.
@@ -520,6 +619,9 @@ func cut_here() -> Dictionary:
 	# A cut made while the last one is still on its way joins its swap (vl_specimen_4d.gd).
 	if sp == null or hover.is_empty():
 		return {}
+	var bld: Node = builder()
+	if bld != null:
+		return _build(bld, bld.call("build_cut", tool, size_index, hover))
 	var r: Dictionary = sp.get("recipe")
 	var v: float = float(r.get("voxel", 0.1))
 	var w_dir: Vector4 = (sp.call("dir_to_voxel", Vector4(0, 0, 0, 1)) as Vector4).normalized()
@@ -543,6 +645,32 @@ func cut_here() -> Dictionary:
 	return rec
 
 
+## Takes a builder's last brick back (Z; the runner calls this too).
+func undo() -> Dictionary:
+	var bld: Node = builder()
+	return _build(bld, bld.call("undo_cut")) if bld != null else {}
+
+
+## A builder's edit: the specimen takes it, the builder's copy follows, a puff in its colours and a
+## knock.
+func _build(bld: Node, cut: Dictionary) -> Dictionary:
+	var sp: Node = specimen()
+	if cut.is_empty() or sp == null:
+		return {}
+	var rec: Dictionary = sp.call("apply_cut", cut)
+	if rec.is_empty():
+		return {}
+	bld.call("commit", cut)
+	var at: Vector4 = hover.get("world", (sp as Node4D).global_position) if not hover.is_empty() else (sp as Node4D).global_position
+	var n_world: Vector4 = (sp.call("dir_to_global", hover.get("normal", Vector4(0, 1, 0, 0))) as Vector4).normalized()
+	Chips.spawn(get_tree().current_scene if get_tree().current_scene != null else self, at, n_world, cut["colors"], 8, 0.04)
+	if _audio != null and not _sounds.is_empty():
+		_audio.stream = _sounds[0]
+		_audio.pitch_scale = randf_range(1.35, 1.5) if int(cut["fill"]) != Recipe.AIR else randf_range(0.95, 1.05)
+		_audio.play()
+	return rec
+
+
 func _on_cut(rec: Dictionary) -> void:
 	if String(rec.get("label", "")).begins_with("Story"):
 		return
@@ -553,5 +681,8 @@ func _on_cut(rec: Dictionary) -> void:
 
 ## The control strip while seated.
 func strip() -> Array:
+	if builder() != null:
+		return [["Click", "Place"], ["Drag", "Look around"], ["Right drag", "Turn the slice"], ["Wheel", "W layer"], ["1 to 3", "Tool"],
+			["Q / E", "Colour"], ["Z", "Undo"], ["Space", "Level"], ["R", "Start again"], ["F", "Stand up"]]
 	return [["Click", "Saw: press, drag, let go" if tool == "saw" else "Cut"], ["1 to 4", "Tool"], ["Q / E", "Size"],
 		["Wheel", "Slide through W"], ["Right drag", "Turn in 4D"], ["Middle drag / WASD", "Orbit"], ["R", "Whole again"], ["F / Esc", "Stand up"]]

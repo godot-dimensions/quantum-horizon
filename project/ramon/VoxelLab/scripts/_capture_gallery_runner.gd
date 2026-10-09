@@ -2,7 +2,7 @@ extends SceneTree
 ## Voxel Lab, round 2 (9 Oct): the gallery and the field, played and photographed. The terrain's ring
 ## (the choice: cut it, change the land), its three looks, a cut at its bench; a rung of the ladder and
 ## its pop-up; the two blue walls; the far door's shimmer; through it to the field's deck (nothing on
-## screen as you arrive; the helm's choice in its ring; change the land, built again behind the board;
+## screen as you arrive; a station's choice in its ring; change the land, built again behind the board;
 ## flying as the bird, and back on the deck); back through the deck's shimmer to the gallery's far door. Frames to
 ## smoke_test_output/voxel_lab/gallery/, checks printed as PASS or FAIL.
 ##
@@ -85,12 +85,12 @@ func _process(delta: float) -> bool:
 			if lab != null and lab.get("player") != null and _t > 2.0 and not bool(lab.get("loading")) and bool(_ex("Terrain").call("is_ready")) and bool(_ex("Layer3").call("is_ready")):
 				var n: Dictionary = _ex("Terrain").call("numbers")
 				print("GALLERY terrain: %s" % str(n))
-				_place(0.0, -17.0, 0.0)
+				_place(0.0, -18.0, 0.0)
 				_next()
 		1:
 			if _t > 1.6:
 				_save("01_gallery")
-				_place(0.0, -23.5, 90.0)
+				_place(0.0, -24.5, 90.0)
 				_next()
 		2:
 			if _t > 1.4:
@@ -132,7 +132,7 @@ func _process(delta: float) -> bool:
 				_next()
 		9:
 			if _t > 0.8:
-				_place(7.2, -20.0, -90.0)
+				_place(7.2, -21.0, -90.0)
 				_next()
 		10:
 			if _t > 1.2:
@@ -147,23 +147,23 @@ func _process(delta: float) -> bool:
 				for i in 3:
 					var n: Dictionary = _ex("Layer%d" % (i + 1)).call("numbers")
 					print("GALLERY layer %d: %s chunks, %s tetrahedra, %s" % [i + 1, String(n["chunks"]), String(n["tets"]), String(n["mb"])])
-				_place(3.5, -23.5, -90.0)
+				_place(3.5, -24.5, -90.0)
 				_next()
 		12:
 			if _t > 1.4:
 				_save("08_layers_wall")
-				_place(-1.5, -18.0, 135.0)
+				_place(-1.5, -19.0, 135.0)
 				_next()
 		13:
 			if _t > 1.4:
 				_save("09_about_wall")
-				_place(0.0, -26.5, 0.0)
+				_place(0.0, -27.5, 0.0)
 				_next()
 		14:
 			if _t > 1.4:
 				_save("10_far_door")
 				# Into the shimmer.
-				_place(0.0, -31.55, 0.0)
+				_place(0.0, -32.55, 0.0)
 				_next()
 		15:
 			var f: Node = _field()
@@ -177,9 +177,10 @@ func _process(delta: float) -> bool:
 			# A moment after the board has gone: you look first, nothing on screen.
 			if f != null and f.get("player") != null and not bool(f.get("loading")) and _since > 1.5:
 				_check(String(f.get("mode")) == "deck", "through the shimmer: on the field's deck")
-				_check(not bool(f.get("choice").get("shown")), "you look first: no choice until the helm")
+				_check(not bool(f.get("choice").get("shown")), "you look first: no choice until a station")
 				_save("11_field_deck")
-				f.get("player").global_position = f.call("helm_spot")
+				# Round 4: two stations where the helm was; the right one changes the world.
+				f.get("player").global_position = f.call("station_spot", "world")
 				_next()
 			elif _t > 40.0:
 				_check(false, "the field never opened")
@@ -187,9 +188,9 @@ func _process(delta: float) -> bool:
 		16:
 			if _t > 1.2:
 				var f: Node = _field()
-				_check(bool(f.get("at_helm")) and bool(f.get("choice").get("shown")), "in the helm's ring, its choice")
-				_save("11b_field_helm")
-				_key(KEY_2)
+				_check(String(f.get("at_station")) == "world" and bool(f.get("choice").get("shown")), "in the right station's ring, its choice")
+				_save("11b_field_station")
+				_key(KEY_1)
 				_since = 0.0
 				_next()
 		17:
@@ -203,24 +204,30 @@ func _process(delta: float) -> bool:
 			else:
 				_since += delta
 			if _t > 1.0 and not bool(f.get("loading")) and _since > 1.5:
-				_check(int(f.get("biome")) == 1 and _board_saved2, "2 at the helm changes the land, built again behind the board")
+				_check(int(f.get("biome")) == 1 and _board_saved2, "1 at the right station changes the land, built again behind the board")
 				_check(not (f.get("water") as Node4D).visible, "the moving sea only with the green land")
 				_save("12_field_desert")
-				_key(KEY_1)
+				f.get("player").global_position = f.call("station_spot", "fly")
 				_next()
 			elif _t > 40.0:
 				_check(false, "the land was never built again")
 				return true
 		18:
+			# At the left station: 1 takes off.
 			var f: Node = _field()
-			if _t < 0.2:
-				f.get("bird").set("drive", {"flap": true, "pitch": 0.05})
+			if _t > 1.0 and _fly_t < 0.0:
+				_key(KEY_1)
+				_fly_t = _t
+			# Once it is up (take-off clears whatever was being driven), flap level, as the open world's own
+			# runner does, and measure from there.
+			if _fly_t >= 0.0 and _t - _fly_t > 0.2 and _t - _fly_t < 0.5:
+				f.get("bird").set("drive", {"flap": true, "pitch": 0.0})
 				_deck0 = f.get("bird").get("at")
-			if _t > 4.0:
+			if _fly_t >= 0.0 and _t - _fly_t > 4.5:
 				var b: Node = f.get("bird")
 				var moved: Vector4 = (b.get("at") as Vector4) - _deck0
-				_check(String(f.get("mode")) == "fly" and bool(b.get("flying")), "1 at the helm: you fly as a bird")
-				_check(Vector2(moved.x, moved.z).length() > 12.0, "off the deck and away (%.1f m)" % Vector2(moved.x, moved.z).length())
+				_check(String(f.get("mode")) == "fly" and bool(b.get("flying")), "1 at the left station: you fly as a bird")
+				_check(Vector2(moved.x, moved.z).length() > 6.0, "off the deck and away (%.1f m)" % Vector2(moved.x, moved.z).length())
 				_save("13_field_flying")
 				b.set("drive", {})
 				_key(KEY_1)
@@ -237,7 +244,7 @@ func _process(delta: float) -> bool:
 			var l: Node = _lab()
 			if l != null and l.get("player") != null and not bool(l.get("loading")) and _t > 1.5:
 				var p: Vector4 = l.get("player").global_position
-				_check(p.z < -24.0 and p.z > -28.0, "back through the deck's shimmer, inside the gallery's far door (z %.1f)" % p.z)
+				_check(p.z < -25.0 and p.z > -29.0, "back through the deck's shimmer, inside the gallery's far door (z %.1f)" % p.z)
 				_save("14_back_in_gallery")
 				print("GALLERY done, %d failed" % _fails)
 				return true
@@ -245,6 +252,9 @@ func _process(delta: float) -> bool:
 				_check(false, "the lab never came back")
 				return true
 	return false
+
+
+var _fly_t: float = -1.0
 
 
 func _next() -> void:

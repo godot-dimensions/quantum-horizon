@@ -101,6 +101,11 @@ var _floor_check: float = 0.0
 	set(v):
 		motion = v
 		_apply_look()
+## The frames round objects in one colour instead of the sheet's (alpha: how much). Clear: as drawn.
+@export var frame_tint: Color = Color(0, 0, 0, 0):
+	set(v):
+		frame_tint = v
+		_apply_look()
 ## Where marks end at a node: "hide" under its art, or "keep" the sheet's 0.25P clear (path_spec.gd).
 @export_enum("hide", "keep") var clear_style: String = Spec.CLEAR_STYLE:
 	set(v):
@@ -1124,6 +1129,7 @@ func _apply_look() -> void:
 		Draw.set_param(mi, "under_color", under_color)
 		Draw.set_param(mi, "motion", 1.0 if motion else 0.0)
 		Draw.set_param(mi, "flow", flow)
+		Draw.set_param(mi, "frame_tint", frame_tint)
 		var k: String = String(key)
 		if k.begins_with("Sand") or k.begins_with("Pad"):
 			_sand_in_field(mi)

@@ -10,7 +10,7 @@ nodes = [{
 "frame": "none",
 "id": 1,
 "kind": "start",
-"pos": Vector4(0, 0, -16.4, 0),
+"pos": Vector4(0, 0, -17.4, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -19,7 +19,7 @@ nodes = [{
 "frame": "none",
 "id": 2,
 "kind": "junction",
-"pos": Vector4(0, 0, -20, 0),
+"pos": Vector4(0, 0, -21, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -28,7 +28,7 @@ nodes = [{
 "frame": "rect",
 "id": 3,
 "kind": "destination",
-"pos": Vector4(0, 0, -23.5, 0),
+"pos": Vector4(0, 0, -24.5, 0),
 "state": "available",
 "target": "Terrain"
 }, {
@@ -37,7 +37,7 @@ nodes = [{
 "frame": "none",
 "id": 4,
 "kind": "bend",
-"pos": Vector4(7.2, 0, -20, 0),
+"pos": Vector4(7.2, 0, -21, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -46,7 +46,7 @@ nodes = [{
 "frame": "none",
 "id": 5,
 "kind": "chord",
-"pos": Vector4(7.2, 0, -23.5, 0),
+"pos": Vector4(7.2, 0, -24.5, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -55,7 +55,7 @@ nodes = [{
 "frame": "none",
 "id": 6,
 "kind": "chord",
-"pos": Vector4(7.2, 0, -27, 0),
+"pos": Vector4(7.2, 0, -28, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -64,7 +64,7 @@ nodes = [{
 "frame": "none",
 "id": 7,
 "kind": "bend",
-"pos": Vector4(7.2, 0, -28.8, 0),
+"pos": Vector4(7.2, 0, -29.8, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -73,7 +73,7 @@ nodes = [{
 "frame": "none",
 "id": 8,
 "kind": "junction",
-"pos": Vector4(0, 0, -28.8, 0),
+"pos": Vector4(0, 0, -29.8, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -82,7 +82,7 @@ nodes = [{
 "frame": "rect",
 "id": 9,
 "kind": "destination",
-"pos": Vector4(0, 0, -30.3, 0),
+"pos": Vector4(0, 0, -31.3, 0),
 "state": "arrival",
 "target": "FieldDoorTarget"
 }]

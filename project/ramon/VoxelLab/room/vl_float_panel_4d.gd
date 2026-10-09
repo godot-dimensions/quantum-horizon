@@ -50,6 +50,8 @@ const CORNER := 0.07
 @export var face_point: Vector2 = Vector2.ZERO
 ## Anything with panel_face() -> {"title", "kicker", "rows"}: the whole face from it instead.
 var source: Object
+## Passed to source.panel_face(key) when set (one source, several panels: the open world's stations).
+var face_key: String = ""
 
 @export_group("Spring")
 ## How close you can come (metres from its middle) before it is pushed, and how far it gives.
@@ -203,7 +205,7 @@ func _read() -> void:
 				rows.append([k[1], String(n[k[0]])])
 	_data = {"number": number, "title": title, "kicker": kicker, "rows": rows.slice(0, 3)}
 	if source != null and is_instance_valid(source) and source.has_method("panel_face"):
-		var f: Dictionary = source.call("panel_face")
+		var f: Dictionary = source.call("panel_face", face_key) if not face_key.is_empty() else source.call("panel_face")
 		_data = {"number": number, "title": f.get("title", title), "kicker": f.get("kicker", kicker), "rows": (f.get("rows", []) as Array).slice(0, 3)}
 	var s: String = str(_data)
 	if s != _sig:

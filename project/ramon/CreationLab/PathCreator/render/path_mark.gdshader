@@ -127,6 +127,9 @@ uniform vec4 col_cyan : source_color = vec4(0.286, 0.851, 1.0, 1.0);
 uniform vec4 col_edge : source_color = vec4(0.400, 0.545, 0.682, 1.0);
 uniform vec4 col_muted : source_color = vec4(0.557, 0.667, 0.784, 1.0);
 uniform vec4 under_color : source_color = vec4(1.0);
+// A colour for the frames round objects (9 Oct, the Voxel Lab: "change the UI lines surrounding the
+// large central pedestal to blue"); its alpha is how much of it. 0: the sheet's own colours.
+uniform vec4 frame_tint : source_color = vec4(0.0);
 uniform vec4 sand : source_color = vec4(0.804, 0.706, 0.549, 1.0);
 uniform float walk = 0.0;
 // DEV: the marks are the sheet's own colours, not lit (a lit mark on a sunlit floor washes out to
@@ -497,6 +500,7 @@ void fragment() {
 			discard;
 		}
 		col = draw_symbol(frame_sym, q, px, erode_m / unit_m, 0.0, 1.0, 1.0, 0.0);
+		col.rgb = mix(col.rgb, frame_tint.rgb, frame_tint.a);
 	}
 	if (abs(w_step) > 0.25 && (mode == 1 || mode == 2)) {
 		// The W cue: dots in a row east of the node, one a metre of W, warm ana, cool kata.

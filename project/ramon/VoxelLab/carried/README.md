@@ -60,6 +60,39 @@ for remakes: "carry it over, and not reuse it"; the Quantum Range and the Arbore
   waves, foam and ripple die away toward the far edge, so the large far squares never sample a wave
   they are too coarse for. With the defaults both are as Trym made them.
 
+- **9 Oct, round 3** (PLAN_ROUND3.md):
+  - `kit/kit_room_4d.gd`: no ceiling overhang on an open side (a corridor's ceiling showed as a slab on
+    the wall of the room it opens into).
+  - `scripts/rd_hud.gd`: `min_strip_width` and `strip_width`, so the room can make the control strip as
+    wide as the choice above it.
+  - `kit/kit_showcase_4d.gd`: the pedestal's band printed lower on a pedestal lower than 0.9 m (the
+    column's ran into its top); `turn_by` stops at the exhibit's `max_tilt` (the gallery's world, past
+    which its square runs out of land); `reset_view()` (R at a pedestal: no turn, the middle slice).
+  - `kit/kit_wall_text_4d.gd`: kind "label", a small blue panel over a specimen: its letter, a title, a
+    line, a diagram (`diagram`: voxels, inside, hidden) and an arrow down.
+  - `PathCreator/graph/path_network_4d.gd` and `render/path_mark.gdshader`: `frame_tint`, the frames
+    round objects in one colour (also put into the Creation Lab's Path Creator, its README).
+
+- **9 Oct, round 4** (PLAN_ROUND4.md):
+  - `water4d/` and `shaders/foam_4d.gdshaderinc` DELETED: the open world uses the Water Lab's copy of
+    Trym's sea directly (`res://ramon/WaterLab/carried/water4d/`), one sea, not two (Ramon: "avoid
+    maintaining unnecessary duplicated systems"). The entry above is history.
+  - `kit/kit_showcase_4d.gd`: `band_print` and `band_stripes` (a pedestal's band without the printed
+    page or without its slanted dashes); the band's "live" dot gone; the serial set in from the corner.
+
+- **9 Oct, round 5** (PLAN_ROUND5.md):
+  - `grass/` NEW, from `res://ramon/chickenpen/grass/` (the pen's grass, never edited there):
+    `vl_grass_lattice.gdshader` is `pen_grass_lattice.gdshader` (Andrew's 4D field with the pen's work)
+    with the pen's mask, clearings and paths taken out and PATCHES put in (`patches[8]`, `patch_w_reach`,
+    a ragged thinning edge); `vl_grass_4d.gd` is `pen_grass_4d.gd` cut to what the patches need (its
+    bands, tiles, material and pre_render layout, the tiles listed only over the patches; the look is
+    the pen's Hay meadow II over its 2 Oct meadow) plus `bake_heights`, the pen's
+    `grass_heights_4d.gd` bake run on the island's chunk meshes (grass material only) on a worker.
+  - `kit/kit_showcase_4d.gd`: the hologram on a box pedestal too (a box as wide as the deck);
+    `step_slice` keeps to an exhibit's `slice_range()` (Build it: one stop a W layer).
+  - `PathCreator/graph/path_network_4d.gd` `ink_color` and `render/path_mark.gdshader` `ink_lit`: the
+    marks' blues as one colour, lit as the floor is (the open world's route in the platform's own blue).
+
 ## Going back to the shared kit
 
 To point the Voxel Lab at the shared kit once it settles, rewrite these paths back to

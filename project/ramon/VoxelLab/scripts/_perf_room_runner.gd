@@ -8,10 +8,10 @@ extends SceneTree
 const Cutter := preload("res://ramon/VoxelLab/specimen/vl_cutter.gd")
 const Specimen := preload("res://ramon/VoxelLab/specimen/vl_specimen_4d.gd")
 
-const SPOTS := [["entrance", Vector4(0, 0.05, 21, 0), 0.0], ["shelf", Vector4(6.2, 0.05, 5.4, 0), deg_to_rad(-90.0)],
-	["block", Vector4(0, 0.05, 3.0, 0), 0.0], ["column", Vector4(-5.1, 0.05, -5.0, 0), deg_to_rad(90.0)],
-	["gallery", Vector4(0, 0.05, -17.0, 0), 0.0], ["terrain", Vector4(0, 0.05, -23.5, 0), deg_to_rad(90.0)],
-	["ladder", Vector4(4.4, 0.05, -23.5, 0), deg_to_rad(-90.0)]]
+const SPOTS := [["entrance", Vector4(0, 0.05, 21, 0), 0.0], ["shelf", Vector4(8.5, 0.05, 5.4, 0), deg_to_rad(-90.0)],
+	["block", Vector4(0, 0.05, 3.0, 0), 0.0], ["builder", Vector4(-4.1, 0.05, 8.8, 0), deg_to_rad(90.0)],
+	["gallery", Vector4(0, 0.05, -18.0, 0), 0.0], ["terrain", Vector4(0, 0.05, -24.5, 0), deg_to_rad(90.0)],
+	["ladder", Vector4(4.4, 0.05, -24.5, 0), deg_to_rad(-90.0)]]
 
 var _scene: Node
 var _t: float = 0.0

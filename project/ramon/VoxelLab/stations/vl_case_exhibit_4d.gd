@@ -30,13 +30,29 @@ const BIOMES := [
 	# The green land's water: this teal until the sea panel has a colour saved; _apply_biome and the
 	# recipe paint it in SeaPanel.voxel_tint(), the open world's sea colour (Ramon, 9 Oct: "the blue of
 	# the water of the voxel surface will have to match ... the big ocean").
-	{"name": "Green", "colors": {0: Color(0.40, 0.74, 0.22), 1: Color(0.56, 0.32, 0.12), 2: Color(0.34, 0.34, 0.34), 3: Color(0.07, 0.27, 0.34)}},
-	{"name": "Desert", "colors": {0: Color(0.88, 0.74, 0.52), 1: Color(0.76, 0.42, 0.24), 2: Color(0.52, 0.36, 0.28), 3: Color(0.93, 0.91, 0.85)}},
-	{"name": "Lava", "colors": {0: Color(0.17, 0.16, 0.16), 1: Color(0.30, 0.14, 0.09), 2: Color(0.10, 0.09, 0.09), 3: Color(1.0, 0.40, 0.06)}},
+	#
+	# Each its own ground too (round 3, Ramon: "the lava landscape could have sharper, more jagged, spiky
+	# terrain ... other landscape types should have their own recognizable geometric characteristics"):
+	# "shape" is the land generator's noise (Recipe.terrain options), in the gallery's voxels. Green is
+	# our generator as it stands, rolling hills; the desert broad and smooth, low dunes (few octaves,
+	# little roughness, wide); the lava rough and fine, high and spiky (many octaves, persistence near 1).
+	{"name": "Green", "colors": {0: Color(0.40, 0.74, 0.22), 1: Color(0.56, 0.32, 0.12), 2: Color(0.34, 0.34, 0.34), 3: Color(0.07, 0.27, 0.34)},
+		"shape": {}},
+	{"name": "Desert", "colors": {0: Color(0.88, 0.74, 0.52), 1: Color(0.76, 0.42, 0.24), 2: Color(0.52, 0.36, 0.28), 3: Color(0.93, 0.91, 0.85)},
+		"shape": {"octaves": 3, "persistence": 0.4, "horizontal_scale": 6.0, "k": 0.5}},
+	{"name": "Lava", "colors": {0: Color(0.17, 0.16, 0.16), 1: Color(0.30, 0.14, 0.09), 2: Color(0.10, 0.09, 0.09), 3: Color(1.0, 0.40, 0.06)},
+		"shape": {"octaves": 6, "persistence": 0.74, "horizontal_scale": 2.0, "vertical_scale": 4.0, "k": 0.5}},
 ]
 ## How deep the terrain sits in its pedestal (m): its sea about level with the deck, so you see the
 ## land, not the side of a box (a box's worth of strata showed from the ring, 9 Oct). Taller than it
 ## shows, so its hills can rise: half its 2 m less the sea's 12 cm.
+##
+## ROUND 3'S SQUARE CROP IS GONE (round 4, Ramon: "if maintaining a fixed square footprint creates
+## unavoidable problems, revert to the original landscape implementation"). It kept the land to its
+## square by throwing away what lay outside and painting the inside faces seen through the cut as its
+## wall: wherever the cut met a cave or the edge of what was built that left gaps, and it needed a limit
+## on the turn (the hard stop he felt). The renderer has no way to cap a cut solid properly. This is
+## round 2's land again, on round 3's larger square pedestal, each look its own ground, R to reset.
 const SINK := 0.86
 
 var case: String = "terrain"
@@ -45,6 +61,10 @@ var face_yaw: float = 0.0
 var biome: int = 0
 var _recipes: Dictionary = {}
 var _t: float = 0.0
+## How far the exhibit may be turned through W, degrees (the kit's showcase reads it). 0: no limit.
+var max_tilt: float = 0.0
+## A change of look asked for while the last one was still building: built again when it is done.
+var _rebuild_again: bool = false
 
 
 func _init() -> void:
@@ -74,15 +94,18 @@ func _ready() -> void:
 
 
 func recipe() -> Dictionary:
-	var key: String = case if case == "terrain" else "layer_" + layer
+	var key: String = "terrain:%d" % biome if case == "terrain" else "layer_" + layer
 	if _recipes.has(key):
 		return _recipes[key]
 	var r: Dictionary
 	if case == "terrain":
 		# Wide, at 18 cm, its hills given room: the land, not the box, is what you see. His heights scaled (k),
 		# his grass at least two and a half voxels deep (thinner, the dirt under it poked through the green
-		# wherever a slope crossed a voxel, 8 Oct).
-		r = Recipe.terrain(Vector4(5.6, 2.0, 5.6, 1.6), 0.18, {"shift": Vector4(16, 0, -8, 0), "k": 0.62, "grass_voxels": 2.6, "sea_m": -0.12})
+		# wherever a slope crossed a voxel, 8 Oct). Round 2's land (round 4: round 3's crop undone); each
+		# look its own ground (BIOMES "shape", round 3).
+		var opts: Dictionary = {"shift": Vector4(16, 0, -8, 0), "k": 0.62, "grass_voxels": 2.6, "sea_m": -0.12}
+		opts.merge(BIOMES[biome].get("shape", {}), true)
+		r = Recipe.terrain(Vector4(5.6, 2.0, 5.6, 1.6), 0.18, opts)
 	elif layer == "caves":
 		# His caves at a scale this block can show (at his own the tunnels are further apart than it is
 		# wide), a quarter cut away so the tunnels inside show.
@@ -116,12 +139,16 @@ func face_front(k: float = 1.0) -> void:
 	stand.basis = Basis4D.from_zx(face_yaw + _yaw)
 
 
-## The next look of the terrain: green, a Nevada desert, a lava field. Returns its name.
+## The next look of the terrain: green, a Nevada desert, a lava field, each its own ground; built again
+## hidden, the old one on show until the new is ready. Returns its name.
 func next_biome() -> String:
 	if case != "terrain":
 		return ""
 	biome = (biome + 1) % BIOMES.size()
-	_apply_biome()
+	if _rebuilding != null:
+		_rebuild_again = true
+	else:
+		reset()
 	return String(BIOMES[biome]["name"])
 
 
@@ -141,8 +168,12 @@ func _apply_biome() -> void:
 
 
 func _after_make(s: Node4D) -> void:
-	if case == "terrain" and biome != 0:
-		s.connect("built", func(_st: Dictionary) -> void: _apply_biome(), CONNECT_ONE_SHOT)
+	if case == "terrain":
+		s.connect("built", func(_st: Dictionary) -> void:
+			_apply_biome()
+			if _rebuild_again:
+				_rebuild_again = false
+				reset.call_deferred(), CONNECT_ONE_SHOT)
 
 
 # -- words -----------------------------------------------------------------------------------------------

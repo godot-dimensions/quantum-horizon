@@ -100,7 +100,7 @@ func build(r: Dictionary) -> void:
 	world.name = "World"
 	world.set("generator", Recipe.generator(r))
 	world.set("material_palette", Recipe.palette(r, r.get("colors", Recipe.COLORS)))
-	var b: Array = Recipe.bounds(r, 2)
+	var b: Array = Recipe.bounds(r)
 	world.set("world_bounds_enabled", true)
 	world.set("world_bounds_position", b[0])
 	world.set("world_bounds_size", b[1])
@@ -271,11 +271,15 @@ func _on_chunk_added(n: Node) -> void:
 func apply_cut(cut: Dictionary) -> Dictionary:
 	if world == null or phase != "ready":
 		return {}
-	var rec: Dictionary = {"label": String(cut.get("label", cut["kind"])), "kind": String(cut["kind"]), "swap": swap}
+	var rec: Dictionary = {"label": String(cut.get("label", cut["kind"])), "kind": String(cut["kind"]), "swap": swap, "fill": int(cut.get("fill", Cut.AIR))}
 	var t_count: int = Time.get_ticks_usec()
 	# Our copy can only count what it can follow: a recipe built from noise (Andrew's landscape and
 	# caves) says "mirror": false, and its cuts count no voxels.
-	rec["voxels"] = Recipe.voxels_removed(recipe, cuts, cut) if bool(recipe.get("mirror", true)) else -1
+	# A cut that knows its own count (Build it's bricks: a whole cell each) says so.
+	if cut.has("voxels"):
+		rec["voxels"] = int(cut["voxels"])
+	else:
+		rec["voxels"] = Recipe.voxels_removed(recipe, cuts, cut) if bool(recipe.get("mirror", true)) else -1
 	rec["count_ms"] = float(Time.get_ticks_usec() - t_count) / 1000.0
 	var b: Array = cut["aabb"]
 	var keys: Array = chunk_keys(b[0], b[1])

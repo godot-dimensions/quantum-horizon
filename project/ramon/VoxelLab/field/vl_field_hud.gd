@@ -85,9 +85,12 @@ func _draw() -> void:
 		draw_line(c - Vector2(0, 9) * u, c + Vector2(0, 9) * u, Color(1, 1, 1, 0.8), 1.5 * u)
 	# The keys.
 	var keys: Array = [["Mouse", "Steer"], ["W / S", "Flap, brake"], ["Space", "Climb"], ["Shift", "Dive"], ["Right drag", "Turn the slice"],
-		["R", "Slice back"], ["Q / E", "Through W"], ["Click", "Crater"], ["V", "Volume view"], ["Tab", "The sea"], ["1", "Back to the deck"]]
+		["R", "Slice back"], ["Q / E", "Through W"], ["Click", "Crater"], ["V", "Projection view"], ["Tab", "Settings"], ["1", "Back to the deck"]]
 	if not flying:
-		keys = [["WASD", "Walk"], ["The ring at the front", "Fly"], ["Tab", "The sea"], ["The blue door behind you", "Back to the lab"]]
+		keys = [["WASD", "Walk"], ["The blue platform", "Turn the slice"], ["The two stations", "Take off, change the world"], ["Tab", "Settings"],
+			["The blue door behind you", "Back to the lab"]]
+		if String(field.get("site")) == "platform":
+			keys = [["WASD", "Walk"], ["Right drag", "Turn the slice"], ["R", "Level again"], ["Tab", "Settings"]]
 	var kx: float = 22 * u
 	var ky: float = size.y - 22 * u
 	var strip := Rect2(Vector2(kx - 10 * u, ky - 22 * u), Vector2(size.x - 2.0 * (kx - 10 * u), 32 * u))

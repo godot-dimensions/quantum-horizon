@@ -13,6 +13,10 @@ extends Control
 ##                 of bars per cut, and the totals. T switches where the draw buffers are built, so the
 ##                 difference can be felt and read.
 ##
+##   AT A BUILDER  (Build it, round 4) the card names the brick tool and its colour, shows the colours
+##                 on Q/E as swatches, and a strip of the W layers: the one you are in lit, each one's
+##                 bricks counted under it.
+##
 ## Sizes follow the window's height, never the distance to anything (Ramon's lab rule).
 ##
 ## NO class_name (engine_gotchas.md).
@@ -29,6 +33,8 @@ var outline: Array = []
 var hit_world: Vector4 = Vector4.INF
 var hit_text: String = ""
 var tool: String = "ball"
+## The bench's own tools, in key order (a bench may offer fewer than all of them).
+var tools: PackedStringArray = PackedStringArray(Cutter.TOOLS)
 var size_index: int = 1
 var records: Array = []
 var swap: bool = true
@@ -36,6 +42,8 @@ var totals: Dictionary = {}
 var show_costs: bool = true
 ## The tool card's own line under the name (the station can put its own words there).
 var station_name: String = ""
+## A builder's card (vl_build_exhibit_4d.gd overlay_info): empty at a cutting bench.
+var build: Dictionary = {}
 
 
 func _ready() -> void:
@@ -96,6 +104,9 @@ func _draw_outline(u: float) -> void:
 
 ## The tool card: bottom middle, above the control strip.
 func _draw_card(u: float) -> void:
+	if not build.is_empty():
+		_draw_build_card(u)
+		return
 	var w: float = 470.0 * u
 	var h: float = 92.0 * u
 	var vs: Vector2 = get_viewport_rect().size
@@ -114,14 +125,71 @@ func _draw_card(u: float) -> void:
 	# The keys: 1 2 3 4 for the tools (numbered boxes are buttons: they answer the number keys), Q/E size.
 	var kx: float = x
 	var ky: float = r.position.y + 64.0 * u
-	for i in Cutter.TOOLS.size():
-		var on: bool = Cutter.TOOLS[i] == tool
+	for i in tools.size():
+		var on: bool = tools[i] == tool
 		var cap := Rect2(Vector2(kx, ky), Vector2(18, 18) * u)
 		draw_rect(cap, Color(1, 1, 1, 0.22 if on else 0.06))
 		draw_rect(cap, Color(1, 1, 1, 0.9 if on else 0.4), false, 1.0 * u)
 		draw_string(fk, Vector2(cap.position.x, cap.position.y + 13.5 * u), str(i + 1), HORIZONTAL_ALIGNMENT_CENTER, cap.size.x, int(11 * u), Style.UI_INK)
 		kx += 22.0 * u
 	draw_string(fk, Vector2(kx + 6 * u, ky + 13.5 * u), "TOOL      Q / E  SIZE      R  WHOLE AGAIN", HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u), Style.UI_INK_DIM)
+
+
+## The builder's card: the tool and its colour, what it does, the keys and swatches, and the W layers.
+func _draw_build_card(u: float) -> void:
+	var w: float = 560.0 * u
+	var h: float = 92.0 * u
+	var vs: Vector2 = get_viewport_rect().size
+	var r := Rect2(Vector2((vs.x - w) * 0.5, vs.y - h - 74.0 * u), Vector2(w, h))
+	draw_style_box(Style.glass_box(14.0 * u), r)
+	var colours: Array = build.get("colours", [])
+	var ci: int = int(build.get("colour", 0))
+	var col: Color = colours[ci] if ci < colours.size() else Style.UI_ACCENT
+	var pic := Rect2(r.position + Vector2(14, 14) * u, Vector2(h - 28 * u, h - 28 * u))
+	_draw_tool_icon(tool, pic, col if tool != "take" else Style.UI_ACCENT, u)
+	var x: float = pic.end.x + 16.0 * u
+	var fb: Font = Style.ui_font("title")
+	var fk: Font = Style.ui_font("key")
+	var ft: Font = Style.ui_font("text")
+	var name_: String = String(build.get("name", "")) + ("" if tool == "take" else "  ·  " + String(build.get("colour_name", "")))
+	draw_string(fb, Vector2(x, r.position.y + 30.0 * u), name_, HORIZONTAL_ALIGNMENT_LEFT, -1, int(19 * u), Style.UI_INK)
+	var layers_w: float = 150.0 * u
+	draw_string(ft, Vector2(x, r.position.y + 52.0 * u), String(build.get("line", "")), HORIZONTAL_ALIGNMENT_LEFT, r.end.x - layers_w - x - 16 * u, int(12 * u), Style.UI_INK_SOFT)
+	# The keys: numbered boxes for the tools (they answer the number keys), then the colours on Q/E.
+	var kx: float = x
+	var ky: float = r.position.y + 64.0 * u
+	for i in tools.size():
+		var on: bool = tools[i] == tool
+		var cap := Rect2(Vector2(kx, ky), Vector2(18, 18) * u)
+		draw_rect(cap, Color(1, 1, 1, 0.22 if on else 0.06))
+		draw_rect(cap, Color(1, 1, 1, 0.9 if on else 0.4), false, 1.0 * u)
+		draw_string(fk, Vector2(cap.position.x, cap.position.y + 13.5 * u), str(i + 1), HORIZONTAL_ALIGNMENT_CENTER, cap.size.x, int(11 * u), Style.UI_INK)
+		kx += 22.0 * u
+	draw_string(fk, Vector2(kx + 6 * u, ky + 13.5 * u), "TOOL     Q / E", HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u), Style.UI_INK_DIM)
+	kx += 6.0 * u + fk.get_string_size("TOOL     Q / E", HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u)).x + 8.0 * u
+	for i in colours.size():
+		var sw := Rect2(Vector2(kx, ky + 2.0 * u), Vector2(14, 14) * u)
+		draw_rect(sw, colours[i])
+		if i == ci:
+			draw_rect(sw.grow(2.5 * u), Color(1, 1, 1, 0.95), false, 1.4 * u)
+		kx += 20.0 * u
+	draw_string(fk, Vector2(kx + 6 * u, ky + 13.5 * u), "Z  UNDO", HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u),
+		Style.UI_INK_DIM if bool(build.get("undo", false)) else Color(Style.UI_INK_DIM, 0.4))
+	# The W layers: one box each, the one you are in lit, its bricks counted under it.
+	var n: int = int(build.get("layers", 5))
+	var lit: int = int(build.get("layer", 0))
+	var per: Array = build.get("per_layer", [])
+	var lx: float = r.end.x - layers_w - 8.0 * u
+	draw_string(fk, Vector2(lx, r.position.y + 24.0 * u), "W LAYER  %d / %d" % [lit + 1, n], HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u), Style.UI_INK)
+	var bw: float = (layers_w - 4.0 * u * float(n - 1)) / float(n)
+	for i in n:
+		var cell := Rect2(Vector2(lx + (bw + 4.0 * u) * float(i), r.position.y + 34.0 * u), Vector2(bw, bw))
+		var count: int = int(per[i]) if i < per.size() else 0
+		draw_rect(cell, Color(col, 0.55) if count > 0 else Color(1, 1, 1, 0.05))
+		draw_rect(cell, Color(1, 1, 1, 0.95 if i == lit else 0.3), false, (2.0 if i == lit else 1.0) * u)
+		draw_string(fk, Vector2(cell.position.x, cell.end.y + 13.0 * u), str(count), HORIZONTAL_ALIGNMENT_CENTER, bw, int(10 * u),
+			Style.UI_INK if i == lit else Style.UI_INK_DIM)
+	draw_string(ft, Vector2(lx, r.end.y - 6.0 * u), "WHEEL  NEXT LAYER", HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Style.UI_INK_DIM)
 
 
 static func _draw_tool_icon_static(c: CanvasItem, t: String, r: Rect2, col: Color, u: float) -> void:
@@ -143,6 +211,27 @@ static func _draw_tool_icon_static(c: CanvasItem, t: String, r: Rect2, col: Colo
 		"saw":
 			c.draw_line(Vector2(r.position.x + s * 0.2, top), Vector2(r.end.x - s * 0.2, top), col, lw)
 			c.draw_rect(Rect2(Vector2(r.position.x + s * 0.2, top), Vector2(r.size.x - s * 0.4, s * 0.55)), col, false, lw)
+		"brick":
+			# A brick set on the surface.
+			c.draw_rect(Rect2(Vector2(m.x - s * 0.5, top - s * 0.85), Vector2(s, s * 0.85)), col)
+		"through":
+			# The brick in every W layer: copies stepped back behind it.
+			for k in [2, 1, 0]:
+				var o := Vector2(s * 0.2, -s * 0.16) * float(k)
+				var b := Rect2(Vector2(m.x - s * 0.62, top - s * 0.8) + o, Vector2(s * 0.8, s * 0.8))
+				if k == 0:
+					c.draw_rect(b, col)
+				else:
+					c.draw_rect(b, Color(col, 0.35 if k == 1 else 0.2))
+		"take":
+			# The brick lifted off, dashed where it was.
+			var was := Rect2(Vector2(m.x - s * 0.5, top - s * 0.85), Vector2(s, s * 0.85))
+			for e in [[was.position, Vector2(was.end.x, was.position.y)], [Vector2(was.end.x, was.position.y), was.end],
+					[was.end, Vector2(was.position.x, was.end.y)], [Vector2(was.position.x, was.end.y), was.position]]:
+				c.draw_dashed_line(e[0], e[1], col, lw * 0.7, 3.0 * u)
+			c.draw_line(Vector2(m.x, top - s * 0.3), Vector2(m.x, top - s * 1.3), col, lw)
+			c.draw_line(Vector2(m.x - s * 0.22, top - s * 1.05), Vector2(m.x, top - s * 1.3), col, lw)
+			c.draw_line(Vector2(m.x + s * 0.22, top - s * 1.05), Vector2(m.x, top - s * 1.3), col, lw)
 
 
 func _draw_tool_icon(t: String, r: Rect2, col: Color, u: float) -> void:
@@ -162,14 +251,14 @@ func _draw_costs(u: float) -> void:
 	var x: float = r.position.x + 16.0 * u
 	var y: float = r.position.y + 28.0 * u
 	var right: float = r.end.x - 16.0 * u
-	draw_string(fb, Vector2(x, y), "CUTS  ·  %d" % records.size(), HORIZONTAL_ALIGNMENT_LEFT, -1, int(16 * u), Style.UI_INK)
+	draw_string(fb, Vector2(x, y), ("EDITS  ·  %d" if not build.is_empty() else "CUTS  ·  %d") % records.size(), HORIZONTAL_ALIGNMENT_LEFT, -1, int(16 * u), Style.UI_INK)
 	draw_string(fk, Vector2(x, y + 18.0 * u), ("DRAW BUFFERS ON A WORKER THREAD" if swap else "THE ENGINE'S WAY: ALL IN ONE FRAME"),
 		HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Style.UI_LIVE if swap else Style.UI_WARM)
 	y += 42.0 * u
 	var last: Dictionary = records[-1] if not records.is_empty() else {}
 	var rows: Array = [
-		["Last cut", String(last.get("label", "none yet"))],
-		["Voxels removed", ("not counted (noise)" if int(last.get("voxels", 0)) < 0 else _thousands(int(last.get("voxels", 0)))) if not last.is_empty() else "-"],
+		["Last edit" if not build.is_empty() else "Last cut", String(last.get("label", "none yet"))],
+		["Voxels added" if int(last.get("fill", Recipe.AIR)) != Recipe.AIR else "Voxels removed", ("not counted (noise)" if int(last.get("voxels", 0)) < 0 else _thousands(int(last.get("voxels", 0)))) if not last.is_empty() else "-"],
 		["Chunks meshed again", str(int(last.get("chunks", 0))) if not last.is_empty() else "-"],
 		["On screen after", "%.0f ms" % float(last.get("latency_ms", 0.0)) if not last.is_empty() else "-"],
 		["Worst frame", "%.1f ms" % float(last.get("worst_ms", 0.0)) if not last.is_empty() else "-"],

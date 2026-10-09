@@ -1,6 +1,6 @@
 extends SceneTree
 ## Voxel Lab, 8 Oct: the turn and the walk, after the pen's walker, camera and floor-only turns were
-## carried over. Diagonal drags on the column and the block (as a hand drags: across with
+## carried over. Diagonal drags on Build it (the column until round 4) and the block (as a hand drags: across with
 ## some up and down in it, many times) must leave UP exactly up, so nothing leans; then the player walks
 ## on real key presses and must face the way it goes, upright. Frames to
 ## smoke_test_output/voxel_lab/turn/ to look at.
@@ -63,36 +63,36 @@ func _process(delta: float) -> bool:
 	if _scene == null or not _scene.is_inside_tree() or _scene.get("player") == null:
 		return false
 	_t += delta
-	var column: Node = _scene.get_node("Column")
+	var build: Node = _scene.get_node("Build")
 	var hero: Node = _scene.get_node("Hero")
 	match _step:
 		0:
 			_scene.get("player").set("input_enabled", false)
-			var ex: Node = column.get("exhibit")
+			var ex: Node = build.get("exhibit")
 			if ex != null and bool(ex.call("is_ready")) and bool(hero.get("exhibit").call("is_ready")) and _t > 2.0 and not bool(current_scene.get("loading")):
-				_scene.call("go_to", Vector4(-5.1, 0.05, -5.0, 0.0), deg_to_rad(90.0))
+				_scene.call("go_to", Vector4(-4.1, 0.05, 8.8, 0.0), deg_to_rad(90.0))
 				_next()
 		1:
 			if _t > 1.0:
-				column.call("_finish")
-				_save("01_column_straight")
+				build.call("_finish")
+				_save("01_build_straight")
 				# Across with a little up and down in it, forty times: about 80 degrees across and 17 down.
-				_drag(column, 40, 5.8, 1.2)
+				_drag(build, 40, 5.8, 1.2)
 				_next()
 		2:
 			if _t > 0.6:
-				var sp: Node4D = column.get("exhibit").get("specimen")
-				_check(_lean(sp) < 0.01, "the column after diagonal drags: up stays up (%.3f degrees)" % _lean(sp))
-				_save("02_column_turned_diagonal")
-				_drag(column, 30, -2.0, 6.0)
+				var sp: Node4D = build.get("exhibit").get("specimen")
+				_check(_lean(sp) < 0.01, "Build it after diagonal drags: up stays up (%.3f degrees)" % _lean(sp))
+				_save("02_build_turned_diagonal")
+				_drag(build, 30, -2.0, 6.0)
 				_next()
 		3:
 			if _t > 0.6:
-				var sp: Node4D = column.get("exhibit").get("specimen")
+				var sp: Node4D = build.get("exhibit").get("specimen")
 				_check(_lean(sp) < 0.01, "and after up and down drags: up stays up (%.3f degrees)" % _lean(sp))
-				_save("03_column_turned_ahead")
-				column.set("turn", Vector2.ZERO)
-				column.set("turn_basis", Projection.IDENTITY)
+				_save("03_build_turned_ahead")
+				build.set("turn", Vector2.ZERO)
+				build.set("turn_basis", Projection.IDENTITY)
 				# (The tree went on 9 Oct: Ramon, "I don't think we should reintroduce that idea".)
 				_scene.call("go_to", Vector4(0.0, 0.05, 4.8, 0.0), 0.0)
 				_step = 6

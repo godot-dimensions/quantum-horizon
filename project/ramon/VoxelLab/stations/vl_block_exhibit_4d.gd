@@ -51,18 +51,16 @@ func recipe() -> Dictionary:
 ## Seen from the front-right, a little above, at a part of the specimen: [eye, look] relative to the
 ## top of the plinth, in shown metres. The room's story camera flies to each (voxel_lab_4d.gd
 ## _run_film); the looks sit a little low so the block stands clear of the callout under it.
+## Three parts, each something only 4D does (round 3: "just three slides. Make each slide count"):
+## what the block is made of, two cuts that look alike until you move through W, and a room you can
+## only reach ana of your slice. The block is whole again when it ends (end_cinematic).
 func chapters() -> Array:
 	var c := Vector4(0, 1.15 * K, 0, 0)
 	return [
-		{"key": "specimen", "title": "THE SPECIMEN", "length": 7.0,
-			"line": "A block of 4D rock, {size}, cut from nothing but numbers.",
-			"callouts": [[1.4, "{voxels} voxels of {voxel}, in the engine's own voxel world."],
-				[4.2, "{chunks} chunks of 8 voxels a side, {tets} tetrahedra on screen."]],
-			"eye": Vector4(3.3, 2.4, 5.6, 0) * K, "look": c, "fov": 0.9},
-		{"key": "voxels", "title": "VOXELS IN 4D", "length": 8.0,
-			"line": "Each voxel is a tiny tesseract. One smooth surface runs through them.",
-			"callouts": [[1.6, "The engine places one point in every voxel the surface crosses: dual contouring, in C++."],
-				[4.6, "Grey crust, orange core: wherever you see orange, something cut it."]],
+		{"key": "voxels", "title": "A BLOCK OF 4D VOXELS", "length": 9.0,
+			"line": "{voxels} voxels of {voxel}, each a tiny tesseract, in the engine's own voxel world.",
+			"callouts": [[1.6, "One smooth surface runs through them: the engine's dual contouring, in C++."],
+				[5.0, "Grey crust, orange core: wherever you see orange, something cut it."]],
 			"eye": Vector4(1.9, 2.0, 4.9, 0) * K, "look": c + K * Vector4(0.2, -0.15, 0.8, 0), "fov": 0.8},
 		{"key": "two", "title": "TWO CUTS", "length": 13.0,
 			"line": "A 4D ball and a 4D box, cut side by side. Now slide through W.",
@@ -70,19 +68,11 @@ func chapters() -> Array:
 				[5.2, "The ball's hole shrinks as you leave its middle, and closes."],
 				[8.8, "The box's hole keeps its size, then stops dead."]],
 			"eye": Vector4(0.4, 1.8, 5.3, 0) * K, "look": c + K * Vector4(0, -0.15, 0.9, 0), "fov": 0.85},
-		{"key": "tunnel", "title": "THE TUNNEL", "length": 11.0,
-			"line": "Drilled straight through. A tunnel in 4D is a tube.",
-			"callouts": [[1.4, "You can see right through it."], [5.0, "Slide through W: a step aside and it is solid rock."]],
-			"eye": Vector4(-0.6, 1.3, 5.2, 0) * K, "look": c + K * Vector4(0.15, -0.6, 0, 0), "fov": 0.8},
 		{"key": "hidden", "title": "THE HIDDEN ROOM", "length": 14.0,
 			"line": "Something sits ana of your slice. Cut where it is.",
 			"callouts": [[1.2, "First, slide ana: 42 centimetres along W."], [4.6, "Drill down from the top, at that W."],
 				[8.4, "Slide back to your own slice: the hole is not here at all."]],
 			"eye": Vector4(2.4, 3.6, 3.8, 0) * K, "look": c + K * Vector4(0.3, 0.6, 0, 0), "fov": 0.85},
-		{"key": "yours", "title": "YOUR TURN", "length": 5.0,
-			"line": "Whole again. Step onto the bench in front of it.",
-			"callouts": [[1.2, "Every cut you make is timed. The numbers go on the screen beside you."]],
-			"eye": Vector4(0.0, 2.6, 6.8, 0) * K, "look": c + K * Vector4(0, -0.4, 2.0, 0), "fov": 0.95},
 	]
 
 
@@ -102,11 +92,6 @@ func play_part(key: String, t: float, length: float) -> Dictionary:
 			if t > 1.8:
 				_cut_once("two_box", Cut.block(front + Vector4(0.55, 0.12, -0.12, 0) * K / v, Vector4.ONE * 0.24 * K / v))
 			return {"slice": _sweep(t, 4.2, length - 0.6, 0.30 * K)}
-		"tunnel":
-			if t > 0.8:
-				var at: Vector4 = front + Vector4(0.15, -0.45, 0.1, 0) * K / v
-				_cut_once("tunnel", Cut.drill(at, Vector4(0, 0, -1, 0), 0.16 * K / v, (SIZE.z + 0.2 * K) / v))
-			return {"slice": _sweep(t, 4.4, length - 0.6, 0.24 * K)}
 		"hidden":
 			var cav: Dictionary = r["cavity"]
 			var cw: float = ((cav["center"] as Vector4).w - cen.w) * v
@@ -116,11 +101,6 @@ func play_part(key: String, t: float, length: float) -> Dictionary:
 				var top := Vector4((cav["center"] as Vector4).x, cen.y + h.y + 0.15 * K / v, (cav["center"] as Vector4).z, (cav["center"] as Vector4).w)
 				_cut_once("hidden", Cut.drill(top, Vector4(0, -1, 0, 0), 0.15 * K / v, ((top.y - (cav["center"] as Vector4).y)) + 0.05 * K / v))
 			return {"slice": _fraction(w_now)}
-		"yours":
-			if t > 0.3 and _story_cut:
-				_story_cut = false
-				_done = {}
-				reset()
 	return {}
 
 

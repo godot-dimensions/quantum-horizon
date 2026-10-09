@@ -13,8 +13,7 @@ its research and its status: `VoxelLab/PLAN.md`. The old `VoxelMining/` scenes a
    `voxel_24cell_test.tscn`) load `res://scripts/voxel_edit_tester.gd`, which is in no branch and no
    commit. Without it they hold no load trigger, so they load nothing: a black screen on our machines.
    With a trigger added (in a runner only) they render. Worth asking him to push it.
-3. **The column (round 2):** kept as a watched fall that works every time. Keep it, or something new
-   in its place (you offered "something completely new")?
+3. ~~The column~~ settled (round 4): replaced by **Build it**, the 4D brick builder (your call, 9 Oct).
 4. **The choice uses keys 1 and 2** (clickable too when the cursor is free, Esc). Would you rather
    click with the cursor held, or another key?
 5. **The open world's edge.** The island ends where the build does, 40 m round the deck, cut straight
@@ -24,6 +23,21 @@ its research and its status: `VoxelLab/PLAN.md`. The old `VoxelMining/` scenes a
    sea before the edge (a change to the generator). Nothing done yet.
 
 ## What to look at
+
+**Rounds 3 to 5 (9 Oct)**, each from a walkthrough of yours: `VoxelLab/PLAN_ROUND3.md`, `PLAN_ROUND4.md`,
+`PLAN_ROUND5.md` (what you asked, what was done, the numbers). The newest, round 5:
+
+- **Build it**, the front-left corner: a 4.6 m square pedestal, a black construction grid, 0.5 m bricks on
+  a 7 x 5 x 7 grid with 5 W layers. Click places, LEFT drag looks round it, right drag turns the slice,
+  wheel the next W layer, 1 to 3 brick / through W / take away, Q/E colour, Z undo, Space levels the
+  slice, R starts again from the sand doorway.
+- **The open world's sea** is one graded mesh (no square edge), the Aquatic Lab's water used from its
+  folder (`field/vl_sea_4d.gd` extends it); **Tab** has the Aquatic Lab's controls (its presets as
+  buttons, its eight water settings, OURS / THE AQUATIC LAB'S to compare), the shore foam, and the grass.
+- **Grass patches** on the island: the pen's grass carried (`carried/grass/`), six patches near the
+  platform, blades 2.2 times the pen's width; Tab switches them.
+- The landscape turned to face you, with the hologram's gradient; Specimen 01's panel by its ring; the
+  open world's route ends short of the platform, in the platform's own blue.
 
 Round 2 (9 Oct), from Ramon's walkthrough of 8 Oct: the plan and what he asked for are in
 `VoxelLab/PLAN_ROUND2.md`. Open `res://ramon/VoxelLab/voxel_lab.tscn` and press F6.
@@ -171,15 +185,25 @@ drawable) until 9 Oct; now it builds once, behind the board, and nothing builds 
    terrain's wider and softer). Set them on the dev panel's LIGHTS page and SAVE.
 4. **A cut is on screen 100 to 250 ms after the click** (a big saw, 500 ms): the engine's meshing and
    the worker's draw buffers. No frame waits for it, but you can feel the delay. Engine side, as 1.
-5. **The column stayed, watched** (round 2): it falls every time now. Something new could replace it;
-   that is your call (question 3).
+5. **The column is gone** (round 4): Build it stands in the front-left corner instead (round 5: bigger,
+   on a grid). Its exhibit and runners are deleted.
 6. **Gone from the gallery** (round 2): the 24-cell and the resolution ladder. The gallery now shows how
    his world is made, layer by layer, and then the world.
 7. **The field is a deck, not ground to walk on**: the engine's voxels have no collision yet, so you
    walk on the floating deck and fly over the land; the bird keeps off the ground by a height map read
    off the built meshes, not by physics.
-8. **The sea.** Trym's, carried (`carried/water4d/`, README there): the land's own sea is air under it,
-   so there is no voxel water, only seabed. Its numbers are on Tab and in `field/voxel_field_sea.cfg`
+8. **The sea.** Trym's, as the Water Lab (on screen: the Aquatic Lab) has it, used from its folder since
+   round 4 (`carried/water4d/` deleted); round 5 builds it as one graded mesh and patches its shore foam
+   from our side (`field/vl_sea_4d.gd`), without touching the Water Lab's files. The land's own sea is air
+   under it, so there is no voxel water, only seabed. Its numbers are on Tab and in `field/voxel_field_sea.cfg`
    once saved; my first values: 1.1 m over the land's sea level, the Calm preset at 0.4, a kilometre
    out, the waves calm from 120 m to flat by 320 m. Its cost did not show in the frame time (2.2 ms
    median flying with it).
+9. **Switching to the open world prints six engine errors** ("scenario is null", from
+   `get_tree().change_scene_to_file` in `to_field`): the lab's off-screen panel viewports freed with the
+   scene. Nothing on screen comes of it; not chased yet.
+10. **The grass costs** +0.7 to +1.0 ms of GPU at 1280 x 720 (from the deck, close to a patch) and 0.045 ms
+   of CPU a frame (`field/_measure_grass_runner.gd`); not measured at 4K, where it will be more.
+11. **The grass's ground** is baked from the island's chunk meshes under each patch (grass material only)
+   on a worker thread after the island is built; the patches are picked off the bird's height map. If the
+   island changes (BUILT_RADIUS, the generator), the patches move with it.

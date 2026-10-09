@@ -109,16 +109,43 @@ nodes = [{
 "frame": "round",
 "id": 12,
 "kind": "destination",
-"pos": Vector4(-5.1, 0, -5, 0),
+"pos": Vector4(-4.1, 0, 8.8, 0),
 "state": "arrival",
-"target": "Column"
+"target": "Build"
 }, {
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
 "id": 13,
 "kind": "bend",
-"pos": Vector4(-5.1, 0, 9, 0),
+"pos": Vector4(-5.1, 0, 5, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 14,
+"kind": "bend",
+"pos": Vector4(8.5, 0, 9, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 15,
+"kind": "bend",
+"pos": Vector4(8.5, 0, 5.4, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 16,
+"kind": "bend",
+"pos": Vector4(8.5, 0, 1.8, 0),
 "state": "arrival",
 "target": ""
 }]
@@ -178,13 +205,7 @@ edges = [{
 "w_mode": "static"
 }, {
 "band": 8.0,
-"from": 9,
-"priority": "primary",
-"to": 11,
-"w_mode": "static"
-}, {
-"band": 8.0,
-"from": 11,
+"from": 2,
 "priority": "primary",
 "to": 12,
 "w_mode": "static"
@@ -198,7 +219,31 @@ edges = [{
 "band": 8.0,
 "from": 13,
 "priority": "primary",
-"to": 2,
+"to": 11,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 11,
+"priority": "primary",
+"to": 9,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 4,
+"priority": "primary",
+"to": 14,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 5,
+"priority": "primary",
+"to": 15,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 6,
+"priority": "primary",
+"to": 16,
 "w_mode": "static"
 }]
-next_id = 14
+next_id = 17

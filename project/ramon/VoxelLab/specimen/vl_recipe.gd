@@ -197,6 +197,9 @@ static func generator(r: Dictionary):
 		layers.append(core)
 	for p in r.get("planes", []):
 		layers.append(_plane(p[0], float(p[1]), AIR, UNDEFINED))
+	# Bricks the recipe starts with (Build it's doorway): [lo, hi, material] boxes over everything.
+	for b in r.get("bricks", []):
+		layers.append(_box(((b[0] as Vector4) + (b[1] as Vector4)) * 0.5, (b[1] as Vector4) - (b[0] as Vector4), int(b[2]), UNDEFINED))
 	var layered = ClassDB.instantiate("LayeredVoxelGenerator4D")
 	layered.set("layers", layers)
 	return layered
@@ -216,7 +219,11 @@ static func recipe_edits(r: Dictionary) -> Array:
 static func palette(r: Dictionary, colors: Dictionary = COLORS):
 	var pal = ClassDB.instantiate("VoxelMaterialPalette4D")
 	var list := PackedColorArray()
-	for i in 5:
+	# Five at least (the old specimens); Build it has ten.
+	var n: int = 5
+	for k in colors:
+		n = maxi(n, int(k) + 1)
+	for i in n:
 		list.append(colors.get(i, Color.WHITE))
 	pal.set("colors", list)
 	return pal
@@ -240,13 +247,24 @@ static func _plane(normal: Vector4, d: float, over: int, under: int):
 	return g
 
 
-## The world's bounds in voxels, [position, size], with a margin of `m`.
+## The world's bounds in voxels, [position, size], with a margin of `m`: the recipe's box, or its
+## `room` [lo, hi] where it has one (Build it: the space over the plate the bricks can fill).
 static func bounds(r: Dictionary, m: int = 2) -> Array:
+	var box: Array = room(r)
+	var a: Vector4 = box[0]
+	var b: Vector4 = box[1]
+	var lo := Vector4i(floori(a.x) - m, floori(a.y) - m, floori(a.z) - m, floori(a.w) - m)
+	var hi := Vector4i(ceili(b.x) + m, ceili(b.y) + m, ceili(b.z) + m, ceili(b.w) + m)
+	return [lo, hi - lo]
+
+
+## The box anything solid can be in, [lo, hi] (voxels).
+static func room(r: Dictionary) -> Array:
+	if r.has("room"):
+		return r["room"]
 	var c: Vector4 = r["center"]
 	var h: Vector4 = r["half"]
-	var lo := Vector4i(floori(c.x - h.x) - m, floori(c.y - h.y) - m, floori(c.z - h.z) - m, floori(c.w - h.w) - m)
-	var hi := Vector4i(ceili(c.x + h.x) + m, ceili(c.y + h.y) + m, ceili(c.z + h.z) + m, ceili(c.w + h.w) + m)
-	return [lo, hi - lo]
+	return [c - h, c + h]
 
 
 # -- for us --------------------------------------------------------------------------------------------
@@ -269,6 +287,11 @@ static func base_material(r: Dictionary, p: Vector4) -> int:
 	var t: float = float(r["crust"])
 	var col: Dictionary = r.get("column", {})
 	var m: int = AIR
+	for b in r.get("bricks", []):
+		var lo: Vector4 = b[0]
+		var hi: Vector4 = b[1]
+		if p.x >= lo.x and p.x < hi.x and p.y >= lo.y and p.y < hi.y and p.z >= lo.z and p.z < hi.z and p.w >= lo.w and p.w < hi.w:
+			return int(b[2])
 	if bool(r.get("empty", false)):
 		for f in r.get("fill_edits", []):
 			if p.distance_to(f[0]) < float(f[1]):
@@ -319,8 +342,9 @@ static func _cut_has(cut: Dictionary, p: Vector4) -> bool:
 ## `step` voxels from `from` for `length` voxels, then narrowed down by halving.
 static func raycast(r: Dictionary, cuts: Array, from: Vector4, dir: Vector4, length: float, step: float = 0.35) -> Dictionary:
 	var d: Vector4 = dir.normalized()
-	# Start where the ray enters the specimen's box (nothing is solid outside it).
-	var span: Vector2 = _ray_box(from, d, r["center"], (r["half"] as Vector4) + Vector4.ONE)
+	# Start where the ray enters the specimen's box, or its room (nothing is solid outside it).
+	var box: Array = room(r)
+	var span: Vector2 = _ray_box(from, d, ((box[0] as Vector4) + (box[1] as Vector4)) * 0.5, ((box[1] as Vector4) - (box[0] as Vector4)) * 0.5 + Vector4.ONE)
 	if span.x > span.y or span.y < 0.0:
 		return {}
 	var t: float = maxf(span.x, 0.0)
@@ -376,8 +400,10 @@ static func _ray_box(o: Vector4, d: Vector4, c: Vector4, h: Vector4) -> Vector2:
 
 
 ## The grid points (voxel centres as the engine samples them: whole numbers) inside `lo`..`hi` that a
-## cut turns from solid to air, given the cuts made before it.
+## cut turns from solid to air, given the cuts made before it; for a cut that fills (a crystal), the
+## points it turns from air to solid.
 static func voxels_removed(r: Dictionary, before: Array, cut: Dictionary) -> int:
+	var adding: bool = int(cut.get("fill", AIR)) != AIR
 	var b: Array = cut["aabb"]
 	var lo: Vector4 = b[0]
 	var hi: Vector4 = b[1]
@@ -387,7 +413,7 @@ static func voxels_removed(r: Dictionary, before: Array, cut: Dictionary) -> int
 			for y in range(ceili(lo.y), floori(hi.y) + 1):
 				for x in range(ceili(lo.x), floori(hi.x) + 1):
 					var p := Vector4(x, y, z, w)
-					if _cut_has(cut, p) and solid(r, before, p):
+					if _cut_has(cut, p) and solid(r, before, p) != adding:
 						n += 1
 	return n
 
@@ -438,8 +464,13 @@ static func terrain(size_m: Vector4, voxel: float, opts: Dictionary = {}) -> Dic
 	# the dirt poked through the green wherever a slope crossed a voxel (Ramon, 8 Oct).
 	var grass: float = maxf(1.5 * k, float(opts.get("grass_voxels", 0.0)))
 	land.set("material_cutoffs", PackedFloat32Array([ground - maxf(6.0 * k, grass + 2.0), ground - grass, ground]))
-	if opts.has("horizontal_scale"):
-		land.set("horizontal_scale", float(opts["horizontal_scale"]))
+	# Its shape (round 3: each look of the land its own ground, not only its own colours): the noise's
+	# scales, how many octaves and how rough (persistence).
+	for key in ["horizontal_scale", "vertical_scale", "persistence"]:
+		if opts.has(key):
+			land.set(key, float(opts[key]))
+	if opts.has("octaves"):
+		land.set("octaves", int(opts["octaves"]))
 	var caves = ClassDB.instantiate("CaveVoxelGenerator4D")
 	caves.set("seed", int(opts.get("cave_seed", 1)))
 	caves.set("persistence", 0.4)

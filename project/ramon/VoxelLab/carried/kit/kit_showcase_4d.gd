@@ -41,7 +41,8 @@ const SLICES := 9
 	set(v):
 		radius = v
 		_rebuild_pedestal()
-## ARBORETUM (carried copy): "round" or "box" (kit_pedestal.gd); the box has no hologram.
+## ARBORETUM (carried copy): "round" or "box" (kit_pedestal.gd); the box had no hologram (it has, in the
+## Voxel Lab's copy, round 5).
 @export_enum("round", "box") var pedestal_shape: String = "round":
 	set(v):
 		pedestal_shape = v
@@ -92,6 +93,11 @@ const SLICES := 9
 @export var play_once: bool = true
 ## Where round the pedestal its side text sits, degrees from the front towards +X (90: the right
 ## side as you walk in; Ramon, 5 Oct: "place pedestal decals on the right now instead of front").
+## VOXEL LAB (carried copy, round 4): no band at all (the gallery's world: "it gets visibly cut off by
+## the geometry and isn't necessary"), and the band without its slanted hazard stripes (the gallery's
+## layer pedestals: "remove the slightly slanted, dash-like decorative lines").
+@export var band_print: bool = true
+@export var band_stripes: bool = true
 @export_range(-180.0, 180.0, 1.0) var band_angle: float = 90.0:
 	set(v):
 		band_angle = v
@@ -348,14 +354,35 @@ func set_near(on: bool) -> void:
 
 func step_slice(d: int) -> void:
 	_touch()
-	slice_index = clampi(slice_index + d, 0, SLICES - 1)
+	# VOXEL LAB (carried copy, round 4): an exhibit may keep the wheel to the stops it uses (Build it:
+	# one a W layer, `slice_range`).
+	var lim := Vector2i(0, SLICES - 1)
+	if exhibit != null and exhibit.has_method("slice_range"):
+		lim = exhibit.call("slice_range")
+	slice_index = clampi(slice_index + d, lim.x, lim.y)
 	_show_slice()
 
 
 func turn_by(dx: float, dy: float) -> void:
 	_touch()
+	var tilted: Projection = Ground.cleaned(Ground.sliced(turn_basis, Vector2(dx, dy)))
+	# VOXEL LAB (carried copy, 9 Oct): an exhibit may say how far it turns through W (`max_tilt`,
+	# degrees): the world's terrain, past which its square runs out of land. A turn back is always let.
+	var lim: float = float(exhibit.get("max_tilt")) if exhibit != null and exhibit.get("max_tilt") != null else 0.0
+	if lim > 0.0 and rad_to_deg(Ground.tilt(tilted)) > lim and Ground.tilt(tilted) > Ground.tilt(turn_basis):
+		return
 	turn += Vector2(dx, dy)
-	turn_basis = Ground.cleaned(Ground.sliced(turn_basis, Vector2(dx, dy)))
+	turn_basis = tilted
+
+
+## VOXEL LAB (carried copy, 9 Oct): back as it first stood: no turn through W, the middle slice
+## (Ramon: "add a Reset Slice control so I can easily return to the initial slice state").
+func reset_view() -> void:
+	_touch()
+	turn = Vector2.ZERO
+	turn_basis = Projection.IDENTITY
+	slice_index = SLICES / 2
+	_show_slice()
 
 
 func action() -> String:
@@ -428,15 +455,14 @@ func _paint_band(c: Control) -> void:
 	var fs: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")
 	var x: float = h * 0.5
-	# Hazard stripes at both ends.
-	for side in [0.0, 1.0]:
+	# Hazard stripes at both ends (unless band_stripes is off).
+	for side in ([0.0, 1.0] if band_stripes else []):
 		var x0: float = h * 0.15 if side == 0.0 else w - h * 1.15
 		for k in 4:
 			var sx: float = x0 + float(k) * h * 0.26
 			c.draw_colored_polygon(PackedVector2Array([Vector2(sx, h * 0.85), Vector2(sx + h * 0.13, h * 0.85), Vector2(sx + h * 0.33, h * 0.15), Vector2(sx + h * 0.2, h * 0.15)]), dim)
+	# VOXEL LAB (round 4): no dot before SPECIMEN ("remove the small decorative dot ... consistently").
 	x = h * 1.35
-	Glyphs.icon(c, "live", Rect2(Vector2(x, h * 0.25), Vector2(h * 0.5, h * 0.5)), ink)
-	x += h * 0.7
 	var code: String = String(data().get("code", "XX-01"))
 	var tag: String = "SPECIMEN " + code.get_slice("-", 1)
 	c.draw_string(fb, Vector2(x, h * 0.66), tag, HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.42), ink)
@@ -446,7 +472,8 @@ func _paint_band(c: Control) -> void:
 	var line: String = String(exhibit.call("band_line")) if exhibit != null and exhibit.has_method("band_line") else 		"THE %s  ·  LOFTED FROM %d BALLS  ·  %s TETRAHEDRA  ·  W REACH %.2f M" % [String(data().get("name", "specimen")).to_upper(), int(st.get("balls", 0)), Glyphs.short(int(st.get("tetra", 0))), float(st.get("reach", 0.0))]
 	c.draw_string(fs, Vector2(x, h * 0.64), line, HORIZONTAL_ALIGNMENT_LEFT, w - x - h * 1.6, int(h * 0.3), ink)
 	var serial_tag: String = "QH-LAB " + code
-	c.draw_string(fl, Vector2(w - h * 1.3 - fl.get_string_size(serial_tag, HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.2)).x, h * 0.98), serial_tag, HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.2), dim)
+	# VOXEL LAB (round 4): lower, and ending before the corner bracket's arm (it ran through the bracket).
+	c.draw_string(fl, Vector2(w - h * 1.72 - fl.get_string_size(serial_tag, HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.2)).x, h * 0.995), serial_tag, HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.2), dim)
 	# Corner brackets round the whole band.
 	var t: float = maxf(1.0, h * 0.04)
 	var arm: float = h * 0.3
@@ -516,9 +543,12 @@ func _process(delta: float) -> void:
 	if Engine.is_editor_hint() or exhibit == null:
 		return
 	_t += delta
-	if not _band_done and _t > 0.5 and not data().is_empty():
+	if not _band_done and _t > 0.5 and not data().is_empty() and band_print:
 		_band_done = true
-		Pedestal.print_band(get_tree(), _ped, 2.4, 0.27, 0.49, _paint_band, 320.0, deg_to_rad(band_angle))
+		# VOXEL LAB (carried copy, 9 Oct): on a pedestal lower than the kit's 0.9 m the band comes down
+		# with it (the column's, 0.6 m, ran into its top: "lower the text on the cylindrical pedestal").
+		var drop: float = maxf(0.0, 0.9 - height) * 0.6
+		Pedestal.print_band(get_tree(), _ped, 2.4, 0.27 - drop, 0.49 - drop, _paint_band, 320.0, deg_to_rad(band_angle))
 	# A new exhibit turns and grows; its loop starts three seconds after it has grown.
 	if _wait_grow and (not exhibit.has_method("grown") or bool(exhibit.call("grown"))):
 		_wait_grow = false
@@ -695,16 +725,18 @@ func ball_sections() -> Array:
 	return exhibit.call("ball_sections") if exhibit != null and exhibit.has_method("ball_sections") else []
 
 
-## The hologram: one cylinder as wide as the deck, standing on it.
+## The hologram: one cylinder as wide as the deck, standing on it. VOXEL LAB (carried copy, round 5, #44:
+## "apply the existing holographic gradient treatment to the large landscape showcase"): on a box pedestal, a
+## box as wide as its deck, the same material and gradient.
 func _build_holo(deck_h: float) -> void:
 	_holo = null
-	if not hologram or pedestal_shape == "box":
+	if not hologram:
 		return
 	var r: float = radius - Pedestal.DECK_IN
 	var h: float = holo_height
 	_holo = MeshInstance4D.new()
 	_holo.name = "Hologram"
-	_holo.mesh = Build._cubinder(r, h, 96)
+	_holo.mesh = Mats.box_mesh(Vector4(r * 2.0, h, r * 2.0, Build.W_DEPTH)) if pedestal_shape == "box" else Build._cubinder(r, h, 96)
 	_holo.position = Vector4(0.0, deck_h + h * 0.5, 0.0, 0.0)
 	_holo.material_override = LabGrid.material("kit_code_blue", Vector4(r * 2.0, h, r * 2.0, Build.W_DEPTH), global_position if is_inside_tree() else Vector4.ZERO)
 	_holo.set_meta(Build.GENERATED, true)

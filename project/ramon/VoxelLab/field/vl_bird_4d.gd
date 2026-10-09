@@ -12,7 +12,7 @@ extends Node
 ##   W / S        flap (faster), brake
 ##   Space        climb
 ##   Shift        fold the wings: the stoop, as fast as the dive is steep
-##   right drag   turn the slice through W (the pen's rotate_4d), up to `slice_limit` degrees
+##   right drag   turn the slice through W (the pen's rotate_4d), as far as you drag
 ##   R            the slice back to flat
 ##   Q / E        through W, kata and ana, along the slice's own normal
 ##
@@ -37,12 +37,14 @@ const G := 9.81
 @export_range(0.5, 10.0, 0.1, "suffix:m/s") var slow_speed: float = 2.2
 @export_range(4.0, 40.0, 0.5, "suffix:m/s") var stoop_speed: float = 13.0
 @export_range(0.0005, 0.01, 0.0001) var mouse_sensitivity: float = 0.0028
+## The slice drag, radians a pixel: the Water Lab platform's (round 3: "the rotation feels quite slow").
+@export_range(0.0005, 0.02, 0.0001) var slice_sensitivity: float = 0.005
 @export_range(0.2, 6.0, 0.1, "suffix:m/s") var w_speed: float = 1.5
 @export_range(0.5, 6.0, 0.1, "suffix:m") var clearance: float = 1.6
 @export_range(0.0, 1.0, 0.05) var roll_with_bank: float = 0.6
-## How far the slice may turn, degrees: the world is built 16 m either side of W 0, and a slice turned
-## further than this runs out of it within sight.
-@export_range(0.0, 90.0, 1.0) var slice_limit: float = 30.0
+## How far the slice may turn, degrees; 0: as far as you drag (round 4: "no unexplained pauses, hard
+## stops"; past about 30 degrees less of the built land is in the slice, which is what turning shows).
+@export_range(0.0, 90.0, 1.0) var slice_limit: float = 0.0
 ## Seconds from the walker's view into the bird's eyes.
 @export var take_off_seconds: float = 0.9
 
@@ -115,7 +117,7 @@ func _input(event: InputEvent) -> void:
 	var mm := event as InputEventMouseMotion
 	if mm != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if Input.is_action_pressed(&"rotate_4d"):
-			_slice += mm.relative * mouse_sensitivity
+			_slice += mm.relative * slice_sensitivity
 		else:
 			_turn += mm.relative * mouse_sensitivity
 		return
@@ -149,9 +151,16 @@ func _process(delta: float) -> void:
 	# The slice: the right drag tilts it, never past the limit; R takes it home, keeping the heading.
 	if slice != Vector2.ZERO:
 		_homing = 0.0
+		# Up to the limit, not stopped short of it: a drag that would pass it is halved until it fits
+		# (it used to be refused whole, and near the limit the slice stuck and jumped: "choppy").
+		var k: float = 1.0
 		var tilted: Projection = Ground.sliced(frame, slice)
-		if rad_to_deg(Ground.tilt(tilted)) <= slice_limit or Ground.tilt(tilted) < Ground.tilt(frame):
-			frame = tilted
+		for i in 8:
+			if slice_limit <= 0.0 or rad_to_deg(Ground.tilt(tilted)) <= slice_limit or Ground.tilt(tilted) < Ground.tilt(frame):
+				frame = tilted
+				break
+			k *= 0.5
+			tilted = Ground.sliced(frame, slice * k)
 	if _homing > 0.0:
 		var step: float = clampf(dt / maxf(_homing, 0.0001), 0.0, 1.0)
 		frame = Ground.eased_flat(frame, step)

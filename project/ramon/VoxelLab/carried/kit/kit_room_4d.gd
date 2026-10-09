@@ -163,7 +163,10 @@ func rebuild() -> void:
 		cuts.append_array(_claim_cuts(side))
 		_walls[side] = RD.wall(self, "Wall" + side.to_upper(), side, x0, z0, x1, z1, h, t, ops, cuts, swatch)
 	if ceiling:
-		RD.ceiling(self, "Ceiling", x0 - t, z0 - t, x1 + t, z1 + t, h, "kit_ceiling")
+		# VOXEL LAB (carried copy, 9 Oct): no overhang on an open side. A corridor's ceiling ran half a
+		# metre on into the room it opens into and showed there as a slab across the wall.
+		RD.ceiling(self, "Ceiling", x0 - (0.0 if "w" in open_sides else t), z0 - (0.0 if "n" in open_sides else t),
+			x1 + (0.0 if "e" in open_sides else t), z1 + (0.0 if "s" in open_sides else t), h, "kit_ceiling")
 	if cove:
 		var b := Batch.new()
 		RD.strip_rect(b, "cove", x0 + 0.3, z0 + 0.3, x1 - 0.3, z1 - 0.3, h - 0.22, 0.09, 0.05)

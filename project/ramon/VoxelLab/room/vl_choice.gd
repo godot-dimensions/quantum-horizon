@@ -27,6 +27,10 @@ var options: Array = []:
 			options = v
 			_hover = -1
 var heading: String = ""
+## At least this wide (the room makes it the control strip's width under it), and how wide it would be
+## on its own, last drawn.
+var match_width: float = 0.0
+var natural_width: float = 0.0
 ## Shown or not; it fades.
 var shown: bool = false
 var _a: float = 0.0
@@ -63,7 +67,11 @@ func _input(event: InputEvent) -> void:
 	var k := event as InputEventKey
 	if k != null and k.pressed and not k.echo:
 		for i in options.size():
-			if OS.get_keycode_string(k.keycode) == String(options[i].get("key", "")):
+			# The key's label, its place on the keyboard, or the keypad's (round 3: "pressing 2 ... appears
+			# to do nothing").
+			var want: String = String(options[i].get("key", ""))
+			if OS.get_keycode_string(k.keycode) == want or OS.get_keycode_string(k.physical_keycode) == want \
+					or OS.get_keycode_string(k.keycode) == "Kp " + want:
 				take(i)
 				get_viewport().set_input_as_handled()
 				return
@@ -105,6 +113,9 @@ func _draw() -> void:
 		widths.append(w)
 		total += w
 	total += gap * float(options.size() - 1)
+	natural_width = total
+	var inner: float = total
+	total = maxf(total, match_width)
 	# Just above the control strip (which sits 22 px off the bottom, 40 px high).
 	var r := Rect2(Vector2((size.x - total) * 0.5, size.y - 62.0 * u - 22.0 * u - h), Vector2(total, h))
 	if not heading.is_empty():
@@ -112,7 +123,7 @@ func _draw() -> void:
 		draw_string(LabPrint.font("bold"), Vector2(r.position.x, r.position.y - 9.0 * u), heading, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, hpx,
 			Color(Style.UI_INK_DIM, Style.UI_INK_DIM.a * _a))
 	draw_style_box(Style.glass_box(h * 0.5, _a), r)
-	var x: float = r.position.x + pad
+	var x: float = r.position.x + pad + (total - inner) * 0.5
 	for i in options.size():
 		var o: Dictionary = options[i]
 		var w: float = widths[i]
@@ -197,6 +208,14 @@ static func icon(c: CanvasItem, kind: String, r: Rect2, col: Color, u: float) ->
 			c.draw_polyline(PackedVector2Array([a, b, d, a, e, d]), col, w, true)
 		"door":
 			c.draw_rect(Rect2(m - Vector2(s * 0.55, s * 0.9), Vector2(s * 1.1, s * 1.8)), col, false, w)
-			c.draw_circle(m + Vector2(s * 0.3, s * 0.1), maxf(1.2, 1.8 * u), col)
+		"build":
+			# Bricks in a little wall, the top one going on.
+			var bw: float = s * 0.62
+			var bh: float = s * 0.42
+			for row in [[Vector2(-1.0, 0.0), Vector2(0.0, 0.0), Vector2(1.0, 0.0)], [Vector2(-0.5, -1.0), Vector2(0.5, -1.0)]]:
+				for k in row:
+					var at: Vector2 = m + Vector2(k.x * bw - bw * 0.5, s * 0.45 + k.y * bh)
+					c.draw_rect(Rect2(at, Vector2(bw, bh)), col, false, w)
+			c.draw_rect(Rect2(m + Vector2(-bw * 0.5, -s * 0.95), Vector2(bw, bh)), col)
 		_:
 			c.draw_circle(m, s * 0.35, col)

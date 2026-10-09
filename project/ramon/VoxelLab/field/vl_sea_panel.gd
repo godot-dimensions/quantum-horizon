@@ -1,18 +1,38 @@
 extends PanelContainer
 
-## The open world's sea settings (Ramon, 9 Oct: "when i press tab can you give me ocean settings i can
-## change and save"). Tab opens and closes it (the cursor comes free to drag); SAVE writes the numbers
-## to SAVE_PATH, and the field starts from them. Black glass, the F1 dev panel's look (room/vl_dev_panel.gd).
+## The open world's settings on Tab (Ramon, 9 Oct: "when i press tab can you give me ocean settings i
+## can change and save"; round 3: "make sure configured values can be saved as defaults"): the light
+## (since round 3, the Water Lab harbour's), the sea, the land. Tab opens and closes it (the cursor comes
+## free to drag); SAVE AS DEFAULTS writes the numbers to SAVE_PATH, and the field starts from them.
+## Black glass, the F1 dev panel's look (room/vl_dev_panel.gd).
 ##
-##   WATER    how high it lies over the land's own sea level (how far it climbs the coasts), the waves
-##            (Trym's presets) and their size, the fine ripple on top
-##   COLOUR   the deep colour and how strongly the water sends it back, how clear it is, the sun's glint
-##            and its softness, how hard it answers the light
-##   REACH    how far the sea goes (a new grid, built when the slider settles), where the waves calm
-##            toward the horizon
+## (The Water Lab is the Aquatic Lab on screen since 9 Oct: the four labs named alike, Voxel, Creature,
+## Botany and Aquatic; its folder and these notes keep WaterLab.)
+##
+## ROUND 5 (#47: "use the same controls as the improved Water Lab Open World ... bring over the existing
+## water presets ... switch between the water configurations and compare them in this scene"):
+##
+##   COMPARE    OURS (what is saved here) or THE WATER LAB'S (its harbour's saved water, read live from
+##              WATER_LAB_SAVE, and the swell its harbour opens on): the sliders take the values, so
+##              what you like of either can be saved as ours
+##   SEA STATE  the Water Lab's eight presets as buttons (Calm, Moderate swell, Storm, Off-slice swell,
+##              Short chop, Wind sea over swell, Sharp crests, Crossing seas), blended in half a second
+##   WATER      the Water Lab panel's own eight, named and ranged as it has them (WATER_LAB_ROWS:
+##              seascape_hud.gd WATER), and saved in its file's own [WATER] form, so a value means the
+##              same in both labs
+##   THIS SEA   ours alone: how high it lies over the land's own sea level, the Gerstner style (the
+##              Water Lab's G key: 0 off, 1 to 3)
+##   FOAM       the shore foam (#48: "reduce the foam intensity ... expose the foam intensity"): its
+##              strength, how much of it only the crests bring, how deep it reaches, how far out it
+##              has fallen to a third (field/vl_sea_4d.gd)
+##   LIGHT      the sun's strength, height and turn, the ambient, the exposure
+##   THE LAND   the island's green: hue, saturation, brightness (round 4)
+##   GRASS      the experimental patches (#49), on or off, how wide and how tall a blade is, and the grass's
+##              colour (Ramon, 9 Oct: "a grass size slider ... color coder for the grass color and save
+##              function"; field.set_grass); saved with the rest
 ##
 ## THE ONE SEA COLOUR. The gallery's pedestals have no moving sea, only the generator's voxel water; it
-## is painted in voxel_tint(), worked out from the saved deep colour, so the two seas stay one colour
+## is painted in voxel_tint(), worked out from the saved scatter colour, so the two seas stay one colour
 ## when this one is retuned (Ramon, 9 Oct: "the blue of the water of the voxel surface will have to
 ## match somehow to the big ocean").
 ##
@@ -20,46 +40,93 @@ extends PanelContainer
 
 const Style := preload("res://ramon/VoxelLab/carried/kit/kit_style.gd")
 const LabPrint := preload("res://ramon/VoxelLab/carried/LabKit/lab_print.gd")
-const WaterSurface := preload("res://ramon/VoxelLab/carried/water4d/water4d_surface.gd")
+const WaterSurface := preload("res://ramon/WaterLab/carried/water4d/water4d_surface.gd")
 
 const SAVE_PATH := "res://ramon/VoxelLab/field/voxel_field_sea.cfg"
+## The Water Lab harbour's saved tuning, read (never written) for COMPARE.
+const WATER_LAB_SAVE := "res://ramon/WaterLab/seascape/seascape_tuning.cfg"
+## The swell the Water Lab's harbour opens on (seascape_4d.gd _ready).
+const WATER_LAB_PRESET := 1
 const FONT := 14
 const HEAD := Color(0.42, 0.72, 1.0)
-## Trym's open-sea absorption, which the clearness divides.
-const ABSORPTION := Vector3(0.42, 0.11, 0.07)
-## The defaults: the calm sea of 9 Oct, a kilometre out.
+## The Water Lab panel's WATER rows, as it lists them (seascape_hud.gd): [property, min, max, step].
+## scatter_color is a colour, absorption three numbers (r, g, b).
+const WATER_LAB_ROWS := [["wave_scale", 0.0, 2.0, 0.001], ["detail_strength", 0.0, 0.3, 0.001], ["specular_strength", 0.0, 2.0, 0.001],
+	["roughness", 0.0, 1.0, 0.001], ["light_response", 0.0, 3.0, 0.001], ["scatter_strength", 0.0, 1.0, 0.001]]
+## The defaults: the calm sea of 9 Oct, the Water Lab's absorption; the land's green darker and greyer
+## than round 3's (round 4); the shore foam at under half the Water Lab's (round 5).
 const DEFAULTS := {
-	"level": 1.1, "preset": 0.0, "wave_scale": 0.4, "detail": 0.085,
-	"deep_r": 0.035, "deep_g": 0.175, "deep_b": 0.205, "scatter": 0.21, "clear": 1.0, "glint": 0.35, "glint_soft": 0.08, "light": 1.0,
-	"reach": 1000.0, "calm_from": 120.0, "calm_to": 320.0,
+	"level": 1.1, "preset": 0.0, "gerstner": 2.0,
+	"wave_scale": 0.4, "detail_strength": 0.085, "specular_strength": 0.35, "roughness": 0.08, "light_response": 1.0,
+	"scatter_strength": 0.21, "scatter_r": 0.035, "scatter_g": 0.175, "scatter_b": 0.205,
+	"absorption_r": 0.42, "absorption_g": 0.11, "absorption_b": 0.07,
+	"shore_foam": 0.4, "shore_breakup": 0.65, "shore_width": 0.4, "shore_far": 160.0, "see_depth": 10.0,
+	"land_h": 0.27, "land_s": 0.5, "land_v": 0.36,
+	"sun": 0.064, "sun_up": 10.5, "sun_turn": 137.5, "ambient": 1.0, "exposure": 0.99,
+	"grass": 1.0, "grass_width": 2.2, "grass_height": 0.7, "grass_r": 0.31, "grass_g": 0.49, "grass_b": 0.16,
 }
 ## How much brighter the voxel water is painted than the sea's deep colour, to read as the same sea in
 ## the gallery's light (its deep colour is what is left at depth; the pedestal's water is a lit surface).
 const TINT_GAIN := 1.65
 
-## The field (voxel_field_4d.gd): its `water`, and remake_sea() when the reach changes.
+## The field (voxel_field_4d.gd): its `water`, apply_light(), apply_land() and set_grass().
 var field: Node
 var _rows: Dictionary = {}
 var _values: Dictionary = {}
 var _pending: Dictionary = {}
 var _box: VBoxContainer
-var _preset_label: Label
+var _preset_buttons: Array = []
+var _compare_label: Label
+var _colour: ColorPickerButton
+var _grass_box: CheckBox
+var _grass_colour: ColorPickerButton
 
 
-## The saved numbers over the defaults (no panel needed: the field reads them as it starts).
+## The saved numbers over the defaults (no panel needed: the field reads them as it starts). The water
+## in the Water Lab's own [WATER] form, the rest in [sea].
 static func saved() -> Dictionary:
 	var out: Dictionary = DEFAULTS.duplicate()
 	var cf := ConfigFile.new()
-	if cf.load(SAVE_PATH) == OK and cf.has_section("sea"):
+	if cf.load(SAVE_PATH) != OK:
+		return out
+	if cf.has_section("sea"):
 		for k in cf.get_section_keys("sea"):
 			out[k] = float(cf.get_value("sea", k))
+	if cf.has_section("WATER"):
+		out.merge(from_water_section(cf), true)
+	return out
+
+
+## A [WATER] section (ours or the Water Lab's) as our flat numbers.
+static func from_water_section(cf: ConfigFile) -> Dictionary:
+	var out: Dictionary = {}
+	for row in WATER_LAB_ROWS:
+		if cf.has_section_key("WATER", String(row[0])):
+			out[String(row[0])] = float(cf.get_value("WATER", String(row[0])))
+	if cf.has_section_key("WATER", "scatter_color"):
+		var c: Color = cf.get_value("WATER", "scatter_color")
+		out.merge({"scatter_r": c.r, "scatter_g": c.g, "scatter_b": c.b}, true)
+	if cf.has_section_key("WATER", "absorption"):
+		var a: Vector3 = cf.get_value("WATER", "absorption")
+		out.merge({"absorption_r": a.x, "absorption_g": a.y, "absorption_b": a.z}, true)
+	return out
+
+
+## The Water Lab harbour's water as it is saved now, with the swell it opens on.
+static func water_lab() -> Dictionary:
+	var cf := ConfigFile.new()
+	if cf.load(WATER_LAB_SAVE) != OK or not cf.has_section("WATER"):
+		return {}
+	var out: Dictionary = from_water_section(cf)
+	out["preset"] = float(WATER_LAB_PRESET)
 	return out
 
 
 ## The voxel water's colour, the sea's deep colour made a lit surface (the pedestals, the recipe).
 static func voxel_tint() -> Color:
 	var v: Dictionary = saved()
-	return Color(clampf(float(v["deep_r"]) * TINT_GAIN, 0.0, 1.0), clampf(float(v["deep_g"]) * TINT_GAIN, 0.0, 1.0), clampf(float(v["deep_b"]) * TINT_GAIN, 0.0, 1.0))
+	return Color(clampf(float(v["scatter_r"]) * TINT_GAIN, 0.0, 1.0), clampf(float(v["scatter_g"]) * TINT_GAIN, 0.0, 1.0),
+		clampf(float(v["scatter_b"]) * TINT_GAIN, 0.0, 1.0))
 
 
 ## Every number onto a sea (the field's, as it starts, and the panel's live edits).
@@ -67,18 +134,21 @@ static func apply_all(water: Node, v: Dictionary) -> void:
 	if water == null:
 		return
 	water.set("water_level", float(v["level"]))
-	water.set("wave_scale", float(v["wave_scale"]))
 	if int(water.get("preset_index")) != int(v["preset"]):
 		water.call("set_preset", int(v["preset"]))
-	water.set("detail_strength", float(v["detail"]))
-	water.set("scatter_color", Color(float(v["deep_r"]), float(v["deep_g"]), float(v["deep_b"])))
-	water.set("scatter_strength", float(v["scatter"]))
-	water.set("absorption", ABSORPTION / maxf(float(v["clear"]), 0.05))
-	water.set("specular_strength", float(v["glint"]))
-	water.set("roughness", float(v["glint_soft"]))
-	water.set("light_response", float(v["light"]))
-	water.set("calm_from", float(v["calm_from"]))
-	water.set("calm_to", maxf(float(v["calm_to"]), float(v["calm_from"]) + 10.0))
+	for row in WATER_LAB_ROWS:
+		water.set(String(row[0]), float(v[String(row[0])]))
+	water.set("scatter_color", Color(float(v["scatter_r"]), float(v["scatter_g"]), float(v["scatter_b"])))
+	water.set("absorption", Vector3(float(v["absorption_r"]), float(v["absorption_g"]), float(v["absorption_b"])))
+	# The Water Lab's Gerstner styles (its G key): 0 off (plain sines), 1 to 3 the styles.
+	var gs: int = int(v.get("gerstner", 2.0))
+	water.set("solve_iterations", 0 if gs == 0 else 2)
+	if gs > 0:
+		water.set("gerstner_style", gs)
+	# The shore foam: only the Voxel Lab's sea has it (field/vl_sea_4d.gd).
+	if water.get("shore_foam") != null:
+		for k in ["shore_foam", "shore_breakup", "shore_width", "shore_far", "see_depth"]:
+			water.set(k, float(v[k]))
 
 
 func _ready() -> void:
@@ -87,51 +157,158 @@ func _ready() -> void:
 	add_theme_stylebox_override("panel", Style.glass_box(10.0, 1.0, 0.92))
 	position = Vector2(16, 16)
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(430, 600)
+	scroll.custom_minimum_size = Vector2(450, 640)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)
 	_box = VBoxContainer.new()
 	_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_box)
 	_values = saved()
-	_title("THE OPEN WORLD  ·  THE SEA")
-	_note("Tab closes. The numbers apply as you drag; SAVE keeps them.")
-	_section("WATER")
+	_title("THE OPEN WORLD  ·  SEA, LIGHT AND LAND")
+	_note("Tab closes. The numbers apply as you drag; SAVE AS DEFAULTS keeps them for next time.")
+	_section("COMPARE")
+	var cmp := HBoxContainer.new()
+	cmp.add_child(_button("OURS", func() -> void: _load(saved(), "Ours, as saved")))
+	cmp.add_child(_button("THE AQUATIC LAB'S", func() -> void:
+		var wl: Dictionary = water_lab()
+		if wl.is_empty():
+			_say("The Aquatic Lab has no saved water yet")
+		else:
+			_load(wl, "The Aquatic Lab harbour's water")))
+	_box.add_child(cmp)
+	_compare_label = Label.new()
+	_compare_label.add_theme_font_size_override("font_size", FONT - 2)
+	_compare_label.add_theme_color_override("font_color", Style.UI_INK_DIM)
+	_compare_label.text = "Ours, as saved"
+	_box.add_child(_compare_label)
+	_section("SEA STATE  ·  THE AQUATIC LAB'S PRESETS")
+	var grid := GridContainer.new()
+	grid.columns = 2
+	for i in WaterSurface.Presets.count():
+		var index: int = i
+		var b := _button("%d  %s" % [i + 1, WaterSurface.preset_name(i)], func() -> void:
+			_values["preset"] = float(index)
+			_name_preset()
+			_apply(false))
+		b.toggle_mode = true
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_preset_buttons.append(b)
+		grid.add_child(b)
+	_box.add_child(grid)
+	_section("WATER  ·  AS THE AQUATIC LAB HAS IT")
+	for row in WATER_LAB_ROWS:
+		_row(String(row[0]), String(row[0]).capitalize(), float(row[1]), float(row[2]), float(row[3]))
+	var line := HBoxContainer.new()
+	var l := Label.new()
+	l.text = "Scatter Color"
+	l.custom_minimum_size = Vector2(210, 0)
+	l.add_theme_font_size_override("font_size", FONT - 1)
+	line.add_child(l)
+	_colour = ColorPickerButton.new()
+	_colour.focus_mode = Control.FOCUS_NONE
+	_colour.custom_minimum_size = Vector2(120, 24)
+	_colour.edit_alpha = false
+	_colour.color = Color(float(_values["scatter_r"]), float(_values["scatter_g"]), float(_values["scatter_b"]))
+	_colour.color_changed.connect(func(c: Color) -> void:
+		_values.merge({"scatter_r": c.r, "scatter_g": c.g, "scatter_b": c.b}, true)
+		_apply(false))
+	line.add_child(_colour)
+	_box.add_child(line)
+	_row("absorption_r", "Absorption r", 0.0, 1.0, 0.001)
+	_row("absorption_g", "Absorption g", 0.0, 1.0, 0.001)
+	_row("absorption_b", "Absorption b", 0.0, 1.0, 0.001)
+	_section("THIS SEA")
 	_row("level", "Height over the land's sea level, m", 0.0, 3.0, 0.05)
-	_row("preset", "Waves", 0.0, float(WaterSurface.Presets.count() - 1), 1.0)
-	_preset_label = Label.new()
-	_preset_label.add_theme_font_size_override("font_size", FONT - 2)
-	_preset_label.add_theme_color_override("font_color", Style.UI_INK_DIM)
-	_box.add_child(_preset_label)
-	_row("wave_scale", "Wave size", 0.05, 1.5, 0.01)
-	_row("detail", "Fine ripple, m", 0.0, 0.3, 0.005)
-	_section("COLOUR")
-	_row("deep_r", "Deep colour, red", 0.0, 0.5, 0.005)
-	_row("deep_g", "Deep colour, green", 0.0, 0.5, 0.005)
-	_row("deep_b", "Deep colour, blue", 0.0, 0.5, 0.005)
-	_row("scatter", "Colour strength", 0.0, 1.0, 0.01)
-	_row("clear", "Clearness", 0.2, 3.0, 0.01)
-	_row("glint", "Sun glint", 0.0, 1.0, 0.01)
-	_row("glint_soft", "Glint softness", 0.02, 0.6, 0.01)
-	_row("light", "Light response", 0.0, 2.0, 0.01)
-	_section("REACH")
-	_row("reach", "How far the sea goes, m", 150.0, 2000.0, 50.0)
-	_row("calm_from", "Waves calm from, m", 20.0, 800.0, 5.0)
-	_row("calm_to", "Flat calm by, m", 40.0, 1200.0, 5.0)
+	_row("gerstner", "Gerstner (0 off, styles 1 to 3)", 0.0, 3.0, 1.0)
+	_row("see_depth", "How deep you see into it, m", 2.0, 40.0, 0.5)
+	_section("FOAM ON THE SHORE")
+	_row("shore_foam", "Strength (the Aquatic Lab's 0.9)", 0.0, 1.0, 0.01)
+	_row("shore_breakup", "Only where crests come in", 0.0, 1.0, 0.01)
+	_row("shore_width", "How deep it reaches, m", 0.05, 1.5, 0.01)
+	_row("shore_far", "Down to a third by, m", 30.0, 600.0, 5.0)
+	_section("LIGHT")
+	_row("sun", "Sun strength", 0.0, 3.0, 0.005)
+	_row("sun_up", "Sun height, degrees", 1.0, 89.0, 0.5)
+	_row("sun_turn", "Sun turn, degrees", -180.0, 180.0, 0.5)
+	_row("ambient", "Sky light (ambient)", 0.0, 2.0, 0.01)
+	_row("exposure", "Exposure", 0.3, 2.5, 0.01)
+	_section("THE LAND")
+	_row("land_h", "Green: hue", 0.0, 1.0, 0.005)
+	_row("land_s", "Green: saturation", 0.0, 1.0, 0.01)
+	_row("land_v", "Green: brightness", 0.0, 1.0, 0.01)
+	_section("GRASS  ·  EXPERIMENTAL")
+	_grass_box = CheckBox.new()
+	_grass_box.text = "Grass patches on the island"
+	_grass_box.focus_mode = Control.FOCUS_NONE
+	_grass_box.button_pressed = float(_values.get("grass", 1.0)) > 0.5
+	_grass_box.add_theme_font_size_override("font_size", FONT - 1)
+	_grass_box.toggled.connect(func(on: bool) -> void:
+		_values["grass"] = 1.0 if on else 0.0
+		_apply(false))
+	_box.add_child(_grass_box)
+	_row("grass_width", "Blade width, times the pen's", 0.5, 4.0, 0.05)
+	_row("grass_height", "Blade height, m", 0.15, 2.5, 0.01)
+	var gline := HBoxContainer.new()
+	var gl := Label.new()
+	gl.text = "Grass colour"
+	gl.custom_minimum_size = Vector2(210, 0)
+	gl.add_theme_font_size_override("font_size", FONT - 1)
+	gline.add_child(gl)
+	_grass_colour = ColorPickerButton.new()
+	_grass_colour.focus_mode = Control.FOCUS_NONE
+	_grass_colour.custom_minimum_size = Vector2(120, 24)
+	_grass_colour.edit_alpha = false
+	_grass_colour.color = Color(float(_values["grass_r"]), float(_values["grass_g"]), float(_values["grass_b"]))
+	_grass_colour.color_changed.connect(func(c: Color) -> void:
+		_values.merge({"grass_r": c.r, "grass_g": c.g, "grass_b": c.b}, true)
+		_apply(false))
+	gline.add_child(_grass_colour)
+	gline.add_child(_button("The pen's", func() -> void:
+		_grass_colour.color = Color(float(DEFAULTS["grass_r"]), float(DEFAULTS["grass_g"]), float(DEFAULTS["grass_b"]))
+		_values.merge({"grass_r": float(DEFAULTS["grass_r"]), "grass_g": float(DEFAULTS["grass_g"]), "grass_b": float(DEFAULTS["grass_b"])}, true)
+		_apply(false)))
+	_box.add_child(gline)
 	var save := Button.new()
-	save.text = "SAVE"
+	save.text = "SAVE AS DEFAULTS"
 	save.add_theme_font_size_override("font_size", FONT)
 	save.pressed.connect(save_now)
 	_box.add_child(save)
 	var reset := Button.new()
-	reset.text = "Back to the defaults"
+	reset.text = "Back to the built-in values"
 	reset.add_theme_font_size_override("font_size", FONT - 1)
-	reset.pressed.connect(func() -> void:
-		for k in DEFAULTS:
-			_set_row(String(k), float(DEFAULTS[k]))
-		_apply(true))
+	reset.pressed.connect(func() -> void: _load(DEFAULTS, "The built-in values"))
 	_box.add_child(reset)
 	_name_preset()
+
+
+func _button(text: String, on_press: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.focus_mode = Control.FOCUS_NONE
+	b.add_theme_font_size_override("font_size", FONT - 2)
+	b.pressed.connect(on_press)
+	return b
+
+
+## Every slider to `v` (those it has), applied.
+func _load(v: Dictionary, what: String) -> void:
+	for k in v:
+		_set_row(String(k), float(v[k]))
+	if v.has("scatter_r") and _colour != null:
+		_colour.color = Color(float(v["scatter_r"]), float(v["scatter_g"]), float(v["scatter_b"]))
+		_values.merge({"scatter_r": float(v["scatter_r"]), "scatter_g": float(v["scatter_g"]), "scatter_b": float(v["scatter_b"])}, true)
+	if v.has("preset"):
+		_values["preset"] = float(v["preset"])
+	if v.has("grass_r") and _grass_colour != null:
+		_grass_colour.color = Color(float(v["grass_r"]), float(v["grass_g"]), float(v["grass_b"]))
+		_values.merge({"grass_r": float(v["grass_r"]), "grass_g": float(v["grass_g"]), "grass_b": float(v["grass_b"])}, true)
+	if v.has("grass") and _grass_box != null:
+		_grass_box.set_pressed_no_signal(float(v["grass"]) > 0.5)
+		_values["grass"] = float(v["grass"])
+	if _compare_label != null:
+		_compare_label.text = what
+	_name_preset()
+	_apply(true)
 
 
 func _title(text: String) -> void:
@@ -166,6 +343,7 @@ func _row(key: String, label: String, lo: float, hi: float, step: float) -> void
 	var l := Label.new()
 	l.text = label
 	l.custom_minimum_size = Vector2(210, 0)
+	l.clip_text = true
 	l.add_theme_font_size_override("font_size", FONT - 1)
 	line.add_child(l)
 	var s := HSlider.new()
@@ -175,6 +353,7 @@ func _row(key: String, label: String, lo: float, hi: float, step: float) -> void
 	s.value = value
 	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	s.custom_minimum_size = Vector2(120, 0)
+	s.focus_mode = Control.FOCUS_NONE
 	line.add_child(s)
 	var v := Label.new()
 	v.custom_minimum_size = Vector2(54, 0)
@@ -186,27 +365,21 @@ func _row(key: String, label: String, lo: float, hi: float, step: float) -> void
 	s.value_changed.connect(func(x: float) -> void:
 		v.text = _fmt(x, step)
 		_values[key] = x
-		if key == "preset":
-			_name_preset()
-		if key == "reach":
-			# A new grid: built once the slider has settled.
-			_pending[key] = 0.4
-		else:
-			_apply(false))
+		_apply(false))
 
 
 func _set_row(key: String, x: float) -> void:
+	_values[key] = x
 	if not _rows.has(key):
 		return
 	(_rows[key][0] as HSlider).set_value_no_signal(x)
 	(_rows[key][1] as Label).text = _fmt(x, float(_rows[key][2]))
-	_values[key] = x
-	_name_preset()
 
 
 func _name_preset() -> void:
-	if _preset_label != null:
-		_preset_label.text = "        " + WaterSurface.preset_name(int(_values.get("preset", 0.0)))
+	var p: int = int(_values.get("preset", 0.0))
+	for i in _preset_buttons.size():
+		(_preset_buttons[i] as Button).set_pressed_no_signal(i == p)
 
 
 static func _fmt(x: float, step: float) -> String:
@@ -219,17 +392,25 @@ static func _fmt(x: float, step: float) -> String:
 	return "%.3f" % x
 
 
-## The numbers onto the field's sea; with `remake`, a new sea of the new reach first.
-func _apply(remake: bool) -> void:
+## The numbers onto the field's sea, its light, its land and its grass.
+func _apply(_remake: bool) -> void:
 	if field == null:
 		return
-	if remake and absf(float(field.get("water").get("extent")) - float(_values["reach"])) > 1.0:
-		field.call("remake_sea", float(_values["reach"]))
 	apply_all(field.get("water"), _values)
+	field.call("apply_light", _values)
+	field.call("apply_land", _values)
+	if field.has_method("set_grass"):
+		field.call("set_grass", float(_values.get("grass", 1.0)) > 0.5, float(_values.get("grass_width", 2.2)), float(_values.get("grass_height", 0.7)),
+			Color(float(_values.get("grass_r", 0.31)), float(_values.get("grass_g", 0.49)), float(_values.get("grass_b", 0.16))))
 
 
 func values() -> Dictionary:
 	return _values
+
+
+func _say(text: String) -> void:
+	if field != null and field.get("hud") != null:
+		field.get("hud").call("toast", text)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -254,10 +435,18 @@ func _process(delta: float) -> void:
 			_apply(true)
 
 
+## The water in the Water Lab's [WATER] form (the same names and types as its seascape_tuning.cfg), the
+## rest in [sea].
 func save_now() -> void:
 	var cf := ConfigFile.new()
+	var water_keys: Array = ["scatter_r", "scatter_g", "scatter_b", "absorption_r", "absorption_g", "absorption_b"]
+	for row in WATER_LAB_ROWS:
+		cf.set_value("WATER", String(row[0]), float(_values[String(row[0])]))
+		water_keys.append(String(row[0]))
+	cf.set_value("WATER", "scatter_color", Color(float(_values["scatter_r"]), float(_values["scatter_g"]), float(_values["scatter_b"])))
+	cf.set_value("WATER", "absorption", Vector3(float(_values["absorption_r"]), float(_values["absorption_g"]), float(_values["absorption_b"])))
 	for k in _values:
-		cf.set_value("sea", String(k), float(_values[k]))
+		if not String(k) in water_keys:
+			cf.set_value("sea", String(k), float(_values[k]))
 	var err: int = cf.save(SAVE_PATH)
-	if field != null and field.get("hud") != null:
-		field.get("hud").call("toast", "Saved to %s" % SAVE_PATH.get_file() if err == OK else "Could not save (error %d)" % err)
+	_say("Saved to %s" % SAVE_PATH.get_file() if err == OK else "Could not save (error %d)" % err)

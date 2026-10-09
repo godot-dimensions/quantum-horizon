@@ -39,7 +39,12 @@ const Shimmer := preload("res://ramon/VoxelLab/room/vl_shimmer_4d.gd")
 const LoadBoard := preload("res://ramon/VoxelLab/room/vl_load_board.gd")
 const GridView := preload("res://ramon/VoxelLab/room/vl_grid_view.gd")
 const DevPanel := preload("res://ramon/VoxelLab/room/vl_dev_panel.gd")
+const LightsPanel := preload("res://ramon/VoxelLab/room/vl_lights_panel.gd")
+const MouseTutorial := preload("res://ramon/VoxelLab/field/vl_mouse_tutorial.gd")
+const Build := preload("res://ramon/VoxelLab/carried/scripts/chamber_build.gd")
 const FIELD := "res://ramon/VoxelLab/field/voxel_field.tscn"
+## Destinations lit blue whatever their turn (the others wait theirs in the muted colour).
+const ALWAYS_LIT := ["Build"]
 
 ## Where you come from when the room opens: "field" (back through the gallery's far door) puts you at
 ## that door; anything else at the entrance. Set by the field before it hands back (static: it outlives
@@ -96,10 +101,22 @@ static var arrive_from: String = ""
 	set(v):
 		gallery_height = v
 		_shape_later()
+## Metres between the hall's back wall and the gallery's front wall (Ramon, 9 Oct: "consider moving the
+## entire second room approximately one meter backward"): each room's walls, floor and ceiling run half
+## a metre past its own walls, and with the rooms touching, the gallery's ceiling showed on the hall's
+## back wall and the hall's corner walls ran on into the gallery. A short passage fills the gap.
+@export_range(0.0, 4.0, 0.1) var gallery_gap: float = 1.0:
+	set(v):
+		gallery_gap = v
+		_shape_later()
 
 @export_group("Visit")
 ## Where you start (x, z), facing the block.
 @export var start_at: Vector2 = Vector2(0.0, 17.5)
+## The lab's own loading board on the way in, while the engine builds the specimens (round 5, Ramon, 9 Oct:
+## "i want to keep the loading screens ... some protos need time to load"; the menu's loading screen covers
+## only the scene's file, not the voxels built after it). Off: straight in, as round 3 had it.
+@export var board_on_arrival: bool = true
 ## How far beyond its pedestal's edge a pedestal counts as the one you are at (its story plays).
 @export_range(1.0, 12.0, 0.5) var story_margin: float = 5.5
 ## The volume view's ghost: the camera's projection_opacity_base (lower is stronger).
@@ -134,6 +151,8 @@ var _near: Dictionary = {}
 var spots: Array = []
 ## The spot you are standing at, or {}; how long you have stood there.
 var spot: Dictionary = {}
+## The Water Lab's mouse card (field/vl_mouse_tutorial.gd), at the gallery world's ring.
+var tutorial: Control
 var _spot_t: float = 0.0
 ## The station whose presentation is playing (chosen at its ring), and one waiting to be made whole first.
 var watching: Node = null
@@ -237,18 +256,31 @@ func _ready() -> void:
 	popup.name = "Popup"
 	popup.set_script(PopupCard)
 	layer.add_child(popup)
+	tutorial = Control.new()
+	tutorial.name = "MouseTutorial"
+	tutorial.set_script(MouseTutorial)
+	tutorial.set("gestures", [["drag_h", "TURN IT THROUGH W"], ["drag_v", "TURN IT THE OTHER WAY"], ["wheel", "SLIDE THROUGH W"]])
+	tutorial.set("footer", "R  ·  BACK AS IT WAS")
+	layer.add_child(tutorial)
 	# The floating panels wobble when you walk into them.
 	for c in get_children():
 		if c.get_script() != null and "face_point" in c:
 			c.set("player", player)
-	_open_board(from_field)
+	# The board on the way in as well as coming back from the open world (round 5: "keep the loading
+	# screens"; round 3 had left it to the menu's, which ends before the voxels are built).
+	if from_field or board_on_arrival:
+		_open_board(from_field)
 	# The blue shimmer in the gallery's far door: walk through it to the field.
 	var door: Node4D = get_node_or_null("FieldDoor") as Node4D
 	if door != null:
 		var sh := Node4D.new()
 		sh.name = "Shimmer"
 		sh.set_script(Shimmer)
-		sh.position = Vector4(0.0, 0.0, door.position.z + 0.1, 0.0)
+		# The opening exactly (round 3: "adjust the bright outline so it follows the opening precisely"):
+		# its width and height, standing just inside the wall's face so its lit edges line the jambs.
+		sh.set("width", 3.2)
+		sh.set("height", minf(4.2, gallery_height - 0.5))
+		sh.position = Vector4(0.0, 0.0, door.position.z + 0.17, 0.0)
 		add_child(sh)
 	var dlayer := CanvasLayer.new()
 	dlayer.name = "Dev"
@@ -258,6 +290,12 @@ func _ready() -> void:
 	dev_panel.set_script(DevPanel)
 	dev_panel.set("room", self)
 	dlayer.add_child(dev_panel)
+	# Tab: every light on its own (round 3).
+	var lp := PanelContainer.new()
+	lp.name = "LightsPanel"
+	lp.set_script(LightsPanel)
+	lp.set("room", self)
+	dlayer.add_child(lp)
 	# The block's story turns the grid view on for its part about voxels.
 	for s in stations:
 		var ex: Node = s.get("exhibit")
@@ -287,7 +325,7 @@ func _open_board(from_field: bool) -> void:
 	_board.set("title", "VOXEL LAB")
 	_board.set("subtitle", "Cutting 4D matter")
 	_board.set("coming", ["A block of 4D rock: watch it cut, or cut it yourself",
-		"Sections, a column that falls through W, the numbers of every cut",
+		"Sections, a 4D builder, the numbers of every cut",
 		"Behind it: how our world is made, and the door into it"])
 	_board.set("diagram_title", "SPECIMENS, BUILT BY THE ENGINE AS YOU WAIT")
 	_board.connect("finished", func() -> void:
@@ -359,7 +397,7 @@ func apply_shape() -> void:
 		ent.position = Vector4(0.0, 0.0, f + 7.5, 0.0)
 	var gal: Node4D = get_node_or_null("GalleryRoom") as Node4D
 	if gal != null:
-		var gz: float = -d - 0.5 - gallery_depth * 0.5
+		var gz: float = -d - 0.5 - gallery_gap - gallery_depth * 0.5
 		gal.position = Vector4(0.0, 0.0, gz, 0.0)
 		_set_if(gal, "size", Vector3(gallery_width, gallery_height, gallery_depth))
 		var gdoors: Array = [["s", -dw * 0.5, dw * 0.5, minf(door_height, gallery_height - 0.5)]] if dw > 0.1 else []
@@ -369,6 +407,54 @@ func apply_shape() -> void:
 		var door: Node4D = get_node_or_null("FieldDoor") as Node4D
 		if door != null:
 			door.position = Vector4(0.0, 2.4, gz - gallery_depth * 0.5 - 0.2, 0.0)
+		_passage(-d - 0.5, gz + gallery_depth * 0.5 + 0.5, dw)
+		_far_walk(gz - gallery_depth * 0.5, minf(4.2, gallery_height - 0.5))
+
+
+## Between the hall's back door and the gallery's: from the outer face of one wall to the outer face of
+## the other, a floor you walk on, a wall either side of the door and a ceiling at the door's height, so
+## nothing of either room shows in the gap and nothing reaches into either.
+func _passage(z_hall: float, z_gallery: float, dw: float) -> void:
+	var old: Node = get_node_or_null("Passage")
+	if old != null:
+		remove_child(old)
+		old.queue_free()
+	if z_hall - z_gallery < 0.05 or dw < 0.1:
+		return
+	var p := Node4D.new()
+	p.name = "Passage"
+	add_child(p)
+	var len: float = z_hall - z_gallery
+	var zc: float = (z_hall + z_gallery) * 0.5
+	var h: float = minf(door_height, minf(hall_height, gallery_height) - 0.5)
+	# The floor reaches under both rooms' walls, which stand on nothing at their outer half.
+	Build.box(p, "Floor", Vector3(0.0, -0.25, zc), Vector3(dw + 1.2, 0.5, len + 1.0), "kit_floor")
+	for side in [-1.0, 1.0]:
+		Build.box(p, "Wall", Vector3(side * (dw * 0.5 + 0.25), h * 0.5, zc), Vector3(0.5, h, len), "kit_wall")
+	Build.box(p, "Ceiling", Vector3(0.0, h + 0.2, zc), Vector3(dw + 1.0, 0.4, len), "kit_ceiling", false)
+
+
+## Past the gallery's far door, a short walkway (round 4, #25: "extend the walkway past the gallery's far
+## door so the player doesn't drop"): floor, walls and a ceiling 4.5 m on from the wall, closed at its
+## end, so the steps after the shimmer still land on something while the wash plays.
+func _far_walk(z_wall: float, h: float) -> void:
+	var old: Node = get_node_or_null("FarWalk")
+	if old != null:
+		remove_child(old)
+		old.queue_free()
+	var p := Node4D.new()
+	p.name = "FarWalk"
+	add_child(p)
+	var half: float = 1.6
+	var reach: float = 4.5
+	# The room's walls stand outside its edge, half a metre thick: the floor starts at the edge (a hair
+	# lower than the gallery's, so where they meet nothing flickers), the walls at the wall's outer face.
+	Build.box(p, "Floor", Vector3(0.0, -0.253, z_wall - reach * 0.5), Vector3(half * 2.0 + 1.2, 0.5, reach), "kit_floor")
+	var zc: float = z_wall - 0.5 - (reach - 0.5) * 0.5
+	for side in [-1.0, 1.0]:
+		Build.box(p, "Wall", Vector3(side * (half + 0.25), h * 0.5, zc), Vector3(0.5, h, reach - 0.5), "kit_wall")
+	Build.box(p, "End", Vector3(0.0, h * 0.5, z_wall - reach - 0.25), Vector3(half * 2.0 + 1.0, h, 0.5), "kit_wall")
+	Build.box(p, "Ceiling", Vector3(0.0, h + 0.2, zc), Vector3(half * 2.0 + 1.0, 0.4, reach - 0.5), "kit_ceiling", false)
 
 
 static func _set_if(n: Object, key: String, v: Variant) -> void:
@@ -411,7 +497,8 @@ func _route_floor() -> void:
 
 func _label_switch() -> void:
 	if hud != null:
-		hud.set("switch_text", "GREY  ·  B" if Style.palette == "black" else "BLACK  ·  B")
+		# Round 3: the switch says what the room is now ("Dark Mode On / Dark Mode Off").
+		hud.set("switch_text", "DARK MODE ON  ·  B" if Style.palette == "black" else "DARK MODE OFF  ·  B")
 		hud.call("refresh_switch")
 
 
@@ -445,8 +532,17 @@ func _process(delta: float) -> void:
 		presenter.set("active", watching != null)
 	prompt.set("shown", false)
 	hud.set("strip", _strip())
+	_match_widths()
 	_route_states(p)
 	_field_door(p)
+
+
+## The choice and the control strip under it, one width: the wider of the two.
+func _match_widths() -> void:
+	var showing: bool = bool(choice.get("shown"))
+	var w: float = maxf(float(hud.get("strip_width")), float(choice.get("natural_width"))) if showing else 0.0
+	hud.set("min_strip_width", w)
+	choice.set("match_width", w)
 
 
 ## The pedestal you are at, for the wheel and a right drag: the nearest whose edge is within
@@ -526,6 +622,11 @@ func _read_spot(p: Vector4, delta: float) -> void:
 	popup.set("shown", kind == "popup" and _popup_open)
 	if kind == "popup" and _popup_open:
 		popup.set("data", _popup_data(spot["station"]))
+	# The mouse card at the world's ring (round 4: "reuse the animated mouse tutorial from the Water Lab
+	# aquarium ... adapt it to demonstrate slice rotation"), ten seconds each time you come to it.
+	if tutorial != null:
+		var st: Node = spot.get("station")
+		tutorial.set("shown", st != null and String(st.name) == "Terrain" and watching == null)
 
 
 func _heading(sp: Dictionary) -> String:
@@ -545,8 +646,8 @@ func _options(sp: Dictionary) -> Array:
 				item.merge({"icon": "eye", "label": "Watch the presentation"})
 			"cut":
 				item.merge({"icon": "pick", "label": "Cut it yourself"})
-			"fall":
-				item.merge({"icon": "fall", "label": "Watch it fall"})
+			"build":
+				item.merge({"icon": "build", "label": "Build it yourself"})
 			"biome":
 				var now: String = String(ex.call("biome_name")) if ex != null and ex.has_method("biome_name") else ""
 				item.merge({"icon": "globe", "label": "Change the land (now %s)" % now})
@@ -561,9 +662,9 @@ func _on_choice(i: int) -> void:
 	if not String(spot["target"]).is_empty():
 		_done[String(spot["target"])] = true
 	match String(spot["options"][i]):
-		"watch", "fall":
+		"watch":
 			watch(st)
-		"cut":
+		"cut", "build":
 			sit(spot.get("bench"))
 		"biome":
 			var ex: Node = st.get("exhibit") if st != null else null
@@ -584,7 +685,7 @@ func _popup_data(st: Node) -> Dictionary:
 
 func _strip() -> Array:
 	if watching != null or _watch_next != null:
-		return [["Click / ← →", "Next part"], ["Esc", "Stop"], ["Wheel", "Slide through W"], ["B", "Black / grey"]]
+		return [["Click / ← →", "Next part"], ["Esc", "Stop"], ["Wheel", "Slide through W"]]
 	var kind: String = String(spot.get("kind", ""))
 	var out: Array = []
 	if kind == "popup":
@@ -592,11 +693,11 @@ func _strip() -> Array:
 	if active != null:
 		out.append(["Wheel", "Slide through W"])
 		out.append(["Right drag", "Turn in 4D"])
-		out.append(["V", "Volume view" if not volume_view else "Slice view"])
+		out.append(["R", "Reset slice"])
+		out.append(["V", "Projection view" if not volume_view else "Slice view"])
 	else:
 		out.append(["WASD", "Move"])
 		out.append(["Mouse", "Look"])
-	out.append(["B", "Black / grey"])
 	if active == null:
 		out.append(["O", "The open world"])
 	return out
@@ -665,6 +766,11 @@ func _route_states(p: Vector4) -> void:
 			var want: String
 			if _done.has(target):
 				want = "completed"
+			elif target in ALWAYS_LIT:
+				# Round 4: the column's ring a proper blue from the start ("rather than the current muted
+				# gray-blue"), though it comes late in the hall's order.
+				var at2: Vector4 = d.get("pos", Vector4.ZERO)
+				want = "focused" if Vector2(p.x - at2.x, p.z - at2.z).length() < 2.0 else "available"
 			elif not next_found:
 				next_found = true
 				var at: Vector4 = d.get("pos", Vector4.ZERO)
@@ -699,6 +805,12 @@ func _input(event: InputEvent) -> void:
 			active.call("step_slice", 1 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else -1)
 			get_viewport().set_input_as_handled()
 			return
+	var kr := event as InputEventKey
+	if kr != null and kr.pressed and not kr.echo and kr.keycode == KEY_R and active != null and watching == null:
+		# Round 3: R puts the pedestal's specimen back as it stood: no turn, the middle slice.
+		active.call("reset_view")
+		get_viewport().set_input_as_handled()
+		return
 	var mm := event as InputEventMouseMotion
 	# Looking round takes the camera back from the story.
 	if mm != null and _film_cam != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and (mm.button_mask & MOUSE_BUTTON_MASK_RIGHT) == 0 \
@@ -882,7 +994,7 @@ func toggle_volume_view() -> void:
 	volume_view = not volume_view
 	_apply_view_to(camera())
 	_apply_view_to(_film_cam)
-	hud.call("toast", "Volume view: the whole 4D specimen, faintly" if volume_view else "Slice view")
+	hud.call("toast", "Projection view: the whole 4D specimen, faintly" if volume_view else "Slice view")
 
 
 func _apply_view_to(cam: Camera4D) -> void:

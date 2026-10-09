@@ -6,12 +6,14 @@ spots you act at and the lights never drift apart. Edit here and run it, rather 
 
 Godot must be closed, or the scene not open in it.
 
-THE LAYOUT (Ramon's walkthrough, 8 Oct; VoxelLab/PLAN_ROUND2.md). The hall: front wall z 12, back
-wall z -15 with the gallery door, side walls x -12 and 12, corner walls from (+-12, -7) to (+-4.8, -15)
-carrying the two wall panels. The gallery behind it: x -13 to 13, z -31.5 to -15.5, the field door in
-its far wall. Routes are straight, with right angles and the odd 45 degrees; big rings (destinations)
-only where you act or look at a wall; small markers (bends, chords) at the shelf and the ladder; quiet
-junctions where routes branch.
+THE LAYOUT (Ramon's walkthroughs, 8 and 9 Oct; VoxelLab/PLAN_ROUND2.md and PLAN_ROUND3.md). The hall:
+front wall z 12, back wall z -15 with the gallery door, side walls x -12 and 12, corner walls from
+(+-12, -7) to (+-4.8, -15) carrying the two wall panels. The gallery behind it, 1 m further back since
+round 3 (GZ): x -13 to 13, z -32.5 to -16.5, the field door in its far wall, a short passage between
+the two doors (voxel_lab_4d.gd). Routes are straight, with right angles and the odd 45 degrees; big
+rings (destinations) only where you act or look at a wall; small markers (bends, chords) at the shelf
+and the ladder; quiet junctions where routes branch. From the pivot the arrows run both ways round the
+hall to the back junction and the gallery door (round 3).
 """
 from pathlib import Path
 import math
@@ -29,7 +31,7 @@ ext = [
     ("9_shelf", "Script", "res://ramon/VoxelLab/stations/vl_shelf_exhibit_4d.gd"),
     ("10_light", "Script", "res://ramon/VoxelLab/carried/kit/kit_light_4d.gd"),
     ("11_sun", "Script", "res://ramon/VoxelLab/carried/kit/kit_sun_4d.gd"),
-    ("12_column", "Script", "res://ramon/VoxelLab/stations/vl_column_exhibit_4d.gd"),
+    ("12_build", "Script", "res://ramon/VoxelLab/stations/vl_build_exhibit_4d.gd"),
     ("13_panel", "Script", "res://ramon/VoxelLab/carried/kit/panels/kit_wall_panel_4d.gd"),
     ("14_pair", "Script", "res://ramon/VoxelLab/carried/kit/panels/kit_wall_panels_4d.gd"),
     ("15_source", "Script", "res://ramon/VoxelLab/room/vl_panel_source.gd"),
@@ -71,13 +73,21 @@ def arr(items):
 node("VoxelLab", None, "Node4D", [("script", 'ExtResource("1_root")'), ("room_half_width", "12.0"), ("room_back", "15.0"),
                                   ("corner_length", "10.8"), ("start_at", "Vector2(0, 21)")])
 node("Room", ".", "Node4D", [("script", 'ExtResource("2_room")'), ("start_mood", q("bright"))])
-node("Entrance", ".", "Node4D", [("position", V(0, 0, 19.5)), ("script", 'ExtResource("3_kitroom")'), ("size", "Vector3(8, 6, 14)"),
+node("Entrance", ".", "Node4D", [("position", V(0, 0, 19.5)), ("script", 'ExtResource("3_kitroom")'), ("size", "Vector3(8, 6.8, 14)"),
                                  ("open_sides", '["n"]'), ("cove", "false")])
 node("Hall", ".", "Node4D", [("script", 'ExtResource("3_kitroom")'), ("size", "Vector3(24, 9, 27)"), ("cove", "false")])
 node("Sign", "Hall", "Node", [("script", 'ExtResource("4_text")'), ("side", q("s")), ("edge", "5"), ("along", "Vector2(7.6, 16.4)"),
                               ("up", "Vector2(4.4, 5.9)"), ("outside", "true"), ("kind", q("sign")), ("title", q("VOXEL LAB")),
                               ("subtitle", q("QUANTUM HORIZON  ·  CUTTING 4D MATTER")), ("glow", "0.3")])
-node("GalleryRoom", ".", "Node4D", [("position", V(0, 0, -23.5)), ("script", 'ExtResource("3_kitroom")'), ("size", "Vector3(26, 8, 16)"),
+# The gallery, everything in it 1 m further back than round 2 (Ramon, 9 Oct: the rooms clipped).
+GZ = -1.0
+# Over the gallery door, on the hall's back wall (edge 2, from its left end: the door is centred 4.77 m
+# along it), the open world door's sign (round 4: "an appropriate black text label at the entrance to
+# the next room").
+node("GallerySign", "Hall", "Node", [("script", 'ExtResource("4_text")'), ("edge", "2"), ("along", "Vector2(0.6, 8.94)"),
+                                    ("up", "Vector2(4.5, 6.3)"), ("kind", q("sign")), ("title", q("HOW A WORLD IS MADE")),
+                                    ("subtitle", q("OUR GENERATORS ONE AT A TIME, THEN THE WHOLE WORLD")), ("glow", "0.3")])
+node("GalleryRoom", ".", "Node4D", [("position", V(0, 0, -23.5 + GZ)), ("script", 'ExtResource("3_kitroom")'), ("size", "Vector3(26, 8, 16)"),
                                     ("cove", "false")])
 node("AboutWall", "GalleryRoom", "Node", [("script", 'ExtResource("4_text")'), ("side", q("w")), ("along", "Vector2(-6.6, 6.6)"),
                                           ("up", "Vector2(1.6, 6.6)"), ("kind", q("lesson")), ("number", "2"), ("title", q("The whole world")),
@@ -88,7 +98,7 @@ node("AboutWall", "GalleryRoom", "Node", [("script", 'ExtResource("4_text")'), (
                                           ("code", q("blue")), ("glow", "0.2")])
 node("FieldSign", "GalleryRoom", "Node", [("script", 'ExtResource("4_text")'), ("side", q("n")), ("along", "Vector2(-4.4, 4.4)"),
                                           ("up", "Vector2(4.6, 6.4)"), ("kind", q("sign")), ("title", q("THE OPEN WORLD")),
-                                          ("subtitle", q("OUR LANDSCAPE, WITHOUT EDGES, GENERATED AS YOU GO")), ("glow", "0.3")])
+                                          ("subtitle", q("AN ISLAND OF OUR LANDSCAPE, IN THE OPEN SEA")), ("glow", "0.3")])
 node("LayersWall", "GalleryRoom", "Node", [("script", 'ExtResource("4_text")'), ("side", q("e")), ("along", "Vector2(-6.6, 6.6)"),
                                            ("up", "Vector2(2.4, 6.6)"), ("kind", q("lesson")), ("number", "1"), ("title", q("How a world is made")),
                                            ("subtitle", q("One generator at a time")),
@@ -100,20 +110,33 @@ node("LayersWall", "GalleryRoom", "Node", [("script", 'ExtResource("4_text")'), 
 
 # -- what stands in them ------------------------------------------------------------------------------
 
-def station(name, x, z, script, radius, height=0.9, shape="round", band=90.0, meta=None, holo=True):
+def station(name, x, z, script, radius, height=0.9, shape="round", band=90.0, meta=None, holo=True, band_print=True, stripes=True, holo_h=None, holo_base=None):
     props = [("position", V(x, 0, z)), ("script", 'ExtResource("5_showcase")'), ("exhibit_script", 'ExtResource("%s")' % script),
-             ("radius", str(radius)), ("height", str(height)), ("pedestal_shape", q(shape)), ("bounds", "Rect2(-13, -31.5, 26, 44)"),
+             ("radius", str(radius)), ("height", str(height)), ("pedestal_shape", q(shape)), ("bounds", "Rect2(-13, -32.5, 26, 45)"),
              ("band_angle", str(band))]
     if not holo:
         props.append(("hologram", "false"))
+    if holo_h:
+        props.append(("holo_height", str(holo_h)))
+    if holo_base is not None:
+        props.append(("holo_base", str(holo_base)))
+    if not band_print:
+        props.append(("band_print", "false"))
+    if not stripes:
+        props.append(("band_stripes", "false"))
     for k, v in (meta or []):
         props.append(("metadata/%s" % k, v))
     node(name, ".", "Node4D", props)
 
 
-def bench(name, x, z, st, dist=4.6, pitch=-16.0):
-    node(name, ".", "Node4D", [("position", V(x, 0, z)), ("script", 'ExtResource("7_bench")'), ("station", 'NodePath("../%s")' % st),
-                               ("pad", "false"), ("camera_distance", str(dist)), ("camera_pitch", str(pitch))])
+def bench(name, x, z, st, dist=4.6, pitch=-16.0, tools=None, bounds=None):
+    props = [("position", V(x, 0, z)), ("script", 'ExtResource("7_bench")'), ("station", 'NodePath("../%s")' % st),
+             ("pad", "false"), ("camera_distance", str(dist)), ("camera_pitch", str(pitch))]
+    if tools:
+        props.append(("tools", 'PackedStringArray(%s)' % ', '.join(q(t) for t in tools)))
+    if bounds:
+        props.append(("camera_bounds", "Rect2(%s, %s, %s, %s)" % bounds))
+    node(name, ".", "Node4D", props)
 
 
 def panel(name, x, z, st, number, title, kicker, face, width=1.3):
@@ -122,30 +145,62 @@ def panel(name, x, z, st, number, title, kicker, face, width=1.3):
                                ("width", str(width)), ("depth", str(round(width * 0.38, 2)))])
 
 
-SHELF_X = 8.6
+# A, B and C near the wall behind them (round 3; 2.5 m out from it before), their markers on short
+# branches off the shelf's run, which stays at x 6.2.
+SHELF_X = 10.5
+SHELF_RUN_X = 6.2
+SHELF_SPOT_X = 8.5
 SHELF_Z = [9.0, 5.4, 1.8]
-for i, (kind, z) in enumerate(zip(["section", "tunnels", "cavity"], SHELF_Z)):
+for i, (kind, z) in enumerate(zip(["voxels", "inside", "hidden"], SHELF_Z)):
     station("Shelf%d" % (i + 1), SHELF_X, z, "9_shelf", 0.95, 1.0, "box", -90.0, [("shelf_kind", q(kind)), ("face_yaw", "-90.0")], False)
+# A label on the right wall over each (round 3): edge 4 of the hall's outline runs up the right wall
+# from where the corner wall meets it (z -15 + 10.8 cos 42) toward the entrance.
+RIGHT_EDGE_Z0 = -15.0 + 10.8 * math.cos(math.radians(42.0))
+LABELS = [("A", "Voxels", "What the world is made of: every voxel a tiny 4D cube.", "voxels"),
+          ("B", "Inside", "Cut into ground and its layers show, all the way round.", "inside"),
+          ("C", "Hidden in W", "Whole in your slice. Slide ana: a room appears.", "hidden")]
+for (letter, title, line, diag), z in zip(LABELS, SHELF_Z):
+    a0 = z - RIGHT_EDGE_Z0
+    node("Label" + letter, "Hall", "Node", [("script", 'ExtResource("4_text")'), ("edge", "4"), ("along", "Vector2(%.2f, %.2f)" % (a0 - 0.85, a0 + 0.85)),
+                                          ("up", "Vector2(2.05, 3.15)"), ("kind", q("label")), ("letter", q(letter)), ("title", q(title)),
+                                          ("subtitle", q(line)), ("diagram", q(diag)), ("live", "true"), ("live_ppm", "400.0"), ("glow", "0.3")])
 HERO = (0.0, -1.4)
 HERO_RING = (0.0, 3.0)
 station("Hero", HERO[0], HERO[1], "6_block", 2.8)
 bench("HeroBench", HERO_RING[0], HERO_RING[1], "Hero", 5.2)
-panel("HeroPanel", -3.7, 1.2, "Hero", 1, "The block", "THE ENGINE'S VOXELS, CUT LIVE", HERO_RING)
-COLUMN = (-8.2, -5.0)
-COLUMN_RING = (-5.1, -5.0)
-station("Column", COLUMN[0], COLUMN[1], "12_column", 1.5, 0.6)
-panel("ColumnPanel", -9.9, -2.3, "Column", 2, "The column", "SUPPORT IN 4D", COLUMN_RING, 1.0)
-TERRAIN = (-6.2, -23.5)
-TERRAIN_RING = (0.0, -23.5)
-station("Terrain", TERRAIN[0], TERRAIN[1], "17_case", 3.3, 0.45, "box", 90.0, [("case", q("terrain")), ("own_height", "true")], False)
-bench("TerrainBench", TERRAIN_RING[0], TERRAIN_RING[1], "Terrain", 8.2, -24.0)
-panel("TerrainPanel", -2.0, -19.6, "Terrain", 3, "The world", "ADAPTED FROM ANDREW (4DENTHUSIAST)", TERRAIN_RING)
+# Right beside its ring (round 5, #42: "position it directly beside the path circle"), on the left as you
+# come down the spine to it.
+panel("HeroPanel", -2.25, 3.3, "Hero", 1, "The block", "THE ENGINE'S VOXELS, CUT LIVE", HERO_RING)
+# The second specimen in the front-left corner, the first thing on your left as you come in (round 3:
+# "make better use of the currently unused space"), its ring on the left run. Round 4: Build it, in place
+# of the column ("scrap the entire Watch It Fall concept"; "putting blocks in place to build something and
+# then rotate the slice"): 4D bricks on a square plate, on a square pedestal a little bigger than the
+# column's ("if the building part needs better a square pedestal go for it").
+# Round 5 (#39: "noticeably larger ... closer to the wall, potentially all the way into the corner"): a
+# 4.6 m square pedestal in the front-left corner (the hall runs to x -12 and z 12), a 3.5 m grid of 0.5 m
+# bricks on it, its ring on the line from the pivot, the camera kept inside the walls. A metre off both
+# walls, not 0.35 (Ramon, 9 Oct: "its crammed a bit too much in the corner").
+COLUMN = (-8.7, 8.7)
+COLUMN_RING = (-4.1, 8.8)
+station("Build", COLUMN[0], COLUMN[1], "12_build", 2.3, 0.5, shape="box", holo=False)
+bench("BuildBench", COLUMN_RING[0], COLUMN_RING[1], "Build", 6.0, -26.0, ["brick", "through", "take"], (-11.5, -12.0, 23.0, 23.5))
+panel("BuildPanel", -3.0, 6.9, "Build", 2, "Build it", "BUILDING IN 4D", COLUMN_RING, 1.0)
+# The world's square pedestal a little longer and wider (round 3: "more breathing room").
+TERRAIN = (-6.2, -23.5 + GZ)
+TERRAIN_RING = (0.0, -23.5 + GZ)
+# Round 5: turned half round, its slope toward you as you come in (#43: "the sloped side of the terrain faces
+# the wall rather than the approaching player"), and the hologram's gradient over it as the specimens have (#44).
+station("Terrain", TERRAIN[0], TERRAIN[1], "17_case", 3.8, 0.45, "box", 90.0, [("case", q("terrain")), ("own_height", "true"), ("face_yaw", "180.0")],
+        True, band_print=False, holo_h=1.5, holo_base=0.4)
+bench("TerrainBench", TERRAIN_RING[0], TERRAIN_RING[1], "Terrain", 9.0, -24.0)
+panel("TerrainPanel", -1.6, -19.2 + GZ, "Terrain", 3, "The world", "ADAPTED FROM ANDREW (4DENTHUSIAST)", TERRAIN_RING)
 # His layers, one per small pedestal, in the order they combine (Ramon, 9 Oct: "rethink what you show").
 RUNG_X = 9.6
-RUNG_Z = [-20.0, -23.5, -27.0]
+RUNG_Z = [-20.0 + GZ, -23.5 + GZ, -27.0 + GZ]
 LAYERS = ["land", "caves", "clipped"]
 for i, z in enumerate(RUNG_Z):
-    station("Layer%d" % (i + 1), RUNG_X, z, "17_case", 0.95, 1.0, "box", -90.0, [("case", q("layer")), ("layer", q(LAYERS[i])), ("face_yaw", "-90.0")], False)
+    station("Layer%d" % (i + 1), RUNG_X, z, "17_case", 0.95, 1.0, "box", -90.0, [("case", q("layer")), ("layer", q(LAYERS[i])), ("face_yaw", "-90.0")], False,
+            stripes=False)
 
 
 # -- the lights: one soft spot on each item (vl_lights.gd sets them from the light file) ---------------------
@@ -169,8 +224,8 @@ def light(name, room, item, x, z, aim_y, group="", cone=None, strength_k=None):
 light("Block", "hall", "the block", HERO[0], HERO[1], 2.1, cone=40.0)
 for g, z in zip("ABC", SHELF_Z):
     light("Shelf" + g, "hall", "specimen " + g, SHELF_X, z, 1.4, g, cone=21.0)
-light("Column", "hall", "the column", COLUMN[0], COLUMN[1], 1.8)
-light("Terrain", "gallery", "the world", TERRAIN[0], TERRAIN[1], 0.6, cone=64.0, strength_k=0.55)
+light("Build", "hall", "the grid you build on", COLUMN[0], COLUMN[1], 1.6, cone=50.0)
+light("Terrain", "gallery", "the world", TERRAIN[0], TERRAIN[1], 0.6, cone=70.0, strength_k=0.55)
 for i, z in enumerate(RUNG_Z):
     light("Layer%d" % (i + 1), "gallery", "the %s" % ["land", "caves", "land and caves"][i], RUNG_X, z, 1.4, cone=21.0, strength_k=0.6)
 node("Sun", ".", "Node4D", [("position", V(2, 9, 4)), ("script", 'ExtResource("11_sun")'), ("target", "Vector3(0, 0, -2)")])
@@ -187,7 +242,7 @@ node("ResearchBoard", ".", "Node4D", [("script", 'ExtResource("13_panel")'), ("k
 node("WallPanels", ".", "Node4D", [("script", 'ExtResource("14_pair")'), ("intro", 'NodePath("../IntroPanel")'),
                                    ("research", 'NodePath("../ResearchBoard")'), ("info", 'ExtResource("16_info")'),
                                    ("source", 'NodePath("../PanelSource")')])
-node("FieldDoor", ".", "Node4D", [("position", V(0, 2.4, -31.7))])
+node("FieldDoor", ".", "Node4D", [("position", V(0, 2.4, -31.7 + GZ))])
 
 
 # -- where you act: the spots (the room reads their metadata) ---------------------------------------------
@@ -212,9 +267,9 @@ def spot(name, at, kind, radius=1.3, station_=None, bench_=None, options=None, t
 
 
 spot("Block", HERO_RING, "choice", 1.5, "Hero", "HeroBench", ["watch", "cut"], "Hero")
-spot("Column", COLUMN_RING, "choice", 1.4, "Column", None, ["fall"], "Column")
+spot("Build", COLUMN_RING, "choice", 1.4, "Build", "BuildBench", ["build"], "Build")
 for i, z in enumerate(SHELF_Z):
-    spot("Shelf%s" % "ABC"[i], (6.2, z), "popup", 1.1, "Shelf%d" % (i + 1))
+    spot("Shelf%s" % "ABC"[i], (SHELF_SPOT_X, z), "popup", 1.1, "Shelf%d" % (i + 1))
 spot("RightWall", RIGHT_WALL, "view", 1.6, target="RightWallTarget")
 spot("LeftWall", LEFT_WALL, "view", 1.6, target="LeftWallTarget")
 spot("Terrain", TERRAIN_RING, "choice", 1.5, "Terrain", "TerrainBench", ["cut", "biome"], "Terrain")
@@ -227,17 +282,20 @@ for i, z in enumerate(RUNG_Z):
 node("Paths", ".", "Node4D")
 node("Targets", "Paths", "Node4D")
 for nm, x, z, size, label in [("Hero", HERO[0], HERO[1], "Vector3(5.6, 1, 5.6)", "The block"),
-                              ("Column", COLUMN[0], COLUMN[1], "Vector3(3, 1, 3)", "The column"),
+                              ("Build", COLUMN[0], COLUMN[1], "Vector3(4.8, 1, 4.8)", "Build it"),
                               ("RightWallTarget", 8.4, -11.0, "Vector3(1, 1, 1)", "The block's wall"),
                               ("LeftWallTarget", -8.4, -11.0, "Vector3(1, 1, 1)", "Voxel Lab wall"),
                               ("GalleryDoor", 0, -15.0, "Vector3(3, 4.2, 0.6)", "Gallery door"),
-                              ("Terrain", TERRAIN[0], TERRAIN[1], "Vector3(6.6, 1, 6.6)", "The world"),
-                              ("FieldDoorTarget", 0, -31.7, "Vector3(3.2, 4.2, 0.6)", "Field door")]:
+                              ("Terrain", TERRAIN[0], TERRAIN[1], "Vector3(7.6, 1, 7.6)", "The world"),
+                              ("FieldDoorTarget", 0, -31.7 + GZ, "Vector3(3.2, 4.2, 0.6)", "Field door")]:
     node(nm, "Paths/Targets", "Node4D", [("position", V(x, 0, z)), ("script", 'ExtResource("21_target")'), ("label", q(label)), ("size", size)])
+# The rings' outlines in the routes' blue (round 3: "change the UI lines surrounding the large central
+# pedestal to blue"), every one of them, so no ring reads as the odd one out.
+FRAME_TINT = "Color(0.09, 0.38, 0.843, 1)"
 node("Hall", "Paths", "Node4D", [("script", 'ExtResource("18_net")'), ("graph", 'ExtResource("19_hall")'), ("targets", 'NodePath("../Targets")'),
-                                ("under_color", "Color(0.64, 0.65, 0.66, 1)")])
+                                ("under_color", "Color(0.64, 0.65, 0.66, 1)"), ("frame_tint", FRAME_TINT)])
 node("Gallery", "Paths", "Node4D", [("script", 'ExtResource("18_net")'), ("graph", 'ExtResource("20_gallery")'), ("targets", 'NodePath("../Targets")'),
-                                   ("under_color", "Color(0.64, 0.65, 0.66, 1)")])
+                                   ("under_color", "Color(0.64, 0.65, 0.66, 1)"), ("frame_tint", FRAME_TINT)])
 txt = '\n'.join(out).rstrip() + '\n'
 (ROOT / 'voxel_lab.tscn').open('w', encoding='utf8', newline='\n').write(txt)
 print('scene nodes:', txt.count('[node '))
@@ -288,32 +346,39 @@ h = Graph()
 start = h.add("start", (0.0, 21.0))
 pivot = h.add("junction", (0.0, SHELF_Z[0]))
 block = h.add("destination", HERO_RING, "Hero", "round", (0.0, 1.0), "available")
-a = h.add("bend", (6.2, SHELF_Z[0]))
-b = h.add("chord", (6.2, SHELF_Z[1]))
-c = h.add("chord", (6.2, SHELF_Z[2]))
-turn45 = h.add("bend", (6.2, RIGHT_WALL[1] + 1.1))
+a = h.add("bend", (SHELF_RUN_X, SHELF_Z[0]))
+b = h.add("chord", (SHELF_RUN_X, SHELF_Z[1]))
+c = h.add("chord", (SHELF_RUN_X, SHELF_Z[2]))
+turn45 = h.add("bend", (SHELF_RUN_X, RIGHT_WALL[1] + 1.1))
 right = h.add("destination", RIGHT_WALL, "RightWallTarget", "none", unit(RIGHT_WALL[0] - 8.4, RIGHT_WALL[1] + 11.0))
 back = h.add("junction", (0.0, RIGHT_WALL[1]))
 door = h.add("destination", (0.0, -13.6), "GalleryDoor", "rect", (0.0, 1.0))
 left = h.add("destination", LEFT_WALL, "LeftWallTarget", "none", unit(LEFT_WALL[0] + 8.4, LEFT_WALL[1] + 11.0))
-column = h.add("destination", COLUMN_RING, "Column", "round", (1.0, 0.0))
-up_left = h.add("bend", (LEFT_WALL[0], SHELF_Z[0]))
+column = h.add("destination", COLUMN_RING, "Build", "round", (1.0, 0.0))
+# Down from the builder's ring to the Voxel Lab wall's, clear of Build it's panel.
+down_left = h.add("bend", (LEFT_WALL[0], 5.0))
+# A short branch at right angles to each of A, B and C, ending at its marker.
+shelf_ends = [h.add("bend", (SHELF_SPOT_X, z)) for z in SHELF_Z]
 h.link(start, pivot, block)
 h.link(pivot, a, b, c, turn45, right, back, door)
-h.link(back, left, column, up_left, pivot)
+# The left loop runs out of the pivot too (round 3: "arrows also originate from the same central pivot
+# and travel toward the left"), down past the column and the Voxel Lab wall to the back junction.
+h.link(pivot, column, down_left, left, back)
+for run, end in zip([a, b, c], shelf_ends):
+    h.link(run, end)
 h.write(ROOT / 'paths' / 'hall.tres')
 
 # The gallery, on the same logic: a spine down the middle, a T to the ladder, the terrain's ring on the spine.
 g = Graph()
-gstart = g.add("start", (0.0, -16.4))
+gstart = g.add("start", (0.0, -16.4 + GZ))
 j1 = g.add("junction", (0.0, RUNG_Z[0]))
 terrain = g.add("destination", TERRAIN_RING, "Terrain", "rect", (1.0, 0.0), "available")
 r1 = g.add("bend", (7.2, RUNG_Z[0]))
 r2 = g.add("chord", (7.2, RUNG_Z[1]))
 r3 = g.add("chord", (7.2, RUNG_Z[2]))
-r_out = g.add("bend", (7.2, -28.8))
-j3 = g.add("junction", (0.0, -28.8))
-field = g.add("destination", (0.0, -30.3), "FieldDoorTarget", "rect", (0.0, 1.0))
+r_out = g.add("bend", (7.2, -28.8 + GZ))
+j3 = g.add("junction", (0.0, -28.8 + GZ))
+field = g.add("destination", (0.0, -30.3 + GZ), "FieldDoorTarget", "rect", (0.0, 1.0))
 g.link(gstart, j1, terrain, j3, field)
 g.link(j1, r1, r2, r3, r_out, j3)
 g.write(ROOT / 'paths' / 'gallery.tres')

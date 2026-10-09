@@ -39,6 +39,20 @@ const Recipe := preload("res://ramon/VoxelLab/specimen/vl_recipe.gd")
 ## with no voxel water under it (Ramon, 9 Oct: "ideally the ocean voxels wouldnt be there"). Set before
 ## the node enters the tree.
 @export var sea_material: int = 3
+## THE ISLAND (round 4, Ramon: "investigate whether the islands currently have unnaturally squared-off
+## boundaries. If so, try rounding or softening their outer edges ... reduce the terrain elevation
+## somewhat"). The land's edge was where the build stopped: whole 8-voxel chunks, so square steps. Now
+## the land is kept inside `island_radius` voxels of `island_centre` (a cylinder generator, round in x,
+## z and W) and steps down to the seabed in `rings` rings `ring_step` voxels wide, each `ring_drop`
+## voxels lower (no generator has a radial slope; a drop no deeper than the grass keeps each step green),
+## seabed beyond. 0: no island, the land runs to the edge of what is built. Set before entering the tree.
+@export var island_radius: float = 0.0
+@export var island_centre: Vector4 = Vector4.ZERO
+@export var rings: int = 4
+@export var ring_step: float = 3.0
+@export var ring_drop: float = 1.5
+## Andrew's height (12.32) unless set lower (round 4: "less steep and mountainous").
+@export var land_intensity: float = 12.32
 @export var y_range: Vector2i = Vector2i(-16, 16)
 ## Build new chunks' draw buffers on a worker thread before showing them.
 @export var swap: bool = true
@@ -47,6 +61,9 @@ const Recipe := preload("res://ramon/VoxelLab/specimen/vl_recipe.gd")
 var world
 var _trigger
 var follow: Node4D
+## A material for every chunk instead of the engine's own (the open world's land look, 9 Oct); null:
+## the engine's. Set with set_chunk_material.
+var chunk_material: Material4D
 ## Chunk meshes waiting to be drawable: [MeshInstance4D, ...]; the batch on a worker now.
 var _waiting: Array = []
 var _batch: Array = []
@@ -88,11 +105,35 @@ func _generator():
 	var ocean = ClassDB.instantiate("PlaneVoxelGenerator4D")
 	ocean.set("material_over", 254)
 	ocean.set("material_under", sea_material)
+	var layers: Array = [ocean, _land(0.0)]
+	if island_radius > 0.0:
+		# Layered: the top layer that is defined wins. Each ring is defined only OUTSIDE its cylinder (a
+		# clipped generator whose base is UNDEFINED inside, AIR outside), so the outermost ring you are
+		# outside of decides: the land lowered by its drop, or past the last, the seabed.
+		for k in range(1, rings + 1):
+			var inner: float = island_radius + float(k - 1) * ring_step
+			var lowered = ClassDB.instantiate("LayeredVoxelGenerator4D")
+			lowered.set("layers", [ocean, _land(float(k) * ring_drop)])
+			layers.append(_outside(inner, lowered))
+		var bed = ClassDB.instantiate("PlaneVoxelGenerator4D")
+		bed.set("distance", -float(rings + 3) * ring_drop)
+		bed.set("material_over", 254)
+		bed.set("material_under", 2)
+		var sea_bed = ClassDB.instantiate("LayeredVoxelGenerator4D")
+		sea_bed.set("layers", [ocean, bed])
+		layers.append(_outside(island_radius + float(rings) * ring_step, sea_bed))
+	var layered = ClassDB.instantiate("LayeredVoxelGenerator4D")
+	layered.set("layers", layers)
+	return layered
+
+
+## Andrew's land clipped by his caves, every band `drop` voxels lower.
+func _land(drop: float):
 	var land = ClassDB.instantiate("LandscapeVoxelGenerator4D")
 	land.set("seed", seed)
-	land.set("intensity", 12.32)
+	land.set("intensity", land_intensity)
 	land.set("materials", PackedInt32Array([2, 1, 0, 255]))
-	land.set("material_cutoffs", PackedFloat32Array([-6.0, -1.5, 0.0]))
+	land.set("material_cutoffs", PackedFloat32Array([-6.0 - drop, -1.5 - drop, 0.0 - drop]))
 	var caves = ClassDB.instantiate("CaveVoxelGenerator4D")
 	caves.set("seed", 1)
 	caves.set("persistence", 0.4)
@@ -100,14 +141,29 @@ func _generator():
 	var clipped = ClassDB.instantiate("ClippedVoxelGenerator4D")
 	clipped.set("base", land)
 	clipped.set("modifier", caves)
-	var layered = ClassDB.instantiate("LayeredVoxelGenerator4D")
-	layered.set("layers", [ocean, clipped])
-	return layered
+	return clipped
+
+
+## `gen` everywhere outside a cylinder (round in x, z and W) of `radius` voxels round the island's
+## middle; UNDEFINED inside, so the layers under it show there.
+func _outside(radius: float, gen):
+	var cyl = ClassDB.instantiate("CylinderVoxelGenerator4D")
+	cyl.set("center", island_centre)
+	cyl.set("radius", radius)
+	cyl.set("height", 100000.0)
+	cyl.set("material_inner", 255)
+	cyl.set("material_outer", 254)
+	var clip = ClassDB.instantiate("ClippedVoxelGenerator4D")
+	clip.set("base", cyl)
+	clip.set("modifier", gen)
+	return clip
 
 
 func _on_chunk(n: Node) -> void:
 	if not (n is MeshInstance4D) or n.get_parent() != world:
 		return
+	if chunk_material != null:
+		(n as MeshInstance4D).material_override = chunk_material
 	if swap:
 		(n as MeshInstance4D).visible = false
 		_waiting.append(n)
@@ -255,6 +311,12 @@ func _shown(n: Node) -> void:
 
 
 ## The world's chunk meshes (shown or waiting).
+func set_chunk_material(m: Material4D) -> void:
+	chunk_material = m
+	for ch in chunk_nodes():
+		(ch as MeshInstance4D).material_override = m
+
+
 func chunk_nodes() -> Array:
 	var out: Array = []
 	if world == null:

@@ -20,6 +20,11 @@ signal mood_pressed
 
 var mood: String = "bright"
 var strip: Array = []                 # [[key, label], ...]
+## VOXEL LAB (carried copy, 9 Oct): the strip at least this wide (the room makes it as wide as the
+## choice above it: "make the width of the Watch Presentation / Cut It Yourself panel align with the
+## width of the UI panel directly underneath it"), and how wide it would be on its own, last drawn.
+var min_strip_width: float = 0.0
+var strip_width: float = 0.0
 ## Dark glass in both moods, with white type, as the lab's other overlays (kit_style.gd); the goat
 ## room turns it on, the other rooms keep the mood-following strip.
 var glass: bool = false
@@ -162,13 +167,16 @@ func _draw_strip(u: float, bg: Color, ink: Color, accent: Color) -> void:
 		widths.append([kw, lw])
 		total += kw + 8.0 * u + lw
 	total += gap * float(strip.size() - 1) + 40.0 * u
+	strip_width = total
+	var inner: float = total
+	total = maxf(total, min_strip_width)
 	var h: float = 40.0 * u
 	var r := Rect2(Vector2((size.x - total) * 0.5, size.y - h - 22.0 * u), Vector2(total, h))
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
 	sb.set_corner_radius_all(int(h * 0.5))
 	draw_style_box(sb, r)
-	var x: float = r.position.x + 20.0 * u
+	var x: float = r.position.x + 20.0 * u + (total - inner) * 0.5
 	for i in strip.size():
 		var kw: float = widths[i][0]
 		var lw: float = widths[i][1]
