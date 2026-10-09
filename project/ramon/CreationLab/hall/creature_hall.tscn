@@ -1,0 +1,66 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://ramon/CreationLab/hall/creature_hall_4d.gd" id="1_root"]
+[ext_resource type="Script" uid="uid://cq1aeo3fdysn4" path="res://ramon/CreationLab/LabKit/lab_room_4d.gd" id="2_room"]
+[ext_resource type="Script" uid="uid://cb5shwdfmcco3" path="res://ramon/CreationLab/kit/kit_room_4d.gd" id="3_kitroom"]
+[ext_resource type="Script" uid="uid://bi80xulp3i5gu" path="res://ramon/CreationLab/kit/kit_wall_text_4d.gd" id="4_text"]
+[ext_resource type="Script" uid="uid://bf6jsusv08tmp" path="res://ramon/CreationLab/kit/kit_light_4d.gd" id="5_light"]
+[ext_resource type="Script" uid="uid://bfuyg4s13e75b" path="res://ramon/CreationLab/kit/kit_sun_4d.gd" id="6_sun"]
+
+[node name="CreatureHall" type="Node4D"]
+script = ExtResource("1_root")
+
+[node name="Room" type="Node4D" parent="."]
+script = ExtResource("2_room")
+start_mood = "bright"
+
+[node name="Hall" type="Node4D" parent="."]
+script = ExtResource("3_kitroom")
+size = Vector3(30, 14, 44)
+doorways = [["s", -1.7, 1.7, 4.2]]
+cove = false
+edge_codes = {
+"n": "blue"
+}
+
+[node name="Title" type="Node" parent="Hall"]
+script = ExtResource("4_text")
+side = "n"
+along = Vector2(-12, 12)
+up = Vector2(7.2, 12.6)
+number = 2
+title = "Creature Showcase"
+subtitle = "Lofted, rigged and walking in four dimensions."
+body = "Every animal here is built the same way: a handful of 4D balls lofted into one skin, cut into rigid pieces, and walked by a gait that knows nothing of the animal. Turn the slice and you see them as they are, a little of each at a time."
+icons = [["rdrag", "Turn the slice"], ["key:R", "Level"]]
+code = "blue"
+
+[node name="CentreSpot" type="Node4D" parent="."]
+position = Vector4(0, 13.6, -9, 0)
+script = ExtResource("5_light")
+aim = Vector3(0, 0, -9)
+angle = 70.0
+softness = 1.5
+reach = 18.0
+attenuation = 0.2
+energy = {
+"bright": 2.4,
+"dark": 3.0
+}
+
+[node name="HallWash" type="Node4D" parent="."]
+position = Vector4(0, 13.6, 8, 0)
+script = ExtResource("5_light")
+aim = Vector3(0, 0, 8)
+angle = 120.0
+softness = 3.0
+reach = 20.0
+attenuation = 0.12
+energy = {
+"bright": 1.1,
+"dark": 1.4
+}
+
+[node name="Sun" type="Node4D" parent="."]
+position = Vector4(1.5, 12, 2, 0)
+script = ExtResource("6_sun")

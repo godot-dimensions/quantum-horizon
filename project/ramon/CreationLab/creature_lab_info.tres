@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/CreationLab/kit/panels/kit_room_info.gd" id="1_info"]
+
+[resource]
+script = ExtResource("1_info")
+number = 1
+title = "Creature Lab"
+status = "BUILD  /  ANIMATE  /  EXPLORE"
+lead = "Build a 4D animal, then bring it to life."
+description = "This room joins two of our tools. The loft creator builds an animal from a handful of balls, each a cross-section of its body. The Motion Lab brings it to life, cut into rigid pieces that walk without being rebuilt. Built and moving in one place, which is why we call it the Creature Lab. This {name} is made of {balls} balls."
+interactions = [["wheel", "Slice through W"], ["rdrag", "Rotate in 4D"], ["key:E", "{action}"], ["key:R", "Whole again"]]
+controls_heading = "CONTROLS"
+research_title = "RESEARCH WALL"
+research_status = "●  MEASURED LIVE ON THIS MACHINE"
+research_layout = "specimen"

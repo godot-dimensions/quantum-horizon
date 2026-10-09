@@ -140,6 +140,11 @@ func paint(c: Control, ink: Dictionary) -> void:
 	if kind == "sign":
 		var f: Font = LabPrint.font("black")
 		var px: int = _px(minf(0.9, (up.y - up.x) * 0.42))
+		# Never wider than its stretch of wall: a long title on a short wall is set smaller instead of cut off
+		# (Ramon, 9 Oct: "creature showca, it says"). A title that fits keeps its size.
+		var tw: float = f.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+		if tw > c.size.x * 0.94:
+			px = maxi(8, int(floor(float(px) * c.size.x * 0.94 / tw)))
 		c.draw_string(f, Vector2(0.0, c.size.y * 0.52), title, HORIZONTAL_ALIGNMENT_CENTER, c.size.x, px, ink["text"])
 		if not subtitle.is_empty():
 			c.draw_string(LabPrint.font("bold"), Vector2(0.0, c.size.y * 0.52 + px * 0.62), subtitle, HORIZONTAL_ALIGNMENT_CENTER, c.size.x, int(px * 0.26), ink["accent"])

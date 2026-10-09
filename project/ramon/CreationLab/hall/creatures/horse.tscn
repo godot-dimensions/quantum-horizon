@@ -1,0 +1,240 @@
+[gd_scene load_steps=25 format=3]
+; Creature hall (9 Oct 2026): walks on the pen's strider copy (rigid pieces, joints blended), not the Model copy that skins every vertex every frame (about 10 ms an animal).
+
+[ext_resource type="Script" path="res://ramon/CreationLab/LabKit/carried/Model/scripts/loft_rig_4d.gd" id="3_rig"]
+[ext_resource type="Script" path="res://ramon/CreationLab/LabKit/carried/Model/scripts/loft_ball_4d.gd" id="4_ball"]
+[ext_resource type="Script" path="res://ramon/CreationLab/LabKit/carried/chickenpen/scripts/strider_walker.gd" id="5_walker"]
+[sub_resource type="Image" id="Image_j7qsm"]
+data = {
+"data": PackedByteArray("UTUh/2tHLf9rRy3/f1Y4/1E1If8oHhn/KB4Z/ygeGf9RNSH/UTUh/1E1If9RNSH/UTUh/1E1If9RNSH/UTUh/1E1If9CLiH/Mich/yMhIf9RNSH/UTUh/1E1If9RNSH/UTUh/1E1If9RNSH/UTUh/1E1If9CLiH/Mich/yMhIf9/Vjj/f1Y4/2tHLf9CLSH/Qi0h/39WOP9RNSH/UTUh/1E1If9RNSH/UTUh/1E1If9RNSH/UTUh/0IuIf8yJyH/IyEh/39WOP9RNSH/UTUh/1E1If9RNSH/UTUh/1E1If9RNSH/UTUh/0IuIf8yJyH/IyEh/w=="),
+"format": "RGBA8",
+"height": 1,
+"mipmaps": false,
+"width": 61
+}
+
+[sub_resource type="ImageTexture3D" id="ImageTexture3D_wmvyk"]
+_images = Array[Image]([SubResource("Image_j7qsm")])
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_strider"]
+albedo_source = 3
+albedo_texture_3d = SubResource("ImageTexture3D_wmvyk")
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_slns4"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_tauhl"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_rpxsc"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_utwrh"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_qo7c1"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_b3qeu"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_7sr4q"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_a2dlg"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_4bpig"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_wwqhw"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_cw32s"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_w7slo"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_ko1x6"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_fme2y"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_bppxc"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_l3weg"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_5exu2"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[sub_resource type="WireMaterial4D" id="WireMaterial4D_5p34k"]
+albedo_color = Color(0.35, 0.85, 1, 1)
+
+[node name="HorseRoot" type="Node4D"]
+
+[node name="Creature" type="Node4D" parent="."]
+
+[node name="Strider" type="Node4D" parent="Creature"]
+
+[node name="Hide" type="MeshInstance4D" parent="Creature/Strider"]
+material_override = SubResource("TetraMaterial4D_strider")
+script = ExtResource("3_rig")
+use_ball_colors = true
+profile_sides = 10
+profile_rings = 5
+
+[node name="Rump" type="MeshInstance4D" parent="Creature/Strider/Hide"]
+position = Vector4(0, 5.45, -2.4, 0)
+material_override = SubResource("WireMaterial4D_slns4")
+script = ExtResource("4_ball")
+radius = 0.95
+w_scale = 1.35
+color = Color(0.32, 0.21, 0.13, 1)
+
+[node name="TailBase" type="MeshInstance4D" parent="Creature/Strider/Hide/Rump"]
+position = Vector4(0, 0.55, -0.55, 0)
+material_override = SubResource("WireMaterial4D_tauhl")
+script = ExtResource("4_ball")
+radius = 0.28
+w_scale = 1.1
+starts_branch = true
+color = Color(0.16, 0.12, 0.1, 1)
+
+[node name="TailTip" type="MeshInstance4D" parent="Creature/Strider/Hide/Rump/TailBase"]
+position = Vector4(0, -0.75, -0.75, 0)
+material_override = SubResource("WireMaterial4D_rpxsc")
+script = ExtResource("4_ball")
+radius = 0.16
+w_scale = 1.1
+color = Color(0.16, 0.12, 0.1, 1)
+
+[node name="HindHip" type="MeshInstance4D" parent="Creature/Strider/Hide/Rump"]
+position = Vector4(0.95, -0.55, 0, -0.3)
+material_override = SubResource("WireMaterial4D_utwrh")
+script = ExtResource("4_ball")
+radius = 0.34
+w_scale = 1.4
+starts_branch = true
+color = Color(0.32, 0.21, 0.13, 1)
+
+[node name="HindKnee" type="MeshInstance4D" parent="Creature/Strider/Hide/Rump/HindHip"]
+position = Vector4(0.1, -2.15, 1.15, 0.1)
+material_override = SubResource("WireMaterial4D_qo7c1")
+script = ExtResource("4_ball")
+radius = 0.26
+w_scale = 2.3
+color = Color(0.32, 0.21, 0.13, 1)
+
+[node name="HindHock" type="MeshInstance4D" parent="Creature/Strider/Hide/Rump/HindHip/HindKnee"]
+position = Vector4(-0.2, -1.7, -1.45, -0.06)
+material_override = SubResource("WireMaterial4D_b3qeu")
+script = ExtResource("4_ball")
+radius = 0.2
+w_scale = 2.5
+color = Color(0.32, 0.21, 0.13, 1)
+
+[node name="HindHoof" type="MeshInstance4D" parent="Creature/Strider/Hide/Rump/HindHip/HindKnee/HindHock"]
+position = Vector4(0.15, -1.2, 0.6, -0.04)
+material_override = SubResource("WireMaterial4D_7sr4q")
+script = ExtResource("4_ball")
+radius = 0.17
+w_scale = 2.8
+color = Color(0.14, 0.13, 0.13, 1)
+
+[node name="Loin" type="MeshInstance4D" parent="Creature/Strider/Hide"]
+position = Vector4(0, 5.6, -1.1, 0)
+material_override = SubResource("WireMaterial4D_a2dlg")
+script = ExtResource("4_ball")
+w_scale = 1.4
+color = Color(0.42, 0.28, 0.18, 1)
+
+[node name="Barrel" type="MeshInstance4D" parent="Creature/Strider/Hide"]
+position = Vector4(0, 5.55, 0.3, 0)
+material_override = SubResource("WireMaterial4D_4bpig")
+script = ExtResource("4_ball")
+radius = 1.05
+w_scale = 1.4
+color = Color(0.42, 0.28, 0.18, 1)
+
+[node name="Chest" type="MeshInstance4D" parent="Creature/Strider/Hide"]
+position = Vector4(0, 5.6, 1.7, 0)
+material_override = SubResource("WireMaterial4D_wwqhw")
+script = ExtResource("4_ball")
+radius = 0.95
+w_scale = 1.35
+color = Color(0.5, 0.34, 0.22, 1)
+
+[node name="Crest" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest"]
+position = Vector4(0, 0.95, 0.85, 0)
+material_override = SubResource("WireMaterial4D_cw32s")
+script = ExtResource("4_ball")
+radius = 0.55
+w_scale = 1.15
+starts_branch = true
+color = Color(0.5, 0.34, 0.22, 1)
+
+[node name="Poll" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest/Crest"]
+position = Vector4(0, 0.75, 0.7, 0)
+material_override = SubResource("WireMaterial4D_w7slo")
+script = ExtResource("4_ball")
+radius = 0.4
+w_scale = 1.1
+color = Color(0.42, 0.28, 0.18, 1)
+
+[node name="Jaw" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest/Crest/Poll"]
+position = Vector4(0, -0.3, 0.75, 0)
+material_override = SubResource("WireMaterial4D_ko1x6")
+script = ExtResource("4_ball")
+radius = 0.3
+w_scale = 1.05
+color = Color(0.26, 0.18, 0.13, 1)
+
+[node name="Muzzle" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest/Crest/Poll/Jaw"]
+position = Vector4(0, -0.15, 0.55, 0)
+material_override = SubResource("WireMaterial4D_fme2y")
+script = ExtResource("4_ball")
+radius = 0.24
+color = Color(0.26, 0.18, 0.13, 1)
+
+[node name="ForeHip" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest"]
+position = Vector4(0.95, -0.55, 0, 0.3)
+material_override = SubResource("WireMaterial4D_bppxc")
+script = ExtResource("4_ball")
+radius = 0.34
+w_scale = 1.4
+starts_branch = true
+color = Color(0.32, 0.21, 0.13, 1)
+
+[node name="ForeKnee" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest/ForeHip"]
+position = Vector4(0.1, -2.15, 1.15, -0.1)
+material_override = SubResource("WireMaterial4D_l3weg")
+script = ExtResource("4_ball")
+radius = 0.26
+w_scale = 2.3
+color = Color(0.32, 0.21, 0.13, 1)
+
+[node name="ForeHock" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest/ForeHip/ForeKnee"]
+position = Vector4(-0.2, -1.7, -1.45, 0.06)
+material_override = SubResource("WireMaterial4D_5exu2")
+script = ExtResource("4_ball")
+radius = 0.2
+w_scale = 2.5
+color = Color(0.32, 0.21, 0.13, 1)
+
+[node name="ForeHoof" type="MeshInstance4D" parent="Creature/Strider/Hide/Chest/ForeHip/ForeKnee/ForeHock"]
+position = Vector4(0.15, -1.2, 0.6, 0.04)
+material_override = SubResource("WireMaterial4D_5p34k")
+script = ExtResource("4_ball")
+radius = 0.17
+w_scale = 2.8
+color = Color(0.14, 0.13, 0.13, 1)
+
+[node name="Walker" type="Node4D" parent="Creature/Strider"]
+script = ExtResource("5_walker")
+blend_joints = true
+rig_path = NodePath("../Hide")
+

@@ -31,33 +31,39 @@ const DECK_IN := 0.42
 
 
 ## Builds the pedestal under `parent` at its origin; returns its parts, with "deck_h" the height
-## an exhibit stands at.
-static func build(parent: Node4D, r: float, h: float) -> Dictionary:
+## an exhibit stands at. `k` sizes its trims (foot, band, lip, the white ring round the deck) with it:
+## 1 is the lab's, in metres; a smaller pedestal at the lab's proportions passes its radius over the
+## lab's (outfit_room_4d.gd: the fitting room's are the lab's, in miniature).
+static func build(parent: Node4D, r: float, h: float, k: float = 1.0) -> Dictionary:
 	var origin: Vector4 = parent.global_position if parent.is_inside_tree() else Vector4.ZERO
-	var body_top: float = h - LIP - BAND
-	var ph: float = body_top - FOOT
+	var foot: float = FOOT * k
+	var band: float = BAND * k
+	var lip: float = LIP * k
+	var body_top: float = h - lip - band
+	var ph: float = body_top - foot
 	var parts: Dictionary = {"dark": [], "glow": [], "panels": []}
-	parts["dark"].append(_drum(parent, "PedestalFoot", r - 0.13, FOOT, FOOT * 0.5))
-	parts["dark"].append(_drum(parent, "PedestalBand", r - 0.11, BAND, body_top + BAND * 0.5))
+	parts["dark"].append(_drum(parent, "PedestalFoot", r - 0.13 * k, foot, foot * 0.5))
+	parts["dark"].append(_drum(parent, "PedestalBand", r - 0.11 * k, band, body_top + band * 0.5))
 	# The body: one cylinder, on the grid shader so its label can be printed round it.
-	var body := _drum(parent, "PedestalBody", r - 0.04, ph, FOOT + ph * 0.5)
-	body.material_override = LabGrid.material("kit_metal", Vector4((r - 0.04) * 2.0, ph, (r - 0.04) * 2.0, Build.W_DEPTH), origin)
+	var body := _drum(parent, "PedestalBody", r - 0.04 * k, ph, foot + ph * 0.5)
+	body.material_override = LabGrid.material("kit_metal", Vector4((r - 0.04 * k) * 2.0, ph, (r - 0.04 * k) * 2.0, Build.W_DEPTH), origin)
 	parts["body"] = body
-	parts["body_r"] = r - 0.04
-	parts["body_y"] = FOOT + ph * 0.5
-	parts["lip"] = _drum(parent, "PedestalLip", r, LIP, h - LIP * 0.5)
-	parts["deck"] = _drum(parent, "PedestalDeck", r - DECK_IN, 0.02, h + 0.004)
+	parts["body_r"] = r - 0.04 * k
+	parts["body_y"] = foot + ph * 0.5
+	parts["lip"] = _drum(parent, "PedestalLip", r, lip, h - lip * 0.5)
+	parts["deck"] = _drum(parent, "PedestalDeck", r - DECK_IN * k, 0.02 * k, h + 0.004 * k)
+	parts["deck_r"] = r - DECK_IN * k
 	var solid := StaticBody4D.new()
 	solid.name = "PedestalSolid"
 	solid.position = Vector4(0, h * 0.5, 0, 0)
 	var shape := CollisionShape4D.new()
 	var bs := BoxShape4D.new()
-	bs.size = Vector4(r * 2.0 + 0.3, h, r * 2.0 + 0.3, Build.W_DEPTH)
+	bs.size = Vector4(r * 2.0 + 0.3 * k, h, r * 2.0 + 0.3 * k, Build.W_DEPTH)
 	shape.shape = bs
 	solid.add_child(shape)
 	solid.set_meta(Build.GENERATED, true)
 	parent.add_child(solid)
-	parts["deck_h"] = h + 0.014
+	parts["deck_h"] = h + 0.014 * k
 	apply_mood(parts)
 	return parts
 
