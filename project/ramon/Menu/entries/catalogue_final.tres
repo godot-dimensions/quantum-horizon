@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="MenuCatalogue" load_steps=33 format=3 uid="uid://y84yrm3y7yy6"]
+[gd_resource type="Resource" script_class="MenuCatalogue" load_steps=35 format=3 uid="uid://y84yrm3y7yy6"]
 
 [ext_resource type="Script" uid="uid://c12nskqorjkfu" path="res://ramon/Menu/scripts/menu_entry.gd" id="1_i2ljj"]
 [ext_resource type="Texture2D" uid="uid://cfakndtgu0jxc" path="res://ramon/Menu/icons/icon_phase_maze.png" id="3_boe22"]
@@ -12,6 +12,7 @@
 [ext_resource type="Texture2D" uid="uid://8fpy7ue2jk7i" path="res://ramon/Menu/icons/lab_icons_bold/icon_creature.png" id="bold_creature"]
 [ext_resource type="Texture2D" uid="uid://c1fvnosw8m4y" path="res://ramon/Menu/icons/lab_icons_bold/icon_crosswise.png" id="bold_crosswise"]
 [ext_resource type="Texture2D" uid="uid://cd2nl1bqmtqsv" path="res://ramon/Menu/icons/lab_icons_bold/icon_maze.png" id="bold_maze"]
+[ext_resource type="Texture2D" uid="uid://4l301dgyyyq8" path="res://ramon/Menu/icons/lab_icons_bold/icon_annex.png" id="bold_annex"]
 [ext_resource type="Texture2D" uid="uid://pae88n6ap81" path="res://ramon/Menu/icons/lab_icons_bold/icon_shooting_range.png" id="bold_shooting_range"]
 [ext_resource type="Texture2D" uid="uid://cia1yhb254eis" path="res://ramon/Menu/icons/lab_icons_bold/icon_voxel.png" id="bold_voxel"]
 [ext_resource type="Texture2D" uid="uid://irnpi5lyimq5" path="res://ramon/Menu/icons/icon_cinematic_starlings.png" id="icon_film1"]
@@ -203,6 +204,30 @@ approach = "A real 4D maze: a turn shows you W, a step through it is slow and bl
 finding = "Not yet played by people. Our bot solves all six levels at par, in 11 to 101 s a level."
 finding_tier = "Not yet tested"
 benchmark = "Bot at par on all six levels: 32, 11, 16, 41, 33 and 101 s · each level builds in 10 to 42 ms · 1.0 to 2.3 ms a frame"
+
+[sub_resource type="Resource" id="Resource_annex"]
+script = ExtResource("1_i2ljj")
+title = "The Annex"
+blurb = "A first-person walk through W: doors slide open and rooms appear as you shift"
+maturity = "Playable"
+category = "Orientation"
+family = "The experiments"
+thrust = "Live it"
+also_answers = PackedStringArray()
+detail = "The Phase Maze remade a second time, first person and free as the first one was. Hold E or Q and you move through W at walking pace while the building rearranges itself round you: door leaves slide apart, walls sink into the floor, bridges grow out of the dark. Three levels, one idea each: a door through W, an archive whose doors lead somewhere else at every W, and a vault you can only reach by turning your view into W."
+clip = "the_annex"
+icon = ExtResource("bold_annex")
+preview_focus = 0.5
+scene_path = "res://ramon/MazeRemake2/maze_remake_2.tscn"
+extra_launch_labels = PackedStringArray()
+extra_launch_scenes = PackedStringArray()
+control_keys = PackedStringArray("WASD + MOUSE", "Q / E", "V", "RMB DRAG", "B")
+control_actions = PackedStringArray("walk and look", "move through W", "finish a reveal", "turn into W (level 3)", "dark or bright")
+question = "With no lesson first, does moving through W feel like moving somewhere, and can people find their way by it?"
+approach = "W is a position you move along at walking pace. Every wall and door is a 4D solid whose cut changes smoothly with W, and the floor's colour is your W."
+finding = "Not yet played by people. Our bot plays all three levels through the real keys, start to end card, every relic taken."
+finding_tier = "Not yet tested"
+benchmark = "Bot checks: level 1 11 of 11, level 2 16 of 16, level 3 22 of 22 · 0.8 ms a frame in levels 1 and 2, 2.6 ms in level 3"
 
 [sub_resource type="Resource" id="Resource_uy7oo"]
 script = ExtResource("1_i2ljj")
@@ -400,7 +425,7 @@ benchmark = "2.46 ms a frame with 862 meshes and nine animated chickens · RTX 5
 
 [resource]
 script = ExtResource("10_ajynb")
-entries = Array[ExtResource("1_i2ljj")]([SubResource("Resource_3ffix"), SubResource("Resource_clab"), SubResource("Resource_ph57d"), SubResource("Resource_aquatic"), SubResource("Resource_fmw2o"), SubResource("Resource_maze"), SubResource("Resource_uy7oo"), SubResource("Resource_3f7jf"), SubResource("Resource_snm5f"), SubResource("Resource_d6obk"), SubResource("Resource_b8wcl"), SubResource("Resource_0k6x8"), SubResource("Resource_lofty")])
+entries = Array[ExtResource("1_i2ljj")]([SubResource("Resource_3ffix"), SubResource("Resource_clab"), SubResource("Resource_ph57d"), SubResource("Resource_aquatic"), SubResource("Resource_fmw2o"), SubResource("Resource_maze"), SubResource("Resource_annex"), SubResource("Resource_uy7oo"), SubResource("Resource_3f7jf"), SubResource("Resource_snm5f"), SubResource("Resource_d6obk"), SubResource("Resource_b8wcl"), SubResource("Resource_0k6x8"), SubResource("Resource_lofty")])
 hero = SubResource("Resource_penhr")
 cinematics = Array[ExtResource("1_i2ljj")]([SubResource("Resource_film1"), SubResource("Resource_film2")])
 system_lines = PackedStringArray("reading a 4D slice", "moving and acting through W", "4D matter and environments", "creatures built and animated")
