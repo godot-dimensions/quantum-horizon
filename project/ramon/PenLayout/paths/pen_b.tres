@@ -97,7 +97,7 @@ nodes = [{
 "frame": "none",
 "id": 10,
 "kind": "bend",
-"pos": Vector4(-11.1, 0, 23.1, -1.92),
+"pos": Vector4(-11.1, 0, 23.1, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -202,29 +202,11 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 2.4,
 "frame": "none",
-"id": 21,
-"kind": "bend",
-"pos": Vector4(13, 0, -14, 1),
-"state": "arrival",
-"target": ""
-}, {
-"approach": Vector2(0, 1),
-"band": 2.4,
-"frame": "none",
-"id": 22,
-"kind": "bend",
-"pos": Vector4(19.5, 0, -23, 4.5),
-"state": "arrival",
-"target": ""
-}, {
-"approach": Vector2(0, 1),
-"band": 2.4,
-"frame": "none",
 "id": 23,
-"kind": "bend",
+"kind": "destination",
 "pos": Vector4(24.6, 0, -28, 7.5),
 "state": "arrival",
-"target": ""
+"target": "KataCache"
 }, {
 "anchor": true,
 "approach": Vector2(1, 0),
@@ -232,7 +214,7 @@ nodes = [{
 "frame": "none",
 "id": 24,
 "kind": "destination",
-"pos": Vector4(22.5, 0, 29, 0),
+"pos": Vector4(23.0, 0, 29, 0),
 "size": 0.75,
 "state": "available",
 "target": "DreamShifter"
@@ -243,6 +225,24 @@ nodes = [{
 "id": 25,
 "kind": "junction",
 "pos": Vector4(24.9, 0, 29, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 26,
+"kind": "bend",
+"pos": Vector4(-11.5, 0, 14, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 27,
+"kind": "junction",
+"pos": Vector4(15.8, 0, -10.8, -2.5),
 "state": "arrival",
 "target": ""
 }]
@@ -311,13 +311,7 @@ edges = [{
 "from": 8,
 "priority": "primary",
 "to": 10,
-"w_mode": "follow"
-}, {
-"band": 2.4,
-"from": 10,
-"priority": "primary",
-"to": 19,
-"w_mode": "follow"
+"w_mode": "here"
 }, {
 "band": 2.4,
 "from": 19,
@@ -374,21 +368,15 @@ edges = [{
 "w_mode": "here"
 }, {
 "band": 2.4,
-"from": 14,
-"priority": "secondary",
-"to": 21,
-"w_mode": "follow"
+"from": 10,
+"priority": "primary",
+"to": 26,
+"w_mode": "here"
 }, {
 "band": 2.4,
-"from": 21,
-"priority": "secondary",
-"to": 22,
-"w_mode": "follow"
-}, {
-"band": 2.4,
-"from": 22,
-"priority": "secondary",
+"from": 27,
+"priority": "primary",
 "to": 23,
 "w_mode": "follow"
 }]
-next_id = 26
+next_id = 28

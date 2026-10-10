@@ -1,6 +1,14 @@
 extends Control
 
-## Five slots along the bottom of the screen. One of them ends up holding the gauntlet.
+## Ten slots in the bottom-left corner, two rows of five. One of them ends up holding the gauntlet.
+##
+## TWO CONNECTED ROWS, FLAT ICONS (10 Oct 2026, Ramon's walkthrough items 6, 7 and 15: "Arrange the inventory into two
+## rows of five slots. Keep the slots tightly connected ... simple, recognizable silhouettes ... a restrained, mostly
+## single-color treatment, with specific colors reserved for items where color communicates identity ... more like a
+## polished gameplay interface and less like a developer tool"). The slots touch, on one dark glass panel; each icon
+## is one flat silhouette in its item's colour (purple azoth, pale grey egg, gold egg; the rest restrained); the count
+## sits in the corner in the lab's type; the name of what is in hand (or just gained) is one line under the grid
+## instead of a caption under every slot. Keys 1 to 5 still choose the top row (6 to 8 stay the debug keys').
 ##
 ## IT LISTENS; IT IS NOT TOLD. The keeper's conversation announces what it did - the
 ## dialogue player emits `effect("give_gauntlet")` and has no idea what a gauntlet is - so
@@ -18,6 +26,9 @@ extends Control
 ## far better than an inventory that grows a slot each time it gains one, and the shape of
 ## the bar stops moving under the player's eye.
 
+const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
+const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
+
 ## What each known item looks like. The key is the effect name the dialogue emits.
 const ITEMS := {
 	"give_gauntlet": {
@@ -32,8 +43,22 @@ const ITEMS := {
 	},
 	"found_egg": {
 		"name": "Golden Egg",
-		"colour": Color(0.98, 0.82, 0.30),
+		"colour": Color(0.90, 0.70, 0.28),
 		"icon": "egg",
+		"stacks": true,
+	},
+	## The strange clock from the meadow's edge (10 Oct, item 27), for Mithra.
+	"found_clock": {
+		"name": "Strange Clock",
+		"colour": Color(0.56, 0.74, 0.70),
+		"icon": "watch",
+	},
+	## The pen's eggs (10 Oct, Ramon's walkthrough item 14: "Two regular white eggs. One golden egg"), pale grey.
+	"found_egg_white": {
+		"name": "Egg",
+		"colour": Color(0.86, 0.85, 0.82),
+		"icon": "egg",
+		"stacks": true,
 	},
 	## THE ONLY THING YOU CAN HOLD MORE THAN ONE OF. There are six pieces in the rock and
 	## six troughs to spend them on, so a belt that refuses the second one makes five of
@@ -80,7 +105,9 @@ signal picked_up(effect_name: String)
 ## Anything that hands items over should be in here. An effect naming an item this belt
 ## does not know is ignored, so adding a speaker who gives nothing costs nothing.
 @export var dialogue_paths: Array[NodePath] = []
-@export_range(1, 10, 1) var slot_count: int = 5
+@export_range(1, 10, 1) var slot_count: int = 10
+## Slots to a row (two rows of five).
+@export_range(1, 10, 1) var per_row: int = 5
 ## Things you are carrying before anybody hands you anything. The pickaxe is one - it is a
 ## tool rather than a reward, so there is no conversation to earn it from, and hanging it
 ## off a dialogue effect would have meant inventing one.
@@ -97,10 +124,11 @@ enum Align { CENTRE, LEFT }
 ## Bigger than it was. Fifty-four was sized against a windowed prototype and reads as a
 ## row of stamps on a full screen, where it is the one piece of UI you have to pick things
 ## out of at a glance.
-@export_range(24.0, 140.0, 1.0) var slot_size: float = 72.0
-@export_range(0.0, 40.0, 1.0) var slot_gap: float = 13.0
-## Leaves room under the row for the name of whatever is in a slot.
-@export_range(0.0, 200.0, 1.0) var bottom_margin: float = 52.0
+## 10 Oct: smaller and joined (two rows of five, no gaps; Ramon: "Maintain consistent slot dimensions").
+@export_range(24.0, 140.0, 1.0) var slot_size: float = 56.0
+@export_range(0.0, 40.0, 1.0) var slot_gap: float = 0.0
+## Leaves room under the grid for the name of what is in hand.
+@export_range(0.0, 200.0, 1.0) var bottom_margin: float = 46.0
 @export var empty_fill: Color = Color(0.0, 0.0, 0.0, 0.34)
 @export var empty_border: Color = Color(1.0, 1.0, 1.0, 0.5)
 @export var filled_border: Color = Color(1.0, 1.0, 1.0, 0.72)
@@ -165,7 +193,8 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		var digit: int = (event as InputEventKey).keycode - KEY_1
-		if digit >= 0 and digit < slot_count:
+		# The top row only (1 to 5): 6, 7 and 8 are the debug keys (scripts/pen_debug_4d.gd).
+		if digit >= 0 and digit < mini(slot_count, per_row):
 			# Mid-conversation the numbers are the answers' (dialogue_player_4d.gd), not the
 			# belt's: the belt hears input first, so it has to step aside or no answer is ever
 			# picked by its number.
@@ -218,7 +247,7 @@ func selected_effect() -> String:
 ## Where the belt is on the screen (its slots and the name under the chosen one), for panels that keep clear of
 ## it (pen_hud_spot_4d.gd counts no full-screen control, and this one is full-screen).
 func belt_rect() -> Rect2:
-	var r: Rect2 = _slot_rect(0).merge(_slot_rect(maxi(slot_count - 1, 0)))
+	var r: Rect2 = _slot_rect(0).merge(_slot_rect(maxi(slot_count - 1, 0))).grow(6.0)
 	r.size.y += bottom_margin
 	return get_global_transform() * r
 
@@ -227,11 +256,16 @@ func belt_rect() -> Rect2:
 ## drawing have to agree exactly - computed twice they drift the moment either moves.
 func _slot_rect(index: int) -> Rect2:
 	var screen: Vector2 = get_viewport_rect().size
-	var total: float = float(slot_count) * slot_size + float(slot_count - 1) * slot_gap
+	var cols: int = mini(per_row, slot_count)
+	var rows: int = ceili(float(slot_count) / float(maxi(cols, 1)))
+	var w: float = slot_size
+	var h: float = slot_size * 0.88
+	var total: float = float(cols) * w + float(cols - 1) * slot_gap
 	var left: float = side_margin if align == Align.LEFT else (screen.x - total) * 0.5
-	var top: float = screen.y - bottom_margin - slot_size
-	return Rect2(Vector2(left + float(index) * (slot_size + slot_gap), top),
-		Vector2(slot_size, slot_size))
+	var top: float = screen.y - bottom_margin - float(rows) * h - float(rows - 1) * slot_gap
+	var col: int = index % maxi(cols, 1)
+	var row: int = index / maxi(cols, 1)
+	return Rect2(Vector2(left + float(col) * (w + slot_gap), top + float(row) * (h + slot_gap)), Vector2(w, h))
 
 
 ## Anything the dialogue announces that names a known item lands in a slot. Unknown effects
@@ -315,183 +349,102 @@ func _closed_loop(points: PackedVector2Array) -> PackedVector2Array:
 	return loop
 
 
+## ONE FLAT SILHOUETTE PER ITEM (10 Oct, Ramon: "simple, recognizable silhouettes ... Avoid unnecessary gradients,
+## complex shading"): a single fill in [param colour], at most a darker cut-out, sized to the slot's shorter side.
 func _draw_icon(kind: String, box: Rect2, colour: Color) -> void:
-	var unit: float = box.size.x
-	var mid: Vector2 = box.position + box.size * 0.5
-	var dim := Color(colour.r, colour.g, colour.b, 0.55)
-
-	if kind == "azoth":
-		# A crystal: a long six-sided point, its left facets darker than its right, with a
-		# pale glint down the ridge - glassy, and plainly not a lump of metal.
-		var h: float = unit * 0.30
-		var r: float = unit * 0.13
-		var top: Vector2 = mid + Vector2(0.0, -h)
-		var bottom: Vector2 = mid + Vector2(0.0, h)
-		var left_hi: Vector2 = mid + Vector2(-r, -h * 0.35)
-		var left_lo: Vector2 = mid + Vector2(-r, h * 0.45)
-		var right_hi: Vector2 = mid + Vector2(r, -h * 0.35)
-		var right_lo: Vector2 = mid + Vector2(r, h * 0.45)
-		draw_colored_polygon(PackedVector2Array([top, mid + Vector2(0.0, -h * 0.2), mid + Vector2(0.0, h * 0.6), bottom, left_lo, left_hi]),
-			colour.darkened(0.35))
-		draw_colored_polygon(PackedVector2Array([top, right_hi, right_lo, bottom, mid + Vector2(0.0, h * 0.6), mid + Vector2(0.0, -h * 0.2)]),
-			colour)
-		draw_line(top, mid + Vector2(0.0, h * 0.6), Color(0.94, 0.86, 1.0, 0.9), maxf(unit * 0.025, 1.0), true)
-		draw_polyline(_closed_loop(PackedVector2Array([top, right_hi, right_lo, bottom, left_lo, left_hi])),
-			Color(0.90, 0.80, 1.0, 0.85), maxf(unit * 0.03, 1.0), true)
-		return
-
-	if kind == "ticket":
-		# A stub with a torn edge. Two rectangles and a row of notches reads as a ticket at
-		# fifty pixels, where anything more literal reads as a grey smudge.
-		var w: float = unit * 0.34
-		var h: float = unit * 0.22
-		draw_rect(Rect2(mid - Vector2(w, h), Vector2(w * 2.0, h * 2.0)), colour)
-		draw_rect(Rect2(mid - Vector2(w, h), Vector2(w * 2.0, h * 2.0)), dim,
-			false, maxf(unit * 0.03, 1.0))
-		# The perforation, a third of the way along.
-		var tear: float = mid.x - w * 0.34
-		for i in 5:
-			var y: float = mid.y - h + h * 2.0 * (float(i) + 0.5) / 5.0
-			draw_line(Vector2(tear, y - h * 0.10), Vector2(tear, y + h * 0.10),
-				Color(0.12, 0.10, 0.14, 0.9), maxf(unit * 0.035, 1.0))
-		return
-
-	if kind == "pickaxe":
-		# A SILHOUETTE, not a line drawing. Upright haft, a collar, and a head that sweeps
-		# out to a point either side and droops as it goes - which is the one shape that
-		# separates a pickaxe from a hammer at fifty pixels.
-		var half: float = unit * 0.34
-		var haft := Rect2(mid + Vector2(-unit * 0.045, -unit * 0.14),
-			Vector2(unit * 0.09, unit * 0.46))
-		draw_rect(haft, Color(0.58, 0.40, 0.24, 0.95), true)
-		draw_rect(Rect2(mid + Vector2(-unit * 0.075, -unit * 0.21),
-			Vector2(unit * 0.15, unit * 0.11)), colour, true)
-		draw_rect(Rect2(mid + Vector2(-unit * 0.05, -unit * 0.27),
-			Vector2(unit * 0.10, unit * 0.06)), Color(0.58, 0.40, 0.24, 0.95), true)
-		# Top edge out from the middle, then back along the underside - the two meet at
-		# each tip, which is what makes the point rather than a blunt end.
-		var head := PackedVector2Array()
-		for i in 13:
-			var x: float = lerpf(-half, half, float(i) / 12.0)
-			var k: float = (x / half) * (x / half)
-			head.append(mid + Vector2(x, -unit * 0.30 + unit * 0.17 * k))
-		for i in 13:
-			var x: float = lerpf(half, -half, float(i) / 12.0)
-			var k: float = (x / half) * (x / half)
-			head.append(mid + Vector2(x, -unit * 0.19 + unit * 0.11 * k))
-		draw_colored_polygon(head, colour)
-		return
-
-	if kind == "watch":
-		# The case, the crown and bow on top, twelve hour ticks and two hands - the same
-		# pieces the model is built from, so the slot and the thing you picked up are
-		# recognisably one object. The hands are set to ten to two, as every watch in every
-		# shop window is, because that is the time people read as "a watch".
-		var face: Vector2 = mid + Vector2(0.0, unit * 0.04)
-		var r: float = unit * 0.26
-		draw_arc(face, r, 0.0, TAU, 32, colour, maxf(unit * 0.05, 1.5), true)
-		draw_rect(Rect2(face + Vector2(-unit * 0.035, -r - unit * 0.07), Vector2(unit * 0.07, unit * 0.07)), colour, true)
-		draw_arc(face + Vector2(0.0, -r - unit * 0.10), unit * 0.05, 0.0, TAU, 14, colour, maxf(unit * 0.03, 1.0), true)
-		for i in 12:
-			var a: float = TAU * float(i) / 12.0
-			var d := Vector2(sin(a), -cos(a))
-			draw_line(face + d * r * 0.72, face + d * r * (0.86 if i % 3 else 0.62), dim, maxf(unit * 0.025, 1.0), true)
-		draw_line(face, face + Vector2(sin(-TAU / 6.0), -cos(-TAU / 6.0)) * r * 0.48, colour, maxf(unit * 0.045, 1.5), true)
-		draw_line(face, face + Vector2(sin(TAU / 6.0), -cos(TAU / 6.0)) * r * 0.66, colour, maxf(unit * 0.035, 1.2), true)
-		draw_circle(face, unit * 0.035, colour)
-		return
-
-	if kind == "egg":
-		# Drawn as stacked chords rather than an ellipse call, because an egg is wider
-		# below its middle and a circle primitive cannot say that.
-		var rows := [[-0.26, 0.10], [-0.19, 0.15], [-0.10, 0.19], [0.00, 0.20],
-			[0.10, 0.185], [0.19, 0.145], [0.26, 0.085]]
-		for row in rows:
-			var half: float = unit * float(row[1])
-			draw_rect(Rect2(mid + Vector2(-half, unit * float(row[0]) - unit * 0.05),
-				Vector2(half * 2.0, unit * 0.075)), colour, true)
-		return
-
-	if kind != "gauntlet":
-		return
-
-	# The cuff, as a band across the slot, with the strap edges darker at top and bottom.
-	var cuff := Rect2(mid - Vector2(unit * 0.30, unit * 0.26), Vector2(unit * 0.60, unit * 0.52))
-	draw_rect(cuff, dim, false, maxf(unit * 0.045, 1.5))
-	draw_rect(Rect2(cuff.position + Vector2(0.0, -unit * 0.07),
-		Vector2(cuff.size.x, unit * 0.06)), dim, true)
-	draw_rect(Rect2(cuff.position + Vector2(0.0, cuff.size.y + unit * 0.01),
-		Vector2(cuff.size.x, unit * 0.06)), dim, true)
-
-	# The screen, filled, because it is the lit part and the thing the eye lands on.
-	draw_rect(Rect2(mid - Vector2(unit * 0.19, unit * 0.19),
-		Vector2(unit * 0.38, unit * 0.27)), colour, true)
-
-	# The dial on the inboard edge and the button row under the screen: the two details
-	# that stop it reading as a plain rectangle.
-	draw_rect(Rect2(mid + Vector2(-unit * 0.38, -unit * 0.08),
-		Vector2(unit * 0.08, unit * 0.16)), dim, true)
-	for i in 3:
-		draw_rect(Rect2(mid + Vector2((float(i) - 1.0) * unit * 0.11 - unit * 0.03, unit * 0.12),
-			Vector2(unit * 0.06, unit * 0.06)), colour, true)
+	var unit: float = minf(box.size.x, box.size.y)
+	var mid: Vector2 = box.get_center()
+	var cut: Color = Color(0.06, 0.07, 0.10, 0.85)
+	match kind:
+		"azoth":
+			# A gem: a crown and a point.
+			var r: float = unit * 0.30
+			draw_colored_polygon(PackedVector2Array([
+				mid + Vector2(-r * 0.55, -r * 0.62), mid + Vector2(r * 0.55, -r * 0.62), mid + Vector2(r, -r * 0.12),
+				mid + Vector2(0.0, r * 0.95), mid + Vector2(-r, -r * 0.12)]), colour)
+			draw_line(mid + Vector2(-r, -r * 0.12), mid + Vector2(r, -r * 0.12), cut, maxf(unit * 0.035, 1.0), true)
+		"egg":
+			var pts := PackedVector2Array()
+			for i in 28:
+				var a: float = TAU * float(i) / 28.0
+				var y: float = -cos(a)
+				# Narrower at the top than the bottom.
+				var w: float = sin(a) * (0.70 + 0.12 * y)
+				pts.append(mid + Vector2(w * unit * 0.25, y * unit * 0.32 + unit * 0.02))
+			draw_colored_polygon(pts, colour)
+		"pickaxe":
+			var half: float = unit * 0.32
+			draw_line(mid + Vector2(-unit * 0.20, unit * 0.30), mid + Vector2(unit * 0.12, -unit * 0.14), colour, maxf(unit * 0.08, 2.0), true)
+			var head := PackedVector2Array()
+			for i in 13:
+				var x: float = lerpf(-half, half, float(i) / 12.0)
+				var k: float = (x / half) * (x / half)
+				head.append(mid + Vector2(x, -unit * 0.26 + unit * 0.14 * k))
+			for i in 13:
+				var x: float = lerpf(half, -half, float(i) / 12.0)
+				var k: float = (x / half) * (x / half)
+				head.append(mid + Vector2(x, -unit * 0.17 + unit * 0.09 * k))
+			draw_colored_polygon(head, colour)
+		"watch":
+			var face: Vector2 = mid + Vector2(0.0, unit * 0.04)
+			var r: float = unit * 0.24
+			draw_circle(face, r, colour)
+			draw_rect(Rect2(face + Vector2(-unit * 0.04, -r - unit * 0.08), Vector2(unit * 0.08, unit * 0.09)), colour, true)
+			draw_line(face, face + Vector2(0.0, -r * 0.62), cut, maxf(unit * 0.04, 1.2), true)
+			draw_line(face, face + Vector2(r * 0.48, 0.0), cut, maxf(unit * 0.04, 1.2), true)
+		"ticket":
+			var w: float = unit * 0.34
+			var h: float = unit * 0.21
+			draw_rect(Rect2(mid - Vector2(w, h), Vector2(w * 2.0, h * 2.0)), colour, true)
+			for i in 4:
+				draw_circle(Vector2(mid.x - w * 0.30, mid.y - h + h * 2.0 * (float(i) + 0.5) / 4.0), unit * 0.025, cut)
+		"gauntlet":
+			draw_rect(Rect2(mid - Vector2(unit * 0.28, unit * 0.22), Vector2(unit * 0.56, unit * 0.44)), colour, true)
+			draw_rect(Rect2(mid - Vector2(unit * 0.16, unit * 0.12), Vector2(unit * 0.32, unit * 0.18)), cut, true)
 
 
 func _draw() -> void:
-	var screen: Vector2 = get_viewport_rect().size
-	var total: float = float(slot_count) * slot_size + float(slot_count - 1) * slot_gap
-	var left: float = side_margin if align == Align.LEFT else (screen.x - total) * 0.5
-	var top: float = screen.y - bottom_margin - slot_size
-	var font: Font = ThemeDB.fallback_font
-
+	if slot_count <= 0:
+		return
+	var font: Font = LabPrint.font("bold")
+	var u: float = slot_size / 56.0
+	var grid: Rect2 = _slot_rect(0).merge(_slot_rect(slot_count - 1))
+	# One dark glass panel behind the whole grid.
+	var panel := Style.glass_box(10.0 * u, 1.0, 0.72)
+	draw_style_box(panel, grid.grow(5.0 * u))
+	var line_c := Color(1.0, 1.0, 1.0, 0.10)
 	for index in slot_count:
 		var box: Rect2 = _slot_rect(index)
-		var at: Vector2 = box.position
 		var filled: bool = index < items.size()
-		draw_rect(box, empty_fill, true)
-
+		# The slots touch: a hairline between them, nothing more.
+		draw_rect(box, line_c, false, 1.0)
 		if not filled:
-			draw_rect(box, empty_border, false, 2.0)
 			continue
-
-		var item: Dictionary = ITEMS[items[index]]
-		var colour: Color = item["colour"]
-		# The newest item pulses its border rather than flashing the whole slot, so the
-		# glyph stays readable while it is drawing attention to itself.
-		var edge: Color = filled_border
+		var item: Dictionary = ITEMS.get(items[index], {})
+		var colour: Color = item.get("colour", Color.WHITE)
+		draw_rect(box.grow(-1.0), Color(1.0, 1.0, 1.0, 0.05), true)
 		if _flash > 0.0 and index == items.size() - 1:
 			var pulse: float = (sin(_flash * 9.0) + 1.0) * 0.5
-			edge = filled_border.lerp(colour, pulse)
-		draw_rect(box.grow(-4.0), Color(colour.r, colour.g, colour.b, 0.22), true)
+			draw_rect(box.grow(-1.5), Color(colour, 0.25 + 0.45 * pulse), false, 2.0)
 		if index == selected:
-			# In hand: brighter inside and a second frame outside, so which one is chosen
-			# survives being glanced at rather than read.
-			draw_rect(box.grow(-4.0), Color(colour.r, colour.g, colour.b, 0.30), true)
-			draw_rect(box.grow(3.0), colour, false, 2.0)
-			edge = colour
-		draw_rect(box, edge, false, 2.0)
-
+			draw_rect(box.grow(-1.0), Color(colour, 0.16), true)
+			draw_rect(box.grow(-1.5), Color(colour, 0.95), false, maxf(2.0, 2.0 * u))
 		_draw_icon(str(item.get("icon", "")), box, colour)
-
-		var label: String = str(item["name"])
-		# The name grows with the slot rather than staying at 14 - a bigger box with the
-		# same caption under it looks like a mistake rather than a size.
-		# HOW MANY, in the corner of the slot: on anything that stacks, always - "x1" of azoth
-		# is worth knowing, it is cumulative - and on nothing else, where a "1" is noise.
+		# How many, in the corner: on anything that stacks, always; on nothing else.
 		var held: int = count_of(items[index])
 		if bool(item.get("stacks", false)) or held > 1:
-			var tag: String = "x%d" % held
-			var tag_size: int = clampi(int(slot_size * 0.30), 12, 26)
-			var tag_wide: float = font.get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1,
-				tag_size).x
-			var corner := Vector2(at.x + slot_size - tag_wide - 5.0,
-				at.y + slot_size - 6.0)
-			draw_string(font, corner + Vector2(1.0, 1.0), tag, HORIZONTAL_ALIGNMENT_LEFT,
-				-1, tag_size, Color(0.0, 0.0, 0.0, 0.7))
-			draw_string(font, corner, tag, HORIZONTAL_ALIGNMENT_LEFT, -1, tag_size,
-				Color(1.0, 1.0, 1.0, 0.95))
-		var name_size: int = clampi(int(slot_size * 0.26), 11, 22)
-		var label_width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1,
-			name_size).x
-		draw_string(font, at + Vector2((slot_size - label_width) * 0.5,
-			slot_size + float(name_size) + 4.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1,
-			name_size, Color(1.0, 1.0, 1.0, 0.8))
+			var tag: String = "%d" % held
+			var tag_size: int = clampi(int(slot_size * 0.24), 10, 24)
+			var tag_wide: float = font.get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1, tag_size).x
+			var corner := Vector2(box.end.x - tag_wide - 4.0 * u, box.end.y - 4.0 * u)
+			draw_string(font, corner + Vector2(1.0, 1.0), tag, HORIZONTAL_ALIGNMENT_LEFT, -1, tag_size, Color(0.0, 0.0, 0.0, 0.7))
+			draw_string(font, corner, tag, HORIZONTAL_ALIGNMENT_LEFT, -1, tag_size, Color(1.0, 1.0, 1.0, 0.95))
+	# One line under the grid: what is in hand, or what just arrived.
+	var shown: int = selected if selected >= 0 and selected < items.size() else (items.size() - 1 if _flash > 0.0 else -1)
+	if shown >= 0:
+		var item: Dictionary = ITEMS.get(items[shown], {})
+		var label: String = str(item.get("name", ""))
+		if shown == selected:
+			label += "  in hand"
+		var name_size: int = clampi(int(slot_size * 0.25), 11, 22)
+		draw_string(font, Vector2(grid.position.x, grid.end.y + 5.0 * u + float(name_size) + 4.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, name_size, Color(1.0, 1.0, 1.0, 0.82))

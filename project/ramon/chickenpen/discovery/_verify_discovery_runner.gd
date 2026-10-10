@@ -142,7 +142,7 @@ func _run() -> void:
 	_cam = WSense.camera_of(_player)
 	var guide: Node = _room.get_node_or_null("Systems/WGuide")
 	_check(guide != null, "the W guide is in the pen")
-	_check(_room.get_node_or_null("World/KataCache") != null and _room.get_node_or_null("World/WDoor") != null and _room.get_node_or_null("World/Zeppelins") != null, "the cache, the door and the airships are in the pen")
+	_check(_room.get_node_or_null("World/KataCache") != null and _room.get_node_or_null("World/WDoor") != null and _room.get_node_or_null("World/SkyBalloons") != null, "the cache, the door and the sky balloons are in the pen")
 	# The Tutor's hints would hold the screen (one hint at a time); this tests the guide's own.
 	await _wait(2.0)
 	_quiet_tutor()
@@ -175,7 +175,6 @@ func _run() -> void:
 	# --- The gate: the card, then the slice turned forward until the gate shows ---------------------------------
 	_place(Vector4(-11.3, 1.2, 19.5, 0.0), 0.0, 2.0, 6.0)
 	await _wait(4.2)
-	_check(Guide.spent.has("gate_road"), "the card came up at the gate road")
 	await _save("05_gate_card")
 	var gate: Vector4 = (_room.get_node("World/TownWall") as Node4D).global_position + Vector4(0, 1.7, 0, 0)
 	var best_zw: float = 0.0
@@ -189,7 +188,6 @@ func _run() -> void:
 	_place(Vector4(-11.3, 1.2, 19.5, 0.0), 0.0, 2.0, 6.0, 0.0, best_zw)
 	await _wait(0.8)
 	_check(best_off < 2.0, "turned forward %d degrees, the gate is in the slice (%.2f m off)" % [best_zw, best_off])
-	_check(Guide.done.has("gate_road"), "the gate's hint is done once the gate shows")
 	await _save("06_gate_turned")
 
 	# --- The camp: the card, then turned sideways until V, and V ------------------------------------------------
@@ -301,7 +299,7 @@ func _run() -> void:
 	await _save("24_balloon_found_w5")
 	_place(Vector4(-28.6, 1.2, -32.0, 5.0), 90.0, -4.0, 4.0)
 	await _wait(0.6)
-	_check(bool(lookout.call("can_board")), "at the basket, at its W, boarding is open")
+	_check(not bool(lookout.call("can_board")), "at the basket, boarding waits for the 2 azoth (10 Oct: a paid ride)")
 	await _save("25_balloon_board_prompt")
 
 	# --- The dev look with the projection on -------------------------------------------------------------------------

@@ -398,7 +398,7 @@ func _apply_dev() -> void:
 		if r[0] is String and String(r[0]) == "block" and _role(mi) == "landmark":
 			_blockout(r[1])
 	for part in _boxed_parts():
-		_blockout(part)
+		_blockout(part, "orange")
 	for mi in meshes:
 		_take(mi)
 
@@ -608,13 +608,21 @@ func _mat(key: String, colour: Color) -> TetraMaterial4D:
 ## [param root]'s blockout, built once and shown (look/pen_blockouts_4d.gd), as children of the
 ## landmark itself: they move with it, and the editor picks the landmark when one is clicked.
 ## Never saved: they have no owner.
-func _blockout(root: Node) -> void:
+## [param one_colour], when given, draws all of it in that one colour key ("orange": the boxed bookshelf is furniture in a
+## landmark, orange like the house it stands in; Ramon, 10 Oct, item 2: "Change the bookshelf's Dev Mode color to
+## the established orange used elsewhere").
+func _blockout(root: Node, one_colour: String = "") -> void:
 	if not (root is Node4D):
 		return
 	if not _blockouts.has(root):
 		var shapes: Dictionary = Blockouts.shapes_for(root as Node4D, tower_three_blocks)
 		if shapes.is_empty():
 			shapes = Blockouts.one_box(root as Node4D)
+		if one_colour != "" and not shapes.is_empty():
+			var all: Array = []
+			for key in shapes:
+				all.append_array(shapes[key])
+			shapes = {one_colour: all}
 		_blockouts[root] = Blockouts.bake(shapes)
 	var baked: Dictionary = _blockouts[root]
 	if baked.is_empty():

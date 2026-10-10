@@ -221,7 +221,7 @@ func _run() -> void:
 	_place(Vector4(24.9, 1.2, 37.5, 0.0), 180.0, -6.0, 5.0)
 	await _wait(0.8)
 	_check(not bool(prompt.call("showing")), "not yet: 9 m on")
-	_place(Vector4(7.3, 1.2, 37.1, 0.0), 90.0, -6.0, 5.0)
+	_place(Vector4(3.0, 1.2, 37.1, 0.0), 90.0, -6.0, 5.0)
 	await _wait(0.8)
 	_check(bool(prompt.call("showing")), "walked on past the orb, the prompt comes unasked")
 	await _wait(3.6)

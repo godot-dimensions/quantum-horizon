@@ -254,4 +254,29 @@ const NODES: Dictionary = {
 	"goto": "",
 },
 
+# ---------------------------------------------------------------- the strange clock (10 Oct)
+
+## RAMON, 10 OCT (walkthrough item 27): a second, stranger clock out at the meadow's edge, off the farm's slice. Carry
+## it to her and she takes it, and tells you about the hawk: "Oh, that's wonderful! You know, when I need to relax, I
+## sometimes fly above the world as a hawk. Try pressing U." U was always there (lookout/hawk_flight_4d.gd); this is
+## how a player hears of it.
+"greet_has_clock": {
+	"speaker": "Mithra",
+	"lines": ["Is that a clock? Where did you find a clock like that?"],
+	"choices": [
+		{"text": "Out at the edge of the meadow. It's yours.", "goto": "clock_given"},
+		{"text": "Just showing you.", "goto": ""},
+	],
+},
+
+"clock_given": {
+	"speaker": "Mithra",
+	"lines": [
+		"Oh, that's wonderful! It ticks backwards and forwards at once.",
+		"You know, when I need to relax, I sometimes fly above the world as a hawk. Try pressing U.",
+	],
+	"do": "take_clock",
+	"goto": "",
+},
+
 }

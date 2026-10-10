@@ -2,11 +2,11 @@ extends RefCounted
 
 ## NO class_name - preloaded by path, like the camp guide's.
 
-## The balloon's ground crew (discovery/pen_balloon_crew_4d.gd), at the fire where the balloon was moored. Ramon,
-## 9 Oct: "simple and short dialogue, where the balloon is in W above or under him". The balloon hovers 5 m ana of its
-## stake and 3.5 m up (lookout/balloon_4d.gd parked); she tells you so and how to bring it in, and, asked, where the
-## airship fleet is (discovery/pen_zeppelins_4d.gd: one in the farm's slice, four more 9 m ana). Short lines, full
-## stops and commas, no dashes.
+## The balloon's ground crew at her fire by the stake (discovery/pen_balloon_crew_4d.gd), in the farm's slice.
+## 9 Oct she said the balloon was right above her, along W. 10 Oct (Ramon's walkthrough, items 18 and 20) the balloon
+## sits on the ground 5 m ana of her stake, and she sells the rides: "Hey mate! There's a balloon hidden somewhere in W.
+## Find it, and for just 2 Azoth, I'll take you for a ride." Her twin by the basket takes the money
+## (discovery/balloon_ride_script.gd). Short lines, full stops and commas, no dashes.
 
 const START: String = "intro"
 
@@ -15,41 +15,48 @@ const NODES: Dictionary = {
 "intro": {
 	"speaker": "Tamsin",
 	"lines": [
-		"Looking for Wren's balloon? It is right above me.",
-		"Not up in the sky. Along W. The wind pushed it five metres ana last night.",
-		"Its rope still comes down to my stake. Turn your slice until you see the basket, then press V.",
+		"Hey mate! There's a balloon hidden somewhere in W.",
+		"Find it, and for just 2 azoth, I'll take you for a ride.",
 	],
 	"choices": [
-		{"text": "And that airship out there?", "goto": "ships"},
-		{"text": "Thanks.", "goto": "", "leave": true},
+		{"text": "Any idea where?", "goto": "hint"},
+		{"text": "Deal.", "goto": ""},
 	],
 },
 
-"ships": {
+"hint": {
 	"speaker": "Tamsin",
 	"lines": [
-		"That one is the only one in our slice. The rest of the fleet sails about nine metres ana.",
-		"Step that way and look past the tower.",
+		"Not far. A few steps ana of my stake, sitting on a patch of sand.",
+		"Turn your slice until you can see it, then press V.",
 	],
 	"choices": [
-		{"text": "Thanks.", "goto": "", "leave": true},
+		{"text": "Thanks.", "goto": ""},
 	],
 },
 
 "again": {
 	"speaker": "Tamsin",
-	"lines": ["Five metres ana, right above the stake. Turn your slice and look for the basket."],
+	"lines": ["Found my balloon yet? It's a few steps ana of my stake."],
 	"choices": [
-		{"text": "And the airships?", "goto": "ships"},
-		{"text": "Right.", "goto": "", "leave": true},
+		{"text": "Any idea where?", "goto": "hint"},
+		{"text": "Not yet.", "goto": ""},
 	],
 },
 
 "found": {
 	"speaker": "Tamsin",
-	"lines": ["You found it. Go on, climb in. Wren will be thrilled."],
+	"lines": ["You found it! I'm by the basket. 2 azoth and we're up."],
 	"choices": [
-		{"text": "On my way.", "goto": "", "leave": true},
+		{"text": "On my way.", "goto": ""},
+	],
+},
+
+"flown": {
+	"speaker": "Tamsin",
+	"lines": ["Good flight? Same price any time, mate."],
+	"choices": [
+		{"text": "Cheers.", "goto": ""},
 	],
 },
 

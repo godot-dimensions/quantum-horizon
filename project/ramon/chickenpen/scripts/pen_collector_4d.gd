@@ -8,6 +8,9 @@ extends Node
 ## opposite of what the placement is for. Measured along the slice frame, the same axis
 ## the catch and the locator use.
 
+const Confetti := preload("res://ramon/chickenpen/discovery/pen_confetti_4d.gd")
+const Toast := preload("res://ramon/chickenpen/discovery/pen_discovery_toast.gd")
+
 @export var player_path: NodePath
 @export var slice_frame_path: NodePath
 @export var inventory_path: NodePath
@@ -49,7 +52,8 @@ func _process(delta: float) -> void:
 	var slice: Projection = _frame.global_basis if _frame != null else _player.global_basis
 	for node in _pickups.get_children():
 		var item: Node4D = node as Node4D
-		if item == null or not item.visible:
+		# Only pickups (the egg's confetti burst lands elsewhere, but anything else under here is not one).
+		if item == null or not item.visible or not ("kind" in item):
 			continue
 		var rel: Vector4 = item.global_position - _player.global_position
 		if absf(rel.dot(slice.w)) > slice_tolerance:
@@ -75,12 +79,40 @@ func _take(item: Node4D) -> void:
 			_readout.text = "Found: a bag of azoth, %d pieces. Somebody hid this." % worth
 			_left = message_seconds
 		return
-	var id: String = "found_watch" if kind == 0 else "found_egg"
+	if kind == 4:
+		if _inventory != null:
+			_inventory.call("add_item", "found_clock")
+		if _readout != null:
+			_readout.text = "Found: a strange clock. Its hands point every way at once."
+			_left = message_seconds
+		Toast.say(self, "A strange clock!", "Hey, this looks interesting. Maybe Mithra would like it.", Color(0.62, 0.78, 0.74))
+		return
+	var id: String = "found_watch" if kind == 0 else ("found_egg_white" if kind == 3 else "found_egg")
 	if _inventory != null:
 		_inventory.call("add_item", id)
 	if _readout != null:
-		_readout.text = "Found: %s" % ("a pocket watch, still ticking" if id == "found_watch" else "a golden egg")
+		_readout.text = "Found: %s" % {"found_watch": "a pocket watch, still ticking", "found_egg": "a golden egg", "found_egg_white": "an egg"}[id]
 		_left = message_seconds
+	# The eggs (10 Oct, Ramon's walkthrough item 14: "Provide a small, satisfying collection response"): a pop of
+	# confetti where it lay and a short card saying how many of the pen's three you have.
+	if id != "found_watch":
+		var burst: Node4D = Confetti.new()
+		_player.get_parent().add_child(burst)
+		burst.call("throw", item.global_position)
+		var golden: bool = id == "found_egg"
+		Toast.say(self, "A golden egg!" if golden else "An egg!", _egg_tally(), Color(0.95, 0.75, 0.30) if golden else Color(0.88, 0.86, 0.80))
+
+
+## "2 of the pen's 3 eggs": the pen's eggs are the pickups named PenEgg*.
+func _egg_tally() -> String:
+	var all: int = 0
+	var got: int = 0
+	for node in _pickups.get_children():
+		if String(node.name).begins_with("PenEgg"):
+			all += 1
+			if not (node as Node4D).visible:
+				got += 1
+	return "%d of the pen's %d eggs" % [got, all] if all > 0 else ""
 
 
 ## Item 73: put them all back where they were.

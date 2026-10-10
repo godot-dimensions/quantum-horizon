@@ -46,8 +46,10 @@ const LEAVES := {
 	"oak": [44, 0.22],
 	"oak_lite1": [14, 0.24],
 	"oak_lite2": [22, 0.28],
-	"oak_lite3": [24, 0.30],
-	"oak_lite4": [16, 0.28],
+	# A quarter more on the big and medium oaks (Ramon, 10 Oct, item 17: "slightly denser foliage ... Performance is the
+	# deciding factor"): measured 6.65 to 6.81 ms GPU over the start's oak belt (discovery/_perf_leaves_runner.gd).
+	"oak_lite3": [30, 0.30],
+	"oak_lite4": [20, 0.28],
 	"bush_1": [22, 0.24],
 	"bush_2": [22, 0.24],
 	"bush_3": [22, 0.24],

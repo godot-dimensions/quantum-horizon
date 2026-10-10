@@ -23,6 +23,9 @@ extends Node
 ##   w_hint_linger   seconds you stay in reach, with the target still hidden, before anything shows (default 3)
 ##   w_hint_tier_min the quietest a spot may be: 1 means never the card, only the chip (the easter eggs)
 ##   w_hint_chip_always  show the chip even once the skill is learned (an easter egg's last resort)
+##   w_hint_card_always  always the animated card, however well the skill is known (10 Oct: the cave, the pen, the wall)
+##   w_hint_acts     the card's own gestures, [[kind, words], ...] (kinds: drag_h, drag_v, look_h, keys), else the skill's
+##   w_hint_card_seconds  how long its card plays (default card_seconds)
 ##
 ## HOW QUIET (by what the player has done, anywhere, this session; never saved, so the next visitor is taught too):
 ##   tier 0, never done it:      the animated mouse card (discovery/pen_mouse_card_4d.gd) with the line, 5 s
@@ -242,6 +245,10 @@ func _show(s: Node4D, key: String) -> void:
 	var tier: int = maxi(tier_of(skill), int(s.get_meta(&"w_hint_tier_min", 0)))
 	if tier >= 2 and bool(s.get_meta(&"w_hint_chip_always", false)):
 		tier = 1
+	# A spot that always teaches with the animated card, however well the skill is known (Ramon, 10 Oct: the cave, the
+	# pen, the wall: "Reuse the animated mouse tutorial from Aquatic Lab at this location").
+	if bool(s.get_meta(&"w_hint_card_always", false)):
+		tier = 0
 	spent[key] = true
 	if tier >= 2:
 		if verbose:
@@ -251,13 +258,22 @@ func _show(s: Node4D, key: String) -> void:
 	_showing_key = key
 	_showing_spot = s
 	if tier == 0 and _card != null:
-		_card.call("play", _acts(skill), line, card_seconds)
+		# Its own gestures if the spot has them (w_hint_acts: [[kind, words], ...]), else the skill's.
+		var acts: Array = s.get_meta(&"w_hint_acts", []) if s.has_meta(&"w_hint_acts") else _acts(skill)
+		_card.call("play", acts, line, float(s.get_meta(&"w_hint_card_seconds", card_seconds)))
 		if verbose:
 			print("WGUIDE card %s: %s" % [key, line])
 		return
 	_show_chip(s, _chip_text(skill))
 	if verbose:
 		print("WGUIDE chip %s: %s" % [key, _chip_text(skill)])
+
+
+## The card, played by someone else's moment (the wall's pivot after its camera move: discovery/pen_wall_pivot_4d.gd):
+## [param acts] [[kind, words], ...], [param line] under them, for [param seconds].
+func teach(acts: Array, line: String, seconds: float = 6.0) -> void:
+	if _card != null:
+		_card.call("play", acts, line, seconds)
 
 
 func _take_down() -> void:

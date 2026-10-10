@@ -14,7 +14,8 @@ extends Control
 ## - It is shown for a while (play) rather than held by its owner, and it fades.
 ## - It takes the first free spot on the HUD when it is shown (scripts/pen_hud_spot_4d.gd), and none while it is hidden.
 ##
-## A gesture is [kind, words]: kind "drag_v", "drag_h" or "keys".
+## A gesture is [kind, words]: kind "drag_v", "drag_h", "look_h" (the mouse alone, looking round: 10 Oct, the cave's
+## "face the hillside") or "keys".
 ## NO class_name (engine_gotchas.md).
 
 const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
@@ -109,7 +110,7 @@ func _draw() -> void:
 	# The words: this gesture big, the others small under it, and the caption.
 	var fb: Font = LabPrint.font("black")
 	var fs: Font = LabPrint.font("bold")
-	var how: String = "RIGHT MOUSE, FORWARD AND BACK" if kind == "drag_v" else ("RIGHT MOUSE, SIDE TO SIDE" if kind == "drag_h" else "HOLD A KEY")
+	var how: String = {"drag_v": "RIGHT MOUSE, FORWARD AND BACK", "drag_h": "RIGHT MOUSE, SIDE TO SIDE", "look_h": "MOVE THE MOUSE"}.get(kind, "HOLD A KEY")
 	var ty0: float = card.position.y + 300.0 * u
 	draw_string(fs, Vector2(card.position.x, ty0), how, HORIZONTAL_ALIGNMENT_CENTER, card.size.x, int(13 * u), Color(Style.UI_INK_DIM, _a))
 	# The gesture's name, as big as fits the card ("TURN THE SLICE FORWARD" is wider than the lab's names).
@@ -141,14 +142,16 @@ func _draw_mouse(centre: Vector2, kind: String, swing: float, ph: float, u: floa
 	_round(m, 56.0 * u, Color(0.93, 0.95, 0.98, _a))
 	var split_y: float = m.position.y + mh * 0.42
 	var right_btn := Rect2(Vector2(m.get_center().x + 2.0 * u, m.position.y + 3.0 * u), Vector2(mw * 0.5 - 5.0 * u, mh * 0.42 - 4.0 * u))
-	_round_top(right_btn, 52.0 * u, Color(Style.UI_ACCENT, _a))
+	# Looking round is the mouse alone (look_h): no button held.
+	if kind != "look_h":
+		_round_top(right_btn, 52.0 * u, Color(Style.UI_ACCENT, _a))
 	draw_line(Vector2(m.position.x + 6.0 * u, split_y), Vector2(m.end.x - 6.0 * u, split_y), Color(0.55, 0.60, 0.68, _a), maxf(1.0, 2.0 * u), true)
 	draw_line(Vector2(m.get_center().x, m.position.y + 4.0 * u), Vector2(m.get_center().x, split_y), Color(0.55, 0.60, 0.68, _a), maxf(1.0, 2.0 * u), true)
 	var wheel := Rect2(Vector2(m.get_center().x - 9.0 * u, m.position.y + 22.0 * u), Vector2(18.0 * u, 40.0 * u))
 	_round(wheel, 9.0 * u, Color(0.40, 0.45, 0.53, _a))
 	draw_line(Vector2(m.position.x + 18.0 * u, split_y + 16.0 * u), Vector2(m.position.x + 18.0 * u, m.end.y - 40.0 * u), Color(1, 1, 1, 0.5 * _a), maxf(2.0, 5.0 * u), true)
 	var v_on: bool = kind == "drag_v"
-	var h_on: bool = kind == "drag_h"
+	var h_on: bool = kind == "drag_h" or kind == "look_h"
 	_arrow(centre + Vector2(0.0, -mh * 0.5 - 70.0 * u), Vector2(0, -1), u, lit if v_on else dim)
 	_arrow(centre + Vector2(0.0, mh * 0.5 + 22.0 * u), Vector2(0, 1), u, lit if v_on else dim)
 	_arrow(centre + Vector2(-mw * 0.5 - 40.0 * u, 0.0), Vector2(-1, 0), u, lit if h_on else dim)

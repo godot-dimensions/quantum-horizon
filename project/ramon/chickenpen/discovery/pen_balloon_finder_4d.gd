@@ -18,6 +18,7 @@ extends Node
 
 const WSense := preload("res://ramon/chickenpen/discovery/w_sense_4d.gd")
 const Balloon := preload("res://ramon/chickenpen/lookout/balloon_4d.gd")
+const Toast := preload("res://ramon/chickenpen/discovery/pen_discovery_toast.gd")
 
 @export var player_path: NodePath = ^"../../Player"
 @export var lookout_path: NodePath = ^"../Lookout"
@@ -111,6 +112,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		var rig: Node = _player.get_node_or_null("CameraRig")
 		if rig != null and rig.has_method("align_to"):
 			rig.call("align_to", b.global_position.w)
+		# The first find only (Ramon, 10 Oct, item 18: "Whoa! You discovered a balloon! ... only on the first
+		# successful discovery"), with where the ride comes from.
+		if not Balloon.found:
+			Toast.say(self, "Whoa! You discovered a balloon!", "Tamsin waits by the basket. A ride is 2 azoth.", Color(0.95, 0.62, 0.30))
 		Balloon.found = true
 		if _lookout != null and _lookout.has_method("sound"):
 			_lookout.call("sound", &"secret")

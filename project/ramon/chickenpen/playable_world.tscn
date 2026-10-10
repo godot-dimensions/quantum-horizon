@@ -1,4 +1,4 @@
-[gd_scene load_steps=492 format=4 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=498 format=4 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/mountains_even.res" id="2_j4g5o"]
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
@@ -113,7 +113,13 @@
 [ext_resource type="Script" path="res://ramon/chickenpen/discovery/pen_balloon_finder_4d.gd" id="disc_finder"]
 [ext_resource type="Script" path="res://ramon/chickenpen/discovery/pen_balloon_crew_4d.gd" id="disc_crew"]
 [ext_resource type="Script" path="res://ramon/chickenpen/discovery/pen_balloon_crew_talk_4d.gd" id="disc_crew_talk"]
-[ext_resource type="Script" path="res://ramon/chickenpen/discovery/pen_zeppelins_4d.gd" id="disc_zeppelins"]
+[ext_resource type="Script" path="res://ramon/chickenpen/discovery/pen_sky_balloons_4d.gd" id="disc_sky_balloons"]
+[ext_resource type="Script" path="res://ramon/chickenpen/discovery/pen_wall_pivot_4d.gd" id="disc_wall_pivot"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_town_wall_look_4d.gd" id="town_wall_look"]
+[ext_resource type="Script" path="res://ramon/chickenpen/discovery/dream_shifter/pen_look_badge.gd" id="look_badge"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_minimal_hud_4d.gd" id="minimal_hud"]
+[ext_resource type="Script" path="res://ramon/CreationLab/LabKit/ui_layout_editor.gd" id="ui_layout"]
+[ext_resource type="Script" path="res://ramon/chickenpen/discovery/pen_meadow_thought_4d.gd" id="meadow_thought"]
 [ext_resource type="Script" path="res://ramon/chickenpen/discovery/dream_shifter/pen_dream_shifter_4d.gd" id="disc_shifter"]
 [ext_resource type="Script" path="res://ramon/chickenpen/discovery/dream_shifter/pen_dream_shifter_talk_4d.gd" id="disc_shifter_talk"]
 [ext_resource type="Script" path="res://ramon/chickenpen/discovery/dream_shifter/pen_look_guide_4d.gd" id="disc_look_guide"]
@@ -1955,6 +1961,31 @@ basis = Projection(-0.8660254037844387, -0.49999999999999994, 0, 0, 0.4999999999
 material_override = SubResource("TetraMaterial4D_b6q35")
 mesh = SubResource("BoxTetraMesh4D_ywbrt")
 
+[node name="PenEggA" type="Node4D" parent="World/Pickups"]
+position = Vector4(-17.6, 0.35, 35.4, 2.2)
+script = ExtResource("pen_pickup")
+kind = 3
+size = 0.22
+
+[node name="PenEggB" type="Node4D" parent="World/Pickups"]
+position = Vector4(-20.4, 0.35, 39.2, -2.6)
+script = ExtResource("pen_pickup")
+kind = 3
+size = 0.22
+
+[node name="PenEggGold" type="Node4D" parent="World/Pickups"]
+position = Vector4(-16.6, 0.4, 39.0, -3.4)
+script = ExtResource("pen_pickup")
+kind = 1
+size = 0.24
+
+[node name="MeadowClock" type="Node4D" parent="World/Pickups"]
+position = Vector4(38, 0.8, -12, 1.8)
+script = ExtResource("pen_pickup")
+kind = 4
+size = 0.46
+metadata/what = "The strange clock at the meadow's far edge, 1.8 m ana (Ramon, 10 Oct, items 26-27): carry it to Mithra and she tells you about the hawk (U)."
+
 [node name="GoldenEgg" type="Node4D" parent="World/Pickups"]
 position = Vector4(7.8, 0.95, -1.2, -1.6)
 script = ExtResource("pen_pickup")
@@ -3727,11 +3758,11 @@ beam_material = SubResource("TetraMaterial4D_68gaw")
 rib_material = SubResource("TetraMaterial4D_j1ble")
 post_material = SubResource("TetraMaterial4D_j1ble")
 desired_spacing_meters = 1.13
-post_height_meters = 1.0
+post_height_meters = 0.83
 post_thickness_meters = 0.14900000000000002
-rib_height_ratio = 0.859
+rib_height_ratio = 0.95
 rib_thickness_ratio = 0.605
-beam_max_height_ratio = 0.865
+beam_max_height_ratio = 0.945
 beam_coverage = 1.0
 beam_thickness_ratio = 0.795
 beam_count = 1
@@ -5148,9 +5179,9 @@ position = Vector4(45, 0, 2, 0)
 script = ExtResource("disc_door")
 metadata/what = "Easter egg 3 (discovery, 9 Oct): Trym's portal arch, thin and turned a quarter into W. A glowing slit in the farm's slice, a whole door with the slice turned sideways; through it you come out on top of the Watchstone."
 
-[node name="Zeppelins" type="Node4D" parent="World"]
-script = ExtResource("disc_zeppelins")
-metadata/what = "The airship fleet (discovery, 9 Oct, Ramon's mid-build idea): one airship in the farm's slice, four more 9 m ana, far out to the right of the Watchstone. Budget: three merged meshes a ship, kept out of the projection."
+[node name="SkyBalloons" type="Node4D" parent="World"]
+script = ExtResource("disc_sky_balloons")
+metadata/what = "Balloons in the sky (10 Oct, Ramon's walkthrough item 21, replacing the airships): one in the farm's slice, three 9 m ana, far out to the right of the Watchstone, drifting. Earthy, muted colours; one shared envelope mesh and a basket each, kept out of the projection."
 
 [node name="BalloonCrew" type="Node4D" parent="World"]
 position = Vector4(-29.2, 0, -30.4, 0)
@@ -5162,13 +5193,38 @@ script = ExtResource("disc_crew")
 [node name="CrewHead" type="Node4D" parent="World/BalloonCrew"]
 position = Vector4(0, 1.05, 0.12, 0)
 
+[node name="AtBasket" type="Node4D" parent="World/BalloonCrew"]
+position = Vector4(0.8, 0, -0.2, 5)
+script = ExtResource("disc_crew")
+seated = false
+with_fire = false
+metadata/what = "Tamsin's twin by the balloon, at its W (5 m ana; Ramon, 10 Oct, item 20): she sells the ride, 2 azoth (Systems/BalloonRideDriver)."
+
+[node name="AtBasketHead" type="Node4D" parent="World/BalloonCrew"]
+position = Vector4(0.8, 1.72, -0.2, 5)
+
+[node name="LandingSand" type="Node4D" parent="World/BalloonCrew"]
+position = Vector4(-0.8, 0, -1.6, 5)
+script = ExtResource("sand_patch")
+radius = 3.0
+w_half = 1.4
+metadata/what = "The balloon's landing patch at its W (Ramon, 10 Oct, item 18: grounded on a small patch of sand, no grass)."
+
+[node name="WallPivot" type="Node4D" parent="World"]
+position = Vector4(-11.5, 0, 14, 0)
+script = ExtResource("disc_wall_pivot")
+metadata/what = "The wall's pivot (Ramon, 10 Oct, item 16): the road from the pen's junction ends here before the town wall; reaching it plays a short camera move over the wall and the W card. It also keeps the wall solid (the wall had no collider)."
+
 [node name="DreamShifter" type="Node4D" parent="World"]
-position = Vector4(21.4, 0, 29, 0)
+position = Vector4(21.1, 0, 29, 0)
+basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
 script = ExtResource("disc_shifter")
+orb_height = 2.12
 metadata/what = "The Dream Shifter (9 Oct, Ramon's dev/art onboarding brief; follow_up/pen_dream_shifter.md): a stumpy marble column with a crystal 24-cell over it, on a short spur off the first road (start to Trym's house). F talks; it shifts the world between the dev and art looks in front of you, then the explainer (Systems/LookGuide)."
 
 [node name="Head" type="Node4D" parent="World/DreamShifter"]
-position = Vector4(0, 2.45, 0, 0)
+position = Vector4(0, 2.67, 0, 0)
+
 
 [node name="WHints" type="Node4D" parent="World"]
 metadata/what = "The W guide's spots along the path (discovery/pen_w_guide_4d.gd): each a marker in the group w_hint, with its skill, reach, target and line as metadata. Move a marker to move where its hint can fire."
@@ -5191,19 +5247,34 @@ metadata/w_hint_target = NodePath("../../Cave/DoorSpot")
 metadata/w_hint_reach = 1.5
 metadata/w_hint_done = "in_slice"
 metadata/w_hint_linger = 2.0
-metadata/w_hint_line = "The road climbs ana. Step through W to follow it."
+metadata/w_hint_line = "Face the hillside. Step through W to reveal the entrance."
+metadata/w_hint_card_always = true
+metadata/w_hint_acts = [["look_h", "FACE THE HILLSIDE"], ["keys", "STEP THROUGH W"]]
+metadata/w_hint_card_seconds = 7.0
 
-[node name="GateRoad" type="Node4D" parent="World/WHints" groups=["w_hint"]]
-position = Vector4(-11.3, 0, 18.5, 0)
-metadata/w_hint_key = "gate_road"
-metadata/w_hint_skill = "turn_forward"
+[node name="MeadowEdge" type="Node4D" parent="World/WHints" groups=["w_hint"]]
+position = Vector4(38, 0, -12, 0)
+metadata/w_hint_key = "meadow_clock"
+metadata/w_hint_skill = "step"
 metadata/w_hint_radius = 6.0
-metadata/w_hint_target = NodePath("../../TownWall")
-metadata/w_hint_offset = Vector4(0, 1.7, 0, 0)
-metadata/w_hint_reach = 2.0
+metadata/w_hint_target = NodePath("../../Pickups/MeadowClock")
+metadata/w_hint_reach = 0.3
 metadata/w_hint_done = "in_slice"
-metadata/w_hint_linger = 3.0
-metadata/w_hint_line = "The path dives into W. Turn your slice forward to see where it goes."
+metadata/w_hint_linger = 5.0
+metadata/w_hint_tier_min = 1
+metadata/w_hint_chip_always = true
+
+[node name="PenPlatform" type="Node4D" parent="World/WHints" groups=["w_hint"]]
+position = Vector4(-14.2, 0, 37.1, 0)
+metadata/w_hint_key = "pen_eggs"
+metadata/w_hint_skill = "step"
+metadata/w_hint_radius = 3.5
+metadata/w_hint_done = "moved_w"
+metadata/w_hint_linger = 1.0
+metadata/w_hint_line = "Move through W to discover what's hidden inside the pen."
+metadata/w_hint_card_always = true
+metadata/w_hint_acts = [["keys", "STEP THROUGH W"], ["drag_h", "OR TURN THE SLICE"]]
+metadata/w_hint_card_seconds = 6.0
 
 [node name="CampRoad" type="Node4D" parent="World/WHints" groups=["w_hint"]]
 position = Vector4(2, 0, -4, 0)
@@ -5237,6 +5308,43 @@ choice_width = 470.0
 choice_gap = 10.0
 camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 head_anchor_path = NodePath("../../World/BalloonCrew/CrewHead")
+over_head_width = 470.0
+name_size = 17
+text_size = 20
+choice_size = 19
+
+[node name="LookBadge" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("look_badge")
+metadata/what = "The Art/Dev Mode badge above the belt (Ramon, 10 Oct, item 12): an eye, the mode, I to switch; a click switches too."
+
+[node name="BalloonRideTag" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("pen_world_tag")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../World/BalloonCrew/AtBasketHead")
+lift = 12.0
+
+[node name="BalloonRideBox" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("dlg_box")
+choice_side = 1
+choice_width = 470.0
+choice_gap = 10.0
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../World/BalloonCrew/AtBasketHead")
 over_head_width = 470.0
 name_size = 17
 text_size = 20
@@ -5292,7 +5400,7 @@ two_shot = true
 main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
 dialogue_box_path = NodePath("../../UI/BalloonCrewBox")
 hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint"), NodePath("../../UI/Objective"), NodePath("../../UI/Progress"), NodePath("../../UI/Debug"), NodePath("../../UI/CameraPicker"), NodePath("../../UI/Quests")])
-talk_range = 2.6
+talk_range = 3.4
 two_shot_side = 1.9
 two_shot_back = 1.7
 two_shot_rise = 0.35
@@ -5324,3 +5432,46 @@ two_shot_side = 1.9
 two_shot_back = 1.7
 two_shot_rise = 0.35
 two_shot_seconds = 2.5
+
+[node name="BalloonRideTalk" type="Node" parent="Systems"]
+script = ExtResource("dlg_talk")
+box_path = NodePath("../../UI/BalloonRideBox")
+
+[node name="BalloonRideDriver" type="Node" parent="Systems"]
+script = ExtResource("disc_crew_talk")
+role = "ride"
+player_path = NodePath("../../Player")
+character_path = NodePath("../../Player")
+catcher_path = NodePath("../../Player/Catcher")
+dialogue_path = NodePath("../BalloonRideTalk")
+tag_path = NodePath("../../UI/BalloonRideTag")
+camera_rig_path = NodePath("../../Player/CameraRig")
+camera_marker_path = NodePath("../../World/TalkCam")
+camera_target_path = NodePath("../../World/BalloonCrew/AtBasketHead")
+two_shot = true
+main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/BalloonRideBox")
+hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint"), NodePath("../../UI/Objective"), NodePath("../../UI/Progress"), NodePath("../../UI/Debug"), NodePath("../../UI/CameraPicker"), NodePath("../../UI/Quests")])
+talk_range = 3.0
+two_shot_side = 1.9
+two_shot_back = 1.7
+two_shot_rise = 0.35
+two_shot_seconds = 2.5
+
+[node name="TownWallLook" type="Node" parent="Systems"]
+script = ExtResource("town_wall_look")
+metadata/what = "The town wall's stone (Ramon, 10 Oct, item 29): courses of blocks and a gentle darker-at-the-foot gradient, a 3D texture made when the pen loads and put on the wall's three materials (art look only)."
+
+[node name="MinimalHud" type="Node" parent="Systems"]
+script = ExtResource("minimal_hud")
+metadata/what = "F1: the minimal HUD (Ramon, 10 Oct, item 11): only the dial, the belt and the mode badge, and the play's own prompts."
+
+[node name="UiLayout" type="CanvasLayer" parent="Systems"]
+script = ExtResource("ui_layout")
+save_name = "pen_ui_layout.cfg"
+exclude = PackedStringArray("SlicePlane")
+metadata/what = "F2: move and size the HUD cards in the running scene, Save UI Location / Reset UI Layout (Ramon, 10 Oct, item 10; CreationLab/LabKit/ui_layout_editor.gd, reusable). The dial is left as it is."
+
+[node name="MeadowThought" type="Node" parent="Systems"]
+script = ExtResource("meadow_thought")
+metadata/what = "At the research camp, looking out east over the meadow, once: the player thinks 'That's a beautiful stretch of grassland. I wonder what's out there?' (Ramon, 10 Oct, item 24)."

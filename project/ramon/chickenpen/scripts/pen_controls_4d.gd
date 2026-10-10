@@ -30,6 +30,15 @@ extends Control
 ## size percentage slider somewhere"), through pen_ui_scale_4d.gd. ESC frees the cursor to
 ## use it, as for anything else on the card. It takes effect when it is let go: resizing the
 ## interface while it is being dragged would move the slider out from under the pointer.
+##
+## TWO GROUPS SIDE BY SIDE (10 Oct 2026, Ramon's walkthrough items 8 and 9: "too tall and cluttered ... Keep the
+## controls from Move through Escape together as one unit ... from C (Cinema) through Ctrl+R (Restart Scene) together
+## as a second unit ... alongside each other ... a thin divider line ... roughly inspired by a 16:9 landscape
+## proportion"): the playing keys in the left column, the shortcuts in the right, a thin rule between them; the card is
+## as tall as the longer column. And the two sizes have their own small bracket now ("Move the UI Size and Dial Size
+## controls into their own separate bracket ... next to the third Camera Testing bracket ... Rename Dial Size to Dial
+## Size / Locator Gizmo"), drawn by this script beside the camera picker (UI/CameraPicker); + and - still work from
+## anywhere.
 
 ## Font size for the verbs. The keys inside their boxes are drawn a point smaller.
 @export_range(9, 28, 1) var text_size: int = 13
@@ -54,6 +63,8 @@ const OWNED: Array = [
 	["../../Systems/Paths", "key_type", "paths: as drawn, static, here, follow, reveal"],
 	["../../Systems/Paths", "key_found", "paths found as you go, or all shown"],
 	["../../Systems/Look", "key", "dev look, or the art"],
+	["../../Systems/MinimalHud", "key", "minimal HUD, on or off"],
+	["../../Systems/UiLayout", "key", "move and size the cards"],
 ]
 
 var _rows: Array = []
@@ -79,7 +90,15 @@ const DIAL_STEP := 10.0
 ## The number first, then what it is (Ramon, 29 Sept: "percentage first, then text"): drawn
 ## as two columns, the number in room for the widest one, so the words stay put.
 const SIZE_WORDS := "UI size"
-const DIAL_WORDS := "dial size"
+const DIAL_WORDS := "dial size / locator gizmo"
+## The two columns: the first row of the second, its chip width and label start; the left column's the same.
+var _split: int = -1
+var _chip_w2: float = 0.0
+var _label_x2: float = 0.0
+var _col2_x: float = 0.0
+## The sizes' own bracket, beside the camera picker.
+var _size_card: Control
+var _size_rows: Array = []
 const NUMBER_ROOM := "300%"
 
 
@@ -131,6 +150,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		visible = not visible
 		if _hint != null:
 			_hint.visible = not visible
+		if _size_card != null:
+			_size_card.visible = visible
 		get_viewport().set_input_as_handled()
 
 
@@ -205,6 +226,7 @@ func _build() -> void:
 	]
 	if show_shortcuts:
 		_rule_after = _rows.size() - 1
+		_split = _rows.size()
 		for entry in OWNED:
 			var owner_node: Node = get_node_or_null(NodePath(entry[0]))
 			if owner_node == null:
@@ -214,37 +236,45 @@ func _build() -> void:
 				continue
 			_rows.append([OS.get_keycode_string(code), entry[2], true])
 		_rows.append(["CTRL+R", "restart the scene", true])
+	_slider_row = -1
 	if _size_box != null:
-		_slider_row = _rows.size()
-		_rows.append(["+ / −", SIZE_WORDS, false, "%d%%" % roundi(size_percent())])
-		_rows.append(["Shift + / −", DIAL_WORDS, false, "%d%%" % roundi(dial_percent())])
+		_size_rows = [["+ / −", SIZE_WORDS, false, "%d%%" % roundi(size_percent())],
+			["Shift + / −", DIAL_WORDS, false, "%d%%" % roundi(dial_percent())]]
+	if not show_shortcuts:
+		_split = -1
 	_measure()
 
 
 func _measure() -> void:
 	var font: Font = get_theme_default_font()
 	var key_size: int = maxi(text_size - 1, 8)
+	var first: int = _split if _split >= 0 else _rows.size()
 	_chip_w = 0.0
+	_chip_w2 = 0.0
 	var widest: float = 0.0
-	for row in _rows:
-		_chip_w = maxf(_chip_w,
-			font.get_string_size(row[0], HORIZONTAL_ALIGNMENT_LEFT, -1, key_size).x + 14.0)
-		widest = maxf(widest,
-			font.get_string_size(row[1], HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x)
-	if _size_box != null:
-		widest = maxf(widest, _number_w() + maxf(font.get_string_size(SIZE_WORDS, HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x,
-			font.get_string_size(DIAL_WORDS, HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x))
+	var widest2: float = 0.0
+	for i in _rows.size():
+		var row: Array = _rows[i]
+		var cw: float = font.get_string_size(row[0], HORIZONTAL_ALIGNMENT_LEFT, -1, key_size).x + 14.0
+		var lw: float = font.get_string_size(row[1], HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x
+		if i < first:
+			_chip_w = maxf(_chip_w, cw)
+			widest = maxf(widest, lw)
+		else:
+			_chip_w2 = maxf(_chip_w2, cw)
+			widest2 = maxf(widest2, lw)
 	_label_x = 14.0 + _chip_w + 12.0
-	var height: float = 14.0 + float(_rows.size()) * _step() + 8.0
-	if _rule_after >= 0:
-		height += 11.0
-	if _slider_row >= 0:
-		height += 11.0
+	var left_w: float = _label_x + widest + 12.0
+	_col2_x = left_w + 12.0 if _split >= 0 else 0.0
+	_label_x2 = _col2_x + _chip_w2 + 12.0
+	var total_w: float = (_label_x2 + widest2 + 16.0) if _split >= 0 else (left_w + 4.0)
+	var rows_tall: int = maxi(first, _rows.size() - first) if _split >= 0 else _rows.size()
+	var height: float = 14.0 + float(rows_tall) * _step() + 8.0
 	# Anchored to the right edge in the scene, so the card is grown leftward and downward
 	# from the corner it is pinned to rather than being sized by hand - a row added below
 	# used to fall off the bottom of a rect somebody had typed a number into.
 	offset_right = -right_margin
-	offset_left = -right_margin - (_label_x + widest + 16.0)
+	offset_left = -right_margin - total_w
 	offset_bottom = offset_top + height
 
 
@@ -254,12 +284,8 @@ func _step() -> float:
 
 ## Where row [param i] starts, down the card - the same sums _draw does.
 func _row_y(i: int) -> float:
-	var y: float = 14.0 + float(i) * _step()
-	if _rule_after >= 0 and i > _rule_after:
-		y += 11.0
-	if _slider_row >= 0 and i >= _slider_row:
-		y += 11.0
-	return y
+	var k: int = i - _split if _split >= 0 and i >= _split else i
+	return 14.0 + float(k) * _step()
 
 
 func _make_spinner() -> void:
@@ -269,6 +295,13 @@ func _make_spinner() -> void:
 	_size_box.name = "UiSize"
 	_size_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_size_box)
+	# Their own bracket (10 Oct): top-level, so it is placed on the screen rather than inside this card.
+	_size_card = Control.new()
+	_size_card.name = "SizeCard"
+	_size_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_size_card.top_level = true
+	_size_card.draw.connect(_draw_size_card)
+	add_child(_size_card)
 	# The scale reads what was last chosen in its own _ready, which comes after this one;
 	# catch up with it once it has.
 	_show_size.call_deferred()
@@ -285,11 +318,12 @@ func size_percent() -> float:
 
 
 func _show_size() -> void:
-	if _slider_row < 0 or _rows.size() < _slider_row + 2:
+	if _size_rows.size() < 2:
 		return
-	_rows[_slider_row][3] = "%d%%" % roundi(size_percent())
-	_rows[_slider_row + 1][3] = "%d%%" % roundi(dial_percent())
-	queue_redraw()
+	_size_rows[0][3] = "%d%%" % roundi(size_percent())
+	_size_rows[1][3] = "%d%%" % roundi(dial_percent())
+	if _size_card != null:
+		_size_card.queue_redraw()
 
 
 ## The dial's own size, from the scale.
@@ -316,41 +350,102 @@ func step_size(by: float) -> void:
 func _draw() -> void:
 	if _rows.is_empty():
 		return
-	var font: Font = get_theme_default_font()
-	var key_size: int = maxi(text_size - 1, 8)
 	if panel_alpha > 0.0:
 		draw_style_box(_panel, Rect2(Vector2.ZERO, size))
-	var y: float = 14.0
+	var first: int = _split if _split >= 0 else _rows.size()
 	for i in _rows.size():
-		if i == _slider_row:
-			y += 5.0
-			draw_line(Vector2(14.0, y), Vector2(size.x - 14.0, y), Color(1.0, 1.0, 1.0, 0.09), 1.0)
-			y += 6.0
-		var row: Array = _rows[i]
-		var chip_h: float = float(text_size) + 7.0
-		var box := Rect2(14.0, y, _chip_w, chip_h)
-		draw_style_box(_chip, box)
-		# Centred in its own box, because a key is a picture of a key. Only the column of
-		# verbs beside it is left-aligned, which is what makes them scannable.
-		var kw: float = font.get_string_size(row[0], HORIZONTAL_ALIGNMENT_LEFT, -1, key_size).x
-		draw_string(font, Vector2(box.position.x + (_chip_w - kw) * 0.5,
-			y + font.get_ascent(key_size) + 3.5), row[0], HORIZONTAL_ALIGNMENT_LEFT, -1,
-			key_size, Color(1.0, 1.0, 1.0, 0.90 if not row[2] else 0.55))
-		var words_x: float = _label_x
-		if row.size() > 3:
-			# A size row: its number, then its words in the column after the widest number.
-			draw_string(font, Vector2(_label_x, y + font.get_ascent(text_size) + 3.5), row[3],
-				HORIZONTAL_ALIGNMENT_LEFT, -1, text_size, Color(1.0, 1.0, 1.0, 0.9))
-			words_x += _number_w()
-		draw_string(font, Vector2(words_x, y + font.get_ascent(text_size) + 3.5), row[1],
-			HORIZONTAL_ALIGNMENT_LEFT, -1, text_size,
-			Color(1.0, 1.0, 1.0, 0.44 if row[2] else 0.72))
-		y += _step()
-		if i == _rule_after:
-			y += 5.0
-			draw_line(Vector2(14.0, y), Vector2(size.x - 14.0, y),
-				Color(1.0, 1.0, 1.0, 0.09), 1.0)
-			y += 6.0
+		var second: bool = i >= first
+		var x0: float = _col2_x if second else 0.0
+		_draw_row(self, _rows[i], x0, _row_y(i), _chip_w2 if second else _chip_w, _label_x2 if second else _label_x)
+	if _split >= 0:
+		# The thin rule between the two groups.
+		var rx: float = _col2_x - 6.0
+		draw_line(Vector2(rx, 12.0), Vector2(rx, size.y - 10.0), Color(1.0, 1.0, 1.0, 0.12), 1.0)
+
+
+func _process(_delta: float) -> void:
+	_keep_clear_of_todo()
+	_place_size_card()
+
+
+## Wider since 10 Oct, the card can reach over the to-do list (top left, beside the info card) on a narrow screen or at a
+## big UI size: then it sits just under the list instead of at the top.
+var _top_wanted: float = -1.0
+
+
+func _keep_clear_of_todo() -> void:
+	if _top_wanted < 0.0:
+		_top_wanted = offset_top
+	var h: float = offset_bottom - offset_top
+	var top: float = _top_wanted
+	var todo := get_node_or_null(^"../Quests") as Control
+	if todo != null and todo.is_visible_in_tree():
+		var t: Rect2 = todo.get_global_rect()
+		var me := Rect2(Vector2(get_global_rect().position.x, _top_wanted), Vector2(size.x, h))
+		if me.intersects(t):
+			top = t.end.y + 10.0
+	if not is_equal_approx(offset_top, top):
+		offset_top = top
+		offset_bottom = top + h
+
+
+## One row: the key in its chip at [param x0] + 14, its words at [param label_x] (and a size row's number first).
+func _draw_row(on: Control, row: Array, x0: float, y: float, chip_w: float, label_x: float) -> void:
+	var font: Font = get_theme_default_font()
+	var key_size: int = maxi(text_size - 1, 8)
+	var chip_h: float = float(text_size) + 7.0
+	var box := Rect2(x0 + 14.0, y, chip_w, chip_h)
+	on.draw_style_box(_chip, box)
+	# Centred in its own box, because a key is a picture of a key. Only the column of
+	# verbs beside it is left-aligned, which is what makes them scannable.
+	var kw: float = font.get_string_size(row[0], HORIZONTAL_ALIGNMENT_LEFT, -1, key_size).x
+	on.draw_string(font, Vector2(box.position.x + (chip_w - kw) * 0.5, y + font.get_ascent(key_size) + 3.5), row[0],
+		HORIZONTAL_ALIGNMENT_LEFT, -1, key_size, Color(1.0, 1.0, 1.0, 0.90 if not row[2] else 0.55))
+	var words_x: float = label_x
+	if row.size() > 3:
+		on.draw_string(font, Vector2(label_x, y + font.get_ascent(text_size) + 3.5), row[3],
+			HORIZONTAL_ALIGNMENT_LEFT, -1, text_size, Color(1.0, 1.0, 1.0, 0.9))
+		words_x += _number_w()
+	on.draw_string(font, Vector2(words_x, y + font.get_ascent(text_size) + 3.5), row[1],
+		HORIZONTAL_ALIGNMENT_LEFT, -1, text_size, Color(1.0, 1.0, 1.0, 0.44 if row[2] else 0.72))
+
+
+## The sizes' bracket: beside the camera picker (to its right, tops level), or under this card without one.
+func _place_size_card() -> void:
+	if _size_card == null or _size_rows.is_empty():
+		return
+	var font: Font = get_theme_default_font()
+	var key_size: int = maxi(text_size - 1, 8)
+	var chip_w: float = 0.0
+	var widest: float = 0.0
+	for row in _size_rows:
+		chip_w = maxf(chip_w, font.get_string_size(row[0], HORIZONTAL_ALIGNMENT_LEFT, -1, key_size).x + 14.0)
+		widest = maxf(widest, _number_w() + font.get_string_size(row[1], HORIZONTAL_ALIGNMENT_LEFT, -1, text_size).x)
+	var w: float = 14.0 + chip_w + 12.0 + widest + 16.0
+	var h: float = 14.0 + 2.0 * _step() + 8.0
+	var at := Vector2(get_global_rect().position.x, get_global_rect().end.y + 8.0)
+	var picker := get_node_or_null(^"../CameraPicker") as Control
+	if picker != null and picker.is_visible_in_tree():
+		# To the picker's right (its left is the to-do list), tops level; if that runs into this card, to its left.
+		var r: Rect2 = picker.get_global_rect()
+		at = Vector2(r.end.x + 8.0, r.position.y)
+		if Rect2(at, Vector2(w, h)).intersects(get_global_rect().grow(4.0)):
+			at = Vector2(r.position.x - w - 8.0, r.position.y)
+	_size_card.visible = visible
+	_size_card.global_position = at
+	_size_card.size = Vector2(w, h)
+	_size_card.set_meta(&"chip_w", chip_w)
+	_size_card.queue_redraw()
+
+
+func _draw_size_card() -> void:
+	if _size_rows.is_empty():
+		return
+	if panel_alpha > 0.0:
+		_size_card.draw_style_box(_panel, Rect2(Vector2.ZERO, _size_card.size))
+	var chip_w: float = float(_size_card.get_meta(&"chip_w", 60.0))
+	for i in _size_rows.size():
+		_draw_row(_size_card, _size_rows[i], 0.0, 14.0 + float(i) * _step(), chip_w, 14.0 + chip_w + 12.0)
 
 
 ## The key bound to an action, short enough to sit in a box.

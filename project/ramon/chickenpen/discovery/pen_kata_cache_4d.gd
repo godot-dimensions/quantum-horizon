@@ -271,12 +271,50 @@ func can_open() -> bool:
 	return absf(WSense.off_slice(_cam, _chest.global_position + Vector4(0, 0.4, 0, 0))) <= 0.5
 
 
+## V ALIGN (Ramon, 10 Oct, items 22-23: "I can't tell what it's supposed to do. Rotating through W doesn't produce an
+## obvious result ... consider using the established V, Align to Slice"): the open chamber is [member open_w] ana of the
+## farm; once your slice shows a part of it (turned or stepped toward it), V lays your slice flat at its W, as the
+## balloon's and the camp's do, and you stand in front of the open mouth with its lamp and the chest inside.
+func can_align() -> bool:
+	if found or _opening >= 0.0 or _player == null or not _player.is_visible_in_tree() or _player.get("input_enabled") == false:
+		return false
+	var mouth: Vector4 = global_position + Vector4(0.0, 1.2, 0.6, open_w)
+	var gap: Vector4 = mouth - _player.global_position
+	if Vector2(gap.x, gap.z).length() > 16.0 or absf(_player.global_position.w - open_w) < 0.6:
+		return false
+	var share: float = WSense.share(WSense.off_slice(_cam, mouth), 2.6)
+	return share >= 0.35 and share < 0.995
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if Engine.is_editor_hint():
+		return
+	var key := event as InputEventKey
+	if key == null or not key.pressed or key.echo or key.keycode != KEY_V or not can_align():
+		return
+	get_viewport().set_input_as_handled()
+	var rig: Node = _player.get_node_or_null("CameraRig")
+	if rig != null and rig.has_method("align_to"):
+		rig.call("align_to", open_w)
+	var lookout: Node = get_node_or_null(lookout_path)
+	if lookout != null and lookout.has_method("sound"):
+		lookout.call("sound", &"secret")
+
+
 func _update_prompt() -> void:
 	if _tag == null:
 		return
 	var text: String = ""
 	if can_open():
 		text = "%s  Open the chest" % _key_for(&"catch_target")
+		_tag_anchor.position = Vector4(0.0, 1.45, -0.8, open_w)
+	elif can_align():
+		text = "V  Align to the opening"
+		# Over the mouth, where your slice crosses it, so the prompt is in your slice.
+		var at: Vector4 = global_position + Vector4(0.0, 2.6, 0.6, 0.0)
+		var w: float = WSense.slice_w_at(_cam, at.x, at.y, at.z)
+		at.w = w if w != INF else _player.global_position.w
+		_tag_anchor.global_position = at
 	if text != _tag_text:
 		_tag_text = text
 		if text == "":

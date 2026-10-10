@@ -19,6 +19,8 @@ extends PenNpcTalk4D
 const WATCH: String = "found_watch"
 const EGG: String = "found_egg"
 const AZOTH: String = "found_azoth"
+## The strange clock from the meadow's edge (10 Oct): she takes it and tells you about the hawk (U).
+const CLOCK: String = "found_clock"
 
 @export var searcher_path: NodePath
 @export var inventory_path: NodePath
@@ -31,6 +33,7 @@ var _inventory: Node
 var _mutter: Label
 var _hinted: bool = false
 var _gave_watch: bool = false
+var _gave_clock: bool = false
 ## Once she has fetched you a bird she has nothing left to offer, and says so.
 var _gifted: bool = false
 var _met: bool = false
@@ -63,6 +66,8 @@ func _entry_node() -> String:
 		return MithraScript.START
 	if _catcher != null and _catcher.get("carried") != null:
 		return "greet_carrying"
+	if _has(CLOCK) and not _gave_clock:
+		return "greet_has_clock"
 	if _gifted:
 		return "greet_after_gift"
 	if _gave_watch:
@@ -84,6 +89,10 @@ func _on_effect(name: String) -> void:
 			# handing it over is the sort of small lie that makes an inventory useless.
 			if _inventory != null and _inventory.has_method("remove_item"):
 				_inventory.call("remove_item", WATCH)
+		"take_clock":
+			_gave_clock = true
+			if _inventory != null and _inventory.has_method("remove_item"):
+				_inventory.call("remove_item", CLOCK)
 		"give_nugget":
 			# A piece of azoth rather than the golden egg she used to hand over. The egg is a
 			# trinket you can also just find in the field; a nugget buys a trough off the
@@ -98,6 +107,7 @@ func _has(item: String) -> bool:
 
 func reset() -> void:
 	_met = false
+	_gave_clock = false
 	_hinted = false
 	_gave_watch = false
 	_gifted = false

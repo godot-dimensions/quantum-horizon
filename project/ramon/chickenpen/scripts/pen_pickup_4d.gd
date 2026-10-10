@@ -27,7 +27,12 @@ extends Node4D
 ## standing out of it, each at its own depth in W, because azoth is "never wholly in the slice
 ## you are looking at" (professor_script.gd): step through W and the crystals change. Worth
 ## [member bag_worth] azoth, which the keeper takes for troughs.
-enum Kind { POCKET_WATCH, GOLDEN_EGG, AZOTH_BAG }
+## WHITE_EGG (10 Oct 2026, Ramon's walkthrough item 14: "Place three collectible eggs inside the chicken house or pen
+## area: Two regular white eggs. One golden egg. Distribute them across W"): the golden egg's shape in an off-white
+## shell. Appended last, so the kinds already saved in the scene keep their numbers.
+## CLOCK (10 Oct, Ramon's walkthrough item 27: "a second mysterious clock or clock-like artifact" out at the meadow's
+## edge, for Mithra): the watch's build in bronze and teal, larger. Appended last, like WHITE_EGG.
+enum Kind { POCKET_WATCH, GOLDEN_EGG, AZOTH_BAG, WHITE_EGG, CLOCK }
 
 @export var kind: Kind = Kind.POCKET_WATCH: set = _set_kind
 @export_range(0.05, 2.0, 0.01) var size: float = 0.34: set = _set_size
@@ -88,7 +93,7 @@ func _process(delta: float) -> void:
 func rebuild() -> void:
 	for child in get_children():
 		child.free()
-	if kind == Kind.POCKET_WATCH:
+	if kind == Kind.POCKET_WATCH or kind == Kind.CLOCK:
 		_build_watch()
 	elif kind == Kind.AZOTH_BAG:
 		_build_bag()
@@ -104,10 +109,11 @@ const HANDS := [[-0.16, 10, 10], [0.0, 3, 45], [0.16, 7, 25]]
 ## The case on edge, a cream face each side, the bow and crown on top, twelve ticks, and
 ## three pairs of hands at three depths along W.
 func _build_watch() -> void:
+	var clock: bool = kind == Kind.CLOCK
 	var brass := TetraMaterial4D.new()
-	brass.albedo_color = watch_case
+	brass.albedo_color = Color(0.46, 0.36, 0.26) if clock else watch_case
 	var cream := TetraMaterial4D.new()
-	cream.albedo_color = watch_face
+	cream.albedo_color = Color(0.56, 0.74, 0.70) if clock else watch_face
 	var ink := TetraMaterial4D.new()
 	ink.albedo_color = watch_hands
 
@@ -167,10 +173,11 @@ func _hand(part: String, angle: float, length: float, width: float, z: float, at
 
 ## A blocky egg: stacked slabs, widest below the middle, the way an egg actually is.
 func _build_egg() -> void:
+	var white: bool = kind == Kind.WHITE_EGG
 	var shell := TetraMaterial4D.new()
-	shell.albedo_color = egg_shell
+	shell.albedo_color = Color(0.90, 0.88, 0.84) if white else egg_shell
 	var shine := TetraMaterial4D.new()
-	shine.albedo_color = egg_shine
+	shine.albedo_color = Color(0.99, 0.98, 0.95) if white else egg_shine
 
 	# height fraction, half-width fraction. Fatter low down and tapering to a narrower
 	# top - an egg is not a symmetric ellipse, and the asymmetry is most of what says egg.
@@ -233,6 +240,9 @@ func _box(part: String, at: Vector4, box: Vector3, material: TetraMaterial4D) ->
 	mesh.size = Vector4(box.x, box.y, box.z, w_depth)
 	node.mesh = mesh
 	node.material_override = material
+	# Out of the projection (P): small, and a watch alone is some thirty meshes, which the projection counts twice
+	# against the engine's instance limit (10 Oct: the pen's eggs and the clock took the dev look over it).
+	node.set("allow_projection", false)
 	add_child(node)
 	node.position = at
 	if Engine.is_editor_hint() and get_tree() != null and get_tree().edited_scene_root != null:

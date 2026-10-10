@@ -18,9 +18,15 @@ extends Node4D
 ##
 ## THE TRIGGER IS ITS OWN, not the arch's: the arch measures you in its own frame, and turned into W its "flat
 ## distance" ignores x (anywhere along a line would wake it). Here you go through when you are inside the doorway's
-## box (its depth along z, its width along W, a little either side in x) AND your slice is turned far enough that
-## the door is whole in it (the slice's normal mostly along x). Walking into the slit at W 0 does nothing; that is
-## the puzzle.
+## box (its depth along z, its width along W, a little either side in x), however your slice is turned. Until 10 Oct
+## it also wanted the door whole in your slice, and walking into the slit at W 0 did nothing; Ramon walked through
+## the slit and nothing happened ("walking through the doorway currently doesn't trigger anything. This needs to be
+## fixed"). So the slit is a door too now.
+##
+## V ALIGN, as at the balloon and the camp (Ramon, 10 Oct: "When the doorway is sufficiently visible through W, the
+## player should be able to align to the correct slice"): once your slice is turned a little toward it
+## ([member align_from] of the way), "V  Align to the door" comes up over it, and V eases your slice the rest of the
+## quarter turn, so the whole arch stands in front of you. Walking through it lays the slice flat again on the far side.
 ##
 ## THE WAY OUT is the Watchstone's own: arrive where its walk-up lands you (watchstone_4d.gd _climb_off, clear of the
 ## red oak, whose trunk box would hold you if you landed in it), the slice laid flat, facing back toward the door,
@@ -30,6 +36,7 @@ extends Node4D
 
 const Arch := preload("res://ramon/chickenpen/theatre/theatre_arch_4d.gd")
 const WSense := preload("res://ramon/chickenpen/discovery/w_sense_4d.gd")
+const SliceAngles := preload("res://ramon/chickenpen/scripts/slice_angles_4d.gd")
 
 @export var player_path: NodePath = ^"../../Player"
 @export var tower_path: NodePath = ^"../LookoutSite/Lookout"
@@ -55,10 +62,12 @@ const WSense := preload("res://ramon/chickenpen/discovery/w_sense_4d.gd")
 	set(v):
 		field_color = v
 		_later()
-## How far the slice must be turned for the door to count as whole: the share of the slice's normal along x.
-@export_range(0.3, 1.0, 0.05) var whole_at: float = 0.6
 ## It lights and chimes when you come this close (ground distance), so a slit in a field is noticed.
 @export_range(1.0, 20.0, 0.5) var notice_within: float = 9.0
+## How whole the door must be in your slice before V is offered (0 edge-on, 1 whole), and from how far.
+@export_range(0.05, 0.9, 0.05) var align_from: float = 0.2
+@export_range(2.0, 30.0, 0.5) var align_within: float = 14.0
+@export var align_key: Key = KEY_V
 
 var _player: CharacterBody4D
 var _cam: Camera4D
@@ -70,6 +79,13 @@ var _cool: float = 0.0
 var _near: bool = false
 var _chime: AudioStreamPlayer
 var _used_once: bool = false
+var _tag: Node
+var _tag_anchor: Node4D
+var _tag_text: String = ""
+## Easing the slice to whole: time left, and the angles it goes from and to (xw, zw, yaw).
+var _easing: float = -1.0
+var _from: Vector3
+var _to: Vector3
 
 
 func _later() -> void:
@@ -100,6 +116,17 @@ func _ready() -> void:
 	if _arch != null and _arch.has_method("_make_chime"):
 		_chime.stream = _arch.call("_make_chime")
 	_build_hint()
+	_tag_anchor = Node4D.new()
+	_tag_anchor.name = "AlignAnchor"
+	add_child(_tag_anchor)
+	_tag = WorldTag4D.new()
+	_tag.name = "AlignPrompt"
+	_tag.set("anchor_path", NodePath(".."))
+	if _cam != null:
+		_tag.set("camera_path", _cam.get_path())
+	_tag.set("lift", 10.0)
+	_tag.set("w_range", 12.0)
+	_tag_anchor.add_child(_tag)
 
 
 func rebuild() -> void:
@@ -165,9 +192,11 @@ func _process(delta: float) -> void:
 	_near = near
 	if _arch != null:
 		_arch.set("highlight", lerpf(0.35, 1.0, maxf(wholeness(), 0.6 if near else 0.0)))
+	_ease_slice(delta)
+	_prompt(local)
 	match _phase:
 		0:
-			if _cool <= 0.0 and _player.get("input_enabled") != false and _inside(local) and wholeness() >= whole_at:
+			if _cool <= 0.0 and _player.get("input_enabled") != false and _inside(local):
 				_go()
 		1:
 			_t += delta
@@ -182,6 +211,67 @@ func _process(delta: float) -> void:
 				_player.set("input_enabled", true)
 
 
+## V is offered: near, the door partly whole in your slice, not on the way through.
+func can_align() -> bool:
+	if _phase != 0 or _easing >= 0.0 or _player == null or _player.get("input_enabled") == false:
+		return false
+	var gap: Vector4 = global_position - _player.global_position
+	if Vector2(gap.x, gap.z).length() > align_within or absf(gap.w) > width:
+		return false
+	var whole: float = wholeness()
+	return whole >= align_from and whole < 0.97
+
+
+func _prompt(_local: Vector4) -> void:
+	if _tag == null:
+		return
+	var text: String = ""
+	if can_align():
+		var at: Vector4 = global_position + Vector4(0.0, height + 0.4, 0.0, 0.0)
+		var w: float = WSense.slice_w_at(_cam, at.x, at.y, at.z)
+		at.w = w if w != INF else _player.global_position.w
+		_tag_anchor.global_position = at
+		text = "%s  Align to the door" % OS.get_keycode_string(align_key)
+	if text != _tag_text:
+		_tag_text = text
+		if text == "":
+			_tag.call("clear")
+		else:
+			_tag.call("show_text", text)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if Engine.is_editor_hint():
+		return
+	var key := event as InputEventKey
+	if key == null or not key.pressed or key.echo or key.keycode != align_key or not can_align():
+		return
+	get_viewport().set_input_as_handled()
+	var rig := _player.get_node_or_null("CameraRig") as Node4D
+	if rig == null:
+		return
+	# The rest of the quarter turn, on the side it is already turned to, keeping the heading.
+	_from = SliceAngles.angles(rig.basis)
+	_to = Vector3(PI * 0.5 * (1.0 if _from.x >= 0.0 else -1.0), 0.0, _from.z)
+	_easing = 0.0
+	if _chime != null and _chime.stream != null:
+		_chime.play()
+
+
+func _ease_slice(delta: float) -> void:
+	if _easing < 0.0:
+		return
+	var rig := _player.get_node_or_null("CameraRig") as Node4D
+	if rig == null:
+		_easing = -1.0
+		return
+	_easing = minf(_easing + delta / 0.6, 1.0)
+	var e: float = _easing * _easing * (3.0 - 2.0 * _easing)
+	SliceAngles.tilt(rig, lerpf(_from.x, _to.x, e), lerpf(_from.y, _to.y, e), _from.z)
+	if _easing >= 1.0:
+		_easing = -1.0
+
+
 ## In the doorway: within its depth along z, its width along W, and a little either side of it in x.
 func _inside(local: Vector4) -> bool:
 	return absf(local.z) <= 1.0 and absf(local.w) <= width * 0.5 and absf(local.x) <= 0.9
@@ -189,6 +279,7 @@ func _inside(local: Vector4) -> bool:
 
 func _go() -> void:
 	_phase = 1
+	_easing = -1.0
 	_t = 0.0
 	_used_once = true
 	_player.set("input_enabled", false)

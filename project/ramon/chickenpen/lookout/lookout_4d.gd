@@ -784,8 +784,9 @@ func can_board() -> bool:
 	if world == null or not world.is_visible_in_tree():
 		return false
 	# Locked until found (Ramon, 9 Oct): found is the V align on it (discovery/pen_balloon_finder_4d.gd). Until then
-	# it was the story's gate, the owl and nine stars (story.balloon_open).
-	return bool(BALLOON.found)
+	# it was the story's gate, the owl and nine stars (story.balloon_open). And paid for since 10 Oct: 2 azoth to
+	# Tamsin by the basket buys one ride (BALLOON.ticket, used up when it takes off).
+	return bool(BALLOON.found) and bool(BALLOON.ticket)
 
 
 func _near_basket() -> bool:

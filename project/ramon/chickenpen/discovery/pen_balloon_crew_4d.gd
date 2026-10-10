@@ -27,6 +27,19 @@ const Mats := preload("res://ramon/CreationLab/LabKit/lab_materials.gd")
 @export var fire_colour: Color = Color(1.0, 0.58, 0.28)
 @export_range(1.0, 15.0, 0.5, "suffix:m") var fire_reach: float = 6.0
 @export_range(0.0, 6.0, 0.05) var fire_energy: float = 1.4
+## THE SECOND TAMSIN (Ramon, 10 Oct: "Place a second instance of the same NPC beside the balloon, visible when the
+## player aligns with the balloon's W-slice. It doesn't matter that the same character appears in two places. This
+## is a 4D world, after all."): standing by the basket, no log, no fire.
+@export var seated: bool = true:
+	set(v):
+		seated = v
+		if is_node_ready():
+			rebuild()
+@export var with_fire: bool = true:
+	set(v):
+		with_fire = v
+		if is_node_ready():
+			rebuild()
 
 ## Where the fire is, in front of her.
 const FIRE := Vector4(0.0, 0.0, 1.45, 0.0)
@@ -52,9 +65,31 @@ func rebuild() -> void:
 			child.free()
 	_flames.clear()
 	_light = null
-	_seat()
+	if seated:
+		_seat()
 	_figure()
-	_fire()
+	if with_fire:
+		_fire()
+	_solid()
+	# The twin by the basket stands at the balloon's W: out of the projection (a character is some thirty meshes, and the
+	# projection counts each twice against the instance limit).
+	if not seated:
+		for mi in find_children("*", "MeshInstance4D", true, false):
+			mi.set("allow_projection", false)
+
+
+## You walk round her, not through her (Ramon, 10 Oct: "I'm also able to walk straight through him"): one box for her
+## (and her log), as deep in W as she is; the fire stays walkable, so the end of the path by it is never blocked.
+func _solid() -> void:
+	var body := StaticBody4D.new()
+	body.name = "Solid"
+	_part(body)
+	var holder := CollisionShape4D.new()
+	var shape := BoxShape4D.new()
+	shape.size = Vector4(1.3, 1.4, 0.75, 0.6) if seated else Vector4(0.6, 1.8, 0.5, 0.5)
+	holder.shape = shape
+	holder.position = Vector4(0.0, shape.size.y * 0.5, -0.02 if seated else 0.0, 0.0)
+	body.add_child(holder)
 
 
 func _part(node: Node, parent: Node = null) -> void:
@@ -104,7 +139,7 @@ func _figure() -> void:
 	figure.set("eye_spacing", 0.066)
 	figure.set("eye_height", 0.022)
 	holder.add_child(figure)
-	figure.position = Vector4(0.0, -SIT_DROP, 0.12, 0.0)
+	figure.position = Vector4(0.0, -SIT_DROP, 0.12, 0.0) if seated else Vector4.ZERO
 	for tag in ["L", "R"]:
 		_paint(figure, "Hip%s/Thigh%s" % [tag, tag], trousers)
 		_paint(figure, "Hip%s/Knee%s/Shin%s" % [tag, tag, tag], trousers)
@@ -119,6 +154,8 @@ func _figure() -> void:
 	if torso != null:
 		_box(torso, "Scarf", Vector4(0.0, 0.2, 0.0, 0.0), Vector4(0.40, 0.07, 0.27, 0.37), scarf)
 		_box(torso, "ScarfEnd", Vector4(0.1, 0.06, 0.14, 0.0), Vector4(0.07, 0.22, 0.03, 0.08), scarf)
+	if not seated:
+		return
 	# Seated: thighs forward, shins back down, boots flat; arms out to the fire, a slight lean in.
 	for side in ["left", "right"]:
 		var hip: Node4D = figure.get("hip_%s" % side) as Node4D

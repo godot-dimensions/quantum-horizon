@@ -149,8 +149,14 @@ var _dev_look: bool = false
 ## waits for it (lookout_4d.gd can_board). The ride itself is untouched: take-off eases the hover offset back onto the
 ## rail over its first seconds, and after landing it moors at W 0 like before.
 static var found: bool = false
+## A RIDE PAID FOR (Ramon, 10 Oct, item 20: "for just 2 Azoth, I'll take you for a ride"): set when you pay Tamsin by
+## the basket (discovery/pen_balloon_crew_talk_4d.gd), used up when the ride starts (board). Boarding by B or F waits
+## for it (lookout_4d.gd can_board).
+static var ticket: bool = false
 @export_range(0.0, 12.0, 0.5, "suffix:m") var park_w: float = 5.0
-@export_range(0.0, 8.0, 0.5, "suffix:m") var park_rise: float = 3.5
+## How high it hovers while parked in W. 0 since 10 Oct (Ramon, item 18: "I want it grounded ... its basket/base rests
+## naturally on the terrain", on a patch of sand at its W: World/BalloonCrew/LandingSand); it hovered 3.5 m up before.
+@export_range(0.0, 8.0, 0.5, "suffix:m") var park_rise: float = 0.0
 ## Hovering in W until the first ride.
 var parked: bool = true
 var _park_from := Vector4.ZERO
@@ -491,6 +497,7 @@ func hide_again() -> void:
 	if riding:
 		return
 	found = false
+	ticket = false
 	parked = true
 	_park_from = Vector4.ZERO
 	_place_mooring()
@@ -506,6 +513,7 @@ func board() -> void:
 	if riding or not ready_now or lookout == null:
 		return
 	riding = true
+	ticket = false
 	ride_time = 0.0
 	lift = 0.0
 	branch = 1.0
@@ -663,10 +671,11 @@ func _path(t: float) -> Vector4:
 
 func _land() -> void:
 	riding = false
-	position = _moor
 	basis = Projection.IDENTITY
-	# Moored at the farm's W from now on, the stake and its rope back with it.
-	parked = false
+	# Back on its sand, 5 m ana, where Tamsin's twin sells the next ride (Ramon, 10 Oct, items 18 and 20); you step
+	# out beside it at its W. Until 10 Oct it moored at the farm's W after the first ride.
+	parked = true
+	position = _moor + Vector4(0.0, park_rise, 0.0, park_w)
 	_park_from = Vector4.ZERO
 	_place_mooring()
 	for t in _tether:
@@ -675,7 +684,7 @@ func _land() -> void:
 		r.visible = true
 	_basket_body.process_mode = Node.PROCESS_MODE_INHERIT
 	var station: Node = lookout.get("station")
-	var step_out: Vector4 = _moor + Vector4(1.6, 0.05, 1.2, 0.0)
+	var step_out: Vector4 = _moor + Vector4(1.6, 0.05, 1.2, park_w)
 	var tower: Node4D = lookout.get("tower")
 	var facing: Vector4 = Vector4(0.0, 0.0, -1.0, 0.0)
 	if tower != null:
