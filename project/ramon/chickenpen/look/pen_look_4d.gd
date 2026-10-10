@@ -328,7 +328,7 @@ func set_dev(on: bool) -> void:
 	dev = on
 	session = "dev" if on else "art"
 	_update()
-	_say(("Dev look   " if on else "Art look   ") + OS.get_keycode_string(key) + ("   (art held: " + _hold + ")" if on and _hold != "" else ""))
+	_say(("Dev Mode   " if on else "Art Mode   ") + OS.get_keycode_string(key) + ("   (art held: " + _hold + ")" if on and _hold != "" else ""))
 	look_changed.emit(on)
 
 

@@ -260,6 +260,9 @@ func _build_balloon() -> void:
 	balloon.position = balloon_mooring
 	balloon.set("ride_basis", site_basis)
 	room.get_node("World").add_child(balloon)
+	# Up from the start since 9 Oct (discovery, easter egg 2): no longer held back for the story's photos, but hidden
+	# off in W until it is found (balloon_4d.gd parked, discovery/pen_balloon_finder_4d.gd).
+	balloon.call("set_ready", true, true)
 	_board = Node4D.new()
 	_board.name = "BalloonBoard"
 	room.get_node("World").add_child(_board)
@@ -515,9 +518,10 @@ func on_journal_wiped() -> void:
 	show_balloon(false)
 
 
-func show_balloon(on: bool) -> void:
+func show_balloon(_on: bool) -> void:
+	# Always up since 9 Oct: what keeps it from you now is its place in W (balloon_4d.gd parked), not its being there.
 	if balloon != null:
-		balloon.call("set_ready", on)
+		balloon.call("set_ready", true)
 
 
 ## The heron's payoff, the first good photo of it: it lifts off, slowly - the whole farm
@@ -779,7 +783,9 @@ func can_board() -> bool:
 	var world := room.get_node_or_null("World") as Node4D
 	if world == null or not world.is_visible_in_tree():
 		return false
-	return bool(story.call("balloon_open"))
+	# Locked until found (Ramon, 9 Oct): found is the V align on it (discovery/pen_balloon_finder_4d.gd). Until then
+	# it was the story's gate, the owl and nine stars (story.balloon_open).
+	return bool(BALLOON.found)
 
 
 func _near_basket() -> bool:
@@ -810,9 +816,12 @@ func _process(delta: float) -> void:
 		_slow -= delta / maxf(Engine.time_scale, 0.01)
 		if _slow <= 0.0:
 			Engine.time_scale = 1.0
+	# The boarding point goes with the basket, which hovers off in W until its first ride (balloon_4d.gd parked).
+	if _board != null and balloon != null and not bool(balloon.get("riding")):
+		_board.global_position = balloon.global_position + Vector4(0.0, 1.6 - float(balloon.get("park_rise")) * (1.0 if bool(balloon.get("parked")) else 0.0), 0.0, 0.0)
 	if _board_tag != null:
 		var board_text: String = ""
-		if can_board() and _at_lookout():
+		if can_board() and (_at_lookout() or _near_basket()):
 			board_text = ("%s or B  board the balloon" % _catch_key()) if _near_basket() else "Wren's balloon  ·  B to go up"
 		_board_tag.fade_to = 60.0
 		_board_tag.fade_from = 45.0

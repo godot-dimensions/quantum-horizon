@@ -1,4 +1,4 @@
-[gd_scene load_steps=482 format=4 uid="uid://bcgq82wcbp0g0"]
+[gd_scene load_steps=492 format=4 uid="uid://bcgq82wcbp0g0"]
 
 [ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/mountains_even.res" id="2_j4g5o"]
 [ext_resource type="Script" uid="uid://dcwu1jihptwy3" path="res://ramon/chickenpen/scripts/loft_rig_4d.gd" id="7_cgmor"]
@@ -107,6 +107,16 @@
 [ext_resource type="PackedScene" path="res://ramon/Model/wolf.tscn" id="wolf_scene"]
 [ext_resource type="Script" uid="uid://dvw4uenv6wx3h" path="res://ramon/WTools/exploder/w_exploder_4d.gd" id="w_exploder"]
 [ext_resource type="Resource" path="res://ramon/WTools/exploder/presets/turnable_forest.tres" id="w_forest"]
+[ext_resource type="Script" path="res://ramon/chickenpen/discovery/pen_w_guide_4d.gd" id="disc_guide"]
+[ext_resource type="Script" path="res://ramon/chickenpen/discovery/pen_kata_cache_4d.gd" id="disc_cache"]
+[ext_resource type="Script" path="res://ramon/chickenpen/discovery/pen_w_door_4d.gd" id="disc_door"]
+[ext_resource type="Script" path="res://ramon/chickenpen/discovery/pen_balloon_finder_4d.gd" id="disc_finder"]
+[ext_resource type="Script" path="res://ramon/chickenpen/discovery/pen_balloon_crew_4d.gd" id="disc_crew"]
+[ext_resource type="Script" path="res://ramon/chickenpen/discovery/pen_balloon_crew_talk_4d.gd" id="disc_crew_talk"]
+[ext_resource type="Script" path="res://ramon/chickenpen/discovery/pen_zeppelins_4d.gd" id="disc_zeppelins"]
+[ext_resource type="Script" path="res://ramon/chickenpen/discovery/dream_shifter/pen_dream_shifter_4d.gd" id="disc_shifter"]
+[ext_resource type="Script" path="res://ramon/chickenpen/discovery/dream_shifter/pen_dream_shifter_talk_4d.gd" id="disc_shifter_talk"]
+[ext_resource type="Script" path="res://ramon/chickenpen/discovery/dream_shifter/pen_look_guide_4d.gd" id="disc_look_guide"]
 
 [sub_resource type="GradientSkyMaterial4D" id="sky"]
 shader_parameter/horizon_color = Color(0.98, 0.71, 0.35, 1)
@@ -4674,7 +4684,7 @@ script = ExtResource("pen_paths")
 
 [node name="Look" type="Node" parent="Systems"]
 script = ExtResource("pen_look")
-orange_units = PackedStringArray("Range", "Pen", "EggCamp", "TrymCabin", "Shed")
+orange_units = PackedStringArray("Range", "Pen", "EggCamp", "TrymCabin", "Shed", "DreamShifter")
 metadata/what = "The pen's two looks: DEV (white floor, the lab's sky, path arrows, blockouts) and ART, F8 or the Look row on the left panel (look/pen_look_4d.gd, PenLayout/PLAN_DEV_LOOK.md)."
 
 [node name="NpcMarkers" type="Node" parent="Systems"]
@@ -5127,3 +5137,190 @@ door_at = Vector4(1, 0, 10.7, 0)
 
 [node name="Cinematics" type="Node" parent="."]
 script = ExtResource("pen_cinematics")
+
+[node name="KataCache" type="Node4D" parent="World"]
+position = Vector4(25, 0, -32, 0)
+script = ExtResource("disc_cache")
+metadata/what = "Easter egg 1 (discovery, 9 Oct; follow_up/pen_discovery_plan.md): a small cave in the quietest corner of the valley whose mouth is open only ana of W 5.5; the chest of 10 azoth at W 7.5. The dotted path from the camp leads to it through W. Move this node to move it all."
+
+[node name="WDoor" type="Node4D" parent="World"]
+position = Vector4(45, 0, 2, 0)
+script = ExtResource("disc_door")
+metadata/what = "Easter egg 3 (discovery, 9 Oct): Trym's portal arch, thin and turned a quarter into W. A glowing slit in the farm's slice, a whole door with the slice turned sideways; through it you come out on top of the Watchstone."
+
+[node name="Zeppelins" type="Node4D" parent="World"]
+script = ExtResource("disc_zeppelins")
+metadata/what = "The airship fleet (discovery, 9 Oct, Ramon's mid-build idea): one airship in the farm's slice, four more 9 m ana, far out to the right of the Watchstone. Budget: three merged meshes a ship, kept out of the projection."
+
+[node name="BalloonCrew" type="Node4D" parent="World"]
+position = Vector4(-29.2, 0, -30.4, 0)
+metadata/what = "Easter egg 2 (discovery, 9 Oct): where the balloon was moored, a fire and the balloon's ground crew sitting at it. The balloon hovers 5 m ana and 3.5 m up of its stake until found (V align)."
+
+[node name="Crew" type="Node4D" parent="World/BalloonCrew"]
+script = ExtResource("disc_crew")
+
+[node name="CrewHead" type="Node4D" parent="World/BalloonCrew"]
+position = Vector4(0, 1.05, 0.12, 0)
+
+[node name="DreamShifter" type="Node4D" parent="World"]
+position = Vector4(21.4, 0, 29, 0)
+script = ExtResource("disc_shifter")
+metadata/what = "The Dream Shifter (9 Oct, Ramon's dev/art onboarding brief; follow_up/pen_dream_shifter.md): a stumpy marble column with a crystal 24-cell over it, on a short spur off the first road (start to Trym's house). F talks; it shifts the world between the dev and art looks in front of you, then the explainer (Systems/LookGuide)."
+
+[node name="Head" type="Node4D" parent="World/DreamShifter"]
+position = Vector4(0, 2.45, 0, 0)
+
+[node name="WHints" type="Node4D" parent="World"]
+metadata/what = "The W guide's spots along the path (discovery/pen_w_guide_4d.gd): each a marker in the group w_hint, with its skill, reach, target and line as metadata. Move a marker to move where its hint can fire."
+
+[node name="TrymShelf" type="Node4D" parent="World/WHints" groups=["w_hint"]]
+position = Vector4(25.6, 0, 45.2, 0)
+metadata/w_hint_key = "trym_shelf"
+metadata/w_hint_skill = "step"
+metadata/w_hint_radius = 2.8
+metadata/w_hint_done = "moved_w"
+metadata/w_hint_linger = 3.0
+metadata/w_hint_line = "Step through W. The desk and the shelf change as you go."
+
+[node name="CaveRoad" type="Node4D" parent="World/WHints" groups=["w_hint"]]
+position = Vector4(7.33, 0, 34.6, 0)
+metadata/w_hint_key = "cave_road"
+metadata/w_hint_skill = "step"
+metadata/w_hint_radius = 4.5
+metadata/w_hint_target = NodePath("../../Cave/DoorSpot")
+metadata/w_hint_reach = 1.5
+metadata/w_hint_done = "in_slice"
+metadata/w_hint_linger = 2.0
+metadata/w_hint_line = "The road climbs ana. Step through W to follow it."
+
+[node name="GateRoad" type="Node4D" parent="World/WHints" groups=["w_hint"]]
+position = Vector4(-11.3, 0, 18.5, 0)
+metadata/w_hint_key = "gate_road"
+metadata/w_hint_skill = "turn_forward"
+metadata/w_hint_radius = 6.0
+metadata/w_hint_target = NodePath("../../TownWall")
+metadata/w_hint_offset = Vector4(0, 1.7, 0, 0)
+metadata/w_hint_reach = 2.0
+metadata/w_hint_done = "in_slice"
+metadata/w_hint_linger = 3.0
+metadata/w_hint_line = "The path dives into W. Turn your slice forward to see where it goes."
+
+[node name="CampRoad" type="Node4D" parent="World/WHints" groups=["w_hint"]]
+position = Vector4(2, 0, -4, 0)
+metadata/w_hint_key = "camp_road"
+metadata/w_hint_skill = "turn_side"
+metadata/w_hint_radius = 7.0
+metadata/w_hint_target = NodePath("../../EggCamp")
+metadata/w_hint_reach = 0.8
+metadata/w_hint_done = "in_slice"
+metadata/w_hint_linger = 3.0
+metadata/w_hint_line = "Turn your slice sideways until most of the camp shows, then press V."
+
+[node name="BalloonCrewTag" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("pen_world_tag")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../World/BalloonCrew/CrewHead")
+lift = 12.0
+
+[node name="BalloonCrewBox" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("dlg_box")
+choice_side = 1
+choice_width = 470.0
+choice_gap = 10.0
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../World/BalloonCrew/CrewHead")
+over_head_width = 470.0
+name_size = 17
+text_size = 20
+choice_size = 19
+
+[node name="ShifterTag" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("pen_world_tag")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../World/DreamShifter/Head")
+lift = 12.0
+
+[node name="ShifterBox" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("dlg_box")
+choice_side = 1
+choice_width = 470.0
+choice_gap = 10.0
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../World/DreamShifter/Head")
+over_head_width = 470.0
+name_size = 17
+text_size = 20
+choice_size = 19
+
+[node name="WGuide" type="Node" parent="Systems"]
+script = ExtResource("disc_guide")
+
+[node name="BalloonFinder" type="Node" parent="Systems"]
+script = ExtResource("disc_finder")
+
+[node name="BalloonCrewTalk" type="Node" parent="Systems"]
+script = ExtResource("dlg_talk")
+box_path = NodePath("../../UI/BalloonCrewBox")
+
+[node name="BalloonCrewDriver" type="Node" parent="Systems"]
+script = ExtResource("disc_crew_talk")
+player_path = NodePath("../../Player")
+character_path = NodePath("../../Player")
+catcher_path = NodePath("../../Player/Catcher")
+dialogue_path = NodePath("../BalloonCrewTalk")
+tag_path = NodePath("../../UI/BalloonCrewTag")
+camera_rig_path = NodePath("../../Player/CameraRig")
+camera_marker_path = NodePath("../../World/TalkCam")
+camera_target_path = NodePath("../../World/BalloonCrew/CrewHead")
+two_shot = true
+main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/BalloonCrewBox")
+hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint"), NodePath("../../UI/Objective"), NodePath("../../UI/Progress"), NodePath("../../UI/Debug"), NodePath("../../UI/CameraPicker"), NodePath("../../UI/Quests")])
+talk_range = 2.6
+two_shot_side = 1.9
+two_shot_back = 1.7
+two_shot_rise = 0.35
+two_shot_seconds = 2.5
+
+[node name="LookGuide" type="Node" parent="Systems"]
+script = ExtResource("disc_look_guide")
+
+[node name="ShifterTalk" type="Node" parent="Systems"]
+script = ExtResource("dlg_talk")
+box_path = NodePath("../../UI/ShifterBox")
+
+[node name="ShifterDriver" type="Node" parent="Systems"]
+script = ExtResource("disc_shifter_talk")
+player_path = NodePath("../../Player")
+character_path = NodePath("../../Player")
+catcher_path = NodePath("../../Player/Catcher")
+dialogue_path = NodePath("../ShifterTalk")
+tag_path = NodePath("../../UI/ShifterTag")
+camera_rig_path = NodePath("../../Player/CameraRig")
+camera_marker_path = NodePath("../../World/TalkCam")
+camera_target_path = NodePath("../../World/DreamShifter/Head")
+two_shot = true
+main_camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/ShifterBox")
+hide_while_talking = Array[NodePath]([NodePath("../../UI/SlicePlane"), NodePath("../../UI/Locator"), NodePath("../../UI/Controls"), NodePath("../../UI/Inventory"), NodePath("../../UI/Hint"), NodePath("../../UI/Objective"), NodePath("../../UI/Progress"), NodePath("../../UI/Debug"), NodePath("../../UI/CameraPicker"), NodePath("../../UI/Quests")])
+talk_range = 2.8
+two_shot_side = 1.9
+two_shot_back = 1.7
+two_shot_rise = 0.35
+two_shot_seconds = 2.5

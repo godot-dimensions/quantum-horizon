@@ -198,12 +198,71 @@ nodes = [{
 "pos": Vector4(-11.556, 0, 10.46, -13.13),
 "state": "arrival",
 "target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 21,
+"kind": "bend",
+"pos": Vector4(13, 0, -14, 1),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 22,
+"kind": "bend",
+"pos": Vector4(19.5, 0, -23, 4.5),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 23,
+"kind": "bend",
+"pos": Vector4(24.6, 0, -28, 7.5),
+"state": "arrival",
+"target": ""
+}, {
+"anchor": true,
+"approach": Vector2(1, 0),
+"band": 1.6,
+"frame": "none",
+"id": 24,
+"kind": "destination",
+"pos": Vector4(22.5, 0, 29, 0),
+"size": 0.75,
+"state": "available",
+"target": "DreamShifter"
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 25,
+"kind": "junction",
+"pos": Vector4(24.9, 0, 29, 0),
+"state": "arrival",
+"target": ""
 }]
 edges = [{
 "band": 2.4,
 "from": 1,
 "priority": "primary",
+"to": 25,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 25,
+"priority": "primary",
 "to": 2,
+"w_mode": "here"
+}, {
+"band": 1.6,
+"from": 25,
+"priority": "primary",
+"to": 24,
 "w_mode": "here"
 }, {
 "band": 2.4,
@@ -313,5 +372,23 @@ edges = [{
 "priority": "secondary",
 "to": 18,
 "w_mode": "here"
+}, {
+"band": 2.4,
+"from": 14,
+"priority": "secondary",
+"to": 21,
+"w_mode": "follow"
+}, {
+"band": 2.4,
+"from": 21,
+"priority": "secondary",
+"to": 22,
+"w_mode": "follow"
+}, {
+"band": 2.4,
+"from": 22,
+"priority": "secondary",
+"to": 23,
+"w_mode": "follow"
 }]
-next_id = 21
+next_id = 26

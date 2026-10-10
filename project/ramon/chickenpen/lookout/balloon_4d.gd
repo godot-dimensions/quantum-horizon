@@ -141,6 +141,23 @@ var _hurry: float = 0.0
 var _t: float = 0.0
 var _dev_look: bool = false
 
+## HIDDEN IN W UNTIL FOUND (discovery, 9 Oct 2026; follow_up/pen_discovery_plan.md, easter egg 2). Ramon: "Remove the
+## balloon from the default W-slice. Place it somewhere else in W ... locked until found, but be forgiving". Until its
+## first ride it hovers [member park_rise] up and [member park_w] ana of its stake, tethered: its envelope (3.55 m
+## round in W too) is clear of the farm's slice, and the only thing of it there is the stake and the first piece of
+## its rope, climbing and stopping in mid-air. Found is the V align (discovery/pen_balloon_finder_4d.gd); boarding
+## waits for it (lookout_4d.gd can_board). The ride itself is untouched: take-off eases the hover offset back onto the
+## rail over its first seconds, and after landing it moors at W 0 like before.
+static var found: bool = false
+@export_range(0.0, 12.0, 0.5, "suffix:m") var park_w: float = 5.0
+@export_range(0.0, 8.0, 0.5, "suffix:m") var park_rise: float = 3.5
+## Hovering in W until the first ride.
+var parked: bool = true
+var _park_from := Vector4.ZERO
+var _stake: Node4D
+var _rope: Node4D
+const STAKE := Vector4(2.6, 0.0, 1.4, 0.0)
+
 
 func _ready() -> void:
 	rebuild()
@@ -391,11 +408,28 @@ func _build_burner_and_ropes() -> void:
 
 func _build_mooring() -> void:
 	# A stake, a tether to it, and sandbags on the rim.
-	var stake := Vector4(2.6, 0.0, 1.4, 0.0)
-	_tether.append(_box(self, "Stake", stake + Vector4(0, 0.25, 0, 0), Vector4(0.08, 0.5, 0.08, 0.3), Color(0.3, 0.22, 0.14)))
-	_tether.append(_strut(self, "Tether", Vector4(0.65, 0.9, 0.3, 0.0), stake + Vector4(0, 0.4, 0, 0), 0.03, 0.25, Color(0.55, 0.48, 0.36)))
+	_stake = _box(self, "Stake", STAKE + Vector4(0, 0.25, 0, 0), Vector4(0.08, 0.5, 0.08, 0.3), Color(0.3, 0.22, 0.14))
+	_tether.append(_stake)
+	_rope = null
+	_place_mooring()
 	for k in 3:
 		_tether.append(_box(self, "Sandbag%d" % k, Vector4(-0.72, 0.55 + 0.0 * float(k), -0.4 + 0.4 * float(k), 0.0), Vector4(0.12, 0.22, 0.16, 0.2), Color(0.66, 0.58, 0.42)))
+
+
+## The stake stays in the ground where the balloon was moored (at the farm's W) while the balloon hovers off in W, so
+## the tether runs from the basket's rim down through W to it: in the farm's slice only its first piece shows, rising
+## from the stake and ending in the air.
+func _place_mooring() -> void:
+	if _stake == null:
+		return
+	var off := Vector4(0.0, -park_rise, 0.0, -park_w) if parked and not riding else Vector4.ZERO
+	_stake.position = STAKE + Vector4(0, 0.25, 0, 0) + off
+	if _rope != null and is_instance_valid(_rope):
+		_tether.erase(_rope)
+		remove_child(_rope)
+		_rope.free()
+	_rope = _strut(self, "Tether", Vector4(0.65, 0.9, 0.3, 0.0), STAKE + Vector4(0, 0.4, 0, 0) + off, 0.03, 0.25, Color(0.55, 0.48, 0.36))
+	_tether.append(_rope)
 
 
 func _box(parent: Node, part: String, at: Vector4, size: Vector4, colour: Color, basis: Projection = Projection.IDENTITY) -> MeshInstance4D:
@@ -452,6 +486,21 @@ func _apply_inflation() -> void:
 
 # --- The ride ---------------------------------------------------------------------------------
 
+## Hidden in W again, for the next visitor (Ctrl+R, through discovery/pen_balloon_finder_4d.gd reset).
+func hide_again() -> void:
+	if riding:
+		return
+	found = false
+	parked = true
+	_park_from = Vector4.ZERO
+	_place_mooring()
+
+
+## Where the middle of the envelope is now (for measuring how much of it your slice shows).
+func envelope_centre() -> Vector4:
+	return global_position + Vector4(0.0, 3.0 + 4.3, 0.0, 0.0)
+
+
 ## Climb in: the camera to the basket, the burner lit, the tether off.
 func board() -> void:
 	if riding or not ready_now or lookout == null:
@@ -463,7 +512,8 @@ func board() -> void:
 	forked = false
 	_said = 0
 	_hurry = 0.0
-	position = _moor
+	# From wherever it hovers (off in W until its first ride), eased onto the rail over the first seconds (_ride).
+	_park_from = position - _moor
 	for t in _tether:
 		t.visible = false
 	for r in _rods:
@@ -508,6 +558,11 @@ func _process(delta: float) -> void:
 		_hurry -= delta
 	if riding:
 		_ride(delta)
+	elif parked:
+		# Hovering off in W on its tether, held still: the stake is one of its parts, so a sway would drag the stake
+		# through the ground.
+		position = _moor + Vector4(0.0, park_rise, 0.0, park_w)
+		basis = Projection.IDENTITY
 	_burn = maxf(_burn - delta, 0.0)
 	var lit: bool = _burn > 0.0
 	for f in _flame:
@@ -547,6 +602,8 @@ func _ride(delta: float) -> void:
 	if ground != null:
 		floor_y = minf(on_rail.y, float(ground.call("height", on_rail.x, on_rail.z)) + ground_clearance)
 	position = on_rail + Vector4(0.0, maxf(lift * allowed, floor_y - on_rail.y), 0.0, 0.0)
+	# Taking off from its hover in W (until its first ride): that offset eased away over the first eight seconds.
+	position += _park_from * (1.0 - smoothstep(0.0, 8.0, ride_time))
 	# A slow turn, as a basket under a balloon always has.
 	basis = Basis4D.from_zx(sin(ride_time * 0.05) * 0.8)
 	# Burner bursts while climbing.
@@ -608,6 +665,10 @@ func _land() -> void:
 	riding = false
 	position = _moor
 	basis = Projection.IDENTITY
+	# Moored at the farm's W from now on, the stake and its rope back with it.
+	parked = false
+	_park_from = Vector4.ZERO
+	_place_mooring()
 	for t in _tether:
 		t.visible = true
 	for r in _rods:

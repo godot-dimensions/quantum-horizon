@@ -144,6 +144,12 @@ func rebuild() -> void:
 				_box(self, "DeskLeg%s%s%s" % ["P" if sx > 0.0 else "N", "P" if sz > 0.0 else "N", "P" if sw > 0.0 else "N"],
 					Vector4(sx * 0.46, desk_top * 0.5, sz * 0.22, sw * 0.46),
 					Vector3(leg, desk_top, leg), timber, leg)
+			# And four at W 0, as the desk had before (0.07 square, 0.45 deep in W), so the top does not float
+			# in the farm's own slice: the corner legs sit at W 0.41 to 0.51, and the W 0 slice cut none of them
+			# (Ramon, 9 Oct: "put the legs there yourself"). Step ana or kata and the corner legs take over.
+			_box(self, "DeskLeg%s%sM" % ["P" if sx > 0.0 else "N", "P" if sz > 0.0 else "N"],
+				Vector4(sx * 0.46, desk_top * 0.5, sz * 0.22, 0.0),
+				Vector3(0.07, desk_top, 0.07), timber, 0.45)
 	_box(self, "Stool", Vector4(0.0, seat_height * 0.5, seat_offset, 0.0),
 		Vector3(0.40, seat_height, 0.40), timber)
 
