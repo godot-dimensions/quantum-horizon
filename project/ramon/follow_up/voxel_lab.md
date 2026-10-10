@@ -219,7 +219,7 @@ drawable) until 9 Oct; now it builds once, behind the board, and nothing builds 
 11. **The grass's ground** is baked from the island's chunk meshes under each patch (grass material only)
    on a worker thread after the island is built; the patches are picked off the bird's height map. If the
    island changes (BUILT_RADIUS, the generator), the patches move with it.
-12. **Green to desert or lava builds the island again (about 8 s, behind the board)**; desert to lava is a
+12. **Green to desert or lava builds the island again (6.4 s measured, behind the board)**; desert to lava is a
    repaint. The land is the same in all three, only the generator's sea differs (empty under our water, or
    filled as the clay pan or the lava). Making every switch instant means drawing those two as a plane like
    our water: about half a day, written up in `PLAN_ROUND6.md`. Keeping two islands built doubles the 2.4 GB.

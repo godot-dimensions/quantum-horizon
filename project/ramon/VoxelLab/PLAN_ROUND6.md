@@ -73,7 +73,7 @@ and bird), tree controls and the lighthouse, the desert and the lava, then perfo
 - **One world at a time already.** A switch frees the old landscape before the new one builds, so memory
   never holds two. The green island is about 656 chunks, 2.0 million tetrahedra and about 2.4 GB of video
   memory.
-- **Green to desert or lava (and back): built again, about 8 s behind the board.** The land's shape is the
+- **Green to desert or lava (and back): built again, 6.4 s behind the board (measured, the desert).** The land's shape is the
   same in all three. What differs is the generator's sea: on the green island it is empty (our moving water
   is a separate mesh), on the other two it is filled with voxels (the clay pan, the lava). The voxel world
   cannot change that without building again. The ground is then mapped again (0.2 s, on a worker) and the
