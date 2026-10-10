@@ -40,7 +40,7 @@ const Loft := preload("res://ramon/chickenpen/scripts/loft_builder_4d.gd")
 const MM := 0.0105
 ## Where the mesh's origin is, in the hand's own millimetres (left hand): the middle of the
 ## palm, so a turn in any plane turns the hand about itself rather than about its wrist.
-const CENTRE := Vector2(-8.0, 70.0)
+const CENTRE := Vector2(-8.0, 62.0)
 
 ## Round enough to read as flesh from the house, coarse enough to stay cheap: every
 ## tetrahedron costs about 1.25 KB of video memory whether it is on screen or not.
@@ -73,6 +73,12 @@ const FINGERS := [
 		"radii": [9.0, 9.0, 8.2, 8.0, 7.3, 6.9, 6.2], "flex": [8.0, 18.0, 12.0]},
 ]
 
+## How much of its measured height the palm keeps, from the wrist up (Ramon, 10 Oct: "make the
+## height of the entire palm a bit shorter"). Applied to everything authored above the wrist -
+## the palm, the ball of the thumb, the knuckles - so the fingers and the thumb keep their
+## lengths and move down with the knuckle line (see _up).
+const PALM_LENGTH := 0.88
+
 ## The palm, wrist to knuckles: [centre (mm), half-width, depth as a share of it, squareness].
 ## Nearly square, as the artists' rule has it: as wide at the heel of the hand as at the
 ## knuckles, narrowing to the wrist only below that. Its lower end is inside the cuff, and
@@ -85,8 +91,10 @@ const PALM := [
 	[Vector3(-1.0, 24.0, 0.5), 39.0, 0.44, 0.25],
 	[Vector3(-2.0, 48.0, 0.5), 41.0, 0.37, 0.3],
 	[Vector3(-3.0, 72.0, 0.0), 42.0, 0.35, 0.3],
-	[Vector3(-4.0, 87.0, 0.0), 39.0, 0.36, 0.25],
-	[Vector3(-3.0, 96.0, 0.0), 26.0, 0.50, 0.1],
+	# The cap: a span long enough, and a narrowing gentle enough, that shortening the palm
+	# cannot fold it (at 7.9 mm and 39 to 26 mm wide it did, 9 of 4,928 tetrahedra).
+	[Vector3(-4.0, 85.0, 0.0), 38.5, 0.36, 0.25],
+	[Vector3(-3.0, 97.0, 0.0), 29.0, 0.48, 0.1],
 ]
 
 ## The ball of the thumb: low on the palm, on the thumb side, standing out on the palm side, a
@@ -168,8 +176,14 @@ static func _section(mm: Vector3, radius: float, depth: float, side: float, squa
 static func _palm_sections(side: float) -> Array:
 	var out: Array = []
 	for p in PALM:
-		out.append(_section(p[0], p[1], p[2], side, p[3]))
+		out.append(_section(_up(p[0]), p[1], p[2], side, p[3]))
 	return out
+
+
+## [param mm] with the palm's height shortened by PALM_LENGTH: above the wrist crease (y = 0),
+## heights are scaled; the wrist and the cuff below it are left where they are.
+static func _up(mm: Vector3) -> Vector3:
+	return Vector3(mm.x, mm.y * PALM_LENGTH if mm.y > 0.0 else mm.y, mm.z)
 
 
 ## A finger from its root, sunk inside the palm, to its tip. Each joint bends the rest of the
@@ -180,7 +194,7 @@ static func _finger_sections(finger: Dictionary, side: float) -> Array:
 	var bones: Array = finger["bones"]
 	var radii: Array = finger["radii"]
 	var flex: Array = finger["flex"]
-	var mcp := Vector3(finger["mcp"].x, finger["mcp"].y, 0.0)
+	var mcp := _up(Vector3(finger["mcp"].x, finger["mcp"].y, 0.0))
 	var d1: Vector3 = _bent(flat, flex[0])
 	var d2: Vector3 = _bent(flat, flex[0] + flex[1])
 	var d3: Vector3 = _bent(flat, flex[0] + flex[1] + flex[2])
@@ -209,10 +223,11 @@ static func _tip(joint: Vector3, along: Vector3, length: float, radius: float, s
 ## indicator colour, the loft blending the two over the span between them.
 static func _thumb_sections(side: float) -> Array:
 	var out: Array = _chain(THENAR, side, SKIN)
+	var mcp: Vector3 = _up(THUMB_MCP)
 	var proximal: Vector3 = THUMB_PROXIMAL_DIR.normalized()
-	var ip: Vector3 = THUMB_MCP + proximal * THUMB_PROXIMAL
-	out.append(_section(THUMB_MCP, THUMB_RADII[0], FINGER_DEPTH, side, 0.0, INDICATOR))
-	out.append(_section(THUMB_MCP + proximal * THUMB_PROXIMAL * 0.5, THUMB_RADII[1], FINGER_DEPTH, side,
+	var ip: Vector3 = mcp + proximal * THUMB_PROXIMAL
+	out.append(_section(mcp, THUMB_RADII[0], FINGER_DEPTH, side, 0.0, INDICATOR))
+	out.append(_section(mcp + proximal * THUMB_PROXIMAL * 0.5, THUMB_RADII[1], FINGER_DEPTH, side,
 		0.0, INDICATOR))
 	out.append(_section(ip, THUMB_RADII[2], FINGER_DEPTH, side, 0.0, INDICATOR))
 	out.append_array(_tip(ip, THUMB_DISTAL_DIR.normalized(), THUMB_DISTAL, THUMB_RADII[3], side, INDICATOR))
@@ -223,7 +238,7 @@ static func _thumb_sections(side: float) -> Array:
 static func _chain(points: Array, side: float, colour: Color) -> Array:
 	var out: Array = []
 	for p in points:
-		out.append(_section(p[0], p[1], p[2], side, 0.0, colour))
+		out.append(_section(_up(p[0]), p[1], p[2], side, 0.0, colour))
 	return out
 
 
