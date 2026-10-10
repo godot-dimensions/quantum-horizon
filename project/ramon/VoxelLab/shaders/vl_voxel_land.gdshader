@@ -208,7 +208,8 @@ void fragment() {
 	if (land_kind == 1) {
 		float band = sin((world_pos.y + n * 1.6) * 3.1) * 0.5 + 0.5;
 		float band2 = sin((world_pos.y + n * 0.9) * 7.3 + 1.7) * 0.5 + 0.5;
-		float strata = smoothstep(0.2, 0.6, steep);
+		// Cliffs only (round 7 review: on gentle slopes the bands spread into broad stripes across the ground).
+		float strata = smoothstep(0.55, 0.85, steep);
 		vec3 layered = base * mix(vec3(0.74, 0.66, 0.64), vec3(1.12, 1.0, 0.92), band) * mix(0.9, 1.05, band2);
 		base = mix(base, layered, strata);
 		// Ochre and pale sand in patches tens of metres across, mostly on the flats.

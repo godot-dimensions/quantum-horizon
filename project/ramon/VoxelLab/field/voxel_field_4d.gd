@@ -1075,8 +1075,10 @@ func _peak(holder: Node4D, centre: Vector4, half: float, tall: float, deep: floa
 ## SMOKE (round 7, #94: "Subtle smoke rising from a few volcanoes. Small, slow-moving smoke particles. Slight
 ## variation in height and density ... restrained"): from two or three peaks, seven grey 24-cell puffs each,
 ## rising slowly and drifting, swelling and then shrinking away, each starting again at its peak.
-const SMOKE_GREYS := [Color(0.34, 0.33, 0.32), Color(0.44, 0.43, 0.42), Color(0.27, 0.26, 0.26)]
-const SMOKE_PUFFS := 7
+## Pale, so against the sky it reads as smoke and not as dark stones in the air (round 7 review).
+const SMOKE_GREYS := [Color(0.62, 0.61, 0.60), Color(0.70, 0.69, 0.68), Color(0.54, 0.53, 0.52)]
+const SMOKE_PUFFS := 9
+const SmokeShader := preload("res://ramon/VoxelLab/shaders/vl_smoke.gdshader")
 var _smokers: Array = []
 var _smoke: Array = []
 
@@ -1090,12 +1092,29 @@ func _make_smoke(holder: Node4D, rng: RandomNumberGenerator) -> void:
 		for i in SMOKE_PUFFS:
 			var mi := MeshInstance4D.new()
 			mi.mesh = _cell24
-			mi.material_override = Mats.flat(SMOKE_GREYS[rng.randi() % SMOKE_GREYS.size()])
+			mi.material_override = _smoke_mat(SMOKE_GREYS[rng.randi() % SMOKE_GREYS.size()])
 			mi.visible = _lava_fx
 			holder.add_child(mi)
 			# [mesh, age, life, peak, drift, size, rise]
-			var life: float = rng.randf_range(4.0, 7.0)
-			_smoke.append([mi, life * float(i) / float(SMOKE_PUFFS), life, peak, drift, rng.randf_range(0.35, 0.7), rng.randf_range(0.45, 0.8)])
+			var life: float = rng.randf_range(6.0, 9.0)
+			_smoke.append([mi, life * float(i) / float(SMOKE_PUFFS), life, peak, drift, rng.randf_range(0.5, 0.9), rng.randf_range(0.3, 0.55)])
+
+
+## A see-through grey (shaders/vl_smoke.gdshader), one per shade, made once.
+var _smoke_mats: Dictionary = {}
+
+
+func _smoke_mat(c: Color) -> TetraMaterial4D:
+	if _smoke_mats.has(c):
+		return _smoke_mats[c]
+	var m := TetraMaterial4D.new()
+	var cs: ShaderMaterial = m.get_cross_section_material_3d()
+	cs.shader = SmokeShader
+	m.albedo_color = Color.WHITE
+	cs.set_shader_parameter("smoke_color", c)
+	cs.set_shader_parameter("smoke_alpha", 0.34)
+	_smoke_mats[c] = m
+	return m
 
 
 func _smoke_tick(delta: float) -> void:
@@ -1104,14 +1123,14 @@ func _smoke_tick(delta: float) -> void:
 		p[1] = float(p[1]) + delta
 		if float(p[1]) >= float(p[2]):
 			p[1] = 0.0
-			p[2] = randf_range(4.0, 7.0)
-			p[5] = randf_range(0.35, 0.7)
-			p[6] = randf_range(0.45, 0.8)
+			p[2] = randf_range(6.0, 9.0)
+			p[5] = randf_range(0.5, 0.9)
+			p[6] = randf_range(0.3, 0.55)
 		var age: float = float(p[1])
 		var k: float = age / maxf(float(p[2]), 0.01)
 		var drift: Vector2 = p[4]
 		mi.position = (p[3] as Vector4) + Vector4(drift.x * age + sin(age * 0.9 + float(p[5]) * 9.0) * 0.15, float(p[6]) * age, drift.y * age, 0.0)
-		var sz: float = float(p[5]) * pow(sin(PI * k), 0.7) * (0.6 + 0.8 * k)
+		var sz: float = float(p[5]) * pow(sin(PI * k), 0.6) * (0.6 + 1.3 * k)
 		mi.basis = Basis4D.from_zx(age * 0.3) * Basis4D.from_scale_uniform(maxf(sz, 0.001) * 0.5 / _cell24_reach)
 
 

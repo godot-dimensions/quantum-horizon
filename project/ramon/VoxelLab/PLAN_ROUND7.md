@@ -67,9 +67,12 @@ The carried walker rig no longer quits, whatever reaches it. The menu's file is 
   foam and colours, and your props (1 mesa a clump, 10 cactus clumps 3.5 m wide).
 - **The trees' greens (88)** are made from the island's own green (Tab, THE LAND): a touch darker, about the
   same, and darker and greyer, each a hair off in hue. Round 6's were half its brightness.
-- **The desert's banding (89).** Two causes, both gone: the wind ripple in the land shader drew parallel
-  stripes a metre apart over the ground (they read as bands in perspective), and the mesas had 16 flat sides,
-  each 2 m wide and lit its own way. The ripple is out; the mesas have 48 sides.
+- **The desert's banding (89).** Three causes, all gone: the wind ripple in the land shader drew parallel
+  stripes a metre apart over the ground (they read as bands in perspective); the mesas had 16 flat sides,
+  each 2 m wide and lit its own way; and the strata bands reached gentle slopes, where they spread into broad
+  stripes. The ripple is out, the mesas have 48 sides, the strata are on cliffs only. The long darker streaks
+  left on the slopes are the land's own ridges and troughs, shaded by your low sun (10.5 degrees up): the
+  shape, not a texture.
 - **Cacti (90).** Clumps at least 20 m apart (12 before), each half as wide again as its slider and even across
   it rather than crowded to the middle. Your saved numbers stay as they are.
 - **Desert colour (91).** Broad patches of ochre and pale sand, tens of metres across, mostly on the flats, each
@@ -79,8 +82,10 @@ The carried walker rig no longer quits, whatever reaches it. The menu's file is 
 - **Volcanoes (93).** Each is a 16-cell, whose cut is an octahedron, so its half above the ground is a
   four-sided pyramid with a point, turned at random. Two to four smaller ones lean round its foot as spires.
   Lava runs down two of its faces in glowing veins from just under the peak, instead of one bright spot.
-- **Smoke (94).** From two or three peaks, seven grey 24-cell puffs each, rising slowly, drifting, swelling and
-  thinning away. It shares Tab's switch with the embers and bubbles.
+- **Smoke (94).** From two or three peaks, nine pale 24-cell puffs each, rising slowly, drifting, swelling and
+  thinning away, see-through (`shaders/vl_smoke.gdshader`, the lab's glow shader made translucent, thinner at
+  each puff's edge), so they build a soft column. Solid grey puffs read as stones in the air. It shares Tab's
+  switch with the embers and bubbles.
 
 ## The ocean (85)
 
