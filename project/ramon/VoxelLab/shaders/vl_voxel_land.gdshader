@@ -12,7 +12,15 @@
 //      hillside and not as more facets of the same green.
 //   3. SOFTER FACETS: the lighting normal bent a third of the way toward up, and the light wrapped, so
 //      neighbouring facets differ less in brightness: the blockiness is mostly that difference.
-// world_pos needs the camera's 4D frame each frame (cam_*), set from the field's pre_render.
+//   4. THE RED DESERT (round 6, #72): strata, bands of darker and lighter red up the slopes, wobbling with
+//      the noise, as layered rock; a faint wind ripple on the flats.
+//   5. THE LAVA FIELD (round 6, #73: "lava texture breakup, variation, heat or molten behavior"): the lava
+//      (the palette's only bright red, the generator's sea) moves: two octaves of value noise drifting
+//      through x, z and w over time make its heat; where it is low a black crust in plates, bright cracks
+//      between them, the rest molten orange to yellow, glowing (EMISSION) and breathing. The rock just over
+//      the lava warmer, its cracks faintly alight; the rock elsewhere patched with ash and rust.
+// world_pos needs the camera's 4D frame each frame (cam_*), set from the field's pre_render, with the land
+// (land_kind: 0 green, 1 desert, 2 lava) and its lowest ground (low_y, the lava's level).
 
 shader_type spatial;
 render_mode skip_vertex_transform;
@@ -39,6 +47,9 @@ uniform float variation_scale = 7.0;
 uniform float slope_dark = 0.22;
 uniform float soften = 0.35;
 uniform float wrap = 0.35;
+uniform int land_kind = 0;
+uniform float low_y = 0.0;
+uniform float lava_glow = 1.5;
 
 varying vec3 uvw;
 varying vec4 normal_4d;
@@ -190,7 +201,46 @@ void fragment() {
 	vec4 nw = mat4(cam_x, cam_y, cam_z, cam_w) * normalize(normal_4d);
 	float steep = 1.0 - clamp(abs(nw.y), 0.0, 1.0);
 	base = mix(base, base * vec3(0.78, 0.70, 0.60), smoothstep(0.25, 0.75, steep) * slope_dark * 2.5);
+	vec3 emit = vec3(0.0);
+	if (land_kind == 1) {
+		float band = sin((world_pos.y + n * 1.6) * 3.1) * 0.5 + 0.5;
+		float band2 = sin((world_pos.y + n * 0.9) * 7.3 + 1.7) * 0.5 + 0.5;
+		float strata = smoothstep(0.2, 0.6, steep);
+		vec3 layered = base * mix(vec3(0.74, 0.66, 0.64), vec3(1.12, 1.0, 0.92), band) * mix(0.9, 1.05, band2);
+		base = mix(base, layered, strata);
+		float ripple = sin(dot(g.xy, vec2(1.7, 0.6)) * 3.0 + n * 6.0) * 0.5 + 0.5;
+		base *= 1.0 + (ripple - 0.5) * 0.07 * (1.0 - strata);
+	} else if (land_kind == 2) {
+		float molten = smoothstep(0.5, 0.8, base.r - base.b);
+		float t = TIME;
+		vec3 q = g * 0.45;
+		float heat = clamp(value_noise(q + vec3(t * 0.08, t * 0.05, -t * 0.03)) * 0.65
+				+ value_noise(q * 2.7 - vec3(t * 0.15, -t * 0.11, t * 0.07)) * 0.35, 0.0, 1.0);
+		// Plates of crust where the heat is low (about half of it); cracks glowing between them. Deep red to
+		// orange where it is hot, yellow only in the hottest spots (round 6 review: all-yellow read as flat).
+		float plate = smoothstep(0.47, 0.6, heat);
+		float crack = 1.0 - smoothstep(0.0, 0.035, abs(value_noise(q * 1.6 + vec3(t * 0.02)) - 0.5));
+		vec3 hot = mix(vec3(0.62, 0.08, 0.015), vec3(1.0, 0.32, 0.04), smoothstep(0.6, 0.8, heat));
+		hot = mix(hot, vec3(1.0, 0.66, 0.22), smoothstep(0.86, 0.97, heat));
+		float pulse = 0.85 + 0.15 * sin(t * 1.3 + n * 9.0);
+		float m = max(plate, crack * 0.6);
+		vec3 crust = vec3(0.045, 0.03, 0.026) * (0.8 + 0.4 * value_noise(q * 3.1));
+		base = mix(base, mix(crust, hot * 0.35, m), molten);
+		emit += hot * m * molten * lava_glow * pulse;
+		// The rock just over the lava: warmer, a few of its cracks faintly alight, in patches (thin and broken,
+		// not lines all over: seen low they read as contour lines).
+		float near = (1.0 - molten) * (1.0 - smoothstep(0.0, 2.0, world_pos.y - low_y));
+		base = mix(base, base * vec3(1.3, 0.88, 0.75), near * 0.5);
+		float rock_crack = 1.0 - smoothstep(0.0, 0.018, abs(value_noise(g * 1.7) - 0.5));
+		float patches = smoothstep(0.6, 0.78, value_noise(g * 0.23 + vec3(3.1)));
+		emit += vec3(0.9, 0.22, 0.03) * rock_crack * patches * near * 0.45;
+		// The rock elsewhere: patches of ash and of rust.
+		float ash = value_noise(g / 11.0 + vec3(7.3));
+		base = mix(base, base * vec3(1.5, 1.35, 1.25), (1.0 - molten) * smoothstep(0.6, 0.85, ash) * 0.5);
+		base = mix(base, base * vec3(1.4, 0.9, 0.7), (1.0 - molten) * smoothstep(0.65, 0.9, 1.0 - ash) * 0.5);
+	}
 	ALBEDO = base;
+	EMISSION = emit;
 	// The lighting normal a little toward the world's up, in the camera's frame.
 	vec4 up_c = vec4(cam_x.y, cam_y.y, cam_z.y, cam_w.y);
 	vec4 ln = normalize(normal_4d);

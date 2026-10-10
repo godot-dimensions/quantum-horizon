@@ -363,8 +363,19 @@ func step_slice(d: int) -> void:
 	_show_slice()
 
 
+## VOXEL LAB (carried copy, round 6, #61: "I don't want the square base or presentation footprint to rotate
+## with the landscape ... the landscape should appear to transform or oscillate within a stationary square"): an
+## exhibit that says `sweep_w` is never turned. A drag sweeps its slice through W instead, back and forth (a
+## triangle wave, so there is no end to hit), within its own W reach: the square stays square and still, and the
+## land inside it changes, as the slice meets other W of the 4D noise.
+var sweep: float = 0.0
+
+
 func turn_by(dx: float, dy: float) -> void:
 	_touch()
+	if exhibit != null and bool(exhibit.get("sweep_w")):
+		sweep += dx + dy * 0.6
+		return
 	var tilted: Projection = Ground.cleaned(Ground.sliced(turn_basis, Vector2(dx, dy)))
 	# VOXEL LAB (carried copy, 9 Oct): an exhibit may say how far it turns through W (`max_tilt`,
 	# degrees): the world's terrain, past which its square runs out of land. A turn back is always let.
@@ -379,6 +390,7 @@ func turn_by(dx: float, dy: float) -> void:
 ## (Ramon: "add a Reset Slice control so I can easily return to the initial slice state").
 func reset_view() -> void:
 	_touch()
+	sweep = 0.0
 	turn = Vector2.ZERO
 	turn_basis = Projection.IDENTITY
 	slice_index = SLICES / 2
@@ -562,6 +574,9 @@ func _process(delta: float) -> void:
 		_extent = float(exhibit.call("w_extent"))
 	var ext: float = maxf(_extent, 0.3)
 	var want_w: float = (float(slice_index) - float(SLICES - 1) * 0.5) / (float(SLICES - 1) * 0.5) * ext * 0.6
+	if sweep != 0.0 and exhibit != null and bool(exhibit.get("sweep_w")):
+		# The sweep: a triangle wave in the drag, 0.7 of the reach either way, kept inside the specimen.
+		want_w = clampf(want_w + ext * 0.7 * (asin(sin(sweep)) / (PI * 0.5)), -ext * 0.85, ext * 0.85)
 	if cinematic and _cine_slice > -2.0:
 		want_w = _cine_slice * ext
 	_slice_w = lerpf(_slice_w, want_w, 1.0 - exp(-8.0 * delta))

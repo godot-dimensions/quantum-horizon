@@ -24,8 +24,20 @@ its research and its status: `VoxelLab/PLAN.md`. The old `VoxelMining/` scenes a
 
 ## What to look at
 
+**Round 6 (10 Oct)**, parts 8 and 9 of your walkthrough, items 60 to 75: `VoxelLab/PLAN_ROUND6.md`.
+
+- The gallery's title in two lines; **the big landscape keeps its square**: a drag sweeps its slice through
+  W, back and forth, the pedestal never turns.
+- **The open world:** narrower foam on the crests with smaller bubbles; a ninth preset, **Moderate swell,
+  gentle**; the whole walkway holds still while you slice; the platform **lifts** (Space up, Shift down);
+  the bird's **Shift dive** works; Tab's new **PROPS ON EACH LAND** window (trees, mesas, cacti, volcanoes:
+  clumps, how many, spread, size); a **lighthouse** on the green island; the **red desert** (strata, mesas,
+  saguaros, a red clay pan, no white) and the **lava field** (moving, glowing lava with a crust, embers,
+  bubbles, little volcanoes); **the way back** named at the station (key 1 on the desert or the lava) and on
+  screen; the world-switch performance written up (#74, no rewrite).
+
 **Rounds 3 to 5 (9 Oct)**, each from a walkthrough of yours: `VoxelLab/PLAN_ROUND3.md`, `PLAN_ROUND4.md`,
-`PLAN_ROUND5.md` (what you asked, what was done, the numbers). The newest, round 5:
+`PLAN_ROUND5.md` (what you asked, what was done, the numbers). Round 5:
 
 - **Build it**, the front-left corner: a 4.6 m square pedestal, a black construction grid, 0.5 m bricks on
   a 7 x 5 x 7 grid with 5 W layers. Click places, LEFT drag looks round it, right drag turns the slice,
@@ -207,3 +219,7 @@ drawable) until 9 Oct; now it builds once, behind the board, and nothing builds 
 11. **The grass's ground** is baked from the island's chunk meshes under each patch (grass material only)
    on a worker thread after the island is built; the patches are picked off the bird's height map. If the
    island changes (BUILT_RADIUS, the generator), the patches move with it.
+12. **Green to desert or lava builds the island again (about 8 s, behind the board)**; desert to lava is a
+   repaint. The land is the same in all three, only the generator's sea differs (empty under our water, or
+   filled as the clay pan or the lava). Making every switch instant means drawing those two as a plane like
+   our water: about half a day, written up in `PLAN_ROUND6.md`. Keeping two islands built doubles the 2.4 GB.

@@ -46,6 +46,8 @@ extends Control
 const Style := preload("res://ramon/VoxelLab/carried/kit/kit_style.gd")
 const LabPrint := preload("res://ramon/VoxelLab/carried/LabKit/lab_print.gd")
 const WaterSurface := preload("res://ramon/WaterLab/carried/water4d/water4d_surface.gd")
+## The open world's sea (the Aquatic Lab's, with our ninth preset).
+const Sea := preload("res://ramon/VoxelLab/field/vl_sea_4d.gd")
 
 const SAVE_PATH := "res://ramon/VoxelLab/field/voxel_field_sea.cfg"
 ## The Water Lab harbour's saved tuning, read (never written) for COMPARE.
@@ -66,12 +68,20 @@ const DEFAULTS := {
 	"wave_scale": 0.4, "detail_strength": 0.085, "specular_strength": 0.35, "roughness": 0.08, "light_response": 1.0,
 	"scatter_strength": 0.21, "scatter_r": 0.035, "scatter_g": 0.175, "scatter_b": 0.205,
 	"absorption_r": 0.42, "absorption_g": 0.11, "absorption_b": 0.07,
-	"shore_foam": 0.4, "shore_breakup": 0.65, "shore_width": 0.25, "shore_far": 160.0, "see_depth": 10.0, "foam_cell": 0.45,
+	"shore_foam": 0.4, "shore_breakup": 0.9, "shore_width": 0.06, "shore_far": 160.0, "see_depth": 10.0, "foam_cell": 0.08,
 	"land_h": 0.27, "land_s": 0.5, "land_v": 0.36,
 	"sun": 0.064, "sun_up": 10.5, "sun_turn": 137.5, "ambient": 1.0, "exposure": 0.99,
 	"grass": 1.0, "grass_width": 2.2, "grass_height": 0.7, "grass_r": 0.31, "grass_g": 0.49, "grass_b": 0.16,
 	"grass_cover": 35.0, "grass_patch_m": 6.0, "grass_spacing_cm": 7.0, "trees": 1.0, "grass_whole": 0.0,
+	"p_trees_clumps": 6.0, "p_trees_per": 30.0, "p_trees_spread": 2.0, "p_trees_size": 1.0,
+	"p_mesas_clumps": 5.0, "p_mesas_per": 2.0, "p_mesas_spread": 9.0, "p_mesas_size": 1.0,
+	"p_cacti_clumps": 8.0, "p_cacti_per": 7.0, "p_cacti_spread": 2.5, "p_cacti_size": 1.0,
+	"p_volcanoes_clumps": 5.0, "p_volcanoes_per": 3.0, "p_volcanoes_spread": 6.0, "p_volcanoes_size": 1.0,
+	"lava_fx": 1.0,
 }
+## The props on each land (voxel_field_4d.gd PROP_KINDS), each with four rows: p_<kind>_clumps, _per, _spread, _size.
+const PROPS := [["trees", "TREES  ·  THE GREEN ISLAND"], ["mesas", "MESAS  ·  THE RED DESERT"], ["cacti", "CACTI  ·  THE RED DESERT"],
+	["volcanoes", "LITTLE VOLCANOES  ·  THE LAVA FIELD"]]
 ## The rows that rebuild something (the grass's patches and blades): applied a moment after the drag stops.
 const DEFERRED := ["grass_spacing_cm"]
 ## How much brighter the voxel water is painted than the sea's deep colour, to read as the same sea in
@@ -90,6 +100,7 @@ var _colour: ColorPickerButton
 var _grass_box: CheckBox
 var _trees_box: CheckBox
 var _whole_box: CheckBox
+var _lava_box: CheckBox
 var _grass_colour: ColorPickerButton
 
 
@@ -190,9 +201,9 @@ func _ready() -> void:
 	_section("SEA STATE  ·  THE AQUATIC LAB'S PRESETS")
 	var grid := GridContainer.new()
 	grid.columns = 2
-	for i in WaterSurface.Presets.count():
+	for i in Sea.preset_count():
 		var index: int = i
-		var pb := _button("%d  %s" % [i + 1, WaterSurface.preset_name(i)], func() -> void:
+		var pb := _button("%d  %s" % [i + 1, Sea.preset_label(i)], func() -> void:
 			_values["preset"] = float(index)
 			_name_preset()
 			_apply(false))
@@ -219,8 +230,8 @@ func _ready() -> void:
 	_window(left, "SHORE FOAM", "")
 	_row("shore_foam", "Strength (the Aquatic Lab's 0.9)", 0.0, 1.0, 0.01)
 	_row("shore_breakup", "Only where crests come in", 0.0, 1.0, 0.01)
-	_row("shore_width", "How wide the band is, m", 0.05, 1.5, 0.01)
-	_row("foam_cell", "Bubble size, m", 0.1, 1.5, 0.01)
+	_row("shore_width", "How wide the band is, m", 0.01, 1.0, 0.005)
+	_row("foam_cell", "Bubble size, m", 0.02, 1.0, 0.01)
 	_row("shore_far", "Down to a third by, m", 30.0, 600.0, 5.0)
 	_footer(false)
 	# LIGHT, right.
@@ -268,7 +279,10 @@ func _ready() -> void:
 		_grass_colour.color = Color(float(DEFAULTS["grass_r"]), float(DEFAULTS["grass_g"]), float(DEFAULTS["grass_b"]))
 		_values.merge({"grass_r": float(DEFAULTS["grass_r"]), "grass_g": float(DEFAULTS["grass_g"]), "grass_b": float(DEFAULTS["grass_b"])}, true)
 		_apply(false)))
-	_section("TREES")
+	_footer(false)
+	# PROPS, left under the foam: what stands on each land, and how it clumps (round 6, #70, #72, #73).
+	_window(left, "PROPS ON EACH LAND", "Planted again a moment after you let go. Each land shows only its own.")
+	_section(String(PROPS[0][1]))
 	_trees_box = CheckBox.new()
 	_trees_box.text = "Clumps of tiny 24-cells, as trees"
 	_trees_box.focus_mode = Control.FOCUS_NONE
@@ -278,8 +292,41 @@ func _ready() -> void:
 		_values["trees"] = 1.0 if on else 0.0
 		_apply(false))
 	_box.add_child(_trees_box)
+	_prop_rows("trees", 60.0, 30.0)
+	_section(String(PROPS[1][1]))
+	_prop_rows("mesas", 10.0, 30.0)
+	_section(String(PROPS[2][1]))
+	_prop_rows("cacti", 40.0, 12.0)
+	_section(String(PROPS[3][1]))
+	_prop_rows("volcanoes", 12.0, 20.0)
+	_lava_box = CheckBox.new()
+	_lava_box.text = "Embers and bubbles over the lava"
+	_lava_box.focus_mode = Control.FOCUS_NONE
+	_lava_box.button_pressed = float(_values.get("lava_fx", 1.0)) > 0.5
+	_lava_box.add_theme_font_size_override("font_size", FONT - 1)
+	_lava_box.toggled.connect(func(on: bool) -> void:
+		_values["lava_fx"] = 1.0 if on else 0.0
+		_apply(false))
+	_box.add_child(_lava_box)
 	_footer(false)
 	_name_preset()
+
+
+## A prop's four rows: how many clumps, how many in each, how far a clump spreads, how big each one is.
+func _prop_rows(kind: String, most_per: float, widest: float) -> void:
+	_row("p_%s_clumps" % kind, "Clumps", 0.0, 20.0, 1.0)
+	_row("p_%s_per" % kind, "In each clump", 1.0, most_per, 1.0)
+	_row("p_%s_spread" % kind, "Clump spread, m", 0.5, widest, 0.5)
+	_row("p_%s_size" % kind, "Size, times", 0.3, 3.0, 0.05)
+
+
+## The props' numbers onto the field (as it starts, and from the panel).
+static func apply_props(to: Node, v: Dictionary) -> void:
+	for p in PROPS:
+		var k: String = String(p[0])
+		to.call("set_props", k, float(v.get("p_%s_clumps" % k, DEFAULTS["p_%s_clumps" % k])), float(v.get("p_%s_per" % k, DEFAULTS["p_%s_per" % k])),
+			float(v.get("p_%s_spread" % k, DEFAULTS["p_%s_spread" % k])), float(v.get("p_%s_size" % k, DEFAULTS["p_%s_size" % k])))
+	to.call("set_lava_fx", float(v.get("lava_fx", 1.0)) > 0.5)
 
 
 ## A column of windows down one side of the screen, scrolling when they are taller than it.
@@ -377,6 +424,9 @@ func _load(v: Dictionary, what: String) -> void:
 	if v.has("grass_whole") and _whole_box != null:
 		_whole_box.set_pressed_no_signal(float(v["grass_whole"]) > 0.5)
 		_values["grass_whole"] = float(v["grass_whole"])
+	if v.has("lava_fx") and _lava_box != null:
+		_lava_box.set_pressed_no_signal(float(v["lava_fx"]) > 0.5)
+		_values["lava_fx"] = float(v["lava_fx"])
 	if v.has("trees") and _trees_box != null:
 		_trees_box.set_pressed_no_signal(float(v["trees"]) > 0.5)
 		_values["trees"] = float(v["trees"])
@@ -443,7 +493,7 @@ func _row(key: String, label: String, lo: float, hi: float, step: float) -> void
 	s.value_changed.connect(func(x: float) -> void:
 		v.text = _fmt(x, step)
 		_values[key] = x
-		if key in DEFERRED:
+		if key in DEFERRED or key.begins_with("p_"):
 			_pending["grass_amount"] = 0.45
 		else:
 			_apply(false))
@@ -487,6 +537,8 @@ func _apply(_remake: bool) -> void:
 		field.call("set_grass_whole", float(_values.get("grass_whole", 0.0)) > 0.5)
 	if field.has_method("set_trees"):
 		field.call("set_trees", float(_values.get("trees", 1.0)) > 0.5)
+	if field.has_method("set_props"):
+		apply_props(field, _values)
 	if field.has_method("set_grass_amount"):
 		field.call("set_grass_amount", float(_values.get("grass_cover", 35.0)), float(_values.get("grass_patch_m", 6.0)),
 			float(_values.get("grass_spacing_cm", 7.0)))

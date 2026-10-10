@@ -25,6 +25,16 @@ extends "res://ramon/WaterLab/carried/water4d/water4d_surface.gd"
 ## crests), the strength falling to a third by `shore_far` metres, and `shore_width` the depth it
 ## reaches (the shader's own intersection_foam_depth). All four on Tab (vl_sea_panel.gd).
 ##
+## A NINTH PRESET (round 6, #65: "keep the cross-pattern behavior, keep it in Gerstner style, but make it behave
+## more like the Calm preset in terms of intensity"): MODERATE SWELL, GENTLE. The Aquatic Lab's Moderate swell's
+## own train (five waves round one wind, spread over the sphere: the crossing pattern) at half its height, half
+## again as long, and with Calm's softer steepness. Index GENTLE, after the Aquatic Lab's eight; its presets file
+## is not touched.
+##
+## THE FOAM ON THE CRESTS (round 6, #63: "make foam appear primarily where incoming wave crests reach the shore"):
+## the crest test is made against the live waves' own height (`crest_ref`, the dominant wave times wave_scale), so
+## a small sea still has crests to foam on.
+##
 ## If the Water Lab's shader changes so a patch no longer finds its line, the sea keeps the plain
 ## shader (with its square detail and full foam) and says so once in the log.
 ##
@@ -36,8 +46,8 @@ var reach: float = 900.0
 const GROWTH := 1.045
 
 var shore_foam: float = 0.4
-var shore_breakup: float = 0.65
-var shore_width: float = 0.25
+var shore_breakup: float = 0.9
+var shore_width: float = 0.06
 var shore_far: float = 160.0
 ## How far down you see into it, m (the shader's max_path_metres, 40 in the Aquatic Lab). The island's
 ## seabed lies 18 m under the surface where the land is built and nowhere past it, so through 40 m of clear
@@ -46,7 +56,10 @@ var shore_far: float = 160.0
 var see_depth: float = 10.0
 ## How big the foam's bubbles are, m across a cell of its network (the shader's foam_cell_size, 0.85 in the
 ## Aquatic Lab; Ramon, 9 Oct: "the foam effect can you make it smaller in size?").
-var foam_cell: float = 0.45
+var foam_cell: float = 0.08
+
+## The ninth preset's index.
+const GENTLE := 8
 
 static var _patched: Shader = null
 static var _patch_failed: bool = false
@@ -69,6 +82,35 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 	_material.set_shader_parameter(&"intersection_foam_depth", shore_width)
 	_material.set_shader_parameter(&"max_path_metres", see_depth)
 	_material.set_shader_parameter(&"foam_cell_size", foam_cell)
+	var dom: Dictionary = dominant()
+	_material.set_shader_parameter(&"crest_ref", maxf(0.03, float(dom.get("amplitude", 0.3)) * maxf(wave_scale, 0.01)))
+
+
+## The presets here: the Aquatic Lab's eight and ours.
+static func preset_count() -> int:
+	return Presets.count() + 1
+
+
+static func preset_label(index: int) -> String:
+	return "Moderate swell, gentle" if index == GENTLE else Presets.preset_name(index)
+
+
+## The gentle swell's waves (see the header), padded to the eight slots.
+static func gentle_swell() -> Array[Wave]:
+	var waves: Array[Wave] = []
+	Presets._train(waves, Vector3(0.85, 0.45, 0.28), 0.55, 5, 0.31, 46.0, 0.80, 0.45)
+	while waves.size() < MAX_WAVES:
+		waves.append(Wave.new(Vector3(1.0, 0.0, 0.0), 0.0, 10.0, 0.0))
+	return waves
+
+
+func set_preset(index: int) -> void:
+	if index == GENTLE:
+		preset_index = GENTLE
+		_target = gentle_swell()
+		_blend_left = BLEND_SECONDS
+		return
+	super.set_preset(index)
 
 
 ## The grid: lines every extent / (GRID_RESOLUTION / 2) metres out to `extent`, then each gap GROWTH
@@ -123,11 +165,11 @@ static func patched_shader() -> Shader:
 	var code: String = SHADER.code
 	var patches: Array = [
 		["uniform float intersection_foam_depth = 0.55;",
-			"uniform float intersection_foam_depth = 0.55;\n// VOXEL LAB (vl_sea_4d.gd): the shore foam's strength, how much of it only the crests bring, and\n// where it has fallen to a third.\nuniform float shore_foam = 0.9;\nuniform float shore_breakup = 0.0;\nuniform float shore_far = 160.0;"],
+			"uniform float intersection_foam_depth = 0.55;\n// VOXEL LAB (vl_sea_4d.gd): the shore foam's strength, how much of it only the crests bring, and\n// where it has fallen to a third.\nuniform float shore_foam = 0.9;\nuniform float shore_breakup = 0.0;\nuniform float shore_far = 160.0;\nuniform float crest_ref = 0.3;"],
 		["\tfloat detail = detail_field(rest, detail_gradient);",
 			"\tfloat detail = detail_field(rest, detail_gradient);\n\t// VOXEL LAB: the ripple goes before the graded squares outgrow it.\n\tfloat detail_k = 1.0 - smoothstep(near_extent, near_extent * 2.5, length(VERTEX.xz));\n\tdetail *= detail_k;\n\tdetail_gradient *= detail_k;"],
 		["float foam = clamp(max(pinch * foam_opacity, edge * 0.9), 0.0, 1.0);",
-			"float shore_k = mix(1.0, smoothstep(-0.1, 0.35, crest_height + surface_detail * 2.0), shore_breakup);\n\t\tshore_k *= mix(1.0, 0.33, smoothstep(shore_far * 0.4, shore_far, length(VERTEX)));\n\t\tfloat foam = clamp(max(pinch * foam_opacity, edge * shore_foam * shore_k), 0.0, 1.0);"],
+			"float shore_k = mix(1.0, smoothstep(0.05 * crest_ref, 0.75 * crest_ref, crest_height + surface_detail * 0.5), shore_breakup);\n\t\tshore_k *= mix(1.0, 0.33, smoothstep(shore_far * 0.4, shore_far, length(VERTEX)));\n\t\tfloat foam = clamp(max(pinch * foam_opacity, edge * shore_foam * shore_k), 0.0, 1.0);"],
 	]
 	for p in patches:
 		if code.find(String(p[0])) < 0:

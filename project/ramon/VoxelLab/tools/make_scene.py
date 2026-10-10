@@ -84,8 +84,9 @@ GZ = -1.0
 # Over the gallery door, on the hall's back wall (edge 2, from its left end: the door is centred 4.77 m
 # along it), the open world door's sign (round 4: "an appropriate black text label at the entrance to
 # the next room").
+# Two lines (round 6, #60: it read "HOW A WORLD IS M"), a little taller to hold them.
 node("GallerySign", "Hall", "Node", [("script", 'ExtResource("4_text")'), ("edge", "2"), ("along", "Vector2(0.6, 8.94)"),
-                                    ("up", "Vector2(4.5, 6.3)"), ("kind", q("sign")), ("title", q("HOW A WORLD IS MADE")),
+                                    ("up", "Vector2(4.1, 6.7)"), ("kind", q("sign")), ("title", q("HOW A WORLD IS\nMADE")),
                                     ("subtitle", q("OUR GENERATORS ONE AT A TIME, THEN THE WHOLE WORLD")), ("glow", "0.3")])
 node("GalleryRoom", ".", "Node4D", [("position", V(0, 0, -23.5 + GZ)), ("script", 'ExtResource("3_kitroom")'), ("size", "Vector3(26, 8, 16)"),
                                     ("cove", "false")])

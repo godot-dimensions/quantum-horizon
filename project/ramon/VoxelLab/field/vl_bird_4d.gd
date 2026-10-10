@@ -11,7 +11,8 @@ extends Node
 ##   mouse        steer: turn and climb
 ##   W / S        flap (faster), brake
 ##   Space        climb
-##   Shift        fold the wings: the stoop, as fast as the dive is steep
+##   Shift        dive: the wings fold, the nose goes down and you drop, faster the steeper (round 6, #69:
+##                it only folded the wings, so without pitching down with the mouse nothing happened)
 ##   right drag   turn the slice through W (the pen's rotate_4d), as far as you drag
 ##   R            the slice back to flat
 ##   Q / E        through W, kata and ana, along the slice's own normal
@@ -144,8 +145,11 @@ func _process(delta: float) -> void:
 			pitch = lerpf(pitch, float(drive["pitch"]), clampf(dt * 2.0, 0.0, 1.0))
 	# Steering: the mouse turns (a turn in place of the frame) and climbs; the turn rate banks it.
 	frame = Ground.looked(frame, Vector2(turn.x, 0.0))
-	stooping = not auto and Input.is_key_pressed(KEY_SHIFT)
+	stooping = (not auto and Input.is_key_pressed(KEY_SHIFT)) or bool(drive.get("dive", false))
 	pitch = clampf(pitch - turn.y, -1.4 if stooping else -1.0, 0.9)
+	# The dive: held, the nose goes down to a stoop (and comes back up by the mouse, as ever).
+	if stooping:
+		pitch = lerpf(pitch, minf(pitch, -0.55), clampf(dt * 2.5, 0.0, 1.0))
 	_yaw_rate = lerpf(_yaw_rate, -turn.x / maxf(dt, 0.0001), clampf(dt * 6.0, 0.0, 1.0))
 	bank = lerpf(bank, clampf(atan(_yaw_rate * speed / G), -1.1, 1.1), clampf(dt * 4.0, 0.0, 1.0))
 	# The slice: the right drag tilts it, never past the limit; R takes it home, keeping the heading.
@@ -189,6 +193,8 @@ func _process(delta: float) -> void:
 	at += heading() * (speed * dt)
 	if climb and not stooping:
 		at.y += 2.6 * dt
+	if stooping:
+		at.y -= 3.2 * dt
 	# Through W along the slice's own normal (the pen's ana and kata).
 	var w_in: float = float(drive.get("w", 0.0)) if auto else float(Input.is_key_pressed(KEY_E)) - float(Input.is_key_pressed(KEY_Q))
 	at += frame.w * (w_in * w_speed * dt)

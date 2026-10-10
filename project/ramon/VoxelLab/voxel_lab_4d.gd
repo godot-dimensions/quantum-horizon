@@ -259,7 +259,8 @@ func _ready() -> void:
 	tutorial = Control.new()
 	tutorial.name = "MouseTutorial"
 	tutorial.set_script(MouseTutorial)
-	tutorial.set("gestures", [["drag_h", "TURN IT THROUGH W"], ["drag_v", "TURN IT THE OTHER WAY"], ["wheel", "SLIDE THROUGH W"]])
+	# Round 6 (#61): a drag sweeps the world's slice through W; its square stays put.
+	tutorial.set("gestures", [["drag_h", "SWEEP IT THROUGH W"], ["drag_v", "SWEEP IT THROUGH W"], ["wheel", "STEP THROUGH W"]])
 	tutorial.set("footer", "R  ·  BACK AS IT WAS")
 	layer.add_child(tutorial)
 	# The floating panels wobble when you walk into them.
@@ -692,7 +693,9 @@ func _strip() -> Array:
 		out.append(["Click", "Close" if _popup_open else "About this specimen"])
 	if active != null:
 		out.append(["Wheel", "Slide through W"])
-		out.append(["Right drag", "Turn in 4D"])
+		var ex: Node = active.get("exhibit")
+		# The big landscape is swept through W, never turned (round 6, #61).
+		out.append(["Right drag", "Sweep through W" if ex != null and bool(ex.get("sweep_w")) else "Turn in 4D"])
 		out.append(["R", "Reset slice"])
 		out.append(["V", "Projection view" if not volume_view else "Slice view"])
 	else:

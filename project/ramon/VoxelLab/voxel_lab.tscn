@@ -61,9 +61,10 @@ glow = 0.3
 script = ExtResource("4_text")
 edge = 2
 along = Vector2(0.6, 8.94)
-up = Vector2(4.5, 6.3)
+up = Vector2(4.1, 6.7)
 kind = "sign"
-title = "HOW A WORLD IS MADE"
+title = "HOW A WORLD IS
+MADE"
 subtitle = "OUR GENERATORS ONE AT A TIME, THEN THE WHOLE WORLD"
 glow = 0.3
 

@@ -156,11 +156,22 @@ func paint(c: Control, ink: Dictionary) -> void:
 		_paint_label(c)
 		return
 	if kind == "sign":
+		# VOXEL LAB (carried copy, round 6, #60: the gallery's sign read "HOW A WORLD IS M"): a title may
+		# break over lines (a newline in it), and the widest line is made to fit the wall rather than cut.
 		var f: Font = LabPrint.font("black")
-		var px: int = _px(minf(0.9, (up.y - up.x) * 0.42))
-		c.draw_string(f, Vector2(0.0, c.size.y * 0.52), title, HORIZONTAL_ALIGNMENT_CENTER, c.size.x, px, ink["text"])
+		var lines: PackedStringArray = title.split("\n")
+		var n: int = lines.size()
+		var px: int = _px(minf(0.9, (up.y - up.x) * (0.42 if n == 1 else 0.62 / float(n))))
+		for line in lines:
+			var lw: float = f.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+			if lw > c.size.x * 0.96:
+				px = int(float(px) * c.size.x * 0.96 / lw)
+		var gap: float = float(px) * 0.92
+		var y0: float = c.size.y * 0.52 - gap * float(n - 1) * 0.62
+		for i in n:
+			c.draw_string(f, Vector2(0.0, y0 + gap * float(i)), lines[i], HORIZONTAL_ALIGNMENT_CENTER, c.size.x, px, ink["text"])
 		if not subtitle.is_empty():
-			c.draw_string(LabPrint.font("bold"), Vector2(0.0, c.size.y * 0.52 + px * 0.62), subtitle, HORIZONTAL_ALIGNMENT_CENTER, c.size.x, int(px * 0.26), ink["accent"])
+			c.draw_string(LabPrint.font("bold"), Vector2(0.0, y0 + gap * float(n - 1) + px * 0.62), subtitle, HORIZONTAL_ALIGNMENT_CENTER, c.size.x, int(px * 0.26 * (1.0 if n == 1 else 1.4)), ink["accent"])
 		return
 	var w: float = c.size.x
 	var k: float = c.size.x / maxf(absf(along.y - along.x), 0.01)

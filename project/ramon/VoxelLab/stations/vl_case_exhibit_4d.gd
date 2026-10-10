@@ -38,9 +38,12 @@ const BIOMES := [
 	# little roughness, wide); the lava rough and fine, high and spiky (many octaves, persistence near 1).
 	{"name": "Green", "colors": {0: Color(0.40, 0.74, 0.22), 1: Color(0.56, 0.32, 0.12), 2: Color(0.34, 0.34, 0.34), 3: Color(0.07, 0.27, 0.34)},
 		"shape": {}},
-	{"name": "Desert", "colors": {0: Color(0.88, 0.74, 0.52), 1: Color(0.76, 0.42, 0.24), 2: Color(0.52, 0.36, 0.28), 3: Color(0.93, 0.91, 0.85)},
+	# Round 6 (#72: "more red overall, closer to a reddish-brown Nevada desert ... remove the white elements ...
+	# use darker red tones for rock"): red sand, red-brown dirt, dark red rock, and a red clay pan for its sea.
+	{"name": "Desert", "colors": {0: Color(0.70, 0.38, 0.22), 1: Color(0.55, 0.25, 0.14), 2: Color(0.36, 0.14, 0.09), 3: Color(0.62, 0.33, 0.20)},
 		"shape": {"octaves": 3, "persistence": 0.4, "horizontal_scale": 6.0, "k": 0.5}},
-	{"name": "Lava", "colors": {0: Color(0.17, 0.16, 0.16), 1: Color(0.30, 0.14, 0.09), 2: Color(0.10, 0.09, 0.09), 3: Color(1.0, 0.40, 0.06)},
+	# Round 6 (#73: "better lava rock coloration"): black basalt, rusty scoria, darker stone; the lava as before.
+	{"name": "Lava", "colors": {0: Color(0.13, 0.115, 0.11), 1: Color(0.27, 0.12, 0.08), 2: Color(0.075, 0.068, 0.068), 3: Color(1.0, 0.40, 0.06)},
 		"shape": {"octaves": 6, "persistence": 0.74, "horizontal_scale": 2.0, "vertical_scale": 4.0, "k": 0.5}},
 ]
 ## How deep the terrain sits in its pedestal (m): its sea about level with the deck, so you see the
@@ -63,6 +66,9 @@ var _recipes: Dictionary = {}
 var _t: float = 0.0
 ## How far the exhibit may be turned through W, degrees (the kit's showcase reads it). 0: no limit.
 var max_tilt: float = 0.0
+## The world is never turned: a drag sweeps its slice through W, its square base still (round 6, #61; the
+## kit's showcase reads it). The three layers keep their turn (#62).
+var sweep_w: bool = false
 ## A change of look asked for while the last one was still building: built again when it is done.
 var _rebuild_again: bool = false
 
@@ -82,6 +88,7 @@ func _ready() -> void:
 		"terrain":
 			code = "AN-04"
 			title = "The world"
+			sweep_w = true
 			# No spare: a reset rebuilds in place (a second or two).
 			spare_on = false
 		_:
@@ -105,7 +112,8 @@ func recipe() -> Dictionary:
 		# look its own ground (BIOMES "shape", round 3).
 		var opts: Dictionary = {"shift": Vector4(16, 0, -8, 0), "k": 0.62, "grass_voxels": 2.6, "sea_m": -0.12}
 		opts.merge(BIOMES[biome].get("shape", {}), true)
-		r = Recipe.terrain(Vector4(5.6, 2.0, 5.6, 1.6), 0.18, opts)
+		# 4 m deep in W (1.6 before), so the sweep has land to go through (round 6, #61).
+		r = Recipe.terrain(Vector4(5.6, 2.0, 5.6, 4.0), 0.18, opts)
 	elif layer == "caves":
 		# His caves at a scale this block can show (at his own the tunnels are further apart than it is
 		# wide), a quarter cut away so the tunnels inside show.

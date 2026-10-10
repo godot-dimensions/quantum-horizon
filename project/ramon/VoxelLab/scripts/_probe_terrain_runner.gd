@@ -1,8 +1,9 @@
 extends SceneTree
 ## Voxel Lab, rounds 3 to 5 (9 Oct): the gallery's world. From above and four sides (round 5, #43: turned half
 ## round, its slope toward you as you come in), with the hologram's gradient over it (#44); then from its ring:
-## turned through W a long way in many small drags (no limit, no stop), slid through W, put back with R
-## (reset_view), the half turn still there, and each look of the land (its own ground: rebuilt). Frames to
+## swept through W in many small drags (round 6, #61: its square foot stays put, no "helicopter" turn, only the
+## land inside it changes), slid through W, put back with R (reset_view), the half turn still there, and each
+## look of the land (its own ground: rebuilt). Frames to
 ## smoke_test_output/voxel_lab/terrain/, checks printed as PASS or FAIL.
 ##   VoxelLab/run.sh windowed terrain res://ramon/VoxelLab/scripts/_probe_terrain_runner.gd
 
@@ -16,6 +17,7 @@ var _step: int = 0
 var _fails: int = 0
 var _cam: Camera4D
 var _resets0: int = 0
+var _w0: float = 0.0
 
 
 func _initialize() -> void:
@@ -105,15 +107,18 @@ func _process(delta: float) -> bool:
 		7:
 			if _t > 1.5:
 				_save("ring_0_start")
-				# A long turn in small drags, as a hand turns it: 0.02 rad a step, 150 steps, about 170 degrees.
-				for k in 150:
+				_w0 = float(_st.get("_slice_w"))
+				# A drag in small steps, as a hand drags: 0.02 a step, 60 steps.
+				for k in 60:
 					_st.call("turn_by", 0.02, 0.0)
 				_next()
 		8:
 			if _t > 1.2:
-				var tilt: float = rad_to_deg(acos(clampf((_st.get("turn_basis") as Projection).w.w, -1.0, 1.0)))
-				_check(tilt > 120.0, "turned through W without a stop (%.0f degrees)" % tilt)
-				_save("ring_1_turned")
+				var tb: Projection = _st.get("turn_basis")
+				_check(tb.x.x > 0.9999 and tb.z.z > 0.9999 and tb.w.w > 0.9999, "the square foot never turned (no helicopter)")
+				var moved: float = absf(float(_st.get("_slice_w")) - _w0)
+				_check(moved > 0.5, "the drag swept the slice through W (%.2f m)" % moved)
+				_save("ring_1_swept")
 				_st.call("step_slice", 3)
 				_next()
 		9:

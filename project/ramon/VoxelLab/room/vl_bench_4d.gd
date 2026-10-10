@@ -685,4 +685,11 @@ func strip() -> Array:
 		return [["Click", "Place"], ["Drag", "Look around"], ["Right drag", "Turn the slice"], ["Wheel", "W layer"], ["1 to 3", "Tool"],
 			["Q / E", "Colour"], ["Z", "Undo"], ["Space", "Level"], ["R", "Start again"], ["F", "Stand up"]]
 	return [["Click", "Saw: press, drag, let go" if tool == "saw" else "Cut"], ["1 to 4", "Tool"], ["Q / E", "Size"],
-		["Wheel", "Slide through W"], ["Right drag", "Turn in 4D"], ["Middle drag / WASD", "Orbit"], ["R", "Whole again"], ["F / Esc", "Stand up"]]
+		["Wheel", "Slide through W"], ["Right drag", "Sweep through W" if _sweeps() else "Turn in 4D"], ["Middle drag / WASD", "Orbit"], ["R", "Whole again"],
+		["F / Esc", "Stand up"]]
+
+
+## The big landscape's drag sweeps its slice through W instead of turning it (round 6, #61).
+func _sweeps() -> bool:
+	var e: Node = exhibit()
+	return e != null and bool(e.get("sweep_w"))

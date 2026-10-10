@@ -20,9 +20,9 @@ func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 
 
-func toast(text: String) -> void:
+func toast(text: String, seconds: float = 2.4) -> void:
 	_toast = text
-	_toast_t = 2.4
+	_toast_t = seconds
 
 
 func _process(delta: float) -> void:
@@ -60,7 +60,7 @@ func _draw() -> void:
 	y += 44 * u
 	var flying: bool = String(field.get("mode")) == "fly"
 	var bird: Node = field.get("bird")
-	var you: String = "on the deck"
+	var you: String = "on the deck, the " + String(field.call("land_name"))
 	if flying and bird != null:
 		var at: Vector4 = bird.get("at")
 		you = "%.0f m up,  W %+.1f m,  slice %.0f°" % [at.y, at.w, float(bird.call("slice_degrees"))]
@@ -89,8 +89,12 @@ func _draw() -> void:
 	if not flying:
 		keys = [["WASD", "Walk"], ["The blue platform", "Turn the slice"], ["The two stations", "Take off, change the world"], ["Tab", "Settings"],
 			["The blue door behind you", "Back to the lab"]]
+		# Away from the green island: the way back first (round 6, #75).
+		if int(field.get("biome")) != 0:
+			keys = [["Change the world station, 1", "Back to the green island"], ["WASD", "Walk"], ["The blue platform", "Turn the slice"],
+				["Tab", "Settings"], ["The blue door", "Back to the lab"]]
 		if String(field.get("site")) == "platform":
-			keys = [["WASD", "Walk"], ["Right drag", "Turn the slice"], ["R", "Level again"], ["Tab", "Settings"]]
+			keys = [["WASD", "Walk"], ["Right drag", "Turn the slice"], ["R", "Level again"], ["Space / Shift", "Platform up, down"], ["Tab", "Settings"]]
 	var kx: float = 22 * u
 	var ky: float = size.y - 22 * u
 	var strip := Rect2(Vector2(kx - 10 * u, ky - 22 * u), Vector2(size.x - 2.0 * (kx - 10 * u), 32 * u))
