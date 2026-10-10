@@ -9,7 +9,22 @@ extends CanvasLayer
 ## and back is an ordinary change of scene; it frees only the current scene, which is the
 ## menu, so the parked game is untouched however often you switch.
 ##
-## ESCAPE ASKS, THEN TAKES YOU HOME (Ramon, 29 Sept: "the menus now should revert back to
+## SINCE 10 OCT THE MENU OWNS THE WAY BACK. The menu's foot has a blue RETURN TO THE WORLD button
+## while a world is held here (menu_final._world_on_hold / _return_to_world call come_back), and
+## Esc everywhere asks the menu's one shared question (Menu/scripts/menu_way_home.gd). So this
+## trip's own "ESC  RETURN TO THE PEN" button and its "Back to the chicken pen?" question are off
+## (Ramon, 10 Oct: the old home buttons go); their code stays, switched off, below. discard() lets
+## the menu give the held world up when PLAY THE WORLD starts a new one.
+##
+## LABS RUN CLEAN (Ramon, 10 Oct: "we are testing performance too"). The world is only HELD (out of
+## the tree, whole) while the menu is up, because the menu is light and coming back from it should
+## be instant. The moment the menu launches a lab it calls release_world(): what the player has
+## done was written down when the world left (pen_resume_4d.gd capture()), and the world is freed,
+## so the lab runs alone. RETURN TO THE WORLD then either puts the held world back (come_back) or,
+## once released, has the menu load the world again behind its loading board (expect_world), and
+## this restores what was written down as soon as the new world is up.
+##
+## UNTIL 10 OCT: ESCAPE ASKS, THEN TAKES YOU HOME (Ramon, 29 Sept: "the menus now should revert back to
 ## the pen by pressing esc, to which you get a notification, back to pen?"). This lives on the
 ## root, outside both menus, and hears Escape only when neither menu wanted it - so Escape
 ## still closes a running prototype, a notice, a drawer or a sub-map first, as it always has,
@@ -30,6 +45,16 @@ extends CanvasLayer
 ##     branch the crossing has hidden - is noted on the way out and made current again on
 ##     the way back.
 
+## The trip's own button and Esc question, from before the menu took the way back over (10 Oct).
+const OWN_WAY_HOME := false
+## Writes the world down and puts it back (made 10 Oct; loaded by path so a missing file only costs
+## the resume, never the trip).
+const RESUME_PATH := "res://ramon/chickenpen/scripts/pen_resume_4d.gd"
+const WORLD_PATH := "res://ramon/chickenpen/playable_world.tscn"
+## Frames to wait for a reloaded world: for it to arrive at all (the menu's threaded load), and
+## then for its _ready and reset sweep to finish before restoring.
+const ARRIVE_FRAMES := 3600
+const SETTLE_FRAMES := 2
 const FONT := "res://ramon/Demo/fonts/Montserrat/static/Montserrat-Medium.ttf"
 const FONT_BOLD := "res://ramon/Demo/fonts/Montserrat/static/Montserrat-SemiBold.ttf"
 
@@ -40,6 +65,11 @@ var _ask: Control
 var _window: Dictionary = {}
 var _environment: Node
 var _home: Button
+## What the player had done when the world left (pen_resume_4d.gd capture()); {} if none.
+var _state: Dictionary = {}
+var _expecting: bool = false
+var _waited: int = 0
+var _settled: int = 0
 
 
 func _ready() -> void:
@@ -50,7 +80,10 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	_home.visible = _pen != null and not _prototype_running()
+	if _expecting:
+		_watch_for_world()
+	# Off since 10 Oct: the menu's blue RETURN TO THE WORLD button is the way back.
+	_home.visible = OWN_WAY_HOME and _pen != null and not _prototype_running()
 	if not _home.visible:
 		return
 	var screen: Vector2 = get_viewport().get_visible_rect().size
@@ -99,6 +132,7 @@ func _swap(menu_path: String) -> void:
 	_pen = tree.current_scene
 	_window = _window_state()
 	_environment = _environment_in_use(_pen)
+	_state = _capture(_pen)
 	# Tells the menu not to take over the window's mode and size - only its scaling, which this
 	# puts back.
 	tree.root.set_meta(&"laptop_trip", true)
@@ -133,6 +167,105 @@ func _return() -> void:
 		_camera.current = true
 	Input.mouse_mode = _mouse
 	queue_free()
+
+
+## The held world given up: PLAY THE WORLD in the menu started a new one (the menu asked first).
+## The menu stays the current scene; the window is the menu's until the new world takes it.
+func discard() -> void:
+	var tree := get_tree()
+	if tree.root.has_meta(&"laptop_trip"):
+		tree.root.remove_meta(&"laptop_trip")
+	_free_world()
+	_state = {}
+	queue_free()
+
+
+## Whether the whole world is still held (back in an instant), rather than written down only.
+func has_world() -> bool:
+	return _pen != null and is_instance_valid(_pen)
+
+
+## The menu is launching a lab: the world goes, so the lab runs alone. Its state was written down
+## when it left; without that (no resume script) it is kept held instead, never lost.
+func release_world() -> void:
+	if not has_world() or _pen.is_inside_tree():
+		return
+	if _state.is_empty():
+		push_warning("LaptopTrip: nothing written down, so the world stays held")
+		return
+	_free_world()
+
+
+## RETURN TO THE WORLD after a release: the menu loads the world again (its own launch, loading
+## board and all); this waits for it to arrive and settle, then restores what was written down.
+func expect_world() -> void:
+	_expecting = true
+	_waited = 0
+	_settled = 0
+
+
+func _watch_for_world() -> void:
+	var tree := get_tree()
+	var here: Node = tree.current_scene
+	_waited += 1
+	if here == null or here.scene_file_path != WORLD_PATH or not here.is_node_ready():
+		if _waited > ARRIVE_FRAMES:
+			push_warning("LaptopTrip: the world never came back; giving up the resume")
+			_expecting = false
+			if tree.root.has_meta(&"laptop_trip"):
+				tree.root.remove_meta(&"laptop_trip")
+			queue_free()
+		return
+	_settled += 1
+	if _settled < SETTLE_FRAMES:
+		return
+	_expecting = false
+	_restore_into(here)
+
+
+func _restore_into(world: Node) -> void:
+	var tree := get_tree()
+	if tree.root.has_meta(&"laptop_trip"):
+		tree.root.remove_meta(&"laptop_trip")
+	_restore_window()
+	# Untyped, so the call is dynamic and the restore (a coroutine) can be awaited.
+	var resume: Variant = _resume_script()
+	if resume != null and not _state.is_empty():
+		await resume.restore(world, _state)
+	if is_instance_valid(world):
+		Input.mouse_mode = _mouse
+	queue_free()
+
+
+func _capture(world: Node) -> Dictionary:
+	var resume: Variant = _resume_script()
+	if resume == null or world == null:
+		return {}
+	resume.clear_root_leftovers(get_tree())
+	return resume.capture(world)
+
+
+func _resume_script() -> GDScript:
+	return load(RESUME_PATH) as GDScript if ResourceLoader.exists(RESUME_PATH) else null
+
+
+## Frees the held world, and the cave it may have parked (CaveCrossing keeps a visited cave out of
+## the tree in `_kept`, which freeing the world does not reach).
+func _free_world() -> void:
+	if _pen == null or not is_instance_valid(_pen):
+		_pen = null
+		return
+	if _pen.is_inside_tree():
+		return
+	var crossing: Node = _pen.get_node_or_null(^"CaveCrossing")
+	if crossing != null:
+		var kept: Variant = crossing.get("_kept")
+		if kept is Node and is_instance_valid(kept) and not (kept as Node).is_inside_tree():
+			(kept as Node).free()
+	_pen.free()
+	_pen = null
+	_camera = null
+	_environment = null
 
 
 func _window_state() -> Dictionary:
@@ -180,6 +313,9 @@ static func _environment_in_use(scene: Node) -> Node:
 # ------------------------------------------------------------------ the question
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Off since 10 Oct: Esc asks the menu's one shared question instead (menu_way_home.gd).
+	if not OWN_WAY_HOME:
+		return
 	if is_asking() or _pen == null:
 		return
 	var key := event as InputEventKey

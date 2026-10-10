@@ -330,6 +330,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	# nothing gave it back, so a running scene could not be closed without killing the
 	# window. First press frees the cursor, second quits.
 	if event.is_action_pressed(&"ui_cancel"):
+		# Launched from the menu, Esc is the menu's one shared question (Menu/scripts/menu_way_home.gd,
+		# 10 Oct): left unhandled so it reaches it; the question frees the cursor itself, and quitting
+		# is the menu's QUIT. Run on its own (no WayHome at the root), Esc does what it always did.
+		if get_tree().root.has_node(^"WayHome"):
+			return
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		else:

@@ -354,6 +354,29 @@ var _menu_scene: Node = null
 var _overlay: Control = null
 var _launching: bool = false
 var _notice: Control = null
+## The Frontier Map's interface sounds (MenuAudio), the same four cues for the same four meanings:
+## click when you pick something, select when something opens or a mode switches, error when it
+## cannot open, swipe when a layer goes away. Only the cues: the map's music bed stays off here,
+## because it would go on playing under a running prototype.
+var _audio: MenuAudio = null
+
+## The greys Ramon tunes behind Tab (10 Oct: "a secret hud ... where i can change the logo grey and
+## save in settings"), each the ink's strength 0..1: higher is darker on white, lighter on dark.
+## Kept in their own settings file rather than the style resource, which carries the run-time
+## palette and would save that too. Read in the editor as well, so the scene preview agrees.
+const TUNING_PATH := "res://ramon/Menu/style/menu_tuning.cfg"
+const TUNING_DEFAULTS := {"list_logos": 0.28, "route_logos": 0.7, "route_rings": 0.3, "music": 0.667}
+## Which section of the .cfg each tuning key is saved in.
+const TUNING_SECTIONS := {"list_logos": "greys", "route_logos": "greys", "route_rings": "greys", "music": "sound"}
+## The music slider's range: 0 is MUSIC_DB_LOW, 1 is MUSIC_DB_HIGH; the default (0.667) is the
+## Frontier Map's -26 dB, which measures about -40 LUFS in the menu, some 10 dB under the select cue.
+const MUSIC_DB_LOW := -46.0
+const MUSIC_DB_HIGH := -16.0
+const MenuTuningHud := preload("res://ramon/Menu/scripts/menu_tuning_hud.gd")
+## The one Esc question and the way back to the world, at the root (menu_way_home.gd says why).
+const MenuWayHome := preload("res://ramon/Menu/scripts/menu_way_home.gd")
+var tuning: Dictionary = TUNING_DEFAULTS.duplicate()
+var _tuning_hud: CanvasLayer = null
 
 
 func _ready() -> void:
@@ -380,9 +403,65 @@ func _ready() -> void:
 		if style != null:
 			style = style.duplicate()
 		_apply_palette()
+		# On the menu node itself, not the rebuilt shell, as the map does: it lives as long as the menu.
+		_audio = MenuAudio.new()
+		add_child(_audio)
+		# The map's music bed plays on the menu again (Ramon, 10 Oct: "bring that back"); it fades
+		# out under a prototype and picks up on the way back (_music). Its level is the Tab panel's.
+		_apply_music_level.call_deferred()
+		MenuWayHome.ensure(get_tree())
+	load_tuning()
 	_connect_resource(style)
 	_connect_resource(catalogue)
 	rebuild()
+
+
+## Reads the tuned greys from TUNING_PATH; a missing file or key keeps the default.
+func load_tuning() -> void:
+	tuning = TUNING_DEFAULTS.duplicate()
+	var cfg := ConfigFile.new()
+	if cfg.load(TUNING_PATH) != OK:
+		return
+	for key in tuning:
+		tuning[key] = clampf(float(cfg.get_value(String(TUNING_SECTIONS.get(key, "greys")), key, tuning[key])), 0.0, 1.0)
+
+
+## Writes the greys to TUNING_PATH (the project's file, so they become everyone's menu).
+func save_tuning() -> Error:
+	var cfg := ConfigFile.new()
+	for key in tuning:
+		cfg.set_value(String(TUNING_SECTIONS.get(key, "greys")), key, snappedf(float(tuning[key]), 0.001))
+	return cfg.save(TUNING_PATH)
+
+
+## One grey changed live: repaints the logos and rings in place, no rebuild (a rebuild would
+## restart the preview video on every step of a drag).
+func set_tuning(key: String, value: float) -> void:
+	tuning[key] = clampf(value, 0.0, 1.0)
+	_a().apply_greys()
+	_apply_music_level()
+
+
+## The music slider's level into the bed (MenuAudio), in dB.
+func _apply_music_level() -> void:
+	if _audio != null and is_instance_valid(_audio):
+		_audio.set_ambience_db(lerpf(MUSIC_DB_LOW, MUSIC_DB_HIGH, float(tuning.get("music", 0.667))))
+
+
+## Tab: the tuning panel, on its own layer on this node (not the shell, which every rebuild replaces).
+func _toggle_tuning() -> void:
+	if _tuning_hud == null or not is_instance_valid(_tuning_hud):
+		_tuning_hud = MenuTuningHud.new(self, TUNING_PATH)
+		add_child(_tuning_hud)
+		_tuning_hud.visible = false
+	_tuning_hud.visible = not _tuning_hud.visible
+	if _tuning_hud.visible:
+		_tuning_hud.call("refresh")
+
+
+func _hide_tuning() -> void:
+	if _tuning_hud != null and is_instance_valid(_tuning_hud):
+		_tuning_hud.visible = false
 
 
 ## Puts the white or the dark palette, and the deck's Regular, into the (run-time copy of the)
@@ -406,6 +485,7 @@ func _show_route(route: bool) -> void:
 		return
 	_route_view = route
 	get_tree().root.set_meta(&"menu_route_view", _route_view)
+	_cue("select")
 	rebuild()
 
 
@@ -413,6 +493,7 @@ func _show_route(route: bool) -> void:
 func _toggle_shade() -> void:
 	_light = not _light
 	get_tree().root.set_meta(&"menu_light", _light)
+	_cue("select")
 	_apply_palette()
 	rebuild()
 
@@ -773,10 +854,10 @@ func rebuild() -> void:
 	# A WAY OUT THAT IS NOT ALT+F4. The menu had no quit at all, so coming back from a
 	# prototype left the window manager as the only exit.
 	#
-	# Put INTO the frame's own switch row rather than positioned in the corner. Two attempts
-	# at absolute offsets landed it on the LIST / ROUTE switches and then across the PLAY THE
-	# WORLD button; the row already solves that, and it moves with the footer if the frame
-	# ever changes. It lives under `_shell`, so it hides with the menu while a prototype runs
+	# Put INTO the frame's corner row (after the light / dark switch) rather than positioned at
+	# offsets. Two attempts at absolute offsets landed it on the LIST / ROUTE switches and then
+	# across the PLAY THE WORLD button; the row already solves that, and it moves with the
+	# footer if the frame ever changes. It lives under `_shell`, so it hides with the menu while a prototype runs
 	# - a quit button floating over the Aquatic Lab would be worse than none.
 	_add_quit_button(_banner_host)
 
@@ -1321,9 +1402,6 @@ func _build_launch_buttons(entry: MenuEntry) -> void:
 		_launch_row.remove_child(child)
 		child.queue_free()
 	_launch_targets = entry.launch_targets(catalogue.launch_label)
-	# From a laptop, the world's own entry is a way home, never a second copy of it.
-	if entry == catalogue.hero and _laptop_trip() != null:
-		_launch_targets = [{"label": catalogue.hero_return_heading, "path": ""}]
 	for i in _launch_targets.size():
 		var button := _make_launch_button(str(_launch_targets[i]["label"]))
 		# Bound by index rather than by path so the handler runs the same
@@ -1335,22 +1413,24 @@ func _build_launch_buttons(entry: MenuEntry) -> void:
 ## Styled rather than left on Godot's default theme, which on this ground sat at
 ## almost exactly the panel colour - the most important control on screen was the
 ## hardest to see.
-## Finds the frame's switch row - the HBox holding the light / dark square and LIST / ROUTE -
-## and puts QUIT at the front of it. Falls back to doing nothing rather than guessing at a
-## position, since a corner-placed button is what went wrong twice.
+## Finds the frame's corner row (menu_a's "CornerRow", the light / dark switch) and puts QUIT at
+## its end, the very corner (Ramon, 10 Oct: "push the quit button to the corner bottom right").
+## Still inside a row, never at absolute offsets, which is what went wrong twice. Falls back to
+## the first HBox, then to nothing.
 func _add_quit_button(frame: Control) -> void:
-	var row: HBoxContainer = _first_hbox(frame)
+	var row := frame.find_child("CornerRow", true, false) as HBoxContainer
+	if row == null:
+		row = _first_hbox(frame)
 	if row == null:
 		push_warning("menu: no switch row found, so no quit button.")
 		return
-	var quit_button: Button = _make_launch_button("QUIT")
+	# In the foot's own button look, like LIST / ROUTE (Ramon, 10 Oct: "fit in style"), not the
+	# filled LAUNCH blue: quitting is not the page's main action.
+	var quit_button: Button = _a().foot_button("QUIT")
 	quit_button.name = "QuitButton"
 	quit_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	quit_button.custom_minimum_size = Vector2(style.space(10), style.space(4))
-	quit_button.add_theme_font_size_override("font_size", style.size_for(MenuStyle.CAPTION))
 	quit_button.pressed.connect(_on_quit_pressed)
 	row.add_child(quit_button)
-	row.move_child(quit_button, 0)
 
 
 func _first_hbox(node: Node) -> HBoxContainer:
@@ -1726,13 +1806,15 @@ func _on_row_input(event: InputEvent, index: int) -> void:
 		if index == _selected:
 			_on_launch_pressed()
 		else:
+			_cue("click")
 			_select(index)
 
 
 ## The banner behaves like a row - click to show it in the pane, again to go - so the
-## world can be read about before committing ten minutes to it. Two exceptions: with no
-## hero configured it shows the old COMING SOON notice, and from a laptop it takes you
-## home on the first click, because going back needs no description.
+## world can be read about before committing ten minutes to it. With no hero configured it
+## shows the old COMING SOON notice. (Until 10 Oct a laptop trip made it the way home on the
+## first click; the blue RETURN TO THE WORLD button at the foot is that now, and the card
+## always means a new world.)
 func _on_hero_input(event: InputEvent) -> void:
 	if _running != null or _launching:
 		return
@@ -1745,10 +1827,10 @@ func _on_hero_input(event: InputEvent) -> void:
 	if catalogue.hero == null:
 		_show_notice()
 		return
-	if _selected == HERO or _laptop_trip() != null:
-		_select(HERO)
+	if _selected == HERO:
 		_on_launch_pressed()
 	else:
+		_cue("click")
 		_select(HERO)
 
 
@@ -1779,10 +1861,10 @@ func _input(event: InputEvent) -> void:
 	if _launching:
 		return
 
+	# Over a running prototype Esc is the one shared question now (menu_way_home.gd, 10 Oct), heard
+	# last so the prototype's own panels close first; it calls _close_running on yes. H is no longer
+	# a way home (Ramon: the H buttons go). So nothing here while a prototype is up.
 	if _prototype_up():
-		if key.keycode == RETURN_KEY or key.keycode == PROTOTYPE_RETURN_KEY:
-			get_viewport().set_input_as_handled()
-			_close_running()
 		return
 
 	# The number keys play the cinematics, in the order they are listed.
@@ -1802,6 +1884,10 @@ func _input(event: InputEvent) -> void:
 			_step_selection(-1)
 		KEY_ENTER, KEY_KP_ENTER:
 			_on_launch_pressed()
+		KEY_TAB:
+			# The secret tuning panel (only here, never over a running prototype: see above).
+			get_viewport().set_input_as_handled()
+			_toggle_tuning()
 
 
 ## Up and down walk the rows in SCREEN order - the banner, then the system groups, then the
@@ -1810,11 +1896,13 @@ func _step_selection(delta: int) -> void:
 	var position_now: int = -1 if _selected == HERO else _order.find(_selected)
 	var next: int = position_now + delta
 	if next < 0:
-		if catalogue.hero != null:
+		if catalogue.hero != null and _selected != HERO:
+			_cue("click")
 			_select(HERO)
 		return
 	if next >= _order.size():
 		return
+	_cue("click")
 	_select(_order[next])
 
 
@@ -1839,6 +1927,7 @@ func _launch(index: int, target: int = 0) -> void:
 		return
 	if entry.section == "Cinematic" and entry.cinematic == "":
 		_detail_path.text = "a placeholder - this cinematic is not made yet"
+		_cue("error")
 		return
 	# A cinematic, opened from a laptop inside the pen: play it in that pen rather than a
 	# second copy, and give the pen back afterwards (pen_cinematics_4d.gd reads both metas).
@@ -1852,14 +1941,26 @@ func _launch(index: int, target: int = 0) -> void:
 	var targets: Array[Dictionary] = entry.launch_targets(catalogue.launch_label)
 	if targets.is_empty():
 		_detail_path.text = "no scene wired yet - nothing to launch"
+		_cue("error")
 		return
 	var chosen: Dictionary = targets[clampi(target, 0, targets.size() - 1)]
 	var path: String = str(chosen["path"])
 	if not ResourceLoader.exists(path):
 		push_error("menu_final: scene missing - %s" % path)
 		_detail_path.text = "MISSING: %s" % path
+		_cue("error")
 		return
 
+	# A lab launched with a world on hold: the world is written down and freed first, so the lab
+	# runs alone and its numbers are its own (Ramon, 10 Oct). Not for the world itself: going back
+	# to it is _return_to_world's business.
+	if index != HERO:
+		var holding: Node = _laptop_trip()
+		if holding != null and holding.has_method("release_world"):
+			holding.call("release_world")
+
+	_cue("select")
+	_music(false)
 	_launching = true
 	# See ensure_root_world_3d(): the scene about to arrive may use the Combined engine.
 	ensure_root_world_3d(get_tree())
@@ -1890,6 +1991,7 @@ func _launch(index: int, target: int = 0) -> void:
 		if status == ResourceLoader.THREAD_LOAD_FAILED or status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 			push_error("menu_final: could not load %s" % path)
 			_hide_overlay()
+			_music(true)
 			_launching = false
 			return
 		if progress.size() > 0:
@@ -1908,6 +2010,7 @@ func _launch(index: int, target: int = 0) -> void:
 	if packed == null:
 		push_error("menu_final: could not load %s" % path)
 		_hide_overlay()
+		_music(true)
 		_launching = false
 		return
 
@@ -1955,6 +2058,7 @@ func _launch(index: int, target: int = 0) -> void:
 	get_tree().current_scene = _running
 
 	_shell.visible = false
+	_hide_tuning()
 	# One white fade, at the very end of the loading (Ramon, 9 Oct: "the white fade in happens after
 	# the tscn loader"). A scene with its own loading board (the Voxel Lab's, opened in its _ready on a
 	# layer above this one) takes over blue to blue and does the white itself once it is built; any
@@ -2000,6 +2104,18 @@ func _show_overlay(entry: MenuEntry, heading: String = "") -> void:
 		numbers.append(["Length", entry.duration])
 	_overlay.set("numbers", numbers)
 	_overlay.call("begin")
+
+
+## The map's music bed: on while the menu is up, faded out and paused under a prototype.
+func _music(on: bool) -> void:
+	if _audio != null and is_instance_valid(_audio):
+		_audio.pause_ambience(not on)
+
+
+## Plays one of the map's cues ("click", "select", "error", "swipe"); silent in the editor.
+func _cue(cue: String) -> void:
+	if _audio != null and is_instance_valid(_audio):
+		_audio.call(cue)
 
 
 ## Gone at once: a launch that failed.
@@ -2056,6 +2172,8 @@ func _close_running() -> void:
 		get_tree().current_scene = _menu_scene
 	_menu_scene = null
 	_hide_overlay()
+	_cue("swipe")
+	_music(true)
 	_shell.visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
@@ -2113,13 +2231,48 @@ func _on_launch_pressed(target: int = 0) -> void:
 	# people do when a screen looks stuck.
 	if _running != null or _launching or Engine.is_editor_hint():
 		return
-	# From a laptop the banner - and its entry's launch button - is the way home.
-	if _selected == HERO:
-		var trip: Node = _laptop_trip()
-		if trip != null:
-			trip.call("come_back")
+	# A world on hold and PLAY THE WORLD pressed: a new world, but only after asking, since the
+	# held one is lost (Ramon, 10 Oct: the card starts fresh, the blue button goes back).
+	if _selected == HERO and _world_on_hold():
+		var way_home: Node = get_tree().root.get_node_or_null(^"WayHome")
+		if way_home != null:
+			way_home.call("ask", "Start a new world?", "The world you left will be lost. To go back to it instead, use Return to the World.",
+				"Yes, Start a New World", "No, Keep It", _start_new_world.bind(target))
 			return
 	_launch(_selected, target)
+
+
+## Whether a world is waiting to be gone back to: held by a laptop trip (pen_laptop_trip_4d.gd)
+## while this menu is up. Shows the blue RETURN TO THE WORLD button at the foot (menu_a).
+func _world_on_hold() -> bool:
+	return _laptop_trip() != null
+
+
+## The blue button: back to the world where it was left. Still held (no lab since): put back in an
+## instant. Written down and freed (a lab ran): loaded again behind the loading board, and the trip
+## restores what was written down once it is up.
+func _return_to_world() -> void:
+	var trip: Node = _laptop_trip()
+	if trip == null or _running != null or _launching:
+		return
+	_cue("select")
+	if not trip.has_method("has_world") or bool(trip.call("has_world")):
+		trip.call("come_back")
+		return
+	trip.call("expect_world")
+	_launch(HERO)
+
+
+func _start_new_world(target: int) -> void:
+	_discard_world()
+	_launch(HERO, target)
+
+
+## The held world given up (PLAY THE WORLD said yes to a new one).
+func _discard_world() -> void:
+	var trip: Node = _laptop_trip()
+	if trip != null and trip.has_method("discard"):
+		trip.call("discard")
 
 
 # --------------------------------------------------------------------------

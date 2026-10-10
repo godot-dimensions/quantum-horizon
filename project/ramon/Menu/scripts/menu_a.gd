@@ -30,11 +30,15 @@ const FONT_DIR := "res://ramon/Demo/fonts/Montserrat/static/"
 const MARGIN := 70.0
 const TOP := 84
 const BOTTOM := 74
+## The foot's controls' height: QUIT's, so LIST / ROUTE in the middle sits on the same line.
+const FOOT_ROW := 32
 
 const WORDS: PackedStringArray = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"]
 
 var m: Control
 var _fonts: Dictionary = {}
+## The list's logos as last built, so the Tab panel's greys can repaint them in place.
+var _logos: Array = []
 
 
 func _init(menu: Control) -> void:
@@ -199,77 +203,130 @@ func build_frame() -> Control:
 	act.offset_right = -MARGIN
 	act.offset_top = 22
 	frame.add_child(act)
+	# The foot is one line (Ramon, 10 Oct: "align and fit in style"): the slug, LIST / ROUTE and the
+	# corner row all centred in the same FOOT_ROW strip, in the same caps.
 	var slug := caps(_footer_slug(), 12, faint())
 	slug.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	slug.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	slug.offset_left = MARGIN
-	slug.offset_bottom = -22
+	slug.offset_right = MARGIN
+	slug.offset_top = -10 - FOOT_ROW
+	slug.offset_bottom = -10
+	slug.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	frame.add_child(slug)
-	# The switches where the deck's page number was (Ramon, 8 Oct: "start with bottom right and
-	# remove 00").
-	var switches := HBoxContainer.new()
-	switches.add_theme_constant_override("separation", 12)
-	switches.add_child(_shade_toggle())
-	switches.add_child(_view_toggle())
-	switches.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	switches.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	switches.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	switches.offset_right = -MARGIN
-	switches.offset_bottom = -10
-	frame.add_child(switches)
+	# LIST / ROUTE at the very middle of the foot (Ramon, 10 Oct: "this panel should be at the very
+	# middle"), in a strip as tall as the corner row so the two sit on one line.
+	var middle := CenterContainer.new()
+	middle.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	middle.offset_top = -10 - FOOT_ROW
+	middle.offset_bottom = -10
+	middle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	middle.add_child(_view_toggle())
+	frame.add_child(middle)
+	# A world on hold (left through a laptop or Esc): the way back, solid blue, just right of the
+	# pill so the pill stays at the very middle (Ramon, 10 Oct). Absent otherwise.
+	if bool(m.call("_world_on_hold")):
+		var back := foot_button("RETURN TO THE WORLD", true)
+		back.name = "ReturnToWorld"
+		back.tooltip_text = "Back to where you left off"
+		back.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+		back.offset_left = 84.0 + 16.0
+		back.offset_right = 84.0 + 16.0 + 230.0
+		back.offset_top = -10 - FOOT_ROW
+		back.offset_bottom = -10
+		back.pressed.connect(m._return_to_world)
+		frame.add_child(back)
+	# The corner: the light / dark switch, then QUIT in the very corner. menu_final's
+	# _add_quit_button finds this row by name and puts QUIT at its end.
+	var corner := HBoxContainer.new()
+	corner.name = "CornerRow"
+	corner.add_theme_constant_override("separation", 28)
+	corner.custom_minimum_size.y = FOOT_ROW
+	corner.add_child(_shade_toggle())
+	corner.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	corner.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	corner.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	corner.offset_right = -MARGIN
+	corner.offset_bottom = -10
+	frame.add_child(corner)
 	frame.draw.connect(_draw_frame.bind(frame))
 	frame.resized.connect(frame.queue_redraw)
 	return frame
 
 
-## LIST and ROUTE as two hard-edged segments, the one showing filled blue.
+## LIST and ROUTE as one pill: rounded at its two outer ends, square where the halves meet, so it
+## reads as one control (Ramon, 10 Oct: "keep a continuation between list and route").
 func _view_toggle() -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 0)
 	row.mouse_filter = Control.MOUSE_FILTER_PASS
 	for k in 2:
 		var route: bool = k == 1
-		var on: bool = bool(m._route_view) == route
-		var b := Button.new()
-		b.text = "ROUTE" if route else "LIST"
-		b.focus_mode = Control.FOCUS_NONE
-		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		b.custom_minimum_size = Vector2(84, 30)
-		var v := FontVariation.new()
-		v.base_font = font("SemiBold")
-		v.set_spacing(TextServer.SPACING_GLYPH, 1)
-		b.add_theme_font_override("font", v)
-		b.add_theme_font_size_override("font_size", 12)
-		var ink_on: Color = Color(1, 1, 1)
-		b.add_theme_color_override("font_color", ink_on if on else accent())
-		b.add_theme_color_override("font_hover_color", ink_on if on else accent())
-		b.add_theme_color_override("font_pressed_color", ink_on)
-		var normal := box(m.style.launch_fill if on else Color(0, 0, 0, 0), 0, m.style.launch_fill, 1)
-		var hover := box(m.style.launch_fill if on else Color(m.style.launch_fill, 0.10), 0, m.style.launch_fill, 1)
-		b.add_theme_stylebox_override("normal", normal)
-		b.add_theme_stylebox_override("hover", hover)
-		b.add_theme_stylebox_override("pressed", normal)
+		var b := foot_button("ROUTE" if route else "LIST", bool(m._route_view) == route, not route, route)
 		b.pressed.connect(m._show_route.bind(route))
 		row.add_child(b)
 	return row
 
 
-## Light or dark: one square with the half-filled disc, beside LIST / ROUTE. Both are how the
-## page is shown, so they sit together at the foot, away from the content.
+## The foot's caps: SemiBold 12, a pixel of tracking (the slug's, the switches', QUIT's).
+func foot_font() -> FontVariation:
+	var v := FontVariation.new()
+	v.base_font = font("SemiBold")
+	v.set_spacing(TextServer.SPACING_GLYPH, 1)
+	return v
+
+
+## A button of the foot (LIST, ROUTE, QUIT; menu_final asks for QUIT): blue caps in a light grey
+## edge, the hairlines' strong grey (Ramon, 10 Oct), or white on solid blue when `on`. Corners
+## round like the LAUNCH button's; `round_left` / `round_right` square off the side that joins
+## another button.
+func foot_button(text: String, on: bool = false, round_left: bool = true, round_right: bool = true) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.focus_mode = Control.FOCUS_NONE
+	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	b.custom_minimum_size = Vector2(84, FOOT_ROW)
+	b.add_theme_font_override("font", foot_font())
+	b.add_theme_font_size_override("font_size", 12)
+	var ink_color: Color = Color(1, 1, 1) if on else accent()
+	for key in ["font_color", "font_hover_color", "font_pressed_color"]:
+		b.add_theme_color_override(key, ink_color)
+	var blue: Color = m.style.launch_fill
+	var edge: Color = blue if on else hair(true)
+	var fills := {"normal": 0.0, "hover": 0.10, "pressed": 0.18}
+	var r: int = m.style.corner_radius
+	for state in fills:
+		var sb := box(blue if on else Color(blue, float(fills[state])), 0, edge, 1)
+		sb.corner_radius_top_left = r if round_left else 0
+		sb.corner_radius_bottom_left = r if round_left else 0
+		sb.corner_radius_top_right = r if round_right else 0
+		sb.corner_radius_bottom_right = r if round_right else 0
+		b.add_theme_stylebox_override(state, sb)
+	return b
+
+
+## Light or dark: what a click turns the page to, in words, then the half-filled disc on its own,
+## no square round it (Ramon, 10 Oct: "only the ball remains and scale that up a bit").
 func _shade_toggle() -> Button:
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	b.tooltip_text = "Dark" if bool(m._light) else "Light"
-	b.custom_minimum_size = Vector2(30, 30)
-	var blue: Color = m.style.launch_fill
-	b.add_theme_stylebox_override("normal", box(Color(0, 0, 0, 0), 0, blue, 1))
-	b.add_theme_stylebox_override("hover", box(Color(blue, 0.10), 0, blue, 1))
-	b.add_theme_stylebox_override("pressed", box(Color(blue, 0.18), 0, blue, 1))
+	b.text = "DARK MODE" if bool(m._light) else "LIGHT MODE"
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.add_theme_font_override("font", foot_font())
+	b.add_theme_font_size_override("font_size", 12)
+	b.add_theme_color_override("font_color", accent())
+	b.add_theme_color_override("font_hover_color", accent())
+	b.add_theme_color_override("font_pressed_color", accent())
+	var r: float = 10.5
+	var bare := StyleBoxEmpty.new()
+	bare.content_margin_right = r * 2.0 + 12.0
+	for state in ["normal", "hover", "pressed", "focus"]:
+		b.add_theme_stylebox_override(state, bare)
 	b.draw.connect(func() -> void:
-		var c: Vector2 = b.size * 0.5
-		var r: float = 7.5
-		b.draw_arc(c, r, 0.0, TAU, 32, accent(), 1.5, true)
+		var c := Vector2(b.size.x - r - 1.0, b.size.y * 0.5)
+		if b.is_hovered():
+			b.draw_circle(c, r, Color(accent(), 0.14))
+		b.draw_arc(c, r, 0.0, TAU, 40, accent(), 1.5, true)
 		var half := PackedVector2Array()
 		for s in 17:
 			var a: float = -PI * 0.5 + PI * float(s) / 16.0
@@ -395,7 +452,9 @@ func deck_title(label: Label) -> void:
 
 
 ## The list's scrolled rows, in a column; `right_gap` keeps the lines and the selection short of
-## the scrollbar.
+## the scrollbar while there is one. Today every row fits, so the bar stays hidden and the rows run
+## the column's full width, flush with the world's card; one more entry and the bar is back, with
+## its gap (Ramon, 10 Oct: keep the scroller for when Trym adds a button).
 func scroll_rows(column: VBoxContainer, right_gap: int) -> VBoxContainer:
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -407,9 +466,15 @@ func scroll_rows(column: VBoxContainer, right_gap: int) -> VBoxContainer:
 	rows.add_theme_constant_override("separation", 0)
 	var inset := MarginContainer.new()
 	inset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	inset.add_theme_constant_override("margin_right", right_gap)
 	inset.add_child(rows)
 	scroll.add_child(inset)
+	# Narrowing the rows can only make them taller (and widening only shorter), so the bar cannot
+	# flicker on and off through this.
+	var bar: VScrollBar = scroll.get_v_scroll_bar()
+	var fit_gap := func() -> void:
+		inset.add_theme_constant_override("margin_right", right_gap if bar.visible else 0)
+	bar.visibility_changed.connect(fit_gap)
+	fit_gap.call()
 	return rows
 
 
@@ -462,6 +527,7 @@ func _list_page(host: MarginContainer) -> void:
 ## Each prototype's own logo, plain (no ring, no frame), its name large and its line small;
 ## hairlines between rows, a heavier one over each group.
 func _list(column: VBoxContainer) -> void:
+	_logos.clear()
 	column.add_child(statement(44))
 	var rows := scroll_rows(column, 22)
 	var first: bool = true
@@ -469,7 +535,8 @@ func _list(column: VBoxContainer) -> void:
 		var group: int = int(chunk[0])
 		if is_films(group):
 			continue
-		gap(rows, 4.0 if first else 28.0)
+		# The rows a little closer (10 Oct) so all seven fit without the scrollbar.
+		gap(rows, 4.0 if first else 18.0)
 		first = false
 		# The family's mark and name, and on the same line what kind of thing it holds (Ramon's 9 Oct
 		# brief: "the two categories should be immediately distinguishable").
@@ -493,7 +560,7 @@ func _list(column: VBoxContainer) -> void:
 			rows.add_child(rule(k == 0))
 			var p := row_panel(i)
 			var pad := MarginContainer.new()
-			m._set_margins(pad, 12, 10)
+			m._set_margins(pad, 12, 7)
 			p.add_child(pad)
 			var line := HBoxContainer.new()
 			line.add_theme_constant_override("separation", 20)
@@ -504,16 +571,20 @@ func _list(column: VBoxContainer) -> void:
 			logo.custom_minimum_size = Vector2(76, 56)
 			logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			logo.modulate = Color(ink(), 0.38)
+			# Lighter on 10 Oct; tuned behind Tab (menu_final.tuning, "list_logos").
+			logo.modulate = Color(ink(), float(m.tuning["list_logos"]))
+			_logos.append(logo)
+			# The icons are 512 px, drawn at 56: mipmapped, or their strokes shimmer.
+			logo.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 			logo.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			line.add_child(logo)
 			var words := VBoxContainer.new()
 			words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			words.add_theme_constant_override("separation", 2)
 			line.add_child(words)
-			# Two of the rows try a step up, to compare (Ramon, 8 Oct): the Shooting Range one
-			# weight up; 4D Ascent one weight up, a little bigger and 20 % brighter.
-			var weight: String = "Regular" if title_of(i) in ["Shooting Range", "4D Ascent"] else "Light"
+			# 4D Ascent tries a step up (Ramon, 8 Oct): one weight up, a little bigger and 20 %
+			# brighter. Shooting Range tried the weight too and went back to Light (10 Oct).
+			var weight: String = "Regular" if title_of(i) == "4D Ascent" else "Light"
 			var ascent: bool = title_of(i) == "4D Ascent"
 			words.add_child(txt(title_of(i), 31 if ascent else 28, ink().lightened(0.2) if ascent else ink(), weight, -1))
 			words.add_child(wrapped(txt(String(entry(i).get("blurb")), 13, dim()), 200))
@@ -524,7 +595,8 @@ func _list(column: VBoxContainer) -> void:
 
 ## The world as the big deal it is (Ramon, 8 Oct: "don't downplay it. it's got everything
 ## integrated and is the big bang"): the code blue, the launch button's corners, a larger title,
-## and what is in it. Inside a laptop trip it is the way home.
+## and what is in it. Always a new world: with one on hold the way back is the blue RETURN TO
+## THE WORLD button at the foot (10 Oct; until then a laptop trip turned this card into it).
 func world_big() -> PanelContainer:
 	var card := PanelContainer.new()
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -538,8 +610,7 @@ func world_big() -> PanelContainer:
 	var words := VBoxContainer.new()
 	words.add_theme_constant_override("separation", 8)
 	pad.add_child(words)
-	var returning: bool = m._laptop_trip() != null
-	var heading: String = m.catalogue.hero_return_heading if returning else m.catalogue.hero_heading
+	var heading: String = m.catalogue.hero_heading
 	var top := HBoxContainer.new()
 	top.add_theme_constant_override("separation", 10)
 	words.add_child(top)
@@ -555,11 +626,10 @@ func world_big() -> PanelContainer:
 	var arrow := txt("→", 34, Color(1, 1, 1), "Light")
 	arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	title_line.add_child(arrow)
-	if not returning:
-		var hero: Resource = m.catalogue.hero
-		if hero != null:
-			words.add_child(wrapped(txt(String(hero.get("blurb")) + ".", 17, Color(1, 1, 1, 0.92)), 300))
-		words.add_child(wrapped(txt("Researchers at work, a cave whose far room lies out along W, the range, a camera for 4D photographs, 5,000 starlings overhead.", 13, Color(1, 1, 1, 0.74)), 300))
+	var hero: Resource = m.catalogue.hero
+	if hero != null:
+		words.add_child(wrapped(txt(String(hero.get("blurb")) + ".", 17, Color(1, 1, 1, 0.92)), 300))
+	words.add_child(wrapped(txt("Researchers at work, a cave whose far room lies out along W, the range, a camera for 4D photographs, 5,000 starlings overhead.", 13, Color(1, 1, 1, 0.74)), 300))
 	return card
 
 
@@ -574,7 +644,7 @@ func world_pill() -> PanelContainer:
 	var pad := MarginContainer.new()
 	m._set_margins(pad, 26, 12)
 	card.add_child(pad)
-	var heading: String = m.catalogue.hero_heading if m._laptop_trip() == null else m.catalogue.hero_return_heading
+	var heading: String = m.catalogue.hero_heading
 	var line := HBoxContainer.new()
 	line.add_theme_constant_override("separation", 12)
 	pad.add_child(line)
@@ -649,6 +719,7 @@ func _route_page(host: MarginContainer) -> void:
 			var ring := Control.new()
 			ring.custom_minimum_size = Vector2(88, 88)
 			ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			ring.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 			ring.draw.connect(_draw_ring.bind(ring, i))
 			p.add_child(ring)
 			m._tracks[i] = ring
@@ -712,7 +783,10 @@ func _draw_ring(ring: Control, index: int) -> void:
 	var r: float = minf(ring.size.x, ring.size.y) * 0.5 - 6.0
 	var chosen: bool = int(m._selected) == index
 	ring.draw_circle(c, r, m.style.launch_fill if chosen else m.style.background)
-	ring.draw_arc(c, r, 0.0, TAU, 48, m.style.launch_fill if chosen else ink(), 2.5, true)
+	# A light grey hairline ring and a darker grey logo (Ramon, 10 Oct), both tuned behind Tab
+	# (menu_final.tuning, "route_rings" and "route_logos").
+	var ring_ink := Color(ink(), float(m.tuning["route_rings"]))
+	ring.draw_arc(c, r, 0.0, TAU, 64, m.style.launch_fill if chosen else ring_ink, 1.0, true)
 	if chosen:
 		ring.draw_arc(c, r + 5.0, 0.0, TAU, 48, Color(m.style.launch_fill, 0.45), 1.5, true)
 	var icon: Texture2D = entry(index).get("icon")
@@ -720,10 +794,21 @@ func _draw_ring(ring: Control, index: int) -> void:
 		var s: float = r * 1.15
 		var aspect: float = float(icon.get_width()) / maxf(1.0, float(icon.get_height()))
 		var size := Vector2(s, s / aspect) if aspect >= 1.0 else Vector2(s * aspect, s)
-		ring.draw_texture_rect(icon, Rect2(c - size * 0.5, size), false, Color(1, 1, 1) if chosen else Color(ink(), 0.85))
+		ring.draw_texture_rect(icon, Rect2(c - size * 0.5, size), false, Color(1, 1, 1) if chosen else Color(ink(), float(m.tuning["route_logos"])))
 	var played: Array = m._played
 	if index < played.size() and bool(played[index]):
 		ring.draw_circle(c + Vector2(r * 0.72, -r * 0.72), 5.0, m.style.positive)
+
+
+## Repaints the list's logos and the route's rings with menu_final's current greys (the Tab
+## panel, live while a slider moves).
+func apply_greys() -> void:
+	for logo in _logos:
+		if is_instance_valid(logo):
+			(logo as TextureRect).modulate = Color(ink(), float(m.tuning["list_logos"]))
+	for ring in m._tracks.values():
+		if is_instance_valid(ring):
+			(ring as CanvasItem).queue_redraw()
 
 
 ## A family's bracket under its name: a thin line from its first stop's centre to its last, with a

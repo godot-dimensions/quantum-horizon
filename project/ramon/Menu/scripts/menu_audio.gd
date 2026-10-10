@@ -61,6 +61,9 @@ var _error: AudioStreamPlayer = null
 var _swipe: AudioStreamPlayer = null
 var _ambience: AudioStreamPlayer = null
 var _muted: bool = false
+var _fade: Tween = null
+## The bed's level now: AMBIENCE_DB unless menu_final's Tab panel set another (set_ambience_db).
+var _ambience_db: float = AMBIENCE_DB
 
 
 func _ready() -> void:
@@ -123,6 +126,33 @@ func _play(player: AudioStreamPlayer) -> void:
 
 func is_muted() -> bool:
 	return _muted
+
+
+## Pauses or resumes the background track with a short fade, keeping its place (menu_final does
+## this around a prototype, 10 Oct: the bed must not play under one, and picks up where it was on
+## the way back). Does nothing while muted.
+func pause_ambience(paused: bool, seconds: float = 0.6) -> void:
+	if _ambience == null or _muted:
+		return
+	if _fade != null and _fade.is_valid():
+		_fade.kill()
+	_fade = create_tween()
+	if paused:
+		_fade.tween_property(_ambience, "volume_db", -60.0, seconds)
+		_fade.tween_callback(func() -> void: _ambience.stream_paused = true)
+	else:
+		_ambience.stream_paused = false
+		if not _ambience.playing:
+			_ambience.play()
+		_ambience.volume_db = -60.0
+		_fade.tween_property(_ambience, "volume_db", _ambience_db, seconds)
+
+
+## The bed's level, live (menu_final's Tab panel, "Music"). Cues are not touched.
+func set_ambience_db(db: float) -> void:
+	_ambience_db = db
+	if _ambience != null and not _ambience.stream_paused and (_fade == null or not _fade.is_running()):
+		_ambience.volume_db = db
 
 
 ## Stops the background track. Interface cues keep playing.

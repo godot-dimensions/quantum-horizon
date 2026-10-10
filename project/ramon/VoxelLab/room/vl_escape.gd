@@ -92,13 +92,22 @@ func _input(event: InputEvent) -> void:
 				else:
 					_yes.grab_focus()
 		return
-	if k.keycode != KEY_ESCAPE and k.keycode != KEY_H:
+	# Launched from the menu (10 Oct) the asking is the menu's one shared question, the same box in
+	# every prototype (Menu/scripts/menu_way_home.gd), and H is no longer a way home (the H buttons
+	# went); this guard keeps only its steps (panels, the bench, flying). Run on its own, as before.
+	var way_home: Node = get_tree().root.get_node_or_null(^"WayHome")
+	if way_home != null and bool(way_home.call("is_asking")):
+		return
+	if k.keycode != KEY_ESCAPE and (k.keycode != KEY_H or way_home != null):
 		return
 	# Both keys are ours from here: the release too, so nothing behind sees half a press.
 	get_viewport().set_input_as_handled()
 	if not k.pressed or k.echo:
 		return
 	if scene.has_method("escape_step") and bool(scene.call("escape_step", k.keycode)):
+		return
+	if way_home != null:
+		way_home.call("ask_home")
 		return
 	open_box()
 

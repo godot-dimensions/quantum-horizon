@@ -245,7 +245,7 @@ func _draw() -> void:
 		_text(fr.position + Vector2(0, 92), "Four islands, through the fourth dimension.", _body, 15, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, fw)
 		var stats: String = "%s     %d turns into W     %d falls" % [_finale.get("time", ""), int(_finale.get("turns", 0)), int(_finale.get("falls", 0))]
 		_text(fr.position + Vector2(0, 134), stats, _bold, 16, ACCENT, HORIZONTAL_ALIGNMENT_CENTER, fw)
-		_text(fr.position + Vector2(0, 178), "R  play again          H  back to menu", _bold, 14, INK, HORIZONTAL_ALIGNMENT_CENTER, fw)
+		_text(fr.position + Vector2(0, 178), "R  play again          ESC  back to menu", _bold, 14, INK, HORIZONTAL_ALIGNMENT_CENTER, fw)
 
 
 func _wrap(text: String, width: float, size: int) -> PackedStringArray:

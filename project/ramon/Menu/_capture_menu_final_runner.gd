@@ -5,7 +5,8 @@ extends SceneTree
 ## Changes nothing on disk. Runs the master (menu_final.tscn) by default; scene=<path> runs another
 ## (menu_variations.tscn, with its design set to A) so the two can be compared pixel for pixel.
 ##
-## Arguments after `--`: scene=<res path>, tag=<name> (default "final").
+## Arguments after `--`: scene=<res path>, tag=<name> (default "final"), tuning=1 (the Tab panel open),
+## ask=1 (the shared Esc question up, answered by nothing), held=1 (a stand-in for a world on hold, so the blue RETURN TO THE WORLD button shows; nothing is held).
 ##
 ##   godot.windows.editor.double.x86_64.console.exe --path project --windowed
 ##       --resolution 1920x1080 --position 40,40 --script res://ramon/Menu/_capture_menu_final_runner.gd
@@ -22,6 +23,9 @@ var _phase := 0
 var _tag := "final"
 var _route_selects: PackedStringArray = []
 var _selects: PackedStringArray = SELECTS
+var _tuning := false
+var _held := false
+var _ask := false
 
 
 func _initialize() -> void:
@@ -38,6 +42,12 @@ func _initialize() -> void:
 				scene = pair[1]
 			"tag":
 				_tag = pair[1]
+			"tuning":
+				_tuning = pair[1] == "1"
+			"held":
+				_held = pair[1] == "1"
+			"ask":
+				_ask = pair[1] == "1"
 			"selects":
 				# A "|" separated list of titles: the route view in white for each (the details pane
 				# there has one fixed height, so every entry's text has to fit it).
@@ -45,6 +55,19 @@ func _initialize() -> void:
 	# The variations menu reads its design from here; the master ignores it.
 	root.set_meta(&"menu_design", 40)
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
+	if _held:
+		# What menu_final._laptop_trip() looks for: the root's meta and a "LaptopTrip" with come_back().
+		var stand_in := Node.new()
+		var script := GDScript.new()
+		script.source_code = "extends Node
+func come_back() -> void:
+	pass
+"
+		script.reload()
+		stand_in.set_script(script)
+		stand_in.name = "LaptopTrip"
+		root.add_child(stand_in)
+		root.set_meta(&"laptop_trip", true)
 	_menu = load(scene).instantiate()
 	root.add_child(_menu)
 	current_scene = _menu
@@ -93,6 +116,17 @@ func _process(d: float) -> bool:
 					_menu.set("_a_route", bool(job[1]))
 				_menu.call("_apply_palette")
 				_menu.call("rebuild")
+				if _tuning and _job == 0:
+					_menu.call("_toggle_tuning")
+				root.set_meta(&"menu_light", bool(job[0]))
+				if _ask and root.get_node_or_null(^"WayHome") != null:
+					root.get_node(^"WayHome").call("refresh_look")
+				if _ask and _job == 0:
+					var way_home: Node = root.get_node_or_null(^"WayHome")
+					if way_home != null:
+						way_home.call("ask_home", func() -> void: pass)
+					else:
+						print("MENU FINAL FRAMES: no WayHome at the root")
 				_phase = 1
 				_t = 0.0
 		1:

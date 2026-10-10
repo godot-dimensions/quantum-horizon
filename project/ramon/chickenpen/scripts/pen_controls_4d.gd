@@ -222,7 +222,7 @@ func _build() -> void:
 	_rows += [
 		["R", "back to your starting slice", false],
 		[OS.get_keycode_string(toggle_key), "hide this card", false],
-		["ESC", "free the cursor, then quit", false],
+		["ESC", "the menu (asks first)", false],
 	]
 	if show_shortcuts:
 		_rule_after = _rows.size() - 1

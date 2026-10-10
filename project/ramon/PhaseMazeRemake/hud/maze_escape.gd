@@ -75,6 +75,12 @@ func _input(event: InputEvent) -> void:
 				else:
 					_yes.grab_focus()
 		return
+	# Launched from the menu (10 Oct) the asking is the menu's one shared question, the same box in
+	# every prototype (Menu/scripts/menu_way_home.gd); this guard keeps only its steps (the Tab panel,
+	# the map). Run on its own, as before.
+	var way_home: Node = get_tree().root.get_node_or_null(^"WayHome")
+	if way_home != null and bool(way_home.call("is_asking")):
+		return
 	var panel: Node = maze_root.get("dev_panel")
 	# H (back to the menu) is ignored while the Tab panel is open: tuning never leaves by accident.
 	if k.keycode == KEY_H and panel != null and (panel as Control).visible:
@@ -89,6 +95,9 @@ func _input(event: InputEvent) -> void:
 	var map: Control = maze_root.get("map")
 	if map != null and map.visible:
 		map.visible = false
+		return
+	if way_home != null:
+		way_home.call("ask_home")
 		return
 	open_box()
 

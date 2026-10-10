@@ -96,6 +96,9 @@ var _measured: bool = false
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Esc in the chair stands you up; the menu's shared Esc question (Menu/scripts/menu_way_home.gd)
+	# asks this group first and leaves the key alone while escape_wanted() says so (10 Oct).
+	add_to_group(&"escape_first")
 	_player = get_node_or_null(player_path) as CharacterBody4D
 	_stage = get_node_or_null(stage_path) as Node4D
 	_camera = get_node_or_null(camera_path)
@@ -376,6 +379,11 @@ func _fold(t: float) -> void:
 ##
 ## NOT THE MOVEMENT KEYS any more (Ramon, 1 Oct): getting up is leaving the talk, and a
 ## brush of W should not end a film.
+## Seated, or sitting down: Esc is this chair's (it stands you up), not the menu's question.
+func escape_wanted() -> bool:
+	return _seated or (_settle > 0.0 and _settle < 1.0)
+
+
 func _wants_out() -> bool:
 	for action in [&"catch_target", &"ui_cancel"]:
 		if InputMap.has_action(action) and Input.is_action_just_pressed(action):

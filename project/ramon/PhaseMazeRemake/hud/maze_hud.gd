@@ -396,7 +396,7 @@ func _keys(u: float, vs: Vector2, state: String) -> void:
 	var rows: Array
 	if state == "lobby":
 		rows = [["1-6", "choose a level"], ["ENTER", "play it"], ["CLICK", "a tile or START"], ["WASD", "walk"], ["B", "dark / bright"], ["TAB", "tune the light"],
-			["ESC", "close a panel, or the menu"], ["H", "back to the menu"]]
+			["ESC", "close a panel, or the menu"]]
 	else:
 		# F's row says whether a turn here opens a way (round 3: "visual feedback when rotation is
 		# available or unavailable"): lit on a blue plate in the level view.

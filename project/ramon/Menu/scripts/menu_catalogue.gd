@@ -198,7 +198,7 @@ func notice_text() -> String:
 		emit_changed()
 
 ## One line under each family's name, saying what kind of thing it holds.
-@export var family_lines: PackedStringArray = PackedStringArray(["How our 4D world is built", "Learn to read 4D by playing"]):
+@export var family_lines: PackedStringArray = PackedStringArray(["How our 4D world is built", "How 4D holds up in play"]):
 	set(value):
 		family_lines = value
 		emit_changed()

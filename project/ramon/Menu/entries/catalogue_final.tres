@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="MenuCatalogue" load_steps=31 format=3 uid="uid://y84yrm3y7yy6"]
+[gd_resource type="Resource" script_class="MenuCatalogue" load_steps=38 format=3 uid="uid://y84yrm3y7yy6"]
 
 [ext_resource type="Script" uid="uid://c12nskqorjkfu" path="res://ramon/Menu/scripts/menu_entry.gd" id="1_i2ljj"]
 [ext_resource type="Texture2D" uid="uid://bqd3858vvcqby" path="res://ramon/Menu/icons/icon_slice_vision.png" id="2_wp3od"]
@@ -14,6 +14,13 @@
 [ext_resource type="Texture2D" uid="uid://bjak7x0lv1gx3" path="res://ramon/Menu/icons/icon_aquatic.png" id="icon_aquatic"]
 [ext_resource type="Texture2D" uid="uid://irnpi5lyimq5" path="res://ramon/Menu/icons/icon_cinematic_starlings.png" id="icon_film1"]
 [ext_resource type="Texture2D" uid="uid://muwo6x5ggm7j" path="res://ramon/Menu/icons/icon_cinematic_mountains.png" id="icon_film2"]
+[ext_resource type="Texture2D" path="res://ramon/Menu/icons/lab_icons_bold/icon_voxel.png" id="bold_voxel"]
+[ext_resource type="Texture2D" path="res://ramon/Menu/icons/lab_icons_bold/icon_creature.png" id="bold_creature"]
+[ext_resource type="Texture2D" path="res://ramon/Menu/icons/lab_icons_bold/icon_botany.png" id="bold_botany"]
+[ext_resource type="Texture2D" path="res://ramon/Menu/icons/lab_icons_bold/icon_aquatic.png" id="bold_aquatic"]
+[ext_resource type="Texture2D" path="res://ramon/Menu/icons/lab_icons_bold/icon_shooting_range.png" id="bold_shooting_range"]
+[ext_resource type="Texture2D" path="res://ramon/Menu/icons/lab_icons_bold/icon_maze.png" id="bold_maze"]
+[ext_resource type="Texture2D" path="res://ramon/Menu/icons/lab_icons_bold/icon_crosswise.png" id="bold_crosswise"]
 
 [sub_resource type="Resource" id="Resource_film1"]
 script = ExtResource("1_i2ljj")
@@ -68,7 +75,7 @@ world_link = "the cave's Artifact block, on the older voxel code"
 also_answers = PackedStringArray()
 detail = "An exhibition of our engine's own 4D voxels: a shelf of specimens, a block you cut by hand with every cut running through W, a builder where bricks laid in one W layer are gone from the next, and a gallery of how our world's land and caves are made. Through the far door, an open island to walk and fly over."
 clip = "voxel_lab"
-icon = ExtResource("7_h1wdl")
+icon = ExtResource("bold_voxel")
 preview_focus = 0.73
 scene_path = "res://ramon/VoxelLab/voxel_lab.tscn"
 extra_launch_labels = PackedStringArray()
@@ -92,7 +99,7 @@ world_link = "the chickens, the wolf raid, the cinema's goat"
 also_answers = PackedStringArray("Build it")
 detail = "The first room builds one 4D animal in five steps: balls, skin, slice, rig and walk. Pick the goat, the chicken or the wolf and step through each. Through the far door, the creature hall: a brachiosaurus, a horse, a wolf, a heron, an owl, crows, chickens and more on their own decks, with other animals standing on the same decks further through W."
 clip = "creature_lab"
-icon = ExtResource("8_jn372")
+icon = ExtResource("bold_creature")
 preview_focus = 0.5
 scene_path = "res://ramon/CreationLab/creature_lab.tscn"
 extra_launch_labels = PackedStringArray()
@@ -117,7 +124,7 @@ world_link = "the oaks, and the red oak on the Watchstone"
 also_answers = PackedStringArray("Build it")
 detail = "One 4D tree skeleton built four ways on four pedestals: blocky cells, smooth voxels, lofted branches, and an oak that grows branch by branch into 77,000 leaves. Each pedestal tells its story and shows what its method costs. Through the back door, two voxel worlds side by side: the same hills built blocky and smooth."
 clip = "botany_lab"
-icon = ExtResource("9_ajynb")
+icon = ExtResource("bold_botany")
 preview_focus = 0.4
 scene_path = "res://ramon/Arboretum/botany_lab.tscn"
 extra_launch_labels = PackedStringArray()
@@ -140,7 +147,7 @@ thrust = "Fill it"
 also_answers = PackedStringArray()
 detail = "A tank room 7 m deep in W: koi, an eel, a crab, a hammerhead and a reef. Step onto the blue square to turn the tank's contents through W and bring in fish that live beside your slice, and feed the koi by the glass. Through the exit door, the sea: a pier and platform, 3,000 sardines, gulls, boats and a visiting plesiosaur."
 clip = "aquatic_lab"
-icon = ExtResource("icon_aquatic")
+icon = ExtResource("bold_aquatic")
 preview_focus = 0.5
 scene_path = "res://ramon/WaterLab/water_lab.tscn"
 extra_launch_labels = PackedStringArray()
@@ -166,7 +173,7 @@ also_answers = PackedStringArray("Build it")
 duration = "9 min"
 detail = "Targets that sit in slices you cannot see. Find them on the radar, step or turn your slice to reach them, then choose the shot: quick for red, charged for amber. Six rounds of four stages each, from finding a core in W to chickens that fly through it and a wolf that runs out of your slice."
 clip = "shooting_range"
-icon = ExtResource("6_13old")
+icon = ExtResource("bold_shooting_range")
 preview_focus = 0.5
 scene_path = "res://ramon/QuantumRange/quantum_range_final.tscn"
 extra_launch_labels = PackedStringArray()
@@ -189,7 +196,7 @@ thrust = "Live it"
 also_answers = PackedStringArray()
 detail = "A maze whose corridors run along x, z and W, so every view of it is a flat maze. Press F and what lay ahead becomes W, with the hidden corridors in front of you; Q and E step through W, slowly and blind. Six levels, each adding one idea, from a single step to a generated cube, and an overlook to read each maze from above."
 clip = "the_maze"
-icon = ExtResource("3_boe22")
+icon = ExtResource("bold_maze")
 preview_focus = 0.5
 scene_path = "res://ramon/PhaseMazeRemake/phase_maze_remake.tscn"
 extra_launch_labels = PackedStringArray()
@@ -214,7 +221,7 @@ world_idea = "the cave's opening through W"
 also_answers = PackedStringArray()
 detail = "Four floating islands, each a puzzle solved by turning a quarter into W. After the turn, forward runs through W: a wall you could not pass is open, a closed cage has an open side, a fence across W hides its door. Carry crates, strike rocks and climb, one new idea per island, each met first in plain 3D."
 clip = "crosswise"
-icon = ExtResource("2_wp3od")
+icon = ExtResource("bold_crosswise")
 preview_focus = 0.64
 scene_path = "res://ramon/Crosswise/crosswise.tscn"
 extra_launch_labels = PackedStringArray()
@@ -403,4 +410,4 @@ hero = SubResource("Resource_penhr")
 cinematics = Array[ExtResource("1_i2ljj")]([SubResource("Resource_film1"), SubResource("Resource_film2")])
 system_lines = PackedStringArray("reading a 4D slice", "moving and acting through W", "4D matter and environments", "creatures built and animated")
 family_names = PackedStringArray("The labs", "The experiments")
-family_lines = PackedStringArray("How our 4D world is built", "Learn to read 4D by playing")
+family_lines = PackedStringArray("How our 4D world is built", "How 4D holds up in play")

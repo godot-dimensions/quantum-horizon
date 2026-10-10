@@ -56,7 +56,8 @@ the words `Menu/entries/catalogue_final.tres`. `Menu/README.md` is the one-page 
 - **The 9 Oct review applied** (`follow_up/menu_review_9oct.md`; Ramon: "yes labs first, go"):
   the films are off the menu (show_in_menu false: no film row, no 1 / 2 keys; they still play in
   the pen, K); one noun per family, THE LABS ("How our 4D world is built") and THE EXPERIMENTS
-  ("Learn to read 4D by playing"), labs first; the kicker counts within the family ("THE LABS · 2
+  ("Learn to read 4D by playing" until 10 Oct, now "How 4D holds up in play": Ramon wanted it to say
+  the experiments are where we test how 4D works as play), labs first; the kicker counts within the family ("THE LABS · 2
   OF 4"); the header says the catalogue's `header_subject` ("4D PROTOTYPES"); every badge set on
   purpose (labs Prototype, experiments Playable); LAUNCH on every entry; a capital W in every
   displayed text; two verbs ("turn the slice", "step through W") and one key style (LMB, RMB,
@@ -92,6 +93,84 @@ the words `Menu/entries/catalogue_final.tres`. `Menu/README.md` is the one-page 
   the playable world; Ramon, 9 Oct: "we might not have the water from the aquatic labs in the
   playable world but they dont need to know"). Don't reword it. (The world does have water: the
   Lookout's marsh along W, built in code by lookout/ana_marsh_4d.gd.)
+- **The films** (9 Oct, Ramon: "make about 5 shots for each prototype video ... as hires as
+  possible ... cinematic, immersive, cool, and also gameplay shots"): each prototype has a 15 to
+  17 s clip at 1920 x 1080, 30 fps, in `Menu/thumbs/<clip>.ogv` (Theora q8; 11 to 51 MB each, the
+  leafy and watery ones largest; q6 halves them, a little softer at full size). Made by
+  `Menu/films/<clip>_film_runner.gd`, one per prototype, with the shared `film_kit.gd` (fixed 30 fps
+  steps, JPG frames, eased glides, HUD hiding) and `film_run.sh <clip> <runner>` (lock-gated, waits
+  up to 45 min; encodes an mp4 to review, the .ogv and a contact sheet into
+  `smoke_test_output/menu_films/`; copying into Menu/thumbs is a separate step). The runners load
+  each prototype's own scene directly, never through the menu, change nothing on disk, and switch
+  the player's input off. Re-film one: `bash Menu/films/film_run.sh voxel_lab
+  res://ramon/Menu/films/voxel_lab_film_runner.gd`, then copy the .ogv over. The screenshots
+  (`<clip>_still.png`) stay as the fallback. Not filmed yet: the world (all its older footage
+  predates the pen's Layout B).
+- **Sounds:** the Frontier Map's MenuAudio cues, with its logic: click on picking a row or the
+  world card (mouse or arrows), select on a launch and on LIST / ROUTE and light / dark, error on a
+  missing or unwired scene, swipe on coming back from a prototype. The map's music bed is off
+  (it would play under a running prototype). `_cue()` in menu_final.gd.
+- **The foot (10 Oct):** LIST / ROUTE at the very middle (light grey edge, the "on" side blue);
+  in the corner row (`CornerRow` in menu_a.gd) the words DARK MODE or LIGHT MODE (what a click
+  turns it to) with the bare half-filled ball, then QUIT, which `_add_quit_button` appends to that
+  row. The list's rows sit a little closer (padding 7, family gap 18) so all seven fit and the
+  scrollbar is hidden; the ScrollContainer stays, and `scroll_rows` gives back the 22 px gap only
+  while the bar shows, so an eighth entry brings the bar straight back.
+- **Round 2 of the foot (10 Oct evening):** one button look for the foot, `foot_button()` in
+  menu_a.gd: blue caps in a light grey edge, rounded like LAUNCH, white on blue when on. LIST /
+  ROUTE is one pill (rounded only at its outer ends); QUIT uses the same look instead of the
+  filled launch blue; the slug, the pill and the corner row are centred on one line (`FOOT_ROW`).
+  Shooting Range's row title is back to Light. On the route the rings are 1 px and the logos
+  greyer (ink at 0.5).
+- **The icons (10 Oct):** Ramon's bold set, `Menu/icons/lab_icons_bold/` (white 512 px PNGs, the
+  SVG sources in `svg/`, ignored by Godot; README from the set), used exactly as given for the seven
+  visible entries in catalogue_final.tres. The PNGs are imported with mipmaps and drawn with
+  `TEXTURE_FILTER_LINEAR_WITH_MIPMAPS` (list logos, route rings): at 56 px from 512 they shimmer
+  otherwise. The old icons stay for the hidden entries and the other menus.
+- **The greys and the Tab panel (10 Oct):** route rings light grey, route logos darker, list logos
+  lighter. The three greys are ink strengths in `Menu/style/menu_tuning.cfg` ([greys] list_logos,
+  route_logos, route_rings), read by menu_final (`tuning`, also in the editor) and used by menu_a.
+  **Tab** on the menu opens `Menu/scripts/menu_tuning_hud.gd`: a slider per grey that repaints
+  live (no rebuild, so the video keeps playing), SAVE writes the .cfg (it is in the repo, so a save
+  is everyone's menu), REVERT reads it back. Tab does nothing while a prototype runs, and the panel
+  hides on launch. More knobs go in the same file and panel: add a key to `TUNING_DEFAULTS` and a
+  row to the panel's `ROWS`. Frames with it open: the capture runner's `tuning=1`.
+- **The way home (10 Oct night; Ramon: "Escape must always provide a safe, consistent way back").**
+  `Menu/scripts/menu_way_home.gd`, a CanvasLayer "WayHome" the first menu puts at the ROOT (it
+  outlives the menu, which the world replaces, and every room change):
+  - **One question everywhere:** "Return to Main Menu?" / "Yes, Return to Menu" / "No, Stay Here",
+    centred, bright in light mode and black in dark (follows the root's `menu_light`). The tree is
+    paused while it is up; Enter = yes, Esc = no. `ask()` is reused for other yes/no questions
+    ("Start a new world?").
+  - **Heard last:** WayHome sits FIRST among the root's children (moved back there on every root
+    arrival), so in `_unhandled_input` it hears only an Esc nobody else took: open panels,
+    conversations, cutscenes, the journal, the hawk close first. Nodes that poll Esc without taking
+    it join group `escape_first` with `escape_wanted()` (the theatre seat). While asking it moves
+    itself last so its `_input` is first.
+  - **Yes:** under a live menu, `_close_running()`; in the world, the world is held by a
+    `pen_laptop_trip_4d.gd` trip exactly as a laptop holds it; else a change of scene to the menu.
+  - **Switched over (each guarded by "is there a WayHome at the root", so a scene run on its own
+    behaves as before):** the menu's own Esc/H close (gone); the seven `pen_orbit_rig_4d.gd` copies
+    (world, Creature, Water, Botany x2, Maze walker, Voxel) no longer free-then-QUIT; the Voxel Lab's
+    `vl_escape.gd` and the Maze's `maze_escape.gd` keep their steps and call `ask_home()` instead of
+    their own box; the Range's Esc no longer frees/quits after its F1 step; the old
+    `Demo/return_button.gd` "BACK TO MENU  H" prompts are hidden and silenced as they appear (not on
+    the world's own range trip); H is no longer a way home; hints updated (world controls card, Maze
+    lobby, Crosswise finale).
+  - **The world on hold:** the laptop trip no longer shows its own ESC RETURN TO THE PEN button or
+    "Back to the chicken pen?" (`OWN_WAY_HOME := false`). The menu's foot shows a solid blue
+    RETURN TO THE WORLD right of the LIST/ROUTE pill while a trip exists; the world card always means
+    a new world (asks "Start a new world?" first, `discard()` frees the held one).
+  - **Labs run clean:** held whole only while the menu is up; launching a lab calls the trip's
+    `release_world()`, which frees the world (and a cave CaveCrossing parked in `_kept`) after it was
+    written down at the moment it left (`pen_resume_4d.gd capture()`). Return then loads the world
+    through the menu's own launch (loading board) and the trip restores what was written down once it
+    is up (`expect_world()`). No resume script, no release: the world stays held, never lost.
+  - **Checks:** `Menu/_verify_way_home_runner.gd` (every entry: Esc asks, No changes nothing, Esc +
+    Enter lands on the menu; second rooms; the Maze's Tab panel closes first; the world: hold, return,
+    release by a lab, reload and restore, a laptop; memory per stage). Frames in
+    `smoke_test_output/way_home/`. Backups of every non-menu file touched:
+    `Menu/.backup/2026-10-10_way_home/` and `chickenpen/.backup/2026-10-10_way_home/`.
 - **Kept, uncommitted on purpose:** `Menu/scripts/menu_designs_b.gd` and `menu_designs_c.gd`, the
   originals of the frozen copies the variations scene reads (`menu_variations_b/c.gd`). Nothing uses
   them; Ramon, 9 Oct: "leave them out but i want to keep them". Don't delete them, don't commit them.
