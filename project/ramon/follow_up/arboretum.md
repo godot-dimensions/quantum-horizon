@@ -1195,3 +1195,79 @@ first draw hitches (build proxies while loading).
 73. Questions for Ramon.
 74. The round 2 hall kept in git to compare.
 75. A sheet of frames for Ramon.
+
+### Status (10 Oct, round 3)
+
+Built from the plan above, in the fork (botany_lab.tscn and botany_lab/); arboretum.tscn and the menu card
+untouched. Checkpoint f60485a, then the finishing commit after it; nothing pushed.
+
+**The flora library (`botany_lab/flora/`, steps 1-15).**
+- `flora_species.gd`: the twelve pocket species and clematis as data (real counts and forms, colours
+  by part). `flower_4d.gd` builds one: the four arrangements of the header (ring + W pair, band, ball,
+  bells), petals and leaves as thin blades along curved midribs (flat across the face, round across the
+  slice's other direction and W), spindles for the hundreds of florets and filaments, solid 4D cores
+  under the alliums' and dandelions' balls (without them a slice cut only a sparse cloud of dots), every
+  loop capped. A light loft (the loft builder without its span splitting, which only guards the editor's
+  click-picking) halved the cells: 4,100 a plant on average.
+- One material for every plant: one 3D texture of every species' colours and `flora_plant.gdshader`,
+  which bends each plant with the room's wind (the angle grows with height squared, so the stem curves),
+  fed each render by `flora_air_4d.gd`.
+- Butterflies: eight species, three true 4D lofts each (body, two wing pairs hinged on it), patterns
+  painted from the real insects; `butterflies_4d.gd` flies, lands, basks and takes off, a gust lifts them.
+- The pen's tricks carried, the pen untouched: `flora_drift*` (the wind bits: a box of air or a stream
+  from a source) and `flora_sprigs*` (leaves, blades, florets drawn where your slice crosses them, each
+  with a home in W, so the ivy is a different ivy in every slice).
+- Runners: `_bl_flora_probe_runner.gd` (headless, every species once, timed; 1.5 s for all), and
+  `_bl_flora_gallery_runner.gd` (each species side on, close, turned 45 and 90 degrees; each butterfly
+  open, mid-beat, closed).
+
+**The flower room (`botany_lab/flowers/flower_room.tscn`, steps 16-32).** Its own scene through the
+holographic doorway at the end of the border (Ramon: "the flower room should be its own tscn with
+transporter door"), a loading board, a floating panel by the door (`fr_words.gd`: how a 4D flower is
+built, the turn, the butterflies).
+- A 20 m glasshouse open to the sky through a frame of beams; the middle clean, a ring in the floor.
+- Four walls of sandstone pockets (44 in two rows, a trailing row above), one species each, 191 plants
+  over grass and leaves, a plate under each with its common and Latin names; the caption names the
+  pocket in front of you.
+- Climbers (true 4D vines up the corners and piers, 40 clematis and passionflower blooms on them), ivy,
+  wisteria and wall-foot grass as sprigs (60,000 pieces).
+- 32 butterflies (about 7 on a flower at a time, up to 14), petals and pollen in the air.
+- A right drag turns every flower through W about its own stem, in its own frame; the pockets never
+  move; R levels them. G is a gust.
+- Numbers (windowed, vsync off, this RTX 5080): ready in 1.4 s, the board gone at 3.3 s; frames 1.4 to
+  2.4 ms (the GPU 1.0 to 2.1 ms) at the door, the middle and a pocket, with up to a million tetrahedra
+  shown. Pockets behind the camera are hidden (the engine cuts every visible mesh every frame).
+
+**The hall (steps 33-47).** The trees all on the left, simple to complex toward the oak, on planters
+(stone body, soil, a warm line under the rim: `kit_pedestal.gd`'s "planter" forms), each with a meadow
+of grass and wildflowers in its soil; the oak at the end on its low wide planter in the warmest light.
+Down the right, the flower border: eight small planters of four flowers each, their names round their
+sides (`room/bl_border_4d.gd`), a few butterflies, a right drag at them turns the border's flowers through
+W. The border's path ends at the flower room's door in the right wall, its sign above. Leaves blow from
+the oak's crown toward the door (520 at a time, more in a gust). The roof is open to a soft sky through
+a frame of beams; the walls are a cool blue-grey and the floor warm stone in the grey palette (B keeps
+the black one). The route is re-laid by `_bl_make_paths_runner.gd` (its checks pass); the tour opens on a
+shot down the middle and closes along the border to the flower room's door. The play-through passes 37
+of 37, the border and the flower door included. Frame times (perf2, vsync off): medians 2.5 to 5.2 ms at
+the pedestals; the tour's median 2.8 ms and its worst frame 6 ms (round 2's worst was 119 ms); each
+arrival at a pedestal still has one frame of about 25 ms, after every new mesh's proxy is built at load.
+
+**The film.** `smoke_test_output/video/botany_lab_r3_walk.mp4` (37 s, the loading cut, the runner
+`scripts/_bl_film_walk_runner.gd`, `-- hall` and `-- flowers`, joined with a fade): down the hall, along
+the border, a planter turned through W, through the flower room's door, round its walls, up to a pocket,
+every flower turned through W and back, a gust.
+
+**The second room (steps 48-54).** One valley mirrored across a sunken walkway 4.2 m wide (the right
+half reads the noise at minus x), so the hills run on across the cut and both methods still build the
+same hills; the land on banks at eye level (0.9 m of stone, clay and topsoil, their cut faces showing);
+a low warm sun at the far end and a painted horizon on the far wall (the walkway runs into it); leaves
+down the cut. A turn keeps the mirror (the right half turns as the left's reflection). Ready in 5.9 s;
+frames 5.8 to 6.2 ms (the land and its trees are 1.3 million tetrahedra).
+
+**Questions for Ramon.**
+1. The hall's open roof and its cooler walls: keep, or the lab's ceiling back?
+2. The flower room's density: 191 flowers costs 1.4 to 2.4 ms here. More, or fewer?
+3. The 4D flowers' "W pair" (one more petal each way through W): a good rule for every species, or only
+   some?
+4. Which flowers you want added (the pockets take any species from `flora_species.gd`).
+5. The menu: the fork is still not live. Say when botany_lab.tscn replaces arboretum.tscn.

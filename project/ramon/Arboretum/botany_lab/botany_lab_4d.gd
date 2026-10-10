@@ -753,6 +753,15 @@ func _build_garden() -> void:
 	if roof_open:
 		_roof_frame()
 	_meadows()
+	# Every new mesh's 3D proxy built now, not on its first draw (round 2's lesson: the hall's arrival
+	# hitches were first draws; round 3's perf2 showed one 28-34 ms frame at three arrivals again).
+	(func() -> void:
+		var seen: Dictionary = {}
+		for mi in find_children("*", "MeshInstance4D", true, false):
+			var m: Mesh4D = (mi as MeshInstance4D).mesh
+			if m != null and not seen.has(m.get_instance_id()):
+				seen[m.get_instance_id()] = true
+				m.get_proxy_mesh_3d()).call_deferred()
 
 
 ## A meadow on every planter's soil (the pen's grass trick, flora/flora_sprigs_4d.gd: blades drawn where your

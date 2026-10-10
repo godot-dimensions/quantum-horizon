@@ -128,6 +128,7 @@ var _turn_said: bool = false
 var _strip_tilt: int = -1
 var _perch_t: float = 0.0
 var _materials: Dictionary = {}
+var _near_panel: bool = false
 
 
 func _ready() -> void:
@@ -173,8 +174,10 @@ func _ready() -> void:
 	_flies.name = "Butterflies"
 	_flies.set_script(Butterflies)
 	_flies.set("count", butterflies)
-	_flies.set("bounds_lo", Vector3(-half + 1.4, 0.7, -half + 1.4))
-	_flies.set("bounds_hi", Vector3(half - 1.4, 6.2, half - 1.4))
+	# Into the pockets to land (the flowers stand up to 0.7 m into the facade), wandering in the open air.
+	_flies.set("bounds_lo", Vector3(-half + 0.2, 0.6, -half + 0.2))
+	_flies.set("bounds_hi", Vector3(half - 0.2, 6.2, half - 0.2))
+	_flies.set("air_margin", 1.4)
 	_flies.set("perch_source", perch_points)
 	_flies.set("wind", wind)
 	add_child(_flies)
@@ -210,6 +213,9 @@ func _ready() -> void:
 	go_to(Vector4(start_at.x, 0.05, start_at.y, 0.0), 0.0)
 	var from_hall: bool = String(get_tree().root.get_meta(ARRIVE_META, "")) == "hall"
 	get_tree().root.remove_meta(ARRIVE_META)
+	var pn: Node = get_node_or_null("PanelFlowers")
+	if pn != null:
+		pn.set("player", player)
 	_build_hud()
 	_build_door()
 	if from_hall:
@@ -842,9 +848,18 @@ func _process(delta: float) -> void:
 			back_to_hall()
 		return
 	_caption(p)
+	var pn: Node4D = get_node_or_null("PanelFlowers") as Node4D
+	var near: bool = false
+	if pn != null:
+		var pp: Vector4 = pn.global_position
+		near = Vector2(p.x - pp.x, p.z - pp.z).length() < 1.7
+		pn.call("set_near", near)
+	# (E is the panel's at the panel, and a step through W everywhere else.)
+	player.set("w_walk_enabled", not near)
 	var tilt: int = int(round(rad_to_deg(Ground.tilt(turn_basis))))
-	if tilt != _strip_tilt:
+	if tilt != _strip_tilt or near != _near_panel:
 		_strip_tilt = tilt
+		_near_panel = near
 		_strip()
 
 
@@ -892,6 +907,8 @@ func _strip() -> void:
 	if hud == null:
 		return
 	var out: Array = [["WASD", "Move"], ["Mouse", "Look"], ["Right drag", "Turn every flower through W"], ["Q / E", "Step through W"], ["G", "Gust of wind"]]
+	if _near_panel:
+		out = [["E", "More about it"], ["WASD", "Move"], ["Right drag", "Turn every flower through W"], ["G", "Gust of wind"]]
 	if _strip_tilt > 0:
 		out.insert(3, ["%d°" % _strip_tilt, "turned through W"])
 		out.insert(4, ["R", "Level"])
@@ -926,6 +943,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_G:
 			gust()
 			get_viewport().set_input_as_handled()
+		KEY_E:
+			var pn: Node = get_node_or_null("PanelFlowers")
+			if pn != null and bool(pn.get("near")):
+				pn.call("activate")
+				get_viewport().set_input_as_handled()
 		KEY_R:
 			if turn_basis != Projection.IDENTITY:
 				level()

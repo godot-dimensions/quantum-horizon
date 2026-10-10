@@ -120,7 +120,15 @@ func _views() -> void:
 	# Corner climbers.
 	_go(-6.5, -6.5, 45.0, 2.0, 3.0)
 	await _shot("12_corner")
-	print("FLOWER ROOM butterflies sitting %d of %d perches" % [int(_room.get("_flies").call("sitting")), int(_room.get("_flies").call("perches_count"))])
+	# (Sampled over 20 s: how many are on a flower at a time.)
+	var most: int = 0
+	var total: int = 0
+	for i in 20:
+		await create_timer(1.0).timeout
+		var n: int = int(_room.get("_flies").call("sitting"))
+		most = maxi(most, n)
+		total += n
+	print("FLOWER ROOM butterflies sitting: %.1f on average, %d at most, of %d (%d perches)" % [float(total) / 20.0, most, int(_room.get("butterflies")), int(_room.get("_flies").call("perches_count"))])
 
 
 func _perf() -> void:

@@ -29,6 +29,8 @@ enum {FLY, LAND, SIT, TAKE_OFF}
 ## The air they keep to (this node's space).
 @export var bounds_lo: Vector3 = Vector3(-9.0, 0.5, -9.0)
 @export var bounds_hi: Vector3 = Vector3(9.0, 6.0, 9.0)
+## How far inside `bounds` the points they wander to stay (they fly anywhere in bounds to reach a flower).
+@export var air_margin: float = 1.2
 ## How far through W they wander either side of the slice, metres.
 @export var w_wander: float = 0.006
 @export var speed: float = 0.9
@@ -135,7 +137,8 @@ func _pick_target(f: Dictionary) -> void:
 			_taken[best] = true
 			f["target"] = _perch_point(best)
 			return
-	f["target"] = Vector4(_rng.randf_range(bounds_lo.x, bounds_hi.x), _rng.randf_range(bounds_lo.y + 0.6, bounds_hi.y - 0.5), _rng.randf_range(bounds_lo.z, bounds_hi.z), 0.0)
+	var m: float = air_margin
+	f["target"] = Vector4(_rng.randf_range(bounds_lo.x + m, bounds_hi.x - m), _rng.randf_range(bounds_lo.y + 0.6, bounds_hi.y - 0.5), _rng.randf_range(bounds_lo.z + m, bounds_hi.z - m), 0.0)
 
 
 func _take_off(f: Dictionary) -> void:
@@ -189,7 +192,9 @@ func _step(f: Dictionary, dt: float, gusty: bool) -> void:
 			var v: Vector4 = f["v"]
 			var sd: float = float(f["seed"])
 			var wander := Vector4(sin(_t * 0.7 + sd), sin(_t * 1.1 + sd * 1.3) * 0.6, cos(_t * 0.8 + sd * 0.7), 0.0)
-			var want: Vector4 = (to / maxf(dist, 0.001)) * speed * clampf(dist / 0.6, 0.35, 1.0) + wander * 0.35 * speed
+			# The wander fades as a flower nears, so they arrive instead of circling it.
+			var wander_k: float = clampf(dist / 1.5, 0.0, 1.0) if int(f["perch"]) >= 0 else 1.0
+			var want: Vector4 = (to / maxf(dist, 0.001)) * speed * clampf(dist / 0.6, 0.35, 1.0) + wander * 0.35 * speed * wander_k
 			if state == TAKE_OFF and t < 0.6:
 				want += Vector4(0, 0.6, 0, 0) * speed
 			var steer: float = 2.2 if dist > 0.8 else 4.0
@@ -223,7 +228,7 @@ func _step(f: Dictionary, dt: float, gusty: bool) -> void:
 			if state == TAKE_OFF and t > 0.9:
 				f["state"] = FLY
 			var perch: int = f["perch"]
-			if perch >= 0 and dist < 0.22:
+			if perch >= 0 and dist < 0.32:
 				f["state"] = LAND
 				f["t"] = 0.0
 				f["from"] = p

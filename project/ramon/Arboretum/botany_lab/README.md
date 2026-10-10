@@ -7,6 +7,9 @@ when it goes live. The plan and the status are in `follow_up/arboretum.md`, sect
 - **The hall:** `../botany_lab.tscn`, its root script `botany_lab_4d.gd`.
 - **The second room:** `compare/botany_compare.tscn`, its root script `compare/bl_compare_4d.gd`. You
   reach it through the hall's back door.
+- **The flower room** (round 3, 10 Oct; section 9 of the handover): `flowers/flower_room.tscn`, its root
+  script `flowers/flower_room_4d.gd`. You reach it through the holographic doorway in the hall's right
+  wall, at the end of the flower border.
 - **The original:** `../arboretum.tscn` and `../arboretum_4d.gd` are untouched, and so is the menu's
   card, which still opens `arboretum.tscn`.
 
@@ -23,7 +26,10 @@ when it goes live. The plan and the status are in `follow_up/arboretum.md`, sect
 | `baked/` | The rework's own bakes and their record (`bl_bake.cfg`), made by `scripts/_bl_bake_runner.gd`. |
 | `paths/hall.tres` | The hall's route, made by `scripts/_bl_make_paths_runner.gd`. |
 | `compare/` | The second room. |
-| `scripts/` | The runners: proof, play, capture, compare, paths, bake. |
+| `flora/` | Round 3: the flowering plants and butterflies, lofted in 4D (`flora_species.gd` the data, `flower_4d.gd` the builder and the one shared material, `flora_plant.gdshader` its wind, `flora_air_4d.gd` feeding it each render), the butterflies (`butterfly_4d.gd`, `butterflies_4d.gd`), drifting petals and leaves (`flora_drift*`, the pen's wind bits carried) and the small foliage (`flora_sprigs*`, the pen's grass trick carried). `flora/baked/` holds their bakes (made on first run). |
+| `flowers/` | Round 3: the flower room. |
+| `room/bl_border_4d.gd` | Round 3: the hall's flower border, eight small planters. |
+| `scripts/` | The runners: proof, play, capture, compare, paths, bake; round 3's flora probe and gallery, flower room and film. |
 
 ## What is shared, and must stay
 
@@ -37,6 +43,8 @@ fork exists:**
   plants these).
 - **Panels and shrubbery:** `../room/arb_panel_source.gd` (the research board's numbers) and
   `../carried/shrubbery/` (the skeletons' crown shapes).
+- **The wind:** `../botany/wind_4d.gd`, shared with the Arboretum. Round 2 added optional strength,
+  width and lead to its `gust()`; called without them it behaves as before.
 
 ## Rules
 
