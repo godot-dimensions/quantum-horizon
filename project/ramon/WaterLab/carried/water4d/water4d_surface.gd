@@ -95,6 +95,19 @@ var light_response: float = 1.0
 var _instance := RID()
 ## WATER LAB: the far ring, out to `far_extent` metres (0: none), drawn with the same material.
 var far_extent: float = 0.0
+## WATER LAB, ROUND 6: ONE GRADED SEA instead of the square and the ring, out to `graded_reach` metres (0:
+## off, the square and the ring as before). Ramon (Aquatic Lab part 5, #41): "A square region around the main
+## scene displays detailed water, while the surrounding ocean uses a visibly different, lower-detail
+## representation." The near square's 0.63 m cells stop at `extent` and the ring's start 10 to 25 times
+## bigger, while the waves there are still at full height (their fade starts at `extent`): the ring cannot
+## carry them, nor the fine ripple, so the change of mesh drew a square. The Voxel Lab found the same and
+## fixed it in its own sea (VoxelLab/field/vl_sea_4d.gd, round 5 #46); this is that fix, here in the shared
+## script so both seas can use one: the even cells out to `extent`, then every ring of cells GRADED_GROWTH
+## wider than the one inside it, and the fine ripple faded out before the cells outgrow it (the shader's
+## `detail_fade_far`, 2.5 times `extent`). Set it from the scene's _ready, as far_extent is (the mesh is
+## swapped in a moment later, _make_far). The Voxel Lab's sea builds its own and does not set it.
+var graded_reach: float = 0.0
+const GRADED_GROWTH := 1.045
 var _far_instance := RID()
 var _far_mesh: ArrayMesh = null
 var _mesh: ArrayMesh = null
@@ -163,6 +176,11 @@ func _ready() -> void:
 
 
 func _make_far() -> void:
+	if graded_reach > extent:
+		_mesh = _build_graded_grid()
+		RenderingServer.instance_set_base(_instance, _mesh.get_rid())
+		_material.set_shader_parameter(&"detail_fade_far", extent * 2.5)
+		return
 	if far_extent > extent and not _far_instance.is_valid():
 		_far_mesh = _build_far_ring()
 		_far_instance = RenderingServer.instance_create()
@@ -271,6 +289,55 @@ func _build_grid() -> ArrayMesh:
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	# Godot would work this out from the flat lattice, which is not where the shader puts
 	# anything; a generous one keeps it from being thrown away before ignore_culling applies.
+	mesh.custom_aabb = AABB(Vector3(-5000, -5000, -5000), Vector3(10000, 10000, 10000))
+	return mesh
+
+
+## WATER LAB, round 6: the graded grid (see `graded_reach`): lines every extent / (GRID_RESOLUTION / 2) m out
+## to `extent`, then each gap GRADED_GROWTH times the last out to `graded_reach`, the same both ways and on both
+## axes (the Voxel Lab's vl_sea_4d.gd _build_grid, the same lattice).
+func _build_graded_grid() -> ArrayMesh:
+	var half: int = GRID_RESOLUTION >> 1
+	var step: float = extent / float(half)
+	var line: Array = []
+	for k in half + 1:
+		line.append(step * float(k))
+	var gap: float = step
+	# Bounded: at 1.045 a ring, 900 m is reached in under a hundred rings.
+	for guard in 400:
+		if float(line[-1]) >= graded_reach:
+			break
+		gap *= GRADED_GROWTH
+		line.append(minf(float(line[-1]) + gap, graded_reach))
+	var coords: Array = []
+	for k in range(line.size() - 1, 0, -1):
+		coords.append(-float(line[k]))
+	coords.append_array(line)
+	var n: int = coords.size()
+	var verts := PackedVector3Array()
+	verts.resize(n * n)
+	for j in n:
+		for i in n:
+			verts[j * n + i] = Vector3(float(coords[i]), 0.0, float(coords[j]))
+	var indices := PackedInt32Array()
+	indices.resize((n - 1) * (n - 1) * 6)
+	var at: int = 0
+	for j in n - 1:
+		for i in n - 1:
+			var a: int = j * n + i
+			indices[at] = a
+			indices[at + 1] = a + n
+			indices[at + 2] = a + 1
+			indices[at + 3] = a + 1
+			indices[at + 4] = a + n
+			indices[at + 5] = a + n + 1
+			at += 6
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	mesh.custom_aabb = AABB(Vector3(-5000, -5000, -5000), Vector3(10000, 10000, 10000))
 	return mesh
 

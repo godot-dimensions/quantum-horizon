@@ -5,47 +5,55 @@ extends Node4D
 ## fourth-dimensional distribution more apparent without overcrowding the visible slice"; and "use
 ## the tool that actually distributes geometry through W ... not the static illusion").
 ##
-## THE W TOOLS EXPLODER'S DISTRIBUTION, carried as its algorithm (WTools/exploder/w_exploder_4d.gd
-## layer_ws, _dice, _place_near, _spawn; not its trunk slab, which deepens one mesh in W and places
-## nothing): the slice's W is cut into layers `layer_spacing` apart either side, out to `w_reach`;
-## each principal boat throws a die per layer (stable: seeded from its name and the layer), and on
-## `share` of them a boat goes there, nudged sideways `shift` metres in a random direction, turned a
-## random heading, a little bigger or smaller. Each is a whole boat (fishing_boat_4d.gd) riding the
-## sea at its own W. Kept clear of the pier and the platform. Not preloaded from WTools: that file
-## pulls in the pen's oak and grass (the scene stands on its own: carried/README.md).
+## THROUGH W (round 4 to 5: the W Tools Exploder's layers, the principals' copies nudged near them; round
+## 6, below: one rule for all of them, spread wide). Each is a whole boat (fishing_boat_4d.gd) riding the
+## sea at its own W, turned a random heading, a little bigger or smaller. Kept clear of the pier and the
+## platform.
 ##
 ## THE WHITE BOATS AND THE OTHERS (Ramon, 9 Oct: "about the white boat, his copies in W should not be
-## orange. just other boats, and those need to be further away in the distance"): the principals and
-## their copies through W are all white. Orange is only for `others`: different boats, scattered at
-## random 35 to 85 m out, each 3.5 to 9 m off the slice in W, so none is in the default slice ("those
-## orange boats should not be visible in the default slice, but scattered a bit") and a slice turned
-## a few degrees brings them in. Not further: out there a degree of turn moves the slice the better
-## part of a metre through W per 50 m, and a boat 3.8 m deep in W shows only for a degree or two
-## (a first try at 80-140 m and 12-30 degree turns was never caught by the frames). Seen only far
-## off, they are built simple (fishing_boat_4d.gd `simple`: no tyres, rust, crates or stays).
+## orange. just other boats, and those need to be further away in the distance"): the principal and its
+## copies through W are white. Orange is only for `others`: different boats, scattered further out, none
+## in the default slice ("those orange boats should not be visible in the default slice, but scattered a
+## bit"). Seen only far off, they are built simple (fishing_boat_4d.gd `simple`: no tyres, rust, crates or
+## stays).
 ##
-## NO class_name.
+## ROUND 6 (Ramon, #38: "There are currently two boats visible in the default W-slice. I don't want that.
+## Remove the left boat from the default slice. Keep the remaining one as the primary visible boat"; #45:
+## "When rotating through W, the boats currently appear much too close together ... Spread them across a
+## much wider area. Vary their positions through W. Avoid placing multiple boats immediately beside each
+## other in neighboring slices. Keep the overall number of boats manageable"). One principal now (the
+## right one as you walk out; the seascape passes it). Its copies were nudged 4 to 12 m from it, so a turn
+## that brought one in showed it beside the principal's own place, and the copies of the two principals
+## sat in the same few layers. Now every boat but the principal is placed by one rule, seeded: anywhere
+## from `range_m` out to sea, at least `apart` metres from every other boat, and at least `neighbour_apart`
+## from any boat whose W is within `neighbour_w` of its own (the next slices over), its W itself spread
+## between `w_range` metres either side. Nine boats in all. A boat this far out shows for a few degrees of
+## turn (at 100 m a degree moves the slice nearly 2 m through W, and a boat is about 4 m deep in it), so
+## each W is also kept within `max_angle` of the slice as seen from the platform: every one can be found.
 
 const Boat := preload("res://ramon/WaterLab/seascape/fishing_boat_4d.gd")
 
-## The two principal boats: [x, z, heading], at w 0.
-@export var principals: Array = [[48.0, 9.0, PI * 0.5], [38.0, -24.0, 0.35]]
-@export var layer_spacing: float = 4.5
-@export var w_reach: float = 13.5
-@export var share: float = 0.55
-@export var shift := Vector2(4.0, 12.0)
+## The principal boat(s): [x, z, heading], at w 0.
+@export var principals: Array = [[48.0, 9.0, PI * 0.5]]
+## The principal's copies through W (white), and the other boats (orange).
+@export var copies: int = 3
+@export var others: int = 5
+## How far out (m from `centre`), the bearings they keep to (radians either side of +x, out to sea).
+@export var range_m := Vector2(40.0, 150.0)
+@export var spread: float = 1.45
+## How far apart every two boats keep (m, in x and z), and how far apart two in neighbouring slices do.
+@export var apart: float = 34.0
+@export var neighbour_apart: float = 70.0
+@export var neighbour_w: float = 5.0
+## How far off the slice in W, either side (m), and at most how steep a turn finds each (degrees, seen
+## from `centre`).
+@export var w_range := Vector2(4.0, 16.0)
+@export var max_angle: float = 14.0
 @export var size_jitter: float = 0.15
-@export var seed_salt: int = 7
+@export var seed_salt: int = 11
 ## Kept clear of: the pier and platform (a box x 0..clear_x, |z| < clear_z).
 @export var clear_x: float = 34.0
 @export var clear_z: float = 10.0
-## The other boats: how many, how far from `centre` (m), how far off the slice in W (m, either side),
-## the bearings they keep to (radians either side of +x, out to sea), and how far apart they keep (m).
-@export var others: int = 6
-@export var others_range := Vector2(35.0, 85.0)
-@export var others_w := Vector2(3.5, 9.0)
-@export var others_spread: float = 1.4
-@export var others_apart: float = 16.0
 var centre := Vector4.ZERO
 
 var water: Node = null
@@ -55,56 +63,42 @@ var boats: Array = []
 
 func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([seed_salt, "fleet"])
+	var placed: Array = []
 	for i in principals.size():
 		var pr: Array = principals[i]
 		_spawn("Boat%d" % i, Vector4(float(pr[0]), 0.0, float(pr[1]), 0.0), float(pr[2]), 1.0, Boat.WHITE)
-		for w in layer_ws():
-			rng.seed = hash([seed_salt, "Boat%d" % i, snappedf(w, 0.01)])
-			if rng.randf() > share:
-				continue
-			for tries in 6:
-				var a: float = rng.randf() * TAU
-				var r: float = rng.randf_range(shift.x, shift.y)
-				var p := Vector2(float(pr[0]) + cos(a) * r, float(pr[1]) + sin(a) * r)
-				if p.x < clear_x and absf(p.y) < clear_z:
-					continue
-				_spawn("Boat%d_w%+.1f" % [i, w], Vector4(p.x, 0.0, p.y, w + rng.randf_range(-0.6, 0.6)), rng.randf() * TAU,
-					1.0 + rng.randf_range(-size_jitter, size_jitter), Boat.WHITE)
-				break
-	# The others, scattered: a random bearing and distance each, kept clear of the pier, the platform,
-	# the white boats and each other.
-	rng.seed = hash([seed_salt, "others"])
-	var taken: Array = []
-	for pr in principals:
-		taken.append(Vector2(float(pr[0]), float(pr[1])))
+		placed.append(Vector3(float(pr[0]), float(pr[1]), 0.0))
+	var kinds: Array = []
+	for k in copies:
+		kinds.append(["Copy%d" % k, Boat.WHITE, false])
 	for k in others:
-		for tries in 16:
-			var a: float = rng.randf_range(-others_spread, others_spread)
-			var r: float = rng.randf_range(others_range.x, others_range.y)
+		kinds.append(["Other%d" % k, Boat.ORANGE, true])
+	# Alternate the side of W, so the turns either way each find some.
+	var side: float = 1.0
+	for kind in kinds:
+		for tries in 40:
+			var a: float = rng.randf_range(-spread, spread)
+			var r: float = rng.randf_range(range_m.x, range_m.y)
 			var p := Vector2(centre.x + cos(a) * r, centre.z + sin(a) * r)
 			if p.x < clear_x and absf(p.y) < clear_z:
 				continue
-			var crowded: bool = false
-			for q in taken:
-				if p.distance_to(q) < others_apart:
-					crowded = true
-			if crowded:
+			var w_max: float = minf(w_range.y, r * sin(deg_to_rad(max_angle)))
+			if w_max < w_range.x:
 				continue
-			taken.append(p)
-			var w: float = rng.randf_range(others_w.x, others_w.y) * (1.0 if rng.randf() < 0.5 else -1.0)
-			_spawn("Other%d" % k, Vector4(p.x, 0.0, p.y, w), rng.randf() * TAU, 1.0 + rng.randf_range(-size_jitter, size_jitter), Boat.ORANGE, true)
+			var w: float = side * rng.randf_range(w_range.x, w_max)
+			var ok: bool = true
+			for q in placed:
+				var d: float = p.distance_to(Vector2(q.x, q.y))
+				if d < apart or (absf(w - q.z) < neighbour_w and d < neighbour_apart):
+					ok = false
+					break
+			if not ok:
+				continue
+			placed.append(Vector3(p.x, p.y, w))
+			_spawn(String(kind[0]), Vector4(p.x, 0.0, p.y, w), rng.randf() * TAU, 1.0 + rng.randf_range(-size_jitter, size_jitter), String(kind[1]), bool(kind[2]))
+			side = -side
 			break
-
-
-## The layers either side of the slice, the slice's own (w 0, the principals) left out.
-func layer_ws() -> Array:
-	var out: Array = []
-	var k: int = 1
-	while float(k) * layer_spacing <= w_reach + 0.001:
-		out.append(float(k) * layer_spacing)
-		out.append(-float(k) * layer_spacing)
-		k += 1
-	return out
 
 
 func _spawn(nm: String, at: Vector4, heading: float, size: float, tone: String, simple: bool = false) -> void:

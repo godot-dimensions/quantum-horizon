@@ -11,6 +11,7 @@ extends "res://ramon/WaterLab/scripts/_wl_shots.gd"
 ## the eel close, the showcase, the fish wall); with "r5perf" it then times the frames at the tank.
 
 const SCENE := "res://ramon/WaterLab/water_lab.tscn"
+const Kit := preload("res://ramon/WaterLab/life/loft_kit.gd")
 
 var _room: Node4D
 
@@ -102,6 +103,80 @@ func setup() -> void:
 				step(180, nop)
 				step(1, perf_end)
 				step(1, _r5_switch.bind(still, true))
+		return
+	if "round6" in args:
+		# Ramon's walkthrough part 5 (round 6): feeding on F at the panel (Q/E still step there), then on the
+		# square with the tank turned; the shark's cover, its prompt and V (on the square and off it), the
+		# alignment's maths over many turns; the fish wall's cards swimming, the crab from above; the
+		# showcase's hammerhead both ways round; the research board's koi with its tail.
+		step(90, _go(-8.7, -7.5, 0.0))
+		step(1, _feed_report.bind("at the panel, before"))
+		step(1, _press.bind(KEY_F))
+		step(30, nop, "x01_fed_half_a_second")
+		step(90, nop, "x02_fed_2s")
+		step(120, nop, "x03_fed_4s")
+		step(1, _feed_report.bind("4 s after F"))
+		step(240, nop, "x04_fed_8s")
+		step(1, _feed_report.bind("8 s after F"))
+		step(1, _go(-5.23, -7.7, 0.0))
+		step(1, _turn_both.bind(25.0, 0.0, 0.0))
+		step(40, nop)
+		step(1, _press.bind(KEY_F))
+		step(120, nop, "x05_square_tank_turned_fed_2s")
+		step(1, _feed_report.bind("on the square, the tank turned 25 degrees, 2 s after F"))
+		step(1, _turn_both.bind(0.0, 0.0, 0.0))
+		step(1, _align_check)
+		step(1, _shark_cover_at.bind(0.78))
+		step(6, nop, "x06_shark_78_prompt")
+		step(1, _shark_state.bind("on the square, cover set to 0.78 by a turn"))
+		step(1, _press.bind(KEY_V))
+		step(40, nop, "x07_shark_after_v")
+		step(1, _shark_state.bind("0.7 s after V"))
+		step(1, _shark_free)
+		step(150, nop, "x08_shark_followed_3s")
+		step(1, _shark_state.bind("3 s after V, swimming"))
+		step(1, _turn_both.bind(0.0, 0.0, 0.0))
+		step(1, _go(-5.23, -3.8, 0.0))
+		step(1, _shark_cover_at.bind(0.78))
+		step(6, nop, "x09_off_square_prompt")
+		step(1, _shark_state.bind("off the square, cover set to 0.78"))
+		step(1, _press.bind(KEY_V))
+		step(40, nop, "x10_off_square_after_v")
+		step(1, _shark_state.bind("off the square, 0.7 s after V"))
+		step(1, _shark_cover_at.bind(0.50))
+		step(6, nop, "x11_shark_50_no_prompt")
+		step(1, _shark_state.bind("cover set to 0.50"))
+		step(1, _shark_free)
+		step(1, _turn_both.bind(0.0, 0.0, 0.0))
+		# The fish wall: the crab (seen from above as it turns), the hammerhead twice (swimming), a koi.
+		for k in 7:
+			step(1, _wall_card.bind(k))
+			step(1, _go(2.3, -2.0, 180.0))
+			step(40, _pitch(-4.0), "x%02d_wall_card_%d" % [12 + k, k])
+		step(1, _wall_at.bind(43.0))
+		step(30, nop, "x19_wall_crab_turned")
+		step(60, nop, "x20_wall_crab_turned_later")
+		# The hammerhead's card swimming: four frames a fifth of a second apart (card 6 on the left panel).
+		step(1, _wall_at.bind(63.0))
+		step(30, nop, "x20b_wall_shark_swim_0")
+		for k in 3:
+			step(12, nop, "x20b_wall_shark_swim_%d" % (k + 1))
+		# The showcase's hammerhead, facing +x and then -x (it was inside out facing -x).
+		step(1, _go(10.0, -4.4, 180.0))
+		step(1, _choose.bind(1))
+		step(90, _pitch(-4.0), "x21_showcase_hammerhead")
+		step(1, _showcase_face.bind(PI * 0.5))
+		step(40, nop, "x22_showcase_hammerhead_plus_x")
+		step(1, _showcase_face.bind(-PI * 0.5))
+		step(40, nop, "x23_showcase_hammerhead_minus_x")
+		step(1, _choose.bind(2))
+		step(150, nop, "x24_showcase_crab_named")
+		step(1, _choose.bind(0))
+		# The research board's koi (its tail), and the panel's tiles.
+		step(1, _go(9.0, 0.0, -90.0))
+		step(40, _pitch(-8.0), "x25_research_board_koi")
+		step(1, _go(7.1, -7.3, -120.0))
+		step(30, _pitch(-24.0), "x26_showcase_tiles")
 		return
 	if "round4" in args:
 		# Ramon's walkthrough parts 2-4: the gizmos, the tank's arches, corals and weed, the swarm, the
@@ -491,6 +566,117 @@ func _shark_part() -> void:
 	var r: float = 0.05 * float(shark.get("length"))
 	tank.call("set_contents", float(tank.get("contents_turn")), -q.w + 0.6 * r)
 	print("ROOM shark visible %.2f" % float(_room.call("shark_visible")))
+
+
+## Round 6: what feeding has done: pellets, how many in your slice (a pellet is a 4D ball its own radius
+## deep in W), how many koi are going for them, and whether Q/E still step through W here.
+func _feed_report(when: String) -> void:
+	var tank: Node = _room.get("tank")
+	var koi: Node = tank.get("koi")
+	var life: Node4D = tank.get("life")
+	var food: Array = koi.get("food")
+	var in_slice: int = 0
+	var low: float = INF
+	var high: float = -INF
+	for f in food:
+		var wp: Vector4 = life.global_position + life.global_basis * (f["p"] as Vector4)
+		if absf(wp.w) < 0.03:
+			in_slice += 1
+		low = minf(low, wp.y)
+		high = maxf(high, wp.y)
+	var feeding: int = 0
+	for f in koi.get("fish"):
+		if String(f["mode"]) == "feed":
+			feeding += 1
+	print("ROOM FEED %s: %d pellets, %d in your slice, %.2f to %.2f m up; %d koi feeding; stepping through W %s" % [when, food.size(), in_slice,
+		low if food.size() > 0 else 0.0, high if food.size() > 0 else 0.0, feeding, "on" if bool(_room.get("player").get("w_walk_enabled")) else "off"])
+
+
+## Round 6: the alignment's maths, many times over: a random turn of the contents, the shark at a random
+## place with a random heading through W, then the alignment set: the cover should come out whole
+## wherever the turns it asks for are within the tank's limit.
+func _align_check() -> void:
+	var tank: Node = _room.get("tank")
+	var shark: Node = tank.get("shark")
+	shark.set_process(false)
+	var keep_p: Vector4 = shark.get("p")
+	var keep_f: Projection = shark.get("frame")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 6
+	var worst: float = 1.0
+	var inside: int = 0
+	var outside: int = 0
+	var past_slide: int = 0
+	var slide_limit: float = float((tank.get("water_size") as Vector4).w) * 0.45
+	var before_sum: float = 0.0
+	for i in 300:
+		tank.call("set_contents", deg_to_rad(rng.randf_range(-60.0, 60.0)), rng.randf_range(-2.0, 2.0))
+		tank.call("set_turn2", deg_to_rad(rng.randf_range(-40.0, 40.0)))
+		var phi: float = deg_to_rad(rng.randf_range(-85.0, 85.0))
+		var yaw: float = rng.randf_range(-PI, PI)
+		var h := Vector4(cos(phi) * cos(yaw), rng.randf_range(-0.15, 0.15), cos(phi) * sin(yaw), sin(phi)).normalized()
+		shark.set("frame", Kit.level_frame(h))
+		shark.set("p", Vector4(rng.randf_range(-6.0, 6.0), rng.randf_range(-1.5, 1.5), rng.randf_range(-0.8, 0.8), rng.randf_range(-2.5, 2.5)))
+		before_sum += float(_room.call("shark_visible"))
+		var want: Vector2 = _room.call("shark_alignment", shark)
+		if absf(want.x) > 1.3089969 or absf(want.y) > 1.3089969:
+			outside += 1
+			continue
+		inside += 1
+		tank.call("set_turn2", want.y)
+		tank.call("set_contents", want.x, 0.0)
+		var slide: float = -((tank.call("contents_basis") as Projection) * (shark.get("p") as Vector4)).w
+		if absf(slide) > slide_limit:
+			past_slide += 1
+			continue
+		tank.call("set_contents", want.x, slide)
+		worst = minf(worst, float(_room.call("shark_visible")))
+	shark.set("p", keep_p)
+	shark.set("frame", keep_f)
+	tank.call("reset_contents")
+	print("ROOM ALIGN %d cases the tank can reach: worst cover after aligning %.4f (mean before %.2f); %d asked more than 75 degrees, %d further through W than the slide goes" % [inside - past_slide, worst, before_sum / 300.0, outside, past_slide])
+
+
+## Round 6: the shark held still, the contents turned (x-W) until it shows `cover` of itself, its middle on
+## the slice: a cover that only a turn can mend (sliding alone was all V did until round 6).
+func _shark_cover_at(cover: float) -> void:
+	_room.set("_follow_shark", 0.0)
+	var tank: Node = _room.get("tank")
+	var shark: Node = tank.get("shark")
+	shark.set_process(false)
+	tank.call("reset_contents")
+	var lo: float = 0.0
+	var hi: float = deg_to_rad(70.0)
+	for i in 30:
+		var mid: float = (lo + hi) * 0.5
+		tank.call("set_contents", mid, 0.0)
+		var slide: float = -((tank.call("contents_basis") as Projection) * (shark.get("p") as Vector4)).w
+		tank.call("set_contents", mid, slide)
+		if float(_room.call("shark_visible")) > cover:
+			lo = mid
+		else:
+			hi = mid
+	print("ROOM shark cover set to %.2f: contents turned %.1f degrees" % [float(_room.call("shark_visible")), rad_to_deg(float(tank.get("contents_turn")))])
+
+
+func _shark_state(when: String) -> void:
+	var tank: Node = _room.get("tank")
+	print("ROOM SHARK %s: cover %.3f, prompt %s, following %.1f s, contents turned %.1f / %.1f degrees, slid %.2f m" % [when, float(_room.call("shark_visible")),
+		"up" if bool(_room.get("_shark_prompt_on")) else "down", float(_room.get("_follow_shark")), rad_to_deg(float(tank.get("contents_turn"))),
+		rad_to_deg(float(tank.get("contents_turn2"))), float(tank.get("contents_slide"))])
+
+
+func _shark_free() -> void:
+	(_room.get("tank").get("shark") as Node).set_process(true)
+
+
+## The showcase's specimen turned to face `yaw` (and held there a while).
+func _showcase_face(yaw: float) -> void:
+	var s: Node = _room.get("showcase")
+	s.set("side_on", yaw)
+	s.set("_yaw", yaw)
+	s.set("_side", 1.0)
+	s.set("_next_turn", 30.0)
 
 
 func _wall_at(t: float) -> void:

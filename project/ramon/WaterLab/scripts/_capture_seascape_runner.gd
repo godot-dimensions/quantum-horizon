@@ -36,6 +36,10 @@ func _initialize() -> void:
 		DisplayServer.window_set_size(Vector2i(3840, 2160))
 	elif "school" in args:
 		_mode = "school"
+	elif "round6" in args:
+		_mode = "round6"
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+		Engine.max_fps = 60
 	elif "round4" in args:
 		_mode = "round4"
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
@@ -76,6 +80,8 @@ func _open() -> void:
 			_round2()
 		"round4":
 			_round4()
+		"round6":
+			_round6()
 		"hud4k":
 			_step(10, _go(0.8, 0.0, -90), "")
 			_step(30, _press_p, "")
@@ -309,6 +315,221 @@ func _round4() -> void:
 	_step(30, _measure_start.bind("platform"), "")
 	_step(150, _nop, "")
 	_step(1, _measure_end, "")
+
+
+## Ramon's walkthrough part 5 (round 6): the arrival open to the sky; one boat in the default slice and
+## the rest spread through W (listed, spacing measured, frames turned); the pier, tunnel and door held
+## while the slice turns (measured in view); the thinner ring; the mouse tutorial big, docking, docked;
+## the sea out to the horizon with no square; the hammerheads' frames never mirrored over a lap; perf.
+func _round6() -> void:
+	var L: float = float(_room.call("tunnel_length"))
+	var pc: Vector4 = _room.call("platform_centre")
+	_step(150, _go(1.6, 0.0, -90.0), "")
+	_step(10, _pitch(10.0), "w01_arrival_open_sky")
+	_step(1, _go(L + 7.0, 0.0, 90.0), "")
+	_step(20, _pitch(-4.0), "w02_tunnel_from_the_pier")
+	_step(1, _boats_report, "")
+	# On the platform: the tutorial's intro starts here, so its frames come first.
+	_step(1, _go(pc.x + 1.0, 0.0, -90.0), "")
+	_step(1, _tutorial_restart, "")
+	_step(120, _pitch(-8.0), "w03_tutorial_big_2s")
+	_step(1, _tutorial_at.bind(10.15), "")
+	_step(1, _nop, "w04_tutorial_docking_a")
+	_step(1, _tutorial_at.bind(10.4), "")
+	_step(1, _nop, "w04_tutorial_docking_b")
+	_step(1, _tutorial_at.bind(10.65), "")
+	_step(1, _nop, "w04_tutorial_docking_c")
+	_step(90, _nop, "w05_tutorial_docked")
+	_step(1, _go(pc.x + 2.0, 0.0, -100.0), "")
+	_step(30, _pitch(-2.0), "w07_default_slice_one_boat")
+	for tr in [[8.0, 0.0], [-8.0, 0.0], [0.0, 8.0], [14.0, 0.0], [0.0, -14.0]]:
+		_step(1, _turn(float(tr[0]), float(tr[1])), "")
+		_step(30, _nop, "w08_boats_turned_xw%+d_zw%+d" % [int(tr[0]), int(tr[1])])
+		_step(1, _boats_in_view.bind("turned %+.0f xw %+.0f zw" % [float(tr[0]), float(tr[1])]), "")
+	_step(1, _turn(0.0), "")
+	_step(1, _boats_sweep, "")
+	# The principal close, white and then orange (the darker parts' swatches, #39).
+	_step(1, _turn(0.0), "")
+	_step(1, _go(pc.x + 4.4, 1.8, -110.0), "")
+	_step(30, _pitch(-4.0), "w08b_boat_white_close")
+	_step(1, _tone_principal.bind("boat_orange"), "")
+	_step(30, _nop, "w08c_boat_orange_close")
+	_step(1, _tone_principal.bind("boat_white"), "")
+	_step(1, _turn(0.0), "")
+	# The structure held: from the platform looking back along the pier at the tunnel.
+	_step(30, _go(pc.x + 1.5, 0.0, 90.0), "")
+	_step(20, _pitch(-6.0), "w09_pier_level")
+	_step(1, _arch_start, "")
+	for k in 40:
+		_step(0, _drag.bind(Vector2(0.012, 0.006)), "")
+	_step(1, _arch_end, "w10_pier_turned_held")
+	for k in 40:
+		_step(0, _drag.bind(Vector2(-0.02, 0.004)), "")
+	_step(1, _arch_end, "w11_pier_turned_other_way_held")
+	_step(30, _turn(0.0), "")
+	# The ring.
+	_step(10, _go(pc.x + 2.0, 0.0, -90.0), "")
+	_step(20, _pitch(-55.0), "w12_ring_thinner")
+	# The sea to the horizon: out to sea, along the diagonal where the old square's corner lay, the storm.
+	_step(1, _go(pc.x + 3.0, 0.0, -90.0), "")
+	_step(20, _pitch(-4.0), "w13_sea_out")
+	_step(1, _go(pc.x + 3.0, 0.0, -45.0), "")
+	_step(20, _pitch(-6.0), "w14_sea_diagonal")
+	_step(1, _go(pc.x + 3.0, 0.0, -135.0), "")
+	_step(20, _pitch(-8.0), "w15_sea_diagonal_other")
+	_step(1, _sea.bind(KEY_4), "")
+	_step(240, _go(pc.x + 3.0, 0.0, -60.0), "")
+	_step(20, _pitch(-5.0), "w16_storm_out")
+	_step(1, _sea.bind(KEY_1), "")
+	# The hammerheads: their frames over most of a lap, never mirrored; then a look at them near.
+	_step(1, _shark_hands_start, "")
+	for k in 60:
+		_step(30, _shark_hands, "")
+	_step(1, _shark_hands_end, "")
+	_step(1, _shark_view, "")
+	_step(20, _pitch(-58.0), "w17_sharks_near")
+	_step(60, _nop, "w18_sharks_near_later")
+	_step(1, _pitch(-10.0), "")
+	_step(10, _go(pc.x, 0.0, -90.0), "")
+	_step(30, _measure_start.bind("platform"), "")
+	_step(150, _nop, "")
+	_step(1, _measure_end, "")
+
+
+## Every boat: its distance and bearing from the platform, its W, its tone; how many the level slice cuts;
+## the least spacing of any two, and of any two in neighbouring slices (W within 5 m).
+func _boats_report() -> void:
+	var fleet: Node = _room.get_node_or_null("Boat")
+	var pc: Vector4 = _room.call("platform_centre")
+	var level: int = 0
+	var all: Array = []
+	for b in fleet.get_children():
+		var p: Vector4 = (b as Node4D).position - pc
+		all.append((b as Node4D).position)
+		if absf(p.w) < float(b.get("beam")) * 0.5:
+			level += 1
+		print("WATER boat %s (%s) at %.0f m, bearing %.0f deg, w %+.1f" % [b.name, String(b.get("tone")), Vector2(p.x, p.z).length(), rad_to_deg(atan2(p.z, p.x)), p.w])
+	var least: float = INF
+	var least_near: float = INF
+	for i in all.size():
+		for j in range(i + 1, all.size()):
+			var a: Vector4 = all[i]
+			var b2: Vector4 = all[j]
+			var d: float = Vector2(a.x - b2.x, a.z - b2.z).length()
+			least = minf(least, d)
+			if absf(a.w - b2.w) < 5.0:
+				least_near = minf(least_near, d)
+	print("WATER boats: %d in all, %d cut by the level slice; closest two %.0f m apart, closest two in neighbouring slices %.0f m" % [all.size(), level, least, least_near])
+
+
+## Every boat the camera's slice cuts and that is in front of it.
+func _boats_in_view(when: String) -> void:
+	var fleet: Node = _room.get_node_or_null("Boat")
+	var cam: Node4D = _room.get("player").find_children("*", "Camera4D", true, false)[0]
+	var names: Array = []
+	for b in fleet.get_children():
+		var q: Vector4 = cam.global_basis.inverse() * ((b as Node4D).global_position - cam.global_position)
+		if q.z < -5.0 and absf(q.w) < float(b.get("beam")) * 0.45:
+			names.append(String(b.name))
+	print("WATER boats in your slice, %s: %d %s" % [when, names.size(), str(names)])
+
+
+## The slice's two turns swept -16 to 16 degrees each: how many boats any turn brings in, and whether
+## two ever come in together.
+func _boats_sweep() -> void:
+	var fleet: Node = _room.get_node_or_null("Boat")
+	var cam: Node4D = _room.get("player").find_children("*", "Camera4D", true, false)[0]
+	var seen: Dictionary = {}
+	var most: int = 0
+	for i in 33:
+		for j in 33:
+			_turn(float(i - 16), float(j - 16)).call()
+			var n: int = 0
+			for b in fleet.get_children():
+				var q: Vector4 = cam.global_basis.inverse() * ((b as Node4D).global_position - cam.global_position)
+				if absf(q.w) < float(b.get("beam")) * 0.45:
+					n += 1
+					seen[String(b.name)] = true
+			most = maxi(most, n)
+	print("WATER boats over turns of up to 16 degrees: %d of %d found, at most %d at once (the principal included)" % [seen.size(), fleet.get_child_count(), most])
+
+
+## Where the structure's points are in view (the camera's frame): the door, a point on the pier's deck,
+## a point on the tunnel's wall, the platform's deck.
+func _arch_points() -> Array:
+	var cam: Node4D = _room.get("player").find_children("*", "Camera4D", true, false)[0]
+	var L: float = float(_room.call("tunnel_length"))
+	var dh: float = float(_room.get("deck_height"))
+	var out: Array = []
+	for pair in [["Door1", Vector4(0.0, 1.5, 0.0, 0.0)], ["Pier1", Vector4(L + 4.0, dh, 1.2, 0.0)], ["Tunnel", Vector4(0.0, 2.0, float(_room.get("tunnel_width")) * 0.5, 0.0)], ["PlatformSet", Vector4(3.0, 0.0, 2.0, 0.0)]]:
+		var n: Node4D = _room.get_node_or_null(String(pair[0])) as Node4D
+		if n == null:
+			out.append(Vector3.ZERO)
+			continue
+		var rel: Vector4 = cam.global_basis.inverse() * ((n.global_position + n.global_basis * (pair[1] as Vector4)) - cam.global_position)
+		out.append(Vector3(rel.x, rel.y, rel.z))
+	return out
+
+
+var _arch_at: Array = []
+
+
+func _arch_start() -> void:
+	_arch_at = _arch_points()
+
+
+func _arch_end() -> void:
+	var now: Array = _arch_points()
+	var words: Array = []
+	for i in now.size():
+		words.append("%s %.3f" % [["door", "pier", "tunnel", "platform"][i], ((now[i] as Vector3) - (_arch_at[i] as Vector3)).length()])
+	print("WATER structure in view moved (m) while the slice turned %.0f deg: %s" % [float((_room.call("slice_degrees") as Vector2).x), ", ".join(words)])
+
+
+## The mouse tutorial as it is `s` seconds into being shown (its own clocks set).
+func _tutorial_at(s: float) -> void:
+	var ov: Node = _room.get("overlay")
+	var m: Node = ov.get("_mouse") if ov != null else null
+	if m != null:
+		m.set("_seen", s)
+		m.set("_dock", clampf((s - float(m.get("intro"))) / float(m.get("dock_seconds")), 0.0, 1.0))
+
+
+func _tone_principal(tone: String) -> void:
+	var b: Node = _room.get_node_or_null("Boat/Boat0")
+	if b != null:
+		b.set("tone", tone)
+		b.set("_tone_check", 0.0)
+
+
+func _tutorial_restart() -> void:
+	var ov: Node = _room.get("overlay")
+	var m: Node = ov.get("_mouse") if ov != null else null
+	if m != null:
+		m.set("_seen", 0.0)
+		m.set("_dock", 0.0)
+
+
+var _hands_min: float = INF
+var _hands_n: int = 0
+
+
+func _shark_hands_start() -> void:
+	_hands_min = INF
+	_hands_n = 0
+
+
+## The three hammerheads' frames' handedness now (a mirrored frame turns a loft inside out).
+func _shark_hands() -> void:
+	var life: Node = _room.get_node_or_null("MoreLife")
+	for s in life.get("_sharks"):
+		var f: Projection = (s["node"] as Node).get("frame")
+		_hands_min = minf(_hands_min, f.determinant())
+		_hands_n += 1
+
+
+func _shark_hands_end() -> void:
+	print("WATER hammerheads: %d frames looked at over 30 s, the least determinant %.4f (below 0: mirrored, inside out)" % [_hands_n, _hands_min])
 
 
 var _held_at := Vector3.ZERO

@@ -87,6 +87,9 @@ uniform int gerstner_style = 2;
 // surface, not part of the wave dynamics, so it deliberately takes no part in the
 // displacement or the Jacobian.
 uniform float detail_strength = 0.085;  // metres, coarse octave
+// WATER LAB, round 6: with a graded sea (water4d_surface.gd graded_reach) the ripple fades out between
+// near_extent and this many metres, before the graded cells outgrow it; 0 keeps it everywhere.
+uniform float detail_fade_far = 0.0;
 uniform float detail_scale = 4.5;       // metres per noise cell, coarse octave
 uniform float detail_time = 0.0;        // advanced on the CPU, same reason as wave_phase
 
@@ -311,6 +314,11 @@ void vertex() {
 	// Detail last, so it rides on top of the solved surface without disturbing the solve.
 	vec3 detail_gradient;
 	float detail = detail_field(rest, detail_gradient);
+	if (detail_fade_far > 0.0) {
+		float detail_fade = 1.0 - smoothstep(near_extent, detail_fade_far, length(VERTEX.xz));
+		detail *= detail_fade;
+		detail_gradient *= detail_fade;
+	}
 	height += detail;
 	dheight += detail_gradient;
 	surface_detail = detail;

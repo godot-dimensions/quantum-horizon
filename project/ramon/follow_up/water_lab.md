@@ -986,3 +986,123 @@ missing.
 
 **Known, not mine:** the koi glyph on the research board logs "Invalid polygon data, triangulation
 failed" (since round 4); the `detail` capture's fish-wall position is stale (round 5 uses round 4's).
+
+## Round 6: Ramon's walkthrough part 5, items 31 to 46 (10 Oct)
+
+His priorities, in order: the broken interactions (31, 32), the rendering (41, 42), the sea's
+architecture (46), the presentation (39, 45, 33, 34, 36, 43, 38, 37), the onboarding (44). Keep the
+aquarium's interactions, the large pedestal (35), the water presets, the life and the storm (40).
+
+### The plan, and what each item turned out to be
+
+**Interactions**
+- 31 Feeding. E fed, and E is also the pen walk's step through W, so the feeder switched stepping off.
+  The feeding itself was invisible:
+  - pellets 1.3 cm across, brown, scattered 10 cm through W, while each is a 4D ball only its own
+    radius deep in W, so most were never in the slice;
+  - they were dropped on the real surface near the ceiling, so the koi rose out of view.
+  - Plan: F feeds, at the panel and on the turning square. The pellets are 6 cm and amber, dropped in
+    your slice at the top of what you see, and sink straight down so they stay in a turned slice.
+- 32 The shark's V.
+  - The visibility looked only at how far the shark's middle sat off the slice, so a shark cut across
+    (the tank turned, or the shark turning through W) read as 90%.
+  - V only slid the contents, never turned them.
+  - V off the square was undone the next frame.
+  - Plan: measure the cover along the whole body. V turns and slides the contents so the shark's own W
+    axis lies on the world's W (exact, in about half a second), then follows it.
+
+**Rendering**
+- 41 The square of water.
+  - A fine 120 m grid inside a coarse ring, while the waves are still at full height at the seam.
+  - The Voxel Lab fixed the same thing in its own subclass of the same carried script
+    (VoxelLab/field/vl_sea_4d.gd).
+  - Plan: that graded grid and the ripple fade, as an opt-in in the shared script (`graded_reach`,
+    the shader's `detail_fade_far`), so the Voxel Lab could drop its own copy. Its files are not touched.
+  - Also the sea floor out to 1800 m (a second, fainter square).
+- 42 The hammerheads' see-through look and their loft circles.
+  - Their frames were rebuilt each frame from the heading with a fixed "right", which mirrors the frame
+    whenever the heading crosses the z axis (twice a lap). A mirrored loft is inside out.
+  - The pedestal's hammerhead had the same flaw, facing the -x half.
+  - Plan: frames carried on from the last (loft_kit.gd frame_for), on both.
+
+**Architecture**
+- 46 Only the platform was held in the set frame.
+  - Plan: the pier, its rails, the tunnel with its walls and pages, the door and the route's marks held
+    the same way.
+  - The pole stays in the sea.
+- 37 The tunnel open to the sky. The gulls sit on its walls' tops.
+
+**Presentation**
+- 38 One boat in the default slice: the right one.
+- 45 The boats spread wide:
+  - every two at least 34 m apart;
+  - 70 m apart if their W is within 5 m;
+  - W kept within a 14 degree turn of the platform, so each can be found.
+- 39 The near-black parts in the grid: mid grey on white boats, a darker orange on orange ones.
+- 33 The crab is the brown crab (Cancer pagurus, the species the loft was built as; "edible crab" is its
+  other common name). Its card tilts toward the camera after the turn, not before.
+- 34 The fish wall's turning animals swim (or walk). Each rigid piece of the loft is cut once, then
+  posed every frame. This is exact: no pose turns through W.
+- 36 The koi glyph's tail outline crossed itself, so it never triangulated and was never drawn. It is
+  redrawn as a proper fork.
+- 43 The platform's ring lines at 55% width (a new `ring_width` uniform, 1 elsewhere), 25 cm further out.
+
+**Onboarding**
+- 44 The shared mouse tutorial gains an opt-in intro:
+  - large and acting for 10 s;
+  - then over 0.9 s it eases into a still card docked above THE SEA, listing each gesture.
+  - The tank room's tutorial is unchanged.
+
+Checks: `_capture_lab_runner.gd round6` (frames `room/x*`) and `_capture_seascape_runner.gd round6`
+(frames `seascape/w*`), with the numbers they print.
+
+### Status (10 Oct, end of round 6)
+
+All of 31-46 done. Checked by frames (`room/x*`, `seascape/w*`) and the runners' numbers (logs
+`r6b_room`, `r6b_sea`).
+
+**Feeding (31).**
+- F feeds, at the panel and on the square. Q/E stepping stays on at the panel.
+- 30 pellets fall at once. 4 s later, 29 were in your slice and 14 koi were feeding. With the tank turned
+  25 degrees, the new pinch still fell wholly in your slice.
+- The pellets are 9 cm across and strong orange. At 6 cm and amber they read as the marine snow.
+
+**The shark (32).**
+- The cover (`shark_cover`) counts the body as 60% and its hammer and fins as 40%. Those are 2 to 8 cm deep
+  in W and go first: 5 degrees off the shark, the slice shows a finless lens, which the body alone had
+  called 80%.
+- The prompt comes up at 0.70 and goes below 0.60, only while the shark is on screen. That is about 2
+  degrees of turn or 3 cm of slide off it.
+- From 0.78, V made the shark whole (1.000) within 0.7 s on the square, and 0.998 off it.
+- The maths check: of 300 random turns and headings, 253 can be reached, and all came out whole. The others
+  ask more than 75 degrees, or more slide than the tank has. The follow lets go there.
+
+**The sea (41, 42, 46).**
+- No square seam in any frame: out to sea, both diagonals, the storm. GPU time is unchanged at 1.82 ms.
+- The hammerheads' frames never mirrored over 30 s (least determinant 1.0).
+- The structure moved at most 7 mm in view over 31 degree drags both ways. The first try moved 30 cm at
+  the door: the heading's ease ran under 20 degrees, and a drag back across the middle passed under that.
+  It now runs under 7 degrees.
+
+**Presentation.**
+- Boats: 9 in all, 1 in the level slice. The closest two are 36 m apart, and 86 m in neighbouring slices.
+  A sweep of turns up to 16 degrees finds all 9, at most 4 at once.
+- The boats' darker parts are mid grey on white boats and a deeper orange on orange ones.
+- The fish wall's cards swim. The crab card is seen from above, its lift down to 0.06.
+- The koi glyph has its tail, on the research board and the pedestal's tile.
+- The ring is thinner and further out. The tunnel is open to the sky.
+- The tutorial is big for 10 s, then docks in 0.9 s. Its big words fade in the first fifth, as the card
+  narrows under them.
+
+**For the Voxel Lab's window** (not touched here): `water4d_surface.gd` now has `graded_reach` and the
+shader `detail_fade_far`, the same lattice and ripple fade that `vl_sea_4d.gd` builds for itself.
+`vl_sea_4d.gd` could set those and drop its own `_build_grid` and its detail patch. Its other patches
+(the shore foam) still fit: their lines are unchanged.
+
+**Questions for Ramon.**
+1. The shark prompt now waits until the shark is nearly whole, about 2 degrees off it. Earlier, the
+   finless lens already showed it. Is that the right moment?
+2. The crab's tile in the pedestal's selector still says "Crab"; its card says "Brown crab". Name the
+   tile in full?
+3. The pole by the platform still turns with the sea (it stands in the water). Hold it with the
+   structure?

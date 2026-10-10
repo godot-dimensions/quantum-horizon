@@ -150,6 +150,8 @@ uniform float path_margin = 1.4;
 uniform sampler2D path_curve_tex : filter_nearest, repeat_disable;
 uniform int path_curve_n = 0;
 uniform vec4 ring_at = vec4(0.0, 0.0, 3.0, 0.08);
+// WATER LAB, round 6: the ring's lines' width as a share of their own (1: as drawn since 4 Oct).
+uniform float ring_width = 1.0;
 // WATER LAB: wet patches on a floor (the sea's platform, where a wave hit: seascape/wave_spray_4d.gd):
 // world x, z, radius, and how wet (0 dry). Four, as separate uniforms (uniform arrays are shared
 // between materials in this engine).
@@ -475,11 +477,11 @@ void fragment() {
 			float ang = atan(rel.y, rel.x) + TIME * ring_at.w;
 			// A ring of dashes, few and long.
 			float dash = step(fract(ang / TAU * 28.0), 0.42);
-			float k = dash * (1.0 - smoothstep(0.045, 0.045 + fr, abs(r - rr)));
+			float k = dash * (1.0 - smoothstep(0.045 * ring_width, 0.045 * ring_width + fr, abs(r - rr)));
 			// Outside it, six arcs with wide breaks, turning the other way.
 			float ang2 = atan(rel.y, rel.x) - TIME * ring_at.w * 0.6;
 			float arcs = step(fract(ang2 / TAU * 6.0), 0.55);
-			k = max(k, arcs * (1.0 - smoothstep(0.105, 0.105 + fr, abs(r - (rr + 0.3)))));
+			k = max(k, arcs * (1.0 - smoothstep(0.105 * ring_width, 0.105 * ring_width + fr, abs(r - (rr + 0.3 * mix(0.7, 1.0, ring_width))))));
 			k *= ring_on * (1.0 - smoothstep(0.03, 0.08, fr));
 			c = mix(c, ring_color.rgb, k * 0.95);
 			glow += ring_color.rgb * k * 0.2;

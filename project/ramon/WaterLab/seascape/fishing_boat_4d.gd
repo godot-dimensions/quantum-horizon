@@ -42,6 +42,12 @@ const LabGrid := preload("res://ramon/WaterLab/carried/LabKit/lab_grid.gd")
 ## leaves the slice deciding, as before.
 const WHITE := "boat_white"
 const ORANGE := "boat_orange"
+## ROUND 6 (Ramon, #39: "The current blockout boats contain black areas that are too visually strong. White
+## boats: Replace the black portions with mid-tone gray. Apply the same established gridline treatment ...
+## Orange boats: Use a darker orange for the darker material regions. Keep the existing gridline style"):
+## the parts that were near black (the window band, the tyres, the stack's top, the block, the stays) wear
+## the grid too, in each tone's darker swatch: mid grey on a white boat, a darker orange on an orange one.
+const DARK := "_dark"
 @export var tone: String = ""
 ## Built simple, for a boat only ever seen far off: the hull, the wheelhouse, the mast, the booms,
 ## the gantry and the drum; no capping, rust, tyres, stays, crates or flanges (about 36 pieces fewer,
@@ -50,6 +56,8 @@ const ORANGE := "boat_orange"
 static var _swatches_set: bool = false
 var viewer: Node4D = null
 var _grid: Array = []
+## The darker parts' grid materials (re-tinted to the tone's DARK swatch).
+var _grid_dark: Array = []
 var _tone: String = ""
 var _tone_check: float = 0.0
 ## Whether it is near enough your slice to be seen (checked with the tone); a boat that is not rides
@@ -102,14 +110,13 @@ func _add(nm: String, mesh: Mesh4D, mat: TetraMaterial4D, at: Vector4 = Vector4.
 
 
 func _box(nm: String, at: Vector4, size: Vector4, c: Color, b: Projection = Projection.IDENTITY) -> MeshInstance4D:
-	# The windows and the near-black bits keep their own colour; everything else wears the grid.
-	if c.v < 0.15:
-		return _add(nm, Mats.box_mesh(size), _mat(c), at, b)
-	return _add(nm, Mats.box_mesh(size), _grid_mat(size, at), at, b)
+	# The windows and the near-black bits wear the tone's darker grid (round 6; until then a flat near
+	# black), everything else the tone's own.
+	return _add(nm, Mats.box_mesh(size), _grid_mat(size, at, c.v < 0.15), at, b)
 
 
-## The lab grid in the boat's swatch (white to start), kept for re-tinting.
-func _grid_mat(size: Vector4, at: Vector4) -> TetraMaterial4D:
+## The lab grid in the boat's swatch (white to start), kept for re-tinting; `dark`, the tone's darker one.
+func _grid_mat(size: Vector4, at: Vector4, dark: bool = false) -> TetraMaterial4D:
 	if not _swatches_set:
 		_swatches_set = true
 		# The kit's own contrast (kit_style.gd's walls: lines a sixth darker, at 0.6): Ramon, 9 Oct, "why
@@ -117,8 +124,14 @@ func _grid_mat(size: Vector4, at: Vector4) -> TetraMaterial4D:
 		# drawn thinner than a pixel, so at the boats' distance a strong one reads as a thick one.
 		LabGrid.set_swatch(WHITE, Color(0.92, 0.92, 0.90), Color(0.79, 0.80, 0.80), Color(0.88, 0.88, 0.87), 0.6)
 		LabGrid.set_swatch(ORANGE, Color(0.949, 0.458, 0.298), Color(0.82, 0.39, 0.25), Color(0.91, 0.44, 0.285), 0.6)
-	var m: TetraMaterial4D = LabGrid.material(WHITE, size, at)
-	_grid.append(m)
+		# Their darker parts, the lines the same share darker as the light ones'.
+		LabGrid.set_swatch(WHITE + DARK, Color(0.50, 0.51, 0.52), Color(0.43, 0.44, 0.45), Color(0.48, 0.49, 0.50), 0.6)
+		LabGrid.set_swatch(ORANGE + DARK, Color(0.64, 0.29, 0.17), Color(0.55, 0.25, 0.145), Color(0.615, 0.28, 0.163), 0.6)
+	var m: TetraMaterial4D = LabGrid.material(WHITE + DARK if dark else WHITE, size, at)
+	if dark:
+		_grid_dark.append(m)
+	else:
+		_grid.append(m)
 	return m
 
 
@@ -142,6 +155,8 @@ func _retone(delta: float) -> void:
 	_tone = want
 	for m in _grid:
 		LabGrid.reswatch(m as TetraMaterial4D, want)
+	for m in _grid_dark:
+		LabGrid.reswatch(m as TetraMaterial4D, want + DARK)
 
 
 ## One layer of the bow, from y0 to y1, `bw` wide: two boxes turned 45 degrees about the vertical,
@@ -159,7 +174,7 @@ func _drum(nm: String, at: Vector4, r: float, t: float, wd: float, c: Color) -> 
 	shape.thickness = wd
 	# The cubinder is round in x-z with its height along y: turned a quarter in y-z, its height runs
 	# along z.
-	var mat: TetraMaterial4D = _mat(c) if c.v < 0.15 else _grid_mat(Vector4(r * 2.0, r * 2.0, t, wd), at)
+	var mat: TetraMaterial4D = _grid_mat(Vector4(r * 2.0, r * 2.0, t, wd), at, c.v < 0.15)
 	return _add(nm, shape.to_tetra_mesh({"segments": 20}), mat, at, Basis4D.from_yz(PI * 0.5))
 
 

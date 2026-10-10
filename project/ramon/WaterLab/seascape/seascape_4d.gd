@@ -10,8 +10,8 @@ extends Node4D
 ## ROUND 2 (Ramon's walkthrough, 9 Oct; follow_up/water_lab.md, "Round 2"):
 ##   THE TUNNEL  you come in through a plain sliding door in a short white room with no front (the
 ##               kit's room, the lab's dev texture), its two pages on its side walls ("4D Water" and
-##               "how the sea is made"), a metre of white wall past them, a ceiling; out of it onto
-##               the pier. The door behind you leads back to the tank room.
+##               "how the sea is made"), a metre of white wall past them, open to the sky (round 6);
+##               out of it onto the pier. The door behind you leads back to the tank room.
 ##   THE PIER    straight on to the platform.
 ##   THE PLATFORM smaller, in code blue, TURN THE SLICE printed big in its middle (the page printed
 ##               into the deck itself) and a ring of slowly turning lines near its edge. A right drag
@@ -180,8 +180,9 @@ func _ready() -> void:
 	Style.apply("bright")
 	_water = get_node_or_null("Water")
 	if _water != null:
-		# The sea out to the horizon (the far ring, carried water4d_surface.gd).
-		_water.set(&"far_extent", 900.0)
+		# The sea out to the horizon: one graded sea (round 6, #41: the square of fine water and the coarse
+		# ring round it showed as a square; carried water4d_surface.gd graded_reach).
+		_water.set(&"graded_reach", 900.0)
 	if _water != null and _water.has_method(&"set_preset"):
 		_water.set(&"wave_scale", wave_scale)
 		_water.call(&"set_preset", start_preset)
@@ -302,6 +303,9 @@ func _build_tunnel() -> void:
 	room.set("flush_open", true)
 	room.set("doorways", [["w", -door_width * 0.5, door_width * 0.5, door_height]])
 	room.set("cove", false)
+	# Round 6 (Ramon, #37: "Remove the ceiling from the Ocean Simulator arrival area ... a more spacious,
+	# outdoor-oriented atmosphere"): open to the sky; the walls, the doorway and the pages stay.
+	room.set("ceiling", false)
 	room.position = Vector4(L * 0.5, deck_height, 0.0, 0.0)
 	add_child(room)
 	_door = Node4D.new()
@@ -431,7 +435,11 @@ func _build_platform() -> void:
 	var m: TetraMaterial4D = LabGrid.material(Style.code_swatch("blue"), size, c)
 	disc.material_override = m
 	_set_frame.add_child(disc)
-	LabGrid.set_ring(m, Vector2(c.x, c.z), platform_radius - 0.95, 1.0, Color(0.52, 0.74, 1.0), 0.05)
+	# Round 6 (Ramon, #43: "slightly too thick ... Reduce the thickness of the circular line. Move the circle
+	# slightly farther toward the edge"): its lines at 55% of their width (dashes 5 cm across, arcs 12 cm),
+	# 25 cm further out.
+	LabGrid.set_ring(m, Vector2(c.x, c.z), platform_radius - 0.7, 1.0, Color(0.52, 0.74, 1.0), 0.05)
+	LabGrid.set_ring_width(m, 0.55)
 	# The rail: Trym's fence round a 32-sided ring, open where the pier comes in (-x).
 	var r: float = platform_radius - 0.15
 	var gap: float = asin(clampf((pier1_width * 0.5 + 0.3) / r, 0.0, 1.0))
@@ -576,12 +584,14 @@ func _build_pole() -> void:
 		_box(holder, "Band%d" % i, Vector4(x, y, z, w), Vector4(pole_size * 1.12, 0.22, pole_size * 1.12, pole_size * 2.4), Color(0.86, 0.33, 0.22))
 
 
-## The sea floor, with Trym's stripes for the absorption to work against.
+## The sea floor, with Trym's stripes for the absorption to work against. Round 6: out to the sea's own
+## reach (it was 124 m across: inside it the water's colour came off the floor, outside off the 40 m of
+## water the shader looks through, a second, fainter square; the Voxel Lab found the same).
 func _build_floor() -> void:
 	var holder := Node4D.new()
 	holder.name = "SeaFloor"
 	add_child(holder)
-	var size := Vector4(124.0, 1.0, 124.0, 124.0)
+	var size := Vector4(1800.0, 1.0, 1800.0, 1800.0)
 	var centre := Vector4(14.0, -floor_depth - 0.5, 4.0, 0.0)
 	_box(holder, "Floor", centre, size, Color(0.30, 0.31, 0.29))
 	for i in range(-5, 6):
@@ -684,14 +694,15 @@ func _build_creature() -> void:
 
 
 ## The harbour's gulls, round both piers, the wind off the sea (+x); they hear through the camera.
-## The boats (seascape/boat_fleet_4d.gd): two white ones at anchor offshore, with their copies spread
-## through W; orange ones far out in other slices.
+## The boats (seascape/boat_fleet_4d.gd): one white one at anchor offshore in your slice, its copies and
+## orange ones spread wide through W (round 6).
 func _build_boat() -> void:
 	var fleet := Node4D.new()
 	fleet.name = "Boat"
 	fleet.set_script(load("res://ramon/WaterLab/seascape/boat_fleet_4d.gd"))
 	var c: Vector4 = platform_centre()
-	fleet.set("principals", [[c.x + 24.0, 9.0, PI * 0.5], [c.x + 15.0, -26.0, 0.35]])
+	# One boat in the default slice, the right one as you walk out (round 6, #38: "Remove the left boat").
+	fleet.set("principals", [[c.x + 24.0, 9.0, PI * 0.5]])
 	fleet.set("clear_x", c.x + platform_radius + 4.0)
 	fleet.set("centre", Vector4(c.x, 0.0, c.z, 0.0))
 	fleet.set("water", _water)
@@ -795,10 +806,10 @@ func _gull_perches() -> void:
 	var pa: Vector3 = pole_at()
 	for o in [Vector2(-0.55, 0.1), Vector2(0.45, 0.45), Vector2(0.3, -0.55)]:
 		harbour.call("add_perch", Vector4(pa.x + o.x, pole_above_water + 0.18, pa.y + o.y, pa.z))
-	# The tunnel's roof: its ceiling slab's top, along both side edges.
-	var roof: float = deck_height + tunnel_height + 0.25
+	# The tunnel's walls' tops (round 6: no ceiling now; the walls are half a metre thick, outward).
+	var roof: float = deck_height + tunnel_height
 	for s in [-1.0, 1.0]:
-		harbour.call("add_rail", Vector4(0.6, roof, s * (tunnel_width * 0.5 + 0.2), 0.0), Vector4(tunnel_length() - 0.4, roof, s * (tunnel_width * 0.5 + 0.2), 0.0), 1.5)
+		harbour.call("add_rail", Vector4(0.6, roof, s * (tunnel_width * 0.5 + 0.25), 0.0), Vector4(tunnel_length() - 0.4, roof, s * (tunnel_width * 0.5 + 0.25), 0.0), 1.5)
 
 
 func _build_hud() -> void:
@@ -1052,7 +1063,9 @@ func _track_look(delta: float) -> void:
 	if tilt < 0.0005:
 		_look = GB.flattened(g)
 	else:
-		_look = GB.rotated_toward(_look, GB.flattened(g), delta * 2.0 * (1.0 - smoothstep(0.0, 0.35, tilt)))
+		# Round 6: eased only in the last 7 degrees before level (it was 20: a drag back across the middle,
+		# from one side to the other, passed under 20 and swung the held pier and tunnel 30 cm at the door).
+		_look = GB.rotated_toward(_look, GB.flattened(g), delta * 2.0 * (1.0 - smoothstep(0.0, 0.12, tilt)))
 
 
 func _world_tilt() -> Projection:
@@ -1072,6 +1085,22 @@ func _world_tilt() -> Projection:
 ## it about its own centre: from its edge, turned 60 degrees, the platform slid out of the slice and
 ## all but vanished (the frames of 8 Oct, standing where pier 1 meets it). When the slice is level
 ## again you are put where the level platform showed you.
+##
+## ROUND 6 (Ramon, #46: "All player-supporting architecture should remain fixed during W rotation. This
+## includes: The main Turn the Slice platform. The walking ramp leading up to it. The connecting walkway.
+## The surrounding architectural walls. The entrance doorway. The surrounding ocean, boats, marine life,
+## and other intended 4D content can rotate or change through W"). Only the platform hung in the set frame.
+## The pier with its rails, the tunnel with its walls and pages, its door, and the route's marks on the
+## deck were cut by the turned slice as the sea is, so they slid, shortened and went as you dragged. Now
+## every one of them (HELD) is drawn as the platform is, turned by the slice's tilt about the same point,
+## so the whole structure reads exactly as level. Their colliders go with them, as you see them; you are
+## kept on the platform while the slice is turned, so none of them is underfoot. The pole is left to the
+## sea: it stands in the water, a ruler for the depth, not something you walk on.
+const HELD := ["Tunnel", "Door1", "Pier1", "Paths"]
+## Their level transforms while the slice is turned: instance id -> [node, basis, position].
+var _held_level: Dictionary = {}
+
+
 func _hold_set_frame() -> void:
 	if _set_frame == null:
 		return
@@ -1086,6 +1115,7 @@ func _hold_set_frame() -> void:
 		_visual = _pivot + s.inverse() * (o - _pivot) - c
 		_set_frame.global_basis = s
 		_set_frame.global_position = _pivot + s * (c - _pivot)
+		_hold_architecture(s)
 		return
 	if _turned_here:
 		_turned_here = false
@@ -1093,6 +1123,35 @@ func _hold_set_frame() -> void:
 		player.global_position = Vector4(c.x + _visual.x - off.x, player.global_position.y, c.z + _visual.z - off.z, 0.0)
 	_set_frame.global_basis = Projection.IDENTITY
 	_set_frame.global_position = c
+	_release_architecture()
+
+
+## The HELD structures turned by `s` about the pivot, as the platform is (their level transforms kept
+## the first time, while they are still level).
+func _hold_architecture(s: Projection) -> void:
+	for nm in HELD:
+		var n: Node4D = get_node_or_null(String(nm)) as Node4D
+		if n == null:
+			continue
+		var id: int = n.get_instance_id()
+		if not _held_level.has(id):
+			_held_level[id] = [n, n.global_basis, n.global_position]
+		var rec: Array = _held_level[id]
+		n.global_basis = s * (rec[1] as Projection)
+		n.global_position = _pivot + s * ((rec[2] as Vector4) - _pivot)
+
+
+## Back where they were, level.
+func _release_architecture() -> void:
+	if _held_level.is_empty():
+		return
+	for id in _held_level:
+		var rec: Array = _held_level[id]
+		var n: Node4D = rec[0] as Node4D
+		if is_instance_valid(n):
+			n.global_basis = rec[1]
+			n.global_position = rec[2]
+	_held_level.clear()
 
 
 ## Pier 1's platform has a round rail, kept here: the physics is box-only. The way back to the pier

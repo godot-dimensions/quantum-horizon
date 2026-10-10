@@ -147,7 +147,12 @@ static func animal(c: CanvasItem, kind: String, rect: Rect2, col: Color, cut: Co
 		"koi":
 			# WATER LAB: a koi side on, nose to the right: the forked tail, the long dorsal fin, the
 			# body from life/koi_mesh.gd's profile, a pectoral fin, the eye.
-			poly.call([Vector2(18, 55), Vector2(5, 40), Vector2(10, 39), Vector2(16, 52), Vector2(17, 56), Vector2(10, 71), Vector2(5, 70)])
+			# The tail (round 6, Ramon: "The fish logo on the blue wall near the tank appears to be missing
+			# its rear fin"): its outline crossed itself (the notch's two points went back over the top
+			# lobe's edge), so it never triangulated ("Invalid polygon data") and was never drawn. Now the
+			# same two lobes, the same tips, drawn round once: up the top lobe's back, its tip, in to the
+			# fork, out to the lower tip, back along its edge to the body.
+			poly.call([Vector2(23, 51.5), Vector2(10, 39), Vector2(5, 40), Vector2(14, 55), Vector2(5, 70), Vector2(10, 71), Vector2(23, 58.5)])
 			poly.call([Vector2(36, 45), Vector2(41, 33), Vector2(50, 34.5), Vector2(66, 43)])
 			var top: Array = []
 			var bottom: Array = []

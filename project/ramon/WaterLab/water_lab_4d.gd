@@ -17,8 +17,8 @@ extends Node4D
 ##                     (Ramon: "a spinnable path creator circle ... in the mid of the fishtank"): in it
 ##                     a right drag turns your slice (the pen's rig, Andrew's directions), and the
 ##                     koi that live off the level slice swim into view. Step out and it levels.
-##   FEEDING           the console at the glass: E drops a pinch of pellets on the surface, and the
-##                     koi rise for them.
+##   FEEDING           F, at the feeding panel or on the turning square: a pinch of pellets falls into
+##                     the water in front of you, in your slice, and the koi rush for it.
 ##   THE SHOWCASE      in the south-east corner: a koi four times life size swimming on the spot in a column of
 ##                     blue light (room/koi_showcase_4d.gd): the wheel slides it through W, a right
 ##                     drag turns it, and its floating panel (the Voxel Lab's) pages through more
@@ -45,6 +45,7 @@ const FloatPanel := preload("res://ramon/WaterLab/carried/voxel_lab/float_panel_
 const LabPrint := preload("res://ramon/WaterLab/carried/LabKit/lab_print.gd")
 const PenWalk := preload("res://ramon/WaterLab/shared/pen_walk.gd")
 const MouseTutorial := preload("res://ramon/WaterLab/shared/mouse_tutorial.gd")
+const SharkScript := preload("res://ramon/WaterLab/life/shark_4d.gd")
 
 const SEA_SCENE := "res://ramon/WaterLab/seascape/seascape.tscn"
 ## The tree's meta that says where you are arriving from (the sea sets it on its way back).
@@ -76,8 +77,16 @@ var prompt: Control
 var builder: Control
 var dial: Control
 var tutorial: Control
-## Seconds left of following the shark (V): the contents slid so it stays in your slice.
+## Seconds left of following the shark (V): the contents turned and slid so it stays whole in your slice.
 var _follow_shark: float = 0.0
+const FOLLOW_TIME := 10.0
+## The most the contents turn either way, 75 degrees (tank_4d.gd's clamp).
+const TURN_LIMIT := 1.3089969
+## A pinch: how many pellets, and the height (from the floor) they fall in at, the top of what you see
+## of the water from the floor (the tank reaches the ceiling).
+const FOOD_PINCH := 30
+const FOOD_HEIGHT := 4.7
+var _rng := RandomNumberGenerator.new()
 var tank: Node4D
 var showcase: Node4D
 ## The showcase while you are at it (the wheel and a right drag are its), else null.
@@ -241,7 +250,7 @@ func _build_feeder() -> void:
 	panel.set("number", 0)
 	panel.set("title", "Feed the koi")
 	panel.set("kicker", "A PINCH OF PELLETS, SINKING TO THEM")
-	panel.set("hint", "E   FEED THE KOI")
+	panel.set("hint", "F   FEED THE KOI")
 	panel.set("rows", _feeder_rows())
 	add_child(panel)
 
@@ -343,7 +352,12 @@ func _square_picture(c: Control) -> void:
 	c.draw_string(fb, Vector2(margin, y + px * 1.02), "THROUGH W", HORIZONTAL_ALIGNMENT_CENTER, w, px, white)
 	var rule_y: float = y + px * 1.02 + 0.17 * u
 	c.draw_line(Vector2(sz.x * 0.5 - 0.45 * u, rule_y), Vector2(sz.x * 0.5 + 0.45 * u, rule_y), soft, maxf(2.0, 0.018 * u), true)
-	c.draw_string(fs, Vector2(margin, rule_y + 0.17 * u), "RIGHT MOUSE   ·   WHEEL   ·   V THE SHARK", HORIZONTAL_ALIGNMENT_CENTER, w, int(0.085 * u), soft)
+	# Round 6: F feeds the koi from here too.
+	var legend := "RIGHT MOUSE   ·   WHEEL   ·   V THE SHARK   ·   F FEED"
+	var lpx: int = int(0.085 * u)
+	while lpx > 8 and fs.get_string_size(legend, HORIZONTAL_ALIGNMENT_LEFT, -1, lpx).x > w:
+		lpx -= 1
+	c.draw_string(fs, Vector2(margin, rule_y + 0.17 * u), legend, HORIZONTAL_ALIGNMENT_CENTER, w, lpx, soft)
 
 
 func _feeder_rows() -> Array:
@@ -390,7 +404,8 @@ func _process(delta: float) -> void:
 	if Engine.get_process_frames() % 30 == 0:
 		_paint_square()
 		_darken_airlock()
-	player.set("w_walk_enabled", not (_at_feed or _near_panel))
+	# (Round 6: feeding is F, so only the showcase's panel, where E pages, pauses stepping through W.)
+	player.set("w_walk_enabled", not _near_panel)
 	_turning(p)
 	_following(delta)
 	_shark_prompt(p)
@@ -449,50 +464,153 @@ func _turning(p: Vector4) -> void:
 		dial.set("following", _follow_shark > 0.0)
 	if tutorial != null:
 		tutorial.set("shown", on)
-	if not on:
+	# (Until round 6 stepping off the square ended the follow, every frame, so V in front of the tank but
+	# off the square did nothing: the prompt asked for a key that the next frame undid. The follow now
+	# ends on its own, or when you walk away from the tank.)
+	if not _in_front(p):
 		_follow_shark = 0.0
 
 
-## How much of the shark your slice shows now, 0 to 1 (its W thickness against how far off the slice
-## its middle is, after the contents' turn and slide).
+## In front of the tank, where its prompts show.
+func _in_front(p: Vector4) -> bool:
+	return tank != null and p.z < tank.global_position.z + 9.0 and absf(p.x - tank.global_position.x) < 12.0
+
+
+## How much of the shark your slice shows now, 0 to 1.
+##
+## ROUND 6 (Ramon: "The alignment prompt sometimes appears when the shark is far away or not meaningfully
+## visible ... Pressing V doesn't consistently align ... Manual rotation can currently produce a better
+## view"). This looked only at how far the shark's MIDDLE was off the slice. But the shark is long and
+## thin through W (12 cm of W for 2.4 m of body), so what shows depends far more on how its body lies
+## across the slice: turned with the contents, or turning through W at an end of the tank, its middle can
+## sit on the slice while all the slice shows is a thin cut across it. That read as 90% and asked for V;
+## and V only slid the contents (the middle onto the slice), never turned them, so the body stayed cut
+## across. Now the body is sampled at 12 stations nose to tail: each station's cross-section (its half
+## width, height and W, from the shark's own profile) is cut where that station sits off the slice, and
+## the cuts' sizes are averaged, the fatter stations counting more. That is 60% of it. The other 40% is
+## what makes it a hammerhead, and goes first: the hammer, the dorsal, the pectorals and the tail are
+## 2 to 8 cm deep in W (SHARK_FEATURES), so a slice turned 5 degrees off the shark shows only a finless
+## lens of its body (the round 6 frames; the body alone called that 80%). Each is a point (or three)
+## cut the same way by its own depth.
 func shark_visible() -> float:
-	if tank == null:
-		return 0.0
-	var shark: Node = tank.get("shark")
+	var shark: Node = tank.get("shark") if tank != null else null
 	if shark == null:
 		return 0.0
-	var q: Vector4 = (tank.call("contents_basis") as Projection) * (shark.get("p") as Vector4)
-	var w: float = q.w + float(tank.get("contents_slide"))
-	var r: float = 0.05 * float(shark.get("length"))
-	return sqrt(maxf(1.0 - (w * w) / (r * r), 0.0))
+	return shark_cover(shark, tank.call("contents_basis"), float(tank.get("contents_slide")))
+
+
+## The parts the slice takes first: [s along the body from the snout, out to its right, up (body
+## lengths), its half depth through W (body lengths, shark_4d.gd's own: the hammer's 0.035, a fin's
+## 1.4 x 0.007, the tail's 1.6 x 0.01), its weight]. The weights come to 0.45, then scaled to 0.4.
+const SHARK_FEATURES := [
+	[0.08, 0.0, 0.0, 0.035, 0.05], [0.08, 0.13, 0.0, 0.035, 0.05], [0.08, -0.13, 0.0, 0.035, 0.05],
+	[0.40, 0.0, 0.13, 0.0098, 0.10],
+	[0.22, 0.12, -0.08, 0.0098, 0.05], [0.22, -0.12, -0.08, 0.0098, 0.05],
+	[0.93, 0.0, 0.10, 0.016, 0.05], [0.90, 0.0, -0.05, 0.016, 0.05],
+]
+
+
+## How much of `shark` the slice shows with the contents turned by `b` and slid `slide` through W.
+static func shark_cover(shark: Node, b: Projection, slide: float) -> float:
+	var L: float = float(shark.get("length"))
+	var fr: Projection = shark.get("frame")
+	var sp: Vector4 = shark.get("p")
+	# How far each of the shark's own axes reaches through the world's W.
+	var ax: float = (b * fr.x).w
+	var ay: float = (b * fr.y).w
+	var aw: float = (b * fr.w).w
+	var total: float = 0.0
+	var seen: float = 0.0
+	for k in 12:
+		var s: float = (float(k) + 0.5) / 12.0
+		var prof: Vector3 = SharkScript._at(minf(s, 0.84))
+		var spine: Vector2 = shark.call("_spine", s)
+		var at: Vector4 = sp + fr.x * (spine.x * L) + fr.z * ((0.5 - s) * L)
+		var w: float = (b * at).w + slide
+		var reach: float = L * sqrt(pow(prof.x * ax, 2.0) + pow(prof.y * ay, 2.0) + pow(prof.z * aw, 2.0))
+		var weight: float = prof.x * prof.y
+		total += weight
+		if reach > 1e-5:
+			seen += weight * sqrt(maxf(1.0 - (w * w) / (reach * reach), 0.0))
+	var body_cover: float = seen / maxf(total, 1e-6)
+	var parts: float = 0.0
+	var parts_total: float = 0.0
+	for f in SHARK_FEATURES:
+		var at2: Vector4 = sp + fr.x * (float(f[1]) * L) + fr.y * (float(f[2]) * L) + fr.z * ((0.5 - float(f[0])) * L)
+		var w2: float = (b * at2).w + slide
+		var reach2: float = L * float(f[3]) * maxf(absf(aw), 0.05)
+		parts_total += float(f[4])
+		parts += float(f[4]) * sqrt(maxf(1.0 - (w2 * w2) / (reach2 * reach2), 0.0))
+	return 0.6 * body_cover + 0.4 * parts / maxf(parts_total, 1e-6)
+
+
+## The contents' two turns (x-W, z-W) that lay the shark's whole body in your slice: its own W axis (the
+## one it is thin along, `frame.w`) turned onto the world's W. Then nothing of it is off the slice but by
+## how far its middle is, which the slide takes up. Not clamped: past TURN_LIMIT the tank cannot follow.
+##
+## THE MATHS. The contents' basis is B = XW(a) * ZW(b), and a point q of the contents lands at world W
+## (B q).w = q . (B^T e_w), with B^T e_w = (sx sin a, 0, sz cos a sin b, cos a cos b): sx and sz are the
+## signs the engine's XW and ZW turns give (read off them, not assumed). Setting that equal to the shark's
+## W axis n (the sign chosen so n.w >= 0, the nearer way round) gives a = asin(sx n.x) and
+## b = atan2(sz n.z, n.w). n has no y: the shark keeps its up as level as its heading allows, so its W axis
+## is always flat.
+static func shark_alignment(shark: Node) -> Vector2:
+	var n: Vector4 = (shark.get("frame") as Projection).w
+	if n.w < 0.0:
+		n = -n
+	n.y = 0.0
+	if n.length() < 1e-4:
+		return Vector2.ZERO
+	n = n.normalized()
+	var sx: float = signf(Basis4D.from_xw(0.5).x.w)
+	var sz: float = signf(Basis4D.from_zw(0.5).z.w)
+	var a: float = asin(clampf(sx * n.x, -1.0, 1.0))
+	var b: float = atan2(sz * n.z, n.w)
+	return Vector2(a, b)
 
 
 ## Round 4 (Ramon: "When the shark reaches approximately 70% visibility within the current slice, show
 ## an on-screen prompt: V, Align with Shark ... only when the shark is sufficiently visible and
-## alignment is relevant"): over the shark itself, while you are in front of the tank, it is at least
-## 70% in your slice and not yet whole; V slides the contents until it is.
+## alignment is relevant"): over the shark itself, while you are in front of the tank, it is mostly in
+## your slice and not yet whole. Round 6: by its cover (shark_visible, the body and its fins), up from 0.70
+## and down below 0.60 (so it does not flicker at the edge), and only while the shark is on screen.
 var _shark_prompt_on: bool = false
 
 
 func _shark_prompt(p: Vector4) -> void:
-	if prompt == null or tank == null or _at_feed:
+	if prompt == null or tank == null:
 		_shark_prompt_on = false
 		return
-	var front: bool = p.z < tank.global_position.z + 9.0 and absf(p.x - tank.global_position.x) < 12.0
+	var shark: Node4D = tank.get("shark")
+	# (Its node stays at the water's middle; its body is what swims.)
+	var body: Node4D = shark.get_node_or_null("Body") as Node4D if shark != null else null
 	var v: float = shark_visible()
-	var on: bool = front and v >= 0.7 and v < 0.985 and _follow_shark <= 0.0
+	var lo: float = 0.60 if _shark_prompt_on else 0.70
+	var on: bool = _in_front(p) and v >= lo and v < 0.97 and _follow_shark <= 0.0 and body != null and _on_screen(body.global_position)
 	_shark_prompt_on = on
 	prompt.set("shown", on)
 	if on:
-		var shark: Node4D = tank.get("shark")
-		var body: Node4D = shark.get_node_or_null("Body") as Node4D
-		prompt.set("target", body if body != null else shark)
+		prompt.set("target", body)
 		prompt.set("offset", Vector4(0.0, 0.7, 0.0, 0.0))
 		prompt.set("key", "V")
 		prompt.set("text", "Align with the shark")
 
 
-## V: the contents slid until the shark is in your slice, and kept there a while as it swims.
+## Whether a point is in front of the camera and inside the screen.
+func _on_screen(at: Vector4) -> bool:
+	var cam: Camera4D = camera()
+	if cam == null:
+		return false
+	if (at - cam.global_position).dot(cam.global_basis * Vector4(0, 0, -1, 0)) <= 0.5:
+		return false
+	var s: Vector2 = cam.world_to_viewport(at)
+	return get_viewport().get_visible_rect().grow(-20.0).has_point(s)
+
+
+## V: the contents turned and slid until the whole shark is in your slice (in about half a second), and
+## kept so for FOLLOW_TIME as it swims. Round 6: the turns lay its body in the slice (shark_alignment),
+## the slide keeps its middle on it, both eased together; the follow lets go when the shark turns back
+## through W at an end of the tank further than the contents can turn, and the view stays as it was.
 func _following(delta: float) -> void:
 	if _follow_shark <= 0.0 or tank == null:
 		return
@@ -501,40 +619,66 @@ func _following(delta: float) -> void:
 	if shark == null:
 		_follow_shark = 0.0
 		return
-	var basis: Projection = tank.call("contents_basis")
-	var q: Vector4 = basis * (shark.get("p") as Vector4)
-	var want: float = -q.w
-	var slide: float = float(tank.get("contents_slide"))
-	tank.call("set_contents", float(tank.get("contents_turn")), lerpf(slide, want, 1.0 - exp(-delta * 3.0)))
+	var want: Vector2 = shark_alignment(shark)
+	if (absf(want.x) > TURN_LIMIT or absf(want.y) > TURN_LIMIT) and _follow_shark < FOLLOW_TIME - 1.0:
+		_follow_shark = 0.0
+		return
+	# Nor further through W than the contents slide (at an end of the tank, turned far, the shark's middle
+	# can lie past what the slide reaches).
+	var slide_limit: float = float((tank.get("water_size") as Vector4).w) * 0.45
+	var needed: float = -((Basis4D.from_xw(clampf(want.x, -TURN_LIMIT, TURN_LIMIT)) * Basis4D.from_zw(clampf(want.y, -TURN_LIMIT, TURN_LIMIT))) * (shark.get("p") as Vector4)).w
+	if absf(needed) > slide_limit and _follow_shark < FOLLOW_TIME - 1.0:
+		_follow_shark = 0.0
+		return
+	var k: float = 1.0 - exp(-delta * 7.0)
+	tank.call("set_turn2", lerpf(float(tank.get("contents_turn2")), clampf(want.y, -TURN_LIMIT, TURN_LIMIT), k))
+	var turn: float = lerpf(float(tank.get("contents_turn")), clampf(want.x, -TURN_LIMIT, TURN_LIMIT), k)
+	tank.call("set_contents", turn, float(tank.get("contents_slide")))
+	# The slide for the turn as it stands now, so the middle stays on the slice while the turn eases.
+	var slide_want: float = -((tank.call("contents_basis") as Projection) * (shark.get("p") as Vector4)).w
+	tank.call("set_contents", turn, lerpf(float(tank.get("contents_slide")), slide_want, k))
 
 
 func _feeding(p: Vector4, delta: float) -> void:
 	_feed_cooldown = maxf(_feed_cooldown - delta, 0.0)
 	var at: bool = Vector2(p.x - feed_at.x, p.z - feed_at.y).length() < feed_reach
 	_at_feed = at
-	# The panel says E while you are at it (it was a prompt bubble over the old lectern).
+	# The panel says F while you are at it (it was a prompt bubble over the old lectern).
 	var feeder: Node = get_node_or_null("Feeder")
 	if feeder != null:
 		feeder.call("set_near", at)
-		feeder.set("hint", "E   FEED THE KOI" if _feed_cooldown <= 0.0 else "THEY ARE EATING")
+		feeder.set("hint", "F   FEED THE KOI" if _feed_cooldown <= 0.0 else "THEY ARE EATING")
 
 
+## F: a pinch of food falls into the water in front of you. ROUND 6 (Ramon: "The E, Feed the Koi
+## interaction currently conflicts with Q / E for stepping through W ... Make sure the feeding
+## interaction remains accessible while using Turn the Tank Through W"): F, at the feeding panel or on the
+## turning square. The pellets fall in your slice wherever the contents are turned: each is placed at a
+## point of the world's slice (just behind the glass, at the top of what you see) and carried into the
+## contents' own frame, where it sinks straight down (the turns never move y).
 func feed() -> void:
-	if _feed_cooldown > 0.0 or tank == null:
+	if _feed_cooldown > 0.0 or tank == null or player == null:
 		return
 	var koi: Node = tank.get("koi")
-	if koi == null or not koi.has_method("drop_food"):
+	var life: Node4D = tank.get("life")
+	if koi == null or life == null or not koi.has_method("drop_food_at"):
 		return
-	_feed_cooldown = 6.0
+	_feed_cooldown = 4.0
 	_fed += 1
 	var feeder: Node = get_node_or_null("Feeder")
 	if feeder != null:
 		feeder.set("rows", _feeder_rows())
-	# Over the water in front of the console, near the glass.
-	var life: Node4D = tank.get("life")
-	var at: Vector4 = life.global_basis.inverse() * (Vector4(feed_at.x, 0.0, feed_at.y, 0.0) - life.global_position)
-	koi.call("drop_food", at.x)
-	hud.call("toast", "A pinch of food on the water")
+	var he: Vector4 = tank.call("half_extents")
+	var tp: Vector4 = tank.global_position
+	var x: float = clampf(player.global_position.x, tp.x - he.x + 1.2, tp.x + he.x - 1.2)
+	var glass_z: float = tp.z + he.z
+	var inv: Projection = life.global_basis.inverse()
+	var points: Array = []
+	for i in FOOD_PINCH:
+		var world := Vector4(x + _rng.randf_range(-1.1, 1.1), FOOD_HEIGHT + _rng.randf_range(0.0, 0.7), glass_z - _rng.randf_range(0.3, 1.1), 0.0)
+		points.append(inv * (world - life.global_position))
+	koi.call("drop_food_at", points)
+	hud.call("toast", "Food in the water. Watch the koi come for it")
 
 
 ## The showcase: you are at it within `showcase_margin` of its pedestal's edge; at its floating panel,
@@ -553,9 +697,9 @@ func _find_active(p: Vector4) -> void:
 
 func _strip() -> Array:
 	if _at_feed:
-		return [["E", "Feed the koi"]]
+		return [["F", "Feed the koi"]]
 	if _on_turn:
-		return [["Right drag", "Slide and turn through W"], ["Wheel", "Turn front to back"], ["V", "Align with the shark"], ["R", "Back"]]
+		return [["Right drag", "Slide and turn through W"], ["Wheel", "Turn front to back"], ["V", "Align with the shark"], ["F", "Feed the koi"], ["R", "Back"]]
 	if active != null:
 		var out: Array = [["Left / Right", "Choose"], ["Wheel", "Slide it through W"], ["Right drag", "Turn it through W"], ["Left drag", "Turn it"], ["R", "Whole again"]]
 		if _near_panel:
@@ -667,11 +811,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	match k.keycode:
 		KEY_E:
-			if _at_feed:
-				feed()
-				get_viewport().set_input_as_handled()
-			elif _near_panel and showcase != null:
+			if _near_panel and showcase != null:
 				showcase.call("activate")
+				get_viewport().set_input_as_handled()
+		KEY_F:
+			if _at_feed or _on_turn:
+				feed()
 				get_viewport().set_input_as_handled()
 		KEY_R:
 			# At the showcase R makes the koi whole again; in the circle it puts the tank's contents
@@ -691,7 +836,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 		KEY_V:
 			if _on_turn or _shark_prompt_on:
-				_follow_shark = 8.0
+				_follow_shark = FOLLOW_TIME
+				_shark_prompt_on = false
 				hud.call("toast", "Aligned with the shark")
 				get_viewport().set_input_as_handled()
 		KEY_B:

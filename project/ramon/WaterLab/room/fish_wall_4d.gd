@@ -65,7 +65,7 @@ const CARDS := [
 	{"kind": "koi", "variety": 4, "name": "Ogon", "latin": "Cyprinus rubrofuscus  ·  koi", "kicker": "ONE METALLIC COLOUR, GOLD",
 		"line": "One metallic colour and a wet highlight: the sheen of a koi under the lights.",
 		"rows": [["Highlight", "three times a plain koi's"], ["Scales", "rows of arcs, faded where smaller than a pixel"]]},
-	{"kind": "crab", "lift": 0.14, "name": "Edible crab", "latin": "Cancer pagurus", "kicker": "WALKS SIDEWAYS, AND THROUGH W",
+	{"kind": "crab", "lift": 0.06, "name": "Brown crab", "latin": "Cancer pagurus", "kicker": "WALKS SIDEWAYS, AND THROUGH W",
 		"line": "It wanders the tank's whole floor, x, z and W: it comes onto your slice somewhere, picks at the sand, and walks off through W.",
 		"rows": [["Width", "0.34 m"], ["Legs", "eight, two sets of four in turn"], ["Claws", "pick at the sand, the pincers open and close"], ["Drawn as", "lofted in 4D, jointed legs and claws"]]},
 	{"kind": "koi", "variety": 6, "name": "Asagi", "latin": "Cyprinus rubrofuscus  ·  koi", "kicker": "A BLUE NET, RED BELOW",
@@ -77,8 +77,6 @@ const CARDS := [
 ]
 
 var _panels: Array = []
-## The lofted animals' cuts at w = 0 (koi, eel, crab), each made the first time its card shows.
-var _cuts: Dictionary = {}
 var _t: float = 0.0
 
 
@@ -234,53 +232,123 @@ func _process(delta: float) -> void:
 
 
 ## A new animal on the turntable.
+##
+## ROUND 6 (Ramon, #34: "The rotating hammerhead shark and fish displays currently appear static apart from
+## their display rotation. I'd like their existing creature animations to remain active ... Let both
+## animations work together without interfering with each other"): each card's animal was one cut of its
+## loft at rest, made once. Now it is the loft's rigid pieces, each cut at w = 0 once in its own frame
+## (shared/slice_mesh.gd), and placed every frame where the loft's own pose puts it: the koi and the eel
+## swim, the crab walks on the spot and works its claws, the hammerhead swims, while the turntable turns
+## the whole. This is exact, not a likeness: every turn the poses make is about x, y or z (loft_kit.gd
+## yaw, rot_x, rot_y, rot_z), never through W, so a piece's cut is the same wherever the pose puts it.
+## The lofts themselves are built once and never enter the tree (only their transforms are read).
 func _show(panel: Dictionary, card: Dictionary) -> void:
 	var studio: SubViewport = panel["studio"]
 	if panel["specimen"] != null and is_instance_valid(panel["specimen"]):
 		(panel["specimen"] as Node).queue_free()
-	var node: Node3D
-	match String(card["kind"]):
+	var kind: String = String(card["kind"])
+	var node: Node3D = _card_animal(kind, card)
+	match kind:
 		"shark":
-			node = _shark_cut()
 			panel["distance"] = 4.2
 		"eel":
-			node = _eel_cut()
 			panel["distance"] = 2.6
 		"crab":
-			node = _crab_cut()
 			# A little further back than at first, so its legs stay in the picture once lifted.
 			panel["distance"] = 1.2
 		_:
-			node = _koi_cut(int(card.get("variety", 0)))
 			panel["distance"] = 1.9
 	studio.add_child(node)
 	panel["specimen"] = node
 	panel["angle"] = 0.6
-	panel["kind"] = String(card["kind"])
+	panel["kind"] = kind
 	panel["lift"] = float(card.get("lift", 0.0))
+	panel["swim"] = randf() * TAU
+	_animate(panel, 0.0)
 
 
-## The hammerhead's cut at w = 0: its baked pieces placed at rest, sliced (shared/slice_mesh.gd).
-func _shark_cut() -> Node3D:
-	var L: float = 2.4
-	var parts: Array = []
-	var grey := Color(0.36, 0.36, 0.32)
-	for pc in Shark.PIECES:
-		var sc: float = (float(pc[1]) + float(pc[2])) * 0.5
-		var origin := Vector4(0.0, 0.0, (0.5 - sc) * L, 0.0)
-		var m: Resource = load(Shark.BAKED + "shark_%s_%s.res" % [String(pc[0]), Shark.BAKE_VERSION])
-		if m is ArrayTetraMesh4D:
-			parts.append([m, Projection.IDENTITY, origin, grey])
-		var extra: Dictionary = {"Head": ["hammer", "eyes"], "Chest": ["pectorals"], "Middle": ["dorsal"], "Hips": ["pelvics"], "Tail": ["dorsal2"]}
-		for e in extra.get(String(pc[0]), []):
-			var em: Resource = load(Shark.BAKED + "shark_%s_%s.res" % [String(e), Shark.BAKE_VERSION])
-			if em is ArrayTetraMesh4D:
-				parts.append([em, Projection.IDENTITY, origin, Color(0.05, 0.05, 0.05) if e == "eyes" else grey])
-	var mi := MeshInstance3D.new()
-	mi.mesh = SliceMesh.cut(parts, 0.0)
+## The lofts, built once: kind -> {"loft": the loft node, "body": its body, "pieces": [[MeshInstance4D,
+## its cut ArrayMesh]], "skin": its 3D texture or null}.
+var _lofts: Dictionary = {}
+
+
+func _loft(kind: String) -> Dictionary:
+	if _lofts.has(kind):
+		return _lofts[kind]
+	var t0: int = Time.get_ticks_usec()
+	var k := Node4D.new()
+	var body: Node4D
+	var skin: Texture3D = null
+	match kind:
+		"shark":
+			k.set_script(Shark)
+			# Its _ready builds its pieces from the bakes; called by hand, as it never enters the tree.
+			k.call("_ready")
+			body = k.get("_body")
+		_:
+			k.set_script({"koi": KoiLoft, "eel": EelLoft, "crab": CrabLoft}[kind])
+			k.set("detail", 2)
+			k.call("build")
+			body = k.get("body")
+			var mat: TetraMaterial4D = k.get("material") as TetraMaterial4D
+			if mat != null and kind != "koi":
+				skin = mat.albedo_texture_3d
+	var pieces: Array = []
+	var stack: Array = [body]
+	for guard in 4096:
+		if stack.is_empty():
+			break
+		var n: Node = stack.pop_back()
+		for c in n.get_children():
+			stack.append(c)
+		if n is MeshInstance4D:
+			var col: Color = Color(0.05, 0.05, 0.05) if (kind == "shark" and String(n.name) == "Eyes") else (Color(0.36, 0.36, 0.32) if kind == "shark" else Color.WHITE)
+			pieces.append([n, SliceMesh.cut([[(n as MeshInstance4D).mesh, Projection.IDENTITY, Vector4.ZERO, col]], 0.0)])
+	var rec: Dictionary = {"loft": k, "body": body, "pieces": pieces, "skin": skin}
+	_lofts[kind] = rec
+	print("FISH WALL %s: %d pieces cut in %.0f ms" % [kind, pieces.size(), (Time.get_ticks_usec() - t0) / 1000.0])
+	return rec
+
+
+## A card's animal: one MeshInstance3D a piece, in the card's paint, under one node the turntable turns.
+func _card_animal(kind: String, card: Dictionary) -> Node3D:
+	var rec: Dictionary = _loft(kind)
+	var root := Node3D.new()
+	var mat: Material
+	match kind:
+		"shark":
+			mat = _shark_material()
+		"koi":
+			var km := ShaderMaterial.new()
+			km.shader = KOI_PICTURE
+			km.set_shader_parameter(&"variety", float(card.get("variety", 0)))
+			km.set_shader_parameter(&"pattern_seed", 0.37)
+			km.set_shader_parameter(&"detail", 1.0)
+			km.set_shader_parameter(&"koi_profile", KoiLoft.profile())
+			mat = km
+		_:
+			var lm := ShaderMaterial.new()
+			lm.shader = LOFT_PICTURE
+			lm.set_shader_parameter(&"skin", rec["skin"])
+			if kind == "crab":
+				lm.set_shader_parameter(&"clearcoat", 0.4)
+			mat = lm
+	for pc in rec["pieces"]:
+		var mi := MeshInstance3D.new()
+		mi.mesh = pc[1]
+		mi.material_override = mat
+		root.add_child(mi)
+	# The size shown: the koi one body length to 0.95 m, the eel to 1.4 m, the crab 0.34 m across (the
+	# hammerhead's bakes are life size).
+	root.scale = Vector3.ONE * float({"koi": 0.95, "eel": 1.4, "crab": 0.34}.get(kind, 1.0))
+	root.set_meta("kind", kind)
+	return root
+
+
+## Countershaded by height, the eyes dark (their vertex colour).
+func _shark_material() -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	var sh := Shader.new()
-	# Countershaded by height, the eyes dark (their vertex colour).
 	sh.code = """shader_type spatial;
 render_mode cull_disabled;
 varying float h;
@@ -294,111 +362,70 @@ void fragment() {
 	ROUGHNESS = 0.5;
 }"""
 	mat.shader = sh
-	mi.material_override = mat
-	return mi
+	return mat
 
 
-## A lofted koi's cut at w = 0, at rest and straight, one body length scaled to 0.95 m: the fine koi
-## the showcase uses, built (or loaded from life/baked/) without entering the tree, its pieces placed
-## as its pose puts them, cut, and painted as the tank's.
-func _koi_cut(v: int) -> Node3D:
-	if not _cuts.has("koi"):
-		_cuts["koi"] = _cut_koi()
-	var mi := MeshInstance3D.new()
-	mi.mesh = _cuts["koi"]
-	mi.scale = Vector3.ONE * 0.95
-	var mat := ShaderMaterial.new()
-	mat.shader = KOI_PICTURE
-	mat.set_shader_parameter(&"variety", float(v))
-	mat.set_shader_parameter(&"pattern_seed", 0.37)
-	mat.set_shader_parameter(&"detail", 1.0)
-	mat.set_shader_parameter(&"koi_profile", KoiLoft.profile())
-	mi.material_override = mat
-	return mi
+## The card's animal posed for now: its loft posed at the origin, level (its swim's own numbers, gentler
+## than in the tank so it stays in the picture), then each piece's place up to the body read off it.
+func _animate(panel: Dictionary, delta: float) -> void:
+	var node: Node3D = panel["specimen"]
+	if node == null or not is_instance_valid(node):
+		return
+	var kind: String = String(panel.get("kind", ""))
+	if not _lofts.has(kind):
+		return
+	var rec: Dictionary = _lofts[kind]
+	var k: Node4D = rec["loft"]
+	var swim: float = float(panel.get("swim", 0.0)) + delta
+	panel["swim"] = swim
+	match kind:
+		"shark":
+			k.set("p", Vector4.ZERO)
+			k.set("frame", Projection.IDENTITY)
+			k.set("_phase", fmod(TAU * 0.65 * swim, TAU * 64.0))
+			k.set("_amp", 0.7)
+			k.call("_pose")
+		"koi":
+			k.call("pose", Vector4.ZERO, Projection.IDENTITY, 1.0, fmod(TAU * 0.9 * swim, TAU * 64.0), 0.07, 0.0, 0.3, 0.0, swim)
+		"eel":
+			k.call("pose", Vector4.ZERO, Projection.IDENTITY, 1.0, fmod(TAU * 0.6 * swim, TAU * 64.0), 0.07, 0.0, 0.0, 0.0)
+		"crab":
+			k.call("pose", Vector4.ZERO, Projection.IDENTITY, 1.0, fmod(TAU * 0.8 * swim, TAU * 64.0), 0.6, 0.3 + 0.25 * sin(swim * 0.9),
+				0.5 + 0.5 * sin(swim * 1.7), swim)
+	var body: Node4D = rec["body"]
+	var pieces: Array = rec["pieces"]
+	for i in mini(pieces.size(), node.get_child_count()):
+		var n: Node4D = pieces[i][0]
+		var b: Projection = n.basis
+		var o: Vector4 = n.position
+		var up: Node = n.get_parent()
+		for guard in 16:
+			if up == null or up == body:
+				break
+			var h := up as Node4D
+			o = h.basis * o + h.position
+			b = h.basis * b
+			up = up.get_parent()
+		(node.get_child(i) as Node3D).transform = Transform3D(Basis(Vector3(b.x.x, b.x.y, b.x.z), Vector3(b.y.x, b.y.y, b.y.z), Vector3(b.z.x, b.z.y, b.z.z)), Vector3(o.x, o.y, o.z))
 
 
-## The cut itself, made once (every koi card shares it; only the paint differs).
-func _cut_koi() -> ArrayMesh:
-	var k := Node4D.new()
-	k.set_script(KoiLoft)
-	k.set("detail", 2)
-	k.call("build")
-	k.call("pose", Vector4.ZERO, Projection.IDENTITY, 1.0, 0.0, 0.0, 0.0, 0.3, 0.0, 0.0)
-	return _cut_loft(k, "koi")
+func _exit_tree() -> void:
+	for kind in _lofts:
+		var k: Node = (_lofts[kind] as Dictionary)["loft"]
+		if is_instance_valid(k) and not k.is_inside_tree():
+			k.free()
+	_lofts.clear()
 
 
-## The lofted eel's cut at w = 0, gently waved (a straight eel reads as a stick), 1.4 m, its skin's own
-## 3D texture read at the cut's coordinates (life/loft_picture.gdshader).
-func _eel_cut() -> Node3D:
-	if not _cuts.has("eel"):
-		var k := Node4D.new()
-		k.set_script(EelLoft)
-		k.set("detail", 2)
-		k.call("build")
-		k.call("pose", Vector4.ZERO, Projection.IDENTITY, 1.0, 1.3, 0.07, 0.0, 0.0, 0.0)
-		_cuts["eel_skin"] = (k.get("material") as TetraMaterial4D).albedo_texture_3d
-		_cuts["eel"] = _cut_loft(k, "eel")
-	var skin: Texture3D = _cuts["eel_skin"]
-	var mi := MeshInstance3D.new()
-	mi.mesh = _cuts["eel"]
-	mi.scale = Vector3.ONE * 1.4
-	var mat := ShaderMaterial.new()
-	mat.shader = LOFT_PICTURE
-	mat.set_shader_parameter(&"skin", skin)
-	mi.material_override = mat
-	return mi
+## The crab seen a little from above (round 6, Ramon, #33: "The small rotating crab diagram currently
+## exposes too much of its underside ... Present the crab from a slightly elevated, top-down perspective"):
+## its tilt was about its own x, before the turntable's turn, so as it turned the tilt went round with it
+## and every half turn showed it from below. The crab's tilt is now toward the camera, after the turn. (Its
+## lift came down from 0.14 to 0.06 with it: seen from above, it had risen to the top of its picture.)
+const CRAB_TILT := 0.42
 
 
-## The lofted crab's cut at w = 0, standing (a step half taken), 0.34 m across.
-func _crab_cut() -> Node3D:
-	if not _cuts.has("crab"):
-		var k := Node4D.new()
-		k.set_script(CrabLoft)
-		k.set("detail", 2)
-		k.call("build")
-		k.call("pose", Vector4.ZERO, Projection.IDENTITY, 1.0, 1.0, 0.6, 0.0, 0.3, 0.0)
-		_cuts["crab_skin"] = (k.get("material") as TetraMaterial4D).albedo_texture_3d
-		_cuts["crab"] = _cut_loft(k, "crab")
-	var skin: Texture3D = _cuts["crab_skin"]
-	var mi := MeshInstance3D.new()
-	mi.mesh = _cuts["crab"]
-	mi.scale = Vector3.ONE * 0.34
-	var mat := ShaderMaterial.new()
-	mat.shader = LOFT_PICTURE
-	mat.set_shader_parameter(&"skin", skin)
-	mat.set_shader_parameter(&"clearcoat", 0.4)
-	mi.material_override = mat
-	return mi
-
-
-## A built loft's cut at w = 0: each mesh placed by its holders' turns and offsets up to the body, cut
-## (shared/slice_mesh.gd), the loft node freed.
-func _cut_loft(k: Node4D, what: String) -> ArrayMesh:
-	var t0: int = Time.get_ticks_usec()
-	var body: Node4D = k.get("body")
-	var parts: Array = []
-	var stack: Array = [body]
-	while not stack.is_empty():
-		var n: Node = stack.pop_back()
-		for c in n.get_children():
-			stack.append(c)
-		if n is MeshInstance4D:
-			var b := Projection.IDENTITY
-			var o := Vector4.ZERO
-			var up: Node = n.get_parent()
-			while up != null and up != body:
-				var h := up as Node4D
-				o = h.basis * o + h.position
-				b = h.basis * b
-				up = up.get_parent()
-			parts.append([(n as MeshInstance4D).mesh, b, o, Color.WHITE])
-	k.free()
-	var m: ArrayMesh = SliceMesh.cut(parts, 0.0)
-	print("FISH WALL %s cut: %.0f ms" % [what, (Time.get_ticks_usec() - t0) / 1000.0])
-	return m
-
-
-## The turntable: round and round, the animal's cut turning on the spot.
+## The turntable: round and round, the animal turning on the spot as it swims.
 func _turn(panel: Dictionary, delta: float) -> void:
 	var node: Node3D = panel["specimen"]
 	if node == null or not is_instance_valid(node):
@@ -410,7 +437,13 @@ func _turn(panel: Dictionary, delta: float) -> void:
 	# the Edible crab displays"; the picture is 2 d tan(16 deg) high at the animal, the studio's fov 32).
 	var up: float = float(panel.get("lift", 0.0)) * 2.0 * d * tan(deg_to_rad(16.0))
 	node.position = Vector3(0.0, -0.05 + up, -d)
-	node.rotation = Vector3(0.25, a, 0.0)
+	if String(panel.get("kind", "")) == "crab":
+		var s: Vector3 = node.scale
+		node.basis = Basis(Vector3.RIGHT, CRAB_TILT) * Basis(Vector3.UP, a)
+		node.scale = s
+	else:
+		node.rotation = Vector3(0.25, a, 0.0)
+	_animate(panel, delta)
 
 
 ## The picture's ground: dark blue and a clean grid of faint white lines, a little stronger every

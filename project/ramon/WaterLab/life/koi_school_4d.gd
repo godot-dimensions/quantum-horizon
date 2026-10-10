@@ -23,10 +23,11 @@ extends Node4D
 ##                    it: a lofted koi shows only within its own half width of the slice), but now
 ##                    and then one wanders off through W, thinning away fin first, to come back
 ##                    later. A few live off it.
-##   FEEDING          drop_food(x) scatters pellets on the surface (the room's console, E). They float
-##                    and drift, then sink; every koi near enough comes up for them, faster than it
-##                    ever swims otherwise, and gulps them down one by one (Ramon, 9 Oct: "maybe you can
-##                    interact with the fishtank").
+##   FEEDING          drop_food_at(points) drops a pinch of pellets into the water (the room's F, at the
+##                    feeding panel or on the turning square); they fall in fast, slow as they sink
+##                    through the koi's water, then drift down to the sand. Every koi near enough comes
+##                    for them, faster than it ever swims otherwise, and gulps them down one by one
+##                    (Ramon, 9 Oct: "maybe you can interact with the fishtank").
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -34,7 +35,15 @@ const Herd := preload("res://ramon/WaterLab/shared/slice_herd_4d.gd")
 const KoiLoft := preload("res://ramon/WaterLab/life/koi_loft_4d.gd")
 const Kit := preload("res://ramon/WaterLab/life/loft_kit.gd")
 const BLOB := preload("res://ramon/WaterLab/life/blob.gdshader")
-const MAX_FOOD := 48
+const MAX_FOOD := 72
+## A pellet's radius, metres, and its colour. ROUND 6 (Ramon: "Food particles should visibly fall into
+## the aquarium ... The player should immediately understand that feeding has occurred"): they were 1.3 cm
+## across, brown, and scattered 10 cm through W, while a pellet is a 4D ball only its own radius deep in W:
+## most were never in the slice at all, and the rest were a pixel or two at the glass. Now 9 cm and a strong
+## orange with a little shine (at 6 cm and amber, the first frames read them as the marine snow), each
+## dropped exactly in your slice (the room works out where that is in the turned contents).
+const FOOD_RADIUS := 0.045
+const FOOD_COLOUR := Color(1.0, 0.42, 0.06, 1.0)
 
 ## The varieties in the shader's order.
 const VARIETIES := ["Kohaku", "Taisho Sanke", "Showa", "Tancho", "Ogon", "Platinum Ogon", "Asagi", "Chagoi"]
@@ -453,14 +462,17 @@ func _swim(i: int, dt: float) -> void:
 	f["v"] = v
 
 
-## A pinch of food over the water at `x` (the tank's frame), near the glass.
-func drop_food(x: float) -> void:
-	for i in 16:
+## A pinch of food at `points` (this node's frame), falling. The room puts them in your slice, in front of
+## you and near the top of what you see through the glass: the tank reaches the ceiling, so a pinch on the
+## real surface (until round 6) fell where no one could see it, and the koi rose out of view to eat.
+func drop_food_at(points: Array) -> void:
+	for at in points:
 		if food.size() >= MAX_FOOD:
 			break
-		var at := Vector4(clampf(x + _rng.randf_range(-0.6, 0.6), -half_extents.x + 0.3, half_extents.x - 0.3), half_extents.y - 0.025,
-			_rng.randf_range(half_extents.z - 1.2, half_extents.z - 0.25), _rng.randf_range(-0.10, 0.10))
-		food.append({"p": at, "v": Vector4(_rng.randf_range(-0.03, 0.03), 0.0, _rng.randf_range(-0.03, 0.01), 0.0), "age": 0.0, "taken": -1})
+		var p: Vector4 = at
+		for k in 4:
+			p[k] = clampf(p[k], -half_extents[k] + 0.15, half_extents[k] - 0.15)
+		food.append({"p": p, "v": Vector4(0.0, -_rng.randf_range(0.5, 0.7), 0.0, 0.0), "age": 0.0, "taken": -1})
 
 
 func _nearest_food(p: Vector4, me: int) -> int:
@@ -476,7 +488,9 @@ func _nearest_food(p: Vector4, me: int) -> int:
 	return best
 
 
-## Pellets drift on the surface, then sink slowly to the sand; a koi's mouth on one eats it.
+## Pellets fall in fast, slow as they sink through the koi's water, then drift down to the sand; a koi's
+## mouth on one eats it. Straight down only: a sideways drift would carry them out of the slice when the
+## contents are turned through W.
 func _float_food(dt: float) -> void:
 	var i: int = food.size() - 1
 	while i >= 0:
@@ -484,13 +498,7 @@ func _float_food(dt: float) -> void:
 		fd["age"] = float(fd["age"]) + dt
 		var p: Vector4 = fd["p"]
 		var v: Vector4 = fd["v"]
-		if p.y > _band_top() - 0.3:
-			# Above where they swim: sinking quickly to them.
-			v.y = move_toward(v.y, -0.6, dt * 1.5)
-		elif v.y < -0.07:
-			v.y = move_toward(v.y, -0.06, dt * 1.0)
-		elif float(fd["age"]) > 9.0:
-			v.y = maxf(v.y - dt * 0.02, -0.06)
+		v.y = move_toward(v.y, -0.18 if float(fd["age"]) < 7.0 else -0.05, dt * 0.3)
 		p += v * dt
 		p.x = clampf(p.x, -half_extents.x + 0.1, half_extents.x - 0.1)
 		p.z = clampf(p.z, -half_extents.z + 0.1, half_extents.z - 0.1)
@@ -532,7 +540,7 @@ func _draw() -> void:
 	if food_herd != null:
 		for k in MAX_FOOD:
 			if k < food.size():
-				food_herd.call("write", k, food[k]["p"], Vector4(0, 0, 1, 0), Vector4(1, 0, 0, 0), Color(0.42, 0.25, 0.12, 1.0), Vector4(0.013, 0.0, 0.0, 0.0))
+				food_herd.call("write", k, food[k]["p"], Vector4(0, 0, 1, 0), Vector4(1, 0, 0, 0), FOOD_COLOUR, Vector4(FOOD_RADIUS, 0.0, 0.25, 0.0))
 			else:
 				food_herd.call("write", k, Vector4(0, -100, 0, 0), Vector4(0, 0, 1, 0), Vector4(1, 0, 0, 0), Color(0, 0, 0, 1), Vector4.ZERO)
 		food_herd.call("upload")

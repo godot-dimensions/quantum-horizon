@@ -16,7 +16,8 @@ extends Control
 ##   THE NUMBERS  bottom right: the sea's dominant wave (amplitude, wavelength, steepness, how far it
 ##                runs off the slice), the slice's tilt, the solve, the frame rate.
 ##   THE MOUSE    on the platform, the shared mouse tutorial (shared/mouse_tutorial.gd) acting the
-##                right drag.
+##                right drag: big for its first ten seconds there, then eased down into a small still
+##                reminder over THE SEA (round 6, #44).
 ##   A THOUGHT    thought(text): a line in the middle of the screen for a few seconds (the edge's
 ##                "look down").
 ##
@@ -41,7 +42,8 @@ func _ready() -> void:
 	_mouse = Control.new()
 	_mouse.set_script(MouseTutorial)
 	_mouse.set("gestures", [["drag_h", "TURN THE SLICE"], ["drag_v", "TURN IT THE OTHER WAY"]])
-	_mouse.set("anchor", Vector2(0.03, 0.42))
+	_mouse.set("anchor", Vector2(0.03, 0.40))
+	_mouse.set("intro", 10.0)
 	add_child(_mouse)
 
 
@@ -56,7 +58,16 @@ func _process(delta: float) -> void:
 	_thought_left = maxf(_thought_left - delta, 0.0)
 	if _mouse != null:
 		_mouse.set("shown", room != null and String(room.get("_site")) == "platform")
+		_mouse.set("dock_rect", dock_rect())
 	queue_redraw()
+
+
+## Where the mouse's reminder docks: a card over THE SEA (_draw_seas), its width, a gap between.
+func dock_rect() -> Rect2:
+	var u: float = size.y / 1080.0
+	var sea := Rect2(Vector2(24.0 * u, size.y - 236.0 * u - 84.0 * u), Vector2(430.0 * u, 236.0 * u))
+	var h: float = 142.0 * u
+	return Rect2(Vector2(sea.position.x, sea.position.y - 12.0 * u - h), Vector2(sea.size.x, h))
 
 
 func _draw() -> void:

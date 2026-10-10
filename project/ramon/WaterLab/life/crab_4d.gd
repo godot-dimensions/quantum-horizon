@@ -1,7 +1,7 @@
 extends Node4D
 
 ## WATER LAB: the crab (Ramon, 9 Oct: "if you could add a walking crab that would be cool, one that
-## appears in different areas of W"). An edible crab a third of a metre across, LOFTED IN 4D
+## appears in different areas of W"). A brown crab (Cancer pagurus, also called the edible crab) a third of a metre across, LOFTED IN 4D
 ## (life/crab_loft_4d.gd, round 5: its shell, jointed legs and claws rigid pieces; until 9 Oct a 3D mesh
 ## a shader shrank off the slice), walked here over the sand of the water's own frame (life/: x along
 ## the tank, y up, z to the glass, W).

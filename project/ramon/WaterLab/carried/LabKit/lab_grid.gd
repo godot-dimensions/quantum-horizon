@@ -138,6 +138,11 @@ static func set_ring(m: TetraMaterial4D, centre: Vector2, radius: float, on: flo
 	cs.set_shader_parameter("ring_on", clampf(on, 0.0, 1.0) if radius > 0.0 else 0.0)
 
 
+## The ring's lines' width, as a share of their own (WATER LAB, round 6).
+static func set_ring_width(m: TetraMaterial4D, k: float) -> void:
+	m.get_cross_section_material_3d().set_shader_parameter("ring_width", maxf(k, 0.05))
+
+
 ## How strongly the print shows (0 hides it, so a sign can fade in).
 static func set_print_strength(m: TetraMaterial4D, k: float) -> void:
 	m.get_cross_section_material_3d().set_shader_parameter("print_on", clampf(k, 0.0, 1.0))

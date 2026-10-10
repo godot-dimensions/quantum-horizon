@@ -52,7 +52,7 @@ const SPECIES := [
 	{"key": "koi", "name": "Koi", "glyph": "koi", "title": "Kohaku", "kicker": "A KOI, FIVE TIMES LIFE SIZE", "life": 0.7, "size": 3.4, "hold": 0.5, "w": 0.09},
 	{"key": "hammerhead", "name": "Hammerhead", "glyph": "hammerhead", "title": "Scalloped hammerhead", "kicker": "LOFTED IN 4D, HALF AGAIN LIFE SIZE",
 		"life": 2.4, "size": 3.6, "hold": 0.5, "w": 0.05},
-	{"key": "crab", "name": "Crab", "glyph": "crab", "title": "Edible crab", "kicker": "WALKS SIDEWAYS, AND THROUGH W", "life": 0.34, "size": 1.8, "hold": 0.0, "w": 0.4},
+	{"key": "crab", "name": "Crab", "glyph": "crab", "title": "Brown crab", "kicker": "WALKS SIDEWAYS, AND THROUGH W", "life": 0.34, "size": 1.8, "hold": 0.0, "w": 0.4},
 	{"key": "eel", "name": "Eel", "glyph": "eel", "title": "European eel", "kicker": "A WAVE DOWN ITS WHOLE LENGTH", "life": 1.4, "size": 3.4, "hold": 0.45, "w": 0.037},
 ]
 
@@ -400,7 +400,10 @@ func _draw_now() -> void:
 			var s: float = size / float(sp["life"])
 			_shark.basis = Projection(Vector4(s, 0, 0, 0), Vector4(0, s, 0, 0), Vector4(0, 0, s, 0), Vector4(0, 0, 0, s))
 			_shark.set("p", centre / s)
-			_shark.set("frame", _shark.call("_frame_for", h))
+			# The frame the others get (round 6): the shark's own _frame_for(h) mirrored it whenever it
+			# faced the -x half (its "right" came off the world's -z and flipped sides as the heading crossed
+			# z), turning the loft inside out; and it left out the turn through W.
+			_shark.set("frame", frame)
 			_shark.set("_phase", _phase)
 			_shark.set("_amp", 0.55 + 0.45 * _amp / 0.085)
 			_shark.call("_pose")

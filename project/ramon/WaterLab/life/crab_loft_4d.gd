@@ -221,7 +221,7 @@ static func _coord(x: float, row: int, z: float) -> Vector3:
 	return Vector3((0.5 + clampf(x, 0.0, 1.0) * 15.0) / 16.0, (float(row) + 0.5) / float(ROWS), (0.5 + clampf(z, 0.0, 1.0) * 7.0) / 8.0)
 
 
-## An edible crab's colours (crab.gdshader): a brick-red shell, darker at its rim and pale beneath, a
+## A brown crab's colours (crab.gdshader): a brick-red shell, darker at its rim and pale beneath, a
 ## faint mottle; black eyes; the claws the shell's red going black at the tips, the fingers black; the
 ## thighs a paler red, the shanks paler still.
 static func skin() -> TetraMaterial4D:

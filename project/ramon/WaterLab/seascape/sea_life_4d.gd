@@ -20,6 +20,15 @@ extends Node4D
 ## The sharks are posed as the showcase poses one (their own _process off, `p` and `frame` set, _pose
 ## called); the eels likewise (their pieces posed by EelLoft.pose). In the seascape's own frame (its
 ## root). NO class_name.
+##
+## ROUND 6 (Ramon, #42: "The hammerhead sharks sometimes appear correctly rendered, but at other times parts
+## become transparent or expose their underlying loft circles"). Each shark's frame was made afresh every
+## frame from its heading alone (shark_4d.gd _frame_for(ahead)), whose "right" is the world's -z with the
+## heading taken out. Swimming the loop, the heading crosses the z axis twice a lap, and at each crossing
+## that right flips to the other side while ana stays put: a mirrored frame. A mirrored loft is inside out,
+## so for half of every lap you saw the backs of its faces, the rings of the loft's sections through a body
+## that seemed half gone. Now each frame is carried on from the last (loft_kit.gd frame_for, as the eels and
+## the koi already were), which never flips and keeps it right-handed.
 
 const Shark := preload("res://ramon/WaterLab/life/shark_4d.gd")
 const EelLoft := preload("res://ramon/WaterLab/life/eel_loft_4d.gd")
@@ -53,7 +62,7 @@ func _ready() -> void:
 		s.set_process(false)
 		var k: float = shark_scale * (1.0 - 0.08 * float(i))
 		s.basis = Projection(Vector4(k, 0, 0, 0), Vector4(0, k, 0, 0), Vector4(0, 0, k, 0), Vector4(0, 0, 0, k))
-		_sharks.append({"node": s, "k": k, "phase": _rng.randf() * TAU})
+		_sharks.append({"node": s, "k": k, "phase": _rng.randf() * TAU, "frame": Projection.IDENTITY, "framed": false})
 	for e in 2:
 		var eel := Node4D.new()
 		eel.name = "Eel%d" % e
@@ -88,7 +97,10 @@ func _process(delta: float) -> void:
 		var k: float = sh["k"]
 		sh["phase"] = float(sh["phase"]) + TAU * 0.7 * dt
 		s.set("p", at / k)
-		s.set("frame", s.call("_frame_for", ahead))
+		var f0: Projection = Kit.frame_for(ahead, sh["frame"]) if bool(sh["framed"]) else Kit.level_frame(ahead)
+		sh["frame"] = f0
+		sh["framed"] = true
+		s.set("frame", f0)
 		s.set("_phase", sh["phase"])
 		s.set("_amp", 0.7)
 		s.call("_pose")
