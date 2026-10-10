@@ -40,6 +40,12 @@ var _title: Label
 var _line: Label
 var _yes: Button
 var _no: Button
+var _column: VBoxContainer
+var _gap: Control
+var _row: HBoxContainer
+var _button_font: FontVariation
+## Window pixels per design pixel (the design is 1080 high); set when the box opens.
+var _k: float = 1.0
 var _on_yes: Callable = Callable()
 var _on_no: Callable = Callable()
 var _mouse_before: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
@@ -145,7 +151,7 @@ func ask(title: String, line: String, yes_text: String, no_text: String, on_yes:
 	_no.text = no_text
 	_on_yes = on_yes
 	_on_no = on_no
-	refresh_look()
+	_fit_to_screen()
 	_mouse_before = Input.mouse_mode
 	_paused_before = get_tree().paused
 	get_tree().paused = true
@@ -244,19 +250,13 @@ func _input(event: InputEvent) -> void:
 		_answer(true)
 
 
-func _font(kind: String, tracking: int = 0) -> Font:
-	var base: Font = load(FONT_DIR + "Montserrat-%s.ttf" % kind) as Font
-	if tracking == 0:
-		return base
-	var v := FontVariation.new()
-	v.base_font = base
-	v.set_spacing(TextServer.SPACING_GLYPH, tracking)
-	return v
+func _font(kind: String) -> Font:
+	return load(FONT_DIR + "Montserrat-%s.ttf" % kind) as Font
 
 
 func _build() -> void:
 	_box = Control.new()
-	_box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Not anchored: sized in WINDOW PIXELS by _fit_to_screen() each time the box opens.
 	_box.mouse_filter = Control.MOUSE_FILTER_STOP
 	_box.visible = false
 	add_child(_box)
@@ -268,42 +268,71 @@ func _build() -> void:
 	_box.add_child(centre)
 	var panel := PanelContainer.new()
 	_panel_box = StyleBoxFlat.new()
-	_panel_box.set_corner_radius_all(8)
-	_panel_box.set_border_width_all(1)
-	_panel_box.content_margin_left = 44
-	_panel_box.content_margin_right = 44
-	_panel_box.content_margin_top = 36
-	_panel_box.content_margin_bottom = 36
 	panel.add_theme_stylebox_override("panel", _panel_box)
 	centre.add_child(panel)
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 12)
-	panel.add_child(column)
+	_column = VBoxContainer.new()
+	panel.add_child(_column)
 	# Centred, title, line and buttons on one axis (Ramon, 10 Oct).
 	_title = Label.new()
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title.add_theme_font_override("font", _font("SemiBold"))
-	_title.add_theme_font_size_override("font_size", 30)
-	column.add_child(_title)
+	_column.add_child(_title)
 	_line = Label.new()
 	_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_line.add_theme_font_override("font", _font("Regular"))
-	_line.add_theme_font_size_override("font_size", 17)
-	column.add_child(_line)
-	var gap := Control.new()
-	gap.custom_minimum_size.y = 16
-	column.add_child(gap)
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 12)
-	column.add_child(row)
+	_column.add_child(_line)
+	_gap = Control.new()
+	_column.add_child(_gap)
+	_row = HBoxContainer.new()
+	_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_column.add_child(_row)
+	_button_font = FontVariation.new()
+	_button_font.base_font = _font("SemiBold")
 	_yes = _button()
 	_yes.pressed.connect(_answer.bind(true))
-	row.add_child(_yes)
+	_row.add_child(_yes)
 	_no = _button()
 	_no.pressed.connect(_answer.bind(false))
-	row.add_child(_no)
+	_row.add_child(_no)
 	refresh_look()
+
+
+## SHARP AT ANY SCALE (Ramon, 10 Oct: the box "was rasterized and I saw pixels. It needs to be
+## dynamic like the menu. Vector"). The box lives on the root and inherits whatever the running
+## scene did to the window: the menu draws through canvas-items stretch (text re-rasterised at the
+## screen's size), but the world puts the project's own scaling back - no stretch, its UI scale on
+## top - where text is drawn at its nominal size and the finished pixels are enlarged. So the box
+## undoes the window's scaling on its own layer (one unit = one window pixel) and sizes everything,
+## type included, for the real screen: the design's 1920 x 1080 proportions, drawn at full
+## resolution, whatever the scene underneath does.
+func _fit_to_screen() -> void:
+	# The window's stretch (canvas units to window pixels), undone on this layer.
+	transform = get_viewport().get_stretch_transform().affine_inverse()
+	var pixels: Vector2 = Vector2(get_window().size)
+	_box.position = Vector2.ZERO
+	_box.size = pixels
+	_k = maxf(pixels.y / 1080.0, 0.5)
+	_panel_box.set_corner_radius_all(_px(8))
+	_panel_box.set_border_width_all(maxi(1, _px(1)))
+	_panel_box.content_margin_left = _px(44)
+	_panel_box.content_margin_right = _px(44)
+	_panel_box.content_margin_top = _px(36)
+	_panel_box.content_margin_bottom = _px(36)
+	_column.add_theme_constant_override("separation", _px(12))
+	_title.add_theme_font_size_override("font_size", _px(30))
+	_line.add_theme_font_size_override("font_size", _px(17))
+	_gap.custom_minimum_size = Vector2(0, _px(16))
+	_row.add_theme_constant_override("separation", _px(12))
+	_button_font.set_spacing(TextServer.SPACING_GLYPH, maxi(1, _px(1)))
+	for b in [_yes, _no]:
+		(b as Button).custom_minimum_size = Vector2(_px(250), _px(52))
+		(b as Button).add_theme_font_size_override("font_size", _px(15))
+	refresh_look()
+
+
+## A design pixel (at 1080 high) in window pixels.
+func _px(design: float) -> int:
+	return int(round(design * _k))
 
 
 ## Bright or black, as the menu's light / dark switch was last left (the root's "menu_light", which
@@ -329,10 +358,8 @@ func _button() -> Button:
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	b.custom_minimum_size = Vector2(250, 52)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	b.add_theme_font_override("font", _font("SemiBold", 1))
-	b.add_theme_font_size_override("font_size", 15)
+	b.add_theme_font_override("font", _button_font)
 	return b
 
 
@@ -346,12 +373,12 @@ func _style_button(b: Button, primary: bool, light: bool) -> void:
 	var fills := {"normal": 0.0, "hover": 0.10, "pressed": 0.18}
 	for state in fills:
 		var s := StyleBoxFlat.new()
-		s.set_corner_radius_all(8)
+		s.set_corner_radius_all(_px(8))
 		s.anti_aliasing = true
 		if primary:
 			s.bg_color = BLUE_HOVER if state == "hover" else BLUE
 		else:
 			s.bg_color = Color(BLUE if light else WHITE, float(fills[state]))
 			s.border_color = Color(ink, 0.22 if light else 0.35)
-			s.set_border_width_all(1)
+			s.set_border_width_all(maxi(1, _px(1)))
 		b.add_theme_stylebox_override(state, s)
