@@ -6,13 +6,11 @@ on 10 Oct. Backup of the scene and the path graph from before this round: `chick
 
 ## Questions for Ramon
 
-1. **The pedestal (items 30-32), settled the same afternoon.** First a stone altar (your Alternative B) with a
-   sci-fi cylinder beside it for comparing; then, from your reference picture, the "temple" pedestal: the reference's
-   pedestal from its sloped skirt up (base block, a tall square shaft with a raised frame, a bronze boss and a carved
-   glowing mark on its front, a band, the capital, the top slab), on a thin round stone plaque, with a small pillar of
-   the same design either side. You then asked for the plaque much thinner and the little blocks under the top slab
-   gone (gone on the small pillars too, to keep them the same design). The comparison cylinder is removed. The altar
-   and the old column are still in the script (`style`), not in the scene.
+1. **The pedestal (items 30-33).** The afternoon's "temple" pedestal (from your reference picture, on a thin plaque,
+   a small pillar either side) gave way that evening to item 33's dark-stone ritual site (style "ritual"). Your two
+   small pillars live on as two small T-pillars in its ring of standing stones. Keep them that way, or put two
+   matching pillars back either side? The temple, altar and old column are still in the script (`style`), not in
+   the scene.
 2. **The campsite NPC's two places (items 19-20).** Tamsin at her fire (farm's slice) tells you about the balloon and
    the price; her twin stands by the grounded balloon at its W and takes the 2 azoth. After the ride the balloon lands
    back on its sand at W 5, so every ride is bought from her twin. OK, or should it come home to the farm's slice?
