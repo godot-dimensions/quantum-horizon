@@ -79,6 +79,13 @@ const PPM := 160.0
 	set(v):
 		code = v
 		_changed()
+## BOTANY LAB, round 4 (Ramon: "Keep the existing gray wall behind the tree displays. Use white
+## typography for the specimen titles"): white type on the room's own wall, the wall left its colour (a
+## colour code would paint the whole wall).
+@export var white_ink: bool = false:
+	set(v):
+		white_ink = v
+		_changed()
 ## Printed live (a viewport redrawn when it changes) rather than rendered once; see the note above.
 @export var live: bool = false:
 	set(v):

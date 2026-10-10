@@ -620,6 +620,9 @@ func refresh_text(tx: Node) -> void:
 ## A wall text's painter: its own paint(), handed its colour code's ink when it has one.
 func _painter(tx: Node) -> Callable:
 	var code: String = String(tx.get("code"))
+	if bool(tx.get("white_ink")) and (code.is_empty() or code == "none"):
+		# White type on the room's own wall (the blue code's ink, without its paint).
+		return func(c: Control, ink: Dictionary) -> void: tx.call("paint", c, Style.code_ink("blue", ink))
 	if code.is_empty() or code == "none":
 		return Callable(tx, "paint")
 	return func(c: Control, ink: Dictionary) -> void: tx.call("paint", c, Style.code_ink(code, ink))

@@ -43,18 +43,17 @@ cove = false
 
 [node name="Hall" type="Node4D" parent="."]
 script = ExtResource("3_kitroom")
-outline = PackedVector2Array(-14, 16, -14, -13.528, -6.372, -22, 6.372, -22, 14, -13.528, 14, 16)
-size = Vector3(28, 12, 38)
-doorways = [["entrance", 11.6, 16.4, 5.0], ["back", 4.772, 7.972, 4.4]]
+outline = PackedVector2Array(-12, 16, -12, -13.528, -4.372, -22, 4.372, -22, 12, -13.528, 12, 16)
+size = Vector3(24, 12, 38)
+doorways = [["entrance", 9.6, 14.4, 5.0], ["back", 2.772, 5.972, 4.4]]
 wall_names = PackedStringArray("left", "left_corner", "back", "right_corner", "right", "entrance")
-ceiling = false
 cove = false
 
 [node name="Sign" type="Node" parent="Hall"]
 script = ExtResource("4_text")
 side = "s"
 edge = 5
-along = Vector2(9.6, 18.4)
+along = Vector2(7.6, 16.4)
 up = Vector2(4.4, 5.9)
 outside = true
 kind = "sign"
@@ -66,32 +65,21 @@ glow = 0.3
 script = ExtResource("4_text")
 side = "n"
 edge = 2
-along = Vector2(1.0, 11.74)
+along = Vector2(0.6, 8.14)
 up = Vector2(4.8, 6.6)
 kind = "sign"
-title = "TWO VOXEL WORLDS"
+title = "TWO GARDENS"
 subtitle = "BLOCKY AND SMOOTH, SIDE BY SIDE"
-glow = 0.3
-
-[node name="FlowerSign" type="Node" parent="Hall"]
-script = ExtResource("4_text")
-side = "e"
-edge = 4
-along = Vector2(5.2, 15.8)
-up = Vector2(4.8, 6.5)
-kind = "sign"
-title = "THE FLOWER ROOM"
-subtitle = "TWELVE 4D FLOWERS  ·  THEIR BUTTERFLIES"
 glow = 0.3
 
 [node name="Station01" type="Node4D" parent="."]
 position = Vector4(-7.5, 0, 7, 0)
 script = ExtResource("5_showcase")
 exhibit_script = ExtResource("6_vx")
-pedestal_shape = "planter_box"
+pedestal_shape = "specimen_box"
 radius = 2.1
 height = 0.45
-bounds = Rect2(-13.5, -21.5, 27, 37)
+bounds = Rect2(-11.5, -21.5, 23, 37)
 band_angle = 90.0
 hologram = false
 
@@ -99,10 +87,10 @@ hologram = false
 position = Vector4(-7.5, 0, 0, 0)
 script = ExtResource("5_showcase")
 exhibit_script = ExtResource("7_dc")
-pedestal_shape = "planter"
+pedestal_shape = "specimen"
 radius = 2.3
 height = 0.45
-bounds = Rect2(-13.5, -21.5, 27, 37)
+bounds = Rect2(-11.5, -21.5, 23, 37)
 band_angle = 90.0
 hologram = false
 
@@ -110,10 +98,10 @@ hologram = false
 position = Vector4(-7.5, 0, -7, 0)
 script = ExtResource("5_showcase")
 exhibit_script = ExtResource("8_lf")
-pedestal_shape = "planter"
+pedestal_shape = "specimen"
 radius = 2.3
 height = 0.45
-bounds = Rect2(-13.5, -21.5, 27, 37)
+bounds = Rect2(-11.5, -21.5, 23, 37)
 band_angle = 90.0
 hologram = false
 
@@ -121,34 +109,13 @@ hologram = false
 position = Vector4(0, 0, -13.5, 0)
 script = ExtResource("5_showcase")
 exhibit_script = ExtResource("9_oak")
-pedestal_shape = "planter"
+pedestal_shape = "specimen"
 radius = 4.0
 height = 0.55
-bounds = Rect2(-13.5, -21.5, 27, 37)
+bounds = Rect2(-11.5, -21.5, 23, 37)
 band_angle = 0.0
 hologram = false
 holo_height = 0.9
-
-[node name="FloorMark01" type="Node4D" parent="."]
-position = Vector4(-7.5, 0, 10.4, 0)
-script = ExtResource("23_mark")
-number = 1
-title = "VOXELS"
-size = Vector2(3.2, 1.1)
-
-[node name="FloorMark02" type="Node4D" parent="."]
-position = Vector4(-7.5, 0, 3.4, 0)
-script = ExtResource("23_mark")
-number = 2
-title = "SMOOTH VOXELS"
-size = Vector2(4.4, 1.1)
-
-[node name="FloorMark03" type="Node4D" parent="."]
-position = Vector4(-7.5, 0, -3.6, 0)
-script = ExtResource("23_mark")
-number = 3
-title = "LOFTED"
-size = Vector2(3.2, 1.1)
 
 [node name="FloorMark04" type="Node4D" parent="."]
 position = Vector4(-3.4, 0, -8.9, 0)
@@ -158,7 +125,7 @@ title = "THE OAK"
 size = Vector2(3.2, 1.1)
 
 [node name="Panel01" type="Node4D" parent="."]
-position = Vector4(-2.6, 0, 5.4, 0)
+position = Vector4(-6.05, 0.45, 7, 0)
 script = ExtResource("12_panel")
 width = 1.6
 depth = 0.7
@@ -167,14 +134,22 @@ title = "Voxels"
 kicker = "THE SHRUBBERY LAB'S METHOD"
 source = NodePath("Words")
 face_point = Vector2(-4.2, 7.0)
-face_always = true
+face_always = false
+tilt = 52.0
+hover = 0.5
+reach = 0.0
+give = 0.0
+notice = 0.0
+follow = 0.0
+turn_to_you = 0.0
+solid = false
 
 [node name="Words" type="Node" parent="Panel01"]
 script = ExtResource("24_words")
 station = NodePath("../../Station01")
 
 [node name="Panel02" type="Node4D" parent="."]
-position = Vector4(-2.6, 0, -1.6, 0)
+position = Vector4(-5.85, 0.45, 0, 0)
 script = ExtResource("12_panel")
 width = 1.6
 depth = 0.7
@@ -183,14 +158,22 @@ title = "Smooth voxels"
 kicker = "THE ENGINE'S OWN VOXEL WORLD"
 source = NodePath("Words")
 face_point = Vector2(-4.0, 0.0)
-face_always = true
+face_always = false
+tilt = 52.0
+hover = 0.5
+reach = 0.0
+give = 0.0
+notice = 0.0
+follow = 0.0
+turn_to_you = 0.0
+solid = false
 
 [node name="Words" type="Node" parent="Panel02"]
 script = ExtResource("24_words")
 station = NodePath("../../Station02")
 
 [node name="Panel03" type="Node4D" parent="."]
-position = Vector4(-2.6, 0, -8.6, 0)
+position = Vector4(-5.85, 0.45, -7, 0)
 script = ExtResource("12_panel")
 width = 1.6
 depth = 0.7
@@ -199,14 +182,22 @@ title = "Lofted"
 kicker = "OUR LOFT TOOL"
 source = NodePath("Words")
 face_point = Vector2(-4.0, -7.0)
-face_always = true
+face_always = false
+tilt = 52.0
+hover = 0.5
+reach = 0.0
+give = 0.0
+notice = 0.0
+follow = 0.0
+turn_to_you = 0.0
+solid = false
 
 [node name="Words" type="Node" parent="Panel03"]
 script = ExtResource("24_words")
 station = NodePath("../../Station03")
 
 [node name="Panel04" type="Node4D" parent="."]
-position = Vector4(2.6, 0, -9.2, 0)
+position = Vector4(0, 0.55, -10.15, 0)
 script = ExtResource("12_panel")
 width = 1.6
 depth = 0.7
@@ -215,7 +206,15 @@ title = "The oak"
 kicker = "WHAT THE METHODS ADD UP TO"
 source = NodePath("Words")
 face_point = Vector2(0.0, -6.8)
-face_always = true
+face_always = false
+tilt = 52.0
+hover = 0.5
+reach = 0.0
+give = 0.0
+notice = 0.0
+follow = 0.0
+turn_to_you = 0.0
+solid = false
 
 [node name="Words" type="Node" parent="Panel04"]
 script = ExtResource("24_words")
@@ -250,7 +249,7 @@ energy = {
 "bright": 2.4,
 "dark": 3.2
 }
-fixture = false
+fixture_at = 11.94
 
 [node name="Light02Smooth" type="Node4D" parent="."]
 position = Vector4(-7.5, 11.5, 0, 0)
@@ -264,7 +263,7 @@ energy = {
 "bright": 2.4,
 "dark": 3.2
 }
-fixture = false
+fixture_at = 11.94
 
 [node name="Light03Lofted" type="Node4D" parent="."]
 position = Vector4(-7.5, 11.5, -7, 0)
@@ -278,7 +277,7 @@ energy = {
 "bright": 2.4,
 "dark": 3.2
 }
-fixture = false
+fixture_at = 11.94
 
 [node name="Light04Oak" type="Node4D" parent="."]
 position = Vector4(0, 11.5, -13.5, 0)
@@ -296,13 +295,13 @@ color = {
 "bright": Color(1, 0.86, 0.64, 1),
 "dark": Color(1, 0.82, 0.58, 1)
 }
-fixture = false
+fixture_at = 11.94
 
 [node name="LightBorder" type="Node4D" parent="."]
-position = Vector4(6.9, 11.5, 5.5, 0)
+position = Vector4(7.9, 11.5, 7.8, 0)
 script = ExtResource("10_light")
 kind = "spot"
-aim = Vector3(6.9, 0, 5.5)
+aim = Vector3(7.9, 0, 7.8)
 angle = 62.0
 softness = 2.5
 reach = 15.0
@@ -391,12 +390,6 @@ position = Vector4(0, 0, -22.4, 0)
 script = ExtResource("21_target")
 label = "To the second room"
 size = Vector3(3.2, 4.4, 0.6)
-
-[node name="Flowers" type="Node4D" parent="Paths/Targets"]
-position = Vector4(14.3, 0, -3, 0)
-script = ExtResource("21_target")
-label = "To the flower room"
-size = Vector3(0.6, 4.4, 3.2)
 
 [node name="Hall" type="Node4D" parent="Paths"]
 script = ExtResource("18_net")

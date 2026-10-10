@@ -1271,3 +1271,181 @@ frames 5.8 to 6.2 ms (the land and its trees are 1.3 million tetrahedra).
    some?
 4. Which flowers you want added (the pockets take any species from `flora_species.gd`).
 5. The menu: the fork is still not live. Say when botany_lab.tscn replaces arboretum.tscn.
+
+
+## 10. Botany Lab, round 4: Ramon's walkthrough feedback, parts 2 to 4 (10 Oct)
+
+From `D:\depot\feedback docs\botany.docx` (items 1 to 30). His frame: "a focused composition and
+presentation pass rather than another complete redesign"; preserve the pedestal sizes and designs, the
+arrival markers, the main path, the tree models and interactions, the oak's look and its camera work.
+Not to be guessed: the walkthrough ended on "I want to have small..."; treated as unfinished.
+
+### His priorities, in his order
+
+1. Fix the final room's W-slice disappearance (16) and the flower overlay that cannot be dismissed (11).
+2. The oak: faster growth with a click that speeds it up rather than skipping (9); a wind
+   demonstration you can see (10).
+3. The flowers in two rows of four (12); the flower room shelved, its door walled up, its scene kept (13).
+4. The holographic doors centred in their openings (14); the final room tightened (15, 18, 25).
+5. The smooth land simplified (20), its green surface embedded (17), a botanical beautification (21, 24,
+   29, 30); the blocky side's own species and composition (22, 24).
+6. The rest of the first room's pass (1 to 8), the naming (23), the backdrop (26), the exit sign (27),
+   ivy on the smooth side only (28, superseding 19).
+
+### The plan (72 steps)
+
+**A. The two bugs**
+1. Read why the final room empties under E: Q/E steps you through W (the pen's walk), the land is only
+   2.5 m deep in W and its banks 3.1 m, so past them the slice holds nothing; the hall's pedestals and the
+   Voxel Lab's ground are deep in W, which is why slicing there never empties.
+2. The banks (the brown base) deep in W, so a slice always cuts them, as the Voxel Lab's ground does.
+3. The walk through W held to the land's depth in this room, so E cannot take you past it; R levels the
+   turn as before.
+4. The flower border: no overlay on approach, a small key prompt only.
+5. E (or a click) at a planter opens its caption; E, a click, or walking away closes it; the "click to
+   skip" line works.
+
+**B. The oak**
+6. Its growth parts shorter (10 to 7.5 s, 9 to 7 s).
+7. A click during a growth part speeds it up three times; a second click goes on to the next part, as
+   before.
+8. Its wind part: the room's wind bent harder for the part (bend, sway, speed), two strong gusts through
+   it, put back after; the leaves follow their branches.
+9. Its leaves on the wind: fewer, smaller, a short reach round the tree, from higher up.
+10. Its platform: a green surface, with the pen's grass on it (carried, the pen untouched), clear of the
+    trunk.
+11. Its floating panel on the platform's front edge, centred on the tree, angled toward you.
+
+**C. The first room**
+12. The ceiling back, the beams gone (the other labs' plain ceiling).
+13. The room 4 m narrower (2 m each side), centred, the pedestals where they are.
+14. The back wall and its corners re-planned for the narrower room; its door sign checked.
+15. The blue walls' panels (intro, research) checked on their corner walls.
+16. The route: the spine kept, the branches at 22.5 degrees, the rings nearer the spine on their own
+    branches; the graph's own checks.
+17. Wall titles: white type on the grey wall behind 01, 02 and 03.
+18. The three planters: white rims and bodies, a flat green surface the shape of each; no grass on them.
+19. The panels onto the pedestals: front edge, centred on the tree, turned to the approach, one angle for
+    all three; still readable and paging (E near them).
+20. The flower border in two rows of four, the second 2 m behind; the path as it is.
+21. The flower room shelved: no door in the right wall, no shimmer, no sign, no route to it; the wall
+    whole; flowers/flower_room.tscn kept.
+22. The back door's shimmer centred in the wall's thickness, the opening's size.
+23. The tour: its closing shot along the border ends on the border, not the shelved door.
+
+**D. The final room's frame**
+24. A botanical name for it ("TWO GARDENS"): the far sign, the board, the hall's door sign.
+25. The entrance wall 3 m before the slabs; you arrive facing both.
+26. Its door's shimmer centred in the wall, the opening's size.
+27. An exit sign above it: "BACK TO BOTANY LAB".
+28. The side walls at the slabs' outer edges; no walkway behind them.
+29. The far wall 3 m before the slabs' end, cropping them; the trees moved off that strip.
+30. The far wall's pages and panels refitted to the shorter, narrower room.
+31. The backdrop: the sky a metre taller, the brown triangle gone, the sun kept, drawn crisper (a larger
+    print, smooth edges).
+32. The leaves down the cut from higher up.
+
+**E. The smooth half**
+33. Coarser: voxels of 0.4 m instead of 0.3, edits on a 1 m grid instead of 0.5 m, for broader, calmer
+    land.
+34. Its grass skin embedded: the balls smaller and lower, inset at the edges (no overhang).
+35. More trees: the grove's oaks with leaves, in groups, open ground between.
+36. Grass: the pen's grass carried, on the green, in the wind.
+37. Flowers from the collection in small clusters (iris, poppy, daisy, tulip, allium, foxglove...).
+38. Bushes and low shrubs: small lofted shrubs (the flora kit).
+39. Rocks in small groups (lofted, flat-shaded stone).
+40. Composition: a clearing in front, trees framing a view to the far wall, clusters leading the eye.
+41. Ivy on its blue wall only (the flower room's ivy).
+42. Butterflies, mostly over the smooth side.
+
+**F. The blocky half**
+43. A blocky conifer (stacked cell tiers on a trunk column).
+44. A blocky birch (a white trunk with dark marks, a small round crown).
+45. Blocky bushes and rock groups (cells).
+46. Composition: the same spots read as a garden, simpler than the smooth side.
+
+**G. Checks**
+47. Parse checks before every batch; headless probes for every new generator (bounded loops).
+48. The hall's frames: from the door, the narrowed room, the wall titles, the pedestals' green, the panels
+    on them, the border's two rows, the walled-up right wall, the oak and its grass and leaves.
+49. The oak's growth (normal, accelerated) and wind, frames and a short film.
+50. The play-through: updated for the new rings, the panels on the pedestals, the border's prompt and
+    caption, no flower door.
+51. The final room's frames: arrival, both halves, the backdrop, the exit sign, turned, a gust.
+52. The W-slice check: E held a long time, the base still showing; R.
+53. Frame times in all three views; the final room's tetrahedra before and after.
+54. The flower room still opens on its own (shelved, not broken).
+55. A film of the walk.
+
+**H. Words and handover**
+56. Player-facing text: no em dashes, our voice.
+57. This section's status, numbers and questions.
+58. Memory.
+59. Commit by explicit paths; no push.
+
+(Steps 60 to 72 are the fixes the frames call for, numbered as they come.)
+
+### Status (10 Oct, round 4)
+
+**The two bugs.**
+- The final room emptied under E because E walks you through W (the pen's walk) and the land is only
+  2.5 m deep in W: past it the slice held nothing. R seemed to fix it because R is the camera rig's "go
+  home", which puts you back at w 0. The Voxel Lab's ground never empties because its generator fills
+  every W. Now the banks (the brown base) are 120 m deep in W, so any slice cuts them, and the walk through
+  W is held at the land's depth (1.05 m); holding E for four seconds stops there with the land in view.
+- The flower border opened its caption by itself on approach, and its "click to skip" did nothing. Now
+  only a small key prompt shows; E or a click opens the caption, and E, a click or walking away closes it.
+
+**The oak.** Its growing parts are a quarter shorter (7.5 s and 7 s). A first click in a growing part runs
+it three times faster (measured: 3.05 s of story in 0.91 s), and the next click goes on; the right arrow
+still skips. The strip says "Click: Faster" there. Its wind part bends the room's wind 5.5 times harder,
+sways it 2.8 times more and blows it 1.6 times faster, turned across your view (the room's wind blows at
+the camera, where a bend reads only as depth), with two strong gusts; all put back when the part ends.
+Its leaves on the wind are 120 in a box of air round the crown, small, from high up. It stands on a green
+platform with the pen's grass (carried/grass/bl_grass_4d.gd, through the Voxel Lab's copy).
+
+**The first room.**
+- The ceiling back (the beams gone, the lights' discs back).
+- 4 m narrower, the back wall and its door sign refitted.
+- Behind each of 01, 02 and 03, a blue panel on the grey wall, as wide as its pedestal and floor to
+  ceiling (Ramon, after a first try with white type: "make a rectangle with heads and some subtext ... the
+  size of the showcase ... in the blue wall style"): its number and name, its method, a line on how it is
+  grown, in corner brackets like the pedestals' decals. The three floor plates with the same titles are
+  gone ("they shouldnt stay on the floor"); the oak's (04) stays, as nothing else names it on the floor.
+- White pedestals with flat green surfaces.
+- The panels on the pedestals' front edges, all turned the same way to the approach; read from the
+  planter's edge, so E at the ring is still the tree's own key.
+- The border in two rows of four.
+- The route's branches at 67.5 degrees from the spine (45 turned 22.5 toward square: Ramon's
+  correction, "25 degrees or so measured from the 45 degree angle ... a little more angular.. but
+  subtle"), the rings where they were.
+- The flower room shelved: the right wall whole, `flower_room_open` false in botany_lab_4d.gd brings its
+  door back; flowers/flower_room.tscn kept and still loads on its own.
+- The back door's shimmer centred in the wall's thickness, the opening's size.
+
+**The final room, TWO GARDENS.**
+- Cropped: the entrance 3 m before the slabs, the far wall 3 m before their end, the side walls on
+  their outer edges.
+- The exit sign "BACK TO BOTANY LAB" over its door, the shimmer centred in that wall.
+- The backdrop a metre taller, printed at 200 px a metre, the brown triangle gone, the sun kept.
+- The leaves drifting from 7 m up.
+- The smooth half a level calmer (voxels 0.4 m, edits on a 1 m grid: 2,028 edits instead of 13,520,
+  267,000 tetrahedra instead of 697,000, meshed in 2.2 s instead of 4.6), its green a thin cap with the
+  soil written over its lower part (no overhang at the edges).
+- The smooth garden (compare/bl_gardens_4d.gd): three light oaks and seven bushes (the Arboretum's
+  bakes, through carried/oak/), 50 flowers in seven clusters, rock groups (flora/rock_4d.gd), the pen's
+  grass baked from the land's own chunks (1.7 s on a worker thread, hidden while the land is turned),
+  ivy on its blue wall only, 14 butterflies.
+- The blocky garden: three blocky conifers, two birches (white trunks marked dark), bushes and rock
+  groups, all cells, no grass or flowers.
+- Frame times 6.4 to 6.8 ms (round 3: 5.8 to 6.2); the smooth land 225,000 tetrahedra (round 3: 697,000).
+
+The play-through passes 42 of 42 (the border's prompt and caption, the walled-up right wall, the panels on
+the pedestals); the route's own checks pass; the oak's click runs 3 s of story in 0.9 s.
+
+**Questions for Ramon.**
+1. The 67.5-degree branches: right, or nearer square still?
+2. The oak's wind part turns the wind across your view while it plays: keep, or the room's own way?
+3. The panels on the pedestals are read from the planter's edge (E at the ring stays the tree's key):
+   does that feel right?
+4. The unfinished "I want to have small...": what was it?

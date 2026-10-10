@@ -13,6 +13,13 @@ extends "res://ramon/Arboretum/botany_lab/exhibits/bl_tree_exhibit_4d.gd"
 ## (botany/leaf_field_4d.gd, the grass's route), and the room's wind on all of it. Its story: the
 ## form, the wood growing limb by limb, the leaves arriving, the slice, the wind. Its key: the seasons.
 ##
+## ROUND 4 (section 10, steps 6-8; Ramon: "the growth sequence is too slow ... Clicking should speed up the
+## animation, not skip it"; "during the presentation's wind demonstration, the trunk and branches appear
+## almost static ... it's acceptable for the motion to be somewhat exaggerated"): the growing parts a quarter
+## shorter, and a first click speeds a growing part up three times (`accelerates`, read by the showcase);
+## the wind part bends the room's wind much harder while it plays (bend, sway and speed raised, two strong
+## gusts through it) and puts it back after.
+##
 ## NO class_name (engine_gotchas.md).
 
 const LoftTree := preload("res://ramon/Arboretum/botany/loft_tree_builder.gd")
@@ -25,6 +32,16 @@ var leaves: Node4D
 var _season: float = 0.0
 var _season_to: float = 0.0
 var _season_i: int = 0
+## The room's wind as it was before the wind part raised it ({} when not raised).
+var _wind_was: Dictionary = {}
+var _wind_gusts: int = 0
+## How hard the wind part bends the room's wind: bend, sway and speed times these.
+const WIND_BEND := 5.5
+const WIND_SWAY := 2.8
+const WIND_SPEED := 1.6
+## The wind part's own direction: across the view (the room's blows toward the door, at the camera, where a
+## bend reads only as depth), a little through W.
+const WIND_ACROSS := Vector4(1.0, 0.0, 0.12, 0.3)
 
 
 func _init() -> void:
@@ -65,6 +82,7 @@ func _load() -> void:
 
 func end_cinematic() -> void:
 	_gusted = false
+	_wind_back()
 	show_only(["wood"])
 	if leaves != null:
 		leaves.set("enabled", true)
@@ -73,16 +91,16 @@ func end_cinematic() -> void:
 
 func chapters() -> Array:
 	return [
-		{"key": "wood", "title": "GROWING", "length": 10.0,
+		{"key": "wood", "title": "GROWING", "length": 7.5,
 			"line": "The trunk first; then each order of branches grows out of the wood it springs from.",
-			"callouts": [[1.6, "A crown wider than it is tall that starts low: each point in it pulls only its nearest bud."],
-				[4.8, "Each limb is as thick as the twigs it carries: {nodes} points in {branches} branches."],
-				[7.6, "{tets} tetrahedra of wood, lofted limb by limb."]],
+			"callouts": [[1.2, "A crown wider than it is tall that starts low: each point in it pulls only its nearest bud."],
+				[3.6, "Each limb is as thick as the twigs it carries: {nodes} points in {branches} branches."],
+				[5.7, "{tets} tetrahedra of wood, lofted limb by limb."]],
 			"eye": Vector4(-6.8, 3.0, 11.5, 0.0), "look": Vector4(0.0, 3.4, 0.0, 0.0), "fov": 0.95},
-		{"key": "leaves", "title": "THE LEAVES", "length": 9.0,
+		{"key": "leaves", "title": "THE LEAVES", "length": 7.0,
 			"line": "{leaves} leaves, and not one of them is a tetrahedron.",
-			"callouts": [[1.8, "The graphics card places every leaf in your slice, every frame."],
-				[5.0, "A leaf in 4D is a thin flat 3D blade. Your slice cuts it into a leaf shape."]],
+			"callouts": [[1.4, "The graphics card places every leaf in your slice, every frame."],
+				[3.9, "A leaf in 4D is a thin flat 3D blade. Your slice cuts it into a leaf shape."]],
 			"eye": Vector4(-5.0, 4.6, 12.0, 0.0), "look": Vector4(0.0, 4.4, 0.0, 0.0), "fov": 0.9},
 		{"key": "slice", "title": "THE SLICE", "length": 8.0,
 			"line": "Slide through W and the crown changes leaf by leaf.",
@@ -97,8 +115,15 @@ func chapters() -> Array:
 	]
 
 
+## The parts a click speeds up rather than skips (the growing ones).
+func accelerates(key: String) -> bool:
+	return key == "wood" or key == "leaves"
+
+
 func play_part(key: String, t: float, length: float) -> Dictionary:
 	var u: float = clampf(t / maxf(length, 0.1), 0.0, 1.0)
+	if key != "wind":
+		_wind_back()
 	match key:
 		"wood":
 			# The trunk alone for the first beat, then an order every beat, then the whole oak.
@@ -124,8 +149,41 @@ func play_part(key: String, t: float, length: float) -> Dictionary:
 			show_only(["wood"])
 			leaves.set("enabled", true)
 			leaves.call("set_grow", 1.0)
-			gust_once(t, 0.8)
+			_wind_up()
+			# Two strong gusts through the part, wide enough to take the whole crown.
+			for at in [0.8, 4.6]:
+				if t >= at and _wind_gusts < (1 if at < 1.0 else 2):
+					_wind_gusts += 1
+					var w: Node = Wind.of(get_tree())
+					if w != null:
+						w.call("gust", 0.95, 9.0, 2.0)
 	return {}
+
+
+## The room's wind for the wind part: bent, swaying and blowing harder (kept to put back).
+func _wind_up() -> void:
+	if not _wind_was.is_empty():
+		return
+	var w: Node = Wind.of(get_tree())
+	if w == null:
+		return
+	_wind_was = {"bend": w.get("bend"), "sway": w.get("sway"), "speed": w.get("speed"), "direction": w.get("direction")}
+	_wind_gusts = 0
+	w.set("direction", WIND_ACROSS)
+	w.set("bend", float(_wind_was["bend"]) * WIND_BEND)
+	w.set("sway", float(_wind_was["sway"]) * WIND_SWAY)
+	w.set("speed", float(_wind_was["speed"]) * WIND_SPEED)
+
+
+func _wind_back() -> void:
+	if _wind_was.is_empty():
+		return
+	var w: Node = Wind.of(get_tree())
+	if w != null:
+		for k in _wind_was:
+			w.set(k, _wind_was[k])
+	_wind_was = {}
+	_wind_gusts = 0
 
 
 func numbers() -> Dictionary:

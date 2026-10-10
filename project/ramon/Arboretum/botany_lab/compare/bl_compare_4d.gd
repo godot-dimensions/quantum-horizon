@@ -45,6 +45,12 @@ extends Node4D
 ## faces showing stone, clay and topsoil). At the far end a low warm sun and a painted horizon; leaves
 ## blow down the cut toward you. A turn keeps the mirror: the right half turns as the left's reflection.
 ##
+## ROUND 4 (section 10; Ramon's walkthrough parts 3 and 4): named TWO GARDENS; the room cropped to the
+## slabs (the entrance 3 m before them, the far wall 3 m before their end, the side walls on their outer
+## edges); the banks deep in W and the walk through W held to the land, so a slice can never empty the
+## room (16); the smooth half a voxel level calmer, its grass skin sunk into the soil (17, 20); the doors'
+## shimmer centred in the wall.
+##
 ## NO class_name (engine_gotchas.md).
 
 const KitPlayer := preload("res://ramon/Arboretum/botany_lab/carried/kit/kit_player.gd")
@@ -67,7 +73,11 @@ const Wind := preload("res://ramon/Arboretum/botany/wind_4d.gd")
 const Species := preload("res://ramon/Arboretum/botany/tree_species.gd")
 const Ground := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/carried/chickenpen/scripts/ground_basis_4d.gd")
 const Drift := preload("res://ramon/Arboretum/botany_lab/flora/flora_drift_4d.gd")
+const Gardens := preload("res://ramon/Arboretum/botany_lab/compare/bl_gardens_4d.gd")
 ## The mirror across the walkway (x to -x): the right half's turn is the left's reflected.
+const BANK_W := 120.0
+## The kit's walls' thickness (kit_room_4d.gd rebuild: t).
+const WALL_T := 0.5
 const MIRROR := Projection(Vector4(-1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
 
 const HALL := "res://ramon/Arboretum/botany_lab.tscn"
@@ -87,13 +97,19 @@ const ARRIVE_META := "botany_arrive"
 @export var w_half: float = 1.25
 ## The blocky side's cells and the smooth side's voxels (m).
 @export var block_cell: float = 0.5
-@export var smooth_voxel: float = 0.3
+@export var smooth_voxel: float = 0.4
 @export var seed: int = 4242
 ## The trees' spots, the same on both sides (x, z from the display's middle).
-@export var tree_spots: Array = [Vector2(-3.4, 8.0), Vector2(3.0, 3.6), Vector2(-2.2, -2.4), Vector2(3.4, -7.4), Vector2(-3.0, -10.6)]
+@export var tree_spots: Array = [Vector2(-3.4, 8.0), Vector2(3.0, 3.6), Vector2(-2.2, -2.4), Vector2(3.4, -7.4), Vector2(-3.6, -8.6)]
+## Round 4: the smooth half's edits on a coarser grid and its voxels a level larger (Ramon: "Reduce the
+## terrain's geometric complexity by approximately one level ... broader, more coherent ground planes").
+@export var smooth_cell: float = 1.0
+## How far through W you can walk (the land is `w_half` deep each way): never past it (round 4, 16).
+@export var w_walk_limit: float = 1.05
 
 @export_group("Visit")
-@export var start_at: Vector2 = Vector2(0.0, 21.0)
+## (Round 4: inside the cropped room, far enough in that the camera behind you is too.)
+@export var start_at: Vector2 = Vector2(0.0, 10.0)
 @export var camera_distance: float = 3.6
 @export var camera_height: float = 2.6
 @export var camera_pitch_degrees: float = -10.0
@@ -123,6 +139,8 @@ var turn_basis: Projection = Projection.IDENTITY
 var _turn_blocky: Node4D
 var _turn_smooth: Node4D
 var _band_said: bool = false
+## Round 4: the two gardens' dressing (bl_gardens_4d.gd), made once the trees stand.
+var gardens: Node4D
 var _strip_tilt: int = -1
 
 
@@ -211,7 +229,10 @@ func _build_slabs() -> void:
 		for ly in layers:
 			var y0: float = float(ly[1]) * slab_height
 			var y1: float = float(ly[2]) * slab_height
-			var size := Vector4(display_size.x + 0.4, y1 - y0, display_size.y + 0.4, w_half * 2.0 + 0.6)
+			# Round 4 (16): the brown base deep in W, so whatever slice you stand in cuts it (the land
+			# above is only 2.5 m deep; the Voxel Lab's ground is endless in W, which is why slicing there
+			# never empties).
+			var size := Vector4(display_size.x + 0.4, y1 - y0, display_size.y + 0.4, BANK_W)
 			var m := MeshInstance4D.new()
 			m.name = String(side[0]) + String(ly[0])
 			m.mesh = Mats.box_mesh(size)
@@ -224,7 +245,7 @@ func _build_slabs() -> void:
 		body.position = Vector4(at.x, slab_height * 0.5, at.y, 0.0)
 		var cs := CollisionShape4D.new()
 		var bs := BoxShape4D.new()
-		bs.size = Vector4(display_size.x + 0.4, slab_height, display_size.y + 0.4, w_half * 2.0 + 0.6)
+		bs.size = Vector4(display_size.x + 0.4, slab_height, display_size.y + 0.4, BANK_W)
 		cs.shape = bs
 		body.add_child(cs)
 		add_child(body)
@@ -236,9 +257,10 @@ func _build_drift() -> void:
 	d.name = "Leaves"
 	d.set_script(Drift)
 	d.set("stream", true)
-	d.set("source", Vector3(0.0, 3.6, -19.0))
-	d.set("source_radius", 7.0)
-	d.set("reach", 44.0)
+	# Round 4 (30): from higher, drifting down rather than out of the middle of the room.
+	d.set("source", Vector3(0.0, 7.2, -9.5))
+	d.set("source_radius", 6.5)
+	d.set("reach", 24.0)
 	d.set("floor_y", 0.04)
 	d.set("amount", 240)
 	d.set("gust_extra", 2.5)
@@ -320,11 +342,12 @@ func _start_smooth() -> void:
 	_trigger.set("position", _turn_smooth.position + Vector4(0.0, height_range.y * 0.5, 0.0, 0.0))
 	var reach: float = Vector4(display_size.x * 0.5, height_range.y, display_size.y * 0.5, w_half).length()
 	_trigger.set("load_distance", reach / v + 12.0)
-	# The edits, in voxels from the world's origin (the display's middle at the slab's top).
-	var c: float = block_cell
+	# The edits, in voxels from the world's origin (the display's middle at the slab's top). Round 4: on
+	# the coarser `smooth_cell` grid.
+	var c: float = smooth_cell
 	var nx: int = int(round(display_size.x / c))
 	var nz: int = int(round(display_size.y / c))
-	var nw: int = int(round(w_half * 2.0 / c))
+	var nw: int = maxi(int(round(w_half * 2.0 / c)), 2)
 	# A small offset off the sample rows, as the Voxel Lab's bricks have (vl_recipe.gd JITTER): faces on
 	# a sample row fray.
 	var jit := Vector4(0.031, 0.027, 0.023, 0.019)
@@ -333,20 +356,26 @@ func _start_smooth() -> void:
 			for iw in nw:
 				var x: float = (float(ix) + 0.5) * c - display_size.x * 0.5
 				var z: float = (float(iz) + 0.5) * c - display_size.y * 0.5
-				var w: float = (float(iw) + 0.5) * c - w_half
+				var w: float = (float(iw) + 0.5) * (w_half * 2.0 / float(nw)) - w_half
 				# The mirror: this half's x is the other's minus x (the walkway between them).
 				var h: float = height_at(-x, z, w)
-				var col_top: float = maxf(h - 0.45, 0.05)
+				# Round 4 (17; Ramon: "a large green surface that looks like a mattress hanging over the
+				# underlying brown geometry"): the grass first, a ball inside the cell's own footprint (none can
+				# hang over an edge), then the soil column written over it up to just under the surface, so only
+				# a thin green cap is left on top and the cut faces are soil to the top.
+				var edge: float = minf(display_size.x * 0.5 - absf(x), display_size.y * 0.5 - absf(z))
+				var r: float = minf(c * 0.48, maxf(edge - 0.04, c * 0.3))
+				var ball = ClassDB.instantiate("SphereVoxelEdit4D")
+				ball.set("center", (Vector4(x, h - r * 0.75, z, w) + jit) / v)
+				ball.set("radius", r / v)
+				ball.set("fill_material", 2)
+				_edits.append(ball)
+				var col_top: float = maxf(h - 0.1, 0.05)
 				var box = ClassDB.instantiate("BoxVoxelEdit4D")
 				box.set("position", (Vector4(x - c * 0.5, 0.0, z - c * 0.5, w - c * 0.5) + jit) / v)
 				box.set("size", Vector4(c, col_top, c, c) / v)
 				box.set("fill_material", 1)
 				_edits.append(box)
-				var ball = ClassDB.instantiate("SphereVoxelEdit4D")
-				ball.set("center", (Vector4(x, h - 0.38, z, w) + jit) / v)
-				ball.set("radius", 0.52 / v)
-				ball.set("fill_material", 2)
-				_edits.append(ball)
 	_phase = "loading"
 
 
@@ -445,6 +474,14 @@ func _place_trees() -> void:
 			drawn["leaves"] = int(drawn["leaves"]) + int(lf.get("count"))
 	stats["trees"] = {"count": tree_spots.size(), "blocky_tets": drawn["blocky"], "smooth_tets": drawn["smooth"], "leaves": drawn["leaves"],
 		"ms": (Time.get_ticks_usec() - t0) / 1000.0}
+	gardens = Node4D.new()
+	gardens.name = "Gardens"
+	gardens.set_script(Gardens)
+	gardens.set("room", self)
+	add_child(gardens)
+	gardens.call("build")
+	gardens.call("start_grass")
+	stats["gardens"] = gardens.get("stats")
 	_trees_done = true
 
 
@@ -480,12 +517,12 @@ func _build_route() -> void:
 		return
 	var g: Resource = Graph.new()
 	var b := {"band": 8.0}
-	var s: int = g.call("add_node", "start", Vector4(0.0, 0.0, 20.0, 0.0), b)
+	var s: int = g.call("add_node", "start", Vector4(0.0, 0.0, 12.6, 0.0), b)
 	var j1: int = g.call("add_node", "junction", Vector4(0.0, 0.0, 4.2, 0.0), b)
 	var dl: int = g.call("add_node", "destination", Vector4(-1.2, 0.0, 3.0, 0.0), {"band": 8.0, "state": "available", "target": "Blocky", "frame": "none", "approach": Vector2(1, 0)})
 	var j2: int = g.call("add_node", "junction", Vector4(0.0, 0.0, -1.0, 0.0), b)
 	var dr: int = g.call("add_node", "destination", Vector4(1.2, 0.0, -2.2, 0.0), {"band": 8.0, "state": "arrival", "target": "Smooth", "frame": "none", "approach": Vector2(-1, 0)})
-	var e: int = g.call("add_node", "destination", Vector4(0.0, 0.0, -18.0, 0.0), {"band": 8.0, "state": "arrival", "target": "End", "frame": "none", "approach": Vector2(0, 1)})
+	var e: int = g.call("add_node", "destination", Vector4(0.0, 0.0, -10.4, 0.0), {"band": 8.0, "state": "arrival", "target": "End", "frame": "none", "approach": Vector2(0, 1)})
 	g.call("add_edge", s, j1, "primary", "static", 8.0)
 	g.call("add_edge", j1, dl, "primary", "static", 8.0)
 	g.call("add_edge", j1, j2, "primary", "static", 8.0)
@@ -505,12 +542,12 @@ func _build_walls() -> void:
 		var holder := Node4D.new()
 		holder.name = "Wall_" + side
 		add_child(holder)
-		hall.call("claim_wall", side, "blue", holder, -16.0, 12.0)
+		hall.call("claim_wall", side, "blue", holder, -14.0, 14.0)
 	# Round 3: the far wall, the horizon the walkway runs toward (blue above it, as the teaching walls).
 	var far := Node4D.new()
 	far.name = "Wall_n"
 	add_child(far)
-	hall.call("claim_wall", "n", "blue", far, -18.0, 18.0)
+	hall.call("claim_wall", "n", "blue", far, -16.0, 16.0)
 	(func() -> void: _print_walls()).call_deferred()
 
 
@@ -524,17 +561,19 @@ func _print_walls() -> void:
 		if tex == null:
 			continue
 		# 14 x 5 m, the page's own shape (2800 x 1000), centred on the display.
-		for tg in hall.call("print_targets", side, -9.0, 5.0, 5.2, 10.2):
+		# (Along the wall from the room's middle, which round 4 moved to z 1: the page stays on the displays.)
+		for tg in hall.call("print_targets", side, -10.0, 4.0, 5.2, 10.2):
 			var m: TetraMaterial4D = (tg[0] as MeshInstance4D).material_override as TetraMaterial4D
 			if m != null:
 				LabGrid.set_print(m, tex, tg[1], tg[2], Color.WHITE, 0.2)
 				LabGrid.set_print_strength(m, 1.0)
 				m.get_cross_section_material_3d().set_shader_parameter("print_aa", 1.0)
 	var sky_top: Color = LabGrid.values("kit_code_blue")[0]
-	var htex: Texture2D = await LabPrint.render(get_tree(), Vector2i(3600, 640), func(c: Control) -> void: _horizon(c, sky_top))
+	var hs: Vector3 = hall.get("size")
+	# Round 4 (26): a metre more sky (floor to 7.4 m), printed at 200 px a metre so it reads as drawn.
+	var htex: Texture2D = await LabPrint.render(get_tree(), Vector2i(int(hs.x * 200.0), 1480), func(c: Control) -> void: _horizon(c, sky_top))
 	if htex != null:
-		# The whole far wall, floor to 6.4 m (the sign above it).
-		for tg in hall.call("print_targets", "n", -18.0, 18.0, 0.0, 6.4):
+		for tg in hall.call("print_targets", "n", -hs.x * 0.5, hs.x * 0.5, 0.0, 7.4):
 			var m: TetraMaterial4D = (tg[0] as MeshInstance4D).material_override as TetraMaterial4D
 			if m != null:
 				LabGrid.set_print(m, htex, tg[1], tg[2], Color.WHITE, 0.55)
@@ -545,7 +584,9 @@ func _print_walls() -> void:
 ## setting between layers of distant hills, the sky going up into the wall's own blue.
 func _horizon(c: Control, top: Color) -> void:
 	var sz: Vector2 = c.size
-	var hy: float = sz.y - 290.0 * sz.y / 640.0
+	# (Round 4: 7.4 m tall now; the horizon stays at 2.9 m.)
+	var px: float = sz.y / 7.4
+	var hy: float = sz.y - 2.9 * px
 	var bands: Array = [[0.0, top], [0.35, Color(0.52, 0.42, 0.66)], [0.62, Color(0.92, 0.56, 0.42)], [0.86, Color(1.0, 0.74, 0.44)], [1.0, Color(1.0, 0.88, 0.62)]]
 	for i in bands.size() - 1:
 		var y0: float = float(bands[i][0]) * hy
@@ -554,28 +595,27 @@ func _horizon(c: Control, top: Color) -> void:
 		var c1: Color = bands[i + 1][1]
 		c.draw_polygon(PackedVector2Array([Vector2(0, y0), Vector2(sz.x, y0), Vector2(sz.x, y1), Vector2(0, y1)]), PackedColorArray([c0, c0, c1, c1]))
 	# The sun, low and half-hidden, at the walkway's end; its halo.
-	var sun := Vector2(sz.x * 0.5, hy - 24.0)
+	var sun := Vector2(sz.x * 0.5, hy - 0.24 * px)
 	for k in 6:
-		var r: float = 120.0 + float(k) * 60.0
-		c.draw_circle(sun, r, Color(1.0, 0.86, 0.6, 0.09))
-	c.draw_circle(sun, 110.0, Color(1.0, 0.95, 0.78))
+		var r: float = (1.2 + float(k) * 0.6) * px
+		c.draw_circle(sun, r, Color(1.0, 0.86, 0.6, 0.09), true, -1.0, true)
+	c.draw_circle(sun, 1.1 * px, Color(1.0, 0.95, 0.78), true, -1.0, true)
 	# The hills: three ranges, farther ones paler (atmosphere), each a rolling line of sines.
-	var ranges: Array = [[Color(0.66, 0.5, 0.62), 70.0, 0.004, 1.3], [Color(0.46, 0.34, 0.5), 52.0, 0.007, 2.9], [Color(0.28, 0.21, 0.34), 34.0, 0.011, 4.7]]
+	var ranges: Array = [[Color(0.66, 0.5, 0.62), 0.7, 0.4, 1.3], [Color(0.46, 0.34, 0.5), 0.52, 0.7, 2.9], [Color(0.28, 0.21, 0.34), 0.34, 1.1, 4.7]]
 	for rg in ranges:
 		var pts := PackedVector2Array()
-		var n: int = 120
+		var n: int = 360
 		for i in n + 1:
 			var x: float = sz.x * float(i) / float(n)
-			var f: float = float(rg[2])
+			var f: float = float(rg[2]) / px
 			var ph: float = float(rg[3])
-			var y: float = hy - float(rg[1]) * (0.55 + 0.3 * sin(x * f + ph) + 0.15 * sin(x * f * 2.7 + ph * 1.9))
+			var y: float = hy - float(rg[1]) * px * (0.55 + 0.3 * sin(x * f + ph) + 0.15 * sin(x * f * 2.7 + ph * 1.9))
 			pts.append(Vector2(x, y))
 		pts.append(Vector2(sz.x, sz.y))
 		pts.append(Vector2(0.0, sz.y))
 		c.draw_colored_polygon(pts, rg[0])
-	# The ground under the hills, dark, and the walkway's line running into it.
-	c.draw_rect(Rect2(0.0, hy + 8.0, sz.x, sz.y - hy - 8.0), Color(0.16, 0.12, 0.18))
-	c.draw_colored_polygon(PackedVector2Array([Vector2(sz.x * 0.5 - 6.0, hy + 8.0), Vector2(sz.x * 0.5 + 6.0, hy + 8.0), Vector2(sz.x * 0.5 + 210.0, sz.y), Vector2(sz.x * 0.5 - 210.0, sz.y)]), Color(0.36, 0.26, 0.26))
+	# The ground under the hills, dark (round 4: the walkway's brown triangle gone).
+	c.draw_rect(Rect2(0.0, hy + 0.08 * px, sz.x, sz.y - hy - 0.08 * px), Color(0.16, 0.12, 0.18))
 
 
 ## A wall's page: white on clear (the wall's blue shows).
@@ -653,17 +693,20 @@ func _build_hud() -> void:
 	dlayer.add_child(light_editor)
 
 
-## The way back: the holographic doorway in the near (+z) wall.
+## The way back: the holographic doorway in the near (+z) wall. Round 4 (14): in the middle of the wall's
+## thickness (the kit's walls are 0.5 m), the opening's own size, so it sits in the doorway from the front
+## and from the side.
 func _build_door() -> void:
 	var hall: Node4D = get_node_or_null("Hall") as Node4D
 	var hs: Vector3 = hall.get("size") if hall != null else Vector3(36, 12, 48)
-	_door_z = hs.z * 0.5
+	_door_z = hs.z * 0.5 + (hall.position.z if hall != null else 0.0)
+	var opening: Array = (hall.get("doorways") as Array)[0] if hall != null and not (hall.get("doorways") as Array).is_empty() else ["s", -1.6, 1.6, 4.4]
 	var sh := Node4D.new()
 	sh.name = "Shimmer"
 	sh.set_script(Shimmer)
-	sh.set("width", 3.2)
-	sh.set("height", 4.1)
-	sh.position = Vector4(0.0, 0.0, _door_z - 0.17, 0.0)
+	sh.set("width", float(opening[2]) - float(opening[1]))
+	sh.set("height", float(opening[3]) - 0.01)
+	sh.position = Vector4(0.0, 0.0, _door_z + WALL_T * 0.5, 0.0)
 	add_child(sh)
 
 
@@ -679,7 +722,7 @@ func _process(delta: float) -> void:
 	if player == null or loading or _leaving:
 		return
 	var p: Vector4 = player.global_position
-	if p.z > _door_z - 0.45 and absf(p.x) < 1.6:
+	if p.z > _door_z - 0.3 and absf(p.x) < 1.6:
 		_leaving = true
 		player.set("input_enabled", false)
 		var sh: Node = get_node_or_null("Shimmer")
@@ -697,6 +740,21 @@ func _process(delta: float) -> void:
 	if tilt != _strip_tilt:
 		_strip_tilt = tilt
 		_strip()
+
+
+## Round 4 (16): never further through W than the land reaches, so the slice always holds it (pressing E
+## on and on used to walk you past it into an empty room; only R, which levels the turn, seemed to help).
+func _physics_process(_delta: float) -> void:
+	if player == null:
+		return
+	var p: Vector4 = player.global_position
+	if absf(p.w) > w_walk_limit:
+		p.w = clampf(p.w, -w_walk_limit, w_walk_limit)
+		player.global_position = p
+		var v: Vector4 = player.get("linear_velocity")
+		if v.w * p.w > 0.0:
+			v.w = 0.0
+			player.set("linear_velocity", v)
 
 
 ## The keys, and how far the lands are turned once they are.
@@ -772,8 +830,8 @@ func _open_board() -> void:
 	player.set("input_enabled", false)
 	_board = LoadBoard.open(self)
 	_board.set("kicker", "QUANTUM HORIZON  ·  BOTANY LAB")
-	_board.set("title", "TWO WORLDS")
-	_board.set("subtitle", "Blocky and smooth voxels, side by side")
+	_board.set("title", "TWO GARDENS")
+	_board.set("subtitle", "One landscape grown two ways, blocky and smooth")
 	_board.set("coming", ["The same land built two ways: boxes on the left, one smooth surface on the right",
 		"Voxel trees on the blocks, lofted oaks on the hills, on the same spots",
 		"Step through W with Q and E: the hills change on both sides"])

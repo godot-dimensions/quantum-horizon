@@ -21,9 +21,13 @@ const Butterflies := preload("res://ramon/Arboretum/botany_lab/flora/butterflies
 
 ## The species, in walking order from the entrance.
 @export var keys: PackedStringArray = PackedStringArray(["tulip", "poppy", "iris", "daisy", "lily", "allium", "rose", "foxglove"])
-## Where the planters stand (x, z), and how big they are.
-@export var at: Vector2 = Vector2(6.9, 12.4)
-@export var step: Vector2 = Vector2(0.0, -2.0)
+## Where the planters stand (x, z), and how big they are. Round 4 (Ramon: "Four flowers in the first row.
+## Four flowers in the second row ... approximately 2 meters behind the first ... Keep the existing path"):
+## `per_row` along the path from `at` by `step`, each further row `row_step` behind it.
+@export var at: Vector2 = Vector2(6.9, 12.0)
+@export var step: Vector2 = Vector2(0.0, -2.6)
+@export var per_row: int = 4
+@export var row_step: Vector2 = Vector2(2.0, 0.0)
 @export var radius: float = 0.5
 @export var height: float = 0.42
 ## How far the planter's label faces round from +Z toward +X (radians): toward the path.
@@ -46,7 +50,10 @@ func _ready() -> void:
 		var key: String = keys[i]
 		var p := Node4D.new()
 		p.name = "Border_%s" % key
-		p.position = Vector4(at.x + step.x * float(i), 0.0, at.y + step.y * float(i), 0.0)
+		var row: int = i / maxi(per_row, 1)
+		var col: int = i % maxi(per_row, 1)
+		var xz: Vector2 = at + step * float(col) + row_step * float(row)
+		p.position = Vector4(xz.x, 0.0, xz.y, 0.0)
 		add_child(p)
 		var parts: Dictionary = Pedestal.build(p, radius, height, "planter")
 		var deck: float = float(parts.get("deck_h", height))
@@ -77,8 +84,9 @@ func _ready() -> void:
 		_flies.set_script(Butterflies)
 		_flies.set("count", butterflies)
 		_flies.set("size", 1.5)
-		var lo := Vector2(minf(at.x, at.x + step.x * float(keys.size() - 1)), minf(at.y, at.y + step.y * float(keys.size() - 1)))
-		var hi := Vector2(maxf(at.x, at.x + step.x * float(keys.size() - 1)), maxf(at.y, at.y + step.y * float(keys.size() - 1)))
+		var far: Vector2 = at + step * float(per_row - 1) + row_step * float((keys.size() - 1) / maxi(per_row, 1))
+		var lo := Vector2(minf(at.x, far.x), minf(at.y, far.y))
+		var hi := Vector2(maxf(at.x, far.x), maxf(at.y, far.y))
 		_flies.set("bounds_lo", Vector3(lo.x - 2.0, 0.5, lo.y - 1.0))
 		_flies.set("bounds_hi", Vector3(hi.x + 1.5, 3.2, hi.y + 1.0))
 		_flies.set("perch_source", perch_points)

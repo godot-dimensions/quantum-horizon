@@ -27,7 +27,11 @@ when it goes live. The plan and the status are in `follow_up/arboretum.md`, sect
 | `paths/hall.tres` | The hall's route, made by `scripts/_bl_make_paths_runner.gd`. |
 | `compare/` | The second room. |
 | `flora/` | Round 3: the flowering plants and butterflies, lofted in 4D (`flora_species.gd` the data, `flower_4d.gd` the builder and the one shared material, `flora_plant.gdshader` its wind, `flora_air_4d.gd` feeding it each render), the butterflies (`butterfly_4d.gd`, `butterflies_4d.gd`), drifting petals and leaves (`flora_drift*`, the pen's wind bits carried) and the small foliage (`flora_sprigs*`, the pen's grass trick carried). `flora/baked/` holds their bakes (made on first run). |
-| `flowers/` | Round 3: the flower room. |
+| `flowers/` | Round 3: the flower room. Round 4: shelved (the hall's `flower_room_open` brings its door back); the scene is kept and still loads on its own. |
+| `carried/grass/` | Round 4: the pen's grass, carried through the Voxel Lab's copy (`bl_grass_4d.gd`): the oak's platform and the second room's smooth half. |
+| `carried/oak/` | Round 4: the light oaks and bushes (`bl_oak_lite_4d.gd`, carried from the Creature Lab's copy of the pen's oak), over the Arboretum's `oak_lite*` and `bush_*` bakes. |
+| `compare/bl_gardens_4d.gd` | Round 4: the second room's two gardens (smooth: trees, bushes, flowers, rocks, grass, ivy, butterflies; blocky: conifers, birches, bushes, rocks). |
+| `flora/rock_4d.gd` | Round 4: lofted 4D rocks. |
 | `room/bl_border_4d.gd` | Round 3: the hall's flower border, eight small planters. |
 | `scripts/` | The runners: proof, play, capture, compare, paths, bake; round 3's flora probe and gallery, flower room and film. |
 

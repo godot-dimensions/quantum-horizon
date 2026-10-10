@@ -86,6 +86,11 @@ func _run() -> void:
 		print("COMPARE done")
 		quit(0)
 		return
+	if "round4" in OS.get_cmdline_user_args():
+		await _round4()
+		print("COMPARE done")
+		quit(0)
+		return
 	if "round3" in OS.get_cmdline_user_args():
 		await _round3()
 		print("COMPARE done")
@@ -128,6 +133,50 @@ func _run() -> void:
 	print("COMPARE the doorway back %s" % ("starts the way back" if bool(_room.get("_leaving")) else "DID NOT trigger"))
 	print("COMPARE done")
 	quit(0)
+
+
+## Round 4 (section 10): the cropped room (arriving 3 m before the slabs), both gardens, the backdrop and the
+## exit sign; the W-slice check (E held for four seconds: the land and its brown base still there, the walk
+## held at the land's depth); turned 45 degrees; a gust; frame times.
+func _round4() -> void:
+	var g: Node = _room.get("gardens")
+	for i in 900:
+		if g != null and bool(g.call("grass_ready")):
+			break
+		await process_frame
+	print("COMPARE gardens: %s, grass %s" % [JSON.stringify(g.get("stats")) if g != null else "none", str(g != null and bool(g.call("grass_ready")))])
+	for v in [[0.0, 10.0, 0.0, -4.0, "r4_01_arrival"], [0.0, 6.0, 0.0, -2.0, "r4_02_down_the_cut"], [1.2, 4.0, -60.0, -6.0, "r4_03_smooth_garden"],
+			[-1.2, 4.0, 60.0, -6.0, "r4_04_blocky_garden"], [0.0, -6.0, 0.0, 6.0, "r4_05_backdrop"], [0.0, -9.0, 180.0, -4.0, "r4_06_back_to_the_exit"],
+			[1.0, -2.0, -85.0, 8.0, "r4_07_ivy_wall"], [4.0, 9.5, -40.0, -14.0, "r4_08_flowers_close"]]:
+		_go(float(v[0]), float(v[1]), float(v[2]), float(v[3]))
+		await _frames(40)
+		_shoot(String(v[4]))
+		if String(v[4]) == "r4_01_arrival":
+			await _measure("r4 arrival")
+		if String(v[4]) == "r4_02_down_the_cut":
+			await _measure("r4 down the cut")
+	# E held: the walk through W, then held at the land's depth.
+	_go(0.0, 6.0, 0.0, -4.0)
+	var p: Node4D = _room.get("player")
+	p.set("input_enabled", true)
+	Input.action_press(&"move_ana")
+	await create_timer(4.0).timeout
+	Input.action_release(&"move_ana")
+	p.set("input_enabled", false)
+	await _frames(10)
+	_shoot("r4_09_after_holding_E")
+	print("COMPARE W after holding E for 4 s: %.2f (limit %.2f)" % [p.global_position.w, float(_room.get("w_walk_limit"))])
+	_go(0.0, 6.0, 0.0, -2.0)
+	_room.call("turn_by", deg_to_rad(45.0), 0.0)
+	await _frames(30)
+	_shoot("r4_10_turned_45")
+	_room.call("level")
+	var w: Node = _room.get_node_or_null("Wind")
+	if w != null:
+		w.set("gust_speed", 10.0)
+		w.call("gust", 0.6, 7.0, 1.0)
+	await _frames(60)
+	_shoot("r4_11_gust")
 
 
 ## Round 3 (section 9, steps 48-54): one land split by the walkway: down the cut from the door and from

@@ -58,6 +58,8 @@ const Mats := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/lab_mater
 const LabGrid := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/lab_grid.gd")
 const FloraSpecies := preload("res://ramon/Arboretum/botany_lab/flora/flora_species.gd")
 const Sprigs := preload("res://ramon/Arboretum/botany_lab/flora/flora_sprigs_4d.gd")
+const Grass := preload("res://ramon/Arboretum/botany_lab/carried/grass/bl_grass_4d.gd")
+const LabPrint := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/lab_print.gd")
 const ARRIVE_META := "botany_arrive"
 const Presentation := preload("res://ramon/Arboretum/botany_lab/carried/kit/kit_presentation.gd")
 
@@ -91,7 +93,7 @@ const TOUR_SHOT := {
 ## The hall's plan (kit_room_plan.gd): a box (half its width, how far its entrance wall and its back
 ## wall are from the middle) with a corner wall cut across each back corner, where the two wall
 ## panels hang, either side of the oak.
-@export_range(8.0, 30.0, 0.1) var room_half_width: float = 14.0:
+@export_range(8.0, 30.0, 0.1) var room_half_width: float = 12.0:
 	set(v):
 		room_half_width = v
 		_shape_later()
@@ -147,9 +149,13 @@ const TOUR_SHOT := {
 ## The PLAY THE SHOWCASE pad (x, z) and how near counts as standing on it.
 @export var tour_pad: Vector2 = Vector2(-3.0, 12.2)
 @export var tour_pad_radius: float = 1.5
-## Round 3: the flower room's door, in the right wall at this z; the roof open to the sky.
+## Round 3: the flower room's door, in the right wall at this z; the roof open to the sky. Round 4 (Ramon:
+## "Remove the newly added ceiling lines and decorative roof structures"; "I don't think we need the
+## separate Flower Room in the active experience ... Preserve the existing Flower Room TSCN"): the
+## ceiling back, and the flower room shelved behind `flower_room_open` (its scene kept; the wall whole).
 @export var flower_door_z: float = -3.0
-@export var roof_open: bool = true
+@export var roof_open: bool = false
+@export var flower_room_open: bool = false
 ## How far beyond its pedestal's edge a pedestal counts as the one you are at (its story plays).
 @export_range(1.0, 12.0, 0.5) var story_margin: float = 4.5
 
@@ -196,6 +202,7 @@ var _leaving: bool = false
 var border: Node4D
 var _at_border: Dictionary = {}
 var _border_caption: String = ""
+var _border_key: String = ""
 
 
 func _enter_tree() -> void:
@@ -281,24 +288,26 @@ func _ready() -> void:
 	var sh := Node4D.new()
 	sh.name = "Shimmer"
 	sh.set_script(Shimmer)
+	# Round 4 (14): in the middle of the wall's thickness (the kit's walls are 0.5 m), the opening's size.
 	sh.set("width", door_width)
-	sh.set("height", minf(4.1, door_height - 0.3))
-	sh.position = Vector4(0.0, 0.0, -room_back + 0.17, 0.0)
+	sh.set("height", minf(door_height, hall_height - 0.5) - 0.01)
+	sh.position = Vector4(0.0, 0.0, -room_back - 0.25, 0.0)
 	add_child(sh)
 	if from_compare:
 		# Back from the second room: just inside the back door, facing into the hall.
 		go_to.call_deferred(Vector4(0.0, 0.05, -room_back + 2.4, 0.0), PI)
 		Shimmer.flash_in(self)
 	# Round 3: the flower room's door, the same holographic doorway turned to the right wall.
-	var fs := Node4D.new()
-	fs.name = "FlowerShimmer"
-	fs.set_script(Shimmer)
-	fs.set("width", door_width)
-	fs.set("height", minf(4.1, door_height - 0.3))
-	fs.position = Vector4(room_half_width - 0.17, 0.0, flower_door_z, 0.0)
-	fs.basis = Basis4D.from_zx(PI * 0.5)
-	add_child(fs)
-	if from_flowers:
+	if flower_room_open:
+		var fs := Node4D.new()
+		fs.name = "FlowerShimmer"
+		fs.set_script(Shimmer)
+		fs.set("width", door_width)
+		fs.set("height", minf(door_height, hall_height - 0.5) - 0.01)
+		fs.position = Vector4(room_half_width + 0.25, 0.0, flower_door_z, 0.0)
+		fs.basis = Basis4D.from_zx(PI * 0.5)
+		add_child(fs)
+	if from_flowers and flower_room_open:
 		# Back from the flower room: just inside its door, facing into the hall.
 		go_to.call_deferred(Vector4(room_half_width - 2.4, 0.05, flower_door_z, 0.0), PI * 0.5)
 		Shimmer.flash_in(self)
@@ -345,8 +354,9 @@ func apply_shape() -> void:
 	if dw > 0.1:
 		doors.append(["back", bl - dw * 0.5, bl + dw * 0.5, minf(door_height, hall_height - 0.5)])
 	# Round 3: the flower room's door in the right wall (its edge runs from the right corner's end, +z).
-	var fa: float = flower_door_z - outline[4].y
-	doors.append(["right", fa - door_width * 0.5, fa + door_width * 0.5, minf(door_height, hall_height - 0.5)])
+	if flower_room_open:
+		var fa: float = flower_door_z - outline[4].y
+		doors.append(["right", fa - door_width * 0.5, fa + door_width * 0.5, minf(door_height, hall_height - 0.5)])
 	_set_if(hall, "doorways", doors)
 	_set_if(hall, "ceiling", not roof_open)
 	var ent: Node4D = get_node_or_null("Entrance") as Node4D
@@ -438,7 +448,7 @@ func _process(delta: float) -> void:
 	_find_active(p)
 	_read_panels()
 	# Through the right wall's shimmer: a flash, then the flower room.
-	if not _leaving and p.x > room_half_width - 0.35 and absf(p.z - flower_door_z) < door_width * 0.5:
+	if flower_room_open and not _leaving and p.x > room_half_width - 0.35 and absf(p.z - flower_door_z) < door_width * 0.5:
 		_leaving = true
 		player.set("input_enabled", false)
 		var fsh: Node = get_node_or_null("FlowerShimmer")
@@ -462,7 +472,7 @@ func _process(delta: float) -> void:
 		presenter.set("active", active != null)
 	hud.set("strip", _strip())
 	# Q/E steps through W (the pen's walk) except where E is taken: a pedestal, a console, the pad.
-	player.set("w_walk_enabled", active == null and _at_panel == null and not _on_pad)
+	player.set("w_walk_enabled", active == null and _at_panel == null and not _on_pad and _at_border.is_empty())
 	_route_states(p)
 
 
@@ -513,7 +523,16 @@ func _strip() -> Array:
 		return [["WASD", "Move"], ["Mouse", "Look"], ["Q / E", "Step through W"], ["G", "Gust of wind"], ["B", "Black / grey"]]
 	var out: Array = []
 	if int(active.get("seq_index")) >= 0:
-		out.append(["Click / ← →", "Next part"])
+		# Round 4: in a growing part (the oak's), the first click speeds it up.
+		var ex: Node = active.get("exhibit")
+		var seqs: Array = active.call("sequences")
+		var si: int = int(active.get("seq_index"))
+		var grows: bool = ex != null and ex.has_method("accelerates") and si < seqs.size() and bool(ex.call("accelerates", String(seqs[si]["key"])))
+		if grows and float(active.get("speed")) <= 1.0:
+			out.append(["Click", "Faster"])
+			out.append(["← →", "Next part"])
+		else:
+			out.append(["Click / ← →", "Next part"])
 	elif bool(active.call("can_skip")):
 		out.append(["Click", "Play its story"])
 	out.append(["Wheel", "Slide through W"])
@@ -629,6 +648,14 @@ func _input(event: InputEvent) -> void:
 		return
 	if mb != null and mb.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if mb.button_index == MOUSE_BUTTON_LEFT:
+			# Round 4 (11): at the border a click opens the flower's caption, and closes it again.
+			if _at_panel == null and active == null and not _on_pad and not _at_border.is_empty():
+				if _border_caption.is_empty():
+					open_flower()
+				else:
+					close_flower()
+				get_viewport().set_input_as_handled()
+				return
 			if _at_panel != null:
 				use_panel()
 				get_viewport().set_input_as_handled()
@@ -677,6 +704,13 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	match k.keycode:
 		KEY_E:
+			if _at_panel == null and active == null and not _on_pad and not _at_border.is_empty():
+				if _border_caption.is_empty():
+					open_flower()
+				else:
+					close_flower()
+				get_viewport().set_input_as_handled()
+				return
 			if _at_panel != null:
 				use_panel()
 			elif _on_pad:
@@ -714,7 +748,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		KEY_RIGHT, KEY_LEFT:
 			if active != null and bool(active.call("can_skip")):
-				active.call("skip" if k.keycode == KEY_RIGHT else "skip_back")
+				if k.keycode == KEY_RIGHT:
+					active.call("skip", true)
+				else:
+					active.call("skip_back")
 				get_viewport().set_input_as_handled()
 
 
@@ -734,25 +771,29 @@ func _build_garden() -> void:
 	add_child(air)
 	var oak: Node4D = get_node_or_null("Station04") as Node4D
 	var src: Vector4 = oak.position if oak != null else Vector4(0.0, 0.0, -13.5, 0.0)
+	# Round 4 (8; Ramon: "too intense ... sometimes extending toward the opposite end of the room"): a few,
+	# small, in a box of air round the crown (wrapped there, so none leaves it), from high up.
 	var leaves := Node4D.new()
 	leaves.name = "OakLeaves"
 	leaves.set_script(Drift)
-	leaves.set("stream", true)
-	leaves.set("source", Vector3(src.x, 5.4, src.z))
-	leaves.set("source_radius", 2.6)
-	leaves.set("reach", 30.0)
-	leaves.set("floor_y", 0.04)
-	leaves.set("amount", 520)
-	leaves.set("gust_extra", 2.5)
-	leaves.set("leaf_share", 0.72)
-	leaves.set("leaf_size", 0.06)
-	leaves.set("bit_size", 0.016)
+	leaves.set("stream", false)
+	leaves.set("box_centre", Vector2(src.x, src.z))
+	leaves.set("box_size", Vector2(9.0, 9.0))
+	leaves.set("floor_y", 1.2)
+	leaves.set("top_y", 8.5)
+	leaves.set("amount", 120)
+	leaves.set("gust_extra", 1.0)
+	leaves.set("leaf_share", 0.7)
+	leaves.set("leaf_size", 0.035)
+	leaves.set("bit_size", 0.01)
 	leaves.set("colours", PackedColorArray([Color(0.5, 0.62, 0.2), Color(0.86, 0.68, 0.22), Color(0.74, 0.4, 0.16), Color(1.0, 0.9, 0.62)]))
 	leaves.set("wind", wind())
 	add_child(leaves)
 	if roof_open:
 		_roof_frame()
 	_meadows()
+	_oak_grass()
+	_specimen_walls.call_deferred()
 	# Every new mesh's 3D proxy built now, not on its first draw (round 2's lesson: the hall's arrival
 	# hitches were first draws; round 3's perf2 showed one 28-34 ms frame at three arrivals again).
 	(func() -> void:
@@ -779,15 +820,12 @@ func _meadows() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1013
 	var beds: Array = []
-	for st in stations:
-		var n4: Node4D = st
-		var r: float = float(st.get("radius")) - 0.16
-		var top: float = float(st.get("height")) - 0.02
-		beds.append([Vector3(n4.position.x, top, n4.position.z), r, String(st.get("pedestal_shape")) == "planter_box", 0.55 if st == stations[stations.size() - 1] else 0.4])
+	# Round 4 (5, 7): the three technical specimens stand on flat green, and the oak on the pen's own grass
+	# (_oak_grass); these sprigs are only the border's tufts now.
 	if border != null:
 		for pl in border.get("planters"):
 			var n4: Node4D = pl["node"]
-			beds.append([Vector3(n4.position.x, float(border.get("height")) - 0.02, n4.position.z), float(border.get("radius")) - 0.1, false, 0.0])
+			beds.append([Vector3(n4.position.x, float(border.get("height")) + 0.02, n4.position.z), float(border.get("radius")) - 0.14, false, 0.0])
 	for bed in beds:
 		var c: Vector3 = bed[0]
 		var r: float = bed[1]
@@ -863,19 +901,167 @@ func _roof_frame() -> void:
 		holder.add_child(m)
 
 
-## Where in the border you are (the planter within its reach, when no pedestal is yours), and its caption.
+## Where in the border you are (the planter within its reach, when no pedestal is yours). Round 4 (11;
+## Ramon: "Stop opening the full information overlay automatically through proximity alone ... Make sure
+## the overlay can be dismissed reliably"): near a planter a small key prompt only; E (or a click) opens
+## its caption, and E, a click or walking away closes it.
 func _border_near(p: Vector4) -> void:
-	_at_border = border.call("nearest", p) if border != null and active == null else {}
+	_at_border = border.call("nearest", p) if border != null and active == null and _at_panel == null else {}
 	if not _cine.is_empty():
 		return
 	var key: String = String(_at_border.get("key", ""))
-	if key != _border_caption:
-		_border_caption = key
-		if key.is_empty():
-			hud.call("hide_caption")
-		else:
-			var sp: Dictionary = FloraSpecies.by_key(key)
-			hud.call("show_caption", String(sp["name"]).to_upper(), String(sp["latin"]), String(sp["line"]))
+	if key != _border_key:
+		_border_key = key
+		# Walked to another planter or away: whatever was open closes.
+		if not _border_caption.is_empty():
+			close_flower()
+	if not key.is_empty() and prompt != null and _border_caption.is_empty():
+		prompt.set("target", _at_border["node"])
+		prompt.set("text", "About this flower")
+		prompt.set("offset", Vector4(0.0, 1.25, 0.0, 0.0))
+		prompt.set("shown", true)
+
+
+## The planter you are at: its caption, its common and Latin names and what is 4D about it.
+func open_flower() -> void:
+	var key: String = String(_at_border.get("key", ""))
+	if key.is_empty():
+		return
+	_border_caption = key
+	var sp: Dictionary = FloraSpecies.by_key(key)
+	hud.call("show_caption", String(sp["name"]).to_upper(), String(sp["latin"]), String(sp["line"]))
+	if prompt != null:
+		prompt.set("shown", false)
+
+
+func close_flower() -> void:
+	if _border_caption.is_empty():
+		return
+	_border_caption = ""
+	hud.call("hide_caption")
+
+
+## Round 4 (7; Ramon: "the Oak should retain actual grass. Reuse the attractive grass implementation from the
+## Playable World"): the pen's grass (carried/grass/bl_grass_4d.gd, through the Voxel Lab's copy) on the
+## oak's green platform. Its ground is the platform's flat top, so its height grid is filled here directly
+## (the platform's disc, a clearing round the trunk) rather than baked from a mesh. Shorter and finer than
+## the island's meadow; deep enough in W for the crown.
+var oak_grass: Node4D
+
+
+func _oak_grass() -> void:
+	var oak: Node4D = get_node_or_null("Station04") as Node4D
+	if oak == null:
+		return
+	var r: float = float(oak.get("radius")) - 0.24
+	var top: float = float(oak.get("height")) + 0.02
+	var c: Vector4 = oak.position
+	var half: float = r + 0.25
+	var cells: int = int(ceil(half * 2.0 / Grass.CELL))
+	var rect := Vector4(c.x - half, c.z - half, Grass.CELL, float(cells))
+	var w_reach: float = 1.2
+	var wl := Vector3(-w_reach - 1.0, Grass.DW, (w_reach + 1.0) * 2.0 / Grass.DW + 1.0)
+	var layers: int = int(wl.z)
+	var heights := PackedFloat32Array()
+	heights.resize(cells * cells * layers)
+	for l in layers:
+		for j in cells:
+			for i in cells:
+				var x: float = rect.x + (float(i) + 0.5) * Grass.CELL
+				var z: float = rect.y + (float(j) + 0.5) * Grass.CELL
+				var d: float = Vector2(x - c.x, z - c.z).length()
+				heights[(l * cells + j) * cells + i] = top if d < r and d > 0.5 else Grass.NONE
+	oak_grass = Node4D.new()
+	oak_grass.name = "OakGrass"
+	oak_grass.set_script(Grass)
+	oak_grass.set("coverage", 1.0)
+	oak_grass.set("w_reach", w_reach)
+	oak_grass.set("height_m", 0.34)
+	oak_grass.set("width_scale", 1.6)
+	oak_grass.set("radius", 24.0)
+	oak_grass.set("band_radii", [7.0, 14.0])
+	add_child(oak_grass)
+	oak_grass.set("player", player)
+	oak_grass.call("start", heights, rect, wl, top)
+
+
+## Round 4 (Ramon, on the white titles: "the white descrips on the wall look very dry. maybe make a rectangle
+## with heads and some subtext. and the bracket more or less the size of the showcase so that it feels it
+## corresponds. and in the blue wall style"): behind each of 01 to 03, on the grey wall, a blue panel as wide
+## as its pedestal and, as every blue backing in the lab, floor to ceiling. Above the tree's crown, its
+## number, its name, its method's line and how its tree was grown, white, inside corner brackets like the
+## pedestals' decals.
+const SPECIMEN_WALLS := [
+	{"station": "Station01", "number": "01", "title": "VOXELS", "kicker": "THE SHRUBBERY LAB'S METHOD",
+		"line": "Grown by shrubbery's rules; every cell a branch passes through is filled."},
+	{"station": "Station02", "number": "02", "title": "SMOOTH VOXELS", "kicker": "THE ENGINE'S OWN VOXEL WORLD",
+		"line": "The same skeleton, one smooth surface run through it."},
+	{"station": "Station03", "number": "03", "title": "LOFTED", "kicker": "OUR LOFT TOOL",
+		"line": "The same skeleton, lofted branch by branch."},
+]
+## The panels' text, metres up the wall (over the crowns, under the ceiling).
+const SPECIMEN_TEXT_Y := Vector2(5.2, 8.0)
+
+
+func _specimen_walls() -> void:
+	var holder := Node4D.new()
+	holder.name = "SpecimenWalls"
+	add_child(holder)
+	var wall_x: float = -room_half_width
+	for spec in SPECIMEN_WALLS:
+		var st: Node4D = get_node_or_null(String(spec["station"])) as Node4D
+		if st == null:
+			continue
+		var w: float = float(st.get("radius")) * 2.0 + 0.2
+		var size := Vector4(w, hall_height, 0.06, 6.0)
+		var m := MeshInstance4D.new()
+		m.name = "Wall_" + String(spec["number"])
+		m.mesh = Mats.box_mesh(size)
+		# Its +z looks into the room (+x); its width runs along the wall, -z to the reader's right.
+		m.basis = Projection(Vector4(0, 0, -1, 0), Vector4(0, 1, 0, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 1))
+		m.position = Vector4(wall_x + 0.03, hall_height * 0.5, st.position.z, 0.0)
+		var mat: TetraMaterial4D = LabGrid.material("kit_code_blue", size, m.position)
+		m.material_override = mat
+		holder.add_child(m)
+		var ppm: float = 220.0
+		var th: float = SPECIMEN_TEXT_Y.y - SPECIMEN_TEXT_Y.x
+		var tex: Texture2D = await LabPrint.render(get_tree(), Vector2i(int(w * ppm), int(th * ppm)), func(c: Control) -> void: _specimen_page(c, spec))
+		if tex != null and is_instance_valid(m):
+			LabGrid.set_print(mat, tex, Vector4(0, 0, 1, 0), Rect2(0.0, SPECIMEN_TEXT_Y.x, w, th), Color.WHITE, 0.25)
+			LabGrid.set_print_strength(mat, 1.0)
+
+
+## A specimen panel's text: white on clear (the panel's blue shows), corner brackets round it.
+func _specimen_page(c: Control, spec: Dictionary) -> void:
+	var sz: Vector2 = c.size
+	var u: float = sz.y / 616.0
+	var white := Color(1, 1, 1, 1)
+	var soft := Color(1, 1, 1, 0.82)
+	var x: float = 70.0 * u
+	c.draw_string(LabPrint.font("bold"), Vector2(x, 120.0 * u), String(spec["kicker"]), HORIZONTAL_ALIGNMENT_LEFT, sz.x - x * 2.0, int(30 * u), soft)
+	c.draw_string(LabPrint.font("black"), Vector2(x, 250.0 * u), String(spec["number"]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(120 * u), white)
+	var black: Font = LabPrint.font("black")
+	var nw: float = black.get_string_size(String(spec["number"]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(120 * u)).x
+	# The name as large as fits beside the number (a long one steps down, never clipped).
+	var room: float = sz.x - x * 2.0 - nw - 34.0 * u
+	var px: int = int(84 * u)
+	for k in 12:
+		if black.get_string_size(String(spec["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, px).x <= room:
+			break
+		px = int(float(px) * 0.9)
+	c.draw_string(black, Vector2(x + nw + 34.0 * u, 250.0 * u), String(spec["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, px, white)
+	c.draw_line(Vector2(x, 300.0 * u), Vector2(sz.x - x, 300.0 * u), Color(1, 1, 1, 0.45), maxf(1.0, 3.0 * u))
+	c.draw_multiline_string(LabPrint.font("body"), Vector2(x, 370.0 * u), String(spec["line"]), HORIZONTAL_ALIGNMENT_LEFT, sz.x - x * 2.0, int(40 * u), 4, soft)
+	# The corner brackets (the pedestals' decals).
+	var arm: float = 60.0 * u
+	var tk: float = maxf(2.0, 5.0 * u)
+	var pad: float = 26.0 * u
+	for cx in [pad, sz.x - pad]:
+		var dir: float = 1.0 if cx < sz.x * 0.5 else -1.0
+		for cy in [pad, sz.y - pad]:
+			var dy: float = 1.0 if cy < sz.y * 0.5 else -1.0
+			c.draw_line(Vector2(cx, cy), Vector2(cx + arm * dir, cy), white, tk)
+			c.draw_line(Vector2(cx, cy), Vector2(cx, cy + arm * dy), white, tk)
 
 
 ## The flower room (its own scene, its own loading board).
@@ -931,8 +1117,8 @@ func watch() -> void:
 		"look0": Vector4(0.0, 3.2, -13.5, 0.0), "look1": Vector4(0.0, 3.8, -13.5, 0.0), "length": 6.5, "lens": 0.95,
 		"title": "THE GARDEN HALL", "line": "Four ways to grow a tree in 4D, from blocks to an oak, and a border of 4D flowers."})
 	shots.append({"scenic": true, "eye0": Vector4(3.4, 1.35, 13.6, 0.0), "eye1": Vector4(4.2, 1.25, 0.6, 0.0),
-		"look0": Vector4(6.9, 0.55, 10.4, 0.0), "look1": Vector4(room_half_width, 1.8, flower_door_z, 0.0), "length": 8.5, "lens": 0.9,
-		"title": "THE FLOWER BORDER", "line": "Every flower here is lofted in 4D. The door beyond leads to a whole room of them."})
+		"look0": Vector4(7.9, 0.55, 10.4, 0.0), "look1": Vector4(7.9, 0.7, 3.0, 0.0), "length": 8.5, "lens": 0.9,
+		"title": "THE FLOWER BORDER", "line": "Every flower here is lofted in 4D: petals in the slice, and more through W."})
 	player.set("input_enabled", false)
 	player.linear_velocity = Vector4.ZERO
 	# The pad's key prompt off for the tour (it hung in the middle of every shot).

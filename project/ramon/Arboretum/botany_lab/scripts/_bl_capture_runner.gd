@@ -111,6 +111,8 @@ func _run() -> void:
 				await _turns()
 			"garden":
 				await _garden()
+			"oak":
+				await _oak()
 			"wall":
 				_go(5.0, -11.0, -42.0, 4.0)
 				await _frames(60)
@@ -145,10 +147,11 @@ func _route() -> void:
 	_player_camera().current = true
 	_top.queue_free()
 	# (Round 3's layout: the trees all on the left, the border down the right.)
-	for v in [[0.0, 20.0, 0.0, -14.0, "r02_from_the_corridor"], [0.0, 13.0, 30.0, -16.0, "r03_junction_01"], [-4.2, 7.0, 90.0, -12.0, "r04_ring_01"],
-			[0.0, 5.8, 30.0, -16.0, "r05_junction_02"], [-4.0, 0.0, 90.0, -12.0, "r06_ring_02"], [0.0, -1.2, 30.0, -16.0, "r07_junction_03"],
+	# (Round 4: short branches at 67.5 degrees from the spine to the rings; the right wall whole.)
+	for v in [[0.0, 20.0, 0.0, -14.0, "r02_from_the_corridor"], [0.0, 10.0, 45.0, -16.0, "r03_junction_01"], [-4.2, 7.0, 90.0, -12.0, "r04_ring_01"],
+			[0.0, 3.0, 45.0, -16.0, "r05_junction_02"], [-4.0, 0.0, 90.0, -12.0, "r06_ring_02"], [0.0, -4.0, 45.0, -16.0, "r07_junction_03"],
 			[-4.0, -7.0, 90.0, -12.0, "r08_ring_03"], [0.0, -6.6, 0.0, -14.0, "r09_ring_oak"], [5.4, -9.0, 0.0, -14.0, "r10_round_the_oak"],
-			[0.6, -19.0, 0.0, -8.0, "r11_back_door"], [5.4, 14.0, 0.0, -14.0, "r12_border_path"], [10.4, -3.0, -90.0, -6.0, "r13_flower_door"]]:
+			[0.6, -19.0, 0.0, -8.0, "r11_back_door"], [5.4, 14.0, 0.0, -14.0, "r12_border_path"], [9.0, -3.0, -90.0, -6.0, "r13_right_wall"]]:
 		_go(float(v[0]), float(v[1]), float(v[2]), float(v[3]))
 		await _frames(40)
 		_shoot("route", String(v[4]))
@@ -375,13 +378,14 @@ func _report(name: String, times: Array) -> void:
 ## trees from the aisle, the oak and its leaves on the wind, the flower room's door.
 func _garden() -> void:
 	for v in [[0.0, 16.5, 0.0, -6.0, "g01_from_the_door"], [0.0, 10.0, 0.0, -2.0, "g02_down_the_middle"], [5.4, 13.0, 0.0, -10.0, "g03_border"],
-			[5.6, 6.4, -90.0, -18.0, "g04_border_close"], [1.6, 4.0, 90.0, -6.0, "g05_trees_from_the_aisle"], [0.0, -5.4, 0.0, 6.0, "g06_oak"],
-			[3.0, -6.0, -150.0, -2.0, "g07_leaves_toward_the_door"], [9.6, -3.0, -90.0, -4.0, "g08_flower_door"]]:
+			[5.6, 6.8, -90.0, -18.0, "g04_border_close"], [1.6, 4.0, 90.0, -6.0, "g05_trees_from_the_aisle"], [0.0, -5.4, 0.0, 6.0, "g06_oak"],
+			[3.0, -6.0, -150.0, -2.0, "g07_leaves_round_the_oak"], [9.0, -3.0, -90.0, -4.0, "g08_right_wall"],
+			[-5.0, 7.0, 90.0, -16.0, "g11_panel_on_01"], [-1.2, 3.0, 125.0, -4.0, "g12_titles_on_the_wall"], [0.0, -8.0, 0.0, -24.0, "g13_oak_grass"]]:
 		_go(float(v[0]), float(v[1]), float(v[2]), float(v[3]))
 		await _frames(50)
 		_shoot("garden", String(v[4]))
 	# The border turned through W (a drag's worth, at the planters).
-	_go(5.6, 6.4, -90.0, -18.0)
+	_go(5.6, 6.8, -90.0, -18.0)
 	await _frames(20)
 	var border: Node = _room.get_node_or_null("Border")
 	if border != null:
@@ -396,6 +400,37 @@ func _garden() -> void:
 		w.call("gust", 0.7, 6.0, 2.0)
 	await _frames(70)
 	_shoot("garden", "g10_gust")
+
+
+## Round 4 (section 10, steps 6-8): the oak's story from its ring: growing, a click that speeds it up (not a
+## skip), then the wind part (the room's wind raised for it), frames through it.
+func _oak() -> void:
+	_go(0.0, -7.6, 0.0, 4.0)
+	await _frames(40)
+	var s4: Node = _room.get("stations")[3]
+	s4.call("skip")
+	await create_timer(1.2).timeout
+	_shoot("oak", "o01_growing")
+	var t0: float = float(s4.get("seq_t"))
+	s4.call("skip")
+	var ms0: int = Time.get_ticks_msec()
+	await create_timer(1.0).timeout
+	var dt: float = float(s4.get("seq_t")) - t0
+	print("CAPTURE oak: after the second click the part ran %.2f s of story in %.2f s (speed %.1f, still part %d)" % [dt,
+		(Time.get_ticks_msec() - ms0) / 1000.0, float(s4.get("speed")), int(s4.get("seq_index"))])
+	_shoot("oak", "o02_faster")
+	for i in 3:
+		s4.call("skip", true)
+		await _frames(4)
+	var w: Node = _room.call("wind")
+	await create_timer(1.0).timeout
+	print("CAPTURE oak: in the wind part (%d): bend %.3f, sway %.2f, speed %.1f" % [int(s4.get("seq_index")), float(w.get("bend")), float(w.get("sway")), float(w.get("speed"))])
+	for k in 6:
+		_shoot("oak", "o03_wind_%d" % k)
+		await create_timer(0.6).timeout
+	s4.call("skip", true)
+	await _frames(10)
+	print("CAPTURE oak: after the wind part: bend %.3f, sway %.2f, speed %.1f" % [float(w.get("bend")), float(w.get("sway")), float(w.get("speed"))])
 
 
 func _door() -> void:

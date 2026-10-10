@@ -43,7 +43,7 @@ const SLICES := 9
 		_rebuild_pedestal()
 ## ARBORETUM (carried copy): "round" or "box" (kit_pedestal.gd); the box had no hologram (it has, in the
 ## Voxel Lab's copy, round 5).
-@export_enum("round", "box", "planter", "planter_box") var pedestal_shape: String = "round":
+@export_enum("round", "box", "planter", "planter_box", "specimen", "specimen_box") var pedestal_shape: String = "round":
 	set(v):
 		pedestal_shape = v
 		_rebuild_pedestal()
@@ -180,6 +180,11 @@ var _holo: MeshInstance4D
 ## into it, and how long it is: the research wall turns its pages by these.
 var seq_index: int = -1
 var seq_t: float = 0.0
+## Round 4 (Ramon: "the first click accelerates the animation"): how fast the story runs now, and the part
+## it was sped up in (a new part runs at its own speed again).
+var speed: float = 1.0
+var _speed_part: int = -1
+const FAST := 3.0
 var seq_len: float = 0.0
 
 
@@ -416,7 +421,10 @@ func _run_loop(delta: float) -> void:
 		cinematic = true
 		turn = Vector2.ZERO
 		turn_basis = Projection.IDENTITY
-	_loop_t += delta
+	if _speed_part >= 0 and seq_index != _speed_part:
+		speed = 1.0
+		_speed_part = -1
+	_loop_t += delta * speed
 	var total: float = 0.0
 	for s in seqs:
 		total += float(s["length"])
@@ -601,13 +609,21 @@ func numbers() -> Dictionary:
 ## while it is paused in your hands, the story starts over from its first part (Ramon, 4 Oct: "it
 ## halts when i keep left clicking ... it should just start over with the next click"). Nothing while
 ## a new animal is still growing in.
-func skip() -> void:
+func skip(force: bool = false) -> void:
 	if _wait_grow:
 		return
 	if not _looping or seq_index < 0:
 		replay()
 		return
 	var seqs: Array = sequences()
+	# A growing part (the exhibit says which): the first click runs it three times faster, the next goes on.
+	if not force and speed <= 1.0 and seq_index < seqs.size() and exhibit != null and exhibit.has_method("accelerates") \
+			and bool(exhibit.call("accelerates", String(seqs[seq_index]["key"]))):
+		speed = FAST
+		_speed_part = seq_index
+		return
+	speed = 1.0
+	_speed_part = -1
 	var total: float = 0.0
 	for s in seqs:
 		total += float(s["length"])
@@ -739,7 +755,7 @@ func _build_holo(deck_h: float) -> void:
 	var h: float = holo_height
 	_holo = MeshInstance4D.new()
 	_holo.name = "Hologram"
-	_holo.mesh = Mats.box_mesh(Vector4(r * 2.0, h, r * 2.0, Build.W_DEPTH)) if pedestal_shape in ["box", "planter_box"] else Build._cubinder(r, h, 96)
+	_holo.mesh = Mats.box_mesh(Vector4(r * 2.0, h, r * 2.0, Build.W_DEPTH)) if pedestal_shape in ["box", "planter_box", "specimen_box"] else Build._cubinder(r, h, 96)
 	_holo.position = Vector4(0.0, deck_h + h * 0.5, 0.0, 0.0)
 	_holo.material_override = LabGrid.material("kit_code_blue", Vector4(r * 2.0, h, r * 2.0, Build.W_DEPTH), global_position if is_inside_tree() else Vector4.ZERO)
 	_holo.set_meta(Build.GENERATED, true)
