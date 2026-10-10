@@ -110,15 +110,18 @@ const COLOURS := [
 ## visual language ... dark blue surfaces with crisp white gridlines ... deep red surfaces with white
 ## gridlines ... less reliance on soft orange and yellow tones"). A preset sets the colours it names
 ## over the defaults; everything stays editable after, and SAVE keeps it. ROUND 2 is the defaults.
+## The grid lines are a subdued medium grey, not white (Ramon, 10 Oct: "make the bright lines much
+## darker like subdued white. medium grey"). The sun lights the lines like any surface, so they are a
+## darker grey than they read: 0.27 shows as a medium grey on navy and red.
 const PRESETS := {
 	"ROUND 2": {},
 	"BLUEPRINT": {
-		"sw:maze_wall": Color(0.04, 0.09, 0.26), "line:maze_wall": Color(0.90, 0.94, 1.0),
+		"sw:maze_wall": Color(0.04, 0.09, 0.26), "line:maze_wall": Color(0.27, 0.28, 0.31),
 		"sw:maze_wall_w": Color(0.90, 0.93, 0.98), "line:maze_wall_w": Color(0.14, 0.28, 0.62),
 		"sw:maze_post": Color(0.03, 0.06, 0.16), "sw:maze_cap": Color(0.92, 0.95, 1.0),
-		"sw:maze_floor": Color(0.02, 0.05, 0.14), "line:maze_floor": Color(0.62, 0.74, 0.98),
-		"sw:maze_climb": Color(0.92, 0.27, 0.20), "line:maze_climb": Color(1.0, 0.86, 0.82),
-		"sw:maze_roof": Color(0.06, 0.12, 0.32), "line:maze_roof": Color(0.86, 0.91, 1.0),
+		"sw:maze_floor": Color(0.02, 0.05, 0.14), "line:maze_floor": Color(0.27, 0.28, 0.31),
+		"sw:maze_climb": Color(0.92, 0.27, 0.20), "line:maze_climb": Color(0.27, 0.28, 0.31),
+		"sw:maze_roof": Color(0.06, 0.12, 0.32), "line:maze_roof": Color(0.27, 0.28, 0.31),
 		"role:start": Color(1.0, 1.0, 1.0), "role:exit": Color(1.0, 0.32, 0.20), "role:w": Color(0.40, 0.70, 1.0),
 		"role:ghost": Color(0.50, 0.75, 1.0), "role:trail": Color(0.92, 0.95, 1.0), "role:done": Color(0.32, 0.38, 0.52),
 		"light:bright:key_color": Color(1.0, 1.0, 1.0), "light:bright:fill_color": Color(0.86, 0.91, 1.0),
@@ -126,12 +129,12 @@ const PRESETS := {
 		"light:bright:sky_horizon": Color(0.88, 0.91, 0.96), "light:bright:sky_bottom": Color(0.62, 0.66, 0.76),
 	},
 	"SIGNAL RED": {
-		"sw:maze_wall": Color(0.55, 0.07, 0.09), "line:maze_wall": Color(1.0, 0.92, 0.90),
+		"sw:maze_wall": Color(0.55, 0.07, 0.09), "line:maze_wall": Color(0.27, 0.28, 0.31),
 		"sw:maze_wall_w": Color(0.95, 0.93, 0.92), "line:maze_wall_w": Color(0.62, 0.10, 0.12),
 		"sw:maze_post": Color(0.26, 0.03, 0.05), "sw:maze_cap": Color(0.98, 0.95, 0.94),
-		"sw:maze_floor": Color(0.22, 0.04, 0.06), "line:maze_floor": Color(0.95, 0.70, 0.70),
-		"sw:maze_climb": Color(0.16, 0.36, 0.86), "line:maze_climb": Color(0.88, 0.92, 1.0),
-		"sw:maze_roof": Color(0.42, 0.06, 0.08), "line:maze_roof": Color(1.0, 0.90, 0.90),
+		"sw:maze_floor": Color(0.22, 0.04, 0.06), "line:maze_floor": Color(0.27, 0.28, 0.31),
+		"sw:maze_climb": Color(0.16, 0.36, 0.86), "line:maze_climb": Color(0.27, 0.28, 0.31),
+		"sw:maze_roof": Color(0.42, 0.06, 0.08), "line:maze_roof": Color(0.27, 0.28, 0.31),
 		"role:start": Color(1.0, 1.0, 1.0), "role:exit": Color(1.0, 0.97, 0.92), "role:w": Color(0.35, 0.62, 1.0),
 		"role:ghost": Color(0.45, 0.68, 1.0), "role:trail": Color(1.0, 0.80, 0.80), "role:done": Color(0.40, 0.22, 0.24),
 		"light:bright:key_color": Color(1.0, 1.0, 1.0), "light:bright:fill_color": Color(0.90, 0.92, 1.0),
