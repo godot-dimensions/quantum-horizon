@@ -111,14 +111,15 @@ const THENAR := [
 ## finger and forward of the palm rather than straight down onto it. Artists draw the break at the
 ## last joint for the same reason: a thumb drawn as one straight line reads as a sausage. Here the
 ## metacarpal leaves the ball of the thumb at about 30 degrees out from the fingers, the knuckle
-## bends the rest about 15 degrees in and forward, and the last joint another 22, a little swollen.
+## bends the rest about 15 degrees in and forward, and the last joint another 22. It tapers to its
+## tip (Ramon, 10 Oct: "top of the thumb should be smaller").
 const THUMB_MCP := Vector3(-46.0, 50.0, 14.0)
 const THUMB_PROXIMAL := 24.0
 const THUMB_DISTAL := 21.0
 const THUMB_PROXIMAL_DIR := Vector3(-0.38, 0.86, 0.34)
 const THUMB_DISTAL_DIR := Vector3(-0.05, 0.86, 0.50)
 ## At its knuckle, mid proximal, its last joint, and the tip.
-const THUMB_RADII := [11.5, 10.2, 10.4, 8.8]
+const THUMB_RADII := [11.5, 10.0, 9.0, 7.2]
 
 ## A cuff over the wrist, as the old gloves had: a clean end to a hand that has no arm, and
 ## the loft's pointed end cap turned into a rounded one.
