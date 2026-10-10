@@ -100,6 +100,11 @@ func _process(delta: float) -> bool:
 				_key(KEY_2)
 				_next()
 		3, 4, 5:
+			# Round 7 (#82): the press is answered at once, GENERATING WORLD at the top while it builds.
+			if _step == 3 and _t > 0.25 and _t - delta <= 0.25:
+				var gen: Control = lab.get("generating")
+				_check(gen != null and bool(gen.get("shown")), "GENERATING WORLD shows while the land builds (%s)" % (String(gen.get("text")) if gen != null else "none"))
+				_save("02b_generating")
 			if _t > 0.8:
 				var b: String = String(_ex("Terrain").call("biome_name"))
 				_biomes.append(b)

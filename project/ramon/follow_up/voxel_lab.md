@@ -24,6 +24,20 @@ its research and its status: `VoxelLab/PLAN.md`. The old `VoxelMining/` scenes a
 
 ## What to look at
 
+**Round 7 (10 Oct)**, parts 10 and 11, items 76 to 94: `VoxelLab/PLAN_ROUND7.md`.
+
+- **Escape never leaves at once** (the menu heard it first and closed the lab; the carried walker rig quit the
+  program on a second press). `room/vl_escape.gd`, the Phase Maze's guard carried and made general: it closes
+  the top thing open (F1, Tab, a pop-up, the presentation, the bench, the Tab settings, a flight), otherwise asks
+  "Return to the main menu?"; only YES leaves. The menu's file is untouched.
+- The lab: Build it's ring nearer and square off the spine, its panel at the pedestal's left, its choice
+  anywhere beside the pedestal; a shorter way in; WORLD / CREATION; "GENERATING WORLD 2 OF 3" while the land
+  builds and "1 of 3" counts; Shift to run shown on the key strip.
+- The open world: the platform lift is gone; a white and grey lighthouse with a low rail; lighter tree greens
+  from the island's own; the desert's ripple stripes and faceted mesas (the banding) gone, ochre and sand
+  patches, cacti further apart; volcanoes as faceted 16-cell pyramids with spires, lava veins and smoke; the
+  sea's grain and blotches traced to round 6's foam size and fixed (your settings untouched).
+
 **Round 6 (10 Oct)**, parts 8 and 9 of your walkthrough, items 60 to 75: `VoxelLab/PLAN_ROUND6.md`.
 
 - The gallery's title in two lines; **the big landscape keeps its square**: a drag sweeps its slice through

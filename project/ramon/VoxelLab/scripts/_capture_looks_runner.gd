@@ -11,7 +11,7 @@ const Style := preload("res://ramon/VoxelLab/carried/kit/kit_style.gd")
 
 ## [name, where (x, z), facing (degrees), seconds to settle]
 const VIEWS := [
-	["entrance", Vector2(0, 21.0), 0.0, 1.6],
+	["entrance", Vector2(0, 17.5), 0.0, 1.6],
 	["junction", Vector2(0, 9.0), 0.0, 1.4],
 	["shelf", Vector2(6.2, 5.4), -90.0, 1.6],
 	["block", Vector2(0, 3.0), 0.0, 1.6],

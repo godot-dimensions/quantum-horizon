@@ -337,11 +337,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	# ESCAPE HAS TO GET YOU OUT. These scenes capture the mouse on the first frame and
 	# nothing gave it back, so a running scene could not be closed without killing the
 	# window. First press frees the cursor, second quits.
+	#
+	# VOXEL LAB (carried copy, round 7, #79): never quits. The lab's Esc guard (room/vl_escape.gd) has Esc
+	# before this; should one reach here, it only frees the cursor.
 	if event.is_action_pressed(&"ui_cancel"):
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		else:
-			get_tree().quit()
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.pressed and not event.echo \

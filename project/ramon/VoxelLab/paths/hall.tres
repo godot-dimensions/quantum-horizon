@@ -10,7 +10,7 @@ nodes = [{
 "frame": "none",
 "id": 1,
 "kind": "start",
-"pos": Vector4(0, 0, 21, 0),
+"pos": Vector4(0, 0, 17.5, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -19,7 +19,7 @@ nodes = [{
 "frame": "none",
 "id": 2,
 "kind": "junction",
-"pos": Vector4(0, 0, 9, 0),
+"pos": Vector4(0, 0, 8.7, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -37,7 +37,7 @@ nodes = [{
 "frame": "none",
 "id": 4,
 "kind": "bend",
-"pos": Vector4(6.2, 0, 9, 0),
+"pos": Vector4(6.2, 0, 8.7, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -109,7 +109,7 @@ nodes = [{
 "frame": "round",
 "id": 12,
 "kind": "destination",
-"pos": Vector4(-4.1, 0, 8.8, 0),
+"pos": Vector4(-5.1, 0, 8.7, 0),
 "state": "arrival",
 "target": "Build"
 }, {
@@ -118,7 +118,7 @@ nodes = [{
 "frame": "none",
 "id": 13,
 "kind": "bend",
-"pos": Vector4(-5.1, 0, 5, 0),
+"pos": Vector4(8.5, 0, 8.7, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -127,15 +127,6 @@ nodes = [{
 "frame": "none",
 "id": 14,
 "kind": "bend",
-"pos": Vector4(8.5, 0, 9, 0),
-"state": "arrival",
-"target": ""
-}, {
-"approach": Vector2(0, 1),
-"band": 8.0,
-"frame": "none",
-"id": 15,
-"kind": "bend",
 "pos": Vector4(8.5, 0, 5.4, 0),
 "state": "arrival",
 "target": ""
@@ -143,7 +134,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
-"id": 16,
+"id": 15,
 "kind": "bend",
 "pos": Vector4(8.5, 0, 1.8, 0),
 "state": "arrival",
@@ -213,12 +204,6 @@ edges = [{
 "band": 8.0,
 "from": 12,
 "priority": "primary",
-"to": 13,
-"w_mode": "static"
-}, {
-"band": 8.0,
-"from": 13,
-"priority": "primary",
 "to": 11,
 "w_mode": "static"
 }, {
@@ -231,19 +216,19 @@ edges = [{
 "band": 8.0,
 "from": 4,
 "priority": "primary",
-"to": 14,
+"to": 13,
 "w_mode": "static"
 }, {
 "band": 8.0,
 "from": 5,
 "priority": "primary",
-"to": 15,
+"to": 14,
 "w_mode": "static"
 }, {
 "band": 8.0,
 "from": 6,
 "priority": "primary",
-"to": 16,
+"to": 15,
 "w_mode": "static"
 }]
-next_id = 17
+next_id = 16

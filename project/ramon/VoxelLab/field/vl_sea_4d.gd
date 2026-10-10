@@ -54,9 +54,14 @@ var shore_far: float = 160.0
 ## water the built square showed lighter than the open sea round it, seen from the air. At 10 the deep
 ## colour is reached over the seabed too; the shallows by the coast still show.
 var see_depth: float = 10.0
-## How big the foam's bubbles are, m across a cell of its network (the shader's foam_cell_size, 0.85 in the
-## Aquatic Lab; Ramon, 9 Oct: "the foam effect can you make it smaller in size?").
+## How big the SHORE foam's bubbles are, m across a cell of its network (Ramon, 9 Oct: "the foam effect can you
+## make it smaller in size?"). Round 7 (#85): the shore foam's alone. Round 6 set it as the shader's
+## foam_cell_size, which every foam on the sea uses, so the crests' foam out at sea went to 6 cm cells too: a
+## grain of dark speckle from the deck, flat white blotches from the air. The crests keep the Aquatic Lab's
+## cell (the shader's own 0.85) and fade out past CREST_FADE metres instead of turning to flat white sheets
+## (the Aquatic Lab drops the bubbles past 65 m, made for a harbour seen from a pier, not from a bird).
 var foam_cell: float = 0.08
+const CREST_FADE := Vector2(70.0, 160.0)
 
 ## The ninth preset's index.
 const GENTLE := 8
@@ -81,7 +86,8 @@ func _on_pre_render(camera: Camera4D, viewport: Viewport, engine: RenderingEngin
 	_material.set_shader_parameter(&"shore_far", shore_far)
 	_material.set_shader_parameter(&"intersection_foam_depth", shore_width)
 	_material.set_shader_parameter(&"max_path_metres", see_depth)
-	_material.set_shader_parameter(&"foam_cell_size", foam_cell)
+	_material.set_shader_parameter(&"shore_cell", foam_cell)
+	_material.set_shader_parameter(&"crest_fade", CREST_FADE)
 	var dom: Dictionary = dominant()
 	_material.set_shader_parameter(&"crest_ref", maxf(0.03, float(dom.get("amplitude", 0.3)) * maxf(wave_scale, 0.01)))
 
@@ -165,11 +171,13 @@ static func patched_shader() -> Shader:
 	var code: String = SHADER.code
 	var patches: Array = [
 		["uniform float intersection_foam_depth = 0.55;",
-			"uniform float intersection_foam_depth = 0.55;\n// VOXEL LAB (vl_sea_4d.gd): the shore foam's strength, how much of it only the crests bring, and\n// where it has fallen to a third.\nuniform float shore_foam = 0.9;\nuniform float shore_breakup = 0.0;\nuniform float shore_far = 160.0;\nuniform float crest_ref = 0.3;"],
+			"uniform float intersection_foam_depth = 0.55;\n// VOXEL LAB (vl_sea_4d.gd): the shore foam's strength, how much of it only the crests bring, and\n// where it has fallen to a third.\nuniform float shore_foam = 0.9;\nuniform float shore_breakup = 0.0;\nuniform float shore_far = 160.0;\nuniform float crest_ref = 0.3;\nuniform float shore_cell = 0.3;\nuniform vec2 crest_fade = vec2(70.0, 160.0);"],
 		["\tfloat detail = detail_field(rest, detail_gradient);",
 			"\tfloat detail = detail_field(rest, detail_gradient);\n\t// VOXEL LAB: the ripple goes before the graded squares outgrow it.\n\tfloat detail_k = 1.0 - smoothstep(near_extent, near_extent * 2.5, length(VERTEX.xz));\n\tdetail *= detail_k;\n\tdetail_gradient *= detail_k;"],
 		["float foam = clamp(max(pinch * foam_opacity, edge * 0.9), 0.0, 1.0);",
-			"float shore_k = mix(1.0, smoothstep(0.05 * crest_ref, 0.75 * crest_ref, crest_height + surface_detail * 0.5), shore_breakup);\n\t\tshore_k *= mix(1.0, 0.33, smoothstep(shore_far * 0.4, shore_far, length(VERTEX)));\n\t\tfloat foam = clamp(max(pinch * foam_opacity, edge * shore_foam * shore_k), 0.0, 1.0);"],
+			"float shore_k = mix(1.0, smoothstep(0.05 * crest_ref, 0.75 * crest_ref, crest_height + surface_detail * 0.5), shore_breakup);\n\t\tshore_k *= mix(1.0, 0.33, smoothstep(shore_far * 0.4, shore_far, length(VERTEX)));\n\t\tfloat crest_f = pinch * foam_opacity * (1.0 - smoothstep(crest_fade.x, crest_fade.y, length(VERTEX)));\n\t\tfloat shore_f = edge * shore_foam * shore_k;\n\t\tfloat shore_share = step(crest_f, shore_f);\n\t\tfloat foam = clamp(max(crest_f, shore_f), 0.0, 1.0);"],
+		["cover = foam_4d_shaded(rest_world, foam, foam_cell_size, detail_time * 12.0,",
+			"cover = foam_4d_shaded(rest_world, foam, mix(foam_cell_size, shore_cell, shore_share), detail_time * 12.0,"],
 	]
 	for p in patches:
 		if code.find(String(p[0])) < 0:

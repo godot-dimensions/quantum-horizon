@@ -39,6 +39,8 @@ const Shimmer := preload("res://ramon/VoxelLab/room/vl_shimmer_4d.gd")
 const LoadBoard := preload("res://ramon/VoxelLab/room/vl_load_board.gd")
 const GridView := preload("res://ramon/VoxelLab/room/vl_grid_view.gd")
 const DevPanel := preload("res://ramon/VoxelLab/room/vl_dev_panel.gd")
+const Escape := preload("res://ramon/VoxelLab/room/vl_escape.gd")
+const Generating := preload("res://ramon/VoxelLab/room/vl_generating.gd")
 const LightsPanel := preload("res://ramon/VoxelLab/room/vl_lights_panel.gd")
 const MouseTutorial := preload("res://ramon/VoxelLab/field/vl_mouse_tutorial.gd")
 const Build := preload("res://ramon/VoxelLab/carried/scripts/chamber_build.gd")
@@ -136,6 +138,9 @@ var presenter: Control
 var choice: Control
 var popup: Control
 var dev_panel: Control
+var lights_panel: Control
+## "GENERATING WORLD" while the world's pedestal builds a new look (round 7, #82; room/vl_generating.gd).
+var generating: Control
 ## The light rig (vl_lights.gd): every soft spot, the room values, the light file.
 var lights: Node
 var stations: Array = []
@@ -179,8 +184,14 @@ func _enter_tree() -> void:
 	add_to_group("lab_mood_listener")
 
 
+## Esc's guard on the root (room/vl_escape.gd): it hears Esc and H before the menu and asks escape_step.
+var _escape: CanvasLayer
+
+
 func _ready() -> void:
 	apply_shape()
+	if not Engine.is_editor_hint():
+		_escape = Escape.guard(self)
 	var room: Node = get_node_or_null("Room")
 	if room != null:
 		room.set("mood_overrides", Style.ROOM_LIGHT.duplicate(true))
@@ -202,7 +213,8 @@ func _ready() -> void:
 			var st: Node = n.get_node_or_null(n.get_meta("station")) if n.has_meta("station") else null
 			var bn: Node = n.get_node_or_null(n.get_meta("bench")) if n.has_meta("bench") else null
 			spots.append({"node": n, "kind": String(n.get_meta("kind", "view")), "radius": float(n.get_meta("radius", 1.3)),
-				"station": st, "bench": bn, "options": n.get_meta("options", []), "target": String(n.get_meta("target", ""))})
+				"station": st, "bench": bn, "options": n.get_meta("options", []), "target": String(n.get_meta("target", "")),
+				"near": float(n.get_meta("near", 0.0))})
 	lights = Node.new()
 	lights.name = "LightRig"
 	lights.set_script(LightRig)
@@ -235,6 +247,10 @@ func _ready() -> void:
 	hud.set_script(Hud)
 	hud.set("glass", true)
 	layer.add_child(hud)
+	generating = Control.new()
+	generating.name = "Generating"
+	generating.set_script(Generating)
+	layer.add_child(generating)
 	hud.connect("mood_pressed", toggle_palette)
 	_label_switch()
 	_route_floor()
@@ -293,6 +309,7 @@ func _ready() -> void:
 	dlayer.add_child(dev_panel)
 	# Tab: every light on its own (round 3).
 	var lp := PanelContainer.new()
+	lights_panel = lp
 	lp.name = "LightsPanel"
 	lp.set_script(LightsPanel)
 	lp.set("room", self)
@@ -516,6 +533,7 @@ func _process(delta: float) -> void:
 		return
 	if _board != null:
 		_feed_board(delta)
+	_show_generating()
 	if bench != null:
 		hud.set("strip", bench.call("strip"))
 		presenter.set("active", false)
@@ -605,6 +623,15 @@ func _read_spot(p: Vector4, delta: float) -> void:
 	for sp in spots:
 		var at: Vector4 = (sp["node"] as Node4D).global_position
 		var d: float = Vector2(p.x - at.x, p.z - at.z).length()
+		# Round 7 (#78: "activate Build It Yourself when standing close to the specimen or builder itself"):
+		# a spot with `near` also counts anywhere that close to its pedestal's sides; standing on a ring
+		# still wins.
+		if d >= float(sp["radius"]) and float(sp.get("near", 0.0)) > 0.0 and sp.get("station") != null:
+			var sc: Vector4 = (sp["station"] as Node4D).global_position
+			var half: float = float(sp["station"].get("radius"))
+			var out := Vector2(maxf(absf(p.x - sc.x) - half, 0.0), maxf(absf(p.z - sc.z) - half, 0.0))
+			if out.length() < float(sp["near"]):
+				d = float(sp["radius"]) - 0.01
 		if d < float(sp["radius"]) and d < best_d:
 			best_d = d
 			best = sp
@@ -650,7 +677,8 @@ func _options(sp: Dictionary) -> Array:
 			"build":
 				item.merge({"icon": "build", "label": "Build it yourself"})
 			"biome":
-				var now: String = String(ex.call("biome_name")) if ex != null and ex.has_method("biome_name") else ""
+				# Round 7 (#83: "how many world variations are available ... 1 of 3"): which, of how many.
+				var now: String = String(ex.call("biome_count_label")) if ex != null and ex.has_method("biome_count_label") else ""
 				item.merge({"icon": "globe", "label": "Change the land (now %s)" % now})
 		out.append(item)
 	return out
@@ -670,7 +698,8 @@ func _on_choice(i: int) -> void:
 		"biome":
 			var ex: Node = st.get("exhibit") if st != null else null
 			if ex != null and ex.has_method("next_biome"):
-				hud.call("toast", "The land: " + String(ex.call("next_biome")))
+				ex.call("next_biome")
+				hud.call("toast", "The land: " + String(ex.call("biome_count_label")))
 
 
 ## The pop-up's words, from the exhibit's card.
@@ -700,6 +729,9 @@ func _strip() -> Array:
 		out.append(["V", "Projection view" if not volume_view else "Slice view"])
 	else:
 		out.append(["WASD", "Move"])
+		# Round 7 (#86: "Holding Shift should make the player move somewhat faster"): the walker's own
+		# sprint (kit_player.gd: 4.2 m/s against the 2.8 m/s run), named here so it is found.
+		out.append(["Shift", "Run"])
 		out.append(["Mouse", "Look"])
 	if active == null:
 		out.append(["O", "The open world"])
@@ -824,18 +856,58 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## ESC, IN ORDER (round 7, #79: "1. If a modal dialog is open, Escape closes or cancels that dialog. 2. If
+## the developer HUD or another interface is open, Escape closes that interface. 3. Otherwise, Escape opens
+## the return-to-menu confirmation"): asked by the guard (room/vl_escape.gd), which has the key before
+## anything else. The top thing open closes and this returns true; nothing open, false, and the guard asks
+## "Return to the main menu?". H is only ever the guard's question here.
+func escape_step(key: Key) -> bool:
+	if key != KEY_ESCAPE:
+		return false
+	for panel in [dev_panel, lights_panel]:
+		if panel != null and (panel as Control).visible:
+			(panel as Control).visible = false
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if bench != null else Input.MOUSE_MODE_CAPTURED
+			return true
+	if _popup_open:
+		_popup_open = false
+		return true
+	if watching != null or _watch_next != null:
+		stop_watching()
+		return true
+	if bench != null:
+		bench.call("undock")
+		return true
+	return false
+
+
+## The pill while the world's pedestal builds a new look, saying which world of how many.
+func _show_generating() -> void:
+	if generating == null:
+		return
+	var on: bool = false
+	for s in stations:
+		var ex: Node = s.get("exhibit")
+		if ex != null and ex.has_method("generating") and bool(ex.call("generating")):
+			on = true
+			generating.set("text", "GENERATING WORLD %s" % String(ex.call("biome_count_label")).to_upper())
+	generating.set("shown", on)
+
+
+func _exit_tree() -> void:
+	if _escape != null and is_instance_valid(_escape):
+		_escape.queue_free()
+	_escape = null
+
+
 func _unhandled_key_input(event: InputEvent) -> void:
 	if Engine.is_editor_hint() or player == null or bench != null:
 		return
 	var k := event as InputEventKey
 	if k == null or not k.pressed or k.echo:
 		return
+	# Esc is the guard's (escape_step above): it never reaches here.
 	match k.keycode:
-		KEY_ESCAPE:
-			if watching != null or _watch_next != null:
-				stop_watching()
-				get_viewport().set_input_as_handled()
-			return
 		KEY_B:
 			if not k.shift_pressed and not k.ctrl_pressed:
 				toggle_palette()

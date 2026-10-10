@@ -94,7 +94,7 @@ func _draw() -> void:
 			keys = [["Change the world station, 1", "Back to the green island"], ["WASD", "Walk"], ["The blue platform", "Turn the slice"],
 				["Tab", "Settings"], ["The blue door", "Back to the lab"]]
 		if String(field.get("site")) == "platform":
-			keys = [["WASD", "Walk"], ["Right drag", "Turn the slice"], ["R", "Level again"], ["Space / Shift", "Platform up, down"], ["Tab", "Settings"]]
+			keys = [["WASD", "Walk"], ["Right drag", "Turn the slice"], ["R", "Level again"], ["Tab", "Settings"]]
 	var kx: float = 22 * u
 	var ky: float = size.y - 22 * u
 	var strip := Rect2(Vector2(kx - 10 * u, ky - 22 * u), Vector2(size.x - 2.0 * (kx - 10 * u), 32 * u))

@@ -164,6 +164,16 @@ func biome_name() -> String:
 	return String(BIOMES[biome]["name"])
 
 
+## Which look of how many (round 7, #83: "World 1 / 3"), e.g. "1 of 3, Green".
+func biome_count_label() -> String:
+	return "%d of %d, %s" % [biome + 1, BIOMES.size(), biome_name()]
+
+
+## A new look is being built (round 7, #82: the lab shows "GENERATING" while this is true).
+func generating() -> bool:
+	return case == "terrain" and (_rebuilding != null or _rebuild_again)
+
+
 func _apply_biome() -> void:
 	var colors: Dictionary = BIOMES[biome]["colors"]
 	if biome == 0:
@@ -203,7 +213,7 @@ func band_line() -> String:
 ## Three numbers for a floating panel.
 func face() -> Array:
 	var n: Dictionary = numbers()
-	return [["Look", biome_name()], ["Chunk meshes", String(n["chunks"])], ["Tetrahedra", String(n["tets"])]]
+	return [["Look", biome_count_label()], ["Chunk meshes", String(n["chunks"])], ["Tetrahedra", String(n["tets"])]]
 
 
 func card() -> Dictionary:
@@ -213,7 +223,7 @@ func card() -> Dictionary:
 			"kicker": "OUR WORLD GENERATOR",
 			"text": "Land, caves and a sea, cut out of an endless 4D world. Slide through W and every slice is a new coastline. Cut it: the engine remeshes it live.",
 			"method": "A sea plane under a fractal-noise landscape, clipped against its caves; here in a box at 18 cm voxels. Adapted from the work of Andrew (4Denthusiast).",
-			"rows": [["Look", biome_name()], ["Chunk meshes", String(n["chunks"])], ["Tetrahedra", "%s, %s" % [String(n["tets"]), String(n["mb"])]]],
+			"rows": [["Look", biome_count_label()], ["Chunk meshes", String(n["chunks"])], ["Tetrahedra", "%s, %s" % [String(n["tets"]), String(n["mb"])]]],
 			"tier": "OUR WORLD GENERATOR", "key": ""}
 	var words := {
 		"land": "Fractal noise, summed over scales, decides how high the ground is; bands below its surface make grass, dirt and stone. One rule, run in 4D.",

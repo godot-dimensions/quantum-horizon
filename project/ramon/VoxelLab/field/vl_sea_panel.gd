@@ -300,7 +300,7 @@ func _ready() -> void:
 	_section(String(PROPS[3][1]))
 	_prop_rows("volcanoes", 12.0, 20.0)
 	_lava_box = CheckBox.new()
-	_lava_box.text = "Embers and bubbles over the lava"
+	_lava_box.text = "Embers, bubbles and smoke"
 	_lava_box.focus_mode = Control.FOCUS_NONE
 	_lava_box.button_pressed = float(_values.get("lava_fx", 1.0)) > 0.5
 	_lava_box.add_theme_font_size_override("font_size", FONT - 1)

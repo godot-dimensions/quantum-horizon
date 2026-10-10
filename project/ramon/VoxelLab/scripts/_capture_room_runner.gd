@@ -135,8 +135,46 @@ func _process(delta: float) -> bool:
 			if _t > 2.0:
 				_check(_room.get("watching") == null, "Esc stops it")
 				_check(int(_ex(_hero).call("cut_count")) == 0, "and the block is whole again (%d cuts)" % int(_ex(_hero).call("cut_count")))
+				# Round 7 (#79): F1's panel closes on Esc; with nothing open Esc asks, and Esc there means No.
+				_key(KEY_F1)
+				_step = 60
+				_t = 0.0
+		60:
+			if _t > 0.6:
+				_check((_room.get("dev_panel") as Control).visible, "F1 opens the dev panel")
+				_key(KEY_ESCAPE)
+				_step = 61
+				_t = 0.0
+		61:
+			if _t > 0.6:
+				var esc: Node = root.get_node_or_null("VoxelLabEscape")
+				_check(not (_room.get("dev_panel") as Control).visible and esc != null and not bool(esc.call("is_open")) and _room.is_inside_tree(),
+					"Esc closes the dev panel, and only it")
+				_key(KEY_ESCAPE)
+				_step = 62
+				_t = 0.0
+		62:
+			if _t > 0.6:
+				var esc2: Node = root.get_node_or_null("VoxelLabEscape")
+				_check(esc2 != null and bool(esc2.call("is_open")), "Esc with nothing open asks: Return to the main menu?")
+				_save("05b_escape_box")
+				_key(KEY_H)
+				_step = 63
+				_t = 0.0
+		63:
+			if _t > 0.6:
+				var esc3: Node = root.get_node_or_null("VoxelLabEscape")
+				_check(esc3 != null and bool(esc3.call("is_open")) and _room.is_inside_tree(), "H there leaves nothing (the box stays)")
+				_key(KEY_ESCAPE)
+				_step = 64
+				_t = 0.0
+		64:
+			if _t > 0.6:
+				var esc4: Node = root.get_node_or_null("VoxelLabEscape")
+				_check(esc4 != null and not bool(esc4.call("is_open")) and _room.is_inside_tree() and not paused, "Esc there means No: still in the lab")
 				_key(KEY_2)
-				_next()
+				_step = 6
+				_t = 0.0
 		6:
 			if _t > 1.2:
 				_check(_room.get("bench") == _bench, "2 sits you at the bench")
@@ -209,8 +247,18 @@ func _process(delta: float) -> bool:
 		16:
 			if _t > 2.0:
 				_save("10_left_wall")
-				_place(-4.1, 8.8, deg_to_rad(90.0))
-				_next()
+				# Round 7 (#78): beside the builder's pedestal, off its ring, it is offered too.
+				_place(-8.7, 5.5, deg_to_rad(180.0))
+				_step = 66
+				_t = 0.0
+		66:
+			if _t > 1.2:
+				_check(_spot_name() == "Build", "beside Build it's pedestal, off the ring, its bench is offered (spot %s)" % _spot_name())
+				_save("10b_build_beside")
+				# Round 7 (#76): the ring itself, nearer the pedestal, square off the spine.
+				_place(-5.1, 8.7, deg_to_rad(90.0))
+				_step = 17
+				_t = 0.0
 		17:
 			if _t > 1.2:
 				var ch: Control = _room.get("choice")

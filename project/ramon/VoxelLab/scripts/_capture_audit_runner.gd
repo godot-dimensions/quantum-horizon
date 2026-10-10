@@ -10,7 +10,7 @@ const OUT := "res://smoke_test_output/voxel_lab/audit/"
 ## [name, "walk", Vector2(x, z), facing degrees] or [name, "free", Vector3 eye, Vector2(yaw, pitch) degrees]
 ## or [name, "top", Vector3 eye] (straight down, the ceilings hidden).
 const SHOTS := [
-	["01_spawn", "walk", Vector2(0, 21.0), 0.0],
+	["01_spawn", "walk", Vector2(0, 17.5), 0.0],
 	["02_corridor", "walk", Vector2(0, 16.0), 0.0],
 	["03_back_to_corridor", "walk", Vector2(0, 6.0), 180.0],
 	["04_entrance_top", "free", Vector3(0, 2.2, 6.0), Vector2(180, 24)],

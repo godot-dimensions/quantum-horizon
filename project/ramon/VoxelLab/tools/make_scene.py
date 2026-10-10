@@ -70,10 +70,17 @@ def arr(items):
 
 # -- the rooms ---------------------------------------------------------------------------------------
 
+# The way in (round 7, #80: "The initial walk from the spawn point into the Voxel Lab feels unnecessarily
+# long"): the corridor 8.5 m long, not 14, from the hall's door at z 12.5; you start 5 m from the door, not
+# 8.5, on the same line in. The corridor, its height and width and the door are as they were.
+ENTRANCE_LEN = 8.5
+ENTRANCE_Z = 12.5 + ENTRANCE_LEN * 0.5
+START = (0, 17.5)
+
 node("VoxelLab", None, "Node4D", [("script", 'ExtResource("1_root")'), ("room_half_width", "12.0"), ("room_back", "15.0"),
-                                  ("corner_length", "10.8"), ("start_at", "Vector2(0, 21)")])
+                                  ("corner_length", "10.8"), ("start_at", "Vector2(%s, %s)" % START)])
 node("Room", ".", "Node4D", [("script", 'ExtResource("2_room")'), ("start_mood", q("bright"))])
-node("Entrance", ".", "Node4D", [("position", V(0, 0, 19.5)), ("script", 'ExtResource("3_kitroom")'), ("size", "Vector3(8, 6.8, 14)"),
+node("Entrance", ".", "Node4D", [("position", V(0, 0, ENTRANCE_Z)), ("script", 'ExtResource("3_kitroom")'), ("size", "Vector3(8, 6.8, %s)" % ENTRANCE_LEN),
                                  ("open_sides", '["n"]'), ("cove", "false")])
 node("Hall", ".", "Node4D", [("script", 'ExtResource("3_kitroom")'), ("size", "Vector3(24, 9, 27)"), ("cove", "false")])
 node("Sign", "Hall", "Node", [("script", 'ExtResource("4_text")'), ("side", q("s")), ("edge", "5"), ("along", "Vector2(7.6, 16.4)"),
@@ -84,9 +91,10 @@ GZ = -1.0
 # Over the gallery door, on the hall's back wall (edge 2, from its left end: the door is centred 4.77 m
 # along it), the open world door's sign (round 4: "an appropriate black text label at the entrance to
 # the next room").
-# Two lines (round 6, #60: it read "HOW A WORLD IS M"), a little taller to hold them.
+# Two lines (round 6, #60: it read "HOW A WORLD IS M"). Round 7 (#81: "visually too dominant ... New title:
+# WORLD / CREATION"): the shorter title, its lines smaller (the sign 1.9 m tall, not 2.6), the same type.
 node("GallerySign", "Hall", "Node", [("script", 'ExtResource("4_text")'), ("edge", "2"), ("along", "Vector2(0.6, 8.94)"),
-                                    ("up", "Vector2(4.1, 6.7)"), ("kind", q("sign")), ("title", q("HOW A WORLD IS\nMADE")),
+                                    ("up", "Vector2(4.5, 6.4)"), ("kind", q("sign")), ("title", q("WORLD\nCREATION")),
                                     ("subtitle", q("OUR GENERATORS ONE AT A TIME, THEN THE WHOLE WORLD")), ("glow", "0.3")])
 node("GalleryRoom", ".", "Node4D", [("position", V(0, 0, -23.5 + GZ)), ("script", 'ExtResource("3_kitroom")'), ("size", "Vector3(26, 8, 16)"),
                                     ("cove", "false")])
@@ -151,7 +159,9 @@ def panel(name, x, z, st, number, title, kicker, face, width=1.3):
 SHELF_X = 10.5
 SHELF_RUN_X = 6.2
 SHELF_SPOT_X = 8.5
-SHELF_Z = [9.0, 5.4, 1.8]
+# A's row at z 8.7, Build it's own (round 7, #76): the pivot sits on it, so the branch to Build it leaves
+# the spine square, as the shelf's does.
+SHELF_Z = [8.7, 5.4, 1.8]
 for i, (kind, z) in enumerate(zip(["voxels", "inside", "hidden"], SHELF_Z)):
     station("Shelf%d" % (i + 1), SHELF_X, z, "9_shelf", 0.95, 1.0, "box", -90.0, [("shelf_kind", q(kind)), ("face_yaw", "-90.0")], False)
 # A label on the right wall over each (round 3): edge 4 of the hall's outline runs up the right wall
@@ -181,11 +191,19 @@ panel("HeroPanel", -2.25, 3.3, "Hero", 1, "The block", "THE ENGINE'S VOXELS, CUT
 # 4.6 m square pedestal in the front-left corner (the hall runs to x -12 and z 12), a 3.5 m grid of 0.5 m
 # bricks on it, its ring on the line from the pivot, the camera kept inside the walls. A metre off both
 # walls, not 0.35 (Ramon, 9 Oct: "its crammed a bit too much in the corner").
+# Round 7 (#76: "Move the circular marker farther forward, closer to Specimen 2 ... a clean 90-degree turn
+# relative to the main path. Remove unnecessary diagonal or angled path sections"): the ring a metre
+# nearer, 1.3 m off the pedestal, square off the spine on the pivot's own row, and on the line the left
+# run takes down to the Voxel Lab wall, so that run is straight too. (#77: "to the left of the specimen
+# pedestal ... floating ... toward the approaching player ... doesn't obstruct the building area"): its
+# panel along the pedestal's left side as you come from the spine, between it and the front wall, off the
+# grid, turned to the pivot.
 COLUMN = (-8.7, 8.7)
-COLUMN_RING = (-4.1, 8.8)
+COLUMN_RING = (-5.1, 8.7)
+BUILD_PANEL = (-8.0, 11.35)
 station("Build", COLUMN[0], COLUMN[1], "12_build", 2.3, 0.5, shape="box", holo=False)
 bench("BuildBench", COLUMN_RING[0], COLUMN_RING[1], "Build", 6.0, -26.0, ["brick", "through", "take"], (-11.5, -12.0, 23.0, 23.5))
-panel("BuildPanel", -3.0, 6.9, "Build", 2, "Build it", "BUILDING IN 4D", COLUMN_RING, 1.0)
+panel("BuildPanel", BUILD_PANEL[0], BUILD_PANEL[1], "Build", 2, "Build it", "BUILDING IN 4D", (0.0, SHELF_Z[0]), 1.0)
 # The world's square pedestal a little longer and wider (round 3: "more breathing room").
 TERRAIN = (-6.2, -23.5 + GZ)
 TERRAIN_RING = (0.0, -23.5 + GZ)
@@ -254,8 +272,10 @@ LEFT_WALL = (-5.1, -8.0)
 node("Spots", ".", "Node4D")
 
 
-def spot(name, at, kind, radius=1.3, station_=None, bench_=None, options=None, target=None):
+def spot(name, at, kind, radius=1.3, station_=None, bench_=None, options=None, target=None, near=None):
     props = [("position", V(at[0], 0, at[1])), ("metadata/kind", q(kind)), ("metadata/radius", str(radius))]
+    if near:
+        props.append(("metadata/near", str(near)))
     if station_:
         props.append(("metadata/station", 'NodePath("../../%s")' % station_))
     if bench_:
@@ -268,7 +288,9 @@ def spot(name, at, kind, radius=1.3, station_=None, bench_=None, options=None, t
 
 
 spot("Block", HERO_RING, "choice", 1.5, "Hero", "HeroBench", ["watch", "cut"], "Hero")
-spot("Build", COLUMN_RING, "choice", 1.4, "Build", "BuildBench", ["build"], "Build")
+# Round 7 (#78: "Allow the player to activate Build It Yourself when standing close to the specimen or
+# builder itself ... Keep the circular marker"): its choice anywhere within 1.6 m of the pedestal's sides.
+spot("Build", COLUMN_RING, "choice", 1.4, "Build", "BuildBench", ["build"], "Build", near=1.6)
 for i, z in enumerate(SHELF_Z):
     spot("Shelf%s" % "ABC"[i], (SHELF_SPOT_X, z), "popup", 1.1, "Shelf%d" % (i + 1))
 spot("RightWall", RIGHT_WALL, "view", 1.6, target="RightWallTarget")
@@ -344,7 +366,7 @@ def unit(dx, dz):
 
 # The hall. Destinations go in the order of the visit (the room lights the next one).
 h = Graph()
-start = h.add("start", (0.0, 21.0))
+start = h.add("start", START)
 pivot = h.add("junction", (0.0, SHELF_Z[0]))
 block = h.add("destination", HERO_RING, "Hero", "round", (0.0, 1.0), "available")
 a = h.add("bend", (SHELF_RUN_X, SHELF_Z[0]))
@@ -356,15 +378,15 @@ back = h.add("junction", (0.0, RIGHT_WALL[1]))
 door = h.add("destination", (0.0, -13.6), "GalleryDoor", "rect", (0.0, 1.0))
 left = h.add("destination", LEFT_WALL, "LeftWallTarget", "none", unit(LEFT_WALL[0] + 8.4, LEFT_WALL[1] + 11.0))
 column = h.add("destination", COLUMN_RING, "Build", "round", (1.0, 0.0))
-# Down from the builder's ring to the Voxel Lab wall's, clear of Build it's panel.
-down_left = h.add("bend", (LEFT_WALL[0], 5.0))
+# Straight down from the builder's ring to the Voxel Lab wall's (the ring is on its line since round 7).
+assert COLUMN_RING[0] == LEFT_WALL[0]
 # A short branch at right angles to each of A, B and C, ending at its marker.
 shelf_ends = [h.add("bend", (SHELF_SPOT_X, z)) for z in SHELF_Z]
 h.link(start, pivot, block)
 h.link(pivot, a, b, c, turn45, right, back, door)
 # The left loop runs out of the pivot too (round 3: "arrows also originate from the same central pivot
 # and travel toward the left"), down past the column and the Voxel Lab wall to the back junction.
-h.link(pivot, column, down_left, left, back)
+h.link(pivot, column, left, back)
 for run, end in zip([a, b, c], shelf_ends):
     h.link(run, end)
 h.write(ROOT / 'paths' / 'hall.tres')

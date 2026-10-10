@@ -13,7 +13,10 @@
 //   3. SOFTER FACETS: the lighting normal bent a third of the way toward up, and the light wrapped, so
 //      neighbouring facets differ less in brightness: the blockiness is mostly that difference.
 //   4. THE RED DESERT (round 6, #72): strata, bands of darker and lighter red up the slopes, wobbling with
-//      the noise, as layered rock; a faint wind ripple on the flats.
+//      the noise, as layered rock. Round 7: the wind ripple on the flats is gone (#89: it drew parallel
+//      stripes a metre apart across the ground, which read as "vertical banding"), and broad patches of
+//      ochre and pale sand break up the orange (#91: "subtle yellow, sandy, or ochre tones ... selectively"),
+//      each matched to the ground's brightness so it stays one desert.
 //   5. THE LAVA FIELD (round 6, #73: "lava texture breakup, variation, heat or molten behavior"): the lava
 //      (the palette's only bright red, the generator's sea) moves: two octaves of value noise drifting
 //      through x, z and w over time make its heat; where it is low a black crust in plates, bright cracks
@@ -208,8 +211,17 @@ void fragment() {
 		float strata = smoothstep(0.2, 0.6, steep);
 		vec3 layered = base * mix(vec3(0.74, 0.66, 0.64), vec3(1.12, 1.0, 0.92), band) * mix(0.9, 1.05, band2);
 		base = mix(base, layered, strata);
-		float ripple = sin(dot(g.xy, vec2(1.7, 0.6)) * 3.0 + n * 6.0) * 0.5 + 0.5;
-		base *= 1.0 + (ripple - 0.5) * 0.07 * (1.0 - strata);
+		// Ochre and pale sand in patches tens of metres across, mostly on the flats.
+		float lum = dot(base, vec3(0.299, 0.587, 0.114));
+		float patch_o = smoothstep(0.55, 0.78, value_noise(g / 26.0 + vec3(11.7)));
+		float patch_s = smoothstep(0.6, 0.82, value_noise(g / 17.0 + vec3(4.3)));
+		vec3 ochre = vec3(0.80, 0.58, 0.27);
+		vec3 sand = vec3(0.86, 0.73, 0.50);
+		ochre *= lum / dot(ochre, vec3(0.299, 0.587, 0.114)) * 1.06;
+		sand *= lum / dot(sand, vec3(0.299, 0.587, 0.114)) * 1.12;
+		float flats = 1.0 - strata * 0.7;
+		base = mix(base, ochre, patch_o * 0.55 * flats);
+		base = mix(base, sand, patch_s * 0.45 * flats);
 	} else if (land_kind == 2) {
 		float molten = smoothstep(0.5, 0.8, base.r - base.b);
 		float t = TIME;

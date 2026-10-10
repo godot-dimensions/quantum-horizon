@@ -73,13 +73,13 @@ const GRASS_W_REACH := 6.0
 ## The trees: clumps of tiny 24-cells (round 5, Ramon, 9 Oct: "create clustered clumbs of 24 cells to fake the
 ## illusion of trees, make then very small. patches of 20-40 at certain places"). The project's own 24-cell.
 const CELL24 := "res://models/primitives/platonic/24_cell/24_cell.g4b"
-const TREE_GREENS := [Color(0.10, 0.22, 0.09), Color(0.14, 0.27, 0.11), Color(0.08, 0.18, 0.10)]
 const LabGrid := preload("res://ramon/VoxelLab/carried/LabKit/lab_grid.gd")
 const Mats := preload("res://ramon/VoxelLab/carried/LabKit/lab_materials.gd")
 const Build := preload("res://ramon/VoxelLab/carried/scripts/chamber_build.gd")
 const FloatPanel := preload("res://ramon/VoxelLab/room/vl_float_panel_4d.gd")
 const Bird := preload("res://ramon/VoxelLab/field/vl_bird_4d.gd")
 const SeaPanel := preload("res://ramon/VoxelLab/field/vl_sea_panel.gd")
+const Escape := preload("res://ramon/VoxelLab/room/vl_escape.gd")
 const MouseTutorial := preload("res://ramon/VoxelLab/field/vl_mouse_tutorial.gd")
 const Ground := preload("res://ramon/VoxelLab/carried/LabKit/carried/chickenpen/scripts/ground_basis_4d.gd")
 const LandShader := preload("res://ramon/VoxelLab/shaders/vl_voxel_land.gdshader")
@@ -216,7 +216,12 @@ var _craters: int = 0
 var _crater_hold: Array = []
 
 
+## Esc's guard on the root (room/vl_escape.gd): it hears Esc and H before the menu and asks escape_step.
+var _escape: CanvasLayer
+
+
 func _ready() -> void:
+	_escape = Escape.guard(self)
 	_light()
 	_deck_at = start_at - Vector4(0, 2.2, 0, 0)
 	_centre = Node4D.new()
@@ -762,6 +767,10 @@ var _bubbles: Array = []
 var _lava_spots := PackedVector4Array()
 var _lighthouse_lamp: MeshInstance4D
 var _fx_t: float = 0.0
+var _octa: Mesh4D
+## The disc mesh with 48 sides, for the big round things (round 7, #89: a mesa's 16 flat sides, each 2 m wide and
+## each lit its own way, read as vertical bands down the rock).
+var _round_disc: Mesh4D
 
 
 ## A prop's numbers: Vector4(clumps, per clump, spread m, size).
@@ -785,7 +794,7 @@ func set_props(kind: String, clumps: float, per: float, spread: float, size: flo
 ## The lava's embers and bubbles on or off (Tab).
 func set_lava_fx(on: bool) -> void:
 	_lava_fx = on
-	for e in _embers + _bubbles:
+	for e in _embers + _bubbles + _smoke:
 		(e[0] as Node4D).visible = on
 
 
@@ -799,6 +808,7 @@ func _plant_props() -> void:
 		shape.height = 1.0
 		shape.thickness = 1.0
 		_unit_disc = shape.to_tetra_mesh()
+		_round_disc = shape.to_tetra_mesh({"segments": 48})
 	if _cell24 == null:
 		_cell24 = load(CELL24) as TetraMesh4D
 		if _cell24 != null:
@@ -824,6 +834,7 @@ func _plant_props() -> void:
 		2:
 			_scatter("volcanoes", props, rng)
 			_make_lava_fx(props, rng)
+			_make_smoke(props, rng)
 
 
 func _drop_props() -> void:
@@ -833,6 +844,8 @@ func _drop_props() -> void:
 	trees = null
 	_embers = []
 	_bubbles = []
+	_smokers = []
+	_smoke = []
 	_lighthouse_lamp = null
 
 
@@ -888,11 +901,16 @@ func _clump_centres(count: int, apart: float, rng: RandomNumberGenerator) -> Arr
 func _scatter(kind: String, holder: Node4D, rng: RandomNumberGenerator) -> void:
 	var cfg: Vector4 = _prop(kind)
 	var spread: float = maxf(cfg.z, 0.2)
-	for at in _clump_centres(int(cfg.x), maxf(12.0, spread * 2.6), rng):
+	# Round 7 (#90: "Increase the spacing between individual cactus clumps. Allow the clusters to occupy a
+	# somewhat wider area"): cactus clumps at least 20 m apart, each half as wide again as its slider and even
+	# across it, not crowded to the middle (his saved numbers stay as they are).
+	var cacti: bool = kind == "cacti"
+	var reach: float = spread * (1.5 if cacti else 1.0)
+	for at in _clump_centres(int(cfg.x), maxf(20.0 if cacti else 12.0, spread * (5.0 if cacti else 2.6)), rng):
 		var n: int = maxi(1, int(round(cfg.y * rng.randf_range(0.7, 1.3))))
 		for k in n:
-			# Denser towards the middle: most of a clump within half its spread.
-			var r: float = pow(rng.randf(), 1.6) * spread
+			# Denser towards the middle (trees): most of a clump within half its spread.
+			var r: float = (sqrt(rng.randf()) if cacti else pow(rng.randf(), 1.6)) * reach
 			var ang: float = rng.randf() * TAU
 			var x: float = (at as Vector2).x + cos(ang) * r
 			var z: float = (at as Vector2).y + sin(ang) * r
@@ -900,7 +918,7 @@ func _scatter(kind: String, holder: Node4D, rng: RandomNumberGenerator) -> void:
 			var y: float = _tree_ground(x, z, w)
 			if y < _prop_floor():
 				continue
-			var big: float = cfg.w * (1.0 - 0.3 * r / spread)
+			var big: float = cfg.w * (1.0 - 0.3 * r / reach)
 			match kind:
 				"trees":
 					_tree(holder, Vector4(x, y, z, w), rng.randf_range(0.35, 0.9) * big, rng)
@@ -913,9 +931,9 @@ func _scatter(kind: String, holder: Node4D, rng: RandomNumberGenerator) -> void:
 
 
 ## A disc of the unit mesh: `r` round in x and z, `h` tall, `t` deep through W, its foot at `foot`.
-func _disc(holder: Node4D, foot: Vector4, r: float, h: float, t: float, mat: Material4D) -> MeshInstance4D:
+func _disc(holder: Node4D, foot: Vector4, r: float, h: float, t: float, mat: Material4D, smooth: bool = false) -> MeshInstance4D:
 	var mi := MeshInstance4D.new()
-	mi.mesh = _unit_disc
+	mi.mesh = _round_disc if smooth else _unit_disc
 	mi.basis = Projection(Vector4(r, 0, 0, 0), Vector4(0, h, 0, 0), Vector4(0, 0, r, 0), Vector4(0, 0, 0, t))
 	mi.position = foot + Vector4(0, h * 0.5, 0, 0)
 	mi.material_override = mat
@@ -931,8 +949,21 @@ func _tree(holder: Node4D, at: Vector4, size: float, rng: RandomNumberGenerator)
 	mi.basis = Basis4D.from_zx(rng.randf() * TAU) * Basis4D.from_xw(rng.randf() * TAU) * Basis4D.from_yz(rng.randf() * TAU) \
 		* Basis4D.from_scale_uniform(size * 0.5 / _cell24_reach)
 	mi.position = at + Vector4(0, size * 0.3, 0, 0)
-	mi.material_override = Mats.flat(TREE_GREENS[rng.randi() % TREE_GREENS.size()])
+	var greens: Array = _tree_greens()
+	mi.material_override = Mats.flat(greens[rng.randi() % greens.size()])
 	holder.add_child(mi)
+
+
+## THE TREES' GREENS (round 7, #88: "a little too dark compared with the surrounding terrain ... closer to the
+## surrounding terrain green ... Preserve some natural variation"): three greens made from the island's own (Tab,
+## THE LAND), a touch darker, about the same, and darker and greyer, each a hair off in hue. Round 6's fixed
+## greens were half the land's brightness.
+func _tree_greens() -> Array:
+	var h: float = _grass.h
+	var sat: float = _grass.s
+	var v: float = _grass.v
+	return [Color.from_hsv(h - 0.01, minf(sat + 0.06, 1.0), v * 0.82), Color.from_hsv(h + 0.012, sat, v * 0.94),
+		Color.from_hsv(h + 0.03, maxf(sat - 0.06, 0.0), v * 0.72)]
 
 
 ## A saguaro: a trunk and one or two arms, each a short way out and turned up. Deeper through W than it is wide
@@ -966,8 +997,8 @@ func _mesa(holder: Node4D, at: Vector4, size: float, rng: RandomNumberGenerator)
 	var tall: float = (rng.randf_range(5.0, 8.0) if butte else rng.randf_range(3.0, 5.0)) * size
 	var deep: float = rad * 2.0
 	# The skirt, sunk into the ground.
-	_disc(holder, Vector4(at.x, at.y - 1.4, at.z, at.w), rad * 1.45, 1.4 + tall * 0.16, deep * 1.2, Mats.flat(MESA_TALUS))
-	_disc(holder, Vector4(at.x, at.y - 1.4, at.z, at.w), rad * 1.2, 1.4 + tall * 0.26, deep * 1.1, Mats.flat(MESA_TALUS.darkened(0.12)))
+	_disc(holder, Vector4(at.x, at.y - 1.4, at.z, at.w), rad * 1.45, 1.4 + tall * 0.16, deep * 1.2, Mats.flat(MESA_TALUS), true)
+	_disc(holder, Vector4(at.x, at.y - 1.4, at.z, at.w), rad * 1.2, 1.4 + tall * 0.26, deep * 1.1, Mats.flat(MESA_TALUS.darkened(0.12)), true)
 	var y: float = at.y - 0.4
 	var bands: int = 6
 	var c := Vector2(at.x, at.z)
@@ -975,28 +1006,117 @@ func _mesa(holder: Node4D, at: Vector4, size: float, rng: RandomNumberGenerator)
 		var h: float = tall / float(bands) + (0.4 if i == 0 else 0.0)
 		var off := Vector2(rng.randf_range(-0.12, 0.12), rng.randf_range(-0.12, 0.12)) * rad
 		var r: float = rad * (1.0 - 0.025 * float(i)) * rng.randf_range(0.96, 1.03)
-		_disc(holder, Vector4(c.x + off.x, y, c.y + off.y, at.w), r, h, deep, Mats.flat(MESA_REDS[(i + rng.randi_range(0, 1)) % MESA_REDS.size()]))
+		_disc(holder, Vector4(c.x + off.x, y, c.y + off.y, at.w), r, h, deep, Mats.flat(MESA_REDS[(i + rng.randi_range(0, 1)) % MESA_REDS.size()]), true)
 		y += h - (0.4 if i == 0 else 0.0)
-	_disc(holder, Vector4(c.x, y, c.y, at.w), rad * 0.9, tall * 0.07, deep, Mats.flat(MESA_CAP))
+	_disc(holder, Vector4(c.x, y, c.y, at.w), rad * 0.9, tall * 0.07, deep, Mats.flat(MESA_CAP), true)
 
 
-## A little volcano: seven discs stepping in, lower steps as it narrows so it reads as a cone, a dark rim and its
-## crater glowing.
+## LITTLE VOLCANOES, round 7 (#93: "Replace the obvious circular stacks with more angular, irregular volcanic
+## forms ... slightly rectangular or faceted ... small pointed formations ... Avoid the appearance of cylinders
+## stacked on top of one another with a single bright lava spot"): each a 16-cell, whose cut is an octahedron, so
+## the half of it over the ground is a four-sided pyramid with a point for a peak, turned at random. Two to four
+## smaller ones lean round its foot as spires and spurs. Down two of its faces runs a vein of glowing lava from
+## just under the peak, not a spot on top. Some smoke (#94, _make_smoke). Deep through W as the discs were.
 func _volcano(holder: Node4D, at: Vector4, size: float, rng: RandomNumberGenerator) -> void:
-	var rad: float = rng.randf_range(1.6, 3.0) * size
-	var tall: float = rad * rng.randf_range(0.8, 1.1)
-	var y: float = at.y - 0.6
-	var steps: int = 7
-	for i in steps:
-		var k: float = float(i) / float(steps - 1)
-		var h: float = tall / float(steps) * (1.0 - 0.3 * k) + (0.6 if i == 0 else 0.0)
-		_disc(holder, Vector4(at.x, y, at.z, at.w), rad * lerpf(1.0, 0.3, pow(k, 0.85)), h, rad * 1.6, Mats.flat(VOLCANO_ROCK[(i + rng.randi_range(0, 1)) % VOLCANO_ROCK.size()]))
-		y += h
-	_disc(holder, Vector4(at.x, y - 0.05, at.z, at.w), rad * 0.2, 0.08, rad * 0.4, Mats.glow(LAVA_GLOW, 1.8))
+	var half: float = rng.randf_range(1.8, 3.2) * size
+	var tall: float = half * rng.randf_range(0.9, 1.3)
+	var yaw: float = rng.randf() * TAU
+	var deep: float = half * 1.6
+	var base := Vector4(at.x, at.y - 0.25, at.z, at.w)
+	_peak(holder, base, half, tall, deep, yaw, 0.0, Mats.flat(VOLCANO_ROCK[rng.randi() % VOLCANO_ROCK.size()]))
+	for i in rng.randi_range(2, 4):
+		var a: float = rng.randf() * TAU
+		var d: float = half * rng.randf_range(0.55, 0.95)
+		var x: float = at.x + cos(a) * d
+		var z: float = at.z + sin(a) * d
+		var foot := Vector4(x, minf(_tree_ground(x, z, 0.0), at.y + tall * 0.3) - 0.2, z, at.w)
+		var sh: float = half * rng.randf_range(0.22, 0.38)
+		_peak(holder, foot, sh, sh * rng.randf_range(1.6, 2.6), sh * 1.6, rng.randf() * TAU, rng.randf_range(-0.28, 0.28),
+			Mats.flat(VOLCANO_ROCK[rng.randi() % VOLCANO_ROCK.size()]))
+	# The veins: down the middle of a face, from just under the peak to most of the way down, lying on it.
+	var yb: Projection = Basis4D.from_zx(yaw)
+	var faces: Array = [Vector2(1, 1), Vector2(-1, 1), Vector2(-1, -1), Vector2(1, -1)]
+	var first: int = rng.randi_range(0, 3)
+	for j in 2:
+		var fc: Vector2 = faces[(first + j * 2) % 4]
+		var top := Vector3(0.0, tall, 0.0)
+		var low := Vector3(fc.x * half * 0.5, 0.0, fc.y * half * 0.5)
+		var s0: Vector3 = top.lerp(low, 0.12)
+		var s1: Vector3 = top.lerp(low, rng.randf_range(0.6, 0.85))
+		var dir: Vector3 = (s1 - s0).normalized()
+		var n: Vector3 = Vector3(fc.x / half, 1.0 / tall, fc.y / half).normalized()
+		var side: Vector3 = dir.cross(n).normalized()
+		var mid: Vector3 = (s0 + s1) * 0.5 + n * 0.03
+		var vein := MeshInstance4D.new()
+		vein.mesh = Mats.box_mesh(Vector4((s1 - s0).length(), 0.05, 0.16 * size, deep * 0.5))
+		vein.basis = yb * Projection(Vector4(dir.x, dir.y, dir.z, 0), Vector4(n.x, n.y, n.z, 0), Vector4(side.x, side.y, side.z, 0), Vector4(0, 0, 0, 1))
+		vein.position = base + yb * Vector4(mid.x, mid.y, mid.z, 0)
+		vein.material_override = Mats.glow(LAVA_GLOW, 1.8)
+		holder.add_child(vein)
+	if rng.randf() < 0.4 or _smokers.size() < 2:
+		_smokers.append(base + Vector4(0, tall, 0, 0))
+
+
+## The top half of a 16-cell over `centre`: a pyramid `tall` high, its base corners `half` out, `deep` through W,
+## turned `yaw` and leaning `lean` (radians).
+func _peak(holder: Node4D, centre: Vector4, half: float, tall: float, deep: float, yaw: float, lean: float, mat: Material4D) -> void:
+	if _octa == null:
+		var o := OrthoplexTetraMesh4D.new()
+		o.size = Vector4(2, 2, 2, 2)
+		_octa = o
+	var mi := MeshInstance4D.new()
+	mi.mesh = _octa
+	mi.basis = Basis4D.from_zx(yaw) * Basis4D.from_yz(lean) * Projection(Vector4(half, 0, 0, 0), Vector4(0, tall, 0, 0), Vector4(0, 0, half, 0), Vector4(0, 0, 0, deep * 0.5))
+	mi.position = centre
+	mi.material_override = mat
+	holder.add_child(mi)
+
+
+## SMOKE (round 7, #94: "Subtle smoke rising from a few volcanoes. Small, slow-moving smoke particles. Slight
+## variation in height and density ... restrained"): from two or three peaks, seven grey 24-cell puffs each,
+## rising slowly and drifting, swelling and then shrinking away, each starting again at its peak.
+const SMOKE_GREYS := [Color(0.34, 0.33, 0.32), Color(0.44, 0.43, 0.42), Color(0.27, 0.26, 0.26)]
+const SMOKE_PUFFS := 7
+var _smokers: Array = []
+var _smoke: Array = []
+
+
+func _make_smoke(holder: Node4D, rng: RandomNumberGenerator) -> void:
+	if _cell24 == null:
+		return
+	for k in mini(_smokers.size(), 3):
+		var peak: Vector4 = _smokers[k]
+		var drift := Vector2(rng.randf_range(-0.25, 0.25), rng.randf_range(-0.25, 0.25))
+		for i in SMOKE_PUFFS:
+			var mi := MeshInstance4D.new()
+			mi.mesh = _cell24
+			mi.material_override = Mats.flat(SMOKE_GREYS[rng.randi() % SMOKE_GREYS.size()])
+			mi.visible = _lava_fx
+			holder.add_child(mi)
+			# [mesh, age, life, peak, drift, size, rise]
+			var life: float = rng.randf_range(4.0, 7.0)
+			_smoke.append([mi, life * float(i) / float(SMOKE_PUFFS), life, peak, drift, rng.randf_range(0.35, 0.7), rng.randf_range(0.45, 0.8)])
+
+
+func _smoke_tick(delta: float) -> void:
+	for p in _smoke:
+		var mi: MeshInstance4D = p[0]
+		p[1] = float(p[1]) + delta
+		if float(p[1]) >= float(p[2]):
+			p[1] = 0.0
+			p[2] = randf_range(4.0, 7.0)
+			p[5] = randf_range(0.35, 0.7)
+			p[6] = randf_range(0.45, 0.8)
+		var age: float = float(p[1])
+		var k: float = age / maxf(float(p[2]), 0.01)
+		var drift: Vector2 = p[4]
+		mi.position = (p[3] as Vector4) + Vector4(drift.x * age + sin(age * 0.9 + float(p[5]) * 9.0) * 0.15, float(p[6]) * age, drift.y * age, 0.0)
+		var sz: float = float(p[5]) * pow(sin(PI * k), 0.7) * (0.6 + 0.8 * k)
+		mi.basis = Basis4D.from_zx(age * 0.3) * Basis4D.from_scale_uniform(maxf(sz, 0.001) * 0.5 / _cell24_reach)
 
 
 ## THE LIGHTHOUSE (round 6, #71: "a new landmark ... it should read clearly as a lighthouse"): on a high point by
-## the shore, in sight of the platform, red and white bands up a tapering tower on a stone foot, a dark gallery,
+## the shore, in sight of the platform, a tapering tower on a stone foot (white and grey since round 7), a gallery,
 ## a lantern that glows and breathes, a red cap; all of it discs, two and a half metres deep through W.
 func _lighthouse(holder: Node4D) -> void:
 	var c: Vector4 = _centre.global_position
@@ -1031,24 +1151,29 @@ func _lighthouse(holder: Node4D) -> void:
 		return
 	var at := Vector4(best.x, best.y - 0.5, best.z, 0.0)
 	var deep: float = 2.5
-	var stone: Material4D = Mats.flat(Color(0.36, 0.35, 0.33))
+	# Round 7 (#84: "Remove the red sections entirely. Use a simple white and gray color palette ... a low, simple
+	# fence around the currently black area"): a white tower, its foot, gallery and cap in greys, and a low rail
+	# round the foot (the dark ring of stone it stood in), the platform's own fence made small.
+	var stone: Material4D = Mats.flat(Color(0.50, 0.50, 0.49))
 	var white: Material4D = Mats.flat(Color(0.92, 0.91, 0.88))
-	var red: Material4D = Mats.flat(Color(0.72, 0.12, 0.10))
-	var dark: Material4D = Mats.flat(Color(0.12, 0.13, 0.15))
+	var grey: Material4D = Mats.flat(Color(0.62, 0.63, 0.64))
+	var dark: Material4D = Mats.flat(Color(0.40, 0.41, 0.43))
 	var y: float = at.y
-	_disc(holder, Vector4(at.x, y, at.z, 0), 1.9, 1.3, deep, stone)
+	_disc(holder, Vector4(at.x, y, at.z, 0), 1.9, 1.3, deep, stone, true)
+	# On the foot's top, just in from its edge: the rail stands on stone, never on the uneven ground.
+	_fence(holder, "LighthouseFence", _ring_seed(1.75, 28, deep, 0.0, 0.0), Vector4(at.x, y + 1.3, at.z, 0), deep, 0.6, 2)
 	y += 1.3
 	for i in 6:
 		var r: float = lerpf(1.2, 0.82, float(i) / 5.0)
-		_disc(holder, Vector4(at.x, y, at.z, 0), r, 1.25, deep, red if i % 2 == 1 else white)
+		_disc(holder, Vector4(at.x, y, at.z, 0), r, 1.25, deep, white, true)
 		y += 1.25
-	_disc(holder, Vector4(at.x, y, at.z, 0), 1.25, 0.18, deep, dark)
+	_disc(holder, Vector4(at.x, y, at.z, 0), 1.25, 0.18, deep, dark, true)
 	y += 0.18
-	_lighthouse_lamp = _disc(holder, Vector4(at.x, y, at.z, 0), 0.62, 1.1, deep * 0.6, Mats.glow(Color(1.0, 0.86, 0.48), 3.0))
+	_lighthouse_lamp = _disc(holder, Vector4(at.x, y, at.z, 0), 0.62, 1.1, deep * 0.6, Mats.glow(Color(1.0, 0.86, 0.48), 3.0), true)
 	y += 1.1
-	_disc(holder, Vector4(at.x, y, at.z, 0), 0.9, 0.28, deep, red)
-	_disc(holder, Vector4(at.x, y + 0.28, at.z, 0), 0.55, 0.28, deep, red)
-	_disc(holder, Vector4(at.x, y + 0.56, at.z, 0), 0.2, 0.4, deep * 0.5, dark)
+	_disc(holder, Vector4(at.x, y, at.z, 0), 0.9, 0.28, deep, grey, true)
+	_disc(holder, Vector4(at.x, y + 0.28, at.z, 0), 0.55, 0.28, deep, grey, true)
+	_disc(holder, Vector4(at.x, y + 0.56, at.z, 0), 0.2, 0.4, deep * 0.5, dark, true)
 
 
 ## The lava's life (round 6, #73: "subtle lava particles, bubbly or bubbling behavior, and small ambient surface
@@ -1096,7 +1221,10 @@ func _props_tick(delta: float) -> void:
 	if _lighthouse_lamp != null and is_instance_valid(_lighthouse_lamp):
 		var k: float = 0.85 + 0.15 * sin(_fx_t * 2.2)
 		_lighthouse_lamp.basis = Projection(Vector4(0.62 * k, 0, 0, 0), Vector4(0, 1.1, 0, 0), Vector4(0, 0, 0.62 * k, 0), Vector4(0, 0, 0, 1.5))
-	if biome != 2 or _lava_spots.is_empty() or not _lava_fx:
+	if biome != 2 or not _lava_fx:
+		return
+	_smoke_tick(delta)
+	if _lava_spots.is_empty():
 		return
 	for e in _embers:
 		e[1] = float(e[1]) - delta
@@ -1276,7 +1404,7 @@ func _platform() -> void:
 	_set.name = "PlatformSet"
 	_set.position = c
 	raft.add_child(_set)
-	# What you stand on rides the disc (round 6, #68: the lift takes it up and down).
+	# What you stand on, in the disc's own frame (it turns with the deck while you slice).
 	_wall(_set, "PlatformBody", Vector4(0, -0.25 + 0.04, 0, 0), Vector4(PLAT_R * 2.0, 0.5, PLAT_R * 2.0, 80.0))
 	var shape := CubinderShape4D.new()
 	shape.radius = PLAT_R
@@ -1295,23 +1423,6 @@ func _platform() -> void:
 	var r: float = PLAT_R - 0.15
 	var gap: float = asin(clampf((PIER.x * 0.5 + 0.3) / r, 0.0, 1.0))
 	_fence(_set, "PlatformRail", _ring_seed(r, 32, PLAT_W, gap, PI * 0.5), Vector4(0.0, 0.04, 0.0, 0.0), PLAT_W)
-	# Lifted, two bars close the way onto the pier (round 6, #68; down, they are gone).
-	_gate = Node4D.new()
-	_gate.name = "LiftGate"
-	_gate.visible = false
-	_set.add_child(_gate)
-	# The opening as the ring seed leaves it: whole segments whose middle is within `gap` of the pier side.
-	var open_half: float = 0.0
-	for i in 32:
-		var mid: float = TAU * (float(i) + 0.5) / 32.0
-		if absf(wrapf(mid - PI * 0.5, -PI, PI)) < gap:
-			open_half = maxf(open_half, absf(wrapf(mid - PI * 0.5, -PI, PI)) + PI / 32.0)
-	for hy in [RAIL_HEIGHT, RAIL_HEIGHT * 0.5]:
-		var bar := MeshInstance4D.new()
-		bar.mesh = Mats.box_mesh(Vector4(2.0 * r * sin(open_half) + 0.06, 0.05, 0.05, PLAT_W))
-		bar.position = Vector4(0.0, 0.04 + float(hy), r * cos(open_half), 0.0)
-		bar.material_override = Mats.flat(Color(0.82, 0.85, 0.9))
-		_gate.add_child(bar)
 	# TURN THE SLICE, a kit panel page drawn out of sight and printed into the deck (the harbour's).
 	var info: Resource = RoomInfo.new()
 	info.set("number", 4)
@@ -1319,7 +1430,7 @@ func _platform() -> void:
 	info.set("status", "THE PLATFORM  /  IT STAYS SET")
 	info.set("lead", "Stand on the blue and right-drag.")
 	info.set("description", "Anywhere on the blue, a right drag turns your slice through W. The land and the sea are cut a new way: every hill is a 4D hill, and its shape changes as the slice turns. The platform stays set, drawn as if nothing had turned, so you keep your footing while the world changes round you.")
-	info.set("interactions", [["rdrag", "Turn the slice"], ["key:R", "Level it again"], ["key:E", "Step through W (Q, E)"], ["key:Space", "Up (Shift: down)"]])
+	info.set("interactions", [["rdrag", "Turn the slice"], ["key:R", "Level it again"], ["key:E", "Step through W (Q, E)"]])
 	info.set("controls_heading", "CONTROLS")
 	var page := Node4D.new()
 	page.name = "PlatformPage"
@@ -1426,7 +1537,7 @@ func _rail(holder: Node4D) -> void:
 	_fence(holder, "Rail", mesh, Vector4.ZERO, GREY.w)
 
 
-func _fence(parent: Node4D, nm: String, seed: ArrayPolyMesh4D, at: Vector4, w_depth: float) -> void:
+func _fence(parent: Node4D, nm: String, seed: ArrayPolyMesh4D, at: Vector4, w_depth: float, height: float = RAIL_HEIGHT, beams: int = 3) -> void:
 	var fence := FenceGenerator4D.new()
 	fence.name = nm
 	fence.update_automatically = false
@@ -1435,13 +1546,13 @@ func _fence(parent: Node4D, nm: String, seed: ArrayPolyMesh4D, at: Vector4, w_de
 	fence.output_mesh_type = FenceGenerator4D.OUTPUT_MESH_TETRA
 	# A third of W apart, so no rib ever lands at W 0 (a rib there is a solid wall in your slice).
 	fence.desired_spacing_meters = w_depth / 3.0
-	fence.post_height_meters = RAIL_HEIGHT
+	fence.post_height_meters = height
 	fence.post_thickness_meters = 0.07
 	fence.top_footprint_ratio = 1.0
 	fence.rib_height_ratio = 0.95
 	fence.rib_thickness_ratio = 0.35
 	fence.beam_thickness_ratio = 0.35
-	fence.beam_count = 3
+	fence.beam_count = beams
 	fence.beam_coverage = 0.08
 	fence.beam_max_height_ratio = 0.97
 	var m := TetraMaterial4D.new()
@@ -1522,7 +1633,6 @@ func _process(delta: float) -> void:
 	if mode == "deck":
 		_on_deck()
 		_on_platform()
-		_lift_platform(delta)
 	else:
 		choice.set("shown", false)
 		tutorial.set("shown", false)
@@ -1670,13 +1780,15 @@ func _world_tilt() -> Projection:
 ##
 ## THE WHOLE DECK, since round 6 (#66: "the walkway is still moving when the environment is sliced ... the
 ## gray pier, the blue turn-the-slice area, and the rest of the walkable platform structure"): the turn is
-## put on `raft`, everything you stand on, the stations and the rails with it; the disc (`_set`) rides in it,
-## lifted by `_lift`. Positions are reckoned from the deck's home (`_deck_at`), never from the turning node.
+## put on `raft`, everything you stand on, the stations and the rails with it; the disc (`_set`) rides in it.
+## Positions are reckoned from the deck's home (`_deck_at`), never from the turning node.
+##
+## THE LIFT IS GONE (round 7, #92: lowering it left you behind and the platform out of reach; "I don't want
+## this feature anymore"): the platform stands where it was built, always. Space and Shift are the bird's.
 func _hold_set() -> void:
 	var rig: Node4D = player.get_node("CameraRig")
 	var c: Vector4 = _plat_middle()
 	var o: Vector4 = rig.global_position
-	_set.position = PLAT_AT + Vector4(0, _lift, 0, 0)
 	var tilted: bool = rad_to_deg(Ground.tilt(rig.basis)) > 0.2
 	if tilted and (_turned_here or site == "platform"):
 		var t: Projection = _world_tilt()
@@ -1695,42 +1807,9 @@ func _hold_set() -> void:
 	raft.global_position = _deck_at
 
 
-## The middle of the blue platform where it stands now: the deck's home, the platform's place on it, its lift.
+## The middle of the blue platform: the deck's home and the platform's place on it.
 func _plat_middle() -> Vector4:
-	return _deck_at + PLAT_AT + Vector4(0, _lift, 0, 0)
-
-
-## THE LIFT (round 6, #68; Trym's idea: "the entire platform could move up and down"): standing on the blue,
-## Space takes the platform up and Shift takes it down (the bird's keys, the same way round), LIFT_SPEED
-## metres a second, from just over the sea to LIFT_MAX over where it was built; you ride it. Lifted, its
-## ring closes all round (the way onto the pier opens again only at the bottom).
-var _lift: float = 0.0
-var _gate: Node4D
-const LIFT_SPEED := 4.0
-const LIFT_MAX := 40.0
-
-
-func _lift_platform(delta: float) -> void:
-	if site != "platform" or not input_enabled or mode != "deck":
-		return
-	var dir: float = (1.0 if Input.is_key_pressed(KEY_SPACE) else 0.0) - (1.0 if Input.is_key_pressed(KEY_SHIFT) else 0.0)
-	if dir == 0.0:
-		return
-	var sea: float = float(water.get("water_level")) if water != null else 1.1
-	var lowest: float = minf(0.0, sea + 0.6 - (_deck_at.y + PLAT_AT.y))
-	var was: float = _lift
-	_lift = clampf(_lift + dir * LIFT_SPEED * delta, lowest, LIFT_MAX)
-	if _lift != was:
-		# The floor and you together, this frame.
-		_set.position = PLAT_AT + Vector4(0, _lift, 0, 0)
-		player.global_position += Vector4(0, _lift - was, 0, 0)
-		if _gate != null:
-			_gate.visible = absf(_lift) >= 0.25
-
-
-## How high the platform is lifted (the HUD, the runners).
-func platform_lift() -> float:
-	return _lift
+	return _deck_at + PLAT_AT
 
 
 ## The platform's round rail, kept here (the physics is box only), open toward the pier; turned, the way
@@ -1764,10 +1843,10 @@ func _physics_process(_delta: float) -> void:
 		return
 	var flat := Vector2(rel.x, rel.z)
 	var r: float = flat.length()
-	# Toward the pier the way is open (the pier's own rails take over), unless the platform is lifted.
-	if rel.z > 0.0 and absf(rel.x) < PIER.x * 0.5 - 0.3 and absf(_lift) < 0.25:
+	# Toward the pier the way is open (the pier's own rails take over).
+	if rel.z > 0.0 and absf(rel.x) < PIER.x * 0.5 - 0.3:
 		return
-	if r > limit and r < PLAT_R + 1.2 and (rel.z < PLAT_R - 0.9 or absf(_lift) >= 0.25):
+	if r > limit and r < PLAT_R + 1.2 and rel.z < PLAT_R - 0.9:
 		var nv2: Vector2 = flat * (limit / r)
 		player.global_position = Vector4(c.x + nv2.x, p.y, c.z + nv2.y, p.w)
 
@@ -1803,7 +1882,7 @@ func panel_face(key: String = "fly") -> Dictionary:
 	var st: Dictionary = stream.call("stats") if stream != null else {}
 	if key == "world":
 		return {"title": "Change the world", "kicker": "GREEN, DESERT, LAVA: EACH ITS OWN GROUND" if biome == 0 else "KEY 1 HERE TAKES YOU BACK TO THE GREEN", "rows": [
-			["Now", String(LAND_NAMES[biome]).capitalize()], ["Built in", "%.1f s" % build_seconds], ["Tetrahedra", _thousands(int(st.get("tets", 0)))]]}
+			["Now", "%d of %d, %s" % [biome + 1, LAND_NAMES.size(), String(LAND_NAMES[biome]).capitalize()]], ["Built in", "%.1f s" % build_seconds], ["Tetrahedra", _thousands(int(st.get("tets", 0)))]]}
 	return {"title": "Take off", "kicker": "STAND IN THE RING. YOU FLY AS A BIRD", "rows": [
 		["Circle", "%.0f m across" % (fly_circle() * 2.0)], ["Slice", "turns with a right drag"], ["Chunks", _thousands(int(st.get("chunks", 0)))]]}
 
@@ -1816,7 +1895,7 @@ func world_options() -> Array:
 	var others: Array = [0, 1, 2]
 	others.erase(biome)
 	for b in others:
-		var label: String = "Back to the green island" if b == 0 else "Go to the %s" % LAND_NAMES[b]
+		var label: String = ("Back to the green island" if b == 0 else "Go to the %s" % LAND_NAMES[b]) + "  (%d of %d)" % [int(b) + 1, LAND_NAMES.size()]
 		out.append({"key": str(out.size() + 1), "id": "land%d" % b, "icon": "globe", "label": label})
 	return out
 
@@ -1939,8 +2018,8 @@ func _input(event: InputEvent) -> void:
 	var k := event as InputEventKey
 	if k != null and k.pressed and not k.echo:
 		match k.keycode:
-			KEY_1, KEY_H, KEY_ESCAPE:
-				# Esc lands you here, before the walker's camera's own Esc frees the cursor.
+			KEY_1:
+				# Esc and H land you too, through the guard (escape_step).
 				land()
 				get_viewport().set_input_as_handled()
 			KEY_V:
@@ -2003,11 +2082,31 @@ func frame_numbers() -> Dictionary:
 ## Leaving (the door, the menu, a runner quitting) while a worker still maps the ground or bakes the grass: wait
 ## for it first, so it never writes into a field that is gone (round 6: a runner crashed quitting mid-bake).
 func _exit_tree() -> void:
+	if _escape != null and is_instance_valid(_escape):
+		_escape.queue_free()
+	_escape = null
 	for task in [_grid_task, _grass_task]:
 		if int(task) >= 0:
 			WorkerThreadPool.wait_for_task_completion(int(task))
 	_grid_task = -1
 	_grass_task = -1
+
+
+## ESC, IN ORDER (round 7, #79), asked by the guard (room/vl_escape.gd), which has the key first: the Tab
+## settings close first ("When the developer HUD is open: Escape should close the HUD"), then a flight lands
+## (Esc or H, as before); nothing open, false, and the guard asks "Return to the main menu?".
+func escape_step(key: Key) -> bool:
+	if sea_panel != null and sea_panel.visible:
+		if key == KEY_ESCAPE:
+			sea_panel.call("toggle")
+			if mode == "fly":
+				Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		# H with the settings open does nothing at all: tuning never leaves by accident.
+		return true
+	if mode == "fly":
+		land()
+		return true
+	return false
 
 
 func back_to_lab() -> void:

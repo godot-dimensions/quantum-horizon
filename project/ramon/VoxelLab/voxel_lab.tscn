@@ -27,16 +27,16 @@ script = ExtResource("1_root")
 room_half_width = 12.0
 room_back = 15.0
 corner_length = 10.8
-start_at = Vector2(0, 21)
+start_at = Vector2(0, 17.5)
 
 [node name="Room" type="Node4D" parent="."]
 script = ExtResource("2_room")
 start_mood = "bright"
 
 [node name="Entrance" type="Node4D" parent="."]
-position = Vector4(0, 0, 19.5, 0)
+position = Vector4(0, 0, 16.75, 0)
 script = ExtResource("3_kitroom")
-size = Vector3(8, 6.8, 14)
+size = Vector3(8, 6.8, 8.5)
 open_sides = ["n"]
 cove = false
 
@@ -61,10 +61,10 @@ glow = 0.3
 script = ExtResource("4_text")
 edge = 2
 along = Vector2(0.6, 8.94)
-up = Vector2(4.1, 6.7)
+up = Vector2(4.5, 6.4)
 kind = "sign"
-title = "HOW A WORLD IS
-MADE"
+title = "WORLD
+CREATION"
 subtitle = "OUR GENERATORS ONE AT A TIME, THEN THE WHOLE WORLD"
 glow = 0.3
 
@@ -111,7 +111,7 @@ code = "blue"
 glow = 0.2
 
 [node name="Shelf1" type="Node4D" parent="."]
-position = Vector4(10.5, 0, 9.0, 0)
+position = Vector4(10.5, 0, 8.7, 0)
 script = ExtResource("5_showcase")
 exhibit_script = ExtResource("9_shelf")
 radius = 0.95
@@ -152,7 +152,7 @@ metadata/face_yaw = -90.0
 [node name="LabelA" type="Node" parent="Hall"]
 script = ExtResource("4_text")
 edge = 4
-along = Vector2(15.12, 16.82)
+along = Vector2(14.82, 16.52)
 up = Vector2(2.05, 3.15)
 kind = "label"
 letter = "A"
@@ -232,7 +232,7 @@ band_angle = 90.0
 hologram = false
 
 [node name="BuildBench" type="Node4D" parent="."]
-position = Vector4(-4.1, 0, 8.8, 0)
+position = Vector4(-5.1, 0, 8.7, 0)
 script = ExtResource("7_bench")
 station = NodePath("../Build")
 pad = false
@@ -242,13 +242,13 @@ tools = PackedStringArray("brick", "through", "take")
 camera_bounds = Rect2(-11.5, -12.0, 23.0, 23.5)
 
 [node name="BuildPanel" type="Node4D" parent="."]
-position = Vector4(-3.0, 0, 6.9, 0)
+position = Vector4(-8.0, 0, 11.35, 0)
 script = ExtResource("22_float")
 station = NodePath("../Build")
 number = 2
 title = "Build it"
 kicker = "BUILDING IN 4D"
-face_point = Vector2(-4.1, 8.8)
+face_point = Vector2(0.0, 8.7)
 width = 1.0
 depth = 0.38
 
@@ -351,9 +351,9 @@ metadata/item = "the block"
 metadata/cone = 40.0
 
 [node name="ShelfA" type="Node4D" parent="Lights"]
-position = Vector4(10.5, 8.0, 9.0, 0)
+position = Vector4(10.5, 8.0, 8.7, 0)
 script = ExtResource("10_light")
-aim = Vector3(10.5, 1.4, 9.0)
+aim = Vector3(10.5, 1.4, 8.7)
 angle = 34.0
 softness = 2.6
 reach = 14.0
@@ -532,16 +532,17 @@ metadata/options = ["watch", "cut"]
 metadata/target = "Hero"
 
 [node name="Build" type="Node4D" parent="Spots"]
-position = Vector4(-4.1, 0, 8.8, 0)
+position = Vector4(-5.1, 0, 8.7, 0)
 metadata/kind = "choice"
 metadata/radius = 1.4
+metadata/near = 1.6
 metadata/station = NodePath("../../Build")
 metadata/bench = NodePath("../../BuildBench")
 metadata/options = ["build"]
 metadata/target = "Build"
 
 [node name="ShelfA" type="Node4D" parent="Spots"]
-position = Vector4(8.5, 0, 9.0, 0)
+position = Vector4(8.5, 0, 8.7, 0)
 metadata/kind = "popup"
 metadata/radius = 1.1
 metadata/station = NodePath("../../Shelf1")

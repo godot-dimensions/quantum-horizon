@@ -5,8 +5,8 @@ extends SceneTree
 ## R, back on the deck; Tab and the sea panel (a number changed, not saved). Round 5: the sea one graded mesh
 ## (no square), the Aquatic Lab's water to compare, the shore foam set; the grass patches made, drawn, seen
 ## up close and from the platform. Round 6: the desert's mesas and cacti, the lava field's volcanoes, embers and
-## its moving lava, the way back (key 1 at the station, "Back to the green island"), the lighthouse, the
-## platform's lift (Space up, Shift down). Frames to
+## its moving lava, the way back (key 1 at the station, "Back to the green island"), the lighthouse. Round 7:
+## the platform stays put under Space and Shift (its lift is gone); Esc closes Tab first, then asks. Frames to
 ## smoke_test_output/voxel_lab/field_play/, checks printed as PASS or FAIL.
 ##
 ## Keys go in as events; the mouse is never moved or held (the cursor is the user's).
@@ -183,7 +183,7 @@ func _process(delta: float) -> bool:
 				var st2: Dictionary = _f.get("stream").call("stats")
 				print("FIELD desert built in %.1f s: %d chunks, %d tetrahedra, ~%.0f MB" % [float(_f.get("build_seconds")), int(st2["chunks"]), int(st2["tets"]), float(st2["mb"])])
 				var opts: Array = _f.call("world_options")
-				_check(not opts.is_empty() and String(opts[0]["label"]) == "Back to the green island", "the way back is option 1 there (%s)" % str(opts.map(func(o): return o["label"])))
+				_check(not opts.is_empty() and String(opts[0]["label"]).begins_with("Back to the green island"), "the way back is option 1 there (%s)" % str(opts.map(func(o): return o["label"])))
 				var props: Node = _f.get("props")
 				_check(props != null and props.get_child_count() > 20, "the desert's mesas and cacti stand (%d pieces)" % (props.get_child_count() if props != null else 0))
 				_save("02b_desert")
@@ -209,6 +209,8 @@ func _process(delta: float) -> bool:
 				var embers: Array = _f.get("_embers")
 				_check(_f.get("props") != null and embers.size() > 0 and (_f.get("_lava_spots") as PackedVector4Array).size() > 0,
 					"the lava field's volcanoes, embers and bubbles (%d embers over %d lava spots)" % [embers.size(), (_f.get("_lava_spots") as PackedVector4Array).size()])
+				var smoke: Array = _f.get("_smoke")
+				_check(smoke.size() >= 2 * 7, "smoke from at least two volcanoes (%d puffs)" % smoke.size())
 				_save("02e_lava")
 				_overview()
 				_to(45)
@@ -321,11 +323,37 @@ func _process(delta: float) -> bool:
 						"THE AQUATIC LAB'S puts its water on this sea (preset %d)" % int(wl["preset"]))
 					panel.call("_load", panel.call("saved"), "ours")
 				_save("09_sea_panel")
+				# Round 7 (#79): Esc closes the settings first, and nothing else.
+				_key(KEY_ESCAPE)
+				_to(70)
+		70:
+			if _t > 0.6:
+				var esc: Node = root.get_node_or_null("VoxelLabEscape")
+				_check(not (_f.get("sea_panel") as Control).visible and esc != null and not bool(esc.call("is_open")) and _f.is_inside_tree(),
+					"Esc closes the settings, and only them")
+				_key(KEY_ESCAPE)
+				_to(71)
+		71:
+			if _t > 0.6:
+				var esc2: Node = root.get_node_or_null("VoxelLabEscape")
+				_check(esc2 != null and bool(esc2.call("is_open")) and _f.is_inside_tree(), "Esc again asks: Return to the main menu?")
+				_save("09b_escape_box")
+				_key(KEY_ESCAPE)
+				_to(72)
+		72:
+			if _t > 0.6:
+				var esc3: Node = root.get_node_or_null("VoxelLabEscape")
+				_check(esc3 != null and not bool(esc3.call("is_open")) and _f.is_inside_tree() and not paused, "and Esc there means No: still here")
 				_key(KEY_TAB)
-				_next()
+				_to(73)
+		73:
+			if _t > 0.6:
+				_check((_f.get("sea_panel") as Control).visible, "Tab still opens the settings")
+				_key(KEY_TAB)
+				_to(9)
 		9:
 			if _t > 0.6:
-				_check(not (_f.get("sea_panel") as Control).visible, "Tab closes it")
+				_check(not (_f.get("sea_panel") as Control).visible, "and Tab closes them")
 				# The island from above: the deck, the circle, the land and the sea.
 				_cam()
 				var c: Vector4 = _f.get("_centre").global_position
@@ -348,6 +376,8 @@ func _process(delta: float) -> bool:
 				_check(t != null and t.get_child_count() >= 6 * 15, "the tree clumps are planted (%d small 24-cells)" % (t.get_child_count() if t != null else 0))
 				var lamp: Node4D = _f.get("_lighthouse_lamp")
 				_check(lamp != null, "the lighthouse stands (%s)" % (str(lamp.global_position) if lamp != null else "none"))
+				var props: Node = _f.get("props")
+				_check(props != null and props.get_node_or_null("LighthouseFence") != null, "a low fence round its foot")
 				# Close to the land, looking down at it.
 				var p: Vector3 = land_near(_f)
 				_top.global_position = Vector4(p.x + 9.0, p.y + 4.5, p.z, 0.0)
@@ -368,17 +398,19 @@ func _process(delta: float) -> bool:
 				_hold(KEY_SPACE, true)
 				_to(50)
 		50:
-			if _t > 1.5:
+			if _t > 1.0 and _t - delta <= 1.0:
 				_hold(KEY_SPACE, false)
-				var up: float = (_f.get("player") as Node4D).global_position.y - _y0
-				_check(float(_f.call("platform_lift")) > 3.0 and up > 3.0, "Space takes the platform up, you on it (%.1f m, you %.1f m)" % [float(_f.call("platform_lift")), up])
-				_save("12b_lifted")
 				_hold(KEY_SHIFT, true)
+			if _t > 2.0:
+				_hold(KEY_SHIFT, false)
+				var moved: float = (_f.get("player") as Node4D).global_position.y - _y0
+				var set_y: float = (_f.get("_set") as Node4D).position.y
+				_check(absf(moved) < 0.3 and absf(set_y) < 0.001 and String(_f.get("site")) == "platform",
+					"Space and Shift leave the platform where it is, you on it (you moved %.2f m)" % moved)
+				_save("12b_platform_fixed")
 				_to(51)
 		51:
-			if float(_f.call("platform_lift")) <= 0.05 or _t > 4.0:
-				_hold(KEY_SHIFT, false)
-				_check(absf(float(_f.call("platform_lift"))) < 0.3, "Shift brings it down again (%.2f m)" % float(_f.call("platform_lift")))
+			if _t > 0.2:
 				var lamp2: Node4D = _f.get("_lighthouse_lamp")
 				if lamp2 != null:
 					var eye: Vector4 = (_f.call("platform_spot") as Vector4) + Vector4(0, 1.7, 0, 0)
