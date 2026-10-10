@@ -164,9 +164,10 @@ func _hall(d: float) -> void:
 			var border: Node = _room.get_node_or_null("Border")
 			if border != null and _bt > 0.8:
 				var k: float = clampf((_bt - 0.8) / 3.0, 0.0, 1.0)
-				var want: float = sin(k * PI) * deg_to_rad(80.0)
-				var have: float = acos(clampf((border.get("turn_basis") as Projection).w.w, -1.0, 1.0))
-				border.call("turn_by", (want - have) * 0.25, 0.0)
+				# (Round 5: the flowers tip through W now, bl_border_4d.gd.)
+				var want: float = sin(k * PI) * 0.6
+				var have: float = float(border.get("tip"))
+				border.call("turn_by", (want - have) * 0.25 / 0.7, 0.0)
 			if _bt > 4.6:
 				if border != null:
 					border.call("level")

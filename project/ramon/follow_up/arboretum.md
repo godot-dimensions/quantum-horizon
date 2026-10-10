@@ -1449,3 +1449,112 @@ the pedestals); the route's own checks pass; the oak's click runs 3 s of story i
 3. The panels on the pedestals are read from the planter's edge (E at the ring stays the tree's key):
    does that feel right?
 4. The unfinished "I want to have small...": what was it?
+
+## 11. Botany Lab, round 5: Ramon's walkthrough feedback, part 5 (10 Oct)
+
+Pasted in chat (items 31 to 44). His frame: the first room is close, so do not destabilise its showcases;
+the Gardens room "regressed significantly" and wants restoring, "not another experimental redesign".
+(The paste ended on two lines, "Cut repetition and tighten the feedback" and "Reorder everything by
+implementation priority". They read as notes from writing the document, so they were taken as that, not as
+a request to rewrite it.)
+
+### What went wrong in round 4, read from the code and the frames
+
+- **The terraces were cut.** Round 4 #25 asked for the room to end "approximately 3 meters before the end of
+  the presentation slabs". I read that as the wall standing 3 m inside the slabs; it meant 3 m past them.
+  The far wall stood at z -12.2, and the slabs run to -15.2.
+- **The sunset showed only round the terraces.** A wall piece carries one print. The TWO GARDENS sign and the
+  sunset both printed onto the far wall's middle piece, and the sign won. So between the terraces the wall
+  was plain blue, and the sunset showed only at the sides. The wall was also close and lit, so its blue read
+  bright; in round 3 it was 9 m behind the slabs and read as a dark sky.
+- **The smooth land went sandy.** Its green was cut to a thin cap: balls just under half a cell, with the
+  soil written over them up to 10 cm under the surface. The soil showed between them and the balls read as
+  lumps.
+- **The flowers spun.** Their turn was the floor-only slice turn (x-W, z-W), which never tips the stem. A
+  flower round about its stem then only seems to spin, and its cut barely changes.
+
+### The plan, in his priorities
+
+**1. The Gardens room** (`compare/`):
+- The far wall 3 m past the slabs' full 26 m (the hall 32.4 m deep, its middle at z -2).
+- The backdrop one print over the whole far wall:
+  - round 3's composition: the sun, the hills, the dark ground;
+  - round 4's own asks: a metre more sky, no brown triangle, drawn crisp;
+  - the sky running on, deepening, to the ceiling;
+  - the sign drawn into it. No kit sign on that wall, and no plain blue.
+- The smooth land green again: overlapping balls 0.85 of a cell, kept inside the edges (no mattress), the
+  soil 0.6 m under the surface. Round 4's calmer grid is kept.
+- The grass kept inside the land's edges. Checked in frames for floating, level and stepped through W.
+- The leaves down to a quarter. The birches' trunks plain light grey, no marks.
+- The fifth tree spot and the lights back where the longer room wants them.
+
+**2. The flowers:**
+- Their W slicing made real:
+  - a right drag forward and back (or the wheel) slides them through W, so they thin and go, petals first;
+  - sideways tips them through W (the y-W plane), so the head leaves the slice before the stem.
+- Stems with a gentle S-bend and a lean.
+- The rose rebuilt as whorls (tight upright inner petals opening to flared outer ones), crimson. The poppy an
+  open scarlet bowl round a big capsule, with a nodding bud on its own stalk. The tulip yellow and flamed, so
+  three reds do not sit side by side.
+- Four new species, so sixteen pots each hold a different plant: lavender, cornflower, marigold and snowdrop.
+  The texture grows to 20 rows, and every flower bake is remade (BAKE_VERSION v2).
+- A 4 x 4 grid of small pots in the corner by 01, 1.4 m apart (aisles you can walk), on a short branch from
+  01's junction.
+
+**3. The first room:**
+- The title and the infographic (the kit's wall panel pair) moved side by side onto the right wall, which
+  their claim turns blue. The corner walls they leave go back to the kit's bright grey.
+- The left wall one continuous blue: each specimen panel claims its stretch and prints its words there.
+- The right wall 1.5 m in, its corner wall recomputed so the back wall stays centred. The left is kept for
+  the flowers.
+- The oak's 04 floor plate removed.
+
+### Status (10 Oct, round 5)
+
+All of 31 to 44 done; checked by frames (`smoke_test_output/botany_lab/compare/c5_*`, `round5/h*`, `flora/`)
+and the play-through (43 of 43).
+
+**The Gardens room.**
+- The hall is 32.4 m deep, its middle at z -2. The slabs run their full 26 m (to z -15.0) and the far wall
+  stands 3.2 m past them (z -18.2).
+- The sunset is one print over the whole far wall (4,832 x 1,920 px):
+  - round 3's band, sun and hills, with round 4's extra metre of sky and no brown triangle;
+  - above them the sky deepening to the ceiling, the room's name in it;
+  - no kit sign on that wall any more, and no plain blue.
+- The smooth land is green again: overlapping balls 0.85 of a cell, kept in from the edges, the soil
+  0.6 m under. Soil shows only on the cut faces. 353,500 tetrahedra, meshed in 2.6 s.
+- The grass is on the land only: the height map's ring beyond the land and the 0.3 m inside its edges are
+  no-grass. A first try inset the map instead; it is read clamped, so the edge heights ran on outward and
+  the grass covered the walkway (caught by the frames, fixed). Checked level and at w +0.5, -0.6 and +1.0.
+- Leaves 60 (from 240), a smaller gust. The birches' trunks are plain light grey.
+- Frames 7.1 to 7.5 ms (round 4: 6.4 to 6.8; the fuller green skin).
+
+**The flowers.**
+- Sixteen pots in a 4 x 4 grid in the left corner by 01, 1.4 m apart, tall at the back, on a branch from
+  01's junction (the route's own checks pass).
+- Each pot is a different species: the twelve and lavender, cornflower, French marigold and snowdrop.
+  Each is potted: its stem cut to about 0.3 m of its own height, then shown 1.9 times bigger, so the flower
+  reads. At full height they were long stems with small heads.
+- By them the camera comes in to 2.9 m, and their controls replace 01's: inside 01's story margin, they
+  win when you are nearer their pots than its edge.
+- The slice is real:
+  - the wheel and a right drag forward and back slide them through W (3 cm leaves fragments, 7 cm almost
+    nothing);
+  - sideways tips them into W (0.3 rad takes the heads);
+  - R puts them back.
+- The rose is whorls (it reads as a rose); the poppy an open scarlet bowl with a black heart and a
+  nodding bud; the tulip yellow and flamed; every stem with its own bend and S. All flower bakes are v2,
+  20 texture rows; the v1 files are no longer read.
+
+**The first room.**
+- The title and the infographic side by side on the right wall, which is blue; the corner walls grey.
+- The left wall one blue, the 01 to 03 words printed into it, checked twice a second and put back if a
+  rebuild takes them.
+- The right wall 1.5 m in, its corner wall at the same angle, the back wall and its door where they were.
+- No 04 on the floor.
+
+**Questions for Ramon.**
+1. The potted flowers are shorter-stemmed than the garden's, to read at that size: right?
+2. The flowers' tip and slide: is the slide's speed (a few centimetres takes them) right in the hand?
+3. The sky above the sunset now runs to the ceiling, deepening: or keep the strip, with the wall darker
+   above it?

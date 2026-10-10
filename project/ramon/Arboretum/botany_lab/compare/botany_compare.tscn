@@ -24,21 +24,11 @@ script = ExtResource("5_wind")
 direction = Vector4(0.12, 0, 1, 0.3)
 
 [node name="Hall" type="Node4D" parent="."]
-position = Vector4(0, 0, 1, 0)
+position = Vector4(0, 0, -2, 0)
 script = ExtResource("3_kitroom")
-size = Vector3(30.2, 12, 26.4)
+size = Vector3(30.2, 12, 32.4)
 doorways = [["s", -1.6, 1.6, 4.4]]
 cove = false
-
-[node name="FarSign" type="Node" parent="Hall"]
-script = ExtResource("4_text")
-side = "n"
-along = Vector2(-7.0, 7.0)
-up = Vector2(8.6, 10.6)
-kind = "sign"
-title = "TWO GARDENS"
-subtitle = "BLOCKY ON THE LEFT  ·  SMOOTH ON THE RIGHT"
-glow = 0.3
 
 [node name="ExitSign" type="Node" parent="Hall"]
 script = ExtResource("4_text")
@@ -70,9 +60,9 @@ energy = {
 fixture_at = 11.94
 
 [node name="LightBlockyFar" type="Node4D" parent="."]
-position = Vector4(-9, 11.5, -9, 0)
+position = Vector4(-9, 11.5, -10, 0)
 script = ExtResource("6_light")
-aim = Vector3(-9, 0, -9)
+aim = Vector3(-9, 0, -10)
 angle = 70.0
 softness = 1.5
 reach = 16.0
@@ -98,9 +88,9 @@ energy = {
 fixture_at = 11.94
 
 [node name="LightSmoothFar" type="Node4D" parent="."]
-position = Vector4(9, 11.5, -9, 0)
+position = Vector4(9, 11.5, -10, 0)
 script = ExtResource("6_light")
-aim = Vector3(9, 0, -9)
+aim = Vector3(9, 0, -10)
 angle = 70.0
 softness = 1.5
 reach = 16.0

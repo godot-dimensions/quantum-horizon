@@ -97,6 +97,14 @@ const TOUR_SHOT := {
 	set(v):
 		room_half_width = v
 		_shape_later()
+## Round 5 (Ramon, #35: "Give the new flower corner enough room. Reduce unnecessary empty width elsewhere ...
+## Avoid awkward wall intersections"): the right side's own half width (0: the same as the left). The right
+## wall comes in; its corner wall keeps its angle and still meets the back wall where it did, so the back
+## wall and its door stay on the spine. The left keeps its width for the flowers in its entrance corner.
+@export_range(0.0, 30.0, 0.1) var room_right_width: float = 10.5:
+	set(v):
+		room_right_width = v
+		_shape_later()
 @export_range(6.0, 30.0, 0.1) var room_front: float = 16.0:
 	set(v):
 		room_front = v
@@ -340,17 +348,31 @@ func apply_shape() -> void:
 	if hall == null:
 		return
 	var w: float = room_half_width
+	var wr: float = room_right_width if room_right_width > 0.0 else w
 	var f: float = room_front
 	var d: float = room_back
 	plan = Plan.chamfered(w * 2.0, f, d, Vector2(corner_length, corner_angle), Vector2(corner_length, corner_angle), 1.0, maxf(door_width, 0.0) + 0.8)
 	var outline: PackedVector2Array = plan["outline"]
-	_set_if(hall, "size", Vector3(w * 2.0, hall_height, f + d))
+	if not is_equal_approx(wr, w):
+		# The right side at its own width: its corner wall from where the back wall ends, at the same angle.
+		var run_x: float = maxf(wr - outline[3].x, 0.0)
+		var run_z: float = run_x / tan(deg_to_rad(clampf(corner_angle, 1.0, 89.0)))
+		outline[4] = Vector2(wr, -d + run_z)
+		outline[5] = Vector2(wr, f)
+		var lengths: Dictionary = {}
+		var names: PackedStringArray = plan["names"]
+		for i in names.size():
+			lengths[names[i]] = outline[i].distance_to(outline[(i + 1) % names.size()])
+		plan["outline"] = outline
+		plan["lengths"] = lengths
+	_set_if(hall, "size", Vector3(w + wr, hall_height, f + d))
 	_set_if(hall, "wall_names", plan["names"])
 	_set_if(hall, "outline", outline)
 	var back_len: float = float((plan["lengths"] as Dictionary)["back"])
 	var bl: float = -outline[2].x
 	var dw: float = minf(door_width, back_len - 0.4)
-	var doors: Array = [["entrance", w - 2.4, w + 2.4, minf(entrance_height, corridor_height - 0.4)]]
+	# (The entrance wall runs from the right wall's end: the spine is `wr` along it.)
+	var doors: Array = [["entrance", wr - 2.4, wr + 2.4, minf(entrance_height, corridor_height - 0.4)]]
 	if dw > 0.1:
 		doors.append(["back", bl - dw * 0.5, bl + dw * 0.5, minf(door_height, hall_height - 0.5)])
 	# Round 3: the flower room's door in the right wall (its edge runs from the right corner's end, +z).
@@ -457,6 +479,15 @@ func _process(delta: float) -> void:
 		else:
 			to_flowers()
 	_border_near(p)
+	if Engine.get_process_frames() % 30 == 0 and not _specimen_prints.is_empty():
+		_specimen_check()
+	# Round 5: by the flowers the camera comes in (they are small beside the trees), and goes back after.
+	var at_flowers: bool = border != null and active == null and bool(border.call("near", p))
+	if at_flowers != _flower_cam:
+		_flower_cam = at_flowers
+		var rig: Node = player.get_node_or_null("CameraRig")
+		if rig != null:
+			rig.set("_zoom_target", FLOWER_CAMERA if at_flowers else camera_distance)
 	# Through the back door's shimmer: a flash, then the second room.
 	if not _leaving and p.z < -room_back + 0.35 and absf(p.x) < door_width * 0.5:
 		_leaving = true
@@ -501,6 +532,10 @@ func _find_active(p: Vector4) -> void:
 		if near and d < best_d:
 			best_d = d
 			best = s
+	# Round 5: the flowers stand in the corner by 01, inside its story margin; by them (nearer their pots than
+	# the pedestal's edge) they are yours, not the tree's.
+	if best != null and border != null and bool(border.call("near", p)) and float(border.call("footprint_distance", p)) < best_d:
+		best = null
 	active = best
 
 
@@ -511,12 +546,14 @@ func _strip() -> Array:
 		return [["E / Click", "More about it" if int(_at_panel.get("page_index")) < 0 else "Next page"], ["WASD", "Move"]]
 	if _on_pad:
 		return [["E / Click", "Play the showcase"], ["WASD", "Move"]]
-	if active == null and not _at_border.is_empty():
-		var bo: Array = [["WASD", "Move"], ["Right drag", "Turn the border's flowers through W"]]
-		var tl: float = rad_to_deg(Ground.tilt(border.get("turn_basis")))
-		if tl > 0.5:
-			bo.append(["%d°" % int(round(tl)), "turned through W"])
-			bo.append(["R", "Level"])
+	if active == null and border != null and bool(border.call("near", player.global_position)):
+		# Round 5: the flowers slide and tip through W (bl_border_4d.gd), no longer turned about their stems.
+		var bo: Array = [["WASD", "Move"], ["Wheel", "Slide them through W"], ["Right drag", "Slide (forward, back), tip (sideways)"]]
+		if not _at_border.is_empty():
+			bo.push_front(["E / Click", "About this flower"])
+		if bool(border.call("moved")):
+			bo.append(["%+.0f cm, %+.0f°" % [float(border.get("slide_w")) * 100.0, rad_to_deg(float(border.get("tip")))], "through W"])
+			bo.append(["R", "Back in the slice"])
 		bo.append(["G", "Gust of wind"])
 		return bo
 	if active == null:
@@ -672,11 +709,16 @@ func _input(event: InputEvent) -> void:
 			active.call("step_slice", 1 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else -1)
 			get_viewport().set_input_as_handled()
 			return
+		# Round 5: by the flowers the wheel slides them through W, 6 mm a step.
+		if active == null and border != null and bool(border.call("near", player.global_position)) and (mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+			border.call("slide_by", 0.006 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else -0.006)
+			get_viewport().set_input_as_handled()
+			return
 	var mm := event as InputEventMouseMotion
 	if mm != null and active != null and (mm.button_mask & MOUSE_BUTTON_MASK_RIGHT) != 0:
 		active.call("turn_by", mm.relative.x * 0.006, mm.relative.y * 0.006)
 		get_viewport().set_input_as_handled()
-	elif mm != null and not _at_border.is_empty() and border != null and (mm.button_mask & MOUSE_BUTTON_MASK_RIGHT) != 0:
+	elif mm != null and active == null and border != null and bool(border.call("near", player.global_position)) and (mm.button_mask & MOUSE_BUTTON_MASK_RIGHT) != 0:
 		border.call("turn_by", mm.relative.x * 0.006, mm.relative.y * 0.006)
 		get_viewport().set_input_as_handled()
 
@@ -732,9 +774,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				active.call("reset_view")
 				hud.call("toast", "Back as it stood")
 				get_viewport().set_input_as_handled()
-			elif not _at_border.is_empty() and border != null:
+			elif border != null and bool(border.call("near", player.global_position)):
 				border.call("level")
-				hud.call("toast", "The border's flowers upright and level again")
+				hud.call("toast", "The flowers upright and back in your slice")
 				get_viewport().set_input_as_handled()
 		KEY_G:
 			var w: Node = wind()
@@ -1003,32 +1045,68 @@ const SPECIMEN_WALLS := [
 const SPECIMEN_TEXT_Y := Vector2(5.2, 8.0)
 
 
+##
+## ROUND 5 (Ramon, #34: "Left wall: Remove the three decorative blue stripes. Make this wall a continuous blue
+## surface instead"): the panels are no longer slabs on a grey wall. Each claims its stretch of the left wall
+## (the kit room's claim: the whole wall goes code blue, split where each panel's words begin and end), and
+## its words are printed into that piece of the wall itself, as the wall panels are. The wall's pieces are
+## made again whenever the room rebuilds, so the prints are looked at twice a second and put back if a
+## rebuild took them (_specimen_check).
+var _specimen_prints: Array = []
+## The camera's distance by the flowers (round 5), and whether it is there now.
+const FLOWER_CAMERA := 2.9
+var _flower_cam: bool = false
+
+
 func _specimen_walls() -> void:
+	var hall: Node = get_node_or_null("Hall")
+	if hall == null:
+		return
 	var holder := Node4D.new()
 	holder.name = "SpecimenWalls"
 	add_child(holder)
-	var wall_x: float = -room_half_width
+	var spans: Array = []
 	for spec in SPECIMEN_WALLS:
 		var st: Node4D = get_node_or_null(String(spec["station"])) as Node4D
 		if st == null:
 			continue
 		var w: float = float(st.get("radius")) * 2.0 + 0.2
-		var size := Vector4(w, hall_height, 0.06, 6.0)
-		var m := MeshInstance4D.new()
-		m.name = "Wall_" + String(spec["number"])
-		m.mesh = Mats.box_mesh(size)
-		# Its +z looks into the room (+x); its width runs along the wall, -z to the reader's right.
-		m.basis = Projection(Vector4(0, 0, -1, 0), Vector4(0, 1, 0, 0), Vector4(1, 0, 0, 0), Vector4(0, 0, 0, 1))
-		m.position = Vector4(wall_x + 0.03, hall_height * 0.5, st.position.z, 0.0)
-		var mat: TetraMaterial4D = LabGrid.material("kit_code_blue", size, m.position)
-		m.material_override = mat
-		holder.add_child(m)
-		var ppm: float = 220.0
-		var th: float = SPECIMEN_TEXT_Y.y - SPECIMEN_TEXT_Y.x
-		var tex: Texture2D = await LabPrint.render(get_tree(), Vector2i(int(w * ppm), int(th * ppm)), func(c: Control) -> void: _specimen_page(c, spec))
-		if tex != null and is_instance_valid(m):
-			LabGrid.set_print(mat, tex, Vector4(0, 0, 1, 0), Rect2(0.0, SPECIMEN_TEXT_Y.x, w, th), Color.WHITE, 0.25)
-			LabGrid.set_print_strength(mat, 1.0)
+		# Along the left wall: from its corner at the entrance (z room_front) toward the back.
+		var mid: float = room_front - st.position.z
+		var claimer := Node.new()
+		claimer.name = "Claim_" + String(spec["number"])
+		holder.add_child(claimer)
+		hall.call("claim_wall", "left", "blue", claimer, mid - w * 0.5, mid + w * 0.5)
+		spans.append([spec, mid - w * 0.5, mid + w * 0.5, w])
+	# The wall is rebuilt with its new pieces a frame or two later.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var ppm: float = 220.0
+	var th: float = SPECIMEN_TEXT_Y.y - SPECIMEN_TEXT_Y.x
+	for sp in spans:
+		var spec: Dictionary = sp[0]
+		var tex: Texture2D = await LabPrint.render(get_tree(), Vector2i(int(float(sp[3]) * ppm), int(th * ppm)), func(c: Control) -> void: _specimen_page(c, spec))
+		if tex != null:
+			_specimen_prints.append([tex, float(sp[1]), float(sp[2])])
+	_specimen_check()
+
+
+## Each specimen's words on its piece of the left wall, put back if the room's rebuild took them.
+func _specimen_check() -> void:
+	var hall: Node = get_node_or_null("Hall")
+	if hall == null:
+		return
+	for pr in _specimen_prints:
+		for tg in hall.call("print_targets", "left", float(pr[1]), float(pr[2]), SPECIMEN_TEXT_Y.x, SPECIMEN_TEXT_Y.y):
+			var m: TetraMaterial4D = (tg[0] as MeshInstance4D).material_override as TetraMaterial4D
+			if m == null:
+				continue
+			var cs: ShaderMaterial = m.get_cross_section_material_3d()
+			if cs.get_shader_parameter("print_texture") == pr[0]:
+				continue
+			LabGrid.set_print(m, pr[0], tg[1], tg[2], Color.WHITE, 0.25)
+			LabGrid.set_print_strength(m, 1.0)
+			cs.set_shader_parameter("print_aa", 1.0)
 
 
 ## A specimen panel's text: white on clear (the panel's blue shows), corner brackets round it.

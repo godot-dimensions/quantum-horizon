@@ -113,6 +113,8 @@ func _run() -> void:
 				await _garden()
 			"oak":
 				await _oak()
+			"round5":
+				await _round5()
 			"wall":
 				_go(5.0, -11.0, -42.0, 4.0)
 				await _frames(60)
@@ -400,6 +402,37 @@ func _garden() -> void:
 		w.call("gust", 0.7, 6.0, 2.0)
 	await _frames(70)
 	_shoot("garden", "g10_gust")
+
+
+## Round 5 (section 11): the flower corner (sixteen pots by 01) from its branch, the flowers slid and tipped
+## through W, the right wall with the title and the infographic, the left wall one blue, the back corners
+## grey and no 04 on the floor, the branch from above.
+func _round5() -> void:
+	var border: Node = _room.get_node_or_null("Border")
+	print("CAPTURE round5 hall outline %s" % str((_room.get_node("Hall") as Node).get("outline")))
+	for v in [[0.0, 15.0, 0.0, -6.0, "h01_from_the_door"], [-4.6, 9.4, 128.0, -16.0, "h02_flower_corner"], [-5.4, 9.6, 125.0, -32.0, "h03_flower_corner_from_above"]]:
+		_go(float(v[0]), float(v[1]), float(v[2]), float(v[3]))
+		await _frames(50)
+		_shoot("round5", String(v[4]))
+	_go(-5.9, 10.4, 118.0, -22.0)
+	await _frames(30)
+	_shoot("round5", "h04_flowers_level")
+	if border != null:
+		for s in [0.03, 0.07, 0.12]:
+			border.set("slide_w", s)
+			await _frames(6)
+			_shoot("round5", "h05_flowers_slid_%02d_cm" % int(round(s * 100.0)))
+		border.call("level")
+		for tp in [0.3, 0.8]:
+			border.set("tip", tp)
+			await _frames(6)
+			_shoot("round5", "h06_flowers_tipped_%.1f" % tp)
+		border.call("level")
+	for v in [[0.0, 2.0, -90.0, 3.0, "h07_right_wall"], [1.0, 2.0, 90.0, 3.0, "h08_left_wall"], [0.0, -3.0, 0.0, -4.0, "h09_back_corners_and_oak"],
+			[-3.0, 9.5, 120.0, -62.0, "h10_flower_branch_from_above"], [0.0, -8.5, 0.0, -26.0, "h11_no_04_on_the_floor"]]:
+		_go(float(v[0]), float(v[1]), float(v[2]), float(v[3]))
+		await _frames(50)
+		_shoot("round5", String(v[4]))
 
 
 ## Round 4 (section 10, steps 6-8): the oak's story from its ring: growing, a click that speeds it up (not a

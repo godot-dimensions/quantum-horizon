@@ -14,9 +14,9 @@ extends Node4D
 ##   worker thread once the land is meshed (the grass is drawn in the world's frame, so it hides while the
 ##   land is turned); ivy on its blue wall only, framing its page; butterflies over it.
 ## THE BLOCKY GARDEN: the same cells as the land (botany/voxel_tree_builder.gd mesh()): two blocky
-##   conifers and a third, stacked tiers of needles on a bark column; two birches, a white trunk marked
-##   dark and a pale crown; low bushes and grey rock groups. No grass and no flowers: its ground already
-##   says grass.
+##   conifers and a third, stacked tiers of needles on a bark column; two birches, a plain light grey trunk
+##   (round 5, 43: "Remove the black markings from the trunks. Use a simple light-gray trunk material") and
+##   a pale crown; low bushes and grey rock groups. No grass and no flowers: its ground already says grass.
 ## The spots are composed, not scattered: tall things to the back and the outer edge, low things near the
 ## walkway, an open middle on each side so the land itself shows.
 ##
@@ -234,11 +234,20 @@ func start_grass() -> void:
 	var at: Vector2 = room.get("right_at")
 	var size: Vector2 = room.get("display_size")
 	var w_reach: float = 1.2
-	var side: float = size.y + 0.5
+	# Round 5 (41: "Some grass is now floating above the terrain or shifting away from one of the terraces"):
+	# the grass's grid reaches half a metre past the land all round, and every cell whose middle is outside
+	# the land or within `inset` of its edge is marked as no grass (Grass.NONE) after the bake. Round 4's grid
+	# ended 0.25 m past the edges with nothing else marked, so the cells on that strip took the edge's height
+	# and their blades stood out in the air over the bank's cut face. (The height map is read clamped, so its
+	# outer ring must be no-grass, or the edge's heights run on outward without end.)
+	var inset: float = 0.3
+	var side: float = size.y + 1.0
 	var cells: int = int(ceil(side / Grass.CELL))
-	var rect := Vector4(at.x - size.x * 0.5 - 0.25, at.y - size.y * 0.5 - 0.25, Grass.CELL, float(cells))
+	var rect := Vector4(at.x - size.y * 0.5 - 0.5, at.y - size.y * 0.5 - 0.5, Grass.CELL, float(cells))
 	var wl := Vector3(-w_reach - 1.0, Grass.DW, (w_reach + 1.0) * 2.0 / Grass.DW + 1.0)
-	var boxes: Array = [[Vector3(rect.x, rect.y, -w_reach - 1.0), Vector3(rect.x + size.x + 0.5, rect.y + side, w_reach + 1.0)]]
+	var land_lo := Vector2(at.x - size.x * 0.5 + inset, at.y - size.y * 0.5 + inset)
+	var land_hi := Vector2(at.x + size.x * 0.5 - inset, at.y + size.y * 0.5 - inset)
+	var boxes: Array = [[Vector3(land_lo.x, land_lo.y, -w_reach - 1.0), Vector3(land_hi.x, land_hi.y, w_reach + 1.0)]]
 	var jobs: Array = []
 	for m in world.find_children("*", "MeshInstance4D", true, false):
 		var mi := m as MeshInstance4D
@@ -252,7 +261,22 @@ func start_grass() -> void:
 		return
 	var bank: float = float(room.get("slab_height")) + 0.2
 	_grass_plan = {"rect": rect, "wl": wl, "w_reach": w_reach, "ground_y": bank + 1.4, "t0": Time.get_ticks_usec()}
-	_grass_task = WorkerThreadPool.add_task(func() -> void: _grass_out = Grass.bake_heights(jobs, rect, wl, boxes, bank, true), false, "smooth garden grass")
+	_grass_task = WorkerThreadPool.add_task(func() -> void: _grass_out = _masked(Grass.bake_heights(jobs, rect, wl, boxes, bank, true), rect, wl, land_lo, land_hi), false, "smooth garden grass")
+
+
+## The baked heights with every cell outside the land (inset) marked as no grass.
+static func _masked(heights: PackedFloat32Array, rect: Vector4, wl: Vector3, lo: Vector2, hi: Vector2) -> PackedFloat32Array:
+	var n: int = int(rect.w)
+	var layers: int = int(wl.z)
+	for j in n:
+		var z: float = rect.y + (float(j) + 0.5) * rect.z
+		for i in n:
+			var x: float = rect.x + (float(i) + 0.5) * rect.z
+			if x >= lo.x and x <= hi.x and z >= lo.y and z <= hi.y:
+				continue
+			for l in layers:
+				heights[(l * n + j) * n + i] = Grass.NONE
+	return heights
 
 
 func _process(_delta: float) -> void:
@@ -300,8 +324,7 @@ func _blocky() -> void:
 	table.add_child(holder)
 	LabGrid.set_swatch("blocky_needles", Color(0.17, 0.33, 0.2), Color(0.13, 0.27, 0.16), Color(0.15, 0.3, 0.18), 0.5)
 	LabGrid.set_swatch("blocky_bark", Color(0.36, 0.26, 0.18), Color(0.29, 0.2, 0.13), Color(0.33, 0.23, 0.16), 0.5)
-	LabGrid.set_swatch("blocky_birch", Color(0.9, 0.89, 0.85), Color(0.8, 0.79, 0.75), Color(0.86, 0.85, 0.81), 0.4)
-	LabGrid.set_swatch("blocky_birch_mark", Color(0.16, 0.15, 0.14), Color(0.12, 0.11, 0.1), Color(0.14, 0.13, 0.12), 0.4)
+	LabGrid.set_swatch("blocky_birch", Color(0.8, 0.8, 0.78), Color(0.72, 0.72, 0.7), Color(0.77, 0.77, 0.75), 0.4)
 	LabGrid.set_swatch("blocky_birch_leaf", Color(0.6, 0.7, 0.28), Color(0.5, 0.6, 0.22), Color(0.56, 0.66, 0.26), 0.5)
 	LabGrid.set_swatch("blocky_bush", Color(0.3, 0.5, 0.2), Color(0.24, 0.42, 0.16), Color(0.28, 0.46, 0.18), 0.5)
 	LabGrid.set_swatch("blocky_rock", Color(0.52, 0.51, 0.49), Color(0.42, 0.41, 0.4), Color(0.48, 0.47, 0.45), 0.5)
@@ -369,16 +392,12 @@ func _conifer(trunk: int, base_r: int) -> Dictionary:
 	return {"blocky_bark": bark, "blocky_needles": needles}
 
 
-## A blocky birch: a white trunk a cell wide, dark marks on it every few cells, a pale round crown.
+## A blocky birch: a light grey trunk a cell wide (no marks since round 5), a pale round crown.
 func _birch(trunk: int, crown_r: int) -> Dictionary:
 	var white: Dictionary = {}
-	var marks: Dictionary = {}
 	var leaf: Dictionary = {}
 	for y in mini(trunk, 40):
-		if y % 3 == 1 and _rng.randf() < 0.7:
-			marks[Vector4i(0, y, 0, 0)] = Vector3.ZERO
-		else:
-			white[Vector4i(0, y, 0, 0)] = Vector3.ZERO
+		white[Vector4i(0, y, 0, 0)] = Vector3.ZERO
 	var cy: int = trunk
 	for ix in range(-crown_r, crown_r + 1):
 		for iy in range(-crown_r, crown_r + 2):
@@ -387,7 +406,7 @@ func _birch(trunk: int, crown_r: int) -> Dictionary:
 					var d: float = Vector4(ix, float(iy) * 0.8, iz, iw).length()
 					if d <= float(crown_r) + 0.3 and _rng.randf() < 0.92:
 						leaf[Vector4i(ix, cy + iy, iz, iw)] = Vector3.ZERO
-	return {"blocky_birch": white, "blocky_birch_mark": marks, "blocky_birch_leaf": leaf}
+	return {"blocky_birch": white, "blocky_birch_leaf": leaf}
 
 
 ## A rounded blob of cells (a bush, or a rock squashed by `squash`), `r` cells across; `sink` cells below the

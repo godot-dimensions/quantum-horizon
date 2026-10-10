@@ -43,9 +43,9 @@ cove = false
 
 [node name="Hall" type="Node4D" parent="."]
 script = ExtResource("3_kitroom")
-outline = PackedVector2Array(-12, 16, -12, -13.528, -4.372, -22, 4.372, -22, 12, -13.528, 12, 16)
-size = Vector3(24, 12, 38)
-doorways = [["entrance", 9.6, 14.4, 5.0], ["back", 2.772, 5.972, 4.4]]
+outline = PackedVector2Array(-12, 16, -12, -13.528, -4.372, -22, 4.372, -22, 10.5, -15.194, 10.5, 16)
+size = Vector3(22.5, 12, 38)
+doorways = [["entrance", 8.1, 12.9, 5.0], ["back", 2.772, 5.972, 4.4]]
 wall_names = PackedStringArray("left", "left_corner", "back", "right_corner", "right", "entrance")
 cove = false
 
@@ -79,7 +79,7 @@ exhibit_script = ExtResource("6_vx")
 pedestal_shape = "specimen_box"
 radius = 2.1
 height = 0.45
-bounds = Rect2(-11.5, -21.5, 23, 37)
+bounds = Rect2(-11.5, -21.5, 21.5, 37)
 band_angle = 90.0
 hologram = false
 
@@ -90,7 +90,7 @@ exhibit_script = ExtResource("7_dc")
 pedestal_shape = "specimen"
 radius = 2.3
 height = 0.45
-bounds = Rect2(-11.5, -21.5, 23, 37)
+bounds = Rect2(-11.5, -21.5, 21.5, 37)
 band_angle = 90.0
 hologram = false
 
@@ -101,7 +101,7 @@ exhibit_script = ExtResource("8_lf")
 pedestal_shape = "specimen"
 radius = 2.3
 height = 0.45
-bounds = Rect2(-11.5, -21.5, 23, 37)
+bounds = Rect2(-11.5, -21.5, 21.5, 37)
 band_angle = 90.0
 hologram = false
 
@@ -112,17 +112,10 @@ exhibit_script = ExtResource("9_oak")
 pedestal_shape = "specimen"
 radius = 4.0
 height = 0.55
-bounds = Rect2(-11.5, -21.5, 23, 37)
+bounds = Rect2(-11.5, -21.5, 21.5, 37)
 band_angle = 0.0
 hologram = false
 holo_height = 0.9
-
-[node name="FloorMark04" type="Node4D" parent="."]
-position = Vector4(-3.4, 0, -8.9, 0)
-script = ExtResource("23_mark")
-number = 4
-title = "THE OAK"
-size = Vector2(3.2, 1.1)
 
 [node name="Panel01" type="Node4D" parent="."]
 position = Vector4(-6.05, 0.45, 7, 0)
@@ -298,11 +291,11 @@ color = {
 fixture_at = 11.94
 
 [node name="LightBorder" type="Node4D" parent="."]
-position = Vector4(7.9, 11.5, 7.8, 0)
+position = Vector4(-8.9, 11.5, 12.8, 0)
 script = ExtResource("10_light")
 kind = "spot"
-aim = Vector3(7.9, 0, 7.8)
-angle = 62.0
+aim = Vector3(-8.9, 0, 12.8)
+angle = 50.0
 softness = 2.5
 reach = 15.0
 attenuation = 0.25
@@ -343,7 +336,8 @@ script = ExtResource("13_panel")
 info = ExtResource("16_info")
 source = NodePath("../PanelSource")
 room_path = NodePath("../Hall")
-wall_name = "left_corner"
+wall_name = "right"
+along_shift = -5.4
 
 [node name="ResearchBoard" type="Node4D" parent="."]
 script = ExtResource("13_panel")
@@ -351,7 +345,8 @@ kind = "research"
 info = ExtResource("16_info")
 source = NodePath("../PanelSource")
 room_path = NodePath("../Hall")
-wall_name = "right_corner"
+wall_name = "right"
+along_shift = 5.4
 
 [node name="WallPanels" type="Node4D" parent="."]
 script = ExtResource("14_pair")
@@ -384,6 +379,12 @@ position = Vector4(0, 0, -13.5, 0)
 script = ExtResource("21_target")
 label = "The oak"
 size = Vector3(8, 1.1, 8)
+
+[node name="Flowers" type="Node4D" parent="Paths/Targets"]
+position = Vector4(-8.9, 0, 12.8, 0)
+script = ExtResource("21_target")
+label = "The flowers"
+size = Vector3(5.3, 0.6, 5.3)
 
 [node name="Door" type="Node4D" parent="Paths/Targets"]
 position = Vector4(0, 0, -22.4, 0)

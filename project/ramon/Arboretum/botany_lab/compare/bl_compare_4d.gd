@@ -46,10 +46,17 @@ extends Node4D
 ## blow down the cut toward you. A turn keeps the mirror: the right half turns as the left's reflection.
 ##
 ## ROUND 4 (section 10; Ramon's walkthrough parts 3 and 4): named TWO GARDENS; the room cropped to the
-## slabs (the entrance 3 m before them, the far wall 3 m before their end, the side walls on their outer
-## edges); the banks deep in W and the walk through W held to the land, so a slice can never empty the
-## room (16); the smooth half a voxel level calmer, its grass skin sunk into the soil (17, 20); the doors'
-## shimmer centred in the wall.
+## slabs (the entrance 3 m before them, the side walls on their outer edges); the banks deep in W and the
+## walk through W held to the land, so a slice can never empty the room (16); the smooth half a voxel level
+## calmer (20); the doors' shimmer centred in the wall.
+##
+## ROUND 5 (section 11; Ramon: "The Gardens room requires more care because the last round of changes
+## significantly altered things that were already working ... do not shorten the terraces, replace the
+## sunset backdrop, or change the smooth terrace from green to sandy"): the far wall 3 m past the slabs'
+## end (round 4 had put it 3 m inside them, which cut the terraces); the sunset one print over the whole
+## far wall, the sign drawn into its sky (a wall piece carries one print, and round 4's sign had taken the
+## middle piece, so between the terraces the wall showed plain blue); the smooth land green again, its
+## balls overlapping and kept inside the edges; fewer leaves; the birches plain grey.
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -100,7 +107,8 @@ const ARRIVE_META := "botany_arrive"
 @export var smooth_voxel: float = 0.4
 @export var seed: int = 4242
 ## The trees' spots, the same on both sides (x, z from the display's middle).
-@export var tree_spots: Array = [Vector2(-3.4, 8.0), Vector2(3.0, 3.6), Vector2(-2.2, -2.4), Vector2(3.4, -7.4), Vector2(-3.6, -8.6)]
+## (Round 5: the fifth back at round 3's spot, the terraces whole again.)
+@export var tree_spots: Array = [Vector2(-3.4, 8.0), Vector2(3.0, 3.6), Vector2(-2.2, -2.4), Vector2(3.4, -7.4), Vector2(-3.0, -10.6)]
 ## Round 4: the smooth half's edits on a coarser grid and its voxels a level larger (Ramon: "Reduce the
 ## terrain's geometric complexity by approximately one level ... broader, more coherent ground planes").
 @export var smooth_cell: float = 1.0
@@ -257,13 +265,14 @@ func _build_drift() -> void:
 	d.name = "Leaves"
 	d.set_script(Drift)
 	d.set("stream", true)
-	# Round 4 (30): from higher, drifting down rather than out of the middle of the room.
-	d.set("source", Vector3(0.0, 7.2, -9.5))
+	# Round 4 (30): from higher, drifting down rather than out of the middle of the room. Round 5 (42: "Significantly
+	# reduce the particle count ... a restrained finishing effect"): a quarter of them, a smaller gust.
+	d.set("source", Vector3(0.0, 7.2, -11.0))
 	d.set("source_radius", 6.5)
-	d.set("reach", 24.0)
+	d.set("reach", 28.0)
 	d.set("floor_y", 0.04)
-	d.set("amount", 240)
-	d.set("gust_extra", 2.5)
+	d.set("amount", 60)
+	d.set("gust_extra", 1.5)
 	d.set("leaf_share", 0.7)
 	d.set("leaf_size", 0.06)
 	d.set("colours", PackedColorArray([Color(0.48, 0.6, 0.2), Color(0.86, 0.66, 0.22), Color(0.72, 0.38, 0.15), Color(1.0, 0.88, 0.62)]))
@@ -360,17 +369,23 @@ func _start_smooth() -> void:
 				# The mirror: this half's x is the other's minus x (the walkway between them).
 				var h: float = height_at(-x, z, w)
 				# Round 4 (17; Ramon: "a large green surface that looks like a mattress hanging over the
-				# underlying brown geometry"): the grass first, a ball inside the cell's own footprint (none can
-				# hang over an edge), then the soil column written over it up to just under the surface, so only
-				# a thin green cap is left on top and the cut faces are soil to the top.
-				var edge: float = minf(display_size.x * 0.5 - absf(x), display_size.y * 0.5 - absf(z))
-				var r: float = minf(c * 0.48, maxf(edge - 0.04, c * 0.3))
+				# underlying brown geometry"): the grass ball kept inside the land's footprint, none hanging over
+				# an edge. ROUND 5 (40: "The smooth terrain on the right used to have an attractive green
+				# surface. It has now become a sandy-looking landscape with strange raised green patches"): round
+				# 4 also cut the balls to under half a cell and wrote the soil up to 10 cm under the surface, so
+				# the soil showed between balls that read as lumps. Now each ball is 0.85 of a cell, so its
+				# neighbours overlap into one continuous green skin, and its middle is moved in from an edge
+				# rather than the ball shrunk. The soil column stops 0.6 m under the surface, under the skin
+				# everywhere, and shows only on the cut faces.
+				var r: float = c * 0.85
+				var bx: float = clampf(x, -display_size.x * 0.5 + r + 0.03, display_size.x * 0.5 - r - 0.03)
+				var bz: float = clampf(z, -display_size.y * 0.5 + r + 0.03, display_size.y * 0.5 - r - 0.03)
 				var ball = ClassDB.instantiate("SphereVoxelEdit4D")
-				ball.set("center", (Vector4(x, h - r * 0.75, z, w) + jit) / v)
+				ball.set("center", (Vector4(bx, h - r * 0.85, bz, w) + jit) / v)
 				ball.set("radius", r / v)
 				ball.set("fill_material", 2)
 				_edits.append(ball)
-				var col_top: float = maxf(h - 0.1, 0.05)
+				var col_top: float = maxf(h - 0.6, 0.05)
 				var box = ClassDB.instantiate("BoxVoxelEdit4D")
 				box.set("position", (Vector4(x - c * 0.5, 0.0, z - c * 0.5, w - c * 0.5) + jit) / v)
 				box.set("size", Vector4(c, col_top, c, c) / v)
@@ -522,7 +537,8 @@ func _build_route() -> void:
 	var dl: int = g.call("add_node", "destination", Vector4(-1.2, 0.0, 3.0, 0.0), {"band": 8.0, "state": "available", "target": "Blocky", "frame": "none", "approach": Vector2(1, 0)})
 	var j2: int = g.call("add_node", "junction", Vector4(0.0, 0.0, -1.0, 0.0), b)
 	var dr: int = g.call("add_node", "destination", Vector4(1.2, 0.0, -2.2, 0.0), {"band": 8.0, "state": "arrival", "target": "Smooth", "frame": "none", "approach": Vector2(-1, 0)})
-	var e: int = g.call("add_node", "destination", Vector4(0.0, 0.0, -10.4, 0.0), {"band": 8.0, "state": "arrival", "target": "End", "frame": "none", "approach": Vector2(0, 1)})
+	# (Round 5: the walkway's end, past the slabs' end at -15.2, before the far wall at -18.2.)
+	var e: int = g.call("add_node", "destination", Vector4(0.0, 0.0, -16.0, 0.0), {"band": 8.0, "state": "arrival", "target": "End", "frame": "none", "approach": Vector2(0, 1)})
 	g.call("add_edge", s, j1, "primary", "static", 8.0)
 	g.call("add_edge", j1, dl, "primary", "static", 8.0)
 	g.call("add_edge", j1, j2, "primary", "static", 8.0)
@@ -542,8 +558,9 @@ func _build_walls() -> void:
 		var holder := Node4D.new()
 		holder.name = "Wall_" + side
 		add_child(holder)
-		hall.call("claim_wall", side, "blue", holder, -14.0, 14.0)
-	# Round 3: the far wall, the horizon the walkway runs toward (blue above it, as the teaching walls).
+		hall.call("claim_wall", side, "blue", holder, -17.0, 17.0)
+	# Round 3: the far wall, the horizon the walkway runs toward. Round 5: its whole face is the backdrop's
+	# print (the claim is for its swatch under it).
 	var far := Node4D.new()
 	far.name = "Wall_n"
 	add_child(far)
@@ -561,8 +578,9 @@ func _print_walls() -> void:
 		if tex == null:
 			continue
 		# 14 x 5 m, the page's own shape (2800 x 1000), centred on the display.
-		# (Along the wall from the room's middle, which round 4 moved to z 1: the page stays on the displays.)
-		for tg in hall.call("print_targets", side, -10.0, 4.0, 5.2, 10.2):
+		# (Along the wall from the room's middle, z -2 since round 5, the displays' own: the page on them.)
+		var mid_z: float = (hall as Node4D).position.z
+		for tg in hall.call("print_targets", side, -9.0 - mid_z, 5.0 - mid_z, 5.2, 10.2):
 			var m: TetraMaterial4D = (tg[0] as MeshInstance4D).material_override as TetraMaterial4D
 			if m != null:
 				LabGrid.set_print(m, tex, tg[1], tg[2], Color.WHITE, 0.2)
@@ -570,30 +588,43 @@ func _print_walls() -> void:
 				m.get_cross_section_material_3d().set_shader_parameter("print_aa", 1.0)
 	var sky_top: Color = LabGrid.values("kit_code_blue")[0]
 	var hs: Vector3 = hall.get("size")
-	# Round 4 (26): a metre more sky (floor to 7.4 m), printed at 200 px a metre so it reads as drawn.
-	var htex: Texture2D = await LabPrint.render(get_tree(), Vector2i(int(hs.x * 200.0), 1480), func(c: Control) -> void: _horizon(c, sky_top))
+	# Round 4 (26): a metre more sky (the warm band's top at 7.4 m), drawn crisp. Round 5 (38, 39): over the
+	# whole far wall, floor to ceiling, at 160 px a metre (4,832 x 1,920), the sky deepening above the band
+	# and the room's name in it.
+	var htex: Texture2D = await LabPrint.render(get_tree(), Vector2i(int(hs.x * 160.0), int(hs.y * 160.0)), func(c: Control) -> void: _horizon(c, sky_top))
 	if htex != null:
-		for tg in hall.call("print_targets", "n", -hs.x * 0.5, hs.x * 0.5, 0.0, 7.4):
+		for tg in hall.call("print_targets", "n", -hs.x * 0.5, hs.x * 0.5, 0.0, hs.y):
 			var m: TetraMaterial4D = (tg[0] as MeshInstance4D).material_override as TetraMaterial4D
 			if m != null:
 				LabGrid.set_print(m, htex, tg[1], tg[2], Color.WHITE, 0.55)
 				LabGrid.set_print_strength(m, 1.0)
 
 
-## Round 3: the far wall's horizon (36 x 6.4 m, 100 px a metre): the walkway runs toward a low warm sun
-## setting between layers of distant hills, the sky going up into the wall's own blue.
+## Round 3: the far wall's horizon: the walkway runs toward a low warm sun setting between layers of distant
+## hills, the sky going up into blue. Round 4 kept it (a metre more sky, the brown triangle gone, crisper).
+## Round 5: over the whole far wall: the same band, sun and hills (the warm band 2.9 to 7.4 m up, as round 4
+## had it), and above it the sky going on up, deepening toward the ceiling, with the room's name in it.
 func _horizon(c: Control, top: Color) -> void:
 	var sz: Vector2 = c.size
-	# (Round 4: 7.4 m tall now; the horizon stays at 2.9 m.)
-	var px: float = sz.y / 7.4
+	var px: float = sz.y / 12.0
 	var hy: float = sz.y - 2.9 * px
+	var band_top: float = sz.y - 7.4 * px
+	# Above the band: the evening sky, from a deep blue at the ceiling down to the band's own top colour.
+	var night := Color(0.05, 0.1, 0.3)
+	c.draw_polygon(PackedVector2Array([Vector2(0, 0), Vector2(sz.x, 0), Vector2(sz.x, band_top + 1.0), Vector2(0, band_top + 1.0)]), PackedColorArray([night, night, top, top]))
 	var bands: Array = [[0.0, top], [0.35, Color(0.52, 0.42, 0.66)], [0.62, Color(0.92, 0.56, 0.42)], [0.86, Color(1.0, 0.74, 0.44)], [1.0, Color(1.0, 0.88, 0.62)]]
 	for i in bands.size() - 1:
-		var y0: float = float(bands[i][0]) * hy
-		var y1: float = float(bands[i + 1][0]) * hy
+		var y0: float = band_top + float(bands[i][0]) * (hy - band_top)
+		var y1: float = band_top + float(bands[i + 1][0]) * (hy - band_top)
 		var c0: Color = bands[i][1]
 		var c1: Color = bands[i + 1][1]
 		c.draw_polygon(PackedVector2Array([Vector2(0, y0), Vector2(sz.x, y0), Vector2(sz.x, y1), Vector2(0, y1)]), PackedColorArray([c0, c0, c1, c1]))
+	# The room's name in the sky (it was the kit's wall sign on this wall, which took the wall's middle piece).
+	var fb: Font = LabPrint.font("black")
+	var fs: Font = LabPrint.font("bold")
+	var ty: float = sz.y - 10.0 * px
+	c.draw_string(fb, Vector2(0.0, ty), "TWO GARDENS", HORIZONTAL_ALIGNMENT_CENTER, sz.x, int(1.15 * px), Color(1, 1, 1, 0.96))
+	c.draw_string(fs, Vector2(0.0, ty + 0.62 * px), "BLOCKY ON THE LEFT  ·  SMOOTH ON THE RIGHT", HORIZONTAL_ALIGNMENT_CENTER, sz.x, int(0.32 * px), Color(1, 1, 1, 0.8))
 	# The sun, low and half-hidden, at the walkway's end; its halo.
 	var sun := Vector2(sz.x * 0.5, hy - 0.24 * px)
 	for k in 6:

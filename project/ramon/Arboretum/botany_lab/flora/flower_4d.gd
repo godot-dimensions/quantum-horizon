@@ -31,7 +31,8 @@ const Kit := preload("res://ramon/Arboretum/botany_lab/flora/flora_kit.gd")
 const Species := preload("res://ramon/Arboretum/botany_lab/flora/flora_species.gd")
 const PlantShader := preload("res://ramon/Arboretum/botany_lab/flora/flora_plant.gdshader")
 const BAKED := "res://ramon/Arboretum/botany_lab/flora/baked/"
-const BAKE_VERSION := "v1"
+## v2 (round 5): curved stems, the rose's whorls, the poppy's bowl and bud, four new species, 20 texture rows.
+const BAKE_VERSION := "v2"
 ## How many shapes of each species are baked (each pocket mixes them, turned and scaled).
 const VARIANTS := 2
 
@@ -40,7 +41,8 @@ enum {STEM, LEAF, PETAL, PETAL2, CENTRE, STAMEN, EXTRA, SPOT}
 const KINDS := 8
 const U_N := 48
 const V_N := 16
-const ROWS := 16
+## (Round 5: 20, room for the four new species and a few more.)
+const ROWS := 20
 
 const UP := Vector4(0, 1, 0, 0)
 const FRONT := Vector4(0, 0, 1, 0)
@@ -62,6 +64,17 @@ static func mesh(key: String, variant: int) -> ArrayTetraMesh4D:
 	return Kit.cached(path, func() -> ArrayTetraMesh4D: return build(key, variant))
 
 
+## A potted plant (round 5, the hall's sixteen pots): the same plant with its stem cut down to about
+## POTTED_STEM metres of its own height (never longer than the plant is), so it can be shown big enough for
+## its flower to read without standing two metres tall. Baked as the plants are, "_pot" after the variant.
+const POTTED_STEM := 0.3
+
+
+static func potted_mesh(key: String, variant: int) -> ArrayTetraMesh4D:
+	var path: String = BAKED + "%s_%d_pot_%s.res" % [key, variant, BAKE_VERSION]
+	return Kit.cached(path, func() -> ArrayTetraMesh4D: return build(key, variant, false, true))
+
+
 ## A bloom alone, facing +y from the origin (no stem, no leaves): the vines' flowers. Baked as the plants are.
 static func bloom_mesh(key: String) -> ArrayTetraMesh4D:
 	var path: String = BAKED + "%s_bloom_%s.res" % [key, BAKE_VERSION]
@@ -69,7 +82,7 @@ static func bloom_mesh(key: String) -> ArrayTetraMesh4D:
 
 
 ## A plant built now (no bake); `bloom_only` the flower alone.
-static func build(key: String, variant: int, bloom_only: bool = false) -> ArrayTetraMesh4D:
+static func build(key: String, variant: int, bloom_only: bool = false, potted: bool = false) -> ArrayTetraMesh4D:
 	var sp: Dictionary = Species.by_key(key)
 	if sp.is_empty():
 		push_warning("flower_4d: no species %s" % key)
@@ -78,6 +91,8 @@ static func build(key: String, variant: int, bloom_only: bool = false) -> ArrayT
 	b.sp = sp
 	b.row = int(sp["row"])
 	b.rng.seed = hash(key) + variant * 7919 + 17
+	if potted:
+		b.height_k = clampf(POTTED_STEM / maxf(float(sp.get("height", 0.4)), 0.01), 0.5, 1.0)
 	if bloom_only or bool(sp.get("bloom_only", false)):
 		b.bloom_alone()
 	else:
@@ -224,6 +239,8 @@ class Builder:
 	var bloom: Vector4 = Vector4.ZERO
 	var top: Vector4 = Vector4.ZERO
 	var _stem_pts := PackedVector4Array()
+	## The stem's height as a share of the species' (a potted plant's is shorter).
+	var height_k: float = 1.0
 
 	func add(m: ArrayTetraMesh4D) -> void:
 		if m != null and parts.size() < MAX_PARTS:
@@ -240,22 +257,39 @@ class Builder:
 	# -- the plant -----------------------------------------------------------------------------------
 
 	func plant() -> void:
-		var h: float = float(sp.get("height", 0.4)) * jit(0.08)
+		var h: float = float(sp.get("height", 0.4)) * jit(0.08) * height_k
 		var form: String = String(sp.get("form", "ring"))
 		var face: float = float(sp.get("face", 0.0))
 		var arch: float = float(sp.get("arch", 0.0))
 		# The stem: up, leaning a little toward the front, bending more where the species faces you
 		# or arches over.
 		var lean0: float = rng.randf_range(0.0, 0.06)
-		var bend: float = face * 0.45 + arch + rng.randf_range(-0.04, 0.08)
+		# ROUND 5 (Ramon: "Most flowers have overly straight stems. The Lily is currently one of the better
+		# examples because its stem has a slight natural bend. Introduce subtle curves and bends into the other
+		# flower stems. Avoid making every plant perfectly upright"): every species bends by its own `bend`
+		# (radians over the stem, a little more or less each plant), and the stem waves in a gentle S by its
+		# `wiggle`, with a touch of sideways drift, so no two are the same arc. Only the lily had a bend
+		# before, from its `face`.
+		var bend: float = face * 0.45 + arch + float(sp.get("bend", 0.16)) * rng.randf_range(0.6, 1.3) + rng.randf_range(-0.04, 0.06)
+		var wig: float = float(sp.get("wiggle", 0.1)) * rng.randf_range(0.6, 1.2) * (1.0 if rng.randf() < 0.5 else -1.0)
+		var drift: float = rng.randf_range(-0.35, 0.35)
 		var lean_dir: Vector4 = (FRONT * cos(rng.randf_range(-0.5, 0.5)) + SIDE * sin(rng.randf_range(-0.5, 0.5))).normalized()
 		if String(sp.get("arch_dir", "")) == "side":
 			lean_dir = (SIDE * (1.0 if rng.randf() < 0.5 else -1.0) + FRONT * rng.randf_range(0.1, 0.4)).normalized()
-		# Four spans: the loft splits each to its width anyway (subdivide_long_spans), so more authored
-		# sections only add cells (6 of them cost a 0.5 m stem 1,700; 4 cost 840).
-		var n_stem: int = 4
-		var a: Array = arc(Vector4.ZERO, UP, lean_dir, h, lean0, bend, n_stem)
-		_stem_pts = a[0]
+		var across: Vector4 = Vector4(lean_dir.z, 0.0, -lean_dir.x, 0.0).normalized()
+		# Six spans (round 5; four could not hold an S). The light loft does not split them, so a stem is
+		# still about a hundred cells.
+		var n_stem: int = 6
+		var spts := PackedVector4Array()
+		var sp_at := Vector4.ZERO
+		var step_len: float = h / float(n_stem)
+		for i in n_stem + 1:
+			spts.append(sp_at)
+			var sm: float = (float(i) + 0.5) / float(n_stem)
+			var th: float = lean0 + bend * sm + wig * sin(sm * PI * 1.5)
+			var ph: float = drift * sin(sm * PI)
+			sp_at += (UP * cos(th) + (lean_dir * cos(ph) + across * sin(ph)) * sin(th)).normalized() * step_len
+		_stem_pts = spts
 		top = _stem_pts[_stem_pts.size() - 1]
 		var radii := PackedFloat32Array()
 		var r: float = float(sp.get("stem_r", 0.003))
@@ -265,8 +299,8 @@ class Builder:
 		tube(_stem_pts, radii, STEM, 4)
 		# The bloom's axis: the stem's last direction, turned on toward the front by what is left of
 		# the face.
-		var th_end: float = lean0 + bend
-		var axis: Vector4 = (UP * cos(th_end) + lean_dir * sin(th_end)).normalized()
+		var th_end: float = lean0 + bend + wig * sin(PI * 1.5)
+		var axis: Vector4 = (_stem_pts[n_stem] - _stem_pts[n_stem - 1]).normalized()
 		if face > 0.0:
 			var th_face: float = maxf(face, th_end)
 			axis = (UP * cos(th_face) + lean_dir * sin(th_face)).normalized()
@@ -288,6 +322,8 @@ class Builder:
 			_leaf(lf)
 		for lf in sp.get("compound", []):
 			_compound(lf)
+		if sp.has("bud"):
+			_bud(sp["bud"])
 		for i in mini(int(sp.get("tendrils", 0)), 4):
 			_tendril(0.4 + 0.3 * float(i))
 
@@ -829,25 +865,29 @@ class Builder:
 				perches.append(attach + axis * (L * 0.5) + side * R)
 		bloom = stem_at((f0 + f1) * 0.5)
 
-	## The rose: petals spiralling by the golden angle over a band of directions, the inner ones
-	## upright and cupped, the outer ones open and turning back; green sepals under.
+	## The rose: whorls of petals round its middle, each turned a little on from the last, the inner ones
+	## upright and wrapped round the centre, the outer ones wider, opening and rolling back at their tips;
+	## a W pair in every whorl (the 4D rose's petals round W as well); green sepals under.
+	##
+	## ROUND 5 (Ramon: "the Corn Poppy and Rose are difficult to distinguish, and the Rose doesn't
+	## convincingly resemble a rose"): its 30 petals had been spread over a band of directions through W,
+	## so the slice showed a few whole and the rest as stubs: a ragged red cluster, like the poppy beside
+	## it. Whorls in the slice give the rose's own silhouette, the tight high centre and the opening cup.
 	func _rose(c: Vector4, a: Vector4) -> void:
 		var r: Dictionary = sp.get("rose", {})
-		var n: int = mini(int(r.get("n", 30)), 80)
-		var dirs: Array = band_dirs(a, n, float(r.get("band", 0.6)), rng.randf() * TAU, true)
-		# The band's directions in the golden-angle order the spiral grows: inner (first) to outer.
-		for k in n:
-			var t: float = float(k) / float(maxi(n - 1, 1))
-			var p := {
-				"L": lerpf(float(r.get("L0", 0.02)), float(r.get("L1", 0.04)), t),
-				"hw": lerpf(float(r.get("hw0", 0.012)), float(r.get("hw1", 0.024)), t),
-				"peak": 0.68, "round": 1.0,
-				"elev": lerpf(float(r.get("elev0", 1.4)), float(r.get("elev1", 0.3)), sqrt(t)),
-				"curl": lerpf(float(r.get("curl0", 0.6)), float(r.get("curl1", -0.5)), t),
-				"r0": float(r.get("r0", 0.003)) + t * 0.004, "thick": float(r.get("thick", 0.0016)), "wr": float(r.get("wr", 1.0)), "n_sec": 3,
-				"lift": (1.0 - t) * 0.006,
-			}
-			petal(c, dirs[k][0], a, p, PETAL, dirs[k][1])
+		var e: Array = square_to(a)
+		var whorls: Array = r.get("whorls", [])
+		var k: int = 0
+		for wh in whorls.slice(0, 8):
+			var d0: Dictionary = wh
+			var p := {"L": float(d0.get("L", 0.03)), "hw": float(d0.get("hw", 0.018)), "peak": 0.62, "round": 1.0,
+				"elev": float(d0.get("elev", 1.0)), "curl": float(d0.get("curl", 0.0)), "r0": float(d0.get("r0", 0.003)),
+				"thick": float(r.get("thick", 0.0016)), "n_sec": 4, "lift": float(d0.get("lift", 0.0))}
+			for d in ring_dirs(a, int(d0.get("n", 5)), float(k) * 0.63 + rng.randf_range(-0.1, 0.1)):
+				petal(c, d, a, p, PETAL)
+			for sgn in [1.0, -1.0]:
+				petal(c, (e[2] as Vector4) * sgn, a, p, PETAL, Vector4.ZERO, 0.95)
+			k += 1
 		var se: Dictionary = sp.get("sepals", {})
 		for d in ring_dirs(a, int(se.get("n", 5)), 0.3):
 			var p := {"L": float(se.get("L", 0.02)), "hw": float(se.get("hw", 0.004)), "peak": 0.3, "round": 0.0, "elev": float(se.get("elev", -0.4)), "curl": float(se.get("curl", -0.5)), "r0": 0.004, "thick": 0.0012, "lift": -0.004}
@@ -977,6 +1017,35 @@ class Builder:
 		var tip_d: Vector4 = (spts[4] - spts[3]).normalized()
 		var ar2: Array = arc(spts[4], tip_d, (UP - tip_d * tip_d.dot(UP)).normalized(), 0.03, 0.0, -0.2, 4)
 		blade(ar2[0], widths(4, 0.0095, 0.45, 0.6, 0.25, 6, 0.08), ar2[1], 0.001, LEAF)
+
+	## A poppy's bud (round 5): a thin stalk from the stem `at` of the way up, rising and then hooking over,
+	## the hairy green bud hanging nose down at its end, as a poppy's buds do before they open.
+	func _bud(bd: Dictionary) -> void:
+		var base: Vector4 = stem_at(float(bd.get("at", 0.6)))
+		var ph: float = float(bd.get("dir", 2.4)) + rng.randf_range(-0.3, 0.3)
+		var out: Vector4 = SIDE * cos(ph) + FRONT * sin(ph)
+		var L: float = float(bd.get("L", 0.09)) * jit(0.1)
+		var ar: Array = arc(base, out, UP, L, 1.2, -2.6, 6)
+		var pts: PackedVector4Array = ar[0]
+		var rad := PackedFloat32Array()
+		for i in pts.size():
+			rad.append(float(sp.get("stem_r", 0.002)) * lerpf(0.85, 0.7, float(i) / float(pts.size() - 1)))
+		tube(pts, rad, STEM, 4)
+		var tip: Vector4 = pts[pts.size() - 1]
+		var down: Vector4 = (pts[pts.size() - 1] - pts[pts.size() - 2]).normalized()
+		var br: float = float(bd.get("r", 0.008))
+		var sections: Array = []
+		for pr in [[0.0, 0.45], [0.25, 0.9], [0.6, 1.0], [0.9, 0.7], [1.0, 0.25]]:
+			sections.append({"center": tip + down * (float(pr[0]) * br * 2.6), "radius": br * float(pr[1]), "v_scale": 1.0, "w_scale": 1.0})
+		var m: ArrayTetraMesh4D = loft(sections, 2, 4)
+		if m != null:
+			var sp2 := PackedVector4Array()
+			var wr := PackedFloat32Array()
+			for s in sections:
+				sp2.append(s["center"])
+				wr.append(float(s["radius"]))
+			paint_along(m, sp2, wr, LEAF)
+			add(m)
 
 	## A passionflower's tendril: a thin coil from the stem.
 	func _tendril(at: float) -> void:

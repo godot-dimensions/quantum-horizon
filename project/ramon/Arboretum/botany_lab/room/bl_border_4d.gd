@@ -1,44 +1,68 @@
 extends Node4D
 
 ## BOTANY LAB, round 3 (follow_up/arboretum.md section 9, step 35; Ramon, 10 Oct: "make some smaller
-## pedestals with different flower types"): the flower border down the hall's right side, eight small
-## planters at knee height along the path to the flower room's door, each with three flowers of one
-## species, true 4D lofts (flora/flower_4d.gd), its name printed round the planter's side. A handful
-## of butterflies (flora/butterflies_4d.gd) visit them.
+## pedestals with different flower types"): small planters of true 4D lofted flowers (flora/flower_4d.gd),
+## each species' name printed round its planter's side, a handful of butterflies (flora/butterflies_4d.gd)
+## visiting them. Round 4 had eight down the hall's right side in two rows of four.
 ##
-## Walk along it and a right drag turns every flower in the border through W about its own stem, as in
-## the flower room (the pedestals' turn: the floor only); the planters never move. R levels them.
+## ROUND 5 (section 11; Ramon: "relocate the flowers into the corner near 01, Voxels ... Arrange them in a
+## compact 4 x 4 grid ... almost like a collection of small potted plants. Keep enough separation to identify
+## and interact with individual specimens"): sixteen small pots, one plant each and every one a different
+## species, in a grid `step` metres apart (aisles you can walk), tall plants at the back by the walls and
+## short ones at the front where the path comes in.
+##
+## THE W SLICE IS REAL (31: "They appear to rotate or spin around a cylindrical axis rather than actually
+## being sliced through four-dimensional geometry ... Ensure the flowers progressively reveal, change, and
+## disappear as their geometry intersects the current W-slice"). Their turn had been the floor-only slice
+## turn (x-W and z-W), which never tips a stem: a flower round about its stem in x, z and W then only seems
+## to spin, and its cut hardly changes. Now, near the collection:
+##   SLIDE  a right drag forward and back (or the wheel) moves every flower through W, `slide_w` metres
+##          off your slice. A stem is a few millimetres deep in W and goes first, then the ring's petals,
+##          and then only the W pair's petals are cut, as they reach out through W, before it all goes.
+##   TIP    a right drag sideways leans every flower over into W about its foot (the y-W plane), so the
+##          slice loses the head first and then the stem from the top down.
+## The pots never move. R puts the flowers back upright in the slice.
 ##
 ## Positions are this node's children's (x, z); it is put at the hall's origin.
 ## NO class_name (engine_gotchas.md).
 
 const Pedestal := preload("res://ramon/Arboretum/botany_lab/carried/kit/kit_pedestal.gd")
 const LabPrint := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/lab_print.gd")
-const Ground := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/carried/chickenpen/scripts/ground_basis_4d.gd")
 const Flower := preload("res://ramon/Arboretum/botany_lab/flora/flower_4d.gd")
 const Species := preload("res://ramon/Arboretum/botany_lab/flora/flora_species.gd")
 const Butterflies := preload("res://ramon/Arboretum/botany_lab/flora/butterflies_4d.gd")
 
-## The species, in walking order from the entrance.
-@export var keys: PackedStringArray = PackedStringArray(["tulip", "poppy", "iris", "daisy", "lily", "allium", "rose", "foxglove"])
-## Where the planters stand (x, z), and how big they are. Round 4 (Ramon: "Four flowers in the first row.
-## Four flowers in the second row ... approximately 2 meters behind the first ... Keep the existing path"):
-## `per_row` along the path from `at` by `step`, each further row `row_step` behind it.
-@export var at: Vector2 = Vector2(6.9, 12.0)
-@export var step: Vector2 = Vector2(0.0, -2.6)
+## The sixteen, row by row from the back (by the entrance wall) to the front (toward 01), each row from the
+## left wall toward the spine: tall at the back, short at the front, the colours mixed.
+@export var keys: PackedStringArray = PackedStringArray(["foxglove", "sunflower", "allium", "lily",
+	"passionflower", "iris", "poppy", "lavender",
+	"rose", "daisy", "cornflower", "tulip",
+	"marigold", "snowdrop", "bluebell", "dandelion"])
+## The back-left pot's middle (x, z), the gap between pots along a row (x) and between rows (z, toward the
+## front), and how many to a row.
+@export var at: Vector2 = Vector2(-11.0, 14.9)
+@export var step: Vector2 = Vector2(1.4, -1.4)
 @export var per_row: int = 4
-@export var row_step: Vector2 = Vector2(2.0, 0.0)
-@export var radius: float = 0.5
-@export var height: float = 0.42
+@export var radius: float = 0.32
+@export var height: float = 0.5
+## How much bigger than its species' own display size a plant is shown in its pot (its stem cut down:
+## flower_4d.gd potted_mesh).
+@export var display: float = 1.9
 ## How far the planter's label faces round from +Z toward +X (radians): toward the path.
-@export var label_angle: float = -PI * 0.5
-@export var butterflies: int = 6
-## How near (m) you must be for a right drag to turn the border.
-@export var reach: float = 2.4
+@export var label_angle: float = PI * 0.5
+@export var butterflies: int = 5
+## How near (m) you must be to the collection's footprint for a drag or the wheel to move its flowers.
+@export var reach: float = 1.6
+## How near a pot you must be for it to be the one you are at (its caption).
+@export var pot_reach: float = 0.95
+## How far the slide and the tip go.
+@export var slide_limit: float = 0.12
+@export var tip_limit: float = 0.9
 
 var planters: Array = []
-var turn_basis: Projection = Projection.IDENTITY
-var _applied: Projection = Projection.IDENTITY
+var slide_w: float = 0.0
+var tip: float = 0.0
+var _applied := Vector2(INF, INF)
 var _flies: Node4D
 var _rng := RandomNumberGenerator.new()
 
@@ -49,52 +73,56 @@ func _ready() -> void:
 	for i in keys.size():
 		var key: String = keys[i]
 		var p := Node4D.new()
-		p.name = "Border_%s" % key
+		p.name = "Pot_%s" % key
 		var row: int = i / maxi(per_row, 1)
 		var col: int = i % maxi(per_row, 1)
-		var xz: Vector2 = at + step * float(col) + row_step * float(row)
-		p.position = Vector4(xz.x, 0.0, xz.y, 0.0)
+		p.position = Vector4(at.x + step.x * float(col), 0.0, at.y + step.y * float(row), 0.0)
 		add_child(p)
 		var parts: Dictionary = Pedestal.build(p, radius, height, "planter")
 		var deck: float = float(parts.get("deck_h", height))
 		var plants: Array = []
-		var disp: float = float(Species.DISPLAY.get(key, 1.4)) * 1.15
-		for k in 4:
-			var mesh: ArrayTetraMesh4D = Flower.mesh(key, k % Flower.VARIANTS)
-			if mesh == null:
-				continue
-			var ang: float = TAU * float(k) / 4.0 + _rng.randf_range(-0.3, 0.3)
-			var off := Vector4(cos(ang) * radius * 0.45, deck, sin(ang) * radius * 0.45, 0.0)
-			# Each faces the path a little differently.
-			var base: Projection = Basis4D.from_zx(-PI * 0.5 + _rng.randf_range(-0.6, 0.6))
-			var s: float = disp * _rng.randf_range(0.92, 1.06)
+		var mesh: ArrayTetraMesh4D = Flower.potted_mesh(key, i % Flower.VARIANTS)
+		if mesh != null:
+			# Its front toward the path (+x) a little differently each.
+			var base: Projection = Basis4D.from_zx(PI * 0.5 + _rng.randf_range(-0.5, 0.5))
+			var s: float = float(Species.DISPLAY.get(key, 1.4)) * display * _rng.randf_range(0.95, 1.05)
 			var mi := MeshInstance4D.new()
-			mi.name = "%s_%d" % [key, k]
+			mi.name = key
 			mi.mesh = mesh
 			mi.material_override = mat
-			mi.position = off
+			mi.position = Vector4(0.0, deck, 0.0, 0.0)
 			mi.basis = _scaled(base, s)
 			p.add_child(mi)
-			plants.append([mi, base, s])
+			plants.append([mi, base, s, mi.position])
 		planters.append({"key": key, "node": p, "parts": parts, "plants": plants})
 	_print_labels.call_deferred()
 	if butterflies > 0:
+		var lo: Vector2 = footprint_lo()
+		var hi: Vector2 = footprint_hi()
 		_flies = Node4D.new()
-		_flies.name = "BorderButterflies"
+		_flies.name = "CollectionButterflies"
 		_flies.set_script(Butterflies)
 		_flies.set("count", butterflies)
 		_flies.set("size", 1.5)
-		var far: Vector2 = at + step * float(per_row - 1) + row_step * float((keys.size() - 1) / maxi(per_row, 1))
-		var lo := Vector2(minf(at.x, far.x), minf(at.y, far.y))
-		var hi := Vector2(maxf(at.x, far.x), maxf(at.y, far.y))
-		_flies.set("bounds_lo", Vector3(lo.x - 2.0, 0.5, lo.y - 1.0))
-		_flies.set("bounds_hi", Vector3(hi.x + 1.5, 3.2, hi.y + 1.0))
+		_flies.set("bounds_lo", Vector3(lo.x, 0.6, lo.y))
+		_flies.set("bounds_hi", Vector3(hi.x, 2.8, hi.y))
 		_flies.set("perch_source", perch_points)
 		add_child(_flies)
 
 
 static func _scaled(b: Projection, s: float) -> Projection:
 	return Projection(b.x * s, b.y * s, b.z * s, b.w * s)
+
+
+## The grid's footprint (x, z), pots' edges included.
+func footprint_lo() -> Vector2:
+	var far: Vector2 = at + Vector2(step.x * float(per_row - 1), step.y * float((keys.size() - 1) / maxi(per_row, 1)))
+	return Vector2(minf(at.x, far.x), minf(at.y, far.y)) - Vector2.ONE * radius
+
+
+func footprint_hi() -> Vector2:
+	var far: Vector2 = at + Vector2(step.x * float(per_row - 1), step.y * float((keys.size() - 1) / maxi(per_row, 1)))
+	return Vector2(maxf(at.x, far.x), maxf(at.y, far.y)) + Vector2.ONE * radius
 
 
 func _print_labels() -> void:
@@ -114,19 +142,42 @@ func _label(c: Control, sp: Dictionary) -> void:
 
 
 func _process(_delta: float) -> void:
-	if turn_basis != _applied:
-		_applied = turn_basis
-		for pl in planters:
-			for pt in pl["plants"]:
-				(pt[0] as MeshInstance4D).basis = _scaled((pt[1] as Projection) * turn_basis, pt[2])
-		if _flies != null:
-			_flies.call("refresh_perches")
+	var now := Vector2(slide_w, tip)
+	if now == _applied:
+		return
+	_applied = now
+	var lean: Projection = Basis4D.from_wy(tip)
+	for pl in planters:
+		for pt in pl["plants"]:
+			var mi: MeshInstance4D = pt[0]
+			mi.basis = _scaled((pt[1] as Projection) * lean, pt[2])
+			mi.position = (pt[3] as Vector4) + Vector4(0.0, 0.0, 0.0, slide_w)
+	if _flies != null:
+		_flies.call("refresh_perches")
 
 
-## The planter nearest `p` (world) within `reach`, or {}.
+## Whether `p` (world) is by the collection: within `reach` of its footprint.
+func near(p: Vector4) -> bool:
+	var lo: Vector2 = footprint_lo() - Vector2.ONE * reach
+	var hi: Vector2 = footprint_hi() + Vector2.ONE * reach
+	return p.x > lo.x and p.x < hi.x and p.z > lo.y and p.z < hi.y
+
+
+## How far `p` (world) is from the collection's footprint, metres (0 inside it).
+func footprint_distance(p: Vector4) -> float:
+	var lo: Vector2 = footprint_lo()
+	var hi: Vector2 = footprint_hi()
+	var dx: float = maxf(maxf(lo.x - p.x, p.x - hi.x), 0.0)
+	var dz: float = maxf(maxf(lo.y - p.z, p.z - hi.y), 0.0)
+	return Vector2(dx, dz).length()
+
+
+## The pot nearest `p` (world) within `pot_reach` of its rim, or {}; only while by the collection.
 func nearest(p: Vector4) -> Dictionary:
+	if not near(p):
+		return {}
 	var best: Dictionary = {}
-	var bd: float = reach
+	var bd: float = pot_reach + radius
 	for pl in planters:
 		var q: Vector4 = (pl["node"] as Node4D).global_position
 		var d: float = Vector2(p.x - q.x, p.z - q.z).length()
@@ -136,12 +187,25 @@ func nearest(p: Vector4) -> Dictionary:
 	return best
 
 
+## A right drag: sideways tips them through W, forward and back slides them (the mouse pushed away slides
+## them ana, +W).
 func turn_by(dx: float, dy: float) -> void:
-	turn_basis = Ground.cleaned(Ground.sliced(turn_basis, Vector2(dx, dy)))
+	tip = clampf(tip + dx * 0.7, -tip_limit, tip_limit)
+	slide_w = clampf(slide_w - dy * 0.05, -slide_limit, slide_limit)
+
+
+## The wheel: a step through W.
+func slide_by(d: float) -> void:
+	slide_w = clampf(slide_w + d, -slide_limit, slide_limit)
 
 
 func level() -> void:
-	turn_basis = Projection.IDENTITY
+	slide_w = 0.0
+	tip = 0.0
+
+
+func moved() -> bool:
+	return absf(slide_w) > 0.0005 or absf(tip) > 0.005
 
 
 func perch_points() -> PackedVector4Array:

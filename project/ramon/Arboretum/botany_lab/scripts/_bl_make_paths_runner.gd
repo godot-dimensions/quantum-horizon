@@ -80,6 +80,12 @@ func _hall() -> Resource:
 	g.call("add_edge", jp, tour, "secondary", "static", BAND)
 	var d1: int = g.call("add_node", "destination", _p(-4.2, 7.0), {"band": BAND, "state": "available", "target": "P1", "frame": "rect", "approach": Vector2(1, 0)})
 	g.call("add_edge", j1, d1, "primary", "static", BAND)
+	# ROUND 5 (Ramon: "Add a short branch from the main exhibition path toward the flower collection. This
+	# should branch near the relevant 4D showcase / V interaction area and lead naturally into the flower
+	# corner"): from 01's junction, back and out to the front corner of the sixteen pots (room/bl_border_4d.gd),
+	# its frame round the collection.
+	var df: int = g.call("add_node", "destination", _p(-5.9, 10.6), {"band": BAND, "state": "arrival", "target": "Flowers", "frame": "rect", "approach": Vector2(1, 0)})
+	g.call("add_edge", j1, df, "secondary", "static", BAND)
 	var d2: int = g.call("add_node", "destination", _p(-4.0, 0.0), {"band": BAND, "state": "arrival", "target": "P2", "frame": "round", "approach": Vector2(1, 0)})
 	g.call("add_edge", j2, d2, "primary", "static", BAND)
 	var d3: int = g.call("add_node", "destination", _p(-4.0, -7.0), {"band": BAND, "state": "arrival", "target": "P3", "frame": "round", "approach": Vector2(1, 0)})
@@ -87,11 +93,9 @@ func _hall() -> Resource:
 	# The oak, on the spine: its deck's edge at z -9.5, the ring at -8.3.
 	var d4: int = g.call("add_node", "destination", _p(0.0, -8.3), {"band": BAND, "state": "arrival", "target": "P4", "frame": "round", "approach": Vector2(0, 1)})
 	g.call("add_edge", j4, d4, "primary", "static", BAND)
-	# The border: across from the door's junction, then down the right side (kept as it was).
-	var r0: int = g.call("add_node", "bend", _p(5.4, 15.2), b)
-	var r1: int = g.call("add_node", "junction", _p(5.4, -6.8), b)
-	g.call("add_edge", t, r0, "primary", "static", BAND)
-	g.call("add_edge", r0, r1, "primary", "static", BAND)
+	# (Round 5: the border's run down the right side went with the border; the way round the oak's right
+	# side to the back door stays.)
+	var r1: int = g.call("add_node", "bend", _p(5.4, -6.8), b)
 	g.call("add_edge", j4, r1, "primary", "static", BAND)
 	# The back door, round the oak's right side.
 	var r2: int = g.call("add_node", "bend", _p(5.4, -17.4), b)

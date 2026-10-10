@@ -86,6 +86,11 @@ func _run() -> void:
 		print("COMPARE done")
 		quit(0)
 		return
+	if "round5" in OS.get_cmdline_user_args():
+		await _round5()
+		print("COMPARE done")
+		quit(0)
+		return
 	if "round4" in OS.get_cmdline_user_args():
 		await _round4()
 		print("COMPARE done")
@@ -177,6 +182,44 @@ func _round4() -> void:
 		w.call("gust", 0.6, 7.0, 1.0)
 	await _frames(60)
 	_shoot("r4_11_gust")
+
+
+## Round 5 (section 11): the terraces whole, the far wall 3 m past them, the sunset over the whole far wall,
+## the smooth land green, the grass on it level and stepped through W both ways, the birches, fewer leaves;
+## frame times at the arrival and down the cut.
+func _round5() -> void:
+	var g: Node = _room.get("gardens")
+	for i in 900:
+		if g != null and bool(g.call("grass_ready")):
+			break
+		await process_frame
+	var hall: Node4D = _room.get_node_or_null("Hall") as Node4D
+	print("COMPARE hall %s at z %.1f; far wall at z %.1f, the slabs end at %.1f" % [str(hall.get("size")), hall.position.z,
+		hall.position.z - float((hall.get("size") as Vector3).z) * 0.5, float((_room.get("left_at") as Vector2).y) - float((_room.get("display_size") as Vector2).y) * 0.5])
+	var leaves: Node = _room.get_node_or_null("Leaves")
+	print("COMPARE leaves %s, butterflies %s" % [str(leaves.get("amount")) if leaves != null else "-", str(g.get("flies").get("count")) if g != null and g.get("flies") != null else "-"])
+	for v in [[0.0, 10.0, 0.0, -4.0, "c5_01_arrival"], [0.0, 6.0, 0.0, -2.0, "c5_02_down_the_cut"], [0.0, -4.0, 0.0, 6.0, "c5_03_backdrop_from_the_middle"],
+			[0.0, -13.5, 0.0, 8.0, "c5_04_backdrop_from_the_end"], [0.0, -14.5, 180.0, -10.0, "c5_05_terraces_ends_and_gap"],
+			[1.2, 4.0, -60.0, -6.0, "c5_06_smooth_land"], [2.0, -2.0, -70.0, -20.0, "c5_07_smooth_close"], [3.0, 8.5, -40.0, -16.0, "c5_08_smooth_grass_close"],
+			[-1.2, 3.0, 120.0, -4.0, "c5_09_blocky_birches"], [0.0, -12.0, 180.0, -4.0, "c5_10_back_to_the_exit"]]:
+		_go(float(v[0]), float(v[1]), float(v[2]), float(v[3]))
+		await _frames(40)
+		_shoot(String(v[4]))
+		if String(v[4]) == "c5_01_arrival":
+			await _measure("r5 arrival")
+		if String(v[4]) == "c5_02_down_the_cut":
+			await _measure("r5 down the cut")
+	# The grass stepped through W: the land changes with W, and the grass must stay on it.
+	for w in [0.5, -0.6, 1.0]:
+		_go(2.0, 1.0, -75.0, -18.0, w)
+		await _frames(40)
+		_shoot("c5_11_grass_at_w_%+.1f" % w)
+	_go(0.0, 6.0, 0.0, -2.0)
+	var wd: Node = _room.get_node_or_null("Wind")
+	if wd != null:
+		wd.call("gust", 0.6, 7.0, 1.0)
+	await _frames(60)
+	_shoot("c5_12_gust")
 
 
 ## Round 3 (section 9, steps 48-54): one land split by the walkway: down the cut from the door and from
