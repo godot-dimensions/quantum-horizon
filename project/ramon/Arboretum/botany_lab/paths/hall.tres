@@ -28,7 +28,7 @@ nodes = [{
 "frame": "none",
 "id": 3,
 "kind": "junction",
-"pos": Vector4(0, 0, 11.7, 0),
+"pos": Vector4(0, 0, 11.2, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -37,7 +37,7 @@ nodes = [{
 "frame": "none",
 "id": 4,
 "kind": "junction",
-"pos": Vector4(0, 0, 4.5, 0),
+"pos": Vector4(0, 0, 4, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -46,50 +46,59 @@ nodes = [{
 "frame": "none",
 "id": 5,
 "kind": "junction",
-"pos": Vector4(0, 0, -2.5, 0),
+"pos": Vector4(0, 0, -3, 0),
 "state": "arrival",
 "target": ""
 }, {
-"approach": Vector2(-1, 0),
+"approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
 "id": 6,
+"kind": "junction",
+"pos": Vector4(0, 0, -6.8, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(1, 0),
+"band": 8.0,
+"frame": "none",
+"id": 7,
 "kind": "destination",
-"pos": Vector4(3, 0, 12.2, 0),
+"pos": Vector4(-3, 0, 12.2, 0),
 "state": "available",
 "target": "Tour"
 }, {
 "approach": Vector2(1, 0),
 "band": 8.0,
 "frame": "rect",
-"id": 7,
-"kind": "destination",
-"pos": Vector4(-3.7, 0, 8, 0),
-"state": "available",
-"target": "P1"
-}, {
-"approach": Vector2(-1, 0),
-"band": 8.0,
-"frame": "round",
 "id": 8,
 "kind": "destination",
-"pos": Vector4(3.5, 0, 1, 0),
-"state": "arrival",
-"target": "P2"
+"pos": Vector4(-4.2, 0, 7, 0),
+"state": "available",
+"target": "P1"
 }, {
 "approach": Vector2(1, 0),
 "band": 8.0,
 "frame": "round",
 "id": 9,
 "kind": "destination",
-"pos": Vector4(-3.5, 0, -6, 0),
+"pos": Vector4(-4, 0, 0, 0),
+"state": "arrival",
+"target": "P2"
+}, {
+"approach": Vector2(1, 0),
+"band": 8.0,
+"frame": "round",
+"id": 10,
+"kind": "destination",
+"pos": Vector4(-4, 0, -7, 0),
 "state": "arrival",
 "target": "P3"
 }, {
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "round",
-"id": 10,
+"id": 11,
 "kind": "destination",
 "pos": Vector4(0, 0, -8.3, 0),
 "state": "arrival",
@@ -98,16 +107,43 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
-"id": 11,
+"id": 12,
 "kind": "bend",
-"pos": Vector4(5.4, 0, -7.9, 0),
+"pos": Vector4(5.4, 0, 15.2, 0),
 "state": "arrival",
 "target": ""
 }, {
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
-"id": 12,
+"id": 13,
+"kind": "junction",
+"pos": Vector4(5.4, 0, -3, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 14,
+"kind": "junction",
+"pos": Vector4(5.4, 0, -6.8, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(-1, 0),
+"band": 8.0,
+"frame": "rect",
+"id": 15,
+"kind": "destination",
+"pos": Vector4(12.6, 0, -3, 0),
+"state": "arrival",
+"target": "Flowers"
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 16,
 "kind": "bend",
 "pos": Vector4(5.4, 0, -17.4, 0),
 "state": "arrival",
@@ -116,7 +152,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
-"id": 13,
+"id": 17,
 "kind": "bend",
 "pos": Vector4(2, 0, -20.8, 0),
 "state": "arrival",
@@ -125,7 +161,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "rect",
-"id": 14,
+"id": 18,
 "kind": "destination",
 "pos": Vector4(0, 0, -20.8, 0),
 "state": "arrival",
@@ -157,25 +193,25 @@ edges = [{
 "w_mode": "static"
 }, {
 "band": 8.0,
+"from": 5,
+"priority": "primary",
+"to": 6,
+"w_mode": "static"
+}, {
+"band": 8.0,
 "from": 2,
 "priority": "secondary",
-"to": 6,
+"to": 7,
 "w_mode": "static"
 }, {
 "band": 8.0,
 "from": 3,
 "priority": "primary",
-"to": 7,
-"w_mode": "static"
-}, {
-"band": 8.0,
-"from": 4,
-"priority": "primary",
 "to": 8,
 "w_mode": "static"
 }, {
 "band": 8.0,
-"from": 5,
+"from": 4,
 "priority": "primary",
 "to": 9,
 "w_mode": "static"
@@ -187,13 +223,13 @@ edges = [{
 "w_mode": "static"
 }, {
 "band": 8.0,
-"from": 5,
+"from": 6,
 "priority": "primary",
 "to": 11,
 "w_mode": "static"
 }, {
 "band": 8.0,
-"from": 11,
+"from": 2,
 "priority": "primary",
 "to": 12,
 "w_mode": "static"
@@ -209,5 +245,35 @@ edges = [{
 "priority": "primary",
 "to": 14,
 "w_mode": "static"
+}, {
+"band": 8.0,
+"from": 6,
+"priority": "primary",
+"to": 14,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 13,
+"priority": "primary",
+"to": 15,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 14,
+"priority": "primary",
+"to": 16,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 16,
+"priority": "primary",
+"to": 17,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 17,
+"priority": "primary",
+"to": 18,
+"w_mode": "static"
 }]
-next_id = 15
+next_id = 19

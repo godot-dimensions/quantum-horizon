@@ -109,6 +109,8 @@ func _run() -> void:
 				await _showcase()
 			"turns":
 				await _turns()
+			"garden":
+				await _garden()
 			"wall":
 				_go(5.0, -11.0, -42.0, 4.0)
 				await _frames(60)
@@ -142,10 +144,11 @@ func _route() -> void:
 	_shoot("route", "r01_from_above")
 	_player_camera().current = true
 	_top.queue_free()
-	for v in [[0.0, 20.0, 0.0, -14.0, "r02_from_the_corridor"], [0.0, 13.6, 30.0, -16.0, "r03_junction_01"], [-3.7, 8.0, 90.0, -12.0, "r04_ring_01"],
-			[0.0, 6.4, -30.0, -16.0, "r05_junction_02"], [3.5, 1.0, -90.0, -12.0, "r06_ring_02"], [0.0, -0.6, 30.0, -16.0, "r07_junction_03"],
-			[-3.5, -6.0, 90.0, -12.0, "r08_ring_03"], [0.0, -6.6, 0.0, -14.0, "r09_ring_oak"], [5.4, -9.0, 0.0, -14.0, "r10_round_the_oak"],
-			[0.6, -19.0, 0.0, -8.0, "r11_back_door"]]:
+	# (Round 3's layout: the trees all on the left, the border down the right.)
+	for v in [[0.0, 20.0, 0.0, -14.0, "r02_from_the_corridor"], [0.0, 13.0, 30.0, -16.0, "r03_junction_01"], [-4.2, 7.0, 90.0, -12.0, "r04_ring_01"],
+			[0.0, 5.8, 30.0, -16.0, "r05_junction_02"], [-4.0, 0.0, 90.0, -12.0, "r06_ring_02"], [0.0, -1.2, 30.0, -16.0, "r07_junction_03"],
+			[-4.0, -7.0, 90.0, -12.0, "r08_ring_03"], [0.0, -6.6, 0.0, -14.0, "r09_ring_oak"], [5.4, -9.0, 0.0, -14.0, "r10_round_the_oak"],
+			[0.6, -19.0, 0.0, -8.0, "r11_back_door"], [5.4, 14.0, 0.0, -14.0, "r12_border_path"], [10.4, -3.0, -90.0, -6.0, "r13_flower_door"]]:
 		_go(float(v[0]), float(v[1]), float(v[2]), float(v[3]))
 		await _frames(40)
 		_shoot("route", String(v[4]))
@@ -368,6 +371,33 @@ func _report(name: String, times: Array) -> void:
 
 
 ## The back door's sign and its doorway.
+## Round 3: the hall as a garden: down its middle from the door, the border, a border planter close, the
+## trees from the aisle, the oak and its leaves on the wind, the flower room's door.
+func _garden() -> void:
+	for v in [[0.0, 16.5, 0.0, -6.0, "g01_from_the_door"], [0.0, 10.0, 0.0, -2.0, "g02_down_the_middle"], [5.4, 13.0, 0.0, -10.0, "g03_border"],
+			[5.6, 6.4, -90.0, -18.0, "g04_border_close"], [1.6, 4.0, 90.0, -6.0, "g05_trees_from_the_aisle"], [0.0, -5.4, 0.0, 6.0, "g06_oak"],
+			[3.0, -6.0, -150.0, -2.0, "g07_leaves_toward_the_door"], [9.6, -3.0, -90.0, -4.0, "g08_flower_door"]]:
+		_go(float(v[0]), float(v[1]), float(v[2]), float(v[3]))
+		await _frames(50)
+		_shoot("garden", String(v[4]))
+	# The border turned through W (a drag's worth, at the planters).
+	_go(5.6, 6.4, -90.0, -18.0)
+	await _frames(20)
+	var border: Node = _room.get_node_or_null("Border")
+	if border != null:
+		border.call("turn_by", deg_to_rad(45.0), 0.0)
+		await _frames(20)
+		_shoot("garden", "g09_border_turned_45")
+		border.call("level")
+	# A gust from the oak.
+	_go(0.0, 4.0, 0.0, 2.0)
+	var w: Node = _room.call("wind")
+	if w != null:
+		w.call("gust", 0.7, 6.0, 2.0)
+	await _frames(70)
+	_shoot("garden", "g10_gust")
+
+
 func _door() -> void:
 	_go(0.0, -18.0, 0.0, -2.0)
 	await _frames(40)

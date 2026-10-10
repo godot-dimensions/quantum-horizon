@@ -86,6 +86,11 @@ func _run() -> void:
 		print("COMPARE done")
 		quit(0)
 		return
+	if "round3" in OS.get_cmdline_user_args():
+		await _round3()
+		print("COMPARE done")
+		quit(0)
+		return
 	_go(0.0, 19.0, 0.0, -12.0)
 	await _frames(30)
 	_shoot("c01_from_the_door")
@@ -123,6 +128,32 @@ func _run() -> void:
 	print("COMPARE the doorway back %s" % ("starts the way back" if bool(_room.get("_leaving")) else "DID NOT trigger"))
 	print("COMPARE done")
 	quit(0)
+
+
+## Round 3 (section 9, steps 48-54): one land split by the walkway: down the cut from the door and from
+## its middle, a bank's cut face close, the horizon at the far end, back toward the door, turned 45 degrees,
+## and a gust with the leaves down the cut; frame times at the door and the middle.
+func _round3() -> void:
+	for v in [[0.0, 19.0, 0.0, -4.0, "r3_01_from_the_door"], [0.0, 6.0, 0.0, -2.0, "r3_02_down_the_cut"], [-0.6, 0.0, 90.0, -8.0, "r3_03_blocky_bank"],
+			[0.6, 0.0, -90.0, -8.0, "r3_04_smooth_bank"], [0.0, -12.0, 0.0, 6.0, "r3_05_horizon"], [0.0, -17.0, 180.0, -6.0, "r3_06_back_to_the_door"]]:
+		_go(float(v[0]), float(v[1]), float(v[2]), float(v[3]))
+		await _frames(40)
+		_shoot(String(v[4]))
+		if String(v[4]) == "r3_01_from_the_door":
+			await _measure("r3 from the door")
+		if String(v[4]) == "r3_02_down_the_cut":
+			await _measure("r3 down the cut")
+	_go(0.0, 6.0, 0.0, -2.0)
+	_room.call("turn_by", deg_to_rad(45.0), 0.0)
+	await _frames(30)
+	_shoot("r3_07_turned_45")
+	_room.call("level")
+	var w: Node = _room.get_node_or_null("Wind")
+	if w != null:
+		w.set("gust_speed", 10.0)
+		w.call("gust", 0.6, 7.0, 1.0)
+	await _frames(60)
+	_shoot("r3_08_gust")
 
 
 ## Round 2 (section 8, steps 22 and 26): both lands turned through W, each side from its ring, level and

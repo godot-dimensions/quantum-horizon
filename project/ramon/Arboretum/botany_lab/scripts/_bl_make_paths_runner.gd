@@ -43,39 +43,58 @@ func _p(x: float, z: float) -> Vector4:
 	return Vector4(x, 0.0, z, 0.0)
 
 
+## ROUND 3 (section 9, step 41; Ramon, 10 Oct: "change the layout ... think how to guide the eye and the
+## players tour"): the trees all on the left, simple to complex toward the oak; the flower border down the
+## right to the flower room's door. Every leg straight, the branches at 45 degrees as before.
+##   THE SPINE      x 0, from the corridor to the oak's ring, a junction 4.2 m (01) or 4 m (02, 03) before
+##                  each tree, so its 45-degree branch lands on the ring 1.2 m off the planter
+##   THE PAD        PLAY THE SHOWCASE, a short 45-degree branch to the left just inside the door
+##   THE BORDER     from the door's junction straight across to x 5.4 and straight down past the eight
+##                  small planters (x 6.9) to the oak's level; a branch east at z -3 to the flower room
+##   THE OAK        its ring on the spine; a junction 1.5 m before it, a leg east to the border path, which
+##                  goes on round the oak's right to the back door
 func _hall() -> Resource:
 	var g: Resource = Graph.new()
 	var b := {"band": BAND}
 	var s: int = g.call("add_node", "start", _p(0.0, 19.5), b)
 	var t: int = g.call("add_node", "junction", _p(0.0, 15.2), b)
-	var j1: int = g.call("add_node", "junction", _p(0.0, 11.7), b)
-	var j2: int = g.call("add_node", "junction", _p(0.0, 4.5), b)
-	var j3: int = g.call("add_node", "junction", _p(0.0, -2.5), b)
+	var j1: int = g.call("add_node", "junction", _p(0.0, 11.2), b)
+	var j2: int = g.call("add_node", "junction", _p(0.0, 4.0), b)
+	var j3: int = g.call("add_node", "junction", _p(0.0, -3.0), b)
+	var j4: int = g.call("add_node", "junction", _p(0.0, -6.8), b)
 	g.call("add_edge", s, t, "primary", "static", BAND)
 	g.call("add_edge", t, j1, "primary", "static", BAND)
 	g.call("add_edge", j1, j2, "primary", "static", BAND)
 	g.call("add_edge", j2, j3, "primary", "static", BAND)
-	# The pad, secondary: 3 m across and 3 m on.
-	var tour: int = g.call("add_node", "destination", _p(3.0, 12.2), {"band": BAND, "state": "available", "target": "Tour", "frame": "none", "approach": Vector2(-1, 0)})
+	g.call("add_edge", j3, j4, "primary", "static", BAND)
+	var tour: int = g.call("add_node", "destination", _p(-3.0, 12.2), {"band": BAND, "state": "available", "target": "Tour", "frame": "none", "approach": Vector2(1, 0)})
 	g.call("add_edge", t, tour, "secondary", "static", BAND)
-	# 01, left (its box, r 2.1, at x -7): the ring at x -3.7.
-	var d1: int = g.call("add_node", "destination", _p(-3.7, 8.0), {"band": BAND, "state": "available", "target": "P1", "frame": "rect", "approach": Vector2(1, 0)})
+	# 01 (its box, r 2.1, at x -7.5, z 7): the ring at x -4.2.
+	var d1: int = g.call("add_node", "destination", _p(-4.2, 7.0), {"band": BAND, "state": "available", "target": "P1", "frame": "rect", "approach": Vector2(1, 0)})
 	g.call("add_edge", j1, d1, "primary", "static", BAND)
-	# 02, right (r 2.3 at x 7): the ring at x 3.5.
-	var d2: int = g.call("add_node", "destination", _p(3.5, 1.0), {"band": BAND, "state": "arrival", "target": "P2", "frame": "round", "approach": Vector2(-1, 0)})
+	# 02 (r 2.3 at x -7.5, z 0): the ring at x -4.0.
+	var d2: int = g.call("add_node", "destination", _p(-4.0, 0.0), {"band": BAND, "state": "arrival", "target": "P2", "frame": "round", "approach": Vector2(1, 0)})
 	g.call("add_edge", j2, d2, "primary", "static", BAND)
-	# 03, left (r 2.3 at x -7): the ring at x -3.5.
-	var d3: int = g.call("add_node", "destination", _p(-3.5, -6.0), {"band": BAND, "state": "arrival", "target": "P3", "frame": "round", "approach": Vector2(1, 0)})
+	# 03 (r 2.3 at x -7.5, z -7): the ring at x -4.0.
+	var d3: int = g.call("add_node", "destination", _p(-4.0, -7.0), {"band": BAND, "state": "arrival", "target": "P3", "frame": "round", "approach": Vector2(1, 0)})
 	g.call("add_edge", j3, d3, "primary", "static", BAND)
 	# The oak, on the spine: its deck's edge at z -9.5, the ring at -8.3.
 	var d4: int = g.call("add_node", "destination", _p(0.0, -8.3), {"band": BAND, "state": "arrival", "target": "P4", "frame": "round", "approach": Vector2(0, 1)})
-	g.call("add_edge", j3, d4, "primary", "static", BAND)
+	g.call("add_edge", j4, d4, "primary", "static", BAND)
+	# The border: across from the door's junction, then down the right side.
+	var r0: int = g.call("add_node", "bend", _p(5.4, 15.2), b)
+	var rf: int = g.call("add_node", "junction", _p(5.4, -3.0), b)
+	var r1: int = g.call("add_node", "junction", _p(5.4, -6.8), b)
+	g.call("add_edge", t, r0, "primary", "static", BAND)
+	g.call("add_edge", r0, rf, "primary", "static", BAND)
+	g.call("add_edge", rf, r1, "primary", "static", BAND)
+	g.call("add_edge", j4, r1, "primary", "static", BAND)
+	var fl: int = g.call("add_node", "destination", _p(12.6, -3.0), {"band": BAND, "state": "arrival", "target": "Flowers", "frame": "rect", "approach": Vector2(-1, 0)})
+	g.call("add_edge", rf, fl, "primary", "static", BAND)
 	# The back door, round the oak's right side.
-	var r1: int = g.call("add_node", "bend", _p(5.4, -7.9), b)
 	var r2: int = g.call("add_node", "bend", _p(5.4, -17.4), b)
 	var r3: int = g.call("add_node", "bend", _p(2.0, -20.8), b)
 	var door: int = g.call("add_node", "destination", _p(0.0, -20.8), {"band": BAND, "state": "arrival", "target": "Door", "frame": "rect", "approach": Vector2(0, 1)})
-	g.call("add_edge", j3, r1, "primary", "static", BAND)
 	g.call("add_edge", r1, r2, "primary", "static", BAND)
 	g.call("add_edge", r2, r3, "primary", "static", BAND)
 	g.call("add_edge", r3, door, "primary", "static", BAND)

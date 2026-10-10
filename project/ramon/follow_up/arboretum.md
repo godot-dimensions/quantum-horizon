@@ -1139,7 +1139,7 @@ first draw hitches (build proxies while loading).
 25. Right drag turns every flower through W about its stem; R levels; the pockets never move.
 26. The strip, a toast on the first turn, one wall page on why the flowers change and the room does not.
 27. The light: a warm sun high on one side, a cool fill, the pockets' inner glow.
-28. The way in: from the hall's side door, a holographic doorway each way, a loading board.
+28. The way in: its own scene (Ramon, 10 Oct: "the flower room should be its own tscn with transporter door"): the hall's side door is the holographic doorway the second room already uses (the shimmer's flash, then the scene loads), one back the same way, a loading board.
 29. The route: a ring round the medallion, nothing more.
 30. Frames: entering, each wall, a pocket close, butterflies landing, turned 30 and 60 degrees.
 31. Perf: the frame time standing in the middle, every system's share measured.

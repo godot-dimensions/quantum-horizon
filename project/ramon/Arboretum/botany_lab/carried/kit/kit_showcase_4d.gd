@@ -43,7 +43,7 @@ const SLICES := 9
 		_rebuild_pedestal()
 ## ARBORETUM (carried copy): "round" or "box" (kit_pedestal.gd); the box had no hologram (it has, in the
 ## Voxel Lab's copy, round 5).
-@export_enum("round", "box") var pedestal_shape: String = "round":
+@export_enum("round", "box", "planter", "planter_box") var pedestal_shape: String = "round":
 	set(v):
 		pedestal_shape = v
 		_rebuild_pedestal()
@@ -739,7 +739,7 @@ func _build_holo(deck_h: float) -> void:
 	var h: float = holo_height
 	_holo = MeshInstance4D.new()
 	_holo.name = "Hologram"
-	_holo.mesh = Mats.box_mesh(Vector4(r * 2.0, h, r * 2.0, Build.W_DEPTH)) if pedestal_shape == "box" else Build._cubinder(r, h, 96)
+	_holo.mesh = Mats.box_mesh(Vector4(r * 2.0, h, r * 2.0, Build.W_DEPTH)) if pedestal_shape in ["box", "planter_box"] else Build._cubinder(r, h, 96)
 	_holo.position = Vector4(0.0, deck_h + h * 0.5, 0.0, 0.0)
 	_holo.material_override = LabGrid.material("kit_code_blue", Vector4(r * 2.0, h, r * 2.0, Build.W_DEPTH), global_position if is_inside_tree() else Vector4.ZERO)
 	_holo.set_meta(Build.GENERATED, true)

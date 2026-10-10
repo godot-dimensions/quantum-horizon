@@ -37,6 +37,14 @@ extends Node4D
 ## (`w_half`), so a turned slice crosses it in a band that narrows as the turn grows: no stop, the band
 ## is shown and said (the strip, a toast, the walls).
 ##
+## ROUND 3 (follow_up/arboretum.md section 9, steps 48-54; Ramon, 10 Oct: "the split halfs are cool, but
+## look carefully how to improve it ... think how to guide the eye"): ONE LAND, SPLIT BY YOUR PATH. The two
+## displays close in on a sunken walkway 4.2 m wide, and the land is one valley mirrored across it (the
+## right half samples the noise at minus its x), so the hills run on across the cut and the two methods
+## still build the very same hills. The land stands on banks at eye level (0.9 m of layered soil, its cut
+## faces showing stone, clay and topsoil). At the far end a low warm sun and a painted horizon; leaves
+## blow down the cut toward you. A turn keeps the mirror: the right half turns as the left's reflection.
+##
 ## NO class_name (engine_gotchas.md).
 
 const KitPlayer := preload("res://ramon/Arboretum/botany_lab/carried/kit/kit_player.gd")
@@ -58,20 +66,23 @@ const Leaves := preload("res://ramon/Arboretum/botany/leaf_field_4d.gd")
 const Wind := preload("res://ramon/Arboretum/botany/wind_4d.gd")
 const Species := preload("res://ramon/Arboretum/botany/tree_species.gd")
 const Ground := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/carried/chickenpen/scripts/ground_basis_4d.gd")
+const Drift := preload("res://ramon/Arboretum/botany_lab/flora/flora_drift_4d.gd")
+## The mirror across the walkway (x to -x): the right half's turn is the left's reflected.
+const MIRROR := Projection(Vector4(-1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
 
 const HALL := "res://ramon/Arboretum/botany_lab.tscn"
 const ARRIVE_META := "botany_arrive"
 
 @export_group("Land")
 ## The two displays' middles (x, z) and their size (x, z), metres.
-@export var left_at: Vector2 = Vector2(-9.5, -2.0)
-@export var right_at: Vector2 = Vector2(9.5, -2.0)
+@export var left_at: Vector2 = Vector2(-8.6, -2.0)
+@export var right_at: Vector2 = Vector2(8.6, -2.0)
 ## (First run, 9 Oct: 14 m wide with a 4 m gap, and facing one side from the path put the camera over
 ## the other side's land; now a 6 m gap, the hills a little lower, the camera a metre closer.)
 @export var display_size: Vector2 = Vector2(13.0, 26.0)
 ## The display's slab (its top, where the land starts), and the land's heights over it.
-@export var slab_height: float = 0.35
-@export var height_range: Vector2 = Vector2(0.5, 2.4)
+@export var slab_height: float = 0.9
+@export var height_range: Vector2 = Vector2(0.4, 2.0)
 ## How deep in W the land is (metres either side of the slice).
 @export var w_half: float = 1.25
 ## The blocky side's cells and the smooth side's voxels (m).
@@ -83,7 +94,7 @@ const ARRIVE_META := "botany_arrive"
 
 @export_group("Visit")
 @export var start_at: Vector2 = Vector2(0.0, 21.0)
-@export var camera_distance: float = 4.5
+@export var camera_distance: float = 3.6
 @export var camera_height: float = 2.6
 @export var camera_pitch_degrees: float = -10.0
 
@@ -123,7 +134,15 @@ func _ready() -> void:
 	noise.fractal_octaves = 3
 	var room: Node = get_node_or_null("Room")
 	if room != null:
-		room.set("mood_overrides", Style.ROOM_LIGHT.duplicate(true))
+		# Round 3: the low warm sun at the far end (the Sun node aims it), a warmer ambient.
+		var light: Dictionary = Style.ROOM_LIGHT.duplicate(true)
+		var b: Dictionary = light["bright"]
+		b["key_color"] = Color(1.0, 0.74, 0.48)
+		b["key_energy"] = 0.9
+		b["ambient"] = Color(0.26, 0.26, 0.32)
+		b["fill_color"] = Color(0.55, 0.65, 0.95)
+		b["fill_energy"] = 0.14
+		room.set("mood_overrides", light)
 		room.call("set_mood", "bright", true, false)
 		room.set("mood_key", KEY_NONE)
 	Style.apply("bright")
@@ -131,7 +150,11 @@ func _ready() -> void:
 	# the kit's contrast).
 	LabGrid.set_swatch("botany_grass", Color(0.36, 0.55, 0.22), Color(0.29, 0.46, 0.17), Color(0.33, 0.51, 0.20), 0.6)
 	LabGrid.set_swatch("botany_soil", Color(0.45, 0.36, 0.27), Color(0.37, 0.29, 0.21), Color(0.42, 0.33, 0.25), 0.6)
+	LabGrid.set_swatch("strata_stone", Color(0.36, 0.33, 0.3), Color(0.3, 0.27, 0.24), Color(0.34, 0.31, 0.28), 0.35)
+	LabGrid.set_swatch("strata_clay", Color(0.56, 0.4, 0.26), Color(0.48, 0.33, 0.2), Color(0.53, 0.37, 0.24), 0.3)
+	LabGrid.set_swatch("strata_soil", Color(0.24, 0.17, 0.12), Color(0.19, 0.13, 0.09), Color(0.22, 0.15, 0.11), 0.3)
 	_build_slabs()
+	_build_drift()
 	_turn_blocky = _turntable("TurnBlocky", left_at)
 	_turn_smooth = _turntable("TurnSmooth", right_at)
 	_build_blocky()
@@ -179,17 +202,51 @@ func _turntable(nm: String, at: Vector2) -> Node4D:
 	return n
 
 
-## The two slabs the land stands on: dark, low, square (the Voxel Lab's square ground display).
+## The two banks the land stands on (round 3: at eye level, 0.9 m): layered soil, stone at the foot, clay,
+## dark topsoil under the land, so the walkway's cut faces read as the ground cut open.
 func _build_slabs() -> void:
+	var layers: Array = [["Stone", 0.0, 0.36, "strata_stone"], ["Clay", 0.36, 0.66, "strata_clay"], ["Soil", 0.66, 1.0, "strata_soil"]]
 	for side in [["SlabBlocky", left_at], ["SlabSmooth", right_at]]:
 		var at: Vector2 = side[1]
-		var size := Vector4(display_size.x + 0.4, slab_height, display_size.y + 0.4, w_half * 2.0 + 0.6)
-		var m := MeshInstance4D.new()
-		m.name = String(side[0])
-		m.mesh = Mats.box_mesh(size)
-		m.position = Vector4(at.x, slab_height * 0.5, at.y, 0.0)
-		m.material_override = LabGrid.material("kit_metal", size, Vector4(at.x, slab_height * 0.5, at.y, 0.0))
-		add_child(m)
+		for ly in layers:
+			var y0: float = float(ly[1]) * slab_height
+			var y1: float = float(ly[2]) * slab_height
+			var size := Vector4(display_size.x + 0.4, y1 - y0, display_size.y + 0.4, w_half * 2.0 + 0.6)
+			var m := MeshInstance4D.new()
+			m.name = String(side[0]) + String(ly[0])
+			m.mesh = Mats.box_mesh(size)
+			m.position = Vector4(at.x, (y0 + y1) * 0.5, at.y, 0.0)
+			m.material_override = LabGrid.material(String(ly[3]), size, m.position)
+			add_child(m)
+	# The banks are solid: one box each (box-only physics).
+	for at in [left_at, right_at]:
+		var body := StaticBody4D.new()
+		body.position = Vector4(at.x, slab_height * 0.5, at.y, 0.0)
+		var cs := CollisionShape4D.new()
+		var bs := BoxShape4D.new()
+		bs.size = Vector4(display_size.x + 0.4, slab_height, display_size.y + 0.4, w_half * 2.0 + 0.6)
+		cs.shape = bs
+		body.add_child(cs)
+		add_child(body)
+
+
+## Leaves on the wind down the cut, from the far end toward you (the pen's flying leaves, carried).
+func _build_drift() -> void:
+	var d := Node4D.new()
+	d.name = "Leaves"
+	d.set_script(Drift)
+	d.set("stream", true)
+	d.set("source", Vector3(0.0, 3.6, -19.0))
+	d.set("source_radius", 7.0)
+	d.set("reach", 44.0)
+	d.set("floor_y", 0.04)
+	d.set("amount", 240)
+	d.set("gust_extra", 2.5)
+	d.set("leaf_share", 0.7)
+	d.set("leaf_size", 0.06)
+	d.set("colours", PackedColorArray([Color(0.48, 0.6, 0.2), Color(0.86, 0.66, 0.22), Color(0.72, 0.38, 0.15), Color(1.0, 0.88, 0.62)]))
+	d.set("wind", Wind.of(get_tree()))
+	add_child(d)
 
 
 ## LEFT: the land in 0.5 m cells, a box each (the pedestal 01 mesher), the top cell grass.
@@ -277,7 +334,8 @@ func _start_smooth() -> void:
 				var x: float = (float(ix) + 0.5) * c - display_size.x * 0.5
 				var z: float = (float(iz) + 0.5) * c - display_size.y * 0.5
 				var w: float = (float(iw) + 0.5) * c - w_half
-				var h: float = height_at(x, z, w)
+				# The mirror: this half's x is the other's minus x (the walkway between them).
+				var h: float = height_at(-x, z, w)
 				var col_top: float = maxf(h - 0.45, 0.05)
 				var box = ClassDB.instantiate("BoxVoxelEdit4D")
 				box.set("position", (Vector4(x - c * 0.5, 0.0, z - c * 0.5, w - c * 0.5) + jit) / v)
@@ -371,7 +429,7 @@ func _place_trees() -> void:
 		var oi: int = i % 2
 		if ok[oi] != null and osk[oi] != null:
 			var h: float = height_at(spot.x, spot.y, 0.0)
-			var o: Node4D = _tree(_turn_smooth, ok[oi], osk[oi], Vector4(spot.x, h - 0.15, spot.y, 0.0), yaw, 5.2 * scale_k, true, mats_o, oi)
+			var o: Node4D = _tree(_turn_smooth, ok[oi], osk[oi], Vector4(-spot.x, h - 0.15, spot.y, 0.0), -yaw, 5.2 * scale_k, true, mats_o, oi)
 			o.name = "SmoothTree%d" % i
 			drawn["smooth"] = int(drawn["smooth"]) + (ok[oi] as TetraMesh4D).get_simplex_cell_vertex_indices().size() / 4
 			var lf := Node4D.new()
@@ -448,6 +506,11 @@ func _build_walls() -> void:
 		holder.name = "Wall_" + side
 		add_child(holder)
 		hall.call("claim_wall", side, "blue", holder, -16.0, 12.0)
+	# Round 3: the far wall, the horizon the walkway runs toward (blue above it, as the teaching walls).
+	var far := Node4D.new()
+	far.name = "Wall_n"
+	add_child(far)
+	hall.call("claim_wall", "n", "blue", far, -18.0, 18.0)
 	(func() -> void: _print_walls()).call_deferred()
 
 
@@ -467,6 +530,52 @@ func _print_walls() -> void:
 				LabGrid.set_print(m, tex, tg[1], tg[2], Color.WHITE, 0.2)
 				LabGrid.set_print_strength(m, 1.0)
 				m.get_cross_section_material_3d().set_shader_parameter("print_aa", 1.0)
+	var sky_top: Color = LabGrid.values("kit_code_blue")[0]
+	var htex: Texture2D = await LabPrint.render(get_tree(), Vector2i(3600, 640), func(c: Control) -> void: _horizon(c, sky_top))
+	if htex != null:
+		# The whole far wall, floor to 6.4 m (the sign above it).
+		for tg in hall.call("print_targets", "n", -18.0, 18.0, 0.0, 6.4):
+			var m: TetraMaterial4D = (tg[0] as MeshInstance4D).material_override as TetraMaterial4D
+			if m != null:
+				LabGrid.set_print(m, htex, tg[1], tg[2], Color.WHITE, 0.55)
+				LabGrid.set_print_strength(m, 1.0)
+
+
+## Round 3: the far wall's horizon (36 x 6.4 m, 100 px a metre): the walkway runs toward a low warm sun
+## setting between layers of distant hills, the sky going up into the wall's own blue.
+func _horizon(c: Control, top: Color) -> void:
+	var sz: Vector2 = c.size
+	var hy: float = sz.y - 290.0 * sz.y / 640.0
+	var bands: Array = [[0.0, top], [0.35, Color(0.52, 0.42, 0.66)], [0.62, Color(0.92, 0.56, 0.42)], [0.86, Color(1.0, 0.74, 0.44)], [1.0, Color(1.0, 0.88, 0.62)]]
+	for i in bands.size() - 1:
+		var y0: float = float(bands[i][0]) * hy
+		var y1: float = float(bands[i + 1][0]) * hy
+		var c0: Color = bands[i][1]
+		var c1: Color = bands[i + 1][1]
+		c.draw_polygon(PackedVector2Array([Vector2(0, y0), Vector2(sz.x, y0), Vector2(sz.x, y1), Vector2(0, y1)]), PackedColorArray([c0, c0, c1, c1]))
+	# The sun, low and half-hidden, at the walkway's end; its halo.
+	var sun := Vector2(sz.x * 0.5, hy - 24.0)
+	for k in 6:
+		var r: float = 120.0 + float(k) * 60.0
+		c.draw_circle(sun, r, Color(1.0, 0.86, 0.6, 0.09))
+	c.draw_circle(sun, 110.0, Color(1.0, 0.95, 0.78))
+	# The hills: three ranges, farther ones paler (atmosphere), each a rolling line of sines.
+	var ranges: Array = [[Color(0.66, 0.5, 0.62), 70.0, 0.004, 1.3], [Color(0.46, 0.34, 0.5), 52.0, 0.007, 2.9], [Color(0.28, 0.21, 0.34), 34.0, 0.011, 4.7]]
+	for rg in ranges:
+		var pts := PackedVector2Array()
+		var n: int = 120
+		for i in n + 1:
+			var x: float = sz.x * float(i) / float(n)
+			var f: float = float(rg[2])
+			var ph: float = float(rg[3])
+			var y: float = hy - float(rg[1]) * (0.55 + 0.3 * sin(x * f + ph) + 0.15 * sin(x * f * 2.7 + ph * 1.9))
+			pts.append(Vector2(x, y))
+		pts.append(Vector2(sz.x, sz.y))
+		pts.append(Vector2(0.0, sz.y))
+		c.draw_colored_polygon(pts, rg[0])
+	# The ground under the hills, dark, and the walkway's line running into it.
+	c.draw_rect(Rect2(0.0, hy + 8.0, sz.x, sz.y - hy - 8.0), Color(0.16, 0.12, 0.18))
+	c.draw_colored_polygon(PackedVector2Array([Vector2(sz.x * 0.5 - 6.0, hy + 8.0), Vector2(sz.x * 0.5 + 6.0, hy + 8.0), Vector2(sz.x * 0.5 + 210.0, sz.y), Vector2(sz.x * 0.5 - 210.0, sz.y)]), Color(0.36, 0.26, 0.26))
 
 
 ## A wall's page: white on clear (the wall's blue shows).
@@ -583,7 +692,7 @@ func _process(delta: float) -> void:
 			var pp: Vector4 = (pn as Node4D).global_position
 			pn.call("set_near", Vector2(p.x - pp.x, p.z - pp.z).length() < 1.7)
 	_turn_blocky.basis = turn_basis
-	_turn_smooth.basis = turn_basis
+	_turn_smooth.basis = MIRROR * turn_basis * MIRROR
 	var tilt: int = int(round(rad_to_deg(Ground.tilt(turn_basis))))
 	if tilt != _strip_tilt:
 		_strip_tilt = tilt

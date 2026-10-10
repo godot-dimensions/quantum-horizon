@@ -101,9 +101,9 @@ func _play() -> void:
 	_check(_room.get("active") == null, "at the door no pedestal is active")
 	_shoot("01_door")
 
-	# 2. The showcase pad (moved to the route's branch, 3.0, 12.2): E starts the tour, Esc hands the
-	# camera back.
-	_go(3.0, 12.2, 0.0)
+	# 2. The showcase pad (round 3: on the route's left branch, -3.0, 12.2): E starts the tour, Esc hands
+	# the camera back.
+	_go(-3.0, 12.2, 0.0)
 	await _frames(20)
 	_key(KEY_E)
 	await _frames(90)
@@ -118,7 +118,7 @@ func _play() -> void:
 	# 3. Pedestal 01, from its ring (the route's destination): its finished tree stands still on arrival
 	# (round 2: no story plays by itself), a click or the right arrow plays it, the arrow moves it on, E
 	# rebuilds the cells.
-	_go(-3.7, 8.0, 90.0)
+	_go(-4.2, 7.0, 90.0)
 	await _frames(90)
 	var s1: Node = _station(1)
 	_check(_room.get("active") == s1, "pedestal 01 is active when you stand at it")
@@ -142,7 +142,7 @@ func _play() -> void:
 	# it back on its face.
 	var pn: Node = _room.get_node_or_null("Panel01")
 	pn.set("page_index", -1)
-	_go(-2.3, 11.3, 135.0)
+	_go(-2.2, 6.4, 135.0)
 	await _frames(20)
 	_check(_room.get("_at_panel") == pn and pn != null, "the panel beside 01 is in reach")
 	_check(bool(pn.get("near")), "it lights as you come up to it")
@@ -158,7 +158,7 @@ func _play() -> void:
 	_check(int(pn.get("page_index")) == -1 and not bool(pn.get("near")), "walking away puts it back on its face")
 
 	# 5. Pedestal 02: E grows a new tree live in the engine's voxel world.
-	_go(3.5, 1.0, -90.0)
+	_go(-4.0, 0.0, 90.0)
 	await _frames(40)
 	_check(_room.get("active") == _station(2), "pedestal 02 is active")
 	_key(KEY_E)
@@ -174,7 +174,7 @@ func _play() -> void:
 	_shoot("08_pedestal_02_grown")
 
 	# 6. Pedestal 03: E lofts it again at another resolution.
-	_go(-3.5, -6.0, 90.0)
+	_go(-4.0, -7.0, 90.0)
 	await _frames(40)
 	var l0: int = int((_ex(3).get("record") as Dictionary).get("tets", 0))
 	_key(KEY_E)
@@ -268,6 +268,31 @@ func _play() -> void:
 	_free_mouse()
 	_check(absf(pl.global_position.w - w0) > 0.05, "E away from the pedestals steps through W (%.2f to %.2f)" % [w0, pl.global_position.w])
 	_go(0.0, 14.0, 0.0, 0.0)
+	await _frames(10)
+
+	# 9b. Round 3, the flower border: at a planter its caption names the flower, a right drag (turn_by)
+	# turns the border's flowers through W, R levels them; then the flower room's door.
+	_go(5.6, 6.4, -90.0)
+	await _frames(30)
+	var border: Node = _room.get_node_or_null("Border")
+	_check(border != null and not (_room.get("_at_border") as Dictionary).is_empty(), "at the border a planter is yours")
+	_check(String(_room.get("_border_caption")) != "", "its caption names the flower (%s)" % String(_room.get("_border_caption")))
+	border.call("turn_by", 0.5, 0.0)
+	await _frames(5)
+	_check(border.get("turn_basis") != Projection.IDENTITY, "a right drag turns the border's flowers through W")
+	_key(KEY_R)
+	await _frames(5)
+	_check(border.get("turn_basis") == Projection.IDENTITY, "R levels them")
+	_shoot("16_border")
+	_go(12.0, -3.0, -90.0)
+	await _frames(10)
+	var pl3: Node4D = _room.get("player")
+	pl3.global_position = Vector4(13.8, 0.05, -3.0, 0.0)
+	await _frames(3)
+	_check(bool(_room.get("_leaving")), "walking into the right wall's shimmer starts the way to the flower room")
+	_room.set("_leaving", false)
+	pl3.set("input_enabled", false)
+	_go(0.0, 14.0, 0.0)
 	await _frames(10)
 
 	# 10. The back door (plan step 67): walking into its shimmer starts the way to the second room. The

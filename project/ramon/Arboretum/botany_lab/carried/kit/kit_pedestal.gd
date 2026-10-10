@@ -34,7 +34,12 @@ const DECK_IN := 0.42
 ## an exhibit stands at.
 ## ARBORETUM (carried copy): `form` "box" builds it square (the voxel tree stands on a box: it is
 ## made of boxes), `r` then half its side; "round" is the original.
+## BOTANY LAB, round 3 (Ramon, 10 Oct: "change the layout and the pedestals"): "planter" and "planter_box"
+## build a garden planter instead: a pale stone body with a rim, a bed of dark soil set just below the
+## rim (the tree stands in it), and a thin warm line of light under the rim; lower than the lab drums.
 static func build(parent: Node4D, r: float, h: float, form: String = "round") -> Dictionary:
+	if form == "planter" or form == "planter_box":
+		return _build_planter(parent, r, h, form == "planter_box")
 	if form == "box":
 		return _build_box(parent, r, h)
 	var origin: Vector4 = parent.global_position if parent.is_inside_tree() else Vector4.ZERO
@@ -97,6 +102,43 @@ static func _build_box(parent: Node4D, r: float, h: float) -> Dictionary:
 	return parts
 
 
+## The planter: from the floor up, a dark foot set in (its shadow line), the stone body (the label is
+## printed on it), a warm line of light, the stone rim a little proud of the body, and the soil.
+static func _build_planter(parent: Node4D, r: float, h: float, square: bool) -> Dictionary:
+	if not LabGrid._values.has("planter_stone"):
+		LabGrid.set_swatch("planter_stone", Color(0.84, 0.81, 0.75), Color(0.76, 0.73, 0.67), Color(0.81, 0.78, 0.72), 0.22)
+	var origin: Vector4 = parent.global_position if parent.is_inside_tree() else Vector4.ZERO
+	var rim_h: float = 0.09
+	var body_h: float = h - rim_h - FOOT
+	var parts: Dictionary = {"dark": [], "glow": [], "panels": [], "planter": true}
+	if square:
+		parts["shape"] = "box"
+	var piece := func(nm: String, rr: float, hh: float, y: float) -> MeshInstance4D:
+		return _slab(parent, nm, rr, hh, y) if square else _drum(parent, nm, rr, hh, y)
+	parts["dark"].append(piece.call("PedestalFoot", r - 0.1, FOOT, FOOT * 0.5))
+	var body: MeshInstance4D = piece.call("PedestalBody", r - 0.03, body_h, FOOT + body_h * 0.5)
+	body.material_override = LabGrid.material("planter_stone", Vector4((r - 0.03) * 2.0, body_h, (r - 0.03) * 2.0, Build.W_DEPTH), origin)
+	parts["body"] = body
+	parts["body_r"] = r - 0.03
+	parts["body_y"] = FOOT + body_h * 0.5
+	parts["glow"].append(piece.call("PedestalGlow", r - 0.025, 0.022, FOOT + body_h - 0.02))
+	parts["lip"] = piece.call("PedestalLip", r + 0.03, rim_h, h - rim_h * 0.5)
+	parts["deck"] = piece.call("PedestalSoil", r - 0.1, 0.03, h - 0.025)
+	var solid := StaticBody4D.new()
+	solid.name = "PedestalSolid"
+	solid.position = Vector4(0, h * 0.5, 0, 0)
+	var shape := CollisionShape4D.new()
+	var bs := BoxShape4D.new()
+	bs.size = Vector4(r * 2.0 + 0.3, h, r * 2.0 + 0.3, Build.W_DEPTH)
+	shape.shape = bs
+	solid.add_child(shape)
+	solid.set_meta(Build.GENERATED, true)
+	parent.add_child(solid)
+	parts["deck_h"] = h - 0.01
+	apply_mood(parts)
+	return parts
+
+
 static func _slab(parent: Node4D, nm: String, half: float, h: float, y: float) -> MeshInstance4D:
 	var m := MeshInstance4D.new()
 	m.name = nm
@@ -126,6 +168,13 @@ static func apply_mood(parts: Dictionary) -> void:
 	for m in parts.get("glow", []):
 		if is_instance_valid(m):
 			(m as MeshInstance4D).material_override = Mats.glow(Style.pick(Style.GLOW_WARM), 1.6)
+	if bool(parts.get("planter", false)):
+		# The planter: a pale stone rim, dark soil.
+		if is_instance_valid(parts.get("lip")):
+			(parts["lip"] as MeshInstance4D).material_override = Mats.flat(Color(0.9, 0.87, 0.81))
+		if is_instance_valid(parts.get("deck")):
+			(parts["deck"] as MeshInstance4D).material_override = Mats.flat(Color(0.2, 0.14, 0.1))
+		return
 	if is_instance_valid(parts.get("lip")):
 		(parts["lip"] as MeshInstance4D).material_override = Mats.flat(Style.lip())
 	if is_instance_valid(parts.get("deck")):
