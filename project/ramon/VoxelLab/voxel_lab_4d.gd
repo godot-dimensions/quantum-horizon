@@ -412,7 +412,11 @@ func apply_shape() -> void:
 	_set_if(hall, "doorways", doors)
 	var ent: Node4D = get_node_or_null("Entrance") as Node4D
 	if ent != null:
-		ent.position = Vector4(0.0, 0.0, f + 7.5, 0.0)
+		# Its near end against the hall's front wall, half a metre out, whatever its length. (Round 7 shortened
+		# it to 8.5 m; this placed its middle 7.5 m out as for the old 14 m, which left a 3 m hole in the
+		# floor between the corridor and the hall's door: you walked in and fell.)
+		var ent_len: float = (ent.get("size") as Vector3).z if ent.get("size") is Vector3 else 14.0
+		ent.position = Vector4(0.0, 0.0, f + 0.5 + ent_len * 0.5, 0.0)
 	var gal: Node4D = get_node_or_null("GalleryRoom") as Node4D
 	if gal != null:
 		var gz: float = -d - 0.5 - gallery_gap - gallery_depth * 0.5

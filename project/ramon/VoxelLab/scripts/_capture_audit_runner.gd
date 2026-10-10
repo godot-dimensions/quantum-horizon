@@ -19,7 +19,7 @@ const SHOTS := [
 	["07_shelf_wall", "free", Vector3(4.6, 2.4, 5.4), Vector2(-90, 12)],
 	["08_hero_ring", "walk", Vector2(0, 3.0), 0.0],
 	["09_hero_far", "walk", Vector2(0, 8.0), 0.0],
-	["10_builder", "walk", Vector2(-4.1, 8.8), 90.0],
+	["10_builder", "walk", Vector2(-5.1, 8.7), 90.0],
 	["11_builder_top", "top", Vector3(-7.0, 30.0, 8.0)],
 	["12_hall_back", "walk", Vector2(0, -9.0), 0.0],
 	["13_hall_back_top", "free", Vector3(0, 2.2, -6.0), Vector2(0, 26)],

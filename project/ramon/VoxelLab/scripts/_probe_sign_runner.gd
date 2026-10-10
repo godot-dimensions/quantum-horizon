@@ -47,7 +47,7 @@ func _process(delta: float) -> bool:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if _scene == null or _scene.get("player") == null:
 		return false
-	if _step < 3:
+	if _step < 3 and _step != 10:
 		_scene.get("player").set("input_enabled", false)
 	_t += delta
 	match _step:
@@ -56,6 +56,21 @@ func _process(delta: float) -> bool:
 				var sign: Node = _scene.get_node_or_null("Hall/GallerySign")
 				print("SIGN %s title %s" % ["PASS" if sign != null and String(sign.get("title")).contains("\n") else "FAIL",
 					str(String(sign.get("title")).split("\n")) if sign != null else "missing"])
+				# First the way in, walked as a player walks it: from the spawn, straight into the hall.
+				_scene.call("go_to", Vector4(0.0, 0.05, 17.5, 0.0), 0.0)
+				_step = 10
+				_t = 0.0
+		10:
+			_scene.get("player").set("input_enabled", true)
+			if _t > 0.5 and _t - delta <= 0.5:
+				_hold(KEY_W, true)
+			if _t > 4.5:
+				_hold(KEY_W, false)
+				var p: Vector4 = (_scene.get("player") as Node4D).global_position
+				print("SIGN %s walked from the spawn into the hall without falling (now at z %.1f, y %.2f)" % [
+					"PASS" if p.y > -0.3 and p.z < 12.0 else "FAIL", p.z, p.y])
+				_save("walk_in")
+				_scene.get("player").set("input_enabled", false)
 				_scene.call("go_to", Vector4(0.0, 0.05, -4.0, 0.0), 0.0)
 				_step = 1
 				_t = 0.0
