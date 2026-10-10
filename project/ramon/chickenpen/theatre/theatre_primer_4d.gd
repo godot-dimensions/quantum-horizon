@@ -53,6 +53,7 @@ extends Node
 const Shapes := preload("res://ramon/chickenpen/theatre/theatre_shapes_4d.gd")
 const Hand := preload("res://ramon/chickenpen/theatre/theatre_hand_4d.gd")
 const Loft := preload("res://ramon/chickenpen/scripts/loft_builder_4d.gd")
+const Bake := preload("res://ramon/chickenpen/theatre/theatre_bake_4d.gd")
 const TerrainBake := preload("res://ramon/chickenpen/terrain/terrain_bake_4d.gd")
 
 ## How fast a drag turns the thing you are holding: the field camera's own rate, so the
@@ -181,10 +182,7 @@ func _make_shapes() -> void:
 	# Slide VI's two hands, lofted here too: a loft is pure GDScript and some tens of
 	# milliseconds a hand, which is nothing on this thread and a dropped frame on the main one.
 	for side in ["left", "right"]:
-		var hand: Dictionary = Hand.build(side == "right")
-		made["hand_%s" % side] = hand["skin"]
-		made["hand_%s_thumb" % side] = hand["thumb"]
-		made["hand_%s_cuff" % side] = hand["cuff"]
+		made["hand_%s" % side] = Hand.build(side == "right")
 	# The proxy is built the first time a mesh is drawn, and that first draw is the hitch;
 	# the cave's far room moved it here for the same reason (141 ms down to 17).
 	for id in made:
@@ -500,18 +498,16 @@ func _build_gloves() -> Node4D:
 	return piece
 
 
-## A hand, palm towards the house (theatre_hand_4d). Its thumb is gold and nothing else is:
-## seen palm first, which side the thumb is on is the whole of its handedness.
+## A hand, palm towards the house (theatre_hand_4d): one mesh, coloured by its sections - skin,
+## the thumb in the indicator orange, the cuff in blue. Seen palm first, which side the thumb is
+## on is the whole of its handedness, so the thumb is the only thing that colour.
 func _hand(parent: Node, part: String, all: Dictionary, side: String) -> Node4D:
 	var hand := Node4D.new()
 	hand.name = part
 	parent.add_child(hand)
-	var skin := _mesh_node(hand, "Hand", all["hand_%s" % side])
-	skin.material_override = _paint(Color(0.92, 0.74, 0.62))
-	var thumb := _mesh_node(hand, "Thumb", all["hand_%s_thumb" % side])
-	thumb.material_override = _paint(Color(1.0, 0.78, 0.25))
-	var cuff := _mesh_node(hand, "Cuff", all["hand_%s_cuff" % side])
-	cuff.material_override = _paint(Color(0.30, 0.55, 0.95))
+	var mesh: ArrayTetraMesh4D = all["hand_%s" % side]
+	var skin := _mesh_node(hand, "Hand", mesh)
+	skin.material_override = Bake.coat(mesh, TetraMaterial4D.new())
 	return hand
 
 

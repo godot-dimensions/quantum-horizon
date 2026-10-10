@@ -39,30 +39,25 @@ func _initialize() -> void:
 func _report_cost() -> void:
 	for right in [false, true]:
 		var t0: int = Time.get_ticks_usec()
-		var hand: Dictionary = Hand.build(right)
+		var hand: ArrayTetraMesh4D = Hand.build(right)
 		var ms: float = (Time.get_ticks_usec() - t0) / 1000.0
-		var skin: ArrayTetraMesh4D = hand["skin"]
-		var thumb: ArrayTetraMesh4D = hand["thumb"]
-		var cuff: ArrayTetraMesh4D = hand["cuff"]
-		var a: int = skin.get_simplex_cell_vertex_indices().size() / 4
-		var b: int = thumb.get_simplex_cell_vertex_indices().size() / 4
-		var c: int = cuff.get_simplex_cell_vertex_indices().size() / 4
-		print("%s hand: %d tetrahedra (%d skin, %d thumb, %d cuff), lofted in %.0f ms" % [
-			"right" if right else "left", a + b + c, a, b, c, ms])
+		print("%s hand: %d tetrahedra, %d colours along its sections, lofted in %.0f ms" % [
+			"right" if right else "left", hand.get_simplex_cell_vertex_indices().size() / 4,
+			(hand.get_meta("loft_ramp", PackedColorArray()) as PackedColorArray).size(), ms])
 	# The checks, chain by chain, on the left hand: they print only when something is wrong.
 	print("loft checks (silent means sound):")
 	var side: float = 1.0
+	print("  palm")
 	Loft.build(Hand._palm_sections(side), Hand.PALM_RINGS, Hand.PALM_SIDES, true, true, true, Hand.SMOOTHING, true)
 	for finger in Hand.FINGERS:
 		print("  %s" % finger["name"])
 		Loft.build(Hand._finger_sections(finger, side), Hand.FINGER_RINGS, Hand.FINGER_SIDES, true, true, true,
 			Hand.SMOOTHING, true)
-	print("  thumb")
+	print("  thumb, with the ball of the thumb")
 	Loft.build(Hand._thumb_sections(side), Hand.FINGER_RINGS, Hand.FINGER_SIDES, true, true, true, Hand.SMOOTHING, true)
-	print("  ball of the thumb")
-	Loft.build(Hand._chain(Hand.THENAR, side), Hand.FINGER_RINGS, Hand.FINGER_SIDES, true, true, true, Hand.SMOOTHING, true)
 	print("  cuff")
-	Loft.build(Hand._chain(Hand.CUFF, side), Hand.PALM_RINGS, Hand.PALM_SIDES, true, true, true, Hand.SMOOTHING, true)
+	Loft.build(Hand._chain(Hand.CUFF, side, Hand.CUFF_COLOUR), Hand.PALM_RINGS, Hand.PALM_SIDES, true, true, true,
+		Hand.SMOOTHING, true)
 
 
 func _process(delta: float) -> bool:

@@ -89,26 +89,28 @@ const PALM := [
 	[Vector3(-3.0, 96.0, 0.0), 26.0, 0.50, 0.1],
 ]
 
-## The ball of the thumb: low on the palm, on the thumb side, standing out on the palm side.
-## Flesh, part of the hand rather than the thumb, which starts at its knuckle.
+## The ball of the thumb: low on the palm, on the thumb side, standing out on the palm side, a
+## broad wedge rather than the root of a stick. The first three sections of the thumb's own
+## chain, in skin.
 const THENAR := [
-	[Vector3(-16.0, 8.0, 3.0), 15.0, 0.85],
-	[Vector3(-28.0, 24.0, 9.0), 16.5, 0.80],
-	[Vector3(-39.0, 40.0, 12.0), 14.5, 0.85],
+	[Vector3(-18.0, 6.0, 4.0), 14.0, 0.85],
+	[Vector3(-30.0, 22.0, 9.0), 16.0, 0.80],
+	[Vector3(-38.0, 36.0, 12.0), 14.5, 0.85],
 ]
 
-## The thumb from its knuckle, out of the ball of the thumb at about 30 degrees from the
-## fingers and forward of the palm, and the thickest of the five: its proximal phalanx 31.6 mm, its distal one 21.7 with a
-## 5.7 mm pad (the same X-rays). The knuckle sits where a 46 mm metacarpal from the base of
-## the palm puts it.
-const THUMB_ROOT := Vector3(-42.0, 45.0, 13.0)
-const THUMB_MCP := Vector3(-49.0, 55.0, 16.0)
-const THUMB_PROXIMAL := 31.6
-const THUMB_DISTAL := 27.4
-const THUMB_PROXIMAL_DIR := Vector3(-0.50, 0.83, 0.25)
-const THUMB_DISTAL_DIR := Vector3(-0.30, 0.93, 0.20)
+## The thumb from its knuckle: a short thick digit, not a fifth finger (Ramon, 10 Oct: "shorten
+## the thumb, it looks anatomically incorrect"). The knuckle sits at the palm's edge half way up,
+## so the web between thumb and index is where it is on a hand, the digit leaves at about 30
+## degrees from the fingers and forward of the palm, and its tip stops just short of the index
+## finger's knuckle (the artists' rule). The X-rays' 31.6 and 27.4 mm phalanges include the part
+## buried in the web; what shows is shorter.
+const THUMB_MCP := Vector3(-46.0, 50.0, 14.0)
+const THUMB_PROXIMAL := 24.0
+const THUMB_DISTAL := 21.0
+const THUMB_PROXIMAL_DIR := Vector3(-0.42, 0.86, 0.28)
+const THUMB_DISTAL_DIR := Vector3(-0.25, 0.94, 0.22)
 ## At its knuckle, mid proximal, its joint, and the tip.
-const THUMB_RADII := [13.0, 12.0, 11.5, 10.0]
+const THUMB_RADII := [11.5, 10.6, 10.0, 8.8]
 
 ## A cuff over the wrist, as the old gloves had: a clean end to a hand that has no arm, and
 ## the loft's pointed end cap turned into a rounded one.
@@ -120,25 +122,38 @@ const CUFF := [
 	[Vector3(0.0, -16.0, 0.0), 27.0, 0.68],
 ]
 
+## COLOURED THE WAY THE LOFT RIG COLOURS BALLS: every section carries a colour, the loft
+## records them in order (its `loft_ramp`), and the material samples them as a strip of one
+## texel per section, so the colour blends along a chain between one section and the next.
+## The thumb is therefore not a separate piece with a seam at its knuckle (Ramon, 10 Oct: "no
+## need to make a thumb cut, use loft ball color technique"): it is one chain from the ball of
+## the thumb to its tip, skin running into the indicator over the knuckle.
+const SKIN := Color(0.92, 0.74, 0.62)
+## The handedness indicator: gold, as on the gloves before (Ramon, 10 Oct, after trying a bright
+## orange: "orange looks dirty. make it yellow again").
+const INDICATOR := Color(1.0, 0.78, 0.25)
+const CUFF_COLOUR := Color(0.30, 0.55, 0.95)
 
-## The three parts of one hand: {"skin": the palm, the ball of the thumb and four fingers,
-## "thumb": the thumb from its knuckle, kept apart so it can be coloured as the handedness it
-## carries, "cuff": the cuff}. Null in any of them on failure.
-static func build(right: bool) -> Dictionary:
+
+## One hand as one mesh: the palm, four fingers, the thumb with the ball of the thumb, and the
+## cuff, each lofted on its own and merged, with their colours in the mesh's `loft_ramp` (see
+## theatre_bake_4d.coat for the material that shows them). Null on failure.
+static func build(right: bool) -> ArrayTetraMesh4D:
 	var side: float = -1.0 if right else 1.0
 	var parts: Array = [_loft(_palm_sections(side), PALM_RINGS, PALM_SIDES),
-		_loft(_chain(THENAR, side), FINGER_RINGS, FINGER_SIDES)]
+		_loft(_thumb_sections(side), FINGER_RINGS, FINGER_SIDES),
+		_loft(_chain(CUFF, side, CUFF_COLOUR), PALM_RINGS, PALM_SIDES)]
 	for finger in FINGERS:
 		parts.append(_loft(_finger_sections(finger, side), FINGER_RINGS, FINGER_SIDES))
-	return {"skin": _merge(parts), "thumb": _loft(_thumb_sections(side), FINGER_RINGS, FINGER_SIDES),
-		"cuff": _loft(_chain(CUFF, side), PALM_RINGS, PALM_SIDES)}
+	return _merge(parts)
 
 
 ## A section of the loft at [param mm] (the left hand's millimetres), mirrored by [param side].
-static func _section(mm: Vector3, radius: float, depth: float, side: float, squareness: float = 0.0) -> Dictionary:
+static func _section(mm: Vector3, radius: float, depth: float, side: float, squareness: float = 0.0,
+		colour: Color = SKIN) -> Dictionary:
 	var centre := Vector4((mm.x - CENTRE.x) * side, mm.y - CENTRE.y, mm.z, 0.0) * MM
 	return {"center": centre, "radius": radius * MM, "v_scale": depth, "w_scale": depth,
-		"squareness": squareness}
+		"squareness": squareness, "color": colour}
 
 
 static func _palm_sections(side: float) -> Array:
@@ -167,7 +182,7 @@ static func _finger_sections(finger: Dictionary, side: float) -> Array:
 	var out: Array = []
 	for i in centres.size():
 		out.append(_section(centres[i], radii[i], FINGER_DEPTH, side))
-	out.append_array(_tip(dip, d3, float(bones[2]), float(radii[6]), side))
+	out.append_array(_tip(dip, d3, float(bones[2]), float(radii[6]), side, SKIN))
 	return out
 
 
@@ -175,27 +190,31 @@ static func _finger_sections(finger: Dictionary, side: float) -> Array:
 ## chain with a cone 0.55 of the last radius long, and a full-width last section made that a
 ## point. A narrower one just short of the end makes the cone a small cap on a dome instead,
 ## landing where the bone and its pad end.
-static func _tip(joint: Vector3, along: Vector3, length: float, radius: float, side: float) -> Array:
-	return [_section(joint + along * (length - 0.95 * radius), radius, FINGER_DEPTH, side),
-		_section(joint + along * (length - 0.42 * radius), radius * 0.72, FINGER_DEPTH, side)]
+static func _tip(joint: Vector3, along: Vector3, length: float, radius: float, side: float,
+		colour: Color) -> Array:
+	return [_section(joint + along * (length - 0.95 * radius), radius, FINGER_DEPTH, side, 0.0, colour),
+		_section(joint + along * (length - 0.42 * radius), radius * 0.72, FINGER_DEPTH, side, 0.0, colour)]
 
 
+## The thumb as one chain: the ball of the thumb in skin, then from the knuckle on in the
+## indicator colour, the loft blending the two over the span between them.
 static func _thumb_sections(side: float) -> Array:
+	var out: Array = _chain(THENAR, side, SKIN)
 	var proximal: Vector3 = THUMB_PROXIMAL_DIR.normalized()
 	var ip: Vector3 = THUMB_MCP + proximal * THUMB_PROXIMAL
-	var out: Array = [_section(THUMB_ROOT, THUMB_RADII[0], FINGER_DEPTH, side),
-		_section(THUMB_MCP, THUMB_RADII[0], FINGER_DEPTH, side),
-		_section(THUMB_MCP + proximal * THUMB_PROXIMAL * 0.5, THUMB_RADII[1], FINGER_DEPTH, side),
-		_section(ip, THUMB_RADII[2], FINGER_DEPTH, side)]
-	out.append_array(_tip(ip, THUMB_DISTAL_DIR.normalized(), THUMB_DISTAL, THUMB_RADII[3], side))
+	out.append(_section(THUMB_MCP, THUMB_RADII[0], FINGER_DEPTH, side, 0.0, INDICATOR))
+	out.append(_section(THUMB_MCP + proximal * THUMB_PROXIMAL * 0.5, THUMB_RADII[1], FINGER_DEPTH, side,
+		0.0, INDICATOR))
+	out.append(_section(ip, THUMB_RADII[2], FINGER_DEPTH, side, 0.0, INDICATOR))
+	out.append_array(_tip(ip, THUMB_DISTAL_DIR.normalized(), THUMB_DISTAL, THUMB_RADII[3], side, INDICATOR))
 	return out
 
 
-## A chain given as [centre (mm), half-width, depth as a share of it].
-static func _chain(points: Array, side: float) -> Array:
+## A chain given as [centre (mm), half-width, depth as a share of it], all in [param colour].
+static func _chain(points: Array, side: float, colour: Color) -> Array:
 	var out: Array = []
 	for p in points:
-		out.append(_section(p[0], p[1], p[2], side))
+		out.append(_section(p[0], p[1], p[2], side, 0.0, colour))
 	return out
 
 
@@ -209,21 +228,36 @@ static func _loft(sections: Array, rings: int, sides: int) -> ArrayTetraMesh4D:
 	return Loft.build(sections, rings, sides, true, false, true, SMOOTHING, false)
 
 
-## Several lofts as one mesh: one draw for the palm and fingers instead of five. The loft's
-## texture coordinates are left behind - the hand is one flat colour.
+## Several lofts as one mesh, their colours kept: one draw for the whole hand. Each loft
+## points its cells' corners at its own sections' colours (one texture coordinate per section,
+## `loft_ramp` holding the colours); merged, the sections are numbered on from the last part's,
+## the ramps laid end to end, and the coordinates spread over the whole strip, as the loft rig
+## does when it merges its chains.
 static func _merge(parts: Array) -> ArrayTetraMesh4D:
 	var positions := PackedVector4Array()
 	var cells := PackedInt32Array()
+	var texture_indices := PackedInt32Array()
+	var ramp := PackedColorArray()
 	for part in parts:
 		if part == null:
 			return null
 		var mesh: ArrayTetraMesh4D = part
 		var offset: int = positions.size()
+		var first: int = ramp.size()
 		positions.append_array(mesh.get_vertex_positions())
 		for index in mesh.get_simplex_cell_vertex_indices():
 			cells.append(index + offset)
+		for index in mesh.get_simplex_cell_texture_map_indices():
+			texture_indices.append(index + first)
+		ramp.append_array(mesh.get_meta("loft_ramp", PackedColorArray()))
+	var texture_map := PackedVector3Array()
+	for i in ramp.size():
+		texture_map.append(Vector3((float(i) + 0.5) / float(ramp.size()), 0.5, 0.5))
 	var out := ArrayTetraMesh4D.new()
 	out.set_vertex_positions(positions)
 	out.set_simplex_cell_vertex_indices(cells)
+	out.set_texture_map_values(texture_map)
+	out.set_simplex_cell_texture_map_indices(texture_indices)
+	out.set_meta("loft_ramp", ramp)
 	out.calculate_boundary_normals(false)
 	return out

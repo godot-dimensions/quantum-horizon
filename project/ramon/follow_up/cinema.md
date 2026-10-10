@@ -23,9 +23,11 @@ start point is the local branch `theatre-before-2026-10-09`.
 4. **Spaced dashes** in player-facing lines, against your rule: the bodies of VII, VIII and IX, and
    Trym's closing line "The way out is behind you - mind the step". Not changed; say if you want
    them rewritten.
-5. The hands are a warm skin tone with the thumb gold (Trym liked "the reference and the yellow
-   highlight", so the gold thumb and the gold LEFT label stay). Colour, size (2.5 m tall on the drum)
-   and pose are all in `theatre_hand_4d.gd`; say if they want a different look.
+5. The hands (10 Oct, after Ramon's first look): the thumb shorter and thicker with its web half way
+   up the palm, and coloured the loft-ball way, skin running into the gold indicator over the
+   knuckle with no cut. Bright orange was tried and dropped ("orange looks dirty"). The LEFT label
+   above the hand stays gold to pair with it. Colour, size (2.5 m tall on the drum) and pose are
+   all in `theatre_hand_4d.gd`.
 
 ## What changed (10 Oct)
 
@@ -59,8 +61,13 @@ Trym's notes on the cinema, and Ramon's "work out optimization, and build/load a
   palm, the thumb comes forward, the ball of the thumb stands out on the palm side.
 - **As deep in W as it is thick, centred on w = 0**, so half a turn in a plane with W is a mirror.
   The right hand is the left one mirrored before lofting (not the left one turned).
-- About 25,600 tetrahedra a hand (skin 20,128, thumb 2,560, cuff 2,912); about 0.35 s to loft, done on
-  the cinema's worker thread with the shapes. Every loft checked sound (watertight, no folds, no
+- **One mesh a hand, coloured by its sections**, the way the loft rig colours balls: every
+  section carries a colour (skin, the gold indicator on the thumb from its knuckle, blue on the
+  cuff), the palm, thumb, fingers and cuff are lofted separately and merged with their colour
+  strips laid end to end, and the material reads the strip (`theatre_bake_4d.coat`). So the thumb
+  is one chain from the ball of the thumb to its tip, with no seam where the colour changes.
+- About 25,400 tetrahedra a hand; about 0.32 s to loft, done on the cinema's worker thread with the
+  shapes. Every loft checked sound (watertight, no folds, no
   slivers): `scripts/_capture_hands_runner.gd` prints the checks and photographs the hands turned in
   3D and through W (`smoke_test_output/theatre_hands/`).
 
