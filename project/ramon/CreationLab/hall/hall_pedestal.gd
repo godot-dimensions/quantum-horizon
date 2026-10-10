@@ -16,7 +16,8 @@ extends RefCounted
 ## ROUND 3 (10 Oct, Ramon's items 29, 36, 37):
 ##   style "natural"    the deck green, for grass (the animals "walking on small patches of natural ground
 ##                      rather than blue technological platforms")
-##   style "technical"  Azathoth's: a near-black base on the grid lines, the deck blue, the hologram wider
+##   style "technical"  Azathoth's: a near-black base on the grid lines, the deck near black with thin white grid
+##                      lines (round 4)
 ##   style "plain"      the lab's blue deck, as before
 ##   holo               a hologram standing on the deck (room 1's showcase's: the grid shader's hologram mode),
 ##                      {"height", "base", "falloff", "grow"}; empty for none. As deep in W as the pedestal, so
@@ -79,6 +80,13 @@ static func _style(root: Node4D, style: String) -> void:
 	elif style == "technical":
 		# Its own swatch, near black with blue-grey lines, the same in both modes: a research specimen's stand.
 		LabGrid.set_swatch("hall_tech", Color(0.03, 0.034, 0.042), Color(0.17, 0.25, 0.38), Color(0.08, 0.11, 0.16), 1.0)
+		# Its deck too, round 4 (Ramon, item 48: "replace the blue surface with black or very dark gray ... thin white
+		# gridlines ... the established Dev Mode material style"): the same grid shader, near black, white lines.
+		LabGrid.set_swatch("hall_tech_deck", Color(0.03, 0.033, 0.04), Color(0.88, 0.9, 0.93), Color(0.3, 0.32, 0.36), 1.0)
+		var dk: MeshInstance4D = root.get_node_or_null("PedestalDeck") as MeshInstance4D
+		if dk != null:
+			dk.material_override = LabGrid.material("hall_tech_deck", Vector4(2.0, 0.02, 2.0, Build.W_DEPTH),
+				root.global_position if root.is_inside_tree() else Vector4.ZERO)
 		for nm in ["PedestalFoot", "PedestalBand", "PedestalBody"]:
 			var m: MeshInstance4D = root.get_node_or_null(nm) as MeshInstance4D
 			if m == null:

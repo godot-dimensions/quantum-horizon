@@ -53,6 +53,8 @@ const INFO := preload("res://ramon/CreationLab/hall/creature_hall_info.tres")
 ## How near a pedestal's edge its card comes up (m), and how far away you go before a closed card may come back.
 const CARD_NEAR := 2.5
 const CARD_RESET := 4.5
+## How near a pedestal's edge a click starts the close look (round 4, item 49: "approximately 1 meter").
+const CLOSE_NEAR := 1.0
 
 const CREATURES := "res://ramon/CreationLab/hall/creatures/"
 const CARRIED := "res://ramon/CreationLab/LabKit/carried/"
@@ -75,30 +77,39 @@ const DREAMER := "res://ramon/CreationLab/hall/carried/hall_dreamer_4d.gd"
 ## hologram's height, foot and fall-off; hall_pedestal.gd), "grass" (blade height, m: the pen's are 0.66, these
 ## shorter, shortest under the small animals so their feet show) and "push" (how far round an animal the blades
 ## lie aside), "front" (the side you come from: the label stands there, facing you; the path's approach),
-## "closeup" (the small ones: C for a close look, from "eye" metres off and "lift" up, at "aim" over its feet).
+## the close look's framing (round 4: every creature; from "eye" metres off and "lift" up from what it looks at, which
+## is "aim" over the creature's feet), and "label", where its label stands if not at the front (Ramon's sides, round 4).
 const STATIONS := [
 	{"name": "Centre", "at": Vector2(0, -9), "shape": "square", "size": Vector2(10, 10), "h": 0.6, "kind": "brachio", "title": "Brachiosaurus",
-		"style": "natural", "holo": {"height": 2.2, "base": 0.75, "falloff": 1.15, "glow": 1.1}, "grass": 0.42, "push": 1.2, "front": Vector2(0, 1)},
+		"style": "natural", "holo": {"height": 2.2, "base": 0.75, "falloff": 1.15, "glow": 1.1}, "grass": 0.42, "push": 1.2, "front": Vector2(0, 1),
+		"eye": 9.5, "lift": 1.0, "aim": 3.8, "angle": 60.0},
 	{"name": "Wolf", "at": Vector2(-9.5, 9), "shape": "round", "size": Vector2(3.4, 3.4), "h": 0.5, "kind": "wolf", "title": "Wolf", "w_copies": 1,
-		"style": "natural", "holo": {"height": 0.7, "base": 0.45, "falloff": 1.8}, "grass": 0.32, "push": 0.7, "front": Vector2(0, -1)},
+		"style": "natural", "holo": {"height": 0.7, "base": 0.45, "falloff": 1.8}, "grass": 0.32, "push": 0.7, "front": Vector2(0, -1),
+		"eye": 3.4, "lift": 0.5, "aim": 0.9},
 	{"name": "Azathoth", "at": Vector2(9.5, 9), "shape": "square", "size": Vector2(7, 6), "h": 0.7, "kind": "azathoth", "title": "Azathoth",
-		"style": "technical", "holo": {"height": 1.4, "base": 0.6, "falloff": 1.5, "glow": 0.9, "grow": 0.55}, "front": Vector2(0, -1)},
+		"style": "technical", "holo": {"height": 1.4, "base": 0.6, "falloff": 1.5, "glow": 0.9}, "front": Vector2(0, -1),
+		"label": Vector2(-1, 0), "eye": 13.0, "lift": -2.5, "aim": 7.0},
 	{"name": "Chickens", "at": Vector2(-5, 17), "shape": "round", "size": Vector2(2.0, 2.0), "h": 0.35, "kind": "chickens", "title": "Chickens", "w_copies": 2,
-		"style": "natural", "holo": {"height": 0.45, "base": 0.4, "falloff": 1.8}, "grass": 0.13, "push": 0.3, "front": Vector2(0, -1)},
+		"style": "natural", "holo": {"height": 0.45, "base": 0.4, "falloff": 1.8}, "grass": 0.13, "push": 0.3, "front": Vector2(0, -1),
+		"label": Vector2(1, 0), "eye": 1.5, "lift": 0.3, "aim": 0.25},
 	{"name": "Heron", "at": Vector2(5, 17), "shape": "round", "size": Vector2(1.3, 1.3), "h": 0.3, "kind": "heron", "title": "Grey heron", "w_copies": 1,
-		"style": "natural", "holo": {"height": 0.5, "base": 0.4, "falloff": 1.8}, "grass": 0.2, "push": 0.35, "front": Vector2(0, -1)},
+		"style": "natural", "holo": {"height": 0.5, "base": 0.4, "falloff": 1.8}, "grass": 0.2, "push": 0.35, "front": Vector2(0, -1),
+		"label": Vector2(-1, 0), "eye": 2.4, "lift": 0.3, "aim": 0.75},
 	{"name": "Nike", "at": Vector2(-10.5, -4), "shape": "round", "size": Vector2(3.0, 3.0), "h": 0.45, "kind": "nike", "title": "Nike",
-		"style": "natural", "holo": {"height": 0.65, "base": 0.45, "falloff": 1.8}, "grass": 0.26, "push": 0.8, "front": Vector2(0, 1)},
+		"style": "natural", "holo": {"height": 0.65, "base": 0.45, "falloff": 1.8}, "grass": 0.26, "push": 0.8, "front": Vector2(0, 1),
+		"eye": 3.0, "lift": 0.5, "aim": 0.55},
 	{"name": "Goat", "at": Vector2(10.5, -4), "shape": "square", "size": Vector2(4.4, 4.4), "h": 0.75, "kind": "goat", "title": "Goat", "w_copies": 1,
-		"style": "natural", "holo": {"height": 0.65, "base": 0.45, "falloff": 1.8}, "grass": 0.22, "push": 0.5, "front": Vector2(0, 1)},
+		"style": "natural", "holo": {"height": 0.65, "base": 0.45, "falloff": 1.8}, "grass": 0.22, "push": 0.5, "front": Vector2(0, 1),
+		"eye": 2.6, "lift": 0.45, "aim": 0.6},
 	{"name": "Owl", "at": Vector2(-12, -19.2), "shape": "square", "size": Vector2(1.6, 1.6), "h": 0.5, "kind": "owl", "title": "Eagle owl", "w_copies": 1,
 		"style": "natural", "holo": {"height": 0.5, "base": 0.4, "falloff": 1.8}, "grass": 0.22, "front": Vector2(0, 1),
-		"closeup": true, "eye": 1.5, "lift": 0.35, "aim": 0.3},
+		"eye": 1.5, "lift": 0.35, "aim": 0.3},
 	{"name": "Chipmunk", "at": Vector2(-6.2, -19.4), "shape": "round", "size": Vector2(0.9, 0.9), "h": 0.9, "kind": "chipmunk", "title": "Chipmunk", "w_copies": 2,
 		"style": "natural", "holo": {"height": 0.4, "base": 0.35, "falloff": 1.8}, "grass": 0.09, "push": 0.25, "front": Vector2(0, 1),
-		"closeup": true, "eye": 0.75, "lift": 0.12, "aim": 0.18},
+		"eye": 0.75, "lift": 0.12, "aim": 0.18},
 	{"name": "Crows", "at": Vector2(11, -19.6), "shape": "square", "size": Vector2(3.6, 3.6), "h": 0.4, "kind": "crows", "title": "Crows", "w_copies": 1,
-		"style": "natural", "holo": {"height": 0.5, "base": 0.4, "falloff": 1.8}, "grass": 0.2, "push": 0.25, "front": Vector2(0, 1)},
+		"style": "natural", "holo": {"height": 0.5, "base": 0.4, "falloff": 1.8}, "grass": 0.2, "push": 0.25, "front": Vector2(0, 1),
+		"eye": 2.8, "lift": 0.6, "aim": 0.9},
 	{"name": "TreeSW", "at": Vector2(-12.6, 18.6), "shape": "round", "size": Vector2(0.62, 0.62), "h": 0.15, "kind": "tree", "seed": 3, "w_copies": 1,
 		"style": "natural", "grass": 0.28},
 	{"name": "TreeSE", "at": Vector2(12.6, 18.6), "shape": "round", "size": Vector2(0.62, 0.62), "h": 0.15, "kind": "tree", "seed": 7, "w_copies": 1,
@@ -126,6 +137,8 @@ var _board_t: float = 0.0
 var _to_build: Array = []
 var _leaving: bool = false
 var card: Control
+## The close look's panel, on the left (round 4).
+var look_card: Control
 var _card_at: String = ""
 ## Stations whose card was closed with a click, until you walk away from them.
 var _closed: Dictionary = {}
@@ -240,7 +253,14 @@ func _ready() -> void:
 	card.name = "InfoCard"
 	card.set_script(Card)
 	card.set("close_hint", INFO.get("close_hint"))
+	look_card = Control.new()
+	look_card.name = "LookCard"
+	look_card.set_script(Card)
+	look_card.set("side", "left")
+	look_card.set("full", true)
+	look_card.set("close_hint", "CLICK  ·  BACK")
 	layer.add_child(card)
+	layer.add_child(look_card)
 	_to_build = STATIONS.duplicate()
 	_open_board()
 
@@ -328,28 +348,38 @@ func _process(delta: float) -> void:
 func _strip() -> Array:
 	var out: Array = [["WASD", "Move"], ["Mouse", "Look"], ["Right drag", "Turn the animals in 4D"], ["R", "Whole again"]]
 	if _near_closeup() != null:
-		out.append(["C", "Close look"])
+		out.append(["Click / C", "Close look"])
 	out.append(["B", "Dark mode"])
 	return out
 
 
 # -- the close look -----------------------------------------------------------------------------------
 
-## The small creature whose station you are by (its card is up), or null (round 3, item 33).
+## The creature whose pedestal you are within CLOSE_NEAR of (its edge), or null (round 4, item 49: "within
+## approximately 1 meter of a creature pedestal ... click to activate"; any creature, trees not).
 func _near_closeup() -> Variant:
-	if _card_at.is_empty():
+	if player == null:
 		return null
+	var p: Vector4 = player.global_position
 	for st in stations:
-		if String(st["name"]) == _card_at and bool((st["data"] as Dictionary).get("closeup", false)) and not (st["animals"] as Array).is_empty():
+		var s: Dictionary = st["data"]
+		if String(s["kind"]) == "tree" or (st["animals"] as Array).is_empty():
+			continue
+		var sz: Vector2 = s["size"]
+		var at: Vector2 = s["at"]
+		var q := Vector2(p.x - at.x, p.z - at.y)
+		var d: float = q.length() - sz.x if String(s["shape"]) == "round" else maxf(absf(q.x) - sz.x * 0.5, absf(q.y) - sz.y * 0.5)
+		if d < CLOSE_NEAR:
 			return st
 	return null
 
 
-## A close camera on a small creature (Ramon, item 33: "briefly transition to a closer camera angle ... from a
-## flattering perspective ... preserve the creature's animation ... skip or dismiss"): your camera's copy eases
-## in to a point in front of it, a little to one side and above, looking at it; any of C, a click or Esc eases
-## back. It keeps looking at the creature while it is there, so a turn of its head or the exhibits' turn
-## through W stays in frame. Any station with "closeup" gets it.
+## The close look, for every creature (round 3 item 33, round 4 items 49 and 50: "within approximately 1 meter of a
+## creature pedestal ... click to activate a short creature presentation ... a close-up camera view ... a subtle camera
+## pan, tilt, or gentle orbit ... a concise explanation ... a reusable system"): your camera's copy eases in to the
+## station's framing ("eye", "lift", "aim" in STATIONS; Azathoth from the room's side, low), then drifts a little round
+## it while it lives; its panel (the cards' words and how it is built) on the left. A click, C or Esc eases back. Right
+## drag still turns it through W. New creatures only need their framing in STATIONS and their words in the .tres.
 func close_look() -> bool:
 	var st: Variant = _near_closeup()
 	if st == null or not _look.is_empty():
@@ -360,29 +390,53 @@ func close_look() -> bool:
 	var s: Dictionary = st["data"]
 	var who: Node4D = (st["animals"] as Array)[0]
 	var at: Vector4 = who.global_position + Vector4(0.0, float(s.get("aim", 0.2)), 0.0, 0.0)
+	if String(s["kind"]) == "azathoth":
+		# Azathoth from the room's side, low, looking up at it (round 4, item 50: "far enough away to capture the
+		# extended tentacles ... a slightly elevated or dramatic angle"): its limbs stay within 7 m, the eye is 13 m off.
+		var to_room: Vector2 = (-(s["at"] as Vector2)).normalized()
+		var eye_a := Vector4(at.x + to_room.x * float(s["eye"]), at.y + float(s["lift"]), at.z + to_room.y * float(s["eye"]), at.w)
+		return _close_look_from(st, who, at, eye_a)
 	# In front of its face (the way it is turned, its +z), a little to one side; the station's front if it has none.
 	var f4: Vector4 = who.global_basis * Vector4(0.0, 0.0, 1.0, 0.0)
 	var front: Vector2 = Vector2(f4.x, f4.z).normalized() if Vector2(f4.x, f4.z).length() > 0.01 else (s["front"] as Vector2).normalized()
 	var side := Vector2(-front.y, front.x)
-	var off: Vector2 = front * float(s.get("eye", 1.2)) + side * float(s.get("eye", 1.2)) * 0.35
+	# "angle": how far round from its face (degrees; about 19 unless the station says: the long ones from the side).
+	var swing: float = deg_to_rad(float(s.get("angle", 19.3)))
+	var off: Vector2 = (front * cos(swing) + side * sin(swing)) * float(s.get("eye", 1.2)) * 1.06
 	var eye := Vector4(at.x + off.x, at.y + float(s.get("lift", 0.3)), at.z + off.y, at.w)
+	return _close_look_from(st, who, at, eye)
+
+
+func _close_look_from(st: Dictionary, who: Node4D, at: Vector4, eye: Vector4) -> bool:
+	var s: Dictionary = st["data"]
+	var pc: Camera4D = player.get_node_or_null("CameraRig/Pitch/Camera4D") as Camera4D
 	var cam := pc.duplicate(0) as Camera4D
 	cam.name = "CloseLook"
 	add_child(cam)
 	cam.global_position = pc.global_position
 	cam.global_basis = pc.global_basis
 	cam.make_current()
-	_look = {"cam": cam, "pc": pc, "who": who, "aim": float(s.get("aim", 0.2)), "phase": "in", "t": 0.0,
-		"from_eye": pc.global_position, "from_ang": _angles_of(pc.global_basis), "eye": eye}
+	_look = {"cam": cam, "pc": pc, "who": who, "aim": float(s.get("aim", 0.2)), "phase": "in", "t": 0.0, "clock": 0.0,
+		"from_eye": pc.global_position, "from_ang": _angles_of(pc.global_basis), "eye": eye, "rel": eye - at}
 	player.set("input_enabled", false)
+	# You out of the picture (round 4: you stood between the camera and the heron).
+	var av: Node4D = player.get_node_or_null("Avatar") as Node4D
+	if av != null:
+		av.visible = false
 	card.call("hide_card")
-	hud.set("strip", [["C / Click", "Back"]])
+	# Its panel on the left, the cards' words with how it is built (round 4: "a concise explanation ... grounded in the
+	# actual implementation").
+	var words: Dictionary = (INFO.get("cards") as Dictionary).get(String(st["name"]), {})
+	if not words.is_empty():
+		look_card.call("show_card", words)
+	hud.set("strip", [["Click / C", "Back"], ["Right drag", "Turn it in 4D"]])
 	return true
 
 
 func close_look_end() -> void:
 	if _look.is_empty() or String(_look["phase"]) == "out":
 		return
+	look_card.call("hide_card")
 	var cam: Camera4D = _look["cam"]
 	_look["phase"] = "out"
 	_look["t"] = 0.0
@@ -398,9 +452,17 @@ func _look_step(delta: float) -> void:
 	var u: float = clampf(float(_look["t"]) / 0.8, 0.0, 1.0)
 	var e: float = u * u * (3.0 - 2.0 * u)
 	var target: Vector4 = (who.global_position if is_instance_valid(who) else cam.global_position) + Vector4(0.0, float(_look["aim"]), 0.0, 0.0)
+	_look["clock"] = float(_look["clock"]) + delta
 	match String(_look["phase"]):
 		"in", "hold":
-			var eye: Vector4 = (_look["from_eye"] as Vector4).lerp(_look["eye"], e)
+			# The framing follows the creature as it walks, and drifts round it a little (round 4: "a subtle camera pan,
+			# tilt, or gentle orbit ... restrained"): about 12 degrees either way over some 18 s, a slight rise and fall.
+			var c: float = float(_look["clock"])
+			var rel: Vector4 = _look["rel"]
+			var sway: float = sin(c * 0.35) * 0.21
+			var r2 := Vector2(rel.x, rel.z).rotated(sway)
+			var goal := target + Vector4(r2.x, rel.y + sin(c * 0.23) * 0.06 * Vector2(rel.x, rel.z).length(), r2.y, rel.w)
+			var eye: Vector4 = (_look["from_eye"] as Vector4).lerp(goal, e)
 			var to_ang: Vector2 = _aim(eye, target)
 			var fa: Vector2 = _look["from_ang"]
 			_put_cam(cam, eye, Vector2(lerp_angle(fa.x, to_ang.x, e), lerpf(fa.y, to_ang.y, e)))
@@ -416,6 +478,9 @@ func _look_step(delta: float) -> void:
 				cam.queue_free()
 				_look = {}
 				player.set("input_enabled", true)
+				var av: Node4D = player.get_node_or_null("Avatar") as Node4D
+				if av != null:
+					av.visible = true
 				hud.set("strip", _strip())
 
 
@@ -497,6 +562,7 @@ func _card_check(p: Vector4) -> void:
 			best_d = d
 			best = String(st["name"])
 	var cards: Dictionary = INFO.get("cards")
+	card.set("close_hint", "CLICK  ·  TAKE A CLOSER LOOK" if _near_closeup() != null else String(INFO.get("close_hint")))
 	if best_d < CARD_NEAR and not _closed.has(best) and cards.has(best):
 		if best != _card_at or not bool(card.call("showing")):
 			card.call("show_card", cards[best])
@@ -524,7 +590,12 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	var mb := event as InputEventMouseButton
-	if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and bool(card.call("showing")) 			and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED \
+			and close_look():
+		get_viewport().set_input_as_handled()
+		return
+	if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and bool(card.call("showing")) \
+			and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		_closed[_card_at] = true
 		card.call("hide_card")
 		_card_at = ""
@@ -614,8 +685,10 @@ func _deck_grass(s: Dictionary, st: Dictionary) -> Node4D:
 	var g := Node4D.new()
 	g.name = "Grass" + String(s["name"])
 	g.set_script(HallGrass)
-	var settings: Dictionary = {"coverage": 1.0, "w_reach": w_half, "height_m": float(s["grass"]), "spacing_m": 0.05,
-		"width_scale": 1.35, "radius": 36.0, "band_radii": [6.0, 14.0, 24.0], "band_vertices": [11, 7, 5, 3],
+	# Denser and thinner (round 4, item 44: "too sparse ... blades somewhat too thick"): 0.036 m apart (0.05 before,
+	# about twice the blades), 1.0 of the pen's width (1.35 before).
+	var settings: Dictionary = {"coverage": 1.0, "w_reach": w_half, "height_m": float(s["grass"]), "spacing_m": 0.036,
+		"width_scale": 1.0, "radius": 36.0, "band_radii": [6.0, 14.0, 24.0], "band_vertices": [11, 7, 5, 3],
 		"height_cap": top + 0.01, "push_reach": float(s.get("push", 0.4))}
 	for k in settings:
 		g.set(k, settings[k])
@@ -630,11 +703,13 @@ func _deck_grass(s: Dictionary, st: Dictionary) -> Node4D:
 ## floor in front, where the deck is too small for it), facing the side you come from, its number, name and
 ## kicker from the cards' words. Still: it never moves when you turn the animals.
 func _label(s: Dictionary, st: Dictionary) -> Node4D:
-	var front: Vector2 = (s["front"] as Vector2).normalized()
+	# Round 4 (item 47): on the side Ramon gave ("label"), else the front; at the deck's edge, where the platform begins
+	# (0.7 m in before), facing out that way.
+	var front: Vector2 = (s.get("label", s["front"]) as Vector2).normalized()
 	var deck: Vector2 = st["deck"]
 	var edge: float = deck.x if String(s["shape"]) == "round" else absf(front.x) * deck.x + absf(front.y) * deck.y
 	var on_deck: bool = edge >= 1.7
-	var off: float = edge - 0.7 if on_deck else edge + 0.75
+	var off: float = edge - 0.35 if on_deck else edge + 0.6
 	var card: Dictionary = (INFO.get("cards") as Dictionary).get(String(s["name"]), {})
 	var lb := Node4D.new()
 	lb.name = "Label"
@@ -688,18 +763,20 @@ func _populate(deck: Node4D, s: Dictionary, st: Dictionary, size: Vector2) -> vo
 				if body != null:
 					st["animals"].append(body)
 		"azathoth":
-			# The cave's dreamer at pedestal size (round 3, item 36; the research's numbers: a mouth about 1 m across,
-			# 1.5 m over the deck, limbs reaching 2 m, kept between the deck and 2.6 m up). Not in a turn pivot: it
-			# squares itself to your slice and turns to you, which is the point of it; it eases along W after you.
-			var az := _scripted(DREAMER, "Azathoth", {"creature_scale": 0.8, "core_height": 1.5, "limb_length": 2.0,
-				"limb_count": 20, "pieces_per_limb": 12, "root_radius": 0.09, "tip_radius": 0.02, "curl_scale": 2.0 / 12.0,
-				"room_radii": Vector4(size.x * 0.5 - 0.25, 2.6, size.y * 0.5 - 0.25, 2.5), "floor_clear": 0.08,
-				"breath_height": 0.08, "too_close": 3.0, "turn_rate": 1.6, "dust_count": 24, "w_follow": 1.5, "w_follow_limit": 2.5})
+			# THE CAVE'S OWN (round 4, item 45: "restore the original, much longer tentacles ... the same presence and scale
+			# as the cave version"): its scale, its limbs (12 units, the cave's curl, 24 of 20 pieces), its breath and its
+			# dust as the cave sets them. Round 3 had shrunk it on purpose to the deck (scale 0.8, 2-unit limbs, 1.5 m up),
+			# which is why it read as a reduced copy. Raised to 7 m over its deck; its limbs kept between the deck, the
+			# east wall (5.5 m off) and the ceiling, and within 7 m along the hall.
+			# IN A TURN PIVOT, ITS SLICE ITS OWN (item 46: "doesn't appear to respond to W-slice rotation"): with the
+			# camera's slice as its normal it cancelled any turn; without, it turns with the others and still turns to you.
+			var az := _scripted(DREAMER, "Azathoth", {"core_height": 7.0, "too_close": 3.0, "w_follow": 1.5, "w_follow_limit": 2.5,
+				"room_radii": Vector4(5.2, 12.6, 7.0, 6.0)})
 			if az != null:
-				# It finds you once, as it enters the tree: the paths from where it will stand, set first.
-				az.set("player_path", NodePath("../" + String(deck.get_path_to(player))))
-				az.set("camera_rig_path", NodePath("../" + String(deck.get_path_to(player.get_node("CameraRig")))))
-				deck.add_child(az)
+				# It finds you once, as it enters the tree: the path from where it will stand (deck, its pivot, it), set first.
+				az.set("player_path", NodePath("../../" + String(deck.get_path_to(player))))
+				az.set("camera_rig_path", NodePath())
+				deck.add_child(_wrap(az))
 				st["animals"].append(az)
 		"goat":
 			var g: Node4D = _instance(CREATURES + "goat.tscn")
@@ -786,7 +863,8 @@ func _populate(deck: Node4D, s: Dictionary, st: Dictionary, size: Vector2) -> vo
 					_roam(deck, cw, {"radius": size.x, "margin": 0.35, "steer": false})
 				st["animals"].append(c)
 		"heron":
-			var hr := _scripted(HERON, "Heron", {"idle_only": true, "size": 1.0})
+			# No croak (round 4, item 43: "strange and distracting"); its wingbeats stay.
+			var hr := _scripted(HERON, "Heron", {"idle_only": true, "size": 1.0, "croak": null})
 			if hr != null:
 				_turn(hr, -0.5)
 				deck.add_child(_wrap(hr))

@@ -15,6 +15,10 @@ const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
 const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
 
 var close_hint: String = "LEFT CLICK  ·  CLOSE"
+## Where it stands: "right" (the proximity card) or "left" (the close look's panel, round 4).
+var side: String = "right"
+## The close look's panel says how the creature is built as well ("built" in the words).
+var full: bool = false
 var _card: Dictionary = {}
 var _shown: bool = false
 var _a: float = 0.0
@@ -62,23 +66,33 @@ func _draw() -> void:
 	var line_h: float = float(body_px) * 1.35
 	var moves: String = String(_card.get("moves", ""))
 	var four_d: String = String(_card.get("four_d", ""))
+	var built: String = String(_card.get("built", "")) if full else ""
 	var moves_lines: int = _line_count(fl, moves, tw, body_px)
 	var four_lines: int = _line_count(fl, four_d, tw, body_px)
+	var built_lines: int = _line_count(fl, built, tw, body_px) if not built.is_empty() else 0
 	var ch: float = pad + 18.0 * u + 34.0 * u + 18.0 * u + (16.0 * u + line_h * float(moves_lines)) + 14.0 * u \
 		+ (16.0 * u + line_h * float(four_lines)) + 30.0 * u + pad
-	# At the right, a third of the way down, sliding in from the edge as it fades up.
+	if not built.is_empty():
+		ch += 14.0 * u + 16.0 * u + line_h * float(built_lines)
+	# At the right (or the left), a third of the way down, sliding in from its edge as it fades up.
 	var x: float = size.x - cw - 28.0 * u + (1.0 - e) * 40.0 * u
-	var y: float = size.y * 0.3
+	if side == "left":
+		x = 28.0 * u - (1.0 - e) * 40.0 * u
+	var y: float = size.y * 0.3 if side != "left" else size.y * 0.22
 	var a: float = e
 	var box := Style.glass_box(14.0 * u, a)
 	draw_style_box(box, Rect2(Vector2(x, y), Vector2(cw, ch)))
-	# The blue edge down its left.
-	draw_rect(Rect2(Vector2(x, y + 14.0 * u), Vector2(3.0 * u, ch - 28.0 * u)), Color(Style.UI_ACCENT, a))
+	# The blue edge down its inner side.
+	var ex: float = x if side != "left" else x + cw - 3.0 * u
+	draw_rect(Rect2(Vector2(ex, y + 14.0 * u), Vector2(3.0 * u, ch - 28.0 * u)), Color(Style.UI_ACCENT, a))
 	var cy: float = y + pad + 12.0 * u
 	draw_string(fs, Vector2(x + pad, cy), String(_card.get("kicker", "")), HORIZONTAL_ALIGNMENT_LEFT, tw, Style.type_px("micro", u), Color(Style.UI_ACCENT, a))
 	cy += 34.0 * u
 	draw_string(fb, Vector2(x + pad, cy), String(_card.get("title", "")), HORIZONTAL_ALIGNMENT_LEFT, tw, Style.type_px("title", u), Color(1, 1, 1, a))
 	cy += 18.0 * u
+	if not built.is_empty():
+		cy = _section(fs, fl, "HOW IT IS BUILT", built, x + pad, cy, tw, u, line_h, body_px, a)
+		cy += 14.0 * u
 	cy = _section(fs, fl, "HOW IT MOVES", moves, x + pad, cy, tw, u, line_h, body_px, a)
 	cy += 14.0 * u
 	cy = _section(fs, fl, "WHAT IS 4D ABOUT IT", four_d, x + pad, cy, tw, u, line_h, body_px, a)

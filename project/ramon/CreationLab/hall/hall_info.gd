@@ -8,6 +8,7 @@ extends Resource
 ##   kicker   one line over it, capitals: what kind, how many balls, how it moves
 ##   moves    HOW IT MOVES, a sentence or two
 ##   four_d   WHAT IS 4D ABOUT IT, a sentence or two
+##   built    HOW IT IS BUILT, for the close look's panel (round 4), from the code
 ##
 ## NO class_name (engine_gotchas.md).
 

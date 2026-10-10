@@ -9,6 +9,23 @@ door sign, lesson wall, info panel; textual only).
 Ramon's order: "block everything in first, and than worry about optimization after". This is the block-in.
 Every animal is the full live one; what each costs is the next batch.
 
+## Round 4 (10 Oct, Ramon's walkthrough Part 4, items 43-50; `CreationLab/PLAN_ROUND4.md`)
+
+| Item | What | Where |
+|---|---|---|
+| 45 Azathoth as in the cave | Round 3 had shrunk it on purpose to fit its deck (scale 0.8, 2-unit limbs, 1.5 m up); now the cave's own scale, limbs and curl (24 limbs of 20 pieces), breath and dust, raised to 7 m over its deck, its limbs kept off the east wall and the ceiling | hall `_populate` "azathoth" |
+| 46 Azathoth under W | It squared itself to the camera's slice, which cancelled the turn; now in a turn pivot with its own slice: it turns with the others and still faces you | same |
+| 48 its pedestal | The deck near black with thin white grid lines; the hologram the deck's own size, inside the pedestal | `hall_pedestal.gd` technical |
+| 49, 50 close look | Every creature: within 1 m of its pedestal a click (or C) eases the camera to its framing (`eye`, `lift`, `aim` in `STATIONS`), a slow small orbit, its panel on the left (built, moves, 4D); click, C or Esc back; right drag still turns it. Azathoth from the room's side, low, 13 m off | `close_look()`, `hall_info_card.gd` `side`/`full` |
+| 47 labels | At the deck's edge (0.35 m in, was 0.7), facing out. Heron west, chickens east, Azathoth west facing the room's middle; the rest at their front | `STATIONS` "label", `_label` |
+| 44 grass | Denser (0.036 m apart, was 0.05) and thinner (1.0 of the pen's width, was 1.35) | `_deck_grass` |
+| 43 heron | No croak; the wingbeats stay | hall `_populate` "heron" |
+
+Checks on 10 Oct: 42 of 42 (`hall/_capture_hall_runner.gd`), frames of all ten close looks and of Azathoth whole and
+turned. Frame time 8.6 ms (6.8 in round 3): Azathoth at the cave's size is 2.9 ms of it; the denser grass costs next to
+nothing. The close look hides your avatar while it runs (it stood between the camera and the heron); the
+brachiosaurus is framed from the side ("angle" in `STATIONS`), the rest about 19 degrees off their faces.
+
 ## Round 3 (10 Oct, Ramon's walkthrough Part 3, items 25-42; `CreationLab/PLAN_ROUND3.md`)
 
 The principle: a living exhibition in a stable building. **"Nightpic" / "Nikepeg" is Nike**, the pen's pig.

@@ -300,15 +300,64 @@ func _hall() -> void:
 	await _shot("hall_dark")
 	_g.call("toggle_palette")
 	await _wait(0.4)
-	# The close look at the chipmunk (item 33).
-	_put(-6.2, -16.8, 0.0, -12.0)
-	await _wait(0.8)
-	_check(bool(_g.call("close_look")), "C by the chipmunk starts a close look")
-	await _wait(1.4)
-	await _shot("hall_closeup_chipmunk")
-	_g.call("close_look_end")
-	await _wait(1.2)
-	_check((_g.get("_look") as Dictionary).is_empty(), "and it comes back")
+	# Round 4: Azathoth as in the cave, in a turn pivot (items 45, 46).
+	var az: Node4D = null
+	for st in built:
+		if String(st["data"]["kind"]) == "azathoth" and not (st["animals"] as Array).is_empty():
+			az = (st["animals"] as Array)[0]
+	_check(az != null and az.get_parent().get_script() != null and String(az.get_parent().get_script().resource_path).ends_with("turn_pivot_4d.gd"),
+		"Azathoth turns with the others (in a turn pivot)")
+	if az != null:
+		_check(float(az.get("creature_scale")) >= 2.0 and float(az.get("limb_length")) >= 12.0 and float(az.get("core_height")) >= 6.5,
+			"Azathoth at the cave's scale, its long limbs, raised (scale %.1f, limbs %.0f, %.1f m up)" % [float(az.get("creature_scale")), float(az.get("limb_length")), float(az.get("core_height"))])
+		_put(0.0, 9.0, -PI * 0.5, 4.0)
+		await _wait(1.5)
+		await _shot("hall_azathoth_cave")
+		_g.set("turn", Vector2(0.8, 0.0))
+		await _wait(1.0)
+		await _shot("hall_azathoth_turned")
+		_g.call("whole_again")
+		await _wait(1.0)
+	# The labels where Ramon put them (item 47): the heron's west, the chickens' east, Azathoth's west.
+	for want in [["Heron", -1.0], ["Chickens", 1.0], ["Azathoth", -1.0]]:
+		for st in built:
+			if String(st["name"]) == want[0] and st.has("label"):
+				var lb: Node4D = st["label"]
+				_check(signf(lb.position.x) == float(want[1]), "%s's label on its %s side" % [want[0], "west" if float(want[1]) < 0.0 else "east"])
+	# The heron has no croak (item 43); the grass denser and thinner (item 44).
+	for st in built:
+		if String(st["data"]["kind"]) == "heron" and not (st["animals"] as Array).is_empty():
+			_check((st["animals"] as Array)[0].get("croak") == null, "the heron has no croak")
+		if String(st["name"]) == "Chickens" and st.has("grass"):
+			_check(float(st["grass"].get("spacing_m")) <= 0.04 and float(st["grass"].get("width_scale")) <= 1.0, "the grass denser and thinner")
+	# The close look at every creature, by a click within a metre of its pedestal (items 49, 50).
+	var looks: int = 0
+	for st in built:
+		var s: Dictionary = st["data"]
+		if String(s["kind"]) == "tree":
+			continue
+		var at: Vector2 = s["at"]
+		var dir: Vector2 = (s["front"] as Vector2).normalized()
+		var sz: Vector2 = s["size"]
+		var edge: float = sz.x if String(s["shape"]) == "round" else absf(dir.x) * sz.x * 0.5 + absf(dir.y) * sz.y * 0.5
+		_put(at.x + dir.x * (edge + 0.6), at.y + dir.y * (edge + 0.6), atan2(dir.x, dir.y) + PI, -10.0)
+		await _wait(0.4)
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		var click := InputEventMouseButton.new()
+		click.button_index = MOUSE_BUTTON_LEFT
+		click.pressed = true
+		_g.call("_input", click)
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		await _wait(0.3)
+		if not (_g.get("_look") as Dictionary).is_empty():
+			looks += 1
+			await _wait(2.6)
+			await _shot("hall_look_" + String(st["name"]).to_lower())
+			_g.call("close_look_end")
+			await _wait(1.1)
+		_quiet()
+	_check(looks == 10, "a click by every creature's pedestal starts its close look (%d of 10)" % looks)
+	_check((_g.get("_look") as Dictionary).is_empty(), "and each comes back")
 	_quiet()
 	# The info card: comes up near the wolf, a click closes it, it stays closed till you have been away.
 	var card: Node = _g.get("card")
