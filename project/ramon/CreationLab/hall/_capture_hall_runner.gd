@@ -287,6 +287,21 @@ func _hall() -> void:
 		ed.call("_input", tab)
 		await _wait(0.4)
 		_check(bool((ed as Control).visible), "Tab opens it")
+		var env: Dictionary = ed.get("env")
+		_check(env.has("gain") and env.has("exposure") and env.has("key_elevation"), "it has All spotlights and the room's light")
+		var light0: Node = _g.get_node_or_null("CentreSpot")
+		var own_before: Variant = (light0.get("energy") as Dictionary).duplicate() if light0 != null else null
+		env["gain"] = 2.0
+		env["exposure"] = 0.8
+		ed.call("_apply_env")
+		await _wait(0.4)
+		var room5: Node = _g.get_node_or_null("Room")
+		var over5: Dictionary = (room5.get("mood_overrides") as Dictionary).get(String(room5.get("mood")), {})
+		_check(absf(float(_g.get_script().get_script_constant_map()["Style"].gain.get("spot", 0.0)) - 2.0) < 0.001 and absf(float(over5.get("exposure", 0.0)) - 0.8) < 0.001,
+			"All spotlights and Exposure change the room live")
+		_check(light0 == null or (light0.get("energy") as Dictionary) == own_before, "each light keeps its own strength")
+		ed.call("reset")
+		await _wait(0.3)
 		await _shot("hall_tab_lights")
 		ed.call("_input", tab)
 		await _wait(0.3)
@@ -330,8 +345,24 @@ func _hall() -> void:
 			_check((st["animals"] as Array)[0].get("croak") == null, "the heron has no croak")
 		if String(st["name"]) == "Chickens" and st.has("grass"):
 			_check(float(st["grass"].get("spacing_m")) <= 0.04 and float(st["grass"].get("width_scale")) <= 1.0, "the grass denser and thinner")
+	# Round 5: Azathoth further back (51); every label outside its pedestal, at the start of the platform (52).
+	if az != null:
+		_check(az.position.z > 1.0, "Azathoth further back on its deck (%.1f m)" % az.position.z)
+	var inside: Array = []
+	for st in built:
+		if not st.has("label"):
+			continue
+		var s5: Dictionary = st["data"]
+		var lb5: Node4D = st["label"]
+		var q5 := Vector2(lb5.position.x, lb5.position.z)
+		var sz5: Vector2 = s5["size"]
+		var out5: bool = q5.length() > sz5.x if String(s5["shape"]) == "round" else (absf(q5.x) > sz5.x * 0.5 or absf(q5.y) > sz5.y * 0.5)
+		if not out5:
+			inside.append(String(st["name"]))
+	_check(inside.is_empty(), "every label stands at the start of its platform, outside the hologram (inside: %s)" % ", ".join(inside))
 	# The close look at every creature, by a click within a metre of its pedestal (items 49, 50).
 	var looks: int = 0
+	var hidden_you: int = 0
 	for st in built:
 		var s: Dictionary = st["data"]
 		if String(s["kind"]) == "tree":
@@ -351,12 +382,27 @@ func _hall() -> void:
 		await _wait(0.3)
 		if not (_g.get("_look") as Dictionary).is_empty():
 			looks += 1
+			var av: Node4D = _player().get_node_or_null("Avatar") as Node4D
+			if av != null and not av.visible:
+				hidden_you += 1
 			await _wait(2.6)
 			await _shot("hall_look_" + String(st["name"]).to_lower())
+			if String(st["name"]) == "Wolf":
+				# R in a close look (55): the animals whole again, the close look still on.
+				_g.set("turn", Vector2(0.5, 0.0))
+				var rk := InputEventKey.new()
+				rk.keycode = KEY_R
+				rk.physical_keycode = KEY_R
+				rk.pressed = true
+				_g.call("_unhandled_key_input", rk)
+				await _wait(0.6)
+				_check(not (_g.get("_look") as Dictionary).is_empty() and (_g.get("turn") as Vector2).length() < 0.2,
+					"R in a close look puts them whole again and the close look goes on")
 			_g.call("close_look_end")
 			await _wait(1.1)
 		_quiet()
 	_check(looks == 10, "a click by every creature's pedestal starts its close look (%d of 10)" % looks)
+	_check(hidden_you == 0, "you stay in the picture in every close look (hidden in %d)" % hidden_you)
 	_check((_g.get("_look") as Dictionary).is_empty(), "and each comes back")
 	_quiet()
 	# The info card: comes up near the wolf, a click closes it, it stays closed till you have been away.

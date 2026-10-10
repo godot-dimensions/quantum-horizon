@@ -26,6 +26,21 @@ extends PanelContainer
 const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
 const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
 const SAVE_PATH := "res://ramon/CreationLab/hall/creature_hall_lights.cfg"
+## THE HALL, round 5 (10 Oct, Ramon's items 57 and 58): under the chosen light, ALL LIGHTS AND THE ROOM. "All spotlights"
+## is the kit's own shared multiplier for every kit light (Style.gain "spot"), so each light keeps its own values and its
+## own row still works; the hall owns it now (room 1 sets it to 3.26 for itself, and the hall used to inherit that when
+## you came through the door, and run at 1.0 when opened on its own). The rest is the room's own light, nothing added:
+## exposure, the ambient light (how much, and warmer or cooler), the sky's colours (how bright), the key light the Sun
+## handle aims (strength, elevation, direction) and the fill. Live; SAVE keeps them with the lights, RESET puts back
+## the room's own.
+const ENV_ROWS := [["gain", "All spotlights (x)", 0.0, 6.0, 0.01], ["exposure", "Exposure", 0.3, 3.0, 0.01],
+	["ambient_k", "Ambient (x)", 0.0, 3.0, 0.01], ["warmth", "Ambient warmth", -1.0, 1.0, 0.01], ["sky_k", "Sky (x)", 0.0, 3.0, 0.01],
+	["key_energy", "Sun strength", 0.0, 3.0, 0.01], ["key_elevation", "Sun elevation", 5.0, 90.0, 1.0],
+	["key_azimuth", "Sun direction", -180.0, 180.0, 1.0], ["fill_energy", "Fill strength", 0.0, 1.0, 0.01]]
+## The hall's spotlight multiplier unless saved otherwise: what it has been seen at, coming in from room 1.
+const HALL_GAIN := 3.26
+const WARM := Color(1.0, 0.82, 0.62)
+const COOL := Color(0.62, 0.78, 1.0)
 const ROWS := [["energy", "Strength", 0.0, 8.0, 0.05], ["angle", "Spread (degrees)", 5.0, 120.0, 1.0], ["softness", "Softness", 0.1, 10.0, 0.1],
 	["reach", "Reach (m)", 1.0, 40.0, 0.5], ["attenuation", "Fall-off", 0.01, 2.0, 0.01]]
 
@@ -42,6 +57,10 @@ var _flash_t: float = 0.0
 var _mouse_before: int = Input.MOUSE_MODE_CAPTURED
 ## Whether Tab is this panel's own (the Aquatic Lab), or the room's to give (the Botany Lab).
 var own_key: bool = true
+## The room's light as the scene set it (its mood's values), and the sliders' values over it.
+var _env_base: Dictionary = {}
+var env: Dictionary = {}
+var _env_initial: Dictionary = {}
 
 
 func _ready() -> void:
@@ -82,7 +101,9 @@ func _ready() -> void:
 	(func() -> void:
 		_find()
 		_snapshot()
+		_env_snapshot()
 		load_saved()
+		_apply_env()
 		_build_rows()).call_deferred()
 
 
@@ -277,6 +298,93 @@ func _build_rows() -> void:
 			_apply_value(l, nm, x)
 			val.text = _fmt(x, float(r[4])))
 		_rows.add_child(line)
+	_rows_env()
+
+
+## ALL LIGHTS AND THE ROOM: the shared spotlight multiplier and the room's own light, live.
+func _rows_env() -> void:
+	if env.is_empty():
+		return
+	var head := Label.new()
+	head.text = "ALL LIGHTS AND THE ROOM"
+	head.add_theme_font_override("font", LabPrint.font("bold"))
+	head.modulate = Style.UI_ACCENT
+	_rows.add_child(head)
+	for r in ENV_ROWS:
+		var nm: String = r[0]
+		var line := HBoxContainer.new()
+		var label := Label.new()
+		label.text = String(r[1])
+		label.custom_minimum_size = Vector2(170, 0)
+		line.add_child(label)
+		var sl := HSlider.new()
+		sl.min_value = float(r[2])
+		sl.max_value = float(r[3])
+		sl.step = float(r[4])
+		sl.value = float(env.get(nm, 0.0))
+		sl.custom_minimum_size = Vector2(240, 24)
+		sl.focus_mode = Control.FOCUS_NONE
+		line.add_child(sl)
+		var val := Label.new()
+		val.text = _fmt(float(env.get(nm, 0.0)), float(r[4]))
+		val.custom_minimum_size = Vector2(60, 0)
+		line.add_child(val)
+		sl.value_changed.connect(func(x: float) -> void:
+			env[nm] = x
+			_apply_env()
+			val.text = _fmt(x, float(r[4])))
+		_rows.add_child(line)
+
+
+## The room's values as the scene set them, and the sliders at them (the spotlights at the hall's own multiplier).
+func _env_snapshot() -> void:
+	var r: Node = room.get_node_or_null("Room") if room != null else null
+	if r == null:
+		return
+	var mood: String = String(r.get("mood"))
+	var over: Dictionary = (r.get("mood_overrides") as Dictionary).get(mood, {})
+	_env_base = Style.ROOM_LIGHT.get(mood, {}).duplicate()
+	_env_base.merge(over, true)
+	var sun: Node = room.get_node_or_null("Sun")
+	var ang: Vector2 = sun.call("angles") if sun != null and sun.has_method("angles") else \
+		Vector2(float(_env_base.get("key_elevation", 60.0)), float(_env_base.get("key_azimuth", 25.0)))
+	env = {"gain": HALL_GAIN, "exposure": float(_env_base.get("exposure", 1.0)), "ambient_k": 1.0, "warmth": 0.0, "sky_k": 1.0,
+		"key_energy": float(_env_base.get("key_energy", 0.4)), "key_elevation": ang.x, "key_azimuth": ang.y,
+		"fill_energy": float(_env_base.get("fill_energy", 0.08))}
+	_env_initial = env.duplicate()
+
+
+## The sliders onto the lights and the room, now.
+func _apply_env() -> void:
+	if env.is_empty() or room == null:
+		return
+	Style.gain["spot"] = float(env["gain"])
+	room.get_tree().call_group("kit_light", "apply_mood", Style.mood, true)
+	var r: Node = room.get_node_or_null("Room")
+	if r == null:
+		return
+	var mood: String = String(r.get("mood"))
+	var all: Dictionary = (r.get("mood_overrides") as Dictionary).duplicate(true)
+	var over: Dictionary = (all.get(mood, {}) as Dictionary).duplicate()
+	var w: float = float(env["warmth"])
+	var tint: Color = Color.WHITE.lerp(WARM, w) if w >= 0.0 else Color.WHITE.lerp(COOL, -w)
+	var amb: Color = _env_base.get("ambient", Color(0.2, 0.24, 0.33))
+	over["ambient"] = Color(amb.r * tint.r, amb.g * tint.g, amb.b * tint.b) * float(env["ambient_k"])
+	for k in ["sky_top", "sky_horizon", "sky_bottom"]:
+		var c: Color = _env_base.get(k, Color(0.1, 0.1, 0.15))
+		over[k] = Color(c.r, c.g, c.b) * float(env["sky_k"])
+	over["exposure"] = float(env["exposure"])
+	over["key_energy"] = float(env["key_energy"])
+	over["fill_energy"] = float(env["fill_energy"])
+	over["key_elevation"] = float(env["key_elevation"])
+	over["key_azimuth"] = float(env["key_azimuth"])
+	all[mood] = over
+	r.set("mood_overrides", all)
+	r.call("set_mood", mood, true, false)
+	# The Sun handle stands where the key light comes from (it writes the same two angles when it is moved).
+	var sun: Node = room.get_node_or_null("Sun")
+	if sun != null and sun.has_method("set_angles"):
+		sun.call("set_angles", float(env["key_elevation"]), float(env["key_azimuth"]))
 
 
 func _apply_value(l: Node, nm: String, x: float) -> void:
@@ -300,6 +408,8 @@ func save() -> void:
 		var v: Dictionary = _values(l)
 		for key in v:
 			cf.set_value(String(l.name), key, v[key])
+	for key in env:
+		cf.set_value("room", String(key), env[key])
 	var err: int = cf.save(SAVE_PATH)
 	_say("Saved to %s" % SAVE_PATH.get_file() if err == OK else "Could not save (%d)" % err)
 
@@ -314,6 +424,9 @@ func load_saved() -> void:
 			continue
 		for key in cf.get_section_keys(sec):
 			l.set(key, cf.get_value(sec, key))
+	if cf.has_section("room"):
+		for key in cf.get_section_keys("room"):
+			env[key] = float(cf.get_value("room", key))
 
 
 func reset() -> void:
@@ -321,6 +434,8 @@ func reset() -> void:
 		var v: Dictionary = _initial.get(String(l.name), {})
 		for key in v:
 			l.set(key, v[key])
+	env = _env_initial.duplicate()
+	_apply_env()
 	_build_rows()
 	_say("Back to the room's own values")
 

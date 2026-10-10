@@ -1,21 +1,17 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=6 format=3]
 ; WOLF 2 (Creature Lab v2, 9 Oct 2026; PLAN_V2.md part F, Ramon's walkthrough item 3): a fork of LabKit/carried/Model/wolf.tscn, which stays as it was.
 ; Changed: the rump back (Rump z -0.44 to -0.48, Loin -0.22 to -0.25) and the hind legs forward on it (HindHip z 0.02 to 0.07); the hind hips
 ; apart (x 0.085 to 0.105, radius 0.1 to 0.092: the pair overlapped by 3 cm); the head up a little (Ruff, Skull, Muzzle, Nose); the eyes
 ; bigger, black, and out past the skin of the head (they sat inside it).
+; Round 5 (10 Oct, item 56: "sunglasses"): the eyes 24-cells (v2/eye_24cell_4d.gd), 2.4 cm across, about half set into the face.
 
 [ext_resource type="Script" path="res://ramon/CreationLab/LabKit/carried/chickenpen/scripts/loft_rig_4d.gd" id="1_rig"]
 [ext_resource type="Script" path="res://ramon/CreationLab/LabKit/carried/chickenpen/scripts/loft_ball_4d.gd" id="2_ball"]
 [ext_resource type="Script" path="res://ramon/CreationLab/LabKit/carried/chickenpen/scripts/strider_walker.gd" id="3_walker"]
+[ext_resource type="Script" path="res://ramon/CreationLab/v2/eye_24cell_4d.gd" id="4_eye"]
 
 [sub_resource type="TetraMaterial4D" id="TetraMaterial4D_wolf"]
 albedo_color = Color(0.33, 0.34, 0.37, 1)
-
-[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_eye"]
-size = Vector4(0.03, 0.032, 0.04, 0.03)
-
-[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_eye"]
-albedo_color = Color(0.015, 0.015, 0.018, 1)
 
 [node name="Wolf" type="Node4D"]
 
@@ -164,14 +160,12 @@ radius = 0.008
 color = Color(0.12, 0.12, 0.13, 1)
 
 [node name="EyeL" type="MeshInstance4D" parent="Hide"]
-position = Vector4(0.082, 0.875, 0.6, 0)
-mesh = SubResource("BoxTetraMesh4D_eye")
-material_override = SubResource("TetraMaterial4D_eye")
+position = Vector4(0.074, 0.872, 0.6, 0)
+script = ExtResource("4_eye")
 
 [node name="EyeR" type="MeshInstance4D" parent="Hide"]
-position = Vector4(-0.082, 0.875, 0.6, 0)
-mesh = SubResource("BoxTetraMesh4D_eye")
-material_override = SubResource("TetraMaterial4D_eye")
+position = Vector4(-0.074, 0.872, 0.6, 0)
+script = ExtResource("4_eye")
 
 [node name="Walker" type="Node4D" parent="."]
 script = ExtResource("3_walker")

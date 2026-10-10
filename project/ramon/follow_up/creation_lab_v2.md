@@ -9,6 +9,21 @@ door sign, lesson wall, info panel; textual only).
 Ramon's order: "block everything in first, and than worry about optimization after". This is the block-in.
 Every animal is the full live one; what each costs is the next batch.
 
+## Round 5 (10 Oct, Ramon's walkthrough Part 5, items 51-58; `CreationLab/PLAN_ROUND5.md`, with the card references)
+
+| Item | What | Where |
+|---|---|---|
+| 51 Azathoth back | 1.6 m toward the back of its deck, centred across; everything else as it was | `STATIONS` "back" |
+| 52 cards forward | Every card on the floor just outside its pedestal on its card side (never inside the hologram); Azathoth's at the front end of its west side | `_label`, "label_along" |
+| 53 Azathoth's close look | Over your shoulder, three quarters to its face, you in the lower frame | `close_look()` |
+| 54 you in the picture | Your avatar is never hidden; where you would block the creature the camera swings round it until you do not | `_clear_of_you` |
+| 55 R in a close look | Whole again, the close look goes on | `_unhandled_key_input` |
+| 56 wolf's eyes | Small 24-cells (hulled from the 24-cell's points), 2.4 cm, half set into the face; both rooms use `v2/wolf2.tscn` | `v2/eye_24cell_4d.gd` |
+| 57 All spotlights | The kit's shared multiplier as one slider, each light's own values kept; the hall owns it (default 3.26, what it ran at when entered from room 1) | `hall/carried/hall_light_editor.gd` |
+| 58 the room's light | Exposure, ambient (amount and warmth), sky brightness, sun strength, elevation and direction, fill; live, saved with SAVE | same |
+
+Ramon's saved hall lighting (Tab, SAVE) is `hall/creature_hall_lights.cfg`. Checks: 49 of 49 on 10 Oct.
+
 ## Round 4 (10 Oct, Ramon's walkthrough Part 4, items 43-50; `CreationLab/PLAN_ROUND4.md`)
 
 | Item | What | Where |

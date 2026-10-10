@@ -88,7 +88,7 @@ const STATIONS := [
 		"eye": 3.4, "lift": 0.5, "aim": 0.9},
 	{"name": "Azathoth", "at": Vector2(9.5, 9), "shape": "square", "size": Vector2(7, 6), "h": 0.7, "kind": "azathoth", "title": "Azathoth",
 		"style": "technical", "holo": {"height": 1.4, "base": 0.6, "falloff": 1.5, "glow": 0.9}, "front": Vector2(0, -1),
-		"label": Vector2(-1, 0), "eye": 13.0, "lift": -2.5, "aim": 7.0},
+		"label": Vector2(-1, 0), "label_along": Vector2(0, -2.3), "back": 1.6, "eye": 13.0, "lift": -2.5, "aim": 7.0},
 	{"name": "Chickens", "at": Vector2(-5, 17), "shape": "round", "size": Vector2(2.0, 2.0), "h": 0.35, "kind": "chickens", "title": "Chickens", "w_copies": 2,
 		"style": "natural", "holo": {"height": 0.45, "base": 0.4, "falloff": 1.8}, "grass": 0.13, "push": 0.3, "front": Vector2(0, -1),
 		"label": Vector2(1, 0), "eye": 1.5, "lift": 0.3, "aim": 0.25},
@@ -391,11 +391,16 @@ func close_look() -> bool:
 	var who: Node4D = (st["animals"] as Array)[0]
 	var at: Vector4 = who.global_position + Vector4(0.0, float(s.get("aim", 0.2)), 0.0, 0.0)
 	if String(s["kind"]) == "azathoth":
-		# Azathoth from the room's side, low, looking up at it (round 4, item 50: "far enough away to capture the
-		# extended tentacles ... a slightly elevated or dramatic angle"): its limbs stay within 7 m, the eye is 13 m off.
-		var to_room: Vector2 = (-(s["at"] as Vector2)).normalized()
-		var eye_a := Vector4(at.x + to_room.x * float(s["eye"]), at.y + float(s["lift"]), at.z + to_room.y * float(s["eye"]), at.w)
-		return _close_look_from(st, who, at, eye_a)
+		# Over your shoulder, three quarters to its face (round 5, item 53: "a three-quarter frontal composition rather than
+		# a pure side view ... include the player character in the shot"): it turns to face you, so behind you is in front
+		# of it; the eye 6 m back from you and 3 m to one side, at 3.4 m, looking at its middle (5 m up) so you stand in
+		# the lower part of the frame and its limbs, within 7 m of it, fill the rest.
+		var p: Vector4 = player.global_position
+		var away := Vector2(p.x - who.global_position.x, p.z - who.global_position.z).normalized()
+		var across := Vector2(-away.y, away.x)
+		var e2: Vector2 = Vector2(p.x, p.z) + away * 6.0 + across * 3.0
+		var mid: Vector4 = who.global_position + Vector4(0.0, 5.0, 0.0, 0.0)
+		return _close_look_from(st, who, mid, Vector4(e2.x, p.y + 3.4, e2.y, p.w), mid.y - who.global_position.y)
 	# In front of its face (the way it is turned, its +z), a little to one side; the station's front if it has none.
 	var f4: Vector4 = who.global_basis * Vector4(0.0, 0.0, 1.0, 0.0)
 	var front: Vector2 = Vector2(f4.x, f4.z).normalized() if Vector2(f4.x, f4.z).length() > 0.01 else (s["front"] as Vector2).normalized()
@@ -404,10 +409,30 @@ func close_look() -> bool:
 	var swing: float = deg_to_rad(float(s.get("angle", 19.3)))
 	var off: Vector2 = (front * cos(swing) + side * sin(swing)) * float(s.get("eye", 1.2)) * 1.06
 	var eye := Vector4(at.x + off.x, at.y + float(s.get("lift", 0.3)), at.z + off.y, at.w)
-	return _close_look_from(st, who, at, eye)
+	return _close_look_from(st, who, at, _clear_of_you(eye, at), float(s.get("aim", 0.2)))
 
 
-func _close_look_from(st: Dictionary, who: Node4D, at: Vector4, eye: Vector4) -> bool:
+## The eye swung round the creature, a step either way at a time, until you are not between it and the creature
+## (round 5, item 54: you stay in the picture now, so you must not stand in front of it). Unmoved if already clear.
+func _clear_of_you(eye: Vector4, at: Vector4) -> Vector4:
+	var you: Vector4 = player.global_position + Vector4(0.0, 1.0, 0.0, 0.0)
+	for k in [0.0, 0.7, -0.7, 1.4, -1.4, 2.1, -2.1]:
+		var r2 := Vector2(eye.x - at.x, eye.z - at.z).rotated(k)
+		var e := Vector4(at.x + r2.x, eye.y, at.z + r2.y, eye.w)
+		if _off_line(you, e, at) > 0.65:
+			return e
+	return eye
+
+
+## How far `q` is from the line from `a` to `b` (between them), in x, y and z.
+static func _off_line(q: Vector4, a: Vector4, b: Vector4) -> float:
+	var ab := Vector3(b.x - a.x, b.y - a.y, b.z - a.z)
+	var aq := Vector3(q.x - a.x, q.y - a.y, q.z - a.z)
+	var t: float = clampf(aq.dot(ab) / maxf(ab.length_squared(), 1e-6), 0.0, 1.0)
+	return (aq - ab * t).length()
+
+
+func _close_look_from(st: Dictionary, who: Node4D, at: Vector4, eye: Vector4, aim: float) -> bool:
 	var s: Dictionary = st["data"]
 	var pc: Camera4D = player.get_node_or_null("CameraRig/Pitch/Camera4D") as Camera4D
 	var cam := pc.duplicate(0) as Camera4D
@@ -416,20 +441,17 @@ func _close_look_from(st: Dictionary, who: Node4D, at: Vector4, eye: Vector4) ->
 	cam.global_position = pc.global_position
 	cam.global_basis = pc.global_basis
 	cam.make_current()
-	_look = {"cam": cam, "pc": pc, "who": who, "aim": float(s.get("aim", 0.2)), "phase": "in", "t": 0.0, "clock": 0.0,
+	_look = {"cam": cam, "pc": pc, "who": who, "aim": aim, "phase": "in", "t": 0.0, "clock": 0.0,
 		"from_eye": pc.global_position, "from_ang": _angles_of(pc.global_basis), "eye": eye, "rel": eye - at}
 	player.set("input_enabled", false)
-	# You out of the picture (round 4: you stood between the camera and the heron).
-	var av: Node4D = player.get_node_or_null("Avatar") as Node4D
-	if av != null:
-		av.visible = false
+	# You stay in the picture (round 5, item 54: "avoid hiding the player mesh"); _clear_of_you keeps you out of the way.
 	card.call("hide_card")
 	# Its panel on the left, the cards' words with how it is built (round 4: "a concise explanation ... grounded in the
 	# actual implementation").
 	var words: Dictionary = (INFO.get("cards") as Dictionary).get(String(st["name"]), {})
 	if not words.is_empty():
 		look_card.call("show_card", words)
-	hud.set("strip", [["Click / C", "Back"], ["Right drag", "Turn it in 4D"]])
+	hud.set("strip", [["Click / C", "Back"], ["Right drag", "Turn it in 4D"], ["R", "Whole again"]])
 	return true
 
 
@@ -478,9 +500,6 @@ func _look_step(delta: float) -> void:
 				cam.queue_free()
 				_look = {}
 				player.set("input_enabled", true)
-				var av: Node4D = player.get_node_or_null("Avatar") as Node4D
-				if av != null:
-					av.visible = true
 				hud.set("strip", _strip())
 
 
@@ -528,6 +547,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if not _look.is_empty():
 		if k.keycode == KEY_C or k.keycode == KEY_ESCAPE:
 			close_look_end()
+			get_viewport().set_input_as_handled()
+		elif k.keycode == KEY_R:
+			# R puts the animals whole again here too, and the close look goes on (round 5, item 55).
+			whole_again()
 			get_viewport().set_input_as_handled()
 		return
 	if k.keycode == KEY_C and close_look():
@@ -703,13 +726,15 @@ func _deck_grass(s: Dictionary, st: Dictionary) -> Node4D:
 ## floor in front, where the deck is too small for it), facing the side you come from, its number, name and
 ## kicker from the cards' words. Still: it never moves when you turn the animals.
 func _label(s: Dictionary, st: Dictionary) -> Node4D:
-	# Round 4 (item 47): on the side Ramon gave ("label"), else the front; at the deck's edge, where the platform begins
-	# (0.7 m in before), facing out that way.
+	# On the side Ramon gave ("label", round 4), else the front, facing out that way. Round 5 (item 52: "at the beginning
+	# of each presentation platform, rather than halfway into the display ... avoid having it overlap the holographic
+	# effects"): every label on the floor just outside the pedestal's edge, so never inside the hologram on the deck;
+	# "label_along" slides it along that edge (Azathoth's to the front end of its west side).
 	var front: Vector2 = (s.get("label", s["front"]) as Vector2).normalized()
-	var deck: Vector2 = st["deck"]
-	var edge: float = deck.x if String(s["shape"]) == "round" else absf(front.x) * deck.x + absf(front.y) * deck.y
-	var on_deck: bool = edge >= 1.7
-	var off: float = edge - 0.35 if on_deck else edge + 0.6
+	var deck: Vector2 = s["size"] as Vector2
+	var edge: float = deck.x if String(s["shape"]) == "round" else absf(front.x) * deck.x * 0.5 + absf(front.y) * deck.y * 0.5
+	var on_deck: bool = false
+	var off: float = edge + 0.45
 	var card: Dictionary = (INFO.get("cards") as Dictionary).get(String(s["name"]), {})
 	var lb := Node4D.new()
 	lb.name = "Label"
@@ -720,7 +745,8 @@ func _label(s: Dictionary, st: Dictionary) -> Node4D:
 		"reach": 0.0, "give": 0.0, "notice": 0.0, "follow": 0.0, "turn_to_you": 0.0, "solid": false}
 	for k in settings:
 		lb.set(k, settings[k])
-	lb.position = Vector4(front.x * off, float(st["deck_h"]) if on_deck else 0.0, front.y * off, 0.0)
+	var along: Vector2 = s.get("label_along", Vector2.ZERO)
+	lb.position = Vector4(front.x * off + along.x, float(st["deck_h"]) if on_deck else 0.0, front.y * off + along.y, 0.0)
 	(st["node"] as Node4D).add_child(lb)
 	lb.set("player", player)
 	return lb
@@ -773,6 +799,9 @@ func _populate(deck: Node4D, s: Dictionary, st: Dictionary, size: Vector2) -> vo
 			var az := _scripted(DREAMER, "Azathoth", {"core_height": 7.0, "too_close": 3.0, "w_follow": 1.5, "w_follow_limit": 2.5,
 				"room_radii": Vector4(5.2, 12.6, 7.0, 6.0)})
 			if az != null:
+				# Further back on its deck, centred across (round 5, item 51: "more breathing room at the front").
+				var bk: Vector2 = -(s["front"] as Vector2).normalized() * float(s.get("back", 0.0))
+				az.position = Vector4(bk.x, 0.0, bk.y, 0.0)
 				# It finds you once, as it enters the tree: the path from where it will stand (deck, its pivot, it), set first.
 				az.set("player_path", NodePath("../../" + String(deck.get_path_to(player))))
 				az.set("camera_rig_path", NodePath())
