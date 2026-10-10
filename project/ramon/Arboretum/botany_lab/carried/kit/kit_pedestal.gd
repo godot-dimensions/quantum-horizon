@@ -12,7 +12,8 @@ extends RefCounted
 ##
 ## build() makes it and returns its parts; apply_mood() recolours them; print_band() wraps a
 ## picture round the front of the body (the side text; lab_grid's cylinder print).
-## The physics is one box (box-only physics).
+## The physics is one box (box-only physics), or for a round one, if asked, boxes that follow its circle
+## (`round_solid`, below).
 ##
 ## NO class_name (engine_gotchas.md).
 
@@ -30,6 +31,19 @@ const LIP := 0.13
 const GREEN := Color(0.33, 0.52, 0.2)
 ## How far in from the edge the blue disc starts.
 const DECK_IN := 0.42
+## BOTANY LAB, round 8 (Ramon, #58: "There is a strange square-shaped collision area around the large Oak
+## showcase ... Replace it with a simple cylindrical collision shape that closely follows the pedestal's
+## footprint"): the physics is box-only and square to the world, so a round pedestal's one box (its
+## diameter and 0.3 m) stood out at its corners, 1.8 m past the rim of the oak's 4 m pedestal. Asked for
+## (`round_solid`), it is instead this many boxes, all centred on it, each wide one way and narrow the other
+## (a box at angle a is cos a by sin a of a circle), their corners on that circle: the outline is a staircase
+## round it. Its steps are deepest at 45 degrees, in from the corners' circle by about half the angle between
+## boxes (as a share of the radius: 2.5% with 32), so the circle is sized for the deepest step to stand
+## RING_CLEAR outside the rim; the corners then stand about 12 cm out on the oak. (Measured in round 8 by rays:
+## with 16 boxes on a circle 5 cm out, the 45-degree steps were 15 cm inside the rim.)
+const RING_BOXES := 32
+## How far outside the rim the staircase's deepest step is, m.
+const RING_CLEAR := 0.02
 
 
 ## Builds the pedestal under `parent` at its origin; returns its parts, with "deck_h" the height
@@ -42,11 +56,12 @@ const DECK_IN := 0.42
 ## Round 4 (Ramon: "Replace the existing blue or grass-covered presentation areas with a solid green
 ## surface ... Keep the surrounding pedestal geometry white"): "specimen" and "specimen_box" are the
 ## planter's shape in white, with a flat green surface where the soil was.
-static func build(parent: Node4D, r: float, h: float, form: String = "round") -> Dictionary:
+## `round_solid` (round 8): a round pedestal's physics follows its circle (RING_BOXES) instead of one square box.
+static func build(parent: Node4D, r: float, h: float, form: String = "round", round_solid: bool = false) -> Dictionary:
 	if form == "planter" or form == "planter_box":
-		return _build_planter(parent, r, h, form == "planter_box")
+		return _build_planter(parent, r, h, form == "planter_box", false, round_solid)
 	if form == "specimen" or form == "specimen_box":
-		return _build_planter(parent, r, h, form == "specimen_box", true)
+		return _build_planter(parent, r, h, form == "specimen_box", true, round_solid)
 	if form == "box":
 		return _build_box(parent, r, h)
 	var origin: Vector4 = parent.global_position if parent.is_inside_tree() else Vector4.ZERO
@@ -63,16 +78,7 @@ static func build(parent: Node4D, r: float, h: float, form: String = "round") ->
 	parts["body_y"] = FOOT + ph * 0.5
 	parts["lip"] = _drum(parent, "PedestalLip", r, LIP, h - LIP * 0.5)
 	parts["deck"] = _drum(parent, "PedestalDeck", r - DECK_IN, 0.02, h + 0.004)
-	var solid := StaticBody4D.new()
-	solid.name = "PedestalSolid"
-	solid.position = Vector4(0, h * 0.5, 0, 0)
-	var shape := CollisionShape4D.new()
-	var bs := BoxShape4D.new()
-	bs.size = Vector4(r * 2.0 + 0.3, h, r * 2.0 + 0.3, Build.W_DEPTH)
-	shape.shape = bs
-	solid.add_child(shape)
-	solid.set_meta(Build.GENERATED, true)
-	parent.add_child(solid)
+	_solid(parent, r, h, round_solid)
 	parts["deck_h"] = h + 0.014
 	apply_mood(parts)
 	return parts
@@ -111,7 +117,7 @@ static func _build_box(parent: Node4D, r: float, h: float) -> Dictionary:
 
 ## The planter: from the floor up, a dark foot set in (its shadow line), the stone body (the label is
 ## printed on it), a warm line of light, the stone rim a little proud of the body, and the soil.
-static func _build_planter(parent: Node4D, r: float, h: float, square: bool, white: bool = false) -> Dictionary:
+static func _build_planter(parent: Node4D, r: float, h: float, square: bool, white: bool = false, round_solid: bool = false) -> Dictionary:
 	if not LabGrid._values.has("planter_stone"):
 		LabGrid.set_swatch("planter_stone", Color(0.84, 0.81, 0.75), Color(0.76, 0.73, 0.67), Color(0.81, 0.78, 0.72), 0.22)
 	if not LabGrid._values.has("specimen_white"):
@@ -135,19 +141,36 @@ static func _build_planter(parent: Node4D, r: float, h: float, square: bool, whi
 	# (Round 4: the rim is a solid drum, so a surface below its top never showed: the soil, or the green, sits
 	# on it, inset to leave a band of rim round it.)
 	parts["deck"] = piece.call("PedestalSoil", r - 0.12, 0.02, h + 0.01)
-	var solid := StaticBody4D.new()
-	solid.name = "PedestalSolid"
-	solid.position = Vector4(0, h * 0.5, 0, 0)
-	var shape := CollisionShape4D.new()
-	var bs := BoxShape4D.new()
-	bs.size = Vector4(r * 2.0 + 0.3, h, r * 2.0 + 0.3, Build.W_DEPTH)
-	shape.shape = bs
-	solid.add_child(shape)
-	solid.set_meta(Build.GENERATED, true)
-	parent.add_child(solid)
+	_solid(parent, r, h, round_solid and not square, 0.03)
 	parts["deck_h"] = h + 0.02
 	apply_mood(parts)
 	return parts
+
+
+## The pedestal's physics, `h` high: one box `r` + 0.15 m out each way (as it always was), or with
+## `follow_circle` the RING_BOXES boxes whose staircase stays RING_CLEAR or more outside the rim (`rim_out` past
+## `r`: the planter's rim stands 3 cm proud of its body).
+static func _solid(parent: Node4D, r: float, h: float, follow_circle: bool, rim_out: float = 0.0) -> void:
+	var solid := StaticBody4D.new()
+	solid.name = "PedestalSolid"
+	solid.position = Vector4(0, h * 0.5, 0, 0)
+	var halves: Array = [Vector2(r + 0.15, r + 0.15)]
+	if follow_circle:
+		halves = []
+		# The deepest step (between the boxes either side of 45 degrees) is in from the corners by sqrt(1 - sin d).
+		var step: float = PI * 0.5 / float(RING_BOXES)
+		var rc: float = (r + rim_out + RING_CLEAR) / sqrt(1.0 - sin(step))
+		for k in RING_BOXES:
+			var a: float = (float(k) + 0.5) * PI * 0.5 / float(RING_BOXES)
+			halves.append(Vector2(rc * cos(a), rc * sin(a)))
+	for hv in halves:
+		var shape := CollisionShape4D.new()
+		var bs := BoxShape4D.new()
+		bs.size = Vector4((hv as Vector2).x * 2.0, h, (hv as Vector2).y * 2.0, Build.W_DEPTH)
+		shape.shape = bs
+		solid.add_child(shape)
+	solid.set_meta(Build.GENERATED, true)
+	parent.add_child(solid)
 
 
 static func _slab(parent: Node4D, nm: String, half: float, h: float, y: float) -> MeshInstance4D:

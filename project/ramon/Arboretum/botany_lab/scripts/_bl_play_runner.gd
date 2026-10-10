@@ -184,8 +184,8 @@ func _play() -> void:
 	_check(l1 != l0 and l1 > 0, "E lofts pedestal 03 at another resolution (%d to %d tetrahedra)" % [l0, l1])
 	_shoot("09_pedestal_03_coarse")
 
-	# 7. The oak: E turns the season; then the room's keys.
-	_go(0.0, -7.6, 0.0)
+	# 7. The oak: E turns the season; then the room's keys. (Round 8: the oak 2 m back, at z -14.5; by its ring.)
+	_go(-2.0, -9.4, 0.0)
 	await _frames(40)
 	_check(_room.get("active") == _station(4), "the oak is active")
 	_key(KEY_E)

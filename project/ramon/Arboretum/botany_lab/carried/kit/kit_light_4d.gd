@@ -141,7 +141,8 @@ func _aim() -> void:
 func _set_params() -> void:
 	if _light == null:
 		return
-	_light.set("light_energy", float(energy.get(Style.mood, 1.0)) * float(Style.gain.get("wash" if kind == "wash" else "spot", 1.0)))
+	var dark_k: float = Style.spot_black if kind != "wash" and Style.palette == "black" else 1.0
+	_light.set("light_energy", float(energy.get(Style.mood, 1.0)) * float(Style.gain.get("wash" if kind == "wash" else "spot", 1.0)) * dark_k)
 	_light.set("light_color", color.get(Style.mood, Color.WHITE))
 	if _light is SpotLight4D:
 		_light.set("spot_angle_degrees", angle)

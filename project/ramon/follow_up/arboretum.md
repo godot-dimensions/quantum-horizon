@@ -1607,3 +1607,125 @@ Both .cfg files and the scene were backed up to `.backup/botany_r6/` first.
 - Frame cost not measured (unrun). If it is heavy, `GRASS_SPACING` and the band radii are the levers.
 - The ivy is the sprig trick: drawn where your slice crosses each leaf, each with a home in W. So it already
   answers W in its own way, and was left as it is (#55).
+
+## 13. Botany Lab, round 8: walkthrough part 8 (10 Oct, late evening)
+
+Pasted in chat, items 57 to 62: "a focused final adjustment pass rather than another redesign". He had played
+rounds 6 and 7 ("the first room is nearly correct now, and the Two Gardens room is looking good"); they were
+committed first (f4ec42d). Written while his editor was open, so NOT run; he checks it himself. The scenes and
+both .cfg files were backed up to `.backup/botany_r8/` first. Neither .cfg was touched: his tuning (the oak 9.25 m,
+the back wall at z -21.5, the front at 12.0) and his saved Gardens lights load as they were.
+
+**58, the oak's square collision** (`carried/kit/kit_pedestal.gd` `_solid`, `RING_BOXES`; `kit_showcase_4d.gd`
+`round_solid`, on for Station04 only):
+- The physics is box-only and square to the world. Every round pedestal's solid was one box of its diameter plus
+  0.3 m; on the oak's 4 m pedestal its corners stood 1.8 m past the rim.
+- Now 32 boxes, all centred on the pedestal, the k-th cos a by sin a of a circle. Their corners lie on that
+  circle, and the staircase between them is deepest at 45 degrees, in by about half the angle between boxes
+  (2.5% of the radius). So the circle is sized for that deepest step to stand 2 cm outside the rim; the corners
+  stand about 12 cm out.
+- First written with 16 boxes on a circle 5 cm out, and wrongly noted as "in by under 1%". Rays measured the
+  45-degree steps 15 cm INSIDE the rim (3.875 m against 4.03); now 4.05 to 4.15 m all round.
+- The other pedestals (01 to 03, the flower pots) still have their square box (not asked; it is one
+  `round_solid = true` each if he wants it).
+
+**57, the oak 2 m back** (z -12.5 to -14.5):
+- Station04, Panel04 (and its face point), Light04Oak and its aim, and the P4 target. The leaves' box, the deck's
+  grass and the tour's shots follow the station in code.
+- Clearances: its back edge at -18.5, the back wall at -21.5. 03's pedestal is now 3 m from it (1.5 m before).
+- The route (`_bl_make_paths_runner.gd` `_hall()`, mirrored by hand in `paths/hall.tres`): the oak's branch
+  leaves 03's junction at 45 degrees to x -2 as before (a new bend at z -7.34), then runs straight to its ring
+  at z -9.3, 1.2 m off the deck. The way to the back door is unchanged and passes 1.5 m off the oak's right and
+  1.6 m behind it.
+- The Door target to z -21.9, in his saved back wall (it was at -22.4 for the scene's -22).
+- `_bl_play_runner.gd`'s oak stop moved to (-2, -9.4).
+
+**59, the panels and the signs** (`botany_lab.tscn`; `botany_lab_4d.gd` `apply_shape`):
+- The two wall panels swapped. The introduction (BOTANY LAB) is on the right wall where Branches Grow was
+  (`along_shift` +5.4, z -4.2 to 5.5, behind the flowers). Branches Grow is on the left wall past 03's specimen
+  text (`wall_name` "left", `along_shift` 10.7: z -10.7 to -20.3, beside the oak), with 1.25 m to 03's text and
+  to the back corner. Both keep the kit size and the pair's alignment.
+- TWO GARDENS was on edge 2. When round 6 made the hall a rectangle, edge 2 became the right wall, which is
+  why it showed there. It is now on the back wall (edge 1), over the holographic door, centred on it, at its
+  old height and length.
+- The BOTANY LAB sign outside the entrance was on edge 5, which the rectangle does not have, so it was not drawn.
+  It is on the entrance wall (edge 3) again, centred on the spine. Along is the edge's own on both faces
+  (rd_build.gd `print_wall` turns it round for the outer one), so the spine is `room_right_width` along it. I
+  first had this backwards and the frames showed it missing; the old sign, centred at x -1.5, was 1.5 m off
+  centre. It is lifted to 5.25-6.75 m (it was 4.4-5.9 over a 5 m doorway, so its second line had always been
+  in the opening).
+- `apply_shape` now places both signs from the room's shape, so the dev panel's width and door sliders keep them
+  centred. The scene holds the values for the script's defaults (the editor's view).
+
+**60, the Gardens grass in sap green** (`compare/bl_gardens_4d.gd` `SAP_GREEN`, `grass_colour`, `set_grass_colour`):
+- The blades in the pen's own sap green (0.31, 0.5, 0.15): a little deeper and more saturated than the land's
+  green, and boosted a little more (saturation 1.1 to 1.25).
+- Shade, the patches and the roots' fade toward the land's green are as round 7 left them: that fade is what
+  keeps the blades sitting in the terrain.
+- Spacing, height, bands and mask are unchanged.
+
+**61, the Gardens' sky and sun on Tab** (`compare/bl_compare_4d.gd` `ENV_ROWS`, `env_get`, `env_set`;
+`room/bl_light_editor.gd`'s second page):
+- What the room really has:
+  - The LabKit room's key light (a DirectionalLight4D) is the sun. Its strength and colour are the bright mood's
+    overrides; its direction comes from the Sun handle (kit_sun_4d.gd, a height and a turn round its target).
+  - A cool fill light from behind.
+  - The WorldEnvironment4D's ambient and exposure.
+  - The sky he sees is the painted sunset on the far wall (`_horizon`), a print with a glow and a tint. The
+    environment's own gradient sky is never seen (the room has a ceiling) and adds nothing to the ambient
+    (ambient_sky 0), so it has no row.
+- The light editor's new SKY AND SUN button (beside CLOSE; the hall has no such page) swaps the layout for ten
+  rows. The sliders are exposure, sun strength, sun height, sun turn, fill, ambient and sky brightness. The
+  colour squares are sun colour, sky tint and grass colour; they open a picker, as the pen's grass green does,
+  with the hex beside them.
+- The rows write into the bright mood's overrides, as the hall's artist panel does. The dark mode here is the
+  palette chosen in the hall, and the light stays the bright mood's, so #62's dark mode is untouched.
+- SAVE writes them into `botany_lab_lights.cfg` under [SkyAndSun]; the room reads them back as it opens, and
+  RESET puts them back.
+- The saving changed:
+  - The file is shared by the hall and the second room, and a save used to write it afresh, which dropped the
+    other room's lights. It now reads the file first and writes only this room's sections.
+  - Both rooms have a LightEntrance, so the second room's saved one was read into the hall's corridor too. The
+    hall's lights now save under "hall." (`section_prefix`). The hall's corridor light is therefore its scene's
+    own again until he saves the hall; his saved Gardens sections are read exactly as before.
+
+**Round 8 follow-ups (his first play of it, same evening):**
+- **"I made the big tree even bigger a few times now and saved but it didn't work".** The dev panel loads the saved
+  tree heights onto the exhibits, then the saved pedestal height (0.45 against the scene's 0.55). That height's
+  setter rebuilds every showcase, and a rebuild makes a new exhibit at its own height. So the oak always came
+  back at 7.4 m, and the saved 9.25 never showed. The showcase now carries `exhibit_tree_height` and hands it
+  to every exhibit it builds; the dev panel's tree rows set it too. He asked for the tree 30% bigger than he
+  saw: 7.4 to 9.6 m, in the scene (Station04) and in his tuning (tree_h_3, the only value changed). The crown
+  (radius 4.6 at 7.4 m, so about 6 m now) clears the back wall by 1 m, the right wall by 1.5 m and the ceiling
+  by 1.6 m.
+- **"For dark mode exclusively, push the spotlights in this room 40% brighter".** The hall's dark mode is the
+  black palette, and the lab mood stays "bright", so the lights' own "dark" energies are never used.
+  `kit_style.gd` has a new `spot_black`: the spots' extra gain while the palette is black. kit_light multiplies
+  it in for every non-wash light. The hall sets it to 1.4 (DARK_SPOTS), and the dev panel's new "Spots in dark
+  mode, x" row tunes and saves it.
+- **"Why is the second room dark, and not bright? all i said was the toggle mode isnt working".** The palette is
+  one static for the whole game, so the second room came in black whenever the hall was. Its HUD switch was never
+  connected, and B did nothing there. The room now opens grey whatever the hall was in, and B and its switch
+  (BLACK / GREY, as in the hall) toggle it. Going back to the hall restores the palette the hall had. The room
+  also puts `spot_black` back to 1, so its own lights are as tuned.
+- **Known coupling, left alone:** the hall's dev panel "Spots" gain (Style.gain) is static as well, so it also
+  scales the second room's spots. His second-room lights were saved (20:30) while it read 0.38; it is 0.56
+  now. Resetting it there would change the look he tuned, so ask before decoupling.
+
+**Round 8 tested (10 Oct, 21:40, after he handed Godot over; his editor closed cleanly first):**
+- `scripts/_bl_round8_runner.gd` (windowed, frames in smoke_test_output/botany_lab/round8/), 27 of 27:
+  - the oak is 9.6 m after the panel's load and the rebuild, and still is 90 frames on;
+  - 96 rays in toward the trunk hit 4.05 to 4.15 m out (the rim 4.03); the body pushed in from four directions
+    stops 4.41-4.42 m out (the square stopped about 5.9 m out on the diagonal);
+  - the panels and both signs are where they belong;
+  - the hall's spots are x1.400 in dark mode and back after;
+  - the second room opens bright from a dark hall; B and its switch toggle it;
+  - SKY AND SUN: ten rows, Sun strength reaching the key light, LIGHTS back;
+  - his saved grass colour is on the blades.
+- `scripts/_bl_roundtrip_runner.gd`, 8 of 8, by real scene changes: dark hall, to the second room (bright), B
+  there, back (the hall dark again, its spots x1.4). Its log has no errors at all.
+- `_bl_play_runner.gd` 43 of 43; `_bl_compare_runner.gd` clean (the doorway back works); `_bl_make_paths_runner.gd
+  force`: the graph's own checks pass, and Godot's saved hall.tres is byte for byte the hand-written one.
+- Found by the frames and fixed: the entrance sign's along (above); the second room's key strip now lists B.
+- `kit_room_4d.gd` `get_tree()` is guarded. "Parameter data.tree is null" had been logged since 20:41 by a
+  rebuild queued just before the room left the tree (a scene change, or an editor tab switch).

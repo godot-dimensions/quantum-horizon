@@ -316,19 +316,36 @@ func _process(_delta: float) -> void:
 ## script's `colour`), its colours less boosted (saturation 1.45 to 1.1), less shaded (0.46 to 0.32), its broad
 ## patches half as strong, and its roots fading toward the land's green rather than a dark ground; the hue jitter and
 ## the lush and dry clumps kept, for the variation.
+##
+## Round 8 (#60: "Shift the grass toward a richer sap green. Make the green slightly more natural and vibrant. Keep the
+## grass visually integrated with the underlying terrain. Preserve the improved density, length, and placement"): the
+## blades in sap green (the pen's own, the look's colour_base), a little deeper and more saturated than the land's
+## green, and boosted a little more again (1.1 to 1.25); their roots still fade toward the land's green, which keeps
+## them sitting in it. Spacing, height, bands and the mask as round 7 left them. The Tab panel's Grass colour
+## (bl_light_editor.gd, through bl_compare_4d.gd) sets `grass_colour`.
 const GRASS_SPACING := 0.055
 const LAND_GREEN := Color(0.36, 0.55, 0.22)
+const SAP_GREEN := Color(0.31, 0.5, 0.15)
+
+## The blades' colour (set_grass_colour, or before the grass is made).
+var grass_colour: Color = SAP_GREEN
+
+
+func set_grass_colour(c: Color) -> void:
+	grass_colour = c
+	if grass != null and c.a > 0.0:
+		grass.set("colour", c)
 
 
 func _grass_look() -> void:
 	if grass == null:
 		return
-	grass.set("colour", LAND_GREEN)
+	grass.set("colour", grass_colour if grass_colour.a > 0.0 else SAP_GREEN)
 	for band in grass.get("_bands"):
 		var m: ShaderMaterial = band.material
 		if m == null:
 			continue
-		m.set_shader_parameter("saturation", 1.1)
+		m.set_shader_parameter("saturation", 1.25)
 		m.set_shader_parameter("shade", 0.32)
 		m.set_shader_parameter("region_strength", 0.5)
 		m.set_shader_parameter("toward_ground", 0.3)

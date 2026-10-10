@@ -220,6 +220,9 @@ static var mood: String = "bright"
 ## Washes start off (Ramon, 4 Oct: "as for the wash, I have no use for it now, but keep the
 ## slider, make default inactive").
 static var gain: Dictionary = {"spot": 1.0, "wash": 0.0}
+## BOTANY LAB, round 8: the spots' extra gain while the palette is black (the dark mode), on top of `gain`. The hall
+## sets it (its dev panel's "Spots in dark mode"), the second room puts it back to 1.
+static var spot_black: float = 1.0
 
 
 static func apply(m: String) -> void:

@@ -150,9 +150,25 @@ var _band_said: bool = false
 ## Round 4: the two gardens' dressing (bl_gardens_4d.gd), made once the trees stand.
 var gardens: Node4D
 var _strip_tilt: int = -1
+## Round 8: the Tab panel's sky, ambient and grass (env_rows, below): the painted sky's print brightness and tint,
+## how strong the ambient is against the room's own, the smooth side's grass colour.
+var sky_glow: float = 0.55
+var sky_tint: Color = Color.WHITE
+var ambient_k: float = 1.0
+var grass_colour: Color = Gardens.SAP_GREEN
+var _sky_mats: Array = []
+var _mood_queued: bool = false
 
 
 func _ready() -> void:
+	# Round 8 (Ramon: "why is the second room dark, and not bright? all i said was the toggle mode isnt working"):
+	# the dark mode is the kit's palette, one for the whole game, so this room came in black whenever the hall
+	# was, and its own switch (the HUD's button, B) did nothing. It opens bright now, B and the button switch it
+	# here (toggle_palette), and the hall gets the palette it had back when you return (back_to_hall). The hall's
+	# extra dark-mode spot gain is the hall's: here the spots are as tuned.
+	get_tree().root.set_meta(HALL_PALETTE_META, Style.palette)
+	Style.palette = "grey"
+	Style.spot_black = 1.0
 	noise.seed = seed
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	noise.frequency = 0.085
@@ -165,7 +181,7 @@ func _ready() -> void:
 		var b: Dictionary = light["bright"]
 		b["key_color"] = Color(1.0, 0.74, 0.48)
 		b["key_energy"] = 0.9
-		b["ambient"] = Color(0.26, 0.26, 0.32)
+		b["ambient"] = GARDEN_AMBIENT
 		b["fill_color"] = Color(0.55, 0.65, 0.95)
 		b["fill_energy"] = 0.14
 		room.set("mood_overrides", light)
@@ -493,6 +509,7 @@ func _place_trees() -> void:
 	gardens.name = "Gardens"
 	gardens.set_script(Gardens)
 	gardens.set("room", self)
+	gardens.set("grass_colour", grass_colour)
 	add_child(gardens)
 	gardens.call("build")
 	gardens.call("start_grass")
@@ -593,11 +610,13 @@ func _print_walls() -> void:
 	# and the room's name in it.
 	var htex: Texture2D = await LabPrint.render(get_tree(), Vector2i(int(hs.x * 160.0), int(hs.y * 160.0)), func(c: Control) -> void: _horizon(c, sky_top))
 	if htex != null:
+		_sky_mats = []
 		for tg in hall.call("print_targets", "n", -hs.x * 0.5, hs.x * 0.5, 0.0, hs.y):
 			var m: TetraMaterial4D = (tg[0] as MeshInstance4D).material_override as TetraMaterial4D
 			if m != null:
-				LabGrid.set_print(m, htex, tg[1], tg[2], Color.WHITE, 0.55)
+				LabGrid.set_print(m, htex, tg[1], tg[2], sky_tint, sky_glow)
 				LabGrid.set_print_strength(m, 1.0)
+				_sky_mats.append(m)
 
 
 ## Round 3: the far wall's horizon: the walkway runs toward a low warm sun setting between layers of distant
@@ -712,6 +731,8 @@ func _build_hud() -> void:
 	hud.set("glass", true)
 	hud.set_anchors_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(hud)
+	hud.connect("mood_pressed", toggle_palette)
+	_label_switch()
 	_strip()
 	var dlayer := CanvasLayer.new()
 	dlayer.name = "Dev"
@@ -788,11 +809,28 @@ func _physics_process(_delta: float) -> void:
 			player.set("linear_velocity", v)
 
 
+## B and the HUD's switch (round 8): the palette, grey or black, as the hall's toggle_palette does it.
+func toggle_palette() -> void:
+	Style.palette = "grey" if Style.palette == "black" else "black"
+	Style.apply(Style.mood)
+	for n in get_tree().get_nodes_in_group("lab_mood_listener"):
+		if is_ancestor_of(n) and n.has_method("apply_mood"):
+			n.call("apply_mood", Style.mood, true)
+	_label_switch()
+
+
+func _label_switch() -> void:
+	if hud != null:
+		hud.set("switch_text", "GREY  ·  B" if Style.palette == "black" else "BLACK  ·  B")
+		hud.call("refresh_switch")
+
+
 ## The keys, and how far the lands are turned once they are.
 func _strip() -> void:
 	if hud == null:
 		return
-	var out: Array = [["WASD", "Move"], ["Mouse", "Look"], ["Right drag", "Turn both lands through W"], ["Q / E", "Step through W"], ["G", "Gust of wind"]]
+	var out: Array = [["WASD", "Move"], ["Mouse", "Look"], ["Right drag", "Turn both lands through W"], ["Q / E", "Step through W"], ["G", "Gust of wind"],
+		["B", "Black / grey"]]
 	if _strip_tilt > 0:
 		out.insert(3, ["%d°" % _strip_tilt, "turned through W"])
 		out.insert(4, ["R", "Level"])
@@ -823,6 +861,9 @@ func _input(event: InputEvent) -> void:
 
 
 func back_to_hall() -> void:
+	if get_tree().root.has_meta(HALL_PALETTE_META):
+		Style.palette = String(get_tree().root.get_meta(HALL_PALETTE_META))
+		get_tree().root.remove_meta(HALL_PALETTE_META)
 	get_tree().root.set_meta(ARRIVE_META, "compare")
 	get_tree().change_scene_to_file(HALL)
 
@@ -832,6 +873,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if k == null or not k.pressed or k.echo or player == null:
 		return
 	match k.keycode:
+		KEY_B:
+			if not k.shift_pressed and not k.ctrl_pressed:
+				toggle_palette()
+				get_viewport().set_input_as_handled()
 		KEY_G:
 			var w: Node = Wind.of(get_tree())
 			if w != null:
@@ -912,3 +957,125 @@ func camera() -> Camera4D:
 
 func ready_to_visit() -> bool:
 	return _phase == "ready" and _trees_done
+
+
+# -- the sky and sun on the Tab panel ---------------------------------------------------------------------------
+
+## Round 8 (#61: "Identify whether the scene has an actual sun or directional light. Identify how the sky is currently
+## generated or configured. Expose the relevant controls in the Tab -> Lights developer HUD ... Only expose controls
+## that correspond to real systems in the scene ... I'd also like the grass color to be adjustable"). What there is:
+##   THE SUN      the LabKit room's key light (a DirectionalLight4D, lab_room_4d.gd): its strength and colour are
+##                the bright mood's overrides set in _ready, its direction comes from the Sun handle (kit_sun_4d.gd,
+##                a height and a turn round its target)
+##   THE FILL     the room's second directional light, cool, from behind; its strength
+##   AMBIENT      the WorldEnvironment4D's ambient light (its colour, GARDEN_AMBIENT, scaled); EXPOSURE its tonemap's
+##   THE SKY      the painted sunset over the far wall (_horizon), lit as a print: its brightness (the print's glow)
+##                and a tint over it. The environment's own gradient sky is never seen (the room has a ceiling) and
+##                gives the ambient nothing (ambient_sky 0), so it has no row
+##   THE GRASS    the smooth side's blades (bl_gardens_4d.gd set_grass_colour)
+## The rows write into the bright mood's overrides, as the hall's artist panel does (the dark mode here is the
+## palette, chosen with B in the hall; the light stays the bright mood's). The light editor (room/bl_light_editor.gd) draws them on its
+## second page and keeps them, with the lights, in botany_lab_lights.cfg.
+const GARDEN_AMBIENT := Color(0.26, 0.26, 0.32)
+## Where the hall's palette waits while you are in this room.
+const HALL_PALETTE_META := "botany_hall_palette"
+const ENV_ROWS := [
+	["exposure", "Exposure", "slider", 0.4, 2.5, 0.01],
+	["sun", "Sun strength", "slider", 0.0, 3.0, 0.01],
+	["sun_colour", "Sun colour", "colour"],
+	["sun_up", "Sun height (degrees)", "slider", 1.0, 89.0, 0.5],
+	["sun_turn", "Sun turn (degrees)", "slider", -180.0, 180.0, 0.5],
+	["fill", "Fill light", "slider", 0.0, 1.5, 0.01],
+	["ambient", "Ambient (shadows)", "slider", 0.0, 3.0, 0.01],
+	["sky_glow", "Sky brightness", "slider", 0.0, 1.5, 0.01],
+	["sky_tint", "Sky tint", "colour"],
+	["grass_colour", "Grass colour", "colour"],
+]
+
+
+func env_rows() -> Array:
+	return ENV_ROWS
+
+
+## The row `key`'s value now.
+func env_get(key: String) -> Variant:
+	var room: Node = get_node_or_null("Room")
+	var b: Dictionary = (room.get("mood_overrides") as Dictionary).get("bright", {}) if room != null else {}
+	match key:
+		"exposure":
+			return float(b.get("exposure", 1.25))
+		"sun":
+			return float(b.get("key_energy", 0.9))
+		"sun_colour":
+			return b.get("key_color", Color(1.0, 0.74, 0.48))
+		"sun_up", "sun_turn":
+			var sun: Node = get_node_or_null("Sun")
+			var ang: Vector2 = sun.call("angles") if sun != null else Vector2(14.0, 180.0)
+			return ang.x if key == "sun_up" else ang.y
+		"fill":
+			return float(b.get("fill_energy", 0.14))
+		"ambient":
+			return ambient_k
+		"sky_glow":
+			return sky_glow
+		"sky_tint":
+			return sky_tint
+		"grass_colour":
+			return grass_colour
+	return null
+
+
+## Sets the row `key` (a float, or a Color for a colour row).
+func env_set(key: String, v: Variant) -> void:
+	match key:
+		"sun_up", "sun_turn":
+			var sun: Node = get_node_or_null("Sun")
+			if sun != null:
+				# The handle moves; it re-aims the room's key light itself (kit_sun_4d.gd _process).
+				var ang: Vector2 = sun.call("angles")
+				sun.call("set_angles", float(v) if key == "sun_up" else ang.x, float(v) if key == "sun_turn" else ang.y)
+			return
+		"sky_glow", "sky_tint":
+			if key == "sky_glow":
+				sky_glow = float(v)
+			else:
+				sky_tint = v
+			for m in _sky_mats:
+				if is_instance_valid(m):
+					var cs: ShaderMaterial = (m as TetraMaterial4D).get_cross_section_material_3d()
+					cs.set_shader_parameter("print_glow", sky_glow)
+					cs.set_shader_parameter("print_tint", sky_tint)
+			return
+		"grass_colour":
+			grass_colour = v
+			if gardens != null:
+				gardens.call("set_grass_colour", grass_colour)
+			return
+	var room: Node = get_node_or_null("Room")
+	if room == null:
+		return
+	var over: Dictionary = room.get("mood_overrides")
+	var b: Dictionary = over.get("bright", {})
+	match key:
+		"exposure":
+			b["exposure"] = float(v)
+		"sun":
+			b["key_energy"] = float(v)
+		"sun_colour":
+			b["key_color"] = v
+		"fill":
+			b["fill_energy"] = float(v)
+		"ambient":
+			ambient_k = float(v)
+			b["ambient"] = Color(GARDEN_AMBIENT.r * ambient_k, GARDEN_AMBIENT.g * ambient_k, GARDEN_AMBIENT.b * ambient_k)
+		_:
+			return
+	over["bright"] = b
+	room.set("mood_overrides", over)
+	# Once a frame however many rows moved (a slider sends a value every step).
+	if not _mood_queued:
+		_mood_queued = true
+		(func() -> void:
+			_mood_queued = false
+			if is_instance_valid(room):
+				room.call("set_mood", String(room.get("mood")), true, false)).call_deferred()

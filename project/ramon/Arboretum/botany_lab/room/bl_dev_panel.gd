@@ -60,6 +60,8 @@ func _ready() -> void:
 	_row("sun_up", "Sun height, degrees", 5.0, 90.0, 0.5, 64.0)
 	_row("sun_turn", "Sun turn, degrees", -180.0, 180.0, 0.5, 25.0)
 	_row("exposure", "Exposure", 0.4, 2.5, 0.01, 1.25)
+	# Round 8 (Ramon: "for dark mode exclusively, can you push the spotlights in this room 40% brighter?").
+	_row("dark_spots", "Spots in dark mode, x", 0.5, 3.0, 0.01, Style.spot_black)
 	_section("TREES")
 	for i in 4:
 		var s: Node = _station(i)
@@ -218,6 +220,11 @@ func apply(key: String) -> void:
 				over["bright"] = b
 				lab.set("mood_overrides", over)
 				lab.call("set_mood", "bright", true, false)
+		"dark_spots":
+			Style.spot_black = x
+			for n in get_tree().get_nodes_in_group("kit_light"):
+				if room.is_ancestor_of(n):
+					n.call("apply_mood", Style.mood, true)
 		"sun_up", "sun_turn":
 			var sun: Node = room.get_node_or_null("Sun")
 			if sun != null:
@@ -263,7 +270,11 @@ func apply(key: String) -> void:
 					m.set_shader_parameter(key, x)
 		_:
 			if key.begins_with("tree_h_"):
-				var ex2: Node = _station(int(key.get_slice("_", 2))).get("exhibit")
+				# (Round 8: kept on the showcase too, so a rebuild, the pedestal height's, keeps it.)
+				var st2: Node = _station(int(key.get_slice("_", 2)))
+				if st2 != null:
+					st2.set("exhibit_tree_height", x)
+				var ex2: Node = st2.get("exhibit") if st2 != null else null
 				if ex2 != null:
 					ex2.set("tree_height", x)
 					ex2.call("_setup_tree", String(ex2.get("method")) == "oak")

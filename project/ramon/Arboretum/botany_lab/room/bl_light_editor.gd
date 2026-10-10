@@ -17,7 +17,18 @@ extends PanelContainer
 ##   SAVE        writes every light to water_lab_lights.cfg, which the room reads back when it opens;
 ##               RESET puts back what the room opened with.
 ##
-## Every kit light (carried/kit/kit_light_4d.gd) that is a child of the room is listed. NO class_name.
+## Every kit light (carried/kit/kit_light_4d.gd) that is a child of the room is listed.
+##
+## ROUND 8 (Ramon, #61: "Expose the relevant controls in the Tab -> Lights developer HUD ... Keep these controls
+## consistent with the other labs and preserve any existing saved-default functionality"): a room that has a sky
+## and sun of its own to tune (the second room: bl_compare_4d.gd env_rows, env_get, env_set) gets a second page,
+## SKY AND SUN, on the button beside CLOSE: its rows are sliders, and colour squares that open a picker (as the
+## pen's grass green does). SAVE keeps them with the lights, RESET puts them back too.
+## And the file is shared by the hall and the second room: a save used to write it afresh, so saving in one room
+## dropped the other's lights. Now it reads what is there and writes only this room's sections; the hall's lights
+## are under "hall." (`section_prefix`), as the hall and the second room each have a LightEntrance and the second
+## room's saved one was being read into the hall's corridor.
+## NO class_name.
 
 const LabPrint := preload("res://ramon/Arboretum/botany_lab/carried/LabKit/lab_print.gd")
 const Style := preload("res://ramon/Arboretum/botany_lab/carried/kit/kit_style.gd")
@@ -38,6 +49,12 @@ var _flash_t: float = 0.0
 var _mouse_before: int = Input.MOUSE_MODE_CAPTURED
 ## Whether Tab is this panel's own (the Aquatic Lab), or the room's to give (the Botany Lab).
 var own_key: bool = true
+## Put before each light's name for its section in the file (round 8: the hall's "hall.").
+var section_prefix: String = ""
+var _env_box: VBoxContainer
+var _env_initial: Dictionary = {}
+var _page: String = "lights"
+var _page_button: Button
 
 
 func _ready() -> void:
@@ -64,6 +81,12 @@ func _ready() -> void:
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.pressed.connect(b[1])
 		buttons.add_child(btn)
+	if _has_env():
+		_page_button = Button.new()
+		_page_button.text = "SKY AND SUN"
+		_page_button.focus_mode = Control.FOCUS_NONE
+		_page_button.pressed.connect(_flip_page)
+		buttons.add_child(_page_button)
 	_layout = Control.new()
 	_layout.custom_minimum_size = Vector2(520, 330)
 	_layout.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -72,6 +95,9 @@ func _ready() -> void:
 	box.add_child(_layout)
 	_rows = VBoxContainer.new()
 	box.add_child(_rows)
+	_env_box = VBoxContainer.new()
+	_env_box.visible = false
+	box.add_child(_env_box)
 	_flash = Label.new()
 	_flash.modulate = Style.UI_ACCENT
 	box.add_child(_flash)
@@ -94,6 +120,9 @@ func _find() -> void:
 func _snapshot() -> void:
 	for l in lights:
 		_initial[String(l.name)] = _values(l)
+	if _has_env():
+		for r in room.call("env_rows"):
+			_env_initial[String(r[0])] = room.call("env_get", String(r[0]))
 
 
 func _values(l: Node) -> Dictionary:
@@ -116,7 +145,7 @@ func open() -> void:
 	visible = true
 	_mouse_before = Input.mouse_mode
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	_build_rows()
+	_show_page()
 
 
 func close() -> void:
@@ -288,14 +317,100 @@ static func _fmt(x: float, step: float) -> String:
 	return ("%.0f" % x) if step >= 1.0 else (("%.1f" % x) if step >= 0.1 else "%.2f" % x)
 
 
+# -- the sky and sun page (round 8) ------------------------------------------------------------------------------
+
+func _has_env() -> bool:
+	return room != null and room.has_method("env_rows")
+
+
+func _flip_page() -> void:
+	_page = "env" if _page == "lights" else "lights"
+	_show_page()
+
+
+func _show_page() -> void:
+	var env: bool = _page == "env" and _has_env()
+	_layout.visible = not env
+	_rows.visible = not env
+	_env_box.visible = env
+	_title.text = "SKY AND SUN  ·  TAB" if env else "LIGHTS  ·  TAB"
+	if _page_button != null:
+		_page_button.text = "LIGHTS" if env else "SKY AND SUN"
+	if env:
+		_build_env()
+	else:
+		_build_rows()
+
+
+func _build_env() -> void:
+	for c in _env_box.get_children():
+		c.queue_free()
+	if not _has_env():
+		return
+	var head := Label.new()
+	head.text = "SKY, SUN AND GRASS"
+	head.add_theme_font_override("font", LabPrint.font("bold"))
+	head.modulate = Style.UI_ACCENT
+	_env_box.add_child(head)
+	var note := Label.new()
+	note.text = "The sky is the painted sunset on the far wall."
+	note.modulate = Color(1, 1, 1, 0.6)
+	_env_box.add_child(note)
+	for r in room.call("env_rows"):
+		var key: String = String(r[0])
+		var line := HBoxContainer.new()
+		var label := Label.new()
+		label.text = String(r[1])
+		label.custom_minimum_size = Vector2(170, 0)
+		line.add_child(label)
+		var v: Variant = room.call("env_get", key)
+		if String(r[2]) == "colour":
+			var pick := ColorPickerButton.new()
+			pick.edit_alpha = false
+			pick.color = v if v is Color else Color.WHITE
+			pick.custom_minimum_size = Vector2(240, 24)
+			pick.focus_mode = Control.FOCUS_NONE
+			line.add_child(pick)
+			var hex := Label.new()
+			hex.text = "#" + pick.color.to_html(false)
+			hex.custom_minimum_size = Vector2(60, 0)
+			line.add_child(hex)
+			pick.color_changed.connect(func(c: Color) -> void:
+				room.call("env_set", key, c)
+				hex.text = "#" + c.to_html(false))
+		else:
+			var step: float = float(r[5])
+			var sl := HSlider.new()
+			sl.min_value = float(r[3])
+			sl.max_value = float(r[4])
+			sl.step = step
+			sl.value = float(v) if v != null else float(r[3])
+			sl.custom_minimum_size = Vector2(240, 24)
+			sl.focus_mode = Control.FOCUS_NONE
+			line.add_child(sl)
+			var val := Label.new()
+			val.text = _fmt(sl.value, step)
+			val.custom_minimum_size = Vector2(60, 0)
+			line.add_child(val)
+			sl.value_changed.connect(func(x: float) -> void:
+				room.call("env_set", key, x)
+				val.text = _fmt(x, step))
+		_env_box.add_child(line)
+
+
 # -- save, load, reset ---------------------------------------------------------------------------------------------
 
 func save() -> void:
+	# Round 8: what the file holds is kept (the other room's lights among it); this room's sections are written.
 	var cf := ConfigFile.new()
+	cf.load(SAVE_PATH)
 	for l in lights:
 		var v: Dictionary = _values(l)
 		for key in v:
-			cf.set_value(String(l.name), key, v[key])
+			cf.set_value(section_prefix + String(l.name), key, v[key])
+	if _has_env():
+		for r in room.call("env_rows"):
+			cf.set_value(_env_section(), String(r[0]), room.call("env_get", String(r[0])))
 	var err: int = cf.save(SAVE_PATH)
 	_say("Saved to %s" % SAVE_PATH.get_file() if err == OK else "Could not save (%d)" % err)
 
@@ -305,11 +420,19 @@ func load_saved() -> void:
 	if cf.load(SAVE_PATH) != OK:
 		return
 	for l in lights:
-		var sec: String = String(l.name)
+		var sec: String = section_prefix + String(l.name)
 		if not cf.has_section(sec):
 			continue
 		for key in cf.get_section_keys(sec):
 			l.set(key, cf.get_value(sec, key))
+	if _has_env() and cf.has_section(_env_section()):
+		for key in cf.get_section_keys(_env_section()):
+			room.call("env_set", key, cf.get_value(_env_section(), key))
+
+
+## The sky and sun's section in the file.
+func _env_section() -> String:
+	return section_prefix + "SkyAndSun"
 
 
 func reset() -> void:
@@ -317,7 +440,10 @@ func reset() -> void:
 		var v: Dictionary = _initial.get(String(l.name), {})
 		for key in v:
 			l.set(key, v[key])
-	_build_rows()
+	if _has_env():
+		for key in _env_initial:
+			room.call("env_set", key, _env_initial[key])
+	_show_page()
 	_say("Back to the room's own values")
 
 

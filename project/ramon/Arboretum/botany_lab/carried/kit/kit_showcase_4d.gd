@@ -47,6 +47,17 @@ const SLICES := 9
 	set(v):
 		pedestal_shape = v
 		_rebuild_pedestal()
+## BOTANY LAB, round 8 (Ramon, #58): a round pedestal's physics follows its circle (kit_pedestal.gd RING_BOXES)
+## instead of one square box round it. On for the oak's 4 m pedestal, whose square stood 1.8 m out at its corners.
+@export var round_solid: bool = false:
+	set(v):
+		round_solid = v
+		_rebuild_pedestal()
+## BOTANY LAB, round 8 (Ramon: "i made the big tree even bigger a few times now and saved but didnt work"): the
+## exhibit's tree height, m (0: the exhibit's own), given to every exhibit this showcase builds. The dev panel's
+## tree height went onto the exhibit alone, and its saved pedestal height, applied after it, rebuilt every
+## showcase and with it a new exhibit at its own height; now the height lives here and outlasts a rebuild.
+@export var exhibit_tree_height: float = 0.0
 @export_range(0.2, 2.0, 0.05) var height: float = 0.9:
 	set(v):
 		height = v
@@ -214,7 +225,7 @@ func _rebuild_pedestal() -> void:
 	for c in get_children():
 		if String(c.name).begins_with("Pedestal"):
 			c.free()
-	_ped = Pedestal.build(self, radius, height, pedestal_shape)
+	_ped = Pedestal.build(self, radius, height, pedestal_shape, round_solid)
 	_band_done = false
 	if is_instance_valid(_holo):
 		_holo.free()
@@ -226,7 +237,7 @@ func rebuild() -> void:
 	Build.clear(self)
 	_frames = []
 	_prints = []
-	_ped = Pedestal.build(self, radius, height, pedestal_shape)
+	_ped = Pedestal.build(self, radius, height, pedestal_shape, round_solid)
 	_band_done = false
 	var deck_h: float = float(_ped["deck_h"])
 	_slice_node = Node4D.new()
@@ -240,6 +251,8 @@ func rebuild() -> void:
 		exhibit.name = "Exhibit"
 		exhibit.set_script(exhibit_script)
 		exhibit.set("joint_balls", joint_balls)
+		if exhibit_tree_height > 0.0 and exhibit.get("tree_height") != null:
+			exhibit.set("tree_height", exhibit_tree_height)
 		_slice_node.add_child(exhibit)
 	_build_holo(deck_h)
 	for i in (SLICES if slice_frames else 0):

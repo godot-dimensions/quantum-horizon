@@ -52,9 +52,9 @@ cove = false
 [node name="Sign" type="Node" parent="Hall"]
 script = ExtResource("4_text")
 side = "s"
-edge = 5
-along = Vector2(7.6, 16.4)
-up = Vector2(4.4, 5.9)
+edge = 3
+along = Vector2(1.1, 9.9)
+up = Vector2(5.25, 6.75)
 outside = true
 kind = "sign"
 title = "BOTANY LAB"
@@ -64,8 +64,8 @@ glow = 0.3
 [node name="DoorSign" type="Node" parent="Hall"]
 script = ExtResource("4_text")
 side = "n"
-edge = 2
-along = Vector2(0.6, 8.14)
+edge = 1
+along = Vector2(0.83, 8.37)
 up = Vector2(4.8, 6.6)
 kind = "sign"
 title = "TWO GARDENS"
@@ -106,10 +106,12 @@ band_angle = 90.0
 hologram = false
 
 [node name="Station04" type="Node4D" parent="."]
-position = Vector4(-2, 0, -12.5, 0)
+position = Vector4(-2, 0, -14.5, 0)
 script = ExtResource("5_showcase")
 exhibit_script = ExtResource("9_oak")
 pedestal_shape = "specimen"
+round_solid = true
+exhibit_tree_height = 9.6
 radius = 4.0
 height = 0.55
 bounds = Rect2(-11.5, -21.5, 16.5, 33.1)
@@ -190,7 +192,7 @@ script = ExtResource("24_words")
 station = NodePath("../../Station03")
 
 [node name="Panel04" type="Node4D" parent="."]
-position = Vector4(-2, 0.55, -9.15, 0)
+position = Vector4(-2, 0.55, -11.15, 0)
 script = ExtResource("12_panel")
 width = 1.6
 depth = 0.7
@@ -198,7 +200,7 @@ number = 4
 title = "The oak"
 kicker = "WHAT THE METHODS ADD UP TO"
 source = NodePath("Words")
-face_point = Vector2(-2.0, -5.8)
+face_point = Vector2(-2.0, -7.8)
 face_always = false
 tilt = 52.0
 hover = 0.5
@@ -273,9 +275,9 @@ energy = {
 fixture_at = 11.94
 
 [node name="Light04Oak" type="Node4D" parent="."]
-position = Vector4(-2, 11.5, -12.5, 0)
+position = Vector4(-2, 11.5, -14.5, 0)
 script = ExtResource("10_light")
-aim = Vector3(-2, 0, -12.5)
+aim = Vector3(-2, 0, -14.5)
 angle = 55.0
 softness = 0.6
 reach = 15.0
@@ -337,7 +339,7 @@ info = ExtResource("16_info")
 source = NodePath("../PanelSource")
 room_path = NodePath("../Hall")
 wall_name = "right"
-along_shift = -5.4
+along_shift = 5.4
 
 [node name="ResearchBoard" type="Node4D" parent="."]
 script = ExtResource("13_panel")
@@ -345,8 +347,8 @@ kind = "research"
 info = ExtResource("16_info")
 source = NodePath("../PanelSource")
 room_path = NodePath("../Hall")
-wall_name = "right"
-along_shift = 5.4
+wall_name = "left"
+along_shift = 10.7
 
 [node name="WallPanels" type="Node4D" parent="."]
 script = ExtResource("14_pair")
@@ -375,13 +377,13 @@ script = ExtResource("21_target")
 size = Vector3(4.6, 0.9, 4.6)
 
 [node name="P4" type="Node4D" parent="Paths/Targets"]
-position = Vector4(-2, 0, -12.5, 0)
+position = Vector4(-2, 0, -14.5, 0)
 script = ExtResource("21_target")
 label = "The oak"
 size = Vector3(8, 1.1, 8)
 
 [node name="Door" type="Node4D" parent="Paths/Targets"]
-position = Vector4(-7.3, 0, -22.4, 0)
+position = Vector4(-7.3, 0, -21.9, 0)
 script = ExtResource("21_target")
 label = "To the second room"
 size = Vector3(3.2, 4.4, 0.6)

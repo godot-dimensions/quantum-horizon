@@ -67,6 +67,10 @@ func _run(side: float) -> float:
 ## tour's pad on the left between the entrance wall and 01; 01 to 03 on their 67.5-degree branches as before; the
 ## oak's ring on a 45-degree run from 03's junction; the way to the back door round the oak's right, behind it and
 ## along the back wall (between 03 and the oak there is no room for a path).
+## ROUND 8 (section 13; Ramon, #57: "Move the entire Oak showcase approximately 2 meters backward ... Check that
+## the adjusted position doesn't interfere with the surrounding paths"): the oak at (-2, -14.5); its branch 45
+## degrees out from 03's junction to the oak's line as before, then straight on to its ring. The way to the back
+## door is unchanged: 1.5 m off the oak's right, 1.6 m behind it.
 func _hall() -> Resource:
 	var g: Resource = Graph.new()
 	var b := {"band": BAND}
@@ -87,9 +91,12 @@ func _hall() -> Resource:
 	g.call("add_edge", j2, d2, "primary", "static", BAND)
 	var d3: int = g.call("add_node", "destination", _p(-4.0, -7.0), {"band": BAND, "state": "arrival", "target": "P3", "frame": "round", "approach": Vector2(1, 0)})
 	g.call("add_edge", j3, d3, "primary", "static", BAND)
-	# The oak: its deck's edge at z -8.5, its ring 1.2 m off it, 45 degrees from 03's junction.
-	var d4: int = g.call("add_node", "destination", _p(-2.0, -7.0 + _run(4.0) - 2.0), {"band": BAND, "state": "arrival", "target": "P4", "frame": "round", "approach": Vector2(0, 1)})
-	g.call("add_edge", j3, d4, "primary", "static", BAND)
+	# The oak: its deck's edge at z -10.5 (round 8), its ring 1.2 m off it; 45 degrees from 03's junction to x -2,
+	# then straight down to it.
+	var b4: int = g.call("add_node", "bend", _p(-2.0, -7.0 + _run(4.0) - 2.0), b)
+	var d4: int = g.call("add_node", "destination", _p(-2.0, -9.3), {"band": BAND, "state": "arrival", "target": "P4", "frame": "round", "approach": Vector2(0, 1)})
+	g.call("add_edge", j3, b4, "primary", "static", BAND)
+	g.call("add_edge", b4, d4, "primary", "static", BAND)
 	# The back door: 45 degrees out to the right of the oak, straight down past it, 45 degrees back in behind it, and
 	# along the back wall to the door.
 	var b1: int = g.call("add_node", "bend", _p(3.5, -7.0 + _run(4.0) - 3.5), b)

@@ -237,6 +237,9 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	apply_shape()
+	# Round 8 (Ramon: "for dark mode exclusively, can you push the spotlights in this room 40% brighter?"): the
+	# spots in the black palette (kit_style.gd spot_black; the dev panel's "Spots in dark mode" row tunes it).
+	Style.spot_black = DARK_SPOTS
 	var room: Node = get_node_or_null("Room")
 	if room != null:
 		room.set("mood_overrides", _garden_light())
@@ -309,6 +312,8 @@ func _ready() -> void:
 	light_editor.set_script(LightEditor)
 	light_editor.set("room", self)
 	light_editor.set("own_key", false)
+	# (Round 8: its lights under "hall." in the lights' file, which the second room shares.)
+	light_editor.set("section_prefix", "hall.")
 	dlayer.add_child(light_editor)
 	# The back door: the Voxel Lab's holographic doorway, the opening exactly, just inside the wall.
 	var sh := Node4D.new()
@@ -409,11 +414,34 @@ func apply_shape() -> void:
 		doors.append(["right", fa - door_width * 0.5, fa + door_width * 0.5, minf(door_height, hall_height - 0.5)])
 	_set_if(hall, "doorways", doors)
 	_set_if(hall, "ceiling", not roof_open)
+	# Round 8 (#59: "Position Two Gardens above the holographic doorway at the far end of the main room. Center it
+	# relative to the doorway"): the two signs on the rectangle's walls, from its shape. TWO GARDENS on the back
+	# wall over the back door, centred on it (round 6 had left it on the edge that became the right wall); BOTANY
+	# LAB outside over the entrance, centred on the spine. Along is the edge's own, from its start, on either face
+	# (rd_build.gd print_wall turns it round for the outer one): the entrance wall starts at the right wall, so the
+	# spine is `wr` along it.
+	if rect_room:
+		var ds: Node = hall.get_node_or_null("DoorSign")
+		if ds != null and dw > 0.1:
+			var dm: float = door_from_left + dw * 0.5
+			_set_if(ds, "edge", 1)
+			_set_if(ds, "along", Vector2(maxf(dm - DOOR_SIGN_HALF, 0.2), minf(dm + DOOR_SIGN_HALF, back_len - 0.2)))
+		var es2: Node = hall.get_node_or_null("Sign")
+		if es2 != null:
+			_set_if(es2, "edge", 3)
+			_set_if(es2, "along", Vector2(wr - ENTRANCE_SIGN_HALF, wr + ENTRANCE_SIGN_HALF))
 	var ent: Node4D = get_node_or_null("Entrance") as Node4D
 	if ent != null:
 		ent.position = Vector4(0.0, 0.0, f + 7.5, 0.0)
 		var es: Vector3 = ent.get("size")
 		_set_if(ent, "size", Vector3(es.x, corridor_height, es.z))
+
+
+## The spots' gain in dark mode (the black palette), against the grey's.
+const DARK_SPOTS := 1.4
+## Half the length of the sign over the back door and of the one over the entrance, m (as they were).
+const DOOR_SIGN_HALF := 3.77
+const ENTRANCE_SIGN_HALF := 4.4
 
 
 ## The back door's middle (x): in the middle of the back wall, or (round 6) `door_from_left` from the left wall.

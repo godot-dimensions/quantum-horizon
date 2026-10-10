@@ -198,7 +198,9 @@ func rebuild() -> void:
 		add_child(_cove)
 	_apply_mood_now()
 	_show_route()
-	var tree: SceneTree = get_tree()
+	# (A rebuild queued just before the room left the tree, at a scene change or an editor tab switch, has no tree to
+	# print with; get_tree() would log an error first.)
+	var tree: SceneTree = get_tree() if is_inside_tree() else null
 	if tree == null:
 		return
 	for tx in texts:
@@ -277,7 +279,9 @@ func _rebuild_outline() -> void:
 		add_child(_cove)
 	_apply_mood_now()
 	_show_route()
-	var tree: SceneTree = get_tree()
+	# (A rebuild queued just before the room left the tree, at a scene change or an editor tab switch, has no tree to
+	# print with; get_tree() would log an error first.)
+	var tree: SceneTree = get_tree() if is_inside_tree() else null
 	if tree == null:
 		return
 	for tx in texts:
