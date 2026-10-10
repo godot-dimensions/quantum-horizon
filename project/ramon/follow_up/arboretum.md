@@ -1729,3 +1729,7 @@ the back wall at z -21.5, the front at 12.0) and his saved Gardens lights load a
 - Found by the frames and fixed: the entrance sign's along (above); the second room's key strip now lists B.
 - `kit_room_4d.gd` `get_tree()` is guarded. "Parameter data.tree is null" had been logged since 20:41 by a
   rebuild queued just before the room left the tree (a scene change, or an editor tab switch).
+- Later the same evening (Ramon: "in the second room of botany labs, make the exit wall blue too"): the
+  ExitSign in `compare/botany_compare.tscn` carries `code = "blue"`. The kit then paints its whole wall
+  (the near, "s" wall with the doorway back) blue, floor to ceiling, and inks BACK TO BOTANY LAB / EXIT
+  white, as on the other blue walls. Written while his editor was open; not run.

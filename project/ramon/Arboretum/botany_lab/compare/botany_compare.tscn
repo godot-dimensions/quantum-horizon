@@ -38,6 +38,7 @@ up = Vector2(4.7, 5.9)
 kind = "sign"
 title = "BACK TO BOTANY LAB"
 subtitle = "EXIT"
+code = "blue"
 glow = 0.3
 
 [node name="Sun" type="Node4D" parent="."]
