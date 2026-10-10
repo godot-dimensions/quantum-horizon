@@ -340,23 +340,21 @@ func _world_flow() -> void:
 		await _laptop_flow()
 
 
-## A laptop (Trym's cabin): stand at it, press F, the menu comes up holding the world.
+## A laptop: stand where one can be used, press F, the menu comes up holding the world. Trym's
+## cabin laptop gives way to Trym (he stands 0.3 m from it, and a talk wins over the laptop, as
+## designed), so spots round each laptop are tried, then the cave's (through CaveCrossing.go()).
 func _laptop_flow() -> void:
 	var world: Node = current_scene
-	var laptops: Array = world.find_children("*", "", true, false).filter(func(n: Node) -> bool:
-		var s: Script = n.get_script() as Script
-		return s != null and s.resource_path.ends_with("pen_laptop_4d.gd") and n.is_inside_tree())
-	_check(not laptops.is_empty(), "laptop: found %d in the world" % laptops.size())
-	if laptops.is_empty():
+	var laptop: Node = await _usable_laptop(world)
+	if laptop == null:
+		var crossing: Node = world.get_node_or_null(^"CaveCrossing")
+		if crossing != null and crossing.has_method("go"):
+			crossing.call("go")
+			await _frames_wait(90)
+			laptop = await _usable_laptop(world)
+	_check(laptop != null, "laptop: one can be used (%s)" % (laptop.get_path() if laptop != null else "none"))
+	if laptop == null:
 		return
-	var laptop: Node = laptops[0]
-	var player: Node4D = world.get_node_or_null(^"Player") as Node4D
-	var at: Variant = laptop.get("global_position")
-	if player != null and at is Vector4:
-		player.set("global_position", Vector4(at) + Vector4(0.6, 0.0, 0.0, 0.0))
-	await _frames_wait(20)
-	var usable: bool = bool(laptop.call("usable"))
-	_check(usable, "laptop: usable when standing at it (%s)" % laptop.get_path())
 	var press := InputEventAction.new()
 	press.action = &"catch_target"
 	press.pressed = true
@@ -376,6 +374,26 @@ func _laptop_flow() -> void:
 		_check(back, "laptop: Return puts the world back")
 		await _frames_wait(30)
 		_check(laptop != null and is_instance_valid(laptop) and bool(laptop.call("usable")), "laptop: still works after coming back")
+
+
+## The first laptop in the world (cave included once it is in) that is usable from some spot round
+## it: the player is put at eight spots 1 m out and the laptop asked.
+func _usable_laptop(world: Node) -> Node:
+	var player: Node4D = world.get_node_or_null(^"Player") as Node4D
+	if player == null:
+		return null
+	var laptops: Array = world.find_children("*", "Node4D", true, false).filter(func(n: Node) -> bool:
+		var s: Script = n.get_script() as Script
+		return s != null and s.resource_path.ends_with("pen_laptop_4d.gd") and n.is_inside_tree() and (n as Node4D).is_visible_in_tree())
+	for laptop in laptops:
+		var at: Vector4 = (laptop as Node4D).global_position
+		for k in 8:
+			var a: float = TAU * float(k) / 8.0
+			player.global_position = Vector4(at.x + cos(a), at.y, at.z + sin(a), at.w)
+			await _frames_wait(4)
+			if bool(laptop.call("usable")):
+				return laptop
+	return null
 
 
 func _index_of(title: String) -> int:
