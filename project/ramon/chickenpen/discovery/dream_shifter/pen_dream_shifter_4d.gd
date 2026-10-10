@@ -50,6 +50,46 @@ extends Node4D
 ## toward the road, each leaning its own way, two of them small T-pillars; uneven flat slabs underfoot; a few loose
 ## stones; and two more standing stones ana and kata, out of the farm's slice. Boxes only, merged into two meshes.
 ##
+## THE LAPUTA CRADLE (10 Oct, night, Ramon on the ritual site: "holy damn it looks weird ... make a new one that follows
+## more logic. drop the goteklitepe inspiration. think laputa gibli ritual tech. try something."). Style "laputa", the
+## pen's now. One idea, and every part of it serves it: an old machine whose whole job is to hold a stone in the air.
+## A worn stone disc and a drum; on them a round column that narrows, swells and flares to a dark gray cap (a pillar's
+## cap, a little wider than the drum), the crystal floating clear above (it touches nothing). Out of the cap grow the
+## cradle's arms, curving out and back in over the crystal like fingers round a held stone, never meeting it: four you
+## see, at the corners (the front stays open to the road), and two more ana and kata, because a cradle for a 4D stone
+## holds it from every side (turn the slice and they come in). A thin lit line runs up the inside of every arm to its
+## tip. Round the crystal at its height, six little 24-cells float in a ring and turn: held up by the stone, slow
+## when you are away, faster as you come near, racing when it shifts the world. (The 24-cell's three little orbiting
+## 16-cells are left off in this style: the ring is their job now.)
+##
+## Ramon on the first look (same night): "it has potential. remove the black bits with the cyan completely ... where
+## the black floating bits are now make simpler bits in the same color. remove the grass patches. ... add a cylinder
+## cap thats a bit larger than the base. like a pillar cap. and make the color dark grey. and make the spikes a little
+## thicker". So: the glyph band and the ring's glyph-stones went, plain blocks in their dark colour took the ring, the
+## moss went, the cap came (it covers the bowl and its lit lens, so they went too), and the arms are 30% thicker.
+## Then: "the spikey bits look complex. not heavy on budget? make the spikes stumpier. shorter. and the whole thing
+## should be dark grey". The arms are short thick horns now, up to the crystal's middle (no longer over it), and
+## everything is dark gray in three close shades (footing darkest, the cap and blocks, the column and arms lightest).
+## Lighter too: the round parts lofted with fewer sides, the arms and lines with fewer sections: 19,000 tetrahedra
+## down to 7,300, against about 858,000 in the whole pen (World/Hills alone is 92,000). _budget_runner.gd counts them.
+## Then: "the arms, rotated a bit more outward. pivot at bottom arm. 20 degrees more turn outward. you can put 24 cells
+## in the gem color in place of the floating blocks but lower them in alignment with the big gem", and "the pedestal
+## base remove one level of complexity to lower budget. retaining the look". So: each arm leans 20 degrees further out
+## round its own foot ([member arm_lean]); the ring is six little 24-cells in the crystal's own material (they pulse
+## with it and tumble through W), riding at the crystal's height as it bobs, so they stay level with it; the disc and
+## drum are lofted with one ring fewer through W (see _laputa), the same outline in the slice for half the tetrahedra.
+## Then: "[lower] the floating ones, and stretch them a bit. and make the bottom plate a bit more interesting. and some
+## random rocks around it", "remove complexity from the elongated pillar bit", "chunky is a bit better anyway". So: the
+## little 24-cells ride [member ring_drop] under the crystal's centre and are half as tall again (stretched upright
+## after their tumble, so they stay tall); the plate is a raised round stone with a ring of eleven flagstones round it,
+## each its own height and turn, the twelfth gone at the back; rocks lie about in the grass (24-cells and 16-cells
+## turned every way through all four axes, squashed and half sunk, none in front where the path comes in); and the
+## column is four sections and ten sides, chunky, where it was seven and fourteen.
+## Then: "make the big gem a bit higher. remove the thin radial slabs on the bottom. just make base thats already there
+## a bit wider and thicker." So: the crystal floats [member gem_lift] higher than the cradle was built round (the
+## cradle and its little ring stay put; the ring rides with the crystal); the flagstones are gone and the round base
+## stone is wider and thicker (1.1 m across the slice, 14 cm), the drum and column standing on it.
+##
 ## Built when it loads (and in the editor, to place it), never saved into the scene. Move or turn this node to move it;
 ## its front (+z) faces the road. NO class_name (engine_gotchas.md).
 
@@ -59,7 +99,7 @@ const CrystalShader := preload("res://ramon/chickenpen/discovery/dream_shifter/d
 
 @export var player_path: NodePath = ^"../../Player"
 ## "altar" (the stone altar, the pen's since 10 Oct), "unit" (Alternative A, simple sci-fi), "column" (the 9 Oct column).
-@export_enum("ritual", "temple", "altar", "unit", "column") var style: String = "ritual":
+@export_enum("laputa", "ritual", "temple", "altar", "unit", "column") var style: String = "laputa":
 	set(v):
 		style = v
 		_later()
@@ -70,6 +110,29 @@ const CrystalShader := preload("res://ramon/chickenpen/discovery/dream_shifter/d
 @export var dark_stone: Color = Color(0.25, 0.265, 0.29)
 @export var dark_footing: Color = Color(0.20, 0.21, 0.23)
 @export var rune: Color = Color(0.55, 0.85, 1.0)
+## The Laputa cradle, all dark gray (Ramon: "the whole thing should be dark grey"), in three close shades, each a touch
+## cool (the evening light is warm: a neutral gray reads brown in it): the column and arms, the footing, the cap and the
+## floating blocks.
+## Lifted toward the loose rocks' gray (Ramon, after the winner: "a little bit lighter like the rock next to it"); it
+## was 0.29 / 0.22 / 0.25.
+@export var cradle_stone: Color = Color(0.36, 0.365, 0.38)
+@export var cradle_footing: Color = Color(0.29, 0.295, 0.31)
+@export var cap_stone: Color = Color(0.32, 0.325, 0.34)
+## The loose rocks round it (natural stone, a little lighter than the worked stone).
+@export var rock_stone: Color = Color(0.36, 0.36, 0.37)
+## How much higher than [member orb_height] the crystal floats over the Laputa cradle (the cradle is built round
+## orb_height; Ramon: "make the big gem a bit higher").
+@export_range(0.0, 1.0, 0.01, "suffix:m") var gem_lift: float = 0.15:
+	set(v):
+		gem_lift = v
+		_later()
+## How far under the crystal's centre its ring of little 24-cells rides.
+@export_range(0.0, 1.0, 0.01, "suffix:m") var ring_drop: float = 0.25
+## How far each of the cradle's arms leans out from upright, round its foot (Ramon: "20 degrees more turn outward").
+@export_range(-30.0, 60.0, 1.0, "suffix:°") var arm_lean: float = 20.0:
+	set(v):
+		arm_lean = v
+		_later()
 @export var metal: Color = Color(0.30, 0.32, 0.35)
 ## The crystal's centre above the ground, and its size (the 24-cell model scaled by this).
 @export_range(1.0, 3.5, 0.05, "suffix:m") var orb_height: float = 1.92:
@@ -91,6 +154,13 @@ const CrystalShader := preload("res://ramon/chickenpen/discovery/dream_shifter/d
 
 ## The column's height to the top of its capital.
 const PILLAR_H := 1.36
+## The Laputa cradle's little 24-cells, against the crystal's size; the ring's radius; and how much taller than wide
+## they are (Ramon: "stretch them a bit").
+const RING_CELL := 0.26
+const RING_R := 1.05
+const RING_STRETCH := Vector4(1.0, 1.5, 1.0, 1.0)
+## How much higher than the cradle's rim the cap sits (the column reaches up to it).
+const CAP_RAISE := 0.04
 
 var _player: Node4D
 var _orb: Node4D
@@ -106,6 +176,11 @@ var _awake: float = 0.0
 var _flare: float = 0.0
 var _flare_len: float = 1.0
 var _band: float = 0.0
+## The Laputa cradle's floating ring (null in the other styles) and how far round it has turned.
+var _ring: Node4D
+var _ring_turn: float = 0.0
+## Its little 24-cells (they tumble through W, each its own way).
+var _ring_cells: Array[MeshInstance4D] = []
 ## Held fully awake (while it talks and shifts), whatever the distance.
 var hold_awake: bool = false
 
@@ -127,7 +202,7 @@ func _ready() -> void:
 func _out_of_projection() -> void:
 	for mi in find_children("*", "MeshInstance4D", true, false):
 		var n: String = String(mi.name)
-		if style == "unit" or n in ["Core", "Shard", "Runes"]:
+		if style == "unit" or n in ["Core", "Shard", "Runes", "Glyphs", "Cap", "Rocks"]:
 			mi.set("allow_projection", false)
 
 
@@ -138,7 +213,10 @@ func rebuild() -> void:
 			child.free()
 	_shards.clear()
 	_light = null
+	_ring = null
 	match style:
+		"laputa":
+			_laputa()
 		"ritual":
 			_ritual()
 		"temple":
@@ -195,6 +273,140 @@ func _pillar() -> void:
 	var body: ArrayTetraMesh4D = Loft.build(secs, 5, 12, false, false, false, 1, false)
 	if body != null:
 		_mesh(col, "Shaft", body, _flat(marble))
+
+
+## The Laputa cradle (see the header). Its heights follow the crystal's: the cap's foot 0.75 m under the crystal's centre.
+func _laputa() -> void:
+	var root := Node4D.new()
+	root.name = "Cradle"
+	_part(root)
+	var h: float = orb_height
+	var rim: float = h - 0.75
+	# Underfoot: a raised round stone, and on it the drum the column stands on. Lofted with two rings through W, not
+	# three (Ramon: "remove one level of complexity to lower budget. retaining the look"): half the tetrahedra. Three
+	# rings put no vertices at W 0, so the slice cut their band at cos 30° (0.866) of the radius; two rings put the
+	# equator at W 0, so the drum's radii are taken down by that much to keep its outline (the round stone is new, and
+	# its radius is what you see).
+	var foot := ArrayTetraMesh4D.new()
+	_merge_into(foot, _round_loft(_flat_capped([[0.0, 1.10], [0.10, 1.10], [0.14, 1.05]]), 2))
+	_merge_into(foot, _round_loft(_flat_capped([[0.135, 0.66], [0.325, 0.66], [0.375, 0.61]]), 2, 0.866))
+	_mesh(root, "Footing", foot, _flat(cradle_footing))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2207
+	# The flagstones that ringed the base stone took 55 draws from this seed (Ramon had them removed); drawn and
+	# dropped, so the rocks below stay where he saw them. As randf_range, as they were: in this double build it does not
+	# take the same draws as randf.
+	for i in 55:
+		rng.randf_range(0.0, 1.0)
+	# Rocks in the grass round it: 24-cells and 16-cells turned every way through all four axes (so each one's slice is
+	# an odd faceted lump), squashed low and half sunk; none in front, where the path comes in. The three big ones solid.
+	var lumps: Array = [_as_array(load(CELL24) as Mesh4D), _as_array(OrthoplexTetraMesh4D.new())]
+	var lump_r: Array = [_mesh_radius(lumps[0]), _mesh_radius(lumps[1])]
+	var rocks := ArrayTetraMesh4D.new()
+	for i in 11:
+		var big: bool = i < 3
+		var which: int = 0 if (big or i % 2 == 0) else 1
+		if lumps[which] == null or float(lump_r[which]) <= 0.0:
+			continue
+		var a1: float = rng.randf_range(PI * 0.28, PI * 1.72)
+		# Big enough to show over the meadow's grass (half a metre tall): the first try's were lost in it.
+		var r1: float = rng.randf_range(1.5, 2.3) if big else rng.randf_range(1.45, 2.6)
+		var size: float = rng.randf_range(0.34, 0.48) if big else rng.randf_range(0.13, 0.22)
+		var turn: Projection = Basis4D.from_xy(rng.randf_range(0.0, TAU)) * Basis4D.from_zx(rng.randf_range(0.0, TAU)) * Basis4D.from_xw(rng.randf_range(0.0, TAU)) * Basis4D.from_yz(rng.randf_range(0.0, TAU))
+		var squash := Vector4(1.0, rng.randf_range(0.7, 0.9), rng.randf_range(0.8, 1.2), 1.0) * (size / float(lump_r[which]))
+		var at1 := Vector4(sin(a1) * r1, size * 0.2, cos(a1) * r1, rng.randf_range(-0.4, 0.4) * size)
+		rocks.merge_with(lumps[which], at1, Basis4D.from_scale(squash) * turn)
+		if big:
+			_solid_box(Vector4(size * 1.5, size * 1.0, size * 1.5, size * 1.5), Vector4(at1.x, size * 0.4, at1.z, 0.0))
+	_mesh(root, "Rocks", rocks, _flat(rock_stone))
+	# The column (narrowing, then flaring up to the cap) and the arms, one stone. Four sections and ten sides, chunky
+	# (Ramon: "remove complexity from the elongated pillar bit ... chunky is a bit better anyway").
+	var stone_mesh := ArrayTetraMesh4D.new()
+	_merge_into(stone_mesh, _round_loft(_flat_capped([[0.375, 0.44], [0.60, 0.37], [rim - 0.16, 0.38], [rim + CAP_RAISE, 0.52]]), 2, 0.866, 10))
+	# The arms: [out from the axis, height against the crystal's centre, thickness]; up and out of the cap's top (they
+	# start inside it), turning in at the crystal's middle. Short thick horns (Ramon: "stumpier. shorter").
+	var spine: Array = [[0.42, -0.72, 0.140], [0.57, -0.50, 0.128], [0.62, -0.26, 0.108], [0.57, -0.04, 0.078]]
+	# Each leans [member arm_lean] degrees out round its foot: (out, up) from the foot turned outward in its own plane.
+	var lean: float = deg_to_rad(arm_lean)
+	var foot_r: float = float(spine[0][0])
+	var foot_y: float = float(spine[0][1])
+	for i in spine.size():
+		var dr: float = float(spine[i][0]) - foot_r
+		var dy: float = float(spine[i][1]) - foot_y
+		spine[i] = [foot_r + dr * cos(lean) + dy * sin(lean), foot_y - dr * sin(lean) + dy * cos(lean), spine[i][2]]
+	var lit := ArrayTetraMesh4D.new()
+	var d45: float = sqrt(0.5)
+	for d in [Vector4(d45, 0.0, d45, 0.0), Vector4(-d45, 0.0, d45, 0.0), Vector4(d45, 0.0, -d45, 0.0), Vector4(-d45, 0.0, -d45, 0.0),
+			Vector4(0.0, 0.0, 0.0, 1.0), Vector4(0.0, 0.0, 0.0, -1.0)]:
+		var arm: Array = []
+		var line: Array = []
+		for i in spine.size():
+			var r: float = float(spine[i][0])
+			var t: float = float(spine[i][2])
+			var up := Vector4(0.0, h + float(spine[i][1]), 0.0, 0.0)
+			arm.append({"center": d * r + up, "radius": t, "v_scale": 1.0, "w_scale": 1.0})
+			# Its lit line, just proud of the arm's inner face, from the cap to near the tip.
+			if i >= 1:
+				line.append({"center": d * (r - t * 0.8) + up, "radius": 0.022, "v_scale": 1.0, "w_scale": 1.0})
+		_merge_into(stone_mesh, Loft.build(arm, 3, 8, true, false, true, 1, false))
+		_merge_into(lit, Loft.build(line, 2, 4, true, false, true, 1, false))
+	_mesh(root, "Stone", stone_mesh, _flat(cradle_stone))
+	var glyphs := MeshInstance4D.new()
+	glyphs.name = "Glyphs"
+	glyphs.mesh = lit
+	glyphs.material_override = preload("res://ramon/CreationLab/LabKit/lab_materials.gd").glow(rune.darkened(0.15), 1.0)
+	glyphs.set_meta(&"_look_own", true)
+	root.add_child(glyphs)
+	# The cap: a short round slab on the column's flare, its edges eased. Since the winner a little smaller (0.72 to
+	# 0.66) and CAP_RAISE higher, the column's flare reaching up to it (Ramon: "make the cylinder block on top a little
+	# bit smaller and raise it a tiny bit").
+	var c0: float = rim + CAP_RAISE
+	_mesh(root, "Cap", _round_loft(_flat_capped([[c0, 0.64], [c0 + 0.015, 0.66], [c0 + 0.105, 0.66], [c0 + 0.12, 0.64]])), _flat(cap_stone))
+	# The floating ring's pivot, at the crystal's height; its little 24-cells are the crystal's own (see _crystal).
+	_ring = Node4D.new()
+	_ring.name = "RingTurn"
+	root.add_child(_ring)
+	_ring.position = Vector4(0.0, h - ring_drop, 0.0, 0.0)
+	# One box for the base, drum and column (the arms and ring are above a walker's reach), wide enough that a walker
+	# stops at the base stone's edge rather than standing sunk in it.
+	_solid_box(Vector4(1.64, rim + 0.05, 1.64, 1.64), Vector4(0.0, (rim + 0.05) * 0.5, 0.0, 0.0))
+
+
+## [param profile] ([height, radius] pairs) lofted round (balls through X, Z and W), in one piece.
+## [param rings] through W (fewer is cheaper), each radius times [param k], [param sides] round.
+static func _round_loft(profile: Array, rings: int = 3, k: float = 1.0, sides: int = 14) -> ArrayTetraMesh4D:
+	var secs: Array = []
+	for p in profile:
+		secs.append({"center": Vector4(0.0, float(p[0]), 0.0, 0.0), "radius": float(p[1]) * k, "v_scale": 1.0, "w_scale": 1.0})
+	return Loft.build(secs, rings, sides, false, false, false, 0, false)
+
+
+## [param m] as an ArrayTetraMesh4D (to merge it), or null.
+static func _as_array(m: Mesh4D) -> ArrayTetraMesh4D:
+	if m is ArrayTetraMesh4D:
+		return m as ArrayTetraMesh4D
+	if m != null and m.has_method("to_array_tetra_mesh"):
+		return m.call("to_array_tetra_mesh") as ArrayTetraMesh4D
+	return null
+
+
+## How far [param m]'s farthest vertex is from its centre (0 if it has none).
+static func _mesh_radius(m: ArrayTetraMesh4D) -> float:
+	var far: float = 0.0
+	if m != null:
+		for v in m.get_vertex_positions():
+			far = maxf(far, v.length())
+	return far
+
+
+static func _merge_into(into: ArrayTetraMesh4D, part: ArrayTetraMesh4D) -> void:
+	if part != null:
+		into.merge_with(part, Vector4.ZERO, Projection.IDENTITY)
+
+
+## A basis whose z points along [param out] (flat, unit) and whose x runs round, for parts set on a circle.
+static func _facing(out: Vector4) -> Projection:
+	return Projection(Vector4(out.z, 0.0, -out.x, 0.0), Vector4(0.0, 1.0, 0.0, 0.0), out, Vector4(0.0, 0.0, 0.0, 1.0))
 
 
 ## The ritual site (see the header). The T-pillar's top at 1.42 m. A fixed seed: the same stones every time.
@@ -464,7 +676,7 @@ func _crystal() -> void:
 	_orb = Node4D.new()
 	_orb.name = "Orb"
 	_part(_orb)
-	_orb.position = Vector4(0.0, orb_height, 0.0, 0.0)
+	_orb.position = Vector4(0.0, _gem_height(), 0.0, 0.0)
 	# The small parts stay out of the projection (the instance limit); the comparison unit stays out altogether.
 	var mesh: Mesh4D = load(CELL24) as Mesh4D
 	if mesh == null:
@@ -476,8 +688,24 @@ func _crystal() -> void:
 	var core_mat: TetraMaterial4D = _crystal_material(rim_colour, Color(1.0, 1.0, 1.0))
 	_core_mat = core_mat.get_cross_section_material_3d()
 	_core = _crystal_mesh("Core", mesh, orb_scale * 0.42, core_mat)
+	# The Laputa cradle's ring: six little 24-cells in the crystal's own material, round it at its height.
+	_ring_cells.clear()
+	if _ring != null:
+		for k in 6:
+			var small := MeshInstance4D.new()
+			small.name = "RingCell%d" % k
+			small.mesh = mesh
+			small.material_override = cell_mat
+			small.set_meta(&"_look_own", true)
+			# Out of the projection (the instance limit), as the shards are.
+			small.set("allow_projection", false)
+			_ring.add_child(small)
+			var a: float = TAU * float(k) / 6.0 + PI / 6.0
+			small.position = Vector4(sin(a), 0.0, cos(a), 0.0) * RING_R
+			small.basis = Basis4D.from_scale(RING_STRETCH * orb_scale * RING_CELL)
+			_ring_cells.append(small)
 	var shard_mesh := OrthoplexTetraMesh4D.new()
-	for i in 3:
+	for i in (0 if style == "laputa" else 3):
 		var pivot := Node4D.new()
 		pivot.name = "Orbit%d" % i
 		_orb.add_child(pivot)
@@ -529,6 +757,11 @@ func _crystal_mesh(part: String, mesh: Mesh4D, s: float, mat: TetraMaterial4D) -
 	return node
 
 
+## The crystal's centre above the ground: [member orb_height], and over the Laputa cradle [member gem_lift] more.
+func _gem_height() -> float:
+	return orb_height + (gem_lift if style == "laputa" else 0.0)
+
+
 ## Where the prompt and the conversation hang (the WorldTag's and the dialogue box's anchor).
 func anchor() -> Node4D:
 	return _anchor
@@ -536,7 +769,7 @@ func anchor() -> Node4D:
 
 ## The crystal's centre, in the world.
 func orb_position() -> Vector4:
-	return _orb.global_position if _orb != null else global_position + Vector4(0.0, orb_height, 0.0, 0.0)
+	return _orb.global_position if _orb != null else global_position + Vector4(0.0, _gem_height(), 0.0, 0.0)
 
 
 ## A flash of light and a sweep up through the crystal, [param seconds] long: it shifting the world.
@@ -574,7 +807,16 @@ func _process(delta: float) -> void:
 	for i in _shards.size():
 		var ph: float = _t * (0.9 + 0.5 * _awake + 3.0 * f) + TAU * float(i) / 3.0
 		_shards[i].basis = Basis4D.from_zx(ph) * Basis4D.from_xy(0.35 * sin(_t * 0.7 + float(i))) * Basis4D.from_xw(0.5 * sin(_t * 0.4 + float(i) * 2.0))
-	_orb.position = Vector4(0.0, orb_height + sin(_t * 1.3) * 0.05 + 0.08 * f, 0.0, 0.0)
+	_orb.position = Vector4(0.0, _gem_height() + sin(_t * 1.3) * 0.05 + 0.08 * f, 0.0, 0.0)
+	if _ring != null:
+		_ring_turn += delta * (0.12 + 0.35 * _awake + 3.0 * f)
+		_ring.basis = Basis4D.from_zx(_ring_turn)
+		# Level with the crystal as it bobs and lifts (Ramon: "lower them in alignment with the big gem").
+		_ring.position = Vector4(0.0, _orb.position.y - ring_drop, 0.0, 0.0)
+		for i in _ring_cells.size():
+			var b: float = _t * (0.5 + 0.4 * _awake + 2.0 * f) + float(i) * 1.1
+			# Tumbled, then stretched upright, so each stays tall whatever its slice.
+			_ring_cells[i].basis = Basis4D.from_scale(RING_STRETCH) * Basis4D.from_xw(b) * Basis4D.from_wy(b * 0.6) * Basis4D.from_zx(b * 0.4) * Basis4D.from_scale_uniform(orb_scale * RING_CELL)
 	var energy: float = 0.85 + 0.35 * _awake + 1.4 * f
 	_cell_mat.set_shader_parameter("energy", energy)
 	_cell_mat.set_shader_parameter("band", _band)

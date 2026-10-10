@@ -1,10 +1,11 @@
 extends SceneTree
 
-## A few frames of the Dream Shifter's pedestal (style "temple", Ramon's reference, 10 Oct), art and dev, for a look.
+## A few frames of the Dream Shifter's pedestal (whatever its style is; "laputa" since 10 Oct night), art and dev, and
+## one with the camera's slice turned into W (the cradle's ana and kata arms come in), for a look.
 ##
 ##   lab_run.sh windowed ds_pedestal res://ramon/chickenpen/discovery/dream_shifter/_shot_pedestal_runner.gd
 
-const OUT := "res://smoke_test_output/dream_shifter/pedestal/"
+const OUT := "res://smoke_test_output/dream_shifter/laputa/"
 
 var _room: Node
 
@@ -33,10 +34,10 @@ static func _look_basis(gap: Vector4) -> Projection:
 	return Projection(Vector4(xc.x, xc.y, xc.z, 0.0), Vector4(yc.x, yc.y, yc.z, 0.0), Vector4(zc.x, zc.y, zc.z, 0.0), Vector4(0, 0, 0, 1))
 
 
-func _shot(name: String, from: Vector4, at: Vector4) -> void:
+func _shot(name: String, from: Vector4, at: Vector4, into_w: float = 0.0) -> void:
 	var cam := _room.get_node("World/TalkCam") as Node4D
 	cam.global_position = from
-	cam.global_basis = _look_basis(at - from)
+	cam.global_basis = _look_basis(at - from) * Basis4D.from_xw(into_w)
 	cam.set("current", true)
 	await _frames(20)
 	await RenderingServer.frame_post_draw
@@ -90,10 +91,12 @@ func _run() -> void:
 	var shifter := _room.get_node("World/DreamShifter") as Node4D
 	var c: Vector4 = shifter.global_position
 	_hide_hud()
-	# From the road, three-quarter; then square on; then close on the front panel.
-	await _shot("01_three_quarter", c + Vector4(4.2, 1.9, 3.0, 0.0), c + Vector4(0.0, 1.1, 0.0, 0.0))
-	await _shot("02_front", c + Vector4(4.6, 1.5, 0.0, 0.0), c + Vector4(0.0, 1.2, 0.0, 0.0))
-	await _shot("03_close", c + Vector4(2.0, 1.3, 0.9, 0.0), c + Vector4(0.0, 1.0, 0.0, 0.0))
+	# From the road, three-quarter; square on; close; at a walker's eye coming up the spur; and the slice turned into W.
+	await _shot("01_three_quarter", c + Vector4(4.2, 1.9, 3.0, 0.0), c + Vector4(0.0, 1.25, 0.0, 0.0))
+	await _shot("02_front", c + Vector4(4.6, 1.5, 0.0, 0.0), c + Vector4(0.0, 1.3, 0.0, 0.0))
+	await _shot("03_close", c + Vector4(2.0, 1.5, 0.9, 0.0), c + Vector4(0.0, 1.5, 0.0, 0.0))
+	await _shot("05_eye", c + Vector4(3.4, 1.62, 0.7, 0.0), c + Vector4(0.0, 1.55, 0.0, 0.0))
+	await _shot("06_slice_turned", c + Vector4(4.0, 1.7, 1.2, 0.0), c + Vector4(0.0, 1.4, 0.0, 0.0), 0.6)
 	_room.get_node("Systems/Look").call("set_dev", true)
 	await _frames(20)
 	_hide_hud()

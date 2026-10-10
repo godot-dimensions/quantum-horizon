@@ -6,11 +6,9 @@ on 10 Oct. Backup of the scene and the path graph from before this round: `chick
 
 ## Questions for Ramon
 
-1. **The pedestal (items 30-33).** The afternoon's "temple" pedestal (from your reference picture, on a thin plaque,
-   a small pillar either side) gave way that evening to item 33's dark-stone ritual site (style "ritual"). Your two
-   small pillars live on as two small T-pillars in its ring of standing stones. Keep them that way, or put two
-   matching pillars back either side? The temple, altar and old column are still in the script (`style`), not in
-   the scene.
+1. **The pedestal: settled ("we have a winner", that night).** Temple pedestal, then item 33's dark-stone ritual
+   site, then the Laputa cradle (style "laputa"), refined over seven quick rounds to what is in the scene now (see
+   "That night" at the bottom). The other styles are still in the script (`style`), not in the scene.
 2. **The campsite NPC's two places (items 19-20).** Tamsin at her fire (farm's slice) tells you about the balloon and
    the price; her twin stands by the grounded balloon at its W and takes the 2 azoth. After the ride the balloon lands
    back on its sand at W 5, so every ride is bought from her twin. OK, or should it come home to the farm's slice?
@@ -97,3 +95,26 @@ Played through by runners, frames looked at (`smoke_test_output/feedback_10oct/`
 Checked by play the same evening: `_verify_feedback_runner` 27/27 (with the wall moment starting by itself 5 m out and
 giving control back), `_verify_feedback2_runner` all pass (the switch hidden before the Dream Shifter and shown after),
 `_verify_discovery_runner` (dev, projection on: no mesh-limit errors), `_verify_shifter_runner` (art).
+
+## That night: the Laputa cradle (Ramon: "the new pedestal looks great. we have a winner")
+
+The Göbekli Tepe site "looks weird ... drop the goteklitepe inspiration. think laputa gibli ritual tech". Built as one
+idea, a machine that holds a stone in the air, then refined in seven rounds of screenshots and his notes:
+
+| Round | His note | What changed |
+|---|---|---|
+| 1 | "think laputa gibli ritual tech. try something" | Style "laputa": column into a bowl, the crystal floating clear, six curved arms (four in the slice, two ana/kata), glyph band, lit lines up the arms, a ring of black glyph-stones, moss. |
+| 2 | "remove the black bits with the cyan completely ... simpler bits in the same color. remove the grass patches ... a cylinder cap thats a bit larger than the base ... dark grey. make the spikes a little thicker" | Band and glyph-stones gone, plain dark blocks in the ring, moss gone, a dark gray cap (it covers the bowl and lens), arms 30% thicker. |
+| 3 | "the spikey bits look complex. not heavy on budget? make the spikes stumpier. shorter. and the whole thing should be dark grey" | Short thick horns to the crystal's middle; all dark gray in three close shades; 19,000 tetrahedra down to 7,300 (the pen is about 858,000; `_budget_runner.gd` counts). |
+| 4 | "rotated a bit more outward. pivot at bottom arm. 20 degrees ... 24 cells in the gem color in place of the floating blocks ... in alignment with the big gem"; "the pedestal base remove one level of complexity" | Arms lean 20° out round their feet (`arm_lean`); the ring is six little 24-cells in the crystal's own material, tumbling through W, riding with the crystal; base lofted with one ring fewer through W (same outline, half the tetrahedra). |
+| 5 | "[lower] the floating ones, and stretch them a bit ... the bottom plate a bit more interesting ... random rocks"; "remove complexity form the elongated pillar bit ... chunky is a bit better" | Ring `ring_drop` 0.25 m under the crystal, cells 1.5× tall; a flagstone ring; eleven rocks (24-cells and 16-cells turned through 4D, squashed, half sunk; the three big ones solid), sized to clear the grass; column four sections, ten sides. |
+| 6 | "make the big gem a bit higher. remove the thin radial slabs ... make base thats already there a bit wider and thicker" | Crystal `gem_lift` 0.15 m over the cradle (the cradle builds round `orb_height` 1.95); flagstones gone; base stone 1.1 m, 14 cm thick; the solid box widened so you stop at its edge. |
+| After | "make the pedestal a little bit lighter like the rock next to it"; "make the cylinder block on top a little bit smaller and raise it a tiny bit" | The three grays lifted toward the rocks' (0.36 / 0.29 / 0.32); the cap 0.72 to 0.66 and `CAP_RAISE` 4 cm higher, the column reaching up to it. |
+
+Now about 6,700 tetrahedra. In the scene: `orb_height` 1.95, `Head` at 2.7. The rocks keep their places through
+later edits by drawing the removed flagstones' 55 numbers from the seed first: in this double build `randf_range`
+does not take the same draws as `randf`, so the stand-in draws are `randf_range` too.
+
+| Where |
+|---|
+| `discovery/dream_shifter/pen_dream_shifter_4d.gd` (`_laputa`, `_gem_height`, the ring in `_crystal` and `_process`), `World/DreamShifter` in `playable_world.tscn`, `discovery/dream_shifter/_shot_pedestal_runner.gd` (frames), `discovery/dream_shifter/_budget_runner.gd` (tetrahedra) |

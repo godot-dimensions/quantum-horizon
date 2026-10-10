@@ -5219,11 +5219,11 @@ metadata/what = "The wall's pivot (Ramon, 10 Oct, item 16): the road from the pe
 position = Vector4(21.1, 0, 29, 0)
 basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
 script = ExtResource("disc_shifter")
-orb_height = 2.12
-metadata/what = "The Dream Shifter (9 Oct, Ramon's dev/art onboarding brief; follow_up/pen_dream_shifter.md): a stumpy marble column with a crystal 24-cell over it, on a short spur off the first road (start to Trym's house). F talks; it shifts the world between the dev and art looks in front of you, then the explainer (Systems/LookGuide)."
+orb_height = 1.95
+metadata/what = "The Dream Shifter (9 Oct, Ramon's dev/art onboarding brief; follow_up/pen_dream_shifter.md): since 10 Oct night the Laputa cradle (dark gray column, stumpy arms, a ring of little 24-cells; follow_up/pen_feedback_10oct.md) with a crystal 24-cell floating over it, on a short spur off the first road (start to Trym's house). F talks; it shifts the world between the dev and art looks in front of you, then the explainer (Systems/LookGuide)."
 
 [node name="Head" type="Node4D" parent="World/DreamShifter"]
-position = Vector4(0, 2.67, 0, 0)
+position = Vector4(0, 2.7, 0, 0)
 
 
 [node name="WHints" type="Node4D" parent="World"]
