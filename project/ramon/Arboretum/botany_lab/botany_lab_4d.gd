@@ -101,11 +101,14 @@ const TOUR_SHOT := {
 ## Avoid awkward wall intersections"): the right side's own half width (0: the same as the left). The right
 ## wall comes in; its corner wall keeps its angle and still meets the back wall where it did, so the back
 ## wall and its door stay on the spine. The left keeps its width for the flowers in its entrance corner.
-@export_range(0.0, 30.0, 0.1) var room_right_width: float = 10.5:
+## Round 6 (Ramon, #47: "Move the existing blue wall on the right side 5 meters to the left"): 5.5.
+@export_range(0.0, 30.0, 0.1) var room_right_width: float = 5.5:
 	set(v):
 		room_right_width = v
 		_shape_later()
-@export_range(6.0, 30.0, 0.1) var room_front: float = 16.0:
+## Round 6 (#50: "Maintain approximately 3 meters between the first tree showcase platform and the adjacent wall"):
+## 01's platform ends at z 9.1, so the entrance wall stands at 12.1.
+@export_range(6.0, 30.0, 0.1) var room_front: float = 12.1:
 	set(v):
 		room_front = v
 		_shape_later()
@@ -125,7 +128,19 @@ const TOUR_SHOT := {
 	set(v):
 		hall_height = v
 		_shape_later()
-## The grove's door, in the middle of the back wall.
+## Round 6 (#45: "Replace the irregular rear wall with one continuous, flat wall. Use the furthest existing rear wall
+## plane as the reference"): a plain rectangle, the back wall across the whole width at `room_back` (its back wall's
+## plane before), the side walls run on to it; the corner walls (corner_length, corner_angle) are not built.
+@export var rect_room: bool = true:
+	set(v):
+		rect_room = v
+		_shape_later()
+## The grove's door in the back wall: round 6 (#48: "Position the doorway 3 meters from the left side of the back
+## wall"), `door_from_left` metres from the left wall's inner face to the opening's near edge.
+@export_range(0.0, 20.0, 0.1) var door_from_left: float = 3.0:
+	set(v):
+		door_from_left = v
+		_shape_later()
 @export_range(0.0, 8.0, 0.1) var door_width: float = 3.2:
 	set(v):
 		door_width = v
@@ -156,8 +171,10 @@ const TOUR_SHOT := {
 @export var start_at: Vector2 = Vector2(0.0, 22.0)
 ## The PLAY THE SHOWCASE pad (x, z) and how near counts as standing on it.
 ## (Round 5: on the right, the flowers having the left corner by the entrance.)
-@export var tour_pad: Vector2 = Vector2(3.0, 12.2)
-@export var tour_pad_radius: float = 1.5
+## (Round 6: back on the left, between the entrance wall and 01, the flowers taking the right of the path; smaller,
+## the entrance strip being 3 m deep.)
+@export var tour_pad: Vector2 = Vector2(-3.0, 10.6)
+@export var tour_pad_radius: float = 1.1
 ## Round 3: the flower room's door, in the right wall at this z; the roof open to the sky. Round 4 (Ramon:
 ## "Remove the newly added ceiling lines and decorative roof structures"; "I don't think we need the
 ## separate Flower Room in the active experience ... Preserve the existing Flower Room TSCN"): the
@@ -300,11 +317,11 @@ func _ready() -> void:
 	# Round 4 (14): in the middle of the wall's thickness (the kit's walls are 0.5 m), the opening's size.
 	sh.set("width", door_width)
 	sh.set("height", minf(door_height, hall_height - 0.5) - 0.01)
-	sh.position = Vector4(0.0, 0.0, -room_back - 0.25, 0.0)
+	sh.position = Vector4(back_door_x(), 0.0, -room_back - 0.25, 0.0)
 	add_child(sh)
 	if from_compare:
 		# Back from the second room: just inside the back door, facing into the hall.
-		go_to.call_deferred(Vector4(0.0, 0.05, -room_back + 2.4, 0.0), PI)
+		go_to.call_deferred(Vector4(back_door_x(), 0.05, -room_back + 2.4, 0.0), PI)
 		Shimmer.flash_in(self)
 	# Round 3: the flower room's door, the same holographic doorway turned to the right wall.
 	if flower_room_open:
@@ -354,7 +371,14 @@ func apply_shape() -> void:
 	var d: float = room_back
 	plan = Plan.chamfered(w * 2.0, f, d, Vector2(corner_length, corner_angle), Vector2(corner_length, corner_angle), 1.0, maxf(door_width, 0.0) + 0.8)
 	var outline: PackedVector2Array = plan["outline"]
-	if not is_equal_approx(wr, w):
+	if rect_room:
+		outline = PackedVector2Array([Vector2(-w, f), Vector2(-w, -d), Vector2(wr, -d), Vector2(wr, f)])
+		var rnames := PackedStringArray(["left", "back", "right", "entrance"])
+		var rl: Dictionary = {}
+		for i in rnames.size():
+			rl[rnames[i]] = outline[i].distance_to(outline[(i + 1) % rnames.size()])
+		plan = {"outline": outline, "names": rnames, "lengths": rl}
+	elif not is_equal_approx(wr, w):
 		# The right side at its own width: its corner wall from where the back wall ends, at the same angle.
 		var run_x: float = maxf(wr - outline[3].x, 0.0)
 		var run_z: float = run_x / tan(deg_to_rad(clampf(corner_angle, 1.0, 89.0)))
@@ -374,7 +398,10 @@ func apply_shape() -> void:
 	var dw: float = minf(door_width, back_len - 0.4)
 	# (The entrance wall runs from the right wall's end: the spine is `wr` along it.)
 	var doors: Array = [["entrance", wr - 2.4, wr + 2.4, minf(entrance_height, corridor_height - 0.4)]]
-	if dw > 0.1:
+	if dw > 0.1 and rect_room:
+		# Along the back wall from its left end.
+		doors.append(["back", door_from_left, door_from_left + dw, minf(door_height, hall_height - 0.5)])
+	elif dw > 0.1:
 		doors.append(["back", bl - dw * 0.5, bl + dw * 0.5, minf(door_height, hall_height - 0.5)])
 	# Round 3: the flower room's door in the right wall (its edge runs from the right corner's end, +z).
 	if flower_room_open:
@@ -387,6 +414,11 @@ func apply_shape() -> void:
 		ent.position = Vector4(0.0, 0.0, f + 7.5, 0.0)
 		var es: Vector3 = ent.get("size")
 		_set_if(ent, "size", Vector3(es.x, corridor_height, es.z))
+
+
+## The back door's middle (x): in the middle of the back wall, or (round 6) `door_from_left` from the left wall.
+func back_door_x() -> float:
+	return -room_half_width + door_from_left + door_width * 0.5 if rect_room else 0.0
 
 
 static func _set_if(n: Object, key: String, v: Variant) -> void:
@@ -490,7 +522,7 @@ func _process(delta: float) -> void:
 		if rig != null:
 			rig.set("_zoom_target", FLOWER_CAMERA if at_flowers else camera_distance)
 	# Through the back door's shimmer: a flash, then the second room.
-	if not _leaving and p.z < -room_back + 0.35 and absf(p.x) < door_width * 0.5:
+	if not _leaving and p.z < -room_back + 0.35 and absf(p.x - back_door_x()) < door_width * 0.5:
 		_leaving = true
 		player.set("input_enabled", false)
 		var sh: Node = get_node_or_null("Shimmer")
@@ -676,7 +708,17 @@ func _set_state(graph: Resource, target: String, state: String) -> bool:
 # -- the mouse and keys ------------------------------------------------------------------------------
 
 func _input(event: InputEvent) -> void:
-	if Engine.is_editor_hint() or player == null or building:
+	if Engine.is_editor_hint() or player == null:
+		return
+	# Tab here, before the GUI (Ramon: "when i press tab, it opens, but i cant close it with tab again"): it was
+	# read in _unhandled_key_input, and once a slider or field on the open panel had focus, the GUI took Tab
+	# to move its focus on and it never reached the room.
+	var tk := event as InputEventKey
+	if tk != null and tk.pressed and not tk.echo and tk.keycode == KEY_TAB:
+		toggle_dev()
+		get_viewport().set_input_as_handled()
+		return
+	if building:
 		return
 	var mb := event as InputEventMouseButton
 	if not _cine.is_empty():
@@ -729,10 +771,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	var k := event as InputEventKey
 	if k == null or not k.pressed or k.echo:
-		return
-	if k.keycode == KEY_TAB:
-		toggle_dev()
-		get_viewport().set_input_as_handled()
 		return
 	if k.keycode == KEY_F4:
 		set_build(not building)
@@ -1162,6 +1200,9 @@ func toggle_dev() -> void:
 		light_editor.call("open" if on else "close")
 	if dev_panel != null:
 		dev_panel.visible = on
+	# Closed: whatever slider or field had focus lets go, so the keys are the walk's again.
+	if not on and get_viewport() != null:
+		get_viewport().gui_release_focus()
 
 
 # -- the guided tour ------------------------------------------------------------------------------------
@@ -1192,12 +1233,14 @@ func watch() -> void:
 			"title": "%02d  ·  %s" % [i + 1, String(info.get("name", "")).to_upper()], "line": line, "done_at": -1.0})
 	# Round 3: the tour as a short film. It opens down the hall's middle toward the oak and the leaves on
 	# its wind, and closes along the flower border to the flower room's door.
-	shots.push_front({"scenic": true, "eye0": Vector4(0.0, 2.3, 14.0, 0.0), "eye1": Vector4(0.0, 2.7, 4.5, 0.0),
-		"look0": Vector4(0.0, 3.2, -13.5, 0.0), "look1": Vector4(0.0, 3.8, -13.5, 0.0), "length": 6.5, "lens": 0.95,
-		"title": "THE GARDEN HALL", "line": "Four ways to grow a tree in 4D, from blocks to an oak, and a border of 4D flowers."})
-	shots.append({"scenic": true, "eye0": Vector4(3.4, 1.35, 13.6, 0.0), "eye1": Vector4(4.2, 1.25, 0.6, 0.0),
-		"look0": Vector4(7.9, 0.55, 10.4, 0.0), "look1": Vector4(7.9, 0.7, 3.0, 0.0), "length": 8.5, "lens": 0.9,
-		"title": "THE FLOWER BORDER", "line": "Every flower here is lofted in 4D: petals in the slice, and more through W."})
+	# (Round 6: the hall shorter, the oak at -2, -12.5, the flowers in two rows right of the path.)
+	var oak_at: Vector4 = (get_node_or_null("Station04") as Node4D).position if get_node_or_null("Station04") != null else Vector4(-2.0, 0.0, -12.5, 0.0)
+	shots.push_front({"scenic": true, "eye0": Vector4(0.0, 2.3, room_front - 1.2, 0.0), "eye1": Vector4(0.0, 2.7, 3.5, 0.0),
+		"look0": oak_at + Vector4(0.0, 3.2, 0.0, 0.0), "look1": oak_at + Vector4(0.0, 3.8, 0.0, 0.0), "length": 6.5, "lens": 0.95,
+		"title": "THE GARDEN HALL", "line": "Four ways to grow a tree in 4D, from blocks to an oak, and sixteen 4D flowers."})
+	shots.append({"scenic": true, "eye0": Vector4(-0.6, 1.4, 10.4, 0.0), "eye1": Vector4(-0.4, 1.3, 1.0, 0.0),
+		"look0": Vector4(2.2, 0.6, 8.2, 0.0), "look1": Vector4(2.2, 0.7, 2.4, 0.0), "length": 8.5, "lens": 0.9,
+		"title": "THE FLOWERS", "line": "Every flower here is lofted in 4D: petals in the slice, and more through W."})
 	player.set("input_enabled", false)
 	player.linear_velocity = Vector4.ZERO
 	# The pad's key prompt off for the tour (it hung in the middle of every shot).

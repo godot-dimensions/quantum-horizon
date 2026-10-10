@@ -288,13 +288,18 @@ func _process(_delta: float) -> void:
 		grass.set_script(Grass)
 		grass.set("coverage", 1.0)
 		grass.set("w_reach", float(_grass_plan["w_reach"]))
-		grass.set("height_m", 0.42)
+		# Round 7 (Ramon, #53: "The grass still looks too sparse ... a fuller, more continuous grassy surface ... Reduce
+		# the spacing ... Make the grass slightly longer ... within a reasonable performance budget"): 5.5 cm between
+		# blades near you (7: the far gap shrinks with it), the dense band out to 11 m (8), and blades 0.52 m (0.42).
+		grass.set("spacing_m", GRASS_SPACING)
+		grass.set("height_m", 0.52)
 		grass.set("width_scale", 1.8)
 		grass.set("radius", 30.0)
-		grass.set("band_radii", [8.0, 18.0])
+		grass.set("band_radii", [11.0, 22.0])
 		add_child(grass)
 		grass.set("player", room.get("player"))
 		grass.call("start", _grass_out, _grass_plan["rect"], _grass_plan["wl"], float(_grass_plan["ground_y"]))
+		_grass_look()
 		stats["grass_ms"] = float(Time.get_ticks_usec() - int(_grass_plan["t0"])) / 1000.0
 		_grass_out = PackedFloat32Array()
 	# The grass stands in the world's frame, the land on its turntable: shown only while the land is level.
@@ -303,6 +308,32 @@ func _process(_delta: float) -> void:
 		if grass.visible != level:
 			grass.visible = level
 			grass.set("enabled", level)
+
+
+## Round 7 (#54: "Adjust the grass color to more closely match the green terrain underneath. Reduce the contrast between
+## the grass blades and the underlying surface. Preserve enough subtle variation"): the look's own green moved to the
+## smooth land's (its voxel grass, bl_compare_4d.gd's palette), every other colour of the look with it (the grass
+## script's `colour`), its colours less boosted (saturation 1.45 to 1.1), less shaded (0.46 to 0.32), its broad
+## patches half as strong, and its roots fading toward the land's green rather than a dark ground; the hue jitter and
+## the lush and dry clumps kept, for the variation.
+const GRASS_SPACING := 0.055
+const LAND_GREEN := Color(0.36, 0.55, 0.22)
+
+
+func _grass_look() -> void:
+	if grass == null:
+		return
+	grass.set("colour", LAND_GREEN)
+	for band in grass.get("_bands"):
+		var m: ShaderMaterial = band.material
+		if m == null:
+			continue
+		m.set_shader_parameter("saturation", 1.1)
+		m.set_shader_parameter("shade", 0.32)
+		m.set_shader_parameter("region_strength", 0.5)
+		m.set_shader_parameter("toward_ground", 0.3)
+		var g: Color = LAND_GREEN * 0.8
+		m.set_shader_parameter("ground_colour", Vector3(g.r, g.g, g.b))
 
 
 func grass_ready() -> bool:

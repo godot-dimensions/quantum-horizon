@@ -23,6 +23,13 @@ extends Node4D
 ##          slice loses the head first and then the stem from the top down.
 ## The pots never move. R puts the flowers back upright in the slice.
 ##
+## ROUND 6 (section 12; Ramon: "Instead of the previously requested 4x4 cluster in the corner, arrange the flowers in
+## two rows of eight ... on the right side of the path ... Start the arrangement at the same longitudinal position
+## where the first voxel tree platform begins ... Orient the flowers and their presentation labels toward the opposite
+## viewing side ... Keep the two rows reasonably close together"): two rows down the right of the spine, the first pots
+## level with the start of 01's platform (z 9.1), the short plants in the row by the path and the tall ones behind,
+## all of them and their labels facing the path (-x).
+##
 ## Positions are this node's children's (x, z); it is put at the hall's origin.
 ## NO class_name (engine_gotchas.md).
 
@@ -32,19 +39,17 @@ const Flower := preload("res://ramon/Arboretum/botany_lab/flora/flower_4d.gd")
 const Species := preload("res://ramon/Arboretum/botany_lab/flora/flora_species.gd")
 const Butterflies := preload("res://ramon/Arboretum/botany_lab/flora/butterflies_4d.gd")
 
-## The sixteen, row by row from the back (by the entrance wall) to the front (toward 01), each row from the
-## left wall toward the spine: tall at the back, short at the front, the colours mixed.
-@export var keys: PackedStringArray = PackedStringArray(["foxglove", "sunflower", "allium", "lily",
-	"passionflower", "iris", "poppy", "lavender",
-	"rose", "daisy", "cornflower", "tulip",
-	"marigold", "snowdrop", "bluebell", "dandelion"])
-## The back-left pot's middle (x, z), the gap between pots along a row (x) and between rows (z, toward the
-## front), and how many to a row. (Ramon, mid round 5: "make the pot cluster align with the other pedestal
-## next to it. mind spacing": the grid centred on 01's x (-7.5), in front of it toward the entrance, its
-## front row 1.5 m off 01's box, 0.7 m aisles between the pots, 0.7 m off the entrance wall.)
-@export var at: Vector2 = Vector2(-9.525, 14.95)
-@export var step: Vector2 = Vector2(1.35, -1.35)
-@export var per_row: int = 4
+## The sixteen: the row by the path first (the short plants), from the entrance end down the hall, then the row
+## behind it (the tall ones); the colours mixed.
+@export var keys: PackedStringArray = PackedStringArray(["marigold", "snowdrop", "cornflower", "tulip", "dandelion", "bluebell", "daisy", "lavender",
+	"poppy", "foxglove", "iris", "sunflower", "rose", "allium", "lily", "passionflower"])
+## The first pot's middle (x, z), the step from pot to pot along a row and from row to row, and how many to a row.
+## (Round 6: the first row 1.7 m right of the spine, its first pot's edge level with 01's platform's start, z 9.1;
+## the second row a metre behind it; 0.94 m from pot to pot.)
+@export var at: Vector2 = Vector2(1.7, 8.78)
+@export var col_step: Vector2 = Vector2(0.0, -0.935)
+@export var row_step: Vector2 = Vector2(1.0, 0.0)
+@export var per_row: int = 8
 @export var radius: float = 0.32
 ## The earth's radius in each pot (Ramon, mid round 5: "for the potted plants, make the earth radius a bit
 ## bigger"): the kit's planter sets its soil 0.12 m in from the body, right for the big pedestals but a thick
@@ -54,9 +59,8 @@ const Butterflies := preload("res://ramon/Arboretum/botany_lab/flora/butterflies
 ## How much bigger than its species' own display size a plant is shown in its pot (its stem cut down:
 ## flower_4d.gd potted_mesh).
 @export var display: float = 1.9
-## How far the planter's label faces round from +Z toward +X (radians): toward the spine and the arrival
-## marker on that side (+x).
-@export var label_angle: float = PI * 0.5
+## How far the planter's label faces round from +Z toward +X (radians): toward the path (-x).
+@export var label_angle: float = -PI * 0.5
 @export var butterflies: int = 5
 ## How near (m) you must be to the collection's footprint for a drag or the wheel to move its flowers.
 @export var reach: float = 1.6
@@ -81,9 +85,8 @@ func _ready() -> void:
 		var key: String = keys[i]
 		var p := Node4D.new()
 		p.name = "Pot_%s" % key
-		var row: int = i / maxi(per_row, 1)
-		var col: int = i % maxi(per_row, 1)
-		p.position = Vector4(at.x + step.x * float(col), 0.0, at.y + step.y * float(row), 0.0)
+		var xz: Vector2 = pot_at(i)
+		p.position = Vector4(xz.x, 0.0, xz.y, 0.0)
 		add_child(p)
 		var parts: Dictionary = Pedestal.build(p, radius, height, "planter")
 		# The wider earth: the planter's soil disc (radius - 0.12) scaled out across x and z.
@@ -95,8 +98,8 @@ func _ready() -> void:
 		var plants: Array = []
 		var mesh: ArrayTetraMesh4D = Flower.potted_mesh(key, i % Flower.VARIANTS)
 		if mesh != null:
-			# Its front toward the spine (+x), a little differently each.
-			var base: Projection = Basis4D.from_zx(PI * 0.5 + _rng.randf_range(-0.5, 0.5))
+			# Its front toward the path (-x), a little differently each.
+			var base: Projection = Basis4D.from_zx(-PI * 0.5 + _rng.randf_range(-0.5, 0.5))
 			var s: float = float(Species.DISPLAY.get(key, 1.4)) * display * _rng.randf_range(0.95, 1.05)
 			var mi := MeshInstance4D.new()
 			mi.name = key
@@ -126,15 +129,28 @@ static func _scaled(b: Projection, s: float) -> Projection:
 	return Projection(b.x * s, b.y * s, b.z * s, b.w * s)
 
 
-## The grid's footprint (x, z), pots' edges included.
+## Pot `i`'s middle (x, z).
+func pot_at(i: int) -> Vector2:
+	var row: int = i / maxi(per_row, 1)
+	var col: int = i % maxi(per_row, 1)
+	return at + col_step * float(col) + row_step * float(row)
+
+
+## The collection's footprint (x, z), pots' edges included.
 func footprint_lo() -> Vector2:
-	var far: Vector2 = at + Vector2(step.x * float(per_row - 1), step.y * float((keys.size() - 1) / maxi(per_row, 1)))
-	return Vector2(minf(at.x, far.x), minf(at.y, far.y)) - Vector2.ONE * radius
+	var lo := Vector2(INF, INF)
+	for i in keys.size():
+		var q: Vector2 = pot_at(i)
+		lo = Vector2(minf(lo.x, q.x), minf(lo.y, q.y))
+	return lo - Vector2.ONE * radius
 
 
 func footprint_hi() -> Vector2:
-	var far: Vector2 = at + Vector2(step.x * float(per_row - 1), step.y * float((keys.size() - 1) / maxi(per_row, 1)))
-	return Vector2(maxf(at.x, far.x), maxf(at.y, far.y)) + Vector2.ONE * radius
+	var hi := Vector2(-INF, -INF)
+	for i in keys.size():
+		var q: Vector2 = pot_at(i)
+		hi = Vector2(maxf(hi.x, q.x), maxf(hi.y, q.y))
+	return hi + Vector2.ONE * radius
 
 
 func _print_labels() -> void:

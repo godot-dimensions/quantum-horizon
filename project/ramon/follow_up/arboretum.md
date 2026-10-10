@@ -1567,3 +1567,43 @@ and the play-through (43 of 43).
 2. The flowers' tip and slide: is the slide's speed (a few centimetres takes them) right in the hand?
 3. The sky above the sunset now runs to the ceiling, deepening: or keep the strip, with the wall darker
    above it?
+
+## 12. Botany Lab, rounds 6 and 7: walkthrough parts 6 and 7 (10 Oct, evening)
+
+Pasted in chat. Part 6 (items 45 to 51) is the first room's layout, superseding part 5's 4 x 4 flowers. Part 7
+(52 to 56) is the Gardens room's grass only: keep the rest, and do not touch the lights. Both were written while
+Ramon had his editor open, playing, so they were NOT run. He checks them himself. His `botany_lab_tuning.cfg`
+(saved from the dev panel: the oak 10.5 m tall, the room's shape, the light levels) was kept, except
+`room_front` 16 to 12.1. The tuning loads over the script's defaults, so the new front had to go there too.
+Both .cfg files and the scene were backed up to `.backup/botany_r6/` first.
+
+**Part 6, the first room** (`botany_lab_4d.gd` `rect_room`, `door_from_left`, `room_right_width` 5.5, `room_front` 12.1):
+- A rectangle: the back wall flat at z -22 (the old back wall's plane, its furthest), the side walls run to it. The
+  corner walls are not built; their tuning values are ignored while `rect_room` is on.
+- The right (blue) wall 5 m left, x 10.5 to 5.5. Its two panels stay on it.
+- The entrance wall 3 m before 01's platform (z 9.1 + 3 = 12.1); the corridor follows it.
+- The oak and everything of it 1 m forward and 2 m left: Station04, its panel, its light and its target to (-2,
+  -12.5). Its leaves and grass follow the station by code.
+- The back door 3 m from the left wall to the opening's edge (centre x -7.3): the doorway, the shimmer, the trigger,
+  the arrival from the second room and the route's target.
+- The flowers in two rows of eight right of the spine:
+  - the first pots level with 01's platform's start (z 9.1), 0.94 m apart down the hall;
+  - the row by the path at x 1.7 (the short plants), the tall row a metre behind;
+  - plants and labels facing the path.
+  - The spine passes 1.1 m from them, with no branch.
+- The route (`paths/hall.tres`, hand-written from `_bl_make_paths_runner.gd`'s new `_hall()`, as Godot was his):
+  - the spine from the doorway to 03's junction;
+  - the tour's pad back on the left, between the entrance wall and 01 (its radius 1.1);
+  - 01 to 03 as before;
+  - the oak's ring on a 45-degree run from 03's junction;
+  - the way to the back door round the oak's right, behind it and along the back wall. Between 03 and the oak
+    there is 1.5 m, too little for a path.
+- The tour's opening and closing shots refitted. The camera bounds are narrower.
+
+**Part 7, the Gardens grass** (`compare/bl_gardens_4d.gd`):
+- Blades 5.5 cm apart (7), the dense band out to 11 m (8), blades 0.52 m (0.42).
+- The colour moved to the land's own green (0.36, 0.55, 0.22), with less saturation (1.1), less shading (0.32),
+  half-strength patches, and roots toward the land's green.
+- Frame cost not measured (unrun). If it is heavy, `GRASS_SPACING` and the band radii are the levers.
+- The ivy is the sprig trick: drawn where your slice crosses each leaf, each with a home in W. So it already
+  answers W in its own way, and was left as it is (#55).

@@ -96,14 +96,14 @@ func _play() -> void:
 	_free_mouse()
 
 	# 1. The door: the hall ahead, nothing active.
-	_go(0.0, 14.0, 0.0)
+	_go(0.0, 10.5, 0.0)
 	await _frames(30)
 	_check(_room.get("active") == null, "at the door no pedestal is active")
 	_shoot("01_door")
 
-	# 2. The showcase pad (round 3: on the route's left branch; round 5 the right, 3.0, 12.2): E starts the tour, Esc hands
+	# 2. The showcase pad (round 3: on the route's left branch; round 6 the left again, -3.0, 10.6): E starts the tour, Esc hands
 	# the camera back.
-	_go(3.0, 12.2, 0.0)
+	_go(-3.0, 10.6, 0.0)
 	await _frames(20)
 	_key(KEY_E)
 	await _frames(90)
@@ -154,7 +154,7 @@ func _play() -> void:
 	_key(KEY_E)
 	await _frames(15)
 	_check(int(pn.get("page_index")) == 1, "E again to the next (What it shows)")
-	_go(0.0, 14.0, 0.0)
+	_go(0.0, 10.5, 0.0)
 	await _frames(15)
 	_check(int(pn.get("page_index")) == -1 and not bool(pn.get("near")), "walking away puts it back on its face")
 
@@ -256,7 +256,7 @@ func _play() -> void:
 	_check(not bool(_room.get("building")), "F4 again closes it")
 
 	# 9. Q/E through W, away from the pedestals (the playable world's walk).
-	_go(0.0, 14.0, 0.0)
+	_go(0.0, 10.5, 0.0)
 	await _frames(20)
 	var pl: Node4D = _room.get("player")
 	pl.set("input_enabled", true)
@@ -268,13 +268,13 @@ func _play() -> void:
 	await _frames(5)
 	_free_mouse()
 	_check(absf(pl.global_position.w - w0) > 0.05, "E away from the pedestals steps through W (%.2f to %.2f)" % [w0, pl.global_position.w])
-	_go(0.0, 14.0, 0.0, 0.0)
+	_go(0.0, 10.5, 0.0, 0.0)
 	await _frames(10)
 
 	# 9b. The flowers (round 4, 11; round 5: sixteen pots in the corner by 01): near a pot only a key prompt
 	# shows; E opens its caption, E closes it, walking away closes it; a drag tips them and slides them
 	# through W, R puts them back.
-	_go(-4.6, 12.25, 90.0)
+	_go(0.8, 7.85, -90.0)
 	await _frames(30)
 	var border: Node = _room.get_node_or_null("Border")
 	_check(border != null and not (_room.get("_at_border") as Dictionary).is_empty(), "at the border a planter is yours")
@@ -289,10 +289,10 @@ func _play() -> void:
 	_check(String(_room.get("_border_caption")) == "", "E again closes it")
 	_room.call("open_flower")
 	await _frames(3)
-	_go(0.0, 14.0, 0.0)
+	_go(0.0, 10.5, 0.0)
 	await _frames(10)
 	_check(String(_room.get("_border_caption")) == "", "walking away closes it")
-	_go(-6.0, 11.4, 90.0)
+	_go(0.8, 6.0, -90.0)
 	await _frames(20)
 	border.call("turn_by", 0.5, 0.0)
 	await _frames(5)
@@ -306,21 +306,21 @@ func _play() -> void:
 	# The flower room is shelved: no door in the right wall.
 	_check(_room.get_node_or_null("FlowerShimmer") == null, "the right wall has no door (the flower room is shelved)")
 	var pl3: Node4D = _room.get("player")
-	_go(10.0, -3.0, -90.0)
+	_go(4.0, -3.0, -90.0)
 	await _frames(5)
-	pl3.global_position = Vector4(11.7, 0.05, -3.0, 0.0)
+	pl3.global_position = Vector4(5.2, 0.05, -3.0, 0.0)
 	await _frames(3)
 	_check(not bool(_room.get("_leaving")), "walking up to the right wall leads nowhere")
 	pl3.set("input_enabled", false)
-	_go(0.0, 14.0, 0.0)
+	_go(0.0, 10.5, 0.0)
 	await _frames(10)
 
 	# 10. The back door (plan step 67): walking into its shimmer starts the way to the second room. The
 	# run ends here, before the scene changes.
-	_go(0.0, -20.6, 0.0)
+	_go(-7.3, -20.6, 0.0)
 	await _frames(10)
 	var pl2: Node4D = _room.get("player")
-	pl2.global_position = Vector4(0.0, 0.05, -21.8, 0.0)
+	pl2.global_position = Vector4(-7.3, 0.05, -21.8, 0.0)
 	await _frames(3)
 	_check(bool(_room.get("_leaving")), "walking into the back door's shimmer starts the way to the second room")
 

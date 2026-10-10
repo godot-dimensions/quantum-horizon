@@ -43,10 +43,10 @@ cove = false
 
 [node name="Hall" type="Node4D" parent="."]
 script = ExtResource("3_kitroom")
-outline = PackedVector2Array(-12, 16, -12, -13.528, -4.372, -22, 4.372, -22, 10.5, -15.194, 10.5, 16)
-size = Vector3(22.5, 12, 38)
-doorways = [["entrance", 8.1, 12.9, 5.0], ["back", 2.772, 5.972, 4.4]]
-wall_names = PackedStringArray("left", "left_corner", "back", "right_corner", "right", "entrance")
+outline = PackedVector2Array(-11.9, 12.1, -11.9, -22, 5.5, -22, 5.5, 12.1)
+size = Vector3(17.4, 11.6, 34.1)
+doorways = [["entrance", 3.1, 7.9, 5.0], ["back", 3.0, 6.2, 4.4]]
+wall_names = PackedStringArray("left", "back", "right", "entrance")
 cove = false
 
 [node name="Sign" type="Node" parent="Hall"]
@@ -79,7 +79,7 @@ exhibit_script = ExtResource("6_vx")
 pedestal_shape = "specimen_box"
 radius = 2.1
 height = 0.45
-bounds = Rect2(-11.5, -21.5, 21.5, 37)
+bounds = Rect2(-11.5, -21.5, 16.5, 33.1)
 band_angle = 90.0
 hologram = false
 
@@ -90,7 +90,7 @@ exhibit_script = ExtResource("7_dc")
 pedestal_shape = "specimen"
 radius = 2.3
 height = 0.45
-bounds = Rect2(-11.5, -21.5, 21.5, 37)
+bounds = Rect2(-11.5, -21.5, 16.5, 33.1)
 band_angle = 90.0
 hologram = false
 
@@ -101,18 +101,18 @@ exhibit_script = ExtResource("8_lf")
 pedestal_shape = "specimen"
 radius = 2.3
 height = 0.45
-bounds = Rect2(-11.5, -21.5, 21.5, 37)
+bounds = Rect2(-11.5, -21.5, 16.5, 33.1)
 band_angle = 90.0
 hologram = false
 
 [node name="Station04" type="Node4D" parent="."]
-position = Vector4(0, 0, -13.5, 0)
+position = Vector4(-2, 0, -12.5, 0)
 script = ExtResource("5_showcase")
 exhibit_script = ExtResource("9_oak")
 pedestal_shape = "specimen"
 radius = 4.0
 height = 0.55
-bounds = Rect2(-11.5, -21.5, 21.5, 37)
+bounds = Rect2(-11.5, -21.5, 16.5, 33.1)
 band_angle = 0.0
 hologram = false
 holo_height = 0.9
@@ -190,7 +190,7 @@ script = ExtResource("24_words")
 station = NodePath("../../Station03")
 
 [node name="Panel04" type="Node4D" parent="."]
-position = Vector4(0, 0.55, -10.15, 0)
+position = Vector4(-2, 0.55, -9.15, 0)
 script = ExtResource("12_panel")
 width = 1.6
 depth = 0.7
@@ -198,7 +198,7 @@ number = 4
 title = "The oak"
 kicker = "WHAT THE METHODS ADD UP TO"
 source = NodePath("Words")
-face_point = Vector2(0.0, -6.8)
+face_point = Vector2(-2.0, -5.8)
 face_always = false
 tilt = 52.0
 hover = 0.5
@@ -214,7 +214,7 @@ script = ExtResource("24_words")
 station = NodePath("../../Station04")
 
 [node name="PanelTour" type="Node4D" parent="."]
-position = Vector4(4.1, 0, 11.1, 0)
+position = Vector4(-4.6, 0, 11.2, 0)
 script = ExtResource("12_panel")
 width = 1.6
 depth = 0.7
@@ -222,7 +222,7 @@ number = 0
 title = "The whole showcase"
 kicker = "A GUIDED TOUR OF THE FOUR"
 source = NodePath("Words")
-face_point = Vector2(0.0, 15.2)
+face_point = Vector2(0.0, 9.0)
 face_always = true
 hint = "E  PLAY THE SHOWCASE"
 
@@ -273,9 +273,9 @@ energy = {
 fixture_at = 11.94
 
 [node name="Light04Oak" type="Node4D" parent="."]
-position = Vector4(0, 11.5, -13.5, 0)
+position = Vector4(-2, 11.5, -12.5, 0)
 script = ExtResource("10_light")
-aim = Vector3(0, 0, -13.5)
+aim = Vector3(-2, 0, -12.5)
 angle = 55.0
 softness = 0.6
 reach = 15.0
@@ -291,10 +291,10 @@ color = {
 fixture_at = 11.94
 
 [node name="LightBorder" type="Node4D" parent="."]
-position = Vector4(-7.5, 11.5, 12.9, 0)
+position = Vector4(2.2, 11.5, 5.5, 0)
 script = ExtResource("10_light")
 kind = "spot"
-aim = Vector3(-7.5, 0, 12.9)
+aim = Vector3(2.2, 0, 5.5)
 angle = 50.0
 softness = 2.5
 reach = 15.0
@@ -375,19 +375,13 @@ script = ExtResource("21_target")
 size = Vector3(4.6, 0.9, 4.6)
 
 [node name="P4" type="Node4D" parent="Paths/Targets"]
-position = Vector4(0, 0, -13.5, 0)
+position = Vector4(-2, 0, -12.5, 0)
 script = ExtResource("21_target")
 label = "The oak"
 size = Vector3(8, 1.1, 8)
 
-[node name="Flowers" type="Node4D" parent="Paths/Targets"]
-position = Vector4(-7.5, 0, 12.925, 0)
-script = ExtResource("21_target")
-label = "The flowers"
-size = Vector3(4.75, 0.6, 4.75)
-
 [node name="Door" type="Node4D" parent="Paths/Targets"]
-position = Vector4(0, 0, -22.4, 0)
+position = Vector4(-7.3, 0, -22.4, 0)
 script = ExtResource("21_target")
 label = "To the second room"
 size = Vector3(3.2, 4.4, 0.6)
