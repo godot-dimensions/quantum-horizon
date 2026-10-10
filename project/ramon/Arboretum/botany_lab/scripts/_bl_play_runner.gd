@@ -101,9 +101,9 @@ func _play() -> void:
 	_check(_room.get("active") == null, "at the door no pedestal is active")
 	_shoot("01_door")
 
-	# 2. The showcase pad (round 3: on the route's left branch, -3.0, 12.2): E starts the tour, Esc hands
+	# 2. The showcase pad (round 3: on the route's left branch; round 5 the right, 3.0, 12.2): E starts the tour, Esc hands
 	# the camera back.
-	_go(-3.0, 12.2, 0.0)
+	_go(3.0, 12.2, 0.0)
 	await _frames(20)
 	_key(KEY_E)
 	await _frames(90)
@@ -274,7 +274,7 @@ func _play() -> void:
 	# 9b. The flowers (round 4, 11; round 5: sixteen pots in the corner by 01): near a pot only a key prompt
 	# shows; E opens its caption, E closes it, walking away closes it; a drag tips them and slides them
 	# through W, R puts them back.
-	_go(-6.0, 10.7, 90.0)
+	_go(-4.6, 12.25, 90.0)
 	await _frames(30)
 	var border: Node = _room.get_node_or_null("Border")
 	_check(border != null and not (_room.get("_at_border") as Dictionary).is_empty(), "at the border a planter is yours")

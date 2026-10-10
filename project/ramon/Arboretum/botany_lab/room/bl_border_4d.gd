@@ -39,16 +39,23 @@ const Butterflies := preload("res://ramon/Arboretum/botany_lab/flora/butterflies
 	"rose", "daisy", "cornflower", "tulip",
 	"marigold", "snowdrop", "bluebell", "dandelion"])
 ## The back-left pot's middle (x, z), the gap between pots along a row (x) and between rows (z, toward the
-## front), and how many to a row.
-@export var at: Vector2 = Vector2(-11.0, 14.9)
-@export var step: Vector2 = Vector2(1.4, -1.4)
+## front), and how many to a row. (Ramon, mid round 5: "make the pot cluster align with the other pedestal
+## next to it. mind spacing": the grid centred on 01's x (-7.5), in front of it toward the entrance, its
+## front row 1.5 m off 01's box, 0.7 m aisles between the pots, 0.7 m off the entrance wall.)
+@export var at: Vector2 = Vector2(-9.525, 14.95)
+@export var step: Vector2 = Vector2(1.35, -1.35)
 @export var per_row: int = 4
 @export var radius: float = 0.32
+## The earth's radius in each pot (Ramon, mid round 5: "for the potted plants, make the earth radius a bit
+## bigger"): the kit's planter sets its soil 0.12 m in from the body, right for the big pedestals but a thick
+## stone band on a small pot; here it is widened to this.
+@export var soil_radius: float = 0.27
 @export var height: float = 0.5
 ## How much bigger than its species' own display size a plant is shown in its pot (its stem cut down:
 ## flower_4d.gd potted_mesh).
 @export var display: float = 1.9
-## How far the planter's label faces round from +Z toward +X (radians): toward the path.
+## How far the planter's label faces round from +Z toward +X (radians): toward the spine and the arrival
+## marker on that side (+x).
 @export var label_angle: float = PI * 0.5
 @export var butterflies: int = 5
 ## How near (m) you must be to the collection's footprint for a drag or the wheel to move its flowers.
@@ -79,11 +86,16 @@ func _ready() -> void:
 		p.position = Vector4(at.x + step.x * float(col), 0.0, at.y + step.y * float(row), 0.0)
 		add_child(p)
 		var parts: Dictionary = Pedestal.build(p, radius, height, "planter")
+		# The wider earth: the planter's soil disc (radius - 0.12) scaled out across x and z.
+		var soil: Node4D = parts.get("deck") as Node4D
+		if soil != null and radius > 0.13:
+			var k: float = soil_radius / (radius - 0.12)
+			soil.basis = Projection(Vector4(k, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, k, 0), Vector4(0, 0, 0, 1))
 		var deck: float = float(parts.get("deck_h", height))
 		var plants: Array = []
 		var mesh: ArrayTetraMesh4D = Flower.potted_mesh(key, i % Flower.VARIANTS)
 		if mesh != null:
-			# Its front toward the path (+x) a little differently each.
+			# Its front toward the spine (+x), a little differently each.
 			var base: Projection = Basis4D.from_zx(PI * 0.5 + _rng.randf_range(-0.5, 0.5))
 			var s: float = float(Species.DISPLAY.get(key, 1.4)) * display * _rng.randf_range(0.95, 1.05)
 			var mi := MeshInstance4D.new()

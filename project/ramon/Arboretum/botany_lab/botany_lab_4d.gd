@@ -155,7 +155,8 @@ const TOUR_SHOT := {
 ## Where you start (x, z), facing the oak.
 @export var start_at: Vector2 = Vector2(0.0, 22.0)
 ## The PLAY THE SHOWCASE pad (x, z) and how near counts as standing on it.
-@export var tour_pad: Vector2 = Vector2(-3.0, 12.2)
+## (Round 5: on the right, the flowers having the left corner by the entrance.)
+@export var tour_pad: Vector2 = Vector2(3.0, 12.2)
 @export var tour_pad_radius: float = 1.5
 ## Round 3: the flower room's door, in the right wall at this z; the roof open to the sky. Round 4 (Ramon:
 ## "Remove the newly added ceiling lines and decorative roof structures"; "I don't think we need the
@@ -867,7 +868,7 @@ func _meadows() -> void:
 	if border != null:
 		for pl in border.get("planters"):
 			var n4: Node4D = pl["node"]
-			beds.append([Vector3(n4.position.x, float(border.get("height")) + 0.02, n4.position.z), float(border.get("radius")) - 0.14, false, 0.0])
+			beds.append([Vector3(n4.position.x, float(border.get("height")) + 0.02, n4.position.z), float(border.get("soil_radius")) - 0.04, false, 0.0])
 	for bed in beds:
 		var c: Vector3 = bed[0]
 		var r: float = bed[1]

@@ -1530,8 +1530,17 @@ and the play-through (43 of 43).
 - Frames 7.1 to 7.5 ms (round 4: 6.4 to 6.8; the fuller green skin).
 
 **The flowers.**
-- Sixteen pots in a 4 x 4 grid in the left corner by 01, 1.4 m apart, tall at the back, on a branch from
-  01's junction (the route's own checks pass).
+- Sixteen pots in a 4 x 4 grid. Ramon, mid-round: "make the pot cluster align with the other pedestal
+  next to it. mind spacing":
+  - in line with 01 (centred on its x), in front of it toward the entrance;
+  - 1.35 m apart (0.7 m aisles), 1.5 m off 01's box and 0.7 m off the entrance wall;
+  - tall at the back;
+  - the arrival marker on their spine side, on their own 67.5-degree branch. A marker between them and 01
+    put the camera inside 01's crown.
+  - The tour's pad and its panel moved across the spine to the right, to keep clear of them. The route's
+    own checks pass.
+- Their earth wider: "for the potted plants, make the earth radius a bit bigger". 0.27 m against the
+  kit's 0.20, a slim rim left.
 - Each pot is a different species: the twelve and lavender, cornflower, French marigold and snowdrop.
   Each is potted: its stem cut to about 0.3 m of its own height, then shown 1.9 times bigger, so the flower
   reads. At full height they were long stems with small heads.

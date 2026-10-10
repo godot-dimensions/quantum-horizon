@@ -410,11 +410,11 @@ func _garden() -> void:
 func _round5() -> void:
 	var border: Node = _room.get_node_or_null("Border")
 	print("CAPTURE round5 hall outline %s" % str((_room.get_node("Hall") as Node).get("outline")))
-	for v in [[0.0, 15.0, 0.0, -6.0, "h01_from_the_door"], [-4.6, 9.4, 128.0, -16.0, "h02_flower_corner"], [-5.4, 9.6, 125.0, -32.0, "h03_flower_corner_from_above"]]:
+	for v in [[0.0, 15.0, 0.0, -6.0, "h01_from_the_door"], [-1.2, 11.0, 70.0, -14.0, "h02_flower_corner"], [-2.6, 11.8, 80.0, -34.0, "h03_flower_corner_from_above"]]:
 		_go(float(v[0]), float(v[1]), float(v[2]), float(v[3]))
 		await _frames(50)
 		_shoot("round5", String(v[4]))
-	_go(-5.9, 10.4, 118.0, -22.0)
+	_go(-4.5, 12.925, 90.0, -20.0)
 	await _frames(30)
 	_shoot("round5", "h04_flowers_level")
 	if border != null:
@@ -429,7 +429,7 @@ func _round5() -> void:
 			_shoot("round5", "h06_flowers_tipped_%.1f" % tp)
 		border.call("level")
 	for v in [[0.0, 2.0, -90.0, 3.0, "h07_right_wall"], [1.0, 2.0, 90.0, 3.0, "h08_left_wall"], [0.0, -3.0, 0.0, -4.0, "h09_back_corners_and_oak"],
-			[-3.0, 9.5, 120.0, -62.0, "h10_flower_branch_from_above"], [0.0, -8.5, 0.0, -26.0, "h11_no_04_on_the_floor"]]:
+			[-1.6, 12.0, 90.0, -62.0, "h10_flower_branch_from_above"], [0.0, -8.5, 0.0, -26.0, "h11_no_04_on_the_floor"]]:
 		_go(float(v[0]), float(v[1]), float(v[2]), float(v[3]))
 		await _frames(50)
 		_shoot("round5", String(v[4]))

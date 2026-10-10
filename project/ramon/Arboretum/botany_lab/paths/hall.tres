@@ -28,7 +28,7 @@ nodes = [{
 "frame": "none",
 "id": 3,
 "kind": "junction",
-"pos": Vector4(0, 0, 13.442640687119285, 0),
+"pos": Vector4(0, 0, 14.788961030678928, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -37,7 +37,7 @@ nodes = [{
 "frame": "none",
 "id": 4,
 "kind": "junction",
-"pos": Vector4(0, 0, 8.739696961966999, 0),
+"pos": Vector4(0, 0, 13.442640687119285, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -46,7 +46,7 @@ nodes = [{
 "frame": "none",
 "id": 5,
 "kind": "junction",
-"pos": Vector4(0, 0, 1.6568542494923804, 0),
+"pos": Vector4(0, 0, 8.739696961966999, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -55,7 +55,7 @@ nodes = [{
 "frame": "none",
 "id": 6,
 "kind": "junction",
-"pos": Vector4(0, 0, -5.343145750507619, 0),
+"pos": Vector4(0, 0, 1.6568542494923804, 0),
 "state": "arrival",
 "target": ""
 }, {
@@ -64,23 +64,32 @@ nodes = [{
 "frame": "none",
 "id": 7,
 "kind": "junction",
+"pos": Vector4(0, 0, -5.343145750507619, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 8,
+"kind": "junction",
 "pos": Vector4(0, 0, -6.8, 0),
 "state": "arrival",
 "target": ""
 }, {
-"approach": Vector2(1, 0),
+"approach": Vector2(-1, 0),
 "band": 8.0,
 "frame": "none",
-"id": 8,
+"id": 9,
 "kind": "destination",
-"pos": Vector4(-3, 0, 12.2, 0),
+"pos": Vector4(3, 0, 12.2, 0),
 "state": "available",
 "target": "Tour"
 }, {
 "approach": Vector2(1, 0),
 "band": 8.0,
 "frame": "rect",
-"id": 9,
+"id": 10,
 "kind": "destination",
 "pos": Vector4(-4.2, 0, 7, 0),
 "state": "available",
@@ -89,16 +98,16 @@ nodes = [{
 "approach": Vector2(1, 0),
 "band": 8.0,
 "frame": "rect",
-"id": 10,
+"id": 11,
 "kind": "destination",
-"pos": Vector4(-5.9, 0, 10.6, 0),
+"pos": Vector4(-4.5, 0, 12.925, 0),
 "state": "arrival",
 "target": "Flowers"
 }, {
 "approach": Vector2(1, 0),
 "band": 8.0,
 "frame": "round",
-"id": 11,
+"id": 12,
 "kind": "destination",
 "pos": Vector4(-4, 0, 0, 0),
 "state": "arrival",
@@ -107,7 +116,7 @@ nodes = [{
 "approach": Vector2(1, 0),
 "band": 8.0,
 "frame": "round",
-"id": 12,
+"id": 13,
 "kind": "destination",
 "pos": Vector4(-4, 0, -7, 0),
 "state": "arrival",
@@ -116,7 +125,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "round",
-"id": 13,
+"id": 14,
 "kind": "destination",
 "pos": Vector4(0, 0, -8.3, 0),
 "state": "arrival",
@@ -125,7 +134,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
-"id": 14,
+"id": 15,
 "kind": "bend",
 "pos": Vector4(5.4, 0, -6.8, 0),
 "state": "arrival",
@@ -134,7 +143,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
-"id": 15,
+"id": 16,
 "kind": "bend",
 "pos": Vector4(5.4, 0, -17.4, 0),
 "state": "arrival",
@@ -143,7 +152,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "none",
-"id": 16,
+"id": 17,
 "kind": "bend",
 "pos": Vector4(2, 0, -20.8, 0),
 "state": "arrival",
@@ -152,7 +161,7 @@ nodes = [{
 "approach": Vector2(0, 1),
 "band": 8.0,
 "frame": "rect",
-"id": 17,
+"id": 18,
 "kind": "destination",
 "pos": Vector4(0, 0, -20.8, 0),
 "state": "arrival",
@@ -196,26 +205,26 @@ edges = [{
 "w_mode": "static"
 }, {
 "band": 8.0,
-"from": 3,
-"priority": "secondary",
+"from": 7,
+"priority": "primary",
 "to": 8,
 "w_mode": "static"
 }, {
 "band": 8.0,
 "from": 4,
-"priority": "primary",
-"to": 9,
-"w_mode": "static"
-}, {
-"band": 8.0,
-"from": 4,
 "priority": "secondary",
-"to": 10,
+"to": 9,
 "w_mode": "static"
 }, {
 "band": 8.0,
 "from": 5,
 "priority": "primary",
+"to": 10,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 3,
+"priority": "secondary",
 "to": 11,
 "w_mode": "static"
 }, {
@@ -232,13 +241,13 @@ edges = [{
 "w_mode": "static"
 }, {
 "band": 8.0,
-"from": 7,
+"from": 8,
 "priority": "primary",
 "to": 14,
 "w_mode": "static"
 }, {
 "band": 8.0,
-"from": 14,
+"from": 8,
 "priority": "primary",
 "to": 15,
 "w_mode": "static"
@@ -254,5 +263,11 @@ edges = [{
 "priority": "primary",
 "to": 17,
 "w_mode": "static"
+}, {
+"band": 8.0,
+"from": 17,
+"priority": "primary",
+"to": 18,
+"w_mode": "static"
 }]
-next_id = 18
+next_id = 19

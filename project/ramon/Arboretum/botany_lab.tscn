@@ -214,7 +214,7 @@ script = ExtResource("24_words")
 station = NodePath("../../Station04")
 
 [node name="PanelTour" type="Node4D" parent="."]
-position = Vector4(-4.1, 0, 11.1, 0)
+position = Vector4(4.1, 0, 11.1, 0)
 script = ExtResource("12_panel")
 width = 1.6
 depth = 0.7
@@ -291,10 +291,10 @@ color = {
 fixture_at = 11.94
 
 [node name="LightBorder" type="Node4D" parent="."]
-position = Vector4(-8.9, 11.5, 12.8, 0)
+position = Vector4(-7.5, 11.5, 12.9, 0)
 script = ExtResource("10_light")
 kind = "spot"
-aim = Vector3(-8.9, 0, 12.8)
+aim = Vector3(-7.5, 0, 12.9)
 angle = 50.0
 softness = 2.5
 reach = 15.0
@@ -381,10 +381,10 @@ label = "The oak"
 size = Vector3(8, 1.1, 8)
 
 [node name="Flowers" type="Node4D" parent="Paths/Targets"]
-position = Vector4(-8.9, 0, 12.8, 0)
+position = Vector4(-7.5, 0, 12.925, 0)
 script = ExtResource("21_target")
 label = "The flowers"
-size = Vector3(5.3, 0.6, 5.3)
+size = Vector3(4.75, 0.6, 4.75)
 
 [node name="Door" type="Node4D" parent="Paths/Targets"]
 position = Vector4(0, 0, -22.4, 0)

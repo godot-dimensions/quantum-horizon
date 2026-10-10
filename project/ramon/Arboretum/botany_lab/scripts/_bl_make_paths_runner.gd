@@ -64,6 +64,8 @@ func _hall() -> Resource:
 	var b := {"band": BAND}
 	var s: int = g.call("add_node", "start", _p(0.0, 19.5), b)
 	var t: int = g.call("add_node", "junction", _p(0.0, 15.2), b)
+	# (Round 5: the flowers' junction, their 67.5-degree branch to the sixteen pots' spine side.)
+	var jf: int = g.call("add_node", "junction", _p(0.0, 12.925 + _run(4.5)), b)
 	var jp: int = g.call("add_node", "junction", _p(0.0, 12.2 + _run(3.0)), b)
 	var j1: int = g.call("add_node", "junction", _p(0.0, 7.0 + _run(4.2)), b)
 	var j2: int = g.call("add_node", "junction", _p(0.0, 0.0 + _run(4.0)), b)
@@ -71,21 +73,24 @@ func _hall() -> Resource:
 	var j4: int = g.call("add_node", "junction", _p(0.0, -6.8), b)
 	# Down the spine: the door's junction, the pad's, 01's, 02's, 03's, the oak's.
 	g.call("add_edge", s, t, "primary", "static", BAND)
-	g.call("add_edge", t, jp, "primary", "static", BAND)
+	g.call("add_edge", t, jf, "primary", "static", BAND)
+	g.call("add_edge", jf, jp, "primary", "static", BAND)
 	g.call("add_edge", jp, j1, "primary", "static", BAND)
 	g.call("add_edge", j1, j2, "primary", "static", BAND)
 	g.call("add_edge", j2, j3, "primary", "static", BAND)
 	g.call("add_edge", j3, j4, "primary", "static", BAND)
-	var tour: int = g.call("add_node", "destination", _p(-3.0, 12.2), {"band": BAND, "state": "available", "target": "Tour", "frame": "none", "approach": Vector2(1, 0)})
+	# (Round 5: the tour's pad across the spine, on the right, the flowers having the left corner.)
+	var tour: int = g.call("add_node", "destination", _p(3.0, 12.2), {"band": BAND, "state": "available", "target": "Tour", "frame": "none", "approach": Vector2(-1, 0)})
 	g.call("add_edge", jp, tour, "secondary", "static", BAND)
 	var d1: int = g.call("add_node", "destination", _p(-4.2, 7.0), {"band": BAND, "state": "available", "target": "P1", "frame": "rect", "approach": Vector2(1, 0)})
 	g.call("add_edge", j1, d1, "primary", "static", BAND)
 	# ROUND 5 (Ramon: "Add a short branch from the main exhibition path toward the flower collection. This
 	# should branch near the relevant 4D showcase / V interaction area and lead naturally into the flower
-	# corner"): from 01's junction, back and out to the front corner of the sixteen pots (room/bl_border_4d.gd),
-	# its frame round the collection.
-	var df: int = g.call("add_node", "destination", _p(-5.9, 10.6), {"band": BAND, "state": "arrival", "target": "Flowers", "frame": "rect", "approach": Vector2(1, 0)})
-	g.call("add_edge", j1, df, "secondary", "static", BAND)
+	# corner"): from its own junction at 67.5 degrees, as 01's, to the spine side of the sixteen pots
+	# (room/bl_border_4d.gd, in line with 01 in front of it), facing them; its frame round the collection.
+	# (Between the pots and 01 the camera behind you stood in 01's crown.)
+	var df: int = g.call("add_node", "destination", _p(-4.5, 12.925), {"band": BAND, "state": "arrival", "target": "Flowers", "frame": "rect", "approach": Vector2(1, 0)})
+	g.call("add_edge", jf, df, "secondary", "static", BAND)
 	var d2: int = g.call("add_node", "destination", _p(-4.0, 0.0), {"band": BAND, "state": "arrival", "target": "P2", "frame": "round", "approach": Vector2(1, 0)})
 	g.call("add_edge", j2, d2, "primary", "static", BAND)
 	var d3: int = g.call("add_node", "destination", _p(-4.0, -7.0), {"band": BAND, "state": "arrival", "target": "P3", "frame": "round", "approach": Vector2(1, 0)})
