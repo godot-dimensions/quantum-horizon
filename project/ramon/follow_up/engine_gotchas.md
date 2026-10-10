@@ -437,3 +437,8 @@ starts inside: it just stops it ("TODO: proper depenetration", axis_aligned_box_
 A WorldEnvironment4D taken out of the tree loses "current", and adding it back does not take the sky again. A
 place kept between visits (the cave) was lit by the farm's environment from the second visit; call
 make_current() on the place's environment every time it goes back in, and on the farm's on the way home.
+
+A hand-written .tscn takes a Color only with all four components. Color(1, 0.94, 0.84) inside a property (a light's
+colour dictionary) is a parse error, and the whole scene fails to load ("Parse error ... flower_room.tscn:44",
+then instantiate on null); write Color(1, 0.94, 0.84, 1). Vector4s and Vector3s are fine as written (10 Oct,
+Botany Lab round 3).
