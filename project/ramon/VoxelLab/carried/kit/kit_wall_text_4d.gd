@@ -171,7 +171,12 @@ func paint(c: Control, ink: Dictionary) -> void:
 		for i in n:
 			c.draw_string(f, Vector2(0.0, y0 + gap * float(i)), lines[i], HORIZONTAL_ALIGNMENT_CENTER, c.size.x, px, ink["text"])
 		if not subtitle.is_empty():
-			c.draw_string(LabPrint.font("bold"), Vector2(0.0, y0 + gap * float(n - 1) + px * 0.62), subtitle, HORIZONTAL_ALIGNMENT_CENTER, c.size.x, int(px * 0.26 * (1.0 if n == 1 else 1.4)), ink["accent"])
+			var fs: Font = LabPrint.font("bold")
+			var spx: int = int(px * 0.26 * (1.0 if n == 1 else 1.4))
+			var sw: float = fs.get_string_size(subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, spx).x
+			if sw > c.size.x * 0.96:
+				spx = int(float(spx) * c.size.x * 0.96 / sw)
+			c.draw_string(fs, Vector2(0.0, y0 + gap * float(n - 1) + px * 0.62), subtitle, HORIZONTAL_ALIGNMENT_CENTER, c.size.x, spx, ink["accent"])
 		return
 	var w: float = c.size.x
 	var k: float = c.size.x / maxf(absf(along.y - along.x), 0.01)

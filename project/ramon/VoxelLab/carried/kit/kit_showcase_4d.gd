@@ -373,7 +373,7 @@ var sweep: float = 0.0
 
 func turn_by(dx: float, dy: float) -> void:
 	_touch()
-	if exhibit != null and bool(exhibit.get("sweep_w")):
+	if exhibit != null and exhibit.get("sweep_w") == true:
 		sweep += dx + dy * 0.6
 		return
 	var tilted: Projection = Ground.cleaned(Ground.sliced(turn_basis, Vector2(dx, dy)))
@@ -574,7 +574,7 @@ func _process(delta: float) -> void:
 		_extent = float(exhibit.call("w_extent"))
 	var ext: float = maxf(_extent, 0.3)
 	var want_w: float = (float(slice_index) - float(SLICES - 1) * 0.5) / (float(SLICES - 1) * 0.5) * ext * 0.6
-	if sweep != 0.0 and exhibit != null and bool(exhibit.get("sweep_w")):
+	if sweep != 0.0 and exhibit != null and exhibit.get("sweep_w") == true:
 		# The sweep: a triangle wave in the drag, 0.7 of the reach either way, kept inside the specimen.
 		want_w = clampf(want_w + ext * 0.7 * (asin(sin(sweep)) / (PI * 0.5)), -ext * 0.85, ext * 0.85)
 	if cinematic and _cine_slice > -2.0:

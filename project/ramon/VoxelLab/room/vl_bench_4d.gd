@@ -692,4 +692,4 @@ func strip() -> Array:
 ## The big landscape's drag sweeps its slice through W instead of turning it (round 6, #61).
 func _sweeps() -> bool:
 	var e: Node = exhibit()
-	return e != null and bool(e.get("sweep_w"))
+	return e != null and e.get("sweep_w") == true

@@ -695,7 +695,7 @@ func _strip() -> Array:
 		out.append(["Wheel", "Slide through W"])
 		var ex: Node = active.get("exhibit")
 		# The big landscape is swept through W, never turned (round 6, #61).
-		out.append(["Right drag", "Sweep through W" if ex != null and bool(ex.get("sweep_w")) else "Turn in 4D"])
+		out.append(["Right drag", "Sweep through W" if ex != null and ex.get("sweep_w") == true else "Turn in 4D"])
 		out.append(["R", "Reset slice"])
 		out.append(["V", "Projection view" if not volume_view else "Slice view"])
 	else:
