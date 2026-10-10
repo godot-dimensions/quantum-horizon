@@ -44,8 +44,8 @@ softness = 1.5
 reach = 18.0
 attenuation = 0.2
 energy = {
-"bright": 2.4,
-"dark": 3.0
+"bright": 2.0,
+"dark": 2.6
 }
 
 [node name="HallWash" type="Node4D" parent="."]
@@ -57,8 +57,64 @@ softness = 3.0
 reach = 20.0
 attenuation = 0.12
 energy = {
-"bright": 1.1,
-"dark": 1.4
+"bright": 0.9,
+"dark": 1.2
+}
+
+[node name="WallLightWN" type="Node4D" parent="."]
+position = Vector4(-12.0, 13.2, -9.0, 0)
+script = ExtResource("5_light")
+kind = "spot"
+aim = Vector3(-15.0, 3, -9.0)
+angle = 75.0
+softness = 3.0
+reach = 18.0
+attenuation = 0.2
+energy = {
+"bright": 0.7,
+"dark": 1.1
+}
+
+[node name="WallLightWS" type="Node4D" parent="."]
+position = Vector4(-12.0, 13.2, 9.0, 0)
+script = ExtResource("5_light")
+kind = "spot"
+aim = Vector3(-15.0, 3, 9.0)
+angle = 75.0
+softness = 3.0
+reach = 18.0
+attenuation = 0.2
+energy = {
+"bright": 0.7,
+"dark": 1.1
+}
+
+[node name="WallLightEN" type="Node4D" parent="."]
+position = Vector4(12.0, 13.2, -9.0, 0)
+script = ExtResource("5_light")
+kind = "spot"
+aim = Vector3(15.0, 3, -9.0)
+angle = 75.0
+softness = 3.0
+reach = 18.0
+attenuation = 0.2
+energy = {
+"bright": 0.7,
+"dark": 1.1
+}
+
+[node name="WallLightES" type="Node4D" parent="."]
+position = Vector4(12.0, 13.2, 9.0, 0)
+script = ExtResource("5_light")
+kind = "spot"
+aim = Vector3(15.0, 3, 9.0)
+angle = 75.0
+softness = 3.0
+reach = 18.0
+attenuation = 0.2
+energy = {
+"bright": 0.7,
+"dark": 1.1
 }
 
 [node name="Sun" type="Node4D" parent="."]

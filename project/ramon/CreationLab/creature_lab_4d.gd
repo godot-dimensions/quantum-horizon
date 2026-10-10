@@ -128,21 +128,6 @@ static var arrive_from: String = ""
 		if is_inside_tree():
 			set_walls(v)
 
-## Room 2, the big room behind the back door (Ramon, 4 Oct: "size attributes for room 2, and one
-## large spot in the middle which will need to light the whole giant room"): its width, depth and
-## height; its spot (BigSpot) stays over its middle with its fixture on the ceiling.
-@export_range(6.0, 80.0, 0.5) var big_room_width: float = 9.0:
-	set(v):
-		big_room_width = v
-		_shape_later()
-@export_range(4.0, 80.0, 0.5) var big_room_depth: float = 8.0:
-	set(v):
-		big_room_depth = v
-		_shape_later()
-@export_range(4.0, 24.0, 0.1) var big_room_height: float = 6.5:
-	set(v):
-		big_room_height = v
-		_shape_later()
 
 @export_group("Camera")
 ## How far behind you the camera sits, in metres. The concept frames have you close and large in
@@ -156,7 +141,6 @@ static var arrive_from: String = ""
 var player: CharacterBody4D
 var hud: Control
 var tuner: PanelContainer
-var tuner_room2: PanelContainer
 var data_panel: Control
 var prompt: Control
 var showcase: Node
@@ -200,7 +184,8 @@ func toggle_palette() -> void:
 
 func _label_switch() -> void:
 	if hud != null:
-		hud.set("switch_text", "GREY  ·  B" if Style.palette == "black" else "BLACK  ·  B")
+		# The Voxel and Aquatic Labs' words (round 3, item 42).
+		hud.set("switch_text", "DARK MODE %s  ·  B" % ("ON" if Style.palette == "black" else "OFF"))
 		hud.call("refresh_switch")
 
 
@@ -315,15 +300,6 @@ func _ready() -> void:
 	tuner.set("showcase", showcase)
 	tuner.set("goat_room", get_node_or_null("GoatRoom"))
 	tuner.set("shape_root", self)
-	# Room 2's own panel, on the right.
-	var tuner2 := PanelContainer.new()
-	tuner2.set_script(Tuner)
-	tuner2.set("panel", "room2")
-	tuner2.set("room", room)
-	tuner2.set("spot", get_node_or_null("BigSpot"))
-	tuner2.set("shape_root", self)
-	layer.add_child(tuner2)
-	tuner_room2 = tuner2
 	layer.add_child(tuner)
 	apply_mood(String(room.get("mood")) if room != null else "bright")
 	_build_route()
@@ -332,10 +308,9 @@ func _ready() -> void:
 	_pedestal_boxes.call_deferred()
 	var from_hall: bool = arrive_from == "hall"
 	if from_hall:
-		var big: Node4D = get_node_or_null("BigRoom") as Node4D
-		if big != null:
-			# Just through the door, facing back into the lab.
-			go_to(Vector4(0.0, 0.05, big.position.z - big_room_depth * 0.5 + 3.2, 0.0), PI)
+		# Inside the back door you went out by, facing into the lab (round 3: no room 2); far enough in that the
+		# camera, 5 m behind you, is inside the room and not looking in through the hologram.
+		go_to(Vector4(0.0, 0.05, -room_back + 5.6, 0.0), PI)
 	arrive_from = ""
 	_open_board(from_hall)
 
@@ -430,23 +405,6 @@ func apply_shape() -> void:
 	if dw > 0.1:
 		doors.append(["back", bl - dw * 0.5, bl + dw * 0.5, minf(door_height, h - 0.5)])
 	_set_if(gr, "doorways", doors)
-	# The big room behind it, its own front wall just behind the back wall, a door to match.
-	var big: Node4D = get_node_or_null("BigRoom") as Node4D
-	if big != null:
-		var bz: float = -d - 1.0 - big_room_depth * 0.5
-		big.position = Vector4(0.0, 0.0, bz, 0.0)
-		_set_if(big, "size", Vector3(big_room_width, big_room_height, big_room_depth))
-		var ways: Array = [["s", -dw * 0.5, dw * 0.5, minf(door_height, minf(h, big_room_height) - 0.5)]] if dw > 0.1 else []
-		# The far wall's door into the creature hall: the hologram stands in it (_build_hall_door).
-		ways.append(["n", -1.7, 1.7, minf(4.2, big_room_height - 0.5)])
-		_set_if(big, "doorways", ways)
-		var bs: Node4D = get_node_or_null("BigSpot") as Node4D
-		if bs != null:
-			var by: float = minf(bs.position.y, big_room_height - 0.3)
-			if bs.position.x != 0.0 or absf(bs.position.z - bz) > 0.001 or bs.position.y != by:
-				bs.position = Vector4(0.0, by, bz, 0.0)
-			_set_if(bs, "aim", Vector3(0.0, 0.0, bz))
-			_set_if(bs, "fixture_at", big_room_height - 0.06)
 	var sign: Node = gr.get_node_or_null("Sign")
 	if sign != null:
 		_set_if(sign, "along", Vector2(w - 3.8, w + 3.8))
@@ -894,6 +852,9 @@ func _build_route() -> void:
 	_route.set("targets", NodePath("../Targets"))
 	_route.set("floor_swatch", "kit_floor")
 	_route.set("frame_tint", Color(0.09, 0.38, 0.843))
+	# The side routes' dots small and a lighter cyan (round 3, item 26).
+	_route.set("dot_size", 0.4)
+	_route.set("dot_color", Color(0.55, 0.88, 1.0, 1.0))
 	paths.add_child(_route)
 
 
@@ -938,24 +899,26 @@ func _pedestal_boxes() -> void:
 				solid.add_child(extra)
 
 
-## The 0.5 m strip under the back door with no floor (room 1's floor ends at its wall, the entry room's
-## begins past its own): one floor box of the same tile across the doorway.
+## The floor through the back doorway, the wall's thickness (room 1's floor ends at its wall's face): the
+## hologram stands on it.
 func _close_door_floor() -> void:
 	var d: float = room_back
-	Build.box(self, "DoorFloor", Vector3(0.0, -0.25, -d - 0.75), Vector3(door_width + 1.2, 0.5, 1.6), "kit_floor")
+	Build.box(self, "DoorFloor", Vector3(0.0, -0.25, -d - 0.25), Vector3(door_width + 0.2, 0.5, 0.5), "kit_floor")
 
 
-## The hologram door into the creature hall, in the entry room's far wall (the Voxel Lab's shimmer).
+## The hologram door into the creature hall, in room 1's back door itself under the CREATURE SHOWCASE sign (round 3,
+## Ramon's item 27: "no unnecessary intermediate room ... position the holographic effect within the wall's
+## thickness ... align it properly with the actual doorway"): half way through the 0.5 m wall, the doorway's own
+## width and height (apply_shape: door_width, door_height).
 func _build_hall_door() -> void:
-	var big: Node4D = get_node_or_null("BigRoom") as Node4D
-	if big == null:
-		return
+	var gr: Node = get_node_or_null("GoatRoom")
+	var h: float = float((gr.get("size") as Vector3).y) if gr != null else 10.0
 	var sh := Node4D.new()
 	sh.name = "HallDoor"
 	sh.set_script(Shimmer)
-	sh.set("width", 3.4)
-	sh.set("height", minf(4.2, big_room_height - 0.5))
-	sh.position = Vector4(0.0, 0.0, big.position.z - big_room_depth * 0.5 + 0.17, 0.0)
+	sh.set("width", door_width)
+	sh.set("height", minf(door_height, h - 0.5))
+	sh.position = Vector4(0.0, 0.0, -room_back - 0.25, 0.0)
 	add_child(sh)
 
 
@@ -964,7 +927,7 @@ func _hall_door_check(p: Vector4) -> void:
 	var sh: Node4D = get_node_or_null("HallDoor") as Node4D
 	if sh == null or _leaving:
 		return
-	if p.z < sh.position.z + 0.35 and absf(p.x) < 1.6:
+	if p.z < sh.position.z + 0.45 and absf(p.x) < door_width * 0.5:
 		_leaving = true
 		sh.call("flash_out", self, to_hall)
 

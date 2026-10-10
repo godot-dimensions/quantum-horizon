@@ -57,6 +57,13 @@ const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
 	set(v):
 		open_sides = v
 		_later()
+## A ceiling flush with the room on its open sides instead of the 0.5 m it runs on past every wall (Creature Lab,
+## 10 Oct, Ramon's item 25: the entrance corridor's ceiling ran on through the lab's entrance wall, its end on the
+## wall's face, and flickered). Off by default: every other room as it was.
+@export var flush_open_ceiling: bool = false:
+	set(v):
+		flush_open_ceiling = v
+		_later()
 @export var ceiling: bool = true:
 	set(v):
 		ceiling = v
@@ -161,7 +168,9 @@ func rebuild() -> void:
 		cuts.append_array(_claim_cuts(side))
 		_walls[side] = RD.wall(self, "Wall" + side.to_upper(), side, x0, z0, x1, z1, h, t, ops, cuts, swatch)
 	if ceiling:
-		RD.ceiling(self, "Ceiling", x0 - t, z0 - t, x1 + t, z1 + t, h, "kit_ceiling")
+		var fl: bool = flush_open_ceiling
+		RD.ceiling(self, "Ceiling", x0 - (0.0 if fl and "w" in open_sides else t), z0 - (0.0 if fl and "n" in open_sides else t),
+			x1 + (0.0 if fl and "e" in open_sides else t), z1 + (0.0 if fl and "s" in open_sides else t), h, "kit_ceiling")
 	if cove:
 		var b := Batch.new()
 		RD.strip_rect(b, "cove", x0 + 0.3, z0 + 0.3, x1 - 0.3, z1 - 0.3, h - 0.22, 0.09, 0.05)

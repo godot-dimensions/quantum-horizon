@@ -52,6 +52,7 @@ script = ExtResource("3_kitroom")
 outline = PackedVector2Array()
 size = Vector3(8, 5.5, 14)
 open_sides = ["n"]
+flush_open_ceiling = true
 cove = false
 route = PackedVector2Array(0, 14.6, 0, -1.5)
 
@@ -67,13 +68,6 @@ wall_names = PackedStringArray("left", "left_corner", "back", "right_corner", "r
 cove = false
 route = PackedVector2Array(0, 14.6, 0, -1.5)
 ring = Vector3(0, -1.5, 3.75)
-
-[node name="BigRoom" type="Node4D" parent="."]
-position = Vector4(0, 0, -27, 0)
-script = ExtResource("3_kitroom")
-size = Vector3(30, 10, 30)
-doorways = [["s", -1.2, 1.2, 3.6]]
-cove = false
 
 [node name="Sign" type="Node" parent="GoatRoom"]
 script = ExtResource("4_text")
@@ -251,20 +245,6 @@ energy = {
 [node name="Sun" type="Node4D" parent="."]
 position = Vector4(1.48, 7.19, 1.68, 0)
 script = ExtResource("11_sun")
-
-[node name="BigSpot" type="Node4D" parent="."]
-position = Vector4(0, 9.7, -27, 0)
-script = ExtResource("9_light")
-aim = Vector3(0, 0, -27)
-angle = 120.0
-softness = 3.0
-reach = 30.0
-attenuation = 0.12
-energy = {
-"bright": 0.0,
-"dark": 0.0
-}
-fixture_at = 9.94
 
 [node name="PanelSource" type="Node" parent="."]
 script = ExtResource("17_source")

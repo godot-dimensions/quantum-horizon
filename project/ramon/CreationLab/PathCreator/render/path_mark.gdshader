@@ -93,6 +93,9 @@ uniform float shear = 0.0;
 uniform float guide_w = 0.105;
 // 0: a solid guide line; otherwise dots this far apart (the secondary route's, as the field map).
 uniform float guide_dot = 0.0;
+// A dot's radius in guide widths (0.6: as drawn), and its own colour (alpha: how much of it; clear: the guide's).
+uniform float guide_dot_r = 0.6;
+uniform vec4 col_dot : source_color = vec4(0.0);
 // The guide's own light blue (path_spec.gd GUIDE_COLOR); sand in the WALK look.
 uniform vec4 col_guide : source_color = vec4(0.435, 0.651, 0.949, 1.0);
 
@@ -462,11 +465,12 @@ void fragment() {
 			if (guide_dot > 0.0) {
 				float sd = s0 + along;
 				vec2 q = vec2((sd - (floor(sd / guide_dot) + 0.5) * guide_dot) * k + w_along, m.y);
-				g = clamp(0.5 - (length(q) - guide_w * 0.6) / px_m, 0.0, 1.0);
+				g = clamp(0.5 - (length(q) - guide_w * guide_dot_r) / px_m, 0.0, 1.0);
 			} else {
 				g = clamp(0.5 - (abs(m.y) - guide_w * 0.5) / px_m, 0.0, 1.0);
 			}
-			col = over(col, walk > 0.5 ? sand.rgb : col_guide.rgb, g);
+			vec3 gc = guide_dot > 0.0 ? mix(col_guide.rgb, col_dot.rgb, col_dot.a) : col_guide.rgb;
+			col = over(col, walk > 0.5 ? sand.rgb : gc, g);
 		}
 		if (mark_sym >= 0 && !in_clear && !in_gap && mine) {
 			vec2 p = vec2(to_mark, m.y) / (unit_m * mark_scale * riser);

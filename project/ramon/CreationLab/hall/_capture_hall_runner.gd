@@ -117,9 +117,11 @@ func _run() -> void:
 		await _room_one()
 	# Through the hologram door: walk the player into it.
 	var door: Node4D = _g.get_node_or_null("HallDoor") as Node4D
-	_check(door != null, "room 2 has the hologram door into the hall")
+	_check(door != null, "room 1's back door holds the hologram into the hall")
+	_check(_g.get_node_or_null("BigRoom") == null, "no room 2 (round 3: one door into the showcase)")
 	if door != null:
-		_put(0.0, door.position.z + 0.2, 0.0)
+		_check(absf(door.position.z + float(_g.get("room_back")) + 0.25) < 0.01, "the hologram stands in the wall's thickness")
+		_put(0.0, door.position.z + 0.3, 0.0)
 	_check(await _scene("res://ramon/CreationLab/hall/creature_hall.tscn"), "walking into the door goes to the hall")
 	await _wait(0.8)
 	await _shot("hall_loading_board")
@@ -158,12 +160,15 @@ func _room_one() -> void:
 	_check(int(sc.get("slice_index")) == mid, "R puts the exhibit back on its middle slice")
 	_g.call("pick", 0)
 	await _wait(1.0)
-	# The entry room and its door.
-	var big: Node4D = _g.get_node_or_null("BigRoom") as Node4D
-	if big != null:
-		_put(0.0, big.position.z + 2.0, 0.0, -6.0)
-		await _wait(1.0)
-		await _shot("room2_hall_door")
+	# The back door with the showcase's title over it, and the hologram in it.
+	_put(1.7, -float(_g.get("room_back")) + 1.6, 0.25, 4.0)
+	await _wait(1.0)
+	await _shot("room1_showcase_door")
+	# Looking back at the entrance, where the corridor's ceiling flickered (item 25).
+	_put(0.0, 4.0, PI, 2.0)
+	await _wait(1.0)
+	await _shot("room1_entrance_wall")
+	_check(String(_g.get("hud").get("switch_text")).begins_with("DARK MODE"), "the mode switch says DARK MODE, as the other labs'")
 
 
 func _hall() -> void:
@@ -212,8 +217,33 @@ func _hall() -> void:
 					who = String(s["name"])
 		await process_frame
 	_check(worst < 0.0, "every walker stays inside its deck (closest to the edge: %s, %.2f m inside)" % [who, -worst])
+	# Nike walks (item 31): how far he goes in twelve seconds.
+	var nike: Node4D = null
+	for st in built:
+		if String(st["data"]["kind"]) == "nike" and not (st["animals"] as Array).is_empty():
+			nike = (st["animals"] as Array)[0]
+	if nike != null:
+		var path: float = 0.0
+		var last: Vector4 = nike.global_position
+		var t_end: int = Time.get_ticks_msec() + 30000
+		while Time.get_ticks_msec() < t_end:
+			await process_frame
+			path += Vector2(nike.global_position.x - last.x, nike.global_position.z - last.z).length()
+			last = nike.global_position
+		_check(path > 1.5, "Nike walks (%.1f m in 30 s)" % path)
+	# Labels, grass, holograms (items 28, 29, 37).
+	var labels: int = 0
+	var grass: int = 0
+	var holos: int = 0
+	for st in built:
+		labels += 1 if st.has("label") else 0
+		grass += 1 if st.has("grass") else 0
+		holos += 1 if (st["node"] as Node).get_node_or_null("Hologram") != null else 0
+	_check(labels == 10, "a label at every creature (%d)" % labels)
+	_check(grass >= 13, "grass on the natural decks (%d)" % grass)
+	_check(holos == 10, "a hologram on every creature pedestal (%d)" % holos)
 	# The stations, by area.
-	for v in [["centre", 0.0, 3.5, 0.0, -12.0], ["wolf", -5.0, 4.0, 0.75, -12.0], ["horse", 5.0, 4.0, -0.75, -12.0],
+	for v in [["centre", 0.0, 3.5, 0.0, -12.0], ["wolf", -5.0, 4.0, 0.75, -12.0], ["azathoth", 5.0, 4.0, -0.75, -12.0],
 			["nike_goat", 0.0, 1.0, 0.0, -10.0], ["owl_chipmunk", -1.0, -17.4, PI * 0.5, -14.0], ["crows", 4.0, -17.0, -PI * 0.5, -14.0], ["chickens_heron", 0.0, 11.5, PI, -16.0]]:
 		_put(v[1], v[2], v[3], v[4])
 		await _wait(1.2)
@@ -222,14 +252,64 @@ func _hall() -> void:
 	_put(-5.0, 13.4, PI, -20.0, 2.4)
 	await _wait(1.2)
 	await _shot("hall_chickens_ana")
-	_put(0.0, 15.2, 0.0, -9.0)
-	var rig: Node = _player().get_node_or_null("CameraRig")
-	rig.set("_slice_xw", 0.55)
-	rig.call("_apply")
+	# The building stays still while the animals turn (item 38): the turn on every pivot, nothing else moved.
+	_put(0.0, 3.5, 0.0, -12.0)
+	await _wait(0.6)
+	var room_before: Array = _poses(["Hall", "Stations", "Paths"])
+	_g.set("turn", Vector2(0.9, 0.35))
 	await _wait(1.2)
-	await _shot("hall_slice_turned")
-	rig.set("_slice_xw", 0.0)
-	rig.call("_apply")
+	await _shot("hall_animals_turned")
+	var room_after: Array = _poses(["Hall", "Stations", "Paths"])
+	var moved: Array = []
+	for i in mini(room_before.size(), room_after.size()):
+		if room_before[i] != room_after[i]:
+			moved.append("%s %s -> %s" % [room_before[i][0], room_before[i][1], room_after[i][1]])
+	for m in moved.slice(0, 6):
+		print("   moved: ", m)
+	_check(room_before.size() == room_after.size() and moved.is_empty(), "walls, pedestals and paths do not move when the animals turn (%d moved)" % moved.size())
+	var turned: int = 0
+	for n in _g.get_tree().get_nodes_in_group("hall_turn"):
+		turned += 1 if (n as Node4D).basis != Projection.IDENTITY else 0
+	_check(turned >= 20, "every creature and tree turned (%d pivots)" % turned)
+	var rig: Node = _player().get_node_or_null("CameraRig")
+	_check(not bool(rig.get("slice_turning")), "the view's own slice does not turn in the hall")
+	_g.call("whole_again")
+	await _wait(1.2)
+	_check(_g.get("turn") == Vector2.ZERO, "R puts them whole again")
+	# Tab: the lights, one by one (item 40).
+	var ed: Node = _g.get_node_or_null("Dev/LightEditor")
+	_check(ed != null, "the hall has the light panel")
+	if ed != null:
+		var tab := InputEventKey.new()
+		tab.keycode = KEY_TAB
+		tab.physical_keycode = KEY_TAB
+		tab.pressed = true
+		ed.call("_input", tab)
+		await _wait(0.4)
+		_check(bool((ed as Control).visible), "Tab opens it")
+		await _shot("hall_tab_lights")
+		ed.call("_input", tab)
+		await _wait(0.3)
+		_quiet()
+	# Dark mode (item 42): both looks.
+	_g.call("toggle_palette")
+	await _wait(0.6)
+	_check(String(_g.get("hud").get("switch_text")).begins_with("DARK MODE ON"), "dark mode on, and it says so")
+	_put(0.0, 15.2, 0.0, -9.0)
+	await _wait(0.8)
+	await _shot("hall_dark")
+	_g.call("toggle_palette")
+	await _wait(0.4)
+	# The close look at the chipmunk (item 33).
+	_put(-6.2, -16.8, 0.0, -12.0)
+	await _wait(0.8)
+	_check(bool(_g.call("close_look")), "C by the chipmunk starts a close look")
+	await _wait(1.4)
+	await _shot("hall_closeup_chipmunk")
+	_g.call("close_look_end")
+	await _wait(1.2)
+	_check((_g.get("_look") as Dictionary).is_empty(), "and it comes back")
+	_quiet()
 	# The info card: comes up near the wolf, a click closes it, it stays closed till you have been away.
 	var card: Node = _g.get("card")
 	_put(-9.5, 4.4, 0.0, -10.0)
@@ -253,11 +333,36 @@ func _hall() -> void:
 	await _wait(0.6)
 	_check(card != null and bool(card.call("showing")), "away and back, it comes up again")
 	# Back through the hall's door: arriving in room 2 by the hall's door.
-	_put(0.0, 21.6, PI, -9.0)
+	_put(0.0, 21.95, PI, -9.0)
 	_check(await _scene(LAB), "the hall's door goes back to the lab")
 	_check(await _until(func() -> bool: return not bool(_g.get("loading"))), "the board on the way back finishes")
 	await _wait(0.5)
-	var big: Node4D = _g.get_node_or_null("BigRoom") as Node4D
 	var p: CharacterBody4D = _player()
-	_check(big != null and p != null and p.global_position.z < big.position.z, "you come back in room 2, by the hall's door (z %.1f)" % (p.global_position.z if p != null else 0.0))
-	await _shot("room2_back_from_hall")
+	var back: float = -float(_g.get("room_back"))
+	_check(p != null and p.global_position.z > back and p.global_position.z < back + 7.0, "you come back in room 1, inside its back door (z %.1f)" % (p.global_position.z if p != null else 0.0))
+	await _shot("room1_back_from_hall")
+
+
+## Every node's place under these, to see they did not move.
+func _poses(names: Array) -> Array:
+	var out: Array = []
+	for nm in names:
+		var n: Node = _g.get_node_or_null(nm)
+		if n == null:
+			continue
+		for c in n.find_children("*", "Node4D", true, false):
+			# The creatures and their props live on the decks; the building is everything else.
+			if "/Deck/" in String(c.get_path()):
+				continue
+			if c.get_script() == null or not String(c.get_script().resource_path).ends_with("turn_pivot_4d.gd"):
+				var inside_pivot: bool = false
+				var up: Node = c
+				while up != null and up != n:
+					# Inside a turn pivot (the exhibits), or a label (it bobs a couple of centimetres, by design).
+					if up.get_script() != null and (String(up.get_script().resource_path).ends_with("turn_pivot_4d.gd") 							or String(up.get_script().resource_path).ends_with("hall_float_panel_4d.gd")):
+						inside_pivot = true
+						break
+					up = up.get_parent()
+				if not inside_pivot:
+					out.append([String(c.get_path()), (c as Node4D).global_position.snapped(Vector4.ONE * 0.001)])
+	return out

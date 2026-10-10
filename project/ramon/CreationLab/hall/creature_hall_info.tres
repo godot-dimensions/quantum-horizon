@@ -6,7 +6,7 @@
 script = ExtResource("1_info")
 cards = {
 "Centre": {
-"four_d": "Every ball is a 4D sphere. You see the slice of it your view cuts, so turning the slice thins and swells its body through W.",
+"four_d": "Every ball is a 4D sphere. You see the slice of it your view cuts, so turning it through W thins and swells its body.",
 "kicker": "LAND  ·  18 BALLS  ·  STRIDER WALK",
 "moves": "Four legs, each on its own phase of the walk. Its skin is bound to the leg bones once, then only moved, never lofted again.",
 "title": "Brachiosaurus"
@@ -18,7 +18,7 @@ cards = {
 "title": "Chickens"
 },
 "Chipmunk": {
-"four_d": "It is 1.6 times as deep in W as it is wide, so it lasts a little longer than you expect as the slice turns.",
+"four_d": "It is 1.6 times as deep in W as it is wide, so it lasts a little longer than you expect as you turn it.",
 "kicker": "LAND  ·  THE SMALLEST HERE",
 "moves": "It sits up and looks about. Drawn from the field guides: five dark stripes down the back, a tail held up.",
 "title": "Chipmunk"
@@ -30,25 +30,25 @@ cards = {
 "title": "Crows"
 },
 "Goat": {
-"four_d": "Every ball a 4D sphere: what you see is this slice of the goat. Turn the slice to see the rest of it.",
+"four_d": "Every ball a 4D sphere: what you see is this slice of the goat. Turn it to see the rest.",
 "kicker": "LAND  ·  23 BALLS  ·  STRIDER WALK",
 "moves": "The lab's first animal. In room 1 it walks in rigid pieces; here it walks on the strider gait, like the horse.",
 "title": "Goat"
 },
 "Heron": {
-"four_d": "It is 2.2 times as deep in W as it is wide, so it stays in view through more of a slice turn than its width suggests.",
+"four_d": "It is 2.2 times as deep in W as it is wide, so it stays in view through more of a turn than its width suggests.",
 "kicker": "LAND AND AIR  ·  POSED, NOT LOFTED",
 "moves": "Its neck is three short lofted pieces on pivots, so every pose turns a joint instead of rebuilding the bird.",
 "title": "Grey heron"
 },
-"Horse": {
-"four_d": "Its hind legs sit a little kata, its forelegs a little ana. Turn the slice and one pair fades before the other.",
-"kicker": "LAND  ·  18 BALLS  ·  STRIDER WALK",
-"moves": "A planted hoof slides back exactly as far as the body goes forward, so the hooves never skate. Near the edge it turns in.",
-"title": "Horse"
+"Azathoth": {
+"four_d": "It sets its mouth square to your slice of the world and follows you through W: step ana or kata and it comes with you.",
+"kicker": "THE CAVE  ·  A RESEARCH SPECIMEN",
+"moves": "It breathes, its limbs curl and wave, and it turns to face you. Come too close and it goes red.",
+"title": "Azathoth"
 },
 "Nike": {
-"four_d": "Like the horse, his hind legs sit kata and his forelegs ana, so a slice turn takes one pair before the other.",
+"four_d": "His hind legs sit a little kata and his forelegs a little ana, so turning him through W takes one pair before the other.",
 "kicker": "LAND  ·  21 BALLS  ·  HIS OWN ANTICS",
 "moves": "He ambles, stops to root with his snout, and now and then flops onto his side for a while.",
 "title": "Nike"
@@ -60,7 +60,7 @@ cards = {
 "title": "Eagle owl"
 },
 "Wolf": {
-"four_d": "All its balls sit at one W, so it narrows evenly as the slice turns. Its legs are branches the rig mirrors.",
+"four_d": "All its balls sit at one W, so it narrows evenly as you turn it. Its legs are branches the rig mirrors.",
 "kicker": "LAND  ·  20 BALLS  ·  STRIDER WALK",
 "moves": "The strider walk, quicker and shorter in the stride. Near the edge of its deck it turns in and walks on.",
 "title": "Wolf"

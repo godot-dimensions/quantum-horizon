@@ -9,6 +9,39 @@ door sign, lesson wall, info panel; textual only).
 Ramon's order: "block everything in first, and than worry about optimization after". This is the block-in.
 Every animal is the full live one; what each costs is the next batch.
 
+## Round 3 (10 Oct, Ramon's walkthrough Part 3, items 25-42; `CreationLab/PLAN_ROUND3.md`)
+
+The principle: a living exhibition in a stable building. **"Nightpic" / "Nikepeg" is Nike**, the pen's pig.
+
+| Item | What | Where |
+|---|---|---|
+| 31 Nike stuck | The leash froze him: past its radius it stops him and checks again on the first frame of every walk, so once out he never walked again. Now his own roam with short walks | hall `_populate` "nike" |
+| 40 Tab | The Botany Lab's per-light panel, carried; every hall light (centre, wash, four new wall lights), Save to `hall/creature_hall_lights.cfg` | `hall/carried/hall_light_editor.gd` |
+| 38 building still | The view's slice no longer turns in the hall. Right drag turns every creature and tree through W round its own middle; R "Whole again". Walls, floor, pedestals, paths, doors, labels never move | `hall/turn_pivot_4d.gd`, hall `_apply_turn` |
+| 42 dark mode | "DARK MODE ON / OFF · B" as the Voxel and Aquatic Labs say it, in both scenes; B works in the hall too. The hall's walls kept their lines (four lights grazing them, and in dark mode their grid lines a step lighter) | `_label_switch`, `_dark_walls` |
+| 30, 36 Azathoth | The horse out; the cave's dreamer on a technical pedestal (dark grid base, blue deck, the hologram wider and taller), always turned to you, easing along W after you, red when you come within 3 m | `hall/carried/hall_dreamer_4d.gd` |
+| 28 labels | The Botany Lab's framed panel at every creature, at the front edge (on the floor in front for small decks), facing the path: number, name, kicker | `hall/carried/hall_float_panel_4d.gd`, `_label` |
+| 32 chipmunk | Twice the size, on a bigger stand; a fuller tail that shows (it was buried in the deck when it sat, and its angles pointed down), sat on its deck, its idle cycle fixed, rounder | `hall/carried/hall_chipmunk_4d.gd` |
+| 33 close look | C by a small creature (chipmunk, owl; any station with `closeup`): your camera eases to a three-quarter view of it; C, a click or Esc eases back | `close_look()` |
+| 37 holograms | Every creature pedestal has the showcase's hologram (they never had one); tallest round the brachiosaurus | `hall_pedestal.gd` `_hologram` |
+| 29 green, grass | Green decks and the pen's grass (by way of the Botany Lab's copy), shorter, the pen's spacing, parting round the animals' feet | `hall/carried/grass/` |
+| 34 trees | Their pedestals just wider than the trunk (radius 0.62), green with grass | `STATIONS` |
+| 27 one door | No room 2: the hologram stands in room 1's back door itself, inside the wall, the doorway's size, under the CREATURE SHOWCASE sign; the hall's door the same | `_build_hall_door()` |
+| 25 flicker | The entrance corridor's ceiling ran 0.5 m on through the entrance wall, its end on the wall's face. A kit room option keeps a ceiling flush on its open sides; on for this entrance only | `kit_room_4d.gd` `flush_open_ceiling` |
+| 26 path dots | The side routes' dots had grown from about 2 to 6 cm with the wider guide line. Dot size and colour are now settings of the path network (unchanged by default); here 0.4 of the size, light cyan | `path_network_4d.gd` `dot_size`, `dot_color` |
+| 39 birds | The heron now and then flies a loop off its deck and lands on the same spot; the crows fly their short loops and land again | `hall/heron_loop_4d.gd` |
+| 41 light | The hall a little dimmer: exposure 0.9 of the lab's, the centre and the wash 15 % down | `EXPOSURE_K`, `creature_hall.tscn` |
+| 35 cat (optional) | Built and taken out again: on its deck between the wolf and Nike it did not read at all (a black cat, low in dark grass), and its sit and wash cannot show after the walker cuts its hide. The gap stays open | `PLAN_ROUND3.md` |
+
+**Frame time (10 Oct, `hall/_perf_hall_runner.gd`, 1280 x 720 window, vsync off, wall clock): 6.8 ms a frame with
+everything, 3.4 ms with no stations.** The heaviest: Azathoth 1.6 ms, the wolf 1.4, the goat 1.0. The "72 ms a frame"
+reported on 9 Oct was wrong: it was Godot's script-time monitor read with vsync on, not the frame
+(follow_up/lofting_gotchas.md says as much). The runner's own "script time" line is that monitor; trust the perf
+runner's frame column.
+
+Checks: `hall/_capture_hall_runner.gd`, 35 of 35 passing on 10 Oct (Nike walks 6.3 m in 30 s; the building does not
+move while 37 pivots turn; Tab, dark mode, labels, grass, holograms, the close look, both doors).
+
 ## Questions for Ramon
 
 1. **The hall's title.** CREATURE SHOWCASE on the blue back wall, and on the sign over room 2's door. Keep, or

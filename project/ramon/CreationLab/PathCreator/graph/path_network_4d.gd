@@ -106,6 +106,17 @@ var _floor_check: float = 0.0
 	set(v):
 		frame_tint = v
 		_apply_look()
+## The side routes' dotted guide: each dot's size against the sheet's (1: as drawn, a dot 1.2 guide widths
+## across), and its own colour (alpha: how much; clear: the guide's). The Creature Lab, 10 Oct (Ramon: "make
+## these intermediate balls significantly smaller ... a lighter cyan-blue"); every other network as it was.
+@export_range(0.1, 2.0, 0.05) var dot_size: float = 1.0:
+	set(v):
+		dot_size = v
+		_apply_look()
+@export var dot_color: Color = Color(0, 0, 0, 0):
+	set(v):
+		dot_color = v
+		_apply_look()
 ## Where marks end at a node: "hide" under its art, or "keep" the sheet's 0.25P clear (path_spec.gd).
 @export_enum("hide", "keep") var clear_style: String = Spec.CLEAR_STYLE:
 	set(v):
@@ -1131,6 +1142,8 @@ func _apply_look() -> void:
 		Draw.set_param(mi, "motion", 1.0 if motion else 0.0)
 		Draw.set_param(mi, "flow", flow)
 		Draw.set_param(mi, "frame_tint", frame_tint)
+		Draw.set_param(mi, "guide_dot_r", 0.6 * dot_size)
+		Draw.set_param(mi, "col_dot", dot_color)
 		var k: String = String(key)
 		if k.begins_with("Sand") or k.begins_with("Pad"):
 			_sand_in_field(mi)
