@@ -52,7 +52,25 @@ on 10 Oct. Backup of the scene and the path graph from before this round: `chick
 
 ## What was checked
 
-(Filled in after the runs.)
+Played through by runners, frames looked at (`smoke_test_output/feedback_10oct/`, `feedback_10oct_b/`,
+`dream_shifter/pedestal/`, `feedback_10oct/hud4k/`), 10 Oct afternoon:
+
+- `discovery/_verify_feedback_runner.gd`, **27/27**: the door through the slit and by V; the balloon grounded at W 5,
+  found by V with its toast; Tamsin from 3 m, her collider; no boarding unpaid; her twin; 2 azoth paid (3 to 1), the
+  ride starts, lands back on its sand, the next ride needs paying again; the pen's card; all three eggs at their W;
+  the cave's card; the pivot's camera move and control back; held out of the wall at W 0; the cache's V to W 7.5.
+- `discovery/_verify_feedback2_runner.gd`, all pass: the switch and I; the controls card wider than tall; the sizes'
+  bracket; F1 hides and restores; F2 on, a card dragged, Save writes the layout, Reset puts it back and deletes it;
+  the meadow thought; the clock chip, the clock in the belt, Mithra takes it and names U.
+- `discovery/_verify_discovery_runner.gd` (art and dev) and `dream_shifter/_verify_shifter_runner.gd` (art and dev):
+  still all pass. The dev look with the projection on: no "Too many instances" (the eggs, the clock and the pivot ball
+  had taken it over the engine's limit; they are out of the projection now).
+- The HUD at 3840 x 2160 and 145% (`discovery/_shot_hud4k_runner.gd`): no two cards overlap. At 1920 x 1080 and 145%
+  the screen is too small for everything (the controls card then steps under the to-do list).
+- The oaks: 6.65 ms GPU as they were, 6.81 ms with a quarter more leaves (`discovery/_perf_leaves_runner.gd`).
+- The wall's stone: the first try (a tiled stone texture) showed nothing, because the wall is one texture island and
+  the texture is clamped; a loud test texture proved the coordinates reach the wall (`discovery/_probe_wall_runner.gd`),
+  and the gradient is now packed into the band the wall uses.
 
 ## Notes
 
