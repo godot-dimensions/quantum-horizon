@@ -227,7 +227,10 @@ Dreamer ("Azathoth") is untouched.
   START, 1-6.
 
 **Colour**
-- Grid line colours of their own for the walls, the walls across W, the floor, the stairs and the roofs.
+- Grid line colours of their own for the walls, the walls across W, the floor, the stairs and the roofs,
+  drawn as the kit draws its grid: thin metre lines at the swatch's own strength, the 20 cm lines barely
+  off the surface. (The first try forced the grid to full strength and lit the 20 cm lines too: Ramon,
+  "big white lines? it should be similar to the thin dev kit lines".)
 - Looks: ROUND 2, BLUEPRINT, SIGNAL RED (`round3_frames/04_*`).
 
 **Finding your way** (the gizmo survey chose Crosswise's ruler and floors, the Lookout's labels and the

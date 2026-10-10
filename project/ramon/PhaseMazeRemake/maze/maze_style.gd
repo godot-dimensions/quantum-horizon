@@ -208,10 +208,12 @@ static func swatch_values(k: String) -> Array:
 		var from: Color = base[0]
 		v = [_scaled(v[0], from, to), _scaled(v[1], from, to), _scaled(v[2], from, to), v[3]]
 	if lines.has(k):
-		# A line colour of its own: crisp metre lines in it, the 20 cm lines half way to the surface,
-		# and the grid at full strength so the lines read as drawn.
+		# A line colour of its own, drawn as the kit draws its grid (Ramon, 10 Oct, on the first try:
+		# "big white lines? it should be similar to the thin dev kit lines"): the metre lines in it at the
+		# swatch's own grid strength, the 20 cm lines only a touch off the surface. The first try put the
+		# grid at full strength and the 20 cm lines a third of the way to white: a dense white tiling.
 		var ln: Color = lines[k]
-		v = [v[0], ln, (v[0] as Color).lerp(ln, 0.35), maxf(float(v[3]), 0.95)]
+		v = [v[0], ln, (v[0] as Color).lerp(ln, 0.1), v[3]]
 	return v
 
 
