@@ -61,11 +61,19 @@ func _balloon() -> Node:
 	return lookout.get("balloon") if lookout != null else null
 
 
-## Not while the balloon is up (her twin stays by the sand; the ride is away).
+## Not while the balloon is up (her twin stays by the sand; the ride is away). And her twin only once your slice is
+## aligned with the balloon's W (Ramon, 10 Oct, item 43: "Only allow the balloon NPC interaction when the player is
+## properly aligned with its W-slice"): V does that when most of the balloon shows.
 func _can_talk() -> bool:
 	var b: Node = _balloon()
 	if b != null and bool(b.get("riding")):
 		return false
+	if role == "ride" and b != null and _rig is Node4D and _player != null:
+		# Aligned: the slice flat (no turn into W) and you within 30 cm of the balloon's W (V puts you exactly there;
+		# stepping there with E and Q counts too).
+		var flat: bool = GroundBasis4D.tilt((_rig as Node4D).basis) < 0.05
+		if not flat or absf(_player.global_position.w - (b as Node4D).global_position.w) > 0.3:
+			return false
 	return super()
 
 

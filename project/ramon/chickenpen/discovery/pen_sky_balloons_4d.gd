@@ -39,8 +39,11 @@ const PROFILE := [[0.0, 0.55], [0.8, 1.5], [1.8, 2.5], [3.0, 3.2], [4.4, 3.55], 
 @export var basket_colour: Color = Color(0.33, 0.25, 0.17)
 @export var rope_colour: Color = Color(0.45, 0.40, 0.33)
 ## How far each wanders along x and z, and how long a loop takes.
-@export var drift: Vector2 = Vector2(18.0, 9.0)
-@export_range(30.0, 900.0, 5.0, "suffix:s") var loop_seconds: float = 240.0
+## 10 Oct, later (Ramon, item 41: "they appear almost stationary ... Increase their horizontal movement"): 55 m by 26 m
+## loops, about five minutes round (a metre a second, a hundred and fifty metres out), and a few metres up and down.
+@export var drift: Vector2 = Vector2(55.0, 26.0)
+@export_range(30.0, 900.0, 5.0, "suffix:s") var loop_seconds: float = 300.0
+@export_range(0.0, 20.0, 0.5, "suffix:m") var rise: float = 4.0
 
 var _nodes: Array[Node4D] = []
 var _t: float = 0.0
@@ -124,5 +127,6 @@ func _process(delta: float) -> void:
 		var spec: Array = balloons[i]
 		var ph: float = float(spec[2])
 		# A slow loop (x and z out of step, so it wanders rather than circles) and a bob; no turning, ever.
-		var off := Vector4(sin(_t * w + ph) * drift.x, sin(_t * 0.23 + ph) * 0.8, sin(_t * w * 0.71 + ph * 1.3) * drift.y, 0.0)
+		var off := Vector4(sin(_t * w + ph) * drift.x, sin(_t * w * 1.9 + ph * 0.7) * rise + sin(_t * 0.23 + ph) * 0.6,
+			sin(_t * w * 0.71 + ph * 1.3) * drift.y, 0.0)
 		_nodes[i].position = (spec[0] as Vector4) + off

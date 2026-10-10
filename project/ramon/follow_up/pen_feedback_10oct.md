@@ -78,3 +78,24 @@ Played through by runners, frames looked at (`smoke_test_output/feedback_10oct/`
   changes of both rounds (and Andrew's gate nodes). Do not run it.
 - The camp guide (the Camp Scout on the camp road) was not touched.
 - The gate road's W hint (`GateRoad`) went with the road's dive; the gate's crossing (nodes 19 and 20) is still there.
+
+## Parts 5 and 6 (10 Oct, evening): items 31-44
+
+| # | What | Where |
+|---|---|---|
+| 31 | The DEV / ART switch stays hidden until the Dream Shifter has explained it; I works all along. | `discovery/dream_shifter/pen_look_badge.gd` |
+| 32 | The belt a size up (slots 66, were 56); the pickaxe icon upright (haft down the middle, head across the top). | `scripts/pen_inventory_4d.gd` |
+| 33 | The pedestal is a small dark-stone ritual site (style "ritual"): Göbekli Tepe's T-pillar under the crystal, a ring of seven leaning standing stones open toward the road (two of them small T-pillars), uneven slabs underfoot, loose stones behind, two stones ana and kata. No rune. The "golden egg stuck in it" was the temple pedestal's bronze boss: gone. | `discovery/dream_shifter/pen_dream_shifter_4d.gd` |
+| 34, 44 | The wall: no texture any more; one medium gray (posts and ribs a touch darker). | `scripts/pen_town_wall_look_4d.gd` |
+| 35 | By the hillside with the hidden cave door, the animated card again ("The opening is in this hillside. Step through W to find it."), until the door is in your slice. | `World/WHints/CaveHill` |
+| 36 | The cave road's card fires on the road before the professor, as you come by (it sat beside him and seemed to follow talking to him). The gate's is the wall moment (38, 39). | `World/WHints/CaveRoad` |
+| 37 | The eggs are one stretched 24-cell each (were eight boxes); white and gold kept. | `scripts/pen_pickup_4d.gd` |
+| 38, 39 | The wall moment: no orb; it starts by itself within 5 m of the wall; a wide shot from high behind you, up and over the wall to far above the other side; then a close shot and the thought "My path is blocked. I need to find another way through W."; then the W card. Skippable (Space, Enter, F, click) after 1.2 s. The wall stays solid. | `discovery/pen_wall_pivot_4d.gd` |
+| 40 | The cache's floating white glint is gone (the chest and its V stay). | `discovery/pen_kata_cache_4d.gd` |
+| 41 | The sky balloons drift on 55 m by 26 m loops, about five minutes round, rising and sinking a few metres. | `discovery/pen_sky_balloons_4d.gd` |
+| 42 | The block over the player's head was the outfit's joke hat, the Hypercube (hat 5 in your saved outfit, `user://pen_outfit.cfg`, chosen in Trym's fitting room). Your saved hat is the cap again; nothing else in the outfit changed, and the hat is still there to pick. | your `pen_outfit.cfg` (no code change) |
+| 43 | The grounded balloon offers "V  Align to slice" whenever about 70% of it shows, every visit (it stopped once it had been found); her twin by the basket talks only once you are aligned (slice flat, within 30 cm of its W). | `discovery/pen_balloon_finder_4d.gd`, `discovery/pen_balloon_crew_talk_4d.gd` |
+
+Checked by play the same evening: `_verify_feedback_runner` 27/27 (with the wall moment starting by itself 5 m out and
+giving control back), `_verify_feedback2_runner` all pass (the switch hidden before the Dream Shifter and shown after),
+`_verify_discovery_runner` (dev, projection on: no mesh-limit errors), `_verify_shifter_runner` (art).

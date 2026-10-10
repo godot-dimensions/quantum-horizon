@@ -40,6 +40,16 @@ extends Node4D
 ## small pillar of the same stone either side. Square parts are lofted with square sections (round
 ## through W as across, as everything here), so the steps and the skirt's slope are one mesh.
 ##
+## THE RITUAL SITE (10 Oct, later still, Ramon's walkthrough item 33: "still looks too slick and modern ... a small,
+## ancient ritual site made from dark stone ... the feeling of Göbekli Tepe ... Ancient. Rustic. Slightly weathered.
+## Magical and atmospheric ... substantial stone blocks or slabs ... Avoid overly clean cylinders ... a small, cozy
+## ritual site rather than a futuristic console ... Remove the rune ... a golden egg appearing to be stuck inside the
+## starting orb pedestal"). The "golden egg" was the temple pedestal's bronze boss; it is gone with the rune. Style
+## "ritual", the pen's now: Göbekli Tepe's T-shaped pillar in dark stone (a slab-like shaft, a heavy cross-piece on top,
+## leaning a degree or two), the crystal over it; a ring of seven standing stones of different heights round it, open
+## toward the road, each leaning its own way, two of them small T-pillars; uneven flat slabs underfoot; a few loose
+## stones; and two more standing stones ana and kata, out of the farm's slice. Boxes only, merged into two meshes.
+##
 ## Built when it loads (and in the editor, to place it), never saved into the scene. Move or turn this node to move it;
 ## its front (+z) faces the road. NO class_name (engine_gotchas.md).
 
@@ -49,12 +59,16 @@ const CrystalShader := preload("res://ramon/chickenpen/discovery/dream_shifter/d
 
 @export var player_path: NodePath = ^"../../Player"
 ## "altar" (the stone altar, the pen's since 10 Oct), "unit" (Alternative A, simple sci-fi), "column" (the 9 Oct column).
-@export_enum("temple", "altar", "unit", "column") var style: String = "temple":
+@export_enum("ritual", "temple", "altar", "unit", "column") var style: String = "ritual":
 	set(v):
 		style = v
 		_later()
 @export var stone: Color = Color(0.53, 0.51, 0.47)
 @export var stone_dark: Color = Color(0.40, 0.38, 0.35)
+## The ritual site's dark stone (and its darker footing).
+## A cool dark gray (the evening light is warm: a neutral gray read brown in it).
+@export var dark_stone: Color = Color(0.25, 0.265, 0.29)
+@export var dark_footing: Color = Color(0.20, 0.21, 0.23)
 @export var rune: Color = Color(0.55, 0.85, 1.0)
 @export var metal: Color = Color(0.30, 0.32, 0.35)
 ## The crystal's centre above the ground, and its size (the 24-cell model scaled by this).
@@ -125,6 +139,8 @@ func rebuild() -> void:
 	_shards.clear()
 	_light = null
 	match style:
+		"ritual":
+			_ritual()
 		"temple":
 			_temple()
 		"altar":
@@ -179,6 +195,55 @@ func _pillar() -> void:
 	var body: ArrayTetraMesh4D = Loft.build(secs, 5, 12, false, false, false, 1, false)
 	if body != null:
 		_mesh(col, "Shaft", body, _flat(marble))
+
+
+## The ritual site (see the header). The T-pillar's top at 1.42 m. A fixed seed: the same stones every time.
+func _ritual() -> void:
+	var root := Node4D.new()
+	root.name = "Ritual"
+	_part(root)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7311
+	var main := ArrayTetraMesh4D.new()
+	var foot := ArrayTetraMesh4D.new()
+	# Underfoot: three flat slabs, each turned its own way and at its own height, overlapping.
+	for sl in [[Vector4(0.0, 0.05, 0.0, 0.0), Vector4(1.9, 0.10, 1.5, 1.6), 0.18], [Vector4(-0.5, 0.04, 0.55, 0.0), Vector4(1.2, 0.08, 1.0, 1.2), -0.35],
+			[Vector4(0.6, 0.06, -0.45, 0.0), Vector4(1.1, 0.12, 1.1, 1.3), 0.6]]:
+		foot.merge_with(_box_mesh(sl[1]), sl[0], Basis4D.from_zx(float(sl[2])))
+	# The T-pillar: a slab-like shaft (wide one way, thin the other, as Göbekli's are), a chipped corner, a heavy
+	# cross-piece overhanging front and back, the whole leaning a little.
+	var lean: Projection = Basis4D.from_xy(0.03) * Basis4D.from_yz(-0.025)
+	main.merge_with(_box_mesh(Vector4(0.62, 1.12, 0.34, 0.44)), lean * Vector4(0.0, 0.66, 0.0, 0.0), lean)
+	main.merge_with(_box_mesh(Vector4(0.50, 0.30, 0.26, 0.36)), lean * Vector4(0.06, 0.20, 0.03, 0.0), lean)
+	main.merge_with(_box_mesh(Vector4(0.80, 0.24, 0.62, 0.56)), lean * Vector4(0.03, 1.30, 0.04, 0.0), lean * Basis4D.from_zx(0.05))
+	main.merge_with(_box_mesh(Vector4(0.34, 0.10, 0.40, 0.40)), lean * Vector4(-0.18, 1.45, -0.02, 0.0), lean * Basis4D.from_zx(-0.12))
+	# The ring: seven standing stones round it, open toward the road (+z), leaning each its own way. [angle from the
+	# front (degrees), height, width]; the two marked true are small T-pillars.
+	var ring: Array = [[62.0, 0.62, 0.34, false], [98.0, 0.88, 0.40, true], [135.0, 0.55, 0.30, false], [180.0, 0.95, 0.44, true],
+		[225.0, 0.60, 0.32, false], [262.0, 0.80, 0.38, false], [298.0, 0.50, 0.30, false]]
+	for st in ring:
+		var a: float = deg_to_rad(float(st[0]))
+		var r: float = 1.55 + rng.randf_range(-0.12, 0.12)
+		var h: float = float(st[1])
+		var wd: float = float(st[2])
+		var at := Vector4(sin(a) * r, h * 0.5, cos(a) * r, 0.0)
+		var turn: Projection = Basis4D.from_zx(-a + rng.randf_range(-0.2, 0.2)) * Basis4D.from_xy(rng.randf_range(-0.07, 0.07)) * Basis4D.from_yz(rng.randf_range(-0.06, 0.06))
+		main.merge_with(_box_mesh(Vector4(wd, h, wd * 0.55, wd * 0.8)), at, turn)
+		if bool(st[3]):
+			main.merge_with(_box_mesh(Vector4(wd * 1.35, 0.12, wd * 0.95, wd * 1.1)), at + Vector4(0.0, h * 0.5 + 0.05, 0.0, 0.0), turn)
+		_solid_box(Vector4(wd, h, wd * 0.6, wd * 0.8), at)
+	# Loose stones in the grass, and two standing stones ana and kata (out of the farm's slice).
+	for i in 5:
+		# Behind and beside the ring only: the front is the road.
+		var a2: float = rng.randf_range(PI * 0.55, PI * 1.45)
+		var rr: float = rng.randf_range(1.9, 2.4)
+		var s3: float = rng.randf_range(0.12, 0.22)
+		foot.merge_with(_box_mesh(Vector4(s3 * 1.4, s3, s3 * 1.1, s3 * 1.2)), Vector4(sin(a2) * rr, s3 * 0.4, cos(a2) * rr, 0.0), Basis4D.from_zx(rng.randf_range(0.0, TAU)))
+	for w in [-1.4, 1.4]:
+		main.merge_with(_box_mesh(Vector4(0.42, 0.90, 0.26, 0.34)), Vector4(0.0, 0.45, -1.2, w), Basis4D.from_xy(0.05 * signf(w)))
+	_mesh(root, "Stones", main, _flat(dark_stone))
+	_mesh(root, "Footing", foot, _flat(dark_footing))
+	_solid_box(Vector4(0.7, 1.45, 0.5, 0.5), Vector4(0.0, 0.72, 0.0, 0.0))
 
 
 ## The temple pedestal (see the header). The top slab's top at 1.52 m.

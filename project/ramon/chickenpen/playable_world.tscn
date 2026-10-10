@@ -5239,14 +5239,15 @@ metadata/w_hint_linger = 3.0
 metadata/w_hint_line = "Step through W. The desk and the shelf change as you go."
 
 [node name="CaveRoad" type="Node4D" parent="World/WHints" groups=["w_hint"]]
-position = Vector4(7.33, 0, 34.6, 0)
+position = Vector4(10.5, 0, 37.1, 0)
+metadata/what = "On the road from Trym's house, before the professor (Ramon, 10 Oct, item 36: tied to the place, not to talking to him): fires as you come by."
 metadata/w_hint_key = "cave_road"
 metadata/w_hint_skill = "step"
-metadata/w_hint_radius = 4.5
+metadata/w_hint_radius = 3.5
 metadata/w_hint_target = NodePath("../../Cave/DoorSpot")
 metadata/w_hint_reach = 1.5
 metadata/w_hint_done = "in_slice"
-metadata/w_hint_linger = 2.0
+metadata/w_hint_linger = 0.3
 metadata/w_hint_line = "Face the hillside. Step through W to reveal the entrance."
 metadata/w_hint_card_always = true
 metadata/w_hint_acts = [["look_h", "FACE THE HILLSIDE"], ["keys", "STEP THROUGH W"]]
@@ -5274,6 +5275,21 @@ metadata/w_hint_linger = 1.0
 metadata/w_hint_line = "Move through W to discover what's hidden inside the pen."
 metadata/w_hint_card_always = true
 metadata/w_hint_acts = [["keys", "STEP THROUGH W"], ["drag_h", "OR TURN THE SLICE"]]
+metadata/w_hint_card_seconds = 6.0
+
+[node name="CaveHill" type="Node4D" parent="World/WHints" groups=["w_hint"]]
+position = Vector4(7.4, 0, 32, 0)
+metadata/what = "By the hillside with the hidden cave door (Ramon, 10 Oct, item 35): the card again when you get close, until you have found the opening (the door in your slice)."
+metadata/w_hint_key = "cave_hill"
+metadata/w_hint_skill = "step"
+metadata/w_hint_radius = 4.5
+metadata/w_hint_target = NodePath("../../Cave/DoorSpot")
+metadata/w_hint_reach = 1.5
+metadata/w_hint_done = "in_slice"
+metadata/w_hint_linger = 0.6
+metadata/w_hint_line = "The opening is in this hillside. Step through W to find it."
+metadata/w_hint_card_always = true
+metadata/w_hint_acts = [["look_h", "FACE THE HILLSIDE"], ["keys", "STEP THROUGH W"]]
 metadata/w_hint_card_seconds = 6.0
 
 [node name="CampRoad" type="Node4D" parent="World/WHints" groups=["w_hint"]]

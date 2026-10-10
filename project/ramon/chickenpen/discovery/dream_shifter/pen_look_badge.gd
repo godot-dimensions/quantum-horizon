@@ -18,6 +18,7 @@ extends Control
 const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
 const LabPrint := preload("res://ramon/CreationLab/LabKit/lab_print.gd")
 const Style := preload("res://ramon/CreationLab/kit/kit_style.gd")
+const Guide := preload("res://ramon/chickenpen/discovery/dream_shifter/pen_look_guide_4d.gd")
 
 @export var inventory_path: NodePath = ^"../Inventory"
 @export var dev_colour: Color = Color(0.40, 0.70, 1.0)
@@ -66,7 +67,9 @@ func _process(delta: float) -> void:
 	size = get_viewport_rect().size
 	_find_look()
 	var inv := get_node_or_null(inventory_path) as Control
-	var show: bool = _look != null and inv != null and inv.is_visible_in_tree()
+	# Only once the Dream Shifter has explained it (Ramon, 10 Oct, item 31: "Keep the toggle hidden initially. Reveal
+	# it only after the player completes the Dream Shifter introduction."); I works all along.
+	var show: bool = _look != null and inv != null and inv.is_visible_in_tree() and Guide.seen
 	if show != visible:
 		visible = show
 	if _change < 1.0:

@@ -131,7 +131,7 @@ func rebuild() -> void:
 	_rock("CairnMid", Vector4(3.0, 0.45, 4.6, 0.0), Vector3(0.55, 0.4, 0.55), 0.7, "round", 1, 0.0, false)
 	_rock("CairnTop", Vector4(3.0, 0.82, 4.6, 0.9), Vector3(0.45, 0.35, 0.45), 0.6, "round", 2, 0.0, false)
 	_build_chest()
-	_build_glint()
+	# The glint at the mouth is gone (Ramon, 10 Oct, item 40: "a strange floating white object ... nothing happens").
 	if not Engine.is_editor_hint():
 		_lamp = OmniLight4D.new()
 		_lamp.name = "Lamp"

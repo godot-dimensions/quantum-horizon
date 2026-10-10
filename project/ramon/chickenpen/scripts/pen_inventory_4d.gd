@@ -125,7 +125,7 @@ enum Align { CENTRE, LEFT }
 ## row of stamps on a full screen, where it is the one piece of UI you have to pick things
 ## out of at a glance.
 ## 10 Oct: smaller and joined (two rows of five, no gaps; Ramon: "Maintain consistent slot dimensions").
-@export_range(24.0, 140.0, 1.0) var slot_size: float = 56.0
+@export_range(24.0, 140.0, 1.0) var slot_size: float = 66.0
 @export_range(0.0, 40.0, 1.0) var slot_gap: float = 0.0
 ## Leaves room under the grid for the name of what is in hand.
 @export_range(0.0, 200.0, 1.0) var bottom_margin: float = 46.0
@@ -373,18 +373,21 @@ func _draw_icon(kind: String, box: Rect2, colour: Color) -> void:
 				pts.append(mid + Vector2(w * unit * 0.25, y * unit * 0.32 + unit * 0.02))
 			draw_colored_polygon(pts, colour)
 		"pickaxe":
-			var half: float = unit * 0.32
-			draw_line(mid + Vector2(-unit * 0.20, unit * 0.30), mid + Vector2(unit * 0.12, -unit * 0.14), colour, maxf(unit * 0.08, 2.0), true)
+			# Upright: the haft straight down the middle, the head across its top sweeping down to a point each side
+			# (10 Oct, Ramon: the diagonal one "doesn't read clearly as a pickaxe").
+			var half: float = unit * 0.34
+			draw_rect(Rect2(mid + Vector2(-unit * 0.04, -unit * 0.18), Vector2(unit * 0.08, unit * 0.50)), colour.darkened(0.35), true)
 			var head := PackedVector2Array()
 			for i in 13:
 				var x: float = lerpf(-half, half, float(i) / 12.0)
 				var k: float = (x / half) * (x / half)
-				head.append(mid + Vector2(x, -unit * 0.26 + unit * 0.14 * k))
+				head.append(mid + Vector2(x, -unit * 0.30 + unit * 0.16 * k))
 			for i in 13:
 				var x: float = lerpf(half, -half, float(i) / 12.0)
 				var k: float = (x / half) * (x / half)
-				head.append(mid + Vector2(x, -unit * 0.17 + unit * 0.09 * k))
+				head.append(mid + Vector2(x, -unit * 0.19 + unit * 0.11 * k))
 			draw_colored_polygon(head, colour)
+			draw_rect(Rect2(mid + Vector2(-unit * 0.065, -unit * 0.25), Vector2(unit * 0.13, unit * 0.10)), colour, true)
 		"watch":
 			var face: Vector2 = mid + Vector2(0.0, unit * 0.04)
 			var r: float = unit * 0.24

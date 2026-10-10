@@ -27,6 +27,8 @@ extends Node4D
 ## standing out of it, each at its own depth in W, because azoth is "never wholly in the slice
 ## you are looking at" (professor_script.gd): step through W and the crystals change. Worth
 ## [member bag_worth] azoth, which the keeper takes for troughs.
+const CELL24 := "res://models/primitives/platonic/24_cell/24_cell.g4b"
+
 ## WHITE_EGG (10 Oct 2026, Ramon's walkthrough item 14: "Place three collectible eggs inside the chicken house or pen
 ## area: Two regular white eggs. One golden egg. Distribute them across W"): the golden egg's shape in an off-white
 ## shell. Appended last, so the kinds already saved in the scene keep their numbers.
@@ -173,33 +175,21 @@ func _hand(part: String, angle: float, length: float, width: float, z: float, at
 
 ## A blocky egg: stacked slabs, widest below the middle, the way an egg actually is.
 func _build_egg() -> void:
+	# ONE 24-CELL, NOT EIGHT SLABS (10 Oct, Ramon's walkthrough item 37: "replacing the current stacked-cube egg
+	# construction with a simpler form. A single appropriately shaped 24-cell might work well"): the project's own
+	# 24-cell, stretched taller than it is wide and as round through W as across, in the egg's colour. One mesh.
 	var white: bool = kind == Kind.WHITE_EGG
 	var shell := TetraMaterial4D.new()
 	shell.albedo_color = Color(0.90, 0.88, 0.84) if white else egg_shell
-	var shine := TetraMaterial4D.new()
-	shine.albedo_color = Color(0.99, 0.98, 0.95) if white else egg_shine
-
-	# height fraction, half-width fraction. Fatter low down and tapering to a narrower
-	# top - an egg is not a symmetric ellipse, and the asymmetry is most of what says egg.
-	# Taller than it is wide, which is most of the difference between an egg and a pebble:
-	# the widths peak at 0.66 of the half-height, not 0.82.
-	var slabs := [
-		[-1.00, 0.26], [-0.74, 0.46], [-0.44, 0.60], [-0.08, 0.66],
-		[0.28, 0.60], [0.58, 0.46], [0.82, 0.28], [1.00, 0.12],
-	]
-	for i in slabs.size() - 1:
-		var low: Array = slabs[i]
-		var high: Array = slabs[i + 1]
-		var mid: float = (float(low[0]) + float(high[0])) * 0.5
-		var span: float = (float(high[0]) - float(low[0])) * size
-		var half: float = maxf(float(low[1]), float(high[1])) * size
-		_box("Slab%d" % i, Vector4(0.0, mid * size, 0.0, 0.0),
-			Vector3(half * 2.0, span, half * 2.0), shell)
-
-	# One lighter band, so a turning egg has something to catch the eye rather than reading
-	# as a single flat colour whatever angle it is at.
-	_box("Shine", Vector4(0.0, -size * 0.10, size * 0.72, 0.0),
-		Vector3(size * 0.5, size * 0.44, size * 0.18), shine)
+	var node := MeshInstance4D.new()
+	node.name = "Egg"
+	node.mesh = load(CELL24) as Mesh4D
+	node.material_override = shell
+	node.set("allow_projection", false)
+	add_child(node)
+	node.basis = Basis4D.from_scale(Vector4(0.80, 1.05, 0.80, 0.80) * size)
+	if Engine.is_editor_hint() and get_tree() != null and get_tree().edited_scene_root != null:
+		node.owner = get_tree().edited_scene_root
 
 
 ## A sack: stacked slabs, fat at the bottom and pinched at the neck, a tie round the neck,

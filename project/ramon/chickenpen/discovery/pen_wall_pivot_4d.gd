@@ -1,24 +1,24 @@
 @tool
 extends Node4D
 
-## THE WALL'S PIVOT (10 Oct 2026, Ramon's walkthrough item 16; follow_up/pen_feedback_10oct.md): "End the approaching
-## path at a visible pivot ball just before the wall ... When the player reaches the pivot, trigger a short animated
-## explanation ... a brief bird's-eye or elevated camera perspective: Start with the camera looking toward the player
-## and wall. Move the camera around toward the opposite side of the wall while keeping the player in view. Show that
-## the wall blocks the obvious 3D route. Return control to the player. Display the animated mouse tutorial ...
-## Find a way past the wall through W."
+## THE WALL'S MOMENT (10 Oct 2026, Ramon's walkthrough items 16, 38 and 39; follow_up/pen_feedback_10oct.md).
 ##
-## THE ROAD now ends here, in the farm's slice, a couple of metres short of the wall (PenLayout/paths/pen_b.tres: node
-## 26 at this spot, from junction 8); it used to dive 13 m through W toward the gate over a few metres, and in a turned
-## slice that line looked as if it ran on under the wall. The gate's own short crossing (nodes 19 and 20, at the gate's
-## W) is still there, for whoever finds it. This node is the ball: an orange glow floating over a ring on the ground,
-## the same in both looks.
+## Item 16 asked for the road to end before the wall and a short camera move showing why plain walking will not get you
+## past it, then the W card. Items 38 and 39 (later the same day): "Zoom the camera farther out. Use a more cinematic
+## elevated or bird's-eye perspective ... After the wide shot, consider briefly cutting to a closer view of the player
+## ... 'My path is blocked. I need to find another way through W.' ... The floating orange interaction orb near the wall
+## is unnecessary ... the cinematic should trigger automatically when the player approaches the wall for the first time
+## ... approximately 5 meters before the wall ... Play it only once ... return control ... Show the appropriate
+## contextual W-navigation hint."
 ##
-## THE MOMENT, once a session, when you step up to it: your controls held, the talk camera (World/TalkCam) rises behind
-## you looking at the wall, swings up and over it to the far side and looks back at you (3.6 s), then your own camera
-## again and the W guide's card: turn the slice forward (the gate is ahead of you along W), or step through W.
+## SO: nothing to see here any more (the orb is gone; the road still ends here, PenLayout/paths/pen_b.tres node 26).
+## The first time you come within [member trigger_m] of the wall in the farm's slice, near the road's end: your controls
+## held, the talk camera (World/TalkCam) high behind you, pulling up and over the wall to look back down at you from far
+## above the other side (the wall between, plainly in the way); then a cut to your face and the thought; then your own
+## camera and the W card (turn the slice forward, or step). Space, Enter, F or a click skip to the end once
+## [member skip_after] seconds have shown the wall.
 ##
-## THE WALL IS SOLID NOW. Andrew's wall (World/TownWall, a FenceGenerator4D from wall_with_gate.obj) had no collider, so
+## THE WALL IS SOLID. Andrew's wall (World/TownWall, a FenceGenerator4D from wall_with_gate.obj) had no collider, so
 ## you could walk straight through it, which says nothing about W. The engine's physics is boxes only and the wall bends
 ## through W, so this keeps you out of it itself: the wall's own sheet (the OBJ's 4x4 grid: across X and W, bent in Z,
 ## its centre square open, the gate) is checked every physics frame, and a step that would put you inside its slab is
@@ -26,17 +26,21 @@ extends Node4D
 ##
 ## NO class_name (engine_gotchas.md).
 
-const Mats := preload("res://ramon/CreationLab/LabKit/lab_materials.gd")
-const Loft := preload("res://ramon/chickenpen/scripts/loft_builder_4d.gd")
 
 @export var player_path: NodePath = ^"../../Player"
 @export var wall_path: NodePath = ^"../TownWall"
 @export var talk_cam_path: NodePath = ^"../TalkCam"
 @export var main_cam_path: NodePath = ^"../../Player/CameraRig/Pitch/Camera4D"
 @export var guide_path: NodePath = ^"../../Systems/WGuide"
-@export var colour: Color = Color(1.0, 0.55, 0.20)
-@export_range(0.5, 5.0, 0.1, "suffix:m") var reach: float = 1.8
-@export_range(1.0, 10.0, 0.1, "suffix:s") var orbit_seconds: float = 3.6
+@export var thought_path: NodePath = ^"../../UI/ThoughtBox"
+## How near the wall it starts, and how far either side of this node (along x) it listens.
+@export_range(1.0, 15.0, 0.5, "suffix:m") var trigger_m: float = 5.0
+@export_range(2.0, 40.0, 0.5, "suffix:m") var listen_x: float = 12.0
+## The wide shot's length, the close shot's, and when it may be skipped.
+@export_range(1.0, 10.0, 0.1, "suffix:s") var orbit_seconds: float = 4.2
+@export_range(1.0, 10.0, 0.1, "suffix:s") var close_seconds: float = 3.4
+@export_range(0.0, 5.0, 0.1, "suffix:s") var skip_after: float = 1.2
+@export var line: String = "My path is blocked. I need to find another way through W."
 ## Keep the wall solid (see above).
 @export var solid_wall: bool = true
 
@@ -53,15 +57,22 @@ static var shown: bool = false
 
 var _player: CharacterBody4D
 var _wall: Node4D
-var _ball: Node4D
 var _t: float = 0.0
+## Seconds into the moment (-1: not playing).
 var _orbit: float = -1.0
+var _said: bool = false
+var _close_from := Vector4.ZERO
+var _close_at := Vector4.ZERO
 var _last_ok := Vector4.ZERO
 var _have_ok: bool = false
 
 
 func _ready() -> void:
-	_build()
+	# What the 9 Oct pivot built (the orb and its ring) is gone; anything of it a scene saved is cleared.
+	for child in get_children():
+		if child.has_meta(&"_pivot_part") or String(child.name) in ["Ball", "Ring"]:
+			remove_child(child)
+			child.free()
 	if Engine.is_editor_hint():
 		return
 	add_to_group(&"discovery_reset")
@@ -69,66 +80,34 @@ func _ready() -> void:
 	_wall = get_node_or_null(wall_path) as Node4D
 
 
-func _build() -> void:
-	for child in get_children():
-		if child.has_meta(&"_pivot_part"):
-			remove_child(child)
-			child.free()
-	_ball = Node4D.new()
-	_ball.name = "Ball"
-	_ball.set_meta(&"_pivot_part", true)
-	add_child(_ball)
-	_ball.position = Vector4(0.0, 1.0, 0.0, 0.0)
-	var secs: Array = []
-	for i in range(1, 8):
-		var th: float = PI * float(i) / 8.0
-		secs.append({"center": Vector4(0.0, -cos(th) * 0.32, 0.0, 0.0), "radius": sin(th) * 0.32, "v_scale": 1.0, "w_scale": 1.0})
-	var mi := MeshInstance4D.new()
-	mi.name = "Glow"
-	mi.mesh = Loft.build(secs, 4, 10, true, false, false, 1, false)
-	mi.material_override = Mats.glow(colour, 1.0)
-	mi.set_meta(&"_look_own", true)
-	mi.set("allow_projection", false)
-	_ball.add_child(mi)
-	# A ring on the ground under it: eight short bars round a circle.
-	var ring := MeshInstance4D.new()
-	ring.name = "Ring"
-	ring.set_meta(&"_pivot_part", true)
-	ring.set_meta(&"_look_own", true)
-	var m := ArrayTetraMesh4D.new()
-	for k in 8:
-		var a: float = TAU * float(k) / 8.0
-		var bar := BoxTetraMesh4D.new()
-		bar.size = Vector4(0.42, 0.04, 0.08, 0.5)
-		m.merge_with(bar.to_array_tetra_mesh(), Vector4(cos(a) * 0.62, 0.02, sin(a) * 0.62, 0.0), Basis4D.from_zx(-a + PI * 0.5))
-	ring.mesh = m
-	ring.material_override = Mats.glow(colour.darkened(0.15), 1.0)
-	ring.set("allow_projection", false)
-	add_child(ring)
-
-
 func _process(delta: float) -> void:
-	if Engine.is_editor_hint():
+	if Engine.is_editor_hint() or _player == null or _wall == null:
 		return
 	_t += delta
-	if _ball != null:
-		_ball.position.y = 1.0 + sin(_t * 1.6) * 0.08
-		_ball.basis = Basis4D.from_zx(_t * 0.8)
-	if _player == null:
-		return
 	if _orbit >= 0.0:
-		_run_orbit(delta)
+		_run(delta)
 		return
 	if shown or _player.get("input_enabled") == false:
 		return
-	var gap: Vector4 = global_position - _player.global_position
-	if Vector2(gap.x, gap.z).length() <= reach and absf(gap.w) < 1.0:
-		_start_orbit()
+	var p: Vector4 = _player.global_position
+	if absf(p.w) > 1.5 or absf(p.x - global_position.x) > listen_x:
+		return
+	if _wall_distance(p) <= trigger_m:
+		_start()
 
 
-func _start_orbit() -> void:
+## How far [param p] is from the wall's sheet, in metres (across it).
+func _wall_distance(p: Vector4) -> float:
+	var l: Vector4 = (p - _wall.global_position) / 6.0
+	if absf(l.x) > 10.0 or absf(l.w) > 10.0:
+		return INF
+	return absf(l.z - _sheet_z(l.x, l.w)) * 6.0
+
+
+func _start() -> void:
 	shown = true
 	_orbit = 0.0
+	_said = false
 	_player.set("input_enabled", false)
 	_player.set("velocity", Vector4.ZERO)
 	var cam := get_node_or_null(talk_cam_path) as Node4D
@@ -136,37 +115,77 @@ func _start_orbit() -> void:
 		cam.set("current", true)
 
 
-## The camera round the wall: from behind you, up and over, to the far side looking back at you.
-func _run_orbit(delta: float) -> void:
-	_orbit += delta / orbit_seconds
+func _input(event: InputEvent) -> void:
+	if Engine.is_editor_hint() or _orbit < skip_after:
+		return
+	var go: bool = false
+	if event is InputEventKey and (event as InputEventKey).pressed and not (event as InputEventKey).echo:
+		go = (event as InputEventKey).keycode in [KEY_SPACE, KEY_ENTER, KEY_KP_ENTER] or event.is_action_pressed(&"catch_target")
+	elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		go = true
+	if go:
+		get_viewport().set_input_as_handled()
+		_finish()
+
+
+## The wide shot (round, up and over the wall, far out), then the close shot with the thought.
+func _run(delta: float) -> void:
+	_orbit += delta
 	var cam := get_node_or_null(talk_cam_path) as Node4D
-	var e: float = clampf(_orbit, 0.0, 1.0)
-	e = e * e * (3.0 - 2.0 * e)
-	if cam != null and _wall != null:
-		var me: Vector4 = _player.global_position
-		var wall_at: Vector4 = _wall_point_near(me)
-		var away: Vector2 = Vector2(me.x - wall_at.x, me.z - wall_at.z)
+	if cam == null:
+		_finish()
+		return
+	var me: Vector4 = _player.global_position
+	var wall_at: Vector4 = _wall_point_near(me)
+	if _orbit < orbit_seconds:
+		var e: float = clampf(_orbit / orbit_seconds, 0.0, 1.0)
+		e = e * e * (3.0 - 2.0 * e)
+		var away := Vector2(me.x - wall_at.x, me.z - wall_at.z)
 		if away.length() < 0.1:
 			away = Vector2(0.0, 1.0)
 		away = away.normalized()
-		# Round the vertical through the wall point, from your side (angle 0) to the far side (PI), a little to one side.
-		var ang: float = lerpf(0.0, PI, e)
 		var side := Vector2(-away.y, away.x)
-		var flat: Vector2 = (away * cos(ang) + side * sin(ang) * 0.55) * 9.0
-		var height: float = 4.0 + 5.0 * sin(PI * e)
+		# From high behind you (behind and above, the wall ahead) round over the top to far above the other side.
+		var ang: float = lerpf(0.15, PI - 0.25, e)
+		var flat: Vector2 = (away * cos(ang) + side * sin(ang) * 0.45) * 17.0
+		var height: float = 9.0 + 9.0 * sin(PI * e) + 3.0 * e
 		var from := Vector4(wall_at.x + flat.x, wall_at.y + height, wall_at.z + flat.y, me.w)
-		var look_at_pt: Vector4 = me.lerp(wall_at, 0.35) + Vector4(0.0, 1.0, 0.0, 0.0)
+		var look_at_pt: Vector4 = me.lerp(wall_at, 0.5) + Vector4(0.0, 0.6, 0.0, 0.0)
 		cam.global_position = from
 		cam.global_basis = _look_basis(look_at_pt - from)
-	if _orbit >= 1.15:
-		_orbit = -1.0
-		var main := get_node_or_null(main_cam_path) as Node4D
-		if main != null:
-			main.set("current", true)
-		_player.set("input_enabled", true)
-		var guide: Node = get_node_or_null(guide_path)
-		if guide != null and guide.has_method("teach"):
-			guide.call("teach", [["drag_v", "TURN THE SLICE FORWARD"], ["keys", "OR STEP THROUGH W"]], "Find a way past the wall through W.", 7.0)
+		return
+	if not _said:
+		_said = true
+		# The close shot: between you and the wall, a little to the side.
+		var to_wall := Vector2(wall_at.x - me.x, wall_at.z - me.z).normalized()
+		var side2 := Vector2(-to_wall.y, to_wall.x)
+		# Above the grass (it hid you at head height), looking a little down at you.
+		var spot: Vector2 = Vector2(me.x, me.z) + to_wall * 2.0 + side2 * 1.1
+		_close_from = Vector4(spot.x, me.y + 1.25, spot.y, me.w)
+		_close_at = me + Vector4(0.0, 0.35, 0.0, 0.0)
+		var box: Node = get_node_or_null(thought_path)
+		if box != null and box.has_method("say"):
+			box.call("say", String(box.get("player_name")), line)
+	cam.global_position = _close_from
+	cam.global_basis = _look_basis(_close_at - _close_from)
+	if _orbit >= orbit_seconds + close_seconds:
+		_finish()
+
+
+func _finish() -> void:
+	if _orbit < 0.0:
+		return
+	_orbit = -1.0
+	var box: Node = get_node_or_null(thought_path)
+	if _said and box != null and box.has_method("close"):
+		box.call("close")
+	var main := get_node_or_null(main_cam_path) as Node4D
+	if main != null:
+		main.set("current", true)
+	_player.set("input_enabled", true)
+	var guide: Node = get_node_or_null(guide_path)
+	if guide != null and guide.has_method("teach"):
+		guide.call("teach", [["drag_v", "TURN THE SLICE FORWARD"], ["keys", "OR STEP THROUGH W"]], "Find a way past the wall through W.", 7.0)
 
 
 ## The point on the wall's sheet nearest the farm's slice in front of [param p] (its middle height).
@@ -241,3 +260,5 @@ func _physics_process(_delta: float) -> void:
 ## Ctrl+R (through the W guide): the moment again for the next visitor.
 func reset() -> void:
 	shown = false
+	if _orbit >= 0.0:
+		_finish()

@@ -24,7 +24,8 @@ const Toast := preload("res://ramon/chickenpen/discovery/pen_discovery_toast.gd"
 @export var lookout_path: NodePath = ^"../Lookout"
 @export var align_key: Key = KEY_V
 ## How much of the envelope must show before the prompt comes up (1 cut through the middle).
-@export_range(0.1, 1.0, 0.05) var show_from: float = 0.5
+## 0.7 since 10 Oct (Ramon, item 43: "When approximately 70-80% of the balloon is visible, display V"); it was 0.5.
+@export_range(0.1, 1.0, 0.05) var show_from: float = 0.7
 ## How far away on the ground it can be offered.
 @export_range(5.0, 80.0, 1.0) var reach: float = 45.0
 ## The envelope's widest radius, in W as in x and z (balloon_4d.gd: up to 3.55 m).
@@ -74,7 +75,9 @@ func shown_share() -> float:
 
 func can_align() -> bool:
 	var b := _balloon()
-	if b == null or Balloon.found or not bool(b.get("parked")) or bool(b.get("riding")) or not b.is_visible_in_tree():
+	# Every visit, found or not (Ramon, 10 Oct: "Important interactive objects that become sufficiently visible through
+	# W should offer contextual V-alignment"); only the toast is for the first find.
+	if b == null or not bool(b.get("parked")) or bool(b.get("riding")) or not b.is_visible_in_tree():
 		return false
 	if _player == null or not _player.is_visible_in_tree() or _player.get("input_enabled") == false:
 		return false

@@ -134,7 +134,10 @@ func _run() -> void:
 	# --- The HUD: the badge, I, the controls card ----------------------------------------------------------------------
 	_place(Vector4(24.9, 1.2, 20.0, 0.0), 180.0, -6.0, 6.0)
 	await _wait(1.0)
-	_check(badge != null and (badge as Control).visible, "the mode badge is up")
+	_check(badge != null and not (badge as Control).visible, "the DEV / ART switch is hidden before the Dream Shifter")
+	(load("res://ramon/chickenpen/discovery/dream_shifter/pen_look_guide_4d.gd") as GDScript).set("seen", true)
+	await _wait(0.3)
+	_check((badge as Control).visible, "and shows once the Dream Shifter has explained it")
 	await _save("01_hud_art")
 	await _key(KEY_I)
 	await _wait(0.2)
