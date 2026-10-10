@@ -100,17 +100,25 @@ const THENAR := [
 
 ## The thumb from its knuckle: a short thick digit, not a fifth finger (Ramon, 10 Oct: "shorten
 ## the thumb, it looks anatomically incorrect"). The knuckle sits at the palm's edge half way up,
-## so the web between thumb and index is where it is on a hand, the digit leaves at about 30
-## degrees from the fingers and forward of the palm, and its tip stops just short of the index
-## finger's knuckle (the artists' rule). The X-rays' 31.6 and 27.4 mm phalanges include the part
-## buried in the web; what shows is shorter.
+## so the web between thumb and index is where it is on a hand, and its tip stops just short of
+## the index finger's knuckle (the artists' rule). The X-rays' 31.6 and 27.4 mm phalanges include
+## the part buried in the web; what shows is shorter.
+##
+## AND IT BENDS (Ramon, 10 Oct: "thumb should bend a bit"). A relaxed thumb is flexed a little at
+## every joint, most at its base (Lee et al., resting hand posture: the thumb's carpometacarpal
+## joint has the largest flexion of its joints, and the thumb rests more flexed than the fingers),
+## and because it is turned to face the fingers, its bends carry the tip back in towards the index
+## finger and forward of the palm rather than straight down onto it. Artists draw the break at the
+## last joint for the same reason: a thumb drawn as one straight line reads as a sausage. Here the
+## metacarpal leaves the ball of the thumb at about 30 degrees out from the fingers, the knuckle
+## bends the rest about 15 degrees in and forward, and the last joint another 22, a little swollen.
 const THUMB_MCP := Vector3(-46.0, 50.0, 14.0)
 const THUMB_PROXIMAL := 24.0
 const THUMB_DISTAL := 21.0
-const THUMB_PROXIMAL_DIR := Vector3(-0.42, 0.86, 0.28)
-const THUMB_DISTAL_DIR := Vector3(-0.25, 0.94, 0.22)
-## At its knuckle, mid proximal, its joint, and the tip.
-const THUMB_RADII := [11.5, 10.6, 10.0, 8.8]
+const THUMB_PROXIMAL_DIR := Vector3(-0.38, 0.86, 0.34)
+const THUMB_DISTAL_DIR := Vector3(-0.05, 0.86, 0.50)
+## At its knuckle, mid proximal, its last joint, and the tip.
+const THUMB_RADII := [11.5, 10.2, 10.4, 8.8]
 
 ## A cuff over the wrist, as the old gloves had: a clean end to a hand that has no arm, and
 ## the loft's pointed end cap turned into a rounded one.

@@ -24,7 +24,8 @@ start point is the local branch `theatre-before-2026-10-09`.
    Trym's closing line "The way out is behind you - mind the step". Not changed; say if you want
    them rewritten.
 5. The hands (10 Oct, after Ramon's first look): the thumb shorter and thicker with its web half way
-   up the palm, and coloured the loft-ball way, skin running into the gold indicator over the
+   up the palm, bent a little at both joints, in towards the fingers and forward (the relaxed-hand
+   references in `theatre_hand_4d.gd`), and coloured the loft-ball way, skin running into the gold indicator over the
    knuckle with no cut. Bright orange was tried and dropped ("orange looks dirty"). The LEFT label
    above the hand stays gold to pair with it. Colour, size (2.5 m tall on the drum) and pose are
    all in `theatre_hand_4d.gd`.
