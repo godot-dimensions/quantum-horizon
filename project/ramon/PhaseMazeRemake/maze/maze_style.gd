@@ -57,23 +57,89 @@ const LIGHT := {
 }
 
 ## The colour code, one colour, one meaning: the pen's dev blue and orange (pen_look_4d.gd foundation and
-## landmark, Ramon's saved orange), and a warm cream in place of the kit's yellow, which sits between the
-## two without shouting (Ramon, 9 Oct: "see what color fits tastefully to that, instead of the yellow").
+## landmark, Ramon's saved orange). Round 2 had a warm cream for "stand here" and the breadcrumbs; round 3
+## (Ramon, 10 Oct: "I'm not convinced by the current yellow floor markers or the soft orange lighting")
+## makes them a cool white, so the floor marks no longer read yellow.
 const ROLE := {
-	"start": Color(0.96, 0.90, 0.78),   # cream: stand here (the start, the lift's ring)
+	"start": Color(0.93, 0.96, 1.0),    # cool white: stand here (the start, the lift's ring, roof lights)
 	"exit": Color(0.95, 0.46, 0.30),    # the pen's landmark orange: where you are going, what you climb
 	"w": Color(0.36, 0.58, 1.0),        # the pen's dev blue, lifted to read on dark glass: anything about W
 	"ghost": Color(0.30, 0.52, 1.0),    # 4D sight's ghosts (the material albedo only the ghost pass uses)
-	"trail": Color(0.95, 0.86, 0.68),   # breadcrumbs, newest: the cream
+	"trail": Color(0.86, 0.91, 1.0),    # breadcrumbs, newest: the cool white
 	"done": Color(0.55, 0.57, 0.62),    # a dead end you have finished
 	"x": Color(0.95, 0.95, 0.97),       # the badge's x axis: white
-	"z": Color(0.95, 0.80, 0.58),       # the badge's z axis: the cream, deeper
+	"z": Color(1.0, 0.62, 0.52),        # the badge's z axis: coral (round 2's deeper cream read yellow)
 }
 const GLOW := {
 	"start": Color(1.0, 0.94, 0.82),
 	"exit": Color(1.0, 0.52, 0.32),
 	"w": Color(0.32, 0.56, 1.0),
 }
+
+## THE W LAYERS' FLOORS (round 3, Ramon: "I can't clearly tell where I currently am in W"; Miegakure:
+## "texture the ground differently at intervals, to group parallel worlds", RESEARCH.md section 3; the
+## Crosswise islands' lane-tinted floors). Each layer of the maze along W has its floor tinted its own
+## colour, kata-most first; the HUD's W ruler uses the same colours, so it is the floor's legend. How
+## strong the tint is, is "Floor tint by W layer" on Tab.
+const LAYER_TINTS := [Color(0.30, 0.52, 1.0), Color(0.22, 0.78, 0.62), Color(0.72, 0.42, 0.98), Color(1.0, 0.46, 0.42), Color(0.55, 0.62, 0.72)]
+static var layer_tint: float = 0.4
+## Grid line colours set on their own (Tab, Colours): white lines on dark blue cannot be had by scaling
+## the surface colour, which is how a surface's lines follow it otherwise.
+static var lines: Dictionary = {}
+
+
+## The floor swatch of W layer `k`.
+static func layer_swatch(k: int) -> String:
+	return "maze_floor_l%d" % clampi(k, 0, LAYER_TINTS.size() - 1)
+
+
+## Layer `k`'s colour, full strength, for the HUD.
+static func layer_colour(k: int) -> Color:
+	return LAYER_TINTS[clampi(k, 0, LAYER_TINTS.size() - 1)]
+
+
+static func set_layer_tint(k: float) -> void:
+	layer_tint = clampf(k, 0.0, 1.0)
+	_apply_layers()
+
+
+## Every layer floor's swatch from the floor's own, blended toward the layer's colour. The lines blend
+## less, so the grid stays the grid.
+static func _apply_layers() -> void:
+	var v: Array = swatch_values("maze_floor")
+	for k in LAYER_TINTS.size():
+		# The layer's colour brought to the floor's own brightness first, so the tint turns the floor's
+		# hue without lifting a dark floor (a deep red floor went purple when it blended toward a bright
+		# blue).
+		var t: Color = _at_luma(LAYER_TINTS[k], _luma(v[0]))
+		var a: float = layer_tint * 0.65
+		LabGrid.set_swatch(layer_swatch(k), (v[0] as Color).lerp(t, a), (v[1] as Color).lerp(_at_luma(LAYER_TINTS[k], _luma(v[1])), a * 0.6),
+			(v[2] as Color).lerp(_at_luma(LAYER_TINTS[k], _luma(v[2])), a * 0.8), float(v[3]))
+
+
+static func _luma(c: Color) -> float:
+	return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
+
+
+static func _at_luma(c: Color, luma: float) -> Color:
+	var k: float = luma / maxf(_luma(c), 0.001)
+	return Color(clampf(c.r * k, 0.0, 1.0), clampf(c.g * k, 0.0, 1.0), clampf(c.b * k, 0.0, 1.0))
+
+
+static func set_line(k: String, c: Color) -> void:
+	if not SWATCHES.has(k):
+		return
+	# The default line colour means "follow the surface", as round 2 did: only a changed one is drawn
+	# crisp and on its own.
+	if c.is_equal_approx(SWATCHES[k][1]):
+		lines.erase(k)
+	else:
+		lines[k] = c
+	_apply_swatch(k)
+	if k == "maze_wall":
+		_apply_swatch("maze_wall_w")
+	if k == "maze_floor":
+		_apply_layers()
 
 static var _saved: Dictionary = {}
 
@@ -95,6 +161,8 @@ static func remember() -> void:
 	_saved = {}
 	for k in SWATCHES:
 		_saved[k] = LabGrid.values(String(k))
+	for k in LAYER_TINTS.size():
+		_saved[layer_swatch(k)] = LabGrid.values(layer_swatch(k))
 
 
 static func apply() -> void:
@@ -125,6 +193,7 @@ static func apply_mood(m: String) -> void:
 	mood = m
 	for k in SWATCHES:
 		_apply_swatch(String(k))
+	_apply_layers()
 
 
 ## A swatch's four values in the mood in force: the default, or the edited main colour with the lines
@@ -134,11 +203,16 @@ static func swatch_values(k: String) -> Array:
 		return swatch_values("maze_wall")
 	var base: Array = SWATCHES[k]
 	var v: Array = DARK[k] if mood == "dark" and DARK.has(k) else base
-	if not surfaces.has(k):
-		return v
-	var to: Color = surfaces[k]
-	var from: Color = base[0]
-	return [_scaled(v[0], from, to), _scaled(v[1], from, to), _scaled(v[2], from, to), v[3]]
+	if surfaces.has(k):
+		var to: Color = surfaces[k]
+		var from: Color = base[0]
+		v = [_scaled(v[0], from, to), _scaled(v[1], from, to), _scaled(v[2], from, to), v[3]]
+	if lines.has(k):
+		# A line colour of its own: crisp metre lines in it, the 20 cm lines half way to the surface,
+		# and the grid at full strength so the lines read as drawn.
+		var ln: Color = lines[k]
+		v = [v[0], ln, (v[0] as Color).lerp(ln, 0.35), maxf(float(v[3]), 0.95)]
+	return v
 
 
 static func _scaled(c: Color, from: Color, to: Color) -> Color:
@@ -164,6 +238,8 @@ static func set_surface(k: String, c: Color) -> void:
 	_apply_swatch(k)
 	if k == "maze_wall":
 		_apply_swatch("maze_wall_w")
+	if k == "maze_floor":
+		_apply_layers()
 
 
 static func set_w_plain(on: bool) -> void:

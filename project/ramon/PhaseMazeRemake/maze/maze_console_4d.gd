@@ -4,10 +4,13 @@ extends Node4D
 ## range_console_4d.gd, copied, not shared) with six level tiles and START. A light rounded plate with
 ## black glass on its face and a glow line under it, tilted up towards you.
 ##
-## WHERE IT STANDS. In the lobby, facing where you come in. When you finish a level it flies to you and
-## stands beside you in the exit's cell, facing you, with the next level chosen (anchor "near"; the game
-## gives it the cell to stay inside). It is only as deep in W as a body, not the range's 24 m, so it can
-## never show through into other cells of the maze.
+## WHERE IT STANDS (round 3, Ramon, 10 Oct: "the level-selection panel currently appears to move with
+## the player ... I'd prefer a static panel"). It stands still: in the lobby in the back left corner,
+## between the Phase Maze wall and the back wall, turned to face you as you come in (anchor "lobby");
+## in the hall at one place beside where you arrive, facing you (anchor "near"). The game gives it both
+## places (`spots`). It used to turn to you every frame and fly to your side after a level.
+## A plinth under it collides, so you walk round it, not through it. It is only as deep in W as a body,
+## not the range's 24 m, so it can never show through into other cells of the maze.
 ##
 ## NUMBERED BOXES ARE BUTTONS (the kit's rule): every tile is pressed, never just lit. Click it (where
 ## your aim crosses the glass, pick()), or press its number; Enter presses START.
@@ -30,10 +33,6 @@ const SLAB := 0.06
 const CORNER := 0.08
 const TILT := 58.0
 const HOVER := 0.78
-const FOLLOW := 3.0
-## Beside you once it has come to you: right, a little ahead (metres).
-const BESIDE := Vector2(1.7, 0.6)
-const FOLLOW_AFTER := 1.4
 ## Thickness through W: about a body's, so it shows only in the cell it stands in.
 const W_DEPTH := 1.2
 
@@ -47,6 +46,8 @@ var frame: Node
 var home: Vector4 = Vector4.ZERO
 ## Where "near" may put it: [low corner, high corner] in x and z (the exit's cell, inset).
 var room: Array = []
+## Its fixed places: {anchor: [position, yaw]}. An anchor not in here falls back to `home`, facing +z.
+var spots: Dictionary = {}
 
 var _vp: SubViewport
 var _page: Control
@@ -59,9 +60,6 @@ var _lit_at: float = -10.0
 var _last_sel: int = -1
 var _pos: Vector4 = Vector4.ZERO
 var _yaw: float = 0.0
-var _spot: Vector4 = Vector4.ZERO
-var _has_spot: bool = false
-var _spot_from: Vector4 = Vector4.ZERO
 var _anchor: String = "lobby"
 
 
@@ -123,8 +121,30 @@ func _build() -> void:
 		button.set_meta("maze_button", i)
 		add_child(button)
 		_buttons.append(button)
+	_plinth()
 	for mi in find_children("*", "MeshInstance4D", true, false):
 		(mi as MeshInstance4D).set("allow_projection", false)
+
+
+## A plinth under the plate, in the kit's dark plinth colour, and a collider round the whole console,
+## so the walker stops in front of it instead of walking into it.
+func _plinth() -> void:
+	var size := Vector4(SCREEN.x * 0.86, HOVER + 0.02, 0.34, W_DEPTH)
+	var mi := MeshInstance4D.new()
+	mi.name = "Plinth"
+	mi.mesh = _box(size)
+	mi.position = Vector4(0.0, size.y * 0.5, 0.05, 0.0)
+	mi.material_override = LabMaterials.flat(Kit.pick(Kit.PLINTH))
+	add_child(mi)
+	var body := StaticBody4D.new()
+	body.name = "Stand"
+	var shape := CollisionShape4D.new()
+	var box := BoxShape4D.new()
+	box.size = Vector4(SCREEN.x + MARGIN * 2.0 + 0.1, 1.3, 0.9, W_DEPTH)
+	shape.shape = box
+	shape.position = Vector4(0.0, 0.65, 0.0, 0.0)
+	body.add_child(shape)
+	add_child(body)
 
 
 static func _box(size: Vector4) -> BoxTetraMesh4D:
@@ -147,7 +167,8 @@ func pick(origin: Vector4, dir: Vector4) -> Dictionary:
 	if absf(d.y) < 0.000001:
 		return {}
 	var t: float = (SLAB * 0.5 + 0.022 - o.y) / d.y
-	if t <= 0.0 or t > 12.0:
+	# 20 m: the console stands in the lobby's corner, 13.5 m from where you arrive (round 3).
+	if t <= 0.0 or t > 20.0:
 		return {}
 	var p: Vector4 = o + d * t
 	if absf(p.w) > W_DEPTH * 0.5:
@@ -204,7 +225,6 @@ func show_data(d: Dictionary) -> void:
 	var anchor: String = String(d.get("anchor", "lobby"))
 	if anchor != _anchor:
 		_anchor = anchor
-		_has_spot = false
 	if int(d.get("sel", -1)) != _last_sel:
 		_last_sel = int(d.get("sel", -1))
 		_lit_at = _clock
@@ -216,10 +236,7 @@ func show_data(d: Dictionary) -> void:
 
 ## Straight to where it should be (a level loaded, a restart): no flight across the maze.
 func snap() -> void:
-	_has_spot = false
 	_process(0.0)
-	_pos = _goal()
-	_place()
 
 
 func _redraw() -> void:
@@ -227,40 +244,24 @@ func _redraw() -> void:
 	_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 
-func _beside() -> Vector4:
-	var b: Projection = frame.call("level_basis") if frame != null else Projection.IDENTITY
-	var f: Vector4 = -b.z
-	var r: Vector4 = b.x
-	var at: Vector4 = player.global_position + r * BESIDE.x + f * BESIDE.y
-	if room.size() == 2:
-		var lo: Vector4 = room[0]
-		var hi: Vector4 = room[1]
-		at.x = clampf(at.x, lo.x, hi.x)
-		at.z = clampf(at.z, lo.z, hi.z)
-	return Vector4(at.x, 0.0, at.z, player.global_position.w)
-
-
+## Where it stands for the anchor in force, and which way it faces: fixed, never following you.
 func _goal() -> Vector4:
-	if _anchor == "near" and player != null:
-		var pp: Vector4 = player.global_position
-		if not _has_spot or Vector2(pp.x - _spot_from.x, pp.z - _spot_from.z).length() > FOLLOW_AFTER:
-			_spot = _beside()
-			_spot_from = pp
-			_has_spot = true
-		return _spot
+	if spots.has(_anchor):
+		return spots[_anchor][0]
 	return home
+
+
+func _goal_yaw() -> float:
+	if spots.has(_anchor):
+		return float(spots[_anchor][1])
+	return 0.0
 
 
 func _process(delta: float) -> void:
 	_clock += delta
-	var to: Vector4 = _goal()
-	var k: float = 1.0 - exp(-delta * FOLLOW)
-	# Through W it jumps: it never sweeps through other cells of the maze on its way.
-	_pos = Vector4(lerpf(_pos.x, to.x, k), lerpf(_pos.y, to.y, k), lerpf(_pos.z, to.z, k), to.w)
-	if player != null:
-		var d := Vector2(player.global_position.x - _pos.x, player.global_position.z - _pos.z)
-		if d.length() > 0.3:
-			_yaw = lerp_angle(_yaw, atan2(d.x, d.y), 1.0 - exp(-delta * FOLLOW * 1.6))
+	# Straight to its place (the lobby and the hall change behind a fade), never gliding after you.
+	_pos = _goal()
+	_yaw = _goal_yaw()
 	_place()
 	if _clock - _lit_at < 0.7 or int(Engine.get_process_frames()) % 6 == 0:
 		_redraw()

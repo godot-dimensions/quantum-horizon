@@ -77,6 +77,15 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not keys_on:
 		return
+	# Looking during a turn turns the turn's goal the same way (round 3, Ramon: "the system continues
+	# rotating the player toward a predetermined direction ... a feeling of losing control"): the rig
+	# applies the look to the view, this applies it to where the turn is going, so the two never fight
+	# and the mouse is yours throughout.
+	var mm := event as InputEventMouseMotion
+	if mm != null and _target != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not Input.is_action_pressed(&"rotate_4d"):
+		var motion: Vector2 = mm.relative * float(rig.get("mouse_sensitivity"))
+		_target = GB.looked(_target, motion)
+		return
 	var k := event as InputEventKey
 	if k == null or not k.pressed or k.echo:
 		return
@@ -143,14 +152,19 @@ func quarter_turn() -> void:
 	if _target != null:
 		return
 	var b: Projection = rig.basis
+	# THE WHOLE TURN IN turn_seconds (round 3). The rate used to be a quarter turn's, but the heading's
+	# snap to the corridor rides on the same ease, so a turn begun 30 degrees off a corridor took a third
+	# longer than the swing that holds the walking keys: you walked while the view kept turning to a
+	# heading you never chose. Now the rate is the real angle's, and the keys come back as it lands.
 	if is_turned():
-		_ease_to(GB.flattened(b), PI * 0.5 / turn_seconds, true, "level")
+		var flat: Projection = GB.flattened(b)
+		_ease_to(flat, maxf(_angle(b, flat), 0.01) / turn_seconds, true, "level")
 		return
 	var h: float = GB.heading(b)
 	var b0: Projection = Basis4D.from_zx(snappedf(h, PI * 0.5))
 	# Forward is -z: the new frame's z is -(old w), so forward becomes old W (ana); its W is old z.
 	var t := Projection(b0.x, GB.UP, -b0.w, b0.z)
-	_ease_to(t, PI * 0.5 / turn_seconds, true, "into_w")
+	_ease_to(t, maxf(_angle(b, t), 0.01) / turn_seconds, true, "into_w")
 
 
 ## R: the slice level again, your heading and your W kept, over the pen's own time for its R
@@ -186,7 +200,9 @@ func _ease_to(t: Projection, rate: float, swing: bool, kind: String) -> void:
 	_target = t
 	_rate = rate
 	if swing:
-		_swing_left = turn_seconds + 0.05
+		# Only as long as the turn: the keys come back the moment it lands (and not before, so walking
+		# never changes meaning half way, Nesky #18).
+		_swing_left = turn_seconds
 		body.set("input_enabled", false)
 	turn_started.emit(kind)
 

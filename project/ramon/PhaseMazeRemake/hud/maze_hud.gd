@@ -42,6 +42,19 @@ var mood: String = "bright"
 var result_glass: float = 0.86
 ## A crosshair, when there is something to click.
 var crosshair: bool = false
+## The console's prompt (round 3): {"number", "name", "next", "click", "flash"}, or {} for none.
+var menu: Dictionary = {}
+## The camera, for labels on things in the world (the beacon's).
+var camera: Camera4D
+## The top of the exit's beacon (the builder's "beacon_top"), or Vector4.INF for none.
+var beacon_top: Vector4 = Vector4.INF
+## Standing on a blue plate (a door through W): {"up": bool, "down": bool}, or {} for none.
+var plate: Dictionary = {}
+## Q or E held: -1 kata, 1 ana, 0 neither (the ruler's caps light while held).
+var stepping: int = 0
+## When you last changed W layer, and which: the ruler's segment and a line flash for it.
+var _layer_flash: float = -10.0
+var _last_layer: int = -1
 ## How dark the fade is (0 clear, 1 black): level changes happen behind it.
 var fade: float = 0.0
 
@@ -96,6 +109,7 @@ func _draw() -> void:
 	if state != "lobby":
 		_card(u)
 	if view != null and body != null and state == "playing":
+		_beacon_label(u, vs)
 		_badge(u, vs)
 	_mood_chip(u, vs)
 	if not title.is_empty():
@@ -104,6 +118,8 @@ func _draw() -> void:
 	_messages(u, vs)
 	if not result.is_empty():
 		_results(u, vs)
+	elif not menu.is_empty():
+		_menu_prompt(u, vs)
 	if crosshair:
 		draw_circle(vs * 0.5, 3.0 * u, Color(1, 1, 1, 0.9))
 		draw_arc(vs * 0.5, 7.0 * u, 0.0, TAU, 24, Color(0, 0, 0, 0.5), 1.5 * u, true)
@@ -147,7 +163,7 @@ func _badge(u: float, vs: Vector2) -> void:
 	var right: Vector4 = b.x
 	var fwd: Vector4 = -b.z
 	var hid: Vector4 = b.w
-	var r := Rect2(Vector2(18.0 * u, vs.y - 300.0 * u), Vector2(214, 226) * u)
+	var r := Rect2(Vector2(18.0 * u, vs.y - 330.0 * u), Vector2(214, 256) * u)
 	_glass(r, u)
 	var fs: Font = LabPrint.font("bold")
 	var fb: Font = LabPrint.font("black")
@@ -205,47 +221,137 @@ func _badge(u: float, vs: Vector2) -> void:
 	draw_string(fs, r.position + Vector2(14.0 * u, 180.0 * u), line, HORIZONTAL_ALIGNMENT_LEFT, -1, int(11.0 * u), Kit.UI_INK_SOFT)
 	var hw: float = fs.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, int(11.0 * u)).x
 	draw_string(fb, r.position + Vector2(14.0 * u + hw, 180.0 * u), AXIS_NAMES[hidden], HORIZONTAL_ALIGNMENT_LEFT, -1, int(12.0 * u), _axis_col(hidden))
-	_ruler(Rect2(r.position + Vector2(10.0, 190.0) * u, Vector2(r.size.x - 20.0 * u, 28.0 * u)), u, hidden, hid)
+	_ruler(Rect2(r.position + Vector2(10.0, 190.0) * u, Vector2(r.size.x - 20.0 * u, 58.0 * u)), u, hidden, hid)
 
 
+## THE RULER (round 3, adapted from Crosswise's W ruler; the gizmo survey in PLAN.md round 3: "the old
+## maze's aids reacted continuously while you held Q or E ... the remake's ruler only changes when you
+## cross into the next 6 m cell"). Along the axis your view hides (W when level):
+##   a line naming it: "W  LAYER 2 OF 4", and on the right where the exit is along it
+##   a bar of its cells, each as long as the cell, in the floor's own layer colour when it is W, so the
+##   bar is the legend of the ground you stand on; the exit's cell carries an orange diamond
+##   your needle, placed continuously, so holding Q or E visibly moves you before the cell changes
+##   Q and E at the ends: lit when the step that way is open, struck through when it is a wall, and
+##   pressed while you hold them
 func _ruler(r: Rect2, u: float, h: int, hid: Vector4) -> void:
 	if lattice == null:
 		return
 	var dims: Array = [lattice.nx, lattice.nz, lattice.nw]
 	var n: int = int(dims[h])
-	var c: Vector3i = lattice.cell_at(body.global_position)
+	var p: Vector4 = body.global_position
+	var c: Vector3i = lattice.cell_at(p)
 	var s: int = 1 if UNIT[h].dot(hid) >= 0.0 else -1
 	var idx: int = [c.x, c.y, c.z][h]
+	var ex: int = [lattice.exit.x, lattice.exit.y, lattice.exit.z][h]
 	var col: Color = _axis_col(h)
 	var fs: Font = LabPrint.font("bold")
+	var fb: Font = LabPrint.font("black")
+	var now: float = float(Time.get_ticks_msec()) / 1000.0
+	if h == 2 and idx != _last_layer:
+		if _last_layer >= 0:
+			_layer_flash = now
+		_last_layer = idx
+	var flash: float = clampf(1.0 - (now - _layer_flash) / 1.2, 0.0, 1.0) if h == 2 else 0.0
+	# The line over the bar.
+	var noun: String = ["COLUMN", "ROW", "LAYER"][h]
+	var here_col: Color = Style.layer_colour(idx) if h == 2 else col
+	var label: String = "%s  %s %d OF %d" % [AXIS_NAMES[h], noun, clampi(idx + 1, 1, n), n]
+	draw_string(fb, r.position + Vector2(0.0, 12.0 * u), label, HORIZONTAL_ALIGNMENT_LEFT, -1, int((12.0 + 3.0 * flash) * u), here_col.lightened(0.25 + 0.5 * flash))
+	var exit_text: String = "EXIT HERE" if idx == ex else "EXIT %s %d" % [noun, ex + 1]
+	draw_string(fs, Vector2(r.position.x, r.position.y + 12.0 * u), exit_text, HORIZONTAL_ALIGNMENT_RIGHT, r.size.x, int(10.0 * u), Style.role("exit"))
 	# Q on the left (steps against the view's W), E on the right (along it).
 	var q_open: bool = lattice.inside(c) and lattice.passable(c, h, -s)
 	var e_open: bool = lattice.inside(c) and lattice.passable(c, h, s)
-	var cap: float = 22.0 * u
-	_cap(Rect2(r.position + Vector2(0, 3.0 * u), Vector2(cap, cap)), "Q", q_open, col, u)
-	_cap(Rect2(Vector2(r.end.x - cap, r.position.y + 3.0 * u), Vector2(cap, cap)), "E", e_open, col, u)
-	var x0: float = r.position.x + cap + 10.0 * u
-	var x1: float = r.end.x - cap - 10.0 * u
-	var y: float = r.position.y + 14.0 * u
-	draw_line(Vector2(x0, y), Vector2(x1, y), Color(col, 0.35), 2.0 * u, true)
+	var cap: float = 24.0 * u
+	var bar_y: float = r.position.y + 22.0 * u
+	_cap(Rect2(Vector2(r.position.x, bar_y), Vector2(cap, cap)), "Q", q_open, col, u, stepping < 0)
+	_cap(Rect2(Vector2(r.end.x - cap, bar_y), Vector2(cap, cap)), "E", e_open, col, u, stepping > 0)
+	var x0: float = r.position.x + cap + 8.0 * u
+	var x1: float = r.end.x - cap - 8.0 * u
+	var total: float = lattice.total(h)
+	var starts: PackedFloat32Array = lattice.starts[h]
+	var sizes: PackedFloat32Array = lattice.sizes[h]
 	for i in n:
-		# Cells laid out so E is to the right.
-		var pos_i: int = i if s > 0 else n - 1 - i
-		var x: float = x0 + (x1 - x0) * (float(pos_i) + 0.5) / float(n)
+		var f0: float = float(starts[i]) / total
+		var f1: float = (float(starts[i]) + float(sizes[i])) / total
+		if s < 0:
+			var t0: float = 1.0 - f1
+			f1 = 1.0 - f0
+			f0 = t0
+		var seg := Rect2(Vector2(lerpf(x0, x1, f0) + 1.5 * u, bar_y), Vector2((f1 - f0) * (x1 - x0) - 3.0 * u, cap))
+		var segc: Color = Style.layer_colour(i) if h == 2 else Color(0.62, 0.66, 0.74)
 		var here: bool = i == idx
+		var box := StyleBoxFlat.new()
+		box.set_corner_radius_all(int(4.0 * u))
+		box.anti_aliasing = true
+		box.bg_color = Color(segc, (0.85 if here else 0.28) + 0.15 * flash * float(here))
 		if here:
-			draw_rect(Rect2(Vector2(x - 9.0 * u, y - 9.0 * u), Vector2(18, 18) * u), col, true)
-			draw_string(fs, Vector2(x - 9.0 * u, y + 5.0 * u), str(i + 1), HORIZONTAL_ALIGNMENT_CENTER, 18.0 * u, int(11.0 * u), Color(Kit.UI_GLASS, 1.0))
-		else:
-			draw_rect(Rect2(Vector2(x - 6.0 * u, y - 6.0 * u), Vector2(12, 12) * u), Color(col, 0.55), false, 1.5 * u)
+			box.border_color = Color(1, 1, 1, 0.9)
+			box.set_border_width_all(int(maxf(1.0, 1.5 * u)))
+		draw_style_box(box, seg)
+		draw_string(fs, Vector2(seg.position.x, seg.position.y + 16.0 * u), str(i + 1), HORIZONTAL_ALIGNMENT_CENTER, seg.size.x, int(10.0 * u),
+			Color(Kit.UI_GLASS, 1.0) if here else Color(1, 1, 1, 0.75))
+		if i == ex:
+			var dc := Vector2(seg.get_center().x, bar_y - 1.0 * u)
+			var dd: float = 5.5 * u
+			draw_colored_polygon(PackedVector2Array([dc + Vector2(0, -dd), dc + Vector2(dd, 0), dc + Vector2(0, dd), dc + Vector2(-dd, 0)]), Style.role("exit"))
+	# Your needle, continuous along the axis.
+	var pa: float = [p.x - lattice.origin.x, p.z - lattice.origin.z, p.w - lattice.origin.w][h]
+	var f: float = clampf(pa / total, 0.0, 1.0)
+	if s < 0:
+		f = 1.0 - f
+	var nxp: float = lerpf(x0, x1, f)
+	draw_line(Vector2(nxp, bar_y - 3.0 * u), Vector2(nxp, bar_y + cap + 3.0 * u), Color(Kit.UI_GLASS, 0.9), 5.0 * u)
+	draw_line(Vector2(nxp, bar_y - 3.0 * u), Vector2(nxp, bar_y + cap + 3.0 * u), Color.WHITE, 2.5 * u)
+	draw_colored_polygon(PackedVector2Array([Vector2(nxp - 5.0 * u, bar_y + cap + 9.0 * u), Vector2(nxp + 5.0 * u, bar_y + cap + 9.0 * u), Vector2(nxp, bar_y + cap + 3.0 * u)]), Color.WHITE)
 
 
-func _cap(r: Rect2, key: String, open_side: bool, col: Color, u: float) -> void:
+## The exit's beacon, named where it stands on screen (round 3): "EXIT" in its own layer; in any other,
+## "EXIT IS IN LAYER 3" and which key's way that is, so the hollow frame over you never reads as there.
+func _beacon_label(u: float, vs: Vector2) -> void:
+	if camera == null or lattice == null or beacon_top == Vector4.INF:
+		return
+	# At the beacon's middle, not its top (a toast can cover the top of the screen), and kept below the
+	# messages.
+	var mid: Vector4 = beacon_top - Vector4(0.0, 7.0, 0.0, 0.0)
+	if camera.is_position_behind(mid):
+		return
+	var at: Vector2 = camera.world_to_viewport(mid)
+	if at.x < 0.0 or at.y < 0.0 or at.x > vs.x or at.y > vs.y:
+		return
+	at.y = maxf(at.y, 150.0 * u)
+	var c: Vector3i = lattice.cell_at(body.global_position)
+	var here: bool = c.z == lattice.exit.z
+	var text: String = "EXIT"
+	if not here:
+		var d: int = lattice.exit.z - c.z
+		var w_axis: Vector4 = (view.get("rig") as Node4D).basis.w
+		var key: String = ""
+		if int(view.get("hidden_axis")) == 2:
+			key = " (%s)" % ("E" if float(d) * w_axis.w > 0.0 else "Q")
+		text = "EXIT: W LAYER %d  ·  %d %s %s%s" % [lattice.exit.z + 1, absi(d), "LAYER" if absi(d) == 1 else "LAYERS", "ANA" if d > 0 else "KATA", key]
+	var fs: Font = LabPrint.font("bold")
+	var px: int = int(11.0 * u)
+	var tw: float = fs.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	var r := Rect2(Vector2(at.x - tw * 0.5 - 10.0 * u, at.y - 34.0 * u), Vector2(tw + 20.0 * u, 22.0 * u))
+	# Kept whole on screen when the beacon stands near an edge.
+	r.position.x = clampf(r.position.x, 12.0 * u, vs.x - r.size.x - 12.0 * u)
+	var box: StyleBoxFlat = Kit.glass_box(11.0 * u, 1.0, 0.8)
+	box.border_color = Color(Style.role("exit"), 0.9 if here else 0.45)
+	box.set_border_width_all(int(maxf(1.0, 1.5 * u)))
+	draw_style_box(box, r)
+	draw_string(fs, Vector2(r.position.x, r.position.y + 15.0 * u), text, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, px, Style.role("exit") if here else Kit.UI_INK_SOFT)
+
+
+func _cap(r: Rect2, key: String, open_side: bool, col: Color, u: float, held: bool = false) -> void:
 	var box := StyleBoxFlat.new()
 	box.set_corner_radius_all(int(5.0 * u))
 	box.anti_aliasing = true
+	if held:
+		box.border_color = Color.WHITE
+		box.set_border_width_all(int(maxf(1.0, 2.0 * u)))
 	if open_side:
-		box.bg_color = col
+		box.bg_color = col.lightened(0.25) if held else col
 	else:
 		box.bg_color = Color(1, 1, 1, 0.04)
 		box.border_color = Color(1, 1, 1, 0.25)
@@ -289,11 +395,19 @@ func _mood_chip(u: float, vs: Vector2) -> void:
 func _keys(u: float, vs: Vector2, state: String) -> void:
 	var rows: Array
 	if state == "lobby":
-		rows = [["1-6", "choose a level"], ["ENTER", "start"], ["WASD", "walk"], ["B", "dark / bright"], ["TAB", "tune the light"], ["H", "back to the menu"]]
+		rows = [["1-6", "choose a level"], ["ENTER", "play it"], ["CLICK", "a tile or START"], ["WASD", "walk"], ["B", "dark / bright"], ["TAB", "tune the light"],
+			["ESC", "close a panel, or the menu"], ["H", "back to the menu"]]
 	else:
-		rows = [["WASD", "walk"], ["F", "turn into W"], ["R", "level the slice"], ["Q E", "step through the hidden axis"],
+		# F's row says whether a turn here opens a way (round 3: "visual feedback when rotation is
+		# available or unavailable"): lit on a blue plate in the level view.
+		var f_row: Array = ["F", "turn into W"]
+		if not plate.is_empty() and bool(plate.get("level", false)):
+			f_row = ["F", "turn: the way is HERE", true]
+		elif view != null and int(view.get("hidden_axis")) == 2:
+			f_row = ["F", "turn into W (no door)"]
+		rows = [["WASD", "walk"], f_row, ["R", "level the slice"], ["Q E", "step through the hidden axis"],
 			["RMB", "hold and drag: tilt"], ["G", "4D sight" + ("  ON" if bool(info.get("sight", false)) else "")], ["M", "map"], ["T", "hint"],
-			["V", "first person" if not bool(info.get("first_person", false)) else "third person"], ["C", "camera"], ["B", "dark / bright"], ["TAB", "tune the light"], ["BACKSPACE", "again"], ["1-6", "levels"]]
+			["V", "first person" if not bool(info.get("first_person", false)) else "third person"], ["C", "camera"], ["B", "dark / bright"], ["TAB", "tune the light"], ["BACKSPACE", "again"], ["1-6", "levels"], ["ESC", "menu (asks first)"]]
 	var fs: Font = LabPrint.font("bold")
 	var px: int = int(11.0 * u)
 	var lh: float = 18.0 * u
@@ -303,14 +417,62 @@ func _keys(u: float, vs: Vector2, state: String) -> void:
 	for i in rows.size():
 		var y: float = r.position.y + 8.0 * u + lh * float(i) + lh * 0.72
 		var key: String = String(rows[i][0])
+		var lit: bool = (rows[i] as Array).size() > 2 and bool(rows[i][2])
 		var kw: float = fs.get_string_size(key, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x + 10.0 * u
 		var kr := Rect2(Vector2(r.position.x + 10.0 * u, y - lh * 0.66), Vector2(kw, lh * 0.82))
 		var box := StyleBoxFlat.new()
 		box.set_corner_radius_all(int(4.0 * u))
-		box.bg_color = Color(1, 1, 1, 0.10)
+		box.bg_color = Style.role("w") if lit else Color(1, 1, 1, 0.10)
 		draw_style_box(box, kr)
 		draw_string(fs, Vector2(kr.position.x, y), key, HORIZONTAL_ALIGNMENT_CENTER, kr.size.x, px, Kit.UI_INK)
-		draw_string(fs, Vector2(kr.end.x + 8.0 * u, y), String(rows[i][1]), HORIZONTAL_ALIGNMENT_LEFT, -1, px, Kit.UI_INK_SOFT)
+		draw_string(fs, Vector2(kr.end.x + 8.0 * u, y), String(rows[i][1]), HORIZONTAL_ALIGNMENT_LEFT, -1, px, Style.role("w").lightened(0.3) if lit else Kit.UI_INK_SOFT)
+
+
+# -- the console's prompt ----------------------------------------------------------------------------------
+
+## Bottom middle while the console is up (round 3, Ramon: "provide a clear Click or Enter to Start
+## prompt"): the level chosen, big, and the three ways on, as key chips. It flashes when the choice
+## changes, so pressing a number visibly did something.
+func _menu_prompt(u: float, vs: Vector2) -> void:
+	var fb: Font = LabPrint.font("black")
+	var fs: Font = LabPrint.font("bold")
+	var now: float = float(Time.get_ticks_msec()) / 1000.0
+	var flash: float = clampf(1.0 - (now - float(menu.get("flash", -10.0))) / 0.7, 0.0, 1.0)
+	var title: String = "%02d  %s" % [int(menu.get("number", 1)), String(menu.get("name", ""))]
+	var kicker: String = "NEXT LEVEL" if bool(menu.get("next", false)) else "LEVEL CHOSEN"
+	var chips: Array = [["ENTER", "PLAY"], [String(menu.get("click", "CLICK START")), ""], ["1-6", "ANOTHER LEVEL"]]
+	var px_chip: int = int(12.0 * u)
+	var chips_w: float = 0.0
+	for c in chips:
+		chips_w += fs.get_string_size(String(c[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, px_chip).x + 16.0 * u
+		if String(c[1]) != "":
+			chips_w += fs.get_string_size(String(c[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, px_chip).x + 8.0 * u
+		chips_w += 22.0 * u
+	var tw: float = fb.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, int(24.0 * u)).x
+	var w: float = maxf(tw, chips_w) + 48.0 * u
+	var r := Rect2(Vector2((vs.x - w) * 0.5, vs.y - 128.0 * u), Vector2(w, 98.0 * u))
+	var box: StyleBoxFlat = Kit.glass_box(14.0 * u, 1.0, Kit.UI_GLASS_ALPHA)
+	box.border_color = Color(Kit.UI_ACCENT, 0.35 + 0.65 * flash)
+	box.set_border_width_all(int(maxf(1.0, (1.5 + 2.0 * flash) * u)))
+	draw_style_box(box, r)
+	draw_string(fs, Vector2(r.position.x, r.position.y + 22.0 * u), kicker, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, int(11.0 * u), Kit.UI_GREY)
+	draw_string(fb, Vector2(r.position.x, r.position.y + 52.0 * u), title, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, int(24.0 * u), Kit.UI_INK.lerp(Kit.UI_ACCENT, flash))
+	var x: float = r.position.x + (r.size.x - chips_w) * 0.5
+	var y: float = r.position.y + 80.0 * u
+	for c in chips:
+		var key: String = String(c[0])
+		var kw: float = fs.get_string_size(key, HORIZONTAL_ALIGNMENT_LEFT, -1, px_chip).x + 16.0 * u
+		var kr := Rect2(Vector2(x, y - 15.0 * u), Vector2(kw, 21.0 * u))
+		var kb := StyleBoxFlat.new()
+		kb.set_corner_radius_all(int(5.0 * u))
+		kb.bg_color = Color(Kit.UI_ACCENT, 0.9) if key == "ENTER" else Color(1, 1, 1, 0.14)
+		draw_style_box(kb, kr)
+		draw_string(fs, Vector2(kr.position.x, y), key, HORIZONTAL_ALIGNMENT_CENTER, kr.size.x, px_chip, Color(Kit.UI_GLASS, 1.0) if key == "ENTER" else Kit.UI_INK)
+		x += kw + 8.0 * u
+		if String(c[1]) != "":
+			draw_string(fs, Vector2(x, y), String(c[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, px_chip, Kit.UI_INK_SOFT)
+			x += fs.get_string_size(String(c[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, px_chip).x
+		x += 22.0 * u
 
 
 # -- toasts and hints ----------------------------------------------------------------------------------

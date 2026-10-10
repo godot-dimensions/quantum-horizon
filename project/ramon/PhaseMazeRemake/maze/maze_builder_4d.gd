@@ -174,6 +174,83 @@ static func _posts(parent: Node4D, body: StaticBody4D, batch, posts: Dictionary)
 	parent.add_child(pm)
 
 
+## LANDMARKS for the generated level (round 3, Ramon, 10 Oct: "Level 6 was particularly confusing because
+## almost everything looked identical ... more recognizable environmental landmarks ... subtle variation
+## between different areas or W positions"). One per W layer where the level has room, each a different
+## shape floating high over a cell (8 to 11 m up, over the 5 m walls, so it is seen from across its
+## layer and is never in the way), coloured as its layer's floor, and only as deep in W as its cell:
+## it shows only while you are in that layer, so it says both where in the maze and which layer.
+## Darken and Sibert's landmarks (RESEARCH.md): distinct, visible from afar, tied to one place.
+## Seeded by the level's seed, so a seed always has the same ones.
+const LANDMARK_KINDS := ["crystal", "obelisk", "frame", "stack"]
+
+
+static func landmarks(parent: Node4D, lv, seed_value: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value * 7919 + 13
+	var holder := Node4D.new()
+	holder.name = "Landmarks"
+	parent.add_child(holder)
+	var used: Array = []
+	for k in lv.nw:
+		var options: Array = []
+		for j in lv.nz:
+			for i in lv.nx:
+				var c := Vector3i(i, j, k)
+				if c == lv.start or c == lv.exit or lv.stairs.has(c):
+					continue
+				var far: bool = true
+				for u in used:
+					if absi((u as Vector3i).x - i) + absi((u as Vector3i).y - j) < 2:
+						far = false
+				if far:
+					options.append(c)
+		if options.is_empty():
+			continue
+		var c: Vector3i = options[rng.randi() % options.size()]
+		used.append(c)
+		_landmark(holder, lv, c, String(LANDMARK_KINDS[k % LANDMARK_KINDS.size()]), Style.layer_colour(k))
+
+
+static func _landmark(holder: Node4D, lv, c: Vector3i, kind: String, col: Color) -> void:
+	var at: Vector4 = lv.cell_centre(c)
+	var sw: float = lv.size_of(c).z - 1.0
+	var mat := TetraMaterial4D.new()
+	mat.albedo_color = col.lightened(0.15)
+	var parts: Array = []
+	match kind:
+		"crystal":
+			parts.append(["orthoplex", Vector4(2.4, 3.6, 2.4, minf(2.4, sw)), Vector4(0.0, 9.6, 0.0, 0.0)])
+		"obelisk":
+			parts.append(["box", Vector4(0.9, 3.6, 0.9, sw * 0.6), Vector4(0.0, 9.6, 0.0, 0.0)])
+			parts.append(["orthoplex", Vector4(1.3, 1.4, 1.3, minf(1.3, sw)), Vector4(0.0, 12.1, 0.0, 0.0)])
+		"frame":
+			for sx in [-1.1, 1.1]:
+				parts.append(["box", Vector4(0.35, 3.2, 0.35, sw * 0.6), Vector4(sx, 9.4, 0.0, 0.0)])
+			parts.append(["box", Vector4(2.6, 0.4, 0.4, sw * 0.6), Vector4(0.0, 11.2, 0.0, 0.0)])
+		_:
+			for q in 3:
+				var s: float = 2.0 - float(q) * 0.55
+				parts.append(["box", Vector4(s, 0.8, s, sw * 0.6), Vector4(0.0, 8.6 + float(q) * 1.1, 0.0, 0.0)])
+	var n: int = 0
+	for part in parts:
+		var mi := MeshInstance4D.new()
+		mi.name = "Landmark_%s_%d" % [kind, n]
+		n += 1
+		if String(part[0]) == "orthoplex":
+			var o := OrthoplexTetraMesh4D.new()
+			o.size = part[1]
+			mi.mesh = o
+		else:
+			var b := BoxTetraMesh4D.new()
+			b.size = part[1]
+			mi.mesh = b
+		mi.material_override = mat
+		mi.position = at + (part[2] as Vector4)
+		mi.set("allow_projection", false)
+		holder.add_child(mi)
+
+
 static func _collide(body: StaticBody4D, size: Vector4, at: Vector4) -> void:
 	var shape := CollisionShape4D.new()
 	var box := BoxShape4D.new()
@@ -183,7 +260,9 @@ static func _collide(body: StaticBody4D, size: Vector4, at: Vector4) -> void:
 	body.add_child(shape)
 
 
-## One slab under the whole maze and a margin round it, through all its layers, top at y 0.
+## One slab under the whole maze and a margin round it, through all its layers, top at y 0: one collider,
+## and one mesh per W layer in that layer's floor swatch (round 3: each layer's floor its own tint, so
+## where you are in W shows on the ground; Style.LAYER_TINTS). The first and last layers carry the margin.
 static func _floor(parent: Node4D, lv) -> void:
 	var b: Array = lv.bounds()
 	var lo: Vector4 = b[0]
@@ -199,14 +278,24 @@ static func _floor(parent: Node4D, lv) -> void:
 	box.size = size
 	shape.shape = box
 	floor_body.add_child(shape)
-	var mi := MeshInstance4D.new()
-	mi.name = "FloorMesh"
-	var mesh := BoxTetraMesh4D.new()
-	mesh.size = size
-	mi.mesh = mesh
-	mi.material_override = LabGrid.material("maze_floor", size, at)
-	mi.set("allow_projection", false)
-	floor_body.add_child(mi)
+	for k in lv.nw:
+		var w0: float = lv.cell_min(Vector3i(0, 0, k)).w
+		var w1: float = w0 + lv.size_of(Vector3i(0, 0, k)).z
+		if k == 0:
+			w0 -= margin
+		if k == lv.nw - 1:
+			w1 += margin
+		var ls := Vector4(size.x, size.y, size.z, w1 - w0)
+		var la := Vector4(at.x, at.y, at.z, (w0 + w1) * 0.5)
+		var mi := MeshInstance4D.new()
+		mi.name = "FloorMesh_W%d" % k
+		var mesh := BoxTetraMesh4D.new()
+		mesh.size = ls
+		mi.mesh = mesh
+		mi.position = la - at
+		mi.material_override = LabGrid.material(Style.layer_swatch(k), ls, la)
+		mi.set("allow_projection", false)
+		floor_body.add_child(mi)
 	parent.add_child(floor_body)
 
 
@@ -249,7 +338,7 @@ static func _raised(parent: Node4D, body: StaticBody4D, lv) -> void:
 					if h > 0.01:
 						var size := Vector4(sz.x, h, sz.y, sz.z)
 						var at := Vector4(lo.x + sz.x * 0.5, h * 0.5, lo.z + sz.y * 0.5, lo.w + sz.z * 0.5)
-						_block(holder, body, "Floor_%d_%d_%d" % [i, j, k], size, at)
+						_block(holder, body, "Floor_%d_%d_%d" % [i, j, k], size, at, Style.layer_swatch(k))
 
 
 ## Roofs over the indoor stretches: a ceiling at the walls' top, colliding (so the camera's arm is held
@@ -345,13 +434,33 @@ static func _marks(parent: Node4D, lv, out: Dictionary) -> void:
 	var ew: float = lv.size_of(lv.exit).z - 1.0
 	batch.box("exit", Vector4(3.0, 0.04, 3.0, ew), e_at + Vector4(0.0, 0.03, 0.0, 0.0))
 	batch.ring("exit_ring", e_at + Vector4(0.0, 0.035, 0.0, 0.0), 2.1, 0.12, 0.04, ew, 48)
+	# THE BEACON (round 3, Ramon, 10 Oct: "it seems to remain visible across all W-slices. This allows
+	# players to move underneath it without actually solving the level"). Solid only through the exit's
+	# own layer; in every other layer it is a hollow frame, an outline of where it stands, so standing
+	# under the frame never looks like the way out. The HUD names the layer it is really in.
 	var b: Array = lv.bounds()
-	var all_w: float = (b[1] as Vector4).w - (b[0] as Vector4).w + 2.0
-	var mid_w: float = ((b[0] as Vector4).w + (b[1] as Vector4).w) * 0.5
 	var tallest: float = 0.0
 	for c in lv.heights:
 		tallest = maxf(tallest, float(lv.heights[c]))
-	batch.box("beacon", Vector4(0.6, 14.0, 0.6, all_w), Vector4(e_at.x, tallest + HEIGHT + 0.8 + 7.0, e_at.z, mid_w))
+	var by: float = tallest + HEIGHT + 0.8 + 7.0
+	var ew_lo: float = lv.cell_min(lv.exit).w
+	var ew_hi: float = ew_lo + lv.size_of(lv.exit).z
+	batch.box("beacon", Vector4(0.6, 14.0, 0.6, ew_hi - ew_lo - 0.2), Vector4(e_at.x, by, e_at.z, (ew_lo + ew_hi) * 0.5))
+	for span in [[(b[0] as Vector4).w - 1.0, ew_lo], [ew_hi, (b[1] as Vector4).w + 1.0]]:
+		var w0: float = float(span[0])
+		var w1: float = float(span[1])
+		if w1 - w0 < 0.2:
+			continue
+		var wm: float = (w0 + w1) * 0.5
+		var wd: float = w1 - w0
+		for cx in [-0.42, 0.42]:
+			for cz in [-0.42, 0.42]:
+				batch.box("beacon_frame", Vector4(0.07, 14.0, 0.07, wd), Vector4(e_at.x + cx, by, e_at.z + cz, wm))
+		for hy in [-7.0, -3.5, 0.0, 3.5, 7.0]:
+			batch.box("beacon_frame", Vector4(0.91, 0.06, 0.07, wd), Vector4(e_at.x, by + hy, e_at.z - 0.42, wm))
+			batch.box("beacon_frame", Vector4(0.91, 0.06, 0.07, wd), Vector4(e_at.x, by + hy, e_at.z + 0.42, wm))
+			batch.box("beacon_frame", Vector4(0.07, 0.06, 0.91, wd), Vector4(e_at.x - 0.42, by + hy, e_at.z, wm))
+			batch.box("beacon_frame", Vector4(0.07, 0.06, 0.91, wd), Vector4(e_at.x + 0.42, by + hy, e_at.z, wm))
 	var looks := {
 		"doors": ["w", 1.0, 0.0],
 		"doors_in": ["w", 1.0, 0.35],
@@ -359,6 +468,7 @@ static func _marks(parent: Node4D, lv, out: Dictionary) -> void:
 		"exit": ["exit", 1.0, 0.08],
 		"exit_ring": ["exit", 1.2, 0.0],
 		"beacon": ["exit", 1.3, 0.0],
+		"beacon_frame": ["exit", 0.9, 0.25],
 	}
 	for kind in batch.kinds():
 		var mi: MeshInstance4D = batch.instance(kind)
@@ -369,3 +479,4 @@ static func _marks(parent: Node4D, lv, out: Dictionary) -> void:
 		if kind == "beacon":
 			out["beacon"] = mi
 	out["exit_at"] = e_at
+	out["beacon_top"] = Vector4(e_at.x, by + 7.0, e_at.z, e_at.w)

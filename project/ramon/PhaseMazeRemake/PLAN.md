@@ -578,3 +578,123 @@ Proof:
   - `smoke_test_output/video/phase_maze_journey.mp4` (110 s, levels 2, 3 and 5 with their halls);
   - the menu clip `art/phase_maze_remake.ogv` (10 s).
 - **Dark against bright:** `smoke_test_output/phase_maze_remake/moods_sheet.png`.
+
+## Round 3: the walkthrough feedback (10 Oct, Ramon's three playtest notes)
+
+Priorities as he set them: first Escape and the Tab panel, then the level console, then the light and
+the colours, then the navigation (the gizmo, the blue plates, the door, level 6). Preserve every level,
+mechanic and working interaction unless a change is asked for. The Dreamer ("Azathoth") stays.
+
+**1. Escape and the Tab panel**
+1. Esc never leaves at once. From the menu, the menu hears Esc first (prototype_launcher's tree-order
+   fix) and closes the prototype: a guard node on the root, added after the menu, hears it before
+   the menu does. The menu's own file is another window's and stays untouched.
+2. Esc, in order: closes the confirm box (No), closes the Tab panel, closes the map, else opens
+   "Return to the main menu? Yes / No". The game pauses behind the box and the cursor is free.
+3. Yes: from the menu, the guard steps aside and hands Esc on, so the menu leaves the way it always
+   has; run alone (F6), it goes to the menu scene as H does. No, Esc or N: back to play, mouse as it was.
+4. Tab (and F1) opens and closes the panel every time. While it is open: the cursor is free, a
+   click beside the panel does not grab the mouse, and no game key (1-6, Enter, Backspace, F, R, G,
+   M, T, L, V, C, walking) can start, leave or change anything.
+5. Every row on the Numbers page gets a plain name and a one-line note of what it does; SAVE kept.
+
+**2. The level console**
+6. It stands still: in the lobby, in the back left corner between the Phase Maze wall and the back
+   wall, turned to face you as you come in; in the hall, at one place facing where you arrive. It no
+   longer turns to you or flies to you.
+7. A stand that collides, so you walk round it, not through it; clear of the walking line.
+8. The mouse: pressing a level's number, or clicking a tile, frees the cursor, so START can be
+   clicked with the pointer (a 4D ray from the cursor: Camera4D.viewport_to_world_ray_*); the
+   crosshair keeps working when the mouse is captured. Clicking away from the console takes the
+   mouse back for looking.
+9. A clear prompt on screen once a level is chosen: "02 TURN. CLICK START OR PRESS ENTER".
+
+**3. Light and colour**
+10. The spot gets its edge softness (SpotLight4D.spot_angle_attenuation) and its fall-off with
+    distance (spot_range_attenuation) and its reach on Tab; cone, height and strength kept.
+11. "Spot, dark" did nothing because it is the dark mood's strength (B): rename both strengths after
+    their mood, and mark the one in force.
+12. Colour presets on the Colours page: the round-2 look, and stronger, graphic ones (dark blue with
+    white grid lines; deep red with white grid lines), the floor marks recoloured to suit.
+13. Grid line colours editable on their own for the maze's surfaces (white lines on dark blue cannot
+    be had by scaling the surface colour).
+
+**4. Navigation**
+14. Survey the repo's 4D navigation aids (the old Phase Maze's gizmo first), then adapt the best one
+    rather than invent: where am I in W, what a turn or a step changes, where I might go.
+15. The blue plates: standing on one says so (the plate lights; the F key on the HUD lights; the
+    first time, an animated F key and a line: F turns the way through W ahead of you).
+16. Holding Q/E shows progress through W at once, so a slow step never looks like nothing.
+17. The exit beacon: solid only in the exit's own layer; elsewhere a hollow outline that says which
+    way along W the exit lies, so standing under it in the wrong layer never looks like the way out.
+18. The forced turn after F: find it and remove it; you can walk the moment you press F.
+19. The mid-air stick after R on the lift: reproduce it, fix it.
+20. Level 6 (generated): every W layer its own floor tint and a layer sign on its walls, so moving
+    through W is visible and progress can be read; landmarks in a few cells.
+21. The door through W in level 1: check it works, and that its feedback is clear.
+
+**5. Proof and handover**
+22. Bot at par on all six, level check, features; new runners for Esc, the console, the softlock and
+    the turn; frames of every change looked at; perf unchanged.
+23. Handover and memory; commit by explicit paths; no push.
+
+### The gizmo survey (step 14), and what it chose
+
+Asked first, built second (Ramon: "investigate the existing systems first, then recommend a solution
+... adapting a proven gizmo rather than inventing an entirely new visual language").
+
+**Why the old maze felt more informative.** Its aids reacted *continuously*: a raw W number every frame
+(player.gd's position label, which its legend told you to watch), and in level 2 a "W ALIGNMENT" bar
+that filled as you neared the hidden gap's W (PhaseMaze/scripts/maze_hud_2.gd). The remake's ruler
+changed only when you crossed into the next 6 m cell, so holding Q or E looked like nothing happening,
+and it showed nothing of the other layers: not the exit, not where you stood in them.
+
+**What exists, by the three questions** (where am I in W; what a turn or a step changes; where I might go):
+- Crosswise's W ruler and lane-tinted floors (Crosswise/hud/mk_hud.gd, shaders/mk_surface.gdshader):
+  a column of the lanes in their floor colours, you as a bar placed continuously, the goal at its W.
+  Built for the same quarter turn of z into W. Answers the first and third; the floor and the HUD agree.
+- The Lookout's W meter and ghost rings (chickenpen/lookout/lookout_viewfinder_4d.gd): a kata to ana
+  scale with targets ticked at their W, and "W +n" written on screen where an off-slice thing stands.
+  The best for "where might I go".
+- The Aquatic Lab's tank dial (WaterLab/room/tank_dial.gd): a side section with YOUR SLICE as a line.
+  The best for "what a turn changes", but it needs the lattice drawn as a section; not taken now.
+- The pen's spirit level (pen_slice_plane_4d.gd): stems and rings for things in other W. Its maths
+  cannot draw a quarter turn into W (edge-on), so it is not portable here; its vocabulary is.
+- The Aquatic Lab's animated mouse card (WaterLab/shared/mouse_tutorial.gd) and the pen's copy with
+  keys: the teaching card.
+
+**The smallest set that answers all three, adapted, not invented:**
+1. The ruler becomes Crosswise's: each cell along the hidden axis as long as it is, in its floor's
+   layer colour; your needle placed continuously (it moves while you hold Q or E); the exit's cell
+   marked with an orange diamond; "W LAYER 2 OF 4" over it and where the exit is on the right; the Q
+   and E caps lit when open and pressed while held. The cube badge stays above it, for the turn.
+2. Every W layer's floor takes its own colour (Miegakure's banded ground, Crosswise's lanes), the same
+   colours as the ruler, so the ground says which layer you are in, in every level.
+3. The beacon over the exit is solid only in the exit's layer and a hollow frame elsewhere, and a
+   label where it stands on screen says which layer the exit is in and which key's way (the Lookout's
+   ghost labels).
+4. The blue plates teach themselves: the plate pulses under you, F's row on the keys strip lights and
+   says the way is here (elsewhere: "no door"), and the first few times a key card acts out F and Q/E
+   (the Aquatic Lab's card, with keys).
+5. A move through W is said: the layer's name, in its colour, and the ruler flashes.
+
+### Round 3, as built (10 Oct)
+
+All 23 steps done; the handover's "10 Oct: round 3" says what each looks like and where.
+- 1 to 5: Esc asks first (`hud/maze_escape.gd`, a guard on the root, YES through the menu's own
+  `_input`); the Tab panel holds the game while open; every row named and explained.
+- 6 to 9: the console stands still in the lobby's corner and in the hall, with a colliding plinth,
+  cursor clicks and the prompt.
+- 10 to 13: the spot's softness, fade and reach; IN USE on the mood's strength; line colours; the
+  ROUND 2, BLUEPRINT and SIGNAL RED looks; the cream marks now a cool white.
+- 14 to 21: the survey above, then the ruler, the layer floors, the beacon, the plates and their card,
+  the layer toast, level 6's landmarks; the turn's rate fixed (keys back at 0.35 s, nothing turning
+  after); the lift's R did not stick in any test; the stairs through W settle W on the step under you.
+- 22: round 3 runner PASS, levels PASS, the bot at par on all six, features PASS, perf as before.
+
+Changes the build itself led to:
+- **YES once quit the program.** The first YES handed Esc on by broadcasting it, and the walker's rig
+  took it as its second Esc: quit. It now goes to the menu alone.
+- **The console's reach** for a click went from 12 m to 20 m: from where you arrive it is 13.5 m away.
+- **The layer tint** is matched to the floor's brightness before it blends, or a dark floor turned
+  another colour (SIGNAL RED's floor went purple).

@@ -38,6 +38,8 @@ const LabGrid := preload("res://ramon/PhaseMazeRemake/carried/LabKit/lab_grid.gd
 const LabBatch := preload("res://ramon/PhaseMazeRemake/carried/LabKit/lab_batch.gd")
 const LabMaterials := preload("res://ramon/PhaseMazeRemake/carried/LabKit/lab_materials.gd")
 const Kit := preload("res://ramon/PhaseMazeRemake/carried/kit/kit_style.gd")
+const Escape := preload("res://ramon/PhaseMazeRemake/hud/maze_escape.gd")
+const KeyCard := preload("res://ramon/PhaseMazeRemake/hud/maze_key_card.gd")
 
 const CELL := 6.0
 const BESTS := "user://phase_maze_remake_bests.cfg"
@@ -60,7 +62,12 @@ const LEVELS := [
 ## lab's walls from its exhibit (the range measured the same distance for the same type sizes).
 const LOBBY := Vector4(0.0, 0.0, 40.0, 0.0)
 const LOBBY_SPAWN := Vector4(0.0, 0.1, 44.6, 0.0)
-const CONSOLE_HOME := Vector4(0.0, 0.0, 39.0, 0.0)
+## The console's fixed places (round 3: it stands still). In the lobby: the back left corner, between
+## the Phase Maze wall (west) and the back wall, 2.6 m off the one and 3 m off the other, out of the
+## line from where you arrive to the back wall, turned to face where you arrive. In the hall: ahead and
+## to the right of where you arrive, facing you.
+const CONSOLE_HOME := Vector4(-6.4, 0.0, 35.0, 0.0)
+const CONSOLE_HALL := Vector4(3.0, 0.0, -214.6, 0.0)
 const RENDERERS := ["Cross-section", "Combined", "Projected", "Wireframe Canvas"]
 
 var player: CharacterBody4D
@@ -73,6 +80,17 @@ var console: Node4D
 var hud: Control
 var map: Control
 var dev_panel: PanelContainer
+## Esc's confirm box, on the root (hud/maze_escape.gd says why).
+var escape: CanvasLayer
+## The blue plate's key card (hud/maze_key_card.gd), and the glow that lights the plate you stand on.
+var key_card: Control
+var _plate_glow: MeshInstance4D
+## How many times the big card has been shown this session: the first few plates get it, later ones
+## only the lit F row on the keys strip.
+var _cards_shown: int = 0
+var _card_cell := Vector3i(-1, -1, -1)
+var _glow_cell := Vector3i(-1, -1, -1)
+const CARD_TIMES := 3
 var tuning: Dictionary = {}
 ## Every colour in force (Tab, Colours; hud/maze_dev_panel.gd COLOURS), saved with the numbers.
 var colours: Dictionary = {}
@@ -183,6 +201,11 @@ func _ready() -> void:
 	console.set("home", CONSOLE_HOME)
 	console.set("player", player)
 	console.set("frame", view)
+	var hall_arrive: Vector4 = Journey.HALL_AT + Vector4(0.0, 0.0, 8.0, 0.0)
+	console.set("spots", {
+		"lobby": [CONSOLE_HOME, atan2(LOBBY_SPAWN.x - CONSOLE_HOME.x, LOBBY_SPAWN.z - CONSOLE_HOME.z)],
+		"near": [CONSOLE_HALL, atan2(hall_arrive.x - CONSOLE_HALL.x, hall_arrive.z - CONSOLE_HALL.z)],
+	})
 	add_child(console)
 	var layer := CanvasLayer.new()
 	layer.name = "HUD"
@@ -193,6 +216,11 @@ func _ready() -> void:
 	hud.set("view", view)
 	hud.set("body", player)
 	layer.add_child(hud)
+	hud.set("camera", camera)
+	key_card = Control.new()
+	key_card.name = "KeyCard"
+	key_card.set_script(KeyCard)
+	layer.add_child(key_card)
 	map = Control.new()
 	map.name = "Map"
 	map.set_script(MapPanel)
@@ -216,6 +244,15 @@ func _ready() -> void:
 	var rb: Node = ReturnButton.instantiate()
 	rb.name = "ReturnButton"
 	add_child(rb)
+	# Esc asks before it leaves (round 3). On the root, after the menu, so it hears Esc first.
+	escape = CanvasLayer.new()
+	escape.name = "PhaseMazeEscape"
+	escape.set_script(Escape)
+	escape.set("maze_root", self)
+	get_tree().root.add_child.call_deferred(escape)
+	tree_exiting.connect(func() -> void:
+		if is_instance_valid(escape):
+			escape.queue_free())
 	_load_bests()
 	WalkerBuild.recolour(avatar, _walker_colours())
 	hall = Journey.hall(self)
@@ -254,6 +291,10 @@ func start_level(i: int, new_seed: bool = true) -> void:
 	if _busy:
 		return
 	_busy = true
+	# Playing looks with the mouse; choosing a level may have freed the cursor (round 3). Only here, the
+	# player's way in: runners load levels with _load_level and keep the mouse free.
+	if dev_panel == null or not dev_panel.visible:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	await _fade_to(1.0, 0.22)
 	_load_level(i, new_seed)
 	await _fade_to(0.0, 0.3)
@@ -279,6 +320,23 @@ func _load_level(i: int, new_seed: bool = true) -> void:
 	add_child(level_node)
 	built = Builder.build(level_node, lattice)
 	_par = lattice.par_w()
+	hud.set("beacon_top", built.get("beacon_top", Vector4.INF))
+	# The glow that lights the blue plate you stand on (parked under the floor until then).
+	var pg := BoxTetraMesh4D.new()
+	pg.size = Vector4(2.5, 0.04, 2.5, 1.0)
+	_plate_glow = MeshInstance4D.new()
+	_plate_glow.name = "PlateGlow"
+	_plate_glow.mesh = pg
+	_plate_glow.material_override = Style.glow_material("w", 1.6)
+	_plate_glow.set("allow_projection", false)
+	_plate_glow.position = Vector4(0.0, Builder.PARKED_Y, 0.0, 0.0)
+	level_node.add_child(_plate_glow)
+	_card_cell = Vector3i(-1, -1, -1)
+	_glow_cell = Vector3i(-1, -1, -1)
+	# Level 6, generated: landmarks high over a few cells, each only in its own W layer (round 3,
+	# Ramon: "Level 6 was particularly confusing because almost everything looked identical").
+	if spec.has("generated"):
+		Builder.landmarks(level_node, lattice, generated_seed)
 	sight.call("set_level", lattice, built)
 	hud.set("lattice", lattice)
 	map.set("lattice", lattice)
@@ -332,6 +390,11 @@ func _clear_level() -> void:
 	on_overlook = false
 	_lifting = false
 	hud.set("title", {})
+	hud.set("plate", {})
+	hud.set("beacon_top", Vector4.INF)
+	if key_card != null:
+		key_card.set("shown", false)
+	_plate_glow = null
 	if level_node != null:
 		level_node.free()
 		level_node = null
@@ -416,6 +479,7 @@ func _fade_to(v: float, seconds: float) -> void:
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint() or player == null:
 		return
+	_hold_for_panel()
 	if state == "playing" and lattice != null:
 		_play(delta)
 	if _cinema >= 0.0:
@@ -429,8 +493,10 @@ func _process(delta: float) -> void:
 		if _hint_left <= 0.0 and _hint_tier >= 3:
 			_clear_hint()
 	if console.visible:
+		_hover = _console_hit().get("button", -1)
 		console.call("show_data", _console_data("near" if state == "finished" else "lobby"))
 	hud.set("crosshair", console.visible and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED)
+	hud.set("menu", _menu_prompt())
 	var light: Node = get_node_or_null("Light")
 	if light != null:
 		hud.set("mood", String(light.get("mood")))
@@ -464,6 +530,13 @@ func _play(delta: float) -> void:
 		var d: Vector3i = cell - _last_cell
 		if absi(d.x) + absi(d.y) + absi(d.z) == 1 and d.z != 0:
 			w_moves += 1
+		if d.z != 0 and lattice.inside(cell):
+			# A move through W, said where you will see it (round 3: "clearer feedback when a meaningful
+			# spatial transition occurs"): the layer's name in its floor colour; the ruler flashes too.
+			var note: String = "W LAYER %d OF %d" % [cell.z + 1, lattice.nw]
+			if cell.z == lattice.exit.z:
+				note += "  ·  THE EXIT'S LAYER"
+			hud.call("toast", note, Style.layer_colour(cell.z).lightened(0.35), 2.2)
 		var others: Array = lattice.neighbours(_last_cell)
 		others.erase(cell)
 		var all_done: bool = true
@@ -478,9 +551,89 @@ func _play(delta: float) -> void:
 		if _hint_tier < 3:
 			_clear_hint()
 		_hint_tier = 0
+	_plate_step(cell, delta)
+	_stair_settle(cell)
 	var e: Vector4 = lattice.cell_centre(lattice.exit)
 	if cell == lattice.exit and Vector2(p.x - e.x, p.z - e.z).length() < 2.2 and absf(p.w - e.w) < 1.6:
 		_finish()
+
+
+## LEVEL AGAIN ON A STAIR THROUGH W (round 3, Ramon: "pressing R while airborne on a descending platform
+## can leave the player stuck in mid-air"). A stair through W is a run of steps along W; the walker's
+## body has some depth in W, so half way between two steps he rests on the higher one while the level
+## slice, cut at his middle, shows the lower: he hangs in the air over a step you cannot see, and the
+## way off it is no clearer. When the view comes back level (R, or F back) on such a stair, his W is
+## put on the middle of the step he stands on, at most half a step away inside the same cell, so the
+## slice shows what holds him up.
+var _was_level: bool = true
+
+
+func _stair_settle(cell: Vector3i) -> void:
+	var level_now: bool = int(view.get("hidden_axis")) == 2 and not bool(view.call("is_turning"))
+	var arrived: bool = level_now and not _was_level
+	_was_level = level_now
+	if not arrived or not lattice.inside(cell) or not lattice.stairs.has(cell):
+		return
+	var st: Array = lattice.stairs[cell]
+	if int(st[0]) != 2:
+		return
+	var e: Vector2 = lattice.stair_ends(cell)
+	var n: int = maxi(1, roundi((e.y - e.x) / Builder.STEP))
+	var span: float = lattice.size_of(cell).z
+	var y: float = player.global_position.y
+	var best: int = 0
+	var best_d: float = INF
+	for q in n:
+		var top: float = e.x + (e.y - e.x) * float(q + 1) / float(n)
+		if absf(top - y) < best_d:
+			best_d = absf(top - y)
+			best = q
+	var d0: float = span * float(best) / float(n)
+	var d1: float = span * float(best + 1) / float(n)
+	if int(st[1]) < 0:
+		var t0: float = span - d1
+		d1 = span - d0
+		d0 = t0
+	var p: Vector4 = player.global_position
+	player.global_position = Vector4(p.x, p.y, p.z, lattice.cell_min(cell).w + (d0 + d1) * 0.5)
+
+
+## THE BLUE PLATES (round 3, Ramon: "the intended solution essentially requires the player to rotate
+## using F, and only while standing on a blue square ... make the blue squares more obviously
+## interactive ... provide visual feedback when rotation is available or unavailable"). Standing on one
+## (a cell with a door through W) in the level view: the plate under you pulses, F's row on the keys
+## strip lights and says the way is here, and the first few times the key card acts it out (F, or Q / E).
+## Turned, the card goes: the way through W is ahead. Off a plate, F's row says no door is here.
+## Holding Q or E presses its cap on the ruler.
+func _plate_step(cell: Vector3i, _delta: float) -> void:
+	var up: bool = lattice.inside(cell) and not lattice.stairs.has(cell) and lattice.is_open(cell, 2, 1)
+	var down: bool = lattice.inside(cell) and not lattice.stairs.has(cell) and lattice.is_open(cell, 2, -1)
+	var on: bool = up or down
+	var level_view: bool = int(view.get("hidden_axis")) == 2 and not bool(view.call("is_turning"))
+	hud.set("plate", {"up": up, "down": down, "level": level_view} if on else {})
+	var ana: float = Input.get_axis(&"move_kata", &"move_ana") if bool(player.get("input_enabled")) else 0.0
+	hud.set("stepping", 0 if absf(ana) < 0.1 else (1 if ana > 0.0 else -1))
+	if _plate_glow != null:
+		if on:
+			if cell != _glow_cell:
+				_glow_cell = cell
+				var at: Vector4 = lattice.cell_centre(cell)
+				(_plate_glow.mesh as BoxTetraMesh4D).size = Vector4(2.5, 0.04, 2.5, lattice.size_of(cell).z - 1.0)
+				_plate_glow.position = Vector4(at.x, at.y + 0.05, at.z, at.w)
+			var pulse: float = 1.0 + 0.9 * (0.5 + 0.5 * sin(float(Time.get_ticks_msec()) / 1000.0 * 5.0))
+			(_plate_glow.material_override as TetraMaterial4D).get_cross_section_material_3d().set_shader_parameter("glow_energy", pulse)
+		elif _glow_cell.x >= 0:
+			_glow_cell = Vector3i(-1, -1, -1)
+			_plate_glow.position = Vector4(0.0, Builder.PARKED_Y, 0.0, 0.0)
+	# The card: on arriving on a plate in the level view, the first CARD_TIMES times.
+	if on and level_view and cell != _card_cell and _cards_shown < CARD_TIMES:
+		_card_cell = cell
+		_cards_shown += 1
+		key_card.set("gestures", [["f_turn", "PRESS F"], ["qe_step", "OR HOLD %s" % ("E" if up else "Q")]])
+		key_card.set("line", "F turns it ahead of you. Then walk on.")
+	if not on:
+		_card_cell = Vector3i(-1, -1, -1)
+	key_card.set("shown", on and level_view and cell == _card_cell)
 
 
 ## The overlook: standing in the lift's ring a moment lowers it (and you) into the start cell; the
@@ -673,8 +826,43 @@ func _console_data(anchor: String) -> Dictionary:
 		var best: float = float(bests.get(i, 0.0))
 		var par: String = "NEW EACH RUN" if LEVELS[i].has("generated") else ""
 		tiles.append([str(i + 1), _level_name(i).to_upper(), Hud.clock(best) if best > 0.0 else "", best > 0.0, String(LEVELS[i]["glyph"]), par])
-	return {"sel": sel, "tiles": tiles, "start": "NEXT" if state == "finished" else "START", "hover": -1, "anchor": anchor,
+	return {"sel": sel, "tiles": tiles, "start": "NEXT" if state == "finished" else "START", "hover": _hover, "anchor": anchor,
 		"live": true, "hint": "PRESS 1 TO 6 OR CLICK A LEVEL, THEN START" if state != "finished" else "WELL DONE. ENTER FOR THE NEXT ONE"}
+
+
+## The console tile under the crosshair (mouse captured, looking) or under the cursor (mouse free,
+## round 3), or {}.
+var _hover: int = -1
+
+
+func _console_hit() -> Dictionary:
+	if console == null or not console.visible or camera == null:
+		return {}
+	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		return console.call("pick", camera.global_position, -(camera.global_basis.z).normalized())
+	return _pointer_pick(get_viewport().get_mouse_position())
+
+
+func _pointer_pick(at: Vector2) -> Dictionary:
+	var origin: Vector4 = camera.viewport_to_world_ray_origin(at)
+	var dir: Vector4 = camera.viewport_to_world_ray_direction(at)
+	return console.call("pick", origin, dir)
+
+
+## The line under the console, in the HUD (round 3, Ramon: "make the action required to start the level
+## immediately obvious"): which level is chosen and how to play it, or {} when there is no console.
+func _menu_prompt() -> Dictionary:
+	if console == null or not console.visible or state == "playing":
+		return {}
+	var free: bool = Input.mouse_mode != Input.MOUSE_MODE_CAPTURED
+	return {"number": sel + 1, "name": _level_name(sel).to_upper(), "next": state == "finished",
+		"click": "CLICK START" if free else "AIM AT START AND CLICK", "flash": _sel_flash}
+
+
+## When the choice last changed, for the prompt's flash.
+var _sel_flash: float = -10.0
+## A free-cursor click that missed the console (see _input).
+var _free_click: InputEvent
 
 
 # -- hints (T) -----------------------------------------------------------------------------------------
@@ -746,26 +934,64 @@ func _clear_hint() -> void:
 func _input(event: InputEvent) -> void:
 	if Engine.is_editor_hint():
 		return
-	# Escape closes the dev panel first (the rig would otherwise take it as "let the mouse go, then quit").
-	var k := event as InputEventKey
-	if k != null and k.pressed and not k.echo and k.keycode == KEY_ESCAPE and dev_panel != null and dev_panel.visible:
-		dev_panel.call("toggle")
-		get_viewport().set_input_as_handled()
-		return
+	# Esc is hud/maze_escape.gd's: it closes this panel, the map, or asks before leaving.
 	# Tab, as in Ramon's other scenes (9 Oct: "sliders and a save mode when i press tab, so i can tweak
-	# it"), and F1. Here, before the panel's own controls can take Tab for moving focus.
+	# it"), and F1: open and close, every time. Here, before the panel's own controls can take Tab for
+	# moving focus.
+	var k := event as InputEventKey
 	if k != null and k.pressed and not k.echo and (k.keycode == KEY_TAB or k.keycode == KEY_F1) and dev_panel != null:
 		dev_panel.call("toggle")
 		get_viewport().set_input_as_handled()
+		return
+	# A click with the cursor free lands on the console where the cursor is (round 3). Taken here, before
+	# the walker's rig, which grabs the mouse back on any free click; a click that misses the console
+	# is left to it, so clicking into the room goes back to looking.
+	var mb := event as InputEventMouseButton
+	if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED \
+			and console != null and console.visible and (dev_panel == null or not dev_panel.visible):
+		var hit: Dictionary = _pointer_pick(mb.position)
+		if not hit.is_empty():
+			press(int(hit["button"]))
+			get_viewport().set_input_as_handled()
+		else:
+			# A miss is a click back into looking: the crosshair must not take it as a press as well.
+			_free_click = event
+
+
+## While the Tab panel is open the game takes no keys and no clicks, and the walker stands still, so
+## tuning can never start, restart or leave a level by accident (round 3). Held on the panel's opening,
+## let go on its closing (runners freeze these flags themselves, so nothing here runs every frame).
+var _ui_hold: bool = false
+var _held_keys: bool = true
+
+
+func _hold_for_panel() -> void:
+	var held: bool = dev_panel != null and dev_panel.visible
+	if held:
+		player.set("input_enabled", false)
+	if held == _ui_hold:
+		return
+	_ui_hold = held
+	if held:
+		_held_keys = bool(view.get("keys_on"))
+		view.set("keys_on", false)
+	else:
+		view.set("keys_on", _held_keys)
+		player.set("input_enabled", _cinema < 0.0 and float(view.get("_swing_left")) <= 0.0)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if Engine.is_editor_hint():
 		return
+	if dev_panel != null and dev_panel.visible:
+		return
 	var mm := event as InputEventMouseMotion
 	if mm != null and _orbit and mm.relative.length() > 3.0 and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		_end_orbit()
 	var mb := event as InputEventMouseButton
+	if mb != null and mb == _free_click:
+		_free_click = null
+		return
 	if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and console.visible and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var origin: Vector4 = camera.global_position
 		var dir: Vector4 = -(camera.global_basis.z).normalized()
@@ -782,6 +1008,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		if state == "playing":
 			start_level(i)
 		else:
+			# Choosing at the console by number frees the cursor, so START can be clicked with it (round 3,
+			# Ramon: "after pressing 2 or 3, the player can become stuck with the mouse captured").
+			if i != sel:
+				Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			press(i)
 	elif k.keycode == KEY_ENTER or k.keycode == KEY_KP_ENTER:
 		if state != "playing":
@@ -816,6 +1046,7 @@ func press(i: int) -> void:
 		start_level(sel)
 		return
 	sel = clampi(i, 0, LEVELS.size() - 1)
+	_sel_flash = float(Time.get_ticks_msec()) / 1000.0
 
 
 # -- tuning (F1) ---------------------------------------------------------------------------------------
@@ -834,6 +1065,7 @@ func apply_tuning(v: Dictionary) -> void:
 		player.set("w_speed_scale", _w_step)
 	sight.set("strength", float(v.get("ghost", 0.3)))
 	Style.set_w_plain(float(v.get("w_cyan", 1.0)) < 0.5)
+	Style.set_layer_tint(float(v.get("layer_tint", 0.4)))
 	sight.call("set_renderer", RENDERERS[clampi(int(v.get("renderer", 0.0)), 0, 3)])
 	_apply_light()
 	_apply_spot()
@@ -874,6 +1106,8 @@ func apply_colours(c: Dictionary) -> void:
 		match p[0]:
 			"sw":
 				Style.set_surface(p[1], c[key])
+			"line":
+				Style.set_line(p[1], c[key])
 			"role":
 				Style.set_role(p[1], c[key])
 			"walker":
@@ -902,6 +1136,13 @@ func _apply_spot() -> void:
 	if spot != null:
 		spot.set("energy", {"bright": float(tuning.get("spot_bright", 3.0)), "dark": float(tuning.get("spot_dark", 9.0))})
 		spot.set("angle", float(tuning.get("spot_angle", 30.0)))
+		# Round 3 (Ramon, 10 Oct: "there doesn't appear to be a way to control the softness of its
+		# edges"): the engine's own angular fall-off (SpotLight4D.spot_angle_attenuation: low a crisp rim,
+		# about 1 an even fade, higher a glow bright only in the middle), the fade with distance, and the
+		# reach. The kit light passes them straight on.
+		spot.set("softness", float(tuning.get("spot_softness", 1.2)))
+		spot.set("attenuation", float(tuning.get("spot_falloff", 0.15)))
+		spot.set("reach", float(tuning.get("spot_reach", 30.0)))
 
 
 func _load_bests() -> void:

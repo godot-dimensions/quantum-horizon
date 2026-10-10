@@ -16,6 +16,28 @@ Beside the scene:
 
 None of these blocked the build; each has a default in place.
 
+**Round 3 (10 Oct), new:**
+
+A. **H still leaves at once.** Esc now asks first; H is the labelled "BACK TO MENU" key, so I left it
+   immediate (it does nothing while the Tab panel is open). Should H ask too?
+B. **The default look.** Kept round 2's colours, with the cream floor marks (breadcrumbs, start and
+   lift rings, roof lights) now a cool white. The stronger looks you described are one click away on
+   Tab, Colours, START FROM A LOOK: BLUEPRINT (dark blue, white grid lines) and SIGNAL RED (deep red,
+   white grid lines). Should one of them be the default?
+   - If you pressed SAVE in round 2, your saved colours load instead of the new defaults (the cream
+     comes back): pick a look or RESET THIS PAGE on the Colours page.
+   - On BLUEPRINT the walker's dark blue sits close to the floor. Tab, Colours, THE WALKER recolours him
+     (in Miegakure the character is the one warm, saturated thing on screen).
+C. **The R softlock on the lift did not happen in my tests.** R in mid-air on the descending lift, in
+   the level view and turned, always ended the ride on the ground. What I did find and fix is a float on
+   the stairs through W (below). If it happens again, which level and what you did just before would
+   find it.
+D. **What F changes is still told by the cube badge only.** The survey's best aid for it is the Aquatic
+   Lab's tank dial (a side section with YOUR SLICE as a line). Not built yet; the next step if the new
+   ruler and plates are not enough.
+
+**From round 2:**
+
 1. **Going live.** Should it replace the old Phase Maze in the menu, or sit beside it?
    - The catalogue is shared, so it is untouched.
    - A 10 s clip is ready: `PhaseMazeRemake/art/phase_maze_remake.ogv` (level 2's stair through W
@@ -58,8 +80,8 @@ Ideas not built (round 2 went to the journey):
 | Key | What |
 |---|---|
 | WASD | Walk (in the slice you see). Shift sprints, Alt walks. |
-| F | Turn into W: what is ahead swings into ana. F again: back to level. Facing along x, F shows z and W. |
-| Q / E | Step through the hidden axis: slow and blind. The ruler says if the cell beyond is open. |
+| F | Turn into W: what is ahead swings into ana. F again: back to level. Facing along x, F shows z and W. On a blue plate it opens the way through W (the plate pulses and the F row lights). |
+| Q / E | Step through the hidden axis: slow and blind. The ruler says if the cell beyond is open, and its needle moves while you hold them. |
 | Right mouse + drag | Tilt the slice freely (Andrew's). It stays where you let go. |
 | R | Level the slice, keeping your W. |
 | G | 4D sight: the next layer's walls as blue ghosts. |
@@ -68,12 +90,12 @@ Ideas not built (round 2 went to the journey):
 | V | First or third person. |
 | C | Chase or over-the-shoulder camera. |
 | B | Dark or bright, as in the Creation Lab. Remembered. |
-| Tab (or F1) | The tuning panel. **Numbers:** cameras, turns, step speed, ghosts, renderer, light, spot. **Colours:** every colour in the scene (the maze's surfaces and posts, the colour code, the lobby and halls, the console, the sky and light in each mood, the walker), live. SAVE keeps both; RESET THIS PAGE goes back. |
+| Tab (or F1) | The tuning panel (Tab or Esc closes it; the game takes no keys while it is open). **Numbers:** cameras, turns, step speed, ghosts, renderer, light, spot. **Colours:** every colour in the scene (the maze's surfaces and posts, the colour code, the lobby and halls, the console, the sky and light in each mood, the walker), live. SAVE keeps both; RESET THIS PAGE goes back. |
 | Backspace | Restart the level. |
-| 1 to 6, Enter | Levels, at any time. |
+| 1 to 6, Enter | Levels, at any time. In the lobby a number chooses and frees the cursor; Enter or a click on START plays. |
 | L | Back to the lobby. |
 | H | Back to the menu. |
-| Esc, Esc | Let go of the mouse, then quit. |
+| Esc | Closes the Tab panel or the map if one is open; otherwise asks "Return to the main menu?" (Y or N, Esc is no). |
 
 ## How it plays
 
@@ -133,6 +155,8 @@ the scene. The scene holds the lab light, the lobby (a kit room), its two live w
 | `_capture_colours_runner.gd` | The Colours page: live, saved, reopened, reset (your settings file set aside and restored) |
 | `_capture_journey_runner.gd`, `_capture_moods_runner.gd`, `_capture_lobby_runner.gd`, `_hud4k_runner.gd`, `_smoke_runner.gd` | Frames: the journey, bright against dark, the lobby, the HUD at 4K, a smoke pass |
 | `_capture_teaching_runner.gd` | Films the back wall's three pictures (`art/`) |
+| `_round3_runner.gd` | Esc and its box (YES handed to a stand-in menu), the Tab panel's hold, the still console and its clicks; probes for F's turn, R on the lift and on a stair through W |
+| `_capture_round3_runner.gd` | Frames of round 3: the lobby, the Tab pages, the three looks, the spot's softness, a blue plate, the beacon, level 6, the Esc box |
 | `_probe_*`, `_study_*` | The research probes |
 
 Last results (9 Oct):
@@ -163,6 +187,78 @@ Last results (9 Oct):
   - Walls touch nothing now. The posts are all one material and overlap only each other, so nothing
     shows.
   - Their colour is "Corner posts" on the Colours page.
+
+## 10 Oct: round 3, the walkthrough feedback
+
+Ramon's three notes from playing it (Escape and the Tab panel, the level console, light and colour,
+then navigation; the gizmo review; the blue squares, the softlock, the forced turn and level 6). The
+plan and the gizmo survey are PLAN.md "Round 3". Every level, mechanic and route is as it was; the
+Dreamer ("Azathoth") is untouched.
+
+**Escape and the Tab panel**
+- Esc closes the Tab panel, then the map, and otherwise asks "Return to the main menu?" (YES or Y, NO or
+  N or Esc; Enter presses the lit button, which starts on NO). The game pauses behind it.
+- It is `hud/maze_escape.gd`, a guard on the scene tree's root. From the menu, the menu used to hear Esc
+  before anything in the maze (prototype_launcher's tree-order fix) and close it at once; the guard is
+  added after the menu, so it hears Esc first. YES hands the menu an Esc through the menu's own `_input`,
+  so it leaves the way it always did. It is never broadcast: the walker's rig quits the whole program
+  on a stray Esc (the first test did exactly that). Run alone (F6), YES loads the menu scene, as H does.
+  No menu file was touched.
+- Tab (and F1) open and close the panel every time; Esc closes it too. While it is open the cursor is
+  free, a click beside it does not grab the mouse, the walker stands still, and no game key (1 to 6,
+  Enter, Backspace, F, R, G, M, T, L, V, C) or H does anything. Closing it puts the mouse back as it was.
+- Every number has a plain name and a line under it saying what it does, in groups (camera; turning and
+  stepping; 4D sight; sky light; spot; finding your way). "Sun" is "Sunlight strength", "Ambient" is
+  "Shadow brightness".
+
+**The spot**
+- New on Tab: edge softness (the engine's own `spot_angle_attenuation`: 0.3 a crisp rim, 1.2 an even
+  fade, 3.5 a soft glow; `round3_frames/05_*`), fade with distance, and reach.
+- "Spot, dark" did nothing because it is the dark mood's strength: it only applies after B. Both
+  strengths are named after their mood now, and the one in force says IN USE.
+
+**The level console**
+- It stands still: in the lobby's back left corner between the Phase Maze wall and the back wall,
+  facing where you arrive; in the hall ahead and to the right of where you arrive. A plinth under it
+  collides, so you stop in front of it.
+- A number frees the cursor, so START can be clicked with it (a 4D ray from the cursor,
+  `Camera4D.viewport_to_world_ray_*`); the crosshair still works with the mouse captured; a click
+  beside the console goes back to looking. A prompt under it says the level chosen and ENTER, CLICK
+  START, 1-6.
+
+**Colour**
+- Grid line colours of their own for the walls, the walls across W, the floor, the stairs and the roofs.
+- Looks: ROUND 2, BLUEPRINT, SIGNAL RED (`round3_frames/04_*`).
+
+**Finding your way** (the gizmo survey chose Crosswise's ruler and floors, the Lookout's labels and the
+Aquatic Lab's card; PLAN.md says why)
+- Every W layer's floor is tinted its own colour (blue, teal, violet, coral), and the W ruler under the
+  view badge uses the same colours: "W LAYER 2 OF 4", where the exit is, each cell as long as it is,
+  your needle moving continuously (it moves while you hold Q or E), Q and E pressed while held.
+  "Floor tint by W layer" on Tab.
+- The exit's beacon is solid only in the exit's own layer; in the others it is a hollow frame, with a
+  label where it stands on screen: "EXIT: W LAYER 1 · 1 LAYER KATA (Q)".
+- A move through W says so: "W LAYER 3 OF 3" in the layer's colour, and the ruler flashes.
+- The blue plates: the one you stand on pulses; F's row on the keys strip lights ("turn: the way is
+  HERE"; elsewhere "turn into W (no door)"); the first three times, a card acts out F and E or Q
+  (`hud/maze_key_card.gd`, after the Aquatic Lab's mouse card).
+- Level 6 (generated): a landmark floating high over one cell in each layer (a crystal, an obelisk, a
+  frame, a stack), in its layer's colour and only in that layer.
+
+**The forced turn after F, and the float on the stairs**
+- F used to ease at a quarter turn's rate while the heading's snap to the corridor rode on the same
+  ease, so a turn begun 30 degrees off took a third longer than the swing that holds the walking keys:
+  you walked while the view kept turning. Now the whole turn takes "F turn duration", the keys come back
+  as it lands (0.35 s, measured), and moving the mouse during a turn turns its goal too.
+- On a stair through W the walker's body, deep in W, could rest on the next step while the level slice
+  showed the one below: he hung in the air over a step you could not see. When the view comes back
+  level on such a stair, his W is put on the step he stands on.
+
+**Proof** (10 Oct): `scripts/_round3_runner.gd` (the controls, YES through a stand-in menu, and the
+probes for the turn, the lift and the stair) PASS; the level check PASS; the bot all six at par; the
+features run PASS; the mazes 1.2 to 2.5 ms a frame, the Dreamer's hall 4.37 ms as before. Frames in
+`smoke_test_output/phase_maze_remake/round3_frames/` (`scripts/_capture_round3_runner.gd`, which sets
+your settings file aside and puts it back).
 
 ## Andrew's walker and W rotation, checked against the playable world (9 Oct)
 
