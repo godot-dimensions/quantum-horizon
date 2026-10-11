@@ -114,7 +114,30 @@ breathes, sways, turns and tilts its head now and then; walking, the swinging le
 feet stay flat. Look at it from every side with `scripts/_walker_look_runner.gd`.
 
 Each lives at one W: the trunk and head are 0.5 thick in W either side, the limbs 0.42, so as you shift
-away the limbs thin out of your slice first and the trunk last; it collides only at its own W. States: idle (standing or pacing), notice (eyes grey to red,
+away the limbs thin out of your slice first and the trunk last; it collides only at its own W.
+
+**How they behave (12 Oct, round 4: "how they see you at what angle, and when not.. walk pace
+differences ... how the walk looks").** An awareness meter, 0 to 1, fills while it perceives you:
+- sight from its eyes, so it turns with the head: a central cone 32 degrees either side out to its notice
+  range, fastest close; a peripheral cone to 72 degrees, 60 % of the reach, a third as fast; nothing beside
+  or behind; never through a wall
+- only within 0.5 m of its W, and at half strength in the last 0.2 m of that (the edge of its slice)
+- standing still you are half as easy to see, running nearly twice as easy; right at its back (1.7 m) it
+  feels you; running within 6.5 m it hears you, round corners too
+- at 0.3 it turns suspicious (stops, head to you, then body, then a slow step or two; eyes warm), at 1 it
+  has you (the sting, eyes full red, head snaps), and hunts at 1.35 m/s, 1.6 within 4 m (it paces at 0.5;
+  you walk 3.4), arms coming up as it closes. Lose its slice or its sight: it walks to about a metre
+  short of where it last saw you (on the spot, its body would block you shifting back) and looks about
+  for 5 s, still primed, then walks home.
+- measured by `scripts/_walker_senses_runner.gd` (3 m ahead: 1.25 s; 6 m: 2.5 s; 50 degrees off at 3 m:
+  2.65 s; at its back: 1.7 s; running behind: 1.7 s; edge of its slice: 2.9 s; beside, behind, out of its
+  slice: never)
+
+The walk is matched to its real speed (stride 0.5 to 0.8 m, cadence = speed over stride, so no skating);
+the hips drop at each footfall, shift over the planted leg and twist, the trunk twists back; the arms
+swing against the legs; standing it shuffles round as it turns; idle it breathes, shifts its weight, tilts
+its head and now and then twitches. `scripts/_walker_clip_runner.gd` films it side-on (pacing, hunting,
+searching) at a fixed 30 fps. States: idle (standing or pacing), notice (eyes grey to red,
 a sting), hunt (a slow walk to you), return. Line of sight is a ray at its own W. Caught: a red flash,
 back to the room's way in, every Tall One back at its post. The level owns them (`add_walker` in
 `levels/mr2_level_4d.gd`); the slice map shows them, red when they are after you.

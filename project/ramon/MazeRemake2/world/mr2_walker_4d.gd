@@ -17,10 +17,14 @@ extends CharacterBody4D
 ## heavy stride, the feet kept flat.
 ##
 ## ITS SLICE IS ITS WORLD. It lives at one W and never moves through W; its body collides only with what is
-## at its W. It sees you only when you are in its slice (within NOTICE_W of its W), close, in front and
-## with no wall between. Then it stops, its eyes grow red over a moment, and it walks to you, slower than
-## you walk. In its slice and within reach, it kills you. Out of its slice for LOSE_S, or far off, it
-## loses you; the red fades and it goes back to its post. So the way out is another slice.
+## at its W. It perceives you only in its slice (within NOTICE_W of its W), and slowly: an awareness that
+## fills while it sees you, faster the closer, the more central and the more you move (12 Oct, Ramon:
+## "improve the behavior on the walkers, subtleties, how they see you at what angle, and when not.. walk
+## pace differences, like when they see you they walk a little faster. how the walk looks"). See
+## _perceive and the states above _physics_process. Something registered: it stops and looks. Full: its
+## eyes go red and it walks to you, faster than it paces, slower than you walk. In its slice and within
+## reach, it kills you. Lose its slice or its sight and it goes to where it last saw you, looks about,
+## then gives up. So the way out is another slice.
 ##
 ## The level places it (mr2_level_4d.gd add_walker); the game hears `caught` (and resets it on a respawn).
 
@@ -35,10 +39,27 @@ signal lost(walker: Node)
 const WTHICK := 0.55
 ## How near your W must be to its own for it to see you (and for it to reach you).
 const NOTICE_W := 0.5
-const LOSE_S := 3.0
+## How long it stands searching where it lost you before it gives up.
+const SEARCH_S := 5.0
+## What it sees, from its eyes (so the cones turn with its head): half-angles in degrees, how far the
+## peripheral cone reaches as a share of notice_range, and how near it feels you behind it.
+const CENTRAL_DEG := 32.0
+const PERIPH_DEG := 72.0
+const PERIPH_REACH := 0.6
+const BACK_SENSE_M := 1.7
+## How far it hears you run.
+const HEAR_M := 6.5
+## Its paces, metres a second (you walk 3.4): pacing, edging toward something, searching, walking home.
+const PACE_SPEED := 0.5
+const INVESTIGATE_SPEED := 0.45
+const SEARCH_SPEED := 0.8
+const RETURN_SPEED := 0.7
+## Hunting within 4 m, it walks this much faster again.
+const HUNT_CLOSE_K := 1.18
 
 @export var notice_range: float = 9.0
-@export var walk_speed: float = 1.15
+## Its hunting pace, m/s: faster than it paces, slower than you walk.
+@export var walk_speed: float = 1.35
 @export var turn_rate: float = 1.1
 ## Where it stands and faces when it is not after you (set by the level).
 var post: Vector4 = Vector4.ZERO
@@ -48,8 +69,12 @@ var pace_to: Vector4 = Vector4.INF
 var game: Node = null
 var player: Node4D = null
 var level_body: Node = null
-## "idle", "notice", "hunt", "return", "film"
+## "idle", "suspicious", "notice", "hunt", "search", "return", "film"
 var state: String = "idle"
+## 0 calm .. 1 it has you.
+var awareness: float = 0.0
+## Where it last saw (or sensed) you.
+var last_seen: Vector4 = Vector4.INF
 var red: float = 0.0
 var yaw: float = 0.0
 var head_turn: float = 0.0
@@ -57,8 +82,20 @@ var head_target: float = 0.0
 var _tilt: float = 0.0
 var _tilt_target: float = 0.0
 var _t: float = 0.0
-var _notice_t: float = 0.0
-var _lost_t: float = 0.0
+var _alert_t: float = 0.0
+var _sus_t: float = 0.0
+var _unseen_t: float = 0.0
+var _search_t: float = 0.0
+var _travel_t: float = 0.0
+var _at_spot: bool = false
+var _player_prev: Vector4 = Vector4.INF
+var _player_speed: float = 0.0
+var _yaw_rate: float = 0.0
+var _look_down: float = 0.0
+var _hunt_k: float = 0.0
+var _reach_k: float = 0.0
+var _hitch: float = 0.0
+var _hitch_t: float = 6.0
 var _stride: float = 0.0
 var _speed_now: float = 0.0
 var _pace_leg: int = 0
@@ -92,9 +129,15 @@ func _ready() -> void:
 func reset() -> void:
 	state = "idle"
 	red = 0.0
-	_notice_t = 0.0
-	_lost_t = 0.0
+	awareness = 0.0
+	last_seen = Vector4.INF
+	_alert_t = 0.0
+	_sus_t = 0.0
+	_unseen_t = 0.0
+	_search_t = 0.0
 	_speed_now = 0.0
+	_hunt_k = 0.0
+	_reach_k = 0.0
 	global_position = Vector4(post.x, post.y + 0.0, post.z, post.w)
 	yaw = post_yaw
 	head_turn = 0.0
@@ -297,11 +340,13 @@ func _apply_eyes() -> void:
 		e.basis = _rs(Projection.IDENTITY, Vector4(k, k, k, 1.0))
 
 
-## Straight to the hunt (the kennel's ambush): the eyes go red as it walks.
+## Straight to the hunt (the kennel's ambush): fully aware at once; its eyes flare as it turns to you.
 func hunt_now() -> void:
-	state = "hunt"
-	_lost_t = 0.0
-	red = maxf(red, 0.3)
+	awareness = 1.0
+	if player != null:
+		last_seen = player.global_position
+	state = "notice"
+	_alert_t = 0.3
 
 
 ## The first-sighting film: it stops, and turns its head to the film's camera.
@@ -314,24 +359,13 @@ func start_film(cam: Node4D) -> void:
 func end_film() -> void:
 	state = "idle"
 	red = 0.0
+	awareness = 0.0
 	_film_cam = null
 
 
-## Is the player in my slice, close, in front of me, with nothing between?
+## Can it see you right now (in its slice, inside its cones and reach, nothing between)?
 func sees_player() -> bool:
-	if player == null or not player.is_inside_tree():
-		return false
-	var p: Vector4 = player.global_position
-	if absf(p.w - global_position.w) > NOTICE_W:
-		return false
-	var d := Vector2(p.x - global_position.x, p.z - global_position.z)
-	var dist: float = d.length()
-	if dist > notice_range:
-		return false
-	var fwd := Vector2(-sin(yaw), -cos(yaw))
-	if dist > 1.5 and fwd.dot(d / dist) < cos(deg_to_rad(80.0)):
-		return false
-	return clear_line_to(p + Vector4(0, 0.6, 0, 0))
+	return _perceive().y > 0.5
 
 
 ## Nothing of the level between my eyes and `target` (a ray at my W through the level's solids).
@@ -354,60 +388,183 @@ func clear_line_to(target: Vector4) -> bool:
 	return not bool(r.get("hit", false))
 
 
+## HOW IT PERCEIVES YOU, this frame: x is awareness gained per second (0 for nothing), y is 1 when that
+## is sight (it knows where you are), 0 when it only senses or hears you.
+##   sight      from its eyes, so the cones turn with its head: a sharp central cone (CENTRAL_DEG either
+##              side) out to notice_range, fastest close up; a wide peripheral one (to PERIPH_DEG) that
+##              reaches PERIPH_REACH as far and registers you about a third as fast; nothing behind;
+##              never through a wall
+##   your W     only within NOTICE_W of its own; in the last 0.2 m of that you are half there to it
+##   your pace  standing still you are about half as easy to see; running (Shift) much easier
+##   its back   right behind it (BACK_SENSE_M) it feels you, slowly, without knowing quite where
+##   hearing    running within HEAR_M of it, in its slice, carries round corners and to its back
+func _perceive() -> Vector2:
+	if player == null or not player.is_inside_tree():
+		return Vector2.ZERO
+	var p: Vector4 = player.global_position
+	var dw: float = absf(p.w - global_position.w)
+	if dw > NOTICE_W:
+		return Vector2.ZERO
+	var w_k: float = 1.0 - smoothstep(NOTICE_W - 0.2, NOTICE_W, dw)
+	var d := Vector2(p.x - global_position.x, p.z - global_position.z)
+	var dist: float = d.length()
+	if dist < 0.05:
+		return Vector2(3.0, 1.0)
+	var running: bool = _player_speed > 4.4
+	var move_k: float = 0.5 if _player_speed < 0.3 else (1.8 if running else 1.0)
+	var look: float = yaw + head_turn
+	var fwd := Vector2(-sin(look), -cos(look))
+	var ang: float = rad_to_deg(acos(clampf(fwd.dot(d / dist), -1.0, 1.0)))
+	var rate: float = 0.0
+	var seen: bool = false
+	if ang <= PERIPH_DEG:
+		var central: bool = ang <= CENTRAL_DEG
+		var reach: float = notice_range * (1.0 if central else PERIPH_REACH)
+		if dist <= reach and clear_line_to(p + Vector4(0, 0.6, 0, 0)):
+			var near_k: float = lerpf(1.0, 0.3, clampf((dist - 1.5) / maxf(reach - 1.5, 0.1), 0.0, 1.0))
+			rate = (1.8 if central else 0.6) * near_k * move_k * w_k
+			seen = true
+	if not seen and dist < BACK_SENSE_M:
+		rate = maxf(rate, 0.7 * w_k)
+	if running and dist < HEAR_M:
+		rate = maxf(rate, 0.65 * w_k)
+	return Vector2(rate, 1.0 if seen else 0.0)
+
+
+## Your ground speed, from how far you moved since the last physics frame (for how easily you are seen).
+func _track_player(delta: float) -> void:
+	if player == null:
+		return
+	var p: Vector4 = player.global_position
+	if _player_prev != Vector4.INF and delta > 0.0:
+		var v: float = Vector2(p.x - _player_prev.x, p.z - _player_prev.z).length() / delta
+		_player_speed = lerpf(_player_speed, minf(v, 12.0), clampf(delta * 8.0, 0.0, 1.0))
+	_player_prev = p
+
+
+## It has you: the eyes flare, the head snaps to you, the sting.
+func _alert() -> void:
+	state = "notice"
+	_alert_t = 0.0
+	awareness = 1.0
+	noticed.emit(self)
+
+
+## THE STATES
+##   idle        standing at its post or pacing slowly to its second point and back; awareness drains
+##   suspicious  something registered (awareness past 0.3): it stops, its head goes to it, then its body if
+##               the head cannot reach, and after a moment it takes slow steps toward it. Its eyes warm.
+##               Full awareness: notice. Nothing more for a while: back to idle.
+##   notice      0.7 s: the eyes go full red, the head snaps to you, it turns
+##   hunt        it walks to you at walk_speed, a little faster within 4 m, its arms coming up as it
+##               closes; locked on, it tracks you at any angle while it can see you. In its slice and
+##               within reach, it catches you. You leave its slice, or a wall hides you: it goes to
+##               where it last saw you.
+##   search      it walks to that spot and stands there, its head turning, for SEARCH_S; still primed, so
+##               it knows you again quickly. Then it gives up (lost) and walks back.
+##   return      back to its post; it can notice you again on the way
+##   film        the first sighting's film
 func _physics_process(delta: float) -> void:
 	_t += delta
+	_track_player(delta)
 	var want_speed: float = 0.0
 	var target_yaw: float = yaw
+	var look_at: Vector4 = Vector4.INF
+	var per: Vector2 = Vector2.ZERO if state == "film" else _perceive()
+	var p: Vector4 = player.global_position if player != null else Vector4.ZERO
+	if per.x > 0.0:
+		last_seen = p
 	match state:
 		"idle":
-			red = move_toward(red, 0.0, delta * 0.6)
+			# It drains only while nothing registers (a faint glimpse still adds up).
+			awareness = clampf(awareness + (per.x if per.x > 0.0 else -0.2) * delta, 0.0, 1.0)
 			_idle_pace(delta)
 			want_speed = _speed_pace_target()
 			if want_speed > 0.0:
 				target_yaw = _yaw_to(pace_to if _pace_leg == 1 else post)
 			else:
 				target_yaw = post_yaw if pace_to == Vector4.INF else yaw
-			if sees_player():
-				state = "notice"
-				_notice_t = 0.0
-				noticed.emit(self)
+			if awareness >= 0.3:
+				state = "suspicious"
+				_sus_t = 0.0
+		"suspicious":
+			_sus_t += delta
+			awareness = clampf(awareness + (per.x if per.x > 0.0 else -0.12) * delta, 0.0, 1.0)
+			look_at = last_seen
+			var rel: float = wrapf(_yaw_to(last_seen) - yaw, -PI, PI)
+			if absf(rel) > 0.85 or _sus_t > 1.6:
+				target_yaw = _yaw_to(last_seen)
+			if _sus_t > 1.6 and Vector2(last_seen.x - global_position.x, last_seen.z - global_position.z).length() > 2.2:
+				want_speed = INVESTIGATE_SPEED
+			if awareness >= 1.0:
+				_alert()
+			elif awareness < 0.1:
+				state = "idle"
 		"notice":
-			_notice_t += delta
-			red = minf(1.0, red + delta * 1.6)
-			target_yaw = _yaw_to(player.global_position)
-			head_target = 0.0
-			if _notice_t > 0.9:
-				state = "hunt"
-				_lost_t = 0.0
-		"hunt":
-			red = minf(1.0, red + delta * 2.0)
-			var p: Vector4 = player.global_position
+			_alert_t += delta
+			look_at = p
 			target_yaw = _yaw_to(p)
-			want_speed = walk_speed
+			if _alert_t > 0.7:
+				state = "hunt"
+				_unseen_t = 0.0
+		"hunt":
 			var in_slice: bool = absf(p.w - global_position.w) <= NOTICE_W
+			var seen: bool = in_slice and clear_line_to(p + Vector4(0, 0.6, 0, 0))
+			if seen:
+				last_seen = p
+				_unseen_t = 0.0
+			else:
+				_unseen_t += delta
+			look_at = last_seen
+			target_yaw = _yaw_to(last_seen)
 			var dist: float = Vector2(p.x - global_position.x, p.z - global_position.z).length()
+			want_speed = walk_speed * (HUNT_CLOSE_K if dist < 4.0 else 1.0)
 			if in_slice and dist < 0.95 and absf(p.y - global_position.y) < 1.8:
 				caught.emit(self)
 				state = "return"
-			if not in_slice or dist > 22.0:
-				_lost_t += delta
-				if _lost_t > LOSE_S:
-					state = "return"
-					lost.emit(self)
+				awareness = 0.0
+			elif (not in_slice and _unseen_t > 0.5) or _unseen_t > 1.5:
+				state = "search"
+				_search_t = 0.0
+				_travel_t = 0.0
+				_at_spot = false
+		"search":
+			awareness = maxf(0.55, awareness - delta * 0.06)
+			if per.y > 0.5 or per.x > 0.0:
+				awareness += per.x * delta * 1.6
+				if awareness >= 1.0:
+					_alert()
+			# It stops about a metre short of the spot, not on it: standing where you were, its body would
+			# fill the place you shift back into, and hold you at the edge of its slice.
+			var to_spot := Vector2(last_seen.x - global_position.x, last_seen.z - global_position.z)
+			if not _at_spot and to_spot.length() > 1.1:
+				target_yaw = _yaw_to(last_seen)
+				want_speed = SEARCH_SPEED
+				look_at = last_seen
+				_travel_t += delta
+				if _travel_t > 12.0:
+					_at_spot = true
 			else:
-				_lost_t = 0.0
+				_at_spot = true
+				_search_t += delta
+				# Standing where you vanished: the head sweeps slowly, the body follows now and then.
+				head_target = sin(_search_t * 0.9) * 1.0
+				if absf(head_target) > 0.9:
+					target_yaw = yaw + head_target * 0.5
+			if state == "search" and _search_t > SEARCH_S:
+				state = "return"
+				lost.emit(self)
 		"return":
-			red = move_toward(red, 0.0, delta * 0.5)
+			awareness = clampf(awareness + (per.x if per.x > 0.0 else -0.15) * delta, 0.0, 1.0)
 			var to_post := Vector2(post.x - global_position.x, post.z - global_position.z)
 			if to_post.length() < 0.3:
 				state = "idle"
 			else:
 				target_yaw = _yaw_to(post)
-				want_speed = walk_speed * 0.7
-			if sees_player() and red < 0.5:
-				state = "notice"
-				_notice_t = 0.0
-				noticed.emit(self)
+				want_speed = RETURN_SPEED
+			if awareness >= 0.45:
+				state = "suspicious"
+				_sus_t = 0.0
 		"film":
 			# Its film: the head turns, slowly, to the camera; the eyes flicker red once and go pale.
 			_film_t += delta
@@ -416,12 +573,32 @@ func _physics_process(delta: float) -> void:
 				head_target = clampf(wrapf(atan2(-d.x, -d.y) - yaw, -PI, PI), -1.3, 1.3)
 			var ft: float = _film_t - 3.2
 			red = clampf(sin(ft * 3.0), 0.0, 1.0) * 0.85 if (ft > 0.0 and ft < 1.05) else 0.0
+	# The eyes: warming with awareness, full red once it has you, cooling slowly when it has lost you.
+	if state != "film":
+		var want_red: float = 1.0 if state in ["notice", "hunt"] else clampf((awareness - 0.15) / 0.85, 0.0, 1.0) * 0.6
+		red = move_toward(red, want_red, delta * (2.2 if want_red > red else 0.35))
+	# The head: to what holds its attention, fast when it has just noticed you; idle, it looks about.
+	if look_at != Vector4.INF:
+		head_target = clampf(wrapf(_yaw_to(look_at) - yaw, -PI, PI), -1.15, 1.15)
+		var dd: float = Vector2(look_at.x - global_position.x, look_at.z - global_position.z).length()
+		_look_down = move_toward(_look_down, clampf(atan2(1.0, maxf(dd, 0.5)) * 0.7, 0.0, 0.5), delta * 0.8)
+	else:
+		_look_down = move_toward(_look_down, 0.0, delta * 0.5)
+		if state == "idle" and fmod(_t, 7.0) < delta:
+			head_target = (fmod(_t * 3.17, 2.0) - 1.0) * 0.9
+		if state in ["return"]:
+			head_target = 0.0
+	var head_speed: float = {"notice": 3.2, "hunt": 1.6, "suspicious": 1.3, "search": 0.9, "film": 0.6}.get(state, 0.45)
+	head_turn = move_toward(head_turn, head_target, delta * head_speed)
 	# A stiff turn toward where it is going, then a step only when it more or less faces it.
 	var dy: float = wrapf(target_yaw - yaw, -PI, PI)
-	yaw += clampf(dy, -turn_rate * delta, turn_rate * delta)
+	var rate: float = turn_rate * (1.6 if state in ["notice", "hunt"] else 1.0)
+	var turn: float = clampf(dy, -rate * delta, rate * delta)
+	yaw += turn
+	_yaw_rate = lerpf(_yaw_rate, turn / maxf(delta, 0.0001), clampf(delta * 6.0, 0.0, 1.0))
 	if absf(dy) > 0.6:
 		want_speed = 0.0
-	_speed_now = move_toward(_speed_now, want_speed, delta * 1.5)
+	_speed_now = move_toward(_speed_now, want_speed, delta * (1.8 if want_speed > _speed_now else 1.2))
 	var fwd := Vector4(-sin(yaw), 0, -cos(yaw), 0)
 	var vy: float = (get("linear_velocity") as Vector4).y
 	vy = -0.5 if is_on_floor() else vy - 18.0 * delta
@@ -434,8 +611,8 @@ func _physics_process(delta: float) -> void:
 	_apply_eyes()
 
 
-func _yaw_to(p: Vector4) -> float:
-	var d := Vector2(p.x - global_position.x, p.z - global_position.z)
+func _yaw_to(q: Vector4) -> float:
+	var d := Vector2(q.x - global_position.x, q.z - global_position.z)
 	if d.length() < 0.01:
 		return yaw
 	return atan2(-d.x, -d.y)
@@ -457,57 +634,91 @@ func _idle_pace(delta: float) -> void:
 func _speed_pace_target() -> float:
 	if pace_to == Vector4.INF or _pace_wait > 0.0:
 		return 0.0
-	return walk_speed * 0.45
+	return PACE_SPEED
 
 
-## The stiff pose. Standing: it breathes, sways a degree or two, its knees a little bent, the head jutting
-## forward on the long neck; now and then the head turns, or tilts, slowly, to look at nothing. Walking:
-## a heavy stride, the swinging leg's knee bending (a leg bends only while it swings forward), the feet
-## kept flat, the arms swinging a little and late. Every angle is a rigid piece turning at its joint.
+## THE WALK, rigid pieces at their joints, matched to how fast it is really moving:
+##   the stride   steps lengthen with speed (0.5 m pacing, about 0.8 m hunting) and the cadence is the
+##                speed over the stride, so the feet do not skate; a leg's knee bends only while it swings
+##                forward, and the planted foot stays level
+##   the hips     drop at each footfall and rise over the planted leg, shift a little over it, and twist
+##                with the stride; the trunk twists back against them
+##   the arms     swing against the legs, more the faster it goes; hunting and close, they come up toward
+##                you, the fingers first
+##   the posture  a slight hunch standing, more walking, most hunting, the knees softer and the head low
+##   turning      standing, it shuffles its feet round as it turns
+##   idle         it breathes, shifts its weight, now and then turns or tilts its head, and once in a
+##                while its head jerks, a stiff twitch, and settles
 func _pose(delta: float) -> void:
 	_body.basis = Basis4D.from_zx(yaw)
-	var moving: float = clampf(_speed_now / maxf(walk_speed, 0.01), 0.0, 1.0)
-	_stride += delta * (0.2 + moving * 1.5) * TAU * 0.5
-	var swing: float = sin(_stride) * 0.36 * moving
-	var lift_l: float = maxf(0.0, cos(_stride)) * 0.45 * moving
-	var lift_r: float = maxf(0.0, -cos(_stride)) * 0.45 * moving
-	# The head: in idle it turns now and then, slowly, and now and then tilts.
-	if state == "idle" and fmod(_t, 7.0) < delta:
-		head_target = (fmod(_t * 3.17, 2.0) - 1.0) * 0.9
+	var speed: float = _speed_now
+	var sk: float = clampf(speed / 1.6, 0.0, 1.0)
+	var gait: float = clampf(speed / 0.35, 0.0, 1.0)
+	var shuffle: float = clampf(absf(_yaw_rate) / 0.7, 0.0, 1.0) * (1.0 - gait)
+	var step_len: float = 0.5 + 0.3 * sk
+	var cadence: float = speed / (2.0 * step_len)
+	_stride += delta * TAU * (cadence + shuffle * 0.45)
+	var s: float = sin(_stride)
+	var c: float = cos(_stride)
+	var amp: float = gait * (0.17 + 0.13 * sk) + shuffle * 0.07
+	var hunting: float = 1.0 if state in ["notice", "hunt"] else 0.0
+	_hunt_k = move_toward(_hunt_k, hunting, delta * 1.5)
+	var close_k: float = 0.0
+	if state == "hunt" and player != null:
+		var dp: Vector4 = player.global_position - global_position
+		close_k = clampf((3.6 - Vector2(dp.x, dp.z).length()) / 2.2, 0.0, 1.0)
+	_reach_k = move_toward(_reach_k, close_k, delta * 0.9)
+	# Idle: the head turns now and then (set by the state machine); it tilts; it twitches.
 	if state == "idle" and fmod(_t + 3.0, 11.0) < delta:
 		_tilt_target = (fmod(_t * 1.91, 2.0) - 1.0) * 0.3
 	if state != "idle":
 		_tilt_target = 0.0
-	head_turn = move_toward(head_turn, head_target if (state == "idle" or state == "film") else 0.0, delta * (0.6 if state == "film" else 0.45))
 	_tilt = move_toward(_tilt, _tilt_target, delta * 0.18)
-	var sway: float = sin(_t * 0.7) * 0.02
+	_hitch_t -= delta
+	if state in ["idle", "search"] and _hitch_t <= 0.0:
+		_hitch_t = 9.0 + fmod(_t * 5.17, 8.0)
+		_hitch = 0.22 if fmod(_t, 2.0) < 1.0 else -0.22
+	_hitch = move_toward(_hitch, 0.0, delta * (1.6 if absf(_hitch) > 0.15 else 0.5))
 	var breathe: float = sin(_t * 0.8) * 0.012
-	(_joints["pelvis"] as Node4D).position = Vector4(0, HIP_Y - 0.02 - absf(sin(_stride)) * 0.03 * moving, 0, 0)
-	(_joints["spine"] as Node4D).basis = Basis4D.from_yz(-0.12 - 0.07 * moving + breathe) * Basis4D.from_xy(sway)
-	(_joints["neck"] as Node4D).basis = Basis4D.from_yz(-0.42 - breathe)
-	(_joints["head"] as Node4D).basis = Basis4D.from_zx(head_turn) * Basis4D.from_yz(0.48 + 0.07 * moving) * Basis4D.from_xy(_tilt)
-	# The legs: a little knee bend standing; the foot turned back by both so its sole stays level.
-	var thigh_l: float = 0.05 + swing
-	var thigh_r: float = 0.05 - swing
-	var shin_l: float = -0.09 - lift_l
-	var shin_r: float = -0.09 - lift_r
+	var weight: float = sin(_t * 0.31) * 0.014 * (1.0 - gait)
+	# The hips.
+	var bob: float = (0.03 + 0.02 * sk) * absf(s) * gait
+	var crouch: float = 0.02 + 0.05 * _hunt_k
+	(_joints["pelvis"] as Node4D).position = Vector4(0.022 * c * gait + weight, HIP_Y - crouch - bob, 0, 0)
+	(_joints["pelvis"] as Node4D).basis = Basis4D.from_zx(0.07 * s * gait) * Basis4D.from_xy(-0.03 * c * gait)
+	# The trunk, neck and head.
+	var lean: float = -0.12 - 0.05 * gait - 0.12 * _hunt_k
+	(_joints["spine"] as Node4D).basis = Basis4D.from_zx(-0.09 * s * gait) * Basis4D.from_yz(lean + breathe) * Basis4D.from_xy(sin(_t * 0.7) * 0.015 * (1.0 - gait))
+	(_joints["neck"] as Node4D).basis = Basis4D.from_yz(-0.42 - breathe - 0.08 * _hunt_k)
+	(_joints["head"] as Node4D).basis = Basis4D.from_zx(head_turn) * Basis4D.from_yz(0.48 + 0.07 * gait + 0.18 * _hunt_k - _look_down) * Basis4D.from_xy(_tilt + _hitch)
+	# The legs: a leg bends while it swings forward (its angle rising); the planted foot kept level.
+	var knee_soft: float = 0.09 + 0.08 * _hunt_k
+	var thigh_l: float = 0.05 + 0.04 * _hunt_k + amp * s
+	var thigh_r: float = 0.05 + 0.04 * _hunt_k - amp * s
+	var lift_l: float = maxf(0.0, c) * (0.25 + 0.3 * sk) * gait + maxf(0.0, c) * shuffle * 0.25
+	var lift_r: float = maxf(0.0, -c) * (0.25 + 0.3 * sk) * gait + maxf(0.0, -c) * shuffle * 0.25
+	var shin_l: float = -knee_soft - lift_l
+	var shin_r: float = -knee_soft - lift_r
 	(_joints["l_thigh"] as Node4D).basis = Basis4D.from_yz(thigh_l)
 	(_joints["r_thigh"] as Node4D).basis = Basis4D.from_yz(thigh_r)
 	(_joints["l_shin"] as Node4D).basis = Basis4D.from_yz(shin_l)
 	(_joints["r_shin"] as Node4D).basis = Basis4D.from_yz(shin_r)
-	(_joints["l_foot"] as Node4D).basis = Basis4D.from_yz(-(thigh_l + shin_l) * (1.0 - 0.6 * lift_l))
-	(_joints["r_foot"] as Node4D).basis = Basis4D.from_yz(-(thigh_r + shin_r) * (1.0 - 0.6 * lift_r))
-	# The arms: hanging a little out and forward, elbows soft, the hands now and then turning at the wrist.
-	var arm: float = -swing * 0.3 + sin(_t * 0.6) * 0.015
-	(_joints["l_arm"] as Node4D).basis = Basis4D.from_yz(0.1 + arm) * Basis4D.from_xy(-0.05)
-	(_joints["r_arm"] as Node4D).basis = Basis4D.from_yz(0.1 - arm) * Basis4D.from_xy(0.05)
-	(_joints["l_fore"] as Node4D).basis = Basis4D.from_yz(0.14 + maxf(0.0, -arm) * 0.5)
-	(_joints["r_fore"] as Node4D).basis = Basis4D.from_yz(0.14 + maxf(0.0, arm) * 0.5)
-	(_joints["l_hand"] as Node4D).basis = Basis4D.from_yz(0.06 + sin(_t * 0.43) * 0.05) * Basis4D.from_zx(0.15)
-	(_joints["r_hand"] as Node4D).basis = Basis4D.from_yz(0.06 + sin(_t * 0.37 + 1.3) * 0.05) * Basis4D.from_zx(-0.15)
-	# A footfall: the game's sound hears it.
-	var side: int = 1 if sin(_stride) > 0.0 else -1
-	if moving > 0.3 and side != _step_side:
+	(_joints["l_foot"] as Node4D).basis = Basis4D.from_yz(-(thigh_l + shin_l) + lift_l * 0.35)
+	(_joints["r_foot"] as Node4D).basis = Basis4D.from_yz(-(thigh_r + shin_r) + lift_r * 0.35)
+	# The arms: against the legs, more with speed; reaching for you as it closes.
+	var swing: float = amp * (0.7 + 0.4 * sk)
+	var reach: float = _reach_k
+	var arm_l: float = 0.1 + 0.06 * _hunt_k - swing * s + 0.6 * reach + sin(_t * 0.6) * 0.012
+	var arm_r: float = 0.1 + 0.06 * _hunt_k + swing * s + 0.55 * reach + sin(_t * 0.53 + 1.0) * 0.012
+	(_joints["l_arm"] as Node4D).basis = Basis4D.from_yz(arm_l) * Basis4D.from_xy(-0.05 - 0.04 * reach)
+	(_joints["r_arm"] as Node4D).basis = Basis4D.from_yz(arm_r) * Basis4D.from_xy(0.05 + 0.04 * reach)
+	(_joints["l_fore"] as Node4D).basis = Basis4D.from_yz(0.14 + maxf(0.0, -s) * swing * 0.6 + 0.3 * reach)
+	(_joints["r_fore"] as Node4D).basis = Basis4D.from_yz(0.14 + maxf(0.0, s) * swing * 0.6 + 0.3 * reach)
+	(_joints["l_hand"] as Node4D).basis = Basis4D.from_yz(0.06 + sin(_t * 0.43) * 0.05 + 0.25 * reach) * Basis4D.from_zx(0.15)
+	(_joints["r_hand"] as Node4D).basis = Basis4D.from_yz(0.06 + sin(_t * 0.37 + 1.3) * 0.05 + 0.25 * reach) * Basis4D.from_zx(-0.15)
+	# A footfall as each leg lands (its forward swing ending): the game's sound hears it.
+	var side: int = 1 if c > 0.0 else -1
+	if (gait > 0.3 or shuffle > 0.5) and side != _step_side:
 		_step_side = side
 		if game != null:
 			game.call("walker_step", self)

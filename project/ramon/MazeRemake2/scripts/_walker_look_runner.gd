@@ -88,6 +88,27 @@ func _run() -> void:
 		await physics_frame
 	await _view("11_walking_b", 3.4, 1.3, 0.0, 1.5)
 	await _view("12_walking_front", 3.6, 0.0, 0.0, 1.5)
+	# Hunting: it has you, from 6 m at 40 degrees; it turns, leans in, walks faster, the arms come up.
+	_w.call("reset")
+	var hq: Vector4 = _w.global_position
+	var ha: float = float(_w.get("yaw")) + 0.7
+	_player.call("place", Vector4(hq.x - sin(ha) * 6.0, 0.0, hq.z - cos(ha) * 6.0, hq.w), 0.0)
+	_w.call("hunt_now")
+	for f in 100:
+		await physics_frame
+	for k in 3:
+		var d: Vector4 = _w.global_position - _player.global_position
+		var yaw: float = atan2(-d.x, -d.z)
+		var g: Projection = Basis4D.from_zx(yaw)
+		_player.set("ground", g)
+		_player.basis = g
+		(_player.get("head") as Node4D).basis = Basis4D.from_yz(atan2(1.0, maxf(Vector2(d.x, d.z).length(), 0.5)))
+		for f in 18:
+			await physics_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(ProjectSettings.globalize_path(OUT + "15_hunt_%d.png" % k))
+		print("LOOK frame 15_hunt_%d" % k)
+	_w.call("reset")
 	# Its eyes red.
 	_w.set("red", 1.0)
 	_w.set("state", "notice")
