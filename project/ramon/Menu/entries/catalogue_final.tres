@@ -208,6 +208,7 @@ benchmark = "Bot at par on all six levels: 32, 11, 16, 41, 33 and 101 s · each 
 [sub_resource type="Resource" id="Resource_annex"]
 script = ExtResource("1_i2ljj")
 title = "The Annex"
+show_in_menu = false
 blurb = "A first-person walk through W in the dark: doors open as you shift, and the Tall Ones only see their own slice"
 maturity = "Playable"
 category = "Orientation"

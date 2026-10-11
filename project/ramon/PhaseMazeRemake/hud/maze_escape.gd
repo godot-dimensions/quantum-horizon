@@ -75,9 +75,9 @@ func _input(event: InputEvent) -> void:
 				else:
 					_yes.grab_focus()
 		return
-	# Launched from the menu (10 Oct) the asking is the menu's one shared question, the same box in
-	# every prototype (Menu/scripts/menu_way_home.gd); this guard keeps only its steps (the Tab panel,
-	# the map). Run on its own, as before.
+	# Launched from the menu (a WayHome at the root, 10-11 Oct) this guard keeps only its steps (the
+	# Tab panel, the map): Esc stops things and with nothing open frees the cursor; the way to the menu
+	# is M and the menu's shared question (Menu/scripts/menu_way_home.gd). Run on its own, as before.
 	var way_home: Node = get_tree().root.get_node_or_null(^"WayHome")
 	if way_home != null and bool(way_home.call("is_asking")):
 		return
@@ -97,7 +97,7 @@ func _input(event: InputEvent) -> void:
 		map.visible = false
 		return
 	if way_home != null:
-		way_home.call("ask_home")
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		return
 	open_box()
 

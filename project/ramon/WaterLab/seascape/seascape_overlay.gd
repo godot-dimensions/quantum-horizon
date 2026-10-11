@@ -94,6 +94,7 @@ func _draw_keys(u: float) -> void:
 		strip.append(["Right drag", "Turn the slice"])
 		strip.append(["R", "Level it"])
 	strip.append(["G", "Toggle Gerstner"])
+	strip += _menu_key()
 	var fk: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")
 	var kpx: int = Style.type_px("caption", u)
@@ -225,3 +226,9 @@ func _draw_thought(u: float) -> void:
 	sb.bg_color.a *= a
 	draw_style_box(sb, r)
 	draw_string(fb, Vector2(r.position.x, r.get_center().y + 9.0 * u), _thought, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, px, Color(1, 1, 1, a))
+
+
+## The menu's key, listed while this runs from the menu (its way home sits at the root,
+## Menu/scripts/menu_way_home.gd; Ramon, 11 Oct: M is the menu everywhere, Esc only stops things).
+func _menu_key() -> Array:
+	return [["M", "Menu"]] if is_inside_tree() and get_tree().root.has_node(^"WayHome") else []

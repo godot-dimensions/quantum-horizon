@@ -222,8 +222,11 @@ func _build() -> void:
 	_rows += [
 		["R", "back to your starting slice", false],
 		[OS.get_keycode_string(toggle_key), "hide this card", false],
-		["ESC", "the menu (asks first)", false],
+		["ESC", "stop, free the cursor", false],
 	]
+	# From the menu (11 Oct): M is the way back to it (Menu/scripts/menu_way_home.gd); Esc only stops.
+	if is_inside_tree() and get_tree().root.has_node(^"WayHome"):
+		_rows.append(["M", "the menu (asks first)", false])
 	if show_shortcuts:
 		_rule_after = _rows.size() - 1
 		_split = _rows.size()

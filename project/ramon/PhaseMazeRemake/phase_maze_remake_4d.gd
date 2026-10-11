@@ -1023,7 +1023,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		if state != "lobby":
 			sight.call("set_on", not bool(sight.get("on")))
 			hud.call("toast", "4D sight on. The cells next door in the hidden direction show as ghosts." if bool(sight.get("on")) else "4D sight off.", Style.role("w"), 3.0)
-	elif k.keycode == KEY_M:
+	elif k.keycode == KEY_O:
+		# O, not M (11 Oct): M is the way to the menu everywhere launched from it.
 		if lattice != null:
 			map.visible = not map.visible
 	elif k.keycode == KEY_T:

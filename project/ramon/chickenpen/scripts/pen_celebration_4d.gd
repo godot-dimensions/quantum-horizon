@@ -57,7 +57,8 @@ extends Node
 ## celebration directly, because a shortcut that skips the thing it is testing tests
 ## nothing. PRESS AGAIN: a clean restart, the same one Ctrl+R does.
 @export var test_key_enabled: bool = true
-@export var test_key: Key = KEY_M
+## F7, not M (11 Oct): M is the way to the menu everywhere launched from it.
+@export var test_key: Key = KEY_F7
 
 var _game: Node
 var _manager: Node

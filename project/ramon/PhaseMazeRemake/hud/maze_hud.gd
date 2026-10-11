@@ -395,8 +395,9 @@ func _mood_chip(u: float, vs: Vector2) -> void:
 func _keys(u: float, vs: Vector2, state: String) -> void:
 	var rows: Array
 	if state == "lobby":
-		rows = [["1-6", "choose a level"], ["ENTER", "play it"], ["CLICK", "a tile or START"], ["WASD", "walk"], ["B", "dark / bright"], ["TAB", "tune the light"],
-			["ESC", "close a panel, or the menu"]]
+		rows = [["1-6", "choose a level"], ["ENTER", "play it"], ["CLICK", "a tile or START"], ["WASD", "walk"], ["B", "dark / bright"], ["TAB", "tune the light"]]
+		# From the menu (11 Oct) Esc only closes things and M is the way to the menu.
+		rows += [["ESC", "close a panel"], ["M", "menu (asks first)"]] if _from_menu() else [["ESC", "close a panel, or the menu"]]
 	else:
 		# F's row says whether a turn here opens a way (round 3: "visual feedback when rotation is
 		# available or unavailable"): lit on a blue plate in the level view.
@@ -406,8 +407,9 @@ func _keys(u: float, vs: Vector2, state: String) -> void:
 		elif view != null and int(view.get("hidden_axis")) == 2:
 			f_row = ["F", "turn into W (no door)"]
 		rows = [["WASD", "walk"], f_row, ["R", "level the slice"], ["Q E", "step through the hidden axis"],
-			["RMB", "hold and drag: tilt"], ["G", "4D sight" + ("  ON" if bool(info.get("sight", false)) else "")], ["M", "map"], ["T", "hint"],
-			["V", "first person" if not bool(info.get("first_person", false)) else "third person"], ["C", "camera"], ["B", "dark / bright"], ["TAB", "tune the light"], ["BACKSPACE", "again"], ["1-6", "levels"], ["ESC", "menu (asks first)"]]
+			["RMB", "hold and drag: tilt"], ["G", "4D sight" + ("  ON" if bool(info.get("sight", false)) else "")], ["O", "map"], ["T", "hint"],
+			["V", "first person" if not bool(info.get("first_person", false)) else "third person"], ["C", "camera"], ["B", "dark / bright"], ["TAB", "tune the light"], ["BACKSPACE", "again"], ["1-6", "levels"]]
+		rows += [["ESC", "close a panel"], ["M", "menu (asks first)"]] if _from_menu() else [["ESC", "menu (asks first)"]]
 	var fs: Font = LabPrint.font("bold")
 	var px: int = int(11.0 * u)
 	var lh: float = 18.0 * u
@@ -513,3 +515,8 @@ func _results(u: float, vs: Vector2) -> void:
 	draw_line(Vector2(x + 30.0 * u, r.position.y + 142.0 * u), Vector2(r.end.x - 30.0 * u, r.position.y + 142.0 * u), Color(1, 1, 1, 0.12), 1.0 * u)
 	draw_string(fs, Vector2(x, r.position.y + 166.0 * u), String(result.get("next", "")), HORIZONTAL_ALIGNMENT_CENTER, w, int(12.0 * u), Kit.UI_INK_SOFT)
 	draw_string(fs, Vector2(x, r.position.y + 184.0 * u), "ENTER  NEXT    ·    BACKSPACE  AGAIN    ·    1-6  CHOOSE", HORIZONTAL_ALIGNMENT_CENTER, w, int(10.0 * u), Kit.UI_GREY)
+
+
+## Launched from the menu: the menu's way home is at the root (Menu/scripts/menu_way_home.gd).
+func _from_menu() -> bool:
+	return is_inside_tree() and get_tree().root.has_node(^"WayHome")

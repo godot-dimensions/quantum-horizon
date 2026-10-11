@@ -492,7 +492,7 @@ func _process(delta: float) -> void:
 		showcase.call("set_near", _in_room and bool(showcase.call("near_button", p)))
 	_read_desk(delta)
 	_hall_door_check(p)
-	hud.set("strip", _strip())
+	hud.set("strip", _strip() + _menu_key())
 
 
 func _strip() -> Array:
@@ -949,3 +949,10 @@ func go_to(at: Vector4, yaw: float) -> void:
 	if rig != null:
 		rig.set("yaw", yaw)
 		rig.call("_apply")
+
+
+## The menu's key, listed while this runs from the menu (its way home sits at the root,
+## Menu/scripts/menu_way_home.gd; Ramon, 11 Oct: M is the menu everywhere, Esc only stops things).
+func _menu_key() -> Array:
+	# Tagged "menu": the lab HUD (rd_hud.gd) draws it as its own blue pill beside the strip.
+	return [["M", "Menu", "menu"]] if is_inside_tree() and get_tree().root.has_node(^"WayHome") else []

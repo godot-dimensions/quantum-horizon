@@ -135,6 +135,25 @@ the words `Menu/entries/catalogue_final.tres`. `Menu/README.md` is the one-page 
   is everyone's menu), REVERT reads it back. Tab does nothing while a prototype runs, and the panel
   hides on launch. More knobs go in the same file and panel: add a key to `TUNING_DEFAULTS` and a
   row to the panel's `ROWS`. Frames with it open: the capture runner's `tuning=1`.
+- **THE ANNEX IS HIDDEN (11 Oct, Ramon: "remove it for now and restore to how it was, but keep the
+  data").** Another window added The Annex (MazeRemake2) to the menu in c89bfc2 / 24a133b. Its entry
+  stays in catalogue_final.tres with `show_in_menu = false` (text, icon, clip, scene path all kept);
+  delete that line to bring it back. Before it comes back: its Esc guard (MazeRemake2/hud/mr2_escape.gd,
+  a copy of the Voxel Lab's from 10 Oct) still calls the menu's question on Esc, and its key strip has no
+  `M  Menu`; both need the 11 Oct change below (as vl_escape.gd and voxel_lab_4d.gd got it), or the end
+  to end runner fails there and the Annex stays running under the next test.
+- **ESC STOPS, M IS THE MENU (11 Oct; Ramon: "escape was always my button to break a presentation
+  ... it was always: kill it").** The 10 Oct night's "Esc asks to go home" is reversed. Esc stops
+  things again (talks, cinematics, presentations, seats, panels) and with nothing open frees the
+  cursor; launched from the menu it never quits (rig copies, the Range). The menu's question opens on
+  **M** (`MENU_KEY` in menu_way_home.gd), heard last as before; in the box Esc or M is No, Enter Yes.
+  Every scene lists `M  Menu` in its own key strip while a WayHome is at the root (`_menu_key()` in
+  the Voxel Lab and its field, Creature Lab and hall, Botany Lab and Two Gardens, Aquatic Lab and the
+  sea, the Range; Crosswise's strip, the Maze's lists, the world's controls card). Keys moved off M:
+  the Maze's map is O (its wall text too), the world's "finish the round" test key is F7 (G is
+  Nike's carry). Kept as they were, Ramon's call: Crosswise's intro skip, the cave dreamer's refusal,
+  the Dream Shifter's unskippable start, the lookout climb ignoring Esc. The theatre seat is back
+  as it was (its escape_first group is gone). The text below about Esc asking is history.
 - **The way home (10 Oct night; Ramon: "Escape must always provide a safe, consistent way back").**
   `Menu/scripts/menu_way_home.gd`, a CanvasLayer "WayHome" the first menu puts at the ROOT (it
   outlives the menu, which the world replaces, and every room change):

@@ -228,12 +228,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	if k != null and k.pressed and not k.echo and k.keycode == KEY_ESCAPE:
 		if dev_panel != null and dev_panel.visible:
 			dev_panel.call("toggle")
-		elif get_tree().root.has_node(^"WayHome"):
-			# Launched from the menu (10 Oct): with the F1 panel shut, Esc is the menu's one shared
-			# question (Menu/scripts/menu_way_home.gd), heard after this; it frees the mouse itself.
-			return
 		elif Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		elif get_tree().root.has_node(^"WayHome"):
+			# Launched from the menu (11 Oct): Esc never quits; M is the way to the menu
+			# (Menu/scripts/menu_way_home.gd) and QUIT is on the menu.
+			pass
 		else:
 			get_tree().quit()
 		get_viewport().set_input_as_handled()

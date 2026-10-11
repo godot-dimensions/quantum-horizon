@@ -341,10 +341,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	# VOXEL LAB (carried copy, round 7, #79): never quits. The lab's Esc guard (room/vl_escape.gd) has Esc
 	# before this; should one reach here, it only frees the cursor.
 	if event.is_action_pressed(&"ui_cancel"):
-		# Launched from the menu, Esc is the menu's one shared question (Menu/scripts/menu_way_home.gd,
-		# 10 Oct): left unhandled so it reaches it; the question frees the cursor itself, and quitting
-		# is the menu's QUIT. Run on its own (no WayHome at the root), Esc does what it always did.
+		# Launched from the menu (a WayHome at the root, Menu/scripts/menu_way_home.gd) Esc only frees
+		# the cursor and never quits: Esc stops things, M is the way to the menu, QUIT is on the menu
+		# (Ramon, 11 Oct). Run on its own, Esc does what it always did.
 		if get_tree().root.has_node(^"WayHome"):
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+			get_viewport().set_input_as_handled()
 			return
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

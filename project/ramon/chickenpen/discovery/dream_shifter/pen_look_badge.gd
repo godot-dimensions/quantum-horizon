@@ -10,7 +10,7 @@ extends Control
 ## center bottom. and it should be just DEV / ART. and one of of the botton sides look like its activated or not. and
 ## under the botton 'I to switch' just as text."): one pill split in two, DEV and ART, the active half filled in its
 ## colour (the dev look's blue, the art's warm gold) with dark letters, the other half dark glass with dim ones; the
-## fill slides across when the look changes. Under it, "I to switch" as plain text. A click on either half picks it,
+## fill slides across when the look changes. "I to switch" above it (11 Oct; it was under), on a small dark pill. A click on either half picks it,
 ## while the cursor is free. It follows the belt: hidden when the belt is (conversations, films).
 ##
 ## It reads the Look (look/pen_look_4d.gd) and only calls its set_dev. NO class_name (engine_gotchas.md).
@@ -30,6 +30,7 @@ var _was_dev: bool = true
 ## 0..1 through a change (1: settled).
 var _change: float = 1.0
 var _pill := Rect2()
+var _label := Rect2()
 
 
 func _ready() -> void:
@@ -59,8 +60,8 @@ func _on_look(dev: bool) -> void:
 
 ## The pill on screen (for panels that keep clear of it, and the layout editor).
 func drawn_rect() -> Rect2:
-	# The pill and the line of text under it.
-	return Rect2(_pill.position, _pill.size + Vector2(0.0, _pill.size.y * 0.75)) if visible else Rect2()
+	# The pill and the little "I to switch" pill above it.
+	return _pill.merge(_label) if visible else Rect2()
 
 
 func _process(delta: float) -> void:
@@ -104,7 +105,11 @@ func _draw() -> void:
 	var fs: Font = LabPrint.font("bold")
 	var w: float = 232.0 * u
 	var h: float = 40.0 * u
-	_pill = Rect2(Vector2((size.x - w) * 0.5, size.y - 70.0 * u - h), Vector2(w, h))
+	# On the belt's centre line, with the menu's pill beside the belt (Ramon, 11 Oct; pen_inventory_4d.gd pill_line());
+	# 70 above the bottom as before when there is no belt to follow.
+	var inv := get_node_or_null(inventory_path) as Control
+	var line_y: float = float(inv.call("pill_line")) if inv != null and inv.has_method("pill_line") else size.y - 70.0 * u - h * 0.5
+	_pill = Rect2(Vector2((size.x - w) * 0.5, line_y - h * 0.5), Vector2(w, h))
 	var glass := Style.glass_box(h * 0.5, 1.0, 0.82)
 	glass.border_color = Color(1, 1, 1, 0.22)
 	glass.set_border_width_all(int(maxf(1.0, 1.5 * u)))
@@ -130,9 +135,16 @@ func _draw() -> void:
 		var ink: Color = Color(0.08, 0.09, 0.12).lerp(Color(1, 1, 1, 0.55), 1.0 - on)
 		var r := Rect2(_pill.position + Vector2(float(i) * half.x, 0.0), half)
 		draw_string(fb, Vector2(r.position.x, r.get_center().y + fb.get_ascent(px) * 0.36), word, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, px, ink)
-	# "I to switch" under it, plain.
+	# "I to switch" ABOVE it, on a small dark glass pill of its own, a little less white (Ramon, 11 Oct).
 	var key: String = OS.get_keycode_string(int(_look.get("key")))
-	var tpx: int = int(17 * u)
-	var line_pos := Vector2(_pill.position.x, _pill.end.y + 8.0 * u + fs.get_ascent(tpx))
-	draw_string(fs, line_pos + Vector2(1.0, 1.0) * u, "%s to switch" % key, HORIZONTAL_ALIGNMENT_CENTER, w, tpx, Color(0, 0, 0, 0.55))
-	draw_string(fs, line_pos, "%s to switch" % key, HORIZONTAL_ALIGNMENT_CENTER, w, tpx, Color(1, 1, 1, 0.92))
+	var tpx: int = int(15 * u)
+	var text: String = "%s to switch" % key
+	var tw: float = fs.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, tpx).x
+	var th: float = 26.0 * u
+	_label = Rect2(Vector2(_pill.get_center().x - (tw + 26.0 * u) * 0.5, _pill.position.y - 8.0 * u - th), Vector2(tw + 26.0 * u, th))
+	var tag := StyleBoxFlat.new()
+	tag.bg_color = Color(0.02, 0.03, 0.05, 0.5)
+	tag.set_corner_radius_all(int(th * 0.5))
+	tag.anti_aliasing = true
+	draw_style_box(tag, _label)
+	draw_string(fs, Vector2(_label.position.x, _label.get_center().y + fs.get_ascent(tpx) * 0.36), text, HORIZONTAL_ALIGNMENT_CENTER, _label.size.x, tpx, Color(1, 1, 1, 0.72))

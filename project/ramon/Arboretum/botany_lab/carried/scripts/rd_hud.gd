@@ -154,18 +154,27 @@ func _draw() -> void:
 func _draw_strip(u: float, bg: Color, ink: Color, accent: Color) -> void:
 	var fk: Font = LabPrint.font("bold")
 	var fl: Font = LabPrint.font("body")
+	# THE MENU'S KEY, BROKEN OFF (Ramon, 11 Oct: "menu is placed [off] what I just called strip, so a
+	# breakage, and this should be the only blue part"). A last entry tagged "menu" (the scene's
+	# _menu_key(), while it runs from the menu) is drawn as its own pill right of the strip, in the
+	# strip's shape and type, on the menu's blue; the strip keeps its place.
+	var items: Array = strip
+	var menu_item: Array = []
+	if not strip.is_empty() and (strip[strip.size() - 1] as Array).size() > 2 and String(strip[strip.size() - 1][2]) == "menu":
+		menu_item = strip[strip.size() - 1]
+		items = strip.slice(0, strip.size() - 1)
 	# On the lab's type ladder when it is the glass HUD: the key a caption, its label body text.
 	var kpx: int = Style.type_px("caption", u) if glass else int(11 * u)
 	var lpx: int = Style.type_px("body", u) if glass else int(13 * u)
 	var gap: float = 22.0 * u
 	var widths: Array = []
 	var total: float = 0.0
-	for it in strip:
+	for it in items:
 		var kw: float = 0.0 if String(it[0]).is_empty() else maxf(24.0 * u, fk.get_string_size(String(it[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, kpx).x + 14.0 * u)
 		var lw: float = fl.get_string_size(String(it[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, lpx).x
 		widths.append([kw, lw])
 		total += kw + 8.0 * u + lw
-	total += gap * float(strip.size() - 1) + 40.0 * u
+	total += gap * float(items.size() - 1) + 40.0 * u
 	var h: float = 40.0 * u
 	var r := Rect2(Vector2((size.x - total) * 0.5, size.y - h - 22.0 * u), Vector2(total, h))
 	if strip_at >= 0.0:
@@ -175,7 +184,7 @@ func _draw_strip(u: float, bg: Color, ink: Color, accent: Color) -> void:
 	sb.set_corner_radius_all(int(h * 0.5))
 	draw_style_box(sb, r)
 	var x: float = r.position.x + 20.0 * u
-	for i in strip.size():
+	for i in items.size():
 		var kw: float = widths[i][0]
 		var lw: float = widths[i][1]
 		var kr := Rect2(Vector2(x, r.get_center().y - 11.0 * u), Vector2(kw, 22.0 * u))
@@ -187,13 +196,40 @@ func _draw_strip(u: float, bg: Color, ink: Color, accent: Color) -> void:
 			kb.set_border_width_all(int(maxf(1.0, 1.5 * u)))
 			kb.set_corner_radius_all(int(5 * u))
 			draw_style_box(kb, kr)
-			draw_string(fk, Vector2(kr.position.x, kr.get_center().y + 4.0 * u), String(strip[i][0]), HORIZONTAL_ALIGNMENT_CENTER, kr.size.x, kpx, ink)
+			draw_string(fk, Vector2(kr.position.x, kr.get_center().y + 4.0 * u), String(items[i][0]), HORIZONTAL_ALIGNMENT_CENTER, kr.size.x, kpx, ink)
 		else:
 			lx = x
-		draw_string(fl, Vector2(lx, r.get_center().y + 4.5 * u), String(strip[i][1]), HORIZONTAL_ALIGNMENT_LEFT, -1, lpx, ink)
+		draw_string(fl, Vector2(lx, r.get_center().y + 4.5 * u), String(items[i][1]), HORIZONTAL_ALIGNMENT_LEFT, -1, lpx, ink)
 		x = lx + lw + gap
-		if i < strip.size() - 1:
+		if i < items.size() - 1:
 			draw_line(Vector2(x - gap * 0.5, r.position.y + 11.0 * u), Vector2(x - gap * 0.5, r.end.y - 11.0 * u), Color(ink, 0.25), maxf(1.0, u))
+	if not menu_item.is_empty():
+		_draw_menu_pill(u, menu_item, r if not items.is_empty() else Rect2(Vector2(size.x * 0.5, r.position.y), Vector2(0.0, h)), fk, fl, kpx, lpx, items.is_empty())
+
+
+## The menu's key as its own blue pill, `gap` right of the strip `beside` (or centred on it when the
+## strip is empty), the strip's height and type.
+func _draw_menu_pill(u: float, item: Array, beside: Rect2, fk: Font, fl: Font, kpx: int, lpx: int, centred: bool) -> void:
+	var white := Color(0.97, 0.98, 1.0)
+	var kw: float = maxf(24.0 * u, fk.get_string_size(String(item[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, kpx).x + 14.0 * u)
+	var lw: float = fl.get_string_size(String(item[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, lpx).x
+	var w: float = 20.0 * u + kw + 8.0 * u + lw + 20.0 * u
+	var x0: float = beside.position.x - w * 0.5 if centred else beside.end.x + 12.0 * u
+	var r := Rect2(Vector2(x0, beside.position.y), Vector2(w, beside.size.y))
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.125, 0.384, 0.863)
+	sb.set_corner_radius_all(int(r.size.y * 0.5))
+	sb.anti_aliasing = true
+	draw_style_box(sb, r)
+	var kr := Rect2(Vector2(r.position.x + 20.0 * u, r.get_center().y - 11.0 * u), Vector2(kw, 22.0 * u))
+	var kb := StyleBoxFlat.new()
+	kb.draw_center = false
+	kb.border_color = Color(white, 0.85)
+	kb.set_border_width_all(int(maxf(1.0, 1.5 * u)))
+	kb.set_corner_radius_all(int(5 * u))
+	draw_style_box(kb, kr)
+	draw_string(fk, Vector2(kr.position.x, kr.get_center().y + 4.0 * u), String(item[0]), HORIZONTAL_ALIGNMENT_CENTER, kr.size.x, kpx, white)
+	draw_string(fl, Vector2(kr.end.x + 8.0 * u, r.get_center().y + 4.5 * u), String(item[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, lpx, white)
 
 
 func _draw_caption(u: float, ink: Color, accent: Color) -> void:

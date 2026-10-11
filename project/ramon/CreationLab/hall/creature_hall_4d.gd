@@ -238,7 +238,7 @@ func _ready() -> void:
 		room.set("mood_key", KEY_NONE)
 	_label_switch()
 	apply_mood(String(room.get("mood")) if room != null else "bright")
-	hud.set("strip", _strip())
+	hud.set("strip", _strip() + _menu_key())
 	# Tab: every light in the hall on its own (round 3, item 40; the Botany Lab's panel, carried).
 	var ed := PanelContainer.new()
 	ed.name = "LightEditor"
@@ -342,7 +342,7 @@ func _process(delta: float) -> void:
 	_door_check(player.global_position)
 	_card_check(player.global_position)
 	_apply_turn(delta)
-	hud.set("strip", _strip())
+	hud.set("strip", _strip() + _menu_key())
 
 
 func _strip() -> Array:
@@ -500,7 +500,7 @@ func _look_step(delta: float) -> void:
 				cam.queue_free()
 				_look = {}
 				player.set("input_enabled", true)
-				hud.set("strip", _strip())
+				hud.set("strip", _strip() + _menu_key())
 
 
 static func _angles_of(b: Projection) -> Vector2:
@@ -1103,3 +1103,10 @@ func _target(host: Node4D, nm: String, at: Vector2, size: Vector3) -> void:
 	t.set("size", size)
 	t.position = Vector4(at.x, 0.0, at.y, 0.0)
 	host.add_child(t)
+
+
+## The menu's key, listed while this runs from the menu (its way home sits at the root,
+## Menu/scripts/menu_way_home.gd; Ramon, 11 Oct: M is the menu everywhere, Esc only stops things).
+func _menu_key() -> Array:
+	# Tagged "menu": the lab HUD (rd_hud.gd) draws it as its own blue pill beside the strip.
+	return [["M", "Menu", "menu"]] if is_inside_tree() and get_tree().root.has_node(^"WayHome") else []

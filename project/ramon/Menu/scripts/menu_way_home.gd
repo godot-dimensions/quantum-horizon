@@ -1,10 +1,13 @@
 extends CanvasLayer
 
-## The way home, for everything launched from the menu (Ramon, 10 Oct: "Escape must always provide a
-## safe, consistent way back to the main menu").
+## The way home, for everything launched from the menu (10 Oct: one safe, consistent way back to the
+## main menu from anywhere).
 ##
-## ONE QUESTION, EVERYWHERE. Esc in any prototype, in any room it opens, and in the world asks the
-## same thing in the same box: "Return to Main Menu?", yes or no. No closes the box and the scene
+## ONE QUESTION, EVERYWHERE. M in any prototype, in any room it opens, and in the world asks the
+## same thing in the same box: "Return to Main Menu?", yes or no. (Esc did, for a night; Ramon,
+## 11 Oct: Esc was always "kill it", the instant way out of a presentation, a talk, a cinematic or
+## a seat, so Esc went back to stopping things and the menu got its own key, M, shown in every
+## scene's own key list while it runs from the menu.) No closes the box and the scene
 ## goes on exactly where it was (the tree is paused while the box is up, so nothing moves). The
 ## prototypes' own back-to-menu prompts and H buttons are switched off and hidden while they run
 ## from the menu, so this is the only way back anyone has to learn.
@@ -20,6 +23,9 @@ extends CanvasLayer
 ## NO class_name: menu_final preloads it.
 
 const MENU_PATH := "res://ramon/menu_final.tscn"
+## The way to the menu from anything launched from it (11 Oct). Scenes show it in their key lists
+## as ["M", "Menu"] while a WayHome is at the root.
+const MENU_KEY := KEY_M
 ## The world, and the laptop trip that holds it while the menu is up (the menu's catalogue hero).
 const WORLD_PATH := "res://ramon/chickenpen/playable_world.tscn"
 const TRIP_SCRIPT := "res://ramon/chickenpen/scripts/pen_laptop_trip_4d.gd"
@@ -74,29 +80,23 @@ func _ready() -> void:
 	_keep_first.call_deferred()
 
 
-## WHERE ESC IS HEARD: LAST. Godot hands unhandled input to the root's children in reverse order,
-## so sitting FIRST among them makes this the last to hear an Esc nobody else took. Whatever has
-## something open closes it first and keeps the key (a lab's panel, a conversation, a cutscene,
-## the journal, the hawk, the Voxel Lab's and the Maze's own steps), and only an Esc that closed
-## nothing asks the question. Anything that should keep Esc while busy without taking the key
-## (the theatre seat polls it) joins the group "escape_first" with escape_wanted() -> bool.
+## WHERE M IS HEARD: LAST. Godot hands unhandled input to the root's children in reverse order,
+## so sitting FIRST among them makes this the last to hear an M nobody else took (a dev tool that
+## uses M while it is open keeps it). Esc is not this node's: it stops things, scene by scene.
 func _unhandled_input(event: InputEvent) -> void:
 	if is_asking():
 		return
 	var key := event as InputEventKey
-	if key == null or not key.pressed or key.echo or key.keycode != KEY_ESCAPE:
+	if key == null or not key.pressed or key.echo or key.keycode != MENU_KEY:
 		return
 	if not away_from_menu():
 		return
-	for node in get_tree().get_nodes_in_group(&"escape_first"):
-		if node.has_method("escape_wanted") and bool(node.call("escape_wanted")):
-			return
 	get_viewport().set_input_as_handled()
 	ask_home()
 
 
 ## A loading board is up (a scene's own, a CanvasLayer named "LoadBoard" as the Voxel Lab's rooms
-## have, or the menu's "MenuLoadBoard" still fading): Esc waits until the room is built rather than
+## have, or the menu's "MenuLoadBoard" still fading): M waits until the room is built rather than
 ## tearing it down mid-build.
 func _loading() -> bool:
 	for board_name in ["LoadBoard", "MenuLoadBoard"]:
@@ -113,7 +113,7 @@ func _keep_first() -> void:
 
 ## Every arrival at the root (a launch, a room opened by change of scene) puts this back first.
 ## And the old "BACK TO MENU   H" prompts (Demo/return_button.gd, in the Maze, the Range and
-## Crosswise) are hidden and silenced as they appear: Esc is the one way back (Ramon, 10 Oct:
+## Crosswise) are hidden and silenced as they appear: M is the one way back (Ramon, 10 Oct:
 ## "the H blue home buttons ... should be removed"). Except on the world's own trip to the range,
 ## where that prompt is relabelled as the way back to the world (range_way_home_4d.gd).
 func _on_node_added(node: Node) -> void:
@@ -181,7 +181,7 @@ func menu_alive() -> Node:
 
 
 ## Whether there is anything to go home FROM: a prototype (or a room it opened) or the world is
-## the current scene. On the menu itself Esc asks nothing.
+## the current scene. On the menu itself M asks nothing.
 func away_from_menu() -> bool:
 	var here: Node = get_tree().current_scene
 	if here == null:
@@ -191,7 +191,7 @@ func away_from_menu() -> bool:
 
 ## Yes: back to the menu.
 ##   - Under a live menu (a prototype it launched, in whichever room): the menu closes it, the
-##     way Esc always did, so nothing is orphaned.
+##     way its Esc close always did, so nothing is orphaned.
 ##   - In the world (which replaced the menu): the world is HELD, as a laptop holds it, and a
 ##     menu comes up with the blue RETURN TO THE WORLD button; nothing is lost.
 ##   - Anything else: the menu, as a change of scene.
@@ -233,7 +233,7 @@ func _answer(yes: bool) -> void:
 		then.call()
 
 
-## While the box is up it takes every key itself: Enter is yes, Esc is no, nothing reaches the
+## While the box is up it takes every key itself: Enter is yes, Esc or M again is no, nothing reaches the
 ## scene underneath (which is paused anyway).
 func _input(event: InputEvent) -> void:
 	if not is_asking():
@@ -244,7 +244,7 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 	if not key.pressed or key.echo:
 		return
-	if key.keycode == KEY_ESCAPE:
+	if key.keycode == KEY_ESCAPE or key.keycode == MENU_KEY:
 		_answer(false)
 	elif key.keycode == KEY_ENTER or key.keycode == KEY_KP_ENTER:
 		_answer(true)

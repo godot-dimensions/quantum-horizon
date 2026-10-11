@@ -129,6 +129,17 @@ enum Align { CENTRE, LEFT }
 @export_range(0.0, 40.0, 1.0) var slot_gap: float = 0.0
 ## Leaves room under the grid for the name of what is in hand.
 @export_range(0.0, 200.0, 1.0) var bottom_margin: float = 46.0
+## ONE LINE WITH THE PILLS (Ramon, 11 Oct: "align the inventory to be in the center of that"): the bottom pills - the
+## menu's beside the belt and the DEV / ART switch in the middle (discovery/dream_shifter/pen_look_badge.gd) - sit on
+## the belt's centre line, pill_line(). The belt stays `bottom_margin` above the bottom: at a large UI scale it is
+## tall, and centring it on the switch's old line put its bottom, and the name under it, off the screen.
+## The pills' height at 1080 high (pen_look_badge.gd's), scaled with the screen height.
+const PILL_HEIGHT := 40.0
+## The menu's code blue (Menu/scripts/menu_way_home.gd) in the dev look; in the art look a deeper blue, so it sits in
+## the picture instead of popping out of it, and a little desaturated (Ramon, 11 Oct).
+const MENU_BLUE := Color(0.125, 0.384, 0.863)
+const MENU_BLUE_ART := Color(0.16, 0.26, 0.45)
+const Look := preload("res://ramon/chickenpen/look/pen_look_4d.gd")
 @export var empty_fill: Color = Color(0.0, 0.0, 0.0, 0.34)
 @export var empty_border: Color = Color(1.0, 1.0, 1.0, 0.5)
 @export var filled_border: Color = Color(1.0, 1.0, 1.0, 0.72)
@@ -210,6 +221,11 @@ func _input(event: InputEvent) -> void:
 	if Input.mouse_mode != Input.MOUSE_MODE_VISIBLE:
 		return
 	var where: Vector2 = get_viewport().get_mouse_position()
+	# The menu's pill, while the cursor is free: the same question as M (Menu/scripts/menu_way_home.gd).
+	if _from_menu() and _menu_pill_rect().has_point(where):
+		get_tree().root.get_node(^"WayHome").call("ask_home")
+		get_viewport().set_input_as_handled()
+		return
 	for index in slot_count:
 		if _slot_rect(index).has_point(where):
 			_choose(index)
@@ -248,6 +264,8 @@ func selected_effect() -> String:
 ## it (pen_hud_spot_4d.gd counts no full-screen control, and this one is full-screen).
 func belt_rect() -> Rect2:
 	var r: Rect2 = _slot_rect(0).merge(_slot_rect(maxi(slot_count - 1, 0))).grow(6.0)
+	if _from_menu():
+		r = r.merge(_menu_pill_rect())
 	r.size.y += bottom_margin
 	return get_global_transform() * r
 
@@ -451,3 +469,59 @@ func _draw() -> void:
 			label += "  in hand"
 		var name_size: int = clampi(int(slot_size * 0.25), 11, 22)
 		draw_string(font, Vector2(grid.position.x, grid.end.y + 5.0 * u + float(name_size) + 4.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, name_size, Color(1.0, 1.0, 1.0, 0.82))
+	if _from_menu():
+		_draw_menu_pill()
+
+
+## Launched from the menu: its way home sits at the root (Menu/scripts/menu_way_home.gd).
+func _from_menu() -> bool:
+	return is_inside_tree() and get_tree().root.has_node(^"WayHome")
+
+
+## THE MENU'S PILL, BESIDE THE BELT (Ramon, 11 Oct: "in alignment with the I button pill ... a similar pill in blue
+## with M menu, placed next to the inventory"): the DEV / ART switch's height and corners, on the pills' centre line,
+## a step right of the belt's glass; the menu's blue, an outlined M and MENU in the switch's black type.
+func _menu_pill_rect() -> Rect2:
+	var screen: Vector2 = get_viewport_rect().size
+	var k: float = screen.y / 1080.0
+	var grid: Rect2 = _slot_rect(0).merge(_slot_rect(maxi(slot_count - 1, 0)))
+	var h: float = PILL_HEIGHT * k
+	var w: float = 150.0 * k
+	return Rect2(Vector2(grid.end.x + 5.0 * (slot_size / 56.0) + 16.0 * k, pill_line() - h * 0.5), Vector2(w, h))
+
+
+## The bottom pills' centre line: the belt's own middle (screen y, in this full-screen control's coordinates).
+func pill_line() -> float:
+	return _slot_rect(0).merge(_slot_rect(maxi(slot_count - 1, 0))).get_center().y
+
+
+func _draw_menu_pill() -> void:
+	var r: Rect2 = _menu_pill_rect()
+	var k: float = r.size.y / PILL_HEIGHT
+	var white := Color(0.97, 0.98, 1.0)
+	var pill := StyleBoxFlat.new()
+	var look: Object = Look.current
+	var art: bool = look != null and is_instance_valid(look) and not bool(look.get("dev"))
+	pill.bg_color = MENU_BLUE_ART if art else MENU_BLUE
+	pill.set_corner_radius_all(int(r.size.y * 0.5))
+	pill.anti_aliasing = true
+	# The switch's faint white rim, so the blue holds on the dev look's blue too.
+	pill.border_color = Color(1, 1, 1, 0.22)
+	pill.set_border_width_all(int(maxf(1.0, 1.5 * k)))
+	draw_style_box(pill, r)
+	var fb: Font = LabPrint.font("black")
+	var fk: Font = LabPrint.font("bold")
+	var key_px: int = int(14 * k)
+	var word_px: int = int(17 * k)
+	var key_w: float = maxf(24.0 * k, fk.get_string_size("M", HORIZONTAL_ALIGNMENT_LEFT, -1, key_px).x + 12.0 * k)
+	var word_w: float = fb.get_string_size("MENU", HORIZONTAL_ALIGNMENT_LEFT, -1, word_px).x
+	var x: float = r.get_center().x - (key_w + 10.0 * k + word_w) * 0.5
+	var key := Rect2(Vector2(x, r.get_center().y - 12.0 * k), Vector2(key_w, 24.0 * k))
+	var cap := StyleBoxFlat.new()
+	cap.draw_center = false
+	cap.border_color = Color(white, 0.85)
+	cap.set_border_width_all(int(maxf(1.0, 1.5 * k)))
+	cap.set_corner_radius_all(int(5 * k))
+	draw_style_box(cap, key)
+	draw_string(fk, Vector2(key.position.x, key.get_center().y + fk.get_ascent(key_px) * 0.36), "M", HORIZONTAL_ALIGNMENT_CENTER, key.size.x, key_px, white)
+	draw_string(fb, Vector2(key.end.x + 10.0 * k, r.get_center().y + fb.get_ascent(word_px) * 0.36), "MENU", HORIZONTAL_ALIGNMENT_LEFT, -1, word_px, white)

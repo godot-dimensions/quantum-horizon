@@ -1,10 +1,10 @@
 extends SceneTree
 
 ## End-to-end check of the way home (Menu/scripts/menu_way_home.gd, 10 Oct): starts at the menu as
-## the game does, and for every visible entry launches it, presses Esc (the question must come up),
-## answers No (it must go, the scene unchanged), presses Esc and Enter (back on the menu, nothing
-## left over). The same in the labs' second rooms (opened the way their doors open them), with a
-## panel open first (Esc must close the panel, not ask), and in the world: Esc + yes holds it (blue
+## the game does, and for every visible entry launches it, presses Esc (it must neither ask nor
+## leave), M (the question must come up), M again (No: it goes, the scene unchanged), M and Esc (No
+## again), M and Enter (back on the menu, nothing left over). The same in the labs' second rooms (opened the way their doors open them), with a
+## panel open first (Esc must close the panel, not ask), and in the world: M + yes holds it (blue
 ## button), Return puts it back, a lab in between frees it, Return reloads and restores it, and a
 ## laptop opens the menu too. Prints PASS / FAIL per check, memory at each stage, and saves frames
 ## to res://smoke_test_output/way_home/.
@@ -218,8 +218,8 @@ func _entry_flow(index: int, title: String) -> void:
 			if arrived:
 				# Esc while the room's loading board is up does nothing: the room is built first.
 				if _board_up():
-					await _key(KEY_ESCAPE)
-					_check(not _asking(), "%s second room: Esc during its loading board waits (no question)" % title)
+					await _key(KEY_M)
+					_check(not _asking(), "%s second room: M during its loading board waits (no question)" % title)
 				await _settle(SETTLE)
 				await _ask_no_yes(title + " second room", slug + "_room")
 	# A panel open first: Esc must close it and not ask (the Maze's Tab panel).
@@ -235,8 +235,8 @@ func _entry_flow(index: int, title: String) -> void:
 				await _frames_wait(5)
 				var was_open: bool = panel.visible
 				await _key(KEY_ESCAPE)
-				_check(was_open and not panel.visible and not _asking(), "The Maze: Esc closes the open Tab panel first, no question")
-			await _key(KEY_ESCAPE)
+				_check(was_open and not panel.visible and not _asking(), "The Maze: Esc closes the open Tab panel, no question")
+			await _key(KEY_M)
 			await _key(KEY_ENTER)
 			await _until(func() -> bool: return _menu() != null and current_scene == _menu(), 300)
 
@@ -244,16 +244,24 @@ func _entry_flow(index: int, title: String) -> void:
 func _ask_no_yes(what: String, slug: String) -> void:
 	var body: Node4D = _body()
 	var before: Vector4 = body.get("position") if body != null else Vector4.ZERO
+	# Esc only stops things (11 Oct): it must never ask, nor leave.
+	var here: Node = current_scene
 	await _key(KEY_ESCAPE)
-	_check(_asking(), "%s: Esc asks" % what)
+	await _frames_wait(10)
+	_check(not _asking() and current_scene == here, "%s: Esc does not ask or leave" % what)
+	await _key(KEY_M)
+	_check(_asking(), "%s: M asks" % what)
 	await _shot(slug + "_2_asking")
-	await _key(KEY_ESCAPE)
+	await _key(KEY_M)
 	await _frames_wait(20)
 	var after: Vector4 = body.get("position") if body != null and is_instance_valid(body) else before
-	_check(not _asking() and not paused, "%s: Esc again answers No (box gone, not paused)" % what)
+	_check(not _asking() and not paused, "%s: M again answers No (box gone, not paused)" % what)
 	_check((after - before).length() < 0.05, "%s: No leaves the player where they were (moved %.3f)" % [what, (after - before).length()])
+	await _key(KEY_M)
+	_check(_asking(), "%s: M asks again" % what)
 	await _key(KEY_ESCAPE)
-	_check(_asking(), "%s: Esc asks again" % what)
+	_check(not _asking(), "%s: Esc in the box answers No" % what)
+	await _key(KEY_M)
 	await _key(KEY_ENTER)
 	var home: bool = await _until(func() -> bool: return _menu() != null and current_scene == _menu() and _menu().get("_running") == null, 300)
 	_check(home, "%s: Enter answers Yes and lands on the menu" % what)
@@ -280,9 +288,12 @@ func _world_flow() -> void:
 	await _frames_wait(60)
 	var spot: Vector4 = player.get("position") if player != null else Vector4.ZERO
 	await _shot("world_1_playing")
-	# Esc + yes: the world is held, the menu has the blue button.
+	# M + yes: the world is held, the menu has the blue button. Esc first: it must not ask.
 	await _key(KEY_ESCAPE)
-	_check(_asking(), "world: Esc asks")
+	await _frames_wait(10)
+	_check(not _asking() and current_scene == world, "world: Esc does not ask or leave")
+	await _key(KEY_M)
+	_check(_asking(), "world: M asks")
 	await _shot("world_2_asking")
 	await _key(KEY_ENTER)
 	var held: bool = await _until(func() -> bool: return _menu() != null and current_scene == _menu(), 300)
@@ -303,8 +314,8 @@ func _world_flow() -> void:
 		var d: float = (Vector4(player.get("position")) - spot).length()
 		_check(d < 0.3, "Return: the player where they were (off by %.3f)" % d)
 	await _shot("world_4_back")
-	# Esc + yes again, then a lab: the world is released.
-	await _key(KEY_ESCAPE)
+	# M + yes again, then a lab: the world is released.
+	await _key(KEY_M)
 	await _key(KEY_ENTER)
 	await _until(func() -> bool: return _menu() != null and current_scene == _menu(), 300)
 	await _frames_wait(30)
@@ -317,7 +328,7 @@ func _world_flow() -> void:
 	_check(trip != null and is_instance_valid(trip) and not bool(trip.call("has_world")), "launching a lab freed the world (labs run clean)")
 	await _settle(SETTLE)
 	_memory("Voxel Lab, world freed")
-	await _key(KEY_ESCAPE)
+	await _key(KEY_M)
 	await _key(KEY_ENTER)
 	await _until(func() -> bool: return _menu() != null and current_scene == _menu() and _menu().get("_running") == null, 300)
 	await _frames_wait(30)

@@ -539,7 +539,7 @@ func _process(delta: float) -> void:
 		_feed_board(delta)
 	_show_generating()
 	if bench != null:
-		hud.set("strip", bench.call("strip"))
+		hud.set("strip", bench.call("strip") + _menu_key())
 		presenter.set("active", false)
 		prompt.set("shown", false)
 		choice.set("shown", false)
@@ -554,7 +554,7 @@ func _process(delta: float) -> void:
 		presenter.set("showcase", watching)
 		presenter.set("active", watching != null)
 	prompt.set("shown", false)
-	hud.set("strip", _strip())
+	hud.set("strip", _strip() + _menu_key())
 	_match_widths()
 	_route_states(p)
 	_field_door(p)
@@ -1151,3 +1151,10 @@ func go_to(at: Vector4, yaw: float = NAN) -> void:
 
 func touring() -> bool:
 	return false
+
+
+## The menu's key, listed while this runs from the menu (its way home sits at the root,
+## Menu/scripts/menu_way_home.gd; Ramon, 11 Oct: M is the menu everywhere, Esc only stops things).
+func _menu_key() -> Array:
+	# Tagged "menu": the lab HUD (rd_hud.gd) draws it as its own blue pill beside the strip.
+	return [["M", "Menu", "menu"]] if is_inside_tree() and get_tree().root.has_node(^"WayHome") else []

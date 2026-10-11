@@ -502,7 +502,7 @@ static func _clock(s: float) -> String:
 
 func _feed_hud() -> void:
 	var e: RefCounted = current()
-	var base_keys: Array = [["Click", "Shoot"], ["Hold", "Charge"], ["Q  E", "Step through W"], ["RMB", "Turn the slice"], ["X", "Snap it back"]]
+	var base_keys: Array = [["Click", "Shoot"], ["Hold", "Charge"], ["Q  E", "Step through W"], ["RMB", "Turn the slice"], ["X", "Snap it back"]] + _menu_key()
 	match state:
 		"gallery":
 			hud.set("card", {"kicker": "SHOOTING RANGE  ·  TARGET GALLERY", "title": "Every family, nothing scored", "clock": "",
@@ -516,12 +516,12 @@ func _feed_hud() -> void:
 			hud.set("keys", [["1 to 6", "Choose, again for a stage"], ["F", "Start"], ["F2", "Target gallery"]] + base_keys)
 		"results":
 			hud.set("card", {})
-			hud.set("keys", [["F  R", "Again"], ["1 to 6", "Choose"]])
+			hud.set("keys", [["F  R", "Again"], ["1 to 6", "Choose"]] + _menu_key())
 		"failed":
 			hud.set("card", {"kicker": "%02d  %s   ·   ROUND PAUSED" % [int(e.get("number")), String(e.get("title")).to_upper()],
 				"title": _fail_reason if not _fail_reason.is_empty() else "Round paused", "clock": _clock(t_run),
 				"line": "Strict mode: one miss stops the round.\nPress R to run the stage again.", "progress": Vector2.ZERO})
-			hud.set("keys", [["R", "Restart the stage"], ["T", "Strict mode off"]])
+			hud.set("keys", [["R", "Restart the stage"], ["T", "Strict mode off"]] + _menu_key())
 		_:
 			var st: Dictionary = e.get("stages")[stage]
 			var prog: Vector2 = e.call("progress", stage)
@@ -557,3 +557,9 @@ func _feed_console() -> void:
 
 func _refresh() -> void:
 	changed.emit()
+
+
+## The menu's key, listed while this runs from the menu (its way home sits at the root,
+## Menu/scripts/menu_way_home.gd; Ramon, 11 Oct: M is the menu everywhere, Esc only stops things).
+func _menu_key() -> Array:
+	return [["M", "Menu"]] if is_inside_tree() and get_tree().root.has_node(^"WayHome") else []

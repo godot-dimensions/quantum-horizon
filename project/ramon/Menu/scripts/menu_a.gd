@@ -345,7 +345,7 @@ func _footer_slug() -> String:
 		parts.append("%s %s" % [word(labs).to_lower(), "lab" if labs == 1 else "labs"])
 	if plays > 0:
 		parts.append("%s %s" % [word(plays).to_lower(), "experiment" if plays == 1 else "experiments"])
-	parts.append("click or enter launches, esc returns")
+	parts.append("click or enter launches, M returns")
 	return "  ·  ".join(parts)
 
 

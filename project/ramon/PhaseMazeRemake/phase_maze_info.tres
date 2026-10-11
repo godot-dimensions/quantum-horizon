@@ -11,7 +11,7 @@ lead = "A maze in four directions."
 description = "Every view is a flat maze. Press F and what was ahead is W: another flat maze stands in front of you.
 Q and E step through W too, slowly and blind.
 Blue walls stand across W. Orange is the way out, and what you climb.
-G shows the next layer as ghosts. M is the map, T a hint."
+G shows the next layer as ghosts. O is the map, T a hint."
 interactions = [["key:F", "Turn into W"], ["key:Q E", "Step through W"], ["rdrag", "Tilt the slice"], ["key:G", "4D sight"]]
 controls_heading = "CONTROLS"
 research_title = "THE MAZE"

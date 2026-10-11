@@ -95,6 +95,7 @@ func _draw() -> void:
 				["Tab", "Settings"], ["The blue door", "Back to the lab"]]
 		if String(field.get("site")) == "platform":
 			keys = [["WASD", "Walk"], ["Right drag", "Turn the slice"], ["R", "Level again"], ["Tab", "Settings"]]
+	keys += _menu_key()
 	var kx: float = 22 * u
 	var ky: float = size.y - 22 * u
 	var strip := Rect2(Vector2(kx - 10 * u, ky - 22 * u), Vector2(size.x - 2.0 * (kx - 10 * u), 32 * u))
@@ -118,3 +119,9 @@ static func _thousands(n: int) -> String:
 		out = "," + s.substr(s.length() - 3) + out
 		s = s.substr(0, s.length() - 3)
 	return ("-" if n < 0 else "") + s + out
+
+
+## The menu's key, listed while this runs from the menu (its way home sits at the root,
+## Menu/scripts/menu_way_home.gd; Ramon, 11 Oct: M is the menu everywhere, Esc only stops things).
+func _menu_key() -> Array:
+	return [["M", "Menu"]] if is_inside_tree() and get_tree().root.has_node(^"WayHome") else []

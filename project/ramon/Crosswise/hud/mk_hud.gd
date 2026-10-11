@@ -179,9 +179,14 @@ func _draw() -> void:
 		draw_rect(Rect2(Vector2(col_x - 4, wy - 2.5), Vector2(48, 5)), YOU)
 	# KEYS
 	var keys := "WASD walk    SPACE jump    RIGHT MOUSE turn into W (drag: by hand)    E lift / put down    CLICK strike    R restart    F hint    F2 light"
+	# From the menu (11 Oct): M is the way back, and the shared BACK TO MENU button is hidden, so the
+	# strip says M and centres in the whole width.
+	var from_menu: bool = get_tree().root.has_node(^"WayHome")
+	if from_menu:
+		keys += "    M menu"
 	var kw: float = _body.get_string_size(keys, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x + 40
 	# Centred in the room right of the shared BACK TO MENU button (bottom left, about 270 px wide).
-	var left: float = 296.0
+	var left: float = 20.0 if from_menu else 296.0
 	var kx: float = maxf(left, left + (vp.x - left - 20.0 - kw) * 0.5)
 	var kr := Rect2(Vector2(kx, vp.y - 50), Vector2(kw, 34))
 	_glass(kr, 17)
@@ -245,7 +250,7 @@ func _draw() -> void:
 		_text(fr.position + Vector2(0, 92), "Four islands, through the fourth dimension.", _body, 15, INK_DIM, HORIZONTAL_ALIGNMENT_CENTER, fw)
 		var stats: String = "%s     %d turns into W     %d falls" % [_finale.get("time", ""), int(_finale.get("turns", 0)), int(_finale.get("falls", 0))]
 		_text(fr.position + Vector2(0, 134), stats, _bold, 16, ACCENT, HORIZONTAL_ALIGNMENT_CENTER, fw)
-		_text(fr.position + Vector2(0, 178), "R  play again          ESC  back to menu", _bold, 14, INK, HORIZONTAL_ALIGNMENT_CENTER, fw)
+		_text(fr.position + Vector2(0, 178), "R  play again          M  back to menu" if get_tree().root.has_node(^"WayHome") else "R  play again          H  back to menu", _bold, 14, INK, HORIZONTAL_ALIGNMENT_CENTER, fw)
 
 
 func _wrap(text: String, width: float, size: int) -> PackedStringArray:

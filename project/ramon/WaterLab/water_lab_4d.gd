@@ -417,7 +417,7 @@ func _process(delta: float) -> void:
 		if bool(_door.call("inside", p)):
 			_leaving = 0.0
 			player.set("input_enabled", false)
-	hud.set("strip", _strip())
+	hud.set("strip", _strip() + _menu_key())
 	hud.set("strip_at", 0.40 if _at_feed else -1.0)
 	_route_states(p)
 
@@ -937,3 +937,10 @@ func set_build(on: bool) -> void:
 		var c: Camera4D = camera()
 		if c != null:
 			c.current = true
+
+
+## The menu's key, listed while this runs from the menu (its way home sits at the root,
+## Menu/scripts/menu_way_home.gd; Ramon, 11 Oct: M is the menu everywhere, Esc only stops things).
+func _menu_key() -> Array:
+	# Tagged "menu": the lab HUD (rd_hud.gd) draws it as its own blue pill beside the strip.
+	return [["M", "Menu", "menu"]] if is_inside_tree() and get_tree().root.has_node(^"WayHome") else []

@@ -834,7 +834,7 @@ func _strip() -> void:
 	if _strip_tilt > 0:
 		out.insert(3, ["%d°" % _strip_tilt, "turned through W"])
 		out.insert(4, ["R", "Level"])
-	hud.set("strip", out)
+	hud.set("strip", out + _menu_key())
 
 
 ## A right drag: both lands turned through W together, about their own middles (the hall's turn: a
@@ -1079,3 +1079,10 @@ func env_set(key: String, v: Variant) -> void:
 			_mood_queued = false
 			if is_instance_valid(room):
 				room.call("set_mood", String(room.get("mood")), true, false)).call_deferred()
+
+
+## The menu's key, listed while this runs from the menu (its way home sits at the root,
+## Menu/scripts/menu_way_home.gd; Ramon, 11 Oct: M is the menu everywhere, Esc only stops things).
+func _menu_key() -> Array:
+	# Tagged "menu": the lab HUD (rd_hud.gd) draws it as its own blue pill beside the strip.
+	return [["M", "Menu", "menu"]] if is_inside_tree() and get_tree().root.has_node(^"WayHome") else []
