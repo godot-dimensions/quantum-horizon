@@ -48,6 +48,8 @@ const HeronLoop := preload("res://ramon/CreationLab/hall/heron_loop_4d.gd")
 const EXPOSURE_K := 0.9
 const LabScript := preload("res://ramon/CreationLab/creature_lab_4d.gd")
 const LAB := "res://ramon/CreationLab/creature_lab.tscn"
+## The menu's sounds in the labs: the Frontier Map's cues and music bed (Ramon, 11 Oct).
+const LabSounds := preload("res://ramon/Menu/scripts/menu_lab_sounds.gd")
 const Card := preload("res://ramon/CreationLab/hall/hall_info_card.gd")
 const INFO := preload("res://ramon/CreationLab/hall/creature_hall_info.tres")
 ## How near a pedestal's edge its card comes up (m), and how far away you go before a closed card may come back.
@@ -154,6 +156,7 @@ func _enter_tree() -> void:
 
 
 func toggle_palette() -> void:
+	_sound("click")
 	Style.palette = "grey" if Style.palette == "black" else "black"
 	Style.apply(Style.mood)
 	_dark_walls()
@@ -187,6 +190,9 @@ func _dark_walls() -> void:
 
 
 func _ready() -> void:
+	# The menu's sounds in the labs (Menu/scripts/menu_lab_sounds.gd): this room, with the music bed.
+	if not Engine.is_editor_hint():
+		LabSounds.room(self, true)
 	var room: Node = get_node_or_null("Room")
 	if room != null:
 		var light: Dictionary = Style.ROOM_LIGHT.duplicate(true)
@@ -458,6 +464,7 @@ func _close_look_from(st: Dictionary, who: Node4D, at: Vector4, eye: Vector4, ai
 func close_look_end() -> void:
 	if _look.is_empty() or String(_look["phase"]) == "out":
 		return
+	_sound("swipe")
 	look_card.call("hide_card")
 	var cam: Camera4D = _look["cam"]
 	_look["phase"] = "out"
@@ -533,6 +540,7 @@ func _apply_turn(delta: float) -> void:
 
 ## The exhibits back whole (the Water Lab's "R  Whole again"); the runner calls this too.
 func whole_again() -> void:
+	_sound("click")
 	_leveling = true
 	if hud != null:
 		hud.call("toast", "Whole again")
@@ -554,6 +562,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 	if k.keycode == KEY_C and close_look():
+		_sound("swipe")
 		get_viewport().set_input_as_handled()
 		return
 	if k.keycode == KEY_R:
@@ -615,10 +624,12 @@ func _input(event: InputEvent) -> void:
 	var mb := event as InputEventMouseButton
 	if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED \
 			and close_look():
+		_sound("swipe")
 		get_viewport().set_input_as_handled()
 		return
 	if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and bool(card.call("showing")) \
 			and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		_sound("click")
 		_closed[_card_at] = true
 		card.call("hide_card")
 		_card_at = ""
@@ -639,6 +650,7 @@ func _door_check(p: Vector4) -> void:
 
 ## Back to the Creature Lab, arriving in its entry room by the hall's door.
 func to_lab() -> void:
+	_sound("select")
 	LabScript.arrive_from = "hall"
 	get_tree().change_scene_to_file(LAB)
 
@@ -892,8 +904,9 @@ func _populate(deck: Node4D, s: Dictionary, st: Dictionary, size: Vector2) -> vo
 					_roam(deck, cw, {"radius": size.x, "margin": 0.35, "steer": false})
 				st["animals"].append(c)
 		"heron":
-			# No croak (round 4, item 43: "strange and distracting"); its wingbeats stay.
-			var hr := _scripted(HERON, "Heron", {"idle_only": true, "size": 1.0, "croak": null})
+			# No croak (round 4, item 43: "strange and distracting"), and no wingbeat sound either (Ramon, 11 Oct:
+			# "remove the flapping sound of the heron in the big presentation hall"); it still flies its loops.
+			var hr := _scripted(HERON, "Heron", {"idle_only": true, "size": 1.0, "croak": null, "wingbeats": null})
 			if hr != null:
 				_turn(hr, -0.5)
 				deck.add_child(_wrap(hr))
@@ -1110,3 +1123,9 @@ func _target(host: Node4D, nm: String, at: Vector2, size: Vector3) -> void:
 func _menu_key() -> Array:
 	# Tagged "menu": the lab HUD (rd_hud.gd) draws it as its own blue pill beside the strip.
 	return [["M", "Menu", "menu"]] if is_inside_tree() and get_tree().root.has_node(^"WayHome") else []
+
+
+## The menu's sounds in the labs (Menu/scripts/menu_lab_sounds.gd): one of the Frontier Map's cues, never in the editor.
+func _sound(which: String) -> void:
+	if not Engine.is_editor_hint() and is_inside_tree():
+		LabSounds.cue(get_tree(), which)

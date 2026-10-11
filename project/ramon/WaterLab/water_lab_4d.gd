@@ -48,6 +48,8 @@ const MouseTutorial := preload("res://ramon/WaterLab/shared/mouse_tutorial.gd")
 const SharkScript := preload("res://ramon/WaterLab/life/shark_4d.gd")
 
 const SEA_SCENE := "res://ramon/WaterLab/seascape/seascape.tscn"
+## The menu's sounds in the labs: the Frontier Map's cues, and its music bed indoors (Ramon, 11 Oct).
+const LabSounds := preload("res://ramon/Menu/scripts/menu_lab_sounds.gd")
 ## The tree's meta that says where you are arriving from (the sea sets it on its way back).
 const ARRIVE_META := "water_lab_arrive"
 
@@ -111,6 +113,8 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
+	if not Engine.is_editor_hint():
+		LabSounds.room(self, true)
 	var room: Node = get_node_or_null("Room")
 	if room != null:
 		room.set("mood_overrides", Style.ROOM_LIGHT.duplicate(true))
@@ -367,6 +371,7 @@ func _feeder_rows() -> Array:
 # -- looks ------------------------------------------------------------------------------------------------
 
 func toggle_palette() -> void:
+	_sound("click")
 	Style.palette = "grey" if Style.palette == "black" else "black"
 	Style.apply(Style.mood)
 	for n in get_tree().get_nodes_in_group("lab_mood_listener"):
@@ -659,6 +664,7 @@ func _feeding(p: Vector4, delta: float) -> void:
 func feed() -> void:
 	if _feed_cooldown > 0.0 or tank == null or player == null:
 		return
+	_sound("click")
 	var koi: Node = tank.get("koi")
 	var life: Node4D = tank.get("life")
 	if koi == null or life == null or not koi.has_method("drop_food_at"):
@@ -752,6 +758,7 @@ func _leave(delta: float) -> void:
 	if _leaving >= 0.65:
 		_leaving = -100.0
 		get_tree().root.set_meta(ARRIVE_META, "lab")
+		_sound("select")
 		get_tree().change_scene_to_file(SEA_SCENE)
 
 
@@ -812,6 +819,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	match k.keycode:
 		KEY_E:
 			if _near_panel and showcase != null:
+				_sound("click")
 				showcase.call("activate")
 				get_viewport().set_input_as_handled()
 		KEY_F:
@@ -821,6 +829,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_R:
 			# At the showcase R makes the koi whole again; in the circle it puts the tank's contents
 			# back (the rig levels the slice, as everywhere).
+			if active != null or (_on_turn and tank != null):
+				_sound("click")
 			if active != null:
 				active.call("reset")
 			if _on_turn and tank != null:
@@ -828,14 +838,17 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				_follow_shark = 0.0
 		KEY_LEFT, KEY_RIGHT:
 			if active != null and active.has_method("select_step"):
+				_sound("click")
 				active.call("select_step", -1 if k.keycode == KEY_LEFT else 1)
 				get_viewport().set_input_as_handled()
 		KEY_1, KEY_2, KEY_3, KEY_4:
 			if active != null and active.has_method("select"):
+				_sound("click")
 				active.call("select", k.keycode - KEY_1)
 				get_viewport().set_input_as_handled()
 		KEY_V:
 			if _on_turn or _shark_prompt_on:
+				_sound("click")
 				_follow_shark = FOLLOW_TIME
 				_shark_prompt_on = false
 				hud.call("toast", "Aligned with the shark")
@@ -944,3 +957,9 @@ func set_build(on: bool) -> void:
 func _menu_key() -> Array:
 	# Tagged "menu": the lab HUD (rd_hud.gd) draws it as its own blue pill beside the strip.
 	return [["M", "Menu", "menu"]] if is_inside_tree() and get_tree().root.has_node(^"WayHome") else []
+
+
+## The menu's sounds in the labs (Menu/scripts/menu_lab_sounds.gd): one of the Frontier Map's cues, never in the editor.
+func _sound(which: String) -> void:
+	if not Engine.is_editor_hint() and is_inside_tree():
+		LabSounds.cue(get_tree(), which)

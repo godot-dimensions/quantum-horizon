@@ -90,6 +90,8 @@ const PathNet := preload("res://ramon/VoxelLab/carried/PathCreator/graph/path_ne
 const PathGraph := preload("res://ramon/VoxelLab/carried/PathCreator/graph/path_graph.gd")
 
 const LAB := "res://ramon/VoxelLab/voxel_lab.tscn"
+## The menu's sounds in the labs: the Frontier Map's cues (Ramon, 11 Oct).
+const LabSounds := preload("res://ramon/Menu/scripts/menu_lab_sounds.gd")
 ## What is built round the deck, metres (a 4D ball, cut to the band of W and of height), and how many
 ## 8 m chunks either side of W 0. Changed in code only: every metre more is more to build and keep.
 ## Each voxel 1.6 m (round 4: "scale up the existing island meshes uniformly rather than generating
@@ -222,6 +224,9 @@ var _escape: CanvasLayer
 
 func _ready() -> void:
 	_escape = Escape.guard(self)
+	# Out by the sea: the menu's cues, but no music bed here (Ramon, 11 Oct).
+	if not Engine.is_editor_hint():
+		LabSounds.room(self, false)
 	_light()
 	_deck_at = start_at - Vector4(0, 2.2, 0, 0)
 	_centre = Node4D.new()
@@ -1942,6 +1947,7 @@ func _on_choice(i: int) -> void:
 func go_to_land(to: int) -> void:
 	if to == biome or to < 0 or to >= Case.BIOMES.size():
 		return
+	_sound("select")
 	var was_green: bool = biome == 0
 	biome = to
 	# The moving sea belongs to the green land, over open seabed; the desert's salt flats and the lava
@@ -1996,6 +2002,7 @@ func _rebuild_land() -> void:
 func fly() -> void:
 	if mode == "fly" or _heights.is_empty():
 		return
+	_sound("select")
 	mode = "fly"
 	player.set("input_enabled", false)
 	choice.set("shown", false)
@@ -2018,6 +2025,7 @@ func fly() -> void:
 func land() -> void:
 	if mode != "fly":
 		return
+	_sound("click")
 	bird.call("stop")
 	mode = "deck"
 	_edge.visible = false
@@ -2042,6 +2050,7 @@ func _input(event: InputEvent) -> void:
 				land()
 				get_viewport().set_input_as_handled()
 			KEY_V:
+				_sound("click")
 				set_volume_view(not volume_view)
 		return
 	var mb := event as InputEventMouseButton
@@ -2129,9 +2138,16 @@ func escape_step(key: Key) -> bool:
 
 
 func back_to_lab() -> void:
+	_sound("select")
 	input_enabled = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	# The lab places you at the gallery's back door when you come back from here.
 	var lab = load("res://ramon/VoxelLab/voxel_lab_4d.gd")
 	lab.arrive_from = "field"
 	get_tree().change_scene_to_file(LAB)
+
+
+## The menu's sounds in the labs (Menu/scripts/menu_lab_sounds.gd): one of the Frontier Map's cues, never in the editor.
+func _sound(which: String) -> void:
+	if not Engine.is_editor_hint() and is_inside_tree():
+		LabSounds.cue(get_tree(), which)

@@ -88,6 +88,8 @@ const WALL_T := 0.5
 const MIRROR := Projection(Vector4(-1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 1))
 
 const HALL := "res://ramon/Arboretum/botany_lab.tscn"
+## The menu's sounds in the labs: the Frontier Map's cues, and its music bed indoors (Ramon, 11 Oct).
+const LabSounds := preload("res://ramon/Menu/scripts/menu_lab_sounds.gd")
 const ARRIVE_META := "botany_arrive"
 
 @export_group("Land")
@@ -161,6 +163,9 @@ var _mood_queued: bool = false
 
 
 func _ready() -> void:
+	# The menu's sounds in the labs (Menu/scripts/menu_lab_sounds.gd): this room, with the music bed.
+	if not Engine.is_editor_hint():
+		LabSounds.room(self, true)
 	# Round 8 (Ramon: "why is the second room dark, and not bright? all i said was the toggle mode isnt working"):
 	# the dark mode is the kit's palette, one for the whole game, so this room came in black whenever the hall
 	# was, and its own switch (the HUD's button, B) did nothing. It opens bright now, B and the button switch it
@@ -811,6 +816,7 @@ func _physics_process(_delta: float) -> void:
 
 ## B and the HUD's switch (round 8): the palette, grey or black, as the hall's toggle_palette does it.
 func toggle_palette() -> void:
+	_sound("click")
 	Style.palette = "grey" if Style.palette == "black" else "black"
 	Style.apply(Style.mood)
 	for n in get_tree().get_nodes_in_group("lab_mood_listener"):
@@ -861,6 +867,7 @@ func _input(event: InputEvent) -> void:
 
 
 func back_to_hall() -> void:
+	_sound("select")
 	if get_tree().root.has_meta(HALL_PALETTE_META):
 		Style.palette = String(get_tree().root.get_meta(HALL_PALETTE_META))
 		get_tree().root.remove_meta(HALL_PALETTE_META)
@@ -883,18 +890,21 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				# Round 2 (Ramon: the Gust of wind "appears to do nothing"): it did run, but it began 8 m out
 				# and reached the first tree seconds later, at the room's mild strength. Now it starts at
 				# the trees, wide and hard, and crosses the room fast enough to follow.
+				_sound("click")
 				w.set("gust_speed", 10.0)
 				w.call("gust", 0.6, 7.0, 1.0)
 				hud.call("toast", "A gust of wind: blocky or smooth, every tree bends by its own skeleton")
 			get_viewport().set_input_as_handled()
 		KEY_R:
 			if turn_basis != Projection.IDENTITY:
+				_sound("click")
 				level()
 				hud.call("toast", "Both lands level again")
 				get_viewport().set_input_as_handled()
 		KEY_E:
 			for pn in [get_node_or_null("PanelBlocky"), get_node_or_null("PanelSmooth")]:
 				if pn != null and bool(pn.get("near")):
+					_sound("click")
 					pn.call("activate")
 					get_viewport().set_input_as_handled()
 
@@ -1086,3 +1096,9 @@ func env_set(key: String, v: Variant) -> void:
 func _menu_key() -> Array:
 	# Tagged "menu": the lab HUD (rd_hud.gd) draws it as its own blue pill beside the strip.
 	return [["M", "Menu", "menu"]] if is_inside_tree() and get_tree().root.has_node(^"WayHome") else []
+
+
+## The menu's sounds in the labs (Menu/scripts/menu_lab_sounds.gd): one of the Frontier Map's cues, never in the editor.
+func _sound(which: String) -> void:
+	if not Engine.is_editor_hint() and is_inside_tree():
+		LabSounds.cue(get_tree(), which)

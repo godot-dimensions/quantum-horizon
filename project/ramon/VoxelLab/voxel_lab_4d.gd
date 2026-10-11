@@ -45,6 +45,8 @@ const LightsPanel := preload("res://ramon/VoxelLab/room/vl_lights_panel.gd")
 const MouseTutorial := preload("res://ramon/VoxelLab/field/vl_mouse_tutorial.gd")
 const Build := preload("res://ramon/VoxelLab/carried/scripts/chamber_build.gd")
 const FIELD := "res://ramon/VoxelLab/field/voxel_field.tscn"
+## The menu's sounds in the labs: the Frontier Map's cues, and its music bed indoors (Ramon, 11 Oct).
+const LabSounds := preload("res://ramon/Menu/scripts/menu_lab_sounds.gd")
 ## Destinations lit blue whatever their turn (the others wait theirs in the muted colour).
 const ALWAYS_LIT := ["Build"]
 
@@ -192,6 +194,7 @@ func _ready() -> void:
 	apply_shape()
 	if not Engine.is_editor_hint():
 		_escape = Escape.guard(self)
+		LabSounds.room(self, true)
 	var room: Node = get_node_or_null("Room")
 	if room != null:
 		room.set("mood_overrides", Style.ROOM_LIGHT.duplicate(true))
@@ -493,6 +496,7 @@ func wall_lengths() -> Dictionary:
 ## The palette switch (B, or the button at the top right): the light surfaces grey or near-black, the
 ## light untouched (kit_style.gd palette), as in the Creation Lab and the Arboretum.
 func toggle_palette() -> void:
+	_sound("click")
 	Style.palette = "grey" if Style.palette == "black" else "black"
 	Style.apply(Style.mood)
 	# The black palette keeps less of the sky fill (the dev panel's "black palette: fill kept"), so the
@@ -610,6 +614,7 @@ func watch(s: Node) -> void:
 		if bool(ex.call("is_ready")):
 			ex.call("reset")
 		hud.call("toast", "Making it whole first")
+	_sound("select")
 	_watch_next = s
 
 
@@ -702,6 +707,7 @@ func _on_choice(i: int) -> void:
 		"biome":
 			var ex: Node = st.get("exhibit") if st != null else null
 			if ex != null and ex.has_method("next_biome"):
+				_sound("click")
 				ex.call("next_biome")
 				hud.call("toast", "The land: " + String(ex.call("biome_count_label")))
 
@@ -833,10 +839,12 @@ func _input(event: InputEvent) -> void:
 	if mb != null and mb.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if mb.button_index == MOUSE_BUTTON_LEFT:
 			if watching != null:
+				_sound("click")
 				watching.call("skip")
 				get_viewport().set_input_as_handled()
 				return
 			if String(spot.get("kind", "")) == "popup":
+				_sound("swipe")
 				_popup_open = not _popup_open
 				get_viewport().set_input_as_handled()
 				return
@@ -847,6 +855,7 @@ func _input(event: InputEvent) -> void:
 	var kr := event as InputEventKey
 	if kr != null and kr.pressed and not kr.echo and kr.keycode == KEY_R and active != null and watching == null:
 		# Round 3: R puts the pedestal's specimen back as it stood: no turn, the middle slice.
+		_sound("click")
 		active.call("reset_view")
 		get_viewport().set_input_as_handled()
 		return
@@ -874,9 +883,11 @@ func escape_step(key: Key) -> bool:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if bench != null else Input.MOUSE_MODE_CAPTURED
 			return true
 	if _popup_open:
+		_sound("swipe")
 		_popup_open = false
 		return true
 	if watching != null or _watch_next != null:
+		_sound("click")
 		stop_watching()
 		return true
 	if bench != null:
@@ -927,6 +938,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		KEY_RIGHT, KEY_LEFT:
 			if watching != null:
+				_sound("click")
 				watching.call("skip" if k.keycode == KEY_RIGHT else "skip_back")
 				get_viewport().set_input_as_handled()
 
@@ -1070,6 +1082,7 @@ func camera() -> Camera4D:
 ## root is handed a 3D world first: switching to Combined in one run crashes the engine otherwise (the
 ## 30 Sept engine bug).
 func toggle_volume_view() -> void:
+	_sound("click")
 	volume_view = not volume_view
 	_apply_view_to(camera())
 	_apply_view_to(_film_cam)
@@ -1102,6 +1115,7 @@ func _projection_specimens_only() -> void:
 
 ## G: the voxel grid on every specimen (room/vl_grid_view.gd).
 func toggle_grid_view() -> void:
+	_sound("click")
 	grid_view = not grid_view
 	for s in stations:
 		_grid_for(s, grid_view)
@@ -1130,6 +1144,7 @@ func straight_to_field() -> void:
 ## Out through the gallery's far door to the field (field/voxel_field.tscn): this room is let go, so its
 ## memory is free for the landscape; the field brings you back to this door.
 func to_field() -> void:
+	_sound("select")
 	player.set("input_enabled", false)
 	get_tree().change_scene_to_file(FIELD)
 
@@ -1158,3 +1173,9 @@ func touring() -> bool:
 func _menu_key() -> Array:
 	# Tagged "menu": the lab HUD (rd_hud.gd) draws it as its own blue pill beside the strip.
 	return [["M", "Menu", "menu"]] if is_inside_tree() and get_tree().root.has_node(^"WayHome") else []
+
+
+## The menu's sounds in the labs (Menu/scripts/menu_lab_sounds.gd): one of the Frontier Map's cues, never in the editor.
+func _sound(which: String) -> void:
+	if not Engine.is_editor_hint() and is_inside_tree():
+		LabSounds.cue(get_tree(), which)

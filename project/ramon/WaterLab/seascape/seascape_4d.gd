@@ -113,6 +113,8 @@ var _visual := Vector4.ZERO
 ## The doors back to the tank room: armed once you have walked away from them; walking into one
 ## fades and loads the Water Lab's tank room (water_lab.tscn), which puts you at its far door.
 const LAB_SCENE := "res://ramon/WaterLab/water_lab.tscn"
+## The menu's sounds in the labs: the Frontier Map's cues; out by the sea, no music bed (Ramon, 11 Oct).
+const LabSounds := preload("res://ramon/Menu/scripts/menu_lab_sounds.gd")
 const ARRIVE_META := "water_lab_arrive"
 var _doors_armed: bool = false
 ## Off for runners that walk you about (they would trip the doors).
@@ -177,6 +179,9 @@ func pole_at() -> Vector3:
 # -- building -----------------------------------------------------------------------------------------------
 
 func _ready() -> void:
+	# Out by the sea: the menu's cues, but no music bed here (Ramon, 11 Oct).
+	if not Engine.is_editor_hint():
+		LabSounds.room(self, false)
 	Style.apply("bright")
 	_water = get_node_or_null("Water")
 	if _water != null:
@@ -1015,6 +1020,7 @@ func _doors(delta: float) -> void:
 		if _leaving >= 0.65:
 			_leaving = -100.0
 			get_tree().root.set_meta(ARRIVE_META, "sea")
+			_sound("select")
 			get_tree().change_scene_to_file(LAB_SCENE)
 		return
 	var p: Vector4 = player.global_position
@@ -1313,9 +1319,16 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_toast("Gerstner off: plain sines" if g == 0 else "Gerstner %d" % g)
 		_:
 			return
+	_sound("click")
 	get_viewport().set_input_as_handled()
 
 
 func _toast(text: String) -> void:
 	if hud != null and hud.has_method("toast"):
 		hud.call("toast", text)
+
+
+## The menu's sounds in the labs (Menu/scripts/menu_lab_sounds.gd): one of the Frontier Map's cues, never in the editor.
+func _sound(which: String) -> void:
+	if not Engine.is_editor_hint() and is_inside_tree():
+		LabSounds.cue(get_tree(), which)

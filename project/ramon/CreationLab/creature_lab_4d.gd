@@ -48,6 +48,8 @@ const LoadBoard := preload("res://ramon/CreationLab/hall/carried/vl_load_board.g
 const Build := preload("res://ramon/CreationLab/scripts/chamber_build.gd")
 ## The creature hall, behind the entry room's hologram door.
 const HALL := "res://ramon/CreationLab/hall/creature_hall.tscn"
+## The menu's sounds in the labs: the Frontier Map's cues and music bed (Ramon, 11 Oct).
+const LabSounds := preload("res://ramon/Menu/scripts/menu_lab_sounds.gd")
 ## Where you come back from: "hall" puts you in the entry room by the hall's door, facing room 1.
 static var arrive_from: String = ""
 
@@ -174,6 +176,7 @@ func _enter_tree() -> void:
 ## The palette switch (B, or the button at the top right): the light surfaces grey or near-black, the
 ## lights untouched (kit_style.gd palette).
 func toggle_palette() -> void:
+	_sound("click")
 	Style.palette = "grey" if Style.palette == "black" else "black"
 	Style.apply(Style.mood)
 	for n in get_tree().get_nodes_in_group("lab_mood_listener"):
@@ -229,6 +232,9 @@ func set_walls(which: String) -> void:
 
 
 func _ready() -> void:
+	# The menu's sounds in the labs (Menu/scripts/menu_lab_sounds.gd): this room, with the music bed.
+	if not Engine.is_editor_hint():
+		LabSounds.room(self, true)
 	set_walls(walls)
 	apply_shape()
 	var room: Node = get_node_or_null("Room")
@@ -547,6 +553,7 @@ func _read_desk(_delta: float) -> void:
 func toggle_desk() -> void:
 	if _at_desk != null:
 		_desk_open = not _desk_open
+		_sound("swipe")
 
 
 # -- the mouse and keys ----------------------------------------------------------------------------
@@ -557,6 +564,7 @@ func _input(event: InputEvent) -> void:
 	var mb := event as InputEventMouseButton
 	if not _cine.is_empty():
 		if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+			_sound("click")
 			_begin_out()
 			get_viewport().set_input_as_handled()
 		return
@@ -570,6 +578,7 @@ func _input(event: InputEvent) -> void:
 		if mb.button_index == MOUSE_BUTTON_LEFT and _at_desk != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			# A click opens the data; while it is open a click steps through its four steps (E closes).
 			if _desk_open:
+				_sound("click")
 				data_panel.call("select_step", 1)
 			else:
 				toggle_desk()
@@ -583,6 +592,7 @@ func _input(event: InputEvent) -> void:
 		# While the presentation plays, a left click goes on to its next part (Ramon, 4 Oct: "skip
 		# to the next sequence by pressing left mouse button").
 		if mb.button_index == MOUSE_BUTTON_LEFT and bool(showcase.call("can_skip")) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			_sound("click")
 			showcase.call("skip")
 			get_viewport().set_input_as_handled()
 			return
@@ -603,6 +613,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	if k != null and k.pressed and not k.echo and k.keycode == KEY_E and _in_room:
 		var said: String = String(showcase.call("action"))
+		_sound("click")
 		if not said.is_empty():
 			hud.call("toast", said)
 		get_viewport().set_input_as_handled()
@@ -619,11 +630,13 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	# With the data open the arrow keys step through its four steps.
 	if k != null and k.pressed and not k.echo and (k.keycode == KEY_RIGHT or k.keycode == KEY_LEFT) and _desk_open and _at_desk != null:
+		_sound("click")
 		data_panel.call("select_step", 1 if k.keycode == KEY_RIGHT else -1)
 		get_viewport().set_input_as_handled()
 		return
 	# The arrow keys step through the story as a click does (Ramon, 5 Oct): right on, left back.
 	if k != null and k.pressed and not k.echo and (k.keycode == KEY_RIGHT or k.keycode == KEY_LEFT) and bool(showcase.call("can_skip")):
+		_sound("click")
 		showcase.call("skip" if k.keycode == KEY_RIGHT else "skip_back")
 		get_viewport().set_input_as_handled()
 		return
@@ -640,7 +653,11 @@ func pick(i: int) -> bool:
 	var picker: Node = get_node_or_null("ExhibitPicker")
 	var s: Script = picker.call("choose", i) if picker != null else null
 	if s == null or s == showcase.get("exhibit_script"):
+		# An empty slot is a refusal; the animal already there says nothing.
+		if s == null:
+			_sound("error")
 		return false
+	_sound("click")
 	showcase.call("set_exhibit", s)
 	var names: PackedStringArray = picker.get("slot_names")
 	if i < names.size():
@@ -657,6 +674,7 @@ func watch() -> void:
 	var pc: Camera4D = player.get_node_or_null("CameraRig/Pitch/Camera4D") as Camera4D
 	if pc == null:
 		return
+	_sound("select")
 	player.set("input_enabled", false)
 	player.linear_velocity = Vector4.ZERO
 	_film = pc.duplicate(0) as Camera4D
@@ -780,6 +798,7 @@ func toggle_compare() -> bool:
 func whole_again() -> void:
 	if showcase == null:
 		return
+	_sound("click")
 	var mid: int = int(showcase.get_script().get_script_constant_map().get("SLICES", 9)) / 2
 	showcase.call("step_slice", mid - int(showcase.get("slice_index")))
 	showcase.set("turn", Vector2.ZERO)
@@ -934,6 +953,7 @@ func _hall_door_check(p: Vector4) -> void:
 
 ## Into the creature hall (its own scene: this room is let go while you are there).
 func to_hall() -> void:
+	_sound("select")
 	player.set("input_enabled", false)
 	get_tree().change_scene_to_file(HALL)
 
@@ -956,3 +976,9 @@ func go_to(at: Vector4, yaw: float) -> void:
 func _menu_key() -> Array:
 	# Tagged "menu": the lab HUD (rd_hud.gd) draws it as its own blue pill beside the strip.
 	return [["M", "Menu", "menu"]] if is_inside_tree() and get_tree().root.has_node(^"WayHome") else []
+
+
+## The menu's sounds in the labs (Menu/scripts/menu_lab_sounds.gd): one of the Frontier Map's cues, never in the editor.
+func _sound(which: String) -> void:
+	if not Engine.is_editor_hint() and is_inside_tree():
+		LabSounds.cue(get_tree(), which)

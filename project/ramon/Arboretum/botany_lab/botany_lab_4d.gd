@@ -51,6 +51,8 @@ const COMPARE := "res://ramon/Arboretum/botany_lab/compare/botany_compare.tscn"
 ## Round 3: the flower room, its own scene (Ramon, 10 Oct: "the flower room should be its own tscn with
 ## transporter door"), through the holographic doorway in the hall's right wall.
 const FLOWERS := "res://ramon/Arboretum/botany_lab/flowers/flower_room.tscn"
+## The menu's sounds in the labs: the Frontier Map's cues, and its music bed indoors (Ramon, 11 Oct).
+const LabSounds := preload("res://ramon/Menu/scripts/menu_lab_sounds.gd")
 const Border := preload("res://ramon/Arboretum/botany_lab/room/bl_border_4d.gd")
 const Drift := preload("res://ramon/Arboretum/botany_lab/flora/flora_drift_4d.gd")
 const Air := preload("res://ramon/Arboretum/botany_lab/flora/flora_air_4d.gd")
@@ -237,6 +239,8 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	apply_shape()
+	if not Engine.is_editor_hint():
+		LabSounds.room(self, true)
 	# Round 8 (Ramon: "for dark mode exclusively, can you push the spotlights in this room 40% brighter?"): the
 	# spots in the black palette (kit_style.gd spot_black; the dev panel's "Spots in dark mode" row tunes it).
 	Style.spot_black = DARK_SPOTS
@@ -464,6 +468,7 @@ func wall_lengths() -> Dictionary:
 ## The palette switch (B, or the button at the top right): the light surfaces grey or near-black, the
 ## light untouched (kit_style.gd palette), as in the Creation Lab.
 func toggle_palette() -> void:
+	_sound("click")
 	Style.palette = "grey" if Style.palette == "black" else "black"
 	Style.apply(Style.mood)
 	_garden_palette()
@@ -682,6 +687,7 @@ func use_panel() -> void:
 	if bool(_at_panel.get_node("Words").get("tour")):
 		watch()
 		return
+	_sound("click")
 	_at_panel.call("activate")
 	var st: Node = get_node_or_null(_at_panel.get_node("Words").get("station"))
 	if st == null:
@@ -751,6 +757,7 @@ func _input(event: InputEvent) -> void:
 	var mb := event as InputEventMouseButton
 	if not _cine.is_empty():
 		if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+			_sound("click")
 			_tour_next()
 			get_viewport().set_input_as_handled()
 		return
@@ -773,6 +780,7 @@ func _input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				return
 			if active != null and bool(active.call("can_skip")):
+				_sound("click")
 				active.call("skip")
 				get_viewport().set_input_as_handled()
 				return
@@ -808,6 +816,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	if not _cine.is_empty():
 		if k.keycode == KEY_ESCAPE:
+			_sound("click")
 			_tour_out()
 			get_viewport().set_input_as_handled()
 		return
@@ -825,6 +834,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			elif _on_pad:
 				watch()
 			elif active != null:
+				_sound("click")
 				var said: String = String(active.call("action"))
 				if not said.is_empty():
 					hud.call("toast", said)
@@ -838,25 +848,30 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_R:
 			# The tree as it stood: upright, its middle slice (the Voxel Lab's reset_view).
 			if active != null:
+				_sound("click")
 				active.call("reset_view")
 				hud.call("toast", "Back as it stood")
 				get_viewport().set_input_as_handled()
 			elif border != null and bool(border.call("near", player.global_position)):
+				_sound("click")
 				border.call("level")
 				hud.call("toast", "The flowers upright and back in your slice")
 				get_viewport().set_input_as_handled()
 		KEY_G:
 			var w: Node = wind()
 			if w != null:
+				_sound("click")
 				w.call("gust")
 				hud.call("toast", "A gust of wind")
 			get_viewport().set_input_as_handled()
 		KEY_V:
+			_sound("click")
 			set_volume_view(not volume_view)
 			hud.call("toast", "Volume view: the whole 4D tree, faintly" if volume_view else "Slice view")
 			get_viewport().set_input_as_handled()
 		KEY_RIGHT, KEY_LEFT:
 			if active != null and bool(active.call("can_skip")):
+				_sound("click")
 				if k.keycode == KEY_RIGHT:
 					active.call("skip", true)
 				else:
@@ -1037,6 +1052,7 @@ func open_flower() -> void:
 	if key.is_empty():
 		return
 	_border_caption = key
+	_sound("swipe")
 	var sp: Dictionary = FloraSpecies.by_key(key)
 	hud.call("show_caption", String(sp["name"]).to_upper(), String(sp["latin"]), String(sp["line"]))
 	if prompt != null:
@@ -1046,6 +1062,7 @@ func open_flower() -> void:
 func close_flower() -> void:
 	if _border_caption.is_empty():
 		return
+	_sound("swipe")
 	_border_caption = ""
 	hud.call("hide_caption")
 
@@ -1211,12 +1228,14 @@ func _specimen_page(c: Control, spec: Dictionary) -> void:
 
 ## The flower room (its own scene, its own loading board).
 func to_flowers() -> void:
+	_sound("select")
 	get_tree().root.set_meta(ARRIVE_META, "hall")
 	get_tree().change_scene_to_file(FLOWERS)
 
 
 ## The second room (its own scene, built behind its loading board).
 func to_compare() -> void:
+	_sound("select")
 	get_tree().change_scene_to_file(COMPARE)
 
 
@@ -1243,6 +1262,7 @@ func watch() -> void:
 	var pc: Camera4D = player.get_node_or_null("CameraRig/Pitch/Camera4D") as Camera4D
 	if pc == null:
 		return
+	_sound("select")
 	var shots: Array = []
 	for i in stations.size():
 		var s: Node = stations[i]
@@ -1542,3 +1562,9 @@ func set_build(on: bool) -> void:
 func _menu_key() -> Array:
 	# Tagged "menu": the lab HUD (rd_hud.gd) draws it as its own blue pill beside the strip.
 	return [["M", "Menu", "menu"]] if is_inside_tree() and get_tree().root.has_node(^"WayHome") else []
+
+
+## The menu's sounds in the labs (Menu/scripts/menu_lab_sounds.gd): one of the Frontier Map's cues, never in the editor.
+func _sound(which: String) -> void:
+	if not Engine.is_editor_hint() and is_inside_tree():
+		LabSounds.cue(get_tree(), which)

@@ -41,6 +41,8 @@ const RD := preload("res://ramon/VoxelLab/carried/scripts/rd_build.gd")
 const LabPrint := preload("res://ramon/VoxelLab/carried/LabKit/lab_print.gd")
 const Style := preload("res://ramon/VoxelLab/carried/kit/kit_style.gd")
 const Recipe := preload("res://ramon/VoxelLab/specimen/vl_recipe.gd")
+## The menu's sounds in the labs: the Frontier Map's cues (Ramon, 11 Oct).
+const LabSounds := preload("res://ramon/Menu/scripts/menu_lab_sounds.gd")
 const Cutter := preload("res://ramon/VoxelLab/specimen/vl_cutter.gd")
 const Overlay := preload("res://ramon/VoxelLab/room/vl_bench_overlay.gd")
 const Chips := preload("res://ramon/VoxelLab/room/vl_chips_4d.gd")
@@ -216,6 +218,7 @@ func _centre() -> Vector4:
 func dock(r: Node) -> void:
 	if docked or specimen() == null:
 		return
+	_sound("swipe")
 	room = r
 	docked = true
 	var sc: Node = showcase()
@@ -269,6 +272,7 @@ func dock(r: Node) -> void:
 func undock() -> void:
 	if not docked:
 		return
+	_sound("swipe")
 	docked = false
 	_drag_from = {}
 	_ldown = false
@@ -592,6 +596,9 @@ func _input(event: InputEvent) -> void:
 				room.call("toggle_grid_view")
 		_:
 			return
+	# The bench's own keys click (standing up swipes, in undock(); V and G click in the room's toggles).
+	if not (k.keycode in [KEY_F, KEY_ESCAPE, KEY_V, KEY_G]):
+		_sound("click")
 	get_viewport().set_input_as_handled()
 
 
@@ -693,3 +700,9 @@ func strip() -> Array:
 func _sweeps() -> bool:
 	var e: Node = exhibit()
 	return e != null and e.get("sweep_w") == true
+
+
+## The menu's sounds in the labs (Menu/scripts/menu_lab_sounds.gd): one of the Frontier Map's cues, never in the editor.
+func _sound(which: String) -> void:
+	if not Engine.is_editor_hint() and is_inside_tree():
+		LabSounds.cue(get_tree(), which)
