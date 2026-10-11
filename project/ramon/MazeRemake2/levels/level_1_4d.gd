@@ -11,13 +11,14 @@ extends "res://ramon/MazeRemake2/levels/mr2_level_4d.gd"
 ## first time you see it). It stands at W 3.3, so at the second door's W, 3.5, you see it well. It does not
 ## see you yet. The way out is a third door, further ana still: at
 ## the W where it opens you are out of the Tall One's slice, so the lesson comes with the danger: another
-## slice is safe. For the curious, an amber door in the arrival room opens kata onto a niche with the first
-## Phase Maze's old sign. One lore log in the Long Hall.
+## slice is safe. For the curious, an amber door in the arrival room opens kata onto a niche: the level's
+## one lesson in going the other way (Q), with a relic (12 Oct: the old Phase Maze monitor that stood there
+## is gone, Ramon: "remove the weird room ... if its important for tutorial purposes just place something
+## else there"). One lore log in the Long Hall.
 ##
 ## On paper (PLAN.md section 4 and round 2). You start at z 5.5 facing -z; the door is 14.5 m ahead.
 
 const Oak := preload("res://ramon/MazeRemake2/carried/oak/mr2_oak_lite_4d.gd")
-const OLD_SIGN := "res://ramon/textures/phaze_maze_new.png"
 
 const W_LO := -3.5
 const W_HI := 4.5
@@ -75,13 +76,13 @@ func build_level() -> void:
 	b.wall_x(1.3, 3.5, 0.0, W_LO, W_HI)
 	b.ceiling_rect(-3.7, -0.2, 3.7, 7.2, 3.6, W_LO, W_HI)
 	for x in [-1.4, 1.4]:
-		b.glow(Morph.standing(Vector3(x - 0.5, 3.57, 2.2), Vector3(x + 0.5, 3.6, 4.8), W_LO, W_HI), Color(0.42, 0.52, 0.72))
+		b.glow(Morph.standing(Vector3(x - 0.5, 3.57, 2.2), Vector3(x + 0.5, 3.6, 4.8), W_LO, W_HI), Color(0.5, 0.52, 0.56))
 
 	# THE CORRIDOR (all W): x -1.3..1.3, z -9..0, ending in the first door.
 	b.wall_z(-9.0, 0.2, -1.3, W_LO, W_HI)
 	b.wall_z(-9.0, 0.2, 1.3, W_LO, W_HI)
 	b.ceiling_rect(-1.5, -9.2, 1.5, 0.2, 3.6, W_LO, W_HI)
-	b.glow(Morph.standing(Vector3(-0.06, 3.57, -8.0), Vector3(0.06, 3.6, -0.6), W_LO, W_HI), Color(0.45, 0.6, 0.85))
+	b.glow(Morph.standing(Vector3(-0.06, 3.57, -8.0), Vector3(0.06, 3.6, -0.6), W_LO, W_HI), Color(0.5, 0.52, 0.56))
 	b.wall_x(-6.2, -0.9, -9.0, W_LO, W_HI, 6.0)
 	b.wall_x(0.9, 6.2, -9.0, W_LO, W_HI, 6.0)
 	b.door({"name": "the first door", "at": Vector2(0, -9), "along": "x", "closed_w": 0.3, "open_w": 1.4, "align_w": 1.7,
@@ -113,7 +114,7 @@ func build_level() -> void:
 	b.ceiling_rect(-2.8, -38.2, 2.8, -22.0, 4.4, H_W, W_HI)
 	b.cap(-2.8, -38.2, 2.8, -22.2, W_LO - 1.0, H_W, 4.6)
 	for pz in [-26.0, -31.0, -36.0]:
-		b.box(Vector3(-2.41, 0.6, pz - 1.0), Vector3(-2.39, 3.6, pz + 1.0), H_W, W_HI, "blue", false)
+		b.box(Vector3(-2.41, 0.6, pz - 1.0), Vector3(-2.39, 3.6, pz + 1.0), H_W, W_HI, "glass", false)
 	b.wall_x(-2.8, -0.9, -38.0, H_W, W_HI, 4.4)
 	b.wall_x(0.9, 2.8, -38.0, H_W, W_HI, 4.4)
 	b.door({"name": "the third door", "at": Vector2(0, -38), "along": "x", "closed_w": 3.6, "open_w": 4.0, "align_w": 4.2,
@@ -137,7 +138,6 @@ func build_level() -> void:
 	b.ceiling_rect(-6.2, 1.7, -3.5, 5.3, 3.0, W_LO, N_W)
 	b.cap(-6.2, 1.7, -3.7, 5.3, N_W, W_HI + 1.0, 3.6)
 	b.box(Vector3(-5.7, 0.0, 2.7), Vector3(-4.6, 0.78, 4.3), W_LO, N_W, "desk")
-	b.box(Vector3(-5.62, 0.78, 2.95), Vector3(-5.5, 1.9, 4.05), W_LO, N_W, "metal")
 
 
 ## A square of glowing strips on the floor: stand inside it to ride on.
@@ -155,10 +155,10 @@ func after_build() -> void:
 	# Soft pools of light (the dark look), each at the W its room lives at.
 	pools(-3.0, 0.5, 3.0, 6.5, 0.6, 3.6, 4.0, 2.0)
 	pools(-1.0, -8.5, 1.0, -0.5, 0.9, 3.6, 4.0, 1.8)
-	pools(-4.5, -20.5, 4.5, -10.5, 2.2, 6.0, 5.0, 2.8, Color(1.0, 0.9, 0.75))
-	pools(-1.5, -37.0, 1.5, -23.0, 3.4, 4.4, 5.0, 1.5, Color(0.7, 0.8, 1.0), 52.0)
+	pools(-4.5, -20.5, 4.5, -10.5, 2.2, 6.0, 5.0, 2.8, Color(1.0, 0.92, 0.82))
+	pools(-1.5, -37.0, 1.5, -23.0, 3.4, 4.4, 5.0, 1.5, Color(0.86, 0.9, 1.0), 52.0)
 	pools(-0.8, -41.5, 0.8, -38.5, 4.1, 3.0, 3.0, 1.6)
-	pools(-5.5, 2.2, -4.0, 4.8, -1.8, 3.0, 3.0, 1.4, Color(1.0, 0.8, 0.55))
+	pools(-5.5, 2.2, -4.0, 4.8, -1.8, 3.0, 3.0, 1.4)
 	# The lesson on the arrival room's east wall.
 	sign_painted(Vector3(3.24, 0.7, 1.2), Vector3(3.28, 3.1, 5.8), W_LO, W_HI, Vector4(-1, 0, 0, 0), Vector2i(1840, 960),
 		lesson_paint("THE ANNEX  ·  1  THE THRESHOLD", "THE CORRIDOR ENDS.\nTHE BUILDING DOES NOT.",
@@ -170,28 +170,18 @@ func after_build() -> void:
 	# The lift's panel.
 	sign_painted(Vector3(-1.0, 1.0, -41.78), Vector3(1.0, 2.2, -41.74), L_W, W_HI, Vector4(0, 0, 1, 0), Vector2i(1000, 600),
 		lesson_paint("LIFT", "LEVEL 2\nTHE STACKS", "Stand in the square."))
-	# The niche's old monitor: the first Phase Maze's sign, an homage.
-	var img := Image.new()
-	var ok: bool = img.load(ProjectSettings.globalize_path(OLD_SIGN)) == OK
-	if ok:
-		# Stored the way the old maze's 3D texture mapping wanted it: upside down and mirrored.
-		img.rotate_180()
-	var old: Texture2D = ImageTexture.create_from_image(img) if ok else null
-	var monitor := func(c: Control) -> void:
-		c.draw_rect(Rect2(Vector2.ZERO, c.size), Color(0.02, 0.03, 0.05))
-		if old != null:
-			var s: float = minf(c.size.x / old.get_width(), (c.size.y * 0.78) / old.get_height())
-			var sz := Vector2(old.get_width(), old.get_height()) * s
-			c.draw_texture_rect(old, Rect2(Vector2((c.size.x - sz.x) * 0.5, c.size.y * 0.06), sz), false)
-		var f: Font = LabPrint.font("bold")
-		c.draw_string(f, Vector2(c.size.x * 0.06, c.size.y * 0.93), "PHASE MAZE  ·  WHERE IT STARTED", HORIZONTAL_ALIGNMENT_LEFT, -1, int(c.size.y * 0.05), Color(1.0, 0.75, 0.4))
-	sign_painted(Vector3(-5.5, 0.88, 3.02), Vector3(-5.46, 1.82, 3.98), W_LO, N_W, Vector4(1, 0, 0, 0), Vector2i(900, 900), monitor, "glass", 0.8)
+	# The niche's lesson, on its back wall: kata, the other way.
+	sign_painted(Vector3(-5.8, 0.95, 2.2), Vector3(-5.76, 2.75, 4.8), W_LO, N_W, Vector4(1, 0, 0, 0), Vector2i(1500, 1040),
+		lesson_paint("KATA  ·  W -1.7", "THE OTHER WAY
+THROUGH W", "Q takes you kata, the other way from E.
+Amber marks kata: on doors, on the map
+and on the W bar.", Color(1.0, 0.74, 0.42)))
 	# The lore log in the long hall, on its east wall.
 	add_log("LOG 1  ·  THE TALL ONES", Vector4(1.6, 0, -27.0, 3.5),
 		["They stand where we left them.", "Each lives in one slice, and only one.", "If one turns to you, move through W.", "It cannot follow you there."],
 		Vector3(2.38, 1.1, -28.0), Vector3(2.4, 2.3, -26.0), H_W, W_HI, Vector4(-1, 0, 0, 0))
 	# The two relics.
-	add_relic("the first sign", Vector4(-4.4, 1.5, 3.5, -1.9), 0.7, Build.KATA.lerp(Color.WHITE, 0.3), "the niche kata of the arrival room")
+	add_relic("the amber glint", Vector4(-4.3, 1.4, 2.45, -1.9), 0.7, Build.KATA.lerp(Color.WHITE, 0.3), "the niche kata of the arrival room")
 	add_relic("the glint", Vector4(4.0, 1.6, -15.0, 3.0), 0.6, Build.ANA.lerp(Color.WHITE, 0.3), "a glint near W 3 in the garden hall")
 	# The oak under the skylight.
 	oak = Oak.new()

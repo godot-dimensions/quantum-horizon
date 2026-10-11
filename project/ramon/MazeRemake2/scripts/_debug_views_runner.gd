@@ -31,6 +31,7 @@ func _run() -> void:
 	var lvl: int = int(args[0]) if args.size() > 0 else 1
 	var game: Node = (load(SCENE) as PackedScene).instantiate()
 	game.set("capture_mouse", false)
+	game.set("popups", false)
 	game.set("start_level", lvl)
 	root.add_child(game)
 	for i in 600:

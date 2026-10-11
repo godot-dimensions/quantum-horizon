@@ -54,6 +54,7 @@ func _view(name: String, dist: float, angle: float, dw: float, aim_y: float) -> 
 func _run() -> void:
 	_game = (load(SCENE) as PackedScene).instantiate()
 	_game.set("capture_mouse", false)
+	_game.set("popups", false)
 	root.add_child(_game)
 	for i in 600:
 		if String(_game.get("mode")) == "play":

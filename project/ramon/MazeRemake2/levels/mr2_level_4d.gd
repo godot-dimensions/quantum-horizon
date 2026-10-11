@@ -49,7 +49,8 @@ var game: Node = null
 ## How much a level lifts the ambient light in DARK (the Heart's atrium is bigger than the torch reaches).
 var dark_lift: float = 1.0
 ## The thin glowing line round the foot of the walls (the dark look's "brighter pops").
-var skirt_color: Color = Color(0.22, 0.46, 1.0, 1.0)
+## The skirting round the foot of every wall: a dim neutral line that outlines the rooms in the dark.
+var skirt_color: Color = Color(0.3, 0.32, 0.36, 1.0)
 var _time: float = 0.0
 
 
@@ -77,9 +78,9 @@ func apply_palette(dark: bool) -> void:
 		return
 	var floor_mat: TetraMaterial4D = build.materials.get("floor")
 	if floor_mat != null:
-		# Soft, not neon: the lines take the band's colour with a low glow; the walls keep the kit's dim
-		# grey lines, so the blue panels and the strips are the pops.
-		LabGrid.set_wtint_lines(floor_mat, 0.8 if dark else 0.0, 0.38)
+		# Neutral: the floor keeps the kit's grey lines in both looks (12 Oct: colour only where it tells you
+		# something; the band colours are on the doors, passages, bridges and lifts).
+		LabGrid.set_wtint_lines(floor_mat, 0.0, 0.0)
 	for l in build.lights:
 		if is_instance_valid(l):
 			var base: float = float(l.get_meta("base_energy", 1.0))

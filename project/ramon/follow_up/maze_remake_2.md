@@ -8,6 +8,34 @@ The Phase Maze (`ramon/PhaseMaze/`) and the first remake (`ramon/PhaseMazeRemake
 Beside the scene, `PLAN.md` holds the 100 steps as adapted, the levels on paper, the gizmo trial
 (section 9) and round 2's 30 steps.
 
+## Round 3 (12 Oct, after Ramon played it)
+
+- **The niche** in level 1 (behind the amber door, kata) no longer holds the old Phase Maze monitor. It is
+  kept as the level's one lesson in going kata: a blue panel "THE OTHER WAY THROUGH W" and the relic (now
+  "the amber glint", moved off the panel).
+- **Popup explainers** (`hud/mr2_popup.gd`; the game holds you still, Space, Enter or a click carries on,
+  Esc closes it too): each level opens once a session with its controls card (every slicing control
+  marked YOURS, NEW or LATER: level 1 E/Q and V new, turning later; level 2 the Lens new; level 3 turning
+  and R new). After the first sighting's film, "THEY HAVE NOT SEEN YOU": a small diagram acts it out
+  (a Tall One in one slice, you walking into it, its eyes going red, you shifting to the next slice)
+  beside three lines. Runners turn them off with `popups = false`; the features runner tests the cards,
+  the walkers runner the Tall Ones' card.
+- **Subdued colour**: floors keep only a faint W hue and grey grid lines; the skirting is a dim neutral
+  line; the pools of light are neutral (warm white in the bright rooms; the kennel stays red); decorative
+  strips and the Long Hall's panels went grey. Colour stays where it tells you something: door frames and
+  passage stripes (the band they open at), the bridges, the lifts, relics, seal lights, the hub's
+  landmark pillar, the vault's ring, the HUD, the eyes.
+- **The fence generator, analysed and not used.** The pen's walls (`chickenpen/scripts/pen_town_wall_4d.gd`,
+  `pen_ruin_wall_4d.gd`, Andrew's TownWall) use FenceGenerator4D for two things: a solid wall deep in W
+  (the town wall: the same as a box), and a masonry rhythm through W (the ruin: its posts stand at seed
+  vertices, so they appear only within a post's thickness of those W's, about 0.1 m, then thinner ribs).
+  For the Annex's rooms neither adds W readability: a box wall looks the same at every W either way, the
+  post rhythm flickers for a twentieth of a second at walking W speed, and what changes with W here
+  (doors sliding, walls sinking, bridges narrowing) is already 4D geometry the fence cannot make. It also
+  has no collision and costs 3 to 13 ms a build per wall. If walls should show your W motion, the useful
+  idea from the ruin is a rhythm of W-thin pilasters, which the Annex's own morph boxes can do (not built;
+  question for Ramon).
+
 ## Questions for Ramon
 
 None of these blocked anything; each has a default in place.

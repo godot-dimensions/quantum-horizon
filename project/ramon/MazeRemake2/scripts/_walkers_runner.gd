@@ -56,8 +56,10 @@ func _run() -> void:
 	_bot.log_prefix = "WALK"
 	(_game.get("light") as Node).call("set_dark", true, false)
 	var player: CharacterBody4D = _game.get("player")
-	var ok: bool = await _bot.until(func() -> bool: return _level(0), 20.0)
-	_bot.check(ok, "level 1 starts")
+	var ok: bool = await _bot.until(func() -> bool: return String(_game.get("mode")) == "popup", 20.0)
+	await _bot.key(KEY_SPACE)
+	ok = await _bot.until(func() -> bool: return _level(0), 5.0)
+	_bot.check(ok, "level 1 starts (its controls card closed)")
 	await _bot.frames(10)
 
 	# THE FIRST SIGHTING: in the Long Hall at the Tall One's W, looking down the hall.
@@ -69,8 +71,15 @@ func _run() -> void:
 	for i in 3:
 		await _bot.frames(int(60 * 1.7))
 		await _shot("01_sighting_%d" % i)
-	ok = await _bot.until(func() -> bool: return _mode() == "play", 12.0)
-	_bot.check(ok and bool(_game.get("sighted")), "the film ends, once")
+	ok = await _bot.until(func() -> bool: return _mode() == "popup", 12.0)
+	_bot.check(ok and bool(_game.get("sighted")), "the film ends in the Tall Ones' explainer")
+	await _bot.frames(150)
+	await _shot("01b_walkers_explainer")
+	await _bot.key(KEY_SPACE)
+	ok = await _bot.until(func() -> bool: return _mode() == "play", 3.0)
+	_bot.check(ok, "Space closes the explainer")
+	# The other levels' cards are tested by the features runner.
+	_game.set("popups", false)
 	_bot.check(String(walker.get("state")) == "idle", "after its film it is calm again (%s)" % String(walker.get("state")))
 
 	# NOTICED: walk up the hall at its W.

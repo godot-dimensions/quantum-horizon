@@ -46,6 +46,7 @@ func _process(_x: float) -> bool:
 func _run() -> void:
 	_g = (load(SCENE) as PackedScene).instantiate()
 	_g.set("capture_mouse", false)
+	_g.set("popups", false)
 	root.add_child(_g)
 	_p = _g.get("player")
 	for i in 600:

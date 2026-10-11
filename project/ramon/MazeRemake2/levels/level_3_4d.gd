@@ -116,14 +116,14 @@ func build_level() -> void:
 		for cz in [-8.0, -3.0, 7.0, 12.0]:
 			b.box(Vector3(cx - 0.6, 0.0, cz - 0.6), Vector3(cx + 0.6, H, cz + 0.6), wl, wh, "slate")
 			var face: float = 0.61 if cx < 0.0 else -0.61
-			b.glow(Morph.standing(Vector3(cx + face - 0.02, 0.4, cz - 0.05), Vector3(cx + face + 0.02, H - 0.4, cz + 0.05), wl, wh), Color(0.55, 0.62, 0.9))
+			b.glow(Morph.standing(Vector3(cx + face - 0.02, 0.4, cz - 0.05), Vector3(cx + face + 0.02, H - 0.4, cz + 0.05), wl, wh), Color(0.46, 0.48, 0.52))
 	# The ring round the centre: where the vault stands, ana.
 	var deep: Color = Build.DEEP
 	for e in [[Vector3(-FX, 0.0, FZ0), Vector3(FX, 0.014, FZ0 + 0.08)], [Vector3(-FX, 0.0, FZ1 - 0.08), Vector3(FX, 0.014, FZ1)],
 			[Vector3(-FX, 0.0, FZ0), Vector3(-FX + 0.08, 0.014, FZ1)], [Vector3(FX - 0.08, 0.0, FZ0), Vector3(FX, 0.014, FZ1)]]:
 		b.glow(Morph.standing(e[0], e[1], wl, V_LO), deep)
 	# A ring of light in the ceiling over the crystal.
-	b.glow(Morph.standing(Vector3(-3.0, H - 0.05, CZ - 3.0), Vector3(3.0, H, CZ + 3.0), wl, wh), Color(0.62, 0.55, 1.0))
+	b.glow(Morph.standing(Vector3(-3.0, H - 0.05, CZ - 3.0), Vector3(3.0, H, CZ + 3.0), wl, wh), Color(0.6, 0.62, 0.66))
 
 	# THE VAULT: blue walls and roof from W 2 to 8; its kata face (W 2 to 2.4) with a cross-shaped
 	# doorway; its ana face at W 7.6 to 8.
@@ -243,12 +243,12 @@ func after_build() -> void:
 		_seal_plate.append(mi)
 		_seal_plate.append(body)
 	# Soft pools of light, each at the W its place lives at: the atrium dim, at home and kata.
-	pools(-12.0, -10.0, 12.0, 14.0, 0.0, H, 9.0, 2.4, Color(0.7, 0.72, 1.0), 40.0)
-	pools(-12.0, -10.0, -2.0, 14.0, -1.9, H, 9.0, 1.8, Color(1.0, 0.62, 0.32), 40.0)
-	pools(-19.0, -1.0, -14.5, 5.0, -1.9, 4.0, 5.0, 1.6, Color(1.0, 0.7, 0.4))
+	pools(-12.0, -10.0, 12.0, 14.0, 0.0, H, 9.0, 2.4, Color(0.86, 0.9, 1.0), 40.0)
+	pools(-12.0, -10.0, -2.0, 14.0, -1.9, H, 9.0, 1.8, Color(0.86, 0.9, 1.0), 40.0)
+	pools(-19.0, -1.0, -14.5, 5.0, -1.9, 4.0, 5.0, 1.6)
 	pools(14.5, 1.0, 25.8, 3.0, 0.0, 3.6, 4.0, 1.2)
-	pools(14.5, 1.0, 25.8, 3.0, 2.4, 3.6, 4.0, 1.2, Color(0.6, 1.0, 0.92))
-	pools(26.5, -1.0, 30.5, 5.0, 0.0, 4.0, 5.0, 1.8, Color(0.6, 1.0, 0.92))
+	pools(14.5, 1.0, 25.8, 3.0, 2.4, 3.6, 4.0, 1.2)
+	pools(26.5, -1.0, 30.5, 5.0, 0.0, 4.0, 5.0, 1.8)
 	# The Tall Ones: one walking the atrium kata, across the way to the amber door; one in the weave
 	# between its second and third gates, at home, facing on (it turns as it paces).
 	add_walker(Vector4(-7.5, 0.0, -7.0, -1.9), 0.0, Vector4(-7.5, 0.0, 10.5, -1.9), 8.0)

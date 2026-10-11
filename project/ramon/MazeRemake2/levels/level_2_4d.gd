@@ -160,12 +160,12 @@ func build_level() -> void:
 	b.add(Morph.standing(Vector3(-11.6, 0.0, -1.0), Vector3(-10.4, 0.78, 1.0), wl, K_HI - 0.15, 0.45), "desk", true)
 	b.add(Morph.standing(Vector3(-11.55, 0.78, -0.55), Vector3(-11.42, 1.6, 0.55), wl, K_HI - 0.15, 0.45), "metal", false)
 	for zz in [-2.3, 2.3]:
-		b.glow(Morph.standing(Vector3(-11.8, 2.7, zz - 0.04), Vector3(-6.3, 2.75, zz + 0.04), wl, K_HI - 0.15, 0.45), Build.KATA)
+		b.glow(Morph.standing(Vector3(-11.8, 2.7, zz - 0.04), Vector3(-6.3, 2.75, zz + 0.04), wl, K_HI - 0.15, 0.45), Color(0.5, 0.52, 0.56))
 	b.cap(-11.8, -3.8, -4.2, 3.8, A_LO - 0.15, wh, CEIL)
 
 	for sx2 in [-10.6, -7.6]:
 		for side in [-1.0, 1.0]:
-			b.glow(Morph.standing(Vector3(sx2 + side * 0.36 - 0.02, 3.36, -2.6), Vector3(sx2 + side * 0.36 + 0.02, 3.4, 2.6), K_HI + 0.15, wh, 0.45), Color(0.3, 0.55, 1.0))
+			b.glow(Morph.standing(Vector3(sx2 + side * 0.36 - 0.02, 3.36, -2.6), Vector3(sx2 + side * 0.36 + 0.02, 3.4, 2.6), K_HI + 0.15, wh, 0.45), Color(0.42, 0.44, 0.48))
 
 	# THE READING ROOM (north-west, home only): the level's bright sanctuary, white panels over its walls.
 	var rw0: float = -1.4
@@ -197,7 +197,7 @@ func build_level() -> void:
 	# The bottom, far down: lights you see falling towards.
 	b.box(Vector3(-4, -14.5, -12), Vector3(4, -14.0, -4), wl, wh, "glass", false)
 	for gx in [-2.5, 0.0, 2.5]:
-		b.glow(Morph.standing(Vector3(gx - 0.05, -14.0, -11.5), Vector3(gx + 0.05, -13.96, -5.5), wl, wh), Color(0.25, 0.5, 0.9))
+		b.glow(Morph.standing(Vector3(gx - 0.05, -14.0, -11.5), Vector3(gx + 0.05, -13.96, -5.5), wl, wh), Color(0.36, 0.38, 0.42))
 	# Pit walls going down (so the drop reads as a shaft).
 	b.box(Vector3(-4.2, -14.5, -12.2), Vector3(4.2, -0.02, -11.8), wl, wh, "glass", false)
 	b.box(Vector3(-4.2, -14.5, -12.2), Vector3(-3.8, -0.02, -4.0), wl, wh, "glass", false)
@@ -347,15 +347,15 @@ func after_build() -> void:
 		lesson_paint("LIFT", "LEVEL 3\nTHE HEART", "Stand in the square."))
 	# Soft pools of light, each at the W its room lives at.
 	pools(-3.0, 5.0, 3.0, 11.0, 0.0, CEIL, 6.0, 2.2)
-	pools(-3.0, -3.0, 3.0, 3.0, 0.0, H, 6.0, 2.6, Color(1.0, 0.82, 0.6))
-	pools(-11.0, -3.0, -5.0, 3.0, 0.0, CEIL, 6.0, 1.8, Color(0.6, 0.72, 1.0))
-	pools(-11.0, -3.0, -5.0, 3.0, -2.4, CEIL, 6.0, 1.6, Color(1.0, 0.6, 0.3))
-	pools(-11.0, -11.0, -5.0, -5.0, 0.0, CEIL, 4.0, 3.2, Color(1.0, 0.9, 0.75))
-	pools(5.0, -3.0, 11.0, 3.0, 2.4, CEIL, 6.0, 2.0, Color(0.6, 1.0, 0.92))
-	pools(5.0, 5.0, 11.0, 11.0, 2.4, CEIL, 6.0, 1.8, Color(0.6, 1.0, 0.92))
+	pools(-3.0, -3.0, 3.0, 3.0, 0.0, H, 6.0, 2.6)
+	pools(-11.0, -3.0, -5.0, 3.0, 0.0, CEIL, 6.0, 1.8)
+	pools(-11.0, -3.0, -5.0, 3.0, -2.4, CEIL, 6.0, 1.6)
+	pools(-11.0, -11.0, -5.0, -5.0, 0.0, CEIL, 4.0, 3.2, Color(1.0, 0.92, 0.82))
+	pools(5.0, -3.0, 11.0, 3.0, 2.4, CEIL, 6.0, 2.0)
+	pools(5.0, 5.0, 11.0, 11.0, 2.4, CEIL, 6.0, 1.8)
 	pools(5.0, -11.0, 11.0, -5.0, 0.0, CEIL, 6.0, 2.0)
-	pools(5.0, -11.0, 11.0, -5.0, 2.4, CEIL, 6.0, 1.6, Color(0.6, 1.0, 0.92))
-	pools(-1.0, -9.0, 1.0, -7.0, 0.0, H, 3.0, 1.6, Color(0.7, 0.8, 1.0))
+	pools(5.0, -11.0, 11.0, -5.0, 2.4, CEIL, 6.0, 1.6)
+	pools(-1.0, -9.0, 1.0, -7.0, 0.0, H, 3.0, 1.6)
 	pools(13.0, -13.0, 16.5, -8.0, 2.4, 3.6, 4.0, 0.9, Color(1.0, 0.35, 0.3))
 	# The Tall Ones of the archive (home), pacing its aisles; shift kata and you are among the computers
 	# instead, and they are not there.

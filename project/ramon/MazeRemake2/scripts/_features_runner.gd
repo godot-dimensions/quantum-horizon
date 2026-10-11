@@ -83,8 +83,19 @@ func _run() -> void:
 	_bot = Bot.new(self, _game)
 	_bot.log_prefix = "FEAT"
 	var player: CharacterBody4D = _game.get("player")
-	var ok: bool = await _bot.until(func() -> bool: return String(_game.get("mode")) == "play", 20.0)
-	_bot.check(ok, "the game starts")
+	# Level 1 opens with its controls card (the popup explainer); Space carries on.
+	var ok: bool = await _bot.until(func() -> bool: return String(_game.get("mode")) == "popup", 20.0)
+	var popup: Node = (_game.get("hud") as Node).get("popup")
+	_bot.check(ok and bool(popup.call("is_open")), "level 1 opens with its controls card")
+	await _bot.frames(30)
+	await _shot("00_controls_card")
+	Input.action_press(&"move_ana")
+	await _bot.frames(20)
+	Input.action_release(&"move_ana")
+	_bot.check(absf(player.global_position.w) < 0.01, "you are held still while the card shows")
+	await _bot.key(KEY_SPACE)
+	ok = await _bot.until(func() -> bool: return String(_game.get("mode")) == "play", 3.0)
+	_bot.check(ok and not bool(popup.call("is_open")), "Space closes the card")
 	await _bot.frames(20)
 	# Tab: the panel.
 	await _bot.key(KEY_TAB)
@@ -150,8 +161,17 @@ func _run() -> void:
 	_bot.check(ok, "Backspace puts you at the room's way in")
 	# Level keys, and R on a turned view in level 3.
 	await _bot.key(KEY_3)
-	ok = await _bot.until(func() -> bool: return int(_game.get("level_index")) == 2 and String(_game.get("mode")) == "play", 14.0)
-	_bot.check(ok, "3 loads level 3")
+	ok = await _bot.until(func() -> bool: return int(_game.get("level_index")) == 2 and String(_game.get("mode")) == "popup", 14.0)
+	_bot.check(ok, "3 loads level 3, with its controls card")
+	await _bot.frames(30)
+	await _shot("00b_controls_card_level3")
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	Input.parse_input_event(click)
+	await process_frame
+	ok = await _bot.until(func() -> bool: return String(_game.get("mode")) == "play", 3.0)
+	_bot.check(ok, "a click closes the card too")
 	player.set("_turn_held", true)
 	for i in 30:
 		player.call("look", Vector2(0, -6))

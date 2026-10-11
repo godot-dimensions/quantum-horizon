@@ -43,6 +43,7 @@ func _shot(name: String) -> void:
 func _run() -> void:
 	var g: Node = (load(SCENE) as PackedScene).instantiate()
 	g.set("capture_mouse", false)
+	g.set("popups", false)
 	root.add_child(g)
 	for i in 600:
 		if String(g.get("mode")) == "play":

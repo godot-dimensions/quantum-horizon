@@ -53,6 +53,7 @@ func _run() -> void:
 	var packed: PackedScene = load(SCENE)
 	_game = packed.instantiate()
 	_game.set("capture_mouse", false)
+	_game.set("popups", false)
 	root.add_child(_game)
 	_bot = Bot.new(self, _game)
 	_bot.log_prefix = "L1"
@@ -140,11 +141,12 @@ func _run() -> void:
 		await _bot.key(KEY_V)
 		await _bot.frames(40)
 	_bot.check(player.global_position.w < -1.3, "kata enough for the niche (W %.2f)" % player.global_position.w)
-	ok = await _bot.walk_to(-4.4, 3.5, 6.0, 0.4)
+	ok = await _bot.walk_to(-4.1, 3.5, 6.0, 0.4)
+	ok = await _bot.walk_to(-4.3, 2.55, 6.0, 0.4)
 	_bot.face(-6.0, 3.5)
 	await _bot.frames(6)
 	await _shot("09_niche")
-	_bot.check(int(_game.get("_relics_found")) >= 1, "took the first sign")
+	_bot.check(int(_game.get("_relics_found")) >= 1, "took the amber glint")
 
 	# BRIGHT, in the corridor and the garden hall.
 	light.call("set_dark", false, false)

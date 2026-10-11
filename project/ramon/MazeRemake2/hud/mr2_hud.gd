@@ -20,6 +20,7 @@ const Dial := preload("res://ramon/MazeRemake2/hud/gizmo_dial.gd")
 const Lens := preload("res://ramon/MazeRemake2/hud/gizmo_lens.gd")
 const Card := preload("res://ramon/MazeRemake2/hud/mr2_key_card.gd")
 const Map := preload("res://ramon/MazeRemake2/hud/gizmo_map.gd")
+const Explainer := preload("res://ramon/MazeRemake2/hud/mr2_popup.gd")
 
 ## MAP (round 2's default: the slice map, with the lens's brackets on the door you face), then round 1's
 ## trial: the ruler, the dial, the lens with its compact ruler.
@@ -31,6 +32,7 @@ var state: Dictionary = {}
 var gizmos: Array[Control] = []
 var overlay: Control
 var card: Control
+var popup: Control
 var fade_rect: ColorRect
 var flash_rect: ColorRect
 var _flash_color: Color = Color(0, 0, 0, 0)
@@ -75,6 +77,8 @@ func _ready() -> void:
 	fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(fade_rect)
+	popup = Explainer.new()
+	add_child(popup)
 	set_gizmo(gizmo_index)
 
 

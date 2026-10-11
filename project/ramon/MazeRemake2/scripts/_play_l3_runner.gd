@@ -61,6 +61,7 @@ func _run() -> void:
 	var packed: PackedScene = load(SCENE)
 	_game = packed.instantiate()
 	_game.set("capture_mouse", false)
+	_game.set("popups", false)
 	_game.set("start_level", 3)
 	root.add_child(_game)
 	_bot = Bot.new(self, _game)

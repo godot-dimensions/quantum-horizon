@@ -49,6 +49,8 @@ const SETTINGS := "user://maze_remake_2.cfg"
 @export_range(1, 3) var start_level: int = 1
 ## Off for runners that drive the mouse themselves.
 @export var capture_mouse: bool = true
+## The popup explainers (each level's controls, the first Tall One). Runners turn them off.
+@export var popups: bool = true
 
 var light: Node4D
 var player: CharacterBody4D
@@ -60,6 +62,8 @@ var level_index: int = -1
 var film_camera: Camera4D
 ## "play", "lift", "respawn", "film", "end", "loading"
 var mode: String = "loading"
+var _popup_seen: Dictionary = {}
+var _popup_done: Callable = Callable()
 ## The total time played, and per level.
 var clock: float = 0.0
 ## The Lens (end of level 2): the turn into W.
@@ -176,13 +180,19 @@ func load_level(i: int, instant: bool = false) -> void:
 	player.set("input_enabled", true)
 	if level.has_method("on_arrive"):
 		level.call("on_arrive")
+	# Once a session per level: what you can do with W here, and what is still to come.
+	var key: String = "level%d" % level_index
+	if not _popup_seen.has(key):
+		_popup_seen[key] = true
+		show_popup("controls", _controls_card(level_index))
 
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(level):
 		return
 	level.call("tick", player, delta)
-	_since_level += delta
+	if mode == "play":
+		_since_level += delta
 	if mode == "film":
 		_step_film(delta)
 	if mode == "play":
@@ -430,9 +440,69 @@ func teach(kind: String) -> void:
 			card.call("play", "shift", 7.0, "STEP THROUGH W", "Hold E to shift ana. Q shifts back.")
 
 
+## A popup explainer in the middle of the screen; you are held still until Space, Enter or a click.
+func show_popup(kind: String, d: Dictionary, done: Callable = Callable()) -> void:
+	if not popups:
+		if done.is_valid():
+			done.call()
+		return
+	mode = "popup"
+	player.set("input_enabled", false)
+	_popup_done = done
+	(hud.get("popup") as Node).call("open", kind, d)
+
+
+func close_popup() -> void:
+	if mode != "popup":
+		return
+	(hud.get("popup") as Node).call("close")
+	mode = "play"
+	player.set("input_enabled", true)
+	sound.call("tick")
+	var done: Callable = _popup_done
+	_popup_done = Callable()
+	if done.is_valid():
+		done.call()
+
+
+## Each level's controls card: every slicing control, YOURS, NEW here, or LATER.
+func _controls_card(i: int) -> Dictionary:
+	var kicker: String = "THE ANNEX  ·  %d  %s" % [i + 1, String(level.get("title"))]
+	match i:
+		0:
+			return {"kicker": kicker, "title": "WHAT YOU CAN DO HERE", "rows": [
+				["E / Q", "Move through W, ana and kata", "new"],
+				["V", "Finish a door once it is mostly open", "new"],
+				["RIGHT DRAG", "Turn your view into W", "later"]],
+				"line": "Each level gives you one more way to slice the building. Turning comes with the Lens, in level 2."}
+		1:
+			return {"kicker": kicker, "title": "NEW HERE: THE LENS", "rows": [
+				["E / Q", "Move through W", "yours"],
+				["V", "Finish a door", "yours"],
+				["RIGHT DRAG", "Find the Lens, then turn your view into W", "new"]],
+				"line": "Here the same doorway leads to a different room at every W."}
+	return {"kicker": kicker, "title": "NEW HERE: TURNING", "rows": [
+		["E / Q", "Move through W", "yours"],
+		["V", "Finish a door, or a turn", "yours"],
+		["RIGHT DRAG", "Turn your view into W", "new"],
+		["R", "Level your view again", "new"]],
+		"line": "Some places you cannot walk to. You can only turn toward them."}
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if mode == "popup":
+		var mb := event as InputEventMouseButton
+		if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+			close_popup()
+			get_viewport().set_input_as_handled()
+			return
 	var k := event as InputEventKey
 	if k == null or not k.pressed or k.echo:
+		return
+	if mode == "popup":
+		if k.keycode in [KEY_SPACE, KEY_ENTER, KEY_KP_ENTER]:
+			close_popup()
+			get_viewport().set_input_as_handled()
 		return
 	if bool(tuning.call("is_open")):
 		if k.keycode == KEY_TAB or k.keycode == KEY_F2:
@@ -749,7 +819,11 @@ func _sighting_film(w: Node) -> void:
 		{"eye": e2, "eye2": e2 + Vector4(flat.x, 0, flat.y, 0) * -0.25, "basis": look2, "seconds": 3.2, "caption": ""},
 		{"eye": e1, "eye2": e0, "basis": look1, "basis2": b0, "seconds": 1.8, "caption": "It has not seen you. Not yet."},
 	], func() -> void:
-		w.call("end_film"))
+		w.call("end_film")
+		show_popup("walkers", {"kicker": "THE TALL ONES", "title": "THEY HAVE NOT SEEN YOU", "lines": [
+			"Each one lives in a single slice of W. It can only see you in its slice.",
+			"Keep out of its sight. If its eyes go red, it walks to you.",
+			"Then get into another slice: hold E or Q."]}))
 
 
 func _look_basis(eye: Vector4, at: Vector4) -> Projection:
@@ -847,5 +921,8 @@ func escape_step(key: Key) -> bool:
 		return true
 	if mode == "film":
 		skip_film()
+		return true
+	if mode == "popup":
+		close_popup()
 		return true
 	return false

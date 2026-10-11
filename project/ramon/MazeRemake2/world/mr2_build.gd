@@ -31,22 +31,24 @@ const DEEP := Color(0.66, 0.42, 1.00)
 const SEAM := 0.15
 const RISE := 0.4
 
-## Material slots: [swatch, how strongly the W tint shows on it].
+## Material slots: [swatch, how strongly the W tint shows on it]. (12 Oct, Ramon: "make the colors a bit
+## more subdued. meaning only add colors where its important as indicators and navigation": a faint hue
+## on the floor is all the W tint keeps; the band colours live on doors, passages, bridges and lifts.)
 const SLOTS := {
-	"floor": ["kit_floor", 0.42],
-	"wall": ["kit_wall", 0.10],
+	"floor": ["kit_floor", 0.12],
+	"wall": ["kit_wall", 0.0],
 	"ceiling": ["kit_ceiling", 0.0],
 	"blue": ["kit_code_blue", 0.0],
 	"leaf": ["kit_screen2", 0.0],
 	"metal": ["kit_metal", 0.0],
 	"desk": ["kit_desk", 0.0],
 	"glass": ["kit_glass", 0.0],
-	"cap": ["kit_wall", 0.10],
-	"slate": ["slate", 0.12],
-	"slate_cap": ["slate", 0.12],
+	"cap": ["kit_wall", 0.0],
+	"slate": ["slate", 0.0],
+	"slate_cap": ["slate", 0.0],
 	# A bright room's own surfaces: the lab grid's own swatches, which the dark palette never touches.
 	"bright_wall": ["wall", 0.0],
-	"bright_floor": ["floor", 0.30],
+	"bright_floor": ["floor", 0.08],
 }
 ## Slots that get the glowing skirting when the level asks for it (`skirt`).
 const SKIRTED := ["wall", "slate", "bright_wall"]
