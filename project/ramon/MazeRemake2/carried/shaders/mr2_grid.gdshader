@@ -63,6 +63,10 @@ uniform float wtint_stops[6];
 uniform int wtint_count = 0;
 // How bright the tinted surface is against the untinted one (1 keeps its brightness).
 uniform float wtint_gain = 1.0;
+// In the dark look the grid lines themselves take the band's colour and glow faintly, so W reads as
+// coloured light on a near-black floor (0 off).
+uniform float wtint_lines = 0.0;
+uniform float wtint_line_glow = 0.6;
 uniform float grid_size = 1.0;
 uniform float sub_count = 5.0;
 uniform float line_width = 0.022;
@@ -407,9 +411,10 @@ void fragment() {
 	vec3 c = surface_color.rgb;
 	c = mix(c, subline_color.rgb, minor * fade_minor * grid_strength);
 	c = mix(c, line_color.rgb, major * grid_strength);
-	if (wtint_on > 0.0 && wtint_count > 0) {
+	vec3 band = vec3(1.0);
+	if (wtint_count > 0) {
 		float ww = world.w;
-		vec3 band = wtint_colors[0].rgb;
+		band = wtint_colors[0].rgb;
 		for (int i = 1; i < 6; i++) {
 			if (i >= wtint_count) {
 				break;
@@ -420,12 +425,19 @@ void fragment() {
 				band = mix(wtint_colors[i - 1].rgb, wtint_colors[i].rgb, clamp((ww - a) / max(b - a, 0.0001), 0.0, 1.0));
 			}
 		}
+	}
+	if (wtint_on > 0.0 && wtint_count > 0) {
 		float lum_c = dot(c, vec3(0.299, 0.587, 0.114));
 		float lum_b = max(dot(band, vec3(0.299, 0.587, 0.114)), 0.001);
 		vec3 tinted = clamp(band * (lum_c / lum_b) * wtint_gain, 0.0, 1.0);
 		c = mix(c, tinted, wtint_on);
 	}
 	vec3 glow = vec3(0.0);
+	if (wtint_lines > 0.0 && wtint_count > 0) {
+		float lk = clamp(max(major * grid_strength, minor * fade_minor * grid_strength * 0.4), 0.0, 1.0) * wtint_lines;
+		c = mix(c, band * 0.5, lk);
+		glow += band * lk * wtint_line_glow;
+	}
 
 	// Metres from the box's lower corner.
 	vec4 pc = local_pos + abs(surface_size) * 0.5;

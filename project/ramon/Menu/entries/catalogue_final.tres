@@ -208,13 +208,13 @@ benchmark = "Bot at par on all six levels: 32, 11, 16, 41, 33 and 101 s · each 
 [sub_resource type="Resource" id="Resource_annex"]
 script = ExtResource("1_i2ljj")
 title = "The Annex"
-blurb = "A first-person walk through W: doors slide open and rooms appear as you shift"
+blurb = "A first-person walk through W in the dark: doors open as you shift, and the Tall Ones only see their own slice"
 maturity = "Playable"
 category = "Orientation"
 family = "The experiments"
 thrust = "Live it"
 also_answers = PackedStringArray()
-detail = "The Phase Maze remade a second time, first person and free as the first one was. Hold E or Q and you move through W at walking pace while the building rearranges itself round you: door leaves slide apart, walls sink into the floor, bridges grow out of the dark. Three levels, one idea each: a door through W, an archive whose doors lead somewhere else at every W, and a vault you can only reach by turning your view into W."
+detail = "The Phase Maze remade a second time, first person, in the dark. Hold E or Q and you move through W at walking pace while the building rearranges itself round you: door leaves slide apart, walls sink into the floor, bridges grow out of the dark. Tall grey figures stand in some rooms. Each lives in one slice; if one sees you, its eyes go red and it walks to you, and the way out is another slice. Three levels: a door through W, an archive with an ambush, and the Heart, a vault you reach only by turning your view into W. Six logs tell what sleeps there."
 clip = "the_annex"
 icon = ExtResource("bold_annex")
 preview_focus = 0.5
@@ -225,9 +225,9 @@ control_keys = PackedStringArray("WASD + MOUSE", "Q / E", "V", "RMB DRAG", "B")
 control_actions = PackedStringArray("walk and look", "move through W", "finish a reveal", "turn into W (level 3)", "dark or bright")
 question = "With no lesson first, does moving through W feel like moving somewhere, and can people find their way by it?"
 approach = "W is a position you move along at walking pace. Every wall and door is a 4D solid whose cut changes smoothly with W, and the floor's colour is your W."
-finding = "Not yet played by people. Our bot plays all three levels through the real keys, start to end card, every relic taken."
+finding = "Not yet played by people. Our bot plays all three levels through the real keys, start to end card, every relic taken, past every Tall One."
 finding_tier = "Not yet tested"
-benchmark = "Bot checks: level 1 11 of 11, level 2 16 of 16, level 3 22 of 22 · 0.8 ms a frame in levels 1 and 2, 2.6 ms in level 3"
+benchmark = "Bot checks: level 1 16 of 16, level 2 19 of 19, level 3 23 of 23, the Tall Ones 19 of 19 · 1.0 ms a frame in level 1, 1.6 ms in level 2, 3.1 ms in level 3"
 
 [sub_resource type="Resource" id="Resource_uy7oo"]
 script = ExtResource("1_i2ljj")

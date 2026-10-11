@@ -39,8 +39,15 @@ func _run() -> void:
 		await physics_frame
 	var player: CharacterBody4D = game.get("player")
 	player.set("input_enabled", false)
-	(game.get("hud") as CanvasLayer).visible = false
+	if not "hud" in OS.get_cmdline_user_args():
+		(game.get("hud") as CanvasLayer).visible = false
+	game.set("sighted", true)
+	# "lenstaken": level 2's Lens counts as taken (its film never starts; the kennel stays shut).
+	if "lenstaken" in args:
+		(game.get("level") as Node).set("lens_taken", true)
 	for k in range(1, args.size()):
+		if not "," in args[k]:
+			continue
 		var v: PackedStringArray = args[k].split(",")
 		var pos := Vector4(float(v[0]), 0.0, float(v[1]), float(v[2]))
 		player.call("place", pos, deg_to_rad(float(v[3])))

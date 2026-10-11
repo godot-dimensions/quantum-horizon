@@ -35,6 +35,9 @@ const D := preload("res://ramon/MazeRemake2/hud/mr2_draw.gd")
 const Ground := preload("res://ramon/MazeRemake2/carried/ground_basis_4d.gd")
 const Tuning := preload("res://ramon/MazeRemake2/hud/mr2_tuning_panel.gd")
 
+## The lore logs across the three levels.
+const LOG_TOTAL := 6
+
 const LEVELS := [
 	"res://ramon/MazeRemake2/levels/level_1.tscn",
 	"res://ramon/MazeRemake2/levels/level_2.tscn",
@@ -77,6 +80,11 @@ var _stop_kata: float = -INF
 var _stop_ana: float = INF
 var _door_open_last: Dictionary = {}
 var _since_nag: float = 99.0
+## The Tall Ones: seen once (the first-sighting film plays once a game), deaths, logs read.
+var sighted: bool = false
+var deaths: int = 0
+var logs_read: Dictionary = {}
+var _told_escape: bool = false
 
 
 func _enter_tree() -> void:
@@ -115,7 +123,7 @@ func _ready() -> void:
 	tuning.call("apply_saved")
 	var cfg := ConfigFile.new()
 	if cfg.load(SETTINGS) == OK:
-		hud.call("set_gizmo", int(cfg.get_value("view", "gizmo", 2)))
+		hud.call("set_gizmo", int(cfg.get_value("view", "gizmo", 0)))
 	if not Engine.is_editor_hint():
 		_escape = Escape.guard(self)
 	if capture_mouse:
@@ -193,6 +201,9 @@ func _process(delta: float) -> void:
 			respawn("You fell. Back to this room's way in.")
 		target = _pick_target()
 		_teach(delta)
+		level.call("tick_logs", player)
+		if not sighted:
+			_check_sighting()
 	else:
 		target = {}
 	_measure_stops()
@@ -358,6 +369,7 @@ func _feed_hud() -> void:
 	var relics: String = ""
 	if _relic_total > 0:
 		relics = "RELICS  %d / %d" % [_relics_found, _relic_total]
+	relics += ("     " if relics != "" else "") + "LOGS  %d / %d" % [logs_read.size(), LOG_TOTAL]
 	hud.call("update_state", {
 		"w": player.global_position.w,
 		"w_min": float(level.get("w_min")),
@@ -376,6 +388,11 @@ func _feed_hud() -> void:
 		"relics": relics,
 		"dark": bool(light.get("dark")),
 		"strip": strip,
+		"walkers": _walker_marks(),
+		"rooms": level.get("rooms"),
+		"player_pos": player.global_position,
+		"ground": player.get("ground"),
+		"level_doors": level.call("doors"),
 	})
 	(hud.get("card") as Node).set("bands", level.get("bands"))
 
@@ -509,6 +526,7 @@ func respawn(why: String = "") -> void:
 			break
 		await get_tree().process_frame
 	player.call("place", c["at"], float(c.get("yaw", 0.0)))
+	level.call("reset_walkers")
 	await get_tree().physics_frame
 	hud.call("fade_to", 0.0, 3.0)
 	if why != "":
@@ -615,12 +633,129 @@ func take_lens() -> void:
 	var after := func() -> void:
 		has_lens = true
 		player.set("turn_enabled", true)
-		hud.call("toast", "THE LENS  ·  YOU CAN TURN INTO W", Color(0.62, 0.86, 1.0), 3.0)
+		hud.call("toast", "THEY ARE COMING. GO HOME, THEN TO THE LIFT.", Color(1.0, 0.36, 0.3), 3.6)
 		teach("turn")
+		if level.has_method("after_lens"):
+			level.call("after_lens")
 	if shots.is_empty():
 		after.call()
 	else:
 		play_film(shots, after)
+
+
+## Where the Tall Ones are, for the slice map: [{pos: Vector4, red: float}].
+func _walker_marks() -> Array:
+	var out: Array = []
+	for w in level.get("walkers"):
+		if is_instance_valid(w):
+			out.append({"pos": (w as Node4D).global_position, "red": float(w.get("red"))})
+	return out
+
+
+## A Tall One's footfall: heavy and slow; heard further than it is seen, muffled when it is in another
+## slice (you hear what you cannot see).
+func walker_step(w: Node) -> void:
+	var p: Vector4 = player.global_position
+	var q: Vector4 = (w as Node4D).global_position
+	var dist: float = Vector2(p.x - q.x, p.z - q.z).length()
+	var dw: float = absf(p.w - q.w)
+	if dist > 26.0:
+		return
+	var db: float = lerpf(-12.0, -40.0, clampf(dist / 26.0, 0.0, 1.0)) - clampf(dw, 0.0, 3.0) * 4.0
+	sound.call("step", db, 1.0 if dw < 0.6 else 0.75)
+
+
+## A Tall One has seen you: the sting, and the first time, what to do.
+func walker_noticed(_w: Node) -> void:
+	sound.call("sting")
+	if not _told_escape:
+		_told_escape = true
+		hud.call("toast", "IT HAS SEEN YOU. GET INTO ANOTHER SLICE.", Color(1.0, 0.32, 0.26), 3.4)
+
+
+## A Tall One reached you: a red flash, back to the room's way in, the Tall Ones back at their posts.
+func walker_caught(_w: Node) -> void:
+	if mode != "play":
+		return
+	mode = "dead"
+	deaths += 1
+	player.set("input_enabled", false)
+	sound.call("death")
+	hud.call("flash", Color(0.75, 0.02, 0.02), 1.4)
+	hud.call("fade_to", 1.0, 1.6)
+	await get_tree().create_timer(1.1).timeout
+	var c: Dictionary = level.call("checkpoint_for", player.call("feet"))
+	player.call("place", c["at"], float(c.get("yaw", 0.0)))
+	level.call("reset_walkers")
+	await get_tree().physics_frame
+	hud.call("fade_to", 0.0, 1.6)
+	hud.call("toast", "A TALL ONE CAUGHT YOU", Color(1.0, 0.4, 0.34), 2.6)
+	mode = "play"
+	player.set("input_enabled", true)
+
+
+## A lore log read.
+func log_read(l: Dictionary) -> void:
+	if logs_read.has(String(l["name"])):
+		return
+	logs_read[String(l["name"])] = true
+	sound.call("tick")
+	hud.call("toast", "%s  ·  LOG %d OF %d" % [String(l["name"]), logs_read.size(), LOG_TOTAL], Color(1.0, 0.74, 0.42), 2.6)
+
+
+## The first time a Tall One stands in your view, in your slice, close: its film.
+func _check_sighting() -> void:
+	var cam: Camera4D = player.get("camera")
+	if cam == null:
+		return
+	for w in level.get("walkers"):
+		if not is_instance_valid(w):
+			continue
+		var q: Vector4 = (w as Node4D).global_position
+		var p: Vector4 = player.global_position
+		if absf(p.w - q.w) > 0.4:
+			continue
+		var head: Vector4 = q + Vector4(0, 2.6, 0, 0)
+		var rel: Vector4 = head - cam.global_position
+		var dist: float = Vector2(rel.x, rel.z).length()
+		if dist > 14.0 or dist < 2.0:
+			continue
+		var fwd: Vector4 = -cam.global_basis.z
+		if rel.normalized().dot(fwd) < cos(deg_to_rad(26.0)):
+			continue
+		if not bool(w.call("clear_line_to", player.global_position + Vector4(0, 0.6, 0, 0))):
+			continue
+		sighted = true
+		_sighting_film(w)
+		return
+
+
+func _sighting_film(w: Node) -> void:
+	var cam: Camera4D = player.get("camera")
+	var e0: Vector4 = cam.global_position
+	var b0: Projection = cam.global_basis
+	var q: Vector4 = (w as Node4D).global_position
+	var head: Vector4 = q + Vector4(0, 2.62, 0, 0)
+	var to_head: Vector4 = head - e0
+	var e1: Vector4 = e0 + Vector4(to_head.x, 0, to_head.z, 0) * 0.35
+	var look1: Projection = _look_basis(e1, head)
+	var flat := Vector2(e0.x - q.x, e0.z - q.z).normalized()
+	var e2: Vector4 = Vector4(q.x + flat.x * 1.7, 2.05, q.z + flat.y * 1.7, q.w)
+	var look2: Projection = _look_basis(e2, head)
+	w.call("start_film", film_camera)
+	sound.call("sight")
+	play_film([
+		{"eye": e0, "eye2": e1, "basis": b0, "basis2": look1, "seconds": 2.6, "caption": ""},
+		{"eye": e2, "eye2": e2 + Vector4(flat.x, 0, flat.y, 0) * -0.25, "basis": look2, "seconds": 3.2, "caption": ""},
+		{"eye": e1, "eye2": e0, "basis": look1, "basis2": b0, "seconds": 1.8, "caption": "It has not seen you. Not yet."},
+	], func() -> void:
+		w.call("end_film"))
+
+
+func _look_basis(eye: Vector4, at: Vector4) -> Projection:
+	var d: Vector4 = at - eye
+	var flat: float = Vector2(d.x, d.z).length()
+	return Basis4D.from_zx(atan2(-d.x, -d.z)) * Basis4D.from_yz(atan2(d.y, maxf(flat, 0.0001)))
 
 
 ## Level 3: a seal light lit (`count` of two). With both, a short film shows the Heart open.

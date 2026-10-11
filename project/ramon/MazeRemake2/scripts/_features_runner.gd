@@ -127,9 +127,11 @@ func _run() -> void:
 	await _bot.key(KEY_F1)
 	var g0: int = int((_game.get("hud") as Node).get("gizmo_index"))
 	await _bot.key(KEY_G)
-	_bot.check(int((_game.get("hud") as Node).get("gizmo_index")) == (g0 + 1) % 3, "G cycles the gizmo")
+	_bot.check(int((_game.get("hud") as Node).get("gizmo_index")) == (g0 + 1) % 4, "G cycles the gizmo")
 	await _bot.key(KEY_G)
 	await _bot.key(KEY_G)
+	await _bot.key(KEY_G)
+	_bot.check(int((_game.get("hud") as Node).get("gizmo_index")) == g0, "four Gs come back round to the first")
 	# The wheel nudges W.
 	w0 = player.global_position.w
 	for i in 2:

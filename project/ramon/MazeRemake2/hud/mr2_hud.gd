@@ -19,16 +19,23 @@ const Ruler := preload("res://ramon/MazeRemake2/hud/gizmo_ruler.gd")
 const Dial := preload("res://ramon/MazeRemake2/hud/gizmo_dial.gd")
 const Lens := preload("res://ramon/MazeRemake2/hud/gizmo_lens.gd")
 const Card := preload("res://ramon/MazeRemake2/hud/mr2_key_card.gd")
+const Map := preload("res://ramon/MazeRemake2/hud/gizmo_map.gd")
 
-const GIZMOS := ["RULER", "DIAL", "LENS"]
+## MAP (round 2's default: the slice map, with the lens's brackets on the door you face), then round 1's
+## trial: the ruler, the dial, the lens with its compact ruler.
+const GIZMOS := ["MAP", "RULER", "DIAL", "LENS"]
 
-var gizmo_index: int = 2
+var gizmo_index: int = 0
 var hud_visible: bool = true
 var state: Dictionary = {}
 var gizmos: Array[Control] = []
 var overlay: Control
 var card: Control
 var fade_rect: ColorRect
+var flash_rect: ColorRect
+var _flash_color: Color = Color(0, 0, 0, 0)
+var _flash_left: float = 0.0
+var _flash_total: float = 1.0
 var fade: float = 0.0
 var _fade_to: float = 0.0
 var _fade_speed: float = 2.0
@@ -46,7 +53,7 @@ var _caption_t: float = 0.0
 
 func _ready() -> void:
 	layer = 20
-	for script in [Ruler, Dial, Lens]:
+	for script in [Map, Ruler, Dial, Lens]:
 		var g: Control = script.new()
 		add_child(g)
 		gizmos.append(g)
@@ -58,6 +65,11 @@ func _ready() -> void:
 	add_child(overlay)
 	card = Card.new()
 	add_child(card)
+	flash_rect = ColorRect.new()
+	flash_rect.color = Color(0, 0, 0, 0)
+	flash_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(flash_rect)
 	fade_rect = ColorRect.new()
 	fade_rect.color = Color(0, 0, 0, 0)
 	fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -70,6 +82,10 @@ func set_gizmo(i: int) -> void:
 	gizmo_index = posmod(i, gizmos.size())
 	for k in gizmos.size():
 		gizmos[k].visible = hud_visible and k == gizmo_index
+	# The map wears the lens's brackets, ring and V chip on the door you face (no second ruler).
+	if gizmo_index == 0:
+		gizmos[3].visible = hud_visible
+	gizmos[3].set("show_ruler", gizmo_index == 3)
 
 
 func update_state(s: Dictionary) -> void:
@@ -86,6 +102,13 @@ func fade_to(alpha: float, speed: float = 2.0) -> void:
 
 func is_faded() -> bool:
 	return absf(fade - _fade_to) < 0.01
+
+
+## A full-screen flash of `color` fading over `seconds` (a Tall One's catch).
+func flash(color: Color, seconds: float = 1.2) -> void:
+	_flash_color = color
+	_flash_left = seconds
+	_flash_total = seconds
 
 
 func show_title() -> void:
@@ -115,6 +138,8 @@ func set_hud_visible(on: bool) -> void:
 
 
 func _process(delta: float) -> void:
+	_flash_left = maxf(0.0, _flash_left - delta)
+	flash_rect.color = Color(_flash_color, _flash_color.a * 0.85 * (_flash_left / maxf(_flash_total, 0.001)))
 	fade = move_toward(fade, _fade_to, _fade_speed * delta)
 	fade_rect.color = Color(0, 0, 0, fade)
 	film_bars = move_toward(film_bars, _film_to, delta * 2.5)
@@ -155,7 +180,7 @@ func _draw_overlay() -> void:
 	c.draw_circle(vs * 0.5, 1.6 * u, Color(1, 1, 1, 0.85 * gf))
 	# The V chip (the lens draws its own on the door).
 	var t: Dictionary = state.get("target", {})
-	var lens_has_it: bool = gizmo_index == 2 and t.has("screen")
+	var lens_has_it: bool = (gizmo_index == 0 or gizmo_index == 3) and t.has("screen")
 	if bool(t.get("offered", false)) and not lens_has_it:
 		var col: Color = (t.get("color", D.ACCENT) as Color).lerp(Color.WHITE, 0.2)
 		var label: String = String(t.get("verb", "ALIGN"))

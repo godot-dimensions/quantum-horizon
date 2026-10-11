@@ -3,7 +3,8 @@ extends SceneTree
 ## LEVEL 1 PLAYED BY THE BOT through the real keys, with frames (smoke_test_output/maze_remake_2/l1/):
 ## the arrival, the walk to the door, E held until it is part open, V, through, the garden hall, the
 ## glint at W 3, the second door, the lift; and the amber niche. At the three gizmo moments every design
-## is photographed (the trial of PLAN.md section 9).
+## is photographed (the trial of PLAN.md section 9). Round 2: in the dark look; the Long Hall, the first
+## sighting's film, past the Tall One by shifting out of its slice, the third door, the lift.
 ##   run.sh windowed l1 res://ramon/MazeRemake2/scripts/_play_l1_runner.gd
 
 const SCENE := "res://ramon/MazeRemake2/maze_remake_2.tscn"
@@ -42,9 +43,9 @@ func _shot(name: String) -> void:
 func _gizmo_shots(name: String) -> void:
 	var hud: Node = _game.get("hud")
 	var keep: int = int(hud.get("gizmo_index"))
-	for i in 3:
+	for i in 4:
 		hud.call("set_gizmo", i)
-		await _shot("%s_%s" % [name, ["a_ruler", "b_dial", "c_lens"][i]])
+		await _shot("%s_%s" % [name, ["a_map", "b_ruler", "c_dial", "d_lens"][i]])
 	hud.call("set_gizmo", keep)
 
 
@@ -56,7 +57,7 @@ func _run() -> void:
 	_bot = Bot.new(self, _game)
 	_bot.log_prefix = "L1"
 	var light: Node = _game.get("light")
-	light.call("set_dark", false, false)
+	light.call("set_dark", true, false)
 	var ok: bool = await _bot.until(func() -> bool: return String(_game.get("mode")) == "play", 20.0)
 	_bot.check(ok, "the game starts in play")
 	var player: CharacterBody4D = _game.get("player")
@@ -98,7 +99,30 @@ func _run() -> void:
 	_bot.face(0.0, -22.0)
 	w = await _bot.shift_to(3.4)
 	await _shot("07_second_door")
-	ok = await _bot.walk_to(0.0, -24.3, 6.0)
+	# Into the Long Hall: the first Tall One, and its film.
+	ok = await _bot.walk_to(0.0, -24.6, 6.0)
+	_bot.face(0.0, -34.0)
+	ok = await _bot.until(func() -> bool: return String(_game.get("mode")) == "film", 4.0)
+	_bot.check(ok, "the first sighting plays its film")
+	for i in 3:
+		await _bot.frames(int(60 * 1.6))
+		await _shot("07b_sighting_film_%d" % i)
+	ok = await _bot.until(func() -> bool: return String(_game.get("mode")) == "play", 12.0)
+	_bot.check(ok and bool(_game.get("sighted")), "the film ends, back in play")
+	await _gizmo_shots("07c_long_hall")
+	# Out of its slice (and to the third door's W), then past it.
+	w = await _bot.shift_to(4.2)
+	_bot.check(w > 4.0, "shifted out of the Tall One's slice (W %.2f)" % w)
+	await _shot("07d_long_hall_far_ana")
+	ok = await _bot.walk_to(0.0, -36.4, 10.0)
+	_bot.check(ok and int(_game.get("deaths")) == 0, "walked past the Tall One unharmed")
+	_bot.face(0.0, -40.0)
+	target = _game.get("target")
+	if bool(target.get("offered", false)):
+		await _bot.key(KEY_V)
+		await _bot.frames(40)
+	await _shot("07e_third_door")
+	ok = await _bot.walk_to(0.0, -40.3, 6.0)
 	_bot.check(ok or int(_game.get("level_index")) == 1 or String(_game.get("mode")) != "play", "walked into the lift")
 	ok = await _bot.until(func() -> bool: return int(_game.get("level_index")) == 1 and String(_game.get("mode")) == "play", 12.0)
 	_bot.check(ok, "the lift took us to level 2")
@@ -122,11 +146,14 @@ func _run() -> void:
 	await _shot("09_niche")
 	_bot.check(int(_game.get("_relics_found")) >= 1, "took the first sign")
 
-	# DARK in the garden hall and the corridor.
-	light.call("set_dark", true, false)
+	# BRIGHT, in the corridor and the garden hall.
+	light.call("set_dark", false, false)
 	player.call("place", Vector4(0, 0, -3, 0.9), 0.0)
 	await _bot.frames(6)
-	await _shot("10_dark_corridor")
-	light.call("set_dark", false, false)
+	await _shot("10_bright_corridor")
+	player.call("place", Vector4(0, 0, -10.6, 1.7), 0.0)
+	await _bot.frames(6)
+	await _shot("11_bright_garden")
+	light.call("set_dark", true, false)
 	print("L1 DONE fails=%d" % _bot.fails)
 	quit(0 if _bot.fails == 0 else 1)

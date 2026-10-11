@@ -17,6 +17,11 @@ extends "res://ramon/MazeRemake2/levels/mr2_level_4d.gd"
 ## plays a short film that turns the view into W, and three sculptures that share one plinth stand side
 ## by side; then the lift.
 ##
+## ROUND 2 (11 Oct): dark, with pools of light; the reading room is the bright sanctuary; Tall Ones pace the
+## archive's aisles at home (shift kata and the archive becomes the computer room, and they are gone); and
+## the AMBUSH: after the Lens, a wall in the north-east bay sinks and five Tall Ones walk out of the kennel
+## behind it, ana. The lift only opens at home now, so you get out by another slice.
+##
 ## On paper: PLAN.md section 4. Bays are 8 m; the grid is x -12..12, z -12..12; you arrive from the
 ## south facing -z.
 
@@ -29,6 +34,10 @@ const CEIL := 4.4
 const LANDMARK := Color(1.0, 0.47, 0.06)
 
 var lens_taken: bool = false
+var _ambush_t: float = -1.0
+var _released: bool = false
+var _kennel_door: Array = []
+var _kennel_walkers: Array = []
 var _lens: Node4D
 var _sculptures: Array[Node4D] = []
 var _band_k: Array
@@ -59,6 +68,19 @@ func _init() -> void:
 		{"name": "start", "lo": Vector4(-4, -1, 4, W_LO - 1), "hi": Vector4(4, 9, 16, W_HI + 1), "at": Vector4(0, 0, 9.0, 0), "yaw": 0.0},
 	]
 	lift_out = {"lo": Vector4(7.0, -1, -15.6, W_LO - 1), "hi": Vector4(9.0, 3, -13.0, W_HI + 1)}
+	rooms = [
+		{"name": "start", "rect": Rect2(-4, 4, 8, 8), "w0": W_LO, "w1": W_HI},
+		{"name": "hub", "rect": Rect2(-4, -4, 8, 8), "w0": W_LO, "w1": W_HI},
+		{"name": "archive", "rect": Rect2(-12, -4, 8, 8), "w0": K_HI, "w1": A_LO - 0.15},
+		{"name": "computer room", "rect": Rect2(-12, -4, 8, 8), "w0": W_LO, "w1": K_HI},
+		{"name": "reading room", "rect": Rect2(-12, -12, 8, 8), "w0": -1.4, "w1": 1.4},
+		{"name": "pit", "rect": Rect2(-4, -12, 8, 8), "w0": W_LO, "w1": W_HI},
+		{"name": "north-east", "rect": Rect2(4, -12, 8, 8), "w0": W_LO, "w1": W_HI},
+		{"name": "gallery", "rect": Rect2(4, -4, 8, 8), "w0": A_LO - 0.15, "w1": W_HI},
+		{"name": "south-east", "rect": Rect2(4, 4, 8, 8), "w0": A_LO - 0.15, "w1": W_HI},
+		{"name": "kennel", "rect": Rect2(12.2, -13.4, 4.8, 5.8), "w0": 1.1, "w1": 3.6},
+		{"name": "lift", "rect": Rect2(6.5, -16, 3, 4), "w0": W_LO, "w1": W_HI},
+	]
 
 
 func build_level() -> void:
@@ -77,13 +99,20 @@ func build_level() -> void:
 
 	# THE OUTER WALLS, with the two lift openings.
 	b.wall_z(-12.2, 12.2, -12.0, wl, wh, H)
-	b.wall_z(-12.2, 12.2, 12.0, wl, wh, H)
+	b.wall_z(-12.2, -11.8, 12.0, wl, wh, H)
+	b.wall_z(-10.1, 12.2, 12.0, wl, wh, H)
+	# The kennel's opening in it, north of the sculptures' bench: walled except ana, where a slab stands
+	# until the Lens is taken.
+	b.box(Vector3(11.8, 3.0, -11.8), Vector3(12.2, H, -10.1), wl, wh)
+	b.box(Vector3(11.8, 0.0, -11.8), Vector3(12.2, 3.0, -10.1), wl, 1.1)
+	b.box(Vector3(11.8, 0.0, -11.8), Vector3(12.2, 3.0, -10.1), 3.6, wh)
 	b.wall_x(-12.2, -1.0, 12.0, wl, wh, H)
 	b.wall_x(1.0, 12.2, 12.0, wl, wh, H)
 	b.box(Vector3(-1.0, 3.0, 11.8), Vector3(1.0, H, 12.2), wl, wh)
 	b.wall_x(-12.2, 7.0, -12.0, wl, wh, H)
 	b.wall_x(9.0, 12.2, -12.0, wl, wh, H)
-	b.box(Vector3(7.0, 3.0, -12.2), Vector3(9.0, H, -11.8), wl, wh)
+	# The way to the lift: open only at home (round 2: the ambush comes ana, so you leave by another slice).
+	b.passage({"name": "the lift's door", "at": Vector2(8.0, -12.0), "along": "x", "open": [[K_HI, A_LO, Build.HOME]], "w_lo": W_LO, "w_hi": W_HI, "wall_h": H})
 
 	# THE GRID: walls on x = -4, 4 and z = -4, 4, with a passage or a wall in each bay boundary.
 	var K: Array = _band_k
@@ -134,8 +163,21 @@ func build_level() -> void:
 		b.glow(Morph.standing(Vector3(-11.8, 2.7, zz - 0.04), Vector3(-6.3, 2.75, zz + 0.04), wl, K_HI - 0.15, 0.45), Build.KATA)
 	b.cap(-11.8, -3.8, -4.2, 3.8, A_LO - 0.15, wh, CEIL)
 
-	# THE READING ROOM (north-west, home only).
-	b.box(Vector3(-10.0, 0.0, -9.0), Vector3(-6.0, 0.45, -8.4), wl, wh, "desk")
+	for sx2 in [-10.6, -7.6]:
+		for side in [-1.0, 1.0]:
+			b.glow(Morph.standing(Vector3(sx2 + side * 0.36 - 0.02, 3.36, -2.6), Vector3(sx2 + side * 0.36 + 0.02, 3.4, 2.6), K_HI + 0.15, wh, 0.45), Color(0.3, 0.55, 1.0))
+
+	# THE READING ROOM (north-west, home only): the level's bright sanctuary, white panels over its walls.
+	var rw0: float = -1.4
+	var rw1: float = 1.4
+	b.box(Vector3(-11.8, 0.0, -11.8), Vector3(-11.76, CEIL, -4.2), rw0, rw1, "bright_wall", false)
+	b.box(Vector3(-11.8, 0.0, -11.8), Vector3(-4.2, CEIL, -11.76), rw0, rw1, "bright_wall", false)
+	b.box(Vector3(-4.24, 0.0, -11.8), Vector3(-4.2, CEIL, -4.2), rw0, rw1, "bright_wall", false)
+	b.box(Vector3(-11.8, 0.0, -4.24), Vector3(-9.02, CEIL, -4.2), rw0, rw1, "bright_wall", false)
+	b.box(Vector3(-6.98, 0.0, -4.24), Vector3(-4.2, CEIL, -4.2), rw0, rw1, "bright_wall", false)
+	b.box(Vector3(-11.8, 0.0, -11.8), Vector3(-4.2, 0.012, -4.2), rw0, rw1, "bright_floor", false)
+	b.box(Vector3(-11.8, CEIL - 0.04, -11.8), Vector3(-4.2, CEIL - 0.01, -4.2), rw0, rw1, "bright_wall", false)
+	b.box(Vector3(-10.0, 0.0, -9.0), Vector3(-6.0, 0.45, -8.4), wl, wh, "bright_wall")
 	b.cap(-11.8, -11.8, -4.2, -4.2, wl, K_HI - 0.15, CEIL)
 	b.cap(-11.8, -11.8, -4.2, -4.2, A_LO + 0.15, wh, CEIL)
 
@@ -176,6 +218,17 @@ func build_level() -> void:
 	b.box(Vector3(7.3, 0.0, -8.7), Vector3(8.7, 1.0, -7.3), wl, wh, "metal")
 	b.glow(Morph.standing(Vector3(7.25, 1.0, -8.75), Vector3(8.75, 1.03, -7.25), wl, wh), Color(0.55, 0.85, 1.0))
 	b.box(Vector3(10.4, 0.0, -10.0), Vector3(11.6, 0.9, -6.0), wl, wh, "desk")
+
+	# THE KENNEL (ana, behind the north-east bay's east wall): where the Tall Ones wait.
+	b.floor_rect(12.2, -13.6, 17.2, -7.4, 1.0, 3.7)
+	b.wall_z(-13.6, -7.4, 17.0, 1.1, 3.6, 3.6)
+	b.wall_z(-13.6, -12.0, 12.0, 1.1, 3.6, 3.6)
+	b.wall_x(12.0, 17.2, -13.4, 1.1, 3.6, 3.6)
+	b.wall_x(12.0, 17.2, -7.6, 1.1, 3.6, 3.6)
+	b.ceiling_rect(12.0, -13.6, 17.2, -7.4, 3.6, 1.1, 3.6)
+	b.cap(12.2, -13.4, 17.0, -7.6, wl, 1.1, 3.6)
+	b.cap(12.2, -13.4, 17.0, -7.6, 3.6, wh, 3.6)
+	b.glow(Morph.standing(Vector3(16.75, 0.0, -13.2), Vector3(16.8, 0.04, -7.8), 1.1, 3.6), Color(1.0, 0.2, 0.15))
 
 	# THE START LIFT (south) and THE LIFT OUT (north of the north-east bay).
 	b.wall_z(12.0, 16.2, -1.5, wl, wh, 3.0)
@@ -272,18 +325,18 @@ func after_build() -> void:
 	# The reading room's notice (home only: the room is not there otherwise).
 	sign_painted(Vector3(-10.6, 1.2, -11.78), Vector3(-5.4, 3.4, -11.74), K_HI, A_LO, Vector4(0, 0, 1, 0), Vector2i(1600, 680),
 		lesson_paint("ARCHIVE  B7", "THE ARCHIVE IS LARGER\nEACH TIME WE MEASURE IT", "This room is only here at home."))
-	# The computer room's terminal (kata): a log, and the hint.
-	var log := func(c: Control) -> void:
-		c.draw_rect(Rect2(Vector2.ZERO, c.size), Color(0.02, 0.04, 0.03))
-		var f: Font = LabPrint.font("bold")
-		var s: int = int(c.size.y * 0.06)
-		var lines: Array = ["RESEARCH LOG  041", "", "We stopped mapping the stacks.", "The hub's doors never lead to the", "same rooms twice.", "",
-			"North, kata, the floor gives way.", "Cross where the bridges meet.", "", "The Lens is in the far corner."]
-		var y: float = c.size.y * 0.12
-		for t in lines:
-			c.draw_string(f, Vector2(c.size.x * 0.06, y), String(t), HORIZONTAL_ALIGNMENT_LEFT, -1, s, Color(1.0, 0.72, 0.32))
-			y += s * 1.35
-	sign_painted(Vector3(-11.42, 0.82, -0.52), Vector3(-11.38, 1.56, 0.52), wl, K_HI - 0.15, Vector4(1, 0, 0, 0), Vector2i(900, 640), log, "glass", 0.9)
+	# The computer room's terminal (kata): log 2, and the hint.
+	add_log("LOG 2  ·  THE STACKS", Vector4(-10.0, 0, 0.0, -2.4),
+		["We stopped mapping the stacks.", "The hub's doors never lead to", "the same rooms twice.", "North, kata, the floor gives way.", "Cross where the bridges meet.", "The Lens is in the far corner."],
+		Vector3(-11.42, 0.82, -0.52), Vector3(-11.38, 1.56, 0.52), wl, K_HI - 0.15, Vector4(1, 0, 0, 0))
+	# The reading room's log (home): log 3, the Dreamer.
+	add_log("LOG 3  ·  THE DREAMER", Vector4(-10.0, 0, -7.8, 0.0),
+		["Something at the Heart is asleep.", "We call it the Dreamer.", "The Annex grows while it dreams.", "The Tall Ones keep its door.", "Do not let them see you."],
+		Vector3(-11.74, 0.95, -8.7), Vector3(-11.7, 2.05, -7.0), K_HI + 0.2, A_LO - 0.2, Vector4(1, 0, 0, 0))
+	# The gallery's log (ana): log 4, the kennel.
+	add_log("LOG 4  ·  THE KENNEL", Vector4(10.0, 0, 1.5, 2.4),
+		["We sealed the north-east wall, ana.", "Behind it they stand in rows,", "waiting for a sound.", "Our lift only answers at home.", "If the wall opens, go home. Then go."],
+		Vector3(11.74, 0.9, 2.4), Vector3(11.78, 1.9, 3.8), A_LO, wh, Vector4(-1, 0, 0, 0))
 	# The gallery's notice (ana).
 	sign_painted(Vector3(11.74, 1.2, -2.0), Vector3(11.78, 3.2, 2.0), A_LO, wh, Vector4(-1, 0, 0, 0), Vector2i(1400, 700),
 		lesson_paint("GALLERY  ·  ANA", "ONLY OPEN ANA", "Shift back home and this room is shut.", Color(0.55, 1.0, 0.9)))
@@ -292,6 +345,44 @@ func after_build() -> void:
 		lesson_paint("LIFT", "LEVEL 2\nTHE STACKS", "Ahead: the archive."))
 	sign_painted(Vector3(7.0, 1.0, -15.78), Vector3(9.0, 2.2, -15.74), wl, wh, Vector4(0, 0, 1, 0), Vector2i(1000, 600),
 		lesson_paint("LIFT", "LEVEL 3\nTHE HEART", "Stand in the square."))
+	# Soft pools of light, each at the W its room lives at.
+	pools(-3.0, 5.0, 3.0, 11.0, 0.0, CEIL, 6.0, 2.2)
+	pools(-3.0, -3.0, 3.0, 3.0, 0.0, H, 6.0, 2.6, Color(1.0, 0.82, 0.6))
+	pools(-11.0, -3.0, -5.0, 3.0, 0.0, CEIL, 6.0, 1.8, Color(0.6, 0.72, 1.0))
+	pools(-11.0, -3.0, -5.0, 3.0, -2.4, CEIL, 6.0, 1.6, Color(1.0, 0.6, 0.3))
+	pools(-11.0, -11.0, -5.0, -5.0, 0.0, CEIL, 4.0, 3.2, Color(1.0, 0.9, 0.75))
+	pools(5.0, -3.0, 11.0, 3.0, 2.4, CEIL, 6.0, 2.0, Color(0.6, 1.0, 0.92))
+	pools(5.0, 5.0, 11.0, 11.0, 2.4, CEIL, 6.0, 1.8, Color(0.6, 1.0, 0.92))
+	pools(5.0, -11.0, 11.0, -5.0, 0.0, CEIL, 6.0, 2.0)
+	pools(5.0, -11.0, 11.0, -5.0, 2.4, CEIL, 6.0, 1.6, Color(0.6, 1.0, 0.92))
+	pools(-1.0, -9.0, 1.0, -7.0, 0.0, H, 3.0, 1.6, Color(0.7, 0.8, 1.0))
+	pools(13.0, -13.0, 16.5, -8.0, 2.4, 3.6, 4.0, 0.9, Color(1.0, 0.35, 0.3))
+	# The Tall Ones of the archive (home), pacing its aisles; shift kata and you are among the computers
+	# instead, and they are not there.
+	add_walker(Vector4(-9.1, 0.0, -2.1, 0.0), PI, Vector4(-9.1, 0.0, 2.1, 0.0), 7.5)
+	add_walker(Vector4(-5.8, 0.0, 2.2, 0.0), 0.0, Vector4(-5.8, 0.0, -2.2, 0.0), 6.5)
+	# The kennel's Tall Ones (ana), waiting in rows behind their slab.
+	for kp in [Vector2(13.6, -12.4), Vector2(13.6, -8.8), Vector2(15.0, -10.6), Vector2(16.2, -12.6), Vector2(16.2, -8.6)]:
+		_kennel_walkers.append(add_walker(Vector4(kp.x, 0.0, kp.y, 2.4), PI * 0.5, Vector4.INF, 0.1))
+	# The slab over the kennel's opening (ana): it sinks when the Lens is taken.
+	var slab_size := Vector4(0.36, 3.0, 1.7, 2.5)
+	var slab_centre := Vector4(12.0, 1.5, -10.95, 2.35)
+	var slab_mi := MeshInstance4D.new()
+	var slab_bm := BoxTetraMesh4D.new()
+	slab_bm.size = slab_size
+	slab_mi.mesh = slab_bm
+	slab_mi.position = slab_centre
+	slab_mi.material_override = LabGrid.material("kit_wall", slab_size, slab_centre)
+	add_child(slab_mi)
+	var slab_body := StaticBody4D.new()
+	slab_body.position = slab_centre
+	var slab_cs := CollisionShape4D.new()
+	var slab_shape := BoxShape4D.new()
+	slab_shape.size = slab_size
+	slab_cs.shape = slab_shape
+	slab_body.add_child(slab_cs)
+	add_child(slab_body)
+	_kennel_door = [slab_mi, slab_body]
 	# The relics: one in the computer room (kata), one in the south-east bay (ana).
 	add_relic("the log's key", Vector4(-8.2, 1.4, 1.5, -2.4), 0.7, Build.KATA.lerp(Color.WHITE, 0.3), "the computer room, kata of the archive")
 	add_relic("the gallery glint", Vector4(8.0, 1.4, 8.0, 2.4), 0.7, Build.ANA.lerp(Color.WHITE, 0.3), "the south-east bay, ana")
@@ -336,7 +427,26 @@ func tick(player: Node4D, delta: float) -> void:
 		var f: Vector4 = player.global_position
 		if Vector2(f.x - 8.0, f.z + 8.0).length() < 1.7:
 			lens_taken = true
+			_ambush_t = 0.0
 			game.call("take_lens")
+	# The ambush: as the Lens film reaches its last shot, the kennel's slab sinks into the floor.
+	if _ambush_t >= 0.0:
+		_ambush_t += delta
+		var sink: float = clampf((_ambush_t - 11.8) / 2.4, 0.0, 1.0)
+		for n in _kennel_door:
+			if is_instance_valid(n):
+				(n as Node4D).position = Vector4(12.0, 1.5 - sink * 3.05, -10.95, 2.35)
+
+
+## Called by the game when the Lens film has ended: the kennel's Tall Ones come for you.
+func after_lens() -> void:
+	_released = true
+	# A skipped film: the slab is already on its way down.
+	_ambush_t = maxf(_ambush_t, 13.0)
+	for w in _kennel_walkers:
+		if is_instance_valid(w):
+			w.set("notice_range", 26.0)
+			w.call("hunt_now")
 
 
 ## The lift out only once you hold the Lens.
@@ -356,4 +466,6 @@ func lens_film(player: Node4D) -> Array:
 		{"eye": eye, "eye2": Vector4(11.0, 1.9, -4.4, 0.0), "basis": level_b, "basis2": turned, "seconds": 3.2, "caption": "Turn your view into W..."},
 		{"eye": Vector4(11.0, 1.9, -4.4, 0.0), "basis": turned, "seconds": 3.6, "caption": "...and they stand side by side. So did every room you crossed."},
 		{"eye": Vector4(11.0, 1.9, -4.4, 0.0), "eye2": eye, "basis": turned, "basis2": level_b, "seconds": 2.2, "caption": "The Lens lets you turn too."},
+		{"eye": Vector4(8.5, 1.6, -11.25, 2.4), "eye2": Vector4(8.9, 1.55, -11.15, 2.4), "basis": Basis4D.from_zx(-1.64) * Basis4D.from_yz(0.04), "seconds": 3.4,
+			"caption": "Something heard you. The lift only answers at home."},
 	]

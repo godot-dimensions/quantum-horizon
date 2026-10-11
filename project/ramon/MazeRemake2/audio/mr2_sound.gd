@@ -8,6 +8,9 @@ extends Node
 ##   the slide    a hush when a door near you moves (its leaves sliding as you shift)
 ##   one-shots    a knock when W stops you, a chime for V, a bell for a relic, the lift's rise, a click
 ##                for B, a chord for the finale
+##   round 2      darker beds (a semitone above each root, beating slowly against it); the Tall Ones'
+##                steps, the sting when one notices you, the first sighting's swell, the death; and
+##                distant creaks every so often, somewhere in the building
 ##
 ## Loops are set in code (the import's loop setting does nothing in this build: water_lab_4d.gd).
 
@@ -19,6 +22,7 @@ var _slide: AudioStreamPlayer
 var _shots: Array[AudioStreamPlayer] = []
 var _streams: Dictionary = {}
 var _level: int = 0
+var _creak_in: float = 6.0
 var _wt_level: float = 0.0
 var _slide_level: float = 0.0
 ## Master trim, dB (the Tab panel tunes it).
@@ -29,7 +33,7 @@ func _ready() -> void:
 	_hum = _player(-30.0)
 	_wtone = _player(-80.0)
 	_slide = _player(-80.0)
-	for i in 4:
+	for i in 8:
 		_shots.append(_player(-14.0))
 	_streams["wtone"] = _loop(_make_wtone(2.0))
 	_streams["slide"] = _loop(_make_noise_loop(2.0, 0.18))
@@ -39,6 +43,12 @@ func _ready() -> void:
 	_streams["tick"] = _make_chime([1800.0], 0.05, 120.0)
 	_streams["lift"] = _make_lift()
 	_streams["finale"] = _make_chime([261.6, 329.6, 392.0, 523.3, 784.0], 4.5, 0.9)
+	_streams["step"] = _make_step()
+	_streams["sting"] = _make_sting()
+	_streams["sight"] = _make_sight()
+	_streams["death"] = _make_death()
+	_streams["creak0"] = _make_creak(1.0)
+	_streams["creak1"] = _make_creak(0.7)
 	_wtone.stream = _streams["wtone"]
 	_slide.stream = _streams["slide"]
 	_wtone.play()
@@ -57,7 +67,9 @@ func set_level(i: int) -> void:
 	_level = i
 	var key: String = "hum%d" % i
 	if not _streams.has(key):
-		var freqs: Array = [[55.0, 82.5, 110.25], [60.0, 120.0, 90.25], [41.25, 61.75, 82.5]][clampi(i, 0, 2)]
+		# Each with a fourth tone a semitone above the root, beating slowly against it: the darker bed.
+		# Every tone makes whole cycles in the 4 s loop (f * 4 an integer), so it loops without a click.
+		var freqs: Array = [[55.0, 82.5, 110.25, 58.25], [60.0, 120.0, 90.25, 63.5], [41.25, 61.75, 82.5, 43.75]][clampi(i, 0, 2)]
 		_streams[key] = _loop(_make_hum(4.0, freqs, [0.05, 0.14, 0.08][clampi(i, 0, 2)]))
 	_hum.stream = _streams[key]
 	_hum.volume_db = -30.0 + volume_db
@@ -78,6 +90,7 @@ func feed(w_rate: float, door_rate: float, delta: float) -> void:
 func _shot(name: String, db: float = -14.0) -> void:
 	for p in _shots:
 		if not p.playing:
+			p.pitch_scale = 1.0
 			p.stream = _streams[name]
 			p.volume_db = db + volume_db
 			p.play()
@@ -111,6 +124,44 @@ func finale() -> void:
 	_shot("finale", -12.0)
 
 
+## A Tall One's footfall at `db`, its pitch lowered when it is in another slice (muffled).
+func step(db: float, pitch: float = 1.0) -> void:
+	for p in _shots:
+		if not p.playing:
+			p.stream = _streams["step"]
+			p.volume_db = db + volume_db
+			p.pitch_scale = pitch * randf_range(0.94, 1.04)
+			p.play()
+			return
+
+
+## Distant creaks: every 9 to 24 s, somewhere in the building, quiet, at a random pitch.
+func _process(delta: float) -> void:
+	_creak_in -= delta
+	if _creak_in > 0.0:
+		return
+	_creak_in = randf_range(9.0, 24.0)
+	for p in _shots:
+		if not p.playing:
+			p.stream = _streams["creak%d" % (randi() % 2)]
+			p.volume_db = -25.0 + volume_db + randf_range(-3.0, 1.0)
+			p.pitch_scale = randf_range(0.7, 1.08)
+			p.play()
+			return
+
+
+func sting() -> void:
+	_shot("sting", -10.0)
+
+
+func sight() -> void:
+	_shot("sight", -9.0)
+
+
+func death() -> void:
+	_shot("death", -8.0)
+
+
 # --- making the sounds ---
 
 func _wav(samples: PackedFloat32Array) -> AudioStreamWAV:
@@ -140,12 +191,12 @@ func _make_hum(seconds: float, freqs: Array, noise: float) -> AudioStreamWAV:
 	var out := PackedFloat32Array()
 	out.resize(n)
 	var lp: float = 0.0
-	var amps: Array = [0.32, 0.18, 0.07]
+	var amps: Array = [0.32, 0.18, 0.07, 0.12]
 	for i in n:
 		var t: float = float(i) / RATE
 		var s: float = 0.0
 		for k in freqs.size():
-			s += sin(TAU * float(freqs[k]) * t) * float(amps[mini(k, 2)])
+			s += sin(TAU * float(freqs[k]) * t) * float(amps[mini(k, 3)])
 		lp += (randf_range(-1.0, 1.0) - lp) * 0.02
 		var edge: float = minf(1.0, minf(t, seconds - t) / 0.25)
 		out[i] = s * 0.5 + lp * noise * 3.0 * edge
@@ -225,4 +276,94 @@ func _make_lift() -> AudioStreamWAV:
 		lp += (randf_range(-1.0, 1.0) - lp) * 0.05
 		var env: float = smoothstep(0.0, 0.4, t) * (1.0 - smoothstep(1.3, 1.8, t))
 		out[i] = (sin(phase) * 0.5 + sin(phase * 1.5) * 0.2 + lp * 1.5) * env * 0.7
+	return _wav(out)
+
+
+## A heavy, slow footfall: a low thud with a little grit.
+func _make_step() -> AudioStreamWAV:
+	var n: int = int(RATE * 0.45)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var phase: float = 0.0
+	var lp: float = 0.0
+	for i in n:
+		var t: float = float(i) / RATE
+		phase += TAU * (62.0 - t * 30.0) / RATE
+		lp += (randf_range(-1.0, 1.0) - lp) * 0.08
+		out[i] = (sin(phase) * exp(-t * 9.0) + lp * 1.4 * exp(-t * 22.0)) * 0.95
+	return _wav(out)
+
+
+## When a Tall One sees you: a dissonant rise, two close tones beating, over a second.
+func _make_sting() -> AudioStreamWAV:
+	var n: int = int(RATE * 1.6)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var p1: float = 0.0
+	var p2: float = 0.0
+	var p3: float = 0.0
+	for i in n:
+		var t: float = float(i) / RATE
+		var f: float = lerpf(180.0, 420.0, smoothstep(0.0, 1.1, t))
+		p1 += TAU * f / RATE
+		p2 += TAU * f * 1.059 / RATE
+		p3 += TAU * f * 0.5 / RATE
+		var env: float = smoothstep(0.0, 0.15, t) * (1.0 - smoothstep(1.1, 1.6, t))
+		out[i] = (sin(p1) * 0.4 + sin(p2) * 0.35 + sin(p3) * 0.25) * env * 0.7
+	return _wav(out)
+
+
+## A distant creak: a slow groan of filtered noise round a gliding pitch, as if something heavy settled
+## far away. `bend` sets how far the pitch falls.
+func _make_creak(bend: float) -> AudioStreamWAV:
+	var seconds: float = 2.2
+	var n: int = int(RATE * seconds)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var ph: float = 0.0
+	var lp: float = 0.0
+	for i in n:
+		var t: float = float(i) / RATE
+		var f: float = 180.0 - 70.0 * bend * (t / seconds) + 14.0 * sin(t * 5.3)
+		ph += TAU * f / RATE
+		lp += (randf_range(-1.0, 1.0) - lp) * 0.08
+		var grain: float = 1.0 if fmod(t * 31.0, 1.0) < 0.4 else 0.3
+		var env: float = smoothstep(0.0, 0.25, t) * (1.0 - smoothstep(1.4, seconds, t))
+		out[i] = (sin(ph) * 0.35 * grain + lp * 1.6) * env * 0.7
+	return _wav(out)
+
+
+## The first sighting: a low swell under a long creak.
+func _make_sight() -> AudioStreamWAV:
+	var n: int = int(RATE * 6.0)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var p1: float = 0.0
+	var p2: float = 0.0
+	var lp: float = 0.0
+	var creak_ph: float = 0.0
+	for i in n:
+		var t: float = float(i) / RATE
+		p1 += TAU * 46.0 / RATE
+		p2 += TAU * 69.3 / RATE
+		lp += (randf_range(-1.0, 1.0) - lp) * 0.01
+		var swell: float = smoothstep(0.0, 2.5, t) * (1.0 - smoothstep(4.5, 6.0, t))
+		creak_ph += TAU * (300.0 + 90.0 * sin(t * 3.1)) / RATE
+		var creak: float = sin(creak_ph) * (1.0 if fmod(t * 23.0, 1.0) < 0.35 else 0.15) * smoothstep(2.2, 2.6, t) * (1.0 - smoothstep(3.4, 3.9, t))
+		out[i] = (sin(p1) * 0.45 + sin(p2) * 0.25 + lp * 4.0) * swell * 0.8 + creak * 0.08
+	return _wav(out)
+
+
+## Caught: a hard low hit and a falling tone.
+func _make_death() -> AudioStreamWAV:
+	var n: int = int(RATE * 1.8)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var ph: float = 0.0
+	var lp: float = 0.0
+	for i in n:
+		var t: float = float(i) / RATE
+		ph += TAU * lerpf(160.0, 38.0, smoothstep(0.0, 1.4, t)) / RATE
+		lp += (randf_range(-1.0, 1.0) - lp) * 0.2
+		out[i] = (sin(ph) * 0.8 * exp(-t * 1.8) + lp * exp(-t * 14.0)) * 0.9
 	return _wav(out)

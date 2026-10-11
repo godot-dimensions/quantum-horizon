@@ -15,6 +15,7 @@ const Morph := preload("res://ramon/MazeRemake2/world/mr2_morph.gd")
 const LabGrid := preload("res://ramon/MazeRemake2/carried/lab_grid.gd")
 const LabPrint := preload("res://ramon/MazeRemake2/carried/lab_print.gd")
 const KitStyle := preload("res://ramon/MazeRemake2/carried/kit_style.gd")
+const Walker := preload("res://ramon/MazeRemake2/world/mr2_walker_4d.gd")
 
 signal relic_taken(relic: Dictionary)
 
@@ -37,10 +38,18 @@ var checkpoints: Array = []
 var relics: Array = []
 ## The lift out: {lo: Vector4, hi: Vector4} in world space (x, y, z, w).
 var lift_out: Dictionary = {}
+## The rooms for the slice map: [{rect: Rect2 (x, z), w0, w1, name}].
+var rooms: Array = []
+## The Tall Ones (world/mr2_walker_4d.gd) in this level.
+var walkers: Array = []
+## Lore logs: [{name, at: Vector4 (where you read it from), text, read: bool}]
+var logs: Array = []
 var lift_in: Dictionary = {}
 var game: Node = null
 ## How much a level lifts the ambient light in DARK (the Heart's atrium is bigger than the torch reaches).
 var dark_lift: float = 1.0
+## The thin glowing line round the foot of the walls (the dark look's "brighter pops").
+var skirt_color: Color = Color(0.22, 0.46, 1.0, 1.0)
 var _time: float = 0.0
 
 
@@ -52,9 +61,29 @@ func _ready() -> void:
 		stops.append(float(b[0]))
 		colors.append(b[1])
 	build.tint = {"stops": stops, "colors": colors}
+	build.skirt = skirt_color
 	build_level()
 	build.finish()
 	after_build()
+	add_to_group(&"mr2_palette")
+	var light: Node = game.get("light") if game != null else null
+	apply_palette(bool(light.get("dark")) if light != null else true)
+
+
+## The dark look and the bright one (mr2_light_4d.gd tells the group): in the dark the floor's grid lines
+## take the band's colour and glow; in the bright lab they are the lab's grey lines with the floor tinted.
+func apply_palette(dark: bool) -> void:
+	if build == null:
+		return
+	var floor_mat: TetraMaterial4D = build.materials.get("floor")
+	if floor_mat != null:
+		# Soft, not neon: the lines take the band's colour with a low glow; the walls keep the kit's dim
+		# grey lines, so the blue panels and the strips are the pops.
+		LabGrid.set_wtint_lines(floor_mat, 0.8 if dark else 0.0, 0.38)
+	for l in build.lights:
+		if is_instance_valid(l):
+			var base: float = float(l.get_meta("base_energy", 1.0))
+			l.set("light_energy", base * (1.0 if dark else float(l.get_meta("bright_gain", 0.6))))
 
 
 ## Override: the rooms.
@@ -70,6 +99,80 @@ func after_build() -> void:
 ## Override: per frame, with the player.
 func tick(_player: Node4D, delta: float) -> void:
 	_time += delta
+
+
+## Soft pools of light in a room (the Creature hall's dark look): downlights every `step` metres over the
+## rectangle, hung under the ceiling at `h`, at W `w` (a light reaches about two metres of W either side).
+func pools(x0: float, z0: float, x1: float, z1: float, w: float, h: float, step: float = 5.0, energy: float = 2.4, color: Color = Color(0.86, 0.9, 1.0), angle: float = 64.0) -> void:
+	var nx: int = maxi(1, int(round(absf(x1 - x0) / step)))
+	var nz: int = maxi(1, int(round(absf(z1 - z0) / step)))
+	for i in nx:
+		for j in nz:
+			var x: float = lerpf(x0, x1, (float(i) + 0.5) / nx)
+			var z: float = lerpf(z0, z1, (float(j) + 0.5) / nz)
+			var l: SpotLight4D = build.downlight(Vector4(x, h - 0.15, z, w), energy, angle, h + 6.0, color)
+			l.set("spot_angle_attenuation", 1.4)
+
+
+## A Tall One standing at `post` (feet, its W its slice) facing `yaw`; pacing to `pace_to` and back when
+## given. Its signals go to the game.
+func add_walker(post: Vector4, yaw: float, pace_to: Vector4 = Vector4.INF, notice: float = 9.0) -> Node:
+	var w: CharacterBody4D = Walker.new()
+	w.name = "TallOne%d" % walkers.size()
+	w.set("post", post)
+	w.set("post_yaw", yaw)
+	w.set("pace_to", pace_to)
+	w.set("notice_range", notice)
+	w.set("game", game)
+	if game != null:
+		w.set("player", game.get("player"))
+		w.connect("caught", Callable(game, "walker_caught"))
+		w.connect("noticed", Callable(game, "walker_noticed"))
+	add_child(w)
+	walkers.append(w)
+	return w
+
+
+func reset_walkers() -> void:
+	for w in walkers:
+		if is_instance_valid(w):
+			w.call("reset")
+
+
+## A lore log: a dark screen on a wall with amber text, read by standing at `at` (within 2.4 m).
+func add_log(title: String, at: Vector4, lines: Array, lo: Vector3, hi: Vector3, w0: float, w1: float, normal: Vector4) -> void:
+	var paint := func(c: Control) -> void:
+		c.draw_rect(Rect2(Vector2.ZERO, c.size), Color(0.02, 0.03, 0.04))
+		var f: Font = LabPrint.font("bold")
+		var fb: Font = LabPrint.font("body")
+		var s1: int = int(c.size.y * 0.075)
+		var s2: int = int(c.size.y * 0.058)
+		var x: float = c.size.x * 0.07
+		var y: float = c.size.y * 0.16
+		s1 = _fit(f, [title], s1, c.size.x - x * 2.0)
+		s2 = _fit(fb, lines, s2, c.size.x - x * 2.0)
+		c.draw_string(f, Vector2(x, y), title, HORIZONTAL_ALIGNMENT_LEFT, -1, s1, Color(1.0, 0.68, 0.30))
+		y += s1 * 0.7
+		c.draw_rect(Rect2(x, y, c.size.x * 0.1, maxf(2.0, c.size.y * 0.006)), Color(1.0, 0.68, 0.30, 0.8))
+		y += s2 * 1.8
+		for t in lines:
+			c.draw_string(fb, Vector2(x, y), String(t), HORIZONTAL_ALIGNMENT_LEFT, c.size.x - x * 2.0, s2, Color(0.95, 0.80, 0.62))
+			y += s2 * 1.5
+	sign_painted(lo, hi, w0, w1, normal, Vector2i(1100, 800), paint, "glass", 0.85)
+	logs.append({"name": title, "at": at, "lines": lines, "read": false, "w0": w0, "w1": w1})
+
+
+## Marks logs read when you stand by them, in their W.
+func tick_logs(player: Node4D) -> void:
+	var f: Vector4 = player.global_position
+	for l in logs:
+		if bool(l["read"]):
+			continue
+		var at: Vector4 = l["at"]
+		if Vector2(f.x - at.x, f.z - at.z).length() < 2.4 and f.w >= float(l["w0"]) and f.w <= float(l["w1"]):
+			l["read"] = true
+			if game != null:
+				game.call("log_read", l)
 
 
 func doors() -> Array:

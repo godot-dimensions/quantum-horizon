@@ -64,9 +64,9 @@ const CALM_A := Color(0.30, 0.62, 1.0)
 const CALM_B := Color(0.55, 0.40, 1.0)
 const WARN_A := Color(1.0, 0.22, 0.16)
 const WARN_B := Color(1.0, 0.45, 0.10)
-## Metallic light grey, paler toward the tips, so the heart's light is what colours it.
-const METAL := Color(0.60, 0.62, 0.66)
-const METAL_PALE := Color(0.86, 0.88, 0.92)
+## Gunmetal, paler toward the tips (the Annex: dark against the Heart's white walls).
+const METAL := Color(0.30, 0.31, 0.34)
+const METAL_PALE := Color(0.46, 0.47, 0.50)
 const THROAT := Color(0.16, 0.17, 0.20)
 
 @export var player_path: NodePath = NodePath("../../../Player")

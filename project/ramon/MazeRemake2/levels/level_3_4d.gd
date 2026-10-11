@@ -16,6 +16,11 @@ extends "res://ramon/MazeRemake2/levels/mr2_level_4d.gd"
 ## With both lit, a short film shows the grid go. Turn at the centre, walk forward along W, into the
 ## Heart, where the Dreamer waits. Then the finale.
 ##
+## ROUND 2 (11 Oct): dark; a Tall One walks the atrium kata (on the way to the amber door), another
+## stands in the weave between its second and third gates at home (meet it, shift ana, go); logs 5
+## and 6 tell who sleeps in the Heart; and the Heart itself is the bright room, white, warm, with a
+## shimmer in its doorway once the seals go.
+##
 ## On paper: PLAN.md section 4. The atrium is x -14..14, z -12..16; the vault's footprint x -4..4,
 ## z -2..6, from W 2 to 8; you arrive from the south facing -z.
 
@@ -50,7 +55,7 @@ var _turn_taught: bool = false
 func _init() -> void:
 	number = 3
 	title = "THE HEART"
-	dark_lift = 2.4
+	dark_lift = 1.3
 	w_min = W_LO
 	w_max = V_HI
 	bands = [[-2.4, Build.KATA, "KATA"], [0.0, Build.HOME, "HOME"], [2.4, Build.ANA, "ANA"], [5.0, Build.DEEP, "DEEP"]]
@@ -61,6 +66,14 @@ func _init() -> void:
 		{"name": "west alcove", "lo": Vector4(-19.5, -1, -1.5, W_LO - 1), "hi": Vector4(-14.0, 9, 5.5, -0.2), "at": Vector4(-15.2, 0, CZ, -1.7), "yaw": PI * 0.5},
 		{"name": "the weave", "lo": Vector4(14.0, -1, -1.5, W_LO - 1), "hi": Vector4(31.0, 9, 5.5, W_HI + 1), "at": Vector4(15.0, 0, CZ, 0.0), "yaw": -PI * 0.5},
 		{"name": "atrium", "lo": Vector4(-14, -1, -12, W_LO - 1), "hi": Vector4(14, 13, 20, W_HI + 1), "at": Vector4(0, 0, 14.0, 0), "yaw": 0.0},
+	]
+	rooms = [
+		{"name": "atrium", "rect": Rect2(-14, -12, 28, 28), "w0": W_LO, "w1": W_HI},
+		{"name": "west alcove", "rect": Rect2(-19.5, -1.5, 5.5, 7), "w0": W_LO, "w1": -0.2},
+		{"name": "the weave", "rect": Rect2(14, 0.8, 12, 2.4), "w0": W_LO, "w1": W_HI},
+		{"name": "seal room", "rect": Rect2(26, -1.5, 5, 7), "w0": W_LO, "w1": W_HI},
+		{"name": "the heart", "rect": Rect2(-FX, FZ0, FX * 2.0, FZ1 - FZ0), "w0": V_LO, "w1": V_HI},
+		{"name": "lift", "rect": Rect2(-1.5, 16, 3, 4), "w0": W_LO, "w1": W_HI},
 	]
 
 
@@ -145,8 +158,20 @@ func build_level() -> void:
 	for e in [[Vector3(-hx, 0.0, hz0), Vector3(hx, 0.016, hz0 + 0.06)], [Vector3(-hx, 0.0, hz1 - 0.06), Vector3(hx, 0.016, hz1)],
 			[Vector3(-hx, 0.0, hz0), Vector3(-hx + 0.06, 0.016, hz1)], [Vector3(hx - 0.06, 0.0, hz0), Vector3(hx, 0.016, hz1)]]:
 		b.glow(Morph.standing(e[0], e[1], wl, V_LO), deep.lerp(Color.WHITE, 0.35))
-	# Inside: light from the ceiling.
-	b.glow(Morph.standing(Vector3(-2.0, VH - 0.04, CZ - 2.0), Vector3(2.0, VH, CZ + 2.0), V_IN, V_HI - 0.4), Color(0.75, 0.7, 1.0))
+	# Inside: the bright room. White panels over its walls, a pale floor, warm light from the ceiling.
+	var hw0: float = V_IN + 0.02
+	var hw1: float = V_HI - 0.4
+	var ix: float = FX - 0.2
+	b.box(Vector3(-ix, 0.0, FZ0 + 0.2), Vector3(-ix + 0.04, VH, FZ1 - 0.2), hw0, hw1, "bright_wall", false)
+	b.box(Vector3(ix - 0.04, 0.0, FZ0 + 0.2), Vector3(ix, VH, FZ1 - 0.2), hw0, hw1, "bright_wall", false)
+	b.box(Vector3(-ix, 0.0, FZ0 + 0.2), Vector3(ix, VH, FZ0 + 0.24), hw0, hw1, "bright_wall", false)
+	b.box(Vector3(-ix, 0.0, FZ1 - 0.24), Vector3(ix, VH, FZ1 - 0.2), hw0, hw1, "bright_wall", false)
+	b.box(Vector3(-ix, 0.0, FZ0 + 0.2), Vector3(ix, 0.012, FZ1 - 0.2), hw0, hw1, "bright_floor", false)
+	b.box(Vector3(-ix, VH - 0.04, FZ0 + 0.2), Vector3(ix, VH, FZ1 - 0.2), hw0, hw1, "bright_wall", false)
+	b.box(Vector3(-ix, 0.0, FZ0 + 0.2), Vector3(ix, VH, FZ1 - 0.2), hw1 - 0.05, hw1, "bright_wall", false)
+	b.glow(Morph.standing(Vector3(-2.0, VH - 0.06, CZ - 2.0), Vector3(2.0, VH - 0.04, CZ + 2.0), V_IN, V_HI - 0.4), Color(1.0, 0.94, 0.84))
+	b.omni(Vector4(0.0, 4.6, CZ, 4.2), 2.6, 12.0, Color(1.0, 0.88, 0.7)).set_meta("bright_gain", 1.0)
+	b.omni(Vector4(0.0, 4.6, CZ, 6.6), 2.0, 12.0, Color(1.0, 0.9, 0.76)).set_meta("bright_gain", 1.0)
 
 	# THE WEST ALCOVE (kata of -0.2): seal one.
 	b.wall_z(-1.7, 5.7, -19.5, wl, -0.2, 4.0, 0.4, 0.0, "slate")
@@ -217,6 +242,29 @@ func after_build() -> void:
 		add_child(body)
 		_seal_plate.append(mi)
 		_seal_plate.append(body)
+	# Soft pools of light, each at the W its place lives at: the atrium dim, at home and kata.
+	pools(-12.0, -10.0, 12.0, 14.0, 0.0, H, 9.0, 2.4, Color(0.7, 0.72, 1.0), 40.0)
+	pools(-12.0, -10.0, -2.0, 14.0, -1.9, H, 9.0, 1.8, Color(1.0, 0.62, 0.32), 40.0)
+	pools(-19.0, -1.0, -14.5, 5.0, -1.9, 4.0, 5.0, 1.6, Color(1.0, 0.7, 0.4))
+	pools(14.5, 1.0, 25.8, 3.0, 0.0, 3.6, 4.0, 1.2)
+	pools(14.5, 1.0, 25.8, 3.0, 2.4, 3.6, 4.0, 1.2, Color(0.6, 1.0, 0.92))
+	pools(26.5, -1.0, 30.5, 5.0, 0.0, 4.0, 5.0, 1.8, Color(0.6, 1.0, 0.92))
+	# The Tall Ones: one walking the atrium kata, across the way to the amber door; one in the weave
+	# between its second and third gates, at home, facing on (it turns as it paces).
+	add_walker(Vector4(-7.5, 0.0, -7.0, -1.9), 0.0, Vector4(-7.5, 0.0, 10.5, -1.9), 8.0)
+	add_walker(Vector4(24.2, 0.0, CZ, 0.0), -PI * 0.5, Vector4(23.0, 0.0, CZ, 0.0), 5.0)
+	# Log 5 in the west alcove (kata): who sleeps at the centre.
+	add_log("LOG 5  ·  AZATHOTH", Vector4(-16.5, 0, 4.4, -1.9),
+		["The first survey named the centre.", "Azathoth. The blind thing at the", "middle of everything. Its dream", "is the world we walk in.",
+			"The Tall Ones are its pipers.", "They only keep the quiet."],
+		Vector3(-19.26, 1.0, 3.4), Vector3(-19.22, 2.1, 5.2), wl, -0.25, Vector4(1, 0, 0, 0))
+	# Log 6 in the seal room past the weave: the last entry.
+	add_log("LOG 6  ·  THE LAST ENTRY", Vector4(29.0, 0, -0.4, 0.0),
+		["We lit both lights. The grid went.", "We walked in along W.", "It did not wake. It looked at us", "from every side at once.",
+			"Do not stay long. Go back", "the way the light goes."],
+		Vector3(27.6, 1.0, -1.26), Vector3(30.4, 2.1, -1.22), wl, wh, Vector4(0, 0, 1, 0))
+	# A shimmer in the Heart's doorway, just ana of its seal: seen through the grid until the grid goes.
+	build.shimmer(Vector3(-0.78, 0.0, CZ - 0.78), Vector3(0.78, 2.78, CZ + 0.78), V_LO + 0.22, V_LO + 0.3, Color(0.7, 0.6, 1.0), 0.5)
 	# The two seal lights: an amber one in the west alcove (kata), a teal one past the weave.
 	_seal_lamps["kata"] = _lamp(Vector4(-17.7, 1.45, CZ, -1.9), Build.KATA, 1.4)
 	_seal_lamps["ana"] = _lamp(Vector4(28.5, 1.45, CZ, 0.0), Build.ANA, 12.0)

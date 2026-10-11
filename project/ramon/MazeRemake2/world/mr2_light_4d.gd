@@ -50,7 +50,8 @@ var dark_ambient_gain: float = 1.0
 @export var torch_angle: float = 38.0
 @export var torch_reach: float = 24.0
 
-var dark: bool = false
+## DARK is the Annex's own look (Ramon, 11 Oct: "a beautiful dark ambience"); B brings the bright lab back.
+var dark: bool = true
 var env: WorldEnvironment4D
 var sky: GradientSkyMaterial4D
 var key: DirectionalLight4D
@@ -77,7 +78,7 @@ func _ready() -> void:
 	add_child(fill)
 	var cfg := ConfigFile.new()
 	if cfg.load(SETTINGS) == OK:
-		dark = bool(cfg.get_value("view", "dark", false))
+		dark = bool(cfg.get_value("view", "dark", true))
 	apply()
 
 

@@ -16,6 +16,8 @@ const Ruler := preload("res://ramon/MazeRemake2/hud/gizmo_ruler.gd")
 
 var state: Dictionary = {}
 var fade: float = 1.0
+## Off when the lens rides on the slice map (the map has its own W scale).
+var show_ruler: bool = true
 var _pulse: float = 0.0
 
 
@@ -37,7 +39,8 @@ func _draw() -> void:
 	# THE RULER, compact: the full ruler's scale, keys and doors (gizmo_ruler.gd), slimmer.
 	var rw: float = 440.0 * u
 	var rh: float = 46.0 * u
-	Ruler.draw_ruler(self, Rect2((vs.x - rw) * 0.5, vs.y - rh - 54.0 * u, rw, rh), state, fade, u, true)
+	if show_ruler:
+		Ruler.draw_ruler(self, Rect2((vs.x - rw) * 0.5, vs.y - rh - 54.0 * u, rw, rh), state, fade, u, true)
 	# THE DOOR YOU FACE: brackets, the ring, the V chip.
 	var t: Dictionary = state.get("target", {})
 	if t.is_empty() or not t.has("screen"):

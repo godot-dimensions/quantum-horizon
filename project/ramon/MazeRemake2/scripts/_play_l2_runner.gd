@@ -42,9 +42,9 @@ func _shot(name: String) -> void:
 func _gizmo_shots(name: String) -> void:
 	var hud: Node = _game.get("hud")
 	var keep: int = int(hud.get("gizmo_index"))
-	for i in 3:
+	for i in 4:
 		hud.call("set_gizmo", i)
-		await _shot("%s_%s" % [name, ["a_ruler", "b_dial", "c_lens"][i]])
+		await _shot("%s_%s" % [name, ["a_map", "b_ruler", "c_dial", "d_lens"][i]])
 	hud.call("set_gizmo", keep)
 
 
@@ -61,7 +61,8 @@ func _run() -> void:
 	_bot = Bot.new(self, _game)
 	_bot.log_prefix = "L2"
 	var light: Node = _game.get("light")
-	light.call("set_dark", false, false)
+	light.call("set_dark", true, false)
+	_game.set("sighted", true)
 	var player: CharacterBody4D = _game.get("player")
 	var ok: bool = await _bot.until(func() -> bool: return _level(1), 20.0)
 	_bot.check(ok, "level 2 starts in play")
@@ -103,18 +104,35 @@ func _run() -> void:
 	ok = await _bot.until(func() -> bool: return String(_game.get("mode")) == "film", 6.0)
 	Input.action_release(&"move_forward")
 	_bot.check(ok, "the Lens starts its film")
-	for i in 5:
-		await _bot.frames(int(60 * 2.0))
+	for i in 8:
+		await _bot.frames(int(60 * 1.8))
 		await _shot("09_film_%d" % i)
 		if String(_game.get("mode")) != "film":
 			break
 	ok = await _bot.until(func() -> bool: return String(_game.get("mode")) == "play", 15.0)
 	_bot.check(ok and bool(_game.get("has_lens")), "the film ends and the turn is ours")
-	await _bot.frames(30)
-	await _shot("10_after_lens_card")
+	# THE AMBUSH: the kennel's slab is down and its Tall Ones are coming.
+	var lvl: Node = _game.get("level")
+	var kennel: Array = lvl.get("_kennel_walkers")
+	var hunting: int = 0
+	for k in kennel:
+		if String(k.get("state")) in ["notice", "hunt"]:
+			hunting += 1
+	_bot.check(hunting == kennel.size() and kennel.size() == 5, "the kennel's five Tall Ones hunt (%d)" % hunting)
+	_bot.face(12.0, -11.0)
+	await _bot.frames(50)
+	_bot.check(((lvl.get("_kennel_door") as Array)[0] as Node4D).position.y < -1.0, "the kennel's slab has sunk")
+	await _shot("10_ambush")
+	# The lift's door is shut ana.
+	ok = await _bot.walk_to(8.0, -13.0, 2.0)
+	_bot.check(player.global_position.z > -12.0, "the lift's door is shut ana (z %.2f)" % player.global_position.z)
+	w = await _bot.shift_to(0.0)
+	_bot.face(8.0, -14.0)
+	await _bot.frames(10)
+	await _shot("10b_home_lift_open")
 	ok = await _bot.walk_to(8.0, -14.2, 8.0)
 	ok = await _bot.until(func() -> bool: return _level(2), 14.0)
-	_bot.check(ok, "the lift took us to level 3")
+	_bot.check(ok and int(_game.get("deaths")) == 0, "escaped home to the lift, to level 3 (deaths %d)" % int(_game.get("deaths")))
 
 	# Side rooms, from a fresh level 2.
 	await _bot.key(KEY_2)
@@ -130,9 +148,10 @@ func _run() -> void:
 	ok = await _bot.walk_to(-8.2, 1.5, 5.0, 0.4)
 	await _bot.frames(10)
 	_bot.check(int(_game.get("_relics_found")) >= 1, "took the log's key")
-	w = await _bot.shift_to(0.0)
-	_bot.face(-11.0, 1.0)
-	await _bot.frames(6)
+	# The archive at home, seen from the hub through the west doorway (its Tall Ones pace in there).
+	player.call("place", Vector4(-2.4, 0, 0.0, 0.0), PI * 0.5)
+	_bot.face(-9.0, 0.0)
+	await _bot.frames(10)
 	await _shot("12_archive_home")
 	player.call("place", Vector4(0, 0, 0.5, 2.4), -PI * 0.5)
 	await _bot.frames(10)
@@ -151,14 +170,17 @@ func _run() -> void:
 	_bot.check(ok, "fell off the vanishing bridge and came back on the ledge")
 	await _shot("14_after_fall")
 
-	# Dark in the hub and over the pit.
-	light.call("set_dark", true, false)
+	# The reading room (the bright sanctuary), and bright mode in the hub and over the pit.
+	player.call("place", Vector4(-8.0, 0, -5.2, 0.0), 0.0)
+	await _bot.frames(10)
+	await _shot("15_reading_room")
+	light.call("set_dark", false, false)
 	player.call("place", Vector4(0, 0, 2.5, 0.0), 0.0)
 	await _bot.frames(8)
-	await _shot("15_dark_hub")
+	await _shot("16_bright_hub")
 	player.call("place", Vector4(0, 0, -4.5, -2.4), 0.0)
 	await _bot.frames(8)
-	await _shot("16_dark_pit")
-	light.call("set_dark", false, false)
+	await _shot("17_bright_pit")
+	light.call("set_dark", true, false)
 	print("L2 DONE fails=%d" % _bot.fails)
 	quit(0 if _bot.fails == 0 else 1)

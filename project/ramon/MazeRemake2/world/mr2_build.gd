@@ -44,7 +44,12 @@ const SLOTS := {
 	"cap": ["kit_wall", 0.10],
 	"slate": ["slate", 0.12],
 	"slate_cap": ["slate", 0.12],
+	# A bright room's own surfaces: the lab grid's own swatches, which the dark palette never touches.
+	"bright_wall": ["wall", 0.0],
+	"bright_floor": ["floor", 0.30],
 }
+## Slots that get the glowing skirting when the level asks for it (`skirt`).
+const SKIRTED := ["wall", "slate", "bright_wall"]
 
 var root: Node4D
 ## The level's W bands as tint stops: {"stops": PackedFloat32Array, "colors": PackedColorArray}.
@@ -57,6 +62,9 @@ var lights: Array[Node4D] = []
 var meshes: Dictionary = {}         # slot -> MeshInstance4D
 var materials: Dictionary = {}      # slot -> TetraMaterial4D
 var body: StaticBody4D
+## The skirting's colour: a thin glowing line round the foot of every wall (alpha 0: none).
+var skirt: Color = Color(0, 0, 0, 0)
+var shimmers: Array[MeshInstance4D] = []
 
 
 func _init(level_root: Node4D) -> void:
@@ -72,6 +80,21 @@ func add(keys: Array, slot: String = "wall", collide: bool = true) -> void:
 	(_keys[slot] as Array).append(keys)
 	if collide:
 		_colliders.append_array(Morph.collider_boxes(keys))
+	if skirt.a > 0.0 and slot in SKIRTED:
+		# The same morph, a few centimetres high and a hair wider, so it rises and sinks with its wall.
+		var sk: Array = []
+		var any_up: bool = false
+		for k in keys:
+			var lo: Vector3 = k[1]
+			var hi: Vector3 = k[2]
+			if lo.y > 0.05:
+				continue
+			var top: float = minf(hi.y, 0.045)
+			if top > 0.0:
+				any_up = true
+			sk.append(Morph.key(float(k[0]), Vector3(lo.x - 0.015, maxf(lo.y, -0.06), lo.z - 0.015), Vector3(hi.x + 0.015, top, hi.z + 0.015)))
+		if any_up and sk.size() >= 2:
+			glow(sk, skirt)
 
 
 ## A glowing (unshaded) morph box; never collides.
@@ -214,10 +237,17 @@ func door(spec: Dictionary) -> Dictionary:
 			else:
 				gkeys.append(Morph.key(float(k[0]), Vector3(lo.x - 0.01, 0.05, e0), Vector3(hi.x + 0.01, height - 0.05, e1)))
 		glow(gkeys, color.lerp(Color.WHITE, 0.35))
+	# The labs' shimmer in the opening once it is fully open: a hologram you walk through, in the colour
+	# of the W it opens at.
+	if bool(spec.get("shimmer", true)):
+		var sw0: float = open_w if dir > 0.0 else w_lo
+		var sw1: float = w_hi if dir > 0.0 else open_w
+		shimmer(_door_lo(at, along, -half + 0.02, 0.0, -0.015), _door_hi(at, along, half - 0.02, height - 0.02, 0.015), sw0, sw1, color.lerp(Color.WHITE, 0.15), 0.5)
 	# The lintel over the opening (solid wall above the door).
 	if wall_h > height:
 		box(_door_lo(at, along, -half - 0.02, height, -wall_t * 0.5), _door_hi(at, along, half + 0.02, wall_h, wall_t * 0.5), w_lo, w_hi, String(spec.get("slot", "wall")), true)
 	# The frame: glowing strips round the opening on both faces, in the colour of where it opens.
+	# (The lintel's slot follows the wall it sits in: "slot" in the spec.)
 	for face in [-1.0, 1.0]:
 		var z0: float = face * wall_t * 0.5
 		var z1: float = z0 + face * 0.03
@@ -388,6 +418,25 @@ func _door_lo(at: Vector2, along: String, a: float, y: float, d: float) -> Vecto
 
 func _door_hi(at: Vector2, along: String, b: float, y: float, d: float) -> Vector3:
 	return Vector3(at.x + b, y, at.y + d) if along == "x" else Vector3(at.x + d, y, at.y + b)
+
+
+## THE LABS' SHIMMER: a hologram sheet from `lo` to `hi` (thin along one axis), from W `w0` to `w1`,
+## the grid shader's holo mode (VoxelLab/room/vl_shimmer_4d.gd): an ordered dither you see through,
+## densest at its foot, bright bands drifting up. Never collides: you walk through it.
+func shimmer(lo: Vector3, hi: Vector3, w0: float, w1: float, color: Color = Color(0.32, 0.66, 1.0), base: float = 0.8) -> MeshInstance4D:
+	var size := Vector4(hi.x - lo.x, hi.y - lo.y, hi.z - lo.z, w1 - w0)
+	var centre := Vector4((lo.x + hi.x) * 0.5, (lo.y + hi.y) * 0.5, (lo.z + hi.z) * 0.5, (w0 + w1) * 0.5)
+	var mi := MeshInstance4D.new()
+	var bm := BoxTetraMesh4D.new()
+	bm.size = size
+	mi.mesh = bm
+	mi.position = centre
+	var m: TetraMaterial4D = LabGrid.material("kit_code_blue", size, centre)
+	LabGrid.set_holo(m, color, base, 0.9, 0.9, 0.7, 1.6)
+	mi.material_override = m
+	root.add_child(mi)
+	shimmers.append(mi)
+	return mi
 
 
 ## A sign: a thin box with text printed on its `normal` face. The texture comes later (LabPrint is

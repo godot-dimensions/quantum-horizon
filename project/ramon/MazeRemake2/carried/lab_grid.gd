@@ -196,6 +196,26 @@ static func set_wtint(m: TetraMaterial4D, stops: PackedFloat32Array, colors: Pac
 	cs.set_shader_parameter("wtint_gain", gain)
 
 
+## MAZE REMAKE 2: the grid lines in the band colour, glowing (the dark look); 0 turns it off.
+static func set_wtint_lines(m: TetraMaterial4D, on: float, glow: float = 0.6) -> void:
+	var cs: ShaderMaterial = m.get_cross_section_material_3d()
+	cs.set_shader_parameter("wtint_lines", clampf(on, 0.0, 1.0))
+	cs.set_shader_parameter("wtint_line_glow", glow)
+
+
+## MAZE REMAKE 2: the hologram (the labs' shimmer doors): the ordered-dither sheet with drifting bands.
+static func set_holo(m: TetraMaterial4D, color: Color, base: float = 0.85, falloff: float = 0.9, glow: float = 0.9, scan: float = 0.7, density: float = 1.6) -> void:
+	var cs: ShaderMaterial = m.get_cross_section_material_3d()
+	cs.set_shader_parameter("holo_on", 1.0)
+	cs.set_shader_parameter("holo_color", color)
+	cs.set_shader_parameter("holo_base", base)
+	cs.set_shader_parameter("holo_falloff", falloff)
+	cs.set_shader_parameter("holo_glow", glow)
+	cs.set_shader_parameter("holo_scan", scan)
+	cs.set_shader_parameter("holo_scan_density", density)
+	cs.set_shader_parameter("holo_scan_speed", 0.35)
+
+
 static func _apply(cs: ShaderMaterial, v: Array) -> void:
 	cs.set_shader_parameter("surface_color", v[0])
 	cs.set_shader_parameter("line_color", v[1])

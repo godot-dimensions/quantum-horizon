@@ -256,9 +256,9 @@ func _build() -> void:
 	_sized_fonts.append([gl, 14])
 	gl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	gz.add_child(gl)
-	for i in 3:
+	for i in 4:
 		var b := Button.new()
-		b.text = ["A  RULER", "B  DIAL", "C  LENS"][i]
+		b.text = ["MAP", "RULER", "DIAL", "LENS"][i]
 		b.add_theme_font_override("font", D.font("key"))
 		b.add_theme_font_size_override("font_size", 11)
 		_sized_fonts.append([b, 11])

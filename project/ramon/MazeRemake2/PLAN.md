@@ -315,3 +315,87 @@ you hold the Lens. Brackets and ring sit on dark glass so they read on the white
 - The menu's catalogue entry and its thumbnail; one launch from the menu, Esc back.
 - Frame times per level; the HUD at 4K; BRIGHT and DARK sheets.
 - The handover (follow_up/maze_remake_2.md), memory, commit.
+
+## Round 2 (11 Oct, Ramon's notes mid-run)
+
+His words, in short: a beautiful dark ambience (the Creation Lab's dark mode: soft subdued light, a
+dark look, blue walls with brighter pops); a gizmo that shows the power of the slice (the pen's dial, the
+control room, the aquarium's tank), mine can stay in combination; a spooky mood with elongated, grey,
+rigidly animated, lofted walkers that do not notice you until they do, then their tiny eyes go red and
+they walk to you, slowly, and can kill you, so you get into another slice; a creepy film the first time
+you see one; beautiful rooms, lore to find, Azathoth in it, the mood dark with the odd bright room;
+walkers pouring from an open door so you find another way out; a subtle sci-fi feel and the labs'
+holographic shimmer.
+
+**The 30 steps of round 2**
+
+The look (dark by default)
+1. DARK is the default; B brings the bright lab look back.
+2. The dark light: the kit's dark mood (a whisper of blue ambient), soft pools from downlights in every
+   room at its own W (the Creature hall's look), the torch kept but softer.
+3. Floors and walls near-black with lighter grid lines; the floor's grid lines take the band colour
+   (amber, blue, teal, violet), so W shows as coloured light in the dark.
+4. Blue pops: code-blue feature walls and panels in every room, glow strips at the skirting and ceiling.
+5. The labs' holographic shimmer (the grid shader's holo mode) in the lifts' mouths and over open
+   W doors, and the vault's doorway.
+6. One bright room per level where it helps (level 1's garden hall stays warm and lit; level 2's reading
+   room is the sanctuary), white-walled whatever the palette.
+
+The slice map (the gizmo)
+7. A round dark-glass map in the corner, after the pen's dial: the rooms near you drawn in isometric
+   (x and z flat, W up), each as a box through the W it exists in.
+8. Your slice as a sheet at your W through them, moving as you shift and tilting when you turn; rooms it
+   cuts are lit, the others dim outlines.
+9. Doors as glyphs at the W where they open, stems down to the sheet; walkers as red marks at their W.
+10. The lens (brackets, ring, V) stays on the door you face; the ruler and dial stay behind G.
+
+The walkers (the Tall Ones)
+11. Built from lofted segments (the Dreamer's loft builder): very tall and thin, long limbs, a small head
+    with two tiny eyes; grey; every piece thick through W so they read in the slice.
+12. Rigid: each limb a stiff segment turning at its joint, an idle sway and a slow head turn; a stiff slow
+    walk.
+13. They live at one W and are walls to nothing: a body that collides at its own W only.
+14. They notice you only in their slice, close, in front, with nothing between; the eyes grow red over
+    half a second, a sting, and they walk to you at a slow walking pace.
+15. In your slice and within reach, they kill you: a red flash, back to the room's way in, the walkers
+    back at their posts.
+16. Out of their slice for a few seconds (or far away), they lose you; the red fades.
+17. The first time you see one, a short creepy film: a slow push in, its head turns, the eyes flicker.
+18. Their sound: slow heavy steps, a rising tone when they notice.
+
+Rooms, lore, Azathoth
+19. Level 1: one Tall One stands in the garden hall at W 3, beside the way to the second door: the first
+    sighting; the second door opens further ana than it reaches, so the lesson is "another slice is safe".
+20. Level 2: Tall Ones among the archive's shelves (home); after the Lens, the AMBUSH: a door in the
+    north-east bay opens ana and several come for you; the lift there only opens at home now, so you
+    shift away and get out.
+21. Level 3: Tall Ones between the weave's gates and one in the atrium kata; the Heart's lore ties them
+    to the Dreamer.
+22. Six lore logs on terminals across the levels (the researchers, the Tall Ones, the Dreamer), counted
+    on the HUD; each one a short dark note, no em dashes.
+23. A beautiful room or view per level (the moonlit oak; the archive's stacks receding into blue; the
+    crystal over the atrium).
+
+Sound
+24. Darker beds per level, distant creaks; the walkers' steps and sting; the first-sighting drone.
+
+Proof
+25. The level runners updated for the walkers (escape by shifting, a death and the respawn).
+26. A walker runner: notice, hunt, lose, kill, reset; frames of the eyes going red.
+27. The first-sighting film and the ambush, filmed by runners.
+28. Dark and bright frames of every level; perf with the walkers.
+29. The menu film re-shot in the dark look.
+30. Handover, memory, commit.
+
+**Round 2, status (11 Oct, done and played by the bot)**
+
+All 30 steps are in, with these changes from the list above:
+- Step 19: the first Tall One stands in a new Long Hall after the garden (the garden stays the bright
+  room), and the third door opens further ana than it can see.
+- Step 20: the kennel's opening is north of the sculptures' bench (the bench stood across the first
+  opening and the Tall Ones jammed against it); a skipped Lens film still sinks the slab.
+- Step 21: one Tall One walks the atrium kata at W -1.9, one stands in the weave at home between its
+  second and third gates. Level 3's Heart is the bright room, and this folder's Dreamer is gunmetal so it
+  reads on the white.
+- Step 24: the beds got a fourth tone a semitone above each root (slow beating), plus distant creaks.
+Runner counts and the questions for Ramon are in `follow_up/maze_remake_2.md`.
