@@ -8,6 +8,11 @@ extends Node
 ##   the slide    a hush when a door near you moves (its leaves sliding as you shift)
 ##   one-shots    a knock when W stops you, a chime for V, a bell for a relic, the lift's rise, a click
 ##                for B, a chord for the finale
+##   the music    the pen's cave track under everything (12 Oct, Ramon: "put the ambient background track for
+##                the cave in this scene"): Michael Vignola's "Follow Me Nowhere", played from the pen's own
+##                file (read, never changed; 49 MB, so not copied), looped as the pen loops it (from 30 s to
+##                4 s before its end), subtle at -26 dB (Ramon: "make the bg track less volume ... just
+##                subtle"; the cave plays it at -12); the Tab panel's Music row trims it
 ##   round 2      darker beds (a semitone above each root, beating slowly against it); the Tall Ones'
 ##                steps, the sting when one notices you, the first sighting's swell, the death; and
 ##                distant creaks every so often, somewhere in the building
@@ -15,6 +20,8 @@ extends Node
 ## Loops are set in code (the import's loop setting does nothing in this build: water_lab_4d.gd).
 
 const RATE := 22050
+const MUSIC_FILE := "res://ramon/chickenpen/audio/music/Michael Vignola - Follow Me Nowhere.wav"
+const MUSIC_DB := -26.0
 
 var _hum: AudioStreamPlayer
 var _wtone: AudioStreamPlayer
@@ -27,6 +34,9 @@ var _wt_level: float = 0.0
 var _slide_level: float = 0.0
 ## Master trim, dB (the Tab panel tunes it).
 var volume_db: float = 0.0
+## The music's own trim, dB, on top of the master (the Tab panel's Music row).
+var music_db: float = 0.0
+var _music: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -53,7 +63,32 @@ func _ready() -> void:
 	_slide.stream = _streams["slide"]
 	_wtone.play()
 	_slide.play()
+	_start_music()
 	set_level(0)
+
+
+## The cave's track, looped the pen's way (chickenpen/scripts/pen_sfx_4d.gd `_loop_between`, the same values,
+## so the shared resource ends up as the pen leaves it). Missing, the Annex plays on without it.
+func _start_music() -> void:
+	if not ResourceLoader.exists(MUSIC_FILE):
+		push_warning("Annex sound: the cave's track is missing at %s." % MUSIC_FILE)
+		return
+	var wav := load(MUSIC_FILE) as AudioStreamWAV
+	if wav == null:
+		return
+	var rate: float = maxf(float(wav.mix_rate), 1.0)
+	var length: float = wav.get_length()
+	var a: float = clampf(30.0, 0.0, length * 0.45)
+	var b: float = clampf(length - 4.0, a + 1.0, length)
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = int(a * rate)
+	wav.loop_end = int(b * rate)
+	_music = AudioStreamPlayer.new()
+	_music.name = "Music"
+	_music.stream = wav
+	_music.volume_db = MUSIC_DB + music_db + volume_db
+	add_child(_music)
+	_music.play()
 
 
 func _player(db: float) -> AudioStreamPlayer:
@@ -137,6 +172,8 @@ func step(db: float, pitch: float = 1.0) -> void:
 
 ## Distant creaks: every 9 to 24 s, somewhere in the building, quiet, at a random pitch.
 func _process(delta: float) -> void:
+	if _music != null:
+		_music.volume_db = MUSIC_DB + music_db + volume_db
 	_creak_in -= delta
 	if _creak_in > 0.0:
 		return

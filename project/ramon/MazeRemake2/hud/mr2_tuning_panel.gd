@@ -21,6 +21,7 @@ const ROWS := [
 	["exposure", "Exposure", "The whole picture, lighter or darker.", 0.5, 2.0, 0.02, "light", "exposure_gain"],
 	["torch", "Torch", "The light you carry in DARK.", 0.0, 10.0, 0.1, "light", "torch_energy"],
 	["volume", "Sound", "The hum, the W tone and the chimes, in dB.", -30.0, 8.0, 1.0, "sound", "volume_db"],
+	["music", "Music", "The cave's track under it all, in dB.", -40.0, 6.0, 1.0, "sound", "music_db"],
 ]
 
 var game: Node

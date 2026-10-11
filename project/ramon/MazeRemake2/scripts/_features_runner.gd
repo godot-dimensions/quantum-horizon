@@ -96,6 +96,9 @@ func _run() -> void:
 	await _bot.key(KEY_SPACE)
 	ok = await _bot.until(func() -> bool: return String(_game.get("mode")) == "play", 3.0)
 	_bot.check(ok and not bool(popup.call("is_open")), "Space closes the card")
+	var music: AudioStreamPlayer = (_game.get("sound") as Node).get("_music")
+	_bot.check(music != null and music.playing and (music.stream as AudioStreamWAV).loop_mode == AudioStreamWAV.LOOP_FORWARD,
+		"the cave's track plays under it all, looped")
 	await _bot.frames(20)
 	# Tab: the panel.
 	await _bot.key(KEY_TAB)

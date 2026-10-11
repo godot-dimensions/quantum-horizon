@@ -25,6 +25,10 @@ Beside the scene, `PLAN.md` holds the 100 steps as adapted, the levels on paper,
   strips and the Long Hall's panels went grey. Colour stays where it tells you something: door frames and
   passage stripes (the band they open at), the bridges, the lifts, relics, seal lights, the hub's
   landmark pillar, the vault's ring, the HUD, the eyes.
+- **The cave's music** (12 Oct): the pen's cave track, Michael Vignola's "Follow Me Nowhere", plays under
+  every level, read from `chickenpen/audio/music/` (not copied: 49 MB), looped as the pen loops it (30 s
+  to 4 s before the end) subtle at -26 dB, far under the cave's -12 (his ask: "less volume ... just subtle"). Tab has a Music row to trim it; the code-made hum, W tone,
+  creaks and the Tall Ones' sounds stay on top. If the pen's file ever moves, the Annex plays on without it.
 - **The fence generator, analysed and not used.** The pen's walls (`chickenpen/scripts/pen_town_wall_4d.gd`,
   `pen_ruin_wall_4d.gd`, Andrew's TownWall) use FenceGenerator4D for two things: a solid wall deep in W
   (the town wall: the same as a box), and a masonry rhythm through W (the ruin: its posts stand at seed
