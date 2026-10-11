@@ -272,7 +272,7 @@ func _draw_end(c: Control, u: float, vs: Vector2) -> void:
 		y += 22.0 * u
 	var ky: float = r.end.y - 46.0 * u
 	var x: float = r.position.x + 30.0 * u
-	for it in [["ENTER", "Play again"], ["ESC", "Back to the menu"]]:
+	for it in [["ENTER", "Play again"], ["M", "Back to the menu"]]:
 		var kw: float = D.keycap_width(String(it[0]), u)
 		D.keycap(c, Rect2(x, ky, kw, 24.0 * u), String(it[0]), u, false, 1.0)
 		x += kw + 8.0 * u

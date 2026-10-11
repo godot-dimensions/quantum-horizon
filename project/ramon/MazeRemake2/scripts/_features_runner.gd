@@ -80,6 +80,8 @@ func _run() -> void:
 	_game = (load(SCENE) as PackedScene).instantiate()
 	_game.set("capture_mouse", false)
 	root.add_child(_game)
+	# As F6 or the menu would have it: the Annex is the current scene (the menu's box asks only away from the menu).
+	current_scene = _game
 	_bot = Bot.new(self, _game)
 	_bot.log_prefix = "FEAT"
 	var player: CharacterBody4D = _game.get("player")
@@ -121,15 +123,21 @@ func _run() -> void:
 	await _bot.key(KEY_ESCAPE)
 	await _bot.frames(4)
 	_bot.check(not bool(tuning.call("is_open")), "Esc closes the panel first")
-	# Esc again: the question.
+	# Esc again, nothing open: it only frees the cursor (12 Oct: the labs' rule); it never asks or leaves.
 	await _bot.key(KEY_ESCAPE)
 	await _bot.frames(6)
 	var guard: Node = root.get_node_or_null(^"AnnexEscape")
-	_bot.check(guard != null and bool(guard.call("is_open")), "Esc then asks before leaving")
-	await _shot("02_esc_box")
-	await _bot.key(KEY_N)
+	var way_home: Node = root.get_node_or_null(^"WayHome")
+	_bot.check(guard != null and not bool(guard.call("is_open")) and way_home != null and not bool(way_home.call("is_asking")) and String(_game.get("mode")) == "play",
+		"Esc with nothing open asks nothing and stays")
+	# M: the menu's shared box, the same one every lab uses.
+	await _bot.key(KEY_M)
 	await _bot.frames(6)
-	_bot.check(guard != null and not bool(guard.call("is_open")) and is_instance_valid(_game), "N stays in the game")
+	_bot.check(way_home != null and bool(way_home.call("is_asking")), "M asks the menu's shared question")
+	await _shot("02_menu_box")
+	await _bot.key(KEY_ESCAPE)
+	await _bot.frames(6)
+	_bot.check(way_home != null and not bool(way_home.call("is_asking")) and is_instance_valid(_game) and String(_game.get("mode")) == "play", "Esc answers no and the Annex goes on")
 	# B, F1, G.
 	var dark0: bool = bool((_game.get("light") as Node).get("dark"))
 	await _bot.key(KEY_B)

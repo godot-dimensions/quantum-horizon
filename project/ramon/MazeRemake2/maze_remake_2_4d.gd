@@ -376,6 +376,8 @@ func _feed_hud() -> void:
 		if float(player.call("tilt")) > 0.02:
 			strip.append(["R", "Level the view"])
 	strip.append(["B", "Dark"])
+	# The way to the menu (12 Oct): M asks the menu's shared box, as in every lab.
+	strip.append(["M", "Menu"])
 	var relics: String = ""
 	if _relic_total > 0:
 		relics = "RELICS  %d / %d" % [_relics_found, _relic_total]

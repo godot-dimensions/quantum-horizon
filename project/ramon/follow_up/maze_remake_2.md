@@ -29,6 +29,10 @@ Beside the scene, `PLAN.md` holds the 100 steps as adapted, the levels on paper,
   every level, read from `chickenpen/audio/music/` (not copied: 49 MB), looped as the pen loops it (30 s
   to 4 s before the end) subtle at -26 dB, far under the cave's -12 (his ask: "less volume ... just subtle"). Tab has a Music row to trim it; the code-made hum, W tone,
   creaks and the Tall Ones' sounds stay on top. If the pen's file ever moves, the Annex plays on without it.
+- **Leaving: the labs' box** (12 Oct): M opens the menu's shared "Return to Main Menu?" box
+  (Menu/scripts/menu_way_home.gd), the same as every lab, launched from the menu or run alone (the Esc guard
+  makes the box itself when there is no menu). Esc only stops things (a popup, a film, the Tab panel) and
+  otherwise frees the cursor; it never asks. The key strip shows M Menu; the end card says M for the menu.
 - **The fence generator, analysed and not used.** The pen's walls (`chickenpen/scripts/pen_town_wall_4d.gd`,
   `pen_ruin_wall_4d.gd`, Andrew's TownWall) use FenceGenerator4D for two things: a solid wall deep in W
   (the town wall: the same as a box), and a masonry rhythm through W (the ruin: its posts stand at seed
@@ -97,7 +101,7 @@ open doorways, and grey Tall Ones that only see their own slice.
 WASD walk, mouse look, Shift sprint, E/Q (or wheel) move through W, V align / finish a reveal, right
 drag turn into W (once you hold the Lens), R level the view or back to the room's W, Backspace back to
 the room's way in, B dark or bright, G cycle the gizmo, F1 HUD, Tab tuning panel (SAVE/RESET), 1 2 3
-levels, Esc asks before leaving (and skips a film / closes the panel first).
+levels, M asks to return to the menu (the menu's shared box), Esc stops a popup, film or panel, or frees the cursor.
 
 ## The Tall Ones (`world/mr2_walker_4d.gd`)
 
