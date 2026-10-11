@@ -87,9 +87,6 @@ uniform float drop1 = 0.0;
 uniform float flow = 0.55;
 uniform vec4 gap0 = vec4(-1.0, -1.0, -1.0, -1.0);
 uniform float guide_on = 1.0;
-// A stretch's climb through W per metre along the floor: its box's x axis is (dir, shear) and its w
-// axis the world's W, which are not perpendicular, so local coordinates are skewed (see fragment()).
-uniform float shear = 0.0;
 uniform float guide_w = 0.105;
 // 0: a solid guide line; otherwise dots this far apart (the secondary route's, as the field map).
 uniform float guide_dot = 0.0;
@@ -419,14 +416,9 @@ void fragment() {
 		discard;
 	}
 	// Along the box, and out from its middle across it: z and w together (see the header).
-	// On a stretch climbing through W the box's x and w axes are skewed (x is (dir, shear), w the
-	// world's W), so the true distance from the centre line is hypot(z, w / k), and a point's true
-	// distance along the line from a point on it at local x0 is (x - x0) k + w shear / k, with
-	// k = sqrt(1 + shear^2). WHERE things fall along the stretch (marks' spacing, clears, gaps, the
-	// ends) stays in local x so stretches still meet; only the shapes drawn use the true distances.
-	float k = sqrt(1.0 + shear * shear);
-	float w_along = local_pos.w * shear / k;
-	vec2 m = vec2(local_pos.x, length(vec2(local_pos.z, local_pos.w / k)));
+	// Along the box, and out from its middle across it: z and w together (see the header). A stretch's
+	// box is turned to its own line, so these are true distances whichever way it runs.
+	vec2 m = vec2(local_pos.x, length(local_pos.zw));
 	vec4 col = vec4(0.0);
 	float px_m = max(length(fwidth(m)) * 0.7, 1e-5);
 	float erode_m = 0.0;
@@ -458,13 +450,13 @@ void fragment() {
 		// and would fight for the pixel). It stops short of the nodes' art by their clear floor.
 		bool mark_drawn = mark_sym >= 0 && !in_clear && !in_gap && (mine || by_neighbour);
 		float cut = mark_half * (mine ? riser : 1.0);
-		float to_mark = (s - c_s) * k + w_along;
+		float to_mark = s - c_s;
 		bool under_mark = mark_drawn && abs(to_mark) < cut;
 		if (guide_on > 0.5 && !in_clear && !in_gap && !past && !under_mark) {
 			float g;
 			if (guide_dot > 0.0) {
 				float sd = s0 + along;
-				vec2 q = vec2((sd - (floor(sd / guide_dot) + 0.5) * guide_dot) * k + w_along, m.y);
+				vec2 q = vec2(sd - (floor(sd / guide_dot) + 0.5) * guide_dot, m.y);
 				g = clamp(0.5 - (length(q) - guide_w * guide_dot_r) / px_m, 0.0, 1.0);
 			} else {
 				g = clamp(0.5 - (abs(m.y) - guide_w * 0.5) / px_m, 0.0, 1.0);

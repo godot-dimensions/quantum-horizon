@@ -1010,25 +1010,30 @@ func build_path_field() -> void:
 	path_msec = Time.get_ticks_msec() - started
 
 
+## One sand box into the paths' field. A path box is turned to its stretch's own line, which may run
+## across the floor and through W alike (path_network_4d.gd _edge_basis): x along it, z across it on
+## the floor (never through W), w its depth, the third horizontal direction. Above a cell of the floor
+## the box is one stretch of W, found exactly: each of its limits that changes with W (along, depth)
+## cuts the stretch; one that does not (across always, along on a stretch at one W, depth on one straight
+## along W) is a distance on the floor, the field's `inside`. Where a cell already holds sand at an
+## overlapping W, the two are joined (a pad, the stretch down through W from it, the pad at its foot);
+## at a W apart, the deeper inside wins, as before.
 func _path_box(field: PackedFloat32Array, mi: MeshInstance4D, sm: ShaderMaterial) -> void:
 	var n: int = MASK_CELLS
 	var half: float = MASK_CELL * n * 0.5
 	var size: Vector4 = sm.get_shader_parameter("box_size")
 	var is_round: bool = float(sm.get_shader_parameter("sand_round")) > 0.5
-	var w_half: float = float(sm.get_shader_parameter("w_half"))
 	var o: Vector4 = mi.global_position
 	var b: Projection = mi.global_basis
-	var ax := Vector2(b.x.x, b.x.z)
-	var az := Vector2(b.z.x, b.z.z)
-	var ax_len: float = maxf(ax.length(), 1e-4)
-	var az_len: float = maxf(az.length(), 1e-4)
-	var ax_n: Vector2 = ax / ax_len
-	var az_n: Vector2 = az / az_len
-	var half_len: float = size.x * 0.5 * ax_len
-	var hw: float = size.z * 0.5 * az_len
-	var reach_w: float = w_half * absf(b.w.w)
-	var margin: float = hw + path_fringe + path_ragged + 1.0
-	var span: float = margin if is_round else half_len + margin
+	var u: Vector4 = b.x.normalized()
+	var across: Vector4 = b.z.normalized()
+	var deep: Vector4 = b.w.normalized()
+	var hl: float = size.x * 0.5 * b.x.length()
+	var hw: float = size.z * 0.5 * b.z.length()
+	var hd: float = size.w * 0.5 * b.w.length()
+	# The box's shadow on the floor, and the fringe round it.
+	var span: float = hl * Vector2(u.x, u.z).length() + hw + hd * Vector2(deep.x, deep.z).length() \
+		+ path_fringe + path_ragged + 1.0
 	var i0: int = clampi(int(floor((o.x - span + half) / MASK_CELL)), 0, n - 1)
 	var i1: int = clampi(int(ceil((o.x + span + half) / MASK_CELL)), 0, n - 1)
 	var j0: int = clampi(int(floor((o.z - span + half) / MASK_CELL)), 0, n - 1)
@@ -1037,25 +1042,48 @@ func _path_box(field: PackedFloat32Array, mi: MeshInstance4D, sm: ShaderMaterial
 		var z: float = -half + (float(j) + 0.5) * MASK_CELL
 		for i in range(i0, i1 + 1):
 			var x: float = -half + (float(i) + 0.5) * MASK_CELL
-			var d := Vector2(x - o.x, z - o.z)
-			var along: float = d.dot(ax_n)
-			var across: float = d.dot(az_n)
-			var inside: float
-			if is_round:
-				inside = hw - d.length()
-				along = 0.0
+			var dx: float = x - o.x
+			var dz: float = z - o.z
+			# Along, across and deep, at the box's own W (s = 0); along and deep change with s = w - o.w.
+			var a0: float = dx * u.x + dz * u.z
+			var c: float = dx * across.x + dz * across.z
+			var d0: float = dx * deep.x + dz * deep.z
+			var inside: float = hw - (sqrt(dx * dx + dz * dz) if is_round else absf(c))
+			var lo: float = -INF
+			var hi: float = INF
+			if absf(u.w) < 1e-3:
+				# Along the floor only: past an end, the edge rounds off on the floor (a pad is round).
+				if not is_round:
+					inside = hw - Vector2(maxf(absf(a0) - hl, 0.0), c).length()
 			else:
-				var past: float = maxf(absf(along) - half_len, 0.0)
-				inside = hw - Vector2(past, across).length()
-				along = clampf(along, -half_len, half_len)
-			var k: int = (j * n + i) * 4
-			if inside <= field[k]:
+				var s1: float = (-hl - a0) / u.w
+				var s2: float = (hl - a0) / u.w
+				lo = maxf(lo, minf(s1, s2))
+				hi = minf(hi, maxf(s1, s2))
+			if absf(deep.w) < 1e-3:
+				inside = minf(inside, hd - absf(d0))
+			else:
+				var s1: float = (-hd - d0) / deep.w
+				var s2: float = (hd - d0) / deep.w
+				lo = maxf(lo, minf(s1, s2))
+				hi = minf(hi, maxf(s1, s2))
+			if lo > hi:
 				continue
-			# The sand's W here: the box's middle, moved along its length (a W shear climbs with it).
-			var w_here: float = (o + b * Vector4(along / ax_len, 0.0, across / az_len, 0.0)).w
+			var w_lo: float = o.w + lo
+			var w_hi: float = o.w + hi
+			var k: int = (j * n + i) * 4
+			var had: float = field[k]
+			var e_lo: float = field[k + 1] - field[k + 2]
+			var e_hi: float = field[k + 1] + field[k + 2]
+			if had > -10.0 and field[k + 2] >= 0.0 and w_lo <= e_hi + 0.25 and w_hi >= e_lo - 0.25:
+				w_lo = minf(w_lo, e_lo)
+				w_hi = maxf(w_hi, e_hi)
+				inside = maxf(inside, had)
+			elif inside <= had:
+				continue
 			field[k] = inside
-			field[k + 1] = w_here
-			field[k + 2] = reach_w
+			field[k + 1] = (w_lo + w_hi) * 0.5
+			field[k + 2] = (w_hi - w_lo) * 0.5
 
 
 ## The name in [param names] that [param node] is part of (itself or a parent), or "".

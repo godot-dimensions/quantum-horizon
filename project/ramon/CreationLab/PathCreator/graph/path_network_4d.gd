@@ -20,10 +20,13 @@ extends Node4D
 ## W (PLAN.md part F): an edge's box is as deep in W as its band, at the W its mode says
 ##   static  the floor's whole W depth: readable from anywhere
 ##   here    at its from-node's W
-##   follow  from the from-node's W to the to-node's: the box is sheared through W along its length,
-##           so the slice cuts a stretch of it that slides along the route as you move through W
+##   follow  from the from-node's W to the to-node's: the box is turned to run through W along its
+##           length (even straight along W), so the slice cuts a stretch of it that slides along the
+##           route as you move through W
 ##   reveal  at its to-node's W only
-## and each node's box is its own band deep at its own W (a wide band is a bracket you see from afar).
+## Each edge's box is turned to its own line (_edge_line, _edge_basis), so its width and depth are
+## the two horizontal directions square to it. A node's ball and sand pad are cubes across the floor
+## and W, at the node's own W; its symbol is its own band deep.
 ##
 ## LOOKS AND SETS: `look` DEV or WALK for every box at once; `libraries` says which library each
 ## symbol slot comes from (Ramon, 5 Oct: "toggle not entire sets at once, but subicons separately").
@@ -270,13 +273,13 @@ func ground_at(x: float, z: float, w: float, from_y: float = 0.0, skip: Array = 
 
 
 ## Where an edge's ground changes height: [[from, to, height], ...] along it, metres from its
-## start. One run (the whole edge at y 0) when draping is off. `w_at` gives the route's W at a
-## distance along it (a follow route climbs).
-func _runs(A: Vector4, dir: Vector2, L: float, w_at: Callable) -> Array:
+## start. One run (the whole edge at y 0) when draping is off. [param A], [param u] and [param L] are
+## the edge's line (_edge_line): it may run through W as well as across the floor.
+func _runs(A: Vector4, u: Vector4, L: float) -> Array:
 	if not drape:
 		return [[0.0, L, 0.0]]
 	var h_at := func(t: float) -> float:
-		return ground_at(A.x + dir.x * t, A.z + dir.y * t, float(w_at.call(t)), A.y)
+		return ground_at(A.x + u.x * t, A.z + u.z * t, A.w + u.w * t, A.y)
 	var n: int = maxi(1, ceili(L / Spec.DRAPE_STEP_M))
 	var out: Array = []
 	var t0: float = 0.0
@@ -344,7 +347,7 @@ func rebuild() -> void:
 		var s: float = 0.0
 		for ei in r["edges"]:
 			_s0[int(ei)] = s
-			s += _floor_len(graph.edges[int(ei)])
+			s += float(_edge_line(graph.edges[int(ei)]).get("L", 0.0))
 	_gaps = _crossings()
 	_geo.clear()
 	for i in graph.edges.size():
@@ -366,10 +369,45 @@ func rebuild() -> void:
 	_push_reveal()
 
 
-func _floor_len(e: Dictionary) -> float:
-	var a: Vector4 = _pos(graph.call("node", int(e["from"])))
-	var b: Vector4 = _pos(graph.call("node", int(e["to"])))
-	return Vector2(b.x - a.x, b.z - a.z).length()
+## The line edge [param e] is laid along, in the floor's x, z and W: {"A": its start (A's x, height and
+## z, at the W the stretch starts at), "u": its unit direction (no y), "L": its length in metres}, or
+## empty if a node is missing. Where it lies in W comes from its w_mode: "here" and "reveal" lie at one
+## node's W, "static" at W 0, "follow" from A's W to B's - so a "follow" stretch can run any way across
+## the floor and through W, straight along W too, and every distance along it is a real one.
+func _edge_line(e: Dictionary) -> Dictionary:
+	var na: Dictionary = graph.call("node", int(e["from"]))
+	var nb: Dictionary = graph.call("node", int(e["to"]))
+	if na.is_empty() or nb.is_empty():
+		return {}
+	var A: Vector4 = _pos(na)
+	var B: Vector4 = _pos(nb)
+	var wa: float = 0.0
+	var wb: float = 0.0
+	match mode_of(e):
+		"here":
+			wa = A.w
+			wb = A.w
+		"reveal":
+			wa = B.w
+			wb = B.w
+		"follow":
+			wa = A.w
+			wb = B.w
+	var d := Vector4(B.x - A.x, 0.0, B.z - A.z, wb - wa)
+	var length: float = d.length()
+	return {"A": Vector4(A.x, A.y, A.z, wa), "u": d / length if length > 1e-6 else Vector4(1.0, 0.0, 0.0, 0.0), "L": length}
+
+
+## A stretch's box frame: x along [param u], y up, z across it on the floor (along x if the stretch runs
+## straight along W, where the floor gives no across), w the third horizontal direction, so (x, y, z, w)
+## is right-handed. For a stretch on one W it is the floor's frame turned about y, w the world's W.
+static func _edge_basis(u: Vector4) -> Projection:
+	var across := Vector3(-u.z, u.x, 0.0)
+	if across.length_squared() < 1e-8:
+		across = Vector3(1.0, 0.0, 0.0)
+	across = across.normalized()
+	var deep: Vector3 = Vector3(u.x, u.z, u.w).cross(across)
+	return Projection(u, Vector4(0, 1, 0, 0), Vector4(across.x, 0.0, across.y, across.z), Vector4(deep.x, 0.0, deep.y, deep.z))
 
 
 ## Metres a sheet unit, at this network's scale.
@@ -698,13 +736,11 @@ func _find_near() -> void:
 	for i in _geo:
 		var g: Dictionary = _geo[i]
 		var a: Vector4 = g["A"]
-		var dir: Vector2 = g["dir"]
+		var u: Vector4 = g["u"]
 		var length: float = g["L"]
-		var t: float = clampf((p.x - a.x) * dir.x + (p.z - a.z) * dir.y, 0.0, length)
-		var dx: float = a.x + dir.x * t - p.x
-		var dz: float = a.z + dir.y * t - p.z
-		var dw: float = float((g["w_at"] as Callable).call(t)) - p.w
-		var d2: float = dx * dx + dz * dz + dw * dw
+		var rel := Vector4(p.x - a.x, 0.0, p.z - a.z, p.w - a.w)
+		var t: float = clampf(rel.dot(u), 0.0, length)
+		var d2: float = (rel - u * t).length_squared()
 		var lo: float = 1.0e9
 		var hi: float = -1.0e9
 		if d2 < r * r:
@@ -736,8 +772,7 @@ func _edge_shut(i: int) -> bool:
 		return false
 	var geo: Dictionary = _geo[i]
 	var A: Vector4 = geo["A"]
-	var dir: Vector2 = geo["dir"]
-	var shear: float = geo["shear"]
+	var u: Vector4 = geo["u"]
 	var skip: Array[Node4D] = []
 	var e: Dictionary = graph.edges[i]
 	for id in [int(e["from"]), int(e["to"])]:
@@ -751,11 +786,10 @@ func _edge_shut(i: int) -> bool:
 		var t1: float = float(r[1]) - 0.05
 		if t1 <= t0:
 			continue
-		var d4 := Vector4(dir.x, 0.0, dir.y, shear)
 		var params := RaycastParameters4D.new()
-		params.global_ray_origin = o + Vector4(A.x + dir.x * t0, float(r[2]) + Spec.BLOCK_H_M, A.z + dir.y * t0, float(geo["w_at"].call(t0)))
-		params.global_ray_direction = d4.normalized()
-		params.max_distance = (t1 - t0) * d4.length()
+		params.global_ray_origin = o + Vector4(A.x + u.x * t0, float(r[2]) + Spec.BLOCK_H_M, A.z + u.z * t0, A.w + u.w * t0)
+		params.global_ray_direction = u
+		params.max_distance = t1 - t0
 		params.collision_mask = drape_mask
 		var ex: Array[Node4D] = skip.duplicate()
 		for k in 8:
@@ -810,31 +844,20 @@ func _size(mi: MeshInstance4D, s: Vector4) -> void:
 func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictionary) -> void:
 	var na: Dictionary = graph.call("node", int(e["from"]))
 	var nb: Dictionary = graph.call("node", int(e["to"]))
-	if na.is_empty() or nb.is_empty():
+	var line: Dictionary = _edge_line(e)
+	if line.is_empty():
 		return
-	var A: Vector4 = _pos(na)
-	var B: Vector4 = _pos(nb)
-	var d := Vector2(B.x - A.x, B.z - A.z)
-	var L: float = d.length()
+	# Laid along its own line, across the floor and through W alike: a box turned to it (_edge_basis),
+	# its length the line's own.
+	var A: Vector4 = line["A"]
+	var u: Vector4 = line["u"]
+	var L: float = line["L"]
 	if L < 0.05:
 		return
-	var dir: Vector2 = d / L
+	var basis: Projection = _edge_basis(u)
 	var mode: String = mode_of(e)
 	var band: float = float(e.get("band", 1.2))
-	var wc: float = 0.0
-	var depth: float = Spec.W_REACH * 2.0
-	var shear: float = 0.0
-	match mode:
-		"here":
-			wc = A.w
-			depth = band
-		"reveal":
-			wc = B.w
-			depth = band
-		"follow":
-			wc = (A.w + B.w) * 0.5
-			depth = band
-			shear = (B.w - A.w) / L
+	var depth: float = Spec.W_REACH * 2.0 if mode == "static" else band
 	var primary: bool = String(e.get("priority", "primary")) == "primary"
 	var mark: int = sym("A" if primary else "B")
 	# A chord the route runs on through is a joint: marks are whole there, drawn by the stretch that
@@ -848,11 +871,9 @@ func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictiona
 	# The short-segment rule is about crowding end markers; a joint has none.
 	var room: float = L - (0.0 if join0 else c0) - (0.0 if join1 else c1)
 	var marks_on: bool = room >= Spec.SHORT_SEGMENT_M * p_scale * 0.5 or (join0 and join1)
-	var w_at := func(t: float) -> float:
-		return wc + shear * (t - L * 0.5)
 	# One box per run of ground at one height (one run unless draped over a step).
-	var runs: Array = _runs(A, dir, L, w_at)
-	_geo[i] = {"A": A, "dir": dir, "L": L, "shear": shear, "w_at": w_at, "runs": runs}
+	var runs: Array = _runs(A, u, L)
+	_geo[i] = {"A": A, "u": u, "L": L, "runs": runs}
 	for k in runs.size():
 		var t0: float = float(runs[k][0])
 		var t1: float = float(runs[k][1])
@@ -864,9 +885,8 @@ func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictiona
 		var mid: float = t0 + (seg - ext0 + ext1) * 0.5
 		var mi: MeshInstance4D = _item("Edge%d" % i if first else "Edge%d_%d" % [i, k], Draw.SEGMENT, used)
 		_size(mi, Vector4(seg + ext0 + ext1, Spec.BOX_H_M, EDGE_W * p_scale, depth))
-		mi.position = Vector4(A.x + dir.x * mid, float(runs[k][2]) + Spec.PROUD_M, A.z + dir.y * mid, float(w_at.call(mid)))
-		mi.basis = Projection(Vector4(dir.x, 0, dir.y, shear), Vector4(0, 1, 0, 0), Vector4(-dir.y, 0, dir.x, 0), Vector4(0, 0, 0, 1))
-		Draw.set_param(mi, "shear", shear)
+		mi.position = Vector4(A.x + u.x * mid, float(runs[k][2]) + Spec.PROUD_M, A.z + u.z * mid, A.w + u.w * mid)
+		mi.basis = basis
 		Draw.set_param(mi, "mark_sym", mark if marks_on else -1)
 		Draw.set_param(mi, "join0", 1.0 if (join0 and first) else 0.0)
 		Draw.set_param(mi, "join1", 1.0 if (join1 and last) else 0.0)
@@ -891,11 +911,11 @@ func _lay_edge(i: int, e: Dictionary, s0: float, gap_list: Array, used: Dictiona
 		mi.set_meta("edge", i)
 		mi.set_meta("t0", t0)
 		# The sand under it: the run's own length (the node patches cover the joints), a little
-		# below the marks, as deep in W and as sheared as they are.
+		# below the marks, as deep and as turned as they are.
 		var sb: MeshInstance4D = _item("Sand%d" % i if first else "Sand%d_%d" % [i, k], Draw.SAND, used)
 		var sm: float = t0 + seg * 0.5
 		_size(sb, Vector4(seg, Spec.BOX_H_M, sand_width * (1.0 if primary else 0.6), depth))
-		sb.position = Vector4(A.x + dir.x * sm, float(runs[k][2]) + Spec.PROUD_M - 0.004, A.z + dir.y * sm, float(w_at.call(sm)))
+		sb.position = Vector4(A.x + u.x * sm, float(runs[k][2]) + Spec.PROUD_M - 0.004, A.z + u.z * sm, A.w + u.w * sm)
 		sb.basis = mi.basis
 		Draw.set_param(sb, "s0", s0 + t0)
 		Draw.set_param(sb, "sand_round", 0.0)
@@ -914,7 +934,8 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 	match kind:
 		"chord", "bend", "start":
 			mi = _item("Node%d" % id, Draw.PIVOT, used)
-			_size(mi, Vector4(0.5 * p_scale, Spec.BOX_H_M, 0.5 * p_scale, band))
+			# A cube across the floor and W: a stretch may come in along any of them.
+			_size(mi, Vector4(0.5 * p_scale, Spec.BOX_H_M, 0.5 * p_scale, 0.5 * p_scale))
 			Draw.set_param(mi, "ring_on", 1.0 if kind == "bend" else 0.0)
 			Draw.set_param(mi, "ball_r", (Spec.BEND_BALL_R if kind == "bend" else (Spec.CHORD_BALL_R if kind == "chord" else 8.0)) * _u())
 			Draw.set_param(mi, "ring_r", Spec.BEND_RING_R * _u())
@@ -939,10 +960,11 @@ func _lay_node(n: Dictionary, used: Dictionary) -> void:
 	mi.basis = Projection.IDENTITY
 	mi.set_meta("node", id)
 	# The sand patch: a little wider than the strip at a node on the way, so it covers the corners
-	# two strips' square ends leave where they meet at an angle; wider again at a destination.
+	# two strips' square ends leave where they meet at an angle; wider again at a destination. A cube
+	# across the floor and W, as the strips may meet at an angle through W too.
 	var pad: MeshInstance4D = _item("Pad%d" % id, Draw.SAND, used)
 	var pad_d: float = sand_width * (sand_patch if kind == "destination" else 1.25)
-	_size(pad, Vector4(pad_d, Spec.BOX_H_M, pad_d, band))
+	_size(pad, Vector4(pad_d, Spec.BOX_H_M, pad_d, pad_d))
 	pad.position = Vector4(P.x, gy + Spec.PROUD_M - 0.004, P.z, P.w)
 	pad.basis = Projection.IDENTITY
 	Draw.set_param(pad, "sand_round", 1.0)
@@ -1113,8 +1135,15 @@ func _crossings() -> Dictionary:
 			var weak_b: bool = String(b.get("priority", "primary")) == "secondary" or String(a.get("priority", "primary")) == String(b.get("priority", "primary"))
 			var k: int = j if weak_b else i
 			var s: Vector4 = q0 if weak_b else p0
+			var t: Vector4 = q1 if weak_b else p1
+			# Found on the floor; the gap is placed along the edge's own line (_edge_line), which is longer
+			# by its climb through W.
+			var floor_len: float = Vector2(t.x - s.x, t.z - s.z).length()
+			if floor_len < 1e-4:
+				continue
+			var line_len: float = float(_edge_line(E[k]).get("L", floor_len))
 			var list: Array = out.get(k, [])
-			list.append(x.distance_to(Vector2(s.x, s.z)))
+			list.append(x.distance_to(Vector2(s.x, s.z)) * line_len / floor_len)
 			out[k] = list
 	return out
 
