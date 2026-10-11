@@ -69,9 +69,20 @@ levels, Esc asks before leaving (and skips a film / closes the panel first).
 
 ## The Tall Ones (`world/mr2_walker_4d.gd`)
 
-Lofted from tapered segments with the Dreamer's loft builder, very tall and thin, rigid joints, a slow
-stiff gait and a head that turns. Each lives at one W: its body is 0.55 thick in W, so it shows only
-near its own W and collides only there. States: idle (standing or pacing), notice (eyes grey to red,
+**The body (12 Oct, Ramon: "more lofted humanoid beings", built the Creature Lab's way).** The wolf,
+horse and goat in the Creature Lab are ball rigs: chains of shaped cross-sections lofted into a hide,
+each ball with its own colour baked into a ramp texture. The Aquatic Lab's hammerhead cuts such lofts
+into rigid pieces that only turn at joints. The Tall One is both: 16 lofted pieces (pelvis, ribbed
+trunk with a hunched back, long neck, an oval skull swept back with a dark visor band where the two tiny
+eyes sit, upper arms, forearms, hands with four long fingers, thighs, shins, flat feet), their sections
+written as data in `_piece_lofts()`, lofted once and shared by every Tall One, four greys on the ramp.
+About 2.9 m tall, the fingertips below the knees. Every section is shaped by its own basis (the
+hammerhead's rule), so a palm is thin across and wide front to back whatever way its spine runs. It
+breathes, sways, turns and tilts its head now and then; walking, the swinging leg's knee bends and the
+feet stay flat. Look at it from every side with `scripts/_walker_look_runner.gd`.
+
+Each lives at one W: the trunk and head are 0.5 thick in W either side, the limbs 0.42, so as you shift
+away the limbs thin out of your slice first and the trunk last; it collides only at its own W. States: idle (standing or pacing), notice (eyes grey to red,
 a sting), hunt (a slow walk to you), return. Line of sight is a ray at its own W. Caught: a red flash,
 back to the room's way in, every Tall One back at its post. The level owns them (`add_walker` in
 `levels/mr2_level_4d.gd`); the slice map shows them, red when they are after you.
