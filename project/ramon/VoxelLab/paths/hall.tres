@@ -139,6 +139,24 @@ nodes = [{
 "pos": Vector4(8.5, 0, 1.8, 0),
 "state": "arrival",
 "target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 8.0,
+"frame": "none",
+"id": 16,
+"kind": "junction",
+"pos": Vector4(-5.1, 0, 3.4, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(1, 0),
+"band": 8.0,
+"frame": "round",
+"id": 17,
+"kind": "destination",
+"pos": Vector4(-6.2, 0, 3.4, 0),
+"state": "arrival",
+"target": "Hypercubes"
 }]
 edges = [{
 "band": 8.0,
@@ -204,7 +222,19 @@ edges = [{
 "band": 8.0,
 "from": 12,
 "priority": "primary",
+"to": 16,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 16,
+"priority": "primary",
 "to": 11,
+"w_mode": "static"
+}, {
+"band": 8.0,
+"from": 16,
+"priority": "primary",
+"to": 17,
 "w_mode": "static"
 }, {
 "band": 8.0,
@@ -231,4 +261,4 @@ edges = [{
 "to": 15,
 "w_mode": "static"
 }]
-next_id = 16
+next_id = 18

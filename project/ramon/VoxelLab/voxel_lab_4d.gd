@@ -685,6 +685,8 @@ func _options(sp: Dictionary) -> Array:
 				item.merge({"icon": "pick", "label": "Cut it yourself"})
 			"build":
 				item.merge({"icon": "build", "label": "Build it yourself"})
+			"overlap":
+				item.merge({"icon": "build", "label": "Overlap one by one"})
 			"biome":
 				# Round 7 (#83: "how many world variations are available ... 1 of 3"): which, of how many.
 				var now: String = String(ex.call("biome_count_label")) if ex != null and ex.has_method("biome_count_label") else ""
@@ -702,7 +704,7 @@ func _on_choice(i: int) -> void:
 	match String(spot["options"][i]):
 		"watch":
 			watch(st)
-		"cut", "build":
+		"cut", "build", "overlap":
 			sit(spot.get("bench"))
 		"biome":
 			var ex: Node = st.get("exhibit") if st != null else null

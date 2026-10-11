@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3]
+[gd_scene load_steps=23 format=3]
 
 [ext_resource type="Script" path="res://ramon/VoxelLab/voxel_lab_4d.gd" id="1_root"]
 [ext_resource type="Script" path="res://ramon/VoxelLab/carried/LabKit/lab_room_4d.gd" id="2_room"]
@@ -21,6 +21,7 @@
 [ext_resource type="Resource" path="res://ramon/VoxelLab/paths/gallery.tres" id="20_gallery"]
 [ext_resource type="Script" path="res://ramon/VoxelLab/room/vl_target_4d.gd" id="21_target"]
 [ext_resource type="Script" path="res://ramon/VoxelLab/room/vl_float_panel_4d.gd" id="22_float"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/stations/vl_hypercubes_exhibit_4d.gd" id="23_hypercubes"]
 
 [node name="VoxelLab" type="Node4D"]
 script = ExtResource("1_root")
@@ -252,6 +253,26 @@ face_point = Vector2(0.0, 8.7)
 width = 1.0
 depth = 0.38
 
+[node name="Hypercubes" type="Node4D" parent="."]
+position = Vector4(-8.7, 0, 3.4, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("23_hypercubes")
+radius = 1.3
+height = 0.9
+pedestal_shape = "box"
+bounds = Rect2(-13, -32.5, 26, 45)
+band_angle = 90.0
+hologram = false
+
+[node name="HypercubesBench" type="Node4D" parent="."]
+position = Vector4(-6.2, 0, 3.4, 0)
+script = ExtResource("7_bench")
+station = NodePath("../Hypercubes")
+pad = false
+camera_distance = 4.0
+camera_pitch = -20.0
+camera_bounds = Rect2(-11.5, -12.0, 23.0, 23.5)
+
 [node name="Terrain" type="Node4D" parent="."]
 position = Vector4(-6.2, 0, -24.5, 0)
 script = ExtResource("5_showcase")
@@ -417,6 +438,22 @@ metadata/room = "hall"
 metadata/item = "the grid you build on"
 metadata/cone = 50.0
 
+[node name="Hypercubes" type="Node4D" parent="Lights"]
+position = Vector4(-8.7, 8.0, 3.4, 0)
+script = ExtResource("10_light")
+aim = Vector3(-8.7, 1.6, 3.4)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "hall"
+metadata/item = "the overlapping hypercubes"
+metadata/cone = 30.0
+
 [node name="Terrain" type="Node4D" parent="Lights"]
 position = Vector4(-6.2, 8.0, -24.5, 0)
 script = ExtResource("10_light")
@@ -540,6 +577,16 @@ metadata/station = NodePath("../../Build")
 metadata/bench = NodePath("../../BuildBench")
 metadata/options = ["build"]
 metadata/target = "Build"
+
+[node name="Hypercubes" type="Node4D" parent="Spots"]
+position = Vector4(-6.2, 0, 3.4, 0)
+metadata/kind = "choice"
+metadata/radius = 1.4
+metadata/near = 1.0
+metadata/station = NodePath("../../Hypercubes")
+metadata/bench = NodePath("../../HypercubesBench")
+metadata/options = ["overlap"]
+metadata/target = "Hypercubes"
 
 [node name="ShelfA" type="Node4D" parent="Spots"]
 position = Vector4(8.5, 0, 8.7, 0)

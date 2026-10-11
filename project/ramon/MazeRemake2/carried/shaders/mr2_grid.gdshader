@@ -297,33 +297,48 @@ void vertex() {
 }
 
 
-// The grid's two coordinates on whichever face this cell lies on, in world metres.
-vec2 grid_coords(vec4 n, vec4 p) {
+// The grid's three coordinates on the 3D face this cell lies on, in world metres. A line is where one of
+// them is a multiple of the period: a sheet in the face, which the slice cuts to a line. `shown` is how
+// much each family of sheets is drawn: none while they lie parallel to the slice (all of them alike, or
+// all of the face at once), all once the slice crosses them at a fair angle (`seen` per mesh axis).
+// MAZE REMAKE 2: a face across W stands like a wall in a view turned into W (the only way it is ever
+// seen); with all three of x, y and z its grid runs up it as well as along it.
+vec3 grid_coords(vec4 n, vec4 p, vec4 seen, out vec3 shown) {
 	vec4 a = abs(n);
 	if (a.y >= a.x && a.y >= a.z && a.y >= a.w) {
-		return p.xz;
+		shown = seen.xzw;
+		return p.xzw;
 	}
-	// MAZE REMAKE 2: a face across W stands like a wall in a view turned into W (the only way it is
-	// ever seen), so its grid runs along x and up, not along the floor.
 	if (a.w >= a.x && a.w >= a.z) {
-		return p.xy;
+		shown = seen.xyz;
+		return p.xyz;
 	}
 	if (a.z >= a.x) {
-		return p.xy;
+		shown = seen.xyw;
+		return p.xyw;
 	}
-	return p.zy;
+	shown = seen.zyw;
+	return p.zyw;
 }
 
 // How much of a line `width` metres wide, repeating every `period` metres, covers this pixel.
 // Never thinner than a pixel; `fade` says how far it was thickened to stay that wide (1: not at
 // all), so a caller can let a fine line go rather than draw it fat.
-float lines(vec2 c, float period, float width, out float fade) {
-	vec2 fw = max(fwidth(c), vec2(0.00001));
-	vec2 d = abs(fract(c / period + 0.5) - 0.5) * period;
-	vec2 w = max(vec2(width), fw);
-	fade = clamp(width / max(fw.x, fw.y), 0.0, 1.0);
-	vec2 cover = 1.0 - smoothstep(w * 0.5 - fw * 0.5, w * 0.5 + fw * 0.5, d);
-	return max(cover.x, cover.y);
+float lines(vec3 c, vec3 shown, float period, float width, out float fade) {
+	vec3 fw = max(fwidth(c), vec3(0.00001));
+	vec3 d = abs(fract(c / period + 0.5) - 0.5) * period;
+	vec3 w = max(vec3(width), fw);
+	fade = clamp(width / max(fw.x, max(fw.y, fw.z)), 0.0, 1.0);
+	vec3 cover = (1.0 - smoothstep(w * 0.5 - fw * 0.5, w * 0.5 + fw * 0.5, d)) * shown;
+	return max(cover.x, max(cover.y, cover.z));
+}
+
+// How far each of the mesh's axes leans out of the slice's normal (camera W): 0 when the sheets across it
+// lie in the slice, drawn fully from about 17 degrees off it.
+vec4 axes_seen() {
+	vec4 s = vec4(length(normalize(modelview_basis_x).xyz), length(normalize(modelview_basis_y).xyz),
+		length(normalize(modelview_basis_z).xyz), length(normalize(modelview_basis_w).xyz));
+	return smoothstep(vec4(0.1), vec4(0.3), s);
 }
 
 // The print's texture coordinate on the face it is painted on, or -1 off it. Before the flip,
@@ -403,11 +418,12 @@ vec2 path_frame_ends(float sc, vec2 p) {
 void fragment() {
 	NORMAL = normalize(NORMAL);
 	vec4 world = local_pos + grid_offset;
-	vec2 g = grid_coords(local_normal_4d, world);
+	vec3 shown;
+	vec3 g = grid_coords(local_normal_4d, world, axes_seen(), shown);
 	float fade_major;
 	float fade_minor;
-	float major = lines(g, grid_size, line_width, fade_major);
-	float minor = lines(g, grid_size / max(sub_count, 1.0), subline_width, fade_minor);
+	float major = lines(g, shown, grid_size, line_width, fade_major);
+	float minor = lines(g, shown, grid_size / max(sub_count, 1.0), subline_width, fade_minor);
 	vec3 c = surface_color.rgb;
 	c = mix(c, subline_color.rgb, minor * fade_minor * grid_strength);
 	c = mix(c, line_color.rgb, major * grid_strength);

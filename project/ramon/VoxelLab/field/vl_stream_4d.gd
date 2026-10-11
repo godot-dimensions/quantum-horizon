@@ -53,6 +53,11 @@ const Recipe := preload("res://ramon/VoxelLab/specimen/vl_recipe.gd")
 @export var ring_drop: float = 1.5
 ## Andrew's height (12.32) unless set lower (round 4: "less steep and mountainous").
 @export var land_intensity: float = 12.32
+## Upright spherinders (round in x, z and W) of banded rock over the land: [centre, radius, height], in voxels.
+## Their bands are flat, `pillar_materials` below `pillar_cutoffs` as a landscape's are. Set before entering the tree.
+@export var pillars: Array = []
+@export var pillar_materials: PackedInt32Array = PackedInt32Array()
+@export var pillar_cutoffs: PackedFloat32Array = PackedFloat32Array()
 @export var y_range: Vector2i = Vector2i(-16, 16)
 ## Build new chunks' draw buffers on a worker thread before showing them.
 @export var swap: bool = true
@@ -122,6 +127,8 @@ func _generator():
 		var sea_bed = ClassDB.instantiate("LayeredVoxelGenerator4D")
 		sea_bed.set("layers", [ocean, bed])
 		layers.append(_outside(island_radius + float(rings) * ring_step, sea_bed))
+	if not pillars.is_empty():
+		layers.append(_pillars())
 	var layered = ClassDB.instantiate("LayeredVoxelGenerator4D")
 	layered.set("layers", layers)
 	return layered
@@ -156,6 +163,29 @@ func _outside(radius: float, gen):
 	var clip = ClassDB.instantiate("ClippedVoxelGenerator4D")
 	clip.set("base", cyl)
 	clip.set("modifier", gen)
+	return clip
+
+
+## The pillars: a landscape with no noise (so flat bands) clipped to their spherinders, UNDEFINED outside them.
+func _pillars():
+	var shapes: Array = []
+	for p in pillars:
+		var cyl = ClassDB.instantiate("CylinderVoxelGenerator4D")
+		cyl.set("center", p[0])
+		cyl.set("radius", p[1])
+		cyl.set("height", p[2])
+		cyl.set("material_inner", 254)
+		cyl.set("material_outer", 255)
+		shapes.append(cyl)
+	var within = ClassDB.instantiate("LayeredVoxelGenerator4D")
+	within.set("layers", shapes)
+	var strata = ClassDB.instantiate("LandscapeVoxelGenerator4D")
+	strata.set("intensity", 0.0)
+	strata.set("materials", pillar_materials)
+	strata.set("material_cutoffs", pillar_cutoffs)
+	var clip = ClassDB.instantiate("ClippedVoxelGenerator4D")
+	clip.set("base", within)
+	clip.set("modifier", strata)
 	return clip
 
 

@@ -421,8 +421,8 @@ func _land_look(delta: float) -> void:
 	stream.call("set_chunk_material", _land_mat)
 
 
-## The landscape round the deck: built once, not streamed (the trigger stays at the middle).
-func _new_stream(sea: int) -> Node4D:
+## The landscape round the deck: built once, not streamed (the trigger stays at the middle). `mesas`: _mesa_pillars.
+func _new_stream(sea: int, mesas: Array = []) -> Node4D:
 	var s := Node4D.new()
 	s.name = "Stream"
 	s.set_script(Stream)
@@ -435,6 +435,11 @@ func _new_stream(sea: int) -> Node4D:
 	s.set("land_intensity", LAND_INTENSITY)
 	s.set("ahead", 0.0)
 	s.set("sea_material", sea)
+	if not mesas.is_empty():
+		var strata: Array = _mesa_strata(s.get("y_range"))
+		s.set("pillars", mesas)
+		s.set("pillar_materials", strata[0])
+		s.set("pillar_cutoffs", strata[1])
 	add_child(s)
 	s.set("follow", _centre)
 	return s
@@ -740,20 +745,21 @@ func set_trees(on: bool) -> void:
 ## deck and the platform and apart from each other, each PER CLUMP of the prop within SPREAD metres of its middle,
 ## denser towards it, scaled by SIZE (Tab, PROPS; Ramon: "how many trees there are, how densely they are placed,
 ## how closely they are clumped ... trees should be placed closer together in clumps"). Seeded per land, so the
-## same each time. The green island: the trees (tiny 24-cells, three greens) and the lighthouse. The desert: mesas
-## (stacked red discs, flat topped, strata) and saguaro cacti. The lava field: little volcanoes, glowing in their
+## same each time. The green island: the trees (tiny 24-cells, three greens) and the lighthouse. The desert: saguaro
+## cacti (its mesas are voxels, part of its land: _mesa_pillars). The lava field: little volcanoes, glowing in their
 ## craters, and embers and bubbles over the lava. Everything a disc in x and z, deep through W (CubinderShape4D),
 ## one unit mesh scaled per piece.
 ##   kind: [land, clumps, per clump, spread m, size]
 const PROP_KINDS := {
 	"trees": [0, 6, 30, 2.0, 1.0],
-	"mesas": [1, 5, 2, 9.0, 1.0],
+	"mesas": [1, 8, 1, 9.0, 1.0],
 	"cacti": [1, 8, 7, 2.5, 1.0],
 	"volcanoes": [2, 5, 3, 6.0, 1.0],
 }
 const MESA_REDS := [Color(0.40, 0.17, 0.10), Color(0.53, 0.24, 0.13), Color(0.60, 0.29, 0.16), Color(0.47, 0.20, 0.12)]
 const MESA_CAP := Color(0.66, 0.40, 0.25)
-const MESA_TALUS := Color(0.50, 0.25, 0.15)
+## The first of the mesas' materials: the reds, then the cap's colour.
+const MESA_STRATA := 4
 const CACTUS_GREENS := [Color(0.20, 0.36, 0.17), Color(0.16, 0.31, 0.15), Color(0.25, 0.41, 0.20)]
 const VOLCANO_ROCK := [Color(0.13, 0.11, 0.10), Color(0.20, 0.12, 0.09), Color(0.09, 0.08, 0.08)]
 const LAVA_GLOW := Color(1.0, 0.42, 0.06)
@@ -786,13 +792,14 @@ func _prop(kind: String) -> Vector4:
 	return Vector4(float(d[1]), float(d[2]), float(d[3]), float(d[4]))
 
 
-## A prop's numbers from Tab; planted again if they changed and it belongs to the land now.
+## A prop's numbers from Tab; planted again if they changed and it belongs to the land now. The mesas are part of the
+## desert's land, so theirs apply from its next build.
 func set_props(kind: String, clumps: float, per: float, spread: float, size: float) -> void:
 	var v := Vector4(clumps, per, spread, size)
 	if _prop(kind) == v and _prop_cfg.has(kind):
 		return
 	_prop_cfg[kind] = v
-	if int(PROP_KINDS[kind][0]) == biome and props != null:
+	if kind != "mesas" and int(PROP_KINDS[kind][0]) == biome and props != null:
 		_plant_props()
 
 
@@ -834,7 +841,6 @@ func _plant_props() -> void:
 			trees.visible = _trees_on
 			_lighthouse(props)
 		1:
-			_scatter("mesas", props, rng)
 			_scatter("cacti", props, rng)
 		2:
 			_scatter("volcanoes", props, rng)
@@ -878,8 +884,8 @@ func _find_low() -> void:
 	_low = low if low < 1e8 else 0.0
 
 
-## `count` clump middles on the land, `apart` metres from each other, clear of the deck and the platform.
-func _clump_centres(count: int, apart: float, rng: RandomNumberGenerator) -> Array:
+## `count` clump middles on the land above `floor_y`, `apart` metres from each other, clear of the deck and the platform.
+func _clump_centres(count: int, apart: float, rng: RandomNumberGenerator, floor_y: float) -> Array:
 	var c: Vector4 = _centre.global_position
 	var plat: Vector4 = _deck_at + PLAT_AT
 	var out: Array = []
@@ -889,7 +895,7 @@ func _clump_centres(count: int, apart: float, rng: RandomNumberGenerator) -> Arr
 		var a: float = rng.randf() * TAU
 		var d: float = rng.randf_range(14.0, BUILT_RADIUS - 6.0)
 		var at := Vector2(c.x + cos(a) * d, c.z + sin(a) * d)
-		if _tree_ground(at.x, at.y, 0.0) < _prop_floor() + 0.7:
+		if _tree_ground(at.x, at.y, 0.0) < floor_y + 0.7:
 			continue
 		if Vector2(at.x - _deck_at.x, at.y - _deck_at.z).length() < 12.0 or Vector2(at.x - plat.x, at.y - plat.z).length() < PLAT_R + 5.0:
 			continue
@@ -911,7 +917,7 @@ func _scatter(kind: String, holder: Node4D, rng: RandomNumberGenerator) -> void:
 	# across it, not crowded to the middle (his saved numbers stay as they are).
 	var cacti: bool = kind == "cacti"
 	var reach: float = spread * (1.5 if cacti else 1.0)
-	for at in _clump_centres(int(cfg.x), maxf(20.0 if cacti else 12.0, spread * (5.0 if cacti else 2.6)), rng):
+	for at in _clump_centres(int(cfg.x), maxf(20.0 if cacti else 12.0, spread * (5.0 if cacti else 2.6)), rng, _prop_floor()):
 		var n: int = maxi(1, int(round(cfg.y * rng.randf_range(0.7, 1.3))))
 		for k in n:
 			# Denser towards the middle (trees): most of a clump within half its spread.
@@ -929,8 +935,6 @@ func _scatter(kind: String, holder: Node4D, rng: RandomNumberGenerator) -> void:
 					_tree(holder, Vector4(x, y, z, w), rng.randf_range(0.35, 0.9) * big, rng)
 				"cacti":
 					_cactus(holder, Vector4(x, y, z, w * 0.5), big, rng)
-				"mesas":
-					_mesa(holder, Vector4(x, y, z, 0.0), big, rng)
 				"volcanoes":
 					_volcano(holder, Vector4(x, y, z, 0.0), big, rng)
 
@@ -993,27 +997,63 @@ func _cactus(holder: Node4D, at: Vector4, size: float, rng: RandomNumberGenerato
 		holder.add_child(link)
 
 
-## A mesa or a butte, as Monument Valley has them (round 6 review: three equal drums read as barrels): a low wide
-## skirt of fallen rock, a sheer cliff in thin bands of red, each a little off the last, and a paler caprock on top,
-## a touch wider than the cliff under it. Mesas wider than tall; one in three a butte, narrower and taller.
-func _mesa(holder: Node4D, at: Vector4, size: float, rng: RandomNumberGenerator) -> void:
-	var butte: bool = rng.randf() < 0.34
-	var rad: float = (rng.randf_range(1.8, 3.0) if butte else rng.randf_range(3.5, 6.5)) * size
-	var tall: float = (rng.randf_range(5.0, 8.0) if butte else rng.randf_range(3.0, 5.0)) * size
-	var deep: float = rad * 2.0
-	# The skirt, sunk into the ground.
-	_disc(holder, Vector4(at.x, at.y - 1.4, at.z, at.w), rad * 1.45, 1.4 + tall * 0.16, deep * 1.2, Mats.flat(MESA_TALUS), true)
-	_disc(holder, Vector4(at.x, at.y - 1.4, at.z, at.w), rad * 1.2, 1.4 + tall * 0.26, deep * 1.1, Mats.flat(MESA_TALUS.darkened(0.12)), true)
-	var y: float = at.y - 0.4
-	var bands: int = 6
-	var c := Vector2(at.x, at.z)
-	for i in bands:
-		var h: float = tall / float(bands) + (0.4 if i == 0 else 0.0)
-		var off := Vector2(rng.randf_range(-0.12, 0.12), rng.randf_range(-0.12, 0.12)) * rad
-		var r: float = rad * (1.0 - 0.025 * float(i)) * rng.randf_range(0.96, 1.03)
-		_disc(holder, Vector4(c.x + off.x, y, c.y + off.y, at.w), r, h, deep, Mats.flat(MESA_REDS[(i + rng.randi_range(0, 1)) % MESA_REDS.size()]), true)
-		y += h - (0.4 if i == 0 else 0.0)
-	_disc(holder, Vector4(c.x, y, c.y, at.w), rad * 0.9, tall * 0.07, deep, Mats.flat(MESA_CAP), true)
+## The desert's mesas and buttes, as spherinders for its generator ([centre, radius, height] in the stream's voxels),
+## each reaching down to the bottom of the world. Mesas wider than tall; one in three a butte, narrower and taller; half at W 0, the rest anywhere through the
+## world's W. Placed on the ground of the land built before
+## this one (every land is the same landscape under another sea), where the desert's salt flats lie at sea level.
+## None if no land has been mapped yet.
+func _mesa_pillars() -> Array:
+	if _heights.is_empty():
+		return []
+	var origin: Vector4 = stream.global_position
+	var v: float = float(stream.get("voxel"))
+	var floor_y: float = maxf(_low, origin.y) + 0.8
+	var bottom: float = origin.y + float((stream.get("y_range") as Vector2i).x) * v
+	var w_reach: float = float(W_CHUNKS) * 8.0 * v
+	var cfg: Vector4 = _prop("mesas")
+	var spread: float = maxf(cfg.z, 0.2)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2410 + 977
+	var out: Array = []
+	for at in _clump_centres(int(cfg.x), maxf(12.0, spread * 2.6), rng, floor_y):
+		for k in maxi(1, int(round(cfg.y * rng.randf_range(0.7, 1.3)))):
+			var r: float = pow(rng.randf(), 1.6) * spread
+			var ang: float = rng.randf() * TAU
+			var x: float = (at as Vector2).x + cos(ang) * r
+			var z: float = (at as Vector2).y + sin(ang) * r
+			var size: float = cfg.w * (1.0 - 0.3 * r / spread)
+			var butte: bool = rng.randf() < 0.34
+			var rad: float = (rng.randf_range(1.8, 3.0) if butte else rng.randf_range(3.5, 6.5)) * size
+			var tall: float = (rng.randf_range(5.0, 8.0) if butte else rng.randf_range(3.0, 5.0)) * size
+			var w: float = 0.0 if rng.randf() < 0.5 else rng.randf_range(-1.0, 1.0) * maxf(w_reach - rad * 1.45, 0.0)
+			var y: float = _tree_ground(x, z, w)
+			if y < floor_y:
+				continue
+			var top: float = y + tall * 1.07
+			var centre := Vector4(x, (top + bottom) * 0.5, z, w)
+			out.append([(centre - origin) / v, rad * 1.45 / v, (top - bottom) / v])
+	return out
+
+
+## The mesas' rock: flat bands one or two voxels thick through the world's height `y_range` (voxels), in the reds
+## and now and then the caprock's colour, no two the same running. [materials, cutoffs] for the stream.
+func _mesa_strata(y_range: Vector2i) -> Array:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3313
+	var materials := PackedInt32Array()
+	var cutoffs := PackedFloat32Array()
+	var y: int = y_range.x
+	var last: int = -1
+	while y < y_range.y:
+		var m: int = MESA_STRATA + rng.randi_range(0, MESA_REDS.size())
+		if m == last:
+			m = MESA_STRATA + (m - MESA_STRATA + 1) % (MESA_REDS.size() + 1)
+		materials.append(m)
+		last = m
+		y += rng.randi_range(1, 2)
+		cutoffs.append(float(y))
+	materials.append(MESA_STRATA)
+	return [materials, cutoffs]
 
 
 ## LITTLE VOLCANOES, round 7 (#93: "Replace the obvious circular stacks with more angular, irregular volcanic
@@ -1948,11 +1988,10 @@ func go_to_land(to: int) -> void:
 	if to == biome or to < 0 or to >= Case.BIOMES.size():
 		return
 	_sound("select")
-	var was_green: bool = biome == 0
 	biome = to
 	# The moving sea belongs to the green land, over open seabed; the desert's salt flats and the lava
-	# field's lava are the generator's own sea. Between the two the landscape is built again, behind
-	# the board; between desert and lava only its colours change.
+	# field's lava are the generator's own sea, and the desert has its mesas. So each land is built
+	# again, behind the board.
 	water.visible = biome == 0
 	if _bed != null:
 		_bed.visible = biome == 0
@@ -1960,11 +1999,7 @@ func go_to_land(to: int) -> void:
 		grass.visible = biome == 0
 	if trees != null:
 		trees.visible = _trees_on and biome == 0
-	if was_green != (biome == 0):
-		_rebuild_land()
-	else:
-		_paint_land()
-		_plant_props()
+	_rebuild_land()
 	if biome == 0:
 		hud.call("toast", "Home: the green island", 3.0)
 	else:
@@ -1975,8 +2010,12 @@ func _paint_land() -> void:
 	var colors: Dictionary = (Case.BIOMES[biome]["colors"] as Dictionary).duplicate()
 	if biome == 0:
 		colors[0] = _grass
+	if biome == 1:
+		for i in MESA_REDS.size():
+			colors[MESA_STRATA + i] = MESA_REDS[i]
+		colors[MESA_STRATA + MESA_REDS.size()] = MESA_CAP
 	var list := PackedColorArray()
-	for m in 5:
+	for m in MESA_STRATA + MESA_REDS.size() + 1:
 		list.append(colors.get(m, Color.WHITE))
 	var pal = ClassDB.instantiate("VoxelMaterialPalette4D")
 	pal.set("colors", list)
@@ -1987,7 +2026,7 @@ func _paint_land() -> void:
 func _rebuild_land() -> void:
 	var old: Node4D = stream
 	var swap: bool = bool(old.get("swap"))
-	stream = _new_stream(254 if biome == 0 else 3)
+	stream = _new_stream(254 if biome == 0 else 3, _mesa_pillars() if biome == 1 else [])
 	stream.set("swap", swap)
 	old.queue_free()
 	_paint_land()

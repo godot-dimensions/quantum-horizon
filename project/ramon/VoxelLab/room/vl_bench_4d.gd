@@ -30,6 +30,10 @@ extends Node4D
 ## its left and right), the camera goes from nearly straight down to a little under the top of the
 ## grid, and it is kept inside `camera_bounds` (the room's walls, in the corner) by coming closer.
 ##
+## AT A STEPPER (Overlapping geometry: an exhibit with add_next()) sitting down empties it, 1 puts the next
+## piece back, and once the last is in the bench stands you up by itself (RELEASE_AFTER later); standing up
+## before then puts the rest back. A left drag orbits, as at a builder; there is nothing to aim at.
+##
 ## Faces its own +Z: the pad lies in front of the station, and you sit looking from it to the specimen.
 ##
 ## NO class_name (engine_gotchas.md).
@@ -113,6 +117,10 @@ var _autoplay_was: bool = true
 ## A screen point (window pixels) to aim at instead of the mouse: the runners set it, so a test never
 ## moves the real cursor (it is the user's).
 var aim_override: Vector2 = Vector2.INF
+## Seconds a stepper's last piece stays on show before the bench stands you up.
+const RELEASE_AFTER := 1.5
+## Counts sittings, so a release timed for one never stands up the next.
+var _sitting: int = 0
 
 
 func _enter_tree() -> void:
@@ -205,6 +213,17 @@ func builder() -> Node:
 	return e if e != null and e.has_method("build_cut") else null
 
 
+## The exhibit when it is put together a piece at a time (Overlapping geometry), else null.
+func stepper() -> Node:
+	var e: Node = exhibit()
+	return e if e != null and e.has_method("add_next") else null
+
+
+## A builder or a stepper: a left drag orbits.
+func _orbits() -> bool:
+	return builder() != null or stepper() != null
+
+
 ## The point the camera circles: the specimen's middle as it stands, in your slice (W 0).
 func _centre() -> Vector4:
 	var sp: Node4D = specimen() as Node4D
@@ -265,6 +284,9 @@ func dock(r: Node) -> void:
 		tool = tools[0]
 	if builder() != null:
 		size_index = clampi(size_index, 0, _sizes() - 1)
+	_sitting += 1
+	if stepper() != null:
+		stepper().call("begin")
 	_sync_overlay()
 	docked_changed.emit(true)
 
@@ -282,6 +304,8 @@ func undock() -> void:
 	var ex: Node = exhibit()
 	if ex != null:
 		ex.set("held", false)
+	if stepper() != null:
+		stepper().call("end")
 	if is_instance_valid(_layer):
 		_layer.queue_free()
 	_layer = null
@@ -327,7 +351,7 @@ func _process(delta: float) -> void:
 ## Up and down: a builder's orbit reaches from nearly straight down to a little under level; a cutting
 ## bench keeps its old reach.
 func _clamp_pitch(p: float) -> float:
-	if builder() != null:
+	if _orbits():
 		return clampf(p, deg_to_rad(-85.0), deg_to_rad(8.0))
 	return clampf(p, deg_to_rad(-70.0), deg_to_rad(15.0))
 
@@ -377,7 +401,7 @@ func aim_at_screen(px: Vector2) -> Dictionary:
 func _update_hover() -> void:
 	hover = {}
 	var sp: Node = specimen()
-	if sp == null or _cam == null or not bool(sp.call("is_ready")):
+	if sp == null or _cam == null or not bool(sp.call("is_ready")) or stepper() != null:
 		return
 	var px: Vector2 = _mouse_px()
 	var o: Vector4 = _cam.viewport_to_world_ray_origin(px)
@@ -414,6 +438,8 @@ func _sync_overlay() -> void:
 	_overlay.set("swap", bool(sp.get("swap")) if sp != null else true)
 	var b: Node = builder()
 	_overlay.set("build", b.call("overlay_info", tool, size_index) if b != null else {})
+	var stp: Node = stepper()
+	_overlay.set("step", stp.call("overlay_info") if stp != null else {})
 	if sp != null:
 		var st: Dictionary = sp.get("stats")
 		var n: int = int(sp.call("tets"))
@@ -504,14 +530,14 @@ func _input(event: InputEvent) -> void:
 	var k := event as InputEventKey
 	var sc: Node = showcase()
 	if mb != null:
-		if mb.button_index == MOUSE_BUTTON_LEFT and builder() != null:
-			# A builder: a click places on release, a drag orbits.
+		if mb.button_index == MOUSE_BUTTON_LEFT and _orbits():
+			# A builder: a click places on release, a drag orbits (a stepper only orbits).
 			if mb.pressed:
 				_ldown = true
 				_lmoved = 0.0
 			elif _ldown:
 				_ldown = false
-				if _lmoved < DRAG_PX:
+				if _lmoved < DRAG_PX and builder() != null:
 					cut_here()
 		elif mb.button_index == MOUSE_BUTTON_LEFT:
 			if mb.pressed:
@@ -538,12 +564,12 @@ func _input(event: InputEvent) -> void:
 	if mm != null:
 		if _rdrag and sc != null:
 			sc.call("turn_by", mm.relative.x * 0.006, mm.relative.y * 0.006)
-		elif _ldown and builder() != null:
+		elif _ldown and _orbits():
 			_lmoved += mm.relative.length()
 			if _lmoved >= DRAG_PX:
 				orbit(mm.relative)
 		elif _mdrag:
-			if builder() != null:
+			if _orbits():
 				orbit(mm.relative)
 			else:
 				# Orbit, as a middle drag does in Blender.
@@ -551,6 +577,12 @@ func _input(event: InputEvent) -> void:
 				_pitch = clampf(_pitch + mm.relative.y * 0.005, deg_to_rad(-70.0), deg_to_rad(15.0))
 		return
 	if k == null or not k.pressed or k.echo:
+		return
+	var stp: Node = stepper()
+	if stp != null and k.keycode in [KEY_1, KEY_2, KEY_3, KEY_4, KEY_Q, KEY_E, KEY_R, KEY_Z, KEY_SPACE]:
+		if k.keycode == KEY_1:
+			step_next()
+		get_viewport().set_input_as_handled()
 		return
 	match k.keycode:
 		KEY_F, KEY_ESCAPE:
@@ -652,6 +684,24 @@ func cut_here() -> Dictionary:
 	return rec
 
 
+## A stepper's next piece (1; the runner calls this too), with a knock; after the last, the bench stands you up
+## once it has been on show a moment.
+func step_next() -> void:
+	var stp: Node = stepper()
+	if stp == null or not bool(stp.call("add_next")):
+		return
+	_sound("click")
+	if _audio != null and not _sounds.is_empty():
+		_audio.stream = _sounds[0]
+		_audio.pitch_scale = randf_range(1.35, 1.5)
+		_audio.play()
+	if bool(stp.call("finished")):
+		var sitting: int = _sitting
+		get_tree().create_timer(RELEASE_AFTER).timeout.connect(func() -> void:
+			if docked and _sitting == sitting:
+				undock())
+
+
 ## Takes a builder's last brick back (Z; the runner calls this too).
 func undo() -> Dictionary:
 	var bld: Node = builder()
@@ -688,6 +738,8 @@ func _on_cut(rec: Dictionary) -> void:
 
 ## The control strip while seated.
 func strip() -> Array:
+	if stepper() != null:
+		return [["1", "Add the next"], ["Drag", "Look around"], ["Right drag", "Turn in 4D"], ["Wheel", "Slide through W"], ["F", "Stand up"]]
 	if builder() != null:
 		return [["Click", "Place"], ["Drag", "Look around"], ["Right drag", "Turn the slice"], ["Wheel", "W layer"], ["1 to 3", "Tool"],
 			["Q / E", "Colour"], ["Z", "Undo"], ["Space", "Level"], ["R", "Start again"], ["F", "Stand up"]]

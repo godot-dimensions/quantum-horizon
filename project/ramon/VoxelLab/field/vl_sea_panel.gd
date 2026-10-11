@@ -74,7 +74,7 @@ const DEFAULTS := {
 	"grass": 1.0, "grass_width": 2.2, "grass_height": 0.7, "grass_r": 0.31, "grass_g": 0.49, "grass_b": 0.16,
 	"grass_cover": 35.0, "grass_patch_m": 6.0, "grass_spacing_cm": 7.0, "trees": 1.0, "grass_whole": 0.0,
 	"p_trees_clumps": 6.0, "p_trees_per": 30.0, "p_trees_spread": 2.0, "p_trees_size": 1.0,
-	"p_mesas_clumps": 5.0, "p_mesas_per": 2.0, "p_mesas_spread": 9.0, "p_mesas_size": 1.0,
+	"p_mesas_clumps": 8.0, "p_mesas_per": 1.0, "p_mesas_spread": 9.0, "p_mesas_size": 1.0,
 	"p_cacti_clumps": 8.0, "p_cacti_per": 7.0, "p_cacti_spread": 2.5, "p_cacti_size": 1.0,
 	"p_volcanoes_clumps": 5.0, "p_volcanoes_per": 3.0, "p_volcanoes_spread": 6.0, "p_volcanoes_size": 1.0,
 	"lava_fx": 1.0,

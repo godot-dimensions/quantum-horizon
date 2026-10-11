@@ -112,9 +112,9 @@ func _black_deck() -> void:
 	sc.add_child(m)
 
 
-## The construction grid: a thin grey line on the black deck along every cell edge in x and z, each as deep
-## through W as the grid, so every W layer stands on the same lines (and a turned slice cuts them like
-## the bricks). On the stand, so it turns with the slice.
+## The construction grid: the cells' floor is a 3D grid in x, z and W, so a thin grey sheet on the black deck
+## at every cell boundary in each of the three, spanning the other two. The slice's stops are layer
+## middles, so the W sheets only show once it is turned. On the stand, so it turns with the slice.
 func _grid_lines() -> void:
 	var g := Node4D.new()
 	g.name = "Grid"
@@ -135,6 +135,12 @@ func _grid_lines() -> void:
 		var m := MeshInstance4D.new()
 		m.mesh = Mats.box_mesh(Vector4(sx + LINE_M, 0.008, LINE_M, sw))
 		m.position = Vector4(0.0, y, -sz * 0.5 + cm * float(k), 0.0)
+		m.material_override = mat
+		g.add_child(m)
+	for l in NW + 1:
+		var m := MeshInstance4D.new()
+		m.mesh = Mats.box_mesh(Vector4(sx + LINE_M, 0.008, sz + LINE_M, LINE_M))
+		m.position = Vector4(0.0, y, 0.0, -sw * 0.5 + cm * float(l))
 		m.material_override = mat
 		g.add_child(m)
 
@@ -424,8 +430,8 @@ func hit_text(hover: Dictionary) -> String:
 	return "%s  ·  W LAYER %d OF %d" % [material_name(int(hover.get("material", -1))), layer() + 1, NW]
 
 
-## The outline at the hover, as world polylines [points, closed, accent]: the cube a brick would fill
-## (white), or the brick that would go (accent).
+## The outline at the hover, as world polylines [points, closed, accent]: the hypercube a brick would fill
+## (white), or the brick that would go (accent): all 32 of its edges, projected along W onto your view.
 func outline(sp: Node, hover: Dictionary, tool: String) -> Array:
 	var key: Vector4i
 	var accent: bool = false
@@ -443,16 +449,14 @@ func outline(sp: Node, hover: Dictionary, tool: String) -> Array:
 		elif key.x < 0:
 			return []
 	var lo: Vector4 = cell_lo(key)
-	var w: float = lo.w + CELL * 0.5
 	var corners: Array = []
-	for i in 8:
-		var p := Vector4(lo.x + CELL * float(i & 1), lo.y + CELL * float((i >> 2) & 1), lo.z + CELL * float((i >> 1) & 1), w)
-		corners.append(sp.call("to_global", p))
+	for i in 16:
+		corners.append(sp.call("to_global", lo + Vector4(i & 1, (i >> 1) & 1, (i >> 2) & 1, (i >> 3) & 1) * CELL))
 	var out: Array = []
-	for top in [0, 4]:
-		out.append([PackedVector4Array([corners[top], corners[top + 1], corners[top + 3], corners[top + 2]]), true, accent])
-	for i in 4:
-		out.append([PackedVector4Array([corners[i], corners[i + 4]]), false, accent])
+	for i in 16:
+		for axis in 4:
+			if i & (1 << axis) == 0:
+				out.append([PackedVector4Array([corners[i], corners[i | (1 << axis)]]), false, accent])
 	return out
 
 

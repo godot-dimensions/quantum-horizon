@@ -16,6 +16,8 @@ extends Control
 ##   AT A BUILDER  (Build it, round 4) the card names the brick tool and its colour, shows the colours
 ##                 on Q/E as swatches, and a strip of the W layers: the one you are in lit, each one's
 ##                 bricks counted under it.
+##   AT A STEPPER  (Overlapping geometry) the card names the piece that went in last and counts them all in a
+##                 strip of boxes, and a glass panel on the left holds the exhibit's words.
 ##
 ## Sizes follow the window's height, never the distance to anything (Ramon's lab rule).
 ##
@@ -44,6 +46,8 @@ var show_costs: bool = true
 var station_name: String = ""
 ## A builder's card (vl_build_exhibit_4d.gd overlay_info): empty at a cutting bench.
 var build: Dictionary = {}
+## A stepper's card (vl_hypercubes_exhibit_4d.gd overlay_info): empty elsewhere.
+var step: Dictionary = {}
 
 
 func _ready() -> void:
@@ -106,6 +110,10 @@ func _draw_outline(u: float) -> void:
 func _draw_card(u: float) -> void:
 	if not build.is_empty():
 		_draw_build_card(u)
+		return
+	if not step.is_empty():
+		_draw_step_card(u)
+		_draw_side_text(u)
 		return
 	var w: float = 470.0 * u
 	var h: float = 92.0 * u
@@ -192,6 +200,60 @@ func _draw_build_card(u: float) -> void:
 	draw_string(ft, Vector2(lx, r.end.y - 6.0 * u), "WHEEL  NEXT LAYER", HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Style.UI_INK_DIM)
 
 
+## The stepper's card, as the builder's: the piece that went in last and what it is, the key, and a box for
+## each piece, lit once it is in.
+func _draw_step_card(u: float) -> void:
+	var w: float = 560.0 * u
+	var h: float = 92.0 * u
+	var vs: Vector2 = get_viewport_rect().size
+	var r := Rect2(Vector2((vs.x - w) * 0.5, vs.y - h - 74.0 * u), Vector2(w, h))
+	draw_style_box(Style.glass_box(14.0 * u), r)
+	var col: Color = step.get("colour", Style.UI_ACCENT)
+	var count: int = int(step.get("count", 0))
+	var of: int = int(step.get("of", 1))
+	var pic := Rect2(r.position + Vector2(14, 14) * u, Vector2(h - 28 * u, h - 28 * u))
+	_draw_tool_icon("through", pic, col, u)
+	var x: float = pic.end.x + 16.0 * u
+	var fb: Font = Style.ui_font("title")
+	var fk: Font = Style.ui_font("key")
+	var ft: Font = Style.ui_font("text")
+	draw_string(fb, Vector2(x, r.position.y + 30.0 * u), String(step.get("name", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, int(19 * u), Style.UI_INK)
+	var boxes_w: float = 150.0 * u
+	draw_string(ft, Vector2(x, r.position.y + 52.0 * u), String(step.get("line", "")), HORIZONTAL_ALIGNMENT_LEFT, r.end.x - boxes_w - x - 16 * u, int(12 * u), Style.UI_INK_SOFT)
+	var ky: float = r.position.y + 64.0 * u
+	var more: bool = count < of
+	var cap := Rect2(Vector2(x, ky), Vector2(18, 18) * u)
+	draw_rect(cap, Color(1, 1, 1, 0.22 if more else 0.06))
+	draw_rect(cap, Color(1, 1, 1, 0.9 if more else 0.4), false, 1.0 * u)
+	draw_string(fk, Vector2(cap.position.x, cap.position.y + 13.5 * u), "1", HORIZONTAL_ALIGNMENT_CENTER, cap.size.x, int(11 * u), Style.UI_INK)
+	draw_string(fk, Vector2(cap.end.x + 10 * u, ky + 13.5 * u), "ADD THE NEXT" if more else "ALL IN PLACE", HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u), Style.UI_INK_DIM)
+	var bx: float = r.end.x - boxes_w - 8.0 * u
+	draw_string(fk, Vector2(bx, r.position.y + 24.0 * u), "IN PLACE  %d / %d" % [count, of], HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * u), Style.UI_INK)
+	var bw: float = (boxes_w - 4.0 * u * float(of - 1)) / float(of)
+	for i in of:
+		var cell := Rect2(Vector2(bx + (bw + 4.0 * u) * float(i), r.position.y + 34.0 * u), Vector2(bw, bw))
+		draw_rect(cell, Color(col, 0.55) if i < count else Color(1, 1, 1, 0.05))
+		draw_rect(cell, Color(1, 1, 1, 0.95 if i == count - 1 else 0.3), false, (2.0 if i == count - 1 else 1.0) * u)
+
+
+## The stepper's words: a glass panel on the left, as tall as its text.
+func _draw_side_text(u: float) -> void:
+	var text: String = String(step.get("text", ""))
+	if text.is_empty():
+		return
+	var w: float = 300.0 * u
+	var fb: Font = Style.ui_font("title")
+	var ft: Font = Style.ui_font("text")
+	var inner: float = w - 32.0 * u
+	var fs: int = int(13 * u)
+	var body_h: float = ft.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, inner, fs).y
+	var r := Rect2(Vector2(22.0 * u, 96.0 * u), Vector2(w, 50.0 * u + body_h + 16.0 * u))
+	draw_style_box(Style.glass_box(14.0 * u), r)
+	var x: float = r.position.x + 16.0 * u
+	draw_string(fb, Vector2(x, r.position.y + 28.0 * u), String(step.get("title", "")), HORIZONTAL_ALIGNMENT_LEFT, inner, int(16 * u), Style.UI_INK)
+	draw_multiline_string(ft, Vector2(x, r.position.y + 50.0 * u + float(fs)), text, HORIZONTAL_ALIGNMENT_LEFT, inner, fs, -1, Style.UI_INK_SOFT)
+
+
 static func _draw_tool_icon_static(c: CanvasItem, t: String, r: Rect2, col: Color, u: float) -> void:
 	var m: Vector2 = r.get_center()
 	var s: float = r.size.y * 0.5
@@ -251,13 +313,14 @@ func _draw_costs(u: float) -> void:
 	var x: float = r.position.x + 16.0 * u
 	var y: float = r.position.y + 28.0 * u
 	var right: float = r.end.x - 16.0 * u
-	draw_string(fb, Vector2(x, y), ("EDITS  ·  %d" if not build.is_empty() else "CUTS  ·  %d") % records.size(), HORIZONTAL_ALIGNMENT_LEFT, -1, int(16 * u), Style.UI_INK)
+	var edits: bool = not build.is_empty() or not step.is_empty()
+	draw_string(fb, Vector2(x, y), ("EDITS  ·  %d" if edits else "CUTS  ·  %d") % records.size(), HORIZONTAL_ALIGNMENT_LEFT, -1, int(16 * u), Style.UI_INK)
 	draw_string(fk, Vector2(x, y + 18.0 * u), ("DRAW BUFFERS ON A WORKER THREAD" if swap else "THE ENGINE'S WAY: ALL IN ONE FRAME"),
 		HORIZONTAL_ALIGNMENT_LEFT, -1, int(9 * u), Style.UI_LIVE if swap else Style.UI_WARM)
 	y += 42.0 * u
 	var last: Dictionary = records[-1] if not records.is_empty() else {}
 	var rows: Array = [
-		["Last edit" if not build.is_empty() else "Last cut", String(last.get("label", "none yet"))],
+		["Last edit" if edits else "Last cut", String(last.get("label", "none yet"))],
 		["Voxels added" if int(last.get("fill", Recipe.AIR)) != Recipe.AIR else "Voxels removed", ("not counted (noise)" if int(last.get("voxels", 0)) < 0 else _thousands(int(last.get("voxels", 0)))) if not last.is_empty() else "-"],
 		["Chunks meshed again", str(int(last.get("chunks", 0))) if not last.is_empty() else "-"],
 		["On screen after", "%.0f ms" % float(last.get("latency_ms", 0.0)) if not last.is_empty() else "-"],
