@@ -46,7 +46,19 @@ function Get-DirectoryContentChecksum {
         if (-not (Test-Path -LiteralPath $filePath -PathType Leaf)) {
             continue
         }
-        $fileChecksum = (Get-FileHash -LiteralPath $filePath -Algorithm SHA256).Hash
+        $fileHasher = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            $fileStream = [System.IO.File]::OpenRead($filePath)
+            try {
+                $fileChecksum = [System.BitConverter]::ToString($fileHasher.ComputeHash($fileStream)).Replace("-", "")
+            }
+            finally {
+                $fileStream.Dispose()
+            }
+        }
+        finally {
+            $fileHasher.Dispose()
+        }
         [void]$checksumInput.Append($relativePath).Append("`0").Append($fileChecksum).Append("`n")
     }
 
@@ -127,6 +139,7 @@ $sconsArgs = @(
     "d3d12=no"
     "target=$Target"
     "platform=$Platform"
+    "arch=$Architecture"
 )
 if ($Target -eq "editor") {
     $sconsArgs += "tests=yes"

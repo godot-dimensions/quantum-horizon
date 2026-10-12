@@ -13,13 +13,14 @@ CLICOLOR_FORCE=1
 export CLICOLOR_FORCE
 
 target=editor
+requested_architecture=
 jobs=
 dev_build=0
 clean_build=0
 do_not_run=0
 
 usage() {
-    printf 'Usage: %s [--target TARGET] [--jobs COUNT] [--dev] [--clean] [--do-not-run]\n' "$0"
+    printf 'Usage: %s [--target TARGET] [--architecture ARCH] [--jobs COUNT] [--dev] [--clean] [--do-not-run]\n' "$0"
 }
 
 die() {
@@ -32,6 +33,11 @@ while [ "$#" -gt 0 ]; do
         --target)
             [ "$#" -ge 2 ] || die "--target requires a value."
             target=$2
+            shift 2
+            ;;
+        --architecture|--arch)
+            [ "$#" -ge 2 ] || die "--architecture requires a value."
+            requested_architecture=$2
             shift 2
             ;;
         --jobs)
@@ -95,6 +101,14 @@ case "$os_name" in
     *)
         die "This script supports macOS and Linux only. Detected: $os_name"
         ;;
+esac
+
+if [ -n "$requested_architecture" ]; then
+    architecture=$requested_architecture
+fi
+case "$platform:$architecture" in
+    macos:x86_64|macos:arm64|linuxbsd:x86_64|linuxbsd:x86_32|linuxbsd:arm64|linuxbsd:arm32|linuxbsd:rv64|linuxbsd:ppc64|linuxbsd:loongarch64) ;;
+    *) die "Unsupported $platform architecture: $architecture" ;;
 esac
 
 if [ -z "$jobs" ]; then
