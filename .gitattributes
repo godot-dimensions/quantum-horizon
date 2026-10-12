@@ -5,7 +5,7 @@
 *.bat text eol=crlf
 *.ps1 text eol=lf
 
-# Properly detect languages on Github.
+# Properly detect languages on GitHub.
 *.h linguist-language=C++
 
 # Git LFS tracking for Godot binary files.

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://mi1rauivlclq"
 path.s3tc="res://.godot/imported/glass_scratches_roughness.jpg-82ab1c536b9433138c77093d4f10e2eb.s3tc.ctex"
+path.etc2="res://.godot/imported/glass_scratches_roughness.jpg-82ab1c536b9433138c77093d4f10e2eb.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://sandbox/shooting_gallery/radar_orb/textures/glass_scratches_roughness.jpg"
-dest_files=["res://.godot/imported/glass_scratches_roughness.jpg-82ab1c536b9433138c77093d4f10e2eb.s3tc.ctex"]
+dest_files=["res://.godot/imported/glass_scratches_roughness.jpg-82ab1c536b9433138c77093d4f10e2eb.s3tc.ctex", "res://.godot/imported/glass_scratches_roughness.jpg-82ab1c536b9433138c77093d4f10e2eb.etc2.ctex"]
 
 [params]
 

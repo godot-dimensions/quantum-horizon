@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bymvujfnir62x"
 path.s3tc="res://.godot/imported/icon_sky_box_clouds.png-f96cfeec87b3d7d81c43e346126a2308.s3tc.ctex"
+path.etc2="res://.godot/imported/icon_sky_box_clouds.png-f96cfeec87b3d7d81c43e346126a2308.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://ramon/Demo/textures/icon_sky_box_clouds.png"
-dest_files=["res://.godot/imported/icon_sky_box_clouds.png-f96cfeec87b3d7d81c43e346126a2308.s3tc.ctex"]
+dest_files=["res://.godot/imported/icon_sky_box_clouds.png-f96cfeec87b3d7d81c43e346126a2308.s3tc.ctex", "res://.godot/imported/icon_sky_box_clouds.png-f96cfeec87b3d7d81c43e346126a2308.etc2.ctex"]
 
 [params]
 

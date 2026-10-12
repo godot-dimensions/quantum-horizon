@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://comnh1fvblitb"
 path.s3tc="res://.godot/imported/icon_ascent.png-789b013b8bc699665679eaaf5883796c.s3tc.ctex"
+path.etc2="res://.godot/imported/icon_ascent.png-789b013b8bc699665679eaaf5883796c.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://ramon/Demo/textures/icon_ascent.png"
-dest_files=["res://.godot/imported/icon_ascent.png-789b013b8bc699665679eaaf5883796c.s3tc.ctex"]
+dest_files=["res://.godot/imported/icon_ascent.png-789b013b8bc699665679eaaf5883796c.s3tc.ctex", "res://.godot/imported/icon_ascent.png-789b013b8bc699665679eaaf5883796c.etc2.ctex"]
 
 [params]
 

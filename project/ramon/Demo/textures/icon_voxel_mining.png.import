@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://240qb5po2vbw"
 path.s3tc="res://.godot/imported/icon_voxel_mining.png-de189c740fa17396e9f29726917a5fc6.s3tc.ctex"
+path.etc2="res://.godot/imported/icon_voxel_mining.png-de189c740fa17396e9f29726917a5fc6.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://ramon/Demo/textures/icon_voxel_mining.png"
-dest_files=["res://.godot/imported/icon_voxel_mining.png-de189c740fa17396e9f29726917a5fc6.s3tc.ctex"]
+dest_files=["res://.godot/imported/icon_voxel_mining.png-de189c740fa17396e9f29726917a5fc6.s3tc.ctex", "res://.godot/imported/icon_voxel_mining.png-de189c740fa17396e9f29726917a5fc6.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://g3hckkpp33vx"
 path.s3tc="res://.godot/imported/icon_portal_chamber.png-be6f49b1a7cd16237b577eb4c0321094.s3tc.ctex"
+path.etc2="res://.godot/imported/icon_portal_chamber.png-be6f49b1a7cd16237b577eb4c0321094.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://ramon/Demo/textures/icon_portal_chamber.png"
-dest_files=["res://.godot/imported/icon_portal_chamber.png-be6f49b1a7cd16237b577eb4c0321094.s3tc.ctex"]
+dest_files=["res://.godot/imported/icon_portal_chamber.png-be6f49b1a7cd16237b577eb4c0321094.s3tc.ctex", "res://.godot/imported/icon_portal_chamber.png-be6f49b1a7cd16237b577eb4c0321094.etc2.ctex"]
 
 [params]
 
