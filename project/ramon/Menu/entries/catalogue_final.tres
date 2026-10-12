@@ -7,12 +7,12 @@
 [ext_resource type="Texture2D" uid="uid://b0jdikyke41ss" path="res://ramon/Menu/icons/icon_creature.png" id="8_jn372"]
 [ext_resource type="Script" uid="uid://b2a43mgb5dqv" path="res://ramon/Menu/scripts/menu_catalogue.gd" id="10_ajynb"]
 [ext_resource type="Texture2D" uid="uid://bjmr20bfnryq" path="res://ramon/Menu/icons/icon_sky_box_clouds.png" id="10_uy7oo"]
+[ext_resource type="Texture2D" uid="uid://4l301dgyyyq8" path="res://ramon/Menu/icons/lab_icons_bold/icon_annex.png" id="bold_annex"]
 [ext_resource type="Texture2D" uid="uid://da3gm4lw2t1go" path="res://ramon/Menu/icons/lab_icons_bold/icon_aquatic.png" id="bold_aquatic"]
 [ext_resource type="Texture2D" uid="uid://c74e3kyjx6iix" path="res://ramon/Menu/icons/lab_icons_bold/icon_botany.png" id="bold_botany"]
 [ext_resource type="Texture2D" uid="uid://8fpy7ue2jk7i" path="res://ramon/Menu/icons/lab_icons_bold/icon_creature.png" id="bold_creature"]
 [ext_resource type="Texture2D" uid="uid://c1fvnosw8m4y" path="res://ramon/Menu/icons/lab_icons_bold/icon_crosswise.png" id="bold_crosswise"]
 [ext_resource type="Texture2D" uid="uid://cd2nl1bqmtqsv" path="res://ramon/Menu/icons/lab_icons_bold/icon_maze.png" id="bold_maze"]
-[ext_resource type="Texture2D" uid="uid://4l301dgyyyq8" path="res://ramon/Menu/icons/lab_icons_bold/icon_annex.png" id="bold_annex"]
 [ext_resource type="Texture2D" uid="uid://pae88n6ap81" path="res://ramon/Menu/icons/lab_icons_bold/icon_shooting_range.png" id="bold_shooting_range"]
 [ext_resource type="Texture2D" uid="uid://cia1yhb254eis" path="res://ramon/Menu/icons/lab_icons_bold/icon_voxel.png" id="bold_voxel"]
 [ext_resource type="Texture2D" uid="uid://irnpi5lyimq5" path="res://ramon/Menu/icons/icon_cinematic_starlings.png" id="icon_film1"]
@@ -208,13 +208,13 @@ benchmark = "Bot at par on all six levels: 32, 11, 16, 41, 33 and 101 s · each 
 [sub_resource type="Resource" id="Resource_annex"]
 script = ExtResource("1_i2ljj")
 title = "The Annex"
-show_in_menu = false
 blurb = "A first-person walk through W in the dark: doors open as you shift, and the Tall Ones only see their own slice"
 maturity = "Playable"
 category = "Orientation"
 family = "The experiments"
 thrust = "Live it"
 also_answers = PackedStringArray()
+show_in_menu = false
 detail = "The Phase Maze remade a second time, first person, in the dark. Hold E or Q and you move through W at walking pace while the building rearranges itself round you: door leaves slide apart, walls sink into the floor, bridges grow out of the dark. Tall grey figures stand in some rooms. Each lives in one slice; if one sees you, its eyes go red and it walks to you, and the way out is another slice. Three levels: a door through W, an archive with an ambush, and the Heart, a vault you reach only by turning your view into W. Six logs tell what sleeps there."
 clip = "the_annex"
 icon = ExtResource("bold_annex")
