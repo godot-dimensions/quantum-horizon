@@ -58,3 +58,11 @@ These are automatically invoked when running the `run_editor` scripts. After com
 The `setup_visual_studio_windows.ps1` script will set up files for Visual Studio.
 
 It should work the same as the VS Code setup script, being automatically invoked when running the `run_editor_windows.bat` script. After compiling and running once, you can open the generated `.sln` file in Visual Studio and it should have intellisense for the C++ code in the engine and modules.
+
+## License
+
+Quantum Horizon is licensed under the MIT License. See the [LICENSE.txt](LICENSE.txt) file for details.
+
+Quantum Horizon depends on Godot 4D, which is licensed under The Unlicense: https://github.com/godot-dimensions/godot-4d
+
+Quantum Horizon depends on Godot Engine, which is licensed under the MIT License: https://github.com/godotengine/godot
