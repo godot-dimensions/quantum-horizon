@@ -18,6 +18,8 @@ position = Vector4(0, 0.75, 0, 0)
 [node name="FirstPersonCamera" type="Camera4D" parent="PlayerHead"]
 current = true
 rendering_engine_name = "Cross-section"
+view_angle_type = 1
+field_of_view_4d = 1.3962634015954636
 
 [node name="PositionLabel" type="Label" parent="."]
 custom_minimum_size = Vector2(400, 26)
