@@ -88,7 +88,19 @@ function Get-SourceLayoutSignature {
             if ($normalizedPath -match '(^|/)(SConstruct|SCsub|config\.py)$') {
                 $fullPath = Join-Path $resolvedPath $relativePath
                 if (Test-Path -LiteralPath $fullPath -PathType Leaf) {
-                    $fileHash = (Get-FileHash -LiteralPath $fullPath -Algorithm SHA256).Hash
+                    $fileHasher = [System.Security.Cryptography.SHA256]::Create()
+                    try {
+                        $fileStream = [System.IO.File]::OpenRead($fullPath)
+                        try {
+                            $fileHash = [System.BitConverter]::ToString($fileHasher.ComputeHash($fileStream)).Replace("-", "")
+                        }
+                        finally {
+                            $fileStream.Dispose()
+                        }
+                    }
+                    finally {
+                        $fileHasher.Dispose()
+                    }
                     $signatureLines.Add("build-file=$normalizedPath`:$fileHash")
                 }
             }
