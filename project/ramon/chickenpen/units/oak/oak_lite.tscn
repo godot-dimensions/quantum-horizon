@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=4]
+
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_oak_4d.gd" id="pen_oak"]
+
+[node name="OakLite" type="Node4D"]
+script = ExtResource("pen_oak")
+bake = "oak_lite2"
+metadata/what = "A light oak to place about the pen (scripts/pen_oak_4d.gd): about 0.15 ms of GPU, drawn only when your slice cuts it. Change bake for oak_lite1 (fuller) or oak_lite3 (sparest)."

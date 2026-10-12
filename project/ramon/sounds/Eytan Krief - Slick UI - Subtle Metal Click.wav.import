@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://bv0dq51y7eqjk"
+path="res://.godot/imported/Eytan Krief - Slick UI - Subtle Metal Click.wav-5e2e9c390d5ffda159dd2835f99d801c.sample"
+
+[deps]
+
+source_file="res://ramon/sounds/Eytan Krief - Slick UI - Subtle Metal Click.wav"
+dest_files=["res://.godot/imported/Eytan Krief - Slick UI - Subtle Metal Click.wav-5e2e9c390d5ffda159dd2835f99d801c.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

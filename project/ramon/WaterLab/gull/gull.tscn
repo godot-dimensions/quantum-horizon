@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" uid="uid://b6b2ii25lfm31" path="res://ramon/WaterLab/gull/gull_4d.gd" id="1_gull"]
+
+[node name="Gull" type="Node4D"]
+script = ExtResource("1_gull")

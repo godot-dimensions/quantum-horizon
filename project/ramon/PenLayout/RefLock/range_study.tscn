@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=4]
+
+[ext_resource type="PackedScene" path="res://ramon/chickenpen/units/rune_range/rune_range.tscn" id="rg"]
+
+[node name="RangeStudy" instance=ExtResource("rg")]
+
+[node name="RangeYard" parent="." index="0"]
+ground_patch = true

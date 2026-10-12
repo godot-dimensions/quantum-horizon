@@ -1,0 +1,68 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://ramon/CreationLab/tests/panel_test_room_4d.gd" id="1_root"]
+[ext_resource type="Script" path="res://ramon/CreationLab/LabKit/lab_room_4d.gd" id="2_room"]
+[ext_resource type="Script" path="res://ramon/CreationLab/kit/kit_room_4d.gd" id="3_kitroom"]
+[ext_resource type="Script" path="res://ramon/CreationLab/kit/panels/kit_wall_panel_4d.gd" id="4_panel"]
+[ext_resource type="Resource" path="res://ramon/CreationLab/tests/panel_test_info.tres" id="5_info"]
+[ext_resource type="Resource" path="res://ramon/CreationLab/tests/panel_test_steps_info.tres" id="6_steps"]
+[ext_resource type="Script" path="res://ramon/CreationLab/kit/kit_light_4d.gd" id="7_light"]
+[ext_resource type="Script" path="res://ramon/CreationLab/kit/panels/kit_wall_panels_4d.gd" id="8_pair"]
+
+[node name="PanelTestRoom" type="Node4D"]
+script = ExtResource("1_root")
+
+[node name="Room" type="Node4D" parent="."]
+script = ExtResource("2_room")
+ground_size = Vector4(90, 1, 90, 4)
+
+[node name="BoxRoom" type="Node4D" parent="."]
+script = ExtResource("3_kitroom")
+size = Vector3(26, 9, 22)
+open_sides = ["s"]
+cove = false
+
+[node name="Intro" type="Node4D" parent="."]
+script = ExtResource("4_panel")
+info = ExtResource("5_info")
+room_path = NodePath("../BoxRoom")
+wall_side = "n"
+
+[node name="Compare" type="Node4D" parent="."]
+script = ExtResource("4_panel")
+kind = "research"
+info = ExtResource("5_info")
+room_path = NodePath("../BoxRoom")
+wall_side = "e"
+
+[node name="WallPanels" type="Node4D" parent="."]
+script = ExtResource("8_pair")
+intro = NodePath("../Intro")
+research = NodePath("../Compare")
+info = ExtResource("5_info")
+
+[node name="Steps" type="Node4D" parent="."]
+script = ExtResource("4_panel")
+kind = "research"
+info = ExtResource("6_steps")
+room_path = NodePath("../BoxRoom")
+wall_side = "w"
+
+[node name="Freestanding" type="Node4D" parent="."]
+position = Vector4(6, 0, 26, 0)
+script = ExtResource("4_panel")
+info = ExtResource("5_info")
+
+[node name="Light" type="Node4D" parent="."]
+position = Vector4(0, 8.6, 0, 0)
+script = ExtResource("7_light")
+aim = Vector3(0, 0, 0)
+angle = 120.0
+softness = 3.0
+reach = 22.0
+attenuation = 0.12
+energy = {
+"bright": 3.0,
+"dark": 3.6
+}
+fixture_at = 8.94

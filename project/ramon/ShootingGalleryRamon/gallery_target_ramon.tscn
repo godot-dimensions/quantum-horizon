@@ -1,0 +1,21 @@
+[gd_scene load_steps=5 format=3 uid="uid://cm40bljm6hby5"]
+
+[ext_resource type="CompressedTexture3D" uid="uid://bqold4qr3x2p" path="res://textures/dev_finals/ramdev_yellow.png" id="1_yellow"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_gallery_target_ramon"]
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_gallery_target_ramon"]
+albedo_source = 3
+albedo_texture_3d = ExtResource("1_yellow")
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gallery_target_ramon"]
+cell_texture_map = 1
+
+[node name="GalleryTarget" type="Area4D"]
+
+[node name="CollisionShape" type="CollisionShape4D" parent="."]
+shape = SubResource("BoxShape4D_gallery_target_ramon")
+
+[node name="Mesh" type="MeshInstance4D" parent="."]
+material_override = SubResource("TetraMaterial4D_gallery_target_ramon")
+mesh = SubResource("BoxTetraMesh4D_gallery_target_ramon")

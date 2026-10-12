@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://crep0ip7j0ydq"]
+
+[ext_resource type="Script" uid="uid://85p0bisj6ppl" path="res://sandbox/terrain4d/terrain_generator.gd" id="1_terrain"]
+[ext_resource type="Script" uid="uid://ymqgasl8v0n5" path="res://scripts/_benchmark_terrain4d_runner.gd" id="2_runner"]
+
+[node name="Terrain4DBenchmark" type="Node4D"]
+
+[node name="Terrain" type="StaticBody4D" parent="."]
+script = ExtResource("1_terrain")
+
+[node name="Mesh" type="MeshInstance4D" parent="Terrain"]
+
+[node name="Collision" type="CollisionShape4D" parent="Terrain"]
+
+[node name="Runner" type="Node" parent="."]
+script = ExtResource("2_runner")

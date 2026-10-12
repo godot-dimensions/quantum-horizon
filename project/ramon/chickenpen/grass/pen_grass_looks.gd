@@ -1,0 +1,201 @@
+extends RefCounted
+
+## The grass's looks, by number: each a set of the Grass node's exports (pen_grass_4d.gd's
+## apply_preset, the grass panel's buttons, O). BASE names everything a look sets; each look
+## names only what it changes from BASE, so reworking one look never moves another.
+##
+## 1, PASTURE: grazed grass. Ramon, 3 Oct: "option one could be the shorter grazed grass .. i
+##    would start from scratch in terms of the grass design parameters. probably less thick,
+##    more, and shorter, feel free to reduce polycount, we dont need it for such short grass".
+##    16 cm, thinner than either look before it and closer together than any, one triangle to
+##    a blade, the one colour root to tip; a breeze barely moves it, it shimmers. (It was
+##    "Meadow", 38 cm, saved as preset 1 on 2 Oct: that look is BASE now.)
+## 2, HAY MEADOW: "longer grass, thinner grass and more grass, yes more, and improve the wind
+##    animation, make it flow like on barley fields, even though its not". Long thin blades
+##    closer together, and the wind in long soft crests that roll downwind through it, in sets,
+##    the tips catching the light as each crest lays them over. First called Barley; Ramon, 3
+##    Oct: "i wouldn't call it barley ... its more like longer beautiful grass" - a hay meadow,
+##    the long grass left uncut till summer.
+## 3, HAY MEADOW II: Hay meadow given more of the budget - one bend more near you, denser,
+##    reaching further, more wildflowers.
+
+## The 2 Oct meadow, every value a look sets.
+const BASE := {
+	"spacing": 0.075,
+	"spacing_far": 0.27,
+	"spacing_from": 3.0,
+	"band_radii": [5.0, 10.0, 18.0, 28.0],
+	"band_vertices": [11, 9, 7, 5, 3],
+	"blade_height": 0.38,
+	"blade_width": 0.011,
+	"taper": 0.5,
+	"min_pixels": 0.8,
+	"clump_size": 1.3,
+	"colour_root": Color(0.11, 0.17, 0.07),
+	"colour_base": Color(0.31, 0.49, 0.16),
+	"colour_lush": Color(0.27, 0.47, 0.18),
+	"colour_dry": Color(0.47, 0.44, 0.22),
+	"colour_tip": Color(0.48, 0.62, 0.26),
+	"region_deep": Color(0.21, 0.40, 0.19),
+	"region_bright": Color(0.40, 0.56, 0.17),
+	"region_size": 13.0,
+	"region_share": 0.25,
+	"region_strength": 1.0,
+	"hue_jitter": 0.05,
+	# Darker: 0.7, then 0.6 (3 Oct, "make both grasses a bit darker"), then 0.39 - Ramon's pick on
+	# the Darkness slider (0.61 there, which ran from 1 - shade) - then 0.46 (-0.07 on the new one).
+	"shade": 0.46,
+	"toward_ground": 0.18,
+	"saturation": 1.45,
+	"wind_speed": 3.0,
+	"gustiness": 0.55,
+	"gust_length": 7.0,
+	"gust_width": 18.0,
+	"bend_max": 0.42,
+	"stiffness": 30.0,
+	"sheen": 0.2,
+	"wave_strength": 0.0,
+	"wave_length": 8.0,
+	"wave_speed": 3.2,
+	"wave_width": 22.0,
+	"root_dark": 1.0,
+	"trail_length": 3.0,
+	"trail_spacing": 0.3,
+	"trail_seconds": 6.0,
+	"trample": true,
+	"far_fade_from": 0.5,
+	"far_fade": 1.0,
+	"radius": 44.0,
+	"splay": 0.08,
+	"tuft_share": 0.0,
+	"tuft_height": 1.9,
+	"flower_height": 1.5,
+	"flower_share": 0.012,
+	"big_gust_strength": 0.0,
+	"flower_patch_size": 0.0,
+	"flower_dot": 0.0,
+	"flower_white": 0.5,
+}
+
+const PRESETS := {
+	1: {
+		"name": "Pasture",
+		# Short, thin, many, and cheap: one triangle a blade, everywhere (3 Oct: "lower the
+		# vertexes and add more grass"), and the same colour root to tip ("remove the strong
+		# brown gradient from the bottom entirely").
+		"blade_height": 0.16,
+		"blade_width": 0.0075,
+		"taper": 0.85,
+		"spacing": 0.03,
+		"spacing_far": 0.14,
+		"spacing_from": 2.0,
+		# Five at your feet, for the daisies' shape (and a bend); one triangle beyond.
+		"band_vertices": [5, 3, 3, 3, 3],
+		"root_dark": 0.0,
+		"min_pixels": 0.7,
+		# Stays as it is when walked over ("not have the walkthrough mechanic"), and more of it,
+		# a little wider (3 Oct).
+		"trample": false,
+		# Grazed, as a field with animals on it is (3 Oct, "improve the pasture as you see fit"):
+		# tousled, every blade leaning its own way, not combed upright; a few clumps left long
+		# where the animals passed over, lusher; clover and daisies low among the blades, not
+		# stalks standing out of them.
+		"splay": 0.3,
+		"tuft_share": 0.12,
+		"tuft_height": 1.9,
+		"flower_height": 0.75,
+		# Daisies, in patches (3 Oct: "patches of these very little white flowers"): one blade in
+		# ten inside a patch is a little white dot, a patch every few metres, none between.
+		"flower_share": 0.1,
+		"flower_patch_size": 4.0,
+		"flower_dot": 0.011,
+		"flower_white": 1.0,
+		"clump_size": 1.1,
+		# Short grass hardly bends; it shimmers as the gusts pass.
+		"gustiness": 0.45,
+		"bend_max": 0.24,
+		"stiffness": 34.0,
+		"sheen": 0.32,
+	},
+	2: {
+		"name": "Hay meadow",
+		# Longer, thinner, and more of it; one bend fewer to a blade than BASE, in every band
+		# (Ramon, 3 Oct: "the general style is low poly, we only need enough to make sure it can
+		# bend and not look off").
+		"band_vertices": [9, 7, 5, 3, 3],
+		# No dark root here either (3 Oct: "hay meadow still has the darker roots").
+		"root_dark": 0.0,
+		"blade_height": 0.62,
+		"blade_width": 0.0075,
+		"taper": 0.6,
+		"spacing": 0.058,
+		"spacing_far": 0.21,
+		"min_pixels": 0.7,
+		"clump_size": 1.6,
+		# The wind as on barley: long crests, a softer, more even blow under them, less of each
+		# stalk's own rocking, and the light on the tips as a crest lays them over.
+		"wind_speed": 3.4,
+		"gustiness": 0.3,
+		"bend_max": 0.55,
+		"stiffness": 26.0,
+		"sheen": 0.45,
+		"wave_strength": 1.0,
+		"wave_length": 8.0,
+		"wave_speed": 3.2,
+		"wave_width": 22.0,
+		# Walking through: a longer trail behind you, up again sooner once you stop (3 Oct:
+		# "make the walked down trail longer, but let the grass recover a little faster").
+		"trail_length": 5.0,
+		"trail_spacing": 0.35,
+		"trail_seconds": 4.0,
+	},
+	3: {
+		# Hay meadow with the grass budget it could have as the main field (3 Oct: "make a
+		# second grass meadow with changes you suggest"): one bend more at your feet, denser,
+		# reaching 52 m instead of 44 so the fade into the ground starts further out, a few more
+		# wildflowers.
+		"name": "Hay meadow II",
+		# Eleven vertices at your feet, as BASE, then as Hay meadow.
+		"band_vertices": [11, 7, 5, 3, 3],
+		# No dark root here either (3 Oct: "hay meadow still has the darker roots").
+		"root_dark": 0.0,
+		"blade_height": 0.66,
+		"blade_width": 0.007,
+		"taper": 0.6,
+		"spacing": 0.05,
+		"spacing_far": 0.2,
+		# Further out, so the fade into the ground starts further away.
+		"radius": 52.0,
+		"far_fade_from": 0.55,
+		# Wildflowers standing a little above the grass, but not all over it (3 Oct: "make the
+		# colored top bits a bit less often, its all over now"; was 2%).
+		"flower_share": 0.007,
+		"flower_height": 1.3,
+		# Now and then a big gust over the whole field ("sometimes have a stronger and larger
+		# gust of wind blow over").
+		"big_gust_strength": 6.0,
+		"big_gust_every": 16.0,
+		"big_gust_chance": 0.7,
+		"big_gust_width": 14.0,
+		"big_gust_speed": 14.0,
+		"big_gust_lean": 0.32,
+		"min_pixels": 0.7,
+		"clump_size": 1.6,
+		# The wind as on barley: long crests, a softer, more even blow under them, less of each
+		# stalk's own rocking, and the light on the tips as a crest lays them over.
+		"wind_speed": 3.4,
+		"gustiness": 0.3,
+		"bend_max": 0.55,
+		"stiffness": 26.0,
+		"sheen": 0.45,
+		"wave_strength": 1.0,
+		"wave_length": 8.0,
+		"wave_speed": 3.2,
+		"wave_width": 22.0,
+		# Walking through: a longer trail behind you, up again sooner once you stop (3 Oct:
+		# "make the walked down trail longer, but let the grass recover a little faster").
+		"trail_length": 5.0,
+		"trail_spacing": 0.35,
+		"trail_seconds": 4.0,
+	},
+}

@@ -1,0 +1,204 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_far_4d.gd" id="far"]
+[ext_resource type="Script" path="res://ramon/chickenpen/terrain/baked_ground_4d.gd" id="baked"]
+[ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/cave_far.res" id="cave_far_mesh"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_dreamer_4d.gd" id="dreamer"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_dreamer_talk_4d.gd" id="dreamer_talk"]
+[ext_resource type="Script" path="res://ramon/dialogue/world_tag_4d.gd" id="tag"]
+[ext_resource type="Script" path="res://ramon/dialogue/dialogue_player_4d.gd" id="dlg"]
+[ext_resource type="Script" path="res://ramon/dialogue/dialogue_box_4d.gd" id="box"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_dreamer_cinema_4d.gd" id="cinema"]
+[ext_resource type="Script" path="res://ramon/chickenpen/cave/cave_first_look_4d.gd" id="first_look"]
+
+
+[node name="FarRoom" type="Node4D"]
+script = ExtResource("far")
+
+[node name="RockFar" type="MeshInstance4D" parent="."]
+mesh = ExtResource("cave_far_mesh")
+script = ExtResource("baked")
+
+[node name="Dreamer" type="Node4D" parent="."]
+position = Vector4(0, 0, -36, 46)
+script = ExtResource("dreamer")
+
+[node name="DreamerHead" type="Node4D" parent="."]
+position = Vector4(0, 11, -36, 46)
+
+[node name="DreamerTalkSpot" type="Node4D" parent="."]
+position = Vector4(0, 4.5, -36, 46)
+
+[node name="DreamerMark" type="Node4D" parent="."]
+position = Vector4(0, 0, -26, 46)
+
+[node name="CinemaCamera" type="Camera4D" parent="."]
+position = Vector4(0, 2, -15, 46)
+field_of_view_3d = 0.9599310886
+rendering_engine_name = "Cross-section"
+w_fade_distance = 6.0
+
+[node name="UI" type="Node4D" parent="."]
+
+[node name="DreamerTag" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("tag")
+camera_path = NodePath("../../../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../DreamerTalkSpot")
+fade_from = 22.0
+fade_to = 30.0
+w_range = 8.0
+
+[node name="DreamerBox" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("box")
+layout = 3
+choice_side = 1
+choice_width = 470.0
+choice_gap = 10.0
+camera_path = NodePath("../../../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../DreamerHead")
+over_head_width = 470.0
+name_size = 17
+text_size = 20
+choice_size = 19
+
+[node name="Systems" type="Node" parent="."]
+
+[node name="DreamerTalk" type="Node" parent="Systems"]
+script = ExtResource("dlg")
+box_path = NodePath("../../UI/DreamerBox")
+escape_leaves = false
+
+[node name="DreamerDriver" type="Node" parent="Systems"]
+script = ExtResource("dreamer_talk")
+player_path = NodePath("../../../../Player")
+character_path = NodePath("../../../../Player")
+catcher_path = NodePath("../../../../Player/Catcher")
+dialogue_path = NodePath("../DreamerTalk")
+tag_path = NodePath("../../UI/DreamerTag")
+camera_rig_path = NodePath("../../../../Player/CameraRig")
+main_camera_path = NodePath("../../../../Player/CameraRig/Pitch/Camera4D")
+dialogue_box_path = NodePath("../../UI/DreamerBox")
+hide_while_talking = Array[NodePath]([NodePath("../../../../UI/SlicePlane"), NodePath("../../../../UI/Controls"), NodePath("../../../../UI/Inventory"), NodePath("../../../../UI/Hint"), NodePath("../../../../UI/Debug"), NodePath("../../../../UI/CameraPicker"), NodePath("../../../../UI/Quests")])
+stand_marker_path = NodePath("../../DreamerMark")
+step_seconds = 0.05
+camera_marker_path = NodePath("../../CinemaCamera")
+camera_target_path = NodePath("../../DreamerHead")
+talk_range = 16.0
+talk_range_w = 7.5
+
+[node name="DreamerCinema" type="Node" parent="Systems"]
+script = ExtResource("cinema")
+
+[node name="FirstLook" type="Node" parent="."]
+script = ExtResource("first_look")
+box_path = NodePath("../../../UI/ThoughtBox")
+player_path = NodePath("../../../Player")
+talker_paths = Array[NodePath]([NodePath("../Systems/DreamerTalk")])
+line = "Wow... and I sense something."
+use_w = true
+at_w = 25.0
+said_meta = &"cave_far_first_look_said"
+
+[node name="Lamps" type="Node4D" parent="."]
+
+[node name="WTunnel1" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 2.4, -36, 16)
+light_color = Color(0.62, 0.82, 1, 1)
+light_energy = 1.2
+omni_range_meters = 6.0
+
+[node name="WTunnel2" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 2.4, -36, 22.5)
+light_color = Color(0.62, 0.82, 1, 1)
+light_energy = 1.2
+omni_range_meters = 6.0
+
+[node name="FarRoom" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 13, -36, 46)
+light_color = Color(0.55, 0.7, 1, 1)
+light_energy = 20.0
+omni_range_meters = 50.0
+
+[node name="FarRoomEntry" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 4, -36, 27)
+light_color = Color(0.62, 0.82, 1, 1)
+light_energy = 3.5
+omni_range_meters = 14.0
+
+[node name="FarStoneX+" type="OmniLight4D" parent="Lamps"]
+position = Vector4(8.4, 1.2, -36, 46)
+light_color = Color(0.62, 0.82, 1, 1)
+light_energy = 2.5
+omni_range_meters = 5.0
+
+[node name="FarStoneX-" type="OmniLight4D" parent="Lamps"]
+position = Vector4(-8.4, 1.2, -36, 46)
+light_color = Color(0.62, 0.82, 1, 1)
+light_energy = 2.5
+omni_range_meters = 5.0
+
+[node name="FarStoneZ+" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 1.2, -30.06, 51.94)
+light_color = Color(0.62, 0.82, 1, 1)
+light_energy = 2.5
+omni_range_meters = 5.0
+
+[node name="FarStoneZ-" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 1.2, -30.06, 40.06)
+light_color = Color(0.62, 0.82, 1, 1)
+light_energy = 2.5
+omni_range_meters = 5.0
+
+[node name="FarStoneW+" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 1.2, -41.94, 51.94)
+light_color = Color(0.62, 0.82, 1, 1)
+light_energy = 2.5
+omni_range_meters = 5.0
+
+[node name="FarStoneW-" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 1.2, -41.94, 40.06)
+light_color = Color(0.62, 0.82, 1, 1)
+light_energy = 2.5
+omni_range_meters = 5.0
+
+[node name="FarWallWashZ+" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 5, -13, 46)
+light_color = Color(0.5, 0.62, 0.95, 1)
+light_energy = 2.0
+omni_range_meters = 9.0
+
+[node name="FarWallWashZ-" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 5, -59, 46)
+light_color = Color(0.5, 0.62, 0.95, 1)
+light_energy = 2.0
+omni_range_meters = 9.0
+
+[node name="FarWallWashW+" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 5, -36, 63)
+light_color = Color(0.5, 0.62, 0.95, 1)
+light_energy = 2.0
+omni_range_meters = 9.0
+
+[node name="FarWallWashX+" type="OmniLight4D" parent="Lamps"]
+position = Vector4(23, 5, -36, 46)
+light_color = Color(0.5, 0.62, 0.95, 1)
+light_energy = 2.0
+omni_range_meters = 9.0
+
+[node name="FarRoomBack" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 6, -36, 64)
+light_color = Color(0.62, 0.82, 1, 1)
+light_energy = 2.5
+omni_range_meters = 14.0
+
+[node name="FarRoomStones" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 1.2, -36, 46)
+light_color = Color(0.62, 0.82, 1, 1)
+light_energy = 8.0
+omni_range_meters = 16.0

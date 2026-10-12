@@ -1,0 +1,84 @@
+[gd_scene load_steps=9 format=3 uid="uid://ck1m7ghsfv3uq"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1"]
+[ext_resource type="PackedScene" uid="uid://gh03wmhupplp" path="res://ramon/VoxelMining/voxel_mining_block.tscn" id="2"]
+[ext_resource type="Script" uid="uid://c6q1cfdmllkfk" path="res://ramon/VoxelMining/scripts/mining_axe.gd" id="3"]
+[ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="98_sun"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
+size = Vector4(40, 1, 40, 40)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_floor"]
+albedo_color = Color(0.32, 0.34, 0.38, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_floor"]
+size = Vector4(40, 1, 40, 40)
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_vm"]
+shader_parameter/world_up_direction_4d = null
+shader_parameter/light0_direction_4d = null
+shader_parameter/light0_color = null
+shader_parameter/light0_energy = null
+shader_parameter/light0_angular_radius_radians = null
+shader_parameter/light0_enabled = null
+shader_parameter/light1_direction_4d = null
+shader_parameter/light1_color = null
+shader_parameter/light1_energy = null
+shader_parameter/light1_angular_radius_radians = null
+shader_parameter/light1_enabled = null
+shader_parameter/light2_direction_4d = null
+shader_parameter/light2_color = null
+shader_parameter/light2_energy = null
+shader_parameter/light2_angular_radius_radians = null
+shader_parameter/light2_enabled = null
+shader_parameter/light3_direction_4d = null
+shader_parameter/light3_color = null
+shader_parameter/light3_energy = null
+shader_parameter/light3_angular_radius_radians = null
+shader_parameter/light3_enabled = null
+shader_parameter/top_color = Color(0.25138095, 0.45543057, 0.70535547, 1)
+shader_parameter/bottom_color = Color(0.2787614, 0.25990424, 0.23803556, 1)
+shader_parameter/inv_top_curve = 4.00000015894572
+shader_parameter/inv_bottom_curve = 30.000001192092896
+shader_parameter/inv_sun_curve = 22.782018847067608
+top_color = Color(0.25138095, 0.45543057, 0.70535547, 1)
+top_curve = 0.15
+bottom_color = Color(0.2787614, 0.25990424, 0.23803556, 1)
+bottom_curve = 0.02
+sun_curve = 0.15
+
+[node name="VoxelMiningTest" type="Node4D"]
+
+[node name="ObservationFloor" type="StaticBody4D" parent="."]
+position = Vector4(0, -1, 0, 0)
+
+[node name="BoxCollider" type="CollisionShape4D" parent="ObservationFloor"]
+shape = SubResource("BoxShape4D_floor")
+
+[node name="BoxMesh" type="MeshInstance4D" parent="ObservationFloor"]
+material_override = SubResource("TetraMaterial4D_floor")
+mesh = SubResource("BoxTetraMesh4D_floor")
+
+[node name="RockBlock" parent="." instance=ExtResource("2")]
+position = Vector4(0, 0.55, -2, 0)
+
+[node name="Player" parent="." instance=ExtResource("1")]
+position = Vector4(0, 0.5, 1.9886578299233744, 0)
+
+[node name="MiningAxe" type="Node" parent="."]
+script = ExtResource("3")
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_vm")
+ambient_light_color = Color(0.3914545, 0.41625983, 0.46172702, 1)
+tonemap_mode = 2
+
+[node name="Sun" type="DirectionalLight4D" parent="."]
+basis = Projection(0, 0, 0, 1, 0.1818436621338853, 0.9781476007338056, 0.10079758787013174, 0, -0.8555071680929038, 0.20791169081775934, -0.474215366856622, 0, -0.48480962024633717, 4.7601675429442275e-17, 0.8746197071393959, 0)
+light_color = Color(1, 0.98, 0.94, 1)
+light_energy = 0.328
+angular_radius_radians = 0.03490658503988659
+script = ExtResource("98_sun")
+elevation_degrees = 12.0
+azimuth_degrees = -119.0

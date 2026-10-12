@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://dhkjyi4vr5d4k"
+path="res://.godot/imported/Ni Sound - Soft UI - Digital Button Select.wav-5ffab6989dff2c2a3d7cd4e2a387267d.sample"
+
+[deps]
+
+source_file="res://ramon/sounds/Ni Sound - Soft UI - Digital Button Select.wav"
+dest_files=["res://.godot/imported/Ni Sound - Soft UI - Digital Button Select.wav-5ffab6989dff2c2a3d7cd4e2a387267d.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

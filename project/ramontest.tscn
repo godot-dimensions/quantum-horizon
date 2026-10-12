@@ -1,0 +1,27 @@
+[gd_scene load_steps=5 format=3 uid="uid://dn28gp8jcj6da"]
+
+[ext_resource type="CompressedTexture3D" uid="uid://pbsawdmrmihe" path="res://textures/dev_finals/ramdev_grey.png" id="1_4f10r"]
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_j4qmv"]
+albedo_source = 3
+albedo_texture_3d = ExtResource("1_4f10r")
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_tbw0d"]
+cell_texture_map = 1
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_4f10r"]
+
+[node name="RamonTest" type="Node4D"]
+
+[node name="MeshInstance4D" type="MeshInstance4D" parent="."]
+material_override = SubResource("TetraMaterial4D_j4qmv")
+mesh = SubResource("BoxTetraMesh4D_tbw0d")
+
+[node name="MeshInstance4D2" type="MeshInstance4D" parent="."]
+position = Vector4(0, -1.4867746593493127, 0, 0)
+material_override = SubResource("TetraMaterial4D_j4qmv")
+mesh = SubResource("BoxTetraMesh4D_tbw0d")
+
+[node name="MeshInstance4D3" type="MeshInstance4D" parent="."]
+position = Vector4(0, 4.304737140743256, 0, 0)
+mesh = SubResource("BoxTetraMesh4D_4f10r")

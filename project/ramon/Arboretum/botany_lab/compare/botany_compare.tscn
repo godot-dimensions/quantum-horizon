@@ -1,0 +1,173 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/compare/bl_compare_4d.gd" id="1_root"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/LabKit/lab_room_4d.gd" id="2_room"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/kit/kit_room_4d.gd" id="3_kitroom"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/kit/kit_wall_text_4d.gd" id="4_text"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany/wind_4d.gd" id="5_wind"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/kit/kit_light_4d.gd" id="6_light"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/kit/kit_sun_4d.gd" id="7_sun"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/room/bl_target_4d.gd" id="8_target"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/PathCreator/graph/path_network_4d.gd" id="9_net"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/voxel_lab/float_panel_4d.gd" id="10_panel"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/compare/bl_compare_words.gd" id="11_words"]
+
+[node name="BotanyCompare" type="Node4D"]
+script = ExtResource("1_root")
+
+[node name="Room" type="Node4D" parent="."]
+script = ExtResource("2_room")
+start_mood = "bright"
+
+[node name="Wind" type="Node" parent="."]
+script = ExtResource("5_wind")
+direction = Vector4(0.12, 0, 1, 0.3)
+
+[node name="Hall" type="Node4D" parent="."]
+position = Vector4(0, 0, -2, 0)
+script = ExtResource("3_kitroom")
+size = Vector3(30.2, 12, 32.4)
+doorways = [["s", -1.6, 1.6, 4.4]]
+cove = false
+
+[node name="ExitSign" type="Node" parent="Hall"]
+script = ExtResource("4_text")
+side = "s"
+along = Vector2(-3.4, 3.4)
+up = Vector2(4.7, 5.9)
+kind = "sign"
+title = "BACK TO BOTANY LAB"
+subtitle = "EXIT"
+code = "blue"
+glow = 0.3
+
+[node name="Sun" type="Node4D" parent="."]
+position = Vector4(0, 11, -44, 0)
+script = ExtResource("7_sun")
+target = Vector3(0, 0, 0)
+
+[node name="LightBlockyNear" type="Node4D" parent="."]
+position = Vector4(-9, 11.5, 5, 0)
+script = ExtResource("6_light")
+aim = Vector3(-9, 0, 5)
+angle = 70.0
+softness = 1.5
+reach = 16.0
+attenuation = 0.2
+energy = {
+"bright": 2.0,
+"dark": 2.8
+}
+fixture_at = 11.94
+
+[node name="LightBlockyFar" type="Node4D" parent="."]
+position = Vector4(-9, 11.5, -10, 0)
+script = ExtResource("6_light")
+aim = Vector3(-9, 0, -10)
+angle = 70.0
+softness = 1.5
+reach = 16.0
+attenuation = 0.2
+energy = {
+"bright": 2.0,
+"dark": 2.8
+}
+fixture_at = 11.94
+
+[node name="LightSmoothNear" type="Node4D" parent="."]
+position = Vector4(9, 11.5, 5, 0)
+script = ExtResource("6_light")
+aim = Vector3(9, 0, 5)
+angle = 70.0
+softness = 1.5
+reach = 16.0
+attenuation = 0.2
+energy = {
+"bright": 2.0,
+"dark": 2.8
+}
+fixture_at = 11.94
+
+[node name="LightSmoothFar" type="Node4D" parent="."]
+position = Vector4(9, 11.5, -10, 0)
+script = ExtResource("6_light")
+aim = Vector3(9, 0, -10)
+angle = 70.0
+softness = 1.5
+reach = 16.0
+attenuation = 0.2
+energy = {
+"bright": 2.0,
+"dark": 2.8
+}
+fixture_at = 11.94
+
+[node name="LightEntrance" type="Node4D" parent="."]
+position = Vector4(0, 11.5, 11.5, 0)
+script = ExtResource("6_light")
+aim = Vector3(0, 0, 11.5)
+angle = 80.0
+softness = 3.0
+reach = 15.0
+attenuation = 0.25
+energy = {
+"bright": 1.4,
+"dark": 1.8
+}
+fixture_at = 11.94
+
+[node name="Paths" type="Node4D" parent="."]
+
+[node name="Targets" type="Node4D" parent="Paths"]
+
+[node name="Blocky" type="Node4D" parent="Paths/Targets"]
+position = Vector4(-8.6, 0, -2, 0)
+script = ExtResource("8_target")
+label = "The blocky land"
+size = Vector3(13.4, 3, 26.4)
+
+[node name="Smooth" type="Node4D" parent="Paths/Targets"]
+position = Vector4(8.6, 0, -2, 0)
+script = ExtResource("8_target")
+label = "The smooth land"
+size = Vector3(13.4, 3, 26.4)
+
+[node name="Center" type="Node4D" parent="Paths"]
+script = ExtResource("9_net")
+targets = NodePath("../Targets")
+under_color = Color(0.64, 0.65, 0.66, 1)
+edge_color = Color(0.0902, 0.3804, 0.8431, 1)
+frame_margin = 0.12
+floor_swatch = "kit_floor"
+
+[node name="PanelBlocky" type="Node4D" parent="."]
+position = Vector4(-1.25, 0, 5.4, 0)
+script = ExtResource("10_panel")
+width = 1.6
+depth = 0.7
+number = 0
+title = "The blocky way"
+kicker = "LEFT  ·  CELLS AS BOXES"
+source = NodePath("Words")
+face_point = Vector2(0, 8)
+face_always = true
+
+[node name="Words" type="Node" parent="PanelBlocky"]
+script = ExtResource("11_words")
+side = "blocky"
+
+[node name="PanelSmooth" type="Node4D" parent="."]
+position = Vector4(1.25, 0, -4.6, 0)
+script = ExtResource("10_panel")
+width = 1.6
+depth = 0.7
+number = 0
+title = "The smooth way"
+kicker = "RIGHT  ·  ONE CONTOURED SURFACE"
+source = NodePath("Words")
+face_point = Vector2(0, -8)
+face_always = true
+
+[node name="Words" type="Node" parent="PanelSmooth"]
+script = ExtResource("11_words")
+side = "smooth"

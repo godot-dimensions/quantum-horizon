@@ -1,0 +1,11 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/WTools/exploder/w_exploder_preset.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+note = "The experiments' pick: layers to 18 m either side at the even share. A turned slice keeps the wood from 10 to 60 degrees."
+w_reach = 18.0
+share = 0.62
+auto_share = true
+target_angle = 30.0

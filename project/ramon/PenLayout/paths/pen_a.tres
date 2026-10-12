@@ -1,0 +1,1039 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/graph/path_graph.gd" id="1_4thrc"]
+
+[resource]
+script = ExtResource("1_4thrc")
+nodes = [{
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 1,
+"kind": "start",
+"pos": Vector4(4, 0, 37, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 2,
+"kind": "junction",
+"pos": Vector4(5.5, 0, 35, 0),
+"state": "arrival",
+"target": ""
+}, {
+"anchor": true,
+"approach": Vector2(1, 0),
+"band": 2.4,
+"frame": "none",
+"id": 3,
+"kind": "destination",
+"pos": Vector4(-5, 0, 39, 0),
+"state": "available",
+"target": "TrymArrival"
+}, {
+"anchor": true,
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 4,
+"kind": "destination",
+"pos": Vector4(3.6, 0, 33.3, 0),
+"state": "available",
+"target": "ProfessorArrival"
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 5,
+"kind": "bend",
+"pos": Vector4(7.2, 0, 30.5, 0),
+"state": "arrival",
+"target": ""
+}, {
+"anchor": true,
+"approach": Vector2(0, 1),
+"band": 2.0,
+"frame": "none",
+"id": 6,
+"kind": "destination",
+"pos": Vector4(7.5, 0, 27.8, 4),
+"state": "available",
+"target": "CaveArrival"
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 9,
+"kind": "chord",
+"pos": Vector4(-11.2, 0, 19, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 10,
+"kind": "chord",
+"pos": Vector4(-11.2, 0, 13.4, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 12,
+"kind": "junction",
+"pos": Vector4(-4, 0, 0, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 13,
+"kind": "junction",
+"pos": Vector4(4, 0, -3.5, 0),
+"state": "arrival",
+"target": ""
+}, {
+"anchor": true,
+"approach": Vector2(1, 0),
+"band": 2.4,
+"frame": "none",
+"id": 14,
+"kind": "destination",
+"pos": Vector4(-5.8, 0, 1.4, 0),
+"state": "available",
+"target": "RockArrival"
+}, {
+"anchor": true,
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 15,
+"kind": "destination",
+"pos": Vector4(3.2, 0, -4.4, 0),
+"state": "available",
+"target": "KeeperArrival"
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 18,
+"kind": "junction",
+"pos": Vector4(27.5, 0, 16, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 20,
+"kind": "junction",
+"pos": Vector4(27.6, 0, -2, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 21,
+"kind": "chord",
+"pos": Vector4(26.581793068761733, 0, 1.7999999999999994, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 22,
+"kind": "chord",
+"pos": Vector4(23.8, 0, 4.581793068761733, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 23,
+"kind": "junction",
+"pos": Vector4(20, 0, 5.6, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 24,
+"kind": "chord",
+"pos": Vector4(16.200000000000003, 0, 4.581793068761734, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 25,
+"kind": "chord",
+"pos": Vector4(13.418206931238267, 0, 1.7999999999999994, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 26,
+"kind": "junction",
+"pos": Vector4(12.4, 0, -1.9999999999999991, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 27,
+"kind": "chord",
+"pos": Vector4(13.418206931238267, 0, -5.800000000000001, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 28,
+"kind": "chord",
+"pos": Vector4(16.199999999999996, 0, -8.581793068761733, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 29,
+"kind": "chord",
+"pos": Vector4(20, 0, -9.6, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 30,
+"kind": "chord",
+"pos": Vector4(23.8, 0, -8.581793068761733, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 31,
+"kind": "chord",
+"pos": Vector4(26.581793068761733, 0, -5.800000000000003, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 32,
+"kind": "junction",
+"pos": Vector4(-6, 0, -3, 0),
+"state": "arrival",
+"target": ""
+}, {
+"anchor": true,
+"approach": Vector2(1, 0),
+"band": 2.4,
+"frame": "none",
+"id": 33,
+"kind": "destination",
+"pos": Vector4(-15, 0, -7.5, 0),
+"state": "available",
+"target": "RangeArrival"
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 34,
+"kind": "bend",
+"pos": Vector4(-9, 0, -16, 0),
+"state": "arrival",
+"target": ""
+}, {
+"anchor": true,
+"approach": Vector2(0, 1),
+"band": 2.4,
+"frame": "none",
+"id": 37,
+"kind": "destination",
+"pos": Vector4(-18.5, 0, -27.6, 0),
+"state": "available",
+"target": "TowerArrival"
+}, {
+"anchor": false,
+"approach": Vector2(0, 1),
+"band": 2.0,
+"frame": "none",
+"id": 38,
+"kind": "destination",
+"pos": Vector4(20, 0, -0.6000000000000001, -2.5),
+"state": "available",
+"target": ""
+}, {
+"anchor": false,
+"approach": Vector2(0, -1),
+"band": 2.0,
+"frame": "none",
+"id": 39,
+"kind": "destination",
+"pos": Vector4(25.8, 0, 13.3, 7),
+"state": "available",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-5, 0, 31, 0)
+},
+"curve": 1,
+"curve_r": 4.0,
+"frame": "none",
+"id": 40,
+"kind": "chord",
+"pos": Vector4(-3.7442132321814663, 0, 31.478394959168966, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-5, 0, 31, 0)
+},
+"curve": 1,
+"curve_r": 4.0,
+"frame": "none",
+"id": 41,
+"kind": "chord",
+"pos": Vector4(-4.860477461242199, 0, 30.83029071458421, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-5, 0, 31, 0)
+},
+"curve": 1,
+"curve_r": 4.0,
+"frame": "none",
+"id": 42,
+"kind": "chord",
+"pos": Vector4(-5.712225137833867, 0, 29.860439779465814, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-10, 0, 23, 0)
+},
+"curve": 2,
+"curve_r": 4.0,
+"frame": "none",
+"id": 43,
+"kind": "chord",
+"pos": Vector4(-9.715133347038362, 0, 23.45578664473862, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-10, 0, 23, 0)
+},
+"curve": 2,
+"curve_r": 4.0,
+"frame": "none",
+"id": 44,
+"kind": "chord",
+"pos": Vector4(-10.154445271902613, 0, 22.485182426991287, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-10, 0, 7, 0)
+},
+"curve": 3,
+"curve_r": 4.0,
+"frame": "none",
+"id": 45,
+"kind": "chord",
+"pos": Vector4(-10.197393270152242, 0, 8.052764107478632, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-10, 0, 7, 0)
+},
+"curve": 3,
+"curve_r": 4.0,
+"frame": "none",
+"id": 46,
+"kind": "chord",
+"pos": Vector4(-9.30293093187614, 0, 6.186752753855501, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(14, 0, 37, 0)
+},
+"curve": 4,
+"curve_r": 4.0,
+"frame": "none",
+"id": 47,
+"kind": "chord",
+"pos": Vector4(12.358783999709166, 0, 36.61383152934334, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(14, 0, 37, 0)
+},
+"curve": 4,
+"curve_r": 4.0,
+"frame": "none",
+"id": 48,
+"kind": "chord",
+"pos": Vector4(13.943071971862626, 0, 36.66396830906655, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(14, 0, 37, 0)
+},
+"curve": 4,
+"curve_r": 4.0,
+"frame": "none",
+"id": 49,
+"kind": "chord",
+"pos": Vector4(15.422443303383995, 0, 36.09480880693746, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(25, 0, 30, 0)
+},
+"curve": 5,
+"curve_r": 7.0,
+"frame": "none",
+"id": 50,
+"kind": "chord",
+"pos": Vector4(22.40735525762937, 0, 31.649864836054036, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(25, 0, 30, 0)
+},
+"curve": 5,
+"curve_r": 7.0,
+"frame": "none",
+"id": 51,
+"kind": "chord",
+"pos": Vector4(23.87346424431818, 0, 30.403348420713005, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(25, 0, 30, 0)
+},
+"curve": 5,
+"curve_r": 7.0,
+"frame": "none",
+"id": 52,
+"kind": "chord",
+"pos": Vector4(24.944740427203065, 0, 28.804709601420814, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(25, 0, 30, 0)
+},
+"curve": 5,
+"curve_r": 7.0,
+"frame": "none",
+"id": 53,
+"kind": "chord",
+"pos": Vector4(25.540219840836627, 0, 26.974768891314888, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(25.5, 0, 7, 0)
+},
+"curve": 6,
+"curve_r": 4.0,
+"frame": "none",
+"id": 54,
+"kind": "chord",
+"pos": Vector4(25.697641951265737, 0, 7.889388780695825, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(25.5, 0, 7, 0)
+},
+"curve": 6,
+"curve_r": 4.0,
+"frame": "none",
+"id": 55,
+"kind": "chord",
+"pos": Vector4(25.70702535303438, 0, 6.112748486995525, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-12, 0, -24.5, 0)
+},
+"curve": 7,
+"curve_r": 4.0,
+"frame": "none",
+"id": 56,
+"kind": "chord",
+"pos": Vector4(-11.044895407426466, 0, -21.793870321041656, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-12, 0, -24.5, 0)
+},
+"curve": 7,
+"curve_r": 4.0,
+"frame": "none",
+"id": 57,
+"kind": "chord",
+"pos": Vector4(-11.901522606971737, 0, -23.201353600874416, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-12, 0, -24.5, 0)
+},
+"curve": 7,
+"curve_r": 4.0,
+"frame": "none",
+"id": 58,
+"kind": "chord",
+"pos": Vector4(-13.252812650113164, 0, -24.14413383047005, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-12, 0, -24.5, 0)
+},
+"curve": 7,
+"curve_r": 4.0,
+"frame": "none",
+"id": 59,
+"kind": "chord",
+"pos": Vector4(-14.869483765239169, 0, -24.462243634667907, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-19.6, 0, -24.4, 0)
+},
+"curve": 8,
+"curve_r": 3.0,
+"frame": "none",
+"id": 60,
+"kind": "chord",
+"pos": Vector4(-18.077428607424025, 0, -24.42003383411284, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-19.6, 0, -24.4, 0)
+},
+"curve": 8,
+"curve_r": 3.0,
+"frame": "none",
+"id": 61,
+"kind": "chord",
+"pos": Vector4(-18.572672968304854, 0, -24.53402121245015, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-19.6, 0, -24.4, 0)
+},
+"curve": 8,
+"curve_r": 3.0,
+"frame": "none",
+"id": 62,
+"kind": "chord",
+"pos": Vector4(-18.959723073350908, 0, -24.863342204171474, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-19.6, 0, -24.4, 0)
+},
+"curve": 8,
+"curve_r": 3.0,
+"frame": "none",
+"id": 63,
+"kind": "chord",
+"pos": Vector4(-19.151543544688213, 0, -25.333942890720493, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 2.4,
+"corner": {
+"band": 2.4,
+"kind": "bend",
+"pos": Vector4(-19.6, 0, -24.4, 0)
+},
+"curve": 8,
+"curve_r": 3.0,
+"frame": "none",
+"id": 64,
+"kind": "chord",
+"pos": Vector4(-19.105, 0, -25.84, 0),
+"state": "arrival",
+"target": ""
+}]
+edges = [{
+"band": 2.4,
+"from": 1,
+"priority": "primary",
+"to": 2,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 1,
+"priority": "secondary",
+"to": 3,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 2,
+"priority": "secondary",
+"to": 4,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 2,
+"priority": "primary",
+"to": 5,
+"w_mode": "here"
+}, {
+"band": 2.0,
+"from": 5,
+"priority": "primary",
+"to": 6,
+"w_mode": "reveal"
+}, {
+"band": 2.4,
+"from": 2,
+"priority": "primary",
+"to": 40,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 42,
+"priority": "primary",
+"to": 43,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 44,
+"priority": "primary",
+"to": 9,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 9,
+"priority": "primary",
+"to": 10,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 10,
+"priority": "primary",
+"to": 45,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 46,
+"priority": "primary",
+"to": 12,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 12,
+"priority": "secondary",
+"to": 14,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 13,
+"priority": "secondary",
+"to": 15,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 2,
+"priority": "primary",
+"to": 47,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 49,
+"priority": "primary",
+"to": 50,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 53,
+"priority": "primary",
+"to": 18,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 18,
+"priority": "primary",
+"to": 54,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 20,
+"priority": "secondary",
+"to": 21,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 21,
+"priority": "secondary",
+"to": 22,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 22,
+"priority": "secondary",
+"to": 23,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 23,
+"priority": "secondary",
+"to": 24,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 24,
+"priority": "secondary",
+"to": 25,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 25,
+"priority": "secondary",
+"to": 26,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 26,
+"priority": "secondary",
+"to": 27,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 27,
+"priority": "secondary",
+"to": 28,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 28,
+"priority": "secondary",
+"to": 29,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 29,
+"priority": "secondary",
+"to": 30,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 30,
+"priority": "secondary",
+"to": 31,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 31,
+"priority": "secondary",
+"to": 20,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 55,
+"priority": "primary",
+"to": 20,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 26,
+"priority": "primary",
+"to": 13,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 12,
+"priority": "primary",
+"to": 32,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 32,
+"priority": "primary",
+"to": 13,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 32,
+"priority": "primary",
+"to": 33,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 32,
+"priority": "primary",
+"to": 34,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 34,
+"priority": "primary",
+"to": 56,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 59,
+"priority": "primary",
+"to": 60,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 64,
+"priority": "primary",
+"to": 37,
+"w_mode": "here"
+}, {
+"band": 2.0,
+"from": 23,
+"priority": "secondary",
+"to": 38,
+"w_mode": "reveal"
+}, {
+"band": 2.0,
+"from": 18,
+"priority": "secondary",
+"to": 39,
+"w_mode": "reveal"
+}, {
+"band": 2.4,
+"from": 40,
+"priority": "primary",
+"to": 41,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 41,
+"priority": "primary",
+"to": 42,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 43,
+"priority": "primary",
+"to": 44,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 45,
+"priority": "primary",
+"to": 46,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 47,
+"priority": "primary",
+"to": 48,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 48,
+"priority": "primary",
+"to": 49,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 50,
+"priority": "primary",
+"to": 51,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 51,
+"priority": "primary",
+"to": 52,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 52,
+"priority": "primary",
+"to": 53,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 54,
+"priority": "primary",
+"to": 55,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 56,
+"priority": "primary",
+"to": 57,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 57,
+"priority": "primary",
+"to": 58,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 58,
+"priority": "primary",
+"to": 59,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 60,
+"priority": "primary",
+"to": 61,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 61,
+"priority": "primary",
+"to": 62,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 62,
+"priority": "primary",
+"to": 63,
+"w_mode": "here"
+}, {
+"band": 2.4,
+"from": 63,
+"priority": "primary",
+"to": 64,
+"w_mode": "here"
+}]
+next_id = 65

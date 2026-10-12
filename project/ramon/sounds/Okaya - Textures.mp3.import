@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://5dx8b17voqxv"
+path="res://.godot/imported/Okaya - Textures.mp3-7b7d277502dfbed7950e745a58c47e3e.mp3str"
+
+[deps]
+
+source_file="res://ramon/sounds/Okaya - Textures.mp3"
+dest_files=["res://.godot/imported/Okaya - Textures.mp3-7b7d277502dfbed7950e745a58c47e3e.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

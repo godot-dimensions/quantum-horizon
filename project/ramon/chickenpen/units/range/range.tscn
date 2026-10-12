@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=4]
+
+[ext_resource type="Script" uid="uid://cu6xoypl3i6xf" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="pen_face"]
+[ext_resource type="Script" uid="uid://bywvkkogo4qju" path="res://ramon/chickenpen/scripts/pen_range_booth_4d.gd" id="range_booth"]
+[ext_resource type="Script" uid="uid://bf71jwp6t887l" path="res://ramon/chickenpen/scripts/pen_range_master_4d.gd" id="range_master"]
+
+[node name="Range" type="Node4D"]
+
+[node name="RangeBooth" type="Node4D" parent="."]
+position = Vector4(0, 0, 0, 0)
+script = ExtResource("range_booth")
+
+[node name="RangeMaster" type="Node4D" parent="."]
+position = Vector4(0.6, 0, 1.4, 0)
+basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
+script = ExtResource("range_master")
+
+[node name="RangeMasterHead" type="Node4D" parent="."]
+position = Vector4(0.6, 1.45, 1.4, 0)
+
+[node name="RangeMasterFacing" type="Node4D" parent="."]
+position = Vector4(19, 0, 9, 0)
+script = ExtResource("pen_face")
+figure_path = NodePath("../RangeMaster")
+player_path = NodePath("../../../Player")
+notice_within = 4.0
+
+[node name="RangeArrival" type="Node4D" parent="."]
+position = Vector4(3, 0, 1.5, 0)
+metadata/what = "Where the pen's path arrives (PenLayout/paths/pen_a.tres): its destination is anchored here, so it goes where the unit goes."

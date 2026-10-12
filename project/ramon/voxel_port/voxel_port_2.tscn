@@ -1,0 +1,71 @@
+[gd_scene load_steps=8 format=3 uid="uid://cu55yj0p284ji"]
+
+[ext_resource type="Script" uid="uid://cxmuugsbcbs0f" path="res://ramon/voxel_port/scripts/voxel_terrain_4d_2.gd" id="2_terrn"]
+[ext_resource type="Script" uid="uid://n8uxxkbptg6o" path="res://ramon/voxel_port/scripts/voxel_hover_camera_4d.gd" id="3_hover"]
+[ext_resource type="Script" uid="uid://ecn8kkodc33l" path="res://ramon/voxel_port/scripts/voxel_terrain_perf_hud.gd" id="4_perfhud"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_o8jd2"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
+size = Vector4(120, 1, 120, 120)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_floor"]
+albedo_color = Color(0.32, 0.34, 0.38, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_floor"]
+size = Vector4(120, 1, 120, 120)
+
+[node name="VoxelPort" type="Node4D"]
+
+[node name="WorldEnvironment4D" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_o8jd2")
+tonemap_mode = 2
+
+[node name="Terrain" type="Node4D" parent="."]
+script = ExtResource("2_terrn")
+model_layers = 202
+terrain_shape = 0
+camera_path = NodePath("../HoverCamera")
+
+[node name="Ground" type="MeshInstance4D" parent="Terrain"]
+
+[node name="Water" type="MeshInstance4D" parent="Terrain"]
+
+[node name="StaticBody4D" type="StaticBody4D" parent="Terrain"]
+
+[node name="CollisionShape4D" type="CollisionShape4D" parent="Terrain/StaticBody4D"]
+
+[node name="ObservationFloor" type="StaticBody4D" parent="."]
+position = Vector4(0, -35.5, 0, 0)
+
+[node name="BoxCollider" type="CollisionShape4D" parent="ObservationFloor"]
+shape = SubResource("BoxShape4D_floor")
+
+[node name="BoxMesh" type="MeshInstance4D" parent="ObservationFloor"]
+material_override = SubResource("TetraMaterial4D_floor")
+mesh = SubResource("BoxTetraMesh4D_floor")
+
+[node name="HoverCamera" type="Camera4D" parent="."]
+current = true
+rendering_engine_name = "Cross-section"
+view_angle_type = 1
+field_of_view_4d = 1.3962634015954636
+script = ExtResource("3_hover")
+rig_path = NodePath("../Terrain")
+terrain_path = NodePath("../Terrain")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="PerfLabel" type="Label" parent="HUD"]
+offset_left = 8.0
+offset_top = 4.0
+offset_right = 500.0
+offset_bottom = 100.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+text = "FPS: 0"
+script = ExtResource("4_perfhud")
+terrain_path = NodePath("../../Terrain")

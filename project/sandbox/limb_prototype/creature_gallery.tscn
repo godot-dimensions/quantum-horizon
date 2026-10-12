@@ -1,0 +1,114 @@
+[gd_scene load_steps=9 format=3 uid="uid://dsfkq1f3df5if"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" path="res://sandbox/limb_prototype/creature_template.tscn" id="2_creature"]
+[ext_resource type="Script" uid="uid://p1c5m88xxyj7" path="res://scripts/poi_radar.gd" id="3_poiradar"]
+[ext_resource type="Script" uid="uid://dl7s71uds1jka" path="res://scripts/creature_gait_input_router.gd" id="4_router"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_p87bd"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_ground"]
+size = Vector4(140, 1, 220, 30)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ground"]
+albedo_color = Color(0.25, 0.3, 0.28, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ground"]
+size = Vector4(140, 1, 220, 30)
+
+[node name="CreatureGallery" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="WorldEnvironment4D" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_p87bd")
+tonemap_mode = 2
+
+[node name="FlatPlane" type="Node4D" parent="."]
+
+[node name="Ground" type="StaticBody4D" parent="FlatPlane"]
+position = Vector4(0, -0.5, 80, 0)
+
+[node name="CollisionShape" type="CollisionShape4D" parent="FlatPlane/Ground"]
+shape = SubResource("BoxShape4D_ground")
+
+[node name="Mesh" type="MeshInstance4D" parent="FlatPlane/Ground"]
+material_override = SubResource("TetraMaterial4D_ground")
+mesh = SubResource("BoxTetraMesh4D_ground")
+
+[node name="Player" parent="FlatPlane" instance=ExtResource("1_player")]
+position = Vector4(0, 3, -12, 0)
+
+[node name="Hopper1" parent="FlatPlane" instance=ExtResource("2_creature")]
+position = Vector4(-20, 0, 0, 0)
+
+[node name="Hopper2" parent="FlatPlane" instance=ExtResource("2_creature")]
+position = Vector4(-10, 0, 0, 0)
+
+[node name="Hopper3" parent="FlatPlane" instance=ExtResource("2_creature")]
+
+[node name="Hopper4" parent="FlatPlane" instance=ExtResource("2_creature")]
+position = Vector4(10, 0, 0, 0)
+
+[node name="Hopper5" parent="FlatPlane" instance=ExtResource("2_creature")]
+position = Vector4(20, 0, 0, 0)
+
+[node name="Steed1" parent="FlatPlane" instance=ExtResource("2_creature")]
+position = Vector4(-15, 0, 60, 0)
+
+[node name="Steed2" parent="FlatPlane" instance=ExtResource("2_creature")]
+position = Vector4(0, 0, 60, 0)
+
+[node name="Steed3" parent="FlatPlane" instance=ExtResource("2_creature")]
+position = Vector4(15, 0, 60, 0)
+
+[node name="Giraffe1" parent="FlatPlane" instance=ExtResource("2_creature")]
+position = Vector4(-25, 0, 160, 0)
+
+[node name="Giraffe2" parent="FlatPlane" instance=ExtResource("2_creature")]
+position = Vector4(25, 0, 160, 0)
+
+[node name="InfoLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(760, 26)
+layout_mode = 0
+offset_left = 8.0
+offset_top = 34.0
+offset_right = 768.0
+offset_bottom = 60.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+text = "Creature gallery - 5 hopper, 3 steed, 2 giraffe. Free-roam movement/4D rotation."
+
+[node name="GaitInputRouter" type="Node" parent="."]
+script = ExtResource("4_router")
+player_path = NodePath("../FlatPlane/Player")
+player_head_path = NodePath("../FlatPlane/Player/PlayerHead")
+creature_container_path = NodePath("../FlatPlane")
+info_label_path = NodePath("../InfoLabel")
+
+[node name="POIRadar" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -220.0
+offset_top = -170.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("3_poiradar")
+halfway_meters = 40.0
+camera_path = NodePath("../FlatPlane/Player")
+rig_path = NodePath("../FlatPlane/Player")
+poi_container_path = NodePath("../FlatPlane")
+
+[editable path="FlatPlane/Player"]

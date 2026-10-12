@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/_diagnose_mt_alternate_split_runner.gd" id="1_runner"]
+
+[node name="DiagnoseMtAlternateSplit" type="Node"]
+script = ExtResource("1_runner")

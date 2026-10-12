@@ -1,0 +1,240 @@
+[gd_resource type="Resource" script_class="FrontierLayout" load_steps=26 format=3 uid="uid://dehjk4fjmt8pc"]
+
+[ext_resource type="Script" uid="uid://b84kg83dlekmv" path="res://ramon/Menu/scripts/frontier_entry.gd" id="1_entry"]
+[ext_resource type="Script" uid="uid://dqx0jsnxe5eve" path="res://ramon/Menu/scripts/frontier_category.gd" id="2_category"]
+[ext_resource type="Script" uid="uid://cqi5scrxv6i3a" path="res://ramon/Menu/scripts/frontier_edge.gd" id="3_edge"]
+[ext_resource type="Script" uid="uid://dglrrnpek1cjp" path="res://ramon/Menu/scripts/frontier_gateway.gd" id="3_u3wmg"]
+[ext_resource type="Script" uid="uid://bpsmmo0s1hdmt" path="res://ramon/Menu/scripts/frontier_activity.gd" id="4_activity"]
+[ext_resource type="Script" uid="uid://d20gf7lu3wt1l" path="res://ramon/Menu/scripts/frontier_layout.gd" id="5_layout"]
+
+[sub_resource type="Resource" id="C_or"]
+script = ExtResource("2_category")
+label = "ORIENTATION"
+color = Color(0.294, 0.663, 1, 1)
+edge_color = Color(0.294, 0.663, 1, 1)
+label_position = Vector2(124, 170)
+drop_line = Vector3(84, 208, 342)
+
+[sub_resource type="Resource" id="C_sp"]
+script = ExtResource("2_category")
+label = "SPATIAL INTERACTION"
+category = 1
+color = Color(0.294, 0.663, 1, 1)
+edge_color = Color(0.251, 0.325, 0.416, 1)
+label_position = Vector2(450, 170)
+drop_line = Vector3(410, 208, 258)
+separator_x = 389.0
+
+[sub_resource type="Resource" id="C_wo"]
+script = ExtResource("2_category")
+label = "WORLD SYSTEMS"
+category = 2
+color = Color(0.333, 0.784, 0.741, 1)
+edge_color = Color(0.333, 0.784, 0.741, 1)
+label_position = Vector2(1006, 170)
+drop_line = Vector3(966, 208, 260)
+separator_x = 945.0
+
+[sub_resource type="Resource" id="C_li"]
+script = ExtResource("2_category")
+label = "LIVING SYSTEMS"
+category = 3
+color = Color(0.655, 0.478, 0.957, 1)
+edge_color = Color(0.655, 0.478, 0.957, 1)
+label_position = Vector2(1740, 170)
+drop_line = Vector3(1709, 208, 286)
+separator_x = 1688.0
+
+[sub_resource type="Resource" id="P0"]
+script = ExtResource("1_entry")
+entry_title = "Slice Vision"
+reference_position = Vector2(110, 430)
+glyph = "⊙"
+tags = PackedStringArray()
+map_detail = "Three chambers that teach reading a 4D cross-section before asking anything of you."
+
+[sub_resource type="Resource" id="P1"]
+script = ExtResource("1_entry")
+entry_title = "Phase Maze"
+reference_position = Vector2(296, 430)
+glyph = "▥"
+tags = PackedStringArray()
+map_detail = "Rotation used as a navigation verb: the route through the maze exists only at the right slice."
+
+[sub_resource type="Resource" id="P2"]
+script = ExtResource("1_entry")
+entry_title = "4D Ascent"
+category = 1
+reference_position = Vector2(481, 402)
+glyph = "◿"
+tags = PackedStringArray()
+map_detail = "A vertical course where the next foothold is often a rotation away rather than a jump."
+
+[sub_resource type="Resource" id="P3"]
+script = ExtResource("1_entry")
+entry_title = "Portal"
+category = 1
+reference_position = Vector2(667, 338)
+glyph = "◐"
+tags = PackedStringArray()
+map_detail = "Openings cut anywhere in a wall, and two linked apertures that carry momentum across."
+
+[sub_resource type="Resource" id="P4"]
+script = ExtResource("1_entry")
+entry_title = "Quantum Range"
+category = 1
+reference_position = Vector2(852, 400)
+glyph = "◎"
+tags = PackedStringArray()
+map_detail = "True 4D raycasting against 4D colliders, independent of what the camera can see."
+
+[sub_resource type="Resource" id="P5"]
+script = ExtResource("1_entry")
+entry_title = "Voxel Mining"
+category = 2
+reference_position = Vector2(1038, 336)
+glyph = "◩"
+gate_essential = true
+tags = PackedStringArray("GATE ESSENTIAL", "VOXEL CORE")
+map_detail = "Destructible 4D matter: a persistent voxel field, dual contoured and re-meshed on every hit."
+
+[sub_resource type="Resource" id="P6"]
+script = ExtResource("1_entry")
+entry_title = "Shrubbery Lab"
+category = 2
+reference_position = Vector2(1223, 370)
+glyph = "✚"
+tags = PackedStringArray()
+map_detail = "Procedural growth in four dimensions, rendered with the combined cross-section and projection engine."
+
+[sub_resource type="Resource" id="P7"]
+script = ExtResource("1_entry")
+entry_title = "Sky Box Clouds"
+category = 2
+reference_position = Vector2(1409, 322)
+glyph = "☁"
+tags = PackedStringArray()
+map_detail = "Weather as real 4D solids, so the cloud deck exists at every w rather than only the one you face."
+
+[sub_resource type="Resource" id="P8"]
+script = ExtResource("1_entry")
+entry_title = "Nevada Terrain"
+route_after = "Sky Box Clouds"
+standalone_subtitle = "VOXEL CORE PROOF"
+category = 2
+state = 3
+reference_position = Vector2(1594, 420)
+glyph = "▦"
+gate_essential = true
+flag_caption = "OCTOBER GATE"
+tags = PackedStringArray("GATE ESSENTIAL", "VOXEL CORE", "KILL-CONDITION PROOF")
+map_detail = "Tests whether varied 4D environments can be generated without bespoke construction."
+
+[sub_resource type="Resource" id="P9"]
+script = ExtResource("1_entry")
+entry_title = "Motion Lab"
+category = 3
+state = 2
+reference_position = Vector2(1780, 360)
+glyph = "⌁"
+tags = PackedStringArray()
+map_detail = "A quadruped whose gait is solved every frame from IK, with limb count and segments changeable live."
+
+[sub_resource type="Resource" id="Act_gate"]
+script = ExtResource("4_activity")
+contributors = 6
+merged = 3
+open_briefs = 2
+member_initials = PackedStringArray("RT", "AF", "4D", "TB")
+member_overflow = 2
+lane_names = PackedStringArray("EVIDENCE", "BENCHMARKS", "DOCS")
+lane_counts = PackedInt32Array(3, 2, 1)
+lane_fills = PackedFloat32Array(0.65, 0.45, 0.26)
+played = 42
+completed = 31
+shared = 8
+option_titles = PackedStringArray()
+option_subtitles = PackedStringArray()
+option_counts = PackedInt32Array()
+
+[sub_resource type="Resource" id="G_oct"]
+script = ExtResource("1_entry")
+entry_title = "October Gate"
+display_title = "OCTOBER GATE"
+standalone_subtitle = "ESSENTIALS SUB-MAP"
+category = 2
+reference_position = Vector2(1110, 760)
+glyph = "△"
+tags = PackedStringArray()
+map_detail = "Gate-critical artifact work, S1-S3 evidence, and the decision-pack inputs behind the October call."
+kind = 1
+opens_map = "res://ramon/Menu/entries/map_october_gate.tres"
+detail_head = "WHAT MUST BE PROVEN BY OCTOBER"
+map_detail_2 = "The dependency graph inside is team-owned and estimated until Aaron and Andrew validate it."
+radius_scale = 1.08
+haloed = true
+activity_count = 3
+activity = SubResource("Act_gate")
+
+[sub_resource type="Resource" id="Act_os"]
+script = ExtResource("4_activity")
+contributors = 4
+merged = 2
+open_briefs = 3
+member_initials = PackedStringArray("AF", "4D", "TB")
+member_overflow = 1
+lane_names = PackedStringArray("CODE", "ART / TEST", "DOCS")
+lane_counts = PackedInt32Array(3, 2, 1)
+lane_fills = PackedFloat32Array(0.65, 0.46, 0.26)
+played = 18
+completed = 11
+shared = 5
+signal_open = true
+option_titles = PackedStringArray("PLAYER VOXEL TOOLS", "W RADAR + TARGETING", "OUTSIDER BUILD DOCS")
+option_subtitles = PackedStringArray("NON-EXPERT CREATION PATH", "4D ORIENTATION INTERFACE", "REMOVE EXPERT INTERVENTIONS")
+option_counts = PackedInt32Array(24, 18, 11)
+
+[sub_resource type="Resource" id="G_os"]
+script = ExtResource("1_entry")
+entry_title = "Open-Source Path"
+display_title = "OPEN-SOURCE
+PATH"
+standalone_subtitle = "READINESS SUB-MAP"
+category = 2
+reference_position = Vector2(1380, 760)
+glyph = "◇"
+tags = PackedStringArray()
+map_detail = "License, maintainer, outsider build docs and the canary test that make a hosted jam credible."
+kind = 1
+opens_map = "res://ramon/Menu/entries/map_open_source.tres"
+detail_head = "HOW A PUBLIC BUILD BECOMES PROOF"
+map_detail_2 = "Contribution counts open the activity drawer; individual entries live in the jam gallery."
+radius_scale = 1.05
+activity_count = 4
+activity = SubResource("Act_os")
+
+[sub_resource type="Resource" id="G_2027"]
+script = ExtResource("1_entry")
+entry_title = "2027 Frontier"
+display_title = "2027
+FRONTIER"
+standalone_subtitle = "READ-ONLY / LATER"
+category = 2
+state = 4
+reference_position = Vector2(1650, 760)
+glyph = "○"
+tags = PackedStringArray()
+map_detail = "Q1-Q4 work across engine, interface, external proof and the partner track, ending at Gate 1."
+kind = 1
+opens_map = "res://ramon/Menu/entries/map_2027_frontier.tres"
+detail_head = "MACRO PREPRODUCTION PLAN"
+map_detail_2 = "Productization and the UGC ecosystem stay fogged beyond the gate."
+radius_scale = 1.08
+
+[resource]
+script = ExtResource("5_layout")
+placements = Array[ExtResource("1_entry")]([SubResource("P0"), SubResource("P1"), SubResource("P2"), SubResource("P3"), SubResource("P4"), SubResource("P5"), SubResource("P6"), SubResource("P7"), SubResource("P8"), SubResource("P9"), SubResource("G_oct"), SubResource("G_os"), SubResource("G_2027")])
+categories = Array[ExtResource("2_category")]([SubResource("C_or"), SubResource("C_sp"), SubResource("C_wo"), SubResource("C_li")])
+route_from_catalogue = true
+fog_teaser_position = Vector2(1810, 760)
+legend_labels = PackedStringArray("PLAYED", "ACTIVE", "AVAILABLE", "RESEARCH", "FOG / LATER")

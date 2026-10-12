@@ -1,0 +1,24 @@
+# Probe and playtest screenshots.
+#
+# Every diagnostic script in these prototypes writes its PNGs next to the scene it
+# is testing - see OUT_DIR in the _visual_probe_* scripts, and the hardcoded
+# res:// paths in ObstacleCourse's and Portal's test scripts. That is convenient
+# for whoever is reading the output and wrong for the repository: 93 of them,
+# 26 MB, accumulated before anyone noticed.
+#
+# IGNORED RATHER THAN REDIRECTED, deliberately. The probes belong to their
+# prototypes and their authors expect the images to appear beside the scenes, so
+# repointing their output would break someone else's workflow to tidy the tree.
+# This keeps the files exactly where they are written and simply stops them
+# reaching a commit.
+#
+# Matches only PNGs sitting DIRECTLY in a prototype folder, which is the one place
+# probes write. Anything under a textures/ subfolder is two levels deep, so gate
+# icons and the like are never touched.
+*/*.png
+*/*.png.import
+
+# The shared texture folder sits one level deep like the probe output does, so it
+# has to be exempted explicitly - these are assets, not evidence.
+!textures/*.png
+!textures/*.png.import

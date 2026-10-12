@@ -1,0 +1,195 @@
+{
+ "_what": "Landmarks read off Ramon's camp sheet (refs/camp_views.png) at 2x zoom on a pixel grid (tools/ref_grid.py), in sheet pixels: tops of the tent poles, the cook frame's posts and the lantern post, the fire ring's middle on the ground, the barrel's lid, the player's cap and feet. 6 Oct 2026, PLAN_REF_LOCK.md step 42.",
+ "sheet": "camp",
+ "fixed": {
+  "PF": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "PH": [
+   0.0,
+   1.54,
+   0.0
+  ]
+ },
+ "weights": {
+  "front": 1.0,
+  "right": 0.6,
+  "top": 0.8
+ },
+ "points": {
+  "PH": {
+   "front": [
+    248,
+    365
+   ],
+   "right": [
+    832,
+    331
+   ],
+   "top": [
+    1675,
+    467
+   ]
+  },
+  "PF": {
+   "front": [
+    248,
+    482
+   ],
+   "right": [
+    832,
+    420
+   ],
+   "top": [
+    1675,
+    515
+   ]
+  },
+  "fire": {
+   "front": [
+    375,
+    400
+   ],
+   "right": [
+    975,
+    400
+   ],
+   "top": [
+    1688,
+    372
+   ]
+  },
+  "cook_W": {
+   "front": [
+    330,
+    267.5
+   ],
+   "right": [
+    1069,
+    300
+   ],
+   "top": [
+    1655,
+    182
+   ]
+  },
+  "cook_E": {
+   "front": [
+    424,
+    272.5
+   ],
+   "right": [
+    1013.5,
+    295
+   ],
+   "top": [
+    1728,
+    192
+   ]
+  },
+  "tentL_front": {
+   "front": [
+    152.5,
+    180
+   ],
+   "right": [
+    1120,
+    207.5
+   ],
+   "top": [
+    1511,
+    182
+   ]
+  },
+  "tentL_back": {
+   "front": [
+    279,
+    175
+   ],
+   "right": [
+    1216.5,
+    207.5
+   ],
+   "top": [
+    1601,
+    115
+   ]
+  },
+  "tentR_back": {
+   "front": [
+    481.5,
+    175
+   ],
+   "right": [
+    1282.5,
+    252.5
+   ],
+   "top": [
+    1782,
+    110
+   ]
+  },
+  "tentR_front": {
+   "front": [
+    607.5,
+    175
+   ],
+   "right": [
+    1158.5,
+    240
+   ],
+   "top": [
+    1872,
+    177
+   ]
+  },
+  "lantern": {
+   "front": [
+    85,
+    242.5
+   ],
+   "right": [
+    857.5,
+    240
+   ],
+   "top": [
+    1470,
+    282
+   ]
+  },
+  "barrel": {
+   "front": [
+    677.5,
+    327.5
+   ],
+   "right": [
+    1246,
+    380
+   ],
+   "top": [
+    1920,
+    287
+   ]
+  }
+ },
+ "known_y": {
+  "fire": 0.0,
+  "barrel": 0.95
+ },
+ "equal_y": [
+  [
+   "tentL_front",
+   "tentL_back",
+   "tentR_back",
+   "tentR_front"
+  ],
+  [
+   "cook_W",
+   "cook_E"
+  ]
+ ],
+ "origin": "fire",
+ "_note": "The player stands in a different place in each view (the painter moved him); ref_fit_plan.py uses him in the front view only, for scale. The top view is a painted map (ref_fit_plan.py)."
+}

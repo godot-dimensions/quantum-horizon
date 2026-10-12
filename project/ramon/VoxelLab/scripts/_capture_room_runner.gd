@@ -1,0 +1,435 @@
+extends SceneTree
+## Voxel Lab, round 2 (9 Oct): the hall played and photographed the way Ramon walked it. In from the
+## corridor to the quiet junction (nothing plays), to the block's ring (the choice), 1 to watch its
+## presentation (it cuts live), Esc, 2 to sit at the bench (its camera in use, a cut with each tool, a
+## middle drag orbits), F; specimen A's pop-up; the right wall's ring turning done; Build it (round 4,
+## in place of the column; round 5 bigger, in the corner, on a grid): 1 sits you at its bench, a click
+## puts a brick on the grid, a left drag orbits and places nothing, a column through W, one taken
+## away and undone, the next W layer (the doorway gone), the slice turned 45 and 90 degrees and levelled
+## with Space; the lights saved and read back; the dev panel's top view; black.
+## Frames to smoke_test_output/voxel_lab/room/, checks printed as PASS or FAIL.
+##
+## The player's input is off and the mouse is never moved or held: keys and buttons go in as events
+## (Input.parse_input_event), the bench is aimed through aim_at_screen() (the cursor is the user's).
+##   VoxelLab/run.sh windowed room res://ramon/VoxelLab/scripts/_capture_room_runner.gd
+
+const OUT := "res://smoke_test_output/voxel_lab/room/"
+const TEST_LIGHTS := "user://vl_lights_test.cfg"
+
+var _scene: Node
+var _room: Node
+var _t: float = 0.0
+var _total: float = 0.0
+var _step: int = 0
+var _fails: int = 0
+var _hero: Node
+var _bench: Node
+var _build: Node
+var _build_bench: Node
+var _yaw0: float = 0.0
+var _board_saved: bool = false
+
+
+func _initialize() -> void:
+	root.unfocusable = true
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
+	_open.call_deferred()
+
+
+func _open() -> void:
+	_scene = (load("res://ramon/VoxelLab/voxel_lab.tscn") as PackedScene).instantiate()
+	root.add_child(_scene)
+	current_scene = _scene
+	_room = _scene
+	_hero = _scene.get_node("Hero")
+	_bench = _scene.get_node("HeroBench")
+	_build = _scene.get_node("Build")
+	_build_bench = _scene.get_node("BuildBench")
+
+
+func _check(ok: bool, what: String) -> void:
+	if ok:
+		print("ROOM PASS %s" % what)
+	else:
+		_fails += 1
+		print("ROOM FAIL %s" % what)
+
+
+func _player() -> Node:
+	return _room.get("player")
+
+
+func _place(x: float, z: float, yaw: float) -> void:
+	_room.call("go_to", Vector4(x, 0.05, z, 0.0), yaw)
+
+
+func _key(code: Key) -> void:
+	for pressed in [true, false]:
+		var e := InputEventKey.new()
+		e.keycode = code
+		e.physical_keycode = code
+		e.pressed = pressed
+		Input.parse_input_event(e)
+
+
+func _ex(st: Node) -> Node:
+	return st.get("exhibit")
+
+
+func _spot_name() -> String:
+	var sp: Dictionary = _room.get("spot")
+	return String((sp["node"] as Node).name) if not sp.is_empty() else ""
+
+
+func _process(delta: float) -> bool:
+	_total += delta
+	if _total > 300.0:
+		print("ROOM FAIL: timed out at step %d" % _step)
+		return true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	if _scene == null or not _scene.is_inside_tree() or _player() == null:
+		return false
+	if _room.get("bench") == null:
+		_player().set("input_enabled", false)
+	_t += delta
+	if _step == 0 and bool(_room.get("loading")) and not _board_saved and _t > 1.5:
+		_board_saved = true
+		_save("00_loading_board")
+	match _step:
+		0:
+			if bool(_ex(_hero).call("is_ready")) and bool(_ex(_build).call("is_ready")) and _t > 2.0 and not bool(current_scene.get("loading")):
+				_save("01_entrance")
+				_place(0.0, 9.0, 0.0)
+				_next()
+		1:
+			if _t > 1.6:
+				_check(int(_hero.get("seq_index")) < 0 and not bool(_hero.get("armed")), "nothing plays at the junction")
+				_save("02_junction")
+				_place(0.0, 3.0, 0.0)
+				_next()
+		2:
+			if _t > 1.2:
+				var ch: Control = _room.get("choice")
+				var opts: Array = ch.get("options")
+				_check(_spot_name() == "Block" and bool(ch.get("shown")) and opts.size() == 2, "the block's ring offers a choice (%s)" % str(opts.map(func(o): return o["label"])))
+				_check(int(_hero.get("seq_index")) < 0, "and its presentation has not started by itself")
+				_save("03_block_choice")
+				_key(KEY_1)
+				_next()
+		3:
+			if _t > 1.5:
+				_check(_room.get("watching") == _hero and int(_hero.get("seq_index")) >= 0, "1 plays the presentation (part %d)" % int(_hero.get("seq_index")))
+				_check(not bool(_room.get("choice").get("shown")), "and the choice steps aside while it plays")
+				_save("04_watch_specimen")
+				_key(KEY_RIGHT)
+				_next()
+		4:
+			# Round 3: three parts, the ball and the box second (one skip from the first).
+			if _t > 4.4:
+				_check(String(_hero.call("sequences")[int(_hero.get("seq_index"))]["key"]) == "two", "one skip reaches the two cuts (of %d parts)" % (_hero.call("sequences") as Array).size())
+				_save("05_watch_two_cuts")
+				_check(int(_ex(_hero).call("cut_count")) >= 2, "the presentation cut the ball and the box (%d cuts)" % int(_ex(_hero).call("cut_count")))
+				_key(KEY_ESCAPE)
+				_next()
+		5:
+			if _t > 2.0:
+				_check(_room.get("watching") == null, "Esc stops it")
+				_check(int(_ex(_hero).call("cut_count")) == 0, "and the block is whole again (%d cuts)" % int(_ex(_hero).call("cut_count")))
+				# Round 7 (#79): F1's panel closes on Esc; with nothing open Esc asks, and Esc there means No.
+				_key(KEY_F1)
+				_step = 60
+				_t = 0.0
+		60:
+			if _t > 0.6:
+				_check((_room.get("dev_panel") as Control).visible, "F1 opens the dev panel")
+				_key(KEY_ESCAPE)
+				_step = 61
+				_t = 0.0
+		61:
+			if _t > 0.6:
+				var esc: Node = root.get_node_or_null("VoxelLabEscape")
+				_check(not (_room.get("dev_panel") as Control).visible and esc != null and not bool(esc.call("is_open")) and _room.is_inside_tree(),
+					"Esc closes the dev panel, and only it")
+				_key(KEY_ESCAPE)
+				_step = 62
+				_t = 0.0
+		62:
+			if _t > 0.6:
+				var esc2: Node = root.get_node_or_null("VoxelLabEscape")
+				_check(esc2 != null and bool(esc2.call("is_open")), "Esc with nothing open asks: Return to the main menu?")
+				_save("05b_escape_box")
+				_key(KEY_H)
+				_step = 63
+				_t = 0.0
+		63:
+			if _t > 0.6:
+				var esc3: Node = root.get_node_or_null("VoxelLabEscape")
+				_check(esc3 != null and bool(esc3.call("is_open")) and _room.is_inside_tree(), "H there leaves nothing (the box stays)")
+				_key(KEY_ESCAPE)
+				_step = 64
+				_t = 0.0
+		64:
+			if _t > 0.6:
+				var esc4: Node = root.get_node_or_null("VoxelLabEscape")
+				_check(esc4 != null and not bool(esc4.call("is_open")) and _room.is_inside_tree() and not paused, "Esc there means No: still in the lab")
+				_key(KEY_2)
+				_step = 6
+				_t = 0.0
+		6:
+			if _t > 1.2:
+				_check(_room.get("bench") == _bench, "2 sits you at the bench")
+				var bc: Camera4D = _bench.call("camera")
+				_check(bc != null and bool(bc.get("current")), "the bench's camera is the one in use")
+				_save("06_bench")
+				_next()
+		7:
+			if _t > 0.4:
+				_bench.set("tool", "ball")
+				_bench.set("size_index", 1)
+				_cut_at(Vector2(560, 330))
+				_next()
+		8:
+			if _t > 0.5:
+				_bench.set("tool", "block")
+				_cut_at(Vector2(730, 320))
+				_next()
+		9:
+			if _t > 0.5:
+				_bench.set("tool", "drill")
+				_cut_at(Vector2(640, 400))
+				_next()
+		10:
+			if _t > 1.2:
+				_yaw0 = float(_bench.get("_yaw"))
+				_mouse_button(MOUSE_BUTTON_MIDDLE, true)
+				# Motion is handed over at the end of the frame, so the button is let go in the next step.
+				var mm := InputEventMouseMotion.new()
+				mm.relative = Vector2(120, 0)
+				mm.button_mask = MOUSE_BUTTON_MASK_MIDDLE
+				Input.parse_input_event(mm)
+				_next()
+		11:
+			if _t > 0.3:
+				_mouse_button(MOUSE_BUTTON_MIDDLE, false)
+				_check(absf(float(_bench.get("_yaw")) - _yaw0) > 0.3, "a middle drag orbits the bench camera")
+				_save("07_bench_cuts")
+				var recs: Array = _bench.get("records")
+				for r in recs:
+					print("ROOM cut %-10s voxels %4d  chunks %2d  on screen after %6.1f ms  worst frame %5.1f ms" % [String(r["label"]), int(r["voxels"]),
+						int(r["chunks"]), float(r["latency_ms"]), float(r["worst_ms"])])
+				_check(recs.size() >= 3, "%d cuts recorded" % recs.size())
+				_key(KEY_F)
+				_next()
+		12:
+			if _t > 0.8:
+				_check(_room.get("bench") == null, "F stands you up")
+				_place(8.5, 9.0, deg_to_rad(-90.0))
+				_next()
+		13:
+			if _t > 1.0:
+				_check(_spot_name() == "ShelfA", "specimen A's marker is a spot")
+				_room.set("_popup_open", true)
+				_next()
+		14:
+			if _t > 0.6:
+				var pd: Dictionary = _room.get("popup").get("data")
+				_check(bool(_room.get("popup").get("shown")) and not String(pd.get("title", "")).is_empty(), "a click opens its pop-up (%s)" % String(pd.get("title", "")))
+				_save("08_shelf_popup")
+				_place(5.1, -8.0, deg_to_rad(-48.0))
+				_next()
+		15:
+			if _t > 2.0:
+				var done: Dictionary = _room.get("_done")
+				_check(done.has("RightWallTarget"), "standing at the right wall's ring marks it done")
+				_save("09_right_wall")
+				_place(-5.1, -8.0, deg_to_rad(48.0))
+				_next()
+		16:
+			if _t > 2.0:
+				_save("10_left_wall")
+				# Round 7 (#78): beside the builder's pedestal, off its ring, it is offered too.
+				_place(-8.7, 5.5, deg_to_rad(180.0))
+				_step = 66
+				_t = 0.0
+		66:
+			if _t > 1.2:
+				_check(_spot_name() == "Build", "beside Build it's pedestal, off the ring, its bench is offered (spot %s)" % _spot_name())
+				_save("10b_build_beside")
+				# Round 7 (#76): the ring itself, nearer the pedestal, square off the spine.
+				_place(-5.1, 8.7, deg_to_rad(90.0))
+				_step = 17
+				_t = 0.0
+		17:
+			if _t > 1.2:
+				var ch: Control = _room.get("choice")
+				_check(_spot_name() == "Build" and (ch.get("options") as Array).size() == 1, "Build it's ring offers its bench (%s)" % str((ch.get("options") as Array).map(func(o): return o["label"])))
+				_save("11_build_choice")
+				_key(KEY_1)
+				_next()
+		18:
+			if _t > 1.4:
+				var ex: Node = _ex(_build)
+				_check(_room.get("bench") == _build_bench, "1 sits you at Build it's bench")
+				_check(String(_build_bench.get("tool")) == "brick" and int(ex.call("bricks")) == 11, "with the brick in hand and the doorway's 11 bricks (%d)" % int(ex.call("bricks")))
+				_save("12_build_bench")
+				_build_bench.set("size_index", 0)
+				_aim_cell(Vector4i(0, 0, 0, 2), Vector4(2, 0, 2, 2))
+				# A left click with no drag places (round 5: the button is pressed and let go in place).
+				_mouse_button(MOUSE_BUTTON_LEFT, true)
+				_mouse_button(MOUSE_BUTTON_LEFT, false)
+				_next()
+		19:
+			if _t > 0.8:
+				var ex: Node = _ex(_build)
+				_check(int(ex.call("bricks")) == 12, "a click on the grid puts a brick there (%d bricks)" % int(ex.call("bricks")))
+				_build_bench.set("tool", "through")
+				_build_bench.set("size_index", 2)
+				_aim_cell(Vector4i(4, 0, 4, 2), Vector4(2, 0, 2, 2))
+				_build_bench.call("cut_here")
+				_check(int(ex.call("bricks")) == 17, "through W puts one in each of the 5 layers (%d bricks)" % int(ex.call("bricks")))
+				# A left drag orbits and places nothing (round 5, #40).
+				_yaw0 = float(_build_bench.get("_yaw"))
+				_mouse_button(MOUSE_BUTTON_LEFT, true)
+				var mm := InputEventMouseMotion.new()
+				mm.relative = Vector2(140, 30)
+				mm.button_mask = MOUSE_BUTTON_MASK_LEFT
+				Input.parse_input_event(mm)
+				_next()
+		20:
+			if _t > 1.0:
+				var ex: Node = _ex(_build)
+				_mouse_button(MOUSE_BUTTON_LEFT, false)
+				_check(absf(float(_build_bench.get("_yaw")) - _yaw0) > 0.3 and int(ex.call("bricks")) == 17,
+					"a left drag orbits the camera and places nothing (yaw moved %.2f, %d bricks)" % [absf(float(_build_bench.get("_yaw")) - _yaw0), int(ex.call("bricks"))])
+				_build_bench.call("orbit", Vector2(-140, -30))
+				_save("13_build_placed")
+				_next()
+		21:
+			# A moment after the frame was saved, so the save's stall is not charged to the edit.
+			if _t > 0.5:
+				var ex: Node = _ex(_build)
+				_build_bench.set("tool", "take")
+				# The lintel's end brick, on its face toward the bench (+x).
+				_aim_cell(Vector4i(1, 3, 5, 2), Vector4(4, 2, 2, 2))
+				_build_bench.call("cut_here")
+				var taken: int = int(ex.call("bricks"))
+				_build_bench.call("undo")
+				_check(taken == 16 and int(ex.call("bricks")) == 17, "take away lifts a brick (%d) and Z puts it back (%d)" % [taken, int(ex.call("bricks"))])
+				_build_bench.set("tool", "brick")
+				_build.call("step_slice", 1)
+				_next()
+		22:
+			if _t > 1.4:
+				var ex: Node = _ex(_build)
+				_check(int(ex.call("layer")) == 3, "the wheel steps to the next W layer (%d of 5)" % (int(ex.call("layer")) + 1))
+				_save("14_build_next_layer")
+				_build.call("step_slice", 5)
+				_check(int(_build.get("slice_index")) == 6, "and stops at the last layer (stop %d)" % int(_build.get("slice_index")))
+				_build.call("step_slice", -2)
+				_build.call("turn_by", PI * 0.25, 0.0)
+				_next()
+		23:
+			if _t > 1.4:
+				_save("15_build_turned_45")
+				_build.call("turn_by", PI * 0.25, 0.0)
+				_next()
+		24:
+			if _t > 1.2:
+				_save("16_build_turned_90")
+				_key(KEY_SPACE)
+				_next()
+		25:
+			if _t > 0.6:
+				_check((_build.get("turn_basis") as Projection) == Projection.IDENTITY, "Space levels the slice again")
+				_key(KEY_F)
+				_next()
+		26:
+			if _t > 0.8:
+				_check(_room.get("bench") == null, "F stands you up from Build it")
+				_lights_test()
+				_place(0.0, 7.0, 0.0)
+				var dp: Control = _room.get("dev_panel")
+				dp.visible = true
+				dp.get("_settings_box").visible = false
+				dp.get("_lights_box").visible = true
+				_next()
+		27:
+			if _t > 1.0:
+				_save("17_dev_lights")
+				var dp: Control = _room.get("dev_panel")
+				dp.visible = false
+				_room.call("toggle_palette")
+				_place(0.0, 9.0, 0.0)
+				_next()
+		28:
+			if _t > 1.6:
+				_save("18_black")
+				print("ROOM done, %d failed" % _fails)
+				return true
+	return false
+
+
+## The light rig: a room slider moves its lights, a light's own value moves only it, and what is saved
+## reads back.
+func _lights_test() -> void:
+	var rig: Node = _room.get("lights")
+	var lights: Array = rig.get("lights")
+	_check(lights.size() >= 6, "%d lights in the rig" % lights.size())
+	var block: Node = rig.call("light", "Block")
+	var shelf_a: Node = rig.call("light", "ShelfA")
+	rig.call("set_room", "hall", "strength", 3.3)
+	_check(is_equal_approx(float((block.get("energy") as Dictionary)["bright"]), 3.3), "the hall's strength moves the block's light")
+	_check(not is_equal_approx(float((shelf_a.get("energy") as Dictionary)["bright"]), 3.3), "but not specimen A's, which has its own")
+	rig.call("move_to", "Block", 0.6, -1.0)
+	rig.call("set_own", "Block", "cone", 22.0)
+	rig.call("save", TEST_LIGHTS)
+	rig.call("reset_own", "Block")
+	rig.call("load_saved", TEST_LIGHTS)
+	rig.call("apply_all")
+	var e: Dictionary = rig.call("effective", block)
+	_check(is_equal_approx(float(e["cone"]), 22.0) and is_equal_approx(float(e["x"]), 0.6), "a light's own cone and place save and read back")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_LIGHTS))
+	# Back to the plan's values, so the frames after this one show the room as it starts.
+	rig.call("reset_own", "Block")
+	rig.call("set_room", "hall", "strength", 2.4)
+
+
+func _mouse_button(b: MouseButton, pressed: bool) -> void:
+	var e := InputEventMouseButton.new()
+	e.button_index = b
+	e.pressed = pressed
+	Input.parse_input_event(e)
+
+
+func _cut_at(px: Vector2) -> void:
+	_bench_cut(_bench, px)
+
+
+## Aims Build it's bench at a point of a cell (`at`, voxels from the cell's low corner), through its camera.
+func _aim_cell(key: Vector4i, at: Vector4) -> void:
+	var ex: Node = _ex(_build)
+	var sp: Node = ex.get("specimen")
+	var world: Vector4 = sp.call("to_global", (ex.call("cell_lo", key) as Vector4) + at)
+	var cam: Camera4D = _build_bench.call("camera")
+	var h: Dictionary = _build_bench.call("aim_at_screen", cam.world_to_viewport(world))
+	_check(not h.is_empty(), "the aim at cell %s found %s" % [str(key), String(h.get("on", "nothing"))])
+
+
+func _bench_cut(b: Node, px: Vector2) -> void:
+	var h: Dictionary = b.call("aim_at_screen", px)
+	if h.is_empty():
+		_check(false, "%s: the aim at %s found the specimen" % [String(b.get("tool")), str(px)])
+		return
+	var rec: Dictionary = b.call("cut_here")
+	_check(not rec.is_empty(), "%s at %s" % [String(b.get("tool")), str(px)])
+
+
+func _next() -> void:
+	_step += 1
+	_t = 0.0
+
+
+func _save(name: String) -> void:
+	var image: Image = root.get_texture().get_image()
+	image.save_png(ProjectSettings.globalize_path(OUT + name + ".png"))
+	print("ROOM saved %s" % name)

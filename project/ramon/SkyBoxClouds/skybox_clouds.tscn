@@ -1,0 +1,59 @@
+[gd_scene load_steps=9 format=3 uid="uid://bacql382t57ft"]
+
+[ext_resource type="Script" uid="uid://cet3tnp3nbwi5" path="res://ramon/SkyBoxClouds/scripts/cloud_field_4d.gd" id="2_clouds"]
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="3_player"]
+[ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="4_sun"]
+[ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="99_return"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_7shgg"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_ground"]
+size = Vector4(600, 2, 600, 600)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ground"]
+albedo_color = Color(0.28, 0.33, 0.26, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ground"]
+size = Vector4(600, 2, 600, 600)
+
+[node name="SkyBoxClouds" type="Node4D"]
+
+[node name="Sun" type="DirectionalLight4D" parent="."]
+basis = Projection(0.02925471410923004, 0.010654335481031766, 0.9994893318936003, -0.007191819570137305, 0.2114777653713162, 0.07701852941143737, 1.7804023272744086e-18, 0.9743435230353071, 0.9150505959194969, 0.33325418921008726, -0.03195427093339113, -0.224951054343865, -0.3422042129537792, 0.9396256045024979, -1.459346875503445e-19, 0)
+light_color = Color(1, 0.97, 0.91, 1)
+angular_radius_radians = 0.03490658503988659
+script = ExtResource("4_sun")
+elevation_degrees = 20.0
+azimuth_degrees = 92.0
+ana_tilt_degrees = -13.0
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_7shgg")
+tonemap_mode = 2
+
+[node name="Clouds" type="MeshInstance4D" parent="."]
+script = ExtResource("2_clouds")
+preset_name = "my_sky1"
+clump_attempts = 120
+animate = true
+wind_speed = 0.30000000000000004
+evolve_amplitude = 18.0
+cloud_color = Color(0.93, 0.94, 0.97, 1)
+cloud_seed = 3452511263
+max_tetrahedra = 95000
+
+[node name="Ground" type="StaticBody4D" parent="."]
+position = Vector4(0, -1, 0, 0)
+
+[node name="CollisionShape4D" type="CollisionShape4D" parent="Ground"]
+shape = SubResource("BoxShape4D_ground")
+
+[node name="GroundMesh" type="MeshInstance4D" parent="Ground"]
+material_override = SubResource("TetraMaterial4D_ground")
+mesh = SubResource("BoxTetraMesh4D_ground")
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+position = Vector4(0, 2, 0, 0)
+
+[node name="ReturnButton" parent="." instance=ExtResource("99_return")]

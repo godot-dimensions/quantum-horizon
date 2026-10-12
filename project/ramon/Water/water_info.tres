@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/Water/carried/kit/panels/kit_room_info.gd" id="1_info"]
+
+[resource]
+script = ExtResource("1_info")
+number = 3
+title = "4D Water"
+status = "TRYM'S SEA  /  THE SET PLATFORM"
+lead = "A sea whose waves run through W."
+description = "Every wave here travels in three flat directions: the two you see and W. Stand on this platform and right-drag to turn your slice: the sea is cut a new way and its waves change, while the platform stays set. {preset} is running now."
+interactions = [["rdrag", "Turn the slice"], ["key:R", "Level it again"], ["key:1", "Seas 1 to 8"], ["key:P", "The other pier"]]
+controls_heading = "CONTROLS"
+research_title = "HOW THE SEA IS MADE"
+research_status = "●  LIVE FROM THE SEA"
+research_layout = "steps"

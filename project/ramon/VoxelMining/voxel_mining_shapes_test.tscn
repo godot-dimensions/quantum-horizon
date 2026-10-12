@@ -1,0 +1,45 @@
+[gd_scene load_steps=9 format=3 uid="uid://bov3fa1o73iia"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1"]
+[ext_resource type="PackedScene" uid="uid://gh03wmhupplp" path="res://ramon/VoxelMining/voxel_mining_block.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://4jvoejn10o3u" path="res://ramon/VoxelMining/voxel_mining_sphere_block.tscn" id="3"]
+[ext_resource type="PackedScene" uid="uid://cwc01l0hlry24" path="res://ramon/VoxelMining/voxel_mining_boulder_block.tscn" id="4"]
+[ext_resource type="Script" uid="uid://c6q1cfdmllkfk" path="res://ramon/VoxelMining/scripts/mining_axe.gd" id="5"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
+size = Vector4(40, 1, 40, 40)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_floor"]
+albedo_color = Color(0.32, 0.34, 0.38, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_floor"]
+size = Vector4(40, 1, 40, 40)
+
+[node name="VoxelMiningShapesTest" type="Node4D"]
+
+[node name="ObservationFloor" type="StaticBody4D" parent="."]
+position = Vector4(0, -1, 0, 0)
+
+[node name="BoxCollider" type="CollisionShape4D" parent="ObservationFloor"]
+shape = SubResource("BoxShape4D_floor")
+
+[node name="BoxMesh" type="MeshInstance4D" parent="ObservationFloor"]
+material_override = SubResource("TetraMaterial4D_floor")
+mesh = SubResource("BoxTetraMesh4D_floor")
+
+[node name="RockBlock_Box" parent="." instance=ExtResource("2")]
+position = Vector4(-7.356100227743752, 0.55, -2, 0)
+
+[node name="RockBlock_Sphere" parent="." instance=ExtResource("3")]
+position = Vector4(-2.0432770827942477, 0, -2.5101316453734523, 0)
+
+[node name="RockBlock_Boulder" parent="." instance=ExtResource("4")]
+position = Vector4(3.27276341849486, 0.17718497151536886, -1.9996479558265643, 0)
+lump_count = 8
+grid_size = 10
+
+[node name="Player" parent="." instance=ExtResource("1")]
+position = Vector4(0, 0.5, 4.6629557572514475, 0)
+
+[node name="MiningAxe" type="Node" parent="."]
+script = ExtResource("5")

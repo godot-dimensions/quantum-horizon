@@ -1,0 +1,19 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://ramon/PhaseMazeRemake/carried/kit/panels/kit_room_info.gd" id="1_info"]
+
+[resource]
+script = ExtResource("1_info")
+number = 5
+title = "Phase Maze"
+status = "STEP  /  TURN  /  BOTH TURNS  /  SEALED ROOM  /  THE CUBE"
+lead = "A maze in four directions."
+description = "Every view is a flat maze. Press F and what was ahead is W: another flat maze stands in front of you.
+Q and E step through W too, slowly and blind.
+Blue walls stand across W. Orange is the way out, and what you climb.
+G shows the next layer as ghosts. O is the map, T a hint."
+interactions = [["key:F", "Turn into W"], ["key:Q E", "Step through W"], ["rdrag", "Tilt the slice"], ["key:G", "4D sight"]]
+controls_heading = "CONTROLS"
+research_title = "THE MAZE"
+research_status = "●  MEASURED LIVE ON THIS MACHINE"
+research_layout = "specimen"

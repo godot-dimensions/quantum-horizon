@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/WaterLab/carried/kit/panels/kit_room_info.gd" id="1_info"]
+
+[resource]
+script = ExtResource("1_info")
+number = 4
+title = "Turn the slice"
+status = "THE PLATFORM  /  IT STAYS SET"
+lead = "Stand on the circle and right-drag."
+description = "On the platform a right drag turns your slice through W. The sea is cut a new way and its waves change, because they run through W as well as across. The platform stays set, drawn as if nothing had turned, so you keep your footing while the sea changes round you."
+interactions = [["rdrag", "Turn the slice"], ["key:R", "Level it again"], ["key:1", "Seas 1 to 4"]]
+controls_heading = "CONTROLS"
+research_title = "THE SLICE"
+research_status = ""
+research_layout = "steps"

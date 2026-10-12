@@ -1,0 +1,101 @@
+[gd_scene load_steps=9 format=3 uid="uid://jqqlpo6xucne"]
+
+[ext_resource type="Script" uid="uid://c1jsa7mslvhqp" path="res://ramon/Archive/IsoclynicSun/scripts/sun_4d.gd" id="1_sun4d"]
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="3_player"]
+[ext_resource type="ArrayTetraMesh4D" uid="uid://bh6g0ly3wnw3t" path="res://models/primitives/platonic/600_cell/600_cell_smooth.g4b" id="4_600cell"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
+shader_parameter/world_up_direction_4d = null
+shader_parameter/light0_direction_4d = null
+shader_parameter/light0_color = null
+shader_parameter/light0_energy = null
+shader_parameter/light0_angular_radius_radians = null
+shader_parameter/light0_enabled = null
+shader_parameter/light1_direction_4d = null
+shader_parameter/light1_color = null
+shader_parameter/light1_energy = null
+shader_parameter/light1_angular_radius_radians = null
+shader_parameter/light1_enabled = null
+shader_parameter/light2_direction_4d = null
+shader_parameter/light2_color = null
+shader_parameter/light2_energy = null
+shader_parameter/light2_angular_radius_radians = null
+shader_parameter/light2_enabled = null
+shader_parameter/light3_direction_4d = null
+shader_parameter/light3_color = null
+shader_parameter/light3_energy = null
+shader_parameter/light3_angular_radius_radians = null
+shader_parameter/light3_enabled = null
+shader_parameter/horizon_color = Color(0.55, 0.7, 0.95, 1)
+shader_parameter/top_color = Color(0.05, 0.12, 0.35, 1)
+shader_parameter/bottom_color = Color(0.13, 0.11, 0.09, 1)
+horizon_color = Color(0.55, 0.7, 0.95, 1)
+top_color = Color(0.05, 0.12, 0.35, 1)
+bottom_color = Color(0.13, 0.11, 0.09, 1)
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
+size = Vector4(50, 1, 50, 50)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_floor"]
+albedo_color = Color(0.3, 0.3, 0.32, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_floor"]
+size = Vector4(50, 1, 50, 50)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ball"]
+albedo_color = Color(0.9, 0.85, 0.8, 1)
+
+[node name="Skybox" type="Node4D"]
+
+[node name="WorldEnvironment4D" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_sky")
+
+[node name="Sun" type="DirectionalLight4D" parent="."]
+basis = Projection(0.9129231024683224, 0, 0.4015706708183181, -0.07288624917040254, 0.2447794363740324, 0.3256060124151338, -0.6692644127559806, -0.6214088010528328, -0.08429528214658835, 0.9455055392112282, 0.2304761925251375, 0.2139960406358656, 0.315513457582784, 0, -0.5811255172817931, 0.7501629098056781)
+light_color = Color(1, 0.95, 0.85, 1)
+light_energy = 0.431
+
+[node name="Ground" type="StaticBody4D" parent="."]
+position = Vector4(0, -0.5, 0, 0)
+
+[node name="BoxCollider" type="CollisionShape4D" parent="Ground"]
+shape = SubResource("BoxShape4D_floor")
+
+[node name="BoxMesh" type="MeshInstance4D" parent="Ground"]
+material_override = SubResource("TetraMaterial4D_floor")
+mesh = SubResource("BoxTetraMesh4D_floor")
+
+[node name="HexacosichoronBall" type="MeshInstance4D" parent="."]
+position = Vector4(0, 1.5, 0, 0)
+basis = Projection(1.5, 0, 0, 0, 0, 1.5, 0, 0, 0, 0, 1.5, 0, 0, 0, 0, 1.5)
+material_override = SubResource("TetraMaterial4D_ball")
+mesh = ExtResource("4_600cell")
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+position = Vector4(0, 1, 6, 0)
+
+[node name="DebugUI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="SunDebugLabel" type="Label" parent="DebugUI"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 500.0
+offset_bottom = 100.0
+text = "sun 4D (world): (-0.08, 0.95, 0.23, 0.21)
+sun 3D (local, visible): (-0.08, 0.95, 0.23)
+local w: 0.214    w-fade: 0.977"
+
+[node name="Sun4D" type="Node" parent="."]
+script = ExtResource("1_sun4d")
+sun_w_extent = 0.23
+isoclinic_angle_1 = 21.5
+isoclinic_angle_2 = -3.0

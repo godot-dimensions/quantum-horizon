@@ -1,0 +1,71 @@
+[gd_scene load_steps=6 format=3 uid="uid://dnc3ghkjfteto"]
+
+[ext_resource type="PackedScene" uid="uid://dgfin0ndc8hyt" path="res://ramon/ObstacleCourse/ascent_player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://ct3wn8odwxfj6" path="res://ramon/ObstacleCourse/scripts/w_gap_builder_4d.gd" id="2_builder"]
+[ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="3_sun"]
+[ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="99_return"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_wgap"]
+shader_parameter/world_up_direction_4d = null
+shader_parameter/light0_direction_4d = null
+shader_parameter/light0_color = null
+shader_parameter/light0_energy = null
+shader_parameter/light0_angular_radius_radians = null
+shader_parameter/light0_enabled = null
+shader_parameter/light1_direction_4d = null
+shader_parameter/light1_color = null
+shader_parameter/light1_energy = null
+shader_parameter/light1_angular_radius_radians = null
+shader_parameter/light1_enabled = null
+shader_parameter/light2_direction_4d = null
+shader_parameter/light2_color = null
+shader_parameter/light2_energy = null
+shader_parameter/light2_angular_radius_radians = null
+shader_parameter/light2_enabled = null
+shader_parameter/light3_direction_4d = null
+shader_parameter/light3_color = null
+shader_parameter/light3_energy = null
+shader_parameter/light3_angular_radius_radians = null
+shader_parameter/light3_enabled = null
+shader_parameter/horizon_color = Color(0.22, 0.24, 0.29, 1)
+shader_parameter/top_color = Color(0.06, 0.07, 0.1, 1)
+shader_parameter/bottom_color = Color(0.04, 0.04, 0.06, 1)
+shader_parameter/inv_top_curve = 4.00000015894572
+shader_parameter/inv_bottom_curve = 30.000001192092896
+shader_parameter/inv_sun_curve = 22.782018847067608
+horizon_color = Color(0.22, 0.24, 0.29, 1)
+top_color = Color(0.06, 0.07, 0.1, 1)
+top_curve = 0.15
+bottom_color = Color(0.04, 0.04, 0.06, 1)
+bottom_curve = 0.02
+sun_curve = 0.15
+
+[node name="WGap4D" type="Node4D"]
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_wgap")
+ambient_light_color = Color(0.62, 0.65, 0.73, 1)
+ambient_light_sky_contribution = 0.0
+tonemap_mode = 2
+tonemap_exposure = 0.9
+
+[node name="Sun" type="DirectionalLight4D" parent="."]
+basis = Projection(0, 0, 0, 1, 0.9371654089691248, -0.2491021029878364, -0.24427267247641604, 0, 0.34888536259312036, 0.6691306063588582, 0.6561579348008326, 0, 0, -0.7001516792244837, 0.713994135885678, 0)
+light_color = Color(1, 0.98, 0.94, 1)
+light_energy = 0.45
+angular_radius_radians = 0.02092126174365602
+script = ExtResource("3_sun")
+elevation_degrees = 42.0
+azimuth_degrees = 28.0
+
+[node name="Course" type="Node4D" parent="."]
+script = ExtResource("2_builder")
+band_centres = PackedFloat32Array(-5, 0, 5)
+jump_box_heights = PackedFloat32Array(0.8, 1, 1.2)
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector4(-23, 1, 0, 0)
+basis = Projection(0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 1)
+
+[node name="ReturnButton" parent="." instance=ExtResource("99_return")]

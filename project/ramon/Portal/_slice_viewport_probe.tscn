@@ -1,0 +1,48 @@
+[gd_scene load_steps=2 format=3 uid="uid://bywsn5se0u0by"]
+
+[ext_resource type="Script" uid="uid://dd0dp7m77k04k" path="res://ramon/Portal/scripts/slice_viewport_probe.gd" id="1_probe"]
+
+[node name="SliceViewportProbe" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_probe")
+
+[node name="World" type="Node4D" parent="."]
+
+[node name="MainCamera" type="Camera4D" parent="World"]
+position = Vector4(0, 2, 12, 0)
+current = true
+rendering_engine_name = "Cross-section"
+
+[node name="DestinationViewportContainer" type="SubViewportContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -660.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = 382.0
+grow_horizontal = 0
+stretch = true
+
+[node name="DestinationViewport" type="SubViewport" parent="DestinationViewportContainer"]
+handle_input_locally = false
+size = Vector2i(636, 358)
+render_target_update_mode = 4
+
+[node name="DestinationCamera" type="Camera4D" parent="DestinationViewportContainer/DestinationViewport"]
+position = Vector4(0, 2, 12, 8)
+current = true
+rendering_engine_name = "Cross-section"
+
+[node name="Readout" type="Label" parent="."]
+layout_mode = 1
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 700.0
+offset_bottom = 340.0

@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=4]
+
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_crag_4d.gd" id="crag"]
+
+[node name="CragStudy" type="Node4D"]
+script = ExtResource("crag")
+spec_path = "res://ramon/chickenpen/lookout/watchstone_spec.json"
+solid = false

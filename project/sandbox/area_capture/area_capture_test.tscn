@@ -1,0 +1,131 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" path="res://scripts/area_capture_controller.gd" id="2_controller"]
+[ext_resource type="Script" path="res://scripts/area_capture_hud.gd" id="3_hud"]
+[ext_resource type="Script" path="res://scripts/area_capture_target_cluster.gd" id="4_cluster"]
+[ext_resource type="Script" path="res://sandbox/shooting_gallery/radar_orb/radar_orb_hud.gd" id="5_radar_orb_hud"]
+[ext_resource type="Script" path="res://scripts/area_capture_radar.gd" id="6_radar"]
+[ext_resource type="Texture2D" uid="uid://cdvuaq8kfgns0" path="res://sandbox/shooting_gallery/radar_orb/textures/glass_scratches_normal.jpg" id="7_glass_normal"]
+[ext_resource type="Texture2D" uid="uid://mi1rauivlclq" path="res://sandbox/shooting_gallery/radar_orb/textures/glass_scratches_roughness.jpg" id="8_glass_roughness"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_ground"]
+size = Vector4(60, 1, 60, 60)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ground"]
+albedo_color = Color(0.3, 0.35, 0.28, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ground"]
+size = Vector4(60, 1, 60, 60)
+
+[sub_resource type="SphereMesh" id="SphereMesh_glass_dome"]
+radius = 0.3624
+height = 0.3624
+is_hemisphere = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_glass_dome"]
+transparency = 1
+albedo_color = Color(0.75, 0.88, 1, 0.35)
+metallic_specular = 0.9
+roughness = 0.15
+roughness_texture = ExtResource("8_glass_roughness")
+normal_enabled = true
+normal_scale = 1.2
+normal_texture = ExtResource("7_glass_normal")
+rim_enabled = true
+rim = 0.55
+rim_tint = 0.85
+uv1_scale = Vector3(3, 3, 1)
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_glass_dome"]
+viewport_path = NodePath("HUD/RadarOrbHud/GlassViewport")
+
+[node name="AreaCaptureTest" type="Node4D"]
+
+[node name="Ground" type="StaticBody4D" parent="."]
+position = Vector4(0, -0.5, 0, 0)
+
+[node name="CollisionShape4D" type="CollisionShape4D" parent="Ground"]
+shape = SubResource("BoxShape4D_ground")
+
+[node name="GroundMesh" type="MeshInstance4D" parent="Ground"]
+material_override = SubResource("TetraMaterial4D_ground")
+mesh = SubResource("BoxTetraMesh4D_ground")
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector4(0, 1, 10, 0)
+
+[node name="TargetCluster" type="Node4D" parent="."]
+script = ExtResource("4_cluster")
+
+[node name="AreaCapture" type="Node4D" parent="."]
+script = ExtResource("2_controller")
+player_path = NodePath("../Player")
+player_head_path = NodePath("../Player/PlayerHead")
+ground_path = NodePath("../Ground")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="DevMetrics" type="Label" parent="HUD"]
+offset_left = 8.0
+offset_top = 4.0
+offset_right = 420.0
+offset_bottom = 118.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 18
+text = "FPS: 0"
+script = ExtResource("3_hud")
+controller_path = NodePath("../../AreaCapture")
+
+[node name="RadarOrbHud" type="Control" parent="HUD"]
+layout_mode = 1
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("5_radar_orb_hud")
+lowered_anchor = Vector2(0.5, 0.92)
+raised_anchor = Vector2(0.5, 0.6)
+
+[node name="SliceRadar" type="Control" parent="HUD/RadarOrbHud"]
+layout_mode = 1
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("6_radar")
+player_path = NodePath("../../../Player")
+target_cluster_path = NodePath("../../../TargetCluster")
+controller_path = NodePath("../../../AreaCapture")
+
+[node name="GlassViewport" type="SubViewport" parent="HUD/RadarOrbHud"]
+own_world_3d = true
+transparent_bg = true
+
+[node name="Camera3D" type="Camera3D" parent="HUD/RadarOrbHud/GlassViewport"]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 0.75, 1.3)
+fov = 30.0
+
+[node name="DomeLight" type="DirectionalLight3D" parent="HUD/RadarOrbHud/GlassViewport"]
+transform = Transform3D(0.75, 0.433013, -0.5, 0, 0.866025, 0.75, 0.5, -0.649519, 0.75, 0, 0, 0)
+light_energy = 1.2
+
+[node name="DomeFillLight" type="DirectionalLight3D" parent="HUD/RadarOrbHud/GlassViewport"]
+transform = Transform3D(0.75, -0.433013, 0.5, 0, 0.866025, 0.75, -0.5, -0.649519, 0.75, 0, 0, 0)
+light_color = Color(0.8, 0.9, 1, 1)
+light_energy = 0.5
+
+[node name="DomeMesh" type="MeshInstance3D" parent="HUD/RadarOrbHud/GlassViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1415, 0.0817)
+mesh = SubResource("SphereMesh_glass_dome")
+surface_material_override/0 = SubResource("StandardMaterial3D_glass_dome")
+
+[node name="GlassTextureRect" type="TextureRect" parent="HUD/RadarOrbHud"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("ViewportTexture_glass_dome")
+expand_mode = 1

@@ -1,0 +1,85 @@
+[gd_scene load_steps=17 format=3 uid="uid://bqa4nt7xwvd2k"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://0jx3olx3h8o6" path="res://ramon/ObstacleCourse/scripts/ascent_builder_4d.gd" id="2_builder"]
+[ext_resource type="Resource" path="res://ramon/ObstacleCourse/stations/station00.tres" id="3_st00"]
+[ext_resource type="Resource" path="res://ramon/ObstacleCourse/stations/station01.tres" id="4_st01"]
+[ext_resource type="Resource" path="res://ramon/ObstacleCourse/stations/station02.tres" id="5_st02"]
+[ext_resource type="Resource" path="res://ramon/ObstacleCourse/stations/station03.tres" id="6_st03"]
+[ext_resource type="Resource" path="res://ramon/ObstacleCourse/stations/station04.tres" id="7_st04"]
+[ext_resource type="Resource" path="res://ramon/ObstacleCourse/stations/station05.tres" id="8_st05"]
+[ext_resource type="Resource" path="res://ramon/ObstacleCourse/stations/station06.tres" id="9_st06"]
+[ext_resource type="Resource" path="res://ramon/ObstacleCourse/stations/station07.tres" id="10_st07"]
+[ext_resource type="Resource" path="res://ramon/ObstacleCourse/stations/station08.tres" id="11_st08"]
+[ext_resource type="Resource" path="res://ramon/ObstacleCourse/stations/station09.tres" id="12_st09"]
+[ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="13_sun"]
+[ext_resource type="Script" uid="uid://tr1j217ck3ae" path="res://ramon/Demo/scripts/hub_slice_reset.gd" id="14_reset"]
+[ext_resource type="Script" uid="uid://ddyhkr1eose3k" path="res://ramon/ObstacleCourse/scripts/ascent_checkpoints_4d.gd" id="15_checkpoints"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_ascent"]
+shader_parameter/world_up_direction_4d = null
+shader_parameter/light0_direction_4d = null
+shader_parameter/light0_color = null
+shader_parameter/light0_energy = null
+shader_parameter/light0_angular_radius_radians = null
+shader_parameter/light0_enabled = null
+shader_parameter/light1_direction_4d = null
+shader_parameter/light1_color = null
+shader_parameter/light1_energy = null
+shader_parameter/light1_angular_radius_radians = null
+shader_parameter/light1_enabled = null
+shader_parameter/light2_direction_4d = null
+shader_parameter/light2_color = null
+shader_parameter/light2_energy = null
+shader_parameter/light2_angular_radius_radians = null
+shader_parameter/light2_enabled = null
+shader_parameter/light3_direction_4d = null
+shader_parameter/light3_color = null
+shader_parameter/light3_energy = null
+shader_parameter/light3_angular_radius_radians = null
+shader_parameter/light3_enabled = null
+shader_parameter/horizon_color = Color(0.22, 0.24, 0.29, 1)
+shader_parameter/top_color = Color(0.06, 0.07, 0.1, 1)
+shader_parameter/bottom_color = Color(0.04, 0.04, 0.06, 1)
+shader_parameter/inv_top_curve = 4.00000015894572
+shader_parameter/inv_bottom_curve = 30.000001192092896
+shader_parameter/inv_sun_curve = 22.782018847067608
+horizon_color = Color(0.22, 0.24, 0.29, 1)
+top_color = Color(0.06, 0.07, 0.1, 1)
+top_curve = 0.15
+bottom_color = Color(0.04, 0.04, 0.06, 1)
+bottom_curve = 0.02
+sun_curve = 0.15
+
+[node name="Ascent4D" type="Node4D"]
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_ascent")
+ambient_light_color = Color(0.62, 0.65, 0.73, 1)
+ambient_light_sky_contribution = 0.0
+tonemap_mode = 2
+tonemap_exposure = 0.9
+
+[node name="Sun" type="DirectionalLight4D" parent="."]
+basis = Projection(0, 0, 0, 1, 0.9371654089691248, -0.2491021029878364, -0.24427267247641604, 0, 0.34888536259312036, 0.6691306063588582, 0.6561579348008326, 0, 0, -0.7001516792244837, 0.713994135885678, 0)
+light_color = Color(1, 0.98, 0.94, 1)
+light_energy = 0.45
+angular_radius_radians = 0.02092126174365602
+script = ExtResource("13_sun")
+elevation_degrees = 42.0
+azimuth_degrees = 28.0
+
+[node name="Course" type="Node4D" parent="."]
+script = ExtResource("2_builder")
+stations = Array[Resource]([ExtResource("3_st00"), ExtResource("4_st01"), ExtResource("5_st02"), ExtResource("6_st03"), ExtResource("7_st04"), ExtResource("8_st05"), ExtResource("9_st06"), ExtResource("10_st07"), ExtResource("11_st08"), ExtResource("12_st09")])
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector4(0, 1, -9, 0)
+basis = Projection(-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)
+
+[node name="SliceReset" type="Node" parent="."]
+script = ExtResource("14_reset")
+
+[node name="Checkpoints" type="Node" parent="."]
+script = ExtResource("15_checkpoints")

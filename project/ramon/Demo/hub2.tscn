@@ -1,0 +1,107 @@
+[gd_scene load_steps=18 format=3 uid="uid://dne11tsy3x5hi"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://81c1nj4nrkya" path="res://ramon/Demo/scripts/hub_tier_ring_4d.gd" id="2_ring"]
+[ext_resource type="Script" uid="uid://dlkwtfxhm88rs" path="res://ramon/Demo/scripts/hub_tier_gate_def.gd" id="3_gatedef"]
+[ext_resource type="Script" uid="uid://coa88rg2y21cb" path="res://ramon/Demo/scripts/hub_tier_def.gd" id="4_tierdef"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates_tiered/gate01.tres" id="5_gate01"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates_tiered/gate02.tres" id="6_gate02"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates_tiered/gate03.tres" id="7_gate03"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates_tiered/gate04.tres" id="8_gate04"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates_tiered/gate05.tres" id="9_gate05"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates_tiered/tier1.tres" id="10_tier1"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates_tiered/tier2.tres" id="11_tier2"]
+[ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="12_sun"]
+[ext_resource type="Script" uid="uid://bg6kulalwlupc" path="res://ramon/Demo/scripts/hub_tiled_floor_4d.gd" id="13_floor"]
+[ext_resource type="Script" uid="uid://tr1j217ck3ae" path="res://ramon/Demo/scripts/hub_slice_reset.gd" id="14_reset"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_hub2"]
+shader_parameter/world_up_direction_4d = null
+shader_parameter/light0_direction_4d = null
+shader_parameter/light0_color = null
+shader_parameter/light0_energy = null
+shader_parameter/light0_angular_radius_radians = null
+shader_parameter/light0_enabled = null
+shader_parameter/light1_direction_4d = null
+shader_parameter/light1_color = null
+shader_parameter/light1_energy = null
+shader_parameter/light1_angular_radius_radians = null
+shader_parameter/light1_enabled = null
+shader_parameter/light2_direction_4d = null
+shader_parameter/light2_color = null
+shader_parameter/light2_energy = null
+shader_parameter/light2_angular_radius_radians = null
+shader_parameter/light2_enabled = null
+shader_parameter/light3_direction_4d = null
+shader_parameter/light3_color = null
+shader_parameter/light3_energy = null
+shader_parameter/light3_angular_radius_radians = null
+shader_parameter/light3_enabled = null
+shader_parameter/top_color = Color(0.25138095, 0.45543057, 0.70535547, 1)
+shader_parameter/bottom_color = Color(0.2787614, 0.25990424, 0.23803556, 1)
+shader_parameter/inv_top_curve = 4.00000015894572
+shader_parameter/inv_bottom_curve = 30.000001192092896
+shader_parameter/inv_sun_curve = 22.782018847067608
+top_color = Color(0.25138095, 0.45543057, 0.70535547, 1)
+top_curve = 0.15
+bottom_color = Color(0.2787614, 0.25990424, 0.23803556, 1)
+bottom_curve = 0.02
+sun_curve = 0.15
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
+size = Vector4(48, 1, 48, 80)
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_wall"]
+size = Vector4(26, 5, 1, 80)
+
+[node name="Hub2" type="Node4D"]
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_hub2")
+ambient_light_color = Color(0.3914545, 0.41625983, 0.46172702, 1)
+tonemap_mode = 2
+
+[node name="Sun" type="DirectionalLight4D" parent="."]
+basis = Projection(0, 0, 0, 1, 0.1818436621338853, 0.9781476007338056, 0.10079758787013174, 0, -0.8555071680929038, 0.20791169081775934, -0.474215366856622, 0, -0.48480962024633717, 4.7601675429442275e-17, 0.8746197071393959, 0)
+light_color = Color(1, 0.98, 0.94, 1)
+light_energy = 0.328
+angular_radius_radians = 0.03490658503988659
+script = ExtResource("12_sun")
+elevation_degrees = 12.0
+azimuth_degrees = -119.0
+
+[node name="Floor" type="StaticBody4D" parent="."]
+position = Vector4(0, -0.5, 0, 0)
+
+[node name="Collider" type="CollisionShape4D" parent="Floor"]
+shape = SubResource("BoxShape4D_floor")
+
+[node name="Mesh" type="Node4D" parent="Floor"]
+script = ExtResource("13_floor")
+
+[node name="BackWall" type="StaticBody4D" parent="."]
+position = Vector4(0, 2.5, 6, 0)
+
+[node name="Collider" type="CollisionShape4D" parent="BackWall"]
+shape = SubResource("BoxShape4D_wall")
+
+[node name="Mesh" type="Node4D" parent="BackWall"]
+script = ExtResource("13_floor")
+size = Vector4(26, 5, 1, 80)
+palette_color = "white"
+
+[node name="GateRing" type="Node4D" parent="."]
+script = ExtResource("2_ring")
+gates = Array[ExtResource("3_gatedef")]([ExtResource("5_gate01"), ExtResource("6_gate02"), ExtResource("7_gate03"), ExtResource("8_gate04"), ExtResource("9_gate05")])
+tiers = Array[ExtResource("4_tierdef")]([ExtResource("10_tier1"), ExtResource("11_tier2")])
+platform_margin = 1.0
+ramp_width = 2.5
+slab_thickness = 1.0
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector4(0, 1, 0, 0)
+
+[node name="SliceReset" type="Node" parent="."]
+script = ExtResource("14_reset")
+also_return_to_spawn = true

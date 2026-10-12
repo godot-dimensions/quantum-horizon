@@ -1,0 +1,94 @@
+[gd_scene load_steps=7 format=3 uid="uid://bsbhvcplov6j8"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://ci3p7cj6s5s3w" path="res://ramon/Demo/scripts/centerpiece_probe_4d.gd" id="2_centerpiece"]
+[ext_resource type="Script" uid="uid://cxgpd72agfe0g" path="res://ramon/Demo/scripts/hub_sun_4d.gd" id="3_sun"]
+[ext_resource type="Script" uid="uid://bg6kulalwlupc" path="res://ramon/Demo/scripts/hub_tiled_floor_4d.gd" id="4_floor"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_probe"]
+shader_parameter/world_up_direction_4d = null
+shader_parameter/light0_direction_4d = null
+shader_parameter/light0_color = null
+shader_parameter/light0_energy = null
+shader_parameter/light0_angular_radius_radians = null
+shader_parameter/light0_enabled = null
+shader_parameter/light1_direction_4d = null
+shader_parameter/light1_color = null
+shader_parameter/light1_energy = null
+shader_parameter/light1_angular_radius_radians = null
+shader_parameter/light1_enabled = null
+shader_parameter/light2_direction_4d = null
+shader_parameter/light2_color = null
+shader_parameter/light2_energy = null
+shader_parameter/light2_angular_radius_radians = null
+shader_parameter/light2_enabled = null
+shader_parameter/light3_direction_4d = null
+shader_parameter/light3_color = null
+shader_parameter/light3_energy = null
+shader_parameter/light3_angular_radius_radians = null
+shader_parameter/light3_enabled = null
+shader_parameter/top_color = Color(0.2, 0.22, 0.32, 1)
+shader_parameter/bottom_color = Color(0.1, 0.09, 0.1, 1)
+shader_parameter/inv_top_curve = 4.00000015894572
+shader_parameter/inv_bottom_curve = 30.000001192092896
+shader_parameter/inv_sun_curve = 22.782018847067608
+top_color = Color(0.2, 0.22, 0.32, 1)
+top_curve = 0.15
+bottom_color = Color(0.1, 0.09, 0.1, 1)
+bottom_curve = 0.02
+sun_curve = 0.15
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
+size = Vector4(30, 1, 30, 40)
+
+[node name="CenterpieceProbe" type="Node4D"]
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_probe")
+ambient_light_color = Color(0.35, 0.36, 0.42, 1)
+tonemap_mode = 2
+
+[node name="Sun" type="DirectionalLight4D" parent="."]
+basis = Projection(0, 0, 0, 1, 0.850149870457431, 0.35524487772376767, 0.3886467221169362, 0, -0.5265407845183633, 0.5735764363510462, 0.6275068715971333, 0, 7.520682268878011e-17, 0.738113235563392, -0.6746768496740796, 0)
+light_color = Color(1, 0.98, 0.94, 1)
+angular_radius_radians = 0.03490658503988659
+script = ExtResource("3_sun")
+elevation_degrees = 35.0
+azimuth_degrees = -40.0
+
+[node name="Floor" type="StaticBody4D" parent="."]
+position = Vector4(0, -0.5, 0, 0)
+
+[node name="Collider" type="CollisionShape4D" parent="Floor"]
+shape = SubResource("BoxShape4D_floor")
+
+[node name="Mesh" type="Node4D" parent="Floor"]
+script = ExtResource("4_floor")
+size = Vector4(30, 1, 30, 40)
+
+[node name="Centerpiece" type="Node4D" parent="."]
+position = Vector4(0, 3.5, -12, 0)
+script = ExtResource("2_centerpiece")
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector4(0, 1, -3, 0)
+
+[node name="DebugUI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="LegendLabel" type="Label" parent="DebugUI"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 500.0
+offset_bottom = 90.0
+text = "Centerpiece probe - not wired into any hub.
+Idles on its own. Hold rotate_4d and drag to make
+it react - 3x your own slice-rotation speed."

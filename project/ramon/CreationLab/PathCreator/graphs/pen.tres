@@ -1,0 +1,109 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/graph/path_graph.gd" id="1_snl4v"]
+
+[resource]
+script = ExtResource("1_snl4v")
+nodes = [{
+"approach": Vector2(0, 1),
+"band": 7.8,
+"frame": "none",
+"id": 1,
+"kind": "start",
+"pos": Vector4(42, 0, -17, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 7.8,
+"frame": "none",
+"id": 2,
+"kind": "chord",
+"pos": Vector4(42, 0, -4.2, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, 1),
+"band": 7.8,
+"frame": "none",
+"id": 3,
+"kind": "junction",
+"pos": Vector4(42, 0, -2.6, 0),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, -1),
+"band": 7.8,
+"frame": "rect",
+"id": 4,
+"kind": "destination",
+"pos": Vector4(39.5, 0, -0.4, 0),
+"state": "available",
+"target": "Feeder"
+}, {
+"approach": Vector2(0, 1),
+"band": 1.4,
+"frame": "none",
+"id": 5,
+"kind": "bend",
+"pos": Vector4(44.5, 0, -2.6, 1),
+"state": "arrival",
+"target": ""
+}, {
+"approach": Vector2(0, -1),
+"band": 1.4,
+"frame": "rect",
+"id": 6,
+"kind": "destination",
+"pos": Vector4(44.5, 0, 0, 3),
+"state": "available",
+"target": "Coop"
+}, {
+"anchor": true,
+"approach": Vector2(0, -1),
+"band": 1.4,
+"frame": "round",
+"id": 7,
+"kind": "destination",
+"pos": Vector4(43.6, 0, -1.3, 0),
+"state": "available",
+"target": "Hen"
+}]
+edges = [{
+"band": 7.8,
+"from": 1,
+"priority": "primary",
+"to": 2,
+"w_mode": "static"
+}, {
+"band": 7.8,
+"from": 2,
+"priority": "primary",
+"to": 3,
+"w_mode": "static"
+}, {
+"band": 7.8,
+"from": 3,
+"priority": "secondary",
+"to": 4,
+"w_mode": "static"
+}, {
+"band": 1.4,
+"from": 3,
+"priority": "primary",
+"to": 5,
+"w_mode": "follow"
+}, {
+"band": 1.4,
+"from": 5,
+"priority": "primary",
+"to": 6,
+"w_mode": "follow"
+}, {
+"band": 1.4,
+"from": 3,
+"priority": "secondary",
+"to": 7,
+"w_mode": "follow"
+}]
+next_id = 8

@@ -1,0 +1,85 @@
+[gd_scene load_steps=8 format=3 uid="uid://ckhytac2y85so"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1"]
+[ext_resource type="PackedScene" uid="uid://gh03wmhupplp" path="res://ramon/VoxelMining/voxel_mining_block.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://ctimhckawyf2s" path="res://ramon/VoxelMining/voxel_mining_gem_block.tscn" id="3"]
+[ext_resource type="Script" uid="uid://c6q1cfdmllkfk" path="res://ramon/VoxelMining/scripts/mining_axe.gd" id="4"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
+size = Vector4(16, 1, 14, 40)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_floor"]
+albedo_color = Color(0.24, 0.25, 0.28, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_floor"]
+size = Vector4(16, 1, 14, 40)
+
+[node name="VoxelMiningRampart" type="Node4D"]
+
+[node name="RampartFloor" type="StaticBody4D" parent="."]
+position = Vector4(0, -1, -2, 0)
+
+[node name="BoxCollider" type="CollisionShape4D" parent="RampartFloor"]
+shape = SubResource("BoxShape4D_floor")
+
+[node name="BoxMesh" type="MeshInstance4D" parent="RampartFloor"]
+material_override = SubResource("TetraMaterial4D_floor")
+mesh = SubResource("BoxTetraMesh4D_floor")
+
+[node name="Brick_Bottom_1" parent="." instance=ExtResource("2")]
+position = Vector4(-4.48, 0.62, -6, 0)
+cell_size = 0.43
+world_height_max = 4.5
+
+[node name="Brick_Bottom_2" parent="." instance=ExtResource("2")]
+position = Vector4(-2.24, 0.62, -6, 0)
+cell_size = 0.43
+world_height_max = 4.5
+
+[node name="GemBrick" parent="." instance=ExtResource("3")]
+position = Vector4(0, 0.62, -6, 0)
+gem_size_fraction = 0.5
+gem_color = Color(0.55, 0.25, 0.85, 1)
+cell_size = 0.43
+world_height_max = 4.5
+
+[node name="Brick_Bottom_4" parent="." instance=ExtResource("2")]
+position = Vector4(2.24, 0.62, -6, 0)
+cell_size = 0.43
+world_height_max = 4.5
+
+[node name="Brick_Bottom_5" parent="." instance=ExtResource("2")]
+position = Vector4(4.48, 0.62, -6, 0)
+cell_size = 0.43
+world_height_max = 4.5
+
+[node name="Brick_Top_1" parent="." instance=ExtResource("2")]
+position = Vector4(-4.48, 2.86, -6, 0)
+cell_size = 0.43
+world_height_max = 4.5
+
+[node name="Brick_Top_2" parent="." instance=ExtResource("2")]
+position = Vector4(-2.24, 2.86, -6, 0)
+cell_size = 0.43
+world_height_max = 4.5
+
+[node name="Brick_Top_3" parent="." instance=ExtResource("2")]
+position = Vector4(0, 2.86, -6, 0)
+cell_size = 0.43
+world_height_max = 4.5
+
+[node name="Brick_Top_4" parent="." instance=ExtResource("2")]
+position = Vector4(2.24, 2.86, -6, 0)
+cell_size = 0.43
+world_height_max = 4.5
+
+[node name="Brick_Top_5" parent="." instance=ExtResource("2")]
+position = Vector4(4.48, 2.86, -6, 0)
+cell_size = 0.43
+world_height_max = 4.5
+
+[node name="Player" parent="." instance=ExtResource("1")]
+position = Vector4(0, 0.5, 3, 0)
+
+[node name="MiningAxe" type="Node" parent="."]
+script = ExtResource("4")

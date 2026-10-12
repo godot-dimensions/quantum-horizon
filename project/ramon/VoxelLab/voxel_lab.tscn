@@ -1,0 +1,706 @@
+[gd_scene load_steps=23 format=3]
+
+[ext_resource type="Script" path="res://ramon/VoxelLab/voxel_lab_4d.gd" id="1_root"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/carried/LabKit/lab_room_4d.gd" id="2_room"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/carried/kit/kit_room_4d.gd" id="3_kitroom"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/carried/kit/kit_wall_text_4d.gd" id="4_text"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/carried/kit/kit_showcase_4d.gd" id="5_showcase"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/stations/vl_block_exhibit_4d.gd" id="6_block"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/room/vl_bench_4d.gd" id="7_bench"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/stations/vl_shelf_exhibit_4d.gd" id="9_shelf"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/carried/kit/kit_light_4d.gd" id="10_light"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/carried/kit/kit_sun_4d.gd" id="11_sun"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/stations/vl_build_exhibit_4d.gd" id="12_build"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/carried/kit/panels/kit_wall_panel_4d.gd" id="13_panel"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/carried/kit/panels/kit_wall_panels_4d.gd" id="14_pair"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/room/vl_panel_source.gd" id="15_source"]
+[ext_resource type="Resource" path="res://ramon/VoxelLab/voxel_lab_info.tres" id="16_info"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/stations/vl_case_exhibit_4d.gd" id="17_case"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/carried/PathCreator/graph/path_network_4d.gd" id="18_net"]
+[ext_resource type="Resource" path="res://ramon/VoxelLab/paths/hall.tres" id="19_hall"]
+[ext_resource type="Resource" path="res://ramon/VoxelLab/paths/gallery.tres" id="20_gallery"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/room/vl_target_4d.gd" id="21_target"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/room/vl_float_panel_4d.gd" id="22_float"]
+[ext_resource type="Script" path="res://ramon/VoxelLab/stations/vl_hypercubes_exhibit_4d.gd" id="23_hypercubes"]
+
+[node name="VoxelLab" type="Node4D"]
+script = ExtResource("1_root")
+room_half_width = 12.0
+room_back = 15.0
+corner_length = 10.8
+start_at = Vector2(0, 17.5)
+
+[node name="Room" type="Node4D" parent="."]
+script = ExtResource("2_room")
+start_mood = "bright"
+
+[node name="Entrance" type="Node4D" parent="."]
+position = Vector4(0, 0, 16.75, 0)
+script = ExtResource("3_kitroom")
+size = Vector3(8, 6.8, 8.5)
+open_sides = ["n"]
+cove = false
+
+[node name="Hall" type="Node4D" parent="."]
+script = ExtResource("3_kitroom")
+size = Vector3(24, 9, 27)
+cove = false
+
+[node name="Sign" type="Node" parent="Hall"]
+script = ExtResource("4_text")
+side = "s"
+edge = 5
+along = Vector2(7.6, 16.4)
+up = Vector2(4.4, 5.9)
+outside = true
+kind = "sign"
+title = "VOXEL LAB"
+subtitle = "QUANTUM HORIZON  ·  CUTTING 4D MATTER"
+glow = 0.3
+
+[node name="GallerySign" type="Node" parent="Hall"]
+script = ExtResource("4_text")
+edge = 2
+along = Vector2(0.6, 8.94)
+up = Vector2(4.5, 6.4)
+kind = "sign"
+title = "WORLD
+CREATION"
+subtitle = "OUR GENERATORS ONE AT A TIME, THEN THE WHOLE WORLD"
+glow = 0.3
+
+[node name="GalleryRoom" type="Node4D" parent="."]
+position = Vector4(0, 0, -24.5, 0)
+script = ExtResource("3_kitroom")
+size = Vector3(26, 8, 16)
+cove = false
+
+[node name="AboutWall" type="Node" parent="GalleryRoom"]
+script = ExtResource("4_text")
+side = "w"
+along = Vector2(-6.6, 6.6)
+up = Vector2(1.6, 6.6)
+kind = "lesson"
+number = 2
+title = "The whole world"
+subtitle = "All three layers, and a sea, at full size"
+body = "Our generator stacks the land, the caves carved through it, and a sea filling everything below a plane, cut out of a world with no edges. The noise is four-dimensional, so every slice through W is a new coastline. Change its look, or cut it: the engine remeshes it as you go."
+code = "blue"
+glow = 0.2
+
+[node name="FieldSign" type="Node" parent="GalleryRoom"]
+script = ExtResource("4_text")
+side = "n"
+along = Vector2(-4.4, 4.4)
+up = Vector2(4.6, 6.4)
+kind = "sign"
+title = "THE OPEN WORLD"
+subtitle = "AN ISLAND OF OUR LANDSCAPE, IN THE OPEN SEA"
+glow = 0.3
+
+[node name="LayersWall" type="Node" parent="GalleryRoom"]
+script = ExtResource("4_text")
+side = "e"
+along = Vector2(-6.6, 6.6)
+up = Vector2(2.4, 6.6)
+kind = "lesson"
+number = 1
+title = "How a world is made"
+subtitle = "One generator at a time"
+body = "The engine builds land from generators, each a rule for what fills a voxel. First the land: fractal noise in bands of grass, dirt and stone. Then the caves: tunnels wherever three noise fields meet zero. Clip one by the other and the land is hollowed. Stack a sea under it and you have the world behind you."
+code = "blue"
+glow = 0.2
+
+[node name="Shelf1" type="Node4D" parent="."]
+position = Vector4(10.5, 0, 8.7, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("9_shelf")
+radius = 0.95
+height = 1.0
+pedestal_shape = "box"
+bounds = Rect2(-13, -32.5, 26, 45)
+band_angle = -90.0
+hologram = false
+metadata/shelf_kind = "voxels"
+metadata/face_yaw = -90.0
+
+[node name="Shelf2" type="Node4D" parent="."]
+position = Vector4(10.5, 0, 5.4, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("9_shelf")
+radius = 0.95
+height = 1.0
+pedestal_shape = "box"
+bounds = Rect2(-13, -32.5, 26, 45)
+band_angle = -90.0
+hologram = false
+metadata/shelf_kind = "inside"
+metadata/face_yaw = -90.0
+
+[node name="Shelf3" type="Node4D" parent="."]
+position = Vector4(10.5, 0, 1.8, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("9_shelf")
+radius = 0.95
+height = 1.0
+pedestal_shape = "box"
+bounds = Rect2(-13, -32.5, 26, 45)
+band_angle = -90.0
+hologram = false
+metadata/shelf_kind = "hidden"
+metadata/face_yaw = -90.0
+
+[node name="LabelA" type="Node" parent="Hall"]
+script = ExtResource("4_text")
+edge = 4
+along = Vector2(14.82, 16.52)
+up = Vector2(2.05, 3.15)
+kind = "label"
+letter = "A"
+title = "Voxels"
+subtitle = "What the world is made of: every voxel a tiny 4D cube."
+diagram = "voxels"
+live = true
+live_ppm = 400.0
+glow = 0.3
+
+[node name="LabelB" type="Node" parent="Hall"]
+script = ExtResource("4_text")
+edge = 4
+along = Vector2(11.52, 13.22)
+up = Vector2(2.05, 3.15)
+kind = "label"
+letter = "B"
+title = "Inside"
+subtitle = "Cut into ground and its layers show, all the way round."
+diagram = "inside"
+live = true
+live_ppm = 400.0
+glow = 0.3
+
+[node name="LabelC" type="Node" parent="Hall"]
+script = ExtResource("4_text")
+edge = 4
+along = Vector2(7.92, 9.62)
+up = Vector2(2.05, 3.15)
+kind = "label"
+letter = "C"
+title = "Hidden in W"
+subtitle = "Whole in your slice. Slide ana: a room appears."
+diagram = "hidden"
+live = true
+live_ppm = 400.0
+glow = 0.3
+
+[node name="Hero" type="Node4D" parent="."]
+position = Vector4(0.0, 0, -1.4, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("6_block")
+radius = 2.8
+height = 0.9
+pedestal_shape = "round"
+bounds = Rect2(-13, -32.5, 26, 45)
+band_angle = 90.0
+
+[node name="HeroBench" type="Node4D" parent="."]
+position = Vector4(0.0, 0, 3.0, 0)
+script = ExtResource("7_bench")
+station = NodePath("../Hero")
+pad = false
+camera_distance = 5.2
+camera_pitch = -16.0
+
+[node name="HeroPanel" type="Node4D" parent="."]
+position = Vector4(-2.25, 0, 3.3, 0)
+script = ExtResource("22_float")
+station = NodePath("../Hero")
+number = 1
+title = "The block"
+kicker = "THE ENGINE'S VOXELS, CUT LIVE"
+face_point = Vector2(0.0, 3.0)
+width = 1.3
+depth = 0.49
+
+[node name="Build" type="Node4D" parent="."]
+position = Vector4(-8.7, 0, 8.7, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("12_build")
+radius = 2.3
+height = 0.5
+pedestal_shape = "box"
+bounds = Rect2(-13, -32.5, 26, 45)
+band_angle = 90.0
+hologram = false
+
+[node name="BuildBench" type="Node4D" parent="."]
+position = Vector4(-5.1, 0, 8.7, 0)
+script = ExtResource("7_bench")
+station = NodePath("../Build")
+pad = false
+camera_distance = 6.0
+camera_pitch = -26.0
+tools = PackedStringArray("brick", "through", "take")
+camera_bounds = Rect2(-11.5, -12.0, 23.0, 23.5)
+
+[node name="BuildPanel" type="Node4D" parent="."]
+position = Vector4(-8.0, 0, 11.35, 0)
+script = ExtResource("22_float")
+station = NodePath("../Build")
+number = 2
+title = "Build it"
+kicker = "BUILDING IN 4D"
+face_point = Vector2(0.0, 8.7)
+width = 1.0
+depth = 0.38
+
+[node name="Hypercubes" type="Node4D" parent="."]
+position = Vector4(-8.7, 0, 3.4, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("23_hypercubes")
+radius = 1.3
+height = 0.9
+pedestal_shape = "box"
+bounds = Rect2(-13, -32.5, 26, 45)
+band_angle = 90.0
+hologram = false
+
+[node name="HypercubesBench" type="Node4D" parent="."]
+position = Vector4(-6.2, 0, 3.4, 0)
+script = ExtResource("7_bench")
+station = NodePath("../Hypercubes")
+pad = false
+camera_distance = 4.0
+camera_pitch = -20.0
+camera_bounds = Rect2(-11.5, -12.0, 23.0, 23.5)
+
+[node name="Terrain" type="Node4D" parent="."]
+position = Vector4(-6.2, 0, -24.5, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("17_case")
+radius = 3.8
+height = 0.45
+pedestal_shape = "box"
+bounds = Rect2(-13, -32.5, 26, 45)
+band_angle = 90.0
+holo_height = 1.5
+holo_base = 0.4
+band_print = false
+metadata/case = "terrain"
+metadata/own_height = true
+metadata/face_yaw = 180.0
+
+[node name="TerrainBench" type="Node4D" parent="."]
+position = Vector4(0.0, 0, -24.5, 0)
+script = ExtResource("7_bench")
+station = NodePath("../Terrain")
+pad = false
+camera_distance = 9.0
+camera_pitch = -24.0
+
+[node name="TerrainPanel" type="Node4D" parent="."]
+position = Vector4(-1.6, 0, -20.2, 0)
+script = ExtResource("22_float")
+station = NodePath("../Terrain")
+number = 3
+title = "The world"
+kicker = "ADAPTED FROM ANDREW (4DENTHUSIAST)"
+face_point = Vector2(0.0, -24.5)
+width = 1.3
+depth = 0.49
+
+[node name="Layer1" type="Node4D" parent="."]
+position = Vector4(9.6, 0, -21.0, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("17_case")
+radius = 0.95
+height = 1.0
+pedestal_shape = "box"
+bounds = Rect2(-13, -32.5, 26, 45)
+band_angle = -90.0
+hologram = false
+band_stripes = false
+metadata/case = "layer"
+metadata/layer = "land"
+metadata/face_yaw = -90.0
+
+[node name="Layer2" type="Node4D" parent="."]
+position = Vector4(9.6, 0, -24.5, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("17_case")
+radius = 0.95
+height = 1.0
+pedestal_shape = "box"
+bounds = Rect2(-13, -32.5, 26, 45)
+band_angle = -90.0
+hologram = false
+band_stripes = false
+metadata/case = "layer"
+metadata/layer = "caves"
+metadata/face_yaw = -90.0
+
+[node name="Layer3" type="Node4D" parent="."]
+position = Vector4(9.6, 0, -28.0, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("17_case")
+radius = 0.95
+height = 1.0
+pedestal_shape = "box"
+bounds = Rect2(-13, -32.5, 26, 45)
+band_angle = -90.0
+hologram = false
+band_stripes = false
+metadata/case = "layer"
+metadata/layer = "clipped"
+metadata/face_yaw = -90.0
+
+[node name="Lights" type="Node4D" parent="."]
+
+[node name="Block" type="Node4D" parent="Lights"]
+position = Vector4(0.0, 8.0, -1.4, 0)
+script = ExtResource("10_light")
+aim = Vector3(0.0, 2.1, -1.4)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "hall"
+metadata/item = "the block"
+metadata/cone = 40.0
+
+[node name="ShelfA" type="Node4D" parent="Lights"]
+position = Vector4(10.5, 8.0, 8.7, 0)
+script = ExtResource("10_light")
+aim = Vector3(10.5, 1.4, 8.7)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "hall"
+metadata/item = "specimen A"
+metadata/group = "A"
+metadata/cone = 21.0
+
+[node name="ShelfB" type="Node4D" parent="Lights"]
+position = Vector4(10.5, 8.0, 5.4, 0)
+script = ExtResource("10_light")
+aim = Vector3(10.5, 1.4, 5.4)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "hall"
+metadata/item = "specimen B"
+metadata/group = "B"
+metadata/cone = 21.0
+
+[node name="ShelfC" type="Node4D" parent="Lights"]
+position = Vector4(10.5, 8.0, 1.8, 0)
+script = ExtResource("10_light")
+aim = Vector3(10.5, 1.4, 1.8)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "hall"
+metadata/item = "specimen C"
+metadata/group = "C"
+metadata/cone = 21.0
+
+[node name="Build" type="Node4D" parent="Lights"]
+position = Vector4(-8.7, 8.0, 8.7, 0)
+script = ExtResource("10_light")
+aim = Vector3(-8.7, 1.6, 8.7)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "hall"
+metadata/item = "the grid you build on"
+metadata/cone = 50.0
+
+[node name="Hypercubes" type="Node4D" parent="Lights"]
+position = Vector4(-8.7, 8.0, 3.4, 0)
+script = ExtResource("10_light")
+aim = Vector3(-8.7, 1.6, 3.4)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "hall"
+metadata/item = "the overlapping hypercubes"
+metadata/cone = 30.0
+
+[node name="Terrain" type="Node4D" parent="Lights"]
+position = Vector4(-6.2, 8.0, -24.5, 0)
+script = ExtResource("10_light")
+aim = Vector3(-6.2, 0.6, -24.5)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "gallery"
+metadata/item = "the world"
+metadata/cone = 70.0
+metadata/strength_k = 0.55
+
+[node name="Layer1" type="Node4D" parent="Lights"]
+position = Vector4(9.6, 8.0, -21.0, 0)
+script = ExtResource("10_light")
+aim = Vector3(9.6, 1.4, -21.0)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "gallery"
+metadata/item = "the land"
+metadata/cone = 21.0
+metadata/strength_k = 0.6
+
+[node name="Layer2" type="Node4D" parent="Lights"]
+position = Vector4(9.6, 8.0, -24.5, 0)
+script = ExtResource("10_light")
+aim = Vector3(9.6, 1.4, -24.5)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "gallery"
+metadata/item = "the caves"
+metadata/cone = 21.0
+metadata/strength_k = 0.6
+
+[node name="Layer3" type="Node4D" parent="Lights"]
+position = Vector4(9.6, 8.0, -28.0, 0)
+script = ExtResource("10_light")
+aim = Vector3(9.6, 1.4, -28.0)
+angle = 34.0
+softness = 2.6
+reach = 14.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.1
+}
+metadata/room = "gallery"
+metadata/item = "the land and caves"
+metadata/cone = 21.0
+metadata/strength_k = 0.6
+
+[node name="Sun" type="Node4D" parent="."]
+position = Vector4(2, 9, 4, 0)
+script = ExtResource("11_sun")
+target = Vector3(0, 0, -2)
+
+[node name="PanelSource" type="Node" parent="."]
+script = ExtResource("15_source")
+room = NodePath("..")
+hero = NodePath("../Hero")
+
+[node name="IntroPanel" type="Node4D" parent="."]
+script = ExtResource("13_panel")
+info = ExtResource("16_info")
+source = NodePath("../PanelSource")
+room_path = NodePath("../Hall")
+wall_name = "left_corner"
+
+[node name="ResearchBoard" type="Node4D" parent="."]
+script = ExtResource("13_panel")
+kind = "research"
+info = ExtResource("16_info")
+source = NodePath("../PanelSource")
+room_path = NodePath("../Hall")
+wall_name = "right_corner"
+
+[node name="WallPanels" type="Node4D" parent="."]
+script = ExtResource("14_pair")
+intro = NodePath("../IntroPanel")
+research = NodePath("../ResearchBoard")
+info = ExtResource("16_info")
+source = NodePath("../PanelSource")
+
+[node name="FieldDoor" type="Node4D" parent="."]
+position = Vector4(0, 2.4, -32.7, 0)
+
+[node name="Spots" type="Node4D" parent="."]
+
+[node name="Block" type="Node4D" parent="Spots"]
+position = Vector4(0.0, 0, 3.0, 0)
+metadata/kind = "choice"
+metadata/radius = 1.5
+metadata/station = NodePath("../../Hero")
+metadata/bench = NodePath("../../HeroBench")
+metadata/options = ["watch", "cut"]
+metadata/target = "Hero"
+
+[node name="Build" type="Node4D" parent="Spots"]
+position = Vector4(-5.1, 0, 8.7, 0)
+metadata/kind = "choice"
+metadata/radius = 1.4
+metadata/near = 1.6
+metadata/station = NodePath("../../Build")
+metadata/bench = NodePath("../../BuildBench")
+metadata/options = ["build"]
+metadata/target = "Build"
+
+[node name="Hypercubes" type="Node4D" parent="Spots"]
+position = Vector4(-6.2, 0, 3.4, 0)
+metadata/kind = "choice"
+metadata/radius = 1.4
+metadata/near = 1.0
+metadata/station = NodePath("../../Hypercubes")
+metadata/bench = NodePath("../../HypercubesBench")
+metadata/options = ["overlap"]
+metadata/target = "Hypercubes"
+
+[node name="ShelfA" type="Node4D" parent="Spots"]
+position = Vector4(8.5, 0, 8.7, 0)
+metadata/kind = "popup"
+metadata/radius = 1.1
+metadata/station = NodePath("../../Shelf1")
+
+[node name="ShelfB" type="Node4D" parent="Spots"]
+position = Vector4(8.5, 0, 5.4, 0)
+metadata/kind = "popup"
+metadata/radius = 1.1
+metadata/station = NodePath("../../Shelf2")
+
+[node name="ShelfC" type="Node4D" parent="Spots"]
+position = Vector4(8.5, 0, 1.8, 0)
+metadata/kind = "popup"
+metadata/radius = 1.1
+metadata/station = NodePath("../../Shelf3")
+
+[node name="RightWall" type="Node4D" parent="Spots"]
+position = Vector4(5.1, 0, -8.0, 0)
+metadata/kind = "view"
+metadata/radius = 1.6
+metadata/target = "RightWallTarget"
+
+[node name="LeftWall" type="Node4D" parent="Spots"]
+position = Vector4(-5.1, 0, -8.0, 0)
+metadata/kind = "view"
+metadata/radius = 1.6
+metadata/target = "LeftWallTarget"
+
+[node name="Terrain" type="Node4D" parent="Spots"]
+position = Vector4(0.0, 0, -24.5, 0)
+metadata/kind = "choice"
+metadata/radius = 1.5
+metadata/station = NodePath("../../Terrain")
+metadata/bench = NodePath("../../TerrainBench")
+metadata/options = ["cut", "biome"]
+metadata/target = "Terrain"
+
+[node name="Layer1" type="Node4D" parent="Spots"]
+position = Vector4(7.2, 0, -21.0, 0)
+metadata/kind = "popup"
+metadata/radius = 1.1
+metadata/station = NodePath("../../Layer1")
+
+[node name="Layer2" type="Node4D" parent="Spots"]
+position = Vector4(7.2, 0, -24.5, 0)
+metadata/kind = "popup"
+metadata/radius = 1.1
+metadata/station = NodePath("../../Layer2")
+
+[node name="Layer3" type="Node4D" parent="Spots"]
+position = Vector4(7.2, 0, -28.0, 0)
+metadata/kind = "popup"
+metadata/radius = 1.1
+metadata/station = NodePath("../../Layer3")
+
+[node name="Paths" type="Node4D" parent="."]
+
+[node name="Targets" type="Node4D" parent="Paths"]
+
+[node name="Hero" type="Node4D" parent="Paths/Targets"]
+position = Vector4(0.0, 0, -1.4, 0)
+script = ExtResource("21_target")
+label = "The block"
+size = Vector3(5.6, 1, 5.6)
+
+[node name="Build" type="Node4D" parent="Paths/Targets"]
+position = Vector4(-8.7, 0, 8.7, 0)
+script = ExtResource("21_target")
+label = "Build it"
+size = Vector3(4.8, 1, 4.8)
+
+[node name="RightWallTarget" type="Node4D" parent="Paths/Targets"]
+position = Vector4(8.4, 0, -11.0, 0)
+script = ExtResource("21_target")
+label = "The block's wall"
+size = Vector3(1, 1, 1)
+
+[node name="LeftWallTarget" type="Node4D" parent="Paths/Targets"]
+position = Vector4(-8.4, 0, -11.0, 0)
+script = ExtResource("21_target")
+label = "Voxel Lab wall"
+size = Vector3(1, 1, 1)
+
+[node name="GalleryDoor" type="Node4D" parent="Paths/Targets"]
+position = Vector4(0, 0, -15.0, 0)
+script = ExtResource("21_target")
+label = "Gallery door"
+size = Vector3(3, 4.2, 0.6)
+
+[node name="Terrain" type="Node4D" parent="Paths/Targets"]
+position = Vector4(-6.2, 0, -24.5, 0)
+script = ExtResource("21_target")
+label = "The world"
+size = Vector3(7.6, 1, 7.6)
+
+[node name="FieldDoorTarget" type="Node4D" parent="Paths/Targets"]
+position = Vector4(0, 0, -32.7, 0)
+script = ExtResource("21_target")
+label = "Field door"
+size = Vector3(3.2, 4.2, 0.6)
+
+[node name="Hall" type="Node4D" parent="Paths"]
+script = ExtResource("18_net")
+graph = ExtResource("19_hall")
+targets = NodePath("../Targets")
+under_color = Color(0.64, 0.65, 0.66, 1)
+frame_tint = Color(0.09, 0.38, 0.843, 1)
+
+[node name="Gallery" type="Node4D" parent="Paths"]
+script = ExtResource("18_net")
+graph = ExtResource("20_gallery")
+targets = NodePath("../Targets")
+under_color = Color(0.64, 0.65, 0.66, 1)
+frame_tint = Color(0.09, 0.38, 0.843, 1)

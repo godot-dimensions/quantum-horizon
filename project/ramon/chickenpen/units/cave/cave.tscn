@@ -1,0 +1,32 @@
+[gd_scene load_steps=5 format=4]
+
+[ext_resource type="ArrayTetraMesh4D" path="res://ramon/chickenpen/terrain/baked/cave_hill_even.res" id="cave_hill_mesh"]
+[ext_resource type="Script" uid="uid://wj5fbldct7mk" path="res://ramon/chickenpen/scripts/pen_cave_hill_4d.gd" id="pen_cave_hill"]
+[ext_resource type="ImageTexture3D" path="res://ramon/chickenpen/terrain/terrain_tint_3d.tres" id="shared_ImageTexture3D_umeec"]
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_wbvub"]
+albedo_source = 3
+albedo_texture_3d = ExtResource("shared_ImageTexture3D_umeec")
+
+[node name="Cave" type="Node4D"]
+
+[node name="CaveHill" type="MeshInstance4D" parent="."]
+position = Vector4(-17, 0, 40, 0)
+material_override = SubResource("TetraMaterial4D_wbvub")
+mesh = ExtResource("cave_hill_mesh")
+script = ExtResource("pen_cave_hill")
+player_path = NodePath("../../../Player")
+crossing_path = NodePath("../../../CaveCrossing")
+
+[node name="DoorSpot" type="Node4D" parent="." groups=["tutor_spot"]]
+position = Vector4(-0.5, 1, 12.9, 0)
+metadata/what = "Where the tutor explains the door (pen_tutor_4d.gd): a metre and a half in front of the arch, at the arch's own W, so on any other slice you are told which way it is."
+metadata/tutor_key = "cave_door"
+metadata/tutor_text = "The arch is {dir} of your slice. Hold {key} until it opens."
+metadata/tutor_radius = 4.5
+metadata/tutor_w = 1.5
+metadata/tutor_when = "off"
+
+[node name="CaveArrival" type="Node4D" parent="."]
+position = Vector4(-0.5, 0, 12.8, 0)
+metadata/what = "Where the pen's path arrives (PenLayout/paths/pen_a.tres): its destination is anchored here, so it goes where the unit goes."

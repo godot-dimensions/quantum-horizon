@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="MenuStyle" load_steps=3 format=3]
+
+[ext_resource type="FontFile" path="res://ramon/Demo/fonts/Montserrat/static/Montserrat-SemiBold.ttf" id="1_font"]
+[ext_resource type="Script" path="res://ramon/Menu/scripts/menu_style.gd" id="2_script"]
+
+[resource]
+script = ExtResource("2_script")
+font = ExtResource("1_font")
+preview_aspect = 1.778
+thumbnail_width = 130.0
+thumbnail_tint = Color(0.46, 0.5, 0.56, 1)
+detail_paragraph_gap = 2.8
+info_cell_h_gap = 2.4

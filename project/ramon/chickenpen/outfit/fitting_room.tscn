@@ -1,0 +1,35 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://ramon/chickenpen/outfit/outfit_room_4d.gd" id="1_room"]
+[ext_resource type="Script" path="res://ramon/CreationLab/LabKit/lab_room_4d.gd" id="2_light"]
+[ext_resource type="Script" path="res://ramon/CreationLab/kit/kit_room_4d.gd" id="3_walls"]
+[ext_resource type="Script" path="res://ramon/CreationLab/kit/kit_wall_text_4d.gd" id="4_text"]
+
+[node name="FittingRoom" type="Node4D"]
+script = ExtResource("1_room")
+metadata/what = "Trym's fitting room: the advanced mode of the outfit changer, reached from the fitting circle's ADVANCED stop, or run on its own (chickenpen/outfit/PLAN_FITTING_ROOM.md)."
+
+[node name="Light" type="Node4D" parent="."]
+script = ExtResource("2_light")
+start_mood = "bright"
+
+[node name="Walls" type="Node4D" parent="."]
+script = ExtResource("3_walls")
+size = Vector3(10, 5, 10)
+edge_codes = {
+"e": "blue",
+"n": "blue",
+"s": "blue",
+"w": "blue"
+}
+cove = false
+
+[node name="Lesson" type="Node" parent="Walls"]
+script = ExtResource("4_text")
+side = "n"
+along = Vector2(-4.6, 1.4)
+up = Vector2(2.5, 4.4)
+title = "Fitting room"
+subtitle = "What you wear here goes with you: the farm, the cave, the cinema."
+body = "Every piece is at least as thick through W as you are, so it stays on whichever way you turn your slice. The hypercube is a hat you only ever see a slice of."
+code = "blue"

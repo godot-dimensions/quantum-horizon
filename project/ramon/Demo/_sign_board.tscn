@@ -1,0 +1,26 @@
+[gd_scene load_steps=11 format=3 uid="uid://p628713ygmtx"]
+
+[ext_resource type="Script" uid="uid://wwtbhyshmdc5" path="res://ramon/Demo/_sign_board.gd" id="1_board"]
+[ext_resource type="Script" uid="uid://2yrp524m1rto" path="res://ramon/Demo/scripts/hub_gate_def.gd" id="2_def"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates/gate02.tres" id="4_g2"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates/gate03.tres" id="5_g3"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates/gate04.tres" id="6_g4"]
+[ext_resource type="Resource" uid="uid://c6wn6r8bijy72" path="res://ramon/Demo/gates/gate05.tres" id="7_g5"]
+[ext_resource type="Resource" uid="uid://ccaa7ccrewq6u" path="res://ramon/Demo/sign_style.tres" id="8_style"]
+[ext_resource type="Resource" uid="uid://b42upmss6xudx" path="res://ramon/Demo/gates/gate06.tres" id="20_g6"]
+[ext_resource type="Resource" path="res://ramon/Demo/gates/gate07.tres" id="21_g7"]
+[ext_resource type="Resource" uid="uid://8bdni024u5wh" path="res://ramon/Demo/gates/gate08.tres" id="22_g8"]
+
+[node name="SignBoard" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 159.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_board")
+gates = Array[ExtResource("2_def")]([ExtResource("4_g2"), ExtResource("5_g3"), ExtResource("6_g4"), ExtResource("7_g5"), ExtResource("20_g6"), ExtResource("21_g7"), ExtResource("22_g8")])
+panel_size = Vector2(3, 0.7)
+sign_style = ExtResource("8_style")
+corner_radius = 0.11

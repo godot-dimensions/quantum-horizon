@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="HubTier4D" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/Demo/scripts/hub_tier_def.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+height = 0.6
+ramp_run = 3.0
+w_offset = 6.0
+w_extent = 5.0

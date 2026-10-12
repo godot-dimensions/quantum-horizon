@@ -1,0 +1,98 @@
+[gd_scene load_steps=9 format=3 uid="uid://cvsiobipgt1en"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://cci7qchdsxa2r" path="res://sandbox/shrubbery/shrubbery_lab.gd" id="2_lab"]
+[ext_resource type="Script" uid="uid://bu06wpw8orns5" path="res://sandbox/shrubbery/shrubbery_lab_controller.gd" id="3_controller"]
+[ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="99_return"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_sky"]
+horizon_color = Color(0.75, 0.82, 0.9, 1)
+top_color = Color(0.25, 0.45, 0.85, 1)
+bottom_color = Color(0.35, 0.32, 0.28, 1)
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_platform"]
+size = Vector4(30, 2, 30, 12)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_platform"]
+albedo_color = Color(0.3, 0.32, 0.35, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_platform"]
+size = Vector4(30, 2, 30, 12)
+
+[node name="ShrubberyLab" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FlatPlane" type="Node4D" parent="."]
+
+[node name="WorldEnvironment4D" type="WorldEnvironment4D" parent="FlatPlane"]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_sky")
+
+[node name="Sun" type="DirectionalLight4D" parent="FlatPlane"]
+basis = Projection(1, 0, 0, 0, 0, -0.3714, -0.9284, 0, 0, 0.9284, -0.3714, 0, 0, 0, 0, 1)
+light_color = Color(1, 0.95, 0.88, 1)
+light_energy = 1.0
+
+[node name="Platform" type="StaticBody4D" parent="FlatPlane"]
+position = Vector4(0, -1, 0, 0)
+
+[node name="CollisionShape" type="CollisionShape4D" parent="FlatPlane/Platform"]
+shape = SubResource("BoxShape4D_platform")
+
+[node name="Mesh" type="MeshInstance4D" parent="FlatPlane/Platform"]
+material_override = SubResource("TetraMaterial4D_platform")
+mesh = SubResource("BoxTetraMesh4D_platform")
+
+[node name="Player" parent="FlatPlane" instance=ExtResource("1_player")]
+position = Vector4(-3, 1.5, -3, 0)
+basis = Projection(-0.70710678118655, 0, 0.70710678118655, 0, 0, 1, 0, 0, -0.70710678118655, 0, -0.70710678118655, 0, 0, 0, 0, 1)
+
+[node name="ShrubberyLabRoot" type="Node4D" parent="FlatPlane"]
+script = ExtResource("2_lab")
+
+[node name="InfoLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(900, 26)
+layout_mode = 0
+offset_left = 8.0
+offset_top = 34.0
+offset_right = 908.0
+offset_bottom = 60.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+text = "Shrubbery lab - inspect and tweak procedural shrub generation. Free-roam movement/4D rotation."
+
+[node name="HintLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(900, 50)
+layout_mode = 0
+offset_left = 8.0
+offset_top = 64.0
+offset_right = 908.0
+offset_bottom = 110.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+
+[node name="ShrubberyLabController" type="Node" parent="."]
+script = ExtResource("3_controller")
+lab_path = NodePath("../FlatPlane/ShrubberyLabRoot")
+hint_label_path = NodePath("../HintLabel")
+info_label_path = NodePath("../InfoLabel")
+
+[node name="ReturnButton" parent="." instance=ExtResource("99_return")]
+
+[node name="FirstPersonCamera" parent="FlatPlane/Player/PlayerHead" index="0"]
+rendering_engine_name = "Combined"
+w_fade_distance = 8.0
+edge_falloff = 0.6
+plane_sharpness = 0.2
+skewness = 0.35
+projection_opacity = 0.85
+projection_opacity_base = 0.5
+
+[editable path="FlatPlane/Player"]

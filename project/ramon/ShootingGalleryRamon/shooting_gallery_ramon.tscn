@@ -1,0 +1,619 @@
+[gd_scene load_steps=47 format=3 uid="uid://c35cc8bahk37i"]
+
+[ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_klo0o"]
+[ext_resource type="CompressedTexture3D" uid="uid://7sn7g152xkb3" path="res://textures/dev_finals/ramdev_blue.png" id="1_mkiib"]
+[ext_resource type="ArrayTetraMesh4D" uid="uid://u62ydn7uiys0" path="res://models/primitives/platonic/600_cell/600_cell.g4b" id="2_dijkm"]
+[ext_resource type="CompressedTexture3D" uid="uid://bqold4qr3x2p" path="res://textures/dev_finals/ramdev_yellow.png" id="3_bsfo8"]
+[ext_resource type="Script" uid="uid://ipqmfh8o7wv4" path="res://ramon/ShootingGalleryRamon/scripts/gun_core_rotator_ramon.gd" id="3_ramon"]
+[ext_resource type="Script" uid="uid://byjs5wqri332t" path="res://ramon/ShootingGalleryRamon/scripts/duck_row_spawner.gd" id="5_nc0f2"]
+[ext_resource type="Script" uid="uid://cm2qsjc6tlvxv" path="res://ramon/ShootingGalleryRamon/scripts/fall_respawn.gd" id="6_wbi24"]
+[ext_resource type="Script" uid="uid://euwrsrv1cl7" path="res://ramon/ShootingGalleryRamon/scripts/crosshair.gd" id="7_r48ea"]
+[ext_resource type="Shader" uid="uid://b2bofj0x8mes5" path="res://ramon/ShootingGalleryRamon/scripts/slice_alignment_glow.gdshader" id="10_3d2qt"]
+[ext_resource type="Script" uid="uid://c5d33a56onklc" path="res://ramon/ShootingGalleryRamon/scripts/slice_alignment_glow.gd" id="11_vjnna"]
+[ext_resource type="CompressedTexture3D" uid="uid://cayw13c0c7nvx" path="res://textures/dev_finals/ramdev_black.png" id="12_dijkm"]
+[ext_resource type="Script" uid="uid://d3has72ijoeki" path="res://ramon/ShootingGalleryRamon/scripts/gallery_target_spawner_ramon.gd" id="13_ramon"]
+[ext_resource type="CompressedTexture3D" uid="uid://cd3dx4oq7ouk8" path="res://textures/tutorial/testrange2.png" id="22_tutorial_ramon"]
+[ext_resource type="Script" uid="uid://dfc3xg5r5cdop" path="res://ramon/ShootingGalleryRamon/scripts/shape_blocker_spawner_ramon.gd" id="23_blockers"]
+[ext_resource type="Script" uid="uid://jm45lfry63cy" path="res://ramon/ShootingGalleryRamon/scripts/black_stalker_spawner_ramon.gd" id="24_stalker"]
+[ext_resource type="Script" uid="uid://q4lle7uuxrpb" path="res://ramon/ShootingGalleryRamon/scripts/game_over_overlay_ramon.gd" id="25_gameover"]
+[ext_resource type="Script" uid="uid://bmx2jrxoak7pu" path="res://ramon/ShootingGalleryRamon/scripts/hitscan_weapon_ramon.gd" id="26_hitscan_ramon"]
+[ext_resource type="Script" uid="uid://dikjl0dbt6awv" path="res://ramon/ShootingGalleryRamon/scripts/charge_bar_ramon.gd" id="27_chargebar"]
+[ext_resource type="Script" uid="uid://bwwvnhnde2gvu" path="res://ramon/ShootingGalleryRamon/scripts/green_sphere_spawner_ramon.gd" id="28_greensphere"]
+[ext_resource type="Script" uid="uid://cdyu547dfidnc" path="res://ramon/ShootingGalleryRamon/scripts/scene_environment_ramon.gd" id="29_env"]
+[ext_resource type="Script" uid="uid://dayaqacq37qju" path="res://ramon/ShootingGalleryRamon/scripts/instructions_overlay_ramon.gd" id="30_instructions"]
+[ext_resource type="Script" uid="uid://bwberot5mvh5t" path="res://ramon/ShootingGalleryRamon/scripts/slice_radar_ramon.gd" id="31_radar_ramon"]
+[ext_resource type="Script" uid="uid://c0616r1ij5vay" path="res://ramon/ShootingGalleryRamon/scripts/holodeck_ramon.gd" id="32_holodeck"]
+[ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="99_return"]
+[ext_resource type="Script" path="res://ramon/ShootingGalleryRamon/scripts/range_way_home_ramon.gd" id="100_wayhome"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_blue_floor"]
+size = Vector4(20, 1, 10, 10)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_orange"]
+albedo_source = 3
+albedo_texture_3d = ExtResource("1_mkiib")
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_blue_floor"]
+size = Vector4(20, 1, 10, 10)
+cell_texture_map = 1
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_green"]
+size = Vector4(10, 1, 6, 10)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_green"]
+albedo_source = 3
+albedo_texture_3d = ExtResource("12_dijkm")
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_green"]
+size = Vector4(1, 1, 1, 10)
+cell_texture_map = 1
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_barrier"]
+size = Vector4(10, 1.1, 0.3, 10)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_hazard_yellow"]
+albedo_source = 3
+albedo_texture_3d = ExtResource("12_dijkm")
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_hazard_stripe"]
+size = Vector4(10, 0.275, 0.1, 10)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_hazard_black"]
+albedo_color = Color(0.05, 0.05, 0.05, 1)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_nc0f2"]
+albedo_source = 3
+albedo_texture_3d = ExtResource("3_bsfo8")
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_gun_metal"]
+albedo_color = Color(0.22, 0.22, 0.25, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gun_barrel"]
+size = Vector4(0.05, 0.05, 0.3, 0.05)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_gun_stock"]
+size = Vector4(0.06, 0.1, 0.22, 0.06)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_gun_core_ramon"]
+albedo_color = Color(0.35, 0.03, 0.03, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hud_panel"]
+content_margin_left = 10.0
+content_margin_top = 4.0
+content_margin_right = 10.0
+content_margin_bottom = 4.0
+bg_color = Color(0, 0, 0, 0.55)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_billboard"]
+albedo_source = 3
+albedo_texture_3d = ExtResource("22_tutorial_ramon")
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_billboard"]
+size = Vector4(4, 3, 0.12, 3)
+cell_texture_map = 1
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_slice_glow"]
+shader = ExtResource("10_3d2qt")
+shader_parameter/glow_color = Color(0.2, 1, 0.35, 1)
+shader_parameter/intensity = 0.0
+shader_parameter/edge_thickness = 0.18
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_bsfo8"]
+albedo_source = 3
+albedo_texture_3d = ExtResource("12_dijkm")
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_nc0f2"]
+cell_texture_map = 1
+
+[node name="ShootingGallery" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FlatPlane" type="Node4D" parent="."]
+
+[node name="BlueFloor" type="StaticBody4D" parent="FlatPlane"]
+position = Vector4(0, -0.5, 0, 0)
+
+[node name="CollisionShape" type="CollisionShape4D" parent="FlatPlane/BlueFloor"]
+shape = SubResource("BoxShape4D_blue_floor")
+
+[node name="Mesh" type="MeshInstance4D" parent="FlatPlane/BlueFloor"]
+material_override = SubResource("TetraMaterial4D_orange")
+mesh = SubResource("BoxTetraMesh4D_blue_floor")
+
+[node name="blackfloor" type="StaticBody4D" parent="FlatPlane"]
+position = Vector4(0, -0.5, 8, 0)
+
+[node name="CollisionShape" type="CollisionShape4D" parent="FlatPlane/blackfloor"]
+shape = SubResource("BoxShape4D_green")
+
+[node name="Tile_0_0" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-4.5, 0, -2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_1_0" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-3.5, 0, -2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_2_0" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-2.5, 0, -2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_3_0" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-1.5, 0, -2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_4_0" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-0.5, 0, -2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_5_0" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(0.5, 0, -2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_6_0" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(1.5, 0, -2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_7_0" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(2.5, 0, -2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_8_0" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(3.5, 0, -2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_9_0" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(4.5, 0, -2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_0_1" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-4.5, 0, -1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_1_1" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-3.5, 0, -1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_2_1" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-2.5, 0, -1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_3_1" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-1.5, 0, -1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_4_1" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-0.5, 0, -1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_5_1" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(0.5, 0, -1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_6_1" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(1.5, 0, -1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_7_1" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(2.5, 0, -1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_8_1" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(3.5, 0, -1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_9_1" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(4.5, 0, -1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_0_2" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-4.5, 0, -0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_1_2" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-3.5, 0, -0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_2_2" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-2.5, 0, -0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_3_2" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-1.5, 0, -0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_4_2" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-0.5, 0, -0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_5_2" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(0.5, 0, -0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_6_2" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(1.5, 0, -0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_7_2" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(2.5, 0, -0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_8_2" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(3.5, 0, -0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_9_2" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(4.5, 0, -0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_0_3" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-4.5, 0, 0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_1_3" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-3.5, 0, 0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_2_3" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-2.5, 0, 0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_3_3" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-1.5, 0, 0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_4_3" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-0.5, 0, 0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_5_3" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(0.5, 0, 0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_6_3" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(1.5, 0, 0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_7_3" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(2.5, 0, 0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_8_3" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(3.5, 0, 0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_9_3" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(4.5, 0, 0.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_0_4" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-4.5, 0, 1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_1_4" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-3.5, 0, 1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_2_4" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-2.5, 0, 1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_3_4" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-1.5, 0, 1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_4_4" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-0.5, 0, 1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_5_4" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(0.5, 0, 1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_6_4" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(1.5, 0, 1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_7_4" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(2.5, 0, 1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_8_4" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(3.5, 0, 1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_9_4" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(4.5, 0, 1.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_0_5" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-4.5, 0, 2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_1_5" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-3.5, 0, 2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_2_5" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-2.5, 0, 2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_3_5" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-1.5, 0, 2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_4_5" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(-0.5, 0, 2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_5_5" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(0.5, 0, 2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_6_5" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(1.5, 0, 2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_7_5" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(2.5, 0, 2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_8_5" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(3.5, 0, 2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Tile_9_5" type="MeshInstance4D" parent="FlatPlane/blackfloor"]
+position = Vector4(4.5, 0, 2.5, 0)
+material_override = SubResource("TetraMaterial4D_green")
+mesh = SubResource("BoxTetraMesh4D_green")
+
+[node name="Barrier" type="StaticBody4D" parent="FlatPlane"]
+position = Vector4(0, 0.55, 5, 0)
+
+[node name="CollisionShape" type="CollisionShape4D" parent="FlatPlane/Barrier"]
+shape = SubResource("BoxShape4D_barrier")
+
+[node name="Stripe0" type="MeshInstance4D" parent="FlatPlane/Barrier"]
+position = Vector4(0, -0.4125, 0, 0)
+material_override = SubResource("TetraMaterial4D_hazard_yellow")
+mesh = SubResource("BoxTetraMesh4D_hazard_stripe")
+
+[node name="Stripe1" type="MeshInstance4D" parent="FlatPlane/Barrier"]
+position = Vector4(0, -0.1375, 0, 0)
+material_override = SubResource("TetraMaterial4D_hazard_black")
+mesh = SubResource("BoxTetraMesh4D_hazard_stripe")
+
+[node name="Stripe2" type="MeshInstance4D" parent="FlatPlane/Barrier"]
+position = Vector4(0, 0.13749999999999996, 0, 0)
+material_override = SubResource("TetraMaterial4D_nc0f2")
+mesh = SubResource("BoxTetraMesh4D_hazard_stripe")
+
+[node name="Stripe3" type="MeshInstance4D" parent="FlatPlane/Barrier"]
+position = Vector4(0, 0.4125, 0, 0)
+material_override = SubResource("TetraMaterial4D_hazard_black")
+mesh = SubResource("BoxTetraMesh4D_hazard_stripe")
+
+[node name="Player" parent="FlatPlane" instance=ExtResource("1_klo0o")]
+position = Vector4(0, 1, 8.85711883424072, 0)
+basis = Projection(0.9995500336999996, 0, 0, 0.02999550019999999, 0, 1, 0, 0, 0, 0, 1, 0, -0.02999550019999999, 0, 0, 0.9995500336999996)
+
+[node name="GunViewmodel" type="Node4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera" index="0"]
+position = Vector4(0.3, -0.25, -0.5, 0)
+
+[node name="Barrel" type="MeshInstance4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel"]
+position = Vector4(0, 0.04, -0.22, 0)
+material_override = SubResource("TetraMaterial4D_gun_metal")
+mesh = SubResource("BoxTetraMesh4D_gun_barrel")
+
+[node name="Stock" type="MeshInstance4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel"]
+position = Vector4(0, -0.04, 0.16, 0)
+material_override = SubResource("TetraMaterial4D_gun_metal")
+mesh = SubResource("BoxTetraMesh4D_gun_stock")
+
+[node name="Core" type="MeshInstance4D" parent="FlatPlane/Player/PlayerHead/FirstPersonCamera/GunViewmodel"]
+position = Vector4(0, 0, -0.01, 0)
+basis = Projection(0.045, 0, 0, 0, 0, 0.045, 0, 0, 0, 0, 0.045, 0, 0, 0, 0, 0.045)
+material_override = SubResource("TetraMaterial4D_gun_core_ramon")
+mesh = ExtResource("2_dijkm")
+script = ExtResource("3_ramon")
+
+[node name="GalleryTargetSpawner" type="Node4D" parent="FlatPlane"]
+script = ExtResource("13_ramon")
+
+[node name="TimeLabel" type="Label" parent="FlatPlane/GalleryTargetSpawner"]
+custom_minimum_size = Vector2(400, 26)
+offset_left = 8.0
+offset_top = 34.0
+offset_right = 408.0
+offset_bottom = 60.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_hud_panel")
+text = "Elapsed: 0.0s | Avg: 0.0s (0 catches)"
+
+[node name="ResultLabel" type="Label" parent="FlatPlane/GalleryTargetSpawner"]
+custom_minimum_size = Vector2(400, 26)
+offset_left = 8.0
+offset_top = 64.0
+offset_right = 408.0
+offset_bottom = 90.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_hud_panel")
+text = "Last catch: -"
+
+[node name="DuckRowSpawner" type="Node4D" parent="FlatPlane"]
+script = ExtResource("5_nc0f2")
+
+[node name="FallRespawn" type="Node" parent="FlatPlane"]
+script = ExtResource("6_wbi24")
+
+[node name="ShapeBlockerSpawner" type="Node4D" parent="FlatPlane"]
+script = ExtResource("23_blockers")
+
+[node name="BlackStalkerSpawner" type="Node4D" parent="FlatPlane"]
+script = ExtResource("24_stalker")
+
+[node name="GreenSphereSpawner" type="Node4D" parent="FlatPlane"]
+script = ExtResource("28_greensphere")
+
+[node name="SceneEnvironment" type="Node" parent="FlatPlane"]
+script = ExtResource("29_env")
+
+[node name="Holodeck" type="Node4D" parent="FlatPlane"]
+script = ExtResource("32_holodeck")
+
+[node name="TutorialBillboard" type="MeshInstance4D" parent="FlatPlane"]
+position = Vector4(-5.004023422436406, 1.739733530857434, 7.467448630204475, -1.9009113572049547)
+basis = Projection(7.339290167946595e-17, 0, -1.1985970441528933, 0, 0, 1.1985970441528937, 0, 0, 1.1985970441528933, 0, 7.339290167946595e-17, 0, 0, 0, 0, 1.1985970441528937)
+material_override = SubResource("TetraMaterial4D_billboard")
+mesh = SubResource("BoxTetraMesh4D_billboard")
+
+[node name="Crosshair" type="Control" parent="."]
+anchors_preset = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+script = ExtResource("7_r48ea")
+
+[node name="HitscanWeapon" type="Node" parent="."]
+script = ExtResource("26_hitscan_ramon")
+
+[node name="SliceRadar" type="Control" parent="."]
+layout_mode = 1
+anchor_left = 0.333
+anchor_top = 0.5
+anchor_right = 0.667
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("31_radar_ramon")
+axis_label_style = 2
+axis_line_style = 2
+
+[node name="SliceAlignmentGlow" type="Control" parent="."]
+material = SubResource("ShaderMaterial_slice_glow")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("11_vjnna")
+
+[node name="MeshInstance4D" type="MeshInstance4D" parent="."]
+position = Vector4(0, 0, 14.188220091193704, 0)
+material_override = SubResource("TetraMaterial4D_bsfo8")
+mesh = SubResource("BoxTetraMesh4D_nc0f2")
+
+[node name="GameOverOverlay" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("25_gameover")
+
+[node name="ChargeBar" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("27_chargebar")
+
+[node name="InstructionsOverlay" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("30_instructions")
+
+[node name="ReturnButton" parent="." instance=ExtResource("99_return")]
+
+[node name="WayHome" type="Node" parent="."]
+script = ExtResource("100_wayhome")
+
+[editable path="FlatPlane/Player"]

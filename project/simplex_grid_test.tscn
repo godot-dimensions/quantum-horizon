@@ -1,0 +1,79 @@
+[gd_scene load_steps=9 format=3 uid="uid://nremly42cjsb"]
+
+[ext_resource type="Script" uid="uid://cet3tnp3nbwi5" path="res://ramon/SkyBoxClouds/scripts/cloud_field_4d.gd" id="2_clouds"]
+[ext_resource type="Script" uid="uid://crm4x6u3ifpyn" path="res://scripts/simplex_grid_layer.gd" id="3_grid"]
+[ext_resource type="Script" uid="uid://n8uxxkbptg6o" path="res://ramon/voxel_port/scripts/voxel_hover_camera_4d.gd" id="4_hover"]
+[ext_resource type="Script" uid="uid://dqol6vr8ihx80" path="res://scripts/simplex_grid_test_hud.gd" id="5_hud"]
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_ground"]
+size = Vector4(600, 2, 600, 600)
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_ground"]
+albedo_color = Color(0.28, 0.33, 0.26, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ground"]
+size = Vector4(600, 2, 600, 600)
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_0cgc1"]
+
+[node name="SimplexGridTest" type="Node4D"]
+
+[node name="Rig" type="Node4D" parent="."]
+
+[node name="Ground" type="StaticBody4D" parent="Rig"]
+position = Vector4(0, -1, 0, 0)
+
+[node name="CollisionShape4D" type="CollisionShape4D" parent="Rig/Ground"]
+shape = SubResource("BoxShape4D_ground")
+
+[node name="GroundMesh" type="MeshInstance4D" parent="Rig/Ground"]
+visible = false
+material_override = SubResource("TetraMaterial4D_ground")
+mesh = SubResource("BoxTetraMesh4D_ground")
+
+[node name="Skydome" type="WorldEnvironment4D" parent="Rig"]
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_0cgc1")
+tonemap_mode = 2
+
+[node name="Clouds" type="MeshInstance4D" parent="Rig"]
+script = ExtResource("2_clouds")
+preset_name = "my_sky1"
+clump_attempts = 120
+animate = true
+wind_speed = 0.30000000000000004
+evolve_amplitude = 18.0
+cloud_color = Color(0.93, 0.94, 0.97, 1)
+cloud_seed = 3452511263
+max_tetrahedra = 95000
+
+[node name="SimplexGrid" type="Node4D" parent="Rig"]
+script = ExtResource("3_grid")
+
+[node name="HoverCamera" type="Camera4D" parent="."]
+current = true
+rendering_engine_name = "Cross-section"
+view_angle_type = 1
+field_of_view_4d = 1.3962634015954638
+field_of_view_3d = 1.3494818844471053
+script = ExtResource("4_hover")
+look_at_target = Vector4(0, 1, 0, 0)
+radius = 40.0
+rig_path = NodePath("../Rig")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="DevMetrics" type="Label" parent="HUD"]
+offset_left = 8.0
+offset_top = 4.0
+offset_right = 400.0
+offset_bottom = 90.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 18
+text = "FPS: 0"
+script = ExtResource("5_hud")
+grid_path = NodePath("../../Rig/SimplexGrid")
+clouds_path = NodePath("../../Rig/Clouds")

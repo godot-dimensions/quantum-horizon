@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://dhu3rj7x2xj4n"
+path="res://.godot/imported/flock_step.glsl-8c518a16047dad5210769db7af0be764.res"
+
+[deps]
+
+source_file="res://ramon/chickenpen/flock/flock_step.glsl"
+dest_files=["res://.godot/imported/flock_step.glsl-8c518a16047dad5210769db7af0be764.res"]
+
+[params]
+

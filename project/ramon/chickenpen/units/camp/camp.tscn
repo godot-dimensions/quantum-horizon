@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=4]
+
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_research_camp_4d.gd" id="camp"]
+
+[node name="Camp" type="Node4D"]
+script = ExtResource("camp")
+metadata/what = "The researchers' camp, built to Ramon's sheet (PenLayout/refs/camp_views.png, PenLayout/PLAN_REF_LOCK.md part E). The origin is the fire's middle; V at the camp brings your slice to it when it is half in view."

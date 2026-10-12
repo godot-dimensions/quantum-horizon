@@ -1,0 +1,78 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/CreationLab/hall/hall_info.gd" id="1_info"]
+
+[resource]
+script = ExtResource("1_info")
+cards = {
+"Centre": {
+"built": "Eighteen 4D balls lofted into one skin, then cut into rigid pieces at the joints; as it walks only a band of skin round each joint is reshaped.",
+"four_d": "Every ball is a 4D sphere. You see the slice of it your view cuts, so turning it through W thins and swells its body.",
+"kicker": "LAND  ·  18 BALLS  ·  STRIDER WALK",
+"moves": "Four legs, each on its own phase of the walk. Its skin is bound to the leg bones once, then only moved, never lofted again.",
+"title": "Brachiosaurus"
+},
+"Chickens": {
+"built": "Five lofts to a bird: body, neck and head, wing and two legs. The legs are cut into thigh and shank on the first frame.",
+"four_d": "Body, neck, wing and legs are lofts of their own, so a peck moves the head without rebuilding the bird.",
+"kicker": "LAND  ·  TWO LEGS  ·  A WANDER OF THEIR OWN",
+"moves": "A wander steered by noise, pulled gently home when they stray, and every few seconds a peck.",
+"title": "Chickens"
+},
+"Chipmunk": {
+"built": "Three small lofts, fur, head and a four-ball tail, with its stripes, cheeks and legs as boxes on pivots.",
+"four_d": "It is 1.6 times as deep in W as it is wide, so it lasts a little longer than you expect as you turn it.",
+"kicker": "LAND  ·  THE SMALLEST HERE",
+"moves": "It sits up and looks about. Drawn from the field guides: five dark stripes down the back, a tail held up.",
+"title": "Chipmunk"
+},
+"Crows": {
+"built": "One loft from beak to tail with its legs as branches; the wings are separate quill pieces that fold and beat.",
+"four_d": "The wings are not part of the hide. They fold and beat as pieces of their own, so flying costs no lofting.",
+"kicker": "AIR  ·  PERCH, FLY, LAND",
+"moves": "They perch, look about, fly a short loop and land again: on the rail, the crate or the deck.",
+"title": "Crows"
+},
+"Goat": {
+"built": "Twenty-three balls lofted into one hide. Here it walks on the strider gait; in room 1 the same goat walks in rigid pieces.",
+"four_d": "Every ball a 4D sphere: what you see is this slice of the goat. Turn it to see the rest.",
+"kicker": "LAND  ·  23 BALLS  ·  STRIDER WALK",
+"moves": "The lab's first animal. It walks its deck on the strider gait, like the wolf, and turns in before the edge.",
+"title": "Goat"
+},
+"Heron": {
+"built": "A body loft and a neck of three lofted pieces on pivots; its legs and wings are boxes on hip, heel, shoulder and wrist pivots.",
+"four_d": "It is 2.2 times as deep in W as it is wide, so it stays in view through more of a turn than its width suggests.",
+"kicker": "LAND AND AIR  ·  POSED, NOT LOFTED",
+"moves": "Its neck is three short lofted pieces on pivots, so every pose turns a joint instead of rebuilding the bird.",
+"title": "Grey heron"
+},
+"Azathoth": {
+"built": "About 700 pieces of two lofted shapes, a tube segment and a tooth, set in place every frame: lip, teeth, throat, a swirl, 24 limbs, drifting dust, and its own light.",
+"four_d": "It keeps its own slice: turn the animals through W and it turns with them, still facing you. Step ana or kata and it follows you.",
+"kicker": "THE CAVE  ·  A RESEARCH SPECIMEN",
+"moves": "It breathes, its limbs curl and wave, and it turns to face you. Come too close and it goes red.",
+"title": "Azathoth"
+},
+"Nike": {
+"built": "Twenty-one balls lofted into one hide, walked by the strider gait. Rooting and lying down are poses on the rig, not new lofts.",
+"four_d": "His hind legs sit a little kata and his forelegs a little ana, so turning him through W takes one pair before the other.",
+"kicker": "LAND  ·  21 BALLS  ·  HIS OWN ANTICS",
+"moves": "He ambles, stops to root with his snout, and now and then flops onto his side for a while.",
+"title": "Nike"
+},
+"Owl": {
+"built": "A plumage loft and a second loft for the head on its own pivot; the facial disc, eyes, beak, tufts and barred wings are boxes.",
+"four_d": "It is 2.4 times as deep in W as it is wide: the deepest animal in the hall for its size.",
+"kicker": "AIR  ·  PERCHED",
+"moves": "It sits. Its head is a second loft on a pivot of its own, so turning the head moves a node, not the bird.",
+"title": "Eagle owl"
+},
+"Wolf": {
+"built": "Twenty balls lofted into one hide; its legs, tail and ears are branches the rig mirrors. Cut into rigid pieces with the joints blended.",
+"four_d": "All its balls sit at one W, so it narrows evenly as you turn it. Its legs are branches the rig mirrors.",
+"kicker": "LAND  ·  20 BALLS  ·  STRIDER WALK",
+"moves": "The strider walk, quicker and shorter in the stride. Near the edge of its deck it turns in and walks on.",
+"title": "Wolf"
+}
+}

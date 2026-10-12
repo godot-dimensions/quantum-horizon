@@ -1,0 +1,56 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://ramon/PhaseMazeRemake/phase_maze_remake_4d.gd" id="1_root"]
+[ext_resource type="Script" path="res://ramon/PhaseMazeRemake/carried/LabKit/lab_room_4d.gd" id="2_light"]
+[ext_resource type="Script" path="res://ramon/PhaseMazeRemake/carried/kit/kit_room_4d.gd" id="3_room"]
+[ext_resource type="Script" path="res://ramon/PhaseMazeRemake/carried/kit/kit_light_4d.gd" id="4_spot"]
+[ext_resource type="Script" path="res://ramon/PhaseMazeRemake/carried/kit/panels/kit_wall_panel_4d.gd" id="5_panel"]
+[ext_resource type="Script" path="res://ramon/PhaseMazeRemake/carried/kit/panels/kit_wall_panels_4d.gd" id="6_panels"]
+[ext_resource type="Resource" path="res://ramon/PhaseMazeRemake/phase_maze_info.tres" id="7_info"]
+
+[node name="PhaseMazeRemake" type="Node4D"]
+script = ExtResource("1_root")
+
+[node name="Light" type="Node4D" parent="."]
+script = ExtResource("2_light")
+
+[node name="Lobby" type="Node4D" parent="."]
+position = Vector4(0, 0, 40, 0)
+script = ExtResource("3_room")
+size = Vector3(18, 8.5, 16)
+ceiling = false
+cove = false
+
+[node name="IntroWall" type="Node4D" parent="."]
+script = ExtResource("5_panel")
+info = ExtResource("7_info")
+room_path = NodePath("../Lobby")
+wall_side = "w"
+
+[node name="ResearchWall" type="Node4D" parent="."]
+script = ExtResource("5_panel")
+kind = "research"
+info = ExtResource("7_info")
+room_path = NodePath("../Lobby")
+wall_side = "e"
+
+[node name="WallPanels" type="Node4D" parent="."]
+script = ExtResource("6_panels")
+intro = NodePath("../IntroWall")
+research = NodePath("../ResearchWall")
+info = ExtResource("7_info")
+
+[node name="Spot" type="Node4D" parent="."]
+position = Vector4(0, 10, 46.5, 0)
+script = ExtResource("4_spot")
+kind = "spot"
+aim = Vector3(0, 0, 45)
+angle = 34.0
+softness = 1.2
+reach = 30.0
+attenuation = 0.15
+energy = {
+"bright": 3.0,
+"dark": 3.0
+}
+fixture = false

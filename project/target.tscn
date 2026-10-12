@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3 uid="uid://bdwopr42nfgy5"]
+
+[sub_resource type="TetraMaterial4D" id="TetraMaterial4D_target"]
+albedo_color = Color(1, 0.6, 0.1, 1)
+
+[sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_target"]
+
+[node name="Target" type="Node4D"]
+
+[node name="Mesh" type="MeshInstance4D" parent="."]
+material_override = SubResource("TetraMaterial4D_target")
+mesh = SubResource("BoxTetraMesh4D_target")

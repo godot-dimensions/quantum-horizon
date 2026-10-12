@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://bg8h6gdj7fh4h"
+path="res://.godot/imported/Artlist Original - Interference - Swipe.wav-542aab91fb75d36c4b94ff3cd99f91ab.sample"
+
+[deps]
+
+source_file="res://ramon/sounds/Artlist Original - Interference - Swipe.wav"
+dest_files=["res://.godot/imported/Artlist Original - Interference - Swipe.wav-542aab91fb75d36c4b94ff3cd99f91ab.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

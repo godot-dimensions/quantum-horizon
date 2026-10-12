@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://6ihcju0ojrau"
+path="res://.godot/imported/Carlos Santa Rita - Chicken clucking in a farm 2.wav-3e500753560da597ff4efd58f71ffe6e.sample"
+
+[deps]
+
+source_file="res://ramon/chickenpen/audio/sfx/Carlos Santa Rita - Chicken clucking in a farm 2.wav"
+dest_files=["res://.godot/imported/Carlos Santa Rita - Chicken clucking in a farm 2.wav-3e500753560da597ff4efd58f71ffe6e.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

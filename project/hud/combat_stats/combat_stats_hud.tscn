@@ -1,0 +1,29 @@
+[gd_scene load_steps=2 format=3 uid="uid://dhkqw3jdjl45c"]
+
+[ext_resource type="Script" uid="uid://b4q0rpqwehm1g" path="res://hud/combat_stats/combat_stats_hud.gd" id="1_stats"]
+
+[node name="CombatStatsHud" type="Control"]
+layout_mode = 3
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = 100.0
+grow_horizontal = 0
+mouse_filter = 2
+script = ExtResource("1_stats")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Hits: 0
+Misses: 0
+Accuracy: 0%
+Time: 0.0s"
+horizontal_alignment = 2

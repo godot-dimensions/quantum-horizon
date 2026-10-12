@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AscentStationDef4D" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/ObstacleCourse/scripts/ascent_station_def.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+beat_id = "00"
+label = "Calibration court"
+tier = 0
+height = 0.0
+deck_size = Vector2(14.0, 14.0)
+is_checkpoint = true

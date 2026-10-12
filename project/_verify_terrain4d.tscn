@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://b245spssitpmk"]
+
+[ext_resource type="PackedScene" uid="uid://10myebwjf8" path="res://sandbox/terrain4d/terrain4d_test.tscn" id="1_scene"]
+[ext_resource type="Script" uid="uid://c6v6oph55j15a" path="res://scripts/_verify_terrain4d_runner.gd" id="2_runner"]
+
+[node name="VerifyTerrain4D" type="Node"]
+
+[node name="Scene" parent="." instance=ExtResource("1_scene")]
+
+[node name="Runner" type="Node" parent="."]
+script = ExtResource("2_runner")

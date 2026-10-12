@@ -1,0 +1,398 @@
+[gd_scene load_steps=23 format=3]
+
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/botany_lab_4d.gd" id="1_root"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/LabKit/lab_room_4d.gd" id="2_room"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/kit/kit_room_4d.gd" id="3_kitroom"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/kit/kit_wall_text_4d.gd" id="4_text"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/kit/kit_showcase_4d.gd" id="5_showcase"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/exhibits/bl_ex_voxel_4d.gd" id="6_vx"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/exhibits/bl_ex_dc_4d.gd" id="7_dc"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/exhibits/bl_ex_loft_4d.gd" id="8_lf"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/exhibits/bl_ex_oak_4d.gd" id="9_oak"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/kit/kit_light_4d.gd" id="10_light"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/kit/kit_sun_4d.gd" id="11_sun"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/voxel_lab/float_panel_4d.gd" id="12_panel"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/room/bl_panel_words.gd" id="24_words"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/kit/panels/kit_wall_panel_4d.gd" id="13_panel"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/kit/panels/kit_wall_panels_4d.gd" id="14_pair"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/room/bl_panel_source.gd" id="15_source"]
+[ext_resource type="Resource" path="res://ramon/Arboretum/botany_lab/botany_lab_info.tres" id="16_info"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany/wind_4d.gd" id="17_wind"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/carried/PathCreator/graph/path_network_4d.gd" id="18_net"]
+[ext_resource type="Resource" path="res://ramon/Arboretum/botany_lab/paths/hall.tres" id="19_hall"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/room/bl_target_4d.gd" id="21_target"]
+[ext_resource type="Script" path="res://ramon/Arboretum/botany_lab/room/bl_floor_mark_4d.gd" id="23_mark"]
+
+[node name="BotanyLab" type="Node4D"]
+script = ExtResource("1_root")
+
+[node name="Room" type="Node4D" parent="."]
+script = ExtResource("2_room")
+start_mood = "bright"
+
+[node name="Wind" type="Node" parent="."]
+script = ExtResource("17_wind")
+direction = Vector4(0.3, 0, 1, 0.3)
+
+[node name="Entrance" type="Node4D" parent="."]
+position = Vector4(0, 0, 23.5, 0)
+script = ExtResource("3_kitroom")
+size = Vector3(8, 7.5, 14)
+open_sides = ["n"]
+cove = false
+
+[node name="Hall" type="Node4D" parent="."]
+script = ExtResource("3_kitroom")
+outline = PackedVector2Array(-11.9, 12.1, -11.9, -22, 5.5, -22, 5.5, 12.1)
+size = Vector3(17.4, 11.6, 34.1)
+doorways = [["entrance", 3.1, 7.9, 5.0], ["back", 3.0, 6.2, 4.4]]
+wall_names = PackedStringArray("left", "back", "right", "entrance")
+cove = false
+
+[node name="Sign" type="Node" parent="Hall"]
+script = ExtResource("4_text")
+side = "s"
+edge = 3
+along = Vector2(1.1, 9.9)
+up = Vector2(5.25, 6.75)
+outside = true
+kind = "sign"
+title = "BOTANY LAB"
+subtitle = "QUANTUM HORIZON  ·  BOTANICAL SYSTEMS"
+glow = 0.3
+
+[node name="DoorSign" type="Node" parent="Hall"]
+script = ExtResource("4_text")
+side = "n"
+edge = 1
+along = Vector2(0.83, 8.37)
+up = Vector2(4.8, 6.6)
+kind = "sign"
+title = "TWO GARDENS"
+subtitle = "BLOCKY AND SMOOTH, SIDE BY SIDE"
+glow = 0.3
+
+[node name="Station01" type="Node4D" parent="."]
+position = Vector4(-7.5, 0, 7, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("6_vx")
+pedestal_shape = "specimen_box"
+radius = 2.1
+height = 0.45
+bounds = Rect2(-11.5, -21.5, 16.5, 33.1)
+band_angle = 90.0
+hologram = false
+
+[node name="Station02" type="Node4D" parent="."]
+position = Vector4(-7.5, 0, 0, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("7_dc")
+pedestal_shape = "specimen"
+radius = 2.3
+height = 0.45
+bounds = Rect2(-11.5, -21.5, 16.5, 33.1)
+band_angle = 90.0
+hologram = false
+
+[node name="Station03" type="Node4D" parent="."]
+position = Vector4(-7.5, 0, -7, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("8_lf")
+pedestal_shape = "specimen"
+radius = 2.3
+height = 0.45
+bounds = Rect2(-11.5, -21.5, 16.5, 33.1)
+band_angle = 90.0
+hologram = false
+
+[node name="Station04" type="Node4D" parent="."]
+position = Vector4(-2, 0, -14.5, 0)
+script = ExtResource("5_showcase")
+exhibit_script = ExtResource("9_oak")
+pedestal_shape = "specimen"
+round_solid = true
+exhibit_tree_height = 9.6
+radius = 4.0
+height = 0.55
+bounds = Rect2(-11.5, -21.5, 16.5, 33.1)
+band_angle = 0.0
+hologram = false
+holo_height = 0.9
+
+[node name="Panel01" type="Node4D" parent="."]
+position = Vector4(-6.05, 0.45, 7, 0)
+script = ExtResource("12_panel")
+width = 1.6
+depth = 0.7
+number = 1
+title = "Voxels"
+kicker = "THE SHRUBBERY LAB'S METHOD"
+source = NodePath("Words")
+face_point = Vector2(-4.2, 7.0)
+face_always = false
+tilt = 52.0
+hover = 0.5
+reach = 0.0
+give = 0.0
+notice = 0.0
+follow = 0.0
+turn_to_you = 0.0
+solid = false
+
+[node name="Words" type="Node" parent="Panel01"]
+script = ExtResource("24_words")
+station = NodePath("../../Station01")
+
+[node name="Panel02" type="Node4D" parent="."]
+position = Vector4(-5.85, 0.45, 0, 0)
+script = ExtResource("12_panel")
+width = 1.6
+depth = 0.7
+number = 2
+title = "Smooth voxels"
+kicker = "THE ENGINE'S OWN VOXEL WORLD"
+source = NodePath("Words")
+face_point = Vector2(-4.0, 0.0)
+face_always = false
+tilt = 52.0
+hover = 0.5
+reach = 0.0
+give = 0.0
+notice = 0.0
+follow = 0.0
+turn_to_you = 0.0
+solid = false
+
+[node name="Words" type="Node" parent="Panel02"]
+script = ExtResource("24_words")
+station = NodePath("../../Station02")
+
+[node name="Panel03" type="Node4D" parent="."]
+position = Vector4(-5.85, 0.45, -7, 0)
+script = ExtResource("12_panel")
+width = 1.6
+depth = 0.7
+number = 3
+title = "Lofted"
+kicker = "OUR LOFT TOOL"
+source = NodePath("Words")
+face_point = Vector2(-4.0, -7.0)
+face_always = false
+tilt = 52.0
+hover = 0.5
+reach = 0.0
+give = 0.0
+notice = 0.0
+follow = 0.0
+turn_to_you = 0.0
+solid = false
+
+[node name="Words" type="Node" parent="Panel03"]
+script = ExtResource("24_words")
+station = NodePath("../../Station03")
+
+[node name="Panel04" type="Node4D" parent="."]
+position = Vector4(-2, 0.55, -11.15, 0)
+script = ExtResource("12_panel")
+width = 1.6
+depth = 0.7
+number = 4
+title = "The oak"
+kicker = "WHAT THE METHODS ADD UP TO"
+source = NodePath("Words")
+face_point = Vector2(-2.0, -7.8)
+face_always = false
+tilt = 52.0
+hover = 0.5
+reach = 0.0
+give = 0.0
+notice = 0.0
+follow = 0.0
+turn_to_you = 0.0
+solid = false
+
+[node name="Words" type="Node" parent="Panel04"]
+script = ExtResource("24_words")
+station = NodePath("../../Station04")
+
+[node name="PanelTour" type="Node4D" parent="."]
+position = Vector4(-4.6, 0, 11.2, 0)
+script = ExtResource("12_panel")
+width = 1.6
+depth = 0.7
+number = 0
+title = "The whole showcase"
+kicker = "A GUIDED TOUR OF THE FOUR"
+source = NodePath("Words")
+face_point = Vector2(0.0, 9.0)
+face_always = true
+hint = "E  PLAY THE SHOWCASE"
+
+[node name="Words" type="Node" parent="PanelTour"]
+script = ExtResource("24_words")
+tour = true
+
+[node name="Light01Voxels" type="Node4D" parent="."]
+position = Vector4(-7.5, 11.5, 7, 0)
+script = ExtResource("10_light")
+aim = Vector3(-7.5, 0, 7)
+angle = 40.0
+softness = 0.5
+reach = 13.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.2
+}
+fixture_at = 11.94
+
+[node name="Light02Smooth" type="Node4D" parent="."]
+position = Vector4(-7.5, 11.5, 0, 0)
+script = ExtResource("10_light")
+aim = Vector3(-7.5, 0, 0)
+angle = 40.0
+softness = 0.5
+reach = 13.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.2
+}
+fixture_at = 11.94
+
+[node name="Light03Lofted" type="Node4D" parent="."]
+position = Vector4(-7.5, 11.5, -7, 0)
+script = ExtResource("10_light")
+aim = Vector3(-7.5, 0, -7)
+angle = 40.0
+softness = 0.5
+reach = 13.0
+attenuation = 0.3
+energy = {
+"bright": 2.4,
+"dark": 3.2
+}
+fixture_at = 11.94
+
+[node name="Light04Oak" type="Node4D" parent="."]
+position = Vector4(-2, 11.5, -14.5, 0)
+script = ExtResource("10_light")
+aim = Vector3(-2, 0, -14.5)
+angle = 55.0
+softness = 0.6
+reach = 15.0
+attenuation = 0.28
+energy = {
+"bright": 3.4,
+"dark": 4.2
+}
+color = {
+"bright": Color(1, 0.86, 0.64, 1),
+"dark": Color(1, 0.82, 0.58, 1)
+}
+fixture_at = 11.94
+
+[node name="LightBorder" type="Node4D" parent="."]
+position = Vector4(2.2, 11.5, 5.5, 0)
+script = ExtResource("10_light")
+kind = "spot"
+aim = Vector3(2.2, 0, 5.5)
+angle = 50.0
+softness = 2.5
+reach = 15.0
+attenuation = 0.25
+energy = {
+"bright": 1.9,
+"dark": 2.5
+}
+color = {
+"bright": Color(1, 0.93, 0.88, 1),
+"dark": Color(1, 0.9, 0.84, 1)
+}
+fixture = false
+
+[node name="LightEntrance" type="Node4D" parent="."]
+position = Vector4(0, 5.4, 19.5, 0)
+script = ExtResource("10_light")
+aim = Vector3(0, 0, 19.5)
+angle = 70.0
+softness = 4.0
+reach = 9.0
+attenuation = 0.3
+energy = {
+"bright": 1.4,
+"dark": 1.8
+}
+
+[node name="Sun" type="Node4D" parent="."]
+position = Vector4(2.0, 10.0, 4.0, 0)
+script = ExtResource("11_sun")
+target = Vector3(0, 0, -4)
+
+[node name="PanelSource" type="Node" parent="."]
+script = ExtResource("15_source")
+room = NodePath("..")
+
+[node name="IntroPanel" type="Node4D" parent="."]
+script = ExtResource("13_panel")
+info = ExtResource("16_info")
+source = NodePath("../PanelSource")
+room_path = NodePath("../Hall")
+wall_name = "right"
+along_shift = 5.4
+
+[node name="ResearchBoard" type="Node4D" parent="."]
+script = ExtResource("13_panel")
+kind = "research"
+info = ExtResource("16_info")
+source = NodePath("../PanelSource")
+room_path = NodePath("../Hall")
+wall_name = "left"
+along_shift = 10.7
+
+[node name="WallPanels" type="Node4D" parent="."]
+script = ExtResource("14_pair")
+intro = NodePath("../IntroPanel")
+research = NodePath("../ResearchBoard")
+info = ExtResource("16_info")
+source = NodePath("../PanelSource")
+
+[node name="Paths" type="Node4D" parent="."]
+
+[node name="Targets" type="Node4D" parent="Paths"]
+
+[node name="P1" type="Node4D" parent="Paths/Targets"]
+position = Vector4(-7.5, 0, 7, 0)
+script = ExtResource("21_target")
+size = Vector3(4.2, 0.9, 4.2)
+
+[node name="P2" type="Node4D" parent="Paths/Targets"]
+position = Vector4(-7.5, 0, 0, 0)
+script = ExtResource("21_target")
+size = Vector3(4.6, 0.9, 4.6)
+
+[node name="P3" type="Node4D" parent="Paths/Targets"]
+position = Vector4(-7.5, 0, -7, 0)
+script = ExtResource("21_target")
+size = Vector3(4.6, 0.9, 4.6)
+
+[node name="P4" type="Node4D" parent="Paths/Targets"]
+position = Vector4(-2, 0, -14.5, 0)
+script = ExtResource("21_target")
+label = "The oak"
+size = Vector3(8, 1.1, 8)
+
+[node name="Door" type="Node4D" parent="Paths/Targets"]
+position = Vector4(-7.3, 0, -21.9, 0)
+script = ExtResource("21_target")
+label = "To the second room"
+size = Vector3(3.2, 4.4, 0.6)
+
+[node name="Hall" type="Node4D" parent="Paths"]
+script = ExtResource("18_net")
+graph = ExtResource("19_hall")
+targets = NodePath("../Targets")
+under_color = Color(0.64, 0.65, 0.66, 1)
+edge_color = Color(0.0902, 0.3804, 0.8431, 1)
+frame_margin = 0.12
+floor_swatch = "kit_floor"

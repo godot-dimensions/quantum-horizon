@@ -1,0 +1,207 @@
+{
+ "_what": "The Watchstone's crag, measured from Ramon's sheet (PenLayout/refs/watchstone_views.png) with the fitted cameras (PenLayout/RefLock/specs/watchstone_fit.json). Origin: the plateau's middle, on the ground. Radii at E, SE, S, SW, W, NW, N, NE (S is +z, toward the front view). Built by scripts/pen_crag_4d.gd. PLAN_REF_LOCK.md steps 14 and 21.",
+ "seed": 11,
+ "w_depth": 6.0,
+ "core_inset": 0.25,
+ "core_colour": "#7a756c",
+ "turf_colour": "#5b6612",
+ "tuft_on_top": 0.75,
+ "tuft_in_joint": 0.7,
+ "ledge_tufts": 1.4,
+ "ledge_stones": 0.08,
+ "courses": [
+  {
+   "y0": 0.0,
+   "y1": 2.6,
+   "r": [
+    7.1,
+    7.2,
+    7.3,
+    7.2,
+    7.0,
+    6.9,
+    6.9,
+    7.0
+   ],
+   "kinds": [
+    "round",
+    "round",
+    "block",
+    "wedge",
+    "round"
+   ],
+   "stack": 0.15,
+   "width_scale": 1.1
+  },
+  {
+   "y0": 2.6,
+   "y1": 5.8,
+   "r": [
+    5.6,
+    6.0,
+    6.3,
+    6.3,
+    6.1,
+    6.0,
+    6.0,
+    5.8
+   ],
+   "kinds": [
+    "round",
+    "block",
+    "round",
+    "wedge",
+    "block"
+   ],
+   "stack": 0.15,
+   "width_scale": 1.15
+  },
+  {
+   "y0": 5.8,
+   "y1": 9.0,
+   "r": [
+    5.3,
+    5.2,
+    5.0,
+    5.3,
+    5.6,
+    5.9,
+    6.1,
+    5.7
+   ],
+   "kinds": [
+    "round",
+    "block",
+    "round",
+    "wedge",
+    "block"
+   ],
+   "stack": 0.15,
+   "width_scale": 1.15
+  },
+  {
+   "y0": 9.0,
+   "y1": 13.5,
+   "r": [
+    5.0,
+    4.7,
+    4.5,
+    4.5,
+    4.6,
+    5.0,
+    5.5,
+    5.3
+   ],
+   "kinds": [
+    "round",
+    "block",
+    "round",
+    "wedge",
+    "block"
+   ],
+   "stack": 0.15,
+   "width_scale": 1.15
+  },
+  {
+   "y0": 13.35,
+   "y1": 13.75,
+   "r": [
+    3.9,
+    3.8,
+    3.8,
+    3.8,
+    3.9,
+    4.4,
+    4.8,
+    4.4
+   ],
+   "kinds": [
+    "cap",
+    "round"
+   ],
+   "stack": 0.0,
+   "width_scale": 1.0,
+   "keep": 0.2,
+   "core": false
+  }
+ ],
+ "top": {
+  "y": 13.65,
+  "turf_r": 3.7,
+  "rim_stones": 3,
+  "tufts": 0,
+  "turf_colour": "#66701a",
+  "rim_size": [
+   0.7,
+   0.95
+  ],
+  "thickness": 0.22,
+  "edge": false,
+  "proud": 2,
+  "proud_height": 0.9
+ },
+ "debris": {
+  "clusters": 6,
+  "reach": 2.0,
+  "size": 1.7,
+  "keep_clear": [
+   [
+    -2.4,
+    8.2,
+    1.4
+   ],
+   [
+    -1.0,
+    7.4,
+    1.6
+   ]
+  ],
+  "skirt": 22,
+  "rings": [
+   [
+    30,
+    0.1,
+    0.8,
+    1.1,
+    1.7
+   ],
+   [
+    26,
+    0.9,
+    1.6,
+    0.75,
+    1.15
+   ],
+   [
+    18,
+    1.6,
+    2.3,
+    0.45,
+    0.8
+   ]
+  ]
+ },
+ "ground": {
+  "r": 9.8,
+  "tufts": 0,
+  "colour": "#5b6612",
+  "centre": [
+   -0.3,
+   0.0
+  ]
+ },
+ "tuft_scale": 1.0,
+ "turf_gaps": 0.35,
+ "joint": [
+  0.0,
+  0.12
+ ],
+ "tufts": false,
+ "ledge_turf": false,
+ "moss": 0.5,
+ "_moss_note": "moss: the share of stones with a mossy top (terrain/cut_stone_4d.gd moss_colour); the rest plain grey. tufts and ledge_turf off for the Watchstone (Ramon, 6 Oct: remove the green clumps).",
+ "core": "stones",
+ "bury": 1.6,
+ "monolith_proud": 0.6,
+ "_chunks_note": "The big chunks are nodes in units/watchstone/watchstone.tscn (Chunks/*, pen_crag_chunk_4d.gd), placed by hand."
+}

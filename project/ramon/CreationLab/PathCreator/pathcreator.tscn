@@ -1,0 +1,291 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/pathcreator_4d.gd" id="1_root"]
+[ext_resource type="Script" path="res://ramon/CreationLab/LabKit/lab_room_4d.gd" id="2_room"]
+[ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/space/pc_target_4d.gd" id="3_target"]
+[ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/graph/path_network_4d.gd" id="4_network"]
+[ext_resource type="Resource" path="res://ramon/CreationLab/PathCreator/graphs/yard.tres" id="5_yard"]
+[ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/space/pc_label_4d.gd" id="6_label"]
+[ext_resource type="Resource" path="res://ramon/CreationLab/PathCreator/graphs/wfield.tres" id="7_wfield"]
+[ext_resource type="Resource" path="res://ramon/CreationLab/PathCreator/graphs/pen.tres" id="8_pen"]
+[ext_resource type="Script" path="res://ramon/CreationLab/PathCreator/space/pc_wander_4d.gd" id="9_wander"]
+
+[node name="PathCreator" type="Node4D"]
+script = ExtResource("1_root")
+
+[node name="Room" type="Node4D" parent="."]
+script = ExtResource("2_room")
+start_mood = "bright"
+
+[node name="Targets" type="Node4D" parent="."]
+
+[node name="Here" type="Node4D" parent="Targets"]
+position = Vector4(32, 0, 20, 0)
+script = ExtResource("3_target")
+label = "Here / W 0"
+color = Color(0.86, 0.2, 0.2, 1)
+
+[node name="Kata2" type="Node4D" parent="Targets"]
+position = Vector4(38, 0, 28, -2)
+script = ExtResource("3_target")
+label = "Green / W -2"
+color = Color(0.2, 0.7, 0.35, 1)
+
+[node name="Ana2" type="Node4D" parent="Targets"]
+position = Vector4(46, 0, 28, 2)
+script = ExtResource("3_target")
+label = "Drum / W +2"
+shape = "cubinder"
+size = Vector3(3, 2, 3)
+color = Color(0.95, 0.78, 0.15, 1)
+
+[node name="House" type="Node4D" parent="Targets"]
+position = Vector4(40, 0, 40, 4)
+script = ExtResource("3_target")
+label = "House / W +4"
+size = Vector3(6, 5, 6)
+color = Color(0.14, 0.34, 0.86, 1)
+
+[node name="Tower" type="Node4D" parent="Targets"]
+position = Vector4(50, 0, 50, 8)
+script = ExtResource("3_target")
+label = "Tower / W +8"
+size = Vector3(4, 10, 4)
+color = Color(0.55, 0.3, 0.8, 1)
+
+[node name="PadA" type="Node4D" parent="Targets"]
+position = Vector4(-13, 0, 37.5, 4)
+script = ExtResource("3_target")
+label = "Pad A / W +4"
+size = Vector3(3, 3, 3)
+color = Color(0.14, 0.34, 0.86, 1)
+
+[node name="PadB" type="Node4D" parent="Targets"]
+position = Vector4(-5, 0, 37.5, 4)
+script = ExtResource("3_target")
+label = "Pad B / W +4"
+size = Vector3(3, 3, 3)
+color = Color(0.14, 0.34, 0.86, 1)
+
+[node name="PadC" type="Node4D" parent="Targets"]
+position = Vector4(3, 0, 37.5, 4)
+script = ExtResource("3_target")
+label = "Pad C / W +4"
+size = Vector3(3, 3, 3)
+color = Color(0.14, 0.34, 0.86, 1)
+
+[node name="PadD" type="Node4D" parent="Targets"]
+position = Vector4(11, 0, 37.5, 4)
+script = ExtResource("3_target")
+label = "Pad D / W +4"
+size = Vector3(3, 3, 3)
+color = Color(0.14, 0.34, 0.86, 1)
+
+[node name="PadE" type="Node4D" parent="Targets"]
+position = Vector4(19, 0, 37.5, 4)
+script = ExtResource("3_target")
+label = "Pad E / W +4"
+size = Vector3(3, 3, 3)
+color = Color(0.14, 0.34, 0.86, 1)
+
+[node name="Labels" type="Node4D" parent="."]
+
+[node name="LabelA" type="Node4D" parent="Labels"]
+position = Vector4(-15, 0, 9.6, 0)
+script = ExtResource("6_label")
+text = "A  STATIC"
+note = "route and bracket from any W; the cube only at W +4"
+size = Vector2(6.5, 1.2)
+
+[node name="LabelB" type="Node4D" parent="Labels"]
+position = Vector4(-7, 0, 9.6, 0)
+script = ExtResource("6_label")
+text = "B  HERE"
+note = "the route at W 0; the arrival at W +4"
+size = Vector2(6.5, 1.2)
+
+[node name="LabelC" type="Node4D" parent="Labels"]
+position = Vector4(1, 0, 9.6, 0)
+script = ExtResource("6_label")
+text = "C  FOLLOW"
+note = "the route climbs through W, node by node"
+size = Vector2(6.5, 1.2)
+
+[node name="LabelD" type="Node4D" parent="Labels"]
+position = Vector4(9, 0, 9.6, 0)
+script = ExtResource("6_label")
+text = "D  REVEAL"
+note = "the whole route only at W +4"
+size = Vector2(6.5, 1.2)
+
+[node name="LabelE" type="Node4D" parent="Labels"]
+position = Vector4(17, 0, 9.6, 0)
+script = ExtResource("6_label")
+text = "E  LADDER"
+note = "one step of W a stretch: walk it and walk ana"
+size = Vector2(6.5, 1.2)
+
+[node name="Yard" type="Node4D" parent="."]
+
+[node name="Hut" type="Node4D" parent="Yard"]
+position = Vector4(-12, 0, -43, 0)
+script = ExtResource("3_target")
+label = "Hut / A-01"
+size = Vector3(6, 3, 4)
+color = Color(0.7, 0.73, 0.78, 1)
+
+[node name="Watchtower" type="Node4D" parent="Yard"]
+position = Vector4(13, 0, -42, 0)
+script = ExtResource("3_target")
+label = "Watchtower / B-02"
+size = Vector3(8, 12, 8)
+color = Color(0.7, 0.73, 0.78, 1)
+
+[node name="RoundStation" type="Node4D" parent="Yard"]
+position = Vector4(0, 0, -35, 0)
+script = ExtResource("3_target")
+label = "Round station"
+shape = "cubinder"
+size = Vector3(6, 3, 6)
+color = Color(0.7, 0.73, 0.78, 1)
+
+[node name="Pen" type="Node4D" parent="Yard"]
+position = Vector4(-12, 0, -23.5, 0)
+script = ExtResource("3_target")
+label = "Pen / C-03"
+size = Vector3(8, 1.2, 5)
+color = Color(0.7, 0.73, 0.78, 1)
+
+[node name="Store" type="Node4D" parent="Yard"]
+position = Vector4(13, 0, -24.5, 0)
+script = ExtResource("3_target")
+label = "Store / D-04"
+size = Vector3(4, 2.5, 3)
+color = Color(0.7, 0.73, 0.78, 1)
+
+[node name="Survey" type="Node4D" parent="Yard"]
+position = Vector4(2.5, 0, -45, 0)
+script = ExtResource("3_target")
+label = "Survey / E-05"
+size = Vector3(2, 1.1, 2)
+color = Color(0.7, 0.73, 0.78, 1)
+
+[node name="YardNetwork" type="Node4D" parent="."]
+script = ExtResource("4_network")
+graph = ExtResource("5_yard")
+targets = NodePath("../Yard")
+
+[node name="WFieldNetwork" type="Node4D" parent="."]
+script = ExtResource("4_network")
+graph = ExtResource("7_wfield")
+targets = NodePath("../Targets")
+
+[node name="PenPatch" type="Node4D" parent="."]
+position = Vector4(42, 0, -5, 0)
+
+[node name="StepLow" type="Node4D" parent="PenPatch"]
+position = Vector4(0, 0, -6, 0)
+script = ExtResource("3_target")
+label = "Step 0.25 m"
+size = Vector3(4, 0.25, 6)
+w_depth = 8.0
+color = Color(0.8, 0.78, 0.74, 1)
+
+[node name="Deck" type="Node4D" parent="PenPatch"]
+position = Vector4(0, 0, -6, 0)
+script = ExtResource("3_target")
+label = "Deck 0.5 m"
+size = Vector3(4, 0.5, 4)
+w_depth = 8.0
+color = Color(0.74, 0.72, 0.68, 1)
+
+[node name="FenceSouthWest" type="Node4D" parent="PenPatch"]
+position = Vector4(-2.5, 0, 0.2, 0)
+script = ExtResource("3_target")
+label = "Fence"
+size = Vector3(3.4, 0.95, 0.15)
+w_depth = 8.0
+color = Color(0.55, 0.42, 0.3, 1)
+
+[node name="FenceSouthEast" type="Node4D" parent="PenPatch"]
+position = Vector4(2.5, 0, 0.2, 0)
+script = ExtResource("3_target")
+label = "Fence"
+size = Vector3(3.4, 0.95, 0.15)
+w_depth = 8.0
+color = Color(0.55, 0.42, 0.3, 1)
+
+[node name="FenceNorth" type="Node4D" parent="PenPatch"]
+position = Vector4(0, 0, 7.8, 0)
+script = ExtResource("3_target")
+label = "Fence"
+size = Vector3(8.4, 0.95, 0.15)
+w_depth = 8.0
+color = Color(0.55, 0.42, 0.3, 1)
+
+[node name="FenceWest" type="Node4D" parent="PenPatch"]
+position = Vector4(-4.2, 0, 4, 0)
+script = ExtResource("3_target")
+label = "Fence"
+size = Vector3(0.15, 0.95, 7.6)
+w_depth = 8.0
+color = Color(0.55, 0.42, 0.3, 1)
+
+[node name="FenceEast" type="Node4D" parent="PenPatch"]
+position = Vector4(4.2, 0, 4, 0)
+script = ExtResource("3_target")
+label = "Fence"
+size = Vector3(0.15, 0.95, 7.6)
+w_depth = 8.0
+color = Color(0.55, 0.42, 0.3, 1)
+
+[node name="FenceAna" type="Node4D" parent="PenPatch"]
+position = Vector4(0, 0, 4, 4)
+script = ExtResource("3_target")
+label = "Fence W +4"
+size = Vector3(8.4, 0.95, 7.6)
+w_depth = 0.15
+color = Color(0.55, 0.42, 0.3, 1)
+
+[node name="FenceKata" type="Node4D" parent="PenPatch"]
+position = Vector4(0, 0, 4, -4)
+script = ExtResource("3_target")
+label = "Fence W -4"
+size = Vector3(8.4, 0.95, 7.6)
+w_depth = 0.15
+color = Color(0.55, 0.42, 0.3, 1)
+
+[node name="Feeder" type="Node4D" parent="PenPatch"]
+position = Vector4(-2.5, 0, 5.7, 0)
+script = ExtResource("3_target")
+label = "Feeder / W 0"
+size = Vector3(1.4, 0.4, 0.5)
+w_depth = 1.2
+color = Color(0.78, 0.62, 0.36, 1)
+
+[node name="Coop" type="Node4D" parent="PenPatch"]
+position = Vector4(2.5, 0, 6.6, 3)
+script = ExtResource("3_target")
+label = "Coop / W +3"
+size = Vector3(1.6, 1.4, 1.6)
+w_depth = 1.6
+color = Color(0.72, 0.3, 0.24, 1)
+
+[node name="Hen" type="Node4D" parent="PenPatch"]
+position = Vector4(1.6, 0, 4.5, 0)
+script = ExtResource("3_target")
+label = "Hen / wanders"
+size = Vector3(0.45, 0.45, 0.45)
+w_depth = 0.6
+color = Color(0.95, 0.94, 0.9, 1)
+collide = false
+
+[node name="Wander" type="Node" parent="PenPatch/Hen"]
+script = ExtResource("9_wander")
+
+[node name="PenNetwork" type="Node4D" parent="."]
+script = ExtResource("4_network")
+graph = ExtResource("8_pen")
+targets = NodePath("../PenPatch")
+drape = true
+hide_blocked = true

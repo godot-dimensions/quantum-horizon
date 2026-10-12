@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://dbgv5pjuhrtgu"]
+
+[ext_resource type="PackedScene" uid="uid://bn1urbyca0gdg" path="res://sandbox/terrain4d/terrain4d_voxel_showcase.tscn" id="1_scene"]
+[ext_resource type="Script" uid="uid://c0ycxnmhxdmpp" path="res://scripts/_verify_voxel_world_showcase_runner.gd" id="2_runner"]
+
+[node name="VerifyVoxelWorldShowcase" type="Node"]
+
+[node name="Scene" parent="." instance=ExtResource("1_scene")]
+
+[node name="Runner" type="Node" parent="."]
+script = ExtResource("2_runner")

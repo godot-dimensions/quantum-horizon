@@ -1,0 +1,18 @@
+[gd_scene load_steps=5 format=3 uid="uid://bvw4nyqvebj0b"]
+
+[ext_resource type="Script" uid="uid://cq878c48p4j6k" path="res://ramon/Menu/scripts/frontier_map.gd" id="1_script"]
+[ext_resource type="Resource" path="res://ramon/Menu/style/frontier_style.tres" id="2_style"]
+[ext_resource type="Resource" uid="uid://dehjk4fjmt8pc" path="res://ramon/Menu/entries/frontier_layout.tres" id="3_layout"]
+[ext_resource type="Resource" uid="uid://b6ehjm0dis877" path="res://ramon/Menu/entries/catalogue.tres" id="4_catalogue"]
+
+[node name="FrontierMap" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+style = ExtResource("2_style")
+layout = ExtResource("3_layout")
+catalogue = ExtResource("4_catalogue")

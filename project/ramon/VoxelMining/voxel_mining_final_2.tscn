@@ -1,0 +1,105 @@
+[gd_scene load_steps=10 format=3 uid="uid://dcoxtboqrofxi"]
+
+[ext_resource type="PackedScene" uid="uid://bi0e06i884sxk" path="res://ramon/VoxelMining/voxel_mining_player.tscn" id="1_player"]
+[ext_resource type="PackedScene" uid="uid://cvmfnlblk0a1b" path="res://ramon/VoxelMining/voxel_mining_final_block.tscn" id="2_block"]
+[ext_resource type="Script" uid="uid://c6q1cfdmllkfk" path="res://ramon/VoxelMining/scripts/mining_axe.gd" id="3_axe"]
+[ext_resource type="Script" uid="uid://bg6kulalwlupc" path="res://ramon/Demo/scripts/hub_tiled_floor_4d.gd" id="4_surface"]
+[ext_resource type="PackedScene" uid="uid://b6aulsjbmldhg" path="res://ramon/VoxelMining/voxel_mining_tuner.tscn" id="5_tuner"]
+[ext_resource type="PackedScene" uid="uid://da6cpp0smsgku" path="res://ramon/Demo/return_button.tscn" id="99_return"]
+
+[sub_resource type="GradientSkyMaterial4D" id="GradientSkyMaterial4D_night"]
+shader_parameter/horizon_color = Color(0.22, 0.24, 0.29, 1)
+shader_parameter/top_color = Color(0.06, 0.07, 0.1, 1)
+shader_parameter/bottom_color = Color(0.04, 0.04, 0.06, 1)
+shader_parameter/inv_top_curve = 4.00000015894572
+shader_parameter/inv_bottom_curve = 30.000001192092896
+shader_parameter/inv_sun_curve = 22.782018847067608
+horizon_color = Color(0.22, 0.24, 0.29, 1)
+top_color = Color(0.06, 0.07, 0.1, 1)
+top_curve = 0.15
+bottom_color = Color(0.04, 0.04, 0.06, 1)
+bottom_curve = 0.02
+sun_curve = 0.15
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_floor"]
+size = Vector4(40, 1, 40, 40)
+
+[sub_resource type="BoxShape4D" id="BoxShape4D_dais"]
+size = Vector4(6, 0.8, 12, 4)
+
+[node name="VoxelMiningFinal2" type="Node4D"]
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+visible = false
+current = true
+sky_material = SubResource("GradientSkyMaterial4D_night")
+ambient_light_color = Color(0.18, 0.19, 0.24, 1)
+ambient_light_sky_contribution = 0.0
+tonemap_mode = 2
+tonemap_exposure = 0.95
+
+[node name="KeyLight" type="OmniLight4D" parent="."]
+position = Vector4(-0.1019499290490904, 5.586466441408036, -0.5770669904415072, 0)
+light_color = Color(0.93841237, 0.97863656, 0.9995341, 1)
+light_energy = 30.0
+omni_range_meters = 10.791
+omni_range_attenuation = 3.1319999999999997
+omni_light_size_meters = 0.24
+
+[node name="Floor" type="StaticBody4D" parent="."]
+position = Vector4(0, -0.5, 0, 0)
+
+[node name="Collider" type="CollisionShape4D" parent="Floor"]
+shape = SubResource("BoxShape4D_floor")
+
+[node name="Mesh" type="Node4D" parent="Floor"]
+script = ExtResource("4_surface")
+size = Vector4(40, 1, 40, 40)
+
+[node name="Dais" type="StaticBody4D" parent="."]
+position = Vector4(0, 0, -2, 0)
+
+[node name="Collider" type="CollisionShape4D" parent="Dais"]
+position = Vector4(0, 0, 4, 0)
+shape = SubResource("BoxShape4D_dais")
+
+[node name="Mesh" type="Node4D" parent="Dais"]
+position = Vector4(0, 0, 4, 0)
+script = ExtResource("4_surface")
+size = Vector4(6, 0.8, 12, 4)
+use_dev_textures = false
+
+[node name="Ramp" type="Node4D" parent="."]
+visible = false
+
+[node name="Mesh" type="Node4D" parent="Ramp"]
+position = Vector4(0, 0.141794, 1.76176330870965, 0)
+basis = Projection(1, 0, 0, 0, 0, 0.9701000000000002, 0.24250000000000005, 0, 0, -0.24250000000000005, 0.9701000000000002, 0, 0, 0, 0, 1)
+script = ExtResource("4_surface")
+size = Vector4(5, 0.12, 1.649, 4)
+
+[node name="RockBlock" parent="." instance=ExtResource("2_block")]
+position = Vector4(-0.25, 1.2076929416127045, -2.25, -0.25)
+crust_metres = 0.5
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector4(0.087706394569986, 1.7895603797084625, 4.6, 0)
+
+[node name="FirstPersonCamera" parent="Player/PlayerHead" index="0"]
+rendering_engine_name = "Combined"
+field_of_view_3d = 1.3494818844471053
+w_fade_distance = 8.0
+edge_falloff = 0.6
+plane_sharpness = 0.2
+skewness = 0.35
+projection_opacity = 0.85
+projection_opacity_base = 0.5
+
+[node name="MiningAxe" type="Node" parent="."]
+script = ExtResource("3_axe")
+
+[node name="Tuner" parent="." instance=ExtResource("5_tuner")]
+
+[node name="ReturnButton" parent="." instance=ExtResource("99_return")]
+
+[editable path="Player"]

@@ -1,0 +1,241 @@
+[gd_scene load_steps=20 format=3]
+
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_stage_4d.gd" id="stage"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_show_4d.gd" id="show"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_after_4d.gd" id="thtr_after"]
+[ext_resource type="Script" path="res://ramon/dialogue/world_tag_4d.gd" id="thtr_tag"]
+[ext_resource type="Script" path="res://ramon/dialogue/dialogue_player_4d.gd" id="thtr_player"]
+[ext_resource type="Script" path="res://ramon/dialogue/dialogue_box_4d.gd" id="thtr_box"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_caption_4d.gd" id="caption"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_aside_4d.gd" id="aside"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_part_two_4d.gd" id="part_two"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_metric_4d.gd" id="metric"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_screen_4d.gd" id="screen"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_endcard_4d.gd" id="endcard"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_pane_4d.gd" id="pane"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_arch_4d.gd" id="arch"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_camera_4d.gd" id="shotcam"]
+[ext_resource type="Script" path="res://ramon/chickenpen/theatre/theatre_seat_4d.gd" id="seat"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_walker_character_4d.gd" id="character"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_orbit_rig_4d.gd" id="rig"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_avatar_4d.gd" id="avatar"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/block_gait_4d.gd" id="gait"]
+
+[sub_resource type="GradientSkyMaterial4D" id="voidsky"]
+top_color = Color(0.015, 0.018, 0.047, 1)
+horizon_color = Color(0.035, 0.043, 0.09, 1)
+bottom_color = Color(0.006, 0.008, 0.018, 1)
+top_curve = 0.35
+bottom_curve = 0.1
+
+[sub_resource type="CapsuleShape4D" id="body_shape"]
+radius = 0.26
+full_height = 1.35
+
+[node name="Theatre" type="Node4D"]
+
+[node name="Environment" type="WorldEnvironment4D" parent="."]
+current = true
+sky_material = SubResource("voidsky")
+tonemap_mode = 2
+
+[node name="KeyLight" type="DirectionalLight4D" parent="."]
+basis = Projection(1, 0, 0, 0, 0, 0.5, 0.866, 0, 0, -0.866, 0.5, 0, 0, 0, 0, 1)
+light_color = Color(0.72, 0.8, 1, 1)
+light_energy = 0.35
+
+[node name="Lamps" type="Node4D" parent="."]
+
+[node name="Key" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 6.2, 2.4, 0)
+light_color = Color(0.93, 0.97, 1, 1)
+light_energy = 2.6
+omni_range_meters = 17.0
+
+[node name="Rim" type="OmniLight4D" parent="Lamps"]
+position = Vector4(0, 3.6, -5.4, 0)
+light_color = Color(0.3, 0.72, 1, 1)
+light_energy = 2.2
+omni_range_meters = 14.0
+
+[node name="Presenter" type="OmniLight4D" parent="Lamps"]
+position = Vector4(-4.8, 4.4, 2.8, 0)
+light_color = Color(1, 0.95, 0.86, 1)
+light_energy = 1.8
+omni_range_meters = 9.0
+
+[node name="HouseLeft" type="OmniLight4D" parent="Lamps"]
+position = Vector4(-8.5, 2.6, 8.5, 0)
+light_color = Color(0.36, 0.5, 0.86, 1)
+light_energy = 1.1
+omni_range_meters = 12.0
+
+[node name="HouseRight" type="OmniLight4D" parent="Lamps"]
+position = Vector4(8.5, 2.6, 8.5, 0)
+light_color = Color(0.36, 0.5, 0.86, 1)
+light_energy = 1.1
+omni_range_meters = 12.0
+
+[node name="Stage" type="Node4D" parent="."]
+script = ExtResource("stage")
+
+[node name="Presenter" type="Node4D" parent="."]
+position = Vector4(-4.45, 0, 1.5, 0)
+basis = Projection(0.8, 0, -0.6, 0, 0, 1, 0, 0, 0.6, 0, 0.8, 0, 0, 0, 0, 1)
+script = ExtResource("avatar")
+build = 2
+wear_cap = false
+
+[node name="PresenterHead" type="Node4D" parent="."]
+
+[node name="ExitArch" type="Node4D" parent="."]
+position = Vector4(0, 2.08, 18.6, 0)
+script = ExtResource("arch")
+player_path = NodePath("../Player")
+starts_open = true
+highlight = 0.75
+
+[node name="ShotCamera" type="Node4D" parent="."]
+script = ExtResource("shotcam")
+player_path = NodePath("../Player")
+presenter_path = NodePath("../Presenter")
+
+[node name="Show" type="Node4D" parent="."]
+script = ExtResource("show")
+stage_path = NodePath("../Stage")
+caption_path = NodePath("../UI/Caption")
+presenter_path = NodePath("../Presenter")
+exit_path = NodePath("../ExitArch")
+audience_path = NodePath("../Player")
+part_two_path = NodePath("../PartTwo")
+camera_path = NodePath("../ShotCamera")
+seat_path = NodePath("../UI/Seat")
+metrics_path = NodePath("../UI/Metrics")
+screen_path = NodePath("../UI/Screen")
+
+[node name="PartTwo" type="Node" parent="."]
+script = ExtResource("part_two")
+stage_path = NodePath("../Stage")
+caption_path = NodePath("../UI/Caption")
+show_path = NodePath("../Show")
+presenter_path = NodePath("../Presenter")
+metrics_path = NodePath("../UI/Metrics")
+camera_path = NodePath("../ShotCamera")
+
+[node name="TrymTalk" type="Node" parent="."]
+script = ExtResource("thtr_player")
+box_path = NodePath("../UI/TrymBox")
+
+[node name="AfterShow" type="Node" parent="."]
+script = ExtResource("thtr_after")
+player_path = NodePath("../Player")
+character_path = NodePath("../Player")
+dialogue_path = NodePath("../TrymTalk")
+tag_path = NodePath("../UI/TrymTag")
+dialogue_box_path = NodePath("../UI/TrymBox")
+show_path = NodePath("../Show")
+hide_while_talking = Array[NodePath]([NodePath("../UI/Caption"), NodePath("../UI/Metrics"), NodePath("../UI/Screen"), NodePath("../UI/EndCard"), NodePath("../UI/Aside"), NodePath("../UI/Seat")])
+talk_range = 3.0
+talk_range_w = 4.0
+
+[node name="UI" type="Node4D" parent="."]
+
+[node name="Pane" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("pane")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+shot_rig_path = NodePath("../../ShotCamera")
+
+[node name="TrymBox" type="Control" parent="UI"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("thtr_box")
+choice_side = 1
+choice_width = 470.0
+choice_gap = 10.0
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+head_anchor_path = NodePath("../../PresenterHead")
+over_head_width = 470.0
+name_size = 17
+text_size = 20
+choice_size = 19
+
+[node name="TrymTag" type="Control" parent="UI"]
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("thtr_tag")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+anchor_path = NodePath("../../PresenterHead")
+lift = 26.0
+
+[node name="Caption" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("caption")
+
+[node name="Metrics" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("metric")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+shot_rig_path = NodePath("../../ShotCamera")
+
+[node name="Screen" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("screen")
+camera_path = NodePath("../../Player/CameraRig/Pitch/Camera4D")
+shot_rig_path = NodePath("../../ShotCamera")
+
+[node name="EndCard" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("endcard")
+
+[node name="Aside" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("aside")
+player_path = NodePath("../../Player")
+stage_path = NodePath("../../Stage")
+
+[node name="Seat" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("seat")
+player_path = NodePath("../../Player")
+stage_path = NodePath("../../Stage")
+camera_path = NodePath("../../ShotCamera")
+show_path = NodePath("../../Show")
+
+[node name="Player" type="CharacterBody4D" parent="."]
+position = Vector4(0, 3.28, 12.6, 0)
+script = ExtResource("character")
+
+[node name="CollisionShape4D" type="CollisionShape4D" parent="Player"]
+position = Vector4(0, 0.68, 0, 0)
+shape = SubResource("body_shape")
+
+[node name="Avatar" type="Node4D" parent="Player"]
+script = ExtResource("avatar")
+build = 2
+skin = Color(0.42, 0.62, 0.36, 1)
+accent = Color(0.93, 0.80, 0.62, 1)
+
+[node name="Gait" type="Node4D" parent="Player"]
+script = ExtResource("gait")
+run_speed = 6
+
+[node name="CameraRig" type="Node4D" parent="Player"]
+script = ExtResource("rig")
+
+[node name="Pitch" type="Node4D" parent="Player/CameraRig"]
+
+[node name="Camera4D" type="Camera4D" parent="Player/CameraRig/Pitch"]
+position = Vector4(0, 0, 5, 0)
+current = true
+rendering_engine_name = "Cross-section"
+w_fade_distance = 9.0

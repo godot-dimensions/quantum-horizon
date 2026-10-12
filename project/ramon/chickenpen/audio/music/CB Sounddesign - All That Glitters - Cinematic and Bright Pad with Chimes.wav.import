@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://b0sf1s4qocbot"
+path="res://.godot/imported/CB Sounddesign - All That Glitters - Cinematic and Bright Pad with Chimes.wav-bed7a6a7599ba6c5ee2d351339ee256e.sample"
+
+[deps]
+
+source_file="res://ramon/chickenpen/audio/music/CB Sounddesign - All That Glitters - Cinematic and Bright Pad with Chimes.wav"
+dest_files=["res://.godot/imported/CB Sounddesign - All That Glitters - Cinematic and Bright Pad with Chimes.wav-bed7a6a7599ba6c5ee2d351339ee256e.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

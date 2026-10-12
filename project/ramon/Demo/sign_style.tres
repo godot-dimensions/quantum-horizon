@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="HubSignStyle4D" load_steps=3 format=3 uid="uid://ccaa7ccrewq6u"]
+
+[ext_resource type="Script" uid="uid://6st4wfvncnb5" path="res://ramon/Demo/scripts/hub_sign_style.gd" id="1_script"]
+[ext_resource type="FontFile" uid="uid://dm20lf6rp3c2u" path="res://ramon/Demo/fonts/Montserrat/static/Montserrat-SemiBold.ttf" id="2_font"]
+
+[resource]
+script = ExtResource("1_script")
+font = ExtResource("2_font")
+panel_size = Vector2(3.2, 0.7)
+corner_radius = 0.15
+panel_color = Color(0.06668042, 0.33446676, 0.68098366, 1)
+title_uppercase = true
+title_font_size = 78
+title_pixel_size = 0.0034
+blurb_uppercase = true
+blurb_pixel_size = 0.0022
+blurb_width_ratio = 0.83
+title_letter_spacing = -2
+blurb_letter_spacing = 2
+blurb_word_spacing = 10
+line_spacing = -6.0

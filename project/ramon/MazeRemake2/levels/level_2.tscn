@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ramon/MazeRemake2/levels/level_2_4d.gd" id="1_level"]
+
+[node name="Level2" type="Node4D"]
+script = ExtResource("1_level")

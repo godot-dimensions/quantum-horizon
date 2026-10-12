@@ -1,0 +1,42 @@
+[gd_scene load_steps=5 format=3 uid="uid://dopefnlt47x0a"]
+
+[ext_resource type="Script" uid="uid://cu6xoypl3i6xf" path="res://ramon/chickenpen/scripts/pen_face_player_4d.gd" id="pen_face"]
+[ext_resource type="Script" uid="uid://bf71jwp6t887l" path="res://ramon/chickenpen/scripts/pen_range_master_4d.gd" id="range_master"]
+[ext_resource type="Script" uid="uid://cqbaq53e1445l" path="res://ramon/chickenpen/scripts/pen_rune_range_4d.gd" id="rune_range"]
+[ext_resource type="Script" uid="uid://lb3dd37cagjw" path="res://ramon/chickenpen/scripts/pen_rune_stone_4d.gd" id="rune_stone"]
+
+[node name="Range" type="Node4D"]
+metadata/move_me = "Move (or turn) this node to move the whole range: the yard, its fences, boards, outcrop, table, banner and rune stone, the range master, and the path's end. Built to Ramon's sheet (PenLayout/refs/range_views.png): the origin is where the sheet stands the player, the boards 10.5 m away along -z."
+
+[node name="RangeYard" type="Node4D" parent="."]
+script = ExtResource("rune_range")
+metadata/what = "The range, built to Ramon's sheet by measurement (PenLayout/PLAN_REF_LOCK.md part D): illustration only, the rune stone is the button to the Quantum Range."
+
+[node name="RuneStone" type="Node4D" parent="."]
+position = Vector4(1.1, 0, -0.9, 0)
+script = ExtResource("rune_stone")
+metadata/what = "The button to the Quantum Range: F by the stone (pen_rune_stone_4d.gd). The stone itself is the yard's; keep this node on it (pen_rune_range_4d.gd STONE_AT)."
+
+[node name="RangeMaster" type="Node4D" parent="."]
+position = Vector4(-2.16, 0, -1.21, 0)
+basis = Projection(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)
+script = ExtResource("range_master")
+jacket = Color(0.42, 0.16, 0.14, 1)
+cap = Color(0.55, 0.55, 0.56, 1)
+trousers = Color(0.24, 0.17, 0.11, 1)
+defenders = Color(0.3, 0.12, 0.1, 1)
+metadata/what = "Dressed as Ramon's range sheet has him: grey head, maroon tunic, dark breeches."
+
+[node name="RangeMasterHead" type="Node4D" parent="."]
+position = Vector4(-2.16, 1.45, -1.21, 0)
+
+[node name="RangeMasterFacing" type="Node4D" parent="."]
+position = Vector4(19, 0, 9, 0)
+script = ExtResource("pen_face")
+figure_path = NodePath("../RangeMaster")
+player_path = NodePath("../../../Player")
+notice_within = 4.0
+
+[node name="RangeArrival" type="Node4D" parent="."]
+position = Vector4(0, 0, 0.8, 0)
+metadata/what = "Where the pen's path arrives (PenLayout/paths/pen_a.tres): its destination is anchored here, so it goes where the unit goes. Beside the rune stone."

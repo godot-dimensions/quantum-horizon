@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ramon/chickenpen/outfit/outfit_circle_4d.gd" id="circle"]
+[ext_resource type="Script" path="res://ramon/chickenpen/scripts/pen_sand_patch_4d.gd" id="sand"]
+
+[node name="OutfitCircle" type="Node4D"]
+script = ExtResource("circle")
+metadata/what = "The fitting circle: step in to change your outfit, which then goes with you to the cave and the cinema (follow_up/outfit.md)."
+
+[node name="Sand" type="Node4D" parent="."]
+script = ExtResource("sand")
+radius = 1.8
+w_half = 0.6
+metadata/what = "Bare sand under the plate and the strips beside it, so the grass grows through neither."

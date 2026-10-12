@@ -3,10 +3,10 @@
 [ext_resource type="PackedScene" uid="uid://j6j6nagrgwrm" path="res://player/player.tscn" id="1_u7wn6"]
 
 [sub_resource type="BoxShape4D" id="BoxShape4D_7dm0k"]
-size = Vector4(10, 1, 10, 10)
+size = Vector4(50, 1, 50, 50)
 
 [sub_resource type="BoxTetraMesh4D" id="BoxTetraMesh4D_ig7tw"]
-size = Vector4(10, 1, 10, 10)
+size = Vector4(50, 1, 50, 50)
 
 [node name="FlatPlane" type="Node4D"]
 

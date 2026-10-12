@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://crqlq0st57m7i"]
+
+[ext_resource type="PackedScene" uid="uid://b2ojfvbl5mjea" path="res://main.tscn" id="1_main"]
+[ext_resource type="Script" uid="uid://c0fqhnvcsbdqk" path="res://scripts/_verify_runner.gd" id="2_runner"]
+
+[node name="Verify" type="Node"]
+
+[node name="Main" parent="." instance=ExtResource("1_main")]
+
+[node name="Runner" type="Node" parent="."]
+script = ExtResource("2_runner")

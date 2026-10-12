@@ -1,0 +1,1988 @@
+[gd_scene load_steps=3 format=3 uid="uid://drermxrqw4wgx"]
+
+[ext_resource type="Script" uid="uid://doesm4wdtabcm" path="res://ramon/chickenpen/scripts/pen_crag_chunk_4d.gd" id="chunk"]
+[ext_resource type="Script" uid="uid://b3u6tbqnu8jqk" path="res://ramon/chickenpen/lookout/watchstone_4d.gd" id="watchstone"]
+
+[node name="Watchstone" type="Node4D"]
+script = ExtResource("watchstone")
+stones_baked = true
+metadata/what = "The Watchstone: the Lookout's crag and its timber walkways, built to Ramon's sheet (PenLayout/PLAN_REF_LOCK.md). The big rock chunks are under Chunks: move, turn or resize them."
+
+[node name="Chunks" type="Node4D" parent="."]
+metadata/what = "The big rock chunks (pen_crag_chunk_4d.gd). Move, turn or resize one: half a second after you let go, the crag clears its face stones round it."
+
+[node name="Chunk75" type="MeshInstance4D" parent="Chunks"]
+position = Vector4(-3.798, 0, -1.382, 0)
+basis = Projection(-0.34202, 0, 0.93969, 0, 0.21806, 0.9727, 0.07937, 0, -0.91404, 0.23206, -0.33268, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+size = Vector3(6.2, 10.2, 4.6)
+metadata/what = "A thick chunk to 75% of the crag (Ramon, 6 Oct). Move, turn or resize it; the crag clears round it."
+
+[node name="Chunk70" type="MeshInstance4D" parent="Chunks"]
+position = Vector4(4.276, 0, -0.754, 0)
+basis = Projection(-0.17365, 0, -0.98481, 0, -0.22881, 0.97263, 0.04035, 0, 0.95786, 0.23234, -0.1689, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 1
+size = Vector3(5.4, 9.6, 4.4)
+metadata/what = "A thick chunk to 70% of the crag (Ramon, 6 Oct). Move, turn or resize it; the crag clears round it."
+
+[node name="Chunk50" type="MeshInstance4D" parent="Chunks"]
+position = Vector4(1.682, 0, -4.621, 0)
+basis = Projection(-0.93969, 0, -0.34202, 0, -0.06167, 0.98361, 0.16944, 0, 0.33641, 0.18032, -0.92429, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+size = Vector3(5.2, 6.8, 4)
+metadata/what = "A thick chunk to 50% of the crag (Ramon, 6 Oct). Move, turn or resize it; the crag clears round it."
+
+[node name="Stones" type="Node4D" parent="."]
+
+[node name="Inner" type="Node4D" parent="Stones"]
+
+[node name="Stone000" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(3.4464553266419107, -0.19999999999999996, -4.114684593065306, -0.38348858078189824)
+basis = Projection(-0.7643885445793337, 0, -0.6447558862979755, 0, 0, 1, 0, 0, 0.6447558862979755, 0, -0.7643885445793337, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+moss = false
+size = Vector3(2.7257814521054056, 3, 2.453203306894865)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone001" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(4.919587949983775, -0.19999999999999996, -2.242024797617771, -0.19258010093627248)
+basis = Projection(-0.34038844747232344, 0, -0.940284906199914, 0, 0, 1, 0, 0, 0.940284906199914, 0, -0.34038844747232344, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+moss = false
+size = Vector3(2.927087087546049, 3, 2.634378378791444)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone002" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(5.481983502125124, -0.03064516129032268, 0.1873998859247734, 0.21034950729855173)
+basis = Projection(0.22413071313602423, 0, -0.9745590918097976, 0, 0, 1, 0, 0, 0.9745590918097976, 0, 0.22413071313602423, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+moss = false
+size = Vector3(3.2891956766002117, 2.6612903225806455, 3.203762022662544)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone003" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(4.954649826801037, -0.19999999999999996, 2.4464072148099354, 0.3900947141306037)
+basis = Projection(0.3634544984984415, 0, -0.9316119511477116, 0, 0, 1, 0, 0, 0.9316119511477116, 0, 0.3634544984984415, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 1
+moss = false
+size = Vector3(2.506571292391111, 3, 2.255914163152001)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone004" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(3.637273102748925, -0.19999999999999996, 4.248732631341699, 0.18567602691259488)
+basis = Projection(0.6975330175044775, 0, -0.7165526425121174, 0, 0, 1, 0, 0, 0.7165526425121174, 0, 0.6975330175044775, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+moss = false
+size = Vector3(2.781347541709568, 3, 2.503212787538611)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone005" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(1.06549570063255, -0.19999999999999996, 4.207602698002467, 0.13490139801404344)
+basis = Projection(0.9789833528061068, 0, -0.20394017487614804, 0, 0, 1, 0, 0, 0.20394017487614804, 0, 0.9789833528061068, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+moss = false
+size = Vector3(2.5393898966539603, 3, 2.285450906988564)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone006" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-1.0453403104512569, -0.19999999999999996, 4.315633851119734, -0.19356744321175529)
+basis = Projection(0.981707187863244, 0, 0.1903969466605002, 0, 0, 1, 0, 0, -0.1903969466605002, 0, 0.981707187863244, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+moss = false
+size = Vector3(2.4763272016207236, 3, 2.228694481458651)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone007" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-3.505711539787643, -0.19999999999999996, 4.410311400775893, 0.23591128845409623)
+basis = Projection(0.7821793964651996, 0, 0.6230532816263278, 0, 0, 1, 0, 0, -0.6230532816263278, 0, 0.7821793964651996, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+moss = false
+size = Vector3(2.6109460373134405, 3, 2.3498514335820966)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone008" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-4.95298841148051, -0.03064516129032268, 2.601221433915892, -0.31054278824155224)
+basis = Projection(0.4046172593520802, 0, 0.914486125337291, 0, 0, 1, 0, 0, -0.914486125337291, 0, 0.4046172593520802, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 3
+moss = false
+size = Vector3(3.1657310680485535, 2.6612903225806455, 3.083504287060279)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone009" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-5.449662912502973, -0.19999999999999996, 0.1254188203427026, 0.09650920453191451)
+basis = Projection(-0.03382269610750287, 0, 0.9994278489355894, 0, 0, 1, 0, 0, -0.9994278489355894, 0, -0.03382269610750287, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+moss = false
+size = Vector3(3.103286296398481, 3, 2.792957666758633)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone010" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-4.874454933966308, -0.19999999999999996, -2.281626661004264, 0.3800212376013242)
+basis = Projection(-0.3238915261483301, 0, 0.9460942232617772, 0, 0, 1, 0, 0, -0.9460942232617772, 0, -0.3238915261483301, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 1
+moss = false
+size = Vector3(2.7713654508608183, 3, 2.4942289057747367)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone011" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-3.32874753110371, -0.03064516129032268, -4.132589615936588, -0.22521801063256208)
+basis = Projection(-0.7767002306777796, 0, 0.6298704245041864, 0, 0, 1, 0, 0, -0.6298704245041864, 0, -0.7767002306777796, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 3
+moss = false
+size = Vector3(3.2425303415826954, 2.6612903225806455, 3.1583087742688587)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone012" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-1.120840108327866, -0.19999999999999996, -5.180127263152746, 0.00412046690678957)
+basis = Projection(-0.9173196559351376, 0, 0.39815154003851455, 0, 0, 1, 0, 0, -0.39815154003851455, 0, -0.9173196559351376, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+moss = false
+size = Vector3(2.854544960485044, 3, 2.56909046443654)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone013" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(1.2879607143957683, -0.03064516129032268, -5.14123193002333, 0.0204216124675991)
+basis = Projection(-0.9297990411055516, 0, -0.3680675796089581, 0, 0, 1, 0, 0, 0.3680675796089581, 0, -0.9297990411055516, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(3.1503231655833326, 2.6612903225806455, 3.068496589853895)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone014" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-2.8690242418389715, -0.19999999999999996, -2.11172906435374, -0.12554780452589748)
+basis = Projection(-0.6006258224304393, 0, 0.7995302504782158, 0, 0, 1, 0, 0, -0.7995302504782158, 0, -0.6006258224304393, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+moss = false
+size = Vector3(2.5521376511476923, 3, 2.296923886032923)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone015" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-1.1381130405873148, -0.19999999999999996, -3.309788418376185, 0.0956984021112512)
+basis = Projection(-0.9116164261720676, 0, 0.41104195836102586, 0, 0, 1, 0, 0, -0.41104195836102586, 0, -0.9116164261720676, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+moss = false
+size = Vector3(2.475660232718515, 3, 2.2280942094466636)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone016" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(1.0348153888470284, -0.03064516129032268, -3.3435247536959265, -0.18776878358463955)
+basis = Projection(-0.9876717217237576, 0, -0.15653935641629677, 0, 0, 1, 0, 0, 0.15653935641629677, 0, -0.9876717217237576, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+moss = false
+size = Vector3(2.996015652606962, 2.6612903225806455, 2.9181970642275608)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone017" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(3.0096958753300824, -0.19999999999999996, -1.9583603550219104, 0.3145000400772676)
+basis = Projection(-0.5295777261969286, 0, -0.8482614172035003, 0, 0, 1, 0, 0, 0.8482614172035003, 0, -0.5295777261969286, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+moss = false
+size = Vector3(3.067455617130484, 3, 2.7607100554174355)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone018" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(3.6636685734332786, -0.19999999999999996, 0.374894117470758, -0.07229445119925226)
+basis = Projection(0.07560648439201821, 0, -0.9971377334741072, 0, 0, 1, 0, 0, 0.9971377334741072, 0, 0.07560648439201821, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+moss = false
+size = Vector3(2.736231226594159, 3, 2.4626081039347434)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone019" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(2.886396240163136, -0.19999999999999996, 2.4018185998663517, 0.09273881905337884)
+basis = Projection(0.7396201924406882, 0, -0.6730244950475422, 0, 0, 1, 0, 0, 0.6730244950475422, 0, 0.7396201924406882, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+moss = false
+size = Vector3(2.441036499667982, 3, 2.196932849701184)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone020" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(1.0930184914113787, -0.19999999999999996, 3.6530524758193703, -0.01474454859129198)
+basis = Projection(0.993685618966457, 0, -0.1122002257540032, 0, 0, 1, 0, 0, 0.1122002257540032, 0, 0.993685618966457, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 1
+moss = false
+size = Vector3(2.7791871884052615, 3, 2.5012684695647356)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone021" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-1.0740356464789402, -0.03064516129032268, 2.412120629973781, 0.38607794390797023)
+basis = Projection(0.9630516999635902, 0, 0.269316585447757, 0, 0, 1, 0, 0, -0.269316585447757, 0, 0.9630516999635902, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+moss = false
+size = Vector3(2.7327645330987544, 2.6612903225806455, 2.6617836361351506)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone022" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-3.4715181858444293, -0.19999999999999996, 1.543284827128958, -0.1691773452249586)
+basis = Projection(0.43428387093691834, 0, 0.9007760650927876, 0, 0, 1, 0, 0, -0.9007760650927876, 0, 0.43428387093691834, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+moss = false
+size = Vector3(2.9829115172757903, 3, 2.6846203655482115)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone023" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-3.507012027430323, -0.19999999999999996, -0.8377596487953359, -0.2813650332633408)
+basis = Projection(-0.3047150294870115, 0, 0.9524435683045634, 0, 0, 1, 0, 0, -0.9524435683045634, 0, -0.3047150294870115, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+moss = false
+size = Vector3(2.707323350186242, 3, 2.436591015167618)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone024" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(0, -0.19999999999999996, 0, 0)
+basis = Projection(-0.1918086455055659, 0, 0.9814323428078576, 0, 0, 1, 0, 0, -0.9814323428078576, 0, -0.1918086455055659, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+moss = false
+size = Vector3(3.6, 3, 3.6)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone039" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-3.9789806332882, 2.6032258064516123, 2.5015425066996544, -0.3664504587924049)
+basis = Projection(0.4732861713459377, 0, 0.8809087353481652, 0, 0, 1, 0, 0, -0.8809087353481652, 0, 0.4732861713459377, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 3
+moss = false
+size = Vector3(2.755685918325813, 3.193548387096774, 2.68410966070696)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone040" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-4.570231859859028, 2.3999999999999995, 0.2491408039508871, -0.2853933043584693)
+basis = Projection(-0.13453016945568816, 0, 0.9909094981410884, 0, 0, 1, 0, 0, -0.9909094981410884, 0, -0.13453016945568816, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+moss = false
+size = Vector3(3.018211869494101, 3.5999999999999996, 2.716390682544691)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone041" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-3.962411666647273, 2.3999999999999995, -2.092423464427107, 0.25146567542207066)
+basis = Projection(-0.3274564414782148, 0, 0.9448662756890124, 0, 0, 1, 0, 0, -0.9448662756890124, 0, -0.3274564414782148, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+moss = false
+size = Vector3(2.7418411717789013, 3.5999999999999996, 2.4676570546010113)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone042" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-2.311175899795408, 2.3999999999999995, -3.744864631818956, -0.1460633147657287)
+basis = Projection(-0.8942499152855904, 0, 0.44756797138726806, 0, 0, 1, 0, 0, -0.44756797138726806, 0, -0.8942499152855904, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+moss = false
+size = Vector3(2.8159269868927, 3.5999999999999996, 2.5343342882034303)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone043" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-0.21512816694103165, 2.3999999999999995, -4.394737747782977, 0.35101411225536583)
+basis = Projection(-0.9982429874271356, 0, -0.05925316913505455, 0, 0, 1, 0, 0, 0.05925316913505455, 0, -0.9982429874271356, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+moss = false
+size = Vector3(2.4026536301805335, 3.5999999999999996, 2.16238826716248)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone044" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(1.7995179614628456, 2.6032258064516123, -3.987052489819724, -0.04206371375367857)
+basis = Projection(-0.9695598664455364, 0, -0.24485437586066017, 0, 0, 1, 0, 0, 0.24485437586066017, 0, -0.9695598664455364, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+moss = false
+size = Vector3(2.726360712812121, 3.193548387096774, 2.6555461488429746)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone045" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(3.348715652748347, 2.3999999999999995, -2.5538587854906805, 0.00915722044299538)
+basis = Projection(-0.6640514874593064, 0, -0.7476868475525583, 0, 0, 1, 0, 0, 0.7476868475525583, 0, -0.6640514874593064, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+moss = false
+size = Vector3(2.5217189742221806, 3.5999999999999996, 2.2695470767999626)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone046" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(4.060668745824745, 2.6032258064516123, -0.57902351822686, -0.02665584052097924)
+basis = Projection(-0.31101713306007117, 0, -0.9504043049897732, 0, 0, 1, 0, 0, 0.9504043049897732, 0, -0.31101713306007117, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(2.711615694670414, 3.193548387096774, 2.6411841181854685)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone047" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(3.653414371360879, 2.3999999999999995, 1.6780593816869505, 0.0567370321292347)
+basis = Projection(0.4659027953744458, 0, -0.8848359086645825, 0, 0, 1, 0, 0, 0.8848359086645825, 0, 0.4659027953744458, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 1
+moss = false
+size = Vector3(2.996722048048842, 3.5999999999999996, 2.6970498432439576)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone048" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(1.4654286132894752, 2.3999999999999995, 2.906894189013912, -0.3820887871245568)
+basis = Projection(0.9559785208434282, 0, -0.29343665020922516, 0, 0, 1, 0, 0, 0.29343665020922516, 0, 0.9559785208434282, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+moss = false
+size = Vector3(2.730664311962846, 3.5999999999999996, 2.4575978807665617)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone049" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-0.8623621849412919, 2.6032258064516123, 4.2476259576204844, -0.31049451085440616)
+basis = Projection(0.9888708428386456, 0, 0.14877653102417326, 0, 0, 1, 0, 0, -0.14877653102417326, 0, 0.9888708428386456, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(3.4859573055855004, 3.193548387096774, 3.395412959985877)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone050" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-3.291922802021875, 2.6032258064516123, 3.354585825170702, 0.12081558175007512)
+basis = Projection(0.8057664527040465, 0, 0.5922334199424562, 0, 0, 1, 0, 0, -0.5922334199424562, 0, 0.8057664527040465, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(3.2227689119379708, 3.193548387096774, 3.1390606285110105)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone051" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(2.353171540701034, 2.6032258064516123, -0.27281023622566547, 0.3363421723741655)
+basis = Projection(-0.1528974468895094, 0, -0.988242060800222, 0, 0, 1, 0, 0, 0.988242060800222, 0, -0.1528974468895094, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+moss = false
+size = Vector3(2.8660686677869514, 3.193548387096774, 2.791625325766511)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone052" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(0, 2.3999999999999995, 0, 0)
+basis = Projection(-0.7715596763718249, 0, 0.6361569506002468, 0, 0, 1, 0, 0, -0.6361569506002468, 0, -0.7715596763718249, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+moss = false
+size = Vector3(3.6, 3.5999999999999996, 3.6)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone060" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-2.576988348284751, 5.8032258064516125, -3.4052459011283274, -0.1608690481326178)
+basis = Projection(-0.6685523639207148, 0, 0.7436650702406454, 0, 0, 1, 0, 0, -0.7436650702406454, 0, -0.6685523639207148, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+moss = false
+size = Vector3(3.2850749156648393, 3.1935483870967745, 3.1997482944787397)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone061" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-0.4554043848517674, 5.6, -4.393216023128711, 0.29263406980901896)
+basis = Projection(-0.9849804148348958, 0, 0.17266610087587098, 0, 0, 1, 0, 0, -0.17266610087587098, 0, -0.9849804148348958, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+moss = false
+size = Vector3(2.5701735881429895, 3.6, 2.3131562293286905)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone062" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(1.689258586786334, 5.6, -4.1360246710667, 0.03270250823417398)
+basis = Projection(-0.9333630225757396, 0, -0.3589337934609662, 0, 0, 1, 0, 0, 0.3589337934609662, 0, -0.9333630225757396, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+moss = false
+size = Vector3(2.562113056010935, 3.6, 2.305901750409842)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone063" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(3.201728201149403, 5.8032258064516125, -2.619469131612787, -0.1743208330130461)
+basis = Projection(-0.6995713181731908, 0, -0.7145627829585194, 0, 0, 1, 0, 0, 0.7145627829585194, 0, -0.6995713181731908, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+moss = false
+size = Vector3(2.7154218504979872, 3.1935483870967745, 2.6448914128227146)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone064" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(3.913969810783592, 5.8032258064516125, -0.3695624707745081, -0.210002093430564)
+basis = Projection(0.0875424187873479, 0, -0.9961607927000844, 0, 0, 1, 0, 0, 0.9961607927000844, 0, 0.0875424187873479, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+moss = false
+size = Vector3(3.4387411310893388, 3.1935483870967745, 3.349423179632473)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone065" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(3.0207691329507074, 5.6, 2.0983308933249827, 0.31846069774673647)
+basis = Projection(0.4332662607335731, 0, -0.901265969239906, 0, 0, 1, 0, 0, 0.901265969239906, 0, 0.4332662607335731, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 1
+moss = false
+size = Vector3(3.14416413595876, 3.6, 2.829747722362884)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone066" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(0.31501033852118687, 5.6, 2.6789040423351933, -0.04759406555299128)
+basis = Projection(0.9999696293834024, 0, -0.00779360704814249, 0, 0, 1, 0, 0, 0.00779360704814249, 0, 0.9999696293834024, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 1
+moss = false
+size = Vector3(3.0674974330152405, 3.6, 2.7607476897137166)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone067" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-1.5913458111299468, 5.6, 0.8614366733741549, -0.18053104924405697)
+basis = Projection(0.6137553815547621, 0, 0.7894962518040022, 0, 0, 1, 0, 0, -0.7894962518040022, 0, 0.6137553815547621, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+moss = false
+size = Vector3(3.0160637583944823, 3.6, 2.714457382555034)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone068" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-3.5883076135853913, 5.6, -1.87981910581782, 0.08544781973375659)
+basis = Projection(-0.5404412782449113, 0, 0.8413817354619758, 0, 0, 1, 0, 0, -0.8413817354619758, 0, -0.5404412782449113, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+moss = false
+size = Vector3(2.576868421579633, 3.6, 2.3191815794216697)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone069" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(1.6721720177037531, 5.8032258064516125, 0.9515214095400848, -0.02497665053514064)
+basis = Projection(0.4594874526223291, 0, -0.8881842606591511, 0, 0, 1, 0, 0, 0.8881842606591511, 0, 0.4594874526223291, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+moss = false
+size = Vector3(3.1913428455321124, 3.1935483870967745, 3.108450823570239)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone070" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(0, 5.6, 0, 0)
+basis = Projection(-0.7195108813058657, 0, 0.6944811672626238, 0, 0, 1, 0, 0, -0.6944811672626238, 0, -0.7195108813058657, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 3
+moss = false
+size = Vector3(3.6, 3.6, 3.6)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone079" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(3.5826369256788704, 9.069274193548388, -0.37748173437043053, 0.145451442962927)
+basis = Projection(0.08834792349634923, 0, -0.9960896768935432, 0, 0, 1, 0, 0, 0.9960896768935432, 0, 0.08834792349634923, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(3.51581005877824, 4.231451612903226, 3.4244903169917924)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone081" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(0.5350566592230205, 9.069274193548388, 3.01932941227128, -0.2501252680844316)
+basis = Projection(0.9997184480270652, 0, -0.02372814097977475, 0, 0, 1, 0, 0, 0.02372814097977475, 0, 0.9997184480270652, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+moss = false
+size = Vector3(3.1648806369156364, 4.231451612903226, 3.0826759450476975)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone082" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-1.4297459181601957, 9.069274193548388, 1.0836920932155474, -0.20881087025858136)
+basis = Projection(0.7113858474672876, 0, 0.7028016619383088, 0, 0, 1, 0, 0, -0.7028016619383088, 0, 0.7113858474672876, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+moss = false
+size = Vector3(3.2449517671478043, 4.231451612903226, 3.1606673056634453)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone083" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-2.64498591619005, 8.8, -1.4242059530271975, -0.3948440019334682)
+basis = Projection(-0.5949547766673376, 0, 0.8037591764457301, 0, 0, 1, 0, 0, -0.8037591764457301, 0, -0.5949547766673376, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+moss = false
+size = Vector3(3.1360861541020357, 4.77, 2.822477538691832)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone084" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(-0.9138292149579028, 9.069274193548388, -3.321543122933076, -0.24192876322735393)
+basis = Projection(-0.937650355268246, 0, 0.34757993507297275, 0, 0, 1, 0, 0, -0.34757993507297275, 0, -0.937650355268246, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(3.251801195628955, 4.231451612903226, 3.16733882691132)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone085" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(1.41056131790609, 8.8, -3.6281255042374, 0.09355342777313586)
+basis = Projection(-0.9726419529120932, 0, -0.2323093442704133, 0, 0, 1, 0, 0, 0.2323093442704133, 0, -0.9726419529120932, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+moss = false
+size = Vector3(2.514949598638876, 4.77, 2.2634546387749883)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone086" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(3.0960256640752037, 9.069274193548388, -2.053760365744024, 0.13868431539768322)
+basis = Projection(-0.6657372562843398, 0, -0.7461862405559347, 0, 0, 1, 0, 0, 0.7461862405559347, 0, -0.6657372562843398, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(3.266651945670197, 4.231451612903226, 3.1818038431852567)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Stone087" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(0.05529734115051994, 8.8, -1.6269674011625217, -0.3939325690321103)
+basis = Projection(-0.9955207402242282, 0, -0.09454340687432831, 0, 0, 1, 0, 0, 0.09454340687432831, 0, -0.9955207402242282, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 1
+moss = false
+size = Vector3(2.6819762524305175, 4.77, 2.4137786271874657)
+w_size = 4.800000000000001
+bury = 0.0
+solid = false
+
+[node name="Stone088" type="MeshInstance4D" parent="Stones/Inner"]
+position = Vector4(1.835062661346439, 9.069274193548388, -0.5005265633799955, 0.15301527825640304)
+basis = Projection(-0.3735026152300437, 0, -0.9276291265459046, 0, 0, 1, 0, 0, 0.9276291265459046, 0, -0.3735026152300437, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 3
+moss = false
+size = Vector3(2.807899133464123, 4.231451612903226, 2.7349666884390804)
+w_size = 5.333333333333334
+bury = 0.0
+solid = false
+
+[node name="Course0" type="Node4D" parent="Stones"]
+
+[node name="Stone025" type="MeshInstance4D" parent="Stones/Course0"]
+position = Vector4(-3.327548346737053, -0.21962983039827333, -4.957259472906661, -0.08364046556710947)
+basis = Projection(-0.7562092201597024, -0.02042696953356381, 0.6540109741136838, 0, -0.03319884720380199, 0.999423038260734, -0.00717127171581552, 0, -0.6534871474557044, -0.02713539219098008, -0.7564510682131715, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+moss = false
+size = Vector3(2.6422087930724443, 2.9027620047349485, 2.2617801174794865)
+w_size = 3.588653687180532
+bury = 0.0
+solid = false
+
+[node name="Stone026" type="MeshInstance4D" parent="Stones/Course0"]
+position = Vector4(-1.1619713821731454, -0.00724643592675922, -5.935255931966316, -0.28065507433880105)
+basis = Projection(-0.9924858907672808, -0.05227534299292173, 0.11063021803670876, 0, -0.04972989853778953, 0.9984333822604812, 0.02564602073064374, 0, -0.1117975573047036, 0.01995168421131004, -0.9935306922676488, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+size = Vector3(2.7075961467339043, 2.8225553707870827, 2.0170361942125057)
+w_size = 2.4919798364605668
+bury = 0.0
+solid = false
+
+[node name="Stone027" type="MeshInstance4D" parent="Stones/Course0"]
+position = Vector4(4.884063042890798, -0.15804353054518083, -3.922398018624532, 0.4356685738645555)
+basis = Projection(-0.5898509137452314, 0.02721795348954251, -0.8070533331581977, 0, 0.00617520555944242, 0.9995546074698048, 0.02919680671209179, 0, 0.8074885549592727, 0.0122380428878852, -0.5897562750120255, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(2.3491620559558304, 2.481734434764322, 2.0673041085773147)
+w_size = 2.954275362562438
+bury = 0.0
+solid = false
+
+[node name="Stone028" type="MeshInstance4D" parent="Stones/Course0"]
+position = Vector4(6.096452765790034, -0.1977647232224712, 2.2948603773002607, -0.47552334969187454)
+basis = Projection(0.4125998453672448, -0.02235747786301999, -0.910637969110958, 0, 0.00420126569342609, 0.9997348232981856, -0.02264138802103125, 0, 0.9109026934692304, 0.00551600113762019, 0.41258436320581865, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "wedge"
+variant = 1
+moss = false
+size = Vector3(2.0703836684517967, 2.0880513375821352, 1.7966809754150177)
+w_size = 3.1719879944880027
+bury = 0.0
+solid = false
+
+[node name="Stone029" type="MeshInstance4D" parent="Stones/Course0"]
+position = Vector4(5.123323674452197, -0.24987437266400236, 4.191401444308945, 0.15890070975237913)
+basis = Projection(0.669632267257751, 0.00258407443864, -0.7426883257508088, 0, -0.03107545115225868, 0.999215695051729, -0.02454202717734525, 0, 0.742042413196798, 0.03951350809008908, 0.6691873726360107, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "wedge"
+variant = 1
+moss = false
+size = Vector3(2.3940036129862987, 2.2719664537443545, 2.108174584771815)
+w_size = 2.8308981749049043
+bury = 0.0
+solid = false
+
+[node name="Stone030" type="MeshInstance4D" parent="Stones/Course0"]
+position = Vector4(2.384500874018464, -0.14572904109603324, 4.312194760585436, 0.20365497017705905)
+basis = Projection(0.8449970640837495, 0.02680595400943868, -0.5340986823794714, 0, -0.03397337583634333, 0.9994162926013485, -0.00358940346833953, 0, 0.5336907076426628, 0.02117817066273248, 0.8454145217958193, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 1
+size = Vector3(3.1185274135271395, 2.6896066679165784, 2.7387364905299267)
+w_size = 2.958827131656414
+bury = 0.0
+solid = false
+
+[node name="Stone031" type="MeshInstance4D" parent="Stones/Course0"]
+position = Vector4(-0.03625267874992866, -0.14016724339592956, 5.138668351562093, -0.23355012045691836)
+basis = Projection(0.995065339833984, -0.03488116686193535, -0.0928885012228528, 0, 0.0337410457114967, 0.9993350968018124, -0.01381687860576805, 0, 0.0933086882094738, 0.01061454183946079, 0.9955806447526818, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+size = Vector3(3.09496291531846, 3.129357284306377, 2.248034938869352)
+w_size = 2.4080492750113582
+bury = 0.0
+solid = false
+
+[node name="Stone032" type="MeshInstance4D" parent="Stones/Course0"]
+position = Vector4(-2.694070283630391, -0.25768062302695466, 5.933762543187491, 0.00521386562390413)
+basis = Projection(0.9298119400783392, 0.05304262094585582, 0.3641925815429925, 0, -0.03079539124224135, 0.997302503221682, -0.06662852952005113, 0, -0.3667443250631048, 0.0507365492614673, 0.9289372436300778, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(2.0042448468701917, 1.284952987398157, 1.8293904283891216)
+w_size = 3.3557858354625245
+bury = 0.0
+solid = false
+
+[node name="Stone033" type="MeshInstance4D" parent="Stones/Course0"]
+position = Vector4(-2.8016296680100172, 1.162695653119035, 6.09654584646141, 0.09199456469692512)
+basis = Projection(0.9164358179945574, 0.00890408897680311, 0.4000826273360787, 0, 0.00403347254744422, 0.9994961316634065, -0.03148354949962918, 0, -0.40016137069419305, 0.03046637473313424, 0.915938140604902, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "wedge"
+variant = 2
+moss = false
+size = Vector3(2.0966472924144623, 1.3252096011276149, 1.692590767781586)
+w_size = 2.8345302304402007
+bury = 0.0
+solid = false
+
+[node name="Stone034" type="MeshInstance4D" parent="Stones/Course0"]
+position = Vector4(-4.470552369188647, -0.2216499967345724, 4.71464784348946, -0.4626357237939646)
+basis = Projection(0.7520665264801984, 0.03282599747445548, 0.6582692409932399, 0, 0.01703476664152147, 0.9974571900056006, -0.06920239036044969, 0, -0.658867024879435, 0.06325826425012147, 0.7495949809934588, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 3
+moss = false
+size = Vector3(2.623279675344204, 2.7428042865465607, 2.357610198531001)
+w_size = 3.4512947783262056
+bury = 0.0
+solid = false
+
+[node name="Stone035" type="MeshInstance4D" parent="Stones/Course0"]
+position = Vector4(-5.951892184418934, -0.0935614579875299, 3.167942807378177, -0.3338940437446105)
+basis = Projection(0.434843041140414, 0.03198280005802749, 0.8999381256909857, 0, 0.01847278716474823, 0.9988419777185502, -0.04442363877105414, 0, -0.9003167696461741, 0.03594167563906041, 0.4337486717514354, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+moss = false
+size = Vector3(1.961193852521291, 1.41243949030765, 1.528489769938713)
+w_size = 3.50908458321414
+bury = 0.0
+solid = false
+
+[node name="Stone036" type="MeshInstance4D" parent="Stones/Course0"]
+position = Vector4(-5.700812013433983, 1.135715201790191, 3.0188147779638905, 0.39322441704705546)
+basis = Projection(0.3652944425224979, 0.01374331456417227, 0.9307905734196966, 0, 0.02220952329852165, 0.9994777235059196, -0.02347375748099319, 0, -0.9306270506153526, 0.0292472480793368, 0.3647984253567383, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 3
+moss = false
+size = Vector3(2.0316355098808416, 1.3558300827997785, 1.8039781285291532)
+w_size = 2.719960886339976
+bury = 0.0
+solid = false
+
+[node name="Stone037" type="MeshInstance4D" parent="Stones/Course0"]
+position = Vector4(-6.398496766162473, -0.03569530729497128, 1.3706821369910405, 0.04253997564184597)
+basis = Projection(0.2999287083031594, 0.0123513638487713, 0.9538816560489428, 0, -0.04507948783872167, 0.9989826348439008, 0.00123897398527377, 0, -0.9528959070705452, -0.04337210038046237, 0.3001803644424302, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+size = Vector3(1.7959712800758638, 2.190239277823973, 1.5796934673232574)
+w_size = 3.5670884943523813
+bury = 0.0
+solid = false
+
+[node name="Ledges" type="Node4D" parent="Stones"]
+
+[node name="Stone038" type="MeshInstance4D" parent="Stones/Ledges"]
+position = Vector4(-6.1244040306378755, 2.6507205596725205, -1.209565120546093, 0.3019446918424217)
+basis = Projection(0.7995045755762716, 0.00883890503446956, -0.6005949611763302, 0, -0.0678276662232884, 0.9948248061004208, -0.07565059723467027, 0, 0.5968180973523742, 0.1012199531962535, 0.7959665066745211, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+moss = false
+size = Vector3(0.6581940994632245, 0.2784667343882873, 0.5063031534332496)
+w_size = 1.0126063068664992
+bury = 0.0
+solid = false
+
+[node name="Stone078" type="MeshInstance4D" parent="Stones/Ledges"]
+position = Vector4(-5.051077411177137, 9.050057911716456, -1.009303523753739, -0.38736431499639246)
+basis = Projection(-0.15990429951325388, 0.02450297400581094, -0.986828363628674, 0, -0.00387816204164963, 0.9996685684466156, 0.02545020862532977, 0, 0.9871249033715817, 0.00789667808414747, -0.15975627567917652, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+moss = false
+size = Vector3(0.8260060787568155, 0.3494641102432681, 0.6353892913513965)
+w_size = 1.270778582702793
+bury = 0.0
+solid = false
+
+[node name="Stone098" type="MeshInstance4D" parent="Stones/Ledges"]
+position = Vector4(4.483526814723316, 13.550489648568997, -0.8827815138020172, -0.5850010635887204)
+basis = Projection(-0.5619169842470917, -0.007953828575863, 0.8271553901327365, 0, -0.06127635260136231, 0.9976066386530432, -0.03203440536750609, 0, -0.8249209122252432, -0.06868574179814885, -0.5610594954611415, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+variant = 1
+size = Vector3(0.9671344985629752, 0.4091722878535664, 0.7439496142792116)
+w_size = 1.4878992285584232
+bury = 0.0
+solid = false
+
+[node name="Course1" type="Node4D" parent="Stones"]
+
+[node name="Stone053" type="MeshInstance4D" parent="Stones/Course1"]
+position = Vector4(2.4790260025461546, 2.4612775763849193, 2.9036373720928585, 0.4406525420998074)
+basis = Projection(0.6989683513572534, -0.02971948785053765, -0.7145348107984837, 0, 0.00276961886098722, 0.9992411403007504, -0.03885193356605077, 0, 0.715147238694444, 0.02517728286288462, 0.6985202440984473, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+size = Vector3(3.0920109950966697, 2.7940421888779827, 2.494359509527909)
+w_size = 2.945528912354441
+bury = 0.0
+solid = false
+
+[node name="Stone054" type="MeshInstance4D" parent="Stones/Course1"]
+position = Vector4(-0.4330154512534615, 2.590798240212981, 5.096125554034677, 0.3464696177100155)
+basis = Projection(0.9996830414840008, -0.02079788043499067, 0.01418678042083724, 0, 0.02083963536315289, 0.999778905433402, -0.00280175807656159, 0, -0.01412537317128457, 0.00309651736642682, 0.9998954372398002, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+moss = false
+size = Vector3(3.0292301467524485, 3.6254637201445794, 2.8491296806408686)
+w_size = 3.0283087759507645
+bury = 0.0
+solid = false
+
+[node name="Stone055" type="MeshInstance4D" parent="Stones/Course1"]
+position = Vector4(-3.498570889758597, 2.5399433313832525, 4.644387763959211, 0.17469439600748682)
+basis = Projection(0.7371283116844666, -0.0049181773868743, 0.6757349063385724, 0, -0.01179238483766943, 0.9997276218174548, 0.02014005548791666, 0, -0.6756499032583726, -0.02281433116283044, 0.7368695369741814, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(1.7683033339175118, 1.5722971681519151, 1.2991406995103758)
+w_size = 2.453368730361089
+bury = 0.0
+solid = false
+
+[node name="Stone056" type="MeshInstance4D" parent="Stones/Course1"]
+position = Vector4(-3.375203532847373, 4.091658321246246, 4.50495879544937, -0.42247137779042054)
+basis = Projection(0.7359513434685889, 0.01519369228442595, 0.6768639241099685, 0, -0.02291215133028597, 0.9997344283281018, 0.00247105987413234, 0, -0.6766466237026512, -0.01732698849337782, 0.7361040158167548, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+size = Vector3(1.868006392279128, 1.4980975925246651, 1.6588836592180876)
+w_size = 2.577819140662682
+bury = 0.0
+solid = false
+
+[node name="Stone057" type="MeshInstance4D" parent="Stones/Course1"]
+position = Vector4(-4.538532265528962, 2.5022934738109694, 2.6716541282963413, 0.10877007603335144)
+basis = Projection(0.5382040652652572, 0.06469763180843985, 0.8403276745236529, 0, -0.03930029056568777, 0.997891247072948, -0.05165797302110584, 0, -0.8418977795988082, -0.00522259069584612, 0.5396117615962613, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+moss = false
+size = Vector3(3.098549461207636, 3.850646396554826, 2.7114321363224017)
+w_size = 3.2694167140120944
+bury = 0.0
+solid = false
+
+[node name="Stone058" type="MeshInstance4D" parent="Stones/Course1"]
+position = Vector4(-1.506810274356963, 2.3958137974950047, -4.6299700489545605, -0.3009782415970499)
+basis = Projection(-0.9390016031746096, -0.00753677306965738, 0.3438301707052614, 0, -0.02400442054450024, 0.9987578782944886, -0.04366335235657515, 0, -0.34307401100904666, -0.04925340187629834, -0.938016164772109, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "wedge"
+moss = false
+size = Vector3(3.236885355036847, 3.40516511729444, 2.7396347488383066)
+w_size = 3.3683707686289215
+bury = 0.0
+solid = false
+
+[node name="Stone059" type="MeshInstance4D" parent="Stones/Course1"]
+position = Vector4(3.4386583169310327, 2.435666299218302, -3.820721642375386, -0.45991099646360506)
+basis = Projection(-0.762964458297484, 0.0203566993979454, -0.6461198342137845, 0, 0.00433157748376193, 0.9996426049749684, 0.0263799119665206, 0, 0.6464259221375089, 0.01732821711777928, -0.7627799552165685, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "wedge"
+moss = false
+size = Vector3(2.89240479231316, 3.5336030940726317, 2.0875805423751492)
+w_size = 2.8517733011615007
+bury = 0.0
+solid = false
+
+[node name="Course2" type="Node4D" parent="Stones"]
+
+[node name="Stone071" type="MeshInstance4D" parent="Stones/Course2"]
+position = Vector4(2.7591523566719887, 5.706469939532109, 2.2749866913956582, -0.16407695863755056)
+basis = Projection(0.5548811620042811, -0.02528801139207537, -0.8315451957245698, 0, 0.03934317976067698, 0.9992172066424349, -0.00413378228851248, 0, 0.8309988028024456, -0.03042187419479654, 0.5554417154944145, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "wedge"
+variant = 1
+size = Vector3(1.8997365901787748, 1.4448573354338765, 1.4028136182514452)
+w_size = 2.777713714410194
+bury = 0.0
+solid = false
+
+[node name="Stone072" type="MeshInstance4D" parent="Stones/Course2"]
+position = Vector4(2.796165546466537, 7.218793190503681, 2.274452885255104, 0.1605348372539278)
+basis = Projection(0.708314966127803, 0.00444162990677663, -0.7058825544544507, 0, -0.00030470819913802, 0.999982034707106, 0.00598643599728713, 0, 0.7058964626007717, -0.00402519400867393, 0.7083035944430254, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(1.9669920737114297, 1.4592739342711027, 1.7458555368821702)
+w_size = 3.1352733544794407
+bury = 0.0
+solid = false
+
+[node name="Stone073" type="MeshInstance4D" parent="Stones/Course2"]
+position = Vector4(0.7023701607150524, 5.593707506613697, 2.2886796497027535, -0.26637387777761)
+basis = Projection(0.982163441640101, 0.0156035447635243, -0.18738063746418585, 0, -0.02550726676489969, 0.9983952900383714, -0.05055911561113789, 0, 0.18629104446498815, 0.05443688290129089, 0.980985357960115, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+moss = false
+size = Vector3(3.327081966773502, 3.4529233102717027, 2.8518219940551752)
+w_size = 3.3710930825671923
+bury = 0.0
+solid = false
+
+[node name="Stone074" type="MeshInstance4D" parent="Stones/Course2"]
+position = Vector4(-1.449081698016052, 5.603443681537409, 2.4293299752580033, 0.42541856434782654)
+basis = Projection(0.8362929268154539, -0.01481494099108488, 0.5480827109860996, 0, 0.03195418078661732, 0.9992527187320208, -0.0217470558219024, 0, -0.5473509576941451, 0.03570044299578697, 0.8361413800794736, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+size = Vector3(2.935011084946484, 3.037354119881636, 2.1598293487619133)
+w_size = 3.366169651379082
+bury = 0.0
+solid = false
+
+[node name="Stone075" type="MeshInstance4D" parent="Stones/Course2"]
+position = Vector4(-3.11455528090656, 5.69763627772627, 0.6946359005511957, -0.4648712491149957)
+basis = Projection(0.31221697533020487, 0.01912446487888346, 0.9498183063927303, 0, -0.03437466942480145, 0.9993700716944948, -0.00882280586185759, 0, -0.949388720397285, -0.0298950605357601, 0.312677698178123, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+moss = false
+size = Vector3(2.5040114085721563, 2.9253202866394967, 1.8878396554509853)
+w_size = 2.6109732518574837
+bury = 0.0
+solid = false
+
+[node name="Stone076" type="MeshInstance4D" parent="Stones/Course2"]
+position = Vector4(-2.6045904505828537, 5.710095695411857, -4.123007706896379, -0.294022748230631)
+basis = Projection(-0.8778473324862601, -0.02507490362083728, 0.47828371293110455, 0, -0.03308221002743822, 0.9994179770182922, -0.00832313596939153, 0, -0.4777966389861464, -0.02312912495254057, -0.8781659383923245, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+moss = false
+size = Vector3(2.8078779681726034, 2.954475601483088, 2.6454158398089445)
+w_size = 3.0292724837558462
+bury = 0.0
+solid = false
+
+[node name="Stone077" type="MeshInstance4D" parent="Stones/Course2"]
+position = Vector4(-0.13211865243217302, 5.669383933524576, -5.013046194091233, 0.3674305256253176)
+basis = Projection(-0.9995694135496306, -0.02636254904925737, 0.01288423469489649, 0, -0.02692073559096547, 0.9986123087835984, -0.04526290690104066, 0, -0.01167310975228967, -0.045590270382138, -0.9988920190667232, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "wedge"
+variant = 2
+moss = false
+size = Vector3(2.939774838858188, 3.3665573862381697, 2.2803934220835833)
+w_size = 2.9316186384680964
+bury = 0.0
+solid = false
+
+[node name="Course3" type="Node4D" parent="Stones"]
+
+[node name="Stone089" type="MeshInstance4D" parent="Stones/Course3"]
+position = Vector4(4.4066563212162455, 8.892565896999827, 0.01796605973748163, 0.06258617482443751)
+basis = Projection(-0.03587309269494358, 0.01463536826442499, -0.9992491817441056, 0, -0.04427278354340064, 0.9988878062204598, 0.01621947044130387, 0, 0.9983752009429216, 0.04482138529588079, -0.03518524637314654, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 1
+moss = false
+size = Vector3(3.336211378334294, 4.6836096330154, 2.3637810231156005)
+w_size = 3.4283851425587444
+bury = 0.0
+solid = false
+
+[node name="Stone090" type="MeshInstance4D" parent="Stones/Course3"]
+position = Vector4(2.6515369608277632, 8.714239203777478, 2.198287667925958, -0.22414263647398291)
+basis = Projection(0.6528778355284989, 0.03688372159164922, -0.7565646852432197, 0, -0.02461577947585918, 0.9993193293881346, 0.02747619537062719, 0, 0.7570631382364473, 0.00068483048903666, 0.6533413623296653, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+size = Vector3(2.968401154052532, 3.6899459820961273, 2.278490982350699)
+w_size = 3.4061230241916194
+bury = 0.0
+solid = false
+
+[node name="Stone091" type="MeshInstance4D" parent="Stones/Course3"]
+position = Vector4(0.3770958082904832, 8.955132452346474, 2.735722076316254, -0.16301431530814803)
+basis = Projection(0.9966080353894096, -0.01077561121093308, -0.08158621207221083, 0, 0.01122636180974124, 0.9999241386077976, 0.0050681189775812, 0, 0.08152541074890533, -0.0059668444327759, 0.99665340222654, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+size = Vector3(2.3154954795017053, 2.1383376620869496, 1.8195153276428124)
+w_size = 3.1025794730989658
+bury = 0.0
+solid = false
+
+[node name="Stone092" type="MeshInstance4D" parent="Stones/Course3"]
+position = Vector4(0.3889466300633268, 10.941096811446116, 2.8303833840849624, -0.1810801222951018)
+basis = Projection(0.9880682954238114, -0.01255538764337141, -0.15350376483789682, 0, 0.01218929155209825, 0.9999201767085574, -0.0033258656896001, 0, 0.15353326919512136, 0.00141508029877785, 0.9881424658408352, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+moss = false
+size = Vector3(2.4364428291121043, 2.0250291892879244, 1.7362848427697604)
+w_size = 2.5323006402379127
+bury = 0.0
+solid = false
+
+[node name="Stone093" type="MeshInstance4D" parent="Stones/Course3"]
+position = Vector4(-1.692990556650305, 8.847913673661072, 2.1186499375354653, 0.07867010270667918)
+basis = Projection(0.7839260755685656, -0.00318122214462615, 0.6208460258947739, 0, 0.04903743424351559, 0.9971800733279, -0.05680872644741367, 0, -0.6189145644485033, 0.07497853815213212, 0.7818714604908462, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "wedge"
+variant = 3
+moss = false
+size = Vector3(3.2799298635798224, 4.522908801128552, 2.9648290654097567)
+w_size = 2.66828396473754
+bury = 0.0
+solid = false
+
+[node name="Stone094" type="MeshInstance4D" parent="Stones/Course3"]
+position = Vector4(-0.6828998616248639, 8.879812289370802, -4.370206598245933, 0.3906958247332653)
+basis = Projection(-0.9896044423689916, 0.02181320753591345, 0.14215214251129768, 0, 0.01630487364327788, 0.9990746297498536, -0.03979994077470143, 0, -0.14288876351565877, -0.03706842547489936, -0.9890443534512384, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 3
+moss = false
+size = Vector3(2.963906980445104, 4.555138672226648, 2.540535295760863)
+w_size = 2.645621304947062
+bury = 0.0
+solid = false
+
+[node name="Stone095" type="MeshInstance4D" parent="Stones/Course3"]
+position = Vector4(1.9186571303675044, 8.931040527577576, -3.846854938009021, -0.34008148230299085)
+basis = Projection(-0.8826809646073213, -0.00448161299921185, -0.46995130584435474, 0, 0.03172927225651106, 0.9971047617853496, -0.06910388778537503, 0, 0.4689003817464443, -0.07590789925894935, -0.8799831946282451, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "wedge"
+variant = 3
+moss = false
+size = Vector3(3.3425453104433505, 4.237935432474942, 2.537620541081383)
+w_size = 3.432236913832849
+bury = 0.0
+solid = false
+
+[node name="Stone096" type="MeshInstance4D" parent="Stones/Course3"]
+position = Vector4(3.717072755048126, 8.92111148709346, -2.036788014632933, 0.09623543204626496)
+basis = Projection(-0.4696204055913173, -0.03443035704685642, -0.8821968177033244, 0, -0.01072186987523379, 0.9993880046275402, -0.03329651202397019, 0, 0.8828033281306914, -0.00617792199771265, -0.46970215788429687, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+size = Vector3(3.2958646190377583, 2.1337846348971365, 2.6521914815766925)
+w_size = 3.126130523992516
+bury = 0.0
+solid = false
+
+[node name="Course4" type="Node4D" parent="Stones"]
+
+[node name="Stone099" type="MeshInstance4D" parent="Stones/Course4"]
+position = Vector4(3.942280853444953, 13.173227517593451, -1.703206793325326, -0.2430913664437768)
+basis = Projection(-0.3409018256375011, 0.01528517772220768, -0.9399746319018504, 0, -0.00322075961822623, 0.9998429545251736, 0.01742678954522868, 0, 0.9400933847147848, 0.00896825670755552, -0.3407990586652595, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+moss = false
+size = Vector3(0.8965682372399236, 0.3171488342617382, 0.7349500174179558)
+w_size = 3.216125370966219
+bury = 0.0
+solid = false
+
+[node name="Stone100" type="MeshInstance4D" parent="Stones/Course4"]
+position = Vector4(3.7677043118090574, 13.347333439757438, 1.1939476867586185, 0.15637565022156363)
+basis = Projection(0.19487857750778537, -0.03137542536336466, -0.9803254167427314, 0, 0.0111390334467676, 0.9994945694966184, -0.02977461134323706, 0, 0.9807641214697924, -0.00511744370139646, 0.19512957184278645, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+variant = 3
+moss = false
+size = Vector3(0.8365443131483981, 0.4214288513827061, 0.6322755402396182)
+w_size = 2.9183403562729717
+bury = 0.0
+solid = false
+
+[node name="Stone101" type="MeshInstance4D" parent="Stones/Course4"]
+position = Vector4(-1.1389156966484864, 13.168624795033203, -4.337154335660773, -0.4947362799939042)
+basis = Projection(-0.9792792361055558, 0.00668649785919171, 0.2024042205066343, 0, 0.00864343336866216, 0.999924044819994, 0.00878610553227692, 0, -0.2023300985817995, 0.01035351810747604, -0.9792626490736168, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+variant = 3
+size = Vector3(0.9330948483570424, 0.4586896242914677, 0.737250263057755)
+w_size = 2.5449719565678808
+bury = 0.0
+solid = false
+
+[node name="Stone102" type="MeshInstance4D" parent="Stones/Course4"]
+position = Vector4(0.7438882987080412, 13.331892003162976, -4.605818374624406, 0.28750589145446814)
+basis = Projection(-0.9937621587921016, -0.02569090358854418, -0.1085207317781554, 0, -0.02489431936710198, 0.9996523264448008, -0.00868902162191099, 0, 0.1087062308062926, -0.00593327112994449, -0.9940562115280944, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 3
+size = Vector3(0.9380157876847284, 0.3500000000000014, 0.8669232300900713)
+w_size = 2.437374919919075
+bury = 0.0
+solid = false
+
+[node name="Rim" type="Node4D" parent="Stones"]
+
+[node name="Stone103" type="MeshInstance4D" parent="Stones/Rim"]
+position = Vector4(3.343746395865453, 12.755342852727596, -1.4594470308638192, -0.45871902355005423)
+basis = Projection(-0.3982321375064702, -0.03574292056388364, -0.9165880253890466, 0, 0.04460624623540928, 0.9973037715973118, -0.0582706611817902, 0, 0.9161994583352544, -0.06409080111327099, -0.3955640551906167, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+moss = false
+size = Vector3(0.9317497824817192, 0.9317497824817192, 0.7167306019090147)
+w_size = 1.7918265047725368
+bury = 0.0
+solid = false
+
+[node name="Stone104" type="MeshInstance4D" parent="Stones/Rim"]
+position = Vector4(-1.977798330532991, 12.495805381649618, 3.0794925225639926, -0.5859887688443759)
+basis = Projection(0.759122767087559, 0.01067086817722296, 0.650860013414307, 0, 0.03939472371920671, 0.9972798081371164, -0.06229799374846673, 0, -0.6497543229809363, 0.07293227580667531, 0.7566374316099118, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(1.202062720524544, 1.202062720524544, 0.924663631172726)
+w_size = 2.3116590779318145
+bury = 0.0
+solid = false
+
+[node name="Stone105" type="MeshInstance4D" parent="Stones/Rim"]
+position = Vector4(-2.521872275484609, 12.659553990899328, -2.523153684203639, 0.5399543034595354)
+basis = Projection(-0.6237752695053969, 0.02864766258977167, 0.7810785649226408, 0, -0.03989325261604011, 0.9968586206873908, -0.0684208941548253, 0, -0.7805849995671083, -0.07383902619465939, -0.6206729063375024, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 1
+size = Vector3(1.0317492296212802, 1.0317492296212802, 0.793653253554831)
+w_size = 1.9841331338870776
+bury = 0.0
+solid = false
+
+[node name="Debris" type="Node4D" parent="Stones"]
+
+[node name="Stone106" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(7.413911116724618, -0.28041972149380184, -0.01761357800541025, 0.00125456760174857)
+basis = Projection(-0.13888187572973973, -0.04344462069111302, -0.9893555425259386, 0, -0.03912318132637357, 0.9984980408829914, -0.03835412671058512, 0, 0.9895358514357592, 0.03338004322695283, -0.14037297260325413, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+variant = 1
+size = Vector3(1.6177531693991134, 1.2365926375547749, 1.4067418864340118)
+w_size = 2.8134837728680235
+bury = 0.0
+solid = false
+
+[node name="Stone107" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(7.236756558080256, -0.2511216780841653, 1.1911841840565276, 0.21865398814652817)
+basis = Projection(0.12911747860088016, -0.12047947464455734, -0.9842831771950198, 0, 0.08259515392192832, 0.9904493913620986, -0.11039947327347864, 0, 0.9881835443217843, -0.06704251889525048, 0.13783534884715082, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 3
+moss = false
+size = Vector3(1.4723589511527508, 1.0346457258571742, 1.2803121314371746)
+w_size = 2.560624262874349
+bury = 0.0
+solid = false
+
+[node name="Stone108" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-3.749053482430435, -0.27875959012336804, 6.544681441452011, 1.0210432553557471)
+basis = Projection(0.5395610960649161, -0.0015364190824121, 0.8419450475117896, 0, 0.1022197537427038, 0.992720472283102, -0.06369604269336974, 0, -0.8357182213868545, 0.12043132203217646, 0.5357903984914015, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+moss = false
+size = Vector3(1.6228885465173033, 0.9566269579233492, 1.411207431754177)
+w_size = 2.822414863508354
+bury = 0.0
+solid = false
+
+[node name="Stone109" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-5.629251627509363, -0.2247706877193999, 5.632298600988287, -1.191988474871461)
+basis = Projection(0.8748576174327733, 0.01888021615095187, 0.48401207284317255, 0, 0.00865896184982905, 0.9984708021122238, -0.05459926472999047, 0, -0.48430276852350784, 0.05195762472886643, 0.8733563039407226, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+moss = false
+size = Vector3(1.2962344118623346, 0.8650076149321102, 1.127160358141161)
+w_size = 2.2543207162823213
+bury = 0.0
+solid = false
+
+[node name="Stone110" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-6.94582725707999, -0.23521160345018172, 1.4580107617930949, 0.9335138762152831)
+basis = Projection(0.4964151221141545, -0.03457219550314245, 0.8673965585788784, 0, -0.10132528229615342, 0.9900689773746466, 0.09745053723775184, 0, -0.8621515027557476, -0.13626512150368536, 0.4879821748359175, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+size = Vector3(1.3765562131001154, 0.8437151433475326, 1.1970054026957526)
+w_size = 2.3940108053915052
+bury = 0.0
+solid = false
+
+[node name="Stone111" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-7.765804461046938, -0.3063482969921133, 0.22871819990637973, -0.5337041578364915)
+basis = Projection(0.0690244379282326, 0.06688337223093678, 0.9953704041650572, 0, 0.03148698409879435, 0.997106919102138, -0.0691835364158628, 0, -0.9971179452808248, 0.03611656680334801, 0.06671878896746751, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+size = Vector3(1.772465456838337, 1.3180171132697092, 1.541274310294206)
+w_size = 3.082548620588412
+bury = 0.0
+solid = false
+
+[node name="Stone112" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-7.05326342988078, -0.24378369090005075, -1.2020946373602723, 0.35570605300595415)
+basis = Projection(-0.2361249138285014, 0.04979935771017743, 0.9704457991259154, 0, 0.11058887406962777, 0.9935745273358744, -0.02407819680345281, 0, -0.9654093049072476, 0.10163504612557414, -0.24011495454793652, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+moss = false
+size = Vector3(1.4159607417836009, 0.768924335500939, 1.231270210246609)
+w_size = 2.462540420493218
+bury = 0.0
+solid = false
+
+[node name="Stone113" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-6.268107391996232, -0.26683270279768434, -3.278226671083412, -0.31422774990339486)
+basis = Projection(-0.6130428961909598, -0.09907412745057416, 0.7838129398649321, 0, -0.08132765942317598, 0.9947491893843712, 0.06212778792041658, 0, -0.7858525429382716, -0.02565867278414359, -0.6178813909387532, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+moss = false
+size = Vector3(1.551261420050873, 1.1243566793232442, 1.348922973957281)
+w_size = 2.697845947914562
+bury = 0.0
+solid = false
+
+[node name="Stone114" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-5.733419476397258, -0.29881127409715763, -4.45839705538392, -0.9392803556331832)
+basis = Projection(-0.8656755607190147, -0.0620332254172, 0.4967471212983105, 0, -0.01045795196944173, 0.9943170756134956, 0.10594425130242432, 0, -0.5004962085914582, 0.0865183916156862, -0.8614047324561261, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+variant = 1
+size = Vector3(1.7347320371587562, 1.014004026239543, 1.5084626410076143)
+w_size = 3.0169252820152286
+bury = 0.0
+solid = false
+
+[node name="Stone115" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-5.402096875911516, -0.29914240195384534, -5.344510162681587, -0.00641364613211936)
+basis = Projection(-0.5172732326895086, 0.13550490304332433, 0.8450247475631496, 0, 0.08724781714191462, 0.990590902445474, -0.1054394726667024, 0, -0.8513613927979801, 0.0191855477764, -0.5242286653833449, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+variant = 1
+size = Vector3(1.755977383025774, 1.3274320881400492, 1.526936854805021)
+w_size = 3.053873709610042
+bury = 0.0
+solid = false
+
+[node name="Stone116" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-3.671674008570223, -0.22165675841086796, -6.054219970493368, -0.1992383563507938)
+basis = Projection(-0.7007788670369046, -0.03685013630323282, 0.7124261694862882, 0, -0.0702364909598736, 0.9973768690369302, -0.01749904133756766, 0, -0.7099125402837422, -0.06230127257547369, -0.7015288565578472, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(1.279569001897325, 0.6686521274637787, 1.1126686973020217)
+w_size = 2.2253373946040433
+bury = 0.0
+solid = false
+
+[node name="Stone117" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-2.51664347802049, -0.22417416962708803, -6.708341895220797, -0.6287689846511454)
+basis = Projection(-0.9978640174487464, -0.00725805964916422, -0.064920899956618, 0, -0.00961887349702535, 0.9993009450996256, 0.03612614559627089, 0, 0.06461331096373449, 0.03667344670362895, -0.9972362700750408, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+size = Vector3(1.2905840145976577, 0.7874180292148869, 1.1222469692153545)
+w_size = 2.244493938430709
+bury = 0.0
+solid = false
+
+[node name="Stone118" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-0.4931355681945673, -0.2739275413096071, -7.385922112269352, 0.25591015410639195)
+basis = Projection(-0.9621009162438724, -0.09739505901581384, 0.2547077333769177, 0, -0.10881539961105634, 0.993575280041398, -0.03110259953996606, 0, -0.25004206800094053, -0.05763996330640329, -0.9665177695520396, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 3
+moss = false
+size = Vector3(1.5923950803020086, 0.937234165823474, 1.3846913741756597)
+w_size = 2.7693827483513194
+bury = 0.0
+solid = false
+
+[node name="Stone119" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(0.8027100721578497, -0.2569872420604916, -6.934906691161068, 0.896751707488751)
+basis = Projection(-0.9917037919751204, -0.0863782802396904, -0.095196542400451, 0, -0.07630797453742318, 0.9915635844572156, -0.10477953521730564, 0, 0.10344410086690944, -0.09664600706284834, -0.9899287182997796, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+size = Vector3(1.5054417935326336, 1.1447330937296694, 1.3090798204631595)
+w_size = 2.6181596409263195
+bury = 0.0
+solid = false
+
+[node name="Stone120" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(2.1593344347983185, -0.31112322558038474, -7.172154973135065, 0.3488031208077995)
+basis = Projection(-0.968456323995316, 0.03509000606589606, -0.24670030398800705, 0, 0.01695516830284451, 0.997020263119884, 0.07525368559864375, 0, 0.2486058542780156, 0.0686970625474822, -0.9661655359285204, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+size = Vector3(1.7975735323037512, 1.0056312747119054, 1.5631074193945664)
+w_size = 3.126214838789133
+bury = 0.0
+solid = false
+
+[node name="Stone121" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(3.5652095981048357, -0.2250898742753907, -6.35524641465472, -0.4735831908604931)
+basis = Projection(-0.764471413643279, -0.08721021744722021, -0.6387314268885282, 0, -0.04291720035280866, 0.9954940853714456, -0.08455554330939072, 0, 0.6432274649267735, -0.0372277311056951, -0.7647695890924262, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+variant = 3
+size = Vector3(1.303485937431145, 0.7116567296740024, 1.133466032548822)
+w_size = 2.266932065097644
+bury = 0.0
+solid = false
+
+[node name="Stone122" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(4.697955058366904, -0.31339256439955865, -5.597474323519989, 0.8282167932694426)
+basis = Projection(-0.7179436287322293, 0.01864891952702333, -0.6958513948849089, 0, 0.03529153569553582, 0.9993306634137512, -0.00962978033406744, 0, 0.6952060510892072, -0.03147130377830379, -0.7181212318038258, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+variant = 2
+size = Vector3(1.80440891189043, 1.2480451694537704, 1.5690512277308089)
+w_size = 3.1381024554616177
+bury = 0.0
+solid = false
+
+[node name="Stone123" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(5.7247488436293485, -0.28807706049071835, -4.366883001779351, 0.1888877207206092)
+basis = Projection(-0.7633937534089384, -0.00200039842747872, -0.6459303179618867, 0, 0.02446781271026889, 0.9991879578133837, -0.03201173381582119, 0, 0.6454698315160733, -0.04024205967456346, -0.7627249001021016, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 1
+moss = false
+size = Vector3(1.6586888934314012, 0.9619528540823028, 1.4423381682012186)
+w_size = 2.8846763364024373
+bury = 0.0
+solid = false
+
+[node name="Stone124" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(7.184480830079621, -0.311421261077767, -2.6243728244891615, 0.7680475529984958)
+basis = Projection(-0.5049524911707994, 0.01588314603905648, -0.8630009891838512, 0, 0.02992562588094525, 0.9995517350906948, 0.00088644955590679, 0, 0.8626282157314571, -0.02537822982564922, -0.5052014517743185, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+size = Vector3(1.7922399698377114, 1.2164535498373938, 1.5584695389893144)
+w_size = 3.116939077978629
+bury = 0.0
+solid = false
+
+[node name="Stone125" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(7.268759895805965, -0.32795583660602223, -1.1509410516225742, -0.19831261514701803)
+basis = Projection(-0.1151878554466222, -0.03150751276217788, -0.9928439125044528, 0, 0.01721650393259364, 0.9992833810177992, -0.03370929269467045, 0, 0.9931945176801706, -0.02097620225820614, -0.11456286042551386, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+variant = 3
+size = Vector3(1.8882069391391287, 1.194439184741086, 1.641919077512286)
+w_size = 3.283838155024572
+bury = 0.0
+solid = false
+
+[node name="Stone126" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(8.289236879356313, -0.19595669295066248, 0.4272977827749951, 0.9978828698708588)
+basis = Projection(-0.4293287632449326, 0.00885723107446814, -0.9031048458004586, 0, -0.07817094692222049, 0.9958348341588018, 0.04692852153216721, 0, 0.8997589211049034, 0.09074432507658632, -0.4268481596054208, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+moss = false
+size = Vector3(1.1367144471555208, 0.8320322339743362, 0.9884473453526268)
+w_size = 1.9768946907052536
+bury = 0.0
+solid = false
+
+[node name="Stone127" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(7.866909660024885, -0.17616453968242013, 2.6200042773835515, -0.6173906119631148)
+basis = Projection(0.5275644533129199, 0.09253536880320658, -0.8444601548451499, 0, -0.11661170658538024, 0.99252821072801, 0.03590906287136889, 0, 0.8414733848957346, 0.07952959467713439, 0.5344133101660227, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+size = Vector3(1.0275348005822378, 0.6791317780269887, 0.8935085222454242)
+w_size = 1.7870170444908484
+bury = 0.0
+solid = false
+
+[node name="Stone128" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(4.777612643861932, -0.15303039776935767, 7.045899953990474, 0.8390193123334011)
+basis = Projection(0.9713726192404304, -0.08016028875560725, -0.22362817956734243, 0, 0.08490586262620632, 0.99632062658538, 0.011670626899007, 0, 0.22186984716649907, -0.03032387091275963, 0.974604655114668, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+size = Vector3(0.885713024761699, 0.5471855676761251, 0.7701852389232166)
+w_size = 1.540370477846433
+bury = 0.0
+solid = false
+
+[node name="Stone129" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-4.288514450874181, -0.20396596649743387, 7.316827871483466, -0.02925805565259787)
+basis = Projection(0.9723439997912554, 0.08822963339400698, 0.21624679849908093, 0, -0.07480378483796535, 0.9947720530173592, -0.06951946712643464, 0, -0.221249948799674, 0.05142075774225005, 0.9738605474241958, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+size = Vector3(1.1857017197314532, 0.8580914251498735, 1.0310449736795246)
+w_size = 2.0620899473590493
+bury = 0.0
+solid = false
+
+[node name="Stone130" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-6.6911925569609645, -0.1939567072169279, 5.371018487959598, 1.1453783239550426)
+basis = Projection(0.48351265183562936, 0.07548515750302193, 0.8720765485389579, 0, -0.06372795088156266, 0.9966665702004602, -0.05093619657265549, 0, -0.8730144694054702, -0.03094735597098785, 0.4867114107631856, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+size = Vector3(1.1209489189808486, 0.5945413140752558, 0.9747381904181294)
+w_size = 1.9494763808362583
+bury = 0.0
+solid = false
+
+[node name="Stone131" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-7.72617676833286, -0.16153325442482477, 3.4350875619215366, 0.9233939211614316)
+basis = Projection(0.05404264161193883, -0.0682704018151992, 0.9962020603891536, 0, -0.11398180832677192, 0.990717222240338, 0.07407788419594578, 0, -0.9920118649785206, -0.11755227684898398, 0.0457593919262184, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+moss = false
+size = Vector3(0.9426460548151416, 0.5182047773035601, 0.819692221578384)
+w_size = 1.639384443156768
+bury = 0.0
+solid = false
+
+[node name="Stone132" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-7.745477294119671, -0.22741291665996827, 2.450055138418667, 0.8464567084676269)
+basis = Projection(0.1857382100924522, 0.08870339038192207, 0.9785872602105572, 0, -0.02890478565278998, 0.9959791897710172, -0.08479367257899911, 0, -0.982174032785442, -0.01253643002694843, 0.1875553444830647, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+size = Vector3(1.316189739127498, 0.740968402744074, 1.144512816632607)
+w_size = 2.289025633265214
+bury = 0.0
+solid = false
+
+[node name="Stone133" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-8.118850521251382, -0.20691129670745945, 0.39382942748078426, -0.7900537944212787)
+basis = Projection(0.4253604273598776, -0.03757646854380913, 0.9042436153205607, 0, 0.04266148992043556, 0.9988595086283888, 0.02144013293853433, 0, -0.9040179777603934, 0.02945659577122877, 0.42647837559667606, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(1.192671493007231, 0.8940576384532859, 1.0371056460932444)
+w_size = 2.074211292186489
+bury = 0.0
+solid = false
+
+[node name="Stone134" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-8.042792755655807, -0.1718057631943935, -2.1739251084945126, -0.4512618681545125)
+basis = Projection(-0.4385119637943274, 0.08375891654277527, 0.8948137803525508, 0, 0.06829896399544756, 0.995874196393522, -0.05974810854500072, 0, -0.8961263912676555, 0.03491459375586428, -0.44242339677787373, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+moss = false
+size = Vector3(0.99463202497502, 0.5689652353374117, 0.8648974130217567)
+w_size = 1.7297948260435134
+bury = 0.0
+solid = false
+
+[node name="Stone135" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-7.369727667722429, -0.22244728870943192, -3.763278584053836, -0.07912531998429406)
+basis = Projection(-0.5663531479891645, -0.01282826584894341, 0.8240628297393788, 0, 0.02599310147299875, 0.9991034160192784, 0.03341740226922592, 0, -0.823752675527417, 0.04034599972633852, -0.5655119184133118, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+size = Vector3(1.280829050505301, 0.6816754389703074, 1.11376439174374)
+w_size = 2.22752878348748
+bury = 0.0
+solid = false
+
+[node name="Stone136" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-6.4883846166401655, -0.18930234310987612, -4.890186596702296, -1.059619352047427)
+basis = Projection(-0.2138251680850625, -0.0928709385443032, 0.9724473179906944, 0, 0.03588888075444566, 0.9940517527417954, 0.10282558586829386, 0, -0.9762124695636644, 0.0568867440170815, -0.20922024907629536, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+variant = 1
+size = Vector3(1.1020919875245214, 0.7954708440391923, 0.9583408587169752)
+w_size = 1.9166817174339503
+bury = 0.0
+solid = false
+
+[node name="Stone137" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-4.992658455467497, -0.16859182495065406, -6.121134795360963, -0.5505637577775097)
+basis = Projection(-0.5472720526508402, 0.00192547064093472, 0.8369525631421095, 0, 0.0931547226950277, 0.993924135162278, 0.05862602819166574, 0, -0.8317544697967956, 0.1100504707156148, -0.5441262683130847, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+variant = 3
+size = Vector3(0.980490467031537, 0.634726520001049, 0.8526004061143801)
+w_size = 1.7052008122287603
+bury = 0.0
+solid = false
+
+[node name="Stone138" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-3.1609052424022352, -0.18917942564563267, -7.802606845607024, -0.4059954808701622)
+basis = Projection(-0.9197904768301156, -0.00466653508404752, 0.3923820869802014, 0, 0.02061728170152908, 0.9979735046341228, 0.06019810415225987, 0, -0.3918678430643025, 0.06345949494438076, -0.9178303144228432, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+variant = 2
+moss = false
+size = Vector3(1.0912484425597275, 0.5950294296189662, 0.9489116891823718)
+w_size = 1.8978233783647436
+bury = 0.0
+solid = false
+
+[node name="Stone139" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-1.3275375770895217, -0.17158074375124505, -7.925293162484633, -1.1337321868754364)
+basis = Projection(-0.988446981264612, -0.08861618051791377, -0.12296234293186106, 0, -0.08114254807146871, 0.9946119724053026, -0.06452062647326935, 0, 0.12801738991771966, -0.05379774064447573, -0.9903117443412476, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+moss = false
+size = Vector3(0.9949138870391436, 0.5373982657193116, 0.8651425104688206)
+w_size = 1.7302850209376412
+bury = 0.0
+solid = false
+
+[node name="Stone140" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(1.1158417580621895, -0.22407916528767763, -7.792980960691112, -0.560744695473823)
+basis = Projection(-0.9567849974248754, 0.02354771234044835, -0.2898412909614717, 0, 0.05276936113027852, 0.9942273290176934, -0.0934206227780853, 0, 0.28596829059982026, -0.10467819007737264, -0.9525043901702196, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+variant = 1
+moss = false
+size = Vector3(1.3002159454058553, 0.708631052449723, 1.130622561222483)
+w_size = 2.261245122444966
+bury = 0.0
+solid = false
+
+[node name="Stone141" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(2.30529170423206, -0.18871583379279613, -7.898369471200455, -0.8496012803233879)
+basis = Projection(-0.8427588194149307, 0.05570425316624929, -0.5354013527042518, 0, 0.01356809420133201, 0.9965134049750942, 0.08232217516980246, 0, 0.5381203202984404, 0.06211336316875996, -0.8405762612623375, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+size = Vector3(1.0917892968385563, 0.6657301172618837, 0.9493819972509184)
+w_size = 1.898763994501837
+bury = 0.0
+solid = false
+
+[node name="Stone142" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(4.972571097661318, -0.168832356234378, -6.499727844498663, -0.5664254694014302)
+basis = Projection(-0.9406009566257824, -0.0863145549373246, -0.3283590077957884, 0, -0.11651083912218604, 0.9904742877645384, 0.07338875693438543, 0, 0.3188966364854091, 0.10728691850967569, -0.941697643808771, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+variant = 2
+size = Vector3(0.985954068238694, 0.5538518144535155, 0.8573513636858211)
+w_size = 1.7147027273716422
+bury = 0.0
+solid = false
+
+[node name="Stone143" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(6.309360301724049, -0.15463461410347615, -5.3786035325080075, -0.31045266054840237)
+basis = Projection(-0.22046685297212867, -0.00520451898202691, -0.975380581989785, 0, -0.02054184242313799, 0.9997887548512396, -0.00069165227585882, 0, 0.9751781372910432, 0.01988362781721318, -0.22052719082779287, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+moss = false
+size = Vector3(0.8894611184927633, 0.513868076941904, 0.7734444508632724)
+w_size = 1.5468889017265448
+bury = 0.0
+solid = false
+
+[node name="Stone144" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(7.756354963555006, -0.19953835083202204, -3.694626111805589, 0.30826271162293906)
+basis = Projection(-0.13813785860573555, 0.0284705147381389, -0.9900037180790624, 0, -0.03511918141433853, 0.9988173271161018, 0.03362424942556847, 0, 0.9897901672155612, 0.03941290198896141, -0.13697462553407447, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+size = Vector3(1.1501728315470543, 0.8315178863568619, 1.0001502883017863)
+w_size = 2.000300576603573
+bury = 0.0
+solid = false
+
+[node name="Stone145" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(8.363075954616066, -0.20295874849794152, -2.1648799855294016, -0.24164827193045513)
+basis = Projection(-0.00176943813165597, 0.10470056912774128, -0.9945022171483708, 0, 0.11778871834303348, 0.9876025139086873, 0.10376460067068596, 0, 0.9930371024890278, -0.11695753650606902, -0.01408004739437216, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+variant = 2
+size = Vector3(1.1959830466155472, 0.812794311727687, 1.039985257926563)
+w_size = 2.079970515853126
+bury = 0.0
+solid = false
+
+[node name="Stone146" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(8.93247296615572, -0.12644308727200637, 0.3369154839802895, 1.1090562203452616)
+basis = Projection(-0.08223469311092584, 0.08555924164355998, -0.9929335684819658, 0, -0.07760231831021334, 0.9927333887435718, 0.0919690114472515, 0, 0.993587105110484, 0.08461699027431348, -0.07499753005989306, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 1
+moss = false
+size = Vector3(0.7355966699655498, 0.4092054251177995, 0.639649278230913)
+w_size = 1.279298556461826
+bury = 0.0
+solid = false
+
+[node name="Stone147" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(6.29446139568086, -0.09548529404127064, 6.62993967560228, -0.6144396144644573)
+basis = Projection(0.39609515546566737, -0.01817637423477532, -0.9180295459495332, 0, 0.07479954324002705, 0.9971198551399634, 0.01253087454017833, 0, 0.9151577220062737, -0.07363160941698721, 0.39631392853008857, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+moss = false
+size = Vector3(0.5524291389562698, 0.409242485589304, 0.4803731643097998)
+w_size = 0.9607463286195996
+bury = 0.0
+solid = false
+
+[node name="Stone148" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(4.553524876538201, -0.09120266069477934, 8.03459715711235, -0.8796976730462223)
+basis = Projection(0.9300790344329822, 0.0104363721863758, -0.367211208766561, 0, 0.01530681277457848, 0.9976273170382202, 0.0671225579206157, 0, 0.3670404489847072, -0.06805011708079457, 0.9277125041597718, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+size = Vector3(0.527009234586968, 0.3802608613589063, 0.45826889964084183)
+w_size = 0.9165377992816836
+bury = 0.0
+solid = false
+
+[node name="Stone149" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-4.815417420893798, -0.12081435803562623, 7.92961906600825, -1.1216344697790024)
+basis = Projection(0.8130669666654144, 0.05600186989060034, 0.5794703601447257, 0, -0.01999834896496059, 0.997461784465016, -0.06833779752480987, 0, -0.5818265839201381, 0.0439747552650668, 0.8121231723964044, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+size = Vector3(0.6978159090194109, 0.4293807850262909, 0.6067964426255748)
+w_size = 1.2135928852511495
+bury = 0.0
+solid = false
+
+[node name="Stone150" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-7.1363909176532365, -0.12819776431589822, 5.1589528694634, -0.49997930235983856)
+basis = Projection(0.3745184961370527, 0.03170040657685568, 0.9266773873760504, 0, -0.05097339169439109, 0.99860795016841, -0.01356005898278328, 0, -0.9258172656579756, -0.04215739654329267, 0.37561302496889126, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 3
+size = Vector3(0.7388292539056031, 0.4228007287093314, 0.642460220787481)
+w_size = 1.284920441574962
+bury = 0.0
+solid = false
+
+[node name="Stone151" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-8.437843104334345, -0.13005787052160214, 3.204375343327845, -0.9253606561925524)
+basis = Projection(0.4479230741094197, -0.0345976530102572, 0.8934024412808312, 0, -0.06935108381081227, 0.9948958562152612, 0.07329844786875045, 0, -0.8913783410284507, -0.09479049367887096, 0.4432374256010913, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 3
+moss = false
+size = Vector3(0.7546701597009352, 0.46594054727379974, 0.6562349214790741)
+w_size = 1.3124698429581485
+bury = 0.0
+solid = false
+
+[node name="Stone152" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-9.027094441136686, -0.1276726100253621, -0.6731345932965574, 0.8332018422134466)
+basis = Projection(-0.16496483781277224, -0.09194209734438316, 0.982004711303017, 0, 0.09019438555701498, 0.990067504211264, 0.10784855084270382, 0, -0.9821667756035116, 0.10636253024817868, -0.15503366427910745, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 3
+size = Vector3(0.7488105484519426, 0.5145356210347231, 0.6511396073495154)
+w_size = 1.3022792146990307
+bury = 0.0
+solid = false
+
+[node name="Stone153" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-8.285356992011627, -0.13238061968300516, -2.0710521326205353, 0.123668910947621)
+basis = Projection(-0.4862086748572003, 0.01329004112896833, 0.8737416662265773, 0, -0.11516004860896296, 0.9901890627749808, -0.0791440658873838, 0, -0.8662212694791018, -0.13910066415224476, -0.4799080302874894, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+variant = 3
+size = Vector3(0.7773549414985591, 0.5731448466931056, 0.6759608186943993)
+w_size = 1.3519216373887986
+bury = 0.0
+solid = false
+
+[node name="Stone154" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-6.21661821870205, -0.13837368367214706, -6.13608777327732, -0.35366154264222704)
+basis = Projection(-0.7567889751599053, -0.08094476611066151, 0.6486280844333757, 0, -0.01437190936631592, 0.9941236716803952, 0.10729200168631405, 0, -0.6535012588339724, 0.07187537995711685, -0.7535051655154287, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+variant = 1
+moss = false
+size = Vector3(0.8034758804947391, 0.46330020789581094, 0.6986746786910775)
+w_size = 1.397349357382155
+bury = 0.0
+solid = false
+
+[node name="Stone155" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-5.1425434565389985, -0.09157332163203112, -6.99625307465735, -1.1043356707718064)
+basis = Projection(-0.4809569927293224, -0.07849041017755878, 0.8732236979462508, 0, -0.00985303088790366, 0.9964055802134516, 0.08413582769437075, 0, -0.8766888210346294, 0.03186181460076312, -0.48000159983406104, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+moss = false
+size = Vector3(0.5295174548563212, 0.28748479452951, 0.46044996074462713)
+w_size = 0.9208999214892544
+bury = 0.0
+solid = false
+
+[node name="Stone156" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-1.8337414768937637, -0.1186900876477704, -8.41712627500397, 0.40551364086832)
+basis = Projection(-0.9966529453710108, -0.07162271068465992, 0.03940931105043932, 0, -0.06810311956374605, 0.9941038629322688, 0.08437698032536478, 0, -0.04522025640102992, 0.08141066894039371, -0.9956542730253825, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+variant = 1
+moss = false
+size = Vector3(0.6909807839019574, 0.5021876013419109, 0.6008528555669195)
+w_size = 1.201705711133839
+bury = 0.0
+solid = false
+
+[node name="Stone157" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(1.8507326350035576, -0.14974284570932672, -9.00343945995087, -0.2690754602770312)
+basis = Projection(-0.9983582164638998, 0.05258312504542486, -0.02271313671596898, 0, 0.05392753212557699, 0.996535642739668, -0.06331298467361697, 0, 0.01930525570579023, -0.0644339018676815, -0.9977352250934312, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+variant = 1
+size = Vector3(0.8657972603637101, 0.47950647883629527, 0.7528671829249654)
+w_size = 1.5057343658499307
+bury = 0.0
+solid = false
+
+[node name="Stone158" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(5.012246132457193, -0.11349858203007825, -7.566286005322813, 0.38207573544319584)
+basis = Projection(-0.9339349977563324, 0.07425754930231111, -0.3496444427378966, 0, 0.0548487533279925, 0.9963700325795734, 0.06510278362516506, 0, 0.3532096179667881, 0.04162420628666523, -0.9346177781461044, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+variant = 3
+size = Vector3(0.6562730500005398, 0.350340030435749, 0.5706722173917738)
+w_size = 1.1413444347835475
+bury = 0.0
+solid = false
+
+[node name="Stone159" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(6.9280787809399715, -0.12560786016171116, -5.900146751154509, -0.3608467548688995)
+basis = Projection(-0.4956851692445826, -0.15893039665180558, -0.8538368357075427, 0, -0.11744254796633756, 0.9863500311775496, -0.11541604707847716, 0, 0.8605251076628408, 0.0430667507033733, -0.5075842728707318, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "cap"
+variant = 3
+moss = false
+size = Vector3(0.7412904573363542, 0.485307976615805, 0.6446003976837863)
+w_size = 1.2892007953675726
+bury = 0.0
+solid = false
+
+[node name="Stone160" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(7.984756631716954, -0.1340395114700523, -3.702306563710557, -0.5568759963489679)
+basis = Projection(-0.7805814218644583, -0.12175554982730212, -0.613080932607035, 0, -0.11834589326187896, 0.9918920999502642, -0.04630671230289548, 0, 0.6137482329001921, 0.03640945127994281, -0.788661815019204, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+variant = 1
+moss = false
+size = Vector3(0.7830692116149796, 0.5294683858617742, 0.680929749230417)
+w_size = 1.361859498460834
+bury = 0.0
+solid = false
+
+[node name="Stone161" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(4.217867810287692, -0.2573171388898253, 8.005933940233474, 1.1806628361234004)
+basis = Projection(0.9074482790876508, 0.00844762849734294, -0.4200788715867912, 0, 0.01586845830604288, 0.9983955120863496, 0.05435617238939157, 0, 0.4198640408654334, -0.0559914191515696, 0.9058582384509968, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+moss = false
+size = Vector3(1.1727599464493634, 0.8601489897978575, 0.9769070579389436)
+w_size = 1.8764159143189816
+bury = 0.0
+solid = false
+
+[node name="Stone162" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(4.2563644446204245, -0.13196730310658109, 7.065301240424443, 1.0374994781485631)
+basis = Projection(0.15727844504581387, 0.01041790312840006, 0.9874993458318736, 0, 0.00678367075617046, 0.9999093669841068, -0.01162925743609423, 0, -0.9875309982653928, 0.00852790196064351, 0.1571935188012116, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+variant = 3
+size = Vector3(0.599928721762189, 0.37548526732300314, 0.48384405006574555)
+w_size = 0.9598859548195025
+bury = 0.0
+solid = false
+
+[node name="Stone163" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(4.185278454528598, -0.3409015676151245, -6.187026943697508, 1.0059975538640018)
+basis = Projection(0.3496133570808077, -0.02505883617004923, -0.9365588904497626, 0, -0.08131436635363172, 0.9950585105627064, -0.05697836766032854, 0, 0.9333587061656388, 0.0960760911284948, 0.3458481029849292, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 1
+size = Vector3(1.5612968330725177, 1.045731532412014, 1.4956911246139175)
+w_size = 2.4980749329160283
+bury = 0.0
+solid = false
+
+[node name="Stone164" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(4.102915662238652, -0.13460259392674082, -7.4858185930685535, -0.5880180983972912)
+basis = Projection(0.7729540512442039, 0.08039536651918755, -0.6293477732600776, 0, -0.018424019798756, 0.9943651330989084, 0.10439606109257576, 0, 0.6341944419179559, -0.06909824252059718, 0.7700797638692611, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+variant = 2
+moss = false
+size = Vector3(0.6180527988802456, 0.48591097214666407, 0.5689681399126958)
+w_size = 0.988884478208393
+bury = 0.0
+solid = false
+
+[node name="Stone165" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(1.6124377884127177, -0.2613047351173289, -7.838971759309526, 0.7543247891723441)
+basis = Projection(0.9361630760349706, -0.0317250900115098, 0.35013170912172953, 0, -0.01487043378135953, 0.9914555552386088, 0.1295945685036847, 0, -0.3512514274247096, -0.12652826028308312, 0.927692316493912, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "ledge"
+variant = 1
+moss = false
+size = Vector3(1.2056444471283514, 0.9215445499041092, 1.0047033627785713)
+w_size = 1.9290311154053623
+bury = 0.0
+solid = false
+
+[node name="Stone166" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(2.0035613054281565, -0.12002914555191505, -7.230975131262309, 0.9311547844301906)
+basis = Projection(-0.7107038486005236, 0.00499063787380105, -0.7034736193476033, 0, -0.09246763975364213, 0.9906363430805776, 0.10044586286319092, 0, 0.6973878226516397, 0.13643580652289516, -0.7035875890858595, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 1
+moss = false
+size = Vector3(0.5555884660033207, 0.4699695829845172, 0.4455706958394324)
+w_size = 0.8889415456053131
+bury = 0.0
+solid = false
+
+[node name="Stone167" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(0.6677132546043566, -0.1409510891022207, -8.318014221197078, -0.7671315502862806)
+basis = Projection(0.27161109150295143, 0.1422551361148757, 0.9518355379063724, 0, -0.0986124708243092, 0.98792366313915, -0.11950906412338866, 0, -0.9573416294983208, -0.061402866860283, 0.28235915492655494, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+variant = 3
+moss = false
+size = Vector3(0.6549936459882977, 0.5212694961182488, 0.6036937100986534)
+w_size = 1.0479898335812765
+bury = 0.0
+solid = false
+
+[node name="Stone168" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(7.503090215042002, -0.3564978649649796, 1.3495413154350442, -0.940520515871546)
+basis = Projection(-0.8866398014794779, 0.05573506904147068, -0.45908982183378305, 0, 0.04519424220746729, 0.998401983449775, 0.03392580013570696, 0, 0.46024704551330353, 0.00933174809441667, -0.8877418406123356, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "ledge"
+moss = false
+size = Vector3(1.6253404545730457, 1.3479648141804002, 1.3080706452487392)
+w_size = 2.600544727316873
+bury = 0.0
+solid = false
+
+[node name="Stone169" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(7.386143431810424, -0.172939511348075, 0.13290242944881464, -0.04704352788047461)
+basis = Projection(-0.3443174223017674, 0.0472239564236504, -0.9376648711768848, 0, -0.02111485951213199, 0.9980920543788492, 0.05802080397229334, 0, 0.9386158295102686, 0.03977623568797744, -0.34266335617810834, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+moss = false
+size = Vector3(0.7886591561824567, 0.5927873476020998, 0.749048001933648)
+w_size = 1.261854649891931
+bury = 0.0
+solid = false
+
+[node name="Stone170" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(6.049207672228725, -0.3767826693349018, -4.519760197614705, -1.0736233324090754)
+basis = Projection(-0.9916119739937715, 0.0043524480816859, 0.12917720088263207, 0, -0.00197618374123543, 0.9988054768930792, -0.04882329388939007, 0, -0.12923539658312086, -0.0486690407146587, -0.990418869340603, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+variant = 2
+size = Vector3(1.7161289366194787, 1.2820124063690388, 1.54489343878897)
+w_size = 2.745806298591166
+bury = 0.0
+solid = false
+
+[node name="Stone171" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(4.771062971803853, -0.1912504437435433, -5.52916624393735, 0.5451460925095093)
+basis = Projection(-0.8422112760752734, 0.02721625836509722, -0.5384602508377605, 0, -0.02406063351250308, 0.9958327233467612, 0.0879674543609726, 0, 0.5386104829713554, 0.08704287674690593, -0.8380467082692863, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+moss = false
+size = Vector3(0.8763175866260301, 0.7388159905279527, 0.8634568041392658)
+w_size = 1.4021081386016483
+bury = 0.0
+solid = false
+
+[node name="Stone172" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(6.987913691321786, -0.21465703757353163, -4.345747382259243, -0.2725225785968053)
+basis = Projection(0.916159659553232, 0.06473960520479831, 0.39555058048906033, 0, -0.08459033819629219, 0.995871485274852, 0.03293113269077367, 0, -0.39178559556362286, -0.06362993269199083, 0.9178536260071484, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "chip"
+variant = 2
+moss = false
+size = Vector3(0.9830150849467336, 0.7781399470203755, 0.8927384142456504)
+w_size = 1.5728241359147743
+bury = 0.0
+solid = false
+
+[node name="Stone173" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-7.59023264157853, -0.28850760146603766, 0.09447924913107676, 0.8171926487522392)
+basis = Projection(0.2639932742348408, -0.01323878418039467, 0.964433660627932, 0, -0.03862934918710266, 0.9989584230471164, 0.02428667133633848, 0, -0.9637506547547188, -0.0436669625305375, 0.26320689930776436, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "round"
+moss = false
+size = Vector3(1.313747184835406, 0.9923015218818458, 1.2183688862126043)
+w_size = 2.10199549573665
+bury = 0.0
+solid = false
+
+[node name="Stone174" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-8.654412363460853, -0.11901260527774692, 0.8471664639982293, -0.7610706262789875)
+basis = Projection(0.8273218889858558, 0.13997796521595968, -0.5440079606576314, 0, -0.09776388624017464, 0.989554636604434, 0.10594264354774566, 0, 0.5531552354918948, -0.03446433560459404, 0.8323650010777965, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+variant = 2
+size = Vector3(0.550742550824233, 0.41181064212610785, 0.44344123543963343)
+w_size = 0.8811880813187728
+bury = 0.0
+solid = false
+
+[node name="Stone175" type="MeshInstance4D" parent="Stones/Debris"]
+position = Vector4(-7.932217477892534, -0.14467997253416234, 1.3112141303450224, 0.7838242291495432)
+basis = Projection(-0.7418021973071708, -0.04138234093888374, -0.6693407218514881, 0, 0.03776607591881369, 0.99393249783975, -0.10330495267764137, 0, 0.6695544963480923, -0.10191021340598452, -0.7357384622429353, 0, 0, 0, 0, 1)
+script = ExtResource("chunk")
+kind = "ledge"
+variant = 3
+size = Vector3(0.6640772141180805, 0.46708333491784554, 0.6257761486750729)
+w_size = 1.0625235425889288
+bury = 0.0
+solid = false

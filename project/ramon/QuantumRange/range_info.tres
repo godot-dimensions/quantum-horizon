@@ -1,0 +1,19 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://ramon/QuantumRange/carried/kit/panels/kit_room_info.gd" id="1_info"]
+
+[resource]
+script = ExtResource("1_info")
+number = 4
+title = "Shooting Range"
+status = "LOCATE  /  CHARGE  /  REVEAL  /  INCOMING"
+lead = "Aim in four dimensions."
+description = "A target can sit in a slice you cannot see. The radar shows where.
+Red is a core: one quick shot. Amber takes a charged shot.
+White breaks. Grey never does: go round it, through W.
+Green is friendly. Cyan marks W: rings, lanes and the glow."
+interactions = [["click", "Shoot, hold to charge"], ["key:Q E", "Step through W"], ["rdrag", "Turn the slice"], ["key:X", "Snap it back"]]
+controls_heading = "CONTROLS"
+research_title = "METRICS"
+research_status = "●  MEASURED LIVE ON THIS MACHINE"
+research_layout = "specimen"
