@@ -237,4 +237,3 @@ color = Color(0.14, 0.13, 0.13, 1)
 script = ExtResource("5_walker")
 blend_joints = true
 rig_path = NodePath("../Hide")
-

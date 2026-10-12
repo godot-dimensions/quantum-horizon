@@ -337,7 +337,7 @@ the pen walker's speeds (run 3 m/s, W step 0.9 m/s, a turn 0.35 s plus a moment 
 
 ### 1 Step
 
-`3x3x2, reachable 18/18, route 10 moves [z2 w1 z1 x2 z1 w1 z2], W moves 2, shortest routes 1, dead ends 5`  
+`3x3x2, reachable 18/18, route 10 moves [z2 w1 z1 x2 z1 w1 z2], W moves 2, shortest routes 1, dead ends 5`
 `all W stepped: 29 s   turning instead: 23 s with 3 turns`
 
 ```
@@ -361,7 +361,7 @@ layer 1
 
 ### 2 Turn
 
-`3x2x4, reachable 11/24, route 5 moves [x1 w3 x1], W moves 3, shortest routes 1, dead ends 2`  
+`3x2x4, reachable 11/24, route 5 moves [x1 w3 x1], W moves 3, shortest routes 1, dead ends 2`
 `all W stepped: 24 s   turning instead: 11 s with 1 turns`
 
 ```
@@ -393,7 +393,7 @@ layer 3
 
 ### 3 Both turns
 
-`3x3x3, reachable 24/27, route 7 moves [z1 w2 x1 z1 w2], W moves 4, shortest routes 1, dead ends 7`  
+`3x3x3, reachable 24/27, route 7 moves [z1 w2 x1 z1 w2], W moves 4, shortest routes 1, dead ends 7`
 `all W stepped: 33 s   turning instead: 16 s with 2 turns`
 
 ```
@@ -425,7 +425,7 @@ layer 2
 
 ### 4 Sealed room
 
-`3x3x3, reachable 26/27, route 12 moves [x1 z2 w1 x2 z2 w1 z1 x1 w1], W moves 3, shortest routes 2, dead ends 0`  
+`3x3x3, reachable 26/27, route 12 moves [x1 z2 w1 x2 z2 w1 z1 x1 w1], W moves 3, shortest routes 2, dead ends 0`
 `all W stepped: 38 s   turning instead: 27 s with 3 turns`
 
 ```
@@ -457,7 +457,7 @@ layer 2
 
 ### 5 The cube
 
-`3x3x3, reachable 27/27, route 10 moves [x1 w2 x1 z2 x2 w2], W moves 4, shortest routes 1, dead ends 5`  
+`3x3x3, reachable 27/27, route 10 moves [x1 w2 x1 z2 x2 w2], W moves 4, shortest routes 1, dead ends 5`
 `all W stepped: 39 s   turning instead: 23 s with 3 turns`
 
 ```

@@ -282,4 +282,3 @@ material_override = SubResource("WireMaterial4D_goswe")
 script = ExtResource("5_ball")
 radius = 0.06
 color = Color(0.86, 0.8, 0.68, 1)
-

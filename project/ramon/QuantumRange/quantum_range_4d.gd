@@ -267,4 +267,3 @@ func apply_tuning(v: Dictionary) -> void:
 	if hud != null:
 		hud.set("w_limit", float(v.get("w_limit", Layout.W_LIMIT)))
 	room_still = float(v.get("room_still", 0.0)) > 0.5
-
