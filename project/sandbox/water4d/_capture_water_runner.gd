@@ -97,5 +97,3 @@ func _shoot(index: int, tag: String) -> void:
 	_rows.append("  %d %-16s %-9s amp %.2f  len %5.1f  steep %.2f  off W %.2f"
 			% [index + 1, name, tag, float(d["amplitude"]), float(d["wavelength"]),
 			float(d["steepness"]), float(d["off_slice"])])
-
-

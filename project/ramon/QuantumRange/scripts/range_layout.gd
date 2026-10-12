@@ -90,4 +90,3 @@ static func entrance_along(x: float) -> float:
 ## The entrance door as a KitRoom doorway on the entrance wall.
 static func doorway() -> Array:
 	return ["entrance", entrance_along(DOOR.y), entrance_along(DOOR.x), DOOR_H]
-
